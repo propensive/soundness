@@ -84,8 +84,11 @@ class CliRunner(config: CliRunner.Config = CliRunner.Config()) extends Runner {
     println(row(titles.map(_.merge)))
     println(underlines)
     rows.foreach {
-      case Left(cells) => println(row(cells))
-      case Right(lines) => lines.foreach { line => println(base1+stripColor(line)+reset) }
+      case Left(cells) =>
+        println(row(cells))
+      case Right(lines) =>
+        val indented = if(lines.forall(_.size <= config.columns - 16)) lines.map((" "*16)+_) else lines
+        indented.foreach { line => println(base1+stripColor(line)+reset) }
     }
   }
 

@@ -38,7 +38,7 @@ object Macros {
         Function(param, rhs)
     }
 
-    q"${c.prefix}.assertMessage($assertion, $failureMsg)"
+    q"${c.prefix}.assert($assertion, $failureMsg)"
   }
 }
 

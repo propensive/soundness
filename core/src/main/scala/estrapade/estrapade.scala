@@ -30,18 +30,9 @@ object `package` {
 
 case class DependencyFailureException(dep: String) extends Exception("a failure occurred in a dependency")
 
-trait Test[Result] {
-  def apply(): Result
-  def result = apply()
-}
-
-class EvaluatedTest[Result](val value: Try[Result], hash: String) extends Test[Result]{
-  def apply(): Result = value.getOrElse { throw DependencyFailureException(hash) }
-}
-
-class LazyTest[Result](val value: () => Try[Result], hash: String) extends Test[Result] {
+class Test[Result](val value: () => Try[Result], hash: String) {
   private lazy val lazyValue = value()
-  override def apply(): Result = lazyValue.getOrElse { throw DependencyFailureException(hash) }
+  def apply(): Result = lazyValue.getOrElse { throw DependencyFailureException(hash) }
 }
 
 object Test {
@@ -65,7 +56,10 @@ object Test {
   
     lazy val hash = Test.hash(name)
       
-    def assertMessage(assertion: Result => Boolean, msg: Result => String)(implicit runner: Runner): Test[Result] =
+    def assert(
+      assertion: Result => Boolean,
+      msg: Result => String)(implicit runner: Runner
+    ): Test[Result] =
       if(runner.doTest(hash)) {
         val t0 = System.nanoTime
         val result = Try(action())
@@ -77,12 +71,16 @@ object Test {
           }
         } match {
           case Success(v) => v
-          case Failure(DependencyFailureException(dep)) => Runner.FailedDependency(dep.take(6))
-          case Failure(f) => Runner.ThrewInRun(f)
+          case Failure(DependencyFailureException(dep)) =>
+            Runner.FailedDependency(dep.take(6))
+          case Failure(f) =>
+            Runner.ThrewInRun(f)
         }
         runner.record(this, outcome, duration)
-        new EvaluatedTest(result, hash)
-      } else new LazyTest(() => Try(action()), hash)
+        val test = new Test(() => result, hash)
+        test.lazyValue
+        test
+      } else new Test(() => Try(action()), hash)
   }
 }
 
