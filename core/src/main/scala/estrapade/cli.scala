@@ -2,14 +2,17 @@ package estrapade
 
 import scala.collection.mutable.ListBuffer
 import scala.collection.immutable.ListMap
-import Runner._
 
+/** companion object for [[CliRunner]] */
 object CliRunner {
+  
   case class Config(
     columns: Int = 100,
     color: Boolean = true,
     runLazily: Boolean = false,
-    testOnly: Option[Set[String]] = None
+    testOnly: Option[Set[String]] = None,
+    quiet: Boolean = false,
+    outputDir: Option[String] = None
   )
 
   object Ansi {
@@ -35,21 +38,37 @@ object CliRunner {
     val cyan: String = rgb(42, 161, 152)
     val green: String = rgb(133, 153, 0)
   }
+  
+  private val decimalFormat = {
+    val df = new java.text.DecimalFormat()
+    df.setMinimumFractionDigits(3)
+    df.setMaximumFractionDigits(3)
+    df
+  }
+
+  private val timeUnits: List[String] = List("ns", "μs", "ms", "s", "ks")
 }
 
+/** a general-purpose instance of a [[Runner]] which reports by printing results to standard output
+ */
 class CliRunner(config: CliRunner.Config = CliRunner.Config()) extends Runner {
   import CliRunner.Ansi._
 
-  private val results: ListBuffer[Runner.Result] = ListBuffer()
+  private[this] val results: ListBuffer[Test.Result] = ListBuffer()
 
-  def record(definition: Test.Definition[_], outcome: Runner.Outcome, duration: Long): Unit = {
-    val result: Runner.Result = Runner.Result(definition, outcome, duration)
-    results.synchronized { results += result }
+  def record(definition: Test.Definition[_], outcome: Test.Outcome, duration: Long): Unit = {
+    val result: Test.Result = Test.Result(definition, outcome, duration)
+    results.synchronized { results += result; () }
   }
+  
+  type Return = Unit
 
-  private def stripColor(string: String): String = string.replaceAll("""\e\[?.*?[\@-~]""", "")
+  def skip(hash: String): Boolean =
+    !config.testOnly.map(_.exists(hash startsWith _)).getOrElse(true)
 
-  private def tabulate(
+  private[this] def stripColor(string: String): String = string.replaceAll("""\e\[?.*?[\@-~]""", "")
+
+  private[this] def tabulate(
     titles: Vector[Either[String, String]],
     rows: Vector[Either[Vector[String], List[String]]]
   ): Unit = {
@@ -87,38 +106,30 @@ class CliRunner(config: CliRunner.Config = CliRunner.Config()) extends Runner {
       case Left(cells) =>
         println(row(cells))
       case Right(lines) =>
-        val indented = if(lines.forall(_.size <= config.columns - 16)) lines.map((" "*16)+_) else lines
+        val indent = 16
+        
+        val indented =
+          if(lines.forall(_.size <= config.columns - indent)) lines.map((" "*indent)+_)
+          else lines
+        
         indented.foreach { line => println(base1+stripColor(line)+reset) }
     }
   }
 
-  type Return = Unit
-
-  def doTest(hash: String): Boolean =
-    config.testOnly.map(_.exists(hash startsWith _)).getOrElse(true)
-
-  private def outcomeColor(outcome: Outcome): String =
+  private[this] def outcomeColor(outcome: Test.Outcome): String =
     outcome.success.map(if(_) green else red).getOrElse(yellow)
 
-  private val decimalFormat = {
-    val df = new java.text.DecimalFormat()
-    df.setMinimumFractionDigits(3)
-    df.setMaximumFractionDigits(3)
-    df
-  }
-
-  private val timeUnits: List[String] = List("ns", "μs", "ms", "s", "ks")
-  private def formatTime(time: Double, suffix: List[String] = timeUnits): String =
-    if(time > 1e3) formatTime(time/1000L, suffix.tail) else decimalFormat.format(time)+suffix.head
+  private[this] def formatTime(time: Double, suffix: List[String] = CliRunner.timeUnits): String =
+    if(time > 1e3) formatTime(time/1000L, suffix.tail)
+    else CliRunner.decimalFormat.format(time)+suffix.head
 
   def report(): Unit = {
-
-    val testResults = results.foldLeft(ListMap[Test.Definition[_], List[Runner.Result]]()) {
+    val testResults = results.foldLeft(ListMap[Test.Definition[_], List[Test.Result]]()) {
       case (results, next) =>
         results.updated(next.definition, next :: results.get(next.definition).getOrElse(Nil))
     }
     
-    case class Result(outcome: Outcome, cells: Vector[String], diagnosis: List[String]) {
+    case class Result(outcome: Test.Outcome, cells: Vector[String], diagnosis: List[String]) {
       def tabulation = if(diagnosis.isEmpty) Vector(Left(cells))
           else Vector(Left(cells), Right(diagnosis))
     }
@@ -131,14 +142,16 @@ class CliRunner(config: CliRunner.Config = CliRunner.Config()) extends Runner {
         // FIXME: Better check for consistency
         val outcome = many.map(_.outcome).groupBy(identity).to[List] match {
           case (o, xs) :: Nil => o
-          case _ => Unstable
+          case _ => Test.Unstable
         }
         
         val outcomeTxt = s"$base00[${outcomeColor(outcome)}${outcome.string}$base00]$reset"
-        val count = if(durations.length == 1) "" else durations.length.toString
+        val countTxt = if(durations.length == 1) "" else durations.length.toString
+        val minTxt = if(durations.length == 1) "" else formatTime(durations.min.toDouble)
+        val maxTxt = if(durations.length == 1) "" else formatTime(durations.max.toDouble)
         
-        Result(outcome, Vector(outcomeTxt, cyan+test.hash+reset, test.name, durations.length.toString,
-            formatTime(durations.min), formatTime(avg), formatTime(durations.max)), outcome.diagnosis)
+        Result(outcome, Vector(outcomeTxt, cyan+test.hash+reset, test.name, countTxt,
+            minTxt, formatTime(avg.toDouble), maxTxt), outcome.diagnosis)
     }.to[Vector]
 
     val List(skip, fail, pass) = List(None, Some(false), Some(true)).map { r =>
@@ -148,9 +161,11 @@ class CliRunner(config: CliRunner.Config = CliRunner.Config()) extends Runner {
     val total = pass + fail + skip
     val percent = (100*pass/total.toDouble + 0.5).toInt
 
-    tabulate(Vector(Left("RESULT"), Left("HASH"), Left("TEST"), Right("COUNT"), Right("MIN"),
-        Right("AVG"), Right("MAX")), rows.flatMap(_.tabulation))
-    println(s"\n${base3}Passed: $pass/$total   Failed: $fail/$total   Skipped: $skip/$total")
-    println(s"$base3$percent% of the tests passed\n")
+    if(!config.quiet) {
+      tabulate(Vector(Left("RESULT"), Left("HASH"), Left("TEST"), Right("COUNT"), Right("MIN"),
+          Right("AVG"), Right("MAX")), rows.flatMap(_.tabulation))
+      println(s"\n${base3}Passed: $pass/$total   Failed: $fail/$total   Skipped: $skip/$total")
+      println(s"$base3$percent% of the tests passed\n")
+    }
   }
 }
