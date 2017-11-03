@@ -47,24 +47,70 @@ object CliRunner {
   }
 
   private val timeUnits: List[String] = List("ns", "μs", "ms", "s", "ks")
+  
+  sealed abstract class Outcome(val string: String, val diagnosis: List[String],
+      val success: Option[Boolean])
+
+  private def showCaptures(values: Map[String, String]) =
+    values.map { case (label, value) => s"$label=$value" }.mkString(",")
+
+  case object Passed extends Outcome("pass", Nil, Some(true))
+  case class Failed(reason: String, captures: Map[String, String]) extends Outcome("fail",
+      (if(captures.isEmpty) Nil else List(showCaptures(captures))) :::
+      List(reason), Some(false))
+  
+  case class ThrewInCheck(throwable: Throwable) extends
+      Outcome("fail", List(s"exception thrown during assertion: ${throwable}"), None)
+  
+  case class ThrewInRun(throwable: Throwable, captures: Map[String, String]) extends
+      Outcome("fail", (if(captures.isEmpty) Nil else List(captures.mkString(", "))) ::: List(s"exception thrown during run: ${throwable}"), Some(false))
+  
+  case class FailedDependency(dep: String) extends
+      Outcome("skip", List(s"dependency $dep failed"), None)
+  
+  case object Unstable extends Outcome("vari", Nil, Some(false))
+  
+  case class Result(definition: Test.Definition[_], outcome: Outcome, duration: Long)
 }
 
 /** a general-purpose instance of a [[Runner]] which reports by printing results to standard output
  */
 class CliRunner(config: CliRunner.Config = CliRunner.Config()) extends Runner {
-  import CliRunner.Ansi._
+  import CliRunner._, Ansi._
+  import scala.util._
 
-  private[this] val results: ListBuffer[Test.Result] = ListBuffer()
+  private[this] val results: ListBuffer[CliRunner.Result] = ListBuffer()
 
-  def record(definition: Test.Definition[_], outcome: Test.Outcome, duration: Long): Unit = {
-    val result: Test.Result = Test.Result(definition, outcome, duration)
-    results.synchronized { results += result; () }
-  }
-  
   type Return = Unit
 
-  def skip(hash: String): Boolean =
-    !config.testOnly.map(_.exists(hash startsWith _)).getOrElse(true)
+  private def check[T](test: Test[T]): Outcome = test.result._1.map { r =>
+    Try {
+      if(test.assertion(test())) Passed
+      else Failed(test.failure(r), test.definition.observed.map(_()).toMap)
+    } match {
+        case Success(v) => v
+        case Failure(e) => ThrewInCheck(e)
+      }
+    } match {
+      case Success(v) => v
+      case Failure(Test.DependencyFailureException(dep)) =>
+        FailedDependency(dep.take(6))
+      case Failure(f) =>
+        ThrewInRun(f, test.definition.observed.map(_()).toMap)
+    }
+
+  def exec[T](test: Test[T]): T = {
+    if(config.runLazily) record(test)
+    test.result._1.getOrElse { throw Test.DependencyFailureException(test.definition.hash) }
+  }
+
+  def record[T](test: Test[T]): Unit = {
+    val run = config.testOnly.map(_.exists(test.definition.hash startsWith _)).getOrElse(true)
+    if(run) {
+      val outcome: Outcome = check(test)
+      synchronized { results += Result(test.definition, outcome, test.result._2) }
+    }
+  }
 
   private[this] def stripColor(string: String): String = string.replaceAll("""\e\[?.*?[\@-~]""", "")
 
@@ -116,7 +162,7 @@ class CliRunner(config: CliRunner.Config = CliRunner.Config()) extends Runner {
     }
   }
 
-  private[this] def outcomeColor(outcome: Test.Outcome): String =
+  private[this] def outcomeColor(outcome: Outcome): String =
     outcome.success.map(if(_) green else red).getOrElse(yellow)
 
   private[this] def formatTime(time: Double, suffix: List[String] = CliRunner.timeUnits): String =
@@ -124,12 +170,12 @@ class CliRunner(config: CliRunner.Config = CliRunner.Config()) extends Runner {
     else CliRunner.decimalFormat.format(time)+suffix.head
 
   def report(): Unit = {
-    val testResults = results.foldLeft(ListMap[Test.Definition[_], List[Test.Result]]()) {
+    val testResults = results.foldLeft(ListMap[Test.Definition[_], List[CliRunner.Result]]()) {
       case (results, next) =>
         results.updated(next.definition, next :: results.get(next.definition).getOrElse(Nil))
     }
     
-    case class Result(outcome: Test.Outcome, cells: Vector[String], diagnosis: List[String]) {
+    case class Result(outcome: Outcome, cells: Vector[String], diagnosis: List[String]) {
       def tabulation = if(diagnosis.isEmpty) Vector(Left(cells))
           else Vector(Left(cells), Right(diagnosis))
     }
@@ -142,7 +188,7 @@ class CliRunner(config: CliRunner.Config = CliRunner.Config()) extends Runner {
         // FIXME: Better check for consistency
         val outcome = many.map(_.outcome).groupBy(identity).to[List] match {
           case (o, xs) :: Nil => o
-          case _ => Test.Unstable
+          case _ => Unstable
         }
         
         val outcomeTxt = s"$base00[${outcomeColor(outcome)}${outcome.string}$base00]$reset"

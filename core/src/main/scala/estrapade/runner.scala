@@ -12,11 +12,10 @@ trait Runner {
   type Return
   
   /** should the specified test, identified by a prefix of its hash, be skipped? */
-  def skip(test: String): Boolean
-
-  /** capture the outcome of running the test, as a side-effect */
-  def record(definition: Definition[_], outcome: Outcome, duration: Long): Unit
+  def record[T](test: Test[T]): Unit
   
+  def exec[T](test: Test[T]): T
+
   /** return or generate a report providing details about the recorded test runs */
   def report(): Return
 }

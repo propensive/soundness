@@ -30,6 +30,7 @@ abstract class TestApp() {
     /* parses the command-line arguments to specify the parameters for the creation of a [[Config]]
      * instance */
     def parse(args: List[String], config: Config = Config()): Config = (args.flatMap { arg =>
+      
       // Transform combined forms of arguments and values into separate arguments
       if(arg.startsWith("--")) arg.split("=", 2).to[List]
       else if(arg.startsWith("-") && arg.length > 2) List(arg.substring(0, 2), arg.substring(2))

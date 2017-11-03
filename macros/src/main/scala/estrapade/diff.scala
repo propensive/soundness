@@ -27,6 +27,9 @@ object Show extends Show_1 {
   
   implicit def showArray[T](implicit show: Show[T]): Show[Array[T]] =
     arr => arr.to[List].map(show.show).mkString("Array(", ", ", ")")
+
+  implicit def showMap[T: Show]: Show[Map[String, T]] = map =>
+    map.map { case (label, value) => s"$label=${implicitly[Show[T]].show(value)}" }.mkString(",")
 }
 
 /** low-priority [[Show]] typeclass instance */
