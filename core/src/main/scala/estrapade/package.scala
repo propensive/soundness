@@ -1,6 +1,7 @@
 package estrapade
 
 import scala.language.implicitConversions
+import scala.language.experimental.macros
 
 object `package` extends package_1 {
   /** creates a new [[Test.Definition]], upon which an assertion may be made */
@@ -15,8 +16,12 @@ object `package` extends package_1 {
     scala.Console.withOut(new PrintStream(baos))(block)
     baos.toString
   }
+  
   implicit def namedObserved[T: Show](value: (String, T)): Observed[T] =
     new Observed[T](value)
+
+  def compileTimeRestart(): Unit = macro ReportingMacros.restart
+  def compileTimeReport(): Unit = macro ReportingMacros.report
 }
 
 trait package_1 {

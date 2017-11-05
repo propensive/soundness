@@ -109,6 +109,7 @@ class CliRunner(config: CliRunner.Config = CliRunner.Config()) extends Runner {
     if(run) {
       val outcome: Outcome = check(test)
       synchronized { results += Result(test.definition, outcome, test.result._2) }
+      ()
     }
   }
 

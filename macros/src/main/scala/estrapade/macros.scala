@@ -19,7 +19,8 @@ object Macros {
       case Function(param, cond) =>
         val rhs = cond match {
           case q"$left.==($right)" =>
-            val diffSearchType = appliedType(typeOf[Diff[_]].typeConstructor, right.tpe)
+            val genericType = lub(List(left.tpe, right.tpe))
+            val diffSearchType = appliedType(typeOf[Diff[_]].typeConstructor, genericType)
             val diff = c.inferImplicitValue(diffSearchType, false, false)
             q"""$diff.diff($left, $right)"""
 
@@ -27,7 +28,8 @@ object Macros {
             q"""$left+" was unexpectedly equal to "+$right"""
           
           case q"$left.contains($right)" =>
-            val showSearchType = appliedType(typeOf[Show[_]].typeConstructor, right.tpe)
+            val genericType = lub(List(left.tpe, right.tpe))
+            val showSearchType = appliedType(typeOf[Show[_]].typeConstructor, genericType)
             val show = c.inferImplicitValue(showSearchType, false, false)
             q"""$show.show{$left}+" did not contain "+$show.show($right)"""
           
