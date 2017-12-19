@@ -1,4 +1,4 @@
-package estrapade
+package probation
 
 abstract class TestApp() {
 
@@ -39,7 +39,7 @@ abstract class TestApp() {
       case Nil =>
         config
       case ("-h" | "--help") :: _ =>
-        println("""Usage: estrapade [OPTIONS]
+        println("""Usage: probation [OPTIONS]
                   |Runs the application, and prints a test report to the console.
                   |
                   |Mandatory arguments to long options are mandatory for short options too.

@@ -2,10 +2,10 @@
 
 source ../build.zsh
 
-PROJECT=estrapade
+PROJECT=probation
 TEST=$1
 
 build macros && \
-build core -cp estrapade-macros.jar && \
-build tests -cp estrapade-macros.jar:estrapade-core.jar && \
-runtests tests -cp estrapade-macros.jar:estrapade-core.jar:estrapade-tests.jar
+build core -cp probation-macros.jar && \
+build tests -cp probation-macros.jar:probation-core.jar && \
+runtests tests -cp probation-macros.jar:probation-core.jar:probation-tests.jar

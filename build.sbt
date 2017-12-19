@@ -6,37 +6,37 @@ lazy val macros = project
   .settings(buildSettings: _*)
   .settings(publishSettings: _*)
   .settings(scalaMacroDependencies: _*)
-  .settings(moduleName := "estrapade-macros")
+  .settings(moduleName := "probation-macros")
 
 lazy val core = project
   .in(file("core"))
   .settings(buildSettings: _*)
   .settings(publishSettings: _*)
   .settings(scalaMacroDependencies: _*)
-  .settings(moduleName := "estrapade")
+  .settings(moduleName := "probation")
   .dependsOn(macros)
 
 lazy val tests = project
   .in(file("tests"))
   .settings(buildSettings: _*)
   .settings(noPublishSettings: _*)
-  .settings(moduleName := "estrapade-tests")
+  .settings(moduleName := "probation-tests")
   .settings(quasiQuotesDependencies)
   .dependsOn(core)
 
 lazy val buildSettings = Seq(
   organization := "com.propensive",
   scalaVersion := "2.12.2",
-  name := "estrapade",
+  name := "probation",
   version := "1.0.3",
-  scalacOptions ++= Seq("-deprecation", "-feature", "-Ywarn-value-discard", "-Ywarn-dead-code", "-Ywarn-nullary-unit", "-Ywarn-numeric-widen", "-Ywarn-inaccessible", "-Ywarn-adapted-args"),
+  scalacOptions ++= Seq("-deprecation", "-Xexperimental", "-feature", "-Ywarn-value-discard", "-Ywarn-dead-code", "-Ywarn-nullary-unit", "-Ywarn-numeric-widen", "-Ywarn-inaccessible", "-Ywarn-adapted-args"),
   crossScalaVersions := Seq("2.10.6", "2.11.8", "2.12.1"),
-  scmInfo := Some(ScmInfo(url("https://github.com/propensive/estrapade"),
-    "scm:git:git@github.com:propensive/estrapade.git"))
+  scmInfo := Some(ScmInfo(url("https://github.com/propensive/probation"),
+    "scm:git:git@github.com:propensive/probation.git"))
 )
 
 lazy val publishSettings = Seq(
-  homepage := Some(url("http://estrapade.propensive.com/")),
+  homepage := Some(url("http://probation.propensive.com/")),
   licenses := Seq("Apache-2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0.txt")),
   autoAPIMappings := true,
   publishMavenStyle := true,
@@ -54,7 +54,7 @@ lazy val publishSettings = Seq(
       <developer>
         <id>propensive</id>
         <name>Jon Pretty</name>
-        <url>https://github.com/propensive/estrapade/</url>
+        <url>https://github.com/propensive/probation/</url>
       </developer>
     </developers>
   ),

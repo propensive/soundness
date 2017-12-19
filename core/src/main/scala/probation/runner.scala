@@ -1,4 +1,4 @@
-package estrapade
+package probation
 
 /** the runner for tests definitions, which determines if, when and how the tests and assertions on
  *  them are executed

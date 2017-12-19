@@ -1,6 +1,6 @@
-package estrapade.tests
+package probation.tests
 
-import estrapade._
+import probation._
 import scala.concurrent.ExecutionContext.Implicits.global
 
 object Tests extends TestApp {

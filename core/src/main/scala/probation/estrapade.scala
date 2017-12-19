@@ -1,4 +1,4 @@
-package estrapade
+package probation
 
 import language.implicitConversions
 import language.experimental.macros
@@ -13,7 +13,7 @@ case class Test[Result](
   assertion: Result => Boolean,
   failure: Result => String
 )(implicit runner: Runner) {
-  private[estrapade] lazy val result: (Try[Result], Long) = {
+  private[probation] lazy val result: (Try[Result], Long) = {
     val t0 = System.nanoTime
     try {
       val result = definition.action()
@@ -34,7 +34,7 @@ object Test {
   case class DependencyFailureException(dep: String) extends
       Exception("a failure occurred in a dependency")
   
-  private[estrapade] def hash(name: String): String = {
+  private[probation] def hash(name: String): String = {
     import javax.xml.bind.DatatypeConverter, java.security.MessageDigest
     val md5 = MessageDigest.getInstance("MD5")
     DatatypeConverter.printHexBinary(md5.digest(name.getBytes("UTF-8"))).toLowerCase.take(6)
@@ -43,10 +43,10 @@ object Test {
   /** use the current [[Runner]] to produce a report of all the tests which have been run */
   def report()(implicit runner: Runner): runner.Return = runner.report()
 
-  private[estrapade] val tests: HashMap[String, Definition[_]] = new HashMap()
+  private[probation] val tests: HashMap[String, Definition[_]] = new HashMap()
 
   // the name of the method used to constrain calls to `applyDynamicNamed` in [[Definition]].
-  final val method = "watching"
+  final val method = "observe"
 
   // A definition of a test, without 
   case class Definition[Result](name: String, action: () => Result, observed: Seq[Observed[_]]) extends Dynamic {

@@ -1,8 +1,8 @@
-package estrapade
+package probation
 
 object Diff extends Diff_1 {
   implicit def seqDiff[T](implicit show: Show[T]): Diff[Seq[T]] = (s1, s2) =>
-    if(s1.length != s2.length) "the sequences differ in length: ${s1.size} vs ${s2.size}" else {
+    if(s1.length != s2.length) s"the sequences differ in length: ${s1.size} vs ${s2.size}" else {
       val idx = s1.zip(s2).indexWhere { case (l, r) => l != r }
       s"the sequences differ at index $idx: ${show.show(s1(idx))} vs ${show.show(s2(idx))}"
     }

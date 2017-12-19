@@ -1,4 +1,4 @@
-package estrapade
+package probation
 
 import scala.language.implicitConversions
 import scala.language.experimental.macros
