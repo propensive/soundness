@@ -4,9 +4,6 @@
 
 # Probation
 
-*Probation* is a simple testing library
-
-Please see the [Probation](http://probation.propensive.com/) website for more information.
-
+A library to *probe* what we can't *prove*, so that at least what's not *provably* correct is *probably* correct.
 
 
