@@ -26,11 +26,11 @@ lazy val tests = project
 
 lazy val buildSettings = Seq(
   organization := "com.propensive",
-  scalaVersion := "2.12.2",
+  scalaVersion := "2.12.4",
   name := "probation",
   version := "1.0.3",
   scalacOptions ++= Seq("-deprecation", "-Xexperimental", "-feature", "-Ywarn-value-discard", "-Ywarn-dead-code", "-Ywarn-nullary-unit", "-Ywarn-numeric-widen", "-Ywarn-inaccessible", "-Ywarn-adapted-args"),
-  crossScalaVersions := Seq("2.10.6", "2.11.8", "2.12.1"),
+  crossScalaVersions := Seq("2.10.6", "2.11.8", "2.12.4"),
   scmInfo := Some(ScmInfo(url("https://github.com/propensive/probation"),
     "scm:git:git@github.com:propensive/probation.git"))
 )
