@@ -1,3 +1,22 @@
+/*
+  
+  Guillotine, version 0.1.0. Copyright 2018 Jon Pretty, Propensive Ltd.
+
+  The primary distribution site is: https://propensive.com/
+
+  Licensed under the Apache License, Version 2.0 (the "License"); you may not use
+  this file except in compliance with the License. You may obtain a copy of the
+  License at
+  
+      http://www.apache.org/licenses/LICENSE-2.0
+ 
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+  WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+  License for the specific language governing permissions and limitations under
+  the License.
+
+*/
 package guillotine.tests
 
 import probation.{TestApp, test}
@@ -70,6 +89,31 @@ object Tests extends TestApp {
       sh"echo $sub".args
     }.assert(_ == List("echo", "Hello \" world"))
 
+    test("array substitution with no quotes") {
+      val sub = List("foo", "bar", "baz")
+      sh"echo $sub".args
+    }.assert(_ == List("echo", "foo", "bar", "baz"))
+
+    test("double quoted array substitution") {
+      val sub = List("foo", "bar", "baz")
+      sh"""echo "$sub"""".args
+    }.assert(_ == List("echo", "foo bar baz"))
+
+    test("single quoted array substitution") {
+      val sub = List("foo", "bar", "baz")
+      sh"""echo '$sub'""".args
+    }.assert(_ == List("echo", "foo bar baz"))
+
+    test("quoted array substitution with spaces") {
+      val sub = List("foo", "bar baz")
+      sh"""echo '$sub'""".args
+    }.assert(_ == List("echo", "foo bar baz"))
+
+    test("unquoted array substitution with spaces") {
+      val sub = List("foo", "bar baz")
+      sh"""echo $sub""".args
+    }.assert(_ == List("echo", "foo", "bar baz"))
+
     test("capture of string output") {
       sh"echo foo bar".exec[String]
     }.assert(_ == "foo bar")
@@ -85,5 +129,7 @@ object Tests extends TestApp {
     test("capture of exit status with int") {
       sh"echo 42".exec[Exit[Int]]
     }.assert(_ == Exit(0, 42))
+
+    ()
   }
 }
