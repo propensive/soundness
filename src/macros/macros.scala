@@ -23,39 +23,62 @@ import contextual._
 import concurrent._, ExecutionContext.Implicits.global
 import language.higherKinds
 import java.io.File
+import scala.io.Source
 
-case class WorkDir(dir: Option[String])
-case class Environment(values: Map[String, String])
+object environemnts {
+  implicit val enclosing: Environment = {
+    import scala.collection.JavaConverters._
+    Environment(None, mapAsScalaMapConverter(System.getenv).asScala.toMap)
+  }
+
+  implicit val none: Environment = Environment(None, Map())
+}
+
+case class Environment(workDir: Option[String], variables: Map[String, String]) {
+  private[guillotine] lazy val envArray: Array[String] =
+    variables.map { case (k, v) => s"$k=$v" }.to[Array]
+
+  private[guillotine] lazy val workDirFile: File =
+    new File(workDir.getOrElse(System.getenv("PWD")))
+}
 
 object Executor {
 
-  implicit val string: Executor[Exit[String]] = { (args, env, workDir) =>
-    val proc = workDir match {
-      case Some(wd) => Runtime.getRuntime.exec(args.to[Array], env.map { case (k, v) => s"$k=$v" }.to[Array], new File(wd))
-      case None => Runtime.getRuntime.exec(args.to[Array])
-    }
+  implicit val source: Executor[Source] = { (args, env) =>
+    val runtime = Runtime.getRuntime
+    val argsArray = args.to[Array]
+    val proc = runtime.exec(argsArray, env.envArray, env.workDirFile)
     
-    Exit(proc.waitFor, scala.io.Source.fromInputStream(proc.getInputStream).getLines.mkString("\n").trim)
+    scala.io.Source.fromInputStream(proc.getInputStream)
+  }
+  
+  implicit val string: Executor[Exit[String]] = { (args, env) =>
+    val runtime = Runtime.getRuntime
+    val argsArray = args.to[Array]
+    val proc = runtime.exec(argsArray, env.envArray, env.workDirFile)
+    
+    Exit(proc.waitFor, scala.io.Source.fromInputStream(proc.getInputStream).getLines.mkString("\n").trim, scala.io.Source.fromInputStream(proc.getErrorStream))
   }
 
-  implicit val int: Executor[Exit[Int]] = string.exec(_, _, _).map(_.toInt)
+  implicit val int: Executor[Exit[Int]] = string.exec(_, _).map(_.toInt)
 
   implicit def unwrapped[T](implicit executor: Executor[Exit[T]]): Executor[T] =
-    executor.exec(_, _, _).result
+    executor.exec(_, _).result
 
 
-  implicit def running[T: Executor]: Executor[Run[T]] = (args, env, workDir) =>
-    Run[T](Future(implicitly[Executor[T]].exec(args, env, workDir)))
+  implicit def running[T: Executor]: Executor[Run[T]] = (args, env) =>
+    Run[T](Future(implicitly[Executor[T]].exec(args, env)))
 }
 
 trait Executor[T] {
-  def exec(args: Seq[String], env: Map[String, String], workDir: Option[String]): T
+  def exec(args: Seq[String], env: Environment): T
+  def map[S](fn: T => S): Executor[S] = (args, env) => fn(exec(args, env))
 }
 
 case class Run[T](result: Future[T])
 
-case class Exit[T](status: Int, result: T) {
-  def map[S](fn: T => S): Exit[S] = Exit[S](status, fn(result))
+case class Exit[T](status: Int, result: T, errorStream: Source) {
+  def map[S](fn: T => S): Exit[S] = Exit[S](status, fn(result), errorStream)
 }
 
 object `package` {
@@ -63,8 +86,8 @@ object `package` {
   case class Command(args: String*) {
     override def toString = args.filter(!_.isEmpty).mkString("Command(", ", ", ")")
 
-    def exec[T: Executor]()(implicit env: Environment, workDir: WorkDir = WorkDir(None)): T =
-      implicitly[Executor[T]].exec(args, env.values, workDir.dir)
+    def exec[T: Executor]()(implicit env: Environment): T =
+      implicitly[Executor[T]].exec(args, env)
   }
 
   sealed trait ShellContext extends Context
