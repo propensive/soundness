@@ -2,12 +2,18 @@ package nidificant
 
 import language.implicitConversions, language.dynamics, language.experimental.macros
 
-final case class Tag[Children, -This, Attributes](tagName: String, unclosed: Boolean = false)
-    extends Dynamic with Node[This] {
+final case class Tag[Children, -This, Attributes](tagName: String,
+                                                  unclosed: Boolean = false,
+                                                  inline: Boolean = false)
+    extends Dynamic
+    with Element[This] {
   type Ref
 
+  def attributes = Map()
+  def children = Nil
+
   def applyDynamic(methodName: String)(children: Node[Children]*): Element[This] =
-    Element[This](tagName, Map(), children)
+    Element[This](tagName, Map(), children, inline)
 
   def attributes[A >: Attributes](
     attributes: Attribute[A]*
@@ -23,23 +29,22 @@ final case class Tag[Children, -This, Attributes](tagName: String, unclosed: Boo
 }
 
 final case class AttributedTag[Children, -This](tagName: String,
-                                               attributes: Map[String, String],
-                                               unclosed: Boolean = false) extends Node[This] {
+                                                attributes: Map[String, String],
+                                                unclosed: Boolean = false,
+                                                inline: Boolean = false)
+    extends Element[This] {
   def apply(children: Node[Children]*): Element[This] =
-    Element[This](tagName, attributes, children)
-  
-  private def attributesString =
-    if (attributes.isEmpty) ""
-    else attributes.map { case (k, v) => s"""$k="$v"""" }.mkString(" ", " ", "")
+    Element[This](tagName, attributes, children, inline)
 
-  override def toString(): String =
-    s"<$tagName$attributesString>"+(if(unclosed) "" else s"</$tagName>")
+  def children: Seq[Node[_]] = Nil
 }
 
 final case class TransparentTag[Extras, Attributes](tagName: String,
-                                                    unclosed: Boolean = false) extends Dynamic {
+                                                    unclosed: Boolean = false,
+                                                    inline: Boolean = false)
+    extends Dynamic {
   def children[Children](children: Node[Children with Extras]*): Element[Children] =
-    Element[Children](tagName, Map(), children)
+    Element[Children](tagName, Map(), children, inline)
 
   def applyDynamicNamed(
     methodName: String
@@ -57,45 +62,47 @@ final case class TransparentTag[Extras, Attributes](tagName: String,
 
 final case class TransparentAttributedTag[Extras](tagName: String,
                                                   attributes: Map[String, String],
-                                                  unclosed: Boolean = false) {
-  def apply[Children](children: Node[Children with Extras]*): Element[Children] =
-    Element[Children](tagName, attributes, children)
+                                                  unclosed: Boolean = false,
+                                                  inline: Boolean = false) extends Element[Nothing] {
+  def children: Seq[Node[_]] = Nil
   
-  private def attributesString =
-    if (attributes.isEmpty) ""
-    else attributes.map { case (k, v) => s"""$k="$v"""" }.mkString(" ", " ", "")
-
-  override def toString(): String =
-    s"<$tagName$attributesString>"+(if(unclosed) "" else s"</$tagName>")
+  def apply[Children](children: Node[Children with Extras]*): Element[Children] =
+    Element[Children](tagName, attributes, children, inline)
 
 }
 
 sealed trait Node[-TagType]
 
 object Element {
-  def apply[T](tag: String, atts: Map[String, String], childNodes: Seq[Node[_]]) =
+  def apply[T](tagNameValue: String, attributesValue: Map[String, String], childrenValue: Seq[Node[_]], inlineValue: Boolean) =
     new Element[T] {
-      val tagName = tag
-      val attributes = atts
-      val children = childNodes
+      def unclosed: Boolean = false
+      def tagName: String = tagNameValue
+      def attributes = attributesValue
+      def children: Seq[Node[_]] = childrenValue
+      def inline: Boolean = inlineValue
     }
 }
 
 trait Element[-TagType] extends Node[TagType] {
-  val tagName: String
-  val attributes: Map[String, String]
-  val children: Seq[Node[_]]
+  def tagName: String
+  def attributes: Map[String, String]
+  def children: Seq[Node[_]]
+  def unclosed: Boolean
+  def inline: Boolean
 
-  private def attributesString =
-    if (attributes.isEmpty) ""
-    else attributes.map { case (k, v) => s"""$k="$v"""" }.mkString(" ", " ", "")
-
-  override def toString(): String =
-    s"<$tagName$attributesString>${children.mkString}</$tagName>"
+  override def toString(): String = {
+    val attributesString =
+      if (attributes.isEmpty) ""
+      else attributes.map { case (k, v) => s"""$k="$v"""" }.mkString(" ", " ", "")
+    
+    s"<$tagName$attributesString>" + children.mkString +
+        (if (unclosed) "" else s"</$tagName>")
+  }
 
 }
 
-final case class Elements[-TagType](elements: Iterable[Element[TagType]])
+final case class Elements[-TagType](elements: List[Element[TagType]])
     extends Node[TagType] {
   override def toString(): String = elements.mkString
 }
@@ -114,7 +121,9 @@ trait AttributeFactory[T] {
   def update(value: T)(implicit show: ShowAttribute[T]): Attribute[Type] =
     Attribute(attributeKey, show.show(value))
 }
-final case class Attribute[-AttType](key: String, value: String)
+final case class Attribute[-AttType](key: String, value: String) {
+  override def toString = s"""$key="$value""""
+}
 
 final case class AttributeKey[T](key: String) extends AttributeFactory[T] {
   type Type = this.type
@@ -352,223 +361,225 @@ trait Html5 {
   trait Root
 
   val html = Tag[HtmlItems, Root, Global with manifestAttribute.type]("html")
-  
-  val head = Tag[HeadItems with ScriptContent with MetaContent with LinkContent with StyleContent with TemplateContent, HtmlItems, Global]("head")
-  
+
+  val head = Tag[
+    HeadItems with ScriptContent with MetaContent with LinkContent with StyleContent with TemplateContent,
+    HtmlItems,
+    Global
+  ]("head")
+
   val title = Tag[PlainText, HeadItems, Global]("title")
-  
+
   val base =
     Tag[Text, HeadItems, Global with hrefAttribute.type with targetAttribute.type]("base")
-  
+
   val link = Tag[
     Empty,
     LinkContent,
     Global with crossoriginAttribute.type with hrefAttribute.type with hreflangAttribute.type with integrityAttribute.type with mediaAttribute.type with relAttribute.type with sizesAttribute.type
   ]("link", unclosed = true)
-  
+
   val meta = Tag[
     Empty,
     MetaContent,
     Global with charsetAttribute.type with contentAttribute.type with httpEquivAttribute.type with nameAttribute.type
   ]("meta", unclosed = true)
-  
+
   val style = Tag[
     Text,
     StyleContent,
     Global with mediaAttribute.type with scopedAttribute.type with typeAttribute.type
   ]("style")
-  
+
   val body = Tag[Flow with TemplateContent, HtmlItems, Global]("body")
-  
+
   val article = Tag[Flow, Flow, Global]("article")
-  
+
   val section = Tag[Flow, Flow, Global]("section") // FIXME: Not a descendant of an Address
-  
+
   val nav = Tag[Flow, Flow, Global]("nav")
-  
+
   val aside = Tag[Flow, Flow, Global]("aside") // FIXME: Not a descendant of an address
-  
+
   val h1 = Tag[Phrasing, Flow, Global]("h1")
-  
+
   val h2 = Tag[Phrasing, Flow, Global]("h2")
-  
+
   val h3 = Tag[Phrasing, Flow, Global]("h3")
-  
+
   val h4 = Tag[Phrasing, Flow, Global]("h4")
-  
+
   val h5 = Tag[Phrasing, Flow, Global]("h5")
-  
+
   val h6 = Tag[Phrasing, Flow, Global]("h6")
-  
+
   val header = Tag[Flow, Flow, Global]("header") // FIXME: Not inside another header, footer, or address
-  
+
   val footer = Tag[Flow, Flow, Global]("footer") // FIXME: Not inside another header, footer, or address
-  
+
   val p = Tag[Phrasing, Flow, Global]("p")
-  
+
   val address = Tag[Flow, Flow, Global]("address")
-  
+
   val hr = Tag[Empty, Flow, Global with alignAttribute.type]("hr", unclosed = true)
-  
+
   val pre = Tag[Phrasing, Flow, Global]("pre")
-  
+
   val blockquote = Tag[Flow, Flow, Global with citeAttribute.type]("blockquote")
-  
+
   val ol =
     Tag[ListType, Flow, Global with reversedAttribute.type with startAttribute.type]("ol")
-  
+
   val ul = Tag[ListType, Flow, Global]("ul")
-  
+
   val li = Tag[Flow, ListType, Global with valueAttribute.type]("li")
-  
+
   val dl = Tag[DtContent with DdContent, Flow, Global]("dl") // FIXME with TemplateContent
-  
+
   val dt = Tag[Flow, DtContent, Global]("dt")
-  
+
   val dd = Tag[Flow, DdContent, Global]("dd")
-  
+
   val figure = Tag[FigureContent with Flow, Flow, Global]("figure")
-  
+
   val figcaption = Tag[Flow, FigureContent, Global]("figcaption")
-  
+
   val main = Tag[Flow, Flow, Global]("main")
-  
+
   val div = Tag[Flow, Flow, Global]("div")
 
   val a = TransparentTag[
     Empty,
     Global with downloadAttribute.type with hrefAttribute.type with hreflangAttribute.type with mediaAttribute.type with pingAttribute.type with relAttribute.type with shapeAttribute.type with targetAttribute.type
   ]("a")
-  
+
   val em = Tag[Phrasing, Phrasing, Global]("em")
-  
+
   val strong = Tag[Phrasing, Phrasing, Global]("strong")
-  
+
   val small = Tag[Phrasing, Phrasing, Global]("small")
-  
+
   val s = Tag[Phrasing, Phrasing, Global]("s")
-  
+
   val cite = Tag[Phrasing, Phrasing, Global]("cite")
-  
+
   val q = Tag[Phrasing, Phrasing, Global]("q")
-  
+
   val dfn = Tag[Phrasing, Phrasing, Global]("dfn") // FIXME: No dfn may be a descendant
-  
+
   val abbr = Tag[Phrasing, Phrasing, Global]("abbr")
-  
+
   val ruby = Tag[Ruby, Phrasing, Global]("ruby")
-  
+
   val rb = Tag[Phrasing, Ruby, Global]("rb")
-  
+
   val rt = Tag[Phrasing, Ruby, Global]("rt")
-  
+
   val rtc = Tag[Phrasing with Ruby, Ruby, Global]("rtc")
-  
+
   val rp = Tag[Text, Ruby, Global]("rp")
-  
+
   val data = Tag[Phrasing, Phrasing, Global]("data")
-  
+
   val time = Tag[Phrasing, Phrasing, Global]("time")
-  
+
   val code = Tag[Phrasing, Phrasing, Global]("code")
-  
+
   val `var` = Tag[Phrasing, Phrasing, Global]("var")
-  
+
   val varTag = `var`
-  
+
   val samp = Tag[Phrasing, Phrasing, Global]("samp")
-  
+
   val kbd = Tag[Phrasing, Phrasing, Global]("kbd")
-  
+
   val sub = Tag[Phrasing, Phrasing, Global]("sub")
-  
+
   val sup = Tag[Phrasing, Phrasing, Global]("sup")
-  
+
   val i = Tag[Phrasing, Phrasing, Global]("i")
-  
+
   val b = Tag[Phrasing, Phrasing, Global]("b")
-  
+
   val u = Tag[Phrasing, Phrasing, Global]("u")
-  
+
   val mark = Tag[Phrasing, Phrasing, Global]("mark")
-  
+
   val bdi = Tag[Phrasing, Phrasing, Global]("bdi")
-  
+
   val bdo = Tag[Phrasing, Phrasing, Global]("bdo")
-  
+
   val span = Tag[Phrasing, Phrasing, Global]("span")
-  
+
   val br = Tag[Empty, Phrasing, Global]("br", unclosed = true)
-  
+
   val wbr = Tag[Empty, Phrasing, Global]("wbr")
 
   val ins =
     TransparentTag[Empty, Global with citeAttribute.type with datetimeAttribute.type](
       "ins"
     )
-  
+
   val del =
     TransparentTag[Empty, Global with citeAttribute.type with datetimeAttribute.type](
       "del"
     )
 
   val picture = Tag[SourceContent with ImgContent, Flow, Global]("picture")
-  
+
   val source = Tag[
     Empty,
     SourceContent,
     Global with mediaAttribute.type with sizesAttribute.type with srcAttribute.type with typeAttribute.type
   ]("source")
-  
+
   val img = Tag[
     Empty,
     Embedded,
     Global with alignAttribute.type with altAttribute.type with crossoriginAttribute.type with heightAttribute.type with ismapAttribute.type with sizesAttribute.type with srcAttribute.type with srcsetAttribute.type with usemapAttribute.type with widthAttribute.type
   ]("img", unclosed = true)
 
-  
   val iframe = TransparentTag[
     Empty,
     Global with alignAttribute.type with heightAttribute.type with nameAttribute.type with sandboxAttribute.type with seamlessAttribute.type with srcAttribute.type with srcdocAttribute.type with widthAttribute.type
   ]("iframe")
-  
-  
+
   val embed = Tag[
     Empty,
     Embedded,
     Global with heightAttribute.type with typeAttribute.type with widthAttribute.type
   ]("embed")
-  
+
   val `object` = TransparentTag[
     ParamContent,
     Global with dataAttribute.type with formAttribute.type with nameAttribute.type with typeAttribute.type with usemapAttribute.type with widthAttribute.type
   ]("object")
-  
+
   val objectTag = `object`
-  
+
   val param =
     Tag[Empty, ParamContent, Global with nameAttribute.type with valueAttribute.type](
       "param"
     )
-  
+
   val video = TransparentTag[
     TrackContent with SourceContent,
     Global with autoplayAttribute.type with bufferedAttribute.type with controlsAttribute.type with crossoriginAttribute.type with heightAttribute.type with loopAttribute.type with mutedAttribute.type with posterAttribute.type with preloadAttribute.type with srcAttribute.type with widthAttribute.type
   ]("video")
-  
+
   val audio = TransparentTag[
     TrackContent with SourceContent,
     Global with autoplayAttribute.type with bufferedAttribute.type with controlsAttribute.type with crossoriginAttribute.type with loopAttribute.type with mutedAttribute.type with preloadAttribute.type with srcAttribute.type
   ]("audio")
-  
+
   val track = Tag[
     Empty,
     TrackContent,
     Global with defaultAttribute.type with kindAttribute.type with labelAttribute.type with srcAttribute.type with srclangAttribute.type
   ]("track")
-  
+
   val map = TransparentTag[Empty, Global with nameAttribute.type]("map")
-  
+
   val area = Tag[
     Empty,
     Phrasing,
@@ -580,31 +591,32 @@ trait Html5 {
     Flow,
     Global with alignAttribute.type with summaryAttribute.type
   ]("table")
-  
+
   val caption = Tag[Flow, CaptionContent, Global with alignAttribute.type]("caption")
-  
+
   val colgroup = Tag[ColContent,
                      ColgroupContent,
                      Global with alignAttribute.type with spanAttribute.type]("colgroup")
-  val col = Tag[Empty, ColContent, Global with alignAttribute.type with spanAttribute.type](
-    "col",
-    unclosed = true
-  )
-  
+  val col =
+    Tag[Empty, ColContent, Global with alignAttribute.type with spanAttribute.type](
+      "col",
+      unclosed = true
+    )
+
   val tbody = Tag[TrContent, TbodyContent, Global with alignAttribute.type]("tbody")
-  
+
   val thead = Tag[TrContent, TheadContent, Global with alignAttribute.type]("thead")
-  
+
   val tfoot = Tag[TrContent, TbodyContent, Global with alignAttribute.type]("tfoot")
-  
+
   val tr = Tag[TdContent, TrContent, Global with alignAttribute.type]("tr")
-  
+
   val td = Tag[
     Flow,
     TdContent,
     Global with alignAttribute.type with colspanAttribute.type with headersAttribute.type with rowspanAttribute.type
   ]("td")
-  
+
   val th = Tag[
     Flow,
     TdContent,
@@ -619,106 +631,109 @@ trait Html5 {
     ](
       "form"
     )
-  
+
   val label =
     Tag[Phrasing, Phrasing, Global with forAttribute.type with formAttribute.type](
       "label"
     )
-  
+
   val input = Tag[
     Empty,
     Phrasing,
     Global with acceptAttribute.type with altAttribute.type with autocompleteAttribute.type with autofocusAttribute.type with checkedAttribute.type with dirnameAttribute.type with disabledAttribute.type with formAttribute.type with formactionAttribute.type with heightAttribute.type with listAttribute.type with maxAttribute.type with maxlengthAttribute.type with minAttribute.type with multipleAttribute.type with nameAttribute.type with patternAttribute.type with placeholderAttribute.type with readonlyAttribute.type with requiredAttribute.type with sizeAttribute.type with srcAttribute.type with stepAttribute.type with typeAttribute.type with usemapAttribute.type with widthAttribute.type
   ]("input", unclosed = true)
-  
+
   val button = Tag[
     Phrasing,
     Phrasing,
     Global with autofocusAttribute.type with disabledAttribute.type with formAttribute.type with formactionAttribute.type with nameAttribute.type with typeAttribute.type with valueAttribute.type
   ]("button")
-  
+
   val select = Tag[
     OptionContent with OptGroupContent,
     Flow,
     Global with autofocusAttribute.type with disabledAttribute.type with formAttribute.type with multipleAttribute.type with nameAttribute.type with requiredAttribute.type with sizeAttribute.type
   ]("select")
-  
+
   val datalist = Tag[OptionContent with Phrasing, Phrasing, Global]("datalist")
-  
+
   val optgroup =
     Tag[OptionContent, OptGroupContent, Global with disabledAttribute.type]("optgroup")
-  
+
   val option = Tag[
     Text,
     OptionContent,
     Global with disabledAttribute.type with selectedAttribute.type with valueAttribute.type
   ]("option")
-  
+
   val textarea = Tag[
     Text,
     Flow,
     Global with autocompleteAttribute.type with autofocusAttribute.type with colsAttribute.type with dirnameAttribute.type with disabledAttribute.type with formAttribute.type with maxlengthAttribute.type with nameAttribute.type with placeholderAttribute.type with readonlyAttribute.type with requiredAttribute.type with rowsAttribute.type with wrapAttribute.type
   ]("textarea")
-  
+
   val output =
     Tag[Phrasing,
         Phrasing,
         Global with forAttribute.type with heightAttribute.type with nameAttribute.type](
       "output"
     )
-  
+
   val progress =
     Tag[Phrasing,
         Phrasing,
         Global with formAttribute.type with maxAttribute.type with valueAttribute.type](
       "progress"
     )
-  
+
   val meter = Tag[
     Phrasing,
     Phrasing,
     Global with formAttribute.type with highAttribute.type with lowAttribute.type with maxAttribute.type with minAttribute.type with optimumAttribute.type with valueAttribute.type
   ]("meter")
-  
+
   val fieldset = Tag[
     LegendContent with Flow,
     Flow,
     Global with disabledAttribute.type with formAttribute.type with nameAttribute.type
   ]("fieldset")
-  
+
   val legend = Tag[Phrasing, LegendContent, Global]("legend")
 
   val details =
     Tag[Flow with SummaryContent, Flow, Global with openAttribute.type]("details")
-  
+
   val menu = Tag[Flow with ListType with Scripting with TemplateContent,
                  Flow,
                  Global with typeAttribute.type]("menu")
-  
+
   val summary = Tag[Phrasing with Heading, SummaryContent, Global]("summary")
-  
+
   val dialog = Tag[Flow, Flow, Global]("dialog")
-  
+
   val script = Tag[
     PlainText,
     ScriptContent,
     Global with asyncAttribute.type with charsetAttribute.type with crossoriginAttribute.type with deferAttribute.type with integrityAttribute.type with languageAttribute.type with srcAttribute.type with typeAttribute.type
   ]("script")
-  
+
   val noscript =
     TransparentTag[LinkContent with StyleContent with MetaContent, Global]("noscript")
-  
+
   val template = Tag[Empty, TemplateContent, Global]("template")
-  
+
   val canvas =
     TransparentTag[Empty, Global with heightAttribute.type with widthAttribute.type](
       "canvas"
     )
 
   implicit def stringToText(str: String): Node[Html5#PlainText] = Text(str)
-  implicit def autoIterable[T](elements: Iterable[Element[T]]): Node[T] = Elements(elements)
+  implicit def autoIterable[T](elements: Iterable[Element[T]]): Node[T] =
+    Elements(elements.to[List])
   implicit def autoEmptyAttributedTag[T](tag: AttributedTag[_, T]): Node[T] = tag()
-  implicit def autoEmptyTransparentAttributedTag[T, E](tag: TransparentAttributedTag[E]): Node[T] = tag()
+  implicit def autoEmptyTransparentAttributedTag[T, E](
+    tag: TransparentAttributedTag[E]
+  ): Node[T] = tag()
 
   object inputTypes {
     val button = InputType("button")
