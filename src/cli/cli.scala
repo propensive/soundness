@@ -3,11 +3,14 @@ package probation
 import scala.collection.mutable.ListBuffer
 import scala.collection.immutable.ListMap
 
+// FIXME: Use Escritoire
+import escritoire._
+
 /** companion object for [[CliRunner]] */
 object CliRunner {
   
   case class Config(
-    columns: Int = 100,
+    columns: Int = 95,
     color: Boolean = true,
     runLazily: Boolean = false,
     testOnly: Option[Set[String]] = None,
@@ -55,15 +58,13 @@ object CliRunner {
     values.map { case (label, value) => s"$label=$value" }.mkString(",")
 
   case object Passed extends Outcome("pass", Nil, Some(true))
-  case class Failed(reason: String, captures: Map[String, String]) extends Outcome("fail",
-      (if(captures.isEmpty) Nil else List(showCaptures(captures))) :::
-      List(reason), Some(false))
+  case class Failed(reason: String) extends Outcome("fail", List(reason), Some(false))
   
   case class ThrewInCheck(throwable: Throwable) extends
       Outcome("fail", List(s"exception thrown during assertion: ${throwable}"), None)
   
-  case class ThrewInRun(throwable: Throwable, captures: Map[String, String]) extends
-      Outcome("fail", (if(captures.isEmpty) Nil else List(captures.mkString(", "))) ::: List(s"exception thrown during run: ${throwable}"), Some(false))
+  case class ThrewInRun(throwable: Throwable) extends
+      Outcome("fail", List(s"exception thrown during run: ${throwable}"), Some(false))
   
   case class FailedDependency(dep: String) extends
       Outcome("skip", List(s"dependency $dep failed"), None)
@@ -86,7 +87,7 @@ class CliRunner(config: CliRunner.Config = CliRunner.Config()) extends Runner {
   private def check[T](test: Test[T]): Outcome = test.result._1.map { r =>
     Try {
       if(test.assertion(test())) Passed
-      else Failed(test.failure(r), test.definition.observed.map(_()).toMap)
+      else Failed(test.failure(r))
     } match {
         case Success(v) => v
         case Failure(e) => ThrewInCheck(e)
@@ -96,7 +97,7 @@ class CliRunner(config: CliRunner.Config = CliRunner.Config()) extends Runner {
       case Failure(Test.DependencyFailureException(dep)) =>
         FailedDependency(dep.take(6))
       case Failure(f) =>
-        ThrewInRun(f, test.definition.observed.map(_()).toMap)
+        ThrewInRun(f)
     }
 
   def exec[T](test: Test[T]): T = {

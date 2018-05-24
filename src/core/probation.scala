@@ -49,14 +49,8 @@ object Test {
   final val method = "observe"
 
   // A definition of a test, without 
-  case class Definition[Result](name: String, action: () => Result, observed: Seq[Observed[_]]) extends Dynamic {
+  case class Definition[Result](name: String, action: () => Result) extends Dynamic {
    
-    def applyDynamicNamed(meth: method.type)(observed: Observed[_]*): Definition[Result] =
-      Definition(name, action, observed)
-
-    def applyDynamic(meth: method.type)(observed: Observed[_]*): Definition[Result] =
-      Definition(name, action, observed)
-
     override def hashCode: Int = name.hashCode
     
     override def equals(that: Any): Boolean = that match {

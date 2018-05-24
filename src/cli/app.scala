@@ -71,6 +71,7 @@ abstract class TestApp() {
     runner = new CliRunner(parse(args.to[List]))
     tests()
     Test.report()
+    ()
   }
 }
 

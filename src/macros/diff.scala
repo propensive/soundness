@@ -1,6 +1,9 @@
 package probation
 
+import magnolia._
+
 object Diff extends Diff_1 {
+
   implicit def seqDiff[T](implicit show: Show[T]): Diff[Seq[T]] = (s1, s2) =>
     if(s1.length != s2.length) s"the sequences differ in length: ${s1.size} vs ${s2.size}" else {
       val idx = s1.zip(s2).indexWhere { case (l, r) => l != r }
@@ -11,6 +14,7 @@ object Diff extends Diff_1 {
     val (l1, l2) = (s1.to[List], s2.to[List])
     if(l1 == l2) "the arrays are not equal but have identical elements" else seqDiff.diff(s1, s2)
   }
+
 }
 
 trait Diff_1 {
