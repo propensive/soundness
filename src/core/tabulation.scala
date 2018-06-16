@@ -23,7 +23,6 @@ import language.implicitConversions
 
 import scala.collection.mutable.ListBuffer
 import scala.collection.immutable.ListMap
-import annexation._
 
 object Ansi {
   val esc = 27.toChar
