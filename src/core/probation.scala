@@ -24,6 +24,8 @@ case class Test[Result](
 
   /** gets the value resulting from evaluating this test */
   def apply(): Result = runner.exec(this)
+
+  def value: Result = apply()
 }
 
 /** companion object for [[Test]] */
