@@ -179,7 +179,7 @@ object AnsiShow {
   implicit val string: AnsiShow[String] = identity
   implicit val int: AnsiShow[Int] = _.toString
   implicit val double: AnsiShow[Double] = decimalFormat.format(_)
-  implicit val lines: AnsiShow[List[String]] = _.mkString("\n")
+  implicit val lines: AnsiShow[Seq[String]] = _.mkString("\n")
 }
 
 trait AnsiShow[T] { def show(value: T): String }
