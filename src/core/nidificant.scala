@@ -102,7 +102,7 @@ trait Element[-TagType] extends Node[TagType] {
 
 }
 
-final case class Elements[-TagType](elements: List[Element[TagType]])
+final case class Elements[-TagType](elements: List[Node[TagType]])
     extends Node[TagType] {
   override def toString(): String = elements.mkString
 }
@@ -139,6 +139,7 @@ final case class InputType(id: String)
 object html5 extends Html5 {
   type Javascript = String
   type OnOff = String
+  
 }
 
 trait Html5 {
@@ -728,7 +729,7 @@ trait Html5 {
     )
 
   implicit def stringToText(str: String): Node[Html5#PlainText] = Text(str)
-  implicit def autoIterable[T](elements: Iterable[Element[T]]): Node[T] =
+  implicit def autoIterable[T](elements: Iterable[Node[T]]): Node[T] =
     Elements(elements.to[List])
   implicit def autoEmptyAttributedTag[T](tag: AttributedTag[_, T]): Node[T] = tag()
   implicit def autoEmptyTransparentAttributedTag[T, E](
