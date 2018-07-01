@@ -1,21 +1,28 @@
-/* Testaceous, version 0.1.0. Copyright 2017 Jon Pretty, Propensive Ltd.
- *
- * The primary distribution site is: http://co.ntextu.al/
- *
- * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file
- * except in compliance with the License. You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software distributed under the
- * License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
- * either express or implied. See the License for the specific language governing permissions
- * and limitations under the License.
- */
+/*
+  
+  Testaceous, version 0.1.0. Copyright 2018 Jon Pretty, Propensive Ltd.
+
+  The primary distribution site is: https://propensive.com/
+
+  Licensed under the Apache License, Version 2.0 (the "License"); you may not use
+  this file except in compliance with the License. You may obtain a copy of the
+  License at
+  
+      http://www.apache.org/licenses/LICENSE-2.0
+ 
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+  WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+  License for the specific language governing permissions and limitations under
+  the License.
+
+*/
 package testaceous
 
 import scala.util.Try
 import scala.annotation._
+import mitigation._
+import totalitarian.ident.Disjunct
 
 case class ParamUsage(map: ParamMap, used: Set[String]) {
   def -(key: String): ParamUsage = copy(used = used + key)
@@ -25,9 +32,24 @@ case class ParamUsage(map: ParamMap, used: Set[String]) {
   }
 }
 
+case class Arg(value: String)
+
+object :~ {
+  def unapply(paramMap: ParamMap): Option[(Arg, ParamMap)] =
+    paramMap.prefix.headOption.map { h =>
+      (h, paramMap.drop(1))
+    }
+}
+
 case class ParamMap(args: String*) {
 
   def ++(pm2: ParamMap) = ParamMap(pm2.args ++ args: _*)
+
+  def +(arg: String) = ParamMap(args :+ arg: _*)
+
+  def drop(n: Int): ParamMap = ParamMap(args.tail: _*)
+
+  def headOption: Option[String] = args.headOption
 
   case class Part(no: Int, start: Int, end: Int) {
     def apply() = args(no).substring(start, end)
@@ -40,22 +62,24 @@ case class ParamMap(args: String*) {
     }
   }
 
-  val groups: Set[Parameter] = parseArgs().to[Set]
+  val (prefix, groups, suffix) = parseArgs()
 
   @tailrec
-  private def parseArgs(gs: List[Parameter] = Nil, n: Int = 0, off: Int = 0): List[Parameter] = {
-    if (n == args.length) gs
-    else if (args(n) startsWith "--") {
+  private def parseArgs(prefix: Vector[Arg] = Vector(), gs: List[Parameter] = Nil, n: Int = 0, off: Int = 0): (Vector[Arg], Set[Parameter], Vector[Arg]) = {
+    if (n == args.length) (prefix.reverse, gs.to[Set], Vector())
+    else if(args(n) == "--") {
+      (prefix.reverse, gs.to[Set], args.drop(n + 1).map(Arg(_)).to[Vector])
+    } else if (args(n) startsWith "--") {
       val idx = args(n).indexOf('=')
-      if (idx < off) parseArgs(Parameter(Part(n, 2, args(n).length)) :: gs, n + 1)
-      else parseArgs(Parameter(Part(n, 2, idx)) :: gs, n, idx + 1)
+      if (idx < off) parseArgs(prefix, Parameter(Part(n, 2, args(n).length)) :: gs, n + 1)
+      else parseArgs(prefix, Parameter(Part(n, 2, idx)) :: gs, n, idx + 1)
     } else if (args(n) startsWith "-") {
-      if (off == 0) parseArgs(gs, n, 1)
-      else if (args(n).length == off + 1) parseArgs(Parameter(Part(n, off, off + 1)) :: gs, n + 1)
-      else parseArgs(Parameter(Part(n, off, off + 1)) :: gs, n, off + 1)
+      if (off == 0) parseArgs(prefix, gs, n, 1)
+      else if (args(n).length == off + 1) parseArgs(prefix, Parameter(Part(n, off, off + 1)) :: gs, n + 1)
+      else parseArgs(prefix, Parameter(Part(n, off, off + 1)) :: gs, n, off + 1)
     } else {
-      if (gs.isEmpty) parseArgs(gs, n + 1)
-      else parseArgs(gs.head.copy(values = gs.head.values :+ Part(n, 0, args(n).length)) :: gs.tail, n + 1)
+      if (gs.isEmpty) parseArgs(Arg(args(n)) +: prefix, gs, n + 1)
+      else parseArgs(prefix, gs.head.copy(values = gs.head.values :+ Part(n, 0, args(n).length)) :: gs.tail, n + 1)
     }
   }
 
@@ -66,6 +90,25 @@ case class ParamMap(args: String*) {
     case h +: t => find(h) orElse apply(t)
   }
 
+  def get[T](param: SimpleParam[T]): Result[T, ~ | MissingArg | InvalidArgValue] =
+    groups.find(param.keys contains _.key()) match {
+      case Some(p) => param.extractor.extract(p.values.map(_())) match {
+        case Some(p) => Answer(p)
+        case None => Aborted(Disjunct(InvalidArgValue(param.toString, p.values.map(_()).mkString(" "))))
+      }
+      case None => Aborted(Disjunct(MissingArg(param.toString)))
+    }
+
+  def apply[T: Default](param: SimpleParam[T]): Result[T, ~ | MissingArg | InvalidArgValue] = {
+    groups.find(param.keys contains _.key()) match {
+      case Some(p) => param.extractor.extract(p.values.map(_())) match {
+        case Some(p) => Answer(p)
+        case None => Errata(implicitly[Default[T]].default, Disjunct(InvalidArgValue(param.toString, p.values.map(_()).mkString(" "))))
+      }
+      case None => Errata(implicitly[Default[T]].default, Disjunct(MissingArg(param.toString)))
+    }
+  }
+  
   def isEmpty = args.isEmpty
 
   override def toString = groups.mkString
@@ -73,9 +116,9 @@ case class ParamMap(args: String*) {
 
 sealed class ParamException(msg: String) extends Exception(msg)
 
-case class MissingParam(name: String) extends ParamException(s"the parameter --$name was missing")
+case class MissingArg(name: String) extends ParamException(s"the parameter --$name was missing")
 
-case class InvalidValue(value: String, name: String)
+case class InvalidArgValue(value: String, name: String)
     extends ParamException(s"the value '$value' is not valid for the parameter --$name")
 
 case class UnexpectedParam(param: String) extends ParamException(s"found unexpected parameter '$param'")
@@ -110,6 +153,14 @@ trait Construct_1 {
       def or(a: A, b: B) = CoproductParams[A with B](Vector(a, b))
     }
   }
+}
+
+trait Default[T] { def default: T = getDefault(); def getDefault(): T }
+object Default {
+  implicit val int: Default[Int] = () => 0
+  implicit val long: Default[Long] = () => 0L
+  implicit val string: Default[String] = () => ""
+  implicit val unit: Default[Unit] = () => ()
 }
 
 object Construct extends Construct_1 {
@@ -241,7 +292,7 @@ case class CoproductParams[Ps <: Params](elements: Vector[Params]) extends Param
 
     elems match {
       case (key, (res, args, newSs)) :: Nil => (Coproduct[CoproductTypes](key -> res), args, newSs)
-      case Nil => throw MissingParam(toString)
+      case Nil => throw MissingArg(toString)
       case _ :: (key, _) :: _ => throw UnexpectedParam(key.toString)
     }
   }
@@ -287,18 +338,18 @@ case class SimpleParam[T: Param.Extractor](keys: Vector[String]) extends Params 
     override def checkValue = simpleParam.checkValue
   }
 
-  protected val extractor = implicitly[Param.Extractor[T]]
+  val extractor = implicitly[Param.Extractor[T]]
 
   def check(args: ParamUsage, tabArg: Int, ss: Suggestions): (Result, ParamUsage, Suggestions) = {
 
-    val parameter = args.map(keys) getOrElse { throw MissingParam(keys.head) }
+    val parameter = args.map(keys) getOrElse { throw MissingArg(keys.head) }
 
     val res = extractor.extract(parameter.values.map(_ ())) getOrElse {
-      throw InvalidValue(parameter.key(), parameter.values.mkString(" "))
+      throw InvalidArgValue(parameter.key(), parameter.values.mkString(" "))
     }
 
     checkValue.foreach { v =>
-      if (v != res) throw InvalidValue(keys.head, "invalid")
+      if (v != res) throw InvalidArgValue(keys.head, "invalid")
     }
 
     val newSs = Suggestions(parameter.values.find(tabArg == _.no).map { p =>
