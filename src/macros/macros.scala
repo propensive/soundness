@@ -24,10 +24,10 @@ import concurrent._, ExecutionContext.Implicits.global
 import language.higherKinds
 import java.io.File
 import scala.io.Source
-
+import mitigation._
 import com.zaxxer.nuprocess._
 
-object environemnts {
+object environments {
   implicit val enclosing: Environment = {
     import scala.collection.JavaConverters._
     Environment(mapAsScalaMapConverter(System.getenv).asScala.toMap, None)
@@ -50,6 +50,10 @@ case class Environment(variables: Map[String, String], workDir: Option[String]) 
     new File(workDir.getOrElse(System.getenv("PWD")))
 }
 
+case class ShellFailure(command: String, stdout: String, stderr: String) extends Exception {
+  override def toString(): String = s"exec failed: $stderr"
+}
+
 object Executor {
 
   implicit val running: Executor[Running] = { (args, env) =>
@@ -60,6 +64,16 @@ object Executor {
     val out = scala.io.Source.fromInputStream(proc.getInputStream)
     val err = scala.io.Source.fromInputStream(proc.getErrorStream)
     Running(proc, out, err)
+  }
+
+  implicit val result: Executor[Result[String, ~ | ShellFailure]] = {
+    (args, env) =>
+      val exit = string.exec(args, env)
+      if(exit.status == 0) Result.answer(exit.result)
+      else {
+        val cmd = args.map { a => if(a.contains(' ')) s"'$a'" else a }.mkString(" ")
+        Result.abort(ShellFailure(cmd, exit.result, exit.errorStream.getLines.mkString("\n")))
+      }
   }
 
   implicit val string: Executor[Exit[String]] = { (args, env) =>
@@ -229,6 +243,13 @@ object `package` {
     Case(Unquoted, Unquoted)(_.map('"' + esc1(_) + '"').mkString(" ")),
     Case(SingleQuoted, SingleQuoted)(_.map(esc2(_)).mkString(" ")),
     Case(DoubleQuoted, DoubleQuoted)(_.map(esc1(_)).mkString(" "))
+  )
+
+  implicit def embedCommands[Coll[T] <: Seq[T]] = ShellInterpolator.embed[Command](
+    Case(Awaiting, Unquoted)(_.args.map('"' + esc1(_) + '"').mkString(" ")),
+    Case(Unquoted, Unquoted)(_.args.map('"' + esc1(_) + '"').mkString(" ")),
+    Case(SingleQuoted, SingleQuoted)(_.args.map(esc2(_)).mkString(" ")),
+    Case(DoubleQuoted, DoubleQuoted)(_.args.map(esc1(_)).mkString(" "))
   )
 
   implicit val embedStrings = ShellInterpolator.embed[String](
