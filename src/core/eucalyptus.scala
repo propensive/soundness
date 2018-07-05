@@ -1,36 +1,17 @@
 package eucalyptus
 
-import annotation.implicitNotFound
 import java.text.SimpleDateFormat
-
-import log.{Tag, Level, Format, Logger}
+import scala.reflect._, macros._
+import language.experimental.macros
 
 object output {
-  implicit final val stdout: Logger[String] = (s: String) => System.out.println(s)
-  implicit final val stderr: Logger[String] = (s: String) => System.err.println(s)
-}
-
-object levels {
-  // Helper method for creating singleton-literal-typed Level instances
-  private def level[Name <: String](severity: Int, name: Name): Level[name.type] =
-    Level(severity, name)
-
-  implicit final val trace = level(0, "trace")
-  implicit final val debug = level(1, "debug")
-  implicit final val check = level(2, "check")
-  implicit final val issue = level(3, "issue")
-  implicit final val error = level(4, "error")
-  implicit final val fault = level(5, "fault")
+  implicit final val stdout: Destination[String] = System.out.println(_)
+  implicit final val stderr: Destination[String] = System.err.println(_)
 }
 
 object formats {
-
-  implicit final val standard: Format[String, String] = StandardFormat
-  implicit final val raw: Format[String, String] = RawFormat
-
-  private object RawFormat extends Format[String, String] {
-    def entry(tag: Tag, value: String, timestamp: Long, level: Level[_]): String = value
-  }
+  implicit final val Raw: Format[String, String] = (msg, _, _, _, _, _) => msg
+  implicit final val Default: Format[String, String] = StandardFormat
 
   private object StandardFormat extends Format[String, String] {
     private def pad(str: String, length: Int) =
@@ -38,77 +19,79 @@ object formats {
    
     private val dateFormat: SimpleDateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS ")
     
-    def entry(tag: Tag, value: String, timestamp: Long, level: Level[_]): String = {
+    def entry(msg: String, tag: Tag, timestamp: Long, level: Level, lineNo: Int, sourceFile: String): String = {
       val sb = new StringBuilder()
       sb.append(dateFormat.format(timestamp))
-      sb.append(level.upperName)
+      sb.append(level.name)
       sb.append(' ')
       sb.append(pad(tag.name, 10))
       sb.append(' ')
-      sb.append(value)
+      sb.append(pad(s"$sourceFile:$lineNo", 15))
+      sb.append(' ')
+      sb.append(msg)
       sb.toString
     }
   }
 }
 
-object log {
-  def trace[Value, Out, T <: Tag](value: Value)(implicit tagVisibility: TagVisibility[T], format: Format[Value, Out], logger: Logger[Out]): Unit =
-    if(tagVisibility.visibility.severity <= levels.trace.severity) doLog(value, tagVisibility.tag, format, levels.trace, logger)
+case class Engine[Msg, Out](loggers: Logger[Msg, Out]*) {
+  def trace(msg: Msg)(implicit tag: Tag): Unit = macro Macros.doLog
+  def debug(msg: Msg)(implicit tag: Tag): Unit = macro Macros.doLog
+  def audit(msg: Msg)(implicit tag: Tag): Unit = macro Macros.doLog
+  def issue(msg: Msg)(implicit tag: Tag): Unit = macro Macros.doLog
+  def error(msg: Msg)(implicit tag: Tag): Unit = macro Macros.doLog
+  def fault(msg: Msg)(implicit tag: Tag): Unit = macro Macros.doLog
+}
 
-  def debug[Value, Out, T <: Tag](value: Value)(implicit tagVisibility: TagVisibility[T], format: Format[Value, Out], logger: Logger[Out]): Unit =
-    if(tagVisibility.visibility.severity <= levels.debug.severity) doLog(value, tagVisibility.tag, format, levels.debug, logger)
+object Level {
+  final val Trace = Level(0)
+  final val Debug = Level(1)
+  final val Audit = Level(2)
+  final val Issue = Level(3)
+  final val Error = Level(4)
+  final val Fault = Level(5)
+  final val names = Array("TRACE", "DEBUG", "AUDIT", "ISSUE", "ERROR", "FAULT")
+}
 
-  def check[Value, Out, T <: Tag](value: Value)(implicit tagVisibility: TagVisibility[T], format: Format[Value, Out], logger: Logger[Out]): Unit =
-    if(tagVisibility.visibility.severity <= levels.check.severity) doLog(value, tagVisibility.tag, format, levels.check, logger)
+final case class Level(value: Int) extends AnyVal { final def name: String = Level.names(value) }
 
-  def issue[Value, Out, T <: Tag](value: Value)(implicit tagVisibility: TagVisibility[T], format: Format[Value, Out], logger: Logger[Out]): Unit =
-    if(tagVisibility.visibility.severity <= levels.issue.severity) doLog(value, tagVisibility.tag, format, levels.issue, logger)
+final case class Logger[Msg, Out](min: Level, max: Level, tagSet: Set[Tag], format: Format[Msg, Out], destination: Destination[Out]) {
+  final def matches(tag: Tag, level: Int): Boolean = level >= min.value && level <= max.value && tagSet.contains(tag)
+  final def above(level: Level): Logger[Msg, Out] = copy(level, max, tagSet, format, destination)
+  final def below(level: Level): Logger[Msg, Out] = copy(min, level, tagSet, format, destination)
+}
 
-  def error[Value, Out, T <: Tag](value: Value)(implicit tagVisibility: TagVisibility[T], format: Format[Value, Out], logger: Logger[Out]): Unit =
-    if(tagVisibility.visibility.severity <= levels.error.severity) doLog(value, tagVisibility.tag, format, levels.error, logger)
+trait Destination[T] { def consume(msg: T): Unit }
 
-  def fault[Value, Out, T <: Tag](value: Value)(implicit tagVisibility: TagVisibility[T], format: Format[Value, Out], logger: Logger[Out]): Unit =
-    if(tagVisibility.visibility.severity <= levels.fault.severity) doLog(value, tagVisibility.tag, format, levels.fault, logger)
+trait Format[-Msg, +Out] { def entry(msg: Msg, tag: Tag, timestamp: Long, level: Level, lineNo: Int, sourceFile: String): Out }
 
-  private def doLog[Value, T](value: Value, tag: Tag, format: Format[Value, T], level: Level[_],
-      logger: Logger[T]): Unit =
-    logger.log(format.entry(tag, value, System.currentTimeMillis, level))
-  
-  @implicitNotFound("eucalyptus: could not find an implicit Logger; try importing eucalyptus.output.stdout")
-  trait Logger[-T] { def log(entry: T): Unit }
+object Tag { implicit final val Default = Tag("default") }
 
-  @implicitNotFound("eucalyptus: could not find an implicit Format; try importing eucalyptus.formats.standard")
-  trait Format[-L, +T] { def entry(tag: Tag, value: L, timestamp: Long, level: Level[_]): T }
- 
-  object Tag { implicit val defaultTag: Tag = Tag("") }
- 
-  case class Tag(name: String) {
-    implicit val traceLevel: Visibility[this.type] = Visibility(0)
-    implicit val debugLevel: Visibility[this.type] = Visibility(1)
-    implicit val checkLevel: Visibility[this.type] = Visibility(2)
-    implicit val issueLevel: Visibility[this.type] = Visibility(3)
-    implicit val errorLevel: Visibility[this.type] = Visibility(4)
-    implicit val fatalLevel: Visibility[this.type] = Visibility(5)
+object Log {
+  def apply(tags: Tag*): LogTags = LogTags(tags.to[Set])
+
+  case class LogTags(tagSet: Set[Tag]) {
+    def as[Msg, Out](format: Format[Msg, Out]): LogTagsFormat[Msg, Out] = LogTagsFormat(tagSet, format)
   }
 
-  object Level { implicit final val defaultLevel = levels.check }
-
-  case class Level[Name <: String] private[eucalyptus] (severity: Int, name: String) {
-    val upperName: String = name.toUpperCase
+  case class LogTagsFormat[Msg, Out](tagSet: Set[Tag], format: Format[Msg, Out]) {
+    def to(destination: Destination[Out]): Logger[Msg, Out] = Logger(Level.Trace, Level.Fault, tagSet, format, destination)
   }
+}
 
-  object Visibility {
-    implicit def defaultVisibility(implicit level: Level[_]): Visibility[Tag] = Visibility(level.severity)
+final case class Tag(name: String) extends AnyVal
+
+object Macros {
+  def doLog(c: blackbox.Context)(msg: c.Tree)(tag: c.Tree): c.Tree = {
+    import c._, universe._
+    val lineNo = enclosingPosition.line
+    val sourceFile = enclosingPosition.source.toString
+    val q"$base.$method($_)($_)" = macroApplication // "
+   
+    val level = Level.names.indexOf(method.toString.toUpperCase)
+
+    q"""$base.loggers.foreach { log =>
+          if(log.matches($tag, $level)) log.destination.consume(log.format.entry($msg, $tag, _root_.java.lang.System.currentTimeMillis, _root_.eucalyptus.Level($level), $lineNo, $sourceFile))
+        }"""
   }
-
-  case class Visibility[T <: Tag](severity: Int)
-
-
-  object TagVisibility {
-    implicit def join[T <: Tag](implicit visibility: Visibility[T], tag: T): TagVisibility[T] =
-      new TagVisibility(tag)(visibility)
-  }
-  
-  class TagVisibility[T <: Tag](val tag: T)(val visibility: Visibility[T])
-
 }
