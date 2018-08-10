@@ -6,7 +6,6 @@
 
 *Testaceous* makes it easy to parse command-line arguments in Scala.
 
-Please see the [testaceo.us](http://testaceo.us/) website for more information.
 
 
 
