@@ -30,24 +30,34 @@ object Csv {
 
   def parse(line: String): Row = {
     @tailrec
-    def parseLine(items: Vector[String], idx: Int, quoted: Boolean, start: Int, end: Int)
-                 : Vector[String] =
-      if(line.length <= idx) items :+ line.substring(start, if(end == -1) idx else end)
-      else (line(idx): @switch) match {
+    def parseLine(items: Vector[String], idx: Int, quoted: Boolean, start: Int, end: Int,
+        join: Boolean): Vector[String] =
+      if(line.length <= idx) {
+        if(join) items.init :+ items.last+line.substring(start, if(end == -1) idx else end)
+        else items :+ line.substring(start, if(end == -1) idx else end)
+      } else (line(idx): @switch) match {
         case ',' =>
-          if(quoted) parseLine(items, idx + 1, quoted, start, end)
+          if(quoted) parseLine(items, idx + 1, quoted, start, end, join)
           else {
-            val next = if(start == -1) "" else line.substring(start, if(end == -1) idx else end)
-            parseLine(items :+ next, idx + 1, false, idx + 1, -1)
+            val elems = if(start == -1) items :+ "" else {
+              val suffix = line.substring(start, if(end == -1) idx else end)
+              if(join) items.init :+ items.last+suffix else items :+ suffix
+            }
+            
+            parseLine(elems, idx + 1, false, idx + 1, -1, false)
           }
+
         case '"' =>
-          if(quoted) parseLine(items, idx + 1, false, start, idx)
-          else parseLine(items, idx + 1, true, idx + 1, -1)
+          if(quoted) parseLine(items, idx + 1, false, start, idx, join)
+          else if(end != -1) {
+            parseLine(items :+ line.substring(start, idx), idx + 1, true, idx + 1, -1, true)
+          } else parseLine(items, idx + 1, true, idx + 1, -1, false)
+
         case ch  =>
-          parseLine(items, idx + 1, quoted, start, end)
+          parseLine(items, idx + 1, quoted, start, end, join)
       }
     
-    Row(parseLine(Vector(), 0, false, 0, -1))
+    Row(parseLine(Vector(), 0, false, 0, -1, false): _*)
   }
 
   object Decoder {
@@ -62,8 +72,8 @@ object Csv {
           if(typeclasses.isEmpty) caseClass.rawConstruct(params)
           else {
             val typeclass = typeclasses.head
-            val appended = params :+ typeclass.decode(Row(row.elems.take(typeclass.cols)))
-            parseParams(Row(row.elems.drop(typeclass.cols)), typeclasses.tail, appended)
+            val appended = params :+ typeclass.decode(Row(row.elems.take(typeclass.cols): _*))
+            parseParams(Row(row.elems.drop(typeclass.cols): _*), typeclasses.tail, appended)
           }
         }
 
@@ -95,18 +105,18 @@ object Csv {
     def combine[T](caseClass: CaseClass[Encoder, T]): Encoder[T] = new Encoder[T] {
       def encode(value: T) = Row(caseClass.parameters.flatMap { param =>
         param.typeclass.encode(param.dereference(value)).elems
-      }.to[Vector])
+      }: _*)
     }
 
     implicit def gen[T]: Encoder[T] = macro Magnolia.gen[T]
 
-    implicit val string: Encoder[String] = s => Row(Vector(s))
-    implicit val int: Encoder[Int] = i => Row(Vector(i.toString))
-    implicit val boolean: Encoder[Boolean] = b => Row(Vector(b.toString))
-    implicit val byte: Encoder[Byte] = b => Row(Vector(b.toString))
-    implicit val short: Encoder[Short] = s => Row(Vector(s.toString))
-    implicit val float: Encoder[Float] = f => Row(Vector(f.toString))
-    implicit val double: Encoder[Double] = d => Row(Vector(d.toString))
+    implicit val string: Encoder[String] = s => Row(s)
+    implicit val int: Encoder[Int] = i => Row(i.toString)
+    implicit val boolean: Encoder[Boolean] = b => Row(b.toString)
+    implicit val byte: Encoder[Byte] = b => Row(b.toString)
+    implicit val short: Encoder[Short] = s => Row(s.toString)
+    implicit val float: Encoder[Float] = f => Row(f.toString)
+    implicit val double: Encoder[Double] = d => Row(d.toString)
   }
 
   trait Encoder[T] {
@@ -114,7 +124,7 @@ object Csv {
   }
 }
 
-case class Row(elems: Vector[String]) {
+case class Row(elems: String*) {
   def as[T: Csv.Decoder]: T = implicitly[Csv.Decoder[T]].decode(this)
 
   override def toString: String = elems.map { field =>
