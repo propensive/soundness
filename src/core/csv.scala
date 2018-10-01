@@ -84,7 +84,12 @@ object Csv {
 
     implicit val string: Decoder[String] = Decoder(_.elems.head)
     implicit val int: Decoder[Int] = Decoder(_.elems.head.toInt)
+    implicit val boolean: Decoder[Boolean] = Decoder(_.elems.head == "true")
     implicit val double: Decoder[Double] = Decoder(_.elems.head.toDouble)
+    implicit val byte: Decoder[Byte] = Decoder(_.elems.head.toByte)
+    implicit val short: Decoder[Short] = Decoder(_.elems.head.toShort)
+    implicit val float: Decoder[Float] = Decoder(_.elems.head.toFloat)
+    implicit val char: Decoder[Char] = Decoder(_.elems.head.head)
 
     def apply[T](fn: Row => T, len: Int = 1) = new Decoder[T] {
       def decode(elems: Row): T = fn(elems)
@@ -117,6 +122,7 @@ object Csv {
     implicit val short: Encoder[Short] = s => Row(s.toString)
     implicit val float: Encoder[Float] = f => Row(f.toString)
     implicit val double: Encoder[Double] = d => Row(d.toString)
+    implicit val char: Encoder[Char] = c => Row(c.toString)
   }
 
   trait Encoder[T] {
