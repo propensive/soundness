@@ -22,13 +22,13 @@ package caesura
 import annotation._
 import magnolia._
 
-import scala.io.Source
-
 import language.experimental.macros
 
 object Csv {
-  
-  def parse(line: String): CsvRow = {
+ 
+  def apply[T: Encoder](value: T): Row = implicitly[Encoder[T]].encode(value)
+
+  def parse(line: String): Row = {
     @tailrec
     def parseLine(items: Vector[String], idx: Int, quoted: Boolean, start: Int, end: Int)
                  : Vector[String] =
@@ -47,51 +47,77 @@ object Csv {
           parseLine(items, idx + 1, quoted, start, end)
       }
     
-    CsvRow(parseLine(Vector(), 0, false, 0, -1): _*)
+    Row(parseLine(Vector(), 0, false, 0, -1))
   }
 
-  def parseFile(file: String): Iterable[CsvRow] =
-    Source.fromFile(file).getLines.toIterable.map(parse)
+  object Decoder {
+    type Typeclass[T] = Decoder[T]
 
-}
+    def combine[T](caseClass: CaseClass[Decoder, T]): Decoder[T] = new Decoder[T] {
+      def cols: Int = caseClass.parameters.map(_.typeclass.cols).sum
+      def decode(row: Row): T = {
 
-object CsvParser {
-  type Typeclass[T] = CsvParser[T]
-
-  def combine[T](caseClass: CaseClass[CsvParser, T]): CsvParser[T] = new CsvParser[T] {
-    def cols: Int = caseClass.parameters.map(_.typeclass.cols).sum
-    def parse(row: CsvRow): T = {
-
-      @annotation.tailrec
-      def parseParams(row: CsvRow, typeclasses: Seq[CsvParser[_]], params: Vector[Any]): T = {
-        if(typeclasses.isEmpty) caseClass.rawConstruct(params)
-        else {
-          val typeclass = typeclasses.head
-          val appended = params :+ typeclass.parse(CsvRow(row.elems.take(typeclass.cols): _*))
-          parseParams(CsvRow(row.elems.drop(typeclass.cols): _*), typeclasses.tail, appended)
+        @annotation.tailrec
+        def parseParams(row: Row, typeclasses: Seq[Decoder[_]], params: Vector[Any]): T = {
+          if(typeclasses.isEmpty) caseClass.rawConstruct(params)
+          else {
+            val typeclass = typeclasses.head
+            val appended = params :+ typeclass.decode(Row(row.elems.take(typeclass.cols)))
+            parseParams(Row(row.elems.drop(typeclass.cols)), typeclasses.tail, appended)
+          }
         }
+
+        val typeclasses = caseClass.parameters.map(_.typeclass)
+        parseParams(row, typeclasses, Vector())
       }
-
-      val typeclasses = caseClass.parameters.map(_.typeclass)
-      parseParams(row, typeclasses, Vector())
     }
+
+    implicit val string: Decoder[String] = Decoder(_.elems.head)
+    implicit val int: Decoder[Int] = Decoder(_.elems.head.toInt)
+    implicit val double: Decoder[Double] = Decoder(_.elems.head.toDouble)
+
+    def apply[T](fn: Row => T, len: Int = 1) = new Decoder[T] {
+      def decode(elems: Row): T = fn(elems)
+      def cols: Int = len
+    }
+    
+    implicit def gen[T]: Decoder[T] = macro Magnolia.gen[T]
   }
 
-  implicit val string: CsvParser[String] = CsvParser(_.elems.head)
-  implicit val int: CsvParser[Int] = CsvParser(_.elems.head.toInt)
-  implicit val double: CsvParser[Double] = CsvParser(_.elems.head.toDouble)
-
-  def apply[T](fn: CsvRow => T, len: Int = 1) = new CsvParser[T] {
-    def parse(elems: CsvRow): T = fn(elems)
-    def cols: Int = len
+  trait Decoder[T] {
+    def decode(elems: Row): T
+    def cols: Int
   }
-  
-  implicit def gen[T]: CsvParser[T] = macro Magnolia.gen[T]
+
+  object Encoder {
+    type Typeclass[T] = Encoder[T]
+
+    def combine[T](caseClass: CaseClass[Encoder, T]): Encoder[T] = new Encoder[T] {
+      def encode(value: T) = Row(caseClass.parameters.flatMap { param =>
+        param.typeclass.encode(param.dereference(value)).elems
+      }.to[Vector])
+    }
+
+    implicit def gen[T]: Encoder[T] = macro Magnolia.gen[T]
+
+    implicit val string: Encoder[String] = s => Row(Vector(s))
+    implicit val int: Encoder[Int] = i => Row(Vector(i.toString))
+    implicit val boolean: Encoder[Boolean] = b => Row(Vector(b.toString))
+    implicit val byte: Encoder[Byte] = b => Row(Vector(b.toString))
+    implicit val short: Encoder[Short] = s => Row(Vector(s.toString))
+    implicit val float: Encoder[Float] = f => Row(Vector(f.toString))
+    implicit val double: Encoder[Double] = d => Row(Vector(d.toString))
+  }
+
+  trait Encoder[T] {
+    def encode(value: T): Row
+  }
 }
 
-trait CsvParser[T] {
-  def parse(elems: CsvRow): T
-  def cols: Int
-}
+case class Row(elems: Vector[String]) {
+  def as[T: Csv.Decoder]: T = implicitly[Csv.Decoder[T]].decode(this)
 
-case class CsvRow(elems: String*)
+  override def toString: String = elems.map { field =>
+    field.replaceAll("\"", "\"\"")
+  }.mkString("\"", "\",\"", "\"")
+}
