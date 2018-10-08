@@ -1,4 +1,4 @@
-package nidificant
+package vespiary
 
 import scala.reflect._, macros._, blackbox.Context
 
@@ -14,7 +14,7 @@ object Macros {
         val rewrittenAttributes = attributes.map {
           case q"(${Literal(Constant(identifier: String))}, $value)" =>
             val term = TermName(s"${identifier}Attribute")
-            q"_root_.nidificant.html5.$term() = $value"
+            q"$term() = $value"
         }
 
         q"${c.prefix}.attributes(..$rewrittenAttributes)"

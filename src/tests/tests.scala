@@ -1,4 +1,4 @@
-package nidificant
+package vespiary
 
 import probation._
 

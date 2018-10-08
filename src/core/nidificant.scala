@@ -1,4 +1,4 @@
-package nidificant
+package vespiary
 
 import language.implicitConversions, language.dynamics, language.experimental.macros
 
@@ -8,6 +8,8 @@ final case class Tag[Children, -This, Attributes](tagName: String,
     extends Dynamic
     with Element[This] {
   type Ref
+
+  type Nodes = Node[Children]
 
   def attributes = Map()
   def children = Nil
@@ -100,6 +102,7 @@ trait Element[-TagType] extends Node[TagType] {
         (if (unclosed) "" else s"</$tagName>")
   }
 
+// "
 }
 
 final case class Elements[-TagType](elements: List[Node[TagType]])
@@ -130,6 +133,11 @@ final case class AttributeKey[T](key: String) extends AttributeFactory[T] {
   def attributeKey = key
 }
 
+final case class DataAttributeKey[T](key: String) extends AttributeFactory[T] {
+  type Type = html5.DataAttributes
+  def attributeKey = s"data-$key"
+}
+
 final case class Text(str: String) extends Node[Html5#PlainText] {
   override def toString(): String = str
 }
@@ -139,16 +147,19 @@ final case class InputType(id: String)
 object html5 extends Html5 {
   type Javascript = String
   type OnOff = String
-  
+  type LinkType = String
 }
 
 trait Html5 {
 
   type OnOff
   type Javascript
+  type LinkType
+
+  trait DataAttributes
 
   type Global =
-    accesskeyAttribute.type with classAttribute.type with contenteditableAttribute.type with contextmenuAttribute.type with dirAttribute.type with draggableAttribute.type with dropzoneAttribute.type with hiddenAttribute.type with idAttribute.type with langAttribute.type with spellcheckAttribute.type with styleAttribute.type with tabindexAttribute.type with titleAttribute.type
+    accesskeyAttribute.type with classAttribute.type with contenteditableAttribute.type with contextmenuAttribute.type with dirAttribute.type with draggableAttribute.type with dropzoneAttribute.type with hiddenAttribute.type with idAttribute.type with langAttribute.type with spellcheckAttribute.type with styleAttribute.type with tabindexAttribute.type with titleAttribute.type with DataAttributes
 
   type EventHandlers =
     onabortAttribute.type with onblurAttribute.type with oncanplayAttribute.type with oncanplaythroughAttribute.type with onchangeAttribute.type with onclickAttribute.type with oncontextmenuAttribute.type with oncuechangeAttribute.type with ondblclickAttribute.type with ondragAttribute.type with ondragendAttribute.type with ondragenterAttribute.type with ondragleaveAttribute.type with ondragoverAttribute.type with ondragstartAttribute.type with ondropAttribute.type with ondurationchangeAttribute.type with onemptiedAttribute.type with onendedAttribute.type with onerrorAttribute.type with onfocusAttribute.type with oninputAttribute.type with oninvalidAttribute.type with onkeydownAttribute.type with onkeypressAttribute.type with onkeyupAttribute.type with onloadAttribute.type with onloadeddataAttribute.type with onloadedmetadataAttribute.type with onloadstartAttribute.type with onmousedownAttribute.type with onmousemoveAttribute.type with onmouseoutAttribute.type with onmouseoverAttribute.type with onmouseupAttribute.type with onmousewheelAttribute.type with onpauseAttribute.type with onplayAttribute.type with onplayingAttribute.type with onprogressAttribute.type with onratechangeAttribute.type with onreadystatechangeAttribute.type with onresetAttribute.type with onscrollAttribute.type with onseekedAttribute.type with onseekingAttribute.type with onselectAttribute.type with onshowAttribute.type with onstalledAttribute.type with onsubmitAttribute.type with onsuspendAttribute.type with ontimeupdateAttribute.type with onvolumechangeAttribute.type with onwaitingAttribute.type
@@ -211,7 +222,7 @@ trait Html5 {
   val acceptAttribute = AttributeKey[String]("accept")
   val acceptCharsetAttribute = AttributeKey[String]("accept-charset")
   val accesskeyAttribute = AttributeKey[String]("accesskey")
-  val actionAttribute = AttributeKey[String]("action")
+  val actionAttribute = AttributeKey[LinkType]("action")
   val alignAttribute = AttributeKey[String]("align")
   val altAttribute = AttributeKey[String]("alt")
   val asyncAttribute = AttributeKey[String]("async")
@@ -253,7 +264,7 @@ trait Html5 {
   val heightAttribute = AttributeKey[String]("height")
   val hiddenAttribute = AttributeKey[String]("hidden")
   val highAttribute = AttributeKey[String]("high")
-  val hrefAttribute = AttributeKey[String]("href")
+  val hrefAttribute = AttributeKey[LinkType]("href")
   val hreflangAttribute = AttributeKey[String]("hreflang")
   val httpEquivAttribute = AttributeKey[String]("http-equiv")
   val iconAttribute = AttributeKey[String]("icon")
@@ -305,7 +316,7 @@ trait Html5 {
   val slotAttribute = AttributeKey[String]("slot")
   val spanAttribute = AttributeKey[String]("span")
   val spellcheckAttribute = AttributeKey[String]("spellcheck")
-  val srcAttribute = AttributeKey[String]("src")
+  val srcAttribute = AttributeKey[LinkType]("src")
   val srcdocAttribute = AttributeKey[String]("srcdoc")
   val srclangAttribute = AttributeKey[String]("srclang")
   val srcsetAttribute = AttributeKey[String]("srcset")
@@ -323,7 +334,11 @@ trait Html5 {
   val widthAttribute = AttributeKey[String]("width")
   val wrapAttribute = AttributeKey[OnOff]("wrap")
 
-  trait Flow extends Heading with Sectioning with Phrasing
+  // HTML4, probably
+  val cellspacingAttribute = AttributeKey[String]("cellspacing")
+  val cellpaddingAttribute = AttributeKey[String]("cellpadding")
+  
+  trait Flow extends Heading with Sectioning with Phrasing with ScriptContent
   trait HtmlItems
   trait Phrasing extends Embedded with PlainText
   trait PlainText
@@ -377,7 +392,7 @@ trait Html5 {
   val link = Tag[
     Empty,
     LinkContent,
-    Global with crossoriginAttribute.type with hrefAttribute.type with hreflangAttribute.type with integrityAttribute.type with mediaAttribute.type with relAttribute.type with sizesAttribute.type
+    Global with crossoriginAttribute.type with typeAttribute.type with relAttribute.type with hrefAttribute.type with hreflangAttribute.type with integrityAttribute.type with mediaAttribute.type with relAttribute.type with sizesAttribute.type
   ]("link", unclosed = true)
 
   val meta = Tag[
@@ -387,7 +402,7 @@ trait Html5 {
   ]("meta", unclosed = true)
 
   val style = Tag[
-    Text,
+    PlainText,
     StyleContent,
     Global with mediaAttribute.type with scopedAttribute.type with typeAttribute.type
   ]("style")
@@ -590,7 +605,7 @@ trait Html5 {
   val table = Tag[
     CaptionContent with ColgroupContent with TheadContent with TrContent with TbodyContent with TfootContent,
     Flow,
-    Global with alignAttribute.type with summaryAttribute.type
+    Global with alignAttribute.type with summaryAttribute.type with cellspacingAttribute.type with cellpaddingAttribute.type with widthAttribute.type with heightAttribute.type
   ]("table")
 
   val caption = Tag[Flow, CaptionContent, Global with alignAttribute.type]("caption")
@@ -615,7 +630,7 @@ trait Html5 {
   val td = Tag[
     Flow,
     TdContent,
-    Global with alignAttribute.type with colspanAttribute.type with headersAttribute.type with rowspanAttribute.type
+    Global with alignAttribute.type with colspanAttribute.type with headersAttribute.type with rowspanAttribute.type with widthAttribute.type with heightAttribute.type
   ]("td")
 
   val th = Tag[
@@ -641,7 +656,7 @@ trait Html5 {
   val input = Tag[
     Empty,
     Phrasing,
-    Global with acceptAttribute.type with altAttribute.type with autocompleteAttribute.type with autofocusAttribute.type with checkedAttribute.type with dirnameAttribute.type with disabledAttribute.type with formAttribute.type with formactionAttribute.type with heightAttribute.type with listAttribute.type with maxAttribute.type with maxlengthAttribute.type with minAttribute.type with multipleAttribute.type with nameAttribute.type with patternAttribute.type with placeholderAttribute.type with readonlyAttribute.type with requiredAttribute.type with sizeAttribute.type with srcAttribute.type with stepAttribute.type with typeAttribute.type with usemapAttribute.type with widthAttribute.type
+    Global with acceptAttribute.type with altAttribute.type with autocompleteAttribute.type with autofocusAttribute.type with checkedAttribute.type with dirnameAttribute.type with disabledAttribute.type with formAttribute.type with formactionAttribute.type with heightAttribute.type with listAttribute.type with maxAttribute.type with maxlengthAttribute.type with minAttribute.type with multipleAttribute.type with nameAttribute.type with patternAttribute.type with placeholderAttribute.type with readonlyAttribute.type with requiredAttribute.type with sizeAttribute.type with srcAttribute.type with stepAttribute.type with typeAttribute.type with usemapAttribute.type with widthAttribute.type with valueAttribute.type with EventHandlers
   ]("input", unclosed = true)
 
   val button = Tag[
