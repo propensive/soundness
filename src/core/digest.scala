@@ -29,13 +29,13 @@ object `package` {
 }
 
 object Algorithm {
-  implicit case object Md5 extends Algorithm[Md5]("MD5")
-  implicit case object Sha256 extends Algorithm[Sha256]("SHA-256")
-  implicit case object Sha1 extends Algorithm[Sha1]("SHA1")
+  implicit val Md5: Algorithm[Md5] = Algorithm("MD5")
+  implicit val Sha256: Algorithm[Sha256] = Algorithm("SHA-256")
+  implicit val Sha1: Algorithm[Sha1] = Algorithm("SHA1")
 }
 
-abstract class Algorithm[A <: Hash](val name: String) {
-  def init: MessageDigest = MessageDigest.getInstance(name)
+final case class Algorithm[A <: Hash](name: String) extends AnyVal {
+  def init: Accumulator = new Accumulator(MessageDigest.getInstance(name))
 }
 
 trait Hash
@@ -43,56 +43,56 @@ trait Md5 extends Hash
 trait Sha256 extends Hash
 trait Sha1 extends Hash
 
-case class Digest(value: String) extends AnyVal { override def toString: String = value }
+final case class Digest(value: String) extends AnyVal { override def toString: String = value }
 
 object Digestible {
   type Typeclass[T] = Digestible[T]
 
   def combine[T](caseClass: CaseClass[Digestible, T]): Digestible[T] =
-    (md, value) => caseClass.parameters.foldLeft(md) { (md, param) =>
-      param.typeclass.digest(md, param.dereference(value))
+    (acc, value) => caseClass.parameters.foldLeft(acc) { (acc, param) =>
+      param.typeclass.digest(acc, param.dereference(value))
     }
 
   def dispatch[T](sealedTrait: SealedTrait[Digestible, T]): Digestible[T] =
-    (md, value) => sealedTrait.dispatch(value) { subtype =>
-      val md2 = int.digest(md, sealedTrait.subtypes.indexOf(subtype))
-      subtype.typeclass.digest(md2, subtype.cast(value))
+    (acc, value) => sealedTrait.dispatch(value) { subtype =>
+      val acc2 = int.digest(acc, sealedTrait.subtypes.indexOf(subtype))
+      subtype.typeclass.digest(acc2, subtype.cast(value))
     }
     
-  private def append[T](toArray: T => Array[Byte]): Digestible[T] = { (md, value) =>
-    md.update(toArray(value))
-    md
-  }
-  
-  implicit def traversable[T: Digestible]: Digestible[Traversable[T]] = { (md, xs) =>
-    xs.foldLeft(md)(implicitly[Digestible[T]].digest)
-  }
+  implicit def traversable[T: Digestible]: Digestible[Traversable[T]] = 
+    (acc, xs) => xs.foldLeft(acc)(implicitly[Digestible[T]].digest)
 
-  implicit val int: Digestible[Int] = append { n =>
-    Array((n >> 24).toByte, (n >> 16).toByte, (n >> 8).toByte, n.toByte)
-  }
+  implicit val int: Digestible[Int] =
+    (acc, n) => acc.append(Array((n >> 24).toByte, (n >> 16).toByte, (n >> 8).toByte, n.toByte))
   
-  implicit val long: Digestible[Long] = append { n =>
-    Array((n >> 56).toByte, (n >> 48).toByte, (n >> 40).toByte, (n >> 32).toByte, (n >> 24).toByte,
-        (n >> 16).toByte, (n >> 8).toByte, n.toByte)
-  }
+  implicit val long: Digestible[Long] =
+    (acc, n) => acc.append(Array((n >> 56).toByte, (n >> 48).toByte, (n >> 40).toByte,
+        (n >> 32).toByte, (n >> 24).toByte, (n >> 16).toByte, (n >> 8).toByte, n.toByte))
   
   implicit val double: Digestible[Double] =
-    (md, n) => long.digest(md, java.lang.Double.doubleToRawLongBits(n))
+    (acc, n) => long.digest(acc, java.lang.Double.doubleToRawLongBits(n))
   
-  implicit val float: Digestible[Float] = (md, n) => int.digest(md, java.lang.Float.floatToRawIntBits(n))
-  implicit val byte: Digestible[Byte] = append(Array(_))
-  implicit val string: Digestible[String] = append(_.getBytes("UTF-8"))
-  implicit val short: Digestible[Short] = append { n => Array((n >> 8).toByte, n.toByte) }
-  implicit val char: Digestible[Char] = append { n => Array((n >> 8).toByte, n.toByte) }
+  implicit val float: Digestible[Float] = (acc, n) => int.digest(acc, java.lang.Float.floatToRawIntBits(n))
+  implicit val byte: Digestible[Byte] = (acc, n) => acc.append(Array(n))
+  implicit val boolean: Digestible[Boolean] = (acc, n) => acc.append(Array(if(n) 1.toByte else 0.toByte))
+  implicit val short: Digestible[Short] = (acc, n) => acc.append(Array((n >> 8).toByte, n.toByte))
+  implicit val char: Digestible[Char] = (acc, n) => acc.append(Array((n >> 8).toByte, n.toByte))
+  implicit val string: Digestible[String] = (acc, s) => acc.append(s.getBytes("UTF-8"))
   implicit def gen[T]: Digestible[T] = macro Magnolia.gen[T]
 }
 
-trait Digestible[T] { def digest(md: MessageDigest, value: T): MessageDigest }
+trait Digestible[T] { def digest(acc: Accumulator, value: T): Accumulator }
 
-case class Digester(run: MessageDigest => MessageDigest) {
-  def apply[A <: Hash](implicit algorithm: Algorithm[A]): Digest =
-    Digest(java.util.Base64.getEncoder.encodeToString(run(algorithm.init).digest()))
-
+case class Digester(run: Accumulator => Accumulator) {
+  def apply[A <: Hash](implicit algorithm: Algorithm[A]): Digest = run(algorithm.init).digest()
   def digest[T: Digestible](value: T): Digester = Digester(run.andThen(implicitly[Digestible[T]].digest(_, value)))
+}
+
+case class Accumulator(private val messageDigest: MessageDigest) {
+  def append(bytes: Array[Byte]): Accumulator = {
+    messageDigest.update(bytes)
+    new Accumulator(messageDigest)
+  }
+  
+  def digest(): Digest = Digest(java.util.Base64.getEncoder.encodeToString(messageDigest.digest()))
 }
