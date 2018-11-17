@@ -1,6 +1,6 @@
 /*
   
-  Testaceous, version 0.1.0. Copyright 2018 Jon Pretty, Propensive Ltd.
+  Exoskeleton, version 0.1.0. Copyright 2018 Jon Pretty, Propensive Ltd.
 
   The primary distribution site is: https://propensive.com/
 
@@ -17,7 +17,7 @@
   the License.
 
 */
-package testaceous
+package exoskeleton
 
 //import scala.scalanative.native._
 

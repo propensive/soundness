@@ -1,6 +1,6 @@
 /*
   
-  Testaceous, version 0.1.0. Copyright 2018 Jon Pretty, Propensive Ltd.
+  Exoskeleton, version 0.1.0. Copyright 2018 Jon Pretty, Propensive Ltd.
 
   The primary distribution site is: https://propensive.com/
 
@@ -17,7 +17,7 @@
   the License.
 
 */
-package testaceous
+package exoskeleton
 
 import scala.util.Try
 import scala.annotation._
@@ -37,18 +37,15 @@ case class Arg(value: String)
 object :~ {
   def unapply(paramMap: ParamMap): Option[(Arg, ParamMap)] =
     paramMap.prefix.headOption.map { h =>
-      (h, paramMap.drop(1))
+      (h, paramMap.tail)
     }
 }
 
 case class ParamMap(args: String*) {
 
   def ++(pm2: ParamMap) = ParamMap(pm2.args ++ args: _*)
-
   def +(arg: String) = ParamMap(args :+ arg: _*)
-
-  def drop(n: Int): ParamMap = ParamMap(args.tail: _*)
-
+  def tail: ParamMap = ParamMap(args.tail: _*)
   def headOption: Option[String] = args.headOption
 
   case class Part(no: Int, start: Int, end: Int) {
