@@ -25,11 +25,11 @@ import language.higherKinds
 import java.io.File
 import scala.io.Source
 import mitigation._
-import com.zaxxer.nuprocess._
+//import com.zaxxer.nuprocess._
+import scala.collection.JavaConverters._
 
 object environments {
   implicit val enclosing: Environment = {
-    import scala.collection.JavaConverters._
     Environment(mapAsScalaMapConverter(System.getenv).asScala.toMap, None)
   }
 
@@ -56,7 +56,7 @@ case class ShellFailure(command: String, stdout: String, stderr: String) extends
 
 object Executor {
 
-  implicit val running: Executor[Running] = { (args, env) =>
+  /*implicit val running: Executor[Running] = { (args, env) =>
     val runtime = Runtime.getRuntime
     val argsArray = args.to[Array]
     val proc = runtime.exec(argsArray, env.envArray, env.workDirFile)
@@ -64,7 +64,7 @@ object Executor {
     val out = scala.io.Source.fromInputStream(proc.getInputStream)
     val err = scala.io.Source.fromInputStream(proc.getErrorStream)
     Running(proc, out, err)
-  }
+  }*/
 
   implicit val result: Executor[Result[String, ~ | ShellFailure]] = {
     (args, env) =>
@@ -108,23 +108,56 @@ case class Exit[T](status: Int, result: T, errorStream: Source) {
   def map[S](fn: T => S): Exit[S] = Exit[S](status, fn(result), errorStream)
 }
 
-case class Running(proc: Process, out: Source, err: Source) {
-  def await(): Int = proc.waitFor()
+case class Running(proc: Process, outPump: Thread, errPump: Thread) {
+  def await(): Int = {
+    outPump.start()
+    errPump.start()
+    val result = proc.waitFor()
+    outPump.join()
+    errPump.join()
+    result
+  }
+
+  def destroy(): Int = {
+    proc.destroy()
+    await()
+  }
 }
 
-case class AsyncProcess(nuProcess: NuProcess) {
+/*case class AsyncProcess(nuProcess: NuProcess) {
   def waitFor(): Int = nuProcess.waitFor(0, java.util.concurrent.TimeUnit.SECONDS)
-}
+}*/
 
 object `package` {
 
   case class Command(args: String*) {
     override def toString = args.map { a => if(a.contains(" ")) '"'+a+'"' else a }.mkString(" ")
 
-    def exec[T: Executor]()(implicit env: Environment): T =
-      implicitly[Executor[T]].exec(args, env)
+    def exec[T: Executor]()(implicit env: Environment): T = implicitly[Executor[T]].exec(args, env)
 
-    def async[T](stdout: String => T = { (_: String) => () }, stderr: String => T = { (_: String) => () })(implicit env: Environment): AsyncProcess = {
+    def async[T](stdout: String => Unit = { (_: String) => () }, stderr: String => Unit = { (_: String) => () })(implicit env: Environment): Running = {
+      val pb = new ProcessBuilder(args: _*)
+      val envMap = pb.environment
+      env.variables.foreach { case (k, v) => envMap.put(k, v) }
+      env.workDir.foreach { wd => pb.directory(new java.io.File(wd)) }
+      val proc = pb.start()
+      val out = new java.io.BufferedReader(new java.io.InputStreamReader(proc.getInputStream()))
+      val err = new java.io.BufferedReader(new java.io.InputStreamReader(proc.getErrorStream()))
+      
+      class Pump(stream: java.io.BufferedReader, send: String => Unit) extends Thread {
+        override def run() = {
+          var line = stream.readLine()
+          while(line != null) {
+            send(line)
+            line = stream.readLine()
+          }
+        }
+          
+      }
+      Running(proc, new Pump(out, stdout), new Pump(err, stderr))
+    }
+
+    /*def async[T](stdout: String => T = { (_: String) => () }, stderr: String => T = { (_: String) => () })(implicit env: Environment): AsyncProcess = {
       val pb = new NuProcessBuilder(java.util.Arrays.asList(args: _*), env.toJavaMap)
       pb.setCwd(env.workDirFile.toPath)
 
@@ -152,7 +185,7 @@ object `package` {
         val proc = pb.start
         proc
       }
-    }
+    }*/
   }
 
   sealed trait ShellContext extends Context
