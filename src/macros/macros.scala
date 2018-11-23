@@ -25,7 +25,7 @@ import language.higherKinds
 import java.io.File
 import scala.io.Source
 import mitigation._
-//import com.zaxxer.nuprocess._
+
 import scala.collection.JavaConverters._
 
 object environments {
@@ -124,10 +124,6 @@ case class Running(proc: Process, outPump: Thread, errPump: Thread) {
   }
 }
 
-/*case class AsyncProcess(nuProcess: NuProcess) {
-  def waitFor(): Int = nuProcess.waitFor(0, java.util.concurrent.TimeUnit.SECONDS)
-}*/
-
 object `package` {
 
   case class Command(args: String*) {
@@ -156,36 +152,6 @@ object `package` {
       }
       Running(proc, new Pump(out, stdout), new Pump(err, stderr))
     }
-
-    /*def async[T](stdout: String => T = { (_: String) => () }, stderr: String => T = { (_: String) => () })(implicit env: Environment): AsyncProcess = {
-      val pb = new NuProcessBuilder(java.util.Arrays.asList(args: _*), env.toJavaMap)
-      pb.setCwd(env.workDirFile.toPath)
-
-      pb.setProcessListener(new NuAbstractProcessHandler() {
-        override def onStdout(buf: java.nio.ByteBuffer, closed: Boolean) = if(!closed) {
-          val bytes = new Array[Byte](buf.remaining())
-          buf.get(bytes)
-          val str = new String(bytes)
-          stdout(str)
-          ()
-        }
-        
-        override def onStdinReady(buf: java.nio.ByteBuffer) = false
-        
-        override def onStderr(buf: java.nio.ByteBuffer, closed: Boolean) = if(!closed) {
-          val bytes = new Array[Byte](buf.remaining())
-          buf.get(bytes)
-          val str = new String(bytes)
-          stderr(str)
-          ()
-        }
-      })
-      
-      AsyncProcess {
-        val proc = pb.start
-        proc
-      }
-    }*/
   }
 
   sealed trait ShellContext extends Context
