@@ -23,6 +23,7 @@ import java.security._
 import java.util.Arrays
 
 import language.experimental.macros
+import language.higherKinds
 
 object `package` {
   implicit class DigestExtension[T](val value: T) extends AnyVal {
@@ -90,6 +91,8 @@ object Hashable {
   implicit val short: Hashable[Short] = (acc, n) => acc.append(Array((n >> 8).toByte, n.toByte))
   implicit val char: Hashable[Char] = (acc, n) => acc.append(Array((n >> 8).toByte, n.toByte))
   implicit val string: Hashable[String] = (acc, s) => acc.append(s.getBytes("UTF-8"))
+  implicit val bytes: Hashable[Bytes] = (acc, b) => acc.append(b.array)
+  implicit val digest: Hashable[Digest] = (acc, d) => acc.append(d.bytes.array)
   implicit def gen[T]: Hashable[T] = macro Magnolia.gen[T]
 }
 
@@ -148,6 +151,7 @@ final class Bytes private[gastronomy] (private[gastronomy] val array: Array[Byte
 
 trait EncodingScheme
 trait Base64 extends EncodingScheme
+trait Base64Url extends EncodingScheme
 trait Base32 extends EncodingScheme
 trait Hex extends EncodingScheme
 trait Binary extends EncodingScheme
@@ -158,6 +162,9 @@ object ByteEncoder {
   
   implicit val base64: ByteEncoder[Base64] =
     bytes => java.util.Base64.getEncoder.encodeToString(bytes.array)
+  
+  implicit val base64Url: ByteEncoder[Base64Url] =
+    bytes => java.util.Base64.getEncoder.encodeToString(bytes.array).replace('+', '-').replace('/', '_').takeWhile(_ != '=')
 }
 
 trait ByteEncoder[ES <: EncodingScheme] { def encode(bytes: Bytes): String }
