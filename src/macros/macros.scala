@@ -48,6 +48,8 @@ case class Environment(variables: Map[String, String], workDir: Option[String]) 
 
   private[guillotine] lazy val workDirFile: File =
     new File(workDir.getOrElse(System.getenv("PWD")))
+
+  def append(key: String, value: String) = copy(variables = variables.updated(key, value))
 }
 
 case class ShellFailure(command: String, stdout: String, stderr: String) extends Exception {
