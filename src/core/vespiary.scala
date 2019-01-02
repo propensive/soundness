@@ -133,11 +133,6 @@ final case class AttributeKey[T](key: String) extends AttributeFactory[T] {
   def attributeKey = key
 }
 
-final case class DataAttributeKey[T](key: String) extends AttributeFactory[T] {
-  type Type = html5.DataAttributes
-  def attributeKey = s"data-$key"
-}
-
 final case class Text(str: String) extends Node[Html5#PlainText] {
   override def toString(): String = str
 }
@@ -157,6 +152,11 @@ trait Html5 {
   type LinkType
 
   trait DataAttributes
+
+  case class DataAttributeKey[T](key: String) extends AttributeFactory[T] {
+    type Type = DataAttributes
+    def attributeKey = s"data-$key"
+  }
 
   type Global =
     accesskeyAttribute.type with classAttribute.type with contenteditableAttribute.type with contextmenuAttribute.type with dirAttribute.type with draggableAttribute.type with dropzoneAttribute.type with hiddenAttribute.type with idAttribute.type with langAttribute.type with spellcheckAttribute.type with styleAttribute.type with tabindexAttribute.type with titleAttribute.type with DataAttributes
