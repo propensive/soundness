@@ -78,6 +78,16 @@ object Executor {
       }
   }
 
+  implicit val either: Executor[Either[Exception, String]] = { (args, env) =>
+    val exit = string.exec(args, env)
+    if(exit.status == 0) Right(exit.result)
+    else {
+      val cmd = args.map { a => if(a.contains(' ')) s"'$a'" else a }.mkString(" ")
+      Left(ShellFailure(cmd, exit.result, exit.errorStream.getLines.mkString("\n")))
+    }
+  }
+    
+
   implicit val string: Executor[Exit[String]] = { (args, env) =>
     val runtime = Runtime.getRuntime
     val argsArray = args.to[Array]
