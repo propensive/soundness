@@ -27,6 +27,7 @@ import scala.io.Source
 import mitigation._
 
 import scala.collection.JavaConverters._
+import scala.util._
 
 object environments {
   implicit val enclosing: Environment = {
@@ -78,15 +79,14 @@ object Executor {
       }
   }
 
-  implicit val either: Executor[Either[Exception, String]] = { (args, env) =>
+  implicit val scalaUtilTry: Executor[Try[String]] = { (args, env) =>
     val exit = string.exec(args, env)
-    if(exit.status == 0) Right(exit.result)
+    if(exit.status == 0) Success(exit.result)
     else {
       val cmd = args.map { a => if(a.contains(' ')) s"'$a'" else a }.mkString(" ")
-      Left(ShellFailure(cmd, exit.result, exit.errorStream.getLines.mkString("\n")))
+      Failure(ShellFailure(cmd, exit.result, exit.errorStream.getLines.mkString("\n")))
     }
   }
-    
 
   implicit val string: Executor[Exit[String]] = { (args, env) =>
     val runtime = Runtime.getRuntime
