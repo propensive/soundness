@@ -1,4 +1,4 @@
-package probation
+package probably
 
 import scala.collection.mutable.ListBuffer
 import scala.collection.immutable.ListMap
@@ -121,7 +121,6 @@ class CliRunner(config: CliRunner.Config = CliRunner.Config()) extends Runner {
       case (results, next) =>
         results.updated(next.definition, next :: results.get(next.definition).getOrElse(Nil))
     }
-    
 
     val rows: Seq[Result] = testResults.map {
       case (test, many) => 

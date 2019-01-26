@@ -1,6 +1,6 @@
-package probation.tests
+package probably.tests
 
-import probation._
+import probably._
 import scala.concurrent.ExecutionContext.Implicits.global
 
 object Tests extends TestApp {

@@ -1,4 +1,4 @@
-package probation
+package probably
 
 import scala.reflect._
 import scala.reflect.macros._

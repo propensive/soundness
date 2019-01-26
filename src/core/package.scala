@@ -1,4 +1,4 @@
-package probation
+package probably
 
 import scala.language.implicitConversions
 import scala.language.experimental.macros
