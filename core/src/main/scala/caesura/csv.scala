@@ -1,3 +1,5 @@
+package caesura
+
 /*
   
   Caesura, version 0.1.0. Copyright 2018 Jon Pretty, Propensive Ltd.
@@ -17,12 +19,10 @@
   the License.
 
 */
-package caesura
-
-import annotation._
 import magnolia._
 
-import language.experimental.macros
+import scala.annotation._
+import scala.language.experimental.macros
 
 object Csv {
  
