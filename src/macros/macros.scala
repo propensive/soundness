@@ -80,11 +80,17 @@ object Executor {
   }
 
   implicit val scalaUtilTry: Executor[Try[String]] = { (args, env) =>
-    val exit = string.exec(args, env)
-    if(exit.status == 0) Success(exit.result)
-    else {
-      val cmd = args.map { a => if(a.contains(' ')) s"'$a'" else a }.mkString(" ")
-      Failure(ShellFailure(cmd, exit.result, exit.errorStream.getLines.mkString("\n")))
+    val cmd = args.map { a => if(a.contains(' ')) s"'$a'" else a }.mkString(" ")
+    try {
+      val exit = string.exec(args, env)
+      if(exit.status == 0) Success(exit.result)
+      else {
+        Failure(ShellFailure(cmd, exit.result, exit.errorStream.getLines.mkString("\n")))
+      }
+    } catch {
+      case e: java.io.IOException => {
+        Failure(ShellFailure(cmd, "", e.getMessage))
+      }
     }
   }
 
@@ -120,21 +126,34 @@ case class Exit[T](status: Int, result: T, errorStream: Source) {
   def map[S](fn: T => S): Exit[S] = Exit[S](status, fn(result), errorStream)
 }
 
-case class Running(proc: Process, outPump: Thread, errPump: Thread) {
-  def await(): Int = {
-    outPump.start()
-    errPump.start()
-    val result = proc.waitFor()
-    outPump.join()
-    errPump.join()
-    result
-  }
 
-  def destroy(): Int = {
-    proc.destroy()
-    await()
-  }
-}
+case class RunningData(proc: Process, outPump: Thread, errPump: Thread)
+
+case class Running(runningDataOption: Option[RunningData]) {
+   def await(): Int = {
+    runningDataOption match {
+      case Some(RunningData(proc,outPump,errPump)) =>  {
+        outPump.start()
+        errPump.start()
+        val result = proc.waitFor()
+        outPump.join()
+        errPump.join()
+        result
+      }
+      case None => 127
+    }
+   }
+
+   def destroy(): Int = {
+    runningDataOption match {
+      case Some(RunningData(proc,_,_)) =>  {
+        proc.destroy()
+        await()
+      }
+      case None => 127
+    }
+   }
+ }
 
 object `package` {
 
@@ -148,21 +167,29 @@ object `package` {
       val envMap = pb.environment
       env.variables.foreach { case (k, v) => envMap.put(k, v) }
       env.workDir.foreach { wd => pb.directory(new java.io.File(wd)) }
-      val proc = pb.start()
-      val out = new java.io.BufferedReader(new java.io.InputStreamReader(proc.getInputStream()))
-      val err = new java.io.BufferedReader(new java.io.InputStreamReader(proc.getErrorStream()))
-      
-      class Pump(stream: java.io.BufferedReader, send: String => Unit) extends Thread {
-        override def run() = {
-          var line = stream.readLine()
-          while(line != null) {
-            send(line)
-            line = stream.readLine()
+
+      try {
+        val proc = pb.start()
+        val out = new java.io.BufferedReader(new java.io.InputStreamReader(proc.getInputStream()))
+        val err = new java.io.BufferedReader(new java.io.InputStreamReader(proc.getErrorStream()))
+
+        class Pump(stream: java.io.BufferedReader, send: String => Unit) extends Thread {
+          override def run() = {
+            var line = stream.readLine()
+            while(line != null) {
+              send(line)
+              line = stream.readLine()
+            }
           }
+
         }
-          
+        Running(Some(RunningData(proc, new Pump(out, stdout), new Pump(err, stderr))))
+      } catch {
+        case e: java.io.IOException => {
+          stderr(e.getMessage)
+            Running(None)
+        }
       }
-      Running(proc, new Pump(out, stdout), new Pump(err, stderr))
     }
   }
 

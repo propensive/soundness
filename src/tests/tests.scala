@@ -22,10 +22,12 @@ package guillotine.tests
 import probation.{TestApp, test}
 import contextual.data.scalac._
 import contextual.data.fqt._
-
+import scala.util.Try
 import guillotine._
+import scala.collection.JavaConverters._
 
 object Tests extends TestApp {
+  implicit val env = Environment(System.getenv.asScala.toMap, Option(System.getenv("PWD")))
 
   def tests(): Unit = {
     test("basic argument parsing") {
@@ -124,11 +126,25 @@ object Tests extends TestApp {
 
     test("capture of exit status with string") {
       sh"echo foobar".exec[Exit[String]]
-    }.assert(_ == Exit(0, "foobar"))
+    }.assert(x=>(x.status,x.result) == (0, "foobar"))
 
     test("capture of exit status with int") {
       sh"echo 42".exec[Exit[Int]]
-    }.assert(_ == Exit(0, 42))
+    }.assert(x=>(x.status,x.result) == (0, 42))
+
+    test("nonexistent command: asynchronous call") {
+      sh"non_existent_command".async( _ => (), _ => ()).await()
+    }.assert(_ == 127)
+
+    test("nonexistent command: synchronous call") {
+      sh"non_existent_command".exec[Try[String]]
+    }.assert(_.isFailure)
+
+    test("async call") {
+      val sb = new StringBuilder
+      sh"echo 125".async((ln) => sb.append(ln), _ => ()).await()
+      sb.toString
+    }.assert(_ == "125")
 
     ()
   }
