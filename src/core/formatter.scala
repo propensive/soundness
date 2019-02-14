@@ -1,4 +1,4 @@
-package vespiary
+package honeycomb
 
 /*object Formatter {
 

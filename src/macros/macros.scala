@@ -1,4 +1,4 @@
-package vespiary
+package honeycomb
 
 import scala.reflect._, macros._, blackbox.Context
 

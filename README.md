@@ -1,5 +1,5 @@
-# Vespiary
+# Honeycomb
 
-A library for safe construction of HTML.
+Perfectly-nested HTML
 
 

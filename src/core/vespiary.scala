@@ -1,4 +1,4 @@
-package vespiary
+package honeycomb
 
 import language.implicitConversions, language.dynamics, language.experimental.macros
 
