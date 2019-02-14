@@ -39,6 +39,7 @@ object Macros {
       q"""new $pkg.FindMetadata[$annType, $typ]($ann, $paramMetadata) {
             type Return = ${param.info.finalResultType}
             def get(t: $typ): ${param.info.finalResultType} = t.${param.name}
+            override def toString(): _root_.java.lang.String = ${Literal(Constant("_."+param.name))}
           }"""
 
     /** produces a new Tree of a `ParamMetadata` instance */
