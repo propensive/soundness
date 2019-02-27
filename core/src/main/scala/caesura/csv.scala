@@ -27,25 +27,25 @@ import scala.language.experimental.macros
 
 trait Format {
 
+  implicit val stringEncoder: Encoder[String] = s => Row(s)
+  implicit val intEncoder: Encoder[Int] = i => Row(i.toString)
+  implicit val booleanEncoder: Encoder[Boolean] = b => Row(b.toString)
+  implicit val byteEncoder: Encoder[Byte] = b => Row(b.toString)
+  implicit val shortEncoder: Encoder[Short] = s => Row(s.toString)
+  implicit val floatEncoder: Encoder[Float] = f => Row(f.toString)
+  implicit val doubleEncoder: Encoder[Double] = d => Row(d.toString)
+  implicit val charEncoder: Encoder[Char] = c => Row(c.toString)
+
+  implicit val stringDecoder: Decoder[String] = Decoder(_.elems.head)
+  implicit val intDecoder: Decoder[Int] = Decoder(_.elems.head.toInt)
+  implicit val booleanDecoder: Decoder[Boolean] = Decoder(_.elems.head == "true")
+  implicit val doubleDecoder: Decoder[Double] = Decoder(_.elems.head.toDouble)
+  implicit val byteDecoder: Decoder[Byte] = Decoder(_.elems.head.toByte)
+  implicit val shortDecoder: Decoder[Short] = Decoder(_.elems.head.toShort)
+  implicit val floatDecoder: Decoder[Float] = Decoder(_.elems.head.toFloat)
+  implicit val charDecoder: Decoder[Char] = Decoder(_.elems.head.head)
+
   protected val separator: Char
-
-  protected implicit val stringEncoder: Encoder[String] = s => Row(s)
-  protected implicit val intEncoder: Encoder[Int] = i => Row(i.toString)
-  protected implicit val booleanEncoder: Encoder[Boolean] = b => Row(b.toString)
-  protected implicit val byteEncoder: Encoder[Byte] = b => Row(b.toString)
-  protected implicit val shortEncoder: Encoder[Short] = s => Row(s.toString)
-  protected implicit val floatEncoder: Encoder[Float] = f => Row(f.toString)
-  protected implicit val doubleEncoder: Encoder[Double] = d => Row(d.toString)
-  protected implicit val charEncoder: Encoder[Char] = c => Row(c.toString)
-
-  protected implicit val stringDecoder: Decoder[String] = Decoder(_.elems.head)
-  protected implicit val intDecoder: Decoder[Int] = Decoder(_.elems.head.toInt)
-  protected implicit val booleanDecoder: Decoder[Boolean] = Decoder(_.elems.head == "true")
-  protected implicit val doubleDecoder: Decoder[Double] = Decoder(_.elems.head.toDouble)
-  protected implicit val byteDecoder: Decoder[Byte] = Decoder(_.elems.head.toByte)
-  protected implicit val shortDecoder: Decoder[Short] = Decoder(_.elems.head.toShort)
-  protected implicit val floatDecoder: Decoder[Float] = Decoder(_.elems.head.toFloat)
-  protected implicit val charDecoder: Decoder[Char] = Decoder(_.elems.head.head)
 
   def apply[T: Encoder](value: T): Row = implicitly[Encoder[T]].encode(value)
 

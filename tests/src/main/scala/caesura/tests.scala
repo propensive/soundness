@@ -71,6 +71,14 @@ object Test extends TestApp {
     test("convert row with escaped quote") {
       Csv.Row("hello\"world").toString
     }.assert(_ == """"hello""world"""")
+
+    test("simple parse tsv") {
+      Tsv.parse("hello\tworld")
+    }.assert(_ == Tsv.Row("hello", "world"))
+
+    test("decode case class from tsv") {
+      Tsv.parse("hello\tworld").as[Foo]
+    }.assert(_ == Foo("hello", "world"))
   }
 }
 
