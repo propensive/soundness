@@ -26,7 +26,26 @@ import scala.annotation._
 import scala.language.experimental.macros
 
 trait Format {
+
   protected val separator: Char
+
+  protected implicit val stringEncoder: Encoder[String] = s => Row(s)
+  protected implicit val intEncoder: Encoder[Int] = i => Row(i.toString)
+  protected implicit val booleanEncoder: Encoder[Boolean] = b => Row(b.toString)
+  protected implicit val byteEncoder: Encoder[Byte] = b => Row(b.toString)
+  protected implicit val shortEncoder: Encoder[Short] = s => Row(s.toString)
+  protected implicit val floatEncoder: Encoder[Float] = f => Row(f.toString)
+  protected implicit val doubleEncoder: Encoder[Double] = d => Row(d.toString)
+  protected implicit val charEncoder: Encoder[Char] = c => Row(c.toString)
+
+  protected implicit val stringDecoder: Decoder[String] = Decoder(_.elems.head)
+  protected implicit val intDecoder: Decoder[Int] = Decoder(_.elems.head.toInt)
+  protected implicit val booleanDecoder: Decoder[Boolean] = Decoder(_.elems.head == "true")
+  protected implicit val doubleDecoder: Decoder[Double] = Decoder(_.elems.head.toDouble)
+  protected implicit val byteDecoder: Decoder[Byte] = Decoder(_.elems.head.toByte)
+  protected implicit val shortDecoder: Decoder[Short] = Decoder(_.elems.head.toShort)
+  protected implicit val floatDecoder: Decoder[Float] = Decoder(_.elems.head.toFloat)
+  protected implicit val charDecoder: Decoder[Char] = Decoder(_.elems.head.head)
 
   def apply[T: Encoder](value: T): Row = implicitly[Encoder[T]].encode(value)
 
@@ -85,15 +104,6 @@ trait Format {
       }
     }
 
-    implicit val string: Decoder[String] = Decoder(_.elems.head)
-    implicit val int: Decoder[Int] = Decoder(_.elems.head.toInt)
-    implicit val boolean: Decoder[Boolean] = Decoder(_.elems.head == "true")
-    implicit val double: Decoder[Double] = Decoder(_.elems.head.toDouble)
-    implicit val byte: Decoder[Byte] = Decoder(_.elems.head.toByte)
-    implicit val short: Decoder[Short] = Decoder(_.elems.head.toShort)
-    implicit val float: Decoder[Float] = Decoder(_.elems.head.toFloat)
-    implicit val char: Decoder[Char] = Decoder(_.elems.head.head)
-
     def apply[T](fn: Row => T, len: Int = 1): Decoder[T] = new Decoder[T] {
       def decode(elems: Row): T = fn(elems)
 
@@ -118,15 +128,6 @@ trait Format {
       }: _*)
 
     implicit def gen[T]: Encoder[T] = macro Magnolia.gen[T]
-
-    implicit val string: Encoder[String] = s => Row(s)
-    implicit val int: Encoder[Int] = i => Row(i.toString)
-    implicit val boolean: Encoder[Boolean] = b => Row(b.toString)
-    implicit val byte: Encoder[Byte] = b => Row(b.toString)
-    implicit val short: Encoder[Short] = s => Row(s.toString)
-    implicit val float: Encoder[Float] = f => Row(f.toString)
-    implicit val double: Encoder[Double] = d => Row(d.toString)
-    implicit val char: Encoder[Char] = c => Row(c.toString)
   }
 
   trait Encoder[T] {
