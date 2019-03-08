@@ -146,6 +146,19 @@ object Tests extends TestApp {
       sb.toString
     }.assert(_ == "125")
 
+    test("very long output") {
+       sh"python -c 'print str(0) *65536'".exec[Try[String]]
+    }.assert(x => x.isSuccess && x.get=="0"*65536)
+
+   test("error") {
+     sh"python -c 'import sys;sys.stderr.write(str(1234567));sys.exit(1)'".exec[Try[String]]
+   }.assert(x => {
+     val err = x.failed.get.asInstanceOf[ShellFailure].stderr
+     err.trim == "1234567"
+   }
+   )
+
     ()
   }
 }
+
