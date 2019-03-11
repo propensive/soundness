@@ -99,10 +99,18 @@ object Executor {
     val argsArray = args.to[Array]
     val proc = runtime.exec(argsArray, env.envArray, env.workDirFile)
 
+    var stdout = new StringBuffer
+    var stderr = new StringBuffer
+
+    while(proc.isAlive){
+      stdout.append(scala.io.Source.fromInputStream(proc.getInputStream).mkString.trim)
+      stderr.append(scala.io.Source.fromInputStream(proc.getErrorStream).mkString)
+    }
+
     Exit(
       proc.waitFor,
-      scala.io.Source.fromInputStream(proc.getInputStream).getLines.mkString("\n").trim,
-      scala.io.Source.fromInputStream(proc.getErrorStream)
+      stdout.toString,
+      scala.io.Source.fromString(stderr.toString)
     )
   }
 
