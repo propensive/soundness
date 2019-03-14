@@ -27,23 +27,12 @@ object Tests extends TestApp {
       2*two()
     }.assert(_ == 4)
 
-    val tripleIt = test("check that three twos are six") {
-      3*two()
-    }.watching(three = "4", two = two()).assert(_ == 7)
-
     val diffStrings = test("strings are different") {
       "foo"
     }.assert(_ == "bar")
 
-    val sum = test("check that the previous two sums are ten") {
-      tripleIt() + doubleIt()
-    }.assert(_ == 10)
-  
-  
     test("test tests") { captureStdout {
-      implicit val runner: Runner = new CliRunner()
       test("simple test") { 1 + 1 }.assert(_ == 2)
-      Test.report(); ()
     } }.assert(_ == """foobar""")
   
   }
