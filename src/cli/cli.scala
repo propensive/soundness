@@ -53,6 +53,10 @@ object CliRunner {
   case object Mixed extends Outcome("vari", Nil, Some(false))
   
   case class RunResult(definition: Test.Definition[_], outcome: Outcome, duration: Long)
+
+  case class ExitCode(value: Int){
+    def exit(): Nothing = sys.exit(value)
+  }
 }
 
 /** a general-purpose instance of a [[Runner]] which reports by printing results to standard output
@@ -63,7 +67,7 @@ class CliRunner(config: CliRunner.Config = CliRunner.Config()) extends Runner {
 
   private[this] val results: ListBuffer[CliRunner.RunResult] = ListBuffer()
 
-  type Return = Nothing
+  type Return = ExitCode
 
   private def check[T](test: Test[T]): Outcome = test.result._1.map { r =>
     Try {
@@ -116,7 +120,7 @@ class CliRunner(config: CliRunner.Config = CliRunner.Config()) extends Runner {
     Heading("MAX", _.max)
   )
 
-  def report(): Nothing = {
+  def report(): ExitCode = {
     val testResults = results.foldLeft(ListMap[Test.Definition[_], List[CliRunner.RunResult]]()) {
       case (results, next) =>
         results.updated(next.definition, next :: results.get(next.definition).getOrElse(Nil))
@@ -158,7 +162,7 @@ class CliRunner(config: CliRunner.Config = CliRunner.Config()) extends Runner {
       println(bold(s"$percent% of the tests passed"))
       println()
     }
-    
-    sys.exit(if(fail == 0) 0 else 1)
+
+    if(fail == 0) ExitCode(0) else ExitCode(1)
   }
 }

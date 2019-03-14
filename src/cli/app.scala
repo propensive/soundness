@@ -1,5 +1,7 @@
 package probably
 
+import CliRunner.Config
+
 abstract class TestApp() {
 
   /** the code containing the tests to be run */
@@ -11,7 +13,7 @@ abstract class TestApp() {
     * Note that this value is initialized explicitly when the [[main]] method is executed, as the
     * instance requires the command-line arguments as parameters to its creation. Prior to running
     * the [[main]] method, this value will be `null`. */
-  implicit protected var runner: Runner = _
+  implicit protected var runner: Runner { type Return = CliRunner.ExitCode } = _
   
   /** the entry-point of the application, implemented to run a typical test suite
    *
@@ -25,7 +27,7 @@ abstract class TestApp() {
    *  `-c80`; or, following an equals-sign (`=`) as part of a long parameter, e.g.
    *  `--columns=80`. */
   def main(args: Array[String]): Unit = {
-    import CliRunner.Config
+
 
     /* parses the command-line arguments to specify the parameters for the creation of a [[Config]]
      * instance */
@@ -68,10 +70,18 @@ abstract class TestApp() {
         sys.exit(1)
     }
 
-    runner = new CliRunner(parse(args.to[List]))
+    executeTests(parse(args.to[List])).exit()
+    ()
+  }
+
+  /** executes the tests with the default confiquration and passes the exit code as a return value
+   *  so that the caller can decide how to handle failures */
+  def execute(): CliRunner.ExitCode = executeTests(runnerConfig = Config())
+
+  private def executeTests(runnerConfig: Config): CliRunner.ExitCode = {
+    runner = new CliRunner(runnerConfig)
     tests()
     Test.report()
-    ()
   }
 }
 
