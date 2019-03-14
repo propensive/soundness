@@ -13,7 +13,7 @@ abstract class TestApp() {
     * Note that this value is initialized explicitly when the [[main]] method is executed, as the
     * instance requires the command-line arguments as parameters to its creation. Prior to running
     * the [[main]] method, this value will be `null`. */
-  implicit protected var runner: Runner = _
+  implicit protected var runner: Runner { type Return = CliRunner.ExitCode } = _
   
   /** the entry-point of the application, implemented to run a typical test suite
    *
@@ -78,10 +78,10 @@ abstract class TestApp() {
    *  so that the caller can decide how to handle failures */
   def execute(): CliRunner.ExitCode = executeTests(runnerConfig = Config())
 
-  private def executeTests(runnerConfig: Config) = {
+  private def executeTests(runnerConfig: Config): CliRunner.ExitCode = {
     runner = new CliRunner(runnerConfig)
     tests()
-    Test.report().asInstanceOf[CliRunner.ExitCode]
+    Test.report()
   }
 }
 
