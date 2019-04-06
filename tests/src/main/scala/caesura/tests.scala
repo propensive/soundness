@@ -82,7 +82,7 @@ object Test extends TestApp {
 
     test("convert case class to tsv") {
       Tsv.line(Row.from(Foo("hello", "world")))
-    }.assert(_ == """"hello"	"world"""") // "
+    }.assert(_ == "\"hello\"\t\"world\"") // "
   }
 }
 
