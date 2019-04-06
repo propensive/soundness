@@ -25,16 +25,7 @@ import magnolia._
 import scala.annotation._
 import scala.language.experimental.macros
 
-trait Format {
-
-  implicit val stringEncoder: Encoder[String] = s => Row(s)
-  implicit val intEncoder: Encoder[Int] = i => Row(i.toString)
-  implicit val booleanEncoder: Encoder[Boolean] = b => Row(b.toString)
-  implicit val byteEncoder: Encoder[Byte] = b => Row(b.toString)
-  implicit val shortEncoder: Encoder[Short] = s => Row(s.toString)
-  implicit val floatEncoder: Encoder[Float] = f => Row(f.toString)
-  implicit val doubleEncoder: Encoder[Double] = d => Row(d.toString)
-  implicit val charEncoder: Encoder[Char] = c => Row(c.toString)
+object Decoding {
 
   implicit val stringDecoder: Decoder[String] = Decoder(_.elems.head)
   implicit val intDecoder: Decoder[Int] = Decoder(_.elems.head.toInt)
@@ -44,42 +35,6 @@ trait Format {
   implicit val shortDecoder: Decoder[Short] = Decoder(_.elems.head.toShort)
   implicit val floatDecoder: Decoder[Float] = Decoder(_.elems.head.toFloat)
   implicit val charDecoder: Decoder[Char] = Decoder(_.elems.head.head)
-
-  protected val separator: Char
-
-  def apply[T: Encoder](value: T): Row = implicitly[Encoder[T]].encode(value)
-
-  def parse(line: String): Row = {
-    @tailrec
-    def parseLine(items: Vector[String], idx: Int, quoted: Boolean, start: Int, end: Int,
-                  join: Boolean): Vector[String] =
-      if (line.length <= idx) {
-        if (join) items.init :+ items.last + line.substring(start, if (end == -1) idx else end)
-        else items :+ line.substring(start, if (end == -1) idx else end)
-      } else (line(idx): @switch) match {
-        case `separator` =>
-          if (quoted) parseLine(items, idx + 1, quoted, start, end, join)
-          else {
-            val elems = if (start == -1) items :+ "" else {
-              val suffix = line.substring(start, if (end == -1) idx else end)
-              if (join) items.init :+ items.last + suffix else items :+ suffix
-            }
-
-            parseLine(elems, idx + 1, quoted = false, idx + 1, -1, join = false)
-          }
-
-        case '"' =>
-          if (quoted) parseLine(items, idx + 1, quoted = false, start, idx, join = join)
-          else if (end != -1) {
-            parseLine(items :+ line.substring(start, idx), idx + 1, quoted = true, idx + 1, -1, join = true)
-          } else parseLine(items, idx + 1, quoted = true, idx + 1, -1, join = false)
-
-        case _ =>
-          parseLine(items, idx + 1, quoted, start, end, join)
-      }
-
-    Row(parseLine(Vector(), 0, quoted = false, 0, -1, join = false): _*)
-  }
 
   object Decoder {
     type Typeclass[T] = Decoder[T]
@@ -118,6 +73,18 @@ trait Format {
 
     def cols: Int
   }
+}
+
+object Encoding {
+
+  implicit val stringEncoder: Encoder[String] = s => Row(s)
+  implicit val intEncoder: Encoder[Int] = i => Row(i.toString)
+  implicit val booleanEncoder: Encoder[Boolean] = b => Row(b.toString)
+  implicit val byteEncoder: Encoder[Byte] = b => Row(b.toString)
+  implicit val shortEncoder: Encoder[Short] = s => Row(s.toString)
+  implicit val floatEncoder: Encoder[Float] = f => Row(f.toString)
+  implicit val doubleEncoder: Encoder[Double] = d => Row(d.toString)
+  implicit val charEncoder: Encoder[Char] = c => Row(c.toString)
 
   object Encoder {
     type Typeclass[T] = Encoder[T]
@@ -133,23 +100,70 @@ trait Format {
   trait Encoder[T] {
     def encode(value: T): Row
   }
+}
 
-  case class Row(elems: String*) {
-    def as[T: Decoder]: T = implicitly[Decoder[T]].decode(this)
+trait Format {
 
-    override def toString: String = elems
-      .map {
-        _.replaceAll("\"", "\"\"")
+  protected val separator: Char
+
+  def parse(line: String): Row = {
+    @tailrec
+    def parseLine(items: Vector[String], idx: Int, quoted: Boolean, start: Int, end: Int,
+                  join: Boolean): Vector[String] =
+      if (line.length <= idx) {
+        if (join) items.init :+ items.last + line.substring(start, if (end == -1) idx else end)
+        else items :+ line.substring(start, if (end == -1) idx else end)
+      } else (line(idx): @switch) match {
+        case `separator` =>
+          if (quoted) parseLine(items, idx + 1, quoted, start, end, join)
+          else {
+            val elems = if (start == -1) items :+ "" else {
+              val suffix = line.substring(start, if (end == -1) idx else end)
+              if (join) items.init :+ items.last + suffix else items :+ suffix
+            }
+
+            parseLine(elems, idx + 1, quoted = false, idx + 1, -1, join = false)
+          }
+
+        case '"' =>
+          if (quoted) parseLine(items, idx + 1, quoted = false, start, idx, join = join)
+          else if (end != -1) {
+            parseLine(items :+ line.substring(start, idx), idx + 1, quoted = true, idx + 1, -1, join = true)
+          } else parseLine(items, idx + 1, quoted = true, idx + 1, -1, join = false)
+
+        case _ =>
+          parseLine(items, idx + 1, quoted, start, end, join)
       }
-      .mkString("\"", s""""$separator"""", "\"")
+
+    Row(parseLine(Vector(), 0, quoted = false, 0, -1, join = false): _*)
   }
 
+  def line(row: Row): String = row
+    .elems
+    .map {
+      _.replaceAll("\"", "\"\"")
+    }
+    .mkString("\"", s""""$separator"""", "\"")
+}
+
+object Row {
+
+  import Encoding._
+
+  def from[T: Encoder](value: T): Row = implicitly[Encoder[T]].encode(value)
+}
+
+case class Row(elems: String*) {
+
+  import Decoding._
+
+  def as[T: Decoder]: T = implicitly[Decoder[T]].decode(this)
 }
 
 object Csv extends Format {
-  override protected val separator = ','
+  override val separator = ','
 }
 
 object Tsv extends Format {
-  override protected val separator = '\t'
+  override val separator = '\t'
 }
