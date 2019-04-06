@@ -80,8 +80,8 @@ object Test extends TestApp {
       Tsv.parse("hello\tworld").as[Foo]
     }.assert(_ == Foo("hello", "world"))
 
-    test("convert simple row to tsv") {
-      Tsv.line(Row("hello", "world"))
+    test("convert case class to tsv") {
+      Tsv.line(Row.from(Foo("hello", "world")))
     }.assert(_ == """"hello"	"world"""") // "
   }
 }
