@@ -24,7 +24,6 @@ import concurrent._, ExecutionContext.Implicits.global
 import language.higherKinds
 import java.io.File
 import scala.io.Source
-import mitigation._
 
 import scala.collection.JavaConverters._
 import scala.util._
@@ -68,16 +67,6 @@ object Executor {
     val err = scala.io.Source.fromInputStream(proc.getErrorStream)
     Running(proc, out, err)
   }*/
-
-  implicit val result: Executor[Result[String, ~ | ShellFailure]] = {
-    (args, env) =>
-      val exit = string.exec(args, env)
-      if(exit.status == 0) Result.answer(exit.result)
-      else {
-        val cmd = args.map { a => if(a.contains(' ')) s"'$a'" else a }.mkString(" ")
-        Result.abort(ShellFailure(cmd, exit.result, exit.errorStream.getLines.mkString("\n")))
-      }
-  }
 
   implicit val scalaUtilTry: Executor[Try[String]] = { (args, env) =>
     val exit = string.exec(args, env)
