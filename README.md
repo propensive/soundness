@@ -1,3 +1,3 @@
 # Caesura
 
-Caesura is a CSV file parser build on Magnolia.
+Caesura is a CSV file parser built on Magnolia.
