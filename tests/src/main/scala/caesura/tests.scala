@@ -61,15 +61,15 @@ object Test extends TestApp {
     }.assert(_ == Row("0.1", "two", "three", "4", "five", "six"))
 
     test("convert simple row to string") {
-      Csv.line(Row("hello", "world"))
+      Csv(Row("hello", "world"))
     }.assert(_ == """"hello","world"""") // "
 
     test("convert complex row to string") {
-      Csv.line(Row("0.1", "two", "three", "4", "five", "six"))
+      Csv(Row("0.1", "two", "three", "4", "five", "six"))
     }.assert(_ == """"0.1","two","three","4","five","six"""") // "
 
     test("convert row with escaped quote") {
-      Csv.line(Row("hello\"world"))
+      Csv(Row("hello\"world"))
     }.assert(_ == """"hello""world"""")
 
     test("simple parse tsv") {
@@ -81,7 +81,7 @@ object Test extends TestApp {
     }.assert(_ == Foo("hello", "world"))
 
     test("convert case class to tsv") {
-      Tsv.line(Row.from(Foo("hello", "world")))
+      Tsv(Row.from(Foo("hello", "world")))
     }.assert(_ == "\"hello\"\t\"world\"") // "
   }
 }

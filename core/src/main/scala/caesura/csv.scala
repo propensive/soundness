@@ -138,12 +138,10 @@ trait Format {
     Row(parseLine(Vector(), 0, quoted = false, 0, -1, join = false): _*)
   }
 
-  def line(row: Row): String = row
-    .elems
-    .map {
-      _.replaceAll("\"", "\"\"")
-    }
-    .mkString("\"", s""""$separator"""", "\"")
+  def apply(row: Row): String =
+    row.elems.map(escape).mkString(separator.toString)
+
+  protected def escape(str: String): String
 }
 
 object Row {
@@ -162,8 +160,12 @@ case class Row(elems: String*) {
 
 object Csv extends Format {
   override val separator = ','
+  def escape(str: String): String = str.replaceAll("\"", "\"\"")
 }
 
 object Tsv extends Format {
   override val separator = '\t'
+  // The TSV standard forbids tabs appearing in fields. We do nothing to uphold this, though.
+  def escape(str: String): String = str
 }
+
