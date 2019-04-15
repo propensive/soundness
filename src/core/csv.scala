@@ -1,8 +1,6 @@
-package caesura
-
 /*
   
-  Caesura, version 0.1.0. Copyright 2018 Jon Pretty, Propensive Ltd.
+  Caesura, version 0.1.0. Copyright 2018-19 Jon Pretty, Propensive Ltd.
 
   The primary distribution site is: https://propensive.com/
 
@@ -19,6 +17,7 @@ package caesura
   the License.
 
 */
+package caesura
 
 import magnolia._
 
