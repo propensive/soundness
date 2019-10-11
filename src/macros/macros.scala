@@ -180,7 +180,11 @@ object `package` {
           }
 
         }
-        Running(Some(RunningData(proc, new Pump(out, stdout), new Pump(err, stderr))))
+        val outPump = new Pump(out, stdout)
+        val errPump = new Pump(err, stderr)
+        outPump.setDaemon(true)
+        errPump.setDaemon(true)
+        Running(Some(RunningData(proc, outPump, errPump)))
       } catch {
         case e: java.io.IOException => {
           stderr(e.getMessage)
