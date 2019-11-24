@@ -33,6 +33,7 @@ object Serializer {
   implicit val short: Serializer[Short] = JNum(_)
   implicit val boolean: Serializer[Boolean] = if(_) JTrue else JFalse
   implicit val json: Serializer[Json] = _.normalize.get.root
+  implicit val nil: Serializer[Nil.type] = value => JArray(Array())
 
   implicit def gen[T]: Serializer[T] = macro Magnolia.gen[T]
 
