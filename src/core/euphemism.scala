@@ -5,7 +5,7 @@ import mercator._
 import org.typelevel.jawn._, ast._
 
 import collection.mutable, collection.generic.CanBuildFrom
-import language.experimental.macros, language.dynamics, language.higherKinds
+import language.experimental.macros, language.dynamics, language.higherKinds, language.implicitConversions
 
 object Serializer {
   type Typeclass[T] = Serializer[T]
@@ -32,12 +32,16 @@ object Serializer {
   implicit val byte: Serializer[Byte] = JNum(_)
   implicit val short: Serializer[Short] = JNum(_)
   implicit val boolean: Serializer[Boolean] = if(_) JTrue else JFalse
+  implicit val json: Serializer[Json] = _.normalize.get.root
 
   implicit def gen[T]: Serializer[T] = macro Magnolia.gen[T]
 
   implicit def collection[Coll[T1] <: Traversable[T1], T: Serializer]
                          (implicit cbf: CanBuildFrom[Nothing, T, Array[T]]): Serializer[Coll[T]] =
     coll => JArray(coll.map(implicitly[Serializer[T]].serialize(_)).to[Array])
+  
+  implicit def map[T: Serializer]: Serializer[Map[String, T]] = values =>
+    JObject(mutable.Map(values.mapValues(implicitly[Serializer[T]].serialize(_)).to[Seq]: _*))
 }
 
 trait Serializer[T] { def serialize(t: T): JValue }
@@ -66,6 +70,7 @@ object Deserializer {
   implicit val short: Deserializer[Short] = _.getInt.map(_.toShort)
   implicit val byte: Deserializer[Byte] = _.getInt.map(_.toByte)
   implicit val boolean: Deserializer[Boolean] = _.getBoolean
+  implicit val json: Deserializer[Json] = value => Some(Json(value, Nil))
 
   implicit def collection[Coll[T1] <: Traversable[T1], T: Deserializer]
                          (implicit cbf: CanBuildFrom[Nothing, T, Coll[T]]): Deserializer[Coll[T]] = {
@@ -78,15 +83,36 @@ object Deserializer {
       None
   }
 
+  def map[T: Deserializer]: Deserializer[Map[String, T]] = {
+    case JObject(vs) =>
+      vs.toMap.foldLeft(Option(Map[String, T]())) {
+        case (Some(acc), (k, v)) =>
+          implicitly[Deserializer[T]].deserialize(v).map { v2 => acc.updated(k, v2) }
+        case _ =>
+          None
+      }
+    case _ =>
+      None
+  }
+
   implicit def gen[T]: Deserializer[T] = macro Magnolia.gen[T]
 }
 
 trait Deserializer[T] { def deserialize(json: JValue): Option[T] }
 
-object Json {
+object Json extends Dynamic {
   def apply[T: Serializer](value: T): Json = Json(implicitly[Serializer[T]].serialize(value), Nil)
   def parse(str: String): Option[Json] = JParser.parseFromString(str).toOption.map(Json(_, Nil))
+
+  def applyDynamicNamed[T <: String](methodName: T)(elements: (String, JsonContext)*): Json =
+    Json(JObject(mutable.Map(elements.map { case (k, v) => k -> v.json.root }: _*)), Nil)
 }
+
+object JsonContext {
+  implicit def toJsonContext[T: Serializer](value: T): JsonContext =
+    JsonContext(Json(implicitly[Serializer[T]].serialize(value), Nil))
+}
+case class JsonContext(json: Json) extends AnyVal
 
 case class Json(root: JValue, path: List[Either[Int, String]] = Nil) extends Dynamic {
   def apply(idx: Int): Json = Json(root, Left(idx) :: path)
