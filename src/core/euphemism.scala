@@ -7,11 +7,40 @@ import org.typelevel.jawn._, ast._
 import collection.mutable, collection.generic.CanBuildFrom
 import language.experimental.macros, language.dynamics, language.higherKinds, language.implicitConversions
 
-object Serializer {
+object Serializer extends Serializer_1 {
+  implicit val int: Serializer[Int] = JNum(_)
+  implicit val string: Serializer[String] = JString(_)
+  implicit val double: Serializer[Double] = JNum(_)
+  implicit val long: Serializer[Long] = JNum(_)
+  implicit val byte: Serializer[Byte] = JNum(_)
+  implicit val short: Serializer[Short] = JNum(_)
+  implicit val boolean: Serializer[Boolean] = if(_) JTrue else JFalse
+  implicit val json: Serializer[Json] = _.normalize.get.root
+  implicit val nil: Serializer[Nil.type] = value => JArray(Array())
+
+  implicit def collection[Coll[T1] <: Traversable[T1], T: Serializer]
+                         (implicit cbf: CanBuildFrom[Nothing, T, Array[T]]): Serializer[Coll[T]] =
+    coll => JArray(coll.map(implicitly[Serializer[T]].serialize(_)).to[Array])
+  
+  implicit def map[T: Serializer]: Serializer[Map[String, T]] = values =>
+    JObject(mutable.Map(values.mapValues(implicitly[Serializer[T]].serialize(_)).to[Seq]: _*))
+
+  implicit def option[T: Serializer]: Serializer[Option[T]] = new Serializer[Option[T]] {
+    override def omit(t: Option[T]): Boolean = t.isEmpty
+    def serialize(value: Option[T]): JValue = value match {
+      case None        => JNull
+      case Some(value) => implicitly[Serializer[T]].serialize(value)
+    }
+  }
+}
+
+trait Serializer_1 {
   type Typeclass[T] = Serializer[T]
 
   def combine[T](caseClass: CaseClass[Serializer, T]): Serializer[T] = value =>
-    JObject(mutable.Map(caseClass.parameters.map { param =>
+    JObject(mutable.Map(caseClass.parameters.filter { param =>
+      !param.typeclass.omit(param.dereference(value))
+    }.map { param =>
       (param.label, param.typeclass.serialize(param.dereference(value)))
     }: _*))
     
@@ -25,45 +54,15 @@ object Serializer {
       obj
     }
 
-  implicit val int: Serializer[Int] = JNum(_)
-  implicit val string: Serializer[String] = JString(_)
-  implicit val double: Serializer[Double] = JNum(_)
-  implicit val long: Serializer[Long] = JNum(_)
-  implicit val byte: Serializer[Byte] = JNum(_)
-  implicit val short: Serializer[Short] = JNum(_)
-  implicit val boolean: Serializer[Boolean] = if(_) JTrue else JFalse
-  implicit val json: Serializer[Json] = _.normalize.get.root
-  implicit val nil: Serializer[Nil.type] = value => JArray(Array())
-
   implicit def gen[T]: Serializer[T] = macro Magnolia.gen[T]
-
-  implicit def collection[Coll[T1] <: Traversable[T1], T: Serializer]
-                         (implicit cbf: CanBuildFrom[Nothing, T, Array[T]]): Serializer[Coll[T]] =
-    coll => JArray(coll.map(implicitly[Serializer[T]].serialize(_)).to[Array])
-  
-  implicit def map[T: Serializer]: Serializer[Map[String, T]] = values =>
-    JObject(mutable.Map(values.mapValues(implicitly[Serializer[T]].serialize(_)).to[Seq]: _*))
 }
 
-trait Serializer[T] { def serialize(t: T): JValue }
+trait Serializer[T] {
+  def omit(t: T): Boolean = false
+  def serialize(t: T): JValue
+}
 
-object Deserializer {
-  type Typeclass[T] = Deserializer[T]
-
-  def combine[T](caseClass: CaseClass[Deserializer, T]): Deserializer[T] = json =>
-    caseClass.constructMonadic { param => json match {
-      case JObject(vs) => vs.get(param.label).flatMap(param.typeclass.deserialize(_))
-      case _ => None
-    } }
-
-  def dispatch[T](sealedTrait: SealedTrait[Deserializer, T]): Deserializer[T] = { json =>
-    for {
-      str     <- Json(json, Nil)._type.as[String]
-      subtype <- sealedTrait.subtypes.find(_.typeName.short == str)
-      value   <- subtype.typeclass.deserialize(json)
-    } yield value
-  }
-
+object Deserializer extends Deserializer_1 {
   implicit val int: Deserializer[Int] = _.getInt
   implicit val double: Deserializer[Double] = _.getDouble
   implicit val long: Deserializer[Long] = _.getLong
@@ -94,6 +93,24 @@ object Deserializer {
       }
     case _ =>
       None
+  }
+}
+
+trait Deserializer_1 {
+  type Typeclass[T] = Deserializer[T]
+
+  def combine[T](caseClass: CaseClass[Deserializer, T]): Deserializer[T] = json =>
+    caseClass.constructMonadic { param => json match {
+      case JObject(vs) => vs.get(param.label).flatMap(param.typeclass.deserialize(_))
+      case _ => None
+    } }
+
+  def dispatch[T](sealedTrait: SealedTrait[Deserializer, T]): Deserializer[T] = { json =>
+    for {
+      str     <- Json(json, Nil)._type.as[String]
+      subtype <- sealedTrait.subtypes.find(_.typeName.short == str)
+      value   <- subtype.typeclass.deserialize(json)
+    } yield value
   }
 
   implicit def gen[T]: Deserializer[T] = macro Magnolia.gen[T]
