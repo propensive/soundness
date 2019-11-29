@@ -1,0 +1,17 @@
+name: CI
+
+on: [push]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v1
+    - name: "Install Fury"
+      run: |
+        make install
+    - name: "Compile"
+      run: |
+        git config --global user.name $USER
+        git config --global user.email jon.pretty@propensive.com
+        make
