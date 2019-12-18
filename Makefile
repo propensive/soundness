@@ -10,7 +10,7 @@ compile: fury/bin/fury
 install.sh:
 	curl http://downloads.furore.dev/fury-${FURY_VERSION}.sh > install.sh
 
-install: install.sh
+fury/bin/fury: install.sh
 	chmod +x install.sh
 	./install.sh fury
 
