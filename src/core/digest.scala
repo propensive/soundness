@@ -157,18 +157,15 @@ trait Hex extends EncodingScheme
 trait Binary extends EncodingScheme
 
 object ByteEncoder {
-  private[this] val UppercaseHexLookup: Array[Char] = "0123456789ABCDEF".toCharArray
+  private val HexLookup: Array[Byte] = "0123456789ABCDEF".getBytes
 
-  implicit val hex: ByteEncoder[Hex] = bytes => {
-    val sb = new java.lang.StringBuilder
-    var index = 0
-    while (index < bytes.length) {
-      val b = bytes(index)
-      sb.append(UppercaseHexLookup((b >> 4) & 0xf))
-        .append(UppercaseHexLookup(b & 0xf))
-      index += 1
+  implicit val hex: ByteEncoder[Hex] = { bytes =>
+    val array = new Array[Byte](bytes.length*2)
+    bytes.indices.foreach { idx =>
+      array(2*idx) = HexLookup((bytes(idx) >> 4) & 0xf)
+      array(2*idx + 1) = HexLookup(bytes(idx) & 0xf)
     }
-    sb.toString
+    new String(array, "UTF-8")
   }
 
   implicit val base64: ByteEncoder[Base64] =
