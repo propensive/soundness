@@ -161,7 +161,7 @@ object ByteEncoder {
 
   implicit val hex: ByteEncoder[Hex] = { bytes =>
     val array = new Array[Byte](bytes.length*2)
-    bytes.indices.foreach { idx =>
+    bytes.array.indices.foreach { idx =>
       array(2*idx) = HexLookup((bytes(idx) >> 4) & 0xf)
       array(2*idx + 1) = HexLookup(bytes(idx) & 0xf)
     }
