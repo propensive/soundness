@@ -1,8 +1,0 @@
-[submodule "magnolia"]
-	path = magnolia
-	url = https://github.com/propensive/magnolia.git
-	branch = fury
-[submodule "escritoire"]
-	path = escritoire
-	url = https://github.com/propensive/escritoire.git
-	branch = fury
