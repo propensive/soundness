@@ -2,13 +2,28 @@ package euphemism
 
 import magnolia._
 import mercator._
+import quarantine._
+
 import org.typelevel.jawn._, ast._
 
 import collection.mutable, collection.generic.CanBuildFrom
 import language.experimental.macros, language.dynamics, language.higherKinds, language.implicitConversions
+import scala.util._
+
+object ParseException extends Domain[ParseException]
+case class ParseException(line: Int, column: Int, message: String) extends Exception
+
+
+object Access extends Domain[AccessException]
+
+sealed trait AccessException extends Exception with Product with Serializable
+case class DeserializationException() extends AccessException
+case class IndexNotFound(index: Int) extends AccessException
+case class LabelNotFound(label: String) extends AccessException
+case class UnexpectedType(expectedType: String) extends AccessException
 
 object Json extends Dynamic {
-  
+
   object Serializer extends Serializer_1 {
     implicit val int: Serializer[Int] = JNum(_)
     implicit val string: Serializer[String] = JString(_)
@@ -17,7 +32,7 @@ object Json extends Dynamic {
     implicit val byte: Serializer[Byte] = JNum(_)
     implicit val short: Serializer[Short] = JNum(_)
     implicit val boolean: Serializer[Boolean] = if(_) JTrue else JFalse
-    implicit val json: Serializer[Json] = _.normalize.get.root
+    implicit val json: Serializer[Json] = _.normalize.to[Option].get.root
     implicit val nil: Serializer[Nil.type] = value => JArray(Array())
 
     implicit def collection[Coll[T1] <: Traversable[T1], T: Serializer]
@@ -107,12 +122,13 @@ object Json extends Dynamic {
         case _ => None
       } }
 
-    def dispatch[T](sealedTrait: SealedTrait[Deserializer, T]): Deserializer[T] = { json =>
-      for {
+    def dispatch[T](sealedTrait: SealedTrait[Deserializer, T]): Deserializer[T] = { (json: JValue) =>
+      import Access._
+      { for {
         str     <- Json(json, Nil)._type.as[String]
-        subtype <- sealedTrait.subtypes.find(_.typeName.short == str)
-        value   <- subtype.typeclass.deserialize(json)
-      } yield value
+        subtype <- Result.from(sealedTrait.subtypes.find(_.typeName.short == str))
+        value   <- Result.from(subtype.typeclass.deserialize(json))
+      } yield value }.to[Option]
     }
 
     implicit def gen[T]: Deserializer[T] = macro Magnolia.gen[T]
@@ -121,7 +137,15 @@ object Json extends Dynamic {
   trait Deserializer[T] { def deserialize(json: JValue): Option[T] }
 
   def apply[T: Serializer](value: T): Json = Json(implicitly[Serializer[T]].serialize(value), Nil)
-  def parse(str: String): Option[Json] = JParser.parseFromString(str).toOption.map(Json(_, Nil))
+  
+  def parse(str: String): ParseException.Result[Json] = JParser.parseFromString(str) match {
+    case Success(value) =>
+      ParseException.Answer(Json(value, Nil))
+    case Failure(error: org.typelevel.jawn.ParseException) =>
+      ParseException.Error(ParseException(error.line, error.col, error.msg))
+    case Failure(error) =>
+      ParseException.Surprise(error)
+  }
 
   def applyDynamicNamed[T <: String](methodName: T)(elements: (String, Context)*): Json =
     Json(JObject(mutable.Map(elements.map { case (k, v) => k -> v.json.root }: _*)), Nil)
@@ -141,24 +165,38 @@ case class Json(root: JValue, path: List[Either[Int, String]] = Nil) extends Dyn
   def selectDynamic(field: String): Json = this(field)
   def applyDynamic(field: String)(idx: Int): Json = this(field)(idx)
 
-  def normalize: Option[Json] = {
-    def dereference(value: JValue, path: List[Either[Int, String]]): Option[JValue] = path match {
-      case Nil => Some(value)
+  def normalize: Access.Result[Json] = {
+    import Access._
+    def dereference(value: JValue, path: List[Either[Int, String]]): Result[JValue] = path match {
+      case Nil => Answer(value)
       case Left(idx) :: tail => value match {
-        case JArray(vs) => vs.lift(idx).flatMap(dereference(_, tail))
-        case _ => None
+        case JArray(vs) =>
+          (vs.lift(idx) match {
+            case None        => Error(IndexNotFound(idx))
+            case Some(value) => Answer(value)
+          }).flatMap(dereference(_, tail))
+        case _ =>
+          Error(UnexpectedType("array"))
       }
       case Right(field) :: tail => value match {
-        case JObject(vs) => vs.get(field).flatMap(dereference(_, tail))
-        case _ => None
+        case JObject(vs) =>
+          (vs.get(field) match {
+            case None        => Error(LabelNotFound(field))
+            case Some(value) => Answer(value)
+          }).flatMap(dereference(_, tail))
+        case _ =>
+          Error(UnexpectedType("object"))
       }
     }
-    
+      
     dereference(root, path.reverse).map(Json(_, Nil))
   }
 
-  def as[T: Json.Deserializer]: Option[T] =
-    normalize.flatMap { json => implicitly[Json.Deserializer[T]].deserialize(json.root) }
+  def as[T: Json.Deserializer] = normalize.flatMap { json =>
+    Access.Result.from(implicitly[Json.Deserializer[T]].deserialize(json.root)).extenuate {
+      _ => DeserializationException()
+    }
+  }
 
-  override def toString(): String = normalize.map(_.root.render()).getOrElse("undefined")
+  override def toString(): String = normalize.map(_.root.render()).pacify("undefined")
 }
