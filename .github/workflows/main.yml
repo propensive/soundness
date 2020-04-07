@@ -4,14 +4,15 @@ on: [push]
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+      fail-fast: false
     steps:
-    - uses: actions/checkout@v1
-    - name: "Install Fury"
+    - uses: actions/checkout@v2.0.0
+    - run: git fetch --prune --unshallow
+    - name: Run Fury
       run: |
-        make install
-    - name: "Compile"
-      run: |
-        git config --global user.name $USER
-        git config --global user.email jon.pretty@propensive.com
-        make
+        ./fury build run --output linear --https
+      timeout-minutes: 5
