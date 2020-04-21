@@ -33,7 +33,7 @@ abstract class Tests() {
     val passed = report.results.count(_.result == Pass)
     val total = report.results.size
     val failed = total - passed
-    List(s"Pass: ${passed}   Fail: ${failed}   Total: ${total}")
+    println(Ansi.bold(s"Pass: ${passed}   Fail: ${failed}   Total: ${total}"))
     System.exit(if(total == passed) 1 else 0)
   }
 }

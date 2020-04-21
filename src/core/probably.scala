@@ -32,6 +32,8 @@ object Showable {
 case class Showable(string: String) extends AnyVal
 
 class Runner() extends Dynamic {
+  def apply[T](name: String)(fn: => T): Test { type Type = T } = applyDynamicNamed[T]("")(name)(fn)
+
   def applyDynamicNamed[T]
                        (method: String)
                        (name: String, args: (String, Showable)*)
