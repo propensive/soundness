@@ -34,7 +34,7 @@ abstract class Tests() {
     val total = report.results.size
     val failed = total - passed
     println(Ansi.bold(s"Pass: ${passed}   Fail: ${failed}   Total: ${total}"))
-    System.exit(if(total == passed) 1 else 0)
+    System.exit(if(total == passed) 0 else 1)
   }
 }
 
