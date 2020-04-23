@@ -4,7 +4,7 @@ import probably._
 
 object Main extends Tests {
 
-  def tests(): Unit = {
+  def run(): Unit = {
     test("tests with the same name get grouped") {
       val runner = new Runner()
       runner("test") { 2 + 2 }.assert(_ == 4)
@@ -23,23 +23,23 @@ object Main extends Tests {
       val runner = new Runner()
       runner("failing") { 2 + 2 }.assert(_ == 5)
       runner.report()
-    }.assert(_.results.head.result != Fail)
+    }.assert(_.results.head.result.failed)
     
     test("tests can succeed") {
       val runner = new Runner()
       runner("failing") { 2 + 2 }.assert(_ == 4)
       runner.report()
-    }.assert(_.results.head.result == Pass)
+    }.assert(_.results.head.result.passed)
     
     test("tests can throw an exception") {
       val runner = new Runner()
-      try runner("failing") {
+      runner("failing") {
         throw new Exception()
         4
-      }.assert(_ == 4) catch { case e: Exception => () }
+      }.assert(_ == 4)
       runner.report().results.head.result
     }.assert {
-      case FailsAt(_, _, _) => true
+      case FailsAt(_, _) => true
       case _ => false
     }
     
@@ -49,10 +49,37 @@ object Main extends Tests {
         throw new Exception()
         r == 4
       }
+      
       runner.report().results.head.result
     }.assert {
-      case FailsAt(_, _, _) => true
-      case _                => false
+      case FailsAt(_, _) => true
+      case _             => false
+    }
+
+    test("repetition fails on nth attempt") {
+      val runner = new Runner()
+      for(i <- 1 to 10) runner("integers are less than six")(i).assert(_ < 6)
+      runner.report().results.head.result
+    }.assert {
+      case FailsAt(_, 6) => true
+      case x => false
+    }
+    
+    test("repetition captures failed value") {
+      val runner = new Runner()
+      for(i <- 1 to 10) runner("integers are less than six", i = i)(i).assert(_ < 6)
+      runner.report().results.head.result
+    }.assert {
+      case FailsAt(Fail(map), _) if map("i") == "6" => true
+      case x => false
+    }
+    
+    case class Person(name: String, age: Int)
+
+    Generate.stream[Person].take(1000).foreach { person =>
+      test("all persons have sane ages", person = person.toString) {
+        person.age
+      }.assert { age => age >= 0 && age < 112 }
     }
   }
 }
