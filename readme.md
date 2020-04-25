@@ -165,10 +165,15 @@ A binary will be made available on Maven Central.
 
 ## Contributing
 
-Contributors to Probably are welcome and encouraged. New contributors may like to look for issues marked <a href="https://github.com/propensive/probably/labels/good%20first%20issue"><img alt="label: good first issue" src="https://img.shields.io/badge/-good%20first%20issue-67b6d0.svg" valign="middle"></a>
+Contributors to Probably are welcome and encouraged. New contributors may like to look for issues marked
+<a href="https://github.com/propensive/probably/labels/good%20first%20issue"><img alt="label: good first issue"
+src="https://img.shields.io/badge/-good%20first%20issue-67b6d0.svg" valign="middle"></a>.
 
-Contributors who follow the instructions in the
-The [Contributing Guide](/contributing.md) exists to make this process easier.
+We suggest that all contributors read the [Contributing Guide](/contributing.md) to make the process of
+contributing to Probably easier.
+
+Please __do not__ contact project maintainers privately with questions, as other users cannot then benefit from
+the answers.
 
 ## Author
 
@@ -179,4 +184,5 @@ training is available from [Propensive O&Uuml;](https://propensive.com/).
 
 ## License
 
-Probably is made available under the [Apache 2.0 License](/license.md).
+Probably is copyright &copy; 2017-20 Jon Pretty & Propensive O&Uuml;, and is made available under the
+[Apache 2.0 License](/license.md).
