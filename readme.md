@@ -1,11 +1,10 @@
-<a href="https://furore.dev/propensive/probably"><img src="/doc/images/furore.png" style="vertical-align:middle" valign="middle"></a>&nbsp;<a href="https://furore.dev/propensive/probably">__Develop Probably with Fury__ </a>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="https://riot.im/app/#/room/#propensive.probably:matrix.org"><img src="/doc/images/riot.png" style="vertical-arign:middle" valign="middle"></a>&nbsp;<a href="https://riot.im/app/#/room/#propensive.probably:matrix.org">__Discuss Probably on Riot__</a>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="https://search.maven.org/search?q=g:com.propensive%20AND%20a:probably_2.12"><img src="/doc/images/maven.png" style="vertical-arign:middle" valign="middle"></a>&nbsp;<a href="https://search.maven.org/search?q=g:com.propensive%20AND%20a:probably_2.12">__Get Probably from Maven Central__</a>
+<a href="https://furore.dev/propensive/probably"><img src="/doc/images/furore.png" style="vertical-align:middle" valign="middle"></a>&nbsp;<a href="https://furore.dev/propensive/probably">__Develop Probably with Fury__ </a>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="https://riot.im/app/#/room/#propensive.probably:matrix.org"><img src="/doc/images/riot.png" style="vertical-arign:middle" valign="middle"></a>&nbsp;<a href="https://riot.im/app/#/room/#propensive.probably:matrix.org">__Discuss Probably on Riot__</a>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="https://search.maven.org/search?q=g:com.propensive%20AND%20a:probably_2.12"><img src="/doc/images/mavencentral.png" style="vertical-arign:middle" valign="middle"></a>&nbsp;<a href="https://search.maven.org/search?q=g:com.propensive%20AND%20a:probably_2.12">__Get Probably from Maven Central__</a>
 
 <img src="/doc/images/github.png" valign="middle">
 
 # Probably
 
-__Probably__ is a testing library designed to unintrusively provide test recording and reporting capabilities to any codebase, regardless of the users&rsquo; choices of libraries or programming paradigms. __Probably__ can define and run unit tests and property tests. Its syntax is simple and unexciting, and its execution model has zero magic: it
-´s the same as for any other program.
+__Probably__ is a testing library designed to unintrusively provide test recording and reporting capabilities to any codebase, regardless of the users&rsquo; choices of libraries or programming paradigms. __Probably__ can define and run unit tests and property tests. Its syntax is simple and unexciting, and its execution model has zero magic: it&rsquo;s the same as for any other program.
 
 ## Features
 
@@ -155,7 +154,7 @@ A binary will be made available on Maven Central.
 
 ## Contributing
 
-Contributors to Probably are welcome and encouraged. New contributors may like to look for issues marked [![label: good first issue](https://img.shields.io/badge/-good%20first%20issue-67b6d0.svg)](https://github.com/propensive/github/labels/good%20first%20issue).
+Contributors to Probably are welcome and encouraged. New contributors may like to look for issues marked <a href="https://github.com/propensive/probably/labels/good%20first%20issue"><img alt="label: good first issue" src="https://img.shields.io/badge/-good%20first%20issue-67b6d0.svg" valign="middle"></a>
 
 Contributors who follow the instructions in the
 The [Contributing Guide](/contributing.md) exists to make this process easier.
