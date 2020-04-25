@@ -10,27 +10,33 @@ abstract class Tests() {
     test.setOnly(args.to[Set])
     run()
     val report = test.report()
-    val table = Tabulation[Summary](
-      Heading("", _.outcome match {
-        case Passed =>
-          Ansi.Color.green(Ansi.bold(Ansi.reverse(" ✓ ")))
-        case FailsAt(Fail(map), n) =>
-          Ansi.Color.red(Ansi.bold(Ansi.reverse(" ✗ ")))
-        case FailsAt(ThrowsInCheck(exception, map), n) =>
-          Ansi.Color.cyan(Ansi.bold(Ansi.reverse(" ? ")))
-        case FailsAt(Throws(exception, map), 0) =>
-          Ansi.Color.magenta(Ansi.bold(Ansi.reverse(" ! ")))
-        case FailsAt(_, n) =>
-          Ansi.Color.yellow(Ansi.bold(Ansi.reverse(" ± ")))
-      }),
-      Heading("Hash", _.name.digest[Sha256].encoded[Hex].take(6).toLowerCase),
-      Heading("Test", _.name),
-      Heading("Count", _.count),
-      Heading("Min", _.min),
-      Heading("Avg", _.avg),
-      Heading("Max", _.max),
-      Heading("Debug", _.outcome.debug)
-    )
+    val simple = report.results.forall(_.count == 1)
+
+    val status = Heading[Summary, String]("", _.outcome match {
+      case Passed =>
+        Ansi.Color.green(Ansi.bold(Ansi.reverse(" ✓ ")))
+      case FailsAt(Fail(map), n) =>
+        Ansi.Color.red(Ansi.bold(Ansi.reverse(" ✗ ")))
+      case FailsAt(ThrowsInCheck(exception, map), n) =>
+        Ansi.Color.cyan(Ansi.bold(Ansi.reverse(" ? ")))
+      case FailsAt(Throws(exception, map), 0) =>
+        Ansi.Color.magenta(Ansi.bold(Ansi.reverse(" ! ")))
+      case FailsAt(_, n) =>
+        Ansi.Color.yellow(Ansi.bold(Ansi.reverse(" ± ")))
+    })
+
+    val hash = Heading[Summary, String]("Hash", _.name.digest[Sha256].encoded[Hex].take(6).toLowerCase)
+    val name = Heading[Summary, String]("Test", _.name)
+    val count = Heading[Summary, Int]("Count", _.count)
+    val min = Heading[Summary, Double]("Min", _.min)
+    val avg = Heading[Summary, Double](if(simple) "Time" else "Avg", _.avg)
+    val max = Heading[Summary, Double]("Max", _.max)
+    val debug = Heading[Summary, String]("Debug", _.outcome.debug)
+    
+    val table =
+      if(simple) Tabulation[Summary](status, hash, name, avg, debug)
+      else Tabulation[Summary](status, hash, name, count, min, avg, max, debug)
+
     table.tabulate(100, report.results).foreach(println)
     val passed = report.results.count(_.outcome == Passed)
     val total = report.results.size

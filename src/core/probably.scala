@@ -147,9 +147,9 @@ object Generate {
 }
 
 case class Summary(name: String, count: Int, tmin: Long, ttot: Long, tmax: Long, outcome: Outcome) {
-  def avg: Double = ttot.toDouble/count
-  def min: Double = tmin/1000.0
-  def max: Double = tmax/1000.0
+  def avg: Double = ttot.toDouble/count/1000.0
+  def min: Double = tmin.toDouble/1000.0
+  def max: Double = tmax.toDouble/1000.0
   
   def append(test: String, duration: Long, datapoint: Datapoint): Summary =
     Summary(name, count + 1, tmin min duration, ttot + duration, tmax max duration, outcome match {
