@@ -10,9 +10,9 @@ abstract class Tests() {
     test.setOnly(args.to[Set])
     run()
     val report = test.report()
-    val table = Tabulation[TestSummary](
-      Heading("", _.result match {
-        case Pass =>
+    val table = Tabulation[Summary](
+      Heading("", _.outcome match {
+        case Passed =>
           Ansi.Color.green(Ansi.bold(Ansi.reverse(" ✓ ")))
         case FailsAt(Fail(map), n) =>
           Ansi.Color.red(Ansi.bold(Ansi.reverse(" ✗ ")))
@@ -29,10 +29,10 @@ abstract class Tests() {
       Heading("Min", _.min),
       Heading("Avg", _.avg),
       Heading("Max", _.max),
-      Heading("Debug", _.result.debug)
+      Heading("Debug", _.outcome.debug)
     )
     table.tabulate(100, report.results).foreach(println)
-    val passed = report.results.count(_.result == Pass)
+    val passed = report.results.count(_.outcome == Passed)
     val total = report.results.size
     val failed = total - passed
     println(Ansi.bold(s"Pass: ${passed}   Fail: ${failed}   Total: ${total}"))

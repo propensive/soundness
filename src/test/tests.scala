@@ -23,13 +23,13 @@ object Main extends Tests {
       val runner = new Runner()
       runner("failing") { 2 + 2 }.assert(_ == 5)
       runner.report()
-    }.assert(_.results.head.result.failed)
+    }.assert(_.results.head.outcome.failed)
     
     test("tests can succeed") {
       val runner = new Runner()
       runner("failing") { 2 + 2 }.assert(_ == 4)
       runner.report()
-    }.assert(_.results.head.result.passed)
+    }.assert(_.results.head.outcome.passed)
     
     test("tests can throw an exception") {
       val runner = new Runner()
@@ -37,7 +37,7 @@ object Main extends Tests {
         throw new Exception()
         4
       }.assert(_ == 4)
-      runner.report().results.head.result
+      runner.report().results.head.outcome
     }.assert {
       case FailsAt(_, _) => true
       case _ => false
@@ -50,7 +50,7 @@ object Main extends Tests {
         r == 4
       }
       
-      runner.report().results.head.result
+      runner.report().results.head.outcome
     }.assert {
       case FailsAt(_, _) => true
       case _             => false
@@ -59,7 +59,7 @@ object Main extends Tests {
     test("repetition fails on nth attempt") {
       val runner = new Runner()
       for(i <- 1 to 10) runner("integers are less than six")(i).assert(_ < 6)
-      runner.report().results.head.result
+      runner.report().results.head.outcome
     }.assert {
       case FailsAt(_, 6) => true
       case x => false
@@ -68,18 +68,10 @@ object Main extends Tests {
     test("repetition captures failed value") {
       val runner = new Runner()
       for(i <- 1 to 10) runner("integers are less than six", i = i)(i).assert(_ < 6)
-      runner.report().results.head.result
+      runner.report().results.head.outcome
     }.assert {
       case FailsAt(Fail(map), _) if map("i") == "6" => true
       case x => false
-    }
-    
-    case class Person(name: String, age: Int)
-
-    Generate.stream[Person].take(1000).foreach { person =>
-      test("all persons have sane ages", person = person.toString) {
-        person.age
-      }.assert { age => age >= 0 && age < 112 }
     }
   }
 }

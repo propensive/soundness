@@ -9,27 +9,23 @@ import scala.util.control.NonFatal
 import language.dynamics
 import language.experimental.macros
 
-sealed abstract class TestResult(val passed: Boolean) {
+sealed abstract class Outcome(val passed: Boolean) {
   def failed: Boolean = !passed
-  def debug: String
-}
-
-sealed trait TestStatus { def map: Map[String, String] }
-
-case class FailsAt(status: TestStatus, count: Int) extends TestResult(false) {
-  def debug: String = status.map.map { case (k, v) => s"$k=$v" }.mkString(" ")
-}
-
-case object Pass extends TestResult(true) with TestStatus {
-  def map: Map[String, String] = Map()
   def debug: String = ""
 }
 
-case class Fail(map: Map[String, String]) extends TestStatus
+case class FailsAt(datapoint: Datapoint, count: Int) extends Outcome(false) {
+  override def debug: String = datapoint.map.map { case (k, v) => s"$k=$v" }.mkString(" ")
+}
 
-case class Throws(exception: Throwable, map: Map[String, String]) extends TestStatus
+case object Passed extends Outcome(true)
 
-case class ThrowsInCheck(exception: Exception, map: Map[String, String]) extends TestStatus
+sealed abstract class Datapoint(val map: Map[String, String])
+case object Pass extends Datapoint(Map())
+
+case class Fail(failMap: Map[String, String]) extends Datapoint(failMap)
+case class Throws(exception: Throwable, throwMap: Map[String, String]) extends Datapoint(throwMap)
+case class ThrowsInCheck(exception: Exception, throwMap: Map[String, String]) extends Datapoint(throwMap)
 
 object Show {
   implicit val int: Show[Int] = _.toString
@@ -76,56 +72,32 @@ class Runner() extends Dynamic {
     
     def check(predicate: Type => Boolean): Type = {
       val t0 = System.currentTimeMillis()
-      val result = Try(action())
+      val value = Try(action())
       val time = System.currentTimeMillis() - t0
 
-      result match {
+      value match {
         case Success(value) =>
-          val outcome = try {
-            if(predicate(value)) Pass else Fail(map)
-          } catch { case e: Exception => ThrowsInCheck(e, map) }
-          record(this, Point(time, outcome))
+          val datapoint: Datapoint =
+            try(if(predicate(value)) Pass else Fail(map)) catch { case e: Exception => ThrowsInCheck(e, map) }
+
+          record(this, time, datapoint)
           value
         case Failure(exception) =>
-          record(this, Point(time, Throws(exception, map)))
+          record(this, time, Throws(exception, map))
           throw exception
       }
     }
   }
 
-  def report(): Report = synchronized {
-    Report { results.to[List].map { case (name, points) =>
-      var result: TestResult = Pass
-      var total: Long = 0L
-      var min: Long = Long.MaxValue
-      var max: Long = Long.MinValue
-      var count: Int = 0
+  def report(): Report = Report(results.values.to[List])
 
-      points.reverse.foreach { point =>
-        count += 1
-        total += point.duration
-        if(point.duration > max) max = point.duration
-        if(point.duration < min) min = point.duration
-        result = result match {
-          case Pass => point.status match {
-            case Pass => Pass
-            case fail => FailsAt(fail, count)
-          }
-          case failed => failed
-        }
-      }
-
-      TestSummary(name, count, min/1000.0, (total/1000.0)/count, max/1000.0, result)
-    } }
-  }
-
-  protected def record(test: Test, point: Point): Unit = {
-    synchronized(results = results.updated(test.name, point :: results(test.name)))
+  protected def record(test: Test, duration: Long, datapoint: Datapoint): Unit = synchronized {
+    results = results.updated(test.name, results(test.name).append(test.name, duration, datapoint))
   }
   
   @volatile
-  protected var results: Map[String, List[Point]] =
-    ListMap[String, List[Point]]().withDefault { _ => List() }
+  protected var results: Map[String, Summary] =
+    ListMap[String, Summary]().withDefault(Summary(_, 0, Int.MaxValue, 0L, Int.MinValue, Passed))
 }
 
 case class Seed(value: Long) {
@@ -174,6 +146,19 @@ object Generate {
     Stream.from(0).map(arbitrary(seed, _))
 }
 
-case class Point(duration: Long, status: TestStatus)
-case class TestSummary(name: String, count: Int, min: Double, avg: Double, max: Double, result: TestResult)
-case class Report(results: List[TestSummary])
+case class Summary(name: String, count: Int, tmin: Long, ttot: Long, tmax: Long, outcome: Outcome) {
+  def avg: Double = ttot.toDouble/count
+  def min: Double = tmin/1000.0
+  def max: Double = tmax/1000.0
+  
+  def append(test: String, duration: Long, datapoint: Datapoint): Summary =
+    Summary(name, count + 1, tmin min duration, ttot + duration, tmax max duration, outcome match {
+      case FailsAt(dp, c) => FailsAt(dp, c)
+      case Passed         => datapoint match {
+        case Pass           => Passed
+        case other          => FailsAt(other, count + 1)
+      }
+    })
+}
+
+case class Report(results: List[Summary])
