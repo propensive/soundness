@@ -1,4 +1,4 @@
-<a href="https://furore.dev/propensive/probably"><img src="/doc/images/furore.png" style="vertical-align:middle" valign="middle"></a>&nbsp;<a href="https://furore.dev/propensive/probably"> __Develop Probably with Fury__ </a>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="https://riot.im/app/#/room/#propensive.probably:matrix.org"><img src="/doc/images/riot.png" style="vertical-arign:middle" valign="middle"></a>&nbsp;<a href="https://riot.im/app/#/room/#propensive.probably:matrix.org"> __Discuss Probably on Riot__</a>
+<a href="https://furore.dev/propensive/probably"><img src="/doc/images/furore.png" style="vertical-align:middle" valign="middle"></a>&nbsp;<a href="https://furore.dev/propensive/probably">__Develop Probably with Fury__ </a>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="https://riot.im/app/#/room/#propensive.probably:matrix.org"><img src="/doc/images/riot.png" style="vertical-arign:middle" valign="middle"></a>&nbsp;<a href="https://riot.im/app/#/room/#propensive.probably:matrix.org">__Discuss Probably on Riot__</a>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="https://search.maven.org/search?q=g:com.propensive%20AND%20a:probably_2.12"><img src="/doc/images/maven.png" style="vertical-arign:middle" valign="middle"></a>&nbsp;<a href="https://search.maven.org/search?q=g:com.propensive%20AND%20a:probably_2.12">__Get Probably from Maven Central__</a>
 
 <img src="/doc/images/github.png" valign="middle">
 
@@ -53,6 +53,7 @@ It is important to note that a test can be defined anywhere, such as,
 - in the request handler on a web server
 - in a pattern extractor (`unapply` method)
 - inside an actor
+- in the Scala REPL
 - as one branch of a case clause
 - nested inside another test
 
@@ -67,6 +68,33 @@ state do not apply. The `Runner` has one read-only method, `report()`, which wil
 the recorded test results. Reports may be produced many times, but normally `report()` is called just once, at
 the end. This conscious and careful compromise in functional purity buys convenience: integration of tests does
 not impose constraints on new code, or require non-local changes to existing code.
+
+### Parameterized tests
+
+As tests may appear anywhere, they are easy to parameterize. We could, for example, rewrite the test above like
+so,
+```
+def runTest(x: Int): Unit =
+  test("the sum of two identical numbers is divisible by two") {
+    x + x
+  }.assert(_%2 == 0)
+
+runTest(2)
+runTest(50)
+runTest(65536)
+```
+
+However, if the test were to fail, it would be useful to know what input caused it to fail. Any number of inputs
+can be logged by including them as additional named parameters after the test name, like this:
+```
+def runTest(x: Int): Unit =
+  test("the sum of two identical numbers is divisible by two", input = x) {
+    x + x
+  }.assert(_%2 == 0)
+```
+
+The choice of the parameter name `input` is the user&rsquo;s choice: any name that is a valid identifier may be
+chosen.
 
 ### Property-based testing
 
@@ -127,13 +155,17 @@ A binary will be made available on Maven Central.
 
 ## Contributing
 
-Contributors to Probably are welcome and encouraged. Contributors who follow the instructions in the
-[Contributing Guide](/contributing.md) can expect to receive support from the author.
+Contributors to Probably are welcome and encouraged. New contributors may like to look for issues marked [![label: good first issue](https://img.shields.io/badge/-good%20first%20issue-67b6d0.svg)](https://github.com/propensive/github/labels/good%20first%20issue).
+
+Contributors who follow the instructions in the
+The [Contributing Guide](/contributing.md) exists to make this process easier.
 
 ## Author
 
 Probably was designed and developed by [Jon Pretty](https://twitter.com/propensive), and commercial support and
 training is available from [Propensive O&Uuml;](https://propensive.com/).
+
+
 
 ## License
 

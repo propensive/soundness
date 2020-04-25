@@ -33,6 +33,7 @@ It is important to note that a test can be defined anywhere, such as,
 - in the request handler on a web server
 - in a pattern extractor (`unapply` method)
 - inside an actor
+- in the Scala REPL
 - as one branch of a case clause
 - nested inside another test
 
@@ -48,7 +49,34 @@ the recorded test results. Reports may be produced many times, but normally `rep
 the end. This conscious and careful compromise in functional purity buys convenience: integration of tests does
 not impose constraints on new code, or require non-local changes to existing code.
 
-## Property-based testing
+### Parameterized tests
+
+As tests may appear anywhere, they are easy to parameterize. We could, for example, rewrite the test above like
+so,
+```
+def runTest(x: Int): Unit =
+  test("the sum of two identical numbers is divisible by two") {
+    x + x
+  }.assert(_%2 == 0)
+
+runTest(2)
+runTest(50)
+runTest(65536)
+```
+
+However, if the test were to fail, it would be useful to know what input caused it to fail. Any number of inputs
+can be logged by including them as additional named parameters after the test name, like this:
+```
+def runTest(x: Int): Unit =
+  test("the sum of two identical numbers is divisible by two", input = x) {
+    x + x
+  }.assert(_%2 == 0)
+```
+
+The choice of the parameter name `input` is the user&rsquo;s choice: any name that is a valid identifier may be
+chosen.
+
+### Property-based testing
 
 The ability to run the same test multiple times with different parameters suggests an obvious approach to
 property-based testing: to run the same test over and over again with a stream of different inputs. _Probably_
@@ -68,12 +96,12 @@ Generate.stream[Person](1000).foreach { person =>
 
 For a given `Seed`, the pseudorandom data generated will always be deterministic and hence repeatable.
 
-## Command-line Interface
+### Command-line Interface
 
 _Probably_ comes with a simple CLI runner for running tests through the standard shell interface.
 
 
-## Test Expression
+### Test Expression
 
 _Probably_ provides a second way of defining a test: as an expression. For example,
 ```scala
