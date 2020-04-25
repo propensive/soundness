@@ -25,7 +25,7 @@ package object probably {
             td(summary.min.toString),
             td(summary.avg.toString),
             td(summary.max.toString),
-            td(summary.result.debug)
+            td(summary.outcome.debug)
           )
         }
       )
