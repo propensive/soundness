@@ -7,7 +7,7 @@ abstract class Tests() {
   def run(): Unit
   
   final def main(args: Array[String]): Unit = {
-    test.setOnly(args.to[Set])
+    test.setTests(args.map(TestId(_)).to[Set])
     run()
     val report = test.report()
     val simple = report.results.forall(_.count == 1)
@@ -46,12 +46,4 @@ abstract class Tests() {
   }
 }
 
-object test extends Runner {
-
-  def digest(test: Test): String = test.name.digest[Sha256].encoded[Hex].take(6).toLowerCase
-
-  private var testsToRun: Set[String] = Set()
-  def setOnly(only: Set[String]) = testsToRun = only
-
-  override def only(test: Test): Boolean = testsToRun.isEmpty || testsToRun.contains(digest(test))
-}
+object test extends Runner

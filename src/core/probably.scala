@@ -1,6 +1,7 @@
 package probably
 
 import magnolia._
+import gastronomy._
 
 import scala.util._
 import scala.collection.immutable.ListMap
@@ -45,9 +46,13 @@ object Showable {
 
 case class Showable[T](value: T, show: Show[T]) { def apply(): String = show.show(value) }
 
-class Runner() extends Dynamic {
+case class TestId private[probably](str: String)
 
-  def only(test: Test): Boolean = true
+class Runner() extends Dynamic { thisRunner =>
+
+  private var specifiedTests: Set[TestId] = Set()
+  final def setTests(tests: Set[TestId]): Unit = specifiedTests = tests
+  final def runTest(testId: TestId): Boolean = specifiedTests.isEmpty || specifiedTests(testId)
 
   def applyDynamic[T](method: String)(name: String)(fn: => T): Test { type Type = T } =
     applyDynamicNamed[T]("")("" -> name)(fn)
@@ -62,13 +67,20 @@ class Runner() extends Dynamic {
       def action(): T = fn
     }
 
+  def suite(name: String)(fn: Runner => Unit): Unit = applyDynamic("")(name) {
+    val runner = new Runner()
+    fn(runner)
+    runner.report()
+  }.assert(_.results.forall(_.outcome.passed))
+
   abstract class Test(val name: String, map: => Map[String, String]) {
     type Type
     
+    def id: TestId = TestId(name.digest[Sha256].encoded[Hex].take(6).toLowerCase)
     def action(): Type
     
     def assert(predicate: Type => Boolean): Unit =
-      try if(only(this)) check(predicate) catch { case NonFatal(e) => () }
+      try if(runTest(id)) check(predicate) catch { case NonFatal(e) => () }
     
     def check(predicate: Type => Boolean): Type = {
       val t0 = System.currentTimeMillis()
@@ -115,7 +127,6 @@ object Arbitrary {
     ctx.parameters.zip(spread(seed, n, ctx.parameters.size)).zip(seed.stream(ctx.parameters.size)).map {
       case ((param, i), s) => param.typeclass(s, i)
     } }
-
 
   val interestingInts = Vector(0, 1, -1, 2, -2, 42, Int.MaxValue, Int.MinValue, Int.MaxValue - 1,
       Int.MinValue + 1)
