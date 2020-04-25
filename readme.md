@@ -1,4 +1,4 @@
-<a href="https://furore.dev/propensive/probably"><img src="/doc/images/furore.png" style="vertical-align:middle" valign="middle"></a>&nbsp;<a href="https://furore.dev/propensive/probably">__Develop Probably with Fury__ </a>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="https://riot.im/app/#/room/#propensive.probably:matrix.org"><img src="/doc/images/riot.png" style="vertical-arign:middle" valign="middle"></a>&nbsp;<a href="https://riot.im/app/#/room/#propensive.probably:matrix.org">__Discuss Probably on Riot__</a>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="https://search.maven.org/search?q=g:com.propensive%20AND%20a:probably_2.12"><img src="/doc/images/mavencentral.png" style="vertical-arign:middle" valign="middle"></a>&nbsp;<a href="https://search.maven.org/search?q=g:com.propensive%20AND%20a:probably_2.12">__Get Probably from Maven Central__</a>
+<a href="https://furore.dev/propensive/probably"><img src="/doc/images/furore.png" style="vertical-align:middle" valign="middle"></a>&nbsp;&nbsp;<a href="https://furore.dev/propensive/probably">__Develop Probably with Fury__ </a>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="https://riot.im/app/#/room/#propensive.probably:matrix.org"><img src="/doc/images/riotim.png" style="vertical-arign:middle" valign="middle"></a>&nbsp;&nbsp;<a href="https://riot.im/app/#/room/#propensive.probably:matrix.org">__Discuss Probably on Riot__</a>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="https://search.maven.org/search?q=g:com.propensive%20AND%20a:probably_2.12"><img src="/doc/images/mavencentral.png" style="vertical-arign:middle" valign="middle"></a>&nbsp;&nbsp;<a href="https://search.maven.org/search?q=g:com.propensive%20AND%20a:probably_2.12">__Get Probably from Maven Central__</a>
 
 <img src="/doc/images/github.png" valign="middle">
 
@@ -99,7 +99,8 @@ def runTest(x: Int): Unit =
 ```
 
 The choice of the parameter name `input` is the user&rsquo;s choice: any name that is a valid identifier may be
-chosen.
+chosen. The output from running the above tests will be displayed like this:
+![Screenshot of test results showing input=2147483647](doc/images/failure.png)
 
 ### Property-based testing
 

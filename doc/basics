@@ -81,7 +81,7 @@ def runTest(x: Int): Unit =
 
 The choice of the parameter name `input` is the user&rsquo;s choice: any name that is a valid identifier may be
 chosen. The output from running the above tests will be displayed like this:
-![Screenshot of test results showing input=2147483647](images/failure.png)
+![Screenshot of test results showing input=2147483647](doc/images/failure.png)
 
 ### Property-based testing
 
