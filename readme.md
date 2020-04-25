@@ -24,7 +24,9 @@ Although it is possible to construct and use different `Runner`s, the most typic
 singleton `Runner` called `test`, because for most purposes only one will be required. Defining a test is
 simple. For example,
 ```scala
-test("the sum of two identical numbers is divisible by two") {
+import probably._
+
+test("the sum of two identical integers is divisible by two") {
   val x: Int = 7
   x + x
 }.assert(_%2 == 0)
@@ -73,23 +75,27 @@ not impose constraints on new code, or require non-local changes to existing cod
 As tests may appear anywhere, they are easy to parameterize. We could, for example, rewrite the test above like
 so,
 ```
+import probably._
+
 def runTest(x: Int): Unit =
-  test("the sum of two identical numbers is divisible by two") {
-    x + x
-  }.assert(_%2 == 0)
+  test("the sum of three identical integers is divisible by 3") {
+    x + x + x
+  }.assert(_%3 == 0)
 
 runTest(2)
 runTest(50)
-runTest(65536)
+runTest(Int.MaxValue)
 ```
 
 However, if the test were to fail, it would be useful to know what input caused it to fail. Any number of inputs
 can be logged by including them as additional named parameters after the test name, like this:
 ```
+import probably._
+
 def runTest(x: Int): Unit =
-  test("the sum of two identical numbers is divisible by two", input = x) {
-    x + x
-  }.assert(_%2 == 0)
+  test("the sum of three identical integers is divisible by 3", input = x) {
+    x + x + x
+  }.assert(_%3 == 0)
 ```
 
 The choice of the parameter name `input` is the user&rsquo;s choice: any name that is a valid identifier may be
@@ -104,6 +110,8 @@ types, and will derive generators on-demand for case-class and sealed-trait type
 each of the parameters.
 
 ```scala
+import probably._
+
 case class Person(name: String, age: Int)
 
 Generate.stream[Person](1000).foreach { person =>
@@ -124,6 +132,8 @@ _Probably_ comes with a simple CLI runner for running tests through the standard
 
 _Probably_ provides a second way of defining a test: as an expression. For example,
 ```scala
+import probably._
+
 test("check the backup exists") {
   new File("data.bak")
 }.check(_.exists).setReadOnly()
