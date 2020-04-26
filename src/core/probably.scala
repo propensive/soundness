@@ -62,12 +62,10 @@ object Showable {
 
 case class Showable[T](value: T, show: Show[T]) { def apply(): String = show.show(value) }
 
-case class TestId private[probably](str: String)
+case class TestId private[probably](value: String)
 
-class Runner() extends Dynamic { thisRunner =>
+class Runner(specifiedTests: Set[TestId] = Set()) extends Dynamic {
 
-  private var specifiedTests: Set[TestId] = Set()
-  final def setTests(tests: Set[TestId]): Unit = specifiedTests = tests
   final def runTest(testId: TestId): Boolean = specifiedTests.isEmpty || specifiedTests(testId)
 
   def applyDynamic[T](method: String)(name: String)(fn: => T): Test { type Type = T } =

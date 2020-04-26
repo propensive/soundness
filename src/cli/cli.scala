@@ -20,11 +20,11 @@ import escritoire._
 import gastronomy._
 
 abstract class Tests() {
-  def run(): Unit
+  def run(test: Runner): Unit
   
   final def main(args: Array[String]): Unit = {
-    test.setTests(args.map(TestId(_)).to[Set])
-    run()
+    val test = new Runner(args.map(TestId(_)).to[Set])
+    run(test)
     val report = test.report()
     val simple = report.results.forall(_.count == 1)
 
@@ -61,5 +61,3 @@ abstract class Tests() {
     System.exit(if(total == passed) 0 else 1)
   }
 }
-
-object test extends Runner

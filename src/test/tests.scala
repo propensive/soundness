@@ -20,7 +20,7 @@ import probably._
 
 object Main extends Tests {
 
-  def run(): Unit = {
+  def run(test: Runner): Unit = {
     test("tests with the same name get grouped") {
       val runner = new Runner()
       runner("test") { 2 + 2 }.assert(_ == 4)
