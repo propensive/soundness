@@ -122,8 +122,10 @@ class Runner(specifiedTests: Set[TestId] = Set()) extends Dynamic {
   }
   
   @volatile
-  protected var results: Map[String, Summary] =
-    ListMap[String, Summary]().withDefault(Summary(_, 0, Int.MaxValue, 0L, Int.MinValue, Passed))
+  protected var results: Map[String, Summary] = ListMap[String, Summary]().withDefault { name =>
+    Summary(TestId(name.digest[Sha256].encoded[Hex].take(6).toLowerCase), name, 0, Int.MaxValue, 0L,
+        Int.MinValue, Passed)
+  }
 }
 
 case class Seed(value: Long) {
@@ -171,13 +173,13 @@ object Generate {
     Stream.from(0).map(arbitrary(seed, _))
 }
 
-case class Summary(name: String, count: Int, tmin: Long, ttot: Long, tmax: Long, outcome: Outcome) {
+case class Summary(id: TestId, name: String, count: Int, tmin: Long, ttot: Long, tmax: Long, outcome: Outcome) {
   def avg: Double = ttot.toDouble/count/1000.0
   def min: Double = tmin.toDouble/1000.0
   def max: Double = tmax.toDouble/1000.0
   
   def append(test: String, duration: Long, datapoint: Datapoint): Summary =
-    Summary(name, count + 1, tmin min duration, ttot + duration, tmax max duration, outcome match {
+    Summary(id, name, count + 1, tmin min duration, ttot + duration, tmax max duration, outcome match {
       case FailsAt(dp, c) => FailsAt(dp, c)
       case Passed         => datapoint match {
         case Pass           => Passed
