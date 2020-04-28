@@ -1,4 +1,4 @@
-<a href="https://furore.dev/propensive/probably"><img src="/doc/images/furore.png" style="vertical-align:middle" valign="middle"></a>&nbsp;&nbsp;<a href="https://furore.dev/propensive/probably">__Develop Probably with Fury__ </a>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="https://riot.im/app/#/room/#propensive.probably:matrix.org"><img src="/doc/images/riotim.png" style="vertical-arign:middle" valign="middle"></a>&nbsp;&nbsp;<a href="https://riot.im/app/#/room/#propensive.probably:matrix.org">__Discuss Probably on Riot__</a>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="https://search.maven.org/search?q=g:com.propensive%20AND%20a:probably_2.12"><img src="/doc/images/mavencentral.png" style="vertical-arign:middle" valign="middle"></a>&nbsp;&nbsp;<a href="https://search.maven.org/search?q=g:com.propensive%20AND%20a:probably_2.12">__Get Probably from Maven Central__</a>
+<a href="https://furore.dev/propensive/probably"><img src="/doc/images/furore.png" style="vertical-align:middle" valign="middle"></a>&nbsp;&nbsp;<a href="https://furore.dev/propensive/probably">__Develop with Fury__ </a>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="https://riot.im/app/#/room/#propensive.probably:matrix.org"><img src="/doc/images/riotim.png" style="vertical-arign:middle" valign="middle"></a>&nbsp;&nbsp;<a href="https://riot.im/app/#/room/#propensive.probably:matrix.org">__Discuss on Riot__</a>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="https://search.maven.org/search?q=g:com.propensive%20AND%20a:probably_2.12"><img src="/doc/images/mavencentral.png" style="vertical-arign:middle" valign="middle"></a>&nbsp;&nbsp;<a href="https://search.maven.org/search?q=g:com.propensive%20AND%20a:probably_2.12">__Download from Maven Central__</a>
 
 <img src="/doc/images/github.png" valign="middle">
 
@@ -149,6 +149,16 @@ This confers a few further differences with assertion tests:
 - exceptions thrown inside the body are not caught (but are recorded); exceptions in the check are still caught
 - test expressions cannot be skipped; their return value is necessary for execution to continue
 
+
+## Status
+
+Probably is classified as __fledgling__. Propensive defines the following five stability levels for open-source projects:
+
+- _embryonic_: for experimental or demonstrative purposes only, without guarantee of longevity
+- _fledgling_: of proven utility, seeking contributions, but liable to significant redesigns
+- _maturescent_: major design decisions broady settled, seeking probatory adoption and refinement of designs
+- _dependable_: production-ready, subject to controlled ongoing maintenance and enhancement; tagged as version `1.0` or later
+- _adamantine_: proven, reliable and production-ready, with no further breaking changes ever anticipated
 
 ## Availability
 

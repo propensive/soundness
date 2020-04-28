@@ -19,6 +19,15 @@ package probably
 import escritoire._
 import gastronomy._
 
+object Tests {
+  import Ansi.Color._
+  def ansi(symbol: Char, code: Ansi.Color) = code(Ansi.bold(Ansi.reverse(s" ${symbol} ")))
+
+  val statuses@List(pass, fail, checkThrows, throws, tailFail, mixed) =
+    List('✓' -> green, '✗' -> red, '?' -> cyan, '!' -> magenta, '±' -> blue, '#' -> yellow).map { case (s, c) =>
+        ansi(s, c) }
+}
+
 abstract class Tests() {
   def run(test: Runner): Unit
   
@@ -28,21 +37,18 @@ abstract class Tests() {
     val report = test.report()
     val simple = report.results.forall(_.count == 1)
 
-    val status = Heading[Summary, String]("", _.outcome match {
-      case Passed =>
-        Ansi.Color.green(Ansi.bold(Ansi.reverse(" ✓ ")))
-      case FailsAt(Fail(map), n) =>
-        Ansi.Color.red(Ansi.bold(Ansi.reverse(" ✗ ")))
-      case FailsAt(ThrowsInCheck(exception, map), n) =>
-        Ansi.Color.cyan(Ansi.bold(Ansi.reverse(" ? ")))
-      case FailsAt(Throws(exception, map), 0) =>
-        Ansi.Color.magenta(Ansi.bold(Ansi.reverse(" ! ")))
-      case FailsAt(_, n) =>
-        Ansi.Color.yellow(Ansi.bold(Ansi.reverse(" ± ")))
-    })
+    implicit val showOutcome: AnsiShow[Outcome] = _ match {
+      case Passed                                    => Tests.pass
+      case FailsAt(Fail(map), 1)                     => Tests.fail
+      case FailsAt(ThrowsInCheck(exception, map), n) => Tests.checkThrows
+      case FailsAt(Throws(exception, map), 0)        => Tests.throws
+      case FailsAt(_, n)                             => Tests.tailFail
+      case Mixed                                     => Tests.mixed
+    }
 
+    val status = Heading[Summary, Outcome]("", _.outcome)
     val hash = Heading[Summary, String]("Hash", _.name.digest[Sha256].encoded[Hex].take(6).toLowerCase)
-    val name = Heading[Summary, String]("Test", _.name)
+    val name = Heading[Summary, String]("Test", s => s"${"  "*s.indent}${s.name}")
     val count = Heading[Summary, Int]("Count", _.count)
     val min = Heading[Summary, Double]("Min", _.min)
     val avg = Heading[Summary, Double](if(simple) "Time" else "Avg", _.avg)
@@ -57,7 +63,19 @@ abstract class Tests() {
     val passed = report.results.count(_.outcome == Passed)
     val total = report.results.size
     val failed = total - passed
+    
     println(Ansi.bold(s"Pass: ${passed}   Fail: ${failed}   Total: ${total}"))
+    println()
+
+    val legend = Tests.statuses.zip(List("Pass", "Fail", "Throws exception during check", "Throws exception",
+        "Fails sometimes", "Test suite partially fails")).map { case (status, description) =>
+      s"${status} ${description.padTo(32, ' ')}"
+    }.to[List]
+    
+    legend.take(3).zip(legend.drop(3)).map { case (left, right) => println((" "*2)+left+right) }
+    
+    println()
+
     System.exit(if(total == passed) 0 else 1)
   }
 }

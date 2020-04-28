@@ -36,6 +36,7 @@ case class FailsAt(datapoint: Datapoint, count: Int) extends Outcome(false) {
 }
 
 case object Passed extends Outcome(true)
+case object Mixed extends Outcome(false)
 
 sealed abstract class Datapoint(val map: Map[String, String])
 case object Pass extends Datapoint(Map())
@@ -81,11 +82,22 @@ class Runner(specifiedTests: Set[TestId] = Set()) extends Dynamic {
       def action(): T = fn
     }
 
-  def suite(name: String)(fn: Runner => Unit): Unit = applyDynamic("")(name) {
-    val runner = new Runner()
-    fn(runner)
-    runner.report()
-  }.assert(_.results.forall(_.outcome.passed))
+  def suite(name: String)(fn: Runner => Unit): Unit = {
+    val report = new Test(name, Map()) {
+      type Type = Report
+
+      def action(): Report = {
+        val runner = new Runner()
+        fn(runner)
+        runner.report()
+      }
+    }.check(_.results.forall(_.outcome.passed))
+
+    if(report.results.exists(_.outcome.passed) && report.results.exists(_.outcome.failed))
+      synchronized { results = results.updated(name, results(name).copy(outcome = Mixed)) }
+
+    report.results.foreach { result => record(result.copy(indent = result.indent + 1)) }
+  }
 
   abstract class Test(val name: String, map: => Map[String, String]) {
     type Type
@@ -103,9 +115,8 @@ class Runner(specifiedTests: Set[TestId] = Set()) extends Dynamic {
 
       value match {
         case Success(value) =>
-          val datapoint: Datapoint =
-            try(if(predicate(value)) Pass else Fail(map)) catch { case e: Exception => ThrowsInCheck(e, map) }
-
+          def handler: PartialFunction[Throwable, Datapoint] = { case e: Exception => ThrowsInCheck(e, map) }
+          val datapoint: Datapoint = try(if(predicate(value)) Pass else Fail(map)) catch handler
           record(this, time, datapoint)
           value
         case Failure(exception) =>
@@ -119,6 +130,10 @@ class Runner(specifiedTests: Set[TestId] = Set()) extends Dynamic {
 
   protected def record(test: Test, duration: Long, datapoint: Datapoint): Unit = synchronized {
     results = results.updated(test.name, results(test.name).append(test.name, duration, datapoint))
+  }
+
+  protected def record(summary: Summary) = synchronized {
+    results = results.updated(summary.name, summary)
   }
   
   @volatile
@@ -173,7 +188,14 @@ object Generate {
     Stream.from(0).map(arbitrary(seed, _))
 }
 
-case class Summary(id: TestId, name: String, count: Int, tmin: Long, ttot: Long, tmax: Long, outcome: Outcome) {
+case class Summary(id: TestId,
+                   name: String,
+                   count: Int,
+                   tmin: Long,
+                   ttot: Long,
+                   tmax: Long,
+                   outcome: Outcome,
+                   indent: Int = 0) {
   def avg: Double = ttot.toDouble/count/1000.0
   def min: Double = tmin.toDouble/1000.0
   def max: Double = tmax.toDouble/1000.0
