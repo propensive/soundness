@@ -1,0 +1,17 @@
+*.class
+*.log
+*.swp
+*.swo
+.bloop/
+.fury
+.idea
+*~
+**/#*
+**/.#*
+tmp/
+project
+target
+.bsp
+.metals/
+.*.bak
+.vscode/
