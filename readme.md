@@ -2,7 +2,7 @@
 
 <img src="/doc/images/github.png" valign="middle">
 
-![CI](https://github.com/propensive/probably/workflows/CI/badge.svg?branch=fury)
+![CI](https://github.com/propensive/probably/workflows/CI/badge.svg)
 
 # Probably
 
