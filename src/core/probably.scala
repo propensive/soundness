@@ -16,8 +16,7 @@
 */
 package probably
 
-import magnolia._
-import gastronomy._
+//import gastronomy._
 
 import scala.util._
 import scala.collection.immutable.ListMap
@@ -25,6 +24,8 @@ import scala.util.control.NonFatal
 
 import language.dynamics
 import language.experimental.macros
+
+import language.implicitConversions
 
 sealed abstract class Outcome(val passed: Boolean) {
   def failed: Boolean = !passed
@@ -47,7 +48,7 @@ case class ThrowsInCheck(exception: Exception, throwMap: Map[String, String]) ex
 
 object Show {
   implicit val int: Show[Int] = _.toString
-  implicit val string: Show[String] = identity
+  implicit val string: Show[String] = identity(_)
   implicit val boolean: Show[Boolean] = _.toString
   implicit val long: Show[Long] = _.toString
   implicit val byte: Show[Byte] = _.toString
@@ -77,7 +78,7 @@ class Runner(specifiedTests: Set[TestId] = Set()) extends Dynamic {
                        (name: (String, String), args: (String, Showable[_])*)
                        (fn: => T)
                        : Test { type Type = T } =
-    new Test(name._2, args.toMap.mapValues(_())) {
+    new Test(name._2, args.toMap.map { (k, v) => k -> v() }) {
       type Type = T
       def action(): T = fn
     }
@@ -126,7 +127,7 @@ class Runner(specifiedTests: Set[TestId] = Set()) extends Dynamic {
     }
   }
 
-  def report(): Report = Report(results.values.to[List])
+  def report(): Report = Report(results.values.to(List))
 
   protected def record(test: Test, duration: Long, datapoint: Datapoint): Unit = synchronized {
     results = results.updated(test.name, results(test.name).append(test.name, duration, datapoint))
@@ -154,10 +155,10 @@ case class Seed(value: Long) {
 object Arbitrary {
   type Typeclass[T] = Arbitrary[T]
 
-  def combine[T](ctx: CaseClass[Arbitrary, T]): Arbitrary[T] = (seed, n) => ctx.rawConstruct {
+  /*def combine[T](ctx: CaseClass[Arbitrary, T]): Arbitrary[T] = (seed, n) => ctx.rawConstruct {
     ctx.parameters.zip(spread(seed, n, ctx.parameters.size)).zip(seed.stream(ctx.parameters.size)).map {
       case ((param, i), s) => param.typeclass(s, i)
-    } }
+    } }*/
 
   val interestingInts = Vector(0, 1, -1, 2, -2, 42, Int.MaxValue, Int.MinValue, Int.MaxValue - 1,
       Int.MinValue + 1)
@@ -168,13 +169,11 @@ object Arbitrary {
   val interestingStrings = Vector("", "a", "z", "\n", "0", "_", "\"", "\'", " ", "abcdefghijklmnopqrstuvwxyz")
   implicit def string: Arbitrary[String] = (seed, n) => interestingStrings.lift(n).getOrElse {
     val chars = seed.stream(n).last.stream(10).map(_()).map(_.toByte).filter { c => c > 31 && c < 128 }
-    new String(chars.to[Array], "UTF-8")
+    new String(chars.to(Array), "UTF-8")
   }
 
-  implicit def gen[T]: Arbitrary[T] = macro Magnolia.gen[T]
-
   private def spread(seed: Seed, total: Int, count: Int): List[Int] = {
-    val sample = seed.stream(count).map(_.value.toDouble).map(math.abs(_)).to[List]
+    val sample = seed.stream(count).map(_.value.toDouble).map(math.abs(_)).to(List)
     sample.tails.foldLeft(List[Int]()) { case (acc, tail) => tail.headOption.fold(acc) { v =>
       (((v/(tail.sum))*(total - acc.sum)) + 0.5).toInt :: acc
     } }
