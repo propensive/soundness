@@ -99,6 +99,8 @@ class Runner(specifiedTests: Set[TestId] = Set()) extends Dynamic {
     report.results.foreach { result => record(result.copy(indent = result.indent + 1)) }
   }
 
+  def assert(name: String)(fn: => Boolean): Unit = applyDynamicNamed("")("" -> name)(fn).assert(identity)
+
   abstract class Test(val name: String, map: => Map[String, String]) {
     type Type
     

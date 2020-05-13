@@ -89,5 +89,9 @@ object Main extends Tests {
       case FailsAt(Fail(map), _) if map("i") == "6" => true
       case x => false
     }
+
+    test.assert("assertion-only test") {
+      1 + 1 == 2
+    }
   }
 }
