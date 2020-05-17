@@ -26,24 +26,24 @@ object Tests {
   val statuses@List(pass, fail, checkThrows, throws, tailFail, mixed) =
     List('✓' -> green, '✗' -> red, '?' -> cyan, '!' -> magenta, '±' -> blue, '#' -> yellow).map { case (s, c) =>
         ansi(s, c) }
-}
-
-abstract class Tests() {
-  def run(test: Runner): Unit
   
-  final def main(args: Array[String]): Unit = {
-    val test = new Runner(args.map(TestId(_)).to[Set])
-    run(test)
-    val report = test.report()
+  private val legend: List[String] = Tests.statuses.zip(List("Pass", "Fail", "Throws exception during check",
+      "Throws exception", "Fails sometimes", "Test suite partially fails")).map { case (status, description) =>
+    s"${status} ${description.padTo(32, ' ')}"
+  }.to[List]
+
+  val footer: String = legend.grouped(2).map(_.mkString("  ")).mkString("\n", "\n", "\n")
+  
+  def show(report: Report): String = {
     val simple = report.results.forall(_.count == 1)
 
     implicit val showOutcome: AnsiShow[Outcome] = _ match {
-      case Passed                                    => Tests.pass
-      case FailsAt(Fail(map), 1)                     => Tests.fail
-      case FailsAt(ThrowsInCheck(exception, map), n) => Tests.checkThrows
-      case FailsAt(Throws(exception, map), 0)        => Tests.throws
-      case FailsAt(_, n)                             => Tests.tailFail
-      case Mixed                                     => Tests.mixed
+      case Passed                                    => pass
+      case FailsAt(Fail(map), 1)                     => fail
+      case FailsAt(ThrowsInCheck(exception, map), n) => checkThrows
+      case FailsAt(Throws(exception, map), 0)        => throws
+      case FailsAt(_, n)                             => tailFail
+      case Mixed                                     => mixed
     }
 
     val status = Heading[Summary, Outcome]("", _.outcome)
@@ -59,23 +59,25 @@ abstract class Tests() {
       if(simple) Tabulation[Summary](status, hash, name, avg, debug)
       else Tabulation[Summary](status, hash, name, count, min, avg, max, debug)
 
-    table.tabulate(100, report.results).foreach(println)
-    val passed = report.results.count(_.outcome == Passed)
-    val total = report.results.size
-    val failed = total - passed
+    val resultsTable = table.tabulate(100, report.results).mkString("\n")
     
-    println(Ansi.bold(s"Pass: ${passed}   Fail: ${failed}   Total: ${total}"))
-    println()
+    val summary = Map("Passed" -> report.passed, "Failed" -> report.failed, "Total" -> report.total).map {
+      case (key, value) => s"${Ansi.bold(key)}: $value"
+    }.mkString("   ")
 
-    val legend = Tests.statuses.zip(List("Pass", "Fail", "Throws exception during check", "Throws exception",
-        "Fails sometimes", "Test suite partially fails")).map { case (status, description) =>
-      s"${status} ${description.padTo(32, ' ')}"
-    }.to[List]
-    
-    legend.take(3).zip(legend.drop(3)).map { case (left, right) => println((" "*2)+left+right) }
-    
-    println()
-
-    System.exit(if(total == passed) 0 else 1)
+    List(resultsTable, summary, Tests.footer).mkString("\n")
   }
+}
+
+abstract class Suite() {
+  def run(test: Runner): Unit
+  
+  final def main(args: Array[String]): Unit = {
+    val test = new Runner(args.map(TestId(_)).to[Set])
+    run(test)
+    val report = test.report()
+    println(Tests.show(report))
+    System.exit(if(report.total == report.passed) 0 else 1)
+  }
+
 }

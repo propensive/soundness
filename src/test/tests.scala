@@ -18,7 +18,7 @@ package probably.tests
 
 import probably._
 
-object Main extends Tests {
+object Main extends Suite() {
 
   def run(test: Runner): Unit = {
     test("tests with the same name get grouped") {
@@ -93,5 +93,21 @@ object Main extends Tests {
     test.assert("assertion-only test") {
       1 + 1 == 2
     }
+
+    test("time-only test") {
+      val runner = new Runner()
+      runner.time("wait for 100ms") {
+        Thread.sleep(100)
+      }
+      runner.report()
+    }.assert(_.results.head.ttot >= 100)
+
+    test("repetition test") {
+      val runner = new Runner()
+      for(i <- 1 to 100) runner("simple test") {
+        1 + 1
+      }.assert(_ == 2)
+      runner.report
+    }.assert(_.results.head.count == 100)
   }
 }
