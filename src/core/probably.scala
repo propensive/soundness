@@ -209,6 +209,7 @@ case class Summary(id: TestId,
         case Pass           => Passed
         case other          => FailsAt(other, count + 1)
       }
+      case Mixed          => FailsAt(datapoint, 0)
     })
 }
 
