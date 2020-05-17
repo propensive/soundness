@@ -1,0 +1,4 @@
+- hashing of simple and primitive Scala types
+- generically-derived digests for all case class and sealed trait types
+- supports SHA-256, SHA-1 and MD5 hash algorithms
+- encodes into Hex or BASE-64, or BASE-64 (URL) encodings

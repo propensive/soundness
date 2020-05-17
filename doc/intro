@@ -1,0 +1,3 @@
+Gastronomy is a simple library to provide cryptographic digests of Scala
+objects through a simple functional API, and present them in different
+encoded forms.

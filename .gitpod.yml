@@ -1,7 +1,0 @@
-image: openjdk:8
-vscode:
-  extensions:
-    - scala-lang.scala@0.3.8:wQBBM+lKILHBqOqlqW60xA==
-    - scalameta.metals@1.6.0:Yi5jjDJjIyozrOuZIWFt/g==
-tasks:
-  - command: source ./.setup.sh
