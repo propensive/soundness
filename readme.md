@@ -18,7 +18,7 @@ Gastronomy is a simple library to provide cryptographic digests of Scala objects
 
 ## Getting Started
 
-
+TBC
 
 
 ## Status
