@@ -2,8 +2,6 @@
 
 <img src="/doc/images/github.png" valign="middle">
 
-![CI](https://github.com/propensive/probably/workflows/CI/badge.svg)
-
 # Probably
 
 __Probably__ is a testing library designed to unintrusively provide test recording and reporting capabilities to any codebase, regardless of the users&rsquo; choices of libraries or programming paradigms. __Probably__ can define and run unit tests and property tests. Its syntax is simple and unexciting, and its execution model has zero magic: it&rsquo;s the same as for any other program.
@@ -130,6 +128,7 @@ For a given `Seed`, the pseudorandom data generated will always be deterministic
 
 _Probably_ comes with a simple CLI runner for running tests through the standard shell interface.
 
+### Skipping tests
 
 ### Test Expression
 
@@ -150,6 +149,29 @@ whether the test passes or fails, and execution continues.
 This confers a few further differences with assertion tests:
 - exceptions thrown inside the body are not caught (but are recorded); exceptions in the check are still caught
 - test expressions cannot be skipped; their return value is necessary for execution to continue
+
+### Test Suites
+
+A test suite is a convenient grouping of related tests, and can be launched from a runner (the value `test` in
+the following example) like so:
+```scala
+test.suite("integration tests") { test =>
+  test("end-to-end process") {
+    System.process()
+  }.assert(_.isSuccess)
+}
+```
+
+Like other tests, a suite has a name, and will be executed at the point it is defined, and like other tests, it
+will pass or fail (or, produce mixed results). Its body, however, is a lambda which introduces a new `Runner`
+instance which will be used to run the tests in the suite. By convention, the new `Runner` is also named `test`.
+This will shadow the outer one, which is usually the desired behavior.
+
+When the test suite completes, its results are aggregated into the report of the runner which spawned it. If you
+launched it using the CLI, the table of results will show the nested tests indented.
+
+The `Runner` introduced by the `suite` method is the same as any other `Runner`, so further test suites can be
+defined inside other test suites, making it possible to organise tests into a hierarchy.
 
 
 ## Status
