@@ -19,7 +19,9 @@ package probably
 import escritoire._
 import gastronomy._
 
-object Tests {
+import Runner._
+
+object Suite {
   import Ansi.Color._
   def ansi(symbol: Char, code: Ansi.Color) = code(Ansi.bold(Ansi.reverse(s" ${symbol} ")))
 
@@ -27,7 +29,7 @@ object Tests {
     List('✓' -> green, '✗' -> red, '?' -> cyan, '!' -> magenta, '±' -> blue, '#' -> yellow).map { case (s, c) =>
         ansi(s, c) }
   
-  private val legend: List[String] = Tests.statuses.zip(List("Pass", "Fail", "Throws exception during check",
+  private val legend: List[String] = statuses.zip(List("Pass", "Fail", "Throws exception during check",
       "Throws exception", "Fails sometimes", "Test suite partially fails")).map { case (status, description) =>
     s"${status} ${description.padTo(32, ' ')}"
   }.to[List]
@@ -65,7 +67,7 @@ object Tests {
       case (key, value) => s"${Ansi.bold(key)}: $value"
     }.mkString("   ")
 
-    List(resultsTable, summary, Tests.footer).mkString("\n")
+    List(resultsTable, summary, Suite.footer).mkString("\n")
   }
 }
 
@@ -76,7 +78,7 @@ abstract class Suite() {
     val test = new Runner(args.map(TestId(_)).to[Set])
     run(test)
     val report = test.report()
-    println(Tests.show(report))
+    println(Suite.show(report))
     System.exit(if(report.total == report.passed) 0 else 1)
   }
 

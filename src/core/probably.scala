@@ -24,44 +24,48 @@ import scala.util.control.NonFatal
 
 import language.dynamics
 
-sealed abstract class Outcome(val passed: Boolean) {
-  def failed: Boolean = !passed
-  def debug: String = ""
+import Runner._
+
+object Runner {
+  object Showable {
+    implicit def show[T: Show](value: T): Showable[T] = Showable[T](value, implicitly[Show[T]])
+  }
+
+  case class Showable[T](value: T, show: Show[T]) { def apply(): String = show.show(value) }
+
+  case class TestId private[probably](value: String)
+  sealed abstract class Outcome(val passed: Boolean) {
+    def failed: Boolean = !passed
+    def debug: String = ""
+  }
+
+  case class FailsAt(datapoint: Datapoint, count: Int) extends Outcome(false) {
+    override def debug: String = datapoint.map.map { case (k, v) => s"$k=$v" }.mkString(" ")
+  }
+
+  case object Passed extends Outcome(true)
+  case object Mixed extends Outcome(false)
+
+  sealed abstract class Datapoint(val map: Map[String, String])
+  case object Pass extends Datapoint(Map())
+
+  case class Fail(failMap: Map[String, String]) extends Datapoint(failMap)
+  case class Throws(exception: Throwable, throwMap: Map[String, String]) extends Datapoint(throwMap)
+  case class ThrowsInCheck(exception: Exception, throwMap: Map[String, String]) extends Datapoint(throwMap)
+
+  object Show {
+    implicit val int: Show[Int] = _.toString
+    implicit val string: Show[String] = identity
+    implicit val boolean: Show[Boolean] = _.toString
+    implicit val long: Show[Long] = _.toString
+    implicit val byte: Show[Byte] = _.toString
+    implicit val short: Show[Short] = _.toString
+    implicit val char: Show[Char] = _.toString
+  }
+
+  trait Show[T] { def show(value: T): String }
 }
 
-case class FailsAt(datapoint: Datapoint, count: Int) extends Outcome(false) {
-  override def debug: String = datapoint.map.map { case (k, v) => s"$k=$v" }.mkString(" ")
-}
-
-case object Passed extends Outcome(true)
-case object Mixed extends Outcome(false)
-
-sealed abstract class Datapoint(val map: Map[String, String])
-case object Pass extends Datapoint(Map())
-
-case class Fail(failMap: Map[String, String]) extends Datapoint(failMap)
-case class Throws(exception: Throwable, throwMap: Map[String, String]) extends Datapoint(throwMap)
-case class ThrowsInCheck(exception: Exception, throwMap: Map[String, String]) extends Datapoint(throwMap)
-
-object Show {
-  implicit val int: Show[Int] = _.toString
-  implicit val string: Show[String] = identity
-  implicit val boolean: Show[Boolean] = _.toString
-  implicit val long: Show[Long] = _.toString
-  implicit val byte: Show[Byte] = _.toString
-  implicit val short: Show[Short] = _.toString
-  implicit val char: Show[Char] = _.toString
-}
-
-trait Show[T] { def show(value: T): String }
-
-object Showable {
-  implicit def show[T: Show](value: T): Showable[T] = Showable[T](value, implicitly[Show[T]])
-}
-
-case class Showable[T](value: T, show: Show[T]) { def apply(): String = show.show(value) }
-
-case class TestId private[probably](value: String)
 
 class Runner(specifiedTests: Set[TestId] = Set()) extends Dynamic {
 

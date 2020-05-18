@@ -55,7 +55,7 @@ object Main extends Suite() {
       }.assert(_ == 4)
       runner.report().results.head.outcome
     }.assert {
-      case FailsAt(_, _) => true
+      case Runner.FailsAt(_, _) => true
       case _ => false
     }
     
@@ -68,7 +68,7 @@ object Main extends Suite() {
       
       runner.report().results.head.outcome
     }.assert {
-      case FailsAt(_, _) => true
+      case Runner.FailsAt(_, _) => true
       case _             => false
     }
 
@@ -77,7 +77,7 @@ object Main extends Suite() {
       for(i <- 1 to 10) runner("integers are less than six")(i).assert(_ < 6)
       runner.report().results.head.outcome
     }.assert {
-      case FailsAt(_, 6) => true
+      case Runner.FailsAt(_, 6) => true
       case x => false
     }
     
@@ -86,7 +86,7 @@ object Main extends Suite() {
       for(i <- 1 to 10) runner("integers are less than six", i = i)(i).assert(_ < 6)
       runner.report().results.head.outcome
     }.assert {
-      case FailsAt(Fail(map), _) if map("i") == "6" => true
+      case Runner.FailsAt(Runner.Fail(map), _) if map("i") == "6" => true
       case x => false
     }
 
