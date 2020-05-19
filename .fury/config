@@ -7,8 +7,5 @@
 #
 # For more information, please visit https://propensive.com/fury/
 #
-layerRef	QmU5cyV2asPeb93CNSdjNkygFhgKCsPvq6xUMh1TCeR6pv
-published	Some	url	fury://furore.dev/propensive/probably
-		version	2.2
-		layerRef	QmT7wD5aqjoTbGnRAXHELQoCTj5QV6Gs298SCfFDBk5Yih
+layerRef	QmSeNSHg9fcYbSS9tu7xvaapEtAH7HbQStAYUJZxvtkURW
 # vim: set noai ts=12 sw=12:
