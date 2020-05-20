@@ -134,6 +134,8 @@ class Runner(specifiedTests: Set[TestId] = Set()) extends Dynamic {
 
   def report(): Report = Report(results.values.to[List])
 
+  def clear(): Unit = results = emptyResults()
+
   protected def record(test: Test, duration: Long, datapoint: Datapoint): Unit = synchronized {
     results = results.updated(test.name, results(test.name).append(test.name, duration, datapoint))
   }
@@ -141,12 +143,14 @@ class Runner(specifiedTests: Set[TestId] = Set()) extends Dynamic {
   protected def record(summary: Summary) = synchronized {
     results = results.updated(summary.name, summary)
   }
-  
-  @volatile
-  protected var results: Map[String, Summary] = ListMap[String, Summary]().withDefault { name =>
+
+  private[this] def emptyResults(): Map[String, Summary] = ListMap[String, Summary]().withDefault { name =>
     Summary(TestId(name.digest[Sha256].encoded[Hex].take(6).toLowerCase), name, 0, Int.MaxValue, 0L,
         Int.MinValue, Passed)
   }
+
+  @volatile
+  protected var results: Map[String, Summary] = emptyResults()
 }
 
 case class Summary(id: TestId,
