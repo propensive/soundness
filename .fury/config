@@ -7,5 +7,9 @@
 #
 # For more information, please visit https://propensive.com/fury/
 #
+<<<<<<< HEAD
 layerRef	Qmajk9cmJKdhqkWLv6bckwJ3uH28oZDnGcpy8e6M3GnKP7
+=======
+layerRef	QmSeNSHg9fcYbSS9tu7xvaapEtAH7HbQStAYUJZxvtkURW
+>>>>>>> 6d127183998a1adb135da708119fe8c35a0fd8a6
 # vim: set noai ts=12 sw=12:
