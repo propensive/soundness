@@ -29,8 +29,8 @@ object Suite {
     List('✓' -> green, '✗' -> red, '?' -> cyan, '!' -> magenta, '±' -> blue, '#' -> yellow).map { case (s, c) =>
         ansi(s, c) }
   
-  private val legend: List[String] = statuses.zip(List("Pass", "Fail", "Throws exception during check",
-      "Throws exception", "Fails sometimes", "Test suite partially fails")).map { case (status, description) =>
+  private val legend: List[String] = statuses.zip(List("Pass", "Fail", "Throws in check",
+      "Throws in body", "Fails sometimes", "Suite partially fails")).map { case (status, description) =>
     s"${status} ${description.padTo(32, ' ')}"
   }.to[List]
 
@@ -43,7 +43,7 @@ object Suite {
       case Passed                                    => pass
       case FailsAt(Fail(map), 1)                     => fail
       case FailsAt(ThrowsInCheck(exception, map), n) => checkThrows
-      case FailsAt(Throws(exception, map), 0)        => throws
+      case FailsAt(Throws(exception, map), 1)        => throws
       case FailsAt(_, n)                             => tailFail
       case Mixed                                     => mixed
     }

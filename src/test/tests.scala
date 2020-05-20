@@ -27,7 +27,7 @@ object Main extends Suite() {
       runner("test") { 2 + 2 }.assert(_ == 4)
       runner.report()
     }.assert(_.results.size == 1)
-    
+   
     test("tests with different names displayed separately") {
       val runner = new Runner()
       runner("alpha") { 2 + 2 }.assert(_ == 4)
