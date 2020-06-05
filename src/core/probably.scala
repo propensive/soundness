@@ -86,6 +86,8 @@ class Runner(specifiedTests: Set[TestId] = Set()) extends Dynamic {
 
   def time[T](name: String)(fn: => T): T = applyDynamicNamed[T]("")("" -> name)(fn).check { _ => true }
 
+  def suite(testSuite: TestSuite): Unit = suite(testSuite.name)(testSuite.run(_))
+
   def suite(name: String)(fn: Runner => Unit): Unit = {
     val report = new Test(name, Map()) {
       type Type = Report
@@ -180,4 +182,9 @@ case class Report(results: List[Summary]) {
   val passed: Int = results.count(_.outcome == Passed)
   val failed: Int = results.count(_.outcome != Passed)
   val total: Int = failed + passed
+}
+
+trait TestSuite {
+  def run(test: Runner): Unit
+  def name: String
 }

@@ -71,7 +71,7 @@ object Suite {
   }
 }
 
-abstract class Suite() {
+abstract class Suite(val name: String) extends TestSuite {
   def run(test: Runner): Unit
   
   final def main(args: Array[String]): Unit = {

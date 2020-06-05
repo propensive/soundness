@@ -18,7 +18,7 @@ package probably.tests
 
 import probably._
 
-object Main extends Suite() {
+object Main extends Suite("Probably Tests") {
 
   def run(test: Runner): Unit = {
     test("tests with the same name get grouped") {
