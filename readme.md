@@ -74,7 +74,7 @@ not impose constraints on new code, or require non-local changes to existing cod
 
 As tests may appear anywhere, they are easy to parameterize. We could, for example, rewrite the test above like
 so,
-```
+```scala
 import probably._
 
 def runTest(x: Int): Unit =
@@ -89,7 +89,7 @@ runTest(Int.MaxValue)
 
 However, if the test were to fail, it would be useful to know what input caused it to fail. Any number of inputs
 can be logged by including them as additional named parameters after the test name, like this:
-```
+```scala
 import probably._
 
 def runTest(x: Int): Unit =
