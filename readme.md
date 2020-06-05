@@ -74,7 +74,7 @@ not impose constraints on new code, or require non-local changes to existing cod
 
 As tests may appear anywhere, they are easy to parameterize. We could, for example, rewrite the test above like
 so,
-```scala
+```
 import probably._
 
 def runTest(x: Int): Unit =
@@ -89,7 +89,7 @@ runTest(Int.MaxValue)
 
 However, if the test were to fail, it would be useful to know what input caused it to fail. Any number of inputs
 can be logged by including them as additional named parameters after the test name, like this:
-```scala
+```
 import probably._
 
 def runTest(x: Int): Unit =
@@ -126,7 +126,21 @@ For a given `Seed`, the pseudorandom data generated will always be deterministic
 
 ### Command-line Interface
 
-_Probably_ comes with a simple CLI runner for running tests through the standard shell interface.
+_Probably_ comes with a simple CLI runner for running test suites through the standard shell interface. This
+works particularly well for objects containing a series of unit tests. To use the command-line interface,
+create an object which extends `Suite`, giving the test suite a name. Then implement the `run` method to execute
+the tests, in order, like so:
+```scala
+object ProjectTests extends Suite("Project tests") {
+  def run(test: Runner): Unit = {
+    test("first test") {
+      // test body
+    }.assert(/* predicate */)
+}
+```
+
+The `Suite` class provides an implementation of a `main` method, so any object which subclasses `Suite` may be
+run from the command line.
 
 ### Skipping tests
 
