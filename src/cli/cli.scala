@@ -17,7 +17,6 @@
 package probably
 
 import escritoire._
-import gastronomy._
 
 import Runner._
 
@@ -49,7 +48,7 @@ object Suite {
     }
 
     val status = Heading[Summary, Outcome]("", _.outcome)
-    val hash = Heading[Summary, String]("Hash", _.name.digest[Sha256].encoded[Hex].take(6).toLowerCase)
+    val hash = Heading[Summary, String]("Hash", v => Runner.shortDigest(v.name))
     val name = Heading[Summary, String]("Test", s => s"${"  "*s.indent}${s.name}")
     val count = Heading[Summary, Int]("Count", _.count)
     val min = Heading[Summary, Double]("Min", _.min)

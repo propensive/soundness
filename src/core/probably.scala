@@ -16,8 +16,6 @@
 */
 package probably
 
-import gastronomy._
-
 import scala.util._
 import scala.collection.immutable.ListMap
 import scala.util.control.NonFatal
@@ -64,6 +62,12 @@ object Runner {
   }
 
   trait Show[T] { def show(value: T): String }
+
+  def shortDigest(text: String): String = {
+    val md = java.security.MessageDigest.getInstance("SHA-256")
+    md.update(text.getBytes)
+    md.digest.take(3).map(b => f"$b%02x").mkString
+  }
 }
 
 
@@ -110,7 +114,7 @@ class Runner(specifiedTests: Set[TestId] = Set()) extends Dynamic {
   abstract class Test(val name: String, map: => Map[String, String]) {
     type Type
     
-    def id: TestId = TestId(name.digest[Sha256].encoded[Hex].take(6).toLowerCase)
+    def id: TestId = TestId(Runner.shortDigest(name))
     def action(): Type
     
     def assert(predicate: Type => Boolean): Unit =
@@ -147,7 +151,7 @@ class Runner(specifiedTests: Set[TestId] = Set()) extends Dynamic {
   }
 
   private[this] def emptyResults(): Map[String, Summary] = ListMap[String, Summary]().withDefault { name =>
-    Summary(TestId(name.digest[Sha256].encoded[Hex].take(6).toLowerCase), name, 0, Int.MaxValue, 0L,
+    Summary(TestId(shortDigest(name)), name, 0, Int.MaxValue, 0L,
         Int.MinValue, Passed)
   }
 
