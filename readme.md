@@ -1,9 +1,9 @@
-[<img src="https://img.shields.io/gitter/room/propensive/probably?label=CHAT&style=for-the-badge" height="24">](https://gitter.im/propensive/probably)
-[<img src="https://img.shields.io/discord/633198088311537684?label=DISCORD&style=for-the-badge" height="24">](https://discord.gg/CHCPjERybv)
-[<img src="https://img.shields.io/matrix/propensive.probably:matrix.org?style=for-the-badge" height="24">](https://app.element.io/#/room/#propensive.probably:matrix.org)
+[<img src="https://img.shields.io/gitter/room/propensive/probably?color=f00762&style=for-the-badge" height="24">](https://gitter.im/propensive/probably)
+[<img src="https://img.shields.io/discord/633198088311537684?color=8899f7&label=DISCORD&style=for-the-badge" height="24">](https://discord.gg/CHCPjERybv)
+[<img src="https://img.shields.io/matrix/propensive.probably:matrix.org?label=MATRIX&color=0dbd8b&style=for-the-badge" height="24">](https://app.element.io/#/room/#propensive.probably:matrix.org)
 [<img src="https://img.shields.io/twitter/follow/propensive?color=%2300acee&label=TWITTER&style=for-the-badge" height="24">](https://twitter.com/propensive)
-[<img src="https://img.shields.io/maven-central/v/com.propensive/probably-core_2.12?style=for-the-badge" height="24">](https://search.maven.org/artifact/com.propensive/probably-core_2.12)
-[<img src="https://img.shields.io/badge/Vent-propensive%2Fprobably-yellow?style=for-the-badge" height="24">](https://vent.dev)
+[<img src="https://img.shields.io/maven-central/v/com.propensive/probably-core_2.12?color=2465cd&style=for-the-badge" height="24">](https://search.maven.org/artifact/com.propensive/probably-core_2.12)
+[<img src="https://img.shields.io/badge/Vent-propensive%2Fprobably-f05662?style=for-the-badge" height="24">](https://vent.dev)
 
 <img src="/doc/images/github.png" valign="middle">
 
