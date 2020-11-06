@@ -2,10 +2,10 @@ _Probably_ defines only two primary types: a mutable `Runner` for recording test
 them, and `Test` definitions, whose instances are created by the `Runner`.
 
 Although it is possible to construct and use different `Runner`s, the most typical usage is to use the global
-singleton `Runner` called `test`, because for most purposes only one will be required. Defining a test is
-simple. For example,
+singleton `Runner` called `test`, because for most purposes only one `Runner` will be required. Defining a test
+is simple. For example,
 ```scala
-import probably._
+import probably._, global._
 
 test("the sum of two identical integers is divisible by two") {
   val x: Int = 7

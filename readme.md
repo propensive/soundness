@@ -1,4 +1,4 @@
-[<img alt="GitHub Workflow" src="https://img.shields.io/github/workflow/status/propensive/probably/Build/main?style=for-the-badge" height="24">](https://github.com/propensive/probably/actions)
+[<img alt="GitHub Workflow" src="https://img.shields.io/github/workflow/status/propensive/probably/Build/master?style=for-the-badge" height="24">](https://github.com/propensive/probably/actions)
 [<img src="https://img.shields.io/badge/gitter-discuss-f00762?style=for-the-badge" height="24">](https://gitter.im/propensive/probably)
 [<img src="https://img.shields.io/discord/633198088311537684?color=8899f7&label=DISCORD&style=for-the-badge" height="24">](https://discord.gg/CHCPjERybv)
 [<img src="https://img.shields.io/matrix/propensive.probably:matrix.org?label=MATRIX&color=0dbd8b&style=for-the-badge" height="24">](https://app.element.io/#/room/#propensive.probably:matrix.org)
@@ -27,10 +27,10 @@ _Probably_ defines only two primary types: a mutable `Runner` for recording test
 them, and `Test` definitions, whose instances are created by the `Runner`.
 
 Although it is possible to construct and use different `Runner`s, the most typical usage is to use the global
-singleton `Runner` called `test`, because for most purposes only one will be required. Defining a test is
-simple. For example,
+singleton `Runner` called `test`, because for most purposes only one `Runner` will be required. Defining a test
+is simple. For example,
 ```scala
-import probably._
+import probably._, global._
 
 test("the sum of two identical integers is divisible by two") {
   val x: Int = 7

@@ -192,3 +192,7 @@ trait TestSuite {
   def run(test: Runner): Unit
   def name: String
 }
+
+object global {
+  object test extends Runner()
+}

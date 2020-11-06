@@ -1,4 +1,4 @@
-ThisBuild / scalaVersion := "2.12.10"
+ThisBuild / scalaVersion := "2.12.12"
 ThisBuild / organization := "com.propensive"
 ThisBuild / organizationName := "Propensive OÜ"
 ThisBuild / organizationHomepage := Some(url("https://propensive.com/"))
@@ -36,22 +36,28 @@ ThisBuild / publishMavenStyle := true
 lazy val core = (project in file(".core"))
   .settings(
     name := "probably-core",
-    Compile / scalaSource := baseDirectory.value / ".." / "src" / "core",
-    libraryDependencies += "com.propensive" %% "gastronomy-core" % "0.3.0"
+    Compile / scalaSource := baseDirectory.value / ".." / "src" / "core"
   )
 
 lazy val property = (project in file(".property"))
   .settings(
     name := "probably-property",
     Compile / scalaSource := baseDirectory.value / ".." / "src" / "property",
-    libraryDependencies += "com.propensive" %% "magnolia" % "0.16.0",
-    libraryDependencies += "org.scala-lang" % "scala-reflect" % "2.12.10" % Provided
+    libraryDependencies += "com.propensive" %% "magnolia" % "0.17.0",
+    libraryDependencies += "org.scala-lang" % "scala-reflect" % "2.12.12" % Provided
   )
 
 lazy val cli = (project in file(".cli"))
-  .dependsOn(core, property)
+  .dependsOn(core)
   .settings(
     name := "probably-cli",
     Compile / scalaSource := baseDirectory.value / ".." / "src" / "cli",
     libraryDependencies += "com.propensive" %% "escritoire-core" % "0.3.0"
+  )
+
+lazy val test = (project in file(".test"))
+  .dependsOn(cli, property)
+  .settings(
+    name := "probably-test",
+    Compile / scalaSource := baseDirectory.value / ".." / "src" / "test"
   )
