@@ -1,8 +1,12 @@
-<a href="https://furore.dev/propensive/gastronomy"><img src="/doc/images/furore.png" style="vertical-align:middle" valign="middle"></a>&nbsp;&nbsp;<a href="https://furore.dev/propensive/gastronomy">__Develop with Fury__ </a>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="https://riot.im/app/#/room/#propensive.gastronomy:matrix.org"><img src="/doc/images/riotim.png" style="vertical-arign:middle" valign="middle"></a>&nbsp;&nbsp;<a href="https://riot.im/app/#/room/#propensive.gastronomy:matrix.org">__Discuss on Riot__</a>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="https://search.maven.org/search?q=g:com.propensive%20AND%20a:gastronomy_2.12"><img src="/doc/images/mavencentral.png" style="vertical-arign:middle" valign="middle"></a>&nbsp;&nbsp;<a href="https://search.maven.org/search?q=g:com.propensive%20AND%20a:gastronomy_2.12">__Download from Maven Central__</a>
+[<img alt="GitHub Workflow" src="https://img.shields.io/github/workflow/status/propensive/gastronomy/Build/main?style=for-the-badge" height="24">](https://github.com/propensive/gastronomy/actions)
+[<img src="https://img.shields.io/badge/gitter-discuss-f00762?style=for-the-badge" height="24">](https://gitter.im/propensive/gastronomy)
+[<img src="https://img.shields.io/discord/633198088311537684?color=8899f7&label=DISCORD&style=for-the-badge" height="24">](https://discord.gg/CHCPjERybv)
+[<img src="https://img.shields.io/matrix/propensive.gastronomy:matrix.org?label=MATRIX&color=0dbd8b&style=for-the-badge" height="24">](https://app.element.io/#/room/#propensive.gastronomy:matrix.org)
+[<img src="https://img.shields.io/twitter/follow/propensive?color=%2300acee&label=TWITTER&style=for-the-badge" height="24">](https://twitter.com/propensive)
+[<img src="https://img.shields.io/maven-central/v/com.propensive/gastronomy-core_2.12?color=2465cd&style=for-the-badge" height="24">](https://search.maven.org/artifact/com.propensive/gastronomy-core_2.12)
+[<img src="https://img.shields.io/badge/vent-propensive%2Fgastronomy-f05662?style=for-the-badge" height="24">](https://vent.dev)
 
 <img src="/doc/images/github.png" valign="middle">
-
-[![Build](https://github.com/propensive/gastronomy/workflows/Build/badge.svg)](https://github.com/propensive/gastronomy/actions)
 
 # Gastronomy
 
@@ -42,7 +46,11 @@ or imported into an existing layer with,
 ```
 fury layer import -i propensive/gastronomy
 ```
-A binary will be made available on Maven Central.
+A binary is available on Maven Central as `com.propensive:gastronomy-core_<scala-version>:0.4.0`. This may be added
+to an [sbt](https://www.scala-sbt.org/) build with:
+```
+libraryDependencies += "com.propensive" %% "gastronomy-core" % "0.4.0"
+```
 
 ## Contributing
 

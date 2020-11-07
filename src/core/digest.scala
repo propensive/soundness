@@ -118,7 +118,7 @@ object Bytes {
   def apply[Coll[T] <: Seq[T]]
            (bytes: Coll[Byte])
            (implicit cbf: generic.CanBuildFrom[Coll[Byte], Byte, Array[Byte]]) =
-    new Bytes(bytes.to[Array])
+    new Bytes(bytes.toArray)
   
   def apply(bytes: Array[Byte]): Bytes = new Bytes(bytes.clone)
 }
@@ -143,8 +143,9 @@ final class Bytes private[gastronomy] (private[gastronomy] val array: Array[Byte
     case _ => false
   }
   
-  def to[Coll[T]](implicit cbf: generic.CanBuildFrom[Array[Byte], Byte, Coll[Byte]]): Coll[Byte] =
-    array.to[Coll]
+  /*def to[Coll[T]](implicit cbf: generic.CanBuildFrom[Array[Byte], Byte, Coll[Byte]]): Coll[Byte] =
+    array.to[Coll]*/
+  def to[Coll](factory: Factory[Byte, Coll]): Coll = array.to(factory)
 
   def encoded[ES <: EncodingScheme: ByteEncoder]: String = implicitly[ByteEncoder[ES]].encode(this)
 }
