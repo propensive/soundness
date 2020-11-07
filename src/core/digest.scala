@@ -143,9 +143,8 @@ final class Bytes private[gastronomy] (private[gastronomy] val array: Array[Byte
     case _ => false
   }
   
-  /*def to[Coll[T]](implicit cbf: generic.CanBuildFrom[Array[Byte], Byte, Coll[Byte]]): Coll[Byte] =
-    array.to[Coll]*/
-  def to[Coll](factory: Factory[Byte, Coll]): Coll = array.to(factory)
+  def to[Coll[T]](implicit cbf: generic.CanBuildFrom[Array[Byte], Byte, Coll[Byte]]): Coll[Byte] =
+    array.to[Coll]
 
   def encoded[ES <: EncodingScheme: ByteEncoder]: String = implicitly[ByteEncoder[ES]].encode(this)
 }
