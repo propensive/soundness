@@ -1,33 +1,14 @@
-[![Maven Central](https://goo.gl/VtnfEV)](https://goo.gl/NmvGmr)
-[![Join the chat on Gitter](https://goo.gl/osTzxH)](https://goo.gl/r4r4yU)
-
-# Adversaria
-
-Adversaria is a tiny library which provides a few tools for working with static
-annotations in Scala, by making them available through typeclass interfaces.
-
 The nature of annotations in Scala is that they are very rarely the best
 solution for any task. The can, however, be convenient in certain
 circumstances, and this small domain is where Adversaria aims to help.
 
-Currently there are three use cases:
+Currently three use cases are supported:
 
 - getting all the annotations applied to a particular type
-- finding the parameter of a case class to which a particular annotation has
-  been applied
+- finding the parameter of a case class to which a particular annotation has been applied
 - getting all the annotations applied to a particular case class field
 
-We expect the list of supported use cases to grow as additional suggestions are
-received.
-
-## Availability
-
-An early release of Adversaria is available on Maven Central, and can be
-included in an sbt project by including,
-```
-"com.propensive" %% "adversaria" % "0.2.0"
-```
-in your `build.sbt` file.
+The list of supported use cases may grow as additional suggestions are received.
 
 ## Examples
 
@@ -52,6 +33,8 @@ information by requesting an implicit `TypeMetadata[Company]` value, and
 accessing its `annotations` field, like so,
 
 ```scala
+import adversaria._
+
 val info = implicitly[TypeMetadata[Company]]
 println(info.annotations)
 
@@ -59,35 +42,28 @@ println(info.annotations)
 ```
 
 The `TypeMetadata` implicit should resolve for any type, regardless of
-whether it has any annotations or not.
+whether it has any annotations or not. Its `annotations` method will return a
+list of annotations on that case class.
 
 Another supported use case is to find the field of a case class which has been
-annotated with a particular annotation, if and only if that annotation exists.
+annotated with a particular annotation, _if and only if_ that annotation exists.
 We use the `FindMetadata` typeclass for this. It takes two type parameters:
-the type of the annotation, and the type to check, respectively,
+the type of the annotation, and the type to check for, respectively,
 
 ```scala
+import adversaria._
+
 val idField = implicitly[FindMetadata[id, Person]]
 println(idField.get(Person("John Smith", "test@example.com)))
 
 > test@example.com
 ```
 However, attempting to resolve such an implicit on a case class which has no
-field annotated with that annotation will fail at compile-time:
-
+field annotated with that annotation, for example,
 ```scala
 val idField = implicitly[FindMetadata[id, Company]]
-
-! adversaria: could not find a parameter annotated with type @id
 ```
-
-## Status
-
-This library is very experimental, and provided for evaluation purposes only.
-It should not be considered production-ready, and the API is liable to change
-without warning.
-
-## License
-
-Adversaria is provided under the Apache 2.0 license.
-
+will fail with at compiletime with the message,
+```
+adversaria: could not find a parameter annotated with type @id
+```
