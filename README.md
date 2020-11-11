@@ -1,5 +1,0 @@
-# Honeycomb
-
-Perfectly-nested HTML
-
-
