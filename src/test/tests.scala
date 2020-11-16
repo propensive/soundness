@@ -16,9 +16,9 @@
 */
 package adversaria.tests
 
-import probation.{TestApp, test}
-import contextual.data.scalac._
-import contextual.data.fqt._
+import probably._
+import contextual.examples.scalac._
+import contextual.examples.fqt._
 import annotation.StaticAnnotation
 
 import adversaria._
@@ -33,9 +33,9 @@ case class Company(name: String)
 
 case class Employee(person: Person, @id code: Long)
 
-object Tests extends TestApp {
+object Tests extends Suite("Adversaria tests") {
 
-  def tests(): Unit = {
+  def run(test: Runner): Unit = {
     test("get annotations on type") {
       implicitly[TypeMetadata[Company]].annotations
     }.assert(_ == List(count(10)))
