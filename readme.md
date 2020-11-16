@@ -95,7 +95,7 @@ adversaria: could not find a parameter annotated with type @id
 
 ## Status
 
-Adversaria is classified as __fledglingfl__. Propensive defines the following five stability levels for open-source projects:
+Adversaria is classified as __fledgling__. Propensive defines the following five stability levels for open-source projects:
 
 - _embryonic_: for experimental or demonstrative purposes only, without guarantee of longevity
 - _fledgling_: of proven utility, seeking contributions, but liable to significant redesigns
