@@ -60,7 +60,7 @@ object Tests extends Suite("Adversaria tests") {
     
     test("check that implicit for missing annotation is not resolved") {
       scalac"implicitly[FindMetadata[id, Company]]"
-    }.assert(_ == TypecheckError("adversaria: could not find a parameter annotated with type @adversaria.tests.id"))
+    }.assert(_ == TypecheckError("adversaria: could not find matching annotation"))
 
     test("extract annotation value generically") {
       def getId[T](value: T)(implicit anns: FindMetadata[id, T]): String =
