@@ -114,10 +114,10 @@ or imported into an existing layer with,
 ```
 fury layer import -i propensive/adversaria
 ```
-A binary is available on Maven Central as `com.propensive:adversaria-core_<scala-version>:0.3.0`. This may be added
+A binary is available on Maven Central as `com.propensive:adversaria-core_<scala-version>:0.18.0`. This may be added
 to an [sbt](https://www.scala-sbt.org/) build with:
 ```
-libraryDependencies += "com.propensive" %% "adversaria-core" % "0.3.0"
+libraryDependencies += "com.propensive" %% "adversaria-core" % "0.18.0"
 ```
 
 ## Contributing
