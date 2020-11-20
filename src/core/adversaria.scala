@@ -96,7 +96,7 @@ object Macros {
 
   /** delegates to the macro implementation method */
   def findMetadata[A <: StaticAnnotation: c.WeakTypeTag, T: c.WeakTypeTag]
-                  (c: blackbox.Context)
+                  (c: whitebox.Context)
                   : c.Tree =
     c.findMetadata(c.weakTypeOf[A], c.weakTypeOf[T])
 }
