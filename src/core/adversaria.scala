@@ -1,6 +1,6 @@
 /*
 
-    Adversaria, version 0.3.0. Copyright 2017-20 Jon Pretty, Propensive OÜ.
+    Adversaria, version 0.19.0. Copyright 2017-20 Jon Pretty, Propensive OÜ.
 
     The primary distribution site is: https://propensive.com/
 
