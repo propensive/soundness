@@ -2,7 +2,7 @@ ThisBuild / scalaVersion := "2.12.12"
 ThisBuild / organization := "com.propensive"
 ThisBuild / organizationName := "Propensive OÜ"
 ThisBuild / organizationHomepage := Some(url("https://propensive.com/"))
-ThisBuild / version := "0.5.0"
+ThisBuild / version := "0.8.0"
 
 ThisBuild / scmInfo := Some(
   ScmInfo(
@@ -52,7 +52,9 @@ lazy val cli = (project in file(".cli"))
   .settings(
     name := "probably-cli",
     Compile / scalaSource := baseDirectory.value / ".." / "src" / "cli",
-    libraryDependencies += "com.propensive" %% "escritoire-core" % "0.3.0"
+    libraryDependencies += "com.propensive" %% "escritoire-core" % "0.3.0",
+    libraryDependencies += "org.scala-lang" % "scala-reflect" % "2.12.12" % Provided,
+    libraryDependencies += "org.scala-lang" % "scala-compiler" % "2.12.12" % Provided
   )
 
 lazy val test = (project in file(".test"))

@@ -18,7 +18,16 @@ package probably
 
 import escritoire._
 
+import scala.reflect.macros._
+import scala.collection.mutable
+
 import Runner._
+
+object `package` {
+  implicit class ContextExtras(ctx: blackbox.Context) {
+    def test: Runner = Suite.Compiletime.test(ctx)
+  }
+}
 
 object Suite {
   import Ansi.Color._
@@ -68,6 +77,31 @@ object Suite {
 
     List(resultsTable, summary, Suite.footer).mkString("\n")
   }
+
+  object Compiletime {
+    private var postAction: () => Unit = null
+    def test(c: blackbox.Context): Runner = {
+      import c.universe._
+      
+      val toCheck: mutable.ListBuffer[() => Unit] =
+        c.enclosingUnit.asInstanceOf[scala.tools.nsc.Global#CompilationUnit].toCheck
+      
+      // Add an action to run once at the end, if it has not already been added
+      if(!toCheck.contains(postAction)) {
+        val action: () => Unit = { () =>
+          c.info(c.universe.NoPosition, "Compiletime test results", true)
+          c.info(c.universe.NoPosition, Suite.show(probably.global.test.report()), true)
+          probably.global.test.clear()
+          toCheck -= postAction
+          postAction = null
+        }
+        toCheck += action
+        postAction = action
+      }
+
+      probably.global.test
+    }
+  }
 }
 
 abstract class Suite(val name: String) extends TestSuite {
@@ -80,5 +114,4 @@ abstract class Suite(val name: String) extends TestSuite {
     println(Suite.show(report))
     System.exit(if(report.total == report.passed) 0 else 1)
   }
-
 }
