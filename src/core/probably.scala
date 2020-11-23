@@ -17,7 +17,7 @@
 package probably
 
 import scala.util._
-import scala.collection.immutable.ListMap
+import scala.collection._, immutable.ListMap
 import scala.util.control.NonFatal
 
 import language.dynamics
@@ -194,30 +194,4 @@ trait TestSuite {
 
 object global {
   object test extends Runner()
-
-  object compiler {
-    private var postAction: () => Unit = null
-
-    def apply(c: blackbox.Context): Runner = {
-      import c.universe._
-      
-      val toCheck: mutable.ListBuffer[() => Unit] =
-        c.enclosingUnit.asInstanceOf[scala.tools.nsc.Global#CompilationUnit].toCheck
-      
-      // Add an action to run once at the end, if it has not already been added
-      if(!toCheck.contains(postAction)) {
-        val action: () => Unit = { () =>
-          c.info(c.universe.NoPosition, Suite.show(probably.global.test.report()), true)
-          probably.global.test.clear()
-          toCheck -= postAction
-          postAction = null
-        }
-        
-        toCheck += action
-        postAction = action
-      }
-   
-      probably.global.test
-    }
-  }
 }
