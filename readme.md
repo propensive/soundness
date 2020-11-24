@@ -80,7 +80,7 @@ not impose constraints on new code, or require non-local changes to existing cod
 
 As tests may appear anywhere, they are easy to parameterize. We could, for example, rewrite the test above like
 so,
-```
+```scala
 import probably._
 
 def runTest(x: Int): Unit =
@@ -95,7 +95,7 @@ runTest(Int.MaxValue)
 
 However, if the test were to fail, it would be useful to know what input caused it to fail. Any number of inputs
 can be logged by including them as additional named parameters after the test name, like this:
-```
+```scala
 import probably._
 
 def runTest(x: Int): Unit =
@@ -217,7 +217,7 @@ fury layer import -i propensive/probably
 ```
 A binary is available on Maven Central as `com.propensive:probably-cli_<scala-version>:0.4.0`. This may be added
 to an [sbt](https://www.scala-sbt.org/) build with:
-```
+```scala
 libraryDependencies += "com.propensive" %% "probably-cli" % "0.4.0"
 ```
 
