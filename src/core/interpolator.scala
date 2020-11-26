@@ -31,6 +31,6 @@ object MdInterpolator extends Interpolator {
 
 object `package` {
   implicit class MdStringContext(sc: StringContext) {
-    val md: Document = Prefix(MdInterpolator)
+    val md: Document = Prefix(MdInterpolator, sc)
   }
 }
