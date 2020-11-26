@@ -1,7 +1,6 @@
 package litterateur
 
 import contextual._
-import scala.language.experimental.macros
 
 object MdInterpolator extends Interpolator {
 
@@ -32,6 +31,6 @@ object MdInterpolator extends Interpolator {
 
 object `package` {
   implicit class MdStringContext(sc: StringContext) {
-    def md(expressions: String*): Document = macro Macros.contextual[MdInterpolator.type]
+    val md: Document = Prefix(MdInterpolator)
   }
 }
