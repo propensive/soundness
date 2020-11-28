@@ -50,7 +50,7 @@ object Suite {
     implicit val showOutcome: AnsiShow[Outcome] = _ match {
       case Passed                                    => pass
       case FailsAt(Fail(map, _), 1)                  => fail
-      case FailsAt(ThrowsInCheck(exception, map), n) => checkThrows
+      case FailsAt(ThrowsInCheck(_, _, _), n)        => checkThrows
       case FailsAt(Throws(exception, map), 1)        => throws
       case FailsAt(_, n)                             => tailFail
       case Mixed                                     => mixed
