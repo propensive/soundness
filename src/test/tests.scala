@@ -16,7 +16,9 @@
 */
 package probably.tests
 
+import probably.Runner.{Fail, FailsAt}
 import probably._
+import scala.util.Try
 
 object Main extends Suite("Probably Tests") {
 
@@ -86,7 +88,7 @@ object Main extends Suite("Probably Tests") {
       for(i <- 1 to 10) runner("integers are less than six", i = i)(i).assert(_ < 6)
       runner.report().results.head.outcome
     }.assert {
-      case Runner.FailsAt(Runner.Fail(map), _) if map("i") == "6" => true
+      case Runner.FailsAt(Runner.Fail(map, _), _) if map("i") == "6" => true
       case x => false
     }
 
@@ -109,5 +111,62 @@ object Main extends Suite("Probably Tests") {
       }.assert(_ == 2)
       runner.report
     }.assert(_.results.head.count == 100)
+
+    test("assert without predicate should succeed") {
+      val runner = new Runner()
+      runner("test division") {
+        5 / 2
+      }.assert()
+      runner.report()
+    }.assert(r => r.passed == r.total)
+
+    test("assert without predicate should fail") {
+      val runner = new Runner()
+      runner("test division") {
+        5 / 0
+      }.assert()
+      runner.report()
+    }.assert(r => r.passed == 0)
+
+    test("check without predicate should succeed") {
+      val runner = new Runner()
+      runner("test division") {
+        5 / 2
+      }.check()
+      runner.report()
+    }.assert(r => r.passed == r.total)
+
+    test("check without predicate should fail") {
+      val runner = new Runner()
+      Try(runner("test division") {
+        5 / 0
+      }.check())
+      runner.report()
+    }.assert(r => r.failed == 1)
+
+    test("assert with 2 successful predicates") {
+      val runner = new Runner()
+      runner("test double") {
+        0.001
+      }.assert(_ >= 0.0, _ <= 1.0)
+      runner.report()
+    }.assert(r => r.passed == r.total)
+
+    test("assert with 2 predicates") {
+      val runner = new Runner()
+      runner("test double") {
+        0.001
+      }.assert(_ >= 0.0, _ < 0.0)
+      runner.report().results.head.outcome
+    }.assert(_ == FailsAt(Fail(Map.empty, 1), 1))
+
+    test("assert with 3 predicates") {
+      val runner = new Runner()
+      runner("test double") {
+        0.001
+      }.assert(_ >= 0.0, _ <= 1.0, _ < 0.0)
+      runner.report().results.head.outcome
+    }.assert(_ == FailsAt(Fail(Map.empty, 2), 1))
+
   }
 }
