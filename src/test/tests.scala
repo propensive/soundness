@@ -16,7 +16,7 @@
 */
 package probably.tests
 
-import probably.Runner.{Fail, FailsAt}
+import probably.Runner.{ Fail, FailsAt }
 import probably._
 import scala.util.Try
 
