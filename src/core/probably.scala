@@ -47,9 +47,9 @@ object Runner {
   sealed abstract class Datapoint(val map: Map[String, String])
   case object Pass extends Datapoint(Map())
 
-  case class Fail(failMap: Map[String, String]) extends Datapoint(failMap)
+  case class Fail(failMap: Map[String, String], index: Int) extends Datapoint(failMap)
   case class Throws(exception: Throwable, throwMap: Map[String, String]) extends Datapoint(throwMap)
-  case class ThrowsInCheck(exception: Exception, throwMap: Map[String, String]) extends Datapoint(throwMap)
+  case class ThrowsInCheck(exception: Exception, throwMap: Map[String, String], index: Int) extends Datapoint(throwMap)
 
   object Show {
     implicit val int: Show[Int] = _.toString
@@ -76,7 +76,7 @@ class Runner(specifiedTests: Set[TestId] = Set()) extends Dynamic {
 
   def applyDynamic[T](method: String)(name: String)(fn: => T): Test { type Type = T } =
     applyDynamicNamed[T]("")("" -> name)(fn)
-  
+
   def applyDynamicNamed[T]
                        (method: String)
                        (name: (String, String), args: (String, Showable[_])*)
@@ -112,26 +112,32 @@ class Runner(specifiedTests: Set[TestId] = Set()) extends Dynamic {
 
   abstract class Test(val name: String, map: => Map[String, String]) {
     type Type
-    
+
     def id: TestId = TestId(Runner.shortDigest(name))
     def action(): Type
-    
-    def assert(predicate: Type => Boolean): Unit =
-      try if(runTest(id)) check(predicate) catch { case NonFatal(e) => () }
-    
-    def check(predicate: Type => Boolean): Type = {
+
+    def assert(predicate: (Type => Boolean)*): Unit =
+      try if(runTest(id)) check(predicate: _*) catch { case NonFatal(_) => () }
+
+    def check(predicates: (Type => Boolean)*): Type = {
+      def handler(index: Int): PartialFunction[Throwable, Datapoint] = { case e: Exception => ThrowsInCheck(e, map, index) }
+
+      def makeDatapoint(predicates: Seq[Type => Boolean], count: Int, datapoint: Datapoint, value: Type): Datapoint =
+        try {
+          if (predicates.isEmpty) datapoint
+          else if (predicates.head(value)) makeDatapoint(predicates.tail, count + 1, Pass, value)
+          else Fail(map, count)
+        } catch handler(count)
+
+
       val t0 = System.currentTimeMillis()
       val value = Try(action())
       val time = System.currentTimeMillis() - t0
 
       value match {
-        case Success(value) =>
-          def handler: PartialFunction[Throwable, Datapoint] = { case e: Exception => ThrowsInCheck(e, map) }
-          val datapoint: Datapoint = try(if(predicate(value)) Pass else Fail(map)) catch handler
-          record(this, time, datapoint)
+        case Success(value) => record(this, time, makeDatapoint(predicates, 0, Pass, value))
           value
-        case Failure(exception) =>
-          record(this, time, Throws(exception, map))
+        case Failure(exception) => record(this, time, Throws(exception, map))
           throw exception
       }
     }
@@ -169,7 +175,7 @@ case class Summary(id: TestId,
   def avg: Double = ttot.toDouble/count/1000.0
   def min: Double = tmin.toDouble/1000.0
   def max: Double = tmax.toDouble/1000.0
-  
+
   def append(test: String, duration: Long, datapoint: Datapoint): Summary =
     Summary(id, name, count + 1, tmin min duration, ttot + duration, tmax max duration, outcome match {
       case FailsAt(dp, c) => FailsAt(dp, c)
