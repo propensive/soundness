@@ -117,16 +117,16 @@ class Runner(specifiedTests: Set[TestId] = Set()) extends Dynamic {
     def action(): Type
 
     def assert(predicate: (Type => Boolean)*): Unit =
-      try if(runTest(id)) check(predicate : _*) catch { case NonFatal(_) => () }
+      try if(runTest(id)) check(predicate: _*) catch { case NonFatal(_) => () }
 
     def check(predicates: (Type => Boolean)*): Type = {
       def handler(index: Int): PartialFunction[Throwable, Datapoint] = { case e: Exception => ThrowsInCheck(e, map, index) }
+
       def makeDatapoint(predicates: Seq[Type => Boolean], count: Int, datapoint: Datapoint, value: Type): Datapoint =
         try {
           if (predicates.isEmpty) datapoint
-          else
-            if (predicates.head(value)) makeDatapoint(predicates.tail, count + 1, Pass, value)
-            else Fail(map, count)
+          else if (predicates.head(value)) makeDatapoint(predicates.tail, count + 1, Pass, value)
+          else Fail(map, count)
         } catch handler(count)
 
 
@@ -135,11 +135,9 @@ class Runner(specifiedTests: Set[TestId] = Set()) extends Dynamic {
       val time = System.currentTimeMillis() - t0
 
       value match {
-        case Success(value) =>
-          record(this, time, makeDatapoint(predicates, 0, Pass, value))
+        case Success(value) => record(this, time, makeDatapoint(predicates, 0, Pass, value))
           value
-        case Failure(exception) =>
-          record(this, time, Throws(exception, map))
+        case Failure(exception) => record(this, time, Throws(exception, map))
           throw exception
       }
     }

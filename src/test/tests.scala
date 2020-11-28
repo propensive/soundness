@@ -22,33 +22,35 @@ import scala.util.Try
 
 object Main extends Suite("Probably Tests") {
 
+  def reportTest(fn: Runner => Unit): Report = {
+    val runner = new Runner()
+    fn(runner)
+    runner.report()
+  }
+
   def run(test: Runner): Unit = {
     test("tests with the same name get grouped") {
-      val runner = new Runner()
-      runner("test") { 2 + 2 }.assert(_ == 4)
-      runner("test") { 2 + 2 }.assert(_ == 4)
-      runner.report()
+      reportTest { runner =>
+        runner("test")(2+2).assert(_ == 4)
+        runner("test")(2+2).assert(_ == 4)
+      }
     }.assert(_.results.size == 1)
-   
+
     test("tests with different names displayed separately") {
-      val runner = new Runner()
-      runner("alpha") { 2 + 2 }.assert(_ == 4)
-      runner("beta") { 2 + 2 }.assert(_ == 4)
-      runner.report()
+      reportTest { runner =>
+        runner("alpha")(2+2).assert(_ == 4)
+        runner("beta")(2+2).assert(_ == 4)
+      }
     }.assert(_.results.size == 2)
-    
+
     test("tests can fail") {
-      val runner = new Runner()
-      runner("failing") { 2 + 2 }.assert(_ == 5)
-      runner.report()
+     reportTest(_("failing")(2+2).assert(_ == 5))
     }.assert(_.results.head.outcome.failed)
-    
+
     test("tests can succeed") {
-      val runner = new Runner()
-      runner("failing") { 2 + 2 }.assert(_ == 4)
-      runner.report()
+      reportTest(_("failing")(2+2).assert(_ == 4))
     }.assert(_.results.head.outcome.passed)
-    
+
     test("tests can throw an exception") {
       val runner = new Runner()
       runner("failing") {
@@ -60,14 +62,14 @@ object Main extends Suite("Probably Tests") {
       case Runner.FailsAt(_, _) => true
       case _ => false
     }
-    
+
     test("assertion can throw an exception") {
       val runner = new Runner()
       runner("failing") { 2 + 2 }.assert { r =>
         throw new Exception()
         r == 4
       }
-      
+
       runner.report().results.head.outcome
     }.assert {
       case Runner.FailsAt(_, _) => true
@@ -75,98 +77,60 @@ object Main extends Suite("Probably Tests") {
     }
 
     test("repetition fails on nth attempt") {
-      val runner = new Runner()
-      for(i <- 1 to 10) runner("integers are less than six")(i).assert(_ < 6)
-      runner.report().results.head.outcome
+      val report = reportTest(runner => for(i <- 1 to 10) runner("integers are less than six")(i).assert(_ < 6))
+      report.results.head.outcome
     }.assert {
-      case Runner.FailsAt(_, 6) => true
-      case x => false
-    }
-    
-    test("repetition captures failed value") {
-      val runner = new Runner()
-      for(i <- 1 to 10) runner("integers are less than six", i = i)(i).assert(_ < 6)
-      runner.report().results.head.outcome
-    }.assert {
-      case Runner.FailsAt(Runner.Fail(map, _), _) if map("i") == "6" => true
-      case x => false
+      case FailsAt(_, 6) => true
+      case _ => false
     }
 
-    test.assert("assertion-only test") {
-      1 + 1 == 2
+    test("repetition captures failed value") {
+      val report = reportTest(runner => for(i <- 1 to 10) runner("integers are less than six", i = i)(i).assert(_ < 6))
+      report.results.head.outcome
+    }.assert {
+      case FailsAt(Fail(map, _), _) if map("i") == "6" => true
+      case _ => false
     }
+
+    test.assert("assertion-only test")(1+1 == 2)
 
     test("time-only test") {
-      val runner = new Runner()
-      runner.time("wait for 100ms") {
-        Thread.sleep(100)
-      }
-      runner.report()
+      reportTest(_.time("wait for 100ms")(Thread.sleep(100)))
     }.assert(_.results.head.ttot >= 100)
 
     test("repetition test") {
-      val runner = new Runner()
-      for(i <- 1 to 100) runner("simple test") {
-        1 + 1
-      }.assert(_ == 2)
-      runner.report
+      reportTest(runner => for(i <- 1 to 100) runner("simple test")(1+1).assert(_ == 2))
     }.assert(_.results.head.count == 100)
 
     test("assert without predicate should succeed") {
-      val runner = new Runner()
-      runner("test division") {
-        5 / 2
-      }.assert()
-      runner.report()
-    }.assert(r => r.passed == r.total)
+      reportTest(_("test division")(5/2).assert())
+    }.assert(_.passed == 1, _.total == 1)
 
     test("assert without predicate should fail") {
-      val runner = new Runner()
-      runner("test division") {
-        5 / 0
-      }.assert()
-      runner.report()
-    }.assert(r => r.passed == 0)
+      reportTest(_("test division")(5/0).assert())
+    }.assert(r => r.passed == 0, _.failed == 1)
 
     test("check without predicate should succeed") {
-      val runner = new Runner()
-      runner("test division") {
-        5 / 2
-      }.check()
-      runner.report()
-    }.assert(r => r.passed == r.total)
+      reportTest(_("test division")(5/2).check())
+    }.assert(_.passed == 1, _.total == 1)
 
     test("check without predicate should fail") {
-      val runner = new Runner()
-      Try(runner("test division") {
-        5 / 0
-      }.check())
-      runner.report()
-    }.assert(r => r.failed == 1)
+      reportTest(runner => Try(runner("test division")(5/0).check()))
+    }.assert(_.failed == 1, _.total == 1)
 
     test("assert with 2 successful predicates") {
-      val runner = new Runner()
-      runner("test double") {
-        0.001
-      }.assert(_ >= 0.0, _ <= 1.0)
-      runner.report()
-    }.assert(r => r.passed == r.total)
+      reportTest(_("test double")(0.001).assert(_ >= 0.0, _ <= 1.0))
+    }.assert(_.passed == 1, _.total == 1)
 
     test("assert with 2 predicates") {
-      val runner = new Runner()
-      runner("test double") {
-        0.001
-      }.assert(_ >= 0.0, _ < 0.0)
-      runner.report().results.head.outcome
-    }.assert(_ == FailsAt(Fail(Map.empty, 1), 1))
+      val report = reportTest(_("test double")(0.001).assert(_ >= 0.0, _ < 0.0))
+      report.results.head.outcome
+    }.assert(_ == FailsAt(Fail(Map(), 1), 1))
 
     test("assert with 3 predicates") {
-      val runner = new Runner()
-      runner("test double") {
-        0.001
-      }.assert(_ >= 0.0, _ <= 1.0, _ < 0.0)
-      runner.report().results.head.outcome
-    }.assert(_ == FailsAt(Fail(Map.empty, 2), 1))
+      val report = reportTest(_ ("test double")(0.001).assert(_ >= 0.0, _ <= 1.0, _ < 0.0))
+      report.results.head.outcome
+    }.assert(_ == FailsAt(Fail(Map(), 2), 1))
 
   }
 }
