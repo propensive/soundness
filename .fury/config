@@ -7,8 +7,5 @@
 #
 # For more information, please visit https://propensive.com/fury/
 #
-layerRef	QmeMB8jghjprznYo1tczR9qUvkKE52PjW8rLrh4J9qFGST
-published	Some	url	fury://furore.dev/propensive/gastronomy
-		version	1.2
-		layerRef	QmeMB8jghjprznYo1tczR9qUvkKE52PjW8rLrh4J9qFGST
+layerRef	QmU862WCwt1DJBrZnNrHAwX5njfohRUVWKF4b4ebk8Cg1K
 # vim: set noai ts=12 sw=12:
