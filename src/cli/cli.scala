@@ -1,6 +1,6 @@
 /*
 
-    Probably, version 0.4.0. Copyright 2017-20 Jon Pretty, Propensive OÜ.
+    Probably, version 0.8.0. Copyright 2017-20 Jon Pretty, Propensive OÜ.
 
     The primary distribution site is: https://propensive.com/
 
