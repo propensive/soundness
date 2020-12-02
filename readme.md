@@ -215,10 +215,10 @@ or imported into an existing layer with,
 ```
 fury layer import -i propensive/probably
 ```
-A binary is available on Maven Central as `com.propensive:probably-cli_<scala-version>:0.4.0`. This may be added
+A binary is available on Maven Central as `com.propensive:probably-cli_<scala-version>:0.8.0`. This may be added
 to an [sbt](https://www.scala-sbt.org/) build with:
 ```scala
-libraryDependencies += "com.propensive" %% "probably-cli" % "0.4.0"
+libraryDependencies += "com.propensive" %% "probably-cli" % "0.8.0"
 ```
 
 ## Contributing
