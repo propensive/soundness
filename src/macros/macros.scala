@@ -297,7 +297,7 @@ object `package` {
   )
 
   implicit class ShellStringContext(sc: StringContext) {
-    def sh(expressions: String*): Command = macro Macros.contextual[ShellInterpolator.type]
+    val sh = Prefix(ShellInterpolator, sc)
   }
 
 }

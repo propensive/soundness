@@ -16,17 +16,15 @@
 */
 package guillotine.tests
 
-import probation.{TestApp, test}
-import contextual.data.scalac._
-import contextual.data.fqt._
-import scala.util.Try
+import probably._
+import scala.util._
 import guillotine._
 import scala.collection.JavaConverters._
 
-object Tests extends TestApp {
+object Tests extends Suite("Guillotine tests") {
   implicit val env = Environment(System.getenv.asScala.toMap, Option(System.getenv("PWD")))
 
-  def tests(): Unit = {
+  def run(test: Runner): Unit = {
     test("basic argument parsing") {
       sh"echo foo bar".args
     }.assert(_ == List("echo", "foo", "bar"))
@@ -144,8 +142,8 @@ object Tests extends TestApp {
     }.assert(_ == "125")
 
     test("very long output") {
-       sh"python -c 'print str(0) *65536'".exec[Try[String]]
-    }.assert(x => x.isSuccess && x.get=="0"*65536)
+      sh"""python -c 'print(" "*65536)'""".exec[Try[String]]
+    }.assert(_ == Success(" "*65536))
 
    test("error") {
      sh"python -c 'import sys;sys.stderr.write(str(1234567));sys.exit(1)'".exec[Try[String]]
