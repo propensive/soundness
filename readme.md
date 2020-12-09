@@ -4,7 +4,7 @@
 [<img src="https://img.shields.io/matrix/propensive.probably:matrix.org?label=MATRIX&color=0dbd8b&style=for-the-badge" height="24">](https://app.element.io/#/room/#propensive.probably:matrix.org)
 [<img src="https://img.shields.io/twitter/follow/propensive?color=%2300acee&label=TWITTER&style=for-the-badge" height="24">](https://twitter.com/propensive)
 [<img src="https://img.shields.io/maven-central/v/com.propensive/probably-cli_2.12?color=2465cd&style=for-the-badge" height="24">](https://search.maven.org/artifact/com.propensive/probably-cli_2.12)
-[<img src="https://img.shields.io/badge/vent-propensive%2Fprobably-f05662?style=for-the-badge" height="24">](https://vent.dev)
+[<img src="https://vent.dev/badge/propensive/probably" height="24">](https://vent.dev/)
 
 <img src="/doc/images/github.png" valign="middle">
 
@@ -80,7 +80,7 @@ not impose constraints on new code, or require non-local changes to existing cod
 
 As tests may appear anywhere, they are easy to parameterize. We could, for example, rewrite the test above like
 so,
-```scala
+```
 import probably._
 
 def runTest(x: Int): Unit =
@@ -95,7 +95,7 @@ runTest(Int.MaxValue)
 
 However, if the test were to fail, it would be useful to know what input caused it to fail. Any number of inputs
 can be logged by including them as additional named parameters after the test name, like this:
-```scala
+```
 import probably._
 
 def runTest(x: Int): Unit =
@@ -215,10 +215,10 @@ or imported into an existing layer with,
 ```
 fury layer import -i propensive/probably
 ```
-A binary is available on Maven Central as `com.propensive:probably-cli_<scala-version>:0.4.0`. This may be added
+A binary is available on Maven Central as `com.propensive:probably-cli_<scala-version>:0.8.0`. This may be added
 to an [sbt](https://www.scala-sbt.org/) build with:
-```scala
-libraryDependencies += "com.propensive" %% "probably-cli" % "0.4.0"
+```
+libraryDependencies += "com.propensive" %% "probably-cli" % "0.8.0"
 ```
 
 ## Contributing
