@@ -4,7 +4,7 @@
 [<img src="https://img.shields.io/matrix/propensive.litterateur:matrix.org?label=MATRIX&color=0dbd8b&style=for-the-badge" height="24">](https://app.element.io/#/room/#propensive.litterateur:matrix.org)
 [<img src="https://img.shields.io/twitter/follow/propensive?color=%2300acee&label=TWITTER&style=for-the-badge" height="24">](https://twitter.com/propensive)
 [<img src="https://img.shields.io/maven-central/v/com.propensive/litterateur-html_2.12?color=2465cd&style=for-the-badge" height="24">](https://search.maven.org/artifact/com.propensive/litterateur-html_2.12)
-[<img src="https://img.shields.io/badge/vent-propensive%2Flitterateur-f05662?style=for-the-badge" height="24">](https://vent.dev)
+[<img src="https://vent.dev/badge/propensive/litterateur" height="24">](https://vent.dev/)
 
 <img src="/doc/images/github.png" valign="middle">
 
