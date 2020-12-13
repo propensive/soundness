@@ -19,6 +19,7 @@ package jovian
 import kaleidoscope._
 import contextual._
 import mercator._
+import gastronomy._
 
 import scala.language.experimental.macros
 import scala.language.higherKinds
@@ -225,7 +226,7 @@ case class Path(input: String) {
 
   def lines(): Try[Iterator[String]] = Try(scala.io.Source.fromFile(javaFile).getLines())
 
-  def bytes(): Try[Array[Byte]] = Try(Files.readAllBytes(javaPath))
+  def bytes(): Try[Bytes] = Try(Bytes(Files.readAllBytes(javaPath)))
 
   def copyTo(path: Path): Try[Path] = Try {
     Files.walkFileTree(javaPath, new Path.CopyFileVisitor(javaPath, path.javaPath))
