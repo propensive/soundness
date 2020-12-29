@@ -16,6 +16,7 @@
 package gastronomy
 
 import magnolia._
+import rudiments._
 
 import scala.collection._
 
@@ -31,6 +32,10 @@ object `package` {
               (implicit hashFunction: HashFunction[A], hashable: Hashable[T])
               : Digest =
       Digester(hashable.digest(_, value)).apply(hashFunction)
+  }
+
+  implicit class BytesExtension(val bytes: Bytes) extends AnyVal {
+    def encoded[ES <: EncodingScheme: ByteEncoder]: String = implicitly[ByteEncoder[ES]].encode(bytes)
   }
 }
 
@@ -91,8 +96,8 @@ object Hashable {
   implicit val short: Hashable[Short] = (acc, n) => acc.append(Array((n >> 8).toByte, n.toByte))
   implicit val char: Hashable[Char] = (acc, n) => acc.append(Array((n >> 8).toByte, n.toByte))
   implicit val string: Hashable[String] = (acc, s) => acc.append(s.getBytes("UTF-8"))
-  implicit val bytes: Hashable[Bytes] = (acc, b) => acc.append(b.array)
-  implicit val digest: Hashable[Digest] = (acc, d) => acc.append(d.bytes.array)
+  implicit val bytes: Hashable[Bytes] = (acc, b) => acc.append(b.to[Array])
+  implicit val digest: Hashable[Digest] = (acc, d) => acc.append(d.bytes.to[Array])
   implicit def gen[T]: Hashable[T] = macro Magnolia.gen[T]
 }
 
@@ -114,41 +119,6 @@ final case class DigestAccumulator(private val messageDigest: MessageDigest) {
   def digest(): Digest = Digest(Bytes(messageDigest.digest()))
 }
 
-object Bytes {
-  def apply[Coll[T] <: Seq[T]]
-           (bytes: Coll[Byte])
-           (implicit cbf: generic.CanBuildFrom[Coll[Byte], Byte, Array[Byte]]) =
-    new Bytes(bytes.toArray)
-  
-  def apply(bytes: Array[Byte]): Bytes = new Bytes(bytes.clone)
-}
-
-final class Bytes private[gastronomy] (private[gastronomy] val array: Array[Byte]) {
-  def length: Int = array.size
-  def size: Int = length
-  override def toString: String = s"[${size}B]"
-  override def hashCode: Int = Arrays.hashCode(array)
- 
-  def apply(index: Int): Byte = array(index)
-
-  def ++(that: Bytes): Bytes = {
-    val newArray = new Array[Byte](size + that.size)
-    System.arraycopy(array, 0, newArray, 0, array.size)
-    System.arraycopy(that.array, 0, newArray, array.size, that.array.size)
-    new Bytes(newArray)
-  }
-
-  override def equals(that: Any): Boolean = that match {
-    case that: Bytes => Arrays.equals(array, that.array)
-    case _ => false
-  }
-  
-  def to[Coll[T]](implicit cbf: generic.CanBuildFrom[Array[Byte], Byte, Coll[Byte]]): Coll[Byte] =
-    array.to[Coll]
-
-  def encoded[ES <: EncodingScheme: ByteEncoder]: String = implicitly[ByteEncoder[ES]].encode(this)
-}
-
 trait EncodingScheme
 trait Base64 extends EncodingScheme
 trait Base64Url extends EncodingScheme
@@ -161,7 +131,7 @@ object ByteEncoder {
 
   implicit val hex: ByteEncoder[Hex] = { bytes =>
     val array = new Array[Byte](bytes.length*2)
-    bytes.array.indices.foreach { idx =>
+    bytes.to[Array].indices.foreach { idx =>
       array(2*idx) = HexLookup((bytes(idx) >> 4) & 0xf)
       array(2*idx + 1) = HexLookup(bytes(idx) & 0xf)
     }
@@ -169,10 +139,10 @@ object ByteEncoder {
   }
 
   implicit val base64: ByteEncoder[Base64] =
-    bytes => java.util.Base64.getEncoder.encodeToString(bytes.array)
+    bytes => java.util.Base64.getEncoder.encodeToString(bytes.to[Array])
   
   implicit val base64Url: ByteEncoder[Base64Url] =
-    bytes => java.util.Base64.getEncoder.encodeToString(bytes.array).replace('+', '-').replace('/', '_').takeWhile(_ != '=')
+    bytes => java.util.Base64.getEncoder.encodeToString(bytes.to[Array]).replace('+', '-').replace('/', '_').takeWhile(_ != '=')
 }
 
 trait ByteEncoder[ES <: EncodingScheme] { def encode(bytes: Bytes): String }
