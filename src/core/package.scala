@@ -52,6 +52,9 @@ final case class Bytes private[rudiments] (private val array: Array[Byte])
     case _           => false
   }
 
+  override protected[this] def thisCollection: IndexedSeq[Byte] = array
+  override protected[this] def toCollection(repr: Bytes): IndexedSeq[Byte] = repr.array
+
   override def hashCode: Int = java.util.Arrays.hashCode(array)
   def seq: IndexedSeq[Byte] = array
   def length: Int = array.length
