@@ -41,7 +41,7 @@ trait Annex[Typeclass[_]] {
     function(typeclass)(value)
 }
 
-private[annexation] case class Annexed[Typeclass[_], Type](value: Type,
+private[rudiments] case class Annexed[Typeclass[_], Type](value: Type,
                                                            typeclass: Typeclass[Type])
     extends Annex[Typeclass] {
   type Value = Type
