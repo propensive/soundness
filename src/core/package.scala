@@ -17,6 +17,8 @@
 
 package rudiments
 
+import scala.collection._, mutable.{Builder, ArrayBuffer}
+
 import language.implicitConversions
 
 object `package` {
@@ -39,15 +41,34 @@ case class StringExtensions(value: String) extends AnyVal {
   @inline final def populated: Option[String] = if(value.isEmpty) None else Some(value)
 }
 
-object Bytes { def apply(array: Array[Byte]): Bytes = Bytes(array.clone) }
+object Bytes {
+  def apply(array: Array[Byte]): Bytes = new Bytes(array.clone)
+}
 
-class Bytes private[rudiments] (private val array: Array[Byte]) {
+final case class Bytes private[rudiments] (private val array: Array[Byte])
+    extends IndexedSeqOptimized[Byte, Bytes] {
   override def equals(that: Any): Boolean = that match {
     case that: Bytes => java.util.Arrays.equals(array, that.array)
     case _           => false
   }
 
   override def hashCode: Int = java.util.Arrays.hashCode(array)
+  def seq: IndexedSeq[Byte] = array
+  def length: Int = array.length
+  override def toString: String = s"[${size}B]"
+  def apply(index: Int): Byte = array(index)
+
+  def newBuilder: Builder[Byte, Bytes] = new Builder[Byte, Bytes] {
+    private val underlying = ArrayBuffer.empty[Byte]
+    
+    def +=(elem: Byte): this.type = {
+      underlying += elem
+      this
+    }
+
+    def clear(): Unit = underlying.clear()
+    def result(): Bytes = Bytes(underlying.toArray)
+  }
 }
 
 case class TraversableStringExtensions(values: Traversable[String]) extends AnyVal {
