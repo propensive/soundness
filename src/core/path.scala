@@ -104,7 +104,7 @@ case class Path(input: String) {
   def uriString: String = javaFile.toURI.toString
   def name: String = javaPath.getFileName.toString
   def /(child: String): Path = if(filename == "/") Path(s"/$child") else Path(s"$filename/$child")
-  def in(root: Path): Path = Path(s"${root.value}/$value")
+  def in(root: Path): Path = if(value == ".") root else Path(s"${root.value}/$value")
 
   def lastModified: Long = javaFile.lastModified()
 
