@@ -47,14 +47,14 @@ extension (ctx: StringContext):
    def it(): Messages[It] = Messages(content)
    def pl(): Messages[Pl] = Messages(content)
 
+given LanguageContext[Fr] = LanguageContext(summon[ClassTag[Fr]])
+
 @main
 def run(): Unit =
    println("one")
-   println(ValueOf[Fr#Type].value)
-   //given LanguageContext[Fr] = LanguageContext[Fr]
    println("two")
-   val x = fr"This is in English" & en"C'est en francais"
-   println("three")
+   val x = en"This is in English" & fr"C'est en français"
+   println(x())
    //println(x())
    println("four")
 
