@@ -7,28 +7,25 @@ import scala.util.Not
 import scala.annotation._
 import scala.language.implicitConversions
 
-class Language[T <: String & Singleton: ValueOf]():
-   type Type = T
-   def apply(): String = summon[ValueOf[T]].value
-
 object LanguageContext:
-   def apply[L2 <: Language[?]: ClassTag]: LanguageContext[L2] =
-      new LanguageContext(summon[ClassTag[L2]])
+   def apply[L2 <: String: ValueOf]: LanguageContext[L2] =
+      new LanguageContext(summon[ValueOf[L2]])
 
-class LanguageContext[L <: Language[?]](val classTag: ClassTag[L])
+case class LanguageContext[L <: String: ValueOf](value: ValueOf[L])
 
 object Messages:
-   def apply[L <: Language[?]: ClassTag](msg: String): Messages[L] = Messages[L](Map(summon[ClassTag[L]] -> msg))
+   def make[L <: String: ValueOf](msg: String): Messages[L] =
+      Messages[L](Map(summon[ValueOf[L]].value -> msg))
 
-case class Messages[L <: Language[?]](text: Map[ClassTag[_], String]):
-   def &[L2 <: Language[?]](messages: Messages[L2])(using Not[(L | L2) =:= L]): Messages[L | L2] =
-     Messages(text ++ messages.text)
+case class Messages[L <: String](text: Map[String, String]):
+   def &[L2 <: String](messages: Messages[L2])(using Not[(L | L2) =:= L]): Messages[L | L2] =
+      Messages(text ++ messages.text)
    
-   def apply[L2 <: L: ClassTag]: String =
-     text(summon[ClassTag[L2]])
+   def apply[L2 <: L: ValueOf]: String =
+      text(summon[ValueOf[L2]].value)
 
    def apply[L2 <: L]()(using ctx: LanguageContext[L2]): String =
-      apply[L2](using ctx.classTag)
+      apply(ctx.value)
 
 import languages.common._
 
@@ -36,38 +33,44 @@ extension (ctx: StringContext):
    
    private def content: String = ctx.parts.head
    
-   def en(): Messages[En] = Messages(content)
-   def ru(): Messages[Ru] = Messages(content)
-   def de(): Messages[De] = Messages(content)
-   def es(): Messages[Es] = Messages(content)
-   def fr(): Messages[Fr] = Messages(content)
-   def ja(): Messages[Jp] = Messages(content)
-   def pt(): Messages[Pt] = Messages(content)
-   def zh(): Messages[Zh] = Messages(content)
-   def it(): Messages[It] = Messages(content)
-   def pl(): Messages[Pl] = Messages(content)
+   def en(): Messages["en"] = Messages.make["en"](content)
+   def ru(): Messages["ru"] = Messages.make["ru"](content)
+   def de(): Messages["de"] = Messages.make["de"](content)
+   def es(): Messages["es"] = Messages.make["es"](content)
+   def fr(): Messages["fr"] = Messages.make["fr"](content)
+   def ja(): Messages["ja"] = Messages.make["ja"](content)
+   def pt(): Messages["pt"] = Messages.make["pt"](content)
+   def zh(): Messages["zh"] = Messages.make["zh"](content)
+   def it(): Messages["it"] = Messages.make["it"](content)
+   def pl(): Messages["pl"] = Messages.make["pl"](content)
 
-given LanguageContext[Fr] = LanguageContext[Fr]
+type MyLangs = En | De | Es | Fr
+
+var dynamicLang = "es"
+
+given LanguageContext[? <: MyLangs] = dynamicLang match
+   case "de" => LanguageContext[De]
+   case "es" => LanguageContext[Es]
+   case "fr" => LanguageContext[Fr]
+   case _    => LanguageContext[En]
 
 @main
 def run(): Unit =
-   println(ValueOf["hello"])
-   val x = en"This is in English" & fr"C'est en français" & de"Das ist Deutsch"
-   //println(x[En])
-   println(x()) // FIXME: This does not seem to terminate
+   val x: Messages[MyLangs] = en"This is in English" & de"Das ist Deutsch" & es"Es español" & fr"français"
+   println(x())
 
 object languages:
    object common:
-      opaque type En <: Language[?] = Language["en"]
-      opaque type Fr <: Language[?] = Language["fr"]
-      opaque type De <: Language[?] = Language["de"]
-      opaque type Ru <: Language[?] = Language["ru"]
-      opaque type Pt <: Language[?] = Language["pt"]
-      opaque type It <: Language[?] = Language["it"]
-      opaque type Zh <: Language[?] = Language["zh"]
-      opaque type Es <: Language[?] = Language["es"]
-      opaque type Jp <: Language[?] = Language["jp"]
-      opaque type Pl <: Language[?] = Language["pl"]
+      type En = "en"
+      type Fr = "fr"
+      type De = "de"
+      type Ru = "ru"
+      type Pt = "pt"
+      type It = "it"
+      type Zh = "zh"
+      type Es = "es"
+      type Jp = "jp"
+      type Pl = "pl"
    
    // object all:
    //    opaque type Ab <: Language = Language
