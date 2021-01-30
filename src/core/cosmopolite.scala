@@ -1,5 +1,7 @@
 package cosmopolite
 
+// https://github.com/propensive/cosmopolite
+
 import scala.reflect._
 import scala.util.Not
 import scala.annotation._
@@ -10,9 +12,10 @@ class Language[T <: String & Singleton: ValueOf]():
    def apply(): String = summon[ValueOf[T]].value
 
 object LanguageContext:
-   def apply[L2 <: Language[?]: ClassTag]: LanguageContext[L2] = LanguageContext(summon[ClassTag[L2]])
+   def apply[L2 <: Language[?]: ClassTag]: LanguageContext[L2] =
+      new LanguageContext(summon[ClassTag[L2]])
 
-case class LanguageContext[L <: Language[?]](classTag: ClassTag[L])
+class LanguageContext[L <: Language[?]](val classTag: ClassTag[L])
 
 object Messages:
    def apply[L <: Language[?]: ClassTag](msg: String): Messages[L] = Messages[L](Map(summon[ClassTag[L]] -> msg))
@@ -22,12 +25,9 @@ case class Messages[L <: Language[?]](text: Map[ClassTag[_], String]):
      Messages(text ++ messages.text)
    
    def apply[L2 <: L: ClassTag]: String =
-     println("five")
      text(summon[ClassTag[L2]])
 
    def apply[L2 <: L]()(using ctx: LanguageContext[L2]): String =
-      println(ctx)
-      println(ctx.classTag)
       apply[L2](using ctx.classTag)
 
 import languages.common._
@@ -47,21 +47,19 @@ extension (ctx: StringContext):
    def it(): Messages[It] = Messages(content)
    def pl(): Messages[Pl] = Messages(content)
 
-given LanguageContext[Fr] = LanguageContext(summon[ClassTag[Fr]])
+given LanguageContext[Fr] = LanguageContext[Fr]
 
 @main
 def run(): Unit =
-   println("one")
-   println("two")
-   val x = en"This is in English" & fr"C'est en français"
-   println(x())
-   //println(x())
-   println("four")
+   println(ValueOf["hello"])
+   val x = en"This is in English" & fr"C'est en français" & de"Das ist Deutsch"
+   //println(x[En])
+   println(x()) // FIXME: This does not seem to terminate
 
 object languages:
    object common:
-      type En = Language["en"]
-      type Fr = Language["fr"]
+      opaque type En <: Language[?] = Language["en"]
+      opaque type Fr <: Language[?] = Language["fr"]
       opaque type De <: Language[?] = Language["de"]
       opaque type Ru <: Language[?] = Language["ru"]
       opaque type Pt <: Language[?] = Language["pt"]
