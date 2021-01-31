@@ -3,12 +3,29 @@ import scala.reflect._
 import scala.util.NotGiven
 import scala.annotation._
 import scala.language.implicitConversions
+import scala.quoted._
+import reflect.Selectable.reflectiveSelectable
+
+import scala.annotation.targetName
+
+case class Language[+L <: String](value: String)
 
 object Language:
-   def apply[L2 <: String & Singleton: ValueOf]: Language[L2] =
-      new Language(summon[ValueOf[L2]].value)
+   @targetName("make")
+   def apply[L <: String: ValueOf]: Language[L] = new Language(summon[ValueOf[L]].value)
+   
+   inline def parse[L <: String](str: String): Option[Language[L]] =  ${parseCode[L]('str)}
 
-case class Language[+L <: String: ValueOf](value: L)
+   def parseCode[L <: String: Type](str: Expr[String])(using quotes: Quotes): Expr[Option[Language[L]]] =
+      import quotes.reflect._
+
+      def langs(t: TypeRepr): List[String] = t.dealias match
+         case OrType(left, right) => langs(left) ++ langs(right)
+         case ConstantType(StringConstant(lang)) => List(lang)
+
+      langs(TypeRepr.of[L]).foldLeft('{ None: Option[Language[L]] }) { (agg, lang) =>
+         '{ if $str == ${Expr(lang)} then Some(Language[L](${Expr(lang)})) else $agg }
+      }
 
 object Messages:
    def make[L <: String: ValueOf](seq: Seq[String], parts: Seq[Messages[? >: L]]): Messages[L] =
@@ -23,7 +40,6 @@ case class Messages[L <: String](text: Map[String, String]):
    def apply[L2 <: L]()(using ctx: Language[L2]): String = text(ctx.value)
 
 import languages.common._
-
 extension (ctx: StringContext)
    def en(msgs: Messages[? >: En]*): Messages[En] = Messages.make[En](ctx.parts, msgs)
    def ru(msgs: Messages[? >: Ru]*): Messages[Ru] = Messages.make[Ru](ctx.parts, msgs)
@@ -35,27 +51,3 @@ extension (ctx: StringContext)
    def zh(msgs: Messages[? >: Zh]*): Messages[Zh] = Messages.make[Zh](ctx.parts, msgs)
    def it(msgs: Messages[? >: It]*): Messages[It] = Messages.make[It](ctx.parts, msgs)
    def pl(msgs: Messages[? >: Pl]*): Messages[Pl] = Messages.make[Pl](ctx.parts, msgs)
-
-type MyLangs = En | De | Es | Fr
-
-var dynamicLang = "es"
-
-given Language[MyLangs] = dynamicLang match
-   case "de" => Language[De]
-   case "es" => Language[Es]
-   case "fr" => Language[Fr]
-   case _    => Language[En]
-
-@main
-def run(): Unit =
-   def number(n: Int): Messages[En | Fr | De | Es] = n match
-      case 1 => en"one" & fr"un" & de"ein" & es"uno"
-      case 2 => en"two" & fr"deux" & de"zwei" & es"dos"
-      case 3 => en"three" & fr"trois" & de"drei" & es"tres"
-
-   val x: Messages[MyLangs] = en"This is ${number(1)} in English" &
-       de"Das ist ${number(1)} auf Deutsch" &
-       es"Es ${number(1)} en español" &
-       fr"C'est ${number(1)} en français"
-
-   println(x())
