@@ -10,7 +10,7 @@ var dynamicLang = "es"
 @main
 def run(lang: String): Unit =
    def number(n: Int): Messages[MyLangs] = n match
-      case 1 => en"one" & fr"un" & de"ein" & es"uno"
+      case 1 => en"one" & fr"un" & de"ein" & es"uno" // & fr"uno" // KO
       case 2 => en"two" & fr"deux" & de"zwei" & es"dos"
       case 3 => en"three" & fr"trois" & de"drei" & es"tres"
 

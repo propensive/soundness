@@ -33,7 +33,7 @@ object Messages:
       Messages[L](Map(summon[ValueOf[L]].value -> string))
 
 case class Messages[L <: String](text: Map[String, String]):
-   def &[L2 <: String](messages: Messages[L2])(using NotGiven[(L | L2) =:= L]): Messages[L | L2] =
+   def &[L2 <: String](messages: Messages[L2])(using NotGiven[L2 <:< L]): Messages[L | L2] =
       Messages(text ++ messages.text)
    
    def apply[L2 <: L: ValueOf]: String = text(summon[ValueOf[L2]].value)
