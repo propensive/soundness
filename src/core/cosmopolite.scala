@@ -39,6 +39,9 @@ case class Messages[L <: String](text: Map[String, String]):
    def apply[L2 <: L: ValueOf]: String = text(summon[ValueOf[L2]].value)
    def apply[L2 <: L]()(using ctx: Language[L2]): String = text(ctx.value)
 
+   // Narrows type to the subset of Languages L2 in L
+   def subset[L2 <: L]: Messages[L2] = Messages[L2](text)
+
 import languages.common._
 extension (ctx: StringContext)
    def en(msgs: Messages[? >: En]*): Messages[En] = Messages.make[En](ctx.parts, msgs)

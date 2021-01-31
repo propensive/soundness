@@ -20,6 +20,8 @@ def run(lang: String): Unit =
       es"Es ${number(1)} en español" &
       fr"C'est ${number(1)} en français"
 
+   val subset: Messages[Ru & Es] = msg.subset[Ru & Es]
+
    Language.parse[MyLangs](lang).foreach { lang =>
       given Language[MyLangs] = lang
       println(msg())
