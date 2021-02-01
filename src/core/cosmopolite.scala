@@ -33,11 +33,14 @@ object Messages:
       Messages[L](Map(summon[ValueOf[L]].value -> string))
 
 case class Messages[L <: String](text: Map[String, String]):
-   def &[L2 <: String](messages: Messages[L2])(using NotGiven[(L | L2) =:= L]): Messages[L | L2] =
+   def &[L2 <: String](messages: Messages[L2])(using NotGiven[L2 <:< L]): Messages[L | L2] =
       Messages(text ++ messages.text)
    
    def apply[L2 <: L: ValueOf]: String = text(summon[ValueOf[L2]].value)
    def apply[L2 <: L]()(using ctx: Language[L2]): String = text(ctx.value)
+
+   // Narrows type to the subset of Languages L2 in L
+   def subset[L2 <: L]: Messages[L2] = Messages[L2](text)
 
 import languages.common._
 extension (ctx: StringContext)
