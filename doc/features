@@ -1,0 +1,8 @@
+- provides a representation for multilingual strings
+- provides a representation of a language
+- interpolated string constructors for common languages
+- support for all [ISO 639-1](https://en.wikipedia.org/wiki/List_of_ISO_639-1_codes) languages
+- users choose their exact set of languages with a union type
+- support for all language guaranteed by type for all static strings
+- additions to the language set produce compile errors for every incomplete multilingual string
+- checks for duplicate languages in construction of multilingual strings

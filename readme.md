@@ -6,18 +6,26 @@
 [<img src="https://img.shields.io/maven-central/v/com.propensive/cosmopolite_2.12?color=2465cd&style=for-the-badge" height="24">](https://search.maven.org/artifact/com.propensive/cosmopolite_2.12)
 [<img src="https://vent.dev/badge/propensive/cosmopolite" height="24">](https://vent.dev/)
 
+<img src="/doc/images/github.png" valign="middle">
+
 # Cosmopolite
 
-__Cosmopolite__ provides a representation of multilingual strings.
+_Cosmopolite_ provides a typesafe representation for working with multilingual strings, `Messages`, with convenient constructors which guarantee through their types that translations for a specific set of languages exist in each instance. Furthermore, a `Language` type provides a coproduct representation of a language from the same set which can safely select one string from the set.
 
 ## Features
 
-
+- provides a representation for multilingual strings
+- provides a representation of a language
+- interpolated string constructors for common languages
+- support for all [ISO 639-1](https://en.wikipedia.org/wiki/List_of_ISO_639-1_codes) languages
+- users choose their exact set of languages with a union type
+- support for all language guaranteed by type for all static strings
+- additions to the language set produce compile errors for every incomplete multilingual string
+- checks for duplicate languages in construction of multilingual strings
 
 ## Getting Started
 
-TBC
-
+When working with a front-end application that requires 
 
 ## Status
 
@@ -67,5 +75,5 @@ training is available from [Propensive O&Uuml;](https://propensive.com/).
 
 ## License
 
-Cosmopolite is copyright &copy; 2015-21 Jon Pretty & Propensive O&Uuml;, and is made available under the
+Cosmopolite is copyright &copy; 2021-21 Jon Pretty & Propensive O&Uuml;, and is made available under the
 [Apache 2.0 License](/license.md).
