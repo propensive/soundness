@@ -1,4 +1,5 @@
 package cosmopolite
+
 import scala.reflect._
 import scala.util.NotGiven
 import scala.annotation._
@@ -41,13 +42,14 @@ extension[L <: String] (str: String)
    def as(using ValueOf[L]): Messages[L] = Messages[L](List(str), Nil)
 
 extension (ctx: StringContext)
-   def en(msgs: Messages[En]*): Messages[En] = Messages[En](ctx.parts, msgs)
-   def ru(msgs: Messages[Ru]*): Messages[Ru] = Messages[Ru](ctx.parts, msgs)
-   def de(msgs: Messages[De]*): Messages[De] = Messages[De](ctx.parts, msgs)
-   def es(msgs: Messages[Es]*): Messages[Es] = Messages[Es](ctx.parts, msgs)
-   def fr(msgs: Messages[Fr]*): Messages[Fr] = Messages[Fr](ctx.parts, msgs)
-   def ja(msgs: Messages[Ja]*): Messages[Ja] = Messages[Ja](ctx.parts, msgs)
-   def pt(msgs: Messages[Pt]*): Messages[Pt] = Messages[Pt](ctx.parts, msgs)
-   def zh(msgs: Messages[Zh]*): Messages[Zh] = Messages[Zh](ctx.parts, msgs)
-   def it(msgs: Messages[It]*): Messages[It] = Messages[It](ctx.parts, msgs)
-   def pl(msgs: Messages[Pl]*): Messages[Pl] = Messages[Pl](ctx.parts, msgs)
+   def en(msgs: Messages[En]*): Messages[En] = Messages(ctx.parts, msgs)
+   def ru(msgs: Messages[Ru]*): Messages[Ru] = Messages(ctx.parts, msgs)
+   def de(msgs: Messages[De]*): Messages[De] = Messages(ctx.parts, msgs)
+   def es(msgs: Messages[Es]*): Messages[Es] = Messages(ctx.parts, msgs)
+   def fr(msgs: Messages[Fr]*): Messages[Fr] = Messages(ctx.parts, msgs)
+   def ja(msgs: Messages[Ja]*): Messages[Ja] = Messages(ctx.parts, msgs)
+   def pt(msgs: Messages[Pt]*): Messages[Pt] = Messages(ctx.parts, msgs)
+   def zh(msgs: Messages[Zh]*): Messages[Zh] = Messages(ctx.parts, msgs)
+   def it(msgs: Messages[It]*): Messages[It] = Messages(ctx.parts, msgs)
+   def pl(msgs: Messages[Pl]*): Messages[Pl] = Messages(ctx.parts, msgs)
+
