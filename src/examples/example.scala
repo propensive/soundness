@@ -1,28 +1,27 @@
 package example
 
-import cosmopolite._
-import languages.common._
+import cosmopolite._, languages.common._
 
 type MyLangs = En | De | Es | Fr
+
+type SubsetLangs = En | Fr
 
 var dynamicLang = "es"
 
 @main
 def run(lang: String): Unit =
    def number(n: Int): Messages[MyLangs] = n match
-      case 1 => en"one" & fr"un" & de"ein" & es"uno" // & fr"uno" // KO
+      case 1 => en"one" & fr"un" & de"ein" & es"uno"
       case 2 => en"two" & fr"deux" & de"zwei" & es"dos"
       case 3 => en"three" & fr"trois" & de"drei" & es"tres"
 
-   val msg: Messages[MyLangs] =
-      en"This is ${number(1)} in English" &
-      de"Das ist ${number(1)} auf Deutsch" &
-      es"Es ${number(1)} en español" &
-      fr"C'est ${number(1)} en français"
+   val msg: Messages[SubsetLangs] =
+      en"This is the number ${number(1)} in English" &
+      de"Das ist die Nummer ${number(1)} auf Deutsch" &
+      es"Es el numero ${number(1)} en español" &
+      fr"C'est le numéro ${number(1)} en français"
 
-   val subset: Messages[Ru & Es] = msg.subset[Ru & Es]
-
-   Language.parse[MyLangs](lang).foreach { lang =>
-      given Language[MyLangs] = lang
+   Language.parse[En | Fr](lang).foreach { lang =>
+      given Language[Fr | En] = lang
       println(msg())
    }
