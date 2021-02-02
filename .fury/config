@@ -8,4 +8,7 @@
 # For more information, please visit https://propensive.com/fury/
 #
 layerRef	QmZwZDCkwRZtQ9HjuAGaRmryKBW3DjsunGGXTf4VbKhN6j
+published	Some	url	fury://vent.dev/propensive/cosmopolite
+		layerRef	QmZwZDCkwRZtQ9HjuAGaRmryKBW3DjsunGGXTf4VbKhN6j
+		expiry	Some	1614867532351
 # vim: set noai ts=12 sw=12:
