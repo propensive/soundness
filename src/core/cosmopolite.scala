@@ -11,18 +11,19 @@ object Language:
    @targetName("make")
    def apply[L <: String: ValueOf]: Language[L] = new Language(summon[ValueOf[L]].value)
    
-   inline def parse[L <: String](str: String): Option[Language[L]] = ${doParse[L]('str)}
+   inline def parse[L <: String](str: String): Option[Language[L]] =
+      Option.when(reifyToSet[L].contains(str))(Language(str))
 
-   private def doParse[L <: String: Type](str: Expr[String])(using quotes: Quotes): Expr[Option[Language[L]]] =
+   private inline def reifyToSet[L <: String]: Set[String] = ${reifyToSetMacro[L]}
+
+   private def reifyToSetMacro[L <: String: Type](using quotes: Quotes): Expr[Set[String]] =
       import quotes.reflect._
 
-      def langs(t: TypeRepr): List[String] = t.dealias match
+      def langs(t: TypeRepr): Set[String] = t.dealias match
          case OrType(left, right) => langs(left) ++ langs(right)
-         case ConstantType(StringConstant(lang)) => List(lang)
+         case ConstantType(StringConstant(lang)) => Set(lang)
 
-      langs(TypeRepr.of[L]).foldLeft('{ None: Option[Language[L]] }) { (agg, lang) =>
-         '{ if $str == ${Expr(lang)} then Some(Language[L](${Expr(lang)})) else $agg }
-      }
+      Expr(langs(TypeRepr.of[L]))
 
 object Messages:
    def apply[L <: String: ValueOf](seq: Seq[String], parts: Seq[Messages[? >: L]]): Messages[L] =
