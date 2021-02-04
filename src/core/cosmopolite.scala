@@ -12,17 +12,16 @@ object Language:
    def apply[L <: String: ValueOf]: Language[L] = new Language(summon[ValueOf[L]].value)
    
    inline def parse[L <: String](str: String): Option[Language[L]] =
-      Option.when(reifyToList[L].contains(str))(Language(str))
+      Option.when(reifyToSet[L].contains(str))(Language(str))
 
-   inline def reifyToList[L <: String]: List[String] = ${reifyToListMacro[L]}
+   private inline def reifyToSet[L <: String]: Set[String] = ${reifyToSetMacro[L]}
 
-   private def reifyToListMacro[L <: String: Type](using quotes: Quotes): Expr[List[String]] =
+   private def reifyToSetMacro[L <: String: Type](using quotes: Quotes): Expr[Set[String]] =
       import quotes.reflect._
 
-      def langs(t: TypeRepr): List[String] = t.dealias match
+      def langs(t: TypeRepr): Set[String] = t.dealias match
          case OrType(left, right) => langs(left) ++ langs(right)
-         case AndType(left, right) => langs(left) ++ langs(right)
-         case ConstantType(StringConstant(lang)) => List(lang)
+         case ConstantType(StringConstant(lang)) => Set(lang)
 
       Expr(langs(TypeRepr.of[L]))
 
