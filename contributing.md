@@ -1,14 +1,14 @@
 <img src="/doc/images/200x200.png" align="right">
 
-# Contributing to acyclicity
+# Contributing to Acyclicity
 
-Firstly, thank you for taking an interesting in contributing! acyclicity is an open-source project, and welcomes
+Firstly, thank you for taking an interesting in contributing! Acyclicity is an open-source project, and welcomes
 contributions in the form of feature code, bug reports & fixes, tests, feature suggestions and anything else
 which may help to make it better software.
 
 ## Developing with Fury
 
-acyclicity is developed using [Fury](https://github.com/propensive/fury), which may be installed by running the
+Acyclicity is developed using [Fury](https://github.com/propensive/fury), which may be installed by running the
 launcher script in the root directory, like so:
 ```
 ./fury system install
@@ -19,7 +19,7 @@ system settings.
 
 ### Compiling
 
-The simplest way to compile acyclicity is to run,
+The simplest way to compile Acyclicity is to run,
 ```
 fury
 ```
@@ -56,7 +56,7 @@ branches which named after the issue number, prefixed with `issue/`, for example
 ## Contribution standards
 
 Pull requests should try to follow the coding style of existing code in the repository. They are unlikely to be
-rejected on grounds of formatting, except in extreme cases. acyclicity does not use automatic code-formatting
+rejected on grounds of formatting, except in extreme cases. Acyclicity does not use automatic code-formatting
 because it has proven to produce unreliable results (and furthermore, hand-formatting is not particularly
 laborious).
 
@@ -79,5 +79,5 @@ if it&rsquo;s needed.
 ## Conduct
 
 Contributors and other participants in online discussions are expected to be polite and to nurture a pleasant
-development environment for all acyclicity&rsquo;s users. Propensive O&Uuml; reserves the right to censure
+development environment for all Acyclicity&rsquo;s users. Propensive O&Uuml; reserves the right to censure
 and&mdash;in extreme cases&mdash;ban users whose behavior, in their opinion, is detrimental toward this goal.

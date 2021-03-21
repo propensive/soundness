@@ -8,7 +8,7 @@
 
 <img src="/doc/images/github.png" valign="middle">
 
-# acyclicity
+# Acyclicity
 
 Acyclicity provides a single data structure, `Dag[T]`, representing a graph of nodes of type `T`, with monadic operations and several other utility methods.
 
@@ -29,7 +29,7 @@ Acyclicity provides a monadic representation of a directed, acyclic graph (DAG) 
 
 ## Status
 
-acyclicity is classified as __embryonic__. Propensive defines the following five stability levels for open-source projects:
+Acyclicity is classified as __embryonic__. Propensive defines the following five stability levels for open-source projects:
 
 - _embryonic_: for experimental or demonstrative purposes only, without guarantee of longevity
 - _fledgling_: of proven utility, seeking contributions, but liable to significant redesigns
@@ -39,7 +39,7 @@ acyclicity is classified as __embryonic__. Propensive defines the following five
 
 ## Availability
 
-acyclicity&rsquo;s source is available on GitHub, and may be built with [Fury](https://github.com/propensive/fury) by
+Acyclicity&rsquo;s source is available on GitHub, and may be built with [Fury](https://github.com/propensive/fury) by
 cloning the layer `propensive/acyclicity`.
 ```
 fury layer clone -i propensive/acyclicity
@@ -56,24 +56,24 @@ libraryDependencies += "com.propensive" %% "acyclicity-core" % "0.1.0"
 
 ## Contributing
 
-Contributors to acyclicity are welcome and encouraged. New contributors may like to look for issues marked
+Contributors to Acyclicity are welcome and encouraged. New contributors may like to look for issues marked
 <a href="https://github.com/propensive/acyclicity/labels/good%20first%20issue"><img alt="label: good first issue"
 src="https://img.shields.io/badge/-good%20first%20issue-67b6d0.svg" valign="middle"></a>.
 
 We suggest that all contributors read the [Contributing Guide](/contributing.md) to make the process of
-contributing to acyclicity easier.
+contributing to Acyclicity easier.
 
 Please __do not__ contact project maintainers privately with questions, as other users cannot then benefit from
 the answers.
 
 ## Author
 
-acyclicity was designed and developed by [Jon Pretty](https://twitter.com/propensive), and commercial support and
+Acyclicity was designed and developed by [Jon Pretty](https://twitter.com/propensive), and commercial support and
 training is available from [Propensive O&Uuml;](https://propensive.com/).
 
 
 
 ## License
 
-acyclicity is copyright &copy; 2021-21 Jon Pretty & Propensive O&Uuml;, and is made available under the
+Acyclicity is copyright &copy; 2021-21 Jon Pretty & Propensive O&Uuml;, and is made available under the
 [Apache 2.0 License](/license.md).
