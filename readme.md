@@ -58,7 +58,7 @@ A `Dag[T]` may also be filtered with a predicate, `T => Boolean`. The removal of
 
 ## Other Operations
 
-The method `Dag#simplify` will calculate the transitive reduction of the graph, removing any direct edge between two nodes when transitive edges exist between those nodes.
+The method `Dag#reduction` will calculate the transitive reduction of the graph, removing any direct edge between two nodes when transitive edges exist between those nodes.
 
 The duel of this operation is the transitive closure, which adds direct edges between each pair of nodes between which a transitive path exists. This is available with the `Dag#closure` method.
 
