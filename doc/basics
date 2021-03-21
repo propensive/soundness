@@ -1,0 +1,2 @@
+Acyclicity provides a monadic representation of a directed, acyclic graph (DAG) called `Dag`.
+
