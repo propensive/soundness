@@ -1,6 +1,6 @@
 Acyclicity provides a monadic representation of a directed, acyclic graph (DAG) called `Dag`.
 
-The `Dag[T]` type represents a mapping from nodes of type `T` to zero, one or many other nodes in the graph, and can be constructed by providing a `Map[T, Set[T]]` or calling,
+The `Dag[T]` type represents a mapping from nodes of type `T` to zero, one or many other nodes in the graph, and can be constructed by providing the mapping from each node to its `Set` of dependent nodes, or by calling,
 ```scala
 Dag.from(nodes)(fn)
 ```
@@ -8,14 +8,14 @@ where `nodes` is a `Set` of nodes, and `fn` is a function from each node to its 
 
 For example,
 ```scala
-val factors = Dag(Map(
+val factors = Dag(
   30 -> Set(2, 3, 4, 5, 10, 15),
   15 -> Set(5, 3),
   10 -> Set(5, 2),
   5 -> Set(),
   3 -> Set(),
   2 -> Set()
-))
+)
 ```
 
 ## Monadic Operations
@@ -41,4 +41,4 @@ A list of nodes will be returned in topologically-sorted order by calling `Dag#s
 
 ## Limitations
 
-This library is incomplete, inadequately tested and subject to further development, and should only be used by developers who do not mind examining the source code to diagnose unexpected behavior.
+This library is incomplete, inadequately tested and subject to further development, and is recommended to be used by developers who do not mind examining the source code to diagnose unexpected behavior.

@@ -7,5 +7,8 @@
 #
 # For more information, please visit https://propensive.com/fury/
 #
-layerRef	QmQRhsL5dKfr8SZFzFu4uMKNwQheXYTfqFsecwa79tNfHJ
+layerRef	QmbPjcLXBqzRfwtZrEty3nagokitdTzrtWEYiAytKvSJkQ
+published	Some	url	fury://vent.dev/propensive/acyclicity
+		layerRef	QmbPjcLXBqzRfwtZrEty3nagokitdTzrtWEYiAytKvSJkQ
+		expiry	Some	1618988826359
 # vim: set noai ts=12 sw=12:
