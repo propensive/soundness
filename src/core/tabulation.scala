@@ -1,30 +1,22 @@
 /*
-  
-  Escritoire, version 1.0.0. Copyright 2018 Jon Pretty, Propensive Ltd.
 
-  The primary distribution site is: https://propensive.com/
+    Escritoire, version 0.4.0. Copyright 2017-20 Jon Pretty, Propensive OÜ.
 
-  Licensed under the Apache License, Version 2.0 (the "License"); you may not use
-  this file except in compliance with the License. You may obtain a copy of the
-  License at
-  
-      http://www.apache.org/licenses/LICENSE-2.0
- 
-  Unless required by applicable law or agreed to in writing, software
-  distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
-  WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
-  License for the specific language governing permissions and limitations under
-  the License.
+    The primary distribution site is: https://propensive.com/
+
+    Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in
+    compliance with the License. You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software distributed under the License is
+    distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and limitations under the License.
 
 */
 package escritoire
 
-import language.implicitConversions
-
-import scala.collection.mutable.ListBuffer
-import scala.collection.immutable.ListMap
-
-object Ansi {
+object Ansi:
   val esc = 27.toChar
   val reset: String = s"$esc[39;49m"
   def bold(str: String): String = s"$esc[1m$str$esc[22m"
@@ -32,18 +24,25 @@ object Ansi {
   def strike(str: String): String = s"$esc[9m$str$esc[29m"
   def italic(str: String): String = s"$esc[3m$str$esc[23m"
   def reverse(str: String): String = s"$esc[7m$str$esc[27m"
+  def up(n: Int): String = s"$esc[${n}A"
+  def down(n: Int): String = s"$esc[${n}B"
+  def right(n: Int): String = s"$esc[${n}C"
+  def left(n: Int): String = s"$esc[${n}D"
 
-  case class Color(red: Int, green: Int, blue: Int) {
-    def apply(str: String): String = s"$esc[38;2;$red;$green;${blue}m$str$reset"
+  case class Color(red: Int, green: Int, blue: Int):
+    def apply(str: String): String = s"${apply()}$str$reset"
     def fade(amount: Double) = Color((red*amount).toInt, (green*amount).toInt, (blue*amount).toInt)
+    
     def brighten(amount: Double) = Color(
       (255 - (255 - red)*amount).toInt,
       (255 - (255 - green)*amount).toInt,
       (255 - (255 - blue)*amount).toInt
     )
-  }
+    
+    def apply(): String = s"$esc[38;2;$red;$green;${blue}m"
+    def escaped: String = s"%{${apply()}%}"
 
-  object Color {
+  object Color:
     // Colors are taken from the solarized palette
     val base03: Color = Color(0, 43, 54)
     val base02: Color = Color(7, 54, 66)
@@ -61,125 +60,106 @@ object Ansi {
     val blue: Color = Color(38, 139, 210)
     val cyan: Color = Color(42, 161, 152)
     val green: Color = Color(133, 153, 0)
-  }
+  
   def strip(string: String): String = string.replaceAll("""\e\[?.*?[\@-~]""", "")
-}
 
-sealed trait Alignment
-case object LeftAlign extends Alignment
-case object RightAlign extends Alignment
-case object CenterAlign extends Alignment
+enum Align:
+  case Left
+  case Right
+  case Center
 
-sealed trait Width
-case class ExactWidth(n: Int) extends Width
-case object FlexibleWidth extends Width
+enum Width:
+  case Exact(n: Int)
+  case Flexible
 
-object Heading {
-  def apply[Row, V: AnsiShow](name: String,
-                              getter: Row => V,
-                              width: Width = FlexibleWidth,
-                              align: Alignment = LeftAlign): Heading[Row] =
-    new Heading[Row](name, width, align) {
-      def get(r: Row): String = implicitly[AnsiShow[V]].show(getter(r))
-    }
-}
+object Heading:
+  def apply[Row, V: AnsiShow]
+           (name: String, getter: Row => V, width: Width = Width.Flexible, align: Align = Align.Left): Heading[Row] =
+    new Heading[Row](name, width, align):
+      def get(r: Row): String = summon[AnsiShow[V]].show(getter(r))
 
-abstract class Heading[Row](val name: String,
-                            val width: Width = FlexibleWidth,
-                            val align: Alignment = LeftAlign) {
+trait Heading[Row](val name: String, val width: Width = Width.Flexible, val align: Align = Align.Left):
   def get(r: Row): String
-}
 
-case class Tabulation[Row](headings: Heading[Row]*) {
-
+case class Tabulation[Row](headings: Heading[Row]*):
   def padding: Int = 2
 
-  def tabulate(maxWidth: Int, rows: Seq[Row]): Seq[String] = {
-    val titleStrings = headings.to[List].map { h => List(h.name) }
+  def tabulate(maxWidth: Int, rows: Seq[Row], ansi: Option[String] = None): Seq[String] =
+    val reset = ansi.fold("") { _ => Ansi.reset }
+    val titleStrings = headings.to(List).map(_.name).map(List(_))
     
-    val data: Seq[List[List[String]]] = titleStrings.map(_.map(Ansi.underline(_))) +: (rows.map { row =>
-      headings.to[List].map { _.get(row).split("\n").to[List] }
+    val data: Seq[List[List[String]]] = titleStrings.map(_.map(Ansi.bold(_))) +: (rows.map { row =>
+      headings.to(List).map(_.get(row).split("\n").to(List))
     })
 
     val tight = !data.exists(_.exists(_.length > 1))
 
-    val paddedData = if(!tight) data.map(_.map("" :: _)) else data
-
-    val maxWidths = paddedData.foldLeft(Vector.fill(headings.size)(0)) {
-      case (widths, next) =>
-        widths.zip(next).map { case (w, xs) => xs.map { c => Ansi.strip(c).length }.max max w }
+    val maxWidths: Vector[Int] = data.foldLeft(Vector.fill(headings.size)(0)) {
+      (widths, next) => widths.zip(next).map { (w, xs) => xs.map { c => Ansi.strip(c).length }.max max w }
     }
 
-    val totalWidth = maxWidths.sum + maxWidths.length * padding
-    val flexibleWidths = headings.filter(_.width == FlexibleWidth).size
+    def rule(left: Char, mid: Char, cross: Char, right: Char) =
+      maxWidths.map { w => s"$mid"*(w + 2) }.mkString(s"${ansi.getOrElse("")}$left", s"$cross", s"$right${reset}")
+    
+    val hr = if tight then Nil else List(rule('╟', '─', '┼', '╢'))
+    val endHr = if tight then rule('└', '─', '┴', '┘') else rule('╚', '═', '╧', '╝')
+    val startHr = if tight then rule('┌', '─', '┬', '┐') else rule('╔', '═', '╤', '╗')
+    val midHr = if tight then rule('├', '─', '┼', '┤') else rule('╠', '═', '╪', '╣')
+
+    val totalWidth = maxWidths.sum + maxWidths.length*padding
+    val flexibleWidths = headings.filter(_.width == Width.Flexible).size
 
     val initialWidths =
-      headings
-        .zip(maxWidths)
-        .foldLeft((Vector[Int](), maxWidth, flexibleWidths)) {
+      headings.zip(maxWidths).foldLeft((Vector[Int](), maxWidth, flexibleWidths)) {
           case ((widths, off, todo), (head, maxCellWidth)) =>
-            head.width match {
-              case ExactWidth(w) => (widths :+ w, off, todo)
-              case FlexibleWidth =>
+            head.width match
+              case Width.Exact(w) =>
+                (widths :+ w, off, todo)
+              case Width.Flexible =>
                 val chosenWidth = off / todo min maxCellWidth
                 (widths :+ chosenWidth, off - chosenWidth, todo - 1)
-            }
-        }
-        ._1
+        }._1
 
     val spare = totalWidth - initialWidths.sum
 
     val (widths, _) = initialWidths.zip(maxWidths).foldLeft((Vector[Int](), spare)) {
       case ((agg, spare), (act, req)) =>
-        if(act == req) (agg :+ act, spare)
-        else {
+        if act == req then (agg :+ act, spare)
+        else
           val allocated = spare min (req - act)
           (agg :+ (act + allocated), spare - allocated)
-        }
     }
 
-    paddedData.flatMap { cells =>
-      cells
-        .zip(widths)
-        .zip(headings)
-        .map {
-          case ((lines, width), heading) =>
-            lines.padTo(cells.map(_.length).max, "").map(pad(_, width, heading.align))
-        }
-        .transpose
-        .map(_.mkString(" " * padding))
-    } ++ (if(tight) Nil else List(""))
-  }
+    List(startHr) ++ data.flatMap { cells =>
+      hr ++ cells.zip(widths).zip(headings).map { case ((lines, width), heading) =>
+        lines.padTo(cells.map(_.length).max, "").map(pad(_, width, heading.align, reset))
+      }.transpose.map(_.mkString(s"${ansi.getOrElse("")}${if(tight) "│" else "║"}${reset} ", s" ${ansi.getOrElse("")}│${reset} ", s" ${ansi.getOrElse("")}${if(tight) "│" else "║"}${reset}"))
+    }.drop(if(tight) 0 else 1).patch(1, List(midHr), if(tight) 0 else 1) ++ List(endHr)
+  end tabulate
 
-  private def pad(str: String, width: Int, alignment: Alignment): String = {
+  private def pad(str: String, width: Int, alignment: Align, reset: String): String =
     val stripped = Ansi.strip(str).length
-    alignment match {
-      case LeftAlign =>
-        if (stripped > width) str.dropRight(stripped - width)+Ansi.reset
-        else str + (" " * (width - stripped))
-      case RightAlign =>
-        if (stripped > width) str.drop(stripped - width)+Ansi.reset
-        else (" " * (width - stripped)) + str
-      case CenterAlign =>
-        if (stripped > width) pad(str.drop((stripped - width) / 2), width, LeftAlign)+Ansi.reset
-        else pad(str+" "*((width - stripped)/2), width, RightAlign)
-    }
-  }
-}
+    alignment match
+      case Align.Left =>
+        if stripped > width then str.dropRight(stripped - width)+reset else str + (" " * (width - stripped))
+      case Align.Right =>
+        if stripped > width then str.drop(stripped - width)+reset else (" " * (width - stripped)) + str
+      case Align.Center =>
+        if stripped > width then pad(str.drop((stripped - width) / 2), width, Align.Left, reset)+reset
+        else pad(str+" "*((width - stripped)/2), width, Align.Right, reset)
 
-object AnsiShow {
-
-  private val decimalFormat = {
+object AnsiShow:
+  private val decimalFormat =
     val df = new java.text.DecimalFormat()
     df.setMinimumFractionDigits(3)
     df.setMaximumFractionDigits(3)
     df
-  }
 
-  implicit val string: AnsiShow[String] = identity
-  implicit val int: AnsiShow[Int] = _.toString
-  implicit val double: AnsiShow[Double] = decimalFormat.format(_)
-  implicit val lines: AnsiShow[Seq[String]] = _.mkString("\n")
-}
+  given AnsiShow[String] = identity(_)
+  given AnsiShow[Int] = _.toString
+  given AnsiShow[Long] = _.toString
+  given AnsiShow[Double] = decimalFormat.format(_)
+  given AnsiShow[Seq[String]] = _.mkString("\n")
 
-trait AnsiShow[T] { def show(value: T): String }
+trait AnsiShow[T]:
+  def show(value: T): String
