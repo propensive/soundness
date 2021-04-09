@@ -15,109 +15,77 @@
                                                                                                   */
 package gastronomy
 
-import magnolia._
-import rudiments._
+import magnolia.*
 
-import scala.collection._
+import scala.collection.*
 
-import java.security._
-import java.util.Arrays
+import java.security.*
+import java.util.Base64.getEncoder as Base64Encoder
 
-import language.experimental.macros
-import language.higherKinds
+enum HashScheme:
+  case Md5, Sha256, Sha1
 
-object `package` {
-  implicit class DigestExtension[T](val value: T) extends AnyVal {
-    def digest[A <: HashScheme]
-              (implicit hashFunction: HashFunction[A], hashable: Hashable[T])
-              : Digest =
-      Digester(hashable.digest(_, value)).apply(hashFunction)
-  }
+extension [T](value: T)
+  def digest[A <: HashScheme](using hashFunction: HashFunction[A], hashable: Hashable[T]): Digest =
+    Digester(hashable.digest(_, value)).apply(hashFunction)
 
-  implicit class BytesExtension(val bytes: Bytes) extends AnyVal {
-    def encoded[ES <: EncodingScheme: ByteEncoder]: String = implicitly[ByteEncoder[ES]].encode(bytes)
-  }
-}
+extension (bytes: IArray[Byte])
+  def encoded[ES <: EncodingScheme: ByteEncoder]: String = summon[ByteEncoder[ES]].encode(bytes)
 
-object HashFunction {
-  implicit val md5: HashFunction[Md5] = HashFunction("MD5")
-  implicit val sha256: HashFunction[Sha256] = HashFunction("SHA-256")
-  implicit val sha1: HashFunction[Sha1] = HashFunction("SHA1")
-}
+case class HashFunction[A <: HashScheme](name: String):
+  def init: DigestAccumulator = DigestAccumulator(MessageDigest.getInstance(name))
 
-final case class HashFunction[A <: HashScheme](name: String) extends AnyVal {
-  def init: DigestAccumulator = new DigestAccumulator(MessageDigest.getInstance(name))
-}
+given HashFunction[HashScheme.Md5.type] = HashFunction("MD5")
+given HashFunction[HashScheme.Sha256.type] = HashFunction("SHA-256")
+given HashFunction[HashScheme.Sha1.type] = HashFunction("SHA1")
 
-trait HashScheme
-trait Md5 extends HashScheme
-trait Sha256 extends HashScheme
-trait Sha1 extends HashScheme
-
-final case class Digest(bytes: Bytes) extends AnyVal {
-  override def toString: String = ByteEncoder.base64.encode(bytes)
+case class Digest(bytes: IArray[Byte]):
+  override def toString: String = summon[ByteEncoder[Base64]].encode(bytes)
   def encoded[ES <: EncodingScheme: ByteEncoder]: String = bytes.encoded[ES]
-}
 
-object Hashable {
-  type Typeclass[T] = Hashable[T]
-
-  def combine[T](caseClass: CaseClass[Hashable, T]): Hashable[T] =
-    (acc, value) => caseClass.parameters.foldLeft(acc) { (acc, param) =>
+object Hashable extends Derivation[Hashable]:
+  def join[T](caseClass: CaseClass[Hashable, T]): Hashable[T] =
+    (acc, value) => caseClass.params.foldLeft(acc) { (acc, param) =>
       param.typeclass.digest(acc, param.dereference(value))
     }
 
-  def dispatch[T](sealedTrait: SealedTrait[Hashable, T]): Hashable[T] =
-    (acc, value) => sealedTrait.dispatch(value) { subtype =>
-      val acc2 = int.digest(acc, sealedTrait.subtypes.indexOf(subtype))
+  def split[T](sealedTrait: SealedTrait[Hashable, T]): Hashable[T] =
+    (acc, value) => sealedTrait.split(value) { subtype =>
+      val acc2 = summon[Hashable[Int]].digest(acc, sealedTrait.subtypes.indexOf(subtype))
       subtype.typeclass.digest(acc2, subtype.cast(value))
     }
     
-  implicit def traversable[T: Hashable]: Hashable[Traversable[T]] = 
-    (acc, xs) => xs.foldLeft(acc)(implicitly[Hashable[T]].digest)
+  given[T: Hashable]: Hashable[Traversable[T]] = (acc, xs) => xs.foldLeft(acc)(summon[Hashable[T]].digest)
 
-  implicit val int: Hashable[Int] =
-    (acc, n) => acc.append(Array((n >> 24).toByte, (n >> 16).toByte, (n >> 8).toByte, n.toByte))
+  given Hashable[Int] =
+    (acc, n) => acc.append(IArray((n >> 24).toByte, (n >> 16).toByte, (n >> 8).toByte, n.toByte))
   
-  implicit val long: Hashable[Long] =
-    (acc, n) => acc.append(Array((n >> 56).toByte, (n >> 48).toByte, (n >> 40).toByte,
-        (n >> 32).toByte, (n >> 24).toByte, (n >> 16).toByte, (n >> 8).toByte, n.toByte))
-  
-  implicit val double: Hashable[Double] =
-    (acc, n) => long.digest(acc, java.lang.Double.doubleToRawLongBits(n))
-  
-  implicit val float: Hashable[Float] =
-    (acc, n) => int.digest(acc, java.lang.Float.floatToRawIntBits(n))
-  
-  implicit val boolean: Hashable[Boolean] =
-    (acc, n) => acc.append(Array(if(n) 1.toByte else 0.toByte))
-  
-  implicit val byte: Hashable[Byte] = (acc, n) => acc.append(Array(n))
-  implicit val short: Hashable[Short] = (acc, n) => acc.append(Array((n >> 8).toByte, n.toByte))
-  implicit val char: Hashable[Char] = (acc, n) => acc.append(Array((n >> 8).toByte, n.toByte))
-  implicit val string: Hashable[String] = (acc, s) => acc.append(s.getBytes("UTF-8"))
-  implicit val bytes: Hashable[Bytes] = (acc, b) => acc.append(b.to[Array])
-  implicit val digest: Hashable[Digest] = (acc, d) => acc.append(d.bytes.to[Array])
-  implicit def gen[T]: Hashable[T] = macro Magnolia.gen[T]
-}
+  given Hashable[Long] = (acc, n) =>
+    acc.append(IArray.from((52 to 0 by -8).map { n >> _ }.map(_.toByte).toArray))
 
-trait Hashable[T] { def digest(acc: DigestAccumulator, value: T): DigestAccumulator }
+  given Hashable[Double] = (acc, n) => summon[Hashable[Long]].digest(acc, java.lang.Double.doubleToRawLongBits(n))
+  given Hashable[Float] = (acc, n) => summon[Hashable[Int]].digest(acc, java.lang.Float.floatToRawIntBits(n))
+  given Hashable[Boolean] = (acc, n) => acc.append(IArray(if n then 1.toByte else 0.toByte))
+  given Hashable[Byte] = (acc, n) => acc.append(IArray(n))
+  given Hashable[Short] = (acc, n) => acc.append(IArray((n >> 8).toByte, n.toByte))
+  given Hashable[Char] = (acc, n) => acc.append(IArray((n >> 8).toByte, n.toByte))
+  given Hashable[String] = (acc, s) => acc.append(IArray.from(s.getBytes("UTF-8")))
+  given Hashable[IArray[Byte]] = _.append(_)
+  given Hashable[Digest] = (acc, d) => acc.append(d.bytes)
 
-final case class Digester(run: DigestAccumulator => DigestAccumulator) {
-  def apply[A <: HashScheme: HashFunction]: Digest = run(implicitly[HashFunction[A]].init).digest()
-  
-  def digest[T: Hashable](value: T): Digester =
-    Digester(run.andThen(implicitly[Hashable[T]].digest(_, value)))
-}
+trait Hashable[T]:
+  def digest(acc: DigestAccumulator, value: T): DigestAccumulator
 
-final case class DigestAccumulator(private val messageDigest: MessageDigest) {
-  def append(bytes: Array[Byte]): DigestAccumulator = {
-    messageDigest.update(bytes)
-    new DigestAccumulator(messageDigest)
-  }
+case class Digester(run: DigestAccumulator => DigestAccumulator):
+  def apply[A <: HashScheme: HashFunction]: Digest = run(summon[HashFunction[A]].init).digest()
+  def digest[T: Hashable](value: T): Digester = Digester(run.andThen(summon[Hashable[T]].digest(_, value)))
+
+final case class DigestAccumulator(private val messageDigest: MessageDigest):
+  def append(bytes: IArray[Byte]): DigestAccumulator =
+    messageDigest.update(bytes.to(Array))
+    DigestAccumulator(messageDigest)
   
-  def digest(): Digest = Digest(Bytes(messageDigest.digest()))
-}
+  def digest(): Digest = Digest(IArray.from(messageDigest.digest()))
 
 trait EncodingScheme
 trait Base64 extends EncodingScheme
@@ -126,24 +94,22 @@ trait Base32 extends EncodingScheme
 trait Hex extends EncodingScheme
 trait Binary extends EncodingScheme
 
-object ByteEncoder {
-  private val HexLookup: Array[Byte] = "0123456789ABCDEF".getBytes
+object ByteEncoder:
+  private val HexLookup: IArray[Byte] = IArray.from("0123456789ABCDEF".getBytes)
 
-  implicit val hex: ByteEncoder[Hex] = { bytes =>
+  given ByteEncoder[Hex] = bytes =>
     val array = new Array[Byte](bytes.length*2)
-    bytes.to[Array].indices.foreach { idx =>
+    bytes.indices.foreach { idx =>
       array(2*idx) = HexLookup((bytes(idx) >> 4) & 0xf)
       array(2*idx + 1) = HexLookup(bytes(idx) & 0xf)
     }
-    new String(array, "UTF-8")
-  }
+    
+    String(array, "UTF-8")
 
-  implicit val base64: ByteEncoder[Base64] =
-    bytes => java.util.Base64.getEncoder.encodeToString(bytes.to[Array])
+  given ByteEncoder[Base64] = bytes => Base64Encoder.encodeToString(bytes.to(Array))
   
-  implicit val base64Url: ByteEncoder[Base64Url] =
-    bytes => java.util.Base64.getEncoder.encodeToString(bytes.to[Array]).replace('+', '-').replace('/', '_').takeWhile(_ != '=')
-}
+  given ByteEncoder[Base64Url] = bytes =>
+    Base64Encoder.encodeToString(bytes.to(Array)).replace('+', '-').replace('/', '_').takeWhile(_ != '=')
 
-trait ByteEncoder[ES <: EncodingScheme] { def encode(bytes: Bytes): String }
-
+trait ByteEncoder[ES <: EncodingScheme]:
+  def encode(bytes: IArray[Byte]): String
