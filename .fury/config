@@ -7,9 +7,9 @@
 #
 # For more information, please visit https://propensive.com/fury/
 #
-layerRef	QmcxXYypEJpLczU7WB6hp6mUrbcLE7d5zyVCs2mY9HWH63
+layerRef	QmXASkwNUmLNMmcDapFySBAZ7HKYmhjYtXUogYwhkXUQHL
 published	Some	url	fury://vent.dev/propensive/gastronomy
-		version	5
-		layerRef	QmaVVscR9Z8qRffBCDc5fshM52KpeDe3dPM972frrUyXpe
-		expiry	Some	1620562824690
+		version	6
+		layerRef	QmUC2YnGAM9oJAhiNy5L644tSYqzoxmWnS7P4Nb8eaSHfE
+		expiry	Some	1620563911554
 # vim: set noai ts=12 sw=12:

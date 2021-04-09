@@ -24,13 +24,19 @@ import java.util.Base64.getEncoder as Base64Encoder
 import java.lang.{Double as JDouble, Float as JFloat}
 
 sealed trait HashScheme
+
 sealed trait Md5 extends HashScheme
 sealed trait Sha256 extends HashScheme
 sealed trait Sha1 extends HashScheme
 
-given HashFunction[Md5] = HashFunction("MD5")
-given HashFunction[Sha256] = HashFunction("SHA-256")
-given HashFunction[Sha1] = HashFunction("SHA1")
+object Md5:
+  given HashFunction[Md5] = HashFunction("MD5")
+
+object Sha256:
+  given HashFunction[Sha256] = HashFunction("SHA-256")
+
+object Sha1:
+  given HashFunction[Sha1] = HashFunction("SHA1")
 
 extension [T](value: T)
   def digest[A <: HashScheme](using hashFunction: HashFunction[A], hashable: Hashable[T]): Digest =
