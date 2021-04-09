@@ -21,23 +21,26 @@ import scala.collection.*
 
 import java.security.*
 import java.util.Base64.getEncoder as Base64Encoder
+import java.lang.{Double as JDouble, Float as JFloat}
 
-enum HashScheme:
-  case Md5, Sha256, Sha1
+sealed trait HashScheme
+sealed trait Md5 extends HashScheme
+sealed trait Sha256 extends HashScheme
+sealed trait Sha1 extends HashScheme
+
+given HashFunction[Md5] = HashFunction("MD5")
+given HashFunction[Sha256] = HashFunction("SHA-256")
+given HashFunction[Sha1] = HashFunction("SHA1")
 
 extension [T](value: T)
   def digest[A <: HashScheme](using hashFunction: HashFunction[A], hashable: Hashable[T]): Digest =
     Digester(hashable.digest(_, value)).apply(hashFunction)
 
 extension (bytes: IArray[Byte])
-  def encoded[ES <: EncodingScheme: ByteEncoder]: String = summon[ByteEncoder[ES]].encode(bytes)
+  def encoded[E <: EncodingScheme: ByteEncoder]: String = summon[ByteEncoder[E]].encode(bytes)
 
 case class HashFunction[A <: HashScheme](name: String):
   def init: DigestAccumulator = DigestAccumulator(MessageDigest.getInstance(name))
-
-given HashFunction[HashScheme.Md5.type] = HashFunction("MD5")
-given HashFunction[HashScheme.Sha256.type] = HashFunction("SHA-256")
-given HashFunction[HashScheme.Sha1.type] = HashFunction("SHA1")
 
 case class Digest(bytes: IArray[Byte]):
   override def toString: String = summon[ByteEncoder[Base64]].encode(bytes)
@@ -56,15 +59,10 @@ object Hashable extends Derivation[Hashable]:
     }
     
   given[T: Hashable]: Hashable[Traversable[T]] = (acc, xs) => xs.foldLeft(acc)(summon[Hashable[T]].digest)
-
-  given Hashable[Int] =
-    (acc, n) => acc.append(IArray((n >> 24).toByte, (n >> 16).toByte, (n >> 8).toByte, n.toByte))
-  
-  given Hashable[Long] = (acc, n) =>
-    acc.append(IArray.from((52 to 0 by -8).map { n >> _ }.map(_.toByte).toArray))
-
-  given Hashable[Double] = (acc, n) => summon[Hashable[Long]].digest(acc, java.lang.Double.doubleToRawLongBits(n))
-  given Hashable[Float] = (acc, n) => summon[Hashable[Int]].digest(acc, java.lang.Float.floatToRawIntBits(n))
+  given Hashable[Int] = (acc, n) => acc.append(IArray.from((24 to 0 by -8).map(n >> _).map(_.toByte).toArray))
+  given Hashable[Long] = (acc, n) => acc.append(IArray.from((52 to 0 by -8).map(n >> _).map(_.toByte).toArray))
+  given Hashable[Double] = (acc, n) => summon[Hashable[Long]].digest(acc, JDouble.doubleToRawLongBits(n))
+  given Hashable[Float] = (acc, n) => summon[Hashable[Int]].digest(acc, JFloat.floatToRawIntBits(n))
   given Hashable[Boolean] = (acc, n) => acc.append(IArray(if n then 1.toByte else 0.toByte))
   given Hashable[Byte] = (acc, n) => acc.append(IArray(n))
   given Hashable[Short] = (acc, n) => acc.append(IArray((n >> 8).toByte, n.toByte))
