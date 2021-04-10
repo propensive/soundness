@@ -39,7 +39,7 @@ object Suite:
   def show(report: Report): String =
     val simple = report.results.forall(_.count == 1)
 
-    implicit val showOutcome: AnsiShow[Outcome] = _ match
+    given AnsiShow[Outcome] = _ match
       case Outcome.Passed                             => pass
       case Outcome.FailsAt(Fail(map, _), 1)           => fail
       case Outcome.FailsAt(ThrowsInCheck(_, _, _), n) => checkThrows
@@ -68,7 +68,7 @@ object Suite:
 
     List(resultsTable, summary, Suite.footer).mkString("\n")
 
-trait Suite(val name: String) extends TestSuite:
+abstract class Suite(val name: String) extends TestSuite:
   def run(test: Runner): Unit
   
   final def main(args: Array[String]): Unit =
