@@ -1,6 +1,6 @@
 /*
 
-    Probably, version 0.1.0. Copyright 2017-20 Jon Pretty, Propensive OÜ.
+    Probably, version 0.8.0. Copyright 2017-20 Jon Pretty, Propensive OÜ.
 
     The primary distribution site is: https://propensive.com/
 
@@ -16,176 +16,173 @@
 */
 package probably
 
-import gastronomy._
-import magnolia._
-
-import scala.util._
 import scala.collection.immutable.ListMap
-import scala.util.control.NonFatal
+import scala.util.*, control.NonFatal
 
 import language.dynamics
-import language.implicitConversions
 
-sealed trait Outcome(val passed: Boolean):
-  def failed: Boolean = !passed
-  def debug: String = ""
+import Runner._
 
-case class FailsAt(datapoint: Datapoint, count: Int) extends Outcome(false):
-  override def debug: String = datapoint.map.map { case (k, v) => s"$k=$v" }.mkString(" ")
+object Runner:
+  object Showable:
+    implicit def show[T: Show](value: T): Showable[T] = Showable[T](value, summon[Show[T]])
 
-case object Passed extends Outcome(true)
-case object Mixed extends Outcome(false)
+  case class Showable[T](value: T, show: Show[T]):
+    def apply(): String = show.show(value)
 
-sealed trait Datapoint(val map: Map[String, String])
-case object Pass extends Datapoint(Map())
+  case class TestId private[probably](value: String)
+  
+  enum Outcome:
+    case FailsAt(datapoint: Datapoint, count: Int)
+    case Passed
+    case Mixed
 
-case class Fail(failMap: Map[String, String]) extends Datapoint(failMap)
-case class Throws(exception: Throwable, throwMap: Map[String, String]) extends Datapoint(throwMap)
-case class ThrowsInCheck(exception: Exception, throwMap: Map[String, String]) extends Datapoint(throwMap)
+    def failed: Boolean = !passed
+    
+    def passed: Boolean = this match
+      case Passed        => true
+      case Mixed         => false
+      case FailsAt(_, _) => false
+    
+    def debug: String = this match
+      case FailsAt(datapoint, count) => datapoint.map.map { case (k, v) => s"$k=$v" }.mkString(" ")
+      case _                         => ""
 
-object Show:
-  given Show[Int] = _.toString
-  given Show[String] = identity(_)
-  given Show[Boolean] = _.toString
-  given Show[Long] = _.toString
-  given Show[Byte] = _.toString
-  given Show[Short] = _.toString
-  given Show[Char] = _.toString
 
-trait Show[T]:
-  def show(value: T): String
+  sealed abstract class Datapoint(val map: Map[String, String])
+  case object Pass extends Datapoint(Map())
 
-object Showable:
-  implicit def show[T: Show](value: T): Showable[T] = Showable[T](value, summon[Show[T]])
+  case class Fail(failMap: Map[String, String], index: Int) extends Datapoint(failMap)
+  case class Throws(exception: Throwable, throwMap: Map[String, String]) extends Datapoint(throwMap)
+  case class ThrowsInCheck(exception: Exception, throwMap: Map[String, String], index: Int) extends Datapoint(throwMap)
 
-case class Showable[T](value: T, show: Show[T]):
-  def apply(): String = show.show(value)
+  object Show:
+    given Show[Int] = _.toString
+    given Show[String] = identity(_)
+    given Show[Boolean] = _.toString
+    given Show[Long] = _.toString
+    given Show[Byte] = _.toString
+    given Show[Short] = _.toString
+    given Show[Char] = _.toString
 
-case class TestId private[probably](value: String)
+  trait Show[T] { def show(value: T): String }
 
-class Runner(specifiedTests: Set[TestId] = Set()) extends Dynamic:
+  def shortDigest(text: String): String =
+    val md = java.security.MessageDigest.getInstance("SHA-256")
+    md.update(text.getBytes)
+    md.digest.take(3).map(b => f"$b%02x").mkString
+
+class Runner(specifiedTests: Set[TestId] = Set()) extends Dynamic {
 
   final def runTest(testId: TestId): Boolean = specifiedTests.isEmpty || specifiedTests(testId)
 
   def applyDynamic[T](method: String)(name: String)(fn: => T): Test { type Type = T } =
     applyDynamicNamed[T]("")("" -> name)(fn)
-  
+
   def applyDynamicNamed[T]
                        (method: String)
                        (name: (String, String), args: (String, Showable[_])*)
                        (fn: => T)
                        : Test { type Type = T } =
-    new Test(name._2, args.toMap.map(_ -> _())):
+    new Test(name._2, args.map(_ -> _()).to(Map)):
       type Type = T
       def action(): T = fn
+
+  def time[T](name: String)(fn: => T): T = applyDynamicNamed[T]("")("" -> name)(fn).check { _ => true }
+
+  def suite(testSuite: TestSuite): Unit = suite(testSuite.name)(testSuite.run(_))
 
   def suite(name: String)(fn: Runner => Unit): Unit =
     val report = new Test(name, Map()) {
       type Type = Report
 
-      def action(): Report =
+      def action(): Report = {
         val runner = Runner()
         fn(runner)
         runner.report()
-
+      }
     }.check(_.results.forall(_.outcome.passed))
 
     if report.results.exists(_.outcome.passed) && report.results.exists(_.outcome.failed)
-    then synchronized { results = results.updated(name, results(name).copy(outcome = Mixed)) }
+    then synchronized { results = results.updated(name, results(name).copy(outcome = Outcome.Mixed)) }
 
     report.results.foreach { result => record(result.copy(indent = result.indent + 1)) }
 
+  def assert(name: String)(fn: => Boolean): Unit = applyDynamicNamed("")("" -> name)(fn).assert(identity)
+
   abstract class Test(val name: String, map: => Map[String, String]):
     type Type
-    
-    def id: TestId = TestId(name.digest[Sha256].encoded[Hex].take(6).toLowerCase)
+
+    def id: TestId = TestId(Runner.shortDigest(name))
     def action(): Type
-    
-    def assert(predicate: Type => Boolean): Unit =
-      try if runTest(id) then check(predicate) catch case NonFatal(e) => ()
-    
-    def check(predicate: Type => Boolean): Type =
+    def assert(pred: (Type => Boolean)*): Unit = try if(runTest(id)) check(pred*) catch case NonFatal(_) => ()
+
+    def check(preds: (Type => Boolean)*): Type =
+      def handler(index: Int): PartialFunction[Throwable, Datapoint] =
+        case e: Exception => ThrowsInCheck(e, map, index)
+
+      def makeDatapoint(preds: Seq[Type => Boolean], count: Int, datapoint: Datapoint, value: Type): Datapoint =
+        try
+          if preds.isEmpty then datapoint
+          else if preds.head(value) then makeDatapoint(preds.tail, count + 1, Pass, value)
+          else Fail(map, count)
+        catch handler(count)
+
+
       val t0 = System.currentTimeMillis()
       val value = Try(action())
       val time = System.currentTimeMillis() - t0
 
       value match
         case Success(value) =>
-          def handler: PartialFunction[Throwable, Datapoint] =
-            case e: Exception => ThrowsInCheck(e, map)
-          
-          val datapoint: Datapoint = try if predicate(value) then Pass else Fail(map) catch handler
-          record(this, time, datapoint)
+          record(this, time, makeDatapoint(preds, 0, Pass, value))
           value
-
         case Failure(exception) =>
           record(this, time, Throws(exception, map))
           throw exception
 
   def report(): Report = Report(results.values.to(List))
+  def clear(): Unit = results = emptyResults()
 
   protected def record(test: Test, duration: Long, datapoint: Datapoint): Unit = synchronized {
     results = results.updated(test.name, results(test.name).append(test.name, duration, datapoint))
   }
 
-  protected def record(summary: Summary) = synchronized { results = results.updated(summary.name, summary) }
-  
+  protected def record(summary: Summary) = synchronized {
+    results = results.updated(summary.name, summary)
+  }
+
+  private[this] def emptyResults(): Map[String, Summary] = ListMap().withDefault { name =>
+    Summary(TestId(shortDigest(name)), name, 0, Int.MaxValue, 0L, Int.MinValue, Outcome.Passed)
+  }
+
   @volatile
-  protected var results: Map[String, Summary] = ListMap().withDefault { name =>
-    Summary(TestId(name.digest[Sha256].encoded[Hex].take(6).toLowerCase), name, 0, Int.MaxValue, 0L,
-        Int.MinValue, Passed)
-  }
-
-case class Seed(value: Long):
-  def apply(): Long = value
-  
-  def stream(count: Int): LazyList[Seed] =
-    val rnd = java.util.Random(value)
-    LazyList.continually(Seed(rnd.nextLong)).take(count)
-
-object Arbitrary:
-  def join[T](ctx: CaseClass[Arbitrary, T]): Arbitrary[T] = (seed, n) => ctx.rawConstruct {
-    ctx.params.zip(spread(seed, n, ctx.params.size)).zip(seed.stream(ctx.params.size)).map {
-      case ((param, i), s) => param.typeclass(s, i)
-    } }
-  
-  val testInts = Vector(0, 1, -1, 2, -2, 42, Int.MaxValue, Int.MinValue, Int.MaxValue - 1, Int.MinValue + 1)
-
-  given Arbitrary[Int] = (seed, n) => testInts.lift(n).getOrElse(seed.stream(n).last.value.toInt)
-
-  val testStrings = Vector("", "a", "z", "\n", "0", "_", "\"", "\'", " ", "abcdefghijklmnopqrstuvwxyz")
-  
-  given Arbitrary[String] = (seed, n) => testStrings.lift(n).getOrElse {
-    val chars = seed.stream(n).last.stream(10).map(_()).map(_.toByte).filter { c => c > 31 && c < 128 }
-    String(chars.to(Array), "UTF-8")
-  }
-
-  private def spread(seed: Seed, total: Int, count: Int): List[Int] =
-    val sample = seed.stream(count).map(_.value.toDouble).map(math.abs(_)).to(List)
-    
-    sample.tails.foldLeft(List[Int]()) { case (acc, tail) => tail.headOption.fold(acc) { v =>
-      (((v/(tail.sum))*(total - acc.sum)) + 0.5).toInt :: acc
-    } }
-
-trait Arbitrary[T]:
-  def apply(seed: Seed, n: Int): T
-
-object Generate:
-  def stream[T](using arbitrary: Arbitrary[T], seed: Seed = Seed(0L)): LazyList[T] =
-    LazyList.from(0).map(arbitrary(seed, _))
+  protected var results: Map[String, Summary] = emptyResults()
+}
 
 case class Summary(id: TestId, name: String, count: Int, tmin: Long, ttot: Long, tmax: Long, outcome: Outcome,
                    indent: Int = 0):
   def avg: Double = ttot.toDouble/count/1000.0
   def min: Double = tmin.toDouble/1000.0
   def max: Double = tmax.toDouble/1000.0
-  
+
   def append(test: String, duration: Long, datapoint: Datapoint): Summary =
     Summary(id, name, count + 1, tmin min duration, ttot + duration, tmax max duration, outcome match
-      case FailsAt(dp, c) => FailsAt(dp, c)
-      case Passed         => datapoint match
-        case Pass           => Passed
-        case other          => FailsAt(other, count + 1)
+      case Outcome.FailsAt(dp, c) => Outcome.FailsAt(dp, c)
+      case Outcome.Passed         => datapoint match
+        case Pass                   => Outcome.Passed
+        case other                  => Outcome.FailsAt(other, count + 1)
+      case Outcome.Mixed          => Outcome.FailsAt(datapoint, 0)
     )
 
-case class Report(results: List[Summary])
+case class Report(results: List[Summary]):
+  val passed: Int = results.count(_.outcome == Outcome.Passed)
+  val failed: Int = results.count(_.outcome != Outcome.Passed)
+  val total: Int = failed + passed
+
+trait TestSuite:
+  def run(test: Runner): Unit
+  def name: String
+
+object global:
+  object test extends Runner()

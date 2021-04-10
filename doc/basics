@@ -2,10 +2,10 @@ _Probably_ defines only two primary types: a mutable `Runner` for recording test
 them, and `Test` definitions, whose instances are created by the `Runner`.
 
 Although it is possible to construct and use different `Runner`s, the most typical usage is to use the global
-singleton `Runner` called `test`, because for most purposes only one will be required. Defining a test is
-simple. For example,
+singleton `Runner` called `test`, because for most purposes only one `Runner` will be required. Defining a test
+is simple. For example,
 ```scala
-import probably._
+import probably._, global._
 
 test("the sum of two identical integers is divisible by two") {
   val x: Int = 7
@@ -107,7 +107,21 @@ For a given `Seed`, the pseudorandom data generated will always be deterministic
 
 ### Command-line Interface
 
-_Probably_ comes with a simple CLI runner for running tests through the standard shell interface.
+_Probably_ comes with a simple CLI runner for running test suites through the standard shell interface. This
+works particularly well for objects containing a series of unit tests. To use the command-line interface,
+create an object which extends `Suite`, giving the test suite a name. Then implement the `run` method to execute
+the tests, in order, like so:
+```scala
+object ProjectTests extends Suite("Project tests") {
+  def run(test: Runner): Unit = {
+    test("first test") {
+      // test body
+    }.assert(/* predicate */)
+}
+```
+
+The `Suite` class provides an implementation of a `main` method, so any object which subclasses `Suite` may be
+run from the command line.
 
 ### Skipping tests
 

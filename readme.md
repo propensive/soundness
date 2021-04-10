@@ -1,8 +1,12 @@
-<a href="https://furore.dev/propensive/probably"><img src="/doc/images/furore.png" style="vertical-align:middle" valign="middle"></a>&nbsp;&nbsp;<a href="https://furore.dev/propensive/probably">__Develop with Fury__ </a>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="https://riot.im/app/#/room/#propensive.probably:matrix.org"><img src="/doc/images/riotim.png" style="vertical-arign:middle" valign="middle"></a>&nbsp;&nbsp;<a href="https://riot.im/app/#/room/#propensive.probably:matrix.org">__Discuss on Riot__</a>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="https://search.maven.org/search?q=g:com.propensive%20AND%20a:probably_2.12"><img src="/doc/images/mavencentral.png" style="vertical-arign:middle" valign="middle"></a>&nbsp;&nbsp;<a href="https://search.maven.org/search?q=g:com.propensive%20AND%20a:probably_2.12">__Download from Maven Central__</a>
+[<img alt="GitHub Workflow" src="https://img.shields.io/github/workflow/status/propensive/probably/Build/main?style=for-the-badge" height="24">](https://github.com/propensive/probably/actions)
+[<img src="https://img.shields.io/badge/gitter-discuss-f00762?style=for-the-badge" height="24">](https://gitter.im/propensive/probably)
+[<img src="https://img.shields.io/discord/633198088311537684?color=8899f7&label=DISCORD&style=for-the-badge" height="24">](https://discord.gg/CHCPjERybv)
+[<img src="https://img.shields.io/matrix/propensive.probably:matrix.org?label=MATRIX&color=0dbd8b&style=for-the-badge" height="24">](https://app.element.io/#/room/#propensive.probably:matrix.org)
+[<img src="https://img.shields.io/twitter/follow/propensive?color=%2300acee&label=TWITTER&style=for-the-badge" height="24">](https://twitter.com/propensive)
+[<img src="https://img.shields.io/maven-central/v/com.propensive/probably-cli_2.12?color=2465cd&style=for-the-badge" height="24">](https://search.maven.org/artifact/com.propensive/probably-cli_2.12)
+[<img src="https://vent.dev/badge/propensive/probably" height="24">](https://vent.dev/)
 
 <img src="/doc/images/github.png" valign="middle">
-
-![CI](https://github.com/propensive/probably/workflows/CI/badge.svg)
 
 # Probably
 
@@ -23,10 +27,10 @@ _Probably_ defines only two primary types: a mutable `Runner` for recording test
 them, and `Test` definitions, whose instances are created by the `Runner`.
 
 Although it is possible to construct and use different `Runner`s, the most typical usage is to use the global
-singleton `Runner` called `test`, because for most purposes only one will be required. Defining a test is
-simple. For example,
+singleton `Runner` called `test`, because for most purposes only one `Runner` will be required. Defining a test
+is simple. For example,
 ```scala
-import probably._
+import probably._, global._
 
 test("the sum of two identical integers is divisible by two") {
   val x: Int = 7
@@ -128,8 +132,23 @@ For a given `Seed`, the pseudorandom data generated will always be deterministic
 
 ### Command-line Interface
 
-_Probably_ comes with a simple CLI runner for running tests through the standard shell interface.
+_Probably_ comes with a simple CLI runner for running test suites through the standard shell interface. This
+works particularly well for objects containing a series of unit tests. To use the command-line interface,
+create an object which extends `Suite`, giving the test suite a name. Then implement the `run` method to execute
+the tests, in order, like so:
+```scala
+object ProjectTests extends Suite("Project tests") {
+  def run(test: Runner): Unit = {
+    test("first test") {
+      // test body
+    }.assert(/* predicate */)
+}
+```
 
+The `Suite` class provides an implementation of a `main` method, so any object which subclasses `Suite` may be
+run from the command line.
+
+### Skipping tests
 
 ### Test Expression
 
@@ -150,6 +169,29 @@ whether the test passes or fails, and execution continues.
 This confers a few further differences with assertion tests:
 - exceptions thrown inside the body are not caught (but are recorded); exceptions in the check are still caught
 - test expressions cannot be skipped; their return value is necessary for execution to continue
+
+### Test Suites
+
+A test suite is a convenient grouping of related tests, and can be launched from a runner (the value `test` in
+the following example) like so:
+```scala
+test.suite("integration tests") { test =>
+  test("end-to-end process") {
+    System.process()
+  }.assert(_.isSuccess)
+}
+```
+
+Like other tests, a suite has a name, and will be executed at the point it is defined, and like other tests, it
+will pass or fail (or, produce mixed results). Its body, however, is a lambda which introduces a new `Runner`
+instance which will be used to run the tests in the suite. By convention, the new `Runner` is also named `test`.
+This will shadow the outer one, which is usually the desired behavior.
+
+When the test suite completes, its results are aggregated into the report of the runner which spawned it. If you
+launched it using the CLI, the table of results will show the nested tests indented.
+
+The `Runner` introduced by the `suite` method is the same as any other `Runner`, so further test suites can be
+defined inside other test suites, making it possible to organise tests into a hierarchy.
 
 
 ## Status
@@ -173,7 +215,11 @@ or imported into an existing layer with,
 ```
 fury layer import -i propensive/probably
 ```
-A binary will be made available on Maven Central.
+A binary is available on Maven Central as `com.propensive:probably-cli_<scala-version>:0.8.0`. This may be added
+to an [sbt](https://www.scala-sbt.org/) build with:
+```scala
+libraryDependencies += "com.propensive" %% "probably-cli" % "0.8.0"
+```
 
 ## Contributing
 
