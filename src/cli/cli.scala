@@ -16,12 +16,11 @@
 */
 package probably
 
-import escritoire._
+import escritoire.*
 
-import scala.reflect.macros._
 import scala.collection.mutable
 
-import Runner._
+import Runner.*
 
 object Suite:
   import Ansi.Color._
@@ -31,7 +30,7 @@ object Suite:
     List('✓' -> green, '✗' -> red, '?' -> cyan, '!' -> magenta, '±' -> blue, '#' -> yellow).map(ansi)
   
   private val legend: List[String] = statuses.zip(List("Pass", "Fail", "Throws in check",
-      "Throws in body", "Fails sometimes", "Suite partially fails")).map { case (status, description) =>
+      "Throws in body", "Fails sometimes", "Suite partially fails")).map { (status, description) =>
     s"${status} ${description.padTo(32, ' ')}"
   }.to(List)
 
@@ -64,19 +63,20 @@ object Suite:
     val resultsTable = table.tabulate(100, report.results).mkString("\n")
     
     val summary = Map("Passed" -> report.passed, "Failed" -> report.failed, "Total" -> report.total).map {
-      case (key, value) => s"${Ansi.bold(key)}: $value"
+      (key, value) => s"${Ansi.bold(key)}: $value"
     }.mkString("   ")
 
     List(resultsTable, summary, Suite.footer).mkString("\n")
 
-abstract class Suite(val name: String) extends TestSuite {
+trait Suite(val name: String) extends TestSuite:
   def run(test: Runner): Unit
   
-  final def main(args: Array[String]): Unit = {
+  final def main(args: Array[String]): Unit =
     val test = new Runner(args.map(TestId(_)).to(Set))
     run(test)
     val report = test.report()
     println(Suite.show(report))
-    System.exit(if(report.total == report.passed) 0 else 1)
-  }
-}
+
+    terminate(report.total == report.passed)
+  
+  def terminate(success: Boolean): Unit = System.exit(if success then 0 else 1)
