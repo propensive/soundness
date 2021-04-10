@@ -19,44 +19,41 @@ package probably
 import escritoire._
 import gastronomy._
 
-object Tests {
+object Tests:
   import Ansi.Color._
   def ansi(symbol: Char, code: Ansi.Color) = code(Ansi.bold(Ansi.reverse(s" ${symbol} ")))
 
   val statuses@List(pass, fail, checkThrows, throws, tailFail, mixed) =
-    List('✓' -> green, '✗' -> red, '?' -> cyan, '!' -> magenta, '±' -> blue, '#' -> yellow).map { case (s, c) =>
-        ansi(s, c) }
-}
+    List('✓' -> green, '✗' -> red, '?' -> cyan, '!' -> magenta, '±' -> blue, '#' -> yellow).map(ansi)
 
-abstract class Tests() {
+trait Tests:
   def run(test: Runner): Unit
   
-  final def main(args: Array[String]): Unit = {
-    val test = new Runner(args.map(TestId(_)).to[Set])
+  final def main(args: Array[String]): Unit =
+    val test = Runner(args.map(TestId(_)).to(Set))
     run(test)
     val report = test.report()
     val simple = report.results.forall(_.count == 1)
 
-    implicit val showOutcome: AnsiShow[Outcome] = _ match {
+    given AnsiShow[Outcome] =
       case Passed                                    => Tests.pass
       case FailsAt(Fail(map), 1)                     => Tests.fail
       case FailsAt(ThrowsInCheck(exception, map), n) => Tests.checkThrows
       case FailsAt(Throws(exception, map), 0)        => Tests.throws
       case FailsAt(_, n)                             => Tests.tailFail
       case Mixed                                     => Tests.mixed
-    }
 
     val status = Heading[Summary, Outcome]("", _.outcome)
     val hash = Heading[Summary, String]("Hash", _.name.digest[Sha256].encoded[Hex].take(6).toLowerCase)
     val name = Heading[Summary, String]("Test", s => s"${"  "*s.indent}${s.name}")
     val count = Heading[Summary, Int]("Count", _.count)
     val min = Heading[Summary, Double]("Min", _.min)
-    val avg = Heading[Summary, Double](if(simple) "Time" else "Avg", _.avg)
+    val avg = Heading[Summary, Double](if simple then "Time" else "Avg", _.avg)
     val max = Heading[Summary, Double]("Max", _.max)
     val debug = Heading[Summary, String]("Debug", _.outcome.debug)
     
     val table =
-      if(simple) Tabulation[Summary](status, hash, name, avg, debug)
+      if simple then Tabulation[Summary](status, hash, name, avg, debug)
       else Tabulation[Summary](status, hash, name, count, min, avg, max, debug)
 
     table.tabulate(100, report.results).foreach(println)
@@ -68,14 +65,12 @@ abstract class Tests() {
     println()
 
     val legend = Tests.statuses.zip(List("Pass", "Fail", "Throws exception during check", "Throws exception",
-        "Fails sometimes", "Test suite partially fails")).map { case (status, description) =>
+        "Fails sometimes", "Test suite partially fails")).map { (status, description) =>
       s"${status} ${description.padTo(32, ' ')}"
-    }.to[List]
+    }.to(List)
     
-    legend.take(3).zip(legend.drop(3)).map { case (left, right) => println((" "*2)+left+right) }
+    legend.take(3).zip(legend.drop(3)).map { (left, right) => println((" "*2)+left+right) }
     
     println()
 
     System.exit(if(total == passed) 0 else 1)
-  }
-}
