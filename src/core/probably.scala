@@ -38,23 +38,18 @@ object Runner:
     case Mixed
 
     def failed: Boolean = !passed
-    
-    def passed: Boolean = this match
-      case Passed        => true
-      case Mixed         => false
-      case FailsAt(_, _) => false
+    def passed: Boolean = this == Passed
     
     def debug: String = this match
       case FailsAt(datapoint, count) => datapoint.map.map { case (k, v) => s"$k=$v" }.mkString(" ")
       case _                         => ""
 
 
-  sealed abstract class Datapoint(val map: Map[String, String])
-  case object Pass extends Datapoint(Map())
-
-  case class Fail(failMap: Map[String, String], index: Int) extends Datapoint(failMap)
-  case class Throws(exception: Throwable, throwMap: Map[String, String]) extends Datapoint(throwMap)
-  case class ThrowsInCheck(exception: Exception, throwMap: Map[String, String], index: Int) extends Datapoint(throwMap)
+  enum Datapoint(val map: Map[String, String]):
+    case Pass extends Datapoint(Map())
+    case Fail(failMap: Map[String, String], index: Int) extends Datapoint(failMap)
+    case Throws(exception: Throwable, throwMap: Map[String, String]) extends Datapoint(throwMap)
+    case ThrowsInCheck(exception: Exception, throwMap: Map[String, String], index: Int) extends Datapoint(throwMap)
 
   object Show:
     given Show[Int] = _.toString
@@ -119,13 +114,13 @@ class Runner(specifiedTests: Set[TestId] = Set()) extends Dynamic {
 
     def check(preds: (Type => Boolean)*): Type =
       def handler(index: Int): PartialFunction[Throwable, Datapoint] =
-        case e: Exception => ThrowsInCheck(e, map, index)
+        case e: Exception => Datapoint.ThrowsInCheck(e, map, index)
 
       def makeDatapoint(preds: Seq[Type => Boolean], count: Int, datapoint: Datapoint, value: Type): Datapoint =
         try
           if preds.isEmpty then datapoint
-          else if preds.head(value) then makeDatapoint(preds.tail, count + 1, Pass, value)
-          else Fail(map, count)
+          else if preds.head(value) then makeDatapoint(preds.tail, count + 1, Datapoint.Pass, value)
+          else Datapoint.Fail(map, count)
         catch handler(count)
 
 
@@ -135,10 +130,10 @@ class Runner(specifiedTests: Set[TestId] = Set()) extends Dynamic {
 
       value match
         case Success(value) =>
-          record(this, time, makeDatapoint(preds, 0, Pass, value))
+          record(this, time, makeDatapoint(preds, 0, Datapoint.Pass, value))
           value
         case Failure(exception) =>
-          record(this, time, Throws(exception, map))
+          record(this, time, Datapoint.Throws(exception, map))
           throw exception
 
   def report(): Report = Report(results.values.to(List))
@@ -170,7 +165,7 @@ case class Summary(id: TestId, name: String, count: Int, tmin: Long, ttot: Long,
     Summary(id, name, count + 1, tmin min duration, ttot + duration, tmax max duration, outcome match
       case Outcome.FailsAt(dp, c) => Outcome.FailsAt(dp, c)
       case Outcome.Passed         => datapoint match
-        case Pass                   => Outcome.Passed
+        case Datapoint.Pass         => Outcome.Passed
         case other                  => Outcome.FailsAt(other, count + 1)
       case Outcome.Mixed          => Outcome.FailsAt(datapoint, 0)
     )

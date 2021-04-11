@@ -39,13 +39,13 @@ object Suite:
   def show(report: Report): String =
     val simple = report.results.forall(_.count == 1)
 
-    given AnsiShow[Outcome] = _ match
-      case Outcome.Passed                             => pass
-      case Outcome.FailsAt(Fail(map, _), 1)           => fail
-      case Outcome.FailsAt(ThrowsInCheck(_, _, _), n) => checkThrows
-      case Outcome.FailsAt(Throws(exception, map), 1) => throws
-      case Outcome.FailsAt(_, n)                      => tailFail
-      case Outcome.Mixed                              => mixed
+    given AnsiShow[Outcome] =
+      case Outcome.Passed                                       => pass
+      case Outcome.FailsAt(Datapoint.Fail(map, _), 1)           => fail
+      case Outcome.FailsAt(Datapoint.ThrowsInCheck(_, _, _), n) => checkThrows
+      case Outcome.FailsAt(Datapoint.Throws(exception, map), 1) => throws
+      case Outcome.FailsAt(_, n)                                => tailFail
+      case Outcome.Mixed                                        => mixed
 
     val status = Heading[Summary, Outcome]("", _.outcome)
     val hash = Heading[Summary, String]("Hash", v => Runner.shortDigest(v.name))

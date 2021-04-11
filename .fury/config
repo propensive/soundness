@@ -7,9 +7,9 @@
 #
 # For more information, please visit https://propensive.com/fury/
 #
-layerRef	QmZWLcDEzNPSNu7hEhiR2nsFwiXpTXiP1oZcuFeXMQyGvT
+layerRef	Qmc1dVLyQaQ4nLDB66iAKSfPdnQyjAbESDf5GfNokr5bCT
 published	Some	url	fury://vent.dev/propensive/probably
-		version	8
-		layerRef	QmYizRUALexSXMhx8zZz3r2PQ9wLqHMePzdLp6adogT79Y
-		expiry	Some	1620644586373
+		version	9
+		layerRef	QmQuBAJbs8KC2Sjszi9uSuPTkUSPZdvw54QiBfHJoLUwai
+		expiry	Some	1620646572554
 # vim: set noai ts=12 sw=12:

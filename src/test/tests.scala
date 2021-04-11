@@ -93,7 +93,7 @@ object Main extends Suite("Probably Tests"):
       
       report.results.head.outcome
     }.assert {
-      case Outcome.FailsAt(Fail(map, _), _) if map("i") == "6" => true
+      case Outcome.FailsAt(Datapoint.Fail(map, _), _) if map("i") == "6" => true
       case _ => false
     }
 
@@ -130,9 +130,9 @@ object Main extends Suite("Probably Tests"):
     test("assert with 2 predicates") {
       val report = reportTest(_("test double")(0.001).assert(_ >= 0.0, _ < 0.0))
       report.results.head.outcome
-    }.assert(_ == Outcome.FailsAt(Fail(Map(), 1), 1))
+    }.assert(_ == Outcome.FailsAt(Datapoint.Fail(Map(), 1), 1))
 
     test("assert with 3 predicates") {
       val report = reportTest(_("test double")(0.001).assert(_ >= 0.0, _ <= 1.0, _ < 0.0))
       report.results.head.outcome
-    }.assert(_ == Outcome.FailsAt(Fail(Map(), 2), 1))
+    }.assert(_ == Outcome.FailsAt(Datapoint.Fail(Map(), 2), 1))
