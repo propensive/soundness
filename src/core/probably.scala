@@ -21,7 +21,7 @@ import scala.util.*, control.NonFatal
 
 import language.dynamics
 
-import Runner._
+import Runner.*
 
 object Runner:
   object Showable:
@@ -60,16 +60,17 @@ object Runner:
     given Show[Short] = _.toString
     given Show[Char] = _.toString
 
-  trait Show[T] { def show(value: T): String }
+  trait Show[T]:
+    def show(value: T): String
 
   def shortDigest(text: String): String =
     val md = java.security.MessageDigest.getInstance("SHA-256")
     md.update(text.getBytes)
     md.digest.take(3).map(b => f"$b%02x").mkString
 
-class Runner(specifiedTests: Set[TestId] = Set()) extends Dynamic {
+class Runner(subset: Set[TestId] = Set()) extends Dynamic {
 
-  final def runTest(testId: TestId): Boolean = specifiedTests.isEmpty || specifiedTests(testId)
+  final def skip(testId: TestId): Boolean = !(subset.isEmpty || subset(testId))
 
   def applyDynamic[T](method: String)(name: String)(fn: => T): Test { type Type = T } =
     applyDynamicNamed[T]("")("" -> name)(fn)
@@ -85,18 +86,18 @@ class Runner(specifiedTests: Set[TestId] = Set()) extends Dynamic {
 
   def time[T](name: String)(fn: => T): T = applyDynamicNamed[T]("")("" -> name)(fn).check { _ => true }
 
-  def suite(testSuite: TestSuite): Unit = suite(testSuite.name)(testSuite.run(_))
+  def suite(testSuite: TestSuite): Unit = suite(testSuite.name)(testSuite.run)
 
-  def suite(name: String)(fn: Runner => Unit): Unit =
-    val report = new Test(name, Map()) {
+  def suite(name: String)(fn: Runner ?=> Unit): Unit =
+    val test = new Test(name, Map()):
       type Type = Report
 
-      def action(): Report = {
+      def action(): Report =
         val runner = Runner()
-        fn(runner)
+        fn(using runner)
         runner.report()
-      }
-    }.check(_.results.forall(_.outcome.passed))
+    
+    val report = test.check(_.results.forall(_.outcome.passed))
 
     if report.results.exists(_.outcome.passed) && report.results.exists(_.outcome.failed)
     then synchronized { results = results.updated(name, results(name).copy(outcome = Outcome.Mixed)) }
@@ -110,7 +111,7 @@ class Runner(specifiedTests: Set[TestId] = Set()) extends Dynamic {
 
     def id: TestId = TestId(Runner.shortDigest(name))
     def action(): Type
-    def assert(pred: (Type => Boolean)*): Unit = try if(runTest(id)) check(pred*) catch case NonFatal(_) => ()
+    def assert(pred: (Type => Boolean)*): Unit = try if !skip(id) then check(pred*) catch case NonFatal(_) => ()
 
     def check(preds: (Type => Boolean)*): Type =
       def handler(index: Int): PartialFunction[Throwable, Datapoint] =
@@ -122,7 +123,6 @@ class Runner(specifiedTests: Set[TestId] = Set()) extends Dynamic {
           else if preds.head(value) then makeDatapoint(preds.tail, count + 1, Datapoint.Pass, value)
           else Datapoint.Fail(map, count)
         catch handler(count)
-
 
       val t0 = System.currentTimeMillis()
       val value = Try(action())
@@ -148,7 +148,7 @@ class Runner(specifiedTests: Set[TestId] = Set()) extends Dynamic {
   }
 
   private[this] def emptyResults(): Map[String, Summary] = ListMap().withDefault { name =>
-    Summary(TestId(shortDigest(name)), name, 0, Int.MaxValue, 0L, Int.MinValue, Outcome.Passed)
+    Summary(TestId(shortDigest(name)), name, 0, Int.MaxValue, 0L, Int.MinValue, Outcome.Passed, 0)
   }
 
   @volatile
@@ -156,19 +156,20 @@ class Runner(specifiedTests: Set[TestId] = Set()) extends Dynamic {
 }
 
 case class Summary(id: TestId, name: String, count: Int, tmin: Long, ttot: Long, tmax: Long, outcome: Outcome,
-                   indent: Int = 0):
+                   indent: Int):
   def avg: Double = ttot.toDouble/count/1000.0
   def min: Double = tmin.toDouble/1000.0
   def max: Double = tmax.toDouble/1000.0
 
+  def aggregate(datapoint: Datapoint) = outcome match
+    case Outcome.FailsAt(dp, c) => Outcome.FailsAt(dp, c)
+    case Outcome.Passed         => datapoint match
+      case Datapoint.Pass         => Outcome.Passed
+      case other                  => Outcome.FailsAt(other, count + 1)
+    case Outcome.Mixed          => Outcome.FailsAt(datapoint, 0)
+
   def append(test: String, duration: Long, datapoint: Datapoint): Summary =
-    Summary(id, name, count + 1, tmin min duration, ttot + duration, tmax max duration, outcome match
-      case Outcome.FailsAt(dp, c) => Outcome.FailsAt(dp, c)
-      case Outcome.Passed         => datapoint match
-        case Datapoint.Pass         => Outcome.Passed
-        case other                  => Outcome.FailsAt(other, count + 1)
-      case Outcome.Mixed          => Outcome.FailsAt(datapoint, 0)
-    )
+    Summary(id, name, count + 1, tmin min duration, ttot + duration, tmax max duration, aggregate(datapoint), 0)
 
 case class Report(results: List[Summary]):
   val passed: Int = results.count(_.outcome == Outcome.Passed)
@@ -176,8 +177,11 @@ case class Report(results: List[Summary]):
   val total: Int = failed + passed
 
 trait TestSuite:
-  def run(test: Runner): Unit
+  def run(using Runner): Unit
   def name: String
 
 object global:
   object test extends Runner()
+
+def test[T](str: String)(fn: => T)(using runner: Runner): runner.Test { type Type = T } = runner(str)(fn)
+def suite(name: String)(fn: Runner ?=> Unit)(using runner: Runner): Unit = runner.suite(name)(fn)

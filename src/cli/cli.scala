@@ -23,7 +23,7 @@ import scala.collection.mutable
 import Runner.*
 
 object Suite:
-  import Ansi.Color._
+  import Ansi.Color.*
   def ansi(symbol: Char, code: Ansi.Color) = code(Ansi.bold(Ansi.reverse(s" ${symbol} ")))
 
   val statuses@List(pass, fail, checkThrows, throws, tailFail, mixed) =
@@ -68,13 +68,13 @@ object Suite:
 
     List(resultsTable, summary, Suite.footer).mkString("\n")
 
-abstract class Suite(val name: String) extends TestSuite:
-  def run(test: Runner): Unit
+trait Suite(val name: String) extends TestSuite:
+  def run(using Runner): Unit
   
   final def main(args: Array[String]): Unit =
-    val test = new Runner(args.map(TestId(_)).to(Set))
-    run(test)
-    val report = test.report()
+    val runner = Runner(args.map(TestId(_)).to(Set))
+    run(using runner)
+    val report = runner.report()
     println(Suite.show(report))
 
     terminate(report.total == report.passed)
