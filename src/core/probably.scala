@@ -68,7 +68,7 @@ object Runner:
     md.update(text.getBytes)
     md.digest.take(3).map(b => f"$b%02x").mkString
 
-class Runner(subset: Set[TestId] = Set()) extends Dynamic {
+class Runner(subset: Set[TestId] = Set()) extends Dynamic:
 
   final def skip(testId: TestId): Boolean = !(subset.isEmpty || subset(testId))
 
@@ -153,7 +153,7 @@ class Runner(subset: Set[TestId] = Set()) extends Dynamic {
 
   @volatile
   protected var results: Map[String, Summary] = emptyResults()
-}
+end Runner
 
 case class Summary(id: TestId, name: String, count: Int, tmin: Long, ttot: Long, tmax: Long, outcome: Outcome,
                    indent: Int):
