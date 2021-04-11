@@ -17,7 +17,9 @@
 package probably
 
 import scala.collection.immutable.ListMap
+import scala.collection.mutable.HashMap
 import scala.util.*, control.NonFatal
+import scala.quoted.*
 
 import language.dynamics
 
@@ -72,24 +74,17 @@ class Runner(subset: Set[TestId] = Set()) extends Dynamic:
 
   final def skip(testId: TestId): Boolean = !(subset.isEmpty || subset(testId))
 
-  def applyDynamic[T](method: String)(name: String)(fn: => T): Test { type Type = T } =
-    applyDynamicNamed[T]("")("" -> name)(fn)
-
-  def applyDynamicNamed[T]
-                       (method: String)
-                       (name: (String, String), args: (String, Showable[_])*)
-                       (fn: => T)
-                       : Test { type Type = T } =
-    new Test(name._2, args.map(_ -> _()).to(Map)):
+  def apply[T](name: String)(fn: Test ?=> T): Test { type Type = T } =
+    new Test(name):
       type Type = T
-      def action(): T = fn
+      def action(): T = fn(using this)
 
-  def time[T](name: String)(fn: => T): T = applyDynamicNamed[T]("")("" -> name)(fn).check { _ => true }
+  def time[T](name: String)(fn: => T): T = apply[T](name)(fn).check { _ => true }
 
   def suite(testSuite: TestSuite): Unit = suite(testSuite.name)(testSuite.run)
 
   def suite(name: String)(fn: Runner ?=> Unit): Unit =
-    val test = new Test(name, Map()):
+    val test = new Test(name):
       type Type = Report
 
       def action(): Report =
@@ -104,24 +99,30 @@ class Runner(subset: Set[TestId] = Set()) extends Dynamic:
 
     report.results.foreach { result => record(result.copy(indent = result.indent + 1)) }
 
-  def assert(name: String)(fn: => Boolean): Unit = applyDynamicNamed("")("" -> name)(fn).assert(identity)
+  def assert(name: String)(fn: => Boolean): Unit = apply(name)(fn).assert(identity)
 
-  abstract class Test(val name: String, map: => Map[String, String]):
+  abstract class Test(val name: String):
     type Type
 
     def id: TestId = TestId(Runner.shortDigest(name))
     def action(): Type
     def assert(pred: (Type => Boolean)*): Unit = try if !skip(id) then check(pred*) catch case NonFatal(_) => ()
+    
+    private val map: HashMap[String, String] = HashMap()
+
+    def debug[T](name: String, expr: T): T =
+      map(name) = expr.toString
+      expr
 
     def check(preds: (Type => Boolean)*): Type =
       def handler(index: Int): PartialFunction[Throwable, Datapoint] =
-        case e: Exception => Datapoint.ThrowsInCheck(e, map, index)
+        case e: Exception => Datapoint.ThrowsInCheck(e, map.toMap, index)
 
       def makeDatapoint(preds: Seq[Type => Boolean], count: Int, datapoint: Datapoint, value: Type): Datapoint =
         try
           if preds.isEmpty then datapoint
           else if preds.head(value) then makeDatapoint(preds.tail, count + 1, Datapoint.Pass, value)
-          else Datapoint.Fail(map, count)
+          else Datapoint.Fail(map.toMap, count)
         catch handler(count)
 
       val t0 = System.currentTimeMillis()
@@ -133,7 +134,7 @@ class Runner(subset: Set[TestId] = Set()) extends Dynamic:
           record(this, time, makeDatapoint(preds, 0, Datapoint.Pass, value))
           value
         case Failure(exception) =>
-          record(this, time, Datapoint.Throws(exception, map))
+          record(this, time, Datapoint.Throws(exception, map.toMap))
           throw exception
 
   def report(): Report = Report(results.values.to(List))
@@ -183,5 +184,16 @@ trait TestSuite:
 object global:
   object test extends Runner()
 
-def test[T](str: String)(fn: => T)(using runner: Runner): runner.Test { type Type = T } = runner(str)(fn)
+def test[T](name: String)(fn: Runner#Test ?=> T)(using runner: Runner): runner.Test { type Type = T } =
+  runner(name)(fn)
+
 def suite(name: String)(fn: Runner ?=> Unit)(using runner: Runner): Unit = runner.suite(name)(fn)
+def time[T](name: String)(fn: => T)(using runner: Runner): T = test(name)(fn).check { _ => true }
+
+extension [T](inline value: T)
+  inline def debug(using test: Runner#Test): T = ${Macro.debug('value, 'test)}
+
+object Macro:
+  def debug[T: Type](value: Expr[T], test: Expr[Runner#Test])(using Quotes): Expr[T] =
+    val str = Expr(value.show)
+    '{${test}.debug(${str}, ${value})}

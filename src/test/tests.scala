@@ -43,7 +43,7 @@ object Main extends Suite("Probably Tests"):
     }.assert(_.results.size == 2)
 
     test("tests can fail") {
-     reportTest(_("failing")(2 + 2).assert(_ == 5))
+      reportTest(_("failing")(2 + 2).assert(_ == 5))
     }.assert(_.results.head.outcome.failed)
 
     test("tests can succeed") {
@@ -88,7 +88,9 @@ object Main extends Suite("Probably Tests"):
 
     test("repetition captures failed value") {
       val report = reportTest { runner =>
-        for i <- 1 to 10 do runner("integers are less than six", i = i)(i).assert(_ < 6)
+        for i <- 1 to 10 do runner("integers are less than six") {
+          i.debug
+        }.assert(_ < 6)
       }
       
       report.results.head.outcome
