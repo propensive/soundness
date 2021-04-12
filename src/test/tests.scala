@@ -138,3 +138,39 @@ object Main extends Suite("Probably Tests"):
       val report = reportTest(_("test double")(0.001).assert(_ >= 0.0, _ <= 1.0, _ < 0.0))
       report.results.head.outcome
     }.assert(_ == Outcome.FailsAt(Datapoint.Fail(Map(), 2), 1))
+
+    suite("tolerance tests") {
+      test("Compare numbers which are not similar enough") {
+        3.14159 ~~ 3.4
+      }.assert(_ == false)
+      
+      test("Compare numbers which are similar") {
+        3.141593 ~~ 3.1415926
+      }.assert(_ == true)
+
+      test("Compare different case class instances") {
+        case class Person(name: String, height: Float)
+        Person("John Smith", 1.0) ~~ Person("John Smith", 1.1)
+      }.assert(_ == false)
+      
+      test("Compare equal case class instances") {
+        case class Person(name: String, height: Float)
+        Person("John Smith", 1.0) ~~ Person("John Smith", 1.0)
+      }.assert(_ == true)
+      
+      test("Compare similar case class instances") {
+        case class Person(name: String, height: Float)
+        Person("John Smith", 1.001) ~~ Person("John Smith", 1.0)
+      }.assert(_ == true)
+    }
+
+    suite("Property tests") {
+      Generate.stream[(String, Int)].take(100).zipWithIndex.foreach { case ((str, int), idx) =>
+        test("All longs are less than 100") {
+          println((str, int))
+          idx.debug
+          str.debug
+          int.debug
+        }.assert(_ < 100)
+      }
+    }
