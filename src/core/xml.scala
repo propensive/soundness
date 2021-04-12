@@ -1,7 +1,6 @@
 package euphemism
 
 import magnolia._
-import mercator._
 
 import org.xml.sax._
 import org.w3c.dom.{Node => XValue, NodeList => XList}
@@ -63,10 +62,9 @@ object Xml extends Dynamic {
     implicit def gen[T]: Serializer[T] = macro Magnolia.gen[T]
   }*/
 
-  trait Serializer[T] {
+  trait Serializer[T]:
     def omit(t: T): Boolean = false
     def serialize(t: T): XValue
-  }
 
   /*object Deserializer extends Deserializer_1 {
     implicit val int: Deserializer[Int] = _.getInt
