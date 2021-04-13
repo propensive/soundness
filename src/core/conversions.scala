@@ -82,17 +82,18 @@ case class Srgb(red: Double, green: Double, blue: Double) extends Color:
     val min = r min g min b
     val max = r max g max b
     val delta = max - min
+    val lightness = (max + min)/2
 
-    if delta == 0.0 then Hsl(0.0, 0.0, max)
+    if delta == 0.0 then Hsl(0.0, 0.0, lightness)
     else
-      val s = delta/max
-      val dr = ((max - r)/6) + (delta/2)/delta
-      val dg = ((max - g)/6) + (delta/2)/delta
-      val db = ((max - b)/6) + (delta/2)/delta
+      val saturation = if lightness < 0.5 then delta/(max + min) else delta/(2 - max - min)
+      val dr = ((max - r)/6 + delta/2)/delta
+      val dg = ((max - g)/6 + delta/2)/delta
+      val db = ((max - b)/6 + delta/2)/delta
 
       val hue = if max == r then db - dg else if max == g then 1.0/3.0 + dr - db else 2.0/3.0 + dg - dr
 
-      Hsl(Color.unitary(hue), s, max)
+      Hsl(Color.unitary(hue), saturation, lightness)
 
   def hsv: Hsv =
     val r = red/255
@@ -172,34 +173,28 @@ case class Hsv(hue: Double, saturation: Double, value: Double) extends Color:
 
 case class Hsl(hue: Double, saturation: Double, lightness: Double) extends Color:
   def srgb(using Profile): Srgb =
-    if saturation == 0.0 then Srgb(value*255, value*255, value*255)
+    if saturation == 0.0 then Srgb(lightness*255, lightness*255, lightness*255)
     else
-      val h = hue*6
-      val v = value*255
-      val i = h.toInt%6
-      val a1 = v*(1 - saturation)
-      val a2 = v*(1 - saturation*(h - i))
-      val a3 = v*(1 - saturation*(1 - (h - i)))
+      val v2 =
+        if lightness < 0.5 then lightness*(1 + saturation)
+        else (lightness + saturation - saturation*lightness)
+      
+      val v1 = 2*lightness - v2
 
-      i match
-        case 0 => Srgb(v, a3, a1)
-        case 1 => Srgb(a2, v, a1)
-        case 2 => Srgb(a1, v, a3)
-        case 3 => Srgb(a1, a2, v)
-        case 4 => Srgb(a3, a1, v)
-        case _ => Srgb(v, a1, a2)
+      def conv(h: Double): Double =
+        val vh = Color.unitary(h)
+        if 6*vh < 1 then v1 + (v2 - v1)*6*vh
+        else if 2*vh < 1 then v2
+        else if 3*vh < 2 then v1 + (v2 - v1)*((2.0/3) - vh)*6
+        else v1
+
+      Srgb(255*conv(hue + (1.0/3.0)), 255*conv(hue), 255*conv(hue - (1.0/3.0)))
   
-  def saturate: Hsv = Hsv(hue, 1.0, value)
-  def desaturate: Hsv = Hsv(hue, 0.0, value)
-  def rotate(degrees: Double): Hsv = Hsv(Color.unitary(hue + degrees/360), saturation, value)
+  def saturate: Hsv = Hsv(hue, 1.0, lightness)
+  def desaturate: Hsv = Hsv(hue, 0.0, lightness)
+  def rotate(degrees: Double): Hsv = Hsv(Color.unitary(hue + degrees/360), saturation, lightness)
   def pure: Hsv = Hsv(hue, 1.0, 0.0)
   
-  def shade(black: Double = 0.5): Hsv = Hsv(hue, saturation, value*(1 - black) + (1.0 - value)*black)
-  def tint(white: Double = 0.5): Hsv = Hsv(hue, saturation*(1 - white) + (1.0 - saturation)*white, value)
-  def tone(black: Double = 0.5, white: Double = 0.5) = shade(black).tint(white)
-
-      
-
 object Profile:
   val IncandescentTungsten = Profile(109.850, 100.0, 35.585, 111.144, 100.0, 35.200)
   val OldDirectSunlightAtNoon = Profile(99.0927, 100.0, 85.313, 99.178, 100.0, 84.3493)

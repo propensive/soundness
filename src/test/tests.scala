@@ -24,33 +24,27 @@ object Main extends Suite("Iridesce tests"):
   given Tolerance[Double] = (a, b) => math.abs(a - b) < 0.1
   
   def run(using Runner): Unit =
-    for color <- Colors.all do
+    for color <- Colors.all.reverse do
       test("sRGB to L*a*b*") {
-        color.debug
-        color.cielab.srgb.debug
+        color.debug.cielab.srgb.debug
       }.assert(_ ~~ color)
 
       test("HSV to sRGB and back") {
-        color.hsv.debug
-        color.hsv.srgb.hsv.debug
+        color.debug.hsv.srgb.hsv.debug
       }.assert(_ ~~ color.hsv)
       
       test("sRGB to CMY and back") {
-        color.debug
-        color.cmy.srgb.debug
+        color.debug.cmy.srgb.debug
       }.assert(_ ~~ color)
       
       test("sRGB to CMYK and back") {
-        color.debug
-        color.cmyk.srgb.debug
+        color.debug.cmyk.srgb.debug
       }.assert(_ ~~ color)
       
       test("sRGB to XYZ and back") {
-        color.debug
-        color.xyz.srgb.debug
+        color.debug.xyz.srgb.debug
       }.assert(_ ~~ color)
       
       test("sRGB to HSL and back") {
-        color.debug
-        color.xyz.srgb.debug
+        color.debug.hsl.debug.srgb.debug
       }.assert(_ ~~ color)
