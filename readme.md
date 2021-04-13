@@ -15,11 +15,13 @@ _Iridesce_ implements several algorithms for working with colors represented in 
 ## Features
 
 - represents colors using a variety of different color models
-- work with colors in RGB, HSV, CMY, CMYK, HSL, L*a*b* and XYZ
+- work with colors in RGB, HSV, CMY, CMYK, HSL, L\*a\*b\* and XYZ
 - convert between any colors
 - utilize color profiles (where necessary)
 - provides a standard palette of named colors
 - print colors as CSS, Hex or ANSI
+- brighten, lighten, darken and blend colors
+- calculate perceptual deltas between colors
 
 
 ## Getting Started
