@@ -19,6 +19,8 @@ package rudiments
 extension [T](value: T)
   def only[S](pf: PartialFunction[T, S]): Option[S] = Some(value).collect(pf)
   def unit: Unit = ()
+  def twin: (T, T) = (value, value)
+  def triple: (T, T, T) = (value, value, value)
 
 extension (value: String)
   def populated: Option[String] = if(value.isEmpty) None else Some(value)

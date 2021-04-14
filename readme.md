@@ -15,7 +15,10 @@ _Rudiments_ provides a small collection of tiny but useful utilities for everyda
 ## Features
 
 - implementation of an easier-to-use Y-combinator method, `fix` with a recursion helper method, `recur`
-- tools for 
+- typesafe and mutation-safe reimplementations of several `String` operations
+- `String` extractors for primitive types
+- `unit`, `only`, `twin` and `triple` convenience methods to make some code patterns slightly more concise
+- a typesafe `str""` string interpolator where all substitutions must be `String`s
 
 
 ## Getting Started
@@ -102,6 +105,10 @@ The `s""` interpolator takes parameters of `Any` type as substitutions, calling 
 necessary. This may be considered too permissive, so `str""` is provided as a typesafe alternative that requires
 every substitution to be a `String`.
 
+## `twin` and `triple`
+
+These two extension methods produce a two-tuple and a three-tuple (respectively) of repetitions of the value it
+is applied to. This can be useful in a subsequent `map` operation.
 
 ## Status
 

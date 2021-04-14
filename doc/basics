@@ -79,3 +79,8 @@ val result: Option[Int] = string.only { case Int(i) => i*i }
 The `s""` interpolator takes parameters of `Any` type as substitutions, calling `String#toString` on them as
 necessary. This may be considered too permissive, so `str""` is provided as a typesafe alternative that requires
 every substitution to be a `String`.
+
+## `twin` and `triple`
+
+These two extension methods produce a two-tuple and a three-tuple (respectively) of repetitions of the value it
+is applied to. This can be useful in a subsequent `map` operation.
