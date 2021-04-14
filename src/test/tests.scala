@@ -14,14 +14,14 @@
     See the License for the specific language governing permissions and limitations under the License.
 
 */
-package iridesce
+package iridescence
 
 import probably.*
 
-object Main extends Suite("Iridesce tests"):
+object Main extends Suite("Iridescence tests"):
   
   given Profile = Profile.Daylight
-  given Tolerance[Double] = (a, b) => math.abs(a - b) < 0.1
+  given Tolerance[Double] = (a, b) => math.abs(a - b) < 0.05
   
   def run(using Runner): Unit =
     for color <- Colors.all.reverse do
