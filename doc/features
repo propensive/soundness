@@ -1,1 +1,2 @@
-TBC
+- implementation of an easier-to-use Y-combinator method, `fix` with a recursion helper method, `recur`
+- tools for 

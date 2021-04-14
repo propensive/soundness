@@ -4,22 +4,103 @@
 [<img src="https://img.shields.io/matrix/propensive.rudiments:matrix.org?label=MATRIX&color=0dbd8b&style=for-the-badge" height="24">](https://app.element.io/#/room/#propensive.rudiments:matrix.org)
 [<img src="https://img.shields.io/twitter/follow/propensive?color=%2300acee&label=TWITTER&style=for-the-badge" height="24">](https://twitter.com/propensive)
 [<img src="https://img.shields.io/maven-central/v/com.propensive/rudiments-core_2.12?color=2465cd&style=for-the-badge" height="24">](https://search.maven.org/artifact/com.propensive/rudiments-core_2.12)
-[<img src="https://img.shields.io/badge/vent-propensive%2Frudiments-f05662?style=for-the-badge" height="24">](https://vent.dev)
+[<img src="https://vent.dev/badge/propensive/rudiments" height="24">](https://vent.dev/)
 
 <img src="/doc/images/github.png" valign="middle">
 
 # Rudiments
 
-TBC
+_Rudiments_ provides a small collection of tiny but useful utilities for everyday programming in Scala, and could be considered an enhanced "predef".
 
 ## Features
 
-TBC
+- implementation of an easier-to-use Y-combinator method, `fix` with a recursion helper method, `recur`
+- tools for 
 
 
 ## Getting Started
 
-TBC
+Utilities in _Rudiments_ are mostly provided through extension methods, and importing the `rudiments` package
+will bring all utility methods into scope.
+
+## Y-Combinator
+
+An implementation of a [Y-Combinator](https://shorturl.at/jqKOY), called `fix`, is provided, implemented using a
+Scala 3 context function, which enables slightly more favorable syntax than was possible in Scala 2. This method
+makes it easier to write code in a point-free style.
+
+The `fix` method takes a type parameter (which must be explicitly specified for type inference) and a lambda as
+its first parameter, to which an additional parameter should be supplied as its initial value. Crucially, in the
+body of `fix`'s lambda, a call to `recur` should be used to signal recursion.
+
+This is best illustrated with an example. Here is an implementation of a factorial function.
+```scala
+def factorial(n: Int): Int =
+  fix[Int] { i => if i <= 0 then 1 else i*recur(i - 1) } (n)
+```
+
+This avoids the explicit definition of a private or nested helper function, which would normally be necessary
+for a definition such as this.
+
+## Primitive `String` Extractors
+
+Extractors for all the primitive types are provided for matching on `String`s. These are defines as extensions
+to the (virtual) companion objects of the primitive types, so they have the same names as the types they
+extract.
+
+Here is an example of them in use:
+```scala
+def parse(number: String): Boolean | Int | Double =
+  number match
+    case Boolean(b) => b
+    case Int(i)     => i
+    case Double(d)  => d
+    case _          => 0
+```
+
+## Typesafe `String` operations
+
+The extension method `String#cut` has identical semantics to `String#split`, but returns an immutable `IArray`
+instead of an `Array`. Likewise, the methods `String#bytes` and `String#chars` mirror `String#getBytes` and
+`String#toCharArray`, returning an `IArray[Byte]` and `IArray[Char]` respectively.
+
+The `bytes` method currently uses the `UTF-8` in all cases, though this may change if there is sufficient
+demand.
+
+Four variants of the extension method `join` are provided on `Traversable[String]` instances, which provide the
+same functionality as `mkString` (but only operating on `String`s) with one additional two-parameter version
+that's specialized for natural language lists where each element is separated by a comma except the last, which
+is preceded by a word such as `and` or `or`.
+
+For example,
+```scala
+List("one", "two", "three").join(", ", " or maybe ")
+```
+will produce the string `one, two or maybe three`.
+
+## `unit`
+
+Often a side-effecting expression returns a value which is not used at a particular call site, and can be
+discarded. However, the expression's return type can result in type-inference choosing an undesired return type,
+when `Unit` would be preferable, or a compile-time warning about discarded values may be produced.
+
+The `unit` extension method silently discards the return value of any expression, and instead produces a `Unit`,
+`()`.
+
+## `only`
+
+The `only` extension method applies a partial function to a value and lifts the result into an option.
+
+For example,
+```scala
+val result: Option[Int] = string.only { case Int(i) => i*i }
+```
+
+## `str""` Interpolator
+
+The `s""` interpolator takes parameters of `Any` type as substitutions, calling `String#toString` on them as
+necessary. This may be considered too permissive, so `str""` is provided as a typesafe alternative that requires
+every substitution to be a `String`.
 
 
 ## Status
@@ -43,10 +124,10 @@ or imported into an existing layer with,
 ```
 fury layer import -i propensive/rudiments
 ```
-A binary is available on Maven Central as `com.propensive:rudiments-core_<scala-version>:0.1.0`. This may be added
+A binary is available on Maven Central as `com.propensive:rudiments-core_<scala-version>:0.2.0`. This may be added
 to an [sbt](https://www.scala-sbt.org/) build with:
 ```
-libraryDependencies += "com.propensive" %% "rudiments-core" % "0.1.0"
+libraryDependencies += "com.propensive" %% "rudiments-core" % "0.2.0"
 ```
 
 ## Contributing
@@ -70,5 +151,5 @@ training is available from [Propensive O&Uuml;](https://propensive.com/).
 
 ## License
 
-Rudiments is copyright &copy; 2020-20 Jon Pretty & Propensive O&Uuml;, and is made available under the
+Rudiments is copyright &copy; 2020-21 Jon Pretty & Propensive O&Uuml;, and is made available under the
 [Apache 2.0 License](/license.md).
