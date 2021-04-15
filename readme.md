@@ -217,7 +217,7 @@ fury layer import -i propensive/probably
 ```
 A binary is available on Maven Central as `com.propensive:probably-cli_<scala-version>:0.8.0`. This may be added
 to an [sbt](https://www.scala-sbt.org/) build with:
-```scala
+```
 libraryDependencies += "com.propensive" %% "probably-cli" % "0.8.0"
 ```
 
@@ -242,5 +242,5 @@ training is available from [Propensive O&Uuml;](https://propensive.com/).
 
 ## License
 
-Probably is copyright &copy; 2017-20 Jon Pretty & Propensive O&Uuml;, and is made available under the
+Probably is copyright &copy; 2017-21 Jon Pretty & Propensive O&Uuml;, and is made available under the
 [Apache 2.0 License](/license.md).
