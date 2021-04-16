@@ -16,121 +16,86 @@
 */
 package jovian
 
-import kaleidoscope._
-import contextual._
-import mercator._
-import gastronomy._
+import kaleidoscope.*
+import gastronomy.*
 
-import scala.language.experimental.macros
-import scala.language.higherKinds
-import scala.util._
+import scala.util.*
 import scala.collection.generic.CanBuildFrom
 import java.net.URI
 import java.nio.file.attribute.BasicFileAttributes
-import java.nio.file.{ FileSystems, FileVisitResult, Files, Paths, SimpleFileVisitor, StandardCopyOption,
-    DirectoryNotEmptyException, Path => JavaPath }
-import java.nio.file.StandardCopyOption._
+
+import java.nio.file.{FileSystems, FileVisitResult, Files, Paths, SimpleFileVisitor, StandardCopyOption,
+    DirectoryNotEmptyException, Path as JavaPath}
+
+import java.nio.file.StandardCopyOption.*
 import java.io.{ Closeable, InputStream, File => JavaFile }
 
-object PathInterpolator extends Verifier[Path] {
-  def check(string: String): Either[(Int, String), Path] = {
-    def parse(startPart: Boolean = false, idx: Int = 0): Either[(Int, String), Path] =
-      if(idx == string.length) Right(Path(string))
-      else {
-        string(idx) match {
-          case '<' | '>' | ':' | '"' | '\\' | '|' | '?' | '*' => Left((idx, "invalid character"))
-          case '/' if startPart                               => Left((idx, "double slash in path"))
-          case '/'                                            => parse(true, idx + 1)
-          case _                                              => parse(false, idx + 1)
-        }
-      }
-    
-    parse()
-  }
-}
-
-object Path {
-
-  def apply(jpath: JavaPath): Path = Path(jpath.toString match {
-    case "" => "."
+object Path:
+  def apply(jpath: JavaPath): Path = Path(jpath.toString match
+    case ""    => "."
     case other => other
-  })
+  )
   
   def apply(file: JavaFile): Path = Path(file.getAbsolutePath)
   def apply(uri: URI): Path = Path(Paths.get(uri))
 
-  def unapply(str: String): Option[Path] = str match {
-    case r"""$dir@([^*?:;,&|"\%<>]*)""" => Some(Path(dir))
+  def unapply(str: String): Option[Path] = str match
+    case r"""${dir: String}@([^*?:;,&|"\%<>]*)""" => Some(Path(dir))
     case _                              => None
-  }
 
-  private class CopyFileVisitor(sourcePath: JavaPath, targetPath: JavaPath)
-      extends SimpleFileVisitor[JavaPath] {
+  private class CopyFileVisitor(sourcePath: JavaPath, targetPath: JavaPath) extends SimpleFileVisitor[JavaPath]:
 
-    override def preVisitDirectory(dir: JavaPath, attrs: BasicFileAttributes): FileVisitResult = {
+    override def preVisitDirectory(dir: JavaPath, attrs: BasicFileAttributes): FileVisitResult =
       createDirectories(targetPath.resolve(sourcePath.relativize(dir)))
       FileVisitResult.CONTINUE
-    }
 
-    override def visitFile(file: JavaPath, attrs: BasicFileAttributes): FileVisitResult = {
+    override def visitFile(file: JavaPath, attrs: BasicFileAttributes): FileVisitResult =
       Files.copy(file, targetPath.resolve(sourcePath.relativize(file)), REPLACE_EXISTING)
       FileVisitResult.CONTINUE
-    }
-  }
 
   def createDirectories(path: JavaPath): Boolean = path.toFile.mkdirs()
-}
 
-case class Path(input: String) {
-  val value: String = if(input == "/") "/" else {
-    def canonicalize(str: List[String], drop: Int = 0): List[String] = str match {
+case class Path(input: String):
+  val value: String = if input == "/" then "/" else
+    def canonicalize(str: List[String], drop: Int = 0): List[String] = str match
       case ".." :: tail => canonicalize(tail, drop + 1)
-      case head :: tail => if(drop > 0) canonicalize(tail, drop - 1) else head :: canonicalize(tail)
+      case head :: tail => if drop > 0 then canonicalize(tail, drop - 1) else head :: canonicalize(tail)
       case Nil          => List.fill(drop)("..")
-    }
     
-    canonicalize((input.split("/").to[List] match {
+    canonicalize((input.split("/").to(List) match
       case "" :: xs => "" :: xs.filter { p => p != "." && p != "" }
       case xs       => xs.filter { p => p != "." && p != "" }
-    }).reverse).reverse match {
+    ).reverse).reverse match
       case Nil => "."
       case xs  => xs.mkString("/")
-    }
-  }
 
   def filename: String = value
   lazy val javaPath: JavaPath = Paths.get(value)
   lazy val javaFile: JavaFile = javaPath.toFile
   def uriString: String = javaFile.toURI.toString
   def name: String = javaPath.getFileName.toString
-  def /(child: String): Path = if(filename == "/") Path(s"/$child") else Path(s"$filename/$child")
-  def in(root: Path): Path = if(value == ".") root else Path(s"${root.value}/$value")
+  def /(child: String): Path = if filename == "/" then Path(s"/$child") else Path(s"$filename/$child")
+  def in(root: Path): Path = if value == "." then root else Path(s"${root.value}/$value")
 
   def lastModified: Long = javaFile.lastModified()
 
-  def empty: Boolean = {
+  def empty: Boolean =
     val filesStream = Files.walk(javaPath)
     try filesStream.allMatch(p => Files.isDirectory(p))
     finally filesStream.close()
-  }
 
   def size: ByteSize = ByteSize(javaFile.length)
 
   def setReadOnly(): Try[Unit] = childPaths.traverse(_.setReadOnly()).flatMap { _ =>
-    Try {
-      javaFile.setReadOnly()
-      ()
-    }
+    Try(javaFile.setReadOnly())
   }
 
-  def setWritable(): Try[Unit] = Try {
-    javaFile.setWritable(true)
-  }.flatMap { _ =>
+  def setWritable(): Try[Unit] = Try(javaFile.setWritable(true)).flatMap { _ =>
     childPaths.traverse(_.setWritable()).map { _ => () }
   }
 
   def uniquify(): Path =
-    if(!exists()) this else Stream.from(2).map { i => this.rename(_+"-"+i) }.find(!_.exists()).get
+    if !exists() then this else LazyList.from(2).map { i => this.rename(_+"-"+i) }.find(!_.exists()).get
 
   def hardLink(path: Path): Try[Unit] =
     Try(Files.createLink(javaPath, path.javaPath)).map { _ => () }.recoverWith {
@@ -138,24 +103,21 @@ case class Path(input: String) {
     }
 
   def touch(): Try[Unit] = Try {
-    if(!exists()) new java.io.FileOutputStream(javaFile).close()
-    else {
+    if !exists() then java.io.FileOutputStream(javaFile).close()
+    else
       javaFile.setLastModified(System.currentTimeMillis())
       ()
-    }
   }.recoverWith { case e => Failure(FileWriteError(this, e)) }
 
-  def extant(): Path = {
+  def extant(): Path =
     mkdir()
     this
-  }
 
   def directory: Boolean = Files.isDirectory(javaPath)
 
-  def extantParents(): Path = {
+  def extantParents(): Path =
     parent.mkdir()
     this
-  }
 
   def isExecutable: Boolean = Files.isExecutable(javaPath)
 
@@ -183,7 +145,7 @@ case class Path(input: String) {
 
   def findChildren(pred: String => Boolean): Set[Path] = {
     def search(dir: JavaFile): Set[JavaFile] = {
-      val files = dir.listFiles.to[Set]
+      val files = dir.listFiles.to(Set)
       files.filter(_.isDirectory).flatMap(search(_)) ++ files.filter { f => !f.isDirectory && pred(f.getName) }
     }
 
@@ -192,31 +154,29 @@ case class Path(input: String) {
 
   def findSubdirsContaining(pred: String => Boolean): Set[Path] =
     Option(javaFile.listFiles).map { files =>
-      val found = if(files.exists { f => pred(f.getName) }) Set(this) else Set()
-      val subdirs = files.filter(_.isDirectory).filterNot(_.getName.startsWith(".")).map(Path(_)).to[Set]
+      val found = if files.exists { f => pred(f.getName) } then Set(this) else Set()
+      val subdirs = files.filter(_.isDirectory).filterNot(_.getName.startsWith(".")).map(Path(_)).to(Set)
 
       subdirs.flatMap(_.findSubdirsContaining(pred)) ++ found
     }.getOrElse(Set())
 
   def delete(): Try[Boolean] = {
     def delete(file: JavaFile): Boolean =
-      if(Files.isSymbolicLink(file.toPath)) file.delete()
+      if Files.isSymbolicLink(file.toPath) then file.delete()
       else if(file.isDirectory) file.listFiles.forall(delete(_)) && file.delete()
       else file.delete()
 
     Try(delete(javaFile)).recoverWith { case e => Failure(FileWriteError(this, e)) }
   }
 
-  def linkTarget(): Option[Path] = {
-    if(Files.isSymbolicLink(javaPath)) Some(Path(javaPath.toRealPath())) else None
-  }
+  def linkTarget(): Option[Path] =
+    if Files.isSymbolicLink(javaPath) then Some(Path(javaPath.toRealPath())) else None
 
-  def unlink(): Try[Unit] = {
-    val result = if(Files.isSymbolicLink(javaPath)) Try(Files.delete(javaPath))
+  def unlink(): Try[Unit] =
+    val result = if Files.isSymbolicLink(javaPath) then Try(Files.delete(javaPath))
     else Failure(new IllegalArgumentException(s"Not a symbolic link: $name"))
 
     result.recoverWith { case e => Failure(FileWriteError(this, e)) }
-  }
 
   def writeSync(content: String, append: Boolean = false): Try[Unit] = {
     tryWith(new java.io.BufferedWriter(new java.io.FileWriter(javaPath.toFile, append))) { writer =>
@@ -225,8 +185,7 @@ case class Path(input: String) {
   }
 
   def lines(): Try[Iterator[String]] = Try(scala.io.Source.fromFile(javaFile).getLines())
-
-  def bytes(): Try[Bytes] = Try(Bytes(Files.readAllBytes(javaPath)))
+  def bytes(): Try[IArray[Byte]] = Try(IArray.from(Files.readAllBytes(javaPath)))
 
   def copyTo(path: Path): Try[Path] = Try {
     Files.walkFileTree(javaPath, new Path.CopyFileVisitor(javaPath, path.javaPath))
@@ -240,14 +199,14 @@ case class Path(input: String) {
 
   def hardLinks(): Try[Int] = Try(Files.getAttribute(javaPath, "unix:nlink")).collect { case i: Integer => i }
 
-  def walkTree: Stream[Path] =
-    if(directory) Stream(this) ++: childPaths.to[Stream].flatMap(_.walkTree) else Stream(this)
+  def walkTree: LazyList[Path] =
+    if directory then LazyList(this) ++: childPaths.to(LazyList).flatMap(_.walkTree) else LazyList(this)
 
-  def children: List[String] = if(exists()) Option(javaFile.listFiles).to[List].flatten.map(_.getName) else Nil
+  def children: List[String] = if exists() then Option(javaFile.listFiles).to(List).flatten.map(_.getName) else Nil
   def childPaths: List[Path] = children.map(this / _)
-  def descendants: Stream[Path] = childPaths.to[Stream].flatMap { f => f +: f.descendants }
+  def descendants: LazyList[Path] = childPaths.to(LazyList).flatMap { f => f +: f.descendants }
   def exists(): Boolean = Files.exists(javaPath)
-  def ifExists(): Option[Path] = if(exists) Some(this) else None
+  def ifExists(): Option[Path] = if exists() then Some(this) else None
   def absolutePath(): Try[Path] = Try(this.javaPath.toAbsolutePath.normalize.toString).map(Path(_))
   def mkdir(): Try[Unit] = Try(Path.createDirectories(javaPath))
   def relativizeTo(dir: Path) = Path(dir.javaPath.relativize(this.javaPath))
@@ -268,36 +227,31 @@ case class Path(input: String) {
   //TODO consider wrapping into a buffered stream
   def inputStream(): InputStream = Files.newInputStream(javaPath)
 
-  private def tryWith[R <: Closeable, T](resource: => R)(f: R => T): Try[T] = {
+  private def tryWith[R <: Closeable, T](resource: => R)(f: R => T): Try[T] =
     val res = Try { resource }
     val result = res.flatMap{ r => Try(f(r)) }
     val closed = res.flatMap{ r => Try(r.close()) }
     List(res, closed, result).sequence.map(_ => result.get)
-  }
-}
 
-object Glob {
+object Glob:
   val All = Glob("**")
-}
 
-case class Glob(pattern: String) {
+case class Glob(pattern: String):
   def apply[Coll[T] <: Iterable[T]]
            (dir: Path, xs: Coll[Path])
-           (implicit cbf: CanBuildFrom[Coll[Path], Path, Coll[Path]]): Coll[Path] = {
+           (implicit cbf: CanBuildFrom[Coll[Path], Path, Coll[Path]]): Coll[Path] =
     val javaGlob = FileSystems.getDefault.getPathMatcher(s"glob:$dir/$pattern")
     val b = cbf()
-    xs.foreach { x => if(javaGlob.matches(x.javaPath)) b += x }
+    xs.foreach { x => if javaGlob.matches(x.javaPath) then b += x }
     b.result
-  }
-}
 
-case class ByteSize(bytes: Long) {
+case class ByteSize(bytes: Long):
   def +(that: ByteSize): ByteSize = ByteSize(bytes + that.bytes)
-}
 
 case class FileNotFound(path: Path) extends Exception
-case class FileWriteError(path: Path, e: Throwable) extends Exception {
+
+case class FileWriteError(path: Path, e: Throwable) extends Exception:
   override def getCause: Throwable = e
-}
+
 case class ConfigFormatError(path: Path) extends Exception
 case class ZipfileEntry(name: String, inputStream: () => java.io.InputStream)
