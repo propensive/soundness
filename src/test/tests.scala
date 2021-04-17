@@ -20,11 +20,11 @@ import probably.*
 
 object Main extends Suite("Iridescence tests"):
   
-  given Profile = Profile.Daylight
+  given Profile = profiles.Daylight
   given Tolerance[Double] = (a, b) => math.abs(a - b) < 0.05
   
   def run(using Runner): Unit =
-    for color <- Colors.all.reverse do
+    for color <- colors.all.reverse do
       test("sRGB to L*a*b*") {
         color.debug.cielab.srgb.debug
       }.assert(_ ~~ color)

@@ -35,26 +35,29 @@ trait Color:
     }.mkString("#", "", "")
 
 object Color:
-  def unitary(d: Double): Double = d - d.toInt + (if d < 0 then 1 else 0)
+  private[iridescence] def unitary(d: Double): Double = d - d.toInt + (if d < 0 then 1 else 0)
 
 case class Xyz(x: Double, y: Double, z: Double) extends Color:
+  
+  def luminescence: Double = y
+  
   def srgb(using Profile): Srgb =
     def limit(v: Double): Double = if v > 0.0031308 then 1.055*math.pow(v, 1/2.4) - 0.055 else 12.92*v
     
-    val red = limit(x*0.032406 - y*0.015372 - z*0.004986)
-    val green = limit(-x*0.009689 + y*0.018758 + z*0.000415)
-    val blue = limit(x*0.000557 - y*0.002040 + z*0.010570)
+    val red = limit(x*0.032406994 - y*0.0153738318 - z*0.0049861076)
+    val green = limit(-x*0.0096924364 + y*0.01878675 + z*0.0004155506)
+    val blue = limit(x*0.0005563008 - y*0.0020397696 + z*0.0105697151)
 
     Srgb(red, green, blue)
   
-  def cielab(using profile: Profile): CieLab =
+  def cielab(using profile: Profile): Cielab =
     def limit(v: Double): Double = if v > 0.008856 then math.pow(v, 1.0/3) else 7.787*v + 0.13793
 
     val l = 116*limit(y/profile.y2) - 16
     val a = 500*(limit(x/profile.x2) - limit(y/profile.y2))
     val b = 200*(limit(y/profile.y2) - limit(z/profile.z2))
 
-    CieLab(l, a, b)
+    Cielab(l, a, b)
 
 case class Srgb(red: Double, green: Double, blue: Double) extends Color:
   def srgb(using Profile): Srgb = this
@@ -70,7 +73,7 @@ case class Srgb(red: Double, green: Double, blue: Double) extends Color:
 
     Xyz(x, y, z)
   
-  def cielab(using profile: Profile): CieLab = xyz.cielab
+  def cielab(using profile: Profile): Cielab = xyz.cielab
   def cmy: Cmy = Cmy(1 - red, 1 - green, 1 - blue)
   def cmyk: Cmyk = cmy.cmyk
 
@@ -109,7 +112,7 @@ case class Srgb(red: Double, green: Double, blue: Double) extends Color:
 
       Hsv(Color.unitary(hue), saturation, value)
 
-case class CieLab(l: Double, a: Double, b: Double) extends Color:
+case class Cielab(l: Double, a: Double, b: Double) extends Color:
   def srgb(using profile: Profile): Srgb = xyz.srgb
 
   def xyz(using profile: Profile): Xyz =
@@ -121,10 +124,10 @@ case class CieLab(l: Double, a: Double, b: Double) extends Color:
 
     Xyz(x, y, z)
 
-  def mix(that: CieLab, ratio: Double = 0.5): CieLab =
-    CieLab(l*(1 - ratio) + ratio*that.l, a*(1 - ratio) + ratio*that.a, b*(1 - ratio) + ratio*that.b)
+  def mix(that: Cielab, ratio: Double = 0.5): Cielab =
+    Cielab(l*(1 - ratio) + ratio*that.l, a*(1 - ratio) + ratio*that.a, b*(1 - ratio) + ratio*that.b)
 
-  def delta(that: CieLab): Double = math.sqrt(that.a*that.a + that.b*that.b) - math.sqrt(a*a + b*b)
+  def delta(that: Cielab): Double = math.sqrt(that.a*that.a + that.b*that.b) - math.sqrt(a*a + b*b)
 
 case class Cmy(cyan: Double, magenta: Double, yellow: Double) extends Color:
   def srgb(using profile: Profile): Srgb = Srgb((1 - cyan), (1 - magenta), (1 - yellow))

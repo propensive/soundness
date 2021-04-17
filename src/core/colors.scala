@@ -16,7 +16,7 @@
 */
 package iridescence
 
-object Colors:
+object colors:
   val AliceBlue = Srgb(0.941, 0.973, 1)
   val AntiqueWhite = Srgb(0.98, 0.922, 0.843)
   val Aquamarine = Srgb(0.498, 1, 0.831)
