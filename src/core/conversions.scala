@@ -16,23 +16,7 @@
 */
 package iridescence
 
-trait Color:
-  def srgb(using Profile): Srgb
-  
-  def css(using Profile): String =
-    val Srgb(r, g, b) = srgb
-    s"rgb(${(r*255).toInt}, ${(g*255).toInt}, ${(b*255).toInt})"
-  
-  def ansi24(using Profile): String =
-    val Srgb(r, g, b) = srgb
-    s"${27.toChar}[38;2;${(r*255).toInt};${(g*255).toInt};${(b*255).toInt}m"
-  
-  def hex(using Profile): String =
-    val Srgb(r, g, b) = srgb
-    List(r, g, b).map { c =>
-      val hex = Integer.toHexString((c*255).toInt)
-      if hex.length < 2 then s"0$hex" else hex
-    }.mkString("#", "", "")
+trait Color
 
 object Color:
   private[iridescence] def unitary(d: Double): Double = d - d.toInt + (if d < 0 then 1 else 0)
@@ -41,7 +25,7 @@ case class Xyz(x: Double, y: Double, z: Double) extends Color:
   
   def luminescence: Double = y
   
-  def srgb(using Profile): Srgb =
+  def srgb: Srgb =
     def limit(v: Double): Double = if v > 0.0031308 then 1.055*math.pow(v, 1/2.4) - 0.055 else 12.92*v
     
     val red = limit(x*0.032406994 - y*0.0153738318 - z*0.0049861076)
@@ -60,7 +44,16 @@ case class Xyz(x: Double, y: Double, z: Double) extends Color:
     Cielab(l, a, b)
 
 case class Srgb(red: Double, green: Double, blue: Double) extends Color:
-  def srgb(using Profile): Srgb = this
+  def css: String = s"rgb(${(red*255).toInt}, ${(green*255).toInt}, ${(blue*255).toInt})"
+  def ansiFg24: String = s"${27.toChar}[38;2;${(red*255).toInt};${(green*255).toInt};${(blue*255).toInt}m"
+  def ansiBg24: String = s"${27.toChar}[48;2;${(red*255).toInt};${(green*255).toInt};${(blue*255).toInt}m"
+  def hex12: String = Seq(red, green, blue).map { c => Integer.toHexString((c*16).toInt) }.mkString("#", "", "")
+  
+  def hex24: String =
+    Seq(red, green, blue).map { c =>
+      val hex = Integer.toHexString((c*255).toInt)
+      if hex.length < 2 then s"0$hex" else hex
+    }.mkString("#", "", "")
 
   def xyz(using profile: Profile): Xyz =
     def limit(v: Double): Double = if v > 0.04045 then math.pow((v + 0.055)/1.055, 2.4) else v/12.92
@@ -113,7 +106,7 @@ case class Srgb(red: Double, green: Double, blue: Double) extends Color:
       Hsv(Color.unitary(hue), saturation, value)
 
 case class Cielab(l: Double, a: Double, b: Double) extends Color:
-  def srgb(using profile: Profile): Srgb = xyz.srgb
+  def srgb(using Profile): Srgb = xyz.srgb
 
   def xyz(using profile: Profile): Xyz =
     def limit(v: Double): Double = if v*v*v > 0.008856 then v*v*v else (v - 16.0/116)/7.787
@@ -130,7 +123,7 @@ case class Cielab(l: Double, a: Double, b: Double) extends Color:
   def delta(that: Cielab): Double = math.sqrt(that.a*that.a + that.b*that.b) - math.sqrt(a*a + b*b)
 
 case class Cmy(cyan: Double, magenta: Double, yellow: Double) extends Color:
-  def srgb(using profile: Profile): Srgb = Srgb((1 - cyan), (1 - magenta), (1 - yellow))
+  def srgb: Srgb = Srgb((1 - cyan), (1 - magenta), (1 - yellow))
   def cmyk: Cmyk =
     val key = List(1, cyan, magenta, yellow).min
     
@@ -138,11 +131,11 @@ case class Cmy(cyan: Double, magenta: Double, yellow: Double) extends Color:
     else Cmyk((cyan - key)/(1 - key), (magenta - key)/(1 - key), (yellow - key)/(1 - key), key)
 
 case class Cmyk(cyan: Double, magenta: Double, yellow: Double, key: Double) extends Color:
-  def srgb(using Profile): Srgb = cmy.srgb
+  def srgb: Srgb = cmy.srgb
   def cmy: Cmy = Cmy(cyan*(1 - key) + key, magenta*(1 - key) + key, yellow*(1 - key) + key)
 
 case class Hsv(hue: Double, saturation: Double, value: Double) extends Color:
-  def srgb(using Profile): Srgb =
+  def srgb: Srgb =
     if saturation == 0 then Srgb(value, value, value)
     else
       val i = (hue*6).toInt%6
@@ -166,7 +159,7 @@ case class Hsv(hue: Double, saturation: Double, value: Double) extends Color:
   def tone(black: Double = 0, white: Double = 0) = shade(black).tint(white)
 
 case class Hsl(hue: Double, saturation: Double, lightness: Double) extends Color:
-  def srgb(using Profile): Srgb =
+  def srgb: Srgb =
     if saturation == 0 then Srgb(lightness, lightness, lightness)
     else
       val v2 =
@@ -175,15 +168,16 @@ case class Hsl(hue: Double, saturation: Double, lightness: Double) extends Color
       
       val v1 = 2*lightness - v2
 
-      def conv(h: Double): Double =
+      def convert(h: Double): Double =
         val vh = Color.unitary(h)
         if 6*vh < 1 then v1 + (v2 - v1)*6*vh
         else if 2*vh < 1 then v2
         else if 3*vh < 2 then v1 + (v2 - v1)*((2.0/3) - vh)*6
         else v1
 
-      Srgb(conv(hue + (1.0/3.0)), conv(hue), conv(hue - (1.0/3.0)))
+      Srgb(convert(hue + (1.0/3.0)), convert(hue), convert(hue - (1.0/3.0)))
   
+  def css: String = s"hsl(${(hue*360).toInt}, ${(saturation*100).toInt}%, ${(lightness*100).toInt}%)"
   def saturate: Hsv = Hsv(hue, 1, lightness)
   def desaturate: Hsv = Hsv(hue, 0, lightness)
   def rotate(degrees: Double): Hsv = Hsv(Color.unitary(hue + degrees/360), saturation, lightness)
