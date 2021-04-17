@@ -31,7 +31,7 @@ given profile = profiles.Ultralume50
 
 val pink: Cielab = colors.Ivory.cielab.mix(colors.DarkMagenta.cielab)
 val palePink: Srgb = pink.srgb.hsv.tint(0.5).srgb
-println(s"${color.ansi24}Hello World!")
+println(s"${color.ansiFg24}Hello World!")
 ```
 
 ## Types
@@ -40,9 +40,9 @@ Iridescence provides case classes to immutably represent each of the seven color
 representation can be directly converted into many of the other representations, and the remaining conversions
 can be performed indirectly.
 
-In general, every color representation implements the `Color` interface, and provides the `Color#srgb` method to
-convert it to an `Srgb` value. Conversely, the `Srgb` type provides the methods `cmy`, `cmyk`, `cielab`, `xyz`,
-`hsv` and `hsl` to convert to these alternative representations.
+In general, every color representation provides the `Color#srgb` method to convert it to an `Srgb` value.
+Conversely, the `Srgb` type provides the methods `cmy`, `cmyk`, `cielab`, `xyz`, `hsv` and `hsl` to convert to
+these alternative representations.
 
 While it would be possible to provide an n×n set of methods for converting between any pair of representations,
 conversions which rely on an unspecified intermediate representation (for example converting between HSL and
@@ -53,7 +53,6 @@ For example, the methods `Hsl#srgb` and `Srgb#xyz` both exist, but `Hsl#xyz` is 
 `Srgb#cielab` _is_ provided, even though the conversion is made via an intermediate XYZ value.
 
 Here are some examples:
-
 ```scala
 import iridescence.*
 
@@ -115,6 +114,13 @@ colors.IndianRed.hsv.tone(0.2, 0.4).srgb
 
 Different formats, languages and protocols will represent colors as strings in a number of different ways.
 Iridescence provides serialization methods to the following formats:
-- 24-bit ANSI foreground escape codes,
-- CSS, in the form `rgb(100, 78, 12)`
-- 24-bit hexadecimal, e.g. `#ffed00`
+- 24-bit ANSI foreground and background escape codes,
+- RGB CSS, in the form `rgb(100, 78, 12)`,
+- HSL CSS, in the form `hsl(310, 12%, 84%)`,
+- 12-bit and 24-bit hexadecimal, e.g. `#afc` or `#ffed00`
+
+These are available on the `Srgb` type, with the exception of `Hsl#css`.
+
+## Limitations
+
+There is no support for transparency.
