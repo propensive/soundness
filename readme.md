@@ -29,7 +29,7 @@ _Iridescence_ implements several algorithms for working with colors represented 
 _Iridescence_ provides seven different ways of representing colors:
 - `Srgb`: [sRGB](https://en.wikipedia.org/wiki/SRGB), 
 - `Xyz`: [CIE 1931 XYZ](https://en.wikipedia.org/wiki/CIE_1931_color_space)
-- `Cielab`: [L\*a\*b\*](https://en.wikipedia.org/wiki/CIELAB_color_space)
+- `Cielab`: [L*a*b*](https://en.wikipedia.org/wiki/CIELAB_color_space)
 - `Cmy`: [CMY](https://en.wikipedia.org/wiki/CMY_color_model)
 - `Cmyk`: [CMKY](https://en.wikipedia.org/wiki/CMYK_color_model)
 - `Hsl`: [HSL](https://en.wikipedia.org/wiki/HSL_and_HSV)
@@ -44,7 +44,7 @@ of different colors. While sRGB is the most direct representation of the colored
 monitor, and indeed the most common representation for computers, CMY and CMYK are more common in printing.
 
 Meanwhile, the HSL and HSV representations representations use the natural qualititative properties of hue,
-saturation, lightness and brightness, and the XYZ and L\*a\*b\* color spaces are derived empirically. L\*a\*b\*
+saturation, lightness and brightness, and the XYZ and L*a*b* color spaces are derived empirically. L*a*b*
 attempts to maintain the property that the Euclidean distance between two colors is proportional to the
 perceptual difference between those colors, as determined by experimentation.
 
@@ -152,6 +152,7 @@ These are available on the `Srgb` type, with the exception of `Hsl#css`.
 ## Limitations
 
 There is no support for transparency.
+
 
 ## Status
 
