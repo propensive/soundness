@@ -30,7 +30,7 @@ Although it is possible to construct and use different `Runner`s, the most typic
 singleton `Runner` called `test`, because for most purposes only one `Runner` will be required. Defining a test
 is simple. For example,
 ```scala
-import probably._, global._
+import probably.*
 
 test("the sum of two identical integers is divisible by two") {
   val x: Int = 7
@@ -81,7 +81,7 @@ not impose constraints on new code, or require non-local changes to existing cod
 As tests may appear anywhere, they are easy to parameterize. We could, for example, rewrite the test above like
 so,
 ```
-import probably._
+import probably.*
 
 def runTest(x: Int): Unit =
   test("the sum of three identical integers is divisible by 3") {
@@ -96,7 +96,7 @@ runTest(Int.MaxValue)
 However, if the test were to fail, it would be useful to know what input caused it to fail. Any number of inputs
 can be logged by including them as additional named parameters after the test name, like this:
 ```
-import probably._
+import probably.*
 
 def runTest(x: Int): Unit =
   test("the sum of three identical integers is divisible by 3", input = x) {
@@ -117,7 +117,7 @@ types, and will derive generators on-demand for case-class and sealed-trait type
 each of the parameters.
 
 ```scala
-import probably._
+import probably.*
 
 case class Person(name: String, age: Int)
 
@@ -137,27 +137,25 @@ works particularly well for objects containing a series of unit tests. To use th
 create an object which extends `Suite`, giving the test suite a name. Then implement the `run` method to execute
 the tests, in order, like so:
 ```scala
-object ProjectTests extends Suite("Project tests") {
-  def run(test: Runner): Unit = {
+object ProjectTests extends Suite("Project tests"):
+  def run(using Runner): Unit =
     test("first test") {
       // test body
     }.assert(/* predicate */)
-}
 ```
 
 The `Suite` class provides an implementation of a `main` method, so any object which subclasses `Suite` may be
 run from the command line.
 
-### Skipping tests
-
 ### Test Expression
 
 _Probably_ provides a second way of defining a test: as an expression. For example,
 ```scala
-import probably._
+import probably.*
+import java.io.*
 
 test("check the backup exists") {
-  new File("data.bak")
+  File("data.bak")
 }.check(_.exists).setReadOnly()
 ```
 
