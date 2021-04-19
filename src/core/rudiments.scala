@@ -16,6 +16,19 @@
 */
 package rudiments
 
+import java.net.{URLEncoder, URLDecoder}
+
+type Bytes = IArray[Byte]
+type Chunked = LazyList[Bytes]
+
+case class TooMuchData() extends Exception(s"the amount of data in the stream exceeds the capacity")
+
+extension (value: Chunked)
+  def slurp(maxSize: Int): Bytes =
+    value.foldLeft(IArray[Byte]()) { (acc, next) =>
+      if acc.length + next.length > maxSize then throw TooMuchData() else acc ++ next
+    }
+
 extension [T](value: T)
   def only[S](pf: PartialFunction[T, S]): Option[S] = Some(value).collect(pf)
   def unit: Unit = ()
@@ -25,8 +38,11 @@ extension [T](value: T)
 extension (value: String)
   def populated: Option[String] = if(value.isEmpty) None else Some(value)
   def cut(delimiter: String): IArray[String] = IArray.from(value.split(delimiter))
+  def cut(delimiter: String, limit: Int): IArray[String] = IArray.from(value.split(delimiter, limit))
   def bytes: IArray[Byte] = IArray.from(value.getBytes("UTF-8"))
   def chars: IArray[Char] = IArray.from(value.toCharArray)
+  def urlEncode: String = URLEncoder.encode(value, "UTF-8")
+  def urlDecode: String = URLDecoder.decode(value, "UTF-8")
 
 extension (values: Traversable[String])
   def join: String = values.mkString
