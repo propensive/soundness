@@ -76,7 +76,7 @@ enum RequestHeader(val header: String):
   case NonStandard(name: String) extends RequestHeader(name.toLowerCase)
 
 enum ResponseHeader(val header: String):
-  case AcceptCh extends ResponseHeader("Accept-CH")
+  case AcceptCh extends ResponseHeader("accept-ch")
   case AccessControlAllowOrigin extends ResponseHeader("access-control-allow-origin")
   case AccessControlAllowCredentials extends ResponseHeader("access-control-allow-credentials")
   case AccessControlExposeHeaders extends ResponseHeader("access-control-expose-headers")
@@ -105,7 +105,7 @@ enum ResponseHeader(val header: String):
   case Im extends ResponseHeader("im")
   case LastModified extends ResponseHeader("last-modified")
   case Link extends ResponseHeader("link")
-  case Location extends ResponseHeader("location")
+  case Location extends ResponseHeader("Location")
   case P3p extends ResponseHeader("p3p")
   case Pragma extends ResponseHeader("pragma")
   case PreferenceApplied extends ResponseHeader("preference-applied")

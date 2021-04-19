@@ -2,16 +2,15 @@ package scintillate
 
 import rudiments.*
 
+import scala.collection.immutable.ListMap
 import scala.annotation.tailrec
 
 import java.net.*
 import java.io.*
 
-sealed trait HttpException(url: String, code: Int) extends Exception
+import language.dynamics
 
-case class NotFound(url: String) extends HttpException(url, 404)
-case class NotAuthorized(url: String) extends HttpException(url, 401)
-case class OtherException(url: String, code: Int) extends HttpException(url, code)
+type Body = Chunked | Unit | IArray[Byte]
 
 object Postable:
   given Postable[String]("text/plain") with
@@ -24,31 +23,69 @@ object Postable:
       }.mkString("&").getBytes("UTF-8")
     }
 
+  given Postable[Unit]("text/plain") with
+    def content(value: Unit): IArray[Byte] = IArray()
+
 abstract class Postable[T](val contentType: String):
   def content(value: T): IArray[Byte]
-
-case class HttpHeader(key: String, value: String)
 
 enum Method:
   case Get, Head, Post, Put, Delete, Connect, Options, Trace, Patch
 
-object Http:
-  def post[T: Postable](url: String, content: T, headers: Set[HttpHeader]): IArray[Byte] =
-    request[T](url, content, Method.Post, headers)
+object HttpReadable:
+  given HttpReadable[String] with
+    def read(body: Body) = body match
+      case () =>
+        ""
+      case body: IArray[Byte] =>
+        String(body.asInstanceOf[Array[Byte]], "UTF-8")
+      case body: LazyList[IArray[Byte]] =>
+        body.foldLeft("") { (acc, next) => acc+(new String(next.asInstanceOf[Array[Byte]], "UTF-8")) }
+  
+  given HttpReadable[Bytes] with
+    def read(body: Body): Bytes = body match
+      case () =>
+        IArray()
+      case body: IArray[Byte] =>
+        body
+      case body: LazyList[IArray[Byte]] =>
+        body.slurp(maxSize = 10*1024*1024)
 
-  def get(url: String, headers: Set[HttpHeader]): IArray[Byte] =
-    request(url, Map[String, String](), Method.Get, headers)
+trait HttpReadable[+T]:
+  def read(body: Body): T
+
+case class HttpResponse(status: HttpStatus, headers: ListMap[ResponseHeader, String], body: Body):
+  def as[T: HttpReadable]: T = status match
+    case status: FailureCase => throw HttpError(status, body)
+    case status              => summon[HttpReadable[T]].read(body)
+
+object Http extends Dynamic:
+  def post[T: Postable]
+          (url: String, content: T, headers: ListMap[RequestHeader, String] = ListMap(), follow: Boolean = true): HttpResponse =
+    request[T](url, content, Method.Post, headers, follow)
+
+  def get(url: String,
+          params: ListMap[String, String] = ListMap(),
+          headers: ListMap[RequestHeader, String] = ListMap(),
+          follow: Boolean = true): HttpResponse =
+    val paramString = params.map { (k, v) => s"${k.urlEncode}=${v.urlEncode}" }.mkString("&")
+
+    val fullUrl = if params.isEmpty then url else url+"?"+paramString
+
+    request(fullUrl, (), Method.Get, ListMap(), follow)
 
   private def request[T: Postable](url: String,
                                    content: T,
                                    method: Method,
-                                   headers: Set[HttpHeader]): IArray[Byte] =
+                                   headers: ListMap[RequestHeader, String],
+                                   follow: Boolean): HttpResponse =
     URL(url).openConnection match
       case conn: HttpURLConnection =>
         conn.setRequestMethod(method.toString.toUpperCase)
+        //conn.setFollowRedirects(follow)
         conn.setRequestProperty("Content-Type", summon[Postable[T]].contentType)
         conn.setRequestProperty("User-Agent", "Scintillate 1.0.0")
-        headers.foreach { case HttpHeader(key, value) => conn.setRequestProperty(key, value) }
+        headers.foreach { (key, value) => conn.setRequestProperty(key.header, value) }
         
         if method == Method.Post || method == Method.Put then
           conn.setDoOutput(true)
@@ -56,45 +93,33 @@ object Http:
           out.write(summon[Postable[T]].content(content).to(Array))
           out.close()
 
-        conn.getResponseCode match
-          case 200 =>
-            val in = conn.getInputStream()
-            val data = ByteArrayOutputStream()
-            val buf = new Array[Byte](65536)
+        val buf = new Array[Byte](65536)
+
+        def read(in: InputStream): Chunked =
+          val len = in.read(buf, 0, buf.length)
+          if len < 0 then LazyList.empty else IArray.from(buf.slice(0, len)) #:: read(in)
+       
+
+        def body =
+          try read(conn.getInputStream)
+          catch case _: Exception =>
+            try read(conn.getErrorStream)
+            catch case _: Exception => LazyList.empty
+        
+        val HttpStatus(status) = conn.getResponseCode
+        val responseHeaders = ListMap[ResponseHeader, String]()
+
+        HttpResponse(status, responseHeaders, body)
             
-            @tailrec
-            def read(): Array[Byte] =
-              val bytes = in.read(buf, 0, buf.length)
-              if bytes < 0 then data.toByteArray
-              else
-                data.write(buf, 0, bytes)
-                read()
-
-            IArray.from(read())
-
-          case 404 =>
-            throw NotFound(url)
-
-          case 401 =>
-            throw NotAuthorized(url)
-          
-          case HttpError(error) =>
-            throw error
-          
-          case _ =>
-            throw HttpError(HttpStatus.BadRequest)
-            
-            
-
-object HttpError:
-  def unapply(code: Int): Option[HttpError] = HttpStatus.values.find(_.code == code).flatMap(_.only {
-    case f: FailureCase => HttpError(f)
-  })
-
-case class HttpError(status: HttpStatus & FailureCase)
-  extends Exception(s"HTTP Error ${status.code}: ${status.description}")
+case class HttpError(status: HttpStatus & FailureCase, body: Body)
+    extends Exception(s"HTTP Error ${status.code}: ${status.description}"):
+  def as[T: HttpReadable]: T = summon[HttpReadable[T]].read(body)
 
 trait FailureCase
+
+object HttpStatus:
+  private lazy val all: Map[Int, HttpStatus] = values.map { v => v.code -> v }.to(Map)
+  def unapply(code: Int): Option[HttpStatus] = all.get(code)
 
 enum HttpStatus(val code: Int, val description: String):
   case Continue extends HttpStatus(100, "Continue"), FailureCase
