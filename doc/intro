@@ -1,0 +1,2 @@
+__Scintillate__ is a lightweight HTTP client and server implementation for sending and handling HTTP requests. The
+optional server module provides a common API for running standalone or in a Servlet container.
