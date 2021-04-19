@@ -1,3 +1,19 @@
+/*
+
+    Scintillate, version 0.2.0. Copyright 2018-21 Jon Pretty, Propensive OÜ.
+
+    The primary distribution site is: https://propensive.com/
+
+    Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in
+    compliance with the License. You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software distributed under the License is
+    distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and limitations under the License.
+
+*/
 package scintillate
 
 import rudiments.*
@@ -89,6 +105,17 @@ extension (value: Http.type)
 
 def request(using Request): Request = summon[Request]
 def param(using Request)(key: String): Option[String] = summon[Request].rawParams.get(key).flatMap(_.headOption)
+def param[T](paramKey: Param[T])(using Request): Option[T] = paramKey.get
+
+object ParamReader:
+  given ParamReader[Int] = Int.unapply(_)
+
+trait ParamReader[T]:
+  def read(value: String): Option[T]
+
+case class Param[T: ParamReader](key: String):
+  type Type = T
+  def get(using Request): Option[T] = param(key).flatMap(summon[ParamReader[T]].read(_))
 
 trait HttpServer:
   def shutdown(): Unit
@@ -153,7 +180,7 @@ case class SimpleHttpServer(port: Int) extends RequestHandler:
     def sendBody(status: Int, body: Body): Unit =
       val length = body match
         case body: Unit         => -1
-        case body: IArray[Byte] => body.length
+        case body: Array[Byte]  => body.length
         case _                  => 0
 
       exchange.sendResponseHeaders(status, length)
