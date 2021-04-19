@@ -24,7 +24,7 @@ import javax.servlet.*, http.*
 
 trait Servlet() extends HttpServlet:
 
-  def handle(request: Request): Response[?]
+  def handle(using Request): Response[?]
 
   def run(): Unit
 
@@ -93,7 +93,7 @@ trait Servlet() extends HttpServlet:
 
   def handle(servletRequest: HttpServletRequest, servletResponse: HttpServletResponse): Unit =
     val responseWriter = ServletResponseWriter(servletResponse)
-    handle(makeRequest(servletRequest)).respond(responseWriter)
+    handle(using makeRequest(servletRequest)).respond(responseWriter)
 
   override def service(request: HttpServletRequest, response: HttpServletResponse): Unit =
     handle(request, response)
