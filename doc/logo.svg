@@ -8,91 +8,96 @@
    xmlns:xlink="http://www.w3.org/1999/xlink"
    xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
-   sodipodi:docname="exoskeleton.svg"
-   inkscape:version="1.0 (4035a4fb49, 2020-05-01)"
-   id="svg8"
+   width="120mm"
+   height="120mm"
+   viewBox="0 0 120 120"
    version="1.1"
-   viewBox="0 0 210 297"
-   height="297mm"
-   width="210mm">
+   id="svg8"
+   inkscape:version="1.0 (4035a4fb49, 2020-05-01)"
+   sodipodi:docname="logo.svg">
   <defs
      id="defs2">
     <linearGradient
-       inkscape:collect="always"
-       id="linearGradient901">
-      <stop
-         style="stop-color:#ffffff;stop-opacity:0.29067509"
-         offset="0"
-         id="stop897" />
-      <stop
-         style="stop-color:#ffffff;stop-opacity:0"
-         offset="1"
-         id="stop899" />
-    </linearGradient>
-    <linearGradient
-       id="linearGradient869"
+       id="linearGradient901"
        inkscape:collect="always">
       <stop
-         id="stop865"
+         id="stop897"
          offset="0"
-         style="stop-color:#0e5c00;stop-opacity:1" />
+         style="stop-color:#ffffff;stop-opacity:0.29067509" />
       <stop
-         id="stop867"
+         id="stop899"
          offset="1"
-         style="stop-color:#09c600;stop-opacity:1" />
+         style="stop-color:#ffffff;stop-opacity:0" />
+    </linearGradient>
+    <linearGradient
+       inkscape:collect="always"
+       id="linearGradient869">
+      <stop
+         style="stop-color:#0e5c00;stop-opacity:1"
+         offset="0"
+         id="stop865" />
+      <stop
+         style="stop-color:#09c600;stop-opacity:1"
+         offset="1"
+         id="stop867" />
     </linearGradient>
     <radialGradient
-       gradientTransform="matrix(-0.68822116,-1.6778414,1.9026574,-0.78047813,-15.491574,497.99828)"
-       gradientUnits="userSpaceOnUse"
-       r="61.711903"
-       fy="122.01793"
-       fx="119.13438"
-       cy="122.01793"
-       cx="119.13438"
-       id="radialGradient871"
-       xlink:href="#linearGradient869"
-       inkscape:collect="always" />
-    <radialGradient
        inkscape:collect="always"
-       xlink:href="#linearGradient901"
-       id="radialGradient871-7"
-       cx="182.78207"
-       cy="109.43378"
-       fx="182.78207"
-       fy="109.43378"
+       xlink:href="#linearGradient869"
+       id="radialGradient871"
+       cx="119.13438"
+       cy="122.01793"
+       fx="119.13438"
+       fy="122.01793"
        r="61.711903"
        gradientUnits="userSpaceOnUse"
-       gradientTransform="matrix(0.88856103,0.93746333,-0.90655901,0.85927921,15.110955,-136.30437)" />
+       gradientTransform="matrix(-0.68822116,-1.6778414,1.9026574,-0.78047813,-15.491574,497.99828)" />
+    <radialGradient
+       gradientTransform="matrix(0.88856103,0.93746333,-0.90655901,0.85927921,15.110955,-136.30437)"
+       gradientUnits="userSpaceOnUse"
+       r="61.711903"
+       fy="109.43378"
+       fx="182.78207"
+       cy="109.43378"
+       cx="182.78207"
+       id="radialGradient871-7"
+       xlink:href="#linearGradient901"
+       inkscape:collect="always" />
     <clipPath
-       id="clipPath953"
-       clipPathUnits="userSpaceOnUse">
+       clipPathUnits="userSpaceOnUse"
+       id="clipPath953">
       <circle
-         r="61.711903"
-         cy="156.6703"
-         cx="107.92973"
+         style="opacity:1;fill:none;fill-opacity:1;stroke:#ffffff;stroke-width:0.1;stroke-miterlimit:10.433;stroke-opacity:0.290196;stop-color:#000000"
          id="circle955"
-         style="opacity:1;fill:none;fill-opacity:1;stroke:#ffffff;stroke-width:0.1;stroke-miterlimit:10.433;stroke-opacity:0.290196;stop-color:#000000" />
+         cx="107.92973"
+         cy="156.6703"
+         r="61.711903" />
     </clipPath>
   </defs>
   <sodipodi:namedview
-     inkscape:window-maximized="1"
-     inkscape:window-y="23"
-     inkscape:window-x="0"
-     inkscape:window-height="2977"
-     inkscape:window-width="4500"
-     showgrid="false"
-     inkscape:document-rotation="0"
-     inkscape:current-layer="layer1"
-     inkscape:document-units="mm"
-     inkscape:cy="560"
-     inkscape:cx="340"
-     inkscape:zoom="0.49497475"
-     inkscape:pageshadow="2"
-     inkscape:pageopacity="0.0"
-     borderopacity="1.0"
-     bordercolor="#666666"
+     fit-margin-bottom="0"
+     fit-margin-right="0"
+     fit-margin-left="0"
+     fit-margin-top="0"
+     inkscape:pagecheckerboard="true"
+     id="base"
      pagecolor="#ffffff"
-     id="base" />
+     bordercolor="#666666"
+     borderopacity="1.0"
+     inkscape:pageopacity="0.0"
+     inkscape:pageshadow="2"
+     inkscape:zoom="0.49497475"
+     inkscape:cx="158.84825"
+     inkscape:cy="194.63192"
+     inkscape:document-units="mm"
+     inkscape:current-layer="layer1"
+     inkscape:document-rotation="0"
+     showgrid="false"
+     inkscape:window-width="4500"
+     inkscape:window-height="2977"
+     inkscape:window-x="0"
+     inkscape:window-y="23"
+     inkscape:window-maximized="1" />
   <metadata
      id="metadata5">
     <rdf:RDF>
@@ -106,48 +111,50 @@
     </rdf:RDF>
   </metadata>
   <g
-     id="layer1"
+     transform="translate(-47.929734,-96.670304)"
+     inkscape:label="Layer 1"
      inkscape:groupmode="layer"
-     inkscape:label="Layer 1">
+     id="layer1">
     <g
-       clip-path="url(#clipPath953)"
-       id="g940">
+       transform="matrix(0.97225977,0,0,0.97225977,2.9939961,4.3460709)"
+       id="g940"
+       clip-path="url(#clipPath953)">
       <circle
-         style="opacity:1;fill:url(#radialGradient871);stroke:none;stroke-width:0.1;stroke-miterlimit:10.433;stop-color:#000000;fill-opacity:1"
+         r="61.711903"
+         cy="156.6703"
+         cx="107.92973"
          id="path833"
+         style="opacity:1;fill:url(#radialGradient871);fill-opacity:1;stroke:none;stroke-width:0.1;stroke-miterlimit:10.433;stop-color:#000000" />
+      <circle
+         style="opacity:1;fill:url(#radialGradient871-7);fill-opacity:1;stroke:none;stroke-width:0.1;stroke-miterlimit:10.433;stop-color:#000000"
+         id="path833-5"
          cx="107.92973"
          cy="156.6703"
          r="61.711903" />
-      <circle
-         r="61.711903"
-         cy="156.6703"
-         cx="107.92973"
-         id="path833-5"
-         style="opacity:1;fill:url(#radialGradient871-7);fill-opacity:1;stroke:none;stroke-width:0.1;stroke-miterlimit:10.433;stop-color:#000000" />
-      <circle
-         r="61.711903"
-         cy="126.60228"
-         cx="160.84644"
-         id="path833-3"
-         style="opacity:0.488521;mix-blend-mode:screen;fill:#eaff1e;fill-opacity:1;stroke:none;stroke-width:0.1;stroke-miterlimit:10.433;stop-color:#000000" />
       <circle
          style="opacity:0.488521;mix-blend-mode:screen;fill:#eaff1e;fill-opacity:1;stroke:none;stroke-width:0.1;stroke-miterlimit:10.433;stop-color:#000000"
-         id="path833-3-6"
-         cx="55.013092"
+         id="path833-3"
+         cx="160.84644"
          cy="126.60228"
          r="61.711903" />
       <circle
-         style="opacity:0.12737474;mix-blend-mode:screen;fill:#ffffff;fill-opacity:1;stroke:none;stroke-width:0.1;stroke-miterlimit:10.433;stop-color:#000000"
-         id="path833-3-62"
-         cx="165.60899"
-         cy="126.79124"
-         r="61.711903" />
+         r="61.711903"
+         cy="126.60228"
+         cx="55.013092"
+         id="path833-3-6"
+         style="opacity:0.488521;mix-blend-mode:screen;fill:#eaff1e;fill-opacity:1;stroke:none;stroke-width:0.1;stroke-miterlimit:10.433;stop-color:#000000" />
       <circle
          r="61.711903"
          cy="126.79124"
-         cx="59.775589"
+         cx="165.60899"
+         id="path833-3-62"
+         style="opacity:0.127375;mix-blend-mode:screen;fill:#ffffff;fill-opacity:1;stroke:none;stroke-width:0.1;stroke-miterlimit:10.433;stop-color:#000000" />
+      <circle
+         style="opacity:0.127375;mix-blend-mode:screen;fill:#ffffff;fill-opacity:1;stroke:none;stroke-width:0.1;stroke-miterlimit:10.433;stop-color:#000000"
          id="path833-3-6-9"
-         style="opacity:0.12737474;mix-blend-mode:screen;fill:#ffffff;fill-opacity:1;stroke:none;stroke-width:0.1;stroke-miterlimit:10.433;stop-color:#000000" />
+         cx="59.775589"
+         cy="126.79124"
+         r="61.711903" />
     </g>
   </g>
 </svg>
