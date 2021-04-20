@@ -19,6 +19,7 @@ package scintillate
 import rudiments.*
 
 import scala.collection.immutable.ListMap
+import scala.collection.JavaConverters.*
 import scala.annotation.tailrec
 
 import java.net.*
@@ -26,7 +27,7 @@ import java.io.*
 
 import language.dynamics
 
-type Body = Chunked | Unit | IArray[Byte]
+type Body = Chunked | Unit | Bytes
 
 object ToQuery:
   given ToQuery[String] = str => Params(List(("", str)))
@@ -39,44 +40,39 @@ trait ToQuery[T]:
 
 object Postable:
   given Postable[String](mime"text/plain") with
-    def content(value: String): IArray[Byte] = IArray.from(value.bytes)
+    def content(value: String): Bytes = IArray.from(value.bytes)
 
-  given [T: ToQuery]: Postable[T](mime"multipart/form-data") with
-    def content(value: T): IArray[Byte] =
+  given [T: ToQuery]: Postable[T](mime"application/x-www-form-urlencoded") with
+    def content(value: T): Bytes =
       summon[ToQuery[T]].params(value).queryString.bytes
 
   given Postable[Unit](mime"text/plain") with
-    def content(value: Unit): IArray[Byte] = IArray()
+    def content(value: Unit): Bytes = IArray()
 
 abstract class Postable[T](val contentType: MediaType):
-  def content(value: T): IArray[Byte]
+  def content(value: T): Bytes
 
 enum Method:
   case Get, Head, Post, Put, Delete, Connect, Options, Trace, Patch
 
 object HttpReadable:
-  given HttpReadable[String] with
-    def read(body: Body) = body match
-      case () =>
-        ""
-      case body: IArray[Byte] =>
-        String(body.asInstanceOf[Array[Byte]], "UTF-8")
-      case body: LazyList[IArray[Byte]] =>
-        body.foldLeft("") { (acc, next) => acc+(new String(next.asInstanceOf[Array[Byte]], "UTF-8")) }
+  given HttpReadable[String] =
+    case () =>
+      ""
+    case body: Bytes =>
+      String(body.asInstanceOf[Array[Byte]], "UTF-8")
+    case body: Chunked =>
+      body.foldLeft("") { (acc, next) => acc+(String(next.asInstanceOf[Array[Byte]], "UTF-8")) }
   
-  given HttpReadable[Bytes] with
-    def read(body: Body): Bytes = body match
-      case () =>
-        IArray()
-      case body: IArray[Byte] =>
-        body
-      case body: LazyList[IArray[Byte]] =>
-        body.slurp(maxSize = 10*1024*1024)
+  given HttpReadable[Bytes] =
+    case ()            => IArray()
+    case body: Bytes   => body
+    case body: Chunked => body.slurp(maxSize = 10*1024*1024)
 
 trait HttpReadable[+T]:
   def read(body: Body): T
 
-case class HttpResponse(status: HttpStatus, headers: ListMap[ResponseHeader, String], body: Body):
+case class HttpResponse(status: HttpStatus, headers: Map[ResponseHeader, List[String]], body: Body):
   def as[T: HttpReadable]: T = status match
     case status: FailureCase => throw HttpError(status, body)
     case status              => summon[HttpReadable[T]].read(body)
@@ -93,6 +89,21 @@ object Http:
 
   def options(uri: Uri, headers: RequestHeader.Value*): HttpResponse =
     request(uri.toString, (), Method.Options, headers)
+
+  def head(uri: Uri, headers: RequestHeader.Value*): HttpResponse =
+    request(uri.toString, (), Method.Head, headers)
+  
+  def delete(uri: Uri, headers: RequestHeader.Value*): HttpResponse =
+    request(uri.toString, (), Method.Delete, headers)
+  
+  def connect(uri: Uri, headers: RequestHeader.Value*): HttpResponse =
+    request(uri.toString, (), Method.Connect, headers)
+  
+  def trace(uri: Uri, headers: RequestHeader.Value*): HttpResponse =
+    request(uri.toString, (), Method.Trace, headers)
+  
+  def patch(uri: Uri, headers: RequestHeader.Value*): HttpResponse =
+    request(uri.toString, (), Method.Patch, headers)
 
   private def request[T: Postable](url: String,
                                    content: T,
@@ -119,13 +130,15 @@ object Http:
        
 
         def body =
-          try read(conn.getInputStream)
-          catch case _: Exception =>
-            try read(conn.getErrorStream)
-            catch case _: Exception => LazyList.empty
+          try read(conn.getInputStream) catch case _: Exception =>
+            try read(conn.getErrorStream) catch case _: Exception => LazyList.empty
         
         val HttpStatus(status) = conn.getResponseCode
-        val responseHeaders = ListMap[ResponseHeader, String]()
+        val responseHeaders =
+          conn.getHeaderFields.asScala.flatMap {
+            case (null, v)              => Nil
+            case (ResponseHeader(k), v) => List((k, v.asScala.to(List)))
+          }.to(Map)
 
         HttpResponse(status, responseHeaders, body)
             
@@ -219,6 +232,11 @@ case class Uri(location: String, params: Params) extends Dynamic:
     Http.put(this, content, headers*)
   
   def options(headers: RequestHeader.Value*): HttpResponse = Http.options(this, headers*)
+  def trace(headers: RequestHeader.Value*): HttpResponse = Http.trace(this, headers*)
+  def patch(headers: RequestHeader.Value*): HttpResponse = Http.patch(this, headers*)
+  def head(headers: RequestHeader.Value*): HttpResponse = Http.head(this, headers*)
+  def delete(headers: RequestHeader.Value*): HttpResponse = Http.delete(this, headers*)
+  def connect(headers: RequestHeader.Value*): HttpResponse = Http.connect(this, headers*)
 
   override def toString: String = if params.isEmpty then location else location+"?"+params.queryString
 

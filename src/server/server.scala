@@ -47,6 +47,15 @@ object Handler:
       responder.sendBody(404, handler.stream(notFound.content))
 
 
+object Redirect:
+  object ToLocation:
+    given ToLocation[Uri] = _.toString
+
+  trait ToLocation[T]:
+    def location(value: T): String
+  
+  def apply[T: ToLocation](location: T): Redirect = Redirect(summon[ToLocation[T]].location(location))
+
 case class Redirect(location: String)
 
 trait Handler[T]:
@@ -76,36 +85,53 @@ case class Response[T: Handler](content: T,
     summon[Handler[T]].process(content, status.code, headers.map { (k, v) => k.header -> v }, responder)
 
 case class Request(method: Method, body: Chunked, query: String, ssl: Boolean, hostname: String, port: Int,
-    path: String, rawHeaders: Map[String, List[String]], rawParams: Map[String, List[String]]):
+    path: String, rawHeaders: Map[String, List[String]], queryParams: Map[String, List[String]]):
+
+  val params: Map[String, String] =
+    queryParams.mapValues(_.headOption.getOrElse("")).to(Map) ++ {
+      if (method == Method.Post || method == Method.Put) &&
+          contentType == Some(mime"application/x-www-form-urlencoded") then
+        String(body.slurp(maxSize = 10*1024*1024).asInstanceOf[Array[Byte]], "UTF-8").cut("&").map(_.cut("=", 2) match
+          case IArray(key)        => (key.urlDecode, "")
+          case IArray(key, value) => (key.urlDecode, value.urlDecode)
+        ).to(Map)
+      else Map()
+    }
 
   override def toString(): String =
     ListMap(
+      " content" -> contentType.toString,
       "  method" -> method.toString,
       "   query" -> query,
       "     ssl" -> ssl.toString,
       "hostname" -> hostname,
       "    port" -> port.toString,
       "    path" -> path,
-      " headers" -> rawHeaders.map { (k, vs) => s"$k: ${vs.mkString("; ")}" }.mkString("\n          "),
-      "  params" -> rawParams.map { (k, vs) => s"$k: ${vs.mkString("; ")}" }.mkString("\n          ")
-    ).map { (k, v) => s"$k: $v" }.mkString("", "\n", "\n")
+      "    body" -> String(body.slurp(maxSize = 10000).asInstanceOf[Array[Byte]], "UTF-8"),
+      " headers" -> rawHeaders.map { (k, vs) => s"$k: ${vs.join("; ")}" }.join("\n          "),
+      "  params" -> params.map { (k, v) => s"$k=\"$v\"" }.join("\n          ")
+    ).map { (k, v) => s"$k: $v" }.join("", "\n", "\n")
   
   lazy val headers: Map[RequestHeader, List[String]] =
     rawHeaders.map { case (RequestHeader(header), values) => header -> values }
 
   lazy val length: Int = headers.get(RequestHeader.ContentLength).fold(body.map(_.length).sum)(_.head.toInt)
-  lazy val contentType: Option[String] = headers.get(RequestHeader.ContentType).flatMap(_.headOption)
+  lazy val contentType: Option[MediaType] =
+    headers.get(RequestHeader.ContentType).flatMap(_.headOption).flatMap(MediaType.unapply(_))
   
 trait RequestHandler:
-  def listen(handler: Request => Response[?]): HttpService
+  def listen(handler: Request ?=> Response[?]): HttpService
 
 extension (value: Http.type)
   def listen(handler: Request ?=> Response[?])(using RequestHandler): HttpService =
-    summon[RequestHandler].listen(handler(using _))
+    summon[RequestHandler].listen(handler)
 
 def request(using Request): Request = summon[Request]
-def param(using Request)(key: String): Option[String] = summon[Request].rawParams.get(key).flatMap(_.headOption)
+def param(using Request)(key: String): Option[String] = summon[Request].params.get(key)
 def param[T](paramKey: Param[T])(using Request): Option[T] = paramKey.get
+
+def header(using Request)(header: RequestHeader): List[String] =
+  summon[Request].headers.get(header).getOrElse(Nil)
 
 object ParamReader:
   given ParamReader[Int] = Int.unapply(_)
@@ -126,9 +152,9 @@ object `&`:
 
 case class HttpServer(port: Int) extends RequestHandler:
 
-  def listen(handler: Request => Response[?]): HttpService =
+  def listen(handler: Request ?=> Response[?]): HttpService =
     def handle(exchange: HttpExchange) =
-      try handler(makeRequest(exchange)).respond(SimpleResponder(exchange))
+      try handler(using makeRequest(exchange)).respond(SimpleResponder(exchange))
       catch case NonFatal(exception) => exception.printStackTrace()
     
     val httpServer = JavaHttpServer.create(InetSocketAddress(port), 0)
@@ -154,11 +180,11 @@ case class HttpServer(port: Int) extends RequestHandler:
     val uri = exchange.getRequestURI
     val query = Option(uri.getQuery)
     
-    val params: Map[String, List[String]] = query.fold(Map()) { query =>
+    val queryParams: Map[String, List[String]] = query.fold(Map()) { query =>
       val paramStrings = query.cut("&")
       
       paramStrings.foldLeft(Map[String, List[String]]()) { (map, elem) =>
-        val Array(key, value) = elem.split("=", 2)
+        val IArray(key, value) = elem.cut("=", 2)
         
         map.updated(key, value :: map.getOrElse(key, Nil))
       }
@@ -175,7 +201,7 @@ case class HttpServer(port: Int) extends RequestHandler:
       Option(uri.getPort).filter(_ > 0).getOrElse(exchange.getLocalAddress.getPort),
       uri.getPath,
       headers.map(_ -> _),
-      params
+      queryParams
     )
 
   class SimpleResponder(exchange: HttpExchange) extends Responder:

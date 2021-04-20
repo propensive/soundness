@@ -24,15 +24,11 @@ import scala.collection.immutable.ListMap
 object Tests extends Suite("Scintillate tests"):
   def run(using Runner): Unit =
 
-    given RequestHandler = HttpServer(8081)
-    
     val IntParam = Param[Int]("one")
 
-    val server: HttpService = Http.listen {
-      println(request)
-
+    val server: HttpService = HttpServer(8081).listen {
       request match
-        case Path("/other")     => Response(Redirect("/elsewhere"))
+        case Path("/other")     => Response(Redirect(uri"/elsewhere"))
         case Path("/elsewhere") => Response("Elsewhere")
         case Path("/somewhere") & IntParam(value) => Response(s"Somewhere: ${value + 1}")
         case Path("/notfound")  => Response(NotFound("Not-found message"))
@@ -53,9 +49,11 @@ object Tests extends Suite("Scintillate tests"):
     }.assert(_ == "Elsewhere")
     
     test("Send an HTTP GET request with a parameter") {
-      val x = uri"http://localhost:8081/somewhere".query(one = "1").get().as[String]
-      println(x)
-      x
+      uri"http://localhost:8081/somewhere".query(one = "1").get().as[String]
+    }.assert(_ == "Somewhere: 2")
+    
+    test("Send an HTTP POST request with a parameter") {
+      uri"http://localhost:8081/somewhere".post(Map("one" -> "1")).as[String]
     }.assert(_ == "Somewhere: 2")
     
     test("Check and recover from not found") {

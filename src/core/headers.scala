@@ -64,7 +64,7 @@ enum RequestHeader(val header: String):
   case ContentEncoding extends RequestHeader("content-encoding")
   case ContentLength extends RequestHeader("content-length")
   case ContentMd5 extends RequestHeader("content-md5")
-  case ContentType extends RequestHeader("content-Type")
+  case ContentType extends RequestHeader("content-type")
   case Cookie extends RequestHeader("cookie")
   case Date extends RequestHeader("date")
   case Expect extends RequestHeader("expect")
@@ -94,6 +94,19 @@ enum RequestHeader(val header: String):
   case NonStandard(name: String) extends RequestHeader(name.toLowerCase)
   
   def apply(content: String): RequestHeader.Value = RequestHeader.Value(this, content)
+
+object ResponseHeader:
+  val standard: Map[String, ResponseHeader] = List(AcceptCh, AccessControlAllowOrigin,
+      AccessControlAllowCredentials, AccessControlExposeHeaders, AccessControlMaxAge, AccessControlAllowMethods,
+      AccessControlAllowHeaders, AcceptPatch, AcceptRanges, Age, Allow, AltSvc, CacheControl, Connection,
+      ContentDisposition, ContentEncoding, ContentLanguage, ContentLength, ContentLocation, ContentMd5,
+      ContentRange, ContentType, Date, DeltaBase, ETag, Expires, Im, LastModified, Link, Location, P3p, Pragma,
+      PreferenceApplied, ProxyAuthenticate, PublicKeyPins, RetryAfter, Server, SetCookie,
+      StrictTransportSecurity, Trailer, TransferEncoding, Tk, Upgrade, Vary, Via, Warning, WwwAuthenticate,
+      XFrameOptions).map(_.twin).map(_.header -> _).to(Map)
+  
+  def unapply(str: String): Some[ResponseHeader] =
+    Some(standard.get(str.toLowerCase).getOrElse(NonStandard(str)))
 
 enum ResponseHeader(val header: String):
   case AcceptCh extends ResponseHeader("accept-ch")
@@ -144,3 +157,4 @@ enum ResponseHeader(val header: String):
   case Warning extends ResponseHeader("warning")
   case WwwAuthenticate extends ResponseHeader("www-authenticate")
   case XFrameOptions extends ResponseHeader("x-frame-options")
+  case NonStandard(name: String) extends ResponseHeader(name.toLowerCase)
