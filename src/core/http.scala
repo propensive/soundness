@@ -28,21 +28,27 @@ import language.dynamics
 
 type Body = Chunked | Unit | IArray[Byte]
 
+object ToQuery:
+  given ToQuery[String] = str => Params(List(("", str)))
+  given ToQuery[Int] = int => Params(List(("", int.toString)))
+  given ToQuery[Params] = identity(_)
+  given [M <: Map[String, String]]: ToQuery[M] = map => Params(map.to(List))
+
+trait ToQuery[T]:
+  def params(value: T): Params
+
 object Postable:
-  given Postable[String]("text/plain") with
-    def content(value: String): IArray[Byte] = IArray.from(value.getBytes("UTF-8"))
+  given Postable[String](mime"text/plain") with
+    def content(value: String): IArray[Byte] = IArray.from(value.bytes)
 
-  given Postable[Map[String, String]]("multipart/form-data") with
-    def content(value: Map[String, String]): IArray[Byte] = IArray.from {
-      value.map { (key, value) =>
-        s"${URLEncoder.encode(key, "UTF-8")}=${URLEncoder.encode(value, "UTF-8")}"
-      }.mkString("&").getBytes("UTF-8")
-    }
+  given [T: ToQuery]: Postable[T](mime"multipart/form-data") with
+    def content(value: T): IArray[Byte] =
+      summon[ToQuery[T]].params(value).queryString.bytes
 
-  given Postable[Unit]("text/plain") with
+  given Postable[Unit](mime"text/plain") with
     def content(value: Unit): IArray[Byte] = IArray()
 
-abstract class Postable[T](val contentType: String):
+abstract class Postable[T](val contentType: MediaType):
   def content(value: T): IArray[Byte]
 
 enum Method:
@@ -75,33 +81,29 @@ case class HttpResponse(status: HttpStatus, headers: ListMap[ResponseHeader, Str
     case status: FailureCase => throw HttpError(status, body)
     case status              => summon[HttpReadable[T]].read(body)
 
-object Http extends Dynamic:
-  def post[T: Postable]
-          (url: String, content: T, headers: ListMap[RequestHeader, String] = ListMap(), follow: Boolean = true): HttpResponse =
-    request[T](url, content, Method.Post, headers, follow)
+object Http:
+  def post[T: Postable](uri: Uri, content: T, headers: RequestHeader.Value*): HttpResponse =
+    request[T](uri.location, content, Method.Post, headers)
 
-  def get(url: String,
-          params: ListMap[String, String] = ListMap(),
-          headers: ListMap[RequestHeader, String] = ListMap(),
-          follow: Boolean = true): HttpResponse =
-    val paramString = params.map { (k, v) => s"${k.urlEncode}=${v.urlEncode}" }.mkString("&")
+  def put[T: Postable](uri: Uri, content: T, headers: RequestHeader.Value*): HttpResponse =
+    request[T](uri.location, content, Method.Put, headers)
+  
+  def get(uri: Uri, headers: Seq[RequestHeader.Value] = Nil): HttpResponse =
+    request(uri.toString, (), Method.Get, headers)
 
-    val fullUrl = if params.isEmpty then url else url+"?"+paramString
-
-    request(fullUrl, (), Method.Get, ListMap(), follow)
+  def options(uri: Uri, headers: RequestHeader.Value*): HttpResponse =
+    request(uri.toString, (), Method.Options, headers)
 
   private def request[T: Postable](url: String,
                                    content: T,
                                    method: Method,
-                                   headers: ListMap[RequestHeader, String],
-                                   follow: Boolean): HttpResponse =
+                                   headers: Seq[RequestHeader.Value]): HttpResponse =
     URL(url).openConnection match
       case conn: HttpURLConnection =>
         conn.setRequestMethod(method.toString.toUpperCase)
-        //conn.setFollowRedirects(follow)
-        conn.setRequestProperty("Content-Type", summon[Postable[T]].contentType)
+        conn.setRequestProperty(RequestHeader.ContentType.header, summon[Postable[T]].contentType.toString)
         conn.setRequestProperty("User-Agent", "Scintillate 1.0.0")
-        headers.foreach { (key, value) => conn.setRequestProperty(key.header, value) }
+        headers.foreach { case RequestHeader.Value(key, value) => conn.setRequestProperty(key.header, value) }
         
         if method == Method.Post || method == Method.Put then
           conn.setDoOutput(true)
@@ -191,3 +193,50 @@ enum HttpStatus(val code: Int, val description: String):
   case LoopDetected extends HttpStatus(508, "Loop Detected"), FailureCase
   case NotExtended extends HttpStatus(510, "Not Extended"), FailureCase
   case NetworkAuthenticationRequired extends HttpStatus(511, "Network Authentication Required"), FailureCase
+
+case class Params (values: List[(String, String)]):
+  def append(more: Params): Params = Params(values ++ more.values)
+  def isEmpty: Boolean = values.isEmpty
+
+  def queryString: String = values.map {
+    case ("", value)  => value.urlEncode
+    case (key, value) => s"${key.urlEncode}=${value.urlEncode}"
+  }.join("&")
+
+case class Uri(location: String, params: Params) extends Dynamic:
+  private def makeQuery[T: ToQuery](value: T): Uri =
+    Uri(location, params.append(summon[ToQuery[T]].params(value)))
+  
+  def applyDynamicNamed(method: "query")(params: (String, String)*): Uri = makeQuery(Params(params.to(List)))
+  def applyDynamic[T: ToQuery](method: "query")(value: T) = makeQuery(value)
+
+  def post[T: Postable](content: T, headers: RequestHeader.Value*): HttpResponse =
+    Http.post(this, content, headers*)
+  
+  def get(headers: RequestHeader.Value*): HttpResponse = Http.get(this, headers)
+  
+  def put[T: Postable](content: T, headers: RequestHeader.Value*): HttpResponse =
+    Http.put(this, content, headers*)
+  
+  def options(headers: RequestHeader.Value*): HttpResponse = Http.options(this, headers*)
+
+  override def toString: String = if params.isEmpty then location else location+"?"+params.queryString
+
+object MediaType:
+  enum MainType:
+    case Application, Audio, Image, Message, Multipart, Text, Video, Font, Example, Model
+
+  def unapply(str: String): Option[MediaType] = str.cut("/", 2) match
+    case IArray(key, subtype) =>
+      try Some(MediaType(MainType.valueOf(key.capitalize), subtype)) catch case _ => None
+    
+    case _ =>
+      None
+
+case class MediaType(mediaType: MediaType.MainType, mediaSubtype: String):
+  override def toString = s"${mediaType.toString.toLowerCase}/$mediaSubtype"
+
+extension (ctx: StringContext)
+  def uri(subs: String*): Uri = Uri(ctx.parts.zip(subs).map(_+_).join("", "", ctx.parts.last), Params(List()))
+  // FIXME: Implement with a macro
+  def mime(): MediaType = MediaType.unapply(ctx.parts.head).get

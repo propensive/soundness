@@ -26,8 +26,6 @@ trait Servlet() extends HttpServlet:
 
   def handle(using Request): Response[?]
 
-  def run(): Unit
-
   protected case class ServletResponseWriter(response: HttpServletResponse) extends Responder:
     def addHeader(key: String, value: String) = response.addHeader(key, value)
     
@@ -69,7 +67,7 @@ trait Servlet() extends HttpServlet:
       val paramStrings = query.cut("&")
       
       paramStrings.foldLeft(Map[String, List[String]]()) { (map, elem) =>
-        val Array(key, value) = elem.split("=", 2)
+        val IArray(key, value) = elem.cut("=", 2)
         
         map.updated(key, value :: map.getOrElse(key, Nil))
       }

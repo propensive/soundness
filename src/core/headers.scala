@@ -28,6 +28,8 @@ object RequestHeader:
 
   def unapply(str: String): Some[RequestHeader] =
     Some(standard.get(str.toLowerCase).getOrElse(NonStandard(str)))
+  
+  case class Value(header: RequestHeader, value: String)
 
   object nonStandard:
     val UpgradeInsecureRequests = RequestHeader.NonStandard("upgrade-insecure-requests")
@@ -90,6 +92,8 @@ enum RequestHeader(val header: String):
   case Via extends RequestHeader("via")
   case Warning extends RequestHeader("warning")
   case NonStandard(name: String) extends RequestHeader(name.toLowerCase)
+  
+  def apply(content: String): RequestHeader.Value = RequestHeader.Value(this, content)
 
 enum ResponseHeader(val header: String):
   case AcceptCh extends ResponseHeader("accept-ch")

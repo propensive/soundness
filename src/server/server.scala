@@ -97,10 +97,10 @@ case class Request(method: Method, body: Chunked, query: String, ssl: Boolean, h
   lazy val contentType: Option[String] = headers.get(RequestHeader.ContentType).flatMap(_.headOption)
   
 trait RequestHandler:
-  def listen(handler: Request => Response[?]): HttpServer
+  def listen(handler: Request => Response[?]): HttpService
 
 extension (value: Http.type)
-  def listen(handler: Request ?=> Response[?])(using RequestHandler): HttpServer =
+  def listen(handler: Request ?=> Response[?])(using RequestHandler): HttpService =
     summon[RequestHandler].listen(handler(using _))
 
 def request(using Request): Request = summon[Request]
@@ -113,16 +113,20 @@ object ParamReader:
 trait ParamReader[T]:
   def read(value: String): Option[T]
 
-case class Param[T: ParamReader](key: String):
+case class Param[T](key: String)(using ParamReader[T]):
   type Type = T
   def get(using Request): Option[T] = param(key).flatMap(summon[ParamReader[T]].read(_))
+  def unapply(request: Request): Option[T] = get(using request)
 
-trait HttpServer:
-  def shutdown(): Unit
+trait HttpService:
+  def stop(): Unit
 
-case class SimpleHttpServer(port: Int) extends RequestHandler:
+object `&`:
+  def unapply(request: Request): (Request, Request) = (request, request)
 
-  def listen(handler: Request => Response[?]): HttpServer =
+case class HttpServer(port: Int) extends RequestHandler:
+
+  def listen(handler: Request => Response[?]): HttpService =
     def handle(exchange: HttpExchange) =
       try handler(makeRequest(exchange)).respond(SimpleResponder(exchange))
       catch case NonFatal(exception) => exception.printStackTrace()
