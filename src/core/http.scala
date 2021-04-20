@@ -17,6 +17,7 @@
 package scintillate
 
 import rudiments.*
+import magnolia.*
 
 import scala.collection.immutable.ListMap
 import scala.collection.JavaConverters.*
@@ -29,7 +30,12 @@ import language.dynamics
 
 type Body = Chunked | Unit | Bytes
 
-object ToQuery:
+object ToQuery extends ProductDerivation[ToQuery]:
+  def join[T](ctx: CaseClass[ToQuery, T]): ToQuery[T] = value =>
+    ctx.params.map {
+      param => param.typeclass.params(param.deref(value)).prefix(param.label)
+    }.reduce(_.append(_))
+
   given ToQuery[String] = str => Params(List(("", str)))
   given ToQuery[Int] = int => Params(List(("", int.toString)))
   given ToQuery[Params] = identity(_)
@@ -77,33 +83,39 @@ case class HttpResponse(status: HttpStatus, headers: Map[ResponseHeader, List[St
     case status: FailureCase => throw HttpError(status, body)
     case status              => summon[HttpReadable[T]].read(body)
 
+object ToLocation:
+  given ToLocation[Uri] = _.toString
+
+trait ToLocation[T]:
+  def location(value: T): String
+
 object Http:
-  def post[T: Postable](uri: Uri, content: T, headers: RequestHeader.Value*): HttpResponse =
-    request[T](uri.location, content, Method.Post, headers)
+  def post[T: Postable, L: ToLocation](uri: L, content: T = (), headers: RequestHeader.Value*): HttpResponse =
+    request[T](summon[ToLocation[L]].location(uri), content, Method.Post, headers)
 
-  def put[T: Postable](uri: Uri, content: T, headers: RequestHeader.Value*): HttpResponse =
-    request[T](uri.location, content, Method.Put, headers)
+  def put[T: Postable, L: ToLocation](uri: L, content: T = (), headers: RequestHeader.Value*): HttpResponse =
+    request[T](summon[ToLocation[L]].location(uri), content, Method.Put, headers)
   
-  def get(uri: Uri, headers: Seq[RequestHeader.Value] = Nil): HttpResponse =
-    request(uri.toString, (), Method.Get, headers)
+  def get[L: ToLocation](uri: L, headers: Seq[RequestHeader.Value] = Nil): HttpResponse =
+    request(summon[ToLocation[L]].location(uri), (), Method.Get, headers)
 
-  def options(uri: Uri, headers: RequestHeader.Value*): HttpResponse =
-    request(uri.toString, (), Method.Options, headers)
+  def options[L: ToLocation](uri: L, headers: RequestHeader.Value*): HttpResponse =
+    request(summon[ToLocation[L]].location(uri), (), Method.Options, headers)
 
-  def head(uri: Uri, headers: RequestHeader.Value*): HttpResponse =
-    request(uri.toString, (), Method.Head, headers)
+  def head[L: ToLocation](uri: L, headers: RequestHeader.Value*): HttpResponse =
+    request(summon[ToLocation[L]].location(uri), (), Method.Head, headers)
   
-  def delete(uri: Uri, headers: RequestHeader.Value*): HttpResponse =
-    request(uri.toString, (), Method.Delete, headers)
+  def delete[L: ToLocation](uri: L, headers: RequestHeader.Value*): HttpResponse =
+    request(summon[ToLocation[L]].location(uri), (), Method.Delete, headers)
   
-  def connect(uri: Uri, headers: RequestHeader.Value*): HttpResponse =
-    request(uri.toString, (), Method.Connect, headers)
+  def connect[L: ToLocation](uri: L, headers: RequestHeader.Value*): HttpResponse =
+    request(summon[ToLocation[L]].location(uri), (), Method.Connect, headers)
   
-  def trace(uri: Uri, headers: RequestHeader.Value*): HttpResponse =
-    request(uri.toString, (), Method.Trace, headers)
+  def trace[L: ToLocation](uri: L, headers: RequestHeader.Value*): HttpResponse =
+    request(summon[ToLocation[L]].location(uri), (), Method.Trace, headers)
   
-  def patch(uri: Uri, headers: RequestHeader.Value*): HttpResponse =
-    request(uri.toString, (), Method.Patch, headers)
+  def patch[L: ToLocation](uri: L, headers: RequestHeader.Value*): HttpResponse =
+    request(summon[ToLocation[L]].location(uri), (), Method.Patch, headers)
 
   private def request[T: Postable](url: String,
                                    content: T,
@@ -207,9 +219,14 @@ enum HttpStatus(val code: Int, val description: String):
   case NotExtended extends HttpStatus(510, "Not Extended"), FailureCase
   case NetworkAuthenticationRequired extends HttpStatus(511, "Network Authentication Required"), FailureCase
 
-case class Params (values: List[(String, String)]):
+case class Params(values: List[(String, String)]):
   def append(more: Params): Params = Params(values ++ more.values)
   def isEmpty: Boolean = values.isEmpty
+  
+  def prefix(str: String): Params = Params(values.map {
+    case ("", value)  => (str, value)
+    case (key, value) => (s"$str.$key", value)
+  })
 
   def queryString: String = values.map {
     case ("", value)  => value.urlEncode
@@ -237,6 +254,8 @@ case class Uri(location: String, params: Params) extends Dynamic:
   def head(headers: RequestHeader.Value*): HttpResponse = Http.head(this, headers*)
   def delete(headers: RequestHeader.Value*): HttpResponse = Http.delete(this, headers*)
   def connect(headers: RequestHeader.Value*): HttpResponse = Http.connect(this, headers*)
+
+  def bare = Uri(location, Params(Nil))
 
   override def toString: String = if params.isEmpty then location else location+"?"+params.queryString
 

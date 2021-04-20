@@ -21,6 +21,8 @@ import probably.*
 
 import scala.collection.immutable.ListMap
 
+case class Address(house: Int, street: String, city: String, country: String)
+
 object Tests extends Suite("Scintillate tests"):
   def run(using Runner): Unit =
 
@@ -33,6 +35,12 @@ object Tests extends Suite("Scintillate tests"):
         case Path("/somewhere") & IntParam(value) => Response(s"Somewhere: ${value + 1}")
         case Path("/notfound")  => Response(NotFound("Not-found message"))
         case Path("/withparam") => Response((param(IntParam).getOrElse(100)*2).toString)
+        case Path("/address")   =>
+          val address = List("house", "street", "city", "country").map(param(_).get).join(", ")
+          Response(address)
+        case Path("/person")   =>
+          val address = List("name", "address.house", "address.street", "address.city", "address.country").map(param(_).get).join(", ")
+          Response(address)
         case Path(_)            => Response("This is a response")
     }
 
@@ -55,6 +63,28 @@ object Tests extends Suite("Scintillate tests"):
     test("Send an HTTP POST request with a parameter") {
       uri"http://localhost:8081/somewhere".post(Map("one" -> "1")).as[String]
     }.assert(_ == "Somewhere: 2")
+    
+    test("Send a case class instance as a GET request") {
+      val address = Address(1, "High Street", "London", "UK")
+      uri"http://localhost:8081/address".query(address).get().as[String]
+    }.assert(_ == "1, High Street, London, UK")
+
+    test("Send a nested class instance as a GET request") {
+      case class Person(name: String, address: Address)
+      val address = Address(1, "High Street", "London", "UK")
+      val person = Person("John Smith", address)
+      uri"http://localhost:8081/person".query(person).get().as[String]
+    }.assert(_ == "John Smith, 1, High Street, London, UK")
+    
+    test("Send a case class instance as the query to a POST request") {
+      val address = Address(1, "High Street", "London", "UK")
+      uri"http://localhost:8081/address".query(address).post(()).as[String]
+    }.assert(_ == "1, High Street, London, UK")
+
+    test("Send a case class instance as the body to a POST request") {
+      val address = Address(1, "High Street", "London", "UK")
+      uri"http://localhost:8081/address".post(address).as[String]
+    }.assert(_ == "1, High Street, London, UK")
     
     test("Check and recover from not found") {
       try Http.get(uri"http://localhost:8081/notfound").as[String]

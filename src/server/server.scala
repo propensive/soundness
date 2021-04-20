@@ -48,11 +48,6 @@ object Handler:
 
 
 object Redirect:
-  object ToLocation:
-    given ToLocation[Uri] = _.toString
-
-  trait ToLocation[T]:
-    def location(value: T): String
   
   def apply[T: ToLocation](location: T): Redirect = Redirect(summon[ToLocation[T]].location(location))
 
@@ -88,7 +83,7 @@ case class Request(method: Method, body: Chunked, query: String, ssl: Boolean, h
     path: String, rawHeaders: Map[String, List[String]], queryParams: Map[String, List[String]]):
 
   val params: Map[String, String] =
-    queryParams.mapValues(_.headOption.getOrElse("")).to(Map) ++ {
+    queryParams.map { (k, vs) => k.urlDecode -> vs.headOption.getOrElse("").urlDecode }.to(Map) ++ {
       if (method == Method.Post || method == Method.Put) &&
           contentType == Some(mime"application/x-www-form-urlencoded") then
         String(body.slurp(maxSize = 10*1024*1024).asInstanceOf[Array[Byte]], "UTF-8").cut("&").map(_.cut("=", 2) match
