@@ -149,6 +149,7 @@ HttpServer.listen {
     case Path("/") & RequestHeader.UserAgent(s"Mozilla/$_")               => mozillaHome
     case Path("/") & Post() & AcceptEncoding(lang) if lang.contains("en") => englishHome
 }
+```
 
 In these examples, `&` is an extractor which always matches a `Request`, and "extracts" it into two copies. As
 an infix extractor, both sides may then be matched with their own patterns. Of course, this can be repeated
