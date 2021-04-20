@@ -4,7 +4,7 @@
 [<img src="https://img.shields.io/matrix/propensive.exoskeleton:matrix.org?label=MATRIX&color=0dbd8b&style=for-the-badge" height="24">](https://app.element.io/#/room/#propensive.exoskeleton:matrix.org)
 [<img src="https://img.shields.io/twitter/follow/propensive?color=%2300acee&label=TWITTER&style=for-the-badge" height="24">](https://twitter.com/propensive)
 [<img src="https://img.shields.io/maven-central/v/com.propensive/exoskeleton-core_2.12?color=2465cd&style=for-the-badge" height="24">](https://search.maven.org/artifact/com.propensive/exoskeleton-core_2.12)
-[<img src="https://img.shields.io/badge/vent-propensive%2Fexoskeleton-f05662?style=for-the-badge" height="24">](https://vent.dev)
+[<img src="https://vent.dev/badge/propensive/exoskeleton" height="24">](https://vent.dev/)
 
 <img src="/doc/images/github.png" valign="middle">
 
@@ -116,5 +116,5 @@ training is available from [Propensive O&Uuml;](https://propensive.com/).
 
 ## License
 
-Exoskeleton is copyright &copy; 2017-20 Jon Pretty & Propensive O&Uuml;, and is made available under the
+Exoskeleton is copyright &copy; 2017-21 Jon Pretty & Propensive O&Uuml;, and is made available under the
 [Apache 2.0 License](/license.md).
