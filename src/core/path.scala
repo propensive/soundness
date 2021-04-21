@@ -18,6 +18,7 @@ package jovian
 
 import kaleidoscope.*
 import gastronomy.*
+import rudiments.*
 
 import scala.util.*
 import scala.collection.generic.CanBuildFrom
@@ -55,6 +56,12 @@ object Path:
 
   def createDirectories(path: JavaPath): Boolean = path.toFile.mkdirs()
 
+extension [T](value: Seq[Try[T]]) def sequence: Try[Seq[T]] =
+  def recur(seq: Seq[Try[T]], done: Try[Seq[T]]): Try[Seq[T]] =
+    if seq.isEmpty then done else recur(seq.tail, done.flatMap { seq2 => seq.head.map(seq2 :+ _) })
+  
+  recur(value, Try(Nil))
+
 case class Path(input: String):
   val value: String = if input == "/" then "/" else
     def canonicalize(str: List[String], drop: Int = 0): List[String] = str match
@@ -86,12 +93,12 @@ case class Path(input: String):
 
   def size: ByteSize = ByteSize(javaFile.length)
 
-  def setReadOnly(): Try[Unit] = childPaths.traverse(_.setReadOnly()).flatMap { _ =>
-    Try(javaFile.setReadOnly())
+  def setReadOnly(): Try[Unit] = childPaths.map(_.setReadOnly()).sequence.flatMap { _ =>
+    Try(javaFile.setReadOnly().unit)
   }
 
   def setWritable(): Try[Unit] = Try(javaFile.setWritable(true)).flatMap { _ =>
-    childPaths.traverse(_.setWritable()).map { _ => () }
+    childPaths.map(_.setWritable()).sequence.map { _ => () }
   }
 
   def uniquify(): Path =
@@ -208,7 +215,7 @@ case class Path(input: String):
   def exists(): Boolean = Files.exists(javaPath)
   def ifExists(): Option[Path] = if exists() then Some(this) else None
   def absolutePath(): Try[Path] = Try(this.javaPath.toAbsolutePath.normalize.toString).map(Path(_))
-  def mkdir(): Try[Unit] = Try(Path.createDirectories(javaPath))
+  def mkdir(): Try[Unit] = Try(Path.createDirectories(javaPath).unit)
   def relativizeTo(dir: Path) = Path(dir.javaPath.relativize(this.javaPath))
   def parent = Path(javaPath.getParent.toString)
   def rename(fn: String => String): Path = parent / fn(name)
@@ -232,18 +239,6 @@ case class Path(input: String):
     val result = res.flatMap{ r => Try(f(r)) }
     val closed = res.flatMap{ r => Try(r.close()) }
     List(res, closed, result).sequence.map(_ => result.get)
-
-object Glob:
-  val All = Glob("**")
-
-case class Glob(pattern: String):
-  def apply[Coll[T] <: Iterable[T]]
-           (dir: Path, xs: Coll[Path])
-           (implicit cbf: CanBuildFrom[Coll[Path], Path, Coll[Path]]): Coll[Path] =
-    val javaGlob = FileSystems.getDefault.getPathMatcher(s"glob:$dir/$pattern")
-    val b = cbf()
-    xs.foreach { x => if javaGlob.matches(x.javaPath) then b += x }
-    b.result
 
 case class ByteSize(bytes: Long):
   def +(that: ByteSize): ByteSize = ByteSize(bytes + that.bytes)
