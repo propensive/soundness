@@ -55,11 +55,11 @@ case class Digest(bytes: IArray[Byte]):
 object Hashable extends Derivation[Hashable]:
   def join[T](caseClass: CaseClass[Hashable, T]): Hashable[T] =
     (acc, value) => caseClass.params.foldLeft(acc) { (acc, param) =>
-      param.typeclass.digest(acc, param.dereference(value))
+      param.typeclass.digest(acc, param.deref(value))
     }
 
   def split[T](sealedTrait: SealedTrait[Hashable, T]): Hashable[T] =
-    (acc, value) => sealedTrait.split(value) { subtype =>
+    (acc, value) => sealedTrait.choose(value) { subtype =>
       val acc2 = summon[Hashable[Int]].digest(acc, sealedTrait.subtypes.indexOf(subtype))
       subtype.typeclass.digest(acc2, subtype.cast(value))
     }
