@@ -50,13 +50,13 @@ object Json extends Dynamic:
 
     def join[T](caseClass: CaseClass[Serializer, T]): Serializer[T] = value =>
       JObject(mutable.Map(caseClass.params.filter { param =>
-        !param.typeclass.omit(param.dereference(value))
+        !param.typeclass.omit(param.deref(value))
       }.map { param =>
-        (param.label, param.typeclass.serialize(param.dereference(value)))
+        (param.label, param.typeclass.serialize(param.deref(value)))
       }*))
       
     def split[T](sealedTrait: SealedTrait[Serializer, T]): Serializer[T] = value =>
-      sealedTrait.split(value) { subtype =>
+      sealedTrait.choose(value) { subtype =>
         val obj = subtype.typeclass.serialize(subtype.cast(value))
         obj match
           case JObject(vs) => vs("_type") = JString(subtype.typeInfo.short)
@@ -129,14 +129,14 @@ case class Json(root: JValue, path: List[Int | String] = Nil) extends Dynamic de
   def applyDynamic(field: String)(idx: Int): Json = this(field)(idx)
 
   def normalize: Try[Json] =
-    def dereference(value: JValue, path: List[Int | String]): Try[JValue] = path match
+    def deref(value: JValue, path: List[Int | String]): Try[JValue] = path match
       case Nil => Success(value)
       case (idx: Int) :: tail => value match
         case JArray(vs) =>
           (vs.lift(idx) match
             case None        => Failure(IndexNotFound(idx))
             case Some(value) => Success(value)
-          ).flatMap(dereference(_, tail))
+          ).flatMap(deref(_, tail))
         case _ =>
           Failure(UnexpectedType(JsonPrimitive.Array))
       case (field: String) :: tail => value match
@@ -144,11 +144,11 @@ case class Json(root: JValue, path: List[Int | String] = Nil) extends Dynamic de
           (vs.get(field) match
             case None        => Failure(LabelNotFound(field))
             case Some(value) => Success(value)
-          ).flatMap(dereference(_, tail))
+          ).flatMap(deref(_, tail))
         case _ =>
           Failure(UnexpectedType(JsonPrimitive.Object))
       
-    dereference(root, path.reverse).map(Json(_, Nil))
+    deref(root, path.reverse).map(Json(_, Nil))
 
   def as[T: Json.Deserializer] = normalize.flatMap { json =>
     summon[Json.Deserializer[T]].deserialize(json.root).fold(Failure(DeserializationException()))(Success(_))
