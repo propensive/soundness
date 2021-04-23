@@ -163,14 +163,3 @@ object Main extends Suite("Probably Tests"):
         Person("John Smith", 1.001) ~~ Person("John Smith", 1.0)
       }.assert(_ == true)
     }
-
-    suite("Property tests") {
-      Generate.stream[(String, Int)].take(100).zipWithIndex.foreach { case ((str, int), idx) =>
-        test("All longs are less than 100") {
-          println((str, int))
-          idx.debug
-          str.debug
-          int.debug
-        }.assert(_ < 100)
-      }
-    }
