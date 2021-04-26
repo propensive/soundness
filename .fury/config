@@ -7,9 +7,8 @@
 #
 # For more information, please visit https://propensive.com/fury/
 #
-layerRef	QmUmJzRMLa1CwAbFxtCuybA1YhQo7ktwzxv42Tp2kUQ9EA
+layerRef	QmWPTCuXuDia9RonNTveeLxrGVkTPGpmtwwQiVjsymaEc4
 published	Some	url	fury://vent.dev/propensive/guillotine
-		version	2
-		layerRef	QmWNpekwAPHM9jDazRtK6UucjcSmMHUQz6zBg48XTfqpMb
-		expiry	Some	1621779192771
+		version	3
+		layerRef	QmNoZvC7YSTXL3X5imaYq8Eh2mQnhwCqvhhApZdNsQuWC9
 # vim: set noai ts=12 sw=12:

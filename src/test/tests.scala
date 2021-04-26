@@ -2,6 +2,7 @@ package guillotine
 
 import contextual.*
 import probably.*
+import scala.quoted.*, staging.*
 
 object Tests extends Suite("Guillotine tests"):
   def run(using Runner): Unit =
@@ -119,4 +120,20 @@ object Tests extends Suite("Guillotine tests"):
         println(result)
         result
       }.assert(_ == "hello")
+    }
+
+    suite("Compilation tests") {
+      given Compiler = Compiler.make(getClass.getClassLoader)
+
+      test("Check final escape character is an error") {
+        try Check("""hello\""") catch error => error
+      }.assert(_ == ParseError("An escape character is not permitted at the end"))
+      
+      test("unclosed single quotes") {
+        try Check("""hello ' world""") catch error => error
+      }.assert(_ == ParseError("the single quotes have not been closed"))
+      
+      test("unclosed double quotes") {
+        try Check("""hello " world""") catch error => error
+      }.assert(_ == ParseError("the double quotes have not been closed"))
     }

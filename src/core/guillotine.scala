@@ -33,9 +33,10 @@ trait Executor[T]:
   def map[S](fn: T => S): Executor[S] = process => fn(interpret(process))
 
 case class Command(args: String*):
-  private lazy val processBuilder = ProcessBuilder(args*)
-
-  def exec[T: Executor]()(using Env): T = summon[Executor[T]].interpret(processBuilder.start())
+  def exec[T: Executor]()(using Env): T =
+    val processBuilder = ProcessBuilder(args*)
+    processBuilder.directory(summon[Env].workDirFile)
+    summon[Executor[T]].interpret(processBuilder.start())
 
 case class Env(vars: Map[String, String], workDir: Option[String]):
   private[guillotine] lazy val envArray: Array[String] = vars.map { (k, v) => s"$k=$v" }.to(Array)
@@ -45,7 +46,7 @@ case class Env(vars: Map[String, String], workDir: Option[String]):
     m
   }
 
-  private lazy val workDirFile: File = File(workDir.getOrElse(System.getenv("PWD")))
+  private[guillotine] lazy val workDirFile: File = File(workDir.getOrElse(System.getenv("PWD")))
   
 case class ExecError(command: Command, stdout: Stream, stderr: Stream) extends Exception
 
