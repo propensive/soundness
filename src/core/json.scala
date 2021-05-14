@@ -1,6 +1,6 @@
 package euphemism
 
-import magnolia.*
+import wisteria.*
 
 import org.typelevel.jawn.{ParseException as JawnParseException, *}, ast.*
 

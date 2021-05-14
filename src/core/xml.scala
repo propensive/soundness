@@ -1,6 +1,6 @@
 package euphemism
 
-import magnolia._
+import wisteria._
 
 import org.xml.sax._
 import org.w3c.dom.{Node => XValue, NodeList => XList}
