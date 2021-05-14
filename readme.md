@@ -1,16 +1,16 @@
-[<img alt="GitHub Workflow" src="https://img.shields.io/github/workflow/status/propensive/magnolia/Build/main?style=for-the-badge" height="24">](https://github.com/propensive/magnolia/actions)
-[<img src="https://img.shields.io/badge/gitter-discuss-f00762?style=for-the-badge" height="24">](https://gitter.im/propensive/magnolia)
+[<img alt="GitHub Workflow" src="https://img.shields.io/github/workflow/status/propensive/wisteria/Build/main?style=for-the-badge" height="24">](https://github.com/propensive/wisteria/actions)
+[<img src="https://img.shields.io/badge/gitter-discuss-f00762?style=for-the-badge" height="24">](https://gitter.im/propensive/wisteria)
 [<img src="https://img.shields.io/discord/633198088311537684?color=8899f7&label=DISCORD&style=for-the-badge" height="24">](https://discord.gg/CHCPjERybv)
-[<img src="https://img.shields.io/matrix/propensive.magnolia:matrix.org?label=MATRIX&color=0dbd8b&style=for-the-badge" height="24">](https://app.element.io/#/room/#propensive.magnolia:matrix.org)
+[<img src="https://img.shields.io/matrix/propensive.wisteria:matrix.org?label=MATRIX&color=0dbd8b&style=for-the-badge" height="24">](https://app.element.io/#/room/#propensive.wisteria:matrix.org)
 [<img src="https://img.shields.io/twitter/follow/propensive?color=%2300acee&label=TWITTER&style=for-the-badge" height="24">](https://twitter.com/propensive)
-[<img src="https://img.shields.io/maven-central/v/com.propensive/magnolia-core_2.12?color=2465cd&style=for-the-badge" height="24">](https://search.maven.org/artifact/com.propensive/magnolia-core_2.12)
-[<img src="https://vent.dev/badge/propensive/magnolia" height="24">](https://vent.dev/)
+[<img src="https://img.shields.io/maven-central/v/com.propensive/wisteria-core_2.12?color=2465cd&style=for-the-badge" height="24">](https://search.maven.org/artifact/com.propensive/wisteria-core_2.12)
+[<img src="https://vent.dev/badge/propensive/wisteria" height="24">](https://vent.dev/)
 
 <img src="/doc/images/github.png" valign="middle">
 
-# Magnolia
+# Wisteria
 
-__Magnolia__ is a generic macro for automatic materialization of typeclasses for datatypes composed from product types (e.g. case classes) and coproduct types (e.g. enums). It supports recursively-defined datatypes out-of-the-box, and incurs no significant time-penalty during compilation.
+__Wisteria__ is a generic macro for automatic materialization of typeclasses for datatypes composed from product types (e.g. case classes) and coproduct types (e.g. enums). It supports recursively-defined datatypes out-of-the-box, and incurs no significant time-penalty during compilation.
 
 ## Features
 
@@ -30,18 +30,18 @@ enum Tree[+T]:
   case class Branch(left: Tree[T], right: Tree[T])
   case class Leaf(value: T)
 ```
-and provided an given instance of `Show[Int]` is in scope, and a Magnolia derivation for the `Show` typeclass
+and provided an given instance of `Show[Int]` is in scope, and a Wisteria derivation for the `Show` typeclass
 has been provided, we can automatically derive given typeclass instances of `Show[Tree[Int]]` on-demand, like
 so,
 ```scala
 Branch(Branch(Leaf(1), Leaf(2)), Leaf(3)).show
 ```
-Typeclass authors may provide Magnolia derivations in the typeclass's companion object, but it is easy to create
+Typeclass authors may provide Wisteria derivations in the typeclass's companion object, but it is easy to create
 your own.
 
-The definition of a `Show` typeclass with generic derivation defined with Magnolia might look like this:
+The definition of a `Show` typeclass with generic derivation defined with Wisteria might look like this:
 ```scala
-import magnolia.*
+import wisteria.*
 
 trait Show[T]:
   def show(value: T): String
@@ -66,11 +66,12 @@ be automatically available for consideration during contextual search.
 
 ## Limitations
 
-Magnolia is not currently able to access default values for case class parameters.
+Wisteria is not currently able to access default values for case class parameters.
+
 
 ## Status
 
-Magnolia is classified as __maturescent__. Propensive defines the following five stability levels for open-source projects:
+Wisteria is classified as __maturescent__. Propensive defines the following five stability levels for open-source projects:
 
 - _embryonic_: for experimental or demonstrative purposes only, without guarantee of longevity
 - _fledgling_: of proven utility, seeking contributions, but liable to significant redesigns
@@ -80,41 +81,41 @@ Magnolia is classified as __maturescent__. Propensive defines the following five
 
 ## Availability
 
-Magnolia&rsquo;s source is available on GitHub, and may be built with [Fury](https://github.com/propensive/fury) by
-cloning the layer `propensive/magnolia`.
+Wisteria&rsquo;s source is available on GitHub, and may be built with [Fury](https://github.com/propensive/fury) by
+cloning the layer `propensive/wisteria`.
 ```
-fury layer clone -i propensive/magnolia
+fury layer clone -i propensive/wisteria
 ```
 or imported into an existing layer with,
 ```
-fury layer import -i propensive/magnolia
+fury layer import -i propensive/wisteria
 ```
-A binary is available on Maven Central as `com.propensive:magnolia-core_<scala-version>:2.0.0`. This may be added
+A binary is available on Maven Central as `com.propensive:wisteria-core_<scala-version>:2.0.0`. This may be added
 to an [sbt](https://www.scala-sbt.org/) build with:
 ```
-libraryDependencies += "com.propensive" %% "magnolia-core" % "2.0.0"
+libraryDependencies += "com.propensive" %% "wisteria-core" % "2.0.0"
 ```
 
 ## Contributing
 
-Contributors to Magnolia are welcome and encouraged. New contributors may like to look for issues marked
-<a href="https://github.com/propensive/magnolia/labels/good%20first%20issue"><img alt="label: good first issue"
+Contributors to Wisteria are welcome and encouraged. New contributors may like to look for issues marked
+<a href="https://github.com/propensive/wisteria/labels/good%20first%20issue"><img alt="label: good first issue"
 src="https://img.shields.io/badge/-good%20first%20issue-67b6d0.svg" valign="middle"></a>.
 
 We suggest that all contributors read the [Contributing Guide](/contributing.md) to make the process of
-contributing to Magnolia easier.
+contributing to Wisteria easier.
 
 Please __do not__ contact project maintainers privately with questions, as other users cannot then benefit from
 the answers.
 
 ## Author
 
-Magnolia was designed and developed by [Jon Pretty](https://twitter.com/propensive), and commercial support and
+Wisteria was designed and developed by [Jon Pretty](https://twitter.com/propensive), and commercial support and
 training is available from [Propensive O&Uuml;](https://propensive.com/).
 
 
 
 ## License
 
-Magnolia is copyright &copy; 2018-21 Jon Pretty & Propensive O&Uuml;, and is made available under the
+Wisteria is copyright &copy; 2018-21 Jon Pretty & Propensive O&Uuml;, and is made available under the
 [Apache 2.0 License](/license.md).

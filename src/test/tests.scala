@@ -1,6 +1,6 @@
 /*
 
-    Magnolia, version 0.17.0. Copyright 2018-20 Jon Pretty, Propensive OÜ.
+    Wisteria, version 2.0.0. Copyright 2018-21 Jon Pretty, Propensive OÜ.
 
     The primary distribution site is: https://propensive.com/
 
@@ -14,10 +14,10 @@
     See the License for the specific language governing permissions and limitations under the License.
 
 */
-package magnolia.tests
+package wisteria.tests
 
-import magnolia.examples.*
-import magnolia.TypeInfo
+import wisteria.examples.*
+import wisteria.TypeInfo
 
 import java.time.LocalDate
 import probably.*
@@ -217,7 +217,7 @@ final case class Huey(height: Int) extends GoodChild
 class Dewey(val height: Int) extends GoodChild
 final case class Louie(height: Int) extends BadChild
 
-object Tests extends Suite("Magnolia tests"):
+object Tests extends Suite("Wisteria tests"):
 
   def run(using Runner) =
     test("construct a Show product instance with alternative apply functions") {
@@ -240,20 +240,20 @@ object Tests extends Suite("Magnolia tests"):
       Show.derived[ParamsWithDefault].show(ParamsWithDefault())
     }.assert(_ == "ParamsWithDefault(a=3,b=4)")
 
-    test("local implicit beats Magnolia") {
+    test("local implicit beats Wisteria") {
       given showPerson: Show[String, Person] = _ => "nobody"
       summon[Show[String, Address]].show(Address("Home", Person("John Smith", 44)))
     }.assert(_ == "Address(line1=Home,occupant=nobody)")
 
-    test("even low-priority implicit beats Magnolia for nested case") {
+    test("even low-priority implicit beats Wisteria for nested case") {
       summon[Show[String, Lunchbox]].show(Lunchbox(Fruit("apple"), "lemonade"))
     }.assert(_ == "Lunchbox(fruit=apple,drink=lemonade)")
 
-    test("low-priority implicit beats Magnolia when not nested") {
+    test("low-priority implicit beats Wisteria when not nested") {
       summon[Show[String, Fruit]].show(Fruit("apple"))
     }.assert(_ == "apple")
 
-    test("low-priority implicit beats Magnolia when chained") {
+    test("low-priority implicit beats Wisteria when chained") {
       summon[Show[String, FruitBasket]].show(FruitBasket(Fruit("apple"), Fruit("banana")))
     }.assert(_ == "FruitBasket(fruits=[apple,banana])")
 

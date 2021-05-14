@@ -1,6 +1,6 @@
 /*
 
-    Magnolia, version 0.17.0. Copyright 2018-20 Jon Pretty, Propensive OÜ.
+    Wisteria, version 2.0.0. Copyright 2018-21 Jon Pretty, Propensive OÜ.
 
     The primary distribution site is: https://propensive.com/
 
@@ -14,9 +14,9 @@
     See the License for the specific language governing permissions and limitations under the License.
 
 */
-package magnolia.examples
+package wisteria.examples
 
-import magnolia.*
+import wisteria.*
 
 trait WeakHash[T]:
   def hash(value: T): Int

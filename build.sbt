@@ -6,8 +6,8 @@ ThisBuild / version := "0.17.0"
 
 ThisBuild / scmInfo := Some(
   ScmInfo(
-    url("https://github.com/propensive/magnolia"),
-    "scm:git@github.com:propensive/magnolia.git"
+    url("https://github.com/propensive/wisteria"),
+    "scm:git@github.com:propensive/wisteria.git"
   )
 )
 ThisBuild / developers := List(
@@ -21,7 +21,7 @@ ThisBuild / developers := List(
 
 ThisBuild / description := "Fast, easy and transparent typeclass derivation for Scala 2"
 ThisBuild / licenses := List("Apache 2" -> new URL("http://www.apache.org/licenses/LICENSE-2.0.txt"))
-ThisBuild / homepage := Some(url("https://github.com/propensive/magnolia"))
+ThisBuild / homepage := Some(url("https://github.com/propensive/wisteria"))
 
 ThisBuild / pomIncludeRepository := { _ => false }
 
@@ -35,21 +35,21 @@ ThisBuild / publishMavenStyle := true
 
 lazy val core = (project in file(".core"))
   .settings(
-    name := "magnolia-core",
+    name := "wisteria-core",
     Compile / scalaSource := baseDirectory.value / ".." / "src" / "core",
   )
 
 lazy val examples = (project in file(".examples"))
   .dependsOn(core)
   .settings(
-    name := "magnolia-examples",
+    name := "wisteria-examples",
     Compile / scalaSource := baseDirectory.value / ".." / "src" / "examples",
   )
 
 lazy val test = (project in file(".test"))
   .dependsOn(examples)
   .settings(
-    name := "magnolia-test",
+    name := "wisteria-test",
     projectDependencies ++= Seq(
       "org.scalameta" %% "munit" % "0.7.22"
     ),
