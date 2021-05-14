@@ -17,7 +17,7 @@
 package scintillate
 
 import rudiments.*
-import magnolia.*
+import wisteria.*
 
 import scala.collection.immutable.ListMap
 import scala.collection.JavaConverters.*
