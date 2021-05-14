@@ -1,6 +1,6 @@
 package probably
 
-import magnolia.*
+import wisteria.*
 
 extension [T: Approximable](value: T)
   def ~~(other: T): Boolean = summon[Approximable[T]].approximatelyEqual(value, other)

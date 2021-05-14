@@ -16,7 +16,7 @@
 */
 package probably
 
-import magnolia.*
+import wisteria.*
 
 case class Seed(value: Long):
   def apply(): Long = value
