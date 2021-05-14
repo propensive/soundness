@@ -16,24 +16,24 @@
 */
 package exoskeleton
 
-import collection.JavaConverters._
+import collection.JavaConverters.*
 
-import scala.util._
+import scala.util.*
 
-import java.io._
+import java.io.*
 
-trait Application {
+trait Application:
   def main(context: Context): Io[Exit]
   def complete(cli: Cli): Completions
   
-  final def main(args: Array[String]): Unit = {
-    val argList = args.to[List]
+  final def main(args: Array[String]): Unit =
+    val argList = args.to(List)
     val env = System.getenv().asScala.toMap
     val props = System.getProperties().asScala.toMap
 
     val context = Context(argList, env, props)
     
-    val result = argList match {
+    val result = argList match
       case "{completion}" :: Shell(shell) :: AsInt(current) :: "--" :: args =>
         Log.info("----------")
         Log.info(s"   shell: ${shell.shell}")
@@ -50,22 +50,17 @@ trait Application {
         val result = main(context).exec()
         Io.stdout.flush()
         Io.stderr.flush()
-        result match {
+        result match
           case Failure(err) =>
 
           case Success(Exit(n)) =>
             System.exit(0)
-        }
-    }
-  }
-}
 
-object Io {
+object Io:
 
-  private def capture(stream: PrintStream, replace: PrintStream => Unit): PrintStream = {
+  private def capture(stream: PrintStream, replace: PrintStream => Unit): PrintStream =
     replace(new PrintStream({ _ => () }))
     stream
-  }
 
   private[exoskeleton] val stdout: PrintStream = capture(System.out, System.setOut)
   private[exoskeleton] val stderr: PrintStream = capture(System.err, System.setErr)
@@ -74,22 +69,20 @@ object Io {
   def pure[T](blk: T): Io[T] = () => Success(blk)
   def unit: Io[Unit] = () => Success(())
 
-  object out {
+  object out:
     def print(string: String): Io[Unit] = Io(stdout.println(string))
     def println(string: String): Io[Unit] = Io(stdout.println(string))
-  }
   
-  object err {
+  object err:
     def print(string: String): Io[Unit] = Io(stderr.println(string))
     def println(string: String): Io[Unit] = Io(stderr.println(string))
-  }
 
-  def from[T](value: => Try[T]): Io[T] = new Io[T] { private[exoskeleton] def exec(): Try[T] = value }
-}
+  def from[T](value: => Try[T]): Io[T] = new Io[T]:
+    private[exoskeleton] def exec(): Try[T] = value
 
-abstract class Io[+T]() { io =>
-  private[exoskeleton] def exec(): Try[T]
+abstract class Io[+T]():
+  io =>
+    private[exoskeleton] def exec(): Try[T]
   
-  def flatMap[S](fn: T => Io[S]): Io[S] = () => io.exec().flatMap(fn(_).exec())
-  def map[S](fn: T => S): Io[S] = () => io.exec().map(fn)
-}
+    def flatMap[S](fn: T => Io[S]): Io[S] = () => io.exec().flatMap(fn(_).exec())
+    def map[S](fn: T => S): Io[S] = () => io.exec().map(fn)
