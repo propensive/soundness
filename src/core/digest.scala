@@ -15,7 +15,7 @@
                                                                                                   */
 package gastronomy
 
-import magnolia.*
+import wisteria.*
 
 import scala.collection.*
 
