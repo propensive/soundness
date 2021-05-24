@@ -1,6 +1,6 @@
 package euphemism
 
-import wisteria.*
+import magnolia.*
 
 import org.typelevel.jawn.{ParseException as JawnParseException, *}, ast.*
 
@@ -70,49 +70,55 @@ object Json extends Dynamic:
     def serialize(t: T): JValue
 
   object Deserializer extends Derivation[Deserializer]:
-    given Deserializer[Int] = _.getInt
-    given Deserializer[Double] = _.getDouble
-    given Deserializer[Float] = _.getDouble.map(_.toFloat)
-    given Deserializer[Long] = _.getLong
-    given Deserializer[String] = _.getString
-    given Deserializer[Short] = _.getInt.map(_.toShort)
-    given Deserializer[Byte] = _.getInt.map(_.toByte)
-    given Deserializer[Boolean] = _.getBoolean
-    given Deserializer[Json] = value => Some(Json(value, Nil))
+    given Deserializer[Int] = _.flatMap(_.getInt)
+    given Deserializer[Double] = _.flatMap(_.getDouble)
+    given Deserializer[Float] = _.flatMap(_.getDouble.map(_.toFloat))
+    given Deserializer[Long] = _.flatMap(_.getLong)
+    given Deserializer[String] = _.flatMap(_.getString)
+    given Deserializer[Short] = _.flatMap(_.getInt.map(_.toShort))
+    given Deserializer[Byte] = _.flatMap(_.getInt.map(_.toByte))
+    given Deserializer[Boolean] = _.flatMap(_.getBoolean)
+    given Deserializer[Json] = _.map(Json(_, Nil))
 
-    given array[Coll[T1] <: Traversable[T1], T: Deserializer](using factory: Factory[T, Coll[T]]): Deserializer[Coll[T]] =
+    given opt[T: Deserializer]: Deserializer[Option[T]] = v => Some(summon[Deserializer[T]].deserialize(v))
+
+    given array[Coll[T1] <: Traversable[T1], T: Deserializer](using factory: Factory[T, Coll[T]]): Deserializer[Coll[T]] = _.flatMap {
       case JArray(vs) =>
         vs.foldLeft(Option(factory.newBuilder)) { (builder, next) =>
-          summon[Deserializer[T]].deserialize(next).flatMap { elem => builder.map(_ += elem) }
+          summon[Deserializer[T]].deserialize(Some(next)).flatMap { elem => builder.map(_ += elem) }
         }.map(_.result())
       case _ =>
         None
+    }
 
-    def map[T: Deserializer]: Deserializer[Map[String, T]] =
+    def map[T: Deserializer]: Deserializer[Map[String, T]] = _.flatMap {
       case JObject(vs) =>
         vs.toMap.foldLeft(Option(Map[String, T]())) {
-          case (Some(acc), (k, v)) => summon[Deserializer[T]].deserialize(v).map { v2 => acc.updated(k, v2) }
+          case (Some(acc), (k, v)) => summon[Deserializer[T]].deserialize(Some(v)).map { v2 => acc.updated(k, v2) }
           case _                   => None
         }
       case _ =>
         None
+    }
 
-    def join[T](caseClass: CaseClass[Deserializer, T]): Deserializer[T] = json =>
+    def join[T](caseClass: CaseClass[Deserializer, T]): Deserializer[T] = _.flatMap { json =>
       caseClass.constructMonadic { param =>
         json match
-          case JObject(vs) => vs.get(param.label).flatMap(param.typeclass.deserialize(_))
+          case JObject(vs) => param.typeclass.deserialize(vs.get(param.label))
           case _ => None
       }
+    }
 
-    def split[T](sealedTrait: SealedTrait[Deserializer, T]): Deserializer[T] = json =>
+    def split[T](sealedTrait: SealedTrait[Deserializer, T]): Deserializer[T] = _.flatMap { json =>
       for
         str     <- Json(json, Nil)._type.as[String].toOption
         subtype <- sealedTrait.subtypes.find(_.typeInfo.short == str)
-        value   <- subtype.typeclass.deserialize(json)
+        value   <- subtype.typeclass.deserialize(Some(json))
       yield value
+    }
 
   trait Deserializer[T]:
-    def deserialize(json: JValue): Option[T]
+    def deserialize(json: Option[JValue]): Option[T]
 
   def parse(str: String): Try[Json] = JParser.parseFromString(str) match
     case Success(value)                     => Success(Json(value, Nil))
@@ -130,7 +136,8 @@ case class Json(root: JValue, path: List[Int | String] = Nil) extends Dynamic de
 
   def normalize: Try[Json] =
     def deref(value: JValue, path: List[Int | String]): Try[JValue] = path match
-      case Nil => Success(value)
+      case Nil =>
+        Success(value)
       case (idx: Int) :: tail => value match
         case JArray(vs) =>
           (vs.lift(idx) match
@@ -150,8 +157,7 @@ case class Json(root: JValue, path: List[Int | String] = Nil) extends Dynamic de
       
     deref(root, path.reverse).map(Json(_, Nil))
 
-  def as[T: Json.Deserializer] = normalize.flatMap { json =>
-    summon[Json.Deserializer[T]].deserialize(json.root).fold(Failure(DeserializationException()))(Success(_))
-  }
-
+  def as[T: Json.Deserializer]: Try[T] =
+    summon[Json.Deserializer[T]].deserialize(normalize.toOption.map(_.root)).fold(Failure(DeserializationException()))(Success(_))
+  
   override def toString(): String = normalize.map(_.root.render()).getOrElse("undefined")

@@ -63,12 +63,14 @@ object Tests extends Suite("Euphemism Tests"):
       test("Read case class") {
         Json.parse("""{"x": 1, "y": "two"}""").get.as[Foo].debug
       }.assert(_ == Try(Foo(1, "two")))
-    }
-    
-    suite("Roundtrip tests") {
-      Generate.stream[Foo].take(1000).foreach { foo =>
-        test("Simple case class") {
-        foo.debug -> Json.parse(foo.json.toString).get.as[Foo].get
-        }.assert { case (a, b) => a == b }
-      }
+
+      test("Extract an option") {
+        case class OptFoo(x: Option[Int])
+        Json.parse("""{"x": 1}""").get.as[OptFoo].get.x
+      }.assert(_ == Some(1))
+      
+      test("Extract a None") {
+        case class OptFoo(x: Option[Int])
+        Json.parse("""{"y": 1}""").get.as[OptFoo].get.x
+      }.assert(_ == None)
     }
