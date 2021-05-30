@@ -21,6 +21,7 @@ import scala.quoted.*
 object Macro:
   inline def isObject[T]: Boolean = ${isObject[T]}
   inline def anns[T]: List[Any] = ${anns[T]}
+  inline def typeAnns[T]: List[Any] = ${typeAnns[T]}
   inline def paramAnns[T]: List[(String, List[Any])] = ${paramAnns[T]}
   inline def isValueClass[T]: Boolean = ${isValueClass[T]}
   inline def defaultValue[T]: List[(String, Option[Any])] = ${defaultValue[T]}
@@ -28,14 +29,14 @@ object Macro:
   inline def repeated[T]: List[(String, Boolean)] = ${repeated[T]}
   inline def typeInfo[T]: TypeInfo = ${typeInfo[T]}
 
-  def isObject[T](using qctx: Quotes, tpe: Type[T]): Expr[Boolean] =
-    import qctx.reflect.*
+  def isObject[T: Type](using Quotes): Expr[Boolean] =
+    import quotes.reflect.*
 
     Expr(TypeRepr.of[T].typeSymbol.flags.is(Flags.Module))
   
 
-  def paramAnns[T: Type](using qctx: Quotes): Expr[List[(String, List[Any])]] =
-    import qctx.reflect.*
+  def paramAnns[T: Type](using Quotes): Expr[List[(String, List[Any])]] =
+    import quotes.reflect.*
 
     val tpe = TypeRepr.of[T]
 
@@ -48,8 +49,8 @@ object Macro:
       }.filter(_._2.nonEmpty).map { (name, anns) => Expr.ofTuple(name, Expr.ofList(anns)) }
     }
 
-  def anns[T: Type](using qctx: Quotes): Expr[List[Any]] =
-    import qctx.reflect.*
+  def anns[T: Type](using Quotes): Expr[List[Any]] =
+    import quotes.reflect.*
 
     val tpe = TypeRepr.of[T]
     
@@ -59,19 +60,40 @@ object Macro:
       }.map(_.asExpr.asInstanceOf[Expr[Any]])
     }
   
-  def isValueClass[T: Type](using qctx: Quotes): Expr[Boolean] =
-    import qctx.reflect.*
+  def typeAnns[T: Type](using Quotes): Expr[List[Any]] =
+    import quotes.reflect.*
+    
+    def getAnnotations(t: TypeRepr): List[Term] = t match
+      case AnnotatedType(inner, ann) => ann :: getAnnotations(inner)
+      case _                         => Nil
+    
+    val tpe = TypeRepr.of[T]
+
+    tpe.typeSymbol.tree match
+      case ClassDef(_, _, parents, _, _) =>
+        Expr.ofList {
+          parents.collect { case t: TypeTree => t.tpe }.flatMap(getAnnotations).filter { a =>
+            a.tpe.typeSymbol.maybeOwner.isNoSymbol ||
+                a.tpe.typeSymbol.owner.fullName != "scala.annotation.internal"
+          }.map(_.asExpr.asInstanceOf[Expr[Any]])
+        }
+
+      case _ =>
+        Expr.ofList(List())
+  
+  def isValueClass[T: Type](using Quotes): Expr[Boolean] =
+    import quotes.reflect.*
     
     Expr(TypeRepr.of[T].baseClasses.contains(Symbol.classSymbol("scala.AnyVal")))
   
-  def defaultValue[T: Type](using qctx: Quotes): Expr[List[(String, Option[Any])]] =
-    import qctx.reflect._
+  def defaultValue[T: Type](using Quotes): Expr[List[(String, Option[Any])]] =
+    import quotes.reflect._
 
     // TODO: Implement RHS
-    Expr.ofList(TypeRepr.of[T].typeSymbol.caseFields.map { case ValDef(name, _, rhs) => Expr(name -> None) })
-  
-  def paramTypeAnns[T: Type](using qctx: Quotes): Expr[List[(String, List[Any])]] =
-    import qctx.reflect._
+    Expr.ofList(TypeRepr.of[T].typeSymbol.caseFields.map { case s => Expr(s.name -> None) })
+
+  def paramTypeAnns[T: Type](using Quotes): Expr[List[(String, List[Any])]] =
+    import quotes.reflect._
 
     def getAnnotations(t: TypeRepr): List[Term] = t match
       case AnnotatedType(inner, ann) => ann :: getAnnotations(inner)
@@ -90,8 +112,8 @@ object Macro:
       }.filter(_._2.nonEmpty).map { (name, annots) => Expr.ofTuple(name, Expr.ofList(annots)) }
     }
   
-  def repeated[T: Type](using qctx: Quotes): Expr[List[(String, Boolean)]] =
-    import qctx.reflect.*
+  def repeated[T: Type](using Quotes): Expr[List[(String, Boolean)]] =
+    import quotes.reflect.*
     
     def isRepeated[T](tpeRepr: TypeRepr): Boolean = tpeRepr match
       case a: AnnotatedType =>
@@ -112,16 +134,18 @@ object Macro:
     
     Expr(areRepeated)
 
-  def typeInfo[T: Type](using qctx: Quotes): Expr[TypeInfo] =
-    import qctx.reflect._
-
+  def typeInfo[T: Type](using Quotes): Expr[TypeInfo] =
+    import quotes.reflect._
+    
     def normalizedName(s: Symbol): String = if s.flags.is(Flags.Module) then s.name.stripSuffix("$") else s.name
     def name(tpe: TypeRepr) : Expr[String] = Expr(normalizedName(tpe.typeSymbol))
 
-    def owner(tpe: TypeRepr): Expr[String] =
-      if tpe.typeSymbol.maybeOwner.isNoSymbol then Expr("<no owner>")
-      else if (tpe.typeSymbol.owner == defn.EmptyPackageClass) Expr("")
-      else Expr(tpe.typeSymbol.owner.name)
+    def ownerNameChain(sym: Symbol): List[String] =
+      if sym.isNoSymbol || sym == defn.EmptyPackageClass || sym == defn.RootPackage || sym == defn.RootClass
+      then Nil
+      else ownerNameChain(sym.owner) :+ normalizedName(sym)
+
+    def owner(tpe: TypeRepr): Expr[String] = Expr(ownerNameChain(tpe.typeSymbol.maybeOwner).mkString("."))
 
     def typeInfo(tpe: TypeRepr): Expr[TypeInfo] = tpe match
       case AppliedType(tpe, args) =>
