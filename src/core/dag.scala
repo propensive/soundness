@@ -102,21 +102,20 @@ case class Dag[T] private(edgeMap: Map[T, Set[T]] = Map()):
     val inverted = invert
     
     Dag {
-      (deletions.foldLeft(edgeMap) {
+      deletions.foldLeft(edgeMap) {
         (acc, next) =>
           val indirect: Set[T] = acc(next)
           inverted(next).foldLeft(acc) {
             (acc2, ref) => acc2.updated(ref, acc2(ref) - next ++ indirect)
           }
-      }) -- deletions
+      } -- deletions
     }
 
   def hasCycle(start: T): Boolean = findCycle(start).isDefined
 
   def findCycle(start: T): Option[List[T]] =
     @tailrec
-    def recur(queue: List[(T, List[T])], finished: Set[T]): Option[List[T]] =
-      queue match
+    def recur(queue: List[(T, List[T])], finished: Set[T]): Option[List[T]] = queue match
       case Nil =>
         None
       case (vertex, trace) :: tail =>
@@ -132,11 +131,11 @@ case class Dag[T] private(edgeMap: Map[T, Set[T]] = Map()):
 
   def descendants(start: T): Either[List[T], Set[T]] =
     @tailrec
-    def recur(stack: List[T], ans: Set[T]): Set[T] =
+    def recur(stack: List[T], ans: Set[T] = Set()): Set[T] =
       stack match
       case Nil          => ans
       case head :: tail => recur(apply(head).toList ++ tail, ans + head)
 
     findCycle(start) match
-    case Some(cycle) => Left(cycle)
-    case None        => Right(apply(start).flatMap { c => recur(List(c), Set()) })
+      case Some(cycle) => Left(cycle)
+      case None        => Right(apply(start).flatMap { c => recur(List(c)) })
