@@ -47,26 +47,19 @@ case class Dag[T] private(edgeMap: Map[T, Set[T]] = Map()):
   def -(key: T): Dag[T] = Dag(edgeMap - key)
   def sources: Set[T] = edgeMap.collect { case (k, v) if v.isEmpty => k }.to(Set)
   def edges: Set[(T, T)] = edgeMap.to(Set).flatMap { (k, vs) => vs.map(k -> _) }
-  def dot: String = edges.map { (k, v) => s""""$k" -> "$v"""" }.mkString("digraph {\n  ", ";\n  ", ";\n}")
 
   def ++(dag: Dag[T]): Dag[T] =
     Dag((edgeMap.to(List) ++ dag.edgeMap.to(List)).groupBy(_._1).view.mapValues(_.flatMap(_._2).to(Set)).to(Map))
 
   def flatMap[S](fn: T => Dag[S]): Dag[S] = Dag {
-    edgeMap.flatMap {
-      (k, v) => fn(k).edgeMap.map { (k2, v2) => k2 -> (v2 ++ v.flatMap(fn(_).keys)) }
-    }
+    edgeMap.flatMap { (k, v) => fn(k).edgeMap.map { (k2, v2) => k2 -> (v2 ++ v.flatMap(fn(_).keys)) } }
   }.reduction
 
   def reduction: Dag[T] =
     val allEdges = closure.edgeMap
     val removals = for i <- keys; j <- edgeMap(i); k <- edgeMap(j) if allEdges(i)(k) yield i -> k
     
-    Dag {
-      removals.foldLeft(edgeMap) {
-        case (m, (k, v)) => m.updated(k, m(k) - v)
-      }
-    }
+    Dag(removals.foldLeft(edgeMap) { case (m, (k, v)) => m.updated(k, m(k) - v) })
 
   def closure: Dag[T] = Dag {
     keys.map { k => k -> (reachable(k) - k) }.to(Map)
@@ -105,9 +98,7 @@ case class Dag[T] private(edgeMap: Map[T, Set[T]] = Map()):
       deletions.foldLeft(edgeMap) {
         (acc, next) =>
           val indirect: Set[T] = acc(next)
-          inverted(next).foldLeft(acc) {
-            (acc2, ref) => acc2.updated(ref, acc2(ref) - next ++ indirect)
-          }
+          inverted(next).foldLeft(acc) { (acc2, ref) => acc2.updated(ref, acc2(ref) - next ++ indirect) }
       } -- deletions
     }
 
@@ -139,3 +130,5 @@ case class Dag[T] private(edgeMap: Map[T, Set[T]] = Map()):
     findCycle(start) match
       case Some(cycle) => Left(cycle)
       case None        => Right(apply(start).flatMap { c => recur(List(c)) })
+
+extension (dag: Dag[String]) def dot: Dot = Digraph(dag.edges.to(List).map(Dot.Ref(_) --> Dot.Ref(_))*)

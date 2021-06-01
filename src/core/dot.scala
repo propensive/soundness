@@ -4,37 +4,43 @@ import contextual.*
 
 import language.dynamics
 
-case class Id(key: String) extends Dynamic:
-  def applyDynamicNamed(method: "apply")(attrs: (String, String)*) =
-    Statement.Node(this, attrs.map { case (k, v) => Attribute(k, v) }*)
-  
-  def :=(id: Id): Statement.Assign = Statement.Assign(this, id)
-
-case class CompassId(id: Id, compass: Option[Compass] = None)
-case class NodeId(id: Id, port: Option[CompassId] = None):
-  def --(dest: NodeId | Statement.Subgraph): Statement.Edge = Statement.Edge(this, Target(false, dest, None))
-  def -->(dest: NodeId | Statement.Subgraph): Statement.Edge = Statement.Edge(this, Target(true, dest, None))
-
-enum Compass:
-  case North, South, East, West, NorthEast, NorthWest, SouthEast, SouthWest
-
 enum Dot:
-  case Graph(id: Option[Id], strict: Boolean, statements: Statement*)
-  case Digraph(id: Option[Id], strict: Boolean, statements: Statement*)
+  case Graph(id: Option[Dot.Id], strict: Boolean, statements: Dot.Statement*)
+  case Digraph(id: Option[Dot.Id], strict: Boolean, statements: Dot.Statement*)
 
   def serialize: String = Dot.serialize(Dot.tokenize(this))
 
-enum Statement:
-  case Node(id: Id, attrs: Attribute*)
-  case Edge(id: NodeId, rhs: Target, attrs: Attribute*)
-  case Assign(id: Id, id2: Id)
-  case Subgraph(id: Option[Id], statements: Statement*)
-
-case class Target(directed: Boolean, dest: NodeId | Statement.Subgraph, link: Option[Target])
-
-case class Attribute(key: String, value: String)
-
 object Dot:
+  case class Target(directed: Boolean, dest: Ref | Statement.Subgraph, link: Option[Target])
+  case class Attribute(key: String, value: String)
+  case class Attachment(id: Id, compass: Option[CompassPoint] = None)
+
+  case class Ref(id: Id, port: Option[Attachment] = None):
+    def --(dest: Ref | Statement.Subgraph): Dot.Statement.Edge =
+      Dot.Statement.Edge(this, Target(false, dest, None))
+    
+    def -->(dest: Ref | Statement.Subgraph): Dot.Statement.Edge =
+      Dot.Statement.Edge(this, Target(true, dest, None))
+
+  object Ref:
+    def apply(key: String): Ref = Ref(Id(key))
+
+  case class Id(key: String) extends Dynamic:
+    def applyDynamicNamed(method: "apply")(attrs: (String, String)*) =
+      Statement.Node(this, attrs.map { case (k, v) => Attribute(k, v) }*)
+    
+    def :=(id: Id): Statement.Assignment = Statement.Assignment(this, id)
+
+  enum CompassPoint:
+    case North, South, East, West, NorthEast, NorthWest, SouthEast, SouthWest
+  
+  enum Statement:
+    case Node(id: Id, attrs: Attribute*)
+    case Edge(id: Ref, rhs: Target, attrs: Attribute*)
+    case Assignment(id: Id, id2: Id)
+    case Subgraph(id: Option[Id], statements: Statement*)
+
+
   def serialize(tokens: Vector[String]): String =
     var buf: StringBuilder = StringBuilder()
     var level: Int = 0
@@ -64,8 +70,8 @@ object Dot:
 
     buf.toString
 
-  def tokenize(graph: NodeId | Dot | Target | Statement | Attribute): Vector[String] = graph match
-    case NodeId(id, port) =>
+  def tokenize(graph: Ref | Dot | Target | Statement | Attribute): Vector[String] = graph match
+    case Ref(id, port) =>
       Vector(port.fold(id.key) { p => s"${id.key}:$p" })
     
     case Attribute(key, value) =>
@@ -82,8 +88,8 @@ object Dot:
     case Statement.Edge(id, rhs, attrs*) =>
       tokenize(id) ++ tokenize(rhs)
     
-    case Statement.Assign(id, id2) =>
-      Vector(id.key, "=", id2.key, ";")
+    case Statement.Assignment(id, id2) =>
+      Vector(s""""${id.key}"""", "=", s""""${id2.key}"""", ";")
     
     case Statement.Subgraph(id, statements*) =>
       Vector("subgraph") ++ id.to(Vector).map(_.key) ++ Vector("{") ++ statements.flatMap(tokenize(_)) ++
@@ -102,32 +108,35 @@ object Dot:
       ).flatten
 
 object Digraph:
-  def apply(id: Id, statements: Statement*): Dot = Dot.Digraph(Some(id), false, statements*)
-  def strict(id: Id, statements: Statement*): Dot = Dot.Digraph(Some(id), true, statements*)
+  def apply(id: Dot.Id, statements: Dot.Statement*): Dot = Dot.Digraph(Some(id), false, statements*)
+  def apply(statements: Dot.Statement*): Dot = Dot.Digraph(None, false, statements*)
+  def strict(id: Dot.Id, statements: Dot.Statement*): Dot = Dot.Digraph(Some(id), true, statements*)
 
 object Graph:
-  def apply(id: Id, statements: Statement*): Dot = Dot.Graph(Some(id), false, statements*)
-  def strict(id: Id, statements: Statement*): Dot = Dot.Graph(Some(id), true, statements*)
+  def apply(id: Dot.Id, statements: Dot.Statement*): Dot = Dot.Graph(Some(id), false, statements*)
+  def strict(id: Dot.Id, statements: Dot.Statement*): Dot = Dot.Graph(Some(id), true, statements*)
 
 object Subgraph:
-  def apply(id: Id)(statements: Statement*): Statement.Subgraph = Statement.Subgraph(Some(id), statements*)
-  def apply(statements: Statement*): Statement.Subgraph = Statement.Subgraph(None, statements*)
+  def apply(id: Dot.Id, statements: Dot.Statement*): Dot.Statement.Subgraph =
+    Dot.Statement.Subgraph(Some(id), statements*)
+  
+  def apply(statements: Dot.Statement*): Dot.Statement.Subgraph = Dot.Statement.Subgraph(None, statements*)
 
-object NodeParser extends Interpolator[Unit, Option[NodeId], NodeId]:
-  def parse(state: Option[NodeId], next: String): Some[NodeId] = Some { next.split(":").to(List) match
+object NodeParser extends Interpolator[Unit, Option[Dot.Ref], Dot.Ref]:
+  def parse(state: Option[Dot.Ref], next: String): Some[Dot.Ref] = Some { next.split(":").to(List) match
     case List(id) =>
-      NodeId(Id(id))
+      Dot.Ref(Dot.Id(id))
     
     case List(id, port) =>
-      NodeId(Id(id), Some(CompassId(Id(port))))
+      Dot.Ref(Dot.Id(id), Some(Dot.Attachment(Dot.Id(port))))
     
-    case List(id, port, compass@("n" | "e" | "s" | "w" | "ne" | "nw" | "se" | "sw")) =>
-      NodeId(Id(id), Some(CompassId(Id(port), Some(Compass.valueOf(compass)))))
+    case List(id, port, point@("n" | "e" | "s" | "w" | "ne" | "nw" | "se" | "sw")) =>
+      Dot.Ref(Dot.Id(id), Some(Dot.Attachment(Dot.Id(port), Some(Dot.CompassPoint.valueOf(point.capitalize)))))
     
     case _ =>
       throw ParseError("not a valid node ID")
   }
   
-  def initial: Option[NodeId] = None
-  def complete(value: Option[NodeId]): NodeId = value.get
-  def insert(state: Option[NodeId], value: Option[Unit]): Option[NodeId] = state
+  def initial: Option[Dot.Ref] = None
+  def complete(value: Option[Dot.Ref]): Dot.Ref = value.get
+  def insert(state: Option[Dot.Ref], value: Option[Unit]): Option[Dot.Ref] = state
