@@ -72,7 +72,7 @@ object Dot:
 
   def tokenize(graph: Ref | Dot | Target | Statement | Attribute): Vector[String] = graph match
     case Ref(id, port) =>
-      Vector(port.fold(id.key) { p => s"${id.key}:$p" })
+      Vector(port.fold(s""""${id.key}"""") { p => s""""${id.key}:$p""""" })
     
     case Attribute(key, value) =>
       Vector(s"""$key="$value"""")
@@ -83,7 +83,7 @@ object Dot:
 
     case Statement.Node(id, attrs*) =>
       Vector(s""""${id.key}"""") ++ (if attrs.isEmpty then Vector() else (Vector("[") ++
-          attrs.to(Vector).flatMap(tokenize(_) :+ ",").init ++ Vector("]", ";")))
+          attrs.to(Vector).flatMap(tokenize(_) :+ ",").init ++ Vector("]"))) ++ Vector(";")
     
     case Statement.Edge(id, rhs, attrs*) =>
       tokenize(id) ++ tokenize(rhs)
