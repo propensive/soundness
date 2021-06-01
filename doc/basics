@@ -1,4 +1,4 @@
-Acyclicity provides a monadic representation of a directed, acyclic graph (DAG) called `Dag`.
+Acyclicity provides a monadic representation of a directed, acyclic graph (DAG) called `Dag`, and support for generating [DOT](https://bit.ly/3vFumLW) files which can be rendered with tools such as [GraphViz](https://graphviz.org/).
 
 The `Dag[T]` type represents a mapping from nodes of type `T` to zero, one or many other nodes in the graph, and can be constructed by providing the mapping from each node to its `Set` of dependent nodes, or by calling,
 ```scala
@@ -38,6 +38,15 @@ The method `Dag#reduction` will calculate the transitive reduction of the graph,
 The duel of this operation is the transitive closure, which adds direct edges between each pair of nodes between which a transitive path exists. This is available with the `Dag#closure` method.
 
 A list of nodes will be returned in topologically-sorted order by calling `Dag#sorted`.
+
+## DOT output
+
+An extension method, `dot`, on `Dag`s of `String`s will produce a `Dot` instance, an AST of the DOT code necessary to render a graph. This can then be serialized to a `String` with the `serialize` method.
+
+Typical usage would be to first convert a `Dag[T]` to a `Dag[String]`, then produce the `Dot` instance and serialize it, for example:
+```scala
+println(dag.map(_.name).dot.serialize)
+```
 
 ## Limitations
 

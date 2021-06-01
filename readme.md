@@ -10,20 +10,22 @@
 
 # Acyclicity
 
-Acyclicity provides a single data structure, `Dag[T]`, representing a graph of nodes of type `T`, with monadic operations and several other utility methods.
+Acyclicity provides a single data structure, `Dag[T]`, representing a graph of nodes of type `T`, with monadic operations and several other utility methods, plus the means to generate DOT for input to GraphViz.
 
 ## Features
 
 - provides a simple immutable monadic implementation of a DAG
 - implements `map`, `flatMap` and `filter` for `Dag`s
 - can deduce a partial order on a graph
+- generates `Dot` instances representing a `DOT` abstract syntax tree
+- serializes `Dot` instances to `String`s, which can be rendered by GraphViz
 - can find the transitive closure, transitive reduction and inverse of a graph
 - methods for addition and subtraction of graph nodes
 
 
 ## Getting Started
 
-Acyclicity provides a monadic representation of a directed, acyclic graph (DAG) called `Dag`.
+Acyclicity provides a monadic representation of a directed, acyclic graph (DAG) called `Dag`, and support for generating [DOT](https://bit.ly/3vFumLW) files which can be rendered with tools such as [GraphViz](https://graphviz.org/).
 
 The `Dag[T]` type represents a mapping from nodes of type `T` to zero, one or many other nodes in the graph, and can be constructed by providing the mapping from each node to its `Set` of dependent nodes, or by calling,
 ```scala
@@ -64,6 +66,15 @@ The duel of this operation is the transitive closure, which adds direct edges be
 
 A list of nodes will be returned in topologically-sorted order by calling `Dag#sorted`.
 
+## DOT output
+
+An extension method, `dot`, on `Dag`s of `String`s will produce a `Dot` instance, an AST of the DOT code necessary to render a graph. This can then be serialized to a `String` with the `serialize` method.
+
+Typical usage would be to first convert a `Dag[T]` to a `Dag[String]`, then produce the `Dot` instance and serialize it, for example:
+```scala
+println(dag.map(_.name).dot.serialize)
+```
+
 ## Limitations
 
 This library is incomplete, inadequately tested and subject to further development, and is recommended to be used by developers who do not mind examining the source code to diagnose unexpected behavior.
@@ -90,10 +101,10 @@ or imported into an existing layer with,
 ```
 fury layer import -i propensive/acyclicity
 ```
-A binary is available on Maven Central as `com.propensive:acyclicity-core_<scala-version>:0.1.0`. This may be added
+A binary is available on Maven Central as `com.propensive:acyclicity-core_<scala-version>:0.2.0`. This may be added
 to an [sbt](https://www.scala-sbt.org/) build with:
 ```
-libraryDependencies += "com.propensive" %% "acyclicity-core" % "0.1.0"
+libraryDependencies += "com.propensive" %% "acyclicity-core" % "0.2.0"
 ```
 
 ## Contributing
