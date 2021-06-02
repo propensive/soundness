@@ -10,6 +10,10 @@ enum Dot:
 
   def serialize: String = Dot.serialize(Dot.tokenize(this))
 
+  def add(newStatements: Dot.Statement*): Dot = this match
+    case Dot.Graph(id, strict, statements*)   => Dot.Graph(id, strict, (statements ++ newStatements)*)
+    case Dot.Digraph(id, strict, statements*) => Dot.Digraph(id, strict, (statements ++ newStatements)*)
+
 object Dot:
   case class Target(directed: Boolean, dest: Ref | Statement.Subgraph, link: Option[Target])
   case class Attribute(key: String, value: String)
@@ -42,7 +46,7 @@ object Dot:
 
 
   def serialize(tokens: Vector[String]): String =
-    var buf: StringBuilder = StringBuilder()
+    val buf: StringBuilder = StringBuilder()
     var level: Int = 0
     var end: Boolean = true
 
