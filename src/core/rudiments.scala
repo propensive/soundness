@@ -18,6 +18,8 @@ package rudiments
 
 import java.net.{URLEncoder, URLDecoder}
 
+import scala.collection.Factory
+
 import language.dynamics
 
 type Bytes = IArray[Byte]
@@ -38,7 +40,7 @@ extension [T](value: T)
   def triple: (T, T, T) = (value, value, value)
 
 extension (value: String)
-  def populated: Option[String] = if(value.isEmpty) None else Some(value)
+  def populated: Option[String] = if value.isEmpty then None else Some(value)
   def cut(delimiter: String): IArray[String] = IArray.from(value.split(delimiter))
   def cut(delimiter: String, limit: Int): IArray[String] = IArray.from(value.split(delimiter, limit))
   def bytes: IArray[Byte] = IArray.from(value.getBytes("UTF-8"))
@@ -46,7 +48,7 @@ extension (value: String)
   def urlEncode: String = URLEncoder.encode(value, "UTF-8")
   def urlDecode: String = URLDecoder.decode(value, "UTF-8")
 
-extension (values: Traversable[String])
+extension (values: Iterable[String])
   def join: String = values.mkString
   def join(separator: String): String = values.mkString(separator)
   def join(left: String, separator: String, right: String): String = values.mkString(left, separator, right)
@@ -55,6 +57,13 @@ extension (values: Traversable[String])
     case 0 => ""
     case 1 => values.head
     case _ => values.init.mkString(separator)+last+values.last
+
+extension [T, Coll[T] <: Iterable[T]](values: Coll[T])
+  def mtwin(using factory: Factory[(T, T), Coll[(T, T)]]): Coll[(T, T)] =
+    values.map(_.twin).foldLeft(factory.newBuilder)(_ += _).result()
+  
+  def mtriple(using factory: Factory[(T, T, T), Coll[(T, T, T)]]): Coll[(T, T, T)] =
+    values.map(_.triple).foldLeft(factory.newBuilder)(_ += _).result()
 
 class Recur[T](fn: => T => T):
   def apply(value: T): T = fn(value)
