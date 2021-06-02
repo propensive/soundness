@@ -92,7 +92,9 @@ extension (ctx: StringContext)
 case class Property(name: String) extends Dynamic:
   def apply(): Option[String] = Option(System.getProperty(name))
   def selectDynamic(key: String): Property = Property(s"$name.$key")
+  def applyDynamic(key: String)(): Option[String] = selectDynamic(key).apply()
 
 object Sys extends Dynamic:
   def selectDynamic(key: String): Property = Property(key)
+  def applyDynamic(key: String)(): Option[String] = selectDynamic(key).apply()
   
