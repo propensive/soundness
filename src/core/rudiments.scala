@@ -18,6 +18,8 @@ package rudiments
 
 import java.net.{URLEncoder, URLDecoder}
 
+import language.dynamics
+
 type Bytes = IArray[Byte]
 type Chunked = LazyList[Bytes]
 
@@ -86,3 +88,11 @@ extension (obj: Double.type)
 
 extension (ctx: StringContext)
   def str(strings: String*): String = ctx.parts.head + strings.zip(ctx.parts.tail).map(_+_).mkString
+
+case class Property(name: String) extends Dynamic:
+  def apply(): Option[String] = Option(System.getProperty(name))
+  def selectDynamic(key: String): Property = Property(s"$name.$key")
+
+object Sys extends Dynamic:
+  def selectDynamic(key: String): Property = Property(key)
+  

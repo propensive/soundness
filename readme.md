@@ -81,6 +81,15 @@ List("one", "two", "three").join(", ", " or maybe ")
 ```
 will produce the string `one, two or maybe three`.
 
+## Lightweight system property access
+
+Many JVM system properties are available in the map, `System.getProperties` and are typically given identifiers
+written in a dot-notation style, such as `user.dir`. Rudiments provides syntactic sugar for accessing these
+dynamically through the `Sys` object, for example,
+```scala
+val pwd: Option[String] = Sys.user.dir()
+```
+
 ## `unit`
 
 Often a side-effecting expression returns a value which is not used at a particular call site, and can be
@@ -109,6 +118,7 @@ every substitution to be a `String`.
 
 These two extension methods produce a two-tuple and a three-tuple (respectively) of repetitions of the value it
 is applied to. This can be useful in a subsequent `map` operation.
+
 
 ## Status
 
