@@ -111,7 +111,7 @@ object Json extends Dynamic:
 
     def split[T](sealedTrait: SealedTrait[Deserializer, T]): Deserializer[T] = _.flatMap { json =>
       for
-        str     <- Json(json, Nil)._type.as[String].toOption
+        str     <- Some(Json(json, Nil)._type.as[String])
         subtype <- sealedTrait.subtypes.find(_.typeInfo.short == str)
         value   <- subtype.typeclass.deserialize(Some(json))
       yield value
@@ -120,10 +120,10 @@ object Json extends Dynamic:
   trait Deserializer[T]:
     def deserialize(json: Option[JValue]): Option[T]
 
-  def parse(str: String): Try[Json] = JParser.parseFromString(str) match
-    case Success(value)                     => Success(Json(value, Nil))
-    case Failure(error: JawnParseException) => Failure(ParseException(error.line, error.col, error.msg))
-    case Failure(error)                     => Failure(error)
+  def parse(str: String): Json = JParser.parseFromString(str) match
+    case Success(value)                     => Json(value, Nil)
+    case Failure(error: JawnParseException) => throw ParseException(error.line, error.col, error.msg)
+    case Failure(error)                     => throw error
 
   def applyDynamicNamed[T <: String](methodName: "of")(elements: (String, Json)*): Json =
     Json(JObject(mutable.Map(elements.map { case (k, v) => k -> v.json.root }: _*)), Nil)
@@ -134,30 +134,31 @@ case class Json(root: JValue, path: List[Int | String] = Nil) extends Dynamic de
   def selectDynamic(field: String): Json = this(field)
   def applyDynamic(field: String)(idx: Int): Json = this(field)(idx)
 
-  def normalize: Try[Json] =
-    def deref(value: JValue, path: List[Int | String]): Try[JValue] = path match
+  def normalize: Json =
+    def deref(value: JValue, path: List[Int | String]): JValue = path match
       case Nil =>
-        Success(value)
+        value
       case (idx: Int) :: tail => value match
         case JArray(vs) =>
-          (vs.lift(idx) match
-            case None        => Failure(IndexNotFound(idx))
-            case Some(value) => Success(value)
-          ).flatMap(deref(_, tail))
+          deref((vs.lift(idx) match
+            case None        => throw IndexNotFound(idx)
+            case Some(value) => value
+          ), tail)
         case _ =>
-          Failure(UnexpectedType(JsonPrimitive.Array))
+          throw UnexpectedType(JsonPrimitive.Array)
       case (field: String) :: tail => value match
         case JObject(vs) =>
-          (vs.get(field) match
-            case None        => Failure(LabelNotFound(field))
-            case Some(value) => Success(value)
-          ).flatMap(deref(_, tail))
+          deref((vs.get(field) match
+            case None        => throw LabelNotFound(field)
+            case Some(value) => value
+          ), tail)
         case _ =>
-          Failure(UnexpectedType(JsonPrimitive.Object))
+          throw UnexpectedType(JsonPrimitive.Object)
       
-    deref(root, path.reverse).map(Json(_, Nil))
+    Json(deref(root, path.reverse), Nil)
 
-  def as[T: Json.Deserializer]: Try[T] =
-    summon[Json.Deserializer[T]].deserialize(normalize.toOption.map(_.root)).fold(Failure(DeserializationException()))(Success(_))
+  def as[T: Json.Deserializer]: T =
+    summon[Json.Deserializer[T]].deserialize(Some(normalize.root)).getOrElse(throw DeserializationException())
   
-  override def toString(): String = normalize.map(_.root.render()).getOrElse("undefined")
+  override def toString(): String =
+    try normalize.root.render() catch _ => "undefined"

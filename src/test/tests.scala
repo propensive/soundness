@@ -9,28 +9,28 @@ object Tests extends Suite("Euphemism Tests"):
   def run(using Runner): Unit =
     suite("Parsing tests") {
       test("Parse a number") {
-        Json.parse("42").get.as[Int].get
+        Json.parse("42").as[Int]
       }.assert(_ == 42)
 
       test("Parse a string") {
-        Json.parse("\"string\"").get.as[String].get
+        Json.parse("\"string\"").as[String]
       }.assert(_ == "string")
     
       test("Parse true") {
-        Json.parse("true").get.as[Boolean].get
+        Json.parse("true").as[Boolean]
       }.assert(identity)
 
       test("Parse false") {
-        Json.parse("false").get.as[Boolean].get
+        Json.parse("false").as[Boolean]
       }.assert(!_)
 
       test("Parse float") {
-        Json.parse("3.1415").get.as[Float].get
+        Json.parse("3.1415").as[Float]
       }.assert(_ == 3.1415f)
       
       test("Parse double") {
-        Json.parse("3.1415926").get.as[Double]
-      }.assert(_ == Try(3.1415926))
+        Json.parse("3.1415926").as[Double]
+      }.assert(_ == 3.1415926)
     }
 
     suite("Serialization") {
@@ -58,19 +58,19 @@ object Tests extends Suite("Euphemism Tests"):
 
       test("Parse from JSON") {
         Json.parse("""{"x": 1}""").debug
-      }.assert(_ == Success(Json.of(x = 1.json)))
+      }.assert(_ == Json.of(x = 1.json))
 
       test("Read case class") {
-        Json.parse("""{"x": 1, "y": "two"}""").get.as[Foo].debug
-      }.assert(_ == Try(Foo(1, "two")))
+        Json.parse("""{"x": 1, "y": "two"}""").as[Foo].debug
+      }.assert(_ == Foo(1, "two"))
 
       test("Extract an option") {
         case class OptFoo(x: Option[Int])
-        Json.parse("""{"x": 1}""").get.as[OptFoo].get.x
+        Json.parse("""{"x": 1}""").as[OptFoo].x
       }.assert(_ == Some(1))
       
       test("Extract a None") {
         case class OptFoo(x: Option[Int])
-        Json.parse("""{"y": 1}""").get.as[OptFoo].get.x
+        Json.parse("""{"y": 1}""").as[OptFoo].x
       }.assert(_ == None)
     }
