@@ -18,7 +18,7 @@ package rudiments
 
 import java.net.{URLEncoder, URLDecoder}
 
-import scala.collection.Factory
+import scala.collection.IterableFactory
 
 import language.dynamics
 
@@ -57,13 +57,6 @@ extension (values: Iterable[String])
     case 0 => ""
     case 1 => values.head
     case _ => values.init.mkString(separator)+last+values.last
-
-extension [T, Coll[T] <: Iterable[T]](values: Coll[T])
-  def mtwin(using factory: Factory[(T, T), Coll[(T, T)]]): Coll[(T, T)] =
-    values.map(_.twin).foldLeft(factory.newBuilder)(_ += _).result()
-  
-  def mtriple(using factory: Factory[(T, T, T), Coll[(T, T, T)]]): Coll[(T, T, T)] =
-    values.map(_.triple).foldLeft(factory.newBuilder)(_ += _).result()
 
 class Recur[T](fn: => T => T):
   def apply(value: T): T = fn(value)
