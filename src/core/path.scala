@@ -181,10 +181,12 @@ object Path:
       try if Files.isSymbolicLink(javaPath) then Files.delete(javaPath) else throw NotSymbolicLink(path)
       catch e => throw FileWriteError(path, e)
 
-    def writeSync(content: String, append: Boolean = false): Unit =
-      val writer = ji.BufferedWriter(ji.FileWriter(javaPath.toFile, append))
-      try writer.write(content) catch case e => throw FileWriteError(path, e)
-      finally try writer.close() catch _ => ()
+    def append[T: Writable](content: T): Unit = write(content, true)
+
+    def write[T: Writable](content: T, append: Boolean = false): Unit =
+      val out: ji.BufferedOutputStream = ji.BufferedOutputStream(ji.FileOutputStream(javaPath.toFile, append))
+      try summon[Writable[T]].write(out, content) catch case e => throw FileWriteError(path, e)
+      finally try out.close() catch _ => ()
 
     def lines(): Iterator[String] =
       try scala.io.Source.fromFile(javaFile).getLines() catch e => throw FileReadError(path, e)
@@ -230,6 +232,20 @@ object Path:
 
     //TODO consider wrapping into a buffered stream
     def inputStream(): InputStream = Files.newInputStream(javaPath)
+
+object Writable:
+  given Writable[LazyList[IArray[Byte]]] =
+    (out, stream) => stream.map(_.asInstanceOf[Array[Byte]]).foreach(out.write(_))
+  
+  given lazyListStrings: Writable[LazyList[String]] = (out, stream) =>
+    val writer = ji.OutputStreamWriter(out)
+    stream.foreach(writer.write(_))
+
+  given lazyListString: Writable[String] = (out, string) => ji.OutputStreamWriter(out).write(string)
+  given lazyListIarrayBytes: Writable[IArray[Byte]] = (out, bytes) => out.write(bytes.asInstanceOf[Array[Byte]])
+
+trait Writable[T]:
+  def write(stream: ji.BufferedOutputStream, value: T): Unit
 
 case class ByteSize(bytes: Long):
   def +(that: ByteSize): ByteSize = ByteSize(bytes + that.bytes)
