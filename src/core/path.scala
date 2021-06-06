@@ -40,6 +40,8 @@ enum Recursion:
 
 opaque type Path = String
 
+type raises[T, E <: Exception] = T
+
 object Path:
   def apply(jpath: JavaPath): Path = Path(jpath.toString match
     case ""    => "."
@@ -96,18 +98,18 @@ object Path:
 
     def size: ByteSize = ByteSize(javaFile.length)
 
-    def setReadOnly(recursion: Recursion): Unit =
+    def setReadOnly(recursion: Recursion): Unit raises UnchangeablePermissions =
       if !javaFile.setWritable(false) then throw UnchangeablePermissions(path)
       if recursion == Recursion.Recursive then children.foreach(_.setWritable(recursion))
 
-    def setWritable(recursion: Recursion): Unit =
+    def setWritable(recursion: Recursion): Unit raises UnchangeablePermissions =
       if !javaFile.setWritable(true) then throw UnchangeablePermissions(path)
       if recursion == Recursion.Recursive then children.foreach(_.setWritable(recursion))
 
     def uniquify(): Path =
       if !exists() then path else LazyList.from(2).map { i => rename(_+"-"+i) }.find(!_.exists()).get
 
-    def hardLink(dest: Path): Unit =
+    def hardLink(dest: Path): Unit raises PathAlreadyExists =
       if dest.exists() then throw PathAlreadyExists(dest)
       try Files.createLink(javaPath, dest.javaPath).unit
       catch case ex: java.nio.file.NoSuchFileException => copyTo(dest).unit
@@ -132,12 +134,12 @@ object Path:
     def readable: Boolean = Files.isReadable(javaPath)
     def writable: Boolean = Files.isWritable(javaPath)
 
-    def setExecutable(exec: Boolean): Unit =
+    def setExecutable(exec: Boolean): Unit raises UnchangeablePermissions =
       try javaFile.setExecutable(exec).unit catch e => throw UnchangeablePermissions(path)
 
     def resolve(rel: Path): Path = Path(javaPath.resolve(rel.javaPath))
 
-    def moveTo(dest: Path): Unit =
+    def moveTo(dest: Path): Unit raises FileWriteError =
       try
         path.parent.extant()
         Files.move(javaPath, dest.javaPath, StandardCopyOption.REPLACE_EXISTING).unit
@@ -166,7 +168,7 @@ object Path:
         subdirs.flatMap(_.findSubdirsContaining(pred)) ++ found
       }.getOrElse(Set())
 
-    def delete(): Unit =
+    def delete(): Unit raises FileWriteError =
       def delete(file: JavaFile): Boolean =
         if Files.isSymbolicLink(file.toPath) then file.delete()
         else if file.isDirectory then file.listFiles.forall(delete(_)) && file.delete()
@@ -177,34 +179,38 @@ object Path:
     def linkTarget(): Option[Path] =
       if Files.isSymbolicLink(javaPath) then Some(Path(javaPath.toRealPath())) else None
 
-    def unlink(): Unit =
+    def unlink(): Unit raises NotSymbolicLink | FileWriteError =
       try if Files.isSymbolicLink(javaPath) then Files.delete(javaPath) else throw NotSymbolicLink(path)
       catch e => throw FileWriteError(path, e)
 
     def append[T: Writable](content: T): Unit = write(content, true)
 
-    def write[T: Writable](content: T, append: Boolean = false): Unit =
-      val out: ji.BufferedOutputStream = ji.BufferedOutputStream(ji.FileOutputStream(javaPath.toFile, append))
+    def write[T: Writable](content: T, append: Boolean = false): Unit raises FileWriteError =
+      val out = ji.BufferedOutputStream(ji.FileOutputStream(javaPath.toFile, append))
       try summon[Writable[T]].write(out, content) catch case e => throw FileWriteError(path, e)
       finally try out.close() catch _ => ()
 
-    def lines(): Iterator[String] =
+    def read[T: Readable](limit: Int = 65536): T =
+      val in = ji.BufferedInputStream(ji.FileInputStream(javaPath.toFile))
+      try summon[Readable[T]].read(in, limit) finally try in.close() catch _ => ()
+
+    def lines(): Iterator[String] raises FileReadError =
       try scala.io.Source.fromFile(javaFile).getLines() catch e => throw FileReadError(path, e)
     
-    def bytes(): IArray[Byte] =
+    def bytes(): IArray[Byte] raises FileReadError =
       try IArray.from(Files.readAllBytes(javaPath)) catch e => throw FileReadError(path, e)
 
-    def copyTo(dest: Path): Path =
+    def copyTo(dest: Path): Path raises PathAlreadyExists | FileWriteError =
       if dest.exists() then throw PathAlreadyExists(dest)
       try
         Files.walkFileTree(javaPath, Path.CopyFileVisitor(javaPath, dest.javaPath))
         dest
       catch e => throw FileWriteError(path, e)
 
-    def hardLinkTo(dest: Path): Unit =
+    def hardLinkTo(dest: Path): Unit raises FileWriteError =
       try Files.createLink(dest.javaPath, javaPath) catch e => throw FileWriteError(path, e)
 
-    def hardLinkCount(): Int =
+    def hardLinkCount(): Int raises FileReadError =
       try Files.getAttribute(javaPath, "unix:nlink") match
         case i: Int => i
       catch e => throw FileReadError(path, e)
@@ -226,7 +232,7 @@ object Path:
     def parent: Path = javaPath.getParent.toString
     def rename(fn: String => String): Path = parent / fn(name)
     
-    def symlinkTo(target: Path): Unit =
+    def symlinkTo(target: Path): Unit raises FileWriteError =
       try Files.createSymbolicLink(target.javaPath, javaPath)
       catch case e: ji.IOException => throw FileWriteError(path, e)
 
@@ -237,18 +243,79 @@ object Writable:
   given Writable[LazyList[IArray[Byte]]] =
     (out, stream) => stream.map(_.asInstanceOf[Array[Byte]]).foreach(out.write(_))
   
-  given lazyListStrings: Writable[LazyList[String]] = (out, stream) =>
-    val writer = ji.OutputStreamWriter(out)
+  given lazyListStrings(using enc: Encoding): Writable[LazyList[String]] = (out, stream) =>
+    val writer = ji.OutputStreamWriter(out, enc.name)
     stream.foreach(writer.write(_))
 
-  given lazyListString: Writable[String] = (out, string) => ji.OutputStreamWriter(out).write(string)
+  given lazyListString(using enc: Encoding): Writable[String] =
+    (out, string) => ji.OutputStreamWriter(out, enc.name).write(string)
+  
   given lazyListIarrayBytes: Writable[IArray[Byte]] = (out, bytes) => out.write(bytes.asInstanceOf[Array[Byte]])
 
 trait Writable[T]:
   def write(stream: ji.BufferedOutputStream, value: T): Unit
 
-case class ByteSize(bytes: Long):
-  def +(that: ByteSize): ByteSize = ByteSize(bytes + that.bytes)
+object Readable:
+  given Readable[LazyList[IArray[Byte]]] = (in, limit) =>
+    def read(): LazyList[IArray[Byte]] =
+      val buf = new Array[Byte](in.available.min(limit))
+      val count = in.read(buf, 0, buf.length)
+      if count < 0 then LazyList(buf.asInstanceOf[IArray[Byte]]) else buf.asInstanceOf[IArray[Byte]] #:: read()
+    
+    read()
+    
+      
+  
+  given lazyListStrings(using enc: Encoding): Readable[LazyList[String]] = (in, limit) =>
+    def read(prefix: Array[Byte]): LazyList[String] =
+      val buf = new Array[Byte](in.available.min(limit) + prefix.length)
+      if prefix.length > 0 then System.arraycopy(prefix, 0, buf, 0, prefix.length)
+      val count = in.read(buf, prefix.length, buf.length - prefix.length)
+      if count + prefix.length < 0 then LazyList(String(buf, enc.name))
+      else
+        val carry = enc.carry(buf)
+        (if carry == 0 then String(buf, enc.name) else String(buf, 0, buf.length - carry, enc.name)) #:: read(buf.takeRight(carry))
+    
+    read(Array.empty[Byte])
+
+trait Readable[T]:
+  def read(stream: ji.BufferedInputStream, limit: Int = 65536): T
+
+object encodings:
+  given Utf8: Encoding with
+    def carry(arr: Array[Byte]): Int =
+      val len = arr.length
+      def last = arr(len - 1)
+      def last2 = arr(len - 2)
+      def last3 = arr(len - 3)
+      
+      if len > 0 && ((last & -32) == -64 || (last & -16) == -32 || (last & -8) == -16) then 1
+      else if len > 1 && ((last2 & -16) == -32 || (last2 & -8) == -16) then 2
+      else if len > 2 && ((last3 & -8) == -16) then 3
+      else 0
+    
+    def name: String = "UTF-8"
+  
+  given Ascii: Encoding with
+    def carry(arr: Array[Byte]): Int = 0
+    def name: String = "ASCII"
+  
+  given `ISO-8859-1`: Encoding with
+    def name: String = "ISO-8859-1"
+    def carry(arr: Array[Byte]): Int = 0
+
+trait Encoding:
+  def name: String
+  def carry(array: Array[Byte]): Int
+
+opaque type ByteSize = Long
+
+object ByteSize:
+  def apply(bytes: Long): ByteSize = bytes
+
+  extension (byteSize: ByteSize)
+    def +(that: ByteSize): ByteSize = byteSize + that
+    def value: Long = byteSize
 
 case class FileNotFound(path: Path) extends Exception(str"the file or directory ${path.filename} was not found")
 case class PathAlreadyExists(path: Path) extends Exception(str"the path ${path.filename} already exists")
