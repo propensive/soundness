@@ -193,9 +193,6 @@ object Path:
       val in = ji.BufferedInputStream(ji.FileInputStream(javaPath.toFile))
       try summon[Readable[T]].read(in, limit) catch case e => throw FileReadError(path, e)
 
-    def lines(): Iterator[String] raises FileReadError =
-      try scala.io.Source.fromFile(javaFile).getLines() catch e => throw FileReadError(path, e)
-    
     def bytes(): IArray[Byte] raises FileReadError =
       try IArray.from(Files.readAllBytes(javaPath)) catch e => throw FileReadError(path, e)
 
@@ -235,24 +232,22 @@ object Path:
       try Files.createSymbolicLink(target.javaPath, javaPath)
       catch case e: ji.IOException => throw FileWriteError(path, e)
 
-    //TODO consider wrapping into a buffered stream
-    def inputStream(): InputStream = Files.newInputStream(javaPath)
-
 object Writable:
   given Writable[LazyList[IArray[Byte]]] =
     (out, stream) => stream.map(_.asInstanceOf[Array[Byte]]).foreach(out.write(_))
   
-  given lazyListStrings(using enc: Encoding): Writable[LazyList[String]] = (out, stream) =>
+  given (using enc: Encoding): Writable[LazyList[String]] = (out, stream) =>
     val writer = ji.OutputStreamWriter(out, enc.name)
     stream.foreach(writer.write(_))
 
-  given lazyListString(using enc: Encoding): Writable[String] =
+  given (using enc: Encoding): Writable[String] =
     (out, string) => ji.OutputStreamWriter(out, enc.name).write(string)
   
-  given lazyListIarrayBytes: Writable[IArray[Byte]] = (out, bytes) => out.write(bytes.asInstanceOf[Array[Byte]])
+  given Writable[IArray[Byte]] = (out, bytes) => out.write(bytes.asInstanceOf[Array[Byte]])
 
 trait Writable[T]:
   def write(stream: ji.BufferedOutputStream, value: T): Unit
+  def contramap[S](fn: S => T): Writable[S] = (stream, value) => write(stream, fn(value))
 
 object Readable:
   given Readable[LazyList[IArray[Byte]]] = (in, limit) =>
@@ -266,28 +261,32 @@ object Readable:
     
     read()
     
-      
-  
-  given lazyListStrings(using enc: Encoding): Readable[LazyList[String]] = (in, limit) =>
-    def read(prefix: Array[Byte]): LazyList[String] =
-      val avail = in.available
-      if avail == 0 then LazyList()
-      else
-        val buf = new Array[Byte](in.available.min(limit) + prefix.length)
-        if prefix.length > 0 then System.arraycopy(prefix, 0, buf, 0, prefix.length)
-        val count = in.read(buf, prefix.length, buf.length - prefix.length)
-        if count + prefix.length < 0 then LazyList(String(buf, enc.name))
+  given (using enc: Encoding): Readable[LazyList[String]] = (in, limit) =>
+    def read(prefix: Array[Byte], remaining: Int): LazyList[String] =
+      try
+        val avail = in.available
+        if avail == 0 then LazyList()
+        else if avail > remaining then throw TooMuchData()
         else
-          val carry = enc.carry(buf)
-          (if carry == 0 then String(buf, enc.name) else String(buf, 0, buf.length - carry, enc.name)) #::
-              read(buf.takeRight(carry))
+          val buf = new Array[Byte](in.available.min(limit) + prefix.length)
+          if prefix.length > 0 then System.arraycopy(prefix, 0, buf, 0, prefix.length)
+          val count = in.read(buf, prefix.length, buf.length - prefix.length)
+          if count + prefix.length < 0 then LazyList(String(buf, enc.name))
+          else
+            val carry = enc.carry(buf)
+            (if carry == 0 then String(buf, enc.name) else String(buf, 0, buf.length - carry, enc.name)) #::
+                read(buf.takeRight(carry), limit - buf.length)
+      catch IOException => throw Interrupted()
     
-    read(Array.empty[Byte])
+    read(Array.empty[Byte], limit)
 
-  given string(using enc: Encoding): Readable[String] = lazyListStrings.read(_, _).head
+  given (using enc: Encoding): Readable[String] = (in, limit) =>
+    val stream = summon[Readable[LazyList[String]]].read(in, limit)
+    if stream.length > 1 then throw TooMuchData() else stream.head
 
 trait Readable[T]:
   def read(stream: ji.BufferedInputStream, limit: Int = 65536): T
+  def map[S](fn: T => S): Readable[S] = (stream, limit) => fn(read(stream, limit))
 
 object encodings:
   given Utf8: Encoding with
@@ -328,6 +327,8 @@ object ByteSize:
 case class FileNotFound(path: Path) extends Exception(str"the file or directory ${path.filename} was not found")
 case class PathAlreadyExists(path: Path) extends Exception(str"the path ${path.filename} already exists")
 case class NotSymbolicLink(path: Path) extends Exception(str"the path ${path.filename} is not a symbolic link")
+case class TooMuchData() extends Exception(str"the stream contained too much data")
+case class Interrupted() extends Exception(str"the stream was interrupted")
 
 case class FileWriteError(path: Path, e: Throwable) extends Exception(str"could not write to ${path.filename}"):
   override def getCause: Throwable = e

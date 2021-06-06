@@ -10,17 +10,46 @@
 
 # Jovian
 
-
+__Jovian__ is a simple library for performing disk I/O with Scala. It provides access to most filesystem operations through the `Path` type—an abstract representation of a file or a directory—plus typeclass-based `read` and `write` methods which can use ad-hoc types, including streaming types like `LazyList`. Jovian is designed to take advantage of Scala 3's safer exceptions.
 
 ## Features
 
-TBC
+- simple API for most common filesystem operations
+- read from and write to files on disk with a variety of different types
+- simple streaming to and from disk with `LazyList`s
+- employs `IArray[Byte]` for fast, random-access, immutable chunking of byte data
+- encoding-aware operations involving `String`s
 
 
 ## Getting Started
 
-TBC
+## The `Path` type
 
+Most operations are accessible through the `Path` type. This is a canonicalized string representation of a path
+on disk, which may be a directory or file, or may not exist.
+
+## Reading
+
+Files can be read with the `Path#read` method, which takes the type it should return, for example,
+`path.read[String]()` or `path.read[LazyList[String]]()`. If used in a position with an expected type, this type
+parameter may be omitted, for example:
+```scala
+def contents: String = path.read()
+```
+
+The `read` method takes an optional `limit` value parameter which specifies a limit on the number of byte that
+may be read. This defaults to the conservative figure of `65536`. If this is exceeded, a `TooMuchData` exception
+is thrown.
+
+## Writing
+
+It's possible to write to a file using the `Path#write` and `Path#append` methods. These each take a single
+`content` parameter, which can be one of a variety of types. As standard, these include,
+- `IArray[Byte]`
+- `LazyList[IArray[Byte]]`
+- `String`
+- `LazyList[String]`
+which together support complete and streamed byte and character data.
 
 ## Status
 
