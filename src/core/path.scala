@@ -93,8 +93,7 @@ object Path:
 
     def empty: Boolean =
       val filesStream = Files.walk(javaPath)
-      try filesStream.allMatch(p => Files.isDirectory(p))
-      finally filesStream.close()
+      try filesStream.allMatch { p => Files.isDirectory(p) } finally filesStream.close()
 
     def size: ByteSize = ByteSize(javaFile.length)
 
@@ -192,7 +191,7 @@ object Path:
 
     def read[T: Readable](limit: Int = 65536): T =
       val in = ji.BufferedInputStream(ji.FileInputStream(javaPath.toFile))
-      try summon[Readable[T]].read(in, limit) finally try in.close() catch _ => ()
+      try summon[Readable[T]].read(in, limit) catch case e => throw FileReadError(path, e)
 
     def lines(): Iterator[String] raises FileReadError =
       try scala.io.Source.fromFile(javaFile).getLines() catch e => throw FileReadError(path, e)
@@ -258,9 +257,12 @@ trait Writable[T]:
 object Readable:
   given Readable[LazyList[IArray[Byte]]] = (in, limit) =>
     def read(): LazyList[IArray[Byte]] =
-      val buf = new Array[Byte](in.available.min(limit))
-      val count = in.read(buf, 0, buf.length)
-      if count < 0 then LazyList(buf.asInstanceOf[IArray[Byte]]) else buf.asInstanceOf[IArray[Byte]] #:: read()
+      val avail = in.available
+      if avail == 0 then LazyList() else
+        val buf = new Array[Byte](in.available.min(limit))
+        val count = in.read(buf, 0, buf.length)
+        if count < 0 then LazyList(buf.asInstanceOf[IArray[Byte]])
+        else buf.asInstanceOf[IArray[Byte]] #:: read()
     
     read()
     
@@ -268,15 +270,21 @@ object Readable:
   
   given lazyListStrings(using enc: Encoding): Readable[LazyList[String]] = (in, limit) =>
     def read(prefix: Array[Byte]): LazyList[String] =
-      val buf = new Array[Byte](in.available.min(limit) + prefix.length)
-      if prefix.length > 0 then System.arraycopy(prefix, 0, buf, 0, prefix.length)
-      val count = in.read(buf, prefix.length, buf.length - prefix.length)
-      if count + prefix.length < 0 then LazyList(String(buf, enc.name))
+      val avail = in.available
+      if avail == 0 then LazyList()
       else
-        val carry = enc.carry(buf)
-        (if carry == 0 then String(buf, enc.name) else String(buf, 0, buf.length - carry, enc.name)) #:: read(buf.takeRight(carry))
+        val buf = new Array[Byte](in.available.min(limit) + prefix.length)
+        if prefix.length > 0 then System.arraycopy(prefix, 0, buf, 0, prefix.length)
+        val count = in.read(buf, prefix.length, buf.length - prefix.length)
+        if count + prefix.length < 0 then LazyList(String(buf, enc.name))
+        else
+          val carry = enc.carry(buf)
+          (if carry == 0 then String(buf, enc.name) else String(buf, 0, buf.length - carry, enc.name)) #::
+              read(buf.takeRight(carry))
     
     read(Array.empty[Byte])
+
+  given string(using enc: Encoding): Readable[String] = lazyListStrings.read(_, _).head
 
 trait Readable[T]:
   def read(stream: ji.BufferedInputStream, limit: Int = 65536): T
