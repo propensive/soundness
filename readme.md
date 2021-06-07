@@ -8,7 +8,7 @@
 
 <img src="/doc/images/github.png" valign="middle">
 
-# Probably
+# Euphemism
 
 
 
@@ -24,7 +24,7 @@ TBC
 
 ## Status
 
-Probably is classified as __fledgling__. Propensive defines the following five stability levels for open-source projects:
+Euphemism is classified as __fledgling__. Propensive defines the following five stability levels for open-source projects:
 
 - _embryonic_: for experimental or demonstrative purposes only, without guarantee of longevity
 - _fledgling_: of proven utility, seeking contributions, but liable to significant redesigns
@@ -34,7 +34,7 @@ Probably is classified as __fledgling__. Propensive defines the following five s
 
 ## Availability
 
-Probably&rsquo;s source is available on GitHub, and may be built with [Fury](https://github.com/propensive/fury) by
+Euphemism&rsquo;s source is available on GitHub, and may be built with [Fury](https://github.com/propensive/fury) by
 cloning the layer `propensive/euphemism`.
 ```
 fury layer clone -i propensive/euphemism
@@ -51,24 +51,24 @@ libraryDependencies += "com.propensive" %% "euphemism-core" % "0.8.0"
 
 ## Contributing
 
-Contributors to Probably are welcome and encouraged. New contributors may like to look for issues marked
+Contributors to Euphemism are welcome and encouraged. New contributors may like to look for issues marked
 <a href="https://github.com/propensive/euphemism/labels/good%20first%20issue"><img alt="label: good first issue"
 src="https://img.shields.io/badge/-good%20first%20issue-67b6d0.svg" valign="middle"></a>.
 
 We suggest that all contributors read the [Contributing Guide](/contributing.md) to make the process of
-contributing to Probably easier.
+contributing to Euphemism easier.
 
 Please __do not__ contact project maintainers privately with questions, as other users cannot then benefit from
 the answers.
 
 ## Author
 
-Probably was designed and developed by [Jon Pretty](https://twitter.com/propensive), and commercial support and
+Euphemism was designed and developed by [Jon Pretty](https://twitter.com/propensive), and commercial support and
 training is available from [Propensive O&Uuml;](https://propensive.com/).
 
 
 
 ## License
 
-Probably is copyright &copy; 2018-21 Jon Pretty & Propensive O&Uuml;, and is made available under the
+Euphemism is copyright &copy; 2018-21 Jon Pretty & Propensive O&Uuml;, and is made available under the
 [Apache 2.0 License](/license.md).
