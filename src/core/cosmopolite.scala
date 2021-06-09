@@ -1,23 +1,25 @@
 package cosmopolite
 
-import scala.reflect._
+import rudiments.*
+
+import scala.reflect.*
 import scala.util.NotGiven
-import scala.annotation._
-import scala.quoted._
+import scala.annotation.*
+import scala.quoted.*
 
 case class Language[+L <: String](value: String)
 
 object Language:
    @targetName("make")
-   def apply[L <: String: ValueOf]: Language[L] = new Language(summon[ValueOf[L]].value)
+   def apply[L <: String: ValueOf]: Language[L] = Language(summon[ValueOf[L]].value)
    
    inline def parse[L <: String](str: String): Option[Language[L]] =
       Option.when(reifyToSet[L].contains(str))(Language(str))
 
    private inline def reifyToSet[L <: String]: Set[String] = ${reifyToSetMacro[L]}
 
-   private def reifyToSetMacro[L <: String: Type](using quotes: Quotes): Expr[Set[String]] =
-      import quotes.reflect._
+   private def reifyToSetMacro[L <: String: Type](using Quotes): Expr[Set[String]] =
+      import quotes.reflect.*
 
       def langs(t: TypeRepr): Set[String] = t.dealias match
          case OrType(left, right) => langs(left) ++ langs(right)
@@ -27,7 +29,7 @@ object Language:
 
 object Messages:
    def apply[L <: String: ValueOf](seq: Seq[String], parts: Seq[Messages[? >: L]]): Messages[L] =
-      val string = seq.head+(parts.zip(seq.tail).map { (msg, s) => msg(summon[ValueOf[L]])+s }.mkString)
+      val string = seq.head+(parts.zip(seq.tail).map { (msg, s) => msg(summon[ValueOf[L]])+s }.join)
       Messages[L](Map(summon[ValueOf[L]].value -> string))
    
 case class Messages[-L <: String](text: Map[String, String]):
@@ -37,7 +39,7 @@ case class Messages[-L <: String](text: Map[String, String]):
    def apply[L2 <: L: ValueOf]: String = text(summon[ValueOf[L2]].value)
    def apply[L2 <: L]()(using ctx: Language[L2]): String = text(ctx.value)
 
-import languages.common._
+import languages.common.*
 
 extension[L <: String] (str: String)
    def as(using ValueOf[L]): Messages[L] = Messages[L](List(str), Nil)
