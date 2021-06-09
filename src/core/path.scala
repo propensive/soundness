@@ -193,9 +193,6 @@ object Path:
       val in = ji.BufferedInputStream(ji.FileInputStream(javaPath.toFile))
       try summon[Readable[T]].read(in, limit) catch case e => throw FileReadError(path, e)
 
-    def bytes(): IArray[Byte] raises FileReadError =
-      try IArray.from(Files.readAllBytes(javaPath)) catch e => throw FileReadError(path, e)
-
     def copyTo(dest: Path): Path raises PathAlreadyExists | FileWriteError =
       if dest.exists() then throw PathAlreadyExists(dest)
       try
