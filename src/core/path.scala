@@ -185,7 +185,7 @@ object Path:
     def append[T: Writable](content: T): Unit = write(content, true)
 
     def write[T: Writable](content: T, append: Boolean = false): Unit raises FileWriteError =
-      val out = ji.BufferedOutputStream(ji.FileOutputStream(javaPath.toFile, append))
+      val out = ji.FileOutputStream(javaPath.toFile, append)
       try summon[Writable[T]].write(out, content) catch case e => throw FileWriteError(path, e)
       finally try out.close() catch _ => ()
 
@@ -234,16 +234,23 @@ object Writable:
     (out, stream) => stream.map(_.asInstanceOf[Array[Byte]]).foreach(out.write(_))
   
   given (using enc: Encoding): Writable[LazyList[String]] = (out, stream) =>
-    val writer = ji.OutputStreamWriter(out, enc.name)
-    stream.foreach(writer.write(_))
+    val writer = ji.BufferedWriter(ji.OutputStreamWriter(out, enc.name))
+    stream.foreach { part =>
+      writer.write(part)
+      writer.flush()
+    }
+    writer.close()
 
   given (using enc: Encoding): Writable[String] =
-    (out, string) => ji.OutputStreamWriter(out, enc.name).write(string)
+    (out, string) =>
+      val writer = ji.BufferedWriter(ji.OutputStreamWriter(out, enc.name))
+      writer.write(string)
+      writer.close()
   
   given Writable[IArray[Byte]] = (out, bytes) => out.write(bytes.asInstanceOf[Array[Byte]])
 
 trait Writable[T]:
-  def write(stream: ji.BufferedOutputStream, value: T): Unit
+  def write(stream: ji.OutputStream, value: T): Unit
   def contramap[S](fn: S => T): Writable[S] = (stream, value) => write(stream, fn(value))
 
 object Readable:
