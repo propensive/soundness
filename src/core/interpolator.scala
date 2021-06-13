@@ -16,39 +16,22 @@
 */
 package litterateur
 
-import contextual._
+import rudiments.*
+import contextual.*
 
-object MdInterpolator extends Interpolator {
+enum MdInput:
+  case Block(content: String)
+  case Inline(content: String)
 
-  sealed trait MdInput extends Context
-  case object BlockInput extends MdInput
-  case object InlineInput extends MdInput
+object MdInterpolator extends Interpolator[MdInput, String, MdNode.Document]:
+  def complete(state: String): MdNode.Document = Markdown.parse(state)
+  def initial: String = ""
+  
+  def insert(state: String, value: Option[MdInput]): String = value match
+    case Some(MdInput.Block(content))  => str"$state\n$content\n"
+    case Some(MdInput.Inline(content)) => str"$state$content"
+    case None                          => ""
+   
+  def parse(state: String, next: String): String = state+next
 
-  type ContextType = MdInput
-  type Output = Document
-  type Input = String
-
-  def evaluate(interpolation: RuntimeInterpolation): Document = {
-    Markdown.parse(interpolation.parts.mkString)
-  }
-
-  def contextualize(interpolation: StaticInterpolation): Seq[ContextType] = {
-    if(interpolation.parts.length == 1) Nil else interpolation.parts.sliding(2).map {
-      case List(Literal(_, left), Literal(_, right)) =>
-        if(left.last == '\n' && right.head == '\n') BlockInput else InlineInput
-    }.to[Seq]
-  }
-
-  implicit val embedStrings = embed[String](
-    Case(BlockInput, BlockInput)(identity),
-    Case(InlineInput, InlineInput)(identity)
-  )
-}
-
-object `package` extends InterpolatorPackage
-
-trait InterpolatorPackage {
-  implicit class MdStringContext(sc: StringContext) {
-    val md = Prefix(MdInterpolator, sc)
-  }
-}
+given Insertion[String, String] = identity(_)
