@@ -45,7 +45,7 @@ type NonInteractive = "abbr" | "address" | "area" | "article" | "aside" | "audio
     "style" | "sub" | "sup" | "table" | "template" | "time" | "title" | "u" | "ul" | "var" | "wbr"
 
 type Global = "accesskey" | "autocapitalize" | "autofocus" | "contenteditable" | "dir" | "draggable" |
-    "enterkeyhint" | "hidden" | "inputmode" | "is" | "itemid" | "itemprop" | "itemref" | "itemscope" |
+    "enterkeyhint" | "hidden" | "id" | "inputmode" | "is" | "itemid" | "itemprop" | "itemref" | "itemscope" |
     "itemtype" | "lang" | "nonce" | "spellcheck" | "style" | "tabindex" | "title" | "translate" | EventHandlers
 
 type EventHandlers = "onabort" | "onauxclick" | "oncancel" | "oncanplay" | "oncanplaythrough" | "onchange" |

@@ -70,7 +70,10 @@ val Head = Tag["head", Metadata, Global]("head")
 val Header = Tag["header", Flow, Global]("header")
 val Hgroup = Tag["hgroup", "h1" | "h2" | "h3" | "h4" | "h5" | "h6", Global]("hgroup")
 val Hr = Tag["hr", Nothing, Global]("hr", inline = true, unclosed = true)
-val Html = Tag["html", "head" | "body", Global]("html") // head followed by body
+
+trait ToHtml[T]:
+  def convert(value: T): Seq[Content[Flow]]
+
 val I = Tag["i", Phrasing, Global]("i", inline = true)
 
 val Iframe = Tag["iframe", Nothing, Global | "src" | "srcdoc" | "name" | "sandbox" | "allow" |

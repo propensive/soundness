@@ -1,6 +1,7 @@
 package honeycomb
 
 import scintillate.*
+import rudiments.*
 
 package attributes.scintillate:
   given action[T]: Attribute["action", Uri, T] = _.toString
@@ -19,4 +20,5 @@ package attributes.scintillate:
   given typeName[T]: Attribute["typeName", MediaType, T] with
     override def rename: Option[String] = Some("type")
     def convert(value: MediaType): String = value.toString
-  
+
+given SimpleHandler[HtmlDoc] = SimpleHandler("text/html", html => LazyList(HtmlDoc.serialize(html).bytes))

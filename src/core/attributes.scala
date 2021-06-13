@@ -1,7 +1,5 @@
 package honeycomb
 
-//import rudiments.*
-
 trait Attribute[Key <: Label, -Value, -T]:
   def convert(value: Value): String | Boolean
   def rename: Option[String] = None
