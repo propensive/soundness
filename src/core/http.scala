@@ -264,11 +264,8 @@ object MediaType:
     case Application, Audio, Image, Message, Multipart, Text, Video, Font, Example, Model
 
   def unapply(str: String): Option[MediaType] = str.cut("/", 2) match
-    case IArray(key, subtype) =>
-      try Some(MediaType(MainType.valueOf(key.capitalize), subtype)) catch case _ => None
-    
-    case _ =>
-      None
+    case IArray(key, subtype) => try Some(MediaType(MainType.valueOf(key.capitalize), subtype)) catch _ => None
+    case _                    => None
 
 case class MediaType(mediaType: MediaType.MainType, mediaSubtype: String):
   override def toString = s"${mediaType.toString.toLowerCase}/$mediaSubtype"

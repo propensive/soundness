@@ -152,7 +152,7 @@ case class HttpServer(port: Int) extends RequestHandler:
       try handler(using makeRequest(exchange)).respond(SimpleResponder(exchange))
       catch case NonFatal(exception) => exception.printStackTrace()
     
-    val httpServer = JavaHttpServer.create(InetSocketAddress(port), 0)
+    val httpServer = JavaHttpServer.create(InetSocketAddress("localhost", port), 0)
     val context = httpServer.createContext("/")
     context.setHandler(handle(_))
     httpServer.setExecutor(null)
