@@ -31,18 +31,18 @@ object Markdown:
   options.set(Parser.EXTENSIONS, java.util.Arrays.asList(TablesExtension.create()))
   private val parser = Parser.builder(options).build()
 
-  def parse(string: String): MdNode.Document =
+  def parse(string: String): Markdown.Document =
     val root = parser.parse(string)
-    MdNode.Document(root.getChildIterator.asScala.to(List).map(convert(root, _))*)
+    Markdown.Document(root.getChildIterator.asScala.to(List).map(convert(root, _))*)
 
-  def parse(reader: java.io.Reader): MdNode.Document =
+  def parse(reader: java.io.Reader): Markdown.Document =
     val root = parser.parseReader(reader)
-    MdNode.Document(root.getChildIterator.asScala.to(List).map(convert(root, _))*)
+    Markdown.Document(root.getChildIterator.asScala.to(List).map(convert(root, _))*)
 
   @tailrec
-  def coalesce(xs: List[MdNode], done: List[MdNode] = Nil): List[MdNode] = xs match
+  def coalesce(xs: List[Markdown], done: List[Markdown] = Nil): List[Markdown] = xs match
     case Nil                                           => done.reverse
-    case MdNode.Text(str) :: MdNode.Text(str2) :: tail => coalesce(MdNode.Text(str+str2) :: tail, done)
+    case Markdown.Text(str) :: Markdown.Text(str2) :: tail => coalesce(Markdown.Text(str+str2) :: tail, done)
     case head :: tail                                  => coalesce(tail, head :: done)
 
   @tailrec
@@ -60,29 +60,29 @@ object Markdown:
         case chr  => format(str, buf, i + 1, chr)
     else buf.toString
 
-  def convert(root: ast.Document, node: ast.Node, noFormat: Boolean = false): MdNode =
+  def convert(root: ast.Document, node: ast.Node, noFormat: Boolean = false): Markdown =
     lazy val children = coalesce(node.getChildren.iterator.asScala.to(List).map(convert(root, _)))
     node match
       case node: ast.BlockQuote =>
-        MdNode.Blockquote(children*)
+        Markdown.Blockquote(children*)
       
       case node: ast.BulletList =>
-        MdNode.BulletList(children*)
+        Markdown.BulletList(children*)
       
       case node: ast.BulletListItem =>
-        MdNode.ListItem(children*)
+        Markdown.ListItem(children*)
       
       case node: ast.Code =>
-        MdNode.Code(children*)
+        Markdown.Code(children*)
       
       case node: ast.CodeBlock =>
         lazy val unmodifiedChildren =
           coalesce(node.getChildren.iterator.asScala.to(List).map(convert(root, _, true)))
         
-        MdNode.CodeBlock(None, unmodifiedChildren*)
+        Markdown.CodeBlock(None, unmodifiedChildren*)
 
       case node: ast.Emphasis =>
-        MdNode.Emphasis(children*)
+        Markdown.Emphasis(children*)
       
       case node: ast.FencedCodeBlock =>
         val syntax = node.getInfo.toString
@@ -90,106 +90,106 @@ object Markdown:
         lazy val unmodifiedChildren =
           coalesce(node.getChildren.iterator.asScala.to(List).map(convert(root, _, true)))
         
-        MdNode.CodeBlock(if syntax == "" then None else Some(syntax), unmodifiedChildren*)
+        Markdown.CodeBlock(if syntax == "" then None else Some(syntax), unmodifiedChildren*)
       
       case node: ast.HardLineBreak =>
-        MdNode.LineBreak
+        Markdown.LineBreak
       
       case node: ast.Heading =>
-        MdNode.Heading(node.getLevel, children*)
+        Markdown.Heading(node.getLevel, children*)
       
       case node: ast.Image =>
-        MdNode.Image(node.getText.toString, node.getUrl.toString)
+        Markdown.Image(node.getText.toString, node.getUrl.toString)
       
       case node: ast.ImageRef =>
-        MdNode.Image(node.getText.toString, node.getReferenceNode(root).getUrl.toString)
+        Markdown.Image(node.getText.toString, node.getReferenceNode(root).getUrl.toString)
       
       case node: ast.IndentedCodeBlock =>
-        MdNode.Indented(node.getContentChars.toString)
+        Markdown.Indented(node.getContentChars.toString)
       
       case node: ast.Link =>
-        MdNode.Link(node.getText.toString, node.getUrl.toString)
+        Markdown.Link(node.getText.toString, node.getUrl.toString)
       
       case node: ast.LinkRef =>
         val ref = Option(node.getReferenceNode(root))
-        ref.fold(MdNode.Text(node.getText.toString)) { ref =>
-          MdNode.Link(node.getText.toString, ref.getUrl.toString)
+        ref.fold(Markdown.Text(node.getText.toString)) { ref =>
+          Markdown.Link(node.getText.toString, ref.getUrl.toString)
         }
       
       case node: ast.MailLink =>
-        MdNode.Link(node.getText.toString, s"mailto:${node.getText}")
+        Markdown.Link(node.getText.toString, s"mailto:${node.getText}")
       
       case node: ast.OrderedList =>
-        MdNode.OrderedList(children*)
+        Markdown.OrderedList(children*)
       
       case node: ast.OrderedListItem =>
-        MdNode.ListItem(children*)
+        Markdown.ListItem(children*)
       
       case node: ast.Paragraph =>
-        MdNode.Paragraph(children*)
+        Markdown.Paragraph(children*)
       
       case node: ast.Reference =>
-        MdNode.Reference(node.getReference.toString, node.getUrl.toString)
+        Markdown.Reference(node.getReference.toString, node.getUrl.toString)
       
       case node: ast.SoftLineBreak =>
-        MdNode.Text("\n")
+        Markdown.Text("\n")
       
       case node: ast.StrongEmphasis =>
-        MdNode.StrongEmphasis(children*)
+        Markdown.StrongEmphasis(children*)
       
       case node: ast.Text =>
         val content = node.getChars.toString
-        MdNode.Text(if noFormat then content else format(content))
+        Markdown.Text(if noFormat then content else format(content))
 
       case node: ast.ThematicBreak =>
-        MdNode.ThematicBreak
+        Markdown.ThematicBreak
       
       case node: tables.TableBlock =>
-        MdNode.Table(node.getChildren.iterator.asScala.to(List).flatMap(parseTableParts(root, _))*)
+        Markdown.Table(node.getChildren.iterator.asScala.to(List).flatMap(parseTableParts(root, _))*)
   
   def parseTableParts(root: ast.Document, node: ast.Node): List[TablePart] = node match
     case node: tables.TableHead
-      => List(MdNode.TableHead(node.getChildren.iterator.asScala.to(List).map(parseTableRows(root, _))*))
+      => List(Markdown.TableHead(node.getChildren.iterator.asScala.to(List).map(parseTableRows(root, _))*))
     
     case node: tables.TableBody =>
-      List(MdNode.TableBody(node.getChildren.iterator.asScala.to(List).map(parseTableRows(root, _))*))
+      List(Markdown.TableBody(node.getChildren.iterator.asScala.to(List).map(parseTableRows(root, _))*))
     
     case _ =>
       Nil
   
-  def parseTableRows(root: ast.Document, node: ast.Node): MdNode.Row = node match
+  def parseTableRows(root: ast.Document, node: ast.Node): Markdown.Row = node match
     case node: tables.TableRow =>
-      MdNode.Row(node.getChildren.iterator.asScala.to(List).map(parseTableCells(root, _))*)
+      Markdown.Row(node.getChildren.iterator.asScala.to(List).map(parseTableCells(root, _))*)
 
-  def parseTableCells(root: ast.Document, node: ast.Node): MdNode.Cell = node match
+  def parseTableCells(root: ast.Document, node: ast.Node): Markdown.Cell = node match
     case node: tables.TableCell =>
-      MdNode.Cell(node.getChildren.iterator.asScala.to(List).map(convert(root, _))*)
+      Markdown.Cell(node.getChildren.iterator.asScala.to(List).map(convert(root, _))*)
 
 trait TablePart:
-  this: MdNode =>
+  this: Markdown =>
 
-enum MdNode:
+enum Markdown:
   case LineBreak
   case ThematicBreak
-  case Paragraph(children: MdNode*)
-  case Heading(level: Int, children: MdNode*)
+  case Paragraph(children: Markdown*)
+  case Heading(level: Int, children: Markdown*)
   case Text(string: String)
-  case Code(children: MdNode*)
-  case CodeBlock(syntax: Option[String], children: MdNode*)
-  case Emphasis(children: MdNode*)
-  case StrongEmphasis(children: MdNode*)
-  case Document(children: MdNode*)
-  case ListItem(children: MdNode*)
-  case BulletList(children: MdNode*)
-  case OrderedList(children: MdNode*)
-  case Blockquote(children: MdNode*)
+  case Code(children: Markdown*)
+  case CodeBlock(syntax: Option[String], children: Markdown*)
+  case Emphasis(children: Markdown*)
+  case StrongEmphasis(children: Markdown*)
+  case Document(children: Markdown*)
+  case ListItem(children: Markdown*)
+  case BulletList(children: Markdown*)
+  case OrderedList(children: Markdown*)
+  case Blockquote(children: Markdown*)
   case Indented(content: String)
   case Link(text: String, location: String)
   case Image(alt: String, src: String)
   case Reference(id: String, location: String)
   case Table(children: TablePart*)
 
-  case TableHead(rows: MdNode.Row*) extends MdNode, TablePart
-  case TableBody(rows: MdNode.Row*) extends MdNode, TablePart
-  case Row(cells: MdNode.Cell*) extends MdNode, TablePart
-  case Cell(children: MdNode*) extends MdNode, TablePart
+  case TableHead(rows: Markdown.Row*) extends Markdown, TablePart
+  case TableBody(rows: Markdown.Row*) extends Markdown, TablePart
+  case Row(cells: Markdown.Cell*) extends Markdown, TablePart
+  case Cell(children: Markdown*) extends Markdown, TablePart

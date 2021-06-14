@@ -21,93 +21,99 @@ import rudiments.*
 
 import scala.collection.immutable.ListMap
 
-given ToHtml[MdNode.Document] = HtmlConverter.convert(_)
+given ToHtml[Markdown.Document] = HtmlConverter().convert(_)
 
-object HtmlConverter:
-  def outline(node: MdNode): Seq[Content[Flow]] = convert(Markdown.parse(headOutline(node).join("\n")))
-
+open class HtmlConverter():
+  def outline(node: Markdown): Seq[Content[Flow]] = convert(Markdown.parse(headOutline(node).join("\n")))
   def slug(str: String): String = str.toLowerCase.replaceAll("[^a-z0-9]", "-").replaceAll("--*", "-")
 
-  private def headOutline(node: MdNode): Seq[String] = node match
-    case MdNode.Document(children*) =>
+  def headOutline(node: Markdown): Seq[String] = node match
+    case Markdown.Document(children*) =>
       children.flatMap(headOutline(_))
-    case MdNode.Heading(level, children*) =>
-      val text = inlineText(children)
-      List(s"${" "*(2*level - 1)}- [${text}](#${slug(text)})")
-    case MdNode.Text(str) =>
+    case Markdown.Heading(level, children*) =>
+      val string = text(children)
+      List(s"${" "*(2*level - 1)}- [$string](#${slug(string)})")
+    case Markdown.Text(str) =>
       List(str)
     case _ =>
       Nil
+
+  private val headings = IArray(H1, H2, H3, H4, H5, H6)
   
-  def convert(node: MdNode): Seq[Content[Flow]] = node match
-    case MdNode.Document(children*)        => children.flatMap(convert(_))
-    case MdNode.Paragraph(children*)       => List(P(children.flatMap(convertInline(_))))
-    case MdNode.Heading(level, children*)  =>
-      val ident = slug(inlineText(children))
-      val childNodes = children.flatMap(convertInline(_))
-      level match
-        case 1 => List(H1(id = ident)(childNodes))
-        case 2 => List(H2(id = ident)(childNodes))
-        case 3 => List(H3(id = ident)(childNodes))
-        case 4 => List(H4(id = ident)(childNodes))
-        case 5 => List(H5(id = ident)(childNodes))
-        case 6 => List(H6(id = ident)(childNodes))
-    case MdNode.Blockquote(children*)    => List(Blockquote(children.flatMap(convertInline(_))))
-    case MdNode.ThematicBreak                => List(Hr)
-    case MdNode.CodeBlock(syntax, MdNode.Text(str)) => List(Pre(Code(escape(str))))
-    case MdNode.Reference(_, _)              => Nil
-    case MdNode.Text(str)                    => List(P(escape(str)))
-    case MdNode.BulletList(children*)      => List(Ul(children.flatMap(convertListItem(_))))
-    case MdNode.OrderedList(children*)     => List(Ol(children.flatMap(convertListItem(_))))
-    case MdNode.Table(parts*)            => List(Table(parts.flatMap(convertTableParts(_))))
-    case MdNode.LineBreak                    => List(Br)
+  private def heading(level: Int, children: Seq[Markdown]) =
+    headings(level - 1)(id = slug(text(children)))(children.flatMap(phrasing))
 
-  def convertTableParts(node: TablePart) = node match
-    case MdNode.TableHead(rows*) => List(Thead(convertTableRows(true, rows)))
-    case MdNode.TableBody(rows*) => List(Tbody(convertTableRows(false, rows)))
+  def convert(node: Markdown): Seq[Content[Flow]] = node match
+    case Markdown.Document(children*)                   => children.flatMap(convert)
+    case Markdown.Paragraph(children*)                  => List(P(children.flatMap(phrasing)))
+    case Markdown.Heading(level, children*)             => List(heading(level, children))
+    case Markdown.Blockquote(children*)                 => List(Blockquote(children.flatMap(phrasing)))
+    case Markdown.ThematicBreak                         => List(Hr)
+    case Markdown.CodeBlock(syntax, Markdown.Text(str)) => List(Pre(Code(escape(str))))
+    case Markdown.Reference(_, _)                       => Nil
+    case Markdown.Text(str)                             => List(P(escape(str)))
+    case Markdown.BulletList(children*)                 => List(Ul(children.flatMap(listItem)))
+    case Markdown.OrderedList(children*)                => List(Ol(children.flatMap(listItem)))
+    case Markdown.Table(parts*)                         => List(Table(parts.flatMap(tableParts)))
+    case Markdown.LineBreak                             => List(Br)
+    case _                                              => Nil
 
-  def convertTableRows(heading: Boolean, rows: Seq[MdNode.Row]) =
-    rows.map { case MdNode.Row(cells*) => Tr(convertTableCells(heading, cells)) }
+  def tableParts(node: TablePart): Seq[Item["thead" | "tbody"]] = node match
+    case Markdown.TableHead(rows*) => List(Thead(tableRows(true, rows)))
+    case Markdown.TableBody(rows*) => List(Tbody(tableRows(false, rows)))
 
-  def convertTableCells(heading: Boolean, cells: Seq[MdNode.Cell]) =
-    cells.map { case MdNode.Cell(content*) => (if heading then Th else Td)(content.flatMap(convertInline(_))) }
+  def tableRows(heading: Boolean, rows: Seq[Markdown.Row]): Seq[Item["tr"]] =
+    rows.map { case Markdown.Row(cells*) => Tr(tableCells(heading, cells)) }
 
-  def convertListItem(node: MdNode): Seq[Content["li"]] = node match
-    case MdNode.ListItem(children*) => List(Li(children.flatMap(convert(_))))
-    case _                          => Nil
+  def tableCells(heading: Boolean, cells: Seq[Markdown.Cell]): Seq[Item["th" | "td"]] =
+    cells.map { case Markdown.Cell(content*) => (if heading then Th else Td)(content.flatMap(phrasing)) }
 
-  def inlineText(node: Seq[MdNode]): String = node.map {
-    case MdNode.Document(_*) | MdNode.BulletList(_*) | MdNode.Indented(_) | MdNode.OrderedList(_*) | MdNode.ListItem(_*) => ""
-    case MdNode.Image(txt, _)                                                                => txt
-    case MdNode.Link(txt, _)                                                               => txt
-    case MdNode.Reference(_, _)                                                              => ""
-    case MdNode.LineBreak                                                                    => ""
-    case MdNode.ThematicBreak                                                                => ""
-    case MdNode.Emphasis(children*)                                                          => inlineText(children)
-    case MdNode.StrongEmphasis(children*)                                                    => inlineText(children)
-    case MdNode.Code(children*)                                                            => inlineText(children)
-    case MdNode.Paragraph(children*)                                                         => inlineText(children)
-    case MdNode.Heading(_, children*)                                                        => inlineText(children)
-    case MdNode.Blockquote(children*)                                                      => inlineText(children)
-    case MdNode.CodeBlock(_, children*)                                                      => inlineText(children)
-    case MdNode.Text(str)                                                                    => str
-    case MdNode.Cell(content*)                                                               => inlineText(content)
+  def listItem(node: Markdown): Seq[Item["li"]] = node match
+    case Markdown.ListItem(children*) => List(Li(children.flatMap(convert)))
+    case _                            => Nil
+
+  def text(node: Seq[Markdown]): String = node.map {
+    case Markdown.Document(_*)              => ""
+    case Markdown.BulletList(_*)            => ""
+    case Markdown.Indented(_)               => ""
+    case Markdown.OrderedList(_*)           => ""
+    case Markdown.ListItem(_*)              => ""
+    case Markdown.Image(text, _)            => text
+    case Markdown.Link(text, _)             => text
+    case Markdown.Reference(_, _)           => ""
+    case Markdown.LineBreak                 => ""
+    case Markdown.ThematicBreak             => ""
+    case Markdown.Emphasis(children*)       => text(children)
+    case Markdown.StrongEmphasis(children*) => text(children)
+    case Markdown.Code(children*)           => text(children)
+    case Markdown.Paragraph(children*)      => text(children)
+    case Markdown.Heading(_, children*)     => text(children)
+    case Markdown.Blockquote(children*)     => text(children)
+    case Markdown.CodeBlock(_, children*)   => text(children)
+    case Markdown.Text(text)                => text
+    case Markdown.Cell(content*)            => text(content)
+    case _                                  => ""
   }.join
 
-  def convertInline(node: MdNode): Seq[Content[Phrasing]] = node match
-    case MdNode.Document(_*) | MdNode.BulletList(_*) | MdNode.Indented(_) | MdNode.OrderedList(_*) | MdNode.ListItem(_*) => Nil
-    case MdNode.Image(txt, loc)             => List(Img(src = loc, alt = txt))
-    case MdNode.Link(txt, loc)            => List(A(href = loc)(txt))
-    case MdNode.Reference(_, _)             => Nil
-    case MdNode.LineBreak                   => List(Br)
-    case MdNode.ThematicBreak               => Nil
-    case MdNode.Emphasis(children*)       => List(Em(children.flatMap(convertInline(_))))
-    case MdNode.StrongEmphasis(children*) => List(Strong(children.flatMap(convertInline(_))))
-    case MdNode.Code(children*)           => List(Code(children.flatMap(convertInline(_))))
-    case MdNode.Paragraph(children*)      => children.flatMap(convertInline(_))
-    case MdNode.Heading(_, children*)     => children.flatMap(convertInline(_))
-    case MdNode.Blockquote(children*)     => children.flatMap(convertInline(_))
-    case MdNode.CodeBlock(_, children*)   => children.flatMap(convertInline(_))
-    case MdNode.Text(str)                   => List(escape(str))
+  def phrasing(node: Markdown): Seq[Content[Phrasing]] = node match
+    case Markdown.Document(_*)              => Nil
+    case Markdown.BulletList(_*)            => Nil
+    case Markdown.Indented(_)               => Nil
+    case Markdown.OrderedList(_*)           => Nil
+    case Markdown.ListItem(_*)              => Nil
+    case Markdown.Image(altText, location)  => List(Img(src = location, alt = altText))
+    case Markdown.Link(altText, location)   => List(A(href = location)(altText))
+    case Markdown.Reference(_, _)           => Nil
+    case Markdown.LineBreak                 => List(Br)
+    case Markdown.ThematicBreak             => Nil
+    case Markdown.Emphasis(children*)       => List(Em(children.flatMap(phrasing)))
+    case Markdown.StrongEmphasis(children*) => List(Strong(children.flatMap(phrasing)))
+    case Markdown.Code(children*)           => List(Code(children.flatMap(phrasing)))
+    case Markdown.Paragraph(children*)      => children.flatMap(phrasing)
+    case Markdown.Heading(_, children*)     => children.flatMap(phrasing)
+    case Markdown.Blockquote(children*)     => children.flatMap(phrasing)
+    case Markdown.CodeBlock(_, children*)   => children.flatMap(phrasing)
+    case Markdown.Text(str)                 => List(escape(str))
+    case _                                  => Nil
 
   def escape(str: String): String = str.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;")
