@@ -3,7 +3,7 @@ package honeycomb
 import language.dynamics
 
 val A = TransTag["a", NonInteractive, Global | "href" | "target" | "download" | "ping" | "rel" |
-    "hreflang" | "type" | "referrerpolicy"]("a", inline = true)
+    "hreflang" | "htype" | "referrerpolicy"]("a", inline = true)
 
 val Abbr = Tag["abbr", Phrasing, Global]("abbr", inline = true)
 val Address = Tag["address", Flow | Palpable, Global]("address")
@@ -31,7 +31,7 @@ val Body = Tag["body", Flow, Global | "onafterprint" | "onbeforeprint" | "onbefo
 val Br = Tag["br", Nothing, Global]("br", inline = true, unclosed = true)
 
 val Button = Tag["button", Phrasing, Global | "disabled" | "form" | "formaction" | "formenctype" | "formmethod" |
-    "formnovalidate" | "formtarget" | "name" | "type" | "value"]("button", inline = true)
+    "formnovalidate" | "formtarget" | "name" | "htype" | "value"]("button", inline = true)
 
 val Canvas = TransTag["canvas", NonInteractive, Global | "width" | "height"]("canvas", inline = true) // complicated
 val Caption = Tag["caption", Flow, Global]("caption") // no tables
@@ -50,7 +50,7 @@ val Div = Tag["div", Flow, Global]("div")
 val Dl = Tag["dl", "dt" | "dl" | "div", Global]("dl")
 val Dt = Tag["dt", Flow, Global]("dt") // further constraints
 val Em = Tag["em", Phrasing, Global]("em", inline = true)
-val Embed = Tag["embed", Nothing, Global | "src" | "type" | "width" | "height"]("embed", inline = true)
+val Embed = Tag["embed", Nothing, Global | "src" | "htype" | "width" | "height"]("embed", inline = true)
 val Fieldset = Tag["fieldset", "legend" | Flow, Global | "disabled" | "form" | "name"]("fieldset")
 val Figcaption = Tag["figcaption", Flow, Global]("figcaption")
 val Figure = Tag["figure", "figcaption" | Flow, Global]("figure") // first or last element may be figcaption, but not both
@@ -71,8 +71,8 @@ val Header = Tag["header", Flow, Global]("header")
 val Hgroup = Tag["hgroup", "h1" | "h2" | "h3" | "h4" | "h5" | "h6", Global]("hgroup")
 val Hr = Tag["hr", Nothing, Global]("hr", inline = true, unclosed = true)
 
-trait ToHtml[T]:
-  def convert(value: T): Seq[Content[Flow]]
+trait ToHtml[-T, +R <: Label]:
+  def convert(value: T): Seq[Content[R]]
 
 val I = Tag["i", Phrasing, Global]("i", inline = true)
 
@@ -87,18 +87,18 @@ val Img = Tag["img", Nothing, Global | "alt" | "src" | "srcset" | "sizes" | "cro
 val Input = Tag["input", Nothing, Global | "accept" | "alt" | "autocomplete" | "checked" | "dirname" |
     "disabled" | "form" | "formaction" | "formenctype" | "formmethod" | "formnovalidate" | "formtarget" |
     "height" | "list" | "max" | "maxlength" | "min" | "minlength" | "multiple" | "name" | "pattern" |
-    "placeholder" | "readonly" | "required" | "size" | "src" | "step" | "type" | "value" | "width"]("input",
-    inline = true, unclosed = true)
+    "placeholder" | "readonly" | "required" | "size" | "src" | "step" | "htype" | "value" | "width"]
+    ("input", inline = true, unclosed = true)
 
 val Ins = TransTag["ins", Label, Global | "cite" | "datetime"]("ins", inline = true)
 val Kbd = Tag["kbd", Phrasing, Global]("kbd", inline = true)
-val Label = Tag["label", Phrasing, Global | "for"]("label", inline = true)
+val Label = Tag["label", Phrasing, Global | "hfor"]("label", inline = true)
 val Legend = Tag["legend", Phrasing | Heading, Global]("legend")
 val Li = Tag["li", Flow, Global | "value"]("li")
 
 val Link = Tag["link", Nothing, Global | "href" | "crossorigin" | "rel" | "media" | "integrity" | "hreflang" |
-    "type" | "referrerpolicy" | "sizes" | "imagesrcset" | "imagesizes" | "as" | "color" | "disabled"]("link",
-    inline = true, unclosed = true)
+    "htype" | "referrerpolicy" | "sizes" | "imagesrcset" | "imagesizes" | "as" | "color" | "disabled"]
+    ("link", inline = true, unclosed = true)
 
 val Main = Tag["main", Flow, Global]("main")
 val Mark = Tag["mark", Phrasing, Global]("mark", inline = true)
@@ -113,19 +113,19 @@ val Meter = Tag["meter", Phrasing, Global | "value" | "min" | "max" | "low" | "h
 val Nav = Tag["nav", Flow, Global]("nav")
 // val Noscript = IncludeTag["noscript", Label, "link" | "style" | "meta", Global]("noscript", inline = true)
 
-// val Object = IncludeTag["object", Label, "param", Global | "data" | "type" | "name" | "form" |
+// val Object = IncludeTag["object", Label, "param", Global | "data" | "htype" | "name" | "form" |
 //     "width" | "height"]("object", inline = true)
 
-val Ol = Tag["ol", "li" | ScriptSupporting, Global | "reversed" | "start" | "type"]("ol")
+val Ol = Tag["ol", "li" | ScriptSupporting, Global | "reversed" | "start" | "htype"]("ol")
 val Optgroup = Tag["optgroup", "option" | ScriptSupporting, Global | "disabled" | "label"]("optgroup")
 
 val Option = Tag["option", Nothing, Global | "disabled" | "label" | "selected" | "value"]("option", unclosed = true)
 
-val Output = Tag["output", Phrasing, Global | "for" | "form" | "name"]("output", inline = true)
+val Output = Tag["output", Phrasing, Global | "hfor" | "form" | "name"]("output", inline = true)
 val P = Tag["p", Phrasing, Global]("p")
 val Param = Tag["param", Nothing, Global | "name" | "value"]("param", unclosed = true)
 val Picture = Tag["picture", "source" | "img" | ScriptSupporting, Global]("picture", inline = true)
-val Pre = Tag["pre", Phrasing, Global]("pre", verbatim = true)
+val Pre = Tag["pre", Phrasing, Global]("pre", verbatim = true, inline = true)
 val Progress = Tag["progress", Phrasing, Global | "value" | "max"]("progress", inline = true)
 val Q = Tag["q", Phrasing, Global | "cite"]("q", inline = true)
 val Rb = Tag["rb", Phrasing, Global]("rb")
@@ -135,7 +135,7 @@ val Ruby = Tag["ruby", Phrasing | "rp" | "rt", Global]("ruby", inline = true)
 val S = Tag["s", Phrasing, Global]("s", inline = true)
 val Samp = Tag["samp", Phrasing, Global]("samp", inline = true)
 
-val Script = Tag["script", Nothing, Global | "src" | "type" | "nomodule" | "async" | "defer" | "crossorigin" |
+val Script = Tag["script", Nothing, Global | "src" | "htype" | "nomodule" | "async" | "defer" | "crossorigin" |
     "integrity" | "referrerpolicy"]("script", inline = true)
 
 val Section = Tag["section", Flow, Global]("section")
@@ -146,8 +146,8 @@ val Select = Tag["select", "option" | "optgroup" | ScriptSupporting, Global | "a
 val Slot = TransTag["slot", Label, Global | "name"]("slot", inline = true)
 val Small = Tag["small", Phrasing, Global]("small", inline = true)
 
-val Source = Tag["source", Nothing, Global | "type" | "src" | "srcset" | "sizes" | "media" | "width" | "height"]
-    ("source")
+val Source = Tag["source", Nothing, Global | "htype" | "src" | "srcset" | "sizes" | "media" | "width" |
+    "height"]("source")
 
 val Span = Tag["span", Phrasing, Global]("span", inline = true)
 val Strong = Tag["strong", Phrasing, Global | "media"]("strong", inline = true)

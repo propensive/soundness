@@ -3,10 +3,11 @@ package honeycomb
 import scintillate.*
 import rudiments.*
 
-package attributes.scintillate:
+package integration.scintillate:
   given action[T]: Attribute["action", Uri, T] = _.toString
   given cite[T]: Attribute["cite", Uri, T] = _.toString
   given data[T]: Attribute["data", Uri, T] = _.toString
+  given name[T]: Attribute["name", RequestParam[?], T] = _.key
   given formaction[T]: Attribute["formaction", Uri, T] = _.toString
   given formenctype[T]: Attribute["formenctype", MediaType, T] = _.toString
   given formmethod[T]: Attribute["formmethod", Method, T] = _.toString
@@ -21,4 +22,5 @@ package attributes.scintillate:
     override def rename: Option[String] = Some("type")
     def convert(value: MediaType): String = value.toString
 
-given SimpleHandler[HtmlDoc] = SimpleHandler("text/html", html => LazyList(HtmlDoc.serialize(html).bytes))
+  given SimpleHandler[HtmlDoc] =
+    SimpleHandler("text/html; charset=utf-8", html => LazyList(HtmlDoc.serialize(html).bytes))

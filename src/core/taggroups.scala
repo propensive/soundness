@@ -21,9 +21,9 @@ type Sectioning = "article" | "aside" | "nav" | "section"
 
 type Heading = "h1" | "h2" | "h3" | "h4" | "h5" | "h6" | "hgroup"
 
-type embedded = "audio" | "canvas" | "embed" | "iframe" | "img" | "object" | "picture" | "video"
+type Embedded = "audio" | "canvas" | "embed" | "iframe" | "img" | "object" | "picture" | "video"
 
-type interactive = "a" | "audio" | "button" | "details" | "embed" | "iframe" | "img" | "input" | "label" |
+type Interactive = "a" | "audio" | "button" | "details" | "embed" | "iframe" | "img" | "input" | "label" |
     "select" | "textarea" | "video"
 
 type Palpable = "a" | "abbr" | "address" | "article" | "aside" | "audio" | "b" | "bdi" | "bdo" | "blockquote" |
@@ -45,8 +45,9 @@ type NonInteractive = "abbr" | "address" | "area" | "article" | "aside" | "audio
     "style" | "sub" | "sup" | "table" | "template" | "time" | "title" | "u" | "ul" | "var" | "wbr"
 
 type Global = "accesskey" | "autocapitalize" | "autofocus" | "contenteditable" | "dir" | "draggable" |
-    "enterkeyhint" | "hidden" | "id" | "inputmode" | "is" | "itemid" | "itemprop" | "itemref" | "itemscope" |
-    "itemtype" | "lang" | "nonce" | "spellcheck" | "style" | "tabindex" | "title" | "translate" | EventHandlers
+    "enterkeyhint" | "hclass" | "hidden" | "id" | "inputmode" | "is" | "itemid" | "itemprop" | "itemref" |
+    "itemscope" | "itemtype" | "lang" | "nonce" | "spellcheck" | "style" | "tabindex" | "title" | "translate" |
+    EventHandlers
 
 type EventHandlers = "onabort" | "onauxclick" | "oncancel" | "oncanplay" | "oncanplaythrough" | "onchange" |
     "onclick" | "onclos" | "oncontextmenu" | "oncuechange" | "ondblclick" | "ondrag" | "ondragend" |

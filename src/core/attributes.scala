@@ -99,7 +99,7 @@ package attributes:
   given checked[T]: Attribute["checked", Boolean, T] = identity(_)
   given cite[T]: Attribute["cite", String, T] = identity(_)
 
-  given cls[T]: Attribute["cls", List[Cls], T] with
+  given hclass[T]: Attribute["hclass", List[Cls], T] with
     override def rename: Option[String] = Some("class")
     def convert(value: List[Cls]): String = value.map(_.name).mkString(" ")
  
@@ -142,7 +142,7 @@ package attributes:
   given height[T]: Attribute["height", Int, T] = _.toString
   given hidden[T]: Attribute["hidden", Boolean, T] = identity(_)
   given high[T]: Attribute["high", Double, T] = _.toString
-  given href[T]: Attribute["href", String, T] = identity(_)
+  given href: Attribute["href", String, String] = identity(_)
   given hreflang[T]: Attribute["hreflang", String, T] = identity(_)
   
   given httpEquiv[T]: Attribute["httpEquiv", HttpEquiv, T] with
@@ -206,11 +206,19 @@ package attributes:
   given title[T]: Attribute["title", String, T] = identity(_)
   given translate[T]: Attribute["translate", Boolean, T] = identity(_)
   
-  given typeName[T]: Attribute["typeName", String, T] with
+  given htype[T]: Attribute["htype", HType, T] with
     override def rename: Option[String] = Some("type")
-    def convert(value: String): String = value
+    def convert(value: HType): String = value.identifier
   
   given usemap[T]: Attribute["usemap", String, T] = identity(_) // todo
   given value[T]: Attribute["value", Double, T] = _.toString
   given width[T]: Attribute["width", Int, T] = _.toString
   given wrap[T]: Attribute["wrap", Wrap, T] = _.toString.toLowerCase
+
+enum HType:
+  case Button, Checkbox, Color, Date, DatetimeLocal, Email, File, Hidden, Image, Month, Number, Password, Radio,
+      Range, Reset, Search, Submit, Tel, Text, Time, Url, Week
+  
+  def identifier = this match
+    case DatetimeLocal => "datetime-local"
+    case other         => other.toString.toLowerCase

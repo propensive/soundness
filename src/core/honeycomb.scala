@@ -33,8 +33,10 @@ object Node:
     case node: Content[?] => Seq(node)
   }.asInstanceOf[Seq[Content[C]]]
 
+extension [T](value: T)
+  def html[R <: Label](using ToHtml[T, R]): Seq[Content[R]] = summon[ToHtml[T, R]].convert(value)
+
 object Html extends Item["html"]:
-  def apply[T: ToHtml](value: T): Seq[Content[Flow]] = summon[ToHtml[T]].convert(value)
   def label = "html"
   def attributes: Attributes = Map()
   def children: Seq[Content[?]] = Nil
