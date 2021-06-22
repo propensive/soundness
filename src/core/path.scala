@@ -98,6 +98,8 @@ sealed trait Inode[+Fs <: Filesystem](val path: Path.Absolute[Fs]):
   def fullname: String = javaFile.getAbsolutePath
   def uriString: String = javaFile.toURI.toString
   def exists(): Boolean = Files.exists(javaPath)
+  def parent: Dir[Fs] = Dir(path.parent)
+  
   def copyTo[Fs2 <: Filesystem](dest: Path.Absolute[Fs2]): Inode[Fs2]
   def hardLinkTo[Fs2 <: Filesystem](dest: Path.Absolute[Fs2]): Inode[Fs2]
 
@@ -139,15 +141,8 @@ case class Dir[+Fs <: Filesystem](initPath: Path.Absolute[Fs]) extends Inode[Fs]
     catch case e => throw DifferentFilesystems(path, dest)
 
     dest.dir
-    
   
-
-
-
-
-
-
-
+  def /(child: String): Path[Fs] = path / child
 
 // object OldPath:
 //   def apply(jpath: JavaPath): Path = Path(jpath.toString match
@@ -461,9 +456,19 @@ class Filesystem(separator: "/" | "\\", prefix: String) extends Root(separator, 
   
   def /(filename: String): Path.Absolute[this.type] = Path.Absolute(this, Vector(filename))
 
-
 object UnixRoot extends Filesystem("/", "")
 case class WindowsRoot(drive: Majuscule) extends Filesystem("\\", str"${drive.toString}:\/")
+
+object unix:
+  type / = UnixRoot.type
+  val Pwd: Path.Absolute[/] = UnixRoot.parse(Sys.user.dir().get) match
+    case Some(Path.Absolute(fs, path)) => Path.Absolute(fs, path)
+
+object windows:
+  val C = WindowsRoot('C')
+  val D = WindowsRoot('D')
+  val E = WindowsRoot('E')
+  val F = WindowsRoot('F')
 
 object FsPath:
   def parse(value: String): Path[Filesystem] = Filesystem.roots.find(_.parse(value).nonEmpty).map { fs =>
