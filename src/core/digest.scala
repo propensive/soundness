@@ -21,7 +21,7 @@ import scala.collection.*
 
 import java.security.*
 import java.util.Base64.getEncoder as Base64Encoder
-import java.lang.{Double as JDouble, Float as JFloat}
+import java.lang as jl
 
 sealed trait HashScheme
 
@@ -43,14 +43,14 @@ extension [T](value: T)
     Digester(hashable.digest(_, value)).apply(hashFunction)
 
 extension (bytes: IArray[Byte])
-  def encoded[E <: EncodingScheme: ByteEncoder]: String = summon[ByteEncoder[E]].encode(bytes)
+  def encode[E <: EncodingScheme: ByteEncoder]: String = summon[ByteEncoder[E]].encode(bytes)
 
 case class HashFunction[A <: HashScheme](name: String):
   def init: DigestAccumulator = DigestAccumulator(MessageDigest.getInstance(name))
 
 case class Digest(bytes: IArray[Byte]):
   override def toString: String = summon[ByteEncoder[Base64]].encode(bytes)
-  def encoded[ES <: EncodingScheme: ByteEncoder]: String = bytes.encoded[ES]
+  def encode[ES <: EncodingScheme: ByteEncoder]: String = bytes.encode[ES]
 
 object Hashable extends Derivation[Hashable]:
   def join[T](caseClass: CaseClass[Hashable, T]): Hashable[T] =
@@ -67,8 +67,8 @@ object Hashable extends Derivation[Hashable]:
   given[T: Hashable]: Hashable[Traversable[T]] = (acc, xs) => xs.foldLeft(acc)(summon[Hashable[T]].digest)
   given Hashable[Int] = (acc, n) => acc.append(IArray.from((24 to 0 by -8).map(n >> _).map(_.toByte).toArray))
   given Hashable[Long] = (acc, n) => acc.append(IArray.from((52 to 0 by -8).map(n >> _).map(_.toByte).toArray))
-  given Hashable[Double] = (acc, n) => summon[Hashable[Long]].digest(acc, JDouble.doubleToRawLongBits(n))
-  given Hashable[Float] = (acc, n) => summon[Hashable[Int]].digest(acc, JFloat.floatToRawIntBits(n))
+  given Hashable[Double] = (acc, n) => summon[Hashable[Long]].digest(acc, jl.Double.doubleToRawLongBits(n))
+  given Hashable[Float] = (acc, n) => summon[Hashable[Int]].digest(acc, jl.Float.floatToRawIntBits(n))
   given Hashable[Boolean] = (acc, n) => acc.append(IArray(if n then 1.toByte else 0.toByte))
   given Hashable[Byte] = (acc, n) => acc.append(IArray(n))
   given Hashable[Short] = (acc, n) => acc.append(IArray((n >> 8).toByte, n.toByte))
