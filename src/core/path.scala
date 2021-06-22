@@ -25,59 +25,59 @@ extends SlalomException(str"attempted to exceed the root boundary")
 
 trait Root(val separator: String, val prefix: String)
 
-object ClasspathRoot extends Root("/", "classpath:")
+object Classpath extends Root("/", "classpath:")
 
 sealed trait Path[+R <: Root]:
   def parent: Path[R] raises RootBoundaryExceeded
   def ancestor(ascent: Int): Path[R] raises RootBoundaryExceeded
-  def absolute[R2 >: R <: Root](pwd: Absolute[R2]): Absolute[R2] raises RootBoundaryExceeded
+  def absolute[R2 >: R <: Root](pwd: Path.Absolute[R2]): Path.Absolute[R2] raises RootBoundaryExceeded
   def /(filename: String): Path[R] raises RootBoundaryExceeded
-  def ++(path: Relative): Path[R]
+  def ++(path: Path.Relative): Path[R]
 
-case class Absolute[+R <: Root](root: R, path: Vector[String]) extends Path[R]:
-  override def toString(): String = path.join(root.prefix, root.separator, "")
-  
-  def parent: Absolute[R] raises RootBoundaryExceeded = path match
-    case init :+ last => Absolute[R](root, init)
-    case _            => throw RootBoundaryExceeded(root)
-
-  def ancestor(ascent: Int): Absolute[R] raises RootBoundaryExceeded =
-    if path.length == 0 then this else parent.ancestor(ascent - 1)
-  
-  def absolute[R2 >: R <: Root](pwd: Absolute[R2]): Absolute[R2] raises RootBoundaryExceeded = this
-  
-  def /(filename: String): Absolute[R] raises RootBoundaryExceeded = filename match
-    case ".."     => path match
-      case init :+ last => Absolute(root, init)
+object Path:
+  case class Absolute[+R <: Root](root: R, path: Vector[String]) extends Path[R]:
+    override def toString(): String = path.join(root.prefix, root.separator, "")
+    
+    def parent: Absolute[R] raises RootBoundaryExceeded = path match
+      case init :+ last => Absolute[R](root, init)
       case _            => throw RootBoundaryExceeded(root)
-    case "."      => this
-    case filename => Absolute(root, path :+ filename)
-  
-  def ++(relative: Relative): Absolute[R] raises RootBoundaryExceeded =
-    if relative.ascent > 0 then ancestor(relative.ascent) ++ relative.copy(ascent = 0)
-    else Absolute(root, path ++ relative.path)
 
+    def ancestor(ascent: Int): Absolute[R] raises RootBoundaryExceeded =
+      if path.length == 0 then this else parent.ancestor(ascent - 1)
+    
+    def absolute[R2 >: R <: Root](pwd: Absolute[R2]): Absolute[R2] raises RootBoundaryExceeded = this
+    
+    def /(filename: String): Absolute[R] raises RootBoundaryExceeded = filename match
+      case ".."     => path match
+        case init :+ last => Absolute(root, init)
+        case _            => throw RootBoundaryExceeded(root)
+      case "."      => this
+      case filename => Absolute(root, path :+ filename)
+    
+    def ++(relative: Relative): Absolute[R] raises RootBoundaryExceeded =
+      if relative.ascent > 0 then ancestor(relative.ascent) ++ relative.copy(ascent = 0)
+      else Absolute(root, path ++ relative.path)
 
-case class Relative(ascent: Int, path: Vector[String]) extends Path[Nothing]:
-  override def toString(): String = path.join("../"*ascent, "/", "")
+  case class Relative(ascent: Int, path: Vector[String]) extends Path[Nothing]:
+    override def toString(): String = path.join("../"*ascent, "/", "")
 
-  def parent: Relative raises RootBoundaryExceeded = path match
-    case init :+ last => Relative(ascent, init)
-    case empty        => Relative(ascent + 1, Vector())
-
-  def ancestor(ascent: Int): Relative raises RootBoundaryExceeded =
-    if ascent == 0 then this else parent.ancestor(ascent - 1)
-
-  def absolute[R2 >: Nothing <: Root](pwd: Absolute[R2]): Absolute[R2] raises RootBoundaryExceeded =
-    if ascent == 0 then pwd.copy(path = pwd.path ++ path) else Relative(ascent - 1, path).absolute(pwd.parent)
-  
-  def /(filename: String): Relative raises RootBoundaryExceeded = filename match
-    case ".."     => path match
+    def parent: Relative raises RootBoundaryExceeded = path match
       case init :+ last => Relative(ascent, init)
       case empty        => Relative(ascent + 1, Vector())
-    case "."      => this
-    case filename => Relative(ascent, path :+ filename)
-  
-  def ++(relative: Relative): Relative raises RootBoundaryExceeded =
-    if relative.ascent == 0 then copy(path = path ++ relative.path)
-    else ancestor(relative.ascent) ++ relative.copy(ascent = 0)
+
+    def ancestor(ascent: Int): Relative raises RootBoundaryExceeded =
+      if ascent == 0 then this else parent.ancestor(ascent - 1)
+
+    def absolute[R2 >: Nothing <: Root](pwd: Absolute[R2]): Absolute[R2] raises RootBoundaryExceeded =
+      if ascent == 0 then pwd.copy(path = pwd.path ++ path) else Relative(ascent - 1, path).absolute(pwd.parent)
+    
+    def /(filename: String): Relative raises RootBoundaryExceeded = filename match
+      case ".."     => path match
+        case init :+ last => Relative(ascent, init)
+        case empty        => Relative(ascent + 1, Vector())
+      case "."      => this
+      case filename => Relative(ascent, path :+ filename)
+    
+    def ++(relative: Relative): Relative raises RootBoundaryExceeded =
+      if relative.ascent == 0 then copy(path = path ++ relative.path)
+      else ancestor(relative.ascent) ++ relative.copy(ascent = 0)
