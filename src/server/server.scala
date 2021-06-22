@@ -46,6 +46,12 @@ object Handler:
       for (k, v) <- headers do responder.addHeader(k, v)
       responder.sendBody(404, handler.stream(notFound.content))
 
+  given [T: SimpleHandler]: Handler[ServerError[T]] with
+    def process(notFound: ServerError[T], status: Int, headers: Map[String, String], responder: Responder): Unit =
+      val handler = summon[SimpleHandler[T]]
+      responder.addHeader(ResponseHeader.ContentType.header, handler.mime)
+      for (k, v) <- headers do responder.addHeader(k, v)
+      responder.sendBody(500, handler.stream(notFound.content))
 
 object Redirect:
   
@@ -62,7 +68,8 @@ class SimpleHandler[T](val mime: String, val stream: T => Body) extends Handler[
     for (k, v) <- headers do responder.addHeader(k, v)
     responder.sendBody(status, stream(content))
 
-case class NotFound[T](content: T)(using SimpleHandler[T])
+case class NotFound[T: SimpleHandler](content: T)
+case class ServerError[T: SimpleHandler](content: T)
 
 case class Cookie(domain: String,
                   name: String,
@@ -76,7 +83,7 @@ case class Response[T: Handler](content: T,
                                 headers: Map[ResponseHeader, String] = Map(),
                                 cookies: List[Cookie] = Nil):
 
-  def respond(responder: Responder) =
+  def respond(responder: Responder): Unit =
     summon[Handler[T]].process(content, status.code, headers.map { (k, v) => k.header -> v }, responder)
 
 case class Request(method: Method, body: Chunked, query: String, ssl: Boolean, hostname: String, port: Int,
@@ -123,7 +130,7 @@ extension (value: Http.type)
 
 def request(using Request): Request = summon[Request]
 def param(using Request)(key: String): Option[String] = summon[Request].params.get(key)
-def param[T](paramKey: Param[T])(using Request): Option[T] = paramKey.get
+def param[T](paramKey: RequestParam[T])(using Request): Option[T] = paramKey.get
 
 def header(using Request)(header: RequestHeader): List[String] =
   summon[Request].headers.get(header).getOrElse(Nil)
@@ -134,7 +141,7 @@ object ParamReader:
 trait ParamReader[T]:
   def read(value: String): Option[T]
 
-case class Param[T](key: String)(using ParamReader[T]):
+case class RequestParam[T](key: String)(using ParamReader[T]):
   type Type = T
   def get(using Request): Option[T] = param(key).flatMap(summon[ParamReader[T]].read(_))
   def unapply(request: Request): Option[T] = get(using request)
@@ -179,9 +186,9 @@ case class HttpServer(port: Int) extends RequestHandler:
       val paramStrings = query.cut("&")
       
       paramStrings.foldLeft(Map[String, List[String]]()) { (map, elem) =>
-        val IArray(key, value) = elem.cut("=", 2)
+        val kv = elem.cut("=", 2)
         
-        map.updated(key, value :: map.getOrElse(key, Nil))
+        map.updated(kv(0), kv(1) :: map.getOrElse(kv(0), Nil))
       }
     }
     
@@ -219,3 +226,28 @@ case class HttpServer(port: Int) extends RequestHandler:
           body.map(_.asInstanceOf[Array[Byte]]).foreach(exchange.getResponseBody.write(_))
           exchange.getResponseBody.flush()
       exchange.close()
+
+object Css:
+  given SimpleHandler[Css] = SimpleHandler("text/css; charset=utf-8", _.content.bytes)
+
+case class Css(content: String)
+
+case class Svg(content: String)
+
+object Svg:
+  given SimpleHandler[Svg] = SimpleHandler("image/svg+xml", _.content.bytes)
+
+case class Jpeg(content: IArray[Byte])
+
+object Jpeg:
+  given SimpleHandler[Jpeg] = SimpleHandler("image/jpeg", _.content)
+
+case class Gif(content: IArray[Byte])
+
+object Gif:
+  given SimpleHandler[Gif] = SimpleHandler("image/gif", _.content)
+
+case class Png(content: IArray[Byte])
+
+object Png:
+  given SimpleHandler[Png] = SimpleHandler("image/png", _.content)
