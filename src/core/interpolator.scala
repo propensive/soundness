@@ -19,18 +19,18 @@ package litterateur
 import rudiments.*
 import contextual.*
 
-enum Input:
+enum MdInput:
   case Block(content: String)
   case Inline(content: String)
 
-object MdInterpolator extends Interpolator[Input, String, Markdown.Document]:
+object MdInterpolator extends Interpolator[MdInput, String, Markdown.Root[Markdown]]:
   
-  def complete(state: String): Markdown.Document = Markdown.parse(state)
+  def complete(state: String): Markdown.Root[Markdown] = Markdown.parse[Markdown](state)
   def initial: String = ""
   
-  def insert(state: String, value: Option[Input]): String = value match
-    case Some(Input.Block(content))  => str"$state\n$content\n"
-    case Some(Input.Inline(content)) => str"$state$content"
+  def insert(state: String, value: Option[MdInput]): String = value match
+    case Some(MdInput.Block(content))  => str"$state\n$content\n"
+    case Some(MdInput.Inline(content)) => str"$state$content"
     case None                          => ""
    
   def parse(state: String, next: String): String = state+next
