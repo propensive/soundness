@@ -1,5 +1,4 @@
 /*
-
     Rudiments, version 0.1.0. Copyright 2020-21 Jon Pretty, Propensive OÜ.
 
     The primary distribution site is: https://propensive.com/
@@ -16,11 +15,14 @@
 */
 package rudiments
 
-import java.net.{URLEncoder, URLDecoder}
-
 import scala.collection.IterableFactory
 
+import java.util.regex.*
+import java.net.{URLEncoder, URLDecoder}
+
 import language.dynamics
+
+type raises[T, E <: Exception] = T
 
 type Bytes = IArray[Byte]
 type Chunked = LazyList[Bytes]
@@ -41,8 +43,11 @@ extension [T](value: T)
 
 extension (value: String)
   def populated: Option[String] = if value.isEmpty then None else Some(value)
-  def cut(delimiter: String): IArray[String] = IArray.from(value.split(delimiter))
-  def cut(delimiter: String, limit: Int): IArray[String] = IArray.from(value.split(delimiter, limit))
+  def cut(delimiter: String): IArray[String] = cut(delimiter, 0)
+  
+  def cut(delimiter: String, limit: Int): IArray[String] =
+    IArray.from(value.split(Pattern.quote(delimiter), limit))
+  
   def bytes: IArray[Byte] = IArray.from(value.getBytes("UTF-8"))
   def chars: IArray[Char] = IArray.from(value.toCharArray)
   def urlEncode: String = URLEncoder.encode(value, "UTF-8")
@@ -99,4 +104,3 @@ case class Property(name: String) extends Dynamic:
 object Sys extends Dynamic:
   def selectDynamic(key: String): Property = Property(key)
   def applyDynamic(key: String)(): Option[String] = selectDynamic(key).apply()
-  
