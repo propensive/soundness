@@ -31,7 +31,7 @@ object Dot:
 
   case class Id(key: String) extends Dynamic:
     def applyDynamicNamed(method: "apply")(attrs: (String, String)*) =
-      Statement.Node(this, attrs.map { case (k, v) => Attribute(k, v) }*)
+      Statement.Node(this, attrs.map { (k, v) => Attribute(k, v) }*)
     
     def :=(id: Id): Statement.Assignment = Statement.Assignment(this, id)
 
