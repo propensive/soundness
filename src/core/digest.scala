@@ -1,18 +1,19 @@
 /*
-  Gastronomy, version 1.0.0. Copyright 2018 Jon Pretty, Propensive Ltd.
+    Gastronomy, version 0.4.0. Copyright 2018-21 Jon Pretty, Propensive OÜ.
 
-  The primary distribution site is: https://propensive.com/
+    The primary distribution site is: https://propensive.com/
 
-  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
-  in compliance with the License. You may obtain a copy of the License at
+    Licensed under the Apache License, Version 2.0 (the "License"); you may not use this
+    file except in compliance with the License. You may obtain a copy of the License at
 
-      http://www.apache.org/licenses/LICENSE-2.0
+    http://www.apache.org/licenses/LICENSE-2.0
 
-  Unless required  by applicable  law or  agreed to  in writing,  software  distributed  under the
-  License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
-  express  or  implied.  See  the  License for  the specific  language  governing  permissions and
-  limitations under the License.
-                                                                                                  */
+    Unless required by applicable law or agreed to in writing, software distributed under the
+    License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
+    either express or implied. See the License for the specific language governing permissions
+    and limitations under the License.
+*/
+
 package gastronomy
 
 import wisteria.*
@@ -20,7 +21,7 @@ import wisteria.*
 import scala.collection.*
 
 import java.security.*
-import java.util.Base64.getEncoder as Base64Encoder
+import java.util.Base64.{getEncoder as Base64Encoder, getDecoder as Base64Decoder}
 import java.lang as jl
 
 sealed trait HashScheme
@@ -64,11 +65,21 @@ object Hashable extends Derivation[Hashable]:
       subtype.typeclass.digest(acc2, subtype.cast(value))
     }
     
-  given[T: Hashable]: Hashable[Traversable[T]] = (acc, xs) => xs.foldLeft(acc)(summon[Hashable[T]].digest)
-  given Hashable[Int] = (acc, n) => acc.append(IArray.from((24 to 0 by -8).map(n >> _).map(_.toByte).toArray))
-  given Hashable[Long] = (acc, n) => acc.append(IArray.from((52 to 0 by -8).map(n >> _).map(_.toByte).toArray))
-  given Hashable[Double] = (acc, n) => summon[Hashable[Long]].digest(acc, jl.Double.doubleToRawLongBits(n))
-  given Hashable[Float] = (acc, n) => summon[Hashable[Int]].digest(acc, jl.Float.floatToRawIntBits(n))
+  given[T: Hashable]: Hashable[Traversable[T]] =
+    (acc, xs) => xs.foldLeft(acc)(summon[Hashable[T]].digest)
+  
+  given Hashable[Int] =
+    (acc, n) => acc.append(IArray.from((24 to 0 by -8).map(n >> _).map(_.toByte).toArray))
+  
+  given Hashable[Long] =
+    (acc, n) => acc.append(IArray.from((52 to 0 by -8).map(n >> _).map(_.toByte).toArray))
+  
+  given Hashable[Double] =
+    (acc, n) => summon[Hashable[Long]].digest(acc, jl.Double.doubleToRawLongBits(n))
+  
+  given Hashable[Float] =
+    (acc, n) => summon[Hashable[Int]].digest(acc, jl.Float.floatToRawIntBits(n))
+  
   given Hashable[Boolean] = (acc, n) => acc.append(IArray(if n then 1.toByte else 0.toByte))
   given Hashable[Byte] = (acc, n) => acc.append(IArray(n))
   given Hashable[Short] = (acc, n) => acc.append(IArray((n >> 8).toByte, n.toByte))
@@ -82,7 +93,9 @@ trait Hashable[T]:
 
 case class Digester(run: DigestAccumulator => DigestAccumulator):
   def apply[A <: HashScheme: HashFunction]: Digest = run(summon[HashFunction[A]].init).digest()
-  def digest[T: Hashable](value: T): Digester = Digester(run.andThen(summon[Hashable[T]].digest(_, value)))
+  
+  def digest[T: Hashable](value: T): Digester =
+    Digester(run.andThen(summon[Hashable[T]].digest(_, value)))
 
 final case class DigestAccumulator(private val messageDigest: MessageDigest):
   def append(bytes: IArray[Byte]): DigestAccumulator =
@@ -113,7 +126,19 @@ object ByteEncoder:
   given ByteEncoder[Base64] = bytes => Base64Encoder.encodeToString(bytes.to(Array))
   
   given ByteEncoder[Base64Url] = bytes =>
-    Base64Encoder.encodeToString(bytes.to(Array)).replace('+', '-').replace('/', '_').takeWhile(_ != '=')
+    Base64Encoder.encodeToString(bytes.to(Array))
+      .replace('+', '-')
+      .replace('/', '_')
+      .takeWhile(_ != '=')
+
+trait ByteDecoder[ES <: EncodingScheme]:
+  def decode(value: String): IArray[Byte]
 
 trait ByteEncoder[ES <: EncodingScheme]:
   def encode(bytes: IArray[Byte]): String
+
+object ByteDecoder:
+  given ByteDecoder[Base64] = value => IArray.from(Base64Decoder.decode(value))
+
+extension (value: String)
+  def decode[T <: EncodingScheme: ByteDecoder]: IArray[Byte] = summon[ByteDecoder[T]].decode(value)
