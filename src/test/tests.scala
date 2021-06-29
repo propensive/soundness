@@ -42,7 +42,7 @@ object Tests extends Suite("Gastronomy tests") {
 
   def run(using Runner): Unit = {
     test("Sha256, Hex") {
-      "Hello world".digest[Sha256].encode[Hex]
+      "Hello world".digest[Sha2[256]].encode[Hex]
     }.assert(_ == "64EC88CA00B268E5BA1A35678A1B5316D212F4F366B2477232534A8AECA37F3C")
 
     test("Md5, Base64") {
@@ -52,6 +52,19 @@ object Tests extends Suite("Gastronomy tests") {
     test("Sha1, Base64Url") {
       "Hello world".digest[Sha1].encode[Base64Url]
     }.assert(_ == "e1AsOh9IyGCa4hLN-2Od7jlnP14")
+
+    test("Sha384, Base64") {
+      "Hello world".digest[Sha2[384]].encode[Base64]
+    }.assert(_ == "kgOwxEOf0eauWHiGYze3xTKs1tkmAVDIAxjoq4wnzjMBifjflPuJDfHSmP82Bifh")
+    
+    test("Sha512, Base64") {
+      "Hello world".digest[Sha2[512]].encode[Base64]
+    }.assert(_ == "t/eDuu2Cl/DbkXRiGE/08I5pwtXl95qUJgD5cl9Yzh8pwYE5v4CwbA//K900c4RS7PQMSIwip+PYDN9"+
+        "vnBwNRw==")
+
+    test("Encode to Binary") {
+      IArray[Byte](1, 2, 3, 4).encode[Binary]
+    }.assert(_ == "00000001000000100000001100000100")
 
     test("Extract PEM message type") {
       val example = """
@@ -78,9 +91,9 @@ object Tests extends Suite("Gastronomy tests") {
     }.assert(_ == "Hello world")
     
     test("AES roundtrip") {
-      val privateKey: PrivateKey[Aes[256]] = PrivateKey.generate[Aes[256]]()
-      val message = privateKey.public.encrypt("Hello world")
-      privateKey.decrypt[String](message.bytes)
+      val key: SymmetricKey[Aes[256]] = SymmetricKey.generate[Aes[256]]()
+      val message = key.encrypt("Hello world")
+      key.decrypt[String](message.bytes)
     }.assert(_ == "Hello world")
 
     test("Sign some data with DSA") {
@@ -106,7 +119,16 @@ object Tests extends Suite("Gastronomy tests") {
     }.assert(_ == "DE7C9B85B8B78AA6BC8A7A36F70A90701C9DB4D9")
 
     test("SHA256 HMAC") {
-      pangram.hmac[Sha256]("key".bytes).encode[Hex]
+      pangram.hmac[Sha2[256]]("key".bytes).encode[Hex]
     }.assert(_ == "F7BC83F430538424B13298E6AA6FB143EF4D59A14946175997479DBC2D1A3CD8")
+    
+    test("SHA384 HMAC") {
+      pangram.hmac[Sha2[384]]("key".bytes).encode[Base64]
+    }.assert(_ == "1/RyfiwLOa4PHkDMlvYCQtW3gBhBzqb8WSxdPhrlBwBYKpbPNeHlVJlf5OAzgcI3")
+    
+    test("SHA512 HMAC") {
+      pangram.hmac[Sha2[512]]("key".bytes).encode[Base64]
+    }.assert(_ == "tCrwkFe6weLUFwjkipAuCbX/fxKrQopP6GZTxz3SSPuC+UilSfe3kaW0GRXuTR7Dk1NX5OIxclDQNyr"+
+        "6Lr7rOg==")
   }
 }
