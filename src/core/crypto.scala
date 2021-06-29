@@ -1,5 +1,5 @@
 /*
-    Gastronomy, version 0.4.0. Copyright 2018-21 Jon Pretty, Propensive OÜ.
+    Gastronomy, version 0.5.0. Copyright 2018-21 Jon Pretty, Propensive OÜ.
 
     The primary distribution site is: https://propensive.com/
 
@@ -61,7 +61,9 @@ object PrivateKey:
     PrivateKey(summon[A].genKey())
 
 case class PrivateKey[A <: CryptoAlgorithm[?]](private[gastronomy] val privateBytes: Bytes):
-  override def toString(): String = str"PrivateKey(${privateBytes.digest[Sha256].encode[Base64]})"
+  override def toString(): String =
+    str"PrivateKey(${privateBytes.digest[Sha2[256]].encode[Base64]})"
+  
   def public(using A): PublicKey[A] = PublicKey(summon[A].privateToPublic(privateBytes))
   def decrypt[T: ByteCodec](message: Message[A])(using A & Encryption): T = decrypt(message.bytes)
   
