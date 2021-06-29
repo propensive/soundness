@@ -17,10 +17,12 @@
 package gastronomy
 
 import wisteria.*
+import rudiments.*
 
 import scala.collection.*
 
 import java.security.*
+import javax.crypto.Mac, javax.crypto.spec.SecretKeySpec
 import java.util.Base64.{getEncoder as Base64Encoder, getDecoder as Base64Decoder}
 import java.lang as jl
 
@@ -32,24 +34,38 @@ sealed trait Sha1 extends HashScheme
 
 object Md5:
   given HashFunction[Md5] = HashFunction("MD5")
+  given HmacFunction[Md5] = HmacFunction("HmacMD5")
 
 object Sha256:
   given HashFunction[Sha256] = HashFunction("SHA-256")
+  given HmacFunction[Sha256] = HmacFunction("HmacSHA256")
 
 object Sha1:
   given HashFunction[Sha1] = HashFunction("SHA1")
+  given HmacFunction[Sha1] = HmacFunction("HmacSHA1")
+
+case class Hmac[A <: HashScheme](bytes: Bytes):
+  def encode[ES <: EncodingScheme: ByteEncoder]: String = bytes.encode[ES]
 
 extension [T](value: T)
-  def digest[A <: HashScheme](using hashFunction: HashFunction[A], hashable: Hashable[T]): Digest =
-    Digester(hashable.digest(_, value)).apply(hashFunction)
+  def digest[A <: HashScheme: HashFunction](using Hashable[T]): Digest =
+    Digester(summon[Hashable[T]].digest(_, value)).apply(summon[HashFunction[A]])
 
-extension (bytes: IArray[Byte])
+  def hmac[A <: HashScheme: HmacFunction](key: Bytes)(using ByteCodec[T]): Hmac[A] =
+    val mac = summon[HmacFunction[A]].init
+    mac.init(SecretKeySpec(key.to(Array), summon[HmacFunction[A]].name))
+    Hmac(IArray.from(mac.doFinal(summon[ByteCodec[T]].encode(value).unsafeMutable)))
+
+extension (bytes: Bytes)
   def encode[E <: EncodingScheme: ByteEncoder]: String = summon[ByteEncoder[E]].encode(bytes)
 
 case class HashFunction[A <: HashScheme](name: String):
   def init: DigestAccumulator = DigestAccumulator(MessageDigest.getInstance(name))
 
-case class Digest(bytes: IArray[Byte]):
+case class HmacFunction[A <: HashScheme](name: String):
+  def init: Mac = Mac.getInstance(name)
+
+case class Digest(bytes: Bytes):
   override def toString: String = summon[ByteEncoder[Base64]].encode(bytes)
   def encode[ES <: EncodingScheme: ByteEncoder]: String = bytes.encode[ES]
 
@@ -85,7 +101,7 @@ object Hashable extends Derivation[Hashable]:
   given Hashable[Short] = (acc, n) => acc.append(IArray((n >> 8).toByte, n.toByte))
   given Hashable[Char] = (acc, n) => acc.append(IArray((n >> 8).toByte, n.toByte))
   given Hashable[String] = (acc, s) => acc.append(IArray.from(s.getBytes("UTF-8")))
-  given Hashable[IArray[Byte]] = _.append(_)
+  given Hashable[Bytes] = _.append(_)
   given Hashable[Digest] = (acc, d) => acc.append(d.bytes)
 
 trait Hashable[T]:
@@ -98,7 +114,7 @@ case class Digester(run: DigestAccumulator => DigestAccumulator):
     Digester(run.andThen(summon[Hashable[T]].digest(_, value)))
 
 final case class DigestAccumulator(private val messageDigest: MessageDigest):
-  def append(bytes: IArray[Byte]): DigestAccumulator =
+  def append(bytes: Bytes): DigestAccumulator =
     messageDigest.update(bytes.to(Array))
     DigestAccumulator(messageDigest)
   
@@ -112,7 +128,7 @@ trait Hex extends EncodingScheme
 trait Binary extends EncodingScheme
 
 object ByteEncoder:
-  private val HexLookup: IArray[Byte] = IArray.from("0123456789ABCDEF".getBytes)
+  private val HexLookup: Bytes = IArray.from("0123456789ABCDEF".getBytes)
 
   given ByteEncoder[Hex] = bytes =>
     val array = new Array[Byte](bytes.length*2)
@@ -132,13 +148,13 @@ object ByteEncoder:
       .takeWhile(_ != '=')
 
 trait ByteDecoder[ES <: EncodingScheme]:
-  def decode(value: String): IArray[Byte]
+  def decode(value: String): Bytes
 
 trait ByteEncoder[ES <: EncodingScheme]:
-  def encode(bytes: IArray[Byte]): String
+  def encode(bytes: Bytes): String
 
 object ByteDecoder:
   given ByteDecoder[Base64] = value => IArray.from(Base64Decoder.decode(value))
 
 extension (value: String)
-  def decode[T <: EncodingScheme: ByteDecoder]: IArray[Byte] = summon[ByteDecoder[T]].decode(value)
+  def decode[T <: EncodingScheme: ByteDecoder]: Bytes = summon[ByteDecoder[T]].decode(value)

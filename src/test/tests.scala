@@ -18,12 +18,11 @@ package gastronomy.tests
 
 import gastronomy._
 import probably._
-
-import scala.util.{ Failure, Success, Try }
+import rudiments._
 
 object Tests extends Suite("Gastronomy tests") {
  
-  val request = """
+  val request: String = """
     |-----BEGIN CERTIFICATE REQUEST-----
     |MIIB9TCCAWACAQAwgbgxGTAXBgNVBAoMEFF1b1ZhZGlzIExpbWl0ZWQxHDAaBgNV
     |BAsME0RvY3VtZW50IERlcGFydG1lbnQxOTA3BgNVBAMMMFdoeSBhcmUgeW91IGRl
@@ -38,7 +37,9 @@ object Tests extends Suite("Gastronomy tests") {
     |98TwDIK/39WEB/V607As+KoYazQG8drorw==
     |-----END CERTIFICATE REQUEST-----
     """.stripMargin
-  
+
+  val pangram: String = "The quick brown fox jumps over the lazy dog"
+
   def run(using Runner): Unit = {
     test("Sha256, Hex") {
       "Hello world".digest[Sha256].encode[Hex]
@@ -67,7 +68,7 @@ object Tests extends Suite("Gastronomy tests") {
     }.assert(_ == "iMwRdyDFStqq08vqjPbzYw==")
   
     test("PEM roundtrip") {
-      Pem.parse(request).string
+      Pem.parse(request).serialize
     }.assert(_ == request.trim)
 
     test("RSA roundtrip") {
@@ -81,5 +82,31 @@ object Tests extends Suite("Gastronomy tests") {
       val message = privateKey.public.encrypt("Hello world")
       privateKey.decrypt[String](message.bytes)
     }.assert(_ == "Hello world")
+
+    test("Sign some data with DSA") {
+      val privateKey: PrivateKey[Dsa[1024]] = PrivateKey.generate[Dsa[1024]]()
+      val message = "Hello world"
+      val signature = privateKey.sign(message)
+      privateKey.public.verify(message, signature)
+    }.assert(identity)
+
+    test("Check bad signature") {
+      val privateKey: PrivateKey[Dsa[1024]] = PrivateKey.generate[Dsa[1024]]()
+      val message = "Hello world"
+      val signature = privateKey.sign("Something else")
+      privateKey.public.verify(message, signature)
+    }.assert(!identity(_))
+
+    test("MD5 HMAC") {
+      pangram.hmac[Md5]("key".bytes).encode[Hex]
+    }.assert(_ == "80070713463E7749B90C2DC24911E275")
+    
+    test("SHA1 HMAC") {
+      pangram.hmac[Sha1]("key".bytes).encode[Hex]
+    }.assert(_ == "DE7C9B85B8B78AA6BC8A7A36F70A90701C9DB4D9")
+
+    test("SHA256 HMAC") {
+      pangram.hmac[Sha256]("key".bytes).encode[Hex]
+    }.assert(_ == "F7BC83F430538424B13298E6AA6FB143EF4D59A14946175997479DBC2D1A3CD8")
   }
 }

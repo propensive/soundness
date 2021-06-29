@@ -20,27 +20,37 @@ import javax.crypto.*, javax.crypto.spec.*
 import java.security as js, js.spec.*
 
 import rudiments.*
-import javax.xml.crypto.AlgorithmMethod
 import java.nio.*, charset.*
 
 trait CryptoAlgorithm[+KeySize <: Int & Singleton]:
-  def keySize: Int
+  def keySize: KeySize
+  def privateToPublic(key: Bytes): Bytes
+  def genKey(): Bytes
+
+trait Encryption:
   def encrypt(value: Bytes, privateKey: Bytes): Bytes
   def decrypt(message: Bytes, publicKey: Bytes): Bytes
-  def genKey(): Bytes
-  def privateToPublic(key: Bytes): Bytes
 
+trait Signing:
+  def sign(data: Bytes, privateKey: Bytes): Bytes
+  def verify(data: Bytes, signature: Bytes, publicKey: Bytes): Boolean
 
 case class Message[+A <: CryptoAlgorithm[?]](bytes: Bytes):
   override def toString(): String = str"Message(${bytes.encode[Base64]})"
+
+case class Signature[+A <: CryptoAlgorithm[?]](bytes: Bytes):
+  override def toString(): String = str"Signature(${bytes.encode[Base64]})"
 
 case class PublicKey[A <: CryptoAlgorithm[?]](publicBytes: Bytes):
 
   override def toString(): String = str"PublicKey(${publicBytes.digest[Md5].encode[Hex]})"
 
-  def encrypt[T: ByteCodec](value: T)(using A): Message[A] =
+  def encrypt[T: ByteCodec](value: T)(using A & Encryption): Message[A] =
     Message(summon[A].encrypt(summon[ByteCodec[T]].encode(value), publicBytes))
   
+  def verify[T: ByteCodec](value: T, signature: Signature[A])(using A & Signing): Boolean =
+    summon[A].verify(summon[ByteCodec[T]].encode(value), signature.bytes, publicBytes)
+
   def pem: Pem = Pem("PUBLIC KEY", publicBytes)
 
 object PrivateKey:
@@ -51,10 +61,14 @@ case class PrivateKey[A <: CryptoAlgorithm[?]](private[gastronomy] val privateBy
 
   override def toString(): String = str"PrivateKey(${privateBytes.digest[Md5].encode[Hex]})"
   def public(using A): PublicKey[A] = PublicKey(summon[A].privateToPublic(privateBytes))
-  def decrypt[T: ByteCodec](message: Message[A])(using A): T = decrypt(message.bytes)
+  def decrypt[T: ByteCodec](message: Message[A])(using A & Encryption): T = decrypt(message.bytes)
   
-  def decrypt[T: ByteCodec](bytes: Bytes)(using A): T =
+  def decrypt[T: ByteCodec](bytes: Bytes)(using A & Encryption): T =
     summon[ByteCodec[T]].decode(summon[A].decrypt(bytes, privateBytes))
+  
+  def sign[T: ByteCodec](value: T)(using A & Signing): Signature[A] =
+    Signature(summon[A].sign(summon[ByteCodec[T]].encode(value), privateBytes))
+
   
   def pem: Pem = Pem("PRIVATE KEY", privateBytes)
 
@@ -95,8 +109,14 @@ object Rsa:
   given rsa1024: Rsa[1024] = Rsa()
   given rsa2048: Rsa[2048] = Rsa()
 
-class Aes[KS <: 128 | 192 | 256: ValueOf]() extends CryptoAlgorithm[KS]:
-  def keySize: Int = valueOf[KS]
+object Dsa:
+  given dsa512: Dsa[512] = Dsa()
+  given dsa1024: Dsa[1024] = Dsa()
+  given dsa2048: Dsa[2048] = Dsa()
+  given dsa3072: Dsa[3072] = Dsa()
+
+class Aes[KS <: 128 | 192 | 256: ValueOf]() extends CryptoAlgorithm[KS], Encryption:
+  def keySize: KS = valueOf[KS]
   
   private def init() = Cipher.getInstance("AES/ECB/PKCS5Padding")
   
@@ -122,11 +142,8 @@ class Aes[KS <: 128 | 192 | 256: ValueOf]() extends CryptoAlgorithm[KS]:
   def privateToPublic(key: Bytes): Bytes = key
 end Aes
 
-class Rsa[KS <: 1024 | 2048: ValueOf]() extends CryptoAlgorithm[KS]:
-  def keySize: Int = valueOf[KS]
-
-  private def init(): Cipher = Cipher.getInstance("RSA")
-  private def keyFactory(): js.KeyFactory = js.KeyFactory.getInstance("RSA")
+class Rsa[KS <: 1024 | 2048: ValueOf]() extends CryptoAlgorithm[KS], Encryption:
+  def keySize: KS = valueOf[KS]
     
   def privateToPublic(bytes: Bytes): Bytes =
     val privateKey = keyFactory().generatePrivate(PKCS8EncodedKeySpec(bytes.unsafeMutable)) match
@@ -153,35 +170,46 @@ class Rsa[KS <: 1024 | 2048: ValueOf]() extends CryptoAlgorithm[KS]:
     val keyPair = generator.generateKeyPair()
     IArray.from(keyPair.getPrivate.getEncoded)
 
+  private def init(): Cipher = Cipher.getInstance("RSA")
+  private def keyFactory(): js.KeyFactory = js.KeyFactory.getInstance("RSA")
+end Rsa
 
-case class Pem(kind: String, data: Bytes):
-  def string: String = Seq(
-    Seq(s"-----BEGIN $kind-----"),
-    data.grouped(48).to(Seq).map(_.encode[Base64]),
-    Seq(s"-----END $kind-----")
-  ).flatten.join("\n")
+class Dsa[KS <: 512 | 1024 | 2048 | 3072: ValueOf]() extends CryptoAlgorithm[KS], Signing:
+  def keySize: KS = valueOf[KS]
+
+  def genKey(): Bytes =
+    val generator = js.KeyPairGenerator.getInstance("DSA")
+    val random = js.SecureRandom()
+    generator.initialize(keySize, random)
+    val keyPair = generator.generateKeyPair()
+    val pubKey = keyPair.getPublic match
+      case key: js.interfaces.DSAPublicKey => key
+    IArray.from(keyPair.getPrivate.getEncoded)
+
+  def sign(data: Bytes, keyBytes: Bytes): Bytes =
+    val sig = init()
+    val key = keyFactory().generatePrivate(PKCS8EncodedKeySpec(keyBytes.to(Array)))
+    sig.initSign(key)
+    sig.update(data.to(Array))
+    IArray.from(sig.sign())
+
+  def verify(data: Bytes, signature: Bytes, keyBytes: Bytes): Boolean =
+    val sig = init()
+    val key = keyFactory().generatePublic(X509EncodedKeySpec(keyBytes.to(Array)))
+    sig.initVerify(key)
+    sig.update(data.to(Array))
+    sig.verify(signature.to(Array))
+
+  def privateToPublic(keyBytes: Bytes): Bytes =
+    val key = keyFactory().generatePrivate(PKCS8EncodedKeySpec(keyBytes.to(Array))) match
+      case key: js.interfaces.DSAPrivateKey => key
+
+    val y = key.getParams.getG.modPow(key.getX, key.getParams.getP)
+    val spec = DSAPublicKeySpec(y, key.getParams.getP, key.getParams.getQ, key.getParams.getG)
+    IArray.from(keyFactory().generatePublic(spec).getEncoded)
+
+  private def init(): js.Signature = js.Signature.getInstance("DSA")
+  private def keyFactory(): js.KeyFactory = js.KeyFactory.getInstance("DSA")
 
 case class PemParseError(message: String)
 extends GastronomyException("could not parse PEM-encoded content")
-
-object Pem:
-  def parse(string: String): Pem exposes PemParseError =
-    val lines = string.trim.cut("\n")
-    
-    val label = lines.head match
-      case s"-----BEGIN $label-----" => label
-      case _                         => throw PemParseError("the BEGIN line could not be found")
-    
-    lines.tail.indexWhere {
-      case s"-----END $label-----" => true
-      case _                       => false
-    } match
-      case -1  =>
-        throw PemParseError("the message's END line could not be found")
-      case idx =>
-        try Pem(label, lines.tail.take(idx).join.decode[Base64])
-        catch Exception => throw PemParseError("could not parse Base64 PEM message")
-
-
-
-
