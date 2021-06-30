@@ -17,6 +17,7 @@
 package scintillate
 
 import rudiments.*
+import slalom.*
 
 import scala.collection.JavaConverters.*
 
@@ -31,9 +32,9 @@ trait Servlet() extends HttpServlet:
     
     def sendBody(status: Int, body: Body) =
       val length = body match
-        case body: Unit         => -1
+        case body: Unit        => -1
         case body: Array[Byte] => body.length
-        case _                  => 0
+        case _                 => 0
       
       response.setStatus(status)
       addHeader(ResponseHeader.ContentLength.header, length.toString)
@@ -96,5 +97,5 @@ trait Servlet() extends HttpServlet:
   override def service(request: HttpServletRequest, response: HttpServletResponse): Unit =
     handle(request, response)
 
-object Path:
+extension (path: Base.Path)
   def unapply(request: Request): Option[String] = Some(request.path)

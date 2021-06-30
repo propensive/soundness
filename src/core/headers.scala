@@ -19,35 +19,36 @@ package scintillate
 import rudiments.*
 
 object RequestHeader:
-  val standard: Map[String, RequestHeader] = Set(AIm, Accept, AcceptCharset, AcceptDatetime, AcceptEncoding,
-      AcceptLanguage, AccessControlRequestMethod, AccessControlRequestHeaders, Authorization, CacheControl,
-      Connection, ContentEncoding, ContentLength, ContentMd5, ContentType, Cookie, Date, Expect, Forwarded,
-      From, Host, Http2Settings, IfMatch, IfModifiedSince, IfNoneMatch, IfRange, IfUnmodifiedSince, MaxForwards,
-      Origin, Pragma, Prefer, ProxyAuthorization, Range, Referer, Te, Trailer, TransferEncoding, UserAgent,
-      Upgrade, Via, Warning).map(_.twin).map(_.header -> _).to(Map)
+  val standard: Map[String, RequestHeader] = Set(AIm, Accept, AcceptCharset, AcceptDatetime,
+      AcceptEncoding, AcceptLanguage, AccessControlRequestMethod, AccessControlRequestHeaders,
+      Authorization, CacheControl, Connection, ContentEncoding, ContentLength, ContentMd5,
+      ContentType, Cookie, Date, Expect, Forwarded, From, Host, Http2Settings, IfMatch,
+      IfModifiedSince, IfNoneMatch, IfRange, IfUnmodifiedSince, MaxForwards, Origin, Pragma, Prefer,
+      ProxyAuthorization, Range, Referer, Te, Trailer, TransferEncoding, UserAgent, Upgrade, Via,
+      Warning).map(_.twin).map(_.header -> _).to(Map)
 
   def unapply(str: String): Some[RequestHeader] =
-    Some(standard.get(str.toLowerCase).getOrElse(NonStandard(str)))
+    Some(standard.get(str.toLowerCase).getOrElse(Custom(str)))
   
   case class Value(header: RequestHeader, value: String)
 
   object nonStandard:
-    val UpgradeInsecureRequests = RequestHeader.NonStandard("upgrade-insecure-requests")
-    val XRequestedWith = RequestHeader.NonStandard("x-requested-with")
-    val Dnt = RequestHeader.NonStandard("dnt")
-    val XForwardedFor = RequestHeader.NonStandard("x-forwarded-for")
-    val XForwardedHost = RequestHeader.NonStandard("x-forwarded-host")
-    val XForwardedProto = RequestHeader.NonStandard("x-forwarded-proto")
-    val FrontEndHttps = RequestHeader.NonStandard("front-end-https")
-    val XHttpMethodOverride = RequestHeader.NonStandard("x-http-method-override")
-    val XattDeviceId = RequestHeader.NonStandard("x-att-deviceid")
-    val XWapProfile = RequestHeader.NonStandard("x-wap-profile")
-    val ProxyConnection = RequestHeader.NonStandard("proxy-connection")
-    val Xuidh = RequestHeader.NonStandard("x-uidh")
-    val XCsrfToken = RequestHeader.NonStandard("x-csrf-token")
-    val XRequestId = RequestHeader.NonStandard("x-request-id")
-    val XCorrelationId = RequestHeader.NonStandard("x-correlation-id")
-    val SaveData = RequestHeader.NonStandard("save-data")
+    val UpgradeInsecureRequests = RequestHeader.Custom("upgrade-insecure-requests")
+    val XRequestedWith = RequestHeader.Custom("x-requested-with")
+    val Dnt = RequestHeader.Custom("dnt")
+    val XForwardedFor = RequestHeader.Custom("x-forwarded-for")
+    val XForwardedHost = RequestHeader.Custom("x-forwarded-host")
+    val XForwardedProto = RequestHeader.Custom("x-forwarded-proto")
+    val FrontEndHttps = RequestHeader.Custom("front-end-https")
+    val XHttpMethodOverride = RequestHeader.Custom("x-http-method-override")
+    val XattDeviceId = RequestHeader.Custom("x-att-deviceid")
+    val XWapProfile = RequestHeader.Custom("x-wap-profile")
+    val ProxyConnection = RequestHeader.Custom("proxy-connection")
+    val Xuidh = RequestHeader.Custom("x-uidh")
+    val XCsrfToken = RequestHeader.Custom("x-csrf-token")
+    val XRequestId = RequestHeader.Custom("x-request-id")
+    val XCorrelationId = RequestHeader.Custom("x-correlation-id")
+    val SaveData = RequestHeader.Custom("save-data")
 
 enum RequestHeader(val header: String):
   case AIm extends RequestHeader("a-im")
@@ -91,7 +92,7 @@ enum RequestHeader(val header: String):
   case Upgrade extends RequestHeader("upgrade")
   case Via extends RequestHeader("via")
   case Warning extends RequestHeader("warning")
-  case NonStandard(name: String) extends RequestHeader(name.toLowerCase)
+  case Custom(name: String) extends RequestHeader(name.toLowerCase)
   
   def apply(content: String): RequestHeader.Value = RequestHeader.Value(this, content)
 
@@ -106,7 +107,7 @@ object ResponseHeader:
       XFrameOptions).map(_.twin).map(_.header -> _).to(Map)
   
   def unapply(str: String): Some[ResponseHeader] =
-    Some(standard.get(str.toLowerCase).getOrElse(NonStandard(str)))
+    Some(standard.get(str.toLowerCase).getOrElse(Custom(str)))
 
 enum ResponseHeader(val header: String):
   case AcceptCh extends ResponseHeader("accept-ch")
@@ -157,4 +158,4 @@ enum ResponseHeader(val header: String):
   case Warning extends ResponseHeader("warning")
   case WwwAuthenticate extends ResponseHeader("www-authenticate")
   case XFrameOptions extends ResponseHeader("x-frame-options")
-  case NonStandard(name: String) extends ResponseHeader(name.toLowerCase)
+  case Custom(name: String) extends ResponseHeader(name.toLowerCase)
