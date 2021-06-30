@@ -1,0 +1,1 @@
+Typesafe CSS in Scala
