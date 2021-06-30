@@ -44,6 +44,9 @@ extends JovianException("the permissions of the path cannot be changed")
 case class NotFile(path: Filesystem#Path)
 extends JovianException(str"the path ${path.toString} is not a file")
 
+case class NotSymlink(path: Filesystem#Path)
+extends JovianException(str"the path ${path.toString} is not a symlink")
+
 case class NotDirectory(path: Filesystem#Path)
 extends JovianException(str"the path ${path.toString} is not a directory")
 
@@ -53,50 +56,96 @@ extends JovianException(str"the path ${path.toString} does not exist")
 case class AlreadyExistent(path: Filesystem#Path)
 extends JovianException(str"the path ${path.toString} already exists")
 
+case class MissingResource(path: Classpath#Path)
+extends JovianException(str"the resource ${path.toString} could not be accessed")
+
+class Classpath(classLoader: ClassLoader = getClass.getClassLoader) extends Root("/", ""):
+  type AbsolutePath = CpPath
+  type RelativePath = Path.Relative
+
+  def makeAbsolute(parts: Vector[String]): CpPath = CpPath(parts)
+  def makeRelative(ascent: Int, parts: Vector[String]) = Path.Relative(ascent, parts)
+  
+  def /(resource: String): CpPath = CpPath(Vector(resource))
+
+  case class CpPath(parts: Vector[String]) extends Path.Absolute(parts):
+    def resource: Resource = Resource(makeAbsolute(parts))
+
+  case class Resource(path: CpPath):
+    def read[T: Readable](limit: Int = 65536): T exposes FileReadError =
+      val in = ji.BufferedInputStream(classLoader.getResourceAsStream(path.toString))
+      try summon[Readable[T]].read(in, limit) catch case e => throw MissingResource(path)
+    
+    def name: String = path.path.lastOption.getOrElse(prefix)
+    def parent: Resource = Resource(path.parent)
+
 class Filesystem(pathSeparator: "/" | "\\", fsPrefix: String) extends Root(pathSeparator, fsPrefix):
+
+  type RelativePath = Path.Relative
+  type AbsolutePath = FsPath
+
+  case class FsPath(parts: Vector[String]) extends Path.Absolute(parts):
+    def file: File exposes Nonexistant | NotFile =
+      val javaFile = ji.File(toString)
+      if !javaFile.exists() then throw Nonexistant(this)
+      if javaFile.isDirectory then throw NotFile(this)
+      
+      File(this)
+    
+    def directory: Directory exposes Nonexistant | NotDirectory =
+      val javaFile = ji.File(toString)
+      if !javaFile.exists() then throw Nonexistant(this)
+      if !javaFile.isDirectory then throw NotFile(this)
+      
+      Directory(this)
+  
+    def symlink: Symlink exposes Nonexistant | NotSymlink =
+      val javaFile = ji.File(toString)
+      if !javaFile.exists() then throw Nonexistant(this)
+      if !Files.isSymbolicLink(javaFile.toPath) then throw NotSymlink(this)
+      
+      Symlink(this, parse(Files.readSymbolicLink(Paths.get(toString)).toString).get)
+  
+    def inode: Inode exposes Nonexistant =
+      val javaFile = ji.File(toString)
+      val javaPath = javaFile.toPath
+      if !javaFile.exists() then throw Nonexistant(this)
+      
+      if javaFile.isDirectory then Directory(this)
+      else if Files.isSymbolicLink(javaPath)
+      then
+        val target = parse(Files.readSymbolicLink(javaPath).toString)
+            .getOrElse(throw NotSymlink(this))
+        
+        Symlink(this, target)
+      else File(this)
+    
+    def createDirectory(): Directory exposes NotWritable | AlreadyExistent =
+      val javaFile = ji.File(toString)
+      if javaFile.exists() then throw AlreadyExistent(this)
+      if !javaFile.mkdirs() then throw NotWritable(???)
+  
+      Directory(this)
+    
+    def exists(): Boolean exposes NotReadable = ji.File(path.toString).exists()
+  
+    def createFile(overwrite: Boolean = true): File exposes NotWritable | AlreadyExistent =
+      val javaFile = ji.File(path.toString)
+      if !overwrite && javaFile.exists() then throw AlreadyExistent(this)
+      try ji.FileOutputStream(javaFile).close() catch case e => NotWritable(???)
+  
+      File(this)
+
+    
+  def makeAbsolute(parts: Vector[String]): FsPath = FsPath(parts)
+  def makeRelative(ascent: Int, path: Vector[String]): Path.Relative = Path.Relative(ascent, path)
+
   def parse(value: String): Option[Path.Absolute] =
     if value.startsWith(prefix)
     then Some(Path.Absolute(value.drop(prefix.length).cut(separator.toString).to(Vector)))
     else None
   
   def /(filename: String): Path.Absolute = Path.Absolute(Vector(filename))
-
-  extension (path: Path.Absolute)
-    def file: File raises Nonexistant | NotFile =
-      val javaFile = ji.File(path.toString)
-      if !javaFile.exists() then throw Nonexistant(path)
-      if javaFile.isDirectory then throw NotFile(path)
-      
-      File(path)
-    
-    def directory: Directory raises Nonexistant | NotDirectory =
-      val javaFile = ji.File(path.toString)
-      if !javaFile.exists() then throw Nonexistant(path)
-      if !javaFile.isDirectory then throw NotFile(path)
-      
-      Directory(path)
-  
-    def inode: Inode raises Nonexistant =
-      val javaFile = ji.File(path.toString)
-      if !javaFile.exists() then throw Nonexistant(path)
-      
-      if javaFile.isDirectory then Directory(path) else File(path)
-    
-    def createDirectory(): Directory raises NotWritable | AlreadyExistent =
-      val javaFile = ji.File(path.toString)
-      if javaFile.exists() then throw AlreadyExistent(path)
-      if !javaFile.mkdirs() then throw NotWritable(???)
-  
-      Directory(path)
-    
-    def exists(): Boolean raises NotReadable = ji.File(path.toString).exists()
-  
-    def createFile(overwrite: Boolean = true): File raises NotWritable | AlreadyExistent =
-      val javaFile = ji.File(path.toString)
-      if !overwrite && javaFile.exists() then throw AlreadyExistent(path)
-      try ji.FileOutputStream(javaFile).close() catch case e => NotWritable(???)
-  
-      File(path)
 
   sealed trait Inode(val path: Path.Absolute):
     lazy val javaFile: ji.File = ji.File(path.toString)
@@ -108,57 +157,77 @@ class Filesystem(pathSeparator: "/" | "\\", fsPrefix: String) extends Root(pathS
     def parent: Directory = Directory(path.parent)
     def directory: Option[Directory]
     def file: Option[File]
+    def symlink: Option[Symlink]
     
-    def copyTo(dest: Path.Absolute): Inode
-    def hardLinkTo(dest: Path.Absolute): Inode
+    def copyTo(dest: FsPath): Inode
+    def hardLinkTo(dest: FsPath): Inode
 
   case class File(initPath: Path.Absolute) extends Inode(initPath):
     def directory: Option[Directory] = None
     def file: Option[File] = Some(this)
+    def symlink: Option[Symlink] = None
     
-    def write[T: Writable](content: T, append: Boolean = false): Unit raises NotWritable =
+    def write[T: Writable](content: T, append: Boolean = false): Unit exposes NotWritable =
       val out = ji.FileOutputStream(javaPath.toFile, append)
       try summon[Writable[T]].write(out, content) catch case e => throw NotWritable(this)
       finally try out.close() catch _ => ()
 
-    def read[T: Readable](limit: Int = 65536): T raises FileReadError =
+    def read[T: Readable](limit: Int = 65536): T exposes FileReadError =
       val in = ji.BufferedInputStream(ji.FileInputStream(javaPath.toFile))
       try summon[Readable[T]].read(in, limit) catch case e => throw FileReadError(this, e)
 
-    def copyTo(dest: Path.Absolute): File raises AlreadyExistent | NotWritable =
+    def copyTo(dest: FsPath): File exposes AlreadyExistent | NotWritable =
       if dest.exists() then throw AlreadyExistent(dest)
-      try Files.copy(javaPath, Paths.get(dest.toString)) catch IOException => throw NotWritable(this)
+      
+      try Files.copy(javaPath, Paths.get(dest.toString))
+      catch IOException => throw NotWritable(this)
       
       dest.file
 
-    def hardLinkTo(dest: Path.Absolute): File raises AlreadyExistent =
+    def hardLinkTo(dest: FsPath): File exposes AlreadyExistent =
       if dest.exists() then throw AlreadyExistent(dest)
       try Files.createLink(javaPath, Paths.get(dest.toString))
       catch case e => throw DifferentFilesystems(path, dest)
 
       dest.file
 
+  case class Symlink(initPath: Path.Absolute, target: Path) extends Inode(initPath):
+    def apply(): Path = target
+    def hardLinkTo(dest: FsPath): Inode = copyTo(dest)
+    def directory: Option[Directory] = None
+    def file: Option[File] = None
+    def symlink: Option[Symlink] = Some(this)
+    
+    def copyTo(dest: FsPath): Symlink =
+      Files.createSymbolicLink(Paths.get(dest.toString), Paths.get(target.toString))
+      Symlink(path, dest)
+
   case class Directory(initPath: Path.Absolute) extends Inode(initPath):
     def directory: Option[Directory] = Some(this)
     def file: Option[File] = None
-    def children: IArray[Inode] = IArray.from(javaFile.list.map { child => (initPath / child).inode })
-    def subdirectories: IArray[Directory] = children.collect { case dir: Directory => dir }
-    def files: IArray[File] = children.collect { case file: File => file }
+    def symlink: Option[Symlink] = None
+    def children: List[Inode] =
+      javaFile.list.to(List).map(initPath.path :+ _).map(makeAbsolute(_)).map(_.inode)
+    
+    def subdirectories: List[Directory] = children.collect { case dir: Directory => dir }
+    def files: List[File] = children.collect { case file: File => file }
 
-    def copyTo(dest: Path.Absolute): Directory raises AlreadyExistent | NotWritable =
+    def copyTo(dest: FsPath): Directory exposes AlreadyExistent | NotWritable =
       if dest.exists() then throw AlreadyExistent(dest)
-      try Files.copy(javaPath, Paths.get(dest.toString)) catch IOException => throw NotWritable(this)
+      
+      try Files.copy(javaPath, Paths.get(dest.toString))
+      catch IOException => throw NotWritable(this)
       
       dest.directory
 
-    def hardLinkTo(dest: Path.Absolute): Directory raises AlreadyExistent =
+    def hardLinkTo(dest: FsPath): Directory exposes AlreadyExistent =
       if dest.exists() then throw AlreadyExistent(dest)
       try Files.createLink(javaPath, Paths.get(dest.toString)).unit
       catch case e => throw DifferentFilesystems(path, dest)
 
       dest.directory
     
-    def /(child: String): Path.Absolute = path / child
+    def /(child: String): FsPath = makeAbsolute((path / child).path)
 
 // object OldPath:
 //   def apply(jpath: JavaPath): Path = Path(jpath.toString match
@@ -212,18 +281,18 @@ class Filesystem(pathSeparator: "/" | "\\", fsPrefix: String) extends Root(pathS
 
   //   def size: ByteSize = ByteSize(javaFile.length)
 
-  //   def setReadOnly(recursion: Recursion): Unit raises UnchangeablePermissions =
+  //   def setReadOnly(recursion: Recursion): Unit exposes UnchangeablePermissions =
   //     if !javaFile.setWritable(false) then throw UnchangeablePermissions(path)
   //     if recursion == Recursion.Recursive then children.foreach(_.setWritable(recursion))
 
-  //   def setWritable(recursion: Recursion): Unit raises UnchangeablePermissions =
+  //   def setWritable(recursion: Recursion): Unit exposes UnchangeablePermissions =
   //     if !javaFile.setWritable(true) then throw UnchangeablePermissions(path)
   //     if recursion == Recursion.Recursive then children.foreach(_.setWritable(recursion))
 
   //   def uniquify(): Path =
   //     if !exists() then path else LazyList.from(2).map { i => rename(_+"-"+i) }.find(!_.exists()).get
 
-  //   def hardLink(dest: Path): Unit raises PathAlreadyExists =
+  //   def hardLink(dest: Path): Unit exposes PathAlreadyExists =
   //     if dest.exists() then throw PathAlreadyExists(dest)
   //     try Files.createLink(javaPath, dest.javaPath).unit
   //     catch case ex: java.nio.file.NoSuchFileException => copyTo(dest).unit
@@ -248,12 +317,12 @@ class Filesystem(pathSeparator: "/" | "\\", fsPrefix: String) extends Root(pathS
   //   def readable: Boolean = Files.isReadable(javaPath)
   //   def writable: Boolean = Files.isWritable(javaPath)
 
-  //   def setExecutable(exec: Boolean): Unit raises UnchangeablePermissions =
+  //   def setExecutable(exec: Boolean): Unit exposes UnchangeablePermissions =
   //     try javaFile.setExecutable(exec).unit catch e => throw UnchangeablePermissions(path)
 
   //   def resolve(rel: Path): Path = Path(javaPath.resolve(rel.javaPath))
 
-  //   def moveTo(dest: Path): Unit raises NotWritable =
+  //   def moveTo(dest: Path): Unit exposes NotWritable =
   //     try
   //       path.parent.extant()
   //       Files.move(javaPath, dest.javaPath, StandardCopyOption.REPLACE_EXISTING).unit
@@ -282,7 +351,7 @@ class Filesystem(pathSeparator: "/" | "\\", fsPrefix: String) extends Root(pathS
   //       subdirs.flatMap(_.findSubdirsContaining(pred)) ++ found
   //     }.getOrElse(Set())
 
-  //   def delete(): Unit raises NotWritable =
+  //   def delete(): Unit exposes NotWritable =
   //     def delete(file: JavaFile): Boolean =
   //       if Files.isSymbolicLink(file.toPath) then file.delete()
   //       else if file.isDirectory then file.listFiles.forall(delete(_)) && file.delete()
@@ -293,23 +362,23 @@ class Filesystem(pathSeparator: "/" | "\\", fsPrefix: String) extends Root(pathS
   //   def linkTarget(): Option[Path] =
   //     if Files.isSymbolicLink(javaPath) then Some(Path(javaPath.toRealPath())) else None
 
-  //   def unlink(): Unit raises NotSymbolicLink | NotWritable =
+  //   def unlink(): Unit exposes NotSymbolicLink | NotWritable =
   //     try if Files.isSymbolicLink(javaPath) then Files.delete(javaPath) else throw NotSymbolicLink(path)
   //     catch e => throw NotWritable(path)
 
   //   def append[T: Writable](content: T): Unit = write(content, true)
 
-  //   def copyTo(dest: Path): Path raises PathAlreadyExists | NotWritable =
+  //   def copyTo(dest: Path): Path exposes PathAlreadyExists | NotWritable =
   //     if dest.exists() then throw PathAlreadyExists(dest)
   //     try
   //       Files.walkFileTree(javaPath, Path.CopyFileVisitor(javaPath, dest.javaPath))
   //       dest
   //     catch e => throw NotWritable(path)
 
-  //   def hardLinkTo(dest: Path): Unit raises NotWritable =
+  //   def hardLinkTo(dest: Path): Unit exposes NotWritable =
   //     try Files.createLink(dest.javaPath, javaPath) catch e => throw NotWritable(path)
 
-  //   def hardLinkCount(): Int raises FileReadError =
+  //   def hardLinkCount(): Int exposes FileReadError =
   //     try Files.getAttribute(javaPath, "unix:nlink") match
   //       case i: Int => i
   //     catch e => throw FileReadError(path, e)
@@ -329,7 +398,7 @@ class Filesystem(pathSeparator: "/" | "\\", fsPrefix: String) extends Root(pathS
   //   def parent: Path = javaPath.getParent.toString
   //   def rename(fn: String => String): Path = parent / fn(name)
     
-  //   def symlinkTo(target: Path): Unit raises NotWritable =
+  //   def symlinkTo(target: Path): Unit exposes NotWritable =
   //     try Files.createSymbolicLink(target.javaPath, javaPath)
   //     catch case e: ji.IOException => throw NotWritable(path)
 
@@ -453,26 +522,22 @@ case class NotReadable(inode: Filesystem#Inode) extends JovianException(str"coul
 case class FileReadError(inode: Filesystem#Inode, e: Throwable)
 extends JovianException(str"could not read from ${inode.name}")
 
-case class ZipfileEntry(name: String, inputStream: () => ji.InputStream)
-
 object Filesystem:
   lazy val roots: Set[Filesystem] = ji.File.listRoots.to(Set).map(_.getAbsolutePath).collect {
-    case "/"                                  => UnixRoot
+    case "/"                                  => Unix
     case s"""$drive:\""" if drive.length == 1 => drive(0).toUpper match
       case ch: Majuscule => WindowsRoot(ch)
   }.to(Set)
  
   def defaultSeparator: "/" | "\\" = if ji.File.separator == "\\" then "\\" else "/"
 
-object unix extends Filesystem("/", "/"):
-  def Root: this.type = this
-  val Pwd: Path.Absolute = parse(Sys.user.dir().get) match
-    case Some(Path.Absolute(path)) => Path.Absolute(path)
+object Unix extends Filesystem("/", "/"):
+  val Pwd: FsPath = makeAbsolute(parse(Sys.user.dir()).get.path)
 
 case class WindowsRoot(drive: Majuscule) extends Filesystem("\\", str"${drive.toString}:\/")
 
 object windows:
-  val C = WindowsRoot('C')
-  val D = WindowsRoot('D')
-  val E = WindowsRoot('E')
-  val F = WindowsRoot('F')
+  object DriveC extends WindowsRoot('C')
+  object DriveD extends WindowsRoot('D')
+  object DriveE extends WindowsRoot('E')
+  object DriveF extends WindowsRoot('F')
