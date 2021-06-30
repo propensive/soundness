@@ -29,8 +29,8 @@ object Suite:
   val statuses@List(pass, fail, checkThrows, throws, tailFail, mixed) =
     List('✓' -> green, '✗' -> red, '?' -> cyan, '!' -> magenta, '±' -> blue, '#' -> yellow).map(ansi)
   
-  private val legend: List[String] = statuses.zip(List("Pass", "Fail", "Throws in check",
-      "Throws in body", "Fails sometimes", "Suite partially fails")).map { (status, description) =>
+  private val legend: List[String] = statuses.zip(List("Pass", "Fail", "Assertion throws",
+      "Throws an exception", "Inconsistent", "Suite partially fails")).map { (status, description) =>
     s"${status} ${description.padTo(32, ' ')}"
   }.to(List)
 
