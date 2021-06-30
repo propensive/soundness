@@ -22,8 +22,8 @@ import com.vladsch.flexmark as cvf
 import cvf.ast as cvfa, cvf.parser.*, cvf.util.options.*, cvf.ext.gfm.tables, tables.TablesExtension
 import annotation.tailrec
 
+import scala.reflect.Typeable
 import scala.collection.JavaConverters.*
-import scala.reflect.ClassTag
 
 case class MalformedMarkdown(message: String) extends Exception(str"litterateur: $message")
 case class UnexpectedMarkdown() extends Exception("litterateur: found unexpected Markdown node")
@@ -34,7 +34,7 @@ object Markdown:
   options.set(Parser.EXTENSIONS, java.util.Arrays.asList(TablesExtension.create()))
   private val parser = Parser.builder(options).build()
 
-  def parse[T <: Markdown: ClassTag](string: String): Root[T] =
+  def parse[T <: Markdown: Typeable](string: String): Root[T] =
     val root = parser.parse(string)
     val nodes = root.getChildIterator.asScala.to(List).map(convert(root, _))
     
