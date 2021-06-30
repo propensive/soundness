@@ -17,6 +17,7 @@
 package rudiments
 
 import scala.collection.IterableFactory
+import scala.compiletime.*, ops.int.*
 
 import java.util.regex.*
 import java.net.{URLEncoder, URLDecoder}
@@ -44,6 +45,7 @@ extension [T](value: T)
 
 extension (value: Bytes)
   def string: String = String(value.to(Array), "UTF-8")
+  def unsafeMutable: Array[Byte] = value.asInstanceOf[Array[Byte]]
 
 extension (value: String)
   def populated: Option[String] = if value.isEmpty then None else Some(value)
@@ -74,6 +76,12 @@ extension (values: Iterable[String])
     case 0 => ""
     case 1 => values.head
     case _ => values.init.mkString(separator)+last+values.last
+
+extension [K, V](map: Map[K, V])
+  def upsert(key: K, operation: Option[V] => V) = map.updated(key, operation(map.get(key)))
+  
+  def collate(otherMap: Map[K, V])(merge: (V, V) => V): Map[K, V] =
+    otherMap.foldLeft(map) { case (acc, (k, v)) => acc.updated(k, acc.get(k).fold(v)(merge(v, _))) }
 
 class Recur[T](fn: => T => T):
   def apply(value: T): T = fn(value)
@@ -118,3 +126,31 @@ object Sys extends Dynamic:
   def applyDynamic(key: String)(): String exposes KeyNotFound = selectDynamic(key).apply()
 
 case class KeyNotFound(name: String) extends Exception(str"rudiments: key $name not found")
+
+// It should be possible to reimplement these recursively.
+
+extension [H1, H2](tuple: (H1, H2))
+  transparent inline def at[I <: 0 | 1] = inline erasedValue[I] match
+    case _: 0 => tuple._1
+    case _: 1 => tuple._2
+
+extension [H1, H2, H3](tuple: (H1, H2, H3))
+  transparent inline def at[I <: 0 | 1 | 2] = inline erasedValue[I] match
+    case _: 0 => tuple._1
+    case _: 1 => tuple._2
+    case _: 2 => tuple._3
+
+extension [H1, H2, H3, H4](tuple: (H1, H2, H3, H4))
+  transparent inline def at[I <: 0 | 1 | 2 | 3] = inline erasedValue[I] match
+    case _: 0 => tuple._1
+    case _: 1 => tuple._2
+    case _: 2 => tuple._3
+    case _: 3 => tuple._4
+
+extension [H1, H2, H3, H4, H5](tuple: (H1, H2, H3, H4, H5))
+  transparent inline def at[I <: 0 | 1 | 2 | 3 | 4] = inline erasedValue[I] match
+    case _: 0 => tuple._1
+    case _: 1 => tuple._2
+    case _: 2 => tuple._3
+    case _: 3 => tuple._4
+    case _: 4 => tuple._5
