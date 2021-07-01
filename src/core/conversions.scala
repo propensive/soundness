@@ -16,7 +16,8 @@
 */
 package iridescence
 
-trait Color
+trait Color:
+  def standardSrgb: Srgb
 
 object Color:
   private[iridescence] def unitary(d: Double): Double = d - d.toInt + (if d < 0 then 1 else 0)
@@ -25,6 +26,7 @@ case class Xyz(x: Double, y: Double, z: Double) extends Color:
   
   def luminescence: Double = y
   
+  def standardSrgb: Srgb = srgb
   def srgb: Srgb =
     def limit(v: Double): Double = if v > 0.0031308 then 1.055*math.pow(v, 1/2.4) - 0.055 else 12.92*v
     
@@ -48,6 +50,8 @@ case class Srgb(red: Double, green: Double, blue: Double) extends Color:
   def ansiFg24: String = s"${27.toChar}[38;2;${(red*255).toInt};${(green*255).toInt};${(blue*255).toInt}m"
   def ansiBg24: String = s"${27.toChar}[48;2;${(red*255).toInt};${(green*255).toInt};${(blue*255).toInt}m"
   def hex12: String = Seq(red, green, blue).map { c => Integer.toHexString((c*16).toInt) }.mkString("#", "", "")
+  def standardSrgb: Srgb = srgb
+  def srgb: Srgb = this
   
   def hex24: String =
     Seq(red, green, blue).map { c =>
@@ -107,6 +111,7 @@ case class Srgb(red: Double, green: Double, blue: Double) extends Color:
 
 case class Cielab(l: Double, a: Double, b: Double) extends Color:
   def srgb(using Profile): Srgb = xyz.srgb
+  def standardSrgb: Srgb = srgb(using profiles.Daylight)
 
   def xyz(using profile: Profile): Xyz =
     def limit(v: Double): Double = if v*v*v > 0.008856 then v*v*v else (v - 16.0/116)/7.787
@@ -124,6 +129,7 @@ case class Cielab(l: Double, a: Double, b: Double) extends Color:
 
 case class Cmy(cyan: Double, magenta: Double, yellow: Double) extends Color:
   def srgb: Srgb = Srgb((1 - cyan), (1 - magenta), (1 - yellow))
+  def standardSrgb: Srgb = srgb
   def cmyk: Cmyk =
     val key = List(1, cyan, magenta, yellow).min
     
@@ -132,9 +138,11 @@ case class Cmy(cyan: Double, magenta: Double, yellow: Double) extends Color:
 
 case class Cmyk(cyan: Double, magenta: Double, yellow: Double, key: Double) extends Color:
   def srgb: Srgb = cmy.srgb
+  def standardSrgb: Srgb = srgb
   def cmy: Cmy = Cmy(cyan*(1 - key) + key, magenta*(1 - key) + key, yellow*(1 - key) + key)
 
 case class Hsv(hue: Double, saturation: Double, value: Double) extends Color:
+  def standardSrgb: Srgb = srgb
   def srgb: Srgb =
     if saturation == 0 then Srgb(value, value, value)
     else
@@ -159,6 +167,7 @@ case class Hsv(hue: Double, saturation: Double, value: Double) extends Color:
   def tone(black: Double = 0, white: Double = 0) = shade(black).tint(white)
 
 case class Hsl(hue: Double, saturation: Double, lightness: Double) extends Color:
+  def standardSrgb: Srgb = srgb
   def srgb: Srgb =
     if saturation == 0 then Srgb(lightness, lightness, lightness)
     else
