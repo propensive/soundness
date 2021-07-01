@@ -113,8 +113,8 @@ extension (obj: Char.type) def unapply(str: String): Option[Char] =
 extension (obj: Double.type) def unapply(str: String): Option[Double] =
   try Some(str.toDouble) catch Exception => None
 
-extension (ctx: StringContext) def str(strings: String*): String =
-  ctx.parts.head + strings.zip(ctx.parts.tail).map(_+_).mkString
+extension (ctx: StringContext) def str(strings: (String | Int | Char)*): String =
+  ctx.parts.head + strings.zip(ctx.parts.tail).map(_.toString+_.toString).mkString
 
 case class Property(name: String) extends Dynamic:
   def apply(): String = Option(System.getProperty(name)).getOrElse(throw KeyNotFound(name))
