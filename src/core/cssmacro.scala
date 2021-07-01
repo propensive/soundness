@@ -257,7 +257,10 @@ object PropertyDef:
   given padding1: PropertyDef["padding", Dimension] = PropertyDef()
   given padding2: PropertyDef["padding", (Dimension, Dimension)] = PropertyDef()
   given padding3: PropertyDef["padding", (Dimension, Dimension, Dimension)] = PropertyDef()
-  given padding4: PropertyDef["padding", (Dimension, Dimension, Dimension, Dimension)] = PropertyDef()
+  
+  given padding4: PropertyDef["padding", (Dimension, Dimension, Dimension, Dimension)] =
+    PropertyDef()
+  
   given paddingBottom: PropertyDef["paddingBottom", Dimension] = PropertyDef()
   given paddingLeft: PropertyDef["paddingLeft", Dimension] = PropertyDef()
   given paddingRight: PropertyDef["paddingRight", Dimension] = PropertyDef()
@@ -280,7 +283,10 @@ object PropertyDef:
   given textAlignLast: PropertyDef["textAlignLast", TextAlign] = PropertyDef()
   given textCombineUpright: PropertyDef["textCombineUpright", String] = PropertyDef()
   given textDecoration1: PropertyDef["textDecoration", TextDecorationLine] = PropertyDef()
-  given textDecoration2: PropertyDef["textDecoration", (TextDecorationLine, String, TextDecorationStyle)] = PropertyDef()
+  
+  given textDecoration2: PropertyDef["textDecoration", (TextDecorationLine, String,
+      TextDecorationStyle)] = PropertyDef()
+
   given textDecorationColor1: PropertyDef["textDecorationColor", Color] = PropertyDef()
   given textDecorationColor2: PropertyDef["textDecorationColor", Transparent.type] = PropertyDef()
   given textDecorationLine: PropertyDef["textDecorationLine", TextDecorationLine] = PropertyDef()
