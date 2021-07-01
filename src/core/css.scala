@@ -17,16 +17,34 @@
 package cataract
 
 import rudiments.*
-
 import language.dynamics
 
-case class Stylesheet(rules: Rule*)
+case class Stylesheet(rules: StylesheetItem*):
+  override def toString(): String = rules.map(_.toString).join("\n")
+
+trait StylesheetItem
+
+case class Keyframes(name: String)(frames: Keyframe*) extends StylesheetItem:
+  override def toString = frames.map(_.toString).join("@keyframes "+name+" {\n  ", "\n  ", "\n}\n")
   
+case class Keyframe(ref: String, style: Style):
+  override def toString = style.properties.map(_.toString). join(str"$ref { ", "; ", ", }")
+
+object From extends Dynamic:
+  inline def applyDynamicNamed(method: "apply")(inline properties: (Label, Any)*): Keyframe =
+    ${Macro.keyframe('{"from"}, 'properties)}
+
+object To extends Dynamic:
+  inline def applyDynamicNamed(method: "apply")(inline properties: (Label, Any)*): Keyframe =
+    ${Macro.keyframe('{"to"}, 'properties)}
+  
+case class Import(url: String) extends StylesheetItem:
+  override def toString(): String = str"@import url('$url');"
 
 case class Style(properties: CssProperty*):
   override def toString(): String = properties.map(_.toString).join("\n")
 
-case class Rule(selector: Selector, style: Style):
+case class Rule(selector: Selector, style: Style) extends StylesheetItem:
   override def toString(): String =
     val rules = style.properties.map(_.toString).join("; ")
     str"${selector.value} { $rules }"
@@ -34,9 +52,11 @@ case class Rule(selector: Selector, style: Style):
 case class CssProperty(key: String, value: String):
   override def toString(): String = str"$key: $value"
 
-object Testing:
-  val css = Css(border = "hello", paddingLeft = "10em")
+object Css extends Dynamic:
+  inline def applyDynamicNamed(method: "apply")(inline properties: (Label, Any)*): Style =
+    ${Macro.read('properties)}
 
-@main
-def run(): Unit =
-  println(Testing.css)
+case class Selector(value: String) extends Dynamic:
+  inline def applyDynamicNamed(method: "apply")(inline properties: (Label, Any)*): Rule =
+    ${Macro.rule('this, 'properties)}
+    
