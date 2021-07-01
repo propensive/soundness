@@ -20,11 +20,8 @@ import scala.quoted.*
 
 object Macro:
   def read[Name <: Label: Type, Children <: Label: Type, Return <: Label: Type]
-          (name: Expr[Name],
-           unclosed: Expr[Boolean],
-           inline: Expr[Boolean],
-           verbatim: Expr[Boolean],
-           attributes: Expr[Seq[(Label, Any)]])
+          (name: Expr[Name], unclosed: Expr[Boolean], inline: Expr[Boolean],
+               verbatim: Expr[Boolean], attributes: Expr[Seq[(Label, Any)]])
           (using Quotes): Expr[Element[Name, Return]] =
     import quotes.reflect.{Singleton => _, *}
 
