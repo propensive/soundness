@@ -23,10 +23,12 @@ import cvf.ast as cvfa, cvf.parser.*, cvf.util.options.*, cvf.ext.gfm.tables, ta
 import annotation.tailrec
 
 import scala.reflect.Typeable
+import scala.util.NotGiven
 import scala.collection.JavaConverters.*
 
 case class MalformedMarkdown(message: String) extends Exception(str"litterateur: $message")
-case class UnexpectedMarkdown() extends Exception("litterateur: found unexpected Markdown node")
+case class UnexpectedMarkdown(other: Markdown)
+extends Exception(str"litterateur: found unexpected Markdown node (${other.toString})")
 
 object Markdown:
   private val options = MutableDataSet()
@@ -40,7 +42,7 @@ object Markdown:
     
     Root(nodes.collect {
       case child: T => child
-      case _        => throw UnexpectedMarkdown()
+      case other    => throw UnexpectedMarkdown(other)
     }*)
 
   def parsePhrase(string: String): Root[PhrasingContent] = parse[PhrasingContent](string)
