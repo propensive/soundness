@@ -16,6 +16,8 @@
 */
 package iridescence
 
+import rudiments.*
+
 trait Color:
   def standardSrgb: Srgb
 
@@ -49,7 +51,7 @@ case class Srgb(red: Double, green: Double, blue: Double) extends Color:
   def css: String = s"rgb(${(red*255).toInt}, ${(green*255).toInt}, ${(blue*255).toInt})"
   def ansiFg24: String = s"${27.toChar}[38;2;${(red*255).toInt};${(green*255).toInt};${(blue*255).toInt}m"
   def ansiBg24: String = s"${27.toChar}[48;2;${(red*255).toInt};${(green*255).toInt};${(blue*255).toInt}m"
-  def hex12: String = Seq(red, green, blue).map { c => Integer.toHexString((c*16).toInt) }.mkString("#", "", "")
+  def hex12: String = Seq(red, green, blue).map { c => Integer.toHexString((c*16).toInt) }.join("#", "", "")
   def standardSrgb: Srgb = srgb
   def srgb: Srgb = this
   
@@ -57,7 +59,7 @@ case class Srgb(red: Double, green: Double, blue: Double) extends Color:
     Seq(red, green, blue).map { c =>
       val hex = Integer.toHexString((c*255).toInt)
       if hex.length < 2 then s"0$hex" else hex
-    }.mkString("#", "", "")
+    }.join("#", "", "")
 
   def xyz(using profile: Profile): Xyz =
     def limit(v: Double): Double = if v > 0.04045 then math.pow((v + 0.055)/1.055, 2.4) else v/12.92
@@ -130,6 +132,7 @@ case class Cielab(l: Double, a: Double, b: Double) extends Color:
 case class Cmy(cyan: Double, magenta: Double, yellow: Double) extends Color:
   def srgb: Srgb = Srgb((1 - cyan), (1 - magenta), (1 - yellow))
   def standardSrgb: Srgb = srgb
+  
   def cmyk: Cmyk =
     val key = List(1, cyan, magenta, yellow).min
     
@@ -143,6 +146,7 @@ case class Cmyk(cyan: Double, magenta: Double, yellow: Double, key: Double) exte
 
 case class Hsv(hue: Double, saturation: Double, value: Double) extends Color:
   def standardSrgb: Srgb = srgb
+  
   def srgb: Srgb =
     if saturation == 0 then Srgb(value, value, value)
     else
