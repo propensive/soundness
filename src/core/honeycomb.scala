@@ -22,7 +22,7 @@ import scala.quoted.*
 import language.dynamics
 
 type Label = String & Singleton
-type Content[Children <: Label] = Item[Children] | String
+type Content[Children <: Label] = Item[Children] | String | Int
 type Attributes = Map[String, String | Boolean]
 
 trait Item[+Name <: Label]:
@@ -35,7 +35,8 @@ trait Item[+Name <: Label]:
 
 object Node:
   @targetName("make")
-  def apply[T <: Label, C <: Label](label: String, unclosed: Boolean, inline: Boolean,
+  def apply[T <: Label, C <: Label]
+           (label: String, unclosed: Boolean, inline: Boolean,
                 verbatim: Boolean, attributes: Attributes,
                 children: Seq[Content[C] | Seq[Content[C]]] = Nil): Node[T] =
     new Node(label, unclosed, inline, verbatim, attributes, flatten(children))
@@ -109,6 +110,7 @@ case class Node[+Name <: Label](label: String, unclosed: Boolean, tagInline: Boo
   lazy val inline: Boolean = tagInline && children.forall {
     case item: Item[?] => item.inline
     case text: String  => true
+    case int: Int      => true
   }
 
 case class HtmlDoc(root: Item["html"])

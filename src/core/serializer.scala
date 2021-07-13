@@ -46,41 +46,42 @@ object HtmlSerializer:
       emptyLine = true
 
     def next(node: Content[?], verbatim: Boolean): Unit = node match
-      case node: Item[?] =>
-        whitespace()
-        append("<", node.label)
-        for attribute <- node.attributes do attribute match
-          case (key, value: String) => append(" ", key, "=\"", value, "\"")
-          case (key, true)          => append(" ", key)
-          case (key, false)         => ()
-        append(">")
-        if !node.inline then newline(1)
-        for child <- node.children do
-          val splitLine = child match
-            case node: Node[?] => !node.inline
-            case _             => false
-          if splitLine then newline()
-          next(child, node.verbatim)
-          if splitLine then newline()
-        if !node.inline then newline(-1)
-        if !node.unclosed then
-          whitespace()
-          append("</", node.label, ">")
-          if !node.inline then newline(0)
+      case node: Item[?] => whitespace()
+                            append("<", node.label)
+                            for attribute <- node.attributes do attribute match
+                              case (key, value: String) => append(" ", key, "=\"", value, "\"")
+                              case (key, true)          => append(" ", key)
+                              case (key, false)         => ()
+                            append(">")
+                            if !node.inline then newline(1)
+                            for child <- node.children do
+                              val splitLine = child match
+                                case node: Node[?] => !node.inline
+                                case _             => false
+                              if splitLine then newline()
+                              next(child, node.verbatim)
+                              if splitLine then newline()
+                            if !node.inline then newline(-1)
+                            if !node.unclosed then
+                              whitespace()
+                              append("</", node.label, ">")
+                              if !node.inline then newline(0)
 
-      case text: String =>
-        whitespace()
-        if maxWidth == -1 then append(text) else
-          if verbatim || pos + text.length <= maxWidth then append(text)
-          else
-            text.split("\\s+").foreach { word =>
-              if !(pos + 1 + word.length < maxWidth || emptyLine) then
-                linebreak = true
-                whitespace()
-                append(" ")
-              append(if !emptyLine then " " else "", word)
-            }
-            if text.last.isWhitespace then append(" ")
+      case text: String  => whitespace()
+                            if maxWidth == -1 then append(text) else
+                              if verbatim || pos + text.length <= maxWidth then append(text)
+                              else
+                                text.split("\\s+").foreach { word =>
+                                  if !(pos + 1 + word.length < maxWidth || emptyLine) then
+                                    linebreak = true
+                                    whitespace()
+                                    append(" ")
+                                  append(if !emptyLine then " " else "", word)
+                                }
+                                if text.last.isWhitespace then append(" ")
+      
+      case int: Int      => next(int.toString, verbatim)
+        
     
     append("<!DOCTYPE html>\n")
     next(doc.root, false)

@@ -112,7 +112,7 @@ package attributes:
   given autofocus[T]: Attribute["autofocus", Boolean, T] = identity(_)
   given autoplay[T]: Attribute["autoplay", Boolean, T] = identity(_)
   given border[T]: Attribute["border", Boolean, T] = if _ then "1" else ""
-  given checked[T]: Attribute["checked", Boolean, T] = identity(_)
+  given checkedBoolean[T]: Attribute["checked", Boolean, T] = identity(_)
   given cite[T]: Attribute["cite", String, T] = identity(_)
 
   given hclass[T]: Attribute["hclass", List[Cls], T] with
