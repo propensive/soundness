@@ -26,7 +26,7 @@ object Approximable extends Derivation[Approximable]:
   given [T: Tolerance]: Approximable[T] = summon[Tolerance[T]].close(_, _)
 
   def join[T](ctx: CaseClass[Approximable, T]): Approximable[T] = (v1, v2) =>
-    ctx.params.forall { p => p.typeclass.approximatelyEqual(p.dereference(v1), p.dereference(v2)) }
+    ctx.params.forall { p => p.typeclass.approximatelyEqual(p.deref(v1), p.deref(v2)) }
   
   def split[T](ctx: SealedTrait[Approximable, T]): Approximable[T] = (v1, v2) =>
     ctx.split(v1) { sub => sub.typeclass.approximatelyEqual(sub.cast(v1), sub.cast(v2)) }
