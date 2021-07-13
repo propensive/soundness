@@ -235,11 +235,6 @@ case class HttpServer(port: Int) extends RequestHandler:
           exchange.getResponseBody.flush()
       exchange.close()
 
-object Css:
-  given SimpleHandler[Css] = SimpleHandler("text/css; charset=utf-8", _.content.bytes)
-
-case class Css(content: String)
-
 case class Svg(content: String)
 
 object Svg:
