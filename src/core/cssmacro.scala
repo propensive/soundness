@@ -63,9 +63,34 @@ object Macro:
 case class PropertyDef[Name <: Label, -T: ShowProperty]():
   def show(value: T): String = summon[ShowProperty[T]].show(value)
 
-extension (sc: StringContext)
-  def sel(): Selector = Selector(sc.parts(0))
+// extension (sc: StringContext)
+//   def sel(): Selector = Selector(sc.parts(0))
 
+object Selectable:
+  given ident: Selectable[Selector] = identity(_)
+
+trait Selectable[-T]:
+  def selector(value: T): Selector
+
+extension [T: Selectable](left: T)
+
+  def :=(css: Style): Rule = Rule(summon[Selectable[T]].selector(left), css)
+
+  def >>[S: Selectable](right: S): Selector =
+    summon[Selectable[T]].selector(left) >> summon[Selectable[S]].selector(right)
+  
+  def +[S: Selectable](right: S): Selector =
+    summon[Selectable[T]].selector(left) + summon[Selectable[S]].selector(right)
+  
+  def |[S: Selectable](right: S): Selector =
+    summon[Selectable[T]].selector(left) | summon[Selectable[S]].selector(right)
+  
+  def &[S: Selectable](right: S): Selector =
+    summon[Selectable[T]].selector(left) & summon[Selectable[S]].selector(right)
+  
+  def ~[S: Selectable](right: S): Selector =
+    summon[Selectable[T]].selector(left) ~ summon[Selectable[S]].selector(right)
+  
 object PropertyDef:
   given alignContent: PropertyDef["alignContent", String] = PropertyDef()
   given alignItems: PropertyDef["alignItems", String] = PropertyDef()
@@ -74,10 +99,10 @@ object PropertyDef:
   given animation: PropertyDef["animation", String] = PropertyDef()
   given animationDelay: PropertyDef["animationDelay", String] = PropertyDef()
   given animationDirection: PropertyDef["animationDirection", String] = PropertyDef()
-  given animationDuration: PropertyDef["animationDuration", String] = PropertyDef()
+  given animationDuration: PropertyDef["animationDuration", Duration] = PropertyDef()
   given animationFillMode: PropertyDef["animationFillMode", AnimationFillMode] = PropertyDef()
   given animationIterationCount: PropertyDef["animationIterationCount", String] = PropertyDef()
-  given animationName: PropertyDef["animationName", String] = PropertyDef()
+  given animationName: PropertyDef["animationName", String] = PropertyDef()(using _.toString)
   given animationPlayState: PropertyDef["animationPlayState", String] = PropertyDef()
   given animationTimingFunction: PropertyDef["animationTimingFunction", String] = PropertyDef()
   given backfaceVisibility: PropertyDef["backfaceVisibility", String] = PropertyDef()
@@ -291,7 +316,7 @@ object PropertyDef:
   given textDecorationColor2: PropertyDef["textDecorationColor", Transparent.type] = PropertyDef()
   given textDecorationLine: PropertyDef["textDecorationLine", TextDecorationLine] = PropertyDef()
   given textDecorationStyle: PropertyDef["textDecorationStyle", TextDecorationStyle] = PropertyDef()
-  given textIndent: PropertyDef["textIndent", String] = PropertyDef()
+  given textIndent: PropertyDef["textIndent", Dimension] = PropertyDef()
   given textJustify: PropertyDef["textJustify", String] = PropertyDef()
   given textOrientation: PropertyDef["textOrientation", String] = PropertyDef()
   given textOverflow: PropertyDef["textOverflow", String] = PropertyDef()
@@ -333,6 +358,7 @@ type Dimension = Length | Int
 
 object ShowProperty:
   given ShowProperty[Length] = _.toString
+  given ShowProperty[Duration] = _.toString
   given ShowProperty[Dimension] = _.toString
   
   given [A: ShowProperty, B: ShowProperty]: ShowProperty[(A, B)] = tuple =>
@@ -366,6 +392,14 @@ trait ShowProperty[-T]:
   def show(value: T): String
 
 trait PropertyValue  
+
+enum Duration:
+  case S(value: Double)
+  case Ms(value: Double)
+
+  override def toString(): String = this match
+    case S(value)  => str"${value.toString}s"
+    case Ms(value) => str"${value.toString}ms"
 
 enum Length:
   case Px(value: Double)
@@ -420,6 +454,8 @@ enum Length:
     
 
 extension (value: Double)
+  def s = Duration.S(value)
+  def ms = Duration.Ms(value)
   def px = Length.Px(value)
   def pt = Length.Pt(value)
   def in = Length.In(value)
@@ -490,3 +526,73 @@ enum FontStyle extends PropertyValue:
   case Normal, Italic, Oblique
 
 case class Font(names: String*)
+
+enum Dir:
+  case Rtl, Ltr
+
+package pseudo:
+  def dir(direction: Dir) = Selector.PseudoClass(str"dir(${direction.toString.toLowerCase})")
+  def lang(language: String) = Selector.PseudoClass(str"lang($language)")
+  val after = Selector.PseudoClass(":after")
+  val before = Selector.PseudoClass(":before")
+  val selection = Selector.PseudoClass(":selection")
+  val firstLetter = Selector.PseudoClass(":first-letter")
+  val firstLine = Selector.PseudoClass(":first-line")
+  val marker = Selector.PseudoClass(":marker")
+  val placeholder = Selector.PseudoClass(":placeholder")
+  val anyLink = Selector.PseudoClass("any-link")
+  val link = Selector.PseudoClass("link")
+  val visited = Selector.PseudoClass("visited")
+  val localLink = Selector.PseudoClass("local-link")
+  val target = Selector.PseudoClass("target")
+  val targetWithin = Selector.PseudoClass("target-within")
+  val scope = Selector.PseudoClass("scope")
+  val hover = Selector.PseudoClass("hover")
+  val active = Selector.PseudoClass("active")
+  val focus = Selector.PseudoClass("focus")
+  val focusVisible = Selector.PseudoClass("focus-visible")
+  val focusWithin = Selector.PseudoClass("focus-within")
+  val current = Selector.PseudoClass("current")
+  val past = Selector.PseudoClass("past")
+  val future = Selector.PseudoClass("future")
+  val playing = Selector.PseudoClass("playing")
+  val paused = Selector.PseudoClass("paused")
+  val autofill = Selector.PseudoClass("autofill")
+  val enabled = Selector.PseudoClass("enabled")
+  val disabled = Selector.PseudoClass("disabled")
+  val readOnly = Selector.PseudoClass("read-only")
+  val readWrite = Selector.PseudoClass("read-write")
+  val placeholderShown = Selector.PseudoClass("placeholder-shown")
+  val default = Selector.PseudoClass("default")
+  val checked = Selector.PseudoClass("checked")
+  val indeterminate = Selector.PseudoClass("indeterminate")
+  val blank = Selector.PseudoClass("blank")
+  val valid = Selector.PseudoClass("valid")
+  val invalid = Selector.PseudoClass("invalid")
+  val inRange = Selector.PseudoClass("in-range")
+  val outOfRange = Selector.PseudoClass("out-of-range")
+  val required = Selector.PseudoClass("required")
+  val optional = Selector.PseudoClass("option")
+  val userInvalid = Selector.PseudoClass("user-invalid")
+  val root = Selector.PseudoClass("root")
+  val empty = Selector.PseudoClass("empty")
+  
+  def nthChild(a: Int, b: Int) =
+    Selector.PseudoClass(str"nth-child(${if b == 0 then str"${a}n+$b" else str"${a}n"})")
+  
+  def nthLastChild(a: Int, b: Int) =
+    Selector.PseudoClass(str"nth-last-child(${if b == 0 then str"${a}n+$b" else str"${a}n"})")
+  
+  val firstChild = Selector.PseudoClass("first-child")
+  val lastChild = Selector.PseudoClass("last-child")
+  val onlyChild = Selector.PseudoClass("only-child")
+  
+  def nthOfType(a: Int, b: Int) =
+    Selector.PseudoClass(str"nth-of-type(${if b == 0 then str"${a}n+$b" else str"${a}n"})")
+  
+  def nthLastOfType(a: Int, b: Int) =
+    Selector.PseudoClass(str"nth-last-of-type(${if b == 0 then str"${a}n+$b" else str"${a}n"})")
+  
+  val firstOfType = Selector.PseudoClass("first-of-type")
+  val lastOfType = Selector.PseudoClass("last-of-type")
+  val onlyOfType = Selector.PseudoClass("only-of-type")
