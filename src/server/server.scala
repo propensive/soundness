@@ -150,6 +150,11 @@ object ParamReader:
 trait ParamReader[T]:
   def read(value: String): Option[T]
 
+object RequestParam:
+  given simplistic.HtmlAttribute["name", RequestParam[?]] with
+    def name: String = "name"
+    def serialize(value: RequestParam[?]): String = value.key
+
 case class RequestParam[T](key: String)(using ParamReader[T]):
   type Type = T
   def opt(using Request): Option[T] = param(key).flatMap(summon[ParamReader[T]].read(_))

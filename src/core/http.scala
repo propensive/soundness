@@ -58,6 +58,11 @@ object Postable:
 abstract class Postable[T](val contentType: MediaType):
   def content(value: T): Bytes
 
+object Method:
+  given formmethod: simplistic.HtmlAttribute["formmethod", Method] with
+    def name: String = "formmethod"
+    def serialize(method: Method): String = method.toString
+
 enum Method:
   case Get, Head, Post, Put, Delete, Connect, Options, Trace, Patch
 
@@ -233,6 +238,39 @@ case class Params(values: List[(String, String)]):
     case (key, value) => s"${key.urlEncode}=${value.urlEncode}"
   }.join("&")
 
+object Uri:
+  given action: simplistic.HtmlAttribute["action", Uri] with
+    def name: String = "action"
+    def serialize(uri: Uri): String = uri.toString
+  
+  given cite: simplistic.HtmlAttribute["cite", Uri] with
+    def name: String = "cite"
+    def serialize(uri: Uri): String = uri.toString
+  
+  given data: simplistic.HtmlAttribute["data", Uri] with
+    def name: String = "data"
+    def serialize(uri: Uri): String = uri.toString
+
+  given formaction: simplistic.HtmlAttribute["formaction", Uri] with
+    def name: String = "formaction"
+    def serialize(uri: Uri): String = uri.toString
+ 
+  given poster: simplistic.HtmlAttribute["poster", Uri] with
+    def name: String = "poster"
+    def serialize(uri: Uri): String = uri.toString
+
+  given src: simplistic.HtmlAttribute["src", Uri] with
+    def name: String = "src"
+    def serialize(uri: Uri): String = uri.toString
+  
+  given href: simplistic.HtmlAttribute["href", Uri] with
+    def name: String = "href"
+    def serialize(uri: Uri): String = uri.toString
+  
+  given manifest: simplistic.HtmlAttribute["manifest", Uri] with
+    def name: String = "manifest"
+    def serialize(uri: Uri): String = uri.toString
+
 case class Uri(location: String, params: Params) extends Dynamic:
   private def makeQuery[T: ToQuery](value: T): Uri =
     Uri(location, params.append(summon[ToQuery[T]].params(value)))
@@ -266,6 +304,22 @@ object MediaType:
   def unapply(str: String): Option[MediaType] = str.cut("/", 2) match
     case IArray(key, subtype) => try Some(MediaType(MainType.valueOf(key.capitalize), subtype)) catch _ => None
     case _                    => None
+  
+  given formenctype: simplistic.HtmlAttribute["formenctype", MediaType] with
+    def name: String = "formenctype"
+    def serialize(mediaType: MediaType): String = mediaType.toString
+  
+  given media: simplistic.HtmlAttribute["media", MediaType] with
+    def name: String = "media"
+    def serialize(mediaType: MediaType): String = mediaType.toString
+  
+  given enctype: simplistic.HtmlAttribute["enctype", MediaType] with
+    def name: String = "enctype"
+    def serialize(mediaType: MediaType): String = mediaType.toString
+  
+  given htype: simplistic.HtmlAttribute["htype", MediaType] with
+    def name: String = "type"
+    def serialize(mediaType: MediaType): String = mediaType.toString
 
 case class MediaType(mediaType: MediaType.MainType, mediaSubtype: String):
   override def toString = s"${mediaType.toString.toLowerCase}/$mediaSubtype"
