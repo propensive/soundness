@@ -19,6 +19,11 @@ package cataract
 import rudiments.*
 import language.dynamics
 
+object Stylesheet:
+  given simplistic.HttpResponse[Stylesheet] with
+    def mimeType: String = "text/css; charset=utf-8"
+    def content(stylesheet: Stylesheet): String = stylesheet.toString
+
 case class Stylesheet(rules: StylesheetItem*):
   override def toString(): String = rules.map(_.toString).join("\n")
 
@@ -40,6 +45,11 @@ object To extends Dynamic:
   
 case class Import(url: String) extends StylesheetItem:
   override def toString(): String = str"@import url('$url');"
+
+object Style:
+  given simplistic.HtmlAttribute["style", Style] with
+    def serialize(value: Style): String = value.toString
+    def name: String = "style"
 
 case class Style(properties: CssProperty*):
   override def toString(): String = properties.map(_.toString).join("\n")

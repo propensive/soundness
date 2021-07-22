@@ -63,11 +63,13 @@ object Macro:
 case class PropertyDef[Name <: Label, -T: ShowProperty]():
   def show(value: T): String = summon[ShowProperty[T]].show(value)
 
-// extension (sc: StringContext)
-//   def sel(): Selector = Selector(sc.parts(0))
-
 object Selectable:
   given ident: Selectable[Selector] = identity(_)
+
+  given [T](using sel: simplistic.CssSelection[T]): Selectable[T] = sel.selection(_) match
+    case s".$cls" => Selector.Class(cls)
+    case s"#$id"  => Selector.Id(id)
+    case elem     => Selector.Element(elem)
 
 trait Selectable[-T]:
   def selector(value: T): Selector
