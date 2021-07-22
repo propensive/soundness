@@ -43,6 +43,8 @@ case class Import(url: String) extends StylesheetItem:
 
 case class Style(properties: CssProperty*):
   override def toString(): String = properties.map(_.toString).join("\n")
+  def apply(nested: (Selector => Rule)*): Selector => Stylesheet = sel =>
+    Stylesheet(nested.map(_(sel))*)
 
 case class Rule(selector: Selector, style: Style) extends StylesheetItem:
   override def toString(): String =
