@@ -488,6 +488,15 @@ object encodings:
     def name: String = "ISO-8859-1"
     def carry(arr: Array[Byte]): Int = 0
 
+object Encoding:
+  given acceptCharset[T]: simplistic.HtmlAttribute["acceptCharset", Encoding] with
+    def serialize(enc: Encoding): String = enc.name
+    def name: String = "accept-charset"
+  
+  given charset[T]: simplistic.HtmlAttribute["charset", Encoding] with
+    def serialize(enc: Encoding): String = enc.name
+    def name: String = "charset"
+
 trait Encoding:
   def name: String
   def carry(array: Array[Byte]): Int
