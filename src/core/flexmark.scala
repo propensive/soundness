@@ -23,10 +23,10 @@ import cvf.ast as cvfa, cvf.parser.*, cvf.util.options.*, cvf.ext.gfm.tables, ta
 import annotation.tailrec
 
 import scala.reflect.Typeable
-import scala.util.NotGiven
 import scala.collection.JavaConverters.*
 
 case class MalformedMarkdown(message: String) extends Exception(str"litterateur: $message")
+
 case class UnexpectedMarkdown(other: Markdown)
 extends Exception(str"litterateur: found unexpected Markdown node (${other.toString})")
 

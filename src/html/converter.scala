@@ -16,17 +16,25 @@
 */
 package litterateur
 
-import honeycomb.*, attributes.strings.given
+import honeycomb.*
 import rudiments.*
 
 import scala.collection.immutable.ListMap
+import scala.annotation.targetName
 
-given ToHtml[Markdown, Flow] = HtmlConverter().convert(_)
-given ToHtml[PhrasingContent, Phrasing] = HtmlConverter().phrasing(_)
+extension (value: Markdown)
+  def html: Seq[Content[Flow]] = HtmlConverter().convert(value)
+
+extension (value: PhrasingContent)
+  @targetName("html2")
+  def html: Seq[Content[Phrasing]] = HtmlConverter().phrasing(value)
 
 open class HtmlConverter():
-  def outline(node: Markdown): Seq[Content[Flow]] = convert(Markdown.parse[FlowContent](headOutline(node).join("\n")))
-  def slug(str: String): String = str.toLowerCase.replaceAll("[^a-z0-9]", "-").replaceAll("--*", "-")
+  def outline(node: Markdown): Seq[Content[Flow]] =
+    convert(Markdown.parse[FlowContent](headOutline(node).join("\n")))
+  
+  def slug(str: String): String =
+    str.toLowerCase.replaceAll("[^a-z0-9]", "-").replaceAll("--*", "-")
 
   def headOutline(node: Markdown): Seq[String] = node match
     case Markdown.Root(children*) =>
@@ -53,7 +61,8 @@ open class HtmlConverter():
     case Markdown.Code(syntax, meta, value)     => List(Pre(Code(escape(value))))
     case Markdown.Reference(_, _)               => Nil
     case Markdown.Text(str)                     => List(P(escape(str)))
-    case Markdown.MdList(ordered, _, _, items*) => List((if ordered then Ol else Ul)(items.flatMap(listItem)*))
+    case Markdown.MdList(ordered, _, _, items*) => List((if ordered then Ol else Ul)
+                                                       (items.flatMap(listItem)*))
     case Markdown.Table(parts*)                 => List(Table(parts.flatMap(tableParts)))
     case Markdown.Break()                       => List(Br)
     case _                                      => Nil
@@ -66,7 +75,9 @@ open class HtmlConverter():
     rows.map { case Markdown.Row(cells*) => Tr(tableCells(heading, cells)) }
 
   def tableCells(heading: Boolean, cells: Seq[Markdown.Cell]): Seq[Item["th" | "td"]] =
-    cells.map { case Markdown.Cell(content*) => (if heading then Th else Td)(content.flatMap(phrasing)) }
+    cells.map { case Markdown.Cell(content*) =>
+      (if heading then Th else Td)(content.flatMap(phrasing))
+    }
 
   def listItem(node: ListContent): Seq[Item["li"]] = node match
     case Markdown.ListItem(children*) => List(Li(children.flatMap(convert)))
@@ -109,4 +120,5 @@ open class HtmlConverter():
     case other =>
       nonInteractive(other)
 
-  def escape(str: String): String = str.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;")
+  def escape(str: String): String =
+    str.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;")
