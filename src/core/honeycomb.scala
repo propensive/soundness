@@ -61,6 +61,9 @@ object Html extends Item["html"]:
   def apply(head: Item["head"], body: Item["body"]): Node["html"] =
     Node(label, unclosed, inline, verbatim, Map(), Seq(head, body))
 
+object Tag:
+  given simplistic.CssSelection[Tag[_, _, _]] = _.label
+
 case class Tag[+Name <: Label, Children <: Label, Atts <: Label]
               (label: Name, unclosed: Boolean = false, inline: Boolean = false,
                    verbatim: Boolean = false)
@@ -78,6 +81,9 @@ extends Item[Name], Dynamic:
                   (children: (Content[Children] | Seq[Content[Children]])*): Node[Name] =
     Node(label, unclosed, inline, verbatim, Map(), children)
 
+object TransTag:
+  given simplistic.CssSelection[TransTag[_, _, _]] = _.label
+
 case class TransTag[+Name <: Label, Children <: Label, Atts <: Label]
                    (label: Name, unclosed: Boolean = false, inline: Boolean = false,
                         verbatim: Boolean = false)
@@ -93,6 +99,9 @@ extends Item[Name], Dynamic:
                   (method: "apply")
                   (children: (Content[Return] | Seq[Content[Return]])*): Node[Return] =
     Node(label, unclosed, inline, verbatim, Map(), children)
+
+object Element:
+  given simplistic.CssSelection[Element[_, _]] = _.label
 
 case class Element[+Name <: Label, Children <: Label]
                   (label: Name, unclosed: Boolean, inline: Boolean, verbatim: Boolean,
@@ -116,6 +125,10 @@ case class Node[+Name <: Label](label: String, unclosed: Boolean, tagInline: Boo
 case class HtmlDoc(root: Item["html"])
 
 object HtmlDoc:
+  given simplistic.HttpResponse[HtmlDoc] with
+    def mimeType: String = "text/html; charset=utf-8"
+    def content(value: HtmlDoc): String = HtmlDoc.serialize(value)
+
   def serialize[T](doc: HtmlDoc, maxWidth: Int = -1)(using HtmlSerializer[T]): T =
     summon[HtmlSerializer[T]].serialize(doc, maxWidth)
   

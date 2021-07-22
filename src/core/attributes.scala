@@ -16,6 +16,11 @@
 
 package honeycomb
 
+object Attribute:
+  given [L <: Label, V, T](using att: simplistic.HtmlAttribute[L, V]): Attribute[L, V, T] with
+    def convert(value: V): String | Boolean = att.serialize(value)
+    override def rename: Option[String] = Some(att.name)
+
 trait Attribute[Key <: Label, -Value, -T]:
   def convert(value: Value): String | Boolean
   def rename: Option[String] = None
@@ -46,7 +51,15 @@ extension (sc: StringContext)
   def cls(): Cls = Cls(sc.parts.head)
   def id(): DomId = DomId(sc.parts.head)
 
+
+object Cls:
+  given simplistic.CssSelection[Cls] = cls => s".${cls.name}"
+
 case class Cls(name: String)
+
+object DomId:
+  given simplistic.CssSelection[DomId] = id => s"#${id.name}"
+
 case class DomId(name: String)
 
 enum Crossorigin:
