@@ -24,6 +24,11 @@ extension [T: Json.Serializer](value: T)
   def json: Json = Json(summon[Json.Serializer[T]].serialize(value))
 
 object Json extends Dynamic:
+
+  given simplistic.HttpResponse[Json] with
+    def mimeType: String = "application/json"
+    def content(json: Json): String = json.toString
+
   object Serializer extends Derivation[Serializer]:
     given Serializer[Int] = JNum(_)
     given Serializer[String] = JString(_)
