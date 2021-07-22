@@ -37,7 +37,10 @@ trait Responder:
 
 object Handler:
   given SimpleHandler[String] = SimpleHandler("text/plain", str => LazyList(str.bytes))
-  
+
+  given [T](using hr: simplistic.HttpResponse[T]): SimpleHandler[T] =
+    SimpleHandler(hr.mimeType, value => LazyList(hr.content(value).bytes))
+
   given Handler[Redirect] with
     def process(content: Redirect, status: Int, headers: Map[String, String],
                     responder: Responder): Unit =
