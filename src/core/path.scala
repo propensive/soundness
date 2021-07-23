@@ -59,7 +59,7 @@ trait Root(val separator: String, val prefix: String):
         makeAbsolute(path)
 
       def conjunction(other: AbsolutePath): AbsolutePath =
-        makeAbsolute(path.zip(other.path).takeWhile(_ == _).map(_.at[0]))
+        makeAbsolute(path.zip(other.path).takeWhile(_ == _).map(_(0)))
 
       def relativeTo(base: AbsolutePath): RelativePath =
         val common = conjunction(base)
