@@ -47,9 +47,6 @@ object Node:
       case node: Content[?] => Seq(node)
     }.asInstanceOf[Seq[Content[C]]]
 
-extension [T](value: T)
-  def html[R <: Label](using ToHtml[T, R]): Seq[Content[R]] = summon[ToHtml[T, R]].convert(value)
-
 object Html extends Item["html"]:
   def label = "html"
   def attributes: Attributes = Map()
@@ -62,7 +59,7 @@ object Html extends Item["html"]:
     Node(label, unclosed, inline, verbatim, Map(), Seq(head, body))
 
 object Tag:
-  given simplistic.CssSelection[Tag[_, _, _]] = _.label
+  given simplistic.CssSelection[Tag[?, ?, ?]] = _.label
 
 case class Tag[+Name <: Label, Children <: Label, Atts <: Label]
               (label: Name, unclosed: Boolean = false, inline: Boolean = false,
@@ -82,7 +79,7 @@ extends Item[Name], Dynamic:
     Node(label, unclosed, inline, verbatim, Map(), children)
 
 object TransTag:
-  given simplistic.CssSelection[TransTag[_, _, _]] = _.label
+  given simplistic.CssSelection[TransTag[?, ?, ?]] = _.label
 
 case class TransTag[+Name <: Label, Children <: Label, Atts <: Label]
                    (label: Name, unclosed: Boolean = false, inline: Boolean = false,
@@ -101,7 +98,7 @@ extends Item[Name], Dynamic:
     Node(label, unclosed, inline, verbatim, Map(), children)
 
 object Element:
-  given simplistic.CssSelection[Element[_, _]] = _.label
+  given simplistic.CssSelection[Element[?, ?]] = _.label
 
 case class Element[+Name <: Label, Children <: Label]
                   (label: Name, unclosed: Boolean, inline: Boolean, verbatim: Boolean,
@@ -135,8 +132,6 @@ object HtmlDoc:
   def simple[Stylesheet](title: String, stylesheet: Stylesheet = false)
                         (content: (Content[Flow] | Seq[Content[Flow]])*)
                         (using att: Attribute["href", Stylesheet, ?]): HtmlDoc =
-    import attributes.strings.given
-
     val link = att.convert(stylesheet) match
       case boolean: Boolean => Nil
       case string: String   => Seq(Link(rel = "stylesheet", href = string))

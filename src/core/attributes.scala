@@ -16,11 +16,6 @@
 
 package honeycomb
 
-object Attribute:
-  given [L <: Label, V, T](using att: simplistic.HtmlAttribute[L, V]): Attribute[L, V, T] with
-    def convert(value: V): String | Boolean = att.serialize(value)
-    override def rename: Option[String] = Some(att.name)
-
 trait Attribute[Key <: Label, -Value, -T]:
   def convert(value: Value): String | Boolean
   def rename: Option[String] = None
@@ -111,9 +106,12 @@ enum Shape:
 enum Wrap:
   case Soft, Hard
 
-package attributes:
-  package strings:
-    given any[T, L <: Label]: Attribute[L, String, T] = identity(_)
+object Attribute:
+  given [L <: Label, V, T](using att: simplistic.HtmlAttribute[L, V]): Attribute[L, V, T] with
+    def convert(value: V): String | Boolean = att.serialize(value)
+    override def rename: Option[String] = Some(att.name)
+
+  given any[T, L <: Label]: Attribute[L, String, T] = identity(_)
 
   given accept[T]: Attribute["accept", List[String], T] = _.mkString(",")
   given accesskey[T]: Attribute["accesskey", Char, T] = _.toString
