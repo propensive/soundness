@@ -1,19 +1,19 @@
 /*
-
     Wisteria, version 2.0.0. Copyright 2018-21 Jon Pretty, Propensive OÜ.
 
     The primary distribution site is: https://propensive.com/
 
-    Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in
-    compliance with the License. You may obtain a copy of the License at
+    Licensed under the Apache License, Version 2.0 (the "License"); you may not use this
+    file except in compliance with the License. You may obtain a copy of the License at
 
     http://www.apache.org/licenses/LICENSE-2.0
 
-    Unless required by applicable law or agreed to in writing, software distributed under the License is
-    distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-    See the License for the specific language governing permissions and limitations under the License.
-
+    Unless required by applicable law or agreed to in writing, software distributed under the
+    License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
+    either express or implied. See the License for the specific language governing permissions
+    and limitations under the License.
 */
+
 package wisteria
 
 import language.experimental.macros
@@ -60,7 +60,10 @@ abstract class CaseClass[Typeclass[_], Type]
   override def toString: String = s"CaseClass(${typeInfo.full}, ${params.mkString(",")})"
   def construct[PType](makeParam: Param => PType)(using ClassTag[PType]): Type
   def constructMonadic[Monad[_]: Monadic, PType: ClassTag](make: Param => Monad[PType]): Monad[Type]
-  def constructEither[Err, PType: ClassTag](makeParam: Param => Either[Err, PType]): Either[List[Err], Type]
+  
+  def constructEither[Err, PType: ClassTag](makeParam: Param => Either[Err, PType])
+      : Either[List[Err], Type]
+  
   def rawConstruct(fieldValues: Seq[Any]): Type
 
   def param[P](name: String, idx: Int, repeated: Boolean, cbn: CallByNeed[Typeclass[P]],
@@ -75,7 +78,7 @@ end CaseClass
 
 case class SealedTrait[Typeclass[_], Type]
                       (typeInfo: TypeInfo,
-                       subtypes: IArray[SealedTrait.Subtype[Typeclass, Type, _]],
+                       subtypes: IArray[SealedTrait.Subtype[Typeclass, Type, ?]],
                        annotations: IArray[Any],
                        typeAnnotations: IArray[Any]) extends Serializable:
 
@@ -83,16 +86,16 @@ case class SealedTrait[Typeclass[_], Type]
 
   override def toString: String = s"SealedTrait($typeInfo, IArray[${subtypes.mkString(",")}])"
 
-  def choose[Return](value: Type)(handle: Subtype[_] => Return): Return =
+  def choose[Return](value: Type)(handle: Subtype[?] => Return): Return =
     @tailrec def rec(ix: Int): Return =
       if ix < subtypes.length then
         val sub = subtypes(ix)
         if sub.cast.isDefinedAt(value) then handle(SealedTrait.SubtypeValue(sub, value))
         else rec(ix + 1)
-      else throw new IllegalArgumentException(s"The given value `$value` is not a sub type of `$typeInfo`")
+      else throw IllegalArgumentException(
+          s"The given value `$value` is not a sub type of `$typeInfo`")
 
     rec(0)
-
 end SealedTrait
 
 object SealedTrait:
@@ -114,13 +117,12 @@ object SealedTrait:
   class SubtypeValue[Typeclass[_], Type, S](val subtype: Subtype[Typeclass, Type, S], v: Type):
     export subtype.{typeclass, typeAnnotations, annotations, cast, typeInfo}
     def value: S & Type = cast(v)
-
 end SealedTrait
 
 object CallByNeed:
   def apply[A](a: => A): CallByNeed[A] = new CallByNeed(() => a)
 
-final class CallByNeed[+A](private[this] var eval: () => A) extends Serializable:
+final class CallByNeed[+A](private var eval: () => A) extends Serializable:
   lazy val value: A =
     val result = eval()
     eval = null

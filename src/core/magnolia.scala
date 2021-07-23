@@ -1,19 +1,19 @@
 /*
-
     Wisteria, version 2.0.0. Copyright 2018-21 Jon Pretty, Propensive OÜ.
 
     The primary distribution site is: https://propensive.com/
 
-    Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in
-    compliance with the License. You may obtain a copy of the License at
+    Licensed under the Apache License, Version 2.0 (the "License"); you may not use this
+    file except in compliance with the License. You may obtain a copy of the License at
 
     http://www.apache.org/licenses/LICENSE-2.0
 
-    Unless required by applicable law or agreed to in writing, software distributed under the License is
-    distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-    See the License for the specific language governing permissions and limitations under the License.
-
+    Unless required by applicable law or agreed to in writing, software distributed under the
+    License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
+    either express or implied. See the License for the specific language governing permissions
+    and limitations under the License.
 */
+
 package wisteria
 
 import scala.deriving.Mirror
@@ -29,16 +29,19 @@ trait CommonDerivation[TypeClass[_]]:
     val parameters = IArray(getParams[A, product.MirroredElemLabels, product.MirroredElemTypes](
         paramAnns[A].to(Map), paramTypeAnns[A].to(Map), repeated[A].to(Map))*)
     
-    val caseClass = new CaseClass[Typeclass, A](typeInfo[A], isObject[A], isValueClass[A], parameters,
-        IArray(anns[A]*), IArray[Any](typeAnns[A]*)):
+    val caseClass = new CaseClass[Typeclass, A](typeInfo[A], isObject[A], isValueClass[A],
+        parameters, IArray(anns[A]*), IArray[Any](typeAnns[A]*)):
       
       def construct[PType](makeParam: Param => PType)(using ClassTag[PType]): A =
         product.fromProduct(Tuple.fromArray(this.params.map(makeParam(_)).to(Array)))
 
-      def rawConstruct(fieldValues: Seq[Any]): A = product.fromProduct(Tuple.fromArray(fieldValues.to(Array)))
+      def rawConstruct(fieldValues: Seq[Any]): A =
+        product.fromProduct(Tuple.fromArray(fieldValues.to(Array)))
 
-      def constructEither[Err, PType: ClassTag](makeParam: Param => Either[Err, PType]): Either[List[Err], A] =
-        params.map(makeParam(_)).to(Array).foldLeft[Either[List[Err], Array[PType]]](Right(Array())) {
+      def constructEither[Err, PType: ClassTag]
+                         (makeParam: Param => Either[Err, PType]): Either[List[Err], A] =
+        params.map(makeParam(_)).to(Array).foldLeft[Either[List[Err], Array[PType]]]
+            (Right(Array())) {
           case (Left(errs), Left(err))    => Left(errs ++ List(err))
           case (Right(acc), Right(param)) => Right(acc ++ Array(param))
           case (errs@Left(_), _)          => errs
@@ -58,11 +61,13 @@ trait CommonDerivation[TypeClass[_]]:
 
   inline def getParams[T, Labels <: Tuple, Params <: Tuple]
                       (annotations: Map[String, List[Any]], typeAnnotations: Map[String, List[Any]],
-                      repeated: Map[String, Boolean], idx: Int = 0): List[CaseClass.Param[Typeclass, T]] =
+                          repeated: Map[String, Boolean], idx: Int = 0)
+                      : List[CaseClass.Param[Typeclass, T]] =
 
     inline erasedValue[(Labels, Params)] match
       case _: (EmptyTuple, EmptyTuple) =>
         Nil
+      
       case _: ((l *: ltail), (p *: ptail)) =>
         val label = constValue[l].asInstanceOf[String]
         val typeclass = CallByNeed(summonInline[Typeclass[p]])
@@ -83,11 +88,12 @@ end ProductDerivation
 trait Derivation[TypeClass[_]] extends CommonDerivation[TypeClass]:
   def split[T](ctx: SealedTrait[Typeclass, T]): Typeclass[T]
 
-  transparent inline def subtypes[T, SubtypeTuple <: Tuple]
-                                 (m: Mirror.SumOf[T], idx: Int = 0): List[SealedTrait.Subtype[Typeclass, T, _]] =
+  transparent inline def subtypes[T, SubtypeTuple <: Tuple](m: Mirror.SumOf[T], idx: Int = 0)
+      : List[SealedTrait.Subtype[Typeclass, T, ?]] =
     inline erasedValue[SubtypeTuple] match
       case _: EmptyTuple =>
         Nil
+      
       case _: (s *: tail) =>
         new SealedTrait.Subtype(typeInfo[s], IArray[Any](), IArray.from(paramTypeAnns[T]), idx,
             CallByNeed(summonInline[Typeclass[s]]), x => m.ordinal(x) == idx,

@@ -1,20 +1,22 @@
 /*
-
     Wisteria, version 2.0.0. Copyright 2018-21 Jon Pretty, Propensive OÜ.
 
     The primary distribution site is: https://propensive.com/
 
-    Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in
-    compliance with the License. You may obtain a copy of the License at
+    Licensed under the Apache License, Version 2.0 (the "License"); you may not use this
+    file except in compliance with the License. You may obtain a copy of the License at
 
     http://www.apache.org/licenses/LICENSE-2.0
 
-    Unless required by applicable law or agreed to in writing, software distributed under the License is
-    distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-    See the License for the specific language governing permissions and limitations under the License.
-
+    Unless required by applicable law or agreed to in writing, software distributed under the
+    License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
+    either express or implied. See the License for the specific language governing permissions
+    and limitations under the License.
 */
+
 package wisteria
+
+import rudiments.*
 
 import scala.quoted.*
 
@@ -56,14 +58,15 @@ object Macro:
     
     Expr.ofList {
       tpe.typeSymbol.annotations.filter { a =>
-        a.tpe.typeSymbol.maybeOwner.isNoSymbol || a.tpe.typeSymbol.owner.fullName != "scala.annotation.internal"
+        a.tpe.typeSymbol.maybeOwner.isNoSymbol || a.tpe.typeSymbol.owner.fullName !=
+            "scala.annotation.internal"
       }.map(_.asExpr.asInstanceOf[Expr[Any]])
     }
   
   def typeAnns[T: Type](using Quotes): Expr[List[Any]] =
     import quotes.reflect.*
     
-    def getAnnotations(t: TypeRepr): List[Term] = t match
+    def getAnnotations(t: TypeRepr): List[Term] = t.unsafeMatchable match
       case AnnotatedType(inner, ann) => ann :: getAnnotations(inner)
       case _                         => Nil
     
@@ -87,15 +90,15 @@ object Macro:
     Expr(TypeRepr.of[T].baseClasses.contains(Symbol.classSymbol("scala.AnyVal")))
   
   def defaultValue[T: Type](using Quotes): Expr[List[(String, Option[Any])]] =
-    import quotes.reflect._
+    import quotes.reflect.*
 
     // TODO: Implement RHS
     Expr.ofList(TypeRepr.of[T].typeSymbol.caseFields.map { case s => Expr(s.name -> None) })
 
   def paramTypeAnns[T: Type](using Quotes): Expr[List[(String, List[Any])]] =
-    import quotes.reflect._
+    import quotes.reflect.*
 
-    def getAnnotations(t: TypeRepr): List[Term] = t match
+    def getAnnotations(t: TypeRepr): List[Term] = t.unsafeMatchable match
       case AnnotatedType(inner, ann) => ann :: getAnnotations(inner)
       case _                         => Nil
 
@@ -104,6 +107,7 @@ object Macro:
         val tpeRepr = field.tree match
           case v: ValDef => v.tpt.tpe
           case d: DefDef => d.returnTpt.tpe
+          case other     => throw Impossible("field is not of the expected AST type")
         
         Expr(field.name) -> getAnnotations(tpeRepr).filter { a =>
           a.tpe.typeSymbol.maybeOwner.isNoSymbol ||
@@ -135,19 +139,23 @@ object Macro:
     Expr(areRepeated)
 
   def typeInfo[T: Type](using Quotes): Expr[TypeInfo] =
-    import quotes.reflect._
+    import quotes.reflect.*
     
-    def normalizedName(s: Symbol): String = if s.flags.is(Flags.Module) then s.name.stripSuffix("$") else s.name
+    def normalizedName(s: Symbol): String =
+      if s.flags.is(Flags.Module) then s.name.stripSuffix("$") else s.name
+    
     def name(tpe: TypeRepr) : Expr[String] = Expr(normalizedName(tpe.typeSymbol))
 
     def ownerNameChain(sym: Symbol): List[String] =
-      if sym.isNoSymbol || sym == defn.EmptyPackageClass || sym == defn.RootPackage || sym == defn.RootClass
+      if sym.isNoSymbol || sym == defn.EmptyPackageClass || sym == defn.RootPackage ||
+          sym == defn.RootClass
       then Nil
       else ownerNameChain(sym.owner) :+ normalizedName(sym)
 
-    def owner(tpe: TypeRepr): Expr[String] = Expr(ownerNameChain(tpe.typeSymbol.maybeOwner).mkString("."))
+    def owner(tpe: TypeRepr): Expr[String] =
+      Expr(ownerNameChain(tpe.typeSymbol.maybeOwner).mkString("."))
 
-    def typeInfo(tpe: TypeRepr): Expr[TypeInfo] = tpe match
+    def typeInfo(tpe: TypeRepr): Expr[TypeInfo] = tpe.unsafeMatchable match
       case AppliedType(tpe, args) =>
         '{TypeInfo(${owner(tpe)}, ${name(tpe)}, ${Expr.ofList(args.map(typeInfo))})}
       case _ =>
