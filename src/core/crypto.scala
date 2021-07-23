@@ -153,7 +153,11 @@ class Rsa[KS <: 1024 | 2048: ValueOf]() extends CryptoAlgorithm[KS], Encryption:
     
   def privateToPublic(bytes: Bytes): Bytes =
     val privateKey = keyFactory().generatePrivate(PKCS8EncodedKeySpec(bytes.unsafeMutable)) match
-      case key: js.interfaces.RSAPrivateCrtKey => key
+      case key: js.interfaces.RSAPrivateCrtKey =>
+        key
+      
+      case _ =>
+        throw Impossible("public key did not have the correct type")
 
     val spec = RSAPublicKeySpec(privateKey.getModulus, privateKey.getPublicExponent)
     IArray.from(keyFactory().generatePublic(spec).getEncoded)
@@ -188,8 +192,14 @@ class Dsa[KS <: 512 | 1024 | 2048 | 3072: ValueOf]() extends CryptoAlgorithm[KS]
     val random = js.SecureRandom()
     generator.initialize(keySize, random)
     val keyPair = generator.generateKeyPair()
+    
     val pubKey = keyPair.getPublic match
-      case key: js.interfaces.DSAPublicKey => key
+      case key: js.interfaces.DSAPublicKey =>
+        key
+      
+      case _ =>
+        throw Impossible("public key did not have the correct type")
+    
     IArray.from(keyPair.getPrivate.getEncoded)
 
   def sign(data: Bytes, keyBytes: Bytes): Bytes =
@@ -208,7 +218,11 @@ class Dsa[KS <: 512 | 1024 | 2048 | 3072: ValueOf]() extends CryptoAlgorithm[KS]
 
   def privateToPublic(keyBytes: Bytes): Bytes =
     val key = keyFactory().generatePrivate(PKCS8EncodedKeySpec(keyBytes.to(Array))) match
-      case key: js.interfaces.DSAPrivateKey => key
+      case key: js.interfaces.DSAPrivateKey =>
+        key
+      
+      case _ =>
+        throw Impossible("private key did not have the correct type")
 
     val y = key.getParams.getG.modPow(key.getX, key.getParams.getP)
     val spec = DSAPublicKeySpec(y, key.getParams.getP, key.getParams.getQ, key.getParams.getG)

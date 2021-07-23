@@ -163,7 +163,8 @@ extension (value: String)
 
 extension [T](value: T)
   def digest[A <: HashScheme[?]: HashFunction](using Hashable[T]): Digest[A] =
-    Digester(summon[Hashable[T]].digest(_, value)).apply(summon[HashFunction[A]])
+    val digester = Digester(summon[Hashable[T]].digest(_, value))
+    digester.apply
 
   def hmac[A <: HashScheme[?]: HashFunction](key: Bytes)(using ByteCodec[T]): Hmac[A] =
     val mac = summon[HashFunction[A]].initHmac
