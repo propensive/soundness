@@ -127,30 +127,4 @@ object Sys extends Dynamic:
 
 case class KeyNotFound(name: String) extends Exception(str"rudiments: key $name not found")
 
-// It should be possible to reimplement these recursively.
-
-extension [H1, H2](tuple: (H1, H2))
-  transparent inline def at[I <: 0 | 1] = inline erasedValue[I] match
-    case _: 0 => tuple._1
-    case _: 1 => tuple._2
-
-extension [H1, H2, H3](tuple: (H1, H2, H3))
-  transparent inline def at[I <: 0 | 1 | 2] = inline erasedValue[I] match
-    case _: 0 => tuple._1
-    case _: 1 => tuple._2
-    case _: 2 => tuple._3
-
-extension [H1, H2, H3, H4](tuple: (H1, H2, H3, H4))
-  transparent inline def at[I <: 0 | 1 | 2 | 3] = inline erasedValue[I] match
-    case _: 0 => tuple._1
-    case _: 1 => tuple._2
-    case _: 2 => tuple._3
-    case _: 3 => tuple._4
-
-extension [H1, H2, H3, H4, H5](tuple: (H1, H2, H3, H4, H5))
-  transparent inline def at[I <: 0 | 1 | 2 | 3 | 4] = inline erasedValue[I] match
-    case _: 0 => tuple._1
-    case _: 1 => tuple._2
-    case _: 2 => tuple._3
-    case _: 3 => tuple._4
-    case _: 4 => tuple._5
+def √(value: Double): Double = math.sqrt(value)
