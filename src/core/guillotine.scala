@@ -1,3 +1,19 @@
+/*
+    Guillotine, version 0.5.0. Copyright 2017-21 Jon Pretty, Propensive OÜ.
+
+    The primary distribution site is: https://propensive.com/
+
+    Licensed under the Apache License, Version 2.0 (the "License"); you may not use this
+    file except in compliance with the License. You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software distributed under the
+    License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
+    either express or implied. See the License for the specific language governing permissions
+    and limitations under the License.
+*/
+
 package guillotine
 
 import contextual.*
@@ -78,7 +94,10 @@ object Sh extends Interpolator[List[String], State, Command]:
         
         case State(Quotes2, false, args :+ last) =>
           State(Quotes2, false, args :+ (s"$last$h" :: t).join(" "))
-
+        
+        case _ =>
+          throw Impossible("impossible parser state")
+        
   def parse(state: State, next: String): State = next.foldLeft(state) {
     case (State(Awaiting, esc, args), ' ')          => State(Awaiting, false, args)
     case (State(Quotes1, false, rest :+ cur), '\\') => State(Quotes1, false, rest :+ s"$cur\\")
@@ -93,6 +112,7 @@ object Sh extends Interpolator[List[String], State, Command]:
     case (State(Awaiting, esc, args), char)         => State(Unquoted, false, args :+ s"$char")
     case (State(ctx, esc, Nil), char)               => State(ctx, false, List(s"$char"))
     case (State(ctx, esc, rest :+ cur), char)       => State(ctx, false, rest :+ s"$cur$char")
+    case _                                          => throw Impossible("impossible parser state")
   }
 
 given Insertion[List[String], String] = value => List(value)
