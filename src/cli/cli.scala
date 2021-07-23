@@ -1,22 +1,23 @@
 /*
-
-    Probably, version 0.8.0. Copyright 2017-20 Jon Pretty, Propensive OÜ.
+    Probably, version 0.8.0. Copyright 2017-21 Jon Pretty, Propensive OÜ.
 
     The primary distribution site is: https://propensive.com/
 
-    Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in
-    compliance with the License. You may obtain a copy of the License at
+    Licensed under the Apache License, Version 2.0 (the "License"); you may not use this
+    file except in compliance with the License. You may obtain a copy of the License at
 
     http://www.apache.org/licenses/LICENSE-2.0
 
-    Unless required by applicable law or agreed to in writing, software distributed under the License is
-    distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-    See the License for the specific language governing permissions and limitations under the License.
-
+    Unless required by applicable law or agreed to in writing, software distributed under the
+    License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
+    either express or implied. See the License for the specific language governing permissions
+    and limitations under the License.
 */
+
 package probably
 
 import escritoire.*
+import rudiments.*
 
 import scala.collection.mutable
 
@@ -26,15 +27,21 @@ object Suite:
   import Ansi.Color.*
   def ansi(symbol: Char, code: Ansi.Color) = code(Ansi.bold(Ansi.reverse(s" ${symbol} ")))
 
-  val statuses@List(pass, fail, checkThrows, throws, tailFail, mixed) =
-    List('✓' -> green, '✗' -> red, '?' -> cyan, '!' -> magenta, '±' -> blue, '#' -> yellow).map(ansi)
+  val statuses@List(pass, fail, checkThrows, throws, tailFail, mixed) = List(
+    '✓' -> green,
+    '✗' -> red,
+    '?' -> cyan,
+    '!' -> magenta,
+    '±' -> blue,
+    '#' -> yellow
+  ).map(ansi)
   
   private val legend: List[String] = statuses.zip(List("Pass", "Fail", "Assertion throws",
-      "Throws an exception", "Inconsistent", "Suite partially fails")).map { (status, description) =>
-    s"${status} ${description.padTo(32, ' ')}"
+      "Throws an exception", "Inconsistent", "Suite partially fails")).map { (status, desc) =>
+    str"$status ${desc.padTo(32, ' ')}"
   }.to(List)
 
-  val footer: String = legend.grouped(2).map(_.mkString("  ")).mkString("\n", "\n", "\n")
+  val footer: String = legend.grouped(2).map(_.join("  ")).to(Seq).join("\n", "\n", "\n")
   
   def show(report: Report): String =
     val simple = report.results.forall(_.count == 1)
@@ -52,21 +59,23 @@ object Suite:
     val name = Heading[Summary, String]("Test", s => s"${"  "*s.indent}${s.name}")
     val count = Heading[Summary, Int]("Count", _.count)
     val min = Heading[Summary, Double]("Min", _.min)
-    val avg = Heading[Summary, Double](if(simple) "Time" else "Avg", _.avg)
+    val avg = Heading[Summary, Double](if simple then "Time" else "Avg", _.avg)
     val max = Heading[Summary, Double]("Max", _.max)
     val debug = Heading[Summary, String]("Debug", _.outcome.debug)
     
     val table =
-      if(simple) Tabulation[Summary](status, hash, name, avg, debug)
+      if simple then Tabulation[Summary](status, hash, name, avg, debug)
       else Tabulation[Summary](status, hash, name, count, min, avg, max, debug)
 
-    val resultsTable = table.tabulate(100, report.results).mkString("\n")
+    val resultsTable = table.tabulate(100, report.results).join("\n")
     
-    val summary = Map("Passed" -> report.passed, "Failed" -> report.failed, "Total" -> report.total).map {
-      (key, value) => s"${Ansi.bold(key)}: $value"
-    }.mkString("   ")
+    val summary = Map(
+      "Passed" -> report.passed,
+      "Failed" -> report.failed,
+      "Total" -> report.total
+    ).map { (key, value) => s"${Ansi.bold(key)}: $value" }.join("   ")
 
-    List(resultsTable, summary, Suite.footer).mkString("\n")
+    List(resultsTable, summary, Suite.footer).join("\n")
 
 trait Suite(val name: String) extends TestSuite:
   def run(using Runner): Unit

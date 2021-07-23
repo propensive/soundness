@@ -1,19 +1,19 @@
 /*
-
-    Probably, version 0.8.0. Copyright 2017-20 Jon Pretty, Propensive OÜ.
+    Probably, version 0.8.0. Copyright 2017-21 Jon Pretty, Propensive OÜ.
 
     The primary distribution site is: https://propensive.com/
 
-    Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in
-    compliance with the License. You may obtain a copy of the License at
+    Licensed under the Apache License, Version 2.0 (the "License"); you may not use this
+    file except in compliance with the License. You may obtain a copy of the License at
 
     http://www.apache.org/licenses/LICENSE-2.0
 
-    Unless required by applicable law or agreed to in writing, software distributed under the License is
-    distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-    See the License for the specific language governing permissions and limitations under the License.
-
+    Unless required by applicable law or agreed to in writing, software distributed under the
+    License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
+    either express or implied. See the License for the specific language governing permissions
+    and limitations under the License.
 */
+
 package probably
 
 import scala.collection.immutable.ListMap
@@ -51,7 +51,9 @@ object Runner:
     case Pass extends Datapoint(Map())
     case Fail(failMap: Map[String, String], index: Int) extends Datapoint(failMap)
     case Throws(exception: Throwable, throwMap: Map[String, String]) extends Datapoint(throwMap)
-    case ThrowsInCheck(exception: Exception, throwMap: Map[String, String], index: Int) extends Datapoint(throwMap)
+    
+    case ThrowsInCheck(exception: Exception, throwMap: Map[String, String], index: Int)
+    extends Datapoint(throwMap)
 
   object Show:
     given Show[Int] = _.toString
@@ -95,7 +97,9 @@ class Runner(subset: Set[TestId] = Set()) extends Dynamic:
     val report = test.check(_.results.forall(_.outcome.passed))
 
     if report.results.exists(_.outcome.passed) && report.results.exists(_.outcome.failed)
-    then synchronized { results = results.updated(name, results(name).copy(outcome = Outcome.Mixed)) }
+    then synchronized {
+      results = results.updated(name, results(name).copy(outcome = Outcome.Mixed))
+    }
 
     report.results.foreach { result => record(result.copy(indent = result.indent + 1)) }
 
@@ -106,7 +110,9 @@ class Runner(subset: Set[TestId] = Set()) extends Dynamic:
 
     def id: TestId = TestId(Runner.shortDigest(name))
     def action(): Type
-    def assert(pred: (Type => Boolean)*): Unit = try if !skip(id) then check(pred*) catch case NonFatal(_) => ()
+    
+    def assert(pred: (Type => Boolean)*): Unit =
+      try if !skip(id) then check(pred*) catch case NonFatal(_) => ()
     
     private val map: HashMap[String, String] = HashMap()
 
@@ -118,7 +124,8 @@ class Runner(subset: Set[TestId] = Set()) extends Dynamic:
       def handler(index: Int): PartialFunction[Throwable, Datapoint] =
         case e: Exception => Datapoint.ThrowsInCheck(e, map.toMap, index)
 
-      def makeDatapoint(preds: Seq[Type => Boolean], count: Int, datapoint: Datapoint, value: Type): Datapoint =
+      def makeDatapoint(preds: Seq[Type => Boolean], count: Int, datapoint: Datapoint, value: Type)
+          : Datapoint =
         try
           if preds.isEmpty then datapoint
           else if preds.head(value) then makeDatapoint(preds.tail, count + 1, Datapoint.Pass, value)
@@ -148,7 +155,7 @@ class Runner(subset: Set[TestId] = Set()) extends Dynamic:
     results = results.updated(summary.name, summary)
   }
 
-  private[this] def emptyResults(): Map[String, Summary] = ListMap().withDefault { name =>
+  private def emptyResults(): Map[String, Summary] = ListMap().withDefault { name =>
     Summary(TestId(shortDigest(name)), name, 0, Int.MaxValue, 0L, Int.MinValue, Outcome.Passed, 0)
   }
 
@@ -156,8 +163,8 @@ class Runner(subset: Set[TestId] = Set()) extends Dynamic:
   protected var results: Map[String, Summary] = emptyResults()
 end Runner
 
-case class Summary(id: TestId, name: String, count: Int, tmin: Long, ttot: Long, tmax: Long, outcome: Outcome,
-                   indent: Int):
+case class Summary(id: TestId, name: String, count: Int, tmin: Long, ttot: Long, tmax: Long,
+                       outcome: Outcome, indent: Int):
   def avg: Double = ttot.toDouble/count/1000.0
   def min: Double = tmin.toDouble/1000.0
   def max: Double = tmax.toDouble/1000.0
@@ -170,7 +177,8 @@ case class Summary(id: TestId, name: String, count: Int, tmin: Long, ttot: Long,
     case Outcome.Mixed          => Outcome.FailsAt(datapoint, 0)
 
   def append(test: String, duration: Long, datapoint: Datapoint): Summary =
-    Summary(id, name, count + 1, tmin min duration, ttot + duration, tmax max duration, aggregate(datapoint), 0)
+    Summary(id, name, count + 1, tmin min duration, ttot + duration, tmax max duration,
+        aggregate(datapoint), 0)
 
 case class Report(results: List[Summary]):
   val passed: Int = results.count(_.outcome == Outcome.Passed)
@@ -184,7 +192,8 @@ trait TestSuite:
 object global:
   object test extends Runner()
 
-def test[T](name: String)(fn: Runner#Test ?=> T)(using runner: Runner): runner.Test { type Type = T } =
+def test[T](name: String)(fn: Runner#Test ?=> T)(using runner: Runner)
+    : runner.Test { type Type = T } =
   runner(name)(fn)
 
 def suite(name: String)(fn: Runner ?=> Unit)(using runner: Runner): Unit = runner.suite(name)(fn)

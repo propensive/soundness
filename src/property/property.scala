@@ -1,19 +1,19 @@
 /*
-
-    Probably, version 0.8.0. Copyright 2017-20 Jon Pretty, Propensive OÜ.
+    Probably, version 0.8.0. Copyright 2017-21 Jon Pretty, Propensive OÜ.
 
     The primary distribution site is: https://propensive.com/
 
-    Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in
-    compliance with the License. You may obtain a copy of the License at
+    Licensed under the Apache License, Version 2.0 (the "License"); you may not use this
+    file except in compliance with the License. You may obtain a copy of the License at
 
     http://www.apache.org/licenses/LICENSE-2.0
 
-    Unless required by applicable law or agreed to in writing, software distributed under the License is
-    distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-    See the License for the specific language governing permissions and limitations under the License.
-
+    Unless required by applicable law or agreed to in writing, software distributed under the
+    License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
+    either express or implied. See the License for the specific language governing permissions
+    and limitations under the License.
 */
+
 package probably
 
 import wisteria.*
@@ -36,15 +36,17 @@ object Arbitrary extends Derivation[Arbitrary]:
       case ((subtype, i), s) => subtype.typeclass(s, i)
     }(n%ctx.subtypes.size)
 
-  val seedStrings = Vector("", "a", "z", "\n", "0", "_", "\"", "\'", " ", "abcdefghijklmnopqrstuvwxyz")
+  val seedStrings = Vector("", "a", "z", "\n", "0", "_", "\"", "\'", " ",
+      "abcdefghijklmnopqrstuvwxyz")
   
-  private val seedInts = Vector(0, 1, -1, 2, -2, 42, Int.MaxValue, Int.MinValue, Int.MaxValue - 1, Int.MinValue + 1)
+  private val seedInts = Vector(0, 1, -1, 2, -2, 42, Int.MaxValue, Int.MinValue, Int.MaxValue - 1,
+      Int.MinValue + 1)
 
-  private val seedLongs = Vector[Long](0, 1, -1, 2, -2, 42, Long.MaxValue, Long.MinValue, Long.MaxValue - 1,
-      Long.MinValue + 1)
+  private val seedLongs = Vector[Long](0, 1, -1, 2, -2, 42, Long.MaxValue, Long.MinValue,
+      Long.MaxValue - 1, Long.MinValue + 1)
   
-  private val seedBytes = Vector[Byte](0, 1, -1, 2, -2, 42, Byte.MaxValue, Byte.MinValue, Byte.MaxValue - 1,
-      Byte.MinValue + 1)
+  private val seedBytes = Vector[Byte](0, 1, -1, 2, -2, 42, Byte.MaxValue, Byte.MinValue,
+      Byte.MaxValue - 1, Byte.MinValue + 1)
   
   private val seedShorts = Vector[Short](0, 1, -1, 2, -2, 42, Short.MaxValue, Short.MinValue,
       Short.MaxValue - 1, Short.MinValue + 1)
@@ -52,11 +54,15 @@ object Arbitrary extends Derivation[Arbitrary]:
   given Arbitrary[Int] = (seed, n) => seedInts.lift(n).getOrElse(seed.stream(n).last.value.toInt)
   given Arbitrary[Long] = (seed, n) => seedLongs.lift(n).getOrElse(seed.stream(n).last.value)
   given Arbitrary[Byte] = (seed, n) => seedBytes.lift(n).getOrElse(seed.stream(n).last.value.toByte)
-  given Arbitrary[Short] = (seed, n) => seedShorts.lift(n).getOrElse(seed.stream(n).last.value.toShort)
+  
+  given Arbitrary[Short] = (seed, n) =>
+    seedShorts.lift(n).getOrElse(seed.stream(n).last.value.toShort)
 
   given Arbitrary[String] = (seed, n) => seedStrings.lift(n).getOrElse {
-    val chars = seed.stream(n).last.stream(10).map(_()).map(_.toByte).filter { c => c > 31 && c < 128 }
-    String(chars.to(Array), "UTF-8")
+    val chars =
+      seed.stream(n).last.stream(10).map(_()).map(_.toByte).filter { c => c > 31 && c < 128 }
+    
+    chars.string
   }
 
   private def spread(seed: Seed, total: Int, count: Int): List[Int] =
