@@ -41,11 +41,11 @@ trait Root(val separator: String, val prefix: String):
     def parent: Path exposes RootBoundaryExceeded
     def ancestor(ascent: Int): Path exposes RootBoundaryExceeded
     def absolute(pwd: AbsolutePath): AbsolutePath exposes RootBoundaryExceeded
-    def /(filename: String): Path exposes RootBoundaryExceeded
+    infix def /(filename: String): Path exposes RootBoundaryExceeded
     def ++(path: GenericRelative): Path
 
   object Path:
-    class Absolute(val path: Vector[String]) extends Path:
+    open class Absolute(val path: Vector[String]) extends Path:
       override def toString(): String = path.join(prefix, separator, "")
       
       def parent: AbsolutePath exposes RootBoundaryExceeded = path match
@@ -76,7 +76,7 @@ trait Root(val separator: String, val prefix: String):
         if relative.ascent > 0 then ancestor(relative.ascent) ++ makeRelative(0, relative.path)
         else makeAbsolute(path ++ relative.path)
       
-      override def equals(that: Any): Boolean = that match
+      override def equals(that: Any): Boolean = that.unsafeMatchable match
         case that: Absolute => path == that.path
         case _              => false
 
@@ -107,7 +107,7 @@ trait Root(val separator: String, val prefix: String):
         if relative.ascent == 0 then makeRelative(ascent, path ++ relative.path)
         else ancestor(relative.ascent) ++ makeRelative(ascent, relative.path)
 
-      override def equals(that: Any): Boolean = that match
+      override def equals(that: Any): Boolean = that.unsafeMatchable match
         case that: Relative => ascent == that.ascent && path == that.path
         case _              => false
 
