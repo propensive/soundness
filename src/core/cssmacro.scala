@@ -364,16 +364,16 @@ object ShowProperty:
   given ShowProperty[Dimension] = _.toString
   
   given [A: ShowProperty, B: ShowProperty]: ShowProperty[(A, B)] = tuple =>
-    str"${summon[ShowProperty[A]].show(tuple.at[0])} ${summon[ShowProperty[B]].show(tuple.at[1])}"
+    str"${summon[ShowProperty[A]].show(tuple(0))} ${summon[ShowProperty[B]].show(tuple(1))}"
   
   given [A: ShowProperty, B: ShowProperty, C: ShowProperty]: ShowProperty[(A, B, C)] = tuple =>
-    List(summon[ShowProperty[A]].show(tuple.at[0]), summon[ShowProperty[B]].show(tuple.at[1]),
-        summon[ShowProperty[C]].show(tuple.at[2])).join(" ")
+    List(summon[ShowProperty[A]].show(tuple(0)), summon[ShowProperty[B]].show(tuple(1)),
+        summon[ShowProperty[C]].show(tuple(2))).join(" ")
   
   given [A: ShowProperty, B: ShowProperty, C: ShowProperty, D: ShowProperty]
         : ShowProperty[(A, B, C, D)] = tuple =>
-    List(summon[ShowProperty[A]].show(tuple.at[0]), summon[ShowProperty[B]].show(tuple.at[1]),
-        summon[ShowProperty[C]].show(tuple.at[2]), summon[ShowProperty[D]].show(tuple.at[3]))
+    List(summon[ShowProperty[A]].show(tuple(0)), summon[ShowProperty[B]].show(tuple(1)),
+        summon[ShowProperty[C]].show(tuple(2)), summon[ShowProperty[D]].show(tuple(3)))
       .join(" ")
   
   given ShowProperty[Font] = _.names.map { f =>
