@@ -1,25 +1,25 @@
 /*
-
     Scintillate, version 0.2.0. Copyright 2018-21 Jon Pretty, Propensive OÜ.
 
     The primary distribution site is: https://propensive.com/
 
-    Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in
-    compliance with the License. You may obtain a copy of the License at
+    Licensed under the Apache License, Version 2.0 (the "License"); you may not use this
+    file except in compliance with the License. You may obtain a copy of the License at
 
     http://www.apache.org/licenses/LICENSE-2.0
 
-    Unless required by applicable law or agreed to in writing, software distributed under the License is
-    distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-    See the License for the specific language governing permissions and limitations under the License.
-
+    Unless required by applicable law or agreed to in writing, software distributed under the
+    License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
+    either express or implied. See the License for the specific language governing permissions
+    and limitations under the License.
 */
+
 package scintillate
 
 import rudiments.*
 
 object RequestHeader:
-  val standard: Map[String, RequestHeader] = Set(AIm, Accept, AcceptCharset, AcceptDatetime,
+  lazy val standard: Map[String, RequestHeader] = Set(AIm, Accept, AcceptCharset, AcceptDatetime,
       AcceptEncoding, AcceptLanguage, AccessControlRequestMethod, AccessControlRequestHeaders,
       Authorization, CacheControl, Connection, ContentEncoding, ContentLength, ContentMd5,
       ContentType, Cookie, Date, Expect, Forwarded, From, Host, Http2Settings, IfMatch,
@@ -97,14 +97,17 @@ enum RequestHeader(val header: String):
   def apply(content: String): RequestHeader.Value = RequestHeader.Value(this, content)
 
 object ResponseHeader:
-  val standard: Map[String, ResponseHeader] = List(AcceptCh, AccessControlAllowOrigin,
-      AccessControlAllowCredentials, AccessControlExposeHeaders, AccessControlMaxAge, AccessControlAllowMethods,
-      AccessControlAllowHeaders, AcceptPatch, AcceptRanges, Age, Allow, AltSvc, CacheControl, Connection,
-      ContentDisposition, ContentEncoding, ContentLanguage, ContentLength, ContentLocation, ContentMd5,
-      ContentRange, ContentType, Date, DeltaBase, ETag, Expires, Im, LastModified, Link, Location, P3p, Pragma,
-      PreferenceApplied, ProxyAuthenticate, PublicKeyPins, RetryAfter, Server, SetCookie,
-      StrictTransportSecurity, Trailer, TransferEncoding, Tk, Upgrade, Vary, Via, Warning, WwwAuthenticate,
-      XFrameOptions).map(_.twin).map(_.header -> _).to(Map)
+  lazy val standard: Map[String, ResponseHeader] = List(AcceptCh, AccessControlAllowOrigin,
+      AccessControlAllowCredentials, AccessControlExposeHeaders, AccessControlMaxAge,
+      AccessControlAllowMethods, AccessControlAllowHeaders, AcceptPatch, AcceptRanges, Age, Allow,
+      AltSvc, CacheControl, Connection, ContentDisposition, ContentEncoding, ContentLanguage,
+      ContentLength, ContentLocation, ContentMd5, ContentRange, ContentType, Date, DeltaBase, ETag,
+      Expires, Im, LastModified, Link, Location, P3p, Pragma, PreferenceApplied, ProxyAuthenticate,
+      PublicKeyPins, RetryAfter, Server, SetCookie, StrictTransportSecurity, Trailer,
+      TransferEncoding, Tk, Upgrade, Vary, Via, Warning, WwwAuthenticate, XFrameOptions)
+    .map(_.twin)
+    .map(_.header -> _)
+    .to(Map)
   
   def unapply(str: String): Some[ResponseHeader] =
     Some(standard.get(str.toLowerCase).getOrElse(Custom(str)))

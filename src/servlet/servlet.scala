@@ -1,19 +1,19 @@
 /*
-
     Scintillate, version 0.2.0. Copyright 2018-21 Jon Pretty, Propensive OÜ.
 
     The primary distribution site is: https://propensive.com/
 
-    Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in
-    compliance with the License. You may obtain a copy of the License at
+    Licensed under the Apache License, Version 2.0 (the "License"); you may not use this
+    file except in compliance with the License. You may obtain a copy of the License at
 
     http://www.apache.org/licenses/LICENSE-2.0
 
-    Unless required by applicable law or agreed to in writing, software distributed under the License is
-    distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-    See the License for the specific language governing permissions and limitations under the License.
-
+    Unless required by applicable law or agreed to in writing, software distributed under the
+    License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
+    either express or implied. See the License for the specific language governing permissions
+    and limitations under the License.
 */
+
 package scintillate
 
 import rudiments.*
@@ -32,26 +32,26 @@ trait Servlet() extends HttpServlet:
     
     def sendBody(status: Int, body: Body) =
       val length = body match
-        case body: Unit        => -1
-        case body: Array[Byte] => body.length
-        case _                 => 0
+        case Body.Empty      => -1
+        case Body.Data(body) => body.length
+        case _               => 0
       
       response.setStatus(status)
       addHeader(ResponseHeader.ContentLength.header, length.toString)
 
       body match
-        case body: Unit =>
+        case Body.Empty =>
           ()
 
-        case body: IArray[Byte] =>
-          response.getOutputStream.write(body.asInstanceOf[Array[Byte]])
+        case Body.Data(body) =>
+          response.getOutputStream.write(body.unsafeMutable)
           response.getOutputStream.flush()
 
-        case body: LazyList[IArray[Byte]] =>
-          body.map(_.asInstanceOf[Array[Byte]]).foreach(response.getOutputStream.write(_))
+        case Body.Chunked(body) =>
+          body.map(_.unsafeMutable).foreach(response.getOutputStream.write(_))
           response.getOutputStream.flush()
 
-  private def streamBody(request: HttpServletRequest): LazyList[IArray[Byte]] =
+  private def streamBody(request: HttpServletRequest): Body.Chunked =
     val in = request.getInputStream
     val buffer = new Array[Byte](4096)
     
@@ -59,7 +59,7 @@ trait Servlet() extends HttpServlet:
       val len = in.read(buffer)
       if len > 0 then IArray.from(buffer.slice(0, len)) #:: recur() else LazyList.empty
     
-    recur()
+    Body.Chunked(recur())
     
   private def makeRequest(request: HttpServletRequest): Request =
     val query = Option(request.getQueryString)
@@ -68,7 +68,7 @@ trait Servlet() extends HttpServlet:
       val paramStrings = query.cut("&")
       
       paramStrings.foldLeft(Map[String, List[String]]()) { (map, elem) =>
-        val IArray(key, value) = elem.cut("=", 2)
+        val Seq(key, value) = elem.cut("=", 2).to(Seq)
         
         map.updated(key, value :: map.getOrElse(key, Nil))
       }

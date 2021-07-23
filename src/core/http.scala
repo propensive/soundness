@@ -1,19 +1,19 @@
 /*
-
     Scintillate, version 0.2.0. Copyright 2018-21 Jon Pretty, Propensive OÜ.
 
     The primary distribution site is: https://propensive.com/
 
-    Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in
-    compliance with the License. You may obtain a copy of the License at
+    Licensed under the Apache License, Version 2.0 (the "License"); you may not use this
+    file except in compliance with the License. You may obtain a copy of the License at
 
     http://www.apache.org/licenses/LICENSE-2.0
 
-    Unless required by applicable law or agreed to in writing, software distributed under the License is
-    distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-    See the License for the specific language governing permissions and limitations under the License.
-
+    Unless required by applicable law or agreed to in writing, software distributed under the
+    License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
+    either express or implied. See the License for the specific language governing permissions
+    and limitations under the License.
 */
+
 package scintillate
 
 import rudiments.*
@@ -28,7 +28,10 @@ import java.io.*
 
 import language.dynamics
 
-type Body = Chunked | Unit | Bytes
+enum Body:
+  case Empty
+  case Chunked(stream: LazyList[IArray[Byte]])
+  case Data(data: IArray[Byte])
 
 object ToQuery extends ProductDerivation[ToQuery]:
   def join[T](ctx: CaseClass[ToQuery, T]): ToQuery[T] = value =>
@@ -68,17 +71,14 @@ enum Method:
 
 object HttpReadable:
   given HttpReadable[String] =
-    case () =>
-      ""
-    case body: Bytes =>
-      String(body.asInstanceOf[Array[Byte]], "UTF-8")
-    case body: Chunked =>
-      body.foldLeft("") { (acc, next) => acc+(String(next.asInstanceOf[Array[Byte]], "UTF-8")) }
+    case Body.Empty         => ""
+    case Body.Data(body)    => body.string
+    case Body.Chunked(body) => body.foldLeft("")(_+_.string)
   
   given HttpReadable[Bytes] =
-    case ()            => IArray()
-    case body: Bytes   => body
-    case body: Chunked => body.slurp(maxSize = 10*1024*1024)
+    case Body.Empty         => IArray()
+    case Body.Data(body)    => body
+    case Body.Chunked(body) => body.slurp(maxSize = 10*1024*1024)
 
 trait HttpReadable[+T]:
   def read(body: Body): T
@@ -95,10 +95,12 @@ trait ToLocation[T]:
   def location(value: T): String
 
 object Http:
-  def post[T: Postable, L: ToLocation](uri: L, content: T = (), headers: RequestHeader.Value*): HttpResponse =
+  def post[T: Postable, L: ToLocation](uri: L, content: T = (), headers: RequestHeader.Value*)
+          : HttpResponse =
     request[T](summon[ToLocation[L]].location(uri), content, Method.Post, headers)
 
-  def put[T: Postable, L: ToLocation](uri: L, content: T = (), headers: RequestHeader.Value*): HttpResponse =
+  def put[T: Postable, L: ToLocation](uri: L, content: T = (), headers: RequestHeader.Value*)
+         : HttpResponse =
     request[T](summon[ToLocation[L]].location(uri), content, Method.Put, headers)
   
   def get[L: ToLocation](uri: L, headers: Seq[RequestHeader.Value] = Nil): HttpResponse =
@@ -122,16 +124,20 @@ object Http:
   def patch[L: ToLocation](uri: L, headers: RequestHeader.Value*): HttpResponse =
     request(summon[ToLocation[L]].location(uri), (), Method.Patch, headers)
 
-  private def request[T: Postable](url: String,
-                                   content: T,
-                                   method: Method,
-                                   headers: Seq[RequestHeader.Value]): HttpResponse =
+  private def request[T: Postable](url: String, content: T, method: Method,
+                                       headers: Seq[RequestHeader.Value]): HttpResponse =
     URL(url).openConnection match
       case conn: HttpURLConnection =>
         conn.setRequestMethod(method.toString.toUpperCase)
-        conn.setRequestProperty(RequestHeader.ContentType.header, summon[Postable[T]].contentType.toString)
+        
+        conn.setRequestProperty(RequestHeader.ContentType.header, summon[Postable[T]]
+          .contentType.toString)
+        
         conn.setRequestProperty("User-Agent", "Scintillate 1.0.0")
-        headers.foreach { case RequestHeader.Value(key, value) => conn.setRequestProperty(key.header, value) }
+        
+        headers.foreach { case RequestHeader.Value(key, value) =>
+          conn.setRequestProperty(key.header, value)
+        }
         
         if method == Method.Post || method == Method.Put then
           conn.setDoOutput(true)
@@ -141,16 +147,19 @@ object Http:
 
         val buf = new Array[Byte](65536)
 
-        def read(in: InputStream): Chunked =
+        def read(in: InputStream): Body.Chunked =
           val len = in.read(buf, 0, buf.length)
-          if len < 0 then LazyList.empty else IArray.from(buf.slice(0, len)) #:: read(in)
+          
+          Body.Chunked(if len < 0 then LazyList() else IArray.from(buf.slice(0, len)) #::
+              read(in).stream)
        
 
-        def body =
-          try read(conn.getInputStream) catch case _: Exception =>
-            try read(conn.getErrorStream) catch case _: Exception => LazyList.empty
+        def body: Body =
+          try read(conn.getInputStream) catch Exception =>
+            try read(conn.getErrorStream) catch Exception => Body.Empty
         
-        val HttpStatus(status) = conn.getResponseCode
+        val HttpStatus(status) = conn.getResponseCode: @unchecked
+        
         val responseHeaders =
           conn.getHeaderFields.asScala.flatMap {
             case (null, v)              => Nil
@@ -158,6 +167,9 @@ object Http:
           }.to(Map)
 
         HttpResponse(status, responseHeaders, body)
+      
+      case conn: URLConnection =>
+        throw Impossible("URL connection is not HTTP")
             
 case class HttpError(status: HttpStatus & FailureCase, body: Body)
     extends Exception(s"HTTP Error ${status.code}: ${status.description}"):
@@ -194,7 +206,10 @@ enum HttpStatus(val code: Int, val description: String):
   case NotFound extends HttpStatus(404, "Not Found"), FailureCase
   case MethodNotAllowed extends HttpStatus(405, "Method Not Allowed"), FailureCase
   case NotAcceptable extends HttpStatus(406, "Not Acceptable"), FailureCase
-  case ProxyAuthenticationRequired extends HttpStatus(407, "Proxy Authentication Required"), FailureCase
+  
+  case ProxyAuthenticationRequired
+  extends HttpStatus(407, "Proxy Authentication Required"), FailureCase
+  
   case RequestTimeout extends HttpStatus(408, "Request Timeout"), FailureCase
   case Conflict extends HttpStatus(409, "Conflict"), FailureCase
   case Gone extends HttpStatus(410, "Gone"), FailureCase
@@ -210,8 +225,13 @@ enum HttpStatus(val code: Int, val description: String):
   case UpgradeRequired extends HttpStatus(426, "Upgrade Required"), FailureCase
   case PreconditionRequired extends HttpStatus(428, "Precondition Required"), FailureCase
   case TooManyRequests extends HttpStatus(429, "Too Many Requests"), FailureCase
-  case RequestHeaderFieldsTooLarge extends HttpStatus(431, "Request Header Fields Too Large"), FailureCase
-  case UnavailableForLegalReasons extends HttpStatus(451, "Unavailable For Legal Reasons"), FailureCase
+  
+  case RequestHeaderFieldsTooLarge
+  extends HttpStatus(431, "Request Header Fields Too Large"), FailureCase
+  
+  case UnavailableForLegalReasons
+  extends HttpStatus(451, "Unavailable For Legal Reasons"), FailureCase
+  
   case InternalServerError extends HttpStatus(500, "Internal Server Error"), FailureCase
   case NotImplemented extends HttpStatus(501, "Not Implemented"), FailureCase
   case BadGateway extends HttpStatus(502, "Bad Gateway"), FailureCase
@@ -222,7 +242,9 @@ enum HttpStatus(val code: Int, val description: String):
   case InsufficientStorage extends HttpStatus(507, "Insufficient Storage"), FailureCase
   case LoopDetected extends HttpStatus(508, "Loop Detected"), FailureCase
   case NotExtended extends HttpStatus(510, "Not Extended"), FailureCase
-  case NetworkAuthenticationRequired extends HttpStatus(511, "Network Authentication Required"), FailureCase
+  
+  case NetworkAuthenticationRequired
+  extends HttpStatus(511, "Network Authentication Required"), FailureCase
 
 case class Params(values: List[(String, String)]):
   def append(more: Params): Params = Params(values ++ more.values)
@@ -275,7 +297,9 @@ case class Uri(location: String, params: Params) extends Dynamic:
   private def makeQuery[T: ToQuery](value: T): Uri =
     Uri(location, params.append(summon[ToQuery[T]].params(value)))
   
-  def applyDynamicNamed(method: "query")(params: (String, String)*): Uri = makeQuery(Params(params.to(List)))
+  def applyDynamicNamed(method: "query")(params: (String, String)*): Uri =
+    makeQuery(Params(params.to(List)))
+  
   def applyDynamic[T: ToQuery](method: "query")(value: T) = makeQuery(value)
 
   def post[T: Postable](content: T, headers: RequestHeader.Value*): HttpResponse =
@@ -293,17 +317,19 @@ case class Uri(location: String, params: Params) extends Dynamic:
   def delete(headers: RequestHeader.Value*): HttpResponse = Http.delete(this, headers*)
   def connect(headers: RequestHeader.Value*): HttpResponse = Http.connect(this, headers*)
 
-  def bare = Uri(location, Params(Nil))
+  def bare: Uri = Uri(location, Params(Nil))
 
-  override def toString: String = if params.isEmpty then location else location+"?"+params.queryString
+  override def toString: String =
+    if params.isEmpty then location else location+"?"+params.queryString
 
 object MediaType:
   enum MainType:
     case Application, Audio, Image, Message, Multipart, Text, Video, Font, Example, Model
 
-  def unapply(str: String): Option[MediaType] = str.cut("/", 2) match
-    case IArray(key, subtype) => try Some(MediaType(MainType.valueOf(key.capitalize), subtype)) catch _ => None
-    case _                    => None
+  def unapply(str: String): Option[MediaType] = str.cut("/", 2).to(Seq) match
+    case Seq(key, subtype) => try Some(MediaType(MainType.valueOf(key.capitalize), subtype))
+                              catch _ => None
+    case _                 => None
   
   given formenctype: simplistic.HtmlAttribute["formenctype", MediaType] with
     def name: String = "formenctype"
@@ -325,6 +351,8 @@ case class MediaType(mediaType: MediaType.MainType, mediaSubtype: String):
   override def toString = s"${mediaType.toString.toLowerCase}/$mediaSubtype"
 
 extension (ctx: StringContext)
-  def uri(subs: String*): Uri = Uri(ctx.parts.zip(subs).map(_+_).join("", "", ctx.parts.last), Params(List()))
+  def uri(subs: String*): Uri =
+    Uri(ctx.parts.zip(subs).map(_+_).join("", "", ctx.parts.last), Params(List()))
+  
   // FIXME: Implement with a macro
   def mime(): MediaType = MediaType.unapply(ctx.parts.head).get

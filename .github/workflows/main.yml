@@ -14,5 +14,5 @@ jobs:
     - run: git fetch --prune --unshallow
     - name: Run Fury
       run: |
-        ./fury build run --output linear --https --disable-security-manager
+        ./fury build run --output linear --https
       timeout-minutes: 5

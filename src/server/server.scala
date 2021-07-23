@@ -1,20 +1,19 @@
 /*
-
     Scintillate, version 0.2.0. Copyright 2018-21 Jon Pretty, Propensive OÜ.
 
     The primary distribution site is: https://propensive.com/
 
-    Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
-    in compliance with the License. You may obtain a copy of the License at
+    Licensed under the Apache License, Version 2.0 (the "License"); you may not use this
+    file except in compliance with the License. You may obtain a copy of the License at
 
     http://www.apache.org/licenses/LICENSE-2.0
 
     Unless required by applicable law or agreed to in writing, software distributed under the
-    License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
-    express or implied. See the License for the specific language governing permissions and
-    limitations under the License.
-
+    License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
+    either express or implied. See the License for the specific language governing permissions
+    and limitations under the License.
 */
+
 package scintillate
 
 import rudiments.*
@@ -36,17 +35,18 @@ trait Responder:
   def addHeader(key: String, value: String): Unit
 
 object Handler:
-  given SimpleHandler[String] = SimpleHandler("text/plain", str => LazyList(str.bytes))
+  given SimpleHandler[String] =
+    SimpleHandler("text/plain", str => Body.Chunked(LazyList(str.bytes)))
 
   given [T](using hr: simplistic.HttpResponse[T]): SimpleHandler[T] =
-    SimpleHandler(hr.mimeType, value => LazyList(hr.content(value).bytes))
+    SimpleHandler(hr.mimeType, value => Body.Chunked(LazyList(hr.content(value).bytes)))
 
   given Handler[Redirect] with
     def process(content: Redirect, status: Int, headers: Map[String, String],
                     responder: Responder): Unit =
       responder.addHeader(ResponseHeader.Location.header, content.location)
       for (k, v) <- headers do responder.addHeader(k, v)
-      responder.sendBody(301, ())
+      responder.sendBody(301, Body.Empty)
 
   given [T: SimpleHandler]: Handler[NotFound[T]] with
     def process(notFound: NotFound[T], status: Int, headers: Map[String, String],
@@ -93,8 +93,9 @@ case class Response[T: Handler](content: T, status: HttpStatus = HttpStatus.Ok,
     summon[Handler[T]].process(content, status.code, headers.map { (k, v) =>
         k.header -> v }, responder)
 
-case class Request(method: Method, body: Chunked, query: String, ssl: Boolean, hostname: String,
-                       port: Int, path: String, rawHeaders: Map[String, List[String]],
+case class Request(method: Method, body: Body.Chunked, query: String, ssl: Boolean,
+                       hostname: String, port: Int, path: String,
+                       rawHeaders: Map[String, List[String]],
                        queryParams: Map[String, List[String]]):
 
   val params: Map[String, String] =
@@ -102,10 +103,10 @@ case class Request(method: Method, body: Chunked, query: String, ssl: Boolean, h
       if (method == Method.Post || method == Method.Put) &&
           contentType == Some(mime"application/x-www-form-urlencoded")
       then
-        Map(String(body.slurp(maxSize = 10*1024*1024).unsafeArray,
-            "UTF-8").cut("&").map(_.cut("=", 2) match
-          case IArray(key)        => key.urlDecode -> ""
-          case IArray(key, value) => key.urlDecode -> value.urlDecode
+        Map(body.stream.slurp(maxSize = 10485760).string.cut("&").map(_.cut("=", 2).to(Seq) match
+          case Seq(key)        => key.urlDecode -> ""
+          case Seq(key, value) => key.urlDecode -> value.urlDecode
+          case _               => throw Impossible("key/value pair does not match")
         )*)
       else Map()
     }
@@ -118,7 +119,7 @@ case class Request(method: Method, body: Chunked, query: String, ssl: Boolean, h
     "hostname" -> hostname,
     "port"     -> port.toString,
     "path"     -> path,
-    "body"     -> String(body.slurp(maxSize = 10000).unsafeMutable, "UTF-8"),
+    "body"     -> body.stream.slurp(maxSize = 10000).string,
     "headers"  -> rawHeaders.map { (k, vs) => s"$k: ${vs.join("; ")}" }.join("\n          "),
     "params"   -> params.map { (k, v) => s"$k=\"$v\"" }.join("\n          ")
   ).map { (k, v) => s"${k.padLeft(8)}: $v" }.join("", "\n", "\n")
@@ -126,7 +127,9 @@ case class Request(method: Method, body: Chunked, query: String, ssl: Boolean, h
   lazy val headers: Map[RequestHeader, List[String]] =
     rawHeaders.map { case (RequestHeader(header), values) => header -> values }
 
-  lazy val length: Int = headers.get(RequestHeader.ContentLength).fold(body.map(_.length).sum)(_.head.toInt)
+  lazy val length: Int =
+    headers.get(RequestHeader.ContentLength).fold(body.stream.map(_.length).sum)(_.head.toInt)
+  
   lazy val contentType: Option[MediaType] =
     headers.get(RequestHeader.ContentType).flatMap(_.headOption).flatMap(MediaType.unapply(_))
   
@@ -183,7 +186,7 @@ case class HttpServer(port: Int) extends RequestHandler:
     Runtime.getRuntime.addShutdownHook { new Thread(() => httpServer.stop(0)) }
     () => httpServer.stop(1)
 
-  private def streamBody(exchange: HttpExchange): LazyList[IArray[Byte]] =
+  private def streamBody(exchange: HttpExchange): Body.Chunked =
     val in = exchange.getRequestBody
     val buffer = new Array[Byte](65536)
     
@@ -191,7 +194,7 @@ case class HttpServer(port: Int) extends RequestHandler:
       val len = in.read(buffer)
       if len > 0 then IArray.from(buffer.slice(0, len)) #:: recur() else LazyList.empty
     
-    recur()
+    Body.Chunked(recur())
 
   private def makeRequest(exchange: HttpExchange): Request =
     val uri = exchange.getRequestURI
@@ -226,19 +229,21 @@ case class HttpServer(port: Int) extends RequestHandler:
     
     def sendBody(status: Int, body: Body): Unit =
       val length = body match
-        case body: Unit         => -1
-        case body: Array[Byte]  => body.length
+        case Body.Empty         => -1
+        case Body.Data(body)    => body.length
         case _                  => 0
 
       exchange.sendResponseHeaders(status, length)
       
       body match
-        case body: Unit =>
+        case Body.Empty =>
           exchange.close()
-        case body: IArray[Byte] =>
+        
+        case Body.Data(body) =>
           exchange.getResponseBody.write(body.unsafeMutable)
           exchange.getResponseBody.flush()
-        case body: LazyList[IArray[Byte]] =>
+        
+        case Body.Chunked(body) =>
           body.map(_.unsafeMutable).foreach(exchange.getResponseBody.write(_))
           exchange.getResponseBody.flush()
       exchange.close()
@@ -246,28 +251,28 @@ case class HttpServer(port: Int) extends RequestHandler:
 case class Svg(content: String)
 
 object Svg:
-  given SimpleHandler[Svg] = SimpleHandler("image/svg+xml", _.content.bytes)
+  given SimpleHandler[Svg] = SimpleHandler("image/svg+xml", svg => Body.Data(svg.content.bytes))
 
 case class Jpeg(content: IArray[Byte])
 
 object Jpeg:
-  given SimpleHandler[Jpeg] = SimpleHandler("image/jpeg", _.content)
+  given SimpleHandler[Jpeg] = SimpleHandler("image/jpeg", jpeg => Body.Data(jpeg.content))
 
 case class Gif(content: IArray[Byte])
 
 object Gif:
-  given SimpleHandler[Gif] = SimpleHandler("image/gif", _.content)
+  given SimpleHandler[Gif] = SimpleHandler("image/gif", gif => Body.Data(gif.content))
 
 case class Png(content: IArray[Byte])
 
 object Png:
-  given SimpleHandler[Png] = SimpleHandler("image/png", _.content)
+  given SimpleHandler[Png] = SimpleHandler("image/png", png => Body.Data(png.content))
 
 def basicAuth(validate: (String, String) => Boolean)(response: => Response[?])
              (using Request): Response[?] =
   request.headers.get(RequestHeader.Authorization) match
     case Some(List(s"Basic $credentials")) =>
-      val IArray(username, password) = credentials.decode[Base64].string.cut(":")
+      val Seq(username, password) = credentials.decode[Base64].string.cut(":").to(Seq)
       if validate(username, password) then response else Response("", HttpStatus.Forbidden)
 
     case _ =>
