@@ -52,7 +52,11 @@ object Macro:
           Nil
     
     properties match
-      case Varargs(exprs) => '{Style(${Expr.ofSeq(recur(exprs))}*)}
+      case Varargs(exprs) =>
+        '{Style(${Expr.ofSeq(recur(exprs))}*)}
+      case _ =>
+        report.error("cataract: expected varargs")
+        throw Exception()
 
   private def words(string: String): List[String] =
     val i = string.indexWhere(_.isUpper, 1)
