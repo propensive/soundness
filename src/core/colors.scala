@@ -1,19 +1,19 @@
 /*
-
-    Iridesce, version 0.2.0. Copyright 2021-21 Jon Pretty, Propensive OÜ.
+    Iridescence, version 0.4.0. Copyright 2021-21 Jon Pretty, Propensive OÜ.
 
     The primary distribution site is: https://propensive.com/
 
-    Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in
-    compliance with the License. You may obtain a copy of the License at
+    Licensed under the Apache License, Version 2.0 (the "License"); you may not use this
+    file except in compliance with the License. You may obtain a copy of the License at
 
     http://www.apache.org/licenses/LICENSE-2.0
 
-    Unless required by applicable law or agreed to in writing, software distributed under the License is
-    distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-    See the License for the specific language governing permissions and limitations under the License.
-
+    Unless required by applicable law or agreed to in writing, software distributed under the
+    License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
+    either express or implied. See the License for the specific language governing permissions
+    and limitations under the License.
 */
+
 package iridescence
 
 object colors:
@@ -160,19 +160,21 @@ object colors:
   val Yellow = Srgb(1, 1, 0)
 
 
-  val all = List(AliceBlue, AntiqueWhite, Aquamarine, Aqua, Azure, Beige, Bisque, Black, BlanchedAlmond, Blue,
-      BlueViolet, Brown, BurlyWood, CadetBlue, Chartreuse, Chocolate, Coral, CornflowerBlue, Cornsilk, Crimson,
-      Cyan, DarkBlue, DarkCyan, DarkGoldenrod, DarkGray, DarkGreen, DarkKhaki, DarkMagenta, DarkOliveGreen,
-      DarkOrange, DarkOrchid, DarkRed, DarkSalmon, DarkSeaGreen, DarkSlateBlue, DarkSlateGray, DarkTurquoise,
-      DarkViolet, DeepPink, DeepSkyBlue, DimGray, DodgerBlue, FireBrick, FloralWhite, ForestGreen, Fuchsia,
-      Gainsboro, GhostWhite, Goldenrod, Gold, Gray, Green, GreenYellow, HoneyDew, HotPink, IndianRed, Indigo,
-      Ivory, Khaki, LavenderBlush, Lavender, LawnGreen, LemonChiffon, LightBlue, LightCoral, LightCyan,
-      LightGoldenrodYellow, LightGray, LightGreen, LightPink, LightSalmon, LightSeaGreen, LightSkyBlue,
-      LightSlateGray, LightSteelBlue, LightYellow, LimeGreen, Lime, Linen, Magenta, Maroon, MediumAquamarine,
-      MediumBlue, MediumOrchid, MediumPurple, MediumSeaGreen, MediumSlateBlue, MediumSpringGreen,
-      MediumTurquoise, MediumVioletRed, MidnightBlue, MintCream, MistyRose, Moccasin, NavajoWhite, Navy,
-      OldLace, OliveDrab, Olive, OrangeRed, Orange, Orchid, PaleGoldenrod, PaleGreen, PaleTurquoise,
-      PaleVioletRed, PapayaWhip, PeachPuff, Peru, Pink, Plum, PowderBlue, Purple, RebeccaPurple, Red, RosyBrown,
-      RoyalBlue, SaddleBrown, Salmon, SandyBrown, SeaGreen, SeaShell, Sienna, Silver, SkyBlue, SlateBlue,
-      SlateGray, Snow, SpringGreen, SteelBlue, Tan, Teal, Thistle, Tomato, Turquoise, Violet, Wheat, WhiteSmoke,
+  val all = List(AliceBlue, AntiqueWhite, Aquamarine, Aqua, Azure, Beige, Bisque, Black,
+      BlanchedAlmond, Blue, BlueViolet, Brown, BurlyWood, CadetBlue, Chartreuse, Chocolate, Coral,
+      CornflowerBlue, Cornsilk, Crimson, Cyan, DarkBlue, DarkCyan, DarkGoldenrod, DarkGray,
+      DarkGreen, DarkKhaki, DarkMagenta, DarkOliveGreen, DarkOrange, DarkOrchid, DarkRed,
+      DarkSalmon, DarkSeaGreen, DarkSlateBlue, DarkSlateGray, DarkTurquoise, DarkViolet, DeepPink,
+      DeepSkyBlue, DimGray, DodgerBlue, FireBrick, FloralWhite, ForestGreen, Fuchsia, Gainsboro,
+      GhostWhite, Goldenrod, Gold, Gray, Green, GreenYellow, HoneyDew, HotPink, IndianRed, Indigo,
+      Ivory, Khaki, LavenderBlush, Lavender, LawnGreen, LemonChiffon, LightBlue, LightCoral,
+      LightCyan, LightGoldenrodYellow, LightGray, LightGreen, LightPink, LightSalmon, LightSeaGreen,
+      LightSkyBlue, LightSlateGray, LightSteelBlue, LightYellow, LimeGreen, Lime, Linen, Magenta,
+      Maroon, MediumAquamarine, MediumBlue, MediumOrchid, MediumPurple, MediumSeaGreen,
+      MediumSlateBlue, MediumSpringGreen, MediumTurquoise, MediumVioletRed, MidnightBlue, MintCream,
+      MistyRose, Moccasin, NavajoWhite, Navy, OldLace, OliveDrab, Olive, OrangeRed, Orange, Orchid,
+      PaleGoldenrod, PaleGreen, PaleTurquoise, PaleVioletRed, PapayaWhip, PeachPuff, Peru, Pink,
+      Plum, PowderBlue, Purple, RebeccaPurple, Red, RosyBrown, RoyalBlue, SaddleBrown, Salmon,
+      SandyBrown, SeaGreen, SeaShell, Sienna, Silver, SkyBlue, SlateBlue, SlateGray, Snow,
+      SpringGreen, SteelBlue, Tan, Teal, Thistle, Tomato, Turquoise, Violet, Wheat, WhiteSmoke,
       White, YellowGreen, Yellow)

@@ -1,19 +1,19 @@
 /*
-
-    Iridesce, version 0.2.0. Copyright 2021-21 Jon Pretty, Propensive OÜ.
+    Iridescence, version 0.4.0. Copyright 2021-21 Jon Pretty, Propensive OÜ.
 
     The primary distribution site is: https://propensive.com/
 
-    Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in
-    compliance with the License. You may obtain a copy of the License at
+    Licensed under the Apache License, Version 2.0 (the "License"); you may not use this
+    file except in compliance with the License. You may obtain a copy of the License at
 
     http://www.apache.org/licenses/LICENSE-2.0
 
-    Unless required by applicable law or agreed to in writing, software distributed under the License is
-    distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-    See the License for the specific language governing permissions and limitations under the License.
-
+    Unless required by applicable law or agreed to in writing, software distributed under the
+    License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
+    either express or implied. See the License for the specific language governing permissions
+    and limitations under the License.
 */
+
 package iridescence
 
 import rudiments.*
@@ -30,7 +30,9 @@ case class Xyz(x: Double, y: Double, z: Double) extends Color:
   
   def standardSrgb: Srgb = srgb
   def srgb: Srgb =
-    def limit(v: Double): Double = if v > 0.0031308 then 1.055*math.pow(v, 1/2.4) - 0.055 else 12.92*v
+    
+    def limit(v: Double): Double =
+      if v > 0.0031308 then 1.055*math.pow(v, 1/2.4) - 0.055 else 12.92*v
     
     val red = limit(x*0.032406994 - y*0.0153738318 - z*0.0049861076)
     val green = limit(-x*0.0096924364 + y*0.01878675 + z*0.0004155506)
@@ -49,20 +51,29 @@ case class Xyz(x: Double, y: Double, z: Double) extends Color:
 
 case class Srgb(red: Double, green: Double, blue: Double) extends Color:
   def css: String = s"rgb(${(red*255).toInt}, ${(green*255).toInt}, ${(blue*255).toInt})"
-  def ansiFg24: String = s"${27.toChar}[38;2;${(red*255).toInt};${(green*255).toInt};${(blue*255).toInt}m"
-  def ansiBg24: String = s"${27.toChar}[48;2;${(red*255).toInt};${(green*255).toInt};${(blue*255).toInt}m"
-  def hex12: String = Seq(red, green, blue).map { c => Integer.toHexString((c*16).toInt) }.join("#", "", "")
+  
+  def ansiFg24: String =
+    s"${27.toChar}[38;2;${(red*255).toInt};${(green*255).toInt};${(blue*255).toInt}m"
+  
+  def ansiBg24: String =
+    s"${27.toChar}[48;2;${(red*255).toInt};${(green*255).toInt};${(blue*255).toInt}m"
+  
+  def hex12: String = Seq(red, green, blue).map { c =>
+    Integer.toHexString((c*16).toInt).nn
+  }.join("#", "", "")
+  
   def standardSrgb: Srgb = srgb
   def srgb: Srgb = this
   
   def hex24: String =
     Seq(red, green, blue).map { c =>
-      val hex = Integer.toHexString((c*255).toInt)
+      val hex: String = Integer.toHexString((c*255).toInt).nn
       if hex.length < 2 then s"0$hex" else hex
     }.join("#", "", "")
 
   def xyz(using profile: Profile): Xyz =
-    def limit(v: Double): Double = if v > 0.04045 then math.pow((v + 0.055)/1.055, 2.4) else v/12.92
+    def limit(v: Double): Double =
+      if v > 0.04045 then math.pow((v + 0.055)/1.055, 2.4) else v/12.92
 
     val List(r, g, b) = List(red, green, blue).map(limit(_)*100)
 
@@ -107,7 +118,11 @@ case class Srgb(red: Double, green: Double, blue: Double) extends Color:
       val dr = ((value - red)/6) + (delta/2)/delta
       val dg = ((value - green)/6) + (delta/2)/delta
       val db = ((value - blue)/6) + (delta/2)/delta
-      val hue = if value == red then db - dg else if value == green then 1.0/3 + dr - db else 2.0/3 + dg - dr
+      
+      val hue =
+        if value == red then db - dg
+        else if value == green then 1.0/3 + dr - db
+        else 2.0/3 + dg - dr
 
       Hsv(Color.unitary(hue), saturation, value)
 
@@ -167,7 +182,10 @@ case class Hsv(hue: Double, saturation: Double, value: Double) extends Color:
   def pure: Hsv = Hsv(hue, 1, 0)
   
   def shade(black: Double = 0): Hsv = Hsv(hue, saturation, value*(1 - black) + (1 - value)*black)
-  def tint(white: Double = 0): Hsv = Hsv(hue, saturation*(1 - white) + (1 - saturation)*white, value)
+  
+  def tint(white: Double = 0): Hsv =
+    Hsv(hue, saturation*(1 - white) + (1 - saturation)*white, value)
+  
   def tone(black: Double = 0, white: Double = 0) = shade(black).tint(white)
 
 case class Hsl(hue: Double, saturation: Double, lightness: Double) extends Color:
@@ -190,7 +208,9 @@ case class Hsl(hue: Double, saturation: Double, lightness: Double) extends Color
 
       Srgb(convert(hue + (1.0/3.0)), convert(hue), convert(hue - (1.0/3.0)))
   
-  def css: String = s"hsl(${(hue*360).toInt}, ${(saturation*100).toInt}%, ${(lightness*100).toInt}%)"
+  def css: String =
+    s"hsl(${(hue*360).toInt}, ${(saturation*100).toInt}%, ${(lightness*100).toInt}%)"
+  
   def saturate: Hsv = Hsv(hue, 1, lightness)
   def desaturate: Hsv = Hsv(hue, 0, lightness)
   def rotate(degrees: Double): Hsv = Hsv(Color.unitary(hue + degrees/360), saturation, lightness)
