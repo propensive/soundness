@@ -28,7 +28,7 @@ import java.io.*
 type Stream = LazyList[String]
 
 object envs:
-  val enclosing: Env = Env(System.getenv.asScala.to(Map), None)
+  val enclosing: Env = Env(System.getenv.nn.asScala.to(Map), None)
   val empty: Env = Env(Map(), None)
 
 enum Context:
@@ -39,10 +39,10 @@ case class State(current: Context, esc: Boolean, args: List[String])
 object Executor:
   
   given stream: Executor[Stream] =
-    proc => BufferedReader(InputStreamReader(proc.getInputStream)).lines().toScala(LazyList)
+    proc => BufferedReader(InputStreamReader(proc.getInputStream)).lines().nn.toScala(LazyList)
   
   given Executor[String] =
-    stream.map { stream => if stream.isEmpty then "" else stream.reduce(_ + "\n" + _).trim }
+    stream.map { stream => if stream.isEmpty then "" else stream.reduce(_ + "\n" + _).trim.nn }
 
 trait Executor[T]:
   def interpret(process: Process): T
@@ -52,7 +52,7 @@ case class Command(args: String*):
   def exec[T: Executor]()(using Env): T =
     val processBuilder = ProcessBuilder(args*)
     processBuilder.directory(summon[Env].workDirFile)
-    summon[Executor[T]].interpret(processBuilder.start())
+    summon[Executor[T]].interpret(processBuilder.start().nn)
 
 case class Env(vars: Map[String, String], workDir: Option[String]):
   private[guillotine] lazy val envArray: Array[String] = vars.map { (k, v) => s"$k=$v" }.to(Array)
