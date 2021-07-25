@@ -1,3 +1,19 @@
+/*
+    Euphemism, version 0.8.0. Copyright 2018-21 Jon Pretty, Propensive OÜ.
+
+    The primary distribution site is: https://propensive.com/
+
+    Licensed under the Apache License, Version 2.0 (the "License"); you may not use this
+    file except in compliance with the License. You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software distributed under the
+    License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
+    either express or implied. See the License for the specific language governing permissions
+    and limitations under the License.
+*/
+
 package euphemism
 
 import wisteria.*
@@ -85,13 +101,16 @@ object Json extends Dynamic:
     given Deserializer[Boolean] = _.flatMap(_.getBoolean)
     given Deserializer[Json] = _.map(Json(_, Nil))
 
-    given opt[T: Deserializer]: Deserializer[Option[T]] = v => Some(summon[Deserializer[T]].deserialize(v))
+    given opt[T: Deserializer]: Deserializer[Option[T]] =
+      v => Some(summon[Deserializer[T]].deserialize(v))
 
-    given array[Coll[T1] <: Traversable[T1], T: Deserializer](using factory: Factory[T, Coll[T]]): Deserializer[Coll[T]] = _.flatMap {
+    given array[Coll[T1] <: Traversable[T1], T: Deserializer]
+               (using factory: Factory[T, Coll[T]]): Deserializer[Coll[T]] = _.flatMap {
       case JArray(vs) =>
         vs.foldLeft(Option(factory.newBuilder)) { (builder, next) =>
           summon[Deserializer[T]].deserialize(Some(next)).flatMap { elem => builder.map(_ += elem) }
         }.map(_.result())
+      
       case _ =>
         None
     }
@@ -99,9 +118,13 @@ object Json extends Dynamic:
     def map[T: Deserializer]: Deserializer[Map[String, T]] = _.flatMap {
       case JObject(vs) =>
         vs.toMap.foldLeft(Option(Map[String, T]())) {
-          case (Some(acc), (k, v)) => summon[Deserializer[T]].deserialize(Some(v)).map { v2 => acc.updated(k, v2) }
-          case _                   => None
+          case (Some(acc), (k, v)) =>
+            summon[Deserializer[T]].deserialize(Some(v)).map { v2 => acc.updated(k, v2) }
+          
+          case _ =>
+            None
         }
+      
       case _ =>
         None
     }
@@ -126,12 +149,12 @@ object Json extends Dynamic:
     def deserialize(json: Option[JValue]): Option[T]
 
   def parse(str: String): Json = JParser.parseFromString(str) match
-    case Success(value)                     => Json(value, Nil)
-    case Failure(error: JawnParseException) => throw ParseException(error.line, error.col, error.msg)
-    case Failure(error)                     => throw error
+    case Success(value)                   => Json(value, Nil)
+    case Failure(err: JawnParseException) => throw ParseException(err.line, err.col, err.msg)
+    case Failure(err)                     => throw err
 
   def applyDynamicNamed[T <: String](methodName: "of")(elements: (String, Json)*): Json =
-    Json(JObject(mutable.Map(elements.map { case (k, v) => k -> v.json.root }: _*)), Nil)
+    Json(JObject(mutable.Map(elements.map(_ -> _.json.root)*)), Nil)
 
 case class Json(root: JValue, path: List[Int | String] = Nil) extends Dynamic derives CanEqual:
   def apply(idx: Int): Json = Json(root, idx :: path)
@@ -163,7 +186,9 @@ case class Json(root: JValue, path: List[Int | String] = Nil) extends Dynamic de
     Json(deref(root, path.reverse), Nil)
 
   def as[T: Json.Deserializer]: T =
-    summon[Json.Deserializer[T]].deserialize(Some(normalize.root)).getOrElse(throw DeserializationException())
+    summon[Json.Deserializer[T]]
+      .deserialize(Some(normalize.root))
+      .getOrElse(throw DeserializationException())
   
   override def toString(): String =
     try normalize.root.render() catch _ => "undefined"
