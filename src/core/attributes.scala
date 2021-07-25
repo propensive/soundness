@@ -16,6 +16,8 @@
 
 package honeycomb
 
+import rudiments.*
+
 trait Attribute[Key <: Label, -Value, -T]:
   def convert(value: Value): String | Boolean
   def rename: Option[String] = None
@@ -67,7 +69,7 @@ enum Crossorigin:
 enum Dir:
   case Ltr, Rtl, Auto
 
-  override def toString(): String = toString.toLowerCase
+  override def toString(): String = super.toString.lower
 
 enum HttpEquiv:
   case ContentSecurityPolicy, ContentType, DefaultStyle, Refresh
@@ -119,7 +121,7 @@ object Attribute:
   given allowpaymentrequest[T]: Attribute["allowpaymentrequest", Boolean, T] = identity(_)
   given alt[T]: Attribute["alt", String, T] = identity(_)
   given async[T]: Attribute["async", Boolean, T] = identity(_)
-  given autocomplete[T]: Attribute["autocomplete", Autocomplete, T] = _.toString.toLowerCase
+  given autocomplete[T]: Attribute["autocomplete", Autocomplete, T] = _.toString.lower
   given autofocus[T]: Attribute["autofocus", Boolean, T] = identity(_)
   given autoplay[T]: Attribute["autoplay", Boolean, T] = identity(_)
   given border[T]: Attribute["border", Boolean, T] = if _ then "1" else ""
@@ -165,7 +167,7 @@ object Attribute:
   given form[T]: Attribute["form", DomId, T] = _.name
   given formaction[T]: Attribute["formaction", String, T] = identity(_)
   given formenctype[T]: Attribute["formenctype", String, T] = identity(_)
-  given formmethod[T]: Attribute["formmethod", Method, T] = _.toString.toLowerCase
+  given formmethod[T]: Attribute["formmethod", Method, T] = _.toString.lower
   given formnovalidate[T]: Attribute["formnovalidate", Boolean, T] = identity(_)
   given formtarget[T]: Attribute["formtarget", Target, T] = _.toString
   given headers[T]: Attribute["headers", DomId, T] = _.name
@@ -182,10 +184,10 @@ object Attribute:
   
   given id[T]: Attribute["id", DomId, T] = _.name
   given ismap[T]: Attribute["ismap", Boolean, T] = identity(_)
-  given kind[T]: Attribute["kind", Kind, T] = _.toString.toLowerCase
+  given kind[T]: Attribute["kind", Kind, T] = _.toString.lower
   given label[T]: Attribute["label", String, T] = identity(_)
   given lang[T]: Attribute["lang", String, T] = identity(_)
-  given list[T]: Attribute["list", Seq[DomId], T] = _.map(_.name).mkString(" ")
+  given list[T]: Attribute["list", Seq[DomId], T] = _.map(_.name).join(" ")
   given list2[T]: Attribute["list", DomId, T] = _.name
   given loop[T]: Attribute["loop", Boolean, T] = identity(_)
   given low[T]: Attribute["low", Double, T] = _.toString
@@ -194,7 +196,7 @@ object Attribute:
   given maxlength[T]: Attribute["maxlength", Int, T] = _.toString
   given minlength[T]: Attribute["minlength", Int, T] = _.toString
   given media[T]: Attribute["media", String, T] = identity(_)
-  given method[T]: Attribute["method", Method, T] = _.toString.toLowerCase
+  given method[T]: Attribute["method", Method, T] = _.toString.lower
   given min[T]: Attribute["min", Double | Int, T] = _.toString
   given multiple[T]: Attribute["multiple", Boolean, T] = identity(_)
   given muted[T]: Attribute["muted", Boolean, T] = identity(_)
@@ -207,17 +209,17 @@ object Attribute:
   given pattern[T]: Attribute["pattern", String, T] = identity(_)
   given placeholder[T]: Attribute["placeholder", String, T] = identity(_)
   given poster[T]: Attribute["poster", String, T] = identity(_)
-  given preload[T]: Attribute["preload", Preload, T] = _.toString.toLowerCase
+  given preload[T]: Attribute["preload", Preload, T] = _.toString.lower
   given readonly[T]: Attribute["readonly", Boolean, T] = identity(_)
   given referrerpolicy[T]: Attribute["referrerpolicy", String, T] = identity(_)
-  given rel[T]: Attribute["rel", Rel, T] = _.toString.toLowerCase
-  given rel2[T]: Attribute["rel", Seq[Rel], T] = _.map(_.toString.toLowerCase).mkString(" ")
+  given rel[T]: Attribute["rel", Rel, T] = _.toString.lower
+  given rel2[T]: Attribute["rel", Seq[Rel], T] = _.map(_.toString.lower).join(" ")
   given required[T]: Attribute["required", Boolean, T] = identity(_)
   given rev[T]: Attribute["rev", String, T] = identity(_)
   given rows[T]: Attribute["rows", Int, T] = _.toString
   given rowspan[T]: Attribute["rowspan", Int, T] = _.toString
   given sandbox[T]: Attribute["sandbox", Sandbox, T] = _.toString
-  given scope[T]: Attribute["scope", Scope, T] = _.toString.toLowerCase
+  given scope[T]: Attribute["scope", Scope, T] = _.toString.lower
   given selected[T]: Attribute["selected", Boolean, T] = identity(_)
   given shape[T]: Attribute["shape", Shape, T] = _.toString
   given size[T]: Attribute["size", Int, T] = _.toString
@@ -245,12 +247,12 @@ object Attribute:
   given value[T]: Attribute["value", Double, T] = _.toString
   given valueInt[T]: Attribute["value", Int, T] = _.toString
   given width[T]: Attribute["width", Int, T] = _.toString
-  given wrap[T]: Attribute["wrap", Wrap, T] = _.toString.toLowerCase
+  given wrap[T]: Attribute["wrap", Wrap, T] = _.toString.lower
 
 enum HType:
   case Button, Checkbox, Color, Date, DatetimeLocal, Email, File, Hidden, Image, Month, Number,
       Password, Radio, Range, Reset, Search, Submit, Tel, Text, Time, Url, Week
   
-  def identifier = this match
+  def identifier: String = this match
     case DatetimeLocal => "datetime-local"
-    case other         => other.toString.toLowerCase
+    case other         => other.toString.lower
