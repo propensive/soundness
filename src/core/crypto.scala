@@ -108,7 +108,7 @@ object ByteCodec:
     def decode(bytes: Bytes): String exposes DecodeFailure =
       val buffer = ByteBuffer.wrap(bytes.unsafeMutable)
       
-      try Charset.forName("UTF-8").newDecoder().decode(buffer).toString
+      try Charset.forName("UTF-8").nn.newDecoder().nn.decode(buffer).toString
       catch CharacterCodingException =>
         throw DecodeFailure("the message did not contain a valid UTF-8 string")
 
@@ -130,20 +130,20 @@ class Aes[KS <: 128 | 192 | 256: ValueOf]() extends CryptoAlgorithm[KS], Encrypt
     SecretKeySpec(key.unsafeMutable, "AES")
 
   def encrypt(message: Bytes, key: Bytes): Bytes =
-    val cipher = init()
+    val cipher = init().nn
     cipher.init(Cipher.ENCRYPT_MODE, makeKey(key))
-    IArray.from(cipher.doFinal(message.unsafeMutable))
+    IArray.from(cipher.doFinal(message.unsafeMutable).nn)
   
   def decrypt(message: Bytes, key: Bytes): Bytes =
-    val cipher = init()
+    val cipher = init().nn
     cipher.init(Cipher.DECRYPT_MODE, makeKey(key))
-    IArray.from(cipher.doFinal(message.unsafeMutable))
+    IArray.from(cipher.doFinal(message.unsafeMutable).nn)
   
   def genKey(): Bytes =
-    val keyGen = KeyGenerator.getInstance("AES")
+    val keyGen = KeyGenerator.getInstance("AES").nn
     keyGen.init(keySize)
     
-    IArray.from(keyGen.generateKey().getEncoded)
+    IArray.from(keyGen.generateKey().nn.getEncoded.nn)
   
   def privateToPublic(key: Bytes): Bytes = key
 end Aes
@@ -152,62 +152,61 @@ class Rsa[KS <: 1024 | 2048: ValueOf]() extends CryptoAlgorithm[KS], Encryption:
   def keySize: KS = valueOf[KS]
     
   def privateToPublic(bytes: Bytes): Bytes =
-    val privateKey = keyFactory().generatePrivate(PKCS8EncodedKeySpec(bytes.unsafeMutable)) match
+    val privateKey = keyFactory().generatePrivate(PKCS8EncodedKeySpec(bytes.unsafeMutable)).nn match
       case key: js.interfaces.RSAPrivateCrtKey =>
         key
-      
-      case _ =>
+      case key: js.PrivateKey =>
         throw Impossible("public key did not have the correct type")
 
     val spec = RSAPublicKeySpec(privateKey.getModulus, privateKey.getPublicExponent)
-    IArray.from(keyFactory().generatePublic(spec).getEncoded)
+    IArray.from(keyFactory().generatePublic(spec).nn.getEncoded.nn)
 
   def decrypt(message: Bytes, key: Bytes): Bytes =
-    val cipher = init()
+    val cipher = init().nn
     val privateKey = keyFactory().generatePrivate(PKCS8EncodedKeySpec(key.unsafeMutable))
     cipher.init(Cipher.DECRYPT_MODE, privateKey)
-    IArray.from(cipher.doFinal(message.unsafeMutable))
+    IArray.from(cipher.doFinal(message.unsafeMutable).nn)
   
   def encrypt(message: Bytes, key: Bytes): Bytes =
-    val cipher = init()
+    val cipher = init().nn
     val publicKey = keyFactory().generatePublic(X509EncodedKeySpec(key.unsafeMutable))
     cipher.init(Cipher.ENCRYPT_MODE, publicKey)
-    IArray.from(cipher.doFinal(message.unsafeMutable))
+    IArray.from(cipher.doFinal(message.unsafeMutable).nn)
   
   def genKey(): Bytes =
-    val generator = js.KeyPairGenerator.getInstance("RSA")
+    val generator = js.KeyPairGenerator.getInstance("RSA").nn
     generator.initialize(keySize)
-    val keyPair = generator.generateKeyPair()
-    IArray.from(keyPair.getPrivate.getEncoded)
+    val keyPair = generator.generateKeyPair().nn
+    IArray.from(keyPair.getPrivate.nn.getEncoded.nn)
 
-  private def init(): Cipher = Cipher.getInstance("RSA")
-  private def keyFactory(): js.KeyFactory = js.KeyFactory.getInstance("RSA")
+  private def init(): Cipher = Cipher.getInstance("RSA").nn
+  private def keyFactory(): js.KeyFactory = js.KeyFactory.getInstance("RSA").nn
 end Rsa
 
 class Dsa[KS <: 512 | 1024 | 2048 | 3072: ValueOf]() extends CryptoAlgorithm[KS], Signing:
   def keySize: KS = valueOf[KS]
 
   def genKey(): Bytes =
-    val generator = js.KeyPairGenerator.getInstance("DSA")
+    val generator = js.KeyPairGenerator.getInstance("DSA").nn
     val random = js.SecureRandom()
     generator.initialize(keySize, random)
-    val keyPair = generator.generateKeyPair()
+    val keyPair = generator.generateKeyPair().nn
     
-    val pubKey = keyPair.getPublic match
+    val pubKey = keyPair.getPublic.nn match
       case key: js.interfaces.DSAPublicKey =>
         key
       
-      case _ =>
+      case key: js.PublicKey =>
         throw Impossible("public key did not have the correct type")
     
-    IArray.from(keyPair.getPrivate.getEncoded)
+    IArray.from(keyPair.getPrivate.nn.getEncoded.nn)
 
   def sign(data: Bytes, keyBytes: Bytes): Bytes =
     val sig = init()
     val key = keyFactory().generatePrivate(PKCS8EncodedKeySpec(keyBytes.to(Array)))
     sig.initSign(key)
     sig.update(data.to(Array))
-    IArray.from(sig.sign())
+    IArray.from(sig.sign().nn)
 
   def verify(data: Bytes, signature: Bytes, keyBytes: Bytes): Boolean =
     val sig = init()
@@ -217,19 +216,20 @@ class Dsa[KS <: 512 | 1024 | 2048 | 3072: ValueOf]() extends CryptoAlgorithm[KS]
     sig.verify(signature.to(Array))
 
   def privateToPublic(keyBytes: Bytes): Bytes =
-    val key = keyFactory().generatePrivate(PKCS8EncodedKeySpec(keyBytes.to(Array))) match
+    val key = keyFactory().generatePrivate(PKCS8EncodedKeySpec(keyBytes.to(Array))).nn match
       case key: js.interfaces.DSAPrivateKey =>
         key
       
-      case _ =>
+      case key: js.PrivateKey =>
         throw Impossible("private key did not have the correct type")
 
-    val y = key.getParams.getG.modPow(key.getX, key.getParams.getP)
-    val spec = DSAPublicKeySpec(y, key.getParams.getP, key.getParams.getQ, key.getParams.getG)
-    IArray.from(keyFactory().generatePublic(spec).getEncoded)
+    val params = key.getParams.nn
+    val y = params.getG.nn.modPow(key.getX, params.getP.nn)
+    val spec = DSAPublicKeySpec(y, params.getP, params.getQ, params.getG)
+    IArray.from(keyFactory().generatePublic(spec).nn.getEncoded.nn)
 
-  private def init(): js.Signature = js.Signature.getInstance("DSA")
-  private def keyFactory(): js.KeyFactory = js.KeyFactory.getInstance("DSA")
+  private def init(): js.Signature = js.Signature.getInstance("DSA").nn
+  private def keyFactory(): js.KeyFactory = js.KeyFactory.getInstance("DSA").nn
 end Dsa
 
 case class PemParseError(message: String)
