@@ -3,7 +3,7 @@ bin:
 	mkdir -p bin
 
 bin/cs: bin
-	curl -fLo bin/cs https://git.io/coursier-cli-"$(uname | tr LD ld)"
+	curl -fLo bin/cs https://git.io/coursier-cli-linux
 	chmod +x cs
 
 bin/sbt: bin/cs
