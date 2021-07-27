@@ -4,7 +4,7 @@ bin:
 
 bin/cs: bin
 	curl -fLo bin/cs https://git.io/coursier-cli-linux
-	chmod +x cs
+	chmod +x bin/cs
 
 bin/sbt: bin/cs
 	bin/cs install sbt
