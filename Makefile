@@ -8,7 +8,7 @@ bin/cs: bin
 
 bin/sbt: bin/cs
 	bin/cs install sbt
-	cp $${HOME}/.local/share/coursier/bin/sbt bin/sbt
+	cp /home/runner/.local/share/coursier/bin/sbt bin/sbt
 
 bin/scalac: bin/sbt scala
 	cd scala && bin/sbt dist/packArchive
