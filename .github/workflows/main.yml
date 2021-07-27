@@ -12,4 +12,4 @@ jobs:
     - name: Build
       run: |
         echo Hello World
-        make bin/rudiments
+        make out/rudiments
