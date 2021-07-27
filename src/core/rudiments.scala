@@ -24,15 +24,12 @@ import java.net.{URLEncoder, URLDecoder}
 
 import language.dynamics
 
-type exposes[T, E <: Exception] = T
-
 type Bytes = IArray[Byte]
-type Chunked = LazyList[Bytes]
 
 case class TooMuchData() extends Exception(s"the amount of data in the stream exceeds the capacity")
 
-extension (value: Chunked)
-  def slurp(maxSize: Int): Bytes =
+extension (value: LazyList[Bytes])
+  def slurp(maxSize: Int): Bytes throws TooMuchData =
     value.foldLeft(IArray[Byte]()) { (acc, next) =>
       if acc.length + next.length > maxSize then throw TooMuchData() else acc ++ next
     }
@@ -47,17 +44,25 @@ extension (value: Bytes)
   def string: String = String(value.to(Array), "UTF-8")
   def unsafeMutable: Array[Byte] = value.asInstanceOf[Array[Byte]]
 
+extension (value: Any)
+  def unsafeMatchable: Matchable = value.asInstanceOf[Matchable]
+
+extension (value: Array[Byte])
+  def unsafeImmutable: IArray[Byte] = value.asInstanceOf[IArray[Byte]]
+
 extension (value: String)
   def populated: Option[String] = if value.isEmpty then None else Some(value)
   def cut(delimiter: String): IArray[String] = cut(delimiter, 0)
   
   def cut(delimiter: String, limit: Int): IArray[String] =
-    IArray.from(value.split(Pattern.quote(delimiter), limit))
+    IArray.from(value.split(Pattern.quote(delimiter), limit).nn.map(_.nn))
   
-  def bytes: IArray[Byte] = IArray.from(value.getBytes("UTF-8"))
-  def chars: IArray[Char] = IArray.from(value.toCharArray)
-  def urlEncode: String = URLEncoder.encode(value, "UTF-8")
-  def urlDecode: String = URLDecoder.decode(value, "UTF-8")
+  def bytes: IArray[Byte] = IArray.from(value.getBytes("UTF-8").nn)
+  def chars: IArray[Char] = IArray.from(value.toCharArray.nn)
+  def urlEncode: String = URLEncoder.encode(value, "UTF-8").nn
+  def urlDecode: String = URLDecoder.decode(value, "UTF-8").nn
+  def lower: String = value.toLowerCase.nn
+  def upper: String = value.toUpperCase.nn
 
   def padRight(length: Int, char: Char = ' '): String = 
     if value.length < length then value+char.toString*(length - value.length) else value
@@ -117,14 +122,18 @@ extension (ctx: StringContext) def str(strings: (String | Int | Char)*): String 
   ctx.parts.head + strings.zip(ctx.parts.tail).map(_.toString+_.toString).mkString
 
 case class Property(name: String) extends Dynamic:
-  def apply(): String = Option(System.getProperty(name)).getOrElse(throw KeyNotFound(name))
+  def apply(): String throws KeyNotFound =
+    Option(System.getProperty(name)).getOrElse(throw KeyNotFound(name)).nn
+  
   def selectDynamic(key: String): Property = Property(s"$name.$key")
-  def applyDynamic(key: String)(): String exposes KeyNotFound = selectDynamic(key).apply()
+  def applyDynamic(key: String)(): String throws KeyNotFound = selectDynamic(key).apply()
 
 object Sys extends Dynamic:
   def selectDynamic(key: String): Property = Property(key)
-  def applyDynamic(key: String)(): String exposes KeyNotFound = selectDynamic(key).apply()
+  def applyDynamic(key: String)(): String throws KeyNotFound = selectDynamic(key).apply()
 
 case class KeyNotFound(name: String) extends Exception(str"rudiments: key $name not found")
 
 def √(value: Double): Double = math.sqrt(value)
+
+case class Impossible(message: String) extends Error(message)
