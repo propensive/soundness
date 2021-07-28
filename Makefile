@@ -1,8 +1,12 @@
 
-pub: scala/bin/scalac $(wildcard mod/*/)
+pub: scala/bin/scalac bin/cs $(wildcard mod/*/)
 	echo $<
 	mkdir -p pub
-	etc/build.sh
+	PATH="$(PATH):bin" etc/build.sh
+
+bin/cs: bin
+	curl -fLo bin/cs https://git.io/coursier-cli-linux
+	chmod +x bin/cs
 
 bin:
 	mkdir -p bin
