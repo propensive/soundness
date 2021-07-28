@@ -56,11 +56,13 @@ object Macro:
         '{Style(${Expr.ofSeq(recur(exprs))}*)}
       case _ =>
         report.error("cataract: expected varargs")
-        throw Exception()
+        ???
 
   private def words(string: String): List[String] =
     val i = string.indexWhere(_.isUpper, 1)
-    if i < 0 then List(string.toLowerCase) else string.take(i).toLowerCase :: words(string.drop(i))
+    
+    if i < 0 then List(string.lower)
+    else string.take(i).lower :: words(string.drop(i))
 
   private[cataract] def dashed(string: String): String = words(string).join("-")
 
@@ -103,7 +105,7 @@ object PropertyDef:
   given alignSelf: PropertyDef["alignSelf", String] = PropertyDef()
   given all: PropertyDef["all", String] = PropertyDef()
   given animation: PropertyDef["animation", String] = PropertyDef()
-  given animationDelay: PropertyDef["animationDelay", String] = PropertyDef()
+  given animationDelay: PropertyDef["animationDelay", Duration] = PropertyDef()
   given animationDirection: PropertyDef["animationDirection", String] = PropertyDef()
   given animationDuration: PropertyDef["animationDuration", Duration] = PropertyDef()
   given animationFillMode: PropertyDef["animationFillMode", AnimationFillMode] = PropertyDef()
@@ -537,7 +539,7 @@ enum Dir:
   case Rtl, Ltr
 
 package pseudo:
-  def dir(direction: Dir) = Selector.PseudoClass(str"dir(${direction.toString.toLowerCase})")
+  def dir(direction: Dir) = Selector.PseudoClass(str"dir(${direction.toString.lower})")
   def lang(language: String) = Selector.PseudoClass(str"lang($language)")
   val after = Selector.PseudoClass(":after")
   val before = Selector.PseudoClass(":before")

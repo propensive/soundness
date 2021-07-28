@@ -23,13 +23,13 @@ object Stylesheet:
   given simplistic.HttpResponse[Stylesheet] with
     def mimeType: String = "text/css; charset=utf-8"
     def content(stylesheet: Stylesheet): String = stylesheet.toString
+  
+  trait Item
 
-case class Stylesheet(rules: StylesheetItem*):
+case class Stylesheet(rules: Stylesheet.Item*):
   override def toString(): String = rules.map(_.toString).join("\n")
 
-trait StylesheetItem
-
-case class Keyframes(name: String)(frames: Keyframe*) extends StylesheetItem:
+case class Keyframes(name: String)(frames: Keyframe*) extends Stylesheet.Item:
   override def toString = frames.map(_.toString).join("@keyframes "+name+" {\n  ", "\n  ", "\n}\n")
   
 case class Keyframe(ref: String, style: Style):
@@ -43,12 +43,12 @@ object To extends Dynamic:
   inline def applyDynamicNamed(method: "apply")(inline properties: (Label, Any)*): Keyframe =
     ${Macro.keyframe('{"to"}, 'properties)}
   
-case class Import(url: String) extends StylesheetItem:
+case class Import(url: String) extends Stylesheet.Item:
   override def toString(): String = str"@import url('$url');"
 
 object Style:
   given simplistic.HtmlAttribute["style", Style] with
-    def serialize(value: Style): String = value.toString
+    def serialize(value: Style): String = value.properties.map(_.toString).join(";")
     def name: String = "style"
 
 case class Style(properties: CssProperty*):
@@ -56,7 +56,7 @@ case class Style(properties: CssProperty*):
   def apply(nested: (Selector => Rule)*): Selector => Stylesheet = sel =>
     Stylesheet(nested.map(_(sel))*)
 
-case class Rule(selector: Selector, style: Style) extends StylesheetItem:
+case class Rule(selector: Selector, style: Style) extends Stylesheet.Item:
   override def toString(): String =
     val rules = style.properties.map(_.toString).join("; ")
     str"${selector.normalize.value} { $rules }"
