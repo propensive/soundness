@@ -22,14 +22,19 @@ object Language:
       import quotes.reflect.*
 
       def langs(t: TypeRepr): Set[String] = t.dealias match
-         case OrType(left, right) => langs(left) ++ langs(right)
-         case ConstantType(StringConstant(lang)) => Set(lang)
+         case OrType(left, right) =>
+           langs(left) ++ langs(right)
+         case ConstantType(StringConstant(lang)) =>
+           Set(lang)
+         case _ =>
+           report.error("cosmopolite: expected an intersection or union type")
+           ???
 
       Expr(langs(TypeRepr.of[L]))
 
 object Messages:
    def apply[L <: String: ValueOf](seq: Seq[String], parts: Seq[Messages[? >: L]]): Messages[L] =
-      val string = seq.head+(parts.zip(seq.tail).map { (msg, s) => msg(summon[ValueOf[L]])+s }.join)
+      val string = seq.head+(parts.zip(seq.tail).map { case (msg, s) => msg(using summon[ValueOf[L]])+s }.join)
       Messages[L](Map(summon[ValueOf[L]].value -> string))
    
 case class Messages[-L <: String](text: Map[String, String]):
