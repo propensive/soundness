@@ -16,6 +16,8 @@
 
 package honeycomb
 
+import rudiments.*
+
 import scala.annotation.*
 import scala.quoted.*
 
@@ -98,7 +100,10 @@ extends Item[Name], Dynamic:
     Node(label, unclosed, inline, verbatim, Map(), children)
 
 object Element:
-  given simplistic.CssSelection[Element[?, ?]] = _.label
+  given simplistic.CssSelection[Element[?, ?]] = elem => elem.label+elem.attributes.map {
+    case (key, value: String) => str"[$key=$value]"
+    case (key, value: Boolean) => str"[$key]"
+  }.join
 
 case class Element[+Name <: Label, Children <: Label]
                   (label: Name, unclosed: Boolean, inline: Boolean, verbatim: Boolean,
