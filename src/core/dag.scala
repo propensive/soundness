@@ -32,7 +32,7 @@ object Dag:
   }
   
   @targetName("fromNodes")
-  def apply[T](nodes: (T, Set[T])*): Dag[T] = Dag(Map(nodes: _*))
+  def apply[T](nodes: (T, Set[T])*): Dag[T] = Dag(Map(nodes*))
 
 case class Dag[T] private(edgeMap: Map[T, Set[T]] = Map()):
   def keys: Set[T] = edgeMap.keySet
