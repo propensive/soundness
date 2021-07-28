@@ -1,4 +1,4 @@
-[submodule "rudiments"]
+[submodule "mod/rudiments"]
 	path = mod/rudiments
 	url = https://github.com/propensive/rudiments
 	branch = main
