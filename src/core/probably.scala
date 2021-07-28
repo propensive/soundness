@@ -26,12 +26,6 @@ import language.dynamics
 import Runner.*
 
 object Runner:
-  object Showable:
-    implicit def show[T: Show](value: T): Showable[T] = Showable[T](value, summon[Show[T]])
-
-  case class Showable[T](value: T, show: Show[T]):
-    def apply(): String = show.show(value)
-
   case class TestId private[probably](value: String)
   
   enum Outcome:
@@ -68,9 +62,9 @@ object Runner:
     def show(value: T): String
 
   def shortDigest(text: String): String =
-    val md = java.security.MessageDigest.getInstance("SHA-256")
+    val md = java.security.MessageDigest.getInstance("SHA-256").nn
     md.update(text.getBytes)
-    md.digest.take(3).map(b => f"$b%02x").mkString
+    md.digest.nn.take(3).map(b => f"$b%02x").mkString
 
 class Runner(subset: Set[TestId] = Set()) extends Dynamic:
 

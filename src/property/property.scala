@@ -34,7 +34,7 @@ object Arbitrary extends Derivation[Arbitrary]:
   def split[T](ctx: SealedTrait[Arbitrary, T]): Arbitrary[T] = (seed, n) =>
     ctx.subtypes.zip(spread(seed, n, ctx.subtypes.size)).zip(seed.stream(ctx.subtypes.size)).map {
       case ((subtype, i), s) => subtype.typeclass(s, i)
-    }(n%ctx.subtypes.size)
+    } (n%ctx.subtypes.size)
 
   val seedStrings = Vector("", "a", "z", "\n", "0", "_", "\"", "\'", " ",
       "abcdefghijklmnopqrstuvwxyz")
