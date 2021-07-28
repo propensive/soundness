@@ -30,27 +30,41 @@ object Macro:
   inline def paramTypeAnns[T]: List[(String, List[Any])] = ${paramTypeAnns[T]}
   inline def repeated[T]: List[(String, Boolean)] = ${repeated[T]}
   inline def typeInfo[T]: TypeInfo = ${typeInfo[T]}
+  inline def summonOption[T]: Option[T] = ${summonOption[T]}
+  
+  def summonOption[T: Type](using Quotes): Expr[Option[T]] =
+    Expr.summon[T] match
+      case None => Expr(None)
+      case Some(e) => '{Some($e)}
 
   def isObject[T: Type](using Quotes): Expr[Boolean] =
     import quotes.reflect.*
 
     Expr(TypeRepr.of[T].typeSymbol.flags.is(Flags.Module))
-  
 
   def paramAnns[T: Type](using Quotes): Expr[List[(String, List[Any])]] =
     import quotes.reflect.*
 
     val tpe = TypeRepr.of[T]
 
-    Expr.ofList {
-      tpe.typeSymbol.primaryConstructor.paramSymss.flatten.map { field =>
-        Expr(field.name) -> field.annotations.filter { a =>
-          a.tpe.typeSymbol.maybeOwner.isNoSymbol ||
-            a.tpe.typeSymbol.owner.fullName != "scala.annotation.internal"
-        }.map(_.asExpr.asInstanceOf[Expr[Any]])
-      }.filter(_._2.nonEmpty).map { (name, anns) => Expr.ofTuple(name, Expr.ofList(anns)) }
-    }
+    def filterAnn(a: Term): Boolean =
+      a.tpe.typeSymbol.maybeOwner.isNoSymbol ||
+        a.tpe.typeSymbol.owner.fullName != "scala.annotation.internal"
 
+    Expr.ofList {
+      val constructorAnns = tpe.typeSymbol.primaryConstructor.paramSymss.flatten.map { field =>
+        field.name -> field.annotations.filter(filterAnn).map(_.asExpr.asInstanceOf[Expr[Any]])
+      }
+      val fieldAnns = tpe.typeSymbol.caseFields.collect {
+        case field: Symbol if field.tree.isInstanceOf[ValDef] =>
+          field.name -> field.annotations.filter(filterAnn).map(_.asExpr.asInstanceOf[Expr[Any]])
+      }
+
+      (constructorAnns ++ fieldAnns).filter(_._2.nonEmpty).groupBy(_._1).to(List).map {
+        case (name, l) => Expr(name) -> l.flatMap(_._2)
+      }.map { (name, anns) => Expr.ofTuple(name, Expr.ofList(anns)) }
+    }
+  
   def anns[T: Type](using Quotes): Expr[List[Any]] =
     import quotes.reflect.*
 
@@ -66,7 +80,7 @@ object Macro:
   def typeAnns[T: Type](using Quotes): Expr[List[Any]] =
     import quotes.reflect.*
     
-    def getAnnotations(t: TypeRepr): List[Term] = t.unsafeMatchable match
+    def getAnnotations(t: TypeRepr): List[Term] = t match
       case AnnotatedType(inner, ann) => ann :: getAnnotations(inner)
       case _                         => Nil
     
@@ -98,7 +112,7 @@ object Macro:
   def paramTypeAnns[T: Type](using Quotes): Expr[List[(String, List[Any])]] =
     import quotes.reflect.*
 
-    def getAnnotations(t: TypeRepr): List[Term] = t.unsafeMatchable match
+    def getAnnotations(t: TypeRepr): List[Term] = t match
       case AnnotatedType(inner, ann) => ann :: getAnnotations(inner)
       case _                         => Nil
 
@@ -155,7 +169,7 @@ object Macro:
     def owner(tpe: TypeRepr): Expr[String] =
       Expr(ownerNameChain(tpe.typeSymbol.maybeOwner).mkString("."))
 
-    def typeInfo(tpe: TypeRepr): Expr[TypeInfo] = tpe.unsafeMatchable match
+    def typeInfo(tpe: TypeRepr): Expr[TypeInfo] = tpe match
       case AppliedType(tpe, args) =>
         '{TypeInfo(${owner(tpe)}, ${name(tpe)}, ${Expr.ofList(args.map(typeInfo))})}
       case _ =>

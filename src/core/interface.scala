@@ -125,5 +125,6 @@ object CallByNeed:
 final class CallByNeed[+A](private var eval: () => A) extends Serializable:
   lazy val value: A =
     val result = eval()
+    import language.unsafeNulls
     eval = null
     result
