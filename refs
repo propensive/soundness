@@ -1,21 +1,21 @@
 rudiments/core:
 acyclicity/core: contextual/core
-cataract/core: simplistic/html simplistic/http iridescence/core
+cataract/core: simplistic/html simplistic/css simplistic/http iridescence/core
 contextual/core: rudiments/core
-cosmopolite: rudiments/core
+cosmopolite/core: rudiments/core
 escritoire/core: rudiments/core
-euphemism/core: wisteria/core
+euphemism/core: wisteria/core simplistic/http
 gastronomy/core: kaleidoscope/core wisteria/core
 guillotine/core: contextual/core
 honeycomb/core: simplistic/css simplistic/http simplistic/html rudiments/core
-iridescence/core: rudiments/core
+iridescence/core: contextual/core
 jovian/core: simplistic/html gastronomy/core slalom/core
 kaleidoscope/core: rudiments/core
-punctuation/core: simplistic/html punctuation
+punctuation/core: simplistic/html contextual/core
 punctuation/html: punctuation/core honeycomb/core
 probably/core: escritoire/core
 probably/cli: probably/core
-probably/tolerance: probably/core
+probably/tolerance: probably/core wisteria/core
 scintillate/core: simplistic/html wisteria/core
 scintillate/server: gastronomy/core scintillate/core simplistic/http
 scintillate/servlet: scintillate/server slalom/core
