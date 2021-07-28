@@ -1,16 +1,14 @@
 
-SCALAC := scala/bin/scalac -language:experimental.saferExceptions -new-syntax -Ysafe-init -feature -Xcheck-macros -Ycheck-all-patmat -Yexplicit-nulls -d out
-
-pub: scala/src $(wildcard mod/*/src)
+pub: scala/bin/scalac $(wildcard mod/*/)
+	echo $<
 	mkdir -p pub
 	etc/build.sh
 
 bin:
 	mkdir -p bin
 
-scala/src:
+scala/bin/scalac:
 	git submodule update --init scala
 
-mod/%/src:
+mod/%/:
 	git submodule update --init mod/$*
-
