@@ -9,6 +9,7 @@ bin/cs: bin
 bin/sbt: bin/cs
 	bin/cs install sbt
 	cp /home/runner/.local/share/coursier/bin/sbt bin/sbt
+	chmod +x bin/sbt
 
 bin/scalac: bin/sbt scala/src
 	cd scala && bin/sbt dist/packArchive
