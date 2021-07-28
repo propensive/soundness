@@ -1,4 +1,4 @@
-
+#!/bin/bash
 function classpath() {
   local MOD="$1"
   local JAR="$(echo $MOD | tr '/' '-').jar"
