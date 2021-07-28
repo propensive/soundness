@@ -17,6 +17,7 @@
 package euphemism
 
 import wisteria.*
+import rudiments.*
 
 import org.typelevel.jawn.{ParseException as JawnParseException, *}, ast.*
 
@@ -53,7 +54,10 @@ object Json extends Dynamic:
     given Serializer[Byte] = JNum(_)
     given Serializer[Short] = JNum(_)
     given Serializer[Boolean] = if _ then JTrue else JFalse
-    given Serializer[Json] = _.normalize.toOption.get.root
+    
+    given (using CanThrow[UnexpectedType], CanThrow[LabelNotFound], CanThrow[IndexNotFound])
+        : Serializer[Json] = _.normalize.toOption.get.root
+    
     given Serializer[Nil.type] = value => JArray(Array())
 
     given [Coll[T1] <: Traversable[T1], T: Serializer]: Serializer[Coll[T]] = values =>
@@ -138,23 +142,25 @@ object Json extends Dynamic:
     }
 
     def split[T](sealedTrait: SealedTrait[Deserializer, T]): Deserializer[T] = _.flatMap { json =>
-      for
+      try for
         str     <- Some(Json(json, Nil)._type.as[String])
         subtype <- sealedTrait.subtypes.find(_.typeInfo.short == str)
         value   <- subtype.typeclass.deserialize(Some(json))
       yield value
+      catch
+        case DeserializationException() | IndexNotFound(_) | LabelNotFound(_) | UnexpectedType(_) => None
     }
 
   trait Deserializer[T]:
     def deserialize(json: Option[JValue]): Option[T]
 
-  def parse(str: String): Json = JParser.parseFromString(str) match
+  def parse(str: String): Json throws ParseException = JParser.parseFromString(str) match
     case Success(value)                   => Json(value, Nil)
     case Failure(err: JawnParseException) => throw ParseException(err.line, err.col, err.msg)
     case Failure(err)                     => throw err
 
-  def applyDynamicNamed[T <: String](methodName: "of")(elements: (String, Json)*): Json =
-    Json(JObject(mutable.Map(elements.map(_ -> _.json.root)*)), Nil)
+  // def applyDynamicNamed[T <: String](methodName: "of")(elements: (String, Json)*): Json =
+  //   Json(JObject(mutable.Map(elements.map(_ -> _.json.root)*)), Nil)
 
 case class Json(root: JValue, path: List[Int | String] = Nil) extends Dynamic derives CanEqual:
   def apply(idx: Int): Json = Json(root, idx :: path)
@@ -162,8 +168,9 @@ case class Json(root: JValue, path: List[Int | String] = Nil) extends Dynamic de
   def selectDynamic(field: String): Json = this(field)
   def applyDynamic(field: String)(idx: Int): Json = this(field)(idx)
 
-  def normalize: Json =
-    def deref(value: JValue, path: List[Int | String]): JValue = path match
+  def normalize: Json throws IndexNotFound | LabelNotFound | UnexpectedType =
+    def deref(value: JValue, path: List[Int | String]): JValue throws IndexNotFound |
+        UnexpectedType | LabelNotFound = path match
       case Nil =>
         value
       case (idx: Int) :: tail => value match
@@ -185,10 +192,15 @@ case class Json(root: JValue, path: List[Int | String] = Nil) extends Dynamic de
       
     Json(deref(root, path.reverse), Nil)
 
-  def as[T: Json.Deserializer]: T =
+  def as[T: Json.Deserializer]: T throws DeserializationException | UnexpectedType | LabelNotFound | IndexNotFound =
     summon[Json.Deserializer[T]]
       .deserialize(Some(normalize.root))
       .getOrElse(throw DeserializationException())
   
   override def toString(): String =
-    try normalize.root.render() catch _ => "undefined"
+    try normalize.root.render()
+    catch
+      case UnexpectedType(t) => s"<type mismatch: expected $t>"
+      case LabelNotFound(s)  => str"<missing label: $s>"
+      case IndexNotFound(i)  => str"<missing index: $i>"
+    
