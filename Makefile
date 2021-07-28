@@ -1,7 +1,7 @@
 
 SCALAC := scala/bin/scalac -language:experimental.saferExceptions -new-syntax -Ysafe-init -feature -Xcheck-macros -Ycheck-all-patmat -Yexplicit-nulls -d out
 
-pub: out $(wildcard mod/*/src)
+pub: $(wildcard mod/*/src)
 	mkdir -p pub
 	etc/build.sh
 
