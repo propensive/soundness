@@ -6,3 +6,7 @@
 	path = scala
 	url = https://github.com/dotty-staging/dotty
 	branch = add-safe-throws-2
+[submodule "mod/kaleidoscope"]
+	path = mod/kaleidoscope
+	url = https://github.com/propensive/kaleidoscope
+	branch = main
