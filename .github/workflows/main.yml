@@ -11,4 +11,4 @@ jobs:
     - uses: actions/checkout@v2
     - name: Build
       run: |
-        make rudiments-core.jar
+        make pub/rudiments-core.jar
