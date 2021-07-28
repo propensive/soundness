@@ -1,8 +1,8 @@
 [submodule "rudiments"]
 	path = mod/rudiments
-	url = git@github.com:propensive/rudiments
+	url = https://github.com/propensive/rudiments
 	branch = main
 [submodule "scala"]
 	path = scala
-	url = git@github.com:dotty-staging/dotty
+	url = https://github.com/dotty-staging/dotty
 	branch = add-safe-throws-2
