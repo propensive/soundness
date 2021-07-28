@@ -12,5 +12,5 @@ scala/src:
 	git submodule update --init scala
 
 mod/%/src:
-	git submodule update --init mod/$@
+	git submodule update --init mod/$*
 
