@@ -63,7 +63,7 @@ case class ExecError(command: Command, stdout: Stream, stderr: Stream) extends E
 object Sh extends Interpolator[List[String], State, Command]:
   import Context.*
   
-  def complete(state: State): Command =
+  def complete(state: State): Command throws ParseError =
     val args = state.current match
       case Quotes2        => throw ParseError("the double quotes have not been closed")
       case Quotes1        => throw ParseError("the single quotes have not been closed")
@@ -74,31 +74,32 @@ object Sh extends Interpolator[List[String], State, Command]:
 
   def initial: State = State(Awaiting, false, Nil)
 
-  def insert(state: State, value: Option[List[String]]): State = value.getOrElse(List("x")) match
-    case Nil =>
-      state
+  def insert(state: State, value: Option[List[String]]): State throws ParseError =
+    value.getOrElse(List("x")) match
+      case Nil =>
+        state
 
-    case h :: t =>
-      if state.esc
-      then throw ParseError("escaping with '\\' is not allowed immediately before a substitution")
-      
-      state match
-        case State(Awaiting, false, args) =>
-          State(Unquoted, false, args ++ (h :: t))
+      case h :: t =>
+        if state.esc
+        then throw ParseError("escaping with '\\' is not allowed immediately before a substitution")
+        
+        state match
+          case State(Awaiting, false, args) =>
+            State(Unquoted, false, args ++ (h :: t))
 
-        case State(Unquoted, false, args :+ last) =>
-          State(Unquoted, false, args ++ (s"$last$h" :: t))
+          case State(Unquoted, false, args :+ last) =>
+            State(Unquoted, false, args ++ (s"$last$h" :: t))
+          
+          case State(Quotes1, false, args :+ last) =>
+            State(Quotes1, false, args :+ (s"$last$h" :: t).join(" "))
+          
+          case State(Quotes2, false, args :+ last) =>
+            State(Quotes2, false, args :+ (s"$last$h" :: t).join(" "))
+          
+          case _ =>
+            throw Impossible("impossible parser state")
         
-        case State(Quotes1, false, args :+ last) =>
-          State(Quotes1, false, args :+ (s"$last$h" :: t).join(" "))
-        
-        case State(Quotes2, false, args :+ last) =>
-          State(Quotes2, false, args :+ (s"$last$h" :: t).join(" "))
-        
-        case _ =>
-          throw Impossible("impossible parser state")
-        
-  def parse(state: State, next: String): State = next.foldLeft(state) {
+  def parse(state: State, next: String): State throws ParseError = next.foldLeft(state) {
     case (State(Awaiting, esc, args), ' ')          => State(Awaiting, false, args)
     case (State(Quotes1, false, rest :+ cur), '\\') => State(Quotes1, false, rest :+ s"$cur\\")
     case (State(ctx, false, args), '\\')            => State(ctx, true, args)
