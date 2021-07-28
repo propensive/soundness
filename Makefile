@@ -8,7 +8,7 @@ bin/cs: bin
 
 bin/sbt: bin/cs
 	bin/cs install sbt
-	cp /home/runner/.local/share/coursier/bin/sbt bin/sbt
+	ln /home/runner/.local/share/coursier/bin/sbt bin/sbt
 
 bin/scalac: bin/sbt scala
 	cd scala && bin/sbt dist/packArchive
@@ -17,5 +17,11 @@ bin/scalac: bin/sbt scala
 out:
 	mkdir -p out
 
-out/rudiments: mod/rudiments bin/scalac
+scala:
+	git submodule update --init scala
+
+mod/rudiments:
+	git submodule update --init mod/rudiments
+
+out/rudiments: out mod/rudiments bin/scalac
 	bin/scalac -d out rudiments/src/core/*.scala
