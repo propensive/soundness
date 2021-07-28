@@ -98,18 +98,21 @@ case class Request(method: Method, body: Body.Chunked, query: String, ssl: Boole
                        rawHeaders: Map[String, List[String]],
                        queryParams: Map[String, List[String]]):
 
+  // FIXME: The exception in here needs to be handled elsewhere
   val params: Map[String, String] =
-    queryParams.map { (k, vs) => k.urlDecode -> vs.headOption.getOrElse("").urlDecode }.to(Map) ++ {
-      if (method == Method.Post || method == Method.Put) &&
-          contentType == Some(mime"application/x-www-form-urlencoded")
-      then
-        Map(body.stream.slurp(maxSize = 10485760).string.cut("&").map(_.cut("=", 2).to(Seq) match
-          case Seq(key)        => key.urlDecode -> ""
-          case Seq(key, value) => key.urlDecode -> value.urlDecode
-          case _               => throw Impossible("key/value pair does not match")
-        )*)
-      else Map()
-    }
+    try
+      queryParams.map { (k, vs) => k.urlDecode -> vs.headOption.getOrElse("").urlDecode }.to(Map) ++ {
+        if (method == Method.Post || method == Method.Put) &&
+            contentType == Some(mime"application/x-www-form-urlencoded")
+        then
+          Map(body.stream.slurp(maxSize = 10485760).string.cut("&").map(_.cut("=", 2).to(Seq) match
+            case Seq(key)        => key.urlDecode -> ""
+            case Seq(key, value) => key.urlDecode -> value.urlDecode
+            case _               => throw Impossible("key/value pair does not match")
+          )*)
+        else Map()
+      }
+    catch case TooMuchData() => Map()
 
   override def toString(): String = ListMap(
     "content"  -> contentType.toString,
@@ -119,7 +122,7 @@ case class Request(method: Method, body: Body.Chunked, query: String, ssl: Boole
     "hostname" -> hostname,
     "port"     -> port.toString,
     "path"     -> path,
-    "body"     -> body.stream.slurp(maxSize = 10000).string,
+    "body"     -> (try body.stream.slurp(maxSize = 10000).string catch case TooMuchData() => "[...]"),
     "headers"  -> rawHeaders.map { (k, vs) => s"$k: ${vs.join("; ")}" }.join("\n          "),
     "params"   -> params.map { (k, v) => s"$k=\"$v\"" }.join("\n          ")
   ).map { (k, v) => s"${k.padLeft(8)}: $v" }.join("", "\n", "\n")
@@ -162,7 +165,7 @@ case class RequestParam[T](key: String)(using ParamReader[T]):
   type Type = T
   def opt(using Request): Option[T] = param(key).flatMap(summon[ParamReader[T]].read(_))
   def unapply(request: Request): Option[T] = opt(using request)
-  def apply()(using Request): T exposes ParamNotSent = opt.getOrElse(throw ParamNotSent(key))
+  def apply()(using Request): T throws ParamNotSent = opt.getOrElse(throw ParamNotSent(key))
 
 trait HttpService:
   def stop(): Unit
@@ -173,21 +176,24 @@ object `&`:
 case class HttpServer(port: Int) extends RequestHandler:
 
   def listen(handler: Request ?=> Response[?]): HttpService =
-    def handle(exchange: HttpExchange) =
-      try handler(using makeRequest(exchange)).respond(SimpleResponder(exchange))
+    def handle(exchange: HttpExchange | Null) =
+      try handler(using makeRequest(exchange.nn)).respond(SimpleResponder(exchange.nn))
       catch case NonFatal(exception) => exception.printStackTrace()
     
-    val httpServer = JavaHttpServer.create(InetSocketAddress("localhost", port), 0)
-    val context = httpServer.createContext("/")
+    val httpServer = JavaHttpServer.create(InetSocketAddress("localhost", port), 0).nn
+
+    val context = httpServer.createContext("/").nn
     context.setHandler(handle(_))
     httpServer.setExecutor(null)
     httpServer.start()
     
-    Runtime.getRuntime.addShutdownHook { new Thread(() => httpServer.stop(0)) }
+    Runtime.getRuntime.nn.addShutdownHook { new Thread {
+      override def run(): Unit = httpServer.stop(0)
+    } }
     () => httpServer.stop(1)
 
   private def streamBody(exchange: HttpExchange): Body.Chunked =
-    val in = exchange.getRequestBody
+    val in = exchange.getRequestBody.nn
     val buffer = new Array[Byte](65536)
     
     def recur(): LazyList[IArray[Byte]] =
@@ -197,11 +203,11 @@ case class HttpServer(port: Int) extends RequestHandler:
     Body.Chunked(recur())
 
   private def makeRequest(exchange: HttpExchange): Request =
-    val uri = exchange.getRequestURI
+    val uri = exchange.getRequestURI.nn
     val query = Option(uri.getQuery)
     
     val queryParams: Map[String, List[String]] = query.fold(Map()) { query =>
-      val paramStrings = query.cut("&")
+      val paramStrings = query.nn.cut("&")
       
       paramStrings.foldLeft(Map[String, List[String]]()) { (map, elem) =>
         val kv = elem.cut("=", 2)
@@ -210,22 +216,23 @@ case class HttpServer(port: Int) extends RequestHandler:
       }
     }
     
-    val headers = exchange.getRequestHeaders.asScala.view.mapValues(_.asScala.to(List)).to(Map)
+    val headers = exchange.getRequestHeaders.nn.asScala.view.mapValues(_.asScala.to(List)).to(Map)
 
     Request(
-      method = Method.valueOf(exchange.getRequestMethod.toLowerCase.capitalize),
+      method = Method.valueOf(exchange.getRequestMethod.nn.lower.capitalize.nn),
       body = streamBody(exchange),
-      query = query.getOrElse(""),
+      query = query.getOrElse("").nn,
       ssl = false,
-      Option(uri.getHost).getOrElse(exchange.getLocalAddress.getAddress.getCanonicalHostName),
-      Option(uri.getPort).filter(_ > 0).getOrElse(exchange.getLocalAddress.getPort),
-      uri.getPath,
+      Option(uri.getHost).getOrElse(exchange.getLocalAddress.nn.getAddress.nn.getCanonicalHostName
+          ).nn,
+      Option(uri.getPort).filter(_ > 0).getOrElse(exchange.getLocalAddress.nn.getPort),
+      uri.getPath.nn,
       headers.map(_ -> _),
       queryParams
     )
 
   class SimpleResponder(exchange: HttpExchange) extends Responder:
-    def addHeader(key: String, value: String): Unit = exchange.getResponseHeaders.add(key, value)
+    def addHeader(key: String, value: String): Unit = exchange.getResponseHeaders.nn.add(key, value)
     
     def sendBody(status: Int, body: Body): Unit =
       val length = body match
@@ -240,12 +247,12 @@ case class HttpServer(port: Int) extends RequestHandler:
           exchange.close()
         
         case Body.Data(body) =>
-          exchange.getResponseBody.write(body.unsafeMutable)
-          exchange.getResponseBody.flush()
+          exchange.getResponseBody.nn.write(body.unsafeMutable)
+          exchange.getResponseBody.nn.flush()
         
         case Body.Chunked(body) =>
-          body.map(_.unsafeMutable).foreach(exchange.getResponseBody.write(_))
-          exchange.getResponseBody.flush()
+          body.map(_.unsafeMutable).foreach(exchange.getResponseBody.nn.write(_))
+          exchange.getResponseBody.nn.flush()
       exchange.close()
 
 case class Svg(content: String)

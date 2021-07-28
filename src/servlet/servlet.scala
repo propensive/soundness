@@ -44,19 +44,19 @@ trait Servlet() extends HttpServlet:
           ()
 
         case Body.Data(body) =>
-          response.getOutputStream.write(body.unsafeMutable)
-          response.getOutputStream.flush()
+          response.getOutputStream.nn.write(body.unsafeMutable)
+          response.getOutputStream.nn.flush()
 
         case Body.Chunked(body) =>
-          body.map(_.unsafeMutable).foreach(response.getOutputStream.write(_))
-          response.getOutputStream.flush()
+          body.map(_.unsafeMutable).foreach(response.getOutputStream.nn.write(_))
+          response.getOutputStream.nn.flush()
 
   private def streamBody(request: HttpServletRequest): Body.Chunked =
     val in = request.getInputStream
     val buffer = new Array[Byte](4096)
     
     def recur(): LazyList[IArray[Byte]] =
-      val len = in.read(buffer)
+      val len = in.nn.read(buffer)
       if len > 0 then IArray.from(buffer.slice(0, len)) #:: recur() else LazyList.empty
     
     Body.Chunked(recur())
@@ -65,7 +65,7 @@ trait Servlet() extends HttpServlet:
     val query = Option(request.getQueryString)
     
     val params: Map[String, List[String]] = query.fold(Map()) { query =>
-      val paramStrings = query.cut("&")
+      val paramStrings = query.nn.cut("&")
       
       paramStrings.foldLeft(Map[String, List[String]]()) { (map, elem) =>
         val Seq(key, value) = elem.cut("=", 2).to(Seq)
@@ -74,18 +74,18 @@ trait Servlet() extends HttpServlet:
       }
     }
     
-    val headers = request.getHeaderNames.asScala.to(List).map {
-      k => k -> request.getHeaders(k).asScala.to(List)
+    val headers = request.getHeaderNames.nn.asScala.to(List).map {
+      k => k -> request.getHeaders(k).nn.asScala.to(List)
     }.to(Map)
 
     Request(
-      method = Method.valueOf(request.getMethod.toLowerCase.capitalize),
+      method = Method.valueOf(request.getMethod.nn.lower.capitalize),
       body = streamBody(request),
-      query = query.getOrElse(""),
+      query = query.getOrElse("").nn,
       ssl = false,
-      request.getServerName,
+      request.getServerName.nn,
       request.getServerPort,
-      request.getRequestURI,
+      request.getRequestURI.nn,
       headers,
       params
     )

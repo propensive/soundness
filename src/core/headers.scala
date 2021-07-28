@@ -28,7 +28,7 @@ object RequestHeader:
       Warning).map(_.twin).map(_.header -> _).to(Map)
 
   def unapply(str: String): Some[RequestHeader] =
-    Some(standard.get(str.toLowerCase).getOrElse(Custom(str)))
+    Some(standard.get(str.lower).getOrElse(Custom(str)))
   
   case class Value(header: RequestHeader, value: String)
 
@@ -92,7 +92,7 @@ enum RequestHeader(val header: String):
   case Upgrade extends RequestHeader("upgrade")
   case Via extends RequestHeader("via")
   case Warning extends RequestHeader("warning")
-  case Custom(name: String) extends RequestHeader(name.toLowerCase)
+  case Custom(name: String) extends RequestHeader(name.lower)
   
   def apply(content: String): RequestHeader.Value = RequestHeader.Value(this, content)
 
@@ -110,7 +110,7 @@ object ResponseHeader:
     .to(Map)
   
   def unapply(str: String): Some[ResponseHeader] =
-    Some(standard.get(str.toLowerCase).getOrElse(Custom(str)))
+    Some(standard.get(str.lower).getOrElse(Custom(str)))
 
 enum ResponseHeader(val header: String):
   case AcceptCh extends ResponseHeader("accept-ch")
@@ -161,4 +161,4 @@ enum ResponseHeader(val header: String):
   case Warning extends ResponseHeader("warning")
   case WwwAuthenticate extends ResponseHeader("www-authenticate")
   case XFrameOptions extends ResponseHeader("x-frame-options")
-  case Custom(name: String) extends ResponseHeader(name.toLowerCase)
+  case Custom(name: String) extends ResponseHeader(name.lower)

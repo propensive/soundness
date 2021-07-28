@@ -70,21 +70,23 @@ enum Method:
   case Get, Head, Post, Put, Delete, Connect, Options, Trace, Patch
 
 object HttpReadable:
-  given HttpReadable[String] =
-    case Body.Empty         => ""
-    case Body.Data(body)    => body.string
-    case Body.Chunked(body) => body.foldLeft("")(_+_.string)
+  given HttpReadable[String] with
+    def read(body: Body): String throws TooMuchData = body match
+      case Body.Empty         => ""
+      case Body.Data(body)    => body.string
+      case Body.Chunked(body) => body.foldLeft("")(_+_.string)
   
-  given HttpReadable[Bytes] =
-    case Body.Empty         => IArray()
-    case Body.Data(body)    => body
-    case Body.Chunked(body) => body.slurp(maxSize = 10*1024*1024)
+  given HttpReadable[Bytes] with
+    def read(body: Body): Bytes throws TooMuchData = body match
+      case Body.Empty         => IArray()
+      case Body.Data(body)    => body
+      case Body.Chunked(body) => body.slurp(maxSize = 10*1024*1024)
 
 trait HttpReadable[+T]:
-  def read(body: Body): T
+  def read(body: Body): T throws TooMuchData
 
 case class HttpResponse(status: HttpStatus, headers: Map[ResponseHeader, List[String]], body: Body):
-  def as[T: HttpReadable]: T = status match
+  def as[T: HttpReadable]: T throws HttpError | TooMuchData = status match
     case status: FailureCase => throw HttpError(status, body)
     case status              => summon[HttpReadable[T]].read(body)
 
@@ -126,9 +128,9 @@ object Http:
 
   private def request[T: Postable](url: String, content: T, method: Method,
                                        headers: Seq[RequestHeader.Value]): HttpResponse =
-    URL(url).openConnection match
+    URL(url).openConnection.nn match
       case conn: HttpURLConnection =>
-        conn.setRequestMethod(method.toString.toUpperCase)
+        conn.setRequestMethod(method.toString.upper)
         
         conn.setRequestProperty(RequestHeader.ContentType.header, summon[Postable[T]]
           .contentType.toString)
@@ -141,7 +143,7 @@ object Http:
         
         if method == Method.Post || method == Method.Put then
           conn.setDoOutput(true)
-          val out = conn.getOutputStream()
+          val out = conn.getOutputStream().nn
           out.write(summon[Postable[T]].content(content).to(Array))
           out.close()
 
@@ -155,14 +157,14 @@ object Http:
        
 
         def body: Body =
-          try read(conn.getInputStream) catch Exception =>
-            try read(conn.getErrorStream) catch Exception => Body.Empty
+          try read(conn.getInputStream.nn) catch Exception =>
+            try read(conn.getErrorStream.nn) catch Exception => Body.Empty
         
         val HttpStatus(status) = conn.getResponseCode: @unchecked
         
         val responseHeaders =
-          conn.getHeaderFields.asScala.flatMap {
-            case (null, v)              => Nil
+          conn.getHeaderFields.nn.asScala.flatMap {
+            //case (null, v)              => Nil
             case (ResponseHeader(k), v) => List((k, v.asScala.to(List)))
           }.to(Map)
 
@@ -173,7 +175,7 @@ object Http:
             
 case class HttpError(status: HttpStatus & FailureCase, body: Body)
     extends Exception(s"HTTP Error ${status.code}: ${status.description}"):
-  def as[T: HttpReadable]: T = summon[HttpReadable[T]].read(body)
+  def as[T: HttpReadable]: T throws TooMuchData = summon[HttpReadable[T]].read(body)
 
 trait FailureCase
 
@@ -348,7 +350,7 @@ object MediaType:
     def serialize(mediaType: MediaType): String = mediaType.toString
 
 case class MediaType(mediaType: MediaType.MainType, mediaSubtype: String):
-  override def toString = s"${mediaType.toString.toLowerCase}/$mediaSubtype"
+  override def toString = s"${mediaType.toString.lower}/$mediaSubtype"
 
 extension (ctx: StringContext)
   def uri(subs: String*): Uri =
