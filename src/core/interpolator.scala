@@ -1,6 +1,6 @@
 /*
 
-    Litterateur, version 0.4.0. Copyright 2019-20 Jon Pretty, Propensive OÜ.
+    Punctuation, version 0.4.0. Copyright 2019-21 Jon Pretty, Propensive OÜ.
 
     The primary distribution site is: https://propensive.com/
 
@@ -14,7 +14,7 @@
     See the License for the specific language governing permissions and limitations under the License.
 
 */
-package litterateur
+package punctuation
 
 import rudiments.*
 import contextual.*
@@ -25,14 +25,17 @@ enum MdInput:
 
 object MdInterpolator extends Interpolator[MdInput, String, Markdown.Root[Markdown]]:
   
-  def complete(state: String): Markdown.Root[Markdown] = Markdown.parse[Markdown](state)
+  def complete(state: String): Markdown.Root[Markdown] throws ParseError =
+    try Markdown.parse[Markdown](state)
+    catch case MalformedMarkdown(msg) => throw ParseError("could not parse markdown")
+
   def initial: String = ""
   
-  def insert(state: String, value: Option[MdInput]): String = value match
+  def insert(state: String, value: Option[MdInput]): String throws ParseError = value match
     case Some(MdInput.Block(content))  => str"$state\n$content\n"
     case Some(MdInput.Inline(content)) => str"$state$content"
     case None                          => ""
    
-  def parse(state: String, next: String): String = state+next
+  def parse(state: String, next: String): String throws ParseError = state+next
 
 given Insertion[String, String] = identity(_)

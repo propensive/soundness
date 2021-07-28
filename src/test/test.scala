@@ -1,6 +1,6 @@
 /*
 
-    Litterateur, version 0.4.0. Copyright 2019-20 Jon Pretty, Propensive OÜ.
+    Punctuation, version 0.4.0. Copyright 2019-21 Jon Pretty, Propensive OÜ.
 
     The primary distribution site is: https://propensive.com/
 
@@ -14,11 +14,11 @@
     See the License for the specific language governing permissions and limitations under the License.
 
 */
-package litterateur
+package punctuation
 
 import probably._
 
-object Tests extends Suite("Litterateur tests") {
+object Tests extends Suite("Punctuation tests") {
 
   def run(test: Runner): Unit = {
     test("get a heading") {

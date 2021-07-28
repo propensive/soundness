@@ -1,6 +1,6 @@
 /*
 
-    Litterateur, version 0.4.0. Copyright 2019-20 Jon Pretty, Propensive OÜ.
+    Punctuation, version 0.4.0. Copyright 2019-21 Jon Pretty, Propensive OÜ.
 
     The primary distribution site is: https://propensive.com/
 
@@ -14,7 +14,7 @@
     See the License for the specific language governing permissions and limitations under the License.
 
 */
-package litterateur
+package punctuation
 
 import honeycomb.*
 import rudiments.*
@@ -31,10 +31,11 @@ extension (value: PhrasingContent)
 
 open class HtmlConverter():
   def outline(node: Markdown): Seq[Content[Flow]] =
-    convert(Markdown.parse[FlowContent](headOutline(node).join("\n")))
+    try convert(Markdown.parse[FlowContent](headOutline(node).join("\n")))
+    catch case MalformedMarkdown(_) => Nil
   
   def slug(str: String): String =
-    str.toLowerCase.replaceAll("[^a-z0-9]", "-").replaceAll("--*", "-")
+    str.lower.replaceAll("[^a-z0-9]", "-").nn.replaceAll("--*", "-").nn
 
   def headOutline(node: Markdown): Seq[String] = node match
     case Markdown.Root(children*) =>
@@ -121,4 +122,4 @@ open class HtmlConverter():
       nonInteractive(other)
 
   def escape(str: String): String =
-    str.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;")
+    str.replaceAll("&", "&amp;").nn.replaceAll("<", "&lt;").nn.replaceAll(">", "&gt;").nn

@@ -1,6 +1,6 @@
 /*
 
-    Litterateur, version 0.4.0. Copyright 2019-20 Jon Pretty, Propensive OÜ.
+    Punctuation, version 0.4.0. Copyright 2019-21 Jon Pretty, Propensive OÜ.
 
     The primary distribution site is: https://propensive.com/
 
@@ -14,7 +14,7 @@
     See the License for the specific language governing permissions and limitations under the License.
 
 */
-package litterateur
+package punctuation
 
 import rudiments.*
 
@@ -25,28 +25,28 @@ import annotation.tailrec
 import scala.reflect.Typeable
 import scala.collection.JavaConverters.*
 
-case class MalformedMarkdown(message: String) extends Exception(str"litterateur: $message")
-
-case class UnexpectedMarkdown(other: Markdown)
-extends Exception(str"litterateur: found unexpected Markdown node (${other.toString})")
+case class MalformedMarkdown(message: String) extends Exception(str"punctuation: $message")
 
 object Markdown:
   private val options = MutableDataSet()
   options.set(Parser.INLINE_DELIMITER_DIRECTIONAL_PUNCTUATIONS, java.lang.Boolean.TRUE)
   options.set(Parser.EXTENSIONS, java.util.Arrays.asList(TablesExtension.create()))
-  private val parser = Parser.builder(options).build()
+  private val parser = Parser.builder(options).nn.build().nn
 
-  def parse[T <: Markdown: Typeable](string: String): Root[T] =
-    val root = parser.parse(string)
-    val nodes = root.getChildIterator.asScala.to(List).map(convert(root, _))
+  def parse[T <: Markdown: Typeable](string: String): Root[T] throws MalformedMarkdown =
+    val root = parser.parse(string).nn
+    val nodes = root.getChildIterator.nn.asScala.to(List).map(convert(root, _))
     
     Root(nodes.collect {
       case child: T => child
-      case other    => throw UnexpectedMarkdown(other)
+      case other    => throw MalformedMarkdown("found an unexpected markdown node type")
     }*)
 
-  def parsePhrase(string: String): Root[PhrasingContent] = parse[PhrasingContent](string)
-  def parseDocument(string: String): Root[Markdown] = parse[Markdown](string)
+  def parsePhrase(string: String): Root[PhrasingContent] throws MalformedMarkdown =
+    parse[PhrasingContent](string)
+  
+  def parseDocument(string: String): Root[Markdown] throws MalformedMarkdown =
+    parse[Markdown](string)
 
   @tailrec
   private def coalesce[M >: Text <: Markdown](xs: List[M], done: List[M] = Nil): List[M] = xs match
@@ -65,43 +65,50 @@ object Markdown:
         case chr  => format(str, buf, i + 1, chr)
     else buf.toString
 
-  private def resolveReference(root: cvfa.Document, node: cvfa.ImageRef | cvfa.LinkRef): String =
+  private def resolveReference(root: cvfa.Document, node: cvfa.ImageRef | cvfa.LinkRef)
+      : String throws MalformedMarkdown =
     Option(node.getReferenceNode(root)).fold {
       throw MalformedMarkdown(str"the image reference could not be resolved")
-    } (_.getUrl.toString)
+    } (_.nn.getUrl.toString)
 
   type PhrasingInput = cvfa.Emphasis | cvfa.StrongEmphasis | cvfa.Code | cvfa.HardLineBreak | cvfa.Image |
       cvfa.ImageRef | cvfa.Link | cvfa.LinkRef | cvfa.MailLink | cvfa.Text
 
-  def phrasingChildren(root: cvfa.Document, node: cvfa.Node): Seq[PhrasingContent] =
-    coalesce(node.getChildren.iterator.asScala.to(List).collect {
+  def phrasingChildren(root: cvfa.Document, node: cvfa.Node)
+      : Seq[PhrasingContent] throws MalformedMarkdown =
+    coalesce(node.getChildren.nn.iterator.nn.asScala.to(List).collect {
       case node: PhrasingInput => phrasing(root, node)
     })
   
-  def flowChildren(root: cvfa.Document, node: cvfa.Node): Seq[FlowContent] =
-    node.getChildren.iterator.asScala.to(List).collect { case node: FlowInput => flow(root, node) }
+  def flowChildren(root: cvfa.Document, node: cvfa.Node)
+      : Seq[FlowContent] throws MalformedMarkdown =
+    node.getChildren.nn.iterator.nn.asScala.to(List).collect {
+      case node: FlowInput => flow(root, node)
+    }
   
-  def listItems(root: cvfa.Document, node: cvfa.BulletList | cvfa.OrderedList): Seq[ListItem] =
-    node.getChildren.iterator.asScala.to(List).collect {
+  def listItems(root: cvfa.Document, node: cvfa.BulletList | cvfa.OrderedList)
+      : Seq[ListItem] throws MalformedMarkdown =
+    node.getChildren.nn.iterator.nn.asScala.to(List).collect {
       case node: (cvfa.BulletListItem | cvfa.OrderedListItem) => ListItem(flowChildren(root, node)*)
     }
 
-  def phrasing(root: cvfa.Document, node: PhrasingInput): PhrasingContent = node match
-    case node: cvfa.Emphasis       => Emphasis(phrasingChildren(root, node)*)
-    case node: cvfa.StrongEmphasis => Strong(phrasingChildren(root, node)*)
-    case node: cvfa.Code           => InlineCode(node.getText.toString)
-    case node: cvfa.HardLineBreak  => Break()
-    case node: cvfa.Image          => Image(node.getText.toString, node.getUrl.toString)
-    case node: cvfa.ImageRef       => Image(node.getText.toString, resolveReference(root, node))
-    case node: cvfa.Link           => Link(node.getUrl.toString, phrasingChildren(root, node)*)
-    case node: cvfa.LinkRef        => Link(resolveReference(root, node), phrasingChildren(root, node)*)
-    case node: cvfa.MailLink       => Link(node.getText.toString, Text(s"mailto:${node.getText}"))
-    case node: cvfa.Text           => Text(node.getChars.toString)
+  def phrasing(root: cvfa.Document, node: PhrasingInput): PhrasingContent throws MalformedMarkdown =
+    node match
+      case node: cvfa.Emphasis       => Emphasis(phrasingChildren(root, node)*)
+      case node: cvfa.StrongEmphasis => Strong(phrasingChildren(root, node)*)
+      case node: cvfa.Code           => InlineCode(node.getText.toString)
+      case node: cvfa.HardLineBreak  => Break()
+      case node: cvfa.Image          => Image(node.getText.toString, node.getUrl.toString)
+      case node: cvfa.ImageRef       => Image(node.getText.toString, resolveReference(root, node))
+      case node: cvfa.Link           => Link(node.getUrl.toString, phrasingChildren(root, node)*)
+      case node: cvfa.LinkRef        => Link(resolveReference(root, node), phrasingChildren(root, node)*)
+      case node: cvfa.MailLink       => Link(node.getText.toString, Text(s"mailto:${node.getText}"))
+      case node: cvfa.Text           => Text(node.getChars.toString)
 
   type FlowInput = cvfa.BlockQuote | cvfa.BulletList | cvfa.CodeBlock | cvfa.FencedCodeBlock |
       cvfa.ThematicBreak | cvfa.Paragraph | cvfa.IndentedCodeBlock | cvfa.Heading | cvfa.OrderedList
 
-  def flow(root: cvfa.Document, node: FlowInput): FlowContent =
+  def flow(root: cvfa.Document, node: FlowInput): FlowContent throws MalformedMarkdown =
     node match
       case node: cvfa.BlockQuote        => Blockquote(flowChildren(root, node)*)
       case node: cvfa.BulletList        => MdList(ordered = false, start = 1, loose = node.isLoose, listItems(root, node)*)
@@ -116,23 +123,28 @@ object Markdown:
         case lvl@(1 | 2 | 3 | 4 | 5 | 6) => Heading(lvl, phrasingChildren(root, node)*)
         case _                           => throw MalformedMarkdown("the heading level is not in the range 1-6")
       
-  def convert(root: cvfa.Document, node: cvfa.Node, noFormat: Boolean = false): Markdown = node match
-    case node: cvfa.HardLineBreak => Break()
-    case node: cvfa.SoftLineBreak => Text("\n")
-    case node: cvfa.Reference     => Reference(node.getReference.toString, node.getUrl.toString)
-    case node: cvfa.Text          => Text(if noFormat then node.getChars.toString else format(node.getChars.toString))
-    case node: cvfa.ThematicBreak => ThematicBreak()
-    case node: tables.TableBlock  => Table(table(root, node)*)
-    case node: FlowInput          => flow(root, node)
-    case node: PhrasingInput      => phrasing(root, node)
+  def convert(root: cvfa.Document, node: cvfa.Node, noFormat: Boolean = false)
+      : Markdown throws MalformedMarkdown =
+    node match
+      case node: cvfa.HardLineBreak => Break()
+      case node: cvfa.SoftLineBreak => Text("\n")
+      case node: cvfa.Reference     => Reference(node.getReference.toString, node.getUrl.toString)
+      case node: cvfa.Text          => Text(if noFormat then node.getChars.toString else format(node.getChars.toString))
+      case node: cvfa.ThematicBreak => ThematicBreak()
+      case node: tables.TableBlock  => Table(table(root, node)*)
+      case node: FlowInput          => flow(root, node)
+      case node: PhrasingInput      => phrasing(root, node)
+      case node: cvfa.Node          => throw MalformedMarkdown("unexpected Markdown node")
   
-  def table(root: cvfa.Document, node: tables.TableBlock): List[TablePart] =
-    node.getChildren.iterator.asScala.to(List).collect {
+  def table(root: cvfa.Document, node: tables.TableBlock)
+      : List[TablePart] throws MalformedMarkdown =
+    node.getChildren.nn.iterator.nn.asScala.to(List).collect {
       case node: (tables.TableHead | tables.TableBody) =>
-        val rows: Seq[Row] = node.getChildren.iterator.asScala.to(List).collect {
-          case row: tables.TableRow => Row(node.getChildren.iterator.asScala.to(List).collect {
-            case cell: tables.TableCell => tableCell(root, cell)
-          }*)
+        val rows: Seq[Row] = node.getChildren.nn.iterator.nn.asScala.to(List).collect {
+          case row: tables.TableRow =>
+            Row(node.getChildren.nn.iterator.nn.asScala.to(List).collect {
+              case cell: tables.TableCell => tableCell(root, cell)
+            }*)
         }
 
         node match
@@ -141,7 +153,7 @@ object Markdown:
       
     }
     
-  def tableCell(root: cvfa.Document, node: tables.TableCell): Cell =
+  def tableCell(root: cvfa.Document, node: tables.TableCell): Cell throws MalformedMarkdown =
     Cell(phrasingChildren(root, node)*)
 
 type PhrasingContent = Break | Emphasis | HtmlNode | Image | InlineCode | Strong | Text | Link

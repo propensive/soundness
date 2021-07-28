@@ -7,9 +7,5 @@
 #
 # For more information, please visit https://propensive.com/fury/
 #
-layerRef	QmYDJvazcsQokgLEDL77ZmMaMv6AU9ZHCHyXHyxgEGhwi7
-published	Some	url	fury://vent.dev/propensive/litterateur
-		version	5
-		layerRef	QmZJ4LMDszqaafsjQzrteWC7vPgpXBhrp2bisbNLrHEg6U
-		expiry	Some	1607300435990
+layerRef	QmfKh3k8CmBxBWjqLb8YhyfTBBi9b5iqH3faC3oShQgwt8
 # vim: set noai ts=12 sw=12:
