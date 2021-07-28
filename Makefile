@@ -12,7 +12,7 @@ bin/sbt: bin/cs
 	chmod +x bin/sbt
 
 bin/scalac: bin/sbt scala/src
-	cd scala && bin/sbt dist/packArchive
+	cd scala && ../bin/sbt dist/packArchive
 	cp scala/bin/scalac bin/scalac
 
 out:
