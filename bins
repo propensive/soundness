@@ -1,0 +1,26 @@
+rudiments/core: org.scala-lang:scala3-library_3:3.0.1
+acyclicity/core:
+cataract/core:
+contextual/core:
+cosmopolite:
+escritoire/core:
+euphemism/core: org.typelevel:jawn-parser_3:1.2.0
+gastronomy/core:
+guillotine/core:
+honeycomb/core:
+iridescence/core:
+jovian/core:
+kaleidoscope/core:
+punctuation/core: com.vladsch.flexmark:flexmark:0.36.8 com.vladsch.flexmark:flexmark-ext-gfm-tables:0.36.8
+punctuation/html:
+probably/core:
+probably/cli:
+probably/tolerance:
+scintillate/core:
+scintillate/server:
+scintillate/servlet: javax.servlet:javax.servlet-api:3.0.1
+simplistic/html:
+simplistic/http:
+simplistic/css:
+slalom/core:
+wisteria/core:

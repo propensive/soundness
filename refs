@@ -1,0 +1,26 @@
+rudiments/core:
+acyclicity/core: contextual/core
+cataract/core: simplistic/html simplistic/http iridescence/core
+contextual/core: rudiments/core
+cosmopolite: rudiments/core
+escritoire/core: rudiments/core
+euphemism/core: wisteria/core
+gastronomy/core: kaleidoscope/core wisteria/core
+guillotine/core: contextual/core
+honeycomb/core: simplistic/css simplistic/http simplistic/html rudiments/core
+iridescence/core: rudiments/core
+jovian/core: simplistic/html gastronomy/core slalom/core
+kaleidoscope/core: rudiments/core
+punctuation/core: simplistic/html punctuation
+punctuation/html: punctuation/core honeycomb/core
+probably/core: escritoire/core
+probably/cli: probably/core
+probably/tolerance: probably/core
+scintillate/core: simplistic/html wisteria/core
+scintillate/server: gastronomy/core scintillate/core simplistic/http
+scintillate/servlet: scintillate/server slalom/core
+simplistic/html:
+simplistic/http:
+simplistic/css:
+slalom/core: rudiments/core
+wisteria/core: rudiments/core

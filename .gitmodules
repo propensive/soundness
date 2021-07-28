@@ -10,3 +10,71 @@
 	path = mod/kaleidoscope
 	url = https://github.com/propensive/kaleidoscope
 	branch = main
+[submodule "mod/simplistic"]
+	path = mod/simplistic
+	url = https://github.com/propensive/simplistic
+	branch = main
+[submodule "mod/probably"]
+	path = mod/probably
+	url = https://github.com/propensive/probably
+	branch = main
+[submodule "mod/wisteria"]
+	path = mod/wisteria
+	url = https://github.com/propensive/wisteria
+	branch = main
+[submodule "mod/slalom"]
+	path = mod/slalom
+	url = https://github.com/propensive/slalom
+	branch = main
+[submodule "mod/scintillate"]
+	path = mod/scintillate
+	url = https://github.com/propensive/scintillate
+	branch = main
+[submodule "mod/jovian"]
+	path = mod/jovian
+	url = https://github.com/propensive/jovian
+	branch = main
+[submodule "mod/iridescence"]
+	path = mod/iridescence
+	url = https://github.com/propensive/iridescence
+	branch = main
+[submodule "mod/honeycomb"]
+	path = mod/honeycomb
+	url = https://github.com/propensive/honeycomb
+	branch = main
+[submodule "mod/guillotine"]
+	path = mod/guillotine
+	url = https://github.com/propensive/guillotine
+	branch = main
+[submodule "mod/gastronomy"]
+	path = mod/gastronomy
+	url = https://github.com/propensive/gastronomy
+	branch = main
+[submodule "mod/euphemism"]
+	path = mod/euphemism
+	url = https://github.com/propensive/euphemism
+	branch = main
+[submodule "mod/escritoire"]
+	path = mod/escritoire
+	url = https://github.com/propensive/escritoire
+	branch = main
+[submodule "mod/cosmopolite"]
+	path = mod/cosmopolite
+	url = https://github.com/propensive/cosmopolite
+	branch = main
+[submodule "mod/contextual"]
+	path = mod/contextual
+	url = https://github.com/propensive/contextual
+	branch = main
+[submodule "mod/cataract"]
+	path = mod/cataract
+	url = https://github.com/propensive/cataract
+	branch = main
+[submodule "mod/acyclicity"]
+	path = mod/acyclicity
+	url = https://github.com/propensive/acyclicity
+	branch = main
+[submodule "mod/punctuation"]
+	path = mod/punctuation
+	url = https://github.com/propensive/punctuation
+	branch = main
