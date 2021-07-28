@@ -11,9 +11,8 @@ bin/sbt: bin/cs
 	cp /home/runner/.local/share/coursier/bin/sbt bin/sbt
 	chmod +x bin/sbt
 
-bin/scalac: bin/sbt scala/src
+scala/bin/scalac: bin/sbt scala/src
 	cd scala && ../bin/sbt dist/packArchive
-	cp scala/bin/scalac bin/scalac
 
 out:
 	mkdir -p out
@@ -24,5 +23,19 @@ scala/src:
 mod/rudiments/src:
 	git submodule update --init mod/rudiments
 
-out/rudiments: out mod/rudiments/src bin/scalac
-	bin/scalac -d out rudiments/src/core/*.scala
+out/rudiments/core: out mod/rudiments/src scala/bin/scalac
+	scala/bin/scalac \
+	  -language:experimental.saferExceptions \
+	  -new-syntax \
+	  -Ysafe-init \
+	  -feature \
+	  -Xcheck-macros \
+	  -Ycheck-all-patmat \
+	  -Yexplicit-nulls \
+	  -d out rudiments/src/core/*.scala
+
+pub:
+	mkdir -p pub
+
+pub/rudiments-core.jar: pub out/rudiments/core
+	jar cf pub/rudiments-core.jar -C out rudiments
