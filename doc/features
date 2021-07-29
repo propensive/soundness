@@ -1,0 +1,3 @@
+- minimalistic typeclass interfaces
+- integration for HTTP, HTML and CSS
+- used by [Honeycomb](https://github.com/propensive/honeycomb/), [Cataract](https://github.com/propensive/cataract/) and [Scintillate](https://github.com/propensive/scintillate/)
