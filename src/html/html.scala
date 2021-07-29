@@ -1,5 +1,5 @@
 /*
-    , version . Copyright -21 Jon Pretty, Propensive OÜ.
+    Simplistic, version 0.2.0. Copyright 2020-21 Jon Pretty, Propensive OÜ.
 
     The primary distribution site is: https://propensive.com/
 
