@@ -3,9 +3,11 @@
 for MOD in $(ls mod)
 do
   cd mod/$MOD
-  git add doc/releases
-  git commit -a -m 'Build-related updates'
+  git add doc
+  git commit -a -m 'Publishing'
+  git tag "v$(cat doc/version)"
   git push git@github.com:propensive/$MOD main
+  git push --tags git@github.com:propensive/$MOD main
   git pull
   cd ../..
   git add mod/$MOD

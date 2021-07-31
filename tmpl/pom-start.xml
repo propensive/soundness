@@ -3,7 +3,7 @@
     xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">  
   <modelVersion>4.0.0</modelVersion>
   <groupId>com.propensive</groupId>
-  <artifactId>$PROJECT-$MODULE</artifactId>
+  <artifactId>$PROJECT-${MODULE}_3</artifactId>
   <version>$VERSION</version>
   <licenses>
     <license>
@@ -12,8 +12,9 @@
       <distribution>repo</distribution>
     </license>
   </licenses>
-  <packaging>bundle</packaging>
   <name>$NAME</name>
+  <description>$DESCRIPTION</description>
+  <inceptionYear>$YEAR</inceptionYear>
   <url>https://propensive.com/opensource/$PROJECT</url>
   <organization>
     <name>com.propensive</name>

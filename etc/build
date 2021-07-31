@@ -3,7 +3,6 @@
 declare -A checksums
 
 function classpath() {
-  echo "Calculating classpath for $1" >&2
   local MOD="$1"
   local PROJECT="$(echo $MOD | cut -d/ -f1)"
   local VERSION="$(cat mod/$PROJECT/doc/version)"
@@ -39,6 +38,24 @@ function refs() {
   cat refs | grep "$(pattern $1):" | cut -d':' -f2
 }
 
+function deploy() {
+  local PROJECT="$1"
+  local MODULE="$2"
+  local VERSION="$3"
+
+  mvn deploy:deploy-file \
+    -Durl=https://oss.sonatype.org/service/local/staging/deploy/maven2/ \
+    -Dpackaging=jar \
+    -DpomFile=pub/$PROJECT/$PROJECT-${MODULE}_3-$VERSION.pom \
+    -Dfile=pub/$PROJECT/$PROJECT-${MODULE}_3-$VERSION.jar \
+    -Dsources=pub/$PROJECT/$PROJECT-${MODULE}_3-$VERSION-sources.jar \
+    -Djavadoc=pub/$PROJECT/$PROJECT-${MODULE}_3-$VERSION-javadoc.jar \
+    -DrepositoryId=mavencentral \
+    -Dfiles=pub/$PROJECT/$PROJECT-${MODULE}_3-$VERSION.jar.asc,pub/$PROJECT/$PROJECT-${MODULE}_3-$VERSION.pom.asc,pub/$PROJECT/$PROJECT-${MODULE}_3-$VERSION-sources.jar.asc,pub/$PROJECT/$PROJECT-${MODULE}_3-$VERSION-javadoc.jar.asc \
+    -Dclassifiers=,,sources,javadoc \
+    -Dtypes=jar.asc,pom.asc,jar.asc,jar.asc
+}
+
 function jarfile() {
   echo "pub/$(project $1)/$(project $1)-$(module $1)_3-$(version $1).jar"
 }
@@ -52,7 +69,6 @@ function checksum() {
   local PROJECT="$(project $1)"
   if [ "${checksums[$PROJECT]}" = "" ]
   then
-    echo "Calculating checksum for $1" >&2
     local CHECKSUM="$( (for REF in $(refs $MOD) ; do echo "$(checksum $REF)" ; done && cat mod/$(project $MOD)/src/*/*.scala) | sha1sum | cut -d' ' -f1)"
     checksums[$PROJECT]="$CHECKSUM"
     echo $CHECKSUM
@@ -71,7 +87,6 @@ function nextVersion() {
 }
 
 function version() {
-  echo "Calculating version for $1" >&2
   local VERSION="$(grep "$(checksum $1)" $(docdir $1)/releases | cut -d' ' -f2)"
   if [ "$VERSION" = "" ]
   then
@@ -90,8 +105,12 @@ function build() {
   local PROJECT="$(echo $MOD | cut -d/ -f1)"
   local MODULE="$(echo $MOD | cut -d/ -f2)"
   local NAME="$(cat mod/$PROJECT/doc/title)"
+  local DESCRIPTION="$(cat mod/$PROJECT/doc/slogan)"
+  local YEAR="$(cat mod/$PROJECT/doc/start)"
   local VERSION="$(version $MOD)"
   local JAR="$(echo $MOD | tr '/' '-')_3-$VERSION.jar"
+  local SRCS="$(echo $MOD | tr '/' '-')_3-$VERSION-sources.jar"
+  local DOCS="$(echo $MOD | tr '/' '-')_3-$VERSION-javadoc.jar"
   local POM="$(echo $MOD | tr '/' '-')_3-$VERSION.pom"
   local ID="$(echo $MOD | cut -d/ -f2)"
   local SRC="mod/$PROJECT/src/$ID"
@@ -119,38 +138,41 @@ function build() {
     scala/bin/scalac ${CPF}${CP%?} -d out -new-syntax -Ysafe-init -feature -Xcheck-macros -Ycheck-all-patmat -Yexplicit-nulls -language:experimental.saferExceptions $SRC/*.scala && \
         jar cf "pub/$PROJECT/$JAR" -C out "$PROJECT" && \
 	echo $VERSION > "mod/$PROJECT/doc/version"
+    jar cf "pub/$PROJECT/$SRCS" -C mod/$PROJECT/src $MODULE
+    jar cf "pub/$PROJECT/$DOCS" -C mod/$PROJECT doc
 
-    export PROJECT VERSION MODULE NAME
-    cat tmpl/pom-start.xml | envsubst > "pub/$PROJECT/$POM"
+    (
+      export PROJECT VERSION MODULE NAME DESCRIPTION YEAR
+      cat tmpl/pom-start.xml | envsubst
+    ) > "pub/$PROJECT/$POM"
     
     for REF in $REFS
     do
-      export GROUP="com.propensive"
-      export ARTIFACT="$(echo $REF | tr / '-')"
-      PROJ="$(echo $REF | cut -d/ -f1)"
-      export VERSION="$(cat "mod/$PROJ/doc/version")"
-      cat tmpl/dependency.xml | envsubst >> "pub/$PROJECT/$POM"
+      (
+        export GROUP="com.propensive"
+        export ARTIFACT="$(echo $REF | tr / '-')"
+        PROJ="$(echo $REF | cut -d/ -f1)"
+        export VERSION="$(cat "mod/$PROJ/doc/version")"
+        cat tmpl/dependency.xml | envsubst
+      ) >> "pub/$PROJECT/$POM"
     done
     
     for BIN in $BINS org.scala-lang:scala3-library_3:3.0.1
     do
-      export GROUP="$(echo $BIN | cut -d: -f1)"
-      export ARTIFACT="$(echo $BIN | cut -d: -f2)"
-      export VERSION="$(echo $BIN | cut -d: -f3)"
-      cat tmpl/dependency.xml | envsubst >> "pub/$PROJECT/$POM"
+      (
+        export GROUP="$(echo $BIN | cut -d: -f1)"
+        export ARTIFACT="$(echo $BIN | cut -d: -f2)"
+        export VERSION="$(echo $BIN | cut -d: -f3)"
+        cat tmpl/dependency.xml | envsubst
+      ) >> "pub/$PROJECT/$POM"
     done
     
     cat tmpl/pom-end.xml >> "pub/$PROJECT/$POM"
     gpg -ab "pub/$PROJECT/$POM"
     gpg -ab "pub/$PROJECT/$JAR"
-    echo $(md5sum "pub/$PROJECT/$POM" | head -c 32) > "pub/$PROJECT/$POM.md5"
-    echo $(md5sum "pub/$PROJECT/$POM.asc" | head -c 32) > "pub/$PROJECT/$POM.asc.md5"
-    echo $(md5sum "pub/$PROJECT/$JAR" | head -c 32) > "pub/$PROJECT/$JAR.md5"
-    echo $(md5sum "pub/$PROJECT/$JAR.asc" | head -c 32) > "pub/$PROJECT/$JAR.asc.md5"
-    echo $(sha1sum "pub/$PROJECT/$POM" | head -c 40) > "pub/$PROJECT/$POM.sha1"
-    echo $(sha1sum "pub/$PROJECT/$POM.asc" | head -c 40) > "pub/$PROJECT/$POM.asc.sha1"
-    echo $(sha1sum "pub/$PROJECT/$JAR" | head -c 40) > "pub/$PROJECT/$JAR.sha1"
-    echo $(sha1sum "pub/$PROJECT/$JAR.asc" | head -c 40) > "pub/$PROJECT/$JAR.asc.sha1"
+    gpg -ab "pub/$PROJECT/$SRCS"
+    gpg -ab "pub/$PROJECT/$DOCS"
+    deploy "$PROJECT" "$MODULE" "$VERSION"
   fi
 }
 
@@ -160,5 +182,3 @@ ALL="$(cat refs | cut -d: -f1)"
 for REF in $ALL; do
   build $REF
 done
-
-
