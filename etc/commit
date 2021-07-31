@@ -1,0 +1,12 @@
+#!/bin/bash
+
+for MOD in $(ls mod)
+do
+  cd mod/$MOD
+  git add doc/releases
+  git commit -a -m 'Build-related updates'
+  git push git@github.com:propensive/$MOD main
+  git pull
+  cd ../..
+  git add mod/$MOD
+done

@@ -117,7 +117,8 @@ function build() {
     echo "Building $MOD..."
     mkdir -p "pub/$PROJECT"
     scala/bin/scalac ${CPF}${CP%?} -d out -new-syntax -Ysafe-init -feature -Xcheck-macros -Ycheck-all-patmat -Yexplicit-nulls -language:experimental.saferExceptions $SRC/*.scala && \
-        jar cf "pub/$PROJECT/$JAR" -C out "$PROJECT" && echo $VERSION > "mod/$PROJECT/doc/version" && echo "$( (cat mod/$PROJECT/src/*/*.scala && classpath "$MOD") | sha1sum | cut -d' ' -f1)" > "mod/$PROJECT/doc/checksum"
+        jar cf "pub/$PROJECT/$JAR" -C out "$PROJECT" && \
+	echo $VERSION > "mod/$PROJECT/doc/version"
 
     export PROJECT VERSION MODULE NAME
     cat tmpl/pom-start.xml | envsubst > "pub/$PROJECT/$POM"
