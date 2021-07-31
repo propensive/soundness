@@ -1,0 +1,163 @@
+#!/bin/bash
+
+declare -A checksums
+
+function classpath() {
+  echo "Calculating classpath for $1" >&2
+  local MOD="$1"
+  local PROJECT="$(echo $MOD | cut -d/ -f1)"
+  local VERSION="$(cat mod/$PROJECT/doc/version)"
+  local JAR="$(echo $MOD | tr '/' '-')_3-$VERSION.jar"
+  local PATTERN="$(echo $MOD | tr '/' '.')"
+  local REFS="$(cat refs | grep "$PATTERN:" | cut -d: -f2)"
+  local BINS="$(cat bins | grep "$PATTERN:" | sed 's/^[^:]*: //')"
+  
+  for REF in $REFS; do
+    classpath $REF
+  done | sort | uniq
+  
+  for BIN in $BINS; do
+    cs fetch $BIN
+  done | sort | uniq
+
+  echo "pub/$PROJECT/$JAR"
+}
+
+function project() {
+  echo $1 | cut -d/ -f1
+}
+
+function module() {
+  echo $1 | cut -d/ -f2
+}
+
+function pattern() {
+  echo $1 | tr '/' '.'
+}
+
+function refs() {
+  cat refs | grep "$(pattern $1):" | cut -d':' -f2
+}
+
+function jarfile() {
+  echo "pub/$(project $1)/$(project $1)-$(module $1)_3-$(version $1).jar"
+}
+
+function pomfile() {
+  echo "pub/$(project $1)/$(project $1)-$(module $1)_3-$(version $1).pom"
+}
+
+function checksum() {
+  local MOD="$1"
+  local PROJECT="$(project $1)"
+  if [ "${checksums[$PROJECT]}" = "" ]
+  then
+    echo "Calculating checksum for $1" >&2
+    local CHECKSUM="$( (for REF in $(refs $MOD) ; do echo "$(checksum $REF)" ; done && cat mod/$(project $MOD)/src/*/*.scala) | sha1sum | cut -d' ' -f1)"
+    checksums[$PROJECT]="$CHECKSUM"
+    echo $CHECKSUM
+  else
+    echo "${checksums[$PROJECT]}"
+  fi
+}
+
+function docdir() {
+  echo "mod/$(project $1)/doc"
+}
+
+function nextVersion() {
+  let NEXT="$(echo $1 | cut -d. -f2) + 1"
+  echo $(echo $1 | cut -d. -f1).$NEXT.0
+}
+
+function version() {
+  echo "Calculating version for $1" >&2
+  local VERSION="$(grep "$(checksum $1)" $(docdir $1)/releases | cut -d' ' -f2)"
+  if [ "$VERSION" = "" ]
+  then
+    local CURRENT="$(cat $(docdir $1)/version)"
+    echo "Current version is $CURRENT" >&2
+    echo "$(checksum $1) $(nextVersion "$CURRENT")" >> $(docdir $1)/releases
+    echo "Next version is $(nextVersion "$CURRENT")" >&2
+    echo "$(nextVersion "$CURRENT")"
+  else
+    echo "$VERSION"
+  fi
+}
+
+function build() {
+  local MOD="$1"
+  local PROJECT="$(echo $MOD | cut -d/ -f1)"
+  local MODULE="$(echo $MOD | cut -d/ -f2)"
+  local NAME="$(cat mod/$PROJECT/doc/title)"
+  local VERSION="$(version $MOD)"
+  local JAR="$(echo $MOD | tr '/' '-')_3-$VERSION.jar"
+  local POM="$(echo $MOD | tr '/' '-')_3-$VERSION.pom"
+  local ID="$(echo $MOD | cut -d/ -f2)"
+  local SRC="mod/$PROJECT/src/$ID"
+  local PATTERN="$(echo $MOD | tr '/' '.')"
+  local REFS="$(cat refs | grep "$PATTERN:" | cut -d: -f2)"
+  local BINS="$(cat bins | grep "$PATTERN:" | sed 's/^[^:]*: //')"
+  
+  if [ ! -f pub/$PROJECT/$PROJECT-${MODULE}_3-$VERSION.jar ]; then
+    for REF in $REFS
+    do
+      build "$REF"
+    done
+  
+    local CP="$(classpath "$MOD" | grep -v "$PATTERN" | tr '\n' ':')"
+    echo "Classpath: $CP" >&2
+    
+    if [ -z "$CP" ]; then
+      local CPF=""
+    else
+      local CPF="-classpath:"
+    fi
+   
+    echo "Building $MOD..."
+    mkdir -p "pub/$PROJECT"
+    scala/bin/scalac ${CPF}${CP%?} -d out -new-syntax -Ysafe-init -feature -Xcheck-macros -Ycheck-all-patmat -Yexplicit-nulls -language:experimental.saferExceptions $SRC/*.scala && \
+        jar cf "pub/$PROJECT/$JAR" -C out "$PROJECT" && echo $VERSION > "mod/$PROJECT/doc/version" && echo "$( (cat mod/$PROJECT/src/*/*.scala && classpath "$MOD") | sha1sum | cut -d' ' -f1)" > "mod/$PROJECT/doc/checksum"
+
+    export PROJECT VERSION MODULE NAME
+    cat tmpl/pom-start.xml | envsubst > "pub/$PROJECT/$POM"
+    
+    for REF in $REFS
+    do
+      export GROUP="com.propensive"
+      export ARTIFACT="$(echo $REF | tr / '-')"
+      PROJ="$(echo $REF | cut -d/ -f1)"
+      export VERSION="$(cat "mod/$PROJ/doc/version")"
+      cat tmpl/dependency.xml | envsubst >> "pub/$PROJECT/$POM"
+    done
+    
+    for BIN in $BINS org.scala-lang:scala3-library_3:3.0.1
+    do
+      export GROUP="$(echo $BIN | cut -d: -f1)"
+      export ARTIFACT="$(echo $BIN | cut -d: -f2)"
+      export VERSION="$(echo $BIN | cut -d: -f3)"
+      cat tmpl/dependency.xml | envsubst >> "pub/$PROJECT/$POM"
+    done
+    
+    cat tmpl/pom-end.xml >> "pub/$PROJECT/$POM"
+    gpg -ab "pub/$PROJECT/$POM"
+    gpg -ab "pub/$PROJECT/$JAR"
+    echo $(md5sum "pub/$PROJECT/$POM" | head -c 32) > "pub/$PROJECT/$POM.md5"
+    echo $(md5sum "pub/$PROJECT/$POM.asc" | head -c 32) > "pub/$PROJECT/$POM.asc.md5"
+    echo $(md5sum "pub/$PROJECT/$JAR" | head -c 32) > "pub/$PROJECT/$JAR.md5"
+    echo $(md5sum "pub/$PROJECT/$JAR.asc" | head -c 32) > "pub/$PROJECT/$JAR.asc.md5"
+    echo $(sha1sum "pub/$PROJECT/$POM" | head -c 40) > "pub/$PROJECT/$POM.sha1"
+    echo $(sha1sum "pub/$PROJECT/$POM.asc" | head -c 40) > "pub/$PROJECT/$POM.asc.sha1"
+    echo $(sha1sum "pub/$PROJECT/$JAR" | head -c 40) > "pub/$PROJECT/$JAR.sha1"
+    echo $(sha1sum "pub/$PROJECT/$JAR.asc" | head -c 40) > "pub/$PROJECT/$JAR.asc.sha1"
+  fi
+}
+
+mkdir -p out pub
+
+ALL="$(cat refs | cut -d: -f1)"
+for REF in $ALL; do
+  build $REF
+done
+
+

@@ -1,0 +1,17 @@
+#!/bin/bash
+
+for MOD in mod/*
+do
+  export TITLE="$(cat ${MOD}/doc/title)"
+  export ID="$(cat ${MOD}/doc/id)"
+  export START="$(cat ${MOD}/doc/start)"
+  export YEAR="$(date "+%y")"
+  export VERSION="$(cat ${MOD}/doc/version)"
+  TMP=.tmp.scala
+  cat tmpl/header | envsubst > ${MOD}/.header
+  for FILE in ${MOD}/src/**/*.scala
+  do
+    cat ${MOD}/.header > ${TMP}
+    sed '/\(package\|object\|import\)/,$!d' "${FILE}" >> "${TMP}" && mv "${TMP}" "${FILE}"
+  done && rm ${MOD}/.header
+done

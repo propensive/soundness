@@ -11,8 +11,23 @@ bin/cs: bin
 bin:
 	mkdir -p bin
 
+clean:
+	rm -r pub out
+
 scala/bin/scalac:
 	git submodule update --init scala
 
 mod/%/:
 	git submodule update --init mod/$*
+
+headers:
+	for MOD in mod/*; do \
+	  cat tmpl/header | envsubst > $$MOD/.header ; \
+	  for FILE in $(shell find $$MOD/src -name '*.scala') ; do \
+	    cat $$MOD/.header > $(TMP) ; \
+	    sed '/\(package\|object\|import\)/,$$!d' "$$FILE" >> "$(TMP)" ; \
+	    mv "$(TMP)" "$$FILE" ; \
+	  done && rm $$MOD/.header ; \
+	done
+
+.PHONY: headers
