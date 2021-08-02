@@ -28,8 +28,10 @@ type Bytes = IArray[Byte]
 
 case class TooMuchData() extends Exception(s"the amount of data in the stream exceeds the capacity")
 
+infix type exposes[T, E <: Exception] = T
+
 extension (value: LazyList[Bytes])
-  def slurp(maxSize: Int): Bytes throws TooMuchData =
+  def slurp(maxSize: Int): Bytes exposes TooMuchData =
     value.foldLeft(IArray[Byte]()) { (acc, next) =>
       if acc.length + next.length > maxSize then throw TooMuchData() else acc ++ next
     }
@@ -122,15 +124,15 @@ extension (ctx: StringContext) def str(strings: (String | Int | Char)*): String 
   ctx.parts.head + strings.zip(ctx.parts.tail).map(_.toString+_.toString).mkString
 
 case class Property(name: String) extends Dynamic:
-  def apply(): String throws KeyNotFound =
+  def apply(): String exposes KeyNotFound =
     Option(System.getProperty(name)).getOrElse(throw KeyNotFound(name)).nn
   
   def selectDynamic(key: String): Property = Property(s"$name.$key")
-  def applyDynamic(key: String)(): String throws KeyNotFound = selectDynamic(key).apply()
+  def applyDynamic(key: String)(): String exposes KeyNotFound = selectDynamic(key).apply()
 
 object Sys extends Dynamic:
   def selectDynamic(key: String): Property = Property(key)
-  def applyDynamic(key: String)(): String throws KeyNotFound = selectDynamic(key).apply()
+  def applyDynamic(key: String)(): String exposes KeyNotFound = selectDynamic(key).apply()
 
 case class KeyNotFound(name: String) extends Exception(str"rudiments: key $name not found")
 
