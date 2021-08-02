@@ -135,7 +135,8 @@ function build() {
    
     echo "Building $MOD..."
     mkdir -p "pub/$PROJECT"
-    scala/bin/scalac ${CPF}${CP%?} -d out -new-syntax -Ysafe-init -feature -Xcheck-macros -Ycheck-all-patmat -Yexplicit-nulls -language:experimental.saferExceptions $SRC/*.scala && \
+    #scala/bin/scalac ${CPF}${CP%?} -d out -new-syntax -Ysafe-init -feature -Xcheck-macros -Ycheck-all-patmat -Yexplicit-nulls -language:experimental.saferExceptions $SRC/*.scala && \
+    scalac ${CPF}${CP%?} -d out -new-syntax -Ysafe-init -feature -Xcheck-macros -Ycheck-all-patmat -Yexplicit-nulls $SRC/*.scala && \
         jar cf "pub/$PROJECT/$JAR" -C out "$PROJECT" && \
 	echo $VERSION > "mod/$PROJECT/doc/version"
     jar cf "pub/$PROJECT/$SRCS" -C mod/$PROJECT/src $MODULE

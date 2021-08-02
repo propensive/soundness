@@ -30,4 +30,7 @@ headers:
 	  done && rm $$MOD/.header ; \
 	done
 
+build:
+	etc/build
+
 .PHONY: headers
