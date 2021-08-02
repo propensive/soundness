@@ -71,22 +71,22 @@ enum Method:
 
 object HttpReadable:
   given HttpReadable[String] with
-    def read(body: Body): String throws TooMuchData = body match
+    def read(body: Body): String exposes TooMuchData = body match
       case Body.Empty         => ""
       case Body.Data(body)    => body.string
       case Body.Chunked(body) => body.foldLeft("")(_+_.string)
   
   given HttpReadable[Bytes] with
-    def read(body: Body): Bytes throws TooMuchData = body match
+    def read(body: Body): Bytes exposes TooMuchData = body match
       case Body.Empty         => IArray()
       case Body.Data(body)    => body
       case Body.Chunked(body) => body.slurp(maxSize = 10*1024*1024)
 
 trait HttpReadable[+T]:
-  def read(body: Body): T throws TooMuchData
+  def read(body: Body): T exposes TooMuchData
 
 case class HttpResponse(status: HttpStatus, headers: Map[ResponseHeader, List[String]], body: Body):
-  def as[T: HttpReadable]: T throws HttpError | TooMuchData = status match
+  def as[T: HttpReadable]: T exposes HttpError | TooMuchData = status match
     case status: FailureCase => throw HttpError(status, body)
     case status              => summon[HttpReadable[T]].read(body)
 
@@ -175,7 +175,7 @@ object Http:
             
 case class HttpError(status: HttpStatus & FailureCase, body: Body)
     extends Exception(s"HTTP Error ${status.code}: ${status.description}"):
-  def as[T: HttpReadable]: T throws TooMuchData = summon[HttpReadable[T]].read(body)
+  def as[T: HttpReadable]: T exposes TooMuchData = summon[HttpReadable[T]].read(body)
 
 trait FailureCase
 
