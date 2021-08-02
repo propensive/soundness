@@ -66,10 +66,10 @@ case class PrivateKey[A <: CryptoAlgorithm[?]](private[gastronomy] val privateBy
   
   def public(using A): PublicKey[A] = PublicKey(summon[A].privateToPublic(privateBytes))
   
-  def decrypt[T: ByteCodec](message: Message[A])(using A & Encryption): T throws DecodeFailure =
+  def decrypt[T: ByteCodec](message: Message[A])(using A & Encryption): T exposes DecodeFailure =
     decrypt(message.bytes)
   
-  def decrypt[T: ByteCodec](bytes: Bytes)(using A & Encryption): T throws DecodeFailure =
+  def decrypt[T: ByteCodec](bytes: Bytes)(using A & Encryption): T exposes DecodeFailure =
     summon[ByteCodec[T]].decode(summon[A].decrypt(bytes, privateBytes))
   
   def sign[T: ByteCodec](value: T)(using A & Signing): Signature[A] =
@@ -98,16 +98,16 @@ extends GastronomyException("could not decrypt the message")
 
 trait ByteCodec[T]:
   def encode(value: T): Bytes
-  def decode(bytes: Bytes): T throws DecodeFailure
+  def decode(bytes: Bytes): T exposes DecodeFailure
 
 object ByteCodec:
   given ByteCodec[Bytes] with
     def encode(value: Bytes): Bytes = value
-    def decode(bytes: Bytes): Bytes throws DecodeFailure = bytes
+    def decode(bytes: Bytes): Bytes exposes DecodeFailure = bytes
    
   given ByteCodec[String] with
     def encode(value: String): Bytes = value.bytes
-    def decode(bytes: Bytes): String throws DecodeFailure =
+    def decode(bytes: Bytes): String exposes DecodeFailure =
       val buffer = ByteBuffer.wrap(bytes.unsafeMutable)
       
       try Charset.forName("UTF-8").nn.newDecoder().nn.decode(buffer).toString
