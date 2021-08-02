@@ -55,8 +55,10 @@ object Json extends Dynamic:
     given Serializer[Short] = JNum(_)
     given Serializer[Boolean] = if _ then JTrue else JFalse
     
-    given (using CanThrow[UnexpectedType], CanThrow[LabelNotFound], CanThrow[IndexNotFound])
-        : Serializer[Json] = _.normalize.toOption.get.root
+    // given (using CanThrow[UnexpectedType], CanThrow[LabelNotFound], CanThrow[IndexNotFound])
+    //     : Serializer[Json] = _.normalize.toOption.get.root
+  
+    given Serializer[Json] = _.normalize.toOption.get.root
     
     given Serializer[Nil.type] = value => JArray(Array())
 
@@ -154,7 +156,7 @@ object Json extends Dynamic:
   trait Deserializer[T]:
     def deserialize(json: Option[JValue]): Option[T]
 
-  def parse(str: String): Json throws ParseException = JParser.parseFromString(str) match
+  def parse(str: String): Json exposes ParseException = JParser.parseFromString(str) match
     case Success(value)                   => Json(value, Nil)
     case Failure(err: JawnParseException) => throw ParseException(err.line, err.col, err.msg)
     case Failure(err)                     => throw err
@@ -168,8 +170,8 @@ case class Json(root: JValue, path: List[Int | String] = Nil) extends Dynamic de
   def selectDynamic(field: String): Json = this(field)
   def applyDynamic(field: String)(idx: Int): Json = this(field)(idx)
 
-  def normalize: Json throws IndexNotFound | LabelNotFound | UnexpectedType =
-    def deref(value: JValue, path: List[Int | String]): JValue throws IndexNotFound |
+  def normalize: Json exposes IndexNotFound | LabelNotFound | UnexpectedType =
+    def deref(value: JValue, path: List[Int | String]): JValue exposes IndexNotFound |
         UnexpectedType | LabelNotFound = path match
       case Nil =>
         value
@@ -192,7 +194,7 @@ case class Json(root: JValue, path: List[Int | String] = Nil) extends Dynamic de
       
     Json(deref(root, path.reverse), Nil)
 
-  def as[T: Json.Deserializer]: T throws DeserializationException | UnexpectedType | LabelNotFound | IndexNotFound =
+  def as[T: Json.Deserializer]: T exposes DeserializationException | UnexpectedType | LabelNotFound | IndexNotFound =
     summon[Json.Deserializer[T]]
       .deserialize(Some(normalize.root))
       .getOrElse(throw DeserializationException())
