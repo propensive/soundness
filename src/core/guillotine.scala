@@ -63,7 +63,7 @@ case class ExecError(command: Command, stdout: Stream, stderr: Stream) extends E
 object Sh extends Interpolator[List[String], State, Command]:
   import Context.*
   
-  def complete(state: State): Command throws ParseError =
+  def complete(state: State): Command exposes ParseError =
     val args = state.current match
       case Quotes2        => throw ParseError("the double quotes have not been closed")
       case Quotes1        => throw ParseError("the single quotes have not been closed")
@@ -74,7 +74,7 @@ object Sh extends Interpolator[List[String], State, Command]:
 
   def initial: State = State(Awaiting, false, Nil)
 
-  def insert(state: State, value: Option[List[String]]): State throws ParseError =
+  def insert(state: State, value: Option[List[String]]): State exposes ParseError =
     value.getOrElse(List("x")) match
       case Nil =>
         state
@@ -99,7 +99,7 @@ object Sh extends Interpolator[List[String], State, Command]:
           case _ =>
             throw Impossible("impossible parser state")
         
-  def parse(state: State, next: String): State throws ParseError = next.foldLeft(state) {
+  def parse(state: State, next: String): State exposes ParseError = next.foldLeft(state) {
     case (State(Awaiting, esc, args), ' ')          => State(Awaiting, false, args)
     case (State(Quotes1, false, rest :+ cur), '\\') => State(Quotes1, false, rest :+ s"$cur\\")
     case (State(ctx, false, args), '\\')            => State(ctx, true, args)
