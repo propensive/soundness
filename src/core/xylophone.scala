@@ -16,22 +16,33 @@ case class TagName(namespace: Namespace | DefaultNamespace.type, name: String)
 object DefaultNamespace
 
 enum Ast:
-  case Element(name: TagName, children: Seq[Ast], attributes: Map[String, String], namespaces: Map[Alias, Namespace])
+  case Element(name: TagName, children: Seq[Ast], attributes: Map[String, String],
+                   namespaces: Map[Alias, Namespace])
   case Comment(content: String)
   case ProcessingInstruction(target: String, content: String)
   case Text(content: String)
   case CData(content: String)
-  //case Attribute(namespace: Namespace | DefaultNamespace.type, key: String, value: String)
   case Root(content: Ast*)
 
   override def toString(): String = this match
-    case Element(name, children, attributes, namespaces) => str"<${name.name}${attributes.map(_+"="+_).join(" ", " ", "")}>${children.map(_.toString).join}</${name.name}>"
-    case Comment(content)                                => str"<!--$content-->"
-    case ProcessingInstruction(target, content)          => str"<?$target $content?>"
-    case Text(content)                                   => content
-    case CData(content)                                  => str"<![CDATA[${content.toString}]]>"
-    //case Attribute(namespace, key, value)                => str"$key=$value"
-    case Root(content*)                                  => str"<?xml?>${content.map(_.toString).join}"
+    case Element(name, children, attributes, namespaces) =>
+      val inside = children.map(_.toString).join
+      str"<${name.name}${attributes.map(_+"="+_).join(" ", " ", "")}>$inside</${name.name}>"
+
+    case Comment(content) =>
+      str"<!--$content-->"
+
+    case ProcessingInstruction(target, content) =>
+      str"<?$target $content?>"
+
+    case Text(content) =>
+      content
+
+    case CData(content) =>
+      str"<![CDATA[${content.toString}]]>"
+
+    case Root(content*) =>
+      str"""<?xml version = "1.0"?>${content.map(_.toString).join}"""
 
 sealed trait Xml:
   def pointer: List[Int | String | Unit]
@@ -40,7 +51,7 @@ sealed trait Xml:
 
   def string(using XmlPrinter[String]): String =
     summon[XmlPrinter[String]].write(Doc(Ast.Root(Xml.normalize(this)*)))
-  
+
   override def toString(): String =
     printers.compact.write(Doc(Ast.Root(Xml.normalize(this)*)))
 
@@ -54,7 +65,7 @@ extends Xml, Dynamic:
   def * : Fragment = Fragment((), head :: path, root)
   def +(other: Xml): Doc = Doc(Ast.Root(Xml.normalize(this) ++ Xml.normalize(other)*))
   def as[T: Xml.Reader]: T exposes AccessError = apply().as[T]
-  
+
 case class Node(head: Int, path: List[Int | String | Unit], root: Ast.Root) extends Xml, Dynamic:
   def selectDynamic(tagName: String): Fragment = Fragment(tagName, head :: path, root)
   def applyDynamic(tagName: String)(idx: Int = 0): Node = selectDynamic(tagName).apply(idx)
@@ -62,7 +73,7 @@ case class Node(head: Int, path: List[Int | String | Unit], root: Ast.Root) exte
   def pointer: List[Int | String | Unit] = (head :: path).reverse
   def * : Fragment = Fragment((), head :: path, root)
   def +(other: Xml): Doc = Doc(Ast.Root(Xml.normalize(this) ++ Xml.normalize(other)*))
-  
+
   def as[T: Xml.Reader]: T =
     summon[Xml.Reader[T]].read(Xml.normalize(this)).getOrElse(throw ReadError())
 
@@ -72,7 +83,7 @@ case class Doc(root: Ast.Root) extends Xml, Dynamic:
   def applyDynamic(tagName: String)(idx: Int = 0): Node = selectDynamic(tagName).apply(idx)
   def * : Fragment = Fragment((), Nil, root)
   def +(other: Xml): Doc = Doc(Ast.Root(Xml.normalize(this) ++ Xml.normalize(other)*))
-  
+
   def as[T: Xml.Reader]: T =
     summon[Xml.Reader[T]].read(Xml.normalize(this)).getOrElse(throw ReadError())
 
@@ -83,7 +94,8 @@ case class Attribute(node: Node, attribute: String):
       case _                                      => throw ReadError()
 
     summon[Xml.Reader[T]]
-      .read(Seq(Ast.Element(TagName(DefaultNamespace, "empty"), Seq(Ast.Text(attributes(attribute))), Map(), Map())))
+      .read(Seq(Ast.Element(TagName(DefaultNamespace, "empty"),
+          Seq(Ast.Text(attributes(attribute))), Map(), Map())))
       .getOrElse(throw ReadError())
 
 class XylophoneException(msg: String) extends Exception(str"xylophone: $msg")
@@ -109,22 +121,27 @@ object Xml:
   object Writer extends Derivation[Writer]:
     given Writer[String] = str =>
       Ast.Element(TagName(DefaultNamespace, "String"), List(Ast.Text(str)), Map(), Map())
-    
+
     given Writer[Int] = int =>
       Ast.Element(TagName(DefaultNamespace, "Int"), List(Ast.Text(int.toString)), Map(), Map())
 
     private val attributeAttribute = xmlAttribute()
 
     def join[T](caseClass: CaseClass[Writer, T]): Writer[T] = value =>
-      val elements = caseClass.params.filter(!_.annotations.contains(attributeAttribute))
-      val attributes = caseClass.params.filter(_.annotations.contains(attributeAttribute))
+      val elements =
+        caseClass.params
+          .filter(!_.annotations.contains(attributeAttribute))
+          .map { p => p.typeclass.write(p.deref(value)).copy(name = TagName(DefaultNamespace,
+              p.label))
 
-      Ast.Element(TagName(DefaultNamespace, caseClass.typeInfo.short), elements.map { param =>
-        param.typeclass.write(param.deref(value)).copy(name = TagName(DefaultNamespace, param.label))
-      }, attributes.map { param =>
-        param.label -> text(param.typeclass.write(param.deref(value)))
-      }.to(Map), Map())
-     
+      val attributes =
+        caseClass.params
+          .filter(_.annotations.contains(attributeAttribute))
+          .map { p => p.label -> text(p.typeclass.write(p.deref(value))) }
+          .to(Map)
+
+      Ast.Element(TagName(DefaultNamespace, caseClass.typeInfo.short), elements, attributes, Map())
+
     def split[T](sealedTrait: SealedTrait[Writer, T]): Writer[T] = value =>
       sealedTrait.choose(value) { subtype =>
         val xml = subtype.typeclass.write(subtype.cast(value))
@@ -148,7 +165,7 @@ object Xml:
       childElements(_).collect { case Ast.Text(txt) => txt }.headOption
 
     given Reader[Int] = string.map(Int.unapply(_))
-    
+
     def join[T](caseClass: CaseClass[Reader, T]): Reader[T] = seq =>
       val elems = childElements(seq)
       caseClass.constructMonadic { param =>
@@ -157,7 +174,7 @@ object Xml:
           .find(_.name.name == param.label)
           .flatMap { e => param.typeclass.read(Seq(e)) }
       }
-    
+
     def split[T](sealedTrait: SealedTrait[Reader, T]): Reader[T] = seq =>
       seq.headOption match
         case Some(Ast.Element(_, children, attributes, _)) =>
@@ -182,7 +199,12 @@ object Xml:
         recur(tail, Seq(current(idx)))
 
       case (unit: Unit) :: tail =>
-        recur(tail, current.collect { case e@Ast.Element(_, children, _, _) => children }.flatten.collect { case e: Ast.Element => e })
+        val next = current
+          .collect { case e@Ast.Element(_, children, _, _) => children }
+          .flatten
+          .collect { case e: Ast.Element => e })
+
+        recur(tail, next)
 
       case (label: String) :: tail =>
         val next = current
@@ -190,7 +212,7 @@ object Xml:
           .flatten.collect { case e: Ast.Element if e.name.name == label => e }
 
         recur(tail, next)
-    
+
     recur(xml.pointer, xml.root.content)
 
   def parse(content: String): Doc =
@@ -201,17 +223,18 @@ object Xml:
 
     val factory = DocumentBuilderFactory.newInstance()
     val builder = factory.newDocumentBuilder()
+
     val root = 
       try builder.parse(ByteArrayInputStream(content.bytes.unsafeMutable))
       catch case _: oxs.SAXParseException => throw ParseError()
-    
+
     def readNode(node: owd.Node): Ast = node.getNodeType match
       case CDATA_SECTION_NODE =>
         Ast.CData(node.getTextContent)
-      
+
       case COMMENT_NODE =>
         Ast.Comment(node.getTextContent)
-      
+
       case ELEMENT_NODE =>
         val tagName = TagName(DefaultNamespace, node.getNodeName)
         val childNodes = node.getChildNodes
@@ -219,15 +242,15 @@ object Xml:
         val atts = (0 until node.getAttributes.getLength).map(node.getAttributes.item(_))
         val attributes = atts.map { att => att.getNodeName -> att.getTextContent }.to(Map)
         Ast.Element(tagName, children, attributes, Map())
-      
+
       case PROCESSING_INSTRUCTION_NODE =>
         val name = node.getNodeName
         val content = node.getTextContent
         Ast.ProcessingInstruction(name, content)
-      
+
       case TEXT_NODE =>
         Ast.Text(node.getTextContent)
-    
+
     readNode(root.getDocumentElement) match
       case elem@Ast.Element(_, _, _, _) => Doc(Ast.Root(elem))
       case _                            => throw Impossible("xylophone: malformed XML")
@@ -250,7 +273,7 @@ class StandardXmlPrinter(compact: Boolean = false) extends XmlPrinter[String]:
     var linebreak: Boolean = false
     val buf: StringBuilder = StringBuilder()
     var pos: Int = 0
-    
+
     def newline(n: Int = 0): Unit =
       if !compact then
         indent += n
@@ -277,13 +300,13 @@ class StandardXmlPrinter(compact: Boolean = false) extends XmlPrinter[String]:
       case element@Ast.Element(tagName, children, attributes, namespaces) =>
         whitespace()
         append("<", tagName.name)
-        
+
         for attribute <- attributes do attribute match
           case (key, value) => append(" ", key, "=\"", value, "\"")
-        
+
         append(">")
         if !inline(element) then newline(1)
-        
+
         for child <- element.children do
           val splitLine = child match
             case Ast.Text(_) => false
@@ -291,9 +314,9 @@ class StandardXmlPrinter(compact: Boolean = false) extends XmlPrinter[String]:
           if splitLine then newline()
           next(child)
           if splitLine then newline()
-        
+
         if !inline(element) then newline(-1)
-        
+
         whitespace()
         append("</", tagName.name, ">")
         if !inline(element) then newline(0)
@@ -301,7 +324,7 @@ class StandardXmlPrinter(compact: Boolean = false) extends XmlPrinter[String]:
       case Ast.Text(text) =>
         whitespace()
         append(text)
-      
+
       case Ast.ProcessingInstruction(target, content) =>
         whitespace()
         append("<?", target, " ", content, "?>")
@@ -311,9 +334,9 @@ class StandardXmlPrinter(compact: Boolean = false) extends XmlPrinter[String]:
         whitespace()
         append("<!--", content, "-->")
         newline()
-      
+
       case e => println("Skipping "+e)
-        
+
     doc.root.content.foreach(next(_))
 
     buf.toString
