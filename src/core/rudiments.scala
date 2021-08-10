@@ -139,3 +139,17 @@ case class KeyNotFound(name: String) extends Exception(str"rudiments: key $name 
 def √(value: Double): Double = math.sqrt(value)
 
 case class Impossible(message: String) extends Error(message)
+
+object Unset
+type Maybe[T] = Unset.type | T
+
+extension [T](opt: Maybe[T])
+  def otherwise(value: => T): T = opt match
+    case Unset => value
+    case other => other.asInstanceOf[T]
+  
+  def option: Option[T] = opt match
+    case Unset => None
+    case other => Some(other.asInstanceOf[T])
+
+extension [T](opt: Option[T]) def maybe: Unset.type | T = opt.getOrElse(Unset)
