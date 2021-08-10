@@ -165,7 +165,7 @@ object PropertyDef:
   given borderWidth: PropertyDef["borderWidth", Dimension] = PropertyDef()
   given bottom: PropertyDef["bottom", Dimension] = PropertyDef()
   given boxDecorationBreak: PropertyDef["boxDecorationBreak", String] = PropertyDef()
-  given boxShadow: PropertyDef["boxShadow", String] = PropertyDef()
+  given boxShadow: PropertyDef["boxShadow", (Dimension, Dimension, Dimension, Color)] = PropertyDef()
   given boxSizing: PropertyDef["boxSizing", String] = PropertyDef()
   given breakAfter: PropertyDef["breakAfter", String] = PropertyDef()
   given breakBefore: PropertyDef["breakBefore", String] = PropertyDef()
@@ -409,6 +409,9 @@ enum Duration:
     case S(value)  => str"${value.toString}s"
     case Ms(value) => str"${value.toString}ms"
 
+def max(head: Length, tail: Length*): Length = tail.foldLeft(head)(_.function("max", _))
+def min(head: Length, tail: Length*): Length = tail.foldLeft(head)(_.function("min", _))
+
 enum Length:
   case Px(value: Double)
   case Pt(value: Double)
@@ -445,21 +448,23 @@ enum Length:
     case Vmax(value) => str"${value.toString}vmax"
     case Calc(calc)  => str"calc($calc)"
 
-  def +(dim: Length): Length = op('+', dim)
-  def -(dim: Length): Length = op('-', dim)
-  def *(double: Double): Length = op('*', double)
-  def /(double: Double): Length = op('/', double)
+  def +(dim: Length): Length = infixOp(" + ", dim)
+  def -(dim: Length): Length = infixOp(" - ", dim)
+  def *(double: Double): Length = infixOp(" * ", double)
+  def /(double: Double): Length = infixOp(" / ", double)
 
-  private def op(operator: Char, dim: Length | Double): Length = this match
+  private def infixOp(operator: String, dim: Length | Double): Length.Calc = this match
     case Calc(calc) => dim match
-      case double: Double => Calc(str"($calc) $operator ${double.toString}")
-      case Calc(calc2)    => Calc(str"($calc) $operator ($calc2)")
-      case other          => Calc(str"($calc) $operator ${other.toString}")
+      case double: Double => Calc(str"($calc)$operator${double.toString}")
+      case Calc(calc2)    => Calc(str"($calc)$operator($calc2)")
+      case other          => Calc(str"($calc)$operator${other.toString}")
     case other => dim match
-      case double: Double => Calc(str"$toString $operator ${double.toString}")
-      case Calc(calc2)    => Calc(str"$toString $operator ($calc2)")
-      case other          => Calc(str"$toString $operator ${other.toString}")
+      case double: Double => Calc(str"$toString$operator${double.toString}")
+      case Calc(calc2)    => Calc(str"$toString$operator($calc2)")
+      case other          => Calc(str"$toString$operator${other.toString}")
     
+  def function(name: String, right: Length | Double): Length =
+    Calc(str"$name(${infixOp(", ", right).value})")
 
 extension (value: Double)
   def s = Duration.S(value)
