@@ -25,6 +25,7 @@ import scala.annotation.tailrec
 
 import java.net.*
 import java.io.*
+import java.util as ju
 
 import language.dynamics
 
@@ -48,18 +49,15 @@ trait ToQuery[T]:
   def params(value: T): Params
 
 object Postable:
-  given Postable[String](mime"text/plain") with
-    def content(value: String): Bytes = IArray.from(value.bytes)
+  given [T: ToQuery]: Postable[T](mime"application/x-www-form-urlencoded",
+      value => LazyList(summon[ToQuery[T]].params(value).queryString.bytes))
 
-  given [T: ToQuery]: Postable[T](mime"application/x-www-form-urlencoded") with
-    def content(value: T): Bytes =
-      summon[ToQuery[T]].params(value).queryString.bytes
+  given Postable[String](mime"text/plain", value => LazyList(IArray.from(value.bytes)))
+  given Postable[Unit](mime"text/plain", unit => LazyList())
+  given Postable[Bytes](mime"application/octet-stream", LazyList(_))
+  given Postable[LazyList[Bytes]](mime"application/octet-stream", identity(_))
 
-  given Postable[Unit](mime"text/plain") with
-    def content(value: Unit): Bytes = IArray()
-
-abstract class Postable[T](val contentType: MediaType):
-  def content(value: T): Bytes
+trait Postable[T](val contentType: MediaType, val content: T => LazyList[Bytes])
 
 object Method:
   given formmethod: simplistic.HtmlAttribute["formmethod", Method] with
@@ -144,7 +142,8 @@ object Http:
         if method == Method.Post || method == Method.Put then
           conn.setDoOutput(true)
           val out = conn.getOutputStream().nn
-          out.write(summon[Postable[T]].content(content).to(Array))
+
+          summon[Postable[T]].content(content).map(_.to(Array)).foreach(out.write(_))
           out.close()
 
         val buf = new Array[Byte](65536)
@@ -163,8 +162,9 @@ object Http:
         val HttpStatus(status) = conn.getResponseCode: @unchecked
         
         val responseHeaders =
-          conn.getHeaderFields.nn.asScala.flatMap {
-            //case (null, v)              => Nil
+          val scalaMap: Map[String | Null, ju.List[String]] = conn.getHeaderFields.nn.asScala.toMap
+          scalaMap.flatMap {
+            case (null, v)              => Nil
             case (ResponseHeader(k), v) => List((k, v.asScala.to(List)))
           }.to(Map)
 

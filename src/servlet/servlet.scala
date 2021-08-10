@@ -68,9 +68,10 @@ trait Servlet() extends HttpServlet:
       val paramStrings = query.nn.cut("&")
       
       paramStrings.foldLeft(Map[String, List[String]]()) { (map, elem) =>
-        val Seq(key, value) = elem.cut("=", 2).to(Seq)
-        
-        map.updated(key, value :: map.getOrElse(key, Nil))
+        elem.cut("=", 2).to(Seq) match
+          case Seq(key, value) => map.updated(key, value :: map.getOrElse(key, Nil))
+          case Seq(key)        => map.updated(key, "" :: map.getOrElse(key, Nil))
+          case _               => map
       }
     }
     

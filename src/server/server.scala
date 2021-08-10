@@ -82,15 +82,29 @@ class SimpleHandler[T](val mime: String, val stream: T => Body) extends Handler[
 case class NotFound[T: SimpleHandler](content: T)
 case class ServerError[T: SimpleHandler](content: T)
 
-case class Cookie(domain: String, name: String, value: String, path: String, expiry: Option[Long],
-                      ssl: Boolean)
+case class Cookie(name: String, value: String, domain: Maybe[String] = Unset,
+                      path: Maybe[String] = Unset, expiry: Maybe[Long] = Unset,
+                      ssl: Boolean = false)
 
 case class Response[T: Handler](content: T, status: HttpStatus = HttpStatus.Ok,
                                     headers: Map[ResponseHeader, String] = Map(),
                                     cookies: List[Cookie] = Nil):
 
   def respond(responder: Responder): Unit =
-    summon[Handler[T]].process(content, status.code, headers.map { (k, v) =>
+    val cookieHeaders = cookies.map { cookie =>
+      ResponseHeader.SetCookie -> List[(String, Boolean | Option[String])](
+        cookie.name -> Some(cookie.value),
+        "Expires"   -> cookie.expiry.option.map(java.util.Date(_).toGMTString.nn),
+        "Domain"    -> cookie.domain.option,
+        "Path"      -> cookie.path.option,
+        "Secure"    -> cookie.ssl,
+        "HttpOnly"  -> false
+      ).collect {
+        case (k, true)    => k
+        case (k, Some(v)) => str"$k=$v"
+      }.join("; ")
+    }
+    summon[Handler[T]].process(content, status.code, (headers ++ cookieHeaders).map { (k, v) =>
         k.header -> v }, responder)
 
 case class Request(method: Method, body: Body.Chunked, query: String, ssl: Boolean,
