@@ -459,11 +459,9 @@ object Readable:
       read()
     
   given (using enc: Encoding): Readable[LazyList[String]] with
-    def read(in: ji.BufferedInputStream, limit: Int = 65536): LazyList[String] exposes
-        StreamInterrupted | BufferOverflow =
+    def read(in: ji.BufferedInputStream, limit: Int = 65536): LazyList[String] =
 
-      def read(prefix: Array[Byte], remaining: Int): LazyList[String] exposes StreamInterrupted |
-          BufferOverflow =
+      def read(prefix: Array[Byte], remaining: Int): LazyList[String] =
         try
           val avail = in.available
           if avail == 0 then LazyList()
@@ -481,22 +479,23 @@ object Readable:
       
       read(Array.empty[Byte], limit)
 
-  given (using Encoding): Readable[String] with
-    def read(in: ji.BufferedInputStream, limit: Int = 65536): String exposes StreamInterrupted |
-        BufferOverflow =
+  given readableString: Readable[String] with
+    def read(in: ji.BufferedInputStream, limit: Int = 65536): String =
+      given enc: Encoding = encodings.Utf8
       val stream = summon[Readable[LazyList[String]]].read(in, limit)
-      if stream.length > 1 then throw BufferOverflow() else stream.head
+      if stream.length == 0 then ""
+      else if stream.length > 1 then throw BufferOverflow()
+      else stream.head
 
 trait Readable[T]:
   
   private inline def readable: Readable[T] = this
   
-  def read(stream: ji.BufferedInputStream, limit: Int = 65536): T exposes StreamInterrupted |
-      BufferOverflow
+  def read(stream: ji.BufferedInputStream, limit: Int = 65536): T
   
   def map[S](fn: T => S): Readable[S] = new Readable[S]:
-    def read(stream: ji.BufferedInputStream, limit: Int = 65536): S exposes StreamInterrupted |
-        BufferOverflow = fn(readable.read(stream, limit))
+    def read(stream: ji.BufferedInputStream, limit: Int = 65536): S =
+      fn(readable.read(stream, limit))
 
 object encodings:
   given Utf8: Encoding with
