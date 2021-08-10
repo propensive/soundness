@@ -34,6 +34,11 @@ function pattern() {
   echo $1 | tr '/' '.'
 }
 
+function externalRefs() {
+  local PROJECT=$(project $1)
+  cat refs | grep "$(pattern $1):" | cut -d':' -f2 | tr ' ' '\n' | grep -v "^$PROJECT"
+}
+
 function refs() {
   cat refs | grep "$(pattern $1):" | cut -d':' -f2
 }
@@ -69,7 +74,8 @@ function checksum() {
   local PROJECT="$(project $1)"
   if [ "${checksums[$PROJECT]}" = "" ]
   then
-    local CHECKSUM="$( (for REF in $(refs $MOD) ; do echo "$(checksum $REF)" ; done && cat mod/$(project $MOD)/src/*/*.scala) | sha1sum | cut -d' ' -f1)"
+    echo "Calculating checksum for $PROJECT" >&2
+    local CHECKSUM="$( (for REF in $(externalRefs $MOD) ; do echo "$(checksum $REF)" ; done && cat mod/$(project $MOD)/src/*/*.scala) | sha1sum | cut -d' ' -f1)"
     checksums[$PROJECT]="$CHECKSUM"
     echo $CHECKSUM
   else
@@ -125,7 +131,6 @@ function build() {
     done
   
     local CP="$(classpath "$MOD" | grep -v "$PATTERN" | tr '\n' ':')"
-    echo "Classpath: $CP" >&2
     
     if [ -z "$CP" ]; then
       local CPF=""
@@ -136,7 +141,8 @@ function build() {
     echo "Building $MOD..."
     mkdir -p "pub/$PROJECT"
     #scala/bin/scalac ${CPF}${CP%?} -d out -new-syntax -Ysafe-init -feature -Xcheck-macros -Ycheck-all-patmat -Yexplicit-nulls -language:experimental.saferExceptions $SRC/*.scala && \
-    scalac ${CPF}${CP%?} -d out -new-syntax -Ysafe-init -feature -Xcheck-macros -Ycheck-all-patmat -Yexplicit-nulls $SRC/*.scala && \
+    rm -rf out/*
+    scala/bin/scalac ${CPF}${CP%?} -d out -new-syntax -Ysafe-init -feature -Xcheck-macros -Ycheck-all-patmat -Yexplicit-nulls $SRC/*.scala && \
         jar cf "pub/$PROJECT/$JAR" -C out "$PROJECT" && \
 	echo $VERSION > "mod/$PROJECT/doc/version"
     jar cf "pub/$PROJECT/$SRCS" -C mod/$PROJECT/src $MODULE
@@ -170,10 +176,14 @@ function build() {
     
     cat tmpl/pom-end.xml >> "pub/$PROJECT/$POM"
     gpg -ab "pub/$PROJECT/$POM"
+    sha1sum "pub/$PROJECT/$POM" | cut -d' ' -f1 > "pub/$PROJECT/$POM.sha1"
     gpg -ab "pub/$PROJECT/$JAR"
+    sha1sum "pub/$PROJECT/$JAR" | cut -d' ' -f1 > "pub/$PROJECT/$JAR.sha1"
     gpg -ab "pub/$PROJECT/$SRCS"
+    sha1sum "pub/$PROJECT/$SRCS" | cut -d' ' -f1 > "pub/$PROJECT/$SRCS.sha1"
     gpg -ab "pub/$PROJECT/$DOCS"
-    deploy "$PROJECT" "$MODULE" "$VERSION"
+    sha1sum "pub/$PROJECT/$DOCS" | cut -d' ' -f1 > "pub/$PROJECT/$DOCS.sha1"
+    #deploy "$PROJECT" "$MODULE" "$VERSION"
   fi
 }
 

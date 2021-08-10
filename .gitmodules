@@ -78,3 +78,6 @@
 	path = mod/punctuation
 	url = https://github.com/propensive/punctuation
 	branch = main
+[submodule "mod/xylophone"]
+	path = mod/xylophone
+	url = git@github.com:propensive/xylophone

@@ -17,7 +17,7 @@ probably/core: escritoire/core
 probably/cli: probably/core
 probably/tolerance: probably/core wisteria/core
 scintillate/core: simplistic/html wisteria/core
-scintillate/server: gastronomy/core scintillate/core simplistic/http
+scintillate/server: scintillate/core gastronomy/core scintillate/core simplistic/http
 scintillate/servlet: scintillate/server slalom/core
 simplistic/html:
 simplistic/http:

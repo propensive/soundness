@@ -1,0 +1,32 @@
+#!/bin/bash
+
+CP="$(ls lib/*.jar | tr '\n' : | head -c-1)"
+mkdir -p classes
+scala/bin/scalac "-classpath:$CP" -d classes -deprecation -new-syntax -Ysafe-init -feature -Xcheck-macros -Ycheck-all-patmat -Yexplicit-nulls \
+    mod/acyclicity/src/core/*.scala \
+    mod/cataract/src/core/*.scala \
+    mod/contextual/src/core/*.scala \
+    mod/cosmopolite/src/core/*.scala \
+    mod/escritoire/src/core/*.scala \
+    mod/euphemism/src/core/*.scala \
+    mod/gastronomy/src/core/*.scala \
+    mod/guillotine/src/core/*.scala \
+    mod/honeycomb/src/core/*.scala \
+    mod/iridescence/src/core/*.scala \
+    mod/jovian/src/core/*.scala \
+    mod/kaleidoscope/src/core/*.scala \
+    mod/probably/src/core/*.scala \
+    mod/probably/src/cli/*.scala \
+    mod/probably/src/tolerance/*.scala \
+    mod/punctuation/src/core/*.scala \
+    mod/punctuation/src/html/*.scala \
+    mod/rudiments/src/core/*.scala \
+    mod/scintillate/src/core/*.scala \
+    mod/scintillate/src/server/*.scala \
+    mod/scintillate/src/servlet/*.scala \
+    mod/simplistic/src/http/*.scala \
+    mod/simplistic/src/css/*.scala \
+    mod/simplistic/src/html/*.scala \
+    mod/slalom/src/core/*.scala \
+    mod/wisteria/src/core/*.scala \
+    mod/xylophone/src/core/*.scala && cd classes && jar cf ../niveau.jar $(ls)
