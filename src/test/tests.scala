@@ -68,16 +68,16 @@ object Tests extends Suite("Euphemism Tests"):
     }
     
     suite("Basic tests") {
-      test("Serialize to Json") {
-        Foo(1, "two").json
-      }.assert(_ == Json.of(x = 1.json, y = "two".json))
+      // test("Serialize to Json") {
+      //   Foo(1, "two").json
+      // }.assert(_ == Json.of(x = 1.json, y = "two".json))
 
-      test("Parse from JSON") {
-        Json.parse("""{"x": 1}""").debug
-      }.assert(_ == Json.of(x = 1.json))
+      // test("Parse from JSON") {
+      //   Json.parse("""{"x": 1}""").debug
+      // }.assert(_ == Json.of(x = 1.json))
 
       test("Read case class") {
-        Json.parse("""{"x": 1, "y": "two"}""").as[Foo].debug
+        Json.parse("""{"x": 1, "y": "two"}""").as[Foo]
       }.assert(_ == Foo(1, "two"))
 
       test("Extract an option") {
