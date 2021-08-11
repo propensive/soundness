@@ -5,19 +5,20 @@ import printers.compact
 
 import scala.util.{Try, Success, Failure}
 
+case class Person(name: String, age: Int)
+case class Firm(name: String, ceo: Person)
+
+case class Book(title: String, @xmlAttribute isbn: String)
+case class Bibliography(author: String, book: Book)
+
+enum Color:
+  case Rgb(red: Int, green: Int, blue: Int)
+  case Cmyk(cyan: Int, magenta: Int, yellow: Int, key: Int)
+
+case class Pixel(x: Int, y: Int, color: Color)
+
+
 object Tests extends Suite("Xylophone tests"):
-
-  case class Person(name: String, age: Int)
-  case class Firm(name: String, ceo: Person)
-
-  case class Book(title: String, @xmlAttribute isbn: String)
-  case class Bibliography(author: String, book: Book)
-
-  enum Color:
-    case Rgb(red: Int, green: Int, blue: Int)
-    case Cmyk(cyan: Int, magenta: Int, yellow: Int, key: Int)
-
-  case class Pixel(x: Int, y: Int, color: Color)
 
   def run(using Runner): Unit =
     test("extract integer") {
@@ -173,3 +174,9 @@ object Tests extends Suite("Xylophone tests"):
       val xml = Xml.parse("""<root><company><staff><ceo><name>Xyz</name></ceo></staff></company></root>""")
       Try(xml.company(1).staff().cto.name().as[String])
     }.assert(_ == Failure(XmlAccessError(1, List("company"))))
+
+    // test("contextual parser") {
+    //   val str = "Hello World"
+    //   val bill = Person("Bill", 94)
+    //   x"""<xmle message=$str more="$str">$bill<node/></xmle>"""
+    // }.assert(_ == Xml.parse("<xml></xml>"))
