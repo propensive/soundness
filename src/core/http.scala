@@ -49,15 +49,15 @@ trait ToQuery[T]:
   def params(value: T): Params
 
 object Postable:
-  given [T: ToQuery]: Postable[T](mime"application/x-www-form-urlencoded",
+  given [T: ToQuery]: Postable[T] = Postable(mime"application/x-www-form-urlencoded",
       value => LazyList(summon[ToQuery[T]].params(value).queryString.bytes))
 
-  given Postable[String](mime"text/plain", value => LazyList(IArray.from(value.bytes)))
-  given Postable[Unit](mime"text/plain", unit => LazyList())
-  given Postable[Bytes](mime"application/octet-stream", LazyList(_))
-  given Postable[LazyList[Bytes]](mime"application/octet-stream", identity(_))
+  given Postable[String] = Postable(mime"text/plain", value => LazyList(IArray.from(value.bytes)))
+  given Postable[Unit] = Postable(mime"text/plain", unit => LazyList())
+  given Postable[Bytes] = Postable(mime"application/octet-stream", LazyList(_))
+  given Postable[LazyList[Bytes]] = Postable(mime"application/octet-stream", identity(_))
 
-trait Postable[T](val contentType: MediaType, val content: T => LazyList[Bytes])
+class Postable[T](val contentType: MediaType, val content: T => LazyList[Bytes])
 
 object Method:
   given formmethod: simplistic.HtmlAttribute["formmethod", Method] with
