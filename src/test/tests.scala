@@ -14,13 +14,13 @@
     and limitations under the License.
 */
 
-package gastronomy.tests
+package gastronomy
 
-import gastronomy._
-import probably._
-import rudiments._
+import gastronomy.*
+import probably.*
+import rudiments.*
 
-object Tests extends Suite("Gastronomy tests") {
+object Tests extends Suite("Gastronomy tests"):
  
   val request: String = """
     |-----BEGIN CERTIFICATE REQUEST-----
@@ -131,4 +131,3 @@ object Tests extends Suite("Gastronomy tests") {
     }.assert(_ == "tCrwkFe6weLUFwjkipAuCbX/fxKrQopP6GZTxz3SSPuC+UilSfe3kaW0GRXuTR7Dk1NX5OIxclDQNyr"+
         "6Lr7rOg==")
   }
-}
