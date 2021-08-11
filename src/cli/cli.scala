@@ -47,12 +47,12 @@ object Suite:
     val simple = report.results.forall(_.count == 1)
 
     given AnsiShow[Outcome] =
-      case Outcome.Passed                                       => pass
-      case Outcome.FailsAt(Datapoint.Fail(map, _), 1)           => fail
-      case Outcome.FailsAt(Datapoint.ThrowsInCheck(_, _, _), n) => checkThrows
-      case Outcome.FailsAt(Datapoint.Throws(exception, map), 1) => throws
-      case Outcome.FailsAt(_, n)                                => tailFail
-      case Outcome.Mixed                                        => mixed
+      case Outcome.Passed                                         => pass
+      case Outcome.FailsAt(Datapoint.Fail(map, _), 1)             => fail
+      case Outcome.FailsAt(Datapoint.PredicateThrows(_, _, _), n) => checkThrows
+      case Outcome.FailsAt(Datapoint.Throws(exception, map), 1)   => throws
+      case Outcome.FailsAt(_, n)                                  => tailFail
+      case Outcome.Mixed                                          => mixed
 
     val status = Heading[Summary, Outcome]("", _.outcome)
     val hash = Heading[Summary, String]("Hash", v => Runner.shortDigest(v.name))
@@ -61,21 +61,31 @@ object Suite:
     val min = Heading[Summary, Double]("Min", _.min)
     val avg = Heading[Summary, Double](if simple then "Time" else "Avg", _.avg)
     val max = Heading[Summary, Double]("Max", _.max)
-    val debug = Heading[Summary, String]("Debug", _.outcome.debug)
     
     val table =
-      if simple then Tabulation[Summary](status, hash, name, avg, debug)
-      else Tabulation[Summary](status, hash, name, count, min, avg, max, debug)
+      if simple then Tabulation[Summary](status, hash, name, avg)
+      else Tabulation[Summary](status, hash, name, count, min, avg, max)
 
     val resultsTable = table.tabulate(100, report.results).join("\n")
-    
+
+    val failures = report.results.filter { result =>
+      result.outcome != Outcome.Passed && result.outcome != Outcome.Mixed
+    }.flatMap { result =>
+      List(
+        str"  ${summon[AnsiShow[Outcome]].show(result.outcome)} ${Ansi.bold(Ansi.underline(str"${
+            result.name}:"))} ${Ansi.Color.blue(result.outcome.filename)}:${Ansi.Color.yellow(result.outcome.line)}",
+        result.outcome.debug.cut("\n").join("      ", "\n      ", ""),
+        ""
+      )
+    }.join("\n")
+
     val summary = Map(
       "Passed" -> report.passed,
       "Failed" -> report.failed,
       "Total" -> report.total
     ).map { (key, value) => s"${Ansi.bold(key)}: $value" }.join("   ")
 
-    List(resultsTable, summary, Suite.footer).join("\n")
+    List(resultsTable, failures, summary, Suite.footer).join("\n")
 
 trait Suite(val name: String) extends TestSuite:
   def run(using Runner): Unit
