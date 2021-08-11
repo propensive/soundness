@@ -3,6 +3,8 @@ package xylophone
 import probably.*
 import printers.compact
 
+import scala.util.{Try, Success, Failure}
+
 object Tests extends Suite("Xylophone tests"):
 
   case class Person(name: String, age: Int)
@@ -107,3 +109,67 @@ object Tests extends Suite("Xylophone tests"):
       val xml = Xml.parse(string)
       xml.content().attribute("key").as[String]
     }.assert(_ == "value")
+
+    test("read with namespace") {
+      val string = """<?xml version="1.0"?>
+                     |<root>
+                     |<h:table xmlns:h="http://www.w3.org/TR/html4/">
+                     |  <h:tr>
+                     |    <h:td>Apples</h:td>
+                     |    <h:td>Bananas</h:td>
+                     |  </h:tr>
+                     |</h:table>
+                     |</root>""".stripMargin
+
+      val xml = Xml.parse(string)
+      xml.table.tr.td().as[String]
+    }.assert(_ == "Apples")
+
+    test("serialize list of strings") {
+      val xs = List("one", "two", "three")
+      Xml.print(xs.xml)
+    }.assert(_ == "<List><String>one</String><String>two</String><String>three</String></List>")
+    
+    test("serialize list of complex objects") {
+      val book1 = Book("Lord of the Flies", "9780399529207")
+      val book2 = Book("Brave New World", "9781907704345")
+      val books = List(book1, book2)
+      Xml.print(books.xml)
+    }.assert(_ == """<List><Book isbn="9780399529207"><title>Lord of the Flies</title></Book><Book isbn="9781907704345"><title>Brave New World</title></Book></List>""")
+
+    test("serialize empty node") {
+      Xml.print(List[String]().xml)
+    }.assert(_ == "<List/>")
+
+    test("serialize case object") {
+      case object Foo
+      Xml.print(Foo.xml)
+    }.assert(_ == "<Foo/>")
+
+    test("parse error: unclosed tag") {
+      Try(Xml.parse("""<foo key="value"><bar></foo>"""))
+    }.assert(_ == Failure(XmlParseError(0, 24)))
+
+    test("parse error: unclosed string") {
+      Try(Xml.parse("""<foo key="value><bar/></foo>"""))
+    }.assert(_ == Failure(XmlParseError(0, 16)))
+
+    test("read error: not an integer") {
+      val xml = Xml.parse("""<foo>not an integer</foo>""")
+      Try(xml.as[Int])
+    }.assert(Failure(XmlReadError()) == _)
+
+    test("access error; proactively resolving head nodes") {
+      val xml = Xml.parse("""<root><company><staff><ceo><name>Xyz</name></ceo></staff></company></root>""")
+      Try(xml.company().staff().cto().name().as[String])
+    }.assert(_ == Failure(XmlAccessError(0, List("company", 0, "staff", 0, "cto"))))
+    
+    test("access error; taking all children") {
+      val xml = Xml.parse("""<root><company><staff><ceo><name>Xyz</name></ceo></staff></company></root>""")
+      Try(xml.company.staff.cto.name().as[String])
+    }.assert(_ == Failure(XmlAccessError(0, List("company", "staff", "cto", "name"))))
+    
+    test("access non-zero node") {
+      val xml = Xml.parse("""<root><company><staff><ceo><name>Xyz</name></ceo></staff></company></root>""")
+      Try(xml.company(1).staff().cto.name().as[String])
+    }.assert(_ == Failure(XmlAccessError(1, List("company"))))
