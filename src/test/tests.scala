@@ -18,7 +18,7 @@ package iridescence
 
 import probably.*
 
-object Main extends Suite("Iridescence tests"):
+object Tests extends Suite("Iridescence tests"):
   
   given Profile = profiles.Daylight
   given Tolerance[Double] = (a, b) => math.abs(a - b) < 0.05
@@ -26,25 +26,25 @@ object Main extends Suite("Iridescence tests"):
   def run(using Runner): Unit =
     for color <- colors.all.reverse do
       test("sRGB to L*a*b*") {
-        color.debug.cielab.srgb.debug
+        color.cielab.srgb
       }.assert(_ ~~ color)
 
       test("HSV to sRGB and back") {
-        color.debug.hsv.srgb.hsv.debug
+        color.hsv.srgb.hsv
       }.assert(_ ~~ color.hsv)
       
       test("sRGB to CMY and back") {
-        color.debug.cmy.srgb.debug
+        color.cmy.srgb
       }.assert(_ ~~ color)
       
       test("sRGB to CMYK and back") {
-        color.debug.cmyk.srgb.debug
+        color.cmyk.srgb
       }.assert(_ ~~ color)
       
       test("sRGB to XYZ and back") {
-        color.debug.xyz.srgb.debug
+        color.xyz.srgb
       }.assert(_ ~~ color)
       
       test("sRGB to HSL and back") {
-        color.debug.hsl.debug.srgb.debug
+        color.hsl.srgb
       }.assert(_ ~~ color)
