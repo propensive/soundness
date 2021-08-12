@@ -178,5 +178,12 @@ object Tests extends Suite("Xylophone tests"):
     // test("contextual parser") {
     //   val str = "Hello World"
     //   val bill = Person("Bill", 94)
-    //   x"""<xmle message=$str more="$str">$bill<node/></xmle>"""
-    // }.assert(_ == Xml.parse("<xml></xml>"))
+    //   x"<o#e/>"
+    //   x"<foo/!>"
+    //   x"<foo></foo!>"
+    //   x"<foo bar></foo>"
+    //   x"""<foo ba#="x"/>"""
+    //   x"""<foo><bar></testing></bra>"""
+    //   x"""<foo key !"value"/>"""
+    //   x"""<foo key="value">${str}<bar>Baz  </bar><bad>${str}</bad></foo>"""
+    // }.assert(_ == Xml.parse("""<foo key="value">Hello World<bar>Baz  </bar><bad>Hello World</bad></foo>"""))

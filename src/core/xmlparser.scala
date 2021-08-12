@@ -29,12 +29,12 @@ case class ParseState(offset: Int, context: ContextType, stack: List[String], cu
   
   def pop() = stack.headOption match
     case Some(`current`) => copy(stack = stack.tail)
-    case Some(tag)       => throw ParseError(s"closing tag '$current' does not match expected tag '$tag'")
-    case None            => throw ParseError(s"spurious closing tag: $current")
+    case Some(tag)       => throw InterpolationError(s"closing tag '$current' does not match expected tag '$tag'", offset - current.length, current.length)
+    case None            => throw InterpolationError(s"spurious closing tag: $current", offset - current.length, current.length)
 
 given Insertion[Input, String] = Input.StringLike(_)
 
-given [T](using writer: XmlWriter[? >: T]): Insertion[Input, T] =
+given genInsert[T](using writer: XmlWriter[T]): Insertion[Input, T] =
   value => Input.XmlLike(writer.write(value))
 
 object XmlInterpolator extends Interpolator[Input, ParseState, Doc]:
@@ -65,13 +65,13 @@ object XmlInterpolator extends Interpolator[Input, ParseState, Doc]:
           case Input.StringLike(str) => "\""+escape(str)+"\""
           case Input.XmlLike(xml)    => "\""+escape(xml.toString)+"\""
         })
-      case _ => throw ParseError(s"a substitution cannot be made in this position")
+      case _ => throw InterpolationError(s"a substitution cannot be made in this position")
   
   def complete(state: ParseState): Doc =
-    if state.stack.nonEmpty then throw ParseError(s"expected closing tag: ${state.stack.head}")
+    if state.stack.nonEmpty then throw InterpolationError(s"expected closing tag: ${state.stack.head}")
     Xml.parse(state.source)
 
-  def parse(state: ParseState, string: String): ParseState = string.foldLeft(state) {
+  def parse(state: ParseState, string: String): ParseState = string.foldLeft(state.copy(offset = 0)) {
     case (state@ParseState(_, _, _, _, _), char) => state.context match
       
       case InTagName          => char match
@@ -81,32 +81,33 @@ object XmlInterpolator extends Interpolator[Input, ParseState, Doc]:
         case '/'                => if state.current.isEmpty then state(ClosingTag)
                                    else state(SelfClosingTagName)
         case '>'                => state.push()(Body)
-        case _                  => throw ParseError("not a valid tag name character")
+        case _                  => throw InterpolationError("not a valid tag name character", state.offset, 1)
       
       case SelfClosingTagName => char match
         case TagChar()          => state(char)
         case ':'                => state(char) // FIXME: Namespaces
         case '>'                => state(Body)
-        case _                  => throw ParseError("expected '>'")
+        case _                  => throw InterpolationError("expected '>'", state.offset, 1)
       
       case ClosingTag         => char match
         case TagChar()          => state(char)
         case ':'                => state(char) // FIXME: Namespaces
         case '>'                => state.pop()(Body)
-        case _                  => throw ParseError("expected '>'")
+        case WhitespaceChar()   => state()
+        case _                  => throw InterpolationError("expected '>' or whitespace", state.offset, 1)
 
       case InAttributeName    => char match
         case TagChar()          => state(char)
         case WhitespaceChar()   => state(InAttributeName)
-        case '>'                => throw ParseError("attribute value has not been specified")
+        case '>'                => throw InterpolationError("attribute value has not been specified", state.offset, 1)
         case '='                => state(AttributeEquals).reset()
         case ':'                => state(char) // FIXME: Namespaces
-        case _                  => throw ParseError("not a valid attribute name character")
+        case ch                 => throw InterpolationError(s"character '$ch' is not valid in an attribute name", state.offset, 1)
       
       case AttributeEquals    => char match
         case WhitespaceChar()   => state()
         case '"'                => state(AttributeValue)
-        case _                  => throw ParseError("expected '='")
+        case _                  => throw InterpolationError("expected '\"'", state.offset, 1)
       
       case AttributeValue     => char match
         case '"'                => state(InTagBody).reset()
@@ -118,11 +119,11 @@ object XmlInterpolator extends Interpolator[Input, ParseState, Doc]:
         case TagChar()          => state(InAttributeName, char)
         case '>'                => state(Body)
         case '/'                => state(TagClose)
-        case _                  => throw ParseError("character not permitted in a tag name")
+        case ch                 => throw InterpolationError(s"character '$ch' is not permitted in a tag name", state.offset)
 
       case TagClose           => char match
         case '>'                => state(Body)
-        case _                  => throw ParseError("expected '>'")
+        case _                  => throw InterpolationError("expected '>'", state.offset, 1)
       
       case Body               => char match
         case '<'                => state(InTagName).reset()
@@ -131,10 +132,10 @@ object XmlInterpolator extends Interpolator[Input, ParseState, Doc]:
       
       case InBodyEntity       => char match
         case ';'                => state()
-        case _                  => throw ParseError("not a valid entity name character")
+        case ch                 => throw InterpolationError(s"character '$ch' is not valid in an entity name", state.offset, 1)
 
       case InAttributeEntity  => char match
         case ';'                => state()
         case TagChar()          => state()
-        case _                  => throw ParseError("not a valid entity name character")
+        case ch                 => throw InterpolationError(s"character '$ch' is not valid in an entity name", state.offset, 1)
   }.copy(source = state.source+string)
