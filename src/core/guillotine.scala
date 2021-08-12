@@ -63,25 +63,25 @@ case class ExecError(command: Command, stdout: Stream, stderr: Stream) extends E
 object Sh extends Interpolator[List[String], State, Command]:
   import Context.*
   
-  def complete(state: State): Command exposes ParseError =
+  def complete(state: State): Command exposes InterpolationError =
     val args = state.current match
-      case Quotes2        => throw ParseError("the double quotes have not been closed")
-      case Quotes1        => throw ParseError("the single quotes have not been closed")
-      case _ if state.esc => throw ParseError("an escape character is not permitted at the end")
+      case Quotes2        => throw InterpolationError("the double quotes have not been closed")
+      case Quotes1        => throw InterpolationError("the single quotes have not been closed")
+      case _ if state.esc => throw InterpolationError("an escape character is not permitted at the end")
       case _              => state.args
     
     Command(args*)
 
   def initial: State = State(Awaiting, false, Nil)
 
-  def insert(state: State, value: Option[List[String]]): State exposes ParseError =
+  def insert(state: State, value: Option[List[String]]): State exposes InterpolationError =
     value.getOrElse(List("x")) match
       case Nil =>
         state
 
       case h :: t =>
         if state.esc
-        then throw ParseError("escaping with '\\' is not allowed immediately before a substitution")
+        then throw InterpolationError("escaping with '\\' is not allowed immediately before a substitution")
         
         state match
           case State(Awaiting, false, args) =>
@@ -99,7 +99,7 @@ object Sh extends Interpolator[List[String], State, Command]:
           case _ =>
             throw Impossible("impossible parser state")
         
-  def parse(state: State, next: String): State exposes ParseError = next.foldLeft(state) {
+  def parse(state: State, next: String): State exposes InterpolationError = next.foldLeft(state) {
     case (State(Awaiting, esc, args), ' ')          => State(Awaiting, false, args)
     case (State(Quotes1, false, rest :+ cur), '\\') => State(Quotes1, false, rest :+ s"$cur\\")
     case (State(ctx, false, args), '\\')            => State(ctx, true, args)
