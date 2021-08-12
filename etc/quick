@@ -2,7 +2,7 @@
 
 CP="$(ls lib/*.jar | tr '\n' : | head -c-1)"
 mkdir -p classes
-scala/bin/scalac "-classpath:$CP" -d classes -deprecation -new-syntax -Ysafe-init -feature -Xcheck-macros -Ycheck-all-patmat -Yexplicit-nulls \
+scalac "-classpath:$CP" -d classes -deprecation -new-syntax -Ysafe-init -feature -Xcheck-macros -Ycheck-all-patmat -Yexplicit-nulls \
     mod/acyclicity/src/core/*.scala \
     mod/cataract/src/core/*.scala \
     mod/contextual/src/core/*.scala \

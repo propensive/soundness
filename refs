@@ -22,5 +22,6 @@ scintillate/servlet: scintillate/server slalom/core
 simplistic/html:
 simplistic/http:
 simplistic/css:
+xylophone/core: wisteria/core simplistic/http contextual/core
 slalom/core: rudiments/core
 wisteria/core: rudiments/core

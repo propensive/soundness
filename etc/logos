@@ -1,6 +1,6 @@
 #!/bin/bash
 
-for MOD in mod/*
+for MOD in mod/gastronomy
 do
   printf "Generating images for $MOD..."
   mkdir -p $MOD/doc/images
