@@ -34,8 +34,7 @@ object Macro:
           val exp: Expr[Attribute[k & Label, v, Name]] =
             Expr.summon[Attribute[k & Label, v, Name]].getOrElse {
               val typeName = TypeRepr.of[v].show
-              report.error(s"honeycomb: the attribute $att cannot take a value of type $typeName")
-              ???
+              report.throwError(s"honeycomb: the attribute $att cannot take a value of type $typeName")
             }
           
           '{($exp.rename.getOrElse($key), $exp.convert($value))} :: recur(tail)
