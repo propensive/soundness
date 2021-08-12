@@ -25,17 +25,17 @@ enum MdInput:
 
 object MdInterpolator extends Interpolator[MdInput, String, Markdown.Root[Markdown]]:
   
-  def complete(state: String): Markdown.Root[Markdown] exposes ParseError =
+  def complete(state: String): Markdown.Root[Markdown] exposes InterpolationError =
     try Markdown.parse[Markdown](state)
-    catch case MalformedMarkdown(msg) => throw ParseError("could not parse markdown")
+    catch case MalformedMarkdown(msg) => throw InterpolationError("could not parse markdown")
 
   def initial: String = ""
   
-  def insert(state: String, value: Option[MdInput]): String exposes ParseError = value match
+  def insert(state: String, value: Option[MdInput]): String exposes InterpolationError = value match
     case Some(MdInput.Block(content))  => str"$state\n$content\n"
     case Some(MdInput.Inline(content)) => str"$state$content"
     case None                          => ""
    
-  def parse(state: String, next: String): String exposes ParseError = state+next
+  def parse(state: String, next: String): String exposes InterpolationError = state+next
 
 given Insertion[String, String] = identity(_)
