@@ -154,7 +154,7 @@ object Subgraph:
     Dot.Statement.Subgraph(None, statements*)
 
 object NodeParser extends Interpolator[Unit, Option[Dot.Ref], Dot.Ref]:
-  def parse(state: Option[Dot.Ref], next: String): Some[Dot.Ref] exposes ParseError =
+  def parse(state: Option[Dot.Ref], next: String): Some[Dot.Ref] exposes InterpolationError =
     Some { next.cut(":").to(List) match
       case List(id) =>
         Dot.Ref(Dot.Id(id))
@@ -167,9 +167,9 @@ object NodeParser extends Interpolator[Unit, Option[Dot.Ref], Dot.Ref]:
             Some(Dot.CompassPoint.valueOf(point.capitalize)))))
       
       case _ =>
-        throw ParseError("not a valid node ID")
+        throw InterpolationError("not a valid node ID")
     }
   
   def initial: Option[Dot.Ref] = None
-  def complete(value: Option[Dot.Ref]): Dot.Ref exposes ParseError = value.get
-  def insert(state: Option[Dot.Ref], value: Option[Unit]): Option[Dot.Ref] exposes ParseError = state
+  def complete(value: Option[Dot.Ref]): Dot.Ref exposes InterpolationError = value.get
+  def insert(state: Option[Dot.Ref], value: Option[Unit]): Option[Dot.Ref] exposes InterpolationError = state
