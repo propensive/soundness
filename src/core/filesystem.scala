@@ -40,28 +40,28 @@ type Majuscule = 'A' | 'B' | 'C' | 'D' | 'E' | 'F' | 'G' | 'H' | 'I' | 'J' | 'K'
     'O' | 'P' | 'Q' | 'R' | 'S' | 'T' | 'U' | 'V' | 'W' | 'X' | 'Y' | 'Z'
 
 case class InsufficientPermissions(inode: Filesystem#Inode)
-extends JovianException("the permissions of the path cannot be changed")
+extends JovianError("the permissions of the path cannot be changed")
 
 case class NotFile(path: Filesystem#Path)
-extends JovianException(str"the path ${path.toString} is not a file")
+extends JovianError(str"the path ${path.toString} is not a file")
 
 case class NotSymlink(path: Filesystem#Path)
-extends JovianException(str"the path ${path.toString} is not a symlink")
+extends JovianError(str"the path ${path.toString} is not a symlink")
 
 case class NotDirectory(path: Filesystem#Path)
-extends JovianException(str"the path ${path.toString} is not a directory")
+extends JovianError(str"the path ${path.toString} is not a directory")
 
 case class Nonexistent(path: Filesystem#Path)
-extends JovianException(str"the path ${path.toString} does not exist")
+extends JovianError(str"the path ${path.toString} does not exist")
 
 case class AlreadyExistent(path: Filesystem#Path)
-extends JovianException(str"the path ${path.toString} already exists")
+extends JovianError(str"the path ${path.toString} already exists")
 
 case class MissingResource(path: Classpath#Path)
-extends JovianException(str"the resource ${path.toString} could not be accessed")
+extends JovianError(str"the resource ${path.toString} could not be accessed")
 
 case class UnknownPwd()
-extends JovianException("the current working directory cannot be determined")
+extends JovianError("the current working directory cannot be determined")
 
 open class Classpath(classLoader: ClassLoader = getClass.nn.getClassLoader.nn) extends Root("/", ""):
   type AbsolutePath = CpPath
@@ -542,31 +542,31 @@ object ByteSize:
     def +(that: ByteSize): ByteSize = byteSize + that
     def value: Long = byteSize
 
-open class JovianException(message: String) extends Exception(str"jovian: $message")
+open class JovianError(message: String) extends Exception(str"jovian: $message")
 
 case class DifferentFilesystems(source: Filesystem#Path, destination: Filesystem#Path)
-extends JovianException(
+extends JovianError(
     str"${source.toString} and ${destination.toString} are not on the same filesystem")
 
 case class FileNotFound(inode: Filesystem#Inode)
-extends JovianException(str"the file or directory ${inode.name} was not found")
+extends JovianError(str"the file or directory ${inode.name} was not found")
 
 case class NotSymbolicLink(inode: Filesystem#Inode)
-extends JovianException(str"the path ${inode.name} is not a symbolic link")
+extends JovianError(str"the path ${inode.name} is not a symbolic link")
 
 case class BufferOverflow()
-extends JovianException(str"the stream contained more data than the buffer could hold")
+extends JovianError(str"the stream contained more data than the buffer could hold")
 
-case class StreamInterrupted() extends JovianException(str"the stream was interrupted")
+case class StreamInterrupted() extends JovianError(str"the stream was interrupted")
 
 case class NotWritable(inode: Filesystem#Inode)
-extends JovianException(str"could not write to ${inode.name}")
+extends JovianError(str"could not write to ${inode.name}")
 
 case class NotReadable(inode: Filesystem#Inode)
-extends JovianException(str"could not read from ${inode.name}")
+extends JovianError(str"could not read from ${inode.name}")
 
 case class FileReadError(inode: Filesystem#Inode, e: Throwable)
-extends JovianException(str"could not read from ${inode.name}")
+extends JovianError(str"could not read from ${inode.name}")
 
 object Filesystem:
   lazy val roots: Set[Filesystem] =
