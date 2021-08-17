@@ -1,13 +1,9 @@
-[<img alt="GitHub Workflow" src="https://img.shields.io/github/workflow/status/propensive/cataract/Build/main?style=for-the-badge" height="24">](https://github.com/propensive/cataract/actions)
-[<img src="https://img.shields.io/discord/633198088311537684?color=8899f7&label=DISCORD&style=for-the-badge" height="24">](https://discord.gg/CHCPjERybv)
-[<img src="https://img.shields.io/maven-central/v/com.propensive/cataract-core_2.12?color=2465cd&style=for-the-badge" height="24">](https://search.maven.org/artifact/com.propensive/cataract-core_2.12)
-[<img src="https://vent.dev/badge/propensive/cataract" height="24">](https://vent.dev/)
-
 <img src="/doc/images/github.png" valign="middle">
 
 # Cataract
 
-__Cataract__ provides a typesafe representation of CSS, including properties, selectors, rules and stylesheets.
+__Cataract__ provides a typesafe representation of CSS, including properties, selectors, rules and
+stylesheets.
 
 ## Features
 
