@@ -1,13 +1,10 @@
-[<img alt="GitHub Workflow" src="https://img.shields.io/github/workflow/status/propensive/wisteria/Build/main?style=for-the-badge" height="24">](https://github.com/propensive/wisteria/actions)
-[<img src="https://img.shields.io/discord/633198088311537684?color=8899f7&label=DISCORD&style=for-the-badge" height="24">](https://discord.gg/CHCPjERybv)
-[<img src="https://img.shields.io/maven-central/v/com.propensive/wisteria-core_2.12?color=2465cd&style=for-the-badge" height="24">](https://search.maven.org/artifact/com.propensive/wisteria-core_2.12)
-[<img src="https://vent.dev/badge/propensive/wisteria" height="24">](https://vent.dev/)
-
 <img src="/doc/images/github.png" valign="middle">
 
 # Wisteria
 
-__Wisteria__ is a generic macro for automatic materialization of typeclasses for datatypes composed from product types (e.g. case classes) and coproduct types (e.g. enums). It supports recursively-defined datatypes out-of-the-box, and incurs no significant time-penalty during compilation.
+__Wisteria__ is a generic macro for automatic materialization of typeclasses for datatypes composed from product
+types (e.g. case classes) and coproduct types (e.g. enums). It supports recursively-defined datatypes
+out-of-the-box, and incurs no significant time-penalty during compilation.
 
 ## Features
 
@@ -70,9 +67,9 @@ Wisteria is not currently able to access default values for case class parameter
 
 Wisteria is classified as __maturescent__. Propensive defines the following five stability levels for open-source projects:
 
-- _embryonic_: for experimental or demonstrative purposes only, without guarantee of longevity
+- _embryonic_: for experimental or demonstrative purposes only, without any guarantees of longevity
 - _fledgling_: of proven utility, seeking contributions, but liable to significant redesigns
-- _maturescent_: major design decisions broady settled, seeking probatory adoption and refinement of designs
+- _maturescent_: major design decisions broady settled, seeking probatory adoption and refinement
 - _dependable_: production-ready, subject to controlled ongoing maintenance and enhancement; tagged as version `1.0` or later
 - _adamantine_: proven, reliable and production-ready, with no further breaking changes ever anticipated
 
@@ -86,11 +83,6 @@ fury layer clone -i propensive/wisteria
 or imported into an existing layer with,
 ```
 fury layer import -i propensive/wisteria
-```
-A binary is available on Maven Central as `com.propensive:wisteria-core_<scala-version>:2.0.0`. This may be added
-to an [sbt](https://www.scala-sbt.org/) build with:
-```
-libraryDependencies += "com.propensive" %% "wisteria-core" % "2.0.0"
 ```
 
 ## Contributing
