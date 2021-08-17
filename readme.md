@@ -1,16 +1,11 @@
-[<img alt="GitHub Workflow" src="https://img.shields.io/github/workflow/status/propensive/jovian/Build/main?style=for-the-badge" height="24">](https://github.com/propensive/jovian/actions)
-[<img src="https://img.shields.io/badge/gitter-discuss-f00762?style=for-the-badge" height="24">](https://gitter.im/propensive/jovian)
-[<img src="https://img.shields.io/discord/633198088311537684?color=8899f7&label=DISCORD&style=for-the-badge" height="24">](https://discord.gg/CHCPjERybv)
-[<img src="https://img.shields.io/matrix/propensive.jovian:matrix.org?label=MATRIX&color=0dbd8b&style=for-the-badge" height="24">](https://app.element.io/#/room/#propensive.jovian:matrix.org)
-[<img src="https://img.shields.io/twitter/follow/propensive?color=%2300acee&label=TWITTER&style=for-the-badge" height="24">](https://twitter.com/propensive)
-[<img src="https://img.shields.io/maven-central/v/com.propensive/jovian-core_2.12?color=2465cd&style=for-the-badge" height="24">](https://search.maven.org/artifact/com.propensive/jovian-core_2.12)
-[<img src="https://vent.dev/badge/propensive/jovian" height="24">](https://vent.dev/)
-
 <img src="/doc/images/github.png" valign="middle">
 
 # Jovian
 
-__Jovian__ is a simple library for performing disk I/O with Scala. It provides access to most filesystem operations through the `Path` type—an abstract representation of a file or a directory—plus typeclass-based `read` and `write` methods which can use ad-hoc types, including streaming types like `LazyList`. Jovian is designed to take advantage of Scala 3's safer exceptions.
+__Jovian__ is a simple library for performing disk I/O with Scala. It provides access to most filesystem
+operations through the `Path` type—an abstract representation of a file or a directory—plus typeclass-based
+`read` and `write` methods which can use ad-hoc types, including streaming types like `LazyList`. Jovian is
+designed to take advantage of Scala 3's safer exceptions.
 
 ## Features
 
@@ -23,28 +18,71 @@ __Jovian__ is a simple library for performing disk I/O with Scala. It provides a
 
 ## Getting Started
 
-## The `Path` type
+Unlike many filesystem APIs, __Jovian__ provides different types for `Path`s, `File`s, `Directory`s
+and `Symlink`s. While a `Path` (which is defined in [Slalom](https://github.com/propensive/slalom/))
+represents some location within a filesystem—which may or may not exist and may be either a file,
+directory or symlink—instances of `File`, `Directory` and `Symlink` should only exist when the
+corresponding file, directory or symlink exists on disk.
 
-Most operations are accessible through the `Path` type. This is a canonicalized string representation of a path
-on disk, which may be a directory or file, or may not exist.
+While there is always the possibility that the existence or nature of a `File`, `Directory` or
+`Symlink` could change between the instance being created—after all, we are using _immutable_ heap
+objects to represent _mutable_ disk objects which could be changed by other operating system
+processes—this is a race condition (and would be with other designs, too), and is _recoverable_
+through exception handling.
+
+## Filesystems
+
+`Path`s may be relative or absolute, and must be rooted against a particular filesystem. On Linux
+Mac OS X, and other UNIX-like systems, there is a single root (with the type `Filesystem`, called
+`Unix`, whereas Windows provides multiple roots, indicated by a single alphabetic drive letter, such
+as `windows.DriveC`, which corresponds to the drive, `C:\`.
+
+The `/` operator (regardless of the operating system's standard path separator) may be used on
+`Filesystem` and `Path` objects to navigate the directory sturcture. For example,
+```scala
+val filesPath = Unix / "usr" / "share" / "files"
+```
+or,
+```scala
+val programsPath = windows.DriveC / "Program Files"
+```
+
+## Path-dependent Types
+
+The types `Path`, `File`, `Directory` and `Symlink` are all path-dependent types, defined within
+a particular `Filesystem` object, and the type system will not allow them to be mixed arbitrarily
+between different filesystems.
+
+For example, a `Unix.Path` instance may produce a `Unix.File` value, whose `hardLinkTo` method
+can accept a `Unix.Path`, but not a `windows.DriveD.Path`.
+
+However, we could still put a `Unix.Path` in the same `List` as a `windows.DriveC.Path`. That `List`
+would have the type `List[Filesystem#Path]`, and many of its members' methods, such as `parent` or
+`uriString`, could still be used.
+
+For example, the expression,
+```scala
+List(Unix / "home" / "work", windows.DriveC / "Documents").map(_.directory.parent)
+```
+has the type `List[Filesystem#Directory]`
 
 ## Reading
 
-Files can be read with the `Path#read` method, which takes the type it should return, for example,
-`path.read[String]()` or `path.read[LazyList[String]]()`. If used in a position with an expected type, this type
-parameter may be omitted, for example:
+`File`s can be read with the `File#read` method, which takes, as a parameter, the type it should
+return, for example, `path.read[String]()` or `path.read[LazyList[String]]()`. If used in a position
+with an expected type, this type parameter may be omitted, for example:
 ```scala
 def contents: String = path.read()
 ```
 
-The `read` method takes an optional `limit` value parameter which specifies a limit on the number of byte that
-may be read. This defaults to the conservative figure of `65536`. If this is exceeded, a `TooMuchData` exception
-is thrown.
+The `read` method takes an optional `limit` value parameter which specifies a limit on the number of
+bytes that may be read. This defaults to the conservative figure of `65536`. If this is exceeded, a
+`TooMuchData` exception is thrown.
 
 ## Writing
 
-It's possible to write to a file using the `Path#write` and `Path#append` methods. These each take a single
-`content` parameter, which can be one of a variety of types. As standard, these include,
+It's possible to write to a file using the `File#write` and `File#append` methods. These each take a
+single `content` parameter, which can be one of a variety of types. As standard, these include,
 - `IArray[Byte]`
 - `LazyList[IArray[Byte]]`
 - `String`
@@ -55,9 +93,9 @@ which together support complete and streamed byte and character data.
 
 Jovian is classified as __fledgling__. Propensive defines the following five stability levels for open-source projects:
 
-- _embryonic_: for experimental or demonstrative purposes only, without guarantee of longevity
+- _embryonic_: for experimental or demonstrative purposes only, without any guarantees of longevity
 - _fledgling_: of proven utility, seeking contributions, but liable to significant redesigns
-- _maturescent_: major design decisions broady settled, seeking probatory adoption and refinement of designs
+- _maturescent_: major design decisions broady settled, seeking probatory adoption and refinement
 - _dependable_: production-ready, subject to controlled ongoing maintenance and enhancement; tagged as version `1.0` or later
 - _adamantine_: proven, reliable and production-ready, with no further breaking changes ever anticipated
 
@@ -71,11 +109,6 @@ fury layer clone -i propensive/jovian
 or imported into an existing layer with,
 ```
 fury layer import -i propensive/jovian
-```
-A binary is available on Maven Central as `com.propensive:jovian-core_<scala-version>:0.1.0`. This may be added
-to an [sbt](https://www.scala-sbt.org/) build with:
-```
-libraryDependencies += "com.propensive" %% "jovian-core" % "0.1.0"
 ```
 
 ## Contributing
