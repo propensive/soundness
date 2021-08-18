@@ -219,14 +219,19 @@ We suggest that all contributors read the [Contributing Guide](/contributing.md)
 contributing to Probably easier.
 
 Please __do not__ contact project maintainers privately with questions, as other users cannot then benefit from
-the answers.
+answers given in private.
 
 ## Author
 
-Probably was designed and developed by [Jon Pretty](https://twitter.com/propensive), and commercial support and
-training is available from [Propensive O&Uuml;](https://propensive.com/).
+Probably was designed and developed by Jon Pretty, and commercial support and training is available from
+[Propensive O&Uuml;](https://propensive.com/).
 
 
+
+## Name
+
+The name _Probably_ acknowledges an appropriate level of confidence in writing tests which _probe_
+the functionality of a program, in contrast to using types which (in theory, at least) _prove_ it.
 
 ## License
 
