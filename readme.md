@@ -46,14 +46,21 @@ We suggest that all contributors read the [Contributing Guide](/contributing.md)
 contributing to Punctuation easier.
 
 Please __do not__ contact project maintainers privately with questions, as other users cannot then benefit from
-the answers.
+answers given in private.
 
 ## Author
 
-Punctuation was designed and developed by [Jon Pretty](https://twitter.com/propensive), and commercial support and
-training is available from [Propensive O&Uuml;](https://propensive.com/).
+Punctuation was designed and developed by Jon Pretty, and commercial support and training is available from
+[Propensive O&Uuml;](https://propensive.com/).
 
 
+
+## Name
+
+To _punctuate_ is "to mark with points" (or more specifically, symbolic characters) and also, "to
+stress or single out as important", which describes Markdown in both the literal sense that
+punctuation characters are added to text, and in the figurative sense that this punctuates a
+document with stress and other styled emphasis.
 
 ## License
 
