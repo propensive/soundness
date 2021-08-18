@@ -99,14 +99,19 @@ We suggest that all contributors read the [Contributing Guide](/contributing.md)
 contributing to Simplistic easier.
 
 Please __do not__ contact project maintainers privately with questions, as other users cannot then benefit from
-the answers.
+answers given in private.
 
 ## Author
 
-Simplistic was designed and developed by [Jon Pretty](https://twitter.com/propensive), and commercial support and
-training is available from [Propensive O&Uuml;](https://propensive.com/).
+Simplistic was designed and developed by Jon Pretty, and commercial support and training is available from
+[Propensive O&Uuml;](https://propensive.com/).
 
 
+
+## Name
+
+_Simplistic_ means "extreme or misleading simplicity", which serves to describe Simplistic's
+typeclasses, which are intended to be an absolute minimum interface between other libraries.
 
 ## License
 
