@@ -106,14 +106,18 @@ We suggest that all contributors read the [Contributing Guide](/contributing.md)
 contributing to Acyclicity easier.
 
 Please __do not__ contact project maintainers privately with questions, as other users cannot then benefit from
-the answers.
+answers given in private.
 
 ## Author
 
-Acyclicity was designed and developed by [Jon Pretty](https://twitter.com/propensive), and commercial support and
-training is available from [Propensive O&Uuml;](https://propensive.com/).
+Acyclicity was designed and developed by Jon Pretty, and commercial support and training is available from
+[Propensive O&Uuml;](https://propensive.com/).
 
 
+
+## Name
+
+Acyclicity takes its name from the graphs it represents, which must not contain cycles.
 
 ## License
 
