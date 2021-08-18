@@ -46,14 +46,19 @@ We suggest that all contributors read the [Contributing Guide](/contributing.md)
 contributing to Xylophone easier.
 
 Please __do not__ contact project maintainers privately with questions, as other users cannot then benefit from
-the answers.
+answers given in private.
 
 ## Author
 
-Xylophone was designed and developed by [Jon Pretty](https://twitter.com/propensive), and commercial support and
-training is available from [Propensive O&Uuml;](https://propensive.com/).
+Xylophone was designed and developed by Jon Pretty, and commercial support and training is available from
+[Propensive O&Uuml;](https://propensive.com/).
 
 
+
+## Name
+
+A _xylophone_ is a musical instrument made from wood ("xylo-") or trees, and it provides a
+representation of XML trees. "Xylophone" and "XML" begin with the same infrequently-used letter.
 
 ## License
 
