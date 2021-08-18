@@ -211,14 +211,19 @@ We suggest that all contributors read the [Contributing Guide](/contributing.md)
 contributing to Cataract easier.
 
 Please __do not__ contact project maintainers privately with questions, as other users cannot then benefit from
-the answers.
+answers given in private.
 
 ## Author
 
-Cataract was designed and developed by [Jon Pretty](https://twitter.com/propensive), and commercial support and
-training is available from [Propensive O&Uuml;](https://propensive.com/).
+Cataract was designed and developed by Jon Pretty, and commercial support and training is available from
+[Propensive O&Uuml;](https://propensive.com/).
 
 
+
+## Name
+
+Cataract takes its name from the synonym of _waterfall_—or _cascade_—since it represents _Cascading_ Style
+Sheets.
 
 ## License
 
