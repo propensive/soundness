@@ -46,14 +46,20 @@ We suggest that all contributors read the [Contributing Guide](/contributing.md)
 contributing to Honeycomb easier.
 
 Please __do not__ contact project maintainers privately with questions, as other users cannot then benefit from
-the answers.
+answers given in private.
 
 ## Author
 
-Honeycomb was designed and developed by [Jon Pretty](https://twitter.com/propensive), and commercial support and
-training is available from [Propensive O&Uuml;](https://propensive.com/).
+Honeycomb was designed and developed by Jon Pretty, and commercial support and training is available from
+[Propensive O&Uuml;](https://propensive.com/).
 
 
+
+## Name
+
+Honeycomb is named after the hexagonal prismic cells in a bees' nest, where they store their honey
+and their larvæ; the most innovative feature of Honeycomb is its provision of safe nesting of HTML
+nodes.
 
 ## License
 
