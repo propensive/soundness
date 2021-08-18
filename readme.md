@@ -95,14 +95,18 @@ We suggest that all contributors read the [Contributing Guide](/contributing.md)
 contributing to Wisteria easier.
 
 Please __do not__ contact project maintainers privately with questions, as other users cannot then benefit from
-the answers.
+answers given in private.
 
 ## Author
 
-Wisteria was designed and developed by [Jon Pretty](https://twitter.com/propensive), and commercial support and
-training is available from [Propensive O&Uuml;](https://propensive.com/).
+Wisteria was designed and developed by Jon Pretty, and commercial support and training is available from
+[Propensive O&Uuml;](https://propensive.com/).
 
 
+
+## Name
+
+Wisteria is a flowering plant, much like magnolia is, and Wisteria is a derivative of Magnolia.
 
 ## License
 
