@@ -244,14 +244,19 @@ We suggest that all contributors read the [Contributing Guide](/contributing.md)
 contributing to Gastronomy easier.
 
 Please __do not__ contact project maintainers privately with questions, as other users cannot then benefit from
-the answers.
+answers given in private.
 
 ## Author
 
-Gastronomy was designed and developed by [Jon Pretty](https://twitter.com/propensive), and commercial support and
-training is available from [Propensive O&Uuml;](https://propensive.com/).
+Gastronomy was designed and developed by Jon Pretty, and commercial support and training is available from
+[Propensive O&Uuml;](https://propensive.com/).
 
 
+
+## Name
+
+Gastronomy is named after the art and science of "good eating", which leads to digestion, since the
+consumes data to produce digests (but has subsequently grown in scope).
 
 ## License
 
