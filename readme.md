@@ -34,7 +34,7 @@ of cryptographic methods:
   - `decrypt` for decrypting encrypted data
   - `public` to derive a `PublicKey` from the `PrivateKey`
   - `pem` to provide the private key as a PEM-encoded string
-- `SymmetricKey provides `verify`, `encrypt`, `pem`, `sign` and `decrypt` in a single key.
+- `SymmetricKey` provides `verify`, `encrypt`, `pem`, `sign` and `decrypt` in a single key.
 
 Additionally, the extension methods, `digest` and `hmac` are provided for any value which can be
 serialized to bytes.
