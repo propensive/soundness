@@ -180,14 +180,19 @@ We suggest that all contributors read the [Contributing Guide](/contributing.md)
 contributing to Cosmopolite easier.
 
 Please __do not__ contact project maintainers privately with questions, as other users cannot then benefit from
-the answers.
+answers given in private.
 
 ## Author
 
-Cosmopolite was designed and developed by [Jon Pretty](https://twitter.com/propensive), and commercial support and
-training is available from [Propensive O&Uuml;](https://propensive.com/).
+Cosmopolite was designed and developed by Jon Pretty, and commercial support and training is available from
+[Propensive O&Uuml;](https://propensive.com/).
 
 
+
+## Name
+
+Cosmopolite is so-named because it provides multilingual strings, which are free to travel, and are
+not associated with any particular nation.
 
 ## License
 
