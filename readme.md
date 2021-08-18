@@ -256,7 +256,7 @@ Gastronomy was designed and developed by Jon Pretty, and commercial support and 
 ## Name
 
 Gastronomy is named after the art and science of "good eating", which leads to digestion, since the
-consumes data to produce digests (but has subsequently grown in scope).
+library consumes data to produce digests (but has subsequently grown in scope).
 
 ## License
 
