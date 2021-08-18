@@ -145,14 +145,20 @@ We suggest that all contributors read the [Contributing Guide](/contributing.md)
 contributing to Rudiments easier.
 
 Please __do not__ contact project maintainers privately with questions, as other users cannot then benefit from
-the answers.
+answers given in private.
 
 ## Author
 
-Rudiments was designed and developed by [Jon Pretty](https://twitter.com/propensive), and commercial support and
-training is available from [Propensive O&Uuml;](https://propensive.com/).
+Rudiments was designed and developed by Jon Pretty, and commercial support and training is available from
+[Propensive O&Uuml;](https://propensive.com/).
 
 
+
+## Name
+
+The word _rudiment_ is defined as, "the principle which lies at the bottom of any development; an
+unfinished beginning", which is apt for a library whose purpose is to provide such common
+functionality that it might lie at the start of many other libries.
 
 ## License
 
