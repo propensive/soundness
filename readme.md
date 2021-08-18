@@ -1,3 +1,5 @@
+[<img src="https://img.shields.io/discord/633198088311537684?color=8899f7&label=DISCORD&style=for-the-badge" height="24">](https://discord.gg/v7CjtbnwDq)
+[<img src="https://vent.dev/badge/propensive/gastronomy" height="24">](https://vent.dev/)
 <img src="/doc/images/github.png" valign="middle">
 
 # Gastronomy
@@ -19,8 +21,6 @@ immutable API.
 - serializers and parsers for PEM-encoded data
 
 ## Getting Started
-
-# Overview
 
 __Gastronomy__ provides representations of public, private and symmetric keys which offer a number
 of cryptographic methods:
@@ -211,6 +211,7 @@ privateKey.pem(RevealSecretKey)
 Gastronomy may be easily extended to support other cryptographic algorithms. The existing
 implementations of `Rsa`, `Dsa`, `Aes`, `Sha1`, `Sha2` and `Md5` should be studied to investigate
 this possibility.
+
 
 ## Status
 
