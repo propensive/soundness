@@ -1,3 +1,5 @@
+[<img src="https://img.shields.io/discord/633198088311537684?color=8899f7&label=DISCORD&style=for-the-badge" height="24">](https://discord.gg/v7CjtbnwDq)
+[<img src="https://vent.dev/badge/propensive/probably" height="24">](https://vent.dev/)
 <img src="/doc/images/github.png" valign="middle">
 
 # Probably
@@ -14,7 +16,7 @@ it&rsquo;s the same as for any other program.
 - tests may be run multiple times, with results aggregated
 - automatic derivation of arbitrary instances
 - functional API where it matters; impure calls where it's safe and practical
-
+¦
 
 ## Getting Started
 
