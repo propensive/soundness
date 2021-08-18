@@ -46,14 +46,20 @@ We suggest that all contributors read the [Contributing Guide](/contributing.md)
 contributing to Euphemism easier.
 
 Please __do not__ contact project maintainers privately with questions, as other users cannot then benefit from
-the answers.
+answers given in private.
 
 ## Author
 
-Euphemism was designed and developed by [Jon Pretty](https://twitter.com/propensive), and commercial support and
-training is available from [Propensive O&Uuml;](https://propensive.com/).
+Euphemism was designed and developed by Jon Pretty, and commercial support and training is available from
+[Propensive O&Uuml;](https://propensive.com/).
 
 
+
+## Name
+
+A _euphemism_ is a means to describe something harsh with an inoffensive expression, while the
+JSON format, through its use of just a few simple types, can be considered a way of hiding
+unpleasant details when exchanging data.
 
 ## License
 
