@@ -17,7 +17,7 @@
 package exoskeleton
 
 import collection.immutable.ListMap
-import scala.util._
+import scala.util.*
 
 import scala.annotation.tailrec
 

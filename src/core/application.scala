@@ -22,67 +22,48 @@ import scala.util.*
 
 import java.io.*
 
+def arguments(using Shell): IArray[String] = summon[Shell].args
+
 trait Application:
-  def main(context: Context): Io[Exit]
+  def main(using Shell): Exit
   def complete(cli: Cli): Completions
   
-  final def main(args: Array[String]): Unit =
+  final def main(args: IArray[String]): Unit =
     val argList = args.to(List)
     val env = System.getenv().asScala.toMap
     val props = System.getProperties().asScala.toMap
 
-    val context = Context(argList, env, props)
+    val shell = Shell(args, env, props)
     
-    val result = argList match
-      case "{completion}" :: Shell(shell) :: AsInt(current) :: "--" :: args =>
-        Log.info("----------")
-        Log.info(s"   shell: ${shell.shell}")
-        Log.info(s"    args: ${args.mkString("[\"", "\", \"", "\"]")}")
-        Log.info(s" current: $current")
+    argList match
+      case "{exoskeleton}" :: ShellType(shell) :: AsInt(current) :: "--" :: args =>
         val cli = Cli(args.head, args.tail, env, props, current - 1)
-        shell.serialize(cli, complete(cli)).foreach(println)
-        Io.stdout.flush()
-        Io.stderr.flush()
+        val completions: Completions = try complete(cli) catch Throwable => Completions(Nil)
+        shell.serialize(cli, completions).foreach(println)
         System.exit(0)
-      case "{completion-generate}" :: args =>
-        Generate.install(Context(args, env, props))
+      case "{exoskeleton-generate}" :: _ =>
+        Generate.install()(using Shell(args.tail, env, props))
       case list =>
-        val result = main(context).exec()
-        Io.stdout.flush()
-        Io.stderr.flush()
-        result match
-          case Failure(err) =>
+        val result = try main(using shell) catch case e: Exception =>
+          e.printStackTrace()
+          Exit(2)
 
-          case Success(Exit(n)) =>
-            System.exit(0)
+        System.out.flush()
+        System.err.flush()
+        
+        System.exit(result.status)
 
-object Io:
+object Counter extends Application:
+  def complete(cli: Cli): Completions =
+    Completions(List(
+      Choice("one", "first option"),
+      Choice("two", s"second option"),
+      Choice("three", "third option"),
+      Choice("four", "fourth option"),
+      Choice("five", "fifth option")
+    ), title = "Here are the choices:")
 
-  private def capture(stream: PrintStream, replace: PrintStream => Unit): PrintStream =
-    replace(new PrintStream({ _ => () }))
-    stream
-
-  private[exoskeleton] val stdout: PrintStream = capture(System.out, System.setOut)
-  private[exoskeleton] val stderr: PrintStream = capture(System.err, System.setErr)
-
-  def apply[T](blk: => T): Io[T] = () => Try(blk)
-  def pure[T](blk: T): Io[T] = () => Success(blk)
-  def unit: Io[Unit] = () => Success(())
-
-  object out:
-    def print(string: String): Io[Unit] = Io(stdout.println(string))
-    def println(string: String): Io[Unit] = Io(stdout.println(string))
-  
-  object err:
-    def print(string: String): Io[Unit] = Io(stderr.println(string))
-    def println(string: String): Io[Unit] = Io(stderr.println(string))
-
-  def from[T](value: => Try[T]): Io[T] = new Io[T]:
-    private[exoskeleton] def exec(): Try[T] = value
-
-abstract class Io[+T]():
-  io =>
-    private[exoskeleton] def exec(): Try[T]
-  
-    def flatMap[S](fn: T => Io[S]): Io[S] = () => io.exec().flatMap(fn(_).exec())
-    def map[S](fn: T => S): Io[S] = () => io.exec().map(fn)
+  def main(using Shell): Exit =
+    println("Do nothing")
+    println(System.getenv("FPATH"))
+    Exit(0)
