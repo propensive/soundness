@@ -30,8 +30,8 @@ trait Application:
   
   final def main(args: IArray[String]): Unit =
     val argList = args.to(List)
-    val env = System.getenv().asScala.toMap
-    val props = System.getProperties().asScala.toMap
+    val env = System.getenv().nn.asScala.toMap
+    val props = System.getProperties().nn.asScala.toMap
 
     val shell = Shell(args, env, props)
     
@@ -48,8 +48,8 @@ trait Application:
           e.printStackTrace()
           Exit(2)
 
-        System.out.flush()
-        System.err.flush()
+        System.out.nn.flush()
+        System.err.nn.flush()
         
         System.exit(result.status)
 

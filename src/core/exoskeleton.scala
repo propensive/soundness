@@ -103,7 +103,7 @@ abstract class ShellType(val shell: String):
     val out = BufferedWriter(FileWriter(file))
     out.write(script(cmd))
     out.close()
-    file.getAbsolutePath
+    file.getAbsolutePath.nn
 
 object Zsh extends ShellType("zsh"):
   def description: String = "ZSH shell"
@@ -113,10 +113,10 @@ object Zsh extends ShellType("zsh"):
     val width = maxLength(completions.defs.filter(_.word.startsWith(cli.currentArg)))
     (completions.title.option.map(List("", "-X", _).mkString("\t")) ++ completions.defs.flatMap {
       case Choice(word, desc, hidden, incomplete) =>
-        val hide = if(hidden) List("-n") else Nil
+        val hide = if hidden then List("-n") else Nil
         List(
           List(describe(width, word, desc.option), "-d", "desc") ::: hide ::: List("--", word),
-          if(incomplete) List("", "-n") ::: List("--", s"$word.") else Nil
+          if incomplete then List("", "-n") ::: List("--", s"$word.") else Nil
         ).map(_.mkString("\t"))
     }).to(LazyList)
   
@@ -191,7 +191,7 @@ case class ParamMap(args: String*):
   case class Arg(value: String)
 
   case class Part(no: Int, start: Int, end: Int):
-    def apply() = args(no).substring(start, end)
+    def apply(): String = args(no).slice(start, end)
 
   case class Parameter(key: Part, values: Vector[Part] = Vector()):
     override def toString =

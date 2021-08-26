@@ -79,12 +79,10 @@ case class Arg(index: Int, string: String):
   def longOpt: Boolean = string.startsWith("--")
   def shortOpt: Boolean = string.startsWith("-") && !string.startsWith("--")
 
-case class Params(prefix: Vector[Arg] = Vector(),
-                  opts: ListMap[Arg, Vector[Arg]] = ListMap(),
-                  suffix: Option[Vector[Arg]] = None) {
+case class Params(prefix: Vector[Arg] = Vector(), opts: ListMap[Arg, Vector[Arg]] = ListMap(),
+                      suffix: Option[Vector[Arg]] = None):
   def -<(extractor: Extractor[_]): ParsedParams { type Type = extractor.type } =
     (new ParsedParams(this, Right(Map())) { type Type = extractor.type }) -< extractor
-}
 
 abstract class ParsedParams(val unparsed: Params,
                             val extracted: Either[CliException, Map[Extractor[_], Any]]) { self =>
@@ -100,7 +98,8 @@ abstract class ParsedParams(val unparsed: Params,
     }
 
   def apply(extractor: Extractor[_])(using Type <:< extractor.type): extractor.Type =
-    extracted.right.get(extractor) match { case e: extractor.Type => e }
+    extracted.right.get(extractor) match
+      case e: extractor.Type => e
 }
 
 trait Extractor[T]:
@@ -113,7 +112,7 @@ case class Command[T: Parser]() extends Extractor[T]:
   }.toRight(MissingCommand())
 
 case class Param[T: Parser](key: ParamKey, keys: ParamKey*) extends Extractor[T]:
-  private[this] def keyMatches: Set[String] = (key +: keys).map(_.keyString).to(Set)
+  private def keyMatches: Set[String] = (key +: keys).map(_.keyString).to(Set)
   def extract(params: Params): Either[CliException, (T, Params)] = params.opts.find { case (key, value) =>
     keyMatches.contains(key.string)
   }.toRight(MissingParameter(key)).flatMap {
@@ -126,7 +125,7 @@ case class Param[T: Parser](key: ParamKey, keys: ParamKey*) extends Extractor[T]
   }
 
 case class OptParam[T: Parser](key: ParamKey, keys: ParamKey*) extends Extractor[Option[T]]:
-  private[this] def keyMatches: Set[String] = (key +: keys).map(_.keyString).to(Set)
+  private def keyMatches: Set[String] = (key +: keys).map(_.keyString).to(Set)
   def extract(params: Params): Either[CliException, (Option[T], Params)] =
     (params.opts.find { case (k, _) => keyMatches.contains(k.string) }) match
       case None          => Right((None, params))
@@ -135,7 +134,7 @@ case class OptParam[T: Parser](key: ParamKey, keys: ParamKey*) extends Extractor
       }
   
 case class RepeatedParam[T: Parser](key: ParamKey, keys: ParamKey*) extends Extractor[List[T]]:
-  private[this] def keyMatches: Set[String] = (key +: keys).map(_.keyString).to(Set)
+  private def keyMatches: Set[String] = (key +: keys).map(_.keyString).to(Set)
   
   def extract(params: Params): Either[CliException, (List[T], Params)] =
     val (values, filtered) = params.opts.partition { (k, v) => keyMatches.contains(k.string) }
