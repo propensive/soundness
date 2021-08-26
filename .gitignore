@@ -1,3 +1,6 @@
 out/
 bin/
 pub/
+classes/
+lib/
+niveau.jar

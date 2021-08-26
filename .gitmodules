@@ -81,3 +81,12 @@
 [submodule "mod/xylophone"]
 	path = mod/xylophone
 	url = git@github.com:propensive/xylophone
+[submodule "mod/adversaria"]
+	path = mod/adversaria
+	url = git@github.com:propensive/adversaria
+[submodule "mod/exoskeleton"]
+	path = mod/exoskeleton
+	url = git@github.com:propensive/exoskeleton
+[submodule "mod/caesura"]
+	path = mod/caesura
+	url = git@github.com:propensive/caesura

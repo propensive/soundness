@@ -1,10 +1,13 @@
 rudiments/core:
+adversaria/core: rudiments/core
 acyclicity/core: contextual/core
 cataract/core: simplistic/html simplistic/css simplistic/http iridescence/core
+caesura/core: wisteria/core
 contextual/core: rudiments/core
 cosmopolite/core: rudiments/core
 escritoire/core: rudiments/core
 euphemism/core: wisteria/core simplistic/http
+exoskeleton/core: rudiments/core
 gastronomy/core: kaleidoscope/core wisteria/core
 guillotine/core: contextual/core
 honeycomb/core: simplistic/css simplistic/http simplistic/html rudiments/core

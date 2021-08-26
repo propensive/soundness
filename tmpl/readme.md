@@ -1,8 +1,5 @@
-[<img alt="GitHub Workflow" src="https://img.shields.io/github/workflow/status/propensive/${ID}/Build/main?style=for-the-badge" height="24">](https://github.com/propensive/${ID}/actions)
-[<img src="https://img.shields.io/discord/633198088311537684?color=8899f7&label=DISCORD&style=for-the-badge" height="24">](https://discord.gg/CHCPjERybv)
-[<img src="https://img.shields.io/maven-central/v/com.propensive/${MAVENID}_2.12?color=2465cd&style=for-the-badge" height="24">](https://search.maven.org/artifact/com.propensive/${MAVENID}_2.12)
+[<img src="https://img.shields.io/discord/633198088311537684?color=8899f7&label=DISCORD&style=for-the-badge" height="24">](https://discord.gg/v7CjtbnwDq)
 [<img src="https://vent.dev/badge/propensive/${ID}" height="24">](https://vent.dev/)
-
 <img src="/doc/images/github.png" valign="middle">
 
 # ${TITLE}
@@ -49,14 +46,18 @@ We suggest that all contributors read the [Contributing Guide](/contributing.md)
 contributing to ${TITLE} easier.
 
 Please __do not__ contact project maintainers privately with questions, as other users cannot then benefit from
-the answers.
+answers given in private.
 
 ## Author
 
-${TITLE} was designed and developed by [Jon Pretty](https://twitter.com/propensive), and commercial support and
-training is available from [Propensive O&Uuml;](https://propensive.com/).
+${TITLE} was designed and developed by Jon Pretty, and commercial support and training is available from
+[Propensive O&Uuml;](https://propensive.com/).
 
 ${THANKS}
+
+## Name
+
+${NAME}
 
 ## License
 

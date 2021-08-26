@@ -5,9 +5,11 @@ mkdir -p classes
 scalac "-classpath:$CP" -d classes -deprecation -new-syntax -Ysafe-init -feature -Xcheck-macros -Ycheck-all-patmat -Yexplicit-nulls \
     mod/acyclicity/src/core/*.scala \
     mod/cataract/src/core/*.scala \
+    mod/caesura/src/core/*.scala \
     mod/contextual/src/core/*.scala \
     mod/cosmopolite/src/core/*.scala \
     mod/escritoire/src/core/*.scala \
+    mod/exoskeleton/src/core/*.scala \
     mod/euphemism/src/core/*.scala \
     mod/gastronomy/src/core/*.scala \
     mod/guillotine/src/core/*.scala \
