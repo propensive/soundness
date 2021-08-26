@@ -88,7 +88,7 @@ end ProductDerivation
 trait Derivation[TypeClass[_]] extends CommonDerivation[TypeClass]:
   def split[T](ctx: SealedTrait[Typeclass, T]): Typeclass[T]
 
-  transparent inline def subtypes[T, SubtypeTuple <: Tuple](m: Mirror.SumOf[T], idx: Int = 0)
+  transparent inline def subtypes[T, SubtypeTuple <: Tuple](sum: Mirror.SumOf[T], idx: Int = 0)
       : List[SealedTrait.Subtype[Typeclass, T, ?]] =
     inline erasedValue[SubtypeTuple] match
       case _: EmptyTuple =>
@@ -96,8 +96,8 @@ trait Derivation[TypeClass[_]] extends CommonDerivation[TypeClass]:
       
       case _: (s *: tail) =>
         new SealedTrait.Subtype(typeInfo[s], IArray[Any](), IArray.from(paramTypeAnns[T]), idx,
-            CallByNeed(summonInline[Typeclass[s]]), x => m.ordinal(x) == idx,
-            _.asInstanceOf[s & T]) :: subtypes[T, tail](m, idx + 1)
+            CallByNeed(summonInline[Typeclass[s]]), x => sum.ordinal(x) == idx,
+            _.asInstanceOf[s & T]) :: subtypes[T, tail](sum, idx + 1)
 
   inline def derivedMirrorSum[A](sum: Mirror.SumOf[A]): Typeclass[A] =
     val sealedTrait = SealedTrait(typeInfo[A], IArray(subtypes[A, sum.MirroredElemTypes](sum)*),

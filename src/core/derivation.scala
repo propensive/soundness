@@ -145,10 +145,9 @@ object Macro:
     val constr = symbol.primaryConstructor.tree.asInstanceOf[DefDef]
     
     val areRepeated = constr.paramss.flatMap(_.params.flatMap {
-        case ValDef(name, tpeTree, _) => Some(name -> isRepeated(tpeTree.tpe))
-        case _                        => None
-      }
-    )
+      case ValDef(name, tpeTree, _) => Some(name -> isRepeated(tpeTree.tpe))
+      case _                        => None
+    })
     
     Expr(areRepeated)
 
