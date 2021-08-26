@@ -31,11 +31,11 @@ trait Format:
     def parseLine(items: Vector[String], idx: Int, quoted: Boolean, start: Int, end: Int,
                       join: Boolean): Vector[String] =
       if line.length <= idx then
-        if (join) items.init :+ items.last + line.substring(start, if (end == -1) idx else end)
+        if join then items.init :+ items.last + line.substring(start, if (end == -1) idx else end)
         else items :+ line.substring(start, if (end == -1) idx else end)
       else (line(idx): @switch) match
         case `separator` =>
-          if (quoted) parseLine(items, idx + 1, quoted, start, end, join)
+          if quoted then parseLine(items, idx + 1, quoted, start, end, join)
           else
             val elems = if (start == -1) items :+ "" else
               val suffix = line.substring(start, if end == -1 then idx else end)
@@ -44,7 +44,7 @@ trait Format:
             parseLine(elems, idx + 1, quoted = false, idx + 1, -1, join = false)
 
         case '"' =>
-          if (quoted) parseLine(items, idx + 1, quoted = false, start, idx, join = join)
+          if quoted then parseLine(items, idx + 1, quoted = false, start, idx, join = join)
           else if end != -1 then
             parseLine(items :+ line.substring(start, idx), idx + 1, quoted = true, idx + 1, -1,
                 join = true)
@@ -120,7 +120,9 @@ object Csv extends Format:
     def write(value: T): Row
 
   override val separator = ','
-  def escape(str: String): String = str.replaceAll("\"", "\"\"")
+  def escape(str: String): String =
+    val c = str.count { ch => ch == ' ' || ch == '"' }
+    if c > 0 then s""""${str.replaceAll("\"", "\"\"")}"""" else str
 
 object Tsv extends Format:
   override val separator = '\t'

@@ -19,16 +19,16 @@
 */
 package caesura
 
-import probably._
+import probably.*
 
-object Test extends TestApp {
-  def tests(): Unit = {
+object Test extends Suite("Caesura tests"):
+  def run(using Runner): Unit =
     test("simple parse") {
       Csv.parse("""hello,world""")
     }.assert(_ == Row("hello", "world"))
 
     test("simple parse with quotes") {
-      Csv.parse(""""hello","world"""") // "
+      Csv.parse(""""hello","world"""")
     }.assert(_ == Row("hello", "world"))
 
     test("empty unquoted field at start") {
@@ -44,7 +44,7 @@ object Test extends TestApp {
     }.assert(_ == Row("hello", "", "world"))
 
     test("empty quoted field at start") {
-      Csv.parse(""""","hello","world"""") // "
+      Csv.parse(""""","hello","world"""")
     }.assert(_ == Row("", "hello", "world"))
 
     test("empty quoted field at end") {
@@ -52,15 +52,15 @@ object Test extends TestApp {
     }.assert(_ == Row("hello", "world", ""))
 
     test("empty quoted field in middle") {
-      Csv.parse(""""hello","","world"""") // "
+      Csv.parse(""""hello","","world"""")
     }.assert(_ == Row("hello", "", "world"))
 
     test("quoted comma") {
-      Csv.parse(""""hello,world"""") // "
+      Csv.parse(""""hello,world"""")
     }.assert(_ == Row("hello,world"))
 
     test("escaped quotes") {
-      Csv.parse(""""hello""world"""") // "
+      Csv.parse(""""hello""world"""")
     }.assert(_ == Row("""hello"world"""))
 
     test("decode case class") {
@@ -81,11 +81,11 @@ object Test extends TestApp {
 
     test("convert simple row to string") {
       Csv(Row("hello", "world"))
-    }.assert(_ == """"hello","world"""") // "
+    }.assert(_ == """hello,world""")
 
     test("convert complex row to string") {
       Csv(Row("0.1", "two", "three", "4", "five", "six"))
-    }.assert(_ == """"0.1","two","three","4","five","six"""") // "
+    }.assert(_ == """0.1,two,three,4,five,six""") // "
 
     test("convert row with escaped quote") {
       Csv(Row("hello\"world"))
@@ -101,10 +101,7 @@ object Test extends TestApp {
 
     test("convert case class to tsv") {
       Tsv(Row.from(Foo("hello", "world")))
-    }.assert(_ == "\"hello\"\t\"world\"") // "
-  }
-}
+    }.assert(_ == "hello\tworld") // "
 
 case class Foo(one: String, two: String)
-
 case class Bar(one: Double, foo1: Foo, four: Int, foo2: Foo)
