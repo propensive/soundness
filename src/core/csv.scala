@@ -19,152 +19,109 @@
 */
 package caesura
 
-import magnolia._
+import wisteria.*
 
-import scala.annotation._
-import scala.language.experimental.macros
+import scala.annotation.*
 
-object Decoding {
-
-  implicit val stringDecoder: Decoder[String] = Decoder(_.elems.head)
-  implicit val intDecoder: Decoder[Int] = Decoder(_.elems.head.toInt)
-  implicit val booleanDecoder: Decoder[Boolean] = Decoder(_.elems.head == "true")
-  implicit val doubleDecoder: Decoder[Double] = Decoder(_.elems.head.toDouble)
-  implicit val byteDecoder: Decoder[Byte] = Decoder(_.elems.head.toByte)
-  implicit val shortDecoder: Decoder[Short] = Decoder(_.elems.head.toShort)
-  implicit val floatDecoder: Decoder[Float] = Decoder(_.elems.head.toFloat)
-  implicit val charDecoder: Decoder[Char] = Decoder(_.elems.head.head)
-
-  object Decoder {
-    type Typeclass[T] = Decoder[T]
-
-    def combine[T](caseClass: CaseClass[Decoder, T]): Decoder[T] = new Decoder[T] {
-      def cols: Int = caseClass.parameters.map(_.typeclass.cols).sum
-
-      def decode(row: Row): T = {
-
-        @annotation.tailrec
-        def parseParams(row: Row, typeclasses: Seq[Decoder[_]], params: Vector[Any]): T = {
-          if (typeclasses.isEmpty) caseClass.rawConstruct(params)
-          else {
-            val typeclass = typeclasses.head
-            val appended = params :+ typeclass.decode(Row(row.elems.take(typeclass.cols): _*))
-            parseParams(Row(row.elems.drop(typeclass.cols): _*), typeclasses.tail, appended)
-          }
-        }
-
-        val typeclasses = caseClass.parameters.map(_.typeclass)
-        parseParams(row, typeclasses, Vector())
-      }
-    }
-
-    def apply[T](fn: Row => T, len: Int = 1): Decoder[T] = new Decoder[T] {
-      def decode(elems: Row): T = fn(elems)
-
-      def cols: Int = len
-    }
-
-    implicit def gen[T]: Decoder[T] = macro Magnolia.gen[T]
-  }
-
-  trait Decoder[T] {
-    def decode(elems: Row): T
-
-    def cols: Int
-  }
-}
-
-object Encoding {
-
-  implicit val stringEncoder: Encoder[String] = s => Row(s)
-  implicit val intEncoder: Encoder[Int] = i => Row(i.toString)
-  implicit val booleanEncoder: Encoder[Boolean] = b => Row(b.toString)
-  implicit val byteEncoder: Encoder[Byte] = b => Row(b.toString)
-  implicit val shortEncoder: Encoder[Short] = s => Row(s.toString)
-  implicit val floatEncoder: Encoder[Float] = f => Row(f.toString)
-  implicit val doubleEncoder: Encoder[Double] = d => Row(d.toString)
-  implicit val charEncoder: Encoder[Char] = c => Row(c.toString)
-
-  object Encoder {
-    type Typeclass[T] = Encoder[T]
-
-    def combine[T](caseClass: CaseClass[Encoder, T]): Encoder[T] = (value: T) =>
-      Row(caseClass.parameters.flatMap {
-        param => param.typeclass.encode(param.dereference(value)).elems
-      }: _*)
-
-    implicit def gen[T]: Encoder[T] = macro Magnolia.gen[T]
-  }
-
-  trait Encoder[T] {
-    def encode(value: T): Row
-  }
-}
-
-trait Format {
-
+trait Format:
   protected val separator: Char
 
-  def parse(line: String): Row = {
+  def parse(line: String): Row =
     @tailrec
     def parseLine(items: Vector[String], idx: Int, quoted: Boolean, start: Int, end: Int,
-                  join: Boolean): Vector[String] =
-      if (line.length <= idx) {
+                      join: Boolean): Vector[String] =
+      if line.length <= idx then
         if (join) items.init :+ items.last + line.substring(start, if (end == -1) idx else end)
         else items :+ line.substring(start, if (end == -1) idx else end)
-      } else (line(idx): @switch) match {
+      else (line(idx): @switch) match
         case `separator` =>
           if (quoted) parseLine(items, idx + 1, quoted, start, end, join)
-          else {
-            val elems = if (start == -1) items :+ "" else {
-              val suffix = line.substring(start, if (end == -1) idx else end)
-              if (join) items.init :+ items.last + suffix else items :+ suffix
-            }
+          else
+            val elems = if (start == -1) items :+ "" else
+              val suffix = line.substring(start, if end == -1 then idx else end)
+              if join then items.init :+ items.last + suffix else items :+ suffix
 
             parseLine(elems, idx + 1, quoted = false, idx + 1, -1, join = false)
-          }
 
         case '"' =>
           if (quoted) parseLine(items, idx + 1, quoted = false, start, idx, join = join)
-          else if (end != -1) {
-            parseLine(items :+ line.substring(start, idx), idx + 1, quoted = true, idx + 1, -1, join = true)
-          } else parseLine(items, idx + 1, quoted = true, idx + 1, -1, join = false)
+          else if end != -1 then
+            parseLine(items :+ line.substring(start, idx), idx + 1, quoted = true, idx + 1, -1,
+                join = true)
+          else parseLine(items, idx + 1, quoted = true, idx + 1, -1, join = false)
 
         case _ =>
           parseLine(items, idx + 1, quoted, start, end, join)
-      }
 
-    Row(parseLine(Vector(), 0, quoted = false, 0, -1, join = false): _*)
-  }
+    Row(parseLine(Vector(), 0, quoted = false, 0, -1, join = false)*)
 
-  def apply(row: Row): String =
-    row.elems.map(escape).mkString(separator.toString)
-
+  def apply(row: Row): String = row.elems.map(escape).mkString(separator.toString)
   protected def escape(str: String): String
-}
 
-object Row {
+object Row:
+  def from[T](value: T)(using writer: Csv.Writer[T]): Row = writer.write(value)
 
-  import Encoding._
+case class Row(elems: String*):
+  def as[T](using decoder: Csv.Reader[T]): T = decoder.decode(this)
 
-  def from[T: Encoder](value: T): Row = implicitly[Encoder[T]].encode(value)
-}
+object Csv extends Format:
+  
+  given Reader[String] = _.elems.head
+  given Reader[Int] = _.elems.head.toInt
+  given Reader[Boolean] = _.elems.head == "true"
+  given Reader[Double] = _.elems.head.toDouble
+  given Reader[Byte] = _.elems.head.toByte
+  given Reader[Short] = _.elems.head.toShort
+  given Reader[Float] = _.elems.head.toFloat
+  given Reader[Char] = _.elems.head.head
 
-case class Row(elems: String*) {
+  object Reader extends ProductDerivation[Reader]:
+    def join[T](caseClass: CaseClass[Reader, T]): Reader[T] = Reader[T](
+      fn = { row =>
+        @annotation.tailrec
+        def parseParams(row: Row, typeclasses: Seq[Reader[_]], params: Vector[Any]): T =
+          if typeclasses.isEmpty then caseClass.rawConstruct(params)
+          else
+            val typeclass = typeclasses.head
+            val appended = params :+ typeclass.decode(Row(row.elems.take(typeclass.width)*))
+            parseParams(Row(row.elems.drop(typeclass.width)*), typeclasses.tail, appended)
+        val typeclasses = caseClass.params.map(_.typeclass)
+        parseParams(row, typeclasses, Vector())
+      },
+      width = caseClass.params.map(_.typeclass.width).sum
+    )
 
-  import Decoding._
+    def apply[T](fn: Row => T, width: Int = 1): Reader[T] =
+      val colWidth = width
+      new Reader[T]:
+        def decode(elems: Row): T = fn(elems)
+        override def width: Int = colWidth
 
-  def as[T: Decoder]: T = implicitly[Decoder[T]].decode(this)
-}
+  trait Reader[T]:
+    def decode(elems: Row): T
+    def width: Int = 1
 
-object Csv extends Format {
+  given Writer[String] = s => Row(s)
+  given Writer[Int] = i => Row(i.toString)
+  given Writer[Boolean] = b => Row(b.toString)
+  given Writer[Byte] = b => Row(b.toString)
+  given Writer[Short] = s => Row(s.toString)
+  given Writer[Float] = f => Row(f.toString)
+  given Writer[Double] = d => Row(d.toString)
+  given Writer[Char] = c => Row(c.toString)
+
+  object Writer extends ProductDerivation[Writer]:
+    def join[T](caseClass: CaseClass[Writer, T]): Writer[T] = (value: T) =>
+      Row(caseClass.params.flatMap {
+        param => param.typeclass.write(param.deref(value)).elems
+      }*)
+
+  trait Writer[T]:
+    def write(value: T): Row
+
   override val separator = ','
   def escape(str: String): String = str.replaceAll("\"", "\"\"")
-}
 
-object Tsv extends Format {
+object Tsv extends Format:
   override val separator = '\t'
-  // The TSV standard forbids tabs appearing in fields. We do nothing to uphold this, though.
-  def escape(str: String): String = str
-}
-
+  def escape(str: String): String = str.replaceAll("\t", "        ")
