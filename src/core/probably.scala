@@ -187,7 +187,15 @@ case class Debug(found: Option[String] = None, filename: Maybe[String] = Unset, 
   def add(key: String, value: String): Debug = copy(info = info.updated(key, value))
   
   def allInfo: ListMap[String, String] =
-    List("found" -> found.getOrElse(Unset), "expected" -> expected).filter(_._2 != Unset).to(ListMap).mapValues(_.toString).to(ListMap) ++ info
+    val basicInfo =
+      List("found" -> found.getOrElse(Unset), "expected" -> expected)
+        .filter(_._2 != Unset)
+        .to(ListMap)
+        .view
+        .mapValues(_.toString)
+        .to(ListMap)
+    
+    basicInfo ++ info
 
 object Macros:
   import scala.reflect.*
