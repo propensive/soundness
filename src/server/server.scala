@@ -38,7 +38,7 @@ object Handler:
   given SimpleHandler[String] =
     SimpleHandler("text/plain", str => Body.Chunked(LazyList(str.bytes)))
 
-  given [T](using hr: simplistic.HttpResponse[T]): SimpleHandler[T] =
+  given [T](using hr: clairvoyant.HttpResponse[T]): SimpleHandler[T] =
     SimpleHandler(hr.mimeType, value => Body.Chunked(LazyList(hr.content(value).bytes)))
 
   given Handler[Redirect] with
@@ -171,7 +171,7 @@ trait ParamReader[T]:
   def read(value: String): Option[T]
 
 object RequestParam:
-  given simplistic.HtmlAttribute["name", RequestParam[?]] with
+  given clairvoyant.HtmlAttribute["name", RequestParam[?]] with
     def name: String = "name"
     def serialize(value: RequestParam[?]): String = value.key
 

@@ -60,7 +60,7 @@ object Postable:
 class Postable[T](val contentType: MediaType, val content: T => LazyList[Bytes])
 
 object Method:
-  given formmethod: simplistic.HtmlAttribute["formmethod", Method] with
+  given formmethod: clairvoyant.HtmlAttribute["formmethod", Method] with
     def name: String = "formmethod"
     def serialize(method: Method): String = method.toString
 
@@ -263,35 +263,35 @@ case class Params(values: List[(String, String)]):
   }.join("&")
 
 object Uri:
-  given action: simplistic.HtmlAttribute["action", Uri] with
+  given action: clairvoyant.HtmlAttribute["action", Uri] with
     def name: String = "action"
     def serialize(uri: Uri): String = uri.toString
   
-  given cite: simplistic.HtmlAttribute["cite", Uri] with
+  given cite: clairvoyant.HtmlAttribute["cite", Uri] with
     def name: String = "cite"
     def serialize(uri: Uri): String = uri.toString
   
-  given data: simplistic.HtmlAttribute["data", Uri] with
+  given data: clairvoyant.HtmlAttribute["data", Uri] with
     def name: String = "data"
     def serialize(uri: Uri): String = uri.toString
 
-  given formaction: simplistic.HtmlAttribute["formaction", Uri] with
+  given formaction: clairvoyant.HtmlAttribute["formaction", Uri] with
     def name: String = "formaction"
     def serialize(uri: Uri): String = uri.toString
  
-  given poster: simplistic.HtmlAttribute["poster", Uri] with
+  given poster: clairvoyant.HtmlAttribute["poster", Uri] with
     def name: String = "poster"
     def serialize(uri: Uri): String = uri.toString
 
-  given src: simplistic.HtmlAttribute["src", Uri] with
+  given src: clairvoyant.HtmlAttribute["src", Uri] with
     def name: String = "src"
     def serialize(uri: Uri): String = uri.toString
   
-  given href: simplistic.HtmlAttribute["href", Uri] with
+  given href: clairvoyant.HtmlAttribute["href", Uri] with
     def name: String = "href"
     def serialize(uri: Uri): String = uri.toString
   
-  given manifest: simplistic.HtmlAttribute["manifest", Uri] with
+  given manifest: clairvoyant.HtmlAttribute["manifest", Uri] with
     def name: String = "manifest"
     def serialize(uri: Uri): String = uri.toString
 
@@ -333,19 +333,19 @@ object MediaType:
                               catch _ => None
     case _                 => None
   
-  given formenctype: simplistic.HtmlAttribute["formenctype", MediaType] with
+  given formenctype: clairvoyant.HtmlAttribute["formenctype", MediaType] with
     def name: String = "formenctype"
     def serialize(mediaType: MediaType): String = mediaType.toString
   
-  given media: simplistic.HtmlAttribute["media", MediaType] with
+  given media: clairvoyant.HtmlAttribute["media", MediaType] with
     def name: String = "media"
     def serialize(mediaType: MediaType): String = mediaType.toString
   
-  given enctype: simplistic.HtmlAttribute["enctype", MediaType] with
+  given enctype: clairvoyant.HtmlAttribute["enctype", MediaType] with
     def name: String = "enctype"
     def serialize(mediaType: MediaType): String = mediaType.toString
   
-  given htype: simplistic.HtmlAttribute["htype", MediaType] with
+  given htype: clairvoyant.HtmlAttribute["htype", MediaType] with
     def name: String = "type"
     def serialize(mediaType: MediaType): String = mediaType.toString
 
