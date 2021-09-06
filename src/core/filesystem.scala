@@ -521,11 +521,11 @@ object encodings:
     def carry(arr: Array[Byte]): Int = 0
 
 object Encoding:
-  given acceptCharset[T]: simplistic.HtmlAttribute["acceptCharset", Encoding] with
+  given acceptCharset[T]: clairvoyant.HtmlAttribute["acceptCharset", Encoding] with
     def serialize(enc: Encoding): String = enc.name
     def name: String = "accept-charset"
   
-  given charset[T]: simplistic.HtmlAttribute["charset", Encoding] with
+  given charset[T]: clairvoyant.HtmlAttribute["charset", Encoding] with
     def serialize(enc: Encoding): String = enc.name
     def name: String = "charset"
 
