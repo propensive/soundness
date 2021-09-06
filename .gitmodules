@@ -11,8 +11,8 @@
 	url = https://github.com/propensive/kaleidoscope
 	branch = main
 [submodule "mod/simplistic"]
-	path = mod/simplistic
-	url = https://github.com/propensive/simplistic
+	path = mod/clairvoyant
+	url = https://github.com/propensive/clairvoyant
 	branch = main
 [submodule "mod/probably"]
 	path = mod/probably
