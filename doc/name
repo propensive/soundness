@@ -1,2 +1,3 @@
-_Simplistic_ means "extreme or misleading simplicity", which serves to describe Simplistic's
-typeclasses, which are intended to be an absolute minimum interface between other libraries.
+A _clairvoyant_ is able to foresee the future, as the Clairvoyant modules foresee the need
+for integration between different libraries. Like the premonitions of a clairvoyant, these
+integration points may be vague and simplistic.

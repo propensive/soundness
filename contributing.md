@@ -1,14 +1,14 @@
 <img src="/doc/images/200x200.png" align="right">
 
-# Contributing to Simplistic
+# Contributing to Clairvoyant
 
-Firstly, thank you for taking an interesting in contributing! Simplistic is an open-source project, and welcomes
+Firstly, thank you for taking an interesting in contributing! Clairvoyant is an open-source project, and welcomes
 contributions in the form of feature code, bug reports & fixes, tests, feature suggestions and anything else
 which may help to make it better software.
 
 ## Developing with Fury
 
-Simplistic is developed using [Fury](https://github.com/propensive/fury), which may be installed by running the
+Clairvoyant is developed using [Fury](https://github.com/propensive/fury), which may be installed by running the
 launcher script in the root directory, like so:
 ```
 ./fury system install
@@ -19,7 +19,7 @@ system settings.
 
 ### Compiling
 
-The simplest way to compile Simplistic is to run,
+The simplest way to compile Clairvoyant is to run,
 ```
 fury
 ```
@@ -37,26 +37,26 @@ We recommend using [Visual Studio Code](https://code.visualstudio.com/) with the
 
 ## Before Starting
 
-It&rsquo;s a good idea to [discuss](https://riot.im/app/#/room/#propensive.simplistic:matrix.org) potential changes
+It&rsquo;s a good idea to [discuss](https://riot.im/app/#/room/#propensive.clairvoyant:matrix.org) potential changes
 with one of the maintainers before starting work. Although efforts are made to document future development work
 using the [issue tracker](/issues), it will not always be up-to-date, and the maintainers may have useful
 information to share. The worst-case scenario would be for a contributor to spend a large amount of time
 producing a PR, only for it to be rejected by the maintainers for not fitting with their ideas. A quick
 conversation before starting work can save a lot of time.
 
-If a response is not forthcoming in the [Riot chatroom](https://riot.im/app/#/room/#propensive.simplistic:matrix.org),
+If a response is not forthcoming in the [Riot chatroom](https://riot.im/app/#/room/#propensive.clairvoyant:matrix.org),
 contacting one of the project maintainers directly _but publicly_ may help. Please __do not__ contact the
 maintainers privately, as it misses a good opportunity to share knowledge with a wide audience. Jon Pretty can
 usually be contacted [on Twitter](https://twitter.com/propensive).
 
 All development work&mdash;whether bugfixing or implementing new features&mdash;should have a corresponding
-issue before work starts. If you have commit rights to the `propensive/simplistic` repository, please only push to
+issue before work starts. If you have commit rights to the `propensive/clairvoyant` repository, please only push to
 branches which named after the issue number, prefixed with `issue/`, for example, `issue/423`.
 
 ## Contribution standards
 
 Pull requests should try to follow the coding style of existing code in the repository. They are unlikely to be
-rejected on grounds of formatting, except in extreme cases. Simplistic does not use automatic code-formatting
+rejected on grounds of formatting, except in extreme cases. Clairvoyant does not use automatic code-formatting
 because it has proven to produce unreliable results (and furthermore, hand-formatting is not particularly
 laborious).
 
@@ -79,5 +79,5 @@ if it&rsquo;s needed.
 ## Conduct
 
 Contributors and other participants in online discussions are expected to be polite and to nurture a pleasant
-development environment for all Simplistic&rsquo;s users. Propensive O&Uuml; reserves the right to censure
+development environment for all Clairvoyant&rsquo;s users. Propensive O&Uuml; reserves the right to censure
 and&mdash;in extreme cases&mdash;ban users whose behavior, in their opinion, is detrimental toward this goal.

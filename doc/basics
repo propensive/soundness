@@ -1,4 +1,4 @@
-__Simplistic__ defines several typeclass interfaces to provide interoperability
+__Clairvoyant__ defines several typeclass interfaces to provide interoperability
 between different libraries, without requiring a hard dependency between them.
 
 ## The Problem
@@ -28,7 +28,7 @@ Ideally, users should be able to add both J and H (independently) to their
 build, and import no more than the packages of J and H, and automatically get
 access to the integration typeclass instance without any further work.
 
-This is what Simplistic provides.
+This is what Clairvoyant provides.
 
 ## The Solution
 
@@ -42,8 +42,8 @@ library. Whilst this may compromise the utility of these typeclasses, they are
 intended to be used only by the integration libraries; not by end-users.
 
 Continuing the earlier example, the libraries J and H could both depend on
-Simplistic. J would then define a typeclass instance for its JSON type in its
-companion object, and H would define a typeclass converter from Simplistic's
+Clairvoyant. J would then define a typeclass instance for its JSON type in its
+companion object, and H would define a typeclass converter from Clairvoyant's
 typeclass to its own user-facing typeclass interface in its companion object.
 
 Consequently, users of both H and J could depend on both libraries, import both

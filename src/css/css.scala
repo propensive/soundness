@@ -1,5 +1,5 @@
 /*
-    Simplistic, version 0.2.0. Copyright 2020-21 Jon Pretty, Propensive OÜ.
+    Clairvoyant, version 0.12.0. Copyright 2020-21 Jon Pretty, Propensive OÜ.
 
     The primary distribution site is: https://propensive.com/
 
@@ -14,7 +14,7 @@
     and limitations under the License.
 */
 
-package simplistic
+package clairvoyant
 
 trait CssSelection[-T]:
   def selection(value: T): String
