@@ -20,7 +20,7 @@ import rudiments.*
 import language.dynamics
 
 object Stylesheet:
-  given simplistic.HttpResponse[Stylesheet] with
+  given clairvoyant.HttpResponse[Stylesheet] with
     def mimeType: String = "text/css; charset=utf-8"
     def content(stylesheet: Stylesheet): String = stylesheet.toString
   
@@ -47,7 +47,7 @@ case class Import(url: String) extends Stylesheet.Item:
   override def toString(): String = str"@import url('$url');"
 
 object Style:
-  given simplistic.HtmlAttribute["style", Style] with
+  given clairvoyant.HtmlAttribute["style", Style] with
     def serialize(value: Style): String = value.properties.map(_.toString).join(";")
     def name: String = "style"
 

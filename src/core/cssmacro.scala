@@ -70,7 +70,7 @@ case class PropertyDef[Name <: Label, -T: ShowProperty]():
 object Selectable:
   given ident: Selectable[Selector] = identity(_)
 
-  given [T](using sel: simplistic.CssSelection[T]): Selectable[T] = sel.selection(_) match
+  given [T](using sel: clairvoyant.CssSelection[T]): Selectable[T] = sel.selection(_) match
     case s".$cls" => Selector.Class(cls)
     case s"#$id"  => Selector.Id(id)
     case elem     => Selector.Element(elem)
