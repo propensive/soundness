@@ -50,12 +50,12 @@ extension (sc: StringContext)
 
 
 object Cls:
-  given simplistic.CssSelection[Cls] = cls => s".${cls.name}"
+  given clairvoyant.CssSelection[Cls] = cls => s".${cls.name}"
 
 case class Cls(name: String)
 
 object DomId:
-  given simplistic.CssSelection[DomId] = id => s"#${id.name}"
+  given clairvoyant.CssSelection[DomId] = id => s"#${id.name}"
 
 case class DomId(name: String)
 
@@ -109,7 +109,7 @@ enum Wrap:
   case Soft, Hard
 
 object Attribute:
-  given [L <: Label, V, T](using att: simplistic.HtmlAttribute[L, V]): Attribute[L, V, T] with
+  given [L <: Label, V, T](using att: clairvoyant.HtmlAttribute[L, V]): Attribute[L, V, T] with
     def convert(value: V): String | Boolean = att.serialize(value)
     override def rename: Option[String] = Some(att.name)
 

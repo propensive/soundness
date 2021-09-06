@@ -34,6 +34,16 @@ trait Item[+Name <: Label]:
   def inline: Boolean
   def unclosed: Boolean
   def verbatim: Boolean
+  def string: String =
+    val attributeString = attributes.map {
+      case (key, value: Boolean) => str" $key"
+      case (key, value: String)  => str""" $key="${value}""""
+    }.join
+    
+    if children.isEmpty then str"<$label$attributeString/>"
+    else str"<$label$attributeString>${children.map(_.toString).join}</$label>"
+
+  override def toString: String = string
 
 object Node:
   @targetName("make")
@@ -61,7 +71,7 @@ object Html extends Item["html"]:
     Node(label, unclosed, inline, verbatim, Map(), Seq(head, body))
 
 object Tag:
-  given simplistic.CssSelection[Tag[?, ?, ?]] = _.label
+  given clairvoyant.CssSelection[Tag[?, ?, ?]] = _.label
 
 case class Tag[+Name <: Label, Children <: Label, Atts <: Label]
               (label: Name, unclosed: Boolean = false, inline: Boolean = false,
@@ -81,7 +91,7 @@ extends Item[Name], Dynamic:
     Node(label, unclosed, inline, verbatim, Map(), children)
 
 object TransTag:
-  given simplistic.CssSelection[TransTag[?, ?, ?]] = _.label
+  given clairvoyant.CssSelection[TransTag[?, ?, ?]] = _.label
 
 case class TransTag[+Name <: Label, Children <: Label, Atts <: Label]
                    (label: Name, unclosed: Boolean = false, inline: Boolean = false,
@@ -100,7 +110,7 @@ extends Item[Name], Dynamic:
     Node(label, unclosed, inline, verbatim, Map(), children)
 
 object Element:
-  given simplistic.CssSelection[Element[?, ?]] = elem => elem.label+elem.attributes.map {
+  given clairvoyant.CssSelection[Element[?, ?]] = elem => elem.label+elem.attributes.map {
     case (key, value: String) => str"[$key=$value]"
     case (key, value: Boolean) => str"[$key]"
   }.join
@@ -127,7 +137,7 @@ case class Node[+Name <: Label](label: String, unclosed: Boolean, tagInline: Boo
 case class HtmlDoc(root: Item["html"])
 
 object HtmlDoc:
-  given simplistic.HttpResponse[HtmlDoc] with
+  given clairvoyant.HttpResponse[HtmlDoc] with
     def mimeType: String = "text/html; charset=utf-8"
     def content(value: HtmlDoc): String = HtmlDoc.serialize(value)
 
