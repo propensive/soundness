@@ -56,7 +56,7 @@ trait Format:
 
     Row(parseLine(Vector(), 0, quoted = false, 0, -1, join = false)*)
 
-  def apply(row: Row): String = row.elems.map(escape).mkString(separator.toString)
+  def serialize(row: Row): String = row.elems.map(escape).mkString(separator.toString)
   protected def escape(str: String): String
 
 object Row:
@@ -66,7 +66,12 @@ case class Row(elems: String*):
   def as[T](using decoder: Csv.Reader[T]): T = decoder.decode(this)
 
 object Csv extends Format:
-  
+
+  given clairvoyant.HttpResponse[Csv] with
+    def mimeType: String = "text/csv"
+    def content(value: Csv): String =
+      value.rows.map(Csv.serialize(_)).join("\n")
+
   given Reader[String] = _.elems.head
   given Reader[Int] = _.elems.head.toInt
   given Reader[Boolean] = _.elems.head == "true"
@@ -122,8 +127,13 @@ object Csv extends Format:
 
   override val separator = ','
   def escape(str: String): String =
-    val c = str.count { ch => ch == ' ' || ch == '"' }
+    val c = str.count { ch => ch.isWhitespace || ch == '"' || ch == ',' }
     if c > 0 then s""""${str.replaceAll("\"", "\"\"").nn}"""" else str
+
+extension [T](value: Seq[T])
+  def csv(using Csv.Writer[T]): Csv = Csv(value.map(summon[Csv.Writer[T]].write(_)))
+
+case class Csv(rows: Seq[Row])
 
 object Tsv extends Format:
   override val separator = '\t'
