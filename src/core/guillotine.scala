@@ -28,8 +28,8 @@ import java.io.*
 type Stream = LazyList[String]
 
 object envs:
-  val enclosing: Env = Env(System.getenv.nn.asScala.to(Map), None)
-  val empty: Env = Env(Map(), None)
+  val enclosing: Env = Env(System.getenv.nn.asScala.to(Map))
+  val empty: Env = Env(Map())
 
 enum Context:
   case Awaiting, Unquoted, Quotes2, Quotes1
@@ -37,7 +37,6 @@ enum Context:
 case class State(current: Context, esc: Boolean, args: List[String])
 
 object Executor:
-  
   given stream: Executor[Stream] =
     proc => BufferedReader(InputStreamReader(proc.getInputStream)).lines().nn.toScala(LazyList)
   
@@ -54,9 +53,9 @@ case class Command(args: String*):
     processBuilder.directory(summon[Env].workDirFile)
     summon[Executor[T]].interpret(processBuilder.start().nn)
 
-case class Env(vars: Map[String, String], workDir: Option[String]):
+case class Env(vars: Map[String, String], workDir: Maybe[String] = Unset):
   private[guillotine] lazy val envArray: Array[String] = vars.map { (k, v) => s"$k=$v" }.to(Array)
-  private[guillotine] lazy val workDirFile: File = File(workDir.getOrElse(System.getenv("PWD")))
+  private[guillotine] lazy val workDirFile: File = File(workDir.otherwise(System.getenv("PWD")))
   
 case class ExecError(command: Command, stdout: Stream, stderr: Stream) extends Exception
 
@@ -67,7 +66,7 @@ object Sh extends Interpolator[List[String], State, Command]:
     val args = state.current match
       case Quotes2        => throw InterpolationError("the double quotes have not been closed")
       case Quotes1        => throw InterpolationError("the single quotes have not been closed")
-      case _ if state.esc => throw InterpolationError("an escape character is not permitted at the end")
+      case _ if state.esc => throw InterpolationError("cannot terminate with an escape character")
       case _              => state.args
     
     Command(args*)
