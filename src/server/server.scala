@@ -38,8 +38,11 @@ object Handler:
   given SimpleHandler[String] =
     SimpleHandler("text/plain", str => Body.Chunked(LazyList(str.bytes)))
 
-  given [T](using hr: clairvoyant.HttpResponse[T]): SimpleHandler[T] =
+  given stringHandler[T](using hr: clairvoyant.HttpResponse[T, String]): SimpleHandler[T] =
     SimpleHandler(hr.mimeType, value => Body.Chunked(LazyList(hr.content(value).bytes)))
+  
+  given iarrayByteHandler[T](using hr: clairvoyant.HttpResponse[T, LazyList[IArray[Byte]]]): SimpleHandler[T] =
+    SimpleHandler(hr.mimeType, value => Body.Chunked(hr.content(value)))
 
   given Handler[Redirect] with
     def process(content: Redirect, status: Int, headers: Map[String, String],
