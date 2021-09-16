@@ -101,6 +101,7 @@ case class Property(name: String) extends Dynamic:
 object Sys extends Dynamic:
   def selectDynamic(key: String): Property = Property(key)
   def applyDynamic(key: String)(): String exposes KeyNotFound = selectDynamic(key).apply()
+  def bigEndian: Boolean = java.nio.ByteOrder.nativeOrder == java.nio.ByteOrder.BIG_ENDIAN
 
 case class KeyNotFound(name: String) extends Exception(str"rudiments: key $name not found")
 
