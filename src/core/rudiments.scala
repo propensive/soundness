@@ -52,38 +52,6 @@ extension (value: Any)
 extension (value: Array[Byte])
   def unsafeImmutable: IArray[Byte] = value.asInstanceOf[IArray[Byte]]
 
-extension (value: String)
-  def populated: Option[String] = if value.isEmpty then None else Some(value)
-  def cut(delimiter: String): IArray[String] = cut(delimiter, 0)
-  
-  def cut(delimiter: String, limit: Int): IArray[String] =
-    IArray.from(value.split(Pattern.quote(delimiter), limit).nn.map(_.nn))
-  
-  def bytes: IArray[Byte] = IArray.from(value.getBytes("UTF-8").nn)
-  def chars: IArray[Char] = IArray.from(value.toCharArray.nn)
-  def urlEncode: String = URLEncoder.encode(value, "UTF-8").nn
-  def urlDecode: String = URLDecoder.decode(value, "UTF-8").nn
-  def lower: String = value.toLowerCase.nn
-  def upper: String = value.toUpperCase.nn
-
-  def padRight(length: Int, char: Char = ' '): String = 
-    if value.length < length then value+char.toString*(length - value.length) else value
-  
-  def padLeft(length: Int, char: Char = ' '): String =
-    if value.length < length then char.toString*(length - value.length)+value else value
-
-extension (values: Iterable[String])
-  def join: String = values.mkString
-  def join(separator: String): String = values.mkString(separator)
-  
-  def join(left: String, separator: String, right: String): String =
-    values.mkString(left, separator, right)
-  
-  def join(separator: String, last: String): String = values.size match
-    case 0 => ""
-    case 1 => values.head
-    case _ => values.init.mkString(separator)+last+values.last
-
 extension [K, V](map: Map[K, V])
   def upsert(key: K, operation: Option[V] => V) = map.updated(key, operation(map.get(key)))
   
