@@ -18,24 +18,50 @@ package punctuation
 
 import rudiments.*
 import contextual.*
+import gossamer.*
 
-enum MdInput:
-  case Block(content: String)
-  case Inline(content: String)
+object Md:
+  enum Input:
+    case Block(content: String)
+    case Inline(content: String)
 
-object MdInterpolator extends Interpolator[MdInput, String, Markdown.Root[Markdown]]:
+  object Input:
+    given Insertion[Input, String] = Input.Inline(_)
   
-  def complete(state: String): Markdown.Root[Markdown] exposes InterpolationError =
-    try Markdown.parse[Markdown](state)
-    catch case MalformedMarkdown(msg) => throw InterpolationError("could not parse markdown")
-
-  def initial: String = ""
+  object Interpolator extends contextual.Interpolator[Input, Input, Markdown[Markdown.Ast.Node]]:
+    
+    def complete(state: Input): Markdown[Markdown.Ast.Node] exposes InterpolationError = state match
+      case Input.Inline(state) => Markdown.parseInline(state)
+      case Input.Block(state)  => Markdown.parse(state)
   
-  def insert(state: String, value: Option[MdInput]): String exposes InterpolationError = value match
-    case Some(MdInput.Block(content))  => str"$state\n$content\n"
-    case Some(MdInput.Inline(content)) => str"$state$content"
-    case None                          => ""
-   
-  def parse(state: String, next: String): String exposes InterpolationError = state+next
+    def initial: Input = Input.Inline("")
+    
+    def skip(state: Input): Input = state
 
-given Insertion[String, String] = identity(_)
+    def insert(state: Input, value: Input): Input exposes InterpolationError = value match
+      case Input.Block(content)  => state match
+        case Input.Block(state)    => Input.Block(s"$state\n$content\n")
+        case Input.Inline(state)   => Input.Block(s"$state\n$content")
+      case Input.Inline(content) => state match
+        case Input.Block(state)    => Input.Block(s"$state\n$content\n")
+        case Input.Inline(state)   => Input.Inline(s"$state$content")
+     
+    def parse(state: Input, next: String): Input exposes InterpolationError = state match
+      case Input.Inline(state) =>
+        try
+          Markdown.parseInline(state+next)
+          Input.Inline(state+next)
+        catch MalformedMarkdown =>
+          try
+            Markdown.parse(state+next)
+            Input.Block(state+next)
+          catch MalformedMarkdown =>
+            throw InterpolationError(s"the markdown was malformed")
+
+      case Input.Block(state) =>
+        try
+          Markdown.parse(state+next)
+          Input.Block(state+next)
+        catch MalformedMarkdown =>
+          throw InterpolationError("the markdown was malformed")
+  

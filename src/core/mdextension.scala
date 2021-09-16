@@ -17,5 +17,5 @@
 package punctuation
 
 extension (inline stringContext: StringContext)
-  transparent inline def md(inline parts: Any*): Markdown.Root[Markdown] =
-    ${MdInterpolator.expand('MdInterpolator, 'stringContext, 'parts)}
+  transparent inline def md(inline parts: Any*): Markdown[Markdown.Ast.Node] =
+    ${Md.Interpolator.expand('{Md.Interpolator}, 'stringContext, 'parts)}
