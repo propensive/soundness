@@ -14,17 +14,14 @@
     See the License for the specific language governing permissions and limitations under the License.
 
 */
-package adversaria.tests
+package adversaria
 
-import probably._
-import contextual.examples.scalac._
-import contextual.examples.fqt._
+import probably.*
 import annotation.StaticAnnotation
-
-import adversaria._
 
 final case class id() extends StaticAnnotation
 final case class count(number: Int) extends StaticAnnotation
+final case class ref(x: Int) extends StaticAnnotation
 
 case class Person(name: String, @id email: String)
 
@@ -33,41 +30,69 @@ case class Company(name: String)
 
 case class Employee(person: Person, @id code: Long)
 
-object Tests extends Suite("Adversaria tests") {
+case class Letters(@ref(1) alpha: Int, @ref(2) @ref(3) beta: Int, gamma: Int, @ref(4) delta: Int)
 
-  def run(test: Runner): Unit = {
-    test("get annotations on type") {
-      implicitly[TypeMetadata[Company]].annotations
-    }.assert(_ == List(count(10)))
+object Tests extends Suite("Adversaria tests"):
 
-    test("get the short name of the type") {
-      implicitly[TypeMetadata[Person]].typeName
-    }.assert(_ == "Person")
+  def run(using Runner): Unit =
+
+    test("first field") {
+      val letters = Letters(5, 6, 7, 8)
+      Annotations.firstField[Letters, ref](letters)
+    }.assert(_ == 5)
+
+    test("access field annotations") {
+      Annotations.field[Employee](_.code)
+    }.assert(_ == List(id()))
     
-    test("get the full name of the type") {
-      implicitly[TypeMetadata[Person]].fullTypeName
-    }.assert(_ == "adversaria.tests.Person")
-    
-    test("find the field with a particular annotation") {
-      val ann = implicitly[FindMetadata[id, Person]]
-      val person = Person("John Smith", "test@example.com")
-      ann.get(person)
-    }.assert(_ == "test@example.com")
-    
-    test("check the name of the field found by an annotation") {
-      implicitly[FindMetadata[id, Person]].parameter.fieldName
-    }.assert(_ == "email")
-    
-    test("check that implicit for missing annotation is not resolved") {
-      scalac"implicitly[FindMetadata[id, Company]]"
-    }.assert(_ == TypecheckError("adversaria: could not find matching annotation"))
+    test("check nonexistant annotations") {
+      Annotations.field[Employee](_.person)
+    }.assert(_ == Nil)
 
-    test("extract annotation value generically") {
-      def getId[T](value: T)(implicit anns: FindMetadata[id, T]): String =
-        anns.get(value).toString
+    test("get field values") {
+      val letters = Letters(5, 6, 7, 8)
+      Annotations.fields[Letters, ref].map(_(letters))
+    }.assert(_ == List(5, 6, 6, 8))
+    
+    test("get field annotations") {
+      val letters = Letters(5, 6, 7, 8)
+      Annotations.fields[Letters, ref].map(_.annotation)
+    }.assert(_ == List(ref(1), ref(2), ref(3), ref(4)))
 
-      getId(Employee(Person("John Smith", "test@example.com"), 3141592))
-    }.assert(_ == "3141592")
+    test("get field names") {
+      val letters = Letters(5, 6, 7, 8)
+      Annotations.fields[Letters, ref].map(_.name)
+    }.assert(_ == List("alpha", "beta", "beta", "delta"))
 
-  }
-}
+    // test("get annotations on type") {
+    //   implicitly[TypeMetadata[Company]].annotations
+    // }.assert(_ == List(count(10)))
+
+    // test("get the short name of the type") {
+    //   implicitly[TypeMetadata[Person]].typeName
+    // }.assert(_ == "Person")
+    
+    // test("get the full name of the type") {
+    //   implicitly[TypeMetadata[Person]].fullTypeName
+    // }.assert(_ == "adversaria.tests.Person")
+    
+    // test("find the field with a particular annotation") {
+    //   val ann = implicitly[FindMetadata[id, Person]]
+    //   val person = Person("John Smith", "test@example.com")
+    //   ann.get(person)
+    // }.assert(_ == "test@example.com")
+    
+    // test("check the name of the field found by an annotation") {
+    //   implicitly[FindMetadata[id, Person]].parameter.fieldName
+    // }.assert(_ == "email")
+    
+    // test("check that implicit for missing annotation is not resolved") {
+    //   scalac"implicitly[FindMetadata[id, Company]]"
+    // }.assert(_ == TypecheckError("adversaria: could not find matching annotation"))
+
+    // test("extract annotation value generically") {
+    //   def getId[T](value: T)(implicit anns: FindMetadata[id, T]): String =
+    //     anns.get(value).toString
+
+    //   getId(Employee(Person("John Smith", "test@example.com"), 3141592))
+    // }.assert(_ == "3141592")
