@@ -18,6 +18,7 @@ package acyclicity
 
 import contextual.*
 import rudiments.*
+import gossamer.*
 
 import language.dynamics
 
