@@ -18,6 +18,7 @@ package probably
 
 import escritoire.*
 import rudiments.*
+import gossamer.*
 
 import scala.collection.mutable
 

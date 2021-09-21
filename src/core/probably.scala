@@ -24,6 +24,7 @@ import scala.quoted.*
 import wisteria.*
 import escritoire.*
 import rudiments.*
+import gossamer.*
 
 import language.dynamics
 
@@ -341,4 +342,5 @@ inline def test[T](name: String)(inline fn: Runner#Test ?=> T)(using runner: Run
   runner(name)(fn)
 
 def suite(name: String)(fn: Runner ?=> Unit)(using runner: Runner): Unit = runner.suite(name)(fn)
+def suite(suite: TestSuite)(using runner: Runner): Unit = runner.suite(suite)
 def time[T](name: String)(fn: => T)(using runner: Runner): T = test(name)(fn).check { _ => true }

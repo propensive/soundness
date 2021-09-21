@@ -14,13 +14,13 @@
     and limitations under the License.
 */
 
-package probably.tests
+package probably
 
 import probably.Runner.*
 import probably.*
 import scala.util.Try
 
-object Main extends Suite("Probably Tests"):
+object Tests extends Suite("Probably Tests"):
 
   def reportTest(fn: Runner => Unit): Report =
     val runner = Runner()
@@ -89,14 +89,14 @@ object Main extends Suite("Probably Tests"):
     test("repetition captures failed value") {
       val report = reportTest { runner =>
         for i <- 1 to 10 do runner("integers are less than six") {
-          i.debug
+          i
         }.assert(_ < 6)
       }
       
       report.results.head.outcome
     }.assert {
-      case Outcome.FailsAt(Datapoint.Fail(map, _), _) if map("i") == "6" => true
-      case _ => false
+      case Outcome.FailsAt(Datapoint.Fail(Debug(_, _, _, _, map), _), _) if map("i") == "6" => true
+      case _                                                                                => false
     }
 
     //test.assert("assertion-only test")(1 + 1 == 2)
@@ -110,36 +110,31 @@ object Main extends Suite("Probably Tests"):
     }.assert(_.results.head.count == 100)
 
     test("assert without predicate should succeed") {
-      reportTest(_("test division")(5/2).assert())
-    }.assert(_.passed == 1, _.total == 1)
+      reportTest(_("test division")(5/2).assert(_ => true))
+    }.assert { x => x.passed == 1 && x.total == 1 }
 
     test("assert without predicate should fail") {
-      reportTest(_("test division")(5/0).assert())
-    }.assert(r => r.passed == 0, _.failed == 1)
+      reportTest(_("test division")(5/0).assert(_ => true))
+    }.assert { r => r.passed == 0 && r.failed == 1 }
 
     test("check without predicate should succeed") {
-      reportTest(_("test division")(5/2).check())
-    }.assert(_.passed == 1, _.total == 1)
+      reportTest(_("test division")(5/2).check(_ => true))
+    }.assert { x => x.passed == 1 && x.total == 1 }
 
     test("check without predicate should fail") {
-      reportTest(runner => Try(runner("test division")(5/0).check()))
-    }.assert(_.failed == 1, _.total == 1)
+      reportTest(runner => Try(runner("test division")(5/0).check(_ => true)))
+    }.assert { x => x.failed == 1 && x.total == 1 }
 
     test("assert with 2 successful predicates") {
-      reportTest(_("test double")(0.001).assert(_ >= 0.0, _ <= 1.0))
-    }.assert(_.passed == 1, _.total == 1)
+      reportTest(_("test double")(0.001).assert { x => x >= 0.0 && x <= 1.0 })
+    }.assert { r => r.passed == 1 && r.failed == 1 }
 
     test("assert with 2 predicates") {
-      val report = reportTest(_("test double")(0.001).assert(_ >= 0.0, _ < 0.0))
+      val report = reportTest(_("test double")(0.001).assert { x => x >= 0.0 && x < 0.0 })
       report.results.head.outcome
-    }.assert(_ == Outcome.FailsAt(Datapoint.Fail(Map(), 1), 1))
+    }.assert(_ == Outcome.FailsAt(Datapoint.Fail(Debug(None), 1), 1))
 
-    test("assert with 3 predicates") {
-      val report = reportTest(_("test double")(0.001).assert(_ >= 0.0, _ <= 1.0, _ < 0.0))
-      report.results.head.outcome
-    }.assert(_ == Outcome.FailsAt(Datapoint.Fail(Map(), 2), 1))
-
-    suite("tolerance tests") {
+    suite("Tolerance tests") {
       test("Compare numbers which are not similar enough") {
         3.14159 ~~ 3.4
       }.assert(_ == false)
