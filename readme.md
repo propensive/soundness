@@ -1,20 +1,23 @@
 # Niveau
 
-**Level-up your Scala!**
+**Take Scala to Another Level!**
 
 _Niveau_ is a loose collection of open-source libraries designed to take full advantage of new
-Scala 3 features to write web and command-line applications, with a focus on lifting more operations
-to the type-level.
+features of Scala 3 to write web and command-line applications, with a focus on lifting more
+operations to the type-level.
 
 Niveau includes libraries for working with [HTML](https://github.com/propensive/honeycomb/),
 [CSS](https://github.com/propensive/cataract/), [JSON](https://github.com/propensive/euphemism/),
 [XML](https://github.com/propensive/xylophone/), [CSV](https://github.com/propensive/caesura/),
+[typesafe strings](https://github.com/propensive/gossamer/),
 [ANSI-escaped strings](https://github.com/propensive/escapade/) and
 [Markdown](https://github.com/propensive/punctuation/), interacting over
 [HTTP](https://github.com/propensive/scintillate/) or the
 [command line](https://github.com/propensive/exoskeleton/). Additionally, support for
 [disk I/O](https://github.com/propensive/jovian/),
-[shell processes](https://github.com/propensive/guillotine/), [cryptographic functions](https://github.com/propensive/gastronomy/),
+[shell processes](https://github.com/propensive/guillotine/) (including native
+[keyboard interactivity](https://github.com/propensive/rivulet/)),
+[cryptographic functions](https://github.com/propensive/gastronomy/),
 [tabular output](https://github.com/propensive/escritoire/) and
 [regular expressions](https://github.com/propensive/kaleidoscope/) is provided, and includes
 representations of [colors](https://github.com/propensive/iridescence/),
@@ -25,8 +28,9 @@ representations of [colors](https://github.com/propensive/iridescence/),
 [checked interpolated strings](https://github.com/propensive/contextual/),
 [annotations](https://github.com/propensive/adversaria/), library
 [decoupling](https://github.com/propensive/clairvoyant/) and
-[unit testing](https://github.com/propensive/probably/). Everything builds upon minimal set of
-[common tools](https://github.com/propensive/rudiments/).
+[unit testing](https://github.com/propensive/probably/) with a
+[WebDriver API](https://github.com/propensive/tarantula/) for browser testing. Everything builds
+upon minimal set of [common tools](https://github.com/propensive/rudiments/).
 
 ## Principles
 
@@ -48,16 +52,19 @@ Scala 3's typesystem offers a rich variety of types for representing and combini
 values. This presents an opportunity to encode a value's invariants—facts about the value which we
 know will always be true—precisely in its type. These invariants then give us certainty that
 operations involving the value are safe. Or, that they're simply impossible. In general, this
-reduces the amount of branching, including exception handling, that's required in code.
+reduces the amount of branching, including exception handling, that's required in code. Extensive
+use of immutable datatypes adds further guarantees.
 
 ### Checked Exceptions
 
 The latest release of Scala 3 introduces opt-in exception checking, and every Niveau method declares
 the exceptions it may throw in its signature. This makes it easy to write prototype code with
-exception-checking turned off, then turn it on to migrate to production-ready code just by adding
-handlers for each exception, but without needing to transform types or switch to a monadic coding
-style. Effectively, this transforms every partial function into a total function; when combined with
-the wise philosophy of making impossible states unrepresentable, exceptions become even more
+a "let it fail" attitude and exception-checking off, and to migrate to production-quality code just
+by turning exception-checking on, and having the compiler require handlers for each exception—but
+without needing to transform types or switch to a monadic coding style.
+
+Effectively, this transforms every partial function into a total function; when combined with the
+wise philosophy of making impossible states unrepresentable, exceptions become even more
 exceptional.
 
 ### Safe Literals
@@ -90,7 +97,16 @@ libraries.
 Every API introduced by a Niveau library should fit on one side of a business card. It should never
 be difficult to learn, and composition of APIs should be preferred over specialized solutions. Names
 should be meaningful and appropriately unique: that is to say, sharing a name with an existing
-concept or entity if they represent that entity, and introduce new nomenclature if they represent
+concept or entity if they represent that entity, but introducing new nomenclature if they represent
 something new. Short names are preferred, but arbitrarily-abbreviated names are not. Objects are
 primarily composed through selection (the `.` operator) and application, rather than monadic mapping
-and flat-mapping, since exceptional cases may be handled with checking.
+and flat-mapping, since exceptional cases may be handled with checking. The amount of code in each
+library should also be small.
+
+### Other common features
+
+- extensive use of the immutable `IArray[Byte]` type for random-access byte-data
+- streaming provided using `LazyList`s
+- the `Txt` type provides an more typesafe alternative opaque type alias for `String`s
+- all libraries are compiled with `null`-checking enabled—and `null`s forbidden!
+- use of the `T | Unset` union type for optional parameters, without the need to wrap `T` in `Some` or use `null`

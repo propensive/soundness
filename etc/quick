@@ -2,16 +2,22 @@
 
 CP="$(ls lib/*.jar | tr '\n' : | head -c-1)"
 mkdir -p classes
-scalac "-classpath:$CP" -d classes -deprecation -new-syntax -Ysafe-init -feature -Xcheck-macros -Ycheck-all-patmat -Yexplicit-nulls \
+javac -d classes -classpath "$CP" mod/rivulet/src/java/**/*.java
+scala/bin/scalac "-classpath:$CP:classes" -d classes -deprecation -new-syntax -Ysafe-init -feature -Xcheck-macros -Ycheck-all-patmat -Yexplicit-nulls \
     mod/acyclicity/src/core/*.scala \
     mod/cataract/src/core/*.scala \
     mod/caesura/src/core/*.scala \
+    mod/clairvoyant/src/http/*.scala \
+    mod/clairvoyant/src/css/*.scala \
+    mod/clairvoyant/src/html/*.scala \
     mod/contextual/src/core/*.scala \
     mod/cosmopolite/src/core/*.scala \
+    mod/escapade/src/core/*.scala \
     mod/escritoire/src/core/*.scala \
     mod/exoskeleton/src/core/*.scala \
     mod/euphemism/src/core/*.scala \
     mod/gastronomy/src/core/*.scala \
+    mod/gossamer/src/core/*.scala \
     mod/guillotine/src/core/*.scala \
     mod/honeycomb/src/core/*.scala \
     mod/iridescence/src/core/*.scala \
@@ -22,13 +28,11 @@ scalac "-classpath:$CP" -d classes -deprecation -new-syntax -Ysafe-init -feature
     mod/probably/src/tolerance/*.scala \
     mod/punctuation/src/core/*.scala \
     mod/punctuation/src/html/*.scala \
+    mod/rivulet/src/core/*.scala \
     mod/rudiments/src/core/*.scala \
     mod/scintillate/src/core/*.scala \
     mod/scintillate/src/server/*.scala \
     mod/scintillate/src/servlet/*.scala \
-    mod/simplistic/src/http/*.scala \
-    mod/simplistic/src/css/*.scala \
-    mod/simplistic/src/html/*.scala \
     mod/slalom/src/core/*.scala \
     mod/wisteria/src/core/*.scala \
     mod/xylophone/src/core/*.scala && cd classes && jar cf ../niveau.jar $(ls)

@@ -1,3 +1,4 @@
 euphemism/core: org.typelevel:jawn-parser_3:1.2.0 org.typelevel:jawn-ast_3:1.2.0
-punctuation/core: com.vladsch.flexmark:flexmark:0.36.8 com.vladsch.flexmark:flexmark-ext-gfm-tables:0.36.8
+punctuation/core: com.vladsch.flexmark:flexmark:0.62.2 com.vladsch.flexmark:flexmark-ext-tables:0.62.2 com.vladsch.flexmark:flexmark-ext-typographic:0.62.2
 scintillate/servlet: javax.servlet:javax.servlet-api:3.0.1
+rivulet/core: net.java.dev.jna:jna:jar:5.9.0
