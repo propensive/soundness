@@ -17,6 +17,7 @@
 package scintillate
 
 import rudiments.*
+import gossamer.*
 
 object RequestHeader:
   lazy val standard: Map[String, RequestHeader] = Set(AIm, Accept, AcceptCharset, AcceptDatetime,

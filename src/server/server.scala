@@ -17,6 +17,7 @@
 package scintillate
 
 import rudiments.*
+import gossamer.*
 import gastronomy.*
 
 import scala.collection.JavaConverters.*
@@ -25,6 +26,7 @@ import scala.util.control.NonFatal
 
 import java.net.InetSocketAddress
 import java.io.*
+import java.text as jt
 import com.sun.net.httpserver.{HttpServer as JavaHttpServer, *}
 
 case class ParamNotSent(key: String)
@@ -35,8 +37,8 @@ trait Responder:
   def addHeader(key: String, value: String): Unit
 
 object Handler:
-  given SimpleHandler[String] =
-    SimpleHandler("text/plain", str => Body.Chunked(LazyList(str.bytes)))
+  given [T: Show]: SimpleHandler[T] =
+    SimpleHandler("text/plain", v => Body.Chunked(LazyList(summon[Show[T]].show(v).s.bytes)))
 
   given [T](using hr: clairvoyant.HttpResponse[T]): SimpleHandler[T] =
     SimpleHandler(hr.mimeType, value => Body.Chunked(LazyList(hr.content(value).bytes)))
@@ -73,7 +75,11 @@ case class Redirect(location: String)
 trait Handler[T]:
   def process(content: T, status: Int, headers: Map[String, String], responder: Responder): Unit
 
-class SimpleHandler[T](val mime: String, val stream: T => Body) extends Handler[T]:
+object SimpleHandler:
+  def apply[T](mime: String, stream: T => Body): SimpleHandler[T] =
+    new SimpleHandler(mime, stream) {}
+
+trait SimpleHandler[T](val mime: String, val stream: T => Body) extends Handler[T]:
   def process(content: T, status: Int, headers: Map[String, String], responder: Responder): Unit =
     responder.addHeader(ResponseHeader.ContentType.header, mime)
     for (k, v) <- headers do responder.addHeader(k, v)
@@ -90,11 +96,14 @@ case class Response[T: Handler](content: T, status: HttpStatus = HttpStatus.Ok,
                                     headers: Map[ResponseHeader, String] = Map(),
                                     cookies: List[Cookie] = Nil):
 
+
+  private val df: jt.SimpleDateFormat = jt.SimpleDateFormat("dd MMM yyyy HH:mm:ss")
+
   def respond(responder: Responder): Unit =
     val cookieHeaders = cookies.map { cookie =>
       ResponseHeader.SetCookie -> List[(String, Boolean | Option[String])](
         cookie.name -> Some(cookie.value),
-        "Expires"   -> cookie.expiry.option.map(java.util.Date(_).toGMTString.nn),
+        "Expires"   -> cookie.expiry.option.map(df.format(_).nn+" GMT"),
         "Domain"    -> cookie.domain.option,
         "Path"      -> cookie.path.option,
         "Secure"    -> cookie.ssl,
@@ -119,7 +128,7 @@ case class Request(method: Method, body: Body.Chunked, query: String, ssl: Boole
         if (method == Method.Post || method == Method.Put) &&
             contentType == Some(mime"application/x-www-form-urlencoded")
         then
-          Map(body.stream.slurp(maxSize = 10485760).string.cut("&").map(_.cut("=", 2).to(Seq) match
+          Map(body.stream.slurp(maxSize = 10485760).uString.cut("&").map(_.cut("=", 2).to(Seq) match
             case Seq(key)        => key.urlDecode -> ""
             case Seq(key, value) => key.urlDecode -> value.urlDecode
             case _               => throw Impossible("key/value pair does not match")
@@ -136,7 +145,7 @@ case class Request(method: Method, body: Body.Chunked, query: String, ssl: Boole
     "hostname" -> hostname,
     "port"     -> port.toString,
     "path"     -> path,
-    "body"     -> (try body.stream.slurp(maxSize = 10000).string catch case TooMuchData() => "[...]"),
+    "body"     -> (try body.stream.slurp(maxSize = 10000).uString catch case TooMuchData() => "[...]"),
     "headers"  -> rawHeaders.map { (k, vs) => s"$k: ${vs.join("; ")}" }.join("\n          "),
     "params"   -> params.map { (k, v) => s"$k=\"$v\"" }.join("\n          ")
   ).map { (k, v) => s"${k.padLeft(8)}: $v" }.join("", "\n", "\n")
@@ -293,7 +302,7 @@ def basicAuth(validate: (String, String) => Boolean)(response: => Response[?])
              (using Request): Response[?] =
   request.headers.get(RequestHeader.Authorization) match
     case Some(List(s"Basic $credentials")) =>
-      val Seq(username, password) = credentials.decode[Base64].string.cut(":").to(Seq)
+      val Seq(username, password) = credentials.decode[Base64].uString.cut(":").to(Seq)
       if validate(username, password) then response else Response("", HttpStatus.Forbidden)
 
     case _ =>

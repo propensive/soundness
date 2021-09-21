@@ -16,6 +16,7 @@
 
 package scintillate
 
+import gossamer.*
 import rudiments.*
 import wisteria.*
 
@@ -71,14 +72,20 @@ object HttpReadable:
   given HttpReadable[String] with
     def read(body: Body): String exposes TooMuchData = body match
       case Body.Empty         => ""
-      case Body.Data(body)    => body.string
-      case Body.Chunked(body) => body.foldLeft("")(_+_.string)
+      case Body.Data(body)    => body.uString
+      case Body.Chunked(body) => body.foldLeft("")(_+_.uString)
   
   given HttpReadable[Bytes] with
     def read(body: Body): Bytes exposes TooMuchData = body match
       case Body.Empty         => IArray()
       case Body.Data(body)    => body
       case Body.Chunked(body) => body.slurp(maxSize = 10*1024*1024)
+
+  given [T](using reader: clairvoyant.HttpReader[T]): HttpReadable[T] with
+    def read(body: Body): T exposes TooMuchData = body match
+      case Body.Empty         => reader.read("")
+      case Body.Data(data)    => reader.read(data.uString)
+      case Body.Chunked(data) => reader.read(data.slurp(maxSize = 10*1024*1024).uString)
 
 trait HttpReadable[+T]:
   def read(body: Body): T exposes TooMuchData
@@ -295,6 +302,19 @@ object Uri:
     def name: String = "manifest"
     def serialize(uri: Uri): String = uri.toString
 
+object DomainName:
+  given Show[DomainName] = dn => Txt(dn.toString)
+  
+  def apply(str: String): DomainName =
+    DomainName(str.cut(".").map(_.punycode))
+
+case class DomainName(parts: IArray[String]):
+  override def toString: String = parts.join(".")
+
+case class Url(ssl: Boolean, domain: DomainName, port: Int, path: String) extends Dynamic:
+  override def toString: String =
+    str"http${if ssl then "s" else ""}://$domain${if port == 80 then "" else str":$port"}/$path"
+
 case class Uri(location: String, params: Params) extends Dynamic:
   private def makeQuery[T: ToQuery](value: T): Uri =
     Uri(location, params.append(summon[ToQuery[T]].params(value)))
@@ -356,5 +376,4 @@ extension (ctx: StringContext)
   def uri(subs: String*): Uri =
     Uri(ctx.parts.zip(subs).map(_+_).join("", "", ctx.parts.last), Params(List()))
   
-  // FIXME: Implement with a macro
   def mime(): MediaType = MediaType.unapply(ctx.parts.head).get

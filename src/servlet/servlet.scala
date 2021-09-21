@@ -17,6 +17,7 @@
 package scintillate
 
 import rudiments.*
+import gossamer.*
 import slalom.*
 
 import scala.collection.JavaConverters.*
