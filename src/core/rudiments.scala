@@ -18,9 +18,10 @@ package rudiments
 
 import scala.collection.IterableFactory
 import scala.compiletime.*, ops.int.*
+import scala.reflect.ClassTag
 
 import java.util.regex.*
-import java.net.{URLEncoder, URLDecoder}
+import java.io as ji
 
 import language.dynamics
 
@@ -41,13 +42,11 @@ extension [T](value: T)
   def unit: Unit = ()
   def twin: (T, T) = (value, value)
   def triple: (T, T, T) = (value, value, value)
+  def unsafeMatchable: T & Matchable = value.asInstanceOf[T & Matchable]
 
 extension (value: Bytes)
-  def string: String = String(value.to(Array), "UTF-8")
+  def uString: String = String(value.to(Array), "UTF-8")
   def unsafeMutable: Array[Byte] = value.asInstanceOf[Array[Byte]]
-
-extension (value: Any)
-  def unsafeMatchable: Matchable = value.asInstanceOf[Matchable]
 
 extension (value: Array[Byte])
   def unsafeImmutable: IArray[Byte] = value.asInstanceOf[IArray[Byte]]
@@ -88,9 +87,6 @@ extension (obj: Char.type) def unapply(str: String): Option[Char] =
 extension (obj: Double.type) def unapply(str: String): Option[Double] =
   try Some(str.toDouble) catch Exception => None
 
-extension (ctx: StringContext) def str(strings: (String | Int | Char)*): String =
-  ctx.parts.head + strings.zip(ctx.parts.tail).map(_.toString+_.toString).mkString
-
 case class Property(name: String) extends Dynamic:
   def apply(): String exposes KeyNotFound =
     Option(System.getProperty(name)).getOrElse(throw KeyNotFound(name)).nn
@@ -103,13 +99,12 @@ object Sys extends Dynamic:
   def applyDynamic(key: String)(): String exposes KeyNotFound = selectDynamic(key).apply()
   def bigEndian: Boolean = java.nio.ByteOrder.nativeOrder == java.nio.ByteOrder.BIG_ENDIAN
 
-case class KeyNotFound(name: String) extends Exception(str"rudiments: key $name not found")
-
-def √(value: Double): Double = math.sqrt(value)
-
+case class KeyNotFound(name: String) extends Exception(s"rudiments: key $name not found")
 case class Impossible(message: String) extends Error(message)
 
-object Unset
+object Unset:
+  override def toString: String = "<unset>"
+
 type Maybe[T] = Unset.type | T
 
 extension [T](opt: Maybe[T])
@@ -121,4 +116,31 @@ extension [T](opt: Maybe[T])
     case Unset => None
     case other => Some(other.asInstanceOf[T])
 
+extension (iarray: IArray.type)
+  def init[T: ClassTag](size: Int)(fn: Array[T] => Unit): IArray[T] =
+    val array = new Array[T](size)
+    fn(array)
+    array.asInstanceOf[IArray[T]]
+
+
 extension [T](opt: Option[T]) def maybe: Unset.type | T = opt.getOrElse(Unset)
+
+object Util:
+  def read(in: ji.InputStream, limit: Int): LazyList[IArray[Byte]] = in match
+    case in: ji.BufferedInputStream =>
+      def read(): LazyList[IArray[Byte]] =
+        val avail = in.available
+        if avail == 0 then LazyList()
+        else
+          val buf = new Array[Byte](in.available.min(limit))
+          val count = in.read(buf, 0, buf.length)
+          if count < 0 then LazyList(buf.unsafeImmutable)
+          else buf.unsafeImmutable #:: read()
+      
+      read()
+    
+    case in: ji.InputStream =>
+      read(ji.BufferedInputStream(in), limit)
+  
+  def write(stream: LazyList[IArray[Byte]], out: ji.OutputStream): Unit =
+    stream.map(_.unsafeMutable).foreach(out.write(_))
