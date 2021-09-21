@@ -17,6 +17,7 @@
 package exoskeleton
 
 import rudiments.*
+import gossamer.*
 
 import collection.JavaConverters.*
 
@@ -191,7 +192,7 @@ case class ParamMap(args: String*):
   case class Arg(value: String)
 
   case class Part(no: Int, start: Int, end: Int):
-    def apply(): String = args(no).slice(start, end)
+    def apply(): String = args(no).slice(start, end).nn
 
   case class Parameter(key: Part, values: Vector[Part] = Vector()):
     override def toString =

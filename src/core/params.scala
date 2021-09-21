@@ -81,13 +81,13 @@ case class Arg(index: Int, string: String):
 
 case class Params(prefix: Vector[Arg] = Vector(), opts: ListMap[Arg, Vector[Arg]] = ListMap(),
                       suffix: Option[Vector[Arg]] = None):
-  def -<(extractor: Extractor[_]): ParsedParams { type Type = extractor.type } =
+  def -<(extractor: Extractor[?]): ParsedParams { type Type = extractor.type } =
     (new ParsedParams(this, Right(Map())) { type Type = extractor.type }) -< extractor
 
 abstract class ParsedParams(val unparsed: Params,
-                            val extracted: Either[CliException, Map[Extractor[_], Any]]) { self =>
+                            val extracted: Either[CliException, Map[Extractor[?], Any]]) { self =>
   type Type
-  def -<(extractor: Extractor[_]): ParsedParams { type Type = self.Type & extractor.type } =
+  def -<(extractor: Extractor[?]): ParsedParams { type Type = self.Type & extractor.type } =
     extractor.extract(unparsed).map(_.asInstanceOf[(extractor.type, Params)]) match {
       case Left(failure) =>
         new ParsedParams(unparsed, Left(failure)) { type Type = self.Type & extractor.type }
@@ -97,7 +97,7 @@ abstract class ParsedParams(val unparsed: Params,
         }
     }
 
-  def apply(extractor: Extractor[_])(using Type <:< extractor.type): extractor.Type =
+  def apply(extractor: Extractor[?])(using Type <:< extractor.type): extractor.Type =
     extracted.right.get(extractor) match
       case e: extractor.Type => e
 }
