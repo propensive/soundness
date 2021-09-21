@@ -17,6 +17,7 @@
 package gastronomy
 
 import rudiments.*
+import gossamer.*
 
 case class Pem(kind: String, data: Bytes):
   def serialize: String = Seq(

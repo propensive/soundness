@@ -16,9 +16,9 @@
 
 package gastronomy
 
-import gastronomy.*
 import probably.*
 import rudiments.*
+import gossamer.*
 
 object Tests extends Suite("Gastronomy tests"):
  

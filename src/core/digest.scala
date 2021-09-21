@@ -18,6 +18,7 @@ package gastronomy
 
 import wisteria.*
 import rudiments.*
+import gossamer.*
 
 import scala.collection.*
 import scala.compiletime.ops.int.*
@@ -50,7 +51,7 @@ object Sha1:
 
 object Sha2:
   given sha2[Bits <: 224 | 256 | 384 | 512: ValueOf]: HashFunction[Sha2[Bits]] =
-    HashFunction(str"SHA-${valueOf[Bits].toString}", str"HmacSHA${valueOf[Bits].toString}")
+    HashFunction(str"SHA-${valueOf[Bits]}", str"HmacSHA${valueOf[Bits]}")
 
 trait Encodable:
   val bytes: Bytes

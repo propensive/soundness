@@ -20,6 +20,8 @@ import javax.crypto.*, javax.crypto.spec.*
 import java.security as js, js.spec.*
 
 import rudiments.*
+import gossamer.*
+
 import java.nio.*, charset.*
 
 trait CryptoAlgorithm[+KeySize <: Int & Singleton]:
