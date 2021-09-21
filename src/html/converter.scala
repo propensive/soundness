@@ -18,16 +18,10 @@ package punctuation
 
 import honeycomb.*
 import rudiments.*
+import gossamer.*
 
 import scala.collection.immutable.ListMap
 import scala.annotation.targetName
-
-extension (value: Markdown[Markdown.Ast.Node])
-  def html: Seq[Content[Flow]] = HtmlConverter().convert(value.nodes)
-
-extension (value: Markdown.Ast.Inline)
-  @targetName("html2")
-  def html: Seq[Content[Phrasing]] = HtmlConverter().phrasing(value)
 
 open class HtmlConverter():
   def outline(node: Markdown[Markdown.Ast.Node]): Seq[Content[Flow]] =
@@ -54,22 +48,37 @@ open class HtmlConverter():
   private def heading(level: 1 | 2 | 3 | 4 | 5 | 6, children: Seq[Markdown.Ast.Inline]) =
     headings(level - 1)(id = slug(text(children)))(children.flatMap(phrasing))
 
-  def convert(nodes: Seq[Markdown.Ast.Node]): Seq[Content[Flow]] = nodes.flatMap {
-    case Markdown.Ast.Block.Paragraph(children*)            => List(P(children.flatMap(phrasing)))
-    case Markdown.Ast.Block.Heading(level, children*)       => List(heading(level, children))
-    case Markdown.Ast.Block.Blockquote(children*)           => List(Blockquote(convert(children)*))
-    case Markdown.Ast.Block.ThematicBreak()                 => List(Hr)
-    case Markdown.Ast.Block.FencedCode(syntax, meta, value) => List(Pre(Code(escape(value))))
-    case Markdown.Ast.Block.Reference(_, _)                 => Nil
-    case Markdown.Ast.Inline.Text(str)                      => List(P(escape(str)))
-    
-    case Markdown.Ast.Block.BulletList(num, _, _, items*)   => List((if num.isDefined then Ol else Ul)
-                                                                   (items.flatMap(listItem)*))
+  def blockify(nodes: Seq[Markdown.Ast.Node]): Seq[Markdown.Ast.Block] =
+    nodes.foldLeft((true, List[Markdown.Ast.Block]())) {
+      case ((fresh, acc), next) => next match
+        case node: Markdown.Ast.Block  =>
+          (true, node :: acc)
+        
+        case node: Markdown.Ast.Inline =>
+          if fresh then (false, Markdown.Ast.Block.Paragraph(node) :: acc)
+          else
+            val content = acc.head match
+              case Markdown.Ast.Block.Paragraph(nodes*) =>
+                Markdown.Ast.Block.Paragraph((nodes :+ node)*) :: acc.tail
+            (false, content)
+    }(1).reverse
 
-    case Markdown.Ast.Block.Table(parts*)                   => List(Table(parts.flatMap(tableParts)))
-    case Markdown.Ast.Inline.Break()                        => List(Br)
-    case _                                                  => Nil
-  }
+  def convert(nodes: Seq[Markdown.Ast.Node]): Seq[Content[Flow]] =
+    blockify(nodes).foldLeft(List[Content[Flow]]()) {
+      case (acc, next) => next match
+        case Markdown.Ast.Block.Paragraph(children*)            => acc :+ P(children.flatMap(phrasing)*)
+        case Markdown.Ast.Block.Heading(level, children*)       => acc :+ heading(level, children)
+        case Markdown.Ast.Block.Blockquote(children*)           => acc :+ Blockquote(convert(children)*)
+        case Markdown.Ast.Block.ThematicBreak()                 => acc :+ Hr
+        case Markdown.Ast.Block.FencedCode(syntax, meta, value) => acc :+ Pre(Code(escape(value)))
+        case Markdown.Ast.Block.Reference(_, _)                 => acc
+        
+        case Markdown.Ast.Block.BulletList(num, _, _, items*)   => acc :+ (if num.isDefined then Ol
+                                                                       else Ul)(items.flatMap(listItem)*)
+    
+        case Markdown.Ast.Block.Table(parts*)                   => acc :+ Table(parts.flatMap(tableParts))
+        case other                                              => acc
+    }
 
   def tableParts(node: Markdown.Ast.TablePart): Seq[Item["thead" | "tbody"]] = node match
     case Markdown.Ast.TablePart.Head(rows*) => List(Thead(tableRows(true, rows)))

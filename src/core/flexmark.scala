@@ -17,6 +17,7 @@
 package punctuation
 
 import rudiments.*
+import gossamer.*
 
 import com.vladsch.flexmark as cvf
 import cvf.ast as cvfa, cvf.parser.*, cvf.util.options.*, cvf.util.data.*, cvf.ext.tables,
