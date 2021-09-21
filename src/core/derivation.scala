@@ -53,11 +53,12 @@ object Macro:
 
     Expr.ofList {
       val constructorAnns = tpe.typeSymbol.primaryConstructor.paramSymss.flatten.map { field =>
-        field.name -> field.annotations.filter(filterAnn).map(_.asExpr.asInstanceOf[Expr[Any]])
+        field.name -> field.annotations.filter(filterAnn).map(_.asExpr)
       }
+
       val fieldAnns = tpe.typeSymbol.caseFields.collect {
         case field: Symbol if field.isValDef =>
-          field.name -> field.annotations.filter(filterAnn).map(_.asExpr.asInstanceOf[Expr[Any]])
+          field.name -> field.annotations.filter(filterAnn).map(_.asExpr)
       }
 
       (constructorAnns ++ fieldAnns).filter(_._2.nonEmpty).groupBy(_._1).to(List).map {
@@ -74,7 +75,7 @@ object Macro:
       tpe.typeSymbol.annotations.filter { a =>
         a.tpe.typeSymbol.maybeOwner.isNoSymbol || a.tpe.typeSymbol.owner.fullName !=
             "scala.annotation.internal"
-      }.map(_.asExpr.asInstanceOf[Expr[Any]])
+      }.map(_.asExpr)
     }
   
   def typeAnns[T: Type](using Quotes): Expr[List[Any]] =
@@ -92,7 +93,7 @@ object Macro:
           parents.collect { case t: TypeTree => t.tpe }.flatMap(getAnnotations).filter { a =>
             a.tpe.typeSymbol.maybeOwner.isNoSymbol ||
                 a.tpe.typeSymbol.owner.fullName != "scala.annotation.internal"
-          }.map(_.asExpr.asInstanceOf[Expr[Any]])
+          }.map(_.asExpr)
         }
 
       case _ =>
@@ -126,7 +127,7 @@ object Macro:
         Expr(field.name) -> getAnnotations(tpeRepr).filter { a =>
           a.tpe.typeSymbol.maybeOwner.isNoSymbol ||
               a.tpe.typeSymbol.owner.fullName != "scala.annotation.internal"
-          }.map(_.asExpr.asInstanceOf[Expr[Any]])
+          }.map(_.asExpr)
       }.filter(_._2.nonEmpty).map { (name, annots) => Expr.ofTuple(name, Expr.ofList(annots)) }
     }
   
