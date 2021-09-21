@@ -17,5 +17,8 @@
 package gossamer
 
 extension (inline ctx: StringContext)
-  transparent inline def txt(inline parts: Any*): Text =
-    ${Txt.TxtInterpolator.expand('{Txt.TxtInterpolator}, 'ctx, 'parts)}
+  transparent inline def txt(inline parts: Any*): Txt =
+    ${Interpolation.Txt.expand('{Interpolation.Txt}, 'ctx, 'parts)}
+ 
+  transparent inline def str(inline parts: Any*): String =
+    ${Interpolation.Str.expand('{Interpolation.Str}, 'ctx, 'parts)}

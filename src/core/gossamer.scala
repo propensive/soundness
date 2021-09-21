@@ -24,51 +24,54 @@ import java.net.{URLEncoder, URLDecoder}
 
 import language.implicitConversions
 
-opaque type Text = String
+opaque type Txt = String
 
-object Text:
-  def apply(str: String): Text = str
-  given Conversion[String, Text] = identity(_)
-  given Conversion[Text, String] = identity(_)
+extension (text: Txt)
+  def s: String = text
 
-  extension (text: Text)
-    def +(other: Text) = text+other
-    def slice(index: Int) = text.substring(index)
-    def slice(from: Int, to: Int) = text.substring(from, to)
-    def str: String = text
-    def length = text.length
-    
-    def apply(idx: Int): Char exposes IndexExceedsRangeError =
-      if idx >= 0 && idx < text.length then text(idx)
-      else throw IndexExceedsRangeError(idx, 0, text.length)
-    
-    def populated: Option[String] = if text.isEmpty then None else Some(text)
-    def cut(delimiter: String): IArray[String] = cut(delimiter, 0)
-    
-    def cut(delimiter: String, limit: Int): IArray[String] =
-      IArray.from(text.split(Pattern.quote(delimiter), limit).nn.map(_.nn))
-    
-    def bytes: IArray[Byte] = IArray.from(text.getBytes("UTF-8").nn)
-    def chars: IArray[Char] = IArray.from(text.toCharArray.nn)
-    def urlEncode: Text = URLEncoder.encode(text, "UTF-8").nn
-    def urlDecode: Text = URLDecoder.decode(text, "UTF-8").nn
-    def lower: Text = text.toLowerCase.nn
-    def upper: Text = text.toUpperCase.nn
+extension (text: String)
+  def +(other: Txt): String = text+other
+  def slice(index: Int): String = text.substring(index).nn
+  def slice(from: Int, to: Int): String = text.substring(from, to).nn
+  def length: Int = text.length
   
-    def padRight(length: Int, char: Char = ' '): String = 
-      if text.length < length then text+char.toString*(length - text.length) else text
-    
-    def padLeft(length: Int, char: Char = ' '): String =
-      if text.length < length then char.toString*(length - text.length)+text else text
-
-extension (values: Iterable[Text])
-  def join: Text = values.mkString
-  def join(separator: Text): Text = values.mkString(separator)
+  def apply(idx: Int): Char exposes IndexExceedsRangeError =
+    if idx >= 0 && idx < text.length then text(idx)
+    else throw IndexExceedsRangeError(idx, 0, text.length)
   
-  def join(left: Text, separator: Text, right: Text): Text =
+  def populated: Option[String] = if text.isEmpty then None else Some(text)
+  def cut(delimiter: String): IArray[String] = cut(delimiter, 0)
+  
+  def cut(delimiter: String, limit: Int): IArray[String] =
+    IArray.from(text.split(Pattern.quote(delimiter), limit).nn.map(_.nn))
+  
+  def bytes: IArray[Byte] = IArray.from(text.getBytes("UTF-8").nn)
+  def chars: IArray[Char] = IArray.from(text.toCharArray.nn)
+  def urlEncode: String = URLEncoder.encode(text, "UTF-8").nn
+  def urlDecode: String = URLDecoder.decode(text, "UTF-8").nn
+  def punycode: String = java.net.IDN.toASCII(text).nn
+  def lower: String = text.toLowerCase.nn
+  def upper: String = text.toUpperCase.nn
+
+  def padRight(length: Int, char: Char = ' '): String = 
+    if text.length < length then text+char.toString*(length - text.length) else text
+  
+  def padLeft(length: Int, char: Char = ' '): String =
+    if text.length < length then char.toString*(length - text.length)+text else text
+
+object Txt:
+  def apply(str: String): Txt = str
+  given Conversion[String, Txt] = identity(_)
+  given Conversion[Txt, String] = identity(_)
+
+extension (values: Iterable[String])
+  def join: String = values.mkString
+  def join(separator: String): String = values.mkString(separator)
+  
+  def join(left: String, separator: String, right: String): String =
     values.mkString(left, separator, right)
   
-  def join(separator: Text, last: Text): Text = values.size match
+  def join(separator: String, last: String): String = values.size match
     case 0 => ""
     case 1 => values.head
     case _ => values.init.mkString(separator)+last+values.last
@@ -77,25 +80,34 @@ case class IndexExceedsRangeError(idx: Int, from: Int, to: Int)
 extends Exception(s"gossamer: the index $idx exceeds the range $from-$to")
 
 trait Show[T]:
-  def show(value: T): Text
+  def show(value: T): Txt
 
 object Show:
-  given Show[Int] = num => Text(num.toString)
-  given Show[Short] = num => Text(num.toString)
-  given Show[Long] = num => Text(num.toString)
-  given Show[Byte] = num => Text(num.toString)
-  given Show[Boolean] = if _ then Text("true") else Text("false")
+  given Show[String] = Txt(_)
+  given Show[Int] = num => Txt(num.toString)
+  given Show[Short] = num => Txt(num.toString)
+  given Show[Long] = num => Txt(num.toString)
+  given Show[Byte] = num => Txt(num.toString)
+  given Show[Char] = ch => Txt(ch.toString)
+  given Show[Boolean] = if _ then Txt("true") else Txt("false")
 
-object Txt:
-  case class Input(str: String)
+object Interpolation:
+  case class Input(string: String)
 
   given [T: Show]: Insertion[Input, T] = value => Input(summon[Show[T]].show(value))
 
-  object TxtInterpolator extends Interpolator[Input, String, Text]:
+  object Str extends Interpolator[Input, String, String]:
     def initial: String = ""
     def parse(state: String, next: String): String = state+next
     def skip(state: String): String = state
-    def insert(state: String, input: Input): String = state+input
+    def insert(state: String, input: Input): String = state+input.string
+    def complete(state: String): String = state
+  
+  object Txt extends Interpolator[Input, String, Txt]:
+    def initial: String = ""
+    def parse(state: String, next: String): String = state+next
+    def skip(state: String): String = state
+    def insert(state: String, input: Input): String = state+input.string
 
-    def complete(state: String): Text =
-      Text(state.split("\\n\\s*\\n").map(_.replaceAll("\\s\\s*", " ").trim).mkString("\n"))
+    def complete(state: String): Txt =
+      gossamer.Txt(state.split("\\n\\s*\\n").nn.map(_.nn.replaceAll("\\s\\s*", " ").nn.trim.nn).mkString("\n").nn)
