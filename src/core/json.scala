@@ -18,6 +18,7 @@ package euphemism
 
 import wisteria.*
 import rudiments.*
+import gossamer.*
 
 import org.typelevel.jawn.{ParseException as JawnParseException, *}, ast.*
 
@@ -45,6 +46,8 @@ object Json extends Dynamic:
   given clairvoyant.HttpResponse[Json] with
     def mimeType: String = "application/json"
     def content(json: Json): String = json.toString
+
+  given clairvoyant.HttpReader[Json] = Json.parse(_)
 
   object Serializer extends Derivation[Serializer]:
     given Serializer[Int] = JNum(_)
@@ -121,7 +124,7 @@ object Json extends Dynamic:
         None
     }
 
-    def map[T: Deserializer]: Deserializer[Map[String, T]] = _.flatMap {
+    given map[T: Deserializer]: Deserializer[Map[String, T]] = _.flatMap {
       case JObject(vs) =>
         vs.toMap.foldLeft(Option(Map[String, T]())) {
           case (Some(acc), (k, v)) =>
