@@ -1,25 +1,23 @@
 package rivulet
 
+import rudiments.*
+
 import com.sun.jna.*
+import sun.misc.Signal
 import java.nio.*, charset.*
+import java.io as ji
 
 trait Libc extends Library:
   def tcgetattr(fd: Int, termios: Termios): Int
   def tcsetattr(fd: Int, opt: Int, termios: Termios): Int
   def isatty(fd: Int): Int
 
-@main
-def setup(): Unit =
-  print("What is your name? ")
-  val name = LineEditor.ask("Hello")
-  println("\n")
-  println(s"Hello $name")
-
 enum Keypress:
   case Printable(char: Char)
   case Function(number: Int)
   case Ctrl(char: Char)
   case EscapeSeq(bytes: Byte*)
+  case Resize(rows: Int, columns: Int)
   case Enter, Escape, Tab, Backspace, Delete, PageUp, PageDown, LeftArrow, RightArrow, UpArrow,
       DownArrow, CtrlLeftArrow, CtrlRightArrow, CtrlUpArrow, CtrlDownArrow, End, Home, Insert
 
@@ -28,30 +26,53 @@ trait Keyboard[+KeyType]:
 
 case class TtyError() extends Exception("rivulet: STDIN is not attached to a TTY")
 
-sealed class Tty()
+sealed case class Tty(private[rivulet] val out: ji.PrintStream)
 
 object Tty:
-  private val tty: Tty = Tty()
-
   def capture[T](fn: Tty ?=> T): T =
-    val libc: Libc = Native.load("c", classOf[Libc])
+    val libc: Libc = Native.load("c", classOf[Libc]).nn
     if libc.isatty(0) != 1 then throw TtyError()
     val oldTermios: Termios = Termios()
     libc.tcgetattr(0, oldTermios)
     val newTermios = Termios(oldTermios)
     newTermios.c_lflag = oldTermios.c_lflag & -76
     libc.tcsetattr(0, 0, newTermios)
-    
-    try fn(using tty) finally libc.tcsetattr(0, 0, oldTermios)
+    val noopOut = ji.PrintStream(_ => ())
+    val stdout = System.out
+
+    val tty: Tty = Tty(stdout)
+    System.setOut(noopOut)
+    Signal.handle(Signal("WINCH"), sig => reportSize()(using tty))
+    try Console.withOut(noopOut)(fn(using tty))
+    finally
+      System.setOut(stdout)
+      libc.tcsetattr(0, 0, oldTermios)
+
+  def reportSize()(using Tty): Unit =
+    val esc = 27.toChar
+    Tty.print(s"${esc}[s${esc}[4095C${esc}[4095B${esc}[6n${esc}[u")
 
   def stream[K](using Tty, Keyboard[K]): LazyList[K] =
-    val buf: Array[Byte] = new Array[Byte](6)
-    val count: Int = System.in.read(buf)
+    val buf: Array[Byte] = new Array[Byte](16)
+    val count: Int = System.in.nn.read(buf)
     
     summon[Keyboard[K]].interpret(buf.take(count).to(List)) #::: stream[K]
 
+  def print(msg: String)(using Tty) = summon[Tty].out.print(msg)
+  def println(msg: String)(using Tty) = summon[Tty].out.println(msg)
+
 
 object Keyboard:
+  given Keyboard[Byte] with
+    def interpret(bytes: List[Byte]): LazyList[Byte] = bytes.to(LazyList)
+  
+  given Keyboard[List[Byte]] with
+    def interpret(bytes: List[Byte]): LazyList[List[Byte]] = LazyList(bytes)
+  
+  private def readResize(bytes: List[Byte]): Keypress.Resize =
+    val size = String(bytes.init.to(Array)).split(";")
+    Keypress.Resize(size(0).toInt, size(1).toInt)
+
   given Keyboard[Keypress] with
     def interpret(bytes: List[Byte]): LazyList[Keypress] = bytes match
       case 9 :: Nil             => LazyList(Keypress.Tab)
@@ -61,7 +82,10 @@ object Keyboard:
       case 27 :: 91 :: tail     => LazyList(control(tail))
       case (127 | 8) :: Nil     => LazyList(Keypress.Backspace)
       case i :: Nil if i < 32   => LazyList(Keypress.Ctrl((i + 64).toChar))
-      case other                => String(bytes.to(Array), 0, bytes.length).to(LazyList).map(Keypress.Printable(_))
+      
+      case other                => String(bytes.to(Array), 0, bytes.length)
+                                     .to(LazyList)
+                                     .map(Keypress.Printable(_))
   
     private def control(bytes: List[Byte]): Keypress = bytes match
       case List(51, 126)        => Keypress.Delete
@@ -78,25 +102,31 @@ object Keyboard:
       case List(49, 59, 53, 65) => Keypress.CtrlUpArrow
       case List(66)             => Keypress.DownArrow
       case List(49, 59, 53, 66) => Keypress.CtrlDownArrow
+      case ks if ks.last == 82  => readResize(ks)
       case other                => Keypress.EscapeSeq(other*)
 
 def esc(code: String): String = s"${27.toChar}[${code}"
 
 object LineEditor:
-  def ask(initial: String = ""): String = Tty.capture {
-    print(initial)
-    def finished(keypress: Keypress) = keypress == Keypress.Enter || keypress == Keypress.Ctrl('D')
-    Tty.stream.takeWhile(!finished(_)).foldLeft(LineEditor(initial, initial.length)) {
+
+  def concealed(str: String): String = str.map { _ => '*' }
+
+  def ask(initial: String = "", render: String => String = identity(_))(using Tty): String =
+    Tty.print(render(initial))
+    
+    def finished(key: Keypress) =
+      key == Keypress.Enter || key == Keypress.Ctrl('D') || key == Keypress.Ctrl('C')
+    
+    Tty.stream[Keypress].takeWhile(!finished(_)).foldLeft(LineEditor(initial, initial.length)) {
       case (ed, next) =>
-        if ed.pos > 0 then print(esc(s"${ed.pos}D"))
+        if ed.pos > 0 then Tty.print(esc(s"${ed.pos}D"))
         val newEd = ed(next)
         val line = newEd.content+" "*(ed.content.length - newEd.content.length)
-        print(line)
-        if line.length > 0 then print(esc(s"${line.length}D"))
-        if newEd.pos > 0 then print(esc(s"${newEd.pos}C"))
+        Tty.print(render(line))
+        if line.length > 0 then Tty.print(esc(s"${line.length}D"))
+        if newEd.pos > 0 then Tty.print(esc(s"${newEd.pos}C"))
         newEd
-    }
-  }.content
+    }.content
 
 case class LineEditor(content: String = "", pos: Int = 0):
   import Keypress.*
