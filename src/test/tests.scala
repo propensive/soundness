@@ -136,18 +136,18 @@ object Tests extends Suite("Guillotine tests"):
       }.assert(_ == "hello")
     }
 
-    suite("Compilation tests") {
-      given Compiler = Compiler.make(getClass.getClassLoader)
+    // suite("Compilation tests") {
+    //   given Compiler = Compiler.make(getClass.getClassLoader)
 
-      test("Check final escape character is an error") {
-        try Check("""hello\""") catch error => error
-      }.assert(_ == ParseError("an escape character is not permitted at the end"))
+    //   test("Check final escape character is an error") {
+    //     try Check('{"""hello\"""}) catch error => error
+    //   }.assert(_ == InterpolationError("an escape character is not permitted at the end"))
       
-      test("unclosed single quotes") {
-        try Check("""hello ' world""") catch error => error
-      }.assert(_ == ParseError("the single quotes have not been closed"))
+    //   test("unclosed single quotes") {
+    //     try Check('{"""hello ' world"""}) catch error => error
+    //   }.assert(_ == InterpolationError("the single quotes have not been closed"))
       
-      test("unclosed double quotes") {
-        try Check("""hello " world""") catch error => error
-      }.assert(_ == ParseError("the double quotes have not been closed"))
-    }
+    //   test("unclosed double quotes") {
+    //     try Check('{"""hello " world"""}) catch error => error
+    //   }.assert(_ == InterpolationError("the double quotes have not been closed"))
+    // }

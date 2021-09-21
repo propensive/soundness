@@ -18,17 +18,21 @@ package guillotine
 
 import contextual.*
 import rudiments.*
+import gossamer.*
 
-import scala.collection.JavaConverters.*
+import scala.collection.convert.ImplicitConversionsToJava.*
+import scala.collection.convert.ImplicitConversionsToScala.*
 import scala.jdk.StreamConverters.StreamHasToScala
 
 import java.util.HashMap as JMap
-import java.io.*
+import java.io as ji
+
+import language.implicitConversions
 
 type Stream = LazyList[String]
 
 object envs:
-  val enclosing: Env = Env(System.getenv.nn.asScala.to(Map))
+  val enclosing: Env = Env(System.getenv.nn.to(Map))
   val empty: Env = Env(Map())
 
 enum Context:
@@ -38,85 +42,135 @@ case class State(current: Context, esc: Boolean, args: List[String])
 
 object Executor:
   given stream: Executor[Stream] =
-    proc => BufferedReader(InputStreamReader(proc.getInputStream)).lines().nn.toScala(LazyList)
+    proc => ji.BufferedReader(ji.InputStreamReader(proc.getInputStream)).lines().nn.toScala(LazyList)
   
-  given Executor[String] =
+  given string: Executor[String] =
     stream.map { stream => if stream.isEmpty then "" else stream.reduce(_ + "\n" + _).trim.nn }
 
+  // given Executor[LazyList[IArray[Byte]]] =
+  //   proc => ji.BufferedInputStream(proc.getInputStream)
+
 trait Executor[T]:
-  def interpret(process: Process): T
+  def interpret(process: java.lang.Process): T
   def map[S](fn: T => S): Executor[S] = process => fn(interpret(process))
 
-case class Command(args: String*):
-  def exec[T: Executor]()(using Env): T =
-    val processBuilder = ProcessBuilder(args*)
-    processBuilder.directory(summon[Env].workDirFile)
-    summon[Executor[T]].interpret(processBuilder.start().nn)
+case class Pid(value: Long)
 
+class Process[T](process: java.lang.Process, executor: Executor[T]):
+  def pid: Pid = Pid(process.pid)
+  
+  def stdout(limit: Int = 1024*1024*10): LazyList[IArray[Byte]] =
+    Util.read(process.getInputStream.nn, limit)
+  
+  def stderr(limit: Int = 1024*1024*10): LazyList[IArray[Byte]] =
+    Util.read(process.getErrorStream.nn, limit)
+  
+  def stdin(in: LazyList[IArray[Byte]]): Unit = Util.write(in, process.getOutputStream.nn)
+  def await(): T = executor.interpret(process)
+  def abort(force: Boolean = false): Unit =
+    if force then process.destroyForcibly() else process.destroy()
+
+sealed trait Executable:
+  def fork[T]()(using env: Env, exec: Executor[T] = Executor.string): Process[T]
+  
+  def exec[T]()(using env: Env, exec: Executor[T] = Executor.string): T = fork[T]().await()
+  
+  def apply(cmd: Executable): Pipeline = cmd match
+    case Pipeline(cmds*) => this match
+      case Pipeline(cmds2*) => Pipeline((cmds ++ cmds2)*)
+      case cmd: Command     => Pipeline((cmds :+ cmd)*)
+    case cmd: Command    => this match
+      case Pipeline(cmds2*) => Pipeline((cmd +: cmds2)*)
+      case cmd2: Command    => Pipeline(cmd, cmd2)
+  
+  def |(cmd: Executable): Pipeline = cmd(this)
+
+case class Command(args: String*) extends Executable:
+
+  def fork[T]()(using env: Env, exec: Executor[T] = Executor.string): Process[T] =
+    val processBuilder = ProcessBuilder(args*)
+    processBuilder.directory(env.workDirFile)
+    new Process[T](processBuilder.start().nn, summon[Executor[T]])
+
+case class Pipeline(cmds: Command*) extends Executable:
+  def fork[T]()(using env: Env, exec: Executor[T] = Executor.string): Process[T] =
+    new Process[T](ProcessBuilder.startPipeline(cmds.map { cmd =>
+      val pb = ProcessBuilder(cmd.args*)
+      pb.directory(env.workDirFile)
+      pb.nn
+    }).nn.to(List).last, exec)
+  
 case class Env(vars: Map[String, String], workDir: Maybe[String] = Unset):
   private[guillotine] lazy val envArray: Array[String] = vars.map { (k, v) => s"$k=$v" }.to(Array)
-  private[guillotine] lazy val workDirFile: File = File(workDir.otherwise(System.getenv("PWD")))
+  
+  private[guillotine] lazy val workDirFile: ji.File =
+    ji.File(workDir.otherwise(System.getenv("PWD")))
   
 case class ExecError(command: Command, stdout: Stream, stderr: Stream) extends Exception
 
-object Sh extends Interpolator[List[String], State, Command]:
-  import Context.*
+object Interpolation:
+
+  case class Params(params: String*)
+
+  object Sh extends Interpolator[Params, State, Command]:
+    import Context.*
   
-  def complete(state: State): Command exposes InterpolationError =
-    val args = state.current match
-      case Quotes2        => throw InterpolationError("the double quotes have not been closed")
-      case Quotes1        => throw InterpolationError("the single quotes have not been closed")
-      case _ if state.esc => throw InterpolationError("cannot terminate with an escape character")
-      case _              => state.args
-    
-    Command(args*)
+    def complete(state: State): Command exposes InterpolationError =
+      val args = state.current match
+        case Quotes2        => throw InterpolationError("the double quotes have not been closed")
+        case Quotes1        => throw InterpolationError("the single quotes have not been closed")
+        case _ if state.esc => throw InterpolationError("cannot terminate with an escape character")
+        case _              => state.args
+      
+      Command(args*)
 
-  def initial: State = State(Awaiting, false, Nil)
+    def initial: State = State(Awaiting, false, Nil)
 
-  def skip(state: State): State exposes InterpolationError = insert(state, List("x"))
+    def skip(state: State): State exposes InterpolationError = insert(state, Params("x"))
 
-  def insert(state: State, value: List[String]): State exposes InterpolationError =
-    value match
-      case Nil =>
-        state
-
-      case h :: t =>
-        if state.esc
-        then throw InterpolationError("escaping with '\\' is not allowed immediately before a substitution")
-        
-        state match
-          case State(Awaiting, false, args) =>
-            State(Unquoted, false, args ++ (h :: t))
-
-          case State(Unquoted, false, args :+ last) =>
-            State(Unquoted, false, args ++ (s"$last$h" :: t))
+    def insert(state: State, value: Params): State exposes InterpolationError =
+      value.params.to(List) match
+        case h :: t =>
+          if state.esc
+          then throw InterpolationError("escaping with '\\' is not allowed immediately before a substitution")
           
-          case State(Quotes1, false, args :+ last) =>
-            State(Quotes1, false, args :+ (s"$last$h" :: t).join(" "))
-          
-          case State(Quotes2, false, args :+ last) =>
-            State(Quotes2, false, args :+ (s"$last$h" :: t).join(" "))
-          
-          case _ =>
-            throw Impossible("impossible parser state")
-        
-  def parse(state: State, next: String): State exposes InterpolationError = next.foldLeft(state) {
-    case (State(Awaiting, esc, args), ' ')          => State(Awaiting, false, args)
-    case (State(Quotes1, false, rest :+ cur), '\\') => State(Quotes1, false, rest :+ s"$cur\\")
-    case (State(ctx, false, args), '\\')            => State(ctx, true, args)
-    case (State(Unquoted, esc, args), ' ')          => State(Awaiting, false, args)
-    case (State(Quotes1, esc, args), '\'')          => State(Unquoted, false, args)
-    case (State(Quotes2, false, args), '"')         => State(Unquoted, false, args)
-    case (State(Unquoted, false, args), '"')        => State(Quotes2, false, args)
-    case (State(Unquoted, false, args), '\'')       => State(Quotes1, false, args)
-    case (State(Awaiting, false, args), '"')        => State(Quotes2, false, args :+ "")
-    case (State(Awaiting, false, args), '\'')       => State(Quotes1, false, args :+ "")
-    case (State(Awaiting, esc, args), char)         => State(Unquoted, false, args :+ s"$char")
-    case (State(ctx, esc, Nil), char)               => State(ctx, false, List(s"$char"))
-    case (State(ctx, esc, rest :+ cur), char)       => State(ctx, false, rest :+ s"$cur$char")
-    case _                                          => throw Impossible("impossible parser state")
-  }
+          state match
+            case State(Awaiting, false, args) =>
+              State(Unquoted, false, args ++ (h :: t))
 
-given Insertion[List[String], String] = value => List(value)
-given Insertion[List[String], List[String]] = identity(_)
-given Insertion[List[String], Command] = _.args.to(List)
+            case State(Unquoted, false, args :+ last) =>
+              State(Unquoted, false, args ++ (s"$last$h" :: t))
+            
+            case State(Quotes1, false, args :+ last) =>
+              State(Quotes1, false, args :+ (s"$last$h" :: t).join(" "))
+            
+            case State(Quotes2, false, args :+ last) =>
+              State(Quotes2, false, args :+ (s"$last$h" :: t).join(" "))
+            
+            case _ =>
+              throw Impossible("impossible parser state")
+        case _ =>
+          state
+
+          
+    def parse(state: State, next: String): State exposes InterpolationError = next.foldLeft(state) {
+      case (State(Awaiting, esc, args), ' ')          => State(Awaiting, false, args)
+      case (State(Quotes1, false, rest :+ cur), '\\') => State(Quotes1, false, rest :+ s"$cur\\")
+      case (State(ctx, false, args), '\\')            => State(ctx, true, args)
+      case (State(Unquoted, esc, args), ' ')          => State(Awaiting, false, args)
+      case (State(Quotes1, esc, args), '\'')          => State(Unquoted, false, args)
+      case (State(Quotes2, false, args), '"')         => State(Unquoted, false, args)
+      case (State(Unquoted, false, args), '"')        => State(Quotes2, false, args)
+      case (State(Unquoted, false, args), '\'')       => State(Quotes1, false, args)
+      case (State(Awaiting, false, args), '"')        => State(Quotes2, false, args :+ "")
+      case (State(Awaiting, false, args), '\'')       => State(Quotes1, false, args :+ "")
+      case (State(Awaiting, esc, args), char)         => State(Unquoted, false, args :+ s"$char")
+      case (State(ctx, esc, Nil), char)               => State(ctx, false, List(s"$char"))
+      case (State(ctx, esc, rest :+ cur), char)       => State(ctx, false, rest :+ s"$cur$char")
+      case _                                          => throw Impossible("impossible parser state")
+    }
+
+  given Insertion[Params, String] = value => Params(value)
+  given Insertion[Params, List[String]] = xs => Params(xs*)
+  given Insertion[Params, Command] = cmd => Params(cmd.args*)
+  given [T: Show]: Insertion[Params, T] = value => Params(summon[Show[T]].show(value))

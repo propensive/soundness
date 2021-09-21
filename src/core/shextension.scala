@@ -17,4 +17,5 @@
 package guillotine
 
 extension (inline stringContext: StringContext)
-  transparent inline def sh(inline parts: Any*): Command = ${Sh.expand('Sh, 'stringContext, 'parts)}
+  transparent inline def sh(inline parts: Any*): Command =
+    ${Interpolation.Sh.expand('{Interpolation.Sh}, 'stringContext, 'parts)}
