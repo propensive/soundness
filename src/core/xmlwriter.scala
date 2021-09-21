@@ -2,6 +2,7 @@ package xylophone
 
 import wisteria.*
 import rudiments.*
+import gossamer.*
 
 object XmlWriter extends Derivation[XmlWriter]:
   given XmlWriter[String] = str =>

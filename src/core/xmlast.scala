@@ -1,6 +1,7 @@
 package xylophone
 
 import rudiments.*
+import gossamer.*
 
 enum Ast:
   case Element(name: XmlName, children: Seq[Ast], attributes: Map[XmlName, String] = Map(),

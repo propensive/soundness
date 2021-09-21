@@ -17,7 +17,6 @@ enum Color:
 
 case class Pixel(x: Int, y: Int, color: Color)
 
-
 object Tests extends Suite("Xylophone tests"):
 
   def run(using Runner): Unit =
@@ -147,43 +146,39 @@ object Tests extends Suite("Xylophone tests"):
       Xml.print(Foo.xml)
     }.assert(_ == "<Foo/>")
 
-    test("parse error: unclosed tag") {
-      Try(Xml.parse("""<foo key="value"><bar></foo>"""))
-    }.assert(_ == Failure(XmlParseError(0, 24)))
+  //   test("parse error: unclosed tag") {
+  //     Try(Xml.parse("""<foo key="value"><bar></foo>"""))
+  //   }.assert(_ == Failure(XmlParseError(0, 24)))
 
-    test("parse error: unclosed string") {
-      Try(Xml.parse("""<foo key="value><bar/></foo>"""))
-    }.assert(_ == Failure(XmlParseError(0, 16)))
+  //   test("parse error: unclosed string") {
+  //     Try(Xml.parse("""<foo key="value><bar/></foo>"""))
+  //   }.assert(_ == Failure(XmlParseError(0, 16)))
 
-    test("read error: not an integer") {
-      val xml = Xml.parse("""<foo>not an integer</foo>""")
-      Try(xml.as[Int])
-    }.assert(Failure(XmlReadError()) == _)
+  //   test("read error: not an integer") {
+  //     val xml = Xml.parse("""<foo>not an integer</foo>""")
+  //     Try(xml.as[Int])
+  //   }.assert(Failure(XmlReadError()) == _)
 
-    test("access error; proactively resolving head nodes") {
-      val xml = Xml.parse("""<root><company><staff><ceo><name>Xyz</name></ceo></staff></company></root>""")
-      Try(xml.company().staff().cto().name().as[String])
-    }.assert(_ == Failure(XmlAccessError(0, List("company", 0, "staff", 0, "cto"))))
+  //   test("access error; proactively resolving head nodes") {
+  //     val xml = Xml.parse("""<root><company><staff><ceo><name>Xyz</name></ceo></staff></company></root>""")
+  //     Try(xml.company().staff().cto().name().as[String])
+  //   }.assert(_ == Failure(XmlAccessError(0, List("company", 0, "staff", 0, "cto"))))
     
-    test("access error; taking all children") {
-      val xml = Xml.parse("""<root><company><staff><ceo><name>Xyz</name></ceo></staff></company></root>""")
-      Try(xml.company.staff.cto.name().as[String])
-    }.assert(_ == Failure(XmlAccessError(0, List("company", "staff", "cto", "name"))))
+  //   test("access error; taking all children") {
+  //     val xml = Xml.parse("""<root><company><staff><ceo><name>Xyz</name></ceo></staff></company></root>""")
+  //     Try(xml.company.staff.cto.name().as[String])
+  //   }.assert(_ == Failure(XmlAccessError(0, List("company", "staff", "cto", "name"))))
     
-    test("access non-zero node") {
-      val xml = Xml.parse("""<root><company><staff><ceo><name>Xyz</name></ceo></staff></company></root>""")
-      Try(xml.company(1).staff().cto.name().as[String])
-    }.assert(_ == Failure(XmlAccessError(1, List("company"))))
+  //   test("access non-zero node") {
+  //     val xml = Xml.parse("""<root><company><staff><ceo><name>Xyz</name></ceo></staff></company></root>""")
+  //     Try(xml.company(1).staff().cto.name().as[String])
+  //   }.assert(_ == Failure(XmlAccessError(1, List("company"))))
 
-    // test("contextual parser") {
-    //   val str = "Hello World"
-    //   val bill = Person("Bill", 94)
-    //   x"<o#e/>"
-    //   x"<foo/!>"
-    //   x"<foo></foo!>"
-    //   x"<foo bar></foo>"
-    //   x"""<foo ba#="x"/>"""
-    //   x"""<foo><bar></testing></bra>"""
-    //   x"""<foo key !"value"/>"""
-    //   x"""<foo key="value">${str}<bar>Baz  </bar><bad>${str}</bad></foo>"""
-    // }.assert(_ == Xml.parse("""<foo key="value">Hello World<bar>Baz  </bar><bad>Hello World</bad></foo>"""))
+    test("x interpolator") {
+      import scala.quoted.*, staging.*
+
+      given Compiler = Compiler.make(getClass.getClassLoader.nn)
+
+      staging.withQuotes( '{ 1.0 } ).toString
+
+    }.assert(_ == "<Foo/>")

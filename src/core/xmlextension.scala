@@ -18,4 +18,4 @@ package xylophone
 
 extension (inline stringContext: StringContext)
   transparent inline def x(inline parts: Any*): Xml =
-    ${XmlInterpolator.expand('XmlInterpolator, 'stringContext, 'parts)}
+    ${XmlInterpolation.XmlInterpolator.expand('{XmlInterpolation.XmlInterpolator}, 'stringContext, 'parts)}
