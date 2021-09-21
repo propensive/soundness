@@ -17,6 +17,7 @@
 package slalom
 
 import rudiments.*
+import gossamer.*
 
 class SlalomException(message: String) extends Exception(str"slalom: $message")
 
