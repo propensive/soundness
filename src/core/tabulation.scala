@@ -17,6 +17,7 @@
 package escritoire
 
 import rudiments.*
+import gossamer.*
 
 object Ansi:
   val esc = 27.toChar

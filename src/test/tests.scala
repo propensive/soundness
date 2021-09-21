@@ -16,11 +16,8 @@
 
 package escritoire
 
-import probation._
+import probably.*
 
-object Tests extends TestApp {
-
-  def tests(): Unit = {
-  }
-
-}
+object Tests extends Suite("Escritoire tests"):
+  def run(using Runner): Unit =
+    ()
