@@ -17,6 +17,7 @@
 package iridescence
 
 import rudiments.*
+import gossamer.*
 
 trait Color:
   def standardSrgb: Srgb
