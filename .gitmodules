@@ -105,3 +105,6 @@
 [submodule "mod/rivulet"]
 	path = mod/rivulet
 	url = git@github.com:propensive/rivulet
+[submodule "mod/tarantula"]
+	path = mod/tarantula
+	url = git@github.com:propensive/tarantula
