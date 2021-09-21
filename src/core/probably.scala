@@ -30,6 +30,43 @@ import language.dynamics
 
 import Runner.*
 
+trait LowPriorityDebugString:
+  given [T: Show]: DebugString[T] = summon[Show[T]].show(_).string
+
+
+object DebugString extends Derivation[DebugString], LowPriorityDebugString:
+  given DebugString[String] = "\""+_.flatMap {
+    case '\n' => "\\n"
+    case '\t' => "\\t"
+    case '\r' => "\\r"
+    case '\\' => "\\\\"
+    case '\"' => "\\\""
+    case '\'' => "\\\'"
+    case '\b' => "\\b"
+    case '\f' => "\\f"
+    case ch   => if ch < 128 && ch >= 32 then ch.toString else String.format("\\u%04x", ch.toInt)
+  }+"\""
+
+  val debugAny: DebugString[Any] = _.toString
+
+  given DebugString[Char] =
+    ch => "'"+summon[DebugString[String]].show(ch.toString).drop(1).dropRight(1)+"'"
+
+  given [Coll[X] <: Seq[X], T: DebugString]: DebugString[Coll[T]] =
+    xs => xs.map(summon[DebugString[T]].show(_)).join("Seq(", ", ", ")")
+
+  def join[T](ctx: CaseClass[DebugString, T]): DebugString[T] = t =>
+    ctx.params.map {
+      param => param.typeclass.show(param.deref(t))
+    }.join(str"${ctx.typeInfo.short}(", ", ", ")")
+  
+  def split[T](ctx: SealedTrait[DebugString, T]): DebugString[T] = t =>
+    ctx.choose(t) { subtype => subtype.typeclass.show(subtype.cast(t)) }
+
+
+trait DebugString[T]:
+  def show(value: T): String
+
 object Runner:
   case class TestId private[probably](value: String)
   
@@ -66,18 +103,6 @@ object Runner:
     case Throws(exception: Throwable, debug: Debug) extends Datapoint(debug)
     
     case PredicateThrows(exception: Exception, debug: Debug, index: Int) extends Datapoint(debug)
-
-  object Show:
-    given Show[Int] = _.toString
-    given Show[String] = identity(_)
-    given Show[Boolean] = _.toString
-    given Show[Long] = _.toString
-    given Show[Byte] = _.toString
-    given Show[Short] = _.toString
-    given Show[Char] = _.toString
-
-  trait Show[T]:
-    def show(value: T): String
 
   def shortDigest(text: String): String =
     val md = java.security.MessageDigest.getInstance("SHA-256").nn
@@ -212,10 +237,17 @@ object Macros:
         }
         val line = Expr(Position.ofMacroExpansion.startLine + 1)
 
+        val debugString = Expr.summon[DebugString[T]].getOrElse('{DebugString.debugAny})
+
         Expr.summon[Comparison[T]].map { comparison =>
           '{ (x: Option[T]) =>
-            Debug(found = x.map(_.toString), filename = $filename, line = $line, expected = $expr.toString,
-              info = if x.isEmpty then Map() else Map("structure" -> $comparison.compare(x.get, $expr).toString)
+            Debug(
+              found = x.map($debugString.show(_)),
+              filename = $filename,
+              line = $line,
+              expected = $debugString.show($expr),
+              info = if x.isEmpty then Map()
+                  else Map("structure" -> $comparison.compare(x.get, $expr).toString)
             )
           }
         }.orElse {
