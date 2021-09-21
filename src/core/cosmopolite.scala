@@ -17,6 +17,7 @@
 package cosmopolite
 
 import rudiments.*
+import gossamer.*
 
 import scala.reflect.*
 import scala.util.NotGiven

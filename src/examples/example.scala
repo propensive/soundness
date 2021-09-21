@@ -16,7 +16,7 @@
 
 package example
 
-import cosmopolite._, languages.common._
+import cosmopolite.*, languages.common.*
 
 type MyLangs = En | De | Es | Fr
 
