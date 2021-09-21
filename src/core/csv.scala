@@ -21,6 +21,7 @@ package caesura
 
 import wisteria.*
 import rudiments.*
+import gossamer.*
 
 import scala.annotation.*
 
