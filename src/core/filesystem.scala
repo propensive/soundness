@@ -20,6 +20,7 @@ import kaleidoscope.*
 import gastronomy.*
 import slalom.*
 import rudiments.*
+import gossamer.*
 
 import scala.util.*
 import scala.collection.generic.CanBuildFrom
@@ -446,17 +447,7 @@ trait Writable[T]:
 object Readable:
   given Readable[LazyList[IArray[Byte]]] with
     def read(in: ji.BufferedInputStream, limit: Int = 65536): LazyList[IArray[Byte]] exposes 
-        StreamInterrupted | BufferOverflow =
-
-      def read(): LazyList[IArray[Byte]] =
-        val avail = in.available
-        if avail == 0 then LazyList() else
-          val buf = new Array[Byte](in.available.min(limit))
-          val count = in.read(buf, 0, buf.length)
-          if count < 0 then LazyList(buf.unsafeImmutable)
-          else buf.asInstanceOf[IArray[Byte]] #:: read()
-      
-      read()
+        StreamInterrupted | BufferOverflow = Util.read(in, limit)
     
   given (using enc: Encoding): Readable[LazyList[String]] with
     def read(in: ji.BufferedInputStream, limit: Int = 65536): LazyList[String] =
