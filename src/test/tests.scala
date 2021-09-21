@@ -21,7 +21,7 @@ package caesura
 
 import probably.*
 
-object Test extends Suite("Caesura tests"):
+object Tests extends Suite("Caesura tests"):
   def run(using Runner): Unit =
     test("simple parse") {
       Csv.parse("""hello,world""")
