@@ -17,6 +17,8 @@
 package cataract
 
 import rudiments.*
+import gossamer.*
+
 import language.dynamics
 
 object Stylesheet:

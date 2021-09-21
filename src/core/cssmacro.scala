@@ -17,6 +17,7 @@
 package cataract
 
 import rudiments.*
+import gossamer.*
 import iridescence.*
 
 import scala.quoted.*
