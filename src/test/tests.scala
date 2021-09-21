@@ -41,28 +41,28 @@ object Tests extends Suite("Adversaria tests"):
       Annotations.firstField[Letters, ref](letters)
     }.assert(_ == 5)
 
-    test("access field annotations") {
-      Annotations.field[Employee](_.code)
-    }.assert(_ == List(id()))
+    // test("access field annotations") {
+    //   Annotations.field[Employee](_.code)
+    // }.assert(_ == List(id()))
     
     test("check nonexistant annotations") {
       Annotations.field[Employee](_.person)
     }.assert(_ == Nil)
 
-    test("get field values") {
-      val letters = Letters(5, 6, 7, 8)
-      Annotations.fields[Letters, ref].map(_(letters))
-    }.assert(_ == List(5, 6, 6, 8))
+    // test("get field values") {
+    //   val letters = Letters(5, 6, 7, 8)
+    //   Annotations.fields[Letters, ref].map(_(letters))
+    // }.assert(_ == List(5, 6, 6, 8))
     
-    test("get field annotations") {
-      val letters = Letters(5, 6, 7, 8)
-      Annotations.fields[Letters, ref].map(_.annotation)
-    }.assert(_ == List(ref(1), ref(2), ref(3), ref(4)))
+    // test("get field annotations") {
+    //   val letters = Letters(5, 6, 7, 8)
+    //   Annotations.fields[Letters, ref].map(_.annotation)
+    // }.assert(_ == List(ref(1), ref(2), ref(3), ref(4)))
 
-    test("get field names") {
-      val letters = Letters(5, 6, 7, 8)
-      Annotations.fields[Letters, ref].map(_.name)
-    }.assert(_ == List("alpha", "beta", "beta", "delta"))
+    // test("get field names") {
+    //   val letters = Letters(5, 6, 7, 8)
+    //   Annotations.fields[Letters, ref].map(_.name)
+    // }.assert(_ == List("alpha", "beta", "beta", "delta"))
 
     // test("get annotations on type") {
     //   implicitly[TypeMetadata[Company]].annotations
