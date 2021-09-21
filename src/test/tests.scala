@@ -14,7 +14,7 @@
     and limitations under the License.
 */
 
-package wisteria.tests
+package wisteria
 
 import wisteria.examples.*
 import wisteria.TypeInfo
@@ -338,18 +338,18 @@ object Tests extends Suite("Wisteria tests"):
       Show.derived[Politician[String]].show(Corrupt("wall", Seq(Company("Alice Inc"))))
     }.assert(_ == "Corrupt[String,Seq[Company]](slogan=wall,lobby=[Company(name=Alice Inc)])")
 
-    //test("patch a Person via a Patcher[Entity]") {
-    //  val person = Person("Bob", 42)
-    //  summon[Patcher[Entity]].patch(person, Seq(null, 21))
-    //}.assert(_ == Person("Bob", 21))
+    test("patch a Person via a Patcher[Entity]") {
+     val person = Person("Bob", 42)
+     summon[Patcher[Entity]].patch(person, Seq(null, 21))
+    }.assert(_ == Person("Bob", 21))
 
     test("show an Account") {
       Show.derived[Account].show(Account("john_doe", "john.doe@yahoo.com", "john.doe@gmail.com"))
     }.assert(_ == "Account(id=john_doe,emails=[john.doe@yahoo.com,john.doe@gmail.com])")
 
-    test("construct a default Account") {
-      HasDefault.derived[Account].defaultValue
-    }.assert(_ == Right(Account("")))
+    // test("construct a default Account") {
+    //   HasDefault.derived[Account].defaultValue
+    // }.assert(_ == Right(Account("")))
 
     test("construct a failed NoDefault") {
       HasDefault.derived[NoDefault].defaultValue

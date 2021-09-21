@@ -1,4 +1,4 @@
-package wisteria.tests;
+package wisteria;
 
 public @interface JavaExampleAnnotation {
     String description();

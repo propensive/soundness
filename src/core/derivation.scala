@@ -56,7 +56,7 @@ object Macro:
         field.name -> field.annotations.filter(filterAnn).map(_.asExpr.asInstanceOf[Expr[Any]])
       }
       val fieldAnns = tpe.typeSymbol.caseFields.collect {
-        case field: Symbol if field.tree.isInstanceOf[ValDef] =>
+        case field: Symbol if field.isValDef =>
           field.name -> field.annotations.filter(filterAnn).map(_.asExpr.asInstanceOf[Expr[Any]])
       }
 
