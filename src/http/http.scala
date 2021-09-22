@@ -16,9 +16,9 @@
 
 package clairvoyant
 
-trait HttpResponse[T]:
+trait HttpResponse[T, C]:
   def mimeType: String
-  def content(value: T): String
+  def content(value: T): C
 
 trait HttpReader[T]:
   def read(value: String): T
