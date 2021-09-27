@@ -44,7 +44,7 @@ object Language:
          case ConstantType(StringConstant(lang)) =>
            Set(lang)
          case _ =>
-           report.throwError("cosmopolite: expected an intersection or union type")
+           report.errorAndAbort("cosmopolite: expected an intersection or union type")
 
       Expr(langs(TypeRepr.of[L]))
 
