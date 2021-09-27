@@ -31,8 +31,7 @@ import language.dynamics
 import Runner.*
 
 trait LowPriorityDebugString:
-  given [T: Show]: DebugString[T] = summon[Show[T]].show(_).string
-
+  given [T: Show]: DebugString[T] = summon[Show[T]].show(_).s
 
 object DebugString extends Derivation[DebugString], LowPriorityDebugString:
   given DebugString[String] = "\""+_.flatMap {
@@ -44,7 +43,7 @@ object DebugString extends Derivation[DebugString], LowPriorityDebugString:
     case '\'' => "\\\'"
     case '\b' => "\\b"
     case '\f' => "\\f"
-    case ch   => if ch < 128 && ch >= 32 then ch.toString else String.format("\\u%04x", ch.toInt)
+    case ch   => if ch < 128 && ch >= 32 then ch.toString else String.format("\\u%04x", ch.toInt).nn
   }+"\""
 
   val debugAny: DebugString[Any] = _.toString
