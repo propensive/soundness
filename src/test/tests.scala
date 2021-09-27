@@ -16,6 +16,7 @@
 
 package gesticulate
 
+import gossamer.*
 import probably.*
 
 object Tests extends Suite("Gesticulate tests"):
@@ -27,8 +28,16 @@ object Tests extends Suite("Gesticulate tests"):
     test("parse media type's subtype") {
       Media.parse("application/json").subtype
     }.assert(_ == Media.Subtype.Standard("json"))
-    
+
     test("parse media type suffix") {
       Media.parse("application/epub+zip").suffixes
     }.assert(_ == List(Media.Suffix.Zip))
 
+    test("parse full media type") {
+      Media.parse("application/json")
+    }.assert(_ == MediaType(Media.Group.Application, Media.Subtype.Standard("json")))
+
+    test("parse full media type with parameter") {
+      Media.parse("application/json; charset=UTF-8")
+    }.assert(_ == MediaType(Media.Group.Application, Media.Subtype.Standard("json"),
+        parameters = List(("charset", "UTF-8"))))
