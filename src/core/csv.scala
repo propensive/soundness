@@ -52,7 +52,7 @@ trait Format:
                 join = true)
           else parseLine(items, idx + 1, quoted = true, idx + 1, -1, join = false)
 
-        case _ =>
+        case ch: Char =>
           parseLine(items, idx + 1, quoted, start, end, join)
 
     Row(parseLine(Vector(), 0, quoted = false, 0, -1, join = false)*)
@@ -68,7 +68,7 @@ case class Row(elems: String*):
 
 object Csv extends Format:
 
-  given clairvoyant.HttpResponse[Csv] with
+  given clairvoyant.HttpResponse[Csv, String] with
     def mimeType: String = "text/csv"
     def content(value: Csv): String =
       value.rows.map(Csv.serialize(_)).join("\n")
@@ -132,10 +132,17 @@ object Csv extends Format:
     if c > 0 then s""""${str.replaceAll("\"", "\"\"").nn}"""" else str
 
 extension [T](value: Seq[T])
-  def csv(using Csv.Writer[T]): Csv = Csv(value.map(summon[Csv.Writer[T]].write(_)))
+  def csv(using Csv.Writer[T]): Csv = Csv(value.map(summon[Csv.Writer[T]].write(_))*)
+  def tsv(using Csv.Writer[T]): Tsv = Tsv(value.map(summon[Csv.Writer[T]].write(_))*)
 
-case class Csv(rows: Seq[Row])
+case class Csv(rows: Row*)
+case class Tsv(rows: Row*)
 
 object Tsv extends Format:
   override val separator = '\t'
   def escape(str: String): String = str.replaceAll("\t", "        ").nn
+
+  given clairvoyant.HttpResponse[Csv, String] with
+    def mimeType: String = "text/tab-separated-values"
+    def content(value: Csv): String =
+      value.rows.map(Tsv.serialize(_)).join("\n")
