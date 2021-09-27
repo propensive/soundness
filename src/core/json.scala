@@ -43,7 +43,7 @@ extension [T: Json.Serializer](value: T)
 
 object Json extends Dynamic:
 
-  given clairvoyant.HttpResponse[Json] with
+  given clairvoyant.HttpResponse[Json, String] with
     def mimeType: String = "application/json"
     def content(json: Json): String = json.toString
 
