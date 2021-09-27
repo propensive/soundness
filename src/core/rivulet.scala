@@ -1,6 +1,7 @@
 package rivulet
 
 import rudiments.*
+import gossamer.*
 
 import com.sun.jna.*
 import sun.misc.Signal
@@ -22,14 +23,19 @@ enum Keypress:
       DownArrow, CtrlLeftArrow, CtrlRightArrow, CtrlUpArrow, CtrlDownArrow, End, Home, Insert
 
 trait Keyboard[+KeyType]:
-  def interpret(bytes: List[Byte]): LazyList[KeyType]
+  def interpret(bytes: List[Int]): LazyList[KeyType]
 
 case class TtyError() extends Exception("rivulet: STDIN is not attached to a TTY")
 
 sealed case class Tty(private[rivulet] val out: ji.PrintStream)
 
+case class CannotCaptureTtyError(msg: String) extends Exception(s"rivulet: $msg")
+
 object Tty:
-  def capture[T](fn: Tty ?=> T): T =
+
+  private final val noopOut: ji.PrintStream = ji.PrintStream((_ => ()): ji.OutputStream)
+
+  def capture[T](fn: Tty ?=> T): T exposes CannotCaptureTtyError =
     val libc: Libc = Native.load("c", classOf[Libc]).nn
     if libc.isatty(0) != 1 then throw TtyError()
     val oldTermios: Termios = Termios()
@@ -37,8 +43,12 @@ object Tty:
     val newTermios = Termios(oldTermios)
     newTermios.c_lflag = oldTermios.c_lflag & -76
     libc.tcsetattr(0, 0, newTermios)
-    val noopOut = ji.PrintStream(_ => ())
-    val stdout = System.out
+    
+    val stdout = Option(System.out).getOrElse {
+      throw CannotCaptureTtyError("the STDOUT stream is null")
+    }.nn
+
+    if stdout == noopOut then throw CannotCaptureTtyError("the TTY has already been captured")
 
     val tty: Tty = Tty(stdout)
     System.setOut(noopOut)
@@ -56,25 +66,25 @@ object Tty:
     val buf: Array[Byte] = new Array[Byte](16)
     val count: Int = System.in.nn.read(buf)
     
-    summon[Keyboard[K]].interpret(buf.take(count).to(List)) #::: stream[K]
+    summon[Keyboard[K]].interpret(buf.take(count).to(List).map(_.toInt)) #::: stream[K]
 
   def print(msg: String)(using Tty) = summon[Tty].out.print(msg)
   def println(msg: String)(using Tty) = summon[Tty].out.println(msg)
 
 
 object Keyboard:
-  given Keyboard[Byte] with
-    def interpret(bytes: List[Byte]): LazyList[Byte] = bytes.to(LazyList)
+  given Keyboard[Int] with
+    def interpret(bytes: List[Int]): LazyList[Int] = bytes.map(_.toInt).to(LazyList)
   
-  given Keyboard[List[Byte]] with
-    def interpret(bytes: List[Byte]): LazyList[List[Byte]] = LazyList(bytes)
+  given Keyboard[List[Int]] with
+    def interpret(bytes: List[Int]): LazyList[List[Int]] = LazyList(bytes.map(_.toInt))
   
-  private def readResize(bytes: List[Byte]): Keypress.Resize =
-    val size = String(bytes.init.to(Array)).split(";")
+  private def readResize(bytes: List[Int]): Keypress.Resize =
+    val size = String(bytes.map(_.toByte).init.to(Array)).cut(";")
     Keypress.Resize(size(0).toInt, size(1).toInt)
 
   given Keyboard[Keypress] with
-    def interpret(bytes: List[Byte]): LazyList[Keypress] = bytes match
+    def interpret(bytes: List[Int]): LazyList[Keypress] = bytes match
       case 9 :: Nil             => LazyList(Keypress.Tab)
       case 10 :: Nil            => LazyList(Keypress.Enter)
       case 27 :: Nil            => LazyList(Keypress.Escape)
@@ -87,7 +97,7 @@ object Keyboard:
                                      .to(LazyList)
                                      .map(Keypress.Printable(_))
   
-    private def control(bytes: List[Byte]): Keypress = bytes match
+    private def control(bytes: List[Int]): Keypress = bytes match
       case List(51, 126)        => Keypress.Delete
       case List(50, 126)        => Keypress.Insert
       case List(70)             => Keypress.End
@@ -103,7 +113,7 @@ object Keyboard:
       case List(66)             => Keypress.DownArrow
       case List(49, 59, 53, 66) => Keypress.CtrlDownArrow
       case ks if ks.last == 82  => readResize(ks)
-      case other                => Keypress.EscapeSeq(other*)
+      case other                => Keypress.EscapeSeq(other.map(_.toByte)*)
 
 def esc(code: String): String = s"${27.toChar}[${code}"
 
