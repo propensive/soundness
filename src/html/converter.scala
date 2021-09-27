@@ -60,6 +60,9 @@ open class HtmlConverter():
             val content = acc.head match
               case Markdown.Ast.Block.Paragraph(nodes*) =>
                 Markdown.Ast.Block.Paragraph((nodes :+ node)*) :: acc.tail
+              
+              case _ =>
+                throw Impossible("unexpected non-paragraph node found while folding inline nodes")
             (false, content)
     }(1).reverse
 

@@ -104,10 +104,10 @@ object Markdown:
     if chr != 0 then buf.append(chr)
     if i < str.length then
       str(i) match
-        case '"'  => format(str, buf, i + 1, if space then '“' else '”')
-        case '\'' => format(str, buf, i + 1, if space then '‘' else '’')
-        case ' '  => format(str, buf, i + 1, ' ', space = true)
-        case chr  => format(str, buf, i + 1, chr)
+        case '"'       => format(str, buf, i + 1, if space then '“' else '”')
+        case '\''      => format(str, buf, i + 1, if space then '‘' else '’')
+        case ' '       => format(str, buf, i + 1, ' ', space = true)
+        case chr: Char => format(str, buf, i + 1, chr)
     else buf.toString
 
   private def resolveReference(root: cvfua.Document, node: cvfa.ImageRef | cvfa.LinkRef)
