@@ -29,7 +29,7 @@ sealed trait Xml:
 type XmlPath = List[String | Int | Unit]
 
 object Xml:
-  given (using XmlPrinter[String]): clairvoyant.HttpResponse[Xml] with
+  given (using XmlPrinter[String]): clairvoyant.HttpResponse[Xml, String] with
     def mimeType: String = "application/xml"
     def content(xml: Xml): String = summon[XmlPrinter[String]].print(xml)
 
