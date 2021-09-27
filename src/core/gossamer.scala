@@ -18,11 +18,10 @@ package gossamer
 
 import rudiments.*
 import contextual.*
+import wisteria.*
 
 import java.util.regex.*
 import java.net.{URLEncoder, URLDecoder}
-
-import language.implicitConversions
 
 opaque type Txt = String
 
@@ -30,6 +29,7 @@ extension (text: Txt)
   def s: String = text
 
 extension (text: String)
+  def text: Txt = text
   def +(other: Txt): String = text+other
   def slice(index: Int): String = text.substring(index).nn
   def slice(from: Int, to: Int): String = text.substring(from, to).nn
@@ -58,11 +58,30 @@ extension (text: String)
   
   def padLeft(length: Int, char: Char = ' '): String =
     if text.length < length then char.toString*(length - text.length)+text else text
+  
+  def editDistanceTo(other: String): Int =
+    val m = text.length
+    val n = other.length
+    val old = new Array[Int](n + 1)
+    val dist = new Array[Int](n + 1)
+
+    for j <- 1 to n do old(j) = old(j - 1) + 1
+    
+    for i <- 1 to m do
+      dist(0) = old(0) + 1
+
+      for j <- 1 to n do
+        dist(j) = (old(j - 1) + (if text.charAt(i - 1) == other.charAt(j - 1) then 0 else 1))
+          .min(old(j) + 1).min(dist(j - 1) + 1)
+
+      for j <- 0 to n
+      do
+        old(j) = dist(j)
+    
+    dist(n)
 
 object Txt:
   def apply(str: String): Txt = str
-  given Conversion[String, Txt] = identity(_)
-  given Conversion[Txt, String] = identity(_)
 
 extension (values: Iterable[String])
   def join: String = values.mkString
@@ -79,22 +98,10 @@ extension (values: Iterable[String])
 case class IndexExceedsRangeError(idx: Int, from: Int, to: Int)
 extends Exception(s"gossamer: the index $idx exceeds the range $from-$to")
 
-trait Show[T]:
-  def show(value: T): Txt
-
-object Show:
-  given Show[String] = Txt(_)
-  given Show[Int] = num => Txt(num.toString)
-  given Show[Short] = num => Txt(num.toString)
-  given Show[Long] = num => Txt(num.toString)
-  given Show[Byte] = num => Txt(num.toString)
-  given Show[Char] = ch => Txt(ch.toString)
-  given Show[Boolean] = if _ then Txt("true") else Txt("false")
-
 object Interpolation:
   case class Input(string: String)
 
-  given [T: Show]: Insertion[Input, T] = value => Input(summon[Show[T]].show(value))
+  given [T: Show]: Insertion[Input, T] = value => Input(summon[Show[T]].show(value).s)
 
   object Str extends Interpolator[Input, String, String]:
     def initial: String = ""
