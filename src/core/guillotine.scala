@@ -27,8 +27,6 @@ import scala.jdk.StreamConverters.StreamHasToScala
 import java.util.HashMap as JMap
 import java.io as ji
 
-import language.implicitConversions
-
 type Stream = LazyList[String]
 
 object envs:
@@ -173,4 +171,4 @@ object Interpolation:
   given Insertion[Params, String] = value => Params(value)
   given Insertion[Params, List[String]] = xs => Params(xs*)
   given Insertion[Params, Command] = cmd => Params(cmd.args*)
-  given [T: Show]: Insertion[Params, T] = value => Params(summon[Show[T]].show(value))
+  given [T: Show]: Insertion[Params, T] = value => Params(summon[Show[T]].show(value).s)
