@@ -22,7 +22,8 @@ Niveau includes libraries for working with [HTML](https://github.com/propensive/
 [regular expressions](https://github.com/propensive/kaleidoscope/) is provided, and includes
 representations of [colors](https://github.com/propensive/iridescence/),
 [directed acyclic graphs](https://github.com/propensive/acyclicity/),
-[multilingual strings](https://github.com/propensive/cosmopolite/) and
+[multilingual strings](https://github.com/propensive/cosmopolite/),
+[MIME types](https://github.com/propensive/gesticulate/) and
 [paths](https://github.com/propensive/slalom/). Fundamental to these projects are utilities for
 [generic derivation](https://github.com/propensive/wisteria/),
 [checked interpolated strings](https://github.com/propensive/contextual/),

@@ -6,7 +6,7 @@ function classpath() {
   local MOD="$1"
   local PROJECT="$(echo $MOD | cut -d/ -f1)"
   local VERSION="$(cat mod/$PROJECT/doc/version)"
-  local JAR="$(echo $MOD | tr '/' '-')_3-$VERSION.jar"
+  local JAR="$(echo $MOD | tr '/' '-')-$VERSION.jar"
   local PATTERN="$(echo $MOD | tr '/' '.')"
   local REFS="$(cat refs | grep "$PATTERN:" | cut -d: -f2)"
   local BINS="$(cat bins | grep "$PATTERN:" | sed 's/^[^:]*: //')"
@@ -51,22 +51,22 @@ function deploy() {
   mvn deploy:deploy-file \
     -Durl=https://oss.sonatype.org/service/local/staging/deploy/maven2/ \
     -Dpackaging=jar \
-    -DpomFile=pub/$PROJECT/$PROJECT-${MODULE}_3-$VERSION.pom \
-    -Dfile=pub/$PROJECT/$PROJECT-${MODULE}_3-$VERSION.jar \
-    -Dsources=pub/$PROJECT/$PROJECT-${MODULE}_3-$VERSION-sources.jar \
-    -Djavadoc=pub/$PROJECT/$PROJECT-${MODULE}_3-$VERSION-javadoc.jar \
+    -DpomFile=pub/$PROJECT/$PROJECT-${MODULE}-$VERSION.pom \
+    -Dfile=pub/$PROJECT/$PROJECT-${MODULE}-$VERSION.jar \
+    -Dsources=pub/$PROJECT/$PROJECT-${MODULE}-$VERSION-sources.jar \
+    -Djavadoc=pub/$PROJECT/$PROJECT-${MODULE}-$VERSION-javadoc.jar \
     -DrepositoryId=mavencentral \
-    -Dfiles=pub/$PROJECT/$PROJECT-${MODULE}_3-$VERSION.jar.asc,pub/$PROJECT/$PROJECT-${MODULE}_3-$VERSION.pom.asc,pub/$PROJECT/$PROJECT-${MODULE}_3-$VERSION-sources.jar.asc,pub/$PROJECT/$PROJECT-${MODULE}_3-$VERSION-javadoc.jar.asc \
+    -Dfiles=pub/$PROJECT/$PROJECT-${MODULE}-$VERSION.jar.asc,pub/$PROJECT/$PROJECT-${MODULE}-$VERSION.pom.asc,pub/$PROJECT/$PROJECT-${MODULE}-$VERSION-sources.jar.asc,pub/$PROJECT/$PROJECT-${MODULE}-$VERSION-javadoc.jar.asc \
     -Dclassifiers=,,sources,javadoc \
     -Dtypes=jar.asc,pom.asc,jar.asc,jar.asc
 }
 
 function jarfile() {
-  echo "pub/$(project $1)/$(project $1)-$(module $1)_3-$(version $1).jar"
+  echo "pub/$(project $1)/$(project $1)-$(module $1)-$(version $1).jar"
 }
 
 function pomfile() {
-  echo "pub/$(project $1)/$(project $1)-$(module $1)_3-$(version $1).pom"
+  echo "pub/$(project $1)/$(project $1)-$(module $1)-$(version $1).pom"
 }
 
 function checksum() {
@@ -114,17 +114,17 @@ function build() {
   local DESCRIPTION="$(cat mod/$PROJECT/doc/slogan)"
   local YEAR="$(cat mod/$PROJECT/doc/start)"
   local VERSION="$(version $MOD)"
-  local JAR="$(echo $MOD | tr '/' '-')_3-$VERSION.jar"
-  local SRCS="$(echo $MOD | tr '/' '-')_3-$VERSION-sources.jar"
-  local DOCS="$(echo $MOD | tr '/' '-')_3-$VERSION-javadoc.jar"
-  local POM="$(echo $MOD | tr '/' '-')_3-$VERSION.pom"
+  local JAR="$(echo $MOD | tr '/' '-')-$VERSION.jar"
+  local SRCS="$(echo $MOD | tr '/' '-')-$VERSION-sources.jar"
+  local DOCS="$(echo $MOD | tr '/' '-')-$VERSION-javadoc.jar"
+  local POM="$(echo $MOD | tr '/' '-')-$VERSION.pom"
   local ID="$(echo $MOD | cut -d/ -f2)"
   local SRC="mod/$PROJECT/src/$ID"
   local PATTERN="$(echo $MOD | tr '/' '.')"
   local REFS="$(cat refs | grep "$PATTERN:" | cut -d: -f2)"
   local BINS="$(cat bins | grep "$PATTERN:" | sed 's/^[^:]*: //')"
   
-  if [ ! -f pub/$PROJECT/$PROJECT-${MODULE}_3-$VERSION.jar ]; then
+  if [ ! -f pub/$PROJECT/$PROJECT-${MODULE}-$VERSION.jar ]; then
     for REF in $REFS
     do
       build "$REF"
@@ -164,7 +164,7 @@ function build() {
       ) >> "pub/$PROJECT/$POM"
     done
     
-    for BIN in $BINS org.scala-lang:scala3-library_3:3.0.1
+    for BIN in $BINS org.scala-lang:scala3-library:3.0.1
     do
       (
         export GROUP="$(echo $BIN | cut -d: -f1)"
