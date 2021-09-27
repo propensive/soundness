@@ -10,7 +10,7 @@ euphemism/core: wisteria/core clairvoyant/http
 exoskeleton/core: rudiments/core
 gastronomy/core: kaleidoscope/core wisteria/core
 gesticulate/core: gossamer/core
-gossamer/core: rudiments/core
+gossamer/core: rudiments/core wisteria/core
 guillotine/core: contextual/core
 honeycomb/core: clairvoyant/css clairvoyant/http clairvoyant/html rudiments/core
 iridescence/core: contextual/core

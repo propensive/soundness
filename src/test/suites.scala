@@ -15,6 +15,7 @@ object Tests extends Suite("Niveau tests"):
     suite(euphemism.Tests)
     suite(exoskeleton.Tests)
     suite(gastronomy.Tests)
+    suite(gesticulate.Tests)
     suite(gossamer.Tests)
     suite(guillotine.Tests)
     suite(honeycomb.Tests)
