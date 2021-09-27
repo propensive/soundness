@@ -22,7 +22,7 @@ import gossamer.*
 import language.dynamics
 
 object Stylesheet:
-  given clairvoyant.HttpResponse[Stylesheet] with
+  given clairvoyant.HttpResponse[Stylesheet, String] with
     def mimeType: String = "text/css; charset=utf-8"
     def content(stylesheet: Stylesheet): String = stylesheet.toString
   

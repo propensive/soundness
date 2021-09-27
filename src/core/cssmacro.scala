@@ -39,11 +39,11 @@ object Macro:
     def recur(exprs: Seq[Expr[(Label, Any)]]): List[Expr[CssProperty]] =
       exprs match
         case '{($key: k & Label, $value: v)} +: tail =>
-          val att = key.valueOrError
+          val att = key.valueOrAbort
           val exp: Expr[PropertyDef[k & Label, v]] =
             Expr.summon[PropertyDef[k & Label, v]].getOrElse {
               val typeName = TypeRepr.of[v].show
-              report.throwError(
+              report.errorAndAbort(
                   s"cataract: no valid CSS element $att taking values of type $typeName exists")
             }
           
@@ -55,7 +55,7 @@ object Macro:
       case Varargs(exprs) =>
         '{Style(${Expr.ofSeq(recur(exprs))}*)}
       case _ =>
-        report.throwError("cataract: expected varargs")
+        report.errorAndAbort("cataract: expected varargs")
 
   private def words(string: String): List[String] =
     val i = string.indexWhere(_.isUpper, 1)
