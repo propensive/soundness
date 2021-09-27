@@ -138,7 +138,7 @@ case class Node[+Name <: Label](label: String, unclosed: Boolean, tagInline: Boo
 case class HtmlDoc(root: Item["html"])
 
 object HtmlDoc:
-  given clairvoyant.HttpResponse[HtmlDoc] with
+  given clairvoyant.HttpResponse[HtmlDoc, String] with
     def mimeType: String = "text/html; charset=utf-8"
     def content(value: HtmlDoc): String = HtmlDoc.serialize(value)
 
