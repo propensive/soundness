@@ -30,42 +30,6 @@ import language.dynamics
 
 import Runner.*
 
-trait LowPriorityDebugString:
-  given [T: Show]: DebugString[T] = summon[Show[T]].show(_).s
-
-object DebugString extends Derivation[DebugString], LowPriorityDebugString:
-  given DebugString[String] = "\""+_.flatMap {
-    case '\n' => "\\n"
-    case '\t' => "\\t"
-    case '\r' => "\\r"
-    case '\\' => "\\\\"
-    case '\"' => "\\\""
-    case '\'' => "\\\'"
-    case '\b' => "\\b"
-    case '\f' => "\\f"
-    case ch   => if ch < 128 && ch >= 32 then ch.toString else String.format("\\u%04x", ch.toInt).nn
-  }+"\""
-
-  val debugAny: DebugString[Any] = _.toString
-
-  given DebugString[Char] =
-    ch => "'"+summon[DebugString[String]].show(ch.toString).drop(1).dropRight(1)+"'"
-
-  given [Coll[X] <: Seq[X], T: DebugString]: DebugString[Coll[T]] =
-    xs => xs.map(summon[DebugString[T]].show(_)).join("Seq(", ", ", ")")
-
-  def join[T](ctx: CaseClass[DebugString, T]): DebugString[T] = t =>
-    ctx.params.map {
-      param => param.typeclass.show(param.deref(t))
-    }.join(str"${ctx.typeInfo.short}(", ", ", ")")
-  
-  def split[T](ctx: SealedTrait[DebugString, T]): DebugString[T] = t =>
-    ctx.choose(t) { subtype => subtype.typeclass.show(subtype.cast(t)) }
-
-
-trait DebugString[T]:
-  def show(value: T): String
-
 object Runner:
   case class TestId private[probably](value: String)
   
@@ -226,47 +190,118 @@ object Macros:
   import scala.reflect.*
   def assert[T: Type](runner: Expr[Runner], test: Expr[Runner#Test { type Type = T }], pred: Expr[T => Boolean])(using Quotes): Expr[Unit] =
     import quotes.reflect.*
-
-    def interpret(pred: Expr[T => Boolean]): Option[Expr[Option[T] => Debug]] = pred match
-      case '{ (x: T) => x == ($expr: T) } =>
-        val filename = Expr {
-          val absolute = Position.ofMacroExpansion.toString.cut(":").head
-          val pwd = Sys.user.dir()
-          if absolute.startsWith(pwd) then absolute.drop(pwd.length + 1) else absolute
-        }
-        val line = Expr(Position.ofMacroExpansion.startLine + 1)
-
-        val debugString = Expr.summon[DebugString[T]].getOrElse('{DebugString.debugAny})
-
-        Expr.summon[Comparison[T]].map { comparison =>
-          '{ (x: Option[T]) =>
-            Debug(
-              found = x.map($debugString.show(_)),
-              filename = $filename,
-              line = $line,
-              expected = $debugString.show($expr),
-              info = if x.isEmpty then Map()
-                  else Map("structure" -> $comparison.compare(x.get, $expr).toString)
-            )
-          }
-        }.orElse {
-          Some { 
-            '{ (x: Option[T]) =>
-              Debug(found = x.map(_.toString), filename = $filename, line = $line, expected = $expr.toString)
-            }
-          }
-        }
-
-      case '{ (x: T) => ($expr: T) == x } =>
-        interpret('{ (x: T) => x == ($expr: T) })
-      
-      case _ =>
-        None
     
-    val debug = interpret(pred).getOrElse('{ (x: Option[T]) => Debug(x.map(_.toString)) })
+    val filename = Expr {
+      val absolute = Position.ofMacroExpansion.toString.cut(":").head
+      val pwd = Sys.user.dir()
+      if absolute.startsWith(pwd) then absolute.drop(pwd.length + 1) else absolute
+    }
+    
+    val line = Expr(Position.ofMacroExpansion.startLine + 1)
+
+    def debugExpr[S: Type](expr: Expr[S]): Expr[Option[S] => Debug] =
+
+      Expr.summon[Comparison[S]].fold {
+        '{ (x: Option[S]) =>
+          Debug(found = x.map(_.debug), filename = $filename, line = $line, expected = $expr.debug)
+        }
+      } { comparison =>
+        '{ (x: Option[S]) =>
+          Debug(
+            found = x.map(_.debug),
+            filename = $filename,
+            line = $line,
+            expected = $expr.debug,
+            info = if x.isEmpty then Map()
+                else Map("structure" -> $comparison.compare(x.get, $expr).toString)
+          )
+        }
+      }
+
+    def interpret(pred: Expr[T => Boolean]): Expr[Option[T] => Debug] = pred match
+      case '{ (x: T) => x == ($expr: T) }             => debugExpr(expr)
+      case '{ (x: T) => ($expr: T) == x }             => debugExpr(expr)
+      case '{ (x: Double) => x == ($expr: Double) }   => debugExpr(expr)
+      case '{ (x: Double) => x == ($expr: Float) }    => debugExpr(expr)
+      case '{ (x: Double) => x == ($expr: Long) }     => debugExpr(expr)
+      case '{ (x: Double) => x == ($expr: Int) }      => debugExpr(expr)
+      case '{ (x: Double) => x == ($expr: Short) }    => debugExpr(expr)
+      case '{ (x: Double) => x == ($expr: Byte) }     => debugExpr(expr)
+      case '{ (x: Float) => x == ($expr: Double) }    => debugExpr(expr)
+      case '{ (x: Float) => x == ($expr: Float) }     => debugExpr(expr)
+      case '{ (x: Float) => x == ($expr: Long) }      => debugExpr(expr)
+      case '{ (x: Float) => x == ($expr: Int) }       => debugExpr(expr)
+      case '{ (x: Float) => x == ($expr: Short) }     => debugExpr(expr)
+      case '{ (x: Float) => x == ($expr: Byte) }      => debugExpr(expr)
+      case '{ (x: Long) => x == ($expr: Double) }     => debugExpr(expr)
+      case '{ (x: Long) => x == ($expr: Float) }      => debugExpr(expr)
+      case '{ (x: Long) => x == ($expr: Long) }       => debugExpr(expr)
+      case '{ (x: Long) => x == ($expr: Int) }        => debugExpr(expr)
+      case '{ (x: Long) => x == ($expr: Short) }      => debugExpr(expr)
+      case '{ (x: Long) => x == ($expr: Byte) }       => debugExpr(expr)
+      case '{ (x: Int) => x == ($expr: Double) }      => debugExpr(expr)
+      case '{ (x: Int) => x == ($expr: Float) }       => debugExpr(expr)
+      case '{ (x: Int) => x == ($expr: Long) }        => debugExpr(expr)
+      case '{ (x: Int) => x == ($expr: Int) }         => debugExpr(expr)
+      case '{ (x: Int) => x == ($expr: Short) }       => debugExpr(expr)
+      case '{ (x: Int) => x == ($expr: Byte) }        => debugExpr(expr)
+      case '{ (x: Short) => x == ($expr: Double) }    => debugExpr(expr)
+      case '{ (x: Short) => x == ($expr: Float) }     => debugExpr(expr)
+      case '{ (x: Short) => x == ($expr: Long) }      => debugExpr(expr)
+      case '{ (x: Short) => x == ($expr: Int) }       => debugExpr(expr)
+      case '{ (x: Short) => x == ($expr: Short) }     => debugExpr(expr)
+      case '{ (x: Short) => x == ($expr: Byte) }      => debugExpr(expr)
+      case '{ (x: Byte) => x == ($expr: Double) }     => debugExpr(expr)
+      case '{ (x: Byte) => x == ($expr: Float) }      => debugExpr(expr)
+      case '{ (x: Byte) => x == ($expr: Long) }       => debugExpr(expr)
+      case '{ (x: Byte) => x == ($expr: Int) }        => debugExpr(expr)
+      case '{ (x: Byte) => x == ($expr: Short) }      => debugExpr(expr)
+      case '{ (x: Byte) => x == ($expr: Byte) }       => debugExpr(expr)
+      case '{ (x: Boolean) => x == ($expr: Boolean) } => debugExpr(expr)
+      case '{ (x: Double) => ($expr: Double) == x }   => debugExpr(expr)
+      case '{ (x: Double) => ($expr: Float) == x }    => debugExpr(expr)
+      case '{ (x: Double) => ($expr: Long) == x }     => debugExpr(expr)
+      case '{ (x: Double) => ($expr: Int) == x }      => debugExpr(expr)
+      case '{ (x: Double) => ($expr: Short) == x }    => debugExpr(expr)
+      case '{ (x: Double) => ($expr: Byte) == x }     => debugExpr(expr)
+      case '{ (x: Float) => ($expr: Double) == x }    => debugExpr(expr)
+      case '{ (x: Float) => ($expr: Float) == x }     => debugExpr(expr)
+      case '{ (x: Float) => ($expr: Long) == x }      => debugExpr(expr)
+      case '{ (x: Float) => ($expr: Int) == x }       => debugExpr(expr)
+      case '{ (x: Float) => ($expr: Short) == x }     => debugExpr(expr)
+      case '{ (x: Float) => ($expr: Byte) == x }      => debugExpr(expr)
+      case '{ (x: Long) => ($expr: Double) == x }     => debugExpr(expr)
+      case '{ (x: Long) => ($expr: Float) == x }      => debugExpr(expr)
+      case '{ (x: Long) => ($expr: Long) == x }       => debugExpr(expr)
+      case '{ (x: Long) => ($expr: Int) == x }        => debugExpr(expr)
+      case '{ (x: Long) => ($expr: Short) == x }      => debugExpr(expr)
+      case '{ (x: Long) => ($expr: Byte) == x }       => debugExpr(expr)
+      case '{ (x: Int) => ($expr: Double) == x }      => debugExpr(expr)
+      case '{ (x: Int) => ($expr: Float) == x }       => debugExpr(expr)
+      case '{ (x: Int) => ($expr: Long) == x }        => debugExpr(expr)
+      case '{ (x: Int) => ($expr: Int) == x }         => debugExpr(expr)
+      case '{ (x: Int) => ($expr: Short) == x }       => debugExpr(expr)
+      case '{ (x: Int) => ($expr: Byte) == x }        => debugExpr(expr)
+      case '{ (x: Short) => ($expr: Double) == x }    => debugExpr(expr)
+      case '{ (x: Short) => ($expr: Float) == x }     => debugExpr(expr)
+      case '{ (x: Short) => ($expr: Long) == x }      => debugExpr(expr)
+      case '{ (x: Short) => ($expr: Int) == x }       => debugExpr(expr)
+      case '{ (x: Short) => ($expr: Short) == x }     => debugExpr(expr)
+      case '{ (x: Short) => ($expr: Byte) == x }      => debugExpr(expr)
+      case '{ (x: Byte) => ($expr: Double) == x }     => debugExpr(expr)
+      case '{ (x: Byte) => ($expr: Float) == x }      => debugExpr(expr)
+      case '{ (x: Byte) => ($expr: Long) == x }       => debugExpr(expr)
+      case '{ (x: Byte) => ($expr: Int) == x }        => debugExpr(expr)
+      case '{ (x: Byte) => ($expr: Short) == x }      => debugExpr(expr)
+      case '{ (x: Byte) => ($expr: Byte) == x }       => debugExpr(expr)
+      case '{ (x: Boolean) => ($expr: Boolean) == x } => debugExpr(expr)
+      
+      case expr =>
+        '{ (opt: Option[?]) => Debug(found = opt.map(_.debug), filename = $filename, line = $line) }
     
     '{
-      try if !$runner.skip($test.id) then $test.check($pred, $debug) catch case NonFatal(_) => ()
+      try if !$runner.skip($test.id) then $test.check($pred, ${interpret(pred)})
+      catch case NonFatal(_) => ()
     }
 
 enum Differences:
@@ -293,7 +328,7 @@ enum Differences:
 
     table.tabulate(100, flatten).join("\n")
 
-trait Comparison[T]:
+trait Comparison[-T]:
   def compare(left: T, right: T): Differences
 
 object Comparison extends Derivation[Comparison]:
