@@ -35,9 +35,9 @@ extension (text: String)
   def slice(from: Int, to: Int): String = text.substring(from, to).nn
   def length: Int = text.length
   
-  def apply(idx: Int): Char exposes IndexExceedsRangeError =
+  def apply(idx: Int): Char throws OutOfRangeError =
     if idx >= 0 && idx < text.length then text(idx)
-    else throw IndexExceedsRangeError(idx, 0, text.length)
+    else throw OutOfRangeError(idx, 0, text.length)
   
   def populated: Option[String] = if text.isEmpty then None else Some(text)
   def cut(delimiter: String): IArray[String] = cut(delimiter, 0)
@@ -95,7 +95,7 @@ extension (values: Iterable[String])
     case 1 => values.head
     case _ => values.init.mkString(separator)+last+values.last
 
-case class IndexExceedsRangeError(idx: Int, from: Int, to: Int)
+case class OutOfRangeError(idx: Int, from: Int, to: Int)
 extends Exception(s"gossamer: the index $idx exceeds the range $from-$to")
 
 object Interpolation:
