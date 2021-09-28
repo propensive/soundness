@@ -57,12 +57,8 @@ case class Pid(value: Long)
 class Process[T](process: java.lang.Process, executor: Executor[T]):
   def pid: Pid = Pid(process.pid)
   
-  def stdout(limit: Int = 1024*1024*10): LazyList[IArray[Byte]] =
-    Util.read(process.getInputStream.nn, limit)
-  
-  def stderr(limit: Int = 1024*1024*10): LazyList[IArray[Byte]] =
-    Util.read(process.getErrorStream.nn, limit)
-  
+  def stdout(limit: Int = 1024*1024*10): DataStream = Util.read(process.getInputStream.nn, limit)
+  def stderr(limit: Int = 1024*1024*10): DataStream = Util.read(process.getErrorStream.nn, limit)
   def stdin(in: LazyList[IArray[Byte]]): Unit = Util.write(in, process.getOutputStream.nn)
   def await(): T = executor.interpret(process)
   def abort(force: Boolean = false): Unit =
@@ -113,7 +109,7 @@ object Interpolation:
   object Sh extends Interpolator[Params, State, Command]:
     import Context.*
   
-    def complete(state: State): Command exposes InterpolationError =
+    def complete(state: State): Command =
       val args = state.current match
         case Quotes2        => throw InterpolationError("the double quotes have not been closed")
         case Quotes1        => throw InterpolationError("the single quotes have not been closed")
@@ -124,9 +120,9 @@ object Interpolation:
 
     def initial: State = State(Awaiting, false, Nil)
 
-    def skip(state: State): State exposes InterpolationError = insert(state, Params("x"))
+    def skip(state: State): State = insert(state, Params("x"))
 
-    def insert(state: State, value: Params): State exposes InterpolationError =
+    def insert(state: State, value: Params): State =
       value.params.to(List) match
         case h :: t =>
           if state.esc
@@ -151,7 +147,7 @@ object Interpolation:
           state
 
           
-    def parse(state: State, next: String): State exposes InterpolationError = next.foldLeft(state) {
+    def parse(state: State, next: String): State = next.foldLeft(state) {
       case (State(Awaiting, esc, args), ' ')          => State(Awaiting, false, args)
       case (State(Quotes1, false, rest :+ cur), '\\') => State(Quotes1, false, rest :+ s"$cur\\")
       case (State(ctx, false, args), '\\')            => State(ctx, true, args)
