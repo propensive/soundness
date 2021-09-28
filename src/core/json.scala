@@ -1,5 +1,5 @@
 /*
-    Euphemism, version 0.8.0. Copyright 2018-21 Jon Pretty, Propensive OÜ.
+    Euphemism, version 0.13.0. Copyright 2018-21 Jon Pretty, Propensive OÜ.
 
     The primary distribution site is: https://propensive.com/
 
