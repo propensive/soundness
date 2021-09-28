@@ -25,30 +25,25 @@ enum Keypress:
 trait Keyboard[+KeyType]:
   def interpret(bytes: List[Int]): LazyList[KeyType]
 
-case class TtyError() extends Exception("rivulet: STDIN is not attached to a TTY")
+abstract class RivuletError(msg: String) extends Exception(str"rivulet: $msg")
+case class TtyError(msg: String) extends RivuletError("rivulet: STDIN is not attached to a TTY")
 
 sealed case class Tty(private[rivulet] val out: ji.PrintStream)
-
-case class CannotCaptureTtyError(msg: String) extends Exception(s"rivulet: $msg")
 
 object Tty:
 
   private final val noopOut: ji.PrintStream = ji.PrintStream((_ => ()): ji.OutputStream)
 
-  def capture[T](fn: Tty ?=> T): T exposes CannotCaptureTtyError =
+  def capture[T](fn: Tty ?=> T): T throws TtyError =
     val libc: Libc = Native.load("c", classOf[Libc]).nn
-    if libc.isatty(0) != 1 then throw TtyError()
+    if libc.isatty(0) != 1 then throw TtyError("the program is not running within a TTY")
     val oldTermios: Termios = Termios()
     libc.tcgetattr(0, oldTermios)
     val newTermios = Termios(oldTermios)
     newTermios.c_lflag = oldTermios.c_lflag & -76
     libc.tcsetattr(0, 0, newTermios)
-    
-    val stdout = Option(System.out).getOrElse {
-      throw CannotCaptureTtyError("the STDOUT stream is null")
-    }.nn
-
-    if stdout == noopOut then throw CannotCaptureTtyError("the TTY has already been captured")
+    val stdout = Option(System.out).getOrElse { throw TtyError("the STDOUT stream is null") }.nn
+    if stdout == noopOut then throw TtyError("the TTY has already been captured")
 
     val tty: Tty = Tty(stdout)
     System.setOut(noopOut)
@@ -141,20 +136,25 @@ object LineEditor:
 case class LineEditor(content: String = "", pos: Int = 0):
   import Keypress.*
 
-  def apply(keypress: Keypress): LineEditor = keypress match
+  def apply(keypress: Keypress): LineEditor = try keypress match
     case Printable(ch)  => copy(content.take(pos)+ch+content.drop(pos), pos + 1)
     case Ctrl('U')      => copy(content.drop(pos), 0)
+    
     case Ctrl('W')      => val prefix = content.take(0 max (pos - 1)).reverse.dropWhile(_ != ' ').reverse
                            copy(prefix+content.drop(pos), prefix.length)
+    
     case Delete         => copy(content.take(pos)+content.drop(pos + 1))
     case Backspace      => copy(content.take(pos - 1)+content.drop(pos), (pos - 1) max 0)
     case Home           => copy(pos = 0)
     case End            => copy(pos = content.length)
     case LeftArrow      => copy(pos = (pos - 1) max 0)
-    case CtrlLeftArrow  => val newPos = (((pos - 2) max 0) to 0 by -1).find(content(_) == ' ').fold(0)(_ + 1)
-                           copy(pos = newPos max 0)
+    
+    case CtrlLeftArrow  => copy(pos = (pos - 2 max 0 to 0 by -1).find(content(_) == ' ').fold(0)(_ +
+                               1))
+    
     case CtrlRightArrow => val range = ((pos + 1) min (content.length - 1)) to (content.length - 1)
                            val newPos = range.find(content(_) == ' ').fold(content.length)(_ + 1)
                            copy(pos = newPos min content.length)
     case RightArrow     => copy(pos = (pos + 1) min content.length)
     case _              => this
+  catch case OutOfRangeError(_, _, _) => this
