@@ -1,5 +1,5 @@
 /*
-    Rudiments, version 0.2.0. Copyright 2020-21 Jon Pretty, Propensive OÜ.
+    Rudiments, version 0.6.0. Copyright 2020-21 Jon Pretty, Propensive OÜ.
 
     The primary distribution site is: https://propensive.com/
 
