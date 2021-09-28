@@ -82,7 +82,7 @@ object Media:
       
       parsed
 
-  def parse(string: String): MediaType =
+  def parse(string: String): MediaType throws InvalidMediaTypeError =
     def parseParams(ps: List[String]): List[(String, String)] =
       if ps == List("") then throw InvalidMediaTypeError(string, txt"""a terminal ';' suggests that
           a parameter is missing""".s)
@@ -117,7 +117,8 @@ object Media:
           else Subtype.Standard(str)
         
         case idx =>
-          throw InvalidMediaTypeError(string, str"the character ${str(idx)} is not allowed")
+          val ch = try str(idx) catch case error@OutOfRangeError(_, _, _) => throw Impossible(error)
+          throw InvalidMediaTypeError(string, str"the character ${ch} is not allowed")
     
     string.cut(";").map(_.trim).to(List) match
       case Nil    => throw Impossible("cannot return empty list from `cut`")
