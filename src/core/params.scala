@@ -1,5 +1,5 @@
 /*
-    Exoskeleton, version 2.0.0. Copyright 2017-21 Jon Pretty, Propensive OÜ.
+    Exoskeleton, version 2.1.0. Copyright 2017-21 Jon Pretty, Propensive OÜ.
 
     The primary distribution site is: https://propensive.com/
 
