@@ -29,10 +29,8 @@ type Bytes = IArray[Byte]
 
 case class TooMuchData() extends Exception(s"the amount of data in the stream exceeds the capacity")
 
-infix type exposes[T, E <: Exception] = T
-
 extension (value: LazyList[Bytes])
-  def slurp(maxSize: Int): Bytes exposes TooMuchData =
+  def slurp(maxSize: Int): Bytes throws TooMuchData =
     value.foldLeft(IArray[Byte]()) { (acc, next) =>
       if acc.length + next.length > maxSize then throw TooMuchData() else acc ++ next
     }
@@ -88,18 +86,24 @@ extension (obj: Double.type) def unapply(str: String): Option[Double] =
   try Some(str.toDouble) catch Exception => None
 
 case class Property(name: String) extends Dynamic:
-  def apply(): String exposes KeyNotFound =
+  def apply(): String throws KeyNotFound =
     Option(System.getProperty(name)).getOrElse(throw KeyNotFound(name)).nn
   
   def selectDynamic(key: String): Property = Property(s"$name.$key")
-  def applyDynamic(key: String)(): String exposes KeyNotFound = selectDynamic(key).apply()
+  def applyDynamic(key: String)(): String throws KeyNotFound = selectDynamic(key).apply()
 
 object Sys extends Dynamic:
   def selectDynamic(key: String): Property = Property(key)
-  def applyDynamic(key: String)(): String exposes KeyNotFound = selectDynamic(key).apply()
+  def applyDynamic(key: String)(): String throws KeyNotFound = selectDynamic(key).apply()
   def bigEndian: Boolean = java.nio.ByteOrder.nativeOrder == java.nio.ByteOrder.BIG_ENDIAN
 
 case class KeyNotFound(name: String) extends Exception(s"rudiments: key $name not found")
+
+object Impossible:
+  def apply(error: Exception): Impossible =
+    Impossible(s"rudiments: an ${error.getClass.getName} exception was thrown when this was not "+
+        s"believed to be possible; the error was '${error.getMessage}'")
+
 case class Impossible(message: String) extends Error(message)
 
 object Unset:
@@ -125,17 +129,23 @@ extension (iarray: IArray.type)
 
 extension [T](opt: Option[T]) def maybe: Unset.type | T = opt.getOrElse(Unset)
 
+case class StreamCutError() extends Exception("rudiments: the stream was cut prematurely")
+
+type DataStream = LazyList[IArray[Byte] throws StreamCutError]
+
 object Util:
-  def read(in: ji.InputStream, limit: Int): LazyList[IArray[Byte]] = in match
+  def read(in: ji.InputStream, limit: Int): DataStream = in match
     case in: ji.BufferedInputStream =>
-      def read(): LazyList[IArray[Byte]] =
+      def read(): DataStream =
         val avail = in.available
         if avail == 0 then LazyList()
         else
           val buf = new Array[Byte](in.available.min(limit))
-          val count = in.read(buf, 0, buf.length)
-          if count < 0 then LazyList(buf.unsafeImmutable)
-          else buf.unsafeImmutable #:: read()
+          try
+            val count = in.read(buf, 0, buf.length)
+            if count < 0 then LazyList(buf.unsafeImmutable)
+            else buf.unsafeImmutable #:: read()
+          catch case error: ji.IOException => LazyList(throw StreamCutError())
       
       read()
     
