@@ -42,7 +42,10 @@ trait Application:
         shell.serialize(cli, completions).foreach(println)
         System.exit(0)
       case "{exoskeleton-generate}" :: _ =>
-        Generate.install()(using Shell(args.tail, env, props))
+        try Generate.install()(using Shell(args.tail, env, props))
+        catch case InstallError() | EnvError(_) =>
+          println("Installation failed")
+          Exit(1)
       case list =>
         val result = try main(using shell) catch case e: Exception =>
           e.printStackTrace()

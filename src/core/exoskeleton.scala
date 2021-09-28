@@ -44,7 +44,7 @@ object Generate extends Application:
       e.printStackTrace()
       Exit(1)
 
-  def install()(using Shell): Set[String] = arguments.to(List) match
+  def install()(using Shell): Set[String] throws InstallError | EnvError = arguments.to(List) match
     case cmd :: ShellType(shell) :: Nil =>
       Set(shell.install(cmd, summon[Shell].environment))
     
@@ -97,7 +97,7 @@ abstract class ShellType(val shell: String):
   
   def destination(env: Map[String, String]): File
 
-  def install(cmd: String, env: Map[String, String]): String exposes EnvError | InstallError =
+  def install(cmd: String, env: Map[String, String]): String throws EnvError | InstallError =
     val dir = destination(env)
     if !dir.exists() then dir.mkdirs()
     val file = File(dir, filename(cmd))
