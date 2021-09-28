@@ -27,19 +27,15 @@ import scala.util.*
 
 import language.dynamics
 
-case class ParseException(line: Int, column: Int, message: String) extends Exception
-
-sealed trait AccessException extends Exception
-case class DeserializationException() extends AccessException
-case class IndexNotFound(index: Int) extends AccessException
-case class LabelNotFound(label: String) extends AccessException
-case class UnexpectedType(expectedType: JsonPrimitive) extends AccessException
+case class JsonParseError(line: Int, column: Int, message: String) extends Exception
+case class JsonAccessError(key: Int | String) extends Exception
+case class JsonTypeError(expectedType: JsonPrimitive) extends Exception
 
 enum JsonPrimitive:
   case Array, Object, Number, Null, Boolean, String
 
-extension [T: Json.Serializer](value: T)
-  def json: Json = Json(summon[Json.Serializer[T]].serialize(value))
+extension [T: Json.Writer](value: T)
+  def json: Json = Json(summon[Json.Writer[T]].write(value))
 
 object Json extends Dynamic:
 
@@ -47,47 +43,46 @@ object Json extends Dynamic:
     def mimeType: String = "application/json"
     def content(json: Json): String = json.toString
 
-  given clairvoyant.HttpReader[Json] = Json.parse(_)
+  given clairvoyant.HttpReader[Json, JsonParseError] with
+    def read(value: String): Json throws JsonParseError = Json.parse(value)
 
-  object Serializer extends Derivation[Serializer]:
-    given Serializer[Int] = JNum(_)
-    given Serializer[String] = JString(_)
-    given Serializer[Double] = JNum(_)
-    given Serializer[Long] = JNum(_)
-    given Serializer[Byte] = JNum(_)
-    given Serializer[Short] = JNum(_)
-    given Serializer[Boolean] = if _ then JTrue else JFalse
+  object Writer extends Derivation[Writer]:
+    given Writer[Int] = JNum(_)
+    given Writer[String] = JString(_)
+    given Writer[Double] = JNum(_)
+    given Writer[Long] = JNum(_)
+    given Writer[Byte] = JNum(_)
+    given Writer[Short] = JNum(_)
+    given Writer[Boolean] = if _ then JTrue else JFalse
     
-    // given (using CanThrow[UnexpectedType], CanThrow[LabelNotFound], CanThrow[IndexNotFound])
-    //     : Serializer[Json] = _.normalize.toOption.get.root
-  
-    given Serializer[Json] = _.normalize.toOption.get.root
+    given (using CanThrow[JsonTypeError], CanThrow[JsonAccessError]): Writer[Json] =
+      _.normalize.toOption.get.root
     
-    given Serializer[Nil.type] = value => JArray(Array())
+    given Writer[Nil.type] = value => JArray(Array())
 
-    given [Coll[T1] <: Traversable[T1], T: Serializer]: Serializer[Coll[T]] = values =>
-      JArray(values.map(summon[Serializer[T]].serialize(_)).to(Array))
+    given [Coll[T1] <: Traversable[T1], T: Writer]: Writer[Coll[T]] = values =>
+      JArray(values.map(summon[Writer[T]].write(_)).to(Array))
 
-    given [T: Serializer]: Serializer[Map[String, T]] = values =>
-      JObject(mutable.Map(values.view.mapValues(summon[Serializer[T]].serialize(_)).to(Seq)*))
+    given [T: Writer]: Writer[Map[String, T]] = values =>
+      JObject(mutable.Map(values.view.mapValues(summon[Writer[T]].write(_)).to(Seq)*))
 
-    given [T: Serializer]: Serializer[Option[T]] = new Serializer[Option[T]]:
+    given [T: Writer]: Writer[Option[T]] = new Writer[Option[T]]:
       override def omit(t: Option[T]): Boolean = t.isEmpty
       
-      def serialize(value: Option[T]): JValue = value match
+      def write(value: Option[T]): JValue = value match
         case None        => JNull
-        case Some(value) => summon[Serializer[T]].serialize(value)
+        case Some(value) => summon[Writer[T]].write(value)
 
-    def join[T](caseClass: CaseClass[Serializer, T]): Serializer[T] = value =>
+    def join[T](caseClass: CaseClass[Writer, T]): Writer[T] = value =>
       JObject(mutable.Map(caseClass.params.filter { param =>
         !param.typeclass.omit(param.deref(value))
       }.map { param =>
-        (param.label, param.typeclass.serialize(param.deref(value)))
+        (param.label, param.typeclass.write(param.deref(value)))
       }*))
       
-    def split[T](sealedTrait: SealedTrait[Serializer, T]): Serializer[T] = value =>
+    def split[T](sealedTrait: SealedTrait[Writer, T]): Writer[T] = value =>
       sealedTrait.choose(value) { subtype =>
-        val obj = subtype.typeclass.serialize(subtype.cast(value))
+        val obj = subtype.typeclass.write(subtype.cast(value))
         obj match
           case JObject(vs) => vs("_type") = JString(subtype.typeInfo.short)
           case _           => ()
@@ -95,73 +90,106 @@ object Json extends Dynamic:
         obj
       }
 
-  trait Serializer[T]:
+  trait Writer[T]:
     def omit(t: T): Boolean = false
-    def serialize(t: T): JValue
+    def write(t: T): JValue
+    def contramap[S](fn: S => T): Writer[S] = (v: S) => fn.andThen(write)(v)
 
-  object Deserializer extends Derivation[Deserializer]:
-    given Deserializer[Int] = _.flatMap(_.getInt)
-    given Deserializer[Double] = _.flatMap(_.getDouble)
-    given Deserializer[Float] = _.flatMap(_.getDouble.map(_.toFloat))
-    given Deserializer[Long] = _.flatMap(_.getLong)
-    given Deserializer[String] = _.flatMap(_.getString)
-    given Deserializer[Short] = _.flatMap(_.getInt.map(_.toShort))
-    given Deserializer[Byte] = _.flatMap(_.getInt.map(_.toByte))
-    given Deserializer[Boolean] = _.flatMap(_.getBoolean)
-    given Deserializer[Json] = _.map(Json(_, Nil))
+  object Reader extends Derivation[Reader]:
+    given Reader[Json] with
+      type E = Nothing
+      def read(value: JValue): Json throws JsonTypeError | E = Json(value, Nil)
 
-    given opt[T: Deserializer]: Deserializer[Option[T]] =
-      v => Some(summon[Deserializer[T]].deserialize(v))
+    given Reader[Int] = long.map(_.toInt)
+    given Reader[Byte] = long.map(_.toByte)
+    given Reader[Float] = double.map(_.toFloat)
+    given Reader[Short] = long.map(_.toShort)
+    
+    given double: Reader[Double] with
+      type E = Nothing
+      def read(value: JValue): Double throws JsonTypeError | E =
+        value.getDouble.getOrElse(throw JsonTypeError(JsonPrimitive.Number))
 
-    given array[Coll[T1] <: Traversable[T1], T: Deserializer]
-               (using factory: Factory[T, Coll[T]]): Deserializer[Coll[T]] = _.flatMap {
-      case JArray(vs) =>
-        vs.foldLeft(Option(factory.newBuilder)) { (builder, next) =>
-          summon[Deserializer[T]].deserialize(Some(next)).flatMap { elem => builder.map(_ += elem) }
-        }.map(_.result())
-      
-      case _ =>
-        None
-    }
+    given long: Reader[Long] with
+      type E = Nothing
+      def read(value: JValue): Long throws JsonTypeError | E =
+        value.getLong.getOrElse(throw JsonTypeError(JsonPrimitive.Number))
 
-    given map[T: Deserializer]: Deserializer[Map[String, T]] = _.flatMap {
-      case JObject(vs) =>
-        vs.toMap.foldLeft(Option(Map[String, T]())) {
-          case (Some(acc), (k, v)) =>
-            summon[Deserializer[T]].deserialize(Some(v)).map { v2 => acc.updated(k, v2) }
+    given string: Reader[String] with
+      type E = Nothing
+      def read(value: JValue): String throws JsonTypeError | E =
+        value.getString.getOrElse(throw JsonTypeError(JsonPrimitive.String))
+    
+    
+    given boolean: Reader[Boolean] with
+      type E = Nothing
+      def read(value: JValue): Boolean throws JsonTypeError | E =
+        value.getBoolean.getOrElse(throw JsonTypeError(JsonPrimitive.Number))
+
+    given opt[T](using Reader[T]): Reader[Option[T]] with
+      type E = Nothing
+      def read(value: JValue): Option[T] throws JsonTypeError | E =
+        try Some(summon[Reader[T]].read(value)) catch case e: Exception => None
+
+    given array[Coll[T1] <: Traversable[T1], T]
+               (using reader: Reader[T], factory: Factory[T, Coll[T]]): Reader[Coll[T]] =
+      new Reader[Coll[T]]:
+        type E = reader.E
+        
+        def read(value: JValue): Coll[T] throws JsonTypeError | reader.E = value match
+          case JArray(vs) => val bld = factory.newBuilder
+                             vs.foreach(bld += reader.read(_))
+                             bld.result()
           
-          case _ =>
-            None
-        }
+          case _          => throw JsonTypeError(JsonPrimitive.Array)
+
+    given map[T](using reader: Reader[T]): Reader[Map[String, T]] = new Reader[Map[String, T]]:
+      type E = reader.E
       
-      case _ =>
-        None
-    }
+      def read(value: JValue): Map[String, T] throws JsonTypeError | reader.E = value match
+        case JObject(vs) => vs.toMap.foldLeft(Map[String, T]()) {
+                              case (acc, (k, v)) => acc.updated(k, reader.read(v))
+                            }
+        
+        case _             => throw JsonTypeError(JsonPrimitive.Object)
 
-    def join[T](caseClass: CaseClass[Deserializer, T]): Deserializer[T] = _.flatMap { json =>
-      caseClass.constructMonadic { param =>
-        json match
-          case JObject(vs) => param.typeclass.deserialize(vs.get(param.label))
-          case _ => None
-      }
-    }
+    def join[T](caseClass: CaseClass[Reader, T]): Reader[T] = new Reader[T]:
+      type E = JsonAccessError
+      def read(value: JValue): T throws JsonTypeError | JsonAccessError =
+        caseClass.construct { param =>
+          value match
+            case JObject(vs) =>
+              val value = vs.get(param.label).getOrElse(throw JsonAccessError(param.label))
+              import unsafeExceptions.canThrowAny
+              param.typeclass.read(value)
+            
+            case _ =>
+              throw JsonTypeError(JsonPrimitive.Object)
+        }
 
-    def split[T](sealedTrait: SealedTrait[Deserializer, T]): Deserializer[T] = _.flatMap { json =>
-      try for
-        str     <- Some(Json(json, Nil)._type.as[String])
-        subtype <- sealedTrait.subtypes.find(_.typeInfo.short == str)
-        value   <- subtype.typeclass.deserialize(Some(json))
-      yield value
-      catch
-        case DeserializationException() | IndexNotFound(_) | LabelNotFound(_) | UnexpectedType(_) => None
-    }
+    def split[T](sealedTrait: SealedTrait[Reader, T]): Reader[T] = new Reader[T]:
+      type E = JsonAccessError
+      def read(value: JValue): T throws JsonTypeError | JsonAccessError =
+        val _type = Json(value, Nil)._type.as[String]
+        val subtype = sealedTrait.subtypes.find(_.typeInfo.short == _type)
+          .getOrElse(throw JsonTypeError(JsonPrimitive.Object)) // FIXME
+        
+        try subtype.typeclass.read(value)
+        catch case e: Exception => throw JsonAccessError(subtype.typeInfo.short)
 
-  trait Deserializer[T]:
-    def deserialize(json: Option[JValue]): Option[T]
 
-  def parse(str: String): Json exposes ParseException = JParser.parseFromString(str) match
+  trait Reader[T]:
+    private transparent inline def reader: this.type = this
+    type E <: Exception
+    
+    def read(json: JValue): T throws JsonTypeError | E
+    def map[S](fn: T => S): Reader[S] = new Reader[S]:
+      type E = reader.E
+      def read(v: JValue): S throws JsonTypeError | E = fn(reader.read(v))
+
+  def parse(str: String): Json throws JsonParseError = JParser.parseFromString(str) match
     case Success(value)                   => Json(value, Nil)
-    case Failure(err: JawnParseException) => throw ParseException(err.line, err.col, err.msg)
+    case Failure(err: JawnParseException) => throw JsonParseError(err.line, err.col, err.msg)
     case Failure(err)                     => throw err
 
   // def applyDynamicNamed[T <: String](methodName: "of")(elements: (String, Json)*): Json =
@@ -173,39 +201,37 @@ case class Json(root: JValue, path: List[Int | String] = Nil) extends Dynamic de
   def selectDynamic(field: String): Json = this(field)
   def applyDynamic(field: String)(idx: Int): Json = this(field)(idx)
 
-  def normalize: Json exposes IndexNotFound | LabelNotFound | UnexpectedType =
-    def deref(value: JValue, path: List[Int | String]): JValue exposes IndexNotFound |
-        UnexpectedType | LabelNotFound = path match
+  def normalize: Json throws JsonAccessError | JsonTypeError =
+    def deref(value: JValue, path: List[Int | String])
+        : JValue throws JsonTypeError | JsonAccessError = path match
       case Nil =>
         value
       case (idx: Int) :: tail => value match
         case JArray(vs) =>
           deref((vs.lift(idx) match
-            case None        => throw IndexNotFound(idx)
+            case None        => throw JsonAccessError(idx)
             case Some(value) => value
           ), tail)
         case _ =>
-          throw UnexpectedType(JsonPrimitive.Array)
+          throw JsonTypeError(JsonPrimitive.Array)
       case (field: String) :: tail => value match
         case JObject(vs) =>
           deref((vs.get(field) match
-            case None        => throw LabelNotFound(field)
+            case None        => throw JsonAccessError(field)
             case Some(value) => value
           ), tail)
         case _ =>
-          throw UnexpectedType(JsonPrimitive.Object)
+          throw JsonTypeError(JsonPrimitive.Object)
       
     Json(deref(root, path.reverse), Nil)
 
-  def as[T: Json.Deserializer]: T exposes DeserializationException | UnexpectedType | LabelNotFound | IndexNotFound =
-    summon[Json.Deserializer[T]]
-      .deserialize(Some(normalize.root))
-      .getOrElse(throw DeserializationException())
+  def as[T](using reader: Json.Reader[T]): T throws JsonTypeError | JsonAccessError | reader.E =
+    reader.read(normalize.root)
   
   override def toString(): String =
     try normalize.root.render()
     catch
-      case UnexpectedType(t) => s"<type mismatch: expected $t>"
-      case LabelNotFound(s)  => str"<missing label: $s>"
-      case IndexNotFound(i)  => str"<missing index: $i>"
+      case JsonTypeError(t)           => s"<type mismatch: expected $t>"
+      case JsonAccessError(s: String) => str"<missing label: $s>"
+      case JsonAccessError(i: Int)    => str"<missing index: $i>"
     
