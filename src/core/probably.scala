@@ -193,7 +193,9 @@ object Macros:
     
     val filename = Expr {
       val absolute = Position.ofMacroExpansion.toString.cut(":").head
-      val pwd = Sys.user.dir()
+      
+      val pwd = try Sys.user.dir() catch case error@KeyNotFound(_) => throw Impossible(error)
+      
       if absolute.startsWith(pwd) then absolute.drop(pwd.length + 1) else absolute
     }
     
