@@ -20,5 +20,5 @@ trait HttpResponse[T, C]:
   def mimeType: String
   def content(value: T): C
 
-trait HttpReader[T]:
-  def read(value: String): T
+trait HttpReader[T, E <: Exception]:
+  def read(value: String): T throws E
