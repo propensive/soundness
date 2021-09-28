@@ -46,5 +46,5 @@ object XmlWriter extends Derivation[XmlWriter]:
 
 trait XmlWriter[T]:
   def write(value: T): Ast.Element
-  def contraMap[S](fn: S => T): XmlWriter[S] = value => write(fn(value))
+  def contramap[S](fn: S => T): XmlWriter[S] = value => write(fn(value))
 

@@ -94,7 +94,7 @@ object XmlInterpolation:
     def complete(state: ParseState): Doc =
       if state.stack.nonEmpty then throw InterpolationError(s"expected closing tag: ${state.stack.head}")
       try Xml.parse(state.source)
-      catch XmlParseError => throw InterpolationError("the XML could not be parsed")
+      catch case XmlParseError(_, _) => throw InterpolationError("the XML could not be parsed")
 
     def parse(state: ParseState, string: String): ParseState = string.foldLeft(state.copy(offset = 0)) {
       case (state@ParseState(_, _, _, _, _, _), char) => state.context match
