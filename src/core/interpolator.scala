@@ -30,15 +30,18 @@ object Md:
   
   object Interpolator extends contextual.Interpolator[Input, Input, Markdown[Markdown.Ast.Node]]:
     
-    def complete(state: Input): Markdown[Markdown.Ast.Node] exposes InterpolationError = state match
-      case Input.Inline(state) => Markdown.parseInline(state)
-      case Input.Block(state)  => Markdown.parse(state)
+    def complete(state: Input): Markdown[Markdown.Ast.Node] =
+      try state match
+        case Input.Inline(state) => Markdown.parseInline(state)
+        case Input.Block(state)  => Markdown.parse(state)
+      catch case MalformedMarkdown(msg) =>
+        throw InterpolationError(s"the markdown could not be parsed; $msg")
   
     def initial: Input = Input.Inline("")
     
     def skip(state: Input): Input = state
 
-    def insert(state: Input, value: Input): Input exposes InterpolationError = value match
+    def insert(state: Input, value: Input): Input = value match
       case Input.Block(content)  => state match
         case Input.Block(state)    => Input.Block(s"$state\n$content\n")
         case Input.Inline(state)   => Input.Block(s"$state\n$content")
@@ -46,22 +49,22 @@ object Md:
         case Input.Block(state)    => Input.Block(s"$state\n$content\n")
         case Input.Inline(state)   => Input.Inline(s"$state$content")
      
-    def parse(state: Input, next: String): Input exposes InterpolationError = state match
+    def parse(state: Input, next: String): Input = state match
       case Input.Inline(state) =>
         try
           Markdown.parseInline(state+next)
           Input.Inline(state+next)
-        catch MalformedMarkdown =>
+        catch case MalformedMarkdown(_) =>
           try
             Markdown.parse(state+next)
             Input.Block(state+next)
-          catch MalformedMarkdown =>
-            throw InterpolationError(s"the markdown was malformed")
+          catch case MalformedMarkdown(msg) =>
+            throw InterpolationError(s"the markdown could not be parsed; $msg")
 
       case Input.Block(state) =>
         try
           Markdown.parse(state+next)
           Input.Block(state+next)
-        catch MalformedMarkdown =>
-          throw InterpolationError("the markdown was malformed")
+        catch case MalformedMarkdown(msg) =>
+          throw InterpolationError(s"the markdown could not be parsed; $msg")
   
