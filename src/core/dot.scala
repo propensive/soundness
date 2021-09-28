@@ -155,7 +155,7 @@ object Subgraph:
     Dot.Statement.Subgraph(None, statements*)
 
 object NodeParser extends Interpolator[Unit, Option[Dot.Ref], Dot.Ref]:
-  def parse(state: Option[Dot.Ref], next: String): Some[Dot.Ref] exposes InterpolationError =
+  def parse(state: Option[Dot.Ref], next: String): Some[Dot.Ref] =
     Some { next.cut(":").to(List) match
       case List(id) =>
         Dot.Ref(Dot.Id(id))
@@ -172,8 +172,6 @@ object NodeParser extends Interpolator[Unit, Option[Dot.Ref], Dot.Ref]:
     }
   
   def initial: Option[Dot.Ref] = None
-  def complete(value: Option[Dot.Ref]): Dot.Ref exposes InterpolationError = value.get
+  def complete(value: Option[Dot.Ref]): Dot.Ref = value.get
   def skip(state: Option[Dot.Ref]): Option[Dot.Ref] = state
-  
-  def insert(state: Option[Dot.Ref], value: Unit): Option[Dot.Ref] exposes InterpolationError =
-    state
+  def insert(state: Option[Dot.Ref], value: Unit): Option[Dot.Ref] = state
