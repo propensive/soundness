@@ -1,5 +1,5 @@
 /*
-    Acyclicity, version 0.2.0. Copyright 2021-21 Jon Pretty, Propensive OÜ.
+    Acyclicity, version 0.5.0. Copyright 2021-21 Jon Pretty, Propensive OÜ.
 
     The primary distribution site is: https://propensive.com/
 
