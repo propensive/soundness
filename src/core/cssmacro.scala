@@ -1,5 +1,5 @@
 /*
-    Cataract, version 0.1.0. Copyright 2017-21 Jon Pretty, Propensive OÜ.
+    Cataract, version 0.6.0. Copyright 2017-21 Jon Pretty, Propensive OÜ.
 
     The primary distribution site is: https://propensive.com/
 
