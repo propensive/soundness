@@ -1,5 +1,5 @@
 /*
-    Xylophone, version 0.5.0. Copyright 2017-21 Jon Pretty, Propensive OÜ.
+    Xylophone, version 0.1.0. Copyright 2018-21 Jon Pretty, Propensive OÜ.
 
     The primary distribution site is: https://propensive.com/
 
