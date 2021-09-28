@@ -39,24 +39,24 @@ trait Root(val separator: String, val prefix: String):
 
   trait Path:
     def root: thisRoot.type = thisRoot
-    def parent: Path exposes RootBoundaryExceeded
-    def ancestor(ascent: Int): Path exposes RootBoundaryExceeded
-    def absolute(pwd: AbsolutePath): AbsolutePath exposes RootBoundaryExceeded
-    infix def /(filename: String): Path exposes RootBoundaryExceeded
-    def ++(path: GenericRelative): Path exposes RootBoundaryExceeded
+    def parent: Path throws RootBoundaryExceeded
+    def ancestor(ascent: Int): Path throws RootBoundaryExceeded
+    def absolute(pwd: AbsolutePath): AbsolutePath throws RootBoundaryExceeded
+    infix def /(filename: String): Path throws RootBoundaryExceeded
+    def ++(path: GenericRelative): Path throws RootBoundaryExceeded
 
   object Path:
     open class Absolute(val path: Vector[String]) extends Path:
       override def toString(): String = path.join(prefix, separator, "")
       
-      def parent: AbsolutePath exposes RootBoundaryExceeded = path match
+      def parent: AbsolutePath throws RootBoundaryExceeded = path match
         case init :+ last => makeAbsolute(init)
         case _            => throw RootBoundaryExceeded(root)
 
-      def ancestor(ascent: Int): AbsolutePath exposes RootBoundaryExceeded =
+      def ancestor(ascent: Int): AbsolutePath throws RootBoundaryExceeded =
         if path.length == 0 then makeAbsolute(path) else parent.ancestor(ascent - 1)
       
-      def absolute(pwd: AbsolutePath): AbsolutePath exposes RootBoundaryExceeded =
+      def absolute(pwd: AbsolutePath): AbsolutePath throws RootBoundaryExceeded =
         makeAbsolute(path)
 
       def conjunction(other: AbsolutePath): AbsolutePath =
@@ -66,14 +66,14 @@ trait Root(val separator: String, val prefix: String):
         val common = conjunction(base)
         makeRelative(path.length - common.path.length, base.path.drop(common.path.length))
 
-      def /(filename: String): AbsolutePath exposes RootBoundaryExceeded = filename match
+      def /(filename: String): AbsolutePath throws RootBoundaryExceeded = filename match
         case ".."     => path match
           case init :+ last => makeAbsolute(init)
           case _            => throw RootBoundaryExceeded(root)
         case "."      => makeAbsolute(path)
         case filename => makeAbsolute(path :+ filename)
       
-      def ++(relative: GenericRelative): AbsolutePath exposes RootBoundaryExceeded =
+      def ++(relative: GenericRelative): AbsolutePath throws RootBoundaryExceeded =
         if relative.ascent > 0 then ancestor(relative.ascent) ++ makeRelative(0, relative.path)
         else makeAbsolute(path ++ relative.path)
       
@@ -86,25 +86,25 @@ trait Root(val separator: String, val prefix: String):
     case class Relative(val ascent: Int, val path: Vector[String]) extends Path, GenericRelative:
       override def toString(): String = path.join("../"*ascent, "/", "")
 
-      def parent: Relative exposes RootBoundaryExceeded = path match
+      def parent: Relative throws RootBoundaryExceeded = path match
         case init :+ last => makeRelative(ascent, init)
         case empty        => makeRelative(ascent + 1, Vector())
 
-      def ancestor(ascent: Int): RelativePath exposes RootBoundaryExceeded =
+      def ancestor(ascent: Int): RelativePath throws RootBoundaryExceeded =
         if ascent == 0 then makeRelative(ascent, path) else parent.ancestor(ascent - 1)
 
-      def absolute(pwd: AbsolutePath): AbsolutePath exposes RootBoundaryExceeded =
+      def absolute(pwd: AbsolutePath): AbsolutePath throws RootBoundaryExceeded =
         if ascent == 0 then makeAbsolute(pwd.path ++ path)
         else makeRelative(ascent - 1, path).absolute(pwd.parent)
       
-      def /(filename: String): RelativePath exposes RootBoundaryExceeded = filename match
+      def /(filename: String): RelativePath throws RootBoundaryExceeded = filename match
         case ".."     => path match
           case init :+ last => makeRelative(ascent, init)
           case empty        => makeRelative(ascent + 1, Vector())
         case "."      => makeRelative(ascent, path)
         case filename => makeRelative(ascent, path :+ filename)
       
-      def ++(relative: GenericRelative): RelativePath exposes RootBoundaryExceeded =
+      def ++(relative: GenericRelative): RelativePath throws RootBoundaryExceeded =
         if relative.ascent == 0 then makeRelative(ascent, path ++ relative.path)
         else ancestor(relative.ascent) ++ makeRelative(ascent, relative.path)
 
