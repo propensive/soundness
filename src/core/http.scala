@@ -70,30 +70,37 @@ enum Method:
 
 object HttpReadable:
   given HttpReadable[String] with
-    def read(body: Body): String exposes TooMuchData = body match
+    type E = Nothing
+    
+    def read(body: Body): String throws TooMuchData | E = body match
       case Body.Empty         => ""
       case Body.Data(body)    => body.uString
       case Body.Chunked(body) => body.foldLeft("")(_+_.uString)
   
   given HttpReadable[Bytes] with
-    def read(body: Body): Bytes exposes TooMuchData = body match
+    type E = Nothing
+    
+    def read(body: Body): Bytes throws TooMuchData | E = body match
       case Body.Empty         => IArray()
       case Body.Data(body)    => body
       case Body.Chunked(body) => body.slurp(maxSize = 10*1024*1024)
 
-  given [T](using reader: clairvoyant.HttpReader[T]): HttpReadable[T] with
-    def read(body: Body): T exposes TooMuchData = body match
+  given [T, E2 <: Exception](using reader: clairvoyant.HttpReader[T, E2]): HttpReadable[T] with
+    type E = E2
+    def read(body: Body): T throws TooMuchData | E = body match
       case Body.Empty         => reader.read("")
       case Body.Data(data)    => reader.read(data.uString)
       case Body.Chunked(data) => reader.read(data.slurp(maxSize = 10*1024*1024).uString)
 
 trait HttpReadable[+T]:
-  def read(body: Body): T exposes TooMuchData
+  type E <: Exception
+  def read(body: Body): T throws TooMuchData | E
 
 case class HttpResponse(status: HttpStatus, headers: Map[ResponseHeader, List[String]], body: Body):
-  def as[T: HttpReadable]: T exposes HttpError | TooMuchData = status match
-    case status: FailureCase => throw HttpError(status, body)
-    case status              => summon[HttpReadable[T]].read(body)
+  def as[T](using readable: HttpReadable[T]): T throws HttpError | TooMuchData | readable.E =
+    status match
+      case status: FailureCase => throw HttpError(status, body)
+      case status              => readable.read(body)
 
 object ToLocation:
   given ToLocation[Uri] = _.toString
@@ -182,7 +189,8 @@ object Http:
             
 case class HttpError(status: HttpStatus & FailureCase, body: Body)
     extends Exception(s"HTTP Error ${status.code}: ${status.description}"):
-  def as[T: HttpReadable]: T exposes TooMuchData = summon[HttpReadable[T]].read(body)
+  def as[T](using readable: HttpReadable[T]): T throws TooMuchData | readable.E =
+    readable.read(body)
 
 trait FailureCase
 

@@ -191,7 +191,7 @@ case class RequestParam[T](key: String)(using ParamReader[T]):
   type Type = T
   def opt(using Request): Option[T] = param(key).flatMap(summon[ParamReader[T]].read(_))
   def unapply(request: Request): Option[T] = opt(using request)
-  def apply()(using Request): T exposes ParamNotSent = opt.getOrElse(throw ParamNotSent(key))
+  def apply()(using Request): T throws ParamNotSent = opt.getOrElse(throw ParamNotSent(key))
 
 trait HttpService:
   def stop(): Unit
