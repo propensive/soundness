@@ -35,25 +35,28 @@ trait Format:
       if line.length <= idx then
         if join then items.init :+ items.last + line.slice(start, if end < 0 then idx else end)
         else items :+ line.slice(start, if end < 0 then idx else end)
-      else (line(idx): @switch) match
-        case `separator` =>
-          if quoted then parseLine(items, idx + 1, quoted, start, end, join)
-          else
-            val elems = if start < 0 then items :+ "" else
-              val suffix = line.slice(start, if end == -1 then idx else end)
-              if join then items.init :+ items.last + suffix else items :+ suffix
-
-            parseLine(elems, idx + 1, quoted = false, idx + 1, -1, join = false)
-
-        case '"' =>
-          if quoted then parseLine(items, idx + 1, quoted = false, start, idx, join = join)
-          else if end != -1 then
-            parseLine(items :+ line.slice(start, idx), idx + 1, quoted = true, idx + 1, -1,
-                join = true)
-          else parseLine(items, idx + 1, quoted = true, idx + 1, -1, join = false)
-
-        case ch: Char =>
-          parseLine(items, idx + 1, quoted, start, end, join)
+      else 
+        val ch = try line(idx) catch case error@OutOfRangeError(_, _, _) => throw Impossible(error)
+        
+        (ch: @switch) match
+          case `separator` =>
+            if quoted then parseLine(items, idx + 1, quoted, start, end, join)
+            else
+              val elems = if start < 0 then items :+ "" else
+                val suffix = line.slice(start, if end == -1 then idx else end)
+                if join then items.init :+ items.last + suffix else items :+ suffix
+  
+              parseLine(elems, idx + 1, quoted = false, idx + 1, -1, join = false)
+  
+          case '"' =>
+            if quoted then parseLine(items, idx + 1, quoted = false, start, idx, join = join)
+            else if end != -1 then
+              parseLine(items :+ line.slice(start, idx), idx + 1, quoted = true, idx + 1, -1,
+                  join = true)
+            else parseLine(items, idx + 1, quoted = true, idx + 1, -1, join = false)
+  
+          case ch: Char =>
+            parseLine(items, idx + 1, quoted, start, end, join)
 
     Row(parseLine(Vector(), 0, quoted = false, 0, -1, join = false)*)
 
