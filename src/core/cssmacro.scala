@@ -22,6 +22,7 @@ import iridescence.*
 
 import scala.quoted.*
 
+import annotation.targetName
 import language.dynamics
 
 private[cataract] type Label = String & Singleton
@@ -81,21 +82,31 @@ trait Selectable[-T]:
 
 extension [T: Selectable](left: T)
 
-  def :=(css: Style): Rule = Rule(summon[Selectable[T]].selector(left), css)
+  @targetName("definedAs")
+  infix def :=(css: Style): Rule = Rule(summon[Selectable[T]].selector(left), css)
 
-  def >>[S: Selectable](right: S): Selector =
+  @targetName("descendant")
+  infix def >>[S: Selectable](right: S): Selector =
     summon[Selectable[T]].selector(left) >> summon[Selectable[S]].selector(right)
   
-  def +[S: Selectable](right: S): Selector =
+  @targetName("child")
+  infix def >[S: Selectable](right: S): Selector =
+    summon[Selectable[T]].selector(left) > summon[Selectable[S]].selector(right)
+  
+  @targetName("after")
+  infix def +[S: Selectable](right: S): Selector =
     summon[Selectable[T]].selector(left) + summon[Selectable[S]].selector(right)
   
-  def |[S: Selectable](right: S): Selector =
+  @targetName("or")
+  infix def |[S: Selectable](right: S): Selector =
     summon[Selectable[T]].selector(left) | summon[Selectable[S]].selector(right)
   
-  def &[S: Selectable](right: S): Selector =
+  @targetName("and")
+  infix def &[S: Selectable](right: S): Selector =
     summon[Selectable[T]].selector(left) & summon[Selectable[S]].selector(right)
   
-  def ~[S: Selectable](right: S): Selector =
+  @targetName("before")
+  infix def ~[S: Selectable](right: S): Selector =
     summon[Selectable[T]].selector(left) ~ summon[Selectable[S]].selector(right)
   
 object PropertyDef:
@@ -447,10 +458,17 @@ enum Length:
     case Vmax(value) => str"${value.toString}vmax"
     case Calc(calc)  => str"calc($calc)"
 
-  def +(dim: Length): Length = infixOp(" + ", dim)
-  def -(dim: Length): Length = infixOp(" - ", dim)
-  def *(double: Double): Length = infixOp(" * ", double)
-  def /(double: Double): Length = infixOp(" / ", double)
+  @targetName("add")
+  infix def +(dim: Length): Length = infixOp(" + ", dim)
+  
+  @targetName("sub")
+  infix def -(dim: Length): Length = infixOp(" - ", dim)
+  
+  @targetName("mul")
+  infix def *(double: Double): Length = infixOp(" * ", double)
+  
+  @targetName("div")
+  infix def /(double: Double): Length = infixOp(" / ", double)
 
   private def infixOp(operator: String, dim: Length | Double): Length.Calc = this match
     case Calc(calc) => dim match

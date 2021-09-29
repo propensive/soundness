@@ -19,6 +19,7 @@ package cataract
 import rudiments.*
 import gossamer.*
 
+import annotation.targetName
 import language.dynamics
 
 object Stylesheet:
@@ -79,13 +80,24 @@ sealed trait Selector(val value: String):
     ${Macro.rule('this, 'properties)}
   
   def normalize: Selector
+
+  @targetName("or")
+  infix def |(that: Selector): Selector = Selector.Or(this, that)
   
-  def |(that: Selector): Selector = Selector.Or(this, that)
-  def >>(that: Selector): Selector = Selector.Descendant(this, that)
-  def >(that: Selector): Selector = Selector.Child(this, that)
-  def +(that: Selector): Selector = Selector.After(this, that)
-  def &(that: Selector): Selector = Selector.And(this, that)
-  def ~(that: Selector): Selector = Selector.Before(this, that)
+  @targetName("descendant")
+  infix def >>(that: Selector): Selector = Selector.Descendant(this, that)
+  
+  @targetName("child")
+  infix def >(that: Selector): Selector = Selector.Child(this, that)
+  
+  @targetName("after")
+  infix def +(that: Selector): Selector = Selector.After(this, that)
+  
+  @targetName("and")
+  infix def &(that: Selector): Selector = Selector.And(this, that)
+  
+  @targetName("before")
+  infix def ~(that: Selector): Selector = Selector.Before(this, that)
 
 object Selector:
   case class Element(element: String) extends Selector(element):
