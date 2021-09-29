@@ -19,6 +19,8 @@ package gesticulate
 import gossamer.*
 import probably.*
 
+import unsafeExceptions.canThrowAny
+
 object Tests extends Suite("Gesticulate tests"):
   def run(using Runner): Unit =
     test("parse media type's type") {
