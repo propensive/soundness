@@ -20,6 +20,8 @@ import probably.*
 import rudiments.*
 import gossamer.*
 
+import unsafeExceptions.canThrowAny
+
 object Tests extends Suite("Gastronomy tests"):
  
   val request: String = """
