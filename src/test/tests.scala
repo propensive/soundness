@@ -18,6 +18,8 @@ package iridescence
 
 import probably.*
 
+import unsafeExceptions.canThrowAny
+
 object Tests extends Suite("Iridescence tests"):
   
   given Profile = profiles.Daylight
