@@ -20,6 +20,8 @@ import contextual.*
 import probably.*
 import scala.quoted.*, staging.*
 
+import unsafeExceptions.canThrowAny
+
 object Tests extends Suite("Guillotine tests"):
   def run(using Runner): Unit =
     suite("Parsing tests") {

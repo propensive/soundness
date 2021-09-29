@@ -24,6 +24,8 @@ import scala.collection.convert.ImplicitConversionsToJava.*
 import scala.collection.convert.ImplicitConversionsToScala.*
 import scala.jdk.StreamConverters.StreamHasToScala
 
+import annotation.targetName
+
 import java.util.HashMap as JMap
 import java.io as ji
 
@@ -77,7 +79,8 @@ sealed trait Executable:
       case Pipeline(cmds2*) => Pipeline((cmd +: cmds2)*)
       case cmd2: Command    => Pipeline(cmd, cmd2)
   
-  def |(cmd: Executable): Pipeline = cmd(this)
+  @targetName("pipeTo")
+  infix def |(cmd: Executable): Pipeline = cmd(this)
 
 case class Command(args: String*) extends Executable:
 
