@@ -18,6 +18,8 @@ package rivulet
 
 import probably.*
 
+import unsafeExceptions.canThrowAny
+
 object Tests extends Suite("Rivulet Tests"):
   def run(using Runner): Unit =
     ()
