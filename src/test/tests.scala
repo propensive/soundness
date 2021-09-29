@@ -20,6 +20,8 @@ import probably.*
 
 import escapes.*
 
+import unsafeExceptions.canThrowAny
+
 object Tests extends Suite("Escapade tests"):
   def run(using Runner): Unit =
     test("normal string") {

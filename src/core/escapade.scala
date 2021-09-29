@@ -22,6 +22,8 @@ import rudiments.*
 
 import scala.collection.immutable.TreeMap
 
+import annotation.targetName
+
 case class AnsiString(string: String, escapes: TreeMap[Int, List[Ansi.Change]]):
   def length: Int = string.length
   def take(n: Int): AnsiString = AnsiString(string.take(n), escapes.takeWhile(_._1 <= n))
@@ -61,13 +63,15 @@ case class AnsiString(string: String, escapes: TreeMap[Int, List[Ansi.Change]]):
   private def shift(n: Int): TreeMap[Int, List[Ansi.Change]] =
     escapes.map { (k, v) => (k + n, v) }.to(TreeMap)
 
-  def +(str: String): AnsiString = AnsiString(string+str, escapes)
+  @targetName("add")
+  infix def +(str: String): AnsiString = AnsiString(string+str, escapes)
   def addEsc(esc: Ansi.Change): AnsiString = addEsc(string.length, esc)
   
   def addEsc(pos: Int, esc: Ansi.Change): AnsiString =
     AnsiString(string, escapes.updated(string.length, esc :: escapes.get(string.length).getOrElse(Nil)))
   
-  def +(ansi: AnsiString): AnsiString =
+  @targetName("add")
+  infix def +(ansi: AnsiString): AnsiString =
     AnsiString(string+ansi.string, escapes ++ ansi.shift(length))
 
 object Ansi:
