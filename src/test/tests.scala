@@ -19,7 +19,9 @@ package euphemism
 import probably.*
 import scala.util.*
 
-case class Foo(x: Int, y: String) derives CanEqual, Json.Serializer, Json.Deserializer
+import unsafeExceptions.canThrowAny
+
+case class Foo(x: Int, y: String) derives CanEqual, Json.Writer, Json.Reader
 
 object Tests extends Suite("Euphemism Tests"):
   def run(using Runner): Unit =
