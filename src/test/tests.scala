@@ -18,6 +18,8 @@ package honeycomb
 
 import probably.*
 
+import unsafeExceptions.canThrowAny
+
 object Tests extends Suite("Honeycomb Tests"):
   def run(using Runner): Unit =
     ()
