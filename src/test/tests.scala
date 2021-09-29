@@ -20,6 +20,8 @@ import languages.common.*
 
 import probably.*
 
+import unsafeExceptions.canThrowAny
+
 object Tests extends Suite("Cosmopolite Tests"):
   def run(using Runner): Unit =
     test("extract language from string (English)") {
