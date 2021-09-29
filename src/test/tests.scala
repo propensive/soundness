@@ -19,6 +19,8 @@ package jovian
 import probably.*
 import gastronomy.*
 
+import unsafeExceptions.canThrowAny
+
 import encodings.Utf8
 
 object Tests extends Suite("Jovian tests"):

@@ -24,6 +24,8 @@ import gossamer.*
 
 import scala.util.*
 import scala.collection.generic.CanBuildFrom
+import annotation.targetName
+
 import java.net.URI
 
 import java.nio.file as jnf
@@ -70,8 +72,9 @@ open class Classpath(classLoader: ClassLoader = getClass.nn.getClassLoader.nn) e
 
   def makeAbsolute(parts: Vector[String]): CpPath = CpPath(parts)
   def makeRelative(ascent: Int, parts: Vector[String]) = Path.Relative(ascent, parts)
-  
-  def /(resource: String): CpPath = CpPath(Vector(resource))
+
+  @targetName("access")
+  infix def /(resource: String): CpPath = CpPath(Vector(resource))
 
   case class CpPath(parts: Vector[String]) extends Path.Absolute(parts):
     def resource: Resource = Resource(makeAbsolute(parts))
@@ -151,7 +154,8 @@ extends Root(pathSeparator, fsPrefix):
     then Some(Path.Absolute(value.drop(prefix.length).cut(separator.toString).to(Vector)))
     else None
   
-  def /(filename: String): Path.Absolute = Path.Absolute(Vector(filename))
+  @targetName("access")
+  infix def /(filename: String): Path.Absolute = Path.Absolute(Vector(filename))
 
   sealed trait Inode(val path: Path.Absolute):
     lazy val javaFile: ji.File = ji.File(path.toString)
@@ -255,7 +259,8 @@ extends Root(pathSeparator, fsPrefix):
 
       dest.directory
     
-    def /(child: String): FsPath throws RootBoundaryExceeded = makeAbsolute((path / child).path)
+    @targetName("access")
+    infix def /(child: String): FsPath throws RootBoundaryExceeded = makeAbsolute((path / child).path)
 
 // object OldPath:
 //   def apply(jpath: JavaPath): Path = Path(jpath.toString match
@@ -508,6 +513,7 @@ object encodings:
     def carry(arr: Array[Byte]): Int = 0
     def name: String = "ASCII"
   
+  @targetName("ISO_8859_1")
   given `ISO-8859-1`: Encoding with
     def name: String = "ISO-8859-1"
     def carry(arr: Array[Byte]): Int = 0
@@ -531,7 +537,9 @@ object ByteSize:
   def apply(bytes: Long): ByteSize = bytes
 
   extension (byteSize: ByteSize)
-    def +(that: ByteSize): ByteSize = byteSize + that
+    @targetName("add")
+    infix def +(that: ByteSize): ByteSize = byteSize + that
+    
     def value: Long = byteSize
 
 open class JovianError(message: String) extends Exception(str"jovian: $message")
