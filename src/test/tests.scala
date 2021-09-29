@@ -18,6 +18,8 @@ package slalom
 
 import probably.*
 
+import unsafeExceptions.canThrowAny
+
 object Tests extends Suite("Slalom Tests"):
   def run(using Runner): Unit =
     ()

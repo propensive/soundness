@@ -19,6 +19,8 @@ package slalom
 import rudiments.*
 import gossamer.*
 
+import annotation.targetName
+
 class SlalomException(message: String) extends Exception(str"slalom: $message")
 
 case class RootBoundaryExceeded(root: Root)
@@ -42,8 +44,12 @@ trait Root(val separator: String, val prefix: String):
     def parent: Path throws RootBoundaryExceeded
     def ancestor(ascent: Int): Path throws RootBoundaryExceeded
     def absolute(pwd: AbsolutePath): AbsolutePath throws RootBoundaryExceeded
+    
+    @targetName("access")
     infix def /(filename: String): Path throws RootBoundaryExceeded
-    def ++(path: GenericRelative): Path throws RootBoundaryExceeded
+    
+    @targetName("addAll")
+    infix def ++(path: GenericRelative): Path throws RootBoundaryExceeded
 
   object Path:
     open class Absolute(val path: Vector[String]) extends Path:
@@ -66,14 +72,16 @@ trait Root(val separator: String, val prefix: String):
         val common = conjunction(base)
         makeRelative(path.length - common.path.length, base.path.drop(common.path.length))
 
-      def /(filename: String): AbsolutePath throws RootBoundaryExceeded = filename match
+      @targetName("access")
+      infix def /(filename: String): AbsolutePath throws RootBoundaryExceeded = filename match
         case ".."     => path match
           case init :+ last => makeAbsolute(init)
           case _            => throw RootBoundaryExceeded(root)
         case "."      => makeAbsolute(path)
         case filename => makeAbsolute(path :+ filename)
       
-      def ++(relative: GenericRelative): AbsolutePath throws RootBoundaryExceeded =
+      @targetName("addAll")
+      infix def ++(relative: GenericRelative): AbsolutePath throws RootBoundaryExceeded =
         if relative.ascent > 0 then ancestor(relative.ascent) ++ makeRelative(0, relative.path)
         else makeAbsolute(path ++ relative.path)
       
@@ -97,14 +105,16 @@ trait Root(val separator: String, val prefix: String):
         if ascent == 0 then makeAbsolute(pwd.path ++ path)
         else makeRelative(ascent - 1, path).absolute(pwd.parent)
       
-      def /(filename: String): RelativePath throws RootBoundaryExceeded = filename match
+      @targetName("access")
+      infix def /(filename: String): RelativePath throws RootBoundaryExceeded = filename match
         case ".."     => path match
           case init :+ last => makeRelative(ascent, init)
           case empty        => makeRelative(ascent + 1, Vector())
         case "."      => makeRelative(ascent, path)
         case filename => makeRelative(ascent, path :+ filename)
       
-      def ++(relative: GenericRelative): RelativePath throws RootBoundaryExceeded =
+      @targetName("addAll")
+      infix def ++(relative: GenericRelative): RelativePath throws RootBoundaryExceeded =
         if relative.ascent == 0 then makeRelative(ascent, path ++ relative.path)
         else ancestor(relative.ascent) ++ makeRelative(ascent, relative.path)
 
