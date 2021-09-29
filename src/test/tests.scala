@@ -21,6 +21,8 @@ import probably.*
 
 import scala.collection.immutable.ListMap
 
+import unsafeExceptions.canThrowAny
+
 case class Address(house: Int, street: String, city: String, country: String)
 
 object Tests extends Suite("Scintillate tests"):

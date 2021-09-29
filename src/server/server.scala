@@ -24,6 +24,8 @@ import scala.collection.JavaConverters.*
 import scala.collection.immutable.ListMap
 import scala.util.control.NonFatal
 
+import annotation.targetName
+
 import java.net.InetSocketAddress
 import java.io.*
 import java.text as jt
@@ -196,6 +198,7 @@ case class RequestParam[T](key: String)(using ParamReader[T]):
 trait HttpService:
   def stop(): Unit
 
+@targetName("Splitter")
 object `&`:
   def unapply(request: Request): (Request, Request) = (request, request)
 
