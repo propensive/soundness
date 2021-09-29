@@ -18,6 +18,8 @@ package acyclicity
 
 import scala.annotation.*
 
+import annotation.targetName
+
 object Dag:
   
   @targetName("build")
@@ -39,7 +41,10 @@ case class Dag[T] private(edgeMap: Map[T, Set[T]] = Map()):
   def map[S](fn: T => S): Dag[S] = Dag(edgeMap.map(fn(_) -> _.map(fn)))
   def subgraph(keep: Set[T]): Dag[T] = (keys &~ keep).foldLeft(this)(_.remove(_))
   def apply(key: T): Set[T] = edgeMap.getOrElse(key, Set())
-  def -(key: T): Dag[T] = Dag(edgeMap - key)
+  
+  @targetName("removeKey")
+  infix def -(key: T): Dag[T] = Dag(edgeMap - key)
+  
   def sources: Set[T] = edgeMap.collect { case (k, v) if v.isEmpty => k }.to(Set)
   def edges: Set[(T, T)] = edgeMap.to(Set).flatMap { (k, vs) => vs.map(k -> _) }
   def closure: Dag[T] = Dag(keys.map { k => k -> (reachable(k) - k) }.to(Map))
@@ -49,7 +54,8 @@ case class Dag[T] private(edgeMap: Map[T, Set[T]] = Map()):
   def remove(key: T, value: T): Dag[T] =
     Dag(edgeMap.updated(key, edgeMap.get(key).fold(Set())(_ - value)))
 
-  def ++(dag: Dag[T]): Dag[T] =
+  @targetName("addAll")
+  infix def ++(dag: Dag[T]): Dag[T] =
     val joined = edgeMap.to(List) ++ dag.edgeMap.to(List)
     Dag(joined.groupBy(_._1).view.mapValues(_.flatMap(_._2).to(Set)).to(Map))
 

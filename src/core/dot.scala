@@ -22,6 +22,8 @@ import gossamer.*
 
 import language.dynamics
 
+import annotation.targetName
+
 enum Dot:
   case Graph(id: Option[Dot.Id], strict: Boolean, statements: Dot.Statement*)
   case Digraph(id: Option[Dot.Id], strict: Boolean, statements: Dot.Statement*)
@@ -41,10 +43,12 @@ object Dot:
   case class Attachment(id: Id, compass: Option[CompassPoint] = None)
 
   case class Ref(id: Id, port: Option[Attachment] = None):
-    def --(dest: Ref | Statement.Subgraph): Dot.Statement.Edge =
+    @targetName("joinTo")
+    infix def --(dest: Ref | Statement.Subgraph): Dot.Statement.Edge =
       Dot.Statement.Edge(this, Target(false, dest, None))
     
-    def -->(dest: Ref | Statement.Subgraph): Dot.Statement.Edge =
+    @targetName("mapTo")
+    infix def -->(dest: Ref | Statement.Subgraph): Dot.Statement.Edge =
       Dot.Statement.Edge(this, Target(true, dest, None))
 
   object Ref:
@@ -54,7 +58,8 @@ object Dot:
     def applyDynamicNamed(method: "apply")(attrs: (String, String)*) =
       Statement.Node(this, attrs.map { (k, v) => Attribute(k, v) }*)
     
-    def :=(id: Id): Statement.Assignment = Statement.Assignment(this, id)
+    @targetName("assign")
+    infix def :=(id: Id): Statement.Assignment = Statement.Assignment(this, id)
 
   enum CompassPoint:
     case North, South, East, West, NorthEast, NorthWest, SouthEast, SouthWest
