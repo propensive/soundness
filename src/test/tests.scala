@@ -19,6 +19,8 @@ package adversaria
 import probably.*
 import annotation.StaticAnnotation
 
+import unsafeExceptions.canThrowAny
+
 final case class id() extends StaticAnnotation
 final case class count(number: Int) extends StaticAnnotation
 final case class ref(x: Int) extends StaticAnnotation
