@@ -21,6 +21,8 @@ import printers.compact
 
 import scala.util.{Try, Success, Failure}
 
+import unsafeExceptions.canThrowAny
+
 case class Person(name: String, age: Int)
 case class Firm(name: String, ceo: Person)
 

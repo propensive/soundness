@@ -23,6 +23,7 @@ import contextual.*
 
 import scala.annotation.StaticAnnotation
 
+import annotation.targetName
 import language.dynamics
 
 case class Namespace(id: String, uri: String)
@@ -35,7 +36,9 @@ case class XmlName(name: String, namespace: Maybe[Namespace] = Unset):
 sealed trait Xml:
   def pointer: List[Int | String | Unit]
   def root: Ast.Root
-  def +(other: Xml): Doc throws XmlAccessError
+  
+  @targetName("add")
+  infix def +(other: Xml): Doc throws XmlAccessError
 
   def string(using XmlPrinter[String]): String throws XmlAccessError =
     summon[XmlPrinter[String]].print(Doc(Ast.Root(Xml.normalize(this)*)))
@@ -154,9 +157,12 @@ extends Xml, Dynamic:
   def pointer: XmlPath = (head :: path).reverse
   def selectDynamic(tagName: String): Fragment = Fragment(tagName, head :: path, root)
   def applyDynamic(tagName: String)(idx: Int = 0): XmlNode = selectDynamic(tagName).apply(idx)
+  
+  @targetName("all")
   def * : Fragment = Fragment((), head :: path, root)
   
-  def +(other: Xml): Doc throws XmlAccessError =
+  @targetName("add")
+  infix def +(other: Xml): Doc throws XmlAccessError =
     Doc(Ast.Root(Xml.normalize(this) ++ Xml.normalize(other)*))
   
   def as[T](using reader: XmlReader[T]): T throws XmlAccessError | XmlReadError = apply().as[T]
@@ -166,9 +172,12 @@ case class XmlNode(head: Int, path: XmlPath, root: Ast.Root) extends Xml, Dynami
   def applyDynamic(tagName: String)(idx: Int = 0): XmlNode = selectDynamic(tagName).apply(idx)
   def attribute(attribute: String): Attribute = Attribute(this, attribute)
   def pointer: XmlPath = (head :: path).reverse
+  
+  @targetName("all")
   def * : Fragment = Fragment((), head :: path, root)
   
-  def +(other: Xml): Doc throws XmlAccessError =
+  @targetName("add")
+  infix def +(other: Xml): Doc throws XmlAccessError =
     Doc(Ast.Root(Xml.normalize(this) ++ Xml.normalize(other)*))
 
   def as[T: XmlReader]: T throws XmlReadError | XmlAccessError =
@@ -178,9 +187,12 @@ case class Doc(root: Ast.Root) extends Xml, Dynamic:
   def pointer: XmlPath = Nil
   def selectDynamic(tagName: String): Fragment = Fragment(tagName, Nil, root)
   def applyDynamic(tagName: String)(idx: Int = 0): XmlNode = selectDynamic(tagName).apply(idx)
+  
+  @targetName("all")
   def * : Fragment = Fragment((), Nil, root)
   
-  def +(other: Xml): Doc throws XmlAccessError =
+  @targetName("add")
+  infix def +(other: Xml): Doc throws XmlAccessError =
     Doc(Ast.Root(Xml.normalize(this) ++ Xml.normalize(other)*))
 
   def as[T: XmlReader]: T throws XmlAccessError | XmlReadError =
