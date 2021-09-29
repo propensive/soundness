@@ -37,20 +37,20 @@ trait GenericShow[Out] extends Derivation[[X] =>> Show[Out, X]] {
       param.typeclass.show(param.deref(value))
     else
       val paramStrings = ctx.params.map { param =>
-        val attribStr = if(param.annotations.isEmpty) "" else {
+        val attribStr = if param.annotations.isEmpty then "" else {
           param.annotations.mkString("{", ", ", "}")
         }
-        val tpeAttribStr = if (param.typeAnnotations.isEmpty) "" else {
+        val tpeAttribStr = if param.typeAnnotations.isEmpty then "" else {
           param.typeAnnotations.mkString("{", ", ", "}")
         }
         s"${param.label}$attribStr$tpeAttribStr=${param.typeclass.show(param.deref(value))}"
       }
 
       val anns = ctx.annotations.filterNot(_.isInstanceOf[scala.SerialVersionUID])
-      val annotationStr = if (anns.isEmpty) "" else anns.mkString("{", ",", "}")
+      val annotationStr = if anns.isEmpty then "" else anns.mkString("{", ",", "}")
 
       val tpeAnns = ctx.typeAnnotations.filterNot(_.isInstanceOf[scala.SerialVersionUID])
-      val typeAnnotationStr = if (tpeAnns.isEmpty) "" else tpeAnns.mkString("{", ",", "}")
+      val typeAnnotationStr = if tpeAnns.isEmpty then "" else tpeAnns.mkString("{", ",", "}")
 
 
       def typeArgsString(typeInfo: TypeInfo): String =
@@ -65,7 +65,7 @@ trait GenericShow[Out] extends Derivation[[X] =>> Show[Out, X]] {
   override def split[T](ctx: SealedTrait[Typeclass, T]): Show[Out, T] = (value: T) =>
     ctx.choose(value) { sub =>
       val anns = sub.annotations.filterNot(_.isInstanceOf[scala.SerialVersionUID])
-      val annotationStr = if (anns.isEmpty) "" else anns.mkString("{", ",", "}")
+      val annotationStr = if anns.isEmpty then "" else anns.mkString("{", ",", "}")
 
       prefix(annotationStr, sub.typeclass.show(sub.value))
     }

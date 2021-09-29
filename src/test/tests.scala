@@ -24,6 +24,8 @@ import probably.*
 
 import scala.annotation.StaticAnnotation
 
+import unsafeExceptions.canThrowAny
+
 type ShowStr = [X] =>> Show[String, X ]
 
 sealed trait Tree[+T] derives Eq

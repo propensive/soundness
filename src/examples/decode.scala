@@ -16,7 +16,10 @@
 
 package wisteria.examples
 
-import wisteria._
+import wisteria.*
+import gossamer.*
+
+import unsafeExceptions.canThrowAny
 
 /** very basic decoder for converting strings to other types */
 trait Decoder[T]:
@@ -43,25 +46,21 @@ object Decoder extends Derivation[Decoder]:
   /** very simple extractor for grabbing an entire parameter value, assuming matching parentheses */
   private def parse(value: String): (String, Map[String, String]) =
     val end = value.indexOf('(')
-    val name = value.substring(0, end)
+    val name = value.substring(0, end).nn
 
     def parts(value: String, idx: Int = 0, depth: Int = 0, collected: List[String] = List("")): List[String] =
       def plus(char: Char): List[String] = collected.head + char :: collected.tail
 
-      if (idx == value.length) collected
+      if idx == value.length then collected
       else value(idx) match
-        case '(' =>
-          parts(value, idx + 1, depth + 1, plus('('))
-        case ')' =>
-          if depth == 1 then plus(')') else parts(value, idx + 1, depth - 1, plus(')'))
-        case ',' =>
-          if depth == 0 then parts(value, idx + 1, depth, "" :: collected)
-          else parts(value, idx + 1, depth, plus(','))
-        case char =>
-          parts(value, idx + 1, depth, plus(char))
+        case '('  => parts(value, idx + 1, depth + 1, plus('('))
+        case ')'  => if depth == 1 then plus(')') else parts(value, idx + 1, depth - 1, plus(')'))
+        case ','  => if depth == 0 then parts(value, idx + 1, depth, "" :: collected)
+                     else parts(value, idx + 1, depth, plus(','))
+        case char => parts(value, idx + 1, depth, plus(char))
 
     def keyValue(str: String): (String, String) =
-      val List(label, value) = str.split("=", 2).to(List)
+      val List(label, value) = str.cut("=", 2).to(List)
       (label, value)
 
-    (name, parts(value.substring(end + 1, value.length - 1)).filter(_.nonEmpty).map(keyValue).toMap)
+    (name, parts(value.substring(end + 1, value.length - 1).nn).filter(_.nonEmpty).map(keyValue).toMap)

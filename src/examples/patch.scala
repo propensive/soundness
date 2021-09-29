@@ -45,7 +45,7 @@ object Patcher extends LowerPriorityPatcher with Derivation[Patcher]:
           )
         
         val effectiveFields = ctx.params.zip(fieldValues).map {
-          (param, x) => if (x.asInstanceOf[AnyRef] ne null) x else param.deref(value)
+          (param, x) => if Option(x.asInstanceOf[AnyRef]).isDefined then x else param.deref(value)
         }
 
         ctx.rawConstruct(effectiveFields)
@@ -58,12 +58,12 @@ sealed abstract class LowerPriorityPatcher:
   private[this] val _forSingleValue =
     new Patcher[Any]:
       def patch(value: Any, fieldValues: Seq[Any]): Any = {
-        if (fieldValues.lengthCompare(1) != 0)
+        if fieldValues.lengthCompare(1) != 0 then
           throw new IllegalArgumentException(
             s"Cannot patch single value `$value` with patch sequence of size ${fieldValues.size}"
           )
         val head = fieldValues.head
-        if (head.getClass != value.getClass)
+        if head.getClass != value.getClass then
           throw new IllegalArgumentException(
             s"Illegal patch value type. Expected `${value.getClass}` but got `${head.getClass}`"
           )
