@@ -18,6 +18,8 @@ package caesura
 
 import probably.*
 
+import unsafeExceptions.canThrowAny
+
 object Tests extends Suite("Caesura tests"):
   def run(using Runner): Unit =
     ()
