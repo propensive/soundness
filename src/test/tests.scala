@@ -20,6 +20,8 @@ import probably.Runner.*
 import probably.*
 import scala.util.Try
 
+import unsafeExceptions.canThrowAny
+
 object Tests extends Suite("Probably Tests"):
 
   def reportTest(fn: Runner => Unit): Report =

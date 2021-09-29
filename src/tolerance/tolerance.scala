@@ -18,8 +18,11 @@ package probably
 
 import wisteria.*
 
+import annotation.targetName
+
 extension [T: Approximable](value: T)
-  def ~~(other: T): Boolean = summon[Approximable[T]].approximatelyEqual(value, other)
+  @targetName("approxEquals")
+  infix def ~~(other: T): Boolean = summon[Approximable[T]].approximatelyEqual(value, other)
 
 object Tolerance:
   given Tolerance[Double] = (a, b) => math.abs(a - b) <= math.pow(math.ulp((a + b)/2), 1/3.0)
