@@ -18,6 +18,8 @@ package punctuation
 
 import probably.*
 
+import unsafeExceptions.canThrowAny
+
 case class Example(str: String, int: Int)
 
 object Tests extends Suite("Punctuation tests"):
@@ -143,6 +145,6 @@ object Tests extends Suite("Punctuation tests"):
     }.assert(_ == Markdown(Paragraph(Text("Email me "), Link("nobody@example.com",
         Text("mailto:nobody@example.com")), Text("!"))))
     
-    test("interpolator") {
-      md"Hello *World*"
-    }.assert(_ == Markdown(Text("Hello "), Emphasis(Text("World"))))
+    // test("interpolator") {
+    //   md"Hello *World*"
+    // }.assert(_ == Markdown(Text("Hello "), Emphasis(Text("World"))))

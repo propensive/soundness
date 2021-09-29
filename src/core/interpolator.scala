@@ -38,7 +38,6 @@ object Md:
         throw InterpolationError(s"the markdown could not be parsed; $msg")
   
     def initial: Input = Input.Inline("")
-    
     def skip(state: Input): Input = state
 
     def insert(state: Input, value: Input): Input = value match
@@ -67,4 +66,3 @@ object Md:
           Input.Block(state+next)
         catch case MalformedMarkdown(msg) =>
           throw InterpolationError(s"the markdown could not be parsed; $msg")
-  
