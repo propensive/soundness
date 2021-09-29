@@ -20,6 +20,8 @@ import rudiments.*
 import contextual.*
 import wisteria.*
 
+import annotation.targetName
+
 import java.util.regex.*
 import java.net.{URLEncoder, URLDecoder}
 
@@ -30,7 +32,10 @@ extension (text: Txt)
 
 extension (text: String)
   def text: Txt = text
-  def +(other: Txt): String = text+other
+  
+  @targetName("add")
+  infix def +(other: Txt): String = text+other
+  
   def slice(index: Int): String = text.substring(index).nn
   def slice(from: Int, to: Int): String = text.substring(from, to).nn
   def length: Int = text.length

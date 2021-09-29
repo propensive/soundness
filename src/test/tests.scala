@@ -18,6 +18,8 @@ package gossamer
 
 import probably.*
 
+import unsafeExceptions.canThrowAny
+
 case class Person(name: String, age: Int)
 
 object Tests extends Suite("Gossamer Tests"):
