@@ -39,8 +39,8 @@ object Tests extends Suite("Scintillate tests"):
           Response(Redirect(uri"/elsewhere"))
         case Path("/elsewhere") =>
           Response("Elsewhere")
-        // case Path("/somewhere") & IntParam(value) =>
-        //   Response(s"Somewhere: ${value + 1}")
+        case Path("/somewhere") & IntParam(value) =>
+          Response(s"Somewhere: ${value + 1}")
         case Path("/notfound") =>
           Response(NotFound("Not-found message"))
         // case Path("/withparam") =>
