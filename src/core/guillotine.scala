@@ -29,7 +29,7 @@ import annotation.targetName
 import java.util.HashMap as JMap
 import java.io as ji
 
-type Stream = LazyList[String]
+type TextStream = LazyList[String]
 
 object envs:
   val enclosing: Env = Env(System.getenv.nn.to(Map))
@@ -41,15 +41,20 @@ enum Context:
 case class State(current: Context, esc: Boolean, args: List[String])
 
 object Executor:
-  given stream: Executor[Stream] =
+  given stream: Executor[TextStream] =
     proc => ji.BufferedReader(ji.InputStreamReader(proc.getInputStream)).lines().nn.toScala(LazyList)
   
   given string: Executor[String] =
     stream.map { stream => if stream.isEmpty then "" else stream.reduce(_ + "\n" + _).trim.nn }
 
-  // given Executor[LazyList[IArray[Byte]]] =
-  //   proc => ji.BufferedInputStream(proc.getInputStream)
-
+  given dataStream: Executor[DataStream] = proc => Util.read(proc.getInputStream.nn, 65536)
+  
+  given exitStatus: Executor[ExitStatus] = _.waitFor() match
+    case 0     => ExitStatus.Ok
+    case other => ExitStatus.Fail(other)
+  
+  given unit: Executor[Unit] = exitStatus.map(_ => ())
+ 
 trait Executor[T]:
   def interpret(process: java.lang.Process): T
   def map[S](fn: T => S): Executor[S] = process => fn(interpret(process))
@@ -63,12 +68,11 @@ class Process[T](process: java.lang.Process, executor: Executor[T]):
   def stderr(limit: Int = 1024*1024*10): DataStream = Util.read(process.getErrorStream.nn, limit)
   def stdin(in: LazyList[IArray[Byte]]): Unit = Util.write(in, process.getOutputStream.nn)
   def await(): T = executor.interpret(process)
-  def abort(force: Boolean = false): Unit =
-    if force then process.destroyForcibly() else process.destroy()
+  def abort(): Unit = process.destroy()
+  def kill(): Unit = process.destroyForcibly()
 
 sealed trait Executable:
   def fork[T]()(using env: Env, exec: Executor[T] = Executor.string): Process[T]
-  
   def exec[T]()(using env: Env, exec: Executor[T] = Executor.string): T = fork[T]().await()
   
   def apply(cmd: Executable): Pipeline = cmd match
@@ -82,12 +86,27 @@ sealed trait Executable:
   @targetName("pipeTo")
   infix def |(cmd: Executable): Pipeline = cmd(this)
 
-case class Command(args: String*) extends Executable:
+object Command:
+  given DebugString[Command] = cmd =>
+    val cmdString: String = cmd.args.map { arg =>
+      if arg.contains("\"") && !arg.contains("'") then s"""'$arg'"""
+      else if arg.contains("'") && !arg.contains("\"") then s""""$arg""""
+      else if arg.contains("'") && arg.contains("\"")
+        then s""""${arg.replaceAll("\\\"", "\\\\\"")}""""
+      else if arg.contains(" ") || arg.contains("\t") || arg.contains("\\") then s"'$arg'"
+      else arg
+    }.join(" ")
+    
+    if cmdString.contains("\"") then "sh\"\"\""+cmdString+"\"\"\"" else "sh\""+cmdString+"\""
 
+case class Command(args: String*) extends Executable:
   def fork[T]()(using env: Env, exec: Executor[T] = Executor.string): Process[T] =
     val processBuilder = ProcessBuilder(args*)
     processBuilder.directory(env.workDirFile)
     new Process[T](processBuilder.start().nn, summon[Executor[T]])
+
+object Pipeline:
+  given DebugString[Pipeline] = _.cmds.map(summon[DebugString[Command]].show(_)).join(" | ")
 
 case class Pipeline(cmds: Command*) extends Executable:
   def fork[T]()(using env: Env, exec: Executor[T] = Executor.string): Process[T] =
@@ -103,13 +122,12 @@ case class Env(vars: Map[String, String], workDir: Maybe[String] = Unset):
   private[guillotine] lazy val workDirFile: ji.File =
     ji.File(workDir.otherwise(System.getenv("PWD")))
   
-case class ExecError(command: Command, stdout: Stream, stderr: Stream) extends Exception
+case class ExecError(command: Command, stdout: DataStream, stderr: DataStream) extends Exception
 
-object Interpolation:
-
+object Sh:
   case class Params(params: String*)
 
-  object Sh extends Interpolator[Params, State, Command]:
+  object Prefix extends Interpolator[Params, State, Command]:
     import Context.*
   
     def complete(state: State): Command =
@@ -128,8 +146,8 @@ object Interpolation:
     def insert(state: State, value: Params): State =
       value.params.to(List) match
         case h :: t =>
-          if state.esc
-          then throw InterpolationError("escaping with '\\' is not allowed immediately before a substitution")
+          if state.esc then throw InterpolationError(txt"""escaping with '\\' is not allowed
+                                                         immediately before a substitution""".s)
           
           state match
             case State(Awaiting, false, args) =>
@@ -171,3 +189,7 @@ object Interpolation:
   given Insertion[Params, List[String]] = xs => Params(xs*)
   given Insertion[Params, Command] = cmd => Params(cmd.args*)
   given [T: Show]: Insertion[Params, T] = value => Params(summon[Show[T]].show(value).s)
+
+enum ExitStatus:
+  case Ok
+  case Fail(status: Int)

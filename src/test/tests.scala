@@ -17,6 +17,8 @@
 package guillotine
 
 import contextual.*
+import rudiments.*
+import gossamer.*
 import probably.*
 import scala.quoted.*, staging.*
 
@@ -129,6 +131,38 @@ object Tests extends Suite("Guillotine tests"):
       }.assert(_ == Command("ls", "'"))
     }
 
+    suite("rendering DebugString") {
+      test("simple command") {
+        sh"echo Hello World".debug
+      }.assert(_ == """sh"echo Hello World"""")
+      
+      test("simple command with space") {
+        sh"echo 'Hello World'".debug
+      }.assert(_ == """sh"echo 'Hello World'"""")
+      
+      test("simple command with quote and space") {
+        Command("echo", "Don't stop").debug
+      }.assert(_ == "sh\"\"\"echo \"Don't stop\"\"\"\"")
+
+      test("simple command with single and double quote") {
+        Command("echo", "single ' and double \" quotes").debug
+      }.assert(_ == "sh\"\"\"echo \"single ' and double \\\" quotes\"\"\"\"")
+
+      test("render pipeline of commands") {
+        (sh"echo Hello" | sh"sed s/e/a/g").debug
+      }.assert(_ == """sh"echo Hello" | sh"sed s/e/a/g"""")
+    }
+
+    suite("equality tests") {
+      test("check that two commands written differently are equivalent") {
+        sh"echo 'hello world'"
+      }.assert(_ == sh"""echo "hello world"""")
+      
+      test("check that two commands written with different whitespace are equivalent") {
+        sh"one two   three"
+      }.assert(_ == sh"one   two three")
+    }
+
     suite("Execution tests") {
 
       given Env = envs.enclosing
@@ -136,6 +170,69 @@ object Tests extends Suite("Guillotine tests"):
       test("Echo string") {
         sh"echo hello".exec[String]()
       }.assert(_ == "hello")
+
+      test("substitute string into echo") {
+        val string = "Hello world!"
+        sh"echo $string".exec[String]()
+      }.assert(_ == "Hello world!")
+
+      test("pipe output through two commands") {
+        (sh"echo 'Hello world'" | sh"sed s/e/a/g").exec[String]()
+      }.assert(_ == "Hallo world")
+
+      test("read stream of strings") {
+        sh"echo 'Hello world'".exec[LazyList[String]]().to(List)
+      }.assert(_ == List("Hello world"))
+
+      test("read stream of bytes") {
+        sh"echo 'Hello world'".exec[DataStream]().foldLeft(List[Byte]())(_ ++ _.to(List))
+      }.assert(_ == List(72, 101, 108, 108, 111, 32, 119, 111, 114, 108, 100, 10))
+
+      test("fork sleeping process") {
+        val t0 = System.currentTimeMillis
+        sh"sleep 2".fork[Unit]()
+        System.currentTimeMillis - t0
+      }.assert(_ <= 1000L)
+      
+      test("exec sleeping process") {
+        val t0 = System.currentTimeMillis
+        sh"sleep 2".exec[Unit]()
+        System.currentTimeMillis - t0
+      }.assert(_ >= 2000L)
+      
+      test("fork and await sleeping process") {
+        val t0 = System.currentTimeMillis
+        val proc = sh"sleep 2".fork[Unit]()
+        proc.await()
+        System.currentTimeMillis - t0
+      }.assert(_ >= 2000L)
+      
+      test("fork and abort sleeping process") {
+        val t0 = System.currentTimeMillis
+        val proc = sh"sleep 2".fork[Unit]()
+        proc.abort()
+        System.currentTimeMillis - t0
+      }.assert(_ <= 1000L)
+      
+      test("fork and kill sleeping process") {
+        val t0 = System.currentTimeMillis
+        val proc = sh"sleep 2".fork[Unit]()
+        proc.kill()
+        System.currentTimeMillis - t0
+      }.assert(_ <= 1000L)
+
+      test("successful exit status") {
+        sh"echo hello".exec[ExitStatus]()
+      }.assert(_ == ExitStatus.Ok)
+      
+      test("failed exit status") {
+        sh"false".exec[ExitStatus]()
+      }.assert(_ == ExitStatus.Fail(1))
+
+      test("nested command") {
+        val cmd = sh"echo 'Hello world'"
+        sh"sh -c '$cmd'".exec[String]()
+      }.assert(_ == "Hello world")
     }
 
     // suite("Compilation tests") {
