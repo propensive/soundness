@@ -33,30 +33,29 @@ object Tests extends Suite("Scintillate tests"):
     object Path:
       def unapply(request: Request): Some[String] = Some(request.path)
 
-    // val server: HttpService = HttpServer(8081).listen {
-
-    //   request match
-    //     case Path("/other") =>
-    //       Response(Redirect(uri"/elsewhere"))
-    //     case Path("/elsewhere") =>
-    //       Response("Elsewhere")
-    //     case Path("/somewhere") & IntParam(value) =>
-    //       Response(s"Somewhere: ${value + 1}")
-    //     case Path("/notfound") =>
-    //       Response(NotFound("Not-found message"))
-    //     case Path("/withparam") =>
-    //       Response((IntParam().getOrElse(100)*2).toString)
-    //     case Path("/address") =>
-    //       val address = List("house", "street", "city", "country").map(param(_).get).join(", ")
-    //       Response(address)
-    //     case Path("/person") =>
-    //       val address = List("name", "address.house", "address.street", "address.city",
-    //           "address.country").map(param(_).get).join(", ")
+    val server: HttpService = HttpServer(8081).listen {
+      request match
+        case Path("/other") =>
+          Response(Redirect(uri"/elsewhere"))
+        case Path("/elsewhere") =>
+          Response("Elsewhere")
+        // case Path("/somewhere") & IntParam(value) =>
+        //   Response(s"Somewhere: ${value + 1}")
+        case Path("/notfound") =>
+          Response(NotFound("Not-found message"))
+        // case Path("/withparam") =>
+        //   Response((IntParam().getOrElse(100)*2).toString)
+        // case Path("/address") =>
+        //   val address = List("house", "street", "city", "country").map(param(_).get).join(", ")
+        //   Response(address)
+        // case Path("/person") =>
+        //   val address = List("name", "address.house", "address.street", "address.city",
+        //       "address.country").map(param(_).get).join(", ")
           
-    //       Response(address)
-    //     case Path(_) =>
-    //       Response("This is a response")
-    // }
+        //   Response(address)
+        case Path(_) =>
+          Response("This is a response")
+    }
 
     test("Send an HTTP POST request") {
       Http.post(uri"http://localhost:8081/helloworld", "Here's some content").as[String]
@@ -111,4 +110,4 @@ object Tests extends Suite("Scintillate tests"):
       Http.get(uri"http://localhost:8081/withparam".query(Map("one" -> "9"))).as[String]
     }.assert(_ == "18")
     
-    //server.stop()
+    server.stop()

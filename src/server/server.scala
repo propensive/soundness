@@ -19,6 +19,7 @@ package scintillate
 import rudiments.*
 import gossamer.*
 import gastronomy.*
+import gesticulate.*
 
 import scala.collection.JavaConverters.*
 import scala.collection.immutable.ListMap
@@ -131,7 +132,7 @@ case class Request(method: Method, body: Body.Chunked, query: String, ssl: Boole
     try
       queryParams.map { (k, vs) => k.urlDecode -> vs.headOption.getOrElse("").urlDecode }.to(Map) ++ {
         if (method == Method.Post || method == Method.Put) &&
-            contentType == Some(mime"application/x-www-form-urlencoded")
+            contentType == Some(media"application/x-www-form-urlencoded")
         then
           Map(body.stream.slurp(maxSize = 10485760).uString.cut("&").map(_.cut("=", 2).to(Seq) match
             case Seq(key)        => key.urlDecode -> ""
@@ -190,17 +191,15 @@ object RequestParam:
     def serialize(value: RequestParam[?]): String = value.key
 
 case class RequestParam[T](key: String)(using ParamReader[T]):
-  type Type = T
   def opt(using Request): Option[T] = param(key).flatMap(summon[ParamReader[T]].read(_))
-  def unapply(request: Request): Option[T] = opt(using request)
+  def unapply(req: Request): Option[T] = opt(using req)
   def apply()(using Request): T throws ParamNotSent = opt.getOrElse(throw ParamNotSent(key))
 
 trait HttpService:
   def stop(): Unit
 
-@targetName("Splitter")
 object `&`:
-  def unapply(request: Request): (Request, Request) = (request, request)
+  def unapply(req: Request): (Request, Request) = (req, req)
 
 case class HttpServer(port: Int) extends RequestHandler:
 
@@ -215,11 +214,16 @@ case class HttpServer(port: Int) extends RequestHandler:
     context.setHandler(handle(_))
     httpServer.setExecutor(null)
     httpServer.start()
+
+    val shutdownThread = new Thread:
+      override def run(): Unit = httpServer.stop(1)
     
-    Runtime.getRuntime.nn.addShutdownHook { new Thread {
-      override def run(): Unit = httpServer.stop(0)
-    } }
-    () => httpServer.stop(1)
+    Runtime.getRuntime.nn.addShutdownHook(shutdownThread)
+    
+    () => {
+      Runtime.getRuntime.nn.removeShutdownHook(shutdownThread)
+      httpServer.stop(1)
+    }
 
   private def streamBody(exchange: HttpExchange): Body.Chunked =
     val in = exchange.getRequestBody.nn

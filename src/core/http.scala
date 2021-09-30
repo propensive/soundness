@@ -18,6 +18,7 @@ package scintillate
 
 import gossamer.*
 import rudiments.*
+import gesticulate.*
 import wisteria.*
 
 import scala.collection.immutable.ListMap
@@ -50,13 +51,13 @@ trait ToQuery[T]:
   def params(value: T): Params
 
 object Postable:
-  given [T: ToQuery]: Postable[T] = Postable(mime"application/x-www-form-urlencoded",
+  given [T: ToQuery]: Postable[T] = Postable(media"application/x-www-form-urlencoded",
       value => LazyList(summon[ToQuery[T]].params(value).queryString.bytes))
 
-  given Postable[String] = Postable(mime"text/plain", value => LazyList(IArray.from(value.bytes)))
-  given Postable[Unit] = Postable(mime"text/plain", unit => LazyList())
-  given Postable[Bytes] = Postable(mime"application/octet-stream", LazyList(_))
-  given Postable[LazyList[Bytes]] = Postable(mime"application/octet-stream", identity(_))
+  given Postable[String] = Postable(media"text/plain", value => LazyList(IArray.from(value.bytes)))
+  given Postable[Unit] = Postable(media"text/plain", unit => LazyList())
+  given Postable[Bytes] = Postable(media"application/octet-stream", LazyList(_))
+  given Postable[LazyList[Bytes]] = Postable(media"application/octet-stream", identity(_))
 
 class Postable[T](val contentType: MediaType, val content: T => LazyList[Bytes])
 
@@ -70,34 +71,30 @@ enum Method:
 
 object HttpReadable:
   given HttpReadable[String] with
-    type E = Nothing
-    
-    def read(body: Body): String throws TooMuchData | E = body match
-      case Body.Empty         => ""
-      case Body.Data(body)    => body.uString
-      case Body.Chunked(body) => body.foldLeft("")(_+_.uString)
+    def read(body: Body): String throws TooMuchData =
+      body match
+        case Body.Empty         => ""
+        case Body.Data(body)    => body.uString
+        case Body.Chunked(body) => body.slurp(maxSize = 10*1024*1024).uString
   
   given HttpReadable[Bytes] with
-    type E = Nothing
-    
-    def read(body: Body): Bytes throws TooMuchData | E = body match
+    def read(body: Body): Bytes throws TooMuchData = body match
       case Body.Empty         => IArray()
       case Body.Data(body)    => body
       case Body.Chunked(body) => body.slurp(maxSize = 10*1024*1024)
 
-  given [T, E2 <: Exception](using reader: clairvoyant.HttpReader[T, E2]): HttpReadable[T] with
-    type E = E2
-    def read(body: Body): T throws TooMuchData | E = body match
+  given [T, E2 <: Exception](using reader: clairvoyant.HttpReader[T, E2]): HttpReadable[T throws E2] with
+    def read(body: Body): (T throws E2) throws TooMuchData = body match
       case Body.Empty         => reader.read("")
       case Body.Data(data)    => reader.read(data.uString)
       case Body.Chunked(data) => reader.read(data.slurp(maxSize = 10*1024*1024).uString)
 
 trait HttpReadable[+T]:
-  type E <: Exception
-  def read(body: Body): T throws TooMuchData | E
+  def read(body: Body): T throws TooMuchData
 
 case class HttpResponse(status: HttpStatus, headers: Map[ResponseHeader, List[String]], body: Body):
-  def as[T](using readable: HttpReadable[T]): T throws HttpError | TooMuchData | readable.E =
+  // This is inline to work around a compiler bug
+  inline def as[T](using readable: HttpReadable[T]): T throws HttpError | TooMuchData =
     status match
       case status: FailureCase => throw HttpError(status, body)
       case status              => readable.read(body)
@@ -189,7 +186,8 @@ object Http:
             
 case class HttpError(status: HttpStatus & FailureCase, body: Body)
     extends Exception(s"HTTP Error ${status.code}: ${status.description}"):
-  def as[T](using readable: HttpReadable[T]): T throws TooMuchData | readable.E =
+  // This is `inline` to work around a compiler bug
+  inline def as[T](using readable: HttpReadable[T]): T throws TooMuchData =
     readable.read(body)
 
 trait FailureCase
@@ -352,36 +350,6 @@ case class Uri(location: String, params: Params) extends Dynamic:
   override def toString: String =
     if params.isEmpty then location else location+"?"+params.queryString
 
-object MediaType:
-  enum MainType:
-    case Application, Audio, Image, Message, Multipart, Text, Video, Font, Example, Model
-
-  def unapply(str: String): Option[MediaType] = str.cut("/", 2).to(Seq) match
-    case Seq(key, subtype) => try Some(MediaType(MainType.valueOf(key.capitalize), subtype))
-                              catch _ => None
-    case _                 => None
-  
-  given formenctype: clairvoyant.HtmlAttribute["formenctype", MediaType] with
-    def name: String = "formenctype"
-    def serialize(mediaType: MediaType): String = mediaType.toString
-  
-  given media: clairvoyant.HtmlAttribute["media", MediaType] with
-    def name: String = "media"
-    def serialize(mediaType: MediaType): String = mediaType.toString
-  
-  given enctype: clairvoyant.HtmlAttribute["enctype", MediaType] with
-    def name: String = "enctype"
-    def serialize(mediaType: MediaType): String = mediaType.toString
-  
-  given htype: clairvoyant.HtmlAttribute["htype", MediaType] with
-    def name: String = "type"
-    def serialize(mediaType: MediaType): String = mediaType.toString
-
-case class MediaType(mediaType: MediaType.MainType, mediaSubtype: String):
-  override def toString = s"${mediaType.toString.lower}/$mediaSubtype"
-
 extension (ctx: StringContext)
   def uri(subs: String*): Uri =
     Uri(ctx.parts.zip(subs).map(_+_).join("", "", ctx.parts.last), Params(List()))
-  
-  def mime(): MediaType = MediaType.unapply(ctx.parts.head).get
