@@ -68,13 +68,13 @@ case class PrivateKey[A <: CryptoAlgorithm[?]](private[gastronomy] val privateBy
   
   def public(using A): PublicKey[A] = PublicKey(summon[A].privateToPublic(privateBytes))
   
-  def decrypt[T: ByteCodec](message: Message[A])(using A & Encryption): T throws DecodeFailure =
+  inline def decrypt[T: ByteCodec](message: Message[A])(using A & Encryption): T throws DecodeFailure =
     decrypt(message.bytes)
   
-  def decrypt[T: ByteCodec](bytes: Bytes)(using A & Encryption): T throws DecodeFailure =
+  inline def decrypt[T: ByteCodec](bytes: Bytes)(using A & Encryption): T throws DecodeFailure =
     summon[ByteCodec[T]].decode(summon[A].decrypt(bytes, privateBytes))
   
-  def sign[T: ByteCodec](value: T)(using A & Signing): Signature[A] =
+  inline def sign[T: ByteCodec](value: T)(using A & Signing): Signature[A] =
     Signature(summon[A].sign(summon[ByteCodec[T]].encode(value), privateBytes))
   
   def pem(reveal: RevealSecretKey.type): Pem = Pem("PRIVATE KEY", privateBytes)
