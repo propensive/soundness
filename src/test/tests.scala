@@ -311,19 +311,19 @@ object Tests extends Suite("Wisteria tests"):
       summon[Print[ProtectedCons]].print(ProtectedCons("dada", "phil"))
     }.assert(_ == "ProtectedCons(dada phil)")
 
-    test("decode a company") {
-      Decoder.derived[Company].decode("""Company(name=Acme Inc)""")
-    }.assert(_ == Company("Acme Inc"))
+    // test("decode a company") {
+    //   Decoder.derived[Company].decode("""Company(name=Acme Inc)""")
+    // }.assert(_ == Company("Acme Inc"))
 
-    test("decode a Person as an Entity") {
-      summon[Decoder[Entity]].decode("""tests.Person(name=John Smith,age=32)""")
-    }.assert(_ == Person("John Smith", 32))
+    // test("decode a Person as an Entity") {
+    //   summon[Decoder[Entity]].decode("""tests.Person(name=John Smith,age=32)""")
+    // }.assert(_ == Person("John Smith", 32))
 
-    test("decode a nested product") {
-      summon[Decoder[Address]].decode(
-        """Address(line1=53 High Street,occupant=Person(name=Richard Jones,age=44))"""
-      )
-    }.assert(_ == Address("53 High Street", Person("Richard Jones", 44)))
+    // test("decode a nested product") {
+    //   summon[Decoder[Address]].decode(
+    //     """Address(line1=53 High Street,occupant=Person(name=Richard Jones,age=44))"""
+    //   )
+    // }.assert(_ == Address("53 High Street", Person("Richard Jones", 44)))
 
     test("typenames and labels are not encoded") {
       summon[Show[String, `%%`]].show(`%%`(1, "two"))
@@ -349,9 +349,9 @@ object Tests extends Suite("Wisteria tests"):
       Show.derived[Account].show(Account("john_doe", "john.doe@yahoo.com", "john.doe@gmail.com"))
     }.assert(_ == "Account(id=john_doe,emails=[john.doe@yahoo.com,john.doe@gmail.com])")
 
-    // test("construct a default Account") {
-    //   HasDefault.derived[Account].defaultValue
-    // }.assert(_ == Right(Account("")))
+    test("construct a default Account") {
+      HasDefault.derived[Account].defaultValue
+    }.assert(_ == Right(Account("")))
 
     test("construct a failed NoDefault") {
       HasDefault.derived[NoDefault].defaultValue
@@ -361,12 +361,12 @@ object Tests extends Suite("Wisteria tests"):
       Show.derived[Portfolio].show(Portfolio(Company("Alice Inc"), Company("Bob & Co")))
     }.assert(_ == "Portfolio(companies=[Company(name=Alice Inc),Company(name=Bob & Co)])")
 
-    // test("show a List[Int]") {
-    //   given [T: [X] =>> Show[String, X]] : Show[String, List[T]] = Show.derived
+    test("show a List[Int]") {
+      given [T: [X] =>> Show[String, X]] : Show[String, List[T]] = Show.derived
 
-    //   Show.derived[List[Int]].show(List(1, 2, 3))
-    //.assert(_ == "::[Int](head=1,tl=::[Int](head=2,tl=::[Int](head=3,tl=Nil())))")
-    // }
+      Show.derived[List[Int]].show(List(1, 2, 3))
+    }.assert(_ == "::[Int](head=1,tl=::[Int](head=2,tl=::[Int](head=3,tl=Nil())))")
+    
 
     test("sealed trait typeName should be complete and unchanged") {
       TypeNameInfo.derived[Color].name
