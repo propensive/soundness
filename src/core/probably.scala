@@ -21,6 +21,8 @@ import scala.collection.mutable.HashMap
 import scala.util.*, control.NonFatal
 import scala.quoted.*
 
+import scala.reflect.Typeable
+
 import wisteria.*
 import escritoire.*
 import rudiments.*
@@ -324,8 +326,8 @@ enum Differences:
   override def toString(): String =
     val table = Tabulation[(List[String], String, String)](
       Heading("Key", _(0).join(".")),
-      Heading("Expected", _(1)),
-      Heading("Found", _(2))
+      Heading("Found", _(1)),
+      Heading("Expected", _(2)),
     )
 
     table.tabulate(100, flatten).join("\n")
@@ -412,3 +414,13 @@ inline def test[T](name: String)(inline fn: Runner#Test ?=> T)(using runner: Run
 def suite(name: String)(fn: Runner ?=> Unit)(using runner: Runner): Unit = runner.suite(name)(fn)
 def suite(suite: TestSuite)(using runner: Runner): Unit = runner.suite(suite)
 def time[T](name: String)(fn: => T)(using runner: Runner): T = test(name)(fn).check { _ => true }
+
+case class UnexpectedSuccessError(value: Any)
+extends Exception("probably: the expression was expected to throw an exception, but did not")
+
+def capture[E <: Exception: Typeable](fn: CanThrow[E] ?=> Any): E throws UnexpectedSuccessError =
+  try
+    import unsafeExceptions.canThrowAny
+    val result = fn
+    throw UnexpectedSuccessError(result)
+  catch case error: E => error
