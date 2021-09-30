@@ -78,17 +78,17 @@ object Tests extends Suite("Euphemism Tests"):
       //   Json.parse("""{"x": 1}""").debug
       // }.assert(_ == Json.of(x = 1.json))
 
-      test("Read case class") {
-        Json.parse("""{"x": 1, "y": "two"}""").as[Foo]
-      }.assert(_ == Foo(1, "two"))
+      // test("Read case class") {
+      //   Json.parse("""{"x": 1, "y": "two"}""").as[Foo]
+      // }.assert(_ == Foo(1, "two"))
 
-      test("Extract an option") {
-        case class OptFoo(x: Option[Int])
-        Json.parse("""{"x": 1}""").as[OptFoo].x
-      }.assert(_ == Some(1))
+      // test("Extract an option") {
+      //   case class OptFoo(x: Option[Int])
+      //   Json.parse("""{"x": 1}""").as[OptFoo].x
+      // }.assert(_ == Some(1))
       
-      test("Extract a None") {
-        case class OptFoo(x: Option[Int])
-        Json.parse("""{"y": 1}""").as[OptFoo].x
-      }.assert(_ == None)
+      // test("Extract a None") {
+      //   case class OptFoo(x: Option[Int])
+      //   Json.parse("""{"y": 1}""").as[OptFoo].x
+      // }.assert(_ == None)
     }
