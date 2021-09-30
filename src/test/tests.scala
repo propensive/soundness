@@ -18,6 +18,7 @@ package scintillate
 
 import rudiments.*
 import probably.*
+import gossamer.*
 
 import scala.collection.immutable.ListMap
 
@@ -43,16 +44,16 @@ object Tests extends Suite("Scintillate tests"):
           Response(s"Somewhere: ${value + 1}")
         case Path("/notfound") =>
           Response(NotFound("Not-found message"))
-        // case Path("/withparam") =>
-        //   Response((IntParam().getOrElse(100)*2).toString)
-        // case Path("/address") =>
-        //   val address = List("house", "street", "city", "country").map(param(_).get).join(", ")
-        //   Response(address)
-        // case Path("/person") =>
-        //   val address = List("name", "address.house", "address.street", "address.city",
-        //       "address.country").map(param(_).get).join(", ")
-          
-        //   Response(address)
+        case Path("/withparam") =>
+          Response((IntParam()*2).toString)
+        case Path("/address") =>
+          val address = List("house", "street", "city", "country").map(param(_).get).join(", ")
+          Response(address)
+        case Path("/person") =>
+          val address = List("name", "address.house", "address.street", "address.city",
+              "address.country").map(param(_).get).join(", ")
+       
+          Response(address)
         case Path(_) =>
           Response("This is a response")
     }

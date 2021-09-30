@@ -172,10 +172,10 @@ extension (value: Http.type)
   def listen(handler: Request ?=> Response[?])(using RequestHandler): HttpService =
     summon[RequestHandler].listen(handler)
 
-def request(using Request): Request = summon[Request]
-def param(using Request)(key: String): Option[String] = summon[Request].params.get(key)
+inline def request(using Request): Request = summon[Request]
+inline def param(using Request)(key: String): Option[String] = summon[Request].params.get(key)
 
-def header(using Request)(header: RequestHeader): List[String] =
+inline def header(using Request)(header: RequestHeader): List[String] =
   summon[Request].headers.get(header).getOrElse(Nil)
 
 object ParamReader:
