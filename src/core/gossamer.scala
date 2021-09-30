@@ -30,42 +30,42 @@ opaque type Txt = String
 extension (text: Txt)
   def s: String = text
 
-extension (text: String)
-  def text: Txt = text
-  
+extension (string: String)
+  def text: Txt = string
+
   @targetName("add")
-  infix def +(other: Txt): String = text+other
+  infix def +(other: Txt): String = string+other
   
-  def slice(index: Int): String = text.substring(index).nn
-  def slice(from: Int, to: Int): String = text.substring(from, to).nn
-  def length: Int = text.length
+  def slice(index: Int): String = string.substring(index).nn
+  def slice(from: Int, to: Int): String = string.substring(from, to).nn
+  def length: Int = string.length
   
   def apply(idx: Int): Char throws OutOfRangeError =
-    if idx >= 0 && idx < text.length then text(idx)
-    else throw OutOfRangeError(idx, 0, text.length)
+    if idx >= 0 && idx < string.length then string(idx)
+    else throw OutOfRangeError(idx, 0, string.length)
   
-  def populated: Option[String] = if text.isEmpty then None else Some(text)
+  def populated: Option[String] = if string.isEmpty then None else Some(string)
   def cut(delimiter: String): IArray[String] = cut(delimiter, 0)
   
   def cut(delimiter: String, limit: Int): IArray[String] =
-    IArray.from(text.split(Pattern.quote(delimiter), limit).nn.map(_.nn))
+    IArray.from(string.split(Pattern.quote(delimiter), limit).nn.map(_.nn))
   
-  def bytes: IArray[Byte] = IArray.from(text.getBytes("UTF-8").nn)
-  def chars: IArray[Char] = IArray.from(text.toCharArray.nn)
-  def urlEncode: String = URLEncoder.encode(text, "UTF-8").nn
-  def urlDecode: String = URLDecoder.decode(text, "UTF-8").nn
-  def punycode: String = java.net.IDN.toASCII(text).nn
-  def lower: String = text.toLowerCase.nn
-  def upper: String = text.toUpperCase.nn
+  def bytes: IArray[Byte] = IArray.from(string.getBytes("UTF-8").nn)
+  def chars: IArray[Char] = IArray.from(string.toCharArray.nn)
+  def urlEncode: String = URLEncoder.encode(string, "UTF-8").nn
+  def urlDecode: String = URLDecoder.decode(string, "UTF-8").nn
+  def punycode: String = java.net.IDN.toASCII(string).nn
+  def lower: String = string.toLowerCase.nn
+  def upper: String = string.toUpperCase.nn
 
   def padRight(length: Int, char: Char = ' '): String = 
-    if text.length < length then text+char.toString*(length - text.length) else text
+    if string.length < length then string+char.toString*(length - string.length) else string
   
   def padLeft(length: Int, char: Char = ' '): String =
-    if text.length < length then char.toString*(length - text.length)+text else text
+    if string.length < length then char.toString*(length - string.length)+string else string
   
   def editDistanceTo(other: String): Int =
-    val m = text.length
+    val m = string.length
     val n = other.length
     val old = new Array[Int](n + 1)
     val dist = new Array[Int](n + 1)
@@ -76,7 +76,7 @@ extension (text: String)
       dist(0) = old(0) + 1
 
       for j <- 1 to n do
-        dist(j) = (old(j - 1) + (if text.charAt(i - 1) == other.charAt(j - 1) then 0 else 1))
+        dist(j) = (old(j - 1) + (if string.charAt(i - 1) == other.charAt(j - 1) then 0 else 1))
           .min(old(j) + 1).min(dist(j - 1) + 1)
 
       for j <- 0 to n
@@ -122,4 +122,4 @@ object Interpolation:
     def insert(state: String, input: Input): String = state+input.string
 
     def complete(state: String): Txt =
-      gossamer.Txt(state.split("\\n\\s*\\n").nn.map(_.nn.replaceAll("\\s\\s*", " ").nn.trim.nn).mkString("\n").nn)
+      state.split("\\n\\s*\\n").nn.map(_.nn.replaceAll("\\s\\s*", " ").nn.trim.nn).mkString("\n").nn.text
