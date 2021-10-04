@@ -30,12 +30,16 @@ object Md:
   
   object Interpolator extends contextual.Interpolator[Input, Input, Markdown[Markdown.Ast.Node]]:
     
-    def complete(state: Input): Markdown[Markdown.Ast.Node] =
-      try state match
-        case Input.Inline(state) => Markdown.parseInline(state)
-        case Input.Block(state)  => Markdown.parse(state)
-      catch case MalformedMarkdown(msg) =>
-        throw InterpolationError(s"the markdown could not be parsed; $msg")
+    def complete(state: Input): Markdown[Markdown.Ast.Node] = state match
+      case Input.Inline(state) =>
+        Markdown.parseInlineOpt(state).getOrElse {
+          throw InterpolationError(s"the markdown could not be parsed")
+        }
+      
+      case Input.Block(state)  =>
+        try Markdown.parse(state)
+        catch case MalformedMarkdown(msg) =>
+          throw InterpolationError(s"the markdown could not be parsed; $msg")
   
     def initial: Input = Input.Inline("")
     def skip(state: Input): Input = state
@@ -50,19 +54,15 @@ object Md:
      
     def parse(state: Input, next: String): Input = state match
       case Input.Inline(state) =>
-        try
-          Markdown.parseInline(state+next)
-          Input.Inline(state+next)
-        catch case MalformedMarkdown(_) =>
-          try
-            Markdown.parse(state+next)
-            Input.Block(state+next)
-          catch case MalformedMarkdown(msg) =>
-            throw InterpolationError(s"the markdown could not be parsed; $msg")
+        Markdown.parseInlineOpt(state+next).fold {
+          Markdown.parseOpt(state+next) match
+            case None => throw InterpolationError(s"the markdown could not be parsed")
+            case _    => ()
+          
+          Input.Block(state+next)
+        } { md => Input.Inline(state+next) }
 
       case Input.Block(state) =>
-        try
-          Markdown.parse(state+next)
-          Input.Block(state+next)
-        catch case MalformedMarkdown(msg) =>
-          throw InterpolationError(s"the markdown could not be parsed; $msg")
+        Markdown.parseOpt(state+next) match
+         case None => throw InterpolationError(s"the markdown could not be parsed")
+          case _   =>Input.Block(state+next)

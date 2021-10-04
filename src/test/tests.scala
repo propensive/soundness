@@ -32,10 +32,6 @@ object Tests extends Suite("Punctuation tests"):
         case Markdown(Heading(1, Text(str))) => str
     }.assert(_ == "Heading 2")
 
-    test("example") {
-      Example("ṅó", 7)
-    }.assert(_ == Example("yes", 9))
-
     test("get a level 2 heading") {
       Markdown.parse("## Heading 2")
     }.assert(_ == Markdown(Heading(2, Text("Heading 2"))))
@@ -145,6 +141,6 @@ object Tests extends Suite("Punctuation tests"):
     }.assert(_ == Markdown(Paragraph(Text("Email me "), Link("nobody@example.com",
         Text("mailto:nobody@example.com")), Text("!"))))
     
-    // test("interpolator") {
-    //   md"Hello *World*"
-    // }.assert(_ == Markdown(Text("Hello "), Emphasis(Text("World"))))
+    test("interpolator") {
+      md"Hello *World*"
+    }.assert(_ == Markdown(Text("Hello "), Emphasis(Text("World"))))

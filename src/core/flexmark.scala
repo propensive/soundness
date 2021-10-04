@@ -27,6 +27,8 @@ import annotation.tailrec
 import scala.reflect.Typeable
 import scala.collection.JavaConverters.*
 
+import java.util as ju
+
 case class MalformedMarkdown(message: String) extends Exception(str"punctuation: $message")
 
 case class Markdown[+M <: Markdown.Ast.Node](nodes: M*)
@@ -70,20 +72,23 @@ object Markdown:
       case Link(location: String, children: Inline*)
 
   private val options = MutableDataSet()
-  options.set(Parser.INLINE_DELIMITER_DIRECTIONAL_PUNCTUATIONS, java.lang.Boolean.TRUE)
-  
-  options.set(TypographicExtension.ENABLE_SMARTS, java.lang.Boolean.TRUE)
-  options.set[java.util.Collection[com.vladsch.flexmark.util.misc.Extension]](Parser.EXTENSIONS,
-      java.util.Arrays.asList(TablesExtension.create(), TypographicExtension.create()))
+  options.set[ju.Collection[com.vladsch.flexmark.util.misc.Extension]](Parser.EXTENSIONS,
+      ju.Arrays.asList(TablesExtension.create(), TypographicExtension.create()))
   //options.set(TypographicExtension.ENABLE_QUOTES, java.lang.Boolean.TRUE)
   
   private val parser = Parser.builder(options).nn.build().nn
 
-  def parse(string: String): Markdown[Markdown.Ast.Block] throws MalformedMarkdown =
+  inline def parseOpt(string: String): Option[Markdown[Markdown.Ast.Block]] =
+    try Some(parse(string)) catch case MalformedMarkdown(_) => None
+  
+  inline def parse(string: String): Markdown[Markdown.Ast.Block] throws MalformedMarkdown =
     val root = parser.parse(string).nn
     val nodes = root.getChildIterator.nn.asScala.to(List).map(convert(root, _))
     
     Markdown(nodes.collect { case child: Markdown.Ast.Block => child }*)
+
+  def parseInlineOpt(string: String): Option[Markdown[Markdown.Ast.Inline]] =
+    try Some(parseInline(string)) catch case MalformedMarkdown(_) => None
 
   def parseInline(string: String): Markdown[Markdown.Ast.Inline] throws MalformedMarkdown =
     parse(string) match
@@ -94,13 +99,12 @@ object Markdown:
   private def coalesce[M >: Text <: Markdown.Ast.Inline](xs: List[M], done: List[M] = Nil): List[M] =
     xs match
       case Nil                             => done.reverse
-      case Text(str) :: Text(str2) :: tail => coalesce(Text(str+" "+str2) :: tail, done)
+      case Text(str) :: Text(str2) :: tail => coalesce(Text(format(str+" "+str2)) :: tail, done)
       case head :: tail                    => coalesce(tail, head :: done)
 
   @tailrec
   def format(str: String, buf: StringBuilder = StringBuilder(), i: Int = 0, chr: Char = 0,
                  space: Boolean = false): String =
-
     if chr != 0 then buf.append(chr)
     if i < str.length then
       (try str(i) catch case error@OutOfRangeError(_, _, _) => throw Impossible(error)) match
@@ -150,7 +154,7 @@ object Markdown:
                                             phraseChildren(root, node)*)
       
       case node: cvfa.MailLink       => Link(node.getText.toString, Text(s"mailto:${node.getText}"))
-      case node: cvfa.Text           => Text(node.getChars.toString)
+      case node: cvfa.Text           => Text(format(node.getChars.toString))
 
   type FlowInput = cvfa.BlockQuote | cvfa.BulletList | cvfa.CodeBlock | cvfa.FencedCodeBlock |
       cvfa.ThematicBreak | cvfa.Paragraph | cvfa.IndentedCodeBlock | cvfa.Heading | cvfa.OrderedList
