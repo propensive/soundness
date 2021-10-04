@@ -129,7 +129,7 @@ object Tests extends Suite("Probably Tests"):
 
     test("assert with 2 successful predicates") {
       reportTest(_("test double")(0.001).assert { x => x >= 0.0 && x <= 1.0 })
-    }.assert { r => r.passed == 1 && r.failed == 1 }
+    }.assert { r => r.passed == 1 && r.failed == 0 && r.total == 1 }
 
     test("assert with 2 predicates") {
       val report = reportTest(_("test double")(0.001).assert { x => x >= 0.0 && x < 0.0 })
