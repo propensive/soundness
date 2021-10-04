@@ -174,3 +174,44 @@ case class LineEditor(content: String = "", pos: Int = 0):
     case RightArrow     => copy(pos = (pos + 1) min content.length)
     case _              => this
   catch case OutOfRangeError(_, _, _) => this
+
+object SelectMenu:
+  def ask(options: List[String], initial: Int = 0, renderOn: String => String = s => str" > $s",
+              renderOff: String => String = s => str"   $s")
+         (using Tty): Int =
+    
+    def finished(key: Keypress) =
+      key == Keypress.Enter || key == Keypress.Ctrl('D') || key == Keypress.Ctrl('C')
+
+    def render(options: List[String], current: Int): Unit =
+      options.zipWithIndex.foreach { case (opt, idx) =>
+        Tty.print(if idx == current then renderOn(opt) else renderOff(opt))
+        Tty.print(esc("K"))
+        Tty.print("\n")
+      }
+      Tty.print(esc(str"${options.length}A"))
+
+    Tty.print(esc("?25l"))
+    
+    val menu = SelectMenu(options, initial)
+    render(menu.options, menu.current)
+    
+    val result = Tty.stream[Keypress].takeWhile(!finished(_)).foldLeft(menu) {
+      case (menu, next) =>
+        val newMenu = menu(next)
+        render(newMenu.options, newMenu.current)
+        newMenu
+    }
+
+    Tty.print(esc("J"))
+    Tty.print(esc("?25h"))
+
+    result.current
+
+case class SelectMenu(options: List[String], current: Int):
+  import Keypress.*
+  def apply(keypress: Keypress): SelectMenu = try keypress match
+    case UpArrow   => copy(current = 0 max current - 1)
+    case DownArrow => copy(current = options.size - 1 min current + 1)
+    case _         => this
+  catch case OutOfRangeError(_, _, _) => this
