@@ -1,13 +1,15 @@
 #!/bin/bash
 
 CP="$(ls lib/*.jar | tr '\n' : | head -c-1)"
+rm -r classes/*
 mkdir -p classes/gesticulate
 cp res/media.types classes/gesticulate/media.types
 javac -d classes -classpath "$CP" mod/rivulet/src/java/**/*.java
-scala/bin/scalac "-classpath:$CP:classes" -d classes -deprecation -language:experimental.saferExceptions -new-syntax -Ysafe-init -feature -Xcheck-macros -Ycheck-all-patmat -Yexplicit-nulls \
+scala/bin/scalac "-classpath:$CP:classes" -d classes -deprecation -language:experimental.erasedDefinitions -language:experimental.saferExceptions -Werror -Wunused:all -new-syntax -Yrequire-targetName -Xverify-signatures -Ysafe-init -feature -Xcheck-macros -Ycheck-all-patmat -Yexplicit-nulls \
     mod/acyclicity/src/core/*.scala \
-    mod/cataract/src/core/*.scala \
+    mod/adversaria/src/core/*.scala \
     mod/caesura/src/core/*.scala \
+    mod/cataract/src/core/*.scala \
     mod/clairvoyant/src/css/*.scala \
     mod/clairvoyant/src/html/*.scala \
     mod/clairvoyant/src/http/*.scala \
@@ -30,6 +32,7 @@ scala/bin/scalac "-classpath:$CP:classes" -d classes -deprecation -language:expe
     mod/probably/src/tolerance/*.scala \
     mod/punctuation/src/core/*.scala \
     mod/punctuation/src/html/*.scala \
+    mod/punctuation/src/ansi/*.scala \
     mod/rivulet/src/core/*.scala \
     mod/rudiments/src/core/*.scala \
     mod/scintillate/src/core/*.scala \
@@ -39,3 +42,4 @@ scala/bin/scalac "-classpath:$CP:classes" -d classes -deprecation -language:expe
     mod/wisteria/src/core/*.scala \
     mod/xylophone/src/core/*.scala \
     && cd classes && jar cf ../niveau.jar $(ls)
+    #mod/tarantula/src/core/*.scala \
