@@ -198,6 +198,7 @@ case class RequestParam[T](key: String)(using ParamReader[T]):
 trait HttpService:
   def stop(): Unit
 
+@targetName("Split")
 object `&`:
   def unapply(req: Request): (Request, Request) = (req, req)
 
