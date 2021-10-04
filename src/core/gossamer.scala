@@ -38,13 +38,13 @@ extension (string: String)
   
   def slice(index: Int): String = string.substring(index).nn
   def slice(from: Int, to: Int): String = string.substring(from, to).nn
-  def length: Int = string.length
+  def length: Int = string.size
   
   def apply(idx: Int): Char throws OutOfRangeError =
-    if idx >= 0 && idx < string.length then string(idx)
-    else throw OutOfRangeError(idx, 0, string.length)
+    if idx >= 0 && idx < length then string.charAt(idx)
+    else throw OutOfRangeError(idx, 0, length)
   
-  def populated: Option[String] = if string.isEmpty then None else Some(string)
+  def populated: Option[String] = if length == 0 then None else Some(string)
   def cut(delimiter: String): IArray[String] = cut(delimiter, 0)
   
   def cut(delimiter: String, limit: Int): IArray[String] =
@@ -59,14 +59,14 @@ extension (string: String)
   def upper: String = string.toUpperCase.nn
 
   def padRight(length: Int, char: Char = ' '): String = 
-    if string.length < length then string+char.toString*(length - string.length) else string
+    if string.size < length then string+char.toString*(length - string.size) else string
   
   def padLeft(length: Int, char: Char = ' '): String =
-    if string.length < length then char.toString*(length - string.length)+string else string
+    if string.size < length then char.toString*(length - string.size)+string else string
   
   def editDistanceTo(other: String): Int =
-    val m = string.length
-    val n = other.length
+    val m = string.size
+    val n = other.size
     val old = new Array[Int](n + 1)
     val dist = new Array[Int](n + 1)
 
@@ -79,26 +79,35 @@ extension (string: String)
         dist(j) = (old(j - 1) + (if string.charAt(i - 1) == other.charAt(j - 1) then 0 else 1))
           .min(old(j) + 1).min(dist(j - 1) + 1)
 
-      for j <- 0 to n
-      do
-        old(j) = dist(j)
+      for j <- 0 to n do old(j) = dist(j)
     
     dist(n)
 
 object Txt:
   def apply(str: String): Txt = str
 
-extension (values: Iterable[String])
-  def join: String = values.mkString
-  def join(separator: String): String = values.mkString(separator)
+object Joinable:
+  given string: Joinable[String] = _.mkString
+
+trait Joinable[T]:
+  def join(elements: Iterable[T]): T
+
+extension [T](values: Iterable[T])(using joinable: Joinable[T])
+  def join: T = joinable.join(values)
   
-  def join(left: String, separator: String, right: String): String =
-    values.mkString(left, separator, right)
+  def join(separator: T): T =
+    joinable.join(values.flatMap(Iterable(separator, _)).tail)
   
-  def join(separator: String, last: String): String = values.size match
-    case 0 => ""
+  def join(left: T, separator: T, right: T): T =
+    Iterable(left, join(separator), right).join
+  
+  def join(separator: T, penultimate: T): T = values.size match
+    case 0 => Iterable().join
     case 1 => values.head
-    case _ => values.init.mkString(separator)+last+values.last
+    case _ => Iterable(values.init.join(separator), penultimate, values.last).join
+  
+  def join(left: T, separator: T, penultimate: T, right: T): T =
+    Iterable(left, join(separator, penultimate), right).join
 
 case class OutOfRangeError(idx: Int, from: Int, to: Int)
 extends Exception(s"gossamer: the index $idx exceeds the range $from-$to")
