@@ -191,8 +191,7 @@ Iridescence was designed and developed by Jon Pretty, and commercial support and
 
 ## Name
 
-The word _iridescent_, defined as "having a play of changeable colors", also describes the
-functionality of Iridescence.
+The word _iridescent_, defined as "having a play of changeable colors", also describes the functionality of Iridescence.
 
 ## License
 
