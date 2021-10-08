@@ -59,7 +59,7 @@ Eucalyptus was designed and developed by Jon Pretty, and commercial support and 
 
 ## Name
 
-Eucalyptus
+The _Eucalyptus_ tree is flexible and good for logging.
 
 ## License
 
