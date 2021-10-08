@@ -59,9 +59,7 @@ Honeycomb was designed and developed by Jon Pretty, and commercial support and t
 
 ## Name
 
-Honeycomb is named after the hexagonal prismic cells in a bees' nest, where they store their honey
-and their larvæ; the most innovative feature of Honeycomb is its provision of safe nesting of HTML
-nodes.
+Honeycomb is named after the hexagonal prismic cells in a bees' nest, where they store their honey and their larvæ; the most innovative feature of Honeycomb is its provision of safe nesting of HTML nodes.
 
 ## License
 
