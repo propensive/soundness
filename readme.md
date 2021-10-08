@@ -63,8 +63,7 @@ Escritoire was designed and developed by Jon Pretty, and commercial support and 
 
 ## Name
 
-Escritoire is a pun: it is named after a type of writing table, since its purpose is for writing
-tables.
+Escritoire is a pun: it is named after a type of writing table, since its purpose is for writing tables.
 
 ## License
 
