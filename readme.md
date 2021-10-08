@@ -249,8 +249,7 @@ Scintillate was designed and developed by Jon Pretty, and commercial support and
 
 ## Name
 
-To _scintillate_ is "to fluoresce momentarily when struck by a charged particle", much as a web
-server is dormant until an incoming request stimulates a response.
+To _scintillate_ is "to fluoresce momentarily when struck by a charged particle", much as a web server is dormant until an incoming request stimulates a response.
 
 ## License
 
