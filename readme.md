@@ -54,7 +54,7 @@ For example,
 ```scala
 ansi"This text is $Bold[bold], $Underline{underlined} and $BrightRedFg<bright red>."
 ```
-will apply each style only to the words inside the brackets.
+ will apply each style only to the words inside the brackets.
 
 Plenty of choice is given over which type of brackets to use, so that a choice can (hopefully) be
 made which does not conflict with the real content of the string. Regions may be nested arbitrarily
@@ -136,7 +136,7 @@ Escapade was designed and developed by Jon Pretty, and commercial support and tr
 
 ## Name
 
-TBC
+An __escapade__ is a "wild and exciting undertaking" which is "not necessarily lawful"; like the variety of _escape_ codes that are only valid inside an ANSI terminal.
 
 ## License
 
