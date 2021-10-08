@@ -132,9 +132,6 @@ object Tests extends Suite("Gossamer Tests"):
       }.assert(_ == "'\\\"'")
 
       test("serialize case class") {
-        summon[DebugString[String]]
-        summon[DebugString[Int]]
-        summon[Show[Person]]
         Person("Simon", 72).debug
       }.assert(_ == "Person(name = \"Simon\", age = 72)")
       
