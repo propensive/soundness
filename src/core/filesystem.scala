@@ -80,8 +80,8 @@ open class Classpath(classLoader: ClassLoader = getClass.nn.getClassLoader.nn) e
     def resource: Resource = Resource(makeAbsolute(parts))
 
   case class Resource(path: CpPath):
-    def read[T, E <: Exception](limit: Int = 65536)(using readable: Readable[T, E])
-        : T throws MissingResource | E =
+    def read[T](limit: Int = 65536)(using readable: Readable[T, ?])
+        : T throws MissingResource | readable.E =
       val in = ji.BufferedInputStream(classLoader.getResourceAsStream(path.toString()))
       try readable.read(in, limit)
       catch case e: NullPointerException => throw MissingResource(path)
@@ -186,8 +186,8 @@ extends Root(pathSeparator, fsPrefix):
       try summon[Writable[T]].write(out, content) catch case e => throw NotWritable(this)
       finally try out.close() catch _ => ()
 
-    def read[T, E <: Exception](limit: Int = 65536)(using readable: Readable[T, E])
-        : T throws E | FileReadError =
+    def read[T](limit: Int = 65536)(using readable: Readable[T, ?])
+        : T throws readable.E | FileReadError =
       val in = ji.BufferedInputStream(ji.FileInputStream(javaPath.toFile))
       try readable.read(in, limit)
       catch case e => throw FileReadError(this, e)
@@ -484,7 +484,8 @@ object Readable:
       else if stream.length > 1 then throw BufferOverflowError()
       else stream.head
 
-trait Readable[T, E <: Exception]:
+trait Readable[T, Ex <: Exception]:
+  type E = Ex
   
   private inline def readable: Readable[T, E] = this
   
