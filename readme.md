@@ -59,7 +59,7 @@ Profanity was designed and developed by Jon Pretty, and commercial support and t
 
 ## Name
 
-Profanity
+A __profanity__ is an expletive or curse-word, and _Profanity_ imitates many of the features of the popular terminal library, Curses.
 
 ## License
 
