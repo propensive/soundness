@@ -16,7 +16,7 @@ it&rsquo;s the same as for any other program.
 - tests may be run multiple times, with results aggregated
 - automatic derivation of arbitrary instances
 - functional API where it matters; impure calls where it's safe and practical
-˜
+
 
 ## Getting Started
 
