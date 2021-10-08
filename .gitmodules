@@ -102,9 +102,6 @@
 	path = mod/gossamer
 	url = git@github.com:propensive/gossamer
 	branch = main
-[submodule "mod/tarantula"]
-	path = mod/tarantula
-	url = git@github.com:propensive/tarantula
 [submodule "mod/gesticulate"]
 	path = mod/gesticulate
 	url = git@github.com:propensive/gesticulate
