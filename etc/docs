@@ -5,7 +5,6 @@ do
   printf "Generating docs for $MOD..."
   export TITLE="$(cat $MOD/doc/title)"
   export ID="$(cat $MOD/doc/id)"
-  export MODULE="$(cat $MOD/doc/module)"
   export START="$(cat $MOD/doc/start)"
   export STATUS="$(cat $MOD/doc/status)"
   export BASICS="$(cat $MOD/doc/basics | tr '\n' '¶')"
@@ -14,7 +13,6 @@ do
   export NAME="$(cat $MOD/doc/name)"
   export YEAR="$(date "+%y")"
   export VERSION="$(cat $MOD/doc/version)"
-  export MAVENID="$(cat $MOD/doc/mavenid)"
   export THANKS="$(cat $MOD/doc/thanks 2> /dev/null || echo '')"
   cloc $MOD/src --quiet --json | jq .Scala.code > $MOD/doc/loc
   printf '.'

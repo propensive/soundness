@@ -5,7 +5,7 @@ DIR=$PWD
 for MOD in mod/*
 do
   cd $MOD
-  git diff --quiet --exit-code doc/logo.svg || (
+  (
     printf "Generating images for $MOD..."
     mkdir -p doc/images
     inkscape doc/logo.svg --export-filename=doc/images/2400x2400@300dpi.png --export-dpi='300' --export-width=2400 --export-height=2400 --export-background-opacity=0 > /dev/null 2>&1
