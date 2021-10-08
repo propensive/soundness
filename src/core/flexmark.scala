@@ -83,7 +83,7 @@ object Markdown:
   
   inline def parse(string: String): Markdown[Markdown.Ast.Block] throws MalformedMarkdown =
     val root = parser.parse(string).nn
-    val nodes = root.getChildIterator.nn.asScala.to(List).map(convert(root, _))
+    val nodes = root.getChildIterator.nn.asScala.to(List).map(convert(root, _).getOrElse(throw MalformedMarkdown("could not parse markdown")))
     
     Markdown(nodes.collect { case child: Markdown.Ast.Block => child }*)
 
@@ -188,20 +188,23 @@ object Markdown:
                                                    "in the range 1-6")
       
   def convert(root: cvfua.Document, node: cvfua.Node, noFormat: Boolean = false)
-      : Markdown.Ast.Node throws MalformedMarkdown =
-    node match
-      case node: cvfa.HardLineBreak => Break()
-      case node: cvfa.SoftLineBreak => Text("\n")
-      case node: cvfa.Reference     => Reference(node.getReference.toString, node.getUrl.toString)
-      
-      case node: cvfa.Text          => Text(if noFormat then node.getChars.toString else
-                                           format(node.getChars.toString))
-      
-      case node: cvfa.ThematicBreak => ThematicBreak()
-      case node: tables.TableBlock  => Table(table(root, node)*)
-      case node: FlowInput          => flow(root, node)
-      case node: PhrasingInput      => phrasing(root, node)
-      case node: cvfua.Node         => throw MalformedMarkdown("unexpected Markdown node")
+      : Option[Markdown.Ast.Node] =
+    try Some {
+      node match
+        case node: cvfa.HardLineBreak => Break()
+        case node: cvfa.SoftLineBreak => Text("\n")
+        case node: cvfa.Reference     => Reference(node.getReference.toString, node.getUrl.toString)
+        
+        case node: cvfa.Text          => Text(if noFormat then node.getChars.toString else
+                                             format(node.getChars.toString))
+        
+        case node: cvfa.ThematicBreak => ThematicBreak()
+        case node: tables.TableBlock  => Table(table(root, node)*)
+        case node: FlowInput          => flow(root, node)
+        case node: PhrasingInput      => phrasing(root, node)
+        case node: cvfua.Node         => throw MalformedMarkdown("unexpected Markdown node")
+    }
+    catch case MalformedMarkdown(_) => None
   
   def table(root: cvfua.Document, node: tables.TableBlock)
       : List[Markdown.Ast.TablePart] throws MalformedMarkdown =
