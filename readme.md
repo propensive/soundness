@@ -17,9 +17,8 @@ _annotations_ in Scala, by making them available through _typeclass interfaces_.
 
 ## Getting Started
 
-The nature of annotations in Scala is that they are very rarely the best
-solution for any task. The can, however, be convenient in certain
-circumstances, and this small domain is where Adversaria aims to help.
+The nature of annotations in Scala is that they are very rarely the best solution for any task, but
+can be convenient in certain circumstances, and this small domain is where Adversaria aims to help.
 
 Currently three use cases are supported:
 
@@ -27,7 +26,7 @@ Currently three use cases are supported:
 - finding the parameter of a case class to which a particular annotation has been applied
 - getting all the annotations applied to a particular case class field
 
-The list of supported use cases may grow as additional suggestions are received.
+The list of supported use cases may grow.
 
 ## Examples
 
@@ -45,46 +44,6 @@ we could apply them to some case classes, such as,
 case class Company(name: String)
 
 case class Person(name: String, @id email: String)
-```
-
-Perhaps we would like to find out the annotations on `Company`. We can get this
-information by requesting an implicit `TypeMetadata[Company]` value, and
-accessing its `annotations` field, like so,
-
-```scala
-import adversaria._
-
-val info = implicitly[TypeMetadata[Company]]
-println(info.annotations)
-
-> List(count(10))
-```
-
-The `TypeMetadata` implicit should resolve for any type, regardless of
-whether it has any annotations or not. Its `annotations` method will return a
-list of annotations on that case class.
-
-Another supported use case is to find the field of a case class which has been
-annotated with a particular annotation, _if and only if_ that annotation exists.
-We use the `FindMetadata` typeclass for this. It takes two type parameters:
-the type of the annotation, and the type to check for, respectively,
-
-```scala
-import adversaria._
-
-val idField = implicitly[FindMetadata[id, Person]]
-println(idField.get(Person("John Smith", "test@example.com)))
-
-> test@example.com
-```
-However, attempting to resolve such an implicit on a case class which has no
-field annotated with that annotation, for example,
-```scala
-val idField = implicitly[FindMetadata[id, Company]]
-```
-will fail with at compiletime with the message,
-```
-adversaria: could not find a parameter annotated with type @id
 ```
 
 
