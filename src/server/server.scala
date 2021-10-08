@@ -73,8 +73,8 @@ object Handler:
       responder.sendBody(500, handler.stream(notFound.content))
 
 object Redirect:
-  def apply[T: ToLocation](location: T): Redirect =
-    Redirect(summon[ToLocation[T]].location(location))
+  def apply[T: Locatable](location: T): Redirect =
+    Redirect(summon[Locatable[T]].location(location))
 
 case class Redirect(location: String)
 
@@ -198,8 +198,9 @@ case class RequestParam[T](key: String)(using ParamReader[T]):
 trait HttpService:
   def stop(): Unit
 
-@targetName("Split")
-object `&`:
+val `&` = Split
+
+object Split:
   def unapply(req: Request): (Request, Request) = (req, req)
 
 case class HttpServer(port: Int) extends RequestHandler:

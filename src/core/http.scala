@@ -20,6 +20,9 @@ import gossamer.*
 import rudiments.*
 import gesticulate.*
 import wisteria.*
+import eucalyptus.*
+import iridescence.*
+import escapade.*
 
 import scala.collection.immutable.ListMap
 import scala.collection.JavaConverters.*
@@ -30,6 +33,8 @@ import java.io.*
 import java.util as ju
 
 import language.dynamics
+
+private[scintillate] given Realm("scintillate")
 
 enum Body:
   case Empty
@@ -59,12 +64,19 @@ object Postable:
   given Postable[Bytes] = Postable(media"application/octet-stream", LazyList(_))
   given Postable[LazyList[Bytes]] = Postable(media"application/octet-stream", identity(_))
 
-class Postable[T](val contentType: MediaType, val content: T => LazyList[Bytes])
+class Postable[T](val contentType: MediaType, val content: T => LazyList[Bytes]):
+  def preview(value: T): String = content(value).headOption.fold("") { bytes =>
+    val sample = bytes.take(128)
+    val str = if sample.forall { b => b >= 32 && b <= 127 } then sample.uString else sample.hex
+    if bytes.length > 128 then str+"..." else str
+  }
 
 object Method:
   given formmethod: clairvoyant.HtmlAttribute["formmethod", Method] with
     def name: String = "formmethod"
     def serialize(method: Method): String = method.toString
+
+  given AnsiShow[Method] = method => ansi"${colors.Crimson}[${method.toString.upper}]"
 
 enum Method:
   case Get, Head, Post, Put, Delete, Connect, Options, Trace, Patch
@@ -99,45 +111,72 @@ case class HttpResponse(status: HttpStatus, headers: Map[ResponseHeader, List[St
       case status: FailureCase => throw HttpError(status, body)
       case status              => readable.read(body)
 
-object ToLocation:
-  given ToLocation[Uri] = _.toString
+object Locatable:
+  given Locatable[Uri] = identity(_)
 
-trait ToLocation[T]:
-  def location(value: T): String
+trait Locatable[T]:
+  def location(value: T): Uri
 
 object Http:
-  def post[T: Postable, L: ToLocation](uri: L, content: T = (), headers: RequestHeader.Value*)
+  def post[T: Postable, L: Locatable]
+          (uri: L, content: T = (), headers: RequestHeader.Value*)
+          (using Log)
           : HttpResponse =
-    request[T](summon[ToLocation[L]].location(uri), content, Method.Post, headers)
+    request[T](summon[Locatable[L]].location(uri), content, Method.Post, headers)
 
-  def put[T: Postable, L: ToLocation](uri: L, content: T = (), headers: RequestHeader.Value*)
+  def put[T: Postable, L: Locatable]
+         (uri: L, content: T = (), headers: RequestHeader.Value*)
+         (using Log)
          : HttpResponse =
-    request[T](summon[ToLocation[L]].location(uri), content, Method.Put, headers)
+    request[T](summon[Locatable[L]].location(uri), content, Method.Put, headers)
   
-  def get[L: ToLocation](uri: L, headers: Seq[RequestHeader.Value] = Nil): HttpResponse =
-    request(summon[ToLocation[L]].location(uri), (), Method.Get, headers)
+  def get[L: Locatable]
+         (uri: L, headers: Seq[RequestHeader.Value] = Nil)
+         (using Log)
+         : HttpResponse =
+    request(summon[Locatable[L]].location(uri), (), Method.Get, headers)
 
-  def options[L: ToLocation](uri: L, headers: RequestHeader.Value*): HttpResponse =
-    request(summon[ToLocation[L]].location(uri), (), Method.Options, headers)
+  def options[L: Locatable]
+             (uri: L, headers: RequestHeader.Value*)
+             (using Log)
+             : HttpResponse =
+    request(summon[Locatable[L]].location(uri), (), Method.Options, headers)
 
-  def head[L: ToLocation](uri: L, headers: RequestHeader.Value*): HttpResponse =
-    request(summon[ToLocation[L]].location(uri), (), Method.Head, headers)
+  def head[L: Locatable]
+          (uri: L, headers: RequestHeader.Value*)
+          (using Log)
+          : HttpResponse =
+    request(summon[Locatable[L]].location(uri), (), Method.Head, headers)
   
-  def delete[L: ToLocation](uri: L, headers: RequestHeader.Value*): HttpResponse =
-    request(summon[ToLocation[L]].location(uri), (), Method.Delete, headers)
+  def delete[L: Locatable]
+            (uri: L, headers: RequestHeader.Value*)
+            (using Log)
+            : HttpResponse =
+    request(summon[Locatable[L]].location(uri), (), Method.Delete, headers)
   
-  def connect[L: ToLocation](uri: L, headers: RequestHeader.Value*): HttpResponse =
-    request(summon[ToLocation[L]].location(uri), (), Method.Connect, headers)
+  def connect[L: Locatable]
+             (uri: L, headers: RequestHeader.Value*)
+             (using Log)
+             : HttpResponse =
+    request(summon[Locatable[L]].location(uri), (), Method.Connect, headers)
   
-  def trace[L: ToLocation](uri: L, headers: RequestHeader.Value*): HttpResponse =
-    request(summon[ToLocation[L]].location(uri), (), Method.Trace, headers)
+  def trace[L: Locatable]
+           (uri: L, headers: RequestHeader.Value*)
+           (using Log)
+           : HttpResponse =
+    request(summon[Locatable[L]].location(uri), (), Method.Trace, headers)
   
-  def patch[L: ToLocation](uri: L, headers: RequestHeader.Value*): HttpResponse =
-    request(summon[ToLocation[L]].location(uri), (), Method.Patch, headers)
+  def patch[L: Locatable]
+           (uri: L, headers: RequestHeader.Value*)
+           (using Log)
+           : HttpResponse =
+    request(summon[Locatable[L]].location(uri), (), Method.Patch, headers)
 
-  private def request[T: Postable](url: String, content: T, method: Method,
-                                       headers: Seq[RequestHeader.Value]): HttpResponse =
-    URL(url).openConnection.nn match
+  private def request[T: Postable](url: Uri, content: T, method: Method,
+                                       headers: Seq[RequestHeader.Value])(using Log): HttpResponse =
+    Log.info(ansi"Sending HTTP $method request to $url")
+    Log.fine(ansi"HTTP request body: ${summon[Postable[T]].preview(content)}")
+    URL(url.toString).openConnection.nn match
       case conn: HttpURLConnection =>
         conn.setRequestMethod(method.toString.upper)
         
@@ -276,6 +315,8 @@ case class Params(values: List[(String, String)]):
   }.join("&")
 
 object Uri:
+  given AnsiShow[Uri] = uri => ansi"$Underline(${colors.DeepSkyBlue}(${uri.toString}))"
+  
   given action: clairvoyant.HtmlAttribute["action", Uri] with
     def name: String = "action"
     def serialize(uri: Uri): String = uri.toString
@@ -330,20 +371,19 @@ case class Uri(location: String, params: Params) extends Dynamic:
   
   def applyDynamic[T: ToQuery](method: "query")(value: T) = makeQuery(value)
 
-  def post[T: Postable](content: T, headers: RequestHeader.Value*): HttpResponse =
+  def post[T: Postable](content: T, headers: RequestHeader.Value*)(using Log): HttpResponse =
     Http.post(this, content, headers*)
   
-  def get(headers: RequestHeader.Value*): HttpResponse = Http.get(this, headers)
-  
-  def put[T: Postable](content: T, headers: RequestHeader.Value*): HttpResponse =
+  def put[T: Postable](content: T, headers: RequestHeader.Value*)(using Log): HttpResponse =
     Http.put(this, content, headers*)
   
-  def options(headers: RequestHeader.Value*): HttpResponse = Http.options(this, headers*)
-  def trace(headers: RequestHeader.Value*): HttpResponse = Http.trace(this, headers*)
-  def patch(headers: RequestHeader.Value*): HttpResponse = Http.patch(this, headers*)
-  def head(headers: RequestHeader.Value*): HttpResponse = Http.head(this, headers*)
-  def delete(headers: RequestHeader.Value*): HttpResponse = Http.delete(this, headers*)
-  def connect(headers: RequestHeader.Value*): HttpResponse = Http.connect(this, headers*)
+  def get(headers: RequestHeader.Value*)(using Log): HttpResponse = Http.get(this, headers)
+  def options(headers: RequestHeader.Value*)(using Log): HttpResponse = Http.options(this, headers*)
+  def trace(headers: RequestHeader.Value*)(using Log): HttpResponse = Http.trace(this, headers*)
+  def patch(headers: RequestHeader.Value*)(using Log): HttpResponse = Http.patch(this, headers*)
+  def head(headers: RequestHeader.Value*)(using Log): HttpResponse = Http.head(this, headers*)
+  def delete(headers: RequestHeader.Value*)(using Log): HttpResponse = Http.delete(this, headers*)
+  def connect(headers: RequestHeader.Value*)(using Log): HttpResponse = Http.connect(this, headers*)
 
   def bare: Uri = Uri(location, Params(Nil))
 
