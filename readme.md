@@ -16,7 +16,7 @@ it&rsquo;s the same as for any other program.
 - tests may be run multiple times, with results aggregated
 - automatic derivation of arbitrary instances
 - functional API where it matters; impure calls where it's safe and practical
-
+¸
 
 ## Getting Started
 
@@ -136,7 +136,7 @@ the tests, in order, like so:
 ```scala
 object ProjectTests extends Suite("Project tests"):
   def run(using Runner): Unit =
-    test("first test") {
+     test("first test") {
       // test body
     }.assert(/* predicate */)
 ```
@@ -232,8 +232,7 @@ Probably was designed and developed by Jon Pretty, and commercial support and tr
 
 ## Name
 
-The name _Probably_ acknowledges an appropriate level of confidence in writing tests which _probe_
-the functionality of a program, in contrast to using types which (in theory, at least) _prove_ it.
+The name _Probably_ acknowledges an appropriate level of confidence in writing tests which _probe_ the functionality of a program, in contrast to using types which (in theory, at least) _prove_ it.
 
 ## License
 
