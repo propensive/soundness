@@ -59,7 +59,7 @@ Gesticulate was designed and developed by Jon Pretty, and commercial support and
 
 ## Name
 
-Gesticulate
+Since _Gesticulate_ provides a representation for MIME types, it's appropriate that miming involves gesticulation.
 
 ## License
 
