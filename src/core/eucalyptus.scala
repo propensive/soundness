@@ -1,97 +1,76 @@
 package eucalyptus
 
-import java.text.SimpleDateFormat
-import scala.reflect._, macros._
-import language.experimental.macros
+import gossamer.*
+import escapade.*
+import iridescence.*
 
-object output {
-  implicit final val stdout: Destination[String] = System.out.println(_)
-  implicit final val stderr: Destination[String] = System.err.println(_)
-}
+import scala.annotation.*
 
-object formats {
-  implicit final val Raw: Format[String, String] = (msg, _, _, _, _, _) => msg
-  implicit final val Default: Format[String, String] = StandardFormat
+import java.text as jt
+import java.util as ju
 
-  private object StandardFormat extends Format[String, String] {
-    private def pad(str: String, length: Int) =
-      if(str.length < length) str+(" "*(length - str.length)) else str.take(length)
-   
-    private val dateFormat: SimpleDateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS ")
-    
-    def entry(msg: String, tag: Tag, timestamp: Long, level: Level, lineNo: Int, sourceFile: String): String = {
-      val sb = new StringBuilder()
-      sb.append(dateFormat.format(timestamp))
-      sb.append(level.name)
-      sb.append(' ')
-      sb.append(pad(tag.name, 10))
-      sb.append(' ')
-      sb.append(pad(s"$sourceFile:$lineNo", 15))
-      sb.append(' ')
-      sb.append(msg)
-      sb.toString
-    }
-  }
-}
+object Timestamp:
+  def apply(): Timestamp = System.currentTimeMillis
+  given Highlight[Timestamp] = _ => colors.Tan
 
-case class Engine[Msg, Out](loggers: Logger[Msg, Out]*) {
-  def trace(msg: Msg)(implicit tag: Tag): Unit = macro Macros.doLog
-  def debug(msg: Msg)(implicit tag: Tag): Unit = macro Macros.doLog
-  def audit(msg: Msg)(implicit tag: Tag): Unit = macro Macros.doLog
-  def issue(msg: Msg)(implicit tag: Tag): Unit = macro Macros.doLog
-  def error(msg: Msg)(implicit tag: Tag): Unit = macro Macros.doLog
-  def fault(msg: Msg)(implicit tag: Tag): Unit = macro Macros.doLog
-}
+  private val dateFormat = jt.SimpleDateFormat("yyyy-MMM-dd HH:mm:ss.SSS")
 
-object Level {
-  final val Trace = Level(0)
-  final val Debug = Level(1)
-  final val Audit = Level(2)
-  final val Issue = Level(3)
-  final val Error = Level(4)
-  final val Fault = Level(5)
-  final val names = Array("TRACE", "DEBUG", "AUDIT", "ISSUE", "ERROR", "FAULT")
-}
+  given Show[Timestamp] = ts => dateFormat.format(ju.Date(ts)).nn.text
 
-final case class Level(value: Int) extends AnyVal { final def name: String = Level.names(value) }
+opaque type Timestamp = Long
 
-final case class Logger[Msg, Out](min: Level, max: Level, tagSet: Set[Tag], format: Format[Msg, Out], destination: Destination[Out]) {
-  final def matches(tag: Tag, level: Int): Boolean = level >= min.value && level <= max.value && tagSet.contains(tag)
-  final def above(level: Level): Logger[Msg, Out] = copy(level, max, tagSet, format, destination)
-  final def below(level: Level): Logger[Msg, Out] = copy(min, level, tagSet, format, destination)
-}
+object Level:
+  given AnsiShow[Level] = level =>
+    val color = level match
+      case Fine => colors.DarkGreen
+      case Info => colors.SteelBlue
+      case Warn => colors.Goldenrod
+      case Fail => colors.OrangeRed
 
-trait Destination[T] { def consume(msg: T): Unit }
+    ansi"${Bg(color)}[${colors.Black}($Bold( ${level.toString.upper} ))]"
 
-trait Format[-Msg, +Out] { def entry(msg: Msg, tag: Tag, timestamp: Long, level: Level, lineNo: Int, sourceFile: String): Out }
+enum Level:
+  case Fine, Info, Warn, Fail
 
-object Tag { implicit final val Default = Tag("default") }
+object Log:
+  def fine[T](value: T)(using Log, AnsiShow[T], Realm): Unit =
+    val ts = Timestamp()
+    summon[Log].log(Entry(summon[Realm], Level.Fine, value.ansi, ts))
+  
+  def info[T](value: T)(using Log, AnsiShow[T], Realm): Unit =
+    val ts = Timestamp()
+    summon[Log].log(Entry(summon[Realm], Level.Info, value.ansi, ts))
+  
+  def warn[T](value: T)(using Log, AnsiShow[T], Realm): Unit =
+    val ts = Timestamp()
+    summon[Log].log(Entry(summon[Realm], Level.Warn, value.ansi, ts))
+  
+  def fail[T](value: T)(using Log, AnsiShow[T], Realm): Unit =
+    val ts = Timestamp()
+    summon[Log].log(Entry(summon[Realm], Level.Fail, value.ansi, ts))
 
-object Log {
-  def apply(tags: Tag*): LogTags = LogTags(tags.to[Set])
+  def stdout(format: LogFormat = LogFormat.standard): Log = new Log:
+    def log(entry: Entry): Unit =
+      println(format.format(entry).render)
+  
+  def silent: Log = new Log:
+    def log(entry: Entry): Unit = ()
 
-  case class LogTags(tagSet: Set[Tag]) {
-    def as[Msg, Out](format: Format[Msg, Out]): LogTagsFormat[Msg, Out] = LogTagsFormat(tagSet, format)
-  }
+@implicitNotFound("eucalyptus: a contextual Log is required, for example:\n    given Log = Log.stdout()\nor,\n    given Log = Log.silent")  
+trait Log:
+  def log(entry: Entry): Unit
 
-  case class LogTagsFormat[Msg, Out](tagSet: Set[Tag], format: Format[Msg, Out]) {
-    def to(destination: Destination[Out]): Logger[Msg, Out] = Logger(Level.Trace, Level.Fault, tagSet, format, destination)
-  }
-}
+object Realm:
+  given Show[Realm] = _.name.text
+  given Highlight[Realm] = _ => colors.LightGreen
 
-final case class Tag(name: String) extends AnyVal
+case class Realm(name: String)
 
-object Macros {
-  def doLog(c: blackbox.Context)(msg: c.Tree)(tag: c.Tree): c.Tree = {
-    import c._, universe._
-    val lineNo = enclosingPosition.line
-    val sourceFile = enclosingPosition.source.toString
-    val q"$base.$method($_)($_)" = macroApplication // "
-   
-    val level = Level.names.indexOf(method.toString.toUpperCase)
+case class Entry(realm: Realm, level: Level, message: AnsiString, timestamp: Timestamp)
 
-    q"""$base.loggers.foreach { log =>
-          if(log.matches($tag, $level)) log.destination.consume(log.format.entry($msg, $tag, _root_.java.lang.System.currentTimeMillis, _root_.eucalyptus.Level($level), $lineNo, $sourceFile))
-        }"""
-  }
-}
+object LogFormat:
+  val standard: LogFormat = entry =>
+    ansi"${entry.timestamp.ansi} ${entry.level.ansi} ${entry.realm.ansi.span(10)} ${entry.message}"
+
+trait LogFormat:
+  def format(entry: Entry): AnsiString
