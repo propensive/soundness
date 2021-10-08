@@ -113,3 +113,6 @@
 [submodule "mod/profanity"]
 	path = mod/profanity
 	url = git@github.com:propensive/profanity
+[submodule "mod/tarantula"]
+	path = mod/tarantula
+	url = git@github.com:propensive/tarantula
