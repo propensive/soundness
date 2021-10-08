@@ -24,7 +24,7 @@ object Tests extends Suite("Niveau tests"):
     suite(kaleidoscope.Tests)
     suite(probably.Tests)
     suite(punctuation.Tests)
-    suite(rivulet.Tests)
+    suite(profanity.Tests)
     suite(rudiments.Tests)
     suite(scintillate.Tests)
     suite(slalom.Tests)
