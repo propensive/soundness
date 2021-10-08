@@ -59,8 +59,7 @@ Xylophone was designed and developed by Jon Pretty, and commercial support and t
 
 ## Name
 
-A _xylophone_ is a musical instrument made from wood ("xylo-") or trees, and it provides a
-representation of XML trees. "Xylophone" and "XML" begin with the same infrequently-used letter.
+A _xylophone_ is a musical instrument made from wood ("xylo-") or trees, and it provides a representation of XML trees. "Xylophone" and "XML" begin with the same infrequently-used letter.
 
 ## License
 
