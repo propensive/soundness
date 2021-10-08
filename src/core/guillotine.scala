@@ -19,6 +19,9 @@ package guillotine
 import contextual.*
 import rudiments.*
 import gossamer.*
+import eucalyptus.*
+import escapade.*
+import iridescence.*
 
 import scala.collection.convert.ImplicitConversionsToJava.*
 import scala.collection.convert.ImplicitConversionsToScala.*
@@ -59,6 +62,9 @@ trait Executor[T]:
   def interpret(process: java.lang.Process): T
   def map[S](fn: T => S): Executor[S] = process => fn(interpret(process))
 
+object Pid:
+  given AnsiShow[Pid] = pid => ansi"${colors.FireBrick}(${pid.value})"
+
 case class Pid(value: Long)
 
 class Process[T](process: java.lang.Process, executor: Executor[T]):
@@ -68,12 +74,20 @@ class Process[T](process: java.lang.Process, executor: Executor[T]):
   def stderr(limit: Int = 1024*1024*10): DataStream = Util.read(process.getErrorStream.nn, limit)
   def stdin(in: LazyList[IArray[Byte]]): Unit = Util.write(in, process.getOutputStream.nn)
   def await(): T = executor.interpret(process)
-  def abort(): Unit = process.destroy()
-  def kill(): Unit = process.destroyForcibly()
+  
+  def abort()(using Log): Unit =
+    Log.info(ansi"The process with PID $pid was aborted")
+    process.destroy()
+  
+  def kill()(using Log): Unit =
+    Log.warn(ansi"The process with PID $pid was killed")
+    process.destroyForcibly()
 
 sealed trait Executable:
-  def fork[T]()(using env: Env, exec: Executor[T] = Executor.string): Process[T]
-  def exec[T]()(using env: Env, exec: Executor[T] = Executor.string): T = fork[T]().await()
+  def fork[T]()(using env: Env, exec: Executor[T] = Executor.string)(using Log): Process[T]
+  
+  def exec[T]()(using env: Env, exec: Executor[T] = Executor.string)(using Log): T =
+    fork[T]().await()
   
   def apply(cmd: Executable): Pipeline = cmd match
     case Pipeline(cmds*) => this match
@@ -87,8 +101,9 @@ sealed trait Executable:
   infix def |(cmd: Executable): Pipeline = cmd(this)
 
 object Command:
-  given DebugString[Command] = cmd =>
-    val cmdString: String = cmd.args.map { arg =>
+
+  private def formattedArgs(args: Seq[String]): String =
+    args.map { arg =>
       if arg.contains("\"") && !arg.contains("'") then s"""'$arg'"""
       else if arg.contains("'") && !arg.contains("\"") then s""""$arg""""
       else if arg.contains("'") && arg.contains("\"")
@@ -96,20 +111,31 @@ object Command:
       else if arg.contains(" ") || arg.contains("\t") || arg.contains("\\") then s"'$arg'"
       else arg
     }.join(" ")
+
+  given DebugString[Command] = cmd =>
+    val cmdString: String = formattedArgs(cmd.args)
     
     if cmdString.contains("\"") then "sh\"\"\""+cmdString+"\"\"\"" else "sh\""+cmdString+"\""
 
+  given AnsiShow[Command] = cmd => ansi"${colors.LightSeaGreen}(${formattedArgs(cmd.args)})"
+
 case class Command(args: String*) extends Executable:
-  def fork[T]()(using env: Env, exec: Executor[T] = Executor.string): Process[T] =
+  def fork[T]()(using env: Env, exec: Executor[T] = Executor.string)(using Log): Process[T] =
     val processBuilder = ProcessBuilder(args*)
     processBuilder.directory(env.workDirFile)
+    val t0 = System.currentTimeMillis
+    Log.info(ansi"Starting process ${this.ansi} in directory ${env.workDirFile.getAbsolutePath.nn}")
     new Process[T](processBuilder.start().nn, summon[Executor[T]])
 
 object Pipeline:
   given DebugString[Pipeline] = _.cmds.map(summon[DebugString[Command]].show(_)).join(" | ")
+  given AnsiShow[Pipeline] =
+    _.cmds.map(summon[AnsiShow[Command]].ansiShow(_))
+        .join(ansi" ${colors.PowderBlue}(|) ")
 
 case class Pipeline(cmds: Command*) extends Executable:
-  def fork[T]()(using env: Env, exec: Executor[T] = Executor.string): Process[T] =
+  def fork[T]()(using env: Env, exec: Executor[T] = Executor.string)(using Log): Process[T] =
+    Log.info(ansi"Starting pipelined processes ${this.ansi} in directory ${env.workDirFile.getAbsolutePath.nn}")
     new Process[T](ProcessBuilder.startPipeline(cmds.map { cmd =>
       val pb = ProcessBuilder(cmd.args*)
       pb.directory(env.workDirFile)
@@ -193,3 +219,5 @@ object Sh:
 enum ExitStatus:
   case Ok
   case Fail(status: Int)
+
+private[guillotine] given Realm("guillotine")
