@@ -59,9 +59,7 @@ Euphemism was designed and developed by Jon Pretty, and commercial support and t
 
 ## Name
 
-A _euphemism_ is a means to describe something harsh with an inoffensive expression, while the
-JSON format, through its use of just a few simple types, can be considered a way of hiding
-unpleasant details when exchanging data.
+A _euphemism_ is a means to describe something harsh with an inoffensive expression, while the JSON format, through its use of just a few simple types, can be considered a way of hiding unpleasant details when exchanging data.
 
 ## License
 
