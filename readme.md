@@ -113,9 +113,7 @@ Clairvoyant was designed and developed by Jon Pretty, and commercial support and
 
 ## Name
 
-A _clairvoyant_ is able to foresee the future, as the Clairvoyant modules foresee the need
-for integration between different libraries. Like the premonitions of a clairvoyant, these
-integration points may be vague and simplistic.
+A _clairvoyant_ is able to foresee the future, as the Clairvoyant modules foresee the need for integration between different libraries. Like the premonitions of a clairvoyant, these integration points may be vague and simplistic.
 
 ## License
 
