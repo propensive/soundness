@@ -18,6 +18,8 @@ package escritoire
 
 import probably.*
 
+import unsafeExceptions.canThrowAny
+
 object Tests extends Suite("Escritoire tests"):
   def run(using Runner): Unit =
     ()
