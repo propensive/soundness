@@ -58,6 +58,12 @@ extension (string: String)
   def lower: String = string.toLowerCase.nn
   def upper: String = string.toUpperCase.nn
 
+  def lspan(width: Int): String =
+    if string.size < length then string+" "*(length - string.size) else string.take(width)
+  
+  def rspan(width: Int): String =
+    if string.size < length then " "*(length - string.size)+string else string.takeRight(width)
+
   def padRight(length: Int, char: Char = ' '): String = 
     if string.size < length then string+char.toString*(length - string.size) else string
   
@@ -96,7 +102,7 @@ extension [T](values: Iterable[T])(using joinable: Joinable[T])
   def join: T = joinable.join(values)
   
   def join(separator: T): T =
-    joinable.join(values.flatMap(Iterable(separator, _)).tail)
+    joinable.join(values.flatMap(Iterable(separator, _)).drop(1))
   
   def join(left: T, separator: T, right: T): T =
     Iterable(left, join(separator), right).join

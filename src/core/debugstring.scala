@@ -18,9 +18,13 @@ package gossamer
 
 import wisteria.*
 
-object DebugString extends Derivation[DebugString]:
+trait FallbackDebugString:
   given fromShow[T: Show]: DebugString[T] = summon[Show[T]].show(_).s
 
+  given coll[Coll[X] <: Seq[X], T: DebugString]: DebugString[Coll[T]] =
+    xs => xs.map(summon[DebugString[T]].show(_)).join("Seq(", ", ", ")")
+
+object DebugString extends Derivation[DebugString], FallbackDebugString:
   def join[T](ctx: CaseClass[DebugString, T]): DebugString[T] = t =>
     ctx.params.map {
       param => param.label+" = "+param.typeclass.show(param.deref(t))
@@ -28,9 +32,6 @@ object DebugString extends Derivation[DebugString]:
   
   def split[T](ctx: SealedTrait[DebugString, T]): DebugString[T] = t =>
     ctx.choose(t) { subtype => subtype.typeclass.show(subtype.cast(t)) }
-
-  given coll[Coll[X] <: Seq[X], T: DebugString]: DebugString[Coll[T]] =
-    xs => xs.map(summon[DebugString[T]].show(_)).join("Seq(", ", ", ")")
 
   given string: DebugString[String] = "\""+_.flatMap {
     case '\n' => "\\n"
@@ -69,5 +70,5 @@ trait DebugString[-T]:
   def show(value: T): String
 
 extension [T](value: T)
-  def debug(using debugString: DebugString[T] =
-    DebugString.debugAny): String = debugString.show(value)
+  def debug(using debugString: DebugString[T] = DebugString.debugAny): String =
+    debugString.show(value)
