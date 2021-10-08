@@ -45,6 +45,7 @@ extension [T](value: T)
 extension (value: Bytes)
   def uString: String = String(value.to(Array), "UTF-8")
   def unsafeMutable: Array[Byte] = value.asInstanceOf[Array[Byte]]
+  def hex: String = value.map { b => String.format("\\u%04x", b.toInt).nn }.mkString
 
 extension (value: Array[Byte])
   def unsafeImmutable: IArray[Byte] = value.asInstanceOf[IArray[Byte]]
