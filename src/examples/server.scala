@@ -24,7 +24,7 @@ type AudienceLang = En | Fr | De
 object Server:
   def handle(request: Request): Response =
     // We can parse a string to get one of our target languages
-    val lang: Option[Language[AudienceLang]] = Language.parse[AudienceLang](request.language.toLowerCase)
+    val lang: Option[Language[AudienceLang]] = Language.parse[AudienceLang](request.language.toLowerCase.nn)
 
     // We can define a multilingual string for our languages
     // Providing more languages than required is not a problem, but omitting one is a compile error
