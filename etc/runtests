@@ -1,0 +1,19 @@
+#!/bin/sh
+
+CP="$(ls lib/*.jar bcp/*.jar | tr '\n' : | head -c-1)"
+
+echo "Compiling $1..."
+scala/bin/scalac \
+  -classpath "$CP:niveau.jar:test" \
+  -d test \
+  -deprecation \
+  -language:experimental.saferExceptions \
+  -new-syntax \
+  -Ysafe-init \
+  -feature \
+  -Xcheck-macros \
+  -Ycheck-all-patmat \
+  -Yexplicit-nulls \
+  mod/$1/src/test/tests.scala mod/wisteria/src/examples/*.scala src/test/suites.scala
+echo "Running $1 tests..."
+java -cp "$CP:niveau.jar:test" $1.Tests

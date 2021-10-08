@@ -1,0 +1,24 @@
+#!/bin/sh
+
+CP="$(ls lib/*.jar | tr '\n' : | head -c-1)"
+
+rm -r test/*
+
+javac -d test mod/wisteria/src/test-enum/wisteria/*.java
+
+scala/bin/scalac \
+  -classpath "$CP:niveau.jar:test" \
+  -d test \
+  -deprecation \
+  -language:experimental.saferExceptions \
+  -new-syntax \
+  -Ysafe-init \
+  -feature \
+  -Xcheck-macros \
+  -Ycheck-all-patmat \
+  -Yexplicit-nulls \
+  mod/*/src/test/tests.scala mod/wisteria/src/examples/*.scala src/test/suites.scala
+
+CP="$(ls bcp/*.jar lib/*.jar | tr '\n' : | head -c-1)"
+
+java -classpath "$CP:niveau.jar:test" niveau.Tests

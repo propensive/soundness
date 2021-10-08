@@ -1,11 +1,11 @@
-[submodule "mod/rudiments"]
-	path = mod/rudiments
-	url = git@github.com:propensive/rudiments
-	branch = main
 [submodule "scala"]
 	path = scala
 	url = https://github.com/dotty-staging/dotty
 	branch = add-safe-throws-2
+[submodule "mod/rudiments"]
+	path = mod/rudiments
+	url = git@github.com:propensive/rudiments
+	branch = main
 [submodule "mod/kaleidoscope"]
 	path = mod/kaleidoscope
 	url = git@github.com:propensive/kaleidoscope
@@ -102,12 +102,17 @@
 	path = mod/gossamer
 	url = git@github.com:propensive/gossamer
 	branch = main
-[submodule "mod/rivulet"]
-	path = mod/rivulet
-	url = git@github.com:propensive/rivulet
 [submodule "mod/tarantula"]
 	path = mod/tarantula
 	url = git@github.com:propensive/tarantula
 [submodule "mod/gesticulate"]
 	path = mod/gesticulate
 	url = git@github.com:propensive/gesticulate
+	branch = main
+[submodule "mod/eucalyptus"]
+	path = mod/eucalyptus
+	url = git@github.com:propensive/eucalyptus
+	branch = main
+[submodule "mod/profanity"]
+	path = mod/profanity
+	url = git@github.com:propensive/profanity

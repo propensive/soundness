@@ -28,6 +28,6 @@ object Tests extends Suite("Niveau tests"):
     suite(rudiments.Tests)
     suite(scintillate.Tests)
     suite(slalom.Tests)
-    suite(tarantula.Tests)
+    //suite(tarantula.Tests)
     suite(wisteria.Tests)
     suite(xylophone.Tests)
