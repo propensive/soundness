@@ -23,17 +23,53 @@ import gossamer.*
 
 import scala.collection.immutable.TreeMap
 
+import java.text.*
+
 import annotation.*
 
 object AnsiString:
-  def empty: AnsiString = AnsiString("", TreeMap())
-  def apply(str: String): AnsiString = AnsiString(str, TreeMap())
+  def empty: AnsiString = AnsiString("")
 
   given Joinable[AnsiString] = _.fold(empty)(_ + _)
+    
+  def apply[T: Show](value: T, wrapper: Style => Style): AnsiString =
+    val str: String = value.show.s
+    AnsiString(str, TreeMap(
+      0          -> List(Ansi.Change.Push(wrapper)),
+      str.length -> List(Ansi.Change.Pop)
+    ))
 
-case class AnsiString(string: String, escapes: TreeMap[Int, List[Ansi.Change]]):
+case class AnsiString(string: String, escapes: TreeMap[Int, List[Ansi.Change]] = TreeMap()):
   def length: Int = string.length
-  def take(n: Int): AnsiString = AnsiString(string.take(n), escapes.takeWhile(_._1 <= n))
+
+  def drop(n: Int): AnsiString =
+    val pushes = escapes.filter(_(0) < n).flatMap(_(1)).foldLeft(List[Ansi.Change]()) {
+      case (stack, Ansi.Change.Push(fn))   => Ansi.Change.Push(fn) :: stack
+      case (head :: tail, Ansi.Change.Pop) => tail
+      case (stack, _)                      => stack
+    }.reverse
+
+    val init = escapes.getOrElse(n, Nil) ++ pushes
+
+    AnsiString(string.drop(n), escapes.collect { case (i, e) if i >= n => (i - n, e) }.updated(0,
+        init))
+
+  def padTo(n: Int, char: Char = ' ') =
+    if length < n then this + AnsiString(char.toString*(n - length)) else this
+
+  def span(n: Int): AnsiString = take(n).padTo(n)
+
+  def take(n: Int): AnsiString =
+    val pops = List.fill(0.max(escapes.filter(_(0) > length).flatMap(_(1)).foldLeft(0) {
+      case (count, Ansi.Change.Push(_))    => count - 1
+      case (count, Ansi.Change.Pop)        => count + 1
+      case (count, Ansi.Change.Literal(_)) => count
+    }))(Ansi.Change.Pop)
+    
+    val newEscapes = escapes.filter(_(0) <= length)
+    
+    AnsiString(string.take(n), newEscapes.updated(length, escapes.getOrElse(length, Nil) ++ pops))
+
   def plain: String = string
   def explicit: String = render.flatMap { ch => if ch.toInt == 27 then "\\e" else s"$ch" }
   def upper: AnsiString = AnsiString(string.upper, escapes)
@@ -54,11 +90,12 @@ case class AnsiString(string: String, escapes: TreeMap[Int, List[Ansi.Change]]):
         buf.append(string.slice(pos, treeMap.head(0)))
         
         val newStack = treeMap.head(1).sortBy(_ != Ansi.Change.Pop).foldLeft(stack) {
-          case (stack, Ansi.Change.Pop) =>
-            val currentStyle = stack.headOption.getOrElse(Style())
-            val next = stack.tail.headOption.getOrElse(Style())
-            buf.append(currentStyle.changes(next))
-            stack.tail
+          case (head :: tail, Ansi.Change.Pop) =>
+            val next = tail.headOption.getOrElse(Style())
+            buf.append(head.changes(next))
+            tail
+          
+          case (Nil, Ansi.Change.Pop) => Nil
           
           case (stack, Ansi.Change.Push(fn)) =>
             val currentStyle = stack.headOption.getOrElse(Style())
@@ -91,6 +128,8 @@ case class AnsiString(string: String, escapes: TreeMap[Int, List[Ansi.Change]]):
     AnsiString(string+ansi.string, escapes ++ ansi.shift(length))
 
 object Ansi:
+  def strip(string: String): String = string.replaceAll("""\e\[?.*?[\@-~]""", "").nn
+
   given Substitution[Ansi.Input, String, "str"] = str => Ansi.Input.Str(AnsiString(str))
   given Substitution[Ansi.Input, Int, "str"] = int => Ansi.Input.Str(AnsiString(int.toString))
   given Substitution[Ansi.Input, Escape, "esc"] = identity(_)
@@ -99,9 +138,10 @@ object Ansi:
     color => Ansi.Input.Apply(_.copy(fg = color.standardSrgb))
   
   given Substitution[Ansi.Input, Bg, "esc"] =
-    bgColor => Ansi.Input.Apply(_.copy(bg = bgColor.color.standardSrgb))
+    bgColor => Ansi.Input.Apply(_.copy(bg = Some(bgColor.color.standardSrgb)))
   
-  given Substitution[Ansi.Input, AnsiString, "str"] = Ansi.Input.Str(_)
+  given [T: AnsiShow]: Substitution[Ansi.Input, T, "str"] =
+    value => Ansi.Input.Str(summon[AnsiShow[T]].ansiShow(value))
 
   given Substitution[Ansi.Input, Bold.type, "esc"] = _ => Ansi.Input.Apply(_.copy(bold = true))
   given Substitution[Ansi.Input, Italic.type, "esc"] = _ => Ansi.Input.Apply(_.copy(italic = true))
@@ -128,7 +168,7 @@ object Ansi:
       string.string == "" && string.escapes.isEmpty && last.isEmpty && stack.isEmpty
 
   object Interpolator extends contextual.Interpolator[Input, State, AnsiString]:
-    def initial: State = State(AnsiString("", TreeMap()), None, Nil)
+    def initial: State = State(AnsiString(""), None, Nil)
 
     private def closures(state: State, str: String): State =
       if state.stack.isEmpty then state.add(str)
@@ -149,7 +189,7 @@ object Ansi:
       case '«' => '»'
 
     def parse(state: State, string: String): State =
-      if state.isEmpty then State(AnsiString(string, TreeMap()), None, Nil)
+      if state.isEmpty then State(AnsiString(string), None, Nil)
       else state.last match
         case None =>
           closures(state, string)
@@ -193,7 +233,7 @@ object Ansi:
 
 case class Bg(color: Color)
 
-case class Style(fg: Srgb = colors.White, bg: Srgb = colors.Black, italic: Boolean = false,
+case class Style(fg: Srgb = colors.White, bg: Option[Srgb] = None, italic: Boolean = false,
                      bold: Boolean = false, reverse: Boolean = false, underline: Boolean = false,
                      conceal: Boolean = false, strike: Boolean = false):
 
@@ -210,7 +250,7 @@ case class Style(fg: Srgb = colors.White, bg: Srgb = colors.Black, italic: Boole
   
   def changes(next: Style): String = List(
     if fg != next.fg then next.fg.ansiFg24 else "",
-    if bg != next.bg then next.bg.ansiBg24 else "",
+    if bg != next.bg then next.bg.map(_.ansiBg24).getOrElse(str"$esc[49m") else "",
     if italic != next.italic then str"${esc}${next.italicEsc}" else "",
     if bold != next.bold then str"${esc}${next.boldEsc}" else "",
     if reverse != next.reverse then str"${esc}${next.reverseEsc}" else "",
@@ -225,3 +265,30 @@ object Underline
 object Strike
 object Reverse
 object Conceal
+
+trait Highlight[-T]:
+  def color(value: T): Srgb
+
+trait FallbackAnsiShow:
+  given AnsiShow[T: Show]: AnsiShow[T] = str => AnsiString(str.show.s)
+
+object AnsiShow extends FallbackAnsiShow:
+  given AnsiShow[AnsiString] = identity(_)
+
+  given [T: Show](using highlight: Highlight[T]): AnsiShow[T] = value =>
+    AnsiString(value, _.copy(fg = highlight.color(value)))
+  
+  private val decimalFormat =
+    val df = new java.text.DecimalFormat()
+    df.setMinimumFractionDigits(3)
+    df.setMaximumFractionDigits(3)
+    df
+  
+  given AnsiShow[Double] =
+    value => AnsiString(decimalFormat.format(value).nn, _.copy(fg = colors.Gold))
+
+  given AnsiShow[Throwable] =
+    throwable => AnsiString(throwable.getClass.getName.nn.cut(".").last, _.copy(fg = colors.Crimson))
+
+trait AnsiShow[-T]:
+  def ansiShow(value: T): AnsiString

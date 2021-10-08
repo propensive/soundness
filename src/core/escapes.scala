@@ -74,4 +74,6 @@ object escapes:
     val Conceal: Escape = Escape("[8m", "[28m")
     val Strike: Escape = Escape("[9m", "[29m")
 
+  val Reset: Escape = Escape("[0m", "[0m")
+
   def title(name: String) = Escape(s"]0;$name${27.toChar}\\")
