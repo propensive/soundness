@@ -1,4 +1,4 @@
-package rivulet;
+package profanity;
 
 import com.sun.jna.*;
 import java.util.*;

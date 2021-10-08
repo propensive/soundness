@@ -1,5 +1,5 @@
 /*
-    Rivulet, version 0.1.0. Copyright 2020-21 Jon Pretty, Propensive OÜ.
+    Profanity, version 0.1.0. Copyright 2020-21 Jon Pretty, Propensive OÜ.
 
     The primary distribution site is: https://propensive.com/
 
@@ -14,12 +14,12 @@
     and limitations under the License.
 */
 
-package rivulet
+package profanity
 
 import probably.*
 
 import unsafeExceptions.canThrowAny
 
-object Tests extends Suite("Rivulet Tests"):
+object Tests extends Suite("Profanity Tests"):
   def run(using Runner): Unit =
     ()

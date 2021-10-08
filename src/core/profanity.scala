@@ -1,5 +1,5 @@
 /*
-    Rivulet, version 0.1.0. Copyright 2020-21 Jon Pretty, Propensive OÜ.
+    Profanity, version 0.1.0. Copyright 2020-21 Jon Pretty, Propensive OÜ.
 
     The primary distribution site is: https://propensive.com/
 
@@ -14,7 +14,7 @@
     and limitations under the License.
 */
 
-package rivulet
+package profanity
 
 import rudiments.*
 import gossamer.*
@@ -41,10 +41,10 @@ enum Keypress:
 trait Keyboard[+KeyType]:
   def interpret(bytes: List[Int]): LazyList[KeyType]
 
-abstract class RivuletError(msg: String) extends Exception(str"rivulet: $msg")
-case class TtyError(msg: String) extends RivuletError("rivulet: STDIN is not attached to a TTY")
+abstract class ProfanityError(msg: String) extends Exception(str"profanity: $msg")
+case class TtyError(msg: String) extends ProfanityError("STDIN is not attached to a TTY")
 
-sealed case class Tty(private[rivulet] val out: ji.PrintStream)
+sealed case class Tty(private[profanity] val out: ji.PrintStream)
 
 object Tty:
 
