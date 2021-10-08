@@ -19,32 +19,32 @@ package probably
 import escritoire.*
 import rudiments.*
 import gossamer.*
+import escapade.*
+import iridescence.*
 
 import scala.collection.mutable
 
 import Runner.*
 
 object Suite:
-  import Ansi.Color.*
-  def ansi(symbol: Char, code: Ansi.Color) = code(Ansi.bold(Ansi.reverse(s" ${symbol} ")))
-
   val statuses@List(pass, fail, checkThrows, throws, tailFail, mixed) = List(
-    '✓' -> green,
-    '✗' -> red,
-    '?' -> cyan,
-    '!' -> magenta,
-    '±' -> blue,
-    '#' -> yellow
-  ).map(ansi)
+    '✓' -> colors.YellowGreen,
+    '✗' -> colors.Crimson,
+    '?' -> colors.LightSeaGreen,
+    '!' -> colors.PaleVioletRed,
+    '±' -> colors.DodgerBlue,
+    '#' -> colors.Gold
+  ).map { (ch, color) => ansi"${Bg(color)}( ${colors.Black}($Bold(${ch})) )" }
   
-  private val legend: List[String] = statuses.zip(List("Pass", "Fail", "Assertion throws",
+  private val legend: List[AnsiString] = statuses.zip(List("Pass", "Fail", "Assertion throws",
       "Throws an exception", "Inconsistent", "Suite partially fails")).map { (status, desc) =>
-    str"$status ${desc.padTo(32, ' ')}"
+    ansi"$status ${desc.padTo(32, ' ')}"
   }.to(List)
 
-  val footer: String = legend.grouped(2).map(_.join("  ")).to(Seq).join("\n", "\n", "\n")
+  val footer: AnsiString = legend.grouped(2).map(_.join(ansi"  ")).to(Seq).join(AnsiString("\n"),
+      AnsiString("\n"), AnsiString("\n"))
   
-  def show(report: Report): String =
+  def show(report: Report): AnsiString =
     val simple = report.results.forall(_.count == 1)
 
     given AnsiShow[Outcome] =
@@ -67,26 +67,25 @@ object Suite:
       if simple then Tabulation[Summary](status, hash, name, avg)
       else Tabulation[Summary](status, hash, name, count, min, avg, max)
 
-    val resultsTable = table.tabulate(100, report.results).join("\n")
+    val resultsTable: AnsiString = table.tabulate(100, report.results).join("\n").ansi
 
-    val failures = report.results.filter { result =>
+    val failures: AnsiString = report.results.filter { result =>
       result.outcome != Outcome.Passed && result.outcome != Outcome.Mixed
     }.flatMap { result =>
       List(
-        str"  ${summon[AnsiShow[Outcome]].show(result.outcome)} ${Ansi.bold(Ansi.underline(str"${
-            result.name}:"))} ${Ansi.Color.blue(result.outcome.filename)}:${Ansi.Color.yellow(result.outcome.line)}",
-        result.outcome.debug.cut("\n").join("      ", "\n      ", ""),
-        ""
+        ansi"${result.outcome} $Bold($Underline(${result.name})): ${colors.SkyBlue}(${result.outcome.filename}):${colors.Goldenrod}(${result.outcome.line})",
+        ansi"${result.outcome.debug.cut("\n").join("      ", "\n      ", "")}",
+        ansi""
       )
-    }.join("\n")
+    }.join(AnsiString("\n"))
 
-    val summary = Map(
+    val summary: AnsiString = Map(
       "Passed" -> report.passed,
       "Failed" -> report.failed,
       "Total" -> report.total
-    ).map { (key, value) => s"${Ansi.bold(key)}: $value" }.join("   ")
+    ).map { (key, value) => ansi"$Bold($key): $value" }.join(ansi"   ")
 
-    List(resultsTable, failures, summary, Suite.footer).join("\n")
+    List(resultsTable, failures, summary, Suite.footer).join(AnsiString("\n"))
 
 trait Suite(val name: String) extends TestSuite:
   def run(using Runner): Unit
@@ -95,7 +94,7 @@ trait Suite(val name: String) extends TestSuite:
     val runner = Runner(args.map(TestId(_)).to(Set))
     run(using runner)
     val report = runner.report()
-    println(Suite.show(report))
+    println(Suite.show(report).render)
 
     terminate(report.total == report.passed)
   

@@ -27,8 +27,13 @@ import wisteria.*
 import escritoire.*
 import rudiments.*
 import gossamer.*
+import eucalyptus.*
+import iridescence.*
+import escapade.*
 
 import language.dynamics
+
+private[probably] given Realm("probably")
 
 import Runner.*
 
@@ -74,7 +79,9 @@ object Runner:
     md.update(text.getBytes)
     md.digest.nn.take(3).map(b => f"$b%02x").mkString
 
-class Runner(subset: Set[TestId] = Set()) extends Dynamic:
+class Runner(subset: Set[TestId] = Set()) extends Dynamic, Log:
+
+  def log(entry: Entry): Unit = println(LogFormat.standard.format(entry).render)
 
   val runner: Runner = this
 
@@ -85,11 +92,16 @@ class Runner(subset: Set[TestId] = Set()) extends Dynamic:
       type Type = T
       def action(): T = fn(using this)
 
-  def time[T](name: String)(fn: => T): T = apply[T](name)(fn).check { _ => true }
+  def time[T](name: String)(fn: => T)(using Log): T = apply[T](name)(fn).check { _ => true }
 
-  def suite(testSuite: TestSuite): Unit = suite(testSuite.name)(testSuite.run)
+  def suite(testSuite: TestSuite)(using Log): Unit =
+    val t0 = System.currentTimeMillis
+    Log.info(ansi"Starting test suite $testSuite")
+    suite(testSuite.name)(testSuite.run)
+    val t1 = System.currentTimeMillis - t0
+    Log.fine(ansi"Completed test suite $testSuite in ${t1}ms")
 
-  def suite(name: String)(fn: Runner ?=> Unit): Unit =
+  def suite(name: String)(fn: Runner ?=> Unit)(using Log): Unit =
     val test = new Test(name):
       type Type = Report
 
@@ -107,7 +119,10 @@ class Runner(subset: Set[TestId] = Set()) extends Dynamic:
 
     report.results.foreach { result => record(result.copy(indent = result.indent + 1)) }
 
-  def assert(name: String)(fn: => Boolean): Unit = apply(name)(fn).oldAssert(identity)
+  def assert(name: String)(fn: => Boolean)(using Log): Unit = apply(name)(fn).oldAssert(identity)
+
+  object Test:
+    given AnsiShow[Test] = test => ansi"${colors.Khaki}(${test.id.value})"
 
   abstract class Test(val name: String):
     type Type
@@ -115,8 +130,10 @@ class Runner(subset: Set[TestId] = Set()) extends Dynamic:
     def id: TestId = TestId(Runner.shortDigest(name))
     def action(): Type
     
-    def oldAssert(pred: Type => Boolean): Unit =
-      try if !skip(id) then check(pred) catch case NonFatal(_) => ()
+    def oldAssert(pred: Type => Boolean)(using Log): Unit =
+      try if !skip(id) then check(pred)
+      catch case NonFatal(e) =>
+        Log.warn(ansi"A $e exception was thrown whilst checking the test ${this.ansi}")
     
     private val map: HashMap[String, String] = HashMap()
 
@@ -124,12 +141,15 @@ class Runner(subset: Set[TestId] = Set()) extends Dynamic:
       map(name) = expr.toString
       expr
 
-    inline def assert(inline pred: Type => Boolean): Unit =
-      ${Macros.assert[Type]('runner, 'this, 'pred)}
+    inline def assert(inline pred: Type => Boolean)(using log: Log): Unit =
+      ${Macros.assert[Type]('runner, 'this, 'pred, 'log)}
 
-    inline def check(pred: Type => Boolean, debug: Option[Type] => Debug = v => Debug(v.map(_.toString))): Type =
+    inline def check(pred: Type => Boolean, debug: Option[Type] => Debug = v => Debug(v.map(_.toString)))(using Log): Type =
+      val l = summon[Log]
       def handler(index: Int): PartialFunction[Throwable, Datapoint] =
-        case e: Exception => Datapoint.PredicateThrows(e, Debug(), index)
+        case e: Exception =>
+          //Log.warn(ansi"A $e exception was thrown in the test ${this.ansi}")
+          Datapoint.PredicateThrows(e, Debug(), index)
 
       def makeDatapoint(pred: Type => Boolean, count: Int, datapoint: Datapoint, value: Type)
           : Datapoint =
@@ -190,7 +210,7 @@ case class Debug(found: Option[String] = None, filename: Maybe[String] = Unset, 
 
 object Macros:
   import scala.reflect.*
-  def assert[T: Type](runner: Expr[Runner], test: Expr[Runner#Test { type Type = T }], pred: Expr[T => Boolean])(using Quotes): Expr[Unit] =
+  def assert[T: Type](runner: Expr[Runner], test: Expr[Runner#Test { type Type = T }], pred: Expr[T => Boolean], log: Expr[Log])(using Quotes): Expr[Unit] =
     import quotes.reflect.*
     
     val filename = Expr {
@@ -304,7 +324,7 @@ object Macros:
         '{ (opt: Option[?]) => Debug(found = opt.map(_.debug), filename = $filename, line = $line) }
     
     '{
-      try if !$runner.skip($test.id) then $test.check($pred, ${interpret(pred)})
+      try if !$runner.skip($test.id) then $test.check($pred, ${interpret(pred)})(using $log)
       catch case NonFatal(_) => ()
     }
 
@@ -400,6 +420,9 @@ case class Report(results: List[Summary]):
   val failed: Int = results.count(_.outcome != Outcome.Passed)
   val total: Int = failed + passed
 
+object TestSuite:
+  given AnsiShow[TestSuite] = ts => ansi"${colors.Gold}(${ts.name})"
+
 trait TestSuite:
   def run(using Runner): Unit
   def name: String
@@ -407,7 +430,7 @@ trait TestSuite:
 object global:
   object test extends Runner()
 
-inline def test[T](name: String)(inline fn: Runner#Test ?=> T)(using runner: Runner)
+inline def test[T](name: String)(inline fn: Runner#Test ?=> T)(using runner: Runner, log: Log)
     : runner.Test { type Type = T } =
   runner(name)(fn)
 
