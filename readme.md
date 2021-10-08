@@ -59,7 +59,7 @@ Tarantula was designed and developed by Jon Pretty, and commercial support and t
 
 ## Name
 
-Tarantula
+__Tarantulas__ are spiders, known for making webs, and Tarantula is a library for the WebDriver protocol.
 
 ## License
 
