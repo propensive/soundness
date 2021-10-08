@@ -193,8 +193,7 @@ Cosmopolite was designed and developed by Jon Pretty, and commercial support and
 
 ## Name
 
-Cosmopolite is so-named because it provides multilingual strings, which are free to travel, and are
-not associated with any particular nation.
+Cosmopolite is so-named because it provides multilingual strings, which are free to travel, and are not associated with any particular nation.
 
 ## License
 
