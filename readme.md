@@ -117,8 +117,7 @@ Slalom was designed and developed by Jon Pretty, and commercial support and trai
 
 ## Name
 
-A _slalom_ is a challenging path around obstacles, usually taken downhill on skis, and Slalom
-provides functionality for the challenge of working with paths.
+A _slalom_ is a challenging path around obstacles, usually taken downhill on skis, and Slalom provides functionality for the challenge of working with paths.
 
 ## License
 
