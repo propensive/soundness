@@ -134,8 +134,7 @@ Jovian was designed and developed by Jon Pretty, and commercial support and trai
 
 ## Name
 
-Jovian's primary focus is handling Input and Output, or _I/O_, and is a pun based on the name of the
-Jovian moon (i.e. the moon of Jupiter), _Io_.
+Jovian's primary focus is handling Input and Output, or _I/O_, and is a pun based on the name of the Jovian moon (i.e. the moon of Jupiter), _Io_.
 
 ## License
 
