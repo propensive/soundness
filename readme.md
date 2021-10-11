@@ -47,12 +47,32 @@ sh"cat /home/work/file" | sh"grep $query" | sh"wc -l"
 which is equivalent to the single shell command, `cat /home/work/file | grep $query | wc -l`, with
 the appropriate substitution of `query` being made.
 
+While this expression will seem very familiar from a shell-command perspective, it may also be
+written in function application style as,
+```scala
+sh"wc -l"(sh"grep $query"(sh"cat /home/work/file"))
+```
+and the two versions are equivalent.
+
+### Substitutions
+
+Substitutions of a variety of different types may be made into an interpolated `sh` command. Any
+type for which a `gossamer.Show` typeclass exists will be inserted as a single parameter, and
+any sequence of one of these types will be inserted as multiple arguments. A `Command` instance
+may also be substituted into another, for example,
+```scala
+val echo = sh"echo Hello World"
+sh"sh -c '$echo'"
+```
+where the quotes are required aronud `'$echo'` so that the command is passed to `sh -c` as a
+single argument, rather than multiple arguments (of which only the first would be used).
+
 ### Environment
 
 Execution requires an `Env` instance specifying a map of environment variables and a working
 directory as a `String`, and should be specified as a contextual value, for example,
 ```scala
-given Env(Map("PATH" -> "/usr/bin"), "/home/work")
+given Env(Map("PATH" -> "/usr/bin:/usr/sbin"), "/home/work")
 ```
 however it is common to use the `enclosing` environment. That is, to pass the environment in which
 the JVM was started to its subprocess, ensuring that processes started by Guillotine behave as they
@@ -68,14 +88,23 @@ Two methods are provided for starting execution of a process: `fork` and `exec`,
 parameter which determines the type of the return value, and may also affect how execution is
 handled.
 
+```scala
+val result: String = sh"echo Hello World".exec[String]()
+```
+
 The `exec` method will return a value synchronously, when that value is ready. This may happen only
 when the process completes execution, if the entire output is caputured, for example if the
 return-type is `String`, or may happen earlier if a streaming return type, such as
 `LazyList[String]`, is specified.
 
 The `fork` method always starts the process asynchronously, and returns an instance of `Process[T]`,
-where `T` is the specified return type. `Process` implements a few useful methods for working with a
-running process:
+where `T` is the specified return type.
+
+```scala
+val process: Process[String] = sh"locate lostfile".fork[String]()
+```
+
+`Process` implements a few useful methods for working with a running process:
 
  - `await()` which waits until the process completes, and returns its result of type `T`
  - `abort()` which stopes execution, by delegating to Java's `Process#destroy`
@@ -86,6 +115,8 @@ running process:
    defaulting to `10MB`
  - `stdin(in)` which accepts a stream of bytes (`LazyList[IArray[Byte]]`) as standard input to the
    process
+
+The synchronous `exec[T]()` method is always equivalent to `fork[T]().await()`.
 
 ## Result interpretation
 
