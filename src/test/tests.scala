@@ -88,21 +88,6 @@ object Tests extends Suite("Probably Tests"):
       case _ => false
     }
 
-    test("repetition captures failed value") {
-      val report = reportTest { runner =>
-        for i <- 1 to 10 do runner("integers are less than six") {
-          i
-        }.assert(_ < 6)
-      }
-      
-      report.results.head.outcome
-    }.assert {
-      case Outcome.FailsAt(Datapoint.Fail(Debug(_, _, _, _, map), _), _) if map("i") == "6" => true
-      case _                                                                                => false
-    }
-
-    //test.assert("assertion-only test")(1 + 1 == 2)
-
     test("time-only test") {
       reportTest(_.time("wait for 100ms")(Thread.sleep(100)))
     }.assert(_.results.head.ttot >= 100)
@@ -130,11 +115,6 @@ object Tests extends Suite("Probably Tests"):
     test("assert with 2 successful predicates") {
       reportTest(_("test double")(0.001).assert { x => x >= 0.0 && x <= 1.0 })
     }.assert { r => r.passed == 1 && r.failed == 0 && r.total == 1 }
-
-    test("assert with 2 predicates") {
-      val report = reportTest(_("test double")(0.001).assert { x => x >= 0.0 && x < 0.0 })
-      report.results.head.outcome
-    }.assert(_ == Outcome.FailsAt(Datapoint.Fail(Debug(None), 1), 1))
 
     suite("Tolerance tests") {
       test("Compare numbers which are not similar enough") {

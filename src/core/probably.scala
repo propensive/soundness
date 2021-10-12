@@ -144,7 +144,7 @@ class Runner(subset: Set[TestId] = Set()) extends Dynamic, Log:
     inline def assert(inline pred: Type => Boolean)(using log: Log): Unit =
       ${Macros.assert[Type]('runner, 'this, 'pred, 'log)}
 
-    inline def check(pred: Type => Boolean, debug: Option[Type] => Debug = v => Debug(v.map(_.toString)))(using Log): Type =
+    def check(pred: Type => Boolean, debug: Option[Type] => Debug = v => Debug(v.map(_.toString)))(using Log): Type =
       val l = summon[Log]
       def handler(index: Int): PartialFunction[Throwable, Datapoint] =
         case e: Exception =>
@@ -441,9 +441,10 @@ def time[T](name: String)(fn: => T)(using runner: Runner): T = test(name)(fn).ch
 case class UnexpectedSuccessError(value: Any)
 extends Exception("probably: the expression was expected to throw an exception, but did not")
 
-def capture[E <: Exception: Typeable](fn: CanThrow[E] ?=> Any): E throws UnexpectedSuccessError =
+def capture(fn: => CanThrow[Exception] ?=> Any): Exception throws UnexpectedSuccessError =
   try
-    import unsafeExceptions.canThrowAny
     val result = fn
     throw UnexpectedSuccessError(result)
-  catch case error: E => error
+  catch
+    case error@UnexpectedSuccessError(_) => throw error
+    case error: Exception                => error
