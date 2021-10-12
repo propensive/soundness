@@ -18,6 +18,7 @@ package scintillate
 
 import rudiments.*
 import probably.*
+import eucalyptus.*
 import gossamer.*
 
 import scala.collection.immutable.ListMap
@@ -37,6 +38,7 @@ object Tests extends Suite("Scintillate tests"):
     val server: HttpService = HttpServer(8081).listen {
       request match
         case Path("/other") =>
+          Log.info("Received request to /other")
           Response(Redirect(uri"/elsewhere"))
         case Path("/elsewhere") =>
           Response("Elsewhere")
@@ -62,13 +64,13 @@ object Tests extends Suite("Scintillate tests"):
       Http.post(uri"http://localhost:8081/helloworld", "Here's some content").as[String]
     }.assert(_ == "This is a response")
 
-    test("Send an HTTP GET request") {
-      uri"http://localhost:8081/helloworld".get().as[String]
-    }.assert(_ == "This is a response")
-    
     test("Send an HTTP GET request to redirect") {
       uri"http://localhost:8081/other".get().as[String]
     }.assert(_ == "Elsewhere")
+    
+    test("Send an HTTP GET request") {
+      uri"http://localhost:8081/helloworld".get().as[String]
+    }.assert(_ == "This is a response")
     
     test("Send an HTTP GET request with a parameter") {
       uri"http://localhost:8081/somewhere".query(one = "1").get().as[String]

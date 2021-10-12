@@ -52,7 +52,7 @@ object Handler:
   given Handler[Redirect] with
     def process(content: Redirect, status: Int, headers: Map[String, String],
                     responder: Responder): Unit =
-      responder.addHeader(ResponseHeader.Location.header, content.location)
+      responder.addHeader(ResponseHeader.Location.header, content.location.toString)
       for (k, v) <- headers do responder.addHeader(k, v)
       responder.sendBody(301, Body.Empty)
 
@@ -74,9 +74,9 @@ object Handler:
 
 object Redirect:
   def apply[T: Locatable](location: T): Redirect =
-    Redirect(summon[Locatable[T]].location(location))
+    new Redirect(summon[Locatable[T]].location(location))
 
-case class Redirect(location: String)
+case class Redirect(location: Uri)
 
 trait Handler[T]:
   def process(content: T, status: Int, headers: Map[String, String], responder: Responder): Unit
@@ -198,6 +198,7 @@ case class RequestParam[T](key: String)(using ParamReader[T]):
 trait HttpService:
   def stop(): Unit
 
+@targetName("Ampersand")
 val `&` = Split
 
 object Split:
@@ -271,23 +272,23 @@ case class HttpServer(port: Int) extends RequestHandler:
     
     def sendBody(status: Int, body: Body): Unit =
       val length = body match
-        case Body.Empty         => -1
-        case Body.Data(body)    => body.length
-        case _                  => 0
+        case Body.Empty      => -1
+        case Body.Data(body) => body.length
+        case Body.Chunked(_) => 0
 
       exchange.sendResponseHeaders(status, length)
       
       body match
         case Body.Empty =>
-          exchange.close()
+          ()
         
         case Body.Data(body) =>
           exchange.getResponseBody.nn.write(body.unsafeMutable)
-          exchange.getResponseBody.nn.flush()
         
         case Body.Chunked(body) =>
           body.map(_.unsafeMutable).foreach(exchange.getResponseBody.nn.write(_))
-          exchange.getResponseBody.nn.flush()
+      
+      exchange.getResponseBody.nn.flush()
       exchange.close()
 
 case class Svg(content: String)
