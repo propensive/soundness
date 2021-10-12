@@ -73,22 +73,15 @@ object Markdown:
 
   private val options = MutableDataSet()
   options.set[ju.Collection[com.vladsch.flexmark.util.misc.Extension]](Parser.EXTENSIONS,
-      ju.Arrays.asList(TablesExtension.create(), TypographicExtension.create()))
-  //options.set(TypographicExtension.ENABLE_QUOTES, java.lang.Boolean.TRUE)
+      ju.Arrays.asList(TablesExtension.create()))
   
   private val parser = Parser.builder(options).nn.build().nn
 
-  inline def parseOpt(string: String): Option[Markdown[Markdown.Ast.Block]] =
-    try Some(parse(string)) catch case MalformedMarkdown(_) => None
-  
-  inline def parse(string: String): Markdown[Markdown.Ast.Block] throws MalformedMarkdown =
+  def parse(string: String): Markdown[Markdown.Ast.Block] throws MalformedMarkdown =
     val root = parser.parse(string).nn
     val nodes = root.getChildIterator.nn.asScala.to(List).map(convert(root, _).getOrElse(throw MalformedMarkdown("could not parse markdown")))
     
     Markdown(nodes.collect { case child: Markdown.Ast.Block => child }*)
-
-  def parseInlineOpt(string: String): Option[Markdown[Markdown.Ast.Inline]] =
-    try Some(parseInline(string)) catch case MalformedMarkdown(_) => None
 
   def parseInline(string: String): Markdown[Markdown.Ast.Inline] throws MalformedMarkdown =
     parse(string) match
@@ -102,17 +95,13 @@ object Markdown:
       case Text(str) :: Text(str2) :: tail => coalesce(Text(format(str+" "+str2)) :: tail, done)
       case head :: tail                    => coalesce(tail, head :: done)
 
-  @tailrec
-  def format(str: String, buf: StringBuilder = StringBuilder(), i: Int = 0, chr: Char = 0,
-                 space: Boolean = false): String =
-    if chr != 0 then buf.append(chr)
-    if i < str.length then
-      (try str(i) catch case error@OutOfRangeError(_, _, _) => throw Impossible(error)) match
-        case '"'       => format(str, buf, i + 1, if space then '“' else '”')
-        case '\''      => format(str, buf, i + 1, if space then '‘' else '’')
-        case ' '       => format(str, buf, i + 1, ' ', space = true)
-        case chr: Char => format(str, buf, i + 1, chr)
-    else buf.toString
+  def format(str: String): String =
+    str
+      .replaceAll("--", "—").nn
+      .replaceAll(" \"", " “").nn
+      .replaceAll("\"", "”").nn
+      .replaceAll(" '", " ‘").nn
+      .replaceAll("'", "’").nn
 
   private def resolveReference(root: cvfua.Document, node: cvfa.ImageRef | cvfa.LinkRef)
       : String throws MalformedMarkdown =

@@ -30,7 +30,7 @@ object Tests extends Suite("Punctuation tests"):
     test("get a heading") {
       Markdown.parse("# Heading 1") match
         case Markdown(Heading(1, Text(str))) => str
-    }.assert(_ == "Heading 2")
+    }.assert(_ == "Heading 1")
 
     test("get a level 2 heading") {
       Markdown.parse("## Heading 2")

@@ -32,13 +32,11 @@ object Md:
     
     def complete(state: Input): Markdown[Markdown.Ast.Node] = state match
       case Input.Inline(state) =>
-        Markdown.parseInlineOpt(state).getOrElse {
+        try Markdown.parseInline(state) catch case MalformedMarkdown(_) =>
           throw InterpolationError(s"the markdown could not be parsed")
-        }
       
       case Input.Block(state)  =>
-        try Markdown.parse(state)
-        catch case MalformedMarkdown(msg) =>
+        try Markdown.parse(state) catch case MalformedMarkdown(msg) =>
           throw InterpolationError(s"the markdown could not be parsed; $msg")
   
     def initial: Input = Input.Inline("")
@@ -54,15 +52,19 @@ object Md:
      
     def parse(state: Input, next: String): Input = state match
       case Input.Inline(state) =>
-        Markdown.parseInlineOpt(state+next).fold {
-          Markdown.parseOpt(state+next) match
-            case None => throw InterpolationError(s"the markdown could not be parsed")
-            case _    => ()
-          
-          Input.Block(state+next)
-        } { md => Input.Inline(state+next) }
+        try
+          Markdown.parseInline(state+next)
+          Input.Inline(state+next)
+        catch
+          case MalformedMarkdown(_) =>
+            try
+              Markdown.parse(state+next)
+              Input.Block(state+next)
+            catch
+              case MalformedMarkdown(_) => throw InterpolationError(s"the markdown could not be parsed")
 
       case Input.Block(state) =>
-        Markdown.parseOpt(state+next) match
-         case None => throw InterpolationError(s"the markdown could not be parsed")
-          case _   =>Input.Block(state+next)
+        try
+          Markdown.parse(state+next)
+          Input.Block(state+next)
+        catch case MalformedMarkdown(_) => throw InterpolationError(s"the markdown could not be parsed")
