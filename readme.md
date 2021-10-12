@@ -16,7 +16,7 @@ designed to take advantage of Scala 3's safer exceptions.
 - simple streaming to and from disk with `LazyList`s
 - employs `IArray[Byte]` for fast, random-access, immutable chunking of byte data
 - encoding-aware operations involving `String`s
-
+§
 
 ## Getting Started
 
