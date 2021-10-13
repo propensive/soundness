@@ -47,8 +47,8 @@ extension (value: Bytes)
   def unsafeMutable: Array[Byte] = value.asInstanceOf[Array[Byte]]
   def hex: String = value.map { b => String.format("\\u%04x", b.toInt).nn }.mkString
 
-extension (value: Array[Byte])
-  def unsafeImmutable: IArray[Byte] = value.asInstanceOf[IArray[Byte]]
+extension [T](value: Array[T])
+  def unsafeImmutable: IArray[T] = value.asInstanceOf[IArray[T]]
 
 extension [K, V](map: Map[K, V])
   def upsert(key: K, operation: Option[V] => V) = map.updated(key, operation(map.get(key)))
@@ -125,7 +125,7 @@ extension (iarray: IArray.type)
   def init[T: ClassTag](size: Int)(fn: Array[T] => Unit): IArray[T] =
     val array = new Array[T](size)
     fn(array)
-    array.asInstanceOf[IArray[T]]
+    array.unsafeImmutable
 
 
 extension [T](opt: Option[T]) def maybe: Unset.type | T = opt.getOrElse(Unset)
