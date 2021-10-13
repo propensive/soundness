@@ -8,7 +8,11 @@ Caesura provides an API for reading and writing CSV and TSV.
 
 ## Features
 
-TBC
+- parse CSV and TSV data
+- serialize product-like data (e.g. tuples or case classes) to CSV/TSV rows
+- typeclass-based serialization and deserialization
+- generic derivation of typeclasses for product and coproduct types
+
 
 ## Getting Started
 
