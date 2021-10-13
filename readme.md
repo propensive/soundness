@@ -4,11 +4,19 @@
 
 # Eucalyptus
 
-TBC
+_Eucalyptus_ is a logging library which makes it easy to add logging to any project. It consciously
+makes logging configuration explicit and easily understood, and uses rich ANSI-escaped messages to
+make logs easier to read.
 
 ## Features
 
-TBC
+- logging requires explicit configuration in code, avoiding any doubt about whether or where logs are produced
+- logging "realms" are defined as givens
+- logging configuration may be static or delegate to dynamic criteria
+- unlogged messages are not evaluated, avoiding the cost of construction
+- simple definitions for the log format
+- log messages may contains text styles and color, using ANSI codes; this helps readability
+- typeclass-based support for logging different types of object
 
 
 ## Getting Started
