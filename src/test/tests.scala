@@ -45,5 +45,5 @@ object Tests extends Suite("Gesticulate tests"):
         parameters = List(("charset", "UTF-8"))))
     
     test("invalid media type") {
-      capture[InvalidMediaTypeError](Media.parse("applicationjson"))
+      capture(Media.parse("applicationjson"))
     }.assert(_ == InvalidMediaTypeError("applicationjson", InvalidMediaTypeError.Nature.NotOneSlash))
