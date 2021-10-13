@@ -8,7 +8,10 @@
 
 ## Features
 
-TBC
+- parse and represent JSON in Scala
+- intuitive dynamic API for field access, without compromising typesafety
+- typeclass-based conversion to and from JSON
+- generic derivation of typeclass interfaces for reading and writing product and coproduct types to JSON
 
 
 ## Getting Started
