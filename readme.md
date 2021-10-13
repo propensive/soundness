@@ -4,11 +4,16 @@
 
 # Tarantula
 
-TBC
+_Tarantula_ makes it possible to interact with a web browser through a programmatic interface. It
+provides an immutable API for controlling the web browser from Scala, through the WebDriver
+protocol.
 
 ## Features
 
-TBC
+- simulate keypresses and mouse clicks in a web browser
+- automatically launch Chrome or Firefox programmatically
+- uses the standard WebDriver protocol
+- capture screenshots from web browsers
 
 
 ## Getting Started
