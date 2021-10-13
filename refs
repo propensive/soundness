@@ -6,6 +6,7 @@ caesura/core: wisteria/core
 contextual/core: rudiments/core
 cosmopolite/core: rudiments/core
 escritoire/core: rudiments/core
+eucalyptus/core: escapade/core
 euphemism/core: wisteria/core clairvoyant/http
 exoskeleton/core: rudiments/core
 gastronomy/core: kaleidoscope/core wisteria/core
@@ -22,7 +23,7 @@ probably/core: escritoire/core
 probably/cli: probably/core
 probably/tolerance: probably/core wisteria/core
 scintillate/core: clairvoyant/html wisteria/core
-rivulet/core: gossamer/core
+profanity/core: gossamer/core
 scintillate/server: scintillate/core gastronomy/core scintillate/core clairvoyant/http
 scintillate/servlet: scintillate/server slalom/core
 clairvoyant/html:

@@ -3,8 +3,8 @@
 CP="$(ls lib/*.jar | tr '\n' : | head -c-1)"
 rm -r classes/*
 mkdir -p classes/gesticulate
-cp res/media.types classes/gesticulate/media.types
-javac -d classes -classpath "$CP" mod/rivulet/src/java/**/*.java
+cp res/gesticulate/media.types classes/gesticulate/media.types
+javac -d classes -classpath "$CP" mod/profanity/src/java/**/*.java
 scala/bin/scalac "-classpath:$CP:classes" -d classes -deprecation -language:experimental.erasedDefinitions -language:experimental.saferExceptions -Werror -Wunused:all -new-syntax -Yrequire-targetName -Xverify-signatures -Ysafe-init -feature -Xcheck-macros -Ycheck-all-patmat -Yexplicit-nulls \
     mod/acyclicity/src/core/*.scala \
     mod/adversaria/src/core/*.scala \
@@ -17,6 +17,7 @@ scala/bin/scalac "-classpath:$CP:classes" -d classes -deprecation -language:expe
     mod/cosmopolite/src/core/*.scala \
     mod/escapade/src/core/*.scala \
     mod/escritoire/src/core/*.scala \
+    mod/eucalyptus/src/core/*.scala \
     mod/euphemism/src/core/*.scala \
     mod/exoskeleton/src/core/*.scala \
     mod/gastronomy/src/core/*.scala \
@@ -33,7 +34,7 @@ scala/bin/scalac "-classpath:$CP:classes" -d classes -deprecation -language:expe
     mod/punctuation/src/core/*.scala \
     mod/punctuation/src/html/*.scala \
     mod/punctuation/src/ansi/*.scala \
-    mod/rivulet/src/core/*.scala \
+    mod/profanity/src/core/*.scala \
     mod/rudiments/src/core/*.scala \
     mod/scintillate/src/core/*.scala \
     mod/scintillate/src/server/*.scala \
