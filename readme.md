@@ -4,11 +4,16 @@
 
 # Xylophone
 
-
+_Xylophone_ is an XML library for Scala that takes advantage of many features of the language to
+provide intuitive syntax for manipulating XML, as well as better typesafety and static checks.
 
 ## Features
 
-TBC
+- parse and represent XML in Scala
+- statically check XML in `xml""` interpolators
+- substitute standard and custom types (provided by typeclasses) into XML
+- automatically derive typeclasses to convert case classes and product types to and from XML
+- safe dynamic interface for accessing nested fields
 
 
 ## Getting Started

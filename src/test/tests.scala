@@ -191,12 +191,3 @@ object Tests extends Suite("Xylophone tests"):
   //     val xml = Xml.parse("""<root><company><staff><ceo><name>Xyz</name></ceo></staff></company></root>""")
   //     Try(xml.company(1).staff().cto.name().as[String])
   //   }.assert(_ == Failure(XmlAccessError(1, List("company"))))
-
-    test("x interpolator") {
-      import scala.quoted.*, staging.*
-
-      given Compiler = Compiler.make(getClass.getClassLoader.nn)
-
-      staging.withQuotes( '{ 1.0 } ).toString
-
-    }.assert(_ == "<Foo/>")
