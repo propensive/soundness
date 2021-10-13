@@ -175,7 +175,7 @@ The `PrivateKey` object provides the `generate[A]()` method, where `A` is `Rsa[B
 The algorithm `Aes[B]` can also be used with the `SymmetricKey` object to get a symmetric key which
 has the functionality of both a public and private key.
 
- ## Byte codecs
+## Byte codecs
 
 Any object which can be serialized to bytes may be digested, signed, verified, HMACked or encrypted,
 and can be returned from a decryption operation, provided a corresponding `ByteCodec` instance is
