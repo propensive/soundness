@@ -68,7 +68,7 @@ case class AnsiString(string: String, escapes: TreeMap[Int, List[Ansi.Change]] =
     
     val newEscapes = escapes.filter(_(0) <= length)
     
-    AnsiString(string.take(n), newEscapes.updated(length, escapes.getOrElse(length, Nil) ++ pops))
+    AnsiString(string.take(n), newEscapes.updated(n, escapes.getOrElse(n, Nil) ++ pops))
 
   def plain: String = string
   def explicit: String = render.flatMap { ch => if ch.toInt == 27 then "\\e" else s"$ch" }
