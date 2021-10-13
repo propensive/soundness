@@ -4,11 +4,15 @@
 
 # Profanity
 
-TBC
+_Profanity_ makes it possible to write real-time applications that interact through the terminal by
+converting STDIN into an event stream of keypresses.
 
 ## Features
 
-TBC
+- capture a TTY terminal's individual keypresses
+- interprets standard keys and control keys
+- simple interactive line editor supporting standard keypresses
+- simple interactive navigable menu
 
 
 ## Getting Started
