@@ -70,7 +70,7 @@ extension (string: String)
   def padLeft(length: Int, char: Char = ' '): String =
     if string.size < length then char.toString*(length - string.size)+string else string
   
-  def editDistanceTo(other: String): Int =
+  def lev(other: String): Int =
     val m = string.size
     val n = other.size
     val old = new Array[Int](n + 1)

@@ -146,33 +146,33 @@ object Tests extends Suite("Gossamer Tests"):
 
     suite("Minimum Edit Distance") {
       test("equal strings have zero edit distance") {
-        "Hello world".editDistanceTo("Hello world")
+        "Hello world".lev("Hello world")
       }.assert(_ == 0)
       
       test("missing character has edit distance of 1") {
-        "Hello world".editDistanceTo("Hello orld")
+        "Hello world".lev("Hello orld")
       }.assert(_ == 1)
       
       test("missing character from end has edit distance of 1") {
-        "Hello world".editDistanceTo("Hello worl")
+        "Hello world".lev("Hello worl")
       }.assert(_ == 1)
       
       test("missing character from start has edit distance of 1") {
-        "Hello world".editDistanceTo("ello world")
+        "Hello world".lev("ello world")
       }.assert(_ == 1)
       
       test("changed character has edit distance of 1") {
-        "Hello world".editDistanceTo("Hellq world")
+        "Hello world".lev("Hellq world")
       }.assert(_ == 1)
       
       test("switched characters has edit distance of 2") {
-        "Hello world".editDistanceTo("Hello wrold")
+        "Hello world".lev("Hello wrold")
       }.assert(_ == 2)
 
       val x: Long = 4
 
       test("different strings have large edit distance") {
-        "Hello".editDistanceTo("world").toLong
+        "Hello".lev("world").toLong
       }.assert(_ == x)
     }
 
