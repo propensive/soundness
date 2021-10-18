@@ -16,10 +16,13 @@
 
 package euphemism
 
+import eucalyptus.*
 import probably.*
 import scala.util.*
 
 import unsafeExceptions.canThrowAny
+
+given Log()
 
 case class Foo(x: Int, y: String) derives CanEqual, Json.Writer, Json.Reader
 
