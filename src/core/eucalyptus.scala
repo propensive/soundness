@@ -18,12 +18,16 @@ package eucalyptus
 
 import gossamer.*
 import escapade.*
+import rudiments.*
 import iridescence.*
 
 import scala.annotation.*
+import scala.quoted.*
 
 import java.text as jt
+import java.io as ji
 import java.util as ju
+import java.util.concurrent as juc
 
 object Timestamp:
   def apply(): Timestamp = System.currentTimeMillis
@@ -48,45 +52,163 @@ object Level:
 enum Level:
   case Fine, Info, Warn, Fail
 
+  @targetName("greaterThan")
+  def >(level: Level): Boolean = this.ordinal > level.ordinal
+  
+  @targetName("lessThan")
+  def <(level: Level): Boolean = this.ordinal < level.ordinal
+  
+  @targetName("greaterThanOrEqualTo")
+  def >=(level: Level): Boolean = this.ordinal >= level.ordinal
+  
+  @targetName("lessThanOrEqualTo")
+  def <=(level: Level): Boolean = this.ordinal <= level.ordinal
+
 object Log:
-  def fine[T](value: T)(using Log, AnsiShow[T], Realm): Unit =
-    val ts = Timestamp()
-    summon[Log].log(Entry(summon[Realm], Level.Fine, value.ansi, ts))
+  inline def fine[T](inline value: T)
+                    (using inline log: Log, inline show: AnsiShow[T], inline realm: Realm): Unit =
+    ${recordLog('{Level.Fine}, 'value, 'log, 'show, 'realm)}
   
-  def info[T](value: T)(using Log, AnsiShow[T], Realm): Unit =
-    val ts = Timestamp()
-    summon[Log].log(Entry(summon[Realm], Level.Info, value.ansi, ts))
+  inline def info[T](inline value: T)
+                    (using inline log: Log, inline show: AnsiShow[T], inline realm: Realm): Unit =
+    ${recordLog('{Level.Info}, 'value, 'log, 'show, 'realm)}
   
-  def warn[T](value: T)(using Log, AnsiShow[T], Realm): Unit =
-    val ts = Timestamp()
-    summon[Log].log(Entry(summon[Realm], Level.Warn, value.ansi, ts))
+  inline def warn[T](inline value: T)
+                    (using inline log: Log, inline show: AnsiShow[T], inline realm: Realm): Unit =
+    ${recordLog('{Level.Warn}, 'value, 'log, 'show, 'realm)}
   
-  def fail[T](value: T)(using Log, AnsiShow[T], Realm): Unit =
-    val ts = Timestamp()
-    summon[Log].log(Entry(summon[Realm], Level.Fail, value.ansi, ts))
+  inline def fail[T](inline value: T)
+                    (using inline log: Log, inline show: AnsiShow[T], inline realm: Realm): Unit =
+    ${recordLog('{Level.Fail}, 'value, 'log, 'show, 'realm)}
 
-  def stdout(format: LogFormat = LogFormat.standard): Log = new Log:
-    def log(entry: Entry): Unit =
-      println(format.format(entry).render)
-  
-  def silent: Log = new Log:
-    def log(entry: Entry): Unit = ()
+  private def recordLog[T: Type](level: Expr[Level], value: Expr[T], log: Expr[Log],
+                                     show: Expr[AnsiShow[T]], realm: Expr[Realm])
+                                (using Quotes): Expr[Unit] =
+    import quotes.reflect.*
 
-@implicitNotFound("eucalyptus: a contextual Log is required, for example:\n    given Log = Log.stdout()\nor,\n    given Log = Log.silent")  
-trait Log:
-  def log(entry: Entry): Unit
+    '{
+      val ts = Timestamp()
+      if $log.interested($realm, $level)
+      then $log.record(Entry($realm, $level, $show.ansiShow($value), ts))
+    }
+
+  def silent: Log = Log()
+
+object Everything extends Realm("")
+
+@implicitNotFound("eucalyptus: a contextual Log is required, for example:\n    given Log = "+
+    "Log.stdout()\nor,\n    given Log = Log.silent")  
+case class Log(rules: Rule[?, ?]*):
+
+  class DistributedLog(format: LogFormat[?, ?], interested: Entry => Boolean,
+                           loggers: Iterable[Logger]):
+    def record(entry: Entry): Unit =
+      if interested(entry) then loggers.foreach(_.record(format.serialize(format.format(entry))))
+
+
+  lazy val loggers: Iterable[DistributedLog] =
+    rules.groupBy(_.format).map { (format, rules) =>
+      DistributedLog(
+        format,
+        entry => rules.exists(_.interested(entry.realm, entry.level)),
+        rules.groupBy(_.dest).map { (dest, rules) =>
+          Logger(rules.head.writer, rules, format.interval)
+        }.map(_.start())
+      )
+    }
+
+  def record(entry: Entry): Unit = loggers.foreach(_.record(entry))
+  def interested(realm: Realm, level: Level): Boolean = rules.exists(_.interested(realm, level))
+
+case class Rule[S, T](realm: Realm, level: Level, format: LogFormat[S, T], dest: S, sink: Sink[S]):
+  def writer(stream: LazyList[Bytes]): Unit =
+    try sink.write(dest, stream) catch case e: Exception => ()
+
+  def interested(realm: Realm, level: Level): Boolean =
+    (this.realm == Everything || realm == this.realm) && level >= this.level
 
 object Realm:
   given Show[Realm] = _.name.text
   given Highlight[Realm] = _ => colors.LightGreen
 
-case class Realm(name: String)
+case class Realm(name: String):
+
+  inline def realm: this.type = this
+
+  @targetName("directTo")
+  def |->[D: Sink, T](dest: D, level: Level = Level.Fine)(using fmt: LogFormat[D, T]): Rule[D, T] =
+    Rule(realm, level, fmt, dest, summon[Sink[D]])
+  
+  object fine:
+    @targetName("directTo")
+    def |->[S: Sink, T](sink: S)(using LogFormat[S, T]): Rule[S, T] = realm.|->(sink, Level.Fine)
+
+  object info:
+    @targetName("directTo")
+    def |->[S: Sink, T](sink: S)(using LogFormat[S, T]): Rule[S, T] = realm.|->(sink, Level.Info)
+
+  object warn:
+    @targetName("directTo")
+    def |->[S: Sink, T](sink: S)(using LogFormat[S, T]): Rule[S, T] = realm.|->(sink, Level.Warn)
+
+  object fail:
+    @targetName("directTo")
+    def |->[S: Sink, T](sink: S)(using LogFormat[S, T]): Rule[S, T] = realm.|->(sink, Level.Fail)
 
 case class Entry(realm: Realm, level: Level, message: AnsiString, timestamp: Timestamp)
 
 object LogFormat:
-  val standard: LogFormat = entry =>
-    ansi"${entry.timestamp.ansi} ${entry.level.ansi} ${entry.realm.ansi.span(10)} ${entry.message}"
+  given LogFormat[Stdout.type, AnsiString] with
+    override def interval: Int = 50
+    def serialize(value: AnsiString): Bytes = value.render.bytes
 
-trait LogFormat:
-  def format(entry: Entry): AnsiString
+    def format(entry: Entry): AnsiString =
+      ansi"${entry.timestamp.ansi} ${entry.level.ansi} ${entry.realm.ansi.span(8)} ${entry.message}"
+  
+trait LogFormat[S, T]:
+  def interval: Int = 500
+  def format(entry: Entry): T
+  def serialize(value: T): Bytes
+
+abstract class PlainLogFormat[S] extends LogFormat[S, String]:
+  def serialize(value: String): Bytes = value.bytes
+
+abstract class AnsiLogFormat[S] extends LogFormat[S, AnsiString]:
+  def serialize(value: AnsiString): Bytes = value.render.bytes
+
+object Logger:
+  private var threadId: Int = -1
+  
+  private def run(runnable: Runnable): Unit =
+    val id = synchronized {
+      threadId += 1
+      threadId
+    }
+    
+    val name = str"eucalyptus-$id"
+
+    Thread(runnable, name).start()
+
+class Logger(writer: LazyList[Bytes] => Unit, rules: Seq[Rule[?, ?]], interval: Int):
+  private val queue: juc.ConcurrentLinkedQueue[Bytes] = juc.ConcurrentLinkedQueue[Bytes]()
+  private var continue: Boolean = true
+  private val buf = ji.ByteArrayOutputStream()
+  private val newline = "\n".bytes.unsafeMutable
+
+  def record(entry: Bytes): Unit = queue.offer(entry)
+  def stop(): Unit = continue = false
+
+  def logStream: LazyList[IArray[Byte]] =
+    Thread.sleep(interval)
+    buf.reset()
+    while !queue.isEmpty do
+      buf.write(queue.poll.nn.unsafeMutable)
+      buf.write(newline)
+
+    buf.toByteArray.nn.unsafeImmutable #:: (if continue then logStream else LazyList())
+
+  def start(): Logger =
+    Logger.run { () => try writer(logStream) catch case e: Exception => () }
+    this
+
+given realm: Realm = Realm("eucalyptus")
