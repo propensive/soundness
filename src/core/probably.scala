@@ -33,7 +33,7 @@ import escapade.*
 
 import language.dynamics
 
-private[probably] given Realm("probably")
+given realm: Realm = Realm("probably")
 
 import Runner.*
 
@@ -79,9 +79,7 @@ object Runner:
     md.update(text.getBytes)
     md.digest.nn.take(3).map(b => f"$b%02x").mkString
 
-class Runner(subset: Set[TestId] = Set()) extends Dynamic, Log:
-
-  def log(entry: Entry): Unit = println(LogFormat.standard.format(entry).render)
+class Runner(subset: Set[TestId] = Set()) extends Dynamic:
 
   val runner: Runner = this
 
@@ -93,15 +91,10 @@ class Runner(subset: Set[TestId] = Set()) extends Dynamic, Log:
       def action(): T = fn(using this)
 
   def time[T](name: String)(fn: => T)(using Log): T = apply[T](name)(fn).check { _ => true }
-
-  def suite(testSuite: TestSuite)(using Log): Unit =
-    val t0 = System.currentTimeMillis
-    Log.info(ansi"Starting test suite $testSuite")
-    suite(testSuite.name)(testSuite.run)
-    val t1 = System.currentTimeMillis - t0
-    Log.fine(ansi"Completed test suite $testSuite in ${t1}ms")
+  def suite(testSuite: TestSuite)(using Log): Unit = suite(testSuite.name)(testSuite.run)
 
   def suite(name: String)(fn: Runner ?=> Unit)(using Log): Unit =
+    Log.info(ansi"Starting test suite ${colors.Gold}($name)")
     val test = new Test(name):
       type Type = Report
 
@@ -110,7 +103,9 @@ class Runner(subset: Set[TestId] = Set()) extends Dynamic, Log:
         fn(using runner)
         runner.report()
     
+    val t0 = System.currentTimeMillis
     val report = test.check(_.results.forall(_.outcome.passed))
+    val t1 = System.currentTimeMillis - t0
 
     if report.results.exists(_.outcome.passed) && report.results.exists(_.outcome.failed)
     then synchronized {
@@ -118,6 +113,8 @@ class Runner(subset: Set[TestId] = Set()) extends Dynamic, Log:
     }
 
     report.results.foreach { result => record(result.copy(indent = result.indent + 1)) }
+   
+    Log.fine(ansi"Completed test suite ${colors.Gold}($name) in ${t1}ms")
 
   def assert(name: String)(fn: => Boolean)(using Log): Unit = apply(name)(fn).oldAssert(identity)
 
@@ -148,7 +145,7 @@ class Runner(subset: Set[TestId] = Set()) extends Dynamic, Log:
       val l = summon[Log]
       def handler(index: Int): PartialFunction[Throwable, Datapoint] =
         case e: Exception =>
-          //Log.warn(ansi"A $e exception was thrown in the test ${this.ansi}")
+          Log.warn(ansi"A $e exception was thrown in the test ${this.ansi}")
           Datapoint.PredicateThrows(e, Debug(), index)
 
       def makeDatapoint(pred: Type => Boolean, count: Int, datapoint: Datapoint, value: Type)
@@ -434,9 +431,11 @@ inline def test[T](name: String)(inline fn: Runner#Test ?=> T)(using runner: Run
     : runner.Test { type Type = T } =
   runner(name)(fn)
 
-def suite(name: String)(fn: Runner ?=> Unit)(using runner: Runner): Unit = runner.suite(name)(fn)
-def suite(suite: TestSuite)(using runner: Runner): Unit = runner.suite(suite)
-def time[T](name: String)(fn: => T)(using runner: Runner): T = test(name)(fn).check { _ => true }
+def suite(name: String)(fn: Runner ?=> Unit)(using runner: Runner, log: Log): Unit =
+  runner.suite(name)(fn)
+
+def suite(suite: TestSuite)(using runner: Runner, log: Log): Unit = runner.suite(suite)
+def time[T](name: String)(fn: => T)(using Runner, Log): T = test(name)(fn).check { _ => true }
 
 case class UnexpectedSuccessError(value: Any)
 extends Exception("probably: the expression was expected to throw an exception, but did not")
