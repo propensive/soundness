@@ -155,3 +155,56 @@ object Util:
   
   def write(stream: LazyList[IArray[Byte]], out: ji.OutputStream): Unit =
     stream.map(_.unsafeMutable).foreach(out.write(_))
+
+object Source:
+  given Source[Stdin.type] with
+    type E = StreamCutError
+    def read(value: Stdin.type): DataStream throws E =
+      if System.in == null then throw StreamCutError() else Util.read(System.in, 10*1024*1024)
+
+trait Source[T]:
+  type E <: Exception
+  def read(value: T): DataStream throws E
+
+object Sink:
+  given Sink[Stdout.type] with
+    type E = StreamCutError
+    def write(value: Stdout.type, stream: LazyList[Bytes]): Unit throws StreamCutError =
+      if System.out == null then throw StreamCutError() else Util.write(stream, System.out)
+  
+  given Sink[Stderr.type] with
+    type E = StreamCutError
+    def write(value: Stderr.type, stream: LazyList[Bytes]): Unit throws StreamCutError =
+      if System.err == null then throw StreamCutError() else Util.write(stream, System.err)
+
+trait Sink[T]:
+  type E <: Exception
+  def write(value: T, stream: LazyList[Bytes]): Unit throws E
+
+object Streamable:
+  given Streamable[LazyList[Bytes]] = identity(_)
+
+trait Streamable[T]:
+  def stream(value: T): LazyList[Bytes]
+
+trait Readable[T]:
+  type E <: Exception
+  def fromStream(stream: DataStream): T throws E | StreamCutError
+
+object Stdin
+object Stdout
+object Stderr
+
+extension [T](value: T)
+  def dataStream(using src: Source[T]): DataStream throws src.E = src.read(value)
+  
+  def writeStream(stream: LazyList[Bytes])(using sink: Sink[T]): Unit throws sink.E =
+    sink.write(value, stream)
+  
+  def writeTo[S](destination: S)(using sink: Sink[S], streamable: Streamable[T])
+      : Unit throws sink.E =
+    sink.write(destination, streamable.stream(value))
+
+  def read[S](using readable: Readable[S], src: Source[T])
+      : S throws readable.E | src.E | StreamCutError =
+    readable.fromStream(dataStream)
