@@ -22,6 +22,7 @@ import euphemism.*
 import scintillate.*
 import cataract.*
 import honeycomb.*
+import eucalyptus.*
 import rudiments.*
 
 trait Browser(name: String):
@@ -41,7 +42,7 @@ trait Browser(name: String):
     finally server.stop()
 
 object Firefox extends Browser("firefox"):
-  def launch(port: Int)(using Env): Server =
+  def launch(port: Int)(using Env, Log): Server =
     val server: Process[String] = sh"geckodriver --port $port".fork()
     Thread.sleep(100)
     Server(port, server)
@@ -49,12 +50,12 @@ object Firefox extends Browser("firefox"):
   def stop(server: Server): Unit = server.value.abort()
 
 object Chrome extends Browser("chrome"):
-  def launch(port: Int)(using Env): Server =
+  def launch(port: Int)(using Env, Log): Server =
     val server: Process[String] = sh"chromedriver --port=$port".fork()
     Thread.sleep(100)
     Server(port, server)
 
-  def stop(server: Server): Unit = server.value.abort()
+  def stop(server: Server)(using Log): Unit = server.value.abort()
 
 def browser(using WebDriver#Session): WebDriver#Session = summon[WebDriver#Session]
 
