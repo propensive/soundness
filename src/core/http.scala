@@ -113,6 +113,7 @@ case class HttpResponse(status: HttpStatus, headers: Map[ResponseHeader, List[St
 
 object Locatable:
   given Locatable[Uri] = identity(_)
+  given Locatable[String] = Uri(_, Params(Nil))
 
 trait Locatable[T]:
   def location(value: T): Uri
