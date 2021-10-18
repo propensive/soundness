@@ -92,7 +92,7 @@ object Media:
       throw InterpolationError("could not find the file 'gesticulate/media.types' on the classpath")
     }.nn
 
-    Source.fromInputStream(stream).getLines.map(_.cut("\t").head.lower).to(Set)
+    scala.io.Source.fromInputStream(stream).getLines.map(_.cut("\t").head.lower).to(Set)
 
   object Prefix extends Interpolator[Unit, String, MediaType]:
     def parse(state: String, next: String): String = next
@@ -112,7 +112,7 @@ object Media:
         case Subtype.Standard(_) =>
           if !systemMediaTypes.contains(parsed.basic)
           then
-            val suggestion = systemMediaTypes.minBy(_.editDistanceTo(parsed.basic))
+            val suggestion = systemMediaTypes.minBy(_.lev(parsed.basic))
             throw InterpolationError(txt"""${parsed.basic} is not a registered media type; did you
                                            mean $suggestion or
                                            ${parsed.basic.replaceAll("/", "/x-").nn}?""".s)
