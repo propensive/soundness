@@ -220,4 +220,4 @@ enum ExitStatus:
   case Ok
   case Fail(status: Int)
 
-private[guillotine] given Realm("guillotine")
+given realm: Realm = Realm("guillotine")

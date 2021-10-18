@@ -19,10 +19,14 @@ package guillotine
 import contextual.*
 import rudiments.*
 import gossamer.*
+import escapade.*
 import probably.*
+import eucalyptus.*
 import scala.quoted.*, staging.*
 
 import unsafeExceptions.canThrowAny
+
+given Log(Everything.fine |-> Stdout)
 
 object Tests extends Suite("Guillotine tests"):
   def run(using Runner): Unit =
@@ -49,7 +53,7 @@ object Tests extends Suite("Guillotine tests"):
         sh"ls  $flags     $file"
       }.assert(_ == Command("ls", "-la", "filename"))
       
-      test("parse irregular spacing") {
+      test("parse irregular spacing 2") {
         val flags = "-la"
         val file = "filename"
         sh"ls  $flags $file"
