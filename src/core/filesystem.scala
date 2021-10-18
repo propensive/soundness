@@ -176,6 +176,17 @@ extends Root(pathSeparator, fsPrefix):
     def hardLinkTo(dest: FsPath): Inode throws AlreadyExistent | DifferentFilesystems | NotFile |
         NotReadable | Nonexistent | NotDirectory | NotWritable
 
+  object File:
+    given Source[File] with
+      type E = Nonexistent | NotReadable
+      def read(file: File): DataStream throws E =
+        try
+          val in = ji.BufferedInputStream(ji.FileInputStream(file.javaPath.toFile))
+          Util.read(in, 65536)
+        catch case e: ji.FileNotFoundException =>
+          if e.getMessage.nn.contains("(Permission denied)") then throw NotReadable(file)
+          else throw Nonexistent(file.path)
+
   case class File(initPath: Path.Absolute) extends Inode(initPath):
     def directory: Option[Directory] = None
     def file: Option[File] = Some(this)
