@@ -60,13 +60,13 @@ case class AnsiString(string: String, escapes: TreeMap[Int, List[Ansi.Change]] =
   def span(n: Int): AnsiString = take(n).padTo(n)
 
   def take(n: Int): AnsiString =
-    val pops = List.fill(0.max(escapes.filter(_(0) > length).flatMap(_(1)).foldLeft(0) {
+    val pops = List.fill(0.max(escapes.filter(_(0) > n).flatMap(_(1)).foldLeft(0) {
       case (count, Ansi.Change.Push(_))    => count - 1
       case (count, Ansi.Change.Pop)        => count + 1
       case (count, Ansi.Change.Literal(_)) => count
     }))(Ansi.Change.Pop)
     
-    val newEscapes = escapes.filter(_(0) <= length)
+    val newEscapes = escapes.filter(_(0) <= n)
     
     AnsiString(string.take(n), newEscapes.updated(n, escapes.getOrElse(n, Nil) ++ pops))
 
@@ -127,28 +127,30 @@ case class AnsiString(string: String, escapes: TreeMap[Int, List[Ansi.Change]] =
   infix def +(ansi: AnsiString): AnsiString =
     AnsiString(string+ansi.string, escapes ++ ansi.shift(length))
 
+type Stylize[T] = Substitution[Ansi.Input, T, "esc"]
+
+object Stylize:
+  def apply(fn: Style => Style): Ansi.Input.Apply = Ansi.Input.Apply(fn)
+
 object Ansi:
   def strip(string: String): String = string.replaceAll("""\e\[?.*?[\@-~]""", "").nn
 
   given Substitution[Ansi.Input, String, "str"] = str => Ansi.Input.Str(AnsiString(str))
   given Substitution[Ansi.Input, Int, "str"] = int => Ansi.Input.Str(AnsiString(int.toString))
-  given Substitution[Ansi.Input, Escape, "esc"] = identity(_)
-  
-  given Substitution[Ansi.Input, Color, "esc"] =
-    color => Ansi.Input.Apply(_.copy(fg = color.standardSrgb))
-  
-  given Substitution[Ansi.Input, Bg, "esc"] =
-    bgColor => Ansi.Input.Apply(_.copy(bg = Some(bgColor.color.standardSrgb)))
+  given Stylize[Escape] = identity(_)
+  given Stylize[Color] = color => Stylize(_.copy(fg = color.standardSrgb))
+  given Stylize[Bg] =
+    bgColor => Stylize(_.copy(bg = Some(bgColor.color.standardSrgb)))
   
   given [T: AnsiShow]: Substitution[Ansi.Input, T, "str"] =
     value => Ansi.Input.Str(summon[AnsiShow[T]].ansiShow(value))
 
-  given Substitution[Ansi.Input, Bold.type, "esc"] = _ => Ansi.Input.Apply(_.copy(bold = true))
-  given Substitution[Ansi.Input, Italic.type, "esc"] = _ => Ansi.Input.Apply(_.copy(italic = true))
-  given Substitution[Ansi.Input, Underline.type, "esc"] = _ => Ansi.Input.Apply(_.copy(underline = true))
-  given Substitution[Ansi.Input, Strike.type, "esc"] = _ => Ansi.Input.Apply(_.copy(strike = true))
-  given Substitution[Ansi.Input, Conceal.type, "esc"] = _ => Ansi.Input.Apply(_.copy(conceal = true))
-  given Substitution[Ansi.Input, Reverse.type, "esc"] = _ => Ansi.Input.Apply(_.copy(reverse = true))
+  given Stylize[Bold.type] = _ => Stylize(_.copy(bold = true))
+  given Stylize[Italic.type] = _ => Stylize(_.copy(italic = true))
+  given Stylize[Underline.type] = _ => Stylize(_.copy(underline = true))
+  given Stylize[Strike.type] = _ => Stylize(_.copy(strike = true))
+  given Stylize[Conceal.type] = _ => Stylize(_.copy(conceal = true))
+  given Stylize[Reverse.type] = _ => Stylize(_.copy(reverse = true))
 
   enum Input:
     case Str(string: AnsiString)
