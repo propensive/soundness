@@ -54,7 +54,7 @@ For example,
 ```scala
 ansi"This text is $Bold[bold], $Underline{underlined} and $BrightRedFg<bright red>."
 ```
-will apply each style only to the words inside the brackets.
+°will apply each style only to the words inside the brackets.
 
 Plenty of choice is given over which type of brackets to use, so that a choice can (hopefully) be
 made which does not conflict with the real content of the string. Regions may be nested arbitrarily
@@ -91,7 +91,26 @@ ansi"$Gold[gold, $Indigo[indigo, $HotPink[hot pink], indigo] $White[and] gold]"
 
 ## Manipulating colors
 
-TBC
+Each substitution into an `ansi""` string interpolator may apply a change to the existing style,
+represented by and tracked throughout the string as an instance of the case class, `Style`.
+Typically, these changes will specify the new state of properties such as _bold_, _italic_ or the
+background color.
+
+But the changes may also be a transformation of the existing style information. For example, the
+bold state could be flipped depending on what it was before, or the foreground color could be
+mixed with black to give a "faded" or "darkened" effect to the text, without changing its hue.
+
+Any such transformation requires an object to be used as a substitution to an interpolated string
+to introduce it, plus a corresponding contextual `Stylize` instance, for example:
+```scala
+case class Fade(amount: Double)
+
+given Stylize[Fade] = fade =>
+  Stylize { style =>
+    style.copy(fg = style.fg.hsv.shade(fade.amount).srgb)
+  }
+```
+
 
 ## Status
 
