@@ -158,6 +158,16 @@ trait ByteEncoder[ES <: EncodingScheme]:
 
 object ByteDecoder:
   given ByteDecoder[Base64] = value => IArray.from(Base64Decoder.nn.decode(value).nn)
+  
+  given ByteDecoder[Hex] = value =>
+    val data = Array.fill[Byte](value.length/2)(0)
+    
+    (0 until value.length by 2).foreach { i =>
+      try data(i/2) = ((Character.digit(value(i), 16) << 4) + Character.digit(value(i + 1), 16)).toByte
+      catch case e: OutOfRangeError => throw Impossible("every accessed element should be within range")
+    }
+
+    data.unsafeImmutable
 
 extension (value: String)
   def decode[T <: EncodingScheme: ByteDecoder]: Bytes = summon[ByteDecoder[T]].decode(value)
