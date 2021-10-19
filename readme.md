@@ -100,6 +100,14 @@ _on_ or _off_) to be specified.
 Profanity does not currently support Windows.
 
 
+## Related Projects
+
+The following _Niveau_ libraries are dependencies of _Profanity_:
+
+[![Gossamer](https://github.com/propensive/gossamer/raw/main/doc/images/128x128.png)](https://github.com/propensive/gossamer/) &nbsp;
+
+No other _Niveau_ libraries are dependents of _Profanity_.
+
 ## Status
 
 Profanity is classified as __fledgling__. Propensive defines the following five stability levels for open-source projects:
