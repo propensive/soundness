@@ -74,6 +74,16 @@ Given that a relative path is (by definition) not attached to any particular roo
 APIs that accept relative paths, between accepting _any_ kind of relative path (regardless of its
 origin) and accepting just those originating from a particular root.
 
+## Related Projects
+
+The following _Niveau_ libraries are dependencies of _Slalom_:
+
+[![Rudiments](https://github.com/propensive/rudiments/raw/main/doc/images/128x128.png)](https://github.com/propensive/rudiments/) &nbsp;
+
+The following _Niveau_ libraries are dependents of _Slalom_:
+
+[![Jovian](https://github.com/propensive/jovian/raw/main/doc/images/128x128.png)](https://github.com/propensive/jovian/) &nbsp; [![Scintillate](https://github.com/propensive/scintillate/raw/main/doc/images/128x128.png)](https://github.com/propensive/scintillate/) &nbsp;
+
 ## Status
 
 Slalom is classified as __fledgling__. Propensive defines the following five stability levels for open-source projects:
