@@ -18,7 +18,6 @@ unrepresentable, which is contravened when media types are represented by string
 - checks main media type (e.g. `text` or `image`), and suffixes (e.g. `+gzip` or `+json`)
 - supports media type parameters such as `charset=UTF-8`
 
-
 ## Getting Started
 
 ## `MediaType`
@@ -79,6 +78,13 @@ Media types may be parsed using `MediaType.parse(string)` which returns a `Media
 `InvalidMediaTypeError`. The `InvalidMediaTypeError.Nature` type encodes different varieties of
 parsing failure, should it be useful to distinguish between these.
 
+## Dependencies
+
+_Gesticulate_ depends on the following Niveau libraries:
+
+![Gossamer](https://github.com/propensive/gossamer/raw/main/doc/images/128x128.png)
+![Contextual](https://github.com/propensive/contextual/raw/main/doc/images/128x128.png)
+![Rudiments](https://github.com/propensive/rudiments/raw/main/doc/images/128x128.png)
 
 ## Status
 
