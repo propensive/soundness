@@ -115,6 +115,14 @@ These two extension methods produce a two-tuple and a three-tuple (respectively)
 is applied to. This can be useful in a subsequent `map` operation.
 
 
+## Related Projects
+
+_Rudiments_ has no dependencies.
+
+The following _Niveau_ libraries are dependents of _Rudiments_:
+
+[![Adversaria](https://github.com/propensive/adversaria/raw/main/doc/images/128x128.png)](https://github.com/propensive/adversaria/) &nbsp; [![Contextual](https://github.com/propensive/contextual/raw/main/doc/images/128x128.png)](https://github.com/propensive/contextual/) &nbsp; [![Cosmopolite](https://github.com/propensive/cosmopolite/raw/main/doc/images/128x128.png)](https://github.com/propensive/cosmopolite/) &nbsp; [![Escritoire](https://github.com/propensive/escritoire/raw/main/doc/images/128x128.png)](https://github.com/propensive/escritoire/) &nbsp; [![Exoskeleton](https://github.com/propensive/exoskeleton/raw/main/doc/images/128x128.png)](https://github.com/propensive/exoskeleton/) &nbsp; [![Gossamer](https://github.com/propensive/gossamer/raw/main/doc/images/128x128.png)](https://github.com/propensive/gossamer/) &nbsp; [![Honeycomb](https://github.com/propensive/honeycomb/raw/main/doc/images/128x128.png)](https://github.com/propensive/honeycomb/) &nbsp; [![Kaleidoscope](https://github.com/propensive/kaleidoscope/raw/main/doc/images/128x128.png)](https://github.com/propensive/kaleidoscope/) &nbsp; [![Slalom](https://github.com/propensive/slalom/raw/main/doc/images/128x128.png)](https://github.com/propensive/slalom/) &nbsp; [![Wisteria](https://github.com/propensive/wisteria/raw/main/doc/images/128x128.png)](https://github.com/propensive/wisteria/) &nbsp;
+
 ## Status
 
 Rudiments is classified as __fledgling__. Propensive defines the following five stability levels for open-source projects:
