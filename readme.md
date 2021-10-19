@@ -168,6 +168,8 @@ Iridescence is classified as __fledgling__. Propensive defines the following fiv
 - _dependable_: production-ready, subject to controlled ongoing maintenance and enhancement; tagged as version `1.0` or later
 - _adamantine_: proven, reliable and production-ready, with no further breaking changes ever anticipated
 
+Iridescence is designed to be _small_. Its entire source code currently consists of 360 lines of code.
+
 ## Availability
 
 Iridescence&rsquo;s source is available on GitHub, and may be built with [Fury](https://github.com/propensive/fury) by
@@ -189,8 +191,9 @@ src="https://img.shields.io/badge/-good%20first%20issue-67b6d0.svg" valign="midd
 We suggest that all contributors read the [Contributing Guide](/contributing.md) to make the process of
 contributing to Iridescence easier.
 
-Please __do not__ contact project maintainers privately with questions, as other users cannot then benefit from
-answers given in private.
+Please __do not__ contact project maintainers privately with questions. While it can be tempting to repsond to
+such questions, private answers cannot be shared with a wider audience, and it can result in duplication of
+effort.
 
 ## Author
 
@@ -205,5 +208,5 @@ The word _iridescent_, defined as "having a play of changeable colors", also des
 
 ## License
 
-Iridescence is copyright &copy; 2021-21 Jon Pretty & Propensive O&Uuml;, and is made available under the
+Iridescence is copyright &copy; 2021 Jon Pretty & Propensive O&Uuml;, and is made available under the
 [Apache 2.0 License](/license.md).
