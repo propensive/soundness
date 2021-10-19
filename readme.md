@@ -91,6 +91,14 @@ single `content` parameter, which can be one of a variety of types. As standard,
 - `LazyList[String]`
 which together support complete and streamed byte and character data.
 
+## Related Projects
+
+The following _Niveau_ libraries are dependencies of _Jovian_:
+
+[![Clairvoyant](https://github.com/propensive/clairvoyant/raw/main/doc/images/128x128.png)](https://github.com/propensive/clairvoyant/) &nbsp; [![Gastronomy](https://github.com/propensive/gastronomy/raw/main/doc/images/128x128.png)](https://github.com/propensive/gastronomy/) &nbsp; [![Slalom](https://github.com/propensive/slalom/raw/main/doc/images/128x128.png)](https://github.com/propensive/slalom/) &nbsp;
+
+No other _Niveau_ libraries are dependents of _Jovian_.
+
 ## Status
 
 Jovian is classified as __fledgling__. Propensive defines the following five stability levels for open-source projects:
