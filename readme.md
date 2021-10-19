@@ -54,7 +54,7 @@ For example,
 ```scala
 ansi"This text is $Bold[bold], $Underline{underlined} and $BrightRedFg<bright red>."
 ```
-°will apply each style only to the words inside the brackets.
+will apply each style only to the words inside the brackets.
 
 Plenty of choice is given over which type of brackets to use, so that a choice can (hopefully) be
 made which does not conflict with the real content of the string. Regions may be nested arbitrarily
@@ -111,6 +111,14 @@ given Stylize[Fade] = fade =>
   }
 ```
 
+
+## Related Projects
+
+_Escapade_ has no dependencies.
+
+The following _Niveau_ libraries are dependents of _Escapade_:
+
+[![Eucalyptus](https://github.com/propensive/eucalyptus/raw/main/doc/images/128x128.png)](https://github.com/propensive/eucalyptus/) &nbsp;
 
 ## Status
 
