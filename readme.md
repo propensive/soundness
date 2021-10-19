@@ -23,6 +23,16 @@ enforcing nesting rules between different tags.
 TBC
 
 
+## Related Projects
+
+The following _Niveau_ libraries are dependencies of _Honeycomb_:
+
+[![Clairvoyant](https://github.com/propensive/clairvoyant/raw/main/doc/images/128x128.png)](https://github.com/propensive/clairvoyant/) &nbsp; [![Rudiments](https://github.com/propensive/rudiments/raw/main/doc/images/128x128.png)](https://github.com/propensive/rudiments/) &nbsp;
+
+The following _Niveau_ libraries are dependents of _Honeycomb_:
+
+[![Punctuation](https://github.com/propensive/punctuation/raw/main/doc/images/128x128.png)](https://github.com/propensive/punctuation/) &nbsp;
+
 ## Status
 
 Honeycomb is classified as __fledgling__. Propensive defines the following five stability levels for open-source projects:
