@@ -82,9 +82,9 @@ parsing failure, should it be useful to distinguish between these.
 
 _Gesticulate_ depends on the following Niveau libraries:
 
-![Gossamer](https://github.com/propensive/gossamer/raw/main/doc/images/128x128.png)
-![Contextual](https://github.com/propensive/contextual/raw/main/doc/images/128x128.png)
-![Rudiments](https://github.com/propensive/rudiments/raw/main/doc/images/128x128.png)
+[![Gossamer](https://github.com/propensive/gossamer/raw/main/doc/images/128x128.png)](https://github.com/propensive/gossamer/)
+[![Contextual](https://github.com/propensive/contextual/raw/main/doc/images/128x128.png)](https://github.com/propensive/contextual/)
+[![Rudiments](https://github.com/propensive/rudiments/raw/main/doc/images/128x128.png)](https://github.com/propensive/rudiments/)
 
 ## Status
 
