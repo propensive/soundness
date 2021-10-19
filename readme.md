@@ -189,6 +189,14 @@ The `Runner` introduced by the `suite` method is the same as any other `Runner`,
 defined inside other test suites, making it possible to organise tests into a hierarchy.
 
 
+## Related Projects
+
+The following _Niveau_ libraries are dependencies of _Probably_:
+
+[![Escritoire](https://github.com/propensive/escritoire/raw/main/doc/images/128x128.png)](https://github.com/propensive/escritoire/) &nbsp; [![Wisteria](https://github.com/propensive/wisteria/raw/main/doc/images/128x128.png)](https://github.com/propensive/wisteria/) &nbsp;
+
+No other _Niveau_ libraries are dependents of _Probably_.
+
 ## Status
 
 Probably is classified as __fledgling__. Propensive defines the following five stability levels for open-source projects:
