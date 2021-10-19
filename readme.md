@@ -150,6 +150,14 @@ the `Language` coproduct with each of the `Messages` products, their type parame
 Note, however, that the `Language.parse` method, however, can only be invoked on a concrete type, as it needs
 to build a concrete parser for the languages in the union type.
 
+## Related Projects
+
+The following _Niveau_ libraries are dependencies of _Cosmopolite_:
+
+[![Rudiments](https://github.com/propensive/rudiments/raw/main/doc/images/128x128.png)](https://github.com/propensive/rudiments/) &nbsp;
+
+No other _Niveau_ libraries are dependents of _Cosmopolite_.
+
 ## Status
 
 Cosmopolite is classified as __fledgling__. Propensive defines the following five stability levels for open-source projects:
