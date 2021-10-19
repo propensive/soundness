@@ -18,6 +18,14 @@ Caesura provides an API for reading and writing CSV and TSV.
 
 TBC
 
+## Related Projects
+
+The following _Niveau_ libraries are dependencies of _Caesura_:
+
+[![Wisteria](https://github.com/propensive/wisteria/raw/main/doc/images/128x128.png)](https://github.com/propensive/wisteria/) &nbsp;
+
+No other _Niveau_ libraries are dependents of _Caesura_.
+
 ## Status
 
 Caesura is classified as __fledgling__. Propensive defines the following five stability levels for open-source projects:
