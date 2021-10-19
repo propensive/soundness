@@ -13,10 +13,11 @@ unrepresentable, which is contravened when media types are represented by string
 
 - statically-checked representations of Media Types (a.k.a. MIME types)
 - uses a `media""` string interpolator, e.g. `media"text/plain"`
-- checks media types against the official IANA list
-- support arbitrary custom `x-`-, `vnd.`- and `prs.`-prefixed types
+- checks media types against the official IANA list at compiletime
+- supports arbitrary custom `x-`-, `vnd.`- and `prs.`-prefixed types
 - checks main media type (e.g. `text` or `image`), and suffixes (e.g. `+gzip` or `+json`)
 - supports media type parameters such as `charset=UTF-8`
+
 
 ## Getting Started
 
@@ -78,11 +79,16 @@ Media types may be parsed using `MediaType.parse(string)` which returns a `Media
 `InvalidMediaTypeError`. The `InvalidMediaTypeError.Nature` type encodes different varieties of
 parsing failure, should it be useful to distinguish between these.
 
-## Dependencies
 
-_Gesticulate_ depends on the following Niveau libraries:
+## Related Projects
 
-[![Gossamer](https://github.com/propensive/gossamer/raw/main/doc/images/128x128.png)](https://github.com/propensive/gossamer/) &nbsp; [![Contextual](https://github.com/propensive/contextual/raw/main/doc/images/128x128.png)](https://github.com/propensive/contextual/) &nbsp; [![Rudiments](https://github.com/propensive/rudiments/raw/main/doc/images/128x128.png)](https://github.com/propensive/rudiments/)
+The following _Niveau_ libraries are dependencies of _Gesticulate_:
+
+[![Gossamer](https://github.com/propensive/gossamer/raw/main/doc/images/128x128.png)](https://github.com/propensive/gossamer/) &nbsp;
+
+The following _Niveau_ libraries are dependents of _Gesticulate_:
+
+[![Scintillate](https://github.com/propensive/scintillate/raw/main/doc/images/128x128.png)](https://github.com/propensive/scintillate/) &nbsp;
 
 ## Status
 
