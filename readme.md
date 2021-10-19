@@ -103,6 +103,14 @@ given Log(
 ```
 
 
+## Related Projects
+
+The following _Niveau_ libraries are dependencies of _Eucalyptus_:
+
+[![Escapade](https://github.com/propensive/escapade/raw/main/doc/images/128x128.png)](https://github.com/propensive/escapade/) &nbsp;
+
+No other _Niveau_ libraries are dependents of _Eucalyptus_.
+
 ## Status
 
 Eucalyptus is classified as __fledgling__. Propensive defines the following five stability levels for open-source projects:
