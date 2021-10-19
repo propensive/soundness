@@ -25,6 +25,14 @@ and block-level content, with converters to
 TBC
 
 
+## Related Projects
+
+The following _Niveau_ libraries are dependencies of _Punctuation_:
+
+[![Clairvoyant](https://github.com/propensive/clairvoyant/raw/main/doc/images/128x128.png)](https://github.com/propensive/clairvoyant/) &nbsp; [![Contextual](https://github.com/propensive/contextual/raw/main/doc/images/128x128.png)](https://github.com/propensive/contextual/) &nbsp; [![Honeycomb](https://github.com/propensive/honeycomb/raw/main/doc/images/128x128.png)](https://github.com/propensive/honeycomb/) &nbsp;
+
+No other _Niveau_ libraries are dependents of _Punctuation_.
+
 ## Status
 
 Punctuation is classified as __fledgling__. Propensive defines the following five stability levels for open-source projects:
