@@ -206,6 +206,14 @@ The `Redirect` and `NotFound` case classes provide representations of an HTTP `3
 `Redirect` takes a single parameter, a representation of a location typically as a `Uri` or a `String`, but
 other representations can be used provided a `ToLocation` for that type is in contextual scope.
 
+## Related Projects
+
+The following _Niveau_ libraries are dependencies of _Scintillate_:
+
+[![Clairvoyant](https://github.com/propensive/clairvoyant/raw/main/doc/images/128x128.png)](https://github.com/propensive/clairvoyant/) &nbsp; [![Gastronomy](https://github.com/propensive/gastronomy/raw/main/doc/images/128x128.png)](https://github.com/propensive/gastronomy/) &nbsp; [![Gesticulate](https://github.com/propensive/gesticulate/raw/main/doc/images/128x128.png)](https://github.com/propensive/gesticulate/) &nbsp; [![Slalom](https://github.com/propensive/slalom/raw/main/doc/images/128x128.png)](https://github.com/propensive/slalom/) &nbsp; [![Wisteria](https://github.com/propensive/wisteria/raw/main/doc/images/128x128.png)](https://github.com/propensive/wisteria/) &nbsp;
+
+No other _Niveau_ libraries are dependents of _Scintillate_.
+
 ## Status
 
 Scintillate is classified as __fledgling__. Propensive defines the following five stability levels for open-source projects:
