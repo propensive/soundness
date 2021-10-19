@@ -76,6 +76,14 @@ println(dag.map(_.name).dot.serialize)
 This library is incomplete, inadequately tested and subject to further development, and is recommended to be used by developers who do not mind examining the source code to diagnose unexpected behavior.
 
 
+## Related Projects
+
+The following _Niveau_ libraries are dependencies of _Acyclicity_:
+
+[![Contextual](https://github.com/propensive/contextual/raw/main/doc/images/128x128.png)](https://github.com/propensive/contextual/) &nbsp;
+
+No other _Niveau_ libraries are dependents of _Acyclicity_.
+
 ## Status
 
 Acyclicity is classified as __embryonic__. Propensive defines the following five stability levels for open-source projects:
