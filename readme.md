@@ -21,6 +21,14 @@ provide intuitive syntax for manipulating XML, as well as better typesafety and 
 TBC
 
 
+## Related Projects
+
+The following _Niveau_ libraries are dependencies of _Xylophone_:
+
+[![Clairvoyant](https://github.com/propensive/clairvoyant/raw/main/doc/images/128x128.png)](https://github.com/propensive/clairvoyant/) &nbsp; [![Contextual](https://github.com/propensive/contextual/raw/main/doc/images/128x128.png)](https://github.com/propensive/contextual/) &nbsp; [![Wisteria](https://github.com/propensive/wisteria/raw/main/doc/images/128x128.png)](https://github.com/propensive/wisteria/) &nbsp;
+
+No other _Niveau_ libraries are dependents of _Xylophone_.
+
 ## Status
 
 Xylophone is classified as __fledgling__. Propensive defines the following five stability levels for open-source projects:
