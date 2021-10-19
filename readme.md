@@ -152,6 +152,14 @@ given Executor[Int] = summon[Executor[String]].map(_.toInt)
 since all `Executor`s are functors.
 
 
+## Related Projects
+
+The following _Niveau_ libraries are dependencies of _Guillotine_:
+
+[![Contextual](https://github.com/propensive/contextual/raw/main/doc/images/128x128.png)](https://github.com/propensive/contextual/) &nbsp;
+
+No other _Niveau_ libraries are dependents of _Guillotine_.
+
 ## Status
 
 Guillotine is classified as __fledgling__. Propensive defines the following five stability levels for open-source projects:
