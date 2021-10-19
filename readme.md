@@ -181,6 +181,14 @@ Css(margin = (1.px, 3.em))
 
 
 
+## Related Projects
+
+The following _Niveau_ libraries are dependencies of _Cataract_:
+
+[![Clairvoyant](https://github.com/propensive/clairvoyant/raw/main/doc/images/128x128.png)](https://github.com/propensive/clairvoyant/) &nbsp; [![Iridescence](https://github.com/propensive/iridescence/raw/main/doc/images/128x128.png)](https://github.com/propensive/iridescence/) &nbsp;
+
+No other _Niveau_ libraries are dependents of _Cataract_.
+
 ## Status
 
 Cataract is classified as __fledgling__. Propensive defines the following five stability levels for open-source projects:
