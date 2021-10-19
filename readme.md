@@ -68,6 +68,14 @@ the command that completions are being provided for, and _dir_ is the
 directory in which the script should be written.
 
 
+## Related Projects
+
+The following _Niveau_ libraries are dependencies of _Exoskeleton_:
+
+[![Rudiments](https://github.com/propensive/rudiments/raw/main/doc/images/128x128.png)](https://github.com/propensive/rudiments/) &nbsp;
+
+No other _Niveau_ libraries are dependents of _Exoskeleton_.
+
 ## Status
 
 Exoskeleton is classified as __fledgling__. Propensive defines the following five stability levels for open-source projects:
