@@ -127,6 +127,16 @@ List("one", "two", "three").join("Choose ", ", ", " or ", ".")
 results in, `"Choose one, two or three."`.
 
 
+## Related Projects
+
+The following _Niveau_ libraries are dependencies of _Gossamer_:
+
+[![Rudiments](https://github.com/propensive/rudiments/raw/main/doc/images/128x128.png)](https://github.com/propensive/rudiments/) &nbsp; [![Wisteria](https://github.com/propensive/wisteria/raw/main/doc/images/128x128.png)](https://github.com/propensive/wisteria/) &nbsp;
+
+The following _Niveau_ libraries are dependents of _Gossamer_:
+
+[![Gesticulate](https://github.com/propensive/gesticulate/raw/main/doc/images/128x128.png)](https://github.com/propensive/gesticulate/) &nbsp; [![Profanity](https://github.com/propensive/profanity/raw/main/doc/images/128x128.png)](https://github.com/propensive/profanity/) &nbsp;
+
 ## Status
 
 Gossamer is classified as __fledgling__. Propensive defines the following five stability levels for open-source projects:
