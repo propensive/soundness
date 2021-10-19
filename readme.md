@@ -148,6 +148,16 @@ These are available on the `Srgb` type, with the exception of `Hsl#css`.
 There is no support for transparency.
 
 
+## Related Projects
+
+The following _Niveau_ libraries are dependencies of _Iridescence_:
+
+[![Contextual](https://github.com/propensive/contextual/raw/main/doc/images/128x128.png)](https://github.com/propensive/contextual/) &nbsp;
+
+The following _Niveau_ libraries are dependents of _Iridescence_:
+
+[![Cataract](https://github.com/propensive/cataract/raw/main/doc/images/128x128.png)](https://github.com/propensive/cataract/) &nbsp;
+
 ## Status
 
 Iridescence is classified as __fledgling__. Propensive defines the following five stability levels for open-source projects:
