@@ -213,6 +213,16 @@ implementations of `Rsa`, `Dsa`, `Aes`, `Sha1`, `Sha2` and `Md5` should be studi
 this possibility.
 
 
+## Related Projects
+
+The following _Niveau_ libraries are dependencies of _Gastronomy_:
+
+[![Kaleidoscope](https://github.com/propensive/kaleidoscope/raw/main/doc/images/128x128.png)](https://github.com/propensive/kaleidoscope/) &nbsp; [![Wisteria](https://github.com/propensive/wisteria/raw/main/doc/images/128x128.png)](https://github.com/propensive/wisteria/) &nbsp;
+
+The following _Niveau_ libraries are dependents of _Gastronomy_:
+
+[![Jovian](https://github.com/propensive/jovian/raw/main/doc/images/128x128.png)](https://github.com/propensive/jovian/) &nbsp; [![Scintillate](https://github.com/propensive/scintillate/raw/main/doc/images/128x128.png)](https://github.com/propensive/scintillate/) &nbsp;
+
 ## Status
 
 Gastronomy is classified as __maturescent__. Propensive defines the following five stability levels for open-source projects:
