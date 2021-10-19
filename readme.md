@@ -21,6 +21,12 @@ protocol.
 TBC
 
 
+## Related Projects
+
+_Tarantula_ has no dependencies.
+
+No other _Niveau_ libraries are dependents of _Tarantula_.
+
 ## Status
 
 Tarantula is classified as __fledgling__. Propensive defines the following five stability levels for open-source projects:
