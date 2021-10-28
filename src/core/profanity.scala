@@ -41,8 +41,8 @@ enum Keypress:
 trait Keyboard[+KeyType]:
   def interpret(bytes: List[Int]): LazyList[KeyType]
 
-abstract class ProfanityError(msg: Txt) extends Exception(str"profanity: $msg".s)
-case class TtyError(msg: Txt) extends ProfanityError(str"STDIN is not attached to a TTY")
+abstract class ProfanityError(msg: Text) extends Exception(t"profanity: $msg".s)
+case class TtyError(msg: Text) extends ProfanityError(t"STDIN is not attached to a TTY")
 
 sealed case class Tty(private[profanity] val out: ji.PrintStream)
 
@@ -52,14 +52,14 @@ object Tty:
 
   def capture[T](fn: Tty ?=> T): T throws TtyError =
     val libc: Libc = Native.load("c", classOf[Libc]).nn
-    if libc.isatty(0) != 1 then throw TtyError(str"the program is not running within a TTY")
+    if libc.isatty(0) != 1 then throw TtyError(t"the program is not running within a TTY")
     val oldTermios: Termios = Termios()
     libc.tcgetattr(0, oldTermios)
     val newTermios = Termios(oldTermios)
     newTermios.c_lflag = oldTermios.c_lflag & -76
     libc.tcsetattr(0, 0, newTermios)
-    val stdout = Option(System.out).getOrElse { throw TtyError(str"the STDOUT stream is null") }.nn
-    if stdout == noopOut then throw TtyError(str"the TTY has already been captured")
+    val stdout = Option(System.out).getOrElse { throw TtyError(t"the STDOUT stream is null") }.nn
+    if stdout == noopOut then throw TtyError(t"the TTY has already been captured")
 
     val tty: Tty = Tty(stdout)
     System.setOut(noopOut)
@@ -71,7 +71,7 @@ object Tty:
 
   def reportSize()(using Tty): Unit =
     val esc = 27.toChar
-    Tty.print(str"${esc}[s${esc}[4095C${esc}[4095B${esc}[6n${esc}[u")
+    Tty.print(t"${esc}[s${esc}[4095C${esc}[4095B${esc}[6n${esc}[u")
 
   def stream[K](using Tty, Keyboard[K]): LazyList[K] =
     val buf: Array[Byte] = new Array[Byte](16)
@@ -79,8 +79,8 @@ object Tty:
     
     summon[Keyboard[K]].interpret(buf.take(count).to(List).map(_.toInt)) #::: stream[K]
 
-  def print(msg: Txt)(using Tty) = summon[Tty].out.print(msg.s)
-  def println(msg: Txt)(using Tty) = summon[Tty].out.println(msg.s)
+  def print(msg: Text)(using Tty) = summon[Tty].out.print(msg.s)
+  def println(msg: Text)(using Tty) = summon[Tty].out.println(msg.s)
 
 
 object Keyboard:
@@ -126,13 +126,13 @@ object Keyboard:
       case ks if ks.last == 82  => readResize(ks)
       case other                => Keypress.EscapeSeq(other.map(_.toByte)*)
 
-def esc(code: Txt): Txt = str"${27.toChar}[${code}"
+def esc(code: Text): Text = t"${27.toChar}[${code}"
 
 object LineEditor:
 
-  def concealed(str: Txt): Txt = str.map { _ => '*' }
+  def concealed(str: Text): Text = str.map { _ => '*' }
 
-  def ask(initial: Txt = str"", render: Txt => Txt = identity(_))(using Tty): Txt =
+  def ask(initial: Text = t"", render: Text => Text = identity(_))(using Tty): Text =
     Tty.print(render(initial))
     
     def finished(key: Keypress) =
@@ -140,27 +140,27 @@ object LineEditor:
     
     Tty.stream[Keypress].takeWhile(!finished(_)).foldLeft(LineEditor(initial, initial.length)) {
       case (ed, next) =>
-        if ed.pos > 0 then Tty.print(esc(str"${ed.pos}D"))
+        if ed.pos > 0 then Tty.print(esc(t"${ed.pos}D"))
         val newEd = ed(next)
         val line = newEd.content+" "*(ed.content.length - newEd.content.length)
         Tty.print(render(line))
-        if line.length > 0 then Tty.print(esc(str"${line.length}D"))
-        if newEd.pos > 0 then Tty.print(esc(str"${newEd.pos}C"))
+        if line.length > 0 then Tty.print(esc(t"${line.length}D"))
+        if newEd.pos > 0 then Tty.print(esc(t"${newEd.pos}C"))
         newEd
     }.content
 
-case class LineEditor(content: Txt = str"", pos: Int = 0):
+case class LineEditor(content: Text = t"", pos: Int = 0):
   import Keypress.*
 
   def apply(keypress: Keypress): LineEditor = try keypress match
-    case Printable(ch)  => copy(str"${content.take(pos)}$ch${content.drop(pos)}", pos + 1)
+    case Printable(ch)  => copy(t"${content.take(pos)}$ch${content.drop(pos)}", pos + 1)
     case Ctrl('U')      => copy(content.drop(pos), 0)
     
     case Ctrl('W')      => val prefix = content.take(0 max (pos - 1)).reverse.dropWhile(_ != ' ').reverse
-                           copy(str"$prefix${content.drop(pos)}", prefix.length)
+                           copy(t"$prefix${content.drop(pos)}", prefix.length)
     
-    case Delete         => copy(str"${content.take(pos)}${content.drop(pos + 1)}")
-    case Backspace      => copy(str"${content.take(pos - 1)}${content.drop(pos)}", (pos - 1) max 0)
+    case Delete         => copy(t"${content.take(pos)}${content.drop(pos + 1)}")
+    case Backspace      => copy(t"${content.take(pos - 1)}${content.drop(pos)}", (pos - 1) max 0)
     case Home           => copy(pos = 0)
     case End            => copy(pos = content.length)
     case LeftArrow      => copy(pos = (pos - 1) max 0)
@@ -176,22 +176,22 @@ case class LineEditor(content: Txt = str"", pos: Int = 0):
   catch case OutOfRangeError(_, _, _) => this
 
 object SelectMenu:
-  def ask(options: List[Txt], initial: Int = 0, renderOn: Txt => Txt = s => str" > $s",
-              renderOff: Txt => Txt = s => str"   $s")
+  def ask(options: List[Text], initial: Int = 0, renderOn: Text => Text = s => t" > $s",
+              renderOff: Text => Text = s => t"   $s")
          (using Tty): Int =
     
     def finished(key: Keypress) =
       key == Keypress.Enter || key == Keypress.Ctrl('D') || key == Keypress.Ctrl('C')
 
-    def render(options: List[Txt], current: Int): Unit =
+    def render(options: List[Text], current: Int): Unit =
       options.zipWithIndex.foreach { case (opt, idx) =>
         Tty.print(if idx == current then renderOn(opt) else renderOff(opt))
-        Tty.print(esc(str"K"))
-        Tty.print(str"\n")
+        Tty.print(esc(t"K"))
+        Tty.print(t"\n")
       }
-      Tty.print(esc(str"${options.length}A"))
+      Tty.print(esc(t"${options.length}A"))
 
-    Tty.print(esc(str"?25l"))
+    Tty.print(esc(t"?25l"))
     
     val menu = SelectMenu(options, initial)
     render(menu.options, menu.current)
@@ -203,12 +203,12 @@ object SelectMenu:
         newMenu
     }
 
-    Tty.print(esc(str"J"))
-    Tty.print(esc(str"?25h"))
+    Tty.print(esc(t"J"))
+    Tty.print(esc(t"?25h"))
 
     result.current
 
-case class SelectMenu(options: List[Txt], current: Int):
+case class SelectMenu(options: List[Text], current: Int):
   import Keypress.*
   def apply(keypress: Keypress): SelectMenu = try keypress match
     case UpArrow   => copy(current = 0 max current - 1)
