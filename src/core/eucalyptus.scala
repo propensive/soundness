@@ -31,11 +31,11 @@ import java.util.concurrent as juc
 
 object Timestamp:
   def apply(): Timestamp = System.currentTimeMillis
-  given Highlight[Timestamp] = _ => colors.Tan
+  given show: Show[Timestamp] = ts => dateFormat.format(ju.Date(ts)).nn.show
+  given AnsiShow[Timestamp] = timestamp => ansi"${colors.Tan}(${show.show(timestamp)})"
 
   private val dateFormat = jt.SimpleDateFormat("yyyy-MMM-dd HH:mm:ss.SSS")
 
-  given Show[Timestamp] = ts => dateFormat.format(ju.Date(ts)).nn.text
 
 opaque type Timestamp = Long
 
@@ -47,7 +47,7 @@ object Level:
       case Warn => colors.Goldenrod
       case Fail => colors.OrangeRed
 
-    ansi"${Bg(color)}[${colors.Black}($Bold( ${level.toString.upper} ))]"
+    ansi"${Bg(color)}[${colors.Black}($Bold( ${Txt(level.toString).upper} ))]"
 
 enum Level:
   case Fine, Info, Warn, Fail
@@ -94,7 +94,7 @@ object Log:
 
   def silent: Log = Log()
 
-object Everything extends Realm("")
+object Everything extends Realm(str"")
 
 @implicitNotFound("eucalyptus: a contextual Log is required, for example:\n    given Log = "+
     "Log.stdout()\nor,\n    given Log = Log.silent")  
@@ -128,10 +128,10 @@ case class Rule[S, T](realm: Realm, level: Level, format: LogFormat[S, T], dest:
     (this.realm == Everything || realm == this.realm) && level >= this.level
 
 object Realm:
-  given Show[Realm] = _.name.text
-  given Highlight[Realm] = _ => colors.LightGreen
+  given Show[Realm] = _.name
+  given AnsiShow[Realm] = realm => ansi"${colors.LightGreen}(${realm.name})"
 
-case class Realm(name: String):
+case class Realm(name: Txt):
 
   inline def realm: this.type = this
 
@@ -187,7 +187,7 @@ object Logger:
     
     val name = str"eucalyptus-$id"
 
-    Thread(runnable, name).start()
+    Thread(runnable, name.s).start()
 
 class Logger(writer: LazyList[Bytes] => Unit, rules: Seq[Rule[?, ?]], interval: Int):
   private val queue: juc.ConcurrentLinkedQueue[Bytes] = juc.ConcurrentLinkedQueue[Bytes]()
@@ -211,4 +211,4 @@ class Logger(writer: LazyList[Bytes] => Unit, rules: Seq[Rule[?, ?]], interval: 
     Logger.run { () => try writer(logStream) catch case e: Exception => () }
     this
 
-given realm: Realm = Realm("eucalyptus")
+given realm: Realm = Realm(str"eucalyptus")
