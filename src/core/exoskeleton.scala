@@ -25,18 +25,18 @@ import scala.util.*, scala.annotation.tailrec
 
 import java.io.*
 
-class ExoskeletonError(msg: Txt) extends Exception(str"exoskeleton: $msg".s)
+class ExoskeletonError(msg: Text) extends Exception(t"exoskeleton: $msg".s)
 
-case class EnvError(envVar: Txt)
-extends ExoskeletonError(str"the environment variable $envVar was not found")
+case class EnvError(envVar: Text)
+extends ExoskeletonError(t"the environment variable $envVar was not found")
 
-case class InstallError() extends ExoskeletonError(str"installation failed")
+case class InstallError() extends ExoskeletonError(t"installation failed")
 
 object Generate extends Application:
   def main(using Shell): Exit =
     try
       val files = install()
-      println(s"Installed ${files.join(str", ")}")
+      println(s"Installed ${files.join(t", ")}")
       
       Exit(0)
     
@@ -44,7 +44,7 @@ object Generate extends Application:
       e.printStackTrace()
       Exit(1)
 
-  def install()(using Shell): Set[Txt] throws InstallError | EnvError = arguments.to(List) match
+  def install()(using Shell): Set[Text] throws InstallError | EnvError = arguments.to(List) match
     case cmd :: ShellType(shell) :: Nil =>
       Set(shell.install(cmd, summon[Shell].environment))
     
@@ -55,74 +55,74 @@ object Generate extends Application:
       Set()
 
   def complete(cli: Cli): Completions = cli.index match
-    case 1 => Completions(Nil, str"Please specify the command to complete")
+    case 1 => Completions(Nil, t"Please specify the command to complete")
     case 2 => Completions(ShellType.all.map { shell =>
                 Choice(shell.shell, shell.description, false, false)
               })
-    case 3 => Completions(Nil, str"Please specify the directory in which to install the file")
-    case _ => Completions(Nil, str"No more parameters")
+    case 3 => Completions(Nil, t"Please specify the directory in which to install the file")
+    case _ => Completions(Nil, t"No more parameters")
 
-case class Shell(args: IArray[Txt], environment: Map[Txt, Txt], properties: Map[Txt, Txt])
+case class Shell(args: IArray[Text], environment: Map[Text, Text], properties: Map[Text, Text])
 
-case class Cli(command: Txt,
-               args: List[Txt],
-               environment: Map[Txt, Txt],
-               properties: Map[Txt, Txt],
+case class Cli(command: Text,
+               args: List[Text],
+               environment: Map[Text, Text],
+               properties: Map[Text, Text],
                index: Int):
-  def currentArg: Txt = args.lift(index).getOrElse(str"")
+  def currentArg: Text = args.lift(index).getOrElse(t"")
 
 case class Exit(status: Int)
 
-case class Completions(defs: List[Choice], title: Maybe[Txt] = Unset)
+case class Completions(defs: List[Choice], title: Maybe[Text] = Unset)
 
-case class Choice(word: Txt, description: Maybe[Txt] = Unset, hidden: Boolean = false,
+case class Choice(word: Text, description: Maybe[Text] = Unset, hidden: Boolean = false,
                       incomplete: Boolean = false)
 
 object AsInt:
-  def unapply(str: Txt): Option[Int] = Try(str.s.toInt).toOption
+  def unapply(str: Text): Option[Int] = Try(str.s.toInt).toOption
 
 object ShellType:
   val all: List[ShellType] = List(Zsh, Bash, Fish)
-  def unapply(string: Txt): Option[ShellType] = all.find(_.shell == string)
+  def unapply(string: Text): Option[ShellType] = all.find(_.shell == string)
 
-abstract class ShellType(val shell: Txt):
-  def serialize(cli: Cli, completions: Completions): LazyList[Txt]
-  def script(cmd: Txt): Txt
-  def filename(cmd: Txt): Txt
-  def description: Txt
+abstract class ShellType(val shell: Text):
+  def serialize(cli: Cli, completions: Completions): LazyList[Text]
+  def script(cmd: Text): Text
+  def filename(cmd: Text): Text
+  def description: Text
 
-  def xdgConfig(env: Map[Txt, Txt]): File =
-    val xdgDefault = str"${env(str"HOME")}/.config"
-    File(env.get(str"XDG_CONFIG_HOME").getOrElse(xdgDefault).s)
+  def xdgConfig(env: Map[Text, Text]): File =
+    val xdgDefault = t"${env(t"HOME")}/.config"
+    File(env.get(t"XDG_CONFIG_HOME").getOrElse(xdgDefault).s)
   
-  def destination(env: Map[Txt, Txt]): File
+  def destination(env: Map[Text, Text]): File
 
-  def install(cmd: Txt, env: Map[Txt, Txt]): Txt throws EnvError | InstallError =
+  def install(cmd: Text, env: Map[Text, Text]): Text throws EnvError | InstallError =
     val dir = destination(env)
     if !dir.exists() then dir.mkdirs()
     val file = File(dir, filename(cmd).s)
     val out = BufferedWriter(FileWriter(file))
     out.write(script(cmd).s)
     out.close()
-    Txt(file.getAbsolutePath.nn)
+    Text(file.getAbsolutePath.nn)
 
-object Zsh extends ShellType(str"zsh"):
-  def description: Txt = str"ZSH shell"
-  def destination(env: Map[Txt, Txt]): File = File(File(xdgConfig(env), str"exoskeleton".s), shell.s)
+object Zsh extends ShellType(t"zsh"):
+  def description: Text = t"ZSH shell"
+  def destination(env: Map[Text, Text]): File = File(File(xdgConfig(env), t"exoskeleton".s), shell.s)
   
-  def serialize(cli: Cli, completions: Completions): LazyList[Txt] =
+  def serialize(cli: Cli, completions: Completions): LazyList[Text] =
     val width = maxLength(completions.defs.filter(_.word.startsWith(cli.currentArg)))
-    (completions.title.option.map(List(str"", str"-X", _).join(str"\t")) ++ completions.defs.flatMap {
+    (completions.title.option.map(List(t"", t"-X", _).join(t"\t")) ++ completions.defs.flatMap {
       case Choice(word, desc, hidden, incomplete) =>
-        val hide = if hidden then List(str"-n") else Nil
+        val hide = if hidden then List(t"-n") else Nil
         List(
-          List(describe(width, word, desc.option), str"-d", str"desc") ::: hide ::: List(str"--", word),
-          if incomplete then List(str"", str"-n") ::: List(str"--", str"$word.") else Nil
-        ).map(_.join(str"\t"))
+          List(describe(width, word, desc.option), t"-d", t"desc") ::: hide ::: List(t"--", word),
+          if incomplete then List(t"", t"-n") ::: List(t"--", t"$word.") else Nil
+        ).map(_.join(t"\t"))
     }).to(LazyList)
   
-  def script(cmd: Txt): Txt =
-    Txt(str"""|#compdef $cmd
+  def script(cmd: Text): Text =
+    Text(t"""|#compdef $cmd
               |
               |_$cmd() {
               |  ifsx=$$IFS IFS=$$'\\t'
@@ -138,24 +138,24 @@ object Zsh extends ShellType(str"zsh"):
               |return 0
               |""".s.stripMargin)
   
-  def filename(cmd: Txt): Txt = str"_$cmd"
+  def filename(cmd: Text): Text = t"_$cmd"
   
   private def maxLength(defs: Seq[Choice]): Int = (0 +: defs.map(_.word.length)).max
-  private def describe(width: Int, word: Txt, desc: Option[Txt]): Txt =
-    desc.fold(word) { desc => str"${word.fit(width)}  -- $desc" }
+  private def describe(width: Int, word: Text, desc: Option[Text]): Text =
+    desc.fold(word) { desc => t"${word.fit(width)}  -- $desc" }
 
-object Bash extends ShellType(str"bash"):
-  def description = str"The Bourne Again SHell"
+object Bash extends ShellType(t"bash"):
+  def description = t"The Bourne Again SHell"
 
-  def destination(env: Map[Txt, Txt]): File = File(s"${env(str"HOME")}/.bash_completion")
+  def destination(env: Map[Text, Text]): File = File(s"${env(t"HOME")}/.bash_completion")
 
-  def serialize(cli: Cli, completions: Completions): LazyList[Txt] =
+  def serialize(cli: Cli, completions: Completions): LazyList[Text] =
     LazyList(completions.defs.filter(_.word.startsWith(cli.currentArg)).collect {
       case Choice(word, desc, false, _) => word
-    }.join(str"\t"))
+    }.join(t"\t"))
   
-  def script(cmd: Txt): Txt =
-    Txt(str"""|_${cmd}_complete() {
+  def script(cmd: Text): Text =
+    Text(t"""|_${cmd}_complete() {
               |  data=$$($cmd '{exoskeleton}' 'bash' $$COMP_CWORD -- $$COMP_LINE )
               |  ifsx=$$IFS
               |  IFS=$$'\t'
@@ -166,35 +166,35 @@ object Bash extends ShellType(str"bash"):
               |complete -F _${cmd}_complete $cmd
               |""".s.stripMargin)
 
-  def filename(cmd: Txt): Txt = str"_$cmd"
+  def filename(cmd: Text): Text = t"_$cmd"
   
-object Fish extends ShellType(str"fish"):
-  def description: Txt = str"The Fish Shell"
+object Fish extends ShellType(t"fish"):
+  def description: Text = t"The Fish Shell"
   
-  def destination(env: Map[Txt, Txt]): File =
-    File(File(xdgConfig(env), str"fish".s), str"completions".s)
+  def destination(env: Map[Text, Text]): File =
+    File(File(xdgConfig(env), t"fish".s), t"completions".s)
 
-  def serialize(cli: Cli, completions: Completions): LazyList[Txt] =
+  def serialize(cli: Cli, completions: Completions): LazyList[Text] =
     completions.defs.to(LazyList).map {
-      case Choice(word, desc, hidden, incomplete) => str"$word\t${desc.otherwise(str"")}"
+      case Choice(word, desc, hidden, incomplete) => t"$word\t${desc.otherwise(t"")}"
     }
   
-  def script(cmd: Txt): Txt =
-    Txt(str"""|for line in ($cmd '{exoskeleton}' 'fish' (count (commandline -o)) -- (commandline -o))
+  def script(cmd: Text): Text =
+    Text(t"""|for line in ($cmd '{exoskeleton}' 'fish' (count (commandline -o)) -- (commandline -o))
               |  complete -f -c $cmd -a (string escape $$line[1])
               |end
               |""".s.stripMargin)
 
-  def filename(cmd: Txt): Txt = str"$cmd.fish"
+  def filename(cmd: Text): Text = t"$cmd.fish"
 
-case class ParamMap(args: Txt*):
+case class ParamMap(args: Text*):
 
-  case class Arg(value: Txt)
+  case class Arg(value: Text)
 
   case class Part(no: Int, start: Int, end: Int):
-    def apply(): Txt = args(no).slice(start, end).nn
+    def apply(): Text = args(no).slice(start, end).nn
 
   case class Parameter(key: Part, values: Vector[Part] = Vector()):
     override def toString =
       val prefix = if key().length == 1 then "-" else "--"
-      s"$prefix${key()} ${values.map(_()).join(str" ")}"
+      s"$prefix${key()} ${values.map(_()).join(t" ")}"

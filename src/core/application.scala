@@ -24,7 +24,7 @@ import scala.util.*
 
 import java.io.*
 
-def arguments(using Shell): IArray[Txt] = summon[Shell].args
+def arguments(using Shell): IArray[Text] = summon[Shell].args
 
 trait Application:
   def main(using Shell): Exit
@@ -32,20 +32,20 @@ trait Application:
   
   final def main(args: IArray[String]): Unit =
     val argList = args.to(List)
-    val env = System.getenv().nn.asScala.toMap.map { (k, v) => Txt(k) -> Txt(v) }
-    val props = System.getProperties().nn.asScala.toMap.map(Txt(_) -> Txt(_))
+    val env = System.getenv().nn.asScala.toMap.map { (k, v) => Text(k) -> Text(v) }
+    val props = System.getProperties().nn.asScala.toMap.map(Text(_) -> Text(_))
 
-    val shell = Shell(args.map(Txt(_)), env, props)
+    val shell = Shell(args.map(Text(_)), env, props)
     
     argList match
       case "{exoskeleton}" :: ShellType(shell) :: AsInt(current) :: "--" :: args =>
-        val cli = Cli(Txt(argList.head), args.tail.map(Txt(_)), env, props, current - 1)
+        val cli = Cli(Text(argList.head), args.tail.map(Text(_)), env, props, current - 1)
         val completions: Completions = try complete(cli) catch Throwable => Completions(Nil)
         shell.serialize(cli, completions).foreach(println)
         System.exit(0)
       
       case "{exoskeleton-generate}" :: _ =>
-        try Generate.install()(using Shell(args.tail.map(Txt(_)), env, props))
+        try Generate.install()(using Shell(args.tail.map(Text(_)), env, props))
         catch case InstallError() | EnvError(_) =>
           println("Installation failed")
           Exit(1)
@@ -63,12 +63,12 @@ trait Application:
 object Counter extends Application:
   def complete(cli: Cli): Completions =
     Completions(List(
-      Choice(str"one", str"first option"),
-      Choice(str"two", str"second option"),
-      Choice(str"three", str"third option"),
-      Choice(str"four", str"fourth option"),
-      Choice(str"five", str"fifth option")
-    ), title = str"Here are the choices:")
+      Choice(t"one", t"first option"),
+      Choice(t"two", t"second option"),
+      Choice(t"three", t"third option"),
+      Choice(t"four", t"fourth option"),
+      Choice(t"five", t"fifth option")
+    ), title = t"Here are the choices:")
 
   def main(using Shell): Exit =
     println("Do nothing")
