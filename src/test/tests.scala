@@ -21,7 +21,7 @@ import gossamer.*
 
 import unsafeExceptions.canThrowAny
 
-object Tests extends Suite(str"Caesura tests"):
+object Tests extends Suite(t"Caesura tests"):
   def run(using Runner): Unit =
     ()
     // test("simple parse") {
