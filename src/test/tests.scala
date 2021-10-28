@@ -17,9 +17,10 @@
 package cataract
 
 import probably.*
+import gossamer.*
 
 import unsafeExceptions.canThrowAny
 
-object Tests extends Suite("Cataract Tests"):
+object Tests extends Suite(str"Cataract Tests"):
   def run(using Runner): Unit =
     ()

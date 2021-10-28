@@ -23,20 +23,21 @@ import annotation.targetName
 import language.dynamics
 
 object Stylesheet:
-  given clairvoyant.HttpResponse[Stylesheet, String] with
+  given clairvoyant.HttpResponse[Stylesheet, Txt] with
     def mimeType: String = "text/css; charset=utf-8"
-    def content(stylesheet: Stylesheet): String = stylesheet.toString
+    def content(stylesheet: Stylesheet): Txt = stylesheet.text
   
-  trait Item
+  trait Item:
+    def text: Txt
 
 case class Stylesheet(rules: Stylesheet.Item*):
-  override def toString(): String = rules.map(_.toString).join("\n")
+  def text: Txt = rules.map(_.text).join(str"\n")
 
-case class Keyframes(name: String)(frames: Keyframe*) extends Stylesheet.Item:
-  override def toString = frames.map(_.toString).join("@keyframes "+name+" {\n  ", "\n  ", "\n}\n")
+case class Keyframes(name: Txt)(frames: Keyframe*) extends Stylesheet.Item:
+  def text: Txt = frames.map(_.text).join(str"@keyframes ${name} {\n  ", str"\n  ", str"\n}\n")
   
-case class Keyframe(ref: String, style: Style):
-  override def toString = style.properties.map(_.toString). join(str"$ref { ", "; ", " }")
+case class Keyframe(ref: Txt, style: Style):
+  def text: Txt = style.properties.map(_.text). join(str"$ref { ", str"; ", str" }")
 
 object From extends Dynamic:
   inline def applyDynamicNamed(method: "apply")(inline properties: (Label, Any)*): Keyframe =
@@ -46,36 +47,33 @@ object To extends Dynamic:
   inline def applyDynamicNamed(method: "apply")(inline properties: (Label, Any)*): Keyframe =
     ${Macro.keyframe('{"to"}, 'properties)}
   
-case class Import(url: String) extends Stylesheet.Item:
-  override def toString(): String = str"@import url('$url');"
+case class Import(url: Txt) extends Stylesheet.Item:
+  def text: Txt = str"@import url('$url');"
 
 object Style:
   given clairvoyant.HtmlAttribute["style", Style] with
-    def serialize(value: Style): String = value.properties.map(_.toString).join(";")
+    def serialize(value: Style): String = value.properties.map(_.text).join(str";").s
     def name: String = "style"
 
 case class Style(properties: CssProperty*):
-  override def toString(): String = properties.map(_.toString).join("\n")
+  def text: Txt = properties.map(_.text).join(str"\n")
+  
   def apply(nested: (Selector => Rule)*): Selector => Stylesheet = sel =>
     Stylesheet(nested.map(_(sel))*)
 
 case class Rule(selector: Selector, style: Style) extends Stylesheet.Item:
-  override def toString(): String =
-    val rules = style.properties.map(_.toString).join("; ")
+  def text: Txt =
+    val rules = style.properties.map(_.text).join(str"; ")
     str"${selector.normalize.value} { $rules }"
 
-case class CssProperty(key: String, value: String):
-  override def toString(): String = str"$key: $value"
+case class CssProperty(key: Txt, value: Txt):
+  def text: Txt = str"$key: $value"
 
 object Css extends Dynamic:
   inline def applyDynamicNamed(method: "apply")(inline properties: (Label, Any)*): Style =
     ${Macro.read('properties)}
 
-// case class Selector(value: String) extends Dynamic:
-//   inline def applyDynamicNamed(method: "apply")(inline properties: (Label, Any)*): Rule =
-//     ${Macro.rule('this, 'properties)}
-    
-sealed trait Selector(val value: String):
+sealed trait Selector(val value: Txt):
   inline def applyDynamicNamed(method: "apply")(inline properties: (Label, Any)*): Rule =
     ${Macro.rule('this, 'properties)}
   
@@ -100,7 +98,7 @@ sealed trait Selector(val value: String):
   infix def ~(that: Selector): Selector = Selector.Before(this, that)
 
 object Selector:
-  case class Element(element: String) extends Selector(element):
+  case class Element(element: Txt) extends Selector(element):
     def normalize: Selector = this
 
   case class Before(left: Selector, right: Selector)
@@ -119,13 +117,13 @@ object Selector:
         case Or(a, b) => Or(After(left, a).normalize, After(left, b).normalize)
         case right    => After(left, right)
       
-  case class Id(id: String) extends Selector(str"#$id"):
+  case class Id(id: Txt) extends Selector(str"#$id"):
     def normalize: Selector = this
   
-  case class Class(cls: String) extends Selector(str".$cls"):
+  case class Class(cls: Txt) extends Selector(str".$cls"):
     def normalize: Selector = this
   
-  case class PseudoClass(name: String) extends Selector(str":$name"):
+  case class PseudoClass(name: Txt) extends Selector(str":$name"):
     def normalize: Selector = this
 
   case class And(left: Selector, right: Selector)
