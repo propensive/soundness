@@ -30,21 +30,21 @@ import scala.deriving.*
 
 import language.dynamics
 
-case class JsonParseError(line: Int, column: Int, message: Txt)
-extends Exception(str"euphemism: could not parse the JSON at $line:$column".s)
+case class JsonParseError(line: Int, column: Int, message: Text)
+extends Exception(t"euphemism: could not parse the JSON at $line:$column".s)
 
-case class JsonAccessError(key: Int | Txt)
+case class JsonAccessError(key: Int | Text)
 extends Exception(key match
-  case idx: Int => str"euphemism: could not access the index $idx in the JSON array".s
-  case str: Txt => str"euphemism: could not access the label $str in the JSON object".s
+  case idx: Int => t"euphemism: could not access the index $idx in the JSON array".s
+  case str: Text => t"euphemism: could not access the label $str in the JSON object".s
   case _        => throw Impossible("should never match")
 )
 
 case class JsonTypeError(expectedType: JsonPrimitive)
-extends Exception(str"euphemism: the JSON element was not the expected type, $expectedType".s)
+extends Exception(t"euphemism: the JSON element was not the expected type, $expectedType".s)
 
 object JsonPrimitive:
-  given Show[JsonPrimitive] = value => Txt(value.toString)
+  given Show[JsonPrimitive] = value => Text(value.toString)
 
 enum JsonPrimitive:
   case Array, Object, Number, Null, Boolean, String
@@ -55,22 +55,22 @@ extension [T: Json.Writer](value: T)
 object Json extends Dynamic:
 
   given Show[Json] = json =>
-    try Txt(json.normalize.root.render())
+    try Text(json.normalize.root.render())
     catch
-      case JsonTypeError(t)        => str"<type mismatch: expected $t>"
-      case JsonAccessError(s: Txt) => str"<missing label: $s>"
-      case JsonAccessError(i: Int) => str"<missing index: $i>"
+      case JsonTypeError(t)        => t"<type mismatch: expected $t>"
+      case JsonAccessError(s: Text) => t"<missing label: $s>"
+      case JsonAccessError(i: Int) => t"<missing index: $i>"
 
-  given clairvoyant.HttpResponse[Json, Txt] with
+  given clairvoyant.HttpResponse[Json, Text] with
     def mimeType: String = "application/json"
-    def content(json: Json): Txt = json.show
+    def content(json: Json): Text = json.show
 
   given clairvoyant.HttpReader[Json, JsonParseError] with
-    def read(value: String): Json throws JsonParseError = Json.parse(Txt(value))
+    def read(value: String): Json throws JsonParseError = Json.parse(Text(value))
 
   object Writer extends Derivation[Writer]:
     given Writer[Int] = JNum(_)
-    given Writer[Txt] = value => JString(value.s)
+    given Writer[Text] = value => JString(value.s)
     given Writer[Double] = JNum(_)
     given Writer[Long] = JNum(_)
     given Writer[Byte] = JNum(_)
@@ -145,10 +145,10 @@ object Json extends Dynamic:
       def read(value: => JValue): Long throws JsonTypeError | E =
         value.getLong.getOrElse(throw JsonTypeError(JsonPrimitive.Number))
 
-    given string: Reader[Txt] with
+    given string: Reader[Text] with
       type E = Nothing
-      def read(value: => JValue): Txt throws JsonTypeError | E =
-        Txt(value.getString.getOrElse(throw JsonTypeError(JsonPrimitive.String)))
+      def read(value: => JValue): Text throws JsonTypeError | E =
+        Text(value.getString.getOrElse(throw JsonTypeError(JsonPrimitive.String)))
     
     
     given boolean: Reader[Boolean] with
@@ -191,7 +191,7 @@ object Json extends Dynamic:
     //     caseClass.construct { param =>
     //       value match
     //         case JObject(vs) =>
-    //           val value = vs.get(param.label).getOrElse(throw JsonAccessError(Txt(param.label)))
+    //           val value = vs.get(param.label).getOrElse(throw JsonAccessError(Text(param.label)))
     //           //import unsafeExceptions.canThrowAny
     //           param.typeclass.read(value)
             
@@ -202,12 +202,12 @@ object Json extends Dynamic:
     // def split[T](sealedTrait: SealedTrait[Reader, T]): Reader[T] = new Reader[T]:
     //   type E = JsonAccessError
     //   def read(value: => JValue): T throws JsonTypeError | JsonAccessError =
-    //     val _type = Json(value, Nil)._type.as[Txt]
-    //     val subtype = sealedTrait.subtypes.find { t => Txt(t.typeInfo.short) == _type }
+    //     val _type = Json(value, Nil)._type.as[Text]
+    //     val subtype = sealedTrait.subtypes.find { t => Text(t.typeInfo.short) == _type }
     //       .getOrElse(throw JsonTypeError(JsonPrimitive.Object)) // FIXME
         
     //     try subtype.typeclass.read(value)
-    //     catch case e: Exception => throw JsonAccessError(Txt(subtype.typeInfo.short))
+    //     catch case e: Exception => throw JsonAccessError(Text(subtype.typeInfo.short))
 
   abstract class MapReader[T](fn: collection.mutable.Map[String, JValue] => T) extends Reader[T]:
     
@@ -224,22 +224,22 @@ object Json extends Dynamic:
       type E = self.E
       def read(json: => JValue): S throws JsonTypeError | self.E = fn(self.read(json))
 
-  def parse(str: Txt): Json throws JsonParseError = JParser.parseFromString(str.s) match
+  def parse(str: Text): Json throws JsonParseError = JParser.parseFromString(str.s) match
     case Success(value)                   => Json(value, Nil)
-    case Failure(err: JawnParseException) => throw JsonParseError(err.line, err.col, Txt(err.msg))
+    case Failure(err: JawnParseException) => throw JsonParseError(err.line, err.col, Text(err.msg))
     case Failure(err)                     => throw err
 
   def applyDynamicNamed[T <: String](methodName: "of")(elements: (String, Json)*): Json =
     Json(JObject(mutable.Map(elements.map(_ -> _.root)*)), Nil)
 
-case class Json(root: JValue, path: List[Int | Txt] = Nil) extends Dynamic, Shown[Json] derives CanEqual:
+case class Json(root: JValue, path: List[Int | Text] = Nil) extends Dynamic, Shown[Json] derives CanEqual:
   def apply(idx: Int): Json = Json(root, idx :: path)
-  def apply(field: Txt): Json = Json(root, field :: path)
-  def selectDynamic(field: String): Json = this(Txt(field))
-  def applyDynamic(field: String)(idx: Int): Json = this(Txt(field))(idx)
+  def apply(field: Text): Json = Json(root, field :: path)
+  def selectDynamic(field: String): Json = this(Text(field))
+  def applyDynamic(field: String)(idx: Int): Json = this(Text(field))(idx)
 
   def normalize: Json throws JsonAccessError | JsonTypeError =
-    def deref(value: JValue, path: List[Int | Txt])
+    def deref(value: JValue, path: List[Int | Text])
         : JValue throws JsonTypeError | JsonAccessError = path match
       case Nil =>
         value
@@ -251,7 +251,7 @@ case class Json(root: JValue, path: List[Int | Txt] = Nil) extends Dynamic, Show
           ), tail)
         case _ =>
           throw JsonTypeError(JsonPrimitive.Array)
-      case (field: Txt) :: tail => value match
+      case (field: Text) :: tail => value match
         case JObject(vs) =>
           deref((vs.get(field.s) match
             case None        => throw JsonAccessError(field)

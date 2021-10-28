@@ -77,7 +77,7 @@ object JsonMacro:
                               val label = Expr(head.name)
                               val expr: Expr[`paramType`] =
                                 '{
-                                  $reader.read(vs.get($label).getOrElse(throw JsonAccessError(Txt($label))))
+                                  $reader.read(vs.get($label).getOrElse(throw JsonAccessError(Text($label))))
                                 }
                               expr :: recur(tail)
 
