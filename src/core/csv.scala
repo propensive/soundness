@@ -25,10 +25,10 @@ import scala.annotation.*
 trait Format:
   protected val separator: Char
 
-  def parse(line: String): Row =
+  def parse(line: Txt): Row =
     @tailrec
-    def parseLine(items: Vector[String], idx: Int, quoted: Boolean, start: Int, end: Int,
-                      join: Boolean): Vector[String] =
+    def parseLine(items: Vector[Txt], idx: Int, quoted: Boolean, start: Int, end: Int,
+                      join: Boolean): Vector[Txt] =
       if line.length <= idx then
         if join then items.init :+ items.last + line.slice(start, if end < 0 then idx else end)
         else items :+ line.slice(start, if end < 0 then idx else end)
@@ -39,7 +39,7 @@ trait Format:
           case `separator` =>
             if quoted then parseLine(items, idx + 1, quoted, start, end, join)
             else
-              val elems = if start < 0 then items :+ "" else
+              val elems: Vector[Txt] = if start < 0 then items :+ str"" else
                 val suffix = line.slice(start, if end == -1 then idx else end)
                 if join then items.init :+ items.last + suffix else items :+ suffix
   
@@ -57,30 +57,30 @@ trait Format:
 
     Row(parseLine(Vector(), 0, quoted = false, 0, -1, join = false)*)
 
-  def serialize(row: Row): String = row.elems.map(escape).mkString(separator.toString)
-  protected def escape(str: String): String
+  def serialize(row: Row): Txt = row.elems.map(escape).join(separator.show)
+  protected def escape(str: Txt): Txt
 
 object Row:
   def from[T](value: T)(using writer: Csv.Writer[T]): Row = writer.write(value)
 
-case class Row(elems: String*):
+case class Row(elems: Txt*):
   def as[T](using decoder: Csv.Reader[T]): T = decoder.decode(this)
 
 object Csv extends Format:
 
-  given clairvoyant.HttpResponse[Csv, String] with
+  given clairvoyant.HttpResponse[Csv, Txt] with
     def mimeType: String = "text/csv"
-    def content(value: Csv): String =
-      value.rows.map(Csv.serialize(_)).join("\n")
+    def content(value: Csv): Txt = value.rows.map(Csv.serialize(_)).join(str"\n")
 
-  given Reader[String] = _.elems.head
-  given Reader[Int] = _.elems.head.toInt
-  given Reader[Boolean] = _.elems.head == "true"
-  given Reader[Double] = _.elems.head.toDouble
-  given Reader[Byte] = _.elems.head.toByte
-  given Reader[Short] = _.elems.head.toShort
-  given Reader[Float] = _.elems.head.toFloat
-  given Reader[Char] = _.elems.head.head
+  given Reader[String] = _.elems.head.s
+  given Reader[Txt] = _.elems.head
+  given Reader[Int] = _.elems.head.s.toInt
+  given Reader[Boolean] = _.elems.head == str"true"
+  given Reader[Double] = _.elems.head.s.toDouble
+  given Reader[Byte] = _.elems.head.s.toByte
+  given Reader[Short] = _.elems.head.s.toShort
+  given Reader[Float] = _.elems.head.s.toFloat
+  given Reader[Char] = _.elems.head.s.head
 
   object Reader extends ProductDerivation[Reader]:
     def join[T](caseClass: CaseClass[Reader, T]): Reader[T] = Reader[T](
@@ -108,14 +108,15 @@ object Csv extends Format:
     def decode(elems: Row): T
     def width: Int = 1
 
-  given Writer[String] = s => Row(s)
-  given Writer[Int] = i => Row(i.toString)
-  given Writer[Boolean] = b => Row(b.toString)
-  given Writer[Byte] = b => Row(b.toString)
-  given Writer[Short] = s => Row(s.toString)
-  given Writer[Float] = f => Row(f.toString)
-  given Writer[Double] = d => Row(d.toString)
-  given Writer[Char] = c => Row(c.toString)
+  given Writer[String] = s => Row(Txt(s))
+  given Writer[Txt] = s => Row(s)
+  given Writer[Int] = i => Row(i.show)
+  given Writer[Boolean] = b => Row(b.show)
+  given Writer[Byte] = b => Row(b.show)
+  given Writer[Short] = s => Row(s.show)
+  given Writer[Float] = f => Row(Txt(f.toString))
+  given Writer[Double] = d => Row(Txt(d.toString))
+  given Writer[Char] = c => Row(c.show)
 
   object Writer extends ProductDerivation[Writer]:
     def join[T](caseClass: CaseClass[Writer, T]): Writer[T] = (value: T) =>
@@ -127,9 +128,9 @@ object Csv extends Format:
     def write(value: T): Row
 
   override val separator = ','
-  def escape(str: String): String =
-    val c = str.count { ch => ch.isWhitespace || ch == '"' || ch == ',' }
-    if c > 0 then s""""${str.replaceAll("\"", "\"\"").nn}"""" else str
+  def escape(str: Txt): Txt =
+    val c = str.s.count { ch => ch.isWhitespace || ch == '"' || ch == ',' }
+    if c > 0 then str""""${str.s.replaceAll("\"", "\"\"").nn}"""" else str
 
 extension [T](value: Seq[T])
   def csv(using Csv.Writer[T]): Csv = Csv(value.map(summon[Csv.Writer[T]].write(_))*)
@@ -140,9 +141,9 @@ case class Tsv(rows: Row*)
 
 object Tsv extends Format:
   override val separator = '\t'
-  def escape(str: String): String = str.replaceAll("\t", "        ").nn
+  def escape(str: Txt): Txt = Txt(str.s.replaceAll("\t", "        ").nn)
 
-  given clairvoyant.HttpResponse[Csv, String] with
-    def mimeType: String = "text/tab-separated-values"
-    def content(value: Csv): String =
-      value.rows.map(Tsv.serialize(_)).join("\n")
+  given clairvoyant.HttpResponse[Csv, Txt] with
+    def mimeType: String = str"text/tab-separated-values".s
+    def content(value: Csv): Txt =
+      value.rows.map(Tsv.serialize(_)).join(str"\n")

@@ -17,10 +17,11 @@
 package caesura
 
 import probably.*
+import gossamer.*
 
 import unsafeExceptions.canThrowAny
 
-object Tests extends Suite("Caesura tests"):
+object Tests extends Suite(str"Caesura tests"):
   def run(using Runner): Unit =
     ()
     // test("simple parse") {
