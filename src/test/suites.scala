@@ -7,7 +7,7 @@ import eucalyptus.*
 
 given Log(Everything |-> Stdout)
 
-object Tests extends Suite(str"Niveau tests"):
+object Tests extends Suite(t"Niveau tests"):
   def run(using Runner): Unit =
     suite(adversaria.Tests)
     suite(acyclicity.Tests)
