@@ -13,7 +13,7 @@ _annotations_ in Scala, by making them available through _typeclass interfaces_.
 - resolve a typeclass instance only if a type has an annotated field
 - makes annotations more useful and accessible in Scala
 - no macro code is required to use annotations
-
+¹
 
 ## Getting Started
 
@@ -65,7 +65,7 @@ Adversaria is classified as __fledgling__. Propensive defines the following five
 - _dependable_: production-ready, subject to controlled ongoing maintenance and enhancement; tagged as version `1.0` or later
 - _adamantine_: proven, reliable and production-ready, with no further breaking changes ever anticipated
 
-Adversaria is designed to be _small_. Its entire source code currently consists of 94 lines of code.
+Adversaria is designed to be _small_. Its entire source code currently consists of 95 lines of code.
 
 ## Availability
 
