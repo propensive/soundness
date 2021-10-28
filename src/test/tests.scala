@@ -23,31 +23,31 @@ import gossamer.*
 import unsafeExceptions.canThrowAny
 given Log(Everything |-> Stdout)
 
-object Tests extends Suite(str"Rudiments tests"):
+object Tests extends Suite(t"Rudiments tests"):
   def run(using Runner): Unit =
     
     val array = (0 until 65536).to(Array).map(_.toByte)
     
-    test(str"read Java `InputStream`, chunked") {
+    test(t"read Java `InputStream`, chunked") {
       val in = java.io.ByteArrayInputStream(array)
       Util.read(in, 4096).map(_.to(Vector)).reduce(_ ++ _)
     }.assert(_ == array.to(Vector))
     
-    test(str"read Java `InputStream`, single chunk") {
+    test(t"read Java `InputStream`, single chunk") {
       val in = java.io.ByteArrayInputStream(array)
       Util.read(in, 65536).map(_.to(Vector)).head
     }.assert(_ == array.to(Vector))
     
-    test(str"read Java `InputStream`, two chunks") {
+    test(t"read Java `InputStream`, two chunks") {
       val in = java.io.ByteArrayInputStream(array)
       Util.read(in, 32768).map(_.to(Vector)).length
     }.assert(_ == 2)
 
-    test(str"initialize array") {
-      val iarray: IArray[Txt] = IArray.init(3) { arr =>
-        arr(0) = str"zero"
-        arr(1) = str"one"
-        arr(2) = str"two"
+    test(t"initialize array") {
+      val iarray: IArray[Text] = IArray.init(3) { arr =>
+        arr(0) = t"zero"
+        arr(1) = t"one"
+        arr(2) = t"two"
       }
       iarray.to(Vector)
-    }.assert(_ == Vector(str"zero", str"one", str"two"))
+    }.assert(_ == Vector(t"zero", t"one", t"two"))
