@@ -25,33 +25,35 @@ import honeycomb.*
 import eucalyptus.*
 import rudiments.*
 
-trait Browser(name: String):
+import unsafeExceptions.canThrowAny
+
+trait Browser(name: Txt):
   transparent inline def browser = this
   
-  case class Server(port: Int, value: Process[String]):
-    def stop(): Unit = browser.stop(this)
+  case class Server(port: Int, value: Process[Txt]):
+    def stop()(using Log): Unit = browser.stop(this)
 
-  def launch(port: Int)(using Env): Server
-  def stop(server: Server): Unit
+  def launch(port: Int)(using Env, Log): Server
+  def stop(server: Server)(using Log): Unit
 
-  def session[T](port: Int = 4444)(fn: WebDriver#Session ?=> T)(using Env): T =
+  def session[T](port: Int = 4444)(fn: WebDriver#Session ?=> T)(using Env, Log): T =
     val server = launch(port)
     try
       val driver = WebDriver(server)
       fn(using driver.startSession())
     finally server.stop()
 
-object Firefox extends Browser("firefox"):
+object Firefox extends Browser(str"firefox"):
   def launch(port: Int)(using Env, Log): Server =
-    val server: Process[String] = sh"geckodriver --port $port".fork()
+    val server: Process[Txt] = sh"geckodriver --port $port".fork()
     Thread.sleep(100)
     Server(port, server)
 
-  def stop(server: Server): Unit = server.value.abort()
+  def stop(server: Server)(using Log): Unit = server.value.abort()
 
-object Chrome extends Browser("chrome"):
+object Chrome extends Browser(str"chrome"):
   def launch(port: Int)(using Env, Log): Server =
-    val server: Process[String] = sh"chromedriver --port=$port".fork()
+    val server: Process[Txt] = sh"chromedriver --port=$port".fork()
     Thread.sleep(100)
     Server(port, server)
 
@@ -59,13 +61,13 @@ object Chrome extends Browser("chrome"):
 
 def browser(using WebDriver#Session): WebDriver#Session = summon[WebDriver#Session]
 
-case class WebDriverError(error: String, message: String, stacktrace: IArray[String])
-extends Exception(str"tarantula: $message")
+case class WebDriverError(error: Txt, message: Txt, stacktrace: List[Txt])
+extends Exception(s"tarantula: $message")
 
 case class WebDriver(server: Browser#Server):
   private transparent inline def wd: this.type = this
  
-  case class Session(sessionId: String):
+  case class Session(sessionId: Txt):
     def webDriver: WebDriver = wd
     
     private def safe[T](fn: => T): T =
@@ -75,96 +77,99 @@ case class WebDriver(server: Browser#Server):
           case scintillate.Body.Empty           => throw e
           case scintillate.Body.Data(data)      => Json.parse(data.uString).value
         
-        throw WebDriverError(json.error.as[String], json.message.as[String],
-            json.stacktrace.as[String].cut("\n"))
+        throw WebDriverError(json.error.as[Txt], json.message.as[Txt],
+            json.stacktrace.as[Txt].cut(str"\n"))
             
-    final private val Wei: String = "element-6066-11e4-a52e-4f735466cecf"
+    final private val Wei: Txt = str"element-6066-11e4-a52e-4f735466cecf"
 
-    case class Element(elementId: String):
+    case class Element(elementId: Txt):
       
-      private def get(address: String): Json = safe {
-        uri"http://localhost:${server.port.toString}/session/$sessionId/element/$elementId/$address"
-          .get(RequestHeader.ContentType("application/json")).as[Json]
+      private def get(address: Txt)(using Log): Json = safe {
+        uri"http://localhost:${server.port.show}/session/$sessionId/element/$elementId/$address"
+          .get(RequestHeader.ContentType(str"application/json")).as[Json]
       }
       
-      private def post(address: String, content: Json): Json = safe {
-        uri"http://localhost:${server.port.toString}/session/$sessionId/element/$elementId/$address"
-          .post(content.toString, RequestHeader.ContentType("application/json")).as[Json]
+      private def post(address: Txt, content: Json)(using Log): Json = safe {
+        uri"http://localhost:${server.port.show}/session/$sessionId/element/$elementId/$address"
+          .post(content.show, RequestHeader.ContentType(str"application/json")).as[Json]
       }
       
-      def click(): Unit = post("click", Json.parse("{}"))
+      def click()(using Log): Unit = post(str"click", Json.parse(str"{}"))
 
-      def clear(): Unit = post("clear", Json.parse("{}")) 
+      def clear()(using Log): Unit = post(str"clear", Json.parse(str"{}")) 
 
-      def value(text: String): Unit =
-        case class Data(text: String)
-        post("value", Data(text).json)
+      def value(text: Txt)(using Log): Unit =
+        case class Data(text: Txt)
+        post(str"value", Data(text).json)
     
-      def /[T](value: T)(using el: ElementLocator[T]): List[Element] =
-        case class Data(`using`: String, value: String)
-        post("elements", Data(el.strategy, el.value(value)).json)
+      def /[T](value: T)(using el: ElementLocator[T])(using Log): List[Element] =
+        case class Data(`using`: Txt, value: Txt)
+        post(str"elements", Data(el.strategy, el.value(value)).json)
           .value
           .as[List[Json]]
-          .map(_(Wei).as[String])
+          .map(_(Wei).as[Txt])
           .map(Element(_))
       
-      def element[T](value: T)(using el: ElementLocator[T]): Element =
-        case class Data(`using`: String, value: String)
-        val e = post("element", Data(el.strategy, el.value(value)).json)
-        Element(e.value.selectDynamic(Wei).as[String])
+      def element[T](value: T)(using el: ElementLocator[T], log: Log): Element =
+        case class Data(`using`: Txt, value: Txt)
+        val e = post(str"element", Data(el.strategy, el.value(value)).json)
+        Element(e.value.selectDynamic(Wei.s).as[Txt])
       
-    private def get(address: String): Json = safe {
-      uri"http://localhost:${server.port.toString}/session/$sessionId/$address"
-        .get(RequestHeader.ContentType("application/json")).as[Json]
+    private def get(address: Txt)(using Log): Json = safe {
+      uri"http://localhost:${server.port.show}/session/$sessionId/$address"
+        .get(RequestHeader.ContentType(str"application/json")).as[Json]
     }
   
-    private def post(address: String, content: Json): Json = safe {
-      uri"http://localhost:${server.port.toString}/session/$sessionId/$address"
-        .post(content.toString, RequestHeader.ContentType("application/json")).as[Json]
+    private def post(address: Txt, content: Json)(using Log): Json = safe {
+      uri"http://localhost:${server.port.show}/session/$sessionId/$address"
+        .post(content.show, RequestHeader.ContentType(str"application/json")).as[Json]
     }
     
-    def navigateTo(url: Uri): Json =
-      case class Data(url: String)
-      post("url", Data(url.toString).json)
+    def navigateTo(url: Uri)(using Log): Json =
+      case class Data(url: Txt)
+      post(str"url", Data(Txt(url.toString)).json)
     
-    def refresh(): Unit = post("title", Json.parse("{}")).as[Json]
-    def forward(): Unit = post("forward", Json.parse("{}")).as[Json]
-    def back(): Unit = post("forward", Json.parse("{}")).as[Json]
-    def title(): String = get("title").as[Json].value.as[String]
+    def refresh()(using Log): Unit = post(str"title", Json.parse(str"{}")).as[Json]
+    def forward()(using Log): Unit = post(str"forward", Json.parse(str"{}")).as[Json]
+    def back()(using Log): Unit = post(str"forward", Json.parse(str"{}")).as[Json]
+    def title()(using Log): Txt = get(str"title").as[Json].value.as[Txt]
 
-    def url(): String = get("url").url.as[String]
+    def url()(using Log): Txt = get(str"url").url.as[Txt]
 
-    def /[T](value: T)(using el: ElementLocator[T]): List[Element] =
-      case class Data(`using`: String, value: String)
-      post("elements", Data(el.strategy, el.value(value)).json)
+    def /[T](value: T)(using el: ElementLocator[T], log: Log): List[Element] =
+      case class Data(`using`: Txt, value: Txt)
+      post(str"elements", Data(el.strategy, el.value(value)).json)
         .value
         .as[List[Json]]
-        .map(_(Wei).as[String])
+        .map(_(Wei).as[Txt])
         .map(Element(_))
     
-    def element[T](value: T)(using el: ElementLocator[T]): Element =
-      case class Data(`using`: String, value: String)
-      val e = post("element", Data(el.strategy, el.value(value)).json)
-      Element(e.value.selectDynamic(Wei).as[String])
+    def element[T](value: T)(using el: ElementLocator[T], log: Log): Element =
+      case class Data(`using`: Txt, value: Txt)
+      val e = post(str"element", Data(el.strategy, el.value(value)).json)
+      Element(e.value.selectDynamic(Wei.s).as[Txt])
     
-    def activeElement(): Element = Element(get("element/active").value.selectDynamic(Wei).as[String])
+    def activeElement()(using Log): Element =
+      Element(get(str"element/active").value.selectDynamic(Wei.s).as[Txt])
 
-  def startSession(): Session =
-    val json = uri"http://localhost:${server.port.toString}/session".post("""{"capabilities":{}}""",
-        RequestHeader.ContentType("application/json")).as[Json]
+  def startSession()(using Log): Session =
+    val json = uri"http://localhost:${server.port.show}/session".post(str"""{"capabilities":{}}""",
+        RequestHeader.ContentType(str"application/json")).as[Json]
     
-    Session(json.value.sessionId.as[String])
+    Session(json.value.sessionId.as[Txt])
 
 extension (elems: List[WebDriver#Session#Element])
-  def /[T](value: T)(using el: ElementLocator[T]): List[WebDriver#Session#Element] =
+  def /[T](value: T)(using el: ElementLocator[T])(using Log): List[WebDriver#Session#Element] =
     elems.flatMap(_ / value)
     
 
-case class ElementLocator[-T](strategy: String, value: T => String)
+case class ElementLocator[-T](strategy: Txt, value: T => Txt)
 
 object ElementLocator:
-  given ElementLocator[String]("link text", identity(_))
-  given ElementLocator[Selector]("css selector", _.normalize.value)
-  given ElementLocator[Tag[?, ?, ?]]("tag name", _.label)
-  given ElementLocator[DomId]("css selector", "#"+_.name)
-  given ElementLocator[Cls]("css selector", "."+_.name)
+  given ElementLocator[Txt](str"link text", identity(_))
+  given ElementLocator[Selector](str"css selector", _.normalize.value)
+  given ElementLocator[Tag[?, ?, ?]](str"tag name", _.label)
+  given ElementLocator[DomId](str"css selector", v => str"#${v.name}")
+  given ElementLocator[Cls](str"css selector", v => str".${v.name}")
+
+given realm: Realm(str"tarantula")
