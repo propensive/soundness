@@ -21,23 +21,23 @@ import gossamer.*
 
 import annotation.targetName
 
-class SlalomException(message: String) extends Exception(str"slalom: $message")
+class SlalomException(message: Txt) extends Exception(str"slalom: $message".s)
 
 case class RootBoundaryExceeded(root: Root)
 extends SlalomException(str"attempted to exceed the root boundary")
 
 transparent trait GenericRelative:
   def ascent: Int
-  def path: Vector[String]
+  def path: Vector[Txt]
 
-trait Root(val separator: String, val prefix: String):
+trait Root(val separator: Txt, val prefix: Txt):
   def thisRoot: this.type = this
 
   type AbsolutePath <: Path.Absolute
   type RelativePath <: Path.Relative
 
-  protected def makeAbsolute(path: Vector[String]): AbsolutePath
-  protected def makeRelative(ascent: Int, path: Vector[String]): RelativePath
+  protected def makeAbsolute(path: Vector[Txt]): AbsolutePath
+  protected def makeRelative(ascent: Int, path: Vector[Txt]): RelativePath
 
   trait Path:
     def root: thisRoot.type = thisRoot
@@ -46,14 +46,14 @@ trait Root(val separator: String, val prefix: String):
     def absolute(pwd: AbsolutePath): AbsolutePath throws RootBoundaryExceeded
     
     @targetName("access")
-    infix def /(filename: String): Path throws RootBoundaryExceeded
+    infix def /(filename: Txt): Path throws RootBoundaryExceeded
     
     @targetName("addAll")
     infix def ++(path: GenericRelative): Path throws RootBoundaryExceeded
 
   object Path:
-    open class Absolute(val path: Vector[String]) extends Path:
-      override def toString(): String = path.join(prefix, separator, "")
+    open class Absolute(val path: Vector[Txt]) extends Path:
+      override def toString(): String = path.join(prefix, separator, str"").s
       
       def parent: AbsolutePath throws RootBoundaryExceeded = path match
         case init :+ last => makeAbsolute(init)
@@ -73,12 +73,12 @@ trait Root(val separator: String, val prefix: String):
         makeRelative(path.length - common.path.length, base.path.drop(common.path.length))
 
       @targetName("access")
-      infix def /(filename: String): AbsolutePath throws RootBoundaryExceeded = filename match
+      infix def /(filename: Txt): AbsolutePath throws RootBoundaryExceeded = filename.s match
         case ".."     => path match
           case init :+ last => makeAbsolute(init)
           case _            => throw RootBoundaryExceeded(root)
         case "."      => makeAbsolute(path)
-        case filename => makeAbsolute(path :+ filename)
+        case fn       => makeAbsolute(path :+ filename)
       
       @targetName("addAll")
       infix def ++(relative: GenericRelative): AbsolutePath throws RootBoundaryExceeded =
@@ -91,8 +91,8 @@ trait Root(val separator: String, val prefix: String):
 
       override def hashCode: Int = path.hashCode
 
-    case class Relative(val ascent: Int, val path: Vector[String]) extends Path, GenericRelative:
-      override def toString(): String = path.join("../"*ascent, "/", "")
+    case class Relative(val ascent: Int, val path: Vector[Txt]) extends Path, GenericRelative:
+      override def toString(): String = path.join(str"../"*ascent, str"/", str"").s
 
       def parent: Relative throws RootBoundaryExceeded = path match
         case init :+ last => makeRelative(ascent, init)
@@ -106,12 +106,12 @@ trait Root(val separator: String, val prefix: String):
         else makeRelative(ascent - 1, path).absolute(pwd.parent)
       
       @targetName("access")
-      infix def /(filename: String): RelativePath throws RootBoundaryExceeded = filename match
+      infix def /(filename: Txt): RelativePath throws RootBoundaryExceeded = filename.s match
         case ".."     => path match
           case init :+ last => makeRelative(ascent, init)
           case empty        => makeRelative(ascent + 1, Vector())
         case "."      => makeRelative(ascent, path)
-        case filename => makeRelative(ascent, path :+ filename)
+        case fn       => makeRelative(ascent, path :+ filename)
       
       @targetName("addAll")
       infix def ++(relative: GenericRelative): RelativePath throws RootBoundaryExceeded =
@@ -124,11 +124,11 @@ trait Root(val separator: String, val prefix: String):
 
       override def hashCode: Int = path.hashCode ^ ascent
 
-object Base extends Root("/", "/"):
+object Base extends Root(str"/", str"/"):
   type RelativePath = Path.Relative
   type AbsolutePath = Path.Absolute
   
-  protected def makeAbsolute(path: Vector[String]): AbsolutePath = Path.Absolute(path)
+  protected def makeAbsolute(path: Vector[Txt]): AbsolutePath = Path.Absolute(path)
   
-  protected def makeRelative(ascent: Int, path: Vector[String]): RelativePath =
+  protected def makeRelative(ascent: Int, path: Vector[Txt]): RelativePath =
     Path.Relative(ascent, path)

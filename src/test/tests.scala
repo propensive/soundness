@@ -17,9 +17,10 @@
 package slalom
 
 import probably.*
+import gossamer.*
 
 import unsafeExceptions.canThrowAny
 
-object Tests extends Suite("Slalom Tests"):
+object Tests extends Suite(str"Slalom Tests"):
   def run(using Runner): Unit =
     ()
