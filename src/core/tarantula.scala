@@ -27,10 +27,10 @@ import rudiments.*
 
 import unsafeExceptions.canThrowAny
 
-trait Browser(name: Txt):
+trait Browser(name: Text):
   transparent inline def browser = this
   
-  case class Server(port: Int, value: Process[Txt]):
+  case class Server(port: Int, value: Process[Text]):
     def stop()(using Log): Unit = browser.stop(this)
 
   def launch(port: Int)(using Env, Log): Server
@@ -43,17 +43,17 @@ trait Browser(name: Txt):
       fn(using driver.startSession())
     finally server.stop()
 
-object Firefox extends Browser(str"firefox"):
+object Firefox extends Browser(t"firefox"):
   def launch(port: Int)(using Env, Log): Server =
-    val server: Process[Txt] = sh"geckodriver --port $port".fork()
+    val server: Process[Text] = sh"geckodriver --port $port".fork()
     Thread.sleep(100)
     Server(port, server)
 
   def stop(server: Server)(using Log): Unit = server.value.abort()
 
-object Chrome extends Browser(str"chrome"):
+object Chrome extends Browser(t"chrome"):
   def launch(port: Int)(using Env, Log): Server =
-    val server: Process[Txt] = sh"chromedriver --port=$port".fork()
+    val server: Process[Text] = sh"chromedriver --port=$port".fork()
     Thread.sleep(100)
     Server(port, server)
 
@@ -61,13 +61,13 @@ object Chrome extends Browser(str"chrome"):
 
 def browser(using WebDriver#Session): WebDriver#Session = summon[WebDriver#Session]
 
-case class WebDriverError(error: Txt, message: Txt, stacktrace: List[Txt])
+case class WebDriverError(error: Text, message: Text, stacktrace: List[Text])
 extends Exception(s"tarantula: $message")
 
 case class WebDriver(server: Browser#Server):
   private transparent inline def wd: this.type = this
  
-  case class Session(sessionId: Txt):
+  case class Session(sessionId: Text):
     def webDriver: WebDriver = wd
     
     private def safe[T](fn: => T): T =
@@ -77,99 +77,99 @@ case class WebDriver(server: Browser#Server):
           case scintillate.Body.Empty           => throw e
           case scintillate.Body.Data(data)      => Json.parse(data.uString).value
         
-        throw WebDriverError(json.error.as[Txt], json.message.as[Txt],
-            json.stacktrace.as[Txt].cut(str"\n"))
+        throw WebDriverError(json.error.as[Text], json.message.as[Text],
+            json.stacktrace.as[Text].cut(t"\n"))
             
-    final private val Wei: Txt = str"element-6066-11e4-a52e-4f735466cecf"
+    final private val Wei: Text = t"element-6066-11e4-a52e-4f735466cecf"
 
-    case class Element(elementId: Txt):
+    case class Element(elementId: Text):
       
-      private def get(address: Txt)(using Log): Json = safe {
+      private def get(address: Text)(using Log): Json = safe {
         uri"http://localhost:${server.port.show}/session/$sessionId/element/$elementId/$address"
-          .get(RequestHeader.ContentType(str"application/json")).as[Json]
+          .get(RequestHeader.ContentType(t"application/json")).as[Json]
       }
       
-      private def post(address: Txt, content: Json)(using Log): Json = safe {
+      private def post(address: Text, content: Json)(using Log): Json = safe {
         uri"http://localhost:${server.port.show}/session/$sessionId/element/$elementId/$address"
-          .post(content.show, RequestHeader.ContentType(str"application/json")).as[Json]
+          .post(content.show, RequestHeader.ContentType(t"application/json")).as[Json]
       }
       
-      def click()(using Log): Unit = post(str"click", Json.parse(str"{}"))
+      def click()(using Log): Unit = post(t"click", Json.parse(t"{}"))
 
-      def clear()(using Log): Unit = post(str"clear", Json.parse(str"{}")) 
+      def clear()(using Log): Unit = post(t"clear", Json.parse(t"{}")) 
 
-      def value(text: Txt)(using Log): Unit =
-        case class Data(text: Txt)
-        post(str"value", Data(text).json)
+      def value(text: Text)(using Log): Unit =
+        case class Data(text: Text)
+        post(t"value", Data(text).json)
     
       def /[T](value: T)(using el: ElementLocator[T])(using Log): List[Element] =
-        case class Data(`using`: Txt, value: Txt)
-        post(str"elements", Data(el.strategy, el.value(value)).json)
+        case class Data(`using`: Text, value: Text)
+        post(t"elements", Data(el.strategy, el.value(value)).json)
           .value
           .as[List[Json]]
-          .map(_(Wei).as[Txt])
+          .map(_(Wei).as[Text])
           .map(Element(_))
       
       def element[T](value: T)(using el: ElementLocator[T], log: Log): Element =
-        case class Data(`using`: Txt, value: Txt)
-        val e = post(str"element", Data(el.strategy, el.value(value)).json)
-        Element(e.value.selectDynamic(Wei.s).as[Txt])
+        case class Data(`using`: Text, value: Text)
+        val e = post(t"element", Data(el.strategy, el.value(value)).json)
+        Element(e.value.selectDynamic(Wei.s).as[Text])
       
-    private def get(address: Txt)(using Log): Json = safe {
+    private def get(address: Text)(using Log): Json = safe {
       uri"http://localhost:${server.port.show}/session/$sessionId/$address"
-        .get(RequestHeader.ContentType(str"application/json")).as[Json]
+        .get(RequestHeader.ContentType(t"application/json")).as[Json]
     }
   
-    private def post(address: Txt, content: Json)(using Log): Json = safe {
+    private def post(address: Text, content: Json)(using Log): Json = safe {
       uri"http://localhost:${server.port.show}/session/$sessionId/$address"
-        .post(content.show, RequestHeader.ContentType(str"application/json")).as[Json]
+        .post(content.show, RequestHeader.ContentType(t"application/json")).as[Json]
     }
     
     def navigateTo(url: Uri)(using Log): Json =
-      case class Data(url: Txt)
-      post(str"url", Data(Txt(url.toString)).json)
+      case class Data(url: Text)
+      post(t"url", Data(Text(url.toString)).json)
     
-    def refresh()(using Log): Unit = post(str"title", Json.parse(str"{}")).as[Json]
-    def forward()(using Log): Unit = post(str"forward", Json.parse(str"{}")).as[Json]
-    def back()(using Log): Unit = post(str"forward", Json.parse(str"{}")).as[Json]
-    def title()(using Log): Txt = get(str"title").as[Json].value.as[Txt]
+    def refresh()(using Log): Unit = post(t"title", Json.parse(t"{}")).as[Json]
+    def forward()(using Log): Unit = post(t"forward", Json.parse(t"{}")).as[Json]
+    def back()(using Log): Unit = post(t"forward", Json.parse(t"{}")).as[Json]
+    def title()(using Log): Text = get(t"title").as[Json].value.as[Text]
 
-    def url()(using Log): Txt = get(str"url").url.as[Txt]
+    def url()(using Log): Text = get(t"url").url.as[Text]
 
     def /[T](value: T)(using el: ElementLocator[T], log: Log): List[Element] =
-      case class Data(`using`: Txt, value: Txt)
-      post(str"elements", Data(el.strategy, el.value(value)).json)
+      case class Data(`using`: Text, value: Text)
+      post(t"elements", Data(el.strategy, el.value(value)).json)
         .value
         .as[List[Json]]
-        .map(_(Wei).as[Txt])
+        .map(_(Wei).as[Text])
         .map(Element(_))
     
     def element[T](value: T)(using el: ElementLocator[T], log: Log): Element =
-      case class Data(`using`: Txt, value: Txt)
-      val e = post(str"element", Data(el.strategy, el.value(value)).json)
-      Element(e.value.selectDynamic(Wei.s).as[Txt])
+      case class Data(`using`: Text, value: Text)
+      val e = post(t"element", Data(el.strategy, el.value(value)).json)
+      Element(e.value.selectDynamic(Wei.s).as[Text])
     
     def activeElement()(using Log): Element =
-      Element(get(str"element/active").value.selectDynamic(Wei.s).as[Txt])
+      Element(get(t"element/active").value.selectDynamic(Wei.s).as[Text])
 
   def startSession()(using Log): Session =
-    val json = uri"http://localhost:${server.port.show}/session".post(str"""{"capabilities":{}}""",
-        RequestHeader.ContentType(str"application/json")).as[Json]
+    val json = uri"http://localhost:${server.port.show}/session".post(t"""{"capabilities":{}}""",
+        RequestHeader.ContentType(t"application/json")).as[Json]
     
-    Session(json.value.sessionId.as[Txt])
+    Session(json.value.sessionId.as[Text])
 
 extension (elems: List[WebDriver#Session#Element])
   def /[T](value: T)(using el: ElementLocator[T])(using Log): List[WebDriver#Session#Element] =
     elems.flatMap(_ / value)
     
 
-case class ElementLocator[-T](strategy: Txt, value: T => Txt)
+case class ElementLocator[-T](strategy: Text, value: T => Text)
 
 object ElementLocator:
-  given ElementLocator[Txt](str"link text", identity(_))
-  given ElementLocator[Selector](str"css selector", _.normalize.value)
-  given ElementLocator[Tag[?, ?, ?]](str"tag name", _.label)
-  given ElementLocator[DomId](str"css selector", v => str"#${v.name}")
-  given ElementLocator[Cls](str"css selector", v => str".${v.name}")
+  given ElementLocator[Text](t"link text", identity(_))
+  given ElementLocator[Selector](t"css selector", _.normalize.value)
+  given ElementLocator[Tag[?, ?, ?]](t"tag name", _.label)
+  given ElementLocator[DomId](t"css selector", v => t"#${v.name}")
+  given ElementLocator[Cls](t"css selector", v => t".${v.name}")
 
-given realm: Realm(str"tarantula")
+given realm: Realm(t"tarantula")

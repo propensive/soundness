@@ -19,6 +19,6 @@ package tarantula
 import gossamer.*
 import probably.*
 
-object Tests extends Suite(str"Tarantula Tests"):
+object Tests extends Suite(t"Tarantula Tests"):
   def run(using Runner): Unit =
     ()
