@@ -25,33 +25,33 @@ import scala.quoted.*
 import language.dynamics
 
 type Label = String & Singleton
-type Content[Children <: Label] = Item[Children] | Txt | Int
-type Attributes = Map[String, Maybe[Txt]]
+type Content[Children <: Label] = Item[Children] | Text | Int
+type Attributes = Map[String, Maybe[Text]]
 
 extension (content: Content[?])
-  def text: Txt = content match
+  def text: Text = content match
     case item: Item[?] => item.text
-    case txt: Txt      => txt
+    case txt: Text      => txt
     case int: Int      => int.show
     case _             => throw Impossible("should never match")
 
 trait Item[+Name <: Label]:
-  def label: Txt
+  def label: Text
   def attributes: Attributes
   def children: Seq[Content[?]]
   def inline: Boolean
   def unclosed: Boolean
   def verbatim: Boolean
   
-  def text: Txt =
+  def text: Text =
     val attributeString = attributes.map {
-      case (key, Unset)      => str" $key"
-      case (key, value: Txt) => str""" $key="${value}""""
+      case (key, Unset)      => t" $key"
+      case (key, value: Text) => t""" $key="${value}""""
       case _                 => throw Impossible("should never match")
     }.join
     
-    if children.isEmpty then str"<$label$attributeString/>"
-    else str"<$label$attributeString>${children.map(_.text).join}</$label>"
+    if children.isEmpty then t"<$label$attributeString/>"
+    else t"<$label$attributeString>${children.map(_.text).join}</$label>"
 
   override def toString: String = text.s
 
@@ -70,7 +70,7 @@ object Node:
     }.asInstanceOf[Seq[Content[C]]]
 
 object Html extends Item["html"]:
-  def label: Txt = str"html"
+  def label: Text = t"html"
   def attributes: Attributes = Map()
   def children: Seq[Content[?]] = Nil
   def inline = false
@@ -89,7 +89,7 @@ case class Tag[+Name <: Label, Children <: Label, Atts <: Label]
 extends Item[Name], Dynamic:
   def attributes: Attributes = Map()
   def children: Seq[Content[?]] = Nil
-  def label: Txt = Txt(labelString)
+  def label: Text = Text(labelString)
 
   type ChildNodes = Children
 
@@ -110,7 +110,7 @@ case class TransTag[+Name <: Label, Children <: Label, Atts <: Label]
 extends Item[Name], Dynamic:
   def attributes: Attributes = Map()
   def children: Seq[Content[?]] = Nil
-  def label: Txt = Txt(labelString)
+  def label: Text = Text(labelString)
 
   inline def applyDynamicNamed(method: "apply")
                               (inline attributes: (Atts, Any)*): Element[Name, Children] =
@@ -123,29 +123,29 @@ extends Item[Name], Dynamic:
 
 object Element:
   given clairvoyant.CssSelection[Element[?, ?]] = elem => elem.label+elem.attributes.map {
-    case (key, value: Txt) => str"[$key=$value]"
-    case (key, Unset)      => str"[$key]"
+    case (key, value: Text) => t"[$key=$value]"
+    case (key, Unset)      => t"[$key]"
     case _                 => throw Impossible("should never match")
-  }.join(str"")
+  }.join(t"")
 
 case class Element[+Name <: Label, Children <: Label]
                   (labelString: Name, unclosed: Boolean, inline: Boolean, verbatim: Boolean,
                        attributes: Attributes)
 extends Item[Name]:
   def children = Nil
-  def label: Txt = Txt(labelString)
+  def label: Text = Text(labelString)
   def apply(children: (Content[Children] | Seq[Content[Children]])*): Node[Name] =
     Node(labelString, unclosed, inline, verbatim, attributes, children)
 
 case class Node[+Name <: Label](labelString: String, unclosed: Boolean, tagInline: Boolean,
-                                    verbatim: Boolean, attributes: Map[String, Maybe[Txt]],
+                                    verbatim: Boolean, attributes: Map[String, Maybe[Text]],
                                     children: Seq[Content[?]]) extends Item[Name]:
 
-  def label: Txt = Txt(labelString)
+  def label: Text = Text(labelString)
 
   lazy val inline: Boolean = tagInline && children.forall {
     case item: Item[?] => item.inline
-    case text: Txt     => true
+    case text: Text     => true
     case int: Int      => true
     case _             => throw Impossible("should never match")
   }
@@ -160,12 +160,12 @@ object HtmlDoc:
   def serialize[T](doc: HtmlDoc, maxWidth: Int = -1)(using HtmlSerializer[T]): T =
     summon[HtmlSerializer[T]].serialize(doc, maxWidth)
   
-  def simple[Stylesheet](title: Txt, stylesheet: Stylesheet = false)
+  def simple[Stylesheet](title: Text, stylesheet: Stylesheet = false)
                         (content: (Content[Flow] | Seq[Content[Flow]])*)
                         (using att: Attribute["href", Stylesheet, ?]): HtmlDoc =
     val link = att.convert(stylesheet) match
       case Unset     => Nil
-      case text: Txt => Seq(Link(rel = str"stylesheet", href = text))
+      case text: Text => Seq(Link(rel = t"stylesheet", href = text))
       case _         => throw Impossible("should never match")
 
     HtmlDoc(Html(Head(Title(title), link), Body(content*)))

@@ -23,7 +23,7 @@ trait HtmlSerializer[T]:
   def serialize(doc: HtmlDoc, maxWidth: Int = -1): T
 
 object HtmlSerializer:
-  given HtmlSerializer[Txt] = (doc, maxWidth) =>
+  given HtmlSerializer[Text] = (doc, maxWidth) =>
     var indent: Int = 0
     var linebreak: Boolean = false
     val buf: StringBuilder = StringBuilder()
@@ -34,7 +34,7 @@ object HtmlSerializer:
       indent += n
       linebreak = true
 
-    def append(strings: Txt*): Unit =
+    def append(strings: Text*): Unit =
       for str <- strings do
         buf.append(str)
         pos += str.length
@@ -50,15 +50,15 @@ object HtmlSerializer:
 
     def next(node: Content[?], verbatim: Boolean): Unit = node match
       case node: Item[?] => whitespace()
-                            append(str"<", node.label)
+                            append(t"<", node.label)
                             
                             for attribute <- node.attributes do attribute match
-                              case (key: Txt, value: Txt) => append(str" ", key, str"=\"", value, str"\"")
-                              case (key: Txt, Unset)       => append(str" ", key)
-                              //case (key: Txt, false)      => ()
+                              case (key: Text, value: Text) => append(t" ", key, t"=\"", value, t"\"")
+                              case (key: Text, Unset)       => append(t" ", key)
+                              //case (key: Text, false)      => ()
                               case (_, _)                 => throw Impossible("should never match")
                             
-                            append(str">")
+                            append(t">")
                             if !node.inline then newline(1)
                             
                             for child <- node.children do
@@ -73,28 +73,28 @@ object HtmlSerializer:
                             
                             if !node.unclosed then
                               whitespace()
-                              append(str"</", node.label, str">")
+                              append(t"</", node.label, t">")
                               if !node.inline then newline(0)
 
-      case text: Txt     => whitespace()
+      case text: Text     => whitespace()
                             if maxWidth == -1 then append(text) else
                               if verbatim || pos + text.length <= maxWidth then append(text)
                               else
-                                text.cut(str"\\s+").nn.foreach { word =>
+                                text.cut(t"\\s+").nn.foreach { word =>
                                   if !(pos + 1 + word.nn.length < maxWidth || emptyLine) then
                                     linebreak = true
                                     whitespace()
-                                    append(str" ")
+                                    append(t" ")
                                   
-                                  append(if !emptyLine then str" " else str"", word.nn)
+                                  append(if !emptyLine then t" " else t"", word.nn)
                                 }
-                                if text.chars.last.isWhitespace then append(str" ")
+                                if text.chars.last.isWhitespace then append(t" ")
       
       case int: Int      => next(int.show, verbatim)
       case _             => throw Impossible("should never match")
         
     
-    append(str"<!DOCTYPE html>\n")
+    append(t"<!DOCTYPE html>\n")
     next(doc.root, false)
 
-    Txt(buf.toString)
+    Text(buf.toString)

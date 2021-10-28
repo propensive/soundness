@@ -29,7 +29,7 @@ object Macro:
           : Expr[Element[Name, Return]] =
     import quotes.reflect.{Singleton as _, *}
 
-    def recur(exprs: Seq[Expr[(Label, Any)]]): List[Expr[(String, Maybe[Txt])]] =
+    def recur(exprs: Seq[Expr[(Label, Any)]]): List[Expr[(String, Maybe[Text])]] =
       exprs match
         case '{($key: k & Label, $value: v)} +: tail =>
           val att = key.valueOrAbort
@@ -40,7 +40,7 @@ object Macro:
                                          $typeName""".s)
             }
           
-          '{($exp.rename.getOrElse(Txt($key)).s, $exp.convert($value))} :: recur(tail)
+          '{($exp.rename.getOrElse(Text($key)).s, $exp.convert($value))} :: recur(tail)
         
         case _ =>
           Nil
