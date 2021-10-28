@@ -17,34 +17,39 @@
 package escapade
 
 import probably.*
+import eucalyptus.*
+import rudiments.*
+import gossamer.*
 
 import escapes.*
 
 import unsafeExceptions.canThrowAny
 
-object Tests extends Suite("Escapade tests"):
+given Log(Everything |-> Stdout)
+
+object Tests extends Suite(str"Escapade tests"):
   def run(using Runner): Unit =
-    test("normal string") {
+    test(str"normal string") {
       ansi"hello world".render
-    }.assert(_ == "hello world")
+    }.check(_ == str"hello world")
     
-    test("simple string substitution") {
+    test(str"simple string substitution") {
       ansi"hello ${"world"}".render
-    }.assert(_ == "hello world")
+    }.check(_ == str"hello world")
     
-    test("bold text") {
-      ansi"$Bold{bold} text".explicit
-    }.assert(_ == "\\e[1mbold\\e[22m text")
+    test(str"bold text") {
+      ansi"$Bold{bold} text".render
+    }.check(_ == str"\e[1mbold\e[22m text")
     
-    test("italic text") {
-      ansi"$Italic{italic} text".explicit
-    }.assert(_ == "\\e[3mitalic\\e[23m text")
+    test(str"italic text") {
+      ansi"$Italic{italic} text".render
+    }.check(_ == str"\e[3mitalic\e[23m text")
     
-    test("24-bit colored text") {
-      ansi"${iridescence.colors.Tan}[text]".explicit
-    }.assert(_ == "\\e[38;2;210;180;139mtext\\e[38;2;255;255;255m")
+    test(str"24-bit colored text") {
+      ansi"${iridescence.colors.Tan}[text]".render
+    }.check(_ == str"\e[38;2;210;180;139mtext\e[38;2;255;255;255m")
     
-    test("non-escape insertion should not parse brackets") {
+    test(str"non-escape insertion should not parse brackets") {
       val notAnEscape = 42
-      ansi"${notAnEscape}[text]".explicit
-    }.assert(_ == "42[text]")
+      ansi"${notAnEscape}[text]".render
+    }.check(_ == str"42[text]")
