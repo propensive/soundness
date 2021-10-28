@@ -17,81 +17,88 @@
 package euphemism
 
 import eucalyptus.*
+import gossamer.*
 import probably.*
+import rudiments.*
 import scala.util.*
+import org.typelevel.jawn.ast.*
 
 import unsafeExceptions.canThrowAny
 
-given Log()
+given Log(Everything |-> Stdout)
 
-case class Foo(x: Int, y: String) derives CanEqual, Json.Writer, Json.Reader
+case class Foo(x: Int, y: Txt) derives CanEqual
 
-object Tests extends Suite("Euphemism Tests"):
+case class InvalidState(name: String) extends Exception("Not a valid state: "+name)
+
+object Tests extends Suite(str"Euphemism Tests"):
   def run(using Runner): Unit =
-    suite("Parsing tests") {
-      test("Parse a number") {
-        Json.parse("42").as[Int]
+    suite(str"Parsing tests") {
+      test(str"Parse a number") {
+        Json.parse(str"42").as[Int]
       }.assert(_ == 42)
 
-      test("Parse a string") {
-        Json.parse("\"string\"").as[String]
-      }.assert(_ == "string")
+      test(str"Parse a string") {
+        val s = Json.parse(str"\"string\"")
+        s.as[Txt]
+      }.check(_ == str"string")
     
-      test("Parse true") {
-        Json.parse("true").as[Boolean]
+      test(str"Parse true") {
+        Json.parse(str"true").as[Boolean]
       }.assert(identity)
 
-      test("Parse false") {
-        Json.parse("false").as[Boolean]
+      test(str"Parse false") {
+        Json.parse(str"false").as[Boolean]
       }.assert(!_)
 
-      test("Parse float") {
-        Json.parse("3.1415").as[Float]
+      test(str"Parse float") {
+        Json.parse(str"3.1415").as[Float]
       }.assert(_ == 3.1415f)
       
-      test("Parse double") {
-        Json.parse("3.1415926").as[Double]
+      test(str"Parse double") {
+        Json.parse(str"3.1415926").as[Double]
       }.assert(_ == 3.1415926)
     }
 
-    suite("Serialization") {
-      test("Serialize string") {
-        "foo".json.toString
-      }.assert(_ == """"foo"""")
+    suite(str"Serialization") {
+      test(str"Serialize string") {
+        str"foo".json.show
+      }.check(_ == str""""foo"""")
 
-      test("Serialize double") {
-        3.14159.json.toString
-      }.assert(_ == "3.14159")
+      test(str"Serialize double") {
+        3.14159.json.show
+      }.check(_ == str"3.14159")
       
-      test("Serialize true") {
-        true.json.toString
-      }.assert(_ == "true")
+      test(str"Serialize true") {
+        true.json.show
+      }.check(_ == str"true")
     
-      test("Serialize false") {
-        false.json.toString
-      }.assert(_ == "false")
+      test(str"Serialize false") {
+        false.json.show
+      }.check(_ == str"false")
     }
     
-    suite("Basic tests") {
-      // test("Serialize to Json") {
-      //   Foo(1, "two").json
-      // }.assert(_ == Json.of(x = 1.json, y = "two".json))
+    suite(str"Basic tests") {
+      test(str"Serialize to Json") {
+        Foo(1, str"two").json
+      }.assert(_ == Json.of(x = 1.json, y = str"two".json))
 
-      // test("Parse from JSON") {
-      //   Json.parse("""{"x": 1}""").debug
-      // }.assert(_ == Json.of(x = 1.json))
+      test(str"Parse from JSON") {
+        Json.parse(str"""{"x": 1}""")
+      }.assert(_ == Json.of(x = 1.json))
 
-      // test("Read case class") {
-      //   Json.parse("""{"x": 1, "y": "two"}""").as[Foo]
-      // }.assert(_ == Foo(1, "two"))
+      test(str"Read case class") {
 
-      // test("Extract an option") {
-      //   case class OptFoo(x: Option[Int])
-      //   Json.parse("""{"x": 1}""").as[OptFoo].x
-      // }.assert(_ == Some(1))
+        Json.parse(str"""{"x": 1, "y": "two"}""").as[Foo]
+      }.assert(_ == Foo(1, str"two"))
+
+      test(str"Extract an option") {
+        case class OptFoo(x: Option[Int])
+        Json.parse(str"""{"x": 1}""").as[OptFoo].x
+      }.assert(_ == Some(1))
       
-      // test("Extract a None") {
-      //   case class OptFoo(x: Option[Int])
-      //   Json.parse("""{"y": 1}""").as[OptFoo].x
-      // }.assert(_ == None)
+      test(str"Extract a None") {
+        case class OptFoo(x: Option[Int])
+        Json.parse(str"""{"y": 1}""").as[OptFoo].x
+      }.assert(_ == None)
     }
