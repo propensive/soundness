@@ -28,19 +28,19 @@ import java.text.*
 import annotation.*
 
 object AnsiString:
-  def empty: AnsiString = AnsiString(str"")
+  def empty: AnsiString = AnsiString(t"")
 
   given Joinable[AnsiString] = _.fold(empty)(_ + _)
     
   def apply[T: Show](value: T, wrapper: Style => Style): AnsiString =
-    val str: Txt = value.show
+    val str: Text = value.show
 
     AnsiString(str, TreeMap(
       0          -> List(Ansi.Change.Push(wrapper)),
       str.length -> List(Ansi.Change.Pop)
     ))
 
-case class AnsiString(string: Txt, escapes: TreeMap[Int, List[Ansi.Change]] = TreeMap()):
+case class AnsiString(string: Text, escapes: TreeMap[Int, List[Ansi.Change]] = TreeMap()):
   def length: Int = string.length
 
   def drop(n: Int): AnsiString =
@@ -56,7 +56,7 @@ case class AnsiString(string: Txt, escapes: TreeMap[Int, List[Ansi.Change]] = Tr
         init))
 
   def padTo(n: Int, char: Char = ' ') =
-    if length < n then this + AnsiString(Txt(char.toString*(n - length))) else this
+    if length < n then this + AnsiString(Text(char.toString*(n - length))) else this
 
   def span(n: Int): AnsiString = take(n).padTo(n)
 
@@ -71,28 +71,28 @@ case class AnsiString(string: Txt, escapes: TreeMap[Int, List[Ansi.Change]] = Tr
     
     AnsiString(string.take(n), newEscapes.updated(n, escapes.getOrElse(n, Nil) ++ pops))
 
-  def cut(delim: Txt): List[AnsiString] =
+  def cut(delim: Text): List[AnsiString] =
     val parts = plain.cut(delim)
     parts.zipWithIndex.map { case (part, idx) =>
       drop(parts.take(idx).map(_.length).sum + idx*delim.length).take(part.length)
     }
 
-  def plain: Txt = string
-  def explicit: Txt = render.flatMap { ch => if ch.toInt == 27 then "\\e" else s"$ch" }
+  def plain: Text = string
+  def explicit: Text = render.flatMap { ch => if ch.toInt == 27 then "\\e" else s"$ch" }
   def upper: AnsiString = AnsiString(string.upper, escapes)
   def lower: AnsiString = AnsiString(string.lower, escapes)
 
   @targetName("times")
   def *(n: Int): AnsiString = if n == 0 then this else this*(n - 1)+this
 
-  def render: Txt =
+  def render: Text =
     val buf = StringBuilder()
     
-    def build(treeMap: TreeMap[Int, List[Ansi.Change]], pos: Int = 0, stack: List[Style] = Nil): Txt =
+    def build(treeMap: TreeMap[Int, List[Ansi.Change]], pos: Int = 0, stack: List[Style] = Nil): Text =
 
       if treeMap.isEmpty then
         buf.append(string.slice(pos, string.length).s)
-        Txt(buf.toString)
+        Text(buf.toString)
       else
         buf.append(string.slice(pos, treeMap.head(0)))
         
@@ -140,12 +140,12 @@ object Stylize:
   def apply(fn: Style => Style): Ansi.Input.Apply = Ansi.Input.Apply(fn)
 
 object Ansi:
-  def strip(txt: Txt): Txt = Txt(txt.s.replaceAll("""\e\[?.*?[\@-~]""", "").nn)
+  def strip(txt: Text): Text = Text(txt.s.replaceAll("""\e\[?.*?[\@-~]""", "").nn)
 
-  given Substitution[Ansi.Input, Txt, "str"] = str => Ansi.Input.Str(AnsiString(str))
-  given Substitution[Ansi.Input, String, "str"] = str => Ansi.Input.Str(AnsiString(Txt(str)))
+  given Substitution[Ansi.Input, Text, "t"] = str => Ansi.Input.Str(AnsiString(str))
+  given Substitution[Ansi.Input, String, "t"] = str => Ansi.Input.Str(AnsiString(Text(str)))
   
-  given [T: Show]: Substitution[Ansi.Input, T, "str"] =
+  given [T: Show]: Substitution[Ansi.Input, T, "t"] =
     value => Ansi.Input.Str(AnsiString(summon[Show[T]].show(value)))
   
   given Stylize[Escape] = identity(_)
@@ -153,7 +153,7 @@ object Ansi:
   given Stylize[Bg] =
     bgColor => Stylize(_.copy(bg = Some(bgColor.color.standardSrgb)))
   
-  given [T: AnsiShow]: Substitution[Ansi.Input, T, "str"] =
+  given [T: AnsiShow]: Substitution[Ansi.Input, T, "t"] =
     value => Ansi.Input.Str(summon[AnsiShow[T]].ansiShow(value))
 
   given Stylize[Bold.type] = _ => Stylize(_.copy(bold = true))
@@ -178,10 +178,10 @@ object Ansi:
     def addEsc(esc: Ansi.Change): State = copy(string = string.addEsc(esc), last = None)
     def addEsc(pos: Int, esc: Ansi.Change): State = copy(string = string.addEsc(pos, esc), last = None)
     def isEmpty: Boolean =
-      string.string == str"" && string.escapes.isEmpty && last.isEmpty && stack.isEmpty
+      string.string == t"" && string.escapes.isEmpty && last.isEmpty && stack.isEmpty
 
   object Interpolator extends contextual.Interpolator[Input, State, AnsiString]:
-    def initial: State = State(AnsiString(str""), None, Nil)
+    def initial: State = State(AnsiString(t""), None, Nil)
 
     private def closures(state: State, str: String): State =
       if state.stack.isEmpty then state.add(str)
@@ -202,7 +202,7 @@ object Ansi:
       case '«' => '»'
 
     def parse(state: State, string: String): State =
-      if state.isEmpty then State(AnsiString(Txt(string)), None, Nil)
+      if state.isEmpty then State(AnsiString(Text(string)), None, Nil)
       else state.last match
         case None =>
           closures(state, string)
@@ -261,15 +261,15 @@ case class Style(fg: Srgb = colors.White, bg: Option[Srgb] = None, italic: Boole
   private def concealEsc: String = if conceal then styles.Conceal.on else styles.Conceal.off
   private def strikeEsc: String = if strike then styles.Strike.on else styles.Strike.off
   
-  def changes(next: Style): Txt = List(
-    if fg != next.fg then next.fg.ansiFg24 else str"",
-    if bg != next.bg then next.bg.map(_.ansiBg24).getOrElse(str"$esc[49m") else str"",
-    if italic != next.italic then str"${esc}${next.italicEsc}" else str"",
-    if bold != next.bold then str"${esc}${next.boldEsc}" else str"",
-    if reverse != next.reverse then str"${esc}${next.reverseEsc}" else str"",
-    if underline != next.underline then str"${esc}${next.underlineEsc}" else str"",
-    if conceal != next.conceal then str"${esc}${next.concealEsc}" else str"",
-    if strike != next.strike then str"${esc}${next.strikeEsc}" else str""
+  def changes(next: Style): Text = List(
+    if fg != next.fg then next.fg.ansiFg24 else t"",
+    if bg != next.bg then next.bg.map(_.ansiBg24).getOrElse(t"$esc[49m") else t"",
+    if italic != next.italic then t"${esc}${next.italicEsc}" else t"",
+    if bold != next.bold then t"${esc}${next.boldEsc}" else t"",
+    if reverse != next.reverse then t"${esc}${next.reverseEsc}" else t"",
+    if underline != next.underline then t"${esc}${next.underlineEsc}" else t"",
+    if conceal != next.conceal then t"${esc}${next.concealEsc}" else t"",
+    if strike != next.strike then t"${esc}${next.strikeEsc}" else t""
   ).join
 
 object Bold
@@ -303,5 +303,5 @@ object AnsiShow extends FallbackAnsiShow:
       AnsiString[String](throwable.getClass.getName.nn.cut(".").last, _.copy(fg = colors.Crimson))
 
 trait AnsiShow[-T] extends Show[T]:
-  def show(value: T): Txt = ansiShow(value).plain
+  def show(value: T): Text = ansiShow(value).plain
   def ansiShow(value: T): AnsiString
