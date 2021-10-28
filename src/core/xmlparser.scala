@@ -23,7 +23,7 @@ import gossamer.*
 object XmlInterpolation:
 
   enum Input:
-    case StringLike(str: String)
+    case StringLike(str: Txt)
     case XmlLike(xml: Ast.Element)
 
   enum ContextType:
@@ -34,23 +34,23 @@ object XmlInterpolation:
     val charSet = chars.to(Set)
     def unapply(char: Char): Boolean = charSet.contains(char)
 
-  case class ParseStateNode(name: String, namespaces: Set[String])
+  case class ParseStateNode(name: Txt, namespaces: Set[Txt])
 
-  case class ParseState(offset: Int, context: ContextType, stack: List[ParseStateNode], current: String,
-                            source: String, ns: Boolean):
+  case class ParseState(offset: Int, context: ContextType, stack: List[ParseStateNode], current: Txt,
+                            source: Txt, ns: Boolean):
     def apply(newContext: ContextType, char: Char) =
-      copy(context = newContext, current = current + char, offset = offset + 1)
+      copy(context = newContext, current = str"$current$char", offset = offset + 1)
     
     def apply(newContext: ContextType): ParseState =
       copy(context = newContext, offset = offset + 1, ns = false)
     
-    def apply(char: Char): ParseState = copy(offset = offset + 1, current = current + char)
+    def apply(char: Char): ParseState = copy(offset = offset + 1, current = str"$current$char")
     def apply(): ParseState = copy(offset = offset + 1)
-    def reset: ParseState = copy(current = "")
+    def reset: ParseState = copy(current = str"")
     def namespace: ParseState = copy(ns = true)
-    def push: ParseState = copy(stack = ParseStateNode(current, Set()) :: stack, current = "")
+    def push: ParseState = copy(stack = ParseStateNode(current, Set()) :: stack, current = str"")
     
-    def addNamespace(ns: String): ParseState =
+    def addNamespace(ns: Txt): ParseState =
       copy(stack = stack.head.copy(namespaces = stack.head.namespaces + ns) :: stack.tail)
 
     def checkNs: Boolean =
@@ -68,8 +68,8 @@ object XmlInterpolation:
       case None =>
         throw InterpolationError(s"spurious closing tag: $current", offset - current.length, current.length)
 
-  given Substitution[Input, String, "str"] with
-    def embed(value: String) = Input.StringLike(value)
+  given Substitution[Input, Txt, "str"] with
+    def embed(value: Txt) = Input.StringLike(value)
 
   given genInsert[T](using writer: XmlWriter[T]): Insertion[Input, T] =
     value => Input.XmlLike(writer.write(value))
@@ -81,14 +81,14 @@ object XmlInterpolation:
     val TagChar = CharExtractor(Letters ++ Digits + '.' + '-' + '_')
     val WhitespaceChar = CharExtractor(Set(' ', '\t', '\n', '\r'))
 
-    def initial: ParseState = ParseState(0, ContextType.Body, Nil, "", "", false)
+    def initial: ParseState = ParseState(0, ContextType.Body, Nil, str"", str"", false)
 
-    private def escape(str: String): String =
-      str.replaceAll("\"", "&quot;").nn
-        .replaceAll("'", "&apos;").nn
-        .replaceAll("<", "&lt;").nn
-        .replaceAll(">", "&gt;").nn
-        .replaceAll("&", "&amp;").nn
+    private def escape(str: Txt): Txt =
+      str.sub("\"", "&quot;")
+        .sub("'", "&apos;")
+        .sub("<", "&lt;")
+        .sub(">", "&gt;")
+        .sub("&", "&amp;")
 
     def skip(state: ParseState): ParseState = state.context match
       case AttributeValue | Body => parse(state, "")
@@ -99,11 +99,11 @@ object XmlInterpolation:
     def insert(state: ParseState, value: Input): ParseState =
       state.context match
         case AttributeValue | Body => value match
-          case Input.StringLike(str) => parse(state, escape(str))
+          case Input.StringLike(str) => parse(state, escape(str).s)
           case Input.XmlLike(xml)    => parse(state, xml.toString)
         case AttributeEquals       => value match
-            case Input.StringLike(str) => parse(state, "\""+escape(str)+"\"")
-            case Input.XmlLike(xml)    => parse(state, "\""+escape(xml.toString)+"\"")
+            case Input.StringLike(str) => parse(state, str"\"${escape(str)}\"".s)
+            case Input.XmlLike(xml)    => parse(state, str"\"${escape(xml.text)}\"".s)
         case _ =>
           throw InterpolationError(s"a substitution cannot be made in this position")
     

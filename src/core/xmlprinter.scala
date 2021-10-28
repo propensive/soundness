@@ -16,17 +16,19 @@
 
 package xylophone
 
+import gossamer.*
+
 trait XmlPrinter[T]:
   def print(doc: Xml): T
 
 object XmlPrinter:
-  given XmlPrinter[String] = StandardXmlPrinter(false)
+  given XmlPrinter[Txt] = StandardXmlPrinter(false)
 
 object printers:
-  given compact: XmlPrinter[String] = StandardXmlPrinter(true)
+  given compact: XmlPrinter[Txt] = StandardXmlPrinter(true)
 
-class StandardXmlPrinter(compact: Boolean = false) extends XmlPrinter[String]:
-  def print(doc: Xml): String =
+class StandardXmlPrinter(compact: Boolean = false) extends XmlPrinter[Txt]:
+  def print(doc: Xml): Txt =
     var indent: Int = 0
     var linebreak: Boolean = false
     val buf: StringBuilder = StringBuilder()
@@ -37,39 +39,39 @@ class StandardXmlPrinter(compact: Boolean = false) extends XmlPrinter[String]:
         indent += n
         linebreak = true
 
-    def append(strings: String*): Unit =
+    def append(strings: Txt*): Unit =
       for str <- strings do
-        buf.append(str)
+        buf.append(str.s)
         pos += str.length
 
     def whitespace(): Unit =
       if !compact && linebreak then
-        buf.append("\n")
-        for i <- 1 to indent do buf.append("  ")
+        buf.append(str"\n")
+        for i <- 1 to indent do buf.append(str"  ")
         pos = indent*2
       linebreak = false
 
     def inline(element: Ast.Element): Boolean = element.children.forall {
-      case Ast.Text(_) => true
-      case _       => false
+      case Ast.Textual(_) => true
+      case _              => false
     }
 
     def next(node: Ast): Unit = node match
       case element@Ast.Element(tagName, children, attributes, namespaces) =>
         whitespace()
-        append("<", tagName.toString)
+        append(str"<", tagName.text)
 
         for attribute <- attributes do attribute match
-          case (key, value) => append(" ", key.toString, "=\"", value, "\"")
+          case (key, value) => append(str" ", key.text, str"=\"", value, str"\"")
         
-        if element.children.isEmpty then append("/")
-        append(">")
+        if element.children.isEmpty then append(str"/")
+        append(str">")
         if !inline(element) then newline(1)
 
         for child <- element.children do
           val splitLine = child match
-            case Ast.Text(_) => false
-            case _           => true
+            case Ast.Textual(_) => false
+            case _              => true
           if splitLine then newline()
           next(child)
           if splitLine then newline()
@@ -78,25 +80,25 @@ class StandardXmlPrinter(compact: Boolean = false) extends XmlPrinter[String]:
 
         whitespace()
         if !element.children.isEmpty then
-          append("</", tagName.toString, ">")
+          append(str"</", tagName.text, str">")
           if !inline(element) then newline(0)
 
-      case Ast.Text(text) =>
+      case Ast.Textual(text) =>
         whitespace()
         append(text)
 
       case Ast.ProcessingInstruction(target, content) =>
         whitespace()
-        append("<?", target, " ", content, "?>")
+        append(str"<?", target, str" ", content, str"?>")
         newline()
 
       case Ast.Comment(content) =>
         whitespace()
-        append("<!--", content, "-->")
+        append(str"<!--", content, str"-->")
         newline()
 
       case e => ()
 
     doc.root.content.foreach(next(_))
 
-    buf.toString
+    Txt(buf.toString)

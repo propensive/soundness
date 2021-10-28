@@ -21,14 +21,14 @@ import rudiments.*
 import gossamer.*
 
 object XmlWriter extends Derivation[XmlWriter]:
-  given XmlWriter[String] = str =>
-    Ast.Element(XmlName("String"), List(Ast.Text(str)))
+  given XmlWriter[Txt] = str =>
+    Ast.Element(XmlName(str"Text"), List(Ast.Textual(str)))
 
   given [T: XmlWriter]: XmlWriter[List[T]] = xs =>
-    Ast.Element(XmlName("List"), xs.map(summon[XmlWriter[T]].write(_)))
+    Ast.Element(XmlName(str"List"), xs.map(summon[XmlWriter[T]].write(_)))
 
   given XmlWriter[Int] = int =>
-    Ast.Element(XmlName("Int"), List(Ast.Text(int.toString)))
+    Ast.Element(XmlName(str"Int"), List(Ast.Textual(int.show)))
 
   private val attributeAttribute = xmlAttribute()
 
@@ -36,29 +36,29 @@ object XmlWriter extends Derivation[XmlWriter]:
     val elements =
       caseClass.params
         .filter(!_.annotations.contains(attributeAttribute))
-        .map { p => p.typeclass.write(p.deref(value)).copy(name = XmlName(p.label)) }
+        .map { p => p.typeclass.write(p.deref(value)).copy(name = XmlName(Txt(p.label))) }
 
     val attributes =
       caseClass.params
         .filter(_.annotations.contains(attributeAttribute))
-        .map { p => XmlName(p.label) -> textElements(p.typeclass.write(p.deref(value))) }
+        .map { p => XmlName(Txt(p.label)) -> textElements(p.typeclass.write(p.deref(value))) }
         .to(Map)
 
-    Ast.Element(XmlName(caseClass.typeInfo.short), elements, attributes)
+    Ast.Element(XmlName(Txt(caseClass.typeInfo.short)), elements, attributes)
 
   def split[T](sealedTrait: SealedTrait[XmlWriter, T]): XmlWriter[T] = value =>
     sealedTrait.choose(value) { subtype =>
       val xml = subtype.typeclass.write(subtype.cast(value))
       Ast.Element(
-        XmlName(sealedTrait.typeInfo.short),
+        XmlName(Txt(sealedTrait.typeInfo.short)),
         xml.children,
-        xml.attributes.updated(XmlName("type"), xml.name.name),
+        xml.attributes.updated(XmlName(str"type"), xml.name.name),
         xml.namespaces
       )
     }
   
-  private def textElements(value: Ast.Element): String =
-    value.children.collect { case Ast.Text(txt) => txt }.join
+  private def textElements(value: Ast.Element): Txt =
+    value.children.collect { case Ast.Textual(txt) => txt }.join
 
 trait XmlWriter[T]:
   def write(value: T): Ast.Element

@@ -20,20 +20,20 @@ import rudiments.*
 import gossamer.*
 
 enum Ast:
-  case Element(name: XmlName, children: Seq[Ast], attributes: Map[XmlName, String] = Map(),
+  case Element(name: XmlName, children: Seq[Ast], attributes: Map[XmlName, Txt] = Map(),
                    namespaces: List[Namespace] = Nil)
-  case Comment(content: String)
-  case ProcessingInstruction(target: String, content: String)
-  case Text(content: String)
-  case CData(content: String)
+  case Comment(content: Txt)
+  case ProcessingInstruction(target: Txt, content: Txt)
+  case Textual(content: Txt)
+  case CData(content: Txt)
   case Root(content: Ast*)
 
-  override def toString(): String = this match
+  def text: Txt = this match
     case Element(name, children, attributes, _) =>
-      val inside = children.map(_.toString).join
-      val attributeString = attributes.map { (k, v) => str"${k.toString}=$v" }.join(" ", " ", "")
+      val inside = children.map(_.text).join
+      val attributeString = attributes.map { (k, v) => str"${k.text}=$v" }.join(str" ", str" ", str"")
       
-      str"<${name.toString}${attributeString}>$inside</${name.toString}>"
+      str"<${name.text}${attributeString}>$inside</${name.text}>"
 
     case Comment(content) =>
       str"<!--$content-->"
@@ -41,11 +41,11 @@ enum Ast:
     case ProcessingInstruction(target, content) =>
       str"<?$target $content?>"
 
-    case Text(content) =>
+    case Textual(content) =>
       content
 
     case CData(content) =>
       str"<![CDATA[${content.toString}]]>"
 
     case Root(content*) =>
-      str"""<?xml version = "1.0"?>${content.map(_.toString).join}"""
+      str"""<?xml version = "1.0"?>${content.map(_.text).join}"""

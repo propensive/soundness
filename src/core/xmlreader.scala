@@ -18,23 +18,24 @@ package xylophone
 
 import wisteria.*
 import rudiments.*
+import gossamer.*
 
 trait XmlReader[T]:
   def read(xml: Seq[Ast]): Option[T]
   def map[S](fn: T => Option[S]): XmlReader[S] = read(_).flatMap(fn(_))
 
 object XmlReader extends Derivation[XmlReader]:
-  given string: XmlReader[String] =
-    childElements(_).collect { case Ast.Text(txt) => txt }.headOption
+  given txt: XmlReader[Txt] =
+    childElements(_).collect { case Ast.Textual(txt) => txt }.headOption
   
-  given XmlReader[Int] = string.map(Int.unapply(_))
+  given XmlReader[Int] = txt.map { t => Int.unapply(t.s) }
   
   def join[T](caseClass: CaseClass[XmlReader, T]): XmlReader[T] = seq =>
     val elems = childElements(seq)
     caseClass.constructMonadic { param =>
       elems
         .collect { case e: Ast.Element => e }
-        .find(_.name.name == param.label)
+        .find(_.name.name.s == param.label)
         .flatMap { e => param.typeclass.read(Seq(e)) }
     }
   
@@ -42,8 +43,8 @@ object XmlReader extends Derivation[XmlReader]:
     seq.headOption match
       case Some(Ast.Element(_, children, attributes, _)) =>
         attributes
-          .get(XmlName("type"))
-          .flatMap { t => sealedTrait.subtypes.find(_.typeInfo.short == t) }
+          .get(XmlName(str"type"))
+          .flatMap { t => sealedTrait.subtypes.find(_.typeInfo.short == t.s) }
           .flatMap(_.typeclass.read(seq))
       case _ =>
         None
