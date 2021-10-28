@@ -22,13 +22,13 @@ trait XmlPrinter[T]:
   def print(doc: Xml): T
 
 object XmlPrinter:
-  given XmlPrinter[Txt] = StandardXmlPrinter(false)
+  given XmlPrinter[Text] = StandardXmlPrinter(false)
 
 object printers:
-  given compact: XmlPrinter[Txt] = StandardXmlPrinter(true)
+  given compact: XmlPrinter[Text] = StandardXmlPrinter(true)
 
-class StandardXmlPrinter(compact: Boolean = false) extends XmlPrinter[Txt]:
-  def print(doc: Xml): Txt =
+class StandardXmlPrinter(compact: Boolean = false) extends XmlPrinter[Text]:
+  def print(doc: Xml): Text =
     var indent: Int = 0
     var linebreak: Boolean = false
     val buf: StringBuilder = StringBuilder()
@@ -39,15 +39,15 @@ class StandardXmlPrinter(compact: Boolean = false) extends XmlPrinter[Txt]:
         indent += n
         linebreak = true
 
-    def append(strings: Txt*): Unit =
+    def append(strings: Text*): Unit =
       for str <- strings do
         buf.append(str.s)
         pos += str.length
 
     def whitespace(): Unit =
       if !compact && linebreak then
-        buf.append(str"\n")
-        for i <- 1 to indent do buf.append(str"  ")
+        buf.append(t"\n")
+        for i <- 1 to indent do buf.append(t"  ")
         pos = indent*2
       linebreak = false
 
@@ -59,13 +59,13 @@ class StandardXmlPrinter(compact: Boolean = false) extends XmlPrinter[Txt]:
     def next(node: Ast): Unit = node match
       case element@Ast.Element(tagName, children, attributes, namespaces) =>
         whitespace()
-        append(str"<", tagName.text)
+        append(t"<", tagName.text)
 
         for attribute <- attributes do attribute match
-          case (key, value) => append(str" ", key.text, str"=\"", value, str"\"")
+          case (key, value) => append(t" ", key.text, t"=\"", value, t"\"")
         
-        if element.children.isEmpty then append(str"/")
-        append(str">")
+        if element.children.isEmpty then append(t"/")
+        append(t">")
         if !inline(element) then newline(1)
 
         for child <- element.children do
@@ -80,7 +80,7 @@ class StandardXmlPrinter(compact: Boolean = false) extends XmlPrinter[Txt]:
 
         whitespace()
         if !element.children.isEmpty then
-          append(str"</", tagName.text, str">")
+          append(t"</", tagName.text, t">")
           if !inline(element) then newline(0)
 
       case Ast.Textual(text) =>
@@ -89,16 +89,16 @@ class StandardXmlPrinter(compact: Boolean = false) extends XmlPrinter[Txt]:
 
       case Ast.ProcessingInstruction(target, content) =>
         whitespace()
-        append(str"<?", target, str" ", content, str"?>")
+        append(t"<?", target, t" ", content, t"?>")
         newline()
 
       case Ast.Comment(content) =>
         whitespace()
-        append(str"<!--", content, str"-->")
+        append(t"<!--", content, t"-->")
         newline()
 
       case e => ()
 
     doc.root.content.foreach(next(_))
 
-    Txt(buf.toString)
+    Text(buf.toString)

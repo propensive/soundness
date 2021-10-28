@@ -26,44 +26,44 @@ import scala.annotation.StaticAnnotation
 import annotation.targetName
 import language.dynamics
 
-case class Namespace(id: Txt, uri: Txt)
+case class Namespace(id: Text, uri: Text)
 
-case class XmlName(name: Txt, namespace: Maybe[Namespace] = Unset):
-  def text: Txt = namespace match
+case class XmlName(name: Text, namespace: Maybe[Namespace] = Unset):
+  def text: Text = namespace match
     case Unset                => name
-    case Namespace(prefix, _) => str"$prefix:$name"
+    case Namespace(prefix, _) => t"$prefix:$name"
 
 sealed trait Xml:
-  def pointer: List[Int | Txt | Unit]
+  def pointer: List[Int | Text | Unit]
   def root: Ast.Root
   
   @targetName("add")
   infix def +(other: Xml): Doc throws XmlAccessError
 
-  def string(using XmlPrinter[Txt]): Txt throws XmlAccessError =
-    summon[XmlPrinter[Txt]].print(Doc(Ast.Root(Xml.normalize(this)*)))
+  def string(using XmlPrinter[Text]): Text throws XmlAccessError =
+    summon[XmlPrinter[Text]].print(Doc(Ast.Root(Xml.normalize(this)*)))
 
   override def toString(): String =
     try printers.compact.print(Doc(Ast.Root(Xml.normalize(this)*))).s
-    catch case error@XmlAccessError(_, _) => str"undefined".s
+    catch case error@XmlAccessError(_, _) => t"undefined".s
 
-type XmlPath = List[Txt | Int | Unit]
+type XmlPath = List[Text | Int | Unit]
 
 object Xml:
-  given (using XmlPrinter[Txt]): clairvoyant.HttpResponse[Xml, Txt] with
+  given (using XmlPrinter[Text]): clairvoyant.HttpResponse[Xml, Text] with
     def mimeType: String = "application/xml"
-    def content(xml: Xml): Txt = summon[XmlPrinter[Txt]].print(xml)
+    def content(xml: Xml): Text = summon[XmlPrinter[Text]].print(xml)
 
-  def print(xml: Xml)(using XmlPrinter[Txt]): Txt = summon[XmlPrinter[Txt]].print(xml)
+  def print(xml: Xml)(using XmlPrinter[Text]): Text = summon[XmlPrinter[Text]].print(xml)
 
-  def pathString(path: XmlPath): Txt = if path.isEmpty then str"/" else path.map {
-    case idx: Int   => str"[$idx]"
-    case label: Txt => str"/$label"
-    case unit: Unit => str"/*"
+  def pathString(path: XmlPath): Text = if path.isEmpty then t"/" else path.map {
+    case idx: Int   => t"[$idx]"
+    case label: Text => t"/$label"
+    case unit: Unit => t"/*"
     case _          => throw Impossible("should never match")
   }.join
 
-  def parse(content: Txt): Doc throws XmlParseError =
+  def parse(content: Text): Doc throws XmlParseError =
     import org.w3c.dom as owd, owd.Node.*
     import org.xml.sax as oxs
     import javax.xml.parsers.*
@@ -83,17 +83,17 @@ object Xml:
         case None         => Unset
         case Some(prefix) => Option(node.getNamespaceURI) match
                                case None      => Unset
-                               case Some(uri) => Namespace(Txt(prefix.nn), Txt(uri.nn))
+                               case Some(uri) => Namespace(Text(prefix.nn), Text(uri.nn))
 
     def readNode(node: owd.Node): Ast = node.getNodeType match
       case CDATA_SECTION_NODE =>
-        Ast.CData(Txt(node.getTextContent.nn))
+        Ast.CData(Text(node.getTextContent.nn))
 
       case COMMENT_NODE =>
-        Ast.Comment(Txt(node.getTextContent.nn))
+        Ast.Comment(Text(node.getTextContent.nn))
 
       case ELEMENT_NODE =>
-        val xmlName = XmlName(Txt(node.getLocalName.nn), getNamespace(node))
+        val xmlName = XmlName(Text(node.getLocalName.nn), getNamespace(node))
         val childNodes = node.getChildNodes
         
         val children =
@@ -102,21 +102,21 @@ object Xml:
         val atts = (0 until node.getAttributes.nn.getLength).map(node.getAttributes.nn.item(_).nn)
         val attributes = atts.map { att =>
           val alias: Maybe[Namespace] = getNamespace(att)
-          XmlName(Txt(att.getLocalName.nn), alias) -> Txt(att.getTextContent.nn)
+          XmlName(Text(att.getLocalName.nn), alias) -> Text(att.getTextContent.nn)
         }.to(Map)
         
         Ast.Element(xmlName, children, attributes)
 
       case PROCESSING_INSTRUCTION_NODE =>
-        val name = Txt(node.getNodeName.nn)
-        val content = Txt(node.getTextContent.nn)
+        val name = Text(node.getNodeName.nn)
+        val content = Text(node.getTextContent.nn)
         Ast.ProcessingInstruction(name, content)
 
       case TEXT_NODE =>
-        Ast.Textual(Txt(node.getTextContent.nn))
+        Ast.Textual(Text(node.getTextContent.nn))
       
       case id =>
-        Ast.Comment(str"unrecognized node $id")
+        Ast.Comment(t"unrecognized node $id")
 
     readNode(root.getDocumentElement.nn) match
       case elem@Ast.Element(_, _, _, _) => Doc(Ast.Root(elem))
@@ -139,7 +139,7 @@ object Xml:
 
         recur(tail, next)
 
-      case (label: Txt) :: tail =>
+      case (label: Text) :: tail =>
         val next = current
           .collect { case e@Ast.Element(_, children, _, _) => children }
           .flatten.collect { case e: Ast.Element if e.name.name == label => e }
@@ -154,12 +154,12 @@ object Xml:
       throw XmlAccessError(idx, xml.pointer.dropRight(tail.length))
 
 
-case class Fragment(head: Txt | Unit, path: XmlPath, root: Ast.Root)
+case class Fragment(head: Text | Unit, path: XmlPath, root: Ast.Root)
 extends Xml, Dynamic:
   def apply(idx: Int = 0): XmlNode = XmlNode(idx, head :: path, root)
-  def attribute(key: Txt): Attribute = apply(0).attribute(key)
+  def attribute(key: Text): Attribute = apply(0).attribute(key)
   def pointer: XmlPath = (head :: path).reverse
-  def selectDynamic(tagName: String): Fragment = Fragment(Txt(tagName), head :: path, root)
+  def selectDynamic(tagName: String): Fragment = Fragment(Text(tagName), head :: path, root)
   def applyDynamic(tagName: String)(idx: Int = 0): XmlNode = selectDynamic(tagName).apply(idx)
   
   @targetName("all")
@@ -172,9 +172,9 @@ extends Xml, Dynamic:
   def as[T](using reader: XmlReader[T]): T throws XmlAccessError | XmlReadError = apply().as[T]
 
 case class XmlNode(head: Int, path: XmlPath, root: Ast.Root) extends Xml, Dynamic:
-  def selectDynamic(tagName: String): Fragment = Fragment(Txt(tagName), head :: path, root)
+  def selectDynamic(tagName: String): Fragment = Fragment(Text(tagName), head :: path, root)
   def applyDynamic(tagName: String)(idx: Int = 0): XmlNode = selectDynamic(tagName).apply(idx)
-  def attribute(attribute: Txt): Attribute = Attribute(this, attribute)
+  def attribute(attribute: Text): Attribute = Attribute(this, attribute)
   def pointer: XmlPath = (head :: path).reverse
   
   @targetName("all")
@@ -189,7 +189,7 @@ case class XmlNode(head: Int, path: XmlPath, root: Ast.Root) extends Xml, Dynami
 
 case class Doc(root: Ast.Root) extends Xml, Dynamic:
   def pointer: XmlPath = Nil
-  def selectDynamic(tagName: String): Fragment = Fragment(Txt(tagName), Nil, root)
+  def selectDynamic(tagName: String): Fragment = Fragment(Text(tagName), Nil, root)
   def applyDynamic(tagName: String)(idx: Int = 0): XmlNode = selectDynamic(tagName).apply(idx)
   
   @targetName("all")
@@ -202,14 +202,14 @@ case class Doc(root: Ast.Root) extends Xml, Dynamic:
   def as[T: XmlReader]: T throws XmlAccessError | XmlReadError =
     summon[XmlReader[T]].read(Xml.normalize(this)).getOrElse(throw XmlReadError())
 
-case class Attribute(node: XmlNode, attribute: Txt):
+case class Attribute(node: XmlNode, attribute: Text):
   def as[T: XmlReader]: T throws XmlReadError | XmlAccessError =
     val attributes = Xml.normalize(node).headOption match
       case Some(Ast.Element(_, _, attributes, _)) => attributes
       case _                                      => throw XmlReadError()
 
     summon[XmlReader[T]]
-      .read(Seq(Ast.Element(XmlName(str"empty"), Seq(Ast.Textual(attributes(XmlName(attribute)))))))
+      .read(Seq(Ast.Element(XmlName(t"empty"), Seq(Ast.Textual(attributes(XmlName(attribute)))))))
       .getOrElse(throw XmlReadError())
 
 case class xmlAttribute() extends StaticAnnotation

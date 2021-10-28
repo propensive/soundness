@@ -20,32 +20,32 @@ import rudiments.*
 import gossamer.*
 
 enum Ast:
-  case Element(name: XmlName, children: Seq[Ast], attributes: Map[XmlName, Txt] = Map(),
+  case Element(name: XmlName, children: Seq[Ast], attributes: Map[XmlName, Text] = Map(),
                    namespaces: List[Namespace] = Nil)
-  case Comment(content: Txt)
-  case ProcessingInstruction(target: Txt, content: Txt)
-  case Textual(content: Txt)
-  case CData(content: Txt)
+  case Comment(content: Text)
+  case ProcessingInstruction(target: Text, content: Text)
+  case Textual(content: Text)
+  case CData(content: Text)
   case Root(content: Ast*)
 
-  def text: Txt = this match
+  def text: Text = this match
     case Element(name, children, attributes, _) =>
       val inside = children.map(_.text).join
-      val attributeString = attributes.map { (k, v) => str"${k.text}=$v" }.join(str" ", str" ", str"")
+      val attributeString = attributes.map { (k, v) => t"${k.text}=$v" }.join(t" ", t" ", t"")
       
-      str"<${name.text}${attributeString}>$inside</${name.text}>"
+      t"<${name.text}${attributeString}>$inside</${name.text}>"
 
     case Comment(content) =>
-      str"<!--$content-->"
+      t"<!--$content-->"
 
     case ProcessingInstruction(target, content) =>
-      str"<?$target $content?>"
+      t"<?$target $content?>"
 
     case Textual(content) =>
       content
 
     case CData(content) =>
-      str"<![CDATA[${content.toString}]]>"
+      t"<![CDATA[${content.toString}]]>"
 
     case Root(content*) =>
-      str"""<?xml version = "1.0"?>${content.map(_.text).join}"""
+      t"""<?xml version = "1.0"?>${content.map(_.text).join}"""

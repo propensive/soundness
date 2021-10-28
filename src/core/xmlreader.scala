@@ -25,7 +25,7 @@ trait XmlReader[T]:
   def map[S](fn: T => Option[S]): XmlReader[S] = read(_).flatMap(fn(_))
 
 object XmlReader extends Derivation[XmlReader]:
-  given txt: XmlReader[Txt] =
+  given txt: XmlReader[Text] =
     childElements(_).collect { case Ast.Textual(txt) => txt }.headOption
   
   given XmlReader[Int] = txt.map { t => Int.unapply(t.s) }
@@ -43,7 +43,7 @@ object XmlReader extends Derivation[XmlReader]:
     seq.headOption match
       case Some(Ast.Element(_, children, attributes, _)) =>
         attributes
-          .get(XmlName(str"type"))
+          .get(XmlName(t"type"))
           .flatMap { t => sealedTrait.subtypes.find(_.typeInfo.short == t.s) }
           .flatMap(_.typeclass.read(seq))
       case _ =>

@@ -23,7 +23,7 @@ import gossamer.*
 object XmlInterpolation:
 
   enum Input:
-    case StringLike(str: Txt)
+    case StringLike(str: Text)
     case XmlLike(xml: Ast.Element)
 
   enum ContextType:
@@ -34,23 +34,23 @@ object XmlInterpolation:
     val charSet = chars.to(Set)
     def unapply(char: Char): Boolean = charSet.contains(char)
 
-  case class ParseStateNode(name: Txt, namespaces: Set[Txt])
+  case class ParseStateNode(name: Text, namespaces: Set[Text])
 
-  case class ParseState(offset: Int, context: ContextType, stack: List[ParseStateNode], current: Txt,
-                            source: Txt, ns: Boolean):
+  case class ParseState(offset: Int, context: ContextType, stack: List[ParseStateNode], current: Text,
+                            source: Text, ns: Boolean):
     def apply(newContext: ContextType, char: Char) =
-      copy(context = newContext, current = str"$current$char", offset = offset + 1)
+      copy(context = newContext, current = t"$current$char", offset = offset + 1)
     
     def apply(newContext: ContextType): ParseState =
       copy(context = newContext, offset = offset + 1, ns = false)
     
-    def apply(char: Char): ParseState = copy(offset = offset + 1, current = str"$current$char")
+    def apply(char: Char): ParseState = copy(offset = offset + 1, current = t"$current$char")
     def apply(): ParseState = copy(offset = offset + 1)
-    def reset: ParseState = copy(current = str"")
+    def reset: ParseState = copy(current = t"")
     def namespace: ParseState = copy(ns = true)
-    def push: ParseState = copy(stack = ParseStateNode(current, Set()) :: stack, current = str"")
+    def push: ParseState = copy(stack = ParseStateNode(current, Set()) :: stack, current = t"")
     
-    def addNamespace(ns: Txt): ParseState =
+    def addNamespace(ns: Text): ParseState =
       copy(stack = stack.head.copy(namespaces = stack.head.namespaces + ns) :: stack.tail)
 
     def checkNs: Boolean =
@@ -68,8 +68,8 @@ object XmlInterpolation:
       case None =>
         throw InterpolationError(s"spurious closing tag: $current", offset - current.length, current.length)
 
-  given Substitution[Input, Txt, "str"] with
-    def embed(value: Txt) = Input.StringLike(value)
+  given Substitution[Input, Text, "t"] with
+    def embed(value: Text) = Input.StringLike(value)
 
   given genInsert[T](using writer: XmlWriter[T]): Insertion[Input, T] =
     value => Input.XmlLike(writer.write(value))
@@ -81,9 +81,9 @@ object XmlInterpolation:
     val TagChar = CharExtractor(Letters ++ Digits + '.' + '-' + '_')
     val WhitespaceChar = CharExtractor(Set(' ', '\t', '\n', '\r'))
 
-    def initial: ParseState = ParseState(0, ContextType.Body, Nil, str"", str"", false)
+    def initial: ParseState = ParseState(0, ContextType.Body, Nil, t"", t"", false)
 
-    private def escape(str: Txt): Txt =
+    private def escape(str: Text): Text =
       str.sub("\"", "&quot;")
         .sub("'", "&apos;")
         .sub("<", "&lt;")
@@ -102,8 +102,8 @@ object XmlInterpolation:
           case Input.StringLike(str) => parse(state, escape(str).s)
           case Input.XmlLike(xml)    => parse(state, xml.toString)
         case AttributeEquals       => value match
-            case Input.StringLike(str) => parse(state, str"\"${escape(str)}\"".s)
-            case Input.XmlLike(xml)    => parse(state, str"\"${escape(xml.text)}\"".s)
+            case Input.StringLike(str) => parse(state, t"\"${escape(str)}\"".s)
+            case Input.XmlLike(xml)    => parse(state, t"\"${escape(xml.text)}\"".s)
         case _ =>
           throw InterpolationError(s"a substitution cannot be made in this position")
     

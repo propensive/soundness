@@ -19,15 +19,15 @@ package xylophone
 import rudiments.*
 import gossamer.*
 
-abstract class XylophoneError(msg: Txt) extends Exception(str"xylophone: $msg".s)
+abstract class XylophoneError(msg: Text) extends Exception(t"xylophone: $msg".s)
 
 case class XmlParseError(line: Int, column: Int)
-extends XylophoneError(str"the XML source could not be parsed at line $line, column $column")
+extends XylophoneError(t"the XML source could not be parsed at line $line, column $column")
 
-case class XmlReadError() extends XylophoneError(str"could not read value")
+case class XmlReadError() extends XylophoneError(t"could not read value")
 
 case class XmlAccessError(index: Int, path: XmlPath)
 extends XylophoneError({
-  val ref: Txt = if index == 0 then str"any nodes" else str"node $index"
-  str"could not access $ref at path ${Xml.pathString(path)}"
+  val ref: Text = if index == 0 then t"any nodes" else t"node $index"
+  t"could not access $ref at path ${Xml.pathString(path)}"
 })
