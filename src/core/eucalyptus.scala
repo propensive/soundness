@@ -47,7 +47,7 @@ object Level:
       case Warn => colors.Goldenrod
       case Fail => colors.OrangeRed
 
-    ansi"${Bg(color)}[${colors.Black}($Bold( ${Txt(level.toString).upper} ))]"
+    ansi"${Bg(color)}[${colors.Black}($Bold( ${Text(level.toString).upper} ))]"
 
 enum Level:
   case Fine, Info, Warn, Fail
@@ -94,7 +94,7 @@ object Log:
 
   def silent: Log = Log()
 
-object Everything extends Realm(str"")
+object Everything extends Realm(t"")
 
 @implicitNotFound("eucalyptus: a contextual Log is required, for example:\n    given Log = "+
     "Log.stdout()\nor,\n    given Log = Log.silent")  
@@ -131,7 +131,7 @@ object Realm:
   given Show[Realm] = _.name
   given AnsiShow[Realm] = realm => ansi"${colors.LightGreen}(${realm.name})"
 
-case class Realm(name: Txt):
+case class Realm(name: Text):
 
   inline def realm: this.type = this
 
@@ -185,7 +185,7 @@ object Logger:
       threadId
     }
     
-    val name = str"eucalyptus-$id"
+    val name = t"eucalyptus-$id"
 
     Thread(runnable, name.s).start()
 
@@ -211,4 +211,4 @@ class Logger(writer: LazyList[Bytes] => Unit, rules: Seq[Rule[?, ?]], interval: 
     Logger.run { () => try writer(logStream) catch case e: Exception => () }
     this
 
-given realm: Realm = Realm(str"eucalyptus")
+given realm: Realm = Realm(t"eucalyptus")
