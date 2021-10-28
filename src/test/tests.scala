@@ -30,20 +30,20 @@ final case class id() extends StaticAnnotation
 final case class count(number: Int) extends StaticAnnotation
 final case class ref(x: Int) extends StaticAnnotation
 
-case class Person(name: Txt, @id email: Txt)
+case class Person(name: Text, @id email: Text)
 
 @count(10)
-case class Company(name: Txt)
+case class Company(name: Text)
 
 case class Employee(person: Person, @id code: Long)
 
 case class Letters(@ref(1) alpha: Int, @ref(2) @ref(3) beta: Int, gamma: Int, @ref(4) delta: Int)
 
-object Tests extends Suite(str"Adversaria tests"):
+object Tests extends Suite(t"Adversaria tests"):
 
   def run(using Runner): Unit =
 
-    test(str"first field") {
+    test(t"first field") {
       val letters = Letters(5, 6, 7, 8)
       Annotations.firstField[Letters, ref](letters)
     }.assert(_ == 5)
@@ -52,7 +52,7 @@ object Tests extends Suite(str"Adversaria tests"):
     //   Annotations.field[Employee](_.code)
     // }.assert(_ == List(id()))
     
-    test(str"check nonexistant annotations") {
+    test(t"check nonexistant annotations") {
       Annotations.field[Employee](_.person)
     }.assert(_ == Nil)
 
@@ -98,7 +98,7 @@ object Tests extends Suite(str"Adversaria tests"):
     // }.assert(_ == TypecheckError("adversaria: could not find matching annotation"))
 
     // test("extract annotation value generically") {
-    //   def getId[T](value: T)(implicit anns: FindMetadata[id, T]): Txt =
+    //   def getId[T](value: T)(implicit anns: FindMetadata[id, T]): Text =
     //     anns.get(value).toString
 
     //   getId(Employee(Person("John Smith", "test@example.com"), 3141592))
