@@ -17,9 +17,10 @@
 package honeycomb
 
 import probably.*
+import gossamer.*
 
 import unsafeExceptions.canThrowAny
 
-object Tests extends Suite("Honeycomb Tests"):
+object Tests extends Suite(str"Honeycomb Tests"):
   def run(using Runner): Unit =
     ()
