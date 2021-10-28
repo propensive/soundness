@@ -17,8 +17,10 @@
 package acyclicity
 
 import probably.*
+import gossamer.*
+
 import unsafeExceptions.canThrowAny
 
-object Tests extends Suite("Slalom Tests"):
+object Tests extends Suite(str"Acyclicity Tests"):
   def run(using Runner): Unit =
     ()
