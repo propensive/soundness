@@ -34,32 +34,32 @@ import java.io.*
 import java.text as jt
 import com.sun.net.httpserver.{HttpServer as JavaHttpServer, *}
 
-case class ParamNotSent(key: Txt)
-extends Exception(str"scintillate: the parameter $key was not sent in the request".s)
+case class ParamNotSent(key: Text)
+extends Exception(t"scintillate: the parameter $key was not sent in the request".s)
 
 trait Responder:
   def sendBody(status: Int, body: Body): Unit
-  def addHeader(key: Txt, value: Txt): Unit
+  def addHeader(key: Text, value: Text): Unit
 
 object Handler:
   given [T: Show]: SimpleHandler[T] =
-    SimpleHandler(str"text/plain", v => Body.Chunked(LazyList(summon[Show[T]].show(v).s.bytes)))
+    SimpleHandler(t"text/plain", v => Body.Chunked(LazyList(summon[Show[T]].show(v).s.bytes)))
 
-  given stringHandler[T](using hr: clairvoyant.HttpResponse[T, Txt]): SimpleHandler[T] =
-    SimpleHandler(Txt(hr.mimeType), value => Body.Chunked(LazyList(hr.content(value).bytes)))
+  given stringHandler[T](using hr: clairvoyant.HttpResponse[T, Text]): SimpleHandler[T] =
+    SimpleHandler(Text(hr.mimeType), value => Body.Chunked(LazyList(hr.content(value).bytes)))
   
   given iarrayByteHandler[T](using hr: clairvoyant.HttpResponse[T, LazyList[IArray[Byte]]]): SimpleHandler[T] =
-    SimpleHandler(Txt(hr.mimeType), value => Body.Chunked(hr.content(value)))
+    SimpleHandler(Text(hr.mimeType), value => Body.Chunked(hr.content(value)))
 
   given Handler[Redirect] with
-    def process(content: Redirect, status: Int, headers: Map[Txt, Txt],
+    def process(content: Redirect, status: Int, headers: Map[Text, Text],
                     responder: Responder): Unit =
-      responder.addHeader(ResponseHeader.Location.header, Txt(content.location.toString))
+      responder.addHeader(ResponseHeader.Location.header, Text(content.location.toString))
       for (k, v) <- headers do responder.addHeader(k, v)
       responder.sendBody(301, Body.Empty)
 
   given [T: SimpleHandler]: Handler[NotFound[T]] with
-    def process(notFound: NotFound[T], status: Int, headers: Map[Txt, Txt],
+    def process(notFound: NotFound[T], status: Int, headers: Map[Text, Text],
                     responder: Responder): Unit =
       val handler = summon[SimpleHandler[T]]
       responder.addHeader(ResponseHeader.ContentType.header, handler.mime)
@@ -67,7 +67,7 @@ object Handler:
       responder.sendBody(404, handler.stream(notFound.content))
 
   given [T: SimpleHandler]: Handler[ServerError[T]] with
-    def process(notFound: ServerError[T], status: Int, headers: Map[Txt, Txt],
+    def process(notFound: ServerError[T], status: Int, headers: Map[Text, Text],
                     responder: Responder): Unit =
       val handler = summon[SimpleHandler[T]]
       responder.addHeader(ResponseHeader.ContentType.header, handler.mime)
@@ -81,14 +81,14 @@ object Redirect:
 case class Redirect(location: Uri)
 
 trait Handler[T]:
-  def process(content: T, status: Int, headers: Map[Txt, Txt], responder: Responder): Unit
+  def process(content: T, status: Int, headers: Map[Text, Text], responder: Responder): Unit
 
 object SimpleHandler:
-  def apply[T](mime: Txt, stream: T => Body): SimpleHandler[T] =
+  def apply[T](mime: Text, stream: T => Body): SimpleHandler[T] =
     new SimpleHandler(mime, stream) {}
 
-trait SimpleHandler[T](val mime: Txt, val stream: T => Body) extends Handler[T]:
-  def process(content: T, status: Int, headers: Map[Txt, Txt], responder: Responder): Unit =
+trait SimpleHandler[T](val mime: Text, val stream: T => Body) extends Handler[T]:
+  def process(content: T, status: Int, headers: Map[Text, Text], responder: Responder): Unit =
     responder.addHeader(ResponseHeader.ContentType.header, mime)
     for (k, v) <- headers do responder.addHeader(k, v)
     responder.sendBody(status, stream(content))
@@ -96,38 +96,38 @@ trait SimpleHandler[T](val mime: Txt, val stream: T => Body) extends Handler[T]:
 case class NotFound[T: SimpleHandler](content: T)
 case class ServerError[T: SimpleHandler](content: T)
 
-case class Cookie(name: Txt, value: Txt, domain: Maybe[Txt] = Unset,
-                      path: Maybe[Txt] = Unset, expiry: Maybe[Long] = Unset,
+case class Cookie(name: Text, value: Text, domain: Maybe[Text] = Unset,
+                      path: Maybe[Text] = Unset, expiry: Maybe[Long] = Unset,
                       ssl: Boolean = false)
 
 case class Response[T: Handler](content: T, status: HttpStatus = HttpStatus.Ok,
-                                    headers: Map[ResponseHeader, Txt] = Map(),
+                                    headers: Map[ResponseHeader, Text] = Map(),
                                     cookies: List[Cookie] = Nil):
 
 
   private val df: jt.SimpleDateFormat = jt.SimpleDateFormat("dd MMM yyyy HH:mm:ss")
 
   def respond(responder: Responder): Unit =
-    val cookieHeaders: List[(ResponseHeader, Txt)] = cookies.map { cookie =>
-      ResponseHeader.SetCookie -> List[(Txt, Boolean | Option[Txt])](
+    val cookieHeaders: List[(ResponseHeader, Text)] = cookies.map { cookie =>
+      ResponseHeader.SetCookie -> List[(Text, Boolean | Option[Text])](
         cookie.name   -> Some(cookie.value),
-        str"Expires"  -> cookie.expiry.option.map { t => str"${df.format(t).nn} GMT" },
-        str"Domain"   -> cookie.domain.option,
-        str"Path"     -> cookie.path.option,
-        str"Secure"   -> cookie.ssl,
-        str"HttpOnly" -> false
+        t"Expires"  -> cookie.expiry.option.map { t => t"${df.format(t).nn} GMT" },
+        t"Domain"   -> cookie.domain.option,
+        t"Path"     -> cookie.path.option,
+        t"Secure"   -> cookie.ssl,
+        t"HttpOnly" -> false
       ).collect {
         case (k, true)    => k
-        case (k, Some(v)) => str"$k=$v"
-      }.join(str"; ")
+        case (k, Some(v)) => t"$k=$v"
+      }.join(t"; ")
     }
     summon[Handler[T]].process(content, status.code, (headers ++ cookieHeaders).map { (k, v) =>
         k.header -> v }, responder)
 
 object Request:
   given Show[Request] = request => ListMap(
-    str"content"  -> request.contentType.show,
-    str"method"   -> request.method.show,
+    t"content"  -> request.contentType.show,
+    t"method"   -> request.method.show,
     // ansi"query"    -> request.query.ansiShow,
     // ansi"ssl"      -> request.ssl.ansiShow,
     // ansi"hostname" -> request.hostname.ansiShow,
@@ -136,31 +136,31 @@ object Request:
     // //ansi"body"     -> (try request.body.stream.slurp(maxSize = 256).uString catch case TooMuchData() => "[...]"),
     // ansi"headers"  -> request.rawHeaders.map { (k, vs) => ansi"$k: ${vs.join(ansi"; ")}" }.join(ansi"\n          "),
     // ansi"params"   -> request.params.map { (k, v) => ansi"$k=\"$v\"" }.join(ansi"\n          ")
-  ).map { (k, v) => str"$k = $v" }.join(str", ")
+  ).map { (k, v) => t"$k = $v" }.join(t", ")
 
-case class Request(method: Method, body: Body.Chunked, query: Txt, ssl: Boolean,
-                       hostname: Txt, port: Int, path: Txt,
-                       rawHeaders: Map[Txt, List[Txt]],
-                       queryParams: Map[Txt, List[Txt]]):
+case class Request(method: Method, body: Body.Chunked, query: Text, ssl: Boolean,
+                       hostname: Text, port: Int, path: Text,
+                       rawHeaders: Map[Text, List[Text]],
+                       queryParams: Map[Text, List[Text]]):
 
   // FIXME: The exception in here needs to be handled elsewhere
-  val params: Map[Txt, Txt] =
+  val params: Map[Text, Text] =
     try
-      queryParams.map { (k, vs) => Txt(k.urlDecode) -> Txt(vs.headOption.getOrElse(str"").urlDecode) }.to(Map) ++ {
+      queryParams.map { (k, vs) => Text(k.urlDecode) -> Text(vs.headOption.getOrElse(t"").urlDecode) }.to(Map) ++ {
         if (method == Method.Post || method == Method.Put) &&
             (contentType == Some(media"application/x-www-form-urlencoded") || contentType == None)
         then
-          Map[Txt, Txt](Txt(body.stream.slurp(maxSize = 10485760).uString).cut(str"&").map(_.cut(str"=", 2).to(Seq) match
-            case Seq(key: Txt)             => Txt(key.urlDecode) -> str""
-            case Seq(key: Txt, value: Txt) => Txt(key.urlDecode) -> Txt(value.urlDecode)
+          Map[Text, Text](Text(body.stream.slurp(maxSize = 10485760).uString).cut(t"&").map(_.cut(t"=", 2).to(Seq) match
+            case Seq(key: Text)              => key.urlDecode.show -> t""
+            case Seq(key: Text, value: Text) => key.urlDecode.show -> value.urlDecode.show
             case _                         => throw Impossible("key/value pair does not match")
           )*)
-        else Map[Txt, Txt]()
+        else Map[Text, Text]()
       }
     catch case TooMuchData() => Map()
 
   
-  lazy val headers: Map[RequestHeader, List[Txt]] =
+  lazy val headers: Map[RequestHeader, List[Text]] =
     rawHeaders.map {
       case (RequestHeader(header), values) => header -> values
       case _                               => throw Impossible("should never match")
@@ -180,24 +180,24 @@ extension (value: Http.type)
     summon[RequestHandler].listen(handler)
 
 inline def request(using Request): Request = summon[Request]
-inline def param(using Request)(key: Txt): Option[Txt] = summon[Request].params.get(key)
+inline def param(using Request)(key: Text): Option[Text] = summon[Request].params.get(key)
 
-inline def header(using Request)(header: RequestHeader): List[Txt] =
+inline def header(using Request)(header: RequestHeader): List[Text] =
   summon[Request].headers.get(header).getOrElse(Nil)
 
 object ParamReader:
   given ParamReader[Int] = str => Int.unapply(str.s)
-  given ParamReader[Txt] = Some(_)
+  given ParamReader[Text] = Some(_)
 
 trait ParamReader[T]:
-  def read(value: Txt): Option[T]
+  def read(value: Text): Option[T]
 
 object RequestParam:
   given clairvoyant.HtmlAttribute["name", RequestParam[?]] with
     def name: String = "name"
     def serialize(value: RequestParam[?]): String = value.key.s
 
-case class RequestParam[T](key: Txt)(using ParamReader[T]):
+case class RequestParam[T](key: Text)(using ParamReader[T]):
   def opt(using Request): Option[T] = param(key).flatMap(summon[ParamReader[T]].read(_))
   def unapply(req: Request): Option[T] = opt(using req)
   def apply()(using Request): T throws ParamNotSent = opt.getOrElse(throw ParamNotSent(key))
@@ -249,10 +249,10 @@ case class HttpServer(port: Int) extends RequestHandler:
     val uri = exchange.getRequestURI.nn
     val query = Option(uri.getQuery)
     
-    val queryParams: Map[Txt, List[Txt]] = query.fold(Map()) { query =>
+    val queryParams: Map[Text, List[Text]] = query.fold(Map()) { query =>
       val paramStrings = query.nn.cut("&")
       
-      paramStrings.foldLeft(Map[Txt, List[Txt]]()) { (map, elem) =>
+      paramStrings.foldLeft(Map[Text, List[Text]]()) { (map, elem) =>
         val kv = elem.cut("=", 2)
         
         map.updated(kv(0), kv(1) :: map.getOrElse(kv(0), Nil))
@@ -264,22 +264,22 @@ case class HttpServer(port: Int) extends RequestHandler:
     val request = Request(
       method = Method.valueOf(exchange.getRequestMethod.nn.lower.capitalize.nn),
       body = streamBody(exchange),
-      query = Txt(query.getOrElse("").nn),
+      query = Text(query.getOrElse("").nn),
       ssl = false,
-      Txt(Option(uri.getHost).getOrElse(exchange.getLocalAddress.nn.getAddress.nn.getCanonicalHostName
+      Text(Option(uri.getHost).getOrElse(exchange.getLocalAddress.nn.getAddress.nn.getCanonicalHostName
           ).nn),
       Option(uri.getPort).filter(_ > 0).getOrElse(exchange.getLocalAddress.nn.getPort),
-      Txt(uri.getPath.nn),
-      headers.map { (k, v) => Txt(k) -> v.map(Txt(_)) },
+      Text(uri.getPath.nn),
+      headers.map { (k, v) => Text(k) -> v.map(Text(_)) },
       queryParams
     )
 
-    Log.fine(str"Received request $request")
+    Log.fine(t"Received request $request")
 
     request
 
   class SimpleResponder(exchange: HttpExchange) extends Responder:
-    def addHeader(key: Txt, value: Txt): Unit = exchange.getResponseHeaders.nn.add(key.s, value.s)
+    def addHeader(key: Text, value: Text): Unit = exchange.getResponseHeaders.nn.add(key.s, value.s)
     
     def sendBody(status: Int, body: Body): Unit =
       val length = body match
@@ -302,35 +302,35 @@ case class HttpServer(port: Int) extends RequestHandler:
       exchange.getResponseBody.nn.flush()
       exchange.close()
 
-case class Svg(content: Txt)
+case class Svg(content: Text)
 
 object Svg:
-  given SimpleHandler[Svg] = SimpleHandler(str"image/svg+xml", svg => Body.Data(svg.content.bytes))
+  given SimpleHandler[Svg] = SimpleHandler(t"image/svg+xml", svg => Body.Data(svg.content.bytes))
 
 case class Jpeg(content: IArray[Byte])
 
 object Jpeg:
-  given SimpleHandler[Jpeg] = SimpleHandler(str"image/jpeg", jpeg => Body.Data(jpeg.content))
+  given SimpleHandler[Jpeg] = SimpleHandler(t"image/jpeg", jpeg => Body.Data(jpeg.content))
 
 case class Gif(content: IArray[Byte])
 
 object Gif:
-  given SimpleHandler[Gif] = SimpleHandler(str"image/gif", gif => Body.Data(gif.content))
+  given SimpleHandler[Gif] = SimpleHandler(t"image/gif", gif => Body.Data(gif.content))
 
 case class Png(content: IArray[Byte])
 
 object Png:
-  given SimpleHandler[Png] = SimpleHandler(str"image/png", png => Body.Data(png.content))
+  given SimpleHandler[Png] = SimpleHandler(t"image/png", png => Body.Data(png.content))
 
-def basicAuth(validate: (Txt, Txt) => Boolean)(response: => Response[?])
+def basicAuth(validate: (Text, Text) => Boolean)(response: => Response[?])
              (using Request): Response[?] =
   request.headers.get(RequestHeader.Authorization) match
     case Some(List(s"Basic $credentials")) =>
-      val Seq(username: Txt, password: Txt) =
-        Txt(credentials).decode[Base64].uString.cut(str":").to(Seq)
+      val Seq(username: Text, password: Text) =
+        Text(credentials).decode[Base64].uString.cut(t":").to(Seq)
       
       if validate(username, password) then response else Response("", HttpStatus.Forbidden)
 
     case _ =>
-      val auth = str"""Basic realm="Some realm", charset="UTF-8""""
+      val auth = t"""Basic realm="Some realm", charset="UTF-8""""
       Response("", HttpStatus.Unauthorized, Map(ResponseHeader.WwwAuthenticate -> auth))

@@ -34,7 +34,7 @@ import java.util as ju
 
 import language.dynamics
 
-private[scintillate] given Realm(str"scintillate")
+private[scintillate] given Realm(t"scintillate")
 
 enum Body:
   case Empty
@@ -44,13 +44,13 @@ enum Body:
 object ToQuery extends ProductDerivation[ToQuery]:
   def join[T](ctx: CaseClass[ToQuery, T]): ToQuery[T] = value =>
     ctx.params.map {
-      param => param.typeclass.params(param.deref(value)).prefix(Txt(param.label))
+      param => param.typeclass.params(param.deref(value)).prefix(Text(param.label))
     }.reduce(_.append(_))
 
-  given ToQuery[Txt] = str => Params(List((str"", str)))
-  given ToQuery[Int] = int => Params(List((str"", int.show)))
+  given ToQuery[Text] = str => Params(List((t"", str)))
+  given ToQuery[Int] = int => Params(List((t"", int.show)))
   given ToQuery[Params] = identity(_)
-  given [M <: Map[Txt, Txt]]: ToQuery[M] = map => Params(map.to(List))
+  given [M <: Map[Text, Text]]: ToQuery[M] = map => Params(map.to(List))
 
 trait ToQuery[T]:
   def params(value: T): Params
@@ -59,19 +59,19 @@ object Postable:
   given [T: ToQuery]: Postable[T] = Postable(media"application/x-www-form-urlencoded",
       value => LazyList(summon[ToQuery[T]].params(value).queryString.bytes))
 
-  given Postable[Txt] = Postable(media"text/plain", value => LazyList(IArray.from(value.bytes)))
+  given Postable[Text] = Postable(media"text/plain", value => LazyList(IArray.from(value.bytes)))
   given Postable[Unit] = Postable(media"text/plain", unit => LazyList())
   given Postable[Bytes] = Postable(media"application/octet-stream", LazyList(_))
   given Postable[LazyList[Bytes]] = Postable(media"application/octet-stream", identity(_))
 
 class Postable[T](val contentType: MediaType, val content: T => LazyList[Bytes]):
-  def preview(value: T): Txt = content(value).headOption.fold(str"") { bytes =>
+  def preview(value: T): Text = content(value).headOption.fold(t"") { bytes =>
     val sample = bytes.take(128)
     
-    val str: Txt =
+    val str: Text =
       if sample.forall { b => b >= 32 && b <= 127 } then sample.uString else sample.hex
     
-    if bytes.length > 128 then str"$str..." else str
+    if bytes.length > 128 then t"$str..." else str
   }
 
 object Method:
@@ -85,11 +85,11 @@ enum Method:
   case Get, Head, Post, Put, Delete, Connect, Options, Trace, Patch
 
 object HttpReadable:
-  given HttpReadable[Txt] with
+  given HttpReadable[Text] with
     type E = Nothing
-    def read(body: Body): Txt throws TooMuchData | Nothing =
+    def read(body: Body): Text throws TooMuchData | Nothing =
       body match
-        case Body.Empty         => str""
+        case Body.Empty         => t""
         case Body.Data(body)    => body.uString
         case Body.Chunked(body) => body.slurp(maxSize = 10*1024*1024).uString
   
@@ -119,7 +119,7 @@ case class HttpResponse(status: HttpStatus, headers: Map[ResponseHeader, List[St
 
 object Locatable:
   given Locatable[Uri] = identity(_)
-  given Locatable[Txt] = Uri(_, Params(Nil))
+  given Locatable[Text] = Uri(_, Params(Nil))
 
 trait Locatable[T]:
   def location(value: T): Uri
@@ -306,17 +306,17 @@ enum HttpStatus(val code: Int, val description: String):
   case NetworkAuthenticationRequired
   extends HttpStatus(511, "Network Authentication Required"), FailureCase
 
-case class Params(values: List[(Txt, Txt)]):
+case class Params(values: List[(Text, Text)]):
   def append(more: Params): Params = Params(values ++ more.values)
   def isEmpty: Boolean = values.isEmpty
   
-  def prefix(str: Txt): Params = Params(values.map { (k, v) =>
-    (if k.isEmpty then str else str"$str.$k", v)
+  def prefix(str: Text): Params = Params(values.map { (k, v) =>
+    (if k.isEmpty then str else t"$str.$k", v)
   })
 
-  def queryString: Txt = values.map { (k, v) =>
-    if k.isEmpty then Txt(v.urlEncode) else str"${k.urlEncode}=${v.urlEncode}"
-  }.join(str"&")
+  def queryString: Text = values.map { (k, v) =>
+    if k.isEmpty then Text(v.urlEncode) else t"${k.urlEncode}=${v.urlEncode}"
+  }.join(t"&")
 
 object Uri:
   given Show[Uri] = _.text
@@ -355,29 +355,29 @@ object Uri:
     def serialize(uri: Uri): String = uri.toString
 
 object DomainName:
-  given Show[DomainName] = dn => Txt(dn.toString)
-  def apply(str: Txt): DomainName =
-    val parts: List[Txt] = str.cut(str".").map(_.punycode)
+  given Show[DomainName] = dn => Text(dn.toString)
+  def apply(str: Text): DomainName =
+    val parts: List[Text] = str.cut(t".").map(_.punycode)
     DomainName(IArray.from(parts))
 
-case class DomainName(parts: IArray[Txt]):
-  override def toString: String = parts.join(str".").s
+case class DomainName(parts: IArray[Text]):
+  override def toString: String = parts.join(t".").s
 
 object Url:
   given Show[Url] = _.text
 
-case class Url(ssl: Boolean, domain: DomainName, port: Int, path: Txt) extends Dynamic:
-  def text: Txt =
-    str"http${if ssl then "s" else ""}://$domain${if port == 80 then str"" else str":$port"}/$path"
+case class Url(ssl: Boolean, domain: DomainName, port: Int, path: Text) extends Dynamic:
+  def text: Text =
+    t"http${if ssl then "s" else ""}://$domain${if port == 80 then t"" else t":$port"}/$path"
   
   override def toString: String = text.s
 
-case class Uri(location: Txt, params: Params) extends Dynamic:
+case class Uri(location: Text, params: Params) extends Dynamic:
   private def makeQuery[T: ToQuery](value: T): Uri =
     Uri(location, params.append(summon[ToQuery[T]].params(value)))
   
   def applyDynamicNamed(method: "query")(params: (String, String)*): Uri =
-    makeQuery(Params(params.map { (k, v) => Txt(k) -> Txt(v) }.to(List)))
+    makeQuery(Params(params.map { (k, v) => Text(k) -> Text(v) }.to(List)))
   
   def applyDynamic[T: ToQuery](method: "query")(value: T) = makeQuery(value)
 
@@ -397,12 +397,12 @@ case class Uri(location: Txt, params: Params) extends Dynamic:
 
   def bare: Uri = Uri(location, Params(Nil))
 
-  def text: Txt =
-    if params.isEmpty then location else str"$location?${params.queryString}"
+  def text: Text =
+    if params.isEmpty then location else t"$location?${params.queryString}"
 
   override def toString: String = text.s
 
 extension (ctx: StringContext)
-  def uri(subs: Txt*): Uri =
-    Uri(ctx.parts.zip(subs).map { (k, v) => str"$k$v" }.join(str"", str"", Txt(ctx.parts.last)),
+  def uri(subs: Text*): Uri =
+    Uri(ctx.parts.zip(subs).map { (k, v) => t"$k$v" }.join(t"", t"", Text(ctx.parts.last)),
         Params(List()))

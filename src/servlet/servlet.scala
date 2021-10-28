@@ -29,7 +29,7 @@ trait Servlet() extends HttpServlet:
   def handle(using Request): Response[?]
 
   protected case class ServletResponseWriter(response: HttpServletResponse) extends Responder:
-    def addHeader(key: Txt, value: Txt) = response.addHeader(key.s, value.s)
+    def addHeader(key: Text, value: Text) = response.addHeader(key.s, value.s)
     
     def sendBody(status: Int, body: Body) =
       val length = body match
@@ -65,29 +65,29 @@ trait Servlet() extends HttpServlet:
   private def makeRequest(request: HttpServletRequest): Request =
     val query = Option(request.getQueryString)
     
-    val params: Map[Txt, List[Txt]] = query.fold(Map()) { query =>
-      val paramStrings = query.nn.cut(str"&")
+    val params: Map[Text, List[Text]] = query.fold(Map()) { query =>
+      val paramStrings = query.nn.cut(t"&")
       
-      paramStrings.foldLeft(Map[Txt, List[Txt]]()) { (map, elem) =>
-        elem.cut(str"=", 2).to(Seq) match
-          case Seq(key: Txt, value: Txt) => map.updated(key, value :: map.getOrElse(key, Nil))
-          case Seq(key: Txt)             => map.updated(key, str"" :: map.getOrElse(key, Nil))
+      paramStrings.foldLeft(Map[Text, List[Text]]()) { (map, elem) =>
+        elem.cut(t"=", 2).to(Seq) match
+          case Seq(key: Text, value: Text) => map.updated(key, value :: map.getOrElse(key, Nil))
+          case Seq(key: Text)             => map.updated(key, t"" :: map.getOrElse(key, Nil))
           case _                         => map
       }
     }
     
     val headers = request.getHeaderNames.nn.asScala.to(List).map {
-      k => Txt(k) -> request.getHeaders(k).nn.asScala.to(List).map(Txt(_))
+      k => Text(k) -> request.getHeaders(k).nn.asScala.to(List).map(Text(_))
     }.to(Map)
 
     Request(
       method = Method.valueOf(request.getMethod.nn.lower.capitalize),
       body = streamBody(request),
-      query = Txt(query.getOrElse("").nn),
+      query = Text(query.getOrElse("").nn),
       ssl = false,
-      Txt(request.getServerName.nn),
+      Text(request.getServerName.nn),
       request.getServerPort,
-      Txt(request.getRequestURI.nn),
+      Text(request.getRequestURI.nn),
       headers,
       params
     )
@@ -100,4 +100,4 @@ trait Servlet() extends HttpServlet:
     handle(request, response)
 
 extension (path: Base.Path)
-  def unapply(request: Request): Option[Txt] = Some(request.path)
+  def unapply(request: Request): Option[Text] = Some(request.path)

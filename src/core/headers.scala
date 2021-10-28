@@ -20,7 +20,7 @@ import rudiments.*
 import gossamer.*
 
 object RequestHeader:
-  lazy val standard: Map[Txt, RequestHeader] = Set(AIm, Accept, AcceptCharset, AcceptDatetime,
+  lazy val standard: Map[Text, RequestHeader] = Set(AIm, Accept, AcceptCharset, AcceptDatetime,
       AcceptEncoding, AcceptLanguage, AccessControlRequestMethod, AccessControlRequestHeaders,
       Authorization, CacheControl, Connection, ContentEncoding, ContentLength, ContentMd5,
       ContentType, Cookie, Date, Expect, Forwarded, From, Host, Http2Settings, IfMatch,
@@ -31,7 +31,7 @@ object RequestHeader:
   def unapply(str: String): Some[RequestHeader] =
     Some(standard.get(str.lower).getOrElse(Custom(str)))
   
-  case class Value(header: RequestHeader, value: Txt)
+  case class Value(header: RequestHeader, value: Text)
 
   object nonStandard:
     val UpgradeInsecureRequests = RequestHeader.Custom("upgrade-insecure-requests")
@@ -95,12 +95,12 @@ enum RequestHeader(val headerString: String):
   case Warning extends RequestHeader("warning")
   case Custom(name: String) extends RequestHeader(name.lower)
   
-  def apply(content: Txt): RequestHeader.Value = RequestHeader.Value(this, content)
+  def apply(content: Text): RequestHeader.Value = RequestHeader.Value(this, content)
 
-  def header: Txt = Txt(headerString)
+  def header: Text = Text(headerString)
 
 object ResponseHeader:
-  lazy val standard: Map[Txt, ResponseHeader] = List(AcceptCh, AccessControlAllowOrigin,
+  lazy val standard: Map[Text, ResponseHeader] = List(AcceptCh, AccessControlAllowOrigin,
       AccessControlAllowCredentials, AccessControlExposeHeaders, AccessControlMaxAge,
       AccessControlAllowMethods, AccessControlAllowHeaders, AcceptPatch, AcceptRanges, Age, Allow,
       AltSvc, CacheControl, Connection, ContentDisposition, ContentEncoding, ContentLanguage,
@@ -166,4 +166,4 @@ enum ResponseHeader(val headerString: String):
   case XFrameOptions extends ResponseHeader("x-frame-options")
   case Custom(name: String) extends ResponseHeader(name.lower)
 
-  def header: Txt = Txt(headerString)
+  def header: Text = Text(headerString)
