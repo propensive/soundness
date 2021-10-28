@@ -31,7 +31,7 @@ object Eq extends Derivation[Eq]:
   }
 
   given Eq[String] = _ == _
-  given Eq[Txt] = _ == _
+  given Eq[Text] = _ == _
   given Eq[Int] = _ == _
 
   given [T: Eq]: Eq[Option[T]] =

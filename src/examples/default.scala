@@ -44,8 +44,8 @@ object HasDefault extends Derivation[HasDefault]:
       case None => Left("no subtypes")
 
   /** default value for a string; the empty string */
-  given txt: HasDefault[Txt] with
-    def defaultValue = Right(str"")
+  given txt: HasDefault[Text] with
+    def defaultValue = Right(t"")
 
   /** default value for ints; 0 */
   given int: HasDefault[Int] with { def defaultValue = Right(0) }

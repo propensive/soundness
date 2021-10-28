@@ -21,7 +21,7 @@ import gossamer.*
 
 // Prints a type, only requires read access to fields
 trait Print[T] {
-  def print(t: T): Txt
+  def print(t: T): Text
 }
 
 trait GenericPrint extends Derivation[Print]:
@@ -31,12 +31,12 @@ trait GenericPrint extends Derivation[Print]:
       param.typeclass.print(param.deref(value))
     else ctx.params.map { param =>
       param.typeclass.print(param.deref(value))
-    }.join(str"${ctx.typeInfo.short}(", str",", str")")
+    }.join(t"${ctx.typeInfo.short}(", t",", t")")
 
   override def split[T](ctx: SealedTrait[Print, T]): Print[T] =
     ctx.choose(_) { sub => sub.typeclass.print(sub.value) }
 
 object Print extends GenericPrint:
-  given Print[Txt] = identity(_)
+  given Print[Text] = identity(_)
   given Print[Int] = _.show
-  given seq[T](using printT: Print[T]): Print[Seq[T]] = _.map(printT.print).join(str"[", str",", str"]")
+  given seq[T](using printT: Print[T]): Print[Seq[T]] = _.map(printT.print).join(t"[", t",", t"]")
