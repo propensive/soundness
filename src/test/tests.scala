@@ -17,11 +17,11 @@
 package jovian
 
 import probably.*
-import gastronomy.*
+import gossamer.*
 
 import unsafeExceptions.canThrowAny
 
 import encodings.Utf8
 
-object Tests extends Suite("Jovian tests"):
+object Tests extends Suite(str"Jovian tests"):
   def run(using Runner): Unit = ()
