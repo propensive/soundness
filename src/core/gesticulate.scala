@@ -22,7 +22,7 @@ import contextual.*
 import scala.io.*
 
 object MediaType:
-  given DebugString[MediaType] = mt => str"""media"${mt.toString}""""
+  given DebugString[MediaType] = mt => t"""media"${mt.toString}""""
   given Show[MediaType] = _.text
   
   given formenctype: clairvoyant.HtmlAttribute["formenctype", MediaType] with
@@ -41,14 +41,14 @@ object MediaType:
     def name: String = "type"
     def serialize(mediaType: MediaType): String = mediaType.toString
 
-  def unapply(value: Txt): Option[MediaType] =
+  def unapply(value: Text): Option[MediaType] =
     try Some(Media.parse(value)) catch case InvalidMediaTypeError(_, _) => None
 
 case class MediaType(group: Media.Group, subtype: Media.Subtype, suffixes: List[Media.Suffix] = Nil,
-                        parameters: List[(Txt, Txt)] = Nil):
-  private def suffixString: Txt = suffixes.map { s => str"+${s.name}" }.join
-  def text: Txt = str"$basic${parameters.map { p => str"; ${p(0)}=${p(1)}" }.join}"
-  def basic: Txt = str"${group.name}/${subtype.name}$suffixString"
+                        parameters: List[(Text, Text)] = Nil):
+  private def suffixString: Text = suffixes.map { s => t"+${s.name}" }.join
+  def text: Text = t"$basic${parameters.map { p => t"; ${p(0)}=${p(1)}" }.join}"
+  def basic: Text = t"${group.name}/${subtype.name}$suffixString"
 
 object Media:
   object Group:
@@ -58,22 +58,22 @@ object Media:
   enum Group:
     case Application, Audio, Image, Message, Multipart, Text, Video, Font, Example, Model
 
-    def name: Txt = Txt(toString).lower
+    def name: Text = toString.show.lower
 
   object Subtype:
     given Show[Subtype] = _.name
 
   enum Subtype:
-    case Standard(value: Txt)
-    case Vendor(value: Txt)
-    case Personal(value: Txt)
-    case X(value: Txt)
+    case Standard(value: Text)
+    case Vendor(value: Text)
+    case Personal(value: Text)
+    case X(value: Text)
   
-    def name: Txt = this match
+    def name: Text = this match
       case Standard(value) => value
-      case Vendor(value)   => str"vnd.$value"
-      case Personal(value) => str"prs.$value"
-      case X(value)        => str"x.$value"
+      case Vendor(value)   => t"vnd.$value"
+      case Personal(value) => t"prs.$value"
+      case X(value)        => t"x.$value"
 
   object Suffix:
     given Show[Suffix] = _.toString.lower.text
@@ -87,12 +87,12 @@ object Media:
       case CborSeq => "cbor-seq"
       case other   => toString.lower
 
-  lazy val systemMediaTypes: Set[Txt] =
+  lazy val systemMediaTypes: Set[Text] =
     val stream = Option(getClass.getResourceAsStream("/gesticulate/media.types")).getOrElse {
       throw InterpolationError("could not find the file 'gesticulate/media.types' on the classpath")
     }.nn
 
-    val lines: Iterator[Txt] = scala.io.Source.fromInputStream(stream).getLines.map(Txt(_)).map(_.cut(str"\t").head.lower)
+    val lines: Iterator[Text] = scala.io.Source.fromInputStream(stream).getLines.map(Text(_)).map(_.cut(t"\t").head.lower)
     lines.to(Set)
 
   object Prefix extends Interpolator[Unit, String, MediaType]:
@@ -105,7 +105,7 @@ object Media:
     def initial: String = ""
 
     def complete(value: String): MediaType =
-      val parsed = try Media.parse(Txt(value)) catch
+      val parsed = try Media.parse(Text(value)) catch
         case InvalidMediaTypeError(value, nature) =>
           throw InterpolationError(s"'$value' is not a valid media type; ${nature.message}")
 
@@ -122,35 +122,35 @@ object Media:
       
       parsed
 
-  def parse(string: Txt): MediaType throws InvalidMediaTypeError =
-    def parseParams(ps: List[Txt]): List[(Txt, Txt)] =
+  def parse(string: Text): MediaType throws InvalidMediaTypeError =
+    def parseParams(ps: List[Text]): List[(Text, Text)] =
       if ps == List("")
       then throw InvalidMediaTypeError(string, InvalidMediaTypeError.Nature.MissingParam)
-      ps.map(_.cut(str"=", 2).asInstanceOf[List[Txt]]).map { p => p(0) -> p(1) }
+      ps.map(_.cut(t"=", 2).asInstanceOf[List[Text]]).map { p => p(0) -> p(1) }
     
-    def parseSuffixes(ss: List[Txt]): List[Suffix] = ss.map(_.lower.capitalize).map { s =>
+    def parseSuffixes(ss: List[Text]): List[Suffix] = ss.map(_.lower.capitalize).map { s =>
       try Suffix.valueOf(s) catch IllegalArgumentException =>
         throw InvalidMediaTypeError(string, InvalidMediaTypeError.Nature.InvalidSuffix(s))
     }
 
-    def parseInit(str: Txt): (Subtype, List[Suffix]) =
-      val xs: List[Txt] = str.cut(str"+")
+    def parseInit(str: Text): (Subtype, List[Suffix]) =
+      val xs: List[Text] = str.cut(t"+")
       
       xs match
       case Nil           => throw Impossible("cannot return empty list from `cut`")
-      case (h: Txt) :: _ => (parseSubtype(h), parseSuffixes(xs.tail))
+      case (h: Text) :: _ => (parseSubtype(h), parseSuffixes(xs.tail))
 
-    def parseBasic(str: Txt): (Group, Subtype, List[Suffix]) = str.cut(str"/").to(List) match
-      case List(group, subtype) => parseGroup(group.asInstanceOf[Txt]) *: parseInit(subtype.asInstanceOf[Txt])
+    def parseBasic(str: Text): (Group, Subtype, List[Suffix]) = str.cut(t"/").to(List) match
+      case List(group, subtype) => parseGroup(group.asInstanceOf[Text]) *: parseInit(subtype.asInstanceOf[Text])
       case _                    => throw InvalidMediaTypeError(string,
                                        InvalidMediaTypeError.Nature.NotOneSlash)
 
-    def parseGroup(str: Txt): Group =
+    def parseGroup(str: Text): Group =
       try Group.valueOf(str.lower.capitalize)
       catch IllegalArgumentException =>
         throw InvalidMediaTypeError(string, InvalidMediaTypeError.Nature.InvalidGroup)
 
-    def parseSubtype(str: Txt): Subtype =
+    def parseSubtype(str: Text): Subtype =
       try
         val idx = (str.indexWhere { ch => ch.isWhitespace || ch.isControl || specials.contains(ch) })
         val ch = try str(idx) catch case error@OutOfRangeError(_, _, _) => throw Impossible(error)
@@ -161,11 +161,11 @@ object Media:
         else if str.startsWith("x.") || str.startsWith("x-") then Subtype.X(str.drop(2))
         else Subtype.Standard(str)
         
-    val xs: List[Txt] = string.cut(str";").map(_.trim.asInstanceOf[Txt])
+    val xs: List[Text] = string.cut(t";").map(_.trim.asInstanceOf[Text])
     
     xs match
       case Nil    => throw Impossible("cannot return empty list from `cut`")
-      case (h: Txt) :: _ =>
+      case (h: Text) :: _ =>
         val basic = parseBasic(h)
         MediaType(basic(0), basic(1), basic(2), parseParams(xs.tail))
     
@@ -178,13 +178,13 @@ object InvalidMediaTypeError:
     case InvalidChar(char: Char)
     case InvalidSuffix(suffix: String)
 
-    def message: Txt = this match
+    def message: Text = this match
       case NotOneSlash      => txt"a media type should always contain exactly one '/' character"
       case MissingParam     => txt"a terminal ';' suggests that a parameter is missing"
-      case InvalidGroup     => val list: Txt = Media.Group.values.map(_.name).join(str", ", str" or ")
+      case InvalidGroup     => val list: Text = Media.Group.values.map(_.name).join(t", ", t" or ")
                                txt"the type must be one of: $list"
       case InvalidChar(c)   => txt"the character '$c' is not allowed"
       case InvalidSuffix(s) => txt"the suffix '' is not recognized"
 
-case class InvalidMediaTypeError(value: Txt, nature: InvalidMediaTypeError.Nature)
+case class InvalidMediaTypeError(value: Text, nature: InvalidMediaTypeError.Nature)
 extends Exception(txt"gesticulate: \"$value\" is not a valid media type; ${nature.message}".s)
