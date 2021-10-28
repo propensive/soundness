@@ -17,9 +17,10 @@
 package escritoire
 
 import probably.*
+import gossamer.*
 
 import unsafeExceptions.canThrowAny
 
-object Tests extends Suite("Escritoire tests"):
+object Tests extends Suite(str"Escritoire tests"):
   def run(using Runner): Unit =
     ()

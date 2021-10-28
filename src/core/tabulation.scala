@@ -33,30 +33,30 @@ enum Width:
   case Flexible
 
 object Column:
-  def apply[Row, V: AnsiShow](name: String, getter: Row => V, width: Width = Width.Flexible,
+  def apply[Row, H: AnsiShow, V: AnsiShow](name: H, getter: Row => V, width: Width = Width.Flexible,
                                   align: Align = Align.Left): Column[Row] =
-    new Column[Row](name, width, align):
-      def get(r: Row): String = summon[AnsiShow[V]].ansiShow(getter(r)).render
+    new Column[Row](summon[AnsiShow[H]].ansiShow(name), width, align):
+      def get(r: Row): Txt = summon[AnsiShow[V]].ansiShow(getter(r)).render
 
-trait Column[Row](val name: String, val width: Width = Width.Flexible,
+trait Column[Row](val name: AnsiString, val width: Width = Width.Flexible,
                        val align: Align = Align.Left):
-  def get(r: Row): String
+  def get(r: Row): Txt
 
-case class title(name: String) extends StaticAnnotation
+case class title(name: Txt) extends StaticAnnotation
 
 object Tabulation:
 
-  given [T: AnsiShow]: Tabulation[T] = Tabulation(Column("", summon[AnsiShow[T]].ansiShow(_)))
+  given [T: AnsiShow]: Tabulation[T] = Tabulation(Column(str"", summon[AnsiShow[T]].ansiShow(_)))
 
 case class Tabulation[Row](columns: Column[Row]*):
   def padding: Int = 2
 
-  def tabulate(maxWidth: Int, rows: Seq[Row], ansi: Option[String] = None): Seq[String] =
-    val reset = ansi.fold("") { _ => s"${27.toChar}${escapes.Reset.on}" }
+  def tabulate(maxWidth: Int, rows: Seq[Row], ansi: Option[Txt] = None): Seq[Txt] =
+    val reset = ansi.fold(str"") { _ => str"${27.toChar}${escapes.Reset.on}" }
     val titleStrings = columns.to(List).map(_.name).map(List(_))
     
-    val data: Seq[List[List[String]]] = titleStrings.map(_.map { str => ansi"$Bold($str)".render }) +: (rows.map { row =>
-      columns.to(List).map(_.get(row).cut("\n").to(List))
+    val data: Seq[List[List[Txt]]] = titleStrings.map(_.map { str => ansi"$Bold($str)".render }) +: (rows.map { row =>
+      columns.to(List).map(_.get(row).cut(str"\n"))
     })
 
     val tight = !data.exists(_.exists(_.length > 1))
@@ -68,8 +68,8 @@ case class Tabulation[Row](columns: Column[Row]*):
     }
 
     def rule(left: Char, mid: Char, cross: Char, right: Char) =
-      maxWidths.map { w => s"$mid"*(w + 2) }.join(s"${ansi.getOrElse("")}$left", s"$cross",
-          s"$right${reset}")
+      maxWidths.map { w => mid.show*(w + 2): Txt }.join(str"${ansi.getOrElse(str"")}$left", str"$cross",
+          str"$right${reset}")
     
     val hr = if tight then Nil else List(rule('╟', '─', '┼', '╢'))
     val endHr = if tight then rule('└', '─', '┴', '┘') else rule('╚', '═', '╧', '╝')
@@ -102,26 +102,26 @@ case class Tabulation[Row](columns: Column[Row]*):
 
     List(startHr) ++ data.flatMap { cells =>
       hr ++ cells.zip(widths).zip(columns).map { case ((lines, width), heading) =>
-        lines.padTo(cells.map(_.length).max, "").map(pad(_, width, heading.align, reset))
-      }.transpose.map(_.join(s"${ansi.getOrElse("")}${if tight then "│" else "║"}${reset} ",
-          s" ${ansi.getOrElse("")}│${reset} ",
-          s" ${ansi.getOrElse("")}${if tight then "│" else "║"}${reset}"))
+        lines.padTo(cells.map(_.length).max, str"").map(pad(_, width, heading.align, reset))
+      }.transpose.map(_.join(str"${ansi.getOrElse(str"")}${if tight then str"│" else str"║"}${reset} ",
+          str" ${ansi.getOrElse(str"")}│${reset} ",
+          str" ${ansi.getOrElse(str"")}${if tight then str"│" else str"║"}${reset}"))
 
     }.drop(if tight then 0 else 1).patch(1, List(midHr), if tight then 0 else 1) ++ List(endHr)
   end tabulate
 
-  private def pad(str: String, width: Int, alignment: Align, reset: String): String =
+  private def pad(str: Txt, width: Int, alignment: Align, reset: Txt): Txt =
     val stripped = Ansi.strip(str).length
     alignment match
       case Align.Left =>
-        if stripped > width then str.dropRight(stripped - width)+reset
-        else str + (" " * (width - stripped))
+        if stripped > width then (str.dropRight(stripped - width): Txt)+reset
+        else str + (str" "*(width - stripped))
       
       case Align.Right =>
-        if stripped > width then str.drop(stripped - width)+reset
-        else (" " * (width - stripped)) + str
+        if stripped > width then (str.drop(stripped - width): Txt)+reset
+        else (str" "*(width - stripped): Txt)+str
       
       case Align.Center =>
         if stripped > width
         then pad(str.drop((stripped - width) / 2), width, Align.Left, reset)+reset
-        else pad(str+" "*((width - stripped)/2), width, Align.Right, reset)
+        else pad(str+str" "*((width - stripped)/2), width, Align.Right, reset)
