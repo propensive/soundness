@@ -27,20 +27,20 @@ import unsafeExceptions.canThrowAny
 
 given Log(Everything |-> Stdout)
 
-object Tests extends Suite(str"Cosmopolite Tests"):
+object Tests extends Suite(t"Cosmopolite Tests"):
   def run(using Runner): Unit =
-    test(str"extract language from string (English)") {
+    test(t"extract language from string (English)") {
       val two = en"two" & fr"deux"
       two[En]
-    }.check(_ == str"two")
+    }.check(_ == t"two")
     
-    test(str"extract language from string (French)") {
+    test(t"extract language from string (French)") {
       val two = en"two" & fr"deux"
       two[Fr]
-    }.check(_ == str"deux")
+    }.check(_ == t"deux")
     
-    test(str"extract default language") {
+    test(t"extract default language") {
       val two = en"two" & fr"deux"
       given Language[Fr] = Language[Fr]("fr")
       two()
-    }.check(_ == str"deux")
+    }.check(_ == t"deux")

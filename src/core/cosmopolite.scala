@@ -49,24 +49,24 @@ object Language:
     Expr(langs(TypeRepr.of[L]))
 
 object Messages:
-  def apply[L <: String: ValueOf](seq: Seq[Txt], parts: Seq[Messages[? >: L]]): Messages[L] =
-    val string: Txt = parts.zip(seq.tail.map(_.show)).map {
-      case (msg, s) => str"${msg(using summon[ValueOf[L]])}$s"
-    }.join(seq.head, str"", str"")
+  def apply[L <: String: ValueOf](seq: Seq[Text], parts: Seq[Messages[? >: L]]): Messages[L] =
+    val string: Text = parts.zip(seq.tail.map(_.show)).map {
+      case (msg, s) => t"${msg(using summon[ValueOf[L]])}$s"
+    }.join(seq.head, t"", t"")
 
     Messages[L](Map(summon[ValueOf[L]].value.show -> string))
    
-case class Messages[-L <: String](text: Map[Txt, Txt]):
+case class Messages[-L <: String](text: Map[Text, Text]):
   @targetName("and") 
   infix def &[L2 <: String & Singleton](messages: Messages[L2])(using NotGiven[L2 <:< L]): Messages[L | L2] =
     Messages(text ++ messages.text)
    
-  def apply[L2 <: L: ValueOf]: Txt = text(summon[ValueOf[L2]].value.show)
-  def apply[L2 <: L]()(using ctx: Language[L2]): Txt = text(ctx.value.show)
+  def apply[L2 <: L: ValueOf]: Text = text(summon[ValueOf[L2]].value.show)
+  def apply[L2 <: L]()(using ctx: Language[L2]): Text = text(ctx.value.show)
 
 import languages.common.*
 
-extension [L <: String](str: Txt)
+extension [L <: String](str: Text)
   def as(using ValueOf[L]): Messages[L] = Messages[L](List(str), Nil)
 
 extension (ctx: StringContext)
