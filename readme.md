@@ -207,7 +207,7 @@ Probably is classified as __fledgling__. Propensive defines the following five s
 - _dependable_: production-ready, subject to controlled ongoing maintenance and enhancement; tagged as version `1.0` or later
 - _adamantine_: proven, reliable and production-ready, with no further breaking changes ever anticipated
 
-Probably is designed to be _small_. Its entire source code currently consists of 618 lines of code.
+Probably is designed to be _small_. Its entire source code currently consists of 608 lines of code.
 
 ## Availability
 
