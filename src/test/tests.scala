@@ -17,130 +17,136 @@
 package punctuation
 
 import probably.*
+import gossamer.*
+import rudiments.*
+import eucalyptus.*
 
 import unsafeExceptions.canThrowAny
 
-case class Example(str: String, int: Int)
+given Log(Everything |-> Stdout)
 
-object Tests extends Suite("Punctuation tests"):
+case class Example(str: Txt, int: Int)
+
+object Tests extends Suite(str"Punctuation tests"):
 
   import Markdown.Ast.Block.*, Markdown.Ast.Inline.*, Markdown.Ast.ListItem
 
   def run(using Runner): Unit =
-    test("get a heading") {
-      Markdown.parse("# Heading 1") match
-        case Markdown(Heading(1, Text(str))) => str
-    }.assert(_ == "Heading 1")
+    test(str"get a heading") {
+      Markdown.parse(str"# Heading 1") match
+        case Markdown(Heading(1, Textual(str))) => str
+    }.check(_ == str"Heading 1")
 
-    test("get a level 2 heading") {
-      Markdown.parse("## Heading 2")
-    }.assert(_ == Markdown(Heading(2, Text("Heading 2"))))
+    test(str"get a level 2 heading") {
+      Markdown.parse(str"## Heading 2")
+    }.assert(_ == Markdown(Heading(2, Textual(str"Heading 2"))))
     
-    test("get a bullet list") {
-      Markdown.parse(" - Item 1\n - Item 2")
-    }.assert(_ == Markdown(BulletList(None, false, ListItem(Paragraph(Text("Item 1"))),
-        ListItem(Paragraph(Text("Item 2"))))))
+    test(str"get a bullet list") {
+      Markdown.parse(str" - Item 1\n - Item 2")
+    }.assert(_ == Markdown(BulletList(None, false, ListItem(Paragraph(Textual(str"Item 1"))),
+        ListItem(Paragraph(Textual(str"Item 2"))))))
     
-    test("get an ordered list") {
-      Markdown.parse(" 1. Item 1\n 2. Item 2")
-    }.assert(_ == Markdown(BulletList(Some(1), false, ListItem(Paragraph(Text("Item 1"))),
-        ListItem(Paragraph(Text("Item 2"))))))
+    test(str"get an ordered list") {
+      Markdown.parse(str" 1. Item 1\n 2. Item 2")
+    }.assert(_ == Markdown(BulletList(Some(1), false, ListItem(Paragraph(Textual(str"Item 1"))),
+        ListItem(Paragraph(Textual(str"Item 2"))))))
 
-    test("plain paragraph") {
-      Markdown.parseInline("Here is some content in\na paragraph.")
-    }.assert(_ == Markdown(Text("Here is some content in a paragraph.")))
+    test(str"plain paragraph") {
+      Markdown.parseInline(str"Here is some content in\na paragraph.")
+    }.assert(_ == Markdown(Textual(str"Here is some content in a paragraph.")))
     
-    test("directional apostrophe") {
-      Markdown.parseInline("It's great.")
-    }.assert(_ == Markdown(Text("It’s great.")))
+    test(str"directional apostrophe") {
+      Markdown.parseInline(str"It's great.")
+    }.assert(_ == Markdown(Textual(str"It’s great.")))
     
-    test("directional double-quotes") {
-      Markdown.parseInline("""Some "quoted" text.""")
-    }.assert(_ == Markdown(Text("Some “quoted” text.")))
+    test(str"directional double-quotes") {
+      Markdown.parseInline(str"""Some "quoted" text.""")
+    }.assert(_ == Markdown(Textual(str"Some “quoted” text.")))
     
-    test("directional single-quotes") {
-      Markdown.parseInline("""Some 'quoted' text.""")
-    }.assert(_ == Markdown(Text("Some ‘quoted’ text.")))
+    test(str"directional single-quotes") {
+      Markdown.parseInline(str"""Some 'quoted' text.""")
+    }.assert(_ == Markdown(Textual(str"Some ‘quoted’ text.")))
     
-    test("conversion of emdashes") {
-      Markdown.parse("""An em-dash--so elegant!""")
-    }.assert(_ == Markdown(Paragraph(Text("An em-dash—so elegant!"))))
+    test(str"conversion of emdashes") {
+      Markdown.parse(str"""An em-dash--so elegant!""")
+    }.assert(_ == Markdown(Paragraph(Textual(str"An em-dash—so elegant!"))))
     
-    test("strongly emphasised text") {
-      Markdown.parseInline("Here is some __strongly emphasised text__.")
-    }.assert(_ == Markdown(Text("Here is some "),
-        Strong(Text("strongly emphasised text")), Text(".")))
+    test(str"strongly emphasised text") {
+      Markdown.parseInline(str"Here is some __strongly emphasised text__.")
+    }.assert(_ == Markdown(Textual(str"Here is some "),
+        Strong(Textual(str"strongly emphasised text")), Textual(str".")))
     
-    test("emphasised text") {
-      Markdown.parseInline("Here is some *emphasised text*.")
-    }.assert(_ == Markdown(Text("Here is some "), Emphasis(Text("emphasised text")),
-        Text(".")))
+    test(str"emphasised text") {
+      Markdown.parseInline(str"Here is some *emphasised text*.")
+    }.assert(_ == Markdown(Textual(str"Here is some "), Emphasis(Textual(str"emphasised text")),
+        Textual(str".")))
     
-    test("some code") {
-      Markdown.parseInline("Here is some `source code`.")
-    }.assert(_ == Markdown(Text("Here is some "), Code("source code"), Text(".")))
+    test(str"some code") {
+      Markdown.parseInline(str"Here is some `source code`.")
+    }.assert(_ == Markdown(Textual(str"Here is some "), Code(str"source code"), Textual(str".")))
     
-    test("a code block") {
-      Markdown.parse("""```
-        |echo Hello World
-        |```""".stripMargin)
-    }.assert(_ == Markdown(FencedCode(None, None, "echo Hello World\n")))
+    test(str"a code block") {
+      Markdown.parse(str"""```
+                          |echo Hello World
+                          |```""".s.stripMargin.show)
+    }.assert(_ == Markdown(FencedCode(None, None, str"echo Hello World\n")))
     
-    test("a syntax-aware code block") {
-      Markdown.parse("""```scala
-        |echo Hello World
-        |```""".stripMargin)
-    }.assert(_ == Markdown(FencedCode(Some("scala"), None, "echo Hello World\n")))
+    test(str"a syntax-aware code block") {
+      Markdown.parse(str"""```scala
+                          |echo Hello World
+                          |```""".s.stripMargin.show)
+    }.assert(_ == Markdown(FencedCode(Some(str"scala"), None, str"echo Hello World\n")))
     
-    test("a link") {
-      Markdown.parse("Take a look [here](http://example.com/)")
-    }.assert(_ == Markdown(Paragraph(Text("Take a look "), Link("http://example.com/", Text("here")))))
+    test(str"a link") {
+      Markdown.parse(str"Take a look [here](http://example.com/)")
+    }.assert(_ == Markdown(Paragraph(Textual(str"Take a look "), Link(str"http://example.com/",
+        Textual(str"here")))))
     
-    test("an image") {
-      Markdown.parse("Take a look ![alt text](http://example.com/image.jpg)")
-    }.assert(_ == Markdown(Paragraph(Text("Take a look "), Image("alt text",
-        "http://example.com/image.jpg"))))
+    test(str"an image") {
+      Markdown.parse(str"Take a look ![alt text](http://example.com/image.jpg)")
+    }.assert(_ == Markdown(Paragraph(Textual(str"Take a look "), Image(str"alt text",
+        str"http://example.com/image.jpg"))))
     
-    test("a block quote") {
-      Markdown.parse("> This paragraph is\n> indented.")
-    }.assert(_ == Markdown(Blockquote(Paragraph(Text("This paragraph is indented.")))))
+    test(str"a block quote") {
+      Markdown.parse(str"> This paragraph is\n> indented.")
+    }.assert(_ == Markdown(Blockquote(Paragraph(Textual(str"This paragraph is indented.")))))
     
-    test("indented content") {
-      Markdown.parse("    This paragraph is\n    indented.\n")
-    }.assert(_ == Markdown(FencedCode(None, None, "This paragraph is\nindented.\n")))
+    test(str"indented content") {
+      Markdown.parse(str"    This paragraph is\n    indented.\n")
+    }.assert(_ == Markdown(FencedCode(None, None, str"This paragraph is\nindented.\n")))
     
-    test("hard linebreak") {
-      Markdown.parse("Line 1  \nLine 2\n")
-    }.assert(_ == Markdown(Paragraph(Text("Line 1"), Break(), Text("Line 2"))))
+    test(str"hard linebreak") {
+      Markdown.parse(str"Line 1  \nLine 2\n")
+    }.assert(_ == Markdown(Paragraph(Textual(str"Line 1"), Break(), Textual(str"Line 2"))))
     
-    test("referenced images") {
-      Markdown.parse("""![images reference][ref]
+    test(str"referenced images") {
+      Markdown.parse(str"""![images reference][ref]
                        |
                        |[ref]: http://example.com/image.jpg
-                       |""".stripMargin)
-    }.assert(_ == Markdown(Paragraph(Image("images reference", "http://example.com/image.jpg")),
-        Reference("ref", "http://example.com/image.jpg")))
+                       |""".s.stripMargin.show)
+    }.assert(_ == Markdown(Paragraph(Image(str"images reference", str"http://example.com/image.jpg")),
+        Reference(str"ref", str"http://example.com/image.jpg")))
     
-    test("referenced link") {
-      Markdown.parse("""[link reference][ref]
+    test(str"referenced link") {
+      Markdown.parse(str"""[link reference][ref]
                        |
                        |[ref]: http://example.com/
-                       |""".stripMargin)
-    }.assert(_ == Markdown(Paragraph(Link("http://example.com/", Text("link reference"))),
-        Reference("ref", "http://example.com/")))
+                       |""".s.stripMargin.show)
+    }.assert(_ == Markdown(Paragraph(Link(str"http://example.com/", Textual(str"link reference"))),
+        Reference(str"ref", str"http://example.com/")))
     
-    test("thematic break") {
-      Markdown.parse("""Paragraph 1
+    test(str"thematic break") {
+      Markdown.parse(str"""Paragraph 1
                        |***
-                       |Paragraph 2""".stripMargin)
-    }.assert(_ == Markdown(Paragraph(Text("Paragraph 1")), ThematicBreak(),
-        Paragraph(Text("Paragraph 2"))))
+                       |Paragraph 2""".s.stripMargin.show)
+    }.assert(_ == Markdown(Paragraph(Textual(str"Paragraph 1")), ThematicBreak(),
+        Paragraph(Textual(str"Paragraph 2"))))
     
-    test("email link") {
-      Markdown.parse("Email me <nobody@example.com>!")
-    }.assert(_ == Markdown(Paragraph(Text("Email me "), Link("nobody@example.com",
-        Text("mailto:nobody@example.com")), Text("!"))))
+    test(str"email link") {
+      Markdown.parse(str"Email me <nobody@example.com>!")
+    }.assert(_ == Markdown(Paragraph(Textual(str"Email me "), Link(str"nobody@example.com",
+        Textual(str"mailto:nobody@example.com")), Textual(str"!"))))
     
-    test("interpolator") {
+    test(str"interpolator") {
       md"Hello *World*"
-    }.assert(_ == Markdown(Text("Hello "), Emphasis(Text("World"))))
+    }.assert(_ == Markdown(Textual(str"Hello "), Emphasis(Textual(str"World"))))

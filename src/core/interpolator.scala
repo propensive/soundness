@@ -22,33 +22,33 @@ import gossamer.*
 
 object Md:
   enum Input:
-    case Block(content: String)
-    case Inline(content: String)
+    case Block(content: Txt)
+    case Inline(content: Txt)
 
   object Input:
-    given Insertion[Input, String] = Input.Inline(_)
+    given Insertion[Input, Txt] = Input.Inline(_)
   
   object Interpolator extends contextual.Interpolator[Input, Input, Markdown[Markdown.Ast.Node]]:
     
     def complete(state: Input): Markdown[Markdown.Ast.Node] = state match
       case Input.Inline(state) =>
-        try Markdown.parseInline(state) catch case MalformedMarkdown(_) =>
+        try Markdown.parseInline(state) catch case BadMarkdownError(_) =>
           throw InterpolationError(s"the markdown could not be parsed")
       
       case Input.Block(state)  =>
-        try Markdown.parse(state) catch case MalformedMarkdown(msg) =>
+        try Markdown.parse(state) catch case BadMarkdownError(msg) =>
           throw InterpolationError(s"the markdown could not be parsed; $msg")
   
-    def initial: Input = Input.Inline("")
+    def initial: Input = Input.Inline(str"")
     def skip(state: Input): Input = state
 
     def insert(state: Input, value: Input): Input = value match
       case Input.Block(content)  => state match
-        case Input.Block(state)    => Input.Block(s"$state\n$content\n")
-        case Input.Inline(state)   => Input.Block(s"$state\n$content")
+        case Input.Block(state)    => Input.Block(str"$state\n$content\n")
+        case Input.Inline(state)   => Input.Block(str"$state\n$content")
       case Input.Inline(content) => state match
-        case Input.Block(state)    => Input.Block(s"$state\n$content\n")
-        case Input.Inline(state)   => Input.Inline(s"$state$content")
+        case Input.Block(state)    => Input.Block(str"$state\n$content\n")
+        case Input.Inline(state)   => Input.Inline(str"$state$content")
      
     def parse(state: Input, next: String): Input = state match
       case Input.Inline(state) =>
@@ -56,15 +56,15 @@ object Md:
           Markdown.parseInline(state+next)
           Input.Inline(state+next)
         catch
-          case MalformedMarkdown(_) =>
+          case BadMarkdownError(_) =>
             try
               Markdown.parse(state+next)
               Input.Block(state+next)
             catch
-              case MalformedMarkdown(_) => throw InterpolationError(s"the markdown could not be parsed")
+              case BadMarkdownError(_) => throw InterpolationError(s"the markdown could not be parsed")
 
       case Input.Block(state) =>
         try
           Markdown.parse(state+next)
           Input.Block(state+next)
-        catch case MalformedMarkdown(_) => throw InterpolationError(s"the markdown could not be parsed")
+        catch case BadMarkdownError(_) => throw InterpolationError(s"the markdown could not be parsed")
