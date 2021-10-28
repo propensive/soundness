@@ -29,26 +29,24 @@ import scala.jdk.StreamConverters.StreamHasToScala
 
 import annotation.targetName
 
-import java.util.HashMap as JMap
 import java.io as ji
 
-type TextStream = LazyList[String]
+type TextStream = LazyList[Txt]
 
 object envs:
-  val enclosing: Env = Env(System.getenv.nn.to(Map))
+  val enclosing: Env = Env(System.getenv.nn.map { (k, v) => Txt(k) -> Txt(v) }.to(Map))
   val empty: Env = Env(Map())
 
 enum Context:
   case Awaiting, Unquoted, Quotes2, Quotes1
 
-case class State(current: Context, esc: Boolean, args: List[String])
+case class State(current: Context, esc: Boolean, args: List[Txt])
 
 object Executor:
   given stream: Executor[TextStream] =
-    proc => ji.BufferedReader(ji.InputStreamReader(proc.getInputStream)).lines().nn.toScala(LazyList)
+    proc => ji.BufferedReader(ji.InputStreamReader(proc.getInputStream)).lines().nn.toScala(LazyList).map(Txt(_))
   
-  given string: Executor[String] =
-    stream.map { stream => if stream.isEmpty then "" else stream.reduce(_ + "\n" + _).trim.nn }
+  given text: Executor[Txt] = stream.map(_.foldLeft(str"") { (acc, line) => str"$acc\n$line" }.trim)
 
   given dataStream: Executor[DataStream] = proc => Util.read(proc.getInputStream.nn, 65536)
   
@@ -63,7 +61,7 @@ trait Executor[T]:
   def map[S](fn: T => S): Executor[S] = process => fn(interpret(process))
 
 object Pid:
-  given AnsiShow[Pid] = pid => ansi"${colors.FireBrick}(${pid.value})"
+  given AnsiShow[Pid] = pid => ansi"${colors.FireBrick}(${pid.value.show})"
 
 case class Pid(value: Long)
 
@@ -84,9 +82,9 @@ class Process[T](process: java.lang.Process, executor: Executor[T]):
     process.destroyForcibly()
 
 sealed trait Executable:
-  def fork[T]()(using env: Env, exec: Executor[T] = Executor.string)(using Log): Process[T]
+  def fork[T]()(using env: Env, exec: Executor[T] = Executor.text)(using Log): Process[T]
   
-  def exec[T]()(using env: Env, exec: Executor[T] = Executor.string)(using Log): T =
+  def exec[T]()(using env: Env, exec: Executor[T] = Executor.text)(using Log): T =
     fork[T]().await()
   
   def apply(cmd: Executable): Pipeline = cmd match
@@ -102,56 +100,56 @@ sealed trait Executable:
 
 object Command:
 
-  private def formattedArgs(args: Seq[String]): String =
+  private def formattedArgs(args: Seq[Txt]): Txt =
     args.map { arg =>
-      if arg.contains("\"") && !arg.contains("'") then s"""'$arg'"""
-      else if arg.contains("'") && !arg.contains("\"") then s""""$arg""""
-      else if arg.contains("'") && arg.contains("\"")
-        then s""""${arg.replaceAll("\\\"", "\\\\\"")}""""
-      else if arg.contains(" ") || arg.contains("\t") || arg.contains("\\") then s"'$arg'"
+      if arg.contains(str"\"") && !arg.contains(str"'") then str"""'$arg'"""
+      else if arg.contains(str"'") && !arg.contains(str"\"") then str""""$arg""""
+      else if arg.contains(str"'") && arg.contains(str"\"")
+        then str""""${arg.rsub(str"\\\"", str"\\\\\"")}""""
+      else if arg.contains(str" ") || arg.contains(str"\t") || arg.contains(str"\\") then str"'$arg'"
       else arg
-    }.join(" ")
+    }.join(str" ")
 
   given DebugString[Command] = cmd =>
-    val cmdString: String = formattedArgs(cmd.args)
+    val cmdString: Txt = formattedArgs(cmd.args)
     
-    if cmdString.contains("\"") then "sh\"\"\""+cmdString+"\"\"\"" else "sh\""+cmdString+"\""
+    if cmdString.contains(str"\"") then str"sh\"\"\"$cmdString\"\"\"" else str"sh\"$cmdString\""
 
   given AnsiShow[Command] = cmd => ansi"${colors.LightSeaGreen}(${formattedArgs(cmd.args)})"
 
-case class Command(args: String*) extends Executable:
-  def fork[T]()(using env: Env, exec: Executor[T] = Executor.string)(using Log): Process[T] =
-    val processBuilder = ProcessBuilder(args*)
+case class Command(args: Txt*) extends Executable:
+  def fork[T]()(using env: Env, exec: Executor[T] = Executor.text)(using Log): Process[T] =
+    val processBuilder = ProcessBuilder(args.map(_.s)*)
     processBuilder.directory(env.workDirFile)
     val t0 = System.currentTimeMillis
     Log.info(ansi"Starting process ${this.ansi} in directory ${env.workDirFile.getAbsolutePath.nn}")
     new Process[T](processBuilder.start().nn, summon[Executor[T]])
 
 object Pipeline:
-  given DebugString[Pipeline] = _.cmds.map(summon[DebugString[Command]].show(_)).join(" | ")
+  given DebugString[Pipeline] = _.cmds.map(summon[DebugString[Command]].show(_)).join(str" | ")
   given AnsiShow[Pipeline] =
     _.cmds.map(summon[AnsiShow[Command]].ansiShow(_))
         .join(ansi" ${colors.PowderBlue}(|) ")
 
 case class Pipeline(cmds: Command*) extends Executable:
-  def fork[T]()(using env: Env, exec: Executor[T] = Executor.string)(using Log): Process[T] =
+  def fork[T]()(using env: Env, exec: Executor[T] = Executor.text)(using Log): Process[T] =
     Log.info(ansi"Starting pipelined processes ${this.ansi} in directory ${env.workDirFile.getAbsolutePath.nn}")
     new Process[T](ProcessBuilder.startPipeline(cmds.map { cmd =>
-      val pb = ProcessBuilder(cmd.args*)
+      val pb = ProcessBuilder(cmd.args.map(_.s)*)
       pb.directory(env.workDirFile)
       pb.nn
     }).nn.to(List).last, exec)
   
-case class Env(vars: Map[String, String], workDir: Maybe[String] = Unset):
+case class Env(vars: Map[Txt, Txt], workDir: Maybe[Txt] = Unset):
   private[guillotine] lazy val envArray: Array[String] = vars.map { (k, v) => s"$k=$v" }.to(Array)
   
   private[guillotine] lazy val workDirFile: ji.File =
-    ji.File(workDir.otherwise(System.getenv("PWD")))
+    ji.File(workDir.otherwise(Txt(System.getenv("PWD").nn)).s)
   
 case class ExecError(command: Command, stdout: DataStream, stderr: DataStream) extends Exception
 
 object Sh:
-  case class Params(params: String*)
+  case class Params(params: Txt*)
 
   object Prefix extends Interpolator[Params, State, Command]:
     import Context.*
@@ -167,7 +165,7 @@ object Sh:
 
     def initial: State = State(Awaiting, false, Nil)
 
-    def skip(state: State): State = insert(state, Params("x"))
+    def skip(state: State): State = insert(state, Params(str"x"))
 
     def insert(state: State, value: Params): State =
       value.params.to(List) match
@@ -180,44 +178,43 @@ object Sh:
               State(Unquoted, false, args ++ (h :: t))
 
             case State(Unquoted, false, args :+ last) =>
-              State(Unquoted, false, args ++ (s"$last$h" :: t))
+              State(Unquoted, false, args ++ (str"$last$h" :: t))
             
             case State(Quotes1, false, args :+ last) =>
-              State(Quotes1, false, args :+ (s"$last$h" :: t).join(" "))
+              State(Quotes1, false, args :+ (str"$last$h" :: t).join(str" "))
             
             case State(Quotes2, false, args :+ last) =>
-              State(Quotes2, false, args :+ (s"$last$h" :: t).join(" "))
+              State(Quotes2, false, args :+ (str"$last$h" :: t).join(str" "))
             
             case _ =>
               throw Impossible("impossible parser state")
         case _ =>
           state
-
           
     def parse(state: State, next: String): State = next.foldLeft(state) {
       case (State(Awaiting, esc, args), ' ')          => State(Awaiting, false, args)
-      case (State(Quotes1, false, rest :+ cur), '\\') => State(Quotes1, false, rest :+ s"$cur\\")
+      case (State(Quotes1, false, rest :+ cur), '\\') => State(Quotes1, false, rest :+ str"$cur\\")
       case (State(ctx, false, args), '\\')            => State(ctx, true, args)
       case (State(Unquoted, esc, args), ' ')          => State(Awaiting, false, args)
       case (State(Quotes1, esc, args), '\'')          => State(Unquoted, false, args)
       case (State(Quotes2, false, args), '"')         => State(Unquoted, false, args)
       case (State(Unquoted, false, args), '"')        => State(Quotes2, false, args)
       case (State(Unquoted, false, args), '\'')       => State(Quotes1, false, args)
-      case (State(Awaiting, false, args), '"')        => State(Quotes2, false, args :+ "")
-      case (State(Awaiting, false, args), '\'')       => State(Quotes1, false, args :+ "")
-      case (State(Awaiting, esc, args), char)         => State(Unquoted, false, args :+ s"$char")
-      case (State(ctx, esc, Nil), char)               => State(ctx, false, List(s"$char"))
-      case (State(ctx, esc, rest :+ cur), char)       => State(ctx, false, rest :+ s"$cur$char")
+      case (State(Awaiting, false, args), '"')        => State(Quotes2, false, args :+ str"")
+      case (State(Awaiting, false, args), '\'')       => State(Quotes1, false, args :+ str"")
+      case (State(Awaiting, esc, args), char)         => State(Unquoted, false, args :+ str"$char")
+      case (State(ctx, esc, Nil), char)               => State(ctx, false, List(str"$char"))
+      case (State(ctx, esc, rest :+ cur), char)       => State(ctx, false, rest :+ str"$cur$char")
       case _                                          => throw Impossible("impossible parser state")
     }
 
-  given Insertion[Params, String] = value => Params(value)
-  given Insertion[Params, List[String]] = xs => Params(xs*)
+  given Insertion[Params, Txt] = value => Params(value)
+  given Insertion[Params, List[Txt]] = xs => Params(xs*)
   given Insertion[Params, Command] = cmd => Params(cmd.args*)
-  given [T: Show]: Insertion[Params, T] = value => Params(summon[Show[T]].show(value).s)
+  given [T: Show]: Insertion[Params, T] = value => Params(summon[Show[T]].show(value))
 
 enum ExitStatus:
   case Ok
   case Fail(status: Int)
 
-given realm: Realm = Realm("guillotine")
+given realm: Realm = Realm(str"guillotine")
