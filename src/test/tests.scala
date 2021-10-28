@@ -17,9 +17,10 @@
 package exoskeleton
 
 import probably.*
+import gossamer.*
 
 import unsafeExceptions.canThrowAny
 
-object Tests extends Suite("Contextual Tests"):
+object Tests extends Suite(str"Exoskeleton Tests"):
   def run(using Runner): Unit =
     ()

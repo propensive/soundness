@@ -16,13 +16,15 @@
 
 package exoskeleton
 
+import gossamer.*
+
 import collection.JavaConverters.*
 
 import scala.util.*
 
 import java.io.*
 
-def arguments(using Shell): IArray[String] = summon[Shell].args
+def arguments(using Shell): IArray[Txt] = summon[Shell].args
 
 trait Application:
   def main(using Shell): Exit
@@ -30,22 +32,24 @@ trait Application:
   
   final def main(args: IArray[String]): Unit =
     val argList = args.to(List)
-    val env = System.getenv().nn.asScala.toMap
-    val props = System.getProperties().nn.asScala.toMap
+    val env = System.getenv().nn.asScala.toMap.map { (k, v) => Txt(k) -> Txt(v) }
+    val props = System.getProperties().nn.asScala.toMap.map(Txt(_) -> Txt(_))
 
-    val shell = Shell(args, env, props)
+    val shell = Shell(args.map(Txt(_)), env, props)
     
     argList match
       case "{exoskeleton}" :: ShellType(shell) :: AsInt(current) :: "--" :: args =>
-        val cli = Cli(args.head, args.tail, env, props, current - 1)
+        val cli = Cli(Txt(argList.head), args.tail.map(Txt(_)), env, props, current - 1)
         val completions: Completions = try complete(cli) catch Throwable => Completions(Nil)
         shell.serialize(cli, completions).foreach(println)
         System.exit(0)
+      
       case "{exoskeleton-generate}" :: _ =>
-        try Generate.install()(using Shell(args.tail, env, props))
+        try Generate.install()(using Shell(args.tail.map(Txt(_)), env, props))
         catch case InstallError() | EnvError(_) =>
           println("Installation failed")
           Exit(1)
+      
       case list =>
         val result = try main(using shell) catch case e: Exception =>
           e.printStackTrace()
@@ -59,12 +63,12 @@ trait Application:
 object Counter extends Application:
   def complete(cli: Cli): Completions =
     Completions(List(
-      Choice("one", "first option"),
-      Choice("two", s"second option"),
-      Choice("three", "third option"),
-      Choice("four", "fourth option"),
-      Choice("five", "fifth option")
-    ), title = "Here are the choices:")
+      Choice(str"one", str"first option"),
+      Choice(str"two", str"second option"),
+      Choice(str"three", str"third option"),
+      Choice(str"four", str"fourth option"),
+      Choice(str"five", str"fifth option")
+    ), title = str"Here are the choices:")
 
   def main(using Shell): Exit =
     println("Do nothing")
