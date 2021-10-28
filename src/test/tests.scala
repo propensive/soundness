@@ -1,5 +1,5 @@
 /*
-    Slalom, version 0.6.0. Copyright 2020-21 Jon Pretty, Propensive OÜ.
+    Slalom, version 0.6.0. Copyright 2021-21 Jon Pretty, Propensive OÜ.
 
     The primary distribution site is: https://propensive.com/
 
