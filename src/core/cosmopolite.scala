@@ -44,36 +44,39 @@ object Language:
       case ConstantType(StringConstant(lang)) =>
         Set(lang)
       case _ =>
-        report.errorAndAbort("cosmopolite: expected an intersection or union type")
+        report.errorAndAbort("cosmopolite: expected a union or constant type")
 
     Expr(langs(TypeRepr.of[L]))
 
 object Messages:
-  def apply[L <: String: ValueOf](seq: Seq[String], parts: Seq[Messages[? >: L]]): Messages[L] =
-    val string = seq.head+(parts.zip(seq.tail).map { case (msg, s) => msg(using summon[ValueOf[L]])+s }.join)
-    Messages[L](Map(summon[ValueOf[L]].value -> string))
+  def apply[L <: String: ValueOf](seq: Seq[Txt], parts: Seq[Messages[? >: L]]): Messages[L] =
+    val string: Txt = parts.zip(seq.tail.map(_.show)).map {
+      case (msg, s) => str"${msg(using summon[ValueOf[L]])}$s"
+    }.join(seq.head, str"", str"")
+
+    Messages[L](Map(summon[ValueOf[L]].value.show -> string))
    
-case class Messages[-L <: String](text: Map[String, String]):
+case class Messages[-L <: String](text: Map[Txt, Txt]):
   @targetName("and") 
   infix def &[L2 <: String & Singleton](messages: Messages[L2])(using NotGiven[L2 <:< L]): Messages[L | L2] =
     Messages(text ++ messages.text)
    
-  def apply[L2 <: L: ValueOf]: String = text(summon[ValueOf[L2]].value)
-  def apply[L2 <: L]()(using ctx: Language[L2]): String = text(ctx.value)
+  def apply[L2 <: L: ValueOf]: Txt = text(summon[ValueOf[L2]].value.show)
+  def apply[L2 <: L]()(using ctx: Language[L2]): Txt = text(ctx.value.show)
 
 import languages.common.*
 
-extension[L <: String] (str: String)
+extension [L <: String](str: Txt)
   def as(using ValueOf[L]): Messages[L] = Messages[L](List(str), Nil)
 
 extension (ctx: StringContext)
-  def en(msgs: Messages[En]*): Messages[En] = Messages(ctx.parts, msgs)
-  def ru(msgs: Messages[Ru]*): Messages[Ru] = Messages(ctx.parts, msgs)
-  def de(msgs: Messages[De]*): Messages[De] = Messages(ctx.parts, msgs)
-  def es(msgs: Messages[Es]*): Messages[Es] = Messages(ctx.parts, msgs)
-  def fr(msgs: Messages[Fr]*): Messages[Fr] = Messages(ctx.parts, msgs)
-  def ja(msgs: Messages[Ja]*): Messages[Ja] = Messages(ctx.parts, msgs)
-  def pt(msgs: Messages[Pt]*): Messages[Pt] = Messages(ctx.parts, msgs)
-  def zh(msgs: Messages[Zh]*): Messages[Zh] = Messages(ctx.parts, msgs)
-  def it(msgs: Messages[It]*): Messages[It] = Messages(ctx.parts, msgs)
-  def pl(msgs: Messages[Pl]*): Messages[Pl] = Messages(ctx.parts, msgs)
+  def en(msgs: Messages[En]*): Messages[En] = Messages(ctx.parts.map(_.show), msgs)
+  def ru(msgs: Messages[Ru]*): Messages[Ru] = Messages(ctx.parts.map(_.show), msgs)
+  def de(msgs: Messages[De]*): Messages[De] = Messages(ctx.parts.map(_.show), msgs)
+  def es(msgs: Messages[Es]*): Messages[Es] = Messages(ctx.parts.map(_.show), msgs)
+  def fr(msgs: Messages[Fr]*): Messages[Fr] = Messages(ctx.parts.map(_.show), msgs)
+  def ja(msgs: Messages[Ja]*): Messages[Ja] = Messages(ctx.parts.map(_.show), msgs)
+  def pt(msgs: Messages[Pt]*): Messages[Pt] = Messages(ctx.parts.map(_.show), msgs)
+  def zh(msgs: Messages[Zh]*): Messages[Zh] = Messages(ctx.parts.map(_.show), msgs)
+  def it(msgs: Messages[It]*): Messages[It] = Messages(ctx.parts.map(_.show), msgs)
+  def pl(msgs: Messages[Pl]*): Messages[Pl] = Messages(ctx.parts.map(_.show), msgs)

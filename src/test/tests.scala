@@ -19,23 +19,28 @@ package cosmopolite
 import languages.common.*
 
 import probably.*
+import rudiments.*
+import gossamer.*
+import eucalyptus.*
 
 import unsafeExceptions.canThrowAny
 
-object Tests extends Suite("Cosmopolite Tests"):
+given Log(Everything |-> Stdout)
+
+object Tests extends Suite(str"Cosmopolite Tests"):
   def run(using Runner): Unit =
-    test("extract language from string (English)") {
+    test(str"extract language from string (English)") {
       val two = en"two" & fr"deux"
       two[En]
-    }.assert(_ == "two")
+    }.check(_ == str"two")
     
-    test("extract language from string (French)") {
+    test(str"extract language from string (French)") {
       val two = en"two" & fr"deux"
       two[Fr]
-    }.assert(_ == "deux")
+    }.check(_ == str"deux")
     
-    test("extract default language") {
+    test(str"extract default language") {
       val two = en"two" & fr"deux"
       given Language[Fr] = Language[Fr]("fr")
       two()
-    }.assert(_ == "deux")
+    }.check(_ == str"deux")
