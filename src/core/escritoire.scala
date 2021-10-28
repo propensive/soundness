@@ -93,7 +93,7 @@ case class Tabulation[T: ClassTag](cols: Column[T]*):
 
     val inits = initialWidths(width - style.spacing(cols.length))
 
-    def height(content: Txt, width: Int): Int throws TableWidthError =
+    def height(content: Text, width: Int): Int throws TableWidthError =
       var idx = 0
       var lastSpace = -1
       var lastZwsp = -1
@@ -163,9 +163,9 @@ case class Tabulation[T: ClassTag](cols: Column[T]*):
 
 @main def run(): Unit =
   import unsafeExceptions.canThrowAny
-  case class Person(name: Txt, age: Int)
+  case class Person(name: Text, age: Int)
  
   val tab = Tabulation[Person](Column("Name", _.name), Column("Age", _.age))
 
-  tab.tabulate(List(Person(str"Jonathan Luke Pretty", 38), Person(str"Emma", 78)), 17, BorderStyle.DoubleSingle)
+  tab.tabulate(List(Person(t"Jonathan Luke Pretty", 38), Person(t"Emma", 78)), 17, BorderStyle.DoubleSingle)
     
