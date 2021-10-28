@@ -19,21 +19,21 @@ package gossamer
 import wisteria.*
 
 trait FallbackDebugString:
-  given fromShow[T: Show]: DebugString[T] = summon[Show[T]].show(_).s
+  given fromShow[T: Show]: DebugString[T] = summon[Show[T]].show(_)
 
   given coll[Coll[X] <: Seq[X], T: DebugString]: DebugString[Coll[T]] =
-    xs => xs.map(summon[DebugString[T]].show(_)).join("Seq(", ", ", ")")
+    xs => xs.map(summon[DebugString[T]].show(_)).join(str"Seq(", str", ", str")")
 
 object DebugString extends Derivation[DebugString], FallbackDebugString:
   def join[T](ctx: CaseClass[DebugString, T]): DebugString[T] = t =>
     ctx.params.map {
-      param => param.label+" = "+param.typeclass.show(param.deref(t))
-    }.join(str"${ctx.typeInfo.short}(", ", ", ")")
+      param => Txt(param.label+" = "+param.typeclass.show(param.deref(t)))
+    }.join(str"${ctx.typeInfo.short}(", str", ", str")")
   
   def split[T](ctx: SealedTrait[DebugString, T]): DebugString[T] = t =>
     ctx.choose(t) { subtype => subtype.typeclass.show(subtype.cast(t)) }
 
-  given string: DebugString[String] = "\""+_.flatMap {
+  given string: DebugString[Txt] = x => Txt("\""+x.flatMap {
     case '\n' => "\\n"
     case '\t' => "\\t"
     case '\r' => "\\r"
@@ -42,33 +42,33 @@ object DebugString extends Derivation[DebugString], FallbackDebugString:
     case '\'' => "\\\'"
     case '\b' => "\\b"
     case '\f' => "\\f"
-    case ch   => if ch < 128 && ch >= 32 then ch.toString else String.format("\\u%04x", ch.toInt).nn
-  }+"\""
+    case ch   => if ch < 128 && ch >= 32 then ch.show else String.format("\\u%04x", ch.toInt).nn
+  }+"\"")
 
   given char: DebugString[Char] =
-    ch => "'"+string.show(ch.toString).drop(1).dropRight(1)+"'"
+    ch => str"'${string.show(ch.show).drop(1).dropRight(1)}'"
 
-  given int: DebugString[Int] = _.toString
-  given long: DebugString[Long] = _.toString+"L"
-  given short: DebugString[Short] = _.toString+".toShort"
-  given byte: DebugString[Byte] = _.toString+".toByte"
-  given boolean: DebugString[Boolean] = _.toString
+  given int: DebugString[Int] = _.show
+  given long: DebugString[Long] = x => str"${x.show}L"
+  given short: DebugString[Short] = x => str"${x.show}.toShort"
+  given byte: DebugString[Byte] = x => str"${x.show}.toByte"
+  given boolean: DebugString[Boolean] = _.show
   
   given double: DebugString[Double] = d =>
-    if d != d then "Double.NaN"
-    else if d.isInfinite then str"Double.${if d < 0.0 then "Negative" else "Positive"}Infinity"
-    else d.toString
+    if d != d then str"Double.NaN"
+    else if d.isInfinite then str"Double.${if d < 0.0 then str"Negative" else str"Positive"}Infinity"
+    else Txt(d.toString)
   
   given float: DebugString[Float] = f =>
-    if f != f then "Float.NaN"
+    if f != f then str"Float.NaN"
     else if f.isInfinite then str"Float.${if f < 0.0f then "Negative" else "Positive"}Infinity"
-    else f.toString+"F"
+    else Txt(f.toString+"F")
 
-  val debugAny: DebugString[Any] = _.toString
+  val debugAny: DebugString[Any] = any => Txt(any.toString)
 
 trait DebugString[-T]:
-  def show(value: T): String
+  def show(value: T): Txt
 
 extension [T](value: T)
-  def debug(using debugString: DebugString[T] = DebugString.debugAny): String =
+  def debug(using debugString: DebugString[T] = DebugString.debugAny): Txt =
     debugString.show(value)

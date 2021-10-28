@@ -17,253 +17,253 @@
 package gossamer
 
 import probably.*
+import rudiments.*
+import eucalyptus.*
 
 import unsafeExceptions.canThrowAny
 
-case class Person(name: String, age: Int)
+given Log(Everything |-> Stdout)
 
-object Tests extends Suite("Gossamer Tests"):
+case class Person(name: Txt, age: Int)
 
-
+object Tests extends Suite(str"Gossamer Tests"):
   def run(using Runner): Unit =
-    suite("DebugString tests") {
-      test("serialize boring string") {
-        "Hello world!".debug
-      }.assert(_ == """"Hello world!"""")
+    suite(str"DebugString tests") {
+      test(str"serialize boring string") {
+        str"Hello world!".debug
+      }.check(_ == str""""Hello world!"""")
 
-      test("serialize string with newline") {
-        "Hello\nworld".debug
-      }.assert(_ == """"Hello\nworld"""")
+      test(str"serialize string with newline") {
+        str"Hello\nworld".debug
+      }.check(_ == str"""\"Hello\\nworld\"""")
       
-      test("serialize string with tab") {
-        "Hello\tworld".debug
-      }.assert(_ == """"Hello\tworld"""")
+      test(str"serialize string with tab") {
+        str"Hello\tworld".debug
+      }.check(_ == str"""\"Hello\\tworld\"""")
       
-      test("serialize string with apostrophe") {
-        "Hell' world".debug
-      }.assert(_ == """"Hell\' world"""")
+      test(str"serialize string with apostrophe") {
+        str"Hell' world".debug
+      }.check(_ == str"""\"Hell\\' world\"""")
       
-      test("serialize string with quote") {
-        "Hello \"world\"".debug
-      }.assert(_ == """"Hello \"world\""""")
+      test(str"serialize string with quote") {
+        str"Hello \"world\"".debug
+      }.check(_ == str"""\"Hello \\\"world\\\"\"""")
       
-      test("serialize string with backslash") {
-        "Hello\\world".debug
-      }.assert(_ == """"Hello\\world"""")
+      test(str"serialize string with backslash") {
+        str"Hello\\world".debug
+      }.check(_ == str"""\"Hello\\\\world\"""")
       
-      test("serialize string with linefeed") {
-        "Hello world\r".debug
-      }.assert(_ == """"Hello world\r"""")
+      test(str"serialize string with linefeed") {
+        str"Hello world\r".debug
+      }.check(_ == str"""\"Hello world\\r\"""")
       
-      test("serialize string with unicode escapes") {
-        "Hello мир".debug
-      }.assert(_ == """"Hello \u043c\u0438\u0440"""")
+      test(str"serialize string with unicode escapes") {
+        str"Hello мир".debug
+      }.check(_ == str"""\"Hello \\u043c\\u0438\\u0440\"""")
 
-      test("serialize double") {
+      test(str"serialize double") {
         3.1.debug
-      }.assert(_ == "3.1")
+      }.check(_ == str"3.1")
       
-      test("serialize float") {
+      test(str"serialize float") {
         3.1f.debug
-      }.assert(_ == "3.1F")
+      }.check(_ == str"3.1F")
       
-      test("serialize long") {
+      test(str"serialize long") {
         3L.debug
-      }.assert(_ == "3L")
+      }.check(_ == str"3L")
       
-      test("serialize int") {
+      test(str"serialize int") {
         3.debug
-      }.assert(_ == "3")
+      }.check(_ == str"3")
       
-      test("serialize short") {
+      test(str"serialize short") {
         3.toShort.debug
-      }.assert(_ == "3.toShort")
+      }.check(_ == str"3.toShort")
       
-      test("serialize +infinity") {
+      test(str"serialize +infinity") {
         (1.0/0.0).debug
-      }.assert(_ == "Double.PositiveInfinity")
+      }.check(_ == str"Double.PositiveInfinity")
       
-      test("serialize -infinity") {
+      test(str"serialize -infinity") {
         (-1.0/0.0).debug
-      }.assert(_ == "Double.NegativeInfinity")
+      }.check(_ == str"Double.NegativeInfinity")
       
-      test("serialize NaN") {
+      test(str"serialize NaN") {
         (0.0/0.0).debug
-      }.assert(_ == "Double.NaN")
+      }.check(_ == str"Double.NaN")
       
-      test("serialize float +infinity") {
+      test(str"serialize float +infinity") {
         (1.0F/0.0F).debug
-      }.assert(_ == "Float.PositiveInfinity")
+      }.check(_ == str"Float.PositiveInfinity")
       
-      test("serialize float -infinity") {
+      test(str"serialize float -infinity") {
         (-1.0F/0.0F).debug
-      }.assert(_ == "Float.NegativeInfinity")
+      }.check(_ == str"Float.NegativeInfinity")
       
-      test("serialize float NaN") {
+      test(str"serialize float NaN") {
         (0.0F/0.0F).debug
-      }.assert(_ == "Float.NaN")
+      }.check(_ == str"Float.NaN")
 
-      test("serialize tab char") {
+      test(str"serialize tab char") {
         '\t'.debug
-      }.assert(_ == "'\\t'")
+      }.check(_ == str"'\\t'")
       
-      test("serialize backslash char") {
+      test(str"serialize backslash char") {
         '\\'.debug
-      }.assert(_ == "'\\\\'")
+      }.check(_ == str"'\\\\'")
       
-      test("serialize newline char") {
+      test(str"serialize newline char") {
         '\n'.debug
-      }.assert(_ == "'\\n'")
+      }.check(_ == str"'\\n'")
       
-      test("serialize backspace char") {
+      test(str"serialize backspace char") {
         '\b'.debug
-      }.assert(_ == "'\\b'")
+      }.check(_ == str"'\\b'")
       
-      test("serialize unicode char") {
+      test(str"serialize unicode char") {
         '«'.debug
-      }.assert(_ == "'\\u00ab'")
+      }.check(_ == str"'\\u00ab'")
       
-      test("serialize apostrophe char") {
+      test(str"serialize apostrophe char") {
         '\''.debug
-      }.assert(_ == "'\\''")
+      }.check(_ == str"'\\''")
       
-      test("serialize quote char") {
+      test(str"serialize quote char") {
         '\"'.debug
-      }.assert(_ == "'\\\"'")
+      }.check(_ == str"'\\\"'")
 
-      test("serialize case class") {
-        Person("Simon", 72).debug
-      }.assert(_ == "Person(name = \"Simon\", age = 72)")
+      test(str"serialize case class") {
+        Person(str"Simon", 72).debug
+      }.check(_ == str"Person(name = \"Simon\", age = 72)")
       
-      test("directly-derived serialize case class") {
-        DebugString.derived[Person].show(Person("Simon", 72))
-      }.assert(_ == "Person(name = \"Simon\", age = 72)")
+      test(str"directly-derived serialize case class") {
+        DebugString.derived[Person].show(Person(str"Simon", 72))
+      }.check(_ == str"Person(name = \"Simon\", age = 72)")
     
-      test("serialize list of strings") {
-        List("one", "two", "three").debug
-      }.assert(_ == """Seq("one", "two", "three")""")
+      test(str"serialize list of strings") {
+        List(str"one", str"two", str"three").debug
+      }.check(_ == str"""Seq("one", "two", "three")""")
     }
 
-    suite("Minimum Edit Distance") {
-      test("equal strings have zero edit distance") {
-        "Hello world".lev("Hello world")
+    suite(str"Minimum Edit Distance") {
+      test(str"equal strings have zero edit distance") {
+        str"Hello world".lev(str"Hello world")
       }.assert(_ == 0)
       
-      test("missing character has edit distance of 1") {
-        "Hello world".lev("Hello orld")
+      test(str"missing character has edit distance of 1") {
+        str"Hello world".lev(str"Hello orld")
       }.assert(_ == 1)
       
-      test("missing character from end has edit distance of 1") {
-        "Hello world".lev("Hello worl")
+      test(str"missing character from end has edit distance of 1") {
+        str"Hello world".lev(str"Hello worl")
       }.assert(_ == 1)
       
-      test("missing character from start has edit distance of 1") {
-        "Hello world".lev("ello world")
+      test(str"missing character from start has edit distance of 1") {
+        str"Hello world".lev(str"ello world")
       }.assert(_ == 1)
       
-      test("changed character has edit distance of 1") {
-        "Hello world".lev("Hellq world")
+      test(str"changed character has edit distance of 1") {
+        str"Hello world".lev(str"Hellq world")
       }.assert(_ == 1)
       
-      test("switched characters has edit distance of 2") {
-        "Hello world".lev("Hello wrold")
+      test(str"switched characters has edit distance of 2") {
+        str"Hello world".lev(str"Hello wrold")
       }.assert(_ == 2)
 
-      val x: Long = 4
-
-      test("different strings have large edit distance") {
-        "Hello".lev("world").toLong
-      }.assert(_ == x)
+      test(str"different strings have large edit distance") {
+        str"Hello".lev(str"world").toLong
+      }.assert(_ == 4)
     }
 
-    suite("String functions") {
-      test("punycode test") {
-        "www.äpfel.com".punycode
-      }.assert(_ == "www.xn--pfel-koa.com")
+    suite(str"String functions") {
+      test(str"punycode test") {
+        str"www.äpfel.com".punycode: Txt
+      }.check(_ == str"www.xn--pfel-koa.com")
 
-      test("URL encoding of space") {
-        "hello world".urlEncode
-      }.assert(_ == "hello+world")
+      test(str"URL encoding of space") {
+        str"hello world".urlEncode: Txt
+      }.check(_ == str"hello+world")
       
-      test("URL encoding of multibyte UTF-8 character") {
-        "Café".urlEncode
-      }.assert(_ == "Caf%C3%A9")
+      test(str"URL encoding of multibyte UTF-8 character") {
+        str"Café".urlEncode: Txt
+      }.check(_ == str"Caf%C3%A9")
 
-      test("URL decoding of UTF-8 string") {
-        "Na%C3%AFve".urlDecode
-      }.assert(_ == "Naïve")
+      test(str"URL decoding of UTF-8 string") {
+        str"Na%C3%AFve".urlDecode: Txt
+      }.check(_ == str"Naïve")
 
-      test("Lower-case") {
-        "InDeCiSiVe".lower
-      }.assert(_ == "indecisive")
+      test(str"Lower-case") {
+        str"InDeCiSiVe".lower: Txt
+      }.check(_ == str"indecisive")
       
-      test("Upper-case") {
-        "InDeCiSiVe".upper
-      }.assert(_ == "INDECISIVE")
+      test(str"Upper-case") {
+        str"InDeCiSiVe".upper: Txt
+      }.check(_ == str"INDECISIVE")
       
-      test("Empty string not populated") {
+      test(str"Empty string not populated") {
         "".populated
       }.assert(_ == None)
       
-      test("Non-empty string populated") {
-        "Hello World".populated
+      test(str"Non-empty string populated") {
+        str"Hello World".populated
       }.assert(_ == Some("Hello World"))
     }
 
-    suite("Joining strings") {
-      test("join with separator") {
-        List("one", "two", "three").join(", ")
-      }.assert(_ == "one, two, three")
+    suite(str"Joining strings") {
+      test(str"join with separator") {
+        List(str"one", str"two", str"three").join(str", ")
+      }.check(_ == str"one, two, three")
       
-      test("join with separator; different last") {
-        List("one", "two", "three", "four").join(", ", " and ")
-      }.assert(_ == "one, two, three and four")
+      test(str"join with separator; different last") {
+        List(str"one", str"two", str"three", str"four").join(str", ", str" and ")
+      }.check(_ == str"one, two, three and four")
       
-      test("join with separator; different last; two elements") {
-        List("three", "four").join(", ", " and ")
-      }.assert(_ == "three and four")
+      test(str"join with separator; different last; two elements") {
+        List(str"three", str"four").join(str", ", str" and ")
+      }.check(_ == str"three and four")
       
-      test("join with separator, prefix and suffix") {
-        List("one", "two").join("(", ", ", ")")
-      }.assert(_ == "(one, two)")
+      test(str"join with separator, prefix and suffix") {
+        List(str"one", str"two").join(str"(", str", ", str")")
+      }.check(_ == str"(one, two)")
     }
 
-    suite("txt interpolator") {
-      test("multiline collapses to space-delimited") {
+    suite(str"txt interpolator") {
+      test(str"multiline collapses to space-delimited") {
         txt"""Hello
-              world""".s
-      }.assert(_ == "Hello world")
+              world"""
+      }.check(_ == str"Hello world")
       
-      test("double newline becomes single newline") {
+      test(str"double newline becomes single newline") {
         txt"""Hello
               
-              world""".s
-      }.assert(_ == "Hello\nworld")
+              world"""
+      }.check(_ == str"Hello\nworld")
       
-      test("paragraphs") {
+      test(str"paragraphs") {
         txt"""Hello
               world
               
               Bonjour
-              le monde""".s
-      }.assert(_ == "Hello world\nBonjour le monde")
+              le monde"""
+      }.check(_ == str"Hello world\nBonjour le monde")
     }
 
-    suite("Show tests") {
-      test("Show a string") {
-        "Hello world".show.s
-      }.assert(_ == "Hello world")
+    suite(str"Show tests") {
+      test(str"Show a string") {
+        str"Hello world".show
+      }.check(_ == str"Hello world")
       
-      test("Show an Int") {
-        43.show.s
-      }.assert(_ == "43")
+      test(str"Show an Int") {
+        43.show
+      }.check(_ == str"43")
       
-      test("Show a locally-declared showable") {
+      test(str"Show a locally-declared showable") {
         given Show[Exception] = e => txt"<exception>"
-        Exception("").show.s
-      }.assert(_ == "<exception>")
+        Exception("").show
+      }.check(_ == str"<exception>")
     
-      // test("Show a Double") {
+      // test(str"Show a Double") {
       //   3.1415926.show
-      // }.assert(_ == "3.1415926")
+      // }.check(_ == "3.1415926")
     }
