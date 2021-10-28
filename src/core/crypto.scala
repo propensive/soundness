@@ -40,15 +40,15 @@ trait Signing:
 trait Symmetric
 
 case class Message[+A <: CryptoAlgorithm[?]](bytes: Bytes) extends Encodable:
-  override def toString(): String = str"Message(${bytes.encode[Base64]})"
+  override def toString(): String = str"Message(${bytes.encode[Base64]})".s
 
 case class Signature[+A <: CryptoAlgorithm[?]](bytes: Bytes) extends Encodable:
-  override def toString(): String = str"Signature(${bytes.encode[Base64]})"
+  override def toString(): String = str"Signature(${bytes.encode[Base64]})".s
 
 object RevealSecretKey
 
 case class PublicKey[A <: CryptoAlgorithm[?]](bytes: Bytes):
-  override def toString(): String = str"PublicKey(${bytes.encode[Hex]})"
+  override def toString(): String = str"PublicKey(${bytes.encode[Hex]})".s
 
   def encrypt[T: ByteCodec](value: T)(using A & Encryption): Message[A] =
     Message(summon[A].encrypt(summon[ByteCodec[T]].encode(value), bytes))
@@ -56,7 +56,7 @@ case class PublicKey[A <: CryptoAlgorithm[?]](bytes: Bytes):
   def verify[T: ByteCodec](value: T, signature: Signature[A])(using A & Signing): Boolean =
     summon[A].verify(summon[ByteCodec[T]].encode(value), signature.bytes, bytes)
 
-  def pem: Pem = Pem("PUBLIC KEY", bytes)
+  def pem: Pem = Pem(str"PUBLIC KEY", bytes)
 
 object PrivateKey:
   def generate[A <: CryptoAlgorithm[?]]()(using A): PrivateKey[A] =
@@ -64,7 +64,7 @@ object PrivateKey:
 
 case class PrivateKey[A <: CryptoAlgorithm[?]](private[gastronomy] val privateBytes: Bytes):
   override def toString(): String =
-    str"PrivateKey(${privateBytes.digest[Sha2[256]].encode[Base64]})"
+    str"PrivateKey(${privateBytes.digest[Sha2[256]].encode[Base64]})".s
   
   def public(using A): PublicKey[A] = PublicKey(summon[A].privateToPublic(privateBytes))
   
@@ -77,7 +77,7 @@ case class PrivateKey[A <: CryptoAlgorithm[?]](private[gastronomy] val privateBy
   inline def sign[T: ByteCodec](value: T)(using A & Signing): Signature[A] =
     Signature(summon[A].sign(summon[ByteCodec[T]].encode(value), privateBytes))
   
-  def pem(reveal: RevealSecretKey.type): Pem = Pem("PRIVATE KEY", privateBytes)
+  def pem(reveal: RevealSecretKey.type): Pem = Pem(str"PRIVATE KEY", privateBytes)
 
 object SymmetricKey:
   def generate[A <: CryptoAlgorithm[?] & Symmetric]()(using A): SymmetricKey[A] =
@@ -90,13 +90,13 @@ extends PrivateKey[A](bytes):
   def verify[T: ByteCodec](value: T, signature: Signature[A])(using A & Signing): Boolean =
     public.verify(value, signature)
 
-class GastronomyException(message: String) extends Exception(str"gastronomy: $message")
+class GastronomyException(message: Txt) extends Exception(str"gastronomy: $message".s)
 
-case class DecodeFailure(message: String)
-extends GastronomyException("could not decode the message")
+case class DecodeFailure(message: Txt)
+extends GastronomyException(str"could not decode the message")
 
 case class DecryptionFailure(message: Bytes)
-extends GastronomyException("could not decrypt the message")
+extends GastronomyException(str"could not decrypt the message")
 
 trait ByteCodec[T]:
   def encode(value: T): Bytes
@@ -107,14 +107,14 @@ object ByteCodec:
     def encode(value: Bytes): Bytes = value
     def decode(bytes: Bytes): Bytes throws DecodeFailure = bytes
    
-  given ByteCodec[String] with
-    def encode(value: String): Bytes = value.bytes
-    def decode(bytes: Bytes): String throws DecodeFailure =
+  given ByteCodec[Txt] with
+    def encode(value: Txt): Bytes = value.bytes
+    def decode(bytes: Bytes): Txt throws DecodeFailure =
       val buffer = ByteBuffer.wrap(bytes.unsafeMutable)
       
-      try Charset.forName("UTF-8").nn.newDecoder().nn.decode(buffer).toString
+      try Txt(Charset.forName("UTF-8").nn.newDecoder().nn.decode(buffer).toString)
       catch CharacterCodingException =>
-        throw DecodeFailure("the message did not contain a valid UTF-8 string")
+        throw DecodeFailure(str"the message did not contain a valid UTF-8 string")
 
 object Aes:
   given aes[I <: 128 | 192 | 256: ValueOf]: Aes[I] = Aes()
@@ -236,5 +236,5 @@ class Dsa[KS <: 512 | 1024 | 2048 | 3072: ValueOf]() extends CryptoAlgorithm[KS]
   private def keyFactory(): js.KeyFactory = js.KeyFactory.getInstance("DSA").nn
 end Dsa
 
-case class PemParseError(message: String)
-extends GastronomyException("could not parse PEM-encoded content")
+case class PemParseError(message: Txt)
+extends GastronomyException(str"could not parse PEM-encoded content")
