@@ -18,32 +18,37 @@ package gesticulate
 
 import gossamer.*
 import probably.*
+import eucalyptus.*
+import rudiments.*
 
 import unsafeExceptions.canThrowAny
 
-object Tests extends Suite("Gesticulate tests"):
+given Log(Everything |-> Stdout)
+
+object Tests extends Suite(str"Gesticulate tests"):
   def run(using Runner): Unit =
-    test("parse media type's type") {
-      Media.parse("application/json").group
+    test(str"parse media type's type") {
+      Media.parse(str"application/json").group
     }.assert(_ == Media.Group.Application)
     
-    test("parse media type's subtype") {
-      Media.parse("application/json").subtype
-    }.assert(_ == Media.Subtype.Standard("json"))
+    test(str"parse media type's subtype") {
+      Media.parse(str"application/json").subtype
+    }.assert(_ == Media.Subtype.Standard(str"json"))
 
-    test("parse media type suffix") {
-      Media.parse("application/epub+zip").suffixes
+    test(str"parse media type suffix") {
+      Media.parse(str"application/epub+zip").suffixes
     }.assert(_ == List(Media.Suffix.Zip))
 
-    test("parse full media type") {
-      Media.parse("application/json")
-    }.assert(_ == MediaType(Media.Group.Application, Media.Subtype.Standard("json")))
+    test(str"parse full media type") {
+      Media.parse(str"application/json")
+    }.assert(_ == MediaType(Media.Group.Application, Media.Subtype.Standard(str"json")))
 
-    test("parse full media type with parameter") {
-      Media.parse("application/json; charset=UTF-8")
-    }.assert(_ == MediaType(Media.Group.Application, Media.Subtype.Standard("json"),
-        parameters = List(("charset", "UTF-8"))))
+    test(str"parse full media type with parameter") {
+      Media.parse(str"application/json; charset=UTF-8")
+    }.assert(_ == MediaType(Media.Group.Application, Media.Subtype.Standard(str"json"),
+        parameters = List((str"charset", str"UTF-8"))))
     
-    test("invalid media type") {
-      capture(Media.parse("applicationjson"))
-    }.assert(_ == InvalidMediaTypeError("applicationjson", InvalidMediaTypeError.Nature.NotOneSlash))
+    test(str"invalid media type") {
+      capture(Media.parse(str"applicationjson"))
+    }.assert(_ == InvalidMediaTypeError(str"applicationjson",
+        InvalidMediaTypeError.Nature.NotOneSlash))
