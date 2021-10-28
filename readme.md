@@ -29,7 +29,7 @@ No other _Niveau_ libraries are dependents of _Tarantula_.
 
 ## Status
 
-Tarantula is classified as __fledgling__. Propensive defines the following five stability levels for open-source projects:
+Tarantula is classified as __embryonic__. Propensive defines the following five stability levels for open-source projects:
 
 - _embryonic_: for experimental or demonstrative purposes only, without any guarantees of longevity
 - _fledgling_: of proven utility, seeking contributions, but liable to significant redesigns
@@ -37,7 +37,7 @@ Tarantula is classified as __fledgling__. Propensive defines the following five 
 - _dependable_: production-ready, subject to controlled ongoing maintenance and enhancement; tagged as version `1.0` or later
 - _adamantine_: proven, reliable and production-ready, with no further breaking changes ever anticipated
 
-Tarantula is designed to be _small_. Its entire source code currently consists of 121 lines of code.
+Tarantula is designed to be _small_. Its entire source code currently consists of 125 lines of code.
 
 ## Availability
 
