@@ -17,7 +17,7 @@ scala/bin/scalac \
   -Xcheck-macros \
   -Ycheck-all-patmat \
   -Yexplicit-nulls \
-  mod/*/src/test/tests.scala mod/wisteria/src/examples/*.scala src/test/suites.scala
+  mod/*/src/test/tests.scala src/test/suites.scala mod/wisteria/src/examples/*.scala
 
 CP="$(ls bcp/*.jar lib/*.jar | tr '\n' : | head -c-1)"
 

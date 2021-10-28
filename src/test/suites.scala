@@ -1,8 +1,13 @@
 package niveau
 
 import probably.*
+import rudiments.*
+import gossamer.*
+import eucalyptus.*
 
-object Tests extends Suite("Niveau tests"):
+given Log(Everything |-> Stdout)
+
+object Tests extends Suite(str"Niveau tests"):
   def run(using Runner): Unit =
     suite(adversaria.Tests)
     suite(acyclicity.Tests)
@@ -28,6 +33,6 @@ object Tests extends Suite("Niveau tests"):
     suite(rudiments.Tests)
     suite(scintillate.Tests)
     suite(slalom.Tests)
-    //suite(tarantula.Tests)
+    suite(tarantula.Tests)
     suite(wisteria.Tests)
     suite(xylophone.Tests)

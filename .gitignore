@@ -6,3 +6,4 @@ lib/
 bcp/
 niveau.jar
 ^test/
+*.semanticdb

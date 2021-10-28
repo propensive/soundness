@@ -22,7 +22,7 @@ punctuation/html: punctuation/core honeycomb/core
 probably/core: escritoire/core
 probably/cli: probably/core
 probably/tolerance: probably/core wisteria/core
-scintillate/core: clairvoyant/html wisteria/core
+scintillate/core: clairvoyant/html wisteria/core gesticulate/core
 profanity/core: gossamer/core
 scintillate/server: scintillate/core gastronomy/core scintillate/core clairvoyant/http
 scintillate/servlet: scintillate/server slalom/core

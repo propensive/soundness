@@ -2,10 +2,15 @@
 
 for MOD in mod/*
 do
-  export TITLE="$(cat ${MOD}/doc/title)"
-  export ID="$(cat ${MOD}/doc/id)"
-  export START="$(cat ${MOD}/doc/start)"
+  export ID="$(echo $MOD | cut -d'/' -f2)"
+  export TITLE="$(tr '[:lower:]' '[:upper:]' <<< ${ID:0:1})${ID:1}"
+  export START="$(git --git-dir mod/$ID/.git  show -s --format=%ci $(git --git-dir mod/$ID/.git rev-list --max-parents=0 HEAD) | cut -d- -f1)"
   export YEAR="$(date "+%y")"
+  if [[ "$START" = "$YEAR" ]]; then
+    export COPYRIGHT="$START"
+  else
+    export COPYRIGHT="${START}-$(date +%y)"
+  fi
   export VERSION="$(cat ${MOD}/doc/version)"
   TMP=.tmp.scala
   cat tmpl/header | envsubst > ${MOD}/.header
