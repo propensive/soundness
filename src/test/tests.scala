@@ -23,5 +23,5 @@ import unsafeExceptions.canThrowAny
 
 import encodings.Utf8
 
-object Tests extends Suite(str"Jovian tests"):
+object Tests extends Suite(t"Jovian tests"):
   def run(using Runner): Unit = ()

@@ -43,40 +43,40 @@ type Majuscule = 'A' | 'B' | 'C' | 'D' | 'E' | 'F' | 'G' | 'H' | 'I' | 'J' | 'K'
     'O' | 'P' | 'Q' | 'R' | 'S' | 'T' | 'U' | 'V' | 'W' | 'X' | 'Y' | 'Z'
 
 case class InsufficientPermissions(inode: Filesystem#Inode)
-extends JovianError(str"the permissions of the path cannot be changed")
+extends JovianError(t"the permissions of the path cannot be changed")
 
 case class NotFile(path: Filesystem#Path)
-extends JovianError(str"the path ${path.toString} is not a file")
+extends JovianError(t"the path ${path.toString} is not a file")
 
 case class NotSymlink(path: Filesystem#Path)
-extends JovianError(str"the path ${path.toString} is not a symlink")
+extends JovianError(t"the path ${path.toString} is not a symlink")
 
 case class NotDirectory(path: Filesystem#Path)
-extends JovianError(str"the path ${path.toString} is not a directory")
+extends JovianError(t"the path ${path.toString} is not a directory")
 
 case class Nonexistent(path: Filesystem#Path)
-extends JovianError(str"the path ${path.toString} does not exist")
+extends JovianError(t"the path ${path.toString} does not exist")
 
 case class AlreadyExistent(path: Filesystem#Path)
-extends JovianError(str"the path ${path.toString} already exists")
+extends JovianError(t"the path ${path.toString} already exists")
 
 case class MissingResource(path: Classpath#Path)
-extends JovianError(str"the resource ${path.toString} could not be accessed")
+extends JovianError(t"the resource ${path.toString} could not be accessed")
 
 case class UnknownPwd()
-extends JovianError(str"the current working directory cannot be determined")
+extends JovianError(t"the current working directory cannot be determined")
 
-open class Classpath(classLoader: ClassLoader = getClass.nn.getClassLoader.nn) extends Root(str"/", str""):
+open class Classpath(classLoader: ClassLoader = getClass.nn.getClassLoader.nn) extends Root(t"/", t""):
   type AbsolutePath = CpPath
   type RelativePath = Path.Relative
 
-  def makeAbsolute(parts: Vector[Txt]): CpPath = CpPath(parts)
-  def makeRelative(ascent: Int, parts: Vector[Txt]) = Path.Relative(ascent, parts)
+  def makeAbsolute(parts: Vector[Text]): CpPath = CpPath(parts)
+  def makeRelative(ascent: Int, parts: Vector[Text]) = Path.Relative(ascent, parts)
 
   @targetName("access")
-  infix def /(resource: Txt): CpPath = CpPath(Vector(resource))
+  infix def /(resource: Text): CpPath = CpPath(Vector(resource))
 
-  case class CpPath(parts: Vector[Txt]) extends Path.Absolute(parts):
+  case class CpPath(parts: Vector[Text]) extends Path.Absolute(parts):
     def resource: Resource = Resource(makeAbsolute(parts))
 
   case class Resource(path: CpPath):
@@ -86,16 +86,16 @@ open class Classpath(classLoader: ClassLoader = getClass.nn.getClassLoader.nn) e
       try readable.read(in, limit)
       catch case e: NullPointerException => throw MissingResource(path)
     
-    def name: Txt = path.path.lastOption.getOrElse(prefix)
+    def name: Text = path.path.lastOption.getOrElse(prefix)
     def parent: Resource throws RootBoundaryExceeded = Resource(path.parent)
 
-class Filesystem(pathSeparator: Txt, fsPrefix: Txt)
+class Filesystem(pathSeparator: Text, fsPrefix: Text)
 extends Root(pathSeparator, fsPrefix):
 
   type RelativePath = Path.Relative
   type AbsolutePath = FsPath
 
-  case class FsPath(parts: Vector[Txt]) extends Path.Absolute(parts):
+  case class FsPath(parts: Vector[Text]) extends Path.Absolute(parts):
     def file: File throws Nonexistent | NotFile =
       val javaFile = ji.File(toString)
       if !javaFile.exists() then throw Nonexistent(this)
@@ -115,7 +115,7 @@ extends Root(pathSeparator, fsPrefix):
       if !javaFile.exists() then throw Nonexistent(this)
       if !Files.isSymbolicLink(javaFile.toPath) then throw NotSymlink(this)
       
-      Symlink(this, parse(Txt(Files.readSymbolicLink(Paths.get(toString)).toString)).get)
+      Symlink(this, parse(Text(Files.readSymbolicLink(Paths.get(toString)).toString)).get)
   
     def inode: Inode throws Nonexistent =
       val javaFile = ji.File(toString)
@@ -125,7 +125,7 @@ extends Root(pathSeparator, fsPrefix):
       if javaFile.isDirectory then Directory(this)
       else if Files.isSymbolicLink(javaPath)
       then
-        try Symlink(this, parse(Txt(Files.readSymbolicLink(javaPath).toString)).get)
+        try Symlink(this, parse(Text(Files.readSymbolicLink(javaPath).toString)).get)
         catch NoSuchElementException => File(this)
       else File(this)
     
@@ -146,25 +146,25 @@ extends Root(pathSeparator, fsPrefix):
       File(this)
 
     
-  def makeAbsolute(parts: Vector[Txt]): FsPath = FsPath(parts)
-  def makeRelative(ascent: Int, path: Vector[Txt]): Path.Relative = Path.Relative(ascent, path)
+  def makeAbsolute(parts: Vector[Text]): FsPath = FsPath(parts)
+  def makeRelative(ascent: Int, path: Vector[Text]): Path.Relative = Path.Relative(ascent, path)
 
-  def parse(value: Txt): Option[Path.Absolute] =
+  def parse(value: Text): Option[Path.Absolute] =
     if value.startsWith(prefix)
     then
-      val parts: List[Txt] = value.drop(prefix.length).cut(separator)
+      val parts: List[Text] = value.drop(prefix.length).cut(separator)
       Some(Path.Absolute(parts.to(Vector)))
     else None
   
   @targetName("access")
-  infix def /(filename: Txt): Path.Absolute = Path.Absolute(Vector(filename))
+  infix def /(filename: Text): Path.Absolute = Path.Absolute(Vector(filename))
 
   sealed trait Inode(val path: Path.Absolute):
     lazy val javaFile: ji.File = ji.File(path.toString)
     lazy val javaPath: JavaPath = Paths.get(path.toString).nn
-    def name: Txt = path.path.lastOption.getOrElse(prefix)
-    def fullname: Txt = Txt(javaFile.getAbsolutePath.nn)
-    def uriString: Txt = Txt(javaFile.toURI.toString)
+    def name: Text = path.path.lastOption.getOrElse(prefix)
+    def fullname: Text = Text(javaFile.getAbsolutePath.nn)
+    def uriString: Text = Text(javaFile.toURI.toString)
     def exists(): Boolean = Files.exists(javaPath)
     def parent: Directory throws RootBoundaryExceeded = Directory(path.parent)
     def directory: Option[Directory]
@@ -244,7 +244,7 @@ extends Root(pathSeparator, fsPrefix):
     
     def children: List[Inode] throws Nonexistent =
       Option(javaFile.list).fold(Nil) { files =>
-        files.nn.to(List).map(_.nn).map(Txt(_)).map(initPath.path :+ _).map(makeAbsolute(_)).map(_.inode)
+        files.nn.to(List).map(_.nn).map(Text(_)).map(initPath.path :+ _).map(makeAbsolute(_)).map(_.inode)
       }
     
     def descendants: LazyList[Inode] throws Nonexistent =
@@ -273,7 +273,7 @@ extends Root(pathSeparator, fsPrefix):
       dest.directory
     
     @targetName("access")
-    infix def /(child: Txt): FsPath throws RootBoundaryExceeded = makeAbsolute((path / child).path)
+    infix def /(child: Text): FsPath throws RootBoundaryExceeded = makeAbsolute((path / child).path)
 
 // object OldPath:
 //   def apply(jpath: JavaPath): Path = Path(jpath.toString match
@@ -442,7 +442,7 @@ object Writable:
   given Writable[LazyList[IArray[Byte]]] =
     (out, stream) => stream.map(_.unsafeMutable).foreach(out.write(_))
   
-  given (using enc: Encoding): Writable[LazyList[Txt]] = (out, stream) =>
+  given (using enc: Encoding): Writable[LazyList[Text]] = (out, stream) =>
     val writer = ji.BufferedWriter(ji.OutputStreamWriter(out, enc.name.s))
     stream.foreach { part =>
       writer.write(part.s)
@@ -450,7 +450,7 @@ object Writable:
     }
     writer.close()
 
-  given (using enc: Encoding): Writable[Txt] =
+  given (using enc: Encoding): Writable[Text] =
     (out, string) =>
       val writer = ji.BufferedWriter(ji.OutputStreamWriter(out, enc.name.s))
       writer.write(string.s)
@@ -468,10 +468,10 @@ object Readable:
       Util.read(in, limit)
     
   given stringStream(using enc: Encoding)
-      : Readable[LazyList[Txt], StreamCutError | BufferOverflowError] with
+      : Readable[LazyList[Text], StreamCutError | BufferOverflowError] with
     def read(in: ji.BufferedInputStream, limit: Int = 65536) =
 
-      def read(prefix: Array[Byte], remaining: Int): LazyList[Txt] =
+      def read(prefix: Array[Byte], remaining: Int): LazyList[Text] =
         try
           val avail = in.available
           if avail == 0 then LazyList()
@@ -480,20 +480,20 @@ object Readable:
             val buf = new Array[Byte](in.available.min(limit) + prefix.length)
             if prefix.length > 0 then System.arraycopy(prefix, 0, buf, 0, prefix.length)
             val count = in.read(buf, prefix.length, buf.length - prefix.length)
-            if count + prefix.length < 0 then LazyList(Txt(String(buf, enc.name.s)))
+            if count + prefix.length < 0 then LazyList(Text(String(buf, enc.name.s)))
             else
               val carry = enc.carry(buf)
-              (if carry == 0 then Txt(String(buf, enc.name.s)) else Txt(String(buf, 0, buf.length -
+              (if carry == 0 then Text(String(buf, enc.name.s)) else Text(String(buf, 0, buf.length -
                   carry, enc.name.s))) #:: read(buf.takeRight(carry), limit - buf.length)
         catch IOException => throw StreamCutError()
       
       read(Array.empty[Byte], limit)
 
-  given readableString: Readable[Txt, BufferOverflowError | StreamCutError] with
+  given readableString: Readable[Text, BufferOverflowError | StreamCutError] with
     def read(in: ji.BufferedInputStream, limit: Int = 65536) =
       given enc: Encoding = encodings.Utf8
       val stream = stringStream.read(in, limit)
-      if stream.length == 0 then str""
+      if stream.length == 0 then t""
       else if stream.length > 1 then throw BufferOverflowError()
       else stream.head
 
@@ -521,15 +521,15 @@ object encodings:
       else if len > 2 && ((last3 & -8) == -16) then 3
       else 0
     
-    def name: Txt = str"UTF-8"
+    def name: Text = t"UTF-8"
   
   given Ascii: Encoding with
     def carry(arr: Array[Byte]): Int = 0
-    def name: Txt = str"ASCII"
+    def name: Text = t"ASCII"
   
   @targetName("ISO_8859_1")
   given `ISO-8859-1`: Encoding with
-    def name: Txt = str"ISO-8859-1"
+    def name: Text = t"ISO-8859-1"
     def carry(arr: Array[Byte]): Int = 0
 
 object Encoding:
@@ -542,7 +542,7 @@ object Encoding:
     def name: String = "charset"
 
 trait Encoding:
-  def name: Txt
+  def name: Text
   def carry(array: Array[Byte]): Int
 
 opaque type ByteSize = Long
@@ -556,28 +556,28 @@ object ByteSize:
     
     def value: Long = byteSize
 
-open class JovianError(message: Txt) extends Exception(str"jovian: $message".s)
+open class JovianError(message: Text) extends Exception(t"jovian: $message".s)
 
 case class DifferentFilesystems(source: Filesystem#Path, destination: Filesystem#Path)
-extends JovianError(str"${source.toString} and ${destination.toString} are not on the same filesystem")
+extends JovianError(t"${source.toString} and ${destination.toString} are not on the same filesystem")
 
 case class FileNotFound(inode: Filesystem#Inode)
-extends JovianError(str"the file or directory ${inode.name} was not found")
+extends JovianError(t"the file or directory ${inode.name} was not found")
 
 case class NotSymbolicLink(inode: Filesystem#Inode)
-extends JovianError(str"the path ${inode.name} is not a symbolic link")
+extends JovianError(t"the path ${inode.name} is not a symbolic link")
 
 case class BufferOverflowError()
-extends JovianError(str"the stream contained more data than the buffer could hold")
+extends JovianError(t"the stream contained more data than the buffer could hold")
 
 case class NotWritable(inode: Filesystem#Inode)
-extends JovianError(str"could not write to ${inode.name}")
+extends JovianError(t"could not write to ${inode.name}")
 
 case class NotReadable(inode: Filesystem#Inode)
-extends JovianError(str"could not read from ${inode.name}")
+extends JovianError(t"could not read from ${inode.name}")
 
 case class FileReadError(inode: Filesystem#Inode, e: Throwable)
-extends JovianError(str"could not read from ${inode.name}")
+extends JovianError(t"could not read from ${inode.name}")
 
 object Filesystem:
   lazy val roots: Set[Filesystem] =
@@ -595,12 +595,12 @@ object Filesystem:
  
   def defaultSeparator: "/" | "\\" = if ji.File.separator == "\\" then "\\" else "/"
 
-object Unix extends Filesystem(str"/", str"/"):
+object Unix extends Filesystem(t"/", t"/"):
   def Pwd: FsPath throws UnknownPwd =
-    val dir = try Txt(Sys.user.dir()) catch case KeyNotFound(_) => throw UnknownPwd()
+    val dir = try Text(Sys.user.dir()) catch case KeyNotFound(_) => throw UnknownPwd()
     makeAbsolute(parse(dir).get.path)
 
-case class WindowsRoot(drive: Majuscule) extends Filesystem(str"\\", str"${drive.toString}:\\")
+case class WindowsRoot(drive: Majuscule) extends Filesystem(t"\\", t"${drive.toString}:\\")
 
 object windows:
   object DriveC extends WindowsRoot('C')
