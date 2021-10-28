@@ -25,18 +25,18 @@ import scala.annotation.targetName
 
 open class HtmlConverter():
   def outline(node: Markdown[Markdown.Ast.Node]): Seq[Content[Flow]] =
-    try convert(Markdown.parse(headOutline(node).join(str"\n")).nodes)
+    try convert(Markdown.parse(headOutline(node).join(t"\n")).nodes)
     catch case BadMarkdownError(_) => Nil
   
-  def slug(str: Txt): Txt =
-    Txt(str.lower.replaceAll("[^a-z0-9]", "-").nn.replaceAll("--*", "-").nn)
+  def slug(str: Text): Text =
+    Text(str.lower.replaceAll("[^a-z0-9]", "-").nn.replaceAll("--*", "-").nn)
 
-  def headOutline(node: Markdown[Markdown.Ast.Node]): Seq[Txt] = node match
+  def headOutline(node: Markdown[Markdown.Ast.Node]): Seq[Text] = node match
     case Markdown(children*) =>
       children.flatMap {
         case Markdown.Ast.Block.Heading(level, children*) =>
           val string = text(children)
-          List(str"${" "*(2*level - 1)}- [$string](#${slug(string)})")
+          List(t"${" "*(2*level - 1)}- [$string](#${slug(string)})")
         case Markdown.Ast.Inline.Textual(str) =>
           List(str)
         case _ =>
@@ -98,13 +98,13 @@ open class HtmlConverter():
   def listItem(node: Markdown.Ast.ListItem): Seq[Item["li"]] = node match
     case Markdown.Ast.ListItem(children*) => List(Li(convert(children)*))
 
-  def text(node: Seq[Markdown.Ast.Node]): Txt = node.map {
-    case Markdown.Ast.Block.BulletList(_, _, _, _*) => str""
+  def text(node: Seq[Markdown.Ast.Node]): Text = node.map {
+    case Markdown.Ast.Block.BulletList(_, _, _, _*) => t""
     case Markdown.Ast.Inline.Image(text, _)         => text
     case Markdown.Ast.Inline.Link(text, _)          => text
-    case Markdown.Ast.Block.Reference(_, _)         => str""
-    case Markdown.Ast.Inline.Break()                => str""
-    case Markdown.Ast.Block.ThematicBreak()         => str""
+    case Markdown.Ast.Block.Reference(_, _)         => t""
+    case Markdown.Ast.Inline.Break()                => t""
+    case Markdown.Ast.Block.ThematicBreak()         => t""
     case Markdown.Ast.Inline.Emphasis(children*)    => text(children)
     case Markdown.Ast.Inline.Strong(children*)      => text(children)
     case Markdown.Ast.Inline.Code(code)             => code
@@ -114,7 +114,7 @@ open class HtmlConverter():
     case Markdown.Ast.Block.FencedCode(_, _, code)  => code
     case Markdown.Ast.Inline.Textual(text)          => text
     case Markdown.Ast.Block.Cell(content*)          => text(content)
-    case _                                          => str""
+    case _                                          => t""
   }.join
 
   def nonInteractive(node: Markdown.Ast.Inline): Seq[Content[Phrasing]] = node match
@@ -134,5 +134,5 @@ open class HtmlConverter():
     case other =>
       nonInteractive(other)
 
-  def escape(str: Txt): Txt =
-    str.sub(str"&", str"&amp;").sub(str"<", str"&lt;").sub(str">", str"&gt;")
+  def escape(str: Text): Text =
+    str.sub(t"&", t"&amp;").sub(t"<", t"&lt;").sub(t">", t"&gt;")

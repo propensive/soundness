@@ -22,11 +22,11 @@ import gossamer.*
 
 object Md:
   enum Input:
-    case Block(content: Txt)
-    case Inline(content: Txt)
+    case Block(content: Text)
+    case Inline(content: Text)
 
   object Input:
-    given Insertion[Input, Txt] = Input.Inline(_)
+    given Insertion[Input, Text] = Input.Inline(_)
   
   object Interpolator extends contextual.Interpolator[Input, Input, Markdown[Markdown.Ast.Node]]:
     
@@ -39,16 +39,16 @@ object Md:
         try Markdown.parse(state) catch case BadMarkdownError(msg) =>
           throw InterpolationError(s"the markdown could not be parsed; $msg")
   
-    def initial: Input = Input.Inline(str"")
+    def initial: Input = Input.Inline(t"")
     def skip(state: Input): Input = state
 
     def insert(state: Input, value: Input): Input = value match
       case Input.Block(content)  => state match
-        case Input.Block(state)    => Input.Block(str"$state\n$content\n")
-        case Input.Inline(state)   => Input.Block(str"$state\n$content")
+        case Input.Block(state)    => Input.Block(t"$state\n$content\n")
+        case Input.Inline(state)   => Input.Block(t"$state\n$content")
       case Input.Inline(content) => state match
-        case Input.Block(state)    => Input.Block(str"$state\n$content\n")
-        case Input.Inline(state)   => Input.Inline(str"$state$content")
+        case Input.Block(state)    => Input.Block(t"$state\n$content\n")
+        case Input.Inline(state)   => Input.Inline(t"$state$content")
      
     def parse(state: Input, next: String): Input = state match
       case Input.Inline(state) =>
