@@ -17,7 +17,12 @@
 package adversaria
 
 import probably.*
+import rudiments.*
+import eucalyptus.*
+import gossamer.*
 import annotation.StaticAnnotation
+
+given Log(Everything |-> Stdout)
 
 import unsafeExceptions.canThrowAny
 
@@ -25,20 +30,20 @@ final case class id() extends StaticAnnotation
 final case class count(number: Int) extends StaticAnnotation
 final case class ref(x: Int) extends StaticAnnotation
 
-case class Person(name: String, @id email: String)
+case class Person(name: Txt, @id email: Txt)
 
 @count(10)
-case class Company(name: String)
+case class Company(name: Txt)
 
 case class Employee(person: Person, @id code: Long)
 
 case class Letters(@ref(1) alpha: Int, @ref(2) @ref(3) beta: Int, gamma: Int, @ref(4) delta: Int)
 
-object Tests extends Suite("Adversaria tests"):
+object Tests extends Suite(str"Adversaria tests"):
 
   def run(using Runner): Unit =
 
-    test("first field") {
+    test(str"first field") {
       val letters = Letters(5, 6, 7, 8)
       Annotations.firstField[Letters, ref](letters)
     }.assert(_ == 5)
@@ -47,7 +52,7 @@ object Tests extends Suite("Adversaria tests"):
     //   Annotations.field[Employee](_.code)
     // }.assert(_ == List(id()))
     
-    test("check nonexistant annotations") {
+    test(str"check nonexistant annotations") {
       Annotations.field[Employee](_.person)
     }.assert(_ == Nil)
 
@@ -93,7 +98,7 @@ object Tests extends Suite("Adversaria tests"):
     // }.assert(_ == TypecheckError("adversaria: could not find matching annotation"))
 
     // test("extract annotation value generically") {
-    //   def getId[T](value: T)(implicit anns: FindMetadata[id, T]): String =
+    //   def getId[T](value: T)(implicit anns: FindMetadata[id, T]): Txt =
     //     anns.get(value).toString
 
     //   getId(Employee(Person("John Smith", "test@example.com"), 3141592))
