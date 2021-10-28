@@ -44,27 +44,27 @@ sealed trait Sha384 extends HashScheme[48]
 sealed trait Sha512 extends HashScheme[64]
 
 object Md5:
-  given HashFunction[Md5] = HashFunction(str"MD5", str"HmacMD5")
+  given HashFunction[Md5] = HashFunction(t"MD5", t"HmacMD5")
 
 object Sha1:
-  given HashFunction[Sha1] = HashFunction(str"SHA1", str"HmacSHA1")
+  given HashFunction[Sha1] = HashFunction(t"SHA1", t"HmacSHA1")
 
 object Sha2:
   given sha2[Bits <: 224 | 256 | 384 | 512: ValueOf]: HashFunction[Sha2[Bits]] =
-    HashFunction(str"SHA-${valueOf[Bits]}", str"HmacSHA${valueOf[Bits]}")
+    HashFunction(t"SHA-${valueOf[Bits]}", t"HmacSHA${valueOf[Bits]}")
 
 trait Encodable:
   val bytes: Bytes
-  def encode[ES <: EncodingScheme: ByteEncoder]: Txt = bytes.encode[ES]
+  def encode[ES <: EncodingScheme: ByteEncoder]: Text = bytes.encode[ES]
 
 case class Hmac[A <: HashScheme[?]](bytes: Bytes) extends Encodable
 
-case class HashFunction[A <: HashScheme[?]](name: Txt, hmacName: Txt):
+case class HashFunction[A <: HashScheme[?]](name: Text, hmacName: Text):
   def init: DigestAccumulator = DigestAccumulator(MessageDigest.getInstance(name.s).nn)
   def initHmac: Mac = Mac.getInstance(hmacName.s).nn
 
 case class Digest[A <: HashScheme[?]](bytes: Bytes) extends Encodable:
-  override def toString: String = str"Digest(${encode[Base64]}".s
+  override def toString: String = t"Digest(${encode[Base64]}".s
 
 object Hashable extends Derivation[Hashable]:
   def join[T](caseClass: CaseClass[Hashable, T]): Hashable[T] =
@@ -97,7 +97,7 @@ object Hashable extends Derivation[Hashable]:
   given Hashable[Byte] = (acc, n) => acc.append(IArray(n))
   given Hashable[Short] = (acc, n) => acc.append(IArray((n >> 8).toByte, n.toByte))
   given Hashable[Char] = (acc, n) => acc.append(IArray((n >> 8).toByte, n.toByte))
-  given Hashable[Txt] = (acc, s) => acc.append(IArray.from(s.bytes))
+  given Hashable[Text] = (acc, s) => acc.append(IArray.from(s.bytes))
   given Hashable[Bytes] = _.append(_)
   given Hashable[Digest[?]] = (acc, d) => acc.append(d.bytes)
 
@@ -135,26 +135,26 @@ object ByteEncoder:
       array(2*idx + 1) = HexLookup(bytes(idx) & 0xf)
     }
     
-    Txt(String(array, "UTF-8"))
+    Text(String(array, "UTF-8"))
 
-  given ByteEncoder[Base64] = bytes => Txt(Base64Encoder.nn.encodeToString(bytes.to(Array)).nn)
+  given ByteEncoder[Base64] = bytes => Text(Base64Encoder.nn.encodeToString(bytes.to(Array)).nn)
   
   given ByteEncoder[Binary] = bytes =>
     val buf = StringBuilder()
     bytes.foreach { byte => buf.append(Integer.toBinaryString(byte).nn.padLeft(8, '0')) }
-    Txt(buf.toString)
+    Text(buf.toString)
 
   given ByteEncoder[Base64Url] = bytes =>
-    Txt(Base64Encoder.nn.encodeToString(bytes.to(Array)).nn)
+    Text(Base64Encoder.nn.encodeToString(bytes.to(Array)).nn)
       .sub('+', '-')
       .sub('/', '_')
       .takeWhile(_ != '=')
 
 trait ByteDecoder[ES <: EncodingScheme]:
-  def decode(value: Txt): Bytes
+  def decode(value: Text): Bytes
 
 trait ByteEncoder[ES <: EncodingScheme]:
-  def encode(bytes: Bytes): Txt
+  def encode(bytes: Bytes): Text
 
 object ByteDecoder:
   given ByteDecoder[Base64] = value => IArray.from(Base64Decoder.nn.decode(value.s).nn)
@@ -169,7 +169,7 @@ object ByteDecoder:
 
     data.unsafeImmutable
 
-extension (value: Txt)
+extension (value: Text)
   def decode[T <: EncodingScheme: ByteDecoder]: Bytes = summon[ByteDecoder[T]].decode(value)
 
 extension [T](value: T)
@@ -183,4 +183,4 @@ extension [T](value: T)
     Hmac(IArray.from(mac.doFinal(summon[ByteCodec[T]].encode(value).unsafeMutable).nn))
 
 extension (bytes: Bytes)
-  def encode[E <: EncodingScheme: ByteEncoder]: Txt = summon[ByteEncoder[E]].encode(bytes)
+  def encode[E <: EncodingScheme: ByteEncoder]: Text = summon[ByteEncoder[E]].encode(bytes)

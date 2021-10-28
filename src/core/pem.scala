@@ -19,28 +19,28 @@ package gastronomy
 import rudiments.*
 import gossamer.*
 
-case class Pem(kind: Txt, data: Bytes):
-  def serialize: Txt = Seq(
-    Seq(str"-----BEGIN $kind-----"),
+case class Pem(kind: Text, data: Bytes):
+  def serialize: Text = Seq(
+    Seq(t"-----BEGIN $kind-----"),
     data.grouped(48).to(Seq).map(_.encode[Base64]),
-    Seq(str"-----END $kind-----")
-  ).flatten.join(str"\n")
+    Seq(t"-----END $kind-----")
+  ).flatten.join(t"\n")
 
 object Pem:
-  def parse(string: Txt): Pem throws PemParseError =
+  def parse(string: Text): Pem throws PemParseError =
     val lines = string.trim.nn.cut("\n")
     
     val label = lines.head match
       case s"-----BEGIN $label-----" => label.show
-      case _                         => throw PemParseError(str"the BEGIN line could not be found")
+      case _                         => throw PemParseError(t"the BEGIN line could not be found")
     
     lines.tail.indexWhere {
       case s"-----END $label-----" => true
       case _                       => false
     } match
       case -1  =>
-        throw PemParseError(str"the message's END line could not be found")
+        throw PemParseError(t"the message's END line could not be found")
       case idx =>
-        val joined: Txt = lines.tail.take(idx).join
+        val joined: Text = lines.tail.take(idx).join
         try Pem(label, joined.decode[Base64])
-        catch Exception => throw PemParseError(str"could not parse Base64 PEM message")
+        catch Exception => throw PemParseError(t"could not parse Base64 PEM message")
