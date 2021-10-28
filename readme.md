@@ -36,7 +36,7 @@ Caesura is classified as __fledgling__. Propensive defines the following five st
 - _dependable_: production-ready, subject to controlled ongoing maintenance and enhancement; tagged as version `1.0` or later
 - _adamantine_: proven, reliable and production-ready, with no further breaking changes ever anticipated
 
-Caesura is designed to be _small_. Its entire source code currently consists of 114 lines of code.
+Caesura is designed to be _small_. Its entire source code currently consists of 116 lines of code.
 
 ## Availability
 
