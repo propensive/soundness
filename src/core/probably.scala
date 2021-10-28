@@ -33,12 +33,12 @@ import escapade.*
 
 import language.dynamics
 
-given realm: Realm = Realm(str"probably")
+given realm: Realm = Realm(t"probably")
 
 import Runner.*
 
 object Runner:
-  case class TestId private[probably](value: Txt)
+  case class TestId private[probably](value: Text)
   
   enum Outcome:
     case FailsAt(datapoint: Datapoint, count: Int)
@@ -48,24 +48,24 @@ object Runner:
     def failed: Boolean = !passed
     def passed: Boolean = this == Passed
     
-    def filename: Txt = this match
-      case FailsAt(datapoint, count) => datapoint.debugValue.filename.otherwise(str"(no source)")
-      case _                         => str""
+    def filename: Text = this match
+      case FailsAt(datapoint, count) => datapoint.debugValue.filename.otherwise(t"(no source)")
+      case _                         => t""
     
-    def line: Txt = this match
+    def line: Text = this match
       case FailsAt(datapoint, count) => datapoint.debugValue.line.otherwise(0).show
-      case _                         => str""
+      case _                         => t""
 
-    def debug: Txt = this match
+    def debug: Text = this match
       case FailsAt(datapoint, count) =>
         val padWidth = datapoint.debugValue.allInfo.map(_(0).length).max
         datapoint.debugValue.allInfo.map { case (k, v) =>
-          val value: Txt = (v.cut(str"\n"): List[Txt]).join(str"\n"+" "*(padWidth + 3): Txt)
-          str"${k.padLeft(padWidth, ' ')} = $value"
-        }.join(str"\n")
+          val value: Text = (v.cut(t"\n"): List[Text]).join(t"\n"+" "*(padWidth + 3): Text)
+          t"${k.padLeft(padWidth, ' ')} = $value"
+        }.join(t"\n")
       
       case _ =>
-        str""
+        t""
 
   enum Datapoint(val debugValue: Debug):
     case Pass extends Datapoint(Debug())
@@ -74,10 +74,10 @@ object Runner:
     
     case PredicateThrows(exception: Exception, debug: Debug, index: Int) extends Datapoint(debug)
 
-  def shortDigest[T: Show](text: T): Txt =
+  def shortDigest[T: Show](text: T): Text =
     val md = java.security.MessageDigest.getInstance("SHA-256").nn
     md.update(text.show.s.getBytes)
-    md.digest.nn.take(3).map { b => Txt(f"$b%02x") }.join
+    md.digest.nn.take(3).map { b => Text(f"$b%02x") }.join
 
 class Runner(subset: Set[TestId] = Set()) extends Dynamic:
 
@@ -85,15 +85,15 @@ class Runner(subset: Set[TestId] = Set()) extends Dynamic:
 
   final def skip(testId: TestId): Boolean = !(subset.isEmpty || subset(testId))
 
-  def apply[T](name: Txt)(fn: Test ?=> T): Test { type Type = T } =
+  def apply[T](name: Text)(fn: Test ?=> T): Test { type Type = T } =
     new Test(name):
       type Type = T
       def action(): T = fn(using this)
 
-  def time[T](name: Txt)(fn: => T)(using Log): T = apply[T](name)(fn).check { _ => true }
+  def time[T](name: Text)(fn: => T)(using Log): T = apply[T](name)(fn).check { _ => true }
   def suite(testSuite: TestSuite)(using Log): Unit = suite(testSuite.name)(testSuite.run)
 
-  def suite(name: Txt)(fn: Runner ?=> Unit)(using Log): Unit =
+  def suite(name: Text)(fn: Runner ?=> Unit)(using Log): Unit =
     Log.info(ansi"Starting test suite ${colors.Gold}($name)")
     val test = new Test(name):
       type Type = Report
@@ -116,12 +116,12 @@ class Runner(subset: Set[TestId] = Set()) extends Dynamic:
    
     Log.fine(ansi"Completed test suite ${colors.Gold}($name) in ${t1.show}ms")
 
-  def assert(name: Txt)(fn: => Boolean)(using Log): Unit = apply(name)(fn).oldAssert(identity)
+  def assert(name: Text)(fn: => Boolean)(using Log): Unit = apply(name)(fn).oldAssert(identity)
 
   object Test:
     given AnsiShow[Test] = test => ansi"${colors.Khaki}(${test.id.value})"
 
-  abstract class Test(val name: Txt):
+  abstract class Test(val name: Text):
     type Type
 
     def id: TestId = TestId(Runner.shortDigest(name))
@@ -132,16 +132,16 @@ class Runner(subset: Set[TestId] = Set()) extends Dynamic:
       catch case NonFatal(e) =>
         Log.warn(ansi"A $e exception was thrown whilst checking the test ${this.ansi}")
     
-    private val map: HashMap[Txt, Txt] = HashMap()
+    private val map: HashMap[Text, Text] = HashMap()
 
-    def debug[T](name: Txt, expr: T): T =
-      map(name) = Txt(expr.toString)
+    def debug[T](name: Text, expr: T): T =
+      map(name) = Text(expr.toString)
       expr
 
     inline def assert(inline pred: Type => Boolean)(using log: Log): Unit =
       ${Macros.assert[Type]('runner, 'this, 'pred, 'log)}
 
-    def check(pred: Type => Boolean, debug: Option[Type] => Debug = v => Debug(v.map { v => Txt(v.toString) }))
+    def check(pred: Type => Boolean, debug: Option[Type] => Debug = v => Debug(v.map { v => Text(v.toString) }))
              (using Log): Type =
       //val l = summon[Log]
       def handler(index: Int): PartialFunction[Throwable, Datapoint] =
@@ -166,10 +166,10 @@ class Runner(subset: Set[TestId] = Set()) extends Dynamic:
           val info = Option(e.getStackTrace).to(List)
             .flatMap(_.nn.to(List).map(_.nn))
             .takeWhile(_.getClassName != "probably.Suite")
-            .map { frame => Txt(frame.nn.toString.nn) }
-            .join(Option(Txt(e.getMessage.nn)).fold(str"null")(_+str"\n  at "), str"\n  at ", str"")
+            .map { frame => Text(frame.nn.toString.nn) }
+            .join(Option(Text(e.getMessage.nn)).fold(t"null")(_+t"\n  at "), t"\n  at ", t"")
           
-          record(this, time, Datapoint.Throws(e, debug(None).add(str"exception", info)))
+          record(this, time, Datapoint.Throws(e, debug(None).add(t"exception", info)))
           throw e
 
   def report(): Report = Report(results.values.to(List))
@@ -183,25 +183,25 @@ class Runner(subset: Set[TestId] = Set()) extends Dynamic:
     results = results.updated(summary.name, summary)
   }
 
-  private def emptyResults(): Map[Txt, Summary] = ListMap().withDefault { name =>
+  private def emptyResults(): Map[Text, Summary] = ListMap().withDefault { name =>
     Summary(TestId(shortDigest(name)), name, 0, Int.MaxValue, 0L, Int.MinValue, Outcome.Passed, 0)
   }
 
   @volatile
-  protected var results: Map[Txt, Summary] = emptyResults()
+  protected var results: Map[Text, Summary] = emptyResults()
 end Runner
 
-case class Debug(found: Option[Txt] = None, filename: Maybe[Txt] = Unset, line: Maybe[Int] = Unset,
-                     expected: Maybe[Txt] = Unset, info: Map[Txt, Txt] = Map()):
-  def add(key: Txt, value: Txt): Debug = copy(info = info.updated(key, value))
+case class Debug(found: Option[Text] = None, filename: Maybe[Text] = Unset, line: Maybe[Int] = Unset,
+                     expected: Maybe[Text] = Unset, info: Map[Text, Text] = Map()):
+  def add(key: Text, value: Text): Debug = copy(info = info.updated(key, value))
   
-  def allInfo: ListMap[Txt, Txt] =
+  def allInfo: ListMap[Text, Text] =
     val basicInfo =
-      List(str"found" -> found.getOrElse(Unset), str"expected" -> expected)
+      List(t"found" -> found.getOrElse(Unset), t"expected" -> expected)
         .filter(_._2 != Unset)
         .to(ListMap)
         .view
-        .mapValues { v => Txt(v.toString) }
+        .mapValues { v => Text(v.toString) }
         .to(ListMap)
     
     basicInfo ++ info
@@ -225,17 +225,17 @@ object Macros:
 
       Expr.summon[Comparison[S]].fold {
         '{ (x: Option[S]) =>
-          Debug(found = x.map(_.debug), filename = Txt($filename), line = $line, expected = $expr.debug)
+          Debug(found = x.map(_.debug), filename = Text($filename), line = $line, expected = $expr.debug)
         }
       } { comparison =>
         '{ (x: Option[S]) =>
           Debug(
             found = x.map(_.debug),
-            filename = Txt($filename),
+            filename = Text($filename),
             line = $line,
             expected = $expr.debug,
             info = if x.isEmpty then Map()
-                else Map(str"structure" -> Txt($comparison.compare(x.get, $expr).toString))
+                else Map(t"structure" -> Text($comparison.compare(x.get, $expr).toString))
           )
         }
       }
@@ -319,7 +319,7 @@ object Macros:
       case '{ (x: Boolean) => ($expr: Boolean) == x } => debugExpr(expr)
       
       case expr =>
-        '{ (opt: Option[?]) => Debug(found = opt.map(_.debug), filename = Txt($filename),
+        '{ (opt: Option[?]) => Debug(found = opt.map(_.debug), filename = Text($filename),
             line = $line) }
     
     '{
@@ -329,10 +329,10 @@ object Macros:
 
 enum Differences:
   case Same
-  case Structural(differences: Map[Txt, Differences])
-  case Diff(left: Txt, right: Txt)
+  case Structural(differences: Map[Text, Differences])
+  case Diff(left: Text, right: Text)
 
-  def flatten: Seq[(List[Txt], Txt, Txt)] = this match
+  def flatten: Seq[(List[Text], Text, Text)] = this match
     case Same              => Nil
     case Structural(diffs) => diffs.to(List).flatMap { case (label, nested) =>
                                 nested.flatten.map { case (path, left, right) =>
@@ -342,20 +342,20 @@ enum Differences:
     case Diff(left, right) => List((Nil, left, right))
 
   override def toString(): String =
-    val table = Tabulation[(List[Txt], Txt, Txt)](
-      Column(str"Key", _(0).join(str".")),
-      Column(str"Found", _(1)),
-      Column(str"Expected", _(2)),
+    val table = Tabulation[(List[Text], Text, Text)](
+      Column(t"Key", _(0).join(t".")),
+      Column(t"Found", _(1)),
+      Column(t"Expected", _(2)),
     )
 
-    table.tabulate(100, flatten).join(str"\n").s
+    table.tabulate(100, flatten).join(t"\n").s
 
 trait Comparison[-T]:
   def compare(left: T, right: T): Differences
 
 object Comparison extends Derivation[Comparison]:
   given Comparison[String] =
-    (a, b) => if a == b then Differences.Same else Differences.Diff(Txt(a), Txt(b))
+    (a, b) => if a == b then Differences.Same else Differences.Diff(Text(a), Text(b))
   
   given [T: Show]: Comparison[T] =
     (a, b) => if a == b then Differences.Same else Differences.Diff(a.show, b.show)
@@ -365,7 +365,7 @@ object Comparison extends Derivation[Comparison]:
     else Differences.Structural {
       caseClass.params
         .filter { p => p.deref(left) != p.deref(right) }
-        .map { p => Txt(p.label) -> p.typeclass.compare(p.deref(left), p.deref(right)) }
+        .map { p => Text(p.label) -> p.typeclass.compare(p.deref(left), p.deref(right)) }
         .to(Map)
     }
   
@@ -374,10 +374,10 @@ object Comparison extends Derivation[Comparison]:
     sealedTrait.choose(right) { subtype =>
       if leftType == subtype
       then subtype.typeclass.compare(subtype.cast(left), subtype.cast(right))
-      else Differences.Diff(str"type: ${leftType.typeInfo.short}", str"type: ${subtype.typeInfo.short}")
+      else Differences.Diff(t"type: ${leftType.typeInfo.short}", t"type: ${subtype.typeInfo.short}")
     }
 
-case class Summary(id: TestId, name: Txt, count: Int, tmin: Long, ttot: Long, tmax: Long,
+case class Summary(id: TestId, name: Text, count: Int, tmin: Long, ttot: Long, tmax: Long,
                        outcome: Outcome, indent: Int):
   def avg: Double = ttot.toDouble/count/1000.0
   def min: Double = tmin.toDouble/1000.0
@@ -390,7 +390,7 @@ case class Summary(id: TestId, name: Txt, count: Int, tmin: Long, ttot: Long, tm
       case other                  => Outcome.FailsAt(other, count + 1)
     case Outcome.Mixed          => Outcome.FailsAt(datapoint, 0)
 
-  def append(test: Txt, duration: Long, datapoint: Datapoint): Summary =
+  def append(test: Text, duration: Long, datapoint: Datapoint): Summary =
     Summary(id, name, count + 1, tmin min duration, ttot + duration, tmax max duration,
         aggregate(datapoint), 0)
 
@@ -404,20 +404,20 @@ object TestSuite:
 
 trait TestSuite:
   def run(using Runner): Unit
-  def name: Txt
+  def name: Text
 
 object global:
   object test extends Runner()
 
-def test[T](name: Txt)(fn: Runner#Test ?=> T)(using runner: Runner, log: Log)
+def test[T](name: Text)(fn: Runner#Test ?=> T)(using runner: Runner, log: Log)
     : runner.Test { type Type = T } =
   runner(name)(fn)
 
-def suite(name: Txt)(fn: Runner ?=> Unit)(using runner: Runner, log: Log): Unit =
+def suite(name: Text)(fn: Runner ?=> Unit)(using runner: Runner, log: Log): Unit =
   runner.suite(name)(fn)
 
 def suite(suite: TestSuite)(using runner: Runner, log: Log): Unit = runner.suite(suite)
-def time[T](name: Txt)(fn: => T)(using Runner, Log): T = test(name)(fn).check { _ => true }
+def time[T](name: Text)(fn: => T)(using Runner, Log): T = test(name)(fn).check { _ => true }
 
 case class UnexpectedSuccessError(value: Any)
 extends Exception("probably: the expression was expected to throw an exception, but did not")

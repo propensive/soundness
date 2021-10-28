@@ -42,7 +42,7 @@ object Approximable extends Derivation[Approximable]:
   given Approximable[Short] = _ == _
   given Approximable[Int] = _ == _
   given Approximable[Long] = _ == _
-  given Approximable[Txt] = _ == _
+  given Approximable[Text] = _ == _
   given [T: Tolerance]: Approximable[T] = summon[Tolerance[T]].close(_, _)
 
   def join[T](ctx: CaseClass[Approximable, T]): Approximable[T] = (v1, v2) =>

@@ -41,8 +41,8 @@ object Suite:
     ansi"$status ${desc.padTo(32, ' ')}"
   }.to(List)
 
-  val footer: AnsiString = legend.grouped(2).map(_.join(ansi"  ")).to(Seq).join(AnsiString(str"\n"),
-      AnsiString(str"\n"), AnsiString(str"\n"))
+  val footer: AnsiString = legend.grouped(2).map(_.join(ansi"  ")).to(Seq).join(AnsiString(t"\n"),
+      AnsiString(t"\n"), AnsiString(t"\n"))
   
   def show(report: Report): AnsiString =
     val simple = report.results.forall(_.count == 1)
@@ -56,7 +56,7 @@ object Suite:
       case Outcome.Mixed                                          => mixed
 
     val status = Column[Summary, String, Outcome]("", _.outcome)
-    val hash = Column[Summary, String, Txt]("Hash", v => Runner.shortDigest(v.name))
+    val hash = Column[Summary, String, Text]("Hash", v => Runner.shortDigest(v.name))
     val name = Column[Summary, String, String]("Test", s => s"${"  "*s.indent}${s.name}")
     val count = Column[Summary, String, Int]("Count", _.count)
     val min = Column[Summary, String, Double]("Min", _.min)
@@ -67,17 +67,17 @@ object Suite:
       if simple then Tabulation[Summary](status, hash, name, avg)
       else Tabulation[Summary](status, hash, name, count, min, avg, max)
 
-    val resultsTable: AnsiString = table.tabulate(100, report.results).join(str"\n").ansi
+    val resultsTable: AnsiString = table.tabulate(100, report.results).join(t"\n").ansi
 
     val failures: AnsiString = report.results.filter { result =>
       result.outcome != Outcome.Passed && result.outcome != Outcome.Mixed
     }.flatMap { result =>
       List(
         ansi"${result.outcome} $Bold($Underline(${result.name})): ${colors.SkyBlue}(${result.outcome.filename}):${colors.Goldenrod}(${result.outcome.line})",
-        ansi"${(result.outcome.debug.cut(str"\n"): List[Txt]).join(str"      ", str"\n      ", str"")}",
+        ansi"${(result.outcome.debug.cut(t"\n"): List[Text]).join(t"      ", t"\n      ", t"")}",
         ansi""
       )
-    }.join(AnsiString(str"\n"))
+    }.join(AnsiString(t"\n"))
 
     val summary: AnsiString = Map(
       "Passed" -> report.passed,
@@ -85,12 +85,12 @@ object Suite:
       "Total" -> report.total
     ).map { (key, value) => ansi"$Bold($key): ${value.show}" }.join(ansi"   ")
 
-    List(resultsTable, failures, summary, Suite.footer).join(AnsiString(str"\n"))
+    List(resultsTable, failures, summary, Suite.footer).join(AnsiString(t"\n"))
 
-trait Suite(val name: Txt) extends TestSuite:
+trait Suite(val name: Text) extends TestSuite:
   def run(using Runner): Unit
   
-  final def main(args: IArray[Txt]): Unit =
+  final def main(args: IArray[Text]): Unit =
     val runner = Runner(args.map(TestId(_)).to(Set))
     run(using runner)
     val report = runner.report()
