@@ -16,11 +16,12 @@
 
 package wisteria.examples
 
-import wisteria._
+import wisteria.*
+import gossamer.*
 
 // Prints a type, only requires read access to fields
 trait Print[T] {
-  def print(t: T): String
+  def print(t: T): Txt
 }
 
 trait GenericPrint extends Derivation[Print]:
@@ -30,12 +31,12 @@ trait GenericPrint extends Derivation[Print]:
       param.typeclass.print(param.deref(value))
     else ctx.params.map { param =>
       param.typeclass.print(param.deref(value))
-    }.mkString(s"${ctx.typeInfo.short}(", ",", ")")
+    }.join(str"${ctx.typeInfo.short}(", str",", str")")
 
   override def split[T](ctx: SealedTrait[Print, T]): Print[T] =
     ctx.choose(_) { sub => sub.typeclass.print(sub.value) }
 
 object Print extends GenericPrint:
-  given Print[String] = identity(_)
-  given Print[Int] = _.toString
-  given seq[T](using printT: Print[T]): Print[Seq[T]] = _.map(printT.print).mkString("[", ",", "]")
+  given Print[Txt] = identity(_)
+  given Print[Int] = _.show
+  given seq[T](using printT: Print[T]): Print[Seq[T]] = _.map(printT.print).join(str"[", str",", str"]")

@@ -17,67 +17,70 @@
 package wisteria.examples
 
 import wisteria.*
+import gossamer.*
 
 /** shows one type as another, often as a string
   *
-  *  Note that this is a more general form of `Show` than is usual, as it permits the return type to
+  *  Note that this is a more general form of `AsString` than is usual, as it permits the return type to
   *  be something other than a string. */
-trait Show[Out, T] { def show(value: T): Out }
+trait AsString[Out, T] { def asString(value: T): Out }
 
-trait GenericShow[Out] extends Derivation[[X] =>> Show[Out, X]] {
+trait GenericAsString[Out] extends Derivation[[X] =>> AsString[Out, X]] {
 
-  def joinElems(typeName: String, strings: Seq[String]): Out
-  def prefix(s: String, out: Out): Out
+  def joinElems(typeName: Txt, strings: Seq[Txt]): Out
+  def prefix(s: Txt, out: Out): Out
 
-  /** creates a new [[Show]] instance by labelling and joining (with `mkString`) the result of
+  /** creates a new [[AsString]] instance by labelling and joining (with `mkString`) the result of
     *  showing each parameter, and prefixing it with the class name */
-  def join[T](ctx: CaseClass[Typeclass, T]): Show[Out, T] = { value =>
+  def join[T](ctx: CaseClass[Typeclass, T]): AsString[Out, T] = { value =>
     if ctx.isValueClass then
       val param = ctx.params.head
-      param.typeclass.show(param.deref(value))
+      param.typeclass.asString(param.deref(value))
     else
-      val paramStrings = ctx.params.map { param =>
-        val attribStr = if param.annotations.isEmpty then "" else {
-          param.annotations.mkString("{", ", ", "}")
+      val paramStrings: Seq[Txt] = ctx.params.map { param =>
+        val attribStr = if param.annotations.isEmpty then str"" else {
+          param.annotations.map(_.toString.show).join(str"{", str", ", str"}")
         }
-        val tpeAttribStr = if param.typeAnnotations.isEmpty then "" else {
-          param.typeAnnotations.mkString("{", ", ", "}")
+        val tpeAttribStr = if param.typeAnnotations.isEmpty then str"" else {
+          param.typeAnnotations.map(_.toString.show).join(str"{", str", ", str"}")
         }
-        s"${param.label}$attribStr$tpeAttribStr=${param.typeclass.show(param.deref(value))}"
+        str"${param.label}$attribStr$tpeAttribStr=${param.typeclass.asString(param.deref(value)).toString.show}"
       }
 
       val anns = ctx.annotations.filterNot(_.isInstanceOf[scala.SerialVersionUID])
-      val annotationStr = if anns.isEmpty then "" else anns.mkString("{", ",", "}")
+      val annotationStr = if anns.isEmpty then str"" else anns.map(_.toString.show).join(str"{", str",", str"}")
 
       val tpeAnns = ctx.typeAnnotations.filterNot(_.isInstanceOf[scala.SerialVersionUID])
-      val typeAnnotationStr = if tpeAnns.isEmpty then "" else tpeAnns.mkString("{", ",", "}")
+      val typeAnnotationStr = if tpeAnns.isEmpty then str"" else tpeAnns.map(_.toString.show).join(str"{", str",", str"}")
 
 
-      def typeArgsString(typeInfo: TypeInfo): String =
-        if typeInfo.typeParams.isEmpty then ""
-        else typeInfo.typeParams.map(arg => s"${ arg.short}${ typeArgsString(arg)}").mkString("[", ",", "]")
+      def typeArgsString(typeInfo: TypeInfo): Txt =
+        if typeInfo.typeParams.isEmpty then str""
+        else typeInfo.typeParams.map(arg => str"${arg.short}${typeArgsString(arg)}").join(str"[", str",", str"]")
 
-      joinElems(ctx.typeInfo.short + typeArgsString(ctx.typeInfo) + annotationStr + typeAnnotationStr, paramStrings)
+      joinElems(str"${ctx.typeInfo.short}${typeArgsString(ctx.typeInfo)}${annotationStr}${typeAnnotationStr}", paramStrings)
   }
 
   /** choose which typeclass to use based on the subtype of the sealed trait
     * and prefix with the annotations as discovered on the subtype. */
-  override def split[T](ctx: SealedTrait[Typeclass, T]): Show[Out, T] = (value: T) =>
+  override def split[T](ctx: SealedTrait[Typeclass, T]): AsString[Out, T] = (value: T) =>
     ctx.choose(value) { sub =>
       val anns = sub.annotations.filterNot(_.isInstanceOf[scala.SerialVersionUID])
-      val annotationStr = if anns.isEmpty then "" else anns.mkString("{", ",", "}")
+      val annotationStr = if anns.isEmpty then str"" else anns.map(_.toString.show).join(str"{", str",", str"}")
 
-      prefix(annotationStr, sub.typeclass.show(sub.value))
+      prefix(annotationStr, sub.typeclass.asString(sub.value))
     }
 }
 
-/** companion object to [[Show]] */
-object Show extends GenericShow[String]:
+/** companion object to [[AsString]] */
+object AsString extends GenericAsString[Txt]:
 
-  def prefix(s: String, out: String): String = s + out
-  def joinElems(typeName: String, params: Seq[String]): String = params.mkString(s"$typeName(", ",", ")")
+  def prefix(s: Txt, out: Txt): Txt = s + out
+  def joinElems(typeName: Txt, params: Seq[Txt]): Txt = params.join(str"$typeName(", str",", str")")
 
-  given Show[String, String] = identity(_)
-  given Show[String, Int] = _.toString
-  given Show[String, Long] = _.toString + "L"
-  given[A](using A: Show[String, A]): Show[String, Seq[A]] = _.iterator.map(A.show).mkString("[", ",", "]")
+  given AsString[Txt, Txt] = identity(_)
+  given AsString[Txt, Int] = _.show
+  given AsString[Txt, Long] = long => str"${long.show}L"
+  
+  given[A](using AsString[Txt, A]): AsString[Txt, Seq[A]] =
+    _.iterator.map(summon[AsString[Txt, A]].asString(_)).to(List).join(str"[", str",", str"]")

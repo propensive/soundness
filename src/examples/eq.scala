@@ -17,6 +17,7 @@
 package wisteria.examples
 
 import wisteria.*
+import gossamer.*
 
 trait Eq[T]:
   def equal(value: T, value2: T): Boolean
@@ -30,6 +31,7 @@ object Eq extends Derivation[Eq]:
   }
 
   given Eq[String] = _ == _
+  given Eq[Txt] = _ == _
   given Eq[Int] = _ == _
 
   given [T: Eq]: Eq[Option[T]] =

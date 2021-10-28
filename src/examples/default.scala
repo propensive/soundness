@@ -16,7 +16,8 @@
 
 package wisteria.examples
 
-import wisteria._
+import wisteria.*
+import gossamer.*
 
 /** typeclass for providing a default value for a particular type */
 trait HasDefault[T]:
@@ -43,8 +44,8 @@ object HasDefault extends Derivation[HasDefault]:
       case None => Left("no subtypes")
 
   /** default value for a string; the empty string */
-  given string: HasDefault[String] with
-    def defaultValue = Right("")
+  given txt: HasDefault[Txt] with
+    def defaultValue = Right(str"")
 
   /** default value for ints; 0 */
   given int: HasDefault[Int] with { def defaultValue = Right(0) }
