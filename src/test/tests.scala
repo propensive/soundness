@@ -17,36 +17,41 @@
 package iridescence
 
 import probably.*
+import eucalyptus.*
+import rudiments.*
+import gossamer.*
 
 import unsafeExceptions.canThrowAny
 
-object Tests extends Suite("Iridescence tests"):
+given Log(Everything |-> Stdout)
+
+object Tests extends Suite(str"Iridescence tests"):
   
   given Profile = profiles.Daylight
   given Tolerance[Double] = (a, b) => math.abs(a - b) < 0.05
   
   def run(using Runner): Unit =
     for color <- colors.all.reverse do
-      test("sRGB to L*a*b*") {
+      test(str"sRGB to L*a*b*") {
         color.cielab.srgb
       }.assert(_ ~~ color)
 
-      test("HSV to sRGB and back") {
+      test(str"HSV to sRGB and back") {
         color.hsv.srgb.hsv
       }.assert(_ ~~ color.hsv)
       
-      test("sRGB to CMY and back") {
+      test(str"sRGB to CMY and back") {
         color.cmy.srgb
       }.assert(_ ~~ color)
       
-      test("sRGB to CMYK and back") {
+      test(str"sRGB to CMYK and back") {
         color.cmyk.srgb
       }.assert(_ ~~ color)
       
-      test("sRGB to XYZ and back") {
+      test(str"sRGB to XYZ and back") {
         color.xyz.srgb
       }.assert(_ ~~ color)
       
-      test("sRGB to HSL and back") {
+      test(str"sRGB to HSL and back") {
         color.hsl.srgb
       }.assert(_ ~~ color)

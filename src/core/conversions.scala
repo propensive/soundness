@@ -51,26 +51,26 @@ case class Xyz(x: Double, y: Double, z: Double) extends Color:
     Cielab(l, a, b)
 
 case class Srgb(red: Double, green: Double, blue: Double) extends Color:
-  def css: String = s"rgb(${(red*255).toInt}, ${(green*255).toInt}, ${(blue*255).toInt})"
+  def css: Txt = str"rgb(${(red*255).toInt}, ${(green*255).toInt}, ${(blue*255).toInt})"
   
-  def ansiFg24: String =
-    s"${27.toChar}[38;2;${(red*255).toInt};${(green*255).toInt};${(blue*255).toInt}m"
+  def ansiFg24: Txt =
+    str"${27.toChar}[38;2;${(red*255).toInt};${(green*255).toInt};${(blue*255).toInt}m"
   
-  def ansiBg24: String =
-    s"${27.toChar}[48;2;${(red*255).toInt};${(green*255).toInt};${(blue*255).toInt}m"
+  def ansiBg24: Txt =
+    str"${27.toChar}[48;2;${(red*255).toInt};${(green*255).toInt};${(blue*255).toInt}m"
   
-  def hex12: String = Seq(red, green, blue).map { c =>
-    Integer.toHexString((c*16).toInt).nn
-  }.join("#", "", "")
+  def hex12: Txt = Seq(red, green, blue).map { c =>
+    Txt(Integer.toHexString((c*16).toInt).nn)
+  }.join(str"#", str"", str"")
   
   def standardSrgb: Srgb = srgb
   def srgb: Srgb = this
   
-  def hex24: String =
+  def hex24: Txt =
     Seq(red, green, blue).map { c =>
       val hex: String = Integer.toHexString((c*255).toInt).nn
-      if hex.length < 2 then s"0$hex" else hex
-    }.join("#", "", "")
+      if hex.length < 2 then str"0$hex" else Txt(hex)
+    }.join(str"#", str"", str"")
 
   def xyz(using profile: Profile): Xyz =
     def limit(v: Double): Double =
@@ -209,8 +209,8 @@ case class Hsl(hue: Double, saturation: Double, lightness: Double) extends Color
 
       Srgb(convert(hue + (1.0/3.0)), convert(hue), convert(hue - (1.0/3.0)))
   
-  def css: String =
-    s"hsl(${(hue*360).toInt}, ${(saturation*100).toInt}%, ${(lightness*100).toInt}%)"
+  def css: Txt =
+    str"hsl(${(hue*360).toInt}, ${(saturation*100).toInt}%, ${(lightness*100).toInt}%)"
   
   def saturate: Hsv = Hsv(hue, 1, lightness)
   def desaturate: Hsv = Hsv(hue, 0, lightness)
