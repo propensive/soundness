@@ -34,7 +34,7 @@ import java.util as ju
 
 import language.dynamics
 
-private[scintillate] given Realm("scintillate")
+private[scintillate] given Realm(str"scintillate")
 
 enum Body:
   case Empty
@@ -44,13 +44,13 @@ enum Body:
 object ToQuery extends ProductDerivation[ToQuery]:
   def join[T](ctx: CaseClass[ToQuery, T]): ToQuery[T] = value =>
     ctx.params.map {
-      param => param.typeclass.params(param.deref(value)).prefix(param.label)
+      param => param.typeclass.params(param.deref(value)).prefix(Txt(param.label))
     }.reduce(_.append(_))
 
-  given ToQuery[String] = str => Params(List(("", str)))
-  given ToQuery[Int] = int => Params(List(("", int.toString)))
+  given ToQuery[Txt] = str => Params(List((str"", str)))
+  given ToQuery[Int] = int => Params(List((str"", int.show)))
   given ToQuery[Params] = identity(_)
-  given [M <: Map[String, String]]: ToQuery[M] = map => Params(map.to(List))
+  given [M <: Map[Txt, Txt]]: ToQuery[M] = map => Params(map.to(List))
 
 trait ToQuery[T]:
   def params(value: T): Params
@@ -59,16 +59,19 @@ object Postable:
   given [T: ToQuery]: Postable[T] = Postable(media"application/x-www-form-urlencoded",
       value => LazyList(summon[ToQuery[T]].params(value).queryString.bytes))
 
-  given Postable[String] = Postable(media"text/plain", value => LazyList(IArray.from(value.bytes)))
+  given Postable[Txt] = Postable(media"text/plain", value => LazyList(IArray.from(value.bytes)))
   given Postable[Unit] = Postable(media"text/plain", unit => LazyList())
   given Postable[Bytes] = Postable(media"application/octet-stream", LazyList(_))
   given Postable[LazyList[Bytes]] = Postable(media"application/octet-stream", identity(_))
 
 class Postable[T](val contentType: MediaType, val content: T => LazyList[Bytes]):
-  def preview(value: T): String = content(value).headOption.fold("") { bytes =>
+  def preview(value: T): Txt = content(value).headOption.fold(str"") { bytes =>
     val sample = bytes.take(128)
-    val str = if sample.forall { b => b >= 32 && b <= 127 } then sample.uString else sample.hex
-    if bytes.length > 128 then str+"..." else str
+    
+    val str: Txt =
+      if sample.forall { b => b >= 32 && b <= 127 } then sample.uString else sample.hex
+    
+    if bytes.length > 128 then str"$str..." else str
   }
 
 object Method:
@@ -76,44 +79,47 @@ object Method:
     def name: String = "formmethod"
     def serialize(method: Method): String = method.toString
 
-  given AnsiShow[Method] = method => ansi"${colors.Crimson}[${method.toString.upper}]"
+  given AnsiShow[Method] = method => ansi"${colors.Crimson}[${method.toString.show.upper}]"
 
 enum Method:
   case Get, Head, Post, Put, Delete, Connect, Options, Trace, Patch
 
 object HttpReadable:
-  given HttpReadable[String] with
-    def read(body: Body): String throws TooMuchData =
+  given HttpReadable[Txt] with
+    type E = Nothing
+    def read(body: Body): Txt throws TooMuchData | Nothing =
       body match
-        case Body.Empty         => ""
+        case Body.Empty         => str""
         case Body.Data(body)    => body.uString
         case Body.Chunked(body) => body.slurp(maxSize = 10*1024*1024).uString
   
   given HttpReadable[Bytes] with
-    def read(body: Body): Bytes throws TooMuchData = body match
+    type E <: Exception
+    def read(body: Body): Bytes throws TooMuchData | E = body match
       case Body.Empty         => IArray()
       case Body.Data(body)    => body
       case Body.Chunked(body) => body.slurp(maxSize = 10*1024*1024)
 
-  given [T, E2 <: Exception](using reader: clairvoyant.HttpReader[T, E2]): HttpReadable[T throws E2] with
-    def read(body: Body): (T throws E2) throws TooMuchData = body match
+  given [T, E2 <: Exception](using reader: clairvoyant.HttpReader[T, E2]): HttpReadable[T] with
+    type E = E2
+    def read(body: Body): T throws TooMuchData | E2 = body match
       case Body.Empty         => reader.read("")
       case Body.Data(data)    => reader.read(data.uString)
       case Body.Chunked(data) => reader.read(data.slurp(maxSize = 10*1024*1024).uString)
 
 trait HttpReadable[+T]:
-  def read(body: Body): T throws TooMuchData
+  type E <: Exception
+  def read(body: Body): T throws TooMuchData | E
 
 case class HttpResponse(status: HttpStatus, headers: Map[ResponseHeader, List[String]], body: Body):
-  // This is inline to work around a compiler bug
-  inline def as[T](using readable: HttpReadable[T]): T throws HttpError | TooMuchData =
+  def as[T](using readable: HttpReadable[T]): T throws HttpError | TooMuchData | readable.E =
     status match
       case status: FailureCase => throw HttpError(status, body)
       case status              => readable.read(body)
 
 object Locatable:
   given Locatable[Uri] = identity(_)
-  given Locatable[String] = Uri(_, Params(Nil))
+  given Locatable[Txt] = Uri(_, Params(Nil))
 
 trait Locatable[T]:
   def location(value: T): Uri
@@ -181,13 +187,13 @@ object Http:
       case conn: HttpURLConnection =>
         conn.setRequestMethod(method.toString.upper)
         
-        conn.setRequestProperty(RequestHeader.ContentType.header, summon[Postable[T]]
+        conn.setRequestProperty(RequestHeader.ContentType.header.s, summon[Postable[T]]
           .contentType.toString)
         
         conn.setRequestProperty("User-Agent", "Scintillate 1.0.0")
         
         headers.foreach { case RequestHeader.Value(key, value) =>
-          conn.setRequestProperty(key.header, value)
+          conn.setRequestProperty(key.header.s, value.s)
         }
         
         if method == Method.Post || method == Method.Put then
@@ -226,8 +232,7 @@ object Http:
             
 case class HttpError(status: HttpStatus & FailureCase, body: Body)
     extends Exception(s"HTTP Error ${status.code}: ${status.description}"):
-  // This is `inline` to work around a compiler bug
-  inline def as[T](using readable: HttpReadable[T]): T throws TooMuchData =
+  def as[T](using readable: HttpReadable[T]): T throws TooMuchData | readable.E =
     readable.read(body)
 
 trait FailureCase
@@ -301,22 +306,21 @@ enum HttpStatus(val code: Int, val description: String):
   case NetworkAuthenticationRequired
   extends HttpStatus(511, "Network Authentication Required"), FailureCase
 
-case class Params(values: List[(String, String)]):
+case class Params(values: List[(Txt, Txt)]):
   def append(more: Params): Params = Params(values ++ more.values)
   def isEmpty: Boolean = values.isEmpty
   
-  def prefix(str: String): Params = Params(values.map {
-    case ("", value)  => (str, value)
-    case (key, value) => (s"$str.$key", value)
+  def prefix(str: Txt): Params = Params(values.map { (k, v) =>
+    (if k.isEmpty then str else str"$str.$k", v)
   })
 
-  def queryString: String = values.map {
-    case ("", value)  => value.urlEncode
-    case (key, value) => s"${key.urlEncode}=${value.urlEncode}"
-  }.join("&")
+  def queryString: Txt = values.map { (k, v) =>
+    if k.isEmpty then Txt(v.urlEncode) else str"${k.urlEncode}=${v.urlEncode}"
+  }.join(str"&")
 
 object Uri:
-  given AnsiShow[Uri] = uri => ansi"$Underline(${colors.DeepSkyBlue}(${uri.toString}))"
+  given Show[Uri] = _.text
+  given AnsiShow[Uri] = uri => ansi"$Underline(${colors.DeepSkyBlue}(${uri.text}))"
   
   given action: clairvoyant.HtmlAttribute["action", Uri] with
     def name: String = "action"
@@ -352,23 +356,28 @@ object Uri:
 
 object DomainName:
   given Show[DomainName] = dn => Txt(dn.toString)
+  def apply(str: Txt): DomainName =
+    val parts: List[Txt] = str.cut(str".").map(_.punycode)
+    DomainName(IArray.from(parts))
+
+case class DomainName(parts: IArray[Txt]):
+  override def toString: String = parts.join(str".").s
+
+object Url:
+  given Show[Url] = _.text
+
+case class Url(ssl: Boolean, domain: DomainName, port: Int, path: Txt) extends Dynamic:
+  def text: Txt =
+    str"http${if ssl then "s" else ""}://$domain${if port == 80 then str"" else str":$port"}/$path"
   
-  def apply(str: String): DomainName =
-    DomainName(str.cut(".").map(_.punycode))
+  override def toString: String = text.s
 
-case class DomainName(parts: IArray[String]):
-  override def toString: String = parts.join(".")
-
-case class Url(ssl: Boolean, domain: DomainName, port: Int, path: String) extends Dynamic:
-  override def toString: String =
-    str"http${if ssl then "s" else ""}://$domain${if port == 80 then "" else str":$port"}/$path"
-
-case class Uri(location: String, params: Params) extends Dynamic:
+case class Uri(location: Txt, params: Params) extends Dynamic:
   private def makeQuery[T: ToQuery](value: T): Uri =
     Uri(location, params.append(summon[ToQuery[T]].params(value)))
   
   def applyDynamicNamed(method: "query")(params: (String, String)*): Uri =
-    makeQuery(Params(params.to(List)))
+    makeQuery(Params(params.map { (k, v) => Txt(k) -> Txt(v) }.to(List)))
   
   def applyDynamic[T: ToQuery](method: "query")(value: T) = makeQuery(value)
 
@@ -388,9 +397,12 @@ case class Uri(location: String, params: Params) extends Dynamic:
 
   def bare: Uri = Uri(location, Params(Nil))
 
-  override def toString: String =
-    if params.isEmpty then location else location+"?"+params.queryString
+  def text: Txt =
+    if params.isEmpty then location else str"$location?${params.queryString}"
+
+  override def toString: String = text.s
 
 extension (ctx: StringContext)
-  def uri(subs: String*): Uri =
-    Uri(ctx.parts.zip(subs).map(_+_).join("", "", ctx.parts.last), Params(List()))
+  def uri(subs: Txt*): Uri =
+    Uri(ctx.parts.zip(subs).map { (k, v) => str"$k$v" }.join(str"", str"", Txt(ctx.parts.last)),
+        Params(List()))

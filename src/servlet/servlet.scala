@@ -29,7 +29,7 @@ trait Servlet() extends HttpServlet:
   def handle(using Request): Response[?]
 
   protected case class ServletResponseWriter(response: HttpServletResponse) extends Responder:
-    def addHeader(key: String, value: String) = response.addHeader(key, value)
+    def addHeader(key: Txt, value: Txt) = response.addHeader(key.s, value.s)
     
     def sendBody(status: Int, body: Body) =
       val length = body match
@@ -38,7 +38,7 @@ trait Servlet() extends HttpServlet:
         case _               => 0
       
       response.setStatus(status)
-      addHeader(ResponseHeader.ContentLength.header, length.toString)
+      addHeader(ResponseHeader.ContentLength.header, length.show)
 
       body match
         case Body.Empty =>
@@ -65,29 +65,29 @@ trait Servlet() extends HttpServlet:
   private def makeRequest(request: HttpServletRequest): Request =
     val query = Option(request.getQueryString)
     
-    val params: Map[String, List[String]] = query.fold(Map()) { query =>
-      val paramStrings = query.nn.cut("&")
+    val params: Map[Txt, List[Txt]] = query.fold(Map()) { query =>
+      val paramStrings = query.nn.cut(str"&")
       
-      paramStrings.foldLeft(Map[String, List[String]]()) { (map, elem) =>
-        elem.cut("=", 2).to(Seq) match
-          case Seq(key, value) => map.updated(key, value :: map.getOrElse(key, Nil))
-          case Seq(key)        => map.updated(key, "" :: map.getOrElse(key, Nil))
-          case _               => map
+      paramStrings.foldLeft(Map[Txt, List[Txt]]()) { (map, elem) =>
+        elem.cut(str"=", 2).to(Seq) match
+          case Seq(key: Txt, value: Txt) => map.updated(key, value :: map.getOrElse(key, Nil))
+          case Seq(key: Txt)             => map.updated(key, str"" :: map.getOrElse(key, Nil))
+          case _                         => map
       }
     }
     
     val headers = request.getHeaderNames.nn.asScala.to(List).map {
-      k => k -> request.getHeaders(k).nn.asScala.to(List)
+      k => Txt(k) -> request.getHeaders(k).nn.asScala.to(List).map(Txt(_))
     }.to(Map)
 
     Request(
       method = Method.valueOf(request.getMethod.nn.lower.capitalize),
       body = streamBody(request),
-      query = query.getOrElse("").nn,
+      query = Txt(query.getOrElse("").nn),
       ssl = false,
-      request.getServerName.nn,
+      Txt(request.getServerName.nn),
       request.getServerPort,
-      request.getRequestURI.nn,
+      Txt(request.getRequestURI.nn),
       headers,
       params
     )
@@ -100,4 +100,4 @@ trait Servlet() extends HttpServlet:
     handle(request, response)
 
 extension (path: Base.Path)
-  def unapply(request: Request): Option[String] = Some(request.path)
+  def unapply(request: Request): Option[Txt] = Some(request.path)

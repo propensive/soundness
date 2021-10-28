@@ -20,7 +20,7 @@ import rudiments.*
 import gossamer.*
 
 object RequestHeader:
-  lazy val standard: Map[String, RequestHeader] = Set(AIm, Accept, AcceptCharset, AcceptDatetime,
+  lazy val standard: Map[Txt, RequestHeader] = Set(AIm, Accept, AcceptCharset, AcceptDatetime,
       AcceptEncoding, AcceptLanguage, AccessControlRequestMethod, AccessControlRequestHeaders,
       Authorization, CacheControl, Connection, ContentEncoding, ContentLength, ContentMd5,
       ContentType, Cookie, Date, Expect, Forwarded, From, Host, Http2Settings, IfMatch,
@@ -31,7 +31,7 @@ object RequestHeader:
   def unapply(str: String): Some[RequestHeader] =
     Some(standard.get(str.lower).getOrElse(Custom(str)))
   
-  case class Value(header: RequestHeader, value: String)
+  case class Value(header: RequestHeader, value: Txt)
 
   object nonStandard:
     val UpgradeInsecureRequests = RequestHeader.Custom("upgrade-insecure-requests")
@@ -51,7 +51,7 @@ object RequestHeader:
     val XCorrelationId = RequestHeader.Custom("x-correlation-id")
     val SaveData = RequestHeader.Custom("save-data")
 
-enum RequestHeader(val header: String):
+enum RequestHeader(val headerString: String):
   case AIm extends RequestHeader("a-im")
   case Accept extends RequestHeader("accept")
   case AcceptCharset extends RequestHeader("accept-charset")
@@ -95,10 +95,12 @@ enum RequestHeader(val header: String):
   case Warning extends RequestHeader("warning")
   case Custom(name: String) extends RequestHeader(name.lower)
   
-  def apply(content: String): RequestHeader.Value = RequestHeader.Value(this, content)
+  def apply(content: Txt): RequestHeader.Value = RequestHeader.Value(this, content)
+
+  def header: Txt = Txt(headerString)
 
 object ResponseHeader:
-  lazy val standard: Map[String, ResponseHeader] = List(AcceptCh, AccessControlAllowOrigin,
+  lazy val standard: Map[Txt, ResponseHeader] = List(AcceptCh, AccessControlAllowOrigin,
       AccessControlAllowCredentials, AccessControlExposeHeaders, AccessControlMaxAge,
       AccessControlAllowMethods, AccessControlAllowHeaders, AcceptPatch, AcceptRanges, Age, Allow,
       AltSvc, CacheControl, Connection, ContentDisposition, ContentEncoding, ContentLanguage,
@@ -113,7 +115,7 @@ object ResponseHeader:
   def unapply(str: String): Some[ResponseHeader] =
     Some(standard.get(str.lower).getOrElse(Custom(str)))
 
-enum ResponseHeader(val header: String):
+enum ResponseHeader(val headerString: String):
   case AcceptCh extends ResponseHeader("accept-ch")
   case AccessControlAllowOrigin extends ResponseHeader("access-control-allow-origin")
   case AccessControlAllowCredentials extends ResponseHeader("access-control-allow-credentials")
@@ -163,3 +165,5 @@ enum ResponseHeader(val header: String):
   case WwwAuthenticate extends ResponseHeader("www-authenticate")
   case XFrameOptions extends ResponseHeader("x-frame-options")
   case Custom(name: String) extends ResponseHeader(name.lower)
+
+  def header: Txt = Txt(headerString)
