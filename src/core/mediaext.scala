@@ -1,5 +1,5 @@
 /*
-    Gesticulate, version 0.1.0. Copyright 2020-21 Jon Pretty, Propensive OÜ.
+    Gesticulate, version 0.1.0. Copyright 2021-21 Jon Pretty, Propensive OÜ.
 
     The primary distribution site is: https://propensive.com/
 
