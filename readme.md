@@ -199,7 +199,7 @@ Cataract is classified as __fledgling__. Propensive defines the following five s
 - _dependable_: production-ready, subject to controlled ongoing maintenance and enhancement; tagged as version `1.0` or later
 - _adamantine_: proven, reliable and production-ready, with no further breaking changes ever anticipated
 
-Cataract is designed to be _small_. Its entire source code currently consists of 644 lines of code.
+Cataract is designed to be _small_. Its entire source code currently consists of 650 lines of code.
 
 ## Availability
 
