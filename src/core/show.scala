@@ -19,29 +19,29 @@ package gossamer
 import wisteria.*
 
 trait Show[-T]:
-  def show(value: T): Txt
+  def show(value: T): Text
 
 object Show extends Derivation[Show]:
-  given Show[String] = Txt(_)
-  given Show[Txt] = identity(_)
-  given Show[Int] = num => Txt(num.toString)
-  given Show[Short] = num => Txt(num.toString)
-  given Show[Long] = num => Txt(num.toString)
-  given Show[Byte] = num => Txt(num.toString)
-  given Show[Char] = ch => Txt(ch.toString)
-  given Show[Boolean] = if _ then Txt("true") else Txt("false")
+  given Show[String] = Text(_)
+  given Show[Text] = identity(_)
+  given Show[Int] = num => Text(num.toString)
+  given Show[Short] = num => Text(num.toString)
+  given Show[Long] = num => Text(num.toString)
+  given Show[Byte] = num => Text(num.toString)
+  given Show[Char] = ch => Text(ch.toString)
+  given Show[Boolean] = if _ then Text("true") else Text("false")
 
   given [T: Show]: Show[Option[T]] =
-    case None    => str"none"
+    case None    => t"none"
     case Some(v) => v.show
 
   def join[T](ctx: CaseClass[Show, T]): Show[T] = value =>
-    if ctx.isObject then Txt(ctx.typeInfo.short.text)
+    if ctx.isObject then Text(ctx.typeInfo.short.text)
     else ctx.params.map {
       param => param.typeclass.show(param.deref(value))
-    }.join(str"${ctx.typeInfo.short}(", str", ", str")")
+    }.join(t"${ctx.typeInfo.short}(", t", ", t")")
   
   def split[T](ctx: SealedTrait[Show, T]): Show[T] = value =>
     ctx.choose(value) { subtype => subtype.typeclass.show(subtype.cast(value)) }
 
-extension [T](value: T) def show(using show: Show[T]): Txt = show.show(value)
+extension [T](value: T) def show(using show: Show[T]): Text = show.show(value)

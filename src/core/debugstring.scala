@@ -22,18 +22,18 @@ trait FallbackDebugString:
   given fromShow[T: Show]: DebugString[T] = summon[Show[T]].show(_)
 
   given coll[Coll[X] <: Seq[X], T: DebugString]: DebugString[Coll[T]] =
-    xs => xs.map(summon[DebugString[T]].show(_)).join(str"Seq(", str", ", str")")
+    xs => xs.map(summon[DebugString[T]].show(_)).join(t"Seq(", t", ", t")")
 
 object DebugString extends Derivation[DebugString], FallbackDebugString:
   def join[T](ctx: CaseClass[DebugString, T]): DebugString[T] = t =>
     ctx.params.map {
-      param => Txt(param.label+" = "+param.typeclass.show(param.deref(t)))
-    }.join(str"${ctx.typeInfo.short}(", str", ", str")")
+      param => Text(param.label+" = "+param.typeclass.show(param.deref(t)))
+    }.join(t"${ctx.typeInfo.short}(", t", ", t")")
   
   def split[T](ctx: SealedTrait[DebugString, T]): DebugString[T] = t =>
     ctx.choose(t) { subtype => subtype.typeclass.show(subtype.cast(t)) }
 
-  given string: DebugString[Txt] = x => Txt("\""+x.flatMap {
+  given string: DebugString[Text] = x => Text("\""+x.flatMap {
     case '\n' => "\\n"
     case '\t' => "\\t"
     case '\r' => "\\r"
@@ -46,29 +46,29 @@ object DebugString extends Derivation[DebugString], FallbackDebugString:
   }+"\"")
 
   given char: DebugString[Char] =
-    ch => str"'${string.show(ch.show).drop(1).dropRight(1)}'"
+    ch => t"'${string.show(ch.show).drop(1).dropRight(1)}'"
 
   given int: DebugString[Int] = _.show
-  given long: DebugString[Long] = x => str"${x.show}L"
-  given short: DebugString[Short] = x => str"${x.show}.toShort"
-  given byte: DebugString[Byte] = x => str"${x.show}.toByte"
+  given long: DebugString[Long] = x => t"${x.show}L"
+  given short: DebugString[Short] = x => t"${x.show}.toShort"
+  given byte: DebugString[Byte] = x => t"${x.show}.toByte"
   given boolean: DebugString[Boolean] = _.show
   
   given double: DebugString[Double] = d =>
-    if d != d then str"Double.NaN"
-    else if d.isInfinite then str"Double.${if d < 0.0 then str"Negative" else str"Positive"}Infinity"
-    else Txt(d.toString)
+    if d != d then t"Double.NaN"
+    else if d.isInfinite then t"Double.${if d < 0.0 then t"Negative" else t"Positive"}Infinity"
+    else Text(d.toString)
   
   given float: DebugString[Float] = f =>
-    if f != f then str"Float.NaN"
-    else if f.isInfinite then str"Float.${if f < 0.0f then "Negative" else "Positive"}Infinity"
-    else Txt(f.toString+"F")
+    if f != f then t"Float.NaN"
+    else if f.isInfinite then t"Float.${if f < 0.0f then "Negative" else "Positive"}Infinity"
+    else Text(f.toString+"F")
 
-  val debugAny: DebugString[Any] = any => Txt(any.toString)
+  val debugAny: DebugString[Any] = any => Text(any.toString)
 
 trait DebugString[-T]:
-  def show(value: T): Txt
+  def show(value: T): Text
 
 extension [T](value: T)
-  def debug(using debugString: DebugString[T] = DebugString.debugAny): Txt =
+  def debug(using debugString: DebugString[T] = DebugString.debugAny): Text =
     debugString.show(value)

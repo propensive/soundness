@@ -26,60 +26,60 @@ import scala.reflect.*
 import java.util.regex.*
 import java.net.{URLEncoder, URLDecoder}
 
-opaque type Txt = String
+opaque type Text = String
 
 extension (value: Bytes)
-  def uString: Txt = Txt(String(value.to(Array), "UTF-8"))
-  def hex: Txt = Txt(value.map { b => String.format("\\u%04x", b.toInt).nn }.mkString)
+  def uString: Text = Text(String(value.to(Array), "UTF-8"))
+  def hex: Text = Text(value.map { b => String.format("\\u%04x", b.toInt).nn }.mkString)
 
-extension (text: Txt)
+extension (text: Text)
   def s: String = text
   def bytes: IArray[Byte] = IArray.from(s.getBytes("UTF-8").nn)
   def length: Int = s.size
-  def populated: Option[String] = if s.size == 0 then None else Some(s)
-  def lower: Txt = s.toLowerCase.nn
-  def upper: Txt = s.toUpperCase.nn
-  def urlEncode: Txt = URLEncoder.encode(s, "UTF-8").nn
-  def urlDecode: Txt = URLDecoder.decode(s, "UTF-8").nn
-  def punycode: Txt = java.net.IDN.toASCII(s).nn
-  def drop(n: Int): Txt = s.substring(n).nn
-  def dropRight(n: Int): Txt = s.substring(0, 0 max (s.size - n)).nn
-  def take(n: Int): Txt = s.substring(0, n).nn
-  def trim: Txt = text.trim.nn
-  def slice(index: Int): Txt = s.substring(index).nn
-  def slice(from: Int, to: Int): Txt = s.substring(from, to).nn
+  def populated: Option[Text] = if s.size == 0 then None else Some(s)
+  def lower: Text = s.toLowerCase.nn
+  def upper: Text = s.toUpperCase.nn
+  def urlEncode: Text = URLEncoder.encode(s, "UTF-8").nn
+  def urlDecode: Text = URLDecoder.decode(s, "UTF-8").nn
+  def punycode: Text = java.net.IDN.toASCII(s).nn
+  def drop(n: Int): Text = s.substring(n).nn
+  def dropRight(n: Int): Text = s.substring(0, 0 max (s.size - n)).nn
+  def take(n: Int): Text = s.substring(0, n).nn
+  def trim: Text = text.trim.nn
+  def slice(index: Int): Text = s.substring(index).nn
+  def slice(from: Int, to: Int): Text = s.substring(from, to).nn
   def chars: IArray[Char] = IArray.from(s.toCharArray.nn)
-  def flatMap(fn: Char => Txt): Txt = String(s.toCharArray.nn.flatMap(fn(_).toCharArray.nn))
-  def map(fn: Char => Char): Txt = String(s.toCharArray.nn.map(fn))
+  def flatMap(fn: Char => Text): Text = String(s.toCharArray.nn.flatMap(fn(_).toCharArray.nn))
+  def map(fn: Char => Char): Text = String(s.toCharArray.nn.map(fn))
   def isEmpty: Boolean = s.isEmpty
-  def cut(delimiter: Txt): List[Txt] = cut(delimiter, 0)
-  def sub(from: Txt, to: Txt): Txt = text.replaceAll(Pattern.quote(from), to).nn
-  def rsub(from: Txt, to: Txt): Txt = text.replaceAll(from, to).nn
-  def startsWith(str: Txt): Boolean = text.startsWith(str)
-  def endsWith(str: Txt): Boolean = text.endsWith(str)
-  def sub(from: Char, to: Char): Txt = text.replace(from, to).nn
-  def cut(delimiter: Txt, limit: Int): List[Txt] =
+  def cut(delimiter: Text): List[Text] = cut(delimiter, 0)
+  def sub(from: Text, to: Text): Text = text.replaceAll(Pattern.quote(from), to).nn
+  def rsub(from: Text, to: Text): Text = text.replaceAll(from, to).nn
+  def startsWith(str: Text): Boolean = text.startsWith(str)
+  def endsWith(str: Text): Boolean = text.endsWith(str)
+  def sub(from: Char, to: Char): Text = text.replace(from, to).nn
+  def cut(delimiter: Text, limit: Int): List[Text] =
     s.split(Pattern.quote(delimiter), limit).nn.map(_.nn).to(List)
 
-  def fit(width: Int, char: Char = ' '): Txt = (text + char.show*(width - text.length)).take(width)
+  def fit(width: Int, char: Char = ' '): Text = (text + char.show*(width - text.length)).take(width)
 
   @targetName("add")
-  infix def +(other: Txt): Txt = s+other
+  infix def +(other: Text): Text = s+other
 
   @targetName("times")
-  infix def *(n: Int): Txt = IArray.fill(n)(s).mkString
+  infix def *(n: Int): Text = IArray.fill(n)(s).mkString
   
   def apply(idx: Int): Char throws OutOfRangeError =
     if idx >= 0 && idx < s.size then s.charAt(idx)
     else throw OutOfRangeError(idx, 0, s.size)
 
-  def padRight(length: Int, char: Char = ' '): Txt = 
+  def padRight(length: Int, char: Char = ' '): Text = 
     if s.size < length then s+char.toString*(length - s.size) else s
   
-  def padLeft(length: Int, char: Char = ' '): Txt =
+  def padLeft(length: Int, char: Char = ' '): Text =
     if s.size < length then char.toString*(length - s.size)+s else s
 
-  def contains(substring: Txt): Boolean = text.contains(substring)
+  def contains(substring: Text): Boolean = text.contains(substring)
   def contains(char: Char): Boolean = text.indexOf(char) != -1
 
   @tailrec
@@ -87,11 +87,11 @@ extension (text: Txt)
     if idx >= text.length then throw OutOfRangeError(idx, 0, s.size)
     if pred(text.charAt(idx)) then idx else indexWhere(pred, idx + 1)
 
-  def takeWhile(pred: Char => Boolean): Txt =
+  def takeWhile(pred: Char => Boolean): Text =
     try text.substring(0, indexWhere(!pred(_))).nn
     catch case OutOfRangeError(_, _, _) => text
 
-  def lev(other: Txt): Int =
+  def lev(other: Text): Int =
     val m = s.size
     val n = other.size
     val old = new Array[Int](n + 1)
@@ -111,20 +111,20 @@ extension (text: Txt)
     dist(n)
 
 extension (string: String)
-  def text: Txt = string
+  def text: Text = string
 
-object Txt:
-  given Ordering[Txt] = Ordering[String].on[Txt](_.s)
+object Text:
+  given Ordering[Text] = Ordering[String].on[Text](_.s)
 
-  given typeTest: Typeable[Txt] with
-    def unapply(value: Any): Option[value.type & Txt] = value match
-      case str: String => Some(str.asInstanceOf[value.type & Txt])
+  given typeTest: Typeable[Text] with
+    def unapply(value: Any): Option[value.type & Text] = value match
+      case str: String => Some(str.asInstanceOf[value.type & Text])
       case _           => None
     
-  def apply(str: String): Txt = str
+  def apply(str: String): Text = str
 
 object Joinable:
-  given Joinable[Txt] = xs => Txt(xs.mkString)
+  given Joinable[Text] = xs => Text(xs.mkString)
 
 trait Joinable[T]:
   def join(elements: Iterable[T]): T
@@ -154,14 +154,14 @@ trait Shown[T](using Show[T]):
     override def toString: String = summon[Show[T]].show(this).s
 
 object Interpolation:
-  case class Input(txt: Txt)
+  case class Input(txt: Text)
 
   given [T: Show]: Insertion[Input, T] = value => Input(summon[Show[T]].show(value))
 
-  private def escape(str: String): Txt =
+  private def escape(str: String): Text =
     val buf: StringBuffer = StringBuffer()
     
-    def parseUnicode(chars: Txt): Char =
+    def parseUnicode(chars: Text): Char =
       if chars.length < 4 then throw InterpolationError("the unicode escape is incomplete")
       else Integer.parseInt(chars.s, 16).toChar
 
@@ -199,22 +199,22 @@ object Interpolation:
     
     recur()
     
-    gossamer.Txt(buf.toString)
+    gossamer.Text(buf.toString)
       
 
-  object Str extends Interpolator[Input, Txt, Txt]:
-    def initial: Txt = gossamer.Txt("")
-    def parse(state: Txt, next: String): Txt = state+escape(next)
-    def skip(state: Txt): Txt = state
-    def insert(state: Txt, input: Input): Txt = state+input.txt
-    def complete(state: Txt): Txt = state
+  object T extends Interpolator[Input, Text, Text]:
+    def initial: Text = gossamer.Text("")
+    def parse(state: Text, next: String): Text = state+escape(next)
+    def skip(state: Text): Text = state
+    def insert(state: Text, input: Input): Text = state+input.txt
+    def complete(state: Text): Text = state
   
-  object Txt extends Interpolator[Input, Txt, Txt]:
-    def initial: Txt = gossamer.Txt("")
-    def parse(state: Txt, next: String): Txt = state+escape(next)
-    def skip(state: Txt): Txt = state
-    def insert(state: Txt, input: Input): Txt = state+input.txt
+  object Text extends Interpolator[Input, Text, Text]:
+    def initial: Text = gossamer.Text("")
+    def parse(state: Text, next: String): Text = state+escape(next)
+    def skip(state: Text): Text = state
+    def insert(state: Text, input: Input): Text = state+input.txt
 
-    def complete(state: Txt): Txt =
-      gossamer.Txt(state.s.split("\\n\\s*\\n").nn.map(_.nn.replaceAll("\\s\\s*", " ").nn.trim.nn
+    def complete(state: Text): Text =
+      gossamer.Text(state.s.split("\\n\\s*\\n").nn.map(_.nn.replaceAll("\\s\\s*", " ").nn.trim.nn
           ).mkString("\n").nn)
