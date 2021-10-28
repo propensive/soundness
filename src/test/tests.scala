@@ -17,9 +17,10 @@
 package profanity
 
 import probably.*
+import gossamer.*
 
 import unsafeExceptions.canThrowAny
 
-object Tests extends Suite("Profanity Tests"):
+object Tests extends Suite(str"Profanity Tests"):
   def run(using Runner): Unit =
     ()
