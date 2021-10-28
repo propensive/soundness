@@ -32,7 +32,7 @@ object Macro:
     '{Rule($selector, ${read(props)})}
 
   def keyframe(name: Expr[String], props: Expr[Seq[(Label, Any)]])(using Quotes): Expr[Keyframe] =
-    '{Keyframe(Txt($name), ${read(props)})}
+    '{Keyframe(Text($name), ${read(props)})}
 
   def read(properties: Expr[Seq[(Label, Any)]])(using Quotes): Expr[Style] =
     import quotes.reflect.*
@@ -48,7 +48,7 @@ object Macro:
                   s"cataract: no valid CSS element $att taking values of type $typeName exists")
             }
           
-          '{CssProperty(dashed(Txt($key)), $exp.show($value))} :: recur(tail)
+          '{CssProperty(dashed(Text($key)), $exp.show($value))} :: recur(tail)
         case _ =>
           Nil
     
@@ -58,25 +58,25 @@ object Macro:
       case _ =>
         report.errorAndAbort("cataract: expected varargs")
 
-  private def words(string: Txt): List[Txt] =
+  private def words(string: Text): List[Text] =
     try
       val i = string.indexWhere(_.isUpper, 1)
       string.take(i).lower :: words(string.drop(i))
     catch case OutOfRangeError(_, _, _) => List(string.lower)
     
 
-  private[cataract] def dashed(string: Txt): Txt = words(string).join(str"-")
+  private[cataract] def dashed(string: Text): Text = words(string).join(t"-")
 
 case class PropertyDef[Name <: Label, -T: ShowProperty]():
-  def show(value: T): Txt = summon[ShowProperty[T]].show(value)
+  def show(value: T): Text = summon[ShowProperty[T]].show(value)
 
 object Selectable:
   given ident: Selectable[Selector] = identity(_)
 
   given [T](using sel: clairvoyant.CssSelection[T]): Selectable[T] = sel.selection(_) match
-    case s".$cls" => Selector.Class(Txt(cls))
-    case s"#$id"  => Selector.Id(Txt(id))
-    case elem     => Selector.Element(Txt(elem))
+    case s".$cls" => Selector.Class(Text(cls))
+    case s"#$id"  => Selector.Id(Text(id))
+    case elem     => Selector.Element(Text(elem))
 
 trait Selectable[-T]:
   def selector(value: T): Selector
@@ -111,31 +111,31 @@ extension [T: Selectable](left: T)
     summon[Selectable[T]].selector(left) ~ summon[Selectable[S]].selector(right)
   
 object PropertyDef:
-  given alignContent: PropertyDef["alignContent", Txt] = PropertyDef()
-  given alignItems: PropertyDef["alignItems", Txt] = PropertyDef()
-  given alignSelf: PropertyDef["alignSelf", Txt] = PropertyDef()
-  given all: PropertyDef["all", Txt] = PropertyDef()
-  given animation: PropertyDef["animation", Txt] = PropertyDef()
+  given alignContent: PropertyDef["alignContent", Text] = PropertyDef()
+  given alignItems: PropertyDef["alignItems", Text] = PropertyDef()
+  given alignSelf: PropertyDef["alignSelf", Text] = PropertyDef()
+  given all: PropertyDef["all", Text] = PropertyDef()
+  given animation: PropertyDef["animation", Text] = PropertyDef()
   given animationDelay: PropertyDef["animationDelay", Duration] = PropertyDef()
-  given animationDirection: PropertyDef["animationDirection", Txt] = PropertyDef()
+  given animationDirection: PropertyDef["animationDirection", Text] = PropertyDef()
   given animationDuration: PropertyDef["animationDuration", Duration] = PropertyDef()
   given animationFillMode: PropertyDef["animationFillMode", AnimationFillMode] = PropertyDef()
-  given animationIterationCount: PropertyDef["animationIterationCount", Txt] = PropertyDef()
-  given animationName: PropertyDef["animationName", Txt] = PropertyDef()
-  given animationPlayState: PropertyDef["animationPlayState", Txt] = PropertyDef()
-  given animationTimingFunction: PropertyDef["animationTimingFunction", Txt] = PropertyDef()
-  given backfaceVisibility: PropertyDef["backfaceVisibility", Txt] = PropertyDef()
-  given background: PropertyDef["background", Txt] = PropertyDef()
-  given backgroundAttachment: PropertyDef["backgroundAttachment", Txt] = PropertyDef()
-  given backgroundBlendMode: PropertyDef["backgroundBlendMode", Txt] = PropertyDef()
-  given backgroundClip: PropertyDef["backgroundClip", Txt] = PropertyDef()
+  given animationIterationCount: PropertyDef["animationIterationCount", Text] = PropertyDef()
+  given animationName: PropertyDef["animationName", Text] = PropertyDef()
+  given animationPlayState: PropertyDef["animationPlayState", Text] = PropertyDef()
+  given animationTimingFunction: PropertyDef["animationTimingFunction", Text] = PropertyDef()
+  given backfaceVisibility: PropertyDef["backfaceVisibility", Text] = PropertyDef()
+  given background: PropertyDef["background", Text] = PropertyDef()
+  given backgroundAttachment: PropertyDef["backgroundAttachment", Text] = PropertyDef()
+  given backgroundBlendMode: PropertyDef["backgroundBlendMode", Text] = PropertyDef()
+  given backgroundClip: PropertyDef["backgroundClip", Text] = PropertyDef()
   given backgroundColor1: PropertyDef["backgroundColor", Color] = PropertyDef()
   given backgroundColor2: PropertyDef["backgroundColor", Transparent.type] = PropertyDef()
-  given backgroundImage: PropertyDef["backgroundImage", Txt] = PropertyDef()
-  given backgroundOrigin: PropertyDef["backgroundOrigin", Txt] = PropertyDef()
-  given backgroundPosition: PropertyDef["backgroundPosition", Txt] = PropertyDef()
-  given backgroundRepeat: PropertyDef["backgroundRepeat", Txt] = PropertyDef()
-  given backgroundSize: PropertyDef["backgroundSize", Txt] = PropertyDef()
+  given backgroundImage: PropertyDef["backgroundImage", Text] = PropertyDef()
+  given backgroundOrigin: PropertyDef["backgroundOrigin", Text] = PropertyDef()
+  given backgroundPosition: PropertyDef["backgroundPosition", Text] = PropertyDef()
+  given backgroundRepeat: PropertyDef["backgroundRepeat", Text] = PropertyDef()
+  given backgroundSize: PropertyDef["backgroundSize", Text] = PropertyDef()
   given border: PropertyDef["border", (BorderStyle, Dimension, Color)] = PropertyDef()
   given borderBottom: PropertyDef["borderBottom", (BorderStyle, Dimension, Color)] = PropertyDef()
   given borderBottomColor1: PropertyDef["borderBottomColor", Color] = PropertyDef()
@@ -144,14 +144,14 @@ object PropertyDef:
   given borderBottomRightRadius: PropertyDef["borderBottomRightRadius", Dimension] = PropertyDef()
   given borderBottomStyle: PropertyDef["borderBottomStyle", BorderStyle] = PropertyDef()
   given borderBottomWidth: PropertyDef["borderBottomWidth", Dimension] = PropertyDef()
-  given borderCollapse: PropertyDef["borderCollapse", Txt] = PropertyDef()
+  given borderCollapse: PropertyDef["borderCollapse", Text] = PropertyDef()
   given borderColor1: PropertyDef["borderColor", Color] = PropertyDef()
   given borderColor2: PropertyDef["borderColor", Transparent.type] = PropertyDef()
-  given borderImage: PropertyDef["borderImage", Txt] = PropertyDef()
-  given borderImageOutset: PropertyDef["borderImageOutset", Txt] = PropertyDef()
-  given borderImageRepeat: PropertyDef["borderImageRepeat", Txt] = PropertyDef()
-  given borderImageSlice: PropertyDef["borderImageSlice", Txt] = PropertyDef()
-  given borderImageSource: PropertyDef["borderImageSource", Txt] = PropertyDef()
+  given borderImage: PropertyDef["borderImage", Text] = PropertyDef()
+  given borderImageOutset: PropertyDef["borderImageOutset", Text] = PropertyDef()
+  given borderImageRepeat: PropertyDef["borderImageRepeat", Text] = PropertyDef()
+  given borderImageSlice: PropertyDef["borderImageSlice", Text] = PropertyDef()
+  given borderImageSource: PropertyDef["borderImageSource", Text] = PropertyDef()
   given borderImageWidth: PropertyDef["borderImageWidth", Dimension] = PropertyDef()
   given borderLeft: PropertyDef["borderLeft", (BorderStyle, Dimension, Color)] = PropertyDef()
   given borderLeftColor1: PropertyDef["borderLeftColor", Color] = PropertyDef()
@@ -175,98 +175,98 @@ object PropertyDef:
   given borderTopWidth: PropertyDef["borderTopWidth", Dimension] = PropertyDef()
   given borderWidth: PropertyDef["borderWidth", Dimension] = PropertyDef()
   given bottom: PropertyDef["bottom", Dimension] = PropertyDef()
-  given boxDecorationBreak: PropertyDef["boxDecorationBreak", Txt] = PropertyDef()
+  given boxDecorationBreak: PropertyDef["boxDecorationBreak", Text] = PropertyDef()
   given boxShadow: PropertyDef["boxShadow", (Dimension, Dimension, Dimension, Color)] = PropertyDef()
-  given boxSizing: PropertyDef["boxSizing", Txt] = PropertyDef()
-  given breakAfter: PropertyDef["breakAfter", Txt] = PropertyDef()
-  given breakBefore: PropertyDef["breakBefore", Txt] = PropertyDef()
-  given breakInside: PropertyDef["breakInside", Txt] = PropertyDef()
-  given captionSide: PropertyDef["captionSide", Txt] = PropertyDef()
+  given boxSizing: PropertyDef["boxSizing", Text] = PropertyDef()
+  given breakAfter: PropertyDef["breakAfter", Text] = PropertyDef()
+  given breakBefore: PropertyDef["breakBefore", Text] = PropertyDef()
+  given breakInside: PropertyDef["breakInside", Text] = PropertyDef()
+  given captionSide: PropertyDef["captionSide", Text] = PropertyDef()
   given caretColor1: PropertyDef["caretColor", Color] = PropertyDef()
   given caretColor2: PropertyDef["caretColor", Transparent.type] = PropertyDef()
-  given clear: PropertyDef["clear", Txt] = PropertyDef()
-  given clip: PropertyDef["clip", Txt] = PropertyDef()
+  given clear: PropertyDef["clear", Text] = PropertyDef()
+  given clip: PropertyDef["clip", Text] = PropertyDef()
   given color1: PropertyDef["color", Color] = PropertyDef()
   given color2: PropertyDef["color", Transparent.type] = PropertyDef()
-  given columnCount: PropertyDef["columnCount", Txt] = PropertyDef()
-  given columnFill: PropertyDef["columnFill", Txt] = PropertyDef()
-  given columnGap: PropertyDef["columnGap", Txt] = PropertyDef()
-  given columnRule: PropertyDef["columnRule", Txt] = PropertyDef()
+  given columnCount: PropertyDef["columnCount", Text] = PropertyDef()
+  given columnFill: PropertyDef["columnFill", Text] = PropertyDef()
+  given columnGap: PropertyDef["columnGap", Text] = PropertyDef()
+  given columnRule: PropertyDef["columnRule", Text] = PropertyDef()
   given columnRuleColor1: PropertyDef["columnRuleColor", Color] = PropertyDef()
   given columnRuleColor2: PropertyDef["columnRuleColor", Transparent.type] = PropertyDef()
-  given columnRuleStyle: PropertyDef["columnRuleStyle", Txt] = PropertyDef()
-  given columnRuleWidth: PropertyDef["columnRuleWidth", Txt] = PropertyDef()
-  given columnSpan: PropertyDef["columnSpan", Txt] = PropertyDef()
-  given columnWidth: PropertyDef["columnWidth", Txt] = PropertyDef()
-  given columns: PropertyDef["columns", Txt] = PropertyDef()
-  given content: PropertyDef["content", Txt] = PropertyDef()
-  given counterIncrement: PropertyDef["counterIncrement", Txt] = PropertyDef()
-  given counterReset: PropertyDef["counterReset", Txt] = PropertyDef()
+  given columnRuleStyle: PropertyDef["columnRuleStyle", Text] = PropertyDef()
+  given columnRuleWidth: PropertyDef["columnRuleWidth", Text] = PropertyDef()
+  given columnSpan: PropertyDef["columnSpan", Text] = PropertyDef()
+  given columnWidth: PropertyDef["columnWidth", Text] = PropertyDef()
+  given columns: PropertyDef["columns", Text] = PropertyDef()
+  given content: PropertyDef["content", Text] = PropertyDef()
+  given counterIncrement: PropertyDef["counterIncrement", Text] = PropertyDef()
+  given counterReset: PropertyDef["counterReset", Text] = PropertyDef()
   given cursor: PropertyDef["cursor", Cursor] = PropertyDef()
-  given direction: PropertyDef["direction", Txt] = PropertyDef()
+  given direction: PropertyDef["direction", Text] = PropertyDef()
   given display: PropertyDef["display", Display] = PropertyDef()
-  given emptyCells: PropertyDef["emptyCells", Txt] = PropertyDef()
-  given filter: PropertyDef["filter", Txt] = PropertyDef()
-  given flex: PropertyDef["flex", Txt] = PropertyDef()
-  given flexBasis: PropertyDef["flexBasis", Txt] = PropertyDef()
-  given flexDirection: PropertyDef["flexDirection", Txt] = PropertyDef()
-  given flexFlow: PropertyDef["flexFlow", Txt] = PropertyDef()
-  given flexGrow: PropertyDef["flexGrow", Txt] = PropertyDef()
-  given flexShrink: PropertyDef["flexShrink", Txt] = PropertyDef()
-  given flexWrap: PropertyDef["flexWrap", Txt] = PropertyDef()
+  given emptyCells: PropertyDef["emptyCells", Text] = PropertyDef()
+  given filter: PropertyDef["filter", Text] = PropertyDef()
+  given flex: PropertyDef["flex", Text] = PropertyDef()
+  given flexBasis: PropertyDef["flexBasis", Text] = PropertyDef()
+  given flexDirection: PropertyDef["flexDirection", Text] = PropertyDef()
+  given flexFlow: PropertyDef["flexFlow", Text] = PropertyDef()
+  given flexGrow: PropertyDef["flexGrow", Text] = PropertyDef()
+  given flexShrink: PropertyDef["flexShrink", Text] = PropertyDef()
+  given flexWrap: PropertyDef["flexWrap", Text] = PropertyDef()
   given float: PropertyDef["float", Float] = PropertyDef()
-  given font: PropertyDef["font", Txt] = PropertyDef()
+  given font: PropertyDef["font", Text] = PropertyDef()
   given fontFamily: PropertyDef["fontFamily", Font] = PropertyDef()
-  given fontFeatureSettings: PropertyDef["fontFeatureSettings", Txt] = PropertyDef()
-  given fontKerning: PropertyDef["fontKerning", Txt] = PropertyDef()
-  given fontLanguageOverride: PropertyDef["fontLanguageOverride", Txt] = PropertyDef()
+  given fontFeatureSettings: PropertyDef["fontFeatureSettings", Text] = PropertyDef()
+  given fontKerning: PropertyDef["fontKerning", Text] = PropertyDef()
+  given fontLanguageOverride: PropertyDef["fontLanguageOverride", Text] = PropertyDef()
   given fontSize: PropertyDef["fontSize", Dimension] = PropertyDef()
-  given fontSizeAdjust: PropertyDef["fontSizeAdjust", Txt] = PropertyDef()
-  given fontStretch: PropertyDef["fontStretch", Txt] = PropertyDef()
+  given fontSizeAdjust: PropertyDef["fontSizeAdjust", Text] = PropertyDef()
+  given fontStretch: PropertyDef["fontStretch", Text] = PropertyDef()
   given fontStyle: PropertyDef["fontStyle", FontStyle] = PropertyDef()
-  given fontSynthesis: PropertyDef["fontSynthesis", Txt] = PropertyDef()
-  given fontVariant: PropertyDef["fontVariant", Txt] = PropertyDef()
-  given fontVariantAlternates: PropertyDef["fontVariantAlternates", Txt] = PropertyDef()
-  given fontVariantCaps: PropertyDef["fontVariantCaps", Txt] = PropertyDef()
-  given fontVariantEastAsian: PropertyDef["fontVariantEastAsian", Txt] = PropertyDef()
-  given fontVariantLigatures: PropertyDef["fontVariantLigatures", Txt] = PropertyDef()
-  given fontVariantNumeric: PropertyDef["fontVariantNumeric", Txt] = PropertyDef()
-  given fontVariantPosition: PropertyDef["fontVariantPosition", Txt] = PropertyDef()
+  given fontSynthesis: PropertyDef["fontSynthesis", Text] = PropertyDef()
+  given fontVariant: PropertyDef["fontVariant", Text] = PropertyDef()
+  given fontVariantAlternates: PropertyDef["fontVariantAlternates", Text] = PropertyDef()
+  given fontVariantCaps: PropertyDef["fontVariantCaps", Text] = PropertyDef()
+  given fontVariantEastAsian: PropertyDef["fontVariantEastAsian", Text] = PropertyDef()
+  given fontVariantLigatures: PropertyDef["fontVariantLigatures", Text] = PropertyDef()
+  given fontVariantNumeric: PropertyDef["fontVariantNumeric", Text] = PropertyDef()
+  given fontVariantPosition: PropertyDef["fontVariantPosition", Text] = PropertyDef()
   given fontWeight1: PropertyDef["fontWeight", Int] = PropertyDef()
   given fontWeight2: PropertyDef["fontWeight", FontWeight] = PropertyDef()
-  given gap: PropertyDef["gap", Txt] = PropertyDef()
-  given grid: PropertyDef["grid", Txt] = PropertyDef()
-  given gridArea: PropertyDef["gridArea", Txt] = PropertyDef()
-  given gridAutoColumns: PropertyDef["gridAutoColumns", Txt] = PropertyDef()
-  given gridAutoFlow: PropertyDef["gridAutoFlow", Txt] = PropertyDef()
-  given gridAutoRows: PropertyDef["gridAutoRows", Txt] = PropertyDef()
-  given gridColumn: PropertyDef["gridColumn", Txt] = PropertyDef()
-  given gridColumnEnd: PropertyDef["gridColumnEnd", Txt] = PropertyDef()
-  given gridColumnGap: PropertyDef["gridColumnGap", Txt] = PropertyDef()
-  given gridColumnStart: PropertyDef["gridColumnStart", Txt] = PropertyDef()
-  given gridGap: PropertyDef["gridGap", Txt] = PropertyDef()
-  given gridRow: PropertyDef["gridRow", Txt] = PropertyDef()
-  given gridRowEnd: PropertyDef["gridRowEnd", Txt] = PropertyDef()
-  given gridRowGap: PropertyDef["gridRowGap", Txt] = PropertyDef()
-  given gridRowStart: PropertyDef["gridRowStart", Txt] = PropertyDef()
-  given gridTemplate: PropertyDef["gridTemplate", Txt] = PropertyDef()
-  given gridTemplateAreas: PropertyDef["gridTemplateAreas", Txt] = PropertyDef()
-  given gridTemplateColumns: PropertyDef["gridTemplateColumns", Txt] = PropertyDef()
-  given gridTemplateRows: PropertyDef["gridTemplateRows", Txt] = PropertyDef()
-  given hangingPunctuation: PropertyDef["hangingPunctuation", Txt] = PropertyDef()
+  given gap: PropertyDef["gap", Text] = PropertyDef()
+  given grid: PropertyDef["grid", Text] = PropertyDef()
+  given gridArea: PropertyDef["gridArea", Text] = PropertyDef()
+  given gridAutoColumns: PropertyDef["gridAutoColumns", Text] = PropertyDef()
+  given gridAutoFlow: PropertyDef["gridAutoFlow", Text] = PropertyDef()
+  given gridAutoRows: PropertyDef["gridAutoRows", Text] = PropertyDef()
+  given gridColumn: PropertyDef["gridColumn", Text] = PropertyDef()
+  given gridColumnEnd: PropertyDef["gridColumnEnd", Text] = PropertyDef()
+  given gridColumnGap: PropertyDef["gridColumnGap", Text] = PropertyDef()
+  given gridColumnStart: PropertyDef["gridColumnStart", Text] = PropertyDef()
+  given gridGap: PropertyDef["gridGap", Text] = PropertyDef()
+  given gridRow: PropertyDef["gridRow", Text] = PropertyDef()
+  given gridRowEnd: PropertyDef["gridRowEnd", Text] = PropertyDef()
+  given gridRowGap: PropertyDef["gridRowGap", Text] = PropertyDef()
+  given gridRowStart: PropertyDef["gridRowStart", Text] = PropertyDef()
+  given gridTemplate: PropertyDef["gridTemplate", Text] = PropertyDef()
+  given gridTemplateAreas: PropertyDef["gridTemplateAreas", Text] = PropertyDef()
+  given gridTemplateColumns: PropertyDef["gridTemplateColumns", Text] = PropertyDef()
+  given gridTemplateRows: PropertyDef["gridTemplateRows", Text] = PropertyDef()
+  given hangingPunctuation: PropertyDef["hangingPunctuation", Text] = PropertyDef()
   given height: PropertyDef["height", Dimension] = PropertyDef()
-  given hyphens: PropertyDef["hyphens", Txt] = PropertyDef()
-  given imageRendering: PropertyDef["imageRendering", Txt] = PropertyDef()
-  given isolation: PropertyDef["isolation", Txt] = PropertyDef()
-  given justifyContent: PropertyDef["justifyContent", Txt] = PropertyDef()
+  given hyphens: PropertyDef["hyphens", Text] = PropertyDef()
+  given imageRendering: PropertyDef["imageRendering", Text] = PropertyDef()
+  given isolation: PropertyDef["isolation", Text] = PropertyDef()
+  given justifyContent: PropertyDef["justifyContent", Text] = PropertyDef()
   given left: PropertyDef["left", Dimension] = PropertyDef()
-  given letterSpacing: PropertyDef["letterSpacing", Txt] = PropertyDef()
-  given lineBreak: PropertyDef["lineBreak", Txt] = PropertyDef()
+  given letterSpacing: PropertyDef["letterSpacing", Text] = PropertyDef()
+  given lineBreak: PropertyDef["lineBreak", Text] = PropertyDef()
   given lineHeight: PropertyDef["lineHeight", Dimension] = PropertyDef()
-  given listStyle: PropertyDef["listStyle", Txt] = PropertyDef()
-  given listStyleImage: PropertyDef["listStyleImage", Txt] = PropertyDef()
-  given listStylePosition: PropertyDef["listStylePosition", Txt] = PropertyDef()
-  given listStyleType: PropertyDef["listStyleType", Txt] = PropertyDef()
+  given listStyle: PropertyDef["listStyle", Text] = PropertyDef()
+  given listStyleImage: PropertyDef["listStyleImage", Text] = PropertyDef()
+  given listStylePosition: PropertyDef["listStylePosition", Text] = PropertyDef()
+  given listStyleType: PropertyDef["listStyleType", Text] = PropertyDef()
   given margin1: PropertyDef["margin", Dimension] = PropertyDef()
   given margin2: PropertyDef["margin", (Dimension, Dimension)] = PropertyDef()
   given margin3: PropertyDef["margin", (Dimension, Dimension, Dimension)] = PropertyDef()
@@ -275,26 +275,26 @@ object PropertyDef:
   given marginLeft: PropertyDef["marginLeft", Dimension] = PropertyDef()
   given marginRight: PropertyDef["marginRight", Dimension] = PropertyDef()
   given marginTop: PropertyDef["marginTop", Dimension] = PropertyDef()
-  given mask: PropertyDef["mask", Txt] = PropertyDef()
-  given maskType: PropertyDef["maskType", Txt] = PropertyDef()
+  given mask: PropertyDef["mask", Text] = PropertyDef()
+  given maskType: PropertyDef["maskType", Text] = PropertyDef()
   given maxHeight: PropertyDef["maxHeight", Dimension] = PropertyDef()
   given maxWidth: PropertyDef["maxWidth", Dimension] = PropertyDef()
   given minHeight: PropertyDef["minHeight", Dimension] = PropertyDef()
   given minWidth: PropertyDef["minWidth", Dimension] = PropertyDef()
   given mixBlendMode: PropertyDef["mixBlendMode", MixBlendMode] = PropertyDef()
-  given objectFit: PropertyDef["objectFit", Txt] = PropertyDef()
-  given objectPosition: PropertyDef["objectPosition", Txt] = PropertyDef()
-  given opacity: PropertyDef["opacity", Txt] = PropertyDef()
-  given order: PropertyDef["order", Txt] = PropertyDef()
-  given orphans: PropertyDef["orphans", Txt] = PropertyDef()
-  given outline: PropertyDef["outline", Txt] = PropertyDef()
+  given objectFit: PropertyDef["objectFit", Text] = PropertyDef()
+  given objectPosition: PropertyDef["objectPosition", Text] = PropertyDef()
+  given opacity: PropertyDef["opacity", Text] = PropertyDef()
+  given order: PropertyDef["order", Text] = PropertyDef()
+  given orphans: PropertyDef["orphans", Text] = PropertyDef()
+  given outline: PropertyDef["outline", Text] = PropertyDef()
   given outlineColor1: PropertyDef["outlineColor", Color] = PropertyDef()
   given outlineColor2: PropertyDef["outlineColor", Transparent.type] = PropertyDef()
-  given outlineOffset: PropertyDef["outlineOffset", Txt] = PropertyDef()
-  given outlineStyle: PropertyDef["outlineStyle", Txt] = PropertyDef()
-  given outlineWidth: PropertyDef["outlineWidth", Txt] = PropertyDef()
-  given over: PropertyDef["over", Txt] = PropertyDef()
-  given overflowWrap: PropertyDef["overflowWrap", Txt] = PropertyDef()
+  given outlineOffset: PropertyDef["outlineOffset", Text] = PropertyDef()
+  given outlineStyle: PropertyDef["outlineStyle", Text] = PropertyDef()
+  given outlineWidth: PropertyDef["outlineWidth", Text] = PropertyDef()
+  given over: PropertyDef["over", Text] = PropertyDef()
+  given overflowWrap: PropertyDef["overflowWrap", Text] = PropertyDef()
   given overflow: PropertyDef["overflow", (Overflow, Overflow)] = PropertyDef()
   given overflowX: PropertyDef["overflowX", Overflow] = PropertyDef()
   given overflowY: PropertyDef["overflowY", Overflow] = PropertyDef()
@@ -309,26 +309,26 @@ object PropertyDef:
   given paddingLeft: PropertyDef["paddingLeft", Dimension] = PropertyDef()
   given paddingRight: PropertyDef["paddingRight", Dimension] = PropertyDef()
   given paddingTop: PropertyDef["paddingTop", Dimension] = PropertyDef()
-  given pageBreakAfter: PropertyDef["pageBreakAfter", Txt] = PropertyDef()
-  given pageBreakBefore: PropertyDef["pageBreakBefore", Txt] = PropertyDef()
-  given pageBreakInside: PropertyDef["pageBreakInside", Txt] = PropertyDef()
-  given perspective: PropertyDef["perspective", Txt] = PropertyDef()
-  given perspectiveOrigin: PropertyDef["perspectiveOrigin", Txt] = PropertyDef()
+  given pageBreakAfter: PropertyDef["pageBreakAfter", Text] = PropertyDef()
+  given pageBreakBefore: PropertyDef["pageBreakBefore", Text] = PropertyDef()
+  given pageBreakInside: PropertyDef["pageBreakInside", Text] = PropertyDef()
+  given perspective: PropertyDef["perspective", Text] = PropertyDef()
+  given perspectiveOrigin: PropertyDef["perspectiveOrigin", Text] = PropertyDef()
   given pointerEvents: PropertyDef["pointerEvents", PointerEvents] = PropertyDef()
   given position: PropertyDef["position", Position] = PropertyDef()
-  given quotes: PropertyDef["quotes", Txt] = PropertyDef()
-  given resize: PropertyDef["resize", Txt] = PropertyDef()
+  given quotes: PropertyDef["quotes", Text] = PropertyDef()
+  given resize: PropertyDef["resize", Text] = PropertyDef()
   given right: PropertyDef["right", Dimension] = PropertyDef()
-  given rowGap: PropertyDef["rowGap", Txt] = PropertyDef()
-  given scrollBehavior: PropertyDef["scrollBehavior", Txt] = PropertyDef()
-  given tabSize: PropertyDef["tabSize", Txt] = PropertyDef()
-  given tableLayout: PropertyDef["tableLayout", Txt] = PropertyDef()
+  given rowGap: PropertyDef["rowGap", Text] = PropertyDef()
+  given scrollBehavior: PropertyDef["scrollBehavior", Text] = PropertyDef()
+  given tabSize: PropertyDef["tabSize", Text] = PropertyDef()
+  given tableLayout: PropertyDef["tableLayout", Text] = PropertyDef()
   given textAlign: PropertyDef["textAlign", TextAlign] = PropertyDef()
   given textAlignLast: PropertyDef["textAlignLast", TextAlign] = PropertyDef()
-  given textCombineUpright: PropertyDef["textCombineUpright", Txt] = PropertyDef()
+  given textCombineUpright: PropertyDef["textCombineUpright", Text] = PropertyDef()
   given textDecoration1: PropertyDef["textDecoration", TextDecorationLine] = PropertyDef()
   
-  given textDecoration2: PropertyDef["textDecoration", (TextDecorationLine, Txt,
+  given textDecoration2: PropertyDef["textDecoration", (TextDecorationLine, Text,
       TextDecorationStyle)] = PropertyDef()
 
   given textDecorationColor1: PropertyDef["textDecorationColor", Color] = PropertyDef()
@@ -336,33 +336,33 @@ object PropertyDef:
   given textDecorationLine: PropertyDef["textDecorationLine", TextDecorationLine] = PropertyDef()
   given textDecorationStyle: PropertyDef["textDecorationStyle", TextDecorationStyle] = PropertyDef()
   given textIndent: PropertyDef["textIndent", Dimension] = PropertyDef()
-  given textJustify: PropertyDef["textJustify", Txt] = PropertyDef()
-  given textOrientation: PropertyDef["textOrientation", Txt] = PropertyDef()
-  given textOverflow: PropertyDef["textOverflow", Txt] = PropertyDef()
-  given textShadow: PropertyDef["textShadow", Txt] = PropertyDef()
-  given textTransform: PropertyDef["textTransform", Txt] = PropertyDef()
-  given textUnderlinePosition: PropertyDef["textUnderlinePosition", Txt] = PropertyDef()
+  given textJustify: PropertyDef["textJustify", Text] = PropertyDef()
+  given textOrientation: PropertyDef["textOrientation", Text] = PropertyDef()
+  given textOverflow: PropertyDef["textOverflow", Text] = PropertyDef()
+  given textShadow: PropertyDef["textShadow", Text] = PropertyDef()
+  given textTransform: PropertyDef["textTransform", Text] = PropertyDef()
+  given textUnderlinePosition: PropertyDef["textUnderlinePosition", Text] = PropertyDef()
   given top: PropertyDef["top", Dimension] = PropertyDef()
-  given transform: PropertyDef["transform", Txt] = PropertyDef()
-  given transformOrigin: PropertyDef["transformOrigin", Txt] = PropertyDef()
-  given transformStyle: PropertyDef["transformStyle", Txt] = PropertyDef()
-  given transition: PropertyDef["transition", Txt] = PropertyDef()
-  given transitionDelay: PropertyDef["transitionDelay", Txt] = PropertyDef()
-  given transitionDuration: PropertyDef["transitionDuration", Txt] = PropertyDef()
-  given transitionProperty: PropertyDef["transitionProperty", Txt] = PropertyDef()
-  given transitionTimingFunction: PropertyDef["transitionTimingFunction", Txt] = PropertyDef()
-  given unicodeBidi: PropertyDef["unicodeBidi", Txt] = PropertyDef()
+  given transform: PropertyDef["transform", Text] = PropertyDef()
+  given transformOrigin: PropertyDef["transformOrigin", Text] = PropertyDef()
+  given transformStyle: PropertyDef["transformStyle", Text] = PropertyDef()
+  given transition: PropertyDef["transition", Text] = PropertyDef()
+  given transitionDelay: PropertyDef["transitionDelay", Text] = PropertyDef()
+  given transitionDuration: PropertyDef["transitionDuration", Text] = PropertyDef()
+  given transitionProperty: PropertyDef["transitionProperty", Text] = PropertyDef()
+  given transitionTimingFunction: PropertyDef["transitionTimingFunction", Text] = PropertyDef()
+  given unicodeBidi: PropertyDef["unicodeBidi", Text] = PropertyDef()
   given userSelect: PropertyDef["userSelect", UserSelect] = PropertyDef()
   given verticalAlign1: PropertyDef["verticalAlign", VerticalAlign] = PropertyDef()
   given verticalAlign2: PropertyDef["verticalAlign", Dimension] = PropertyDef()
-  given visibility: PropertyDef["visibility", Txt] = PropertyDef()
-  given whiteSpace: PropertyDef["whiteSpace", Txt] = PropertyDef()
-  given widows: PropertyDef["widows", Txt] = PropertyDef()
+  given visibility: PropertyDef["visibility", Text] = PropertyDef()
+  given whiteSpace: PropertyDef["whiteSpace", Text] = PropertyDef()
+  given widows: PropertyDef["widows", Text] = PropertyDef()
   given width: PropertyDef["width", Dimension] = PropertyDef()
-  given wordBreak: PropertyDef["wordBreak", Txt] = PropertyDef()
-  given wordSpacing: PropertyDef["wordSpacing", Txt] = PropertyDef()
-  given wordWrap: PropertyDef["wordWrap", Txt] = PropertyDef()
-  given writingMode: PropertyDef["writingMode", Txt] = PropertyDef()
+  given wordBreak: PropertyDef["wordBreak", Text] = PropertyDef()
+  given wordSpacing: PropertyDef["wordSpacing", Text] = PropertyDef()
+  given wordWrap: PropertyDef["wordWrap", Text] = PropertyDef()
+  given writingMode: PropertyDef["writingMode", Text] = PropertyDef()
   given zIndex: PropertyDef["zIndex", Int] = PropertyDef()
 
   given inherit[L <: Label]: PropertyDef[L, Inherit.type] = PropertyDef()
@@ -380,48 +380,48 @@ object ShowProperty:
   given ShowProperty[Duration] = _.text
   given ShowProperty[Dimension] =
     case length: Length => length.text
-    case int: Int       => Txt(int.toString)
+    case int: Int       => Text(int.toString)
 
   given [A: ShowProperty, B: ShowProperty]: ShowProperty[(A, B)] = tuple =>
-    str"${summon[ShowProperty[A]].show(tuple(0))} ${summon[ShowProperty[B]].show(tuple(1))}"
+    t"${summon[ShowProperty[A]].show(tuple(0))} ${summon[ShowProperty[B]].show(tuple(1))}"
   
   given [A: ShowProperty, B: ShowProperty, C: ShowProperty]: ShowProperty[(A, B, C)] = tuple =>
     List(summon[ShowProperty[A]].show(tuple(0)), summon[ShowProperty[B]].show(tuple(1)),
-        summon[ShowProperty[C]].show(tuple(2))).join(str" ")
+        summon[ShowProperty[C]].show(tuple(2))).join(t" ")
   
   given [A: ShowProperty, B: ShowProperty, C: ShowProperty, D: ShowProperty]
         : ShowProperty[(A, B, C, D)] = tuple =>
     List(summon[ShowProperty[A]].show(tuple(0)), summon[ShowProperty[B]].show(tuple(1)),
         summon[ShowProperty[C]].show(tuple(2)), summon[ShowProperty[D]].show(tuple(3)))
-      .join(str" ")
+      .join(t" ")
   
   given ShowProperty[Font] = _.names.map { f =>
-    if f.contains(str" ") then str"'$f'" else f
-  }.join(str", ")
+    if f.contains(t" ") then t"'$f'" else f
+  }.join(t", ")
 
-  given ShowProperty[Txt] = identity(_)
-  given ShowProperty[Int] = int => Txt(int.toString)
+  given ShowProperty[Text] = identity(_)
+  given ShowProperty[Int] = int => Text(int.toString)
   given ShowProperty[Srgb] = _.css
   given ShowProperty[Hsl] = _.css
   given ShowProperty[Color] = _.standardSrgb.css
   given ShowProperty[PropertyValue] = c => Macro.dashed(c.text)
-  given ShowProperty[Inherit.type] = c => str"inherit"
-  given ShowProperty[Transparent.type] = c => str"transparent"
-  given ShowProperty[Initial.type] = c => str"initial"
+  given ShowProperty[Inherit.type] = c => t"inherit"
+  given ShowProperty[Transparent.type] = c => t"transparent"
+  given ShowProperty[Initial.type] = c => t"initial"
 
 trait ShowProperty[-T]:
-  def show(value: T): Txt
+  def show(value: T): Text
 
 trait PropertyValue:
-  def text: Txt = Txt(this.toString).lower
+  def text: Text = Text(this.toString).lower
 
 enum Duration:
   case S(value: Double)
   case Ms(value: Double)
 
-  def text: Txt = this match
-    case S(value)  => str"${value.toString}s"
-    case Ms(value) => str"${value.toString}ms"
+  def text: Text = this match
+    case S(value)  => t"${value.toString}s"
+    case Ms(value) => t"${value.toString}ms"
 
 def max(head: Length, tail: Length*): Length = tail.foldLeft(head)(_.function("max", _))
 def min(head: Length, tail: Length*): Length = tail.foldLeft(head)(_.function("min", _))
@@ -442,25 +442,25 @@ enum Length:
   case Vh(value: Double)
   case Vmin(value: Double)
   case Vmax(value: Double)
-  case Calc(value: Txt)
+  case Calc(value: Text)
 
-  def text: Txt = this match
-    case Px(value)   => str"${value.toString}px"
-    case Pt(value)   => str"${value.toString}pt"
-    case In(value)   => str"${value.toString}in"
-    case Auto        => str"auto"
-    case Pc(value)   => str"${value.toString}%"
-    case Cm(value)   => str"${value.toString}cm"
-    case Mm(value)   => str"${value.toString}mm"
-    case Em(value)   => str"${value.toString}em"
-    case Ex(value)   => str"${value.toString}ex"
-    case Ch(value)   => str"${value.toString}ch"
-    case Rem(value)  => str"${value.toString}rem"
-    case Vw(value)   => str"${value.toString}vw"
-    case Vh(value)   => str"${value.toString}vh"
-    case Vmin(value) => str"${value.toString}vmin"
-    case Vmax(value) => str"${value.toString}vmax"
-    case Calc(calc)  => str"calc($calc)"
+  def text: Text = this match
+    case Px(value)   => t"${value.toString}px"
+    case Pt(value)   => t"${value.toString}pt"
+    case In(value)   => t"${value.toString}in"
+    case Auto        => t"auto"
+    case Pc(value)   => t"${value.toString}%"
+    case Cm(value)   => t"${value.toString}cm"
+    case Mm(value)   => t"${value.toString}mm"
+    case Em(value)   => t"${value.toString}em"
+    case Ex(value)   => t"${value.toString}ex"
+    case Ch(value)   => t"${value.toString}ch"
+    case Rem(value)  => t"${value.toString}rem"
+    case Vw(value)   => t"${value.toString}vw"
+    case Vh(value)   => t"${value.toString}vh"
+    case Vmin(value) => t"${value.toString}vmin"
+    case Vmax(value) => t"${value.toString}vmax"
+    case Calc(calc)  => t"calc($calc)"
 
   @targetName("add")
   infix def +(dim: Length): Length = infixOp(" + ", dim)
@@ -476,16 +476,16 @@ enum Length:
 
   private def infixOp(operator: String, dim: Length | Double): Length.Calc = this match
     case Calc(calc) => dim match
-      case double: Double => Calc(str"($calc)$operator${double.toString}")
-      case Calc(calc2)    => Calc(str"($calc)$operator($calc2)")
-      case other          => Calc(str"($calc)$operator${other.toString}")
+      case double: Double => Calc(t"($calc)$operator${double.toString}")
+      case Calc(calc2)    => Calc(t"($calc)$operator($calc2)")
+      case other          => Calc(t"($calc)$operator${other.toString}")
     case other => dim match
-      case double: Double => Calc(str"$toString$operator${double.toString}")
-      case Calc(calc2)    => Calc(str"$toString$operator($calc2)")
-      case other          => Calc(str"$toString$operator${other.toString}")
+      case double: Double => Calc(t"$toString$operator${double.toString}")
+      case Calc(calc2)    => Calc(t"$toString$operator($calc2)")
+      case other          => Calc(t"$toString$operator${other.toString}")
     
   def function(name: String, right: Length | Double): Length =
-    Calc(str"$name(${infixOp(", ", right).value})")
+    Calc(t"$name(${infixOp(", ", right).value})")
 
 extension (value: Double)
   def sec = Duration.S(value)
@@ -559,74 +559,74 @@ enum PointerEvents extends PropertyValue:
 enum FontStyle extends PropertyValue:
   case Normal, Italic, Oblique
 
-case class Font(names: Txt*)
+case class Font(names: Text*)
 
 enum Dir:
   case Rtl, Ltr
 
 package pseudo:
-  def dir(direction: Dir) = Selector.PseudoClass(str"dir(${direction.toString.lower})")
-  def lang(language: String) = Selector.PseudoClass(str"lang($language)")
-  val after = Selector.PseudoClass(str":after")
-  val before = Selector.PseudoClass(str":before")
-  val selection = Selector.PseudoClass(str":selection")
-  val firstLetter = Selector.PseudoClass(str":first-letter")
-  val firstLine = Selector.PseudoClass(str":first-line")
-  val marker = Selector.PseudoClass(str":marker")
-  val placeholder = Selector.PseudoClass(str":placeholder")
-  val anyLink = Selector.PseudoClass(str"any-link")
-  val link = Selector.PseudoClass(str"link")
-  val visited = Selector.PseudoClass(str"visited")
-  val localLink = Selector.PseudoClass(str"local-link")
-  val target = Selector.PseudoClass(str"target")
-  val targetWithin = Selector.PseudoClass(str"target-within")
-  val scope = Selector.PseudoClass(str"scope")
-  val hover = Selector.PseudoClass(str"hover")
-  val active = Selector.PseudoClass(str"active")
-  val focus = Selector.PseudoClass(str"focus")
-  val focusVisible = Selector.PseudoClass(str"focus-visible")
-  val focusWithin = Selector.PseudoClass(str"focus-within")
-  val current = Selector.PseudoClass(str"current")
-  val past = Selector.PseudoClass(str"past")
-  val future = Selector.PseudoClass(str"future")
-  val playing = Selector.PseudoClass(str"playing")
-  val paused = Selector.PseudoClass(str"paused")
-  val autofill = Selector.PseudoClass(str"autofill")
-  val enabled = Selector.PseudoClass(str"enabled")
-  val disabled = Selector.PseudoClass(str"disabled")
-  val readOnly = Selector.PseudoClass(str"read-only")
-  val readWrite = Selector.PseudoClass(str"read-write")
-  val placeholderShown = Selector.PseudoClass(str"placeholder-shown")
-  val default = Selector.PseudoClass(str"default")
-  val checked = Selector.PseudoClass(str"checked")
-  val indeterminate = Selector.PseudoClass(str"indeterminate")
-  val blank = Selector.PseudoClass(str"blank")
-  val valid = Selector.PseudoClass(str"valid")
-  val invalid = Selector.PseudoClass(str"invalid")
-  val inRange = Selector.PseudoClass(str"in-range")
-  val outOfRange = Selector.PseudoClass(str"out-of-range")
-  val required = Selector.PseudoClass(str"required")
-  val optional = Selector.PseudoClass(str"option")
-  val userInvalid = Selector.PseudoClass(str"user-invalid")
-  val root = Selector.PseudoClass(str"root")
-  val empty = Selector.PseudoClass(str"empty")
+  def dir(direction: Dir) = Selector.PseudoClass(t"dir(${direction.toString.lower})")
+  def lang(language: String) = Selector.PseudoClass(t"lang($language)")
+  val after = Selector.PseudoClass(t":after")
+  val before = Selector.PseudoClass(t":before")
+  val selection = Selector.PseudoClass(t":selection")
+  val firstLetter = Selector.PseudoClass(t":first-letter")
+  val firstLine = Selector.PseudoClass(t":first-line")
+  val marker = Selector.PseudoClass(t":marker")
+  val placeholder = Selector.PseudoClass(t":placeholder")
+  val anyLink = Selector.PseudoClass(t"any-link")
+  val link = Selector.PseudoClass(t"link")
+  val visited = Selector.PseudoClass(t"visited")
+  val localLink = Selector.PseudoClass(t"local-link")
+  val target = Selector.PseudoClass(t"target")
+  val targetWithin = Selector.PseudoClass(t"target-within")
+  val scope = Selector.PseudoClass(t"scope")
+  val hover = Selector.PseudoClass(t"hover")
+  val active = Selector.PseudoClass(t"active")
+  val focus = Selector.PseudoClass(t"focus")
+  val focusVisible = Selector.PseudoClass(t"focus-visible")
+  val focusWithin = Selector.PseudoClass(t"focus-within")
+  val current = Selector.PseudoClass(t"current")
+  val past = Selector.PseudoClass(t"past")
+  val future = Selector.PseudoClass(t"future")
+  val playing = Selector.PseudoClass(t"playing")
+  val paused = Selector.PseudoClass(t"paused")
+  val autofill = Selector.PseudoClass(t"autofill")
+  val enabled = Selector.PseudoClass(t"enabled")
+  val disabled = Selector.PseudoClass(t"disabled")
+  val readOnly = Selector.PseudoClass(t"read-only")
+  val readWrite = Selector.PseudoClass(t"read-write")
+  val placeholderShown = Selector.PseudoClass(t"placeholder-shown")
+  val default = Selector.PseudoClass(t"default")
+  val checked = Selector.PseudoClass(t"checked")
+  val indeterminate = Selector.PseudoClass(t"indeterminate")
+  val blank = Selector.PseudoClass(t"blank")
+  val valid = Selector.PseudoClass(t"valid")
+  val invalid = Selector.PseudoClass(t"invalid")
+  val inRange = Selector.PseudoClass(t"in-range")
+  val outOfRange = Selector.PseudoClass(t"out-of-range")
+  val required = Selector.PseudoClass(t"required")
+  val optional = Selector.PseudoClass(t"option")
+  val userInvalid = Selector.PseudoClass(t"user-invalid")
+  val root = Selector.PseudoClass(t"root")
+  val empty = Selector.PseudoClass(t"empty")
   
   def nthChild(a: Int, b: Int) =
-    Selector.PseudoClass(str"nth-child(${if b == 0 then str"${a}n+$b" else str"${a}n"})")
+    Selector.PseudoClass(t"nth-child(${if b == 0 then t"${a}n+$b" else t"${a}n"})")
   
   def nthLastChild(a: Int, b: Int) =
-    Selector.PseudoClass(str"nth-last-child(${if b == 0 then str"${a}n+$b" else str"${a}n"})")
+    Selector.PseudoClass(t"nth-last-child(${if b == 0 then t"${a}n+$b" else t"${a}n"})")
   
-  val firstChild = Selector.PseudoClass(str"first-child")
-  val lastChild = Selector.PseudoClass(str"last-child")
-  val onlyChild = Selector.PseudoClass(str"only-child")
+  val firstChild = Selector.PseudoClass(t"first-child")
+  val lastChild = Selector.PseudoClass(t"last-child")
+  val onlyChild = Selector.PseudoClass(t"only-child")
   
   def nthOfType(a: Int, b: Int) =
-    Selector.PseudoClass(str"nth-of-type(${if b == 0 then str"${a}n+$b" else str"${a}n"})")
+    Selector.PseudoClass(t"nth-of-type(${if b == 0 then t"${a}n+$b" else t"${a}n"})")
   
   def nthLastOfType(a: Int, b: Int) =
-    Selector.PseudoClass(str"nth-last-of-type(${if b == 0 then str"${a}n+$b" else str"${a}n"})")
+    Selector.PseudoClass(t"nth-last-of-type(${if b == 0 then t"${a}n+$b" else t"${a}n"})")
   
-  val firstOfType = Selector.PseudoClass(str"first-of-type")
-  val lastOfType = Selector.PseudoClass(str"last-of-type")
-  val onlyOfType = Selector.PseudoClass(str"only-of-type")
+  val firstOfType = Selector.PseudoClass(t"first-of-type")
+  val lastOfType = Selector.PseudoClass(t"last-of-type")
+  val onlyOfType = Selector.PseudoClass(t"only-of-type")

@@ -21,6 +21,6 @@ import gossamer.*
 
 import unsafeExceptions.canThrowAny
 
-object Tests extends Suite(str"Cataract Tests"):
+object Tests extends Suite(t"Cataract Tests"):
   def run(using Runner): Unit =
     ()

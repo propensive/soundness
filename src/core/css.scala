@@ -23,21 +23,21 @@ import annotation.targetName
 import language.dynamics
 
 object Stylesheet:
-  given clairvoyant.HttpResponse[Stylesheet, Txt] with
+  given clairvoyant.HttpResponse[Stylesheet, Text] with
     def mimeType: String = "text/css; charset=utf-8"
-    def content(stylesheet: Stylesheet): Txt = stylesheet.text
+    def content(stylesheet: Stylesheet): Text = stylesheet.text
   
   trait Item:
-    def text: Txt
+    def text: Text
 
 case class Stylesheet(rules: Stylesheet.Item*):
-  def text: Txt = rules.map(_.text).join(str"\n")
+  def text: Text = rules.map(_.text).join(t"\n")
 
-case class Keyframes(name: Txt)(frames: Keyframe*) extends Stylesheet.Item:
-  def text: Txt = frames.map(_.text).join(str"@keyframes ${name} {\n  ", str"\n  ", str"\n}\n")
+case class Keyframes(name: Text)(frames: Keyframe*) extends Stylesheet.Item:
+  def text: Text = frames.map(_.text).join(t"@keyframes ${name} {\n  ", t"\n  ", t"\n}\n")
   
-case class Keyframe(ref: Txt, style: Style):
-  def text: Txt = style.properties.map(_.text). join(str"$ref { ", str"; ", str" }")
+case class Keyframe(ref: Text, style: Style):
+  def text: Text = style.properties.map(_.text). join(t"$ref { ", t"; ", t" }")
 
 object From extends Dynamic:
   inline def applyDynamicNamed(method: "apply")(inline properties: (Label, Any)*): Keyframe =
@@ -47,33 +47,33 @@ object To extends Dynamic:
   inline def applyDynamicNamed(method: "apply")(inline properties: (Label, Any)*): Keyframe =
     ${Macro.keyframe('{"to"}, 'properties)}
   
-case class Import(url: Txt) extends Stylesheet.Item:
-  def text: Txt = str"@import url('$url');"
+case class Import(url: Text) extends Stylesheet.Item:
+  def text: Text = t"@import url('$url');"
 
 object Style:
   given clairvoyant.HtmlAttribute["style", Style] with
-    def serialize(value: Style): String = value.properties.map(_.text).join(str";").s
+    def serialize(value: Style): String = value.properties.map(_.text).join(t";").s
     def name: String = "style"
 
 case class Style(properties: CssProperty*):
-  def text: Txt = properties.map(_.text).join(str"\n")
+  def text: Text = properties.map(_.text).join(t"\n")
   
   def apply(nested: (Selector => Rule)*): Selector => Stylesheet = sel =>
     Stylesheet(nested.map(_(sel))*)
 
 case class Rule(selector: Selector, style: Style) extends Stylesheet.Item:
-  def text: Txt =
-    val rules = style.properties.map(_.text).join(str"; ")
-    str"${selector.normalize.value} { $rules }"
+  def text: Text =
+    val rules = style.properties.map(_.text).join(t"; ")
+    t"${selector.normalize.value} { $rules }"
 
-case class CssProperty(key: Txt, value: Txt):
-  def text: Txt = str"$key: $value"
+case class CssProperty(key: Text, value: Text):
+  def text: Text = t"$key: $value"
 
 object Css extends Dynamic:
   inline def applyDynamicNamed(method: "apply")(inline properties: (Label, Any)*): Style =
     ${Macro.read('properties)}
 
-sealed trait Selector(val value: Txt):
+sealed trait Selector(val value: Text):
   inline def applyDynamicNamed(method: "apply")(inline properties: (Label, Any)*): Rule =
     ${Macro.rule('this, 'properties)}
   
@@ -98,11 +98,11 @@ sealed trait Selector(val value: Txt):
   infix def ~(that: Selector): Selector = Selector.Before(this, that)
 
 object Selector:
-  case class Element(element: Txt) extends Selector(element):
+  case class Element(element: Text) extends Selector(element):
     def normalize: Selector = this
 
   case class Before(left: Selector, right: Selector)
-  extends Selector(str"${left.value}~${right.value}"):
+  extends Selector(t"${left.value}~${right.value}"):
     def normalize: Selector = left.normalize match
       case Or(a, b) => Or(Before(a, right).normalize, Before(b, right).normalize)
       case left     => right.normalize match
@@ -110,24 +110,24 @@ object Selector:
         case right    => Before(left, right)
       
   case class After(left: Selector, right: Selector)
-  extends Selector(str"${left.value}+${right.value}"):
+  extends Selector(t"${left.value}+${right.value}"):
     def normalize: Selector = left.normalize match
       case Or(a, b) => Or(After(a, right).normalize, After(b, right).normalize)
       case left     => right.normalize match
         case Or(a, b) => Or(After(left, a).normalize, After(left, b).normalize)
         case right    => After(left, right)
       
-  case class Id(id: Txt) extends Selector(str"#$id"):
+  case class Id(id: Text) extends Selector(t"#$id"):
     def normalize: Selector = this
   
-  case class Class(cls: Txt) extends Selector(str".$cls"):
+  case class Class(cls: Text) extends Selector(t".$cls"):
     def normalize: Selector = this
   
-  case class PseudoClass(name: Txt) extends Selector(str":$name"):
+  case class PseudoClass(name: Text) extends Selector(t":$name"):
     def normalize: Selector = this
 
   case class And(left: Selector, right: Selector)
-  extends Selector(str"${left.value}${right.value}"):
+  extends Selector(t"${left.value}${right.value}"):
     def normalize: Selector = left.normalize match
       case Or(a, b) => Or(And(a, right).normalize, And(b, right).normalize)
       case left     => right.normalize match
@@ -135,11 +135,11 @@ object Selector:
         case right    => And(left, right)
 
   case class Or(left: Selector, right: Selector)
-  extends Selector(str"${left.value}, ${right.value}"):
+  extends Selector(t"${left.value}, ${right.value}"):
     def normalize: Selector = Or(left.normalize, right.normalize)
 
   case class Descendant(left: Selector, right: Selector)
-  extends Selector(str"${left.value} ${right.value}"):
+  extends Selector(t"${left.value} ${right.value}"):
     def normalize: Selector = left.normalize match
       case Or(a, b) => Or(Descendant(a, right).normalize, Descendant(b, right).normalize)
       case left     => right.normalize match
@@ -147,7 +147,7 @@ object Selector:
         case right    => Descendant(left, right)
 
   case class Child(left: Selector, right: Selector)
-  extends Selector(str"${left.value}>${right.value}"):
+  extends Selector(t"${left.value}>${right.value}"):
     def normalize: Selector = left.normalize match
       case Or(a, b) => Or(Child(a, right).normalize, Child(b, right).normalize)
       case left     => right.normalize match
