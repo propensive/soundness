@@ -27,6 +27,8 @@ import language.dynamics
 
 private[cataract] type Label = String & Singleton
 
+given Show[Double] = Showable(_).show
+
 object Macro:
   def rule(selector: Expr[Selector], props: Expr[Seq[(Label, Any)]])(using Quotes): Expr[Rule] =
     '{Rule($selector, ${read(props)})}
@@ -48,7 +50,7 @@ object Macro:
                   s"cataract: no valid CSS element $att taking values of type $typeName exists")
             }
           
-          '{CssProperty(dashed(Text($key)), $exp.show($value))} :: recur(tail)
+          '{CssProperty(Text($key).dashed, $exp.show($value))} :: recur(tail)
         case _ =>
           Nil
     
@@ -62,7 +64,7 @@ object Macro:
     try
       val i = string.indexWhere(_.isUpper, 1)
       string.take(i).lower :: words(string.drop(i))
-    catch case OutOfRangeError(_, _, _) => List(string.lower)
+    catch case error: OutOfRangeError => List(string.lower)
     
 
   private[cataract] def dashed(string: Text): Text = words(string).join(t"-")
@@ -376,11 +378,11 @@ object Initial
 type Dimension = Length | Int
 
 object ShowProperty:
-  given ShowProperty[Length] = _.text
-  given ShowProperty[Duration] = _.text
+  given ShowProperty[Length] = _.show
+  given ShowProperty[Duration] = _.show
   given ShowProperty[Dimension] =
-    case length: Length => length.text
-    case int: Int       => Text(int.toString)
+    case length: Length => length.show
+    case int: Int       => int.show
 
   given [A: ShowProperty, B: ShowProperty]: ShowProperty[(A, B)] = tuple =>
     t"${summon[ShowProperty[A]].show(tuple(0))} ${summon[ShowProperty[B]].show(tuple(1))}"
@@ -400,11 +402,11 @@ object ShowProperty:
   }.join(t", ")
 
   given ShowProperty[Text] = identity(_)
-  given ShowProperty[Int] = int => Text(int.toString)
+  given ShowProperty[Int] = _.show
   given ShowProperty[Srgb] = _.css
   given ShowProperty[Hsl] = _.css
   given ShowProperty[Color] = _.standardSrgb.css
-  given ShowProperty[PropertyValue] = c => Macro.dashed(c.text)
+  given ShowProperty[PropertyValue] = c => c.show.dashed
   given ShowProperty[Inherit.type] = c => t"inherit"
   given ShowProperty[Transparent.type] = c => t"transparent"
   given ShowProperty[Initial.type] = c => t"initial"
@@ -412,19 +414,41 @@ object ShowProperty:
 trait ShowProperty[-T]:
   def show(value: T): Text
 
-trait PropertyValue:
-  def text: Text = Text(this.toString).lower
+object PropertyValue:
+  given Show[PropertyValue] = Showable(_).show.lower
+
+trait PropertyValue
+
+object Duration:
+  given Show[Duration] =
+    case S(value)  => t"${value}s"
+    case Ms(value) => t"${value}ms"
 
 enum Duration:
   case S(value: Double)
   case Ms(value: Double)
 
-  def text: Text = this match
-    case S(value)  => t"${value.toString}s"
-    case Ms(value) => t"${value.toString}ms"
+def max(head: Length, tail: Length*): Length = tail.foldLeft(head)(_.function(t"max", _))
+def min(head: Length, tail: Length*): Length = tail.foldLeft(head)(_.function(t"min", _))
 
-def max(head: Length, tail: Length*): Length = tail.foldLeft(head)(_.function("max", _))
-def min(head: Length, tail: Length*): Length = tail.foldLeft(head)(_.function("min", _))
+object Length:
+  given Show[Length] =
+    case Auto        => t"auto"
+    case Px(value)   => t"${value}px"
+    case Pt(value)   => t"${value}pt"
+    case In(value)   => t"${value}in"
+    case Pc(value)   => t"${value}%"
+    case Cm(value)   => t"${value}cm"
+    case Mm(value)   => t"${value}mm"
+    case Em(value)   => t"${value}em"
+    case Ex(value)   => t"${value}ex"
+    case Ch(value)   => t"${value}ch"
+    case Rem(value)  => t"${value}rem"
+    case Vw(value)   => t"${value}vw"
+    case Vh(value)   => t"${value}vh"
+    case Vmin(value) => t"${value}vmin"
+    case Vmax(value) => t"${value}vmax"
+    case Calc(calc)  => t"calc($calc)"
 
 enum Length:
   case Px(value: Double)
@@ -444,66 +468,49 @@ enum Length:
   case Vmax(value: Double)
   case Calc(value: Text)
 
-  def text: Text = this match
-    case Px(value)   => t"${value.toString}px"
-    case Pt(value)   => t"${value.toString}pt"
-    case In(value)   => t"${value.toString}in"
-    case Auto        => t"auto"
-    case Pc(value)   => t"${value.toString}%"
-    case Cm(value)   => t"${value.toString}cm"
-    case Mm(value)   => t"${value.toString}mm"
-    case Em(value)   => t"${value.toString}em"
-    case Ex(value)   => t"${value.toString}ex"
-    case Ch(value)   => t"${value.toString}ch"
-    case Rem(value)  => t"${value.toString}rem"
-    case Vw(value)   => t"${value.toString}vw"
-    case Vh(value)   => t"${value.toString}vh"
-    case Vmin(value) => t"${value.toString}vmin"
-    case Vmax(value) => t"${value.toString}vmax"
-    case Calc(calc)  => t"calc($calc)"
-
   @targetName("add")
-  infix def +(dim: Length): Length = infixOp(" + ", dim)
+  infix def +(dim: Length): Length = infixOp(t" + ", dim)
   
   @targetName("sub")
-  infix def -(dim: Length): Length = infixOp(" - ", dim)
+  infix def -(dim: Length): Length = infixOp(t" - ", dim)
   
   @targetName("mul")
-  infix def *(double: Double): Length = infixOp(" * ", double)
+  infix def *(double: Double): Length = infixOp(t" * ", double)
   
   @targetName("div")
-  infix def /(double: Double): Length = infixOp(" / ", double)
+  infix def /(double: Double): Length = infixOp(t" / ", double)
 
-  private def infixOp(operator: String, dim: Length | Double): Length.Calc = this match
+  private def infixOp(operator: Text, dim: Length | Double): Length.Calc = this match
     case Calc(calc) => dim match
-      case double: Double => Calc(t"($calc)$operator${double.toString}")
+      case double: Double => Calc(t"($calc)$operator${double}")
       case Calc(calc2)    => Calc(t"($calc)$operator($calc2)")
-      case other          => Calc(t"($calc)$operator${other.toString}")
-    case other => dim match
-      case double: Double => Calc(t"$toString$operator${double.toString}")
-      case Calc(calc2)    => Calc(t"$toString$operator($calc2)")
-      case other          => Calc(t"$toString$operator${other.toString}")
+      case length: Length => Calc(t"($calc)$operator$length")
     
-  def function(name: String, right: Length | Double): Length =
-    Calc(t"$name(${infixOp(", ", right).value})")
+    case other => dim match
+      case double: Double => Calc(t"${this.show}$operator$double")
+      case Calc(calc2)    => Calc(t"${this.show}$operator($calc2)")
+      case length: Length => Calc(t"${this.show}$operator$length")
+    
+  def function(name: Text, right: Length | Double): Length =
+    Calc(t"$name(${infixOp(t", ", right).value})")
 
 extension (value: Double)
-  def sec = Duration.S(value)
-  def ms = Duration.Ms(value)
-  def px = Length.Px(value)
-  def pt = Length.Pt(value)
-  def in = Length.In(value)
-  def pc = Length.Pc(value)
-  def cm = Length.Cm(value)
-  def mm = Length.Mm(value)
-  def em = Length.Em(value)
-  def ex = Length.Ex(value)
-  def ch = Length.Ch(value)
-  def rem = Length.Rem(value)
-  def vw = Length.Vw(value)
-  def vh = Length.Vh(value)
-  def vmin = Length.Vmin(value)
-  def vmax = Length.Vmax(value)
+  def sec: Duration = Duration.S(value)
+  def ms: Duration = Duration.Ms(value)
+  def px: Length = Length.Px(value)
+  def pt: Length = Length.Pt(value)
+  def in: Length = Length.In(value)
+  def pc: Length = Length.Pc(value)
+  def cm: Length = Length.Cm(value)
+  def mm: Length = Length.Mm(value)
+  def em: Length = Length.Em(value)
+  def ex: Length = Length.Ex(value)
+  def ch: Length = Length.Ch(value)
+  def rem: Length = Length.Rem(value)
+  def vw: Length = Length.Vw(value)
+  def vh: Length = Length.Vh(value)
+  def vmin: Length = Length.Vmin(value)
+  def vmax: Length = Length.Vmax(value)
 
 enum Position extends PropertyValue:
   case Static, Absolute, Fixed, Relative, Sticky
@@ -565,8 +572,8 @@ enum Dir:
   case Rtl, Ltr
 
 package pseudo:
-  def dir(direction: Dir) = Selector.PseudoClass(t"dir(${direction.toString.lower})")
-  def lang(language: String) = Selector.PseudoClass(t"lang($language)")
+  def dir(direction: Dir) = Selector.PseudoClass(t"dir(${direction.show.lower})")
+  def lang(language: Text) = Selector.PseudoClass(t"lang($language)")
   val after = Selector.PseudoClass(t":after")
   val before = Selector.PseudoClass(t":before")
   val selection = Selector.PseudoClass(t":selection")
