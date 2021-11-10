@@ -116,7 +116,7 @@ case class Tabulation[T: ClassTag](cols: Column[T]*):
                              lineStart = lastSpace + 1
                              skip = 0
         idx += 1
-      catch case OutOfRangeError(_, _, _) => throw Impossible("can't be out of range")
+      catch case e: OutOfRangeError => throw Impossible("can't be out of range")
 
       height + 1
     
