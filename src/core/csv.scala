@@ -33,7 +33,7 @@ trait Format:
         if join then items.init :+ items.last + line.slice(start, if end < 0 then idx else end)
         else items :+ line.slice(start, if end < 0 then idx else end)
       else 
-        val ch = try line(idx) catch case error@OutOfRangeError(_, _, _) => throw Impossible(error)
+        val ch = try line(idx) catch case error: OutOfRangeError => throw Impossible(error)
         
         (ch: @switch) match
           case `separator` =>
@@ -114,8 +114,8 @@ object Csv extends Format:
   given Writer[Boolean] = b => Row(b.show)
   given Writer[Byte] = b => Row(b.show)
   given Writer[Short] = s => Row(s.show)
-  given Writer[Float] = f => Row(Text(f.toString))
-  given Writer[Double] = d => Row(Text(d.toString))
+  given Writer[Float] = f => Row(Showable(f).show)
+  given Writer[Double] = d => Row(Showable(d).show)
   given Writer[Char] = c => Row(c.show)
 
   object Writer extends ProductDerivation[Writer]:

@@ -81,15 +81,15 @@ object Tests extends Suite(t"Caesura tests"):
     // }.assert(_ == Row("0.1", "two", "three", "4", "five", "six"))
 
     // test("convert simple row to string") {
-    //   Csv(Row("hello", "world")).toString
+    //   Csv(Row("hello", "world")).show
     // }.assert(_ == """hello,world""")
 
     // test("convert complex row to string") {
-    //   Csv(Row("0.1", "two", "three", "4", "five", "six")).toString
+    //   Csv(Row("0.1", "two", "three", "4", "five", "six")).show
     // }.assert(_ == """0.1,two,three,4,five,six""") // "
 
     // test("convert row with escaped quote") {
-    //   Csv(Row("hello\"world")).toString
+    //   Csv(Row("hello\"world")).show
     // }.assert(_ == """"hello""world"""")
 
     // test("simple parse tsv") {
@@ -101,7 +101,7 @@ object Tests extends Suite(t"Caesura tests"):
     // }.assert(_ == Foo("hello", "world"))
 
     // test("convert case class to tsv") {
-    //   Seq(Foo("hello", "world")).tsv.toString
+    //   Seq(Foo("hello", "world")).tsv.show
     // }.assert(_ == "hello\tworld") // "
 
 case class Foo(one: String, two: String)
