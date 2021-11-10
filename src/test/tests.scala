@@ -137,10 +137,6 @@ object Tests extends Suite(t"Gossamer Tests"):
         Person(t"Simon", 72).debug
       }.check(_ == t"Person(name = \"Simon\", age = 72)")
       
-      test(t"directly-derived serialize case class") {
-        DebugString.derived[Person].show(Person(t"Simon", 72))
-      }.check(_ == t"Person(name = \"Simon\", age = 72)")
-    
       test(t"serialize list of strings") {
         List(t"one", t"two", t"three").debug
       }.check(_ == t"""Seq("one", "two", "three")""")

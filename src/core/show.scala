@@ -24,13 +24,14 @@ trait Show[-T]:
 object Show extends Derivation[Show]:
   given Show[String] = Text(_)
   given Show[Text] = identity(_)
-  given Show[Int] = num => Text(num.toString)
-  given Show[Short] = num => Text(num.toString)
-  given Show[Long] = num => Text(num.toString)
-  given Show[Byte] = num => Text(num.toString)
-  given Show[Char] = ch => Text(ch.toString)
-  given Show[Boolean] = if _ then Text("true") else Text("false")
-
+  given Show[Int] = Showable(_).show
+  given Show[Short] = Showable(_).show
+  given Show[Long] = Showable(_).show
+  given Show[Byte] = Showable(_).show
+  given Show[Char] = Showable(_).show
+  given Show[Boolean] = if _ then t"true" else t"false"
+  given Show[reflect.Enum] = Showable(_).show
+  
   given [T: Show]: Show[Option[T]] =
     case None    => t"none"
     case Some(v) => v.show

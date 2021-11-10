@@ -44,7 +44,8 @@ extension (text: Text)
   def punycode: Text = java.net.IDN.toASCII(s).nn
   def drop(n: Int): Text = s.substring(n).nn
   def dropRight(n: Int): Text = s.substring(0, 0 max (s.size - n)).nn
-  def take(n: Int): Text = s.substring(0, n).nn
+  def take(n: Int): Text = s.substring(0, n min length).nn
+  def cutAt(n: Int): (Text, Text) = (s.substring(0, n).nn, s.substring(n).nn)
   def trim: Text = text.trim.nn
   def slice(index: Int): Text = s.substring(index).nn
   def slice(from: Int, to: Int): Text = s.substring(from, to).nn
@@ -53,15 +54,24 @@ extension (text: Text)
   def map(fn: Char => Char): Text = String(s.toCharArray.nn.map(fn))
   def isEmpty: Boolean = s.isEmpty
   def cut(delimiter: Text): List[Text] = cut(delimiter, 0)
-  def sub(from: Text, to: Text): Text = text.replaceAll(Pattern.quote(from), to).nn
   def rsub(from: Text, to: Text): Text = text.replaceAll(from, to).nn
   def startsWith(str: Text): Boolean = text.startsWith(str)
   def endsWith(str: Text): Boolean = text.endsWith(str)
+  def sub(from: Text, to: Text): Text = text.replaceAll(Pattern.quote(from), to).nn
   def sub(from: Char, to: Char): Text = text.replace(from, to).nn
+
+  def camelCaseWords: List[Text] =
+    (try text.indexWhere(_.isUpper, 1) catch case error: OutOfRangeError => -1) match
+      case -1 => List(text.lower)
+      case i  => text.take(i).lower :: text.drop(i).camelCaseWords
+
+  def dashed: Text = camelCaseWords.mkString("-").show
+
   def cut(delimiter: Text, limit: Int): List[Text] =
     s.split(Pattern.quote(delimiter), limit).nn.map(_.nn).to(List)
 
   def fit(width: Int, char: Char = ' '): Text = (text + char.show*(width - text.length)).take(width)
+  def fitRight(width: Int, char: Char = ' '): Text = (char.show*(width - text.length) + text).take(width)
 
   @targetName("add")
   infix def +(other: Text): Text = s+other
@@ -74,10 +84,10 @@ extension (text: Text)
     else throw OutOfRangeError(idx, 0, s.size)
 
   def padRight(length: Int, char: Char = ' '): Text = 
-    if s.size < length then s+char.toString*(length - s.size) else s
+    if s.size < length then s+Showable(char).show.s*(length - s.size) else s
   
   def padLeft(length: Int, char: Char = ' '): Text =
-    if s.size < length then char.toString*(length - s.size)+s else s
+    if s.size < length then Showable(char).show.s*(length - s.size)+s else s
 
   def contains(substring: Text): Boolean = text.contains(substring)
   def contains(char: Char): Boolean = text.indexOf(char) != -1
@@ -89,7 +99,7 @@ extension (text: Text)
 
   def takeWhile(pred: Char => Boolean): Text =
     try text.substring(0, indexWhere(!pred(_))).nn
-    catch case OutOfRangeError(_, _, _) => text
+    catch case e: OutOfRangeError => text
 
   def lev(other: Text): Int =
     val m = s.size
@@ -114,7 +124,7 @@ extension (string: String)
   def text: Text = string
 
 object Text:
-  given Ordering[Text] = Ordering[String].on[Text](_.s)
+  given Ordering[Text] = (left, right) => if left < right then -1 else if right < left then 1 else 0
 
   given typeTest: Typeable[Text] with
     def unapply(value: Any): Option[value.type & Text] = value match
@@ -149,9 +159,12 @@ extension [T](values: Iterable[T])(using joinable: Joinable[T])
 case class OutOfRangeError(idx: Int, from: Int, to: Int)
 extends Exception(s"gossamer: the index $idx exceeds the range $from-$to")
 
+case class Showable[T](value: T):
+  def show: Text = Text(value.toString)
+
 trait Shown[T](using Show[T]):
   this: T =>
-    override def toString: String = summon[Show[T]].show(this).s
+    override def toString(): String = summon[Show[T]].show(this).s
 
 object Interpolation:
   case class Input(txt: Text)
@@ -159,7 +172,7 @@ object Interpolation:
   given [T: Show]: Insertion[Input, T] = value => Input(summon[Show[T]].show(value))
 
   private def escape(str: String): Text =
-    val buf: StringBuffer = StringBuffer()
+    val buf: StringBuilder = StringBuilder()
     
     def parseUnicode(chars: Text): Char =
       if chars.length < 4 then throw InterpolationError("the unicode escape is incomplete")
@@ -171,35 +184,35 @@ object Interpolation:
       then
         str.s.charAt(cur) match
           case '\\' if !esc => recur(cur + 1, true)
-          case '\\'         => buf.append('\\')
+          case '\\'         => buf.add('\\')
                                recur(cur + 1, false)
-          case 'n' if esc   => buf.append('\n')
+          case 'n' if esc   => buf.add('\n')
                                recur(cur + 1)
-          case 'r' if esc   => buf.append('\r')
+          case 'r' if esc   => buf.add('\r')
                                recur(cur + 1)
-          case 'f' if esc   => buf.append('\f')
+          case 'f' if esc   => buf.add('\f')
                                recur(cur + 1)
-          case 'b' if esc   => buf.append('\b')
+          case 'b' if esc   => buf.add('\b')
                                recur(cur + 1)
-          case 't' if esc   => buf.append('\t')
+          case 't' if esc   => buf.add('\t')
                                recur(cur + 1)
-          case 'u' if esc   => buf.append(parseUnicode(str.slice(cur + 1, cur + 5)))
+          case 'u' if esc   => buf.add(parseUnicode(str.slice(cur + 1, cur + 5)))
                                recur(cur + 4)
-          case 'e' if esc   => buf.append('\u001b')
+          case 'e' if esc   => buf.add('\u001b')
                                recur(cur + 1)
-          case '"' if esc   => buf.append('"')
+          case '"' if esc   => buf.add('"')
                                recur(cur + 1)
-          case '\'' if esc  => buf.append('\'')
+          case '\'' if esc  => buf.add('\'')
                                recur(cur + 1)
           case ch if esc    => throw InterpolationError(
                                    s"the character '$ch' does not need to be escaped".s)
-          case ch           => buf.append(ch)
+          case ch           => buf.add(ch)
                                recur(cur + 1)
       else if esc then throw InterpolationError("the final character cannot be an escape")
     
     recur()
     
-    gossamer.Text(buf.toString)
+    buf.text
       
 
   object T extends Interpolator[Input, Text, Text]:
@@ -218,3 +231,9 @@ object Interpolation:
     def complete(state: Text): Text =
       gossamer.Text(state.s.split("\\n\\s*\\n").nn.map(_.nn.replaceAll("\\s\\s*", " ").nn.trim.nn
           ).mkString("\n").nn)
+
+
+extension (buf: StringBuilder)
+  def add(text: Text): Unit = buf.append(text.s)
+  def add(char: Char): Unit = buf.append(char)
+  def text: Text = Showable(buf).show
