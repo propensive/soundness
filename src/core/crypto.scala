@@ -39,17 +39,22 @@ trait Signing:
 
 trait Symmetric
 
-case class Message[+A <: CryptoAlgorithm[?]](bytes: Bytes) extends Encodable:
-  override def toString(): String = t"Message(${bytes.encode[Base64]})".s
+object Message:
+  given Show[Message[?]] = msg => t"Message(${msg.bytes.encode[Base64]})"
 
-case class Signature[+A <: CryptoAlgorithm[?]](bytes: Bytes) extends Encodable:
-  override def toString(): String = t"Signature(${bytes.encode[Base64]})".s
+case class Message[+A <: CryptoAlgorithm[?]](bytes: Bytes) extends Encodable, Shown[Message[?]]
 
-object RevealSecretKey
+object Signature:
+  given Show[Signature[?]] = sig => t"Signature(${sig.bytes.encode[Base64]})"
 
-case class PublicKey[A <: CryptoAlgorithm[?]](bytes: Bytes):
-  override def toString(): String = t"PublicKey(${bytes.encode[Hex]})".s
+case class Signature[+A <: CryptoAlgorithm[?]](bytes: Bytes) extends Encodable, Shown[Signature[?]]
 
+object ExposeSecretKey
+
+object PublicKey:
+  given Show[PublicKey[?]] = key => t"PublicKey(${key.bytes.encode[Hex]})"
+
+case class PublicKey[A <: CryptoAlgorithm[?]](bytes: Bytes) extends Shown[PublicKey[?]]:
   def encrypt[T: ByteCodec](value: T)(using A & Encryption): Message[A] =
     Message(summon[A].encrypt(summon[ByteCodec[T]].encode(value), bytes))
   
@@ -62,22 +67,23 @@ object PrivateKey:
   def generate[A <: CryptoAlgorithm[?]]()(using A): PrivateKey[A] =
     PrivateKey(summon[A].genKey())
 
-case class PrivateKey[A <: CryptoAlgorithm[?]](private[gastronomy] val privateBytes: Bytes):
-  override def toString(): String =
-    t"PrivateKey(${privateBytes.digest[Sha2[256]].encode[Base64]})".s
-  
+  given Show[PrivateKey[?]] =
+    key => t"PrivateKey(${key.privateBytes.digest[Sha2[256]].encode[Base64]})"
+
+case class PrivateKey[A <: CryptoAlgorithm[?]](private[gastronomy] val privateBytes: Bytes)
+extends Shown[PrivateKey[?]]:
   def public(using A): PublicKey[A] = PublicKey(summon[A].privateToPublic(privateBytes))
   
-  inline def decrypt[T: ByteCodec](message: Message[A])(using A & Encryption): T throws DecodeFailure =
+  inline def decrypt[T: ByteCodec](message: Message[A])(using A & Encryption): T throws DecodeError =
     decrypt(message.bytes)
   
-  inline def decrypt[T: ByteCodec](bytes: Bytes)(using A & Encryption): T throws DecodeFailure =
+  inline def decrypt[T: ByteCodec](bytes: Bytes)(using A & Encryption): T throws DecodeError =
     summon[ByteCodec[T]].decode(summon[A].decrypt(bytes, privateBytes))
   
   inline def sign[T: ByteCodec](value: T)(using A & Signing): Signature[A] =
     Signature(summon[A].sign(summon[ByteCodec[T]].encode(value), privateBytes))
   
-  def pem(reveal: RevealSecretKey.type): Pem = Pem(t"PRIVATE KEY", privateBytes)
+  def pem(reveal: ExposeSecretKey.type): Pem = Pem(t"PRIVATE KEY", privateBytes)
 
 object SymmetricKey:
   def generate[A <: CryptoAlgorithm[?] & Symmetric]()(using A): SymmetricKey[A] =
@@ -92,7 +98,7 @@ extends PrivateKey[A](bytes):
 
 class GastronomyException(message: Text) extends Exception(t"gastronomy: $message".s)
 
-case class DecodeFailure(message: Text)
+case class DecodeError(message: Text)
 extends GastronomyException(t"could not decode the message")
 
 case class DecryptionFailure(message: Bytes)
@@ -100,21 +106,21 @@ extends GastronomyException(t"could not decrypt the message")
 
 trait ByteCodec[T]:
   def encode(value: T): Bytes
-  def decode(bytes: Bytes): T throws DecodeFailure
+  def decode(bytes: Bytes): T throws DecodeError
 
 object ByteCodec:
   given ByteCodec[Bytes] with
     def encode(value: Bytes): Bytes = value
-    def decode(bytes: Bytes): Bytes throws DecodeFailure = bytes
+    def decode(bytes: Bytes): Bytes throws DecodeError = bytes
    
   given ByteCodec[Text] with
     def encode(value: Text): Bytes = value.bytes
-    def decode(bytes: Bytes): Text throws DecodeFailure =
+    def decode(bytes: Bytes): Text throws DecodeError =
       val buffer = ByteBuffer.wrap(bytes.unsafeMutable)
       
-      try Text(Charset.forName("UTF-8").nn.newDecoder().nn.decode(buffer).toString)
+      try Showable(Charset.forName("UTF-8").nn.newDecoder().nn.decode(buffer)).show
       catch CharacterCodingException =>
-        throw DecodeFailure(t"the message did not contain a valid UTF-8 string")
+        throw DecodeError(t"the message did not contain a valid UTF-8 string")
 
 object Aes:
   given aes[I <: 128 | 192 | 256: ValueOf]: Aes[I] = Aes()

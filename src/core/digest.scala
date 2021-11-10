@@ -57,14 +57,19 @@ trait Encodable:
   val bytes: Bytes
   def encode[ES <: EncodingScheme: ByteEncoder]: Text = bytes.encode[ES]
 
-case class Hmac[A <: HashScheme[?]](bytes: Bytes) extends Encodable
+object Hmac:
+  given Show[Hmac[?]] = hmac => t"Hmac(${hmac.bytes.encode[Base64]})"
+
+case class Hmac[A <: HashScheme[?]](bytes: Bytes) extends Encodable, Shown[Hmac[?]]
 
 case class HashFunction[A <: HashScheme[?]](name: Text, hmacName: Text):
   def init: DigestAccumulator = DigestAccumulator(MessageDigest.getInstance(name.s).nn)
   def initHmac: Mac = Mac.getInstance(hmacName.s).nn
 
-case class Digest[A <: HashScheme[?]](bytes: Bytes) extends Encodable:
-  override def toString: String = t"Digest(${encode[Base64]}".s
+object Digest:
+  given Show[Digest[?]] = digest => t"Digest(${digest.bytes.encode[Base64]})"
+
+case class Digest[A <: HashScheme[?]](bytes: Bytes) extends Encodable, Shown[Digest[?]]
 
 object Hashable extends Derivation[Hashable]:
   def join[T](caseClass: CaseClass[Hashable, T]): Hashable[T] =
@@ -141,8 +146,8 @@ object ByteEncoder:
   
   given ByteEncoder[Binary] = bytes =>
     val buf = StringBuilder()
-    bytes.foreach { byte => buf.append(Integer.toBinaryString(byte).nn.padLeft(8, '0')) }
-    Text(buf.toString)
+    bytes.foreach { byte => buf.add(Integer.toBinaryString(byte).nn.show.fitRight(8, '0')) }
+    buf.text
 
   given ByteEncoder[Base64Url] = bytes =>
     Text(Base64Encoder.nn.encodeToString(bytes.to(Array)).nn)
