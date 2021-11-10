@@ -56,7 +56,7 @@ case class AnsiString(string: Text, escapes: TreeMap[Int, List[Ansi.Change]] = T
         init))
 
   def padTo(n: Int, char: Char = ' ') =
-    if length < n then this + AnsiString(Text(char.toString*(n - length))) else this
+    if length < n then this + AnsiString(char.show*(n - length)) else this
 
   def span(n: Int): AnsiString = take(n).padTo(n)
 
@@ -91,15 +91,15 @@ case class AnsiString(string: Text, escapes: TreeMap[Int, List[Ansi.Change]] = T
     def build(treeMap: TreeMap[Int, List[Ansi.Change]], pos: Int = 0, stack: List[Style] = Nil): Text =
 
       if treeMap.isEmpty then
-        buf.append(string.slice(pos, string.length).s)
-        Text(buf.toString)
+        buf.add(string.slice(pos, string.length))
+        buf.text
       else
-        buf.append(string.slice(pos, treeMap.head(0)))
+        buf.add(string.show.slice(pos, treeMap.head(0)))
         
         val newStack = treeMap.head(1).sortBy(_ != Ansi.Change.Pop).foldLeft(stack) {
           case (head :: tail, Ansi.Change.Pop) =>
             val next = tail.headOption.getOrElse(Style())
-            buf.append(head.changes(next))
+            buf.add(head.changes(next))
             tail
           
           case (Nil, Ansi.Change.Pop) => Nil
@@ -107,12 +107,12 @@ case class AnsiString(string: Text, escapes: TreeMap[Int, List[Ansi.Change]] = T
           case (stack, Ansi.Change.Push(fn)) =>
             val currentStyle = stack.headOption.getOrElse(Style())
             val next = fn(currentStyle)
-            buf.append(currentStyle.changes(next))
+            buf.add(currentStyle.changes(next))
             next :: stack
           
           case (stack, Ansi.Change.Literal(str)) =>
-            buf.append(27.toChar)
-            buf.append(str)
+            buf.add(27.toChar)
+            buf.add(str)
             stack
         }
         
