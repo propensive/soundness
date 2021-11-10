@@ -46,7 +46,7 @@ trait Application:
       
       case "{exoskeleton-generate}" :: _ =>
         try Generate.install()(using Shell(args.tail.map(Text(_)), env, props))
-        catch case InstallError() | EnvError(_) =>
+        catch case e: (InstallError | EnvError) =>
           println("Installation failed")
           Exit(1)
       

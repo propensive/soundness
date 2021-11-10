@@ -45,18 +45,6 @@
 //     case head +: Vector()   => parse(head.string).toRight(CouldNotParse(head))
 //     case head +: extra +: _ => Left(UnexpectedArg(extra))
 
-// object Show:
-//   given Show[String] = identity(_)
-//   given Show[Int] = _.toString
-//   given Show[Double] = _.toString
-//   given Show[Float] = _.toString
-//   given Show[Short] = _.toString
-//   given Show[Byte] = _.toString
-//   given Show[Char] = _.toString
-
-// trait Show[T]:
-//   def show(value: T): String
-
 // object Params:
 //   def parse(completing: Boolean, current: Int, args: Seq[String]): Params =
 //     @tailrec 

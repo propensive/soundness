@@ -194,7 +194,9 @@ case class ParamMap(args: Text*):
   case class Part(no: Int, start: Int, end: Int):
     def apply(): Text = args(no).slice(start, end).nn
 
-  case class Parameter(key: Part, values: Vector[Part] = Vector()):
-    override def toString =
-      val prefix = if key().length == 1 then "-" else "--"
-      s"$prefix${key()} ${values.map(_()).join(t" ")}"
+  object Parameter:
+    given Show[Parameter] = param =>
+      val prefix = if param.key().length == 1 then "-" else "--"
+      t"$prefix${param.key()} ${param.values.map(_()).join(t" ")}"
+
+  case class Parameter(key: Part, values: Vector[Part] = Vector())
