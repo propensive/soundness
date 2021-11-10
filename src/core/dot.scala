@@ -28,7 +28,7 @@ enum Dot:
   case Graph(id: Option[Dot.Id], strict: Boolean, statements: Dot.Statement*)
   case Digraph(id: Option[Dot.Id], strict: Boolean, statements: Dot.Statement*)
 
-  def serialize: String = Dot.serialize(Dot.tokenize(this))
+  def serialize: Text = Dot.serialize(Dot.tokenize(this))
 
   def add(newStatements: Dot.Statement*): Dot = this match
     case Dot.Graph(id, strict, statements*) =>
@@ -39,7 +39,12 @@ enum Dot:
 
 object Dot:
   case class Target(directed: Boolean, dest: Ref | Statement.Subgraph, link: Option[Target])
-  case class Attribute(key: String, value: String)
+  case class Attribute(key: Text, value: Text)
+
+  object Attachment:
+    // FIXME: This needs to include the port
+    given Show[Attachment] = _.id.key
+  
   case class Attachment(id: Id, compass: Option[CompassPoint] = None)
 
   case class Ref(id: Id, port: Option[Attachment] = None):
@@ -52,11 +57,11 @@ object Dot:
       Dot.Statement.Edge(this, Target(true, dest, None))
 
   object Ref:
-    def apply(key: String): Ref = Ref(Id(key))
+    def apply(key: Text): Ref = Ref(Id(key))
 
-  case class Id(key: String) extends Dynamic:
-    def applyDynamicNamed(method: "apply")(attrs: (String, String)*) =
-      Statement.Node(this, attrs.map { (k, v) => Attribute(k, v) }*)
+  case class Id(key: Text) extends Dynamic:
+    def applyDynamicNamed(method: "apply")(attrs: (String, Text)*) =
+      Statement.Node(this, attrs.map { (k, v) => Attribute(k.show, v) }*)
     
     @targetName("assign")
     infix def :=(id: Id): Statement.Assignment = Statement.Assignment(this, id)
@@ -71,7 +76,7 @@ object Dot:
     case Subgraph(id: Option[Id], statements: Statement*)
 
 
-  def serialize(tokens: Vector[String]): String =
+  def serialize(tokens: Vector[Text]): Text =
     val buf: StringBuilder = StringBuilder()
     var level: Int = 0
     var end: Boolean = true
@@ -82,65 +87,65 @@ object Dot:
 
     def whitespace(): Unit =
       if end then
-        buf.append("\n")
-        buf.append("  "*level)
+        buf.add(t"\n")
+        buf.add(t"  "*level)
         end = false
-      else buf.append(" ")
+      else buf.add(t" ")
 
-    tokens.foreach {
+    tokens.map(_.s).foreach {
       case ""   => ()
-      case ","  => buf.append(",")
-      case "{"  => whitespace(); buf.append("{"); indent(); newline()
-      case "}"  => outdent(); whitespace(); buf.append("}"); newline()
-      case "["  => whitespace(); buf.append("[")
-      case "]"  => whitespace(); buf.append("]"); newline()
+      case ","  => buf.add(t",")
+      case "{"  => whitespace(); buf.add(t"{"); indent(); newline()
+      case "}"  => outdent(); whitespace(); buf.add(t"}"); newline()
+      case "["  => whitespace(); buf.add(t"[")
+      case "]"  => whitespace(); buf.add(t"]"); newline()
       case ";"  => newline()
-      case word => whitespace(); buf.append(word)
+      case word => whitespace(); buf.add(word.show)
     }
 
-    buf.toString
+    buf.text
 
-  def tokenize(graph: Ref | Dot | Target | Statement | Attribute): Vector[String] = graph match
+  def tokenize(graph: Ref | Dot | Target | Statement | Attribute): Vector[Text] = graph match
     case Ref(id, port) =>
-      Vector(port.fold(s""""${id.key}"""") { p => s""""${id.key}:$p""""" })
+      Vector(port.fold(t""""${id.key}"""") { p => t""""${id.key}:$p""""" })
     
     case Attribute(key, value) =>
-      Vector(s"""$key="$value"""")
+      Vector(t"""$key="$value"""")
     
     case Target(directed, dest, link) =>
-      val op = if directed then "->" else "--"
-      Vector(op) ++ tokenize(dest) ++ link.to(Vector).flatMap(tokenize(_)) ++ Vector(";")
+      val op = if directed then t"->" else t"--"
+      Vector(op) ++ tokenize(dest) ++ link.to(Vector).flatMap(tokenize(_)) ++ Vector(t";")
 
     case Statement.Node(id, attrs*) =>
-      Vector(s""""${id.key}"""") ++ (if attrs.isEmpty then Vector() else (Vector("[") ++
-          attrs.to(Vector).flatMap(tokenize(_) :+ ",").init ++ Vector("]"))) ++ Vector(";")
+      Vector(t""""${id.key}"""") ++ (if attrs.isEmpty then Vector() else (Vector(t"[") ++
+          attrs.to(Vector).flatMap(tokenize(_) :+ t",").init ++ Vector(t"]"))) ++ Vector(t";")
     
     case Statement.Edge(id, rhs, attrs*) =>
       tokenize(id) ++ tokenize(rhs)
     
     case Statement.Assignment(id, id2) =>
-      Vector(s""""${id.key}"""", "=", s""""${id2.key}"""", ";")
+      Vector(t""""${id.key}"""", t"=", t""""${id2.key}"""", t";")
     
     case Statement.Subgraph(id, statements*) =>
-      Vector("subgraph") ++ id.to(Vector).map(_.key) ++ Vector("{") ++
-          statements.flatMap(tokenize(_)) ++ Vector("}")
+      Vector(t"subgraph") ++ id.to(Vector).map(_.key) ++ Vector(t"{") ++
+          statements.flatMap(tokenize(_)) ++ Vector(t"}")
     
     case Dot.Graph(id, strict, statements*) =>
       Vector(
-        if strict then Vector("strict") else Vector(),
-        Vector("graph"),
-        id.to(Vector).map(_.key), Vector("{"),
-        statements.flatMap(tokenize(_)), Vector("}")
+        if strict then Vector(t"strict") else Vector(),
+        Vector(t"graph"),
+        id.to(Vector).map(_.key), Vector(t"{"),
+        statements.flatMap(tokenize(_)), Vector(t"}")
       ).flatten
     
     case Dot.Digraph(id, strict, statements*) =>
       Vector(
-        if strict then Vector("strict") else Vector(),
-        Vector("digraph"),
+        if strict then Vector(t"strict") else Vector(),
+        Vector(t"digraph"),
         id.to(Vector).map(_.key),
-        Vector("{"),
+        Vector(t"{"),
         statements.flatMap(tokenize(_)),
-        Vector("}")
+        Vector(t"}")
       ).flatten
 
 object Digraph:
@@ -163,13 +168,13 @@ object NodeParser extends Interpolator[Unit, Option[Dot.Ref], Dot.Ref]:
   def parse(state: Option[Dot.Ref], next: String): Some[Dot.Ref] =
     Some { next.cut(":").to(List) match
       case List(id) =>
-        Dot.Ref(Dot.Id(id))
+        Dot.Ref(Dot.Id(id.show))
       
       case List(id, port) =>
-        Dot.Ref(Dot.Id(id), Some(Dot.Attachment(Dot.Id(port))))
+        Dot.Ref(Dot.Id(id.show), Some(Dot.Attachment(Dot.Id(port.show))))
       
       case List(id, port, point@("n" | "e" | "s" | "w" | "ne" | "nw" | "se" | "sw")) =>
-        Dot.Ref(Dot.Id(id), Some(Dot.Attachment(Dot.Id(port),
+        Dot.Ref(Dot.Id(id.show), Some(Dot.Attachment(Dot.Id(port.show),
             Some(Dot.CompassPoint.valueOf(point.capitalize)))))
       
       case _ =>

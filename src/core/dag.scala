@@ -16,6 +16,8 @@
 
 package acyclicity
 
+import gossamer.*
+
 import scala.annotation.*
 
 import annotation.targetName
@@ -129,5 +131,5 @@ case class Dag[T] private(edgeMap: Map[T, Set[T]] = Map()):
       case Some(cycle) => Left(cycle)
       case None        => Right(apply(start).flatMap { c => recur(List(c)) })
 
-extension (dag: Dag[String])
+extension (dag: Dag[Text])
   def dot: Dot = Digraph(dag.edges.to(List).map(Dot.Ref(_) --> Dot.Ref(_))*)
