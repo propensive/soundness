@@ -22,32 +22,33 @@ import contextual.*
 import scala.io.*
 
 object MediaType:
-  given DebugString[MediaType] = mt => t"""media"${mt.toString}""""
-  given Show[MediaType] = _.text
+  given DebugString[MediaType] = mt => t"""media"${mt}""""
+  
+  given Show[MediaType] =
+    mt => t"${mt.basic}${mt.parameters.map { p => t"; ${p(0)}=${p(1)}" }.join}"
   
   given formenctype: clairvoyant.HtmlAttribute["formenctype", MediaType] with
     def name: String = "formenctype"
-    def serialize(mediaType: MediaType): String = mediaType.toString
+    def serialize(mediaType: MediaType): String = mediaType.show.s
   
   given media: clairvoyant.HtmlAttribute["media", MediaType] with
     def name: String = "media"
-    def serialize(mediaType: MediaType): String = mediaType.toString
+    def serialize(mediaType: MediaType): String = mediaType.show.s
   
   given enctype: clairvoyant.HtmlAttribute["enctype", MediaType] with
     def name: String = "enctype"
-    def serialize(mediaType: MediaType): String = mediaType.toString
+    def serialize(mediaType: MediaType): String = mediaType.show.s
   
   given htype: clairvoyant.HtmlAttribute["htype", MediaType] with
     def name: String = "type"
-    def serialize(mediaType: MediaType): String = mediaType.toString
+    def serialize(mediaType: MediaType): String = mediaType.show.s
 
   def unapply(value: Text): Option[MediaType] =
-    try Some(Media.parse(value)) catch case InvalidMediaTypeError(_, _) => None
+    try Some(Media.parse(value)) catch case err: InvalidMediaTypeError => None
 
 case class MediaType(group: Media.Group, subtype: Media.Subtype, suffixes: List[Media.Suffix] = Nil,
                         parameters: List[(Text, Text)] = Nil):
   private def suffixString: Text = suffixes.map { s => t"+${s.name}" }.join
-  def text: Text = t"$basic${parameters.map { p => t"; ${p(0)}=${p(1)}" }.join}"
   def basic: Text = t"${group.name}/${subtype.name}$suffixString"
 
 object Media:
@@ -58,7 +59,7 @@ object Media:
   enum Group:
     case Application, Audio, Image, Message, Multipart, Text, Video, Font, Example, Model
 
-    def name: Text = toString.show.lower
+    def name: Text = Showable(this).show.lower
 
   object Subtype:
     given Show[Subtype] = _.name
@@ -76,16 +77,16 @@ object Media:
       case X(value)        => t"x.$value"
 
   object Suffix:
-    given Show[Suffix] = _.toString.lower.text
+    given Show[Suffix] = Showable(_).show.lower
 
   enum Suffix:
     case Xml, Json, Ber, Cbor, Der, FastInfoset, Wbxml, Zip, Tlv, JsonSeq, Sqlite3, Jwt, Gzip,
         CborSeq, Zstd
   
-    def name: String = this match
-      case JsonSeq => "json-seq"
-      case CborSeq => "cbor-seq"
-      case other   => toString.lower
+    def name: Text = this match
+      case JsonSeq => t"json-seq"
+      case CborSeq => t"cbor-seq"
+      case other   => Showable(other).show.dashed
 
   lazy val systemMediaTypes: Set[Text] =
     val stream = Option(getClass.getResourceAsStream("/gesticulate/media.types")).getOrElse {
@@ -106,8 +107,8 @@ object Media:
 
     def complete(value: String): MediaType =
       val parsed = try Media.parse(Text(value)) catch
-        case InvalidMediaTypeError(value, nature) =>
-          throw InterpolationError(s"'$value' is not a valid media type; ${nature.message}")
+        case err: InvalidMediaTypeError =>
+          throw InterpolationError(s"'${err.value}' is not a valid media type; ${err.nature.message}")
 
       parsed.subtype match
         case Subtype.Standard(_) =>
@@ -126,7 +127,7 @@ object Media:
     def parseParams(ps: List[Text]): List[(Text, Text)] =
       if ps == List("")
       then throw InvalidMediaTypeError(string, InvalidMediaTypeError.Nature.MissingParam)
-      ps.map(_.cut(t"=", 2).asInstanceOf[List[Text]]).map { p => p(0) -> p(1) }
+      ps.map(_.cut(t"=", 2).to(List)).map { p => p(0).show -> p(1).show }
     
     def parseSuffixes(ss: List[Text]): List[Suffix] = ss.map(_.lower.capitalize).map { s =>
       try Suffix.valueOf(s) catch IllegalArgumentException =>
@@ -153,9 +154,9 @@ object Media:
     def parseSubtype(str: Text): Subtype =
       try
         val idx = (str.indexWhere { ch => ch.isWhitespace || ch.isControl || specials.contains(ch) })
-        val ch = try str(idx) catch case error@OutOfRangeError(_, _, _) => throw Impossible(error)
+        val ch = try str(idx) catch case error: OutOfRangeError => throw Impossible(error)
         throw InvalidMediaTypeError(string, InvalidMediaTypeError.Nature.InvalidChar(ch))
-      catch case OutOfRangeError(_, _, _) =>
+      catch case e: OutOfRangeError =>
         if str.startsWith("vnd.") then Subtype.Vendor(str.drop(4))
         else if str.startsWith("prs.") then Subtype.Personal(str.drop(4))
         else if str.startsWith("x.") || str.startsWith("x-") then Subtype.X(str.drop(2))
