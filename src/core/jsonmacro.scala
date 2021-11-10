@@ -52,6 +52,13 @@ object JsonMacro:
               } match
                 case '{ $r: Json.Reader[`t`] { type E = e } } =>
                   if TypeRepr.of[e] == TypeRepr.of[Nothing] then union(tail) else OrType(TypeRepr.of[e], union(tail))
+                case '{ $r: Json.Reader[`t`] } =>
+                  union(tail)
+                case other =>
+                  report.errorAndAbort(s"Unexpectedly found "+other.show)
+            
+            case _ =>
+              throw Impossible("The case '[t] should be irrefutable")
     
     union(fields).asType match
       case '[errorUnion] =>
@@ -73,13 +80,19 @@ object JsonMacro:
                           Expr.summon[Json.Reader[paramType]].getOrElse {
                             report.errorAndAbort(s"euphemism: cannot find Reader for case field of type ${Type.of[paramType]}")
                           } match
-                            case '{ $reader: Json.Reader[`paramType`] { type E = e & Exception } } =>
+                            case '{ $reader: Json.Reader[`paramType`] } =>
                               val label = Expr(head.name)
                               val expr: Expr[`paramType`] =
                                 '{
                                   $reader.read(vs.get($label).getOrElse(throw JsonAccessError(Text($label))))
                                 }
                               expr :: recur(tail)
+                            
+                            case _ =>
+                              throw Impossible("Expr.summon should never retrieve a value which doesn't match the first case")
+                        
+                        case _ =>
+                          throw Impossible("the pattern '[paramType] should be irrefutable")
 
                 val ap = companion.declaredMethod("apply").head
 
@@ -89,3 +102,4 @@ object JsonMacro:
             type E = `errorUnion` & Exception
             
         }
+      case _ => throw Impossible("the case '[errorUnion] should be irrefutable")

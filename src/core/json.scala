@@ -44,7 +44,7 @@ case class JsonTypeError(expectedType: JsonPrimitive)
 extends Exception(t"euphemism: the JSON element was not the expected type, $expectedType".s)
 
 object JsonPrimitive:
-  given Show[JsonPrimitive] = value => Text(value.toString)
+  given Show[JsonPrimitive] = Showable(_).show
 
 enum JsonPrimitive:
   case Array, Object, Number, Null, Boolean, String
@@ -57,9 +57,11 @@ object Json extends Dynamic:
   given Show[Json] = json =>
     try Text(json.normalize.root.render())
     catch
-      case JsonTypeError(t)        => t"<type mismatch: expected $t>"
-      case JsonAccessError(s: Text) => t"<missing label: $s>"
-      case JsonAccessError(i: Int) => t"<missing index: $i>"
+      case err: JsonTypeError   => t"<type mismatch: expected ${err.expectedType}>"
+      case err: JsonAccessError => err.key match
+        case text: Text => t"<missing label: $text>"
+        case int: Int   => t"<missing index: $int>"
+        case _          => throw Impossible("all cases should have been handled")
 
   given clairvoyant.HttpResponse[Json, Text] with
     def mimeType: String = "application/json"
