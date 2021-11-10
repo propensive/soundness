@@ -34,7 +34,7 @@ object Timestamp:
   given show: Show[Timestamp] = ts => dateFormat.format(ju.Date(ts)).nn.show
   given AnsiShow[Timestamp] = timestamp => ansi"${colors.Tan}(${show.show(timestamp)})"
 
-  private val dateFormat = jt.SimpleDateFormat("yyyy-MMM-dd HH:mm:ss.SSS")
+  private val dateFormat = jt.SimpleDateFormat(t"yyyy-MMM-dd HH:mm:ss.SSS".s)
 
 
 opaque type Timestamp = Long
@@ -47,7 +47,7 @@ object Level:
       case Warn => colors.Goldenrod
       case Fail => colors.OrangeRed
 
-    ansi"${Bg(color)}[${colors.Black}($Bold( ${Text(level.toString).upper} ))]"
+    ansi"${Bg(color)}[${colors.Black}($Bold( ${Showable(level).show.upper} ))]"
 
 enum Level:
   case Fine, Info, Warn, Fail
@@ -187,7 +187,9 @@ object Logger:
     
     val name = t"eucalyptus-$id"
 
-    Thread(runnable, name.s).start()
+    val thread = Thread(runnable, name.s)
+    thread.setDaemon(true)
+    thread.start()
 
 class Logger(writer: LazyList[Bytes] => Unit, rules: Seq[Rule[?, ?]], interval: Int):
   private val queue: juc.ConcurrentLinkedQueue[Bytes] = juc.ConcurrentLinkedQueue[Bytes]()
