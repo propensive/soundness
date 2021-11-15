@@ -54,25 +54,27 @@ object Macros:
     val tpe = TypeRepr.of[T]
     val fields = tpe.typeSymbol.caseFields
     
-    fields.flatMap { fld =>
-      val idx = Expr(fields.indexOf(fld))
-      val name = Expr(fld.name)
-      fld.annotations.map(_.asExpr).collect { case '{ $ann: A } => ann }.map { ann =>
-        '{ CaseField($name, (t: T) => ${'t.asTerm.select(fld).asExpr}, $ann) }
-      }.reverse
-    }.head
+    fields.flatMap:
+      fld =>
+        val idx = Expr(fields.indexOf(fld))
+        val name = Expr(fld.name)
+        
+        fld.annotations.map(_.asExpr).collect { case '{ $ann: A } => ann }.map:
+          ann => '{ CaseField($name, (t: T) => ${'t.asTerm.select(fld).asExpr}, $ann) }
+        .reverse
+    .head
 
   def fields[T <: Product: Type, A <: Ann: Type](using Quotes): Expr[List[CaseField[T, A]]] =
     import quotes.reflect.*
     val tpe = TypeRepr.of[T]
     val fields = tpe.typeSymbol.caseFields
     
-    val elements: List[Expr[CaseField[T, A]]] = fields.flatMap { fld =>
-      val name = Expr(fld.name)
-      fld.annotations.map(_.asExpr).collect { case '{ $ann: A } => ann }.map { ann =>
-        '{ CaseField($name, (t: T) => ${'t.asTerm.select(fld).asExpr}, $ann) }
-      }.reverse
-    }
+    val elements: List[Expr[CaseField[T, A]]] = fields.flatMap:
+      fld =>
+        val name = Expr(fld.name)
+        fld.annotations.map(_.asExpr).collect { case '{ $ann: A } => ann }.map:
+          ann => '{ CaseField($name, (t: T) => ${'t.asTerm.select(fld).asExpr}, $ann) }
+        .reverse
 
     Expr.ofList(elements)
 
@@ -82,17 +84,16 @@ object Macros:
 
     val field = fn.asTerm match
       case Inlined(_, _, Block(List(DefDef(_, _, _, Some(Select(_, term)))), _)) =>
-        tpe.typeSymbol.caseFields.find(_.name == term).getOrElse {
+        tpe.typeSymbol.caseFields.find(_.name == term).getOrElse:
           report.errorAndAbort(txt"adversaria: the member $term is not a case class field".s)
-        }
       
       case _ =>
-        report.errorAndAbort(txt"""adversaria: the lambda must be a simple reference to a case class
-                                   field""".s)
+        report.errorAndAbort:
+          txt"""adversaria: the lambda must be a simple reference to a case class field""".s
 
-    Expr.ofList(field.annotations.map(_.asExpr).collect {
+    Expr.ofList(field.annotations.map(_.asExpr).collect:
       case '{ $ann: Ann } => ann
-    })
+    )
 
   def typeAnnotations[A <: Ann: Type, T: Type](using Quotes): Expr[Annotations[A, T]] =
     import quotes.reflect.*
