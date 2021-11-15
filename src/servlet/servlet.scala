@@ -29,9 +29,9 @@ trait Servlet() extends HttpServlet:
   def handle(using Request): Response[?]
 
   protected case class ServletResponseWriter(response: HttpServletResponse) extends Responder:
-    def addHeader(key: Text, value: Text) = response.addHeader(key.s, value.s)
+    def addHeader(key: Text, value: Text): Unit = response.addHeader(key.s, value.s)
     
-    def sendBody(status: Int, body: Body) =
+    def sendBody(status: Int, body: Body): Unit =
       val length = body match
         case Body.Empty      => -1
         case Body.Data(body) => body.length
@@ -49,16 +49,18 @@ trait Servlet() extends HttpServlet:
           response.getOutputStream.nn.flush()
 
         case Body.Chunked(body) =>
-          body.map(_.unsafeMutable).foreach(response.getOutputStream.nn.write(_))
+          try body.map(_.unsafeMutable).foreach(response.getOutputStream.nn.write(_))
+          catch case e: StreamCutError => () // FIXME: Is it correct to just ignore this?
           response.getOutputStream.nn.flush()
 
   private def streamBody(request: HttpServletRequest): Body.Chunked =
     val in = request.getInputStream
     val buffer = new Array[Byte](4096)
     
-    def recur(): LazyList[IArray[Byte]] =
+    def recur(): DataStream = try
       val len = in.nn.read(buffer)
       if len > 0 then IArray.from(buffer.slice(0, len)) #:: recur() else LazyList.empty
+    catch case _: Exception => LazyList(throw StreamCutError())
     
     Body.Chunked(recur())
     
@@ -81,7 +83,7 @@ trait Servlet() extends HttpServlet:
     }.to(Map)
 
     Request(
-      method = Method.valueOf(request.getMethod.nn.lower.capitalize),
+      method = HttpMethod.valueOf(request.getMethod.nn.lower.capitalize),
       body = streamBody(request),
       query = Text(query.getOrElse("").nn),
       ssl = false,

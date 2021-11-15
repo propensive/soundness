@@ -51,7 +51,7 @@ object Tests extends Suite(t"Scintillate tests"):
         case Path("/notfound") =>
           Response(NotFound(t"Not-found message"))
         case Path("/withparam") =>
-          Response(Text((IntParam()*2).toString))
+          Response(IntParam()*2)
         case Path("/address") =>
           val address = List(t"house", t"street", t"city", t"country").map(param(_).get).join(t", ")
           Response(address)
@@ -77,7 +77,7 @@ object Tests extends Suite(t"Scintillate tests"):
     }.check(_ == t"This is a response")
     
     test(t"Send an HTTP GET request with a parameter") {
-      uri"http://localhost:8081/somewhere".query(one = "1").get().as[Text]
+      uri"http://localhost:8081/somewhere".query(one = t"1").get().as[Text]
     }.check(_ == t"Somewhere: 2")
     
     test(t"Send an HTTP POST request with a parameter") {
@@ -108,7 +108,7 @@ object Tests extends Suite(t"Scintillate tests"):
     test(t"Check and recover from not found") {
       try Http.get(uri"http://localhost:8081/notfound").as[Text]
       catch
-        case error@HttpError(HttpStatus.NotFound, _) => error.as[Text]
+        case error: HttpError => error.as[Text]
         case other => other.printStackTrace; ???
     }.check(_ == t"Not-found message")
     

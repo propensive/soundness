@@ -23,10 +23,11 @@ import wisteria.*
 import eucalyptus.*
 import iridescence.*
 import escapade.*
+import slalom.*
 
 import scala.collection.immutable.ListMap
 import scala.collection.JavaConverters.*
-import scala.annotation.tailrec
+import scala.annotation.{tailrec, targetName}
 
 import java.net.*
 import java.io.*
@@ -38,14 +39,14 @@ private[scintillate] given Realm(t"scintillate")
 
 enum Body:
   case Empty
-  case Chunked(stream: LazyList[IArray[Byte]])
+  case Chunked(stream: LazyList[IArray[Byte] throws StreamCutError])
   case Data(data: IArray[Byte])
 
 object ToQuery extends ProductDerivation[ToQuery]:
   def join[T](ctx: CaseClass[ToQuery, T]): ToQuery[T] = value =>
-    ctx.params.map {
+    ctx.params.map:
       param => param.typeclass.params(param.deref(value)).prefix(Text(param.label))
-    }.reduce(_.append(_))
+    .reduce(_.append(_))
 
   given ToQuery[Text] = str => Params(List((t"", str)))
   given ToQuery[Int] = int => Params(List((t"", int.show)))
@@ -65,54 +66,54 @@ object Postable:
   given Postable[LazyList[Bytes]] = Postable(media"application/octet-stream", identity(_))
 
 class Postable[T](val contentType: MediaType, val content: T => LazyList[Bytes]):
-  def preview(value: T): Text = content(value).headOption.fold(t"") { bytes =>
-    val sample = bytes.take(128)
+  def preview(value: T): Text = content(value).headOption.fold(t""):
+    bytes =>
+      val sample = bytes.take(256)
     
-    val str: Text =
-      if sample.forall { b => b >= 32 && b <= 127 } then sample.uString else sample.hex
-    
-    if bytes.length > 128 then t"$str..." else str
-  }
+      val str: Text =
+        if sample.forall { b => b >= 32 && b <= 127 } then sample.uString else sample.hex
+      
+      if bytes.length > 128 then t"$str..." else str
 
-object Method:
-  given formmethod: clairvoyant.HtmlAttribute["formmethod", Method] with
+object HttpMethod:
+  given formmethod: clairvoyant.HtmlAttribute["formmethod", HttpMethod] with
     def name: String = "formmethod"
-    def serialize(method: Method): String = method.toString
+    def serialize(method: HttpMethod): String = summon[AnsiShow[HttpMethod]].ansiShow(method).plain.s
 
-  given AnsiShow[Method] = method => ansi"${colors.Crimson}[${method.toString.show.upper}]"
+  given AnsiShow[HttpMethod] = method => ansi"${colors.Crimson}[${Showable(method).show.upper}]"
 
-enum Method:
+enum HttpMethod:
   case Get, Head, Post, Put, Delete, Connect, Options, Trace, Patch
 
 object HttpReadable:
   given HttpReadable[Text] with
-    type E = Nothing
-    def read(body: Body): Text throws TooMuchData | Nothing =
+    type E = StreamCutError
+    def read(body: Body): Text throws ExcessDataError | StreamCutError | E =
       body match
         case Body.Empty         => t""
         case Body.Data(body)    => body.uString
         case Body.Chunked(body) => body.slurp(maxSize = 10*1024*1024).uString
   
   given HttpReadable[Bytes] with
-    type E <: Exception
-    def read(body: Body): Bytes throws TooMuchData | E = body match
+    type E = Nothing
+    def read(body: Body): Bytes throws ExcessDataError | StreamCutError | E = body match
       case Body.Empty         => IArray()
       case Body.Data(body)    => body
       case Body.Chunked(body) => body.slurp(maxSize = 10*1024*1024)
 
   given [T, E2 <: Exception](using reader: clairvoyant.HttpReader[T, E2]): HttpReadable[T] with
     type E = E2
-    def read(body: Body): T throws TooMuchData | E2 = body match
+    def read(body: Body): T throws ExcessDataError | StreamCutError | E2 = body match
       case Body.Empty         => reader.read("")
       case Body.Data(data)    => reader.read(data.uString)
       case Body.Chunked(data) => reader.read(data.slurp(maxSize = 10*1024*1024).uString)
 
 trait HttpReadable[+T]:
   type E <: Exception
-  def read(body: Body): T throws TooMuchData | E
+  def read(body: Body): T throws ExcessDataError | StreamCutError | E
 
 case class HttpResponse(status: HttpStatus, headers: Map[ResponseHeader, List[String]], body: Body):
-  def as[T](using readable: HttpReadable[T]): T throws HttpError | TooMuchData | readable.E =
+  inline def as[T](using readable: HttpReadable[T]): T throws HttpError | ExcessDataError | StreamCutError | readable.E =
     status match
       case status: FailureCase => throw HttpError(status, body)
       case status              => readable.read(body)
@@ -120,8 +121,9 @@ case class HttpResponse(status: HttpStatus, headers: Map[ResponseHeader, List[St
 object Locatable:
   given Locatable[Uri] = identity(_)
   given Locatable[Text] = Uri(_, Params(Nil))
+  //given Locatable[Url] = url => Uri(Url.show.show(url), Params(Nil))
 
-trait Locatable[T]:
+trait Locatable[-T]:
   def location(value: T): Uri
 
 object Http:
@@ -129,74 +131,73 @@ object Http:
           (uri: L, content: T = (), headers: RequestHeader.Value*)
           (using Log)
           : HttpResponse =
-    request[T](summon[Locatable[L]].location(uri), content, Method.Post, headers)
+    request[T](summon[Locatable[L]].location(uri), content, HttpMethod.Post, headers)
 
   def put[T: Postable, L: Locatable]
          (uri: L, content: T = (), headers: RequestHeader.Value*)
          (using Log)
          : HttpResponse =
-    request[T](summon[Locatable[L]].location(uri), content, Method.Put, headers)
+    request[T](summon[Locatable[L]].location(uri), content, HttpMethod.Put, headers)
   
   def get[L: Locatable]
          (uri: L, headers: Seq[RequestHeader.Value] = Nil)
          (using Log)
          : HttpResponse =
-    request(summon[Locatable[L]].location(uri), (), Method.Get, headers)
+    request(summon[Locatable[L]].location(uri), (), HttpMethod.Get, headers)
 
   def options[L: Locatable]
              (uri: L, headers: RequestHeader.Value*)
              (using Log)
              : HttpResponse =
-    request(summon[Locatable[L]].location(uri), (), Method.Options, headers)
+    request(summon[Locatable[L]].location(uri), (), HttpMethod.Options, headers)
 
   def head[L: Locatable]
           (uri: L, headers: RequestHeader.Value*)
           (using Log)
           : HttpResponse =
-    request(summon[Locatable[L]].location(uri), (), Method.Head, headers)
+    request(summon[Locatable[L]].location(uri), (), HttpMethod.Head, headers)
   
   def delete[L: Locatable]
             (uri: L, headers: RequestHeader.Value*)
             (using Log)
             : HttpResponse =
-    request(summon[Locatable[L]].location(uri), (), Method.Delete, headers)
+    request(summon[Locatable[L]].location(uri), (), HttpMethod.Delete, headers)
   
   def connect[L: Locatable]
              (uri: L, headers: RequestHeader.Value*)
              (using Log)
              : HttpResponse =
-    request(summon[Locatable[L]].location(uri), (), Method.Connect, headers)
+    request(summon[Locatable[L]].location(uri), (), HttpMethod.Connect, headers)
   
   def trace[L: Locatable]
            (uri: L, headers: RequestHeader.Value*)
            (using Log)
            : HttpResponse =
-    request(summon[Locatable[L]].location(uri), (), Method.Trace, headers)
+    request(summon[Locatable[L]].location(uri), (), HttpMethod.Trace, headers)
   
   def patch[L: Locatable]
            (uri: L, headers: RequestHeader.Value*)
            (using Log)
            : HttpResponse =
-    request(summon[Locatable[L]].location(uri), (), Method.Patch, headers)
+    request(summon[Locatable[L]].location(uri), (), HttpMethod.Patch, headers)
 
-  private def request[T: Postable](url: Uri, content: T, method: Method,
+  private def request[T: Postable](url: Uri, content: T, method: HttpMethod,
                                        headers: Seq[RequestHeader.Value])(using Log): HttpResponse =
     Log.info(ansi"Sending HTTP $method request to $url")
     Log.fine(ansi"HTTP request body: ${summon[Postable[T]].preview(content)}")
-    URL(url.toString).openConnection.nn match
+    URL(url.show.s).openConnection.nn match
       case conn: HttpURLConnection =>
-        conn.setRequestMethod(method.toString.upper)
+        conn.setRequestMethod(Showable(method).show.upper)
         
         conn.setRequestProperty(RequestHeader.ContentType.header.s, summon[Postable[T]]
-          .contentType.toString)
+            .contentType.show.s)
         
-        conn.setRequestProperty("User-Agent", "Scintillate 1.0.0")
+        conn.setRequestProperty("User-Agent", "Scintillate/1.0.0")
         
-        headers.foreach { case RequestHeader.Value(key, value) =>
-          conn.setRequestProperty(key.header.s, value.s)
-        }
+        headers.foreach:
+          case RequestHeader.Value(key, value) => conn.setRequestProperty(key.header.s, value.s)
         
-        if method == Method.Post || method == Method.Put then
+        if method == HttpMethod.Post || method == HttpMethod.Put then
           conn.setDoOutput(true)
           val out = conn.getOutputStream().nn
 
@@ -220,10 +221,11 @@ object Http:
         
         val responseHeaders =
           val scalaMap: Map[String | Null, ju.List[String]] = conn.getHeaderFields.nn.asScala.toMap
-          scalaMap.flatMap {
+          
+          scalaMap.flatMap:
             case (null, v)              => Nil
             case (ResponseHeader(k), v) => List((k, v.asScala.to(List)))
-          }.to(Map)
+          .to(Map)
 
         HttpResponse(status, responseHeaders, body)
       
@@ -232,7 +234,7 @@ object Http:
             
 case class HttpError(status: HttpStatus & FailureCase, body: Body)
     extends Exception(s"HTTP Error ${status.code}: ${status.description}"):
-  def as[T](using readable: HttpReadable[T]): T throws TooMuchData | readable.E =
+  inline def as[T](using readable: HttpReadable[T]): T throws ExcessDataError | StreamCutError | readable.E =
     readable.read(body)
 
 trait FailureCase
@@ -310,74 +312,66 @@ case class Params(values: List[(Text, Text)]):
   def append(more: Params): Params = Params(values ++ more.values)
   def isEmpty: Boolean = values.isEmpty
   
-  def prefix(str: Text): Params = Params(values.map { (k, v) =>
-    (if k.isEmpty then str else t"$str.$k", v)
-  })
+  def prefix(str: Text): Params = Params(values.map:
+    (k, v) => (if k.isEmpty then str else t"$str.$k", v)
+  )
 
-  def queryString: Text = values.map { (k, v) =>
-    if k.isEmpty then Text(v.urlEncode) else t"${k.urlEncode}=${v.urlEncode}"
-  }.join(t"&")
+  def queryString: Text = values.map:
+    (k, v) => if k.isEmpty then Text(v.urlEncode) else t"${k.urlEncode}=${v.urlEncode}"
+  .join(t"&")
 
 object Uri:
-  given Show[Uri] = _.text
-  given AnsiShow[Uri] = uri => ansi"$Underline(${colors.DeepSkyBlue}(${uri.text}))"
+  given show: Show[Uri] = uri =>
+    if uri.params.isEmpty then uri.location else t"${uri.location}?${uri.params.queryString}"
+
+  given AnsiShow[Uri] = uri => ansi"$Underline(${colors.DeepSkyBlue}(${show.show(uri)}))"
   
   given action: clairvoyant.HtmlAttribute["action", Uri] with
     def name: String = "action"
-    def serialize(uri: Uri): String = uri.toString
+    def serialize(uri: Uri): String = uri.show.s
+  
+  given codebase: clairvoyant.HtmlAttribute["codebase", Uri] with
+    def name: String = "codebase"
+    def serialize(uri: Uri): String = uri.show.s
   
   given cite: clairvoyant.HtmlAttribute["cite", Uri] with
     def name: String = "cite"
-    def serialize(uri: Uri): String = uri.toString
+    def serialize(uri: Uri): String = uri.show.s
   
   given data: clairvoyant.HtmlAttribute["data", Uri] with
     def name: String = "data"
-    def serialize(uri: Uri): String = uri.toString
+    def serialize(uri: Uri): String = uri.show.s
 
   given formaction: clairvoyant.HtmlAttribute["formaction", Uri] with
     def name: String = "formaction"
-    def serialize(uri: Uri): String = uri.toString
+    def serialize(uri: Uri): String = uri.show.s
  
   given poster: clairvoyant.HtmlAttribute["poster", Uri] with
     def name: String = "poster"
-    def serialize(uri: Uri): String = uri.toString
+    def serialize(uri: Uri): String = uri.show.s
 
   given src: clairvoyant.HtmlAttribute["src", Uri] with
     def name: String = "src"
-    def serialize(uri: Uri): String = uri.toString
+    def serialize(uri: Uri): String = uri.show.s
   
   given href: clairvoyant.HtmlAttribute["href", Uri] with
     def name: String = "href"
-    def serialize(uri: Uri): String = uri.toString
+    def serialize(uri: Uri): String = uri.show.s
   
   given manifest: clairvoyant.HtmlAttribute["manifest", Uri] with
     def name: String = "manifest"
-    def serialize(uri: Uri): String = uri.toString
+    def serialize(uri: Uri): String = uri.show.s
 
-object DomainName:
-  given Show[DomainName] = dn => Text(dn.toString)
-  def apply(str: Text): DomainName =
-    val parts: List[Text] = str.cut(t".").map(_.punycode)
-    DomainName(IArray.from(parts))
-
-case class DomainName(parts: IArray[Text]):
-  override def toString: String = parts.join(t".").s
-
-object Url:
-  given Show[Url] = _.text
-
-case class Url(ssl: Boolean, domain: DomainName, port: Int, path: Text) extends Dynamic:
-  def text: Text =
-    t"http${if ssl then "s" else ""}://$domain${if port == 80 then t"" else t":$port"}/$path"
-  
-  override def toString: String = text.s
-
-case class Uri(location: Text, params: Params) extends Dynamic:
+case class Uri(location: Text, params: Params) extends Dynamic, Shown[Uri]:
   private def makeQuery[T: ToQuery](value: T): Uri =
     Uri(location, params.append(summon[ToQuery[T]].params(value)))
-  
-  def applyDynamicNamed(method: "query")(params: (String, String)*): Uri =
-    makeQuery(Params(params.map { (k, v) => Text(k) -> Text(v) }.to(List)))
+
+  @targetName("slash")
+  def /(part: Text): Uri =
+    Uri(if location.endsWith(t"/") then t"$location$part" else t"$location/$part", Params(Nil))
+
+  def applyDynamicNamed(method: "query")(params: (String, Text)*): Uri =
+    makeQuery(Params(params.map { (k, v) => Text(k) -> v }.to(List)))
   
   def applyDynamic[T: ToQuery](method: "query")(value: T) = makeQuery(value)
 
@@ -394,14 +388,64 @@ case class Uri(location: Text, params: Params) extends Dynamic:
   def head(headers: RequestHeader.Value*)(using Log): HttpResponse = Http.head(this, headers*)
   def delete(headers: RequestHeader.Value*)(using Log): HttpResponse = Http.delete(this, headers*)
   def connect(headers: RequestHeader.Value*)(using Log): HttpResponse = Http.connect(this, headers*)
-
   def bare: Uri = Uri(location, Params(Nil))
 
-  def text: Text =
-    if params.isEmpty then location else t"$location?${params.queryString}"
+object DomainName:
+  given Show[DomainName] = _.parts.join(t".")
+  
+  def apply(str: Text): DomainName =
+    val parts: List[Text] = str.cut(t".").map(_.punycode)
+    DomainName(IArray.from(parts))
 
-  override def toString: String = text.s
+case class DomainName(parts: IArray[Text]) extends Shown[DomainName]
 
+/*object Url:
+  def apply(ssl: Boolean, domain: DomainName, port: Int, parts: IArray[Text]): Url =
+    val baseUrl = BaseUrl(ssl, domain, port)
+    baseUrl.Url(parts)
+  
+  given show: Show[Url] = url => serialize(url.ssl, url.domain, url.port, url.parts)
+
+  def serialize(ssl: Boolean, domain: DomainName, port: Int, parts: IArray[Text]): Text =
+    val portText = if port == 80 then t"" else t":$port"
+    val schemeText = if ssl then t"https" else t"http"
+
+    t"$schemeText://${domain}$portText/${parts.join(t"/")}"
+  
+trait Url:
+  def ssl: Boolean
+  def domain: DomainName
+  def port: Int
+  def parts: IArray[Text]
+
+case class BaseUrl(ssl: Boolean, domain: DomainName, port: Int)
+extends Root(t"/", Url.serialize(ssl, domain, port, IArray())), Url:
+  inline def baseUrl: this.type = this
+
+  type AbsolutePath = Url
+  def makeAbsolute(parts: IArray[Text]) = Url(parts)
+  def url: Url = Url(IArray[Text]())
+
+  case class Url(parts: IArray[Text]) extends Path.Absolute(parts), Dynamic, scintillate.Url:
+    def ssl: Boolean = baseUrl.ssl
+    def domain: DomainName = baseUrl.domain
+    def port: Int = baseUrl.port
+    
+    def post[T: Postable](content: T, headers: RequestHeader.Value*)(using Log): HttpResponse =
+      Http.post(this, content, headers*)
+    
+    def put[T: Postable](content: T, headers: RequestHeader.Value*)(using Log): HttpResponse =
+      Http.put(this, content, headers*)
+    
+    def get(headers: RequestHeader.Value*)(using Log): HttpResponse = Http.get(this, headers)
+    def options(headers: RequestHeader.Value*)(using Log): HttpResponse = Http.options(this, headers*)
+    def trace(headers: RequestHeader.Value*)(using Log): HttpResponse = Http.trace(this, headers*)
+    def patch(headers: RequestHeader.Value*)(using Log): HttpResponse = Http.patch(this, headers*)
+    def head(headers: RequestHeader.Value*)(using Log): HttpResponse = Http.head(this, headers*)
+    def delete(headers: RequestHeader.Value*)(using Log): HttpResponse = Http.delete(this, headers*)
+    def connect(headers: RequestHeader.Value*)(using Log): HttpResponse = Http.connect(this, headers*)
+    //def bare: Uri = Uri(location, Params(Nil))
+*/ 
 extension (ctx: StringContext)
   def uri(subs: Text*): Uri =
     Uri(ctx.parts.zip(subs).map { (k, v) => t"$k$v" }.join(t"", t"", Text(ctx.parts.last)),

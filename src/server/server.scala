@@ -34,7 +34,7 @@ import java.io.*
 import java.text as jt
 import com.sun.net.httpserver.{HttpServer as JavaHttpServer, *}
 
-case class ParamNotSent(key: Text)
+case class MissingParamError(key: Text)
 extends Exception(t"scintillate: the parameter $key was not sent in the request".s)
 
 trait Responder:
@@ -46,15 +46,15 @@ object Handler:
     SimpleHandler(t"text/plain", v => Body.Chunked(LazyList(summon[Show[T]].show(v).s.bytes)))
 
   given stringHandler[T](using hr: clairvoyant.HttpResponse[T, Text]): SimpleHandler[T] =
-    SimpleHandler(Text(hr.mimeType), value => Body.Chunked(LazyList(hr.content(value).bytes)))
+    SimpleHandler(hr.mimeType.show, value => Body.Chunked(LazyList(hr.content(value).bytes)))
   
-  given iarrayByteHandler[T](using hr: clairvoyant.HttpResponse[T, LazyList[IArray[Byte]]]): SimpleHandler[T] =
+  given iarrayByteHandler[T](using hr: clairvoyant.HttpResponse[T, DataStream]): SimpleHandler[T] =
     SimpleHandler(Text(hr.mimeType), value => Body.Chunked(hr.content(value)))
 
   given Handler[Redirect] with
     def process(content: Redirect, status: Int, headers: Map[Text, Text],
                     responder: Responder): Unit =
-      responder.addHeader(ResponseHeader.Location.header, Text(content.location.toString))
+      responder.addHeader(ResponseHeader.Location.header, content.location.show)
       for (k, v) <- headers do responder.addHeader(k, v)
       responder.sendBody(301, Body.Empty)
 
@@ -133,12 +133,12 @@ object Request:
     // ansi"hostname" -> request.hostname.ansiShow,
     // ansi"port"     -> request.port.ansiShow,
     // ansi"path"     -> request.path.ansiShow,
-    // //ansi"body"     -> (try request.body.stream.slurp(maxSize = 256).uString catch case TooMuchData() => "[...]"),
+    // //ansi"body"     -> (try request.body.stream.slurp(maxSize = 256).uString catch case ExcessDataError() => "[...]"),
     // ansi"headers"  -> request.rawHeaders.map { (k, vs) => ansi"$k: ${vs.join(ansi"; ")}" }.join(ansi"\n          "),
     // ansi"params"   -> request.params.map { (k, v) => ansi"$k=\"$v\"" }.join(ansi"\n          ")
   ).map { (k, v) => t"$k = $v" }.join(t", ")
 
-case class Request(method: Method, body: Body.Chunked, query: Text, ssl: Boolean,
+case class Request(method: HttpMethod, body: Body.Chunked, query: Text, ssl: Boolean,
                        hostname: Text, port: Int, path: Text,
                        rawHeaders: Map[Text, List[Text]],
                        queryParams: Map[Text, List[Text]]):
@@ -147,7 +147,7 @@ case class Request(method: Method, body: Body.Chunked, query: Text, ssl: Boolean
   val params: Map[Text, Text] =
     try
       queryParams.map { (k, vs) => Text(k.urlDecode) -> Text(vs.headOption.getOrElse(t"").urlDecode) }.to(Map) ++ {
-        if (method == Method.Post || method == Method.Put) &&
+        if (method == HttpMethod.Post || method == HttpMethod.Put) &&
             (contentType == Some(media"application/x-www-form-urlencoded") || contentType == None)
         then
           Map[Text, Text](Text(body.stream.slurp(maxSize = 10485760).uString).cut(t"&").map(_.cut(t"=", 2).to(Seq) match
@@ -157,7 +157,9 @@ case class Request(method: Method, body: Body.Chunked, query: Text, ssl: Boolean
           )*)
         else Map[Text, Text]()
       }
-    catch case TooMuchData() => Map()
+    catch
+      case e: ExcessDataError => Map()
+      case e: StreamCutError  => Map()
 
   
   lazy val headers: Map[RequestHeader, List[Text]] =
@@ -166,7 +168,7 @@ case class Request(method: Method, body: Body.Chunked, query: Text, ssl: Boolean
       case _                               => throw Impossible("should never match")
     }
 
-  lazy val length: Int =
+  lazy val length: Int throws StreamCutError =
     headers.get(RequestHeader.ContentLength).fold(body.stream.map(_.length).sum)(_.head.s.toInt)
   
   lazy val contentType: Option[MediaType] =
@@ -179,10 +181,10 @@ extension (value: Http.type)
   def listen(handler: Request ?=> Response[?])(using RequestHandler, Log): HttpService =
     summon[RequestHandler].listen(handler)
 
-inline def request(using Request): Request = summon[Request]
-inline def param(using Request)(key: Text): Option[Text] = summon[Request].params.get(key)
+def request(using Request): Request = summon[Request]
+def param(using Request)(key: Text): Option[Text] = summon[Request].params.get(key)
 
-inline def header(using Request)(header: RequestHeader): List[Text] =
+def header(using Request)(header: RequestHeader): List[Text] =
   summon[Request].headers.get(header).getOrElse(Nil)
 
 object ParamReader:
@@ -200,7 +202,7 @@ object RequestParam:
 case class RequestParam[T](key: Text)(using ParamReader[T]):
   def opt(using Request): Option[T] = param(key).flatMap(summon[ParamReader[T]].read(_))
   def unapply(req: Request): Option[T] = opt(using req)
-  def apply()(using Request): T throws ParamNotSent = opt.getOrElse(throw ParamNotSent(key))
+  def apply()(using Request): T throws MissingParamError = opt.getOrElse(throw MissingParamError(key))
 
 trait HttpService:
   def stop(): Unit
@@ -239,7 +241,7 @@ case class HttpServer(port: Int) extends RequestHandler:
     val in = exchange.getRequestBody.nn
     val buffer = new Array[Byte](65536)
     
-    def recur(): LazyList[IArray[Byte]] =
+    def recur(): DataStream =
       val len = in.read(buffer)
       if len > 0 then IArray.from(buffer.slice(0, len)) #:: recur() else LazyList.empty
     
@@ -262,7 +264,7 @@ case class HttpServer(port: Int) extends RequestHandler:
     val headers = exchange.getRequestHeaders.nn.asScala.view.mapValues(_.asScala.to(List)).to(Map)
 
     val request = Request(
-      method = Method.valueOf(exchange.getRequestMethod.nn.lower.capitalize.nn),
+      method = HttpMethod.valueOf(exchange.getRequestMethod.nn.lower.capitalize.nn),
       body = streamBody(exchange),
       query = Text(query.getOrElse("").nn),
       ssl = false,
@@ -297,7 +299,8 @@ case class HttpServer(port: Int) extends RequestHandler:
           exchange.getResponseBody.nn.write(body.unsafeMutable)
         
         case Body.Chunked(body) =>
-          body.map(_.unsafeMutable).foreach(exchange.getResponseBody.nn.write(_))
+          try body.map(_.unsafeMutable).foreach(exchange.getResponseBody.nn.write(_))
+          catch case e: StreamCutError => () // FIXME: Should this be ignored?
       
       exchange.getResponseBody.nn.flush()
       exchange.close()
