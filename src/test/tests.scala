@@ -49,5 +49,5 @@ object Tests extends Suite(t"Rudiments tests"):
         arr(1) = t"one"
         arr(2) = t"two"
       }
-      iarray.to(Vector)
-    }.assert(_ == Vector(t"zero", t"one", t"two"))
+      iarray.to(List)
+    }.assert(_ == List(t"zero", t"one", t"two"))

@@ -19,6 +19,7 @@ package rudiments
 import scala.collection.IterableFactory
 import scala.compiletime.*, ops.int.*
 import scala.reflect.ClassTag
+import scala.annotation.*
 
 import java.util.regex.*
 import java.io as ji
@@ -26,13 +27,14 @@ import java.io as ji
 import language.dynamics
 
 type Bytes = IArray[Byte]
+type DataStream = LazyList[IArray[Byte] throws StreamCutError]
 
-case class TooMuchData() extends Exception(s"the amount of data in the stream exceeds the capacity")
+case class ExcessDataError() extends Exception(s"the amount of data in the stream exceeds the capacity")
 
-extension (value: LazyList[Bytes])
-  def slurp(maxSize: Int): Bytes throws TooMuchData =
+extension (value: DataStream)
+  def slurp(maxSize: Int): Bytes throws ExcessDataError | StreamCutError =
     value.foldLeft(IArray[Byte]()) { (acc, next) =>
-      if acc.length + next.length > maxSize then throw TooMuchData() else acc ++ next
+      if acc.length + next.length > maxSize then throw ExcessDataError() else acc ++ next
     }
 
 extension [T](value: T)
@@ -105,8 +107,7 @@ object Impossible:
 
 case class Impossible(message: String) extends Error(message)
 
-object Unset:
-  override def toString: String = "<unset>"
+object Unset
 
 type Maybe[T] = Unset.type | T
 
@@ -130,7 +131,6 @@ extension [T](opt: Option[T]) def maybe: Unset.type | T = opt.getOrElse(Unset)
 
 case class StreamCutError() extends Exception("rudiments: the stream was cut prematurely")
 
-type DataStream = LazyList[IArray[Byte] throws StreamCutError]
 
 object Util:
   def read(in: ji.InputStream, limit: Int): DataStream = in match
@@ -206,3 +206,5 @@ extension [T](value: T)
   def read[S](using readable: Readable[S], src: Source[T])
       : S throws readable.E | src.E | StreamCutError =
     readable.fromStream(dataStream)
+
+case class githubIssue(id: Int) extends StaticAnnotation
