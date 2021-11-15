@@ -11,6 +11,7 @@ scala/bin/scalac \
   -d test \
   -deprecation \
   -language:experimental.saferExceptions \
+  -language:experimental.fewerBraces \
   -new-syntax \
   -Ysafe-init \
   -feature \

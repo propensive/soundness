@@ -5,7 +5,7 @@ rm -r classes/*
 mkdir -p classes/gesticulate
 cp res/gesticulate/media.types classes/gesticulate/media.types
 javac -d classes -classpath "$CP" mod/profanity/src/java/**/*.java
-scala/bin/scalac "-classpath:$CP:classes" -d classes -deprecation -language:experimental.erasedDefinitions -language:experimental.saferExceptions -Wunused:all -new-syntax -Yrequire-targetName -Ysafe-init -feature -Ycheck-all-patmat -Yexplicit-nulls \
+scala/bin/scalac "-classpath:$CP:classes" -d classes -deprecation -language:experimental.erasedDefinitions -language:experimental.fewerBraces -language:experimental.saferExceptions -Wunused:all -new-syntax -Yrequire-targetName -Ysafe-init -feature -Ycheck-all-patmat -Yexplicit-nulls \
     mod/acyclicity/src/core/*.scala \
     mod/adversaria/src/core/*.scala \
     mod/caesura/src/core/*.scala \
@@ -40,7 +40,7 @@ scala/bin/scalac "-classpath:$CP:classes" -d classes -deprecation -language:expe
     mod/scintillate/src/server/*.scala \
     mod/scintillate/src/servlet/*.scala \
     mod/slalom/src/core/*.scala \
+    mod/tarantula/src/core/*.scala \
     mod/wisteria/src/core/*.scala \
     mod/xylophone/src/core/*.scala \
     && cd classes && jar cf ../niveau.jar $(ls)
-    #mod/tarantula/src/core/*.scala \
