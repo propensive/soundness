@@ -42,10 +42,10 @@ opaque type Timestamp = Long
 object Level:
   given AnsiShow[Level] = level =>
     val color = level match
-      case Fine => colors.DarkGreen
-      case Info => colors.SteelBlue
-      case Warn => colors.Goldenrod
-      case Fail => colors.OrangeRed
+      case Fine => solarized.Cyan
+      case Info => solarized.Green
+      case Warn => solarized.Yellow
+      case Fail => solarized.Red
 
     ansi"${Bg(color)}[${colors.Black}($Bold( ${Showable(level).show.upper} ))]"
 
@@ -107,15 +107,15 @@ case class Log(rules: Rule[?, ?]*):
 
 
   lazy val loggers: Iterable[DistributedLog] =
-    rules.groupBy(_.format).map { (format, rules) =>
-      DistributedLog(
-        format,
-        entry => rules.exists(_.interested(entry.realm, entry.level)),
-        rules.groupBy(_.dest).map { (dest, rules) =>
-          Logger(rules.head.writer, rules, format.interval)
-        }.map(_.start())
-      )
-    }
+    rules.groupBy(_.format).map:
+      (format, rules) =>
+        DistributedLog(
+          format,
+          entry => rules.exists(_.interested(entry.realm, entry.level)),
+          rules.groupBy(_.dest).map:
+            (dest, rules) => Logger(rules.head.writer, rules, format.interval)
+          .map(_.start())
+        )
 
   def record(entry: Entry): Unit = loggers.foreach(_.record(entry))
   def interested(realm: Realm, level: Level): Boolean = rules.exists(_.interested(realm, level))
@@ -180,10 +180,9 @@ object Logger:
   private var threadId: Int = -1
   
   private def run(runnable: Runnable): Unit =
-    val id = synchronized {
+    val id = synchronized:
       threadId += 1
       threadId
-    }
     
     val name = t"eucalyptus-$id"
 
@@ -210,7 +209,8 @@ class Logger(writer: LazyList[Bytes] => Unit, rules: Seq[Rule[?, ?]], interval: 
     buf.toByteArray.nn.unsafeImmutable #:: (if continue then logStream else LazyList())
 
   def start(): Logger =
-    Logger.run { () => try writer(logStream) catch case e: Exception => () }
+    Logger.run:
+      () => try writer(logStream) catch case e: Exception => ()
     this
 
 given realm: Realm = Realm(t"eucalyptus")
