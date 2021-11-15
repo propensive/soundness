@@ -60,13 +60,15 @@ object Tests extends Suite(t"Probably Tests"):
     test(t"tests can throw an exception") {
       val runner = Runner()
       runner(t"failing") {
-        throw new Exception()
+        throw new Exception("something went wrong")
         4
       }.assert(_ == 4)
+
       runner.report().results.head.outcome
+    
     }.assert {
-      case Outcome.FailsAt(_, _) => true
-      case _                     => false
+      case Outcome.FailsAt(Datapoint.Throws(_, _), _) => true
+      case _                                          => false
     }
 
     test(t"assertion can throw an exception") {

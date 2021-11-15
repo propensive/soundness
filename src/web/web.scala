@@ -25,13 +25,13 @@ package object probably {
       tbody(
         report.results.map { summary =>
           tr(
-            td(summary.id.value),
-            td(summary.name),
-            td(summary.count.toString),
-            td(summary.min.toString),
-            td(summary.avg.toString),
-            td(summary.max.toString),
-            td(summary.outcome.debug)
+            td(summary.id.value.show),
+            td(summary.name.show),
+            td(summary.count.show),
+            td(summary.min.show),
+            td(summary.avg.show),
+            td(summary.max.show),
+            td(summary.outcome.debug.show)
           )
         }
       )

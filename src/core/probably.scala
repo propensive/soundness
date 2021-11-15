@@ -135,15 +135,14 @@ class Runner(subset: Set[TestId] = Set()) extends Dynamic:
     private val map: HashMap[Text, Text] = HashMap()
 
     def debug[T](name: Text, expr: T): T =
-      map(name) = Text(expr.toString)
+      map(name) = Showable(expr).show
       expr
 
     inline def assert(inline pred: Type => Boolean)(using log: Log): Unit =
       ${Macros.assert[Type]('runner, 'this, 'pred, 'log)}
 
-    def check(pred: Type => Boolean, debug: Option[Type] => Debug = v => Debug(v.map { v => Text(v.toString) }))
+    def check(pred: Type => Boolean, debug: Option[Type] => Debug = v => Debug(v.map(Showable(_).show)))
              (using Log): Type =
-      //val l = summon[Log]
       def handler(index: Int): PartialFunction[Throwable, Datapoint] =
         case e: Exception =>
           Log.warn(ansi"A $e exception was thrown in the test ${this.ansi}")
@@ -166,10 +165,11 @@ class Runner(subset: Set[TestId] = Set()) extends Dynamic:
           val info = Option(e.getStackTrace).to(List)
             .flatMap(_.nn.to(List).map(_.nn))
             .takeWhile(_.getClassName != "probably.Suite")
-            .map { frame => Text(frame.nn.toString.nn) }
+            .map { frame => Showable(frame.nn).show }
             .join(Option(Text(e.getMessage.nn)).fold(t"null")(_+t"\n  at "), t"\n  at ", t"")
           
           record(this, time, Datapoint.Throws(e, debug(None).add(t"exception", info)))
+          
           throw e
 
   def report(): Report = Report(results.values.to(List))
@@ -201,7 +201,7 @@ case class Debug(found: Option[Text] = None, filename: Maybe[Text] = Unset, line
         .filter(_._2 != Unset)
         .to(ListMap)
         .view
-        .mapValues { v => Text(v.toString) }
+        .mapValues(Showable(_).show)
         .to(ListMap)
     
     basicInfo ++ info
@@ -212,30 +212,36 @@ object Macros:
     import quotes.reflect.*
     
     val filename: Expr[String] = Expr {
-      val absolute = Position.ofMacroExpansion.toString.cut(":").head
+      val absolute = Showable(Position.ofMacroExpansion).show.cut(t":").head
+      val pwd = try Sys.user.dir() catch case e: KeyNotFound => throw Impossible("should not happen")
       
-      val pwd = try Sys.user.dir() catch case error@KeyNotFound(_) => throw Impossible(error)
-      
-      if absolute.startsWith(pwd) then absolute.drop(pwd.length + 1) else absolute
+      if absolute.startsWith(pwd) then absolute.drop(pwd.length + 1).s else absolute.s
     }
     
     val line = Expr(Position.ofMacroExpansion.startLine + 1)
 
     def debugExpr[S: Type](expr: Expr[S]): Expr[Option[S] => Debug] =
 
+      val debugString = '{DebugString.showAny}
+
       Expr.summon[Comparison[S]].fold {
-        '{ (x: Option[S]) =>
-          Debug(found = x.map(_.debug), filename = Text($filename), line = $line, expected = $expr.debug)
-        }
-      } { comparison =>
-        '{ (x: Option[S]) =>
+        '{ (result: Option[S]) =>
           Debug(
-            found = x.map(_.debug),
+            found = result.map($debugString.show(_)),
             filename = Text($filename),
             line = $line,
-            expected = $expr.debug,
-            info = if x.isEmpty then Map()
-                else Map(t"structure" -> Text($comparison.compare(x.get, $expr).toString))
+            expected = $debugString.show($expr)
+          )
+        }
+      } { comparison =>
+        '{ (result: Option[S]) =>
+          Debug(
+            found = result.map($debugString.show(_)),
+            filename = Text($filename),
+            line = $line,
+            expected = $debugString.show($expr),
+            info = if result.isEmpty then Map()
+                else Map(t"structure" -> Showable($comparison.compare(result.get, $expr)).show)
           )
         }
       }
@@ -327,6 +333,16 @@ object Macros:
       catch case NonFatal(_) => ()
     }
 
+object Differences:
+  given Show[Differences] = diff =>
+    val table = Tabulation[(List[Text], Text, Text)](
+      Column(t"Key", _(0).join(t".")),
+      Column(t"Found", _(1)),
+      Column(t"Expected", _(2)),
+    )
+
+    table.tabulate(100, diff.flatten).join(t"\n")
+
 enum Differences:
   case Same
   case Structural(differences: Map[Text, Differences])
@@ -340,15 +356,6 @@ enum Differences:
                                 }
                               }
     case Diff(left, right) => List((Nil, left, right))
-
-  override def toString(): String =
-    val table = Tabulation[(List[Text], Text, Text)](
-      Column(t"Key", _(0).join(t".")),
-      Column(t"Found", _(1)),
-      Column(t"Expected", _(2)),
-    )
-
-    table.tabulate(100, flatten).join(t"\n").s
 
 trait Comparison[-T]:
   def compare(left: T, right: T): Differences
@@ -427,5 +434,5 @@ def capture(fn: => CanThrow[Exception] ?=> Any): Exception throws UnexpectedSucc
     val result = fn
     throw UnexpectedSuccessError(result)
   catch
-    case error@UnexpectedSuccessError(_) => throw error
-    case error: Exception                => error
+    case error: UnexpectedSuccessError => throw error
+    case error: Exception              => error
