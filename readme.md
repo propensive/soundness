@@ -56,6 +56,11 @@ operations involving the value are safe. Or, that they're simply impossible. In 
 reduces the amount of branching, including exception handling, that's required in code. Extensive
 use of immutable datatypes adds further guarantees.
 
+In particular, the type `Text`, an opaque type alias of `String`, is used in place of `String` at
+every opportunity. `Text` has a variety of useful methods, all of which are total functions or
+declare their exceptions. A `String` may always be converted to a `Text` with the `show` extension
+method, and a `Text` converted to a `String` by calling its method `s`.
+
 ### Checked Exceptions
 
 The latest release of Scala 3 introduces opt-in exception checking, and every Niveau method declares
@@ -108,6 +113,6 @@ library should also be small.
 
 - extensive use of the immutable `IArray[Byte]` type for random-access byte-data
 - streaming provided using `LazyList`s
-- the `Txt` type provides an more typesafe alternative opaque type alias for `String`s
+- the `Text` type provides an more typesafe alternative opaque type alias for `String`s
 - all libraries are compiled with `null`-checking enabled—and `null`s forbidden!
 - use of the `T | Unset` union type for optional parameters, without the need to wrap `T` in `Some` or use `null`
