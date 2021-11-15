@@ -34,10 +34,10 @@ object Pem:
       case s"-----BEGIN $label-----" => label.show
       case _                         => throw PemParseError(t"the BEGIN line could not be found")
     
-    lines.tail.indexWhere {
+    lines.tail.indexWhere:
       case s"-----END $label-----" => true
       case _                       => false
-    } match
+    match
       case -1  =>
         throw PemParseError(t"the message's END line could not be found")
       case idx =>

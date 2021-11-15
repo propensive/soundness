@@ -73,15 +73,15 @@ case class Digest[A <: HashScheme[?]](bytes: Bytes) extends Encodable, Shown[Dig
 
 object Hashable extends Derivation[Hashable]:
   def join[T](caseClass: CaseClass[Hashable, T]): Hashable[T] =
-    (acc, value) => caseClass.params.foldLeft(acc) { (acc, param) =>
-      param.typeclass.digest(acc, param.deref(value))
-    }
+    (acc, value) => caseClass.params.foldLeft(acc):
+      (acc, param) =>
+        param.typeclass.digest(acc, param.deref(value))
 
   def split[T](sealedTrait: SealedTrait[Hashable, T]): Hashable[T] =
-    (acc, value) => sealedTrait.choose(value) { subtype =>
-      val acc2 = summon[Hashable[Int]].digest(acc, sealedTrait.subtypes.indexOf(subtype))
-      subtype.typeclass.digest(acc2, subtype.cast(value))
-    }
+    (acc, value) => sealedTrait.choose(value):
+      subtype =>
+        val acc2 = summon[Hashable[Int]].digest(acc, sealedTrait.subtypes.indexOf(subtype))
+        subtype.typeclass.digest(acc2, subtype.cast(value))
     
   given[T: Hashable]: Hashable[Traversable[T]] =
     (acc, xs) => xs.foldLeft(acc)(summon[Hashable[T]].digest)
@@ -135,10 +135,10 @@ object ByteEncoder:
 
   given ByteEncoder[Hex] = bytes =>
     val array = new Array[Byte](bytes.length*2)
-    bytes.indices.foreach { idx =>
-      array(2*idx) = HexLookup((bytes(idx) >> 4) & 0xf)
-      array(2*idx + 1) = HexLookup(bytes(idx) & 0xf)
-    }
+    bytes.indices.foreach:
+      idx =>
+        array(2*idx) = HexLookup((bytes(idx) >> 4) & 0xf)
+        array(2*idx + 1) = HexLookup(bytes(idx) & 0xf)
     
     Text(String(array, "UTF-8"))
 
@@ -146,7 +146,8 @@ object ByteEncoder:
   
   given ByteEncoder[Binary] = bytes =>
     val buf = StringBuilder()
-    bytes.foreach { byte => buf.add(Integer.toBinaryString(byte).nn.show.fitRight(8, '0')) }
+    bytes.foreach:
+      byte => buf.add(Integer.toBinaryString(byte).nn.show.fitRight(8, '0'))
     buf.text
 
   given ByteEncoder[Base64Url] = bytes =>
@@ -167,10 +168,10 @@ object ByteDecoder:
   given ByteDecoder[Hex] = value =>
     val data = Array.fill[Byte](value.length/2)(0)
     
-    (0 until value.length by 2).foreach { i =>
-      try data(i/2) = ((Character.digit(value(i), 16) << 4) + Character.digit(value(i + 1), 16)).toByte
-      catch case e: OutOfRangeError => throw Impossible("every accessed element should be within range")
-    }
+    (0 until value.length by 2).foreach:
+      i =>
+        try data(i/2) = ((Character.digit(value(i), 16) << 4) + Character.digit(value(i + 1), 16)).toByte
+        catch case e: OutOfRangeError => throw Impossible("every accessed element should be within range")
 
     data.unsafeImmutable
 
