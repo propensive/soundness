@@ -23,6 +23,7 @@ import eucalyptus.*
 import escapade.*
 import iridescence.*
 
+import scala.annotation.implicitNotFound
 import scala.collection.convert.ImplicitConversionsToJava.*
 import scala.collection.convert.ImplicitConversionsToScala.*
 import scala.jdk.StreamConverters.StreamHasToScala
@@ -34,7 +35,7 @@ import java.io as ji
 type TextStream = LazyList[Text]
 
 object envs:
-  val enclosing: Env = Env(System.getenv.nn.map { (k, v) => Text(k) -> Text(v) }.to(Map))
+  val enclosing: Env = Env(System.getenv.nn.map(Text(_) -> Text(_)).to(Map))
   val empty: Env = Env(Map())
 
 enum Context:
@@ -101,14 +102,15 @@ sealed trait Executable:
 object Command:
 
   private def formattedArgs(args: Seq[Text]): Text =
-    args.map { arg =>
-      if arg.contains(t"\"") && !arg.contains(t"'") then t"""'$arg'"""
-      else if arg.contains(t"'") && !arg.contains(t"\"") then t""""$arg""""
-      else if arg.contains(t"'") && arg.contains(t"\"")
-        then t""""${arg.rsub(t"\\\"", t"\\\\\"")}""""
-      else if arg.contains(t" ") || arg.contains(t"\t") || arg.contains(t"\\") then t"'$arg'"
-      else arg
-    }.join(t" ")
+    args.map:
+      arg =>
+        if arg.contains(t"\"") && !arg.contains(t"'") then t"""'$arg'"""
+        else if arg.contains(t"'") && !arg.contains(t"\"") then t""""$arg""""
+        else if arg.contains(t"'") && arg.contains(t"\"")
+          then t""""${arg.rsub(t"\\\"", t"\\\\\"")}""""
+        else if arg.contains(t" ") || arg.contains(t"\t") || arg.contains(t"\\") then t"'$arg'"
+        else arg
+    .join(t" ")
 
   given DebugString[Command] = cmd =>
     val cmdString: Text = formattedArgs(cmd.args)
@@ -134,12 +136,15 @@ object Pipeline:
 case class Pipeline(cmds: Command*) extends Executable:
   def fork[T]()(using env: Env, exec: Executor[T] = Executor.text)(using Log): Process[T] =
     Log.info(ansi"Starting pipelined processes ${this.ansi} in directory ${env.workDirFile.getAbsolutePath.nn}")
-    new Process[T](ProcessBuilder.startPipeline(cmds.map { cmd =>
-      val pb = ProcessBuilder(cmd.args.map(_.s)*)
-      pb.directory(env.workDirFile)
-      pb.nn
-    }).nn.to(List).last, exec)
-  
+    new Process[T](ProcessBuilder.startPipeline(cmds.map:
+      cmd =>
+        val pb = ProcessBuilder(cmd.args.map(_.s)*)
+        pb.directory(env.workDirFile)
+        pb.nn
+    ).nn.to(List).last, exec)
+
+@implicitNotFound("guillotine: a contextual Env is required, for example\n    given Env()\nor,\n"+
+                      "    given Env = envs.enclosing")
 case class Env(vars: Map[Text, Text], workDir: Maybe[Text] = Unset):
   private[guillotine] lazy val envArray: Array[String] = vars.map { (k, v) => s"$k=$v" }.to(Array)
   
@@ -191,7 +196,7 @@ object Sh:
         case _ =>
           state
           
-    def parse(state: State, next: String): State = next.foldLeft(state) {
+    def parse(state: State, next: String): State = next.foldLeft(state):
       case (State(Awaiting, esc, args), ' ')          => State(Awaiting, false, args)
       case (State(Quotes1, false, rest :+ cur), '\\') => State(Quotes1, false, rest :+ t"$cur\\")
       case (State(ctx, false, args), '\\')            => State(ctx, true, args)
@@ -206,7 +211,6 @@ object Sh:
       case (State(ctx, esc, Nil), char)               => State(ctx, false, List(t"$char"))
       case (State(ctx, esc, rest :+ cur), char)       => State(ctx, false, rest :+ t"$cur$char")
       case _                                          => throw Impossible("impossible parser state")
-    }
 
   given Insertion[Params, Text] = value => Params(value)
   given Insertion[Params, List[Text]] = xs => Params(xs*)
