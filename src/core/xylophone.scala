@@ -28,10 +28,12 @@ import language.dynamics
 
 case class Namespace(id: Text, uri: Text)
 
-case class XmlName(name: Text, namespace: Maybe[Namespace] = Unset):
-  def text: Text = namespace match
-    case Unset                => name
-    case Namespace(prefix, _) => t"$prefix:$name"
+object XmlName:
+  given Show[XmlName] = name => name.namespace match
+    case Unset                => name.name
+    case Namespace(prefix, _) => t"$prefix:${name.name}"
+
+case class XmlName(name: Text, namespace: Maybe[Namespace] = Unset)
 
 sealed trait Xml:
   def pointer: List[Int | Text | Unit]
@@ -43,13 +45,13 @@ sealed trait Xml:
   def string(using XmlPrinter[Text]): Text throws XmlAccessError =
     summon[XmlPrinter[Text]].print(Doc(Ast.Root(Xml.normalize(this)*)))
 
-  override def toString(): String =
-    try printers.compact.print(Doc(Ast.Root(Xml.normalize(this)*))).s
-    catch case error@XmlAccessError(_, _) => t"undefined".s
-
 type XmlPath = List[Text | Int | Unit]
 
 object Xml:
+  given Show[Xml] = xml =>
+    try printers.compact.print(Doc(Ast.Root(Xml.normalize(xml)*)))
+    catch case error: XmlAccessError => t"undefined"
+
   given (using XmlPrinter[Text]): clairvoyant.HttpResponse[Xml, Text] with
     def mimeType: String = "application/xml"
     def content(xml: Xml): Text = summon[XmlPrinter[Text]].print(xml)
@@ -150,8 +152,8 @@ object Xml:
         throw Impossible("should never match")
 
     try recur(xml.pointer, xml.root.content)
-    catch case XmlAccessError(idx, tail) =>
-      throw XmlAccessError(idx, xml.pointer.dropRight(tail.length))
+    catch case err: XmlAccessError =>
+      throw XmlAccessError(err.index, xml.pointer.dropRight(err.path.length))
 
 
 case class Fragment(head: Text | Unit, path: XmlPath, root: Ast.Root)

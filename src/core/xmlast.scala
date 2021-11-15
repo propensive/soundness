@@ -19,21 +19,13 @@ package xylophone
 import rudiments.*
 import gossamer.*
 
-enum Ast:
-  case Element(name: XmlName, children: Seq[Ast], attributes: Map[XmlName, Text] = Map(),
-                   namespaces: List[Namespace] = Nil)
-  case Comment(content: Text)
-  case ProcessingInstruction(target: Text, content: Text)
-  case Textual(content: Text)
-  case CData(content: Text)
-  case Root(content: Ast*)
-
-  def text: Text = this match
+object Ast:
+  given Show[Ast] =
     case Element(name, children, attributes, _) =>
-      val inside = children.map(_.text).join
-      val attributeString = attributes.map { (k, v) => t"${k.text}=$v" }.join(t" ", t" ", t"")
+      val inside = children.map(_.show).join
+      val attributeString = attributes.map { (k, v) => t"${k.show}=$v" }.join(t" ", t" ", t"")
       
-      t"<${name.text}${attributeString}>$inside</${name.text}>"
+      t"<${name.show}${attributeString}>$inside</${name.show}>"
 
     case Comment(content) =>
       t"<!--$content-->"
@@ -45,7 +37,17 @@ enum Ast:
       content
 
     case CData(content) =>
-      t"<![CDATA[${content.toString}]]>"
+      t"<![CDATA[$content]]>"
 
     case Root(content*) =>
-      t"""<?xml version = "1.0"?>${content.map(_.text).join}"""
+      t"""<?xml version = "1.0"?>${content.map(_.show).join}"""
+
+enum Ast:
+  case Element(name: XmlName, children: Seq[Ast], attributes: Map[XmlName, Text] = Map(),
+                   namespaces: List[Namespace] = Nil)
+  case Comment(content: Text)
+  case ProcessingInstruction(target: Text, content: Text)
+  case Textual(content: Text)
+  case CData(content: Text)
+  case Root(content: Ast*)
+

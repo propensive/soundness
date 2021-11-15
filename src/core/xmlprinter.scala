@@ -41,13 +41,13 @@ class StandardXmlPrinter(compact: Boolean = false) extends XmlPrinter[Text]:
 
     def append(strings: Text*): Unit =
       for str <- strings do
-        buf.append(str.s)
+        buf.add(str)
         pos += str.length
 
     def whitespace(): Unit =
       if !compact && linebreak then
-        buf.append(t"\n")
-        for i <- 1 to indent do buf.append(t"  ")
+        buf.add(t"\n")
+        for i <- 1 to indent do buf.add(t"  ")
         pos = indent*2
       linebreak = false
 
@@ -59,10 +59,10 @@ class StandardXmlPrinter(compact: Boolean = false) extends XmlPrinter[Text]:
     def next(node: Ast): Unit = node match
       case element@Ast.Element(tagName, children, attributes, namespaces) =>
         whitespace()
-        append(t"<", tagName.text)
+        append(t"<", tagName.show)
 
         for attribute <- attributes do attribute match
-          case (key, value) => append(t" ", key.text, t"=\"", value, t"\"")
+          case (key, value) => append(t" ", key.show, t"=\"", value, t"\"")
         
         if element.children.isEmpty then append(t"/")
         append(t">")
@@ -80,7 +80,7 @@ class StandardXmlPrinter(compact: Boolean = false) extends XmlPrinter[Text]:
 
         whitespace()
         if !element.children.isEmpty then
-          append(t"</", tagName.text, t">")
+          append(t"</", tagName.show, t">")
           if !inline(element) then newline(0)
 
       case Ast.Textual(text) =>
@@ -101,4 +101,4 @@ class StandardXmlPrinter(compact: Boolean = false) extends XmlPrinter[Text]:
 
     doc.root.content.foreach(next(_))
 
-    Text(buf.toString)
+    buf.text
