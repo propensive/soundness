@@ -36,20 +36,20 @@ object HtmlSerializer:
 
     def append(strings: Text*): Unit =
       for str <- strings do
-        buf.append(str)
+        buf.add(str)
         pos += str.length
       emptyLine = false
 
     def whitespace(): Unit =
       if linebreak then
-        buf.append("\n")
-        for i <- 1 to indent do buf.append("  ")
+        buf.add(t"\n")
+        for i <- 1 to indent do buf.add(t"  ")
         pos = indent*2
       linebreak = false
       emptyLine = true
 
-    def next(node: Content[?], verbatim: Boolean): Unit = node match
-      case node: Item[?] => whitespace()
+    def next(node: Html[?], verbatim: Boolean): Unit = node match
+      case node: Node[?] => whitespace()
                             append(t"<", node.label)
                             
                             for attribute <- node.attributes do attribute match
@@ -63,8 +63,8 @@ object HtmlSerializer:
                             
                             for child <- node.children do
                               val splitLine = child match
-                                case node: Node[?] => !node.inline
-                                case _             => false
+                                case element: Element[?] => !element.inline
+                                case _                   => false
                               if splitLine then newline()
                               next(child, node.verbatim)
                               if splitLine then newline()
@@ -97,4 +97,4 @@ object HtmlSerializer:
     append(t"<!DOCTYPE html>\n")
     next(doc.root, false)
 
-    Text(buf.toString)
+    buf.text

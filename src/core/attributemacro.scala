@@ -26,7 +26,7 @@ object Macro:
           (name: Expr[Name], unclosed: Expr[Boolean], inline: Expr[Boolean],
                verbatim: Expr[Boolean], attributes: Expr[Seq[(Label, Any)]])
           (using Quotes)
-          : Expr[Element[Name, Return]] =
+          : Expr[StartTag[Name, Return]] =
     import quotes.reflect.{Singleton as _, *}
 
     def recur(exprs: Seq[Expr[(Label, Any)]]): List[Expr[(String, Maybe[Text])]] =
@@ -47,7 +47,7 @@ object Macro:
 
     attributes match
       case Varargs(exprs) =>
-        '{Element($name, $unclosed, $inline, $verbatim, ${Expr.ofSeq(recur(exprs))}.to(Map))}
+        '{StartTag($name, $unclosed, $inline, $verbatim, ${Expr.ofSeq(recur(exprs))}.to(Map))}
       
       case _ =>
         throw Impossible("expected varargs")

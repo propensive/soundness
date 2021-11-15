@@ -16,217 +16,232 @@
 
 package honeycomb
 
+import rudiments.*
+
 import language.dynamics
 
-val A = TransTag["a", NonInteractive, Global | "href" | "target" | "download" | "ping" | "rel" |
-    "hreflang" | "htype" | "referrerpolicy"]("a", inline = true)
+val A = TransTagType["a", NonInteractive, Global | "href" | "target" | "download" | "ping" | "rel" |
+                         "hreflang" | "htype" | "referrerpolicy"]
+                    ("a", inline = true)
 
-val Abbr = Tag["abbr", Phrasing, Global]("abbr", inline = true)
-val Address = Tag["address", Flow | Palpable, Global]("address")
+val Abbr = TagType["abbr", Phrasing, Global]("abbr", inline = true)
+val Address = TagType["address", Flow | Palpable, Global]("address")
 
-val Area = Tag["area", Nothing, Global | "alt" | "coords" | "shape" | "href" | "target" |
-                   "download" | "ping" | "rel" | "referrerpolicy"]
-              ("area", inline = true)
+val Area = TagType["area", Nothing, Global | "alt" | "coords" | "shape" | "href" | "target" |
+                       "download" | "ping" | "rel" | "referrerpolicy"]
+                  ("area", inline = true)
 
-val Article = Tag["article", Flow, Global]("article") // further constraints on descendants
-val Aside = Tag["aside", Flow, Global]("aside")
+val Article = TagType["article", Flow, Global]("article") // further constraints on descendants
+val Aside = TagType["aside", Flow, Global]("aside")
 
-// val Audio = IncludeTag["audio", Label, "track", Global | "src" | "crossorigin" | "preload" |
-//                        "autoplay" | "loop" | "muted" | "controls"]("audio", inline = true)
-// // complicated!
+@githubIssue(2)
+val Audio = TagType["audio", Label, Global | "src" | "crossorigin" | "preload" | "autoplay" |
+                        "loop" | "muted" | "controls"]
+                   ("audio", inline = true)
 
-val B = Tag["b", Phrasing, Global]("b", inline = true)
-val Base = Tag["base", Nothing, Global | "href" | "target"]("base", inline = true)
-val Bdi = Tag["bdi", Phrasing, Global]("bdi", inline = true)
-val Bdo = Tag["bdo", Phrasing, Global]("bdo", inline = true)
-val Blockquote = Tag["blockquote", Flow, Global | "cite"]("blockquote")
+val B = TagType["b", Phrasing, Global]("b", inline = true)
+val Base = TagType["base", Nothing, Global | "href" | "target"]("base", inline = true)
+val Bdi = TagType["bdi", Phrasing, Global]("bdi", inline = true)
+val Bdo = TagType["bdo", Phrasing, Global]("bdo", inline = true)
+val Blockquote = TagType["blockquote", Flow, Global | "cite"]("blockquote")
 
-val Body = Tag["body", Flow, Global | "onafterprint" | "onbeforeprint" | "onbeforeunload" |
-                   "onhashchange" | "onlanguagechange" | "onmessage" | "onmessageerror" |
-                   "onoffline" | "ononline" | "onpagehide" | "onpageshow" | "onpopstate" |
-                   "onrejectionhandled" | "onstorage" | "onunhandledrejection" | "onunload"]
-              ("body")
+val Body = TagType["body", Flow, Global | "onafterprint" | "onbeforeprint" | "onbeforeunload" |
+                       "onhashchange" | "onlanguagechange" | "onmessage" | "onmessageerror" |
+                       "onoffline" | "ononline" | "onpagehide" | "onpageshow" | "onpopstate" |
+                       "onrejectionhandled" | "onstorage" | "onunhandledrejection" | "onunload"]
+                  ("body")
 
-val Br = Tag["br", Nothing, Global]("br", inline = true, unclosed = true)
+val Br = TagType["br", Nothing, Global]("br", inline = true, unclosed = true)
 
-val Button = Tag["button", Phrasing, Global | "disabled" | "form" | "formaction" | "formenctype" |
-                     "formmethod" | "formnovalidate" | "formtarget" | "name" | "htype" | "value"]
-                ("button", inline = true)
+val Button = TagType["button", Phrasing, Global | "disabled" | "form" | "formaction" |
+                         "formenctype" | "formmethod" | "formnovalidate" | "formtarget" | "name" |
+                         "htype" | "value"]
+                    ("button", inline = true)
 
-val Canvas = TransTag["canvas", NonInteractive, Global | "width" | "height"]
+val Canvas = TransTagType["canvas", NonInteractive, Global | "width" | "height"]
                      ("canvas", inline = true) // complicated
 
-val Caption = Tag["caption", Flow, Global]("caption") // no tables
-val Cite = Tag["cite", Phrasing, Global]("cite", inline = true)
-val Code = Tag["code", Phrasing, Global]("code", inline = true)
-val Col = Tag["col", Nothing, Global | "span"]("col", inline = true)
-val Colgroup = Tag["colgroup", "col" | "template", Global | "span"]("colgroup")
-val Data = Tag["data", Phrasing, Global | "value"]("data", inline = true)
+val Caption = TagType["caption", Flow, Global]("caption") // no tables
+val Cite = TagType["cite", Phrasing, Global]("cite", inline = true)
+val Code = TagType["code", Phrasing, Global]("code", inline = true)
+val Col = TagType["col", Nothing, Global | "span"]("col", inline = true)
+val Colgroup = TagType["colgroup", "col" | "template", Global | "span"]("colgroup")
+val Data = TagType["data", Phrasing, Global | "value"]("data", inline = true)
 
-val Datalist = Tag["datalist", Phrasing | "option" | ScriptSupporting, Global]
-                  ("datalist", inline = true)
+val Datalist = TagType["datalist", Phrasing | "option" | ScriptSupporting, Global]
+                      ("datalist", inline = true)
 
-val Dd = Tag["dd", Flow, Global]("dd")
-val Del = TransTag["del", Label, Global | "cite" | "datetime"]("del", inline = true)
-val Details = Tag["details", "summary" | Flow, Global | "open"]("details")
-val Dfn = Tag["dfn", Phrasing, Global]("dfn", inline = true)
-val Dialog = Tag["dialog", Flow, Global | "open"]("dialog")
-val Div = Tag["div", Flow, Global]("div")
-val Dl = Tag["dl", "dt" | "dl" | "div", Global]("dl")
-val Dt = Tag["dt", Flow, Global]("dt") // further constraints
-val Em = Tag["em", Phrasing, Global]("em", inline = true)
+val Dd = TagType["dd", Flow, Global]("dd")
+val Del = TransTagType["del", Label, Global | "cite" | "datetime"]("del", inline = true)
+val Details = TagType["details", "summary" | Flow, Global | "open"]("details")
+val Dfn = TagType["dfn", Phrasing, Global]("dfn", inline = true)
+val Dialog = TagType["dialog", Flow, Global | "open"]("dialog")
+val Div = TagType["div", Flow, Global]("div")
+val Dl = TagType["dl", "dt" | "dl" | "div", Global]("dl")
+val Dt = TagType["dt", Flow, Global]("dt") // further constraints
+val Em = TagType["em", Phrasing, Global]("em", inline = true)
 
-val Embed = Tag["embed", Nothing, Global | "src" | "htype" | "width" | "height"]
-               ("embed", inline = true)
+val Embed = TagType["embed", Nothing, Global | "src" | "htype" | "width" | "height"]
+                   ("embed", inline = true)
 
-val Fieldset = Tag["fieldset", "legend" | Flow, Global | "disabled" | "form" | "name"]("fieldset")
-val Figcaption = Tag["figcaption", Flow, Global]("figcaption")
+val Fieldset = TagType["fieldset", "legend" | Flow, Global | "disabled" | "form" | "name"]
+                      ("fieldset")
+
+val Figcaption = TagType["figcaption", Flow, Global]("figcaption")
 
 // first or last element may be figcaption, but not both
-val Figure = Tag["figure", "figcaption" | Flow, Global]("figure")
+val Figure = TagType["figure", "figcaption" | Flow, Global]("figure")
 
-val Footer = Tag["footer", Flow, Global]("footer")
+val Footer = TagType["footer", Flow, Global]("footer")
 
-val Form = Tag["form", Flow, Global | "acceptCharset" | "action" | "autocomplete" | "enctype" |
-                   "method" | "name" | "novalidate" | "target" | "rel"]("form")
+val Form = TagType["form", Flow, Global | "acceptCharset" | "action" | "autocomplete" | "enctype" |
+                       "method" | "name" | "novalidate" | "target" | "rel"]("form")
 
-val H1 = Tag["h1", Phrasing, Global]("h1")
-val H2 = Tag["h2", Phrasing, Global]("h2")
-val H3 = Tag["h3", Phrasing, Global]("h3")
-val H4 = Tag["h4", Phrasing, Global]("h4")
-val H5 = Tag["h5", Phrasing, Global]("h5")
-val H6 = Tag["h6", Phrasing, Global]("h6")
-val HMap = TransTag["map", Phrasing | Flow | Palpable, Global | "name"]("map", inline = true)
-val Head = Tag["head", Metadata, Global]("head")
-val Header = Tag["header", Flow, Global]("header")
-val Hgroup = Tag["hgroup", "h1" | "h2" | "h3" | "h4" | "h5" | "h6", Global]("hgroup")
-val Hr = Tag["hr", Nothing, Global]("hr", inline = true, unclosed = true)
+val H1 = TagType["h1", Phrasing, Global]("h1")
+val H2 = TagType["h2", Phrasing, Global]("h2")
+val H3 = TagType["h3", Phrasing, Global]("h3")
+val H4 = TagType["h4", Phrasing, Global]("h4")
+val H5 = TagType["h5", Phrasing, Global]("h5")
+val H6 = TagType["h6", Phrasing, Global]("h6")
+val HMap = TransTagType["map", Phrasing | Flow | Palpable, Global | "name"]("map", inline = true)
+val Head = TagType["head", Metadata, Global]("head")
+val Header = TagType["header", Flow, Global]("header")
+val Hgroup = TagType["hgroup", "h1" | "h2" | "h3" | "h4" | "h5" | "h6", Global]("hgroup")
+val Hr = TagType["hr", Nothing, Global]("hr", inline = true, unclosed = true)
 
-trait ToHtml[-T, +R <: Label]:
-  def convert(value: T): Seq[Content[R]]
+val I = TagType["i", Phrasing, Global]("i", inline = true)
 
-val I = Tag["i", Phrasing, Global]("i", inline = true)
+val Iframe = TagType["iframe", Nothing, Global | "src" | "srcdoc" | "name" | "sandbox" | "allow" |
+                         "allowfullscreen" | "width" | "height" | "referrerpolicy" | "loading"]
+                    ("iframe", unclosed = false, inline = true)
 
-val Iframe = Tag["iframe", Nothing, Global | "src" | "srcdoc" | "name" | "sandbox" | "allow" |
-                     "allowfullscreen" | "width" | "height" | "referrerpolicy" | "loading"]
-                ("iframe", unclosed = false, inline = true)
+val Img = TagType["img", Nothing, Global | "alt" | "src" | "srcset" | "sizes" | "crossorigin" |
+                      "usemap" | "ismap" | "width" | "height" | "referrerpolicy" | "decoding" |
+                      "loading"]
+                 ("img", inline = true, unclosed = true)
 
-val Img = Tag["img", Nothing, Global | "alt" | "src" | "srcset" | "sizes" | "crossorigin" |
-                  "usemap" | "ismap" | "width" | "height" | "referrerpolicy" | "decoding" |
-                  "loading"]
-             ("img", inline = true, unclosed = true)
+val Input = TagType["input", Nothing, Global | "accept" | "alt" | "autocomplete" | "checked" |
+                        "dirname" | "disabled" | "form" | "formaction" | "formenctype" |
+                        "formmethod" | "formnovalidate" | "formtarget" | "height" | "list" | "max" |
+                        "maxlength" | "min" | "minlength" | "multiple" | "name" | "pattern" |
+                        "placeholder" | "readonly" | "required" | "size" | "src" | "step" |
+                        "htype" | "value" | "width"]
+                   ("input", inline = true, unclosed = true)
 
-val Input = Tag["input", Nothing, Global | "accept" | "alt" | "autocomplete" | "checked" |
-                    "dirname" | "disabled" | "form" | "formaction" | "formenctype" | "formmethod" |
-                    "formnovalidate" | "formtarget" | "height" | "list" | "max" | "maxlength" |
-                    "min" | "minlength" | "multiple" | "name" | "pattern" | "placeholder" |
-                    "readonly" | "required" | "size" | "src" | "step" | "htype" | "value" | "width"]
-               ("input", inline = true, unclosed = true)
+val Ins = TransTagType["ins", Label, Global | "cite" | "datetime"]("ins", inline = true)
+val Kbd = TagType["kbd", Phrasing, Global]("kbd", inline = true)
+val Label = TagType["label", Phrasing, Global | "hfor"]("label", inline = true)
+val Legend = TagType["legend", Phrasing | Heading, Global]("legend")
+val Li = TagType["li", Flow, Global | "value"]("li")
 
-val Ins = TransTag["ins", Label, Global | "cite" | "datetime"]("ins", inline = true)
-val Kbd = Tag["kbd", Phrasing, Global]("kbd", inline = true)
-val Label = Tag["label", Phrasing, Global | "hfor"]("label", inline = true)
-val Legend = Tag["legend", Phrasing | Heading, Global]("legend")
-val Li = Tag["li", Flow, Global | "value"]("li")
-
-val Link = Tag["link", Nothing, Global | "href" | "crossorigin" | "rel" | "media" | "integrity" |
-                   "hreflang" | "htype" | "referrerpolicy" | "sizes" | "imagesrcset" |
+val Link = TagType["link", Nothing, Global | "href" | "crossorigin" | "rel" | "media" |
+                   "integrity" | "hreflang" | "htype" | "referrerpolicy" | "sizes" | "imagesrcset" |
                    "imagesizes" | "as" | "color" | "disabled"]
-              ("link", inline = true, unclosed = true)
+                  ("link", inline = true, unclosed = true)
 
-val Main = Tag["main", Flow, Global]("main")
-val Mark = Tag["mark", Phrasing, Global]("mark", inline = true)
-val Menu = Tag["menu", Flow, Global]("menu")
+val Main = TagType["main", Flow, Global]("main")
+val Mark = TagType["mark", Phrasing, Global]("mark", inline = true)
+val Menu = TagType["menu", Flow, Global]("menu")
 
-val Meta = Tag["meta", Nothing, Global | "name" | "httpEquiv" | "content" | "charset"]
+val Meta = TagType["meta", Nothing, Global | "name" | "httpEquiv" | "content" | "charset"]
               ("meta", inline = true, unclosed = true)
 
-val Meter = Tag["meter", Phrasing, Global | "value" | "min" | "max" | "low" | "high" | "optimum"]
-               ("meter", inline = true)
+val Meter = TagType["meter", Phrasing, Global | "value" | "min" | "max" | "low" | "high" |
+                        "optimum"]
+                   ("meter", inline = true)
 
-val Nav = Tag["nav", Flow, Global]("nav")
-// val Noscript = IncludeTag["noscript", Label, "link" | "style" | "meta", Global]
-//                          ("noscript", inline = true)
+val Nav = TagType["nav", Flow, Global]("nav")
 
-// val HObject = IncludeTag["object", Label, "param", Global | "data" | "htype" | "name" | "form" |
-//     "width" | "height"]("object", inline = true)
+@githubIssue(2)
+val Noscript = TagType["noscript", Label, Global]("noscript", inline = true)
 
-val Ol = Tag["ol", "li" | ScriptSupporting, Global | "reversed" | "start" | "htype"]("ol")
+@githubIssue(2)
+val HObject = TagType["object", Label, Global | "data" | "htype" | "name" | "form" | "width" |
+                          "height"]
+                     ("object", inline = true)
 
-val Optgroup = Tag["optgroup", "option" | ScriptSupporting, Global | "disabled" | "label"]
-                  ("optgroup")
+val Ol = TagType["ol", "li" | ScriptSupporting, Global | "reversed" | "start" | "htype"]("ol")
 
-val Option = Tag["option", Nothing, Global | "disabled" | "label" | "selected" | "value"]
-                ("option", unclosed = true)
+val Optgroup = TagType["optgroup", "option" | ScriptSupporting, Global | "disabled" | "label"]
+                      ("optgroup")
 
-val Output = Tag["output", Phrasing, Global | "hfor" | "form" | "name"]("output", inline = true)
-val P = Tag["p", Phrasing, Global]("p")
-val Param = Tag["param", Nothing, Global | "name" | "value"]("param", unclosed = true)
-val Picture = Tag["picture", "source" | "img" | ScriptSupporting, Global]("picture", inline = true)
-val Pre = Tag["pre", Phrasing, Global]("pre", verbatim = true, inline = true)
-val Progress = Tag["progress", Phrasing, Global | "value" | "max"]("progress", inline = true)
-val Q = Tag["q", Phrasing, Global | "cite"]("q", inline = true)
-val Rb = Tag["rb", Phrasing, Global]("rb")
-val Rp = Tag["rp", Nothing, Global]("rp")
-val Rt = Tag["rt", Phrasing, Global]("rt")
-val Ruby = Tag["ruby", Phrasing | "rp" | "rt", Global]("ruby", inline = true)
-val S = Tag["s", Phrasing, Global]("s", inline = true)
-val Samp = Tag["samp", Phrasing, Global]("samp", inline = true)
+val Option = TagType["option", Nothing, Global | "disabled" | "label" | "selected" | "value"]
+                    ("option", unclosed = true)
 
-val Script = Tag["script", Nothing, Global | "src" | "htype" | "nomodule" | "async" | "defer" |
-                     "crossorigin" | "integrity" | "referrerpolicy"]
-                ("script", inline = true)
+val Output = TagType["output", Phrasing, Global | "hfor" | "form" | "name"]("output", inline = true)
+val P = TagType["p", Phrasing, Global]("p")
+val Param = TagType["param", Nothing, Global | "name" | "value"]("param", unclosed = true)
 
-val Section = Tag["section", Flow, Global]("section")
+val Picture = TagType["picture", "source" | "img" | ScriptSupporting, Global]
+                     ("picture", inline = true)
 
-val Select = Tag["select", "option" | "optgroup" | ScriptSupporting, Global | "autocomplete" |
-                     "disabled" | "form" | "multiple" | "name" | "required" | "size"]
-                ("select", inline = true)
+val Pre = TagType["pre", Phrasing, Global]("pre", verbatim = true, inline = true)
+val Progress = TagType["progress", Phrasing, Global | "value" | "max"]("progress", inline = true)
+val Q = TagType["q", Phrasing, Global | "cite"]("q", inline = true)
+val Rb = TagType["rb", Phrasing, Global]("rb")
+val Rp = TagType["rp", Nothing, Global]("rp")
+val Rt = TagType["rt", Phrasing, Global]("rt")
+val Ruby = TagType["ruby", Phrasing | "rp" | "rt", Global]("ruby", inline = true)
+val S = TagType["s", Phrasing, Global]("s", inline = true)
+val Samp = TagType["samp", Phrasing, Global]("samp", inline = true)
 
-val Slot = TransTag["slot", Label, Global | "name"]("slot", inline = true)
-val Small = Tag["small", Phrasing, Global]("small", inline = true)
+val Script = TagType["script", Nothing, Global | "src" | "htype" | "nomodule" | "async" | "defer" |
+                         "crossorigin" | "integrity" | "referrerpolicy"]
+                    ("script", inline = true, verbatim = true)
 
-val Source = Tag["source", Nothing, Global | "htype" | "src" | "srcset" | "sizes" | "media" |
-                     "width" | "height"]
-                ("source")
+val Section = TagType["section", Flow, Global]("section")
 
-val Span = Tag["span", Phrasing, Global]("span", inline = true)
-val Strong = Tag["strong", Phrasing, Global | "media"]("strong", inline = true)
-val Style = Tag["style", Nothing, Global]("style")
-val Sub = Tag["sub", Phrasing, Global]("sub", inline = true)
-val Summary = Tag["summary", Phrasing | Heading, Global]("summary")
-val Sup = Tag["sup", Phrasing, Global]("sup", inline = true)
+val Select = TagType["select", "option" | "optgroup" | ScriptSupporting, Global | "autocomplete" |
+                             "disabled" | "form" | "multiple" | "name" | "required" | "size"]
+                        ("select", inline = true)
 
-val Table = Tag["table", "caption" | "colgroup" | "thead" | "tbody" | "tr" | "tfoot" |
-                    ScriptSupporting, Global]
-               ("table")
+val Slot = TransTagType["slot", Label, Global | "name"]("slot", inline = true)
+val Small = TagType["small", Phrasing, Global]("small", inline = true)
 
-val Tbody = Tag["tbody", "tr" | ScriptSupporting, Global]("tbody")
-val Td = Tag["td", Flow, Global | "colspan" | "rowspan" | "headers"]("td")
-val Template = Tag["template", Nothing, Global]("template", unclosed = false, inline = true)
+val Source = TagType["source", Nothing, Global | "htype" | "src" | "srcset" | "sizes" | "media" |
+                         "width" | "height"]
+                    ("source")
 
-val Textarea = Tag["textarea", Nothing, Global | "autocomplete" | "cols" | "dirname" | "disabled" |
-                       "form" | "maxlength" | "minlength" | "name" | "placeholder" | "readonly" |
-                       "required" | "rows" | "wrap"]
-                  ("textarea", inline = true, verbatim = true)
+val Span = TagType["span", Phrasing, Global]("span", inline = true)
+val Strong = TagType["strong", Phrasing, Global | "media"]("strong", inline = true)
+val Style = TagType["style", Nothing, Global]("style")
+val Sub = TagType["sub", Phrasing, Global]("sub", inline = true)
+val Summary = TagType["summary", Phrasing | Heading, Global]("summary")
+val Sup = TagType["sup", Phrasing, Global]("sup", inline = true)
 
-val Tfoot = Tag["tfoot", "tr" | ScriptSupporting, Global]("tfoot")
-val Th = Tag["th", Flow, Global | "colspan" | "rowspan" | "headers" | "scope" | "abbr"]("th")
-val Thead = Tag["thead", "tr" | ScriptSupporting, Global]("thead")
-val Time = Tag["time", Phrasing, Global | "datetime"]("time", inline = true)
-val Title = Tag["title", Nothing, Global]("title")
-val Tr = Tag["tr", "td" | "th" | ScriptSupporting, Global]("tr")
+val Table = TagType["table", "caption" | "colgroup" | "thead" | "tbody" | "tr" | "tfoot" |
+                        ScriptSupporting, Global]
+                   ("table")
 
-val Track = Tag["track", Nothing, Global | "kind" | "src" | "srclang" | "label" | "default"]
-               ("track")
+val Tbody = TagType["tbody", "tr" | ScriptSupporting, Global]("tbody")
+val Td = TagType["td", Flow, Global | "colspan" | "rowspan" | "headers"]("td")
+val Template = TagType["template", Nothing, Global]("template", unclosed = false, inline = true)
 
-val U = Tag["u", Phrasing, Global]("u", inline = true)
-val Ul = Tag["ul", "li" | ScriptSupporting, Global]("ul")
-val Var = Tag["var", Nothing, Global]("var", inline = true)
+val Textarea = TagType["textarea", Nothing, Global | "autocomplete" | "cols" | "dirname" |
+                           "disabled" | "form" | "maxlength" | "minlength" | "name" | "readonly" |
+                           "placeholder" | "required" | "rows" | "wrap"]
+                      ("textarea", inline = true, verbatim = true)
 
-// val Video = IncludeTag["video", Label, "track" | "source", Global | "src" | "crossorigin" |
-//                            "poster" | "preload" | "autoplay" | "playsinline" | "loop" | "muted" |
-//                            "controls" | "width" | "height"]
-//                       ("video", inline = true) // complicated!
+val Tfoot = TagType["tfoot", "tr" | ScriptSupporting, Global]("tfoot")
+val Th = TagType["th", Flow, Global | "colspan" | "rowspan" | "headers" | "scope" | "abbr"]("th")
+val Thead = TagType["thead", "tr" | ScriptSupporting, Global]("thead")
+val Time = TagType["time", Phrasing, Global | "datetime"]("time", inline = true)
+val Title = TagType["title", Nothing, Global]("title")
+val Tr = TagType["tr", "td" | "th" | ScriptSupporting, Global]("tr")
 
-val Wbr = Tag["wbr", Nothing, Global]("wbr", inline = true)
+val Track = TagType["track", Nothing, Global | "kind" | "src" | "srclang" | "label" | "default"]
+                   ("track")
+
+val U = TagType["u", Phrasing, Global]("u", inline = true)
+val Ul = TagType["ul", "li" | ScriptSupporting, Global]("ul")
+val Var = TagType["var", Nothing, Global]("var", inline = true)
+
+@githubIssue(2)
+val Video = TagType["video", Label, Global | "src" | "crossorigin" | "poster" | "preload" | "loop" |
+                        "autoplay" | "playsinline" | "muted" | "controls" | "width" | "height"]
+                   ("video", inline = true)
+
+val Wbr = TagType["wbr", Nothing, Global]("wbr", inline = true)
+
+trait ToHtml[-T, +R <: Label]:
+  def convert(value: T): Seq[Html[R]]

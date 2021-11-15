@@ -24,148 +24,158 @@ import scala.quoted.*
 
 import language.dynamics
 
-type Label = String & Singleton
-type Content[Children <: Label] = Item[Children] | Text | Int
+private[honeycomb] type Label = String & Singleton
+type Html[Children <: Label] = Node[Children] | Text | Int
 type Attributes = Map[String, Maybe[Text]]
 
-extension (content: Content[?])
-  def text: Text = content match
-    case item: Item[?] => item.text
-    case txt: Text      => txt
-    case int: Int      => int.show
-    case _             => throw Impossible("should never match")
-
-trait Item[+Name <: Label]:
-  def label: Text
-  def attributes: Attributes
-  def children: Seq[Content[?]]
-  def inline: Boolean
-  def unclosed: Boolean
-  def verbatim: Boolean
-  
-  def text: Text =
-    val attributeString = attributes.map {
-      case (key, Unset)      => t" $key"
-      case (key, value: Text) => t""" $key="${value}""""
-      case _                 => throw Impossible("should never match")
-    }.join
-    
-    if children.isEmpty then t"<$label$attributeString/>"
-    else t"<$label$attributeString>${children.map(_.text).join}</$label>"
-
-  override def toString: String = text.s
-
 object Node:
+  given Show[Html[?]] =
+    case text: Text    => text
+    case int: Int      => int.show
+    case item: Node[?] => item.show
+    case _             => throw Impossible("this should never match")
+  
+  given Show[Seq[Html[?]]] = _.map(_.show).join
+  
+  given Show[Node[?]] = item =>
+    val filling = item.attributes.map:
+      case (key, Unset)       => t" $key"
+      case (key, value: Text) => t""" $key="${value}""""
+      case _                  => throw Impossible("should never match")
+    .join
+    
+    if item.children.isEmpty && !item.verbatim
+    then t"<${item.label}$filling${if item.unclosed then t"" else t"/"}>"
+    else t"<${item.label}$filling>${item.children.map(_.show).join}</${item.label}>"
+
+sealed trait Node[+Name <: Label] extends Shown[Node[?]]:
+  node =>
+    def label: Text
+    def attributes: Attributes
+    def children: Seq[Html[?]]
+    def inline: Boolean
+    def unclosed: Boolean
+    def verbatim: Boolean
+  
+    inline def refine[N <: Label]: Option[Node[N]] = label.s match
+      case lbl: N => Some:
+        new Node[N]:
+          def label: Text = lbl.show
+          export node.{attributes, children, inline, unclosed, verbatim}
+      case _ => None
+
+object Element:
   @targetName("make")
   def apply[T <: Label, C <: Label]
            (labelString: String, unclosed: Boolean, inline: Boolean,
                 verbatim: Boolean, attributes: Attributes,
-                children: Seq[Content[C] | Seq[Content[C]]] = Nil): Node[T] =
-    new Node(labelString, unclosed, inline, verbatim, attributes, flatten(children))
+                children: Seq[Html[C] | Seq[Html[C]]] = Nil): Element[T] =
+    new Element(labelString, unclosed, inline, verbatim, attributes, flatten(children))
 
-  private def flatten[C <: Label](nodes: Seq[Content[C] | Seq[Content[C]]]): Seq[Content[C]] =
-    nodes.flatMap {
+  private def flatten[C <: Label](nodes: Seq[Html[C] | Seq[Html[C]]]): Seq[Html[C]] =
+    nodes.flatMap:
       case seq: Seq[?] => seq
       case node        => Seq(node)
-    }.asInstanceOf[Seq[Content[C]]]
+    .asInstanceOf[Seq[Html[C]]]
 
-object Html extends Item["html"]:
+object Html extends Node["html"]:
   def label: Text = t"html"
   def attributes: Attributes = Map()
-  def children: Seq[Content[?]] = Nil
+  def children: Seq[Html[?]] = Nil
   def inline = false
   def unclosed = false
   def verbatim = false
 
-  def apply(head: Item["head"], body: Item["body"]): Node["html"] =
-    Node(label.s, unclosed, inline, verbatim, Map(), Seq(head, body))
+  def apply(head: Node["head"], body: Node["body"]): Element["html"] =
+    Element(label.s, unclosed, inline, verbatim, Map(), Seq(head, body))
 
-object Tag:
-  given clairvoyant.CssSelection[Tag[?, ?, ?]] = _.labelString
+object TagType:
+  given clairvoyant.CssSelection[TagType[?, ?, ?]] = _.labelString
 
-case class Tag[+Name <: Label, Children <: Label, Atts <: Label]
+case class TagType[+Name <: Label, Children <: Label, Atts <: Label]
               (labelString: Name, unclosed: Boolean = false, inline: Boolean = false,
                    verbatim: Boolean = false)
-extends Item[Name], Dynamic:
+extends Node[Name], Dynamic:
   def attributes: Attributes = Map()
-  def children: Seq[Content[?]] = Nil
-  def label: Text = Text(labelString)
+  def children: Seq[Html[?]] = Nil
+  def label: Text = labelString.show
 
-  type ChildNodes = Children
+  type ChildElements = Children
 
   inline def applyDynamicNamed(method: "apply")
-                              (inline attributes: (Atts, Any)*): Element[Name, Children] =
-    ${Macro.read[Name, Children, Children]('labelString, 'unclosed, 'inline, 'verbatim, 'attributes)}
+                              (inline attributes: (Atts, Any)*): StartTag[Name, Children] =
+    ${Macro.read[Name, Children, Children]('labelString, 'unclosed, 'inline, 'verbatim,
+        'attributes)}
 
   def applyDynamic(method: "apply")
-                  (children: (Content[Children] | Seq[Content[Children]])*): Node[Name] =
-    Node(labelString, unclosed, inline, verbatim, Map(), children)
+                  (children: (Html[Children] | Seq[Html[Children]])*): Element[Name] =
+    Element(labelString, unclosed, inline, verbatim, Map(), children)
 
-object TransTag:
-  given clairvoyant.CssSelection[TransTag[?, ?, ?]] = _.labelString
+object TransTagType:
+  given clairvoyant.CssSelection[TransTagType[?, ?, ?]] = _.labelString
 
-case class TransTag[+Name <: Label, Children <: Label, Atts <: Label]
+case class TransTagType[+Name <: Label, Children <: Label, Atts <: Label]
                    (labelString: Name, unclosed: Boolean = false, inline: Boolean = false,
                         verbatim: Boolean = false)
-extends Item[Name], Dynamic:
+extends Node[Name], Dynamic:
   def attributes: Attributes = Map()
-  def children: Seq[Content[?]] = Nil
-  def label: Text = Text(labelString)
+  def children: Seq[Html[?]] = Nil
+  def label: Text = labelString.show
 
   inline def applyDynamicNamed(method: "apply")
-                              (inline attributes: (Atts, Any)*): Element[Name, Children] =
-    ${Macro.read[Name, Children, Children]('labelString, 'unclosed, 'inline, 'verbatim, 'attributes)}
+                              (inline attributes: (Atts, Any)*): StartTag[Name, Children] =
+    ${Macro.read[Name, Children, Children]('labelString, 'unclosed, 'inline, 'verbatim,
+        'attributes)}
 
   def applyDynamic[Return <: Label]
                   (method: "apply")
-                  (children: (Content[Return] | Seq[Content[Return]])*): Node[Return] =
-    Node(labelString, unclosed, inline, verbatim, Map(), children)
+                  (children: (Html[Return] | Seq[Html[Return]])*): Element[Return] =
+    Element(labelString, unclosed, inline, verbatim, Map(), children)
 
-object Element:
-  given clairvoyant.CssSelection[Element[?, ?]] = elem => elem.label+elem.attributes.map {
+object StartTag:
+  given clairvoyant.CssSelection[StartTag[?, ?]] = elem => elem.label+elem.attributes.map:
     case (key, value: Text) => t"[$key=$value]"
-    case (key, Unset)      => t"[$key]"
-    case _                 => throw Impossible("should never match")
-  }.join(t"")
+    case (key, Unset)       => t"[$key]"
+    case _                  => throw Impossible("should never match")
+  .join(t"")
 
-case class Element[+Name <: Label, Children <: Label]
-                  (labelString: Name, unclosed: Boolean, inline: Boolean, verbatim: Boolean,
-                       attributes: Attributes)
-extends Item[Name]:
+case class StartTag[+Name <: Label, Children <: Label]
+                   (labelString: Name, unclosed: Boolean, inline: Boolean, verbatim: Boolean,
+                        attributes: Attributes)
+extends Node[Name]:
   def children = Nil
-  def label: Text = Text(labelString)
-  def apply(children: (Content[Children] | Seq[Content[Children]])*): Node[Name] =
-    Node(labelString, unclosed, inline, verbatim, attributes, children)
+  def label: Text = labelString.show
+  def apply(children: (Html[Children] | Seq[Html[Children]])*): Element[Name] =
+    Element(labelString, unclosed, inline, verbatim, attributes, children)
 
-case class Node[+Name <: Label](labelString: String, unclosed: Boolean, tagInline: Boolean,
+case class Element[+Name <: Label](labelString: String, unclosed: Boolean, tagInline: Boolean,
                                     verbatim: Boolean, attributes: Map[String, Maybe[Text]],
-                                    children: Seq[Content[?]]) extends Item[Name]:
+                                    children: Seq[Html[?]]) extends Node[Name]:
 
-  def label: Text = Text(labelString)
+  def label: Text = labelString.show
 
-  lazy val inline: Boolean = tagInline && children.forall {
-    case item: Item[?] => item.inline
-    case text: Text     => true
+  lazy val inline: Boolean = tagInline && children.forall:
+    case item: Node[?] => item.inline
+    case text: Text    => true
     case int: Int      => true
     case _             => throw Impossible("should never match")
-  }
 
-case class HtmlDoc(root: Item["html"])
+case class HtmlDoc(root: Node["html"])
 
 object HtmlDoc:
-  given clairvoyant.HttpResponse[HtmlDoc, String] with
+  given clairvoyant.HttpResponse[HtmlDoc, Text] with
     def mimeType: String = "text/html; charset=utf-8"
-    def content(value: HtmlDoc): String = HtmlDoc.serialize(value).s
+    def content(value: HtmlDoc): Text = HtmlDoc.serialize(value)
 
   def serialize[T](doc: HtmlDoc, maxWidth: Int = -1)(using HtmlSerializer[T]): T =
     summon[HtmlSerializer[T]].serialize(doc, maxWidth)
   
   def simple[Stylesheet](title: Text, stylesheet: Stylesheet = false)
-                        (content: (Content[Flow] | Seq[Content[Flow]])*)
+                        (content: (Html[Flow] | Seq[Html[Flow]])*)
                         (using att: Attribute["href", Stylesheet, ?]): HtmlDoc =
     val link = att.convert(stylesheet) match
-      case Unset     => Nil
+      case Unset      => Nil
       case text: Text => Seq(Link(rel = t"stylesheet", href = text))
-      case _         => throw Impossible("should never match")
+      case _          => throw Impossible("should never match")
 
     HtmlDoc(Html(Head(Title(title), link), Body(content*)))
