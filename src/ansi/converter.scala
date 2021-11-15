@@ -83,7 +83,7 @@ open class TextConverter():
         
         case Markdown.Ast.Block.BulletList(num, loose, _, items*) =>
           acc :+ TextBlock(indent, items.zipWithIndex.map { case (item, idx) =>
-            ansi"${num.fold("  » ") { n => (n + idx).toString.padTo(3, ' ')+". " }}${item.toString}"
+            ansi"${num.fold(t"  » ") { n => t"${(n + idx).show.fit(3)}. " }}${Showable(item).show}"
           }.join)
     
         case Markdown.Ast.Block.Table(parts*) =>
@@ -133,5 +133,5 @@ open class TextConverter():
     case Markdown.Ast.Inline.Emphasis(children*)      => ansi"$Italic(${children.map(phrasing).join})"
     case Markdown.Ast.Inline.Strong(children*)        => ansi"$Bold(${children.map(phrasing).join})"
     case Markdown.Ast.Inline.Code(code)               => ansi"${colors.YellowGreen}(${Bg(Srgb(0, 0.1, 0))}($code))"
-    case Markdown.Ast.Inline.Textual(str)             => ansi"$str"
+    case Markdown.Ast.Inline.Textual(str)             => ansi"${Showable(str).show}"
     case _                                            => text(Seq(node))

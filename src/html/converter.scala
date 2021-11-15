@@ -24,24 +24,25 @@ import scala.collection.immutable.ListMap
 import scala.annotation.targetName
 
 open class HtmlConverter():
-  def outline(node: Markdown[Markdown.Ast.Node]): Seq[Content[Flow]] =
+  def outline(node: Markdown[Markdown.Ast.Node]): Seq[Html[Flow]] =
     try convert(Markdown.parse(headOutline(node).join(t"\n")).nodes)
-    catch case BadMarkdownError(_) => Nil
+    catch case e: BadMarkdownError => Nil
   
   def slug(str: Text): Text =
     Text(str.lower.replaceAll("[^a-z0-9]", "-").nn.replaceAll("--*", "-").nn)
 
   def headOutline(node: Markdown[Markdown.Ast.Node]): Seq[Text] = node match
     case Markdown(children*) =>
-      children.flatMap {
+      children.flatMap:
         case Markdown.Ast.Block.Heading(level, children*) =>
           val string = text(children)
           List(t"${" "*(2*level - 1)}- [$string](#${slug(string)})")
+        
         case Markdown.Ast.Inline.Textual(str) =>
           List(str)
+        
         case _ =>
           Nil
-      }
 
   private val headings = IArray(H1, H2, H3, H4, H5, H6)
   
@@ -49,7 +50,7 @@ open class HtmlConverter():
     headings(level - 1)(id = slug(text(children)))(children.flatMap(phrasing))
 
   def blockify(nodes: Seq[Markdown.Ast.Node]): Seq[Markdown.Ast.Block] =
-    nodes.foldLeft((true, List[Markdown.Ast.Block]())) {
+    val acc = nodes.foldLeft((true, List[Markdown.Ast.Block]())):
       case ((fresh, acc), next) => next match
         case node: Markdown.Ast.Block  =>
           (true, node :: acc)
@@ -63,42 +64,45 @@ open class HtmlConverter():
               
               case _ =>
                 throw Impossible("unexpected non-paragraph node found while folding inline nodes")
+
             (false, content)
-    }(1).reverse
-
-  def convert(nodes: Seq[Markdown.Ast.Node]): Seq[Content[Flow]] =
-    blockify(nodes).foldLeft(List[Content[Flow]]()) {
-      case (acc, next) => next match
-        case Markdown.Ast.Block.Paragraph(children*)            => acc :+ P(children.flatMap(phrasing)*)
-        case Markdown.Ast.Block.Heading(level, children*)       => acc :+ heading(level, children)
-        case Markdown.Ast.Block.Blockquote(children*)           => acc :+ Blockquote(convert(children)*)
-        case Markdown.Ast.Block.ThematicBreak()                 => acc :+ Hr
-        case Markdown.Ast.Block.FencedCode(syntax, meta, value) => acc :+ Pre(Code(escape(value)))
-        case Markdown.Ast.Block.Reference(_, _)                 => acc
-        
-        case Markdown.Ast.Block.BulletList(num, _, _, items*)   => acc :+ (if num.isDefined then Ol
-                                                                       else Ul)(items.flatMap(listItem)*)
     
-        case Markdown.Ast.Block.Table(parts*)                   => acc :+ Table(parts.flatMap(tableParts))
-        case other                                              => acc
-    }
+    acc(1).reverse
 
-  def tableParts(node: Markdown.Ast.TablePart): Seq[Item["thead" | "tbody"]] = node match
+  def convert(nodes: Seq[Markdown.Ast.Node]): Seq[Html[Flow]] =
+    blockify(nodes).foldLeft(List[Html[Flow]]())(_ ++ convertNode(_))
+
+  def convertNode(node: Markdown.Ast.Block): Seq[Html[Flow]] = node match
+    case Markdown.Ast.Block.Paragraph(children*)            => Seq(P(children.flatMap(phrasing)*))
+    case Markdown.Ast.Block.Heading(level, children*)       => Seq(heading(level, children))
+    case Markdown.Ast.Block.Blockquote(children*)           => Seq(Blockquote(convert(children)*))
+    case Markdown.Ast.Block.ThematicBreak()                 => Seq(Hr)
+    case Markdown.Ast.Block.FencedCode(syntax, meta, value) => Seq(Pre(Code(escape(value))))
+    case Markdown.Ast.Block.Reference(_, _)                 => Seq()
+    case Markdown.Ast.Block.BulletList(num, _, _, items*)   => Seq((if num.isEmpty then Ul else Ol)(
+                                                                   items.flatMap(listItem)*))
+    case Markdown.Ast.Block.Table(parts*)                   => Seq(Table(parts.flatMap(tableParts)))
+    case other                                              => Seq()
+
+  def tableParts(node: Markdown.Ast.TablePart): Seq[Node["thead" | "tbody"]] = node match
     case Markdown.Ast.TablePart.Head(rows*) => List(Thead(tableRows(true, rows)))
     case Markdown.Ast.TablePart.Body(rows*) => List(Tbody(tableRows(false, rows)))
 
-  def tableRows(heading: Boolean, rows: Seq[Markdown.Ast.Block.Row]): Seq[Item["tr"]] =
-    rows.map { case Markdown.Ast.Block.Row(cells*) => Tr(tableCells(heading, cells)) }
+  def tableRows(heading: Boolean, rows: Seq[Markdown.Ast.Block.Row]): Seq[Node["tr"]] =
+    rows.map:
+      case Markdown.Ast.Block.Row(cells*) => Tr(tableCells(heading, cells))
 
-  def tableCells(heading: Boolean, cells: Seq[Markdown.Ast.Block.Cell]): Seq[Item["th" | "td"]] =
-    cells.map { case Markdown.Ast.Block.Cell(content*) =>
-      (if heading then Th else Td)(content.flatMap(phrasing))
-    }
+  def tableCells(heading: Boolean, cells: Seq[Markdown.Ast.Block.Cell]): Seq[Node["th" | "td"]] =
+    cells.map:
+      case Markdown.Ast.Block.Cell(content*) =>
+        (if heading then Th else Td)(content.flatMap(phrasing))
 
-  def listItem(node: Markdown.Ast.ListItem): Seq[Item["li"]] = node match
+  def listItem(node: Markdown.Ast.ListItem): Seq[Node["li"]] = node match
     case Markdown.Ast.ListItem(children*) => List(Li(convert(children)*))
 
-  def text(node: Seq[Markdown.Ast.Node]): Text = node.map {
+  def text(node: Seq[Markdown.Ast.Node]): Text = node.map(textNode(_)).join
+
+  def textNode(node: Markdown.Ast.Node): Text = node match
     case Markdown.Ast.Block.BulletList(_, _, _, _*) => t""
     case Markdown.Ast.Inline.Image(text, _)         => text
     case Markdown.Ast.Inline.Link(text, _)          => text
@@ -115,9 +119,8 @@ open class HtmlConverter():
     case Markdown.Ast.Inline.Textual(text)          => text
     case Markdown.Ast.Block.Cell(content*)          => text(content)
     case _                                          => t""
-  }.join
 
-  def nonInteractive(node: Markdown.Ast.Inline): Seq[Content[Phrasing]] = node match
+  def nonInteractive(node: Markdown.Ast.Inline): Seq[Html[Phrasing]] = node match
     case Markdown.Ast.Inline.Image(altText, location) => List(Img(src = location, alt = altText))
     case Markdown.Ast.Inline.Break()                  => List(Br)
     case Markdown.Ast.Inline.Emphasis(children*)      => List(Em(children.flatMap(phrasing)))
@@ -126,9 +129,17 @@ open class HtmlConverter():
     case Markdown.Ast.Inline.Textual(str)             => List(escape(str))
     case _                                            => Nil
 
-  def phrasing(node: Markdown.Ast.Inline): Seq[Content[Phrasing]] = node match
+  def phrasing(node: Markdown.Ast.Inline): Seq[Html[Phrasing]] = node match
     case Markdown.Ast.Inline.Link(location, content) =>
-      val children = nonInteractive(content).collect { case node: Content[NonInteractive] => node }
+
+      def interactive(node: Html[Phrasing]): Option[Html[NonInteractive]] = node match
+        case node: Node[?] => node.refine[NonInteractive]
+        case text: Text    => Some(text)
+        case int: Int      => Some(int)
+        case _             => throw Impossible("there should be no other cases")
+
+      val children: Seq[Html[NonInteractive]] = nonInteractive(content).flatMap(interactive(_))
+
       List(A(href = location)(children))
     
     case other =>

@@ -32,12 +32,13 @@ object Md:
     
     def complete(state: Input): Markdown[Markdown.Ast.Node] = state match
       case Input.Inline(state) =>
-        try Markdown.parseInline(state) catch case BadMarkdownError(_) =>
+        try Markdown.parseInline(state) catch case e: BadMarkdownError =>
           throw InterpolationError(s"the markdown could not be parsed")
       
       case Input.Block(state)  =>
-        try Markdown.parse(state) catch case BadMarkdownError(msg) =>
-          throw InterpolationError(s"the markdown could not be parsed; $msg")
+        try Markdown.parse(state) catch case e: BadMarkdownError => e match
+          case BadMarkdownError(msg) =>
+            throw InterpolationError(s"the markdown could not be parsed; $msg")
   
     def initial: Input = Input.Inline(t"")
     def skip(state: Input): Input = state
@@ -56,15 +57,15 @@ object Md:
           Markdown.parseInline(state+next)
           Input.Inline(state+next)
         catch
-          case BadMarkdownError(_) =>
+          case e: BadMarkdownError =>
             try
               Markdown.parse(state+next)
               Input.Block(state+next)
             catch
-              case BadMarkdownError(_) => throw InterpolationError(s"the markdown could not be parsed")
+              case e: BadMarkdownError => throw InterpolationError(s"the markdown could not be parsed")
 
       case Input.Block(state) =>
         try
           Markdown.parse(state+next)
           Input.Block(state+next)
-        catch case BadMarkdownError(_) => throw InterpolationError(s"the markdown could not be parsed")
+        catch case e: BadMarkdownError => throw InterpolationError(s"the markdown could not be parsed")

@@ -109,7 +109,7 @@ object Markdown:
       : Text throws BadMarkdownError =
     Option(node.getReferenceNode(root)).fold {
       throw BadMarkdownError(t"the image reference could not be resolved")
-    } { node => Text(node.nn.getUrl.toString) }
+    } { node => Showable(node.nn.getUrl).show }
 
   type PhrasingInput = cvfa.Emphasis | cvfa.StrongEmphasis | cvfa.Code | cvfa.HardLineBreak |
       cvfa.Image | cvfa.ImageRef | cvfa.Link | cvfa.LinkRef | cvfa.MailLink | cvfa.Text
@@ -135,17 +135,17 @@ object Markdown:
     node match
       case node: cvfa.Emphasis       => Emphasis(phraseChildren(root, node)*)
       case node: cvfa.StrongEmphasis => Strong(phraseChildren(root, node)*)
-      case node: cvfa.Code           => Code(Text(node.getText.toString))
+      case node: cvfa.Code           => Code(Showable(node.getText).show)
       case node: cvfa.HardLineBreak  => Break()
-      case node: cvfa.Image          => Image(Text(node.getText.toString), Text(node.getUrl.toString))
-      case node: cvfa.ImageRef       => Image(Text(node.getText.toString), resolveReference(root, node))
-      case node: cvfa.Link           => Link(Text(node.getUrl.toString), phraseChildren(root, node)*)
+      case node: cvfa.Image          => Image(Showable(node.getText).show, Showable(node.getUrl).show)
+      case node: cvfa.ImageRef       => Image(Showable(node.getText).show, resolveReference(root, node))
+      case node: cvfa.Link           => Link(Showable(node.getUrl).show, phraseChildren(root, node)*)
       
       case node: cvfa.LinkRef        => Link(resolveReference(root, node),
                                             phraseChildren(root, node)*)
       
-      case node: cvfa.MailLink       => Link(Text(node.getText.toString), Textual(Text(s"mailto:${node.getText}")))
-      case node: cvfa.Text           => Textual(format(Text(node.getChars.toString)))
+      case node: cvfa.MailLink       => Link(Showable(node.getText).show, Textual(t"mailto:${Showable(node.getText.nn).show}"))
+      case node: cvfa.Text           => Textual(format(Showable(node.getChars).show))
 
   type FlowInput = cvfa.BlockQuote | cvfa.BulletList | cvfa.CodeBlock | cvfa.FencedCodeBlock |
       cvfa.ThematicBreak | cvfa.Paragraph | cvfa.IndentedCodeBlock | cvfa.Heading | cvfa.OrderedList
@@ -157,8 +157,8 @@ object Markdown:
       case node: cvfa.BulletList        => BulletList(numbered = None, loose = node.isLoose,
                                                listItems(root, node)*)
       
-      case node: cvfa.CodeBlock         => FencedCode(None, None, Text(node.getContentChars.toString))
-      case node: cvfa.IndentedCodeBlock => FencedCode(None, None, Text(node.getContentChars.toString))
+      case node: cvfa.CodeBlock         => FencedCode(None, None, Showable(node.getContentChars).show)
+      case node: cvfa.IndentedCodeBlock => FencedCode(None, None, Showable(node.getContentChars).show)
       case node: cvfa.Paragraph         => Paragraph(phraseChildren(root, node)*)
       
       case node: cvfa.OrderedList       => BulletList(numbered = Some(1), loose = node.isLoose,
@@ -166,9 +166,9 @@ object Markdown:
       
       case node: cvfa.ThematicBreak     => ThematicBreak()
       
-      case node: cvfa.FencedCodeBlock   => FencedCode(if node.getInfo.toString == "" then None
-                                               else Some(Text(node.getInfo.toString)), None,
-                                               Text(node.getContentChars.toString))
+      case node: cvfa.FencedCodeBlock   => FencedCode(if Showable(node.getInfo).show == t"" then None
+                                               else Some(Showable(node.getInfo).show), None,
+                                               Showable(node.getContentChars).show)
       
       case node: cvfa.Heading           => node.getLevel match
                                              case lvl@(1 | 2 | 3 | 4 | 5 | 6) =>
@@ -184,10 +184,10 @@ object Markdown:
       node match
         case node: cvfa.HardLineBreak => Break()
         case node: cvfa.SoftLineBreak => Textual(t"\n")
-        case node: cvfa.Reference     => Reference(Text(node.getReference.toString), Text(node.getUrl.toString))
+        case node: cvfa.Reference     => Reference(Showable(node.getReference).show, Showable(node.getUrl).show)
         
-        case node: cvfa.Text          => Textual(if noFormat then Text(node.getChars.toString) else
-                                             format(Text(node.getChars.toString)))
+        case node: cvfa.Text          => Textual(if noFormat then Showable(node.getChars).show else
+                                             format(Showable(node.getChars).show))
         
         case node: cvfa.ThematicBreak => ThematicBreak()
         case node: tables.TableBlock  => Table(table(root, node)*)
@@ -195,7 +195,7 @@ object Markdown:
         case node: PhrasingInput      => phrasing(root, node)
         case node: cvfua.Node         => throw BadMarkdownError(t"unexpected Markdown node")
     }
-    catch case BadMarkdownError(_) => None
+    catch case e: BadMarkdownError    => None
   
   def table(root: cvfua.Document, node: tables.TableBlock)
       : List[Markdown.Ast.TablePart] throws BadMarkdownError =
