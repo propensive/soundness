@@ -3,7 +3,7 @@
 
     The primary distribution site is: https://propensive.com/
 
-    Licensed under the Apache License, Version 2.0 (the "License"); you may not use this
+    Licensed under the Apche License, Version 2.0 (the "License"); you may not use this
     file except in compliance with the License. You may obtain a copy of the License at
 
     http://www.apache.org/licenses/LICENSE-2.0
@@ -21,114 +21,98 @@ import gossamer.*
 
 import annotation.targetName
 
-class SlalomException(message: Text) extends Exception(t"slalom: $message".s)
+abstract class SlalomError(message: Text) extends Exception(t"slalom: $message".s)
 
-case class RootBoundaryExceeded(root: Root)
-extends SlalomException(t"attempted to exceed the root boundary")
+case class RootParentError(root: Root)
+extends SlalomError(txt"""an attempt was made to access the parent of a filesystem root, which (by
+                          definition) has no parent""")
 
-transparent trait GenericRelative:
-  def ascent: Int
-  def path: Vector[Text]
+object Relative:
+  given Show[Relative] = relative => relative.parts.join(t"../"*relative.ascent, t"/", t"")
+
+case class Relative(val ascent: Int, val parts: IArray[Text]):
+  def parent: Relative throws RootParentError =
+    if parts.isEmpty then Relative(ascent + 1, IArray()) else Relative(ascent, parts.init)
+  
+  def ancestor(ascent: Int): Relative throws RootParentError =
+    if ascent == 0 then Relative(ascent, parts) else parent.ancestor(ascent - 1)
+  
+  // def absolute(pwd: AbsolutePath): AbsolutePath throws RootParentError =
+  //   if ascent == 0 then makeAbsolute(pwd.parts ++ parts)
+  //   else Relative(ascent - 1, parts).absolute(pwd.parent)
+  
+  @targetName("access")
+  infix def /(filename: Text): Relative throws RootParentError = filename.s match
+    case ".." => if parts.isEmpty then Relative(ascent + 1, IArray())
+                 else Relative(ascent, parts.init)
+    case "."  => Relative(ascent, parts)
+    case fn   => Relative(ascent, parts :+ filename)
+  
+  @targetName("addAll")
+  infix def ++(relative: Relative): Relative throws RootParentError =
+    if relative.ascent == 0 then Relative(ascent, parts ++ relative.parts)
+    else ancestor(relative.ascent) ++ Relative(ascent, relative.parts)
+
+  override def equals(that: Any): Boolean = that.unsafeMatchable match
+    case that: Relative => ascent == that.ascent && parts == that.parts
+    case _              => false
+
+  override def hashCode: Int = parts.hashCode ^ ascent
 
 trait Root(val separator: Text, val prefix: Text):
   def thisRoot: this.type = this
-
   type AbsolutePath <: Path.Absolute
-  type RelativePath <: Path.Relative
 
-  protected def makeAbsolute(path: Vector[Text]): AbsolutePath
-  protected def makeRelative(ascent: Int, path: Vector[Text]): RelativePath
+  protected def makeAbsolute(parts: IArray[Text]): AbsolutePath
 
   trait Path:
     def root: thisRoot.type = thisRoot
-    def parent: Path throws RootBoundaryExceeded
-    def ancestor(ascent: Int): Path throws RootBoundaryExceeded
-    def absolute(pwd: AbsolutePath): AbsolutePath throws RootBoundaryExceeded
+    def parent: Path throws RootParentError
+    def ancestor(ascent: Int): Path throws RootParentError
+    //def absolute(pwd: AbsolutePath): AbsolutePath throws RootParentError
     
     @targetName("access")
-    infix def /(filename: Text): Path throws RootBoundaryExceeded
+    infix def /(filename: Text): Path throws RootParentError
     
     @targetName("addAll")
-    infix def ++(path: GenericRelative): Path throws RootBoundaryExceeded
+    infix def ++(relative: Relative): Path throws RootParentError
 
   object Path:
-    open class Absolute(val path: Vector[Text]) extends Path:
-      override def toString(): String = path.join(prefix, separator, t"").s
-      
-      def parent: AbsolutePath throws RootBoundaryExceeded = path match
-        case init :+ last => makeAbsolute(init)
-        case _            => throw RootBoundaryExceeded(root)
+    object Absolute:
+      given Show[Absolute] = path => path.parts.join(prefix, separator, t"")
 
-      def ancestor(ascent: Int): AbsolutePath throws RootBoundaryExceeded =
-        if path.length == 0 then makeAbsolute(path) else parent.ancestor(ascent - 1)
-      
-      def absolute(pwd: AbsolutePath): AbsolutePath throws RootBoundaryExceeded =
-        makeAbsolute(path)
+    open class Absolute(val parts: IArray[Text]) extends Path:
+      def parent: AbsolutePath throws RootParentError =
+        if parts.isEmpty then throw RootParentError(root) else makeAbsolute(parts.init)
 
+      def ancestor(ascent: Int): AbsolutePath throws RootParentError =
+        if parts.length == 0 then makeAbsolute(parts) else parent.ancestor(ascent - 1)
+      
       def conjunction(other: AbsolutePath): AbsolutePath =
-        makeAbsolute(path.zip(other.path).takeWhile(_ == _).map(_(0)))
+        makeAbsolute(parts.zip(other.parts).takeWhile(_ == _).map(_(0)))
 
-      def relativeTo(base: AbsolutePath): RelativePath =
+      def relativeTo(base: AbsolutePath): Relative =
         val common = conjunction(base)
-        makeRelative(path.length - common.path.length, base.path.drop(common.path.length))
+        Relative(parts.length - common.parts.length, base.parts.drop(common.parts.length))
 
       @targetName("access")
-      infix def /(filename: Text): AbsolutePath throws RootBoundaryExceeded = filename.s match
-        case ".."     => path match
-          case init :+ last => makeAbsolute(init)
-          case _            => throw RootBoundaryExceeded(root)
-        case "."      => makeAbsolute(path)
-        case fn       => makeAbsolute(path :+ filename)
+      infix def /(filename: Text): AbsolutePath throws RootParentError = filename.s match
+        case ".." => if parts.isEmpty then throw RootParentError(root) else makeAbsolute(parts.init)
+        case "."  => makeAbsolute(parts)
+        case fn   => makeAbsolute(parts :+ filename)
       
       @targetName("addAll")
-      infix def ++(relative: GenericRelative): AbsolutePath throws RootBoundaryExceeded =
-        if relative.ascent > 0 then ancestor(relative.ascent) ++ makeRelative(0, relative.path)
-        else makeAbsolute(path ++ relative.path)
+      infix def ++(relative: Relative): AbsolutePath throws RootParentError =
+        if relative.ascent > 0 then ancestor(relative.ascent) ++ Relative(0, relative.parts)
+        else makeAbsolute(parts ++ relative.parts)
       
       override def equals(that: Any): Boolean = that.unsafeMatchable match
-        case that: Absolute => path == that.path
+        case that: Absolute => parts == that.parts
         case _              => false
 
-      override def hashCode: Int = path.hashCode
-
-    case class Relative(val ascent: Int, val path: Vector[Text]) extends Path, GenericRelative:
-      override def toString(): String = path.join(t"../"*ascent, t"/", t"").s
-
-      def parent: Relative throws RootBoundaryExceeded = path match
-        case init :+ last => makeRelative(ascent, init)
-        case empty        => makeRelative(ascent + 1, Vector())
-
-      def ancestor(ascent: Int): RelativePath throws RootBoundaryExceeded =
-        if ascent == 0 then makeRelative(ascent, path) else parent.ancestor(ascent - 1)
-
-      def absolute(pwd: AbsolutePath): AbsolutePath throws RootBoundaryExceeded =
-        if ascent == 0 then makeAbsolute(pwd.path ++ path)
-        else makeRelative(ascent - 1, path).absolute(pwd.parent)
-      
-      @targetName("access")
-      infix def /(filename: Text): RelativePath throws RootBoundaryExceeded = filename.s match
-        case ".."     => path match
-          case init :+ last => makeRelative(ascent, init)
-          case empty        => makeRelative(ascent + 1, Vector())
-        case "."      => makeRelative(ascent, path)
-        case fn       => makeRelative(ascent, path :+ filename)
-      
-      @targetName("addAll")
-      infix def ++(relative: GenericRelative): RelativePath throws RootBoundaryExceeded =
-        if relative.ascent == 0 then makeRelative(ascent, path ++ relative.path)
-        else ancestor(relative.ascent) ++ makeRelative(ascent, relative.path)
-
-      override def equals(that: Any): Boolean = that.unsafeMatchable match
-        case that: Relative => ascent == that.ascent && path == that.path
-        case _              => false
-
-      override def hashCode: Int = path.hashCode ^ ascent
+      override def hashCode: Int = parts.hashCode
 
 object Base extends Root(t"/", t"/"):
-  type RelativePath = Path.Relative
   type AbsolutePath = Path.Absolute
   
-  protected def makeAbsolute(path: Vector[Text]): AbsolutePath = Path.Absolute(path)
-  
-  protected def makeRelative(ascent: Int, path: Vector[Text]): RelativePath =
-    Path.Relative(ascent, path)
+  protected def makeAbsolute(parts: IArray[Text]): AbsolutePath = Path.Absolute(parts)
