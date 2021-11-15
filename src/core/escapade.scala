@@ -44,16 +44,17 @@ case class AnsiString(string: Text, escapes: TreeMap[Int, List[Ansi.Change]] = T
   def length: Int = string.length
 
   def drop(n: Int): AnsiString =
-    val pushes = escapes.filter(_(0) < n).flatMap(_(1)).foldLeft(List[Ansi.Change]()) {
+    val pushes = escapes.filter(_(0) < n).flatMap(_(1)).foldLeft(List[Ansi.Change]()):
       case (stack, Ansi.Change.Push(fn))   => Ansi.Change.Push(fn) :: stack
       case (head :: tail, Ansi.Change.Pop) => tail
       case (stack, _)                      => stack
-    }.reverse
+    .reverse
 
     val init = escapes.getOrElse(n, Nil) ++ pushes
 
-    AnsiString(string.drop(n), escapes.collect { case (i, e) if i >= n => (i - n, e) }.updated(0,
-        init))
+    AnsiString(string.drop(n), escapes.collect:
+      case (i, e) if i >= n => (i - n, e)
+    .updated(0, init))
 
   def padTo(n: Int, char: Char = ' ') =
     if length < n then this + AnsiString(char.show*(n - length)) else this
@@ -61,11 +62,11 @@ case class AnsiString(string: Text, escapes: TreeMap[Int, List[Ansi.Change]] = T
   def span(n: Int): AnsiString = take(n).padTo(n)
 
   def take(n: Int): AnsiString =
-    val pops = List.fill(0.max(escapes.filter(_(0) > n).flatMap(_(1)).foldLeft(0) {
+    val pops = List.fill(0.max(escapes.filter(_(0) > n).flatMap(_(1)).foldLeft(0):
       case (count, Ansi.Change.Push(_))    => count - 1
       case (count, Ansi.Change.Pop)        => count + 1
       case (count, Ansi.Change.Literal(_)) => count
-    }))(Ansi.Change.Pop)
+    ))(Ansi.Change.Pop)
     
     val newEscapes = escapes.filter(_(0) <= n)
     
@@ -73,12 +74,15 @@ case class AnsiString(string: Text, escapes: TreeMap[Int, List[Ansi.Change]] = T
 
   def cut(delim: Text): List[AnsiString] =
     val parts = plain.cut(delim)
-    parts.zipWithIndex.map { case (part, idx) =>
-      drop(parts.take(idx).map(_.length).sum + idx*delim.length).take(part.length)
-    }
+    parts.zipWithIndex.map:
+      case (part, idx) =>
+        drop(parts.take(idx).map(_.length).sum + idx*delim.length).take(part.length)
 
   def plain: Text = string
-  def explicit: Text = render.flatMap { ch => if ch.toInt == 27 then "\\e" else s"$ch" }
+  
+  def explicit: Text = render.flatMap:
+    ch => if ch.toInt == 27 then "\\e" else s"$ch"
+  
   def upper: AnsiString = AnsiString(string.upper, escapes)
   def lower: AnsiString = AnsiString(string.lower, escapes)
 
@@ -96,13 +100,14 @@ case class AnsiString(string: Text, escapes: TreeMap[Int, List[Ansi.Change]] = T
       else
         buf.add(string.show.slice(pos, treeMap.head(0)))
         
-        val newStack = treeMap.head(1).sortBy(_ != Ansi.Change.Pop).foldLeft(stack) {
+        val newStack = treeMap.head(1).sortBy(_ != Ansi.Change.Pop).foldLeft(stack):
           case (head :: tail, Ansi.Change.Pop) =>
             val next = tail.headOption.getOrElse(Style())
             buf.add(head.changes(next))
             tail
           
-          case (Nil, Ansi.Change.Pop) => Nil
+          case (Nil, Ansi.Change.Pop) =>
+            Nil
           
           case (stack, Ansi.Change.Push(fn)) =>
             val currentStyle = stack.headOption.getOrElse(Style())
@@ -114,14 +119,15 @@ case class AnsiString(string: Text, escapes: TreeMap[Int, List[Ansi.Change]] = T
             buf.add(27.toChar)
             buf.add(str)
             stack
-        }
         
         build(treeMap.tail, treeMap.head(0), newStack)
     
     build(escapes)
 
   private def shift(n: Int): TreeMap[Int, List[Ansi.Change]] =
-    escapes.map { (k, v) => (k + n, v) }.to(TreeMap)
+    escapes.map:
+      (k, v) => (k + n, v)
+    .to(TreeMap)
 
   @targetName("add")
   infix def +(str: String): AnsiString = AnsiString(string+str, escapes)
