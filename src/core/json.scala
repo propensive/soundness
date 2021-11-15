@@ -98,11 +98,9 @@ object Json extends Dynamic:
         case Some(value) => summon[Writer[T]].write(value)
 
     def join[T](caseClass: CaseClass[Writer, T]): Writer[T] = value =>
-      JObject(mutable.Map(caseClass.params.filter { param =>
-        !param.typeclass.omit(param.deref(value))
-      }.map { param =>
-        (param.label, param.typeclass.write(param.deref(value)))
-      }*))
+      JObject(mutable.Map(caseClass.params.filter:
+        param => !param.typeclass.omit(param.deref(value))
+      .map { param => (param.label, param.typeclass.write(param.deref(value))) }*))
       
     def split[T](sealedTrait: SealedTrait[Writer, T]): Writer[T] = value =>
       sealedTrait.choose(value) { subtype =>
@@ -170,7 +168,10 @@ object Json extends Dynamic:
         
         def read(value: => JValue): Coll[T] throws JsonTypeError | reader.E = value match
           case JArray(vs) => val bld = factory.newBuilder
-                             vs.foreach { v => bld += reader.read(v) }
+                             
+                             vs.foreach:
+                               v => bld += reader.read(v)
+
                              bld.result()
           
           case _          => throw JsonTypeError(JsonPrimitive.Array)
@@ -179,9 +180,8 @@ object Json extends Dynamic:
       type E = reader.E
       
       def read(value: => JValue): Map[String, T] throws JsonTypeError | reader.E = value match
-        case JObject(vs) => vs.toMap.foldLeft(Map[String, T]()) {
+        case JObject(vs) => vs.toMap.foldLeft(Map[String, T]()):
                               case (acc, (k, v)) => acc.updated(k, reader.read(v))
-                            }
         
         case _           => throw JsonTypeError(JsonPrimitive.Object)
 
@@ -266,6 +266,6 @@ case class Json(root: JValue, path: List[Int | Text] = Nil) extends Dynamic, Sho
       
     Json(deref(root, path.reverse), Nil)
 
-  def as[T](using reader: Json.Reader[T]): T throws JsonTypeError | JsonAccessError | reader.E =
+  inline def as[T](using reader: Json.Reader[T]): T throws JsonTypeError | JsonAccessError | reader.E =
     reader.read(normalize.root)
   
