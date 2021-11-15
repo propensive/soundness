@@ -18,6 +18,9 @@ package profanity
 
 import rudiments.*
 import gossamer.*
+import eucalyptus.*
+import escapade.*
+import iridescence.*
 
 import com.sun.jna.*
 import sun.misc.Signal
@@ -39,7 +42,7 @@ enum Keypress:
       DownArrow, CtrlLeftArrow, CtrlRightArrow, CtrlUpArrow, CtrlDownArrow, End, Home, Insert
 
 trait Keyboard[+KeyType]:
-  def interpret(bytes: List[Int]): LazyList[KeyType]
+  def interpret(bytes: List[Int])(using Log): LazyList[KeyType]
 
 abstract class ProfanityError(msg: Text) extends Exception(t"profanity: $msg".s)
 case class TtyError(msg: Text) extends ProfanityError(t"STDIN is not attached to a TTY")
@@ -50,30 +53,39 @@ object Tty:
 
   private final val noopOut: ji.PrintStream = ji.PrintStream((_ => ()): ji.OutputStream)
 
-  def capture[T](fn: Tty ?=> T): T throws TtyError =
+  def capture[T](fn: Tty ?=> T)(using Log): T throws TtyError =
+    Log.fine(ansi"Attempting to load ${colors.Purple}(libc) native library")
     val libc: Libc = Native.load("c", classOf[Libc]).nn
+    Log.fine(ansi"Checking if process in running within a TTY")
     if libc.isatty(0) != 1 then throw TtyError(t"the program is not running within a TTY")
     val oldTermios: Termios = Termios()
+    Log.fine(ansi"Calling ${colors.Purple}(libc.tcgetattr)")
     libc.tcgetattr(0, oldTermios)
     val newTermios = Termios(oldTermios)
+    Log.fine(ansi"Updating ${colors.Purple}(termios) flags")
     newTermios.c_lflag = oldTermios.c_lflag & -76
+    Log.fine(ansi"Calling ${colors.Purple}(libc.tcsetattr) flags")
     libc.tcsetattr(0, 0, newTermios)
     val stdout = Option(System.out).getOrElse { throw TtyError(t"the STDOUT stream is null") }.nn
     if stdout == noopOut then throw TtyError(t"the TTY has already been captured")
 
+    Log.info(ansi"Capturing ${colors.Red}(stdout) for TTY input/output")
+    Log.info(ansi"Any output to ${colors.Red}(stdout) henceforth will be discarded")
     val tty: Tty = Tty(stdout)
     System.setOut(noopOut)
+    Log.info(ansi"Setting ${colors.Orange}(SIGWINCH) signal handler")
     Signal.handle(Signal("WINCH"), sig => reportSize()(using tty))
     try Console.withOut(noopOut)(fn(using tty))
     finally
       System.setOut(stdout)
       libc.tcsetattr(0, 0, oldTermios)
 
-  def reportSize()(using Tty): Unit =
+  def reportSize()(using Tty, Log): Unit =
     val esc = 27.toChar
+    Log.fine(ansi"Sent ANSI escape codes to TTY to attempt to get console dimensions")
     Tty.print(t"${esc}[s${esc}[4095C${esc}[4095B${esc}[6n${esc}[u")
 
-  def stream[K](using Tty, Keyboard[K]): LazyList[K] =
+  def stream[K](using Tty, Keyboard[K], Log): LazyList[K] =
     val buf: Array[Byte] = new Array[Byte](16)
     val count: Int = System.in.nn.read(buf)
     
@@ -85,17 +97,21 @@ object Tty:
 
 object Keyboard:
   given Keyboard[Int] with
-    def interpret(bytes: List[Int]): LazyList[Int] = bytes.map(_.toInt).to(LazyList)
+    def interpret(bytes: List[Int])(using Log): LazyList[Int] = bytes.map(_.toInt).to(LazyList)
   
   given Keyboard[List[Int]] with
-    def interpret(bytes: List[Int]): LazyList[List[Int]] = LazyList(bytes.map(_.toInt))
+    def interpret(bytes: List[Int])(using Log): LazyList[List[Int]] = LazyList(bytes.map(_.toInt))
   
-  private def readResize(bytes: List[Int]): Keypress.Resize =
+  private def readResize(bytes: List[Int])(using Log): Keypress.Resize =
     val size = String(bytes.map(_.toByte).init.to(Array)).cut(";")
-    Keypress.Resize(size(0).toInt, size(1).toInt)
+    val columns = size(0).toInt
+    val rows = size(1).toInt
+    Log.fine(ansi"Console has been resized to $columns×$rows")
+    
+    Keypress.Resize(columns, rows)
 
   given Keyboard[Keypress] with
-    def interpret(bytes: List[Int]): LazyList[Keypress] = bytes match
+    def interpret(bytes: List[Int])(using Log): LazyList[Keypress] = bytes match
       case 9 :: Nil             => LazyList(Keypress.Tab)
       case 10 :: Nil            => LazyList(Keypress.Enter)
       case 27 :: Nil            => LazyList(Keypress.Escape)
@@ -108,7 +124,7 @@ object Keyboard:
                                      .to(LazyList)
                                      .map(Keypress.Printable(_))
   
-    private def control(bytes: List[Int]): Keypress = bytes match
+    private def control(bytes: List[Int])(using Log): Keypress = bytes match
       case List(51, 126)        => Keypress.Delete
       case List(50, 126)        => Keypress.Insert
       case List(70)             => Keypress.End
@@ -132,7 +148,7 @@ object LineEditor:
 
   def concealed(str: Text): Text = str.map { _ => '*' }
 
-  def ask(initial: Text = t"", render: Text => Text = identity(_))(using Tty): Text =
+  def ask(initial: Text = t"", render: Text => Text = identity(_))(using Tty, Log): Text =
     Tty.print(render(initial))
     
     def finished(key: Keypress) =
@@ -152,7 +168,7 @@ object LineEditor:
 case class LineEditor(content: Text = t"", pos: Int = 0):
   import Keypress.*
 
-  def apply(keypress: Keypress): LineEditor = try keypress match
+  def apply(keypress: Keypress)(using Log): LineEditor = try keypress match
     case Printable(ch)  => copy(t"${content.take(pos)}$ch${content.drop(pos)}", pos + 1)
     case Ctrl('U')      => copy(content.drop(pos), 0)
     
@@ -173,19 +189,18 @@ case class LineEditor(content: Text = t"", pos: Int = 0):
                            copy(pos = newPos min content.length)
     case RightArrow     => copy(pos = (pos + 1) min content.length)
     case _              => this
-  catch case OutOfRangeError(_, _, _) => this
+  catch case e: OutOfRangeError => this
 
 object SelectMenu:
-  def ask(options: List[Text], initial: Int = 0, renderOn: Text => Text = s => t" > $s",
-              renderOff: Text => Text = s => t"   $s")
-         (using Tty): Int =
+  def ask[T](options: List[T], initial: T, renderOn: T => Text, renderOff: T => Text)
+         (using Tty, Log): T =
     
     def finished(key: Keypress) =
       key == Keypress.Enter || key == Keypress.Ctrl('D') || key == Keypress.Ctrl('C')
 
-    def render(options: List[Text], current: Int): Unit =
-      options.zipWithIndex.foreach { case (opt, idx) =>
-        Tty.print(if idx == current then renderOn(opt) else renderOff(opt))
+    def render(options: List[T], current: T): Unit =
+      options.foreach { case opt =>
+        Tty.print(if opt == current then renderOn(opt) else renderOff(opt))
         Tty.print(esc(t"K"))
         Tty.print(t"\n")
       }
@@ -208,10 +223,12 @@ object SelectMenu:
 
     result.current
 
-case class SelectMenu(options: List[Text], current: Int):
+case class SelectMenu[T](options: List[T], current: T):
   import Keypress.*
-  def apply(keypress: Keypress): SelectMenu = try keypress match
-    case UpArrow   => copy(current = 0 max current - 1)
-    case DownArrow => copy(current = options.size - 1 min current + 1)
+  def apply(keypress: Keypress)(using Log): SelectMenu[T] = try keypress match
+    case UpArrow   => copy(current = options(0 max options.indexOf(current) - 1))
+    case DownArrow => copy(current = options(options.size - 1 min options.indexOf(current) + 1))
     case _         => this
-  catch case OutOfRangeError(_, _, _) => this
+  catch case e: OutOfRangeError => this
+
+given realm: Realm = Realm(t"profanity")
