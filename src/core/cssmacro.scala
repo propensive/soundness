@@ -36,7 +36,7 @@ object Macro:
   def keyframe(name: Expr[String], props: Expr[Seq[(Label, Any)]])(using Quotes): Expr[Keyframe] =
     '{Keyframe(Text($name), ${read(props)})}
 
-  def read(properties: Expr[Seq[(Label, Any)]])(using Quotes): Expr[Style] =
+  def read(properties: Expr[Seq[(Label, Any)]])(using Quotes): Expr[CssStyle] =
     import quotes.reflect.*
 
     def recur(exprs: Seq[Expr[(Label, Any)]]): List[Expr[CssProperty]] =
@@ -56,7 +56,7 @@ object Macro:
     
     properties match
       case Varargs(exprs) =>
-        '{Style(${Expr.ofSeq(recur(exprs))}*)}
+        '{CssStyle(${Expr.ofSeq(recur(exprs))}*)}
       case _ =>
         report.errorAndAbort("cataract: expected varargs")
 
@@ -86,7 +86,7 @@ trait Selectable[-T]:
 extension [T: Selectable](left: T)
 
   @targetName("definedAs")
-  infix def :=(css: Style): Rule = Rule(summon[Selectable[T]].selector(left), css)
+  infix def :=(css: CssStyle): Rule = Rule(summon[Selectable[T]].selector(left), css)
 
   @targetName("descendant")
   infix def >>[S: Selectable](right: S): Selector =

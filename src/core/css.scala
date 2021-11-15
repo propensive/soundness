@@ -22,21 +22,21 @@ import gossamer.*
 import annotation.targetName
 import language.dynamics
 
-object Stylesheet:
-  given clairvoyant.HttpResponse[Stylesheet, Text] with
+object CssStylesheet:
+  given clairvoyant.HttpResponse[CssStylesheet, Text] with
     def mimeType: String = "text/css; charset=utf-8"
-    def content(stylesheet: Stylesheet): Text = stylesheet.text
+    def content(stylesheet: CssStylesheet): Text = stylesheet.text
   
   trait Item:
     def text: Text
 
-case class Stylesheet(rules: Stylesheet.Item*):
+case class CssStylesheet(rules: CssStylesheet.Item*):
   def text: Text = rules.map(_.text).join(t"\n")
 
-case class Keyframes(name: Text)(frames: Keyframe*) extends Stylesheet.Item:
+case class Keyframes(name: Text)(frames: Keyframe*) extends CssStylesheet.Item:
   def text: Text = frames.map(_.text).join(t"@keyframes ${name} {\n  ", t"\n  ", t"\n}\n")
   
-case class Keyframe(ref: Text, style: Style):
+case class Keyframe(ref: Text, style: CssStyle):
   def text: Text = style.properties.map(_.text). join(t"$ref { ", t"; ", t" }")
 
 object From extends Dynamic:
@@ -47,21 +47,21 @@ object To extends Dynamic:
   inline def applyDynamicNamed(method: "apply")(inline properties: (Label, Any)*): Keyframe =
     ${Macro.keyframe('{"to"}, 'properties)}
   
-case class Import(url: Text) extends Stylesheet.Item:
+case class Import(url: Text) extends CssStylesheet.Item:
   def text: Text = t"@import url('$url');"
 
-object Style:
-  given clairvoyant.HtmlAttribute["style", Style] with
-    def serialize(value: Style): String = value.properties.map(_.text).join(t";").s
+object CssStyle:
+  given clairvoyant.HtmlAttribute["style", CssStyle] with
+    def serialize(value: CssStyle): String = value.properties.map(_.text).join(t";").s
     def name: String = "style"
 
-case class Style(properties: CssProperty*):
+case class CssStyle(properties: CssProperty*):
   def text: Text = properties.map(_.text).join(t"\n")
   
-  def apply(nested: (Selector => Rule)*): Selector => Stylesheet = sel =>
-    Stylesheet(nested.map(_(sel))*)
+  def apply(nested: (Selector => Rule)*): Selector => CssStylesheet = sel =>
+    CssStylesheet(nested.map(_(sel))*)
 
-case class Rule(selector: Selector, style: Style) extends Stylesheet.Item:
+case class Rule(selector: Selector, style: CssStyle) extends CssStylesheet.Item:
   def text: Text =
     val rules = style.properties.map(_.text).join(t"; ")
     t"${selector.normalize.value} { $rules }"
@@ -70,7 +70,9 @@ case class CssProperty(key: Text, value: Text):
   def text: Text = t"$key: $value"
 
 object Css extends Dynamic:
-  inline def applyDynamicNamed(method: "apply")(inline properties: (Label, Any)*): Style =
+  def applyDynamic(method: "apply")(): CssStyle = CssStyle()
+
+  inline def applyDynamicNamed(method: "apply")(inline properties: (Label, Any)*): CssStyle =
     ${Macro.read('properties)}
 
 sealed trait Selector(val value: Text):
