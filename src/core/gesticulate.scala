@@ -74,7 +74,7 @@ object Media:
       case Standard(value) => value
       case Vendor(value)   => t"vnd.$value"
       case Personal(value) => t"prs.$value"
-      case X(value)        => t"x.$value"
+      case X(value)        => t"x-$value"
 
   object Suffix:
     given Show[Suffix] = Showable(_).show.lower
@@ -129,10 +129,10 @@ object Media:
       then throw InvalidMediaTypeError(string, InvalidMediaTypeError.Nature.MissingParam)
       ps.map(_.cut(t"=", 2).to(List)).map { p => p(0).show -> p(1).show }
     
-    def parseSuffixes(ss: List[Text]): List[Suffix] = ss.map(_.lower.capitalize).map { s =>
-      try Suffix.valueOf(s) catch IllegalArgumentException =>
-        throw InvalidMediaTypeError(string, InvalidMediaTypeError.Nature.InvalidSuffix(s))
-    }
+    def parseSuffixes(ss: List[Text]): List[Suffix] = ss.map(_.lower.capitalize).map:
+      s =>
+        try Suffix.valueOf(s) catch IllegalArgumentException =>
+          throw InvalidMediaTypeError(string, InvalidMediaTypeError.Nature.InvalidSuffix(s))
 
     def parseInit(str: Text): (Subtype, List[Suffix]) =
       val xs: List[Text] = str.cut(t"+")
