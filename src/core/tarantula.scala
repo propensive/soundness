@@ -26,6 +26,7 @@ import eucalyptus.*
 import rudiments.*
 
 import unsafeExceptions.canThrowAny
+import annotation.targetName
 
 trait Browser(name: Text):
   transparent inline def browser = this
@@ -71,14 +72,15 @@ case class WebDriver(server: Browser#Server):
     def webDriver: WebDriver = wd
     
     private def safe[T](fn: => T): T =
-      try fn catch case e@HttpError(status, body) =>
-        val json = body match
-          case scintillate.Body.Chunked(stream) => Json.parse(stream.reduce(_ ++ _).uString).value
-          case scintillate.Body.Empty           => throw e
-          case scintillate.Body.Data(data)      => Json.parse(data.uString).value
-        
-        throw WebDriverError(json.error.as[Text], json.message.as[Text],
-            json.stacktrace.as[Text].cut(t"\n"))
+      try fn catch case e: HttpError => e match
+        case HttpError(status, body) =>
+          val json = body match
+            case scintillate.Body.Chunked(stream) => Json.parse(stream.reduce(_ ++ _).uString).value
+            case scintillate.Body.Empty           => throw e
+            case scintillate.Body.Data(data)      => Json.parse(data.uString).value
+          
+          throw WebDriverError(json.error.as[Text], json.message.as[Text],
+              json.stacktrace.as[Text].cut(t"\n"))
             
     final private val Wei: Text = t"element-6066-11e4-a52e-4f735466cecf"
 
@@ -102,6 +104,7 @@ case class WebDriver(server: Browser#Server):
         case class Data(text: Text)
         post(t"value", Data(text).json)
     
+      @targetName("at")
       def /[T](value: T)(using el: ElementLocator[T])(using Log): List[Element] =
         case class Data(`using`: Text, value: Text)
         post(t"elements", Data(el.strategy, el.value(value)).json)
@@ -127,7 +130,7 @@ case class WebDriver(server: Browser#Server):
     
     def navigateTo(url: Uri)(using Log): Json =
       case class Data(url: Text)
-      post(t"url", Data(Text(url.toString)).json)
+      post(t"url", Data(url.show).json)
     
     def refresh()(using Log): Unit = post(t"title", Json.parse(t"{}")).as[Json]
     def forward()(using Log): Unit = post(t"forward", Json.parse(t"{}")).as[Json]
@@ -136,6 +139,7 @@ case class WebDriver(server: Browser#Server):
 
     def url()(using Log): Text = get(t"url").url.as[Text]
 
+    @targetName("at")
     def /[T](value: T)(using el: ElementLocator[T], log: Log): List[Element] =
       case class Data(`using`: Text, value: Text)
       post(t"elements", Data(el.strategy, el.value(value)).json)
@@ -159,16 +163,16 @@ case class WebDriver(server: Browser#Server):
     Session(json.value.sessionId.as[Text])
 
 extension (elems: List[WebDriver#Session#Element])
+  @targetName("at")
   def /[T](value: T)(using el: ElementLocator[T])(using Log): List[WebDriver#Session#Element] =
     elems.flatMap(_ / value)
     
-
 case class ElementLocator[-T](strategy: Text, value: T => Text)
 
 object ElementLocator:
   given ElementLocator[Text](t"link text", identity(_))
   given ElementLocator[Selector](t"css selector", _.normalize.value)
-  given ElementLocator[Tag[?, ?, ?]](t"tag name", _.label)
+  given ElementLocator[TagType[?, ?, ?]](t"tag name", _.label)
   given ElementLocator[DomId](t"css selector", v => t"#${v.name}")
   given ElementLocator[Cls](t"css selector", v => t".${v.name}")
 
