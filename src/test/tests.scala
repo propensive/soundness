@@ -85,7 +85,7 @@ case class TestEntry(param: Param)
 object TestEntry {
   def apply(): TestEntry = TestEntry(Param(t"", t""))
 
-  def apply(a: Text)(using b: Int): TestEntry = TestEntry(Param(a, Text(b.toString)))
+  def apply(a: Text)(using b: Int): TestEntry = TestEntry(Param(a, Showable(b).show))
 
   def apply(a: Text, b: Text): TestEntry = TestEntry(Param(a, b))
 }
@@ -193,7 +193,7 @@ object AnotherCharacter {
   trait Tag extends Any
   type Id = Long with Tag
 
-  given idShow: AsString[Text, Id] = _.toString.show
+  given idShow: AsString[Text, Id] = Showable(_).show
 }
 
 final case class Abc(

@@ -39,19 +39,19 @@ trait GenericAsString[Out] extends Derivation[[X] =>> AsString[Out, X]] {
     else
       val paramStrings: Seq[Text] = ctx.params.map { param =>
         val attribStr = if param.annotations.isEmpty then t"" else {
-          param.annotations.map(_.toString.show).join(t"{", t", ", t"}")
+          param.annotations.map(Showable(_).show).join(t"{", t", ", t"}")
         }
         val tpeAttribStr = if param.typeAnnotations.isEmpty then t"" else {
-          param.typeAnnotations.map(_.toString.show).join(t"{", t", ", t"}")
+          param.typeAnnotations.map(Showable(_).show).join(t"{", t", ", t"}")
         }
-        t"${param.label}$attribStr$tpeAttribStr=${param.typeclass.asString(param.deref(value)).toString.show}"
+        t"${param.label}$attribStr$tpeAttribStr=${Showable(param.typeclass.asString(param.deref(value))).show}"
       }
 
       val anns = ctx.annotations.filterNot(_.isInstanceOf[scala.SerialVersionUID])
-      val annotationStr = if anns.isEmpty then t"" else anns.map(_.toString.show).join(t"{", t",", t"}")
+      val annotationStr = if anns.isEmpty then t"" else anns.map(Showable(_).show).join(t"{", t",", t"}")
 
       val tpeAnns = ctx.typeAnnotations.filterNot(_.isInstanceOf[scala.SerialVersionUID])
-      val typeAnnotationStr = if tpeAnns.isEmpty then t"" else tpeAnns.map(_.toString.show).join(t"{", t",", t"}")
+      val typeAnnotationStr = if tpeAnns.isEmpty then t"" else tpeAnns.map(Showable(_).show).join(t"{", t",", t"}")
 
 
       def typeArgsString(typeInfo: TypeInfo): Text =
@@ -66,7 +66,7 @@ trait GenericAsString[Out] extends Derivation[[X] =>> AsString[Out, X]] {
   override def split[T](ctx: SealedTrait[Typeclass, T]): AsString[Out, T] = (value: T) =>
     ctx.choose(value) { sub =>
       val anns = sub.annotations.filterNot(_.isInstanceOf[scala.SerialVersionUID])
-      val annotationStr = if anns.isEmpty then t"" else anns.map(_.toString.show).join(t"{", t",", t"}")
+      val annotationStr = if anns.isEmpty then t"" else anns.map(Showable(_).show).join(t"{", t",", t"}")
 
       prefix(annotationStr, sub.typeclass.asString(sub.value))
     }

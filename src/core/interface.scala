@@ -32,7 +32,6 @@ object CaseClass:
     def typeclass: Typeclass[PType]
     def deref(param: Type): PType
     def default: Option[PType]
-    override def toString: String = s"Param($label)"
   
   object Param:
     def apply[F[_], T, P](name: String, idx: Int, repeated: Boolean, cbn: CallByNeed[F[P]],
@@ -57,7 +56,6 @@ abstract class CaseClass[Typeclass[_], Type]
 
   type Param = CaseClass.Param[Typeclass, Type]
   
-  override def toString: String = s"CaseClass(${typeInfo.full}, ${params.mkString(",")})"
   def construct[PType](makeParam: Param => PType)(using ClassTag[PType]): Type
   def constructMonadic[Monad[_]: Monadic, PType: ClassTag](make: Param => Monad[PType]): Monad[Type]
   
@@ -83,8 +81,6 @@ case class SealedTrait[Typeclass[_], Type]
                        typeAnnotations: IArray[Any]) extends Serializable:
 
   type Subtype[S] = SealedTrait.SubtypeValue[Typeclass, Type, S]
-
-  override def toString: String = s"SealedTrait($typeInfo, IArray[${subtypes.mkString(",")}])"
 
   def choose[Return](value: Type)(handle: Subtype[?] => Return): Return =
     @tailrec def rec(ix: Int): Return =
@@ -112,7 +108,6 @@ object SealedTrait:
     def cast: PartialFunction[Type, SType & Type] = this
     def isDefinedAt(t: Type): Boolean = isType(t)
     def apply(t: Type): SType & Type = asType(t)
-    override def toString: String = s"Subtype(${typeInfo.full})"
 
   class SubtypeValue[Typeclass[_], Type, S](val subtype: Subtype[Typeclass, Type, S], v: Type):
     export subtype.{typeclass, typeAnnotations, annotations, cast, typeInfo}
