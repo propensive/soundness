@@ -29,13 +29,16 @@ import language.dynamics
 type Bytes = IArray[Byte]
 type DataStream = LazyList[IArray[Byte] throws StreamCutError]
 
-case class ExcessDataError() extends Exception(s"the amount of data in the stream exceeds the capacity")
+case class ExcessDataError(size: Int, limit: Int)
+extends Exception(s"the amount of data in the stream (at least ${size}B) exceeds the limit (${limit}B)")
 
 extension (value: DataStream)
   def slurp(maxSize: Int): Bytes throws ExcessDataError | StreamCutError =
-    value.foldLeft(IArray[Byte]()) { (acc, next) =>
-      if acc.length + next.length > maxSize then throw ExcessDataError() else acc ++ next
-    }
+    value.foldLeft(IArray[Byte]()):
+      (acc, next) =>
+        if acc.length + next.length > maxSize
+        then throw ExcessDataError(acc.length + next.length, maxSize)
+        else acc ++ next
 
 extension [T](value: T)
   def only[S](pf: PartialFunction[T, S]): Option[S] = Some(value).collect(pf)
@@ -133,19 +136,19 @@ case class StreamCutError() extends Exception("rudiments: the stream was cut pre
 
 
 object Util:
+
   def read(in: ji.InputStream, limit: Int): DataStream = in match
     case in: ji.BufferedInputStream =>
       def read(): DataStream =
-        val avail = in.available
-        if avail == 0 then LazyList()
-        else
-          val buf = new Array[Byte](in.available.min(limit))
-          try
-            val count = in.read(buf, 0, buf.length)
-            if count < 0 then LazyList(buf.unsafeImmutable)
-            else buf.unsafeImmutable #:: read()
-          catch case error: ji.IOException => LazyList(throw StreamCutError())
-      
+        try
+          val avail = in.available
+          val buf = new Array[Byte](if avail == 0 then limit else (avail min limit))
+          val count = in.read(buf, 0, buf.length)
+          if count < 0 then LazyList()
+          else if avail == 0 then buf.slice(0, count).unsafeImmutable #:: read()
+          else buf.unsafeImmutable #:: read()
+        catch case error: ji.IOException => LazyList(throw StreamCutError())
+
       read()
     
     case in: ji.InputStream =>
