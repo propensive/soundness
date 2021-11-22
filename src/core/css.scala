@@ -58,10 +58,10 @@ object CssStyle:
 case class CssStyle(properties: CssProperty*):
   def text: Text = properties.map(_.text).join(t"\n")
   
-  def apply(nested: (Selector => Rule)*): Selector => CssStylesheet = sel =>
+  def apply(nested: (Selector => CssRule)*): Selector => CssStylesheet = sel =>
     CssStylesheet(nested.map(_(sel))*)
 
-case class Rule(selector: Selector, style: CssStyle) extends CssStylesheet.Item:
+case class CssRule(selector: Selector, style: CssStyle) extends CssStylesheet.Item:
   def text: Text =
     val rules = style.properties.map(_.text).join(t"; ")
     t"${selector.normalize.value} { $rules }"
@@ -76,7 +76,7 @@ object Css extends Dynamic:
     ${Macro.read('properties)}
 
 sealed trait Selector(val value: Text):
-  inline def applyDynamicNamed(method: "apply")(inline properties: (Label, Any)*): Rule =
+  inline def applyDynamicNamed(method: "apply")(inline properties: (Label, Any)*): CssRule =
     ${Macro.rule('this, 'properties)}
   
   def normalize: Selector

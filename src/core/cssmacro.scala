@@ -30,8 +30,8 @@ private[cataract] type Label = String & Singleton
 given Show[Double] = Showable(_).show
 
 object Macro:
-  def rule(selector: Expr[Selector], props: Expr[Seq[(Label, Any)]])(using Quotes): Expr[Rule] =
-    '{Rule($selector, ${read(props)})}
+  def rule(selector: Expr[Selector], props: Expr[Seq[(Label, Any)]])(using Quotes): Expr[CssRule] =
+    '{CssRule($selector, ${read(props)})}
 
   def keyframe(name: Expr[String], props: Expr[Seq[(Label, Any)]])(using Quotes): Expr[Keyframe] =
     '{Keyframe(Text($name), ${read(props)})}
@@ -62,7 +62,7 @@ object Macro:
 
   private def words(string: Text): List[Text] =
     try
-      val i = string.indexWhere(_.isUpper, 1)
+      val i = string.where(_.isUpper, 1)
       string.take(i).lower :: words(string.drop(i))
     catch case error: OutOfRangeError => List(string.lower)
     
@@ -86,7 +86,7 @@ trait Selectable[-T]:
 extension [T: Selectable](left: T)
 
   @targetName("definedAs")
-  infix def :=(css: CssStyle): Rule = Rule(summon[Selectable[T]].selector(left), css)
+  infix def :=(css: CssStyle): CssRule = CssRule(summon[Selectable[T]].selector(left), css)
 
   @targetName("descendant")
   infix def >>[S: Selectable](right: S): Selector =
