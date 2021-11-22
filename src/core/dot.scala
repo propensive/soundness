@@ -39,7 +39,7 @@ enum Dot:
 
 object Dot:
   case class Target(directed: Boolean, dest: Ref | Statement.Subgraph, link: Option[Target])
-  case class Attribute(key: Text, value: Text)
+  case class Property(key: Text, value: Text)
 
   object Attachment:
     // FIXME: This needs to include the port
@@ -61,7 +61,7 @@ object Dot:
 
   case class Id(key: Text) extends Dynamic:
     def applyDynamicNamed(method: "apply")(attrs: (String, Text)*) =
-      Statement.Node(this, attrs.map { (k, v) => Attribute(k.show, v) }*)
+      Statement.Node(this, attrs.map { (k, v) => Property(k.show, v) }*)
     
     @targetName("assign")
     infix def :=(id: Id): Statement.Assignment = Statement.Assignment(this, id)
@@ -70,8 +70,8 @@ object Dot:
     case North, South, East, West, NorthEast, NorthWest, SouthEast, SouthWest
   
   enum Statement:
-    case Node(id: Id, attrs: Attribute*)
-    case Edge(id: Ref, rhs: Target, attrs: Attribute*)
+    case Node(id: Id, attrs: Property*)
+    case Edge(id: Ref, rhs: Target, attrs: Property*)
     case Assignment(id: Id, id2: Id)
     case Subgraph(id: Option[Id], statements: Statement*)
 
@@ -105,11 +105,11 @@ object Dot:
 
     buf.text
 
-  def tokenize(graph: Ref | Dot | Target | Statement | Attribute): Vector[Text] = graph match
+  def tokenize(graph: Ref | Dot | Target | Statement | Property): Vector[Text] = graph match
     case Ref(id, port) =>
       Vector(port.fold(t""""${id.key}"""") { p => t""""${id.key}:$p""""" })
     
-    case Attribute(key, value) =>
+    case Property(key, value) =>
       Vector(t"""$key="$value"""")
     
     case Target(directed, dest, link) =>
