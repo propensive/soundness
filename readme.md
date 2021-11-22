@@ -30,8 +30,9 @@ representations of [colors](https://github.com/propensive/iridescence/),
 [annotations](https://github.com/propensive/adversaria/), library
 [decoupling](https://github.com/propensive/clairvoyant/) and
 [unit testing](https://github.com/propensive/probably/) with a
-[WebDriver API](https://github.com/propensive/tarantula/) for browser testing. Everything builds
-upon minimal set of [common tools](https://github.com/propensive/rudiments/).
+[WebDriver API](https://github.com/propensive/tarantula/) for browser testing. A module also
+exists for [Scala syntax highlighting](https://github.com/propensive/harlequin/). Everything
+builds upon minimal set of [common tools](https://github.com/propensive/rudiments/).
 
 ## Principles
 
