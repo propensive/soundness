@@ -35,7 +35,7 @@ import java.io as ji
 type TextStream = LazyList[Text]
 
 object envs:
-  val enclosing: Env = Env(System.getenv.nn.map(Text(_) -> Text(_)).to(Map))
+  val enclosing: Env = Env(System.getenv.nn.map(_.show -> _.show).to(Map))
   val empty: Env = Env(Map())
 
 enum Context:
@@ -45,11 +45,12 @@ case class State(current: Context, esc: Boolean, args: List[Text])
 
 object Executor:
   given stream: Executor[TextStream] =
-    proc => ji.BufferedReader(ji.InputStreamReader(proc.getInputStream)).lines().nn.toScala(LazyList).map(Text(_))
+    proc => ji.BufferedReader(ji.InputStreamReader(proc.getInputStream)).lines().nn.toScala(LazyList).map(_.show)
   
   given text: Executor[Text] = stream.map(_.foldLeft(t"") { (acc, line) => t"$acc\n$line" }.trim)
 
-  given dataStream: Executor[DataStream] = proc => Util.read(proc.getInputStream.nn, 65536)
+  given dataStream: Executor[DataStream] =
+    proc => Util.read(proc.getInputStream.nn, 65536)
   
   given exitStatus: Executor[ExitStatus] = _.waitFor() match
     case 0     => ExitStatus.Ok

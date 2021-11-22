@@ -186,9 +186,7 @@ object Tests extends Suite(t"Guillotine tests"):
       .assert(_ == List("Hello world"))
 
       test(t"read stream of bytes"):
-        val xs: List[Byte] = sh"echo 'Hello world'".exec[DataStream]().slurp(10).to(List)
-        println(xs)
-        xs
+        sh"echo 'Hello world'".exec[DataStream]().slurp(12).to(List)
       .assert(_ == List(72, 101, 108, 108, 111, 32, 119, 111, 114, 108, 100, 10))
 
       test(t"fork sleeping process"):
