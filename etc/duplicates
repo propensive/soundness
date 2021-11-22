@@ -1,0 +1,5 @@
+#!/bin/bash
+for D in $(find classes | grep '.class$' | sed 's/.*\/\([^/]*\).class$/\1/' | sort | uniq -c | grep -v ' 1 ' | grep -v '\$' | sed 's/........//')
+do
+  echo "$D: $(find classes | grep "\/$D.class" | cut -d/ -f2 | tr '\n' ' ')"
+done

@@ -116,3 +116,6 @@
 [submodule "mod/tarantula"]
 	path = mod/tarantula
 	url = git@github.com:propensive/tarantula
+[submodule "mod/harlequin"]
+	path = mod/harlequin
+	url = git@github.com:propensive/harlequin

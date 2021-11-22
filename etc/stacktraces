@@ -1,0 +1,5 @@
+#!/bin/bash
+
+rm -rf stbin
+mkdir -p stbin
+scala/bin/scalac -d stbin stacktraces/src/main/scala/org/virtuslab/stacktraces/*/*.scala

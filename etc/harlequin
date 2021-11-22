@@ -1,0 +1,19 @@
+#!/bin/bash
+
+CP="stbin:$(ls lib/*.jar | tr '\n' : | head -c-1)"
+rm -r classes/*
+mkdir -p classes/gesticulate
+cp res/gesticulate/media.types classes/gesticulate/media.types
+javac -d classes -classpath "$CP" mod/profanity/src/java/**/*.java
+etc/stacktraces
+scala/bin/scalac "-classpath:$CP:classes" -d classes -deprecation -language:experimental.erasedDefinitions -language:experimental.fewerBraces -language:experimental.saferExceptions -Wunused:all -new-syntax -Yrequire-targetName -Ysafe-init -feature -Ycheck-all-patmat -Yexplicit-nulls \
+    mod/contextual/src/core/*.scala \
+    mod/escapade/src/core/*.scala \
+    mod/eucalyptus/src/core/*.scala \
+    mod/gossamer/src/core/*.scala \
+    mod/iridescence/src/core/*.scala \
+    mod/profanity/src/core/*.scala \
+    mod/rudiments/src/core/*.scala \
+    mod/wisteria/src/core/*.scala \
+    wip/harlequin/src/core/*.scala \
+    && cd classes && jar cf ../niveau.jar $(ls)

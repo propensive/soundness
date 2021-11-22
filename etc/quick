@@ -1,10 +1,11 @@
 #!/bin/bash
 
-CP="$(ls lib/*.jar | tr '\n' : | head -c-1)"
+CP="stbin:$(ls lib/*.jar | tr '\n' : | head -c-1)"
 rm -r classes/*
 mkdir -p classes/gesticulate
 cp res/gesticulate/media.types classes/gesticulate/media.types
 javac -d classes -classpath "$CP" mod/profanity/src/java/**/*.java
+etc/stacktraces
 scala/bin/scalac "-classpath:$CP:classes" -d classes -deprecation -language:experimental.erasedDefinitions -language:experimental.fewerBraces -language:experimental.saferExceptions -Wunused:all -new-syntax -Yrequire-targetName -Ysafe-init -feature -Ycheck-all-patmat -Yexplicit-nulls \
     mod/acyclicity/src/core/*.scala \
     mod/adversaria/src/core/*.scala \
@@ -24,6 +25,7 @@ scala/bin/scalac "-classpath:$CP:classes" -d classes -deprecation -language:expe
     mod/gesticulate/src/core/*.scala \
     mod/gossamer/src/core/*.scala \
     mod/guillotine/src/core/*.scala \
+    mod/harlequin/src/core/*.scala \
     mod/honeycomb/src/core/*.scala \
     mod/iridescence/src/core/*.scala \
     mod/jovian/src/core/*.scala \

@@ -1,6 +1,6 @@
 #!/bin/sh
 
-CP="$(ls lib/*.jar | tr '\n' : | head -c-1)"
+CP="stbin:$(ls lib/*.jar | tr '\n' : | head -c-1)"
 
 rm -r test/*
 
@@ -20,6 +20,6 @@ scala/bin/scalac \
   -Yexplicit-nulls \
   mod/*/src/test/tests.scala src/test/suites.scala mod/wisteria/src/examples/*.scala
 
-CP="$(ls bcp/*.jar lib/*.jar | tr '\n' : | head -c-1)"
+CP="stbin:$(ls bcp/*.jar lib/*.jar | tr '\n' : | head -c-1)"
 
 java -classpath "$CP:niveau.jar:test" niveau.Tests

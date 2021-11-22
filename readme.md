@@ -35,12 +35,18 @@ upon minimal set of [common tools](https://github.com/propensive/rudiments/).
 
 ## Principles
 
-Each library under the _Niveau_ umbrella embraces the following principles:
+_Niveau_ embraces two core principles:
+1. Impossible states should be unrepresentable
+2. Transitions between states should be total
 
+Together, these two principles eliminate a whole class of spaces in which bugs can hide.
+
+More specifically, each library under the _Niveau_ umbrella adheres to the following principles:
 - typesafe—taking full advantage of the Scala 3 typesystem
 - checked exceptions—but only if you choose to use them
 - safe literals—interpolated strings, checked at compiletime with
   [Contextual](https://github.com/propensive/contextual/)
+- `null` is banished—no method should ever return `null`, guaranteed by the Scala typesystem
 - typeclasses—extensibility provided through
   [Wisteria](https://github.com/propensive/wisteria/)'s generic derivation
 - decoupled—modules use [Clairvoyant](https://github.com/propensive/clairvoyant/) to minimise
@@ -113,6 +119,5 @@ library should also be small.
 
 - extensive use of the immutable `IArray[Byte]` type for random-access byte-data
 - streaming provided using `LazyList`s
-- the `Text` type provides an more typesafe alternative opaque type alias for `String`s
 - all libraries are compiled with `null`-checking enabled—and `null`s forbidden!
 - use of the `T | Unset` union type for optional parameters, without the need to wrap `T` in `Some` or use `null`
