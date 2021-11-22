@@ -175,17 +175,15 @@ class Runner(subset: Set[TestId] = Set()) extends Dynamic:
   def report(): Report = Report(results.values.to(List))
   def clear(): Unit = results = emptyResults()
 
-  protected def record(test: Test, duration: Long, datapoint: Datapoint): Unit = synchronized {
+  protected def record(test: Test, duration: Long, datapoint: Datapoint): Unit = synchronized:
     results = results.updated(test.name, results(test.name).append(test.name, duration, datapoint))
-  }
 
-  protected def record(summary: Summary) = synchronized {
+  protected def record(summary: Summary) = synchronized:
     results = results.updated(summary.name, summary)
-  }
 
-  private def emptyResults(): Map[Text, Summary] = ListMap().withDefault { name =>
-    Summary(TestId(shortDigest(name)), name, 0, Int.MaxValue, 0L, Int.MinValue, Outcome.Passed, 0)
-  }
+  private def emptyResults(): Map[Text, Summary] = ListMap().withDefault:
+    name =>
+      Summary(TestId(shortDigest(name)), name, 0, Int.MaxValue, 0L, Int.MinValue, Outcome.Passed, 0)
 
   @volatile
   protected var results: Map[Text, Summary] = emptyResults()
@@ -211,17 +209,15 @@ object Macros:
   def assert[T: Type](runner: Expr[Runner], test: Expr[Runner#Test { type Type = T }], pred: Expr[T => Boolean], log: Expr[Log])(using Quotes): Expr[Unit] =
     import quotes.reflect.*
     
-    val filename: Expr[String] = Expr {
+    val filename: Expr[String] = Expr:
       val absolute = Showable(Position.ofMacroExpansion).show.cut(t":").head
       val pwd = try Sys.user.dir() catch case e: KeyNotFound => throw Impossible("should not happen")
       
       if absolute.startsWith(pwd) then absolute.drop(pwd.length + 1).s else absolute.s
-    }
     
     val line = Expr(Position.ofMacroExpansion.startLine + 1)
 
     def debugExpr[S: Type](expr: Expr[S]): Expr[Option[S] => Debug] =
-
       val debugString = '{DebugString.showAny}
 
       Expr.summon[Comparison[S]].fold {
