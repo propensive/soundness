@@ -153,7 +153,7 @@ object Media:
 
     def parseSubtype(str: Text): Subtype =
       try
-        val idx = (str.indexWhere { ch => ch.isWhitespace || ch.isControl || specials.contains(ch) })
+        val idx = (str.where { ch => ch.isWhitespace || ch.isControl || specials.contains(ch) })
         val ch = try str(idx) catch case error: OutOfRangeError => throw Impossible(error)
         throw InvalidMediaTypeError(string, InvalidMediaTypeError.Nature.InvalidChar(ch))
       catch case e: OutOfRangeError =>
