@@ -42,36 +42,41 @@ extension (text: Text)
   def urlEncode: Text = URLEncoder.encode(s, "UTF-8").nn
   def urlDecode: Text = URLDecoder.decode(s, "UTF-8").nn
   def punycode: Text = java.net.IDN.toASCII(s).nn
-  def drop(n: Int): Text = s.substring(n).nn
+  def drop(n: Int): Text = s.substring(n min length).nn
   def dropRight(n: Int): Text = s.substring(0, 0 max (s.size - n)).nn
   def take(n: Int): Text = s.substring(0, n min length).nn
-  def cutAt(n: Int): (Text, Text) = (s.substring(0, n).nn, s.substring(n).nn)
+  def takeRight(n: Int): Text = s.substring(0 max (s.size - n), length).nn
+  def snip(n: Int): (Text, Text) = (s.substring(0, n min s.size).nn, s.substring(n min s.size).nn)
   def trim: Text = text.trim.nn
-  def slice(index: Int): Text = s.substring(index).nn
-  def slice(from: Int, to: Int): Text = s.substring(from, to).nn
+  def slice(from: Int, to: Int): Text = s.substring(from max 0, to min s.size).nn
   def chars: IArray[Char] = IArray.from(s.toCharArray.nn)
   def flatMap(fn: Char => Text): Text = String(s.toCharArray.nn.flatMap(fn(_).toCharArray.nn))
   def map(fn: Char => Char): Text = String(s.toCharArray.nn.map(fn))
   def isEmpty: Boolean = s.isEmpty
-  def cut(delimiter: Text): List[Text] = cut(delimiter, 0)
+  def cut(delimiter: Text): List[Text] = cut(delimiter, Int.MaxValue)
   def rsub(from: Text, to: Text): Text = text.replaceAll(from, to).nn
   def startsWith(str: Text): Boolean = text.startsWith(str)
   def endsWith(str: Text): Boolean = text.endsWith(str)
   def sub(from: Text, to: Text): Text = text.replaceAll(Pattern.quote(from), to).nn
-  def sub(from: Char, to: Char): Text = text.replace(from, to).nn
+  def tr(from: Char, to: Char): Text = text.replace(from, to).nn
+  def dashed: Text = camelCaseWords.mkString("-").show
+  
+  def snipWhere(pred: Char => Boolean, idx: Int = 0): (Text, Text) throws OutOfRangeError =
+    snip(where(pred, idx))
 
   def camelCaseWords: List[Text] =
-    (try text.indexWhere(_.isUpper, 1) catch case error: OutOfRangeError => -1) match
+    (try text.where(_.isUpper, 1) catch case error: OutOfRangeError => -1) match
       case -1 => List(text.lower)
       case i  => text.take(i).lower :: text.drop(i).camelCaseWords
 
-  def dashed: Text = camelCaseWords.mkString("-").show
 
   def cut(delimiter: Text, limit: Int): List[Text] =
     s.split(Pattern.quote(delimiter), limit).nn.map(_.nn).to(List)
 
   def fit(width: Int, char: Char = ' '): Text = (text + char.show*(width - text.length)).take(width)
-  def fitRight(width: Int, char: Char = ' '): Text = (char.show*(width - text.length) + text).take(width)
+  
+  def fitRight(width: Int, char: Char = ' '): Text =
+    (char.show*(width - text.length) + text).takeRight(width)
 
   @targetName("add")
   infix def +(other: Text): Text = s+other
@@ -93,12 +98,13 @@ extension (text: Text)
   def contains(char: Char): Boolean = text.indexOf(char) != -1
 
   @tailrec
-  def indexWhere(pred: Char => Boolean, idx: Int = 0): Int throws OutOfRangeError =
+  def where(pred: Char => Boolean, idx: Int = 0): Int throws OutOfRangeError =
     if idx >= text.length then throw OutOfRangeError(idx, 0, s.size)
-    if pred(text.charAt(idx)) then idx else indexWhere(pred, idx + 1)
+    if pred(text.charAt(idx)) then idx else where(pred, idx + 1)
 
-  def takeWhile(pred: Char => Boolean): Text =
-    try text.substring(0, indexWhere(!pred(_))).nn
+
+  def upto(pred: Char => Boolean): Text =
+    try text.substring(0, where(!pred(_))).nn
     catch case e: OutOfRangeError => text
 
   def lev(other: Text): Int =
