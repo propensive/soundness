@@ -152,9 +152,9 @@ object ByteEncoder:
 
   given ByteEncoder[Base64Url] = bytes =>
     Text(Base64Encoder.nn.encodeToString(bytes.to(Array)).nn)
-      .sub('+', '-')
-      .sub('/', '_')
-      .takeWhile(_ != '=')
+      .tr('+', '-')
+      .tr('/', '_')
+      .upto(_ != '=')
 
 trait ByteDecoder[ES <: EncodingScheme]:
   def decode(value: Text): Bytes
