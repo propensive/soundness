@@ -7,16 +7,16 @@ import dotty.tools.dotc.*, printing.*, core.*, parsing.*, util.*, reporting.*
 import scala.collection.mutable as scm
 
 enum Token:
-  case Whitespace(size: Int)
+  case Space(size: Int)
   case Newline
-  case Content(value: Text, flair: Flair)
+  case Code(value: Text, flair: Flair)
 
 enum Flair:
-  case Special, Number, String, Ident, TermIdent, TypeIdent, Keyword, Symbol, Parens, Modifier
+  case Error, Number, String, Ident, Term, Type, Keyword, Symbol, Parens, Modifier
 
 object ScalaSyntax: 
   def flair(token: Int): Flair =
-    if token <= 2 then Flair.Special
+    if token <= 2 then Flair.Error
     else if token == 3 || token == 10 || token == 13 then Flair.String
     else if token >= 4 && token <= 9 then Flair.Number
     else if token == 14 || token == 15 then Flair.Ident
@@ -44,7 +44,7 @@ object ScalaSyntax:
         val whitespace: LazyList[Token] =
           if lastEnd != start then
             text.slice(lastEnd, start).cut(t"\n").to(LazyList).flatMap:
-              spaces => LazyList(Token.Whitespace(spaces.sub(t"\t", t"  ").size), Token.Newline)
+              spaces => LazyList(Token.Space(spaces.sub(t"\t", t"  ").size), Token.Newline)
             .init
           else LazyList()
         
@@ -53,7 +53,7 @@ object ScalaSyntax:
         
         val content =
           if start == end then LazyList()
-          else LazyList(Token.Content(text.slice(start, end), trees(start, end).getOrElse(flair(
+          else LazyList(Token.Code(text.slice(start, end), trees(start, end).getOrElse(flair(
               token))))
         
         whitespace #::: content #::: stream(end)
@@ -79,18 +79,18 @@ object ScalaSyntax:
         
         case tree: ValOrDefDef =>
           if tree.nameSpan.exists
-          then trees += (tree.nameSpan.start, tree.nameSpan.end) -> Flair.TermIdent
+          then trees += (tree.nameSpan.start, tree.nameSpan.end) -> Flair.Term
         
         case tree: MemberDef =>
           if tree.nameSpan.exists
-          then trees += (tree.nameSpan.start, tree.nameSpan.end) -> Flair.TypeIdent
+          then trees += (tree.nameSpan.start, tree.nameSpan.end) -> Flair.Type
         
         case tree: Ident if tree.isType =>
           if tree.span.exists
-          then trees += (tree.span.start, tree.span.end) -> Flair.TypeIdent
+          then trees += (tree.span.start, tree.span.end) -> Flair.Type
         
         case _: TypTree =>
-          if tree.span.exists then trees += (tree.span.start, tree.span.end) -> Flair.TypeIdent
+          if tree.span.exists then trees += (tree.span.start, tree.span.end) -> Flair.Type
         
         case _ =>
           ()
