@@ -104,7 +104,9 @@ object Hashable extends Derivation[Hashable]:
   given Hashable[Char] = (acc, n) => acc.append(IArray((n >> 8).toByte, n.toByte))
   given Hashable[Text] = (acc, s) => acc.append(IArray.from(s.bytes))
   given Hashable[Bytes] = _.append(_)
+  given Hashable[LazyList[Bytes]] = (acc, stream) => stream.foldLeft(acc)(_.append(_))
   given Hashable[Digest[?]] = (acc, d) => acc.append(d.bytes)
+
 
 trait Hashable[T]:
   def digest(acc: DigestAccumulator, value: T): DigestAccumulator
@@ -166,11 +168,13 @@ object ByteDecoder:
   given ByteDecoder[Base64] = value => IArray.from(Base64Decoder.nn.decode(value.s).nn)
   
   given ByteDecoder[Hex] = value =>
+    import java.lang.Character.digit
     val data = Array.fill[Byte](value.length/2)(0)
     
+
     (0 until value.length by 2).foreach:
       i =>
-        try data(i/2) = ((Character.digit(value(i), 16) << 4) + Character.digit(value(i + 1), 16)).toByte
+        try data(i/2) = ((digit(value(i), 16) << 4) + digit(value(i + 1), 16)).toByte
         catch case e: OutOfRangeError => throw Impossible("every accessed element should be within range")
 
     data.unsafeImmutable
