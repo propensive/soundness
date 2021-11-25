@@ -20,17 +20,26 @@ import rudiments.*
 import gossamer.*
 import escapade.*, escapes.*
 import iridescence.*
+import harlequin.*
 
 import scala.collection.immutable.ListMap
 import scala.annotation.targetName
 
 case class BodyText(blocks: TextBlock*):
-  def serialize(width: Int): AnsiString = blocks.map(_.render(width)).join
+  def serialize(width: Int): AnsiString = blocks.map(_.render(width)).join(ansi"${'\n'}${'\n'}")
 
 case class TextBlock(indent: Int, text: AnsiString):
   @targetName("add")
   def +(txt: AnsiString): TextBlock = TextBlock(indent, text+txt)
-  def render(width: Int): AnsiString = Iterable.fill(indent)(ansi"  ").join+text
+  
+  def render(width: Int): AnsiString =
+    def rest(text: AnsiString, lines: List[AnsiString]): List[AnsiString] =
+      if text.length == 0 then lines.reverse
+      else text.plain.s.lastIndexWhere(_ == ' ', width - indent*2) match
+        case -1 => (text :: lines).reverse
+        case pt => rest(text.take(pt), text.drop(pt + 1) :: lines)
+    
+    rest(text, Nil).map((ansi"  "*indent)+_).join(ansi"${'\n'}")
 
 open class TextConverter():
   private def heading(level: 1 | 2 | 3 | 4 | 5 | 6, children: Seq[Markdown.Ast.Inline]): TextBlock =
@@ -79,12 +88,28 @@ open class TextConverter():
           acc :+ TextBlock(indent, ansi"---")
         
         case Markdown.Ast.Block.FencedCode(syntax, meta, value) =>
-          acc :+ TextBlock(indent, ansi"${foreground.BrightGreen}(${value})")
+          if syntax == Some(t"scala") then
+            val highlightedCode = ScalaSyntax.highlight(value).to(List).map:
+              case Token.Code(code, flair) => flair match
+                case Flair.Type              => ansi"${solarized.Blue}(${code.trim})"
+                case Flair.Term              => ansi"${solarized.Green}(${code.trim})"
+                case Flair.Symbol            => ansi"${solarized.Red}(${code.trim})"
+                case Flair.Keyword           => ansi"${solarized.Orange}(${code.trim})"
+                case Flair.Modifier          => ansi"${solarized.Yellow}(${code.trim})"
+                case Flair.Ident             => ansi"${solarized.Cyan}(${code.trim})"
+                case Flair.Error             => ansi"${solarized.Red}($Underline(${code.trim}))"
+                case Flair.Number            => ansi"${solarized.Violet}(${code.trim})"
+                case Flair.String            => ansi"${solarized.Violet}(${code.trim})"
+                case other                   => ansi"${code.trim}"
+              case Token.Space(n)          => ansi" "*n
+              case Token.Newline           => ansi"${'\n'}"
+            acc :+ TextBlock(indent, highlightedCode.join)
+          else acc :+ TextBlock(indent, ansi"${foreground.BrightGreen}($value)")
         
         case Markdown.Ast.Block.BulletList(num, loose, _, items*) =>
           acc :+ TextBlock(indent, items.zipWithIndex.map { case (item, idx) =>
             ansi"${num.fold(t"  » ") { n => t"${(n + idx).show.fit(3)}. " }}${Showable(item).show}"
-          }.join)
+          }.join(ansi"${'\n'}"))
     
         case Markdown.Ast.Block.Table(parts*) =>
           acc :+ TextBlock(indent, ansi"[table]")
