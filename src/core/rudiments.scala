@@ -29,6 +29,11 @@ import language.dynamics
 type Bytes = IArray[Byte]
 type DataStream = LazyList[IArray[Byte] throws StreamCutError]
 
+object Bytes:
+  def apply(xs: Byte*): Bytes = IArray(xs*)
+  def empty: Bytes = IArray()
+
+
 case class ExcessDataError(size: Int, limit: Int)
 extends Exception(s"the amount of data in the stream (at least ${size}B) exceeds the limit (${limit}B)")
 
@@ -184,6 +189,7 @@ trait Sink[T]:
 
 object Streamable:
   given Streamable[LazyList[Bytes]] = identity(_)
+  given Streamable[Bytes] = LazyList(_)
 
 trait Streamable[T]:
   def stream(value: T): LazyList[Bytes]
@@ -211,3 +217,12 @@ extension [T](value: T)
     readable.fromStream(dataStream)
 
 case class githubIssue(id: Int) extends StaticAnnotation
+
+opaque type ByteSize = Long
+
+extension (bs: Int)
+  def b: ByteSize = bs
+  def kb: ByteSize = bs*1024
+  def mb: ByteSize = bs*1024*1024
+  def gb: ByteSize = bs*1024*1024*1024
+  def tb: ByteSize = bs*1024*1024*1024*1024
