@@ -39,6 +39,14 @@ object Timestamp:
 
 opaque type Timestamp = Long
 
+opaque type ElapsedTime = Long
+
+object ElapsedTime:
+  def between(t0: Timestamp, current: Timestamp): ElapsedTime = (current - t0) max 0
+  given show: Show[ElapsedTime] = ts => numberFormat.format(ts/1000.0).nn.show.padLeft(7)
+
+  private val numberFormat = jt.DecimalFormat(t"#.000".s)
+
 object Level:
   given AnsiShow[Level] = level =>
     val color = level match
@@ -158,13 +166,20 @@ case class Realm(name: Text):
 case class Entry(realm: Realm, level: Level, message: AnsiString, timestamp: Timestamp)
 
 object LogFormat:
+  val t0 = Timestamp()
   given LogFormat[Stdout.type, AnsiString] with
     override def interval: Int = 50
     def serialize(value: AnsiString): Bytes = value.render.bytes
 
     def format(entry: Entry): AnsiString =
       ansi"${entry.timestamp.ansi} ${entry.level.ansi} ${entry.realm.ansi.span(8)} ${entry.message}"
-  
+
+  val timed: LogFormat[Stdout.type, AnsiString] = new LogFormat[Stdout.type, AnsiString]:
+    override def interval: Int = 50
+    def serialize(value: AnsiString): Bytes = value.render.bytes
+    def format(entry: Entry): AnsiString =
+      ansi"${ElapsedTime.between(t0, entry.timestamp)} ${entry.level.ansi} ${entry.realm.ansi.span(8)} ${entry.message}"
+
 trait LogFormat[S, T]:
   def interval: Int = 500
   def format(entry: Entry): T
@@ -187,17 +202,15 @@ object Logger:
     val name = t"eucalyptus-$id"
 
     val thread = Thread(runnable, name.s)
-    thread.setDaemon(true)
     thread.start()
 
 class Logger(writer: LazyList[Bytes] => Unit, rules: Seq[Rule[?, ?]], interval: Int):
   private val queue: juc.ConcurrentLinkedQueue[Bytes] = juc.ConcurrentLinkedQueue[Bytes]()
-  private var continue: Boolean = true
+  private val parentThread: Thread = Thread.currentThread.nn
   private val buf = ji.ByteArrayOutputStream()
   private val newline = "\n".bytes.unsafeMutable
 
   def record(entry: Bytes): Unit = queue.offer(entry)
-  def stop(): Unit = continue = false
 
   def logStream: LazyList[IArray[Byte]] =
     Thread.sleep(interval)
@@ -206,7 +219,7 @@ class Logger(writer: LazyList[Bytes] => Unit, rules: Seq[Rule[?, ?]], interval: 
       buf.write(queue.poll.nn.unsafeMutable)
       buf.write(newline)
 
-    buf.toByteArray.nn.unsafeImmutable #:: (if continue then logStream else LazyList())
+    buf.toByteArray.nn.unsafeImmutable #:: (if parentThread.isAlive then logStream else LazyList())
 
   def start(): Logger =
     Logger.run:
