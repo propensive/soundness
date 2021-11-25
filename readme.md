@@ -16,7 +16,7 @@ it&rsquo;s the same as for any other program.
 - tests may be run multiple times, with results aggregated
 - automatic derivation of arbitrary instances
 - functional API where it matters; impure calls where it's safe and practical
-
+¿
 
 ## Getting Started
 
@@ -207,7 +207,7 @@ Probably is classified as __fledgling__. Propensive defines the following five s
 - _dependable_: production-ready, subject to controlled ongoing maintenance and enhancement; tagged as version `1.0` or later
 - _adamantine_: proven, reliable and production-ready, with no further breaking changes ever anticipated
 
-Probably is designed to be _small_. Its entire source code currently consists of 608 lines of code.
+Probably is designed to be _small_. Its entire source code currently consists of 612 lines of code.
 
 ## Availability
 
