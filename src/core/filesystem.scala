@@ -70,7 +70,7 @@ object IoError:
     case Read, Write, Access, Create
 
 case class IoError(operation: IoError.Operation, reason: IoError.Reason, path: Any)
-extends JovianError(t"the $operation operation at path did not succeed because $reason")
+extends JovianError(t"the $operation operation at ${path.toString} did not succeed because $reason")
 
 
 open class Classpath(classLoader: ClassLoader = getClass.nn.getClassLoader.nn)
@@ -79,15 +79,15 @@ extends Root(t"/", t""):
 
   type AbsolutePath = ClasspathRef
 
-  def makeAbsolute(parts: IArray[Text]): ClasspathRef = ClasspathRef(parts)
+  def makeAbsolute(parts: List[Text]): ClasspathRef = ClasspathRef(parts)
 
   @targetName("access")
-  infix def /(resource: Text): ClasspathRef = ClasspathRef(IArray(resource))
+  infix def /(resource: Text): ClasspathRef = ClasspathRef(List(resource))
 
   object ClasspathRef:
     given Show[ClasspathRef] = _.parts.join(t"classpath:", t"/", t"")
 
-  case class ClasspathRef(elements: IArray[Text]) extends Path.Absolute(elements):
+  case class ClasspathRef(elements: List[Text]) extends Path.Absolute(elements):
     def resource: Resource = Resource(makeAbsolute(parts))
 
   case class Resource(path: ClasspathRef):
@@ -105,7 +105,7 @@ extends Root(t"/", t""):
 class Filesystem(pathSeparator: Text, fsPrefix: Text) extends Root(pathSeparator, fsPrefix):
   type AbsolutePath = IoPath
 
-  case class IoPath(elements: IArray[Text]) extends Path.Absolute(elements), Shown[IoPath]:
+  case class IoPath(elements: List[Text]) extends Path.Absolute(elements):
     private[jovian] lazy val javaFile: ji.File = ji.File(this.show.s)
     private[jovian] lazy val javaPath: jnf.Path = javaFile.toPath.nn
 
@@ -138,7 +138,13 @@ class Filesystem(pathSeparator: Text, fsPrefix: Text) extends Root(pathSeparator
       then throw IoError(IoError.Operation.Access, IoError.Reason.NotSymlink, this)
       
       Symlink(this, parse(Showable(Files.readSymbolicLink(Paths.get(this.show.s))).show).get)
-  
+
+    def descendantFiles: LazyList[File] throws IoError =
+      if javaFile.isDirectory
+      then directory.files.to(LazyList) #:::
+          directory.subdirectories.to(LazyList).flatMap(_.path.descendantFiles)
+      else LazyList(file)
+
     def inode: Inode throws IoError =
       
       if !javaFile.exists()
@@ -171,18 +177,18 @@ class Filesystem(pathSeparator: Text, fsPrefix: Text) extends Root(pathSeparator
         throw IoError(IoError.Operation.Create, IoError.Reason.AccessDenied, this)
   
       File(this)
-
-  def makeAbsolute(parts: IArray[Text]): IoPath = IoPath(parts)
+    
+  def makeAbsolute(parts: List[Text]): IoPath = IoPath(parts)
 
   def parse(value: Text): Option[IoPath] =
     if value.startsWith(prefix)
     then
       val parts: List[Text] = value.drop(prefix.length).cut(separator)
-      Some(IoPath(IArray(parts*)))
+      Some(IoPath(List(parts*)))
     else None
   
   @targetName("access")
-  infix def /(filename: Text): Path.Absolute = Path.Absolute(IArray(filename))
+  infix def /(filename: Text): Path.Absolute = Path.Absolute(List(filename))
 
   sealed trait Inode(val path: IoPath):
     lazy val javaFile: ji.File = ji.File(path.show.s)
@@ -202,6 +208,16 @@ class Filesystem(pathSeparator: Text, fsPrefix: Text) extends Root(pathSeparator
     def hardLinkTo(dest: IoPath): Inode throws IoError
 
   object File:
+    given Show[File] = _.fullname
+    
+    given Sink[File] with
+      type E = IoError
+      def write(value: File, stream: LazyList[Bytes]): Unit throws IoError =
+        val out = ji.FileOutputStream(value.javaPath.toFile, false)
+        try summon[Writable[LazyList[Bytes]]].write(out, stream)
+        catch case e => throw IoError(IoError.Operation.Write, IoError.Reason.AccessDenied, value.path)
+        finally try out.close() catch _ => ()
+
     given Source[File] with
       type E = IoError
       def read(file: File): DataStream throws E =
@@ -270,6 +286,8 @@ class Filesystem(pathSeparator: Text, fsPrefix: Text) extends Root(pathSeparator
 
       Symlink(path, dest)
 
+  object Directory:
+    given Show[Directory] = _.initPath.show
 
   case class Directory(initPath: IoPath) extends Inode(initPath):
     def directory: Option[Directory] = Some(this)
@@ -506,14 +524,14 @@ object Readable:
       Util.read(in, limit)
     
   given stringStream(using enc: Encoding)
-      : Readable[LazyList[Text], StreamCutError | BufferOverflowError] with
+      : Readable[LazyList[Text], StreamCutError | ExcessDataError] with
     def read(in: ji.BufferedInputStream, limit: Int = 65536) =
 
       def read(prefix: Array[Byte], remaining: Int): LazyList[Text] =
         try
           val avail = in.available
           if avail == 0 then LazyList()
-          else if avail > remaining then throw BufferOverflowError()
+          else if avail > remaining then throw ExcessDataError(limit + avail - remaining, limit)
           else
             val buf = new Array[Byte](in.available.min(limit) + prefix.length)
             if prefix.length > 0 then System.arraycopy(prefix, 0, buf, 0, prefix.length)
@@ -527,13 +545,16 @@ object Readable:
       
       read(Array.empty[Byte], limit)
 
-  given readableString: Readable[Text, BufferOverflowError | StreamCutError] with
+  given readableString: Readable[Text, ExcessDataError | StreamCutError] with
     def read(in: ji.BufferedInputStream, limit: Int = 65536) =
       given enc: Encoding = encodings.Utf8
       val stream = stringStream.read(in, limit)
       if stream.length == 0 then t""
-      else if stream.length > 1 then throw BufferOverflowError()
+      else if stream.length > 1 then throw ExcessDataError(stream.length + limit, limit)
       else stream.head
+  
+  given readableBytes: Readable[Bytes, ExcessDataError | StreamCutError] with
+    def read(in: ji.BufferedInputStream, limit: Int) = Util.read(in, limit).slurp(limit)
 
 trait Readable[T, Ex <: Exception]:
   type E = Ex
@@ -596,12 +617,7 @@ object ByteSize:
 
 open class JovianError(message: Text) extends Exception(t"jovian: $message".s)
 
-case class BufferOverflowError()
-extends JovianError(t"the stream contained more data than the buffer could hold")
-
 object Filesystem:
-  
-  given Show[Filesystem#IoPath] = path => path.parts.join(path.prefix, path.separator, t"")
   
   lazy val roots: Set[Filesystem] =
     Option(ji.File.listRoots).fold(Set())(_.nn.to(Set)).map(_.nn.getAbsolutePath.nn).collect:
