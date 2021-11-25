@@ -17,10 +17,32 @@
 package slalom
 
 import probably.*
+import rudiments.*
 import gossamer.*
+import eucalyptus.*
 
 import unsafeExceptions.canThrowAny
 
+given Log(Everything |-> Stdout)
+
 object Tests extends Suite(t"Slalom Tests"):
   def run(using Runner): Unit =
-    ()
+    test(t"parse simple relative path"):
+      Relative.parse(t"peer")
+    .assert(_ == Relative(0, List(t"peer")))
+
+    test(t"parse three-part relative subpath"):
+      Relative.parse(t"path/to/child")
+    .assert(_ == Relative(0, List(t"path", t"to", t"child")))
+
+    test(t"parse parent relative path"):
+      Relative.parse(t"..")
+    .assert(_ == Relative(1, List()))
+
+    test(t"parse ancestor relative path"):
+      Relative.parse(t"../../..")
+    .assert(_ == Relative(3, List()))
+  
+    test(t"parse relative link to current path"):
+      Relative.parse(t".")
+    .assert(_ == Relative(0, List()))

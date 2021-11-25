@@ -30,12 +30,19 @@ extends SlalomError(txt"""an attempt was made to access the parent of a filesyst
 object Relative:
   given Show[Relative] = relative => relative.parts.join(t"../"*relative.ascent, t"/", t"")
 
-case class Relative(val ascent: Int, val parts: IArray[Text]):
+  def parse(text: Text): Relative =
+    def recur(text: Text, ascent: Int): Relative =
+      if text.startsWith(t"../") then recur(text.drop(3), ascent + 1)
+      else Relative(ascent, List(text.cut(t"/")*))
+    
+    recur(text, 0)
+
+case class Relative(val ascent: Int, val parts: List[Text]):
   def parent: Relative throws RootParentError =
-    if parts.isEmpty then Relative(ascent + 1, IArray()) else Relative(ascent, parts.init)
+    if parts.isEmpty then Relative(ascent + 1, List()) else Relative(ascent, parts.init)
   
-  def ancestor(ascent: Int): Relative throws RootParentError =
-    if ascent == 0 then Relative(ascent, parts) else parent.ancestor(ascent - 1)
+  def ancestor(n: Int): Relative throws RootParentError =
+    if n == 0 then Relative(ascent, parts) else parent.ancestor(n - 1)
   
   // def absolute(pwd: AbsolutePath): AbsolutePath throws RootParentError =
   //   if ascent == 0 then makeAbsolute(pwd.parts ++ parts)
@@ -43,7 +50,7 @@ case class Relative(val ascent: Int, val parts: IArray[Text]):
   
   @targetName("access")
   infix def /(filename: Text): Relative throws RootParentError = filename.s match
-    case ".." => if parts.isEmpty then Relative(ascent + 1, IArray())
+    case ".." => if parts.isEmpty then Relative(ascent + 1, List())
                  else Relative(ascent, parts.init)
     case "."  => Relative(ascent, parts)
     case fn   => Relative(ascent, parts :+ filename)
@@ -51,7 +58,7 @@ case class Relative(val ascent: Int, val parts: IArray[Text]):
   @targetName("addAll")
   infix def ++(relative: Relative): Relative throws RootParentError =
     if relative.ascent == 0 then Relative(ascent, parts ++ relative.parts)
-    else ancestor(relative.ascent) ++ Relative(ascent, relative.parts)
+    else ancestor(relative.ascent) ++ Relative(0, relative.parts)
 
   override def equals(that: Any): Boolean = that.unsafeMatchable match
     case that: Relative => ascent == that.ascent && parts == that.parts
@@ -63,13 +70,12 @@ trait Root(val separator: Text, val prefix: Text):
   def thisRoot: this.type = this
   type AbsolutePath <: Path.Absolute
 
-  protected def makeAbsolute(parts: IArray[Text]): AbsolutePath
+  protected def makeAbsolute(parts: List[Text]): AbsolutePath
 
   trait Path:
     def root: thisRoot.type = thisRoot
     def parent: Path throws RootParentError
     def ancestor(ascent: Int): Path throws RootParentError
-    //def absolute(pwd: AbsolutePath): AbsolutePath throws RootParentError
     
     @targetName("access")
     infix def /(filename: Text): Path throws RootParentError
@@ -81,12 +87,14 @@ trait Root(val separator: Text, val prefix: Text):
     object Absolute:
       given Show[Absolute] = path => path.parts.join(prefix, separator, t"")
 
-    open class Absolute(val parts: IArray[Text]) extends Path:
+    open class Absolute(val parts: List[Text]) extends Path:
       def parent: AbsolutePath throws RootParentError =
         if parts.isEmpty then throw RootParentError(root) else makeAbsolute(parts.init)
 
       def ancestor(ascent: Int): AbsolutePath throws RootParentError =
-        if parts.length == 0 then makeAbsolute(parts) else parent.ancestor(ascent - 1)
+        if ascent == 0 then makeAbsolute(parts)
+        else if parts.isEmpty then throw RootParentError(root)
+        else parent.ancestor(ascent - 1)
       
       def conjunction(other: AbsolutePath): AbsolutePath =
         makeAbsolute(parts.zip(other.parts).takeWhile(_ == _).map(_(0)))
@@ -112,7 +120,9 @@ trait Root(val separator: Text, val prefix: Text):
 
       override def hashCode: Int = parts.hashCode
 
+      def rename(change: Text => Text): AbsolutePath = makeAbsolute(parts.init :+ change(parts.last))
+
 object Base extends Root(t"/", t"/"):
   type AbsolutePath = Path.Absolute
   
-  protected def makeAbsolute(parts: IArray[Text]): AbsolutePath = Path.Absolute(parts)
+  protected def makeAbsolute(parts: List[Text]): AbsolutePath = Path.Absolute(parts)
