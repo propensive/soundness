@@ -145,7 +145,6 @@ object Keyboard:
 def esc(code: Text): Text = t"${27.toChar}[${code}"
 
 object LineEditor:
-
   def concealed(str: Text): Text = str.map { _ => '*' }
 
   def ask(initial: Text = t"", render: Text => Text = identity(_))(using Tty, Log): Text =
@@ -154,16 +153,17 @@ object LineEditor:
     def finished(key: Keypress) =
       key == Keypress.Enter || key == Keypress.Ctrl('D') || key == Keypress.Ctrl('C')
     
-    Tty.stream[Keypress].takeWhile(!finished(_)).foldLeft(LineEditor(initial, initial.length)) {
+    Tty.stream[Keypress].takeWhile(!finished(_)).foldLeft(LineEditor(initial, initial.length)):
       case (ed, next) =>
         if ed.pos > 0 then Tty.print(esc(t"${ed.pos}D"))
         val newEd = ed(next)
         val line = newEd.content+" "*(ed.content.length - newEd.content.length)
+        Tty.print(esc(t"0K"))
         Tty.print(render(line))
         if line.length > 0 then Tty.print(esc(t"${line.length}D"))
         if newEd.pos > 0 then Tty.print(esc(t"${newEd.pos}C"))
         newEd
-    }.content
+    .content
 
 case class LineEditor(content: Text = t"", pos: Int = 0):
   import Keypress.*
