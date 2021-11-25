@@ -215,6 +215,7 @@ case class Attribute(node: XmlNode, attribute: Text):
       .getOrElse(throw XmlReadError())
 
 case class xmlAttribute() extends StaticAnnotation
+case class xmlLabel(name: String) extends StaticAnnotation
 
 extension [T](value: T)
   def xml(using writer: XmlWriter[T]): Doc = Doc(Ast.Root(writer.write(value)))

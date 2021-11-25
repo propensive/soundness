@@ -44,7 +44,11 @@ object XmlWriter extends Derivation[XmlWriter]:
         .map { p => XmlName(Text(p.label)) -> textElements(p.typeclass.write(p.deref(value))) }
         .to(Map)
 
-    Ast.Element(XmlName(Text(caseClass.typeInfo.short)), elements, attributes)
+    val tag = caseClass.annotations.collect:
+      case `xmlLabel`(name) => name.show
+    .headOption.getOrElse(caseClass.typeInfo.short.show)
+
+    Ast.Element(XmlName(tag), elements, attributes)
 
   def split[T](sealedTrait: SealedTrait[XmlWriter, T]): XmlWriter[T] = value =>
     sealedTrait.choose(value) { subtype =>
