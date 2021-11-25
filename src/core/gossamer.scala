@@ -42,10 +42,10 @@ extension (text: Text)
   def urlEncode: Text = URLEncoder.encode(s, "UTF-8").nn
   def urlDecode: Text = URLDecoder.decode(s, "UTF-8").nn
   def punycode: Text = java.net.IDN.toASCII(s).nn
-  def drop(n: Int): Text = s.substring(n min length).nn
-  def dropRight(n: Int): Text = s.substring(0, 0 max (s.size - n)).nn
-  def take(n: Int): Text = s.substring(0, n min length).nn
-  def takeRight(n: Int): Text = s.substring(0 max (s.size - n), length).nn
+  def drop(n: Int): Text = s.substring(n min length max 0).nn
+  def dropRight(n: Int): Text = s.substring(0, 0 max (s.size - n) min length).nn
+  def take(n: Int): Text = s.substring(0, n min length max 0).nn
+  def takeRight(n: Int): Text = s.substring(0 max (s.size - n) min length, length).nn
   def snip(n: Int): (Text, Text) = (s.substring(0, n min s.size).nn, s.substring(n min s.size).nn)
   def trim: Text = text.trim.nn
   def slice(from: Int, to: Int): Text = s.substring(from max 0, to min s.size).nn
@@ -60,7 +60,8 @@ extension (text: Text)
   def sub(from: Text, to: Text): Text = text.replaceAll(Pattern.quote(from), to).nn
   def tr(from: Char, to: Char): Text = text.replace(from, to).nn
   def dashed: Text = camelCaseWords.mkString("-").show
-  
+  def capitalize: Text = take(1).upper+drop(1)
+
   def snipWhere(pred: Char => Boolean, idx: Int = 0): (Text, Text) throws OutOfRangeError =
     snip(where(pred, idx))
 

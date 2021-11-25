@@ -35,6 +35,16 @@ Using [Wisteria](https://github.com/propensive/wisteria), `Show` instances for p
 as case classes and tuples) and coproduct types (such as enumerations and sealed traits) will be
 automatically derived.
 
+## `Text`, a typesafe `String`
+
+The `Text` type is provided as an opaque alias of `String`, duplicating most of the functionality
+of `String` (and its associated extension methods), but without the typesafety risks associated
+with `String`. `Text` instances may only be combined with other types when a `Show` typeclass
+instance exists for that type.
+
+Furthermore, every method of `Text` is guaranteed not to be `null` and declares any exceptions it
+may throw.
+
 ### Interpolators
 
 Scala's standard library provides the `s` interpolator which allows elements of any type to be
@@ -147,7 +157,7 @@ Gossamer is classified as __fledgling__. Propensive defines the following five s
 - _dependable_: production-ready, subject to controlled ongoing maintenance and enhancement; tagged as version `1.0` or later
 - _adamantine_: proven, reliable and production-ready, with no further breaking changes ever anticipated
 
-Gossamer is designed to be _small_. Its entire source code currently consists of 423 lines of code.
+Gossamer is designed to be _small_. Its entire source code currently consists of 657 lines of code.
 
 ## Availability
 

@@ -524,6 +524,18 @@ object Tests extends Suite(t"Gossamer Tests"):
       test(t"Take characters when predicate isn't initially true returns empty text"):
         t"Helloworld".upto(_.isLower): Text
       .check(_ == t"")
+    
+      test(t"Capitalize a lowercase word"):
+        t"hello".capitalize: Text
+      .check(_ == t"Hello")
+
+      test(t"Capitalize a mixed-case word"):
+        t"fooBar".capitalize: Text
+      .check(_ == t"FooBar")
+
+      test(t"Capitalize an uppercase word does not change it"):
+        t"HELLO".capitalize: Text
+      .check(_ == t"HELLO")
 
     suite(t"Show tests"):
       test(t"Show a string"):
