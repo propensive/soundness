@@ -77,7 +77,7 @@ object Extensions:
     "tar"    -> media"application/x-tar",
     "tif"    -> media"image/tiff",
     "tiff"   -> media"image/tiff",
-    "ts"     -> media"video/mp2t",
+    "ts"     -> media"video/x-mp2t",
     "ttf"    -> media"font/ttf",
     "txt"    -> media"text/plain",
     "vsd"    -> media"application/vnd.visio",
