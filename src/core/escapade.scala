@@ -87,7 +87,7 @@ case class AnsiString(string: Text, escapes: TreeMap[Int, List[Ansi.Change]] = T
   def lower: AnsiString = AnsiString(string.lower, escapes)
 
   @targetName("times")
-  def *(n: Int): AnsiString = if n == 0 then this else this*(n - 1)+this
+  def *(n: Int): AnsiString = if n == 0 then AnsiString.empty else this*(n - 1)+this
 
   def render: Text =
     val buf = StringBuilder()
