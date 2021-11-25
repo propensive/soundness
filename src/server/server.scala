@@ -108,19 +108,20 @@ case class Response[T: Handler](content: T, status: HttpStatus = HttpStatus.Ok,
   private val df: jt.SimpleDateFormat = jt.SimpleDateFormat("dd MMM yyyy HH:mm:ss")
 
   def respond(responder: Responder): Unit =
-    val cookieHeaders: List[(ResponseHeader, Text)] = cookies.map { cookie =>
-      ResponseHeader.SetCookie -> List[(Text, Boolean | Option[Text])](
-        cookie.name   -> Some(cookie.value),
-        t"Expires"  -> cookie.expiry.option.map { t => t"${df.format(t).nn} GMT" },
-        t"Domain"   -> cookie.domain.option,
-        t"Path"     -> cookie.path.option,
-        t"Secure"   -> cookie.ssl,
-        t"HttpOnly" -> false
-      ).collect {
-        case (k, true)    => k
-        case (k, Some(v)) => t"$k=$v"
-      }.join(t"; ")
-    }
+    val cookieHeaders: List[(ResponseHeader, Text)] = cookies.map:
+      cookie =>
+        ResponseHeader.SetCookie -> List[(Text, Boolean | Option[Text])](
+          cookie.name -> Some(cookie.value),
+          t"Expires"  -> cookie.expiry.option.map { t => t"${df.format(t).nn} GMT" },
+          t"Domain"   -> cookie.domain.option,
+          t"Path"     -> cookie.path.option,
+          t"Secure"   -> cookie.ssl,
+          t"HttpOnly" -> false
+        ).collect:
+          case (k, true)    => k
+          case (k, Some(v)) => t"$k=$v"
+        .join(t"; ")
+    
     summon[Handler[T]].process(content, status.code, (headers ++ cookieHeaders).map { (k, v) =>
         k.header -> v }, responder)
 
@@ -163,10 +164,8 @@ case class Request(method: HttpMethod, body: Body.Chunked, query: Text, ssl: Boo
 
   
   lazy val headers: Map[RequestHeader, List[Text]] =
-    rawHeaders.map {
+    rawHeaders.map:
       case (RequestHeader(header), values) => header -> values
-      case _                               => throw Impossible("should never match")
-    }
 
   lazy val length: Int throws StreamCutError =
     headers.get(RequestHeader.ContentLength).fold(body.stream.map(_.length).sum)(_.head.s.toInt)
@@ -232,10 +231,9 @@ case class HttpServer(port: Int) extends RequestHandler:
     
     Runtime.getRuntime.nn.addShutdownHook(shutdownThread)
     
-    () => {
+    () =>
       Runtime.getRuntime.nn.removeShutdownHook(shutdownThread)
       httpServer.stop(1)
-    }
 
   private def streamBody(exchange: HttpExchange): Body.Chunked =
     val in = exchange.getRequestBody.nn
@@ -251,15 +249,14 @@ case class HttpServer(port: Int) extends RequestHandler:
     val uri = exchange.getRequestURI.nn
     val query = Option(uri.getQuery)
     
-    val queryParams: Map[Text, List[Text]] = query.fold(Map()) { query =>
-      val paramStrings = query.nn.cut("&")
-      
-      paramStrings.foldLeft(Map[Text, List[Text]]()) { (map, elem) =>
-        val kv = elem.cut("=", 2)
+    val queryParams: Map[Text, List[Text]] = query.fold(Map()):
+      query =>
+        val paramStrings = query.nn.cut("&")
         
-        map.updated(kv(0), kv(1) :: map.getOrElse(kv(0), Nil))
-      }
-    }
+        paramStrings.foldLeft(Map[Text, List[Text]]()):
+          (map, elem) =>
+            val kv = elem.cut("=", 2)
+            map.updated(kv(0), kv(1) :: map.getOrElse(kv(0), Nil))
     
     val headers = exchange.getRequestHeaders.nn.asScala.view.mapValues(_.asScala.to(List)).to(Map)
 

@@ -63,17 +63,22 @@ object Postable:
   given Postable[Text] = Postable(media"text/plain", value => LazyList(IArray.from(value.bytes)))
   given Postable[Unit] = Postable(media"text/plain", unit => LazyList())
   given Postable[Bytes] = Postable(media"application/octet-stream", LazyList(_))
-  given Postable[LazyList[Bytes]] = Postable(media"application/octet-stream", identity(_))
+  given Postable[LazyList[Bytes]] = Postable(media"application/octet-stream", _.map(identity(_)))
+  given Postable[DataStream] = Postable(media"application/octet-stream", identity(_))
 
-class Postable[T](val contentType: MediaType, val content: T => LazyList[Bytes]):
+class Postable[T](val contentType: MediaType,
+                      val content: T => LazyList[Bytes throws StreamCutError]):
   def preview(value: T): Text = content(value).headOption.fold(t""):
     bytes =>
-      val sample = bytes.take(256)
-    
-      val str: Text =
-        if sample.forall { b => b >= 32 && b <= 127 } then sample.uString else sample.hex
+      try
+        val sample = bytes.take(256)
       
-      if bytes.length > 128 then t"$str..." else str
+        val str: Text =
+          if sample.forall { b => b >= 32 && b <= 127 } then sample.uString else sample.hex
+        
+        if bytes.length > 128 then t"$str..." else str
+      catch
+        case err: StreamCutError => t"[broken stream]"
 
 object HttpMethod:
   given formmethod: clairvoyant.HtmlAttribute["formmethod", HttpMethod] with
@@ -130,61 +135,66 @@ object Http:
   def post[T: Postable, L: Locatable]
           (uri: L, content: T = (), headers: RequestHeader.Value*)
           (using Log)
-          : HttpResponse =
+          : HttpResponse throws StreamCutError =
     request[T](summon[Locatable[L]].location(uri), content, HttpMethod.Post, headers)
 
   def put[T: Postable, L: Locatable]
          (uri: L, content: T = (), headers: RequestHeader.Value*)
          (using Log)
-         : HttpResponse =
+         : HttpResponse throws StreamCutError =
     request[T](summon[Locatable[L]].location(uri), content, HttpMethod.Put, headers)
   
   def get[L: Locatable]
          (uri: L, headers: Seq[RequestHeader.Value] = Nil)
          (using Log)
-         : HttpResponse =
+         : HttpResponse throws StreamCutError =
     request(summon[Locatable[L]].location(uri), (), HttpMethod.Get, headers)
 
   def options[L: Locatable]
              (uri: L, headers: RequestHeader.Value*)
              (using Log)
-             : HttpResponse =
+             : HttpResponse throws StreamCutError =
     request(summon[Locatable[L]].location(uri), (), HttpMethod.Options, headers)
 
   def head[L: Locatable]
           (uri: L, headers: RequestHeader.Value*)
           (using Log)
-          : HttpResponse =
+          : HttpResponse throws StreamCutError =
     request(summon[Locatable[L]].location(uri), (), HttpMethod.Head, headers)
   
   def delete[L: Locatable]
             (uri: L, headers: RequestHeader.Value*)
             (using Log)
-            : HttpResponse =
+            : HttpResponse throws StreamCutError =
     request(summon[Locatable[L]].location(uri), (), HttpMethod.Delete, headers)
   
   def connect[L: Locatable]
              (uri: L, headers: RequestHeader.Value*)
              (using Log)
-             : HttpResponse =
+             : HttpResponse throws StreamCutError =
     request(summon[Locatable[L]].location(uri), (), HttpMethod.Connect, headers)
   
   def trace[L: Locatable]
            (uri: L, headers: RequestHeader.Value*)
            (using Log)
-           : HttpResponse =
+           : HttpResponse throws StreamCutError =
     request(summon[Locatable[L]].location(uri), (), HttpMethod.Trace, headers)
   
   def patch[L: Locatable]
            (uri: L, headers: RequestHeader.Value*)
            (using Log)
-           : HttpResponse =
+           : HttpResponse throws StreamCutError =
     request(summon[Locatable[L]].location(uri), (), HttpMethod.Patch, headers)
 
-  private def request[T: Postable](url: Uri, content: T, method: HttpMethod,
-                                       headers: Seq[RequestHeader.Value])(using Log): HttpResponse =
+  private def request[T: Postable]
+                     (url: Uri, content: T, method: HttpMethod,
+                          headers: Seq[RequestHeader.Value])(using Log)
+                     : HttpResponse throws StreamCutError =
     Log.info(ansi"Sending HTTP $method request to $url")
+    headers.foreach:
+      header => Log.fine(header)
     Log.fine(ansi"HTTP request body: ${summon[Postable[T]].preview(content)}")
+    
     URL(url.show.s).openConnection.nn match
       case conn: HttpURLConnection =>
         conn.setRequestMethod(Showable(method).show.upper)
@@ -375,19 +385,21 @@ case class Uri(location: Text, params: Params) extends Dynamic, Shown[Uri]:
   
   def applyDynamic[T: ToQuery](method: "query")(value: T) = makeQuery(value)
 
-  def post[T: Postable](content: T, headers: RequestHeader.Value*)(using Log): HttpResponse =
+  def post[T: Postable](content: T, headers: RequestHeader.Value*)(using Log)
+          : HttpResponse throws StreamCutError =
     Http.post(this, content, headers*)
   
-  def put[T: Postable](content: T, headers: RequestHeader.Value*)(using Log): HttpResponse =
+  def put[T: Postable](content: T, headers: RequestHeader.Value*)(using Log)
+         : HttpResponse throws StreamCutError =
     Http.put(this, content, headers*)
   
-  def get(headers: RequestHeader.Value*)(using Log): HttpResponse = Http.get(this, headers)
-  def options(headers: RequestHeader.Value*)(using Log): HttpResponse = Http.options(this, headers*)
-  def trace(headers: RequestHeader.Value*)(using Log): HttpResponse = Http.trace(this, headers*)
-  def patch(headers: RequestHeader.Value*)(using Log): HttpResponse = Http.patch(this, headers*)
-  def head(headers: RequestHeader.Value*)(using Log): HttpResponse = Http.head(this, headers*)
-  def delete(headers: RequestHeader.Value*)(using Log): HttpResponse = Http.delete(this, headers*)
-  def connect(headers: RequestHeader.Value*)(using Log): HttpResponse = Http.connect(this, headers*)
+  def get(headers: RequestHeader.Value*)(using Log): HttpResponse throws StreamCutError = Http.get(this, headers)
+  def options(headers: RequestHeader.Value*)(using Log): HttpResponse throws StreamCutError = Http.options(this, headers*)
+  def trace(headers: RequestHeader.Value*)(using Log): HttpResponse throws StreamCutError = Http.trace(this, headers*)
+  def patch(headers: RequestHeader.Value*)(using Log): HttpResponse throws StreamCutError = Http.patch(this, headers*)
+  def head(headers: RequestHeader.Value*)(using Log): HttpResponse throws StreamCutError = Http.head(this, headers*)
+  def delete(headers: RequestHeader.Value*)(using Log): HttpResponse throws StreamCutError = Http.delete(this, headers*)
+  def connect(headers: RequestHeader.Value*)(using Log): HttpResponse throws StreamCutError = Http.connect(this, headers*)
   def bare: Uri = Uri(location, Params(Nil))
 
 object DomainName:
