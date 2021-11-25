@@ -22,7 +22,7 @@ import gossamer.*
 import escapade.*
 import probably.*
 import eucalyptus.*
-import scala.quoted.*, staging.*
+import scala.quoted.*
 
 import unsafeExceptions.canThrowAny
 
