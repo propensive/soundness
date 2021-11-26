@@ -1,1 +1,74 @@
-TBC
+## Parsing
+
+A `Text` or `String` value containing XML may be parsed with,
+```scala
+Xml.parse(text)
+```
+which will return an instance of `Xml`, or throw an `XmlParseError` if the XML is not well-formed.
+
+## XML Literals
+
+`Xml` values may also be constructed using the `xml""` interpolator. These will be checked for well-formedness
+at compiletime: all syntax must be valid, special characters escaped, and all tags must be closed and nested
+correctly.
+
+```scala
+val book = xml"<book><author>H. G. Wells</author><title>War of the Worlds</title></book>"
+```
+
+## XML AST Representation
+
+An `Xml` value is a general type representing XML in three different forms, subtypes of `Xml`:
+- `XmlDoc` is a complete XML document, and includes the `<?xml...` header
+- `XmlNode` is a single XML node
+- `XmlFragment` is a _fragment_ of XML, which may be zero, one or many XML nodes
+
+While all three subtypes represent XML, there is some overlap in what may be represented by each,
+but important differences in their behavior, and most Xylophone methods are careful to return precisely-typed
+values.
+
+Furthermore, the `Xml` subtypes serve as wrappers around several other AST node types, subtypes of the `Ast`
+enumeration:
+ - `Element`
+ - `Comment`
+ - `ProcessingInstruction`
+ - `Textual`
+ - `CData`
+ - `Root`
+ 
+Of these types, `Element` and `Root` include fields which may include sequences of other `Ast` nodes, thereby
+forming a tree structure.
+
+## Accessing elements
+
+Unlike some other data definition languages such as JSON, XML requires a distinction to be made between a
+single node (`XmlNode`) and a sequence of nodes (`XmlFragment`). Multiple nodes with the same tag name
+may exist as children of another node, while it is common for some variants of XML to use unique tag names
+for every child node.
+
+Both approaches are supported in Xylophone with very simple syntax.
+
+For example, given the XML,
+```xml
+<library>
+  <book>
+    <author>H. G. Wells</author>
+    <title>The War of the Worlds</title>
+  </book>
+  <book>
+    <author>Virginia Woolf</author>
+    <title>Mrs. Dalloway</title>
+  </book>
+</library>
+```
+as an instance of `XmlNode`, `library`, we can access the two book nodes with `library.book`, as an `XmlFragment`.
+Subsequently calling, `library.book.title` would return a new `XmlFragment` consisting of the titles of _both_ books,
+specifically,
+```xml
+<title>The War of the Worlds</title>
+<title>Mrs. Dalloway</title>
+```
+
+Given an `XmlFragment`, the *nth* node in the sequence may be accessed by applying the node index.
+
+## Extracting 
