@@ -165,17 +165,19 @@ object Subgraph:
     Dot.Statement.Subgraph(None, statements*)
 
 object NodeParser extends Interpolator[Unit, Option[Dot.Ref], Dot.Ref]:
+
+  private val compassPoints: Set[Text] = Set(t"n", t"e", t"s", t"w", t"ne", t"nw", t"se", t"sw")
   def parse(state: Option[Dot.Ref], next: String): Some[Dot.Ref] =
-    Some { next.cut(":").to(List) match
+    Some { next.show.cut(t":").to(List) match
       case List(id) =>
-        Dot.Ref(Dot.Id(id.show))
+        Dot.Ref(Dot.Id(id))
       
       case List(id, port) =>
-        Dot.Ref(Dot.Id(id.show), Some(Dot.Attachment(Dot.Id(port.show))))
+        Dot.Ref(Dot.Id(id), Some(Dot.Attachment(Dot.Id(port.show))))
       
-      case List(id, port, point@("n" | "e" | "s" | "w" | "ne" | "nw" | "se" | "sw")) =>
-        Dot.Ref(Dot.Id(id.show), Some(Dot.Attachment(Dot.Id(port.show),
-            Some(Dot.CompassPoint.valueOf(point.capitalize)))))
+      case List(id, port, point) if compassPoints.contains(point) =>
+        Dot.Ref(Dot.Id(id), Some(Dot.Attachment(Dot.Id(port),
+            Some(Dot.CompassPoint.valueOf(point.capitalize.s)))))
       
       case _ =>
         throw InterpolationError("not a valid node ID")

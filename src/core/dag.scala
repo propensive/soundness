@@ -56,6 +56,10 @@ case class Dag[T] private(edgeMap: Map[T, Set[T]] = Map()):
   def remove(key: T, value: T): Dag[T] =
     Dag(edgeMap.updated(key, edgeMap.get(key).fold(Set())(_ - value)))
 
+  def traversal[S](fn: (Set[S], T) => S): Map[T, S] =
+    sorted.foldLeft(Map[T, S]()):
+      (map, next) => map.updated(next, fn(apply(next).map(map), next))
+
   @targetName("addAll")
   infix def ++(dag: Dag[T]): Dag[T] =
     val joined = edgeMap.to(List) ++ dag.edgeMap.to(List)
