@@ -16,9 +16,9 @@
 
 package clairvoyant
 
-trait HttpResponse[T, C]:
-  def mimeType: String
-  def content(value: T): C
+trait HttpResponse[T]:
+  def mediaType: String
+  def content(value: T): LazyList[IArray[Byte]]
 
 trait HttpReader[T, E <: Exception]:
   def read(value: String): T throws E
