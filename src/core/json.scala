@@ -53,7 +53,6 @@ extension [T: Json.Writer](value: T)
   def json: Json = Json(summon[Json.Writer[T]].write(value))
 
 object Json extends Dynamic:
-
   given Show[Json] = json =>
     try Text(json.normalize.root.render())
     catch
@@ -63,9 +62,9 @@ object Json extends Dynamic:
         case int: Int   => t"<missing index: $int>"
         case _          => throw Impossible("all cases should have been handled")
 
-  given clairvoyant.HttpResponse[Json, Text] with
-    def mimeType: String = "application/json"
-    def content(json: Json): Text = json.show
+  given clairvoyant.HttpResponse[Json] with
+    def mediaType: String = "application/json"
+    def content(json: Json): LazyList[IArray[Byte]] = LazyList(json.show.bytes)
 
   given clairvoyant.HttpReader[Json, JsonParseError] with
     def read(value: String): Json throws JsonParseError = Json.parse(Text(value))
@@ -117,7 +116,7 @@ object Json extends Dynamic:
     def write(t: T): JValue
     def contramap[S](fn: S => T): Writer[S] = (v: S) => fn.andThen(write)(v)
 
-  object Reader:
+  object Reader:// extends Derivation[Reader]:
     given Reader[Json] with
       type E = Nothing
       def read(value: => JValue): Json throws JsonTypeError | E = Json(value, Nil)
@@ -194,7 +193,7 @@ object Json extends Dynamic:
     //       value match
     //         case JObject(vs) =>
     //           val value = vs.get(param.label).getOrElse(throw JsonAccessError(Text(param.label)))
-    //           //import unsafeExceptions.canThrowAny
+    //           import unsafeExceptions.canThrowAny
     //           param.typeclass.read(value)
             
     //         case _ =>
@@ -234,7 +233,8 @@ object Json extends Dynamic:
   def applyDynamicNamed[T <: String](methodName: "of")(elements: (String, Json)*): Json =
     Json(JObject(mutable.Map(elements.map(_ -> _.root)*)), Nil)
 
-case class Json(root: JValue, path: List[Int | Text] = Nil) extends Dynamic, Shown[Json] derives CanEqual:
+case class Json(root: JValue, path: List[Int | Text] = Nil)
+extends Dynamic, Shown[Json] derives CanEqual:
   def apply(idx: Int): Json = Json(root, idx :: path)
   def apply(field: Text): Json = Json(root, field :: path)
   def selectDynamic(field: String): Json = this(Text(field))
@@ -242,7 +242,7 @@ case class Json(root: JValue, path: List[Int | Text] = Nil) extends Dynamic, Sho
 
   def normalize: Json throws JsonAccessError | JsonTypeError =
     def deref(value: JValue, path: List[Int | Text])
-        : JValue throws JsonTypeError | JsonAccessError = path match
+             : JValue throws JsonTypeError | JsonAccessError = path match
       case Nil =>
         value
       case (idx: Int) :: tail => value match
@@ -266,6 +266,7 @@ case class Json(root: JValue, path: List[Int | Text] = Nil) extends Dynamic, Sho
       
     Json(deref(root, path.reverse), Nil)
 
-  inline def as[T](using reader: Json.Reader[T]): T throws JsonTypeError | JsonAccessError | reader.E =
+  inline def as[T](using reader: Json.Reader[T])
+                  : T throws JsonTypeError | JsonAccessError | reader.E =
     reader.read(normalize.root)
   

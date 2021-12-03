@@ -48,7 +48,7 @@ object JsonMacro:
           typeRepr.asType match
             case '[t] =>
               Expr.summon[Json.Reader[t]].getOrElse {
-                report.errorAndAbort(s"cannot find Reader for case field of type ${Type.of[t]}")
+                report.errorAndAbort(s"cannot find Reader for case field of type ${TypeRepr.of[t].show}")
               } match
                 case '{ $r: Json.Reader[`t`] { type E = e } } =>
                   if TypeRepr.of[e] == TypeRepr.of[Nothing] then union(tail) else OrType(TypeRepr.of[e], union(tail))
@@ -78,7 +78,7 @@ object JsonMacro:
                       typeRepr.asType match
                         case '[paramType] =>
                           Expr.summon[Json.Reader[paramType]].getOrElse {
-                            report.errorAndAbort(s"euphemism: cannot find Reader for case field of type ${Type.of[paramType]}")
+                            report.errorAndAbort(s"euphemism: cannot find Reader for case field of type ${TypeRepr.of[paramType].show}")
                           } match
                             case '{ $reader: Json.Reader[`paramType`] } =>
                               val label = Expr(head.name)
