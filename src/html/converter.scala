@@ -29,7 +29,7 @@ open class HtmlConverter():
     catch case e: BadMarkdownError => Nil
   
   def slug(str: Text): Text =
-    Text(str.lower.replaceAll("[^a-z0-9]", "-").nn.replaceAll("--*", "-").nn)
+    Text(str.lower.s.replaceAll("[^a-z0-9]", "-").nn.replaceAll("--*", "-").nn)
 
   def headOutline(node: Markdown[Markdown.Ast.Node]): Seq[Text] = node match
     case Markdown(children*) =>

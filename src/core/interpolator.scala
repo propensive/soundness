@@ -54,18 +54,18 @@ object Md:
     def parse(state: Input, next: String): Input = state match
       case Input.Inline(state) =>
         try
-          Markdown.parseInline(state+next)
-          Input.Inline(state+next)
+          Markdown.parseInline(t"$state$next")
+          Input.Inline(t"$state$next")
         catch
           case e: BadMarkdownError =>
             try
-              Markdown.parse(state+next)
-              Input.Block(state+next)
+              Markdown.parse(t"$state$next")
+              Input.Block(t"$state$next")
             catch
               case e: BadMarkdownError => throw InterpolationError(s"the markdown could not be parsed")
 
       case Input.Block(state) =>
         try
-          Markdown.parse(state+next)
-          Input.Block(state+next)
+          Markdown.parse(t"$state$next")
+          Input.Block(t"$state$next")
         catch case e: BadMarkdownError => throw InterpolationError(s"the markdown could not be parsed")
