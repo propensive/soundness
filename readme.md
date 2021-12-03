@@ -54,7 +54,7 @@ For example,
 ```scala
 ansi"This text is $Bold[bold], $Underline{underlined} and $BrightRedFg<bright red>."
 ```
-will apply each style only to the words inside the brackets.
+°will apply each style only to the words inside the brackets.
 
 Plenty of choice is given over which type of brackets to use, so that a choice can (hopefully) be
 made which does not conflict with the real content of the string. Regions may be nested arbitrarily
@@ -130,7 +130,7 @@ Escapade is classified as __fledgling__. Propensive defines the following five s
 - _dependable_: production-ready, subject to controlled ongoing maintenance and enhancement; tagged as version `1.0` or later
 - _adamantine_: proven, reliable and production-ready, with no further breaking changes ever anticipated
 
-Escapade is designed to be _small_. Its entire source code currently consists of 308 lines of code.
+Escapade is designed to be _small_. Its entire source code currently consists of 309 lines of code.
 
 ## Availability
 
