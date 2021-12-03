@@ -32,7 +32,7 @@ object AnsiString:
 
   given Joinable[AnsiString] = _.fold(empty)(_ + _)
     
-  def apply[T: Show](value: T, wrapper: Style => Style): AnsiString =
+  def apply[T: Show](value: T, wrapper: TextStyle => TextStyle): AnsiString =
     val str: Text = value.show
 
     AnsiString(str, TreeMap(
@@ -81,7 +81,7 @@ case class AnsiString(string: Text, escapes: TreeMap[Int, List[Ansi.Change]] = T
   def plain: Text = string
   
   def explicit: Text = render.flatMap:
-    ch => if ch.toInt == 27 then "\\e" else s"$ch"
+    ch => if ch.toInt == 27 then t"\\e" else ch.show
   
   def upper: AnsiString = AnsiString(string.upper, escapes)
   def lower: AnsiString = AnsiString(string.lower, escapes)
@@ -92,7 +92,7 @@ case class AnsiString(string: Text, escapes: TreeMap[Int, List[Ansi.Change]] = T
   def render: Text =
     val buf = StringBuilder()
     
-    def build(treeMap: TreeMap[Int, List[Ansi.Change]], pos: Int = 0, stack: List[Style] = Nil): Text =
+    def build(treeMap: TreeMap[Int, List[Ansi.Change]], pos: Int = 0, stack: List[TextStyle] = Nil): Text =
 
       if treeMap.isEmpty then
         buf.add(string.slice(pos, string.length))
@@ -102,7 +102,7 @@ case class AnsiString(string: Text, escapes: TreeMap[Int, List[Ansi.Change]] = T
         
         val newStack = treeMap.head(1).sortBy(_ != Ansi.Change.Pop).foldLeft(stack):
           case (head :: tail, Ansi.Change.Pop) =>
-            val next = tail.headOption.getOrElse(Style())
+            val next = tail.headOption.getOrElse(TextStyle())
             buf.add(head.changes(next))
             tail
           
@@ -110,7 +110,7 @@ case class AnsiString(string: Text, escapes: TreeMap[Int, List[Ansi.Change]] = T
             Nil
           
           case (stack, Ansi.Change.Push(fn)) =>
-            val currentStyle = stack.headOption.getOrElse(Style())
+            val currentStyle = stack.headOption.getOrElse(TextStyle())
             val next = fn(currentStyle)
             buf.add(currentStyle.changes(next))
             next :: stack
@@ -130,7 +130,7 @@ case class AnsiString(string: Text, escapes: TreeMap[Int, List[Ansi.Change]] = T
     .to(TreeMap)
 
   @targetName("add")
-  infix def +(str: String): AnsiString = AnsiString(string+str, escapes)
+  infix def +(str: String): AnsiString = AnsiString(t"$string$str", escapes)
   def addEsc(esc: Ansi.Change): AnsiString = addEsc(string.length, esc)
   
   def addEsc(pos: Int, esc: Ansi.Change): AnsiString =
@@ -138,12 +138,12 @@ case class AnsiString(string: Text, escapes: TreeMap[Int, List[Ansi.Change]] = T
   
   @targetName("add")
   infix def +(ansi: AnsiString): AnsiString =
-    AnsiString(string+ansi.string, escapes ++ ansi.shift(length))
+    AnsiString(t"$string${ansi.string}", escapes ++ ansi.shift(length))
 
 type Stylize[T] = Substitution[Ansi.Input, T, "esc"]
 
 object Stylize:
-  def apply(fn: Style => Style): Ansi.Input.Apply = Ansi.Input.Apply(fn)
+  def apply(fn: TextStyle => TextStyle): Ansi.Input.Apply = Ansi.Input.Apply(fn)
 
 object Ansi:
   def strip(txt: Text): Text = Text(txt.s.replaceAll("""\e\[?.*?[\@-~]""", "").nn)
@@ -172,10 +172,10 @@ object Ansi:
   enum Input:
     case Str(string: AnsiString)
     case Esc(on: String, off: String)
-    case Apply(color: Style => Style)
+    case Apply(color: TextStyle => TextStyle)
 
   enum Change:
-     case Push(stateChange: Style => Style)
+     case Push(stateChange: TextStyle => TextStyle)
      case Pop
      case Literal(str: String)
 
@@ -252,9 +252,9 @@ object Ansi:
 
 case class Bg(color: Color)
 
-case class Style(fg: Srgb = colors.White, bg: Option[Srgb] = None, italic: Boolean = false,
-                     bold: Boolean = false, reverse: Boolean = false, underline: Boolean = false,
-                     conceal: Boolean = false, strike: Boolean = false):
+case class TextStyle(fg: Srgb = colors.White, bg: Option[Srgb] = None, italic: Boolean = false,
+                         bold: Boolean = false, reverse: Boolean = false, underline: Boolean = false,
+                         conceal: Boolean = false, strike: Boolean = false):
 
   import escapes.*
   
@@ -267,7 +267,7 @@ case class Style(fg: Srgb = colors.White, bg: Option[Srgb] = None, italic: Boole
   private def concealEsc: String = if conceal then styles.Conceal.on else styles.Conceal.off
   private def strikeEsc: String = if strike then styles.Strike.on else styles.Strike.off
   
-  def changes(next: Style): Text = List(
+  def changes(next: TextStyle): Text = List(
     if fg != next.fg then next.fg.ansiFg24 else t"",
     if bg != next.bg then next.bg.map(_.ansiBg24).getOrElse(t"$esc[49m") else t"",
     if italic != next.italic then t"${esc}${next.italicEsc}" else t"",
@@ -306,7 +306,8 @@ object AnsiShow extends FallbackAnsiShow:
 
   given AnsiShow[Throwable] =
     throwable =>
-      AnsiString[String](throwable.getClass.getName.nn.cut(".").last, _.copy(fg = colors.Crimson))
+      AnsiString[String](throwable.getClass.getName.nn.show.cut(t".").last.s,
+          _.copy(fg = colors.Crimson))
 
 trait AnsiShow[-T] extends Show[T]:
   def show(value: T): Text = ansiShow(value).plain
