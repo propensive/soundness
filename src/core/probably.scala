@@ -60,7 +60,7 @@ object Runner:
       case FailsAt(datapoint, count) =>
         val padWidth = datapoint.debugValue.allInfo.map(_(0).length).max
         datapoint.debugValue.allInfo.map { case (k, v) =>
-          val value: Text = (v.cut(t"\n"): List[Text]).join(t"\n"+" "*(padWidth + 3): Text)
+          val value: Text = (v.cut(t"\n"): List[Text]).join(t"\n${t" "*(padWidth + 3)}")
           t"${k.padLeft(padWidth, ' ')} = $value"
         }.join(t"\n")
       
@@ -166,7 +166,7 @@ class Runner(subset: Set[TestId] = Set()) extends Dynamic:
             .flatMap(_.nn.to(List).map(_.nn))
             .takeWhile(_.getClassName != "probably.Suite")
             .map { frame => Showable(frame.nn).show }
-            .join(Option(Text(e.getMessage.nn)).fold(t"null")(_+t"\n  at "), t"\n  at ", t"")
+            .join(Option(e.getMessage).fold(t"null") { x => t"${x.nn}\n  at " }, t"\n  at ", t"")
           
           record(this, time, Datapoint.Throws(e, debug(None).add(t"exception", info)))
           
@@ -211,7 +211,7 @@ object Macros:
     
     val filename: Expr[String] = Expr:
       val absolute = Showable(Position.ofMacroExpansion).show.cut(t":").head
-      val pwd = try Sys.user.dir() catch case e: KeyNotFound => throw Impossible("should not happen")
+      val pwd = try Sys.user.dir().show catch case e: KeyNotFound => throw Impossible("should not happen")
       
       if absolute.startsWith(pwd) then absolute.drop(pwd.length + 1).s else absolute.s
     
