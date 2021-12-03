@@ -91,7 +91,7 @@ object Media:
             val suggestion = systemMediaTypes.minBy(_.lev(parsed.basic))
             throw InterpolationError(txt"""${parsed.basic} is not a registered media type; did you
                                            mean $suggestion or
-                                           ${parsed.basic.sub("/", "/x-")}?""".s)
+                                           ${parsed.basic.sub(t"/", t"/x-")}?""".s)
         case _ =>
           ()
       
@@ -105,7 +105,7 @@ object Media:
     
     def parseSuffixes(ss: List[Text]): List[Suffix] = ss.map(_.lower.capitalize).map:
       s =>
-        try Suffix.valueOf(s) catch IllegalArgumentException =>
+        try Suffix.valueOf(s.s) catch IllegalArgumentException =>
           throw InvalidMediaTypeError(string, InvalidMediaTypeError.Nature.InvalidSuffix(s))
 
     def parseInit(str: Text): (Subtype, List[Suffix]) =
@@ -121,7 +121,7 @@ object Media:
                                        InvalidMediaTypeError.Nature.NotOneSlash)
 
     def parseGroup(str: Text): Group =
-      try Group.valueOf(str.lower.capitalize)
+      try Group.valueOf(str.lower.capitalize.s)
       catch IllegalArgumentException =>
         throw InvalidMediaTypeError(string, InvalidMediaTypeError.Nature.InvalidGroup)
 
@@ -131,9 +131,9 @@ object Media:
         val ch = try str(idx) catch case error: OutOfRangeError => throw Impossible(error)
         throw InvalidMediaTypeError(string, InvalidMediaTypeError.Nature.InvalidChar(ch))
       catch case e: OutOfRangeError =>
-        if str.startsWith("vnd.") then Subtype.Vendor(str.drop(4))
-        else if str.startsWith("prs.") then Subtype.Personal(str.drop(4))
-        else if str.startsWith("x.") || str.startsWith("x-") then Subtype.X(str.drop(2))
+        if str.startsWith(t"vnd.") then Subtype.Vendor(str.drop(4))
+        else if str.startsWith(t"prs.") then Subtype.Personal(str.drop(4))
+        else if str.startsWith(t"x.") || str.startsWith(t"x-") then Subtype.X(str.drop(2))
         else Subtype.Standard(str)
         
     val xs: List[Text] = string.cut(t";").map(_.trim.asInstanceOf[Text])
@@ -151,7 +151,7 @@ object InvalidMediaTypeError:
   enum Nature:
     case NotOneSlash, MissingParam, InvalidGroup
     case InvalidChar(char: Char)
-    case InvalidSuffix(suffix: String)
+    case InvalidSuffix(suffix: Text)
 
     def message: Text = this match
       case NotOneSlash      => txt"a media type should always contain exactly one '/' character"
@@ -159,7 +159,7 @@ object InvalidMediaTypeError:
       case InvalidGroup     => val list: Text = Media.Group.values.map(_.name).join(t", ", t" or ")
                                txt"the type must be one of: $list"
       case InvalidChar(c)   => txt"the character '$c' is not allowed"
-      case InvalidSuffix(s) => txt"the suffix '' is not recognized"
+      case InvalidSuffix(s) => txt"the suffix '$s' is not recognized"
 
 case class InvalidMediaTypeError(value: Text, nature: InvalidMediaTypeError.Nature)
 extends Exception(txt"gesticulate: \"$value\" is not a valid media type; ${nature.message}".s)
