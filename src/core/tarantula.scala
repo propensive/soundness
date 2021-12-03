@@ -75,9 +75,9 @@ case class WebDriver(server: Browser#Server):
       try fn catch case e: HttpError => e match
         case HttpError(status, body) =>
           val json = body match
-            case scintillate.Body.Chunked(stream) => Json.parse(stream.reduce(_ ++ _).uString).value
-            case scintillate.Body.Empty           => throw e
-            case scintillate.Body.Data(data)      => Json.parse(data.uString).value
+            case HttpBody.Chunked(stream) => Json.parse(stream.reduce(_ ++ _).uString).value
+            case HttpBody.Empty           => throw e
+            case HttpBody.Data(data)      => Json.parse(data.uString).value
           
           throw WebDriverError(json.error.as[Text], json.message.as[Text],
               json.stacktrace.as[Text].cut(t"\n"))
@@ -86,15 +86,13 @@ case class WebDriver(server: Browser#Server):
 
     case class Element(elementId: Text):
       
-      private def get(address: Text)(using Log): Json = safe {
+      private def get(address: Text)(using Log): Json = safe:
         uri"http://localhost:${server.port.show}/session/$sessionId/element/$elementId/$address"
           .get(RequestHeader.ContentType(t"application/json")).as[Json]
-      }
       
-      private def post(address: Text, content: Json)(using Log): Json = safe {
+      private def post(address: Text, content: Json)(using Log): Json = safe:
         uri"http://localhost:${server.port.show}/session/$sessionId/element/$elementId/$address"
-          .post(content.show, RequestHeader.ContentType(t"application/json")).as[Json]
-      }
+          .post(content).as[Json]
       
       def click()(using Log): Unit = post(t"click", Json.parse(t"{}"))
 
@@ -118,15 +116,13 @@ case class WebDriver(server: Browser#Server):
         val e = post(t"element", Data(el.strategy, el.value(value)).json)
         Element(e.value.selectDynamic(Wei.s).as[Text])
       
-    private def get(address: Text)(using Log): Json = safe {
+    private def get(address: Text)(using Log): Json = safe:
       uri"http://localhost:${server.port.show}/session/$sessionId/$address"
         .get(RequestHeader.ContentType(t"application/json")).as[Json]
-    }
   
-    private def post(address: Text, content: Json)(using Log): Json = safe {
+    private def post(address: Text, content: Json)(using Log): Json = safe:
       uri"http://localhost:${server.port.show}/session/$sessionId/$address"
-        .post(content.show, RequestHeader.ContentType(t"application/json")).as[Json]
-    }
+        .post(content).as[Json]
     
     def navigateTo(url: Uri)(using Log): Json =
       case class Data(url: Text)
@@ -157,8 +153,8 @@ case class WebDriver(server: Browser#Server):
       Element(get(t"element/active").value.selectDynamic(Wei.s).as[Text])
 
   def startSession()(using Log): Session =
-    val json = uri"http://localhost:${server.port.show}/session".post(t"""{"capabilities":{}}""",
-        RequestHeader.ContentType(t"application/json")).as[Json]
+    val url = uri"http://localhost:${server.port.show}/session"
+    val json = url.post(Json.parse(t"""{"capabilities":{}}""")).as[Json]
     
     Session(json.value.sessionId.as[Text])
 
