@@ -157,7 +157,7 @@ Gossamer is classified as __fledgling__. Propensive defines the following five s
 - _dependable_: production-ready, subject to controlled ongoing maintenance and enhancement; tagged as version `1.0` or later
 - _adamantine_: proven, reliable and production-ready, with no further breaking changes ever anticipated
 
-Gossamer is designed to be _small_. Its entire source code currently consists of 657 lines of code.
+Gossamer is designed to be _small_. Its entire source code currently consists of 682 lines of code.
 
 ## Availability
 
