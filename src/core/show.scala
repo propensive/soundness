@@ -17,6 +17,7 @@
 package gossamer
 
 import wisteria.*
+import rudiments.*
 
 trait Show[-T]:
   def show(value: T): Text
@@ -28,6 +29,14 @@ object Show extends Derivation[Show]:
   given Show[Short] = Showable(_).show
   given Show[Long] = Showable(_).show
   given Show[Byte] = Showable(_).show
+  
+  given Show[ByteSize] = bs =>
+    if bs.long > 10L*1024*1024*1024*1024 then t"${(bs.long/1024*1024*1024*1024).show}TB"
+    else if bs.long > 10L*1024*1024*1024 then t"${(bs.long/1024*1024*1024).show}GB"
+    else if bs.long > 10*1024*1024 then t"${bs.long/1024*1024}MB"
+    else if bs.long > 10*1024 then t"${bs.long/1024}kB"
+    else t"${bs.long}B"
+  
   given Show[Char] = Showable(_).show
   given Show[Boolean] = if _ then t"true" else t"false"
   given Show[reflect.Enum] = Showable(_).show

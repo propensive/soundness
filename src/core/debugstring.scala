@@ -22,19 +22,17 @@ import scala.compiletime.*
 
 trait FallbackDebugString:
   object Generic extends Derivation[Generic]:
-    inline given [T]: Generic[T] = value => summonFrom {
+    inline given [T]: Generic[T] = value => summonFrom:
       case given DebugString[T] => summon[DebugString[T]].show(value)
       case given Show[T]        => summon[Show[T]].show(value)
       case other: Any           => Showable(other).show
-    }
     
-    def join[T](ctx: CaseClass[Generic, T]): Generic[T] = t =>
-      ctx.params.map { param =>
-        t"${param.label} = ${param.typeclass.show(param.deref(t))}"
-      }.join(t"${ctx.typeInfo.short}(", t", ", t")")
+    def join[T](ctx: CaseClass[Generic, T]): Generic[T] = value => ctx.params.map:
+      param => t"${param.label} = ${param.typeclass.show(param.deref(value))}"
+    .join(t"${ctx.typeInfo.short}(", t", ", t")")
     
-    def split[T](ctx: SealedTrait[Generic, T]): Generic[T] = t =>
-      ctx.choose(t) { subtype => subtype.typeclass.show(subtype.cast(t)) }
+    def split[T](ctx: SealedTrait[Generic, T]): Generic[T] = t => ctx.choose(t):
+      subtype => subtype.typeclass.show(subtype.cast(t))
 
   trait Generic[-T]:
     def show(value: T): Text
@@ -47,44 +45,48 @@ object DebugString extends FallbackDebugString:
 
   val showAny: DebugString[Any] = Showable(_).show
 
-  inline given list[T: DebugString]: DebugString[List[T]] = _.map(_.debug).join(t"List(", t", ", t")")
+  inline given [T: DebugString]: DebugString[List[T]] = _.map(_.debug).join(t"List(", t", ", t")")
 
-  given string: DebugString[Text] = x => Text("\""+x.flatMap {
-    case '\n' => "\\n"
-    case '\t' => "\\t"
-    case '\r' => "\\r"
-    case '\\' => "\\\\"
-    case '\"' => "\\\""
-    case '\'' => "\\\'"
-    case '\b' => "\\b"
-    case '\f' => "\\f"
-    case ch   => if ch < 128 && ch >= 32 then ch.show else String.format("\\u%04x", ch.toInt).nn
-  }+"\"")
+  given string: DebugString[Text] = text =>
+    val escaped = text.flatMap:
+      case '\n' => t"\\n"
+      case '\t' => t"\\t"
+      case '\r' => t"\\r"
+      case '\\' => t"\\\\"
+      case '\"' => t"\\\""
+      case '\'' => t"\\\'"
+      case '\b' => t"\\b"
+      case '\f' => t"\\f"
+      case ch   => if ch < 128 && ch >= 32 then ch.show
+                   else String.format("\\u%04x", ch.toInt).nn.show
+
+    t"\"$escaped\""
 
   given char: DebugString[Char] =
     ch => t"'${string.show(ch.show).drop(1).dropRight(1)}'"
 
-  given int: DebugString[Int] = _.show
-  given long: DebugString[Long] = x => t"${x.show}L"
-  given short: DebugString[Short] = x => t"${x.show}.toShort"
-  given byte: DebugString[Byte] = x => t"${x.show}.toByte"
-  given boolean: DebugString[Boolean] = _.show
+  given DebugString[Int] = _.show
+  given DebugString[Long] = long => t"${long.show}L"
+  given DebugString[Short] = short => t"${short.show}.toShort"
+  given DebugString[Byte] = byte => t"${byte.show}.toByte"
+  given DebugString[Boolean] = _.show
   
-  given double: DebugString[Double] = d =>
-    if d != d then t"Double.NaN"
-    else if d.isInfinite then t"Double.${if d < 0.0 then t"Negative" else t"Positive"}Infinity"
-    else Showable(d).show
+  given DebugString[Double] = double =>
+    if double != double then t"Double.NaN"
+    else if double.isInfinite
+    then t"Double.${if double < 0.0 then t"Negative" else t"Positive"}Infinity"
+    else Showable(double).show
   
-  given float: DebugString[Float] = f =>
-    if f != f then t"Float.NaN"
-    else if f.isInfinite then t"Float.${if f < 0.0f then "Negative" else "Positive"}Infinity"
-    else t"${Showable(f).show}F"
+  given DebugString[Float] = float =>
+    if float != float then t"Float.NaN"
+    else if float.isInfinite
+    then t"Float.${if float < 0.0f then t"Negative" else t"Positive"}Infinity"
+    else t"${Showable(float).show}F"
   
-  inline def of[T]: DebugString[T] = (value: T) => summonFrom {
+  inline def of[T]: DebugString[T] = (value: T) => summonFrom:
     case given DebugString[T] => summon[DebugString[T]].show(value)
     case given Show[T]        => summon[Show[T]].show(value)
     case _                    => Showable(value).show
-  }
 
 trait DebugString[-T]:
   def show(value: T): Text

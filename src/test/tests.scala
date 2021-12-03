@@ -139,7 +139,7 @@ object Tests extends Suite(t"Gossamer Tests"):
       
       test(t"serialize list of strings"):
         List(t"one", t"two", t"three").debug
-      .check(_ == t"""Seq("one", "two", "three")""")
+      .check(_ == t"""List("one", "two", "three")""")
 
     suite(t"Minimum Edit Distance"):
       test(t"equal strings have zero edit distance"):
@@ -196,7 +196,7 @@ object Tests extends Suite(t"Gossamer Tests"):
       .check(_ == t"INDECISIVE")
       
       test(t"Empty string not populated"):
-        "".populated
+        t"".populated
       .assert(_ == None)
       
       test(t"Non-empty string populated"):
