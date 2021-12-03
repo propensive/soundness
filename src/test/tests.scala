@@ -86,7 +86,7 @@ object Tests extends Suite(t"Gastronomy tests"):
   
     test(t"PEM roundtrip") {
       Pem.parse(request).serialize
-    }.assert(_ == request.trim)
+    }.check(_ == request.trim)
 
     test(t"RSA roundtrip") {
       val privateKey: PrivateKey[Rsa[1024]] = PrivateKey.generate[Rsa[1024]]()

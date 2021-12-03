@@ -28,7 +28,7 @@ case class Pem(kind: Text, data: Bytes):
 
 object Pem:
   def parse(string: Text): Pem throws PemParseError =
-    val lines = string.trim.nn.cut("\n")
+    val lines = string.trim.nn.cut(t"\n")
     
     val label = lines.head match
       case s"-----BEGIN $label-----" => label.show

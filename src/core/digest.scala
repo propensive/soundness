@@ -133,7 +133,7 @@ trait Hex extends EncodingScheme
 trait Binary extends EncodingScheme
 
 object ByteEncoder:
-  private val HexLookup: Bytes = IArray.from("0123456789ABCDEF".bytes)
+  private val HexLookup: Bytes = IArray.from(t"0123456789ABCDEF".bytes)
 
   given ByteEncoder[Hex] = bytes =>
     val array = new Array[Byte](bytes.length*2)
