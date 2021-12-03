@@ -65,7 +65,7 @@ object DecoderSafe extends Derivation[DecoderSafe]:
         case char => parts(value, idx + 1, depth, plus(char))
 
     def keyValue(str: String): (String, String) =
-      val List(label, value) = str.cut("=", 2).to(List)
+      val List(label, value) = str.show.cut(t"=", 2).to(List).map(_.s)
       (label, value)
 
     (name, parts(value.substring(end + 1, value.length - 1).nn).map(keyValue).to(Map))
