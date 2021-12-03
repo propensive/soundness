@@ -96,16 +96,19 @@ object Log:
 
     '{
       val ts = Timestamp()
-      if $log.interested($realm, $level)
-      then $log.record(Entry($realm, $level, $show.ansiShow($value), ts))
+      try
+        if $log.interested($realm, $level)
+        then $log.record(Entry($realm, $level, $show.ansiShow($value), ts))
+      catch case e: Exception => ()
     }
 
   def silent: Log = Log()
 
 object Everything extends Realm(t"")
 
-@implicitNotFound("eucalyptus: a contextual Log is required, for example:\n    given Log = "+
-    "Log.stdout()\nor,\n    given Log = Log.silent")  
+@implicitNotFound("eucalyptus: a given Log instance is required, for example:\n    import euc"+
+    "alyptus.*\n    given Log(Everything |-> Stdout)\nor,\n    import eucalyptus.*\n    given Log "+
+    "= Log.silent")
 case class Log(rules: Rule[?, ?]*):
 
   class DistributedLog(format: LogFormat[?, ?], interested: Entry => Boolean,
@@ -186,7 +189,7 @@ trait LogFormat[S, T]:
   def serialize(value: T): Bytes
 
 abstract class PlainLogFormat[S] extends LogFormat[S, String]:
-  def serialize(value: String): Bytes = value.bytes
+  def serialize(value: String): Bytes = value.show.bytes
 
 abstract class AnsiLogFormat[S] extends LogFormat[S, AnsiString]:
   def serialize(value: AnsiString): Bytes = value.render.bytes
@@ -208,7 +211,7 @@ class Logger(writer: LazyList[Bytes] => Unit, rules: Seq[Rule[?, ?]], interval: 
   private val queue: juc.ConcurrentLinkedQueue[Bytes] = juc.ConcurrentLinkedQueue[Bytes]()
   private val parentThread: Thread = Thread.currentThread.nn
   private val buf = ji.ByteArrayOutputStream()
-  private val newline = "\n".bytes.unsafeMutable
+  private val newline = t"\n".bytes.unsafeMutable
 
   def record(entry: Bytes): Unit = queue.offer(entry)
 
