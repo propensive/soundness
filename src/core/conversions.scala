@@ -183,7 +183,7 @@ case class Hsv(hue: Double, saturation: Double, value: Double) extends Color:
   def pure: Hsv = Hsv(hue, 1, 0)
   
   def shade(black: Double = 0): Hsv = Hsv(hue, saturation, value*(1 - black) + (1 - value)*black)
-  
+ 
   def tint(white: Double = 0): Hsv =
     Hsv(hue, saturation*(1 - white) + (1 - saturation)*white, value)
   
