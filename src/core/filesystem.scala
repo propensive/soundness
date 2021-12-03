@@ -63,15 +63,17 @@ object IoError:
     case NotFile, NotDirectory, NotSymlink, DoesNotExist, AlreadyExists, AccessDenied,
         DifferentFilesystems
 
-  object Operation:
-    given Show[Operation] = Showable(_).show.lower
+  object Op:
+    given Show[Op] = Showable(_).show.lower
 
-  enum Operation:
+  enum Op:
     case Read, Write, Access, Create
 
-case class IoError(operation: IoError.Operation, reason: IoError.Reason, path: Any)
+case class IoError(operation: IoError.Op, reason: IoError.Reason, path: Any)
 extends JovianError(t"the $operation operation at ${path.toString} did not succeed because $reason")
 
+case class InotifyError()
+extends JovianError(t"the limit on the number of paths that can be watched has been exceeded")
 
 open class Classpath(classLoader: ClassLoader = getClass.nn.getClassLoader.nn)
 extends Root(t"/", t""):
@@ -91,7 +93,7 @@ extends Root(t"/", t""):
     def resource: Resource = Resource(makeAbsolute(parts))
 
   case class Resource(path: ClasspathRef):
-    def read[T](limit: Int = 65536)
+    def read[T](limit: ByteSize = 64.kb)
                (using readable: Readable[T, ?])
                : T throws ClasspathRefError | readable.E =
       val in = ji.BufferedInputStream(classLoader.getResourceAsStream(path.show.s))
@@ -111,34 +113,33 @@ class Filesystem(pathSeparator: Text, fsPrefix: Text) extends Root(pathSeparator
 
     def prefix: Text = fsPrefix
     def separator: Text = pathSeparator
+    def name: Text = elements.last
 
     def file: File throws IoError =
-      if !javaFile.exists()
-      then throw IoError(IoError.Operation.Access, IoError.Reason.DoesNotExist, this)
-      
-      if javaFile.isDirectory
-      then throw IoError(IoError.Operation.Access, IoError.Reason.NotFile, this)
+      if !exists() then throw IoError(IoError.Op.Access, IoError.Reason.DoesNotExist, this)
+      if isDirectory then throw IoError(IoError.Op.Access, IoError.Reason.NotFile, this)
       
       File(this)
     
     def directory: Directory throws IoError =
-      if !javaFile.exists()
-      then throw IoError(IoError.Operation.Access, IoError.Reason.DoesNotExist, this)
-      
-      if !javaFile.isDirectory
-      then throw IoError(IoError.Operation.Access, IoError.Reason.NotDirectory, this)
+      if !exists() then throw IoError(IoError.Op.Access, IoError.Reason.DoesNotExist, this)
+      if !isDirectory then throw IoError(IoError.Op.Access, IoError.Reason.NotDirectory, this)
       
       Directory(this)
   
     def symlink: Symlink throws IoError =
       if !javaFile.exists()
-      then throw IoError(IoError.Operation.Access, IoError.Reason.DoesNotExist, this)
+      then throw IoError(IoError.Op.Access, IoError.Reason.DoesNotExist, this)
       
       if !Files.isSymbolicLink(javaFile.toPath)
-      then throw IoError(IoError.Operation.Access, IoError.Reason.NotSymlink, this)
+      then throw IoError(IoError.Op.Access, IoError.Reason.NotSymlink, this)
       
       Symlink(this, parse(Showable(Files.readSymbolicLink(Paths.get(this.show.s))).show).get)
 
+    def isFile: Boolean = javaFile.exists() && !javaFile.isDirectory
+    def isDirectory: Boolean = javaFile.exists() && javaFile.isDirectory
+    def isSymlink: Boolean = javaFile.exists() && Files.isSymbolicLink(javaFile.toPath)
+    
     def descendantFiles: LazyList[File] throws IoError =
       if javaFile.isDirectory
       then directory.files.to(LazyList) #:::
@@ -148,37 +149,39 @@ class Filesystem(pathSeparator: Text, fsPrefix: Text) extends Root(pathSeparator
     def inode: Inode throws IoError =
       
       if !javaFile.exists()
-      then throw IoError(IoError.Operation.Access, IoError.Reason.DoesNotExist, this)
+      then throw IoError(IoError.Op.Access, IoError.Reason.DoesNotExist, this)
       
-      if javaFile.isDirectory then Directory(this)
-      else if Files.isSymbolicLink(javaPath)
+      if isDirectory then Directory(this)
+      else if isFile
       then
         try Symlink(this, parse(Showable(Files.readSymbolicLink(javaPath)).show).get)
         catch NoSuchElementException => File(this)
       else File(this)
     
     def createDirectory(): Directory throws IoError =
-      if javaFile.exists()
-      then throw IoError(IoError.Operation.Create, IoError.Reason.AlreadyExists, this)
-
+      if exists() then throw IoError(IoError.Op.Create, IoError.Reason.AlreadyExists, this)
+      
       if !javaFile.mkdirs()
-      then throw IoError(IoError.Operation.Create, IoError.Reason.AccessDenied, this)
+      then throw IoError(IoError.Op.Create, IoError.Reason.AccessDenied, this)
   
       Directory(this)
     
     def exists(): Boolean = javaFile.exists()
   
     def createFile(overwrite: Boolean = false): File throws IoError =
-      if !overwrite && javaFile.exists()
-      then throw IoError(IoError.Operation.Create, IoError.Reason.AlreadyExists, this)
+      if !overwrite && exists()
+      then throw IoError(IoError.Op.Create, IoError.Reason.AlreadyExists, this)
       
       try ji.FileOutputStream(javaFile).close()
       catch case e =>
-        throw IoError(IoError.Operation.Create, IoError.Reason.AccessDenied, this)
+        throw IoError(IoError.Op.Create, IoError.Reason.AccessDenied, this)
   
       File(this)
     
   def makeAbsolute(parts: List[Text]): IoPath = IoPath(parts)
+
+  def fromJavaPath(path: jnf.Path): IoPath =
+    IoPath((0 until path.getNameCount).map(path.getName(_).toString.show).to(List))
 
   def parse(value: Text): Option[IoPath] =
     if value.startsWith(prefix)
@@ -215,7 +218,7 @@ class Filesystem(pathSeparator: Text, fsPrefix: Text) extends Root(pathSeparator
       def write(value: File, stream: LazyList[Bytes]): Unit throws IoError =
         val out = ji.FileOutputStream(value.javaPath.toFile, false)
         try summon[Writable[LazyList[Bytes]]].write(out, stream)
-        catch case e => throw IoError(IoError.Operation.Write, IoError.Reason.AccessDenied, value.path)
+        catch case e => throw IoError(IoError.Op.Write, IoError.Reason.AccessDenied, value.path)
         finally try out.close() catch _ => ()
 
     given Source[File] with
@@ -223,11 +226,11 @@ class Filesystem(pathSeparator: Text, fsPrefix: Text) extends Root(pathSeparator
       def read(file: File): DataStream throws E =
         try
           val in = ji.BufferedInputStream(ji.FileInputStream(file.javaPath.toFile))
-          Util.read(in, 65536)
+          Util.read(in, 64.kb)
         catch case e: ji.FileNotFoundException =>
           if e.getMessage.nn.contains("(Permission denied)")
-          then throw IoError(IoError.Operation.Read, IoError.Reason.AccessDenied, file.initPath)
-          else throw IoError(IoError.Operation.Read, IoError.Reason.DoesNotExist, file.initPath)
+          then throw IoError(IoError.Op.Read, IoError.Reason.AccessDenied, file.initPath)
+          else throw IoError(IoError.Op.Read, IoError.Reason.DoesNotExist, file.initPath)
 
   case class File(initPath: IoPath) extends Inode(initPath):
     def directory: Option[Directory] = None
@@ -237,38 +240,38 @@ class Filesystem(pathSeparator: Text, fsPrefix: Text) extends Root(pathSeparator
     def write[T: Writable](content: T, append: Boolean = false): Unit throws IoError =
       val out = ji.FileOutputStream(javaPath.toFile, append)
       try summon[Writable[T]].write(out, content)
-      catch case e => throw IoError(IoError.Operation.Write, IoError.Reason.AccessDenied, initPath)
+      catch case e => throw IoError(IoError.Op.Write, IoError.Reason.AccessDenied, initPath)
       finally try out.close() catch _ => ()
 
-    def read[T](limit: Int = 65536)(using readable: Readable[T, ?])
+    def read[T](limit: ByteSize = 64.kb)(using readable: Readable[T, ?])
         : T throws readable.E | IoError =
       val in = ji.BufferedInputStream(ji.FileInputStream(javaPath.toFile))
       try readable.read(in, limit)
       catch case e =>
-        throw IoError(IoError.Operation.Read, IoError.Reason.AccessDenied, initPath)
+        throw IoError(IoError.Op.Read, IoError.Reason.AccessDenied, initPath)
 
     def copyTo(dest: IoPath): File throws IoError =
       if dest.exists()
-      then throw IoError(IoError.Operation.Create, IoError.Reason.AlreadyExists, dest)
+      then throw IoError(IoError.Op.Create, IoError.Reason.AlreadyExists, dest)
       
       try Files.copy(javaPath, dest.javaPath)
       catch IOException =>
-        throw IoError(IoError.Operation.Write, IoError.Reason.AccessDenied, dest)
+        throw IoError(IoError.Op.Write, IoError.Reason.AccessDenied, dest)
       
       dest.file
 
     def hardLinkTo(dest: IoPath): File throws IoError =
       if dest.exists()
-      then throw IoError(IoError.Operation.Create, IoError.Reason.AlreadyExists, dest)
+      then throw IoError(IoError.Op.Create, IoError.Reason.AlreadyExists, dest)
       
       try Files.createLink(javaPath, Paths.get(dest.show.s))
       catch
         case e: jnf.NoSuchFileException =>
-          throw IoError(IoError.Operation.Write, IoError.Reason.DoesNotExist, initPath)
+          throw IoError(IoError.Op.Write, IoError.Reason.DoesNotExist, initPath)
         case e: jnf.FileAlreadyExistsException =>
-          throw IoError(IoError.Operation.Write, IoError.Reason.AlreadyExists, dest)
+          throw IoError(IoError.Op.Write, IoError.Reason.AlreadyExists, dest)
         case e: jnf.AccessDeniedException =>
-          throw IoError(IoError.Operation.Write, IoError.Reason.AccessDenied, dest)
+          throw IoError(IoError.Op.Write, IoError.Reason.AccessDenied, dest)
 
       dest.file
 
@@ -288,16 +291,79 @@ class Filesystem(pathSeparator: Text, fsPrefix: Text) extends Root(pathSeparator
 
   object Directory:
     given Show[Directory] = _.initPath.show
+  
+  enum FileEvent:
+    case NewFile(file: File)
+    case NewDirectory(directory: Directory)
+    case Modify(file: File)
+    case Delete(file: IoPath)
+
+  case class Watcher(stream: LazyList[FileEvent], stop: () => Unit)
 
   case class Directory(initPath: IoPath) extends Inode(initPath):
     def directory: Option[Directory] = Some(this)
     def file: Option[File] = None
     def symlink: Option[Symlink] = None
-    
+
+    def watch(recursive: Boolean = true, interval: Int = 100)(using Log)
+             : Watcher throws IoError | InotifyError =
+      import java.nio.file.*, StandardWatchEventKinds.*
+      import collection.JavaConverters.*
+      var continue: Boolean = true
+      
+      val dirs: Set[Directory] = if recursive then deepSubdirectories.to(Set) + this else Set(this)
+      val svc = javaPath.getFileSystem.nn.newWatchService().nn
+      
+      def watchKey(dir: Directory): WatchKey =
+        Log.fine(t"Started monitoring for changes in ${dir.path.show}")
+        dir.javaPath.register(svc, ENTRY_CREATE, ENTRY_MODIFY, ENTRY_DELETE).nn
+      
+      def poll(index: Map[WatchKey, Directory]): LazyList[FileEvent] =
+        erased given CanThrow[RootParentError] = compiletime.erasedValue
+        val events = index.map:
+          (key, dir) => key.pollEvents().nn.iterator.nn.asScala.to(List).flatMap:
+            event =>
+              val path: IoPath = event.context match
+                case path: jnf.Path => dir.path ++ Relative.parse(Showable(path).show)
+                case _              => throw Impossible("Watch service should always return a Path")
+              
+              event.kind match
+                case ENTRY_CREATE => if path.isDirectory
+                                     then List(FileEvent.NewDirectory(path.directory))
+                                     else List(FileEvent.NewFile(path.file))
+                case ENTRY_MODIFY => List(FileEvent.Modify(path.file))
+                case ENTRY_DELETE => List(FileEvent.Delete(path))
+                case _            => Nil
+        .flatten
+      
+        if continue then
+          val newIndex = events.foldLeft(index):
+            case (index, FileEvent.NewDirectory(dir)) =>
+              Log.fine(t"Starting monitoring new directory ${dir.path.show}")
+              index.updated(watchKey(dir), dir)
+            
+            case (index, FileEvent.Delete(path)) =>
+              if path.isDirectory then Log.fine(t"Stopping monitoring of deleted directory $path")
+              val deletions = index.filter(_(1).path == path)
+              deletions.keys.foreach(_.cancel())
+              index -- deletions.keys
+            
+            case _ =>
+              index
+          events.to(LazyList) #::: {
+            Thread.sleep(interval)
+            poll(newIndex)
+          }
+        else
+          index.keys.foreach(_.cancel())
+          LazyList()
+
+      Watcher(poll(dirs.mtwin.map(watchKey(_) -> _).to(Map)), () => continue = false)
+
     def children: List[Inode] throws IoError =
       Option(javaFile.list).fold(Nil):
         files =>
-          files.nn.to(List).map(_.nn).map(Text(_)).map(initPath.parts :+ _).map(makeAbsolute(_)).map(_.inode)
+          files.nn.to(List).map(_.nn).map(Text(_)).map(path.parts :+ _).map(makeAbsolute(_)).map(_.inode)
     
     def descendants: LazyList[Inode] throws IoError =
       children.to(LazyList).flatMap(_.directory).flatMap { f => f +: f.descendants }
@@ -306,30 +372,35 @@ class Filesystem(pathSeparator: Text, fsPrefix: Text) extends Root(pathSeparator
       children.collect:
         case dir: Directory => dir
     
+    def deepSubdirectories: LazyList[Directory] throws IoError =
+      val subdirs = subdirectories.to(LazyList).filter(!_.name.startsWith(t"."))
+      subdirs #::: subdirs.flatMap(_.deepSubdirectories)
+
     def files: List[File] throws IoError = children.collect:
       case file: File => file
 
     def copyTo(dest: IoPath): Directory throws IoError =
       if dest.exists()
-      then throw IoError(IoError.Operation.Write, IoError.Reason.AlreadyExists, dest)
+      then throw IoError(IoError.Op.Write, IoError.Reason.AlreadyExists, dest)
       
       try Files.copy(javaPath, Paths.get(dest.show.s))
-      catch e => throw IoError(IoError.Operation.Write, IoError.Reason.AccessDenied, initPath)
+      catch e => throw IoError(IoError.Op.Write, IoError.Reason.AccessDenied, initPath)
       
       dest.directory
 
     def hardLinkTo(dest: IoPath): Directory throws IoError =
       if dest.exists()
-      then throw IoError(IoError.Operation.Write, IoError.Reason.AlreadyExists, dest)
+      then throw IoError(IoError.Op.Write, IoError.Reason.AlreadyExists, dest)
       
       try Files.createLink(javaPath, Paths.get(dest.show.s)).unit
       catch case e =>
-        throw IoError(IoError.Operation.Write, IoError.Reason.DifferentFilesystems, initPath)
+        throw IoError(IoError.Op.Write, IoError.Reason.DifferentFilesystems, initPath)
 
       dest.directory
     
     @targetName("access")
     infix def /(child: Text): IoPath throws RootParentError = makeAbsolute((path / child).parts)
+
 
 // object OldPath:
 //   def apply(jpath: JavaPath): Path = Path(jpath.show.s match
@@ -520,51 +591,52 @@ trait Writable[T]:
 
 object Readable:
   given dataStream: Readable[DataStream, Nothing] with
-    def read(in: ji.BufferedInputStream, limit: Int = 65536): DataStream throws Nothing =
+    def read(in: ji.BufferedInputStream, limit: ByteSize = 64.kb): DataStream throws Nothing =
       Util.read(in, limit)
     
   given stringStream(using enc: Encoding)
       : Readable[LazyList[Text], StreamCutError | ExcessDataError] with
-    def read(in: ji.BufferedInputStream, limit: Int = 65536) =
+    def read(in: ji.BufferedInputStream, limit: ByteSize = 64.kb) =
 
       def read(prefix: Array[Byte], remaining: Int): LazyList[Text] =
         try
-          val avail = in.available
+          val avail: Long = in.available
           if avail == 0 then LazyList()
-          else if avail > remaining then throw ExcessDataError(limit + avail - remaining, limit)
+          else if avail > remaining
+          then throw ExcessDataError((limit.long + avail - remaining).toInt.b, limit)
           else
-            val buf = new Array[Byte](in.available.min(limit) + prefix.length)
+            val buf = new Array[Byte](in.available.min(limit.long.toInt) + prefix.length)
             if prefix.length > 0 then System.arraycopy(prefix, 0, buf, 0, prefix.length)
             val count = in.read(buf, prefix.length, buf.length - prefix.length)
             if count + prefix.length < 0 then LazyList(Text(String(buf, enc.name.s)))
             else
               val carry = enc.carry(buf)
               (if carry == 0 then Text(String(buf, enc.name.s)) else Text(String(buf, 0, buf.length -
-                  carry, enc.name.s))) #:: read(buf.takeRight(carry), limit - buf.length)
+                  carry, enc.name.s))) #:: read(buf.takeRight(carry), limit.long.toInt - buf.length)
         catch IOException => throw StreamCutError()
       
-      read(Array.empty[Byte], limit)
+      read(Array.empty[Byte], limit.long.toInt)
 
   given readableString: Readable[Text, ExcessDataError | StreamCutError] with
-    def read(in: ji.BufferedInputStream, limit: Int = 65536) =
+    def read(in: ji.BufferedInputStream, limit: ByteSize = 64.kb) =
       given enc: Encoding = encodings.Utf8
       val stream = stringStream.read(in, limit)
       if stream.length == 0 then t""
-      else if stream.length > 1 then throw ExcessDataError(stream.length + limit, limit)
+      else if stream.length > 1 then throw ExcessDataError(stream.length.b + limit, limit)
       else stream.head
   
   given readableBytes: Readable[Bytes, ExcessDataError | StreamCutError] with
-    def read(in: ji.BufferedInputStream, limit: Int) = Util.read(in, limit).slurp(limit)
+    def read(in: ji.BufferedInputStream, limit: ByteSize) = Util.read(in, limit).slurp(limit)
 
 trait Readable[T, Ex <: Exception]:
   type E = Ex
   
   private inline def readable: Readable[T, E] = this
   
-  def read(stream: ji.BufferedInputStream, limit: Int = 65536): T throws E
+  def read(stream: ji.BufferedInputStream, limit: ByteSize = 64.kb): T throws E
   
   def map[S](fn: T => S): Readable[S, E] = new Readable[S, E]:
-    def read(stream: ji.BufferedInputStream, limit: Int = 65536): S throws E =
+    def read(stream: ji.BufferedInputStream, limit: ByteSize = 64.kb): S throws E =
       fn(readable.read(stream, limit))
 
 object encodings:
@@ -604,17 +676,6 @@ trait Encoding:
   def name: Text
   def carry(array: Array[Byte]): Int
 
-opaque type ByteSize = Long
-
-object ByteSize:
-  def apply(bytes: Long): ByteSize = bytes
-
-  extension (byteSize: ByteSize)
-    @targetName("add")
-    infix def +(that: ByteSize): ByteSize = byteSize + that
-    
-    def value: Long = byteSize
-
 open class JovianError(message: Text) extends Exception(t"jovian: $message".s)
 
 object Filesystem:
@@ -645,6 +706,5 @@ object windows:
   object DriveD extends WindowsRoot('D')
   object DriveE extends WindowsRoot('E')
   object DriveF extends WindowsRoot('F')
-
 
 given realm: Realm = Realm(t"jovian")
