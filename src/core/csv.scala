@@ -30,7 +30,7 @@ trait Format:
     def parseLine(items: Vector[Text], idx: Int, quoted: Boolean, start: Int, end: Int,
                       join: Boolean): Vector[Text] =
       if line.length <= idx then
-        if join then items.init :+ items.last + line.slice(start, if end < 0 then idx else end)
+        if join then items.init :+ t"${items.last}${line.slice(start, if end < 0 then idx else end)}"
         else items :+ line.slice(start, if end < 0 then idx else end)
       else 
         val ch = try line(idx) catch case error: OutOfRangeError => throw Impossible(error)
@@ -41,7 +41,10 @@ trait Format:
             else
               val elems: Vector[Text] = if start < 0 then items :+ t"" else
                 val suffix = line.slice(start, if end == -1 then idx else end)
-                if join then items.init :+ items.last + suffix else items :+ suffix
+                if join then
+                  val part: Text = t"${items.last}${suffix.s}"
+                  items.init :+ part
+                else items :+ suffix
   
               parseLine(elems, idx + 1, quoted = false, idx + 1, -1, join = false)
   
@@ -68,9 +71,10 @@ case class Row(elems: Text*):
 
 object Csv extends Format:
 
-  given clairvoyant.HttpResponse[Csv, Text] with
-    def mimeType: String = "text/csv"
-    def content(value: Csv): Text = value.rows.map(Csv.serialize(_)).join(t"\n")
+  given clairvoyant.HttpResponse[Csv] with
+    def mediaType: String = "text/csv"
+    def content(value: Csv): LazyList[IArray[Byte]] =
+      LazyList(value.rows.map(Csv.serialize(_)).join(t"\n").bytes)
 
   given Reader[String] = _.elems.head.s
   given Reader[Text] = _.elems.head
@@ -143,7 +147,8 @@ object Tsv extends Format:
   override val separator = '\t'
   def escape(str: Text): Text = Text(str.s.replaceAll("\t", "        ").nn)
 
-  given clairvoyant.HttpResponse[Csv, Text] with
-    def mimeType: String = t"text/tab-separated-values".s
-    def content(value: Csv): Text =
-      value.rows.map(Tsv.serialize(_)).join(t"\n")
+  given clairvoyant.HttpResponse[Csv] with
+    def mediaType: String = t"text/tab-separated-values".s
+    
+    def content(value: Csv): LazyList[IArray[Byte]] =
+      LazyList(value.rows.map(Tsv.serialize(_)).join(t"\n").bytes)
