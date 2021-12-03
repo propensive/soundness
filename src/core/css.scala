@@ -23,9 +23,9 @@ import annotation.targetName
 import language.dynamics
 
 object CssStylesheet:
-  given clairvoyant.HttpResponse[CssStylesheet, Text] with
-    def mimeType: String = "text/css; charset=utf-8"
-    def content(stylesheet: CssStylesheet): Text = stylesheet.text
+  given clairvoyant.HttpResponse[CssStylesheet] with
+    def mediaType: String = "text/css; charset=utf-8"
+    def content(stylesheet: CssStylesheet): LazyList[IArray[Byte]] = LazyList(stylesheet.text.bytes)
   
   trait Item:
     def text: Text
