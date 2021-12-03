@@ -37,35 +37,44 @@ import language.dynamics
 
 private[scintillate] given Realm(t"scintillate")
 
-enum Body:
+enum HttpBody:
   case Empty
   case Chunked(stream: LazyList[IArray[Byte] throws StreamCutError])
   case Data(data: IArray[Byte])
 
-object ToQuery extends ProductDerivation[ToQuery]:
-  def join[T](ctx: CaseClass[ToQuery, T]): ToQuery[T] = value =>
+  def as[T](using readable: HttpReadable[T])
+           : T throws StreamCutError | readable.E | ExcessDataError =
+    readable.read(HttpStatus.Ok, this)
+
+object QuerySerializer extends ProductDerivation[QuerySerializer]:
+  def join[T](ctx: CaseClass[QuerySerializer, T]): QuerySerializer[T] = value =>
     ctx.params.map:
       param => param.typeclass.params(param.deref(value)).prefix(Text(param.label))
     .reduce(_.append(_))
 
-  given ToQuery[Text] = str => Params(List((t"", str)))
-  given ToQuery[Int] = int => Params(List((t"", int.show)))
-  given ToQuery[Params] = identity(_)
-  given [M <: Map[Text, Text]]: ToQuery[M] = map => Params(map.to(List))
+  given QuerySerializer[Text] = str => Params(List((t"", str)))
+  given QuerySerializer[Int] = int => Params(List((t"", int.show)))
+  given QuerySerializer[Params] = identity(_)
+  given [M <: Map[Text, Text]]: QuerySerializer[M] = map => Params(map.to(List))
 
-trait ToQuery[T]:
+trait QuerySerializer[T]:
   def params(value: T): Params
 
-object Postable:
-  given [T: ToQuery]: Postable[T] = Postable(media"application/x-www-form-urlencoded",
-      value => LazyList(summon[ToQuery[T]].params(value).queryString.bytes))
+trait FallbackPostable:
+  given [T: QuerySerializer]: Postable[T] = Postable(media"application/x-www-form-urlencoded",
+      value => LazyList(summon[QuerySerializer[T]].params(value).queryString.bytes))
 
+object Postable extends FallbackPostable:
   given Postable[Text] = Postable(media"text/plain", value => LazyList(IArray.from(value.bytes)))
   given Postable[Unit] = Postable(media"text/plain", unit => LazyList())
   given Postable[Bytes] = Postable(media"application/octet-stream", LazyList(_))
   given Postable[LazyList[Bytes]] = Postable(media"application/octet-stream", _.map(identity(_)))
   given Postable[DataStream] = Postable(media"application/octet-stream", identity(_))
-
+  
+  given dataStream[T](using response: clairvoyant.HttpResponse[T]): Postable[T] =
+    erased given CanThrow[InvalidMediaTypeError] = compiletime.erasedValue
+    Postable(Media.parse(response.mediaType.show), response.content(_).map { v => v })
+  
 class Postable[T](val contentType: MediaType,
                       val content: T => LazyList[Bytes throws StreamCutError]):
   def preview(value: T): Text = content(value).headOption.fold(t""):
@@ -93,35 +102,39 @@ enum HttpMethod:
 object HttpReadable:
   given HttpReadable[Text] with
     type E = StreamCutError
-    def read(body: Body): Text throws ExcessDataError | StreamCutError | E =
+    def read(status: HttpStatus, body: HttpBody): Text throws ExcessDataError | StreamCutError | E =
       body match
-        case Body.Empty         => t""
-        case Body.Data(body)    => body.uString
-        case Body.Chunked(body) => body.slurp(maxSize = 10*1024*1024).uString
+        case HttpBody.Empty         => t""
+        case HttpBody.Data(body)    => body.uString
+        case HttpBody.Chunked(body) => body.slurp(limit = 10.mb).uString
   
   given HttpReadable[Bytes] with
     type E = Nothing
-    def read(body: Body): Bytes throws ExcessDataError | StreamCutError | E = body match
-      case Body.Empty         => IArray()
-      case Body.Data(body)    => body
-      case Body.Chunked(body) => body.slurp(maxSize = 10*1024*1024)
+    def read(status: HttpStatus, body: HttpBody): Bytes throws ExcessDataError | StreamCutError | E = body match
+      case HttpBody.Empty         => IArray()
+      case HttpBody.Data(body)    => body
+      case HttpBody.Chunked(body) => body.slurp(limit = 10.mb)
 
   given [T, E2 <: Exception](using reader: clairvoyant.HttpReader[T, E2]): HttpReadable[T] with
     type E = E2
-    def read(body: Body): T throws ExcessDataError | StreamCutError | E2 = body match
-      case Body.Empty         => reader.read("")
-      case Body.Data(data)    => reader.read(data.uString)
-      case Body.Chunked(data) => reader.read(data.slurp(maxSize = 10*1024*1024).uString)
+    def read(status: HttpStatus, body: HttpBody): T throws ExcessDataError | StreamCutError | E2 = body match
+      case HttpBody.Empty         => reader.read("")
+      case HttpBody.Data(data)    => reader.read(data.uString)
+      case HttpBody.Chunked(data) => reader.read(data.slurp(limit = 10.mb).uString)
+
+  given HttpReadable[HttpStatus] with
+    type E = StreamCutError
+    def read(status: HttpStatus, body: HttpBody) = status
 
 trait HttpReadable[+T]:
   type E <: Exception
-  def read(body: Body): T throws ExcessDataError | StreamCutError | E
+  def read(status: HttpStatus, body: HttpBody): T throws ExcessDataError | StreamCutError | E
 
-case class HttpResponse(status: HttpStatus, headers: Map[ResponseHeader, List[String]], body: Body):
+case class HttpResponse(status: HttpStatus, headers: Map[ResponseHeader, List[String]], body: HttpBody):
   inline def as[T](using readable: HttpReadable[T]): T throws HttpError | ExcessDataError | StreamCutError | readable.E =
     status match
       case status: FailureCase => throw HttpError(status, body)
-      case status              => readable.read(body)
+      case status              => readable.read(status, body)
 
 object Locatable:
   given Locatable[Uri] = identity(_)
@@ -197,7 +210,7 @@ object Http:
     
     URL(url.show.s).openConnection.nn match
       case conn: HttpURLConnection =>
-        conn.setRequestMethod(Showable(method).show.upper)
+        conn.setRequestMethod(Showable(method).show.upper.s)
         
         conn.setRequestProperty(RequestHeader.ContentType.header.s, summon[Postable[T]]
             .contentType.show.s)
@@ -216,25 +229,27 @@ object Http:
 
         val buf = new Array[Byte](65536)
 
-        def read(in: InputStream): Body.Chunked =
+        def read(in: InputStream): HttpBody.Chunked =
           val len = in.read(buf, 0, buf.length)
           
-          Body.Chunked(if len < 0 then LazyList() else IArray.from(buf.slice(0, len)) #::
+          HttpBody.Chunked(if len < 0 then LazyList() else IArray.from(buf.slice(0, len)) #::
               read(in).stream)
        
 
-        def body: Body =
+        def body: HttpBody =
           try read(conn.getInputStream.nn) catch Exception =>
-            try read(conn.getErrorStream.nn) catch Exception => Body.Empty
+            try read(conn.getErrorStream.nn) catch Exception => HttpBody.Empty
         
         val HttpStatus(status) = conn.getResponseCode: @unchecked
-        
+        Log.info(ansi"Received response with HTTP status ${status.show}")
+
         val responseHeaders =
           val scalaMap: Map[String | Null, ju.List[String]] = conn.getHeaderFields.nn.asScala.toMap
           
           scalaMap.flatMap:
             case (null, v)              => Nil
             case (ResponseHeader(k), v) => List((k, v.asScala.to(List)))
+            case _                      => throw Impossible("Previous cases are irrefutable")
           .to(Map)
 
         HttpResponse(status, responseHeaders, body)
@@ -242,16 +257,18 @@ object Http:
       case conn: URLConnection =>
         throw Impossible("URL connection is not HTTP")
             
-case class HttpError(status: HttpStatus & FailureCase, body: Body)
+case class HttpError(status: HttpStatus & FailureCase, body: HttpBody)
     extends Exception(s"HTTP Error ${status.code}: ${status.description}"):
   inline def as[T](using readable: HttpReadable[T]): T throws ExcessDataError | StreamCutError | readable.E =
-    readable.read(body)
+    readable.read(status, body)
 
 trait FailureCase
 
 object HttpStatus:
   private lazy val all: Map[Int, HttpStatus] = values.map { v => v.code -> v }.to(Map)
   def unapply(code: Int): Option[HttpStatus] = all.get(code)
+
+  given Show[HttpStatus] = status => t"${status.code} (${status.description})"
 
 enum HttpStatus(val code: Int, val description: String):
   case Continue extends HttpStatus(100, "Continue"), FailureCase
@@ -322,12 +339,12 @@ case class Params(values: List[(Text, Text)]):
   def append(more: Params): Params = Params(values ++ more.values)
   def isEmpty: Boolean = values.isEmpty
   
-  def prefix(str: Text): Params = Params(values.map:
-    (k, v) => (if k.isEmpty then str else t"$str.$k", v)
-  )
+  def prefix(str: Text): Params = Params:
+    values.map:
+      (k, v) => (if k.isEmpty then str else t"$str.$k", v)
 
   def queryString: Text = values.map:
-    (k, v) => if k.isEmpty then Text(v.urlEncode) else t"${k.urlEncode}=${v.urlEncode}"
+    (k, v) => if k.isEmpty then v.urlEncode else t"${k.urlEncode}=${v.urlEncode}"
   .join(t"&")
 
 object Uri:
@@ -373,8 +390,8 @@ object Uri:
     def serialize(uri: Uri): String = uri.show.s
 
 case class Uri(location: Text, params: Params) extends Dynamic, Shown[Uri]:
-  private def makeQuery[T: ToQuery](value: T): Uri =
-    Uri(location, params.append(summon[ToQuery[T]].params(value)))
+  private def makeQuery[T: QuerySerializer](value: T): Uri =
+    Uri(location, params.append(summon[QuerySerializer[T]].params(value)))
 
   @targetName("slash")
   def /(part: Text): Uri =
@@ -383,23 +400,43 @@ case class Uri(location: Text, params: Params) extends Dynamic, Shown[Uri]:
   def applyDynamicNamed(method: "query")(params: (String, Text)*): Uri =
     makeQuery(Params(params.map { (k, v) => Text(k) -> v }.to(List)))
   
-  def applyDynamic[T: ToQuery](method: "query")(value: T) = makeQuery(value)
+  def applyDynamic[T: QuerySerializer](method: "query")(value: T) = makeQuery(value)
 
-  def post[T: Postable](content: T, headers: RequestHeader.Value*)(using Log)
+  def post[T: Postable](headers: RequestHeader.Value*)(body: T)(using Log)
           : HttpResponse throws StreamCutError =
-    Http.post(this, content, headers*)
+    Http.post(this, body, headers*)
   
-  def put[T: Postable](content: T, headers: RequestHeader.Value*)(using Log)
+  def post[T: Postable](body: T)(using Log): HttpResponse throws StreamCutError =
+    Http.post(this, body)
+  
+  def put[T: Postable](headers: RequestHeader.Value*)(body: T)(using Log)
          : HttpResponse throws StreamCutError =
-    Http.put(this, content, headers*)
+    Http.put(this, body, headers*)
   
-  def get(headers: RequestHeader.Value*)(using Log): HttpResponse throws StreamCutError = Http.get(this, headers)
-  def options(headers: RequestHeader.Value*)(using Log): HttpResponse throws StreamCutError = Http.options(this, headers*)
-  def trace(headers: RequestHeader.Value*)(using Log): HttpResponse throws StreamCutError = Http.trace(this, headers*)
-  def patch(headers: RequestHeader.Value*)(using Log): HttpResponse throws StreamCutError = Http.patch(this, headers*)
-  def head(headers: RequestHeader.Value*)(using Log): HttpResponse throws StreamCutError = Http.head(this, headers*)
-  def delete(headers: RequestHeader.Value*)(using Log): HttpResponse throws StreamCutError = Http.delete(this, headers*)
-  def connect(headers: RequestHeader.Value*)(using Log): HttpResponse throws StreamCutError = Http.connect(this, headers*)
+  def put[T: Postable](body: T)(using Log): HttpResponse throws StreamCutError =
+    Http.put(this, body)
+  
+  def get(headers: RequestHeader.Value*)(using Log): HttpResponse throws StreamCutError =
+    Http.get(this, headers)
+  
+  def options(headers: RequestHeader.Value*)(using Log): HttpResponse throws StreamCutError =
+    Http.options(this, headers*)
+  
+  def trace(headers: RequestHeader.Value*)(using Log): HttpResponse throws StreamCutError =
+    Http.trace(this, headers*)
+  
+  def patch(headers: RequestHeader.Value*)(using Log): HttpResponse throws StreamCutError =
+    Http.patch(this, headers*)
+  
+  def head(headers: RequestHeader.Value*)(using Log): HttpResponse throws StreamCutError =
+    Http.head(this, headers*)
+  
+  def delete(headers: RequestHeader.Value*)(using Log): HttpResponse throws StreamCutError =
+    Http.delete(this, headers*)
+  
+  def connect(headers: RequestHeader.Value*)(using Log): HttpResponse throws StreamCutError =
+    Http.connect(this, headers*)
+  
   def bare: Uri = Uri(location, Params(Nil))
 
 object DomainName:

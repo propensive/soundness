@@ -31,29 +31,29 @@ trait Servlet() extends HttpServlet:
   protected case class ServletResponseWriter(response: HttpServletResponse) extends Responder:
     def addHeader(key: Text, value: Text): Unit = response.addHeader(key.s, value.s)
     
-    def sendBody(status: Int, body: Body): Unit =
+    def sendBody(status: Int, body: HttpBody): Unit =
       val length = body match
-        case Body.Empty      => -1
-        case Body.Data(body) => body.length
+        case HttpBody.Empty      => -1
+        case HttpBody.Data(body) => body.length
         case _               => 0
       
       response.setStatus(status)
       addHeader(ResponseHeader.ContentLength.header, length.show)
 
       body match
-        case Body.Empty =>
+        case HttpBody.Empty =>
           ()
 
-        case Body.Data(body) =>
+        case HttpBody.Data(body) =>
           response.getOutputStream.nn.write(body.unsafeMutable)
           response.getOutputStream.nn.flush()
 
-        case Body.Chunked(body) =>
+        case HttpBody.Chunked(body) =>
           try body.map(_.unsafeMutable).foreach(response.getOutputStream.nn.write(_))
           catch case e: StreamCutError => () // FIXME: Is it correct to just ignore this?
           response.getOutputStream.nn.flush()
 
-  private def streamBody(request: HttpServletRequest): Body.Chunked =
+  private def streamBody(request: HttpServletRequest): HttpBody.Chunked =
     val in = request.getInputStream
     val buffer = new Array[Byte](4096)
     
@@ -62,13 +62,13 @@ trait Servlet() extends HttpServlet:
       if len > 0 then IArray.from(buffer.slice(0, len)) #:: recur() else LazyList.empty
     catch case _: Exception => LazyList(throw StreamCutError())
     
-    Body.Chunked(recur())
+    HttpBody.Chunked(recur())
     
   private def makeRequest(request: HttpServletRequest): Request =
     val query = Option(request.getQueryString)
     
     val params: Map[Text, List[Text]] = query.fold(Map()) { query =>
-      val paramStrings = query.nn.cut(t"&")
+      val paramStrings = query.nn.show.cut(t"&")
       
       paramStrings.foldLeft(Map[Text, List[Text]]()) { (map, elem) =>
         elem.cut(t"=", 2).to(Seq) match
@@ -83,7 +83,7 @@ trait Servlet() extends HttpServlet:
     }.to(Map)
 
     Request(
-      method = HttpMethod.valueOf(request.getMethod.nn.lower.capitalize),
+      method = HttpMethod.valueOf(request.getMethod.nn.show.lower.capitalize.s),
       body = streamBody(request),
       query = Text(query.getOrElse("").nn),
       ssl = false,

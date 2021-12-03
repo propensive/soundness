@@ -18,6 +18,7 @@ package scintillate
 
 import rudiments.*
 import gossamer.*
+import gastronomy.*
 
 object RequestHeader:
   lazy val standard: Map[Text, RequestHeader] = Set(AIm, Accept, AcceptCharset, AcceptDatetime,
@@ -26,7 +27,7 @@ object RequestHeader:
       ContentType, Cookie, Date, Expect, Forwarded, From, Host, Http2Settings, IfMatch,
       IfModifiedSince, IfNoneMatch, IfRange, IfUnmodifiedSince, MaxForwards, Origin, Pragma, Prefer,
       ProxyAuthorization, Range, Referer, Te, Trailer, TransferEncoding, UserAgent, Upgrade, Via,
-      Warning).map(_.twin).map(_.header -> _).to(Map)
+      Warning).mtwin.map(_.header -> _).to(Map)
 
   def unapply(str: Text): Some[RequestHeader] =
     Some(standard.get(str.lower).getOrElse(Custom(str)))
@@ -111,9 +112,7 @@ object ResponseHeader:
       Expires, Im, LastModified, Link, Location, P3p, Pragma, PreferenceApplied, ProxyAuthenticate,
       PublicKeyPins, RetryAfter, Server, SetCookie, StrictTransportSecurity, Trailer,
       TransferEncoding, Tk, Upgrade, Vary, Via, Warning, WwwAuthenticate, XFrameOptions)
-    .map(_.twin)
-    .map(_.header -> _)
-    .to(Map)
+    .mtwin.map(_.header -> _).to(Map)
   
   def unapply(str: Text): Some[ResponseHeader] =
     Some(standard.get(str.lower).getOrElse(Custom(str)))
@@ -170,3 +169,30 @@ enum ResponseHeader(val header: Text):
   case WwwAuthenticate extends ResponseHeader(t"www-authenticate")
   case XFrameOptions extends ResponseHeader(t"x-frame-options")
   case Custom(name: Text) extends ResponseHeader(name.lower)
+
+object Auth:
+  given Show[Auth] =
+    case Basic(username, password) => t"Basic ${t"$username:$password".bytes.encode[Base64]}"
+    case Bearer(token)             => t"Bearer $token"
+    case Digest(digest)            => t"Digest $digest"
+    case Hoba(text)                => t"HOBA $text"
+    case Mutual(text)              => t"Mutual $text"
+    case Negotiate(text)           => t"Negotiate $text"
+    case OAuth(text)               => t"OAuth $text"
+    case ScramSha1(text)           => t"SCRAM-SHA-1 $text"
+    case ScramSha256(text)         => t"SCRAM-SHA-256 $text"
+    case Vapid(text)               => t"vapid $text"
+
+enum Auth:
+  case Basic(username: Text, password: Text)
+  case Bearer(token: Text)
+  case Digest(digest: Text)
+  case Hoba(text: Text)
+  case Mutual(text: Text)
+  case Negotiate(text: Text)
+  case OAuth(text: Text)
+  case ScramSha1(text: Text)
+  case ScramSha256(text: Text)
+  case Vapid(text: Text)
+
+  def apply(): RequestHeader.Value = RequestHeader.Authorization(this.show)

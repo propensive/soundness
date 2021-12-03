@@ -39,7 +39,7 @@ object Tests extends Suite(t"Scintillate tests"):
     object Path:
       def unapply(request: Request): Some[String] = Some(request.path.s)
 
-    val server: HttpService = HttpServer(8081).listen {
+    val server: HttpService = HttpServer(8081).listen:
       request match
         case Path("/other") =>
           Log.info(t"Received request to /other")
@@ -62,58 +62,57 @@ object Tests extends Suite(t"Scintillate tests"):
           Response(address)
         case Path(_) =>
           Response(t"This is a response")
-    }
 
-    test(t"Send an HTTP POST request") {
+    test(t"Send an HTTP POST request"):
       Http.post(uri"http://localhost:8081/helloworld", t"Here's some content").as[Text]
-    }.check(_ == t"This is a response")
+    .check(_ == t"This is a response")
 
-    test(t"Send an HTTP GET request to redirect") {
+    test(t"Send an HTTP GET request to redirect"):
       uri"http://localhost:8081/other".get().as[Text]
-    }.check(_ == t"Elsewhere")
+    .check(_ == t"Elsewhere")
     
-    test(t"Send an HTTP GET request") {
+    test(t"Send an HTTP GET request"):
       uri"http://localhost:8081/helloworld".get().as[Text]
-    }.check(_ == t"This is a response")
+    .check(_ == t"This is a response")
     
-    test(t"Send an HTTP GET request with a parameter") {
+    test(t"Send an HTTP GET request with a parameter"):
       uri"http://localhost:8081/somewhere".query(one = t"1").get().as[Text]
-    }.check(_ == t"Somewhere: 2")
+    .check(_ == t"Somewhere: 2")
     
-    test(t"Send an HTTP POST request with a parameter") {
+    test(t"Send an HTTP POST request with a parameter"):
       uri"http://localhost:8081/somewhere".post(Map(t"one" -> t"1")).as[Text]
-    }.check(_ == t"Somewhere: 2")
+    .check(_ == t"Somewhere: 2")
     
-    test(t"Send a case class instance as a GET request") {
+    test(t"Send a case class instance as a GET request"):
       val address = Address(1, t"High Street", t"London", t"UK")
       uri"http://localhost:8081/address".query(address).get().as[Text]
-    }.check(_ == t"1, High Street, London, UK")
+    .check(_ == t"1, High Street, London, UK")
 
-    test(t"Send a nested class instance as a GET request") {
+    test(t"Send a nested class instance as a GET request"):
       val address = Address(1, t"High Street", t"London", t"UK")
       val person = Person(t"John Smith", address)
       uri"http://localhost:8081/person".query(person).get().as[Text]
-    }.check(_ == t"John Smith, 1, High Street, London, UK")
+    .check(_ == t"John Smith, 1, High Street, London, UK")
     
-    test(t"Send a case class instance as the query to a POST request") {
+    test(t"Send a case class instance as the query to a POST request"):
       val address = Address(1, t"High Street", t"London", t"UK")
       uri"http://localhost:8081/address".query(address).post(()).as[Text]
-    }.check(_ == t"1, High Street, London, UK")
+    .check(_ == t"1, High Street, London, UK")
 
-    test(t"Send a case class instance as the body to a POST request") {
+    test(t"Send a case class instance as the body to a POST request"):
       val address = Address(1, t"High Street", t"London", t"UK")
       uri"http://localhost:8081/address".post(address).as[Text]
-    }.check(_ == t"1, High Street, London, UK")
+    .check(_ == t"1, High Street, London, UK")
     
-    test(t"Check and recover from not found") {
+    test(t"Check and recover from not found"):
       try Http.get(uri"http://localhost:8081/notfound").as[Text]
       catch
         case error: HttpError => error.as[Text]
         case other => other.printStackTrace; ???
-    }.check(_ == t"Not-found message")
+    .check(_ == t"Not-found message")
     
-    test(t"Get a typed parameter") {
+    test(t"Get a typed parameter"):
       Http.get(uri"http://localhost:8081/withparam".query(Map(t"one" -> t"9"))).as[Text]
-    }.check(_ == t"18")
+    .check(_ == t"18")
     
     server.stop()
