@@ -20,6 +20,7 @@ import scala.collection.IterableFactory
 import scala.compiletime.*, ops.int.*
 import scala.reflect.ClassTag
 import scala.annotation.*
+import scala.concurrent.*
 
 import java.util.regex.*
 import java.io as ji
@@ -34,15 +35,15 @@ object Bytes:
   def empty: Bytes = IArray()
 
 
-case class ExcessDataError(size: Int, limit: Int)
+case class ExcessDataError(size: ByteSize, limit: ByteSize)
 extends Exception(s"the amount of data in the stream (at least ${size}B) exceeds the limit (${limit}B)")
 
 extension (value: DataStream)
-  def slurp(maxSize: Int): Bytes throws ExcessDataError | StreamCutError =
+  def slurp(limit: ByteSize): Bytes throws ExcessDataError | StreamCutError =
     value.foldLeft(IArray[Byte]()):
       (acc, next) =>
-        if acc.length + next.length > maxSize
-        then throw ExcessDataError(acc.length + next.length, maxSize)
+        if acc.length + next.length > limit
+        then throw ExcessDataError(acc.length + next.length, limit)
         else acc ++ next
 
 extension [T](value: T)
@@ -142,12 +143,15 @@ case class StreamCutError() extends Exception("rudiments: the stream was cut pre
 
 object Util:
 
-  def read(in: ji.InputStream, limit: Int): DataStream = in match
+  def read(in: ji.InputStream, limit: ByteSize): DataStream = in match
     case in: ji.BufferedInputStream =>
       def read(): DataStream =
         try
           val avail = in.available
-          val buf = new Array[Byte](if avail == 0 then limit else (avail min limit))
+          
+          val buf = new Array[Byte]((if avail == 0 then limit.long.toInt else avail min
+              limit.long.toInt))
+          
           val count = in.read(buf, 0, buf.length)
           if count < 0 then LazyList()
           else if avail == 0 then buf.slice(0, count).unsafeImmutable #:: read()
@@ -166,7 +170,7 @@ object Source:
   given Source[Stdin.type] with
     type E = StreamCutError
     def read(value: Stdin.type): DataStream throws E =
-      if System.in == null then throw StreamCutError() else Util.read(System.in, 10*1024*1024)
+      if System.in == null then throw StreamCutError() else Util.read(System.in, 10.mb)
 
 trait Source[T]:
   type E <: Exception
@@ -218,7 +222,16 @@ extension [T](value: T)
 
 case class githubIssue(id: Int) extends StaticAnnotation
 
-opaque type ByteSize = Long
+extension [T](xs: Iterable[T])
+  transparent inline def mtwin: Iterable[(T, T)] = xs.map { x => (x, x) }
+  transparent inline def mtriple: Iterable[(T, T, T)] = xs.map { x => (x, x, x) }
+
+extension [T](future: Future[T])
+  def await(): T = Await.result(future, duration.Duration.Inf)
+
+extension[T](xs: Seq[T])
+  def random: T = xs(util.Random().nextInt(xs.length))
+  transparent inline def shuffle: Seq[T] = util.Random().shuffle(xs)
 
 extension (bs: Int)
   def b: ByteSize = bs
@@ -226,3 +239,62 @@ extension (bs: Int)
   def mb: ByteSize = bs*1024*1024
   def gb: ByteSize = bs*1024*1024*1024
   def tb: ByteSize = bs*1024*1024*1024*1024
+
+opaque type ByteSize = Long
+
+extension (obj: LazyList.type)
+  def multiplex[T](streams: LazyList[T]*): LazyList[T] =
+    import scala.concurrent.*
+    given ExecutionContext = ExecutionContext.Implicits.global
+
+    def future(stream: LazyList[T], idx: Int): Future[Int] = Future:
+      blocking:
+        stream.isEmpty
+        idx
+    
+    val array: Array[LazyList[T]] = streams.to(Array)
+    val futuresArray: Array[Future[Int]] = array.zipWithIndex.map(future(_, _))
+
+    def recur(futures: Set[Future[Int]]): LazyList[T] =
+      if futures.isEmpty then LazyList()
+      else
+        val finished = Future.firstCompletedOf(futures)
+        val idx: Int = Await.result(finished, duration.Duration.Inf)
+        val stream = array(idx)
+        if stream.isEmpty then recur(futures - futuresArray(idx))
+        else
+          array(idx) = stream.tail
+          val oldFuture = futuresArray(idx)
+          val newFuture = future(stream.tail, idx)
+          futuresArray(idx) = newFuture
+          stream.head #:: recur(futures - oldFuture + newFuture)
+    
+    recur(futuresArray.to(Set))
+
+object ByteSize:
+  extension (bs: ByteSize)
+    def long: Long = bs
+    
+    @targetName("plus")
+    infix def +(that: ByteSize): ByteSize = bs + that
+    
+    @targetName("gt")
+    infix def >(that: ByteSize): Boolean = bs > that
+
+    @targetName("lt")
+    infix def <(that: ByteSize): Boolean = bs < that
+
+    @targetName("lte")
+    infix def <=(that: ByteSize): Boolean = bs <= that
+
+    @targetName("gte")
+    infix def >=(that: ByteSize): Boolean = bs >= that
+
+    @targetName("minus")
+    infix def -(that: ByteSize): ByteSize = bs - that
+
+    @targetName("times")
+    infix def *(that: Int): ByteSize = bs*that
+
+    @targetName("div")
+    infix def /(that: Int): ByteSize = bs/that
