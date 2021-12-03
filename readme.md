@@ -158,7 +158,7 @@ case class Book(title: String, author: String)
 val book = Book("Mrs. Dalloway", "Virginia Woolf")
 ```
 we could create an `XmlNode` value of,
-```xml
+°```xml
 <Book>
   <title>Mrs. Dalloway</title>
   <author>Virginia Woolf</author>
