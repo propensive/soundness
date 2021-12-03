@@ -1,0 +1,4 @@
+#!/bin/bash
+
+CP="stbin:$(ls lib/*.jar | tr '\n' : | head -c-1):niveau.jar"
+scala/bin/scala -classpath $CP
