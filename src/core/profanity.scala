@@ -103,9 +103,9 @@ object Keyboard:
     def interpret(bytes: List[Int])(using Log): LazyList[List[Int]] = LazyList(bytes.map(_.toInt))
   
   private def readResize(bytes: List[Int])(using Log): Keypress.Resize =
-    val size = String(bytes.map(_.toByte).init.to(Array)).cut(";")
-    val columns = size(0).toInt
-    val rows = size(1).toInt
+    val size = String(bytes.map(_.toByte).init.to(Array)).show.cut(t";")
+    val columns = size(0).s.toInt
+    val rows = size(1).s.toInt
     Log.fine(ansi"Console has been resized to $columns×$rows")
     
     Keypress.Resize(columns, rows)
@@ -157,7 +157,7 @@ object LineEditor:
       case (ed, next) =>
         if ed.pos > 0 then Tty.print(esc(t"${ed.pos}D"))
         val newEd = ed(next)
-        val line = newEd.content+" "*(ed.content.length - newEd.content.length)
+        val line = t"${newEd.content}${t" "*(ed.content.length - newEd.content.length)}"
         Tty.print(esc(t"0K"))
         Tty.print(render(line))
         if line.length > 0 then Tty.print(esc(t"${line.length}D"))
@@ -172,7 +172,7 @@ case class LineEditor(content: Text = t"", pos: Int = 0):
     case Printable(ch)  => copy(t"${content.take(pos)}$ch${content.drop(pos)}", pos + 1)
     case Ctrl('U')      => copy(content.drop(pos), 0)
     
-    case Ctrl('W')      => val prefix = content.take(0 max (pos - 1)).reverse.dropWhile(_ != ' ').reverse
+    case Ctrl('W')      => val prefix = content.take(0 max (pos - 1)).reverse.s.dropWhile(_ != ' ').show.reverse
                            copy(t"$prefix${content.drop(pos)}", prefix.length)
     
     case Delete         => copy(t"${content.take(pos)}${content.drop(pos + 1)}")
