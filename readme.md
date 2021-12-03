@@ -94,7 +94,7 @@ Acyclicity is classified as __embryonic__. Propensive defines the following five
 - _dependable_: production-ready, subject to controlled ongoing maintenance and enhancement; tagged as version `1.0` or later
 - _adamantine_: proven, reliable and production-ready, with no further breaking changes ever anticipated
 
-Acyclicity is designed to be _small_. Its entire source code currently consists of 234 lines of code.
+Acyclicity is designed to be _small_. Its entire source code currently consists of 238 lines of code.
 
 ## Availability
 
