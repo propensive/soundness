@@ -52,9 +52,9 @@ object Xml:
     try printers.compact.print(Doc(Ast.Root(Xml.normalize(xml)*)))
     catch case error: XmlAccessError => t"undefined"
 
-  given (using XmlPrinter[Text]): clairvoyant.HttpResponse[Xml, Text] with
-    def mimeType: String = "application/xml"
-    def content(xml: Xml): Text = summon[XmlPrinter[Text]].print(xml)
+  given (using XmlPrinter[Text]): clairvoyant.HttpResponse[Xml] with
+    def mediaType: String = "application/xml; charset=utf-8"
+    def content(xml: Xml): LazyList[IArray[Byte]] = LazyList(summon[XmlPrinter[Text]].print(xml).bytes)
 
   def print(xml: Xml)(using XmlPrinter[Text]): Text = summon[XmlPrinter[Text]].print(xml)
 

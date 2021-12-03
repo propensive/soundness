@@ -54,7 +54,7 @@ object XmlInterpolation:
       copy(stack = stack.head.copy(namespaces = stack.head.namespaces + ns) :: stack.tail)
 
     def checkNs: Boolean =
-      !stack.head.name.contains(':') || stack.flatMap(_.namespaces).contains(stack.head.name.cut(":")(0))
+      !stack.head.name.contains(':') || stack.flatMap(_.namespaces).contains(stack.head.name.cut(t":")(0))
 
     def rollback(difference: Int): ParseState = copy(offset = offset - difference)
     
@@ -84,11 +84,11 @@ object XmlInterpolation:
     def initial: ParseState = ParseState(0, ContextType.Body, Nil, t"", t"", false)
 
     private def escape(str: Text): Text =
-      str.sub("\"", "&quot;")
-        .sub("'", "&apos;")
-        .sub("<", "&lt;")
-        .sub(">", "&gt;")
-        .sub("&", "&amp;")
+      str.sub(t"\"", t"&quot;")
+        .sub(t"'", t"&apos;")
+        .sub(t"<", t"&lt;")
+        .sub(t">", t"&gt;")
+        .sub(t"&", t"&amp;")
 
     def skip(state: ParseState): ParseState = state.context match
       case AttributeValue | Body => parse(state, "")
@@ -149,7 +149,7 @@ object XmlInterpolation:
           case TagChar()          => state(char)
           case WhitespaceChar()   => state(InAttributeName)
           case '>'                => throw InterpolationError("attribute value has not been specified", state.offset, 1)
-          case '='                => if state.current.startsWith("xmlns:")
+          case '='                => if state.current.startsWith(t"xmlns:")
                                     then state.addNamespace(state.current.drop(6))(AttributeEquals)
                                     else state(AttributeEquals)
           case ':'                => if state.ns
@@ -192,4 +192,4 @@ object XmlInterpolation:
           case ';'                => state()
           case TagChar()          => state()
           case ch                 => throw InterpolationError(s"character '$ch' is not valid in an entity name", state.offset, 1)
-    }.copy(source = state.source+string)
+    }.copy(source = t"${state.source}$string")
