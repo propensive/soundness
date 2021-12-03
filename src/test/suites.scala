@@ -5,7 +5,7 @@ import rudiments.*
 import gossamer.*
 import eucalyptus.*
 
-given Log(Everything |-> Stdout)
+given log: Log = Log(Everything |-> Stdout)
 
 object Tests extends Suite(t"Niveau tests"):
   def run(using Runner): Unit =
@@ -14,7 +14,7 @@ object Tests extends Suite(t"Niveau tests"):
     suite(caesura.Tests)
     suite(cataract.Tests)
     suite(contextual.Tests)
-    suite(cosmopolite.Tests)
+    //suite(cosmopolite.Tests)
     suite(escapade.Tests)
     suite(escritoire.Tests)
     suite(euphemism.Tests)

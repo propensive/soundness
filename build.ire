@@ -1,0 +1,333 @@
+{
+  "imports": [
+    "mod/rudiments/build.ire",
+    "mod/contextual/build.ire",
+    "mod/gossamer/build.ire",
+    "mod/wisteria/build.ire"
+  ],
+  "config": {
+    "scalac": {
+      "version": "3.1.2-RC1-bin-SNAPSHOT",
+      "options": [
+        "-language:experimental.erasedDefinitions",
+        "-language:experimental.fewerBraces",
+        "-language:experimental.saferExceptions",
+        "-Wunused:all",
+        "-O", "-deprecation",
+        "-O", "-feature",
+        "-O", "-new-syntax",
+        "-Yrequire-targetName",
+        "-Ysafe-init",
+        "-Ycheck-all-patmat",
+        "-Yexplicit-nulls"
+      ]
+    }
+  },
+  "publishing": {
+    "username": "propensive",
+    "group": "com.propensive",
+    "url": "https://propensive.com/opensource/",
+    "organization": {
+      "name": "Propensive",
+      "url": "https://propensive.com/"
+    },
+    "git": "github.com/propensive",
+    "developers": [
+      {
+        "id": "propensive",
+        "name": "Jon Pretty",
+        "url": "https://github.com/propensive"
+      }
+    ]
+  },
+  "modules": [
+    {
+      "name": "Kaleidoscope",
+      "id": "kaleidoscope/core",
+      "links": ["contextual/core"],
+      "sources": ["mod/kaleidoscope/src/core"],
+      "version": "0.1.0",
+      "docs": ["mod/kaleidoscope/doc"]
+    },
+    {
+      "name": "Clairvoyant CSS",
+      "id": "clairvoyant/css",
+      "sources": ["mod/clairvoyant/src/css"],
+      "version": "0.1.0",
+      "docs": ["mod/clairvoyant/doc"]
+    },
+    {
+      "name": "Eucalyptus",
+      "id": "eucalyptus/core",
+      "links": ["escapade/core"],
+      "sources": ["mod/eucalyptus/src/core"],
+      "version": "0.1.0",
+      "docs": ["mod/eucalyptus/doc"]
+    },
+    {
+      "name": "Clairvoyant HTTP",
+      "id": "clairvoyant/http",
+      "sources": ["mod/clairvoyant/src/http"],
+      "version": "0.1.0",
+      "docs": ["mod/clairvoyant/doc"]
+    },
+    {
+      "name": "Clairvoyant HTML",
+      "id": "clairvoyant/html",
+      "sources": ["mod/clairvoyant/src/html"],
+      "version": "0.1.0",
+      "docs": ["mod/clairvoyant/doc"]
+    },
+    {
+      "name": "Gesticulate",
+      "id": "gesticulate/core",
+      "links": ["gossamer/core", "clairvoyant/html"],
+      "sources": ["mod/gesticulate/src/core"],
+      "version": "0.1.0",
+      "docs": ["mod/gesticulate/doc"]
+    },
+    {
+      "name": "Gastronomy",
+      "id": "gastronomy/core",
+      "links": ["gossamer/core"],
+      "sources": ["mod/gastronomy/src/core"],
+      "version": "0.1.0",
+      "docs": ["mod/gastronomy/doc"]
+    },
+    {
+      "name": "Slalom",
+      "id": "slalom/core",
+      "links": ["gossamer/core"],
+      "sources": ["mod/slalom/src/core"],
+      "version": "0.1.0",
+      "docs": ["mod/slalom/doc"]
+    },
+    {
+      "name": "Scintillate Core",
+      "id": "scintillate/core",
+      "links": [
+        "gesticulate/core",
+        "eucalyptus/core",
+        "slalom/core",
+        "clairvoyant/http",
+        "gastronomy/core"
+      ],
+      "sources": ["mod/scintillate/src/core"],
+      "version": "0.1.0",
+      "docs": ["mod/scintillate/doc"]
+    },
+    {
+      "name": "Scintillate Server",
+      "id": "scintillate/server",
+      "links": ["scintillate/core"],
+      "sources": ["mod/scintillate/src/server"],
+      "version": "0.1.0",
+      "docs": ["mod/scintillate/doc"]
+    },
+    {
+      "name": "Harlequin",
+      "id": "harlequin/core",
+      "links": ["escapade/core"],
+      "sources": ["mod/harlequin/src/core"],
+      "version": "0.1.0",
+      "docs": ["mod/harlequin/doc"]
+    },
+    {
+      "name": "Scintillate Servlet",
+      "id": "scintillate/servlet",
+      "links": ["scintillate/server"],
+      "dependencies": ["javax.servlet:javax.servlet-api:3.0.1"],
+      "sources": ["mod/scintillate/src/servlet"],
+      "version": "0.1.0",
+      "docs": ["mod/scintillate/doc"]
+    },
+    {
+      "name": "Iridescence",
+      "id": "iridescence/core",
+      "links": ["gossamer/core"],
+      "sources": ["mod/iridescence/src/core"],
+      "version": "0.1.0",
+      "docs": ["mod/iridescence/doc"]
+    },
+    {
+      "name": "Caesura",
+      "id": "caesura/core",
+      "links": ["gossamer/core", "clairvoyant/http"],
+      "sources": ["mod/caesura/src/core"],
+      "version": "0.1.0",
+      "docs": ["mod/caesura/doc"]
+    },
+    {
+      "name": "Profanity",
+      "id": "profanity/core",
+      "links": ["eucalyptus/core"],
+      "sources": ["mod/profanity/src/core", "mod/profanity/src/java"],
+      "version": "0.1.0",
+      "docs": ["mod/profanity/doc"]
+    },
+    {
+      "name": "Cataract",
+      "id": "cataract/core",
+      "links": [
+        "clairvoyant/html",
+        "clairvoyant/css",
+        "clairvoyant/http",
+        "iridescence/core"
+      ],
+      "sources": ["mod/cataract/src/core"],
+      "version": "0.1.0",
+      "docs": ["mod/cataract/doc"]
+    },
+    {
+      "name": "Jovian",
+      "id": "jovian/core",
+      "links": [
+        "clairvoyant/html",
+        "gastronomy/core",
+        "slalom/core",
+        "kaleidoscope/core",
+        "eucalyptus/core"
+      ],
+      "sources": ["mod/jovian/src/core"],
+      "version": "0.1.0",
+      "docs": ["mod/jovian/doc"]
+    },
+    {
+      "name": "Punctuation",
+      "id": "punctuation/core",
+      "links": ["gossamer/core", "clairvoyant/html"],
+      "dependencies": [
+        "com.vladsch.flexmark:flexmark:0.62.2",
+        "com.vladsch.flexmark:flexmark-ext-tables:0.62.2",
+        "com.vladsch.flexmark:flexmark-ext-typographic:0.62.2"
+      ],
+      "sources": ["mod/punctuation/src/core"],
+      "version": "0.1.0",
+      "docs": ["mod/punctuation/doc"]
+    },
+    {
+      "name": "Punctuation HTML",
+      "id": "punctuation/html",
+      "links": ["honeycomb/core", "punctuation/core"],
+      "sources": ["mod/punctuation/src/html"],
+      "version": "0.1.0",
+      "docs": ["mod/punctuation/doc"]
+    },
+    {
+      "name": "Punctuation ANSI",
+      "id": "punctuation/ansi",
+      "links": ["harlequin/core", "punctuation/core"],
+      "sources": ["mod/punctuation/src/ansi"],
+      "version": "0.1.0",
+      "docs": ["mod/punctuation/doc"]
+    },
+    {
+      "name": "Xylophone",
+      "id": "xylophone/core",
+      "links": ["gossamer/core", "clairvoyant/http"],
+      "sources": ["mod/xylophone/src/core"],
+      "version": "0.1.0",
+      "docs": ["mod/xylophone/doc"]
+    },
+    {
+      "name": "Probably Core",
+      "id": "probably/core",
+      "links": ["escritoire/core", "eucalyptus/core"],
+      "sources": ["mod/probably/src/core"],
+      "version": "0.1.0",
+      "docs": ["mod/probably/doc"]
+    },
+    {
+      "name": "Probably CLI",
+      "id": "probably/cli",
+      "links": ["probably/core"],
+      "sources": ["mod/probably/src/cli"],
+      "version": "0.1.0",
+      "docs": ["mod/probably/doc"]
+    },
+    {
+      "name": "Probably Tolerance",
+      "id": "probably/tolerance",
+      "links": ["probably/core", "wisteria/core"],
+      "sources": ["mod/probably/src/tolerance"],
+      "version": "0.1.0",
+      "docs": ["mod/probably/doc"]
+    },
+    {
+      "name": "Exoskeleton",
+      "id": "exoskeleton/core",
+      "links": ["gossamer/core"],
+      "sources": ["mod/exoskeleton/src/core"],
+      "version": "0.1.0",
+      "docs": ["mod/exoskeleton/doc"]
+    },
+    {
+      "name": "Honeycomb",
+      "id": "honeycomb/core",
+      "links": ["clairvoyant/css", "clairvoyant/http", "clairvoyant/html", "gossamer/core"],
+      "sources": ["mod/honeycomb/src/core"],
+      "version": "0.1.0",
+      "docs": ["mod/honeycomb/doc"]
+    },
+    {
+      "name": "Euphemism",
+      "id": "euphemism/core",
+      "links": ["gossamer/core", "clairvoyant/http"],
+      "dependencies": [
+        "org.typelevel:jawn-parser_3:1.2.0",
+        "org.typelevel:jawn-ast_3:1.2.0"
+      ],
+      "sources": ["mod/euphemism/src/core"],
+      "version": "0.1.0",
+      "docs": ["mod/euphemism/doc"]
+    },
+    {
+      "name": "Guillotine",
+      "id": "guillotine/core",
+      "links": ["eucalyptus/core", "gossamer/core"],
+      "sources": ["mod/guillotine/src/core"],
+      "version": "0.1.0",
+      "docs": ["mod/guillotine/doc"]
+    },
+    {
+      "name": "Escritoire",
+      "id": "escritoire/core",
+      "links": ["escapade/core"],
+      "sources": ["mod/escritoire/src/core"],
+      "version": "0.1.0",
+      "docs": ["mod/escritoire/doc"]
+    },
+    {
+      "name": "Adversaria",
+      "id": "adversaria/core",
+      "links": ["gossamer/core"],
+      "sources": ["mod/adversaria/src/core"],
+      "version": "0.1.0",
+      "docs": ["mod/adversaria/doc"]
+    },
+    {
+      "name": "Acyclicity",
+      "id": "acyclicity/core",
+      "links": ["gossamer/core"],
+      "sources": ["mod/acyclicity/src/core"],
+      "version": "0.1.0",
+      "docs": ["mod/acyclicity/doc"]
+    },
+    {
+      "name": "Tarantula",
+      "id": "tarantula/core",
+      "links": ["scintillate/core", "cataract/core", "guillotine/core", "euphemism/core", "honeycomb/core"],
+      "sources": ["mod/tarantula/src/core"],
+      "version": "0.1.0",
+      "docs": ["mod/tarantula/doc"]
+    },
+    {
+      "name": "Escapade",
+      "id": "escapade/core",
+      "links": ["iridescence/core"],
+      "sources": ["mod/escapade/src/core"],
+      "version": "0.1.0",
+      "docs": ["mod/escapade/doc"]
+    }
+  ]
+}
