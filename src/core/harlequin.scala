@@ -44,7 +44,7 @@ object ScalaSyntax:
         val whitespace: LazyList[Token] =
           if lastEnd != start then
             text.slice(lastEnd, start).cut(t"\n").to(LazyList).flatMap:
-              spaces => LazyList(Token.Space(spaces.sub(t"\t", t"  ").size), Token.Newline)
+              spaces => LazyList(Token.Space(spaces.sub(t"\t", t"  ").length), Token.Newline)
             .init
           else LazyList()
         
