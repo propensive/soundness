@@ -100,7 +100,7 @@ Gesticulate is classified as __maturescent__. Propensive defines the following f
 - _dependable_: production-ready, subject to controlled ongoing maintenance and enhancement; tagged as version `1.0` or later
 - _adamantine_: proven, reliable and production-ready, with no further breaking changes ever anticipated
 
-Gesticulate is designed to be _small_. Its entire source code currently consists of 250 lines of code.
+Gesticulate is designed to be _small_. Its entire source code currently consists of 2191 lines of code.
 
 ## Availability
 
