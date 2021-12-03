@@ -101,7 +101,8 @@ trait Root(val separator: Text, val prefix: Text):
 
       def relativeTo(base: AbsolutePath): Relative =
         val common = conjunction(base)
-        Relative(parts.length - common.parts.length, base.parts.drop(common.parts.length))
+        Relative(base.parts.length - common.parts.length, parts.drop(common.parts.length))
+
 
       @targetName("access")
       infix def /(filename: Text): AbsolutePath throws RootParentError = filename.s match
