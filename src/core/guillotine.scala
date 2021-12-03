@@ -50,7 +50,7 @@ object Executor:
   given text: Executor[Text] = stream.map(_.foldLeft(t"") { (acc, line) => t"$acc\n$line" }.trim)
 
   given dataStream: Executor[DataStream] =
-    proc => Util.read(proc.getInputStream.nn, 65536)
+    proc => Util.read(proc.getInputStream.nn, 64.kb)
   
   given exitStatus: Executor[ExitStatus] = _.waitFor() match
     case 0     => ExitStatus.Ok
@@ -69,11 +69,13 @@ case class Pid(value: Long)
 
 class Process[T](process: java.lang.Process, executor: Executor[T]):
   def pid: Pid = Pid(process.pid)
-  
-  def stdout(limit: Int = 1024*1024*10): DataStream = Util.read(process.getInputStream.nn, limit)
-  def stderr(limit: Int = 1024*1024*10): DataStream = Util.read(process.getErrorStream.nn, limit)
+  def stdout(limit: ByteSize = 10.mb): DataStream = Util.read(process.getInputStream.nn, limit)
+  def stderr(limit: ByteSize = 10.mb): DataStream = Util.read(process.getErrorStream.nn, limit)
   def stdin(in: LazyList[IArray[Byte]]): Unit = Util.write(in, process.getOutputStream.nn)
   def await(): T = executor.interpret(process)
+  def exitStatus(): ExitStatus = process.waitFor() match
+    case 0     => ExitStatus.Ok
+    case other => ExitStatus.Fail(other)
   
   def abort()(using Log): Unit =
     Log.info(ansi"The process with PID $pid was aborted")
