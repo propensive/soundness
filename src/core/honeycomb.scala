@@ -133,11 +133,15 @@ extends Node[Name], Dynamic:
     Element(labelString, unclosed, inline, verbatim, Map(), children)
 
 object StartTag:
-  given clairvoyant.CssSelection[StartTag[?, ?]] = elem => elem.label+elem.attributes.map:
-    case (key, value: Text) => t"[$key=$value]"
-    case (key, Unset)       => t"[$key]"
-    case _                  => throw Impossible("should never match")
-  .join(t"")
+  given clairvoyant.CssSelection[StartTag[?, ?]] = elem =>
+    val tail = elem.attributes.map:
+      case (key, value: Text) => t"[$key=$value]"
+      case (key, Unset)       => t"[$key]"
+      case _                  => throw Impossible("should never match")
+    .join
+    
+    t"${elem.label}$tail".s
+
 
 case class StartTag[+Name <: Label, Children <: Label]
                    (labelString: Name, unclosed: Boolean, inline: Boolean, verbatim: Boolean,
@@ -163,9 +167,9 @@ case class Element[+Name <: Label](labelString: String, unclosed: Boolean, tagIn
 case class HtmlDoc(root: Node["html"])
 
 object HtmlDoc:
-  given clairvoyant.HttpResponse[HtmlDoc, Text] with
-    def mimeType: String = "text/html; charset=utf-8"
-    def content(value: HtmlDoc): Text = HtmlDoc.serialize(value)
+  given clairvoyant.HttpResponse[HtmlDoc] with
+    def mediaType: String = "text/html; charset=utf-8"
+    def content(value: HtmlDoc): LazyList[IArray[Byte]] = LazyList(HtmlDoc.serialize(value).bytes)
 
   def serialize[T](doc: HtmlDoc, maxWidth: Int = -1)(using HtmlSerializer[T]): T =
     summon[HtmlSerializer[T]].serialize(doc, maxWidth)

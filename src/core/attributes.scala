@@ -151,6 +151,7 @@ object Attribute:
   given alt[T]: Attribute["alt", Text, T] = identity(_)
   given async[T]: Attribute["async", Boolean, T] = _ => Unset
   given autocomplete[T]: Attribute["autocomplete", Autocomplete, T] = _.show
+  given autocomplete2[T]: Attribute["autocomplete", Boolean, T] = if _ then Unset else t"off"
   given autoplay[T]: Attribute["autoplay", Boolean, T] = _ => Unset
   given autofocus[T]: Attribute["autofocus", Boolean, T] = _ => Unset
   given border[T]: Attribute["border", Boolean, T] = if _ then t"1" else t""
