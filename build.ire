@@ -1,0 +1,26 @@
+{
+  "config": {
+    "scalac": {
+      "version": "3.1.1-RC1-bin-SNAPSHOT",
+      "options": [
+        "-language:experimental.erasedDefinitions",
+        "-language:experimental.fewerBraces",
+        "-language:experimental.saferExceptions",
+        "-Wunused:all",
+        "-O", "-deprecation",
+        "-O", "-feature",
+        "-O", "-new-syntax"
+      ]
+    }
+  },
+  "modules": [
+    {
+      "name": "Wisteria",
+      "id": "wisteria/core",
+      "links": ["rudiments/core"],
+      "sources": ["src/core"],
+      "version": "0.1.0",
+      "docs": ["doc"]
+    }
+  ]
+}
