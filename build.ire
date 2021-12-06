@@ -1,0 +1,52 @@
+{
+  "imports": ["gossamer/build.ire", "clairvoyant/build.ire"],
+  "config": {
+    "scalac": {
+      "version": "3.1.1-RC1-bin-SNAPSHOT",
+      "options": [
+        "-language:experimental.erasedDefinitions",
+        "-language:experimental.fewerBraces",
+        "-language:experimental.saferExceptions",
+        "-Wunused:all",
+        "-O", "-deprecation",
+        "-O", "-feature",
+        "-O", "-new-syntax",
+        "-Yrequire-targetName",
+        "-Ysafe-init",
+        "-Ycheck-all-patmat",
+        "-Yexplicit-nulls"
+      ]
+    }
+  },
+  "modules": [
+    {
+      "name": "Punctuation",
+      "id": "punctuation/core",
+      "links": ["gossamer/core", "clairvoyant/html"],
+      "dependencies": [
+        "com.vladsch.flexmark:flexmark:0.62.2",
+        "com.vladsch.flexmark:flexmark-ext-tables:0.62.2",
+        "com.vladsch.flexmark:flexmark-ext-typographic:0.62.2"
+      ],
+      "sources": ["src/core"],
+      "version": "0.1.0",
+      "docs": ["doc"]
+    },
+    {
+      "name": "Punctuation HTML",
+      "id": "punctuation/html",
+      "links": ["honeycomb/core", "punctuation/core"],
+      "sources": ["src/html"],
+      "version": "0.1.0",
+      "docs": ["doc"]
+    },
+    {
+      "name": "Punctuation ANSI",
+      "id": "punctuation/ansi",
+      "links": ["harlequin/core", "punctuation/core"],
+      "sources": ["src/ansi"],
+      "version": "0.1.0",
+      "docs": ["doc"]
+    }
+  ]
+}
