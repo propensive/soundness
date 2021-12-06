@@ -1,0 +1,43 @@
+{
+  "imports": [
+    "eucalyptus/build.ire",
+    "kaleidoscope/build.ire",
+    "clairvoyant/build.ire",
+    "gastronomy/build.ire",
+    "slalom/build.ire"
+  ],
+  "config": {
+    "scalac": {
+      "version": "3.1.1-RC1-bin-SNAPSHOT",
+      "options": [
+        "-language:experimental.erasedDefinitions",
+        "-language:experimental.fewerBraces",
+        "-language:experimental.saferExceptions",
+        "-Wunused:all",
+        "-O", "-deprecation",
+        "-O", "-feature",
+        "-O", "-new-syntax",
+        "-Yrequire-targetName",
+        "-Ysafe-init",
+        "-Ycheck-all-patmat",
+        "-Yexplicit-nulls"
+      ]
+    }
+  },
+  "modules": [
+    {
+      "name": "Jovian",
+      "id": "jovian/core",
+      "links": [
+        "clairvoyant/html",
+        "gastronomy/core",
+        "slalom/core",
+        "kaleidoscope/core",
+        "eucalyptus/core"
+      ],
+      "sources": ["src/core"],
+      "version": "0.1.0",
+      "docs": ["doc"]
+    }
+  ]
+}
