@@ -1,0 +1,43 @@
+{
+  "config": {
+    "scalac": {
+      "version": "3.1.1-RC1-bin-SNAPSHOT",
+      "options": [
+        "-language:experimental.erasedDefinitions",
+        "-language:experimental.fewerBraces",
+        "-language:experimental.saferExceptions",
+        "-Wunused:all",
+        "-O", "-deprecation",
+        "-O", "-feature",
+        "-O", "-new-syntax",
+        "-Yrequire-targetName",
+        "-Ysafe-init",
+        "-Ycheck-all-patmat",
+        "-Yexplicit-nulls"
+      ]
+    }
+  },
+  "modules": [
+    {
+      "name": "Clairvoyant HTTP",
+      "id": "clairvoyant/http",
+      "sources": ["src/http"],
+      "version": "0.1.0",
+      "docs": ["doc"]
+    },
+    {
+      "name": "Clairvoyant HTML",
+      "id": "clairvoyant/html",
+      "sources": ["src/html"],
+      "version": "0.1.0",
+      "docs": ["doc"]
+    },
+    {
+      "name": "Clairvoyant CSS",
+      "id": "clairvoyant/css",
+      "sources": ["src/css"],
+      "version": "0.1.0",
+      "docs": ["doc"]
+    }
+  ]
+}
