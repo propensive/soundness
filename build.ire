@@ -1,0 +1,47 @@
+{
+  "imports": ["escritoire/build.ire", "eucalyptus/build.ire"],
+  "config": {
+    "scalac": {
+      "version": "3.1.1-RC1-bin-SNAPSHOT",
+      "options": [
+        "-language:experimental.erasedDefinitions",
+        "-language:experimental.fewerBraces",
+        "-language:experimental.saferExceptions",
+        "-Wunused:all",
+        "-O", "-deprecation",
+        "-O", "-feature",
+        "-O", "-new-syntax",
+        "-Yrequire-targetName",
+        "-Ysafe-init",
+        "-Ycheck-all-patmat",
+        "-Yexplicit-nulls"
+      ]
+    }
+  },
+  "modules": [
+    {
+      "name": "Probably Core",
+      "id": "probably/core",
+      "links": ["escritoire/core", "eucalyptus/core"],
+      "sources": ["src/core"],
+      "version": "0.1.0",
+      "docs": ["doc"]
+    },
+    {
+      "name": "Probably Tolerance",
+      "id": "probably/tolerance",
+      "links": ["probably/core", "wisteria/core"],
+      "sources": ["src/tolerance"],
+      "version": "0.1.0",
+      "docs": ["doc"]
+    },
+    {
+      "name": "Probably CLI",
+      "id": "probably/cli",
+      "links": ["probably/core"],
+      "sources": ["src/cli"],
+      "version": "0.1.0",
+      "docs": ["doc"]
+    }
+  ]
+}
