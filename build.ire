@@ -1,0 +1,60 @@
+{
+  "imports": [
+    "gesticulate/build.ire",
+    "eucalyptus/build.ire",
+    "slalom/build.ire",
+    "clairvoyant/build.ire",
+    "gastronomy/build.ire"
+  ],
+  "config": {
+    "scalac": {
+      "version": "3.1.1-RC1-bin-SNAPSHOT",
+      "options": [
+        "-language:experimental.erasedDefinitions",
+        "-language:experimental.fewerBraces",
+        "-language:experimental.saferExceptions",
+        "-Wunused:all",
+        "-O", "-deprecation",
+        "-O", "-feature",
+        "-O", "-new-syntax",
+        "-Yrequire-targetName",
+        "-Ysafe-init",
+        "-Ycheck-all-patmat",
+        "-Yexplicit-nulls"
+      ]
+    }
+  },
+  "modules": [
+    {
+      "name": "Scintillate Core",
+      "id": "scintillate/core",
+      "links": [
+        "gesticulate/core",
+        "eucalyptus/core",
+        "slalom/core",
+        "clairvoyant/http",
+        "gastronomy/core"
+      ],
+      "sources": ["src/core"],
+      "version": "0.1.0",
+      "docs": ["doc"]
+    },
+    {
+      "name": "Scintillate Server",
+      "id": "scintillate/server",
+      "links": ["scintillate/core"],
+      "sources": ["src/server"],
+      "version": "0.1.0",
+      "docs": ["doc"]
+    },
+    {
+      "name": "Scintillate Servlet",
+      "id": "scintillate/servlet",
+      "links": ["scintillate/server"],
+      "dependencies": ["javax.servlet:javax.servlet-api:3.0.1"],
+      "sources": ["src/servlet"],
+      "version": "0.1.0",
+      "docs": ["doc"]
+    }
+  ]
+}
