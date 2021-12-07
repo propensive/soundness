@@ -1,9 +1,0 @@
-out/
-bin/
-pub/
-classes/
-lib/
-bcp/
-niveau.jar
-^test/
-*.semanticdb
