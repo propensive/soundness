@@ -23,6 +23,7 @@ import gossamer.*
 import scala.collection.*
 import scala.compiletime.ops.int.*
 
+import java.util.zip as juz
 import java.security.*
 import javax.crypto.Mac, javax.crypto.spec.SecretKeySpec
 import java.util.Base64.{getEncoder as Base64Encoder, getDecoder as Base64Decoder}
@@ -31,6 +32,8 @@ import java.lang as jl
 sealed trait HashScheme[Size <: Int & Singleton]
 
 sealed trait Md5 extends HashScheme[16]
+
+sealed trait Crc32 extends HashScheme[32]
 
 type ByteCount[Bits] <: Int & Singleton = Bits match
   case 224 => 28
@@ -43,15 +46,18 @@ sealed trait Sha1 extends HashScheme[20]
 sealed trait Sha384 extends HashScheme[48]
 sealed trait Sha512 extends HashScheme[64]
 
+object Crc32:
+  given HashFunction[Crc32] = Crc32HashFunction
+
 object Md5:
-  given HashFunction[Md5] = HashFunction(t"MD5", t"HmacMD5")
+  given HashFunction[Md5] = MdHashFunction(t"MD5", t"HmacMD5")
 
 object Sha1:
-  given HashFunction[Sha1] = HashFunction(t"SHA1", t"HmacSHA1")
+  given HashFunction[Sha1] = MdHashFunction(t"SHA1", t"HmacSHA1")
 
 object Sha2:
   given sha2[Bits <: 224 | 256 | 384 | 512: ValueOf]: HashFunction[Sha2[Bits]] =
-    HashFunction(t"SHA-${valueOf[Bits]}", t"HmacSHA${valueOf[Bits]}")
+    MdHashFunction(t"SHA-${valueOf[Bits]}", t"HmacSHA${valueOf[Bits]}")
 
 trait Encodable:
   val bytes: Bytes
@@ -62,9 +68,28 @@ object Hmac:
 
 case class Hmac[A <: HashScheme[?]](bytes: Bytes) extends Encodable, Shown[Hmac[?]]
 
-case class HashFunction[A <: HashScheme[?]](name: Text, hmacName: Text):
-  def init: DigestAccumulator = DigestAccumulator(MessageDigest.getInstance(name.s).nn)
+trait HashFunction[A <: HashScheme[?]]:
+  def name: Text
+  def hmacName: Text
+  def init: DigestAccumulator
+  def initHmac: Mac
+
+case class MdHashFunction[A <: HashScheme[?]](name: Text, hmacName: Text) extends HashFunction[A]:
+  def init: DigestAccumulator = MessageDigestAccumulator(MessageDigest.getInstance(name.s).nn)
   def initHmac: Mac = Mac.getInstance(hmacName.s).nn
+
+case object Crc32HashFunction extends HashFunction[Crc32]:
+  def init: DigestAccumulator = new DigestAccumulator:
+    private val state: juz.CRC32 = juz.CRC32()
+    def append(bytes: Bytes): Unit = state.update(bytes.asInstanceOf[Array[Byte]])
+    
+    def digest(): Bytes =
+      val int = state.getValue()
+      IArray[Byte]((int >> 24).toByte, (int >> 16).toByte, (int >> 8).toByte, int.toByte)
+  def name: Text = t"CRC32"
+  def hmacName: Text = t"HMAC-CRC32"
+  def initHmac: Mac = ???
+    
 
 object Digest:
   given Show[Digest[?]] = digest => t"Digest(${digest.bytes.encode[Base64]})"
@@ -73,18 +98,17 @@ case class Digest[A <: HashScheme[?]](bytes: Bytes) extends Encodable, Shown[Dig
 
 object Hashable extends Derivation[Hashable]:
   def join[T](caseClass: CaseClass[Hashable, T]): Hashable[T] =
-    (acc, value) => caseClass.params.foldLeft(acc):
-      (acc, param) =>
-        param.typeclass.digest(acc, param.deref(value))
+    (acc, value) => caseClass.params.foreach:
+      param => param.typeclass.digest(acc, param.deref(value))
 
   def split[T](sealedTrait: SealedTrait[Hashable, T]): Hashable[T] =
     (acc, value) => sealedTrait.choose(value):
       subtype =>
-        val acc2 = summon[Hashable[Int]].digest(acc, sealedTrait.subtypes.indexOf(subtype))
-        subtype.typeclass.digest(acc2, subtype.cast(value))
+        summon[Hashable[Int]].digest(acc, sealedTrait.subtypes.indexOf(subtype))
+        subtype.typeclass.digest(acc, subtype.cast(value))
     
   given[T: Hashable]: Hashable[Traversable[T]] =
-    (acc, xs) => xs.foldLeft(acc)(summon[Hashable[T]].digest)
+    (acc, xs) => xs.foreach(summon[Hashable[T]].digest(acc, _))
   
   given Hashable[Int] =
     (acc, n) => acc.append(IArray.from((24 to 0 by -8).map(n >> _).map(_.toByte).toArray))
@@ -104,25 +128,31 @@ object Hashable extends Derivation[Hashable]:
   given Hashable[Char] = (acc, n) => acc.append(IArray((n >> 8).toByte, n.toByte))
   given Hashable[Text] = (acc, s) => acc.append(IArray.from(s.bytes))
   given Hashable[Bytes] = _.append(_)
-  given Hashable[LazyList[Bytes]] = (acc, stream) => stream.foldLeft(acc)(_.append(_))
+  given Hashable[Iterable[Bytes]] = (acc, stream) => stream.foreach(acc.append(_))
   given Hashable[Digest[?]] = (acc, d) => acc.append(d.bytes)
 
+trait Hashable[-T]:
+  def digest(acc: DigestAccumulator, value: T): Unit
 
-trait Hashable[T]:
-  def digest(acc: DigestAccumulator, value: T): DigestAccumulator
-
-case class Digester(run: DigestAccumulator => DigestAccumulator):
+case class Digester(run: DigestAccumulator => Unit):
   def apply[A <: HashScheme[?]: HashFunction]: Digest[A] =
-    Digest(run(summon[HashFunction[A]].init).digest())
+    val acc = summon[HashFunction[A]].init
+    run(acc)
+    Digest(acc.digest())
   
   def digest[T: Hashable](value: T): Digester =
-    Digester(run.andThen(summon[Hashable[T]].digest(_, value)))
+    Digester:
+      acc =>
+        run(acc)
+        summon[Hashable[T]].digest(acc, value)
 
-final case class DigestAccumulator(private val messageDigest: MessageDigest):
-  def append(bytes: Bytes): DigestAccumulator =
-    messageDigest.update(bytes.to(Array))
-    DigestAccumulator(messageDigest)
-  
+trait DigestAccumulator:
+  def append(bytes: Bytes): Unit
+  def digest(): Bytes
+
+class MessageDigestAccumulator(md: MessageDigest) extends DigestAccumulator:
+  private val messageDigest: MessageDigest = md
+  def append(bytes: Bytes): Unit = messageDigest.update(bytes.unsafeMutable)
   def digest(): Bytes = IArray.from(messageDigest.digest.nn)
 
 trait EncodingScheme
