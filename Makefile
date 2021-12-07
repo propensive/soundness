@@ -1,36 +1,30 @@
+build: ire tmp/.publish
+	./ire
 
-pub: scala/bin/scalac bin/cs $(wildcard mod/*/)
-	echo $<
-	mkdir -p pub
-	PATH="$(PATH):bin" etc/build.sh
+ire:
+	curl -Lo ire https://github.com/propensive/ire/releases/download/v0.1.0/ire
+	chmod +x ire
 
-bin/cs: bin
-	curl -fLo bin/cs https://git.io/coursier-cli-linux
-	chmod +x bin/cs
+tmp:
+	mkdir -p tmp
 
-bin:
-	mkdir -p bin
+tmp/sbt.tgz: tmp
+	wget -nc -q -O tmp/sbt.tgz https://github.com/sbt/sbt/releases/download/v1.5.5/sbt-1.5.5.tgz || true
 
-clean:
-	rm -r pub out
+tmp/scala-cli.gz: tmp
+	wget -nc -q -O tmp/scala-cli.gz https://github.com/VirtusLab/scala-cli/releases/download/v0.0.9/scala-cli-x86_64-pc-linux-static.gz || true
 
-scala/bin/scalac:
-	git submodule update --init scala
+scala-cli: tmp/scala-cli.gz
+	gunzip -k tmp/scala-cli.gz
+	mv tmp/scala-cli scala-cli
+	chmod +x scala-cli
 
-mod/%/:
-	git submodule update --init mod/$*
+sbt/bin/sbt: tmp/sbt.tgz
+	tar xvf tmp/sbt.tgz
 
-headers:
-	for MOD in mod/*; do \
-	  cat tmpl/header | envsubst > $$MOD/.header ; \
-	  for FILE in $(shell find $$MOD/src -name '*.scala') ; do \
-	    cat $$MOD/.header > $(TMP) ; \
-	    sed '/\(package\|object\|import\)/,$$!d' "$$FILE" >> "$(TMP)" ; \
-	    mv "$(TMP)" "$$FILE" ; \
-	  done && rm $$MOD/.header ; \
-	done
+scala:
+	git clone https://github.com/dotty-staging/dotty --branch=fix-13691 scala
 
-build:
-	etc/build
-
-.PHONY: headers
+tmp/.publish: sbt/bin/sbt scala
+	cd scala && ../sbt/bin/sbt publishLocal
+	touch tmp/.publish
