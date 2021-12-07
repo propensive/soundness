@@ -1,10 +1,10 @@
 {
   "imports": [
-    "eucalyptus/build.ire",
-    "kaleidoscope/build.ire",
-    "clairvoyant/build.ire",
-    "gastronomy/build.ire",
-    "slalom/build.ire"
+    "../eucalyptus/build.ire",
+    "../kaleidoscope/build.ire",
+    "../clairvoyant/build.ire",
+    "../gastronomy/build.ire",
+    "../slalom/build.ire"
   ],
   "config": {
     "scalac": {
