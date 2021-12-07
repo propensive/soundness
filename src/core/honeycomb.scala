@@ -160,8 +160,8 @@ case class Element[+Name <: Label](labelString: String, unclosed: Boolean, tagIn
 
   lazy val inline: Boolean = tagInline && children.forall:
     case item: Node[?] => item.inline
-    case text: Text    => true
-    case int: Int      => true
+    case _: Text       => true
+    case _: Int        => true
     case _             => throw Impossible("should never match")
 
 case class HtmlDoc(root: Node["html"])
