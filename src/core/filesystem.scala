@@ -140,10 +140,10 @@ class Filesystem(pathSeparator: Text, fsPrefix: Text) extends Root(pathSeparator
     def isDirectory: Boolean = javaFile.exists() && javaFile.isDirectory
     def isSymlink: Boolean = javaFile.exists() && Files.isSymbolicLink(javaFile.toPath)
     
-    def descendantFiles: LazyList[File] throws IoError =
+    def descendantFiles(descend: (Directory => Boolean) = _ => true): LazyList[File] throws IoError =
       if javaFile.isDirectory
-      then directory.files.to(LazyList) #:::
-          directory.subdirectories.to(LazyList).flatMap(_.path.descendantFiles)
+      then directory.files.to(LazyList) #::: directory.subdirectories.filter(descend).to(LazyList)
+          .flatMap(_.path.descendantFiles(descend))
       else LazyList(file)
 
     def inode: Inode throws IoError =
@@ -236,6 +236,7 @@ class Filesystem(pathSeparator: Text, fsPrefix: Text) extends Root(pathSeparator
     def directory: Option[Directory] = None
     def file: Option[File] = Some(this)
     def symlink: Option[Symlink] = None
+    def modified: Long = javaFile.lastModified
     
     def write[T: Writable](content: T, append: Boolean = false): Unit throws IoError =
       val out = ji.FileOutputStream(javaPath.toFile, append)
@@ -350,10 +351,10 @@ class Filesystem(pathSeparator: Text, fsPrefix: Text) extends Root(pathSeparator
             
             case _ =>
               index
-          events.to(LazyList) #::: {
+          
+          events.to(LazyList) #::: :
             Thread.sleep(interval)
             poll(newIndex)
-          }
         else
           index.keys.foreach(_.cancel())
           LazyList()
