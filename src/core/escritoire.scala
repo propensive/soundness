@@ -159,13 +159,3 @@ case class Tabulation[T: ClassTag](cols: Column[T]*):
         else newSeen(newSeen.keys.min)
     
     println(optimize(inits).to(List))
-      
-
-@main def run(): Unit =
-  import unsafeExceptions.canThrowAny
-  case class Person(name: Text, age: Int)
- 
-  val tab = Tabulation[Person](Column("Name", _.name), Column("Age", _.age))
-
-  tab.tabulate(List(Person(t"Jonathan Luke Pretty", 38), Person(t"Emma", 78)), 17, BorderStyle.DoubleSingle)
-    
