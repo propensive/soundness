@@ -75,7 +75,7 @@ trait HashFunction[A <: HashScheme[?]]:
   def initHmac: Mac
 
 case class MdHashFunction[A <: HashScheme[?]](name: Text, hmacName: Text) extends HashFunction[A]:
-  def init: DigestAccumulator = MessageDigestAccumulator(MessageDigest.getInstance(name.s).nn)
+  def init: DigestAccumulator = new MessageDigestAccumulator(MessageDigest.getInstance(name.s).nn)
   def initHmac: Mac = Mac.getInstance(hmacName.s).nn
 
 case object Crc32HashFunction extends HashFunction[Crc32]:
