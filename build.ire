@@ -1,10 +1,10 @@
 {
   "imports": [
-    "scintillate/build.ire",
-    "cataract/build.ire",
-    "guillotine/build.ire",
-    "euphemism/build.ire",
-    "honeycomb/build.ire"
+    "../scintillate/build.ire",
+    "../cataract/build.ire",
+    "../guillotine/build.ire",
+    "../euphemism/build.ire",
+    "../honeycomb/build.ire"
   ],
   "config": {
     "scalac": {
