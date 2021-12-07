@@ -1,5 +1,5 @@
 {
-  "imports": ["contextual/build.ire", "wisteria/build.ire"],
+  "imports": ["../contextual/build.ire", "../wisteria/build.ire"],
   "config": {
     "scalac": {
       "version": "3.1.1-RC1-bin-SNAPSHOT",
