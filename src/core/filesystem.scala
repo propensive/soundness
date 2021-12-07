@@ -316,7 +316,8 @@ class Filesystem(pathSeparator: Text, fsPrefix: Text) extends Root(pathSeparator
       val svc = javaPath.getFileSystem.nn.newWatchService().nn
       
       def watchKey(dir: Directory): WatchKey =
-        Log.fine(t"Started monitoring for changes in ${dir.path.show}")
+        // Calls to `Log.fine` seem to result in an AssertionError at compiletime
+        //Log.fine(t"Started monitoring for changes in ${dir.path.show}")
         dir.javaPath.register(svc, ENTRY_CREATE, ENTRY_MODIFY, ENTRY_DELETE).nn
       
       def poll(index: Map[WatchKey, Directory]): LazyList[FileEvent] =
@@ -340,11 +341,13 @@ class Filesystem(pathSeparator: Text, fsPrefix: Text) extends Root(pathSeparator
         if continue then
           val newIndex = events.foldLeft(index):
             case (index, FileEvent.NewDirectory(dir)) =>
-              Log.fine(t"Starting monitoring new directory ${dir.path.show}")
+              // Calls to `Log.fine` seem to result in an AssertionError at compiletime
+              //Log.fine(t"Starting monitoring new directory ${dir.path.show}")
               index.updated(watchKey(dir), dir)
             
             case (index, FileEvent.Delete(path)) =>
-              if path.isDirectory then Log.fine(t"Stopping monitoring of deleted directory $path")
+              // Calls to `Log.fine` seem to result in an AssertionError at compiletime
+              //if path.isDirectory then Log.fine(t"Stopping monitoring of deleted directory $path")
               val deletions = index.filter(_(1).path == path)
               deletions.keys.foreach(_.cancel())
               index -- deletions.keys
