@@ -1,117 +1,117 @@
 [submodule "mod/rudiments"]
 	path = mod/rudiments
-	url = git@github.com:propensive/rudiments
+	url = https://github.com/propensive/rudiments
 	branch = main
 [submodule "mod/kaleidoscope"]
 	path = mod/kaleidoscope
-	url = git@github.com:propensive/kaleidoscope
+	url = https://github.com/propensive/kaleidoscope
 	branch = main
 [submodule "mod/simplistic"]
 	path = mod/clairvoyant
-	url = git@github.com:propensive/clairvoyant
+	url = https://github.com/propensive/clairvoyant
 	branch = main
 [submodule "mod/probably"]
 	path = mod/probably
-	url = git@github.com:propensive/probably
+	url = https://github.com/propensive/probably
 	branch = main
 [submodule "mod/wisteria"]
 	path = mod/wisteria
-	url = git@github.com:propensive/wisteria
+	url = https://github.com/propensive/wisteria
 	branch = main
 [submodule "mod/slalom"]
 	path = mod/slalom
-	url = git@github.com:propensive/slalom
+	url = https://github.com/propensive/slalom
 	branch = main
 [submodule "mod/scintillate"]
 	path = mod/scintillate
-	url = git@github.com:propensive/scintillate
+	url = https://github.com/propensive/scintillate
 	branch = main
 [submodule "mod/jovian"]
 	path = mod/jovian
-	url = git@github.com:propensive/jovian
+	url = https://github.com/propensive/jovian
 	branch = main
 [submodule "mod/iridescence"]
 	path = mod/iridescence
-	url = git@github.com:propensive/iridescence
+	url = https://github.com/propensive/iridescence
 	branch = main
 [submodule "mod/honeycomb"]
 	path = mod/honeycomb
-	url = git@github.com:propensive/honeycomb
+	url = https://github.com/propensive/honeycomb
 	branch = main
 [submodule "mod/guillotine"]
 	path = mod/guillotine
-	url = git@github.com:propensive/guillotine
+	url = https://github.com/propensive/guillotine
 	branch = main
 [submodule "mod/gastronomy"]
 	path = mod/gastronomy
-	url = git@github.com:propensive/gastronomy
+	url = https://github.com/propensive/gastronomy
 	branch = main
 [submodule "mod/euphemism"]
 	path = mod/euphemism
-	url = git@github.com:propensive/euphemism
+	url = https://github.com/propensive/euphemism
 	branch = main
 [submodule "mod/escritoire"]
 	path = mod/escritoire
-	url = git@github.com:propensive/escritoire
+	url = https://github.com/propensive/escritoire
 	branch = main
 [submodule "mod/cosmopolite"]
 	path = mod/cosmopolite
-	url = git@github.com:propensive/cosmopolite
+	url = https://github.com/propensive/cosmopolite
 	branch = main
 [submodule "mod/contextual"]
 	path = mod/contextual
-	url = git@github.com:propensive/contextual
+	url = https://github.com/propensive/contextual
 	branch = main
 [submodule "mod/cataract"]
 	path = mod/cataract
-	url = git@github.com:propensive/cataract
+	url = https://github.com/propensive/cataract
 	branch = main
 [submodule "mod/acyclicity"]
 	path = mod/acyclicity
-	url = git@github.com:propensive/acyclicity
+	url = https://github.com/propensive/acyclicity
 	branch = main
 [submodule "mod/punctuation"]
 	path = mod/punctuation
-	url = git@github.com:propensive/punctuation
+	url = https://github.com/propensive/punctuation
 	branch = main
 [submodule "mod/xylophone"]
 	path = mod/xylophone
-	url = git@github.com:propensive/xylophone
+	url = https://github.com/propensive/xylophone
 	branch = main
 [submodule "mod/adversaria"]
 	path = mod/adversaria
-	url = git@github.com:propensive/adversaria
+	url = https://github.com/propensive/adversaria
 	branch = main
 [submodule "mod/exoskeleton"]
 	path = mod/exoskeleton
-	url = git@github.com:propensive/exoskeleton
+	url = https://github.com/propensive/exoskeleton
 	branch = main
 [submodule "mod/caesura"]
 	path = mod/caesura
-	url = git@github.com:propensive/caesura
+	url = https://github.com/propensive/caesura
 	branch = main
 [submodule "mod/escapade"]
 	path = mod/escapade
-	url = git@github.com:propensive/escapade
+	url = https://github.com/propensive/escapade
 	branch = main
 [submodule "mod/gossamer"]
 	path = mod/gossamer
-	url = git@github.com:propensive/gossamer
+	url = https://github.com/propensive/gossamer
 	branch = main
 [submodule "mod/gesticulate"]
 	path = mod/gesticulate
-	url = git@github.com:propensive/gesticulate
+	url = https://github.com/propensive/gesticulate
 	branch = main
 [submodule "mod/eucalyptus"]
 	path = mod/eucalyptus
-	url = git@github.com:propensive/eucalyptus
+	url = https://github.com/propensive/eucalyptus
 	branch = main
 [submodule "mod/profanity"]
 	path = mod/profanity
-	url = git@github.com:propensive/profanity
+	url = https://github.com/propensive/profanity
 [submodule "mod/tarantula"]
 	path = mod/tarantula
-	url = git@github.com:propensive/tarantula
+	url = https://github.com/propensive/tarantula
 [submodule "mod/harlequin"]
 	path = mod/harlequin
-	url = git@github.com:propensive/harlequin
+	url = https://github.com/propensive/harlequin
