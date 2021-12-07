@@ -11,4 +11,6 @@ jobs:
     - uses: actions/checkout@v2
     - name: Build
       run: |
-        make -B
+        make scala-cli
+        cp scala-cli /usr/local/bin/
+        make
