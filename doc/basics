@@ -1,5 +1,3 @@
-## Quick Start
-
 ### Untyped Schemas
 
 A schema may be implemented as a singleton object extending `SimpleSchema[T]`, where `T` is the
@@ -146,6 +144,19 @@ transparent inline def apply(value: Map[String, String]): Record =
 remembering to make it transparent and inline to ensure that the precise type of the returned
 `Record` is preserved—after all, that is the whole point!
 
+### Structural Types
+
+Polyvinyl uses Scala 3 macros to return structural refinements of `Record` and `SimpleRecord` types.
+
+For example, given the definition of `MySchema`, above, the return type of the method, `record`,
+would be:
+```scala
+Record { def age: Double; def name: String; def employed: Boolean }
+```
+
+This means that, not only is the return value a `Record`, but it additionally has fields called,
+`age`, `name` and `employed` returning a `Double`, a `String` and a `Boolean` respectively.
+
 ## Compilation Order
 
 It is crucial that the schema singleton is defined in a different file from the invocation. This
@@ -156,5 +167,6 @@ exist between those files).
 
 ## Limitations
 
-`SimpleSchema` and `Schema` do not currently make their precise record types available, however
-these are statically known, and could potentially be made available as type members.
+`SimpleSchema` and `Schema` do not currently make their precise record types available except as the
+return type of calling `record`. However the type is statically known, and could potentially be made
+available as a type member.
