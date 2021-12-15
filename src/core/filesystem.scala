@@ -299,7 +299,8 @@ class Filesystem(pathSeparator: Text, fsPrefix: Text) extends Root(pathSeparator
     case Modify(file: File)
     case Delete(file: IoPath)
 
-  case class Watcher(stream: LazyList[FileEvent], stop: () => Unit)
+  case class Watcher(startStream: () => LazyList[FileEvent], stop: () => Unit):
+    def stream: LazyList[FileEvent] = startStream()
 
   case class Directory(initPath: IoPath) extends Inode(initPath):
     def directory: Option[Directory] = Some(this)
@@ -362,7 +363,7 @@ class Filesystem(pathSeparator: Text, fsPrefix: Text) extends Root(pathSeparator
           index.keys.foreach(_.cancel())
           LazyList()
 
-      Watcher(poll(dirs.mtwin.map(watchKey(_) -> _).to(Map)), () => continue = false)
+      Watcher(() => poll(dirs.mtwin.map(watchKey(_) -> _).to(Map)), () => continue = false)
 
     def children: List[Inode] throws IoError =
       Option(javaFile.list).fold(Nil):
