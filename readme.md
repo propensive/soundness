@@ -175,7 +175,7 @@ The `PrivateKey` object provides the `generate[A]()` method, where `A` is `Rsa[B
 The algorithm `Aes[B]` can also be used with the `SymmetricKey` object to get a symmetric key which
 has the functionality of both a public and private key.
 
-°## Byte codecs
+## Byte codecs
 
 Any object which can be serialized to bytes may be digested, signed, verified, HMACked or encrypted,
 and can be returned from a decryption operation, provided a corresponding `ByteCodec` instance is
@@ -233,7 +233,7 @@ Gastronomy is classified as __maturescent__. Propensive defines the following fi
 - _dependable_: production-ready, subject to controlled ongoing maintenance and enhancement; tagged as version `1.0` or later
 - _adamantine_: proven, reliable and production-ready, with no further breaking changes ever anticipated
 
-Gastronomy is designed to be _small_. Its entire source code currently consists of 419 lines of code.
+Gastronomy is designed to be _small_. Its entire source code currently consists of 444 lines of code.
 
 ## Availability
 
