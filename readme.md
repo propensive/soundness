@@ -11,6 +11,7 @@ source, loaded at compiletime, and utilized in a later phase of compilation.
 ## Features
 
 - provides support for record types in Scala
+- allows the implementation of F#-style type providers
 - enforces namespace-safety on field access
 - record schemas may be defined programmatically, without writing explicit case classes
 - schemas can be defined dynamically, taking strings as field names
