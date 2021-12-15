@@ -115,3 +115,6 @@
 [submodule "mod/harlequin"]
 	path = mod/harlequin
 	url = https://github.com/propensive/harlequin
+[submodule "mod/polyvinyl"]
+	path = mod/polyvinyl
+	url = https://github.com/propensive/polyvinyl
