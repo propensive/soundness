@@ -136,7 +136,7 @@ the tests, in order, like so:
 ```scala
 object ProjectTests extends Suite("Project tests"):
   def run(using Runner): Unit =
-°    test("first test") {
+    test("first test") {
       // test body
     }.assert(/* predicate */)
 ```
