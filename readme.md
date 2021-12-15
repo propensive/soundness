@@ -105,7 +105,7 @@ import gesticulate.*
 val styles = Style(htype = media"text/css")(css)
 ```
 without any additional imports.
-°
+
 A contextual instance of `clairvoyant.HtmlAttribute` is all that is required to make this possible.
 
 
