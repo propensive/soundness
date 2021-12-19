@@ -34,7 +34,6 @@ object Bytes:
   def apply(xs: Byte*): Bytes = IArray(xs*)
   def empty: Bytes = IArray()
 
-
 case class ExcessDataError(size: ByteSize, limit: ByteSize)
 extends Exception(s"the amount of data in the stream (at least ${size}B) exceeds the limit (${limit}B)")
 
@@ -140,10 +139,8 @@ extension [T](opt: Option[T]) def maybe: Unset.type | T = opt.getOrElse(Unset)
 
 case class StreamCutError() extends Exception("rudiments: the stream was cut prematurely")
 
-
 object Util:
-
-  def read(in: ji.InputStream, limit: ByteSize): DataStream = in match
+  def readInputStream(in: ji.InputStream, limit: ByteSize): DataStream = in match
     case in: ji.BufferedInputStream =>
       def read(): DataStream =
         try
@@ -161,16 +158,16 @@ object Util:
       read()
     
     case in: ji.InputStream =>
-      read(ji.BufferedInputStream(in), limit)
+      readInputStream(ji.BufferedInputStream(in), limit)
   
-  def write(stream: LazyList[IArray[Byte]], out: ji.OutputStream): Unit =
+  def write(stream: DataStream, out: ji.OutputStream): Unit throws StreamCutError =
     stream.map(_.unsafeMutable).foreach(out.write(_))
 
 object Source:
   given Source[Stdin.type] with
     type E = StreamCutError
-    def read(value: Stdin.type): DataStream throws E =
-      if System.in == null then throw StreamCutError() else Util.read(System.in, 10.mb)
+    def read(value: Stdin.type): DataStream throws StreamCutError =
+      if System.in == null then throw StreamCutError() else Util.readInputStream(System.in, 10.mb)
 
 trait Source[T]:
   type E <: Exception
@@ -179,28 +176,50 @@ trait Source[T]:
 object Sink:
   given Sink[Stdout.type] with
     type E = StreamCutError
-    def write(value: Stdout.type, stream: LazyList[Bytes]): Unit throws StreamCutError =
+    def write(value: Stdout.type, stream: DataStream) =
       if System.out == null then throw StreamCutError() else Util.write(stream, System.out)
   
   given Sink[Stderr.type] with
     type E = StreamCutError
-    def write(value: Stderr.type, stream: LazyList[Bytes]): Unit throws StreamCutError =
+    def write(value: Stderr.type, stream: DataStream) =
       if System.err == null then throw StreamCutError() else Util.write(stream, System.err)
+  
+  given Sink[ji.OutputStream] with
+    type E = StreamCutError
+    def write(sink: ji.OutputStream, stream: DataStream) =
+      val out = sink match
+        case out: ji.BufferedOutputStream => out
+        case out: ji.OutputStream         => ji.BufferedOutputStream(out)
+      
+      Util.write(stream, out)
 
 trait Sink[T]:
   type E <: Exception
-  def write(value: T, stream: LazyList[Bytes]): Unit throws E
+  def write(value: T, stream: DataStream): Unit throws E | StreamCutError
+
+object SafeStreamable:
+  given SafeStreamable[LazyList[Bytes]] = identity(_)
 
 object Streamable:
-  given Streamable[LazyList[Bytes]] = identity(_)
+  given Streamable[DataStream] = identity(_)
   given Streamable[Bytes] = LazyList(_)
 
 trait Streamable[T]:
-  def stream(value: T): LazyList[Bytes]
+  def stream(value: T): DataStream
+
+trait SafeStreamable[T] extends Streamable[T]:
+  def safeStream(value: T): LazyList[Bytes]
+  def stream(value: T): DataStream = safeStream(value).map(identity(_))
 
 trait Readable[T]:
-  type E <: Exception
-  def fromStream(stream: DataStream): T throws E | StreamCutError
+  readable =>
+    type E <: Exception
+    def read(stream: DataStream): T throws E | StreamCutError
+    def map[S](fn: T => S): rudiments.Readable[S] { type E = readable.E } =
+      new rudiments.Readable[S]:
+        type E = readable.E
+        def read(stream: DataStream): S throws E | StreamCutError =
+          fn(readable.read(stream))
 
 object Stdin
 object Stdout
@@ -209,16 +228,16 @@ object Stderr
 extension [T](value: T)
   def dataStream(using src: Source[T]): DataStream throws src.E = src.read(value)
   
-  def writeStream(stream: LazyList[Bytes])(using sink: Sink[T]): Unit throws sink.E =
+  def writeStream(stream: DataStream)(using sink: Sink[T]): Unit throws sink.E | StreamCutError =
     sink.write(value, stream)
   
   def writeTo[S](destination: S)(using sink: Sink[S], streamable: Streamable[T])
-      : Unit throws sink.E =
+      : Unit throws sink.E | StreamCutError =
     sink.write(destination, streamable.stream(value))
 
   def read[S](using readable: Readable[S], src: Source[T])
       : S throws readable.E | src.E | StreamCutError =
-    readable.fromStream(dataStream)
+    readable.read(dataStream)
 
 case class githubIssue(id: Int) extends StaticAnnotation
 
