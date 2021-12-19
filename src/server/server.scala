@@ -127,8 +127,8 @@ object Request:
     val bodySample: Text =
       try request.body.stream.slurp(limit = 256.b).uString
       catch
-        case ExcessDataError(_, _) => t"[...]"
-        case StreamCutError()      => t"[-/-]"
+        case err: ExcessDataError => t"[...]"
+        case err: StreamCutError  => t"[-/-]"
     
     val headers: Text =
       request.rawHeaders.map:
