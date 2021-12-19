@@ -28,10 +28,12 @@ import java.util.regex.*
 import java.net.{URLEncoder, URLDecoder}
 
 opaque type Text = String
+type TextStream = LazyList[Text throws StreamCutError]
 
 extension (value: Bytes)
   def uString: Text = Text(String(value.to(Array), "UTF-8"))
   def hex: Text = Text(value.map { b => String.format("\\u%04x", b.toInt).nn }.mkString)
+  def asString[Enc <: Encoding](using enc: Enc): String = Text(String(value.to(Array), enc.name))
 
 extension (string: String)
   def text: Text = string
@@ -39,10 +41,27 @@ extension (string: String)
 object Text:
   given CommandLineParser.FromString[Text] = identity(_)
 
-  given Readable[Text] with
-    type E = StreamCutError | ExcessDataError
-    def fromStream(value: DataStream) =
-      value.slurp(1.mb).uString
+  given (using Encoding): Readable[Text] with
+    type E = ExcessDataError
+    def read(value: DataStream) = value.slurp(1.mb).asString
+
+  given Streamable[Text] = value => LazyList(value.bytes)
+
+  given textReader(using enc: Encoding): Readable[LazyList[Text]] with
+    type E = ExcessDataError
+    def read(stream: DataStream) =
+      
+      def read(stream: DataStream, carried: Array[Byte] = Array.empty[Byte]): LazyList[Text] =
+        if stream.isEmpty then LazyList()
+        else
+          // FIXME: constructing this new array may be unnecessarily costly.
+          val buf = carried ++ stream.head.unsafeMutable
+          val carry = enc.carry(buf)
+          
+          Text(String(buf, 0, buf.length - carry, enc.name.s)) #::
+              read(stream.tail, buf.takeRight(carry))
+      
+      read(stream)
 
   extension (text: Text)
     def s: String = text
@@ -253,3 +272,52 @@ extension (buf: StringBuilder)
   def add(text: Text): Unit = buf.append(text)
   def add(char: Char): Unit = buf.append(char)
   def text: Text = Showable(buf).show
+
+object encodings:
+  given Utf8: Encoding with
+    def carry(arr: Array[Byte]): Int =
+      val len = arr.length
+      def last = arr(len - 1)
+      def last2 = arr(len - 2)
+      def last3 = arr(len - 3)
+      
+      if len > 0 && ((last & -32) == -64 || (last & -16) == -32 || (last & -8) == -16) then 1
+      else if len > 1 && ((last2 & -16) == -32 || (last2 & -8) == -16) then 2
+      else if len > 2 && ((last3 & -8) == -16) then 3
+      else 0
+    
+    def name: Text = Text("UTF-8")
+  
+  given Ascii: Encoding with
+    def carry(arr: Array[Byte]): Int = 0
+    def name: Text = Text("ASCII")
+  
+  @targetName("ISO_8859_1")
+  given `ISO-8859-1`: Encoding with
+    def name: Text = Text("ISO-8859-1")
+    def carry(arr: Array[Byte]): Int = 0
+
+trait Encoding:
+  def name: Text
+  def carry(array: Array[Byte]): Int
+
+case class Line(text: Text)
+
+object Line:
+  given lineReader(using enc: Encoding): Readable[LazyList[Line]] with
+    type E = ExcessDataError
+    def read(stream: DataStream) =
+      def recur(stream: LazyList[Text], carry: Text = Text("")): LazyList[Line] =
+        if stream.isEmpty then
+          if carry.isEmpty then LazyList() else LazyList(Line(carry))
+        else
+          val parts = stream.head.s.split("\\r?\\n", Int.MaxValue).nn.map(_.nn)
+          if parts.length == 1 then recur(stream.tail, carry + parts.head.show)
+          else if parts.length == 2 then Line(carry + parts.head.show) #:: recur(stream.tail, parts.last.show)
+          else
+            Line(carry + parts.head.show) #:: parts.tail.init.map:
+              str => Line(str.show)
+            .to(LazyList) #::: recur(stream.tail, parts.last.show)
+      
+      recur(summon[Readable[LazyList[Text]]].read(stream))
+      
