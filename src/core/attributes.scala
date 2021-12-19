@@ -145,6 +145,11 @@ object Attribute:
   given any[T, L <: Label]: Attribute[L, Text, T] = identity(_)
 
   given accept[T]: Attribute["accept", List[Text], T] = _.join(t",")
+  
+  given acceptCharset[T]: Attribute["acceptCharset", Encoding, T] with
+    override def rename: Option[Text] = Some(t"accept-charset")
+    def convert(value: Encoding): Text = value.name
+
   given accesskey[T]: Attribute["accesskey", Char, T] = _.show
   given allowfullscreen[T]: Attribute["allowfullscreen", Boolean, T] = _ => Unset
   given allowpaymentrequest[T]: Attribute["allowpaymentrequest", Boolean, T] = _ => Unset
@@ -155,6 +160,7 @@ object Attribute:
   given autoplay[T]: Attribute["autoplay", Boolean, T] = _ => Unset
   given autofocus[T]: Attribute["autofocus", Boolean, T] = _ => Unset
   given border[T]: Attribute["border", Boolean, T] = if _ then t"1" else t""
+  given charset[T]: Attribute["acceptCharset", Encoding, T] = _.name
   given checkedBoolean[T]: Attribute["checked", Boolean, T] = _ => Unset
   given cite[T]: Attribute["cite", Text, T] = identity(_)
 
