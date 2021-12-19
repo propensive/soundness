@@ -93,13 +93,12 @@ extends Root(t"/", t""):
     def resource: Resource = Resource(makeAbsolute(parts))
 
   case class Resource(path: ClasspathRef):
-    def read[T](limit: ByteSize = 64.kb)
-               (using readable: Readable[T, ?])
-               : T throws ClasspathRefError | readable.E =
-      val in = ji.BufferedInputStream(classLoader.getResourceAsStream(path.show.s))
-      
-      try readable.read(in, limit)
-      catch case e: NullPointerException => throw ClasspathRefError(classpath)(path)
+    def read[T](limit: ByteSize = 64.kb)(using readable: Readable[T])
+            : T throws ClasspathRefError | StreamCutError | readable.E =
+      val resource = classLoader.getResourceAsStream(path.show.s)
+      if resource == null then throw ClasspathRefError(classpath)(path)
+      val stream = Util.readInputStream(resource.nn, limit)
+      readable.read(stream)
     
     def name: Text = path.parts.lastOption.getOrElse(prefix)
     def parent: Resource throws RootParentError = Resource(path.parent)
@@ -215,18 +214,16 @@ class Filesystem(pathSeparator: Text, fsPrefix: Text) extends Root(pathSeparator
     
     given Sink[File] with
       type E = IoError
-      def write(value: File, stream: LazyList[Bytes]): Unit throws IoError =
+      def write(value: File, stream: DataStream): Unit throws E | StreamCutError =
         val out = ji.FileOutputStream(value.javaPath.toFile, false)
-        try summon[Writable[LazyList[Bytes]]].write(out, stream)
+        try Util.write(stream, out)
         catch case e => throw IoError(IoError.Op.Write, IoError.Reason.AccessDenied, value.path)
         finally try out.close() catch _ => ()
 
     given Source[File] with
       type E = IoError
       def read(file: File): DataStream throws E =
-        try
-          val in = ji.BufferedInputStream(ji.FileInputStream(file.javaPath.toFile))
-          Util.read(in, 64.kb)
+        try Util.readInputStream(ji.FileInputStream(file.javaPath.toFile), 64.kb)
         catch case e: ji.FileNotFoundException =>
           if e.getMessage.nn.contains("(Permission denied)")
           then throw IoError(IoError.Op.Read, IoError.Reason.AccessDenied, file.initPath)
@@ -238,17 +235,10 @@ class Filesystem(pathSeparator: Text, fsPrefix: Text) extends Root(pathSeparator
     def symlink: Option[Symlink] = None
     def modified: Long = javaFile.lastModified
     
-    def write[T: Writable](content: T, append: Boolean = false): Unit throws IoError =
-      val out = ji.FileOutputStream(javaPath.toFile, append)
-      try summon[Writable[T]].write(out, content)
-      catch case e => throw IoError(IoError.Op.Write, IoError.Reason.AccessDenied, initPath)
-      finally try out.close() catch _ => ()
-
-    def read[T](limit: ByteSize = 64.kb)(using readable: Readable[T, ?])
-        : T throws readable.E | IoError =
-      val in = ji.BufferedInputStream(ji.FileInputStream(javaPath.toFile))
-      try readable.read(in, limit)
-      catch case e =>
+    def read[T](limit: ByteSize = 64.kb)(using readable: Readable[T])
+        : T throws readable.E | IoError | StreamCutError =
+      val stream = Util.readInputStream(ji.FileInputStream(javaPath.toFile), limit)
+      try readable.read(stream) catch case e =>
         throw IoError(IoError.Op.Read, IoError.Reason.AccessDenied, initPath)
 
     def copyTo(dest: IoPath): File throws IoError =
@@ -298,6 +288,7 @@ class Filesystem(pathSeparator: Text, fsPrefix: Text) extends Root(pathSeparator
     case NewDirectory(directory: Directory)
     case Modify(file: File)
     case Delete(file: IoPath)
+    case NoChange
 
   case class Watcher(startStream: () => LazyList[FileEvent], stop: () => Unit):
     def stream: LazyList[FileEvent] = startStream()
@@ -320,7 +311,7 @@ class Filesystem(pathSeparator: Text, fsPrefix: Text) extends Root(pathSeparator
         // Calls to `Log.fine` seem to result in an AssertionError at compiletime
         //Log.fine(t"Started monitoring for changes in ${dir.path.show}")
         dir.javaPath.register(svc, ENTRY_CREATE, ENTRY_MODIFY, ENTRY_DELETE).nn
-      
+
       def poll(index: Map[WatchKey, Directory]): LazyList[FileEvent] =
         erased given CanThrow[RootParentError] = compiletime.erasedValue
         val events = index.map:
@@ -343,12 +334,12 @@ class Filesystem(pathSeparator: Text, fsPrefix: Text) extends Root(pathSeparator
           val newIndex = events.foldLeft(index):
             case (index, FileEvent.NewDirectory(dir)) =>
               // Calls to `Log.fine` seem to result in an AssertionError at compiletime
-              //Log.fine(t"Starting monitoring new directory ${dir.path.show}")
+              Log.fine(t"Starting monitoring new directory ${dir.path.show}")
               index.updated(watchKey(dir), dir)
             
             case (index, FileEvent.Delete(path)) =>
               // Calls to `Log.fine` seem to result in an AssertionError at compiletime
-              //if path.isDirectory then Log.fine(t"Stopping monitoring of deleted directory $path")
+              if path.isDirectory then Log.fine(t"Stopping monitoring of deleted directory $path")
               val deletions = index.filter(_(1).path == path)
               deletions.keys.foreach(_.cancel())
               index -- deletions.keys
@@ -356,9 +347,12 @@ class Filesystem(pathSeparator: Text, fsPrefix: Text) extends Root(pathSeparator
             case _ =>
               index
           
-          events.to(LazyList) #::: :
+          def sleepPoll(): LazyList[FileEvent] =
             Thread.sleep(interval)
             poll(newIndex)
+
+          if events.isEmpty then FileEvent.NoChange #:: sleepPoll()
+          else events.to(LazyList) #::: sleepPoll()
         else
           index.keys.foreach(_.cancel())
           LazyList()
@@ -569,117 +563,6 @@ class Filesystem(pathSeparator: Text, fsPrefix: Text) extends Root(pathSeparator
   //   def symlinkTo(target: Path): Unit throws NotWritable =
   //     try Files.createSymbolicLink(target.javaPath, javaPath)
   //     catch case e: ji.IOException => throw NotWritable(path)
-
-object Writable:
-  given Writable[LazyList[IArray[Byte]]] =
-    (out, stream) => stream.map(_.unsafeMutable).foreach(out.write(_))
-  
-  given (using enc: Encoding): Writable[LazyList[Text]] = (out, stream) =>
-    val writer = ji.BufferedWriter(ji.OutputStreamWriter(out, enc.name.s))
-    stream.foreach:
-      part =>
-        writer.write(part.s)
-        writer.flush()
-    writer.close()
-
-  given (using enc: Encoding): Writable[Text] =
-    (out, string) =>
-      val writer = ji.BufferedWriter(ji.OutputStreamWriter(out, enc.name.s))
-      writer.write(string.s)
-      writer.close()
-  
-  given Writable[IArray[Byte]] = (out, bytes) => out.write(bytes.unsafeMutable)
-
-trait Writable[T]:
-  def write(stream: ji.OutputStream, value: T): Unit
-  def contramap[S](fn: S => T): Writable[S] = (stream, value) => write(stream, fn(value))
-
-object Readable:
-  given dataStream: Readable[DataStream, Nothing] with
-    def read(in: ji.BufferedInputStream, limit: ByteSize = 64.kb): DataStream throws Nothing =
-      Util.read(in, limit)
-    
-  given stringStream(using enc: Encoding)
-      : Readable[LazyList[Text], StreamCutError | ExcessDataError] with
-    def read(in: ji.BufferedInputStream, limit: ByteSize = 64.kb) =
-
-      def read(prefix: Array[Byte], remaining: Int): LazyList[Text] =
-        try
-          val avail: Long = in.available
-          if avail == 0 then LazyList()
-          else if avail > remaining
-          then throw ExcessDataError((limit.long + avail - remaining).toInt.b, limit)
-          else
-            val buf = new Array[Byte](in.available.min(limit.long.toInt) + prefix.length)
-            if prefix.length > 0 then System.arraycopy(prefix, 0, buf, 0, prefix.length)
-            val count = in.read(buf, prefix.length, buf.length - prefix.length)
-            if count + prefix.length < 0 then LazyList(Text(String(buf, enc.name.s)))
-            else
-              val carry = enc.carry(buf)
-              (if carry == 0 then Text(String(buf, enc.name.s)) else Text(String(buf, 0, buf.length -
-                  carry, enc.name.s))) #:: read(buf.takeRight(carry), limit.long.toInt - buf.length)
-        catch IOException => throw StreamCutError()
-      
-      read(Array.empty[Byte], limit.long.toInt)
-
-  given readableString: Readable[Text, ExcessDataError | StreamCutError] with
-    def read(in: ji.BufferedInputStream, limit: ByteSize = 64.kb) =
-      given enc: Encoding = encodings.Utf8
-      val stream = stringStream.read(in, limit)
-      if stream.length == 0 then t""
-      else if stream.length > 1 then throw ExcessDataError(stream.length.b + limit, limit)
-      else stream.head
-  
-  given readableBytes: Readable[Bytes, ExcessDataError | StreamCutError] with
-    def read(in: ji.BufferedInputStream, limit: ByteSize) = Util.read(in, limit).slurp(limit)
-
-trait Readable[T, Ex <: Exception]:
-  type E = Ex
-  
-  private inline def readable: Readable[T, E] = this
-  
-  def read(stream: ji.BufferedInputStream, limit: ByteSize = 64.kb): T throws E
-  
-  def map[S](fn: T => S): Readable[S, E] = new Readable[S, E]:
-    def read(stream: ji.BufferedInputStream, limit: ByteSize = 64.kb): S throws E =
-      fn(readable.read(stream, limit))
-
-object encodings:
-  given Utf8: Encoding with
-    def carry(arr: Array[Byte]): Int =
-      val len = arr.length
-      def last = arr(len - 1)
-      def last2 = arr(len - 2)
-      def last3 = arr(len - 3)
-      
-      if len > 0 && ((last & -32) == -64 || (last & -16) == -32 || (last & -8) == -16) then 1
-      else if len > 1 && ((last2 & -16) == -32 || (last2 & -8) == -16) then 2
-      else if len > 2 && ((last3 & -8) == -16) then 3
-      else 0
-    
-    def name: Text = t"UTF-8"
-  
-  given Ascii: Encoding with
-    def carry(arr: Array[Byte]): Int = 0
-    def name: Text = t"ASCII"
-  
-  @targetName("ISO_8859_1")
-  given `ISO-8859-1`: Encoding with
-    def name: Text = t"ISO-8859-1"
-    def carry(arr: Array[Byte]): Int = 0
-
-object Encoding:
-  given acceptCharset[T]: clairvoyant.HtmlAttribute["acceptCharset", Encoding] with
-    def serialize(enc: Encoding): String = enc.name.s
-    def name: String = "accept-charset"
-  
-  given charset[T]: clairvoyant.HtmlAttribute["charset", Encoding] with
-    def serialize(enc: Encoding): String = enc.name.s
-    def name: String = "charset"
-
-trait Encoding:
-  def name: Text
-  def carry(array: Array[Byte]): Int
 
 open class JovianError(message: Text) extends Exception(t"jovian: $message".s)
 
