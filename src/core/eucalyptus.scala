@@ -133,7 +133,7 @@ case class Log(rules: Rule[?, ?]*):
 
 case class Rule[S, T](realm: Realm, level: Level, format: LogFormat[S, T], dest: S, sink: Sink[S]):
   def writer(stream: LazyList[Bytes]): Unit =
-    try sink.write(dest, stream) catch case e: Exception => ()
+    try sink.write(dest, stream.map(identity(_))) catch case e: Exception => ()
 
   def interested(realm: Realm, level: Level): Boolean =
     (this.realm == Everything || realm == this.realm) && level >= this.level
