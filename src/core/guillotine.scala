@@ -32,8 +32,6 @@ import annotation.targetName
 
 import java.io as ji
 
-type TextStream = LazyList[Text]
-
 object envs:
   val enclosing: Env = Env(System.getenv.nn.map(_.show -> _.show).to(Map))
   val empty: Env = Env(Map())
@@ -44,13 +42,13 @@ enum Context:
 case class State(current: Context, esc: Boolean, args: List[Text])
 
 object Executor:
-  given stream: Executor[TextStream] =
+  given stream: Executor[LazyList[Text]] =
     proc => ji.BufferedReader(ji.InputStreamReader(proc.getInputStream)).lines().nn.toScala(LazyList).map(_.show)
   
   given text: Executor[Text] = stream.map(_.foldLeft(t"") { (acc, line) => t"$acc\n$line" }.trim)
 
   given dataStream: Executor[DataStream] =
-    proc => Util.read(proc.getInputStream.nn, 64.kb)
+    proc => Util.readInputStream(proc.getInputStream.nn, 64.kb)
   
   given exitStatus: Executor[ExitStatus] = _.waitFor() match
     case 0     => ExitStatus.Ok
@@ -69,9 +67,13 @@ case class Pid(value: Long)
 
 class Process[T](process: java.lang.Process, executor: Executor[T]):
   def pid: Pid = Pid(process.pid)
-  def stdout(limit: ByteSize = 10.mb): DataStream = Util.read(process.getInputStream.nn, limit)
-  def stderr(limit: ByteSize = 10.mb): DataStream = Util.read(process.getErrorStream.nn, limit)
-  def stdin(in: LazyList[IArray[Byte]]): Unit = Util.write(in, process.getOutputStream.nn)
+  def stdout(limit: ByteSize = 10.mb): DataStream =
+    Util.readInputStream(process.getInputStream.nn, limit)
+  
+  def stderr(limit: ByteSize = 10.mb): DataStream =
+    Util.readInputStream(process.getErrorStream.nn, limit)
+  
+  def stdin(in: DataStream): Unit throws StreamCutError = Util.write(in, process.getOutputStream.nn)
   def await(): T = executor.interpret(process)
   def exitStatus(): ExitStatus = process.waitFor() match
     case 0     => ExitStatus.Ok
