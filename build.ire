@@ -1,5 +1,5 @@
 {
-  "imports": ["../contextual/build.ire", "../wisteria/build.ire"],
+  "imports": ["../contextual/build.ire", "../wisteria/build.ire", "../probably/build.ire"],
   "config": {
     "scalac": {
       "version": "3.1.2-RC1-bin-SNAPSHOT",
@@ -26,6 +26,14 @@
       "sources": ["src/core"],
       "version": "0.1.0",
       "docs": ["doc"]
+    },
+    {
+      "name": "Gossamer Tests",
+      "id": "gossamer/test",
+      "links": ["gossamer/core", "probably/cli"],
+      "sources": ["src/test"],
+      "version": "0.1.0",
+      "main": "gossamer.Tests"
     }
   ]
 }

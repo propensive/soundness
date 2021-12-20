@@ -79,7 +79,7 @@ object Text:
     def takeRight(n: Int): Text = s.substring(0 max (s.size - n) min length, length).nn
     def snip(n: Int): (Text, Text) = (s.substring(0, n min s.size).nn, s.substring(n min s.size).nn)
     def trim: Text = text.trim.nn
-    def slice(from: Int, to: Int): Text = s.substring(from max 0, to min s.size).nn
+    def slice(from: Int, to: Int): Text = s.substring(from max 0 min length, to min length max 0).nn
     def chars: IArray[Char] = IArray.from(s.toCharArray.nn)
     def flatMap(fn: Char => Text): Text = String(s.toCharArray.nn.flatMap(fn(_).toCharArray.nn))
     def map(fn: Char => Char): Text = String(s.toCharArray.nn.map(fn))

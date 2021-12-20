@@ -61,6 +61,20 @@ object Tests extends Suite(t"Gossamer Tests"):
         t"Hello мир".debug
       .check(_ == t"""\"Hello \\u043c\\u0438\\u0440\"""")
 
+      test(t"pattern match on Text"):
+        var text = t"Hello"
+        text match
+          case t"Hello" => true
+          case _        => false
+      .check(_ == true)
+      
+      test(t"pattern non-match on Text"):
+        var text = t"Hello"
+        text match
+          case t"World" => true
+          case _        => false
+      .check(_ == false)
+
       test(t"serialize double"):
         3.1.debug
       .check(_ == t"3.1")

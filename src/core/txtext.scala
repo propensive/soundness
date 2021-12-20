@@ -22,3 +22,9 @@ extension (inline ctx: StringContext)
  
   transparent inline def t(inline parts: Any*): Text =
     ${Interpolation.T.expand('{Interpolation.T}, 'ctx, 'parts)}
+
+extension (ctx: StringContext)
+  def t = SimpleTExtractor(ctx.parts.head.show)
+
+case class SimpleTExtractor(text: Text):
+  def unapply(scrutinee: Text): Boolean = text == scrutinee
