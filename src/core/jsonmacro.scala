@@ -29,6 +29,7 @@ import unsafeExceptions.canThrowAny
 object JsonMacro:
   def deriveReader[T: Type](using Quotes): Expr[Json.Reader[T]] =
     import quotes.reflect.*
+
     val tpe = TypeRepr.of[T]
     val fields = tpe.typeSymbol.caseFields.collect { case f: Symbol if f.isValDef => f }
     val companion = tpe.typeSymbol.companionModule
@@ -71,6 +72,7 @@ object JsonMacro:
             fields match
               case Nil =>
                 Nil
+              
               case head :: tail =>
                 val typeRepr = head.tree match
                   case valDef: ValDef => valDef.tpt.tpe
@@ -89,12 +91,14 @@ object JsonMacro:
                         val label = Expr(head.name)
                         val expr: Expr[`paramType`] =
                           '{
-                            $reader.read(vs.get($label).getOrElse(throw JsonAccessError(Text($label))))
+                            $reader.read(vs.get($label).getOrElse(
+                                throw JsonAccessError(Text($label))))
                           }
                         expr :: recur(tail)
                       
                       case _ =>
-                        throw Impossible("Expr.summon should never retrieve a value which doesn't match the first case")
+                        throw Impossible("Expr.summon should never retrieve a value which doesn't "+
+                                              "match the first case")
                   
                   case _ =>
                     throw Impossible("the pattern '[paramType] should be irrefutable")
