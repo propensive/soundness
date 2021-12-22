@@ -78,13 +78,13 @@ object Csv extends Format:
 
   given Reader[String] = _.elems.head.s
   given Reader[Text] = _.elems.head
-  given Reader[Int] = _.elems.head.s.toInt
-  given Reader[Boolean] = _.elems.head == t"true"
-  given Reader[Double] = _.elems.head.s.toDouble
-  given Reader[Byte] = _.elems.head.s.toByte
-  given Reader[Short] = _.elems.head.s.toShort
-  given Reader[Float] = _.elems.head.s.toFloat
-  given Reader[Char] = _.elems.head.s.head
+  given Reader[Int] = value => Int.unapply(value.elems.head).get
+  given Reader[Boolean] = value => Boolean.unapply(value.elems.head).get
+  given Reader[Double] = value => Double.unapply(value.elems.head).get
+  given Reader[Byte] = value => Byte.unapply(value.elems.head).get
+  given Reader[Short] = value => Short.unapply(value.elems.head).get
+  given Reader[Float] = value => Float.unapply(value.elems.head).get
+  given Reader[Char] = value => Char.unapply(value.elems.head).get
 
   object Reader extends ProductDerivation[Reader]:
     def join[T](caseClass: CaseClass[Reader, T]): Reader[T] = Reader[T](
@@ -133,7 +133,7 @@ object Csv extends Format:
 
   override val separator = ','
   def escape(str: Text): Text =
-    val c = str.s.count { ch => ch.isWhitespace || ch == '"' || ch == ',' }
+    val c = str.count { ch => ch.isWhitespace || ch == '"' || ch == ',' }
     if c > 0 then t""""${str.s.replaceAll("\"", "\"\"").nn}"""" else str
 
 extension [T](value: Seq[T])
