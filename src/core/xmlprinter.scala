@@ -16,6 +16,7 @@
 
 package xylophone
 
+import rudiments.*
 import gossamer.*
 
 trait XmlPrinter[T]:
