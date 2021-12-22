@@ -17,6 +17,7 @@
 package acyclicity
 
 import gossamer.*
+import rudiments.*
 
 import scala.annotation.*
 

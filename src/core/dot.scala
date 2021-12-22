@@ -92,16 +92,15 @@ object Dot:
         end = false
       else buf.add(t" ")
 
-    tokens.map(_.s).foreach {
-      case ""   => ()
-      case ","  => buf.add(t",")
-      case "{"  => whitespace(); buf.add(t"{"); indent(); newline()
-      case "}"  => outdent(); whitespace(); buf.add(t"}"); newline()
-      case "["  => whitespace(); buf.add(t"[")
-      case "]"  => whitespace(); buf.add(t"]"); newline()
-      case ";"  => newline()
-      case word => whitespace(); buf.add(word.show)
-    }
+    tokens.foreach:
+      case t""  => ()
+      case t"," => buf.add(t",")
+      case t"{" => whitespace(); buf.add(t"{"); indent(); newline()
+      case t"}" => outdent(); whitespace(); buf.add(t"}"); newline()
+      case t"[" => whitespace(); buf.add(t"[")
+      case t"]" => whitespace(); buf.add(t"]"); newline()
+      case t";" => newline()
+      case word => whitespace(); buf.add(word)
 
     buf.text
 
