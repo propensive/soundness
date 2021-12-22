@@ -185,7 +185,10 @@ case class Request(method: HttpMethod, body: HttpBody.Chunked, query: Text, ssl:
       case (RequestHeader(header), values) => header -> values
 
   lazy val length: Int throws StreamCutError =
-    headers.get(RequestHeader.ContentLength).fold(body.stream.map(_.length).sum)(_.head.s.toInt)
+    headers.get(RequestHeader.ContentLength)
+      .map(_.head.s)
+      .flatMap(Int.unapply)
+      .getOrElse(body.stream.map(_.length).sum)
   
   lazy val contentType: Option[MediaType] =
     headers.get(RequestHeader.ContentType).flatMap(_.headOption).flatMap(MediaType.unapply(_))
@@ -273,7 +276,7 @@ case class HttpServer(port: Int) extends RequestHandler:
     
     def recur(): DataStream =
       val len = in.read(buffer)
-      if len > 0 then IArray.from(buffer.slice(0, len)) #:: recur() else LazyList.empty
+      if len > 0 then buffer.slice(0, len).snapshot #:: recur() else LazyList.empty
     
     HttpBody.Chunked(recur())
 

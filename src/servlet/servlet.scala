@@ -59,7 +59,7 @@ trait Servlet() extends HttpServlet:
     
     def recur(): DataStream = try
       val len = in.nn.read(buffer)
-      if len > 0 then IArray.from(buffer.slice(0, len)) #:: recur() else LazyList.empty
+      if len > 0 then buffer.slice(0, len).snapshot #:: recur() else LazyList.empty
     catch case _: Exception => LazyList(throw StreamCutError())
     
     HttpBody.Chunked(recur())

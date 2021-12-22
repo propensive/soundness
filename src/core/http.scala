@@ -232,7 +232,7 @@ object Http:
         def read(in: InputStream): HttpBody.Chunked =
           val len = in.read(buf, 0, buf.length)
           
-          HttpBody.Chunked(if len < 0 then LazyList() else IArray.from(buf.slice(0, len)) #::
+          HttpBody.Chunked(if len < 0 then LazyList() else IArray(buf.slice(0, len)*) #::
               read(in).stream)
        
 
@@ -265,7 +265,7 @@ case class HttpError(status: HttpStatus & FailureCase, body: HttpBody)
 trait FailureCase
 
 object HttpStatus:
-  private lazy val all: Map[Int, HttpStatus] = values.map { v => v.code -> v }.to(Map)
+  private lazy val all: Map[Int, HttpStatus] = values.unsafeImmutable.map { v => v.code -> v }.to(Map)
   def unapply(code: Int): Option[HttpStatus] = all.get(code)
 
   given Show[HttpStatus] = status => t"${status.code} (${status.description})"
