@@ -27,6 +27,14 @@ import java.io as ji
 
 import language.dynamics
 
+export scala.collection.immutable.Set, scala.collection.immutable.List,
+    scala.collection.immutable.Map
+
+export Predef.nn, Predef.genericArrayOps, Predef.identity, Predef.summon, Predef.charWrapper,
+    Predef.$conforms, Predef.ArrowAssoc, Predef.intWrapper, Predef.longWrapper, Predef.shortWrapper,
+    Predef.byteWrapper, Predef.valueOf, Predef.???, Predef.doubleWrapper, Predef.floatWrapper,
+    Predef.classOf
+    
 type Bytes = IArray[Byte]
 type DataStream = LazyList[IArray[Byte] throws StreamCutError]
 
@@ -57,6 +65,11 @@ extension (value: Bytes)
 
 extension [T](value: Array[T])
   def unsafeImmutable: IArray[T] = value.asInstanceOf[IArray[T]]
+  
+  def snapshot(using ClassTag[T]): IArray[T] =
+    val newArray = new Array[T](value.length)
+    System.arraycopy(value, 0, newArray, 0, value.length)
+    newArray.unsafeImmutable
 
 extension [K, V](map: Map[K, V])
   def upsert(key: K, operation: Option[V] => V) = map.updated(key, operation(map.get(key)))
@@ -69,30 +82,6 @@ class Recur[T](fn: => T => T):
 
 def fix[T](func: Recur[T] ?=> (T => T)): (T => T) = func(using Recur(fix(func)))
 def recur[T: Recur](value: T): T = summon[Recur[T]](value)
-
-extension (obj: Boolean.type) def unapply(str: String): Option[Boolean] =
-  try Some(str.toBoolean) catch Exception => None
-
-extension (obj: Byte.type) def unapply(str: String): Option[Byte] =
-  try Some(str.toByte) catch Exception => None
-
-extension (obj: Short.type) def unapply(str: String): Option[Short] =
-  try Some(str.toShort) catch Exception => None
-
-extension (obj: Int.type) def unapply(str: String): Option[Int] =
-  try Some(str.toInt) catch Exception => None
-
-extension (obj: Long.type) def unapply(str: String): Option[Long] =
-  try Some(str.toLong) catch Exception => None
-
-extension (obj: Float.type) def unapply(str: String): Option[Float] =
-  try Some(str.toFloat) catch Exception => None
-
-extension (obj: Char.type) def unapply(str: String): Option[Char] =
-  if str.length == 1 then Some(str.head) else None
-
-extension (obj: Double.type) def unapply(str: String): Option[Double] =
-  try Some(str.toDouble) catch Exception => None
 
 case class Property(name: String) extends Dynamic:
   def apply(): String throws KeyNotFound =
@@ -211,6 +200,16 @@ trait SafeStreamable[T] extends Streamable[T]:
   def safeStream(value: T): LazyList[Bytes]
   def stream(value: T): DataStream = safeStream(value).map(identity(_))
 
+object Readable:
+  given Readable[DataStream] with
+    type E = Nothing
+    def read(stream: DataStream): DataStream throws E | StreamCutError = stream
+  
+  given Readable[Bytes] with
+    type E = ExcessDataError
+    def read(stream: DataStream): Bytes throws ExcessDataError | StreamCutError =
+      stream.slurp(10.mb)
+
 trait Readable[T]:
   readable =>
     type E <: Exception
@@ -271,24 +270,24 @@ extension (obj: LazyList.type)
         stream.isEmpty
         idx
     
-    val array: Array[LazyList[T]] = streams.to(Array)
-    val futuresArray: Array[Future[Int]] = array.zipWithIndex.map(future(_, _))
+    var vector: Vector[LazyList[T]] = streams.to(Vector)
+    var futuresVector: Vector[Future[Int]] = vector.zipWithIndex.map(future(_, _))
 
     def recur(futures: Set[Future[Int]]): LazyList[T] =
       if futures.isEmpty then LazyList()
       else
         val finished = Future.firstCompletedOf(futures)
         val idx: Int = Await.result(finished, duration.Duration.Inf)
-        val stream = array(idx)
-        if stream.isEmpty then recur(futures - futuresArray(idx))
+        val stream = vector(idx)
+        if stream.isEmpty then recur(futures - futuresVector(idx))
         else
-          array(idx) = stream.tail
-          val oldFuture = futuresArray(idx)
+          vector = vector.updated(idx, stream.tail)
+          val oldFuture = futuresVector(idx)
           val newFuture = future(stream.tail, idx)
-          futuresArray(idx) = newFuture
+          futuresVector = futuresVector.updated(idx, newFuture)
           stream.head #:: recur(futures - oldFuture + newFuture)
     
-    recur(futuresArray.to(Set))
+    recur(futuresVector.to(Set))
 
 object ByteSize:
   extension (bs: ByteSize)
@@ -317,3 +316,11 @@ object ByteSize:
 
     @targetName("div")
     infix def /(that: Int): ByteSize = bs/that
+
+enum ExitStatus:
+  case Ok
+  case Fail(status: Int)
+
+  def apply(): Int = this match
+    case Ok           => 0
+    case Fail(status) => status
