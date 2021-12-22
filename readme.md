@@ -13,7 +13,7 @@ _annotations_ in Scala, by making them available through _typeclass interfaces_.
 - resolve a typeclass instance only if a type has an annotated field
 - makes annotations more useful and accessible in Scala
 - no macro code is required to use annotations
-£
+
 
 ## Getting Started
 
@@ -88,7 +88,7 @@ src="https://img.shields.io/badge/-good%20first%20issue-67b6d0.svg" valign="midd
 We suggest that all contributors read the [Contributing Guide](/contributing.md) to make the process of
 contributing to Adversaria easier.
 
-Please __do not__ contact project maintainers privately with questions. While it can be tempting to repsond to
+Please __do not__ contact project maintainers privately with questions. While it can be tempting to respond to
 such questions, private answers cannot be shared with a wider audience, and it can result in duplication of
 effort.
 
