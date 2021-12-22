@@ -37,13 +37,6 @@ trait ServerApp() extends App:
   def server(script: Text, fifo: Text, serverPid: Int): Unit =
     val socket: Unix.IoPath = Unix.parse(fifo).getOrElse(sys.exit(11))
    
-    val shutdown: Runnable = () =>
-      Thread.sleep(1000)
-      sys.exit(2)
-
-    //ProcessHandle.current.nn.parent.nn.get.nn.children.nn.toList.nn.asScala.map(_.nn).filter(_.pid != serverPid).foreach:
-    //  handle => handle.onExit.nn.thenRun(shutdown)
-    
     Runtime.getRuntime.nn.addShutdownHook:
       val runnable: Runnable = () => try socket.file.delete() catch case e: Exception => ()
       Thread(runnable, "exoskeleton-cleanup")
@@ -109,10 +102,5 @@ trait ServerApp() extends App:
             map
           
           case msg =>
-            println("Unexpected message: "+msg)
+            Out.println(t"Unexpected message: ${msg.toString}")
             map
-
-object HelloWorld extends ServerApp():
-  def main(using cli: CommandLine): ExitStatus =
-    cli.stdout(LazyList(t"Hello world ${cli.args.toString.show}\n".bytes))
-    ExitStatus.Ok

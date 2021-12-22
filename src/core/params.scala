@@ -14,7 +14,111 @@
     and limitations under the License.
 */
 
-// package exoskeleton
+package exoskeleton
+
+import rudiments.*
+import gossamer.*
+
+private[exoskeleton] type Label = String & Singleton
+
+case class Shell(apis: List[Api]):
+  def completion: Boolean = false
+  def append(api: List[Api]): Shell = api.foldLeft(this)(_.append(_))
+  def append(api: Api): Shell = api.transform(this)
+
+case class Completion()
+
+enum Return:
+  case Ok
+  case Fail(code: Int = 1)
+  case Completions(completions: List[Completion])
+
+class CliContext[-A <: Api & Singleton](api: List[Api])
+
+trait Api:
+  type Return
+  def transform(shell: Shell): Shell = shell.copy(apis = this :: shell.apis)
+  def apply[A <: Api & Singleton]()(using Shell, CliContext[? >: this.type]): Return
+
+object ParamShow:
+  given [T: Show]: ParamShow[T] = value => List(summon[Show[T]].show(value))
+
+trait ParamShow[T]:
+  def show(value: T): List[Text]
+
+object ParamParser:
+  given ParamParser[Text] = _.headOption
+  given ParamParser[Int] = _.headOption.flatMap(Int.unapply(_))
+  given ParamParser[List[Text]] = Some(_)
+
+trait ParamParser[T]:
+  def read(value: List[Text]): Option[T]
+
+object Arg:
+  def apply[T: ParamParser: ParamShow](longName: Label, secret: Boolean = false): Arg[longName.type, T] =
+    new Arg[longName.type, T](longName, secret, summon[ParamParser[T]], summon[ParamShow[T]])
+
+class Arg[A <: Label, T](longName: String, secret: Boolean = false, parser: ParamParser[T], show: ParamShow[T])
+extends Api:
+  type Return = T
+  def apply[A <: Api & Singleton]()(using Shell, CliContext[? >: this.type]): T =
+    ???
+
+object Flag:
+  def apply[T](longName: Label, secret: Boolean = false): Flag[longName.type] =
+    new Flag[longName.type](longName, secret)
+
+class Flag[A <: Label](longName: String, secret: Boolean = false) extends Api:
+  type Return = Boolean
+  def apply[A <: Api & Singleton]()(using Shell, CliContext[? >: this.type]): Boolean = ???
+
+object Positional:
+  def apply[T: ParamParser: ParamShow](name: Label, choices: List[T]): Positional[name.type, T] =
+    new Positional[name.type, T](name, choices, summon[ParamParser[T]], summon[ParamShow[T]])
+
+class Positional[A <: Label, T](var name: Label, choices: List[T], parser: ParamParser[T],
+    show: ParamShow[T])
+
+trait Fix[A]
+object Fix:
+  given [A]: Fix[A] = new Fix[A] {}
+
+class CliApi[A <: Api & Singleton](shell: Shell, apis: Api*):
+  def apply[T](fn: Shell ?=> CliContext[A] ?=> T): T =
+    fn(using shell)(using CliContext[A](apis.to(List)))
+
+def proffer[A <: Api & Singleton](api: A*)(using Fix[A], Shell): CliApi[A] = CliApi(summon[Shell], api*)
+
+class Executable()
+
+def execute(fn: Executable ?=> Return)(using Shell): Return =
+  if summon[Shell].completion then Return.Completions(Nil)
+  else fn(using new Executable())
+
+object Testing:
+
+  def main(args: Array[String]): Unit =
+    val shell = Shell(Nil)
+    main(using shell)
+
+  val VerboseArg = Flag("--verbose")
+  val HelpArg = Flag("--help")
+  val TestArg = Flag("--test")
+  val NoneArg = Flag("--none")
+
+  def main(using Shell): Unit =
+    proffer(HelpArg, TestArg):
+      Out.println(t"hello")
+      HelpArg()
+      proffer(NoneArg, VerboseArg):
+        NoneArg()
+        VerboseArg()
+        TestArg()
+
+        execute:
+          Out.println(t"Hello world")
+          Return.Ok
+
 
 // import collection.immutable.ListMap
 // import scala.util.*
