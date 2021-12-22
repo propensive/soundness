@@ -61,8 +61,8 @@ object Macro:
           field.name -> field.annotations.filter(filterAnn).map(_.asExpr)
       }
 
-      (constructorAnns ++ fieldAnns).filter(_._2.nonEmpty).groupBy(_._1).to(List).map {
-        case (name, l) => Expr(name) -> l.flatMap(_._2)
+      (constructorAnns ++ fieldAnns).filter(_(1).nonEmpty).groupBy(_(0)).to(List).map {
+        case (name, l) => Expr(name) -> l.flatMap(_(1))
       }.map { (name, anns) => Expr.ofTuple(name, Expr.ofList(anns)) }
     }
   
@@ -156,7 +156,7 @@ object Macro:
     import quotes.reflect.*
     
     def normalizedName(s: Symbol): String =
-      if s.flags.is(Flags.Module) then s.name.stripSuffix("$") else s.name
+      if s.flags.is(Flags.Module) then s.name.replaceAll("\\$$", "").nn else s.name
     
     def name(tpe: TypeRepr) : Expr[String] = Expr(normalizedName(tpe.typeSymbol))
 

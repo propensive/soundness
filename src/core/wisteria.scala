@@ -16,6 +16,8 @@
 
 package wisteria
 
+import rudiments.*
+
 import scala.deriving.Mirror
 import scala.compiletime.*
 import scala.reflect.*
