@@ -111,10 +111,10 @@ object Hashable extends Derivation[Hashable]:
     (acc, xs) => xs.foreach(summon[Hashable[T]].digest(acc, _))
   
   given Hashable[Int] =
-    (acc, n) => acc.append(IArray.from((24 to 0 by -8).map(n >> _).map(_.toByte).toArray))
+    (acc, n) => acc.append((24 to 0 by -8).map(n >> _).map(_.toByte).toArray.unsafeImmutable)
   
   given Hashable[Long] =
-    (acc, n) => acc.append(IArray.from((52 to 0 by -8).map(n >> _).map(_.toByte).toArray))
+    (acc, n) => acc.append((52 to 0 by -8).map(n >> _).map(_.toByte).toArray.unsafeImmutable)
   
   given Hashable[Double] =
     (acc, n) => summon[Hashable[Long]].digest(acc, jl.Double.doubleToRawLongBits(n))
@@ -126,7 +126,7 @@ object Hashable extends Derivation[Hashable]:
   given Hashable[Byte] = (acc, n) => acc.append(IArray(n))
   given Hashable[Short] = (acc, n) => acc.append(IArray((n >> 8).toByte, n.toByte))
   given Hashable[Char] = (acc, n) => acc.append(IArray((n >> 8).toByte, n.toByte))
-  given Hashable[Text] = (acc, s) => acc.append(IArray.from(s.bytes))
+  given Hashable[Text] = (acc, s) => acc.append(s.bytes)
   given Hashable[Bytes] = _.append(_)
   given Hashable[Iterable[Bytes]] = (acc, stream) => stream.foreach(acc.append(_))
   given Hashable[Digest[?]] = (acc, d) => acc.append(d.bytes)
@@ -153,7 +153,7 @@ trait DigestAccumulator:
 class MessageDigestAccumulator(md: MessageDigest) extends DigestAccumulator:
   private val messageDigest: MessageDigest = md
   def append(bytes: Bytes): Unit = messageDigest.update(bytes.unsafeMutable)
-  def digest(): Bytes = IArray.from(messageDigest.digest.nn)
+  def digest(): Bytes = messageDigest.digest.nn.unsafeImmutable
 
 trait EncodingScheme
 trait Base64 extends EncodingScheme
@@ -195,7 +195,7 @@ trait ByteEncoder[ES <: EncodingScheme]:
   def encode(bytes: Bytes): Text
 
 object ByteDecoder:
-  given ByteDecoder[Base64] = value => IArray.from(Base64Decoder.nn.decode(value.s).nn)
+  given ByteDecoder[Base64] = value => Base64Decoder.nn.decode(value.s).nn.unsafeImmutable
   
   given ByteDecoder[Hex] = value =>
     import java.lang.Character.digit
@@ -220,7 +220,7 @@ extension [T](value: T)
   def hmac[A <: HashScheme[?]: HashFunction](key: Bytes)(using ByteCodec[T]): Hmac[A] =
     val mac = summon[HashFunction[A]].initHmac
     mac.init(SecretKeySpec(key.to(Array), summon[HashFunction[A]].name.s))
-    Hmac(IArray.from(mac.doFinal(summon[ByteCodec[T]].encode(value).unsafeMutable).nn))
+    Hmac(mac.doFinal(summon[ByteCodec[T]].encode(value).unsafeMutable).nn.unsafeImmutable)
 
 extension (bytes: Bytes)
   def encode[E <: EncodingScheme: ByteEncoder]: Text = summon[ByteEncoder[E]].encode(bytes)

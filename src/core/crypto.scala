@@ -142,18 +142,18 @@ class Aes[KS <: 128 | 192 | 256: ValueOf]() extends CryptoAlgorithm[KS], Encrypt
   def encrypt(message: Bytes, key: Bytes): Bytes =
     val cipher = init().nn
     cipher.init(Cipher.ENCRYPT_MODE, makeKey(key))
-    IArray.from(cipher.doFinal(message.unsafeMutable).nn)
+    cipher.doFinal(message.unsafeMutable).nn.unsafeImmutable
   
   def decrypt(message: Bytes, key: Bytes): Bytes =
     val cipher = init().nn
     cipher.init(Cipher.DECRYPT_MODE, makeKey(key))
-    IArray.from(cipher.doFinal(message.unsafeMutable).nn)
+    cipher.doFinal(message.unsafeMutable).nn.unsafeImmutable
   
   def genKey(): Bytes =
     val keyGen = KeyGenerator.getInstance("AES").nn
     keyGen.init(keySize)
     
-    IArray.from(keyGen.generateKey().nn.getEncoded.nn)
+    keyGen.generateKey().nn.getEncoded.nn.unsafeImmutable
   
   def privateToPublic(key: Bytes): Bytes = key
 end Aes
@@ -169,25 +169,25 @@ class Rsa[KS <: 1024 | 2048: ValueOf]() extends CryptoAlgorithm[KS], Encryption:
         throw Impossible("public key did not have the correct type")
 
     val spec = RSAPublicKeySpec(privateKey.getModulus, privateKey.getPublicExponent)
-    IArray.from(keyFactory().generatePublic(spec).nn.getEncoded.nn)
+    keyFactory().generatePublic(spec).nn.getEncoded.nn.unsafeImmutable
 
   def decrypt(message: Bytes, key: Bytes): Bytes =
     val cipher = init().nn
     val privateKey = keyFactory().generatePrivate(PKCS8EncodedKeySpec(key.unsafeMutable))
     cipher.init(Cipher.DECRYPT_MODE, privateKey)
-    IArray.from(cipher.doFinal(message.unsafeMutable).nn)
+    cipher.doFinal(message.unsafeMutable).nn.unsafeImmutable
   
   def encrypt(message: Bytes, key: Bytes): Bytes =
     val cipher = init().nn
     val publicKey = keyFactory().generatePublic(X509EncodedKeySpec(key.unsafeMutable))
     cipher.init(Cipher.ENCRYPT_MODE, publicKey)
-    IArray.from(cipher.doFinal(message.unsafeMutable).nn)
+    cipher.doFinal(message.unsafeMutable).nn.unsafeImmutable
   
   def genKey(): Bytes =
     val generator = js.KeyPairGenerator.getInstance("RSA").nn
     generator.initialize(keySize)
     val keyPair = generator.generateKeyPair().nn
-    IArray.from(keyPair.getPrivate.nn.getEncoded.nn)
+    keyPair.getPrivate.nn.getEncoded.nn.unsafeImmutable
 
   private def init(): Cipher = Cipher.getInstance("RSA").nn
   private def keyFactory(): js.KeyFactory = js.KeyFactory.getInstance("RSA").nn
@@ -209,14 +209,14 @@ class Dsa[KS <: 512 | 1024 | 2048 | 3072: ValueOf]() extends CryptoAlgorithm[KS]
       case key: js.PublicKey =>
         throw Impossible("public key did not have the correct type")
     
-    IArray.from(keyPair.getPrivate.nn.getEncoded.nn)
+    keyPair.getPrivate.nn.getEncoded.nn.unsafeImmutable
 
   def sign(data: Bytes, keyBytes: Bytes): Bytes =
     val sig = init()
     val key = keyFactory().generatePrivate(PKCS8EncodedKeySpec(keyBytes.to(Array)))
     sig.initSign(key)
     sig.update(data.to(Array))
-    IArray.from(sig.sign().nn)
+    sig.sign().nn.unsafeImmutable
 
   def verify(data: Bytes, signature: Bytes, keyBytes: Bytes): Boolean =
     val sig = init()
@@ -236,7 +236,7 @@ class Dsa[KS <: 512 | 1024 | 2048 | 3072: ValueOf]() extends CryptoAlgorithm[KS]
     val params = key.getParams.nn
     val y = params.getG.nn.modPow(key.getX, params.getP.nn)
     val spec = DSAPublicKeySpec(y, params.getP, params.getQ, params.getG)
-    IArray.from(keyFactory().generatePublic(spec).nn.getEncoded.nn)
+    keyFactory().generatePublic(spec).nn.getEncoded.nn.unsafeImmutable
 
   private def init(): js.Signature = js.Signature.getInstance("DSA").nn
   private def keyFactory(): js.KeyFactory = js.KeyFactory.getInstance("DSA").nn
