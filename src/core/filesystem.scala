@@ -67,7 +67,7 @@ object IoError:
     given Show[Op] = Showable(_).show.lower
 
   enum Op:
-    case Read, Write, Access, Create
+    case Read, Write, Access, Create, Delete
 
 case class IoError(operation: IoError.Op, reason: IoError.Reason, path: Any)
 extends JovianError(t"the $operation operation at ${path.toString} did not succeed because $reason")
@@ -235,6 +235,10 @@ class Filesystem(pathSeparator: Text, fsPrefix: Text) extends Root(pathSeparator
     def symlink: Option[Symlink] = None
     def modified: Long = javaFile.lastModified
     
+    def delete(): Unit throws IoError =
+      try javaFile.delete()
+      catch e => throw IoError(IoError.Op.Delete, IoError.Reason.AccessDenied, initPath)
+    
     def read[T](limit: ByteSize = 64.kb)(using readable: Readable[T])
         : T throws readable.E | IoError | StreamCutError =
       val stream = Util.readInputStream(ji.FileInputStream(javaPath.toFile), limit)
@@ -334,12 +338,12 @@ class Filesystem(pathSeparator: Text, fsPrefix: Text) extends Root(pathSeparator
           val newIndex = events.foldLeft(index):
             case (index, FileEvent.NewDirectory(dir)) =>
               // Calls to `Log.fine` seem to result in an AssertionError at compiletime
-              Log.fine(t"Starting monitoring new directory ${dir.path.show}")
+              //Log.fine(t"Starting monitoring new directory ${dir.path.show}")
               index.updated(watchKey(dir), dir)
             
             case (index, FileEvent.Delete(path)) =>
               // Calls to `Log.fine` seem to result in an AssertionError at compiletime
-              if path.isDirectory then Log.fine(t"Stopping monitoring of deleted directory $path")
+              //if path.isDirectory then Log.fine(t"Stopping monitoring of deleted directory $path")
               val deletions = index.filter(_(1).path == path)
               deletions.keys.foreach(_.cancel())
               index -- deletions.keys
@@ -362,7 +366,7 @@ class Filesystem(pathSeparator: Text, fsPrefix: Text) extends Root(pathSeparator
     def children: List[Inode] throws IoError =
       Option(javaFile.list).fold(Nil):
         files =>
-          files.nn.to(List).map(_.nn).map(Text(_)).map(path.parts :+ _).map(makeAbsolute(_)).map(_.inode)
+          files.nn.unsafeImmutable.to(List).map(_.nn).map(Text(_)).map(path.parts :+ _).map(makeAbsolute(_)).map(_.inode)
     
     def descendants: LazyList[Inode] throws IoError =
       children.to(LazyList).flatMap(_.directory).flatMap { f => f +: f.descendants }
@@ -569,10 +573,10 @@ open class JovianError(message: Text) extends Exception(t"jovian: $message".s)
 object Filesystem:
   
   lazy val roots: Set[Filesystem] =
-    Option(ji.File.listRoots).fold(Set())(_.nn.to(Set)).map(_.nn.getAbsolutePath.nn).collect:
+    Option(ji.File.listRoots).fold(Set())(_.nn.unsafeImmutable.to(Set)).map(_.nn.getAbsolutePath.nn).collect:
       case "/"                                  => Unix
       case s"""$drive:\""" if drive.length == 1 =>
-        val letter = try drive(0) catch case e: OutOfRangeError => throw Impossible(e)
+        val letter = try drive.charAt(0) catch case e: OutOfRangeError => throw Impossible(e)
         letter.toUpper match
           case ch: Majuscule =>
             WindowsRoot(ch)
