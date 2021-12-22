@@ -96,14 +96,13 @@ object Markdown:
       case Textual(str) :: Textual(str2) :: tail => coalesce(Textual(format(t"$str $str2")) :: tail, done)
       case head :: tail                    => coalesce(tail, head :: done)
 
-  def format(str: Text): Text = Text {
+  def format(str: Text): Text = Text:
     str.s
       .replaceAll("--", "—").nn
       .replaceAll(" \"", " “").nn
       .replaceAll("\"", "”").nn
       .replaceAll(" '", " ‘").nn
       .replaceAll("'", "’").nn
-  }
 
   private def resolveReference(root: cvfua.Document, node: cvfa.ImageRef | cvfa.LinkRef)
       : Text throws BadMarkdownError =

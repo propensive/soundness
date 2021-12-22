@@ -36,7 +36,7 @@ open class HtmlConverter():
       children.flatMap:
         case Markdown.Ast.Block.Heading(level, children*) =>
           val string = text(children)
-          List(t"${" "*(2*level - 1)}- [$string](#${slug(string)})")
+          List(t"${t" "*(2*level - 1)}- [$string](#${slug(string)})")
         
         case Markdown.Ast.Inline.Textual(str) =>
           List(str)

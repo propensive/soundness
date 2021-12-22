@@ -35,9 +35,12 @@ case class TextBlock(indent: Int, text: AnsiString):
   def render(width: Int): AnsiString =
     def rest(text: AnsiString, lines: List[AnsiString]): List[AnsiString] =
       if text.length == 0 then lines.reverse
-      else text.plain.s.lastIndexWhere(_ == ' ', width - indent*2) match
-        case -1 => (text :: lines).reverse
-        case pt => rest(text.take(pt), text.drop(pt + 1) :: lines)
+      else
+        try
+          val pt = text.plain.lastWhere(_ == ' ', width - indent*2)
+          rest(text.drop(pt + 1), text.take(pt) :: lines)
+        catch case err: OutOfRangeError =>
+          rest(text.drop(width - indent*2), text.take(width - indent*2) :: lines)
     
     rest(text, Nil).map((ansi"  "*indent)+_).join(ansi"${'\n'}")
 
@@ -133,7 +136,7 @@ open class TextConverter():
   // def listItem(node: Markdown.Ast.ListItem): Seq[Item["li"]] = node match
   //   case Markdown.Ast.ListItem(children*) => List(Li(convert(children)*))
 
-  def text(node: Seq[Markdown.Ast.Node]): AnsiString = node.map {
+  def text(node: Seq[Markdown.Ast.Node]): AnsiString = node.map:
     case Markdown.Ast.Inline.Image(text, _)         => ansi"[ $text ]"
     case Markdown.Ast.Inline.Link(s, desc)          => ansi"${colors.DeepSkyBlue}($Underline(${text(Seq(desc))})${colors.DarkGray}([)${colors.RoyalBlue}($Underline($s))${colors.DarkGray}(])) "
     case Markdown.Ast.Inline.Break()                => ansi""
@@ -150,7 +153,7 @@ open class TextConverter():
     case Markdown.Ast.Block.FencedCode(_, _, code)  => ansi"${colors.YellowGreen}($code)"
     case Markdown.Ast.Block.Cell(content*)          => text(content)
     case _                                          => ansi""
-  }.join
+  .join
 
   def phrasing(node: Markdown.Ast.Inline): AnsiString = node match
     case Markdown.Ast.Inline.Image(altText, location) => ansi"[ $altText ]"
@@ -158,5 +161,5 @@ open class TextConverter():
     case Markdown.Ast.Inline.Emphasis(children*)      => ansi"$Italic(${children.map(phrasing).join})"
     case Markdown.Ast.Inline.Strong(children*)        => ansi"$Bold(${children.map(phrasing).join})"
     case Markdown.Ast.Inline.Code(code)               => ansi"${colors.YellowGreen}(${Bg(Srgb(0, 0.1, 0))}($code))"
-    case Markdown.Ast.Inline.Textual(str)             => ansi"${Showable(str).show}"
+    case Markdown.Ast.Inline.Textual(str)             => ansi"${Showable(str.sub(t"\n", t" ")).show}"
     case _                                            => text(Seq(node))
