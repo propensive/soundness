@@ -49,11 +49,11 @@ case class Relative(val ascent: Int, val parts: List[Text]):
   //   else Relative(ascent - 1, parts).absolute(pwd.parent)
   
   @targetName("access")
-  infix def /(filename: Text): Relative throws RootParentError = filename.s match
-    case ".." => if parts.isEmpty then Relative(ascent + 1, List())
-                 else Relative(ascent, parts.init)
-    case "."  => Relative(ascent, parts)
-    case fn   => Relative(ascent, parts :+ filename)
+  infix def /(filename: Text): Relative throws RootParentError = filename match
+    case t".." => if parts.isEmpty then Relative(ascent + 1, List())
+                  else Relative(ascent, parts.init)
+    case t"."  => Relative(ascent, parts)
+    case _     => Relative(ascent, parts :+ filename)
   
   @targetName("addAll")
   infix def ++(relative: Relative): Relative throws RootParentError =
@@ -105,10 +105,10 @@ trait Root(val separator: Text, val prefix: Text):
 
 
       @targetName("access")
-      infix def /(filename: Text): AbsolutePath throws RootParentError = filename.s match
-        case ".." => if parts.isEmpty then throw RootParentError(root) else makeAbsolute(parts.init)
-        case "."  => makeAbsolute(parts)
-        case fn   => makeAbsolute(parts :+ filename)
+      infix def /(filename: Text): AbsolutePath throws RootParentError = filename match
+        case t".." => if parts.isEmpty then throw RootParentError(root) else makeAbsolute(parts.init)
+        case t"."  => makeAbsolute(parts)
+        case _     => makeAbsolute(parts :+ filename)
       
       @targetName("addAll")
       infix def ++(relative: Relative): AbsolutePath throws RootParentError =
