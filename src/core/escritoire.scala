@@ -129,7 +129,7 @@ case class Tabulation[T: ClassTag](cols: Column[T]*):
             height(row(i).plain, widths(i))
           } }
         
-        println("Heights: "+heights.to(List).map(_.to(List)))
+        //println("Heights: "+heights.to(List).map(_.to(List)))
   
         val maxHeights: IArray[Int] = heights.map(_.max)
         val totalHeight = maxHeights.sum
@@ -137,7 +137,7 @@ case class Tabulation[T: ClassTag](cols: Column[T]*):
         val densities: IArray[IArray[Double]] =
           heights.zip(maxHeights).map { (row, h) => row.map(_.toDouble/h) }
         
-        println("Densities: "+densities.to(List).map(_.to(List)))
+        //println("Densities: "+densities.to(List).map(_.to(List)))
         
         val meanDensities: IArray[Double] =
           densities.fold(widths.map(_ => 0.0))(_.zip(_).map(_ + _))
@@ -158,4 +158,4 @@ case class Tabulation[T: ClassTag](cols: Column[T]*):
         if newSeen.keys.min > totalHeight then optimize(newWidths, newSeen, count - 1)
         else newSeen(newSeen.keys.min)
     
-    println(optimize(inits).to(List))
+    //println(optimize(inits).to(List))
