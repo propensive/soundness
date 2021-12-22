@@ -201,7 +201,7 @@ object Sh:
         case _ =>
           state
           
-    def parse(state: State, next: String): State = next.foldLeft(state):
+    def parse(state: State, next: String): State = next.toCharArray.nn.unsafeImmutable.foldLeft(state):
       case (State(Awaiting, esc, args), ' ')          => State(Awaiting, false, args)
       case (State(Quotes1, false, rest :+ cur), '\\') => State(Quotes1, false, rest :+ t"$cur\\")
       case (State(ctx, false, args), '\\')            => State(ctx, true, args)
@@ -221,9 +221,5 @@ object Sh:
   given Insertion[Params, List[Text]] = xs => Params(xs*)
   given Insertion[Params, Command] = cmd => Params(cmd.args*)
   given [T: Show]: Insertion[Params, T] = value => Params(summon[Show[T]].show(value))
-
-enum ExitStatus:
-  case Ok
-  case Fail(status: Int)
 
 given realm: Realm = Realm(t"guillotine")
