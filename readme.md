@@ -37,7 +37,7 @@ Euphemism is classified as __fledgling__. Propensive defines the following five 
 - _dependable_: production-ready, subject to controlled ongoing maintenance and enhancement; tagged as version `1.0` or later
 - _adamantine_: proven, reliable and production-ready, with no further breaking changes ever anticipated
 
-Euphemism is designed to be _small_. Its entire source code currently consists of 316 lines of code.
+Euphemism is designed to be _small_. Its entire source code currently consists of 320 lines of code.
 
 ## Availability
 
@@ -60,7 +60,7 @@ src="https://img.shields.io/badge/-good%20first%20issue-67b6d0.svg" valign="midd
 We suggest that all contributors read the [Contributing Guide](/contributing.md) to make the process of
 contributing to Euphemism easier.
 
-Please __do not__ contact project maintainers privately with questions. While it can be tempting to repsond to
+Please __do not__ contact project maintainers privately with questions. While it can be tempting to respond to
 such questions, private answers cannot be shared with a wider audience, and it can result in duplication of
 effort.
 
