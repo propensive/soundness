@@ -1,5 +1,6 @@
 package harlequin
 
+import rudiments.*
 import gossamer.*
 
 import dotty.tools.dotc.*, printing.*, core.*, parsing.*, util.*, reporting.*
