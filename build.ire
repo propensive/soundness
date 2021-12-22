@@ -25,6 +25,8 @@
       "links": ["jovian/core"],
       "sources": ["src/core"],
       "version": "0.1.0",
+      "main": "exoskeleton.HelloWorld",
+      "artifact": "exo.jar",
       "docs": ["doc"]
     }
   ]

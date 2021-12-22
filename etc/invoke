@@ -1,0 +1,56 @@
+#!/bin/sh
+
+THIS="$0"
+SCRIPT="$(basename "$(test -L "$0" && readlink "$0" || echo "$0")")"
+ARGS="$(printf '%s\t' "$@")"
+PID="$$"
+RUNDIR="${XDG_RUNTIME_DIR:-${TMPDIR:-/run/user/$UID}}"
+FIFO="$RUNDIR/$THIS.sock"
+STDOUT="$RUNDIR/$THIS-$PID.stdout.sock"
+STDIN="$RUNDIR/$THIS-$PID.stdin.sock"
+EXITFILE="$RUNDIR/$THIS-$PID.exit"
+
+function join() {
+  local IFS='	'
+  echo "$@"
+}
+
+function startServer() {
+  mkfifo "$FIFO"
+  # Force the FIFO to stay open
+  (while true; do sleep 3600; done) > "$FIFO" &
+  exec java -jar "$THIS" "::start::" "$THIS" "$FIFO" "$PID" &
+}
+
+function connect() {
+  mkfifo "$STDOUT" "$STDIN" "$EXITFILE"
+  echo "PROCESS	$PID" > "$FIFO"
+  echo "SCRIPT	$PID	$THIS" > "$FIFO"
+  echo "RUNDIR	$PID	$RUNDIR" > "$FIFO"
+  echo "ARGS	$PID	${ARGS}END" > "$FIFO"
+  echo "ENV	$PID	$(env | tr '\n' '\t')" > "$FIFO"
+  echo "START	$PID" > "$FIFO"
+  cat - > "$STDIN" <&0 & cat "$STDOUT"
+  EXIT="$(cat "$EXITFILE")"
+  rm -f "$STDOUT" "$STDIN" "$EXITFILE"
+  exit $EXIT
+}
+
+function cleanup() {
+  echo "STOP	$PID" > "$FIFO"
+  rm -f "$STDIN" "$STDOUT" "$EXITFILE"
+}
+
+trap cleanup INT TERM HUP
+
+if [[ ! -p "$FIFO" ]]
+then
+  startServer
+else
+  if [[ -f "$FIFO" ]]; then
+    echo "Cannot create named pipe at $FIFO"
+    exit 1
+  fi
+fi
+connect
+exit 1
