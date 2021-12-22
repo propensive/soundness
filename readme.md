@@ -256,7 +256,7 @@ src="https://img.shields.io/badge/-good%20first%20issue-67b6d0.svg" valign="midd
 We suggest that all contributors read the [Contributing Guide](/contributing.md) to make the process of
 contributing to Gastronomy easier.
 
-Please __do not__ contact project maintainers privately with questions. While it can be tempting to repsond to
+Please __do not__ contact project maintainers privately with questions. While it can be tempting to respond to
 such questions, private answers cannot be shared with a wider audience, and it can result in duplication of
 effort.
 
