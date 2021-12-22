@@ -197,8 +197,8 @@ object Ansi:
             state.add(str)
           
           case i =>
-            val newState = state.copy(stack = state.stack.tail).add(str.slice(0, i)).addEsc(state.stack.head(1))
-            closures(newState, str.slice(i + 1, str.length))
+            val newState = state.copy(stack = state.stack.tail).add(str.show.slice(0, i).s).addEsc(state.stack.head(1))
+            closures(newState, str.show.slice(i + 1, str.length).s)
 
     private def complement(ch: '[' | '(' | '{' | '<' | '«'): ']' | ')' | '}' | '>' | '»' = ch match
       case '[' => ']'
@@ -208,18 +208,20 @@ object Ansi:
       case '«' => '»'
 
     def parse(state: State, string: String): State =
-      if state.isEmpty then State(AnsiString(Text(string)), None, Nil)
+      if state.isEmpty then State(AnsiString(string.show), None, Nil)
       else state.last match
         case None =>
           closures(state, string)
         
         case Some(last) =>
-          string.headOption match
-            case Some('\\') =>
-              closures(state, string.tail)
+          if string.length == 0 then closures(state, string)
+          else string.charAt(0) match
+            case '\\' =>
+              closures(state, string.substring(1).nn)
 
-            case Some(ch@('[' | '(' | '{' | '<' | '«')) =>
-              closures(state.copy(last = None, stack = (complement(ch), last) :: state.stack), string.tail)
+            case ch@('[' | '(' | '{' | '<' | '«') =>
+              closures(state.copy(last = None, stack = (complement(ch), last) :: state.stack),
+                  string.substring(1).nn)
             
             case _ =>
               closures(state, string)
