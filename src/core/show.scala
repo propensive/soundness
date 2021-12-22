@@ -31,25 +31,25 @@ object Show extends Derivation[Show]:
   given Show[Byte] = Showable(_).show
   
   given Show[ByteSize] = bs =>
-    if bs.long > 10L*1024*1024*1024*1024 then t"${(bs.long/1024*1024*1024*1024).show}TB"
-    else if bs.long > 10L*1024*1024*1024 then t"${(bs.long/1024*1024*1024).show}GB"
-    else if bs.long > 10*1024*1024 then t"${bs.long/1024*1024}MB"
-    else if bs.long > 10*1024 then t"${bs.long/1024}kB"
-    else t"${bs.long}B"
+    if bs.long > 10L*1024*1024*1024*1024 then Text(s"${(bs.long/1024*1024*1024*1024).show}TB")
+    else if bs.long > 10L*1024*1024*1024 then Text(s"${(bs.long/1024*1024*1024).show}GB")
+    else if bs.long > 10*1024*1024 then Text(s"${bs.long/1024*1024}MB")
+    else if bs.long > 10*1024 then Text(s"${bs.long/1024}kB")
+    else Text(s"${bs.long}B")
   
   given Show[Char] = Showable(_).show
-  given Show[Boolean] = if _ then t"true" else t"false"
+  given Show[Boolean] = if _ then Text("true") else Text("false")
   given Show[reflect.Enum] = Showable(_).show
   
   given [T: Show]: Show[Option[T]] =
-    case None    => t"none"
+    case None    => Text("none")
     case Some(v) => v.show
 
   def join[T](ctx: CaseClass[Show, T]): Show[T] = value =>
     if ctx.isObject then Text(ctx.typeInfo.short.text)
     else ctx.params.map {
       param => param.typeclass.show(param.deref(value))
-    }.join(t"${ctx.typeInfo.short}(", t", ", t")")
+    }.join(Text(s"${ctx.typeInfo.short}("), Text(", "), Text(")"))
   
   def split[T](ctx: SealedTrait[Show, T]): Show[T] = value =>
     ctx.choose(value) { subtype => subtype.typeclass.show(subtype.cast(value)) }

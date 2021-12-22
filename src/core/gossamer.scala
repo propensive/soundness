@@ -65,23 +65,21 @@ object Text:
 
   extension (text: Text)
     def s: String = text
-    def bytes: IArray[Byte] = IArray.from(s.getBytes("UTF-8").nn)
-    def length: Int = s.size
-    def populated: Option[Text] = if s.size == 0 then None else Some(s)
+    def bytes: IArray[Byte] = s.getBytes("UTF-8").nn.unsafeImmutable
+    def length: Int = s.length
+    def populated: Option[Text] = if s.length == 0 then None else Some(s)
     def lower: Text = s.toLowerCase.nn
     def upper: Text = s.toUpperCase.nn
     def urlEncode: Text = URLEncoder.encode(s, "UTF-8").nn
     def urlDecode: Text = URLDecoder.decode(s, "UTF-8").nn
     def punycode: Text = java.net.IDN.toASCII(s).nn
     def drop(n: Int): Text = s.substring(n min length max 0).nn
-    def dropRight(n: Int): Text = s.substring(0, 0 max (s.size - n) min length).nn
+    def dropRight(n: Int): Text = s.substring(0, 0 max (s.length - n) min length).nn
     def take(n: Int): Text = s.substring(0, n min length max 0).nn
-    def takeRight(n: Int): Text = s.substring(0 max (s.size - n) min length, length).nn
-    def snip(n: Int): (Text, Text) = (s.substring(0, n min s.size).nn, s.substring(n min s.size).nn)
+    def takeRight(n: Int): Text = s.substring(0 max (s.length - n) min length, length).nn
     def trim: Text = text.trim.nn
     def slice(from: Int, to: Int): Text = s.substring(from max 0 min length, to min length max 0).nn
-    def chars: IArray[Char] = IArray.from(s.toCharArray.nn)
-    def flatMap(fn: Char => Text): Text = String(s.toCharArray.nn.flatMap(fn(_).toCharArray.nn))
+    def chars: IArray[Char] = s.toCharArray.nn.unsafeImmutable
     def map(fn: Char => Char): Text = String(s.toCharArray.nn.map(fn))
     def isEmpty: Boolean = s.isEmpty
     def cut(delimiter: Text): List[Text] = cut(delimiter, Int.MaxValue)
@@ -90,10 +88,19 @@ object Text:
     def endsWith(str: Text): Boolean = text.endsWith(str)
     def sub(from: Text, to: Text): Text = text.replaceAll(Pattern.quote(from), to).nn
     def tr(from: Char, to: Char): Text = text.replace(from, to).nn
-    def dashed: Text = camelCaseWords.mkString("-").show
+    def dashed: Text = Text(camelCaseWords.mkString("-"))
     def capitalize: Text = take(1).upper+drop(1)
-    def reverse: Text = s.toCharArray.nn.reverse.map(_.show).join
+    def reverse: Text = Text(String(s.toCharArray.nn.reverse))
 
+    def flatMap(fn: Char => Text): Text =
+      String(s.toCharArray.nn.unsafeImmutable.flatMap(fn(_).s.toCharArray.nn.unsafeImmutable).asInstanceOf[Array[Char]])
+    
+    def dropWhile(pred: Char => Boolean): Text =
+      try s.substring(0, where(!pred(_))).nn catch case err: OutOfRangeError => Text("")
+
+    def snip(n: Int): (Text, Text) =
+      (s.substring(0, n min s.length).nn, s.substring(n min s.length).nn)
+    
     def snipWhere(pred: Char => Boolean, idx: Int = 0): (Text, Text) throws OutOfRangeError =
       snip(where(pred, idx))
 
@@ -104,12 +111,13 @@ object Text:
 
 
     def cut(delimiter: Text, limit: Int): List[Text] =
-      s.split(Pattern.quote(delimiter), limit).nn.map(_.nn).to(List)
+      List(s.split(Pattern.quote(delimiter), limit).nn.map(_.nn)*)
 
-    def fit(width: Int, char: Char = ' '): Text = (text + char.show*(width - text.length)).take(width)
+    def fit(width: Int, char: Char = ' '): Text =
+      (text + Text(s"$char")*(width - text.length)).take(width)
     
     def fitRight(width: Int, char: Char = ' '): Text =
-      (char.show*(width - text.length) + text).takeRight(width)
+      (Text(s"$char")*(width - text.length) + text).takeRight(width)
 
     @targetName("add")
     infix def +(other: Text): Text = s+other
@@ -118,31 +126,34 @@ object Text:
     infix def *(n: Int): Text = IArray.fill(n)(s).mkString
     
     def apply(idx: Int): Char throws OutOfRangeError =
-      if idx >= 0 && idx < s.size then s.charAt(idx)
-      else throw OutOfRangeError(idx, 0, s.size)
+      if idx >= 0 && idx < s.length then s.charAt(idx)
+      else throw OutOfRangeError(idx, 0, s.length)
 
     def padRight(length: Int, char: Char = ' '): Text = 
-      if s.size < length then s+Showable(char).show.s*(length - s.size) else s
+      if s.length < length then s+s"$char"*(length - s.length) else s
     
     def padLeft(length: Int, char: Char = ' '): Text =
-      if s.size < length then Showable(char).show.s*(length - s.size)+s else s
+      if s.length < length then s"$char"*(length - s.length)+s else s
 
     def contains(substring: Text): Boolean = text.contains(substring)
     def contains(char: Char): Boolean = text.indexOf(char) != -1
 
     @tailrec
     def where(pred: Char => Boolean, idx: Int = 0): Int throws OutOfRangeError =
-      if idx >= text.length then throw OutOfRangeError(idx, 0, s.size)
+      if idx >= text.length then throw OutOfRangeError(idx, 0, s.length)
       if pred(text.charAt(idx)) then idx else where(pred, idx + 1)
 
+    def lastWhere(pred: Char => Boolean, idx: Int = text.length - 1): Int throws OutOfRangeError =
+      if idx < 0 then throw OutOfRangeError(idx, 0, s.length)
+      if pred(text.charAt(idx)) then idx else lastWhere(pred, idx - 1)
 
     def upto(pred: Char => Boolean): Text =
       try text.substring(0, where(!pred(_))).nn
       catch case e: OutOfRangeError => text
 
     def lev(other: Text): Int =
-      val m = s.size
-      val n = other.size
+      val m = s.length
+      val n = other.length
       val old = new Array[Int](n + 1)
       val dist = new Array[Int](n + 1)
 
@@ -159,7 +170,7 @@ object Text:
       
       dist(n)
   
-  given Ordering[Text] = (left, right) => if left < right then -1 else if right < left then 1 else 0
+  given Ordering[Text] = Ordering.String.on[Text](_.s)
 
   given typeTest: Typeable[Text] with
     def unapply(value: Any): Option[value.type & Text] = value match
@@ -231,7 +242,7 @@ object Interpolation:
                                recur(cur + 1)
           case 't' if esc   => buf.add('\t')
                                recur(cur + 1)
-          case 'u' if esc   => buf.add(parseUnicode(str.show.slice(cur + 1, cur + 5)))
+          case 'u' if esc   => buf.add(parseUnicode(gossamer.Text(str).slice(cur + 1, cur + 5)))
                                recur(cur + 4)
           case 'e' if esc   => buf.add('\u001b')
                                recur(cur + 1)
@@ -249,7 +260,6 @@ object Interpolation:
     
     buf.text
       
-
   object T extends Interpolator[Input, Text, Text]:
     def initial: Text = gossamer.Text("")
     def parse(state: Text, next: String): Text = state+escape(next)
@@ -264,9 +274,8 @@ object Interpolation:
     def insert(state: Text, input: Input): Text = state+input.txt
 
     def complete(state: Text): Text =
-      gossamer.Text(state.s.split("\\n\\s*\\n").nn.map(_.nn.replaceAll("\\s\\s*", " ").nn.trim.nn
-          ).mkString("\n").nn)
-
+      val array = state.s.split("\\n\\s*\\n").nn.map(_.nn.replaceAll("\\s\\s*", " ").nn.trim.nn)
+      gossamer.Text(String.join("\n", array*).nn)
 
 extension (buf: StringBuilder)
   def add(text: Text): Unit = buf.append(text)
@@ -313,11 +322,46 @@ object Line:
         else
           val parts = stream.head.s.split("\\r?\\n", Int.MaxValue).nn.map(_.nn)
           if parts.length == 1 then recur(stream.tail, carry + parts.head.show)
-          else if parts.length == 2 then Line(carry + parts.head.show) #:: recur(stream.tail, parts.last.show)
+          else if parts.length == 2
+          then Line(carry + parts.head.show) #:: recur(stream.tail, parts.last.show)
           else
-            Line(carry + parts.head.show) #:: parts.tail.init.map:
-              str => Line(str.show)
-            .to(LazyList) #::: recur(stream.tail, parts.last.show)
+            Line(carry + parts.head.show) #::
+                LazyList(parts.tail.init.map(str => Line(str.show))*) #:::
+                recur(stream.tail, parts.last.show)
       
       recur(summon[Readable[LazyList[Text]]].read(stream))
       
+object DefaultSink:
+  given DefaultSink[Stdout.type](Stdout)
+
+case class DefaultSink[T](value: T)(using sink: Sink[T]):
+  def write(msg: Text): Unit =
+    try sink.write(value, LazyList(msg.bytes)) catch case e: Exception => ()
+
+extension (obj: Boolean.type) def unapply(str: Text): Option[Boolean] =
+  if str == Text("true") then Some(true) else if str == Text("false") then Some(false) else None
+
+extension (obj: Byte.type) def unapply(str: Text): Option[Byte] =
+  try Some(java.lang.Byte.parseByte(str)) catch NumberFormatException => None
+
+extension (obj: Short.type) def unapply(str: Text): Option[Short] =
+  try Some(java.lang.Short.parseShort(str)) catch NumberFormatException => None
+
+extension (obj: Int.type) def unapply(str: Text): Option[Int] =
+  try Some(java.lang.Integer.parseInt(str)) catch NumberFormatException => None
+
+extension (obj: Long.type) def unapply(str: Text): Option[Long] =
+  try Some(java.lang.Long.parseLong(str)) catch NumberFormatException => None
+
+extension (obj: Float.type) def unapply(str: Text): Option[Float] =
+  try Some(java.lang.Float.parseFloat(str)) catch NumberFormatException => None
+
+extension (obj: Char.type) def unapply(str: Text): Option[Char] =
+  if str.length == 1 then Some(str.charAt(0)) else None
+
+extension (obj: Double.type) def unapply(str: Text): Option[Double] =
+  try Some(java.lang.Double.parseDouble(str)) catch NumberFormatException => None
+
+object Out:
+  def print(msg: Text)(using defaultSink: DefaultSink[?]): Unit = defaultSink.write(msg)
+  def println(msg: Text)(using DefaultSink[?]): Unit = print(Text(s"$msg\n"))

@@ -14,7 +14,9 @@
         "-Yrequire-targetName",
         "-Ysafe-init",
         "-Ycheck-all-patmat",
-        "-Yexplicit-nulls"
+	"-Xprint-suspension",
+        "-Yexplicit-nulls",
+	"-Yno-predef"
       ]
     }
   },
@@ -32,8 +34,7 @@
       "id": "gossamer/test",
       "links": ["gossamer/core", "probably/cli"],
       "sources": ["src/test"],
-      "version": "0.1.0",
-      "main": "gossamer.Tests"
+      "version": "0.1.0"
     }
   ]
 }

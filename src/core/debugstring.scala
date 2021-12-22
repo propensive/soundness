@@ -17,6 +17,7 @@
 package gossamer
 
 import wisteria.*
+import rudiments.*
 
 import scala.compiletime.*
 
@@ -73,13 +74,13 @@ object DebugString extends FallbackDebugString:
   
   given DebugString[Double] = double =>
     if double != double then t"Double.NaN"
-    else if double.isInfinite
+    else if java.lang.Double.isInfinite(double)
     then t"Double.${if double < 0.0 then t"Negative" else t"Positive"}Infinity"
     else Showable(double).show
   
   given DebugString[Float] = float =>
     if float != float then t"Float.NaN"
-    else if float.isInfinite
+    else if java.lang.Float.isInfinite(float)
     then t"Float.${if float < 0.0f then t"Negative" else t"Positive"}Infinity"
     else t"${Showable(float).show}F"
   
