@@ -89,7 +89,8 @@ object Tty:
     val buf: Array[Byte] = new Array[Byte](16)
     val count: Int = System.in.nn.read(buf)
     
-    summon[Keyboard[K]].interpret(buf.take(count).to(List).map(_.toInt)) #::: stream[K]
+    summon[Keyboard[K]].interpret(buf.take(count).unsafeImmutable.to(List).map(_.toInt)) #:::
+        stream[K]
 
   def print(msg: Text)(using Tty) = summon[Tty].out.print(msg.s)
   def println(msg: Text)(using Tty) = summon[Tty].out.println(msg.s)
@@ -104,8 +105,8 @@ object Keyboard:
   
   private def readResize(bytes: List[Int])(using Log): Keypress.Resize =
     val size = String(bytes.map(_.toByte).init.to(Array)).show.cut(t";")
-    val columns = size(0).s.toInt
-    val rows = size(1).s.toInt
+    val Int(columns) = size(0)
+    val Int(rows) = size(1)
     Log.fine(ansi"Console has been resized to $columns×$rows")
     
     Keypress.Resize(columns, rows)
@@ -121,6 +122,8 @@ object Keyboard:
       case i :: Nil if i < 32   => LazyList(Keypress.Ctrl((i + 64).toChar))
       
       case other                => String(bytes.to(Array), 0, bytes.length)
+                                     .toCharArray.nn
+                                     .unsafeImmutable
                                      .to(LazyList)
                                      .map(Keypress.Printable(_))
   
@@ -172,7 +175,7 @@ case class LineEditor(content: Text = t"", pos: Int = 0):
     case Printable(ch)  => copy(t"${content.take(pos)}$ch${content.drop(pos)}", pos + 1)
     case Ctrl('U')      => copy(content.drop(pos), 0)
     
-    case Ctrl('W')      => val prefix = content.take(0 max (pos - 1)).reverse.s.dropWhile(_ != ' ').show.reverse
+    case Ctrl('W')      => val prefix = content.take(0 max (pos - 1)).reverse.dropWhile(_ != ' ').reverse
                            copy(t"$prefix${content.drop(pos)}", prefix.length)
     
     case Delete         => copy(t"${content.take(pos)}${content.drop(pos + 1)}")
