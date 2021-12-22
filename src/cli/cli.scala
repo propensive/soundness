@@ -36,10 +36,11 @@ object Suite:
     '#' -> colors.Gold
   ).map { (ch, color) => ansi"${Bg(color)}( ${colors.Black}($Bold(${ch.show})) )" }
   
-  private val legend: List[AnsiString] = statuses.zip(List("Pass", "Fail", "Assertion throws",
-      "Throws an exception", "Inconsistent", "Suite partially fails")).map { (status, desc) =>
-    ansi"$status ${desc.padTo(32, ' ')}"
-  }.to(List)
+  private val legend: List[AnsiString] =
+    statuses.zip(List(t"Pass", t"Fail", t"Assertion throws", t"Throws an exception",
+        t"Inconsistent", t"Suite partially fails")).map:
+      (status, desc) => ansi"$status ${desc.show.fit(32)}"
+    .to(List)
 
   val footer: AnsiString = legend.grouped(2).map(_.join(ansi"  ")).to(Seq).join(AnsiString(t"\n"),
       AnsiString(t"\n"), AnsiString(t"\n"))
@@ -57,7 +58,7 @@ object Suite:
 
     val status = Column[Summary, String, Outcome]("", _.outcome)
     val hash = Column[Summary, String, Text]("Hash", v => Runner.shortDigest(v.name))
-    val name = Column[Summary, String, String]("Test", s => s"${"  "*s.indent}${s.name}")
+    val name = Column[Summary, String, String]("Test", s => t"${t"  "*s.indent}${s.name}".s)
     val count = Column[Summary, String, Int]("Count", _.count)
     val min = Column[Summary, String, Double]("Min", _.min)
     val avg = Column[Summary, String, Double](if simple then "Time" else "Avg", _.avg)
@@ -94,7 +95,8 @@ trait Suite(val name: Text) extends TestSuite:
     val runner = Runner(args.map(TestId(_)).to(Set))
     run(using runner)
     val report = runner.report()
-    println(Suite.show(report).render)
+    // FIXME
+    System.out.nn.println(Suite.show(report).render)
 
     terminate(report.total == report.passed)
   
