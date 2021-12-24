@@ -54,8 +54,10 @@ More specifically, each library under the _Niveau_ umbrella adheres to the follo
 - `null` is banished—no method should ever return `null`, guaranteed by the Scala typesystem
 - typeclasses—extensibility provided through
   [Wisteria](https://github.com/propensive/wisteria/)'s generic derivation
+- immutability—mutation of state is avoided, even when working with streams
 - decoupled—modules use [Clairvoyant](https://github.com/propensive/clairvoyant/) to minimise
   unnecessary dependencies
+- functional programming—embracing the fundamentals of FP, but avoiding the complexity
 - small APIs—above all, code should be legible, natural and elegant
 
 ### Typesafe
