@@ -31,8 +31,9 @@ representations of [colors](https://github.com/propensive/iridescence/),
 [paths](https://github.com/propensive/slalom/). Fundamental to these projects are utilities for
 [generic derivation](https://github.com/propensive/wisteria/),
 [checked interpolated strings](https://github.com/propensive/contextual/),
-[annotations](https://github.com/propensive/adversaria/), library
-[decoupling](https://github.com/propensive/clairvoyant/) and
+[annotations](https://github.com/propensive/adversaria/),
+[type providers](https://github.com/propensive/polyvinyl/)
+library [decoupling](https://github.com/propensive/clairvoyant/) and
 [unit testing](https://github.com/propensive/probably/) with a
 [WebDriver API](https://github.com/propensive/tarantula/) for browser testing. A module also
 exists for [Scala syntax highlighting](https://github.com/propensive/harlequin/). Everything
