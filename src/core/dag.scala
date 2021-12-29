@@ -19,12 +19,7 @@ package acyclicity
 import gossamer.*
 import rudiments.*
 
-import scala.annotation.*
-
-import annotation.targetName
-
 object Dag:
-  
   @targetName("build")
   def apply[T](keys: Set[T])(dependencies: T => Set[T]): Dag[T] =
     Dag(keys.map { k => (k, dependencies(k)) }.to(Map))
@@ -109,7 +104,7 @@ case class Dag[T] private(edgeMap: Map[T, Set[T]] = Map()):
       } -- deletions
     }
 
-  def findCycle(start: T): Option[List[T]] =
+  private def findCycle(start: T): Option[List[T]] =
     @tailrec
     def recur(queue: List[(T, List[T])], finished: Set[T]): Option[List[T]] = queue match
       case Nil =>
@@ -125,7 +120,7 @@ case class Dag[T] private(edgeMap: Map[T, Set[T]] = Map()):
 
     recur(List((start, List())), Set())
 
-  def descendants(start: T): Either[List[T], Set[T]] =
+  private def descendants(start: T): Either[List[T], Set[T]] =
     @tailrec
     def recur(stack: List[T], ans: Set[T] = Set()): Set[T] =
       stack match

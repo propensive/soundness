@@ -22,8 +22,6 @@ import gossamer.*
 
 import language.dynamics
 
-import annotation.targetName
-
 enum Dot:
   case Graph(id: Option[Dot.Id], strict: Boolean, statements: Dot.Statement*)
   case Digraph(id: Option[Dot.Id], strict: Boolean, statements: Dot.Statement*)
@@ -75,7 +73,6 @@ object Dot:
     case Assignment(id: Id, id2: Id)
     case Subgraph(id: Option[Id], statements: Statement*)
 
-
   def serialize(tokens: Vector[Text]): Text =
     val buf: StringBuilder = StringBuilder()
     var level: Int = 0
@@ -104,7 +101,7 @@ object Dot:
 
     buf.text
 
-  def tokenize(graph: Ref | Dot | Target | Statement | Property): Vector[Text] = graph match
+  private def tokenize(graph: Ref | Dot | Target | Statement | Property): Vector[Text] = graph match
     case Ref(id, port) =>
       Vector(port.fold(t""""${id.key}"""") { p => t""""${id.key}:$p""""" })
     
