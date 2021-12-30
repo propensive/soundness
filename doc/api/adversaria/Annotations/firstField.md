@@ -1,0 +1,1 @@
+creates an accessor for the first field of a case class which contains an annotation of the specified type

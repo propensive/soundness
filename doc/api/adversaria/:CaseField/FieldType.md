@@ -1,0 +1,1 @@
+the return type of the field represented by this `:CaseField`
