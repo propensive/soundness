@@ -1,0 +1,1 @@
+a list of key/value pairs representing parameters to the media type

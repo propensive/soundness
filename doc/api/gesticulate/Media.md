@@ -1,0 +1,1 @@
+an object containing enumerations and types relating to media types

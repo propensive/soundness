@@ -1,0 +1,1 @@
+a mapping from file extensions to media types for use when guessing a file's media type

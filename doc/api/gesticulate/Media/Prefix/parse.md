@@ -1,0 +1,1 @@
+transforms the interpolator's interpretation state to consume a statically-known string

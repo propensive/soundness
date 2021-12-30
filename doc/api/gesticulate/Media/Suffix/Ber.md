@@ -1,0 +1,1 @@
+represents the `+ber` media type suffix

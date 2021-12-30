@@ -1,0 +1,1 @@
+transforms the interpolator's interpretation state to include a substitution

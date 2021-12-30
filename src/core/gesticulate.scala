@@ -21,7 +21,6 @@ import gossamer.*
 import contextual.*
 import scala.io.*
 
-
 object Media:
   object Group:
     given DebugString[Group] = _.name
@@ -116,9 +115,11 @@ object Media:
       case (h: Text) :: _ => (parseSubtype(h), parseSuffixes(xs.tail))
 
     def parseBasic(str: Text): (Group, Subtype, List[Suffix]) = str.cut(t"/").to(List) match
-      case List(group, subtype) => parseGroup(group.asInstanceOf[Text]) *: parseInit(subtype.asInstanceOf[Text])
-      case _                    => throw InvalidMediaTypeError(string,
-                                       InvalidMediaTypeError.Nature.NotOneSlash)
+      case List(group, subtype) =>
+        parseGroup(group.asInstanceOf[Text]) *: parseInit(subtype.asInstanceOf[Text])
+      
+      case _ =>
+        throw InvalidMediaTypeError(string, InvalidMediaTypeError.Nature.NotOneSlash)
 
     def parseGroup(str: Text): Group =
       try Group.valueOf(str.lower.capitalize.s)

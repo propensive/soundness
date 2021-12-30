@@ -1,0 +1,1 @@
+the variable part of a media subtype in the vendor tree, without the prefix, `vnd.`

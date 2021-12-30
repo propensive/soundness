@@ -1,0 +1,1 @@
+an enumeration of the top-level media types, such as `text` and `application`

@@ -1,0 +1,1 @@
+a `:DebugString` instance for displaying a `:MediaType` as a string that could be interpreted as source code

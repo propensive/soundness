@@ -1,0 +1,1 @@
+creates the interpolator's initial state value
