@@ -179,7 +179,7 @@ object ByteEncoder:
   given ByteEncoder[Binary] = bytes =>
     val buf = StringBuilder()
     bytes.foreach:
-      byte => buf.add(Integer.toBinaryString(byte).nn.show.fitRight(8, '0'))
+      byte => buf.add(Integer.toBinaryString(byte).nn.show.fit(8, Rtl, '0'))
     buf.text
 
   given ByteEncoder[Base64Url] = bytes =>
@@ -201,7 +201,6 @@ object ByteDecoder:
     import java.lang.Character.digit
     val data = Array.fill[Byte](value.length/2)(0)
     
-
     (0 until value.length by 2).foreach:
       i =>
         try data(i/2) = ((digit(value(i), 16) << 4) + digit(value(i + 1), 16)).toByte
