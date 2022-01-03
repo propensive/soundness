@@ -17,8 +17,7 @@
 package punctuation
 
 import honeycomb.*
-
-import scala.annotation.targetName
+import rudiments.*
 
 extension (value: Markdown[Markdown.Ast.Node])
   def html: Seq[Html[Flow]] = HtmlConverter().convert(value.nodes)

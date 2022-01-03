@@ -17,8 +17,7 @@
 package punctuation
 
 import escapade.*
-
-import scala.annotation.targetName
+import rudiments.*
 
 extension (value: Markdown[Markdown.Ast.Node])
   def render(width: Int): AnsiString = TextConverter().convert(value.nodes, 0).serialize(width)

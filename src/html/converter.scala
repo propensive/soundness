@@ -20,9 +20,6 @@ import honeycomb.*
 import rudiments.*
 import gossamer.*
 
-import scala.collection.immutable.ListMap
-import scala.annotation.targetName
-
 open class HtmlConverter():
   def outline(node: Markdown[Markdown.Ast.Node]): Seq[Html[Flow]] =
     try convert(Markdown.parse(headOutline(node).join(t"\n")).nodes)

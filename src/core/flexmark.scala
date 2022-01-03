@@ -24,9 +24,6 @@ import cvf.ast as cvfa, cvf.parser.*, cvf.util.options.*, cvf.util.data.*, cvf.e
     tables.TablesExtension, cvf.ext.typographic.*, cvf.util.ast as cvfua
 import annotation.tailrec
 
-import scala.reflect.Typeable
-import scala.collection.JavaConverters.*
-
 import java.util as ju
 
 case class BadMarkdownError(message: Text) extends Exception(t"punctuation: $message".s)

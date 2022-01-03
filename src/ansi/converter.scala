@@ -22,9 +22,6 @@ import escapade.*, escapes.*
 import iridescence.*
 import harlequin.*
 
-import scala.collection.immutable.ListMap
-import scala.annotation.targetName
-
 case class BodyText(blocks: TextBlock*):
   def serialize(width: Int): AnsiString = blocks.map(_.render(width)).join(ansi"${'\n'}${'\n'}")
 
@@ -37,7 +34,7 @@ case class TextBlock(indent: Int, text: AnsiString):
       if text.length == 0 then lines.reverse
       else
         try
-          val pt = text.plain.lastWhere(_ == ' ', width - indent*2)
+          val pt = text.plain.where(_ == ' ', width - indent*2, Rtl)
           rest(text.drop(pt + 1), text.take(pt) :: lines)
         catch case err: OutOfRangeError =>
           rest(text.drop(width - indent*2), text.take(width - indent*2) :: lines)
