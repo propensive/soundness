@@ -113,6 +113,7 @@ class Filesystem(pathSeparator: Text, fsPrefix: Text) extends Root(pathSeparator
     def prefix: Text = fsPrefix
     def separator: Text = pathSeparator
     def name: Text = elements.last
+    def fullname: Text = elements.join(fsPrefix, separator, t"")
 
     def file: File throws IoError =
       if !exists() then throw IoError(IoError.Op.Access, IoError.Reason.DoesNotExist, this)
@@ -182,12 +183,12 @@ class Filesystem(pathSeparator: Text, fsPrefix: Text) extends Root(pathSeparator
   def fromJavaPath(path: jnf.Path): IoPath =
     IoPath((0 until path.getNameCount).map(path.getName(_).toString.show).to(List))
 
-  def parse(value: Text): Option[IoPath] =
+  def parse(value: Text, pwd: Option[IoPath] = None): Option[IoPath] =
     if value.startsWith(prefix)
     then
       val parts: List[Text] = value.drop(prefix.length).cut(separator)
       Some(IoPath(List(parts*)))
-    else None
+    else try pwd.map(_ ++ Relative.parse(value)) catch case err: RootParentError => None
   
   @targetName("access")
   infix def /(filename: Text): Path.Absolute = Path.Absolute(List(filename))
@@ -209,6 +210,17 @@ class Filesystem(pathSeparator: Text, fsPrefix: Text) extends Root(pathSeparator
     def copyTo(dest: IoPath): Inode throws IoError
     def hardLinkTo(dest: IoPath): Inode throws IoError
 
+  object Fifo:
+    given Sink[Fifo] with
+      type E = IoError
+      def write(value: Fifo, stream: DataStream): Unit throws E | StreamCutError =
+        try Util.write(stream, value.out)
+        catch case e => throw IoError(IoError.Op.Write, IoError.Reason.AccessDenied, value.file.path)
+
+  case class Fifo(file: File):
+    val out = ji.FileOutputStream(file.javaPath.toFile, false)
+    def close(): Unit = out.close()
+
   object File:
     given Show[File] = _.fullname
     
@@ -219,7 +231,7 @@ class Filesystem(pathSeparator: Text, fsPrefix: Text) extends Root(pathSeparator
         try Util.write(stream, out)
         catch case e => throw IoError(IoError.Op.Write, IoError.Reason.AccessDenied, value.path)
         finally try out.close() catch _ => ()
-
+    
     given Source[File] with
       type E = IoError
       def read(file: File): DataStream throws E =
@@ -589,7 +601,7 @@ object Filesystem:
 
 object Unix extends Filesystem(t"/", t"/"):
   def Pwd: IoPath throws PwdError =
-    val dir = try Sys.user.dir().show catch case e: KeyNotFound => throw PwdError()
+    val dir = try Sys.user.dir().show catch case e: KeyNotFoundError => throw PwdError()
     makeAbsolute(parse(dir).get.parts)
 
 case class WindowsRoot(drive: Majuscule) extends Filesystem(t"\\", t"${drive}:\\")
