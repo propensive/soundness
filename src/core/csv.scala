@@ -20,8 +20,6 @@ import wisteria.*
 import rudiments.*
 import gossamer.*
 
-import scala.annotation.*
-
 trait Format:
   protected val separator: Char
 
