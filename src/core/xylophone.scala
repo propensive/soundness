@@ -21,8 +21,6 @@ import rudiments.*
 import gossamer.*
 import contextual.*
 
-import scala.annotation.StaticAnnotation
-
 import annotation.targetName
 import language.dynamics
 

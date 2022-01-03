@@ -28,7 +28,7 @@ object XmlReader extends Derivation[XmlReader]:
   given txt: XmlReader[Text] =
     childElements(_).collect { case Ast.Textual(txt) => txt }.headOption
   
-  given XmlReader[Int] = txt.map { t => Int.unapply(t.s) }
+  given XmlReader[Int] = txt.map(Int.unapply(_))
   
   def join[T](caseClass: CaseClass[XmlReader, T]): XmlReader[T] = seq =>
     val elems = childElements(seq)
