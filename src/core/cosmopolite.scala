@@ -21,7 +21,6 @@ import gossamer.*
 
 import scala.reflect.*
 import scala.util.NotGiven
-import scala.annotation.*
 import scala.quoted.*
 
 case class Language[+L <: String](value: String)
