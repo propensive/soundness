@@ -16,13 +16,6 @@
 
 package probably
 
-import scala.collection.immutable.ListMap
-import scala.collection.mutable.HashMap
-import scala.util.*, control.NonFatal
-import scala.quoted.*
-
-import scala.reflect.Typeable
-
 import wisteria.*
 import escritoire.*
 import rudiments.*
@@ -30,6 +23,10 @@ import gossamer.*
 import eucalyptus.*
 import iridescence.*
 import escapade.*
+
+import scala.collection.mutable.HashMap
+import scala.util.*
+import scala.quoted.*
 
 import language.dynamics
 
@@ -61,7 +58,7 @@ object Runner:
         val padWidth = datapoint.debugValue.allInfo.map(_(0).length).max
         datapoint.debugValue.allInfo.map { case (k, v) =>
           val value: Text = (v.cut(t"\n"): List[Text]).join(t"\n${t" "*(padWidth + 3)}")
-          t"${k.padLeft(padWidth, ' ')} = $value"
+          t"${k.pad(padWidth, Ltr)} = $value"
         }.join(t"\n")
       
       case _ =>
@@ -211,7 +208,7 @@ object Macros:
     
     val filename: Expr[String] = Expr:
       val absolute = Showable(Position.ofMacroExpansion).show.cut(t":").head
-      val pwd = try Sys.user.dir().show catch case e: KeyNotFound => throw Impossible("should not happen")
+      val pwd = try Sys.user.dir().show catch case e: KeyNotFoundError => throw Impossible("should not happen")
       
       if absolute.startsWith(pwd) then absolute.drop(pwd.length + 1).s else absolute.s
     
