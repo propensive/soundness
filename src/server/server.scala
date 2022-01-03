@@ -23,12 +23,6 @@ import eucalyptus.*
 import gesticulate.*
 import escapade.*
 
-import scala.collection.JavaConverters.*
-import scala.collection.immutable.ListMap
-import scala.util.control.NonFatal
-
-import annotation.targetName
-
 import java.net.InetSocketAddress
 import java.io.*
 import java.text as jt
@@ -168,7 +162,7 @@ case class Request(method: HttpMethod, body: HttpBody.Chunked, query: Text, ssl:
         if (method == HttpMethod.Post || method == HttpMethod.Put) &&
             (contentType == Some(media"application/x-www-form-urlencoded") || contentType == None)
         then
-          Map[Text, Text](Text(body.stream.slurp(limit = 1.mb).uString).cut(t"&").map(_.cut(t"=", 2).to(Seq) match
+          Map[Text, Text](body.stream.slurp(limit = 1.mb).uString.cut(t"&").map(_.cut(t"=", 2).to(Seq) match
             case Seq(key: Text)              => key.urlDecode.show -> t""
             case Seq(key: Text, value: Text) => key.urlDecode.show -> value.urlDecode.show
             case _                         => throw Impossible("key/value pair does not match")
@@ -186,8 +180,8 @@ case class Request(method: HttpMethod, body: HttpBody.Chunked, query: Text, ssl:
 
   lazy val length: Int throws StreamCutError =
     headers.get(RequestHeader.ContentLength)
-      .map(_.head.s)
-      .flatMap(Int.unapply)
+      .map(_.head)
+      .flatMap(Int.unapply(_))
       .getOrElse(body.stream.map(_.length).sum)
   
   lazy val contentType: Option[MediaType] =
@@ -209,7 +203,7 @@ def header(using Request)(header: RequestHeader): List[Text] =
   summon[Request].headers.get(header).getOrElse(Nil)
 
 object ParamReader:
-  given ParamReader[Int] = str => Int.unapply(str.s)
+  given ParamReader[Int] = str => Int.unapply(str)
   given ParamReader[Text] = Some(_)
 
 object UrlPath:
@@ -293,7 +287,7 @@ case class HttpServer(port: Int) extends RequestHandler:
             val kv = elem.cut(t"=", 2)
             map.updated(kv(0), kv(1) :: map.getOrElse(kv(0), Nil))
     
-    val headers = exchange.getRequestHeaders.nn.asScala.view.mapValues(_.asScala.to(List)).to(Map)
+    val headers = exchange.getRequestHeaders.nn.asScala.view.mapValues(_.nn.asScala.to(List)).to(Map)
 
     val request = Request(
       method = HttpMethod.valueOf(exchange.getRequestMethod.nn.show.lower.capitalize.s),

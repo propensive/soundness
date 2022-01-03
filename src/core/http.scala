@@ -25,10 +25,6 @@ import iridescence.*
 import escapade.*
 import slalom.*
 
-import scala.collection.immutable.ListMap
-import scala.collection.JavaConverters.*
-import scala.annotation.{tailrec, targetName}
-
 import java.net.*
 import java.io.*
 import java.util as ju
@@ -119,8 +115,8 @@ object HttpReadable:
     type E = E2
     def read(status: HttpStatus, body: HttpBody): T throws ExcessDataError | StreamCutError | E2 = body match
       case HttpBody.Empty         => reader.read("")
-      case HttpBody.Data(data)    => reader.read(data.uString)
-      case HttpBody.Chunked(data) => reader.read(data.slurp(limit = 10.mb).uString)
+      case HttpBody.Data(data)    => reader.read(data.uString.s)
+      case HttpBody.Chunked(data) => reader.read(data.slurp(limit = 10.mb).uString.s)
 
   given HttpReadable[HttpStatus] with
     type E = StreamCutError

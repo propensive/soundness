@@ -20,8 +20,6 @@ import rudiments.*
 import gossamer.*
 import slalom.*
 
-import scala.collection.JavaConverters.*
-
 import javax.servlet.*, http.*
 
 trait Servlet() extends HttpServlet:
@@ -78,9 +76,9 @@ trait Servlet() extends HttpServlet:
       }
     }
     
-    val headers = request.getHeaderNames.nn.asScala.to(List).map {
+    val headers = request.getHeaderNames.nn.asScala.to(List).map:
       k => Text(k) -> request.getHeaders(k).nn.asScala.to(List).map(Text(_))
-    }.to(Map)
+    .to(Map)
 
     Request(
       method = HttpMethod.valueOf(request.getMethod.nn.show.lower.capitalize.s),
