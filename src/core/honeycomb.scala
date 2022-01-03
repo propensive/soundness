@@ -19,7 +19,6 @@ package honeycomb
 import rudiments.*
 import gossamer.*
 
-import scala.annotation.*
 import scala.quoted.*
 
 import language.dynamics
