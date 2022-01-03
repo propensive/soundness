@@ -21,7 +21,6 @@ import escapade.*
 import rudiments.*
 import iridescence.*
 
-import scala.annotation.*
 import scala.quoted.*
 
 import java.text as jt
@@ -43,7 +42,7 @@ opaque type ElapsedTime = Long
 
 object ElapsedTime:
   def between(t0: Timestamp, current: Timestamp): ElapsedTime = (current - t0) max 0
-  given show: Show[ElapsedTime] = ts => numberFormat.format(ts/1000.0).nn.show.padLeft(7)
+  given show: Show[ElapsedTime] = ts => numberFormat.format(ts/1000.0).nn.show.pad(7)
 
   private val numberFormat = jt.DecimalFormat(t"#.000".s)
 
@@ -115,7 +114,6 @@ case class Log(rules: Rule[?, ?]*):
                            loggers: Iterable[Logger]):
     def record(entry: Entry): Unit =
       if interested(entry) then loggers.foreach(_.record(format.serialize(format.format(entry))))
-
 
   lazy val loggers: Iterable[DistributedLog] =
     rules.groupBy(_.format).map:
