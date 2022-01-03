@@ -22,8 +22,6 @@ import gossamer.*
 import escapade.*
 import iridescence.*
 
-import scala.collection.mutable
-
 import Runner.*
 
 object Suite:
