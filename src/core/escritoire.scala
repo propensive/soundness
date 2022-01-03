@@ -20,10 +20,6 @@ import escapade.*
 import gossamer.*
 import rudiments.*
 
-import scala.annotation.tailrec
-import scala.collection.immutable.TreeMap
-import scala.reflect.ClassTag
-
 enum Breaks:
   case Never, Word, Zwsp, Syllable, Character
 

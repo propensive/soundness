@@ -114,7 +114,7 @@ case class Tabulation[Row](columns: Column[Row]*):
     val stripped = Ansi.strip(str).length
     alignment match
       case Align.Left =>
-        if stripped > width then t"${(str.dropRight(stripped - width): Text)}$reset"
+        if stripped > width then t"${(str.drop(stripped - width, Rtl): Text)}$reset"
         else t"$str${(t" "*(width - stripped))}"
       
       case Align.Right =>
