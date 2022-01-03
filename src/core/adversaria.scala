@@ -56,7 +56,6 @@ object Macros:
     
     fields.flatMap:
       fld =>
-        val idx = Expr(fields.indexOf(fld))
         val name = Expr(fld.name)
         
         fld.annotations.map(_.asExpr).collect { case '{ $ann: A } => ann }.map:
