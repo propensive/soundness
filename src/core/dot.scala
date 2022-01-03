@@ -99,7 +99,7 @@ object Dot:
       case t";" => newline()
       case word => whitespace(); buf.add(word)
 
-    buf.text
+    Text(buf.toString)
 
   private def tokenize(graph: Ref | Dot | Target | Statement | Property): Vector[Text] = graph match
     case Ref(id, port) =>
