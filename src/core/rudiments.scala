@@ -23,6 +23,8 @@ import scala.concurrent.*
 import java.util.regex.*
 import java.io as ji
 
+import scala.util.CommandLineParser
+
 import language.dynamics
 
 export scala.reflect.{ClassTag, Typeable}
@@ -36,9 +38,26 @@ export scala.concurrent.{Future, ExecutionContext}
 export scala.util.control.NonFatal
 export scala.jdk.CollectionConverters.*
 export scala.annotation.{tailrec, implicitNotFound, targetName, switch, StaticAnnotation}
-    
+
 type Bytes = IArray[Byte]
 type DataStream = LazyList[IArray[Byte] throws StreamCutError]
+
+opaque type Text = String
+
+object Text:
+  def apply(string: String): Text = string
+  
+  extension (string: Text)
+    def s: String = string
+
+  given CommandLineParser.FromString[Text] = identity(_)
+
+  given Ordering[Text] = Ordering.String.on[Text](_.s)
+  
+  given typeTest: Typeable[Text] with
+    def unapply(value: Any): Option[value.type & Text] = value match
+      case str: String => Some(str.asInstanceOf[value.type & Text])
+      case _           => None
 
 object Bytes:
   def apply(xs: Byte*): Bytes = IArray(xs*)
@@ -85,19 +104,19 @@ class Recur[T](fn: => T => T):
 def fix[T](func: Recur[T] ?=> (T => T)): (T => T) = func(using Recur(fix(func)))
 def recur[T: Recur](value: T): T = summon[Recur[T]](value)
 
-case class Property(name: String) extends Dynamic:
-  def apply(): String throws KeyNotFoundError =
-    Option(System.getProperty(name)).getOrElse(throw KeyNotFoundError(name)).nn
+case class Property(name: Text) extends Dynamic:
+  def apply(): Text throws KeyNotFoundError =
+    Text(Option(System.getProperty(name.s)).getOrElse(throw KeyNotFoundError(name)).nn)
   
-  def selectDynamic(key: String): Property = Property(s"$name.$key")
-  def applyDynamic(key: String)(): String throws KeyNotFoundError = selectDynamic(key).apply()
+  def selectDynamic(key: String): Property = Property(Text(s"$name.$key"))
+  def applyDynamic(key: String)(): Text throws KeyNotFoundError = selectDynamic(key).apply()
 
 object Sys extends Dynamic:
-  def selectDynamic(key: String): Property = Property(key)
-  def applyDynamic(key: String)(): String throws KeyNotFoundError = selectDynamic(key).apply()
+  def selectDynamic(key: String): Property = Property(Text(key))
+  def applyDynamic(key: String)(): Text throws KeyNotFoundError = selectDynamic(key).apply()
   def bigEndian: Boolean = java.nio.ByteOrder.nativeOrder == java.nio.ByteOrder.BIG_ENDIAN
 
-case class KeyNotFoundError(name: String) extends Exception(s"rudiments: key $name not found")
+case class KeyNotFoundError(name: Text) extends Exception(s"rudiments: key $name not found")
 
 object Impossible:
   def apply(error: Exception): Impossible =
@@ -195,6 +214,8 @@ object Streamable:
   given Streamable[DataStream] = identity(_)
   given Streamable[Bytes] = LazyList(_)
 
+  given Streamable[Text] = value => LazyList(value.s.getBytes("UTF-8").nn.unsafeImmutable)
+
 trait Streamable[T]:
   def stream(value: T): DataStream
 
@@ -211,6 +232,30 @@ object Readable:
     type E = ExcessDataError
     def read(stream: DataStream): Bytes throws ExcessDataError | StreamCutError =
       stream.slurp(10.mb)
+
+  given (using enc: Encoding): Readable[Text] with
+    type E = ExcessDataError
+    def read(value: DataStream) = Text(String(value.slurp(1.mb).unsafeMutable, enc.name.s))
+
+  given textReader(using enc: Encoding): Readable[LazyList[Text]] with
+    type E = ExcessDataError
+    def read(stream: DataStream) =
+      
+      def read(stream: DataStream, carried: Array[Byte] = Array.empty[Byte]): LazyList[Text] =
+        if stream.isEmpty then LazyList()
+        else
+          // FIXME: constructing this new array may be unnecessarily costly.
+          val buf = carried ++ stream.head.unsafeMutable
+          val carry = enc.carry(buf)
+          
+          Text(String(buf, 0, buf.length - carry, enc.name.s)) #::
+              read(stream.tail, buf.takeRight(carry))
+      
+      read(stream)
+
+trait Encoding:
+  def name: Text
+  def carry(array: Array[Byte]): Int
 
 trait Readable[T]:
   readable =>
