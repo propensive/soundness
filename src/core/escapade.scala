@@ -21,11 +21,7 @@ import iridescence.*
 import rudiments.*
 import gossamer.*
 
-import scala.collection.immutable.TreeMap
-
 import java.text.*
-
-import annotation.*
 
 object AnsiString:
   def empty: AnsiString = AnsiString(t"")
@@ -39,6 +35,10 @@ object AnsiString:
       0          -> List(Ansi.Change.Push(wrapper)),
       str.length -> List(Ansi.Change.Pop)
     ))
+
+object rendering:
+  given plain: Show[AnsiString] = _.plain
+  given ansi: Show[AnsiString] = _.render
 
 case class AnsiString(string: Text, escapes: TreeMap[Int, List[Ansi.Change]] = TreeMap()):
   def length: Int = string.length
@@ -117,7 +117,7 @@ case class AnsiString(string: Text, escapes: TreeMap[Int, List[Ansi.Change]] = T
           
           case (stack, Ansi.Change.Literal(str)) =>
             buf.add(27.toChar)
-            buf.add(str)
+            buf.add(Text(str))
             stack
         
         build(treeMap.tail, treeMap.head(0), newStack)
