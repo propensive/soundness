@@ -23,7 +23,6 @@ import eucalyptus.*
 import escapade.*
 import iridescence.*
 
-import scala.annotation.implicitNotFound
 import scala.collection.convert.ImplicitConversionsToJava.*
 import scala.collection.convert.ImplicitConversionsToScala.*
 import scala.jdk.StreamConverters.StreamHasToScala
