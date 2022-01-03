@@ -24,6 +24,7 @@
       "name": "Profanity",
       "id": "profanity/core",
       "links": ["eucalyptus/core"],
+      "dependencies": ["net.java.dev.jna:jna:5.10.0"],
       "sources": ["src/core", "src/java"],
       "version": "0.1.0",
       "docs": ["doc"]
