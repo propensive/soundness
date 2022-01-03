@@ -88,7 +88,7 @@ case object Crc32HashFunction extends HashFunction[Crc32]:
       IArray[Byte]((int >> 24).toByte, (int >> 16).toByte, (int >> 8).toByte, int.toByte)
   def name: Text = t"CRC32"
   def hmacName: Text = t"HMAC-CRC32"
-  def initHmac: Mac = ???
+  def initHmac: Mac = throw Impossible("Unimplemented")
     
 
 object Digest:
