@@ -46,7 +46,7 @@ object Show extends Derivation[Show]:
     case Some(v) => v.show
 
   def join[T](ctx: CaseClass[Show, T]): Show[T] = value =>
-    if ctx.isObject then Text(ctx.typeInfo.short.text)
+    if ctx.isObject then Text(ctx.typeInfo.short)
     else ctx.params.map {
       param => param.typeclass.show(param.deref(value))
     }.join(Text(s"${ctx.typeInfo.short}("), Text(", "), Text(")"))

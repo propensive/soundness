@@ -16,6 +16,8 @@
 
 package gossamer
 
+import rudiments.*
+
 extension (inline ctx: StringContext)
   transparent inline def txt(inline parts: Any*): Text =
     ${Interpolation.Text.expand('{Interpolation.Text}, 'ctx, 'parts)}

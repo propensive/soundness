@@ -316,7 +316,7 @@ object Tests extends Suite(t"Gossamer Tests"):
       .check(_ == t"ello")
 
       test(t"drop the last character"):
-        t"Hello".dropRight(1): Text
+        t"Hello".drop(1, Rtl): Text
       .check(_ == t"Hell")
 
       test(t"drop more characters than the length of the Text"):
@@ -324,7 +324,7 @@ object Tests extends Suite(t"Gossamer Tests"):
       .check(_ == t"")
 
       test(t"drop more characters from the right than the length of the Text"):
-        t"Hello".dropRight(10): Text
+        t"Hello".drop(10, Rtl): Text
       .check(_ == t"")
 
       test(t"take the first character"):
@@ -332,7 +332,7 @@ object Tests extends Suite(t"Gossamer Tests"):
       .check(_ == t"H")
 
       test(t"take the last character"):
-        t"Hello".takeRight(1): Text
+        t"Hello".take(1, Rtl): Text
       .check(_ == t"o")
 
       test(t"take more characters than the length of the Text"):
@@ -340,7 +340,7 @@ object Tests extends Suite(t"Gossamer Tests"):
       .check(_ == t"Hello")
 
       test(t"take more characters from the right than the length of the Text"):
-        t"Hello".takeRight(10): Text
+        t"Hello".take(10, Rtl): Text
       .check(_ == t"Hello")
 
       test(t"snip a Text in two"):
@@ -448,19 +448,19 @@ object Tests extends Suite(t"Gossamer Tests"):
       .check(_ == t"123")
 
       test(t"Right-fit long text into fixed width"):
-        t"12345".fitRight(3): Text
+        t"12345".fit(3, Rtl): Text
       .check(_ == t"345")
 
       test(t"Right-fit short text into fixed width"):
-        t"123".fitRight(5): Text
+        t"123".fit(5, Rtl): Text
       .check(_ == t"  123")
 
       test(t"Right-fit short text with different padding character"):
-        t"123".fitRight(5, '.'): Text
+        t"123".fit(5, Rtl, '.'): Text
       .check(_ == t"..123")
       
       test(t"Fit short text with different padding character"):
-        t"123".fit(5, '.'): Text
+        t"123".fit(5, Ltr, '.'): Text
       .check(_ == t"123..")
 
       test(t"duplicate text several times"):
@@ -480,19 +480,19 @@ object Tests extends Suite(t"Gossamer Tests"):
       .check(_ == OutOfRangeError(5, 0, 3))
 
       test(t"Pad-right with space"):
-        t"123".padRight(5): Text
+        t"123".pad(5, Rtl): Text
       .check(_ == t"123  ")
 
       test(t"Pad-left with space"):
-        t"123".padLeft(5): Text
+        t"123".pad(5, Ltr): Text
       .check(_ == t"  123")
 
       test(t"Pad-right with smaller value does not change text"):
-        t"12345".padRight(3): Text
+        t"12345".pad(3, Rtl): Text
       .check(_ == t"12345")
 
       test(t"Pad-left with smaller value does not change text"):
-        t"12345".padLeft(3): Text
+        t"12345".pad(3, Ltr): Text
       .check(_ == t"12345")
 
       test(t"Text does contain value"):

@@ -64,7 +64,7 @@ object DebugString extends FallbackDebugString:
     t"\"$escaped\""
 
   given char: DebugString[Char] =
-    ch => t"'${string.show(ch.show).drop(1).dropRight(1)}'"
+    ch => t"'${string.show(ch.show).drop(1).drop(1, Rtl)}'"
 
   given DebugString[Int] = _.show
   given DebugString[Long] = long => t"${long.show}L"

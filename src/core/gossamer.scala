@@ -20,164 +20,139 @@ import rudiments.*
 import contextual.*
 import wisteria.*
 
-import scala.annotation.*
 import scala.reflect.*
 import scala.util.*
 
 import java.util.regex.*
 import java.net.{URLEncoder, URLDecoder}
 
-opaque type Text = String
 type TextStream = LazyList[Text throws StreamCutError]
+
+enum Direction:
+  case Ltr, Rtl
+
+export Direction.Ltr, Direction.Rtl
 
 extension (value: Bytes)
   def uString: Text = Text(String(value.to(Array), "UTF-8"))
   def hex: Text = Text(value.map { b => String.format("\\u%04x", b.toInt).nn }.mkString)
-  def asString[Enc <: Encoding](using enc: Enc): String = Text(String(value.to(Array), enc.name))
+  def text[Enc <: Encoding](using enc: Enc): Text = Text(String(value.to(Array), enc.name.s))
 
-extension (string: String)
-  def text: Text = string
-
-object Text:
-  given CommandLineParser.FromString[Text] = identity(_)
-
-  given (using Encoding): Readable[Text] with
-    type E = ExcessDataError
-    def read(value: DataStream) = value.slurp(1.mb).asString
-
-  given Streamable[Text] = value => LazyList(value.bytes)
-
-  given textReader(using enc: Encoding): Readable[LazyList[Text]] with
-    type E = ExcessDataError
-    def read(stream: DataStream) =
-      
-      def read(stream: DataStream, carried: Array[Byte] = Array.empty[Byte]): LazyList[Text] =
-        if stream.isEmpty then LazyList()
-        else
-          // FIXME: constructing this new array may be unnecessarily costly.
-          val buf = carried ++ stream.head.unsafeMutable
-          val carry = enc.carry(buf)
-          
-          Text(String(buf, 0, buf.length - carry, enc.name.s)) #::
-              read(stream.tail, buf.takeRight(carry))
-      
-      read(stream)
-
-  extension (text: Text)
-    def s: String = text
-    def bytes: IArray[Byte] = s.getBytes("UTF-8").nn.unsafeImmutable
-    def length: Int = s.length
-    def populated: Option[Text] = if s.length == 0 then None else Some(s)
-    def lower: Text = s.toLowerCase.nn
-    def upper: Text = s.toUpperCase.nn
-    def urlEncode: Text = URLEncoder.encode(s, "UTF-8").nn
-    def urlDecode: Text = URLDecoder.decode(s, "UTF-8").nn
-    def punycode: Text = java.net.IDN.toASCII(s).nn
-    def drop(n: Int): Text = s.substring(n min length max 0).nn
-    def dropRight(n: Int): Text = s.substring(0, 0 max (s.length - n) min length).nn
-    def take(n: Int): Text = s.substring(0, n min length max 0).nn
-    def takeRight(n: Int): Text = s.substring(0 max (s.length - n) min length, length).nn
-    def trim: Text = text.trim.nn
-    def slice(from: Int, to: Int): Text = s.substring(from max 0 min length, to min length max 0).nn
-    def chars: IArray[Char] = s.toCharArray.nn.unsafeImmutable
-    def map(fn: Char => Char): Text = String(s.toCharArray.nn.map(fn))
-    def isEmpty: Boolean = s.isEmpty
-    def cut(delimiter: Text): List[Text] = cut(delimiter, Int.MaxValue)
-    def rsub(from: Text, to: Text): Text = text.replaceAll(from, to).nn
-    def startsWith(str: Text): Boolean = text.startsWith(str)
-    def endsWith(str: Text): Boolean = text.endsWith(str)
-    def sub(from: Text, to: Text): Text = text.replaceAll(Pattern.quote(from), to).nn
-    def tr(from: Char, to: Char): Text = text.replace(from, to).nn
-    def dashed: Text = Text(camelCaseWords.mkString("-"))
-    def capitalize: Text = take(1).upper+drop(1)
-    def reverse: Text = Text(String(s.toCharArray.nn.reverse))
-
-    def flatMap(fn: Char => Text): Text =
-      String(s.toCharArray.nn.unsafeImmutable.flatMap(fn(_).s.toCharArray.nn.unsafeImmutable).asInstanceOf[Array[Char]])
-    
-    def dropWhile(pred: Char => Boolean): Text =
-      try s.substring(0, where(!pred(_))).nn catch case err: OutOfRangeError => Text("")
-
-    def snip(n: Int): (Text, Text) =
-      (s.substring(0, n min s.length).nn, s.substring(n min s.length).nn)
-    
-    def snipWhere(pred: Char => Boolean, idx: Int = 0): (Text, Text) throws OutOfRangeError =
-      snip(where(pred, idx))
-
-    def camelCaseWords: List[Text] =
-      (try text.where(_.isUpper, 1) catch case error: OutOfRangeError => -1) match
-        case -1 => List(text.lower)
-        case i  => text.take(i).lower :: text.drop(i).camelCaseWords
-
-
-    def cut(delimiter: Text, limit: Int): List[Text] =
-      List(s.split(Pattern.quote(delimiter), limit).nn.map(_.nn)*)
-
-    def fit(width: Int, char: Char = ' '): Text =
-      (text + Text(s"$char")*(width - text.length)).take(width)
-    
-    def fitRight(width: Int, char: Char = ' '): Text =
-      (Text(s"$char")*(width - text.length) + text).takeRight(width)
-
-    @targetName("add")
-    infix def +(other: Text): Text = s+other
-
-    @targetName("times")
-    infix def *(n: Int): Text = IArray.fill(n)(s).mkString
-    
-    def apply(idx: Int): Char throws OutOfRangeError =
-      if idx >= 0 && idx < s.length then s.charAt(idx)
-      else throw OutOfRangeError(idx, 0, s.length)
-
-    def padRight(length: Int, char: Char = ' '): Text = 
-      if s.length < length then s+s"$char"*(length - s.length) else s
-    
-    def padLeft(length: Int, char: Char = ' '): Text =
-      if s.length < length then s"$char"*(length - s.length)+s else s
-
-    def contains(substring: Text): Boolean = text.contains(substring)
-    def contains(char: Char): Boolean = text.indexOf(char) != -1
-
-    @tailrec
-    def where(pred: Char => Boolean, idx: Int = 0): Int throws OutOfRangeError =
-      if idx >= text.length then throw OutOfRangeError(idx, 0, s.length)
-      if pred(text.charAt(idx)) then idx else where(pred, idx + 1)
-
-    def lastWhere(pred: Char => Boolean, idx: Int = text.length - 1): Int throws OutOfRangeError =
-      if idx < 0 then throw OutOfRangeError(idx, 0, s.length)
-      if pred(text.charAt(idx)) then idx else lastWhere(pred, idx - 1)
-
-    def upto(pred: Char => Boolean): Text =
-      try text.substring(0, where(!pred(_))).nn
-      catch case e: OutOfRangeError => text
-
-    def lev(other: Text): Int =
-      val m = s.length
-      val n = other.length
-      val old = new Array[Int](n + 1)
-      val dist = new Array[Int](n + 1)
-
-      for j <- 1 to n do old(j) = old(j - 1) + 1
-      
-      for i <- 1 to m do
-        dist(0) = old(0) + 1
-
-        for j <- 1 to n do
-          dist(j) = (old(j - 1) + (if s.charAt(i - 1) == other.charAt(j - 1) then 0 else 1))
-            .min(old(j) + 1).min(dist(j - 1) + 1)
-
-        for j <- 0 to n do old(j) = dist(j)
-      
-      dist(n)
+extension (text: Text)
+  def bytes: IArray[Byte] = text.s.getBytes("UTF-8").nn.unsafeImmutable
+  def length: Int = text.s.length
+  def populated: Option[Text] = if text.s.length == 0 then None else Some(text)
+  def lower: Text = Text(text.s.toLowerCase.nn)
+  def upper: Text = Text(text.s.toUpperCase.nn)
+  def urlEncode: Text = Text(URLEncoder.encode(text.s, "UTF-8").nn)
+  def urlDecode: Text = Text(URLDecoder.decode(text.s, "UTF-8").nn)
+  def punycode: Text = Text(java.net.IDN.toASCII(text.s).nn)
   
-  given Ordering[Text] = Ordering.String.on[Text](_.s)
+  def drop(n: Int, dir: Direction = Ltr): Text = dir match
+    case Ltr => Text(text.s.substring(n min length max 0).nn)
+    case Rtl => Text(text.s.substring(0, 0 max (text.s.length - n) min length).nn)
+  
+  def take(n: Int, dir: Direction = Ltr): Text = dir match
+    case Ltr => Text(text.s.substring(0, n min length max 0).nn)
+    case Rtl => Text(text.s.substring(0 max (text.s.length - n) min length, length).nn)
 
-  given typeTest: Typeable[Text] with
-    def unapply(value: Any): Option[value.type & Text] = value match
-      case str: String => Some(str.asInstanceOf[value.type & Text])
-      case _           => None
+  def trim: Text = Text(text.s.trim.nn)
+  
+  def slice(from: Int, to: Int): Text =
+    Text(text.s.substring(from max 0 min length, to min length max 0).nn)
+  
+  def chars: IArray[Char] = text.s.toCharArray.nn.unsafeImmutable
+  def map(fn: Char => Char): Text = Text(String(text.s.toCharArray.nn.map(fn)))
+  def isEmpty: Boolean = text.s.isEmpty
+  def cut(delimiter: Text): List[Text] = cut(delimiter, Int.MaxValue)
+  def rsub(from: Text, to: Text): Text = Text(text.s.replaceAll(from.s, to.s).nn)
+  def startsWith(prefix: Text): Boolean = text.s.startsWith(prefix.s)
+  def endsWith(suffix: Text): Boolean = text.s.endsWith(suffix.s)
+  def sub(from: Text, to: Text): Text = Text(text.s.replaceAll(Pattern.quote(from.s), to.s).nn)
+  def tr(from: Char, to: Char): Text = Text(text.s.replace(from, to).nn)
+  def dashed: Text = Text(camelCaseWords.mkString("-"))
+  def capitalize: Text = take(1).upper+drop(1)
+  def reverse: Text = Text(String(text.s.toCharArray.nn.reverse))
+  def count(pred: Char => Boolean): Int = text.s.toCharArray.nn.unsafeImmutable.count(pred)
+
+  def flatMap(fn: Char => Text): Text =
+    Text(String(text.s.toCharArray.nn.unsafeImmutable.flatMap(fn(_).s.toCharArray.nn
+        .unsafeImmutable).asInstanceOf[Array[Char]]))
+
+  def dropWhile(pred: Char => Boolean): Text =
+    try Text(text.s.substring(0, where(!pred(_))).nn) catch case err: OutOfRangeError => Text("")
+
+  def snip(n: Int): (Text, Text) =
+    (Text(text.s.substring(0, n min text.s.length).nn), Text(text.s.substring(n min text.s.length)
+        .nn))
+  
+  def snipWhere(pred: Char => Boolean, idx: Int = 0): (Text, Text) throws OutOfRangeError =
+    snip(where(pred, idx))
+
+  def camelCaseWords: List[Text] =
+    (try text.where(_.isUpper, 1) catch case error: OutOfRangeError => -1) match
+      case -1 => List(text.lower)
+      case i  => text.take(i).lower :: text.drop(i).camelCaseWords
+
+
+  def cut(delimiter: Text, limit: Int): List[Text] =
+    List(text.s.split(Pattern.quote(delimiter.s), limit).nn.map(_.nn).map(Text(_))*)
+
+  def fit(width: Int, dir: Direction = Ltr, char: Char = ' '): Text = dir match
+    case Ltr => (text + Text(s"$char")*(width - length)).take(width, Ltr)
+    case Rtl => (Text(s"$char")*(width - length) + text).take(width, Rtl)
+
+  @targetName("add")
+  infix def +(other: Text): Text = Text(text.s+other)
+
+  @targetName("times")
+  infix def *(n: Int): Text = Text(IArray.fill(n)(text.s).mkString)
+  
+  def apply(idx: Int): Char throws OutOfRangeError =
+    if idx >= 0 && idx < text.s.length then text.s.charAt(idx)
+    else throw OutOfRangeError(idx, 0, text.s.length)
+
+  def pad(length: Int, dir: Direction = Ltr, char: Char = ' '): Text = dir match
+    case Ltr => if text.length < length then text+Text(s"$char")*(length - text.length) else text
+    case Rtl => if text.length < length then Text(s"$char")*(length - text.length)+text else text
+
+  def contains(substring: Text): Boolean = text.s.contains(substring.s)
+  def contains(char: Char): Boolean = text.s.indexOf(char) != -1
+
+  @tailrec
+  def where(pred: Char => Boolean, idx: Maybe[Int] = Unset, dir: Direction = Ltr)
+            : Int throws OutOfRangeError = dir match
+    case Ltr =>
+      val index = idx.otherwise(0)
+      if index >= text.length then throw OutOfRangeError(index, 0, text.s.length)
+      if pred(text.s.charAt(index)) then index else where(pred, index + 1, Ltr)
+    case Rtl =>
+      val index = idx.otherwise(text.s.length - 1)
+      if index < 0 then throw OutOfRangeError(index, 0, text.s.length)
+      if pred(text.s.charAt(index)) then index else where(pred, index - 1, Rtl)
+
+  def upto(pred: Char => Boolean): Text =
+    try Text(text.s.substring(0, where(!pred(_))).nn)
+    catch case e: OutOfRangeError => text
+
+  def lev(other: Text): Int =
+    val m = text.s.length
+    val n = other.length
+    val old = new Array[Int](n + 1)
+    val dist = new Array[Int](n + 1)
+
+    for j <- 1 to n do old(j) = old(j - 1) + 1
     
-  def apply(str: String): Text = str
+    for i <- 1 to m do
+      dist(0) = old(0) + 1
+
+      for j <- 1 to n do
+        dist(j) = (old(j - 1) + (if text.s.charAt(i - 1) == other.s.charAt(j - 1) then 0 else 1))
+          .min(old(j) + 1).min(dist(j - 1) + 1)
+
+      for j <- 0 to n do old(j) = dist(j)
+    
+    dist(n)
 
 object Joinable:
   given Joinable[Text] = xs => Text(xs.mkString)
@@ -242,7 +217,7 @@ object Interpolation:
                                recur(cur + 1)
           case 't' if esc   => buf.add('\t')
                                recur(cur + 1)
-          case 'u' if esc   => buf.add(parseUnicode(gossamer.Text(str).slice(cur + 1, cur + 5)))
+          case 'u' if esc   => buf.add(parseUnicode(rudiments.Text(str).slice(cur + 1, cur + 5)))
                                recur(cur + 4)
           case 'e' if esc   => buf.add('\u001b')
                                recur(cur + 1)
@@ -261,24 +236,24 @@ object Interpolation:
     buf.text
       
   object T extends Interpolator[Input, Text, Text]:
-    def initial: Text = gossamer.Text("")
+    def initial: Text = rudiments.Text("")
     def parse(state: Text, next: String): Text = state+escape(next)
     def skip(state: Text): Text = state
     def insert(state: Text, input: Input): Text = state+input.txt
     def complete(state: Text): Text = state
   
   object Text extends Interpolator[Input, Text, Text]:
-    def initial: Text = gossamer.Text("")
+    def initial: Text = rudiments.Text("")
     def parse(state: Text, next: String): Text = state+escape(next)
     def skip(state: Text): Text = state
     def insert(state: Text, input: Input): Text = state+input.txt
 
     def complete(state: Text): Text =
       val array = state.s.split("\\n\\s*\\n").nn.map(_.nn.replaceAll("\\s\\s*", " ").nn.trim.nn)
-      gossamer.Text(String.join("\n", array*).nn)
+      rudiments.Text(String.join("\n", array*).nn)
 
 extension (buf: StringBuilder)
-  def add(text: Text): Unit = buf.append(text)
+  def add(text: Text): Unit = buf.append(text.s)
   def add(char: Char): Unit = buf.append(char)
   def text: Text = Showable(buf).show
 
@@ -306,10 +281,6 @@ object encodings:
     def name: Text = Text("ISO-8859-1")
     def carry(arr: Array[Byte]): Int = 0
 
-trait Encoding:
-  def name: Text
-  def carry(array: Array[Byte]): Int
-
 case class Line(text: Text)
 
 object Line:
@@ -331,37 +302,45 @@ object Line:
       
       recur(summon[Readable[LazyList[Text]]].read(stream))
       
-object DefaultSink:
-  given DefaultSink[Stdout.type](Stdout)
+object drains:
+  given stdout: Drain = txt =>
+    try summon[Sink[Stdout.type]].write(Stdout, LazyList(txt.bytes))
+    catch case err: Exception => ()
+  
+  given devNull: Drain = txt => ()
 
-case class DefaultSink[T](value: T)(using sink: Sink[T]):
-  def write(msg: Text): Unit =
-    try sink.write(value, LazyList(msg.bytes)) catch case e: Exception => ()
+object Drain:
+  def apply[T](value: T)(using sink: Sink[T]): Drain = txt =>
+    try sink.write(value, LazyList(txt.bytes))
+    catch case err: Exception => ()
+
+trait Drain:
+  def write(msg: Text): Unit
 
 extension (obj: Boolean.type) def unapply(str: Text): Option[Boolean] =
   if str == Text("true") then Some(true) else if str == Text("false") then Some(false) else None
 
 extension (obj: Byte.type) def unapply(str: Text): Option[Byte] =
-  try Some(java.lang.Byte.parseByte(str)) catch NumberFormatException => None
+  try Some(java.lang.Byte.parseByte(str.s)) catch NumberFormatException => None
 
 extension (obj: Short.type) def unapply(str: Text): Option[Short] =
-  try Some(java.lang.Short.parseShort(str)) catch NumberFormatException => None
+  try Some(java.lang.Short.parseShort(str.s)) catch NumberFormatException => None
 
 extension (obj: Int.type) def unapply(str: Text): Option[Int] =
-  try Some(java.lang.Integer.parseInt(str)) catch NumberFormatException => None
+  try Some(java.lang.Integer.parseInt(str.s)) catch NumberFormatException => None
 
 extension (obj: Long.type) def unapply(str: Text): Option[Long] =
-  try Some(java.lang.Long.parseLong(str)) catch NumberFormatException => None
+  try Some(java.lang.Long.parseLong(str.s)) catch NumberFormatException => None
 
 extension (obj: Float.type) def unapply(str: Text): Option[Float] =
-  try Some(java.lang.Float.parseFloat(str)) catch NumberFormatException => None
+  try Some(java.lang.Float.parseFloat(str.s)) catch NumberFormatException => None
 
 extension (obj: Char.type) def unapply(str: Text): Option[Char] =
-  if str.length == 1 then Some(str.charAt(0)) else None
+  if str.length == 1 then Some(str.s.charAt(0)) else None
 
 extension (obj: Double.type) def unapply(str: Text): Option[Double] =
-  try Some(java.lang.Double.parseDouble(str)) catch NumberFormatException => None
+  try Some(java.lang.Double.parseDouble(str.s)) catch NumberFormatException => None
 
 object Out:
-  def print(msg: Text)(using defaultSink: DefaultSink[?]): Unit = defaultSink.write(msg)
-  def println(msg: Text)(using DefaultSink[?]): Unit = print(Text(s"$msg\n"))
+  def print[T: Show](msg: T)(using drain: Drain): Unit = drain.write(msg.show)
+  def println[T: Show](msg: T)(using Drain): Unit = print(Text(s"${msg.show}\n"))
