@@ -31,7 +31,7 @@ export scala.reflect.{ClassTag, Typeable}
 export scala.collection.immutable.{Set, List, ListMap, Map, TreeSet, TreeMap}
 
 export Predef.{nn, genericArrayOps, identity, summon, charWrapper, $conforms, ArrowAssoc,
-    intWrapper, longWrapper, shortWrapper, byteWrapper, valueOf, ???, doubleWrapper, floatWrapper,
+    intWrapper, longWrapper, shortWrapper, byteWrapper, valueOf, doubleWrapper, floatWrapper,
     classOf, locally}
 
 export scala.concurrent.{Future, ExecutionContext}
