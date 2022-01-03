@@ -16,8 +16,7 @@
 
 package wisteria.examples
 
-import scala.language.experimental.macros
-import wisteria._
+import wisteria.*
 
 trait SemiDefault[A]:
   def default: A

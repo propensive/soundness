@@ -27,8 +27,6 @@ given Log(Everything |-> Stdout)
 
 import java.time.LocalDate
 
-import scala.annotation.StaticAnnotation
-
 import unsafeExceptions.canThrowAny
 
 type ShowStr = [X] =>> AsString[Text, X ]

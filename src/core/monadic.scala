@@ -16,7 +16,7 @@
 
 package wisteria
 
-import scala.concurrent.{Future, ExecutionContext}
+import rudiments.*
 import scala.util.{Try, Success}
 
 trait Functor[F[_]]:

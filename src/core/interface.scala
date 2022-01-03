@@ -16,8 +16,7 @@
 
 package wisteria
 
-import language.experimental.macros
-import scala.annotation.tailrec
+import rudiments.*
 import scala.reflect.*
 
 case class TypeInfo(owner: String, short: String, typeParams: Iterable[TypeInfo]):
