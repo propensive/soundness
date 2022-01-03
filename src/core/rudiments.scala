@@ -18,8 +18,6 @@ package rudiments
 
 import scala.collection.IterableFactory
 import scala.compiletime.*, ops.int.*
-import scala.reflect.ClassTag
-import scala.annotation.*
 import scala.concurrent.*
 
 import java.util.regex.*
@@ -27,13 +25,17 @@ import java.io as ji
 
 import language.dynamics
 
-export scala.collection.immutable.Set, scala.collection.immutable.List,
-    scala.collection.immutable.Map
+export scala.reflect.{ClassTag, Typeable}
+export scala.collection.immutable.{Set, List, ListMap, Map, TreeSet, TreeMap}
 
-export Predef.nn, Predef.genericArrayOps, Predef.identity, Predef.summon, Predef.charWrapper,
-    Predef.$conforms, Predef.ArrowAssoc, Predef.intWrapper, Predef.longWrapper, Predef.shortWrapper,
-    Predef.byteWrapper, Predef.valueOf, Predef.???, Predef.doubleWrapper, Predef.floatWrapper,
-    Predef.classOf
+export Predef.{nn, genericArrayOps, identity, summon, charWrapper, $conforms, ArrowAssoc,
+    intWrapper, longWrapper, shortWrapper, byteWrapper, valueOf, ???, doubleWrapper, floatWrapper,
+    classOf, locally}
+
+export scala.concurrent.{Future, ExecutionContext}
+export scala.util.control.NonFatal
+export scala.jdk.CollectionConverters.*
+export scala.annotation.{tailrec, implicitNotFound, targetName, switch, StaticAnnotation}
     
 type Bytes = IArray[Byte]
 type DataStream = LazyList[IArray[Byte] throws StreamCutError]
@@ -84,18 +86,18 @@ def fix[T](func: Recur[T] ?=> (T => T)): (T => T) = func(using Recur(fix(func)))
 def recur[T: Recur](value: T): T = summon[Recur[T]](value)
 
 case class Property(name: String) extends Dynamic:
-  def apply(): String throws KeyNotFound =
-    Option(System.getProperty(name)).getOrElse(throw KeyNotFound(name)).nn
+  def apply(): String throws KeyNotFoundError =
+    Option(System.getProperty(name)).getOrElse(throw KeyNotFoundError(name)).nn
   
   def selectDynamic(key: String): Property = Property(s"$name.$key")
-  def applyDynamic(key: String)(): String throws KeyNotFound = selectDynamic(key).apply()
+  def applyDynamic(key: String)(): String throws KeyNotFoundError = selectDynamic(key).apply()
 
 object Sys extends Dynamic:
   def selectDynamic(key: String): Property = Property(key)
-  def applyDynamic(key: String)(): String throws KeyNotFound = selectDynamic(key).apply()
+  def applyDynamic(key: String)(): String throws KeyNotFoundError = selectDynamic(key).apply()
   def bigEndian: Boolean = java.nio.ByteOrder.nativeOrder == java.nio.ByteOrder.BIG_ENDIAN
 
-case class KeyNotFound(name: String) extends Exception(s"rudiments: key $name not found")
+case class KeyNotFoundError(name: String) extends Exception(s"rudiments: key $name not found")
 
 object Impossible:
   def apply(error: Exception): Impossible =
@@ -231,7 +233,7 @@ extension [T](value: T)
     sink.write(value, stream)
   
   def writeTo[S](destination: S)(using sink: Sink[S], streamable: Streamable[T])
-      : Unit throws sink.E | StreamCutError =
+                : Unit throws sink.E | StreamCutError =
     sink.write(destination, streamable.stream(value))
 
   def read[S](using readable: Readable[S], src: Source[T])
