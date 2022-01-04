@@ -1,5 +1,5 @@
 {
-  "imports": ["../contextual/build.ire", "../wisteria/build.ire", "../probably/build.ire"],
+  "imports": ["../contextual/build.vex", "../wisteria/build.vex", "../probably/build.vex"],
   "config": {
     "scalac": {
       "version": "3.1.2-RC1-bin-SNAPSHOT",
