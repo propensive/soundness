@@ -1,5 +1,5 @@
 {
-  "imports": ["../escritoire/build.ire", "../eucalyptus/build.ire"],
+  "imports": ["../escritoire/build.vex", "../eucalyptus/build.vex"],
   "config": {
     "scalac": {
       "version": "3.1.2-RC1-bin-SNAPSHOT",
