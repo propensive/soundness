@@ -1,5 +1,5 @@
 {
-  "imports": ["../gossamer/build.ire", "../honeycomb/build.ire", "../harlequin/build.ire"],
+  "imports": ["../gossamer/build.vex", "../honeycomb/build.vex", "../harlequin/build.vex"],
   "config": {
     "scalac": {
       "version": "3.1.2-RC1-bin-SNAPSHOT",
