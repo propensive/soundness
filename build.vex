@@ -1,5 +1,5 @@
 {
-  "imports": ["../jovian/build.ire"],
+  "imports": ["../jovian/build.vex"],
   "config": {
     "scalac": {
       "version": "3.1.2-RC1-bin-SNAPSHOT",
@@ -26,7 +26,6 @@
       "links": ["jovian/core"],
       "sources": ["src/core"],
       "version": "0.1.0",
-      "main": "exoskeleton.HelloWorld",
       "artifact": "exo.jar",
       "docs": ["doc"]
     }
