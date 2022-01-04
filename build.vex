@@ -1,5 +1,5 @@
 {
-  "imports": ["../clairvoyant/build.ire", "../gossamer/build.ire"],
+  "imports": ["../clairvoyant/build.vex", "../gossamer/build.vex"],
   "config": {
     "scalac": {
       "version": "3.1.2-RC1-bin-SNAPSHOT",
