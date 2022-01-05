@@ -1,53 +1,50 @@
 #!/bin/sh
 
-THIS="$0"
-SCRIPT="$(basename "$(test -L "$0" && readlink "$0" || echo "$0")")"
+SCRIPTDIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &> /dev/null && pwd)"
+THIS="$(basename $0)"
 ARGS="$(printf '%s\t' "$@")"
+ARGCOUNT="$#"
 PID="$$"
-RUNDIR="${XDG_RUNTIME_DIR:-${TMPDIR:-/run/user/$UID}}"
+RUNDIR="${XDG_RUNTIME_DIR:-${TMPDIR:-/run/user/$(id -u)}}"
 FIFO="$RUNDIR/$THIS.sock"
 STDOUT="$RUNDIR/$THIS-$PID.stdout.sock"
 STDIN="$RUNDIR/$THIS-$PID.stdin.sock"
 EXITFILE="$RUNDIR/$THIS-$PID.exit"
 
-function join() {
-  local IFS='	'
-  echo "$@"
-}
-
-function startServer() {
+server() {
   mkfifo "$FIFO"
   # Force the FIFO to stay open
   (while true; do sleep 3600; done) > "$FIFO" &
-  exec java -jar "$THIS" "::start::" "$THIS" "$FIFO" "$PID" &
+  exec java -Dsun.misc.URLClassPath.disableJarChecking -jar "$SCRIPTDIR/$THIS" "::start::" "$THIS" "$FIFO" "$PID" &
 }
 
-function connect() {
+connect() {
   mkfifo "$STDOUT" "$STDIN" "$EXITFILE"
   echo "PROCESS	$PID" > "$FIFO"
   echo "SCRIPT	$PID	$THIS" > "$FIFO"
+  echo "SCRIPTDIR	$PID	$SCRIPTDIR" > "$FIFO"
   echo "RUNDIR	$PID	$RUNDIR" > "$FIFO"
-  echo "ARGS	$PID	${ARGS}END" > "$FIFO"
+  echo "ARGS	$PID	$ARGCOUNT	$ARGS" > "$FIFO"
   echo "ENV	$PID	$(env | tr '\n' '\t')" > "$FIFO"
   echo "START	$PID" > "$FIFO"
   cat - > "$STDIN" <&0 & cat "$STDOUT"
   EXIT="$(cat "$EXITFILE")"
   rm -f "$STDOUT" "$STDIN" "$EXITFILE"
-  exit $EXIT
+  exit "${EXIT:-1}"
 }
 
-function cleanup() {
+cleanup() {
   echo "STOP	$PID" > "$FIFO"
-  rm -f "$STDIN" "$STDOUT" "$EXITFILE"
 }
 
 trap cleanup INT TERM HUP
 
-if [[ ! -p "$FIFO" ]]
+if [ ! -p "$FIFO" ]
 then
-  startServer
+  server
 else
-  if [[ -f "$FIFO" ]]; then
+  if [ -f "$FIFO" ]
+  then
     echo "Cannot create named pipe at $FIFO"
     exit 1
   fi
