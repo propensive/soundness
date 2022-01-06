@@ -70,11 +70,11 @@ object IoError:
   enum Op:
     case Read, Write, Access, Create, Delete
 
-case class IoError(operation: IoError.Op, reason: IoError.Reason, path: Any)
-extends JovianError(t"the $operation operation at ${path.toString} did not succeed because $reason")
+case class IoError(operation: IoError.Op, reason: IoError.Reason, path: Any) extends Error:
+  def message: Text = t"the $operation operation at ${path.toString} failed because $reason"
 
-case class InotifyError()
-extends JovianError(t"the limit on the number of paths that can be watched has been exceeded")
+case class InotifyError() extends Error:
+  def message: Text = t"the limit on the number of paths that can be watched has been exceeded"
 
 open class Classpath(classLoader: ClassLoader = getClass.nn.getClassLoader.nn)
 extends Root(t"/", t""):
