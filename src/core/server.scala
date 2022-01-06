@@ -77,7 +77,7 @@ trait ServerApp() extends App:
       def spawn(map: Map[Int, AppInstance]): Map[Int, AppInstance] =
         val runnable: Runnable = () =>
           val fifoIn = (runDir.otherwise(sys.exit(10)) / t"$script-$pid.stdin.sock").file
-          val fifoOut = (runDir.otherwise(sys.exit(10)) / t"$script-$pid.stdout.sock").file
+          val fifoOut = Unix.Fifo((runDir.otherwise(sys.exit(10)) / t"$script-$pid.stdout.sock").file)
           val terminate = Promise[Int]()
           val pwd2 = pwd.otherwise(sys.exit(10))
           val commandLine = CommandLine(args, env, script, () => fifoIn.read[DataStream](1.mb),
