@@ -1,5 +1,5 @@
 /*
-    Gesticulate, version 0.1.0. Copyright 2021-21 Jon Pretty, Propensive OÜ.
+    Gesticulate, version 0.1.0. Copyright 2021-22 Jon Pretty, Propensive OÜ.
 
     The primary distribution site is: https://propensive.com/
 
@@ -73,7 +73,7 @@ object Media:
     def parse(state: String, next: String): String = next
     
     def insert(state: String, value: Unit): String =
-      throw InterpolationError("a media type literal cannot have substitutions")
+      throw InterpolationError(t"a media type literal cannot have substitutions")
 
     def skip(value: String): String = value
     def initial: String = ""
@@ -81,7 +81,7 @@ object Media:
     def complete(value: String): MediaType =
       val parsed = try Media.parse(Text(value)) catch
         case err: InvalidMediaTypeError =>
-          throw InterpolationError(s"'${err.value}' is not a valid media type; ${err.nature.message}")
+          throw InterpolationError(t"'${err.value}' is not a valid media type; ${err.nature.message}")
 
       parsed.subtype match
         case Subtype.Standard(_) =>
@@ -90,7 +90,7 @@ object Media:
             val suggestion = systemMediaTypes.minBy(_.lev(parsed.basic))
             throw InterpolationError(txt"""${parsed.basic} is not a registered media type; did you
                                            mean $suggestion or
-                                           ${parsed.basic.sub(t"/", t"/x-")}?""".s)
+                                           ${parsed.basic.sub(t"/", t"/x-")}?""")
         case _ =>
           ()
       
