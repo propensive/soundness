@@ -1,5 +1,5 @@
 /*
-    Acyclicity, version 0.5.0. Copyright 2021-21 Jon Pretty, Propensive OÜ.
+    Acyclicity, version 0.5.0. Copyright 2021-22 Jon Pretty, Propensive OÜ.
 
     The primary distribution site is: https://propensive.com/
 
@@ -176,7 +176,7 @@ object NodeParser extends Interpolator[Unit, Option[Dot.Ref], Dot.Ref]:
             Some(Dot.CompassPoint.valueOf(point.capitalize.s)))))
       
       case _ =>
-        throw InterpolationError("not a valid node ID")
+        throw InterpolationError(t"not a valid node ID")
     }
   
   def initial: Option[Dot.Ref] = None
