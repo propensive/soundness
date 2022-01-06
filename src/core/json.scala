@@ -30,18 +30,17 @@ import scala.deriving.*
 
 import language.dynamics
 
-case class JsonParseError(line: Int, column: Int, message: Text)
-extends Exception(t"euphemism: could not parse the JSON at $line:$column".s)
+case class JsonParseError(line: Int, column: Int, detail: Text) extends Error:
+  def message: Text = t"could not parse the JSON at $line:$column: $detail"
 
-case class JsonAccessError(key: Int | Text)
-extends Exception(key match
-  case idx: Int => t"euphemism: could not access the index $idx in the JSON array".s
-  case str: Text => t"euphemism: could not access the label $str in the JSON object".s
-  case _        => throw Impossible("should never match")
-)
+case class JsonAccessError(key: Int | Text) extends Error:
+  def message: Text = key match
+    case idx: Int => t"could not access the index $idx in the JSON array"
+    case str: Text => t"could not access the label $str in the JSON object"
+    case _        => throw Impossible("should never match")
 
-case class JsonTypeError(expectedType: JsonPrimitive)
-extends Exception(t"euphemism: the JSON element was not the expected type, $expectedType".s)
+case class JsonTypeError(expectedType: JsonPrimitive) extends Error:
+  def message = t"the JSON element was not the expected type, $expectedType"
 
 object JsonPrimitive:
   given Show[JsonPrimitive] = Showable(_).show
