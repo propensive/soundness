@@ -17,63 +17,64 @@
 package escapade
 
 import rudiments.*
+import gossamer.*
 
 type Escape = Ansi.Input.Esc
 
 object Escape:
-  def apply(code: String, reset: Maybe[String] = Unset): Escape =
-    Ansi.Input.Esc(code, reset.otherwise(""))
+  def apply(code: Text, reset: Maybe[Text] = Unset): Escape =
+    Ansi.Input.Esc(code, reset.otherwise(t""))
 
 object escapes:
   object foreground:
-    val Black = Escape("[30m", "[39m")
-    val Red = Escape("[31m", "[39m")
-    val Green = Escape("[32m", "[39m")
-    val Yellow = Escape("[33m", "[39m")
-    val Blue = Escape("[34m", "[39m")
-    val Magenta = Escape("[35m", "[39m")
-    val Cyan = Escape("[36m", "[39m")
-    val White = Escape("[37m", "[39m")
+    val Black = Escape(t"[30m", t"[39m")
+    val Red = Escape(t"[31m", t"[39m")
+    val Green = Escape(t"[32m", t"[39m")
+    val Yellow = Escape(t"[33m", t"[39m")
+    val Blue = Escape(t"[34m", t"[39m")
+    val Magenta = Escape(t"[35m", t"[39m")
+    val Cyan = Escape(t"[36m", t"[39m")
+    val White = Escape(t"[37m", t"[39m")
 
-    val BrightBlack = Escape("[90m", "[39m")
-    val BrightRed = Escape("[91m", "[39m")
-    val BrightGreen = Escape("[92m", "[39m")
-    val BrightYellow = Escape("[93m", "[39m")
-    val BrightBlue = Escape("[94m", "[39m")
-    val BrightMagenta = Escape("[95m", "[39m")
-    val BrightCyan = Escape("[96m", "[39m")
-    val BrightWhite = Escape("[97m", "[49m")
+    val BrightBlack = Escape(t"[90m", t"[39m")
+    val BrightRed = Escape(t"[91m", t"[39m")
+    val BrightGreen = Escape(t"[92m", t"[39m")
+    val BrightYellow = Escape(t"[93m", t"[39m")
+    val BrightBlue = Escape(t"[94m", t"[39m")
+    val BrightMagenta = Escape(t"[95m", t"[39m")
+    val BrightCyan = Escape(t"[96m", t"[39m")
+    val BrightWhite = Escape(t"[97m", t"[49m")
 
   object background:
-    val Black = Escape("[40m", "[49m")
-    val Red = Escape("[41m", "[49m")
-    val Green = Escape("[42m", "[49m")
-    val Yellow = Escape("[43m", "[49m")
-    val Blue = Escape("[44m", "[49m")
-    val Magenta = Escape("[45m", "[49m")
-    val Cyan = Escape("[46m", "[49m")
-    val White = Escape("[47m", "[49m")
+    val Black = Escape(t"[40m", t"[49m")
+    val Red = Escape(t"[41m", t"[49m")
+    val Green = Escape(t"[42m", t"[49m")
+    val Yellow = Escape(t"[43m", t"[49m")
+    val Blue = Escape(t"[44m", t"[49m")
+    val Magenta = Escape(t"[45m", t"[49m")
+    val Cyan = Escape(t"[46m", t"[49m")
+    val White = Escape(t"[47m", t"[49m")
     
-    val BrightBlack = Escape("[100m", "[49m")
-    val BrightRed = Escape("[101m", "[49m")
-    val BrightGreen = Escape("[102m", "[49m")
-    val BrightYellow = Escape("[103m", "[49m")
-    val BrightBlue = Escape("[104m", "[49m")
-    val BrightMagenta = Escape("[105m", "[49m")
-    val BrightCyan = Escape("[106m", "[49m")
-    val BrightWhite = Escape("[107m", "[49m")
+    val BrightBlack = Escape(t"[100m", t"[49m")
+    val BrightRed = Escape(t"[101m", t"[49m")
+    val BrightGreen = Escape(t"[102m", t"[49m")
+    val BrightYellow = Escape(t"[103m", t"[49m")
+    val BrightBlue = Escape(t"[104m", t"[49m")
+    val BrightMagenta = Escape(t"[105m", t"[49m")
+    val BrightCyan = Escape(t"[106m", t"[49m")
+    val BrightWhite = Escape(t"[107m", t"[49m")
 
   object styles:
-    val Bold: Escape = Escape("[1m", "[22m")
-    val Light: Escape = Escape("[2m", "[22m")
-    val Italic: Escape = Escape("[3m", "[23m")
-    val Underline: Escape = Escape("[4m", "[24m")
-    val SlowBlink: Escape = Escape("[5m", "[25m")
-    val FastBlink: Escape = Escape("[6m", "[25m")
-    val Reverse: Escape = Escape("[7m", "[27m")
-    val Conceal: Escape = Escape("[8m", "[28m")
-    val Strike: Escape = Escape("[9m", "[29m")
+    val Bold: Escape = Escape(t"[1m", t"[22m")
+    val Light: Escape = Escape(t"[2m", t"[22m")
+    val Italic: Escape = Escape(t"[3m", t"[23m")
+    val Underline: Escape = Escape(t"[4m", t"[24m")
+    val SlowBlink: Escape = Escape(t"[5m", t"[25m")
+    val FastBlink: Escape = Escape(t"[6m", t"[25m")
+    val Reverse: Escape = Escape(t"[7m", t"[27m")
+    val Conceal: Escape = Escape(t"[8m", t"[28m")
+    val Strike: Escape = Escape(t"[9m", t"[29m")
 
-  val Reset: Escape = Escape("[0m", "[0m")
+  val Reset: Escape = Escape(t"[0m", t"[0m")
 
-  def title(name: String) = Escape(s"]0;$name${27.toChar}\\")
+  def title(name: String) = Escape(t"]0;$name${27.toChar}\\")

@@ -31,11 +31,15 @@ object AnsiShow extends FallbackAnsiShow:
     case Some(v) => summon[AnsiShow[T]].ansiShow(v)
 
   given AnsiShow[StackTrace] = stack =>
-    stack.frames.foldLeft(ansi"${stack.className} from ${stack.component} thrown"):
-      case (msg, frame) => ansi"$msg\n$frame"
+    val root = stack.frames.foldLeft(ansi"${Bg(colors.OrangeRed)}(${colors.Black}( ${stack.component} ))${colors.OrangeRed}(${Bg(colors.Orange)}())${Bg(colors.Orange)}( ${colors.Black}(${stack.className}) )${colors.Orange}() ${colors.Ivory}(${stack.message})"):
+      case (msg, frame) => ansi"$msg${'\n'}$frame"
+    
+    stack.cause.option match
+      case None        => root
+      case Some(cause) => ansi"$root${'\n'}${colors.White}(caused by:)${'\n'}${cause.ansi}"
   
   given AnsiShow[StackTrace.Frame] = frame =>
-    ansi"  in ${frame.className}#${frame.method} at ${frame.file}:${frame.line}"
+    ansi"  ${colors.Gray}(in) ${colors.Plum}(${frame.className.fit(40, Rtl)})${colors.Gray}(#)${colors.Peru}(${frame.method.fit(40)}) ${colors.Gray}(at) ${colors.LightBlue}(${frame.file.fit(18, Rtl)})${colors.Gray}(:)${colors.Yellow}(${frame.line})"
 
   private val decimalFormat =
     val df = new java.text.DecimalFormat()

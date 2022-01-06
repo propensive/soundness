@@ -117,7 +117,7 @@ case class AnsiString(string: Text, escapes: TreeMap[Int, List[Ansi.Change]] = T
           
           case (stack, Ansi.Change.Literal(str)) =>
             buf.add(27.toChar)
-            buf.add(Text(str))
+            buf.add(str)
             stack
         
         build(treeMap.tail, treeMap.head(0), newStack)
@@ -130,7 +130,7 @@ case class AnsiString(string: Text, escapes: TreeMap[Int, List[Ansi.Change]] = T
     .to(TreeMap)
 
   @targetName("add")
-  infix def +(str: String): AnsiString = AnsiString(t"$string$str", escapes)
+  infix def +(str: Text): AnsiString = AnsiString(t"$string$str", escapes)
   def addEsc(esc: Ansi.Change): AnsiString = addEsc(string.length, esc)
   
   def addEsc(pos: Int, esc: Ansi.Change): AnsiString =
@@ -146,7 +146,7 @@ object Stylize:
   def apply(fn: TextStyle => TextStyle): Ansi.Input.Apply = Ansi.Input.Apply(fn)
 
 object Ansi:
-  def strip(txt: Text): Text = Text(txt.s.replaceAll("""\e\[?.*?[\@-~]""", "").nn)
+  def strip(txt: Text): Text = txt.sub(t"""\e\\[?.*?[\\@-~]""", t"")
 
   given Substitution[Ansi.Input, Text, "t"] = str => Ansi.Input.Str(AnsiString(str))
   given Substitution[Ansi.Input, String, "t"] = str => Ansi.Input.Str(AnsiString(Text(str)))
@@ -171,34 +171,33 @@ object Ansi:
 
   enum Input:
     case Str(string: AnsiString)
-    case Esc(on: String, off: String)
+    case Esc(on: Text, off: Text)
     case Apply(color: TextStyle => TextStyle)
 
   enum Change:
      case Push(stateChange: TextStyle => TextStyle)
      case Pop
-     case Literal(str: String)
+     case Literal(str: Text)
 
   case class State(string: AnsiString, last: Option[Ansi.Change], stack: List[(Char, Ansi.Change)]):
-    def add(str: String): State = copy(string = string + str, last = None)
+    def add(str: Text): State = copy(string = string + str, last = None)
     def addEsc(esc: Ansi.Change): State = copy(string = string.addEsc(esc), last = None)
     def addEsc(pos: Int, esc: Ansi.Change): State = copy(string = string.addEsc(pos, esc), last = None)
     def isEmpty: Boolean =
       string.string == t"" && string.escapes.isEmpty && last.isEmpty && stack.isEmpty
 
   object Interpolator extends contextual.Interpolator[Input, State, AnsiString]:
+    erased given CanThrow[OutOfRangeError] = compiletime.erasedValue
     def initial: State = State(AnsiString(t""), None, Nil)
 
-    private def closures(state: State, str: String): State =
+    private def closures(state: State, str: Text): State =
       if state.stack.isEmpty then state.add(str)
       else
-        str.indexOf(state.stack.head(0)) match
-          case -1 =>
-            state.add(str)
-          
-          case i =>
-            val newState = state.copy(stack = state.stack.tail).add(str.show.slice(0, i).s).addEsc(state.stack.head(1))
-            closures(newState, str.show.slice(i + 1, str.length).s)
+        try
+          val i = str.where(_ == state.stack.head(0))
+          val newState = state.copy(stack = state.stack.tail).add(str.take(i)).addEsc(state.stack.head(1))
+          closures(newState, str.show.slice(i + 1, str.length))
+        catch case err: OutOfRangeError => state.add(str)
 
     private def complement(ch: '[' | '(' | '{' | '<' | '«'): ']' | ')' | '}' | '>' | '»' = ch match
       case '[' => ']'
@@ -207,7 +206,7 @@ object Ansi:
       case '<' => '>'
       case '«' => '»'
 
-    def parse(state: State, string: String): State =
+    def parse(state: State, string: Text): State =
       if state.isEmpty then State(AnsiString(string.show), None, Nil)
       else state.last match
         case None =>
@@ -215,13 +214,13 @@ object Ansi:
         
         case Some(last) =>
           if string.length == 0 then closures(state, string)
-          else string.charAt(0) match
+          else string(0) match
             case '\\' =>
-              closures(state, string.substring(1).nn)
+              closures(state, string.drop(1))
 
             case ch@('[' | '(' | '{' | '<' | '«') =>
               closures(state.copy(last = None, stack = (complement(ch), last) :: state.stack),
-                  string.substring(1).nn)
+                  string.drop(1))
             
             case _ =>
               closures(state, string)
@@ -239,11 +238,11 @@ object Ansi:
 
     def skip(state: State): State = insert(state, Input.Str(AnsiString.empty))
 
-    override def substitute(state: State, value: String): State =
+    override def substitute(state: State, value: Text): State =
       
       val dummy = value match
-        case "esc" => Ansi.Input.Esc("[0m", "")
-        case _     => Ansi.Input.Str(AnsiString.empty)
+        case t"esc" => Ansi.Input.Esc(t"[0m", t"")
+        case _      => Ansi.Input.Str(AnsiString.empty)
       
       insert(state, dummy)
 
@@ -262,12 +261,12 @@ case class TextStyle(fg: Srgb = colors.White, bg: Option[Srgb] = None, italic: B
   
   val esc = 27.toChar
   
-  private def italicEsc: String = if italic then styles.Italic.on else styles.Italic.off
-  private def boldEsc: String = if bold then styles.Bold.on else styles.Bold.off
-  private def reverseEsc: String = if reverse then styles.Reverse.on else styles.Reverse.off
-  private def underlineEsc: String = if underline then styles.Underline.on else styles.Underline.off
-  private def concealEsc: String = if conceal then styles.Conceal.on else styles.Conceal.off
-  private def strikeEsc: String = if strike then styles.Strike.on else styles.Strike.off
+  private def italicEsc: Text = if italic then styles.Italic.on else styles.Italic.off
+  private def boldEsc: Text = if bold then styles.Bold.on else styles.Bold.off
+  private def reverseEsc: Text = if reverse then styles.Reverse.on else styles.Reverse.off
+  private def underlineEsc: Text = if underline then styles.Underline.on else styles.Underline.off
+  private def concealEsc: Text = if conceal then styles.Conceal.on else styles.Conceal.off
+  private def strikeEsc: Text = if strike then styles.Strike.on else styles.Strike.off
   
   def changes(next: TextStyle): Text = List(
     if fg != next.fg then next.fg.ansiFg24 else t"",
