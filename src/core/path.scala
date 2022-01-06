@@ -1,9 +1,9 @@
 /*
-    Slalom, version 0.6.0. Copyright 2021-21 Jon Pretty, Propensive OÜ.
+    Slalom, version 0.6.0. Copyright 2021-22 Jon Pretty, Propensive OÜ.
 
     The primary distribution site is: https://propensive.com/
 
-    Licensed under the Apche License, Version 2.0 (the "License"); you may not use this
+    Licensed under the Apache License, Version 2.0 (the "License"); you may not use this
     file except in compliance with the License. You may obtain a copy of the License at
 
     http://www.apache.org/licenses/LICENSE-2.0
