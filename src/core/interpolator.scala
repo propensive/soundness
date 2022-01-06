@@ -51,7 +51,7 @@ object Md:
         case Input.Block(state)    => Input.Block(t"$state\n$content\n")
         case Input.Inline(state)   => Input.Inline(t"$state$content")
      
-    def parse(state: Input, next: String): Input = state match
+    def parse(state: Input, next: Text): Input = state match
       case Input.Inline(state) =>
         try
           Markdown.parseInline(t"$state$next")
