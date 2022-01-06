@@ -23,7 +23,7 @@ import gossamer.*
 open class HtmlConverter():
   def outline(node: Markdown[Markdown.Ast.Node]): Seq[Html[Flow]] =
     try convert(Markdown.parse(headOutline(node).join(t"\n")).nodes)
-    catch case e: BadMarkdownError => Nil
+    catch case e: MarkdownError => Nil
   
   def slug(str: Text): Text =
     Text(str.lower.s.replaceAll("[^a-z0-9]", "-").nn.replaceAll("--*", "-").nn)
