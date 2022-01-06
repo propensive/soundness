@@ -1,5 +1,5 @@
 /*
-    Gastronomy, version 0.9.0. Copyright 2018-21 Jon Pretty, Propensive OÜ.
+    Gastronomy, version 0.9.0. Copyright 2018-22 Jon Pretty, Propensive OÜ.
 
     The primary distribution site is: https://propensive.com/
 
