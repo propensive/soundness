@@ -192,7 +192,7 @@ object Interpolation:
 
   given [T: Show]: Insertion[Input, T] = value => Input(summon[Show[T]].show(value))
 
-  private def escape(str: String): Text throws InterpolationError =
+  private def escape(str: Text): Text throws InterpolationError =
     val buf: StringBuilder = StringBuilder()
     
     def parseUnicode(chars: Text): Char =
@@ -203,7 +203,7 @@ object Interpolation:
     def recur(cur: Int = 0, esc: Boolean = false): Unit =
       if cur < str.length
       then
-        str.charAt(cur) match
+        str.s.charAt(cur) match
           case '\\' if !esc => recur(cur + 1, true)
           case '\\'         => buf.add('\\')
                                recur(cur + 1, false)
@@ -217,7 +217,7 @@ object Interpolation:
                                recur(cur + 1)
           case 't' if esc   => buf.add('\t')
                                recur(cur + 1)
-          case 'u' if esc   => buf.add(parseUnicode(rudiments.Text(str).slice(cur + 1, cur + 5)))
+          case 'u' if esc   => buf.add(parseUnicode(str.slice(cur + 1, cur + 5)))
                                recur(cur + 4)
           case 'e' if esc   => buf.add('\u001b')
                                recur(cur + 1)
@@ -237,14 +237,14 @@ object Interpolation:
       
   object T extends Interpolator[Input, Text, Text]:
     def initial: Text = rudiments.Text("")
-    def parse(state: Text, next: String): Text = state+escape(next)
+    def parse(state: Text, next: Text): Text = state+escape(next)
     def skip(state: Text): Text = state
     def insert(state: Text, input: Input): Text = state+input.txt
     def complete(state: Text): Text = state
   
   object Text extends Interpolator[Input, Text, Text]:
     def initial: Text = rudiments.Text("")
-    def parse(state: Text, next: String): Text = state+escape(next)
+    def parse(state: Text, next: Text): Text = state+escape(next)
     def skip(state: Text): Text = state
     def insert(state: Text, input: Input): Text = state+input.txt
 
