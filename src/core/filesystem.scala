@@ -103,6 +103,11 @@ extends Root(t"/", t""):
     def name: Text = path.parts.lastOption.getOrElse(prefix)
     def parent: Resource throws RootParentError = Resource(path.parent)
 
+enum Creation:
+  case Expect, Create, Ensure
+
+export Creation.{Expect, Create, Ensure}
+
 class Filesystem(pathSeparator: Text, fsPrefix: Text) extends Root(pathSeparator, fsPrefix):
   type AbsolutePath = IoPath
 
@@ -121,8 +126,25 @@ class Filesystem(pathSeparator: Text, fsPrefix: Text) extends Root(pathSeparator
       
       File(this)
     
-    def directory: Directory throws IoError =
-      if !exists() then throw IoError(IoError.Op.Access, IoError.Reason.DoesNotExist, this)
+    def directory(creation: Creation = Creation.Ensure): Directory throws IoError =
+      import IoError.*
+      creation match
+        case Creation.Create if exists() =>
+          throw IoError(Op.Access, Reason.DoesNotExist, this)
+        
+        case Creation.Expect if !exists() =>
+          throw IoError(Op.Access, Reason.AlreadyExists, this)
+        
+        case Creation.Ensure if !exists() =>
+          if !javaFile.mkdirs() then throw IoError(Op.Create, Reason.AccessDenied, this)
+        
+        case _                            => ()
+      
+      Directory(this)
+      
+      if !exists() && creation == Creation.Expect
+      then throw IoError(IoError.Op.Access, IoError.Reason.DoesNotExist, this)
+      
       if !isDirectory then throw IoError(IoError.Op.Access, IoError.Reason.NotDirectory, this)
       
       Directory(this)
@@ -142,7 +164,7 @@ class Filesystem(pathSeparator: Text, fsPrefix: Text) extends Root(pathSeparator
     
     def descendantFiles(descend: (Directory => Boolean) = _ => true): LazyList[File] throws IoError =
       if javaFile.isDirectory
-      then directory.files.to(LazyList) #::: directory.subdirectories.filter(descend).to(LazyList)
+      then directory(Expect).files.to(LazyList) #::: directory(Expect).subdirectories.filter(descend).to(LazyList)
           .flatMap(_.path.descendantFiles(descend))
       else LazyList(file)
 
@@ -157,14 +179,6 @@ class Filesystem(pathSeparator: Text, fsPrefix: Text) extends Root(pathSeparator
         try Symlink(this, parse(Showable(Files.readSymbolicLink(javaPath)).show).get)
         catch NoSuchElementException => File(this)
       else File(this)
-    
-    def createDirectory(): Directory throws IoError =
-      if exists() then throw IoError(IoError.Op.Create, IoError.Reason.AlreadyExists, this)
-      
-      if !javaFile.mkdirs()
-      then throw IoError(IoError.Op.Create, IoError.Reason.AccessDenied, this)
-  
-      Directory(this)
     
     def exists(): Boolean = javaFile.exists()
   
@@ -339,7 +353,7 @@ class Filesystem(pathSeparator: Text, fsPrefix: Text) extends Root(pathSeparator
               
               event.kind match
                 case ENTRY_CREATE => if path.isDirectory
-                                     then List(FileEvent.NewDirectory(path.directory))
+                                     then List(FileEvent.NewDirectory(path.directory(Expect)))
                                      else List(FileEvent.NewFile(path.file))
                 case ENTRY_MODIFY => List(FileEvent.Modify(path.file))
                 case ENTRY_DELETE => List(FileEvent.Delete(path))
@@ -401,7 +415,7 @@ class Filesystem(pathSeparator: Text, fsPrefix: Text) extends Root(pathSeparator
       try Files.copy(javaPath, Paths.get(dest.show.s))
       catch e => throw IoError(IoError.Op.Write, IoError.Reason.AccessDenied, initPath)
       
-      dest.directory
+      dest.directory(Expect)
 
     def hardLinkTo(dest: IoPath): Directory throws IoError =
       if dest.exists()
@@ -411,7 +425,7 @@ class Filesystem(pathSeparator: Text, fsPrefix: Text) extends Root(pathSeparator
       catch case e =>
         throw IoError(IoError.Op.Write, IoError.Reason.DifferentFilesystems, initPath)
 
-      dest.directory
+      dest.directory(Expect)
     
     @targetName("access")
     infix def /(child: Text): IoPath throws RootParentError = makeAbsolute((path / child).parts)
