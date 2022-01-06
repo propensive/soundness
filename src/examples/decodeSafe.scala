@@ -1,5 +1,5 @@
 /*
-    Wisteria, version 2.4.0. Copyright 2017-21 Jon Pretty, Propensive OÜ.
+    Wisteria, version 2.4.0. Copyright 2017-22 Jon Pretty, Propensive OÜ.
 
     The primary distribution site is: https://propensive.com/
 
