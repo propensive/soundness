@@ -23,10 +23,11 @@ import scala.util.*, scala.annotation.tailrec
 
 import java.io.*
 
-case class EnvError(envVar: Text)
-extends Exception("the environment variable $envVar was not found")
+case class EnvError(envVar: Text) extends Error:
+  def message: Text = t"the environment variable $envVar was not found"
 
-case class InstallError() extends Exception("installation failed")
+case class InstallError() extends Error:
+  def message: Text = t"installation failed"
 
 object Generate extends Application:
   def main(using CliShell): Exit =
