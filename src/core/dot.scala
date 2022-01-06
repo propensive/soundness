@@ -163,7 +163,7 @@ object Subgraph:
 object NodeParser extends Interpolator[Unit, Option[Dot.Ref], Dot.Ref]:
 
   private val compassPoints: Set[Text] = Set(t"n", t"e", t"s", t"w", t"ne", t"nw", t"se", t"sw")
-  def parse(state: Option[Dot.Ref], next: String): Some[Dot.Ref] =
+  def parse(state: Option[Dot.Ref], next: Text): Some[Dot.Ref] =
     Some { next.show.cut(t":").to(List) match
       case List(id) =>
         Dot.Ref(Dot.Id(id))
