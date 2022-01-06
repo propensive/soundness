@@ -101,8 +101,8 @@ trait ServerApp() extends App:
                 try map.updated(pid, map(pid).copy(scriptDir = dir.directory(Expect)))
                 catch case err: IoError => map
           
-          case t"ARGS" :: Int(pid) :: args =>
-            map.updated(pid, map(pid).copy(args = args))
+          case t"ARGS" :: Int(pid) :: Int(count) :: args =>
+            map.updated(pid, map(pid).copy(args = args.take(count)))
           
           case t"ENV" :: Int(pid) :: env =>
             map.updated(pid, map(pid).copy(env = parseEnv(env)))
