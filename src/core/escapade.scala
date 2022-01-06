@@ -1,5 +1,5 @@
 /*
-    Escapade, version 0.1.0. Copyright 2021-21 Jon Pretty, Propensive OÜ.
+    Escapade, version 0.1.0. Copyright 2021-22 Jon Pretty, Propensive OÜ.
 
     The primary distribution site is: https://propensive.com/
 
@@ -248,7 +248,7 @@ object Ansi:
       insert(state, dummy)
 
     def complete(state: State): AnsiString =
-      if !state.stack.isEmpty then throw InterpolationError("mismatched closing brace")
+      if !state.stack.isEmpty then throw InterpolationError(t"mismatched closing brace")
 
       state.string
 
@@ -286,31 +286,3 @@ object Underline
 object Strike
 object Reverse
 object Conceal
-
-trait FallbackAnsiShow:
-  given AnsiShow[T: Show]: AnsiShow[T] = str => AnsiString(str.show)
-
-object AnsiShow extends FallbackAnsiShow:
-  given AnsiShow[AnsiString] = identity(_)
-
-  given [T: AnsiShow]: AnsiShow[Option[T]] =
-    case None    => AnsiString("empty".show)
-    case Some(v) => summon[AnsiShow[T]].ansiShow(v)
-
-  private val decimalFormat =
-    val df = new java.text.DecimalFormat()
-    df.setMinimumFractionDigits(3)
-    df.setMaximumFractionDigits(3)
-    df
-
-  given AnsiShow[Double] =
-    double => AnsiString(decimalFormat.format(double).nn, _.copy(fg = colors.Gold))
-
-  given AnsiShow[Throwable] =
-    throwable =>
-      AnsiString[String](throwable.getClass.getName.nn.show.cut(t".").last.s,
-          _.copy(fg = colors.Crimson))
-
-trait AnsiShow[-T] extends Show[T]:
-  def show(value: T): Text = ansiShow(value).plain
-  def ansiShow(value: T): AnsiString
