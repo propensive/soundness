@@ -91,19 +91,19 @@ object XmlInterpolation:
         .sub(t"&", t"&amp;")
 
     def skip(state: ParseState): ParseState = state.context match
-      case AttributeValue | Body => parse(state, "")
-      case AttributeEquals       => parse(state, "\"\"")
+      case AttributeValue | Body => parse(state, t"")
+      case AttributeEquals       => parse(state, t"\"\"")
       case _                     => throw InterpolationError(t"a substitution cannot be made in this"+
                                         t" position")
 
     def insert(state: ParseState, value: Input): ParseState =
       state.context match
         case AttributeValue | Body => value match
-          case Input.StringLike(str) => parse(state, escape(str).s)
-          case Input.XmlLike(xml)    => parse(state, xml.show.s)
+          case Input.StringLike(str) => parse(state, escape(str))
+          case Input.XmlLike(xml)    => parse(state, xml.show)
         case AttributeEquals       => value match
-            case Input.StringLike(str) => parse(state, t"\"${escape(str)}\"".s)
-            case Input.XmlLike(xml)    => parse(state, t"\"${escape(xml.show)}\"".s)
+            case Input.StringLike(str) => parse(state, t"\"${escape(str)}\"")
+            case Input.XmlLike(xml)    => parse(state, t"\"${escape(xml.show)}\"")
         case _ =>
           throw InterpolationError(t"a substitution cannot be made in this position")
     
@@ -112,7 +112,7 @@ object XmlInterpolation:
       try Xml.parse(state.source)
       catch case e: XmlParseError => throw InterpolationError(t"the XML could not be parsed")
 
-    def parse(state: ParseState, string: String): ParseState = string.toCharArray.nn.unsafeImmutable.foldLeft(state.copy(offset = 0)) {
+    def parse(state: ParseState, string: Text): ParseState = string.chars.foldLeft(state.copy(offset = 0)) {
       case (state@ParseState(_, _, _, _, _, _), char) => state.context match
         
         case InTagName          => char match
