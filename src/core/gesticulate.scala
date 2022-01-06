@@ -69,17 +69,17 @@ object Media:
     val lines = MediaType.fileContents.cut(t"\n"): List[Text]
     lines.to(Set)
 
-  object Prefix extends Interpolator[Unit, String, MediaType]:
-    def parse(state: String, next: String): String = next
+  object Prefix extends Interpolator[Unit, Text, MediaType]:
+    def parse(state: Text, next: Text): Text = next
     
-    def insert(state: String, value: Unit): String =
+    def insert(state: Text, value: Unit): Text =
       throw InterpolationError(t"a media type literal cannot have substitutions")
 
-    def skip(value: String): String = value
-    def initial: String = ""
+    def skip(value: Text): Text = value
+    def initial: Text = t""
 
-    def complete(value: String): MediaType =
-      val parsed = try Media.parse(Text(value)) catch
+    def complete(value: Text): MediaType =
+      val parsed = try Media.parse(value) catch
         case err: InvalidMediaTypeError =>
           throw InterpolationError(t"'${err.value}' is not a valid media type; ${err.nature.message}")
 
