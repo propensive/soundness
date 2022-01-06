@@ -4,7 +4,6 @@ import jovian.*
 import gossamer.*
 import rudiments.*
 
-import scala.collection.JavaConverters.*
 import scala.concurrent.*
 import scala.util.*
 
@@ -13,7 +12,10 @@ import encodings.Utf8
 import unsafeExceptions.canThrowAny
 
 case class CommandLine(args: List[Text], env: Map[Text, Text], script: Text,
-                           stdin: () => DataStream, stdout: DataStream => Unit, exit: Int => Unit)
+                           stdin: () => DataStream, stdout: DataStream => Unit, exit: Int => Unit,
+                           pwd: Unix.Directory)
+extends Drain:
+  def write(msg: Text): Unit = stdout(LazyList(msg.bytes))
 
 trait App:
   def main(using CommandLine): ExitStatus
@@ -30,34 +32,43 @@ trait ServerApp() extends App:
         val systemStdin = Option(System.in).getOrElse(sys.exit(10)).nn
         def stdin(): DataStream = Util.readInputStream(systemStdin, 1.mb)
         def stdout(ds: DataStream): Unit = ds.map(_.unsafeMutable).foreach(System.out.nn.writeBytes(_))
-        val commandLine = CommandLine(args, env, t"java", () => stdin(), stdout, sys.exit(_))
+        val dir =
+          try Unix.parse(Sys.user.dir()).getOrElse(sys.exit(10)).directory(Expect)
+          catch case err: KeyNotFoundError => sys.exit(10)
+        
+        val commandLine = CommandLine(args, env, t"java", () => stdin(), stdout, sys.exit(_), dir)
         
         main(using commandLine)()
 
   def server(script: Text, fifo: Text, serverPid: Int): Unit =
-    val socket: Unix.IoPath = Unix.parse(fifo).getOrElse(sys.exit(11))
+    val socket: Unix.IoPath = Unix.parse(fifo).getOrElse(sys.exit(10))
    
     Runtime.getRuntime.nn.addShutdownHook:
       val runnable: Runnable = () => try socket.file.delete() catch case e: Exception => ()
       Thread(runnable, "exoskeleton-cleanup")
 
     case class AppInstance(pid: Int, script: Text = t"", args: List[Text] = Nil,
-                               env: Map[Text, Text] = Map(), runDir: Maybe[Unix.Directory] = Unset):
+                               env: Map[Text, Text] = Map(), runDir: Maybe[Unix.Directory] = Unset,
+                               scriptDir: Maybe[Unix.Directory] = Unset):
       
       val terminate: Promise[Unit] = Promise()
+      def pwd: Unix.Directory throws PwdError =
+        try Unix.parse(env.getOrElse(t"PWD", throw PwdError())).getOrElse(throw PwdError()).directory(Expect)
+        catch case err: IoError => throw PwdError()
 
       def stop(): Unit = terminate.complete(Success(()))
       
       def spawn(map: Map[Int, AppInstance]): Map[Int, AppInstance] =
         val runnable: Runnable = () =>
-          val fifoIn = (runDir.otherwise(sys.exit(12)) / t"$script-$pid.stdin.sock").file
-          val fifoOut = (runDir.otherwise(sys.exit(13)) / t"$script-$pid.stdout.sock").file
+          val fifoIn = (runDir.otherwise(sys.exit(10)) / t"$script-$pid.stdin.sock").file
+          val fifoOut = (runDir.otherwise(sys.exit(10)) / t"$script-$pid.stdout.sock").file
           val terminate = Promise[Int]()
+          val pwd2 = pwd.otherwise(sys.exit(10))
           val commandLine = CommandLine(args, env, script, () => fifoIn.read[DataStream](1.mb),
-              _.writeTo(fifoOut), exit => terminate.complete(util.Success(exit)))
+              _.writeTo(fifoOut), exit => terminate.complete(util.Success(exit)), pwd2)
           
           val exit = main(using commandLine)
-          val exitFile = (runDir.otherwise(sys.exit(14)) / t"$script-$pid.exit").file
+          val exitFile = (runDir.otherwise(sys.exit(10)) / t"$script-$pid.exit").file
           exit().show.bytes.writeTo(exitFile)
         
         val thread = Thread(runnable, "exoskeleton-spawner")
@@ -79,10 +90,16 @@ trait ServerApp() extends App:
           
           case t"RUNDIR" :: Int(pid) :: dir :: _ =>
             Unix.parse(dir).fold(map):
-              dir => map.updated(pid, map(pid).copy(runDir = dir.directory))
+              dir => map.updated(pid, map(pid).copy(runDir = dir.directory(Expect)))
           
           case t"SCRIPT" :: Int(pid) :: script :: _ =>
             map.updated(pid, map(pid).copy(script = script))
+          
+          case t"SCRIPTDIR" :: Int(pid) :: dir :: _ =>
+            Unix.parse(dir).fold(map):
+              dir =>
+                try map.updated(pid, map(pid).copy(scriptDir = dir.directory(Expect)))
+                catch case err: IoError => map
           
           case t"ARGS" :: Int(pid) :: args =>
             map.updated(pid, map(pid).copy(args = args))
@@ -102,5 +119,5 @@ trait ServerApp() extends App:
             map
           
           case msg =>
-            Out.println(t"Unexpected message: ${msg.toString}")
+            System.out.nn.println(t"Unexpected message: ${msg.toString}")
             map

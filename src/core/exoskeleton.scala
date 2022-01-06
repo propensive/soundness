@@ -19,24 +19,20 @@ package exoskeleton
 import rudiments.*
 import gossamer.*
 
-import collection.JavaConverters.*
-
 import scala.util.*, scala.annotation.tailrec
 
 import java.io.*
 
-class ExoskeletonError(msg: Text) extends Exception(t"exoskeleton: $msg".s)
-
 case class EnvError(envVar: Text)
-extends ExoskeletonError(t"the environment variable $envVar was not found")
+extends Exception("the environment variable $envVar was not found")
 
-case class InstallError() extends ExoskeletonError(t"installation failed")
+case class InstallError() extends Exception("installation failed")
 
 object Generate extends Application:
-  def main(using Shell): Exit =
+  def main(using CliShell): Exit =
     try
       val files = install()
-      println(s"Installed ${files.join(t", ")}")
+      System.out.nn.println(s"Installed ${files.join(t", ")}")
       
       Exit(0)
     
@@ -44,12 +40,12 @@ object Generate extends Application:
       e.printStackTrace()
       Exit(1)
 
-  def install()(using Shell): Set[Text] throws InstallError | EnvError = arguments.to(List) match
+  def install()(using CliShell): Set[Text] throws InstallError | EnvError = arguments.to(List) match
     case cmd :: ShellType(shell) :: Nil =>
-      Set(shell.install(cmd, summon[Shell].environment))
+      Set(shell.install(cmd, summon[CliShell].environment))
     
     case cmd :: Nil =>
-      ShellType.all.map(_.install(cmd, summon[Shell].environment)).to(Set)
+      ShellType.all.map(_.install(cmd, summon[CliShell].environment)).to(Set)
     
     case _ =>
       Set()
@@ -62,7 +58,7 @@ object Generate extends Application:
     case 3 => Completions(Nil, t"Please specify the directory in which to install the file")
     case _ => Completions(Nil, t"No more parameters")
 
-case class Shell(args: IArray[Text], environment: Map[Text, Text], properties: Map[Text, Text])
+case class CliShell(args: List[Text], environment: Map[Text, Text], properties: Map[Text, Text])
 
 case class Cli(command: Text,
                args: List[Text],
@@ -77,9 +73,6 @@ case class Completions(defs: List[Choice], title: Maybe[Text] = Unset)
 
 case class Choice(word: Text, description: Maybe[Text] = Unset, hidden: Boolean = false,
                       incomplete: Boolean = false)
-
-object AsInt:
-  def unapply(str: Text): Option[Int] = Try(str.s.toInt).toOption
 
 object ShellType:
   val all: List[ShellType] = List(Zsh, Bash, Fish)
@@ -122,21 +115,21 @@ object Zsh extends ShellType(t"zsh"):
     }).to(LazyList)
   
   def script(cmd: Text): Text =
-    Text(t"""|#compdef $cmd
-              |
-              |_$cmd() {
-              |  ifsx=$$IFS IFS=$$'\\t'
-              |  $cmd '{exoskeleton}' 'zsh' "$$(($$CURRENT - 1))" -- $$words | while read -r -A ln; do
-              |    desc=($${ln[1]})
-              |    compadd -Q $${ln:1}
-              |  done
-              |  IFS=$$ifsx
-              |}
-              |
-              |_$cmd
-              |
-              |return 0
-              |""".s.stripMargin)
+    t"""#compdef $cmd
+
+_$cmd() {
+  ifsx=$$IFS IFS=$$'\\t'
+  $cmd '{exoskeleton}' 'zsh' "$$(($$CURRENT - 1))" -- $$words | while read -r -A ln; do
+    desc=($${ln[1]})
+    compadd -Q $${ln:1}
+  done
+  IFS=$$ifsx
+}
+
+_$cmd
+
+return 0
+"""
   
   def filename(cmd: Text): Text = t"_$cmd"
   
@@ -155,16 +148,16 @@ object Bash extends ShellType(t"bash"):
     }.join(t"\t"))
   
   def script(cmd: Text): Text =
-    Text(t"""|_${cmd}_complete() {
-              |  data=$$($cmd '{exoskeleton}' 'bash' $$COMP_CWORD -- $$COMP_LINE )
-              |  ifsx=$$IFS
-              |  IFS=$$'\t'
-              |  COMPREPLY=($$data)
-              |  IFS=$$ifsx
-              |}
-              |
-              |complete -F _${cmd}_complete $cmd
-              |""".s.stripMargin)
+    t"""_${cmd}_complete() {
+  data=$$($cmd '{exoskeleton}' 'bash' $$COMP_CWORD -- $$COMP_LINE )
+  ifsx=$$IFS
+  IFS=$$'\t'
+  COMPREPLY=($$data)
+  IFS=$$ifsx
+}
+
+complete -F _${cmd}_complete $cmd
+"""
 
   def filename(cmd: Text): Text = t"_$cmd"
   
@@ -180,10 +173,10 @@ object Fish extends ShellType(t"fish"):
     }
   
   def script(cmd: Text): Text =
-    Text(t"""|for line in ($cmd '{exoskeleton}' 'fish' (count (commandline -o)) -- (commandline -o))
-              |  complete -f -c $cmd -a (string escape $$line[1])
-              |end
-              |""".s.stripMargin)
+    t"""for line in ($cmd '{exoskeleton}' 'fish' (count (commandline -o)) -- (commandline -o))
+  complete -f -c $cmd -a (string escape $$line[1])
+end
+"""
 
   def filename(cmd: Text): Text = t"$cmd.fish"
 

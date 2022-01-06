@@ -17,60 +17,44 @@
 package exoskeleton
 
 import gossamer.*
-
-import collection.JavaConverters.*
+import rudiments.*
 
 import scala.util.*
 
 import java.io.*
 
-def arguments(using Shell): IArray[Text] = summon[Shell].args
+def arguments(using CliShell): List[Text] = summon[CliShell].args
 
 trait Application:
-  def main(using Shell): Exit
+  def main(using CliShell): Exit
   def complete(cli: Cli): Completions
   
-  final def main(args: IArray[String]): Unit =
-    val argList = args.to(List)
-    val env = System.getenv().nn.asScala.toMap.map { (k, v) => Text(k) -> Text(v) }
-    val props = System.getProperties().nn.asScala.toMap.map(Text(_) -> Text(_))
+//   final def main(argsArray: IArray[String]): Unit =
+//     val args = argsArray.to(List).map(_.show)
+//     val env = System.getenv().nn.asScala.toMap.map { (k, v) => Text(k) -> Text(v) }
+//     val props = System.getProperties().nn.asScala.toMap.map(Text(_) -> Text(_))
 
-    val shell = Shell(args.map(Text(_)), env, props)
+//     val shell = CliShell(args, env, props)
     
-    argList match
-      case "{exoskeleton}" :: ShellType(shell) :: AsInt(current) :: "--" :: args =>
-        val cli = Cli(Text(argList.head), args.tail.map(Text(_)), env, props, current - 1)
-        val completions: Completions = try complete(cli) catch Throwable => Completions(Nil)
-        shell.serialize(cli, completions).foreach(println)
-        System.exit(0)
+//     args match
+//       case t"{exoskeleton}" :: ShellType(shell) :: Int(current) :: t"--" :: args =>
+//         val cli = Cli(args.head, args.tail, env, props, current - 1)
+//         val completions: Completions = try complete(cli) catch Throwable => Completions(Nil)
+//         shell.serialize(cli, completions).foreach(Out.println)
+//         System.exit(0)
       
-      case "{exoskeleton-generate}" :: _ =>
-        try Generate.install()(using Shell(args.tail.map(Text(_)), env, props))
-        catch case e: (InstallError | EnvError) =>
-          println("Installation failed")
-          Exit(1)
+//       case t"{exoskeleton-generate}" :: _ =>
+//         try Generate.install()(using Shell(args.tail.map(Text(_)), env, props))
+//         catch case e: (InstallError | EnvError) =>
+//           Out.println(t"Installation failed")
+//           Exit(1)
       
-      case list =>
-        val result = try main(using shell) catch case e: Exception =>
-          e.printStackTrace()
-          Exit(2)
+//       case list =>
+//         val result = try main(using shell) catch case e: Exception =>
+//           e.printStackTrace()
+//           Exit(2)
 
-        System.out.nn.flush()
-        System.err.nn.flush()
+//         System.out.nn.flush()
+//         System.err.nn.flush()
         
-        System.exit(result.status)
-
-object Counter extends Application:
-  def complete(cli: Cli): Completions =
-    Completions(List(
-      Choice(t"one", t"first option"),
-      Choice(t"two", t"second option"),
-      Choice(t"three", t"third option"),
-      Choice(t"four", t"fourth option"),
-      Choice(t"five", t"fifth option")
-    ), title = t"Here are the choices:")
-
-  def main(using Shell): Exit =
-    println("Do nothing")
-    println(System.getenv("FPATH"))
-    Exit(0)
+//         System.exit(result.status)
