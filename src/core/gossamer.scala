@@ -1,5 +1,5 @@
 /*
-    Gossamer, version 0.5.0. Copyright 2021-21 Jon Pretty, Propensive OÜ.
+    Gossamer, version 0.5.0. Copyright 2021-22 Jon Pretty, Propensive OÜ.
 
     The primary distribution site is: https://propensive.com/
 
@@ -192,11 +192,11 @@ object Interpolation:
 
   given [T: Show]: Insertion[Input, T] = value => Input(summon[Show[T]].show(value))
 
-  private def escape(str: String): Text =
+  private def escape(str: String): Text throws InterpolationError =
     val buf: StringBuilder = StringBuilder()
     
     def parseUnicode(chars: Text): Char =
-      if chars.length < 4 then throw InterpolationError("the unicode escape is incomplete")
+      if chars.length < 4 then throw InterpolationError(rudiments.Text("the unicode escape is incomplete"))
       else Integer.parseInt(chars.s, 16).toChar
 
     @tailrec
@@ -226,10 +226,10 @@ object Interpolation:
           case '\'' if esc  => buf.add('\'')
                                recur(cur + 1)
           case ch if esc    => throw InterpolationError(
-                                   s"the character '$ch' does not need to be escaped")
+                                   rudiments.Text(s"the character '$ch' does not need to be escaped"))
           case ch           => buf.add(ch)
                                recur(cur + 1)
-      else if esc then throw InterpolationError("the final character cannot be an escape")
+      else if esc then throw InterpolationError(rudiments.Text("the final character cannot be an escape"))
     
     recur()
     
