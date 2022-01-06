@@ -1,5 +1,5 @@
 /*
-    Guillotine, version 0.9.0. Copyright 2018-21 Jon Pretty, Propensive OÜ.
+    Guillotine, version 0.9.0. Copyright 2018-22 Jon Pretty, Propensive OÜ.
 
     The primary distribution site is: https://propensive.com/
 
@@ -166,9 +166,9 @@ object Sh:
   
     def complete(state: State): Command =
       val args = state.current match
-        case Quotes2        => throw InterpolationError("the double quotes have not been closed")
-        case Quotes1        => throw InterpolationError("the single quotes have not been closed")
-        case _ if state.esc => throw InterpolationError("cannot terminate with an escape character")
+        case Quotes2        => throw InterpolationError(t"the double quotes have not been closed")
+        case Quotes1        => throw InterpolationError(t"the single quotes have not been closed")
+        case _ if state.esc => throw InterpolationError(t"cannot terminate with an escape character")
         case _              => state.args
       
       Command(args*)
@@ -181,7 +181,7 @@ object Sh:
       value.params.to(List) match
         case h :: t =>
           if state.esc then throw InterpolationError(txt"""escaping with '\\' is not allowed
-                                                         immediately before a substitution""".s)
+                                                         immediately before a substitution""")
           
           state match
             case State(Awaiting, false, args) =>
