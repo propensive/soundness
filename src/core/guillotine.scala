@@ -201,7 +201,7 @@ object Sh:
         case _ =>
           state
           
-    def parse(state: State, next: String): State = next.toCharArray.nn.unsafeImmutable.foldLeft(state):
+    def parse(state: State, next: Text): State = next.chars.foldLeft(state):
       case (State(Awaiting, esc, args), ' ')          => State(Awaiting, false, args)
       case (State(Quotes1, false, rest :+ cur), '\\') => State(Quotes1, false, rest :+ t"$cur\\")
       case (State(ctx, false, args), '\\')            => State(ctx, true, args)
