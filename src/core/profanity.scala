@@ -44,8 +44,8 @@ enum Keypress:
 trait Keyboard[+KeyType]:
   def interpret(bytes: List[Int])(using Log): LazyList[KeyType]
 
-abstract class ProfanityError(msg: Text) extends Exception(t"profanity: $msg".s)
-case class TtyError(msg: Text) extends ProfanityError(t"STDIN is not attached to a TTY")
+case class TtyError(msg: Text) extends Error:
+  def message: Text = t"STDIN is not attached to a TTY"
 
 sealed case class Tty(private[profanity] val out: ji.PrintStream)
 
