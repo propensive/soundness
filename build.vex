@@ -1,0 +1,75 @@
+{
+  "imports": [
+    "mod/polyvinyl/build.vex",
+    "mod/rudiments/build.vex",
+    "mod/contextual/build.vex",
+    "mod/gossamer/build.vex",
+    "mod/wisteria/build.vex",
+    "mod/clairvoyant/build.vex",
+    "mod/adversaria/build.vex",
+    "mod/gesticulate/build.vex",
+    "mod/tarantula/build.vex",
+    "mod/eucalyptus/build.vex",
+    "mod/guillotine/build.vex",
+    "mod/slalom/build.vex",
+    "mod/iridescence/build.vex",
+    "mod/kaleidoscope/build.vex",
+    "mod/scintillate/build.vex",
+    "mod/escapade/build.vex",
+    "mod/escapade/build.vex",
+    "mod/gastronomy/build.vex",
+    "mod/caesura/build.vex",
+    "mod/eucalyptus/build.vex",
+    "mod/profanity/build.vex",
+    "mod/cataract/build.vex",
+    "mod/jovian/build.vex",
+    "mod/punctuation/build.vex",
+    "mod/acyclicity/build.vex",
+    "mod/probably/build.vex",
+    "mod/honeycomb/build.vex",
+    "mod/exoskeleton/build.vex",
+    "mod/xylophone/build.vex",
+    "mod/euphemism/build.vex",
+    "mod/exoskeleton/build.vex",
+    "mod/harlequin/build.vex"
+  ],
+  "config": {
+    "scalac": {
+      "version": "3.1.2-RC1-bin-SNAPSHOT",
+      "options": [
+        "-language:experimental.erasedDefinitions",
+        "-language:experimental.fewerBraces",
+        "-language:experimental.saferExceptions",
+        "-Wunused:all",
+        "-O", "-deprecation",
+        "-O", "-feature",
+        "-O", "-new-syntax",
+        "-Yrequire-targetName",
+        "-Ysafe-init",
+        "-Ycheck-all-patmat",
+        "-Yexplicit-nulls",
+	"-Yno-prelude"
+      ]
+    }
+  },
+  "publishing": {
+    "username": "propensive",
+    "group": "com.propensive",
+    "url": "https://propensive.com/opensource/",
+    "organization": {
+      "name": "Propensive",
+      "url": "https://propensive.com/"
+    },
+    "sign": "63A884FEB076449CEB80F0F742FEF8A41F22D1F3",
+    "git": "github.com/propensive",
+    "developers": [
+      {
+        "id": "propensive",
+        "name": "Jon Pretty",
+        "url": "https://github.com/propensive"
+      }
+    ]
+  },
+  "modules": [
+  ]
+}
