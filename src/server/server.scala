@@ -28,8 +28,8 @@ import java.io.*
 import java.text as jt
 import com.sun.net.httpserver.{HttpServer as JavaHttpServer, *}
 
-case class MissingParamError(key: Text)
-extends Exception(t"scintillate: the parameter $key was not sent in the request".s)
+case class MissingParamError(key: Text) extends Error:
+  def message: Text = t"the parameter $key was not sent in the request"
 
 trait Responder:
   def sendBody(status: Int, body: HttpBody): Unit

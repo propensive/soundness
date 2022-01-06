@@ -253,8 +253,8 @@ object Http:
       case conn: URLConnection =>
         throw Impossible("URL connection is not HTTP")
             
-case class HttpError(status: HttpStatus & FailureCase, body: HttpBody)
-    extends Exception(s"HTTP Error ${status.code}: ${status.description}"):
+case class HttpError(status: HttpStatus & FailureCase, body: HttpBody) extends Error:
+  def message: Text = t"HTTP Error ${status.code}: ${status.description}"
   inline def as[T](using readable: HttpReadable[T]): T throws ExcessDataError | StreamCutError | readable.E =
     readable.read(status, body)
 
