@@ -378,8 +378,8 @@ enum ExitStatus:
 object StackTrace:
   case class Frame(className: Text, method: Text, file: Text, line: Int, native: Boolean)
   
-case class StackTrace(component: Text, className: Text, frames: List[StackTrace.Frame],
-    cause: Maybe[StackTrace])
+case class StackTrace(component: Text, className: Text, message: Text,
+    frames: List[StackTrace.Frame], cause: Maybe[StackTrace])
 
 abstract class Error(cause: Maybe[Error] = Unset) extends Exception():
   def fullClass: List[Text] = List(getClass.nn.getName.nn.split("\\.").nn.map(_.nn).map(Text(_))*)
@@ -403,6 +403,6 @@ abstract class Error(cause: Maybe[Error] = Unset) extends Exception():
           frame.isNativeMethod
         )
     
-    StackTrace(component, className, frames, cause.option.map(_.stackTrace).maybe)
+    StackTrace(component, className, message, frames, cause.option.map(_.stackTrace).maybe)
   
   
