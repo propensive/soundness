@@ -1,5 +1,5 @@
 /*
-    Rudiments, version 0.6.0. Copyright 2020-21 Jon Pretty, Propensive OÜ.
+    Rudiments, version 0.6.0. Copyright 2020-22 Jon Pretty, Propensive OÜ.
 
     The primary distribution site is: https://propensive.com/
 
@@ -387,6 +387,7 @@ abstract class Error(cause: Maybe[Error] = Unset) extends Exception():
   def component: Text = fullClass.head
 
   override def getMessage: String = component.s+": "+toString
+  override def getCause: Exception | Null = cause.option.getOrElse(null)
 
   def message: Text
   def explanation: Maybe[Text] = Unset
