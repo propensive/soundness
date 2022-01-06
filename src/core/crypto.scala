@@ -96,13 +96,8 @@ extends PrivateKey[A](bytes):
   def verify[T: ByteCodec](value: T, signature: Signature[A])(using A & Signing): Boolean =
     public.verify(value, signature)
 
-class GastronomyException(message: Text) extends Exception(t"gastronomy: $message".s)
-
-case class DecodeError(message: Text)
-extends GastronomyException(t"could not decode the message")
-
-case class DecryptionFailure(message: Bytes)
-extends GastronomyException(t"could not decrypt the message")
+case class DecodeError(detail: Text) extends Error:
+  def message: Text = t"could not decode the message: $detail"
 
 trait ByteCodec[T]:
   def encode(value: T): Bytes
@@ -242,5 +237,5 @@ class Dsa[KS <: 512 | 1024 | 2048 | 3072: ValueOf]() extends CryptoAlgorithm[KS]
   private def keyFactory(): js.KeyFactory = js.KeyFactory.getInstance("DSA").nn
 end Dsa
 
-case class PemParseError(message: Text)
-extends GastronomyException(t"could not parse PEM-encoded content")
+case class PemParseError(detail: Text) extends Error:
+  def message: Text = t"could not parse PEM-encoded content: $detail"
