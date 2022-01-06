@@ -43,10 +43,11 @@ enum Recursion:
 type Majuscule = 'A' | 'B' | 'C' | 'D' | 'E' | 'F' | 'G' | 'H' | 'I' | 'J' | 'K' | 'L' | 'M' | 'N' |
     'O' | 'P' | 'Q' | 'R' | 'S' | 'T' | 'U' | 'V' | 'W' | 'X' | 'Y' | 'Z'
 
-case class ClasspathRefError(classpath: Classpath)(path: classpath.ClasspathRef)
-extends JovianError(t"the resource $path could not be accessed")
+case class ClasspathRefError(classpath: Classpath)(path: classpath.ClasspathRef) extends Error:
+  def message: Text = t"the resource $path could not be accessed"
 
-case class PwdError() extends JovianError(t"the current working directory cannot be determined")
+case class PwdError() extends Error:
+  def message: Text = t"the current working directory cannot be determined"
 
 object IoError:
   object Reason:
@@ -593,8 +594,6 @@ class Filesystem(pathSeparator: Text, fsPrefix: Text) extends Root(pathSeparator
   //   def symlinkTo(target: Path): Unit throws NotWritable =
   //     try Files.createSymbolicLink(target.javaPath, javaPath)
   //     catch case e: ji.IOException => throw NotWritable(path)
-
-open class JovianError(message: Text) extends Exception(t"jovian: $message".s)
 
 object Filesystem:
   
