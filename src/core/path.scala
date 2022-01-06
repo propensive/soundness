@@ -21,11 +21,9 @@ import gossamer.*
 
 import annotation.targetName
 
-abstract class SlalomError(message: Text) extends Exception(t"slalom: $message".s)
-
-case class RootParentError(root: Root)
-extends SlalomError(txt"""an attempt was made to access the parent of a filesystem root, which (by
-                          definition) has no parent""")
+case class RootParentError(root: Root) extends Error:
+  def message: Text = txt"""an attempt was made to access the parent of a filesystem root, which (by
+                          definition) has no parent"""
 
 object Relative:
   given Show[Relative] = relative => relative.parts.join(t"../"*relative.ascent, t"/", t"")
