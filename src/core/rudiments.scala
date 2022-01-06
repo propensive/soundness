@@ -63,8 +63,9 @@ object Bytes:
   def apply(xs: Byte*): Bytes = IArray(xs*)
   def empty: Bytes = IArray()
 
-case class ExcessDataError(size: ByteSize, limit: ByteSize)
-extends Exception(s"the amount of data in the stream (at least ${size}B) exceeds the limit (${limit}B)")
+case class ExcessDataError(size: ByteSize, limit: ByteSize) extends Error:
+  def message: Text =
+    Text(s"the amount of data in the stream (at least ${size}B) exceeds the limit (${limit}B)")
 
 extension (value: DataStream)
   def slurp(limit: ByteSize): Bytes throws ExcessDataError | StreamCutError =
@@ -116,14 +117,15 @@ object Sys extends Dynamic:
   def applyDynamic(key: String)(): Text throws KeyNotFoundError = selectDynamic(key).apply()
   def bigEndian: Boolean = java.nio.ByteOrder.nativeOrder == java.nio.ByteOrder.BIG_ENDIAN
 
-case class KeyNotFoundError(name: Text) extends Exception(s"rudiments: key $name not found")
+case class KeyNotFoundError(name: Text) extends Error:
+  def message: Text = Text(s"key $name not found")
 
 object Impossible:
   def apply(error: Exception): Impossible =
     Impossible(s"rudiments: an ${error.getClass.getName} exception was thrown when this was not "+
         s"believed to be possible; the error was '${error.getMessage}'")
 
-case class Impossible(message: String) extends Error(message)
+case class Impossible(message: String) extends java.lang.Error(message)
 
 object Unset
 
@@ -147,7 +149,8 @@ extension (iarray: IArray.type)
 
 extension [T](opt: Option[T]) def maybe: Unset.type | T = opt.getOrElse(Unset)
 
-case class StreamCutError() extends Exception("rudiments: the stream was cut prematurely")
+case class StreamCutError() extends Error:
+  def message: Text = Text("the stream was cut prematurely")
 
 object Util:
   def readInputStream(in: ji.InputStream, limit: ByteSize): DataStream = in match
@@ -371,3 +374,34 @@ enum ExitStatus:
   def apply(): Int = this match
     case Ok           => 0
     case Fail(status) => status
+
+object StackTrace:
+  case class Frame(className: Text, method: Text, file: Text, line: Int, native: Boolean)
+  
+case class StackTrace(component: Text, className: Text, frames: List[StackTrace.Frame],
+    cause: Maybe[StackTrace])
+
+abstract class Error(cause: Maybe[Error] = Unset) extends Exception():
+  def fullClass: List[Text] = List(getClass.nn.getName.nn.split("\\.").nn.map(_.nn).map(Text(_))*)
+  def className: Text = fullClass.last
+  def component: Text = fullClass.head
+
+  override def getMessage: String = component.s+": "+toString
+
+  def message: Text
+  def explanation: Maybe[Text] = Unset
+
+  def stackTrace: StackTrace =
+    val frames = List(getStackTrace.nn.map(_.nn)*).map:
+      frame =>
+        StackTrace.Frame(
+          Text(frame.getClassName.nn),
+          Text(frame.getMethodName.nn),
+          Text(frame.getFileName.nn),
+          frame.getLineNumber,
+          frame.isNativeMethod
+        )
+    
+    StackTrace(component, className, frames, cause.option.map(_.stackTrace).maybe)
+  
+  
