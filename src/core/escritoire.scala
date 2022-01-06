@@ -47,7 +47,8 @@ object Column:
 case class Column[T](title: AnsiString, cell: T => AnsiString, breaks: Breaks, alignment: Alignment,
                          width: ColumnWidth)
 
-case class TableWidthError(total: Int) extends Exception("escritoire: the table width is not in the valid range")
+case class TableWidthError(total: Int) extends Error:
+  def message: Text = t"the table width is not in the valid range"
 
 case class Tabulation[T: ClassTag](cols: Column[T]*):
 
