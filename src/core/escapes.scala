@@ -76,5 +76,6 @@ object escapes:
     val Strike: Escape = Escape(t"[9m", t"[29m")
 
   val Reset: Escape = Escape(t"[0m", t"[0m")
+  val EraseLine: Escape = Escape(t"[0K", t"[0m")
 
   def title(name: String) = Escape(t"]0;$name${27.toChar}\\")

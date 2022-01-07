@@ -31,8 +31,12 @@ object AnsiShow extends FallbackAnsiShow:
     case Some(v) => summon[AnsiShow[T]].ansiShow(v)
 
   given AnsiShow[StackTrace] = stack =>
+    val methodWidth = stack.frames.map(_.method.length).max
+    val classWidth = stack.frames.map(_.className.length).max
+    val fileWidth = stack.frames.map(_.file.length).max
     val root = stack.frames.foldLeft(ansi"${Bg(colors.OrangeRed)}(${colors.Black}( ${stack.component} ))${colors.OrangeRed}(${Bg(colors.Orange)}())${Bg(colors.Orange)}( ${colors.Black}(${stack.className}) )${colors.Orange}() ${colors.Ivory}(${stack.message})"):
-      case (msg, frame) => ansi"$msg${'\n'}$frame"
+      case (msg, frame) =>
+        ansi"$msg${'\n'}  ${colors.Gray}(at) ${colors.Plum}(${frame.className.fit(classWidth, Rtl)})${colors.Gray}(#)${colors.Peru}(${frame.method.fit(methodWidth)}) ${colors.Gray}(at) ${colors.LightBlue}(${frame.file.fit(fileWidth, Rtl)})${colors.Gray}(:)${colors.Yellow}(${frame.line})"
     
     stack.cause.option match
       case None        => root
