@@ -29,7 +29,7 @@ import unsafeExceptions.canThrowAny
 
 case class CommandLine(args: List[Text], env: Map[Text, Text], script: Text,
                            stdin: () => DataStream, stdout: DataStream => Unit, exit: Int => Unit,
-                           pwd: Unix.Directory)
+                           pwd: Unix.Directory, shutdown: () => Unit)
 extends Drain:
   def write(msg: Text): Unit = stdout(LazyList(msg.bytes))
 
@@ -52,7 +52,7 @@ trait ServerApp() extends App:
           try Unix.parse(Sys.user.dir()).getOrElse(sys.exit(10)).directory(Expect)
           catch case err: KeyNotFoundError => sys.exit(10)
         
-        val commandLine = CommandLine(args, env, t"java", () => stdin(), stdout, sys.exit(_), dir)
+        val commandLine = CommandLine(args, env, t"java", () => stdin(), stdout, sys.exit(_), dir, () => sys.exit(0))
         
         main(using commandLine)()
 
@@ -66,30 +66,32 @@ trait ServerApp() extends App:
     case class AppInstance(pid: Int, script: Text = t"", args: List[Text] = Nil,
                                env: Map[Text, Text] = Map(), runDir: Maybe[Unix.Directory] = Unset,
                                scriptDir: Maybe[Unix.Directory] = Unset):
-      
+      val shutdown: Promise[Unit] = Promise()
       val terminate: Promise[Unit] = Promise()
       def pwd: Unix.Directory throws PwdError =
         try Unix.parse(env.getOrElse(t"PWD", throw PwdError())).getOrElse(throw PwdError()).directory(Expect)
         catch case err: IoError => throw PwdError()
 
-      def stop(): Unit = terminate.complete(Success(()))
+      def stop(): Unit = if shutdown.isCompleted then kill() else shutdown.complete(Success(()))
+      def kill(): Unit = terminate.complete(Success(()))
       
-      def spawn(map: Map[Int, AppInstance]): Map[Int, AppInstance] =
+      def spawn(): Unit =
         val runnable: Runnable = () =>
           val fifoIn = (runDir.otherwise(sys.exit(10)) / t"$script-$pid.stdin.sock").file
           val fifoOut = Unix.Fifo((runDir.otherwise(sys.exit(10)) / t"$script-$pid.stdout.sock").file)
           val terminate = Promise[Int]()
-          val pwd2 = pwd.otherwise(sys.exit(10))
+          val workDir = pwd.otherwise(sys.exit(10))
+          
           val commandLine = CommandLine(args, env, script, () => fifoIn.read[DataStream](1.mb),
-              _.writeTo(fifoOut), exit => terminate.complete(util.Success(exit)), pwd2)
+              _.writeTo(fifoOut), exit => terminate.complete(util.Success(exit)), workDir, () => sys.exit(0))
           
           val exit = main(using commandLine)
+          fifoOut.close()
           val exitFile = (runDir.otherwise(sys.exit(10)) / t"$script-$pid.exit").file
           exit().show.bytes.writeTo(exitFile)
         
-        val thread = Thread(runnable, "exoskeleton-spawner")
+        val thread = Thread(runnable, "exoskeleton-dispatcher")
         thread.start()
-        map
     
     def parseEnv(env: List[Text]): Map[Text, Text] = env.flatMap:
       pair =>
@@ -124,7 +126,8 @@ trait ServerApp() extends App:
             map.updated(pid, map(pid).copy(env = parseEnv(env)))
           
           case t"START" :: Int(pid) :: _ =>
-            map(pid).spawn(map)
+            map(pid).spawn()
+            map
           
           case t"STOP" :: Int(pid) :: _ =>
             map(pid).stop()
