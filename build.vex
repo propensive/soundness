@@ -25,6 +25,24 @@
       ]
     }
   },
+  "publishing": {
+    "username": "propensive",
+    "group": "com.propensive",
+    "url": "https://propensive.com/opensource/",
+    "organization": {
+      "name": "Propensive",
+      "url": "https://propensive.com/"
+    },
+    "sign": "63A884FEB076449CEB80F0F742FEF8A41F22D1F3",
+    "git": "github.com/propensive",
+    "developers": [
+      {
+        "id": "propensive",
+        "name": "Jon Pretty",
+        "url": "https://github.com/propensive"
+      }
+    ]
+  },
   "modules": [
     {
       "name": "Scintillate Core",
@@ -37,7 +55,7 @@
         "gastronomy/core"
       ],
       "sources": ["src/core"],
-      "version": "0.1.0",
+      "version": "0.2.0",
       "docs": ["doc"]
     },
     {
@@ -45,7 +63,7 @@
       "id": "scintillate/server",
       "links": ["scintillate/core"],
       "sources": ["src/server"],
-      "version": "0.1.0",
+      "version": "0.2.0",
       "docs": ["doc"]
     },
     {
@@ -53,8 +71,9 @@
       "id": "scintillate/servlet",
       "links": ["scintillate/server"],
       "dependencies": ["javax.servlet:javax.servlet-api:3.0.1"],
+      "jars": ["../../../.cache/coursier/v1/https/repo1.maven.org/maven2/javax/servlet/javax.servlet-api/3.0.1/javax.servlet-api-3.0.1.jar"],
       "sources": ["src/servlet"],
-      "version": "0.1.0",
+      "version": "0.2.0",
       "docs": ["doc"]
     }
   ]
