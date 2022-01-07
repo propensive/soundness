@@ -82,8 +82,8 @@ extension [T](value: T)
   def triple: (T, T, T) = (value, value, value)
   def unsafeMatchable: T & Matchable = value.asInstanceOf[T & Matchable]
 
-extension (value: Bytes)
-  def unsafeMutable: Array[Byte] = value.asInstanceOf[Array[Byte]]
+extension [T](value: IArray[T])
+  def unsafeMutable: Array[T] = value.asInstanceOf[Array[T]]
 
 extension [T](value: Array[T])
   def unsafeImmutable: IArray[T] = value.asInstanceOf[IArray[T]]
@@ -386,7 +386,7 @@ abstract class Error(cause: Maybe[Error] = Unset) extends Exception():
   def className: Text = fullClass.last
   def component: Text = fullClass.head
 
-  override def getMessage: String = component.s+": "+toString
+  override def getMessage: String = component.s+": "+message
   override def getCause: Exception | Null = cause.option.getOrElse(null)
 
   def message: Text
