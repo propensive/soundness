@@ -1,0 +1,7 @@
+#!/bin/sh
+echo 'Downloading Vex 0.2.0...'
+curl -Lso "$0.tmp" 'https://github.com/propensive/vex/releases/download/v0.2.0/vex-0.2.0'
+echo 'Launching Vex...'
+chmod +x "$0.tmp"
+mv "$0.tmp" "$0"
+exec "$0"
