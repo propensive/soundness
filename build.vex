@@ -19,14 +19,37 @@
       ]
     }
   },
+  "publishing": {
+    "username": "propensive",
+    "group": "com.propensive",
+    "url": "https://propensive.com/opensource/",
+    "organization": {
+      "name": "Propensive",
+      "url": "https://propensive.com/"
+    },
+    "sign": "63A884FEB076449CEB80F0F742FEF8A41F22D1F3",
+    "git": "github.com/propensive",
+    "developers": [
+      {
+        "id": "propensive",
+        "name": "Jon Pretty",
+        "url": "https://github.com/propensive"
+      }
+    ]
+  },
   "modules": [
     {
       "name": "Euphemism",
       "id": "euphemism/core",
       "links": ["gossamer/core", "clairvoyant/http"],
       "dependencies": ["org.typelevel:jawn-parser_3:1.2.0", "org.typelevel:jawn-ast_3:1.2.0"],
+      "jars": [
+        "../../../.cache/coursier/v1/https/repo1.maven.org/maven2/org/typelevel/jawn-parser_3/1.2.0/jawn-parser_3-1.2.0.jar",
+	"../../../.cache/coursier/v1/https/repo1.maven.org/maven2/org/typelevel/jawn-ast_3/1.2.0/jawn-ast_3-1.2.0.jar",
+	"../../../.cache/coursier/v1/https/repo1.maven.org/maven2/org/typelevel/jawn-util_3/1.2.0/jawn-util_3-1.2.0.jar"
+      ],
       "sources": ["src/core"],
-      "version": "0.1.0",
+      "version": "0.2.0",
       "docs": ["doc"]
     }
   ]
