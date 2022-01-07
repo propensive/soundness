@@ -42,7 +42,7 @@ object ScalaSyntax:
     else if token >= 63 && token <= 84 then Flair.Symbol
     else Flair.Parens
   
-  def highlight(text: Text): Seq[Token] =
+  def highlight(text: Text): IArray[Seq[Token]] =
     val initCtx = Contexts.ContextBase().initialCtx.fresh.setReporter(Reporter.NoReporter)
     val source = SourceFile.virtual("<highlighting>", text.s)
     val ctx = initCtx.setCompilationUnit(CompilationUnit(source, mustExist = false)(using initCtx))
@@ -75,7 +75,16 @@ object ScalaSyntax:
         
         whitespace #::: content #::: stream(end)
     
-    stream()
+      
+    def lines(seq: List[Token], acc: List[List[Token]] = Nil): List[List[Token]] = seq match
+      case Nil =>
+        acc
+        
+      case xs => xs.indexOf(Token.Newline) match
+        case -1  => xs :: acc
+        case idx => lines(xs.drop(idx + 1), xs.take(idx) :: acc)
+        
+    IArray(lines(stream().to(List)).reverse*)
 
 
   private class Trees() extends ast.untpd.UntypedTreeTraverser:
