@@ -44,9 +44,9 @@
       "links": ["gossamer/core", "clairvoyant/http"],
       "dependencies": ["org.typelevel:jawn-parser_3:1.2.0", "org.typelevel:jawn-ast_3:1.2.0"],
       "jars": [
-        "../../../.cache/coursier/v1/https/repo1.maven.org/maven2/org/typelevel/jawn-parser_3/1.2.0/jawn-parser_3-1.2.0.jar",
-	"../../../.cache/coursier/v1/https/repo1.maven.org/maven2/org/typelevel/jawn-ast_3/1.2.0/jawn-ast_3-1.2.0.jar",
-	"../../../.cache/coursier/v1/https/repo1.maven.org/maven2/org/typelevel/jawn-util_3/1.2.0/jawn-util_3-1.2.0.jar"
+        "https://repo1.maven.org/maven2/org/typelevel/jawn-parser_3/1.2.0/jawn-parser_3-1.2.0.jar",
+	"https://repo1.maven.org/maven2/org/typelevel/jawn-ast_3/1.2.0/jawn-ast_3-1.2.0.jar",
+	"https://repo1.maven.org/maven2/org/typelevel/jawn-util_3/1.2.0/jawn-util_3-1.2.0.jar"
       ],
       "sources": ["src/core"],
       "version": "0.2.0",
