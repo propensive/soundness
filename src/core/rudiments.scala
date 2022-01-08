@@ -274,6 +274,9 @@ object Stdin
 object Stdout
 object Stderr
 
+def safely[T](value: => CanThrow[Exception] ?=> T): Maybe[T] =
+  try value(using unsafeExceptions.canThrowAny) catch NonFatal => Unset
+
 extension [T](value: T)
   def dataStream(using src: Source[T]): DataStream throws src.E = src.read(value)
   
@@ -287,8 +290,6 @@ extension [T](value: T)
   def read[S](using readable: Readable[S], src: Source[T])
       : S throws readable.E | src.E | StreamCutError =
     readable.read(dataStream)
-
-case class githubIssue(id: Int) extends StaticAnnotation
 
 extension [T](xs: Iterable[T])
   transparent inline def mtwin: Iterable[(T, T)] = xs.map { x => (x, x) }
@@ -377,7 +378,27 @@ enum ExitStatus:
 
 object StackTrace:
   case class Frame(className: Text, method: Text, file: Text, line: Int, native: Boolean)
-  
+
+  def apply(exception: Throwable): StackTrace =
+    val frames = List(exception.getStackTrace.nn.map(_.nn)*).map:
+      frame =>
+        StackTrace.Frame(
+          Text(frame.getClassName.nn),
+          Text(frame.getMethodName.nn),
+          Text(frame.getFileName.nn),
+          frame.getLineNumber,
+          frame.isNativeMethod
+        )
+    
+    val cause = Option(exception.getCause)
+    val fullClassName: String = exception.getClass.nn.getName.nn
+    val fullClass: List[Text] = List(fullClassName.split("\\.").nn.map(_.nn).map(Text(_))*)
+    val className: Text = fullClass.last
+    val component: Text = Text(fullClassName.substring(0 max (fullClassName.length - className.s.length - 1)).nn)
+    val message = Text(Option(exception.getMessage).map(_.nn).getOrElse(""))
+    
+    StackTrace(component, className, message, frames, cause.map(_.nn).map(StackTrace(_)).maybe)
+
 case class StackTrace(component: Text, className: Text, message: Text,
     frames: List[StackTrace.Frame], cause: Maybe[StackTrace])
 
@@ -392,17 +413,4 @@ abstract class Error(cause: Maybe[Error] = Unset) extends Exception():
   def message: Text
   def explanation: Maybe[Text] = Unset
 
-  def stackTrace: StackTrace =
-    val frames = List(getStackTrace.nn.map(_.nn)*).map:
-      frame =>
-        StackTrace.Frame(
-          Text(frame.getClassName.nn),
-          Text(frame.getMethodName.nn),
-          Text(frame.getFileName.nn),
-          frame.getLineNumber,
-          frame.isNativeMethod
-        )
-    
-    StackTrace(component, className, message, frames, cause.option.map(_.stackTrace).maybe)
-  
-  
+  def stackTrace: StackTrace = StackTrace(this)
