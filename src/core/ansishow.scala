@@ -30,6 +30,8 @@ object AnsiShow extends FallbackAnsiShow:
     case None    => AnsiString("empty".show)
     case Some(v) => summon[AnsiShow[T]].ansiShow(v)
 
+  given AnsiShow[Exception] = e => summon[AnsiShow[StackTrace]].ansiShow(StackTrace.apply(e))
+
   given AnsiShow[StackTrace] = stack =>
     val methodWidth = stack.frames.map(_.method.length).max
     val classWidth = stack.frames.map(_.className.length).max
