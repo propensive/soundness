@@ -20,8 +20,8 @@ import rudiments.*
 import gossamer.*
 
 import com.vladsch.flexmark as cvf
-import cvf.ast as cvfa, cvf.parser.*, cvf.util.options.*, cvf.util.data.*, cvf.ext.tables,
-    tables.TablesExtension, cvf.ext.typographic.*, cvf.util.ast as cvfua
+import cvf.ast as cvfa, cvf.parser.*, cvf.util.options.*, cvf.ext.tables,
+    tables.TablesExtension, cvf.util.ast as cvfua
 import annotation.tailrec
 
 import java.util as ju
@@ -70,8 +70,8 @@ object Markdown:
       case Link(location: Text, children: Inline*)
 
   private val options = MutableDataSet()
-  options.set[ju.Collection[com.vladsch.flexmark.util.misc.Extension]](Parser.EXTENSIONS,
-      ju.Arrays.asList(TablesExtension.create()))
+  //options.set[ju.Collection[com.vladsch.flexmark.util.misc.Extension]](Parser.EXTENSIONS,
+  //    ju.Arrays.asList(TablesExtension.create()))
   
   private val parser = Parser.builder(options).nn.build().nn
 
