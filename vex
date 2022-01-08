@@ -1,7 +1,8 @@
 #!/bin/sh
-echo 'Downloading Vex 0.2.0...'
-curl -Lso "$0.tmp" 'https://github.com/propensive/vex/releases/download/v0.2.0/vex-0.2.0'
-echo 'Launching Vex...'
+echo "Downloading Vex 0.2.0..."
+curl -Lso "$0.tmp" "https://github.com/propensive/vex/releases/download/v0.2.0/vex-0.2.0"
+echo "Downloaded $(du -sh "$0.tmp" | cut -d'	' -f1)"
+echo 'Launching Vex for the first time...'
 chmod +x "$0.tmp"
 mv "$0.tmp" "$0"
-exec "$0"
+exec "$0" "$@"
