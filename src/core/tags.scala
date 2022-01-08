@@ -34,7 +34,6 @@ val Area = TagType["area", Nothing, Global | "alt" | "coords" | "shape" | "href"
 val Article = TagType["article", Flow, Global]("article") // further constraints on descendants
 val Aside = TagType["aside", Flow, Global]("aside")
 
-@githubIssue(2)
 val Audio = TagType["audio", Label, Global | "src" | "crossorigin" | "preload" | "autoplay" |
                         "loop" | "muted" | "controls"]
                    ("audio", inline = true)
@@ -152,10 +151,8 @@ val Meter = TagType["meter", Phrasing, Global | "value" | "min" | "max" | "low" 
 
 val Nav = TagType["nav", Flow, Global]("nav")
 
-@githubIssue(2)
 val Noscript = TagType["noscript", Label, Global]("noscript", inline = true)
 
-@githubIssue(2)
 val HObject = TagType["object", Label, Global | "data" | "htype" | "name" | "form" | "width" |
                           "height"]
                      ("object", inline = true)
@@ -236,7 +233,6 @@ val U = TagType["u", Phrasing, Global]("u", inline = true)
 val Ul = TagType["ul", "li" | ScriptSupporting, Global]("ul")
 val Var = TagType["var", Nothing, Global]("var", inline = true)
 
-@githubIssue(2)
 val Video = TagType["video", Label, Global | "src" | "crossorigin" | "poster" | "preload" | "loop" |
                         "autoplay" | "playsinline" | "muted" | "controls" | "width" | "height"]
                    ("video", inline = true)
