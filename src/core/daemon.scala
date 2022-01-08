@@ -23,11 +23,13 @@ import rudiments.*
 import scala.concurrent.*
 import scala.util.*
 
+import java.util.concurrent.atomic.AtomicInteger
+
 import encodings.Utf8
 
 import unsafeExceptions.canThrowAny
 
-case class CommandLine(args: List[Text], env: Map[Text, Text], script: Text,
+case class CommandLine(args: List[Text], env: Map[Text, Text], script: Unix.File,
                            stdin: () => DataStream, stdout: DataStream => Unit, exit: Int => Unit,
                            pwd: Unix.Directory, shutdown: () => Unit)
 extends Drain:
@@ -36,7 +38,10 @@ extends Drain:
 trait App:
   def main(using CommandLine): ExitStatus
 
-trait ServerApp() extends App:
+trait Daemon() extends App:
+
+  private val spawnCount: AtomicInteger = AtomicInteger(0)
+
   final def main(args: IArray[Text]): Unit =
     args.to(List) match
       case t"::start::" :: script :: fifo :: Int(pid) :: Nil =>
@@ -47,12 +52,18 @@ trait ServerApp() extends App:
         val env = System.getenv.nn.asScala.map(_.nn.show -> _.nn.show).to(Map)
         val systemStdin = Option(System.in).getOrElse(sys.exit(10)).nn
         def stdin(): DataStream = Util.readInputStream(systemStdin, 1.mb)
-        def stdout(ds: DataStream): Unit = ds.map(_.unsafeMutable).foreach(System.out.nn.writeBytes(_))
+        
+        def stdout(ds: DataStream): Unit = ds.map(_.unsafeMutable).foreach:
+          bytes => System.out.nn.write(bytes, 0, bytes.length)
+
         val dir =
           try Unix.parse(Sys.user.dir()).getOrElse(sys.exit(10)).directory(Expect)
           catch case err: KeyNotFoundError => sys.exit(10)
         
-        val commandLine = CommandLine(args, env, t"java", () => stdin(), stdout, sys.exit(_), dir, () => sys.exit(0))
+        val scriptFile = Unix.parse(List.getClass.nn.getProtectionDomain.nn.getCodeSource.nn
+            .getLocation.nn.getPath.nn.show).get.file
+        
+        val commandLine = CommandLine(args, env, scriptFile, () => stdin(), stdout, sys.exit(_), dir, () => sys.exit(0))
         
         main(using commandLine)()
 
@@ -63,9 +74,8 @@ trait ServerApp() extends App:
       val runnable: Runnable = () => try socket.file.delete() catch case e: Exception => ()
       Thread(runnable, "exoskeleton-cleanup")
 
-    case class AppInstance(pid: Int, script: Text = t"", args: List[Text] = Nil,
-                               env: Map[Text, Text] = Map(), runDir: Maybe[Unix.Directory] = Unset,
-                               scriptDir: Maybe[Unix.Directory] = Unset):
+    case class AppInstance(pid: Int, spawnId: Int, scriptFile: Maybe[Unix.File] = Unset, args: List[Text] = Nil,
+                               env: Map[Text, Text] = Map(), runDir: Maybe[Unix.Directory] = Unset):
       val shutdown: Promise[Unit] = Promise()
       val terminate: Promise[Unit] = Promise()
       def pwd: Unix.Directory throws PwdError =
@@ -77,20 +87,25 @@ trait ServerApp() extends App:
       
       def spawn(): Unit =
         val runnable: Runnable = () =>
-          val fifoIn = (runDir.otherwise(sys.exit(10)) / t"$script-$pid.stdin.sock").file
-          val fifoOut = Unix.Fifo((runDir.otherwise(sys.exit(10)) / t"$script-$pid.stdout.sock").file)
-          val terminate = Promise[Int]()
-          val workDir = pwd.otherwise(sys.exit(10))
-          
-          val commandLine = CommandLine(args, env, script, () => fifoIn.read[DataStream](1.mb),
-              _.writeTo(fifoOut), exit => terminate.complete(util.Success(exit)), workDir, () => sys.exit(0))
-          
-          val exit = main(using commandLine)
-          fifoOut.close()
-          val exitFile = (runDir.otherwise(sys.exit(10)) / t"$script-$pid.exit").file
-          exit().show.bytes.writeTo(exitFile)
+          try
+            val script = scriptFile.otherwise(sys.exit(10)).name
+            val fifoIn = (runDir.otherwise(sys.exit(10)) / t"$script-$pid.stdin.sock").file
+            val fifoOut = Unix.Fifo((runDir.otherwise(sys.exit(10)) / t"$script-$pid.stdout.sock").file)
+            val terminate = Promise[Int]()
+            val workDir = pwd.otherwise(sys.exit(10))
+            
+            val commandLine = CommandLine(args, env, scriptFile.otherwise(sys.exit(10)),
+                () => fifoIn.read[DataStream](1.mb), _.writeTo(fifoOut),
+                exit => terminate.complete(util.Success(exit)), workDir, () => sys.exit(0))
+            
+            val exit = main(using commandLine)
+            fifoOut.close()
+            val exitFile = (runDir.otherwise(sys.exit(10)) / t"$script-$pid.exit").file
+            exit().show.bytes.writeTo(exitFile)
+          catch case NonFatal(err) =>
+            ()
         
-        val thread = Thread(runnable, "exoskeleton-dispatcher")
+        val thread = Thread(runnable, t"exoskeleton-$spawnId".s)
         thread.start()
     
     def parseEnv(env: List[Text]): Map[Text, Text] = env.flatMap:
@@ -104,20 +119,15 @@ trait ServerApp() extends App:
       case (map, line) =>
         line.text.cut(t"\t").to(List) match
           case t"PROCESS" :: Int(pid) :: _ =>
-            map.updated(pid, AppInstance(pid))
+            map.updated(pid, AppInstance(pid, spawnCount.getAndIncrement()))
           
           case t"RUNDIR" :: Int(pid) :: dir :: _ =>
             Unix.parse(dir).fold(map):
               dir => map.updated(pid, map(pid).copy(runDir = dir.directory(Expect)))
           
-          case t"SCRIPT" :: Int(pid) :: script :: _ =>
-            map.updated(pid, map(pid).copy(script = script))
-          
-          case t"SCRIPTDIR" :: Int(pid) :: dir :: _ =>
-            Unix.parse(dir).fold(map):
-              dir =>
-                try map.updated(pid, map(pid).copy(scriptDir = dir.directory(Expect)))
-                catch case err: IoError => map
+          case t"SCRIPT" :: Int(pid) :: scriptDir :: script :: _ =>
+            Unix.parse(t"$scriptDir/$script").map(_.file).fold(map):
+              file => map.updated(pid, map(pid).copy(scriptFile = file))
           
           case t"ARGS" :: Int(pid) :: Int(count) :: args =>
             map.updated(pid, map(pid).copy(args = args.take(count)))
