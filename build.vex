@@ -71,7 +71,7 @@
       "id": "scintillate/servlet",
       "links": ["scintillate/server"],
       "dependencies": ["javax.servlet:javax.servlet-api:3.0.1"],
-      "jars": ["../../../.cache/coursier/v1/https/repo1.maven.org/maven2/javax/servlet/javax.servlet-api/3.0.1/javax.servlet-api-3.0.1.jar"],
+      "jars": ["https://repo1.maven.org/maven2/javax/servlet/javax.servlet-api/3.0.1/javax.servlet-api-3.0.1.jar"],
       "sources": ["src/servlet"],
       "version": "0.2.0",
       "docs": ["doc"]
