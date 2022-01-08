@@ -394,7 +394,7 @@ object StackTrace:
     val fullClassName: String = exception.getClass.nn.getName.nn
     val fullClass: List[Text] = List(fullClassName.split("\\.").nn.map(_.nn).map(Text(_))*)
     val className: Text = fullClass.last
-    val component: Text = Text(fullClassName.substring(0 max (fullClassName.length - className.s.length - 1)).nn)
+    val component: Text = Text(fullClassName.substring(0, 0 max (fullClassName.length - className.s.length - 1)).nn)
     val message = Text(Option(exception.getMessage).map(_.nn).getOrElse(""))
     
     StackTrace(component, className, message, frames, cause.map(_.nn).map(StackTrace(_)).maybe)
