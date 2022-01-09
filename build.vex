@@ -1,5 +1,9 @@
 {
-  "imports": ["../contextual/build.vex", "../wisteria/build.vex", "../probably/build.vex"],
+  "repos": [
+    { "base": "../contextual", "url": "https://github.com/propensive/contextual" },
+    { "base": "../wisteria", "url": "https://github.com/propensive/wisteria" }
+  ],
+  "imports": ["../contextual/build.vex", "../wisteria/build.vex"],
   "config": {
     "scalac": {
       "version": "3.1.2-RC1-bin-SNAPSHOT",
