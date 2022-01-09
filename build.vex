@@ -1,4 +1,7 @@
 {
+  "repos": [
+    { "base": "../gossamer", "url": "https://github.com/propensive/gossamer" }
+  ],
   "imports": ["../gossamer/build.vex"],
   "config": {
     "scalac": {
