@@ -385,7 +385,13 @@ object Uri:
     def name: String = "manifest"
     def serialize(uri: Uri): String = uri.show.s
 
-case class Uri(location: Text, params: Params) extends Dynamic, Shown[Uri]:
+  given (using Log): Streamable[Uri] = uri => LazyList:
+    try uri.get().as[Bytes]
+    catch
+      case err: ExcessDataError => throw StreamCutError()
+      case err: HttpError => throw StreamCutError()
+
+case class Uri(location: Text, params: Params = Params(Nil)) extends Dynamic, Shown[Uri]:
   private def makeQuery[T: QuerySerializer](value: T): Uri =
     Uri(location, params.append(summon[QuerySerializer[T]].params(value)))
 
