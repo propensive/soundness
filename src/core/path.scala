@@ -35,7 +35,7 @@ object Relative:
     
     recur(text, 0)
 
-case class Relative(val ascent: Int, val parts: List[Text]):
+case class Relative(ascent: Int, parts: List[Text]):
   def parent: Relative throws RootParentError =
     if parts.isEmpty then Relative(ascent + 1, List()) else Relative(ascent, parts.init)
   
@@ -82,9 +82,6 @@ trait Root(val separator: Text, val prefix: Text):
     infix def ++(relative: Relative): Path throws RootParentError
 
   object Path:
-    object Absolute:
-      given Show[Absolute] = path => path.parts.join(prefix, separator, t"")
-
     open class Absolute(val parts: List[Text]) extends Path:
       def parent: AbsolutePath throws RootParentError =
         if parts.isEmpty then throw RootParentError(root) else makeAbsolute(parts.init)
