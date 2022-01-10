@@ -309,6 +309,13 @@ extension (bs: Int)
   def gb: ByteSize = bs*1024*1024*1024
   def tb: ByteSize = bs*1024*1024*1024*1024
 
+extension (bs: Long)
+  def b: ByteSize = bs
+  def kb: ByteSize = bs*1024
+  def mb: ByteSize = bs*1024*1024
+  def gb: ByteSize = bs*1024*1024*1024
+  def tb: ByteSize = bs*1024*1024*1024*1024
+
 opaque type ByteSize = Long
 
 extension (obj: LazyList.type)
