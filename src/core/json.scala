@@ -68,6 +68,11 @@ object Json extends Dynamic:
   given clairvoyant.HttpReader[Json, JsonParseError] with
     def read(value: String): Json throws JsonParseError = Json.parse(Text(value))
 
+  given (using readable: Readable[Text]): Readable[Json] with
+    type E = JsonParseError | readable.E
+    def read(stream: DataStream) = Json.parse(readable.read(stream))
+    
+
   object Writer extends Derivation[Writer]:
     given Writer[Int] = JNum(_)
     given Writer[Text] = value => JString(value.s)
