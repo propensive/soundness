@@ -173,8 +173,8 @@ object IoError:
   enum Op:
     case Read, Write, Access, Create, Delete
 
-case class IoError(operation: IoError.Op, reason: IoError.Reason, path: Any) extends Error:
-  def message: Text = t"the $operation operation at ${path.toString} failed because $reason"
+case class IoError(operation: IoError.Op, reason: IoError.Reason, path: DiskPath) extends Error:
+  def message: Text = t"the $operation operation at ${path.show} failed because $reason"
 
 case class InotifyError() extends Error:
   def message: Text = t"the limit on the number of paths that can be watched has been exceeded"
