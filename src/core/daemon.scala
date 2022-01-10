@@ -29,9 +29,9 @@ import encodings.Utf8
 
 import unsafeExceptions.canThrowAny
 
-case class CommandLine(args: List[Text], env: Map[Text, Text], script: Unix.File,
+case class CommandLine(args: List[Text], env: Map[Text, Text], script: File,
                            stdin: () => DataStream, stdout: DataStream => Unit, exit: Int => Unit,
-                           pwd: Unix.Directory, shutdown: () => Unit)
+                           pwd: Directory, shutdown: () => Unit)
 extends Drain:
   def write(msg: Text): Unit = stdout(LazyList(msg.bytes))
 
@@ -39,13 +39,14 @@ trait App:
   def main(using CommandLine): ExitStatus
 
 trait Daemon() extends App:
+  daemon =>
 
   private val spawnCount: AtomicInteger = AtomicInteger(0)
 
   final def main(args: IArray[Text]): Unit =
     args.to(List) match
-      case t"::start::" :: script :: fifo :: Int(pid) :: Nil =>
-        val runnable: Runnable = () => server(script, fifo, pid)
+      case t"::start::" :: script :: fifo :: Int(pid) :: Int(watch) :: Nil =>
+        val runnable: Runnable = () => server(script, fifo, pid, watch)
         Thread(runnable, "exoskeleton-dispatcher").start()
       
       case args =>
@@ -67,18 +68,22 @@ trait Daemon() extends App:
         
         main(using commandLine)()
 
-  def server(script: Text, fifo: Text, serverPid: Int): Unit =
-    val socket: Unix.IoPath = Unix.parse(fifo).getOrElse(sys.exit(10))
+  def server(script: Text, fifo: Text, serverPid: Int, watchPid: Int): Unit =
+    val socket: DiskPath = Unix.parse(fifo).getOrElse(sys.exit(10))
+    val death: Runnable = () =>
+      try socket.file.delete() catch case e: Exception => ()
+    
+    ProcessHandle.of(watchPid).nn.get.nn.onExit.nn.thenRun:
+      () => sys.exit(2)
    
     Runtime.getRuntime.nn.addShutdownHook:
-      val runnable: Runnable = () => try socket.file.delete() catch case e: Exception => ()
-      Thread(runnable, "exoskeleton-cleanup")
+      Thread(death, "exoskeleton-cleanup")
 
-    case class AppInstance(pid: Int, spawnId: Int, scriptFile: Maybe[Unix.File] = Unset, args: List[Text] = Nil,
-                               env: Map[Text, Text] = Map(), runDir: Maybe[Unix.Directory] = Unset):
+    case class AppInstance(pid: Int, spawnId: Int, scriptFile: Maybe[File] = Unset, args: List[Text] = Nil,
+                               env: Map[Text, Text] = Map(), runDir: Maybe[Directory] = Unset):
       val shutdown: Promise[Unit] = Promise()
       val terminate: Promise[Unit] = Promise()
-      def pwd: Unix.Directory throws PwdError =
+      def pwd: Directory throws PwdError =
         try Unix.parse(env.getOrElse(t"PWD", throw PwdError())).getOrElse(throw PwdError()).directory(Expect)
         catch case err: IoError => throw PwdError()
 
@@ -90,7 +95,7 @@ trait Daemon() extends App:
           try
             val script = scriptFile.otherwise(sys.exit(10)).name
             val fifoIn = (runDir.otherwise(sys.exit(10)) / t"$script-$pid.stdin.sock").file
-            val fifoOut = Unix.Fifo((runDir.otherwise(sys.exit(10)) / t"$script-$pid.stdout.sock").file)
+            val fifoOut = Fifo((runDir.otherwise(sys.exit(10)) / t"$script-$pid.stdout.sock").file)
             val terminate = Promise[Int]()
             val workDir = pwd.otherwise(sys.exit(10))
             
@@ -148,5 +153,4 @@ trait Daemon() extends App:
             map
           
           case msg =>
-            System.out.nn.println(t"Unexpected message: ${msg.toString}")
             map
