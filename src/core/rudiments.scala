@@ -419,5 +419,6 @@ abstract class Error(cause: Maybe[Error] = Unset) extends Exception():
 
   def message: Text
   def explanation: Maybe[Text] = Unset
-
   def stackTrace: StackTrace = StackTrace(this)
+
+
