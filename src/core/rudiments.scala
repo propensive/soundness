@@ -177,9 +177,9 @@ object Util:
     stream.map(_.unsafeMutable).foreach(out.write(_))
 
 object Source:
-  given Source[Stdin.type] with
+  given Source[SystemIn.type] with
     type E = StreamCutError
-    def read(value: Stdin.type): DataStream throws StreamCutError =
+    def read(value: SystemIn.type): DataStream throws StreamCutError =
       if System.in == null then throw StreamCutError() else Util.readInputStream(System.in, 10.mb)
 
 trait Source[T]:
@@ -187,14 +187,14 @@ trait Source[T]:
   def read(value: T): DataStream throws E
 
 object Sink:
-  given Sink[Stdout.type] with
+  given Sink[SystemOut.type] with
     type E = StreamCutError
-    def write(value: Stdout.type, stream: DataStream) =
+    def write(value: SystemOut.type, stream: DataStream) =
       if System.out == null then throw StreamCutError() else Util.write(stream, System.out)
   
-  given Sink[Stderr.type] with
+  given Sink[SystemErr.type] with
     type E = StreamCutError
-    def write(value: Stderr.type, stream: DataStream) =
+    def write(value: SystemErr.type, stream: DataStream) =
       if System.err == null then throw StreamCutError() else Util.write(stream, System.err)
   
   given Sink[ji.OutputStream] with
@@ -270,9 +270,9 @@ trait Readable[T]:
         def read(stream: DataStream): S throws E | StreamCutError =
           fn(readable.read(stream))
 
-object Stdin
-object Stdout
-object Stderr
+object SystemIn
+object SystemOut
+object SystemErr
 
 def safely[T](value: => CanThrow[Exception] ?=> T): Maybe[T] =
   try value(using unsafeExceptions.canThrowAny) catch NonFatal => Unset
