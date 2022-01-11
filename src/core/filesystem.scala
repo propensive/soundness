@@ -336,7 +336,7 @@ class Filesystem(pathSeparator: Text, fsPrefix: Text) extends Root(pathSeparator
     lazy val javaPath: jnf.Path = javaFile.toPath.nn
 
     def name: Text = path.parts.lastOption.getOrElse(prefix)
-    def fullname: Text = javaFile.getAbsolutePath.nn.show
+    def fullname: Text = path.javaFile.getAbsolutePath.nn.show
     def uriString: Text = Showable(javaFile.toURI).show
     def exists(): Boolean = Files.exists(javaPath)
     def parent: Directory throws RootParentError = Directory(path.parent)
