@@ -302,19 +302,22 @@ object Line:
       
       recur(summon[Readable[LazyList[Text]]].read(stream))
       
-object drains:
-  given stdout: Drain = txt =>
-    try summon[Sink[Stdout.type]].write(Stdout, LazyList(txt.bytes))
+object stdouts:
+  given stdout: Stdout = txt =>
+    try summon[Sink[SystemOut.type]].write(SystemOut, LazyList(txt.bytes))
     catch case err: Exception => ()
   
-  given devNull: Drain = txt => ()
+  given drain: Stdout = txt => ()
 
-object Drain:
-  def apply[T](value: T)(using sink: Sink[T]): Drain = txt =>
+object Stdout:
+  def apply[T](value: T)(using sink: Sink[T]): Stdout = txt =>
     try sink.write(value, LazyList(txt.bytes))
     catch case err: Exception => ()
 
-trait Drain:
+trait Stderr:
+  def write(msg: Text): Unit
+
+trait Stdout:
   def write(msg: Text): Unit
 
 extension (obj: Boolean.type) def unapply(str: Text): Option[Boolean] =
@@ -342,5 +345,5 @@ extension (obj: Double.type) def unapply(str: Text): Option[Double] =
   try Some(java.lang.Double.parseDouble(str.s)) catch NumberFormatException => None
 
 object Out:
-  def print[T: Show](msg: T)(using drain: Drain): Unit = drain.write(msg.show)
-  def println[T: Show](msg: T)(using Drain): Unit = print(Text(s"${msg.show}\n"))
+  def print[T: Show](msg: T)(using stdout: Stdout): Unit = stdout.write(msg.show)
+  def println[T: Show](msg: T)(using Stdout): Unit = print(Text(s"${msg.show}\n"))
