@@ -106,7 +106,7 @@ object Log:
 object Everything extends Realm(t"")
 
 @implicitNotFound("eucalyptus: a given Log instance is required, for example:\n    import euc"+
-    "alyptus.*\n    given Log(Everything |-> Stdout)\nor,\n    import eucalyptus.*\n    given Log "+
+    "alyptus.*\n    given Log(Everything |-> SystemOut)\nor,\n    import eucalyptus.*\n    given Log "+
     "= Log.silent")
 case class Log(rules: Rule[?, ?]*):
 
@@ -168,14 +168,14 @@ case class Entry(realm: Realm, level: Level, message: AnsiString, timestamp: Tim
 
 object LogFormat:
   val t0 = Timestamp()
-  given LogFormat[Stdout.type, AnsiString] with
+  given LogFormat[SystemOut.type, AnsiString] with
     override def interval: Int = 50
     def serialize(value: AnsiString): Bytes = value.render.bytes
 
     def format(entry: Entry): AnsiString =
       ansi"${entry.timestamp.ansi} ${entry.level.ansi} ${entry.realm.ansi.span(8)} ${entry.message}"
 
-  val timed: LogFormat[Stdout.type, AnsiString] = new LogFormat[Stdout.type, AnsiString]:
+  val timed: LogFormat[SystemOut.type, AnsiString] = new LogFormat[SystemOut.type, AnsiString]:
     override def interval: Int = 50
     def serialize(value: AnsiString): Bytes = value.render.bytes
     def format(entry: Entry): AnsiString =
