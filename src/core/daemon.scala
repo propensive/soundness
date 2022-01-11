@@ -32,7 +32,7 @@ import unsafeExceptions.canThrowAny
 case class CommandLine(args: List[Text], env: Map[Text, Text], script: File,
                            stdin: () => DataStream, stdout: DataStream => Unit, exit: Int => Unit,
                            pwd: Directory, shutdown: () => Unit)
-extends Drain:
+extends Stdout:
   def write(msg: Text): Unit = stdout(LazyList(msg.bytes))
 
 trait App:
