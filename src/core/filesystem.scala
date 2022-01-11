@@ -132,6 +132,13 @@ trait DiskPath:
   def createFile(overwrite: Boolean = false): File throws IoError
   def filesystem: Filesystem
   def +(relative: Relative): DiskPath throws RootParentError
+  def relativeTo(path: DiskPath): Option[Relative] =
+    val fs = filesystem
+    this match
+      case from: fs.DiskPath => path match
+        case to: fs.DiskPath   => Some(from.relativeTo(to))
+        case _                 => None
+      case _                 => None
   
   @targetName("access")
   def /(child: Text): DiskPath throws RootParentError
