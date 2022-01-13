@@ -206,7 +206,7 @@ extends Root(t"/", t""):
   case class Resource(path: ClasspathRef):
     def read[T](limit: ByteSize = 64.kb)(using readable: Readable[T])
             : T throws ClasspathRefError | StreamCutError | readable.E =
-      val resource = classLoader.getResourceAsStream(path.show.s)
+      val resource = classLoader.getResourceAsStream(path.show.drop(10).s)
       if resource == null then throw ClasspathRefError(classpath)(path)
       val stream = Util.readInputStream(resource.nn, limit)
       readable.read(stream)
