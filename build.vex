@@ -44,6 +44,7 @@
       "links": ["jovian/core"],
       "sources": ["src/core"],
       "version": "0.2.0",
+      "resources": ["res"],
       "docs": ["doc"]
     }
   ]
