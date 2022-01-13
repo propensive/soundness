@@ -45,6 +45,13 @@
       "docs": ["doc"]
     },
     {
+      "name": "Clairvoyant Time",
+      "id": "clairvoyant/time",
+      "sources": ["src/time"],
+      "version": "0.2.0",
+      "docs": ["doc"]
+    },
+    {
       "name": "Clairvoyant HTML",
       "id": "clairvoyant/html",
       "sources": ["src/html"],
