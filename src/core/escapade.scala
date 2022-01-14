@@ -28,49 +28,54 @@ object AnsiString:
 
   given Joinable[AnsiString] = _.fold(empty)(_ + _)
     
-  def apply[T: Show](value: T, wrapper: TextStyle => TextStyle): AnsiString =
+  def make[T: Show](value: T, transform: Ansi.Transform): AnsiString =
     val str: Text = value.show
+    AnsiString(str, TreeMap(Span(0, str.length) -> transform))
 
-    AnsiString(str, TreeMap(
-      0          -> List(Ansi.Change.Push(wrapper)),
-      str.length -> List(Ansi.Change.Pop)
-    ))
+object Span:
+  def apply(start: Int, end: Int): Span = (start.toLong << 32) + end
+  given Ordering[Span] = Ordering.Long.on[Span](identity(_))
+
+opaque type Span = Long
+
+extension (span: Span)
+  def start: Int = (span >> 32).toInt
+  def end: Int = span.toInt
+  def isEmpty: Boolean = start == end
+  def drop(n: Int): Span = Span((start - n) max 0, (end - n) max 0)
+  def take(n: Int): Span = Span(start min n, end min n)
+  def +(n: Int): Span = Span(start + n, end + n)
 
 object rendering:
   given plain: Show[AnsiString] = _.plain
   given ansi: Show[AnsiString] = _.render
-
-case class AnsiString(string: Text, escapes: TreeMap[Int, List[Ansi.Change]] = TreeMap()):
+  
+case class AnsiString(string: Text, escapes: TreeMap[Span, Ansi.Transform] = TreeMap()):
   def length: Int = string.length
+  def span(n: Int): AnsiString = take(n).padTo(n)
+  def plain: Text = string
+  def explicit: Text = render.flatMap { ch => if ch.toInt == 27 then t"\\e" else ch.show }
+  def upper: AnsiString = AnsiString(string.upper, escapes)
+  def lower: AnsiString = AnsiString(string.lower, escapes)
 
   def drop(n: Int): AnsiString =
-    val pushes = escapes.filter(_(0) < n).flatMap(_(1)).foldLeft(List[Ansi.Change]()):
-      case (stack, Ansi.Change.Push(fn))   => Ansi.Change.Push(fn) :: stack
-      case (head :: tail, Ansi.Change.Pop) => tail
-      case (stack, _)                      => stack
-    .reverse
+    val newEscapes: TreeMap[Span, Ansi.Transform] =
+      escapes.map:
+        case (span, transform) => (span.drop(n): Span, transform)
+      .filter(!_(0).isEmpty)
+    
+    AnsiString(string.drop(n), newEscapes)
 
-    val init = escapes.getOrElse(n, Nil) ++ pushes
-
-    AnsiString(string.drop(n), escapes.collect:
-      case (i, e) if i >= n => (i - n, e)
-    .updated(0, init))
+  def take(n: Int): AnsiString =
+    val newEscapes: TreeMap[Span, Ansi.Transform] =
+      escapes.map:
+        case (span, transform) => (span.take(n): Span, transform)
+      .filter(!_(0).isEmpty)
+    
+    AnsiString(string.take(n), newEscapes)
 
   def padTo(n: Int, char: Char = ' ') =
     if length < n then this + AnsiString(char.show*(n - length)) else this
-
-  def span(n: Int): AnsiString = take(n).padTo(n)
-
-  def take(n: Int): AnsiString =
-    val pops = List.fill(0.max(escapes.filter(_(0) > n).flatMap(_(1)).foldLeft(0):
-      case (count, Ansi.Change.Push(_))    => count - 1
-      case (count, Ansi.Change.Pop)        => count + 1
-      case (count, Ansi.Change.Literal(_)) => count
-    ))(Ansi.Change.Pop)
-    
-    val newEscapes = escapes.filter(_(0) <= n)
-    
-    AnsiString(string.take(n), newEscapes.updated(n, escapes.getOrElse(n, Nil) ++ pops))
 
   def cut(delim: Text): List[AnsiString] =
     val parts = plain.cut(delim)
@@ -78,67 +83,43 @@ case class AnsiString(string: Text, escapes: TreeMap[Int, List[Ansi.Change]] = T
       case (part, idx) =>
         drop(parts.take(idx).map(_.length).sum + idx*delim.length).take(part.length)
 
-  def plain: Text = string
-  
-  def explicit: Text = render.flatMap:
-    ch => if ch.toInt == 27 then t"\\e" else ch.show
-  
-  def upper: AnsiString = AnsiString(string.upper, escapes)
-  def lower: AnsiString = AnsiString(string.lower, escapes)
-
   @targetName("times")
   def *(n: Int): AnsiString = if n == 0 then AnsiString.empty else this*(n - 1)+this
 
   def render: Text =
     val buf = StringBuilder()
     
-    def build(treeMap: TreeMap[Int, List[Ansi.Change]], pos: Int = 0, stack: List[TextStyle] = Nil): Text =
-
-      if treeMap.isEmpty then
+    def recur(spans: TreeMap[Span, Ansi.Transform], pos: Int = 0, style: TextStyle = TextStyle(),
+                  stack: List[(Span, TextStyle)] = Nil): Text =
+      if spans.isEmpty then
         buf.add(string.slice(pos, string.length))
         buf.text
+      else if stack.isEmpty || spans.head(0).start <= stack.head(0).end then
+        val newStyle = spans.head(1)(style)
+        buf.add(style.changes(newStyle))
+        buf.add(string.slice(pos, spans.head(0).start))
+        recur(spans.tail, spans.head(0).start, newStyle, spans.head(0) -> style :: stack)
       else
-        buf.add(string.show.slice(pos, treeMap.head(0)))
-        
-        val newStack = treeMap.head(1).sortBy(_ != Ansi.Change.Pop).foldLeft(stack):
-          case (head :: tail, Ansi.Change.Pop) =>
-            val next = tail.headOption.getOrElse(TextStyle())
-            buf.add(head.changes(next))
-            tail
-          
-          case (Nil, Ansi.Change.Pop) =>
-            Nil
-          
-          case (stack, Ansi.Change.Push(fn)) =>
-            val currentStyle = stack.headOption.getOrElse(TextStyle())
-            val next = fn(currentStyle)
-            buf.add(currentStyle.changes(next))
-            next :: stack
-          
-          case (stack, Ansi.Change.Literal(str)) =>
-            buf.add(27.toChar)
-            buf.add(str)
-            stack
-        
-        build(treeMap.tail, treeMap.head(0), newStack)
-    
-    build(escapes)
+        buf.add(style.changes(stack.head(1)))
+        buf.add(string.slice(pos, stack.head(0).end))
+        recur(spans, stack.head(0).end, stack.head(1), stack.tail)
 
-  private def shift(n: Int): TreeMap[Int, List[Ansi.Change]] =
-    escapes.map:
-      (k, v) => (k + n, v)
-    .to(TreeMap)
+    recur(escapes)
+
+  private def shift(n: Int): TreeMap[Span, Ansi.Transform] =
+    escapes.map { (s, v) => (s + n: Span) -> v }
 
   @targetName("add")
   infix def +(str: Text): AnsiString = AnsiString(t"$string$str", escapes)
-  def addEsc(esc: Ansi.Change): AnsiString = addEsc(string.length, esc)
+  //def addEsc(esc: Ansi.Change): AnsiString = addEsc(string.length, esc)
   
   def addEsc(pos: Int, esc: Ansi.Change): AnsiString =
-    AnsiString(string, escapes.updated(string.length, escapes.get(string.length).getOrElse(Nil) :+ esc))
+    AnsiString(string, escapes.updated(span,
+        escapes.get(span).fold(transform)(_.andThen(transform))))
   
   @targetName("add")
-  infix def +(ansi: AnsiString): AnsiString =
-    AnsiString(t"$string${ansi.string}", escapes ++ ansi.shift(length))
+  infix def +(other: AnsiString): AnsiString =
+    AnsiString(t"$string${other.string}", escapes ++ other.shift(length))
 
 type Stylize[T] = Substitution[Ansi.Input, T, "esc"]
 
@@ -146,6 +127,7 @@ object Stylize:
   def apply(fn: TextStyle => TextStyle): Ansi.Input.Apply = Ansi.Input.Apply(fn)
 
 object Ansi:
+  type Transform = Ansi.Change => Ansi.Change
   def strip(txt: Text): Text = txt.sub(t"""\e\\[?.*?[\\@-~]""", t"")
 
   given Substitution[Ansi.Input, Text, "t"] = str => Ansi.Input.Str(AnsiString(str))
@@ -174,12 +156,7 @@ object Ansi:
     case Esc(on: Text, off: Text)
     case Apply(color: TextStyle => TextStyle)
 
-  enum Change:
-     case Push(stateChange: TextStyle => TextStyle)
-     case Pop
-     case Literal(str: Text)
-
-  case class State(string: AnsiString, last: Option[Ansi.Change], stack: List[(Char, Ansi.Change)]):
+  case class State(string: AnsiString, last: Option[Transform], stack: List[(Char, Transform)]):
     def add(str: Text): State = copy(string = string + str, last = None)
     def addEsc(esc: Ansi.Change): State = copy(string = string.addEsc(esc), last = None)
     def addEsc(pos: Int, esc: Ansi.Change): State = copy(string = string.addEsc(pos, esc), last = None)
@@ -187,17 +164,20 @@ object Ansi:
       string.string == t"" && string.escapes.isEmpty && last.isEmpty && stack.isEmpty
 
   object Interpolator extends contextual.Interpolator[Input, State, AnsiString]:
-    erased given CanThrow[OutOfRangeError] = compiletime.erasedValue
+    //erased given CanThrow[OutOfRangeError] = compiletime.erasedValue
     def initial: State = State(AnsiString(t""), None, Nil)
 
     private def closures(state: State, str: Text): State =
       if state.stack.isEmpty then state.add(str)
       else
-        try
-          val i = str.where(_ == state.stack.head(0))
-          val newState = state.copy(stack = state.stack.tail).add(str.take(i)).addEsc(state.stack.head(1))
-          closures(newState, str.show.slice(i + 1, str.length))
-        catch case err: OutOfRangeError => state.add(str)
+        str.indexOf(state.stack.head(0)) match
+          case -1 =>
+            state.add(str)
+          
+          case i =>
+            val newState = state.copy(stack = state.stack.tail).add(str.show.slice(0, i).s).addEsc(state.stack.head(1))
+            closures(newState, str.show.slice(i + 1, str.length).s)
+
 
     private def complement(ch: '[' | '(' | '{' | '<' | '«'): ']' | ')' | '}' | '>' | '»' = ch match
       case '[' => ']'
