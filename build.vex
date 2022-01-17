@@ -1,4 +1,9 @@
 {
+  "repos": [
+    { "base": "../clairvoyant", "url": "https://github.com/propensive/clairvoyant" },
+    { "base": "../iridescence", "url": "https://github.com/propensive/iridescence" },
+    { "base": "../gossamer", "url": "https://github.com/propensive/gossamer" }
+  ],
   "imports": ["../clairvoyant/build.vex", "../iridescence/build.vex", "../gossamer/build.vex"],
   "config": {
     "scalac": {
