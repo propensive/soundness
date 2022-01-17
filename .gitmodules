@@ -109,12 +109,16 @@
 [submodule "mod/profanity"]
 	path = mod/profanity
 	url = https://github.com/propensive/profanity
+	branch = main
 [submodule "mod/tarantula"]
 	path = mod/tarantula
 	url = https://github.com/propensive/tarantula
+	branch = main
 [submodule "mod/harlequin"]
 	path = mod/harlequin
 	url = https://github.com/propensive/harlequin
+	branch = main
 [submodule "mod/polyvinyl"]
 	path = mod/polyvinyl
 	url = https://github.com/propensive/polyvinyl
+	branch = main
