@@ -1,6 +1,6 @@
 [<img alt="GitHub Workflow" src="https://img.shields.io/github/workflow/status/propensive/escapade/Build/main?style=for-the-badge" height="24">](https://github.com/propensive/escapade/actions)
+[<img src="https://img.shields.io/maven-central/v/com.propensive/escapade-core?color=2465cd&style=for-the-badge" height="24">](https://search.maven.org/artifact/com.propensive/escapade-core)
 [<img src="https://img.shields.io/discord/633198088311537684?color=8899f7&label=DISCORD&style=for-the-badge" height="24">](https://discord.gg/v7CjtbnwDq)
-[<img src="https://vent.dev/badge/propensive/escapade" height="24">](https://vent.dev/)
 <img src="/doc/images/github.png" valign="middle">
 
 # Escapade
