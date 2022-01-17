@@ -49,6 +49,7 @@
       "id": "jovian/core",
       "links": [
         "clairvoyant/html",
+        "clairvoyant/time",
         "gastronomy/core",
         "slalom/core",
         "kaleidoscope/core",

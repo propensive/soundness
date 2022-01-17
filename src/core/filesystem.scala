@@ -59,19 +59,33 @@ case class Fifo(file: File):
   val out = ji.FileOutputStream(file.javaFile, false)
   def close(): Unit = out.close()
 
+enum Permission:
+  case Read, Write, Exec
+
 trait Inode:
   def javaPath: jnf.Path
   def javaFile: ji.File
   def name: Text
   def fullname: Text
+  def path: DiskPath
   def uriString: Text
-  def exists(): Boolean
+  def exists(): Boolean = javaFile.exists()
   def parent: Directory throws RootParentError
-  def lastModified: Long
+  def modified(using time: clairvoyant.Timekeeping): time.Type
   def copyTo(dest: DiskPath): Inode throws IoError
   def delete(): Unit throws IoError
   def readable: Boolean = Files.isReadable(javaPath)
   def writable: Boolean = Files.isWritable(javaPath)
+
+  def setPermissions(readable: Maybe[Boolean] = Unset, writable: Maybe[Boolean] = Unset,
+                         executable: Maybe[Boolean] = Unset)
+                    : Unit throws IoError =
+    val f = javaFile
+    
+    if !readable.option.fold(true)(f.setReadable(_)) |
+        !writable.option.fold(true)(f.setWritable(_)) |
+        !executable.option.fold(true)(f.setExecutable(_))
+    then throw IoError(IoError.Op.Permissions, IoError.Reason.AccessDenied, path)
 
 object File:
   given Show[File] = _.fullname
@@ -97,7 +111,6 @@ trait File extends Inode:
   def path: DiskPath
   def executable: Boolean = Files.isExecutable(javaPath)
   def copyTo(dest: DiskPath): File throws IoError
-  def modified: Long
   
   def read[T](limit: ByteSize = 64.kb)(using readable: Readable[T])
              : T throws readable.E | IoError | StreamCutError
@@ -120,7 +133,7 @@ trait DiskPath:
   def javaFile: ji.File
   def exists(): Boolean
   def parent: DiskPath throws RootParentError
-  def file: File throws IoError
+  def file(creation: Creation = Creation.Ensure): File throws IoError
   def parts: List[Text]
   def directory(creation: Creation = Creation.Ensure): Directory throws IoError
   def symlink: Symlink throws IoError
@@ -129,7 +142,6 @@ trait DiskPath:
   def rename(fn: Text => Text): DiskPath
   def name: Text
   def prefix: Text
-  def createFile(overwrite: Boolean = false): File throws IoError
   def filesystem: Filesystem
   def +(relative: Relative): DiskPath throws RootParentError
   def relativeTo(path: DiskPath): Option[Relative] =
@@ -140,6 +152,10 @@ trait DiskPath:
         case _                 => None
       case _                 => None
   
+  def isFile: Boolean = javaFile.exists() && !javaFile.isDirectory
+  def isDirectory: Boolean = javaFile.exists() && javaFile.isDirectory
+  def isSymlink: Boolean = javaFile.exists() && Files.isSymbolicLink(javaFile.toPath)
+    
   @targetName("access")
   def /(child: Text): DiskPath throws RootParentError
   
@@ -161,9 +177,7 @@ trait Directory extends Inode:
 object IoError:
   object Reason:
     given Show[Reason] =
-      case NotFile              => t"the path does not refer to a file"
-      case NotDirectory         => t"the path does not refer to a directory"
-      case NotSymlink           => t"the path does not refer to a symlink"
+      case WrongType            => t"the path refers to the wrong type of node"
       case DoesNotExist         => t"no node exists at this path"
       case AlreadyExists        => t"a node already exists at this path"
       case AccessDenied         => t"the operation is not permitted on this path"
@@ -171,14 +185,13 @@ object IoError:
       case NotSupported         => t"the filesystem does not support it"
 
   enum Reason:
-    case NotFile, NotDirectory, NotSymlink, DoesNotExist, AlreadyExists, AccessDenied,
-        DifferentFilesystems, NotSupported
+    case WrongType, DoesNotExist, AlreadyExists, AccessDenied, DifferentFilesystems, NotSupported
 
   object Op:
     given Show[Op] = Showable(_).show.lower
 
   enum Op:
-    case Read, Write, Access, Create, Delete
+    case Read, Write, Access, Permissions, Create, Delete
 
 case class IoError(operation: IoError.Op, reason: IoError.Reason, path: DiskPath) extends Error:
   def message: Text = t"the $operation operation at ${path.show} failed because $reason"
@@ -252,25 +265,45 @@ class Filesystem(pathSeparator: Text, fsPrefix: Text) extends Root(pathSeparator
     def name: Text = elements.last
     def fullname: Text = elements.join(fsPrefix, separator, t"")
 
-    def file: File throws IoError =
-      if !exists() then throw IoError(IoError.Op.Access, IoError.Reason.DoesNotExist, this)
-      if isDirectory then throw IoError(IoError.Op.Access, IoError.Reason.NotFile, this)
-      
-      File(this)
 
     def +(relative: Relative): DiskPath throws RootParentError =
       if relative.ascent == 0 then DiskPath(elements ++ relative.parts)
       else parent + relative.copy(ascent = relative.ascent - 1)
 
+    def file(creation: Creation = Creation.Ensure): File throws IoError =
+      fs.synchronized:
+        import IoError.*
+        creation match
+          case Creation.Create if exists() =>
+            throw IoError(Op.Create, Reason.AlreadyExists, this)
+          
+          case Creation.Expect if !exists() =>
+            throw IoError(Op.Access, Reason.DoesNotExist, this)
+          
+          case Creation.Ensure if !exists() =>
+          
+          case _ =>
+            ()
+
+        val file = File(this)
+        try
+          if !parent.exists() && !parent.javaFile.mkdirs()
+          then throw IoError(Op.Create, Reason.AccessDenied, this)
+        catch case err: RootParentError => throw IoError(Op.Create, Reason.AccessDenied, this)
+        
+        if !exists() then File(this).touch()
+        if !isFile then throw IoError(IoError.Op.Access, IoError.Reason.WrongType, this)
+        
+        File(this)
 
     def directory(creation: Creation = Creation.Ensure): Directory throws IoError = fs.synchronized:
       import IoError.*
       creation match
         case Creation.Create if exists() =>
-          throw IoError(Op.Access, Reason.DoesNotExist, this)
+          throw IoError(Op.Create, Reason.AlreadyExists, this)
         
         case Creation.Expect if !exists() =>
-          throw IoError(Op.Access, Reason.AlreadyExists, this)
+          throw IoError(Op.Access, Reason.DoesNotExist, this)
         
         case Creation.Ensure if !exists() =>
           if !javaFile.mkdirs() then throw IoError(Op.Create, Reason.AccessDenied, this)
@@ -283,7 +316,7 @@ class Filesystem(pathSeparator: Text, fsPrefix: Text) extends Root(pathSeparator
       if !exists() && creation == Creation.Expect
       then throw IoError(IoError.Op.Access, IoError.Reason.DoesNotExist, this)
       
-      if !isDirectory then throw IoError(IoError.Op.Access, IoError.Reason.NotDirectory, this)
+      if !isDirectory then throw IoError(IoError.Op.Access, IoError.Reason.WrongType, this)
       
       Directory(this)
   
@@ -292,20 +325,16 @@ class Filesystem(pathSeparator: Text, fsPrefix: Text) extends Root(pathSeparator
       then throw IoError(IoError.Op.Access, IoError.Reason.DoesNotExist, this)
       
       if !Files.isSymbolicLink(javaFile.toPath)
-      then throw IoError(IoError.Op.Access, IoError.Reason.NotSymlink, this)
+      then throw IoError(IoError.Op.Access, IoError.Reason.WrongType, this)
       
       Symlink(this, parse(Showable(Files.readSymbolicLink(Paths.get(fullname.s))).show).get)
 
-    def isFile: Boolean = javaFile.exists() && !javaFile.isDirectory
-    def isDirectory: Boolean = javaFile.exists() && javaFile.isDirectory
-    def isSymlink: Boolean = javaFile.exists() && Files.isSymbolicLink(javaFile.toPath)
-    
     def descendantFiles(descend: (jovian.Directory => Boolean) = _ => true)
                        : LazyList[File] throws IoError =
       if javaFile.isDirectory
       then directory(Expect).files.to(LazyList) #::: directory(Expect).subdirectories.filter(
           descend).to(LazyList).flatMap(_.path.descendantFiles(descend))
-      else LazyList(file)
+      else LazyList(file(Expect))
 
     def inode: Inode throws IoError =
       
@@ -321,16 +350,6 @@ class Filesystem(pathSeparator: Text, fsPrefix: Text) extends Root(pathSeparator
     
     def exists(): Boolean = javaFile.exists()
   
-    def createFile(overwrite: Boolean = false): File throws IoError =
-      if !overwrite && exists()
-      then throw IoError(IoError.Op.Create, IoError.Reason.AlreadyExists, this)
-      
-      try ji.FileOutputStream(javaFile).close()
-      catch case e =>
-        throw IoError(IoError.Op.Create, IoError.Reason.AccessDenied, this)
-  
-      File(this)
-    
   sealed trait Inode(val path: DiskPath) extends jovian.Inode:
     lazy val javaFile: ji.File = ji.File(fullname.s)
     lazy val javaPath: jnf.Path = javaFile.toPath.nn
@@ -338,12 +357,14 @@ class Filesystem(pathSeparator: Text, fsPrefix: Text) extends Root(pathSeparator
     def name: Text = path.parts.lastOption.getOrElse(prefix)
     def fullname: Text = path.javaFile.getAbsolutePath.nn.show
     def uriString: Text = Showable(javaFile.toURI).show
-    def exists(): Boolean = Files.exists(javaPath)
     def parent: Directory throws RootParentError = Directory(path.parent)
     def directory: Option[Directory]
     def file: Option[File]
     def symlink: Option[Symlink]
-    def lastModified: Long = javaFile.lastModified
+    
+    def modified(using time: clairvoyant.Timekeeping): time.Type =
+      time.from(javaFile.lastModified)
+    
     def copyTo(dest: jovian.DiskPath): jovian.Inode throws IoError
     def delete(): Unit throws IoError
 
@@ -351,7 +372,6 @@ class Filesystem(pathSeparator: Text, fsPrefix: Text) extends Root(pathSeparator
     def directory: Option[Directory] = None
     def file: Option[File] = Some(this)
     def symlink: Option[Symlink] = None
-    def modified: Long = javaFile.lastModified
     
     def delete(): Unit throws IoError =
       try javaFile.delete()
@@ -371,7 +391,7 @@ class Filesystem(pathSeparator: Text, fsPrefix: Text) extends Root(pathSeparator
       catch IOException =>
         throw IoError(IoError.Op.Write, IoError.Reason.AccessDenied, dest)
       
-      dest.file
+      dest.file(Expect)
 
     def hardLinkCount(): Int throws IoError =
       try Files.getAttribute(javaPath, "unix:nlink") match
@@ -392,7 +412,7 @@ class Filesystem(pathSeparator: Text, fsPrefix: Text) extends Root(pathSeparator
         case e: jnf.AccessDeniedException =>
           throw IoError(IoError.Op.Write, IoError.Reason.AccessDenied, dest)
 
-      dest.file
+      dest.file(Expect)
 
   case class Symlink(symlinkPath: DiskPath, target: jovian.DiskPath)
   extends Inode(symlinkPath), jovian.Symlink:
@@ -470,13 +490,14 @@ class Filesystem(pathSeparator: Text, fsPrefix: Text) extends Root(pathSeparator
                 case _ =>
                   throw Impossible("Watch service should always return a Path")
               
-              event.kind match
+              try event.kind match
                 case ENTRY_CREATE => if path.isDirectory
                                      then List(FileEvent.NewDirectory(path.directory(Expect)))
-                                     else List(FileEvent.NewFile(path.file))
-                case ENTRY_MODIFY => List(FileEvent.Modify(path.file))
+                                     else List(FileEvent.NewFile(path.file(Expect)))
+                case ENTRY_MODIFY => List(FileEvent.Modify(path.file(Expect)))
                 case ENTRY_DELETE => List(FileEvent.Delete(path))
                 case _            => Nil
+              catch case err: IoError => Nil
         .flatten
       
         if continue then
@@ -600,10 +621,6 @@ class Filesystem(pathSeparator: Text, fsPrefix: Text) extends Root(pathSeparator
   //   def extantParents(): Path =
   //     parent.mkdir()
   //     path
-
-  //   def executable: Boolean = Files.isExecutable(javaPath)
-  //   def readable: Boolean = Files.isReadable(javaPath)
-  //   def writable: Boolean = Files.isWritable(javaPath)
 
   //   def setExecutable(exec: Boolean): Unit throws UnchangeablePermissions =
   //     try javaFile.setExecutable(exec).unit catch e => throw UnchangeablePermissions(path)
