@@ -17,7 +17,6 @@
 package adversaria
 
 import rudiments.*
-import gossamer.*
 import scala.quoted.*
 import scala.annotation.StaticAnnotation as Ann
 
@@ -84,11 +83,11 @@ object Macros:
     val field = fn.asTerm match
       case Inlined(_, _, Block(List(DefDef(_, _, _, Some(Select(_, term)))), _)) =>
         tpe.typeSymbol.caseFields.find(_.name == term).getOrElse:
-          report.errorAndAbort(txt"adversaria: the member $term is not a case class field".s)
+          report.errorAndAbort(s"adversaria: the member $term is not a case class field")
       
       case _ =>
         report.errorAndAbort:
-          txt"""adversaria: the lambda must be a simple reference to a case class field""".s
+          """adversaria: the lambda must be a simple reference to a case class field"""
 
     Expr.ofList(field.annotations.map(_.asExpr).collect:
       case '{ $ann: Ann } => ann
@@ -101,6 +100,5 @@ object Macros:
     val annotations = tpe.typeSymbol.annotations.map(_.asExpr).collect { case '{ $a: A } => a }
     
     if annotations.isEmpty
-    then report.errorAndAbort(txt"""adversaria: the type ${TypeRepr.of[T].show} did not have the
-                                    annotation ${TypeRepr.of[A].show}""".s)
+    then report.errorAndAbort(s"""adversaria: the type ${TypeRepr.of[T].show} did not have the annotation ${TypeRepr.of[A].show}""")
     else '{ Annotations[A, T](${Expr.ofList(annotations)}*) }
