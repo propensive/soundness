@@ -1,6 +1,6 @@
 [<img alt="GitHub Workflow" src="https://img.shields.io/github/workflow/status/propensive/jovian/Build/main?style=for-the-badge" height="24">](https://github.com/propensive/jovian/actions)
+[<img src="https://img.shields.io/maven-central/v/com.propensive/jovian-core?color=2465cd&style=for-the-badge" height="24">](https://search.maven.org/artifact/com.propensive/jovian-core)
 [<img src="https://img.shields.io/discord/633198088311537684?color=8899f7&label=DISCORD&style=for-the-badge" height="24">](https://discord.gg/v7CjtbnwDq)
-[<img src="https://vent.dev/badge/propensive/jovian" height="24">](https://vent.dev/)
 <img src="/doc/images/github.png" valign="middle">
 
 # Jovian
@@ -17,7 +17,7 @@ designed to take advantage of Scala 3's safer exceptions.
 - simple streaming to and from disk with `LazyList`s
 - employs `IArray[Byte]` for fast, random-access, immutable chunking of byte data
 - encoding-aware operations involving `String`s
-³
+
 
 ## Getting Started
 
