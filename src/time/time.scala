@@ -1,17 +1,22 @@
 package clairvoyant
 
-trait MakeTime:
-  type T
-  def fromLong(long: Long): T
-  def toLong(value: T): Long
+import annotation.implicitNotFound
 
-object timeTypes:
-  given long: MakeTime with
-    type T = Long
-    def fromLong(long: Long): Long = long
-    def toLong(value: Long): Long = value
+@implicitNotFound("an implicit Timekeeping instance is required to determine what type should be used to represent instants in time")
+trait Timekeeping:
+  type Type
+  def from(long: Long): Type
+  def to(value: Type): Long
 
-  given date: MakeTime with
-    type T = java.util.Date
-    def fromLong(long: Long): java.util.Date = java.util.Date(long)
-    def toLong(value: java.util.Date): Long = value.getTime
+object timekeeping:
+  given long: Timekeeping with
+    type Type = Long
+    def from(long: Long): Long = long
+    def to(value: Long): Long = value
+
+  given date: Timekeeping with
+    type Type = java.util.Date
+    def from(long: Long): java.util.Date = java.util.Date(long)
+    def to(value: java.util.Date): Long = value.getTime
+
+def now()(using time: Timekeeping): time.Type = time.from(System.currentTimeMillis)
