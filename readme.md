@@ -1,3 +1,4 @@
+[<img alt="GitHub Workflow" src="https://img.shields.io/github/workflow/status/propensive/exoskeleton/Build/main?style=for-the-badge" height="24">](https://github.com/propensive/exoskeleton/actions)
 [<img src="https://img.shields.io/discord/633198088311537684?color=8899f7&label=DISCORD&style=for-the-badge" height="24">](https://discord.gg/v7CjtbnwDq)
 [<img src="https://vent.dev/badge/propensive/exoskeleton" height="24">](https://vent.dev/)
 <img src="/doc/images/github.png" valign="middle">
@@ -86,7 +87,7 @@ Exoskeleton is classified as __fledgling__. Propensive defines the following fiv
 - _dependable_: production-ready, subject to controlled ongoing maintenance and enhancement; tagged as version `1.0` or later
 - _adamantine_: proven, reliable and production-ready, with no further breaking changes ever anticipated
 
-Exoskeleton is designed to be _small_. Its entire source code currently consists of 167 lines of code.
+Exoskeleton is designed to be _small_. Its entire source code currently consists of 324 lines of code.
 
 ## Availability
 
@@ -109,7 +110,7 @@ src="https://img.shields.io/badge/-good%20first%20issue-67b6d0.svg" valign="midd
 We suggest that all contributors read the [Contributing Guide](/contributing.md) to make the process of
 contributing to Exoskeleton easier.
 
-Please __do not__ contact project maintainers privately with questions. While it can be tempting to respond to
+Please __do not__ contact project maintainers privately with questions. While it can be tempting to repsond to
 such questions, private answers cannot be shared with a wider audience, and it can result in duplication of
 effort.
 
@@ -126,5 +127,5 @@ Exoskeleton is a library for interacting with shells, which are their exterior s
 
 ## License
 
-Exoskeleton is copyright &copy; 2017-21 Jon Pretty & Propensive O&Uuml;, and is made available under the
+Exoskeleton is copyright &copy; 2017-22 Jon Pretty & Propensive O&Uuml;, and is made available under the
 [Apache 2.0 License](/license.md).

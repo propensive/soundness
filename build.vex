@@ -1,4 +1,7 @@
 {
+  "repos": [
+    { "base": "../jovian", "url": "https://github.com/propensive/jovian" }
+  ],
   "imports": ["../jovian/build.vex"],
   "config": {
     "scalac": {
