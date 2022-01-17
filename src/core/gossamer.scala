@@ -59,7 +59,8 @@ extension (text: Text)
   def trim: Text = Text(text.s.trim.nn)
   
   def slice(from: Int, to: Int): Text =
-    Text(text.s.substring(from max 0 min length, to min length max 0).nn)
+    if to <= from then Text("")
+    else Text(text.s.substring(from max 0 min length, to min length max 0).nn)
   
   def chars: IArray[Char] = text.s.toCharArray.nn.unsafeImmutable
   def map(fn: Char => Char): Text = Text(String(text.s.toCharArray.nn.map(fn)))
@@ -124,11 +125,12 @@ extension (text: Text)
             : Int throws OutOfRangeError = dir match
     case Ltr =>
       val index = idx.otherwise(0)
-      if index >= text.length then throw OutOfRangeError(index, 0, text.s.length)
+      if index >= text.length || index < 0 then throw OutOfRangeError(index, 0, text.s.length)
       if pred(text.s.charAt(index)) then index else where(pred, index + 1, Ltr)
+    
     case Rtl =>
       val index = idx.otherwise(text.s.length - 1)
-      if index < 0 then throw OutOfRangeError(index, 0, text.s.length)
+      if index < 0 || index >= text.length then throw OutOfRangeError(index, 0, text.s.length)
       if pred(text.s.charAt(index)) then index else where(pred, index - 1, Rtl)
 
   def upto(pred: Char => Boolean): Text =
