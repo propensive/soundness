@@ -1,4 +1,8 @@
 {
+  "repos": [
+    { "base": "../gossamer", "url": "https://github.com/propensive/gossamer" },
+    { "base": "../clairvoyant", "url": "https://github.com/propensive/clairvoyant" }
+  ],
   "imports": ["../gossamer/build.vex", "../clairvoyant/build.vex"],
   "config": {
     "scalac": {
