@@ -88,17 +88,15 @@ Wisteria is classified as __maturescent__. Propensive defines the following five
 
 Wisteria is designed to be _small_. Its entire source code currently consists of 871 lines of code.
 
-## Availability
+## Building
 
-Wisteria&rsquo;s source is available on GitHub, and may be built with [Fury](https://github.com/propensive/fury) by
-cloning the layer `propensive/wisteria`.
+Wisteria can be built on Linux or Mac OS with Vex, by running the `vex` script in the root directory:
+```sh
+./vex
 ```
-fury layer clone -i propensive/wisteria
-```
-or imported into an existing layer with,
-```
-fury layer import -i propensive/wisteria
-```
+
+This script will download `vex` the first time it is run, start a daemon process, and run the build. Subsequent
+invocations will be near-instantaneous.
 
 ## Contributing
 
