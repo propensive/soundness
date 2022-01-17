@@ -1,5 +1,5 @@
 {
-  "imports": ["../clairvoyant/build.vex", "../iridescence/build.vex"],
+  "imports": ["../clairvoyant/build.vex", "../iridescence/build.vex", "../gossamer/build.vex"],
   "config": {
     "scalac": {
       "version": "3.1.2-RC1-bin-SNAPSHOT",
@@ -41,7 +41,7 @@
     {
       "name": "Cataract",
       "id": "cataract/core",
-      "links": ["iridescence/core", "clairvoyant/http", "clairvoyant/html", "clairvoyant/css"],
+      "links": ["iridescence/core", "gossamer/core", "clairvoyant/http", "clairvoyant/html", "clairvoyant/css"],
       "sources": ["src/core"],
       "version": "0.2.0",
       "docs": ["doc"]
