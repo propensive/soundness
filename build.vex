@@ -1,5 +1,8 @@
 {
-  "imports": ["../gossamer/build.vex", "../eucalyptus/build.vex"],
+  "repos": [
+    { "base": "../eucalyptus", "url": "https://github.com/propensive/eucalyptus" }
+  ],
+  "imports": ["../eucalyptus/build.vex"],
   "config": {
     "scalac": {
       "version": "3.1.2-RC1-bin-SNAPSHOT",
@@ -41,7 +44,7 @@
     {
       "name": "Guillotine",
       "id": "guillotine/core",
-      "links": ["gossamer/core", "eucalyptus/core"],
+      "links": ["eucalyptus/core"],
       "sources": ["src/core"],
       "version": "0.2.0",
       "docs": ["doc"]
