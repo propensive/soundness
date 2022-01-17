@@ -1,4 +1,8 @@
 {
+  "repos": [
+    { "base": "../iridescence", "url": "https://github.com/propensive/iridescence" },
+    { "base": "../gossamer", "url": "https://github.com/propensive/gossamer" }
+  ],
   "imports": ["../iridescence/build.vex", "../gossamer/build.vex"],
   "config": {
     "scalac": {
