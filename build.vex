@@ -1,4 +1,7 @@
 {
+  "repos": [
+    { "base": "../eucalyptus", "url": "https://github.com/propensive/eucalyptus" }
+  ],
   "imports": ["../eucalyptus/build.vex"],
   "config": {
     "scalac": {
