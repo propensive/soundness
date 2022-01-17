@@ -1,6 +1,6 @@
 [<img alt="GitHub Workflow" src="https://img.shields.io/github/workflow/status/propensive/adversaria/Build/main?style=for-the-badge" height="24">](https://github.com/propensive/adversaria/actions)
+[<img src="https://img.shields.io/maven-central/v/com.propensive/adversaria-core?color=2465cd&style=for-the-badge" height="24">](https://search.maven.org/artifact/com.propensive/adversaria-core)
 [<img src="https://img.shields.io/discord/633198088311537684?color=8899f7&label=DISCORD&style=for-the-badge" height="24">](https://discord.gg/v7CjtbnwDq)
-[<img src="https://vent.dev/badge/propensive/adversaria" height="24">](https://vent.dev/)
 <img src="/doc/images/github.png" valign="middle">
 
 # Adversaria
@@ -14,7 +14,7 @@ _annotations_ in Scala, by making them available through _typeclass interfaces_.
 - resolve a typeclass instance only if a type has an annotated field
 - makes annotations more useful and accessible in Scala
 - no macro code is required to use annotations
-
+³
 
 ## Getting Started
 
