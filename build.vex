@@ -1,4 +1,7 @@
 {
+  "repos": [
+    { "base": "../escapade", "url": "https://github.com/propensive/escapade" }
+  ],
   "imports": ["../escapade/build.vex"],
   "config": {
     "scalac": {
