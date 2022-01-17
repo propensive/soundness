@@ -1,5 +1,5 @@
 {
-  "imports": ["../iridescence/build.vex"],
+  "imports": ["../iridescence/build.vex", "../gossamer/build.vex"],
   "config": {
     "scalac": {
       "version": "3.1.2-RC1-bin-SNAPSHOT",
@@ -41,7 +41,7 @@
     {
       "name": "Escapade",
       "id": "escapade/core",
-      "links": ["iridescence/core"],
+      "links": ["iridescence/core", "gossamer/core"],
       "sources": ["src/core"],
       "version": "0.2.0",
       "docs": ["doc"]
