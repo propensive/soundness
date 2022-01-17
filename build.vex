@@ -1,4 +1,11 @@
 {
+  "repos": [
+    { "base": "../eucalyptus", "url": "https://github.com/propensive/eucalyptus" },
+    { "base": "../kaleidoscope", "url": "https://github.com/propensive/kaleidoscope" },
+    { "base": "../clairvoyant", "url": "https://github.com/propensive/clairvoyant" },
+    { "base": "../gastronomy", "url": "https://github.com/propensive/gastronomy" },
+    { "base": "../slalom", "url": "https://github.com/propensive/slalom" }
+  ],
   "imports": [
     "../eucalyptus/build.vex",
     "../kaleidoscope/build.vex",
