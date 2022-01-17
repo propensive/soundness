@@ -19,6 +19,7 @@ package exoskeleton
 import jovian.*
 import gossamer.*
 import rudiments.*
+import escapade.*
 
 import scala.concurrent.*
 import scala.util.*
@@ -28,6 +29,8 @@ import java.util.concurrent.atomic.AtomicInteger
 import encodings.Utf8
 
 import unsafeExceptions.canThrowAny
+import rendering.ansi
+
 
 case class CommandLine(args: List[Text], env: Map[Text, Text], script: File,
                            stdin: () => DataStream, stdout: DataStream => Unit, exit: Int => Unit,
@@ -62,7 +65,7 @@ trait Daemon() extends App:
           catch case err: KeyNotFoundError => sys.exit(10)
         
         val scriptFile = Unix.parse(List.getClass.nn.getProtectionDomain.nn.getCodeSource.nn
-            .getLocation.nn.getPath.nn.show).get.file
+            .getLocation.nn.getPath.nn.show).get.file(Expect)
         
         val commandLine = CommandLine(args, env, scriptFile, () => stdin(), stdout, sys.exit(_), dir, () => sys.exit(0))
         
@@ -70,8 +73,9 @@ trait Daemon() extends App:
 
   def server(script: Text, fifo: Text, serverPid: Int, watchPid: Int): Unit =
     val socket: DiskPath = Unix.parse(fifo).getOrElse(sys.exit(10))
+    
     val death: Runnable = () =>
-      try socket.file.delete() catch case e: Exception => ()
+      try socket.file().delete() catch case e: Exception => ()
     
     ProcessHandle.of(watchPid).nn.get.nn.onExit.nn.thenRun:
       () => sys.exit(2)
@@ -79,36 +83,41 @@ trait Daemon() extends App:
     Runtime.getRuntime.nn.addShutdownHook:
       Thread(death, "exoskeleton-cleanup")
 
-    case class AppInstance(pid: Int, spawnId: Int, scriptFile: Maybe[File] = Unset, args: List[Text] = Nil,
-                               env: Map[Text, Text] = Map(), runDir: Maybe[Directory] = Unset):
+    case class AppInstance(pid: Int, spawnId: Int, scriptFile: Maybe[File] = Unset,
+                               args: List[Text] = Nil, env: Map[Text, Text] = Map(),
+                               runDir: Maybe[Directory] = Unset):
       val shutdown: Promise[Unit] = Promise()
-      val terminate: Promise[Unit] = Promise()
+      val termination: Gun = Gun()
       def pwd: Directory throws PwdError =
-        try Unix.parse(env.getOrElse(t"PWD", throw PwdError())).getOrElse(throw PwdError()).directory(Expect)
+        try Unix.parse(env.getOrElse(t"PWD", throw PwdError())).getOrElse(throw PwdError())
+            .directory(Expect)
         catch case err: IoError => throw PwdError()
 
-      def stop(): Unit = if shutdown.isCompleted then kill() else shutdown.complete(Success(()))
-      def kill(): Unit = terminate.complete(Success(()))
+      def stop(): Unit =
+        if !shutdown.isCompleted then termination.trigger() else shutdown.complete(Success(()))
+      
+      def kill(): Unit = shutdown.complete(Success(()))
       
       def spawn(): Unit =
         val runnable: Runnable = () =>
+          lazy val out = Fifo((runDir.otherwise(sys.exit(10)) / t"$script-$pid.stdout.sock").file(Expect))
           try
             val script = scriptFile.otherwise(sys.exit(10)).name
-            val fifoIn = (runDir.otherwise(sys.exit(10)) / t"$script-$pid.stdin.sock").file
-            val fifoOut = Fifo((runDir.otherwise(sys.exit(10)) / t"$script-$pid.stdout.sock").file)
+            val fifoIn = (runDir.otherwise(sys.exit(10)) / t"$script-$pid.stdin.sock").file(Expect)
             val terminate = Promise[Int]()
             val workDir = pwd.otherwise(sys.exit(10))
             
             val commandLine = CommandLine(args, env, scriptFile.otherwise(sys.exit(10)),
-                () => fifoIn.read[DataStream](1.mb), _.writeTo(fifoOut),
+                () => fifoIn.read[DataStream](1.mb), _.writeTo(out),
                 exit => terminate.complete(util.Success(exit)), workDir, () => sys.exit(0))
             
             val exit = main(using commandLine)
-            fifoOut.close()
-            val exitFile = (runDir.otherwise(sys.exit(10)) / t"$script-$pid.exit").file
+            out.close()
+            val exitFile = (runDir.otherwise(sys.exit(10)) / t"$script-$pid.exit").file()
             exit().show.bytes.writeTo(exitFile)
           catch case NonFatal(err) =>
-            ()
+            given Stdout = Stdout(out)
+            Out.println(StackTrace(err).ansi)
         
         val thread = Thread(runnable, t"exoskeleton-$spawnId".s)
         thread.start()
@@ -119,8 +128,8 @@ trait Daemon() extends App:
           case List(key, value) => List(key -> value)
           case _                => Nil
     .to(Map)
-    
-    socket.file.read[LazyList[Line]](256.kb).foldLeft(Map[Int, AppInstance]()):
+
+    socket.file(Expect).read[LazyList[Line]](256.kb).foldLeft(Map[Int, AppInstance]()):
       case (map, line) =>
         line.text.cut(t"\t").to(List) match
           case t"PROCESS" :: Int(pid) :: _ =>
@@ -131,7 +140,7 @@ trait Daemon() extends App:
               dir => map.updated(pid, map(pid).copy(runDir = dir.directory(Expect)))
           
           case t"SCRIPT" :: Int(pid) :: scriptDir :: script :: _ =>
-            Unix.parse(t"$scriptDir/$script").map(_.file).fold(map):
+            Unix.parse(t"$scriptDir/$script").map(_.file(Expect)).fold(map):
               file => map.updated(pid, map(pid).copy(scriptFile = file))
           
           case t"ARGS" :: Int(pid) :: Int(count) :: args =>
@@ -154,3 +163,7 @@ trait Daemon() extends App:
           
           case msg =>
             map
+
+class Gun():
+  val stream = LazyList.continually(synchronized(wait()))
+  def trigger(): Unit = try synchronized(notify()) catch case _: IllegalMonitorStateException => ()
