@@ -1,4 +1,11 @@
 {
+  "repos": [
+    { "base": "../scintillate", "url": "https://github.com/propensive/scintillate" },
+    { "base": "../cataract", "url": "https://github.com/propensive/cataract" },
+    { "base": "../guillotine", "url": "https://github.com/propensive/guillotine" },
+    { "base": "../euphemism", "url": "https://github.com/propensive/euphemism" },
+    { "base": "../honeycomb", "url": "https://github.com/propensive/honeycomb" }
+  ],
   "imports": [
     "../scintillate/build.vex",
     "../cataract/build.vex",
