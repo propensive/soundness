@@ -1,4 +1,11 @@
 {
+  "repos": [
+    { "base": "../gesticulate", "url": "https://github.com/propensive/gesticulate" },
+    { "base": "../eucalyptus", "url": "https://github.com/propensive/eucalyptus" },
+    { "base": "../slalom", "url": "https://github.com/propensive/slalom" },
+    { "base": "../clairvoyant", "url": "https://github.com/propensive/clairvoyant" },
+    { "base": "../gastronomy", "url": "https://github.com/propensive/gastronomy" }
+  ],
   "imports": [
     "../gesticulate/build.vex",
     "../eucalyptus/build.vex",
