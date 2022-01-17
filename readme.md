@@ -171,17 +171,15 @@ Iridescence is classified as __fledgling__. Propensive defines the following fiv
 
 Iridescence is designed to be _small_. Its entire source code currently consists of 379 lines of code.
 
-## Availability
+## Building
 
-Iridescence&rsquo;s source is available on GitHub, and may be built with [Fury](https://github.com/propensive/fury) by
-cloning the layer `propensive/iridescence`.
+Iridescence can be built on Linux or Mac OS with Vex, by running the `vex` script in the root directory:
+```sh
+./vex
 ```
-fury layer clone -i propensive/iridescence
-```
-or imported into an existing layer with,
-```
-fury layer import -i propensive/iridescence
-```
+
+This script will download `vex` the first time it is run, start a daemon process, and run the build. Subsequent
+invocations will be near-instantaneous.
 
 ## Contributing
 
