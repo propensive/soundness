@@ -1,4 +1,8 @@
 {
+  "repos": [
+    { "base": "../escritoire", "url": "https://github.com/propensive/escritoire" },
+    { "base": "../eucalyptus", "url": "https://github.com/propensive/eucalyptus" }
+  ],
   "imports": ["../escritoire/build.vex", "../eucalyptus/build.vex"],
   "config": {
     "scalac": {
