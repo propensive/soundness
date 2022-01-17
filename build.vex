@@ -1,5 +1,9 @@
 {
-  "imports": ["../gossamer/build.vex", "../honeycomb/build.vex", "../harlequin/build.vex"],
+  "repos": [
+    { "base": "../harlequin", "url": "https://github.com/propensive/harlequin" },
+    { "base": "../honeycomb", "url": "https://github.com/propensive/honeycomb" }
+  ],
+  "imports": ["../honeycomb/build.vex", "../harlequin/build.vex"],
   "config": {
     "scalac": {
       "version": "3.1.2-RC1-bin-SNAPSHOT",
