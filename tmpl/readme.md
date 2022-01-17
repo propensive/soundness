@@ -1,5 +1,6 @@
+[<img alt="GitHub Workflow" src="https://img.shields.io/github/workflow/status/propensive/${ID}/Build/main?style=for-the-badge" height="24">](https://github.com/propensive/${ID}/actions)
+[<img src="https://img.shields.io/maven-central/v/com.propensive/${ID}-core?color=2465cd&style=for-the-badge" height="24">](https://search.maven.org/artifact/com.propensive/${ID}-core)
 [<img src="https://img.shields.io/discord/633198088311537684?color=8899f7&label=DISCORD&style=for-the-badge" height="24">](https://discord.gg/v7CjtbnwDq)
-[<img src="https://vent.dev/badge/propensive/${ID}" height="24">](https://vent.dev/)
 <img src="/doc/images/github.png" valign="middle">
 
 # ${TITLE}
@@ -32,17 +33,15 @@ ${TITLE} is classified as __${STATUS}__. Propensive defines the following five s
 
 ${TITLE} is designed to be _small_. Its entire source code currently consists of ${LOC} lines of code.
 
-## Availability
+## Building
 
-${TITLE}&rsquo;s source is available on GitHub, and may be built with [Fury](https://github.com/propensive/fury) by
-cloning the layer `propensive/${ID}`.
+${TITLE} can be built on Linux or Mac OS with Vex, by running the `vex` script in the root directory:
+```sh
+./vex
 ```
-fury layer clone -i propensive/${ID}
-```
-or imported into an existing layer with,
-```
-fury layer import -i propensive/${ID}
-```
+
+This script will download `vex` the first time it is run, start a daemon process, and run the build. Subsequent
+invocations will be near-instantaneous.
 
 ## Contributing
 
