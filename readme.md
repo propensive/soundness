@@ -17,7 +17,7 @@ designed to take advantage of Scala 3's safer exceptions.
 - simple streaming to and from disk with `LazyList`s
 - employs `IArray[Byte]` for fast, random-access, immutable chunking of byte data
 - encoding-aware operations involving `String`s
-
+³
 
 ## Getting Started
 
@@ -112,17 +112,15 @@ Jovian is classified as __fledgling__. Propensive defines the following five sta
 
 Jovian is designed to be _small_. Its entire source code currently consists of 447 lines of code.
 
-## Availability
+## Building
 
-Jovian&rsquo;s source is available on GitHub, and may be built with [Fury](https://github.com/propensive/fury) by
-cloning the layer `propensive/jovian`.
+Jovian can be built on Linux or Mac OS with Vex, by running the `vex` script in the root directory:
+```sh
+./vex
 ```
-fury layer clone -i propensive/jovian
-```
-or imported into an existing layer with,
-```
-fury layer import -i propensive/jovian
-```
+
+This script will download `vex` the first time it is run, start a daemon process, and run the build. Subsequent
+invocations will be near-instantaneous.
 
 ## Contributing
 
