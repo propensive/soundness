@@ -4,25 +4,6 @@
     { "base": "../eucalyptus", "url": "https://github.com/propensive/eucalyptus" }
   ],
   "imports": ["../escritoire/build.vex", "../eucalyptus/build.vex"],
-  "config": {
-    "scalac": {
-      "version": "3.1.2-RC1-bin-SNAPSHOT",
-      "options": [
-        "-language:experimental.erasedDefinitions",
-        "-language:experimental.fewerBraces",
-        "-language:experimental.saferExceptions",
-        "-Wunused:all",
-        "-O", "-deprecation",
-        "-O", "-feature",
-        "-O", "-new-syntax",
-        "-Yrequire-targetName",
-        "-Ysafe-init",
-        "-Ycheck-all-patmat",
-        "-Yexplicit-nulls",
-	"-Yno-predef"
-      ]
-    }
-  },
   "publishing": {
     "username": "propensive",
     "group": "com.propensive",
