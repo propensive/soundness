@@ -28,6 +28,7 @@
       "id": "gesticulate/core",
       "links": ["gossamer/core", "clairvoyant/html"],
       "sources": ["src/core"],
+      "resources": ["res"],
       "version": "0.2.0",
       "docs": ["doc"]
     }
