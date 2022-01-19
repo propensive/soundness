@@ -38,6 +38,17 @@ extension (value: Bytes)
   def hex: Text = Text(value.map { b => String.format("\\u%04x", b.toInt).nn }.mkString)
   def text[Enc <: Encoding](using enc: Enc): Text = Text(String(value.to(Array), enc.name.s))
 
+object Cuttable:
+  given Cuttable[Text, Text] = (text, delimiter, limit) =>
+    List(text.s.split(Pattern.quote(delimiter.s), limit).nn.map(_.nn).map(Text(_))*)
+
+trait Cuttable[V, D]:
+  def cut(value: V, delimiter: D, limit: Int): List[V]
+
+extension [V](value: V)
+  def cut[D](delimiter: D, limit: Int = Int.MaxValue)(using cuttable: Cuttable[V, D]): List[V] =
+    cuttable.cut(value, delimiter, limit)
+
 extension (text: Text)
   def bytes: IArray[Byte] = text.s.getBytes("UTF-8").nn.unsafeImmutable
   def length: Int = text.s.length
@@ -65,7 +76,6 @@ extension (text: Text)
   def chars: IArray[Char] = text.s.toCharArray.nn.unsafeImmutable
   def map(fn: Char => Char): Text = Text(String(text.s.toCharArray.nn.map(fn)))
   def isEmpty: Boolean = text.s.isEmpty
-  def cut(delimiter: Text): List[Text] = cut(delimiter, Int.MaxValue)
   def rsub(from: Text, to: Text): Text = Text(text.s.replaceAll(from.s, to.s).nn)
   def startsWith(prefix: Text): Boolean = text.s.startsWith(prefix.s)
   def endsWith(suffix: Text): Boolean = text.s.endsWith(suffix.s)
@@ -94,10 +104,6 @@ extension (text: Text)
     (try text.where(_.isUpper, 1) catch case error: OutOfRangeError => -1) match
       case -1 => List(text.lower)
       case i  => text.take(i).lower :: text.drop(i).camelCaseWords
-
-
-  def cut(delimiter: Text, limit: Int): List[Text] =
-    List(text.s.split(Pattern.quote(delimiter.s), limit).nn.map(_.nn).map(Text(_))*)
 
   def fit(width: Int, dir: Direction = Ltr, char: Char = ' '): Text = dir match
     case Ltr => (text + Text(s"$char")*(width - length)).take(width, Ltr)
