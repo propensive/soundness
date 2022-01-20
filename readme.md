@@ -197,7 +197,9 @@ available as a type member.
 
 ## Related Projects
 
-_Polyvinyl_ has no dependencies.
+The following _Niveau_ libraries are dependencies of _Polyvinyl_:
+
+[![Rudiments](https://github.com/propensive/rudiments/raw/main/doc/images/128x128.png)](https://github.com/propensive/rudiments/) &nbsp;
 
 No other _Niveau_ libraries are dependents of _Polyvinyl_.
 
