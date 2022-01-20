@@ -93,7 +93,7 @@ used by developers who do not mind examining the source code to diagnose unexpec
 
 The following _Niveau_ libraries are dependencies of _Acyclicity_:
 
-[![Contextual](https://github.com/propensive/contextual/raw/main/doc/images/128x128.png)](https://github.com/propensive/contextual/) &nbsp;
+[![Gossamer](https://github.com/propensive/gossamer/raw/main/doc/images/128x128.png)](https://github.com/propensive/gossamer/) &nbsp;
 
 No other _Niveau_ libraries are dependents of _Acyclicity_.
 
