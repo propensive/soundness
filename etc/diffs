@@ -1,8 +1,0 @@
-#!/bin/sh
-
-for MODULE in mod/*
-do
-  cd $MODULE
-  echo "$MODULE: $(git diff --name-only | tr '\n' ' ')" | grep -v ': $'
-  cd ../..
-done
