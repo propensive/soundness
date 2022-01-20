@@ -1,8 +1,13 @@
 {
   "repos": [
-    { "base": "../jovian", "url": "https://github.com/propensive/jovian" }
+    {
+      "base": "../jovian",
+      "url": "https://github.com/propensive/jovian"
+    }
   ],
-  "imports": ["../jovian/build.vex"],
+  "imports": [
+    "../jovian/build.vex"
+  ],
   "publishing": {
     "username": "propensive",
     "group": "com.propensive",
@@ -25,11 +30,19 @@
     {
       "name": "Exoskeleton",
       "id": "exoskeleton/core",
-      "links": ["jovian/core"],
-      "sources": ["src/core"],
-      "version": "0.2.0",
-      "resources": ["res"],
-      "docs": ["doc"]
+      "links": [
+        "jovian/core"
+      ],
+      "sources": [
+        "src/core"
+      ],
+      "version": "0.4.0",
+      "resources": [
+        "res"
+      ],
+      "docs": [
+        "doc"
+      ]
     }
   ]
 }
