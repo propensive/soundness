@@ -1,8 +1,13 @@
 {
   "repos": [
-    { "base": "../escapade", "url": "https://github.com/propensive/escapade" }
+    {
+      "base": "../escapade",
+      "url": "https://github.com/propensive/escapade"
+    }
   ],
-  "imports": ["../escapade/build.vex"],
+  "imports": [
+    "../escapade/build.vex"
+  ],
   "publishing": {
     "username": "propensive",
     "group": "com.propensive",
@@ -25,10 +30,16 @@
     {
       "name": "Escritoire",
       "id": "escritoire/core",
-      "links": ["escapade/core"],
-      "sources": ["src/core"],
-      "version": "0.2.0",
-      "docs": ["doc"]
+      "links": [
+        "escapade/core"
+      ],
+      "sources": [
+        "src/core"
+      ],
+      "version": "0.4.0",
+      "docs": [
+        "doc"
+      ]
     }
   ]
 }
