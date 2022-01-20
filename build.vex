@@ -1,9 +1,18 @@
 {
   "repos": [
-    { "base": "../harlequin", "url": "https://github.com/propensive/harlequin" },
-    { "base": "../honeycomb", "url": "https://github.com/propensive/honeycomb" }
+    {
+      "base": "../harlequin",
+      "url": "https://github.com/propensive/harlequin"
+    },
+    {
+      "base": "../honeycomb",
+      "url": "https://github.com/propensive/honeycomb"
+    }
   ],
-  "imports": ["../honeycomb/build.vex", "../harlequin/build.vex"],
+  "imports": [
+    "../honeycomb/build.vex",
+    "../harlequin/build.vex"
+  ],
   "publishing": {
     "username": "propensive",
     "group": "com.propensive",
@@ -26,31 +35,52 @@
     {
       "name": "Punctuation",
       "id": "punctuation/core",
-      "links": ["gossamer/core", "clairvoyant/html"],
+      "links": [
+        "gossamer/core",
+        "clairvoyant/html"
+      ],
       "dependencies": [
         "com.vladsch.flexmark:flexmark:0.42.12",
         "com.vladsch.flexmark:flexmark-ext-tables:0.42.12"
       ],
       "jars": [],
-      "sources": ["src/core"],
-      "version": "0.2.0",
-      "docs": ["doc"]
+      "sources": [
+        "src/core"
+      ],
+      "version": "0.4.0",
+      "docs": [
+        "doc"
+      ]
     },
     {
       "name": "Punctuation HTML",
       "id": "punctuation/html",
-      "links": ["honeycomb/core", "punctuation/core"],
-      "sources": ["src/html"],
-      "version": "0.2.0",
-      "docs": ["doc"]
+      "links": [
+        "honeycomb/core",
+        "punctuation/core"
+      ],
+      "sources": [
+        "src/html"
+      ],
+      "version": "0.4.0",
+      "docs": [
+        "doc"
+      ]
     },
     {
       "name": "Punctuation ANSI",
       "id": "punctuation/ansi",
-      "links": ["harlequin/core", "punctuation/core"],
-      "sources": ["src/ansi"],
-      "version": "0.2.0",
-      "docs": ["doc"]
+      "links": [
+        "harlequin/core",
+        "punctuation/core"
+      ],
+      "sources": [
+        "src/ansi"
+      ],
+      "version": "0.4.0",
+      "docs": [
+        "doc"
+      ]
     }
   ]
 }
