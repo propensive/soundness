@@ -24,9 +24,11 @@ TBC
 
 The following _Niveau_ libraries are dependencies of _Euphemism_:
 
-[![Clairvoyant](https://github.com/propensive/clairvoyant/raw/main/doc/images/128x128.png)](https://github.com/propensive/clairvoyant/) &nbsp; [![Wisteria](https://github.com/propensive/wisteria/raw/main/doc/images/128x128.png)](https://github.com/propensive/wisteria/) &nbsp;
+[![Clairvoyant](https://github.com/propensive/clairvoyant/raw/main/doc/images/128x128.png)](https://github.com/propensive/clairvoyant/) &nbsp; [![Gossamer](https://github.com/propensive/gossamer/raw/main/doc/images/128x128.png)](https://github.com/propensive/gossamer/) &nbsp;
 
-No other _Niveau_ libraries are dependents of _Euphemism_.
+The following _Niveau_ libraries are dependents of _Euphemism_:
+
+[![Tarantula](https://github.com/propensive/tarantula/raw/main/doc/images/128x128.png)](https://github.com/propensive/tarantula/) &nbsp;
 
 ## Status
 
@@ -38,7 +40,7 @@ Euphemism is classified as __fledgling__. Propensive defines the following five 
 - _dependable_: production-ready, subject to controlled ongoing maintenance and enhancement; tagged as version `1.0` or later
 - _adamantine_: proven, reliable and production-ready, with no further breaking changes ever anticipated
 
-Euphemism is designed to be _small_. Its entire source code currently consists of 322 lines of code.
+Euphemism is designed to be _small_. Its entire source code currently consists of 320 lines of code.
 
 ## Building
 
