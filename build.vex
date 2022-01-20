@@ -1,9 +1,18 @@
 {
   "repos": [
-    { "base": "../iridescence", "url": "https://github.com/propensive/iridescence" },
-    { "base": "../gossamer", "url": "https://github.com/propensive/gossamer" }
+    {
+      "base": "../iridescence",
+      "url": "https://github.com/propensive/iridescence"
+    },
+    {
+      "base": "../gossamer",
+      "url": "https://github.com/propensive/gossamer"
+    }
   ],
-  "imports": ["../iridescence/build.vex", "../gossamer/build.vex"],
+  "imports": [
+    "../iridescence/build.vex",
+    "../gossamer/build.vex"
+  ],
   "publishing": {
     "username": "propensive",
     "group": "com.propensive",
@@ -26,10 +35,17 @@
     {
       "name": "Escapade",
       "id": "escapade/core",
-      "links": ["iridescence/core", "gossamer/core"],
-      "sources": ["src/core"],
-      "version": "0.2.0",
-      "docs": ["doc"]
+      "links": [
+        "iridescence/core",
+        "gossamer/core"
+      ],
+      "sources": [
+        "src/core"
+      ],
+      "version": "0.4.0",
+      "docs": [
+        "doc"
+      ]
     }
   ]
 }
