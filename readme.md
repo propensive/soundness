@@ -73,7 +73,7 @@ directory in which the script should be written.
 
 The following _Niveau_ libraries are dependencies of _Exoskeleton_:
 
-[![Rudiments](https://github.com/propensive/rudiments/raw/main/doc/images/128x128.png)](https://github.com/propensive/rudiments/) &nbsp;
+[![Jovian](https://github.com/propensive/jovian/raw/main/doc/images/128x128.png)](https://github.com/propensive/jovian/) &nbsp;
 
 No other _Niveau_ libraries are dependents of _Exoskeleton_.
 
