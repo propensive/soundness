@@ -1,5 +1,5 @@
 /*
-    Eucalyptus, version 0.2.0. Copyright 2018-22 Jon Pretty, Propensive OÜ.
+    Eucalyptus, version 0.4.0. Copyright 2018-22 Jon Pretty, Propensive OÜ.
 
     The primary distribution site is: https://propensive.com/
 
