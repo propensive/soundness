@@ -1,0 +1,12 @@
+#!/bin/sh
+NEWVERSION="$1"
+if [ -z "$NEWVERSION" ]
+then
+  echo "Please specify the new version number as the first parameter"
+  exit 1
+fi
+for x in mod/*
+do
+  jq --arg ver "$1" '.modules[].version |= $ver' $x/build.vex > $x/.build.vex.tmp && mv $x/.build.vex.tmp $x/build.vex
+done
+

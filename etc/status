@@ -1,0 +1,14 @@
+#!/bin/sh
+
+for MOD in mod/*
+do
+  cd $MOD
+  BRANCH="$(git rev-parse --abbrev-ref HEAD)"
+  if [ "${BRANCH}" != "main" ]
+  then
+    echo "$MOD is on branch ${BRANCH}"
+  fi
+  echo "$MOD has additional branches: $(git branch | grep -v "${BRANCH}" | tr '\n' ' ')"
+  git diff-index --quiet HEAD -- || echo "$MOD has uncommitted changes"
+  cd ../..
+done

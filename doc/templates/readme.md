@@ -11,6 +11,10 @@ ${INTRO}
 
 ${FEATURES}
 
+## Availability
+
+The current latest release of ${TITLE} is __${VERSION}__.
+
 ## Getting Started
 
 ${BASICS}

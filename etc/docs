@@ -50,7 +50,7 @@ do
   else
     export COPYRIGHT="${START}-$(date +%y)"
   fi
-  export VERSION="$(cat $MOD/doc/version)"
+  export VERSION="$(jq '.modules[].version' mod/$ID/build.vex | head -n1 | cut -d'"' -f2)"
   export THANKS="$(cat $MOD/doc/thanks 2> /dev/null || echo '')"
   export DEPENDENCIES="$(dependencies $ID)"
   export DEPENDENTS="$(dependents $ID)"

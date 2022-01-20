@@ -11,7 +11,7 @@ do
   else
     export COPYRIGHT="${START}-$(date +%y)"
   fi
-  export VERSION="$(cat ${MOD}/doc/version)"
+  export VERSION="$(jq '.modules[].version' mod/$ID/build.vex | head -n1 | cut -d'"' -f2)"
   TMP=.tmp.scala
   cat doc/templates/header | envsubst > ${MOD}/.header
   for FILE in ${MOD}/src/**/*.scala
