@@ -1,10 +1,25 @@
 {
   "repos": [
-    { "base": "../scintillate", "url": "https://github.com/propensive/scintillate" },
-    { "base": "../cataract", "url": "https://github.com/propensive/cataract" },
-    { "base": "../guillotine", "url": "https://github.com/propensive/guillotine" },
-    { "base": "../euphemism", "url": "https://github.com/propensive/euphemism" },
-    { "base": "../honeycomb", "url": "https://github.com/propensive/honeycomb" }
+    {
+      "base": "../scintillate",
+      "url": "https://github.com/propensive/scintillate"
+    },
+    {
+      "base": "../cataract",
+      "url": "https://github.com/propensive/cataract"
+    },
+    {
+      "base": "../guillotine",
+      "url": "https://github.com/propensive/guillotine"
+    },
+    {
+      "base": "../euphemism",
+      "url": "https://github.com/propensive/euphemism"
+    },
+    {
+      "base": "../honeycomb",
+      "url": "https://github.com/propensive/honeycomb"
+    }
   ],
   "imports": [
     "../scintillate/build.vex",
@@ -35,10 +50,20 @@
     {
       "name": "Tarantula",
       "id": "tarantula/core",
-      "links": ["scintillate/core", "cataract/core", "guillotine/core", "euphemism/core", "honeycomb/core"],
-      "sources": ["src/core"],
-      "version": "0.2.0",
-      "docs": ["doc"]
+      "links": [
+        "scintillate/core",
+        "cataract/core",
+        "guillotine/core",
+        "euphemism/core",
+        "honeycomb/core"
+      ],
+      "sources": [
+        "src/core"
+      ],
+      "version": "0.4.0",
+      "docs": [
+        "doc"
+      ]
     }
   ]
 }
