@@ -157,9 +157,11 @@ since all `Executor`s are functors.
 
 The following _Niveau_ libraries are dependencies of _Guillotine_:
 
-[![Contextual](https://github.com/propensive/contextual/raw/main/doc/images/128x128.png)](https://github.com/propensive/contextual/) &nbsp;
+[![Eucalyptus](https://github.com/propensive/eucalyptus/raw/main/doc/images/128x128.png)](https://github.com/propensive/eucalyptus/) &nbsp;
 
-No other _Niveau_ libraries are dependents of _Guillotine_.
+The following _Niveau_ libraries are dependents of _Guillotine_:
+
+[![Tarantula](https://github.com/propensive/tarantula/raw/main/doc/images/128x128.png)](https://github.com/propensive/tarantula/) &nbsp;
 
 ## Status
 
