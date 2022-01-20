@@ -1,10 +1,25 @@
 {
   "repos": [
-    { "base": "../eucalyptus", "url": "https://github.com/propensive/eucalyptus" },
-    { "base": "../kaleidoscope", "url": "https://github.com/propensive/kaleidoscope" },
-    { "base": "../clairvoyant", "url": "https://github.com/propensive/clairvoyant" },
-    { "base": "../gastronomy", "url": "https://github.com/propensive/gastronomy" },
-    { "base": "../slalom", "url": "https://github.com/propensive/slalom" }
+    {
+      "base": "../eucalyptus",
+      "url": "https://github.com/propensive/eucalyptus"
+    },
+    {
+      "base": "../kaleidoscope",
+      "url": "https://github.com/propensive/kaleidoscope"
+    },
+    {
+      "base": "../clairvoyant",
+      "url": "https://github.com/propensive/clairvoyant"
+    },
+    {
+      "base": "../gastronomy",
+      "url": "https://github.com/propensive/gastronomy"
+    },
+    {
+      "base": "../slalom",
+      "url": "https://github.com/propensive/slalom"
+    }
   ],
   "imports": [
     "../eucalyptus/build.vex",
@@ -43,9 +58,13 @@
         "kaleidoscope/core",
         "eucalyptus/core"
       ],
-      "sources": ["src/core"],
-      "version": "0.2.0",
-      "docs": ["doc"]
+      "sources": [
+        "src/core"
+      ],
+      "version": "0.4.0",
+      "docs": [
+        "doc"
+      ]
     }
   ]
 }
