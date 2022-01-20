@@ -1,9 +1,18 @@
 {
   "repos": [
-    { "base": "../escritoire", "url": "https://github.com/propensive/escritoire" },
-    { "base": "../eucalyptus", "url": "https://github.com/propensive/eucalyptus" }
+    {
+      "base": "../escritoire",
+      "url": "https://github.com/propensive/escritoire"
+    },
+    {
+      "base": "../eucalyptus",
+      "url": "https://github.com/propensive/eucalyptus"
+    }
   ],
-  "imports": ["../escritoire/build.vex", "../eucalyptus/build.vex"],
+  "imports": [
+    "../escritoire/build.vex",
+    "../eucalyptus/build.vex"
+  ],
   "publishing": {
     "username": "propensive",
     "group": "com.propensive",
@@ -26,26 +35,46 @@
     {
       "name": "Probably Core",
       "id": "probably/core",
-      "links": ["escritoire/core", "eucalyptus/core"],
-      "sources": ["src/core"],
-      "version": "0.2.0",
-      "docs": ["doc"]
+      "links": [
+        "escritoire/core",
+        "eucalyptus/core"
+      ],
+      "sources": [
+        "src/core"
+      ],
+      "version": "0.4.0",
+      "docs": [
+        "doc"
+      ]
     },
     {
       "name": "Probably Tolerance",
       "id": "probably/tolerance",
-      "links": ["probably/core", "wisteria/core"],
-      "sources": ["src/tolerance"],
-      "version": "0.2.0",
-      "docs": ["doc"]
+      "links": [
+        "probably/core",
+        "wisteria/core"
+      ],
+      "sources": [
+        "src/tolerance"
+      ],
+      "version": "0.4.0",
+      "docs": [
+        "doc"
+      ]
     },
     {
       "name": "Probably CLI",
       "id": "probably/cli",
-      "links": ["probably/core"],
-      "sources": ["src/cli"],
-      "version": "0.2.0",
-      "docs": ["doc"]
+      "links": [
+        "probably/core"
+      ],
+      "sources": [
+        "src/cli"
+      ],
+      "version": "0.4.0",
+      "docs": [
+        "doc"
+      ]
     }
   ]
 }
