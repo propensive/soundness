@@ -1,9 +1,18 @@
 {
   "repos": [
-    { "base": "../clairvoyant", "url": "https://github.com/propensive/clairvoyant" },
-    { "base": "../gossamer", "url": "https://github.com/propensive/gossamer" }
+    {
+      "base": "../clairvoyant",
+      "url": "https://github.com/propensive/clairvoyant"
+    },
+    {
+      "base": "../gossamer",
+      "url": "https://github.com/propensive/gossamer"
+    }
   ],
-  "imports": ["../clairvoyant/build.vex", "../gossamer/build.vex"],
+  "imports": [
+    "../clairvoyant/build.vex",
+    "../gossamer/build.vex"
+  ],
   "publishing": {
     "username": "propensive",
     "group": "com.propensive",
@@ -26,10 +35,19 @@
     {
       "name": "Honeycomb",
       "id": "honeycomb/core",
-      "links": ["clairvoyant/html", "clairvoyant/http", "clairvoyant/css", "gossamer/core"],
-      "sources": ["src/core"],
-      "version": "0.2.0",
-      "docs": ["doc"]
+      "links": [
+        "clairvoyant/html",
+        "clairvoyant/http",
+        "clairvoyant/css",
+        "gossamer/core"
+      ],
+      "sources": [
+        "src/core"
+      ],
+      "version": "0.4.0",
+      "docs": [
+        "doc"
+      ]
     }
   ]
 }
