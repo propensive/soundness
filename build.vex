@@ -1,24 +1,18 @@
 {
-  "imports": ["../iridescence/build.vex"],
-  "config": {
-    "scalac": {
-      "version": "3.1.2-RC1-bin-SNAPSHOT",
-      "options": [
-        "-language:experimental.erasedDefinitions",
-        "-language:experimental.fewerBraces",
-        "-language:experimental.saferExceptions",
-        "-Wunused:all",
-        "-O", "-deprecation",
-        "-O", "-feature",
-        "-O", "-new-syntax",
-        "-Yrequire-targetName",
-        "-Ysafe-init",
-        "-Ycheck-all-patmat",
-        "-Yexplicit-nulls",
-        "-Yno-predef"
-      ]
+  "repos": [
+    {
+      "base": "../iridescence",
+      "url": "https://github.com/propensive/iridescence"
+    },
+    {
+      "base": "../gossamer",
+      "url": "https://github.com/propensive/gossamer"
     }
-  },
+  ],
+  "imports": [
+    "../iridescence/build.vex",
+    "../gossamer/build.vex"
+  ],
   "publishing": {
     "username": "propensive",
     "group": "com.propensive",
@@ -41,10 +35,17 @@
     {
       "name": "Escapade",
       "id": "escapade/core",
-      "links": ["iridescence/core"],
-      "sources": ["src/core"],
-      "version": "0.2.0",
-      "docs": ["doc"]
+      "links": [
+        "iridescence/core",
+        "gossamer/core"
+      ],
+      "sources": [
+        "src/core"
+      ],
+      "version": "0.4.0",
+      "docs": [
+        "doc"
+      ]
     }
   ]
 }
