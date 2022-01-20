@@ -1,9 +1,18 @@
 {
   "repos": [
-    { "base": "../gossamer", "url": "https://github.com/propensive/gossamer" },
-    { "base": "../clairvoyant", "url": "https://github.com/propensive/clairvoyant" }
+    {
+      "base": "../gossamer",
+      "url": "https://github.com/propensive/gossamer"
+    },
+    {
+      "base": "../clairvoyant",
+      "url": "https://github.com/propensive/clairvoyant"
+    }
   ],
-  "imports": ["../gossamer/build.vex", "../clairvoyant/build.vex"],
+  "imports": [
+    "../gossamer/build.vex",
+    "../clairvoyant/build.vex"
+  ],
   "publishing": {
     "username": "propensive",
     "group": "com.propensive",
@@ -26,16 +35,26 @@
     {
       "name": "Euphemism",
       "id": "euphemism/core",
-      "links": ["gossamer/core", "clairvoyant/http"],
-      "dependencies": ["org.typelevel:jawn-parser_3:1.2.0", "org.typelevel:jawn-ast_3:1.2.0"],
+      "links": [
+        "gossamer/core",
+        "clairvoyant/http"
+      ],
+      "dependencies": [
+        "org.typelevel:jawn-parser_3:1.2.0",
+        "org.typelevel:jawn-ast_3:1.2.0"
+      ],
       "jars": [
         "https://repo1.maven.org/maven2/org/typelevel/jawn-parser_3/1.2.0/jawn-parser_3-1.2.0.jar",
-	      "https://repo1.maven.org/maven2/org/typelevel/jawn-ast_3/1.2.0/jawn-ast_3-1.2.0.jar",
-	      "https://repo1.maven.org/maven2/org/typelevel/jawn-util_3/1.2.0/jawn-util_3-1.2.0.jar"
+        "https://repo1.maven.org/maven2/org/typelevel/jawn-ast_3/1.2.0/jawn-ast_3-1.2.0.jar",
+        "https://repo1.maven.org/maven2/org/typelevel/jawn-util_3/1.2.0/jawn-util_3-1.2.0.jar"
       ],
-      "sources": ["src/core"],
-      "version": "0.2.0",
-      "docs": ["doc"]
+      "sources": [
+        "src/core"
+      ],
+      "version": "0.4.0",
+      "docs": [
+        "doc"
+      ]
     }
   ]
 }
