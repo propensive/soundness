@@ -155,7 +155,7 @@ to build a concrete parser for the languages in the union type.
 
 The following _Niveau_ libraries are dependencies of _Cosmopolite_:
 
-[![Rudiments](https://github.com/propensive/rudiments/raw/main/doc/images/128x128.png)](https://github.com/propensive/rudiments/) &nbsp;
+[![Gossamer](https://github.com/propensive/gossamer/raw/main/doc/images/128x128.png)](https://github.com/propensive/gossamer/) &nbsp;
 
 No other _Niveau_ libraries are dependents of _Cosmopolite_.
 
