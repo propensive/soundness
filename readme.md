@@ -67,9 +67,13 @@ It is likely that as Harlequin evolves, the set of `Flair` values will grow.
 
 ## Related Projects
 
-_Harlequin_ has no dependencies.
+The following _Niveau_ libraries are dependencies of _Harlequin_:
 
-No other _Niveau_ libraries are dependents of _Harlequin_.
+[![Escapade](https://github.com/propensive/escapade/raw/main/doc/images/128x128.png)](https://github.com/propensive/escapade/) &nbsp;
+
+The following _Niveau_ libraries are dependents of _Harlequin_:
+
+[![Punctuation](https://github.com/propensive/punctuation/raw/main/doc/images/128x128.png)](https://github.com/propensive/punctuation/) &nbsp;
 
 ## Status
 
