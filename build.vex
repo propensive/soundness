@@ -1,9 +1,18 @@
 {
   "repos": [
-    { "base": "../contextual", "url": "https://github.com/propensive/contextual" },
-    { "base": "../wisteria", "url": "https://github.com/propensive/wisteria" }
+    {
+      "base": "../contextual",
+      "url": "https://github.com/propensive/contextual"
+    },
+    {
+      "base": "../wisteria",
+      "url": "https://github.com/propensive/wisteria"
+    }
   ],
-  "imports": ["../contextual/build.vex", "../wisteria/build.vex"],
+  "imports": [
+    "../contextual/build.vex",
+    "../wisteria/build.vex"
+  ],
   "publishing": {
     "username": "propensive",
     "group": "com.propensive",
@@ -26,10 +35,17 @@
     {
       "name": "Gossamer",
       "id": "gossamer/core",
-      "links": ["contextual/core", "wisteria/core"],
-      "sources": ["src/core"],
-      "version": "0.2.0",
-      "docs": ["doc"]
+      "links": [
+        "contextual/core",
+        "wisteria/core"
+      ],
+      "sources": [
+        "src/core"
+      ],
+      "version": "0.4.0",
+      "docs": [
+        "doc"
+      ]
     }
   ]
 }
