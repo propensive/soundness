@@ -60,7 +60,7 @@ will return a sequence of `String`s which will print as,
 
 The following _Niveau_ libraries are dependencies of _Escritoire_:
 
-[![Rudiments](https://github.com/propensive/rudiments/raw/main/doc/images/128x128.png)](https://github.com/propensive/rudiments/) &nbsp;
+[![Escapade](https://github.com/propensive/escapade/raw/main/doc/images/128x128.png)](https://github.com/propensive/escapade/) &nbsp;
 
 The following _Niveau_ libraries are dependents of _Escritoire_:
 
