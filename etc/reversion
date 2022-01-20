@@ -22,8 +22,6 @@ then
   exit 1
 fi
 
-echo done
-exit 1
 if [ -z "$NEWVERSION" ]
 then
   echo "Please specify the new version number as the first parameter"
