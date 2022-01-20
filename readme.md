@@ -85,7 +85,7 @@ parsing failure, should it be useful to distinguish between these.
 
 The following _Niveau_ libraries are dependencies of _Gesticulate_:
 
-[![Gossamer](https://github.com/propensive/gossamer/raw/main/doc/images/128x128.png)](https://github.com/propensive/gossamer/) &nbsp;
+[![Clairvoyant](https://github.com/propensive/clairvoyant/raw/main/doc/images/128x128.png)](https://github.com/propensive/clairvoyant/) &nbsp; [![Gossamer](https://github.com/propensive/gossamer/raw/main/doc/images/128x128.png)](https://github.com/propensive/gossamer/) &nbsp;
 
 The following _Niveau_ libraries are dependents of _Gesticulate_:
 
@@ -101,7 +101,7 @@ Gesticulate is classified as __maturescent__. Propensive defines the following f
 - _dependable_: production-ready, subject to controlled ongoing maintenance and enhancement; tagged as version `1.0` or later
 - _adamantine_: proven, reliable and production-ready, with no further breaking changes ever anticipated
 
-Gesticulate is designed to be _small_. Its entire source code currently consists of 2193 lines of code.
+Gesticulate is designed to be _small_. Its entire source code currently consists of 255 lines of code.
 
 ## Building
 
