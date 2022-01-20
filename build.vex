@@ -21,30 +21,46 @@
     {
       "name": "Clairvoyant HTTP",
       "id": "clairvoyant/http",
-      "sources": ["src/http"],
-      "version": "0.2.0",
-      "docs": ["doc"]
+      "sources": [
+        "src/http"
+      ],
+      "version": "0.4.0",
+      "docs": [
+        "doc"
+      ]
     },
     {
       "name": "Clairvoyant Time",
       "id": "clairvoyant/time",
-      "sources": ["src/time"],
-      "version": "0.2.0",
-      "docs": ["doc"]
+      "sources": [
+        "src/time"
+      ],
+      "version": "0.4.0",
+      "docs": [
+        "doc"
+      ]
     },
     {
       "name": "Clairvoyant HTML",
       "id": "clairvoyant/html",
-      "sources": ["src/html"],
-      "version": "0.2.0",
-      "docs": ["doc"]
+      "sources": [
+        "src/html"
+      ],
+      "version": "0.4.0",
+      "docs": [
+        "doc"
+      ]
     },
     {
       "name": "Clairvoyant CSS",
       "id": "clairvoyant/css",
-      "sources": ["src/css"],
-      "version": "0.2.0",
-      "docs": ["doc"]
+      "sources": [
+        "src/css"
+      ],
+      "version": "0.4.0",
+      "docs": [
+        "doc"
+      ]
     }
   ]
 }
