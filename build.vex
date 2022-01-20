@@ -1,9 +1,18 @@
 {
   "repos": [
-    { "base": "../gossamer", "url": "https://github.com/propensive/gossamer" },
-    { "base": "../clairvoyant", "url": "https://github.com/propensive/clairvoyant" }
+    {
+      "base": "../gossamer",
+      "url": "https://github.com/propensive/gossamer"
+    },
+    {
+      "base": "../clairvoyant",
+      "url": "https://github.com/propensive/clairvoyant"
+    }
   ],
-  "imports": ["../gossamer/build.vex", "../clairvoyant/build.vex"],
+  "imports": [
+    "../gossamer/build.vex",
+    "../clairvoyant/build.vex"
+  ],
   "publishing": {
     "username": "propensive",
     "group": "com.propensive",
@@ -26,11 +35,20 @@
     {
       "name": "Gesticulate",
       "id": "gesticulate/core",
-      "links": ["gossamer/core", "clairvoyant/html"],
-      "sources": ["src/core"],
-      "resources": ["res"],
-      "version": "0.2.0",
-      "docs": ["doc"]
+      "links": [
+        "gossamer/core",
+        "clairvoyant/html"
+      ],
+      "sources": [
+        "src/core"
+      ],
+      "resources": [
+        "res"
+      ],
+      "version": "0.4.0",
+      "docs": [
+        "doc"
+      ]
     }
   ]
 }
