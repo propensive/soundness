@@ -79,7 +79,7 @@ origin) and accepting just those originating from a particular root.
 
 The following _Niveau_ libraries are dependencies of _Slalom_:
 
-[![Rudiments](https://github.com/propensive/rudiments/raw/main/doc/images/128x128.png)](https://github.com/propensive/rudiments/) &nbsp;
+[![Gossamer](https://github.com/propensive/gossamer/raw/main/doc/images/128x128.png)](https://github.com/propensive/gossamer/) &nbsp;
 
 The following _Niveau_ libraries are dependents of _Slalom_:
 
