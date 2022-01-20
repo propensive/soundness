@@ -1,8 +1,13 @@
 {
   "repos": [
-    { "base": "../eucalyptus", "url": "https://github.com/propensive/eucalyptus" }
+    {
+      "base": "../eucalyptus",
+      "url": "https://github.com/propensive/eucalyptus"
+    }
   ],
-  "imports": ["../eucalyptus/build.vex"],
+  "imports": [
+    "../eucalyptus/build.vex"
+  ],
   "publishing": {
     "username": "propensive",
     "group": "com.propensive",
@@ -25,10 +30,16 @@
     {
       "name": "Guillotine",
       "id": "guillotine/core",
-      "links": ["eucalyptus/core"],
-      "sources": ["src/core"],
-      "version": "0.2.0",
-      "docs": ["doc"]
+      "links": [
+        "eucalyptus/core"
+      ],
+      "sources": [
+        "src/core"
+      ],
+      "version": "0.4.0",
+      "docs": [
+        "doc"
+      ]
     }
   ]
 }
