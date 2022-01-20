@@ -57,11 +57,11 @@ do
 
   export LOC=$(cloc $MOD/src --quiet --json | jq .Scala.code)
   printf '.'
-  cat tmpl/readme.md | envsubst | tr '¶' '\n' > $MOD/readme.md
+  cat doc/templates/readme.md | envsubst | tr '¶' '\n' > $MOD/readme.md
   printf '.'
-  cat tmpl/contributing.md | envsubst | tr '¶' '\n' > $MOD/contributing.md
+  cat doc/templates/contributing.md | envsubst | tr '¶' '\n' > $MOD/contributing.md
   printf '.'
-  cp tmpl/license.md $MOD/license.md
+  cp doc/templates/license.md $MOD/license.md
   printf '.'
   printf "done\n"
 done
