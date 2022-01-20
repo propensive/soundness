@@ -13,7 +13,7 @@ do
   fi
   export VERSION="$(cat ${MOD}/doc/version)"
   TMP=.tmp.scala
-  cat tmpl/header | envsubst > ${MOD}/.header
+  cat doc/templates/header | envsubst > ${MOD}/.header
   for FILE in ${MOD}/src/**/*.scala
   do
     cat ${MOD}/.header > ${TMP}

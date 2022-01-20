@@ -22,7 +22,7 @@ do
     printf "."
     convert doc/images/1000x1000.png -background none -gravity center -resize 620x620 -extent 1280x640 doc/images/github.png > /dev/null
     printf "."
-    convert doc/images/github.png ../../tmpl/github.png -background transparent -layers flatten doc/images/github.png > /dev/null
+    convert doc/images/github.png ../../doc/templates/github.png -background transparent -layers flatten doc/images/github.png > /dev/null
     printf "."
     printf "done\n"
     git add doc/images doc/logo.svg
