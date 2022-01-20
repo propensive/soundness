@@ -105,7 +105,7 @@ Profanity does not currently support Windows.
 
 The following _Niveau_ libraries are dependencies of _Profanity_:
 
-[![Gossamer](https://github.com/propensive/gossamer/raw/main/doc/images/128x128.png)](https://github.com/propensive/gossamer/) &nbsp;
+[![Eucalyptus](https://github.com/propensive/eucalyptus/raw/main/doc/images/128x128.png)](https://github.com/propensive/eucalyptus/) &nbsp;
 
 No other _Niveau_ libraries are dependents of _Profanity_.
 
