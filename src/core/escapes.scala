@@ -19,11 +19,11 @@ package escapade
 import rudiments.*
 import gossamer.*
 
-type Escape = Ansi.Input.Esc
+type Escape = Ansi.Input.Escape
 
 object Escape:
   def apply(code: Text, reset: Maybe[Text] = Unset): Escape =
-    Ansi.Input.Esc(code, reset.otherwise(t""))
+    Escape(code, reset.otherwise(t""))
 
 object escapes:
   object foreground:

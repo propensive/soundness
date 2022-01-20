@@ -21,13 +21,13 @@ import gossamer.*
 import iridescence.*
 
 trait FallbackAnsiShow:
-  given AnsiShow[T: Show]: AnsiShow[T] = str => AnsiString(str.show)
+  given AnsiShow[T: Show]: AnsiShow[T] = str => AnsiText(str.show)
 
 object AnsiShow extends FallbackAnsiShow:
-  given AnsiShow[AnsiString] = identity(_)
+  given AnsiShow[AnsiText] = identity(_)
 
   given [T: AnsiShow]: AnsiShow[Option[T]] =
-    case None    => AnsiString("empty".show)
+    case None    => AnsiText("empty".show)
     case Some(v) => summon[AnsiShow[T]].ansiShow(v)
 
   given AnsiShow[Exception] = e => summon[AnsiShow[StackTrace]].ansiShow(StackTrace.apply(e))
@@ -55,13 +55,13 @@ object AnsiShow extends FallbackAnsiShow:
     df
 
   given AnsiShow[Double] =
-    double => AnsiString.make(decimalFormat.format(double).nn, _.copy(fg = colors.Gold))
+    double => AnsiText.make(decimalFormat.format(double).nn, _.copy(fg = colors.Gold))
 
   given AnsiShow[Throwable] =
     throwable =>
-      AnsiString.make[String](throwable.getClass.getName.nn.show.cut(t".").last.s,
+      AnsiText.make[String](throwable.getClass.getName.nn.show.cut(t".").last.s,
           _.copy(fg = colors.Crimson))
 
 trait AnsiShow[-T] extends Show[T]:
   def show(value: T): Text = ansiShow(value).plain
-  def ansiShow(value: T): AnsiString
+  def ansiShow(value: T): AnsiText
