@@ -21,9 +21,13 @@
     {
       "name": "Rudiments",
       "id": "rudiments/core",
-      "sources": ["src/core"],
-      "version": "0.2.0",
-      "docs": ["doc"]
+      "sources": [
+        "src/core"
+      ],
+      "version": "0.4.0",
+      "docs": [
+        "doc"
+      ]
     }
   ]
 }
