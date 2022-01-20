@@ -218,7 +218,7 @@ this possibility.
 
 The following _Niveau_ libraries are dependencies of _Gastronomy_:
 
-[![Kaleidoscope](https://github.com/propensive/kaleidoscope/raw/main/doc/images/128x128.png)](https://github.com/propensive/kaleidoscope/) &nbsp; [![Wisteria](https://github.com/propensive/wisteria/raw/main/doc/images/128x128.png)](https://github.com/propensive/wisteria/) &nbsp;
+[![Gossamer](https://github.com/propensive/gossamer/raw/main/doc/images/128x128.png)](https://github.com/propensive/gossamer/) &nbsp;
 
 The following _Niveau_ libraries are dependents of _Gastronomy_:
 
