@@ -1,10 +1,25 @@
 {
   "repos": [
-    { "base": "../gesticulate", "url": "https://github.com/propensive/gesticulate" },
-    { "base": "../eucalyptus", "url": "https://github.com/propensive/eucalyptus" },
-    { "base": "../slalom", "url": "https://github.com/propensive/slalom" },
-    { "base": "../clairvoyant", "url": "https://github.com/propensive/clairvoyant" },
-    { "base": "../gastronomy", "url": "https://github.com/propensive/gastronomy" }
+    {
+      "base": "../gesticulate",
+      "url": "https://github.com/propensive/gesticulate"
+    },
+    {
+      "base": "../eucalyptus",
+      "url": "https://github.com/propensive/eucalyptus"
+    },
+    {
+      "base": "../slalom",
+      "url": "https://github.com/propensive/slalom"
+    },
+    {
+      "base": "../clairvoyant",
+      "url": "https://github.com/propensive/clairvoyant"
+    },
+    {
+      "base": "../gastronomy",
+      "url": "https://github.com/propensive/gastronomy"
+    }
   ],
   "imports": [
     "../gesticulate/build.vex",
@@ -42,27 +57,47 @@
         "clairvoyant/http",
         "gastronomy/core"
       ],
-      "sources": ["src/core"],
-      "version": "0.2.0",
-      "docs": ["doc"]
+      "sources": [
+        "src/core"
+      ],
+      "version": "0.4.0",
+      "docs": [
+        "doc"
+      ]
     },
     {
       "name": "Scintillate Server",
       "id": "scintillate/server",
-      "links": ["scintillate/core"],
-      "sources": ["src/server"],
-      "version": "0.2.0",
-      "docs": ["doc"]
+      "links": [
+        "scintillate/core"
+      ],
+      "sources": [
+        "src/server"
+      ],
+      "version": "0.4.0",
+      "docs": [
+        "doc"
+      ]
     },
     {
       "name": "Scintillate Servlet",
       "id": "scintillate/servlet",
-      "links": ["scintillate/server"],
-      "dependencies": ["javax.servlet:javax.servlet-api:3.0.1"],
-      "jars": ["https://repo1.maven.org/maven2/javax/servlet/javax.servlet-api/3.0.1/javax.servlet-api-3.0.1.jar"],
-      "sources": ["src/servlet"],
-      "version": "0.2.0",
-      "docs": ["doc"]
+      "links": [
+        "scintillate/server"
+      ],
+      "dependencies": [
+        "javax.servlet:javax.servlet-api:3.0.1"
+      ],
+      "jars": [
+        "https://repo1.maven.org/maven2/javax/servlet/javax.servlet-api/3.0.1/javax.servlet-api-3.0.1.jar"
+      ],
+      "sources": [
+        "src/servlet"
+      ],
+      "version": "0.4.0",
+      "docs": [
+        "doc"
+      ]
     }
   ]
 }
