@@ -277,6 +277,8 @@ object SystemErr
 def safely[T](value: => CanThrow[Exception] ?=> T): Maybe[T] =
   try value(using unsafeExceptions.canThrowAny) catch NonFatal => Unset
 
+def unsafely[T](value: => CanThrow[Exception] ?=> T): T = value(using unsafeExceptions.canThrowAny)
+
 extension [T](value: T)
   def dataStream(using src: Source[T]): DataStream throws src.E = src.read(value)
   
