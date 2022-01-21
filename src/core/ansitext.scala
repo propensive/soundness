@@ -5,25 +5,25 @@ import rudiments.*
 import iridescence.*
 import contextual.*
 
-opaque type Span = Long
+opaque type CharSpan = Long
 
-object Span:
-  def apply(start: Int, end: Int): Span = (start.toLong << 32) + (Int.MaxValue - end)
-  given Ordering[Span] = Ordering.Long.on[Span](identity(_))
-  val Nowhere: Span = Span(Int.MaxValue, Int.MaxValue)
+object CharSpan:
+  def apply(start: Int, end: Int): CharSpan = (start.toLong << 32) + (Int.MaxValue - end)
+  given Ordering[CharSpan] = Ordering.Long.on[CharSpan](identity(_))
+  val Nowhere: CharSpan = CharSpan(Int.MaxValue, Int.MaxValue)
 
-extension (span: Span)
+extension (span: CharSpan)
   def start: Int = (span >> 32).toInt
   def end: Int = Int.MaxValue - span.toInt
   def isEmpty: Boolean = start == end
   
-  def trimLeft(n: Int): Span = 
-    if n >= end then Span.Nowhere else if n <= start then Span(start - n, end - n) else Span(0, end - n)
+  def trimLeft(n: Int): CharSpan = 
+    if n >= end then CharSpan.Nowhere else if n <= start then CharSpan(start - n, end - n) else CharSpan(0, end - n)
   
-  def takeLeft(n: Int): Span =
-    if n <= start then Span.Nowhere else if n >= end then span else Span(start, n)
+  def takeLeft(n: Int): CharSpan =
+    if n <= start then CharSpan.Nowhere else if n >= end then span else CharSpan(start, n)
 
-  def shift(n: Int): Span = Span(start + n, end + n)
+  def shift(n: Int): CharSpan = CharSpan(start + n, end + n)
 
 case class TextStyle(fg: Option[Srgb] = None, bg: Option[Srgb] = None, italic: Boolean = false,
                          bold: Boolean = false, reverse: Boolean = false, underline: Boolean = false,
@@ -89,9 +89,9 @@ object Ansi:
   case class Frame(bracket: Char, start: Int, transform: Transform)
   
   case class State(text: Text = t"", last: Option[Transform] = None, stack: List[Frame] = Nil,
-                       spans: TreeMap[Span, Transform] = TreeMap(),
+                       spans: TreeMap[CharSpan, Transform] = TreeMap(),
                        insertions: TreeMap[Int, Text] = TreeMap()):
-    def add(span: Span, transform: Transform): State =
+    def add(span: CharSpan, transform: Transform): State =
       copy(spans = spans.updated(span, spans.get(span).fold(transform)(transform.andThen(_))))
     
     def add(pos: Int, esc: Escape): State =
@@ -111,7 +111,7 @@ object Ansi:
             closures(state.copy(stack = frame :: state.stack, last = None), text.drop(1))
   
           case _ =>
-            closures(state.add(Span(state.text.length, state.text.length), transform).copy(last = None), text)
+            closures(state.add(CharSpan(state.text.length, state.text.length), transform).copy(last = None), text)
 
     private def closures(state: State, text: Text): State =
       state.stack.headOption.fold(state.copy(text = state.text+text)):
@@ -122,14 +122,14 @@ object Ansi:
             
             case idx: Int =>
               val newText = state.text+text.take(idx)
-              val newSpan: Span = Span(frame.start, state.text.length + idx)
+              val newSpan: CharSpan = CharSpan(frame.start, state.text.length + idx)
               val newState: State = state.add(newSpan, frame.transform).copy(text = newText, last = None, stack = state.stack.tail)
               closures(newState, text.drop(idx + 1))
 
     def insert(state: State, value: Input): State = value match
       case Input.Textual(text) =>
-        val textSpans: TreeMap[Span, Transform] = text.spans.map:
-          case (span, transform) => (span.shift(state.text.length): Span) -> transform
+        val textSpans: TreeMap[CharSpan, Transform] = text.spans.map:
+          case (span, transform) => (span.shift(state.text.length): CharSpan) -> transform
 
         val textInsertions: TreeMap[Int, Text] = text.insertions.map:
           case (pos, ins) => (pos + state.text.length) -> ins
@@ -156,9 +156,9 @@ object AnsiText:
   
   def make[T: Show](value: T, transform: Ansi.Transform): AnsiText =
     val str: Text = value.show
-    AnsiText(str, TreeMap(Span(0, str.length) -> transform))
+    AnsiText(str, TreeMap(CharSpan(0, str.length) -> transform))
 
-case class AnsiText(plain: Text, spans: TreeMap[Span, Ansi.Transform] = TreeMap(),
+case class AnsiText(plain: Text, spans: TreeMap[CharSpan, Ansi.Transform] = TreeMap(),
                         insertions: TreeMap[Int, Text] = TreeMap()):
   def length: Int = plain.length
   def span(n: Int): AnsiText = take(n).padTo(n)
@@ -173,24 +173,24 @@ case class AnsiText(plain: Text, spans: TreeMap[Span, Ansi.Transform] = TreeMap(
   infix def +(text: Text): AnsiText = AnsiText(t"$plain$text", spans)
 
   infix def +(text: AnsiText): AnsiText =
-    val newSpans: TreeMap[Span, Ansi.Transform] = text.spans.map:
-      case (span, transform) => (span.shift(length): Span) -> transform
+    val newSpans: TreeMap[CharSpan, Ansi.Transform] = text.spans.map:
+      case (span, transform) => (span.shift(length): CharSpan) -> transform
     
     AnsiText(plain+text.plain, spans ++ newSpans)
 
   def drop(n: Int): AnsiText =
-    val newSpans: TreeMap[Span, Ansi.Transform] =
+    val newSpans: TreeMap[CharSpan, Ansi.Transform] =
       spans.map:
-        case (span, transform) => span.trimLeft(n).asInstanceOf[Span] -> transform
-      .filterKeys { k => k.isEmpty || k != Span.Nowhere }.to(TreeMap)
+        case (span, transform) => span.trimLeft(n).asInstanceOf[CharSpan] -> transform
+      .filterKeys { k => k.isEmpty || k != CharSpan.Nowhere }.to(TreeMap)
     
     AnsiText(plain.drop(n), newSpans)
 
   def take(n: Int): AnsiText =
-    val newSpans: TreeMap[Span, Ansi.Transform] =
+    val newSpans: TreeMap[CharSpan, Ansi.Transform] =
       spans.map:
-        (span, tf) => span.takeLeft(n).asInstanceOf[Span] -> tf
-      .filterKeys { k => k.isEmpty || k != Span.Nowhere }.to(TreeMap)
+        (span, tf) => span.takeLeft(n).asInstanceOf[CharSpan] -> tf
+      .filterKeys { k => k.isEmpty || k != CharSpan.Nowhere }.to(TreeMap)
     
     AnsiText(plain.take(n), newSpans)
 
@@ -201,8 +201,8 @@ case class AnsiText(plain: Text, spans: TreeMap[Span, Ansi.Transform] = TreeMap(
     val buf = StringBuilder()
 
     @tailrec
-    def recur(spans: TreeMap[Span, Ansi.Transform], pos: Int = 0, style: TextStyle = TextStyle(),
-                  stack: List[(Span, TextStyle)] = Nil, insertions: TreeMap[Int, Text] = TreeMap()): Text =
+    def recur(spans: TreeMap[CharSpan, Ansi.Transform], pos: Int = 0, style: TextStyle = TextStyle(),
+                  stack: List[(CharSpan, TextStyle)] = Nil, insertions: TreeMap[Int, Text] = TreeMap()): Text =
 
       inline def addSpan(): Text =
         val newInsertions = addText(pos, spans.head(0).start, insertions)
