@@ -164,21 +164,21 @@ case class Realm(name: Text):
     @targetName("directTo")
     def |->[S: Sink, T](sink: S)(using LogFormat[S, T]): Rule[S, T] = realm.|->(sink, Level.Fail)
 
-case class Entry(realm: Realm, level: Level, message: AnsiString, timestamp: Timestamp)
+case class Entry(realm: Realm, level: Level, message: AnsiText, timestamp: Timestamp)
 
 object LogFormat:
   val t0 = Timestamp()
-  given LogFormat[SystemOut.type, AnsiString] with
+  given LogFormat[SystemOut.type, AnsiText] with
     override def interval: Int = 50
-    def serialize(value: AnsiString): Bytes = value.render.bytes
+    def serialize(value: AnsiText): Bytes = value.render.bytes
 
-    def format(entry: Entry): AnsiString =
+    def format(entry: Entry): AnsiText =
       ansi"${entry.timestamp.ansi} ${entry.level.ansi} ${entry.realm.ansi.span(8)} ${entry.message}"
 
-  val timed: LogFormat[SystemOut.type, AnsiString] = new LogFormat[SystemOut.type, AnsiString]:
+  val timed: LogFormat[SystemOut.type, AnsiText] = new LogFormat[SystemOut.type, AnsiText]:
     override def interval: Int = 50
-    def serialize(value: AnsiString): Bytes = value.render.bytes
-    def format(entry: Entry): AnsiString =
+    def serialize(value: AnsiText): Bytes = value.render.bytes
+    def format(entry: Entry): AnsiText =
       ansi"${ElapsedTime.between(t0, entry.timestamp)} ${entry.level.ansi} ${entry.realm.ansi.span(8)} ${entry.message}"
 
 trait LogFormat[S, T]:
@@ -189,8 +189,8 @@ trait LogFormat[S, T]:
 abstract class PlainLogFormat[S] extends LogFormat[S, String]:
   def serialize(value: String): Bytes = value.show.bytes
 
-abstract class AnsiLogFormat[S] extends LogFormat[S, AnsiString]:
-  def serialize(value: AnsiString): Bytes = value.render.bytes
+abstract class AnsiLogFormat[S] extends LogFormat[S, AnsiText]:
+  def serialize(value: AnsiText): Bytes = value.render.bytes
 
 object Logger:
   private var threadId: Int = -1
