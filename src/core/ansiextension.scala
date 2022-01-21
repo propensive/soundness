@@ -19,8 +19,8 @@ package escapade
 import rudiments.*
 
 extension (inline ctx: StringContext)
-  transparent inline def ansi(inline parts: Any*): AnsiString =
+  transparent inline def ansi(inline parts: Any*): AnsiText =
     ${Ansi.Interpolator.expand('{Ansi.Interpolator}, 'ctx, 'parts)}
 
 extension [T](value: T)
-  def ansi(using AnsiShow[T]): AnsiString = summon[AnsiShow[T]].ansiShow(value)
+  def ansi(using AnsiShow[T]): AnsiText = summon[AnsiShow[T]].ansiShow(value)
