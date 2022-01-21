@@ -38,7 +38,7 @@ object Column:
     new Column[Row](summon[AnsiShow[H]].ansiShow(name), width, align):
       def get(r: Row): Text = summon[AnsiShow[V]].ansiShow(getter(r)).render
 
-trait Column[Row](val name: AnsiString, val width: Width = Width.Flexible,
+trait Column[Row](val name: AnsiText, val width: Width = Width.Flexible,
                        val align: Align = Align.Left):
   def get(r: Row): Text
 

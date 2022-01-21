@@ -44,7 +44,7 @@ object Column:
                 width: ColumnWidth = ColumnWidth(4, 100)): Column[T] =
     Column[T](title.ansi, t => cell(t).ansi, breaks, alignment, width)
 
-case class Column[T](title: AnsiString, cell: T => AnsiString, breaks: Breaks, alignment: Alignment,
+case class Column[T](title: AnsiText, cell: T => AnsiText, breaks: Breaks, alignment: Alignment,
                          width: ColumnWidth)
 
 case class TableWidthError(total: Int) extends Error:
@@ -83,8 +83,8 @@ case class Tabulation[T: ClassTag](cols: Column[T]*):
     colsArray.map(ws(_))
 
   def tabulate(rows: Seq[T], width: Int, style: BorderStyle)
-              : Unit throws TableWidthError =//IArray[AnsiString] throws TableWidthError =
-    val cells: IArray[IArray[AnsiString]] =
+              : Unit throws TableWidthError =//IArray[AnsiText] throws TableWidthError =
+    val cells: IArray[IArray[AnsiText]] =
       val rowsArray: IArray[T] = IArray.from(rows)
       rowsArray.map { row => colsArray.map { col => col.cell(row) } }
 
