@@ -337,10 +337,10 @@ case class Params(values: List[(Text, Text)]):
   
   def prefix(str: Text): Params = Params:
     values.map:
-      (k, v) => (if k.isEmpty then str else t"$str.$k", v)
+      (k, v) => (if k.length == 0 then str else t"$str.$k", v)
 
   def queryString: Text = values.map:
-    (k, v) => if k.isEmpty then v.urlEncode else t"${k.urlEncode}=${v.urlEncode}"
+    (k, v) => if k.length == 0 then v.urlEncode else t"${k.urlEncode}=${v.urlEncode}"
   .join(t"&")
 
 object Uri:
