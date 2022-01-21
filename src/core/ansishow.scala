@@ -36,6 +36,7 @@ object AnsiShow extends FallbackAnsiShow:
     val methodWidth = stack.frames.map(_.method.length).max
     val classWidth = stack.frames.map(_.className.length).max
     val fileWidth = stack.frames.map(_.file.length).max
+    
     val root = stack.frames.foldLeft(ansi"${Bg(colors.OrangeRed)}(${colors.Black}( ${stack.component} ))${colors.OrangeRed}(${Bg(colors.Orange)}())${Bg(colors.Orange)}( ${colors.Black}(${stack.className}) )${colors.Orange}() ${colors.Ivory}(${stack.message})"):
       case (msg, frame) =>
         val obj: Boolean = frame.className.endsWith(t"$$")
@@ -55,12 +56,12 @@ object AnsiShow extends FallbackAnsiShow:
     df
 
   given AnsiShow[Double] =
-    double => AnsiText.make(decimalFormat.format(double).nn, _.copy(fg = colors.Gold))
+    double => AnsiText.make(decimalFormat.format(double).nn, _.copy(fg = Some(colors.Gold)))
 
   given AnsiShow[Throwable] =
     throwable =>
       AnsiText.make[String](throwable.getClass.getName.nn.show.cut(t".").last.s,
-          _.copy(fg = colors.Crimson))
+          _.copy(fg = Some(colors.Crimson)))
 
 trait AnsiShow[-T] extends Show[T]:
   def show(value: T): Text = ansiShow(value).plain

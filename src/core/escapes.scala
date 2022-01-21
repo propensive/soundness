@@ -23,7 +23,7 @@ type Escape = Ansi.Input.Escape
 
 object Escape:
   def apply(code: Text, reset: Maybe[Text] = Unset): Escape =
-    Escape(code, reset.otherwise(t""))
+    Ansi.Input.Escape(code, reset.otherwise(t""))
 
 object escapes:
   object foreground:
