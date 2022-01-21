@@ -50,15 +50,16 @@ object DebugString extends FallbackDebugString:
 
   given string: DebugString[Text] = text =>
     val escaped = text.flatMap:
-      case '\n' => t"\\n"
-      case '\t' => t"\\t"
-      case '\r' => t"\\r"
-      case '\\' => t"\\\\"
-      case '\"' => t"\\\""
-      case '\'' => t"\\\'"
-      case '\b' => t"\\b"
-      case '\f' => t"\\f"
-      case ch   => if ch < 128 && ch >= 32 then ch.show
+      case '\n'     => t"\\n"
+      case '\u001b' => t"\\e"
+      case '\t'     => t"\\t"
+      case '\r'     => t"\\r"
+      case '\\'     => t"\\\\"
+      case '\"'     => t"\\\""
+      case '\''     => t"\\\'"
+      case '\b'     => t"\\b"
+      case '\f'     => t"\\f"
+      case ch       => if ch < 128 && ch >= 32 then ch.show
                    else String.format("\\u%04x", ch.toInt).nn.show
 
     t"\"$escaped\""
