@@ -23,14 +23,14 @@ import iridescence.*
 import harlequin.*
 
 case class BodyText(blocks: TextBlock*):
-  def serialize(width: Int): AnsiString = blocks.map(_.render(width)).join(ansi"${'\n'}${'\n'}")
+  def serialize(width: Int): AnsiText = blocks.map(_.render(width)).join(ansi"${'\n'}${'\n'}")
 
-case class TextBlock(indent: Int, text: AnsiString):
+case class TextBlock(indent: Int, text: AnsiText):
   @targetName("add")
-  def +(txt: AnsiString): TextBlock = TextBlock(indent, text+txt)
+  def +(txt: AnsiText): TextBlock = TextBlock(indent, text+txt)
   
-  def render(width: Int): AnsiString =
-    def rest(text: AnsiString, lines: List[AnsiString]): List[AnsiString] =
+  def render(width: Int): AnsiText =
+    def rest(text: AnsiText, lines: List[AnsiText]): List[AnsiText] =
       if text.length == 0 then lines.reverse
       else
         try
@@ -137,7 +137,7 @@ open class TextConverter():
   // def listItem(node: Markdown.Ast.ListItem): Seq[Item["li"]] = node match
   //   case Markdown.Ast.ListItem(children*) => List(Li(convert(children)*))
 
-  def text(node: Seq[Markdown.Ast.Node]): AnsiString = node.map:
+  def text(node: Seq[Markdown.Ast.Node]): AnsiText = node.map:
     case Markdown.Ast.Inline.Image(text, _)         => ansi"[ $text ]"
     case Markdown.Ast.Inline.Link(s, desc)          => ansi"${colors.DeepSkyBlue}($Underline(${text(Seq(desc))})${colors.DarkGray}([)${colors.RoyalBlue}($Underline($s))${colors.DarkGray}(])) "
     case Markdown.Ast.Inline.Break()                => ansi""
@@ -156,7 +156,7 @@ open class TextConverter():
     case _                                          => ansi""
   .join
 
-  def phrasing(node: Markdown.Ast.Inline): AnsiString = node match
+  def phrasing(node: Markdown.Ast.Inline): AnsiText = node match
     case Markdown.Ast.Inline.Image(altText, location) => ansi"[ $altText ]"
     case Markdown.Ast.Inline.Break()                  => ansi"\n"
     case Markdown.Ast.Inline.Emphasis(children*)      => ansi"$Italic(${children.map(phrasing).join})"
