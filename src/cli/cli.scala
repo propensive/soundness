@@ -1,5 +1,5 @@
 /*
-    Probably, version 0.4.0. Copyright 2017-22 Jon Pretty, Propensive OÜ.
+    Probably, version 0.18.0. Copyright 2017-22 Jon Pretty, Propensive OÜ.
 
     The primary distribution site is: https://propensive.com/
 
@@ -34,16 +34,16 @@ object Suite:
     '#' -> colors.Gold
   ).map { (ch, color) => ansi"${Bg(color)}( ${colors.Black}($Bold(${ch.show})) )" }
   
-  private val legend: List[AnsiString] =
+  private val legend: List[AnsiText] =
     statuses.zip(List(t"Pass", t"Fail", t"Assertion throws", t"Throws an exception",
         t"Inconsistent", t"Suite partially fails")).map:
       (status, desc) => ansi"$status ${desc.show.fit(32)}"
     .to(List)
 
-  val footer: AnsiString = legend.grouped(2).map(_.join(ansi"  ")).to(Seq).join(AnsiString(t"\n"),
-      AnsiString(t"\n"), AnsiString(t"\n"))
+  val footer: AnsiText = legend.grouped(2).map(_.join(ansi"  ")).to(Seq).join(AnsiText(t"\n"),
+      AnsiText(t"\n"), AnsiText(t"\n"))
   
-  def show(report: Report): AnsiString =
+  def show(report: Report): AnsiText =
     val simple = report.results.forall(_.count == 1)
 
     given AnsiShow[Outcome] =
@@ -66,25 +66,27 @@ object Suite:
       if simple then Tabulation[Summary](status, hash, name, avg)
       else Tabulation[Summary](status, hash, name, count, min, avg, max)
 
-    val resultsTable: AnsiString = table.tabulate(100, report.results).join(t"\n").ansi
+    val resultsTable: AnsiText = table.tabulate(100, report.results).join(t"\n").ansi
 
-    val failures: AnsiString = report.results.filter { result =>
-      result.outcome != Outcome.Passed && result.outcome != Outcome.Mixed
-    }.flatMap { result =>
-      List(
-        ansi"${result.outcome} $Bold($Underline(${result.name})): ${colors.SkyBlue}(${result.outcome.filename}):${colors.Goldenrod}(${result.outcome.line})",
-        ansi"${(result.outcome.debug.cut(t"\n"): List[Text]).join(t"      ", t"\n      ", t"")}",
-        ansi""
-      )
-    }.join(AnsiString(t"\n"))
+    val failures: AnsiText =
+      report.results.filter:
+        result => result.outcome != Outcome.Passed && result.outcome != Outcome.Mixed
+      .flatMap:
+        result =>
+          List(
+            ansi"${result.outcome} $Bold($Underline(${result.name})): ${colors.SkyBlue}(${result.outcome.filename}):${colors.Goldenrod}(${result.outcome.line})",
+            ansi"${(result.outcome.debug.cut(t"\n"): List[Text]).join(t"      ", t"\n      ", t"")}",
+            ansi""
+          )
+      .join(AnsiText(t"\n"))
 
-    val summary: AnsiString = Map(
+    val summary: AnsiText = Map(
       "Passed" -> report.passed,
       "Failed" -> report.failed,
       "Total" -> report.total
     ).map { (key, value) => ansi"$Bold($key): ${value.show}" }.join(ansi"   ")
 
-    List(resultsTable, failures, summary, Suite.footer).join(AnsiString(t"\n"))
+    List(resultsTable, failures, summary, Suite.footer).join(AnsiText(t"\n"))
 
 trait Suite(val name: Text) extends TestSuite:
   def run(using Runner): Unit
