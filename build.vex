@@ -1,0 +1,23 @@
+{
+  "imports": ["../niveau/mod/probably/build.vex", "../niveau/mod/jovian/build.vex"],
+  "modules": [
+    {
+      "name": "Merino",
+      "id": "merino/core",
+      "links": ["gossamer/core", "jovian/core"],
+      "sources": ["src/core"],
+      "version": "0.1.0",
+      "docs": ["doc"]
+    },
+    {
+      "name": "Merino tests",
+      "id": "merino/test",
+      "links": ["merino/core", "probably/cli"],
+      "sources": ["src/test"],
+      "version": "0.1.0",
+      "docs": ["doc"],
+      "main": "merino.run",
+      "artifact": "merino.jar"
+    }
+  ]
+}
