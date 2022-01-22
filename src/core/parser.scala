@@ -7,7 +7,7 @@ import rudiments.*
 import stdouts.stdout
 
 enum Json:
-  case Number(value: Long | BigDecimal)
+  case Number(value: Long | BigDecimal | Double)
   case JString(value: String)
   case JObject(values: (String, Json)*)
   case JArray(values: Json*)
@@ -334,28 +334,43 @@ object Json:
     def parseNumber(start: Int, negative: Boolean): Json.Number =
       import Flag.*
       var mantissa: Long = 0L
+      lazy val bigDecimal: StringBuffer = StringBuffer()
       var fractional: Long = 0L
       var exponent: Long = 0L
       var continue: Boolean = true
       var hasExponent: Boolean = false
       var terminible: Boolean = false
       var decimalPoint: Boolean = false
+      var divisor: Double = 1.0
       var leadingZero: Boolean = current == Num0
       var negativeExponent: Boolean = false
+      var large: Boolean = false
+      var result: Double | BigDecimal | Long = 0L
       
       if current == Period then abort(t"cannot start a number with a decimal point")
 
       while continue do
         (current: @switch) match
           case Num0 | Num1 | Num2 | Num3 | Num4 | Num5 | Num6 | Num7 | Num8 | Num9 =>
-            if hasExponent then exponent = exponent*10 + current - 48
-            else if decimalPoint then fractional = fractional*10 + current - 48
-            else mantissa = mantissa*10 + current - 48
+            if large then bigDecimal.append((current - 48).toChar)
+            else if hasExponent then exponent = exponent*10 + current - 48
+            else if decimalPoint then
+              fractional = fractional*10 + current - 48
+              divisor *= 10
+            else
+              val newMantissa = mantissa*10 + current - 48
+              if newMantissa < mantissa then
+                if negative then bigDecimal.append('-')
+                bigDecimal.append(mantissa.toString)
+                bigDecimal.append((current - 48).toChar)
+                large = true
+              else mantissa = newMantissa
             terminible = true
             if cur == penultimate then continue = false
             next()
           
           case Period =>
+            if large then bigDecimal.append('.')
             if decimalPoint then abort(t"a number can have at most one decimal point")
             if hasExponent then abort(t"a decimal point cannot appear after an exponent")
             decimalPoint = true
@@ -363,14 +378,24 @@ object Json:
             next()
           
           case UpperE | LowerE =>
+            if large then bigDecimal.append('e')
             if hasExponent then abort(t"a number can have at most one exponent")
             if !terminible then abort(t"a number's mantissa cannot end in a '.'")
             
             next()
+            
             (current: @switch) match
-              case Minus => negativeExponent = true; next()
-              case Plus  => next()
-              case _     => ()
+              case Minus =>
+                if large then bigDecimal.append('-')
+                negativeExponent = true
+                next()
+              
+              case Plus =>
+                next()
+              
+              case _ =>
+                ()
+            
             hasExponent = true
             terminible = false
           
@@ -381,12 +406,17 @@ object Json:
             if mantissa == 0 && !decimalPoint && hasExponent && exponent != 1
             then abort(t"zero integer should not have an exponent")
             
+            result = 
+              if large then BigDecimal(bigDecimal.toString)
+              else if decimalPoint then (mantissa + fractional/divisor)
+              else mantissa
+            
             continue = false
           
           case ch =>
             abort(t"unexpected character: '$ch' at position $cur")
       
-      Json.Number(mantissa)
+      Json.Number(result)
     
     skip()
     val result = parseValue()

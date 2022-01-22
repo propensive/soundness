@@ -27,7 +27,7 @@ object Tests extends Suite(t"Merino tests"):
                 err.printStackTrace()
                 Right(err.toString.show)
           .check(_.isRight)
-        else if file.name.startsWith(t"i_")
+        else if file.name.startsWith(t"y_")
         then
           test(t"Positive test: ${file.name.drop(2).drop(5, Rtl)}"):
             try
