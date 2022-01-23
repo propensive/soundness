@@ -3,7 +3,7 @@ package merino
 import annotation.*
 import gossamer.*
 import rudiments.*
-import scala.collection.mutable.HashMap
+import scala.collection.mutable.{HashMap, ListBuffer}
 
 import stdouts.stdout
 
@@ -11,7 +11,7 @@ enum Json:
   case Number(value: Long | BigDecimal | Double)
   case JString(value: String)
   case JObject(values: Map[String, Json])
-  case JArray(values: Json*)
+  case JArray(values: List[Json])
   case True
   case False
   case Null
@@ -20,7 +20,7 @@ enum Json:
     case Number(value)   => value.toString
     case JString(value)  => t"\"${value}\"".s
     case JObject(values) => values.map { (k, v) => t"\"$k\": $v" }.join(t"{ ", t", ", t" }").s
-    case JArray(values*) => values.map(_.show).join(t"[ ", t", ", t" ]").s
+    case JArray(values) => values.map(_.show).join(t"[ ", t", ", t" ]").s
     case True            => "true"
     case False           => "false"
     case Null            => "null"
@@ -151,21 +151,26 @@ object Json:
       
       Json.JObject(items.to(Map))
 
-    @tailrec
-    def parseArray(items: List[Json] = Nil): Json.JArray =
-      skip()
-      current match
-        case CloseBracket =>
-          if !items.isEmpty then abort(t"closing bracket appears after comma")
-          next()
-          Json.JArray(items*)
-        case ch =>
-          val value = parseValue()
-          skip()
-          current match
-            case Comma        => next(); parseArray(value :: items)
-            case CloseBracket => next(); Json.JArray((value :: items)*)
-            case ch           => abort(t"expected ',' or ']' but found '${ch.toChar}'")
+    def parseArray(): Json.JArray =
+      val items: ListBuffer[Json] = ListBuffer()
+      var continue = true
+      while continue do
+        skip()
+        current match
+          case CloseBracket =>
+            if !items.isEmpty then abort(t"closing bracket appears after comma")
+            continue = false
+          case ch =>
+            val value = parseValue()
+            skip()
+            current match
+              case Comma        => items += value
+              case CloseBracket => continue = false
+              case ch           => abort(t"expected ',' or ']' but found '${ch.toChar}'")
+        
+        next()
+      
+      Json.JArray(items.to(List))
 
     def parseString(): Json.JString =
       val start = cur
@@ -273,6 +278,7 @@ object Json:
               next()
               char += current & 63
               append(char.toChar)
+            else append(ch.toChar)
             
             next()
       
@@ -355,7 +361,7 @@ object Json:
       while continue do
         (current: @switch) match
           case Num0 | Num1 | Num2 | Num3 | Num4 | Num5 | Num6 | Num7 | Num8 | Num9 =>
-            if large then bigDecimal.append((current - 48).toChar)
+            if large then bigDecimal.append(current.toChar)
             else if hasExponent then exponent = exponent*10 + current - 48
             else if decimalPoint then
               fractional = fractional*10 + current - 48
@@ -365,7 +371,7 @@ object Json:
               if newMantissa < mantissa then
                 if negative then bigDecimal.append('-')
                 bigDecimal.append(mantissa.toString)
-                bigDecimal.append((current - 48).toChar)
+                bigDecimal.append(current.toChar)
                 large = true
               else mantissa = newMantissa
             terminible = true
@@ -375,7 +381,7 @@ object Json:
           case Period =>
             if large then bigDecimal.append('.')
             if decimalPoint then abort(t"a number can have at most one decimal point")
-            if hasExponent then abort(t"a decimal point cannot appear after an exponent")
+            if hasExponent then abort(t"the exponent must be an integer")
             decimalPoint = true
             terminible = false
             next()
@@ -383,7 +389,7 @@ object Json:
           case UpperE | LowerE =>
             if large then bigDecimal.append('e')
             if hasExponent then abort(t"a number can have at most one exponent")
-            if !terminible then abort(t"a number's mantissa cannot end in a '.'")
+            if !terminible then abort(t"the mantissa requires at least one digit after the decimal point")
             
             next()
             
@@ -403,21 +409,24 @@ object Json:
             terminible = false
           
           case Tab | Return | Newline | Space | Comma | CloseBracket | CloseBrace =>
-            if !terminible then abort(t"incomplete number")
-            if leadingZero && mantissa != 0 then abort(t"number should not have a leading zero")
+            if !terminible then abort(t"the number was incomplete")
+            if leadingZero && mantissa != 0 then abort(t"the number should not have a leading zero")
             
             if mantissa == 0 && !decimalPoint && hasExponent && exponent != 1
-            then abort(t"zero integer should not have an exponent")
+            then abort(t"the integer 0 cannot have an exponent other than 1")
             
             result = 
-              if large then BigDecimal(bigDecimal.toString)
-              else if decimalPoint then (mantissa + fractional/divisor)
-              else mantissa
+              if large then
+                try BigDecimal(bigDecimal.toString)
+                catch
+                  case err: NumberFormatException => Out.println(t"Tried to parse '${bigDecimal.toString}'"); throw err
+              else if decimalPoint then (mantissa + fractional/divisor)*(if negative then -1 else 1)
+              else if negative then -mantissa else mantissa
             
             continue = false
           
           case ch =>
-            abort(t"unexpected character: '$ch' at position $cur")
+            abort(t"found an unexpected character '$ch'")
       
       Json.Number(result)
     
@@ -428,10 +437,11 @@ object Json:
       current match
         case Tab | Newline | Return | Space => ()
         case other =>
-          abort(t"spurious extra characters at the end of the stream")
+          abort(t"spurious extra characters were found at the end")
       
       next()
 
     result
   catch
-    case err: ArrayIndexOutOfBoundsException => throw JsonParseError(stream.head.length, t"JSON was not properly terminated")
+    case err: ArrayIndexOutOfBoundsException =>
+      throw JsonParseError(stream.head.length, t"the JSON was not properly terminated")

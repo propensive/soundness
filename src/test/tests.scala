@@ -12,7 +12,9 @@ given Log(Everything |-> SystemOut)
 object Tests extends Suite(t"Merino tests"):
   def run(using Runner): Unit =
     val tests = (Unix.Pwd / t"tests" / t"test_parsing").directory(Expect)
-    tests.files.foreach:
+    val tests2 = (Unix.Pwd / t"tests" / t"test_transform").directory(Expect)
+    
+    (tests.files ++ tests2.files).foreach:
       file =>
         if file.name.startsWith(t"n_")
         then
@@ -27,9 +29,8 @@ object Tests extends Suite(t"Merino tests"):
                 err.printStackTrace()
                 Right(err.toString.show)
           .check(_.isRight)
-        else if file.name.startsWith(t"y_")
-        then
-          test(t"Positive test: ${file.name.drop(2).drop(5, Rtl)}"):
+        else
+          test(t"Positive test: ${file.name.drop(5, Rtl)}"):
             try
               val j = Json.parse(file.read[DataStream](1.mb))
               Right(j.show)
@@ -40,7 +41,6 @@ object Tests extends Suite(t"Merino tests"):
                 err.printStackTrace()
                 Left(err.toString.show)
           .check(_.isRight)
-        else Log.info(t"Skipping test: ${file.name}")
 
 given realm: Realm = Realm(t"tests")
 
