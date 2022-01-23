@@ -21,8 +21,8 @@ object Tests extends Suite(t"Merino tests"):
               Json.parse(file.read[DataStream](10.kb))
               Left(t"success")
             catch
-              case err: ParseError => err match
-                case ParseError(_, msg) => Right(msg)
+              case err: JsonParseError => err match
+                case JsonParseError(_, msg) => Right(msg)
               case err: Throwable  =>
                 err.printStackTrace()
                 Right(err.toString.show)
@@ -34,8 +34,8 @@ object Tests extends Suite(t"Merino tests"):
               val j = Json.parse(file.read[DataStream](1.mb))
               Right(j.show)
             catch
-              case err: ParseError => err match
-                case ParseError(_, msg) => Left(msg)
+              case err: JsonParseError => err match
+                case JsonParseError(_, msg) => Left(msg)
               case err: Throwable        =>
                 err.printStackTrace()
                 Left(err.toString.show)

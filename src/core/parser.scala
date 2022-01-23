@@ -9,20 +9,20 @@ import stdouts.stdout
 enum Json:
   case Number(value: Long | BigDecimal | Double)
   case JString(value: String)
-  case JObject(values: (String, Json)*)
+  case JObject(values: Map[String, Json])
   case JArray(values: Json*)
   case True
   case False
   case Null
 
   override def toString(): String = this match
-    case Number(value)    => value.toString
-    case JString(value)   => t"\"${value}\"".s
-    case JObject(values*) => values.map { (k, v) => t"\"$k\": $v" }.join(t"{ ", t", ", t" }").s
-    case JArray(values*)  => values.map(_.show).join(t"[ ", t", ", t" ]").s
-    case True             => "true"
-    case False            => "false"
-    case Null             => "null"
+    case Number(value)   => value.toString
+    case JString(value)  => t"\"${value}\"".s
+    case JObject(values) => values.map { (k, v) => t"\"$k\": $v" }.join(t"{ ", t", ", t" }").s
+    case JArray(values*) => values.map(_.show).join(t"[ ", t", ", t" ]").s
+    case True            => "true"
+    case False           => "false"
+    case Null            => "null"
 
 object AsciiByte:
   final val OpenBracket = '['.toByte
@@ -81,11 +81,10 @@ object Flag:
   final val Tail = 1 << 6
   final val Interminible = 1 << 7
 
-
-case class ParseError(pos: Int, message: Text) extends Exception(message.s)
+case class JsonParseError(pos: Int, message: Text) extends Exception(message.s)
 
 object Json:
-  def parse(stream: DataStream): Json throws ParseError | StreamCutError = try
+  def parse(stream: DataStream): Json throws JsonParseError | StreamCutError = try
     val block: Bytes = stream.head
     val penultimate = block.length - 1
     var cur: Int = 0
@@ -103,7 +102,7 @@ object Json:
           case _                              => false
       do next()
 
-    def abort(message: Text): Nothing = throw ParseError(cur, message)
+    def abort(message: Text): Nothing = throw JsonParseError(cur, message)
 
     def parseValue(): Json =
       (current: @switch) match
@@ -135,7 +134,7 @@ object Json:
               current match
                 case CloseBrace =>
                   next()
-                  Json.JObject(items*)
+                  Json.JObject(items.to(Map))
                 case Comma =>
                   next()
                   skip()
@@ -145,7 +144,7 @@ object Json:
         case CloseBrace =>
           if !items.isEmpty then abort(t"closing brace appears after comma")
           next()
-          Json.JObject()
+          Json.JObject(Map())
         case ch => abort(t"expected a string but found '${ch.toChar}'")
 
     @tailrec
@@ -431,4 +430,4 @@ object Json:
 
     result
   catch
-    case err: ArrayIndexOutOfBoundsException => throw ParseError(stream.head.length, t"JSON was not properly terminated")
+    case err: ArrayIndexOutOfBoundsException => throw JsonParseError(stream.head.length, t"JSON was not properly terminated")
