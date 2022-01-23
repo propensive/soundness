@@ -3,6 +3,7 @@ package merino
 import annotation.*
 import gossamer.*
 import rudiments.*
+import scala.collection.mutable.HashMap
 
 import stdouts.stdout
 
@@ -92,7 +93,6 @@ object Json:
     if penultimate > 2 && block(0) == -17 && block(1) == -69 && block(2) == -65 then cur = 3
 
     def current: Byte = block(cur)
-    
     def next(): Unit = cur += 1
 
     def skip(): Unit =
@@ -114,38 +114,42 @@ object Json:
         case LowerF                                    => next(); parseFalse()
         case LowerN                                    => next(); parseNull()
         case LowerT                                    => next(); parseTrue()
-        case OpenBrace                                 => next(); parseObject(Nil)
+        case OpenBrace                                 => next(); parseObject()
         case ch                                        => abort(t"expected a value but found '${ch.toChar}'")
 
-    @tailrec
-    def parseObject(items: List[(String, Json)]): Json.JObject =
-      skip()
-      current match
-        case Quote =>
-          next()
-          val str = parseString()
-          skip()
-          current match
-            case Colon =>
-              next()
-              skip()
-              val value = parseValue()
-              skip()
-              current match
-                case CloseBrace =>
-                  next()
-                  Json.JObject(items.to(Map))
-                case Comma =>
-                  next()
-                  skip()
-                  parseObject(str.value -> value :: items)
-                case ch  => abort(t"unexpected character: '${ch.toChar}'")
-            case ch => abort(t"expected a colon but found '${ch.toChar}'")
-        case CloseBrace =>
-          if !items.isEmpty then abort(t"closing brace appears after comma")
-          next()
-          Json.JObject(Map())
-        case ch => abort(t"expected a string but found '${ch.toChar}'")
+    def parseObject(): Json.JObject =
+      val items: HashMap[String, Json] = HashMap()
+      var continue = true
+      while continue do
+        skip()
+        current match
+          case Quote =>
+            next()
+            val str = parseString()
+            skip()
+            current match
+              case Colon =>
+                next()
+                skip()
+                val value = parseValue()
+                skip()
+                current match
+                  case CloseBrace =>
+                    next()
+                    continue = false
+                  case Comma =>
+                    next()
+                    skip()
+                    items += (str.value -> value)
+                  case ch  => abort(t"unexpected character: '${ch.toChar}'")
+              case ch => abort(t"expected a colon but found '${ch.toChar}'")
+          case CloseBrace =>
+            if !items.isEmpty then abort(t"closing brace appears after comma")
+            next()
+            continue = false
+          case ch => abort(t"expected a string but found '${ch.toChar}'")
+      
+      Json.JObject(items.to(Map))
 
     @tailrec
     def parseArray(items: List[Json] = Nil): Json.JArray =
