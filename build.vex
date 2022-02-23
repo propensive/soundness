@@ -6,7 +6,8 @@
     }
   ],
   "imports": [
-    "../escapade/build.vex"
+    "../escapade/build.vex",
+    "../kaleidoscope/build.vex"
   ],
   "publishing": {
     "username": "propensive",
@@ -30,8 +31,11 @@
     {
       "name": "Harlequin",
       "id": "harlequin/core",
+      "artifact": "hi",
+      "main": "harlequin.run",
       "links": [
-        "escapade/core"
+        "escapade/core",
+	"kaleidoscope/core"
       ],
       "sources": [
         "src/core"

@@ -18,15 +18,23 @@ package harlequin
 
 import rudiments.*
 import gossamer.*
+import kaleidoscope.*
 
 import dotty.tools.dotc.*, printing.*, core.*, parsing.*, util.*, reporting.*
 
 import scala.collection.mutable as scm
 
 enum Token:
-  case Space(size: Int)
+  case Unparsed(text: Text)
+  case Markup(text: Text)
   case Newline
-  case Code(value: Text, flair: Flair)
+  case Code(text: Text, flair: Flair)
+
+  def length: Int = this match
+    case Unparsed(text) => text.length
+    case Markup(text)   => text.length
+    case Newline        => 1
+    case Code(text, _)  => text.length
 
 enum Flair:
   case Error, Number, String, Ident, Term, Type, Keyword, Symbol, Parens, Modifier
@@ -52,17 +60,23 @@ object ScalaSyntax:
     parser.blockStatSeq().foreach(trees.traverse(_)(using ctx))
     
     val scanner = Scanners.Scanner(source)(using ctx)
+    
+    def markup(text: Text): LazyList[Token] = text match
+      case r"$before@(.*)\/\*!$inside@([^*]*)\*\/$after@(.*)" =>
+        LazyList(Token.Unparsed(Text(before)), Token.Markup(Text(inside))) #::: markup(Text(after))
+      case unparsed =>
+        LazyList(Token.Unparsed(unparsed.sub(t"\t", t"  ")), Token.Newline)
+        
     def stream(lastEnd: Int = 0): LazyList[Token] = scanner.token match
       case Tokens.EOF =>
-        LazyList()
+        markup(text.slice(lastEnd, text.length)).filter(_.length > 0)
       
       case token =>
         val start = scanner.offset max lastEnd
-        val whitespace: LazyList[Token] =
+        
+        val unparsed: LazyList[Token] =
           if lastEnd != start then
-            text.slice(lastEnd, start).cut(t"\n").to(LazyList).flatMap:
-              spaces => LazyList(Token.Space(spaces.sub(t"\t", t"  ").length), Token.Newline)
-            .init
+            text.slice(lastEnd, start).cut(t"\n").to(LazyList).flatMap(markup(_).filter(_.length > 0)).init
           else LazyList()
         
         scanner.nextToken()
@@ -73,9 +87,8 @@ object ScalaSyntax:
           else LazyList(Token.Code(text.slice(start, end), trees(start, end).getOrElse(flair(
               token))))
         
-        whitespace #::: content #::: stream(end)
-    
-      
+        unparsed #::: content #::: stream(end)
+
     def lines(seq: List[Token], acc: List[List[Token]] = Nil): List[List[Token]] = seq match
       case Nil =>
         acc
@@ -94,7 +107,7 @@ object ScalaSyntax:
     
     def apply(start: Int, end: Int): Option[Flair] = trees.get((start, end))
     
-    def ignored(tree: NameTree) =
+    def ignored(tree: NameTree): Boolean =
       val name = tree.name.toTermName
       name == StdNames.nme.ERROR || name == StdNames.nme.CONSTRUCTOR
     
