@@ -3,6 +3,10 @@
     {
       "base": "../escapade",
       "url": "https://github.com/propensive/escapade"
+    },
+    {
+      "base": "../kaleidoscope",
+      "url": "https://github.com/propensive/kaleidoscope"
     }
   ],
   "imports": [
@@ -31,8 +35,6 @@
     {
       "name": "Harlequin",
       "id": "harlequin/core",
-      "artifact": "hi",
-      "main": "harlequin.run",
       "links": [
         "escapade/core",
 	"kaleidoscope/core"
