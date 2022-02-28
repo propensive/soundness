@@ -16,6 +16,10 @@ converting STDIN into an event stream of keypresses.
 - simple interactive navigable menu
 
 
+## Availability
+
+The current latest release of Profanity is __0.4.0__.
+
 ## Getting Started
 
 Java does not provide native support for direct access to keypress events. While Standard input (`STDIN`)
@@ -103,11 +107,11 @@ Profanity does not currently support Windows.
 
 ## Related Projects
 
-The following _Niveau_ libraries are dependencies of _Profanity_:
+The following _Scala One_ libraries are dependencies of _Profanity_:
 
 [![Eucalyptus](https://github.com/propensive/eucalyptus/raw/main/doc/images/128x128.png)](https://github.com/propensive/eucalyptus/) &nbsp;
 
-No other _Niveau_ libraries are dependents of _Profanity_.
+No other _Scala One_ libraries are dependents of _Profanity_.
 
 ## Status
 
