@@ -6,7 +6,7 @@
     }
   ],
   "imports": [
-    "../escapade/build.vex"
+    "../escapade/build.irk"
   ],
   "publishing": {
     "username": "propensive",
