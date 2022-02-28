@@ -17,6 +17,10 @@ provide intuitive syntax for manipulating XML, as well as better typesafety and 
 - safe dynamic interface for accessing nested fields
 
 
+## Availability
+
+The current latest release of Xylophone is __0.4.0__.
+
 ## Getting Started
 
 ## Parsing
@@ -204,11 +208,11 @@ nesting.
 
 ## Related Projects
 
-The following _Niveau_ libraries are dependencies of _Xylophone_:
+The following _Scala One_ libraries are dependencies of _Xylophone_:
 
 [![Clairvoyant](https://github.com/propensive/clairvoyant/raw/main/doc/images/128x128.png)](https://github.com/propensive/clairvoyant/) &nbsp; [![Gossamer](https://github.com/propensive/gossamer/raw/main/doc/images/128x128.png)](https://github.com/propensive/gossamer/) &nbsp;
 
-No other _Niveau_ libraries are dependents of _Xylophone_.
+No other _Scala One_ libraries are dependents of _Xylophone_.
 
 ## Status
 
