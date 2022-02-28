@@ -17,6 +17,10 @@ could be considered an enhanced "predef".
 - a typesafe `str""` string interpolator where all substitutions must be `String`s
 
 
+## Availability
+
+The current latest release of Rudiments is __0.4.0__.
+
 ## Getting Started
 
 Utilities in _Rudiments_ are mostly provided through extension methods, and importing the `rudiments` package
@@ -120,7 +124,7 @@ is applied to. This can be useful in a subsequent `map` operation.
 
 _Rudiments_ has no dependencies.
 
-The following _Niveau_ libraries are dependents of _Rudiments_:
+The following _Scala One_ libraries are dependents of _Rudiments_:
 
 [![Adversaria](https://github.com/propensive/adversaria/raw/main/doc/images/128x128.png)](https://github.com/propensive/adversaria/) &nbsp; [![Contextual](https://github.com/propensive/contextual/raw/main/doc/images/128x128.png)](https://github.com/propensive/contextual/) &nbsp; [![Iridescence](https://github.com/propensive/iridescence/raw/main/doc/images/128x128.png)](https://github.com/propensive/iridescence/) &nbsp; [![Polyvinyl](https://github.com/propensive/polyvinyl/raw/main/doc/images/128x128.png)](https://github.com/propensive/polyvinyl/) &nbsp; [![Wisteria](https://github.com/propensive/wisteria/raw/main/doc/images/128x128.png)](https://github.com/propensive/wisteria/) &nbsp;
 
@@ -134,7 +138,7 @@ Rudiments is classified as __fledgling__. Propensive defines the following five 
 - _dependable_: production-ready, subject to controlled ongoing maintenance and enhancement; tagged as version `1.0` or later
 - _adamantine_: proven, reliable and production-ready, with no further breaking changes ever anticipated
 
-Rudiments is designed to be _small_. Its entire source code currently consists of 332 lines of code.
+Rudiments is designed to be _small_. Its entire source code currently consists of 334 lines of code.
 
 ## Building
 
