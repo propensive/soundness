@@ -19,6 +19,10 @@ it&rsquo;s the same as for any other program.
 - functional API where it matters; impure calls where it's safe and practical
 
 
+## Availability
+
+The current latest release of Probably is __0.4.0__.
+
 ## Getting Started
 
 _Probably_ defines only two primary types: a mutable `Runner` for recording test results and reporting back on
@@ -192,11 +196,11 @@ defined inside other test suites, making it possible to organise tests into a hi
 
 ## Related Projects
 
-The following _Niveau_ libraries are dependencies of _Probably_:
+The following _Scala One_ libraries are dependencies of _Probably_:
 
 [![Escritoire](https://github.com/propensive/escritoire/raw/main/doc/images/128x128.png)](https://github.com/propensive/escritoire/) &nbsp; [![Eucalyptus](https://github.com/propensive/eucalyptus/raw/main/doc/images/128x128.png)](https://github.com/propensive/eucalyptus/) &nbsp; [![Wisteria](https://github.com/propensive/wisteria/raw/main/doc/images/128x128.png)](https://github.com/propensive/wisteria/) &nbsp;
 
-No other _Niveau_ libraries are dependents of _Probably_.
+No other _Scala One_ libraries are dependents of _Probably_.
 
 ## Status
 
@@ -208,7 +212,7 @@ Probably is classified as __fledgling__. Propensive defines the following five s
 - _dependable_: production-ready, subject to controlled ongoing maintenance and enhancement; tagged as version `1.0` or later
 - _adamantine_: proven, reliable and production-ready, with no further breaking changes ever anticipated
 
-Probably is designed to be _small_. Its entire source code currently consists of 582 lines of code.
+Probably is designed to be _small_. Its entire source code currently consists of 584 lines of code.
 
 ## Building
 
