@@ -242,7 +242,7 @@ Gastronomy is designed to be _small_. Its entire source code currently consists 
 
 ## Building
 
-Gastronomy can be built on Linux or Mac OS with Vex, by running the `irk` script in the root directory:
+Gastronomy can be built on Linux or Mac OS with Irk, by running the `irk` script in the root directory:
 ```sh
 ./irk
 ```
