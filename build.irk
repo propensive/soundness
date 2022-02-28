@@ -10,8 +10,8 @@
     }
   ],
   "imports": [
-    "../escritoire/build.vex",
-    "../eucalyptus/build.vex"
+    "../escritoire/build.irk",
+    "../eucalyptus/build.irk"
   ],
   "publishing": {
     "username": "propensive",
