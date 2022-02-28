@@ -20,6 +20,10 @@ unrepresentable, which is contravened when media types are represented by string
 - supports media type parameters such as `charset=UTF-8`
 
 
+## Availability
+
+The current latest release of Gesticulate is __0.4.0__.
+
 ## Getting Started
 
 ## `MediaType`
@@ -83,11 +87,11 @@ parsing failure, should it be useful to distinguish between these.
 
 ## Related Projects
 
-The following _Niveau_ libraries are dependencies of _Gesticulate_:
+The following _Scala One_ libraries are dependencies of _Gesticulate_:
 
 [![Clairvoyant](https://github.com/propensive/clairvoyant/raw/main/doc/images/128x128.png)](https://github.com/propensive/clairvoyant/) &nbsp; [![Gossamer](https://github.com/propensive/gossamer/raw/main/doc/images/128x128.png)](https://github.com/propensive/gossamer/) &nbsp;
 
-The following _Niveau_ libraries are dependents of _Gesticulate_:
+The following _Scala One_ libraries are dependents of _Gesticulate_:
 
 [![Scintillate](https://github.com/propensive/scintillate/raw/main/doc/images/128x128.png)](https://github.com/propensive/scintillate/) &nbsp;
 
