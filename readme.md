@@ -20,6 +20,10 @@ source, loaded at compiletime, and utilized in a later phase of compilation.
 - uses Scala 3's `Selectable` trait internally
 
 
+## Availability
+
+The current latest release of Polyvinyl is __0.4.0__.
+
 ## Getting Started
 
 ### Untyped Schemas
@@ -197,11 +201,11 @@ available as a type member.
 
 ## Related Projects
 
-The following _Niveau_ libraries are dependencies of _Polyvinyl_:
+The following _Scala One_ libraries are dependencies of _Polyvinyl_:
 
 [![Rudiments](https://github.com/propensive/rudiments/raw/main/doc/images/128x128.png)](https://github.com/propensive/rudiments/) &nbsp;
 
-No other _Niveau_ libraries are dependents of _Polyvinyl_.
+No other _Scala One_ libraries are dependents of _Polyvinyl_.
 
 ## Status
 
