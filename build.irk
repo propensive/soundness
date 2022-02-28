@@ -6,7 +6,7 @@
     }
   ],
   "imports": [
-    "../jovian/build.vex"
+    "../jovian/build.irk"
   ],
   "publishing": {
     "username": "propensive",
