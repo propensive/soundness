@@ -20,6 +20,10 @@ listing may be obtained with `sh"ls $path".exec[List[String]]()`.
 - commands may be piped to other commands with the `|` operator, or applied like functions
 
 
+## Availability
+
+The current latest release of Guillotine is __0.4.0__.
+
 ## Getting Started
 
 ## Commands
@@ -155,11 +159,11 @@ since all `Executor`s are functors.
 
 ## Related Projects
 
-The following _Niveau_ libraries are dependencies of _Guillotine_:
+The following _Scala One_ libraries are dependencies of _Guillotine_:
 
 [![Eucalyptus](https://github.com/propensive/eucalyptus/raw/main/doc/images/128x128.png)](https://github.com/propensive/eucalyptus/) &nbsp;
 
-The following _Niveau_ libraries are dependents of _Guillotine_:
+The following _Scala One_ libraries are dependents of _Guillotine_:
 
 [![Tarantula](https://github.com/propensive/tarantula/raw/main/doc/images/128x128.png)](https://github.com/propensive/tarantula/) &nbsp;
 
