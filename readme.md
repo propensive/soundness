@@ -23,6 +23,10 @@ content—which lend themselves to conversion to HTML or another format.
 - Parsing is fast; a short fragment will typically take a few milliseconds
 
 
+## Availability
+
+The current latest release of Harlequin is __0.4.0__.
+
 ## Getting Started
 
 _Harlequin_ provides only a single method, `ScalaSyntax.highlight`, which takes a `Text` value and
@@ -67,11 +71,11 @@ It is likely that as Harlequin evolves, the set of `Flair` values will grow.
 
 ## Related Projects
 
-The following _Niveau_ libraries are dependencies of _Harlequin_:
+The following _Scala One_ libraries are dependencies of _Harlequin_:
 
-[![Escapade](https://github.com/propensive/escapade/raw/main/doc/images/128x128.png)](https://github.com/propensive/escapade/) &nbsp;
+[![Escapade](https://github.com/propensive/escapade/raw/main/doc/images/128x128.png)](https://github.com/propensive/escapade/) &nbsp; [![Kaleidoscope](https://github.com/propensive/kaleidoscope/raw/main/doc/images/128x128.png)](https://github.com/propensive/kaleidoscope/) &nbsp;
 
-The following _Niveau_ libraries are dependents of _Harlequin_:
+The following _Scala One_ libraries are dependents of _Harlequin_:
 
 [![Punctuation](https://github.com/propensive/punctuation/raw/main/doc/images/128x128.png)](https://github.com/propensive/punctuation/) &nbsp;
 
@@ -85,7 +89,7 @@ Harlequin is classified as __embryonic__. Propensive defines the following five 
 - _dependable_: production-ready, subject to controlled ongoing maintenance and enhancement; tagged as version `1.0` or later
 - _adamantine_: proven, reliable and production-ready, with no further breaking changes ever anticipated
 
-Harlequin is designed to be _small_. Its entire source code currently consists of 79 lines of code.
+Harlequin is designed to be _small_. Its entire source code currently consists of 89 lines of code.
 
 ## Building
 
