@@ -21,6 +21,10 @@ the same set which can safely select one string from the set.
 - additions to the language set produce compile errors for every incomplete multilingual string
 - checks for duplicate languages in construction of multilingual strings
 
+## Availability
+
+The current latest release of Cosmopolite is __0.4.0__.
+
 ## Getting Started
 
 When working with front-end applications that must be presented to different users in different languages, it's
@@ -153,11 +157,11 @@ to build a concrete parser for the languages in the union type.
 
 ## Related Projects
 
-The following _Niveau_ libraries are dependencies of _Cosmopolite_:
+The following _Scala One_ libraries are dependencies of _Cosmopolite_:
 
 [![Gossamer](https://github.com/propensive/gossamer/raw/main/doc/images/128x128.png)](https://github.com/propensive/gossamer/) &nbsp;
 
-No other _Niveau_ libraries are dependents of _Cosmopolite_.
+No other _Scala One_ libraries are dependents of _Cosmopolite_.
 
 ## Status
 
