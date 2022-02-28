@@ -10,8 +10,8 @@
     }
   ],
   "imports": [
-    "../honeycomb/build.vex",
-    "../harlequin/build.vex"
+    "../honeycomb/build.irk",
+    "../harlequin/build.irk"
   ],
   "publishing": {
     "username": "propensive",
