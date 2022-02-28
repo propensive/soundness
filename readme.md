@@ -16,6 +16,10 @@ _annotations_ in Scala, by making them available through _typeclass interfaces_.
 - no macro code is required to use annotations
 
 
+## Availability
+
+The current latest release of Adversaria is __0.4.0__.
+
 ## Getting Started
 
 The nature of annotations in Scala is that they are very rarely the best solution for any task, but
@@ -50,11 +54,11 @@ case class Person(name: String, @id email: String)
 
 ## Related Projects
 
-The following _Niveau_ libraries are dependencies of _Adversaria_:
+The following _Scala One_ libraries are dependencies of _Adversaria_:
 
 [![Rudiments](https://github.com/propensive/rudiments/raw/main/doc/images/128x128.png)](https://github.com/propensive/rudiments/) &nbsp;
 
-No other _Niveau_ libraries are dependents of _Adversaria_.
+No other _Scala One_ libraries are dependents of _Adversaria_.
 
 ## Status
 
