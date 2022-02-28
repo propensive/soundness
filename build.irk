@@ -14,9 +14,9 @@
     }
   ],
   "imports": [
-    "../clairvoyant/build.vex",
-    "../iridescence/build.vex",
-    "../gossamer/build.vex"
+    "../clairvoyant/build.irk",
+    "../iridescence/build.irk",
+    "../gossamer/build.irk"
   ],
   "publishing": {
     "username": "propensive",
