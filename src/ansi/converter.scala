@@ -103,7 +103,7 @@ open class TextConverter():
                     case Flair.Number            => ansi"${solarized.Violet}(${code.trim})"
                     case Flair.String            => ansi"${solarized.Violet}(${code.trim})"
                     case other                   => ansi"${code.trim}"
-                  case Token.Space(n)          => ansi" "*n
+                  case Token.Unparsed(content)   => ansi"${content}"
                   case Token.Newline           => throw Impossible("Should not have a newline")
                 .join
             
