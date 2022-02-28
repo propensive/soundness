@@ -138,12 +138,12 @@ Honeycomb is designed to be _small_. Its entire source code currently consists o
 
 ## Building
 
-Honeycomb can be built on Linux or Mac OS with Vex, by running the `vex` script in the root directory:
+Honeycomb can be built on Linux or Mac OS with Vex, by running the `irk` script in the root directory:
 ```sh
-./vex
+./irk
 ```
 
-This script will download `vex` the first time it is run, start a daemon process, and run the build. Subsequent
+This script will download `irk` the first time it is run, start a daemon process, and run the build. Subsequent
 invocations will be near-instantaneous.
 
 ## Contributing
