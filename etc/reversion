@@ -29,7 +29,7 @@ then
 fi
 for MOD in mod/*
 do
-  jq --arg ver "$1" '.modules[].version |= $ver' $MOD/build.vex > $MOD/.build.vex.tmp && mv $MOD/.build.vex.tmp $MOD/build.vex
+  jq --arg ver "$1" '.modules[].version |= $ver' $MOD/build.irk > $MOD/.build.irk.tmp && mv $MOD/.build.irk.tmp $MOD/build.irk
 done
 
 etc/headers
@@ -37,7 +37,7 @@ etc/headers
 for MOD in mod/*
 do
   cd $MOD
-  git add build.vex src
+  git add build.irk src
   git commit -m "Update version to $NEWVERSION"
   git push
   echo "Tagging v$NEWVERSION"

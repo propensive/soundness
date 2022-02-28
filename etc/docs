@@ -3,7 +3,7 @@
 function dependencies() {
   TEXT=''
   MOD="$1"
-  for D in $(jq '.modules[].links[]?' mod/$MOD/build.vex | cut -d'"' -f2 | cut -d/ -f1 | sort | uniq | grep -v "$MOD"); do
+  for D in $(jq '.modules[].links[]?' mod/$MOD/build.irk | cut -d'"' -f2 | cut -d/ -f1 | sort | uniq | grep -v "$MOD"); do
     I="$(echo $D | cut -d'/' -f2)"
     N="$(tr '[:lower:]' '[:upper:]' <<< ${I:0:1})${I:1}"
     TEXT="$TEXT [![$N](https://github.com/propensive/$D/raw/main/doc/images/128x128.png)](https://github.com/propensive/$D/) &nbsp;"
@@ -20,7 +20,7 @@ function dependencies() {
 function dependents() {
   MOD="$1"
   TEXT=''
-  for D in $(jq --arg mod $MOD '.modules[] | select(.links[]? | startswith($mod)).id' mod/*/build.vex | cut -d'"' -f2 | cut -d/ -f1 | sort | uniq | grep -v "$MOD"); do
+  for D in $(jq --arg mod $MOD '.modules[] | select(.links[]? | startswith($mod)).id' mod/*/build.irk | cut -d'"' -f2 | cut -d/ -f1 | sort | uniq | grep -v "$MOD"); do
     N="$(tr '[:lower:]' '[:upper:]' <<< ${D:0:1})${D:1}"
     TEXT="$TEXT [![$N](https://github.com/propensive/$D/raw/main/doc/images/128x128.png)](https://github.com/propensive/$D/) &nbsp;"
   done
@@ -50,7 +50,7 @@ do
   else
     export COPYRIGHT="${START}-$(date +%y)"
   fi
-  export VERSION="$(jq '.modules[].version' mod/$ID/build.vex | head -n1 | cut -d'"' -f2)"
+  export VERSION="$(jq '.modules[].version' mod/$ID/build.irk | head -n1 | cut -d'"' -f2)"
   export THANKS="$(cat $MOD/doc/thanks 2> /dev/null || echo '')"
   export DEPENDENCIES="$(dependencies $ID)"
   export DEPENDENTS="$(dependents $ID)"
