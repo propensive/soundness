@@ -16,6 +16,10 @@ typically for use in console applications.
 - compact display for tables which don't include multiline contents
 
 
+## Availability
+
+The current latest release of Escritoire is __0.4.0__.
+
 ## Getting Started
 
 Creating a table to be displayed in a monospaced font (e.g. for rendering in a console) is easy,
@@ -58,11 +62,11 @@ will return a sequence of `String`s which will print as,
 
 ## Related Projects
 
-The following _Niveau_ libraries are dependencies of _Escritoire_:
+The following _Scala One_ libraries are dependencies of _Escritoire_:
 
 [![Escapade](https://github.com/propensive/escapade/raw/main/doc/images/128x128.png)](https://github.com/propensive/escapade/) &nbsp;
 
-The following _Niveau_ libraries are dependents of _Escritoire_:
+The following _Scala One_ libraries are dependents of _Escritoire_:
 
 [![Probably](https://github.com/propensive/probably/raw/main/doc/images/128x128.png)](https://github.com/propensive/probably/) &nbsp;
 
