@@ -10,8 +10,8 @@
     }
   ],
   "imports": [
-    "../iridescence/build.vex",
-    "../gossamer/build.vex"
+    "../iridescence/build.irk",
+    "../gossamer/build.irk"
   ],
   "publishing": {
     "username": "propensive",
