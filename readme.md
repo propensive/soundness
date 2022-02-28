@@ -17,6 +17,10 @@ __Escapade__ makes it easy to work safely with strings containing ANSI escape co
 - extensible support for different substitution types
 - introduces "virtual" escapes with stack-based region tracking
 
+## Availability
+
+The current latest release of Escapade is __0.4.0__.
+
 ## Getting Started
 
 ## About ANSI Codes
@@ -115,11 +119,11 @@ given Stylize[Fade] = fade =>
 
 ## Related Projects
 
-The following _Niveau_ libraries are dependencies of _Escapade_:
+The following _Scala One_ libraries are dependencies of _Escapade_:
 
 [![Gossamer](https://github.com/propensive/gossamer/raw/main/doc/images/128x128.png)](https://github.com/propensive/gossamer/) &nbsp; [![Iridescence](https://github.com/propensive/iridescence/raw/main/doc/images/128x128.png)](https://github.com/propensive/iridescence/) &nbsp;
 
-The following _Niveau_ libraries are dependents of _Escapade_:
+The following _Scala One_ libraries are dependents of _Escapade_:
 
 [![Escritoire](https://github.com/propensive/escritoire/raw/main/doc/images/128x128.png)](https://github.com/propensive/escritoire/) &nbsp; [![Eucalyptus](https://github.com/propensive/eucalyptus/raw/main/doc/images/128x128.png)](https://github.com/propensive/eucalyptus/) &nbsp; [![Harlequin](https://github.com/propensive/harlequin/raw/main/doc/images/128x128.png)](https://github.com/propensive/harlequin/) &nbsp;
 
@@ -133,7 +137,7 @@ Escapade is classified as __fledgling__. Propensive defines the following five s
 - _dependable_: production-ready, subject to controlled ongoing maintenance and enhancement; tagged as version `1.0` or later
 - _adamantine_: proven, reliable and production-ready, with no further breaking changes ever anticipated
 
-Escapade is designed to be _small_. Its entire source code currently consists of 333 lines of code.
+Escapade is designed to be _small_. Its entire source code currently consists of 325 lines of code.
 
 ## Building
 
