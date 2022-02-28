@@ -10,8 +10,8 @@
     }
   ],
   "imports": [
-    "../gossamer/build.vex",
-    "../clairvoyant/build.vex"
+    "../gossamer/build.irk",
+    "../clairvoyant/build.irk"
   ],
   "publishing": {
     "username": "propensive",
