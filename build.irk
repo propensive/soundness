@@ -10,8 +10,8 @@
     }
   ],
   "imports": [
-    "../escapade/build.vex",
-    "../kaleidoscope/build.vex"
+    "../escapade/build.irk",
+    "../kaleidoscope/build.irk"
   ],
   "publishing": {
     "username": "propensive",
