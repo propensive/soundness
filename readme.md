@@ -15,6 +15,10 @@
 - generic derivation of typeclass interfaces for reading and writing product and coproduct types to JSON
 
 
+## Availability
+
+The current latest release of Euphemism is __0.4.0__.
+
 ## Getting Started
 
 TBC
@@ -22,11 +26,11 @@ TBC
 
 ## Related Projects
 
-The following _Niveau_ libraries are dependencies of _Euphemism_:
+The following _Scala One_ libraries are dependencies of _Euphemism_:
 
 [![Clairvoyant](https://github.com/propensive/clairvoyant/raw/main/doc/images/128x128.png)](https://github.com/propensive/clairvoyant/) &nbsp; [![Gossamer](https://github.com/propensive/gossamer/raw/main/doc/images/128x128.png)](https://github.com/propensive/gossamer/) &nbsp;
 
-The following _Niveau_ libraries are dependents of _Euphemism_:
+The following _Scala One_ libraries are dependents of _Euphemism_:
 
 [![Tarantula](https://github.com/propensive/tarantula/raw/main/doc/images/128x128.png)](https://github.com/propensive/tarantula/) &nbsp;
 
