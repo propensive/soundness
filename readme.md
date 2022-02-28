@@ -97,7 +97,7 @@ Clairvoyant is designed to be _small_. Its entire source code currently consists
 
 ## Building
 
-Clairvoyant can be built on Linux or Mac OS with Vex, by running the `irk` script in the root directory:
+Clairvoyant can be built on Linux or Mac OS with Irk, by running the `irk` script in the root directory:
 ```sh
 ./irk
 ```
