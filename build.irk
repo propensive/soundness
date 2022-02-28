@@ -22,11 +22,11 @@
     }
   ],
   "imports": [
-    "../gesticulate/build.vex",
-    "../eucalyptus/build.vex",
-    "../slalom/build.vex",
-    "../clairvoyant/build.vex",
-    "../gastronomy/build.vex"
+    "../gesticulate/build.irk",
+    "../eucalyptus/build.irk",
+    "../slalom/build.irk",
+    "../clairvoyant/build.irk",
+    "../gastronomy/build.irk"
   ],
   "publishing": {
     "username": "propensive",
