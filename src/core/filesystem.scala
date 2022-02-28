@@ -380,8 +380,9 @@ class Filesystem(pathSeparator: Text, fsPrefix: Text) extends Root(pathSeparator
     def read[T](limit: ByteSize = 64.kb)(using readable: Readable[T])
         : T throws readable.E | IoError | StreamCutError =
       val stream = Util.readInputStream(ji.FileInputStream(javaFile), limit)
-      try readable.read(stream) catch case e =>
-        throw IoError(IoError.Op.Read, IoError.Reason.AccessDenied, path)
+      try readable.read(stream) catch
+        case err: java.io.FileNotFoundException =>
+          throw IoError(IoError.Op.Read, IoError.Reason.AccessDenied, path)
 
     def copyTo(dest: jovian.DiskPath): jovian.File throws IoError =
       if dest.exists()
