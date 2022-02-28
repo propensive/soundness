@@ -16,6 +16,10 @@ follow a hierarchical pattern.
 - designed for extension and use in many concrete contexts
 - distinguishes between absolute and relative paths
 
+## Availability
+
+The current latest release of Slalom is __0.4.0__.
+
 ## Getting Started
 
 The type `Root` defines a "root", beneath which any number of possible `Path` instances may exist in
@@ -77,11 +81,11 @@ origin) and accepting just those originating from a particular root.
 
 ## Related Projects
 
-The following _Niveau_ libraries are dependencies of _Slalom_:
+The following _Scala One_ libraries are dependencies of _Slalom_:
 
 [![Gossamer](https://github.com/propensive/gossamer/raw/main/doc/images/128x128.png)](https://github.com/propensive/gossamer/) &nbsp;
 
-The following _Niveau_ libraries are dependents of _Slalom_:
+The following _Scala One_ libraries are dependents of _Slalom_:
 
 [![Jovian](https://github.com/propensive/jovian/raw/main/doc/images/128x128.png)](https://github.com/propensive/jovian/) &nbsp; [![Scintillate](https://github.com/propensive/scintillate/raw/main/doc/images/128x128.png)](https://github.com/propensive/scintillate/) &nbsp;
 
