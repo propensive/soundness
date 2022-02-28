@@ -15,17 +15,21 @@ Caesura provides an API for reading and writing CSV and TSV.
 - generic derivation of typeclasses for product and coproduct types
 
 
+## Availability
+
+The current latest release of Caesura is __0.4.0__.
+
 ## Getting Started
 
 TBC
 
 ## Related Projects
 
-The following _Niveau_ libraries are dependencies of _Caesura_:
+The following _Scala One_ libraries are dependencies of _Caesura_:
 
 [![Clairvoyant](https://github.com/propensive/clairvoyant/raw/main/doc/images/128x128.png)](https://github.com/propensive/clairvoyant/) &nbsp; [![Gossamer](https://github.com/propensive/gossamer/raw/main/doc/images/128x128.png)](https://github.com/propensive/gossamer/) &nbsp;
 
-No other _Niveau_ libraries are dependents of _Caesura_.
+No other _Scala One_ libraries are dependents of _Caesura_.
 
 ## Status
 
