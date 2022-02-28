@@ -19,6 +19,10 @@ enforcing nesting rules between different tags.
 - HTML attributes are strongly-typed, and the types accepted by each are defined by typeclasses
 
 
+## Availability
+
+The current latest release of Honeycomb is __0.4.0__.
+
 ## Getting Started
 
 ## Constructing HTML nodes
@@ -112,11 +116,11 @@ A contextual instance of `clairvoyant.HtmlAttribute` is all that is required to 
 
 ## Related Projects
 
-The following _Niveau_ libraries are dependencies of _Honeycomb_:
+The following _Scala One_ libraries are dependencies of _Honeycomb_:
 
 [![Clairvoyant](https://github.com/propensive/clairvoyant/raw/main/doc/images/128x128.png)](https://github.com/propensive/clairvoyant/) &nbsp; [![Gossamer](https://github.com/propensive/gossamer/raw/main/doc/images/128x128.png)](https://github.com/propensive/gossamer/) &nbsp;
 
-The following _Niveau_ libraries are dependents of _Honeycomb_:
+The following _Scala One_ libraries are dependents of _Honeycomb_:
 
 [![Punctuation](https://github.com/propensive/punctuation/raw/main/doc/images/128x128.png)](https://github.com/propensive/punctuation/) &nbsp; [![Tarantula](https://github.com/propensive/tarantula/raw/main/doc/images/128x128.png)](https://github.com/propensive/tarantula/) &nbsp;
 
