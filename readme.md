@@ -21,6 +21,10 @@ immutable API.
 - encoding into Hex, BASE-64, and URL-safe BASE-64
 - serializers and parsers for PEM-encoded data
 
+## Availability
+
+The current latest release of Gastronomy is __0.4.0__.
+
 ## Getting Started
 
 __Gastronomy__ provides representations of public, private and symmetric keys which offer a number
@@ -216,11 +220,11 @@ this possibility.
 
 ## Related Projects
 
-The following _Niveau_ libraries are dependencies of _Gastronomy_:
+The following _Scala One_ libraries are dependencies of _Gastronomy_:
 
 [![Gossamer](https://github.com/propensive/gossamer/raw/main/doc/images/128x128.png)](https://github.com/propensive/gossamer/) &nbsp;
 
-The following _Niveau_ libraries are dependents of _Gastronomy_:
+The following _Scala One_ libraries are dependents of _Gastronomy_:
 
 [![Jovian](https://github.com/propensive/jovian/raw/main/doc/images/128x128.png)](https://github.com/propensive/jovian/) &nbsp; [![Scintillate](https://github.com/propensive/scintillate/raw/main/doc/images/128x128.png)](https://github.com/propensive/scintillate/) &nbsp;
 
