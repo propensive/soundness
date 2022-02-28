@@ -22,11 +22,11 @@
     }
   ],
   "imports": [
-    "../scintillate/build.vex",
-    "../cataract/build.vex",
-    "../guillotine/build.vex",
-    "../euphemism/build.vex",
-    "../honeycomb/build.vex"
+    "../scintillate/build.irk",
+    "../cataract/build.irk",
+    "../guillotine/build.irk",
+    "../euphemism/build.irk",
+    "../honeycomb/build.irk"
   ],
   "publishing": {
     "username": "propensive",
