@@ -1,4 +1,4 @@
-package niveau
+package one
 
 import probably.*
 import rudiments.*
@@ -7,7 +7,7 @@ import eucalyptus.*
 
 given log: Log = Log(Everything |-> Stdout)
 
-object Tests extends Suite(t"Niveau tests"):
+object Tests extends Suite(t"Scala One tests"):
   def run(using Runner): Unit =
     suite(adversaria.Tests)
     suite(acyclicity.Tests)

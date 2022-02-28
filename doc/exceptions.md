@@ -1,19 +1,19 @@
-## Exceptions in Niveau projects
+## Exceptions in _Scala One_ projects
 
-Niveau projects are designed to take full advantage of Scala's advanced exception-handling, so a
+_Scala One_ projects are designed to take full advantage of Scala's advanced exception-handling, so a
 lot of attention is placed on the design of the exception types, when they are thrown, and how they
-are displayed. The consistency of these rules helps to build confidence in Niveau libraries.
+are displayed. The consistency of these rules helps to build confidence in _Scala One_ libraries.
 
 ### Explicit
 
-Niveaus exceptions should always be explicit in their method signatures: if a method may throw a
+_Scala One_'s exceptions should always be explicit in their method signatures: if a method may throw a
 an `XyzError` then its signature should declare `throws XyzError` as part of its return type. This
 allows the full benefits of Scala 3's safer exceptions to be harnessed, while not compromising the
 ease of writing "prototype" code with exception-checking turned off.
 
 ### Scope
 
-Every Niveau library will throw only exception types defined in that library. That is to say, the
+Every _Scala One_ library will throw only exception types defined in that library. That is to say, the
 type of the exception (in particular, the package it is in) can be used to determine where it was
 thrown.
 
@@ -28,7 +28,7 @@ values—which provide additional information about the circumstances in which t
 thrown.
 
 There is often a choice about whether a method should throw an exception, or encode the exceptional
-case in a more complex—but pure—datatype. In general, Niveau methods choose exceptions for the cases
+case in a more complex—but pure—datatype. In general, _Scala One_ methods choose exceptions for the cases
 where the method may still be composed with others to construct useful software without any
 exception handling, in particular when the exception may convey more useful information than
 returning `None` instead of `Some`.

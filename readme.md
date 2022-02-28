@@ -1,15 +1,15 @@
 [<img src="https://img.shields.io/discord/633198088311537684?color=8899f7&label=DISCORD&style=for-the-badge" height="24">](https://discord.gg/v7CjtbnwDq)
 <img src="/doc/images/github.png" valign="middle">
 
-# Niveau
+# Scala One
 
 **Take Scala to Another Level!**
 
-_Niveau_ is a loose collection of open-source libraries designed to take full advantage of new
+_Scala One_ is a loose collection of open-source libraries designed to take full advantage of new
 features of Scala 3 to write web and command-line applications, with a focus on lifting more
-operations to the type-level.
+operations to the type-level with legible and expressive syntax.
 
-Niveau includes libraries for working with [HTML](https://github.com/propensive/honeycomb/),
+_Scala One_ includes libraries for working with [HTML](https://github.com/propensive/honeycomb/),
 [CSS](https://github.com/propensive/cataract/), [JSON](https://github.com/propensive/euphemism/),
 [XML](https://github.com/propensive/xylophone/), [CSV](https://github.com/propensive/caesura/),
 [typesafe strings](https://github.com/propensive/gossamer/),
@@ -40,13 +40,13 @@ builds upon minimal set of [common tools](https://github.com/propensive/rudiment
 
 ## Principles
 
-_Niveau_ embraces two core principles:
+_Scala One_ embraces two core principles:
 1. Impossible states should be unrepresentable
 2. Transitions between states should be total
 
 Together, these two principles eliminate a whole class of spaces in which bugs can hide.
 
-More specifically, each library under the _Niveau_ umbrella adheres to the following principles:
+More specifically, each library under the _Scala One_ umbrella adheres to the following principles:
 - typesafe—taking full advantage of the Scala 3 typesystem
 - checked exceptions—but only if you choose to use them
 - safe literals—interpolated strings, checked at compiletime with
@@ -76,7 +76,7 @@ method, and a `Text` converted to a `String` by calling its method `s`.
 
 ### Checked Exceptions
 
-The latest release of Scala 3 introduces opt-in exception checking, and every Niveau method declares
+The latest release of Scala 3 introduces opt-in exception checking, and every _Scala One_ method declares
 the exceptions it may throw in its signature. This makes it easy to write prototype code with
 a "let it fail" attitude and exception-checking off, and to migrate to production-quality code just
 by turning exception-checking on, and having the compiler require handlers for each exception—but
@@ -97,9 +97,9 @@ compiletime, there is no risk of runtime exceptions arising from these values.
 ### Typeclasses
 
 The typeclass pattern, provided through contextual values (`given`s) is used extensively by
-Niveau libraries to provide ad-hoc polymorphism (in preference to subtype polymorphism). This not
-only allows user-defined types to participate naturally in all kinds of Niveau APIs, but also
-facilitates interaction between Niveau libraries and third-party libraries.
+_Scala One_ libraries to provide ad-hoc polymorphism (in preference to subtype polymorphism). This not
+only allows user-defined types to participate naturally in all kinds of _Scala One_ APIs, but also
+facilitates interaction between _Scala One_ libraries and third-party libraries.
 
 ### Decoupled
 
@@ -113,7 +113,7 @@ libraries.
 
 ### Small APIs
 
-Every API introduced by a Niveau library should fit on one side of a business card. It should never
+Every API introduced by a _Scala One_ library should fit on one side of a business card. It should never
 be difficult to learn, and composition of APIs should be preferred over specialized solutions. Names
 should be meaningful and appropriately unique: that is to say, sharing a name with an existing
 concept or entity if they represent that entity, but introducing new nomenclature if they represent
@@ -129,7 +129,7 @@ library should also be small.
 - all libraries are compiled with `null`-checking enabled—and `null`s forbidden!
 - use of the `T | Unset` union type for optional parameters, without the need to wrap `T` in `Some` or use `null`
 
-## Niveau Modules
+## _Scala One_ Modules
 
 [![Acyclicity](https://github.com/propensive/acyclicity/raw/main/doc/images/128x128.png)](https://github.com/propensive/acyclicity/) &nbsp;
 [![Adversaria](https://github.com/propensive/adversaria/raw/main/doc/images/128x128.png)](https://github.com/propensive/adversaria/) &nbsp;

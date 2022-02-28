@@ -94,8 +94,8 @@
       "sources": ["mod/xylophone/src/test"]
     },
     {
-      "name": "Niveau Tests",
-      "id": "niveau/test",
+      "name": "Scala One Tests",
+      "id": "one/test",
       "links": [
         "xylophone/test",
         "probably/test",
