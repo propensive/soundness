@@ -19,6 +19,10 @@ out-of-the-box, and incurs no significant time-penalty during compilation.
  - supports typeclasses whose generic type parameter is used in either covariant and contravariant positions
 
 
+## Availability
+
+The current latest release of Wisteria is __0.4.0__.
+
 ## Getting Started
 
 Given an ADT such as,
@@ -68,11 +72,11 @@ Wisteria is not currently able to access default values for case class parameter
 
 ## Related Projects
 
-The following _Niveau_ libraries are dependencies of _Wisteria_:
+The following _Scala One_ libraries are dependencies of _Wisteria_:
 
 [![Rudiments](https://github.com/propensive/rudiments/raw/main/doc/images/128x128.png)](https://github.com/propensive/rudiments/) &nbsp;
 
-The following _Niveau_ libraries are dependents of _Wisteria_:
+The following _Scala One_ libraries are dependents of _Wisteria_:
 
 [![Gossamer](https://github.com/propensive/gossamer/raw/main/doc/images/128x128.png)](https://github.com/propensive/gossamer/) &nbsp; [![Probably](https://github.com/propensive/probably/raw/main/doc/images/128x128.png)](https://github.com/propensive/probably/) &nbsp;
 
