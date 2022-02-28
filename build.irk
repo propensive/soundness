@@ -10,8 +10,8 @@
     }
   ],
   "imports": [
-    "../contextual/build.vex",
-    "../wisteria/build.vex"
+    "../contextual/build.irk",
+    "../wisteria/build.irk"
   ],
   "publishing": {
     "username": "propensive",
