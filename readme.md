@@ -21,6 +21,10 @@ container, preferably on a Loom-based JVM.
 - safe parameter and header access
 - typesafe representation of URLs
 
+## Availability
+
+The current latest release of Scintillate is __0.4.0__.
+
 ## Getting Started
 
 Here is an example of a simple HTTP request 
@@ -209,11 +213,11 @@ other representations can be used provided a `ToLocation` for that type is in co
 
 ## Related Projects
 
-The following _Niveau_ libraries are dependencies of _Scintillate_:
+The following _Scala One_ libraries are dependencies of _Scintillate_:
 
 [![Clairvoyant](https://github.com/propensive/clairvoyant/raw/main/doc/images/128x128.png)](https://github.com/propensive/clairvoyant/) &nbsp; [![Eucalyptus](https://github.com/propensive/eucalyptus/raw/main/doc/images/128x128.png)](https://github.com/propensive/eucalyptus/) &nbsp; [![Gastronomy](https://github.com/propensive/gastronomy/raw/main/doc/images/128x128.png)](https://github.com/propensive/gastronomy/) &nbsp; [![Gesticulate](https://github.com/propensive/gesticulate/raw/main/doc/images/128x128.png)](https://github.com/propensive/gesticulate/) &nbsp; [![Slalom](https://github.com/propensive/slalom/raw/main/doc/images/128x128.png)](https://github.com/propensive/slalom/) &nbsp;
 
-The following _Niveau_ libraries are dependents of _Scintillate_:
+The following _Scala One_ libraries are dependents of _Scintillate_:
 
 [![Tarantula](https://github.com/propensive/tarantula/raw/main/doc/images/128x128.png)](https://github.com/propensive/tarantula/) &nbsp;
 
