@@ -20,6 +20,10 @@ plus the means to generate DOT for input to GraphViz.
 - methods for addition and subtraction of graph nodes
 
 
+## Availability
+
+The current latest release of Acyclicity is __0.4.0__.
+
 ## Getting Started
 
 Acyclicity provides a monadic representation of a directed, acyclic graph (DAG) called `Dag`, and support for
@@ -91,11 +95,11 @@ used by developers who do not mind examining the source code to diagnose unexpec
 
 ## Related Projects
 
-The following _Niveau_ libraries are dependencies of _Acyclicity_:
+The following _Scala One_ libraries are dependencies of _Acyclicity_:
 
 [![Gossamer](https://github.com/propensive/gossamer/raw/main/doc/images/128x128.png)](https://github.com/propensive/gossamer/) &nbsp;
 
-No other _Niveau_ libraries are dependents of _Acyclicity_.
+No other _Scala One_ libraries are dependents of _Acyclicity_.
 
 ## Status
 
