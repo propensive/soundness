@@ -20,6 +20,10 @@ make logs easier to read.
 - typeclass-based support for logging different types of object
 
 
+## Availability
+
+The current latest release of Eucalyptus is __0.4.0__.
+
 ## Getting Started
 
 ## Defining a logger
@@ -106,11 +110,11 @@ given Log(
 
 ## Related Projects
 
-The following _Niveau_ libraries are dependencies of _Eucalyptus_:
+The following _Scala One_ libraries are dependencies of _Eucalyptus_:
 
 [![Escapade](https://github.com/propensive/escapade/raw/main/doc/images/128x128.png)](https://github.com/propensive/escapade/) &nbsp;
 
-The following _Niveau_ libraries are dependents of _Eucalyptus_:
+The following _Scala One_ libraries are dependents of _Eucalyptus_:
 
 [![Guillotine](https://github.com/propensive/guillotine/raw/main/doc/images/128x128.png)](https://github.com/propensive/guillotine/) &nbsp; [![Jovian](https://github.com/propensive/jovian/raw/main/doc/images/128x128.png)](https://github.com/propensive/jovian/) &nbsp; [![Probably](https://github.com/propensive/probably/raw/main/doc/images/128x128.png)](https://github.com/propensive/probably/) &nbsp; [![Profanity](https://github.com/propensive/profanity/raw/main/doc/images/128x128.png)](https://github.com/propensive/profanity/) &nbsp; [![Scintillate](https://github.com/propensive/scintillate/raw/main/doc/images/128x128.png)](https://github.com/propensive/scintillate/) &nbsp;
 
