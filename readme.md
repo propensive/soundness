@@ -25,6 +25,10 @@ define the execution of parameters.
   startup time
 
 
+## Availability
+
+The current latest release of Exoskeleton is __0.4.0__.
+
 ## Getting Started
 
 Exoskeleton provides the `Application` trait, akin to `App` in the Scala
@@ -71,11 +75,11 @@ directory in which the script should be written.
 
 ## Related Projects
 
-The following _Niveau_ libraries are dependencies of _Exoskeleton_:
+The following _Scala One_ libraries are dependencies of _Exoskeleton_:
 
 [![Jovian](https://github.com/propensive/jovian/raw/main/doc/images/128x128.png)](https://github.com/propensive/jovian/) &nbsp;
 
-No other _Niveau_ libraries are dependents of _Exoskeleton_.
+No other _Scala One_ libraries are dependents of _Exoskeleton_.
 
 ## Status
 
