@@ -177,7 +177,7 @@ Iridescence is designed to be _small_. Its entire source code currently consists
 
 ## Building
 
-Iridescence can be built on Linux or Mac OS with Vex, by running the `irk` script in the root directory:
+Iridescence can be built on Linux or Mac OS with Irk, by running the `irk` script in the root directory:
 ```sh
 ./irk
 ```
