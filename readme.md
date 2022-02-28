@@ -19,6 +19,10 @@ designed to take advantage of Scala 3's safer exceptions.
 - encoding-aware operations involving `String`s
 
 
+## Availability
+
+The current latest release of Jovian is __0.4.0__.
+
 ## Getting Started
 
 Unlike many filesystem APIs, __Jovian__ provides different types for `Path`s, `File`s, `Directory`s
@@ -94,11 +98,11 @@ which together support complete and streamed byte and character data.
 
 ## Related Projects
 
-The following _Niveau_ libraries are dependencies of _Jovian_:
+The following _Scala One_ libraries are dependencies of _Jovian_:
 
 [![Clairvoyant](https://github.com/propensive/clairvoyant/raw/main/doc/images/128x128.png)](https://github.com/propensive/clairvoyant/) &nbsp; [![Eucalyptus](https://github.com/propensive/eucalyptus/raw/main/doc/images/128x128.png)](https://github.com/propensive/eucalyptus/) &nbsp; [![Gastronomy](https://github.com/propensive/gastronomy/raw/main/doc/images/128x128.png)](https://github.com/propensive/gastronomy/) &nbsp; [![Kaleidoscope](https://github.com/propensive/kaleidoscope/raw/main/doc/images/128x128.png)](https://github.com/propensive/kaleidoscope/) &nbsp; [![Slalom](https://github.com/propensive/slalom/raw/main/doc/images/128x128.png)](https://github.com/propensive/slalom/) &nbsp;
 
-The following _Niveau_ libraries are dependents of _Jovian_:
+The following _Scala One_ libraries are dependents of _Jovian_:
 
 [![Exoskeleton](https://github.com/propensive/exoskeleton/raw/main/doc/images/128x128.png)](https://github.com/propensive/exoskeleton/) &nbsp;
 
@@ -112,7 +116,7 @@ Jovian is classified as __fledgling__. Propensive defines the following five sta
 - _dependable_: production-ready, subject to controlled ongoing maintenance and enhancement; tagged as version `1.0` or later
 - _adamantine_: proven, reliable and production-ready, with no further breaking changes ever anticipated
 
-Jovian is designed to be _small_. Its entire source code currently consists of 447 lines of code.
+Jovian is designed to be _small_. Its entire source code currently consists of 448 lines of code.
 
 ## Building
 
