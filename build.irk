@@ -6,7 +6,7 @@
     }
   ],
   "imports": [
-    "../eucalyptus/build.vex"
+    "../eucalyptus/build.irk"
   ],
   "publishing": {
     "username": "propensive",
