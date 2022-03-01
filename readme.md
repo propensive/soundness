@@ -7,7 +7,7 @@
 
 _Scala One_ is a loose collection of open-source libraries designed to take full advantage of new
 features of Scala 3 to write web and command-line applications, with a focus on lifting more
-operations to the type-level with legible and expressive syntax.
+operations to the type-level with safe and expressive syntax.
 
 _Scala One_ includes libraries for working with [HTML](https://github.com/propensive/honeycomb/),
 [CSS](https://github.com/propensive/cataract/), [JSON](https://github.com/propensive/euphemism/),
@@ -44,14 +44,15 @@ _Scala One_ embraces two core principles:
 1. Impossible states should be unrepresentable
 2. Transitions between states should be total
 
-Together, these two principles eliminate a whole class of spaces in which bugs can hide.
+Together, these two principles eliminate an entire class of bugs.
 
 More specifically, each library under the _Scala One_ umbrella adheres to the following principles:
 - typesafe—taking full advantage of the Scala 3 typesystem
 - checked exceptions—but only if you choose to use them
 - safe literals—interpolated strings, checked at compiletime with
   [Contextual](https://github.com/propensive/contextual/)
-- `null` is banished—no method should ever return `null`, guaranteed by the Scala typesystem
+- forbidden `null`—no method should ever return `null`, and no value should ever be `null`, guaranteed
+  by the Scala typesystem
 - typeclasses—extensibility provided through
   [Wisteria](https://github.com/propensive/wisteria/)'s generic derivation
 - immutability—mutation of state is avoided, even when working with streams
@@ -85,6 +86,12 @@ without needing to transform types or switch to a monadic coding style.
 Effectively, this transforms every partial function into a total function; when combined with the
 wise philosophy of making impossible states unrepresentable, exceptions become even more
 exceptional.
+
+### Forbidden `null`
+
+The introduction of `null` into ALGOL was described by Tony Hoare as his "billion-dollar mistake",
+though it has persisted in numerous programming languages since. Scala 3 introduces new checks to
+help avoid `null` references, and _Scala One_ projects take full advantage of these.
 
 ### Safe Literals
 
@@ -126,8 +133,15 @@ library should also be small.
 
 - extensive use of the immutable `IArray[Byte]` type for random-access byte-data
 - streaming provided using `LazyList`s
-- all libraries are compiled with `null`-checking enabled—and `null`s forbidden!
 - use of the `T | Unset` union type for optional parameters, without the need to wrap `T` in `Some` or use `null`
+
+## Future features
+
+### Capture Checking
+
+_Scala One_ projects already use Scala 3's enhanced exception checking, and in the future, streaming APIs
+built on `LazyList`s will be enhanced to use the experimental capture-checking functionality that is
+expected to be introduced in Scala 3 soon.
 
 ## _Scala One_ Modules
 
