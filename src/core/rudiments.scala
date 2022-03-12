@@ -351,7 +351,7 @@ extension (obj: LazyList.type)
 
 object ByteSize:
 
-  given Ordering[ByteSize] = Ordering[Long].on(_.long)
+  given Ordering[ByteSize] = Ordering.Long.on(_.long)
 
   extension (bs: ByteSize)
     def long: Long = bs
