@@ -48,7 +48,11 @@ trait Daemon() extends App:
 
   final def main(args: IArray[Text]): Unit =
     args.to(List) match
-      case t"::start::" :: script :: fifo :: Int(pid) :: Int(watch) :: Nil =>
+      case _ =>
+        val script = Sys.exoskeleton.script()
+        val fifo = Sys.exoskeleton.fifo()
+        val Int(pid) = Sys.exoskeleton.pid()
+        val Int(watch) = Sys.exoskeleton.watch()
         val runnable: Runnable = () => server(script, fifo, pid, watch)
         Thread(runnable, "exoskeleton-dispatcher").start()
       
