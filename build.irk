@@ -1,10 +1,4 @@
 {
-  "repos": [
-    {
-      "base": "../probably",
-      "url": "https://github.com/propensive/probably"
-    }
-  ],
   "imports": ["../probably/build.irk"],
   "publishing": {
     "username": "propensive",
@@ -35,12 +29,6 @@
       "docs": [
         "doc"
       ]
-    },
-    {
-      "name": "Rudiments Tests",
-      "id": "rudiments/test",
-      "sources": ["src/test"],
-      "links": ["rudiments/core", "probably/cli"]
     }
   ]
 }
