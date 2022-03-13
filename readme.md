@@ -1,6 +1,6 @@
 [<img alt="GitHub Workflow" src="https://img.shields.io/github/workflow/status/propensive/exoskeleton/Build/main?style=for-the-badge" height="24">](https://github.com/propensive/exoskeleton/actions)
 [<img src="https://img.shields.io/maven-central/v/com.propensive/exoskeleton-core?color=2465cd&style=for-the-badge" height="24">](https://search.maven.org/artifact/com.propensive/exoskeleton-core)
-[<img src="https://img.shields.io/discord/633198088311537684?color=8899f7&label=DISCORD&style=for-the-badge" height="24">](https://discord.gg/v7CjtbnwDq)
+[<img src="https://img.shields.io/discord/633198088311537684?color=8899f7&label=DISCORD&style=for-the-badge" height="24">](https://discord.gg/7b6mpF6Qcf)
 <img src="/doc/images/github.png" valign="middle">
 
 # Exoskeleton
@@ -91,7 +91,7 @@ Exoskeleton is classified as __fledgling__. Propensive defines the following fiv
 - _dependable_: production-ready, subject to controlled ongoing maintenance and enhancement; tagged as version `1.0` or later
 - _adamantine_: proven, reliable and production-ready, with no further breaking changes ever anticipated
 
-Exoskeleton is designed to be _small_. Its entire source code currently consists of 324 lines of code.
+Exoskeleton is designed to be _small_. Its entire source code currently consists of 328 lines of code.
 
 ## Building
 
