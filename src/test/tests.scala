@@ -19,9 +19,10 @@ package rudiments
 import probably.*
 import eucalyptus.*
 import gossamer.*
+import stdouts.stdout
 
 import unsafeExceptions.canThrowAny
-given Log(Everything |-> Stdout)
+given Log(Everything |-> SystemOut)
 
 object Tests extends Suite(t"Rudiments tests"):
   def run(using Runner): Unit =
@@ -30,17 +31,17 @@ object Tests extends Suite(t"Rudiments tests"):
     
     test(t"read Java `InputStream`, chunked") {
       val in = java.io.ByteArrayInputStream(array)
-      Util.read(in, 4.kb).map(_.to(Vector)).reduce(_ ++ _)
+      Util.readInputStream(in, 4.kb).map(_.to(Vector)).reduce(_ ++ _)
     }.assert(_ == array.to(Vector))
     
     test(t"read Java `InputStream`, single chunk") {
       val in = java.io.ByteArrayInputStream(array)
-      Util.read(in, 64.kb).map(_.to(Vector)).head
+      Util.readInputStream(in, 64.kb).map(_.to(Vector)).head
     }.assert(_ == array.to(Vector))
     
     test(t"read Java `InputStream`, two chunks") {
       val in = java.io.ByteArrayInputStream(array)
-      Util.read(in, 32.kb).map(_.to(Vector)).length
+      Util.readInputStream(in, 32.kb).map(_.to(Vector)).length
     }.assert(_ == 2)
 
     test(t"initialize array") {

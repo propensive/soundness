@@ -1,4 +1,5 @@
 {
+  "imports": ["../probably/build.irk"],
   "publishing": {
     "username": "propensive",
     "group": "com.propensive",
@@ -28,6 +29,12 @@
       "docs": [
         "doc"
       ]
+    },
+    {
+      "name": "Rudiments Tests",
+      "id": "rudiments/test",
+      "sources": ["src/test"],
+      "links": ["rudiments/core", "probably/cli"]
     }
   ]
 }
