@@ -337,7 +337,7 @@ extension (obj: LazyList.type)
       if futures.isEmpty then LazyList()
       else
         val finished = Future.firstCompletedOf(futures)
-        val idx: Int = Await.result(finished, duration.Duration.Inf)
+        val idx: Int = finished.await()
         val stream = vector(idx)
         if stream.isEmpty then recur(futures - futuresVector(idx))
         else
@@ -348,6 +348,50 @@ extension (obj: LazyList.type)
           stream.head #:: recur(futures - oldFuture + newFuture)
     
     recur(futuresVector.to(Set))
+
+extension [T](stream: LazyList[T])
+  def cluster(interval: Long, maxSize: Maybe[Int] = Unset): LazyList[List[T]] =
+    import scala.concurrent.*
+    given ExecutionContext = ExecutionContext.Implicits.global
+
+    class Timer():
+      private var exp: Long = System.currentTimeMillis + interval
+      
+      val future: Future[None.type] =
+        Future {
+          blocking {
+            @tailrec
+            def waitUntil(time: Long): Unit =
+              Thread.sleep(time - System.currentTimeMillis)
+              if time != exp then waitUntil(exp)
+            
+            waitUntil(exp)
+            None
+          }
+        }
+      
+      def postpone(): Unit = exp = System.currentTimeMillis + interval
+
+    def recur(stream: LazyList[T], list: List[T], timer: Option[Timer]): LazyList[List[T]] =
+      if list.length == maxSize then list #:: recur(stream, Nil, None)
+      else timer match
+        case None =>
+          if stream.isEmpty then LazyList[List[T]]()
+          else recur(stream.tail, stream.head :: list, Some(Timer()))
+        case Some(t) =>
+          val Timeout = t.future
+          val NextReady = Future(blocking(Some(stream.isEmpty)))
+          
+          Future.firstCompletedOf(Iterable(Timeout, NextReady)).await() match
+            case None =>
+              list #:: recur(stream, Nil, None)
+            
+            case Some(empty) =>
+              if empty then LazyList() else
+                t.postpone()
+                recur(stream.tail, stream.head :: list, Some(t))
+
+    recur(stream, Nil, None)
 
 object ByteSize:
 
@@ -425,5 +469,3 @@ abstract class Error(cause: Maybe[Error] = Unset) extends Exception():
   def message: Text
   def explanation: Maybe[Text] = Unset
   def stackTrace: StackTrace = StackTrace(this)
-
-
