@@ -1,5 +1,4 @@
 {
-  "imports": ["../probably/build.irk"],
   "publishing": {
     "username": "propensive",
     "group": "com.propensive",
