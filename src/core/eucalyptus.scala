@@ -19,6 +19,7 @@ package eucalyptus
 import gossamer.*
 import escapade.*
 import rudiments.*
+import turbulence.*
 import iridescence.*
 
 import scala.quoted.*
