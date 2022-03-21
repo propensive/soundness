@@ -18,6 +18,7 @@ package euphemism
 
 import wisteria.*
 import rudiments.*
+import turbulence.*
 import gossamer.*
 
 import org.typelevel.jawn.{ParseException as JawnParseException, *}, ast.*
