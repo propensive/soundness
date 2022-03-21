@@ -66,10 +66,6 @@ object Bytes:
   def apply(xs: Byte*): Bytes = IArray(xs*)
   def empty: Bytes = IArray()
 
-case class ExcessDataError(size: ByteSize, limit: ByteSize) extends Error:
-  def message: Text =
-    Text(s"the amount of data in the stream (at least ${size}B) exceeds the limit (${limit}B)")
-
 extension [T](value: T)
   def only[S](pf: PartialFunction[T, S]): Option[S] = Some(value).collect(pf)
   def unit: Unit = ()
