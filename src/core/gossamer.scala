@@ -17,6 +17,7 @@
 package gossamer
 
 import rudiments.*
+import turbulence.*
 import contextual.*
 import wisteria.*
 

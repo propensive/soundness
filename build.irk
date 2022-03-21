@@ -7,6 +7,10 @@
     {
       "base": "../wisteria",
       "url": "https://github.com/propensive/wisteria"
+    },
+    {
+      "base": "../turbulence",
+      "url": "https://github.com/propensive/turbulence"
     }
   ],
   "imports": [
@@ -37,6 +41,7 @@
       "id": "gossamer/core",
       "links": [
         "contextual/core",
+        "turbulence/core",
         "wisteria/core"
       ],
       "sources": [

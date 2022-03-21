@@ -147,7 +147,7 @@ results in, `"Choose one, two or three."`.
 
 The following _Scala One_ libraries are dependencies of _Gossamer_:
 
-[![Contextual](https://github.com/propensive/contextual/raw/main/doc/images/128x128.png)](https://github.com/propensive/contextual/) &nbsp; [![Wisteria](https://github.com/propensive/wisteria/raw/main/doc/images/128x128.png)](https://github.com/propensive/wisteria/) &nbsp;
+[![Contextual](https://github.com/propensive/contextual/raw/main/doc/images/128x128.png)](https://github.com/propensive/contextual/) &nbsp; [![Turbulence](https://github.com/propensive/turbulence/raw/main/doc/images/128x128.png)](https://github.com/propensive/turbulence/) &nbsp; [![Wisteria](https://github.com/propensive/wisteria/raw/main/doc/images/128x128.png)](https://github.com/propensive/wisteria/) &nbsp;
 
 The following _Scala One_ libraries are dependents of _Gossamer_:
 
@@ -163,7 +163,7 @@ Gossamer is classified as __fledgling__. Propensive defines the following five s
 - _dependable_: production-ready, subject to controlled ongoing maintenance and enhancement; tagged as version `1.0` or later
 - _adamantine_: proven, reliable and production-ready, with no further breaking changes ever anticipated
 
-Gossamer is designed to be _small_. Its entire source code currently consists of 780 lines of code.
+Gossamer is designed to be _small_. Its entire source code currently consists of 781 lines of code.
 
 ## Building
 
