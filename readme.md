@@ -20,8 +20,66 @@ The current latest release of Turbulence is __0.4.0__.
 
 ## Getting Started
 
+## Operations on `LazyList`s
 
+### Clustering
 
+An event stream provided by a `LazyList[T]` may yield events irregularly, often with several events
+happening at the same time. A simple event-handling loop, which performs a slow operation, such as,
+```scala
+stream.foreach:
+  event => slowOperation(event)
+```
+will incur a time cost for every event in the stream; so the operation takes one second and ten
+events arrive at around the same time, it will take about ten seconds from the first event arriving
+until the last event is processed.
+
+Sometimes it can be quicker to process events in a batch, or the results of processing earlier
+events can be invalidated by the arrival of later events. In these cases, clustering the events on
+a stream can be useful.
+
+The `LazyList#cluster` extension method can transform a `LazyList[T]` into a `LazyList[List[T]]`. It
+will group together sequences of events arriving with less than a specified gap in time between
+them.
+
+For example,
+```scala
+stream.cluster(1000).foreach:
+  events => slowOperation(events.last)
+```
+will effectively ignore all but the last event, but will not start processing an event until 1000ms
+has passed without any new events.
+
+As a more complete example, consider the event stream, `stream`, which produces events `0`-`9` at
+the times shown in the "Time" column. 
+
+Event   | Time    | Gap      | `stream`    | `stream.cluster(10)`   | `stream.cluster(100)`     |
+-------:|--------:|---------:|------------:|-----------------------:|--------------------------:|
+`0`     | `4ms`   |          | `0 @ 4ms`   |                        |                           |
+`1`     | `8ms`   | `4ms`    | `1 @ 8ms`   | `{0,1} @ 18ms`         |                           |
+`2`     | `15ms`  | `7ms`    | `2 @ 15ms`  | `{2} @ 25ms`           |                           |
+`3`     | `26ms`  | `11ms`   | `3 @ 26ms`  | `{3} @ 36ms`           |                           |
+`4`     | `75ms`  | `49ms`   | `4 @ 75ms`  |                        |                           |
+`5`     | `80ms`  | `5ms`    | `5 @ 80ms`  |                        |                           |
+`6`     | `85ms`  | `5ms`    | `6 @ 85ms`  |                        |                           |
+`7`     | `90ms`  | `5ms`    | `7 @ 90ms`  | `{4,5,6,7} @ 100ms`    | `{1,2,3,4,5,6,7} @ 190ms` |
+`8`     | `203ms` | `113ms`  | `8 @ 203ms` | `{8} @ 213ms`          | `{8} @ 303ms`             |
+`9`     | `304ms` | `101ms`  | `9 @ 304ms` | `{8} @ 308ms`          | `{9} @ 308ms`             |
+`END`   | `308ms` | `4ms`    |             |                        |                           |
+
+The event streams `stream.cluster(10)` and `stream.cluster(100)` will produce results at different
+times. Note that event `0` is not received on `stream.cluster(100)` until `190ms` after it is
+produced, and likewise event `4` is not received on `stream.cluster(10)` until `25ms` after it
+fires.
+
+In the worst-case scenario, a stream steadily producing events with a gap slightly shorter than the
+cluster interval will never produce a value! To mitigate this possibility, an optional second
+parameter can be provided which specifies the maximum number of events to include in a single
+clustered event.
+
+### Multiplexing
+
+TBC
 
 ## Related Projects
 
