@@ -18,6 +18,7 @@ package scintillate
 
 import gossamer.*
 import rudiments.*
+import turbulence.*
 import gesticulate.*
 import wisteria.*
 import eucalyptus.*
