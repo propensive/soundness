@@ -19,6 +19,7 @@ package exoskeleton
 import jovian.*
 import gossamer.*
 import rudiments.*
+import turbulence.*
 import escapade.*
 
 import scala.concurrent.*
