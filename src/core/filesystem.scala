@@ -20,6 +20,7 @@ import kaleidoscope.*
 import gastronomy.*
 import slalom.*
 import rudiments.*
+import turbulence.*
 import eucalyptus.*
 import gossamer.*
 
