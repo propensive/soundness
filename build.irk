@@ -2,6 +2,7 @@
   "imports": [
     "mod/polyvinyl/build.irk",
     "mod/rudiments/build.irk",
+    "mod/turbulence/build.irk",
     "mod/contextual/build.irk",
     "mod/gossamer/build.irk",
     "mod/wisteria/build.irk",

@@ -122,3 +122,6 @@
 	path = mod/polyvinyl
 	url = https://github.com/propensive/polyvinyl
 	branch = main
+[submodule "mod/turbulence"]
+	path = mod/turbulence
+	url = https://github.com/propensive/turbulence
