@@ -1,0 +1,20 @@
+{
+  "repos": [
+    {
+      "base": "../rudiments",
+      "url": "https://github.com/propensive/rudiments"
+    }
+  ],
+  "imports": ["../rudiments/build.irk", "../clairvoyant/build.irk"],
+  "modules": [
+    {
+      "name": "Imperial",
+      "id": "imperial/core",
+      "links": ["rudiments/core", "clairvoyant/file"],
+      "sources": ["src/core"],
+      "version": "0.4.0",
+      "docs": ["doc"],
+      "artifact": "imperial.jar"
+    }
+  ]
+}
