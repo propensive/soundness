@@ -30,6 +30,17 @@
       ]
     },
     {
+      "name": "Clairvoyant File",
+      "id": "clairvoyant/file",
+      "sources": [
+        "src/file"
+      ],
+      "version": "0.4.0",
+      "docs": [
+        "doc"
+      ]
+    },
+    {
       "name": "Clairvoyant Time",
       "id": "clairvoyant/time",
       "sources": [
