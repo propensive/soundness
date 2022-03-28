@@ -1,4 +1,5 @@
 {
+
   "imports": [
     "mod/polyvinyl/build.irk",
     "mod/rudiments/build.irk",
@@ -13,6 +14,7 @@
     "mod/tarantula/build.irk",
     "mod/eucalyptus/build.irk",
     "mod/guillotine/build.irk",
+    "mod/imperial/build.irk",
     "mod/slalom/build.irk",
     "mod/iridescence/build.irk",
     "mod/kaleidoscope/build.irk",

@@ -125,3 +125,6 @@
 [submodule "mod/turbulence"]
 	path = mod/turbulence
 	url = https://github.com/propensive/turbulence
+[submodule "mod/imperial"]
+	path = mod/imperial
+	url = https://github.com/propensive/imperial
