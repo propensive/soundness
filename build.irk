@@ -3,6 +3,10 @@
     {
       "base": "../rudiments",
       "url": "https://github.com/propensive/rudiments"
+    },
+    {
+      "base": "../clairvoyant",
+      "url": "https://github.com/propensive/clairvoyant"
     }
   ],
   "imports": ["../rudiments/build.irk", "../clairvoyant/build.irk"],
