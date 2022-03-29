@@ -17,8 +17,7 @@
       "links": ["rudiments/core", "clairvoyant/file"],
       "sources": ["src/core"],
       "version": "0.4.0",
-      "docs": ["doc"],
-      "artifact": "imperial.jar"
+      "docs": ["doc"]
     }
   ]
 }
