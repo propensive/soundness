@@ -53,8 +53,25 @@ fires.
 In the worst-case scenario, a stream steadily producing events with a gap slightly shorter than the
 cluster interval will never produce a value! To mitigate this possibility, an optional second
 parameter can be provided which specifies the maximum number of events to include in a single
-clustered event.
+clustered event, for example,
+```scala
+stream.cluster(100, 10)
+```
 
 ### Multiplexing
+
+Multiple `LazyList` streams may be combined into a single stream by multiplexing them. The
+extension method `LazyList.multiplex` takes a variable number of `LazyList` arguments to construct
+a new `LazyList` from two of more existing `LazyList`s.
+
+The type parameter of the resultant `LazyList` will be the least upper-bound of that of the input
+streams.
+
+Multiplexing is implemented by creating a set of futures, each waiting for a stream to become ready.
+Awaiting the first future to complete, its value is yielded, and (assuming it was non-empty) its
+old future is swapped out of the set and replaced with a new future waiting for its tail to become
+ready, and the next change in the set of futures is awaited.
+
+### Mutable Multiplexing
 
 TBC
