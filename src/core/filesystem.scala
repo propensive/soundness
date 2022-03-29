@@ -23,12 +23,14 @@ import rudiments.*
 import turbulence.*
 import eucalyptus.*
 import gossamer.*
+import clairvoyant.*
 
 import scala.util.*
 import scala.collection.generic.CanBuildFrom
+import scala.collection.mutable.HashMap
+import scala.concurrent.*
 
 import java.net.URI
-
 import java.nio.file as jnf
 import java.io as ji
 
@@ -90,7 +92,13 @@ trait Inode:
 
 object File:
   given Show[File] = _.fullname
-  
+
+  given FileProvider[File] with
+    def make(str: String, readOnly: Boolean = false): Option[File] =
+      try Filesystem.parse(Text(str)).map(_.file(Expect)) catch case err: IoError => None
+    
+    def path(file: File): String = file.path.fullname.toString
+
   given Sink[File] with
     type E = IoError
     def write(value: File, stream: DataStream): Unit throws E | StreamCutError =
@@ -128,6 +136,13 @@ trait Symlink extends Inode
 
 object DiskPath:
   given Show[DiskPath] = _.fullname
+  
+  given DirectoryProvider[DiskPath] with
+    def make(str: String, readOnly: Boolean = false): Option[DiskPath] =
+      try Filesystem.parse(Text(str)) catch case err: IoError => None
+    
+    def path(path: DiskPath): String = path.fullname.toString
+
 
 trait DiskPath:
   def javaPath: jnf.Path
@@ -165,6 +180,13 @@ trait DiskPath:
 object Directory:
   given Show[Directory] = _.path.show
   
+  given DirectoryProvider[Directory] with
+    def make(str: String, readOnly: Boolean = false): Option[Directory] =
+      try Filesystem.parse(Text(str)).map(_.directory(Expect)) catch case err: IoError => None
+    
+    def path(directory: Directory): String = directory.path.fullname.s
+
+  
 trait Directory extends Inode:
   def path: DiskPath
   def files: List[File] throws IoError
@@ -199,6 +221,9 @@ case class IoError(operation: IoError.Op, reason: IoError.Reason, path: DiskPath
 
 case class InotifyError() extends Error:
   def message: Text = t"the limit on the number of paths that can be watched has been exceeded"
+
+case class InvalidPathError(path: Text) extends Error:
+  def message: Text = t"the string '$path' is not a valid path"
 
 open class Classpath(classLoader: ClassLoader = getClass.nn.getClassLoader.nn)
 extends Root(t"/", t""):
@@ -237,12 +262,15 @@ class Filesystem(pathSeparator: Text, fsPrefix: Text) extends Root(pathSeparator
   fs =>
   type AbsolutePath = DiskPath
 
+  val root: DiskPath = DiskPath(Nil)
+  lazy val javaFilesystem: jnf.FileSystem = root.javaPath.getFileSystem.nn
+
   def makeAbsolute(parts: List[Text]): DiskPath = DiskPath(parts)
 
   def unapply(path: jnf.Path): Some[DiskPath] =
     Some(DiskPath((0 until path.getNameCount).map(path.getName(_).toString.show).to(List)))
 
-  def parse(value: Text, pwd: Maybe[AbsolutePath] = Unset): Option[AbsolutePath] =
+  def parse(value: Text, pwd: Maybe[DiskPath] = Unset): Option[DiskPath] =
     if value.startsWith(prefix)
     then
       val parts: List[Text] = value.drop(prefix.length).cut(separator)
@@ -443,10 +471,82 @@ class Filesystem(pathSeparator: Text, fsPrefix: Text) extends Root(pathSeparator
     case NewDirectory(directory: Directory)
     case Modify(file: File)
     case Delete(file: DiskPath)
-    case NoChange
+  
+    def path: DiskPath = this match
+      case NewFile(file)     => file.path
+      case NewDirectory(dir) => dir.path
+      case Modify(file)      => file.path
+      case Delete(path)      => path
 
-  case class Watcher(startStream: () => LazyList[FileEvent], stop: () => Unit):
-    def stream: LazyList[FileEvent] = startStream()
+  case class Watcher(private val svc: jnf.WatchService,
+                     private val watches: HashMap[jnf.WatchKey, Directory],
+                     private val dirs: HashMap[Directory, jnf.WatchKey]):
+    import java.nio.file.*, StandardWatchEventKinds.*, collection.JavaConverters.*
+
+    private val Ended: Trigger = Trigger()
+    private val endedFuture: Future[Trigger] = Ended.future
+    def removeAll()(using Log): Unit = watches.values.foreach(remove(_))
+    
+    def stream(using ExecutionContext): LazyList[FileEvent] =
+      @tailrec
+      def recur(): LazyList[FileEvent] =
+        Future.firstCompletedOf(List(endedFuture, Future(blocking(svc.take())))).await() match
+          case Ended | null =>
+            LazyList()
+          case k: WatchKey =>
+            val key = k.nn
+            val events = key.pollEvents().nn.iterator.nn.asScala.to(LazyList).flatMap(process(key, _))
+            key.reset()
+            if events.isEmpty then recur() else events #::: stream
+      
+      recur()
+
+    private def process(key: WatchKey, event: WatchEvent[?]): LazyList[FileEvent] =
+      erased given CanThrow[RootParentError] = compiletime.erasedValue
+      
+      val diskPath = event.context match
+        case path: jnf.Path =>
+          (watches(key).path + Relative.parse(Showable(path).show)) match
+            case path: fs.DiskPath => path
+      
+      try event.kind match
+        case ENTRY_CREATE => if diskPath.isDirectory
+                             then LazyList(FileEvent.NewDirectory(diskPath.directory(Expect)))
+                             else LazyList(FileEvent.NewFile(diskPath.file(Expect)))
+        case ENTRY_MODIFY => LazyList(FileEvent.Modify(diskPath.file(Expect)))
+        case ENTRY_DELETE => LazyList(FileEvent.Delete(diskPath))
+      catch case err: Exception => LazyList()
+
+    def remove(dir: Directory)(using Log): Unit = synchronized:
+      val watchKey = dirs(dir)
+      watchKey.cancel()
+      dirs.remove(dir)
+      watches.remove(watchKey)
+      Log.info(t"Stopped watching ${dir.path}")
+      if dirs.isEmpty then Ended.pull()
+    
+    def add(dir: Directory)(using Log): Unit = synchronized:
+      val watchKey = dir.javaPath.register(svc, ENTRY_CREATE, ENTRY_MODIFY, ENTRY_DELETE).nn
+      watches(watchKey) = dir
+      dirs(dir) = watchKey
+      Log.info(t"Started watching ${dir.path}")
+    
+    def directories: scala.collection.Set[Directory] = dirs.keySet
+
+
+  def watch(dirs: Iterable[Directory])(using Log): Watcher throws IoError | InotifyError =
+    import java.nio.file.*, StandardWatchEventKinds.*, collection.JavaConverters.*
+    val svc: jnf.WatchService = javaFilesystem.newWatchService().nn
+    val watches: HashMap[jnf.WatchKey, Directory] = HashMap()
+    val directories: HashMap[Directory, jnf.WatchKey] = HashMap()
+    dirs.foreach:
+      dir =>
+        val watchKey = dir.javaPath.register(svc, ENTRY_CREATE, ENTRY_MODIFY, ENTRY_DELETE).nn
+        watches(watchKey) = dir
+        directories(dir) = watchKey
+        Log.info(t"Started watching ${dir.path}")
+    
+    Watcher(svc, watches, directories)
 
   case class Directory(dirPath: DiskPath) extends Inode(dirPath), jovian.Directory:
     def directory: Option[Directory] = Some(this)
@@ -463,73 +563,7 @@ class Filesystem(pathSeparator: Text, fsPrefix: Text) extends Root(pathSeparator
       try recur(javaFile).unit
       catch e => throw IoError(IoError.Op.Delete, IoError.Reason.AccessDenied, dirPath)
 
-    def watch(recursive: Boolean = true, interval: Int = 100)(using Log)
-             : Watcher throws IoError | InotifyError =
-      import java.nio.file.*, StandardWatchEventKinds.*
-      import collection.JavaConverters.*
-      var continue: Boolean = true
-      
-      val dirs: Set[Directory] =
-        if recursive then deepSubdirectories.to(Set) + this else Set(this)
-      
-      val svc = javaPath.getFileSystem.nn.newWatchService().nn
-      
-      def watchKey(dir: Directory): WatchKey =
-        // Calls to `Log.fine` seem to result in an AssertionError at compiletime
-        //Log.fine(t"Started monitoring for changes in ${dir.path.show}")
-        dir.javaPath.register(svc, ENTRY_CREATE, ENTRY_MODIFY, ENTRY_DELETE).nn
-
-      def poll(index: Map[WatchKey, Directory]): LazyList[FileEvent] =
-        erased given CanThrow[RootParentError] = compiletime.erasedValue
-        val events = index.map:
-          (key, dir) => key.pollEvents().nn.iterator.nn.asScala.to(List).flatMap:
-            event =>
-              val path: DiskPath = event.context match
-                case path: jnf.Path =>
-                  (dir.path + Relative.parse(Showable(path).show)) match
-                    case path: fs.DiskPath => path
-                
-                case _ =>
-                  throw Impossible("Watch service should always return a Path")
-              
-              try event.kind match
-                case ENTRY_CREATE => if path.isDirectory
-                                     then List(FileEvent.NewDirectory(path.directory(Expect)))
-                                     else List(FileEvent.NewFile(path.file(Expect)))
-                case ENTRY_MODIFY => List(FileEvent.Modify(path.file(Expect)))
-                case ENTRY_DELETE => List(FileEvent.Delete(path))
-                case _            => Nil
-              catch case err: IoError => Nil
-        .flatten
-      
-        if continue then
-          val newIndex = events.foldLeft(index):
-            case (index, FileEvent.NewDirectory(dir)) =>
-              // Calls to `Log.fine` seem to result in an AssertionError at compiletime
-              //Log.fine(t"Starting monitoring new directory ${dir.path.show}")
-              index.updated(watchKey(dir), dir)
-            
-            case (index, FileEvent.Delete(path)) =>
-              // Calls to `Log.fine` seem to result in an AssertionError at compiletime
-              //if path.isDirectory then Log.fine(t"Stopping monitoring of deleted directory $path")
-              val deletions = index.filter(_(1).path == path)
-              deletions.keys.foreach(_.cancel())
-              index -- deletions.keys
-            
-            case _ =>
-              index
-          
-          def sleepPoll(): LazyList[FileEvent] =
-            Thread.sleep(interval)
-            poll(newIndex)
-
-          if events.isEmpty then FileEvent.NoChange #:: sleepPoll()
-          else events.to(LazyList) #::: sleepPoll()
-        else
-          index.keys.foreach(_.cancel())
-          LazyList()
-
-      Watcher(() => poll(dirs.mtwin.map(watchKey(_) -> _).to(Map)), () => continue = false)
+    def watch()(using Log): Watcher throws InotifyError | IoError = fs.watch(List(this))
 
     def children: List[Inode] throws IoError =
       Option(javaFile.list).fold(Nil):
@@ -669,6 +703,8 @@ object Filesystem:
     .to(Set)
  
   def defaultSeparator: "/" | "\\" = if ji.File.separator == "\\" then "\\" else "/"
+
+  def parse(text: Text): Option[DiskPath] = roots.flatMap(_.parse(text)).headOption
 
 object Unix extends Filesystem(t"/", t"/"):
   def Pwd: DiskPath throws PwdError =
