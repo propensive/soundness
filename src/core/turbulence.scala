@@ -19,10 +19,12 @@ package turbulence
 import rudiments.*
 
 import scala.collection.IterableFactory
+import scala.collection.mutable.HashMap
 import scala.compiletime.*, ops.int.*
 import scala.concurrent.*
 
 import java.util.regex.*
+import java.util as ju
 import java.io as ji
 
 import scala.util.CommandLineParser
@@ -182,82 +184,32 @@ extension [T](value: T)
       : S throws readable.E | src.E | StreamCutError =
     readable.read(dataStream)
 
-extension (obj: LazyList.type)
-  def multiplex[T](streams: LazyList[T]*): LazyList[T] =
-    import scala.concurrent.*
-    given ExecutionContext = ExecutionContext.Implicits.global
+case class Multiplexer[K, T]():
+  private val tasks: HashMap[K, Task[Unit]] = HashMap()
+  private val queue: juc.LinkedBlockingQueue[T] = juc.LinkedBlockingQueue()
 
-    def future(stream: LazyList[T], idx: Int): Future[Int] = Future:
-      blocking:
-        stream.isEmpty
-        idx
-    
-    var vector: Vector[LazyList[T]] = streams.to(Vector)
-    var futuresVector: Vector[Future[Int]] = vector.zipWithIndex.map(future(_, _))
+  @tailrec
+  private def pump(key: K, stream: LazyList[T]): Unit =
+    if stream.isEmpty then remove(key)
+    else
+      queue.put(stream.head)
+      pump(key, stream.tail)
 
-    def recur(futures: Set[Future[Int]]): LazyList[T] =
-      if futures.isEmpty then LazyList()
-      else
-        val idx = Future.firstCompletedOf(futures).await()
-        val stream = vector(idx)
-        if stream.isEmpty then recur(futures - futuresVector(idx))
-        else
-          vector = vector.updated(idx, stream.tail)
-          val oldFuture = futuresVector(idx)
-          val newFuture = future(stream.tail, idx)
-          futuresVector = futuresVector.updated(idx, newFuture)
-          stream.head #:: recur(futures - oldFuture + newFuture)
-    
-    recur(futuresVector.to(Set))
-
-case class EventStream[T](interval: Int = 10):
-  private val queue: juc.ConcurrentLinkedQueue[T] = juc.ConcurrentLinkedQueue[T]()
-  def put(value: T): Unit = queue.offer(value)
+  def add(key: K, stream: LazyList[T]): Unit =
+    synchronized:
+      val task: Task[Unit] = Task:
+        pump(key, stream)
+        remove(key)
+      
+      task()
+      tasks(key) = task
   
-  final def stream(): LazyList[T] =
-    if !queue.isEmpty then queue.poll.nn #:: stream() else
-      Thread.sleep(interval)
-      stream()
-
-case class Multiplexer[K, T]()(using ExecutionContext):
-  private enum Change:
-    case AddStream(key: K, stream: LazyList[T])
-    case RemoveStream(key: K)
+  private def remove(key: K): Unit = synchronized:
+    tasks -= key
   
-  private enum Update:
-    case Yield(key: K, stream: LazyList[T])
-    case Ready(stream: LazyList[Change])
-  
-  import Change.*
-  import Update.*
-
-  private val changes: EventStream[Change] = EventStream()
-  def add(key: K, stream: LazyList[T]): Unit = changes.put(AddStream(key, stream))
-  def remove(key: K): Unit = changes.put(RemoveStream(key))
-
-  private def future(key: K, stream: LazyList[T]): Future[Update] = Future:
-    blocking:
-      stream.isEmpty
-      Yield(key, stream)
-
-  private def event(stream: LazyList[Change]): Future[Update] = stream.ready.map(Ready(_))
-
-  def stream()(using ExecutionContext): LazyList[T] =
-    def recur(futures: Map[Maybe[K], Future[Update]]): LazyList[T] =
-      if futures.isEmpty then LazyList()
-      else
-        Future.firstCompletedOf(futures.values).await() match
-          case Yield(key, stream) =>
-            if stream.isEmpty then recur(futures - key)
-            else stream.head #:: recur(futures.updated(key, future(key, stream.tail)))
-          
-          case Ready(RemoveStream(key) #:: tail) =>
-            recur(futures.updated(Unset, event(tail)) - key)
-          
-          case Ready(AddStream(key, stream) #:: tail) =>
-            recur(futures.updated(key, future(key, stream)).updated(Unset, event(tail)))
-    
-    recur(Map(Unset -> event(changes.stream())))
+  def stream: LazyList[T] =
+    val item: T | Null = queue.take()
+    if item == null then LazyList() else item #:: stream
 
 extension [T](stream: LazyList[T])
   def ready(using ExecutionContext): Future[LazyList[T]] = Future:
@@ -265,48 +217,20 @@ extension [T](stream: LazyList[T])
       stream.isEmpty
       stream
 
-  def cluster(interval: Long, maxSize: Maybe[Int] = Unset)
-             (using ExecutionContext)
-             : LazyList[List[T]] =
-    import scala.concurrent.*
+  def cluster(interval: Long, maxSize: Maybe[Int] = Unset, maxDelay: Maybe[Long] = Unset)
+             (using ExecutionContext): LazyList[List[T]] =
+    def recur(stream: LazyList[T], list: List[T], expiry: Long): LazyList[List[T]] =
+      if list.isEmpty then
+        val newExpiry: Long = maxDelay.option.fold(Long.MaxValue)(_ + System.currentTimeMillis)
+        if stream.isEmpty then LazyList() else recur(stream.tail, List(stream.head), newExpiry)
+      else
+        val hasMore: Future[Boolean] = Future(!stream.isEmpty)
 
-    class Timer():
-      private var exp: Long = System.currentTimeMillis + interval
-      
-      val future: Future[None.type] =
-        Future:
-          blocking:
-            @tailrec
-            def waitUntil(time: Long): Unit =
-              Thread.sleep(time - System.currentTimeMillis)
-              if time != exp then waitUntil(exp)
-            
-            waitUntil(exp)
-            None
-      
-      def postpone(): Unit = exp = System.currentTimeMillis + interval
-
-    def rerecur(stream: LazyList[T], list: List[T], timer: Option[Timer]): LazyList[List[T]] =
-      recur(stream, list, timer)
-
-    @tailrec
-    def recur(stream: LazyList[T], list: List[T], timer: Option[Timer]): LazyList[List[T]] =
-      if list.length == maxSize then list #:: rerecur(stream, Nil, None)
-      else timer match
-        case None =>
-          if stream.isEmpty then LazyList[List[T]]()
-          else recur(stream.tail, stream.head :: list, Some(Timer()))
-        case Some(t) =>
-          val timeout = t.future
-          val nextReady = Future(blocking(Some(stream.isEmpty)))
-          
-          Future.firstCompletedOf(Iterable(timeout, nextReady)).await() match
-            case None =>
-              list #:: rerecur(stream, Nil, None)
-            
-            case Some(empty) =>
-              if empty then LazyList() else
-                t.postpone()
-                recur(stream.tail, stream.head :: list, Some(t))
-
-    recur(stream, Nil, None)
+        try
+          if hasMore.timeout(interval.min(expiry - System.currentTimeMillis).max(0)).await()
+          then recur(stream.tail, stream.head :: list, expiry)
+          else LazyList(list)
+        catch
+          case err: TimeoutError => list.reverse #:: recur(stream, Nil, Long.MaxValue)
+    
+    recur(stream, Nil, Long.MaxValue)
