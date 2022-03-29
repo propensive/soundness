@@ -1,14 +1,23 @@
 package clairvoyant
 
+import java.nio.file as jnf
+import java.io as ji
+
 trait DirectoryProvider[T]:
-  def make(path: String): T
+  def make(path: String): Option[T]
   def path(value: T): String
 
 trait FileProvider[T]:
-  def make(path: String): T
+  def make(path: String): Option[T]
   def path(value: T): String
 
 object files:
-  given javaIo: FileProvider[java.io.File] with DirectoryProvider[java.io.File] with
-    def make(path: String): java.io.File = java.io.File(path)
-    def path(value: java.io.File): String = value.getAbsolutePath.nn
+  given javaNio: FileProvider[jnf.Path] with DirectoryProvider[jnf.Path] with
+    def make(path: String): Option[jnf.Path] =
+      try Some(jnf.Paths.get(path).nn)
+      catch case err: jnf.InvalidPathException => None
+    def path(value: jnf.Path): String = value.toAbsolutePath.nn.toString
+
+  given javaIo: FileProvider[ji.File] with DirectoryProvider[ji.File] with
+    def make(path: String): Option[ji.File] = Some(ji.File(path))
+    def path(value: ji.File): String = value.getAbsolutePath.nn
