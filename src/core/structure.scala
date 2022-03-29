@@ -41,32 +41,33 @@ case class BaseLayout(private val path: String, private val env: Maybe[String] =
         case None       => absolutePath
         case Some(path) => path.s
 
-    summon[DirectoryProvider[T]].make(path).get
+    summon[DirectoryProvider[T]].make(path, readOnly = readOnly).get
 
 object Root extends BaseLayout("")(using BaseLayout.Dir("")):
   override def absolutePath: String = ""
   
   override def apply[T]()(using DirectoryProvider[T], EnvVarProvider): T =
-    summon[DirectoryProvider[T]].make("/").get
+    summon[DirectoryProvider[T]].make("/", readOnly = true).get
   
-  object Boot extends BaseLayout("boot")
-  object Efi extends BaseLayout("efi")
+  object Boot extends BaseLayout("boot", readOnly = true)
+  object Efi extends BaseLayout("efi", readOnly = true)
   object Etc extends BaseLayout("etc")
   object Home extends BaseLayout("home")
+  object Root extends BaseLayout("root")
   object Srv extends BaseLayout("srv")
   object Tmp extends BaseLayout("tmp")
   object Run extends BaseLayout("run"):
     object Log extends BaseLayout("log")
     object User extends BaseLayout("user")
-  object Usr extends BaseLayout("usr"):
-    object Bin extends BaseLayout("bin")
-    object Include extends BaseLayout("include")
-    object Lib extends BaseLayout("lib")
-    object Share extends BaseLayout("share"):
-      object Doc extends BaseLayout("doc")
-      object Factory extends BaseLayout("factory"):
-        object Etc extends BaseLayout("etc")
-        object Var extends BaseLayout("var")
+  object Usr extends BaseLayout("usr", readOnly = true):
+    object Bin extends BaseLayout("bin", readOnly = true)
+    object Include extends BaseLayout("include", readOnly = true)
+    object Lib extends BaseLayout("lib", readOnly = true)
+    object Share extends BaseLayout("share", readOnly = true):
+      object Doc extends BaseLayout("doc", readOnly = true)
+      object Factory extends BaseLayout("factory", readOnly = true):
+        object Etc extends BaseLayout("etc", readOnly = true)
+        object Var extends BaseLayout("var", readOnly = true)
   object Var extends BaseLayout("var"):
     object Cache extends BaseLayout("cache")
     object Lib extends BaseLayout("lib")
@@ -76,8 +77,9 @@ object Root extends BaseLayout("")(using BaseLayout.Dir("")):
   object Dev extends BaseLayout("dev"):
     object Shm extends BaseLayout("shm")
   object Proc extends BaseLayout("proc"):
-    object Sys extends BaseLayout("sys")
-  object Sys extends BaseLayout("sys")
+    def apply(pid: Pid): BaseLayout = BaseLayout(pid.value.toString, readOnly = true)
+    object Sys extends BaseLayout("sys", readOnly = true)
+  object Sys extends BaseLayout("sys", readOnly = true)
 
 object Home extends BaseLayout("~")(using BaseLayout.Dir(System.getenv("HOME").nn)):
   override def absolutePath: String = System.getenv("HOME").nn
