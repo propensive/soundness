@@ -22,6 +22,8 @@ import scala.concurrent.*
 
 import java.util.regex.*
 import java.io as ji
+import java.util as ju
+import java.util.concurrent as juc
 
 import scala.util.CommandLineParser
 
@@ -30,6 +32,7 @@ import language.dynamics
 import scala.util.{Try, Success, Failure}
 
 import java.util.concurrent as juc
+import scala.util.chaining.scalaUtilChainingOps
 
 export scala.reflect.{ClassTag, Typeable}
 export scala.collection.immutable.{Set, List, ListMap, Map, TreeSet, TreeMap}
@@ -137,8 +140,28 @@ extension (iarray: IArray.type)
     fn(array)
     array.unsafeImmutable
 
-
 extension [T](opt: Option[T]) def maybe: Unset.type | T = opt.getOrElse(Unset)
+
+case class Counter(first: Int = 0):
+  private var id: Int = first - 1
+  
+  def apply(): Int = synchronized(id.tap { _ => id += 1 })
+
+object Task:
+  private val count: Counter = Counter()
+  private def nextName(): String = s"turbulance-${count()}"
+
+  @targetName("make")
+  def apply[T](fn: => T): Task[T] = Task(() => fn)
+
+case class Task[T] private(fn: () => T):
+  private val promise: Promise[T] = Promise()
+  private val runnable: Runnable = () => promise.complete(Success(fn()))
+  private val thread: Thread = Thread(runnable, Task.nextName())
+  
+  def apply(): Promise[T] =
+    thread.start()
+    promise
 
 trait Encoding:
   def name: Text
@@ -153,8 +176,30 @@ extension [T](xs: Iterable[T])
   transparent inline def mtwin: Iterable[(T, T)] = xs.map { x => (x, x) }
   transparent inline def mtriple: Iterable[(T, T, T)] = xs.map { x => (x, x, x) }
 
+object Timer extends ju.Timer(true)
+
+case class TimeoutError() extends Error:
+  def message: Text = Text("An operation did not complete in the time it was given")
+
 extension [T](future: Future[T])
   def await(): T = Await.result(future, duration.Duration.Inf)
+  
+  def timeout(timeout: Long)(using ExecutionContext): Future[T] =
+    val p = Promise[T]
+    val timerTask: ju.TimerTask = () => p.tryFailure(TimeoutError())
+    
+    Timer.schedule(timerTask, timeout)
+
+    future.map:
+      a => if p.trySuccess(a) then timerTask.cancel()
+    .recover:
+      case e: Exception =>
+        if p.tryFailure(e) then timerTask.cancel()
+
+    p.future
+
+
+
 
 extension[T](xs: Seq[T])
   def random: T = xs(util.Random().nextInt(xs.length))
@@ -176,7 +221,7 @@ extension (bs: Long)
 
 opaque type ByteSize = Long
 
-case class Trigger():
+class Trigger():
   private val promise: Promise[Trigger] = Promise()
   def pull(): Unit = synchronized(if !promise.isCompleted then promise.complete(Success(this)))
   def future: Future[Trigger] = promise.future
@@ -257,3 +302,5 @@ abstract class Error(cause: Maybe[Error] = Unset) extends Exception():
   def message: Text
   def explanation: Maybe[Text] = Unset
   def stackTrace: StackTrace = StackTrace(this)
+
+case class Pid(value: Long)
