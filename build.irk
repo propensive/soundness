@@ -53,6 +53,7 @@
       "links": [
         "clairvoyant/html",
         "clairvoyant/time",
+        "clairvoyant/file",
         "gastronomy/core",
         "slalom/core",
         "kaleidoscope/core",
