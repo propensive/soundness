@@ -60,11 +60,6 @@ trait Executor[T]:
   def interpret(process: java.lang.Process): T
   def map[S](fn: T => S): Executor[S] = process => fn(interpret(process))
 
-object Pid:
-  given AnsiShow[Pid] = pid => ansi"${colors.FireBrick}(${pid.value.show})"
-
-case class Pid(value: Long)
-
 class Process[T](process: java.lang.Process, executor: Executor[T]):
   def pid: Pid = Pid(process.pid)
   def stdout(limit: ByteSize = 10.mb): DataStream =
