@@ -209,7 +209,7 @@ case class Multiplexer[K, T]():
   
   def stream: LazyList[T] =
     val item: T | Null = queue.take()
-    if item == null then LazyList() else item #:: stream
+    if item == null then LazyList() else item.nn #:: stream
 
 extension [T](stream: LazyList[T])
   def ready(using ExecutionContext): Future[LazyList[T]] = Future:
