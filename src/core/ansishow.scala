@@ -26,6 +26,8 @@ trait FallbackAnsiShow:
 object AnsiShow extends FallbackAnsiShow:
   given AnsiShow[AnsiText] = identity(_)
 
+  given AnsiShow[Pid] = pid => ansi"${colors.FireBrick}(${pid.value.show})"
+
   given [T: AnsiShow]: AnsiShow[Option[T]] =
     case None    => AnsiText("empty".show)
     case Some(v) => summon[AnsiShow[T]].ansiShow(v)
