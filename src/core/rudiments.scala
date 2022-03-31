@@ -175,6 +175,7 @@ def unsafely[T](value: => CanThrow[Exception] ?=> T): T = value(using unsafeExce
 extension [T](xs: Iterable[T])
   transparent inline def mtwin: Iterable[(T, T)] = xs.map { x => (x, x) }
   transparent inline def mtriple: Iterable[(T, T, T)] = xs.map { x => (x, x, x) }
+  transparent inline def sift[S]: Iterable[S] = xs.collect { case x: S => x }
 
 object Timer extends ju.Timer(true)
 
@@ -197,9 +198,6 @@ extension [T](future: Future[T])
         if p.tryFailure(e) then timerTask.cancel()
 
     p.future
-
-
-
 
 extension[T](xs: Seq[T])
   def random: T = xs(util.Random().nextInt(xs.length))
