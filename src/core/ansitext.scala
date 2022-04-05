@@ -169,7 +169,9 @@ object Ansi:
 object AnsiText:
   def empty: AnsiText = AnsiText(t"")
   given Joinable[AnsiText] = _.fold(empty)(_ + _)
-  
+
+  given Ordering[AnsiText] = Ordering.by(_.plain)
+
   def make[T: Show](value: T, transform: Ansi.Transform): AnsiText =
     val str: Text = value.show
     AnsiText(str, TreeMap(CharSpan(0, str.length) -> transform))
