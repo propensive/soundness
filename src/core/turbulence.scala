@@ -170,6 +170,24 @@ object SystemIn
 object SystemOut
 object SystemErr
 
+extension (obj: LazyList.type)
+  def multiplex[T](streams: LazyList[T]*): LazyList[T] =
+    val multiplexer = Multiplexer[Any, T]()
+    streams.zipWithIndex.map(_.swap).foreach(multiplexer.add)
+    multiplexer.stream
+  
+  def pulsar(interval: Long): LazyList[Unit] =
+    Thread.sleep(interval)
+    () #:: pulsar(interval)
+
+class Pulsar(interval: Long):
+  private var continue: Boolean = true
+  def stop(): Unit = continue = false
+
+  def stream: LazyList[Unit] = if !continue then LazyList() else
+    Thread.sleep(interval)
+    () #:: stream
+
 extension [T](value: T)
   def dataStream(using src: Source[T]): DataStream throws src.E = src.read(value)
   
@@ -186,7 +204,7 @@ extension [T](value: T)
 
 case class Multiplexer[K, T]():
   private val tasks: HashMap[K, Task[Unit]] = HashMap()
-  private val queue: juc.LinkedBlockingQueue[T] = juc.LinkedBlockingQueue()
+  private val queue: juc.LinkedBlockingQueue[Maybe[T]] = juc.LinkedBlockingQueue()
 
   @tailrec
   private def pump(key: K, stream: LazyList[T]): Unit =
@@ -206,16 +224,32 @@ case class Multiplexer[K, T]():
   
   private def remove(key: K): Unit = synchronized:
     tasks -= key
+    if tasks.isEmpty then queue.put(Unset)
   
   def stream: LazyList[T] =
-    val item: T | Null = queue.take()
-    if item == null then LazyList() else item.nn #:: stream
+    queue.take() match
+      case Unset   => LazyList()
+      case null    => LazyList()
+      case item: T => item.nn #:: stream
 
 extension [T](stream: LazyList[T])
   def ready(using ExecutionContext): Future[LazyList[T]] = Future:
     blocking:
       stream.isEmpty
       stream
+
+  def multiplexWith(that: LazyList[T]): LazyList[T] = LazyList.multiplex(stream, that)
+
+  def regulate(tap: Tap): LazyList[T] =
+    def recur(active: Boolean, stream: LazyList[T | Tap.Regulation], buffer: List[T]): LazyList[T] =
+      if stream.isEmpty then LazyList()
+      else stream.head match
+        case Tap.Regulation.Start => buffer.to(LazyList) #::: recur(true, stream.tail, Nil)
+        case Tap.Regulation.Stop  => recur(false, stream.tail, Nil)
+        case other: T             => if active then other.nn #:: recur(true, stream.tail, Nil)
+                                     else recur(false, stream.tail, other.nn :: buffer)
+
+    recur(true, stream.multiplexWith(tap.stream), Nil)
 
   def cluster(interval: Long, maxSize: Maybe[Int] = Unset, maxDelay: Maybe[Long] = Unset)
              (using ExecutionContext): LazyList[List[T]] =
@@ -234,3 +268,37 @@ extension [T](stream: LazyList[T])
           case err: TimeoutError => list.reverse #:: recur(stream, Nil, Long.MaxValue)
     
     recur(stream, Nil, Long.MaxValue)
+
+class Gun():
+  private val queue: juc.LinkedBlockingQueue[Unit] = juc.LinkedBlockingQueue()
+  def fire(): Unit = queue.put(())
+  def stream: LazyList[Unit] = LazyList.continually(queue.take())
+
+class Funnel[T]():
+  private val queue: juc.LinkedBlockingQueue[Maybe[T]] = juc.LinkedBlockingQueue()
+  def put(value: T): Unit = queue.put(value)
+  def stop(): Unit = queue.put(Unset)
+  
+  def stream: LazyList[T] = queue.take() match
+    case Unset    => LazyList()
+    case other: T => other.nn #:: stream
+
+object Tap:
+  enum Regulation:
+    case Start, Stop
+
+class Tap(initial: Boolean):
+  private var on: Boolean = initial
+  private val funnel: Funnel[Tap.Regulation] = Funnel()
+  def stream: LazyList[Tap.Regulation] = funnel.stream
+  
+  def suspend(): Unit = synchronized:
+    if on then
+      on = false
+      funnel.put(Tap.Regulation.Stop)
+
+  def resume(): Unit = synchronized:
+    if !on then
+      on = true
+      funnel.put(Tap.Regulation.Start)
+  
