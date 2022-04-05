@@ -25,11 +25,9 @@ object Dag:
     Dag(keys.map { k => (k, dependencies(k)) }.to(Map))
 
   @targetName("fromEdges")
-  def apply[T](edges: (T, T)*): Dag[T] = Dag {
-    edges.foldLeft(Map[T, Set[T]]()) {
+  def apply[T](edges: (T, T)*): Dag[T] = Dag:
+    edges.foldLeft(Map[T, Set[T]]()):
       case (acc, (k, v)) => acc.updated(k, acc.get(k).fold(Set(v))(_ + v))
-    }
-  }
   
   @targetName("fromNodes")
   def apply[T](nodes: (T, Set[T])*): Dag[T] = Dag(Map(nodes*))
@@ -39,7 +37,8 @@ case class Dag[T] private(edgeMap: Map[T, Set[T]] = Map()):
   def map[S](fn: T => S): Dag[S] = Dag(edgeMap.map(fn(_) -> _.map(fn)))
   def subgraph(keep: Set[T]): Dag[T] = (keys &~ keep).foldLeft(this)(_.remove(_))
   def apply(key: T): Set[T] = edgeMap.getOrElse(key, Set())
-  
+  def descendants(key: T): Dag[T] = subgraph(reachable(key))
+
   @targetName("removeKey")
   infix def -(key: T): Dag[T] = Dag(edgeMap - key)
   
@@ -61,30 +60,33 @@ case class Dag[T] private(edgeMap: Map[T, Set[T]] = Map()):
     val joined = edgeMap.to(List) ++ dag.edgeMap.to(List)
     Dag(joined.groupBy(_._1).view.mapValues(_.flatMap(_._2).to(Set)).to(Map))
 
-  def flatMap[S](fn: T => Dag[S]): Dag[S] = Dag {
-    edgeMap.flatMap { (k, v) => fn(k).edgeMap.map { (h, w) => h -> (w ++ v.flatMap(fn(_).keys)) } }
-  }.reduction
+  def flatMap[S](fn: T => Dag[S]): Dag[S] = Dag:
+    edgeMap.flatMap:
+      (k, v) => fn(k).edgeMap.map:
+        (h, w) => h -> (w ++ v.flatMap(fn(_).keys))
+  .reduction
 
   def reduction: Dag[T] =
     val allEdges = closure.edgeMap
     val removals = for i <- keys; j <- edgeMap(i); k <- edgeMap(j) if allEdges(i)(k) yield i -> k
     
-    Dag(removals.foldLeft(edgeMap) { case (m, (k, v)) => m.updated(k, m(k) - v) })
+    Dag:
+      removals.foldLeft(edgeMap):
+        case (m, (k, v)) => m.updated(k, m(k) - v)
 
   // FIXME: This may be a slow implementation if called repeatedly
   def reachable(node: T): Set[T] = edgeMap(node).flatMap(reachable) + node
 
-  def invert: Dag[T] = Dag {
-    edgeMap.foldLeft(Map[T, Set[T]]()) { case (acc, (k, vs)) =>
-      vs.foldLeft(acc) { (acc2, v) => acc2.updated(v, acc2.get(v).fold(Set(k))(_ + k)) }
-    }
-  }
+  def invert: Dag[T] = Dag:
+    edgeMap.foldLeft(Map[T, Set[T]]()):
+      case (acc, (k, vs)) =>
+        vs.foldLeft(acc):
+          (acc2, v) => acc2.updated(v, acc2.get(v).fold(Set(k))(_ + k))
 
-  def remove(elem: T): Dag[T] = Dag {
-    (edgeMap - elem).view.mapValues {
+  def remove(elem: T): Dag[T] = Dag:
+    (edgeMap - elem).view.mapValues:
       map => if map(elem) then map ++ edgeMap(elem) - elem else map
-    }.to(Map)
-  }
+    .to(Map)
   
   private def sort(todo: Map[T, Set[T]], done: List[T]): List[T] =
     if todo.isEmpty then done
@@ -96,13 +98,11 @@ case class Dag[T] private(edgeMap: Map[T, Set[T]] = Map()):
     val deletions = keys.filter(!pred(_))
     val inverted = invert
     
-    Dag {
+    Dag:
       deletions.foldLeft(edgeMap) { (acc, next) =>
-        inverted(next).foldLeft(acc) { (acc2, ref) =>
-          acc2.updated(ref, acc2(ref) - next ++ acc(next))
-        }
+        inverted(next).foldLeft(acc):
+          (acc2, ref) => acc2.updated(ref, acc2(ref) - next ++ acc(next))
       } -- deletions
-    }
 
   private def findCycle(start: T): Option[List[T]] =
     @tailrec
@@ -119,17 +119,6 @@ case class Dag[T] private(edgeMap: Map[T, Set[T]] = Map()):
             recur(queue, finished + vertex)
 
     recur(List((start, List())), Set())
-
-  private def descendants(start: T): Either[List[T], Set[T]] =
-    @tailrec
-    def recur(stack: List[T], ans: Set[T] = Set()): Set[T] =
-      stack match
-      case Nil          => ans
-      case head :: tail => recur(apply(head).toList ++ tail, ans + head)
-
-    findCycle(start) match
-      case Some(cycle) => Left(cycle)
-      case None        => Right(apply(start).flatMap { c => recur(List(c)) })
 
 extension (dag: Dag[Text])
   def dot: Dot = Digraph(dag.edges.to(List).map(Dot.Ref(_) --> Dot.Ref(_))*)
