@@ -31,7 +31,8 @@
       "name": "Turbulence",
       "id": "turbulence/core",
       "links": [
-        "rudiments/core"
+        "rudiments/core",
+        "clairvoyant/time"
       ],
       "sources": [
         "src/core"

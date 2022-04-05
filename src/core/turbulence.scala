@@ -17,6 +17,7 @@
 package turbulence
 
 import rudiments.*
+import clairvoyant.*
 
 import scala.collection.IterableFactory
 import scala.collection.mutable.HashMap
@@ -176,16 +177,16 @@ extension (obj: LazyList.type)
     streams.zipWithIndex.map(_.swap).foreach(multiplexer.add)
     multiplexer.stream
   
-  def pulsar(interval: Long): LazyList[Unit] =
-    Thread.sleep(interval)
+  def pulsar(using time: Timekeeping)(interval: time.Type): LazyList[Unit] =
+    Thread.sleep(time.to(interval))
     () #:: pulsar(interval)
 
-class Pulsar(interval: Long):
+class Pulsar(using time: Timekeeping)(interval: time.Type):
   private var continue: Boolean = true
   def stop(): Unit = continue = false
 
   def stream: LazyList[Unit] = if !continue then LazyList() else
-    Thread.sleep(interval)
+    Thread.sleep(time.to(interval))
     () #:: stream
 
 extension [T](value: T)
@@ -257,7 +258,8 @@ extension [T](stream: LazyList[T])
 
     recur(true, stream.multiplexWith(tap.stream), Nil)
 
-  def cluster(interval: Long, maxSize: Maybe[Int] = Unset, maxDelay: Maybe[Long] = Unset)
+  def cluster(using time: Timekeeping)
+             (interval: time.Type, maxSize: Maybe[Int] = Unset, maxDelay: Maybe[Long] = Unset)
              (using ExecutionContext): LazyList[List[T]] =
     
     def defer(stream: LazyList[T], list: List[T], expiry: Long): LazyList[List[T]] =
@@ -272,8 +274,8 @@ extension [T](stream: LazyList[T])
         val hasMore: Future[Boolean] = Future(!stream.isEmpty)
 
         val recurse: Option[Boolean] = try
-          if hasMore.timeout(interval.min(expiry - System.currentTimeMillis).max(0)).await()
-          then Some(true) else None
+          val deadline = time.to(interval).min(expiry - System.currentTimeMillis).max(0)
+          if hasMore.timeout(deadline).await() then Some(true) else None
         catch case err: TimeoutError => Some(false)
 
         // The try/catch above fools tail-call identification
@@ -299,7 +301,7 @@ object Tap:
   enum Regulation:
     case Start, Stop
 
-class Tap(initial: Boolean):
+class Tap(initial: Boolean = true):
   private var on: Boolean = initial
   private val funnel: Funnel[Tap.Regulation] = Funnel()
   def stream: LazyList[Tap.Regulation] = funnel.stream
