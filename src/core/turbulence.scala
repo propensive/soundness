@@ -241,18 +241,29 @@ extension [T](stream: LazyList[T])
   def multiplexWith(that: LazyList[T]): LazyList[T] = LazyList.multiplex(stream, that)
 
   def regulate(tap: Tap): LazyList[T] =
+
+    def defer(active: Boolean, stream: LazyList[T | Tap.Regulation], buffer: List[T]): LazyList[T] =
+      recur(active, stream, buffer)
+
+    @tailrec
     def recur(active: Boolean, stream: LazyList[T | Tap.Regulation], buffer: List[T]): LazyList[T] =
+      if active && buffer.nonEmpty then buffer.head #:: defer(true, stream, buffer.tail)
       if stream.isEmpty then LazyList()
       else stream.head match
-        case Tap.Regulation.Start => buffer.to(LazyList) #::: recur(true, stream.tail, Nil)
+        case Tap.Regulation.Start => recur(true, stream.tail, buffer)
         case Tap.Regulation.Stop  => recur(false, stream.tail, Nil)
-        case other: T             => if active then other.nn #:: recur(true, stream.tail, Nil)
+        case other: T             => if active then other.nn #:: defer(true, stream.tail, Nil)
                                      else recur(false, stream.tail, other.nn :: buffer)
 
     recur(true, stream.multiplexWith(tap.stream), Nil)
 
   def cluster(interval: Long, maxSize: Maybe[Int] = Unset, maxDelay: Maybe[Long] = Unset)
              (using ExecutionContext): LazyList[List[T]] =
+    
+    def defer(stream: LazyList[T], list: List[T], expiry: Long): LazyList[List[T]] =
+      recur(stream, list, expiry)
+
+    @tailrec
     def recur(stream: LazyList[T], list: List[T], expiry: Long): LazyList[List[T]] =
       if list.isEmpty then
         val newExpiry: Long = maxDelay.option.fold(Long.MaxValue)(_ + System.currentTimeMillis)
@@ -260,19 +271,17 @@ extension [T](stream: LazyList[T])
       else
         val hasMore: Future[Boolean] = Future(!stream.isEmpty)
 
-        try
+        val recurse: Option[Boolean] = try
           if hasMore.timeout(interval.min(expiry - System.currentTimeMillis).max(0)).await()
-          then recur(stream.tail, stream.head :: list, expiry)
-          else LazyList(list)
-        catch
-          case err: TimeoutError => list.reverse #:: recur(stream, Nil, Long.MaxValue)
+          then Some(true) else None
+        catch case err: TimeoutError => Some(false)
+
+        // The try/catch above fools tail-call identification
+        if recurse.isEmpty then LazyList(list)
+        else if recurse.get then recur(stream.tail, stream.head :: list, expiry)
+        else list.reverse #:: defer(stream, Nil, Long.MaxValue)
     
     recur(stream, Nil, Long.MaxValue)
-
-class Gun():
-  private val queue: juc.LinkedBlockingQueue[Unit] = juc.LinkedBlockingQueue()
-  def fire(): Unit = queue.put(())
-  def stream: LazyList[Unit] = LazyList.continually(queue.take())
 
 class Funnel[T]():
   private val queue: juc.LinkedBlockingQueue[Maybe[T]] = juc.LinkedBlockingQueue()
@@ -283,6 +292,9 @@ class Funnel[T]():
     case Unset    => LazyList()
     case other: T => other.nn #:: stream
 
+class Gun() extends Funnel[Unit]():
+  def fire(): Unit = put(())
+
 object Tap:
   enum Regulation:
     case Start, Stop
@@ -292,12 +304,12 @@ class Tap(initial: Boolean):
   private val funnel: Funnel[Tap.Regulation] = Funnel()
   def stream: LazyList[Tap.Regulation] = funnel.stream
   
-  def suspend(): Unit = synchronized:
+  def open(): Unit = synchronized:
     if on then
       on = false
       funnel.put(Tap.Regulation.Stop)
 
-  def resume(): Unit = synchronized:
+  def close(): Unit = synchronized:
     if !on then
       on = true
       funnel.put(Tap.Regulation.Start)
