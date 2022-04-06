@@ -306,12 +306,12 @@ class Tap(initial: Boolean = true):
   private val funnel: Funnel[Tap.Regulation] = Funnel()
   def stream: LazyList[Tap.Regulation] = funnel.stream
   
-  def open(): Unit = synchronized:
+  def close(): Unit = synchronized:
     if on then
       on = false
       funnel.put(Tap.Regulation.Stop)
 
-  def close(): Unit = synchronized:
+  def open(): Unit = synchronized:
     if !on then
       on = true
       funnel.put(Tap.Regulation.Start)
