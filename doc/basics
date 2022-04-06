@@ -75,3 +75,38 @@ ready, and the next change in the set of futures is awaited.
 ### Mutable Multiplexing
 
 TBC
+
+### Tap
+
+Sometimes it's useful to pause and restart an immutable `LazyList` using an external trigger. This
+functionality is provided by a `Tap`, a mutable object which defines two methods, `open()` and
+`close()`, and holds the tap's current state.
+
+Given a `LazyList[T]`, `stream`, the `regulate` extension method may be used to specify a `Tap`
+which can control it.
+
+For example,
+```scala
+val tap = Tap()
+def regulatedStream = stream.regulate(tap)
+```
+
+Elsewhere, perhaps in another thread, `tap.close()` and `tap.open()` may be called to pause or
+resume output on the `LazyList`. Any events which arise while the `Tap` is closed will be buffered,
+and emitted when it is re-opened. Accessing `isEmpty`, `head` or `tail` on the `LazyList` will, of
+course, block while the tap is closed.
+
+### Pulsar
+
+A `Pulsar` provides a regular stream of `Unit` values and a predefined rate. It may be created
+simply with the `pulsar` extension method on the `LazyList` object, taking a time duration as its
+only parameter, for example,
+```scala
+LazyList.pulsar(1000L).foreach:
+  unit => println("Hello")
+```
+will print `Hello` once per second, forever.
+
+### Funnel
+
+TBC
