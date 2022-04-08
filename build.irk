@@ -52,6 +52,17 @@
       ]
     },
     {
+      "name": "Clairvoyant URI",
+      "id": "clairvoyant/uri",
+      "sources": [
+        "src/uri"
+      ],
+      "version": "0.4.0",
+      "docs": [
+        "doc"
+      ]
+    },
+    {
       "name": "Clairvoyant HTML",
       "id": "clairvoyant/html",
       "sources": [
