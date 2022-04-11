@@ -170,6 +170,23 @@ object AnsiText:
   def empty: AnsiText = AnsiText(t"")
   given Joinable[AnsiText] = _.fold(empty)(_ + _)
 
+  given Cuttable[AnsiText, Text] = (text, delimiter, limit) =>
+    import java.util.regex.*
+    val pattern = Pattern.compile(t"(.*)${Pattern.quote(delimiter.s).nn}(.*)".s).nn
+    
+    @tailrec
+    def recur(source: AnsiText, limit: Int, acc: List[AnsiText]): List[AnsiText] =
+      if limit <= 0 then acc
+      else
+        val matcher = pattern.matcher(source.plain.s).nn
+        if matcher.matches then
+          recur(source.take(matcher.group(1).nn.length), limit - 1, source.take(matcher.group(2).nn.length, Rtl) :: acc)
+        else source :: acc
+
+
+
+    recur(text, limit, Nil)
+
   given Ordering[AnsiText] = Ordering.by(_.plain)
 
   def make[T: Show](value: T, transform: Ansi.Transform): AnsiText =
@@ -196,21 +213,31 @@ case class AnsiText(plain: Text, spans: TreeMap[CharSpan, Ansi.Transform] = Tree
     
     AnsiText(plain+text.plain, spans ++ newSpans)
 
-  def drop(n: Int): AnsiText =
-    val newSpans: TreeMap[CharSpan, Ansi.Transform] =
-      spans.map:
-        case (span, transform) => span.trimLeft(n).asInstanceOf[CharSpan] -> transform
-      .filterKeys { k => k.isEmpty || k != CharSpan.Nowhere }.to(TreeMap)
+  def drop(n: Int, dir: Direction = Ltr): AnsiText = dir match
+    case Rtl =>
+      take(length - n)
     
-    AnsiText(plain.drop(n), newSpans)
+    case Ltr =>
+      val newSpans: TreeMap[CharSpan, Ansi.Transform] =
+        spans.map:
+          case (span, transform) => span.trimLeft(n).asInstanceOf[CharSpan] -> transform
+        .filterKeys { k => k.isEmpty || k != CharSpan.Nowhere }.to(TreeMap)
+      
+      AnsiText(plain.drop(n), newSpans)
 
-  def take(n: Int): AnsiText =
-    val newSpans: TreeMap[CharSpan, Ansi.Transform] =
-      spans.map:
-        (span, tf) => span.takeLeft(n).asInstanceOf[CharSpan] -> tf
-      .filterKeys { k => k.isEmpty || k != CharSpan.Nowhere }.to(TreeMap)
-    
-    AnsiText(plain.take(n), newSpans)
+  def take(n: Int, dir: Direction = Ltr): AnsiText = dir match
+    case Rtl =>
+      drop(length - n)
+
+    case Ltr =>
+      val newSpans: TreeMap[CharSpan, Ansi.Transform] =
+        spans.map:
+          (span, tf) => span.takeLeft(n).asInstanceOf[CharSpan] -> tf
+        .filterKeys { k => k.isEmpty || k != CharSpan.Nowhere }.to(TreeMap)
+      
+      AnsiText(plain.take(n), newSpans)
+
+  def slice(from: Int, to: Int): AnsiText = drop(from).take(to - from)
 
   def padTo(n: Int, char: Char = ' ') =
     if length < n then this + AnsiText(char.show*(n - length)) else this
