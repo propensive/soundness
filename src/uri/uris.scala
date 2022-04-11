@@ -16,10 +16,10 @@ case class Host(parts: Text*) extends Shown[Host]
 
 object Scheme:
   given Show[Scheme] = _.name
+  object Http extends Scheme(t"http")
+  object Https extends Scheme(t"https")
 
 case class Scheme(name: Text)
-object Http extends Scheme(t"http")
-object Https extends Scheme(t"https")
 
 object Url:
   given UriConverter[Url] with
