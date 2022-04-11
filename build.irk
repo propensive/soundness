@@ -1,12 +1,17 @@
 {
   "repos": [
     {
+      "base": "../clairvoyant",
+      "url": "https://github.com/propensive/clairvoyant"
+    },
+    {
       "base": "../rudiments",
       "url": "https://github.com/propensive/rudiments"
     }
   ],
   "imports": [
-    "../rudiments/build.irk"
+    "../rudiments/build.irk",
+    "../clairvoyant/build.irk"
   ],
   "publishing": {
     "username": "propensive",

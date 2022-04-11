@@ -297,13 +297,14 @@ class StreamBuffer[T]():
   private val primary: juc.LinkedBlockingQueue[Maybe[T]] = juc.LinkedBlockingQueue()
   private val secondary: juc.LinkedBlockingQueue[Maybe[T]] = juc.LinkedBlockingQueue()
   private var buffer: Boolean = true
+  private var closed: Boolean = false
 
   def useSecondary() = primary.put(Unset)
   def usePrimary() = secondary.put(Unset)
 
   def close(): Unit =
-    primary.put(null)
-    secondary.put(null)
+    primary.put(Unset)
+    secondary.put(Unset)
 
   def put(value: T): Unit = primary.put(value)
   def putSecondary(value: T): Unit = secondary.put(value)
@@ -312,13 +313,13 @@ class StreamBuffer[T]():
     if buffer then primary.take() match
       case Unset =>
         buffer = false
-        stream
+        if closed then LazyList() else stream
       case value: T =>
         value #:: stream
     else secondary.take() match
       case Unset =>
         buffer = true
-        stream
+        if closed then LazyList() else stream
       case value: T =>
         value #:: stream
     
