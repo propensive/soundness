@@ -285,6 +285,44 @@ extension [T](stream: LazyList[T])
     
     recur(stream, Nil, Long.MaxValue)
 
+object StreamBuffer:
+  given Sink[StreamBuffer[Bytes throws StreamCutError]] with
+    type E = StreamCutError
+    
+    def write(buffer: StreamBuffer[Bytes throws StreamCutError], stream: DataStream) =
+      stream.foreach(buffer.put(_))
+  
+
+class StreamBuffer[T]():
+  private val primary: juc.LinkedBlockingQueue[Maybe[T]] = juc.LinkedBlockingQueue()
+  private val secondary: juc.LinkedBlockingQueue[Maybe[T]] = juc.LinkedBlockingQueue()
+  private var buffer: Boolean = true
+
+  def useSecondary() = primary.put(Unset)
+  def usePrimary() = secondary.put(Unset)
+
+  def close(): Unit =
+    primary.put(null)
+    secondary.put(null)
+
+  def put(value: T): Unit = primary.put(value)
+  def putSecondary(value: T): Unit = secondary.put(value)
+
+  def stream: LazyList[T] =
+    if buffer then primary.take() match
+      case Unset =>
+        buffer = false
+        stream
+      case value: T =>
+        value #:: stream
+    else secondary.take() match
+      case Unset =>
+        buffer = true
+        stream
+      case value: T =>
+        value #:: stream
+    
+
 class Funnel[T]():
   private val queue: juc.LinkedBlockingQueue[Maybe[T]] = juc.LinkedBlockingQueue()
   def put(value: T): Unit = queue.put(value)
