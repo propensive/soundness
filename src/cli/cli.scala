@@ -66,7 +66,7 @@ object Suite:
       if simple then Tabulation[Summary](status, hash, name, avg)
       else Tabulation[Summary](status, hash, name, count, min, avg, max)
 
-    val resultsTable: AnsiText = table.tabulate(100, report.results).join(t"\n").ansi
+    val resultsTable: AnsiText = table.tabulate(100, report.results).join(AnsiText(t"\n")).ansi
 
     val failures: AnsiText =
       report.results.filter:

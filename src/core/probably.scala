@@ -334,7 +334,7 @@ object Differences:
       Column(t"Expected", _(2)),
     )
 
-    table.tabulate(100, diff.flatten).join(t"\n")
+    table.tabulate(100, diff.flatten).join(ansi"\n").render
 
 enum Differences:
   case Same
