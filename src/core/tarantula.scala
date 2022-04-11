@@ -24,6 +24,7 @@ import cataract.*
 import honeycomb.*
 import eucalyptus.*
 import rudiments.*
+import clairvoyant.*
 
 import unsafeExceptions.canThrowAny
 import annotation.targetName
@@ -123,9 +124,9 @@ case class WebDriver(server: Browser#Server):
       uri"http://localhost:${server.port.show}/session/$sessionId/$address"
         .post(content).as[Json]
     
-    def navigateTo(url: Uri)(using Log): Json =
+    def navigateTo[U: UriConverter](url: U)(using Log): Json =
       case class Data(url: Text)
-      post(t"url", Data(url.show).json)
+      post(t"url", Data(summon[UriConverter[U]](url).show).json)
     
     def refresh()(using Log): Unit = post(t"title", Json.parse(t"{}")).as[Json]
     def forward()(using Log): Unit = post(t"forward", Json.parse(t"{}")).as[Json]
