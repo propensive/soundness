@@ -32,10 +32,9 @@ import encodings.Utf8
 import unsafeExceptions.canThrowAny
 import rendering.ansi
 
-
 case class CommandLine(args: List[Text], env: Map[Text, Text], script: File,
                            stdin: () => DataStream, stdout: DataStream => Unit, exit: Int => Unit,
-                           pwd: Directory, shutdown: () => Unit)
+                           pwd: Directory, shutdown: () => Unit, kills: LazyList[Unit])
 extends Stdout:
   def write(msg: Text): Unit = stdout(LazyList(msg.bytes))
 
@@ -59,6 +58,7 @@ trait Daemon() extends App:
       
       case args =>
         val env = System.getenv.nn.asScala.map(_.nn.show -> _.nn.show).to(Map)
+        val gun: Gun = Gun()
         val systemStdin = Option(System.in).getOrElse(sys.exit(10)).nn
         def stdin(): DataStream = Util.readInputStream(systemStdin, 1.mb)
         
@@ -72,7 +72,7 @@ trait Daemon() extends App:
         val scriptFile = Unix.parse(List.getClass.nn.getProtectionDomain.nn.getCodeSource.nn
             .getLocation.nn.getPath.nn.show).get.file(Expect)
         
-        val commandLine = CommandLine(args, env, scriptFile, () => stdin(), stdout, sys.exit(_), dir, () => sys.exit(0))
+        val commandLine = CommandLine(args, env, scriptFile, () => stdin(), stdout, sys.exit(_), dir, () => sys.exit(0), gun.stream)
         
         main(using commandLine)()
 
@@ -91,17 +91,14 @@ trait Daemon() extends App:
     case class AppInstance(pid: Int, spawnId: Int, scriptFile: Maybe[File] = Unset,
                                args: List[Text] = Nil, env: Map[Text, Text] = Map(),
                                runDir: Maybe[Directory] = Unset):
-      val shutdown: Promise[Unit] = Promise()
-      val termination: Gun = Gun()
+      private val gun: Gun = Gun()
+      
       def pwd: Directory throws PwdError =
         try Unix.parse(env.getOrElse(t"PWD", throw PwdError())).getOrElse(throw PwdError())
             .directory(Expect)
         catch case err: IoError => throw PwdError()
 
-      def stop(): Unit =
-        if !shutdown.isCompleted then termination.trigger() else shutdown.complete(Success(()))
-      
-      def kill(): Unit = shutdown.complete(Success(()))
+      def stop(): Unit = gun.fire()
       
       def spawn(): Unit =
         val runnable: Runnable = () =>
@@ -114,7 +111,7 @@ trait Daemon() extends App:
             
             val commandLine = CommandLine(args, env, scriptFile.otherwise(sys.exit(10)),
                 () => fifoIn.read[DataStream](1.mb), _.writeTo(out),
-                exit => terminate.complete(util.Success(exit)), workDir, () => sys.exit(0))
+                exit => terminate.complete(util.Success(exit)), workDir, () => sys.exit(0), gun.stream)
             
             val exit = main(using commandLine)
             out.close()
@@ -159,6 +156,7 @@ trait Daemon() extends App:
             map
           
           case t"STOP" :: Int(pid) :: _ =>
+            System.out.nn.println("Stopping")
             map(pid).stop()
             map
           
@@ -168,7 +166,3 @@ trait Daemon() extends App:
           
           case msg =>
             map
-
-class Gun():
-  val stream = LazyList.continually(synchronized(wait()))
-  def trigger(): Unit = try synchronized(notify()) catch case _: IllegalMonitorStateException => ()
