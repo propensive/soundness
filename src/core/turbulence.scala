@@ -328,10 +328,7 @@ class Funnel[T]():
   private val queue: juc.LinkedBlockingQueue[Maybe[T]] = juc.LinkedBlockingQueue()
   def put(value: T): Unit = queue.put(value)
   def stop(): Unit = queue.put(Unset)
-  
-  def stream: LazyList[T] = queue.take() match
-    case Unset    => LazyList()
-    case other: T => other.nn #:: stream
+  def stream: LazyList[T] = LazyList.continually(queue.take()).takeWhile(_ != Unset).sift[T]
 
 class Gun() extends Funnel[Unit]():
   def fire(): Unit = put(())
