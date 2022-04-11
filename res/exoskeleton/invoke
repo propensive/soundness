@@ -48,10 +48,7 @@ connect() {
 cleanup() {
   if [ -p "$FIFO" ]
   then
-    echo "Sending stop"
     echo "STOP	$PID" > "$FIFO"
-  else
-    echo "Not a fifo"
   fi
 }
 
