@@ -177,11 +177,11 @@ extension (obj: LazyList.type)
     streams.zipWithIndex.map(_.swap).foreach(multiplexer.add)
     multiplexer.stream
   
-  def pulsar(using time: Timekeeping)(interval: time.Type): LazyList[Unit] =
+  def pulsar(using time: Timekeeper)(interval: time.Type): LazyList[Unit] =
     Thread.sleep(time.to(interval))
     () #:: pulsar(interval)
 
-class Pulsar(using time: Timekeeping)(interval: time.Type):
+class Pulsar(using time: Timekeeper)(interval: time.Type):
   private var continue: Boolean = true
   def stop(): Unit = continue = false
 
@@ -258,7 +258,7 @@ extension [T](stream: LazyList[T])
 
     recur(true, stream.multiplexWith(tap.stream), Nil)
 
-  def cluster(using time: Timekeeping)
+  def cluster(using time: Timekeeper)
              (interval: time.Type, maxSize: Maybe[Int] = Unset, maxDelay: Maybe[Long] = Unset)
              (using ExecutionContext): LazyList[List[T]] =
     
