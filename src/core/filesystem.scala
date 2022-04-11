@@ -74,7 +74,7 @@ trait Inode:
   def uriString: Text
   def exists(): Boolean = javaFile.exists()
   def parent: Directory throws RootParentError
-  def modified(using time: clairvoyant.Timekeeping): time.Type
+  def modified(using time: clairvoyant.Timekeeper): time.Type
   def copyTo(dest: DiskPath): Inode throws IoError
   def delete(): Unit throws IoError
   def readable: Boolean = Files.isReadable(javaPath)
@@ -391,7 +391,7 @@ class Filesystem(pathSeparator: Text, fsPrefix: Text) extends Root(pathSeparator
     def file: Option[File]
     def symlink: Option[Symlink]
     
-    def modified(using time: clairvoyant.Timekeeping): time.Type =
+    def modified(using time: clairvoyant.Timekeeper): time.Type =
       time.from(javaFile.lastModified)
     
     def copyTo(dest: jovian.DiskPath): jovian.Inode throws IoError
