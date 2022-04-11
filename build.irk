@@ -26,7 +26,8 @@
     "../eucalyptus/build.irk",
     "../slalom/build.irk",
     "../clairvoyant/build.irk",
-    "../gastronomy/build.irk"
+    "../gastronomy/build.irk",
+    "../probably/build.irk"
   ],
   "publishing": {
     "username": "propensive",
@@ -48,6 +49,22 @@
   },
   "modules": [
     {
+      "name": "Scintillate URI",
+      "id": "scintillate/uri",
+      "links": [
+        "slalom/core",
+        "clairvoyant/uri",
+        "gossamer/core"
+      ],
+      "sources": [
+        "src/uri"
+      ],
+      "version": "0.4.0",
+      "docs": [
+        "doc"
+      ]
+    },
+    {
       "name": "Scintillate Core",
       "id": "scintillate/core",
       "links": [
@@ -55,7 +72,8 @@
         "eucalyptus/core",
         "slalom/core",
         "clairvoyant/http",
-        "gastronomy/core"
+        "gastronomy/core",
+        "scintillate/uri"
       ],
       "sources": [
         "src/core"
@@ -98,6 +116,26 @@
       "docs": [
         "doc"
       ]
+    },
+    {
+      "name": "Scintillate Tests",
+      "id": "scintillate/test",
+      "links": [
+        "scintillate/uri",
+        "probably/cli"
+      ],
+      "sources": [
+        "src/test"
+      ],
+      "version": "0.4.0",
+      "docs": [
+        "doc"
+      ],
+      "webdev": {
+        "browsers": [],
+        "url": "http://localhost/",
+        "start": "scintillate.Tests"
+      }
     }
   ]
 }

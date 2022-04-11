@@ -442,63 +442,36 @@ case class Uri(location: Text, params: Params = Params(Nil)) extends Dynamic, Sh
   
   def bare: Uri = Uri(location, Params(Nil))
 
-object DomainName:
-  given Show[DomainName] = _.parts.join(t".")
-  
-  def apply(str: Text): DomainName =
-    val parts: List[Text] = str.cut(t".").map(_.punycode)
-    DomainName(IArray.from(parts))
-
-case class DomainName(parts: IArray[Text]) extends Shown[DomainName]
-
-/*object Url:
-  def apply(ssl: Boolean, domain: DomainName, port: Int, parts: IArray[Text]): Url =
-    val baseUrl = BaseUrl(ssl, domain, port)
-    baseUrl.Url(parts)
-  
-  given show: Show[Url] = url => serialize(url.ssl, url.domain, url.port, url.parts)
-
-  def serialize(ssl: Boolean, domain: DomainName, port: Int, parts: IArray[Text]): Text =
-    val portText = if port == 80 then t"" else t":$port"
-    val schemeText = if ssl then t"https" else t"http"
-
-    t"$schemeText://${domain}$portText/${parts.join(t"/")}"
-  
-trait Url:
-  def ssl: Boolean
-  def domain: DomainName
-  def port: Int
-  def parts: IArray[Text]
-
-case class BaseUrl(ssl: Boolean, domain: DomainName, port: Int)
-extends Root(t"/", Url.serialize(ssl, domain, port, IArray())), Url:
-  inline def baseUrl: this.type = this
-
-  type AbsolutePath = Url
-  def makeAbsolute(parts: IArray[Text]) = Url(parts)
-  def url: Url = Url(IArray[Text]())
-
-  case class Url(parts: IArray[Text]) extends Path.Absolute(parts), Dynamic, scintillate.Url:
-    def ssl: Boolean = baseUrl.ssl
-    def domain: DomainName = baseUrl.domain
-    def port: Int = baseUrl.port
-    
-    def post[T: Postable](content: T, headers: RequestHeader.Value*)(using Log): HttpResponse =
-      Http.post(this, content, headers*)
-    
-    def put[T: Postable](content: T, headers: RequestHeader.Value*)(using Log): HttpResponse =
-      Http.put(this, content, headers*)
-    
-    def get(headers: RequestHeader.Value*)(using Log): HttpResponse = Http.get(this, headers)
-    def options(headers: RequestHeader.Value*)(using Log): HttpResponse = Http.options(this, headers*)
-    def trace(headers: RequestHeader.Value*)(using Log): HttpResponse = Http.trace(this, headers*)
-    def patch(headers: RequestHeader.Value*)(using Log): HttpResponse = Http.patch(this, headers*)
-    def head(headers: RequestHeader.Value*)(using Log): HttpResponse = Http.head(this, headers*)
-    def delete(headers: RequestHeader.Value*)(using Log): HttpResponse = Http.delete(this, headers*)
-    def connect(headers: RequestHeader.Value*)(using Log): HttpResponse = Http.connect(this, headers*)
-    //def bare: Uri = Uri(location, Params(Nil))
-*/ 
 extension (ctx: StringContext)
   def uri(subs: Text*): Uri =
     Uri(ctx.parts.zip(subs).map { (k, v) => t"$k$v" }.join(t"", t"", Text(ctx.parts.last)),
         Params(List()))
+
+extension (uri: Uri)
+  def post[T: Postable](content: T, headers: RequestHeader.Value*)(using Log)
+          : HttpResponse throws StreamCutError =
+    Http.post(uri, content, headers*)
+
+  def put[T: Postable](content: T, headers: RequestHeader.Value*)(using Log)
+         : HttpResponse throws StreamCutError =
+    Http.put(uri, content, headers*)
+
+  def get(headers: RequestHeader.Value*)(using Log): HttpResponse throws StreamCutError =
+    Http.get(uri, headers)
+  def options(headers: RequestHeader.Value*)(using Log): HttpResponse throws StreamCutError =
+    Http.options(uri, headers*)
+  
+  def trace(headers: RequestHeader.Value*)(using Log): HttpResponse throws StreamCutError =
+    Http.trace(uri, headers*)
+  
+  def patch(headers: RequestHeader.Value*)(using Log): HttpResponse throws StreamCutError =
+    Http.patch(uri, headers*)
+  
+  def head(headers: RequestHeader.Value*)(using Log): HttpResponse throws StreamCutError =
+    Http.head(uri, headers*)
+  
+  def delete(headers: RequestHeader.Value*)(using Log): HttpResponse throws StreamCutError =
+    Http.delete(uri, headers*)
+  
+  def connect(headers: RequestHeader.Value*)(using Log): HttpResponse throws StreamCutError =
+    Http.connect(uri, headers*)
