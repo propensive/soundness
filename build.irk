@@ -17,6 +17,10 @@
       "url": "https://github.com/propensive/clairvoyant"
     },
     {
+      "base": "../turbulence",
+      "url": "https://github.com/propensive/turbulence"
+    },
+    {
       "base": "../gastronomy",
       "url": "https://github.com/propensive/gastronomy"
     }
@@ -25,6 +29,7 @@
     "../gesticulate/build.irk",
     "../eucalyptus/build.irk",
     "../slalom/build.irk",
+    "../turbulence/build.irk",
     "../clairvoyant/build.irk",
     "../gastronomy/build.irk",
     "../probably/build.irk"
