@@ -23,6 +23,10 @@
     {
       "base": "../gastronomy",
       "url": "https://github.com/propensive/gastronomy"
+    },
+    {
+      "base": "../probably",
+      "url": "https://github.com/propensive/probably"
     }
   ],
   "imports": [
