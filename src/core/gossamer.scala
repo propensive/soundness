@@ -43,6 +43,9 @@ object Cuttable:
   given Cuttable[Text, Text] = (text, delimiter, limit) =>
     List(text.s.split(Pattern.quote(delimiter.s), limit).nn.map(_.nn).map(Text(_))*)
 
+  given [T](using cuttable: Cuttable[T, Text]): Cuttable[T, Char] = (text, delimiter, limit) =>
+    cuttable.cut(text, delimiter.show, limit)
+
 trait Cuttable[V, D]:
   def cut(value: V, delimiter: D, limit: Int): List[V]
 
@@ -235,7 +238,7 @@ object Interpolation:
           case '\'' if esc  => buf.add('\'')
                                recur(cur + 1)
           case ch if esc    => throw InterpolationError(
-                                   rudiments.Text(s"the character '$ch' does not need to be escaped"))
+                                   rudiments.Text(s"the character '$ch' should not be escaped"))
           case ch           => buf.add(ch)
                                recur(cur + 1)
       else if esc then throw InterpolationError(rudiments.Text("the final character cannot be an escape"))
