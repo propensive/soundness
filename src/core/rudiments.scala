@@ -255,6 +255,9 @@ object ByteSize:
     @targetName("div")
     infix def /(that: Int): ByteSize = bs/that
 
+object ExitStatus:
+  def apply(value: Int): ExitStatus = if value == 0 then Ok else Fail(value)
+
 enum ExitStatus:
   case Ok
   case Fail(status: Int)
