@@ -313,6 +313,10 @@ object Uuid:
       val uuid = ju.UUID.fromString(text.s).nn
       Uuid(uuid.getMostSignificantBits, uuid.getLeastSignificantBits)
     .option
+
+  def apply(): Uuid =
+    val uuid = ju.UUID.randomUUID().nn
+    Uuid(uuid.getMostSignificantBits, uuid.getLeastSignificantBits)
   
 case class Uuid(msb: Long, lsb: Long):
   def javaUuid: ju.UUID = ju.UUID(msb, lsb)
