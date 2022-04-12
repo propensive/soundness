@@ -144,8 +144,7 @@ extension (iarray: IArray.type)
 extension [T](opt: Option[T]) def maybe: Unset.type | T = opt.getOrElse(Unset)
 
 case class Counter(first: Int = 0):
-  private var id: Int = first - 1
-  
+  private var id: Int = first
   def apply(): Int = synchronized(id.tap { _ => id += 1 })
 
 object Task:
