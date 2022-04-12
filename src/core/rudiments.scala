@@ -67,6 +67,7 @@ object Text:
 
 object Bytes:
   def apply(xs: Byte*): Bytes = IArray(xs*)
+  def apply(long: Long): Bytes = IArray((56 to 0 by -8).map(long >> _).map(_.toByte)*)
   def empty: Bytes = IArray()
 
 extension [T](value: T)
@@ -305,3 +306,15 @@ abstract class Error(cause: Maybe[Error] = Unset) extends Exception():
   def stackTrace: StackTrace = StackTrace(this)
 
 case class Pid(value: Long)
+
+object Uuid:
+  def unapply(text: Text): Option[Uuid] =
+    safely:
+      val uuid = ju.UUID.fromString(text.s).nn
+      Uuid(uuid.getMostSignificantBits, uuid.getLeastSignificantBits)
+    .option
+  
+case class Uuid(msb: Long, lsb: Long):
+  def javaUuid: ju.UUID = ju.UUID(msb, lsb)
+  def bytes: Bytes = Bytes(msb) ++ Bytes(lsb)
+
