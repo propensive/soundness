@@ -30,6 +30,8 @@ object Show extends Derivation[Show]:
   given Show[Long] = Showable(_).show
   given Show[Byte] = Showable(_).show
   
+  given Show[Uuid] = _.javaUuid.toString.show
+  
   given Show[ByteSize] = bs =>
     if bs.long > 10L*1024*1024*1024*1024 then Text(s"${(bs.long/1024*1024*1024*1024).show}TB")
     else if bs.long > 10L*1024*1024*1024 then Text(s"${(bs.long/1024*1024*1024).show}GB")
