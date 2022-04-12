@@ -15,7 +15,8 @@
   ],
   "imports": [
     "../contextual/build.irk",
-    "../wisteria/build.irk"
+    "../wisteria/build.irk",
+    "../turbulence/build.irk"
   ],
   "publishing": {
     "username": "propensive",
