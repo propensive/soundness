@@ -555,7 +555,10 @@ class Filesystem(pathSeparator: Text, fsPrefix: Text) extends Root(pathSeparator
     def symlink: Option[Symlink] = None
     
     def tmpFile(suffix: Maybe[Text] = Unset): File throws IoError =
-      try (this / t"${Uuid().show}${suffix.otherwise(t"")}").file(Create)
+      try
+        val file = (this / t"${Uuid().show}${suffix.otherwise(t"")}").file(Create)
+        file.javaFile.deleteOnExit()
+        file
       catch case err: RootParentError => throw Impossible("Should never happen")
 
     def delete(): Unit throws IoError =
