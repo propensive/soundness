@@ -193,7 +193,7 @@ trait Directory extends Inode:
   def children: List[Inode] throws IoError
   def subdirectories: List[Directory] throws IoError
   def copyTo(dest: DiskPath): Directory throws IoError
-  def tmpFile(suffix: Maybe[Text]): File throws IoError
+  def tmpFile(suffix: Maybe[Text] = Unset): File throws IoError
   
   @targetName("access")
   def /(child: Text): DiskPath throws RootParentError
