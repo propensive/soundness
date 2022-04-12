@@ -193,6 +193,7 @@ trait Directory extends Inode:
   def children: List[Inode] throws IoError
   def subdirectories: List[Directory] throws IoError
   def copyTo(dest: DiskPath): Directory throws IoError
+  def tmpFile(suffix: Maybe[Text]): File throws IoError
   
   @targetName("access")
   def /(child: Text): DiskPath throws RootParentError
@@ -552,6 +553,10 @@ class Filesystem(pathSeparator: Text, fsPrefix: Text) extends Root(pathSeparator
     def directory: Option[Directory] = Some(this)
     def file: Option[File] = None
     def symlink: Option[Symlink] = None
+    
+    def tmpFile(suffix: Maybe[Text] = Unset): File throws IoError =
+      try (this / t"${Uuid().show}${suffix.otherwise(t"")}").file(Create)
+      catch case err: RootParentError => throw Impossible("Should never happen")
 
     def delete(): Unit throws IoError =
       def recur(file: JavaFile): Boolean =
