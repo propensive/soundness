@@ -40,7 +40,7 @@ case class BaseLayout(private val path: String, private val env: Maybe[String] =
       case Some(env) => summon[EnvVarProvider](Text(env)) match
         case None       => absolutePath
         case Some(path) => path.s
-
+    println("Trying path: "+path.toString)
     summon[DirectoryProvider[T]].make(path, readOnly = readOnly).get
 
 object Root extends BaseLayout("")(using BaseLayout.Dir("")):
