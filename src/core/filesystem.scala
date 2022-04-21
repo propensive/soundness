@@ -65,6 +65,9 @@ case class Fifo(file: File):
 enum Permission:
   case Read, Write, Exec
 
+object Inode:
+  given Show[Inode] = _.fullname
+
 trait Inode:
   def javaPath: jnf.Path
   def javaFile: ji.File
@@ -91,8 +94,6 @@ trait Inode:
     then throw IoError(IoError.Op.Permissions, IoError.Reason.AccessDenied, path)
 
 object File:
-  given Show[File] = _.fullname
-
   given FileProvider[File] with
     def make(str: String, readOnly: Boolean = false): Option[File] =
       try Filesystem.parse(Text(str)).map(_.file(Expect)) catch case err: IoError => None
@@ -178,8 +179,6 @@ trait DiskPath:
   def descendantFiles(descend: (Directory => Boolean) = _ => true): LazyList[File] throws IoError
 
 object Directory:
-  given Show[Directory] = _.path.show
-  
   given DirectoryProvider[Directory] with
     def make(str: String, readOnly: Boolean = false): Option[Directory] =
       try Filesystem.parse(Text(str)).map(_.directory(Expect)) catch case err: IoError => None
@@ -192,8 +191,10 @@ trait Directory extends Inode:
   def files: List[File] throws IoError
   def children: List[Inode] throws IoError
   def subdirectories: List[Directory] throws IoError
+  def descendants: LazyList[Inode] throws IoError
   def copyTo(dest: DiskPath): Directory throws IoError
   def tmpFile(suffix: Maybe[Text] = Unset): File throws IoError
+  def tmpPath(suffix: Maybe[Text] = Unset): DiskPath
   
   @targetName("access")
   def /(child: Text): DiskPath throws RootParentError
@@ -554,12 +555,14 @@ class Filesystem(pathSeparator: Text, fsPrefix: Text) extends Root(pathSeparator
     def file: Option[File] = None
     def symlink: Option[Symlink] = None
     
+    def tmpPath(suffix: Maybe[Text] = Unset): DiskPath =
+      unsafely(this / t"${Uuid().show}${suffix.otherwise(t"")}")
+    
     def tmpFile(suffix: Maybe[Text] = Unset): File throws IoError =
-      try
-        val file = (this / t"${Uuid().show}${suffix.otherwise(t"")}").file(Create)
+      unsafely:
+        val file = tmpPath(suffix).file(Create)
         file.javaFile.deleteOnExit()
         file
-      catch case err: RootParentError => throw Impossible("Should never happen")
 
     def delete(): Unit throws IoError =
       def recur(file: JavaFile): Boolean =
@@ -580,7 +583,7 @@ class Filesystem(pathSeparator: Text, fsPrefix: Text) extends Root(pathSeparator
               makeAbsolute(_)).map(_.inode)
     
     def descendants: LazyList[Inode] throws IoError =
-      children.to(LazyList).flatMap(_.directory).flatMap { f => f +: f.descendants }
+      children.to(LazyList) ++ subdirectories.flatMap(_.descendants)
     
     def subdirectories: List[Directory] throws IoError =
       children.collect:
@@ -701,13 +704,9 @@ object Filesystem:
         Unix
       
       case s"""$drive:\""" if drive.length == 1 =>
-        val letter = try drive.charAt(0) catch case e: OutOfRangeError => throw Impossible(e)
-        letter.toUpper match
-          case ch: Majuscule =>
-            WindowsRoot(ch)
-          
-          case ch =>
-            throw Impossible(s"a drive letter with an unexpected name was found: '$ch'")
+        unsafely:
+          drive.charAt(0).toUpper match
+            case ch: Majuscule => WindowsRoot(ch)
     .to(Set)
  
   def defaultSeparator: "/" | "\\" = if ji.File.separator == "\\" then "\\" else "/"
