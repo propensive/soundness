@@ -35,7 +35,7 @@ given realm: Realm = Realm(t"probably")
 import Runner.*
 
 object Runner:
-  case class TestId private[probably](value: Text)
+  case class TestId(value: Text)
   
   enum Outcome:
     case FailsAt(datapoint: Datapoint, count: Int)
@@ -126,8 +126,13 @@ class Runner(subset: Set[TestId] = Set()) extends Dynamic:
     
     def oldAssert(pred: Type => Boolean)(using Log): Unit =
       try if !skip(id) then check(pred)
-      catch case NonFatal(e) =>
-        Log.warn(ansi"A $e exception was thrown whilst checking the test ${this.ansi}")
+      catch
+        case NonFatal(e) =>
+          Log.warn(ansi"A $e exception was thrown whilst checking the test ${this.ansi}")
+        case fatal: Throwable =>
+          try Log.fail(ansi"A fatal exception, $fatal, was thrown in test $name")
+          catch case _: Throwable => ()
+          throw fatal
     
     private val map: HashMap[Text, Text] = HashMap()
 
@@ -137,6 +142,8 @@ class Runner(subset: Set[TestId] = Set()) extends Dynamic:
 
     inline def assert(inline pred: Type => Boolean)(using log: Log): Unit =
       ${Macros.assert[Type]('runner, 'this, 'pred, 'log)}
+
+    def matches(pf: PartialFunction[Type, Any])(using Log): Type = check(pf.isDefinedAt(_))
 
     def check(pred: Type => Boolean, debug: Option[Type] => Debug = v => Debug(v.map(Showable(_).show)))
              (using Log): Type =
