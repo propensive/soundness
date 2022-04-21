@@ -41,11 +41,14 @@ extension (span: CharSpan)
 
   def shift(n: Int): CharSpan = CharSpan(start + n, end + n)
 
+object TextStyle:
+  val esc: Char = 27.toChar
+
 case class TextStyle(fg: Option[Srgb] = None, bg: Option[Srgb] = None, italic: Boolean = false,
                          bold: Boolean = false, reverse: Boolean = false, underline: Boolean = false,
                          conceal: Boolean = false, strike: Boolean = false):
   import escapes.*
-  val esc = 27.toChar
+  import TextStyle.esc
   
   private def italicEsc: Text = if italic then styles.Italic.on else styles.Italic.off
   private def boldEsc: Text = if bold then styles.Bold.on else styles.Bold.off
