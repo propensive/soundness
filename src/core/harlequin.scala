@@ -64,6 +64,7 @@ object ScalaSyntax:
     def markup(text: Text): LazyList[Token] = text match
       case r"$before@(.*)\/\*!$inside@([^*]*)\*\/$after@(.*)" =>
         LazyList(Token.Unparsed(Text(before)), Token.Markup(Text(inside))) #::: markup(Text(after))
+      
       case unparsed =>
         LazyList(Token.Unparsed(unparsed.sub(t"\t", t"  ")), Token.Newline)
         
@@ -78,22 +79,24 @@ object ScalaSyntax:
           if lastEnd != start then
             text.slice(lastEnd, start).cut(t"\n").to(LazyList).flatMap(markup(_).filter(_.length > 0)).init
           else LazyList()
-        
+
         scanner.nextToken()
         val end = scanner.lastOffset max start
         
-        val content =
+        val content: LazyList[Token] =
           if start == end then LazyList()
-          else LazyList(Token.Code(text.slice(start, end), trees(start, end).getOrElse(flair(
-              token))))
+          else
+            val code = text.slice(start, end)
+            code.cut(t"\n").to(LazyList).flatMap:
+              line => LazyList(Token.Code(line, trees(start, end).getOrElse(flair(token))),
+                  Token.Newline)
+            .init
         
         unparsed #::: content #::: stream(end)
 
     def lines(seq: List[Token], acc: List[List[Token]] = Nil): List[List[Token]] = seq match
-      case Nil =>
-        acc
-        
-      case xs => xs.indexOf(Token.Newline) match
+      case Nil => acc
+      case xs  => xs.indexOf(Token.Newline) match
         case -1  => xs :: acc
         case idx => lines(xs.drop(idx + 1), xs.take(idx) :: acc)
         
