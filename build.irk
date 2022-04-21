@@ -125,26 +125,6 @@
       "docs": [
         "doc"
       ]
-    },
-    {
-      "name": "Scintillate Tests",
-      "id": "scintillate/test",
-      "links": [
-        "scintillate/uri",
-        "probably/cli"
-      ],
-      "sources": [
-        "src/test"
-      ],
-      "version": "0.4.0",
-      "docs": [
-        "doc"
-      ],
-      "webdev": {
-        "browsers": [],
-        "url": "http://localhost/",
-        "start": "scintillate.Tests"
-      }
     }
   ]
 }
