@@ -19,13 +19,16 @@ package xylophone
 import rudiments.*
 import gossamer.*
 
-case class XmlParseError(line: Int, column: Int) extends Error:
+case class XmlParseError(line: Int, column: Int)
+extends Error((t"the XML source could not be parsed at line ", line, t", column ", column)):
   def message: Text = t"the XML source could not be parsed at line $line, column $column"
 
-case class XmlReadError() extends Error:
+case class XmlReadError() extends Error(t"could not read value" *: EmptyTuple):
   def message: Text = t"could not read value"
 
-case class XmlAccessError(index: Int, path: XmlPath) extends Error:
+case class XmlAccessError(index: Int, path: XmlPath)
+extends Error((t"could not access ", if index == 0 then t"any nodes" else t"node $index",
+    t" at path ", Xml.pathString(path))):
   def message: Text =
     val ref: Text = if index == 0 then t"any nodes" else t"node $index"
     t"could not access $ref at path ${Xml.pathString(path)}"
