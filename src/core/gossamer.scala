@@ -189,8 +189,9 @@ extension [T](values: Iterable[T])(using joinable: Joinable[T])
   def join(left: T, separator: T, penultimate: T, right: T): T =
     Iterable(left, join(separator, penultimate), right).join
 
-case class OutOfRangeError(idx: Int, from: Int, to: Int) extends Error:
-  def message: Text = Text(s"gossamer: the index $idx exceeds the range $from-$to")
+case class OutOfRangeError(idx: Int, from: Int, to: Int)
+extends Error((Text("the index "), idx, Text(" is outside the range "), from, Text("-"), to)):
+  def message: Text = Text(s"the index $idx exceeds the range $from-$to")
 
 case class Showable[T](value: T):
   def show: Text = Text(value.toString)
