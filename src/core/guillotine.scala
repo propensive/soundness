@@ -151,7 +151,8 @@ case class Env(vars: Map[Text, Text], workDir: Maybe[Text] = Unset):
   private[guillotine] lazy val workDirFile: ji.File =
     ji.File(workDir.otherwise(Text(System.getenv("PWD").nn)).s)
   
-case class ExecError(command: Command, stdout: DataStream, stderr: DataStream) extends Error:
+case class ExecError(command: Command, stdout: DataStream, stderr: DataStream)
+extends Error((t"execution of the command ", command, t" failed")):
   def message: Text = t"execution of the command $command failed"
 
 object Sh:
