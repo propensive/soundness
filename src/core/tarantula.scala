@@ -63,7 +63,9 @@ object Chrome extends Browser(t"chrome"):
 
 def browser(using WebDriver#Session): WebDriver#Session = summon[WebDriver#Session]
 
-case class WebDriverError(error: Text, message: Text, browserStacktrace: List[Text]) extends Error
+case class WebDriverError(error: Text, message: Text, browserStacktrace: List[Text])
+extends Error((t"the action caused the error ", error, t" in the browser, with the message ",
+    message))
 
 case class WebDriver(server: Browser#Server):
   private transparent inline def wd: this.type = this
@@ -126,6 +128,7 @@ case class WebDriver(server: Browser#Server):
     
     def navigateTo[U: UriConverter](url: U)(using Log): Json =
       case class Data(url: Text)
+      println(summon[UriConverter[U]](url).show)
       post(t"url", Data(summon[UriConverter[U]](url).show).json)
     
     def refresh()(using Log): Unit = post(t"title", Json.parse(t"{}")).as[Json]
