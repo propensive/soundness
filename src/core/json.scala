@@ -31,10 +31,16 @@ import scala.deriving.*
 
 import language.dynamics
 
-case class JsonParseError(line: Int, column: Int, detail: Text) extends Error:
+case class JsonParseError(line: Int, column: Int, detail: Text)
+extends Error((t"could not parse JSON at line ", line, t", column ", column, t": ", detail)):
   def message: Text = t"could not parse the JSON at $line:$column: $detail"
 
-case class JsonAccessError(key: Int | Text | JsonPrimitive) extends Error:
+case class JsonAccessError(key: Int | Text | JsonPrimitive)
+extends Error(
+  key match
+    case idx: Int  => (t"could not access ", t"index", t" ", idx.show)
+    case str: Text =>(t"could not access ", t"label", t" ", str)
+):
   def message: Text = key match
     case idx: Int => t"could not access the index $idx in the JSON array"
     case str: Text => t"could not access the label $str in the JSON object"
