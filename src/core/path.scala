@@ -21,7 +21,8 @@ import gossamer.*
 
 import annotation.targetName
 
-case class RootParentError(root: Root) extends Error:
+case class RootParentError(root: Root)
+extends Error((t"attempted to access parent of root ", root)):
   def message: Text = txt"""an attempt was made to access the parent of a filesystem root, which (by
                           definition) has no parent"""
 
