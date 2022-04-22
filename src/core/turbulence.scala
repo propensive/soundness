@@ -46,11 +46,13 @@ extension (value: DataStream)
         then throw ExcessDataError((acc.length + next.length).b, limit)
         else acc ++ next
 
-case class ExcessDataError(size: ByteSize, limit: ByteSize) extends Error:
+case class ExcessDataError(size: ByteSize, limit: ByteSize)
+extends Error((Text("the amount of data in the stream (at least "), size,
+    Text("B) exceeds the limit ("), limit, Text("B)"))):
   def message: Text =
-    Text(s"the amount of data is the stream (at least ${size}B) exceeds the limit (${limit}B)")
+    Text(s"the amount of data in the stream (at least ${size}B) exceeds the limit (${limit}B)")
 
-case class StreamCutError() extends Error:
+case class StreamCutError() extends Error(Text("the stream was cut prematurely") *: EmptyTuple):
   def message: Text = Text("the stream was cut prematurely")
 
 object Util:
