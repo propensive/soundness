@@ -426,13 +426,15 @@ def suite(name: Text)(fn: Runner ?=> Unit)(using runner: Runner, log: Log): Unit
 def suite(suite: TestSuite)(using runner: Runner, log: Log): Unit = runner.suite(suite)
 def time[T](name: Text)(fn: => T)(using Runner, Log): T = test(name)(fn).check { _ => true }
 
-case class UnexpectedSuccessError(value: Any) extends Error:
+case class UnexpectedSuccessError[T](value: T)
+extends Error((t"the expression was expected to throw an exception, but instead returned ", value)):
   def message: Text = t"the expression was expected to throw an exception, but did not"
 
-def capture(fn: => CanThrow[Exception] ?=> Any): Exception throws UnexpectedSuccessError =
+transparent inline def capture[T](fn: => CanThrow[Exception] ?=> T)
+                     : Exception throws UnexpectedSuccessError[T] =
   try
     val result = fn
     throw UnexpectedSuccessError(result)
   catch
-    case error: UnexpectedSuccessError => throw error
-    case error: Exception              => error
+    case error: UnexpectedSuccessError[T] => throw error
+    case error: Exception                 => error
