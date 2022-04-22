@@ -163,7 +163,8 @@ object InvalidMediaTypeError:
       case InvalidChar(c)   => txt"the character '$c' is not allowed"
       case InvalidSuffix(s) => txt"the suffix '$s' is not recognized"
 
-case class InvalidMediaTypeError(value: Text, nature: InvalidMediaTypeError.Nature) extends Error:
+case class InvalidMediaTypeError(value: Text, nature: InvalidMediaTypeError.Nature)
+extends Error((t"the value ", value, " is not a valid media type; ", nature.message)):
   def message: Text = t"the value \"$value\" is not a valid media type; ${nature.message}"
 
 case class MediaType(group: Media.Group, subtype: Media.Subtype, suffixes: List[Media.Suffix] = Nil,
