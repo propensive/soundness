@@ -28,8 +28,8 @@ object Url:
 
   given show: Show[Url] = url =>
     val auth = url.authority.fold(t"")(t"//"+_.show)
-    val rest = t"${url.path}${url.query.fold(t"")(t"?"+_)}${url.fragment.fold(t"")(t"#"+_)}"
-    t"${url.scheme}$auth${url.path}$rest"
+    val rest = t"${url.query.fold(t"")(t"?"+_)}${url.fragment.fold(t"")(t"#"+_)}"
+    t"${url.scheme}:$auth${url.path}$rest"
 
   def parse(value: Text): Url throws InvalidUrlError =
     import InvalidUrlError.Expectation.*
@@ -64,8 +64,6 @@ object Url:
               case hash: Int =>
                 Url(scheme, auth, value.slice(pathStart, qmark), Some(value.slice(qmark + 1, hash)),
                     Some(value.drop(hash + 1)))
-
-
 
 object Authority:
   given Show[Authority] = auth =>
@@ -121,5 +119,5 @@ object InvalidUrlError:
     case Colon, More, LowerCaseLetter, PortRange, Number
 
 case class InvalidUrlError(text: Text, offset: Int, expected: InvalidUrlError.Expectation)
-extends Error:
+extends Error((t"the URL ", text, t" is not valid: expected ", expected, t" at ", offset)):
   def message: Text = t"Invalid URL: expected $expected at $offset"

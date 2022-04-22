@@ -155,3 +155,8 @@ object Tests extends Suite(t"Scintillate tests"):
         Url.parse(t"https://example.com/foo")
       .check(_ == Url(Scheme(t"https"), Some(Authority(Host(t"example", t"com"))), t"/foo", None,
           None))
+      
+      test(t"Show simple URI"):
+        Url.parse(t"http://example.com/foo").show
+      .check(_ == t"http://example.com/foo")
+      
