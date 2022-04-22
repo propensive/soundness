@@ -45,10 +45,12 @@ enum Recursion:
 type Majuscule = 'A' | 'B' | 'C' | 'D' | 'E' | 'F' | 'G' | 'H' | 'I' | 'J' | 'K' | 'L' | 'M' | 'N' |
     'O' | 'P' | 'Q' | 'R' | 'S' | 'T' | 'U' | 'V' | 'W' | 'X' | 'Y' | 'Z'
 
-case class ClasspathRefError(classpath: Classpath)(path: classpath.ClasspathRef) extends Error:
+case class ClasspathRefError(classpath: Classpath)(path: classpath.ClasspathRef)
+extends Error((t"the resource ", path, t" could not be accessed on the classpath")):
   def message: Text = t"the resource $path could not be accessed"
 
-case class PwdError() extends Error:
+case class PwdError()
+extends Error(t"the current working directory cannot be determined" *: EmptyTuple):
   def message: Text = t"the current working directory cannot be determined"
 
 object Fifo:
@@ -218,13 +220,17 @@ object IoError:
   enum Op:
     case Read, Write, Access, Permissions, Create, Delete
 
-case class IoError(operation: IoError.Op, reason: IoError.Reason, path: DiskPath) extends Error:
+case class IoError(operation: IoError.Op, reason: IoError.Reason, path: DiskPath)
+extends Error((t"the ", operation, t" operation at ", path, t" failed because ", reason)):
   def message: Text = t"the $operation operation at ${path.show} failed because $reason"
 
-case class InotifyError() extends Error:
+case class InotifyError()
+extends Error(t"the limit on the number of paths that can be watched has been exceeded" *:
+    EmptyTuple):
   def message: Text = t"the limit on the number of paths that can be watched has been exceeded"
 
-case class InvalidPathError(path: Text) extends Error:
+case class InvalidPathError(path: Text)
+extends Error((t"the string ", path, t" is not a valid path")):
   def message: Text = t"the string '$path' is not a valid path"
 
 open class Classpath(classLoader: ClassLoader = getClass.nn.getClassLoader.nn)
