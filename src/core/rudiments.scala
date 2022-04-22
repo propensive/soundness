@@ -112,7 +112,7 @@ object Sys extends Dynamic:
   def applyDynamic(key: String)(): Text throws KeyNotFoundError = selectDynamic(key).apply()
   def bigEndian: Boolean = java.nio.ByteOrder.nativeOrder == java.nio.ByteOrder.BIG_ENDIAN
 
-case class KeyNotFoundError(name: Text) extends Error:
+case class KeyNotFoundError(name: Text) extends Error((Text("key "), name, Text(" not found"))):
   def message: Text = Text(s"key $name not found")
 
 object Impossible:
@@ -179,7 +179,7 @@ extension [T](xs: Iterable[T])
 
 object Timer extends ju.Timer(true)
 
-case class TimeoutError() extends Error:
+case class TimeoutError() extends Error(EmptyTuple):
   def message: Text = Text("An operation did not complete in the time it was given")
 
 extension [T](future: Future[T])
@@ -292,7 +292,7 @@ object StackTrace:
 case class StackTrace(component: Text, className: Text, message: Text,
     frames: List[StackTrace.Frame], cause: Maybe[StackTrace])
 
-abstract class Error(cause: Maybe[Error] = Unset) extends Exception():
+abstract class Error[T <: Tuple](parts: T, cause: Maybe[Error[?]] = Unset) extends Exception():
   def fullClass: List[Text] = List(getClass.nn.getName.nn.split("\\.").nn.map(_.nn).map(Text(_))*)
   def className: Text = fullClass.last
   def component: Text = fullClass.head
