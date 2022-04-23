@@ -149,7 +149,7 @@ case class Counter(first: Int = 0):
 
 object Task:
   private val count: Counter = Counter()
-  private def nextName(): String = s"turbulance-${count()}"
+  private def nextName(): String = s"rudiments-${count()}"
 
   @targetName("make")
   def apply[T](fn: => T): Task[T] = Task(() => fn)
