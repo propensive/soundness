@@ -160,14 +160,20 @@ trait DiskPath:
   def fullname: Text
   def rename(fn: Text => Text): DiskPath
   def name: Text
+  def length: Int
   def prefix: Text
   def filesystem: Filesystem
   def +(relative: Relative): DiskPath throws RootParentError
+  
+  def ancestorOf(child: DiskPath): Boolean =
+    this == child || length < child.length && unsafely(ancestorOf(child.parent))
+
   def relativeTo(path: DiskPath): Option[Relative] =
     val fs = filesystem
+    
     this match
-      case from: fs.DiskPath => path match
-        case to: fs.DiskPath   => Some(from.relativeTo(to))
+      case src: fs.DiskPath => path match
+        case dest: fs.DiskPath   => Some(src.relativeTo(dest))
         case _                 => None
       case _                 => None
   
@@ -301,7 +307,7 @@ class Filesystem(pathSeparator: Text, fsPrefix: Text) extends Root(pathSeparator
     def separator: Text = pathSeparator
     def name: Text = elements.last
     def fullname: Text = elements.join(fsPrefix, separator, t"")
-
+    def length: Int = elements.length
 
     def +(relative: Relative): DiskPath throws RootParentError =
       if relative.ascent == 0 then DiskPath(elements ++ relative.parts)
