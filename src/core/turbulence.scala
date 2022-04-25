@@ -174,10 +174,12 @@ object SystemOut
 object SystemErr
 
 extension (obj: LazyList.type)
-  def multiplex[T](streams: LazyList[T]*): LazyList[T] =
+  def multiplex[T](streams: LazyList[T]*): LazyList[T] = multiplexer(streams*).stream
+  
+  def multiplexer[T](streams: LazyList[T]*): Multiplexer[Any, T] =
     val multiplexer = Multiplexer[Any, T]()
     streams.zipWithIndex.map(_.swap).foreach(multiplexer.add)
-    multiplexer.stream
+    multiplexer
   
   def pulsar(using time: Timekeeper)(interval: time.Type): LazyList[Unit] =
     Thread.sleep(time.to(interval))
@@ -209,8 +211,10 @@ case class Multiplexer[K, T]():
   private val tasks: HashMap[K, Task[Unit]] = HashMap()
   private val queue: juc.LinkedBlockingQueue[Maybe[T]] = juc.LinkedBlockingQueue()
 
+  def close(): Unit = tasks.keys.foreach(remove(_))
+
   @tailrec
-  private def pump(key: K, stream: LazyList[T]): Unit =
+  private def pump(key: K, stream: => LazyList[T]): Unit =
     if stream.isEmpty then remove(key)
     else
       queue.put(stream.head)
@@ -218,22 +222,22 @@ case class Multiplexer[K, T]():
 
   def add(key: K, stream: LazyList[T]): Unit =
     synchronized:
-      val task: Task[Unit] = Task:
-        pump(key, stream)
-        remove(key)
-      
+      val task: Task[Unit] = Task(pump(key, stream))
       task()
       tasks(key) = task
-  
+ 
   private def remove(key: K): Unit = synchronized:
     tasks -= key
     if tasks.isEmpty then queue.put(Unset)
   
   def stream: LazyList[T] =
-    queue.take() match
-      case Unset   => LazyList()
-      case null    => LazyList()
-      case item: T => item.nn #:: stream
+    def recur(): LazyList[T] =
+      queue.take() match
+        case Unset   => LazyList()
+        case null    => LazyList()
+        case item: T => item.nn #:: recur()
+    
+    LazyList() #::: recur()
 
 extension [T](stream: LazyList[T])
   def ready(using ExecutionContext): Future[LazyList[T]] = Future:
@@ -244,21 +248,20 @@ extension [T](stream: LazyList[T])
   def multiplexWith(that: LazyList[T]): LazyList[T] = LazyList.multiplex(stream, that)
 
   def regulate(tap: Tap): LazyList[T] =
-
     def defer(active: Boolean, stream: LazyList[T | Tap.Regulation], buffer: List[T]): LazyList[T] =
       recur(active, stream, buffer)
 
     @tailrec
     def recur(active: Boolean, stream: LazyList[T | Tap.Regulation], buffer: List[T]): LazyList[T] =
       if active && buffer.nonEmpty then buffer.head #:: defer(true, stream, buffer.tail)
-      if stream.isEmpty then LazyList()
+      else if stream.isEmpty then LazyList()
       else stream.head match
         case Tap.Regulation.Start => recur(true, stream.tail, buffer)
         case Tap.Regulation.Stop  => recur(false, stream.tail, Nil)
         case other: T             => if active then other.nn #:: defer(true, stream.tail, Nil)
                                      else recur(false, stream.tail, other.nn :: buffer)
 
-    recur(true, stream.multiplexWith(tap.stream), Nil)
+    LazyList() #::: recur(true, stream.multiplexWith(tap.stream), Nil)
 
   def cluster(using time: Timekeeper)
              (interval: time.Type, maxSize: Maybe[Int] = Unset, maxDelay: Maybe[Long] = Unset)
@@ -285,7 +288,7 @@ extension [T](stream: LazyList[T])
         else if recurse.get then recur(stream.tail, stream.head :: list, expiry)
         else list.reverse #:: defer(stream, Nil, Long.MaxValue)
     
-    recur(stream, Nil, Long.MaxValue)
+    LazyList() #::: recur(stream, Nil, Long.MaxValue)
 
 object StreamBuffer:
   given Sink[StreamBuffer[Bytes throws StreamCutError]] with
@@ -305,6 +308,7 @@ class StreamBuffer[T]():
   def usePrimary() = secondary.put(Unset)
 
   def close(): Unit =
+    closed = true
     primary.put(Unset)
     secondary.put(Unset)
 
@@ -344,7 +348,7 @@ class Tap(initial: Boolean = true):
   private val funnel: Funnel[Tap.Regulation] = Funnel()
   def stream: LazyList[Tap.Regulation] = funnel.stream
   
-  def close(): Unit = synchronized:
+  def pause(): Unit = synchronized:
     if on then
       on = false
       funnel.put(Tap.Regulation.Stop)
@@ -353,4 +357,7 @@ class Tap(initial: Boolean = true):
     if !on then
       on = true
       funnel.put(Tap.Regulation.Start)
+  
+  def stop(): Unit = synchronized(funnel.stop())
+    
   
