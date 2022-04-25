@@ -3,10 +3,15 @@
     {
       "base": "../jovian",
       "url": "https://github.com/propensive/jovian"
+    },
+    {
+      "base": "../profanity",
+      "url": "https://github.com/propensive/profanity"
     }
   ],
   "imports": [
-    "../jovian/build.irk"
+    "../jovian/build.irk",
+    "../profanity/build.irk"
   ],
   "publishing": {
     "username": "propensive",
@@ -31,7 +36,7 @@
       "name": "Exoskeleton",
       "id": "exoskeleton/core",
       "links": [
-        "jovian/core"
+        "jovian/core", "profanity/core"
       ],
       "sources": [
         "src/core"

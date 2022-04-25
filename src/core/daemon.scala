@@ -21,9 +21,13 @@ import gossamer.*
 import rudiments.*
 import turbulence.*
 import escapade.*
+import profanity.*
+import eucalyptus.*
 
 import scala.concurrent.*
 import scala.util.*
+
+import sun.misc as sm
 
 import java.util.concurrent.atomic.AtomicInteger
 
@@ -32,21 +36,44 @@ import encodings.Utf8
 import unsafeExceptions.canThrowAny
 import rendering.ansi
 
+transparent inline def cli(using cli: CommandLine): CommandLine = cli
+
 case class CommandLine(args: List[Text], env: Map[Text, Text], script: File,
-                           stdin: () => DataStream, stdout: DataStream => Unit, exit: Int => Unit,
-                           pwd: Directory, shutdown: () => Unit, kills: LazyList[Unit])
-extends Stdout:
+                           stdin: DataStream, stdout: DataStream => Unit, exit: Int => Unit,
+                           pwd: Directory, shutdown: () => Unit, interactive: () => Unit,
+                           resize: () => LazyList[Unit])
+extends Stdout, InputSource:
   def write(msg: Text): Unit = stdout(LazyList(msg.bytes))
+  def cleanup(tty: Tty): Unit = ()
+  
+  def init()(using Log): Tty throws TtyError =
+    interactive()
+    Tty(System.out.nn, stdin)
 
 trait App:
   def main(using CommandLine): ExitStatus
+
+enum Signal:
+  case Hup, Int, Quit, Ill, Trap, Abrt, Bus, Fpe, Kill, Usr1, Segv, Usr2, Pipe, Alrm, Term, Chld,
+      Cont, Stop, Tstp, Ttin, Ttou, Urg, Xcpu, Xfsz, Vtalrm, Prof, Winch, Io, Pwr, Sys
+  
+  def shortName: Text = this.toString.show.upper
+  def name: Text = t"SIG${this.toString.show.upper}"
+  def id: Int = if ordinal < 15 then ordinal - 1 else ordinal
 
 trait Daemon() extends App:
   daemon =>
 
   private val spawnCount: AtomicInteger = AtomicInteger(0)
 
+  val signalHandler: PartialFunction[Signal, Unit] = PartialFunction.empty
+
   final def main(args: IArray[Text]): Unit =
+    Signal.values.foreach:
+      signal =>
+        if signalHandler.isDefinedAt(signal)
+        then sm.Signal.handle(sm.Signal(signal.shortName.s), _ => signalHandler(signal))
+
     args.to(List) match
       case _ =>
         val script = Sys.exoskeleton.script()
@@ -55,32 +82,11 @@ trait Daemon() extends App:
         val Int(watch) = Sys.exoskeleton.watch()
         val runnable: Runnable = () => server(script, fifo, pid, watch)
         Thread(runnable, "exoskeleton-dispatcher").start()
-      
-      case args =>
-        val env = System.getenv.nn.asScala.map(_.nn.show -> _.nn.show).to(Map)
-        val gun: Gun = Gun()
-        val systemStdin = Option(System.in).getOrElse(sys.exit(10)).nn
-        def stdin(): DataStream = Util.readInputStream(systemStdin, 1.mb)
-        
-        def stdout(ds: DataStream): Unit = ds.map(_.unsafeMutable).foreach:
-          bytes => System.out.nn.write(bytes, 0, bytes.length)
-
-        val dir =
-          try Unix.parse(Sys.user.dir()).getOrElse(sys.exit(10)).directory(Expect)
-          catch case err: KeyNotFoundError => sys.exit(10)
-        
-        val scriptFile = Unix.parse(List.getClass.nn.getProtectionDomain.nn.getCodeSource.nn
-            .getLocation.nn.getPath.nn.show).get.file(Expect)
-        
-        val commandLine = CommandLine(args, env, scriptFile, () => stdin(), stdout, sys.exit(_), dir, () => sys.exit(0), gun.stream)
-        
-        main(using commandLine)()
 
   def server(script: Text, fifo: Text, serverPid: Int, watchPid: Int): Unit =
-    val socket: DiskPath = Unix.parse(fifo).getOrElse(sys.exit(10))
+    val socket: DiskPath = Unix.parse(fifo).getOrElse(sys.exit(1))
     
-    val death: Runnable = () =>
-      try socket.file().delete() catch case e: Exception => ()
+    val death: Runnable = () => try socket.file().delete() catch case e: Exception => ()
     
     ProcessHandle.of(watchPid).nn.get.nn.onExit.nn.thenRun:
       () => sys.exit(2)
@@ -91,35 +97,48 @@ trait Daemon() extends App:
     case class AppInstance(pid: Int, spawnId: Int, scriptFile: Maybe[File] = Unset,
                                args: List[Text] = Nil, env: Map[Text, Text] = Map(),
                                runDir: Maybe[Directory] = Unset):
-      private val gun: Gun = Gun()
-      
+      val signals: Funnel[Unit] = Funnel()
       def pwd: Directory throws PwdError =
         try Unix.parse(env.getOrElse(t"PWD", throw PwdError())).getOrElse(throw PwdError())
             .directory(Expect)
         catch case err: IoError => throw PwdError()
 
-      def stop(): Unit = gun.fire()
-      
+      def resize(): Unit = signals.put(())
+
       def spawn(): Unit =
         val runnable: Runnable = () =>
-          lazy val out = Fifo((runDir.otherwise(sys.exit(10)) / t"$script-$pid.stdout.sock").file(Expect))
+          lazy val out = Fifo:
+            val file = (runDir.otherwise(sys.exit(1)) / t"$script-$pid.stdout.sock").file(Expect)
+            file.javaFile.deleteOnExit()
+            file
+          
           try
-            val script = scriptFile.otherwise(sys.exit(10)).name
-            val fifoIn = (runDir.otherwise(sys.exit(10)) / t"$script-$pid.stdin.sock").file(Expect)
+            val script = scriptFile.otherwise(sys.exit(1)).name
+            val fifoIn = (runDir.otherwise(sys.exit(1)) / t"$script-$pid.stdin.sock").file(Expect)
+            fifoIn.javaFile.deleteOnExit()
             val terminate = Promise[Int]()
-            val workDir = pwd.otherwise(sys.exit(10))
+            val workDir = pwd.otherwise(sys.exit(1))
             
-            val commandLine = CommandLine(args, env, scriptFile.otherwise(sys.exit(10)),
-                () => fifoIn.read[DataStream](1.mb), _.writeTo(out),
-                exit => terminate.complete(util.Success(exit)), workDir, () => sys.exit(0), gun.stream)
+            lazy val exitFile = (runDir.otherwise(sys.exit(1)) / t"$script-$pid.exit").file()
+            exitFile.javaFile.deleteOnExit()
+            
+            def interactive(): Unit = 99.show.bytes.writeTo(exitFile)
+            
+            val commandLine = CommandLine(args, env, scriptFile.otherwise(sys.exit(1)),
+                LazyList() #::: fifoIn.read[DataStream](1.mb), _.writeTo(out),
+                exit => terminate.complete(util.Success(exit)), workDir, () => sys.exit(0),
+                () => interactive(), () => signals.stream)
             
             val exit = main(using commandLine)
             out.close()
-            val exitFile = (runDir.otherwise(sys.exit(10)) / t"$script-$pid.exit").file()
             exit().show.bytes.writeTo(exitFile)
-          catch case NonFatal(err) =>
-            given Stdout = Stdout(out)
-            Out.println(StackTrace(err).ansi)
+          
+          catch
+            case err: IoError =>
+              ()
+            case NonFatal(err) =>
+              given Stdout = Stdout(out)
+              Out.println(StackTrace(err).ansi)
         
         val thread = Thread(runnable, t"exoskeleton-$spawnId".s)
         thread.start()
@@ -148,16 +167,15 @@ trait Daemon() extends App:
           case t"ARGS" :: Int(pid) :: Int(count) :: args =>
             map.updated(pid, map(pid).copy(args = args.take(count)))
           
+          case t"RESIZE" :: Int(pid) :: _ =>
+            map(pid).resize()
+            map
+          
           case t"ENV" :: Int(pid) :: env =>
             map.updated(pid, map(pid).copy(env = parseEnv(env)))
           
           case t"START" :: Int(pid) :: _ =>
             map(pid).spawn()
-            map
-          
-          case t"STOP" :: Int(pid) :: _ =>
-            System.out.nn.println("Stopping")
-            map(pid).stop()
             map
           
           case t"SHUTDOWN" :: _ =>

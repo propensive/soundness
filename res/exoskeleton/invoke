@@ -38,21 +38,34 @@ connect() {
   echo "START	$PID" > "$FIFO"
   cat - > "$STDIN" <&0 &
   CATPID="$!"
-  cat "$STDOUT"
+  cat "$STDOUT" &
+  WRITERPID="$!"
   EXIT="$(cat "$EXITFILE")"
-  kill "$CATPID"
+  
+  if [ "$EXIT" = "99" ]
+  then
+    stty -echo -icanon -isig min 1 time 0
+    EXIT="$(cat "$EXITFILE")"
+  fi
+  
+  kill "$CATPID" > /dev/null 2>&1
   rm -f "$STDOUT" "$STDIN" "$EXITFILE"
+  stty sane
   exit "${EXIT:-1}"
 }
 
-cleanup() {
-  if [ -p "$FIFO" ]
-  then
-    echo "STOP	$PID" > "$FIFO"
-  fi
+resize() {
+  echo "Sent resize"
+  echo "RESIZE	$PID" > "$FIFO"
 }
 
-trap cleanup INT TERM HUP
+cleanup() {
+  stty sane
+  printf "\e[0J\e[?25h"
+}
+
+trap cleanup EXIT
+trap resize WINCH
 
 if [ ! -p "$FIFO" ]
 then
