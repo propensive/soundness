@@ -481,55 +481,63 @@ class Filesystem(pathSeparator: Text, fsPrefix: Text) extends Root(pathSeparator
       Symlink(path, dest)
 
   enum FileEvent:
-    case NewFile(file: File)
-    case NewDirectory(directory: Directory)
-    case Modify(file: File)
-    case Delete(file: DiskPath)
-  
+    case NewFile(keyDir: Directory, file: File)
+    case NewDirectory(keyDir: Directory, directory: Directory)
+    case Modify(keyDir: Directory, file: File)
+    case Delete(keyDir: Directory, file: DiskPath)
+
+    def keyDir: Directory
+
     def path: DiskPath = this match
-      case NewFile(file)     => file.path
-      case NewDirectory(dir) => dir.path
-      case Modify(file)      => file.path
-      case Delete(path)      => path
+      case NewFile(_, file)     => file.path
+      case NewDirectory(_, dir) => dir.path
+      case Modify(_, file)      => file.path
+      case Delete(_, path)      => path
 
   case class Watcher(private val svc: jnf.WatchService,
                      private val watches: HashMap[jnf.WatchKey, Directory],
                      private val dirs: HashMap[Directory, jnf.WatchKey]):
     import java.nio.file.*, StandardWatchEventKinds.*, collection.JavaConverters.*
 
-    private val Ended: Trigger = Trigger()
-    private val endedFuture: Future[Trigger] = Ended.future
-    def removeAll()(using Log): Unit = watches.values.foreach(remove(_))
+    private val funnel = Funnel[Maybe[FileEvent]]
+    private val pumpTask = Task(pump())
+    pumpTask()
     
-    def stream(using ExecutionContext): LazyList[FileEvent] =
-      @tailrec
-      def recur(): LazyList[FileEvent] =
-        Future.firstCompletedOf(List(endedFuture, Future(blocking(svc.take())))).await() match
-          case Ended | null =>
-            LazyList()
-          case k: WatchKey =>
-            val key = k.nn
-            val events = key.pollEvents().nn.iterator.nn.asScala.to(LazyList).flatMap(process(key, _))
-            key.reset()
-            if events.isEmpty then recur() else events #::: stream
-      
-      recur()
+    def stream: LazyList[FileEvent] = funnel.stream.takeWhile(_ != Unset).sift[FileEvent]
 
-    private def process(key: WatchKey, event: WatchEvent[?]): LazyList[FileEvent] =
-      erased given CanThrow[RootParentError] = compiletime.erasedValue
+    def removeAll()(using Log): Unit = watches.values.foreach(remove(_))
+
+    @tailrec
+    private def pump(): Unit =
+      svc.take() match
+        case k: WatchKey =>
+          val key = k.nn
+          key.pollEvents().nn.iterator.nn.asScala.flatMap(process(key, _)).foreach(funnel.put(_))
+          key.reset()
+      
+      pump()
+
+    private def process(key: WatchKey, event: WatchEvent[?]): List[FileEvent] =
+      val keyDir = watches(key)
       
       val diskPath = event.context match
         case path: jnf.Path =>
-          (watches(key).path + Relative.parse(Showable(path).show)) match
+          unsafely(keyDir.path + Relative.parse(Showable(path).show)) match
             case path: fs.DiskPath => path
       
       try event.kind match
-        case ENTRY_CREATE => if diskPath.isDirectory
-                             then LazyList(FileEvent.NewDirectory(diskPath.directory(Expect)))
-                             else LazyList(FileEvent.NewFile(diskPath.file(Expect)))
-        case ENTRY_MODIFY => LazyList(FileEvent.Modify(diskPath.file(Expect)))
-        case ENTRY_DELETE => LazyList(FileEvent.Delete(diskPath))
-      catch case err: Exception => LazyList()
+        case ENTRY_CREATE =>
+          if diskPath.isDirectory
+          then List(FileEvent.NewDirectory(keyDir, diskPath.directory(Expect)))
+          else List(FileEvent.NewFile(keyDir, diskPath.file(Expect)))
+        
+        case ENTRY_MODIFY =>
+          List(FileEvent.Modify(keyDir, diskPath.file(Expect)))
+        
+        case ENTRY_DELETE =>
+          List(FileEvent.Delete(keyDir, diskPath))
+      
+      catch case err: Exception => List()
 
     def remove(dir: Directory)(using Log): Unit = synchronized:
       val watchKey = dirs(dir)
@@ -537,7 +545,7 @@ class Filesystem(pathSeparator: Text, fsPrefix: Text) extends Root(pathSeparator
       dirs.remove(dir)
       watches.remove(watchKey)
       Log.info(t"Stopped watching ${dir.path}")
-      if dirs.isEmpty then Ended.pull()
+      if dirs.isEmpty then funnel.put(Unset)
     
     def add(dir: Directory)(using Log): Unit = synchronized:
       val watchKey = dir.javaPath.register(svc, ENTRY_CREATE, ENTRY_MODIFY, ENTRY_DELETE).nn
