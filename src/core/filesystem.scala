@@ -553,7 +553,7 @@ class Filesystem(pathSeparator: Text, fsPrefix: Text) extends Root(pathSeparator
       dirs(dir) = watchKey
       Log.info(t"Started watching ${dir.path}")
     
-    def directories: scala.collection.Set[Directory] = dirs.keySet
+    def directories: Set[Directory] = dirs.keySet.to(Set)
 
 
   def watch(dirs: Iterable[Directory])(using Log): Watcher throws IoError | InotifyError =
