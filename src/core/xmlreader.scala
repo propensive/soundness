@@ -30,14 +30,14 @@ object XmlReader extends Derivation[XmlReader]:
   
   given XmlReader[Int] = txt.map(Int.unapply(_))
   
-  def join[T](caseClass: CaseClass[XmlReader, T]): XmlReader[T] = seq =>
-    val elems = childElements(seq)
-    caseClass.constructMonadic { param =>
-      elems
-        .collect { case e: Ast.Element => e }
-        .find(_.name.name.s == param.label)
-        .flatMap { e => param.typeclass.read(Seq(e)) }
-    }
+  def join[T](caseClass: CaseClass[XmlReader, T]): XmlReader[T] = seq => ???
+    // val elems = childElements(seq)
+    // caseClass.constructMonadic { param =>
+    //   elems
+    //     .collect { case e: Ast.Element => e }
+    //     .find(_.name.name.s == param.label)
+    //     .flatMap { e => param.typeclass.read(Seq(e)) }
+    // }
   
   def split[T](sealedTrait: SealedTrait[XmlReader, T]): XmlReader[T] = seq =>
     seq.headOption match
