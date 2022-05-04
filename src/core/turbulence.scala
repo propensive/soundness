@@ -214,7 +214,7 @@ case class Multiplexer[K, T]():
   def close(): Unit = tasks.keys.foreach(remove(_))
 
   @tailrec
-  private def pump(key: K, stream: => LazyList[T]): Unit =
+  private def pump(key: K, stream: LazyList[T]): Unit =
     if stream.isEmpty then remove(key)
     else
       queue.put(stream.head)
@@ -360,4 +360,4 @@ class Tap(initial: Boolean = true):
   
   def stop(): Unit = synchronized(funnel.stop())
     
-  
+  def state(): Boolean = on
