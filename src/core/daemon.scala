@@ -41,7 +41,7 @@ transparent inline def cli(using cli: CommandLine): CommandLine = cli
 case class CommandLine(args: List[Text], env: Map[Text, Text], script: File,
                            stdin: DataStream, stdout: DataStream => Unit, exit: Int => Unit,
                            pwd: Directory, shutdown: () => Unit, interactive: () => Unit,
-                           resize: () => LazyList[Unit])
+                           resize: LazyList[Unit])
 extends Stdout, InputSource:
   def write(msg: Text): Unit = stdout(LazyList(msg.bytes))
   def cleanup(tty: Tty): Unit = ()
@@ -127,7 +127,7 @@ trait Daemon() extends App:
             val commandLine = CommandLine(args, env, scriptFile.otherwise(sys.exit(1)),
                 LazyList() #::: fifoIn.read[DataStream](1.mb), _.writeTo(out),
                 exit => terminate.complete(util.Success(exit)), workDir, () => sys.exit(0),
-                () => interactive(), () => signals.stream)
+                () => interactive(), signals.stream)
             
             val exit = main(using commandLine)
             out.close()

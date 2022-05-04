@@ -55,7 +55,6 @@ connect() {
 }
 
 resize() {
-  echo "Sent resize"
   echo "RESIZE	$PID" > "$FIFO"
 }
 
