@@ -84,7 +84,7 @@ object Keyboard:
     val Int(rows) = size(1)
     Log.fine(ansi"Console has been resized to $columns×$rows")
     
-    Keypress.Resize(columns, rows)
+    Keypress.Resize(rows, columns)
 
   given Keyboard[Keypress] with
     def interpret(bytes: IArray[Byte])(using Log): LazyList[Keypress] =
@@ -245,7 +245,7 @@ object Jvm extends InputSource:
     Log.info(ansi"Capturing ${colors.Red}(stdout) for TTY input/output")
     Log.info(ansi"Any output to ${colors.Red}(stdout) henceforth will be discarded")
     
-    val tty: Tty = Tty(stdout, LazyList() #::: Util.readInputStream(System.in.nn, 1.kb))
+    val tty: Tty = Tty(stdout, Util.readInputStream(System.in.nn, 1.kb))
     System.setOut(Tty.noopOut)
     Log.info(ansi"Setting ${colors.Orange}(SIGWINCH) signal handler")
     tty
