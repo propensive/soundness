@@ -124,7 +124,7 @@ object Json extends Dynamic:
     def write(t: T): JValue
     def contramap[S](fn: S => T): Writer[S] = (v: S) => fn.andThen(write)(v)
 
-  object Reader:// extends Derivation[Reader]:
+  object Reader extends Derivation[Reader]:
     given Reader[Json] with
       type E = Nothing
       def read(value: => JValue): Json throws JsonAccessError | E = Json(value, Nil)
@@ -192,31 +192,31 @@ object Json extends Dynamic:
         
         case _           => throw JsonAccessError(JsonPrimitive.Object)
 
-    transparent inline given derived[T <: Product]: Reader[T] = ${JsonMacro.deriveReader[T]}
+    //transparent inline given derived[T <: Product]: Reader[T] = ${JsonMacro.deriveReader[T]}
 
-    // def join[T](caseClass: CaseClass[Reader, T]): Reader[T] = new Reader[T]:
-    //   type E = JsonAccessError
-    //   def read(value: => JValue): T throws JsonAccessError =
-    //     caseClass.construct { param =>
-    //       value match
-    //         case JObject(vs) =>
-    //           val value = vs.get(param.label).getOrElse(throw JsonAccessError(Text(param.label)))
-    //           import unsafeExceptions.canThrowAny
-    //           param.typeclass.read(value)
+    def join[T](caseClass: CaseClass[Reader, T]): Reader[T] = new Reader[T]:
+      type E = JsonAccessError
+      def read(value: => JValue) =
+        caseClass.construct { param =>
+          value match
+            case JObject(vs) =>
+              val value = vs.get(param.label).getOrElse(throw JsonAccessError(Text(param.label)))
+              import unsafeExceptions.canThrowAny
+              param.typeclass.read(value)
             
-    //         case _ =>
-    //           throw JsonAccessError(JsonPrimitive.Object)
-    //     }
+            case _ =>
+              throw JsonAccessError(JsonPrimitive.Object)
+        }
 
-    // def split[T](sealedTrait: SealedTrait[Reader, T]): Reader[T] = new Reader[T]:
-    //   type E = JsonAccessError
-    //   def read(value: => JValue): T throws JsonAccessError =
-    //     val _type = Json(value, Nil)._type.as[Text]
-    //     val subtype = sealedTrait.subtypes.find { t => Text(t.typeInfo.short) == _type }
-    //       .getOrElse(throw JsonAccessError(JsonPrimitive.Object)) // FIXME
+    def split[T](sealedTrait: SealedTrait[Reader, T]): Reader[T] = new Reader[T]:
+      type E = JsonAccessError
+      def read(value: => JValue) =
+        val _type = Json(value, Nil)._type.as[Text]
+        val subtype = sealedTrait.subtypes.find { t => Text(t.typeInfo.short) == _type }
+          .getOrElse(throw JsonAccessError(JsonPrimitive.Object)) // FIXME
         
-    //     try subtype.typeclass.read(value)
-    //     catch case e: Exception => throw JsonAccessError(Text(subtype.typeInfo.short))
+        try subtype.typeclass.read(value)
+        catch case e: Exception => throw JsonAccessError(Text(subtype.typeInfo.short))
 
   abstract class MapReader[T](fn: collection.mutable.Map[String, JValue] => T) extends Reader[T]:
     
