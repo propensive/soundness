@@ -166,6 +166,10 @@ extension (text: Text)
     
     dist(n)
 
+case class Numerous(word: Text, pluralEnd: Text = Text("s"), singularEnd: Text = Text("")):
+  def apply(elements: Iterable[?]): Text = apply(elements.size)
+  def apply(value: Int): Text = word+(if value == 1 then singularEnd else pluralEnd)
+
 object Joinable:
   given Joinable[Text] = xs => Text(xs.mkString)
 
