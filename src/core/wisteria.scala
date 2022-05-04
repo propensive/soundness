@@ -50,7 +50,7 @@ trait CommonDerivation[TypeClass[_]]:
           case (_, Left(err))             => Left(List(err))
         }.map { params => product.fromProduct(Tuple.fromArray(params)) }
 
-      def constructMonadic[M[_]: Monadic, PType: ClassTag](makeParam: Param => M[PType]): M[A] =
+      def constructMonadic[M[_]: Monadic, PType](using ClassTag[PType])(makeParam: Param => M[PType]): M[A] =
         summon[Monadic[M]].map {
           params.map(makeParam(_)).to(Array).foldLeft(summon[Monadic[M]].point(Array())) {
             (accM, paramM) => summon[Monadic[M]].flatMap(accM) { acc =>

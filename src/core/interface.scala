@@ -56,7 +56,7 @@ abstract class CaseClass[Typeclass[_], Type]
   type Param = CaseClass.Param[Typeclass, Type]
   
   def construct[PType](makeParam: Param => PType)(using ClassTag[PType]): Type
-  def constructMonadic[Monad[_]: Monadic, PType: ClassTag](make: Param => Monad[PType]): Monad[Type]
+  def constructMonadic[Monad[_]: Monadic, PType](using ClassTag[PType])(make: Param => Monad[PType]): Monad[Type]
   
   def constructEither[Err, PType: ClassTag](makeParam: Param => Either[Err, PType])
       : Either[List[Err], Type]
