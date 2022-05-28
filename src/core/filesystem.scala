@@ -80,8 +80,8 @@ trait Inode:
   def exists(): Boolean = javaFile.exists()
   def parent: Directory throws RootParentError
   def modified(using time: clairvoyant.Timekeeper): time.Type
-  def copyTo(dest: DiskPath): Inode throws IoError
-  def delete(): Unit throws IoError
+  //def copyTo(dest: DiskPath): Inode throws IoError
+  //def delete(): Unit throws IoError
   def readable: Boolean = Files.isReadable(javaPath)
   def writable: Boolean = Files.isWritable(javaPath)
 
@@ -145,7 +145,6 @@ object DiskPath:
       try Filesystem.parse(Text(str)) catch case err: IoError => None
     
     def path(path: DiskPath): String = path.fullname.toString
-
 
 trait DiskPath:
   def javaPath: jnf.Path
@@ -407,9 +406,24 @@ class Filesystem(pathSeparator: Text, fsPrefix: Text) extends Root(pathSeparator
     
     def modified(using time: clairvoyant.Timekeeper): time.Type =
       time.from(javaFile.lastModified)
+
+  object File:
+    given Sink[File] with
+      type E = IoError
+      def write(value: File, stream: DataStream): Unit throws E | StreamCutError =
+        val out = ji.FileOutputStream(value.javaFile, false)
+        try Util.write(stream, out)
+        catch case e => throw IoError(IoError.Op.Write, IoError.Reason.AccessDenied, value.path)
+        finally try out.close() catch _ => ()
     
-    def copyTo(dest: jovian.DiskPath): jovian.Inode throws IoError
-    def delete(): Unit throws IoError
+    given Source[File] with
+      type E = IoError
+      def read(file: File): DataStream throws E =
+        try Util.readInputStream(ji.FileInputStream(file.javaFile), 64.kb)
+        catch case e: ji.FileNotFoundException =>
+          if e.getMessage.nn.contains("(Permission denied)")
+          then throw IoError(IoError.Op.Read, IoError.Reason.AccessDenied, file.path)
+          else throw IoError(IoError.Op.Read, IoError.Reason.DoesNotExist, file.path)
 
   case class File(filePath: DiskPath) extends Inode(filePath), jovian.File:
     def directory: Option[Directory] = None
@@ -570,6 +584,13 @@ class Filesystem(pathSeparator: Text, fsPrefix: Text) extends Root(pathSeparator
     
     Watcher(svc, watches, directories)
 
+  object Directory:
+    given DirectoryProvider[Directory] with
+      def make(str: String, readOnly: Boolean = false): Option[Directory] =
+        try parse(Text(str)).map(_.directory(Expect)) catch case err: IoError => None
+      
+      def path(directory: Directory): String = directory.path.fullname.s
+  
   case class Directory(dirPath: DiskPath) extends Inode(dirPath), jovian.Directory:
     def directory: Option[Directory] = Some(this)
     def file: Option[File] = None
