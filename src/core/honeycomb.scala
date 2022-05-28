@@ -23,46 +23,6 @@ import scala.quoted.*
 
 import language.dynamics
 
-private[honeycomb] type Label = String & Singleton
-type Html[Children <: Label] = Node[Children] | Text | Int
-type Attributes = Map[String, Maybe[Text]]
-
-object Node:
-  given Show[Html[?]] =
-    case text: Text    => text
-    case int: Int      => int.show
-    case item: Node[?] => item.show
-    case _             => throw Impossible("this should never match")
-  
-  given Show[Seq[Html[?]]] = _.map(_.show).join
-  
-  given Show[Node[?]] = item =>
-    val filling = item.attributes.map:
-      case (key, Unset)       => t" $key"
-      case (key, value: Text) => t""" $key="${value}""""
-      case _                  => throw Impossible("should never match")
-    .join
-    
-    if item.children.isEmpty && !item.verbatim
-    then t"<${item.label}$filling${if item.unclosed then t"" else t"/"}>"
-    else t"<${item.label}$filling>${item.children.map(_.show).join}</${item.label}>"
-
-sealed trait Node[+Name <: Label] extends Shown[Node[?]]:
-  node =>
-    def label: Text
-    def attributes: Attributes
-    def children: Seq[Html[?]]
-    def inline: Boolean
-    def unclosed: Boolean
-    def verbatim: Boolean
-  
-    inline def refine[N <: Label]: Option[Node[N]] = label.s match
-      case lbl: N => Some:
-        new Node[N]:
-          def label: Text = lbl.show
-          export node.{attributes, children, inline, unclosed, verbatim}
-      case _ => None
-
 object Element:
   @targetName("make")
   def apply[T <: Label, C <: Label]
@@ -130,26 +90,6 @@ extends Node[Name], Dynamic:
                   (method: "apply")
                   (children: (Html[Return] | Seq[Html[Return]])*): Element[Return] =
     Element(labelString, unclosed, inline, verbatim, Map(), children)
-
-object StartTag:
-  given clairvoyant.CssSelection[StartTag[?, ?]] = elem =>
-    val tail = elem.attributes.map:
-      case (key, value: Text) => t"[$key=$value]"
-      case (key, Unset)       => t"[$key]"
-      case _                  => throw Impossible("should never match")
-    .join
-    
-    t"${elem.label}$tail".s
-
-
-case class StartTag[+Name <: Label, Children <: Label]
-                   (labelString: Name, unclosed: Boolean, inline: Boolean, verbatim: Boolean,
-                        attributes: Attributes)
-extends Node[Name]:
-  def children = Nil
-  def label: Text = labelString.show
-  def apply(children: (Html[Children] | Seq[Html[Children]])*): Element[Name] =
-    Element(labelString, unclosed, inline, verbatim, attributes, children)
 
 case class Element[+Name <: Label](labelString: String, unclosed: Boolean, tagInline: Boolean,
                                     verbatim: Boolean, attributes: Map[String, Maybe[Text]],
