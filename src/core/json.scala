@@ -126,72 +126,65 @@ object Json extends Dynamic:
 
   object Reader extends Derivation[Reader]:
     given Reader[Json] with
-      type E = Nothing
-      def read(value: => JValue): Json throws JsonAccessError | E = Json(value, Nil)
+      def read(value: => JValue): Json throws JsonAccessError = Json(value, Nil)
 
     given int: Reader[Int] with
-      type E = Nothing
-      def read(value: => JValue): Int throws JsonAccessError | E =
+      def read(value: => JValue): Int throws JsonAccessError =
         value.getLong.getOrElse(throw JsonAccessError(JsonPrimitive.Number)).toInt
     
     given Reader[Byte] = long.map(_.toByte)
     given Reader[Short] = long.map(_.toShort)
     
     given float: Reader[Float] with
-      type E = Nothing
-      def read(value: => JValue): Float throws JsonAccessError | E =
+      def read(value: => JValue): Float throws JsonAccessError =
         value.getDouble.getOrElse(throw JsonAccessError(JsonPrimitive.Number)).toFloat
 
     given double: Reader[Double] with
-      type E = Nothing
-      def read(value: => JValue): Double throws JsonAccessError | E =
+      def read(value: => JValue): Double throws JsonAccessError =
         value.getDouble.getOrElse(throw JsonAccessError(JsonPrimitive.Number))
 
     given long: Reader[Long] with
-      type E = Nothing
-      def read(value: => JValue): Long throws JsonAccessError | E =
+      def read(value: => JValue): Long throws JsonAccessError =
         value.getLong.getOrElse(throw JsonAccessError(JsonPrimitive.Number))
 
     given string: Reader[Text] with
-      type E = Nothing
-      def read(value: => JValue): Text throws JsonAccessError | E =
+      def read(value: => JValue): Text throws JsonAccessError =
         Text(value.getString.getOrElse(throw JsonAccessError(JsonPrimitive.String)))
     
     
     given boolean: Reader[Boolean] with
-      type E = Nothing
-      def read(value: => JValue): Boolean throws JsonAccessError | E =
+      def read(value: => JValue): Boolean throws JsonAccessError =
         value.getBoolean.getOrElse(throw JsonAccessError(JsonPrimitive.Number))
 
     given opt[T](using Reader[T]): Reader[Option[T]] with
-      type E = Nothing
-      def read(value: => JValue): Option[T] throws JsonAccessError | E =
-        try Some(summon[Reader[T]].read(value)) catch case e: Exception => None
+      def read(value: => JValue): Option[T] throws JsonAccessError =
+        try Some(summon[Reader[T]].read(value)) catch case e: Throwable => None
 
     given array[Coll[T1] <: Traversable[T1], T]
                (using reader: Reader[T], factory: Factory[T, Coll[T]]): Reader[Coll[T]] =
       new Reader[Coll[T]]:
-        type E = reader.E
         
-        def read(value: => JValue): Coll[T] throws JsonAccessError | reader.E = value match
-          case JArray(vs) => val bld = factory.newBuilder
+        def read(value: => JValue): Coll[T] throws JsonAccessError = value match
+          case JArray(vs) =>
+            val bld = factory.newBuilder
                              
-                             vs.foreach:
-                               v => bld += reader.read(v)
+            vs.foreach:
+              v => bld += reader.read(v)
 
-                             bld.result()
+            bld.result()
           
-          case _          => throw JsonAccessError(JsonPrimitive.Array)
+          case _ =>
+            throw JsonAccessError(JsonPrimitive.Array)
 
     given map[T](using reader: Reader[T]): Reader[Map[String, T]] = new Reader[Map[String, T]]:
-      type E = reader.E
       
-      def read(value: => JValue): Map[String, T] throws JsonAccessError | reader.E = value match
+      def read(value: => JValue): Map[String, T] throws JsonAccessError = value match
         case JObject(vs) => vs.toMap.foldLeft(Map[String, T]()):
                               case (acc, (k, v)) => acc.updated(k, reader.read(v))
         
         case _           => throw JsonAccessError(JsonPrimitive.Object)
 
+<<<<<<< Updated upstream
     //transparent inline given derived[T <: Product]: Reader[T] = ${JsonMacro.deriveReader[T]}
 
     def join[T](caseClass: CaseClass[Reader, T]): Reader[T] = new Reader[T]:
@@ -211,6 +204,23 @@ object Json extends Dynamic:
     def split[T](sealedTrait: SealedTrait[Reader, T]): Reader[T] = new Reader[T]:
       type E = JsonAccessError
       def read(value: => JValue) =
+=======
+    //inline given derived[T <: Product]: Reader[T] = ${JsonMacro.deriveReader[T]}
+
+    def join[T](caseClass: CaseClass[Reader, T]): Reader[T] = new Reader[T]:
+      def read(value: => JValue): T throws JsonAccessError = caseClass.construct:
+        param =>
+          value match
+            case JObject(vs) =>
+              param.typeclass.read:
+                vs.get(param.label).getOrElse(throw JsonAccessError(Text(param.label)))
+            
+            case _ =>
+              throw JsonAccessError(JsonPrimitive.Object)
+
+    def split[T](sealedTrait: SealedTrait[Reader, T]): Reader[T] = new Reader[T]:
+      def read(value: => JValue): T throws JsonAccessError =
+>>>>>>> Stashed changes
         val _type = Json(value, Nil)._type.as[Text]
         val subtype = sealedTrait.subtypes.find { t => Text(t.typeInfo.short) == _type }
           .getOrElse(throw JsonAccessError(JsonPrimitive.Object)) // FIXME
@@ -220,18 +230,16 @@ object Json extends Dynamic:
 
   abstract class MapReader[T](fn: collection.mutable.Map[String, JValue] => T) extends Reader[T]:
     
-    def read(json: => JValue): T throws JsonAccessError | E = json match
+    def read(json: => JValue): T throws JsonAccessError = json match
       case JObject(vs) => fn(vs)
       case _           => throw JsonAccessError(JsonPrimitive.Object)
 
   trait Reader[T]:
     private inline def self: this.type = this
-    type E <: Exception
     
-    def read(json: => JValue): T throws JsonAccessError | E
-    def map[S](fn: T => S): Reader[S] { type E = self.E } = new Reader[S]:
-      type E = self.E
-      def read(json: => JValue): S throws JsonAccessError | self.E = fn(self.read(json))
+    def read(json: => JValue): T throws JsonAccessError
+    def map[S](fn: T => S): Reader[S] = new Reader[S]:
+      def read(json: => JValue): S throws JsonAccessError = fn(self.read(json))
 
   def parse(str: Text): Json throws JsonParseError = JParser.parseFromString(str.s) match
     case Success(value)                   => Json(value, Nil)
@@ -249,8 +257,7 @@ extends Dynamic, Shown[Json] derives CanEqual:
   def applyDynamic(field: String)(idx: Int): Json = this(Text(field))(idx)
 
   def normalize: Json throws JsonAccessError =
-    def deref(value: JValue, path: List[Int | Text])
-             : JValue throws JsonAccessError = path match
+    def deref(value: JValue, path: List[Int | Text]): JValue throws JsonAccessError = path match
       case Nil =>
         value
       case (idx: Int) :: tail => value match
@@ -274,7 +281,6 @@ extends Dynamic, Shown[Json] derives CanEqual:
       
     Json(deref(root, path.reverse), Nil)
 
-  inline def as[T](using reader: Json.Reader[T])
-                  : T throws JsonAccessError | reader.E =
+  def as[T](using reader: Json.Reader[T]): T throws JsonAccessError =
     reader.read(normalize.root)
   
