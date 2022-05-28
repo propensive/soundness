@@ -89,6 +89,10 @@ extension (text: Text)
   def capitalize: Text = take(1).upper+drop(1)
   def reverse: Text = Text(String(text.s.toCharArray.nn.reverse))
   def count(pred: Char => Boolean): Int = text.s.toCharArray.nn.unsafeImmutable.count(pred)
+  def head: Char = text.s.charAt(0)
+  def last: Char = text.s.charAt(text.s.length - 1)
+  def tail: Text = drop(1, Ltr)
+  def init: Text = drop(1, Rtl)
 
   def flatMap(fn: Char => Text): Text =
     Text(String(text.s.toCharArray.nn.unsafeImmutable.flatMap(fn(_).s.toCharArray.nn
