@@ -80,8 +80,8 @@ object Keyboard:
   
   private def readResize(bytes: List[Int])(using Log): Keypress.Resize =
     val size = String(bytes.map(_.toByte).init.to(Array)).show.cut(t";")
-    val Int(columns) = size(0)
-    val Int(rows) = size(1)
+    val columns = size(0).toString.toInt
+    val rows = size(1).toString.toInt
     Log.fine(ansi"Console has been resized to $columns×$rows")
     
     Keypress.Resize(rows, columns)
@@ -178,11 +178,12 @@ object SelectMenu:
       key == Keypress.Enter || key == Keypress.Ctrl('D') || key == Keypress.Ctrl('C')
 
     def render(options: List[T], current: T): Unit =
-      options.foreach { case opt =>
-        Tty.print(if opt == current then renderOn(opt) else renderOff(opt))
-        Tty.print(esc(t"K"))
-        Tty.print(t"\n")
-      }
+      options.foreach:
+        case opt =>
+          Tty.print(if opt == current then renderOn(opt) else renderOff(opt))
+          Tty.print(esc(t"K"))
+          Tty.print(t"\n")
+      
       Tty.print(esc(t"${options.length}A"))
 
     Tty.print(esc(t"?25l"))
