@@ -184,9 +184,6 @@ object Json extends Dynamic:
         
         case _           => throw JsonAccessError(JsonPrimitive.Object)
 
-<<<<<<< Updated upstream
-    //transparent inline given derived[T <: Product]: Reader[T] = ${JsonMacro.deriveReader[T]}
-
     def join[T](caseClass: CaseClass[Reader, T]): Reader[T] = new Reader[T]:
       type E = JsonAccessError
       def read(value: => JValue) =
@@ -204,23 +201,6 @@ object Json extends Dynamic:
     def split[T](sealedTrait: SealedTrait[Reader, T]): Reader[T] = new Reader[T]:
       type E = JsonAccessError
       def read(value: => JValue) =
-=======
-    //inline given derived[T <: Product]: Reader[T] = ${JsonMacro.deriveReader[T]}
-
-    def join[T](caseClass: CaseClass[Reader, T]): Reader[T] = new Reader[T]:
-      def read(value: => JValue): T throws JsonAccessError = caseClass.construct:
-        param =>
-          value match
-            case JObject(vs) =>
-              param.typeclass.read:
-                vs.get(param.label).getOrElse(throw JsonAccessError(Text(param.label)))
-            
-            case _ =>
-              throw JsonAccessError(JsonPrimitive.Object)
-
-    def split[T](sealedTrait: SealedTrait[Reader, T]): Reader[T] = new Reader[T]:
-      def read(value: => JValue): T throws JsonAccessError =
->>>>>>> Stashed changes
         val _type = Json(value, Nil)._type.as[Text]
         val subtype = sealedTrait.subtypes.find { t => Text(t.typeInfo.short) == _type }
           .getOrElse(throw JsonAccessError(JsonPrimitive.Object)) // FIXME
