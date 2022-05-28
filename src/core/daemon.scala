@@ -78,13 +78,13 @@ trait Daemon() extends App:
       case _ =>
         val script = Sys.exoskeleton.script()
         val fifo = Sys.exoskeleton.fifo()
-        val Int(pid) = Sys.exoskeleton.pid()
-        val Int(watch) = Sys.exoskeleton.watch()
-        val runnable: Runnable = () => server(script, fifo, pid, watch)
+        val pid = Sys.exoskeleton.pid().toString.toInt
+        val watch = Sys.exoskeleton.watch().toString.toInt
+        val runnable: Runnable = () => server(script, fifo, pid.toString.toInt, watch)
         Thread(runnable, "exoskeleton-dispatcher").start()
 
   def server(script: Text, fifo: Text, serverPid: Int, watchPid: Int): Unit =
-    val socket: DiskPath = Unix.parse(fifo).getOrElse(sys.exit(1))
+    val socket: Unix.DiskPath = Unix.parse(fifo).getOrElse(sys.exit(1))
     
     val death: Runnable = () => try socket.file().delete() catch case e: Exception => ()
     
@@ -153,29 +153,29 @@ trait Daemon() extends App:
     socket.file(Expect).read[LazyList[Line]](256.kb).foldLeft(Map[Int, AppInstance]()):
       case (map, line) =>
         line.text.cut(t"\t").to(List) match
-          case t"PROCESS" :: Int(pid) :: _ =>
-            map.updated(pid, AppInstance(pid, spawnCount.getAndIncrement()))
+          case t"PROCESS" :: pid :: _ =>
+            map.updated(pid.toString.toInt, AppInstance(pid.toString.toInt, spawnCount.getAndIncrement()))
           
-          case t"RUNDIR" :: Int(pid) :: dir :: _ =>
+          case t"RUNDIR" :: pid :: dir :: _ =>
             Unix.parse(dir).fold(map):
-              dir => map.updated(pid, map(pid).copy(runDir = dir.directory(Expect)))
+              dir => map.updated(pid.toString.toInt, map(pid.toString.toInt).copy(runDir = dir.directory(Expect)))
           
-          case t"SCRIPT" :: Int(pid) :: scriptDir :: script :: _ =>
+          case t"SCRIPT" :: pid :: scriptDir :: script :: _ =>
             Unix.parse(t"$scriptDir/$script").map(_.file(Expect)).fold(map):
-              file => map.updated(pid, map(pid).copy(scriptFile = file))
+              file => map.updated(pid.toString.toInt, map(pid.toString.toInt).copy(scriptFile = file))
           
-          case t"ARGS" :: Int(pid) :: Int(count) :: args =>
-            map.updated(pid, map(pid).copy(args = args.take(count)))
+          case t"ARGS" :: pid :: count :: args =>
+            map.updated(pid.toString.toInt, map(pid.toString.toInt).copy(args = args.take(count.toString.toInt)))
           
-          case t"RESIZE" :: Int(pid) :: _ =>
-            map(pid).resize()
+          case t"RESIZE" :: pid :: _ =>
+            map(pid.toString.toInt).resize()
             map
           
-          case t"ENV" :: Int(pid) :: env =>
-            map.updated(pid, map(pid).copy(env = parseEnv(env)))
+          case t"ENV" :: pid :: env =>
+            map.updated(pid.toString.toInt, map(pid.toString.toInt).copy(env = parseEnv(env)))
           
-          case t"START" :: Int(pid) :: _ =>
-            map(pid).spawn()
+          case t"START" :: pid :: _ =>
+            map(pid.toString.toInt).spawn()
             map
           
           case t"SHUTDOWN" :: _ =>
