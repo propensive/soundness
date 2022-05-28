@@ -190,9 +190,8 @@ object Json extends Dynamic:
         caseClass.construct { param =>
           value match
             case JObject(vs) =>
-              val value = vs.get(param.label).getOrElse(throw JsonAccessError(Text(param.label)))
-              import unsafeExceptions.canThrowAny
-              param.typeclass.read(value)
+              param.typeclass.read:
+                vs.get(param.label).getOrElse(throw JsonAccessError(Text(param.label)))
             
             case _ =>
               throw JsonAccessError(JsonPrimitive.Object)
