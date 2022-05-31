@@ -129,11 +129,11 @@ type Maybe[T] = Unset.type | T
 extension [T](opt: Maybe[T])
   def otherwise(value: => T): T = opt match
     case Unset => value
-    case other => other.asInstanceOf[T]
+    case other: T => other
   
   def option: Option[T] = opt match
     case Unset => None
-    case other => Some(other.asInstanceOf[T])
+    case other: T => Some(other)
 
 extension (iarray: IArray.type)
   def init[T: ClassTag](size: Int)(fn: Array[T] => Unit): IArray[T] =
@@ -191,8 +191,8 @@ extension [T](future: Future[T])
     
     Timer.schedule(timerTask, timeout)
 
-    future.map:
-      a => if p.trySuccess(a) then timerTask.cancel()
+    future.map: a =>
+      if p.trySuccess(a) then timerTask.cancel()
     .recover:
       case e: Exception =>
         if p.tryFailure(e) then timerTask.cancel()
