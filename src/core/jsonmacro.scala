@@ -68,46 +68,45 @@ object JsonMacro:
     union(fields).asType match
       case '[errorUnion] => '{
         new Json.MapReader[T]({ (vs: scm.Map[String, JValue]) => ${
-          def recur(fields: List[Symbol]): List[Expr[Any]] =
-            fields match
-              case Nil =>
-                Nil
-              
-              case head :: tail =>
-                val typeRepr = head.tree match
-                  case valDef: ValDef => valDef.tpt.tpe
-                  case defDef: DefDef => defDef.returnTpt.tpe
-                  case _              => throw Impossible(
-                                             "case field is not of the expected AST type")
-        
-                typeRepr.asType match
-                  case '[paramType] =>
-                    Expr.summon[Json.Reader[paramType]].getOrElse:
-                      val typeName = TypeRepr.of[paramType].show
-                      report.errorAndAbort(
-                          s"euphemism: cannot find Reader for case field of type $typeName")
-                    match
-                      case '{ $reader: Json.Reader[`paramType`] } =>
-                        val label = Expr(head.name)
-                        val expr: Expr[`paramType`] =
-                          '{
-                            $reader.read(vs.get($label).getOrElse(
-                                throw JsonAccessError(Text($label))))
-                          }
-                        expr :: recur(tail)
-                      
-                      case _ =>
-                        throw Impossible("Expr.summon should never retrieve a value which doesn't "+
-                                              "match the first case")
-                  
-                  case _ =>
-                    throw Impossible("the pattern '[paramType] should be irrefutable")
+          def recur(fields: List[Symbol]): List[Expr[Any]] = fields match
+            case Nil =>
+              Nil
+            
+            case head :: tail =>
+              val typeRepr = head.tree match
+                case valDef: ValDef => valDef.tpt.tpe
+                case defDef: DefDef => defDef.returnTpt.tpe
+                case _              => throw Impossible(
+                                            "case field is not of the expected AST type")
+      
+              typeRepr.asType match
+                case '[paramType] =>
+                  Expr.summon[Json.Reader[paramType]].getOrElse:
+                    val typeName = TypeRepr.of[paramType].show
+                    report.errorAndAbort(
+                        s"euphemism: cannot find Reader for case field of type $typeName")
+                  match
+                    case '{ $reader: Json.Reader[`paramType`] } =>
+                      val label = Expr(head.name)
+                      val expr: Expr[`paramType`] =
+                        '{
+                          $reader.read(vs.get($label).getOrElse(
+                              throw JsonAccessError(Text($label))))
+                        }
+                      expr :: recur(tail)
+                    
+                    case _ =>
+                      throw Impossible("Expr.summon should never retrieve a value which doesn't "+
+                                            "match the first case")
+                
+                case _ =>
+                  throw Impossible("the pattern '[paramType] should be irrefutable")
             
           val ap = companion.declaredMethod("apply").head
             
           Ref(companion).select(ap).appliedToArgs(recur(fields).map(_.asTerm)).asExprOf[T]
         } }):
-          type E = `errorUnion` & Exception
+          type E = errorUnion & Exception
       }
 
       case _ => throw Impossible("the case '[errorUnion] should be irrefutable")
