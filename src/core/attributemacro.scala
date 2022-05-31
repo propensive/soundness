@@ -92,11 +92,11 @@ object Macro:
     def recur(exprs: Seq[Expr[(Label, Any)]]): List[Expr[(String, Maybe[Text])]] = exprs match
       case '{($key: k & Label, $value: v)} +: tail =>
         val att = key.value.get
-        val exp: Expr[Attribute[k & Label, v, Name]] =
-          Expr.summon[Attribute[k & Label, v, Name]].getOrElse:
+        val exp: Expr[HtmlAttribute[k & Label, v, Name]] =
+          Expr.summon[HtmlAttribute[k & Label, v, Name]].getOrElse:
             val typeName = TypeRepr.of[v].show
             report.errorAndAbort:
-              """honeycomb: the attribute $att cannot take a value of type $typeName"""
+              t"""honeycomb: the attribute $att cannot take a value of type $typeName""".s
         
         '{($exp.rename.getOrElse(Text($key)).s, $exp.convert($value))} :: recur(tail)
       
