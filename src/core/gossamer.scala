@@ -96,7 +96,7 @@ extension (text: Text)
 
   def flatMap(fn: Char => Text): Text =
     Text(String(text.s.toCharArray.nn.unsafeImmutable.flatMap(fn(_).s.toCharArray.nn
-        .unsafeImmutable).asInstanceOf[Array[Char]]))
+        .unsafeImmutable).unsafeMutable))
 
   def dropWhile(pred: Char => Boolean): Text =
     try Text(text.s.substring(0, where(!pred(_))).nn) catch case err: OutOfRangeError => Text("")
