@@ -116,8 +116,7 @@ object Media:
       case (h: Text) :: _ => (parseSubtype(h), parseSuffixes(xs.tail))
 
     def parseBasic(str: Text): (Group, Subtype, List[Suffix]) = str.cut(t"/").to(List) match
-      case List(group, subtype) =>
-        parseGroup(group.asInstanceOf[Text]) *: parseInit(subtype.asInstanceOf[Text])
+      case List(group, subtype) => parseGroup(group) *: parseInit(subtype)
       
       case _ =>
         throw InvalidMediaTypeError(string, InvalidMediaTypeError.Nature.NotOneSlash)
@@ -138,7 +137,7 @@ object Media:
         else if str.startsWith(t"x.") || str.startsWith(t"x-") then Subtype.X(str.drop(2))
         else Subtype.Standard(str)
         
-    val xs: List[Text] = string.cut(t";").map(_.trim.asInstanceOf[Text])
+    val xs: List[Text] = string.cut(t";").map(_.trim)
     
     xs match
       case Nil    => throw Impossible("cannot return empty list from `cut`")
