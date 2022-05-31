@@ -31,11 +31,9 @@ object Element:
                 children: Seq[Html[C] | Seq[Html[C]]] = Nil): Element[T] =
     new Element(labelString, unclosed, inline, verbatim, attributes, flatten(children))
 
-  private def flatten[C <: Label](nodes: Seq[Html[C] | Seq[Html[C]]]): Seq[Html[C]] =
-    nodes.flatMap:
-      case seq: Seq[?] => seq
-      case node        => Seq(node)
-    .asInstanceOf[Seq[Html[C]]]
+  private def flatten[C <: Label](nodes: Seq[Html[C] | Seq[Html[C]]]): Seq[Html[C]] = nodes.flatMap:
+    case seq: Seq[Html[C]] => seq
+    case node: Html[C]     => Seq(node)
 
 object Html extends Node["html"]:
   def label: Text = t"html"
