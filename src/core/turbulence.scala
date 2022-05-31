@@ -40,11 +40,10 @@ type DataStream = LazyList[IArray[Byte] throws StreamCutError]
 
 extension (value: DataStream)
   def slurp(limit: ByteSize): Bytes throws ExcessDataError | StreamCutError =
-    value.foldLeft(IArray[Byte]()):
-      (acc, next) =>
-        if acc.length + next.length > limit.long
-        then throw ExcessDataError((acc.length + next.length).b, limit)
-        else acc ++ next
+    value.foldLeft(IArray[Byte]()): (acc, next) =>
+      if acc.length + next.length > limit.long
+      then throw ExcessDataError((acc.length + next.length).b, limit)
+      else acc ++ next
 
 case class ExcessDataError(size: ByteSize, limit: ByteSize)
 extends Error((Text("the amount of data in the stream (at least "), size,
@@ -62,8 +61,8 @@ object Util:
         try
           val avail = in.available
           
-          val buf = new Array[Byte]((if avail == 0 then limit.long.toInt else avail min
-              limit.long.toInt))
+          val buf = new Array[Byte](if avail == 0 then limit.long.toInt else avail min
+              limit.long.toInt)
           
           val count = in.read(buf, 0, buf.length)
           if count < 0 then LazyList()
@@ -166,8 +165,7 @@ trait Readable[T]:
     def map[S](fn: T => S): turbulence.Readable[S] { type E = readable.E } =
       new turbulence.Readable[S]:
         type E = readable.E
-        def read(stream: DataStream): S throws E | StreamCutError =
-          fn(readable.read(stream))
+        def read(stream: DataStream): S throws E | StreamCutError = fn(readable.read(stream))
 
 object SystemIn
 object SystemOut
@@ -220,11 +218,10 @@ case class Multiplexer[K, T]():
       queue.put(stream.head)
       pump(key, stream.tail)
 
-  def add(key: K, stream: LazyList[T]): Unit =
-    synchronized:
-      val task: Task[Unit] = Task(pump(key, stream))
-      task()
-      tasks(key) = task
+  def add(key: K, stream: LazyList[T]): Unit = synchronized:
+    val task: Task[Unit] = Task(pump(key, stream))
+    task()
+    tasks(key) = task
  
   private def remove(key: K): Unit = synchronized:
     tasks -= key
@@ -233,9 +230,8 @@ case class Multiplexer[K, T]():
   def stream: LazyList[T] =
     def recur(): LazyList[T] =
       queue.take() match
-        case Unset   => LazyList()
-        case null    => LazyList()
-        case item: T => item.nn #:: recur()
+        case null | Unset => LazyList()
+        case item: T      => item.nn #:: recur()
     
     LazyList() #::: recur()
 
@@ -283,7 +279,7 @@ extension [T](stream: LazyList[T])
           if hasMore.timeout(deadline).await() then Some(true) else None
         catch case err: TimeoutError => Some(false)
 
-        // The try/catch above fools tail-call identification
+        // The try/catch above seems to fool tail-call identification
         if recurse.isEmpty then LazyList(list)
         else if recurse.get then recur(stream.tail, stream.head :: list, expiry)
         else list.reverse #:: defer(stream, Nil, Long.MaxValue)
@@ -297,7 +293,6 @@ object StreamBuffer:
     def write(buffer: StreamBuffer[Bytes throws StreamCutError], stream: DataStream) =
       stream.foreach(buffer.put(_))
   
-
 class StreamBuffer[T]():
   private val primary: juc.LinkedBlockingQueue[Maybe[T]] = juc.LinkedBlockingQueue()
   private val secondary: juc.LinkedBlockingQueue[Maybe[T]] = juc.LinkedBlockingQueue()
@@ -346,7 +341,6 @@ object Tap:
 class Tap(initial: Boolean = true):
   private var on: Boolean = initial
   private val funnel: Funnel[Tap.Regulation] = Funnel()
-  def stream: LazyList[Tap.Regulation] = funnel.stream
   
   def pause(): Unit = synchronized:
     if on then
@@ -359,5 +353,5 @@ class Tap(initial: Boolean = true):
       funnel.put(Tap.Regulation.Start)
   
   def stop(): Unit = synchronized(funnel.stop())
-    
   def state(): Boolean = on
+  def stream: LazyList[Tap.Regulation] = funnel.stream
