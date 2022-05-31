@@ -59,6 +59,8 @@ case class Dag[T] private(edgeMap: Map[T, Set[T]] = Map()):
   infix def ++(dag: Dag[T]): Dag[T] =
     val joined = edgeMap.to(List) ++ dag.edgeMap.to(List)
     Dag(joined.groupBy(_._1).view.mapValues(_.flatMap(_._2).to(Set)).to(Map))
+  
+  def add(key: T, value: T): Dag[T] = this ++ Dag(key -> value)
 
   def flatMap[S](fn: T => Dag[S]): Dag[S] = Dag:
     edgeMap.flatMap:
