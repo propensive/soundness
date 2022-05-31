@@ -40,10 +40,7 @@ trait Browser(name: Text):
 
   def session[T](port: Int = 4444)(fn: WebDriver#Session ?=> T)(using Env, Log): T =
     val server = launch(port)
-    try
-      val driver = WebDriver(server)
-      fn(using driver.startSession())
-    finally server.stop()
+    try fn(using WebDriver(server).startSession()) finally server.stop()
 
 object Firefox extends Browser(t"firefox"):
   def launch(port: Int)(using Env, Log): Server =
@@ -97,7 +94,6 @@ case class WebDriver(server: Browser#Server):
           .post(content).as[Json]
       
       def click()(using Log): Unit = post(t"click", Json.parse(t"{}"))
-
       def clear()(using Log): Unit = post(t"clear", Json.parse(t"{}")) 
 
       def value(text: Text)(using Log): Unit =
@@ -135,7 +131,6 @@ case class WebDriver(server: Browser#Server):
     def forward()(using Log): Unit = post(t"forward", Json.parse(t"{}")).as[Json]
     def back()(using Log): Unit = post(t"forward", Json.parse(t"{}")).as[Json]
     def title()(using Log): Text = get(t"title").as[Json].value.as[Text]
-
     def url()(using Log): Text = get(t"url").url.as[Text]
 
     @targetName("at")
@@ -150,6 +145,7 @@ case class WebDriver(server: Browser#Server):
     def element[T](value: T)(using el: ElementLocator[T], log: Log): Element =
       case class Data(`using`: Text, value: Text)
       val e = post(t"element", Data(el.strategy, el.value(value)).json)
+      
       Element(e.value.selectDynamic(Wei.s).as[Text])
     
     def activeElement()(using Log): Element =
