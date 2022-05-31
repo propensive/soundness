@@ -162,6 +162,8 @@ trait DiskPath:
   def length: Int
   def prefix: Text
   def filesystem: Filesystem
+  
+  @targetName("add")
   def +(relative: Relative): DiskPath throws RootParentError
   
   def ancestorOf(child: DiskPath): Boolean =
@@ -308,6 +310,7 @@ class Filesystem(pathSeparator: Text, fsPrefix: Text) extends Root(pathSeparator
     def fullname: Text = elements.join(fsPrefix, separator, t"")
     def length: Int = elements.length
 
+    @targetName("add")
     def +(relative: Relative): DiskPath throws RootParentError =
       if relative.ascent == 0 then DiskPath(elements ++ relative.parts)
       else parent + relative.copy(ascent = relative.ascent - 1)
@@ -523,7 +526,7 @@ class Filesystem(pathSeparator: Text, fsPrefix: Text) extends Root(pathSeparator
 
     @tailrec
     private def pump(): Unit =
-      svc.take() match
+      svc.take().nn match
         case k: WatchKey =>
           val key = k.nn
           key.pollEvents().nn.iterator.nn.asScala.flatMap(process(key, _)).foreach(funnel.put(_))
@@ -534,10 +537,13 @@ class Filesystem(pathSeparator: Text, fsPrefix: Text) extends Root(pathSeparator
     private def process(key: WatchKey, event: WatchEvent[?]): List[FileEvent] =
       val keyDir = watches(key)
       
-      val diskPath = event.context match
+      val diskPath = event.context.nn match
         case path: jnf.Path =>
           unsafely(keyDir.path + Relative.parse(Showable(path).show)) match
             case path: fs.DiskPath => path
+        
+        case _ =>
+          throw Impossible("the event context should always be a path")
       
       try event.kind match
         case ENTRY_CREATE =>
@@ -550,6 +556,9 @@ class Filesystem(pathSeparator: Text, fsPrefix: Text) extends Root(pathSeparator
         
         case ENTRY_DELETE =>
           List(FileEvent.Delete(keyDir, diskPath))
+        
+        case _ =>
+          Nil
       
       catch case err: Exception => List()
 
@@ -748,6 +757,7 @@ object Filesystem:
         unsafely:
           drive.charAt(0).toUpper match
             case ch: Majuscule => WindowsRoot(ch)
+            case _             => throw Impossible("Filesystem must always start with a letter")
     .to(Set)
  
   def defaultSeparator: "/" | "\\" = if ji.File.separator == "\\" then "\\" else "/"
