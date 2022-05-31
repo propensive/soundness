@@ -42,13 +42,13 @@ object Handler:
     SimpleHandler(t"text/plain", v => HttpBody.Chunked(LazyList(summon[Show[T]].show(v).bytes)))
 
   given iarrayByteHandler[T](using hr: clairvoyant.HttpResponse[T]): SimpleHandler[T] =
-    SimpleHandler(Text(hr.mediaType), value => HttpBody.Chunked(hr.content(value).map { v => v }))
+    SimpleHandler(Text(hr.mediaType), value => HttpBody.Chunked(hr.content(value).map(identity)))
 
   given Handler[Redirect] with
     def process(content: Redirect, status: Int, headers: Map[Text, Text],
                     responder: Responder): Unit =
       responder.addHeader(ResponseHeader.Location.header, content.location.show)
-      for (k, v) <- headers do responder.addHeader(k, v)
+      headers.foreach(responder.addHeader)
       responder.sendBody(301, HttpBody.Empty)
 
   given [T: SimpleHandler]: Handler[NotFound[T]] with
@@ -56,7 +56,7 @@ object Handler:
                     responder: Responder): Unit =
       val handler = summon[SimpleHandler[T]]
       responder.addHeader(ResponseHeader.ContentType.header, handler.mime)
-      for (k, v) <- headers do responder.addHeader(k, v)
+      headers.foreach(responder.addHeader)
       responder.sendBody(404, handler.stream(notFound.content))
 
   given [T: SimpleHandler]: Handler[ServerError[T]] with
@@ -64,7 +64,7 @@ object Handler:
                     responder: Responder): Unit =
       val handler = summon[SimpleHandler[T]]
       responder.addHeader(ResponseHeader.ContentType.header, handler.mime)
-      for (k, v) <- headers do responder.addHeader(k, v)
+      headers.foreach(responder.addHeader)
       responder.sendBody(500, handler.stream(notFound.content))
 
 object Redirect:
@@ -83,7 +83,7 @@ object SimpleHandler:
 trait SimpleHandler[T](val mime: Text, val stream: T => HttpBody) extends Handler[T]:
   def process(content: T, status: Int, headers: Map[Text, Text], responder: Responder): Unit =
     responder.addHeader(ResponseHeader.ContentType.header, mime)
-    for (k, v) <- headers do responder.addHeader(k, v)
+    headers.foreach(responder.addHeader)
     responder.sendBody(status, stream(content))
 
 case class NotFound[T: SimpleHandler](content: T)
@@ -101,19 +101,18 @@ case class Response[T: Handler](content: T, status: HttpStatus = HttpStatus.Ok,
   private val df: jt.SimpleDateFormat = jt.SimpleDateFormat("dd MMM yyyy HH:mm:ss")
 
   def respond(responder: Responder): Unit =
-    val cookieHeaders: List[(ResponseHeader, Text)] = cookies.map:
-      cookie =>
-        ResponseHeader.SetCookie -> List[(Text, Boolean | Option[Text])](
-          cookie.name -> Some(cookie.value),
-          t"Expires"  -> cookie.expiry.option.map { t => t"${df.format(t).nn} GMT" },
-          t"Domain"   -> cookie.domain.option,
-          t"Path"     -> cookie.path.option,
-          t"Secure"   -> cookie.ssl,
-          t"HttpOnly" -> false
-        ).collect:
-          case (k, true)    => k
-          case (k, Some(v)) => t"$k=$v"
-        .join(t"; ")
+    val cookieHeaders: List[(ResponseHeader, Text)] = cookies.map: cookie =>
+      ResponseHeader.SetCookie -> List[(Text, Boolean | Option[Text])](
+        cookie.name -> Some(cookie.value),
+        t"Expires"  -> cookie.expiry.option.map { t => t"${df.format(t).nn} GMT" },
+        t"Domain"   -> cookie.domain.option,
+        t"Path"     -> cookie.path.option,
+        t"Secure"   -> cookie.ssl,
+        t"HttpOnly" -> false
+      ).collect:
+        case (k, true)    => k
+        case (k, Some(v)) => t"$k=$v"
+      .join(t"; ")
     
     summon[Handler[T]].process(content, status.code, (headers ++ cookieHeaders).map { (k, v) =>
         k.header -> v }, responder)
@@ -121,18 +120,17 @@ case class Response[T: Handler](content: T, status: HttpStatus = HttpStatus.Ok,
 object Request:
   given Show[Request] = request =>
     val bodySample: Text =
-      try request.body.stream.slurp(limit = 256.b).uString
-      catch
+      try request.body.stream.slurp(limit = 256.b).uString catch
         case err: ExcessDataError => t"[...]"
         case err: StreamCutError  => t"[-/-]"
     
     val headers: Text =
-      request.rawHeaders.map:
-        (k, vs) => t"$k: ${vs.join(t"; ")}"
+      request.rawHeaders.map: (k, vs) =>
+        t"$k: ${vs.join(t"; ")}"
       .join(t"\n          ")
     
-    val params: Text = request.params.map:
-      (k, v) => t"$k=\"$v\""
+    val params: Text = request.params.map: (k, v) =>
+      t"$k=\"$v\""
     .join(t"\n          ")
 
     ListMap[Text, Text](
@@ -146,9 +144,7 @@ object Request:
       t"body"     -> bodySample,
       t"headers"  -> headers,
       t"params"   -> params
-    ).map:
-      (k, v) => t"$k = $v"
-    .join(t", ")
+    ).map { (k, v) => t"$k = $v" }.join(t", ")
 
 case class Request(method: HttpMethod, body: HttpBody.Chunked, query: Text, ssl: Boolean,
                        hostname: Text, port: Int, path: Text,
@@ -158,8 +154,8 @@ case class Request(method: HttpMethod, body: HttpBody.Chunked, query: Text, ssl:
   // FIXME: The exception in here needs to be handled elsewhere
   val params: Map[Text, Text] =
     try
-      queryParams.map:
-        (k, vs) => k.urlDecode -> vs.headOption.getOrElse(t"").urlDecode
+      queryParams.map: (k, vs) =>
+        k.urlDecode -> vs.headOption.getOrElse(t"").urlDecode
       .to(Map) ++ {
         if (method == HttpMethod.Post || method == HttpMethod.Put) &&
             (contentType == Some(media"application/x-www-form-urlencoded") || contentType == None)
@@ -176,15 +172,13 @@ case class Request(method: HttpMethod, body: HttpBody.Chunked, query: Text, ssl:
       case e: StreamCutError  => Map()
 
   
-  lazy val headers: Map[RequestHeader, List[Text]] =
-    rawHeaders.map:
-      case (RequestHeader(header), values) => header -> values
+  lazy val headers: Map[RequestHeader, List[Text]] = rawHeaders.map:
+    case (RequestHeader(header), values) => header -> values
 
-  lazy val length: Int throws StreamCutError =
-    headers.get(RequestHeader.ContentLength)
-      .map(_.head)
-      .flatMap(Int.unapply(_))
-      .getOrElse(body.stream.map(_.length).sum)
+  lazy val length: Int throws StreamCutError = headers.get(RequestHeader.ContentLength)
+    .map(_.head)
+    .flatMap(Int.unapply(_))
+    .getOrElse(body.stream.map(_.length).sum)
   
   lazy val contentType: Option[MediaType] =
     headers.get(RequestHeader.ContentType).flatMap(_.headOption).flatMap(MediaType.unapply(_))
@@ -259,6 +253,7 @@ case class HttpServer(port: Int) extends RequestHandler:
     
     new HttpService:
       private var continue: Boolean = true
+      
       def stop(): Unit =
         Runtime.getRuntime.nn.removeShutdownHook(shutdownThread)
         httpServer.stop(1)
@@ -280,24 +275,24 @@ case class HttpServer(port: Int) extends RequestHandler:
     val uri = exchange.getRequestURI.nn
     val query = Option(uri.getQuery)
     
-    val queryParams: Map[Text, List[Text]] = query.fold(Map()):
-      query =>
-        val paramStrings = query.nn.show.cut(t"&")
-        
-        paramStrings.foldLeft(Map[Text, List[Text]]()):
-          (map, elem) =>
-            val kv = elem.cut(t"=", 2)
-            map.updated(kv(0), kv(1) :: map.getOrElse(kv(0), Nil))
+    val queryParams: Map[Text, List[Text]] = query.fold(Map()): query =>
+      val paramStrings = query.nn.show.cut(t"&")
+      
+      paramStrings.foldLeft(Map[Text, List[Text]]()):
+        (map, elem) =>
+          val kv = elem.cut(t"=", 2)
+          map.updated(kv(0), kv(1) :: map.getOrElse(kv(0), Nil))
     
-    val headers = exchange.getRequestHeaders.nn.asScala.view.mapValues(_.nn.asScala.to(List)).to(Map)
+    val headers =
+      exchange.getRequestHeaders.nn.asScala.view.mapValues(_.nn.asScala.to(List)).to(Map)
 
     val request = Request(
       method = HttpMethod.valueOf(exchange.getRequestMethod.nn.show.lower.capitalize.s),
       body = streamBody(exchange),
       query = Text(query.getOrElse("").nn),
       ssl = false,
-      Text(Option(uri.getHost).getOrElse(exchange.getLocalAddress.nn.getAddress.nn.getCanonicalHostName
-          ).nn),
+      Text(Option(uri.getHost).getOrElse(exchange.getLocalAddress.nn.getAddress.nn
+          .getCanonicalHostName).nn),
       Option(uri.getPort).filter(_ > 0).getOrElse(exchange.getLocalAddress.nn.getPort),
       Text(uri.getPath.nn),
       headers.map { (k, v) => Text(k) -> v.map(Text(_)) },

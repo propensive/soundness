@@ -45,8 +45,8 @@ enum HttpBody:
 
 object QuerySerializer extends ProductDerivation[QuerySerializer]:
   def join[T](ctx: CaseClass[QuerySerializer, T]): QuerySerializer[T] = value =>
-    ctx.params.map:
-      param => param.typeclass.params(param.deref(value)).prefix(Text(param.label))
+    ctx.params.map: param =>
+      param.typeclass.params(param.deref(value)).prefix(Text(param.label))
     .reduce(_.append(_))
 
   given QuerySerializer[Text] = str => Params(List((t"", str)))
@@ -74,22 +74,24 @@ object Postable extends FallbackPostable:
   
 class Postable[T](val contentType: MediaType,
                       val content: T => LazyList[Bytes throws StreamCutError]):
-  def preview(value: T): Text = content(value).headOption.fold(t""):
-    bytes =>
-      try
-        val sample = bytes.take(256)
+  def preview(value: T): Text = content(value).headOption.fold(t""): bytes =>
+    try
+      val sample = bytes.take(256)
+    
+      val str: Text =
+        if sample.forall { b => b >= 32 && b <= 127 } then sample.uString else sample.hex
       
-        val str: Text =
-          if sample.forall { b => b >= 32 && b <= 127 } then sample.uString else sample.hex
-        
-        if bytes.length > 128 then t"$str..." else str
-      catch
-        case err: StreamCutError => t"[broken stream]"
+      if bytes.length > 128 then t"$str..." else str
+    
+    catch
+      case err: StreamCutError => t"[broken stream]"
 
 object HttpMethod:
   given formmethod: clairvoyant.HtmlAttribute["formmethod", HttpMethod] with
     def name: String = "formmethod"
-    def serialize(method: HttpMethod): String = summon[AnsiShow[HttpMethod]].ansiShow(method).plain.s
+    
+    def serialize(method: HttpMethod): String =
+      summon[AnsiShow[HttpMethod]].ansiShow(method).plain.s
 
   given AnsiShow[HttpMethod] = method => ansi"${colors.Crimson}[${Showable(method).show.upper}]"
 
@@ -201,8 +203,7 @@ object Http:
                           headers: Seq[RequestHeader.Value])(using Log)
                      : HttpResponse throws StreamCutError =
     Log.info(ansi"Sending HTTP $method request to $url")
-    headers.foreach:
-      header => Log.fine(header)
+    headers.foreach(Log.fine(_))
     Log.fine(ansi"HTTP request body: ${summon[Postable[T]].preview(content)}")
     
     URL(url.show.s).openConnection.nn match
@@ -220,7 +221,6 @@ object Http:
         if method == HttpMethod.Post || method == HttpMethod.Put then
           conn.setDoOutput(true)
           val out = conn.getOutputStream().nn
-
           summon[Postable[T]].content(content).map(_.to(Array)).foreach(out.write(_))
           out.close()
 
@@ -257,13 +257,14 @@ object Http:
 case class HttpError(status: HttpStatus & FailureCase, body: HttpBody)
 extends Error((t"HTTP error ", status)):
   def message: Text = t"HTTP Error ${status.code}: ${status.description}"
-  inline def as[T](using readable: HttpReadable[T]): T throws ExcessDataError | StreamCutError | readable.E =
+  inline def as[T](using readable: HttpReadable[T])
+                  : T throws ExcessDataError | StreamCutError | readable.E =
     readable.read(status, body)
 
 trait FailureCase
 
 object HttpStatus:
-  private lazy val all: Map[Int, HttpStatus] = values.unsafeImmutable.map { v => v.code -> v }.to(Map)
+  private lazy val all: Map[Int, HttpStatus] = values.unsafeImmutable.mtwin.map(_.code -> _).to(Map)
   def unapply(code: Int): Option[HttpStatus] = all.get(code)
 
   given Show[HttpStatus] = status => t"${status.code} (${status.description})"
@@ -338,11 +339,11 @@ case class Params(values: List[(Text, Text)]):
   def isEmpty: Boolean = values.isEmpty
   
   def prefix(str: Text): Params = Params:
-    values.map:
-      (k, v) => (if k.length == 0 then str else t"$str.$k", v)
+    values.map: (k, v) =>
+      if k.length == 0 then str -> v else t"$str.$k" -> v
 
-  def queryString: Text = values.map:
-    (k, v) => if k.length == 0 then v.urlEncode else t"${k.urlEncode}=${v.urlEncode}"
+  def queryString: Text = values.map: (k, v) =>
+    if k.length == 0 then v.urlEncode else t"${k.urlEncode}=${v.urlEncode}"
   .join(t"&")
 
 object Uri:
@@ -388,8 +389,7 @@ object Uri:
     def serialize(uri: Uri): String = uri.show.s
 
   given (using Log): Streamable[Uri] = uri => LazyList:
-    try uri.get().as[Bytes]
-    catch
+    try uri.get().as[Bytes] catch
       case err: ExcessDataError => throw StreamCutError()
       case err: HttpError => throw StreamCutError()
 

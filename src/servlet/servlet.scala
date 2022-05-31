@@ -66,19 +66,17 @@ trait Servlet() extends HttpServlet:
   private def makeRequest(request: HttpServletRequest): Request =
     val query = Option(request.getQueryString)
     
-    val params: Map[Text, List[Text]] = query.fold(Map()) { query =>
+    val params: Map[Text, List[Text]] = query.fold(Map()): query =>
       val paramStrings = query.nn.show.cut(t"&")
       
-      paramStrings.foldLeft(Map[Text, List[Text]]()) { (map, elem) =>
+      paramStrings.foldLeft(Map[Text, List[Text]]()): (map, elem) =>
         elem.cut(t"=", 2).to(Seq) match
           case Seq(key: Text, value: Text) => map.updated(key, value :: map.getOrElse(key, Nil))
           case Seq(key: Text)             => map.updated(key, t"" :: map.getOrElse(key, Nil))
           case _                         => map
-      }
-    }
     
-    val headers = request.getHeaderNames.nn.asScala.to(List).map:
-      k => Text(k) -> request.getHeaders(k).nn.asScala.to(List).map(Text(_))
+    val headers = request.getHeaderNames.nn.asScala.to(List).map: k =>
+      Text(k) -> request.getHeaders(k).nn.asScala.to(List).map(Text(_))
     .to(Map)
 
     Request(

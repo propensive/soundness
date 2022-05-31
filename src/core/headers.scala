@@ -29,8 +29,7 @@ object RequestHeader:
       ProxyAuthorization, Range, Referer, Te, Trailer, TransferEncoding, UserAgent, Upgrade, Via,
       Warning).mtwin.map(_.header -> _).to(Map)
 
-  def unapply(str: Text): Some[RequestHeader] =
-    Some(standard.get(str.lower).getOrElse(Custom(str)))
+  def unapply(str: Text): Some[RequestHeader] = Some(standard.get(str.lower).getOrElse(Custom(str)))
   
   object Value:
     given Show[Value] = value => t"${value.header}: ${value.value}"
