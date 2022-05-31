@@ -115,7 +115,7 @@ object HtmlDoc:
   
   def simple[Stylesheet](title: Text, stylesheet: Stylesheet = false)
                         (content: (Html[Flow] | Seq[Html[Flow]])*)
-                        (using att: Attribute["href", Stylesheet, ?]): HtmlDoc =
+                        (using att: HtmlAttribute["href", Stylesheet, ?]): HtmlDoc =
     val link = att.convert(stylesheet) match
       case Unset      => Nil
       case text: Text => Seq(Link(rel = t"stylesheet", href = text))
