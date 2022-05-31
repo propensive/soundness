@@ -63,7 +63,7 @@ object ScalaSyntax:
     
     def markup(text: Text): LazyList[Token] = text match
       case r"$before@(.*)\/\*!$inside@([^*]*)\*\/$after@(.*)" =>
-        LazyList(Token.Unparsed(Text(before)), Token.Markup(Text(inside))) #::: markup(Text(after))
+        LazyList(Token.Unparsed(before.show), Token.Markup(inside.show)) #::: markup(after.show)
       
       case unparsed =>
         LazyList(Token.Unparsed(unparsed.sub(t"\t", t"  ")), Token.Newline)
