@@ -78,10 +78,12 @@ extension [T](value: T)
   def unsafeMatchable: T & Matchable = value.asInstanceOf[T & Matchable]
 
 extension [T](value: IArray[T])
-  def unsafeMutable: Array[T] = value.asInstanceOf[Array[T]]
+  def unsafeMutable: Array[T] = value match
+    case array: Array[T] => array
 
 extension [T](value: Array[T])
-  def unsafeImmutable: IArray[T] = value.asInstanceOf[IArray[T]]
+  def unsafeImmutable: IArray[T] = value match
+    case array: IArray[T] => array
   
   def snapshot(using ClassTag[T]): IArray[T] =
     val newArray = new Array[T](value.length)
