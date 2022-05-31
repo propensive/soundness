@@ -81,7 +81,7 @@ case class MdHashFunction[A <: HashScheme[?]](name: Text, hmacName: Text) extend
 case object Crc32HashFunction extends HashFunction[Crc32]:
   def init: DigestAccumulator = new DigestAccumulator:
     private val state: juz.CRC32 = juz.CRC32()
-    def append(bytes: Bytes): Unit = state.update(bytes.asInstanceOf[Array[Byte]])
+    def append(bytes: Bytes): Unit = state.update(bytes.unsafeMutable)
     
     def digest(): Bytes =
       val int = state.getValue()
