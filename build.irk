@@ -3,10 +3,15 @@
     {
       "base": "../gossamer",
       "url": "https://github.com/propensive/gossamer"
+    },
+    {
+      "base": "../clairvoyant",
+      "url": "https://github.com/propensive/clairvoyant"
     }
   ],
   "imports": [
-    "../gossamer/build.irk"
+    "../gossamer/build.irk",
+    "../clairvoyant/build.irk"
   ],
   "publishing": {
     "username": "propensive",
@@ -31,7 +36,8 @@
       "name": "Slalom",
       "id": "slalom/core",
       "links": [
-        "gossamer/core"
+        "gossamer/core",
+        "clairvoyant/html"
       ],
       "sources": [
         "src/core"

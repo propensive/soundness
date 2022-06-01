@@ -26,8 +26,19 @@ extends Error((t"attempted to access parent of root ", root)):
   def message: Text = txt"""an attempt was made to access the parent of a filesystem root, which (by
                           definition) has no parent"""
 
+case class InvalidPathError(path: Text) extends Error((t"the path ", path, " was not absolute")):
+  def message: Text =
+    txt"the path $path was not absolute, since it did not begin with the / character"
+
+object ^ extends Base.Path.Absolute(Nil)
+object ~ extends Relative(0, Nil)
+
 object Relative:
   given Show[Relative] = relative => relative.parts.join(t"../"*relative.ascent, t"/", t"")
+  
+  given clairvoyant.HtmlAttribute["href", Relative] with
+    def name = "href"
+    def serialize(value: Relative): String = value.show.s
 
   def parse(text: Text): Relative =
     def recur(text: Text, ascent: Int): Relative =
@@ -99,7 +110,6 @@ trait Root(val separator: Text, val prefix: Text):
         val common = conjunction(base)
         Relative(base.parts.length - common.parts.length, parts.drop(common.parts.length))
 
-
       @targetName("access")
       infix def /(filename: Text): AbsolutePath throws RootParentError = filename match
         case t".." => if parts.isEmpty then throw RootParentError(root) else makeAbsolute(parts.init)
@@ -120,6 +130,16 @@ trait Root(val separator: Text, val prefix: Text):
       def rename(change: Text => Text): AbsolutePath = makeAbsolute(parts.init :+ change(parts.last))
 
 object Base extends Root(t"/", t"/"):
+  
+  def parse(text: Text): Path.Absolute throws InvalidPathError =
+    if text.startsWith(t"/") then Path.Absolute(text.dropWhile(_ == '/').cut(t"/"))
+    else throw InvalidPathError(text)
+
+  given clairvoyant.HtmlAttribute["href", Path.Absolute] with
+    def name = "href"
+    def serialize(value: Path.Absolute): String = value.show.s
+
+  given Show[Path.Absolute] = abs => abs.parts.join(t"/", t"/", t"")
   type AbsolutePath = Path.Absolute
   
   protected def makeAbsolute(parts: List[Text]): AbsolutePath = Path.Absolute(parts)
