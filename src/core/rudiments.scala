@@ -47,17 +47,13 @@ export scala.jdk.CollectionConverters.*
 export scala.annotation.{tailrec, implicitNotFound, targetName, switch, StaticAnnotation}
 
 type Bytes = IArray[Byte]
-
 opaque type Text = String
 
 object Text:
   def apply(string: String): Text = string
-  
-  extension (string: Text)
-    def s: String = string
+  extension (string: Text) def s: String = string
 
   given CommandLineParser.FromString[Text] = identity(_)
-
   given Ordering[Text] = Ordering.String.on[Text](_.s)
   
   given typeTest: Typeable[Text] with
