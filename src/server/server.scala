@@ -276,12 +276,9 @@ case class HttpServer(port: Int) extends RequestHandler:
     val query = Option(uri.getQuery)
     
     val queryParams: Map[Text, List[Text]] = query.fold(Map()): query =>
-      val paramStrings = query.nn.show.cut(t"&")
-      
-      paramStrings.foldLeft(Map[Text, List[Text]]()):
-        (map, elem) =>
-          val kv = elem.cut(t"=", 2)
-          map.updated(kv(0), kv(1) :: map.getOrElse(kv(0), Nil))
+      query.nn.show.cut(t"&").foldLeft(Map[Text, List[Text]]()): (map, elem) =>
+        val kv = elem.cut(t"=", 2)
+        map.updated(kv(0), kv(1) :: map.getOrElse(kv(0), Nil))
     
     val headers =
       exchange.getRequestHeaders.nn.asScala.view.mapValues(_.nn.asScala.to(List)).to(Map)
