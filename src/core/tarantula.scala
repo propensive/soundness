@@ -127,9 +127,9 @@ case class WebDriver(server: Browser#Server):
       println(summon[UriConverter[U]](url).show)
       post(t"url", Data(summon[UriConverter[U]](url).show).json)
     
-    def refresh()(using Log): Unit = post(t"title", Json.parse(t"{}")).as[Json]
+    def refresh()(using Log): Unit = post(t"refresh", Json.parse(t"{}")).as[Json]
     def forward()(using Log): Unit = post(t"forward", Json.parse(t"{}")).as[Json]
-    def back()(using Log): Unit = post(t"forward", Json.parse(t"{}")).as[Json]
+    def back()(using Log): Unit = post(t"back", Json.parse(t"{}")).as[Json]
     def title()(using Log): Text = get(t"title").as[Json].value.as[Text]
     def url()(using Log): Text = get(t"url").url.as[Text]
 
