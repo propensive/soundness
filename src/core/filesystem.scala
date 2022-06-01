@@ -542,8 +542,7 @@ class Filesystem(pathSeparator: Text, fsPrefix: Text) extends Root(pathSeparator
           unsafely(keyDir.path + Relative.parse(Showable(path).show)) match
             case path: fs.DiskPath => path
         
-        case _ =>
-          throw Impossible("the event context should always be a path")
+        case _ => throw Impossible("the event context should always be a path")
       
       try event.kind match
         case ENTRY_CREATE =>
