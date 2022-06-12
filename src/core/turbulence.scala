@@ -40,10 +40,11 @@ type DataStream = LazyList[IArray[Byte] throws StreamCutError]
 
 extension (value: DataStream)
   def slurp(limit: ByteSize): Bytes throws ExcessDataError | StreamCutError =
-    value.foldLeft(IArray[Byte]()): (acc, next) =>
-      if acc.length + next.length > limit.long
-      then throw ExcessDataError((acc.length + next.length).b, limit)
-      else acc ++ next
+    value.foldLeft(IArray[Byte]()):
+      (acc, next) =>
+        if acc.length + next.length > limit.long
+        then throw ExcessDataError((acc.length + next.length).b, limit)
+        else acc ++ next
 
 case class ExcessDataError(size: ByteSize, limit: ByteSize)
 extends Error((Text("the amount of data in the stream (at least "), size,
@@ -240,6 +241,17 @@ extension [T](stream: LazyList[T])
     blocking:
       stream.isEmpty
       stream
+
+  def rate(using time: Timekeeper)(interval: time.Type): LazyList[T] =
+    def recur(stream: LazyList[T], last: Long): LazyList[T] = stream match
+      case LazyList() =>
+        LazyList()
+      case head #:: tail =>
+        val delay = time.to(interval) - (System.currentTimeMillis - last)
+        if delay > 0 then Thread.sleep(delay)
+        stream
+
+    recur(stream, System.currentTimeMillis)
 
   def multiplexWith(that: LazyList[T]): LazyList[T] = LazyList.multiplex(stream, that)
 
