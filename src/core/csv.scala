@@ -63,11 +63,13 @@ trait Format:
 
 object Row:
   def from[T](value: T)(using writer: Csv.Writer[T]): Row = writer.write(value)
+  given Show[Row] = _.elems.join(t",")
 
 case class Row(elems: Text*):
   def as[T](using decoder: Csv.Reader[T]): T = decoder.decode(this)
 
 object Csv extends Format:
+  given Show[Csv] = _.rows.map(serialize).join(t"\n")
 
   given clairvoyant.HttpResponse[Csv] with
     def mediaType: String = "text/csv"
@@ -144,6 +146,7 @@ case class Tsv(rows: Row*)
 object Tsv extends Format:
   override val separator = '\t'
   def escape(str: Text): Text = Text(str.s.replaceAll("\t", "        ").nn)
+  given Show[Tsv] = _.rows.map(serialize).join(t"\n")
 
   given clairvoyant.HttpResponse[Csv] with
     def mediaType: String = t"text/tab-separated-values".s
