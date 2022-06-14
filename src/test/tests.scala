@@ -20,60 +20,60 @@ import probably.*
 import gossamer.*
 import rudiments.*
 import turbulence.*
+import eucalyptus.*
 
 import unsafeExceptions.canThrowAny
-
-import eucalyptus.*
+import encodings.Utf8
 
 given Log(Everything |-> SystemOut)
 
 object Tests extends Suite(t"Caesura tests"):
   def run(using Runner): Unit =
     test(t"simple parse"):
-      Csv.parse(t"""hello,world""")
+      Csv.parseLine(t"""hello,world""")
     .assert(_ == Row(t"hello", t"world"))
 
     test(t"simple parse with quotes"):
-      Csv.parse(t""""hello","world"""")
+      Csv.parseLine(t""""hello","world"""")
     .assert(_ == Row(t"hello", t"world"))
 
     test(t"empty unquoted field at start"):
-      Csv.parse(t",hello,world")
+      Csv.parseLine(t",hello,world")
     .assert(_ == Row(t"", t"hello", t"world"))
 
     test(t"empty unquoted field at end"):
-      Csv.parse(t"hello,world,")
+      Csv.parseLine(t"hello,world,")
     .assert(_ == Row(t"hello", t"world", t""))
 
     test(t"empty unquoted field in middle"):
-      Csv.parse(t"hello,,world")
+      Csv.parseLine(t"hello,,world")
     .assert(_ == Row(t"hello", t"", t"world"))
 
     test(t"empty quoted field at start"):
-      Csv.parse(t""""","hello","world"""")
+      Csv.parseLine(t""""","hello","world"""")
     .assert(_ == Row(t"", t"hello", t"world"))
     test(t"empty quoted field at end"):
-      Csv.parse(t""""hello","world",""""")
+      Csv.parseLine(t""""hello","world",""""")
     .assert(_ == Row(t"hello", t"world", t""))
 
     test(t"empty quoted field in middle"):
-      Csv.parse(t""""hello","","world"""")
+      Csv.parseLine(t""""hello","","world"""")
     .assert(_ == Row(t"hello", t"", t"world"))
 
     test(t"quoted comma"):
-      Csv.parse(t""""hello,world"""")
+      Csv.parseLine(t""""hello,world"""")
     .assert(_ == Row(t"hello,world"))
 
     test(t"escaped quotes"):
-      Csv.parse(t""""hello""world"""")
+      Csv.parseLine(t""""hello""world"""")
     .assert(_ == Row(t"""hello"world"""))
 
     test(t"decode case class"):
-      Csv.parse(t"""hello,world""").as[Foo]
+      Csv.parseLine(t"""hello,world""").as[Foo]
     .assert(_ == Foo(t"hello", t"world"))
 
     test(t"decode complex case class"):
-      Csv.parse(t"""0.1,two,three,4,five,six""").as[Bar]
+      Csv.parseLine(t"""0.1,two,three,4,five,six""").as[Bar]
     .assert(_ == Bar(0.1, Foo(t"two", t"three"), 4, Foo(t"five", t"six")))
 
     test(t"encode case class"):
@@ -85,23 +85,23 @@ object Tests extends Suite(t"Caesura tests"):
     .assert(_ == Row(t"0.1", t"two", t"three", t"4", t"five", t"six"))
 
     test(t"convert simple row to string"):
-      Csv(Row(t"hello", t"world")).show.s
+      Csv(List(Row(t"hello", t"world"))).show.s
     .assert(_ == """hello,world""")
 
     test(t"convert complex row to string"):
-      Csv(Row(t"0.1", t"two", t"three", t"4", t"five", t"six")).show.s
+      Csv(List(Row(t"0.1", t"two", t"three", t"4", t"five", t"six"))).show.s
     .assert(_ == """0.1,two,three,4,five,six""") // "
 
     test(t"convert row with escaped quote"):
-      Csv(Row(t"hello\"world")).show.s
+      Csv(List(Row(t"hello\"world"))).show.s
     .assert(_ == """"hello""world"""")
 
     test(t"simple parse tsv"):
-      Tsv.parse(t"hello\tworld")
+      Tsv.parseLine(t"hello\tworld")
     .assert(_ == Row(t"hello", t"world"))
 
     test(t"decode case class from tsv"):
-      Tsv.parse(t"hello\tworld").as[Foo]
+      Tsv.parseLine(t"hello\tworld").as[Foo]
     .assert(_ == Foo(t"hello", t"world"))
 
     test(t"convert case class to tsv"):

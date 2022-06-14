@@ -19,11 +19,20 @@ package caesura
 import wisteria.*
 import rudiments.*
 import gossamer.*
+import turbulence.*
 
-trait Format:
+trait RowFormat:
   protected val separator: Char
+  type Type
+  def wrap(seq: List[Row]): Type
+  
+  def parse[T](input: T)(using source: Source[T], readable: Readable[LazyList[Line]])
+           : Type throws StreamCutError | readable.E | source.E =
+      wrap:
+        readable.read(source.read(input)).to(List).map:
+          line => parseLine(line.text)
 
-  def parse(line: Text): Row =
+  def parseLine(line: Text): Row =
     @tailrec
     def parseLine(items: Vector[Text], idx: Int, quoted: Boolean, start: Int, end: Int,
                       join: Boolean): Vector[Text] =
@@ -68,7 +77,9 @@ object Row:
 case class Row(elems: Text*):
   def as[T](using decoder: Csv.Reader[T]): T = decoder.decode(this)
 
-object Csv extends Format:
+object Csv extends RowFormat:
+  type Type = Csv
+  def wrap(seq: List[Row]): Csv = Csv(seq)
   given Show[Csv] = _.rows.map(serialize).join(t"\n")
 
   given clairvoyant.HttpResponse[Csv] with
@@ -137,19 +148,25 @@ object Csv extends Format:
     if c > 0 then t""""${str.s.replaceAll("\"", "\"\"").nn}"""" else str
 
 extension [T](value: Seq[T])
-  def csv(using Csv.Writer[T]): Csv = Csv(value.map(summon[Csv.Writer[T]].write(_))*)
-  def tsv(using Csv.Writer[T]): Tsv = Tsv(value.map(summon[Csv.Writer[T]].write(_))*)
+  def csv(using Csv.Writer[T]): Csv = Csv(value.to(List).map(summon[Csv.Writer[T]].write(_)))
+  def tsv(using Csv.Writer[T]): Tsv = Tsv(value.to(List).map(summon[Csv.Writer[T]].write(_)))
 
-case class Csv(rows: Row*)
-case class Tsv(rows: Row*)
+case class Csv(rows: List[Row]):
+  def as[T: Csv.Reader]: List[T] = rows.map(_.as[T])
 
-object Tsv extends Format:
+case class Tsv(rows: List[Row]):
+  def as[T: Csv.Reader]: List[T] = rows.map(_.as[T])
+
+object Tsv extends RowFormat:
+  type Type = Tsv
+  def wrap(seq: List[Row]): Tsv = Tsv(seq)
   override val separator = '\t'
   def escape(str: Text): Text = Text(str.s.replaceAll("\t", "        ").nn)
   given Show[Tsv] = _.rows.map(serialize).join(t"\n")
 
-  given clairvoyant.HttpResponse[Csv] with
+  given clairvoyant.HttpResponse[Tsv] with
     def mediaType: String = t"text/tab-separated-values".s
     
-    def content(value: Csv): LazyList[IArray[Byte]] =
+    def content(value: Tsv): LazyList[IArray[Byte]] =
       LazyList(value.rows.map(Tsv.serialize(_)).join(t"\n").bytes)
+
