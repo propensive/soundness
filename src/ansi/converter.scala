@@ -68,7 +68,7 @@ open class TextConverter():
                 Markdown.Ast.Block.Paragraph((nodes :+ node)*) :: acc.tail
               
               case _ =>
-                throw Impossible("unexpected non-paragraph node found while folding inline nodes")
+                throw Mistake("unexpected non-paragraph node found while folding inline nodes")
             (false, content)
     }(1).reverse
 
@@ -104,7 +104,7 @@ open class TextConverter():
                     case Flair.String            => ansi"${solarized.Violet}(${code.trim})"
                     case other                   => ansi"${code.trim}"
                   case Token.Unparsed(content)   => ansi"${content}"
-                  case Token.Newline           => throw Impossible("Should not have a newline")
+                  case Token.Newline           => throw Mistake("Should not have a newline")
                 .join
             
             acc :+ TextBlock(indent, highlightedLines.join(ansi"\n"))

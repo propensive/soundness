@@ -60,7 +60,7 @@ open class HtmlConverter():
                 Markdown.Ast.Block.Paragraph((nodes :+ node)*) :: acc.tail
               
               case _ =>
-                throw Impossible("unexpected non-paragraph node found while folding inline nodes")
+                throw Mistake("unexpected non-paragraph node found while folding inline nodes")
 
             (false, content)
     
@@ -133,7 +133,7 @@ open class HtmlConverter():
         case node: Node[?] => node.refine[NonInteractive]
         case text: Text    => Some(text)
         case int: Int      => Some(int)
-        case _             => throw Impossible("there should be no other cases")
+        case _             => throw Mistake("there should be no other cases")
 
       val children: Seq[Html[NonInteractive]] = nonInteractive(content).flatMap(interactive(_))
 
