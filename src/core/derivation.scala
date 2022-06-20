@@ -122,7 +122,7 @@ object Macro:
         val tpeRepr = field.tree match
           case v: ValDef => v.tpt.tpe
           case d: DefDef => d.returnTpt.tpe
-          case other     => throw Impossible("field is not of the expected AST type")
+          case other     => throw Mistake("field is not of the expected AST type")
         
         Expr(field.name) -> getAnnotations(tpeRepr).filter { a =>
           a.tpe.typeSymbol.maybeOwner.isNoSymbol ||
