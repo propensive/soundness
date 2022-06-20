@@ -113,12 +113,12 @@ object Sys extends Dynamic:
 case class KeyNotFoundError(name: Text) extends Error((Text("key "), name, Text(" not found"))):
   def message: Text = Text(s"key $name not found")
 
-object Impossible:
-  def apply(error: Exception): Impossible =
-    Impossible(s"rudiments: an ${error.getClass.getName} exception was thrown when this was not "+
+object Mistake:
+  def apply(error: Exception): Mistake =
+    Mistake(s"rudiments: an ${error.getClass.getName} exception was thrown when this was not "+
         s"believed to be possible; the error was '${error.getMessage}'")
 
-case class Impossible(message: String) extends java.lang.Error(message)
+case class Mistake(message: String) extends java.lang.Error(message)
 
 object Unset
 
