@@ -521,7 +521,6 @@ class Filesystem(pathSeparator: Text, fsPrefix: Text) extends Root(pathSeparator
     pumpTask()
     
     def stream: LazyList[FileEvent] = funnel.stream.takeWhile(_ != Unset).sift[FileEvent]
-
     def removeAll()(using Log): Unit = watches.values.foreach(remove(_))
 
     @tailrec
@@ -628,7 +627,7 @@ class Filesystem(pathSeparator: Text, fsPrefix: Text) extends Root(pathSeparator
     def children: List[Inode] throws IoError =
       Option(javaFile.list).fold(Nil):
         files =>
-          files.nn.unsafeImmutable.to(List).map(_.nn).map(Text(_)).map(path.parts :+ _).map(
+          files.nn.immutable(using Unsafe).to(List).map(_.nn).map(Text(_)).map(path.parts :+ _).map(
               makeAbsolute(_)).map(_.inode)
     
     def descendants: LazyList[Inode] throws IoError =
@@ -747,7 +746,7 @@ class Filesystem(pathSeparator: Text, fsPrefix: Text) extends Root(pathSeparator
 
 object Filesystem:
   lazy val roots: Set[Filesystem] =
-    Option(ji.File.listRoots).fold(Set())(_.nn.unsafeImmutable.to(Set)).map(_.nn.getAbsolutePath.nn)
+    Option(ji.File.listRoots).fold(Set())(_.nn.immutable(using Unsafe).to(Set)).map(_.nn.getAbsolutePath.nn)
         .collect:
       case "/" =>
         Unix
