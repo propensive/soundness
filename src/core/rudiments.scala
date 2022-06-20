@@ -71,20 +71,20 @@ extension [T](value: T)
   def unit: Unit = ()
   def twin: (T, T) = (value, value)
   def triple: (T, T, T) = (value, value, value)
-  def unsafeMatchable: T & Matchable = value.asInstanceOf[T & Matchable]
+  transparent inline def matchable(using erased Unsafe.type): T & Matchable = value.asInstanceOf[T & Matchable]
 
 extension [T](value: IArray[T])
-  def unsafeMutable: Array[T] = value match
+  transparent inline def mutable(using erased Unsafe.type): Array[T] = value match
     case array: Array[T] => array
 
 extension [T](value: Array[T])
-  def unsafeImmutable: IArray[T] = value match
+  transparent inline def immutable(using erased Unsafe.type): IArray[T] = value match
     case array: IArray[T] => array
   
   def snapshot(using ClassTag[T]): IArray[T] =
     val newArray = new Array[T](value.length)
     System.arraycopy(value, 0, newArray, 0, value.length)
-    newArray.unsafeImmutable
+    newArray.immutable(using Unsafe)
 
 extension [K, V](map: Map[K, V])
   def upsert(key: K, operation: Option[V] => V) = map.updated(key, operation(map.get(key)))
@@ -137,7 +137,7 @@ extension (iarray: IArray.type)
   def init[T: ClassTag](size: Int)(fn: Array[T] => Unit): IArray[T] =
     val array = new Array[T](size)
     fn(array)
-    array.unsafeImmutable
+    array.immutable(using Unsafe)
 
 extension [T](opt: Option[T]) def maybe: Unset.type | T = opt.getOrElse(Unset)
 
@@ -319,3 +319,4 @@ case class Uuid(msb: Long, lsb: Long):
   def javaUuid: ju.UUID = ju.UUID(msb, lsb)
   def bytes: Bytes = Bytes(msb) ++ Bytes(lsb)
 
+object Unsafe
