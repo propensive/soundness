@@ -67,8 +67,8 @@ object Util:
           
           val count = in.read(buf, 0, buf.length)
           if count < 0 then LazyList()
-          else if avail == 0 then buf.slice(0, count).unsafeImmutable #:: read()
-          else buf.unsafeImmutable #:: read()
+          else if avail == 0 then buf.slice(0, count).immutable(using Unsafe) #:: read()
+          else buf.immutable(using Unsafe) #:: read()
         catch case error: ji.IOException => LazyList(throw StreamCutError())
 
       read()
@@ -77,7 +77,7 @@ object Util:
       readInputStream(ji.BufferedInputStream(in), limit)
   
   def write(stream: DataStream, out: ji.OutputStream): Unit throws StreamCutError =
-    stream.map(_.unsafeMutable).foreach(out.write(_))
+    stream.map(_.mutable(using Unsafe)).foreach(out.write(_))
 
 object Source:
   given Source[SystemIn.type] with
@@ -120,7 +120,7 @@ object Streamable:
   given Streamable[DataStream] = identity(_)
   given Streamable[Bytes] = LazyList(_)
 
-  given Streamable[Text] = value => LazyList(value.s.getBytes("UTF-8").nn.unsafeImmutable)
+  given Streamable[Text] = value => LazyList(value.s.getBytes("UTF-8").nn.immutable(using Unsafe))
 
 trait Streamable[T]:
   def stream(value: T): DataStream
@@ -141,7 +141,7 @@ object Readable:
 
   given (using enc: Encoding): Readable[Text] with
     type E = ExcessDataError
-    def read(value: DataStream) = Text(String(value.slurp(1.mb).unsafeMutable, enc.name.s))
+    def read(value: DataStream) = Text(String(value.slurp(1.mb).mutable(using Unsafe), enc.name.s))
 
   given textReader(using enc: Encoding): Readable[LazyList[Text]] with
     type E = ExcessDataError
@@ -151,7 +151,7 @@ object Readable:
         if stream.isEmpty then LazyList()
         else
           // FIXME: constructing this new array may be unnecessarily costly.
-          val buf = carried ++ stream.head.unsafeMutable
+          val buf = carried ++ stream.head.mutable(using Unsafe)
           val carry = enc.carry(buf)
           
           Text(String(buf, 0, buf.length - carry, enc.name.s)) #::
