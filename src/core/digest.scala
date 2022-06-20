@@ -81,7 +81,7 @@ case class MdHashFunction[A <: HashScheme[?]](name: Text, hmacName: Text) extend
 case object Crc32HashFunction extends HashFunction[Crc32]:
   def init: DigestAccumulator = new DigestAccumulator:
     private val state: juz.CRC32 = juz.CRC32()
-    def append(bytes: Bytes): Unit = state.update(bytes.unsafeMutable)
+    def append(bytes: Bytes): Unit = state.update(bytes.mutable(using Unsafe))
     
     def digest(): Bytes =
       val int = state.getValue()
@@ -111,10 +111,10 @@ object Hashable extends Derivation[Hashable]:
     (acc, xs) => xs.foreach(summon[Hashable[T]].digest(acc, _))
   
   given Hashable[Int] =
-    (acc, n) => acc.append((24 to 0 by -8).map(n >> _).map(_.toByte).toArray.unsafeImmutable)
+    (acc, n) => acc.append((24 to 0 by -8).map(n >> _).map(_.toByte).toArray.immutable(using Unsafe))
   
   given Hashable[Long] =
-    (acc, n) => acc.append((52 to 0 by -8).map(n >> _).map(_.toByte).toArray.unsafeImmutable)
+    (acc, n) => acc.append((52 to 0 by -8).map(n >> _).map(_.toByte).toArray.immutable(using Unsafe))
   
   given Hashable[Double] =
     (acc, n) => summon[Hashable[Long]].digest(acc, jl.Double.doubleToRawLongBits(n))
@@ -152,8 +152,8 @@ trait DigestAccumulator:
 
 class MessageDigestAccumulator(md: MessageDigest) extends DigestAccumulator:
   private val messageDigest: MessageDigest = md
-  def append(bytes: Bytes): Unit = messageDigest.update(bytes.unsafeMutable)
-  def digest(): Bytes = messageDigest.digest.nn.unsafeImmutable
+  def append(bytes: Bytes): Unit = messageDigest.update(bytes.mutable(using Unsafe))
+  def digest(): Bytes = messageDigest.digest.nn.immutable(using Unsafe)
 
 trait EncodingScheme
 trait Base64 extends EncodingScheme
@@ -195,7 +195,7 @@ trait ByteEncoder[ES <: EncodingScheme]:
   def encode(bytes: Bytes): Text
 
 object ByteDecoder:
-  given ByteDecoder[Base64] = value => Base64Decoder.nn.decode(value.s).nn.unsafeImmutable
+  given ByteDecoder[Base64] = value => Base64Decoder.nn.decode(value.s).nn.immutable(using Unsafe)
   
   given ByteDecoder[Hex] = value =>
     import java.lang.Character.digit
@@ -206,7 +206,7 @@ object ByteDecoder:
         try data(i/2) = ((digit(value(i), 16) << 4) + digit(value(i + 1), 16)).toByte
         catch case e: OutOfRangeError => throw Impossible("every accessed element should be within range")
 
-    data.unsafeImmutable
+    data.immutable(using Unsafe)
 
 extension (value: Text)
   def decode[T <: EncodingScheme: ByteDecoder]: Bytes = summon[ByteDecoder[T]].decode(value)
@@ -219,7 +219,7 @@ extension [T](value: T)
   def hmac[A <: HashScheme[?]: HashFunction](key: Bytes)(using ByteCodec[T]): Hmac[A] =
     val mac = summon[HashFunction[A]].initHmac
     mac.init(SecretKeySpec(key.to(Array), summon[HashFunction[A]].name.s))
-    Hmac(mac.doFinal(summon[ByteCodec[T]].encode(value).unsafeMutable).nn.unsafeImmutable)
+    Hmac(mac.doFinal(summon[ByteCodec[T]].encode(value).mutable(using Unsafe)).nn.immutable(using Unsafe))
 
 extension (bytes: Bytes)
   def encode[E <: EncodingScheme: ByteEncoder]: Text = summon[ByteEncoder[E]].encode(bytes)

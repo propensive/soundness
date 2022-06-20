@@ -112,7 +112,7 @@ object ByteCodec:
   given ByteCodec[Text] with
     def encode(value: Text): Bytes = value.bytes
     def decode(bytes: Bytes): Text throws DecodeError =
-      val buffer = ByteBuffer.wrap(bytes.unsafeMutable)
+      val buffer = ByteBuffer.wrap(bytes.mutable(using Unsafe))
       
       try Showable(Charset.forName("UTF-8").nn.newDecoder().nn.decode(buffer)).show
       catch CharacterCodingException =>
@@ -133,23 +133,23 @@ class Aes[KS <: 128 | 192 | 256: ValueOf]() extends CryptoAlgorithm[KS], Encrypt
   private def init() = Cipher.getInstance("AES/ECB/PKCS5Padding")
   
   private def makeKey(key: Bytes): SecretKeySpec =
-    SecretKeySpec(key.unsafeMutable, "AES")
+    SecretKeySpec(key.mutable(using Unsafe), "AES")
 
   def encrypt(message: Bytes, key: Bytes): Bytes =
     val cipher = init().nn
     cipher.init(Cipher.ENCRYPT_MODE, makeKey(key))
-    cipher.doFinal(message.unsafeMutable).nn.unsafeImmutable
+    cipher.doFinal(message.mutable(using Unsafe)).nn.immutable(using Unsafe)
   
   def decrypt(message: Bytes, key: Bytes): Bytes =
     val cipher = init().nn
     cipher.init(Cipher.DECRYPT_MODE, makeKey(key))
-    cipher.doFinal(message.unsafeMutable).nn.unsafeImmutable
+    cipher.doFinal(message.mutable(using Unsafe)).nn.immutable(using Unsafe)
   
   def genKey(): Bytes =
     val keyGen = KeyGenerator.getInstance("AES").nn
     keyGen.init(keySize)
     
-    keyGen.generateKey().nn.getEncoded.nn.unsafeImmutable
+    keyGen.generateKey().nn.getEncoded.nn.immutable(using Unsafe)
   
   def privateToPublic(key: Bytes): Bytes = key
 end Aes
@@ -158,32 +158,32 @@ class Rsa[KS <: 1024 | 2048: ValueOf]() extends CryptoAlgorithm[KS], Encryption:
   def keySize: KS = valueOf[KS]
     
   def privateToPublic(bytes: Bytes): Bytes =
-    val privateKey = keyFactory().generatePrivate(PKCS8EncodedKeySpec(bytes.unsafeMutable)).nn match
+    val privateKey = keyFactory().generatePrivate(PKCS8EncodedKeySpec(bytes.mutable(using Unsafe))).nn match
       case key: js.interfaces.RSAPrivateCrtKey =>
         key
       case key: js.PrivateKey =>
         throw Impossible("public key did not have the correct type")
 
     val spec = RSAPublicKeySpec(privateKey.getModulus, privateKey.getPublicExponent)
-    keyFactory().generatePublic(spec).nn.getEncoded.nn.unsafeImmutable
+    keyFactory().generatePublic(spec).nn.getEncoded.nn.immutable(using Unsafe)
 
   def decrypt(message: Bytes, key: Bytes): Bytes =
     val cipher = init().nn
-    val privateKey = keyFactory().generatePrivate(PKCS8EncodedKeySpec(key.unsafeMutable))
+    val privateKey = keyFactory().generatePrivate(PKCS8EncodedKeySpec(key.mutable(using Unsafe)))
     cipher.init(Cipher.DECRYPT_MODE, privateKey)
-    cipher.doFinal(message.unsafeMutable).nn.unsafeImmutable
+    cipher.doFinal(message.mutable(using Unsafe)).nn.immutable(using Unsafe)
   
   def encrypt(message: Bytes, key: Bytes): Bytes =
     val cipher = init().nn
-    val publicKey = keyFactory().generatePublic(X509EncodedKeySpec(key.unsafeMutable))
+    val publicKey = keyFactory().generatePublic(X509EncodedKeySpec(key.mutable(using Unsafe)))
     cipher.init(Cipher.ENCRYPT_MODE, publicKey)
-    cipher.doFinal(message.unsafeMutable).nn.unsafeImmutable
+    cipher.doFinal(message.mutable(using Unsafe)).nn.immutable(using Unsafe)
   
   def genKey(): Bytes =
     val generator = js.KeyPairGenerator.getInstance("RSA").nn
     generator.initialize(keySize)
     val keyPair = generator.generateKeyPair().nn
-    keyPair.getPrivate.nn.getEncoded.nn.unsafeImmutable
+    keyPair.getPrivate.nn.getEncoded.nn.immutable(using Unsafe)
 
   private def init(): Cipher = Cipher.getInstance("RSA").nn
   private def keyFactory(): js.KeyFactory = js.KeyFactory.getInstance("RSA").nn
@@ -205,14 +205,14 @@ class Dsa[KS <: 512 | 1024 | 2048 | 3072: ValueOf]() extends CryptoAlgorithm[KS]
       case key: js.PublicKey =>
         throw Impossible("public key did not have the correct type")
     
-    keyPair.getPrivate.nn.getEncoded.nn.unsafeImmutable
+    keyPair.getPrivate.nn.getEncoded.nn.immutable(using Unsafe)
 
   def sign(data: Bytes, keyBytes: Bytes): Bytes =
     val sig = init()
     val key = keyFactory().generatePrivate(PKCS8EncodedKeySpec(keyBytes.to(Array)))
     sig.initSign(key)
     sig.update(data.to(Array))
-    sig.sign().nn.unsafeImmutable
+    sig.sign().nn.immutable(using Unsafe)
 
   def verify(data: Bytes, signature: Bytes, keyBytes: Bytes): Boolean =
     val sig = init()
@@ -232,7 +232,7 @@ class Dsa[KS <: 512 | 1024 | 2048 | 3072: ValueOf]() extends CryptoAlgorithm[KS]
     val params = key.getParams.nn
     val y = params.getG.nn.modPow(key.getX, params.getP.nn)
     val spec = DSAPublicKeySpec(y, params.getP, params.getQ, params.getG)
-    keyFactory().generatePublic(spec).nn.getEncoded.nn.unsafeImmutable
+    keyFactory().generatePublic(spec).nn.getEncoded.nn.immutable(using Unsafe)
 
   private def init(): js.Signature = js.Signature.getInstance("DSA").nn
   private def keyFactory(): js.KeyFactory = js.KeyFactory.getInstance("DSA").nn
