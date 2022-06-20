@@ -31,7 +31,7 @@ trait Format:
         if join then items.init :+ t"${items.last}${line.slice(start, if end < 0 then idx else end)}"
         else items :+ line.slice(start, if end < 0 then idx else end)
       else 
-        val ch = try line(idx) catch case error: OutOfRangeError => throw Impossible(error)
+        val ch = try line(idx) catch case error: OutOfRangeError => throw Mistake(error)
         
         (ch: @switch) match
           case `separator` =>
