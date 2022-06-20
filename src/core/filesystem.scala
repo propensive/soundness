@@ -457,7 +457,7 @@ class Filesystem(pathSeparator: Text, fsPrefix: Text) extends Root(pathSeparator
     def hardLinkCount(): Int throws IoError =
       try Files.getAttribute(javaPath, "unix:nlink") match
         case i: Int => i
-        case _      => throw Impossible("Should never match")
+        case _      => throw Mistake("Should never match")
       catch e => throw IoError(IoError.Op.Read, IoError.Reason.NotSupported, path)
     
     def hardLinkTo(dest: DiskPath): File throws IoError =
@@ -541,7 +541,7 @@ class Filesystem(pathSeparator: Text, fsPrefix: Text) extends Root(pathSeparator
           unsafely(keyDir.path + Relative.parse(Showable(path).show)) match
             case path: fs.DiskPath => path
         
-        case _ => throw Impossible("the event context should always be a path")
+        case _ => throw Mistake("the event context should always be a path")
       
       try event.kind match
         case ENTRY_CREATE =>
@@ -755,7 +755,7 @@ object Filesystem:
         unsafely:
           drive.charAt(0).toUpper match
             case ch: Majuscule => WindowsRoot(ch)
-            case _             => throw Impossible("Filesystem must always start with a letter")
+            case _             => throw Mistake("Filesystem must always start with a letter")
     .to(Set)
  
   def defaultSeparator: "/" | "\\" = if ji.File.separator == "\\" then "\\" else "/"
