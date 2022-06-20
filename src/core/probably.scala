@@ -74,7 +74,7 @@ object Runner:
   def shortDigest[T: Show](text: T): Text =
     val md = java.security.MessageDigest.getInstance("SHA-256").nn
     md.update(text.show.s.getBytes)
-    md.digest.nn.take(3).unsafeImmutable.map { b => Text(f"$b%02x") }.join
+    md.digest.nn.take(3).immutable(using Unsafe).map { b => Text(f"$b%02x") }.join
 
 class Runner(subset: Set[TestId] = Set()) extends Dynamic:
 
@@ -166,7 +166,7 @@ class Runner(subset: Set[TestId] = Set()) extends Dynamic:
           record(this, time, makeDatapoint(pred, 0, Datapoint.Pass, value))
           value
         case Failure(e) =>
-          val trace = Option(e.getStackTrace).fold(Nil)(_.nn.unsafeImmutable.to(List).map(_.nn))
+          val trace = Option(e.getStackTrace).fold(Nil)(_.nn.immutable(using Unsafe).to(List).map(_.nn))
           
           val info = trace.takeWhile(_.getClassName != "probably.Suite")
             .map { frame => Showable(frame.nn).show }
