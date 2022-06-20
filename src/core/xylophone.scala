@@ -74,7 +74,7 @@ object Xml:
     val builder = factory.newDocumentBuilder().nn
 
     val root = 
-      try builder.parse(ByteArrayInputStream(content.bytes.unsafeMutable)).nn
+      try builder.parse(ByteArrayInputStream(content.bytes.mutable(using Unsafe))).nn
       catch case e: oxs.SAXParseException =>
         throw XmlParseError(e.getLineNumber - 1, e.getColumnNumber - 1)
 
