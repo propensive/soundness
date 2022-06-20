@@ -56,7 +56,7 @@ object HtmlSerializer:
                               case (key: Text, value: Text) => append(t" ", key, t"=\"", value, t"\"")
                               case (key: Text, Unset)       => append(t" ", key)
                               //case (key: Text, false)      => ()
-                              case (_, _)                 => throw Impossible("should never match")
+                              case (_, _)                 => throw Mistake("should never match")
                             
                             append(t">")
                             if !node.inline then newline(1)
@@ -91,7 +91,7 @@ object HtmlSerializer:
                                 if text.chars.last.isWhitespace then append(t" ")
       
       case int: Int      => next(int.show, verbatim)
-      case _             => throw Impossible("should never match")
+      case _             => throw Mistake("should never match")
         
     
     append(t"<!DOCTYPE html>\n")

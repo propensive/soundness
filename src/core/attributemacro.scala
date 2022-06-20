@@ -30,7 +30,7 @@ object Node:
     case text: Text    => text
     case int: Int      => int.show
     case item: Node[?] => item.show
-    case _             => throw Impossible("this should never match")
+    case _             => throw Mistake("this should never match")
   
   given Show[Seq[Html[?]]] = _.map(_.show).join
   
@@ -38,7 +38,7 @@ object Node:
     val filling = item.attributes.map:
       case (key, Unset)       => t" $key"
       case (key, value: Text) => t""" $key="${value}""""
-      case _                  => throw Impossible("should never match")
+      case _                  => throw Mistake("should never match")
     .join
     
     if item.children.isEmpty && !item.verbatim
@@ -66,7 +66,7 @@ object StartTag:
     val tail = elem.attributes.map:
       case (key, value: Text) => t"[$key=$value]"
       case (key, Unset)       => t"[$key]"
-      case _                  => throw Impossible("should never match")
+      case _                  => throw Mistake("should never match")
     .join
     
     t"${elem.label}$tail".s
@@ -108,4 +108,4 @@ object Macro:
         '{StartTag($name, $unclosed, $inline, $verbatim, ${Expr.ofSeq(recur(exprs))}.to(Map))}
       
       case _ =>
-        throw Impossible("expected varargs")
+        throw Mistake("expected varargs")

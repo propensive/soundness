@@ -99,7 +99,7 @@ case class Element[+Name <: Label](labelString: String, unclosed: Boolean, tagIn
     case item: Node[?] => item.inline
     case _: Text       => true
     case _: Int        => true
-    case _             => throw Impossible("should never match")
+    case _             => throw Mistake("should never match")
 
 case class HtmlDoc(root: Node["html"])
 
@@ -117,6 +117,6 @@ object HtmlDoc:
     val link = att.convert(stylesheet) match
       case Unset      => Nil
       case text: Text => Seq(Link(rel = t"stylesheet", href = text))
-      case _          => throw Impossible("should never match")
+      case _          => throw Mistake("should never match")
 
     HtmlDoc(Html(Head(Title(title), link), Body(content*)))
