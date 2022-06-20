@@ -194,7 +194,7 @@ object Sh:
               State(Quotes2, false, args :+ (t"$last$h" :: t).join(t" "))
             
             case _ =>
-              throw Impossible("impossible parser state")
+              throw Mistake("impossible parser state")
         case _ =>
           state
           
@@ -212,7 +212,7 @@ object Sh:
       case (State(Awaiting, esc, args), char)         => State(Unquoted, false, args :+ t"$char")
       case (State(ctx, esc, Nil), char)               => State(ctx, false, List(t"$char"))
       case (State(ctx, esc, rest :+ cur), char)       => State(ctx, false, rest :+ t"$cur$char")
-      case _                                          => throw Impossible("impossible parser state")
+      case _                                          => throw Mistake("impossible parser state")
 
   given Insertion[Params, Text] = value => Params(value)
   given Insertion[Params, List[Text]] = xs => Params(xs*)
