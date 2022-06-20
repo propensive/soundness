@@ -29,7 +29,7 @@ trait SimpleSchema[F]:
     import quotes.*, quotes.reflect.*
     fields.foldLeft(TypeRepr.of[SimpleRecord[F]])(Refinement(_, _, TypeRepr.of[F])).asType match
       case '[typ] => '{new SimpleRecord[F]($fn(_)).asInstanceOf[typ & SimpleRecord[F]]}
-      case _      => throw Impossible("the first case should always match")
+      case _      => throw Mistake("the first case should always match")
   
 class SimpleRecord[Field](fn: String => Field) extends Selectable:
   def selectDynamic(name: String): Field = fn(name)
@@ -52,7 +52,7 @@ trait Schema[E <: reflect.Enum]:
         val sym = companion.symbol.declaredField(etype.toString)
         val returnType = Singleton(companion.select(sym)).tpe.asType match
           case '[typ] => TypeRepr.of[Result[typ & E]].simplified
-          case _      => throw Impossible("the first case should always match")
+          case _      => throw Mistake("the first case should always match")
 
         Refinement(acc, key, returnType)
     .asType match
