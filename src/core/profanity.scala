@@ -99,7 +99,7 @@ object Keyboard:
         
         case other                => String(bytes.to(Array), 0, bytes.length)
                                        .toCharArray.nn
-                                       .unsafeImmutable
+                                       .immutable(using Unsafe)
                                        .to(LazyList)
                                        .map(Keypress.Printable(_))
     
