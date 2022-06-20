@@ -246,13 +246,13 @@ object Http:
           scalaMap.flatMap:
             case (null, v)              => Nil
             case (ResponseHeader(k), v) => List((k, v.asScala.to(List)))
-            case _                      => throw Impossible("Previous cases are irrefutable")
+            case _                      => throw Mistake("Previous cases are irrefutable")
           .to(Map)
 
         HttpResponse(status, responseHeaders, body)
       
       case conn: URLConnection =>
-        throw Impossible("URL connection is not HTTP")
+        throw Mistake("URL connection is not HTTP")
             
 case class HttpError(status: HttpStatus & FailureCase, body: HttpBody)
 extends Error((t"HTTP error ", status)):

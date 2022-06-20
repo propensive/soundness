@@ -163,7 +163,7 @@ case class Request(method: HttpMethod, body: HttpBody.Chunked, query: Text, ssl:
           Map[Text, Text](body.stream.slurp(limit = 1.mb).uString.cut(t"&").map(_.cut(t"=", 2).to(Seq) match
             case Seq(key: Text)              => key.urlDecode.show -> t""
             case Seq(key: Text, value: Text) => key.urlDecode.show -> value.urlDecode.show
-            case _                         => throw Impossible("key/value pair does not match")
+            case _                         => throw Mistake("key/value pair does not match")
           )*)
         else Map[Text, Text]()
       }
