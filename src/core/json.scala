@@ -241,7 +241,7 @@ extends Dynamic, Shown[Json] derives CanEqual:
         value
       case (idx: Int) :: tail => value match
         case JArray(vs) =>
-          deref((vs.unsafeImmutable.lift(idx) match
+          deref((vs.immutable(using Unsafe).lift(idx) match
             case None        => throw JsonAccessError(idx)
             case Some(value) => value
           ), tail)
