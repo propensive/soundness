@@ -61,9 +61,8 @@ catch
 
 An HTTP server can be launched anywhere by calling,
 ```scala
-HttpServer.listen {
+HttpServer.listen:
   // handler
-}
 ```
 
 This is a non-blocking call whose body will be executed every time a request is received. The `listen` method
@@ -77,9 +76,8 @@ how its body is sent: all at once, or streamed.
 
 The simplest sever implementation would look something like this,
 ```scala
-HttpServer.listen {
+HttpServer.listen:
   Response("Hello world!")
-}
 ```
 and would respond with a `200` response with the MIME type `text/plain`, and the string `Hello world!` for every
 request, regardless of its HTTP method, parameters, body or headers.
@@ -88,12 +86,11 @@ Within the body of `listen`, a `Request` instance is contextually available, and
 `request` method. For convenience, the methods `param` and `header` may also be used directly within a `listen`
 block to access a parameter or HTTP header, for example:
 ```scala
-HttpServer.listen {
+HttpServer.listen:
   val name = param("name")
   val age = param("age")
 
   Response(s"The name is $name and age is $age")
-}
 ```
 
 ## Pattern matching on Requests
@@ -103,12 +100,11 @@ for this purpose.
 
 A very simple pattern match on a request object might look like this,
 ```scala
-HttpServer.listen {
+HttpServer.listen:
   request match
     case Path("/")                   => homePage
     case Path("/contact")            => contactUsPage
     case Path(s"/products/$product") => productPage(product)
-}
 ```
 where the `Path` extractor is used to match on the part of the URL after the hostname, and before the query, if
 there is one.
@@ -116,11 +112,10 @@ there is one.
 But other extractors for matching on the HTTP method, headers and parameters also exist, and can be combined in
 the same pattern using the `&` combinator, like so:
 ```scala
-HttpServer.listen {
+HttpServer.listen:
   request match
     case Path("/") & RequestHeader.UserAgent(s"Mozilla/$_")               => mozillaHome
     case Path("/") & Post() & AcceptEncoding(lang) if lang.contains("en") => englishHome
-}
 ```
 
 In these examples, `&` is an extractor which always matches a `Request`, and "extracts" it into two copies. As
