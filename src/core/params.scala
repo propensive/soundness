@@ -62,7 +62,7 @@ class Arg[A <: Label, T](longName: String, secret: Boolean = false, parser: Para
 extends Api:
   type Return = T
   def apply[A <: Api & Singleton]()(using Shell, CliContext[? >: this.type]): T =
-    throw Impossible("Not implemented")
+    throw Mistake("Not implemented")
 
 object Flag:
   def apply[T](longName: Label, secret: Boolean = false): Flag[longName.type] =
@@ -71,7 +71,7 @@ object Flag:
 class Flag[A <: Label](longName: String, secret: Boolean = false) extends Api:
   type Return = Boolean
   def apply[A <: Api & Singleton]()(using Shell, CliContext[? >: this.type]): Boolean =
-    throw Impossible("Not implemented")
+    throw Mistake("Not implemented")
 
 object Positional:
   def apply[T: ParamParser: ParamShow](name: Label, choices: List[T]): Positional[name.type, T] =
