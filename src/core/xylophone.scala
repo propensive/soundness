@@ -60,7 +60,7 @@ object Xml:
     case idx: Int   => t"[$idx]"
     case label: Text => t"/$label"
     case unit: Unit => t"/*"
-    case _          => throw Impossible("should never match")
+    case _          => throw Mistake("should never match")
   }.join
 
   def parse(content: Text): Doc throws XmlParseError =
@@ -120,7 +120,7 @@ object Xml:
 
     readNode(root.getDocumentElement.nn) match
       case elem@Ast.Element(_, _, _, _) => Doc(Ast.Root(elem))
-      case _                            => throw Impossible("xylophone: malformed XML")
+      case _                            => throw Mistake("xylophone: malformed XML")
 
   def normalize(xml: Xml): Seq[Ast] throws XmlAccessError =
     def recur(path: XmlPath, current: Seq[Ast]): Seq[Ast] = path match
@@ -147,7 +147,7 @@ object Xml:
         recur(tail, next)
       
       case _ :: tail =>
-        throw Impossible("should never match")
+        throw Mistake("should never match")
 
     try recur(xml.pointer, xml.root.content)
     catch case err: XmlAccessError =>
