@@ -157,7 +157,7 @@ object InvalidMediaTypeError:
     def message: Text = this match
       case NotOneSlash      => txt"a media type should always contain exactly one '/' character"
       case MissingParam     => txt"a terminal ';' suggests that a parameter is missing"
-      case InvalidGroup     => val list = Media.Group.values.unsafeImmutable.map(_.name)
+      case InvalidGroup     => val list = Media.Group.values.immutable(using Unsafe).map(_.name)
                                txt"the type must be one of: ${list.join(t", ", t" or ")}"
       case InvalidChar(c)   => txt"the character '$c' is not allowed"
       case InvalidSuffix(s) => txt"the suffix '$s' is not recognized"
