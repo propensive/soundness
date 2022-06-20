@@ -112,7 +112,7 @@ object Media:
       val xs: List[Text] = str.cut(t"+")
       
       xs match
-      case Nil           => throw Impossible("cannot return empty list from `cut`")
+      case Nil           => throw Mistake("cannot return empty list from `cut`")
       case (h: Text) :: _ => (parseSubtype(h), parseSuffixes(xs.tail))
 
     def parseBasic(str: Text): (Group, Subtype, List[Suffix]) = str.cut(t"/").to(List) match
@@ -129,7 +129,7 @@ object Media:
     def parseSubtype(str: Text): Subtype =
       try
         val idx = (str.where { ch => ch.isWhitespace || ch.isControl || specials.contains(ch) })
-        val ch = try str(idx) catch case error: OutOfRangeError => throw Impossible(error)
+        val ch = try str(idx) catch case error: OutOfRangeError => throw Mistake(error)
         throw InvalidMediaTypeError(string, InvalidMediaTypeError.Nature.InvalidChar(ch))
       catch case e: OutOfRangeError =>
         if str.startsWith(t"vnd.") then Subtype.Vendor(str.drop(4))
@@ -140,13 +140,13 @@ object Media:
     val xs: List[Text] = string.cut(t";").map(_.trim)
     
     xs match
-      case Nil    => throw Impossible("cannot return empty list from `cut`")
+      case Nil    => throw Mistake("cannot return empty list from `cut`")
       case (h: Text) :: _ =>
         val basic = parseBasic(h)
         MediaType(basic(0), basic(1), basic(2), parseParams(xs.tail))
     
-  final private val specials: Set[Char] = Set('(', ')', '<', '>', '@', ',', ';', ':', '\\', '"',
-      '/', '[', ']', '?', '=', '+')
+  final private val specials: Set[Char] =
+    Set('(', ')', '<', '>', '@', ',', ';', ':', '\\', '"', '/', '[', ']', '?', '=', '+')
 
 object InvalidMediaTypeError:
   enum Nature:
