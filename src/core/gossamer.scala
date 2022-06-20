@@ -54,7 +54,7 @@ extension [V](value: V)
     cuttable.cut(value, delimiter, limit)
 
 extension (text: Text)
-  def bytes: IArray[Byte] = text.s.getBytes("UTF-8").nn.unsafeImmutable
+  def bytes: IArray[Byte] = text.s.getBytes("UTF-8").nn.immutable(using Unsafe)
   def length: Int = text.s.length
   def populated: Option[Text] = if text.s.length == 0 then None else Some(text)
   def lower: Text = Text(text.s.toLowerCase.nn)
@@ -77,7 +77,7 @@ extension (text: Text)
     if to <= from then Text("")
     else Text(text.s.substring(from max 0 min length, to min length max 0).nn)
   
-  def chars: IArray[Char] = text.s.toCharArray.nn.unsafeImmutable
+  def chars: IArray[Char] = text.s.toCharArray.nn.immutable(using Unsafe)
   def map(fn: Char => Char): Text = Text(String(text.s.toCharArray.nn.map(fn)))
   def isEmpty: Boolean = text.s.isEmpty
   def rsub(from: Text, to: Text): Text = Text(text.s.replaceAll(from.s, to.s).nn)
@@ -88,15 +88,15 @@ extension (text: Text)
   def dashed: Text = Text(camelCaseWords.mkString("-"))
   def capitalize: Text = take(1).upper+drop(1)
   def reverse: Text = Text(String(text.s.toCharArray.nn.reverse))
-  def count(pred: Char => Boolean): Int = text.s.toCharArray.nn.unsafeImmutable.count(pred)
+  def count(pred: Char => Boolean): Int = text.s.toCharArray.nn.immutable(using Unsafe).count(pred)
   def head: Char = text.s.charAt(0)
   def last: Char = text.s.charAt(text.s.length - 1)
   def tail: Text = drop(1, Ltr)
   def init: Text = drop(1, Rtl)
 
   def flatMap(fn: Char => Text): Text =
-    Text(String(text.s.toCharArray.nn.unsafeImmutable.flatMap(fn(_).s.toCharArray.nn
-        .unsafeImmutable).unsafeMutable))
+    Text(String(text.s.toCharArray.nn.immutable(using Unsafe).flatMap(fn(_).s.toCharArray.nn
+        .immutable(using Unsafe)).immutable(using Unsafe)))
 
   def dropWhile(pred: Char => Boolean): Text =
     try Text(text.s.substring(0, where(!pred(_))).nn) catch case err: OutOfRangeError => Text("")
@@ -179,6 +179,8 @@ object Joinable:
 
 trait Joinable[T]:
   def join(elements: Iterable[T]): T
+
+extension (iarray: IArray[Char]) def text: Text = Text(String(iarray.mutable(using Unsafe)))
 
 extension [T](values: Iterable[T])(using joinable: Joinable[T])
   def join: T = joinable.join(values)
