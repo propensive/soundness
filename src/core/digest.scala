@@ -88,7 +88,7 @@ case object Crc32HashFunction extends HashFunction[Crc32]:
       IArray[Byte]((int >> 24).toByte, (int >> 16).toByte, (int >> 8).toByte, int.toByte)
   def name: Text = t"CRC32"
   def hmacName: Text = t"HMAC-CRC32"
-  def initHmac: Mac = throw Impossible("Unimplemented")
+  def initHmac: Mac = throw Mistake("Unimplemented")
     
 
 object Digest:
@@ -204,7 +204,7 @@ object ByteDecoder:
     (0 until value.length by 2).foreach:
       i =>
         try data(i/2) = ((digit(value(i), 16) << 4) + digit(value(i + 1), 16)).toByte
-        catch case e: OutOfRangeError => throw Impossible("every accessed element should be within range")
+        catch case e: OutOfRangeError => throw Mistake("every accessed element should be within range")
 
     data.immutable(using Unsafe)
 
