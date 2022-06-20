@@ -5,13 +5,18 @@
       "url": "https://github.com/propensive/gossamer"
     },
     {
+      "base": "../probably",
+      "url": "https://github.com/propensive/probably"
+    },
+    {
       "base": "../clairvoyant",
       "url": "https://github.com/propensive/clairvoyant"
     }
   ],
   "imports": [
     "../gossamer/build.irk",
-    "../clairvoyant/build.irk"
+    "../clairvoyant/build.irk",
+    "../probably/build.irk"
   ],
   "publishing": {
     "username": "propensive",
@@ -42,6 +47,26 @@
       "sources": [
         "src/core"
       ],
+      "version": "0.4.0",
+      "docs": [
+        "doc"
+      ]
+    },
+    {
+      "name": "Caesura Tests",
+      "id": "caesura/test",
+      "links": [
+        "caesura/core",
+        "probably/cli"
+      ],
+      "sources": [
+        "src/test"
+      ],
+      "artifact": {
+        "main": "caesura.Tests",
+        "path": "caesura.jar",
+        "format": "fat-jar"
+      },
       "version": "0.4.0",
       "docs": [
         "doc"
