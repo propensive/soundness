@@ -215,7 +215,7 @@ object Macros:
     
     val filename: Expr[String] = Expr:
       val absolute = Showable(Position.ofMacroExpansion).show.cut(t":").head
-      val pwd = try Sys.user.dir().show catch case e: KeyNotFoundError => throw Impossible("should not happen")
+      val pwd = try Sys.user.dir().show catch case e: KeyNotFoundError => throw Mistake("should not happen")
       
       if absolute.startsWith(pwd) then absolute.drop(pwd.length + 1).s else absolute.s
     
