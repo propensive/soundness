@@ -70,7 +70,7 @@ case class Relative(ascent: Int, parts: List[Text]):
     if relative.ascent == 0 then Relative(ascent, parts ++ relative.parts)
     else ancestor(relative.ascent) ++ Relative(0, relative.parts)
 
-  override def equals(that: Any): Boolean = that.unsafeMatchable match
+  override def equals(that: Any): Boolean = that.matchable(using Unsafe) match
     case that: Relative => ascent == that.ascent && parts == that.parts
     case _              => false
 
@@ -121,7 +121,7 @@ trait Root(val separator: Text, val prefix: Text):
         if relative.ascent > 0 then ancestor(relative.ascent) ++ Relative(0, relative.parts)
         else makeAbsolute(parts ++ relative.parts)
       
-      override def equals(that: Any): Boolean = that.unsafeMatchable match
+      override def equals(that: Any): Boolean = that.matchable(using Unsafe) match
         case that: Absolute => parts == that.parts
         case _              => false
 
