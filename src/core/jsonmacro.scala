@@ -44,7 +44,7 @@ object JsonMacro:
           val typeRepr = head.tree match
             case v: ValDef => v.tpt.tpe
             case d: DefDef => d.returnTpt.tpe
-            case _         => throw Impossible("case field is not of the expected AST type")
+            case _         => throw Mistake("case field is not of the expected AST type")
   
           typeRepr.asType match
             case '[t] =>
@@ -63,7 +63,7 @@ object JsonMacro:
                   report.errorAndAbort(s"Unexpectedly found "+other.show)
             
             case _ =>
-              throw Impossible("The case '[t] should be irrefutable")
+              throw Mistake("The case '[t] should be irrefutable")
     
     union(fields).asType match
       case '[errorUnion] => '{
@@ -76,7 +76,7 @@ object JsonMacro:
               val typeRepr = head.tree match
                 case valDef: ValDef => valDef.tpt.tpe
                 case defDef: DefDef => defDef.returnTpt.tpe
-                case _              => throw Impossible(
+                case _              => throw Mistake(
                                             "case field is not of the expected AST type")
       
               typeRepr.asType match
@@ -96,11 +96,11 @@ object JsonMacro:
                       expr :: recur(tail)
                     
                     case _ =>
-                      throw Impossible("Expr.summon should never retrieve a value which doesn't "+
+                      throw Mistake("Expr.summon should never retrieve a value which doesn't "+
                                             "match the first case")
                 
                 case _ =>
-                  throw Impossible("the pattern '[paramType] should be irrefutable")
+                  throw Mistake("the pattern '[paramType] should be irrefutable")
             
           val ap = companion.declaredMethod("apply").head
             
@@ -109,4 +109,4 @@ object JsonMacro:
           type E = errorUnion & Exception
       }
 
-      case _ => throw Impossible("the case '[errorUnion] should be irrefutable")
+      case _ => throw Mistake("the case '[errorUnion] should be irrefutable")

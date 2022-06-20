@@ -44,7 +44,7 @@ extends Error(
   def message: Text = key match
     case idx: Int => t"could not access the index $idx in the JSON array"
     case str: Text => t"could not access the label $str in the JSON object"
-    case _        => throw Impossible("should never match")
+    case _        => throw Mistake("should never match")
 
 object JsonPrimitive:
   given Show[JsonPrimitive] = Showable(_).show
@@ -63,7 +63,7 @@ object Json extends Dynamic:
         case typ: JsonPrimitive => t"<unexpected type: $typ>"
         case text: Text         => t"<missing label: $text>"
         case int: Int           => t"<missing index: $int>"
-        case _                  => throw Impossible("all cases should have been handled")
+        case _                  => throw Mistake("all cases should have been handled")
 
   given clairvoyant.HttpResponse[Json] with
     def mediaType: String = "application/json"
@@ -256,7 +256,7 @@ extends Dynamic, Shown[Json] derives CanEqual:
         case _ =>
           throw JsonAccessError(JsonPrimitive.Object)
       
-      case _ => throw Impossible("should never match")
+      case _ => throw Mistake("should never match")
       
     Json(deref(root, path.reverse), Nil)
 
