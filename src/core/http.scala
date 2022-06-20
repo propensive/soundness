@@ -264,7 +264,7 @@ extends Error((t"HTTP error ", status)):
 trait FailureCase
 
 object HttpStatus:
-  private lazy val all: Map[Int, HttpStatus] = values.unsafeImmutable.mtwin.map(_.code -> _).to(Map)
+  private lazy val all: Map[Int, HttpStatus] = values.immutable(using Unsafe).mtwin.map(_.code -> _).to(Map)
   def unapply(code: Int): Option[HttpStatus] = all.get(code)
 
   given Show[HttpStatus] = status => t"${status.code} (${status.description})"

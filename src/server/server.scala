@@ -316,10 +316,10 @@ case class HttpServer(port: Int) extends RequestHandler:
           ()
         
         case HttpBody.Data(body) =>
-          exchange.getResponseBody.nn.write(body.unsafeMutable)
+          exchange.getResponseBody.nn.write(body.mutable(using Unsafe))
         
         case HttpBody.Chunked(body) =>
-          try body.map(_.unsafeMutable).foreach(exchange.getResponseBody.nn.write(_))
+          try body.map(_.mutable(using Unsafe)).foreach(exchange.getResponseBody.nn.write(_))
           catch case e: StreamCutError => () // FIXME: Should this be ignored?
       
       exchange.getResponseBody.nn.flush()

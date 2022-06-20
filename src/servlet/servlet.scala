@@ -44,11 +44,11 @@ trait Servlet() extends HttpServlet:
           ()
 
         case HttpBody.Data(body) =>
-          response.getOutputStream.nn.write(body.unsafeMutable)
+          response.getOutputStream.nn.write(body.mutable(using Unsafe))
           response.getOutputStream.nn.flush()
 
         case HttpBody.Chunked(body) =>
-          try body.map(_.unsafeMutable).foreach(response.getOutputStream.nn.write(_))
+          try body.map(_.mutable(using Unsafe)).foreach(response.getOutputStream.nn.write(_))
           catch case e: StreamCutError => () // FIXME: Is it correct to just ignore this?
           response.getOutputStream.nn.flush()
 
