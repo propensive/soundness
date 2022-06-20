@@ -210,7 +210,7 @@ class Logger(writer: LazyList[Bytes] => Unit, rules: Seq[Rule[?, ?]], interval: 
   private val queue: juc.ConcurrentLinkedQueue[Bytes] = juc.ConcurrentLinkedQueue[Bytes]()
   private val parentThread: Thread = Thread.currentThread.nn
   private val buf = ji.ByteArrayOutputStream()
-  private val newline = t"\n".bytes.unsafeMutable
+  private val newline = t"\n".bytes.mutable(using Unsafe)
 
   def record(entry: Bytes): Unit = queue.offer(entry)
 
@@ -218,10 +218,10 @@ class Logger(writer: LazyList[Bytes] => Unit, rules: Seq[Rule[?, ?]], interval: 
     Thread.sleep(interval)
     buf.reset()
     while !queue.isEmpty do
-      buf.write(queue.poll.nn.unsafeMutable)
+      buf.write(queue.poll.nn.mutable(using Unsafe))
       buf.write(newline)
 
-    buf.toByteArray.nn.unsafeImmutable #:: (if parentThread.isAlive then logStream else LazyList())
+    buf.toByteArray.nn.immutable(using Unsafe) #:: (if parentThread.isAlive then logStream else LazyList())
 
   def start(): Logger =
     Logger.run:
