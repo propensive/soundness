@@ -47,8 +47,7 @@ trait ParamShow[T]:
   def show(value: T): List[Text]
 
 object ParamParser:
-  given ParamParser[Text] = _.headOption
-  given ParamParser[Int] = _.headOption.flatMap(Int.unapply(_))
+  given [T](using ext: Unapply[Text, T]): ParamParser[T] = _.headOption.flatMap(ext.unapply(_))
   given ParamParser[List[Text]] = Some(_)
 
 trait ParamParser[T]:

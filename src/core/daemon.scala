@@ -155,29 +155,29 @@ trait Daemon() extends App:
     socket.file(Expect).read[LazyList[Line]](256.kb).foldLeft(Map[Int, AppInstance]()):
       case (map, line) =>
         line.text.cut(t"\t").to(List) match
-          case t"PROCESS" :: pid :: _ =>
-            map.updated(pid.toString.toInt, AppInstance(pid.toString.toInt, spawnCount.getAndIncrement()))
+          case t"PROCESS" :: As[Int](pid) :: _ =>
+            map.updated(pid.toString.toInt, AppInstance(pid, spawnCount.getAndIncrement()))
           
-          case t"RUNDIR" :: pid :: dir :: _ =>
+          case t"RUNDIR" :: As[Int](pid) :: dir :: _ =>
             safely(Unix.parse(dir)).option.fold(map): dir =>
-              map.updated(pid.toString.toInt, map(pid.toString.toInt).copy(runDir = dir.directory(Expect)))
+              map.updated(pid, map(pid).copy(runDir = dir.directory(Expect)))
           
-          case t"SCRIPT" :: pid :: scriptDir :: script :: _ =>
+          case t"SCRIPT" :: As[Int](pid) :: scriptDir :: script :: _ =>
             safely(Unix.parse(t"$scriptDir/$script")).option.map(_.file(Expect)).fold(map): file =>
-              map.updated(pid.toString.toInt, map(pid.toString.toInt).copy(scriptFile = file))
+              map.updated(pid, map(pid).copy(scriptFile = file))
           
-          case t"ARGS" :: pid :: count :: args =>
-            map.updated(pid.toString.toInt, map(pid.toString.toInt).copy(args = args.take(count.toString.toInt)))
+          case t"ARGS" :: As[Int](pid) :: As[Int](count) :: args =>
+            map.updated(pid, map(pid).copy(args = args.take(count)))
           
-          case t"RESIZE" :: pid :: _ =>
-            map(pid.toString.toInt).resize()
+          case t"RESIZE" :: As[Int](pid) :: _ =>
+            map(pid).resize()
             map
           
-          case t"ENV" :: pid :: env =>
-            map.updated(pid.toString.toInt, map(pid.toString.toInt).copy(env = parseEnv(env)))
+          case t"ENV" :: As[Int](pid) :: env =>
+            map.updated(pid, map(pid).copy(env = parseEnv(env)))
           
-          case t"START" :: pid :: _ =>
-            map(pid.toString.toInt).spawn()
+          case t"START" :: As[Int](pid) :: _ =>
+            map(pid).spawn()
             map
           
           case t"SHUTDOWN" :: _ =>
