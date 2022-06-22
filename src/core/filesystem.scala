@@ -98,7 +98,7 @@ trait Inode:
 object File:
   given FileProvider[File] with
     def make(str: String, readOnly: Boolean = false): Option[File] =
-      try Filesystem.parse(Text(str)).map(_.file(Expect)) catch case err: IoError => None
+      Some(unsafely(Filesystem.parse(Text(str)).file(Expect)))
     
     def path(file: File): String = file.path.fullname.toString
 
@@ -142,7 +142,7 @@ object DiskPath:
   
   given DirectoryProvider[DiskPath] with
     def make(str: String, readOnly: Boolean = false): Option[DiskPath] =
-      try Filesystem.parse(Text(str)) catch case err: IoError => None
+      safely(Filesystem.parse(Text(str))).option
     
     def path(path: DiskPath): String = path.fullname.toString
 
@@ -190,7 +190,7 @@ trait DiskPath:
 object Directory:
   given DirectoryProvider[Directory] with
     def make(str: String, readOnly: Boolean = false): Option[Directory] =
-      try Filesystem.parse(Text(str)).map(_.directory(Expect)) catch case err: IoError => None
+      safely(Filesystem.parse(Text(str)).directory(Expect)).option
     
     def path(directory: Directory): String = directory.path.fullname.s
 
@@ -236,10 +236,6 @@ extends Error(t"the limit on the number of paths that can be watched has been ex
     EmptyTuple):
   def message: Text = t"the limit on the number of paths that can be watched has been exceeded"
 
-case class InvalidPathError(path: Text)
-extends Error((t"the string ", path, t" is not a valid path")):
-  def message: Text = t"the string '$path' is not a valid path"
-
 open class Classpath(classLoader: ClassLoader = getClass.nn.getClassLoader.nn)
 extends Root(t"/", t""):
   protected inline def classpath: this.type = this
@@ -277,6 +273,8 @@ class Filesystem(pathSeparator: Text, fsPrefix: Text) extends Root(pathSeparator
   fs =>
   type AbsolutePath = DiskPath
 
+  override def toString(): String = fsPrefix.s
+
   val root: DiskPath = DiskPath(Nil)
   lazy val javaFilesystem: jnf.FileSystem = root.javaPath.getFileSystem.nn
 
@@ -285,17 +283,15 @@ class Filesystem(pathSeparator: Text, fsPrefix: Text) extends Root(pathSeparator
   def unapply(path: jnf.Path): Some[DiskPath] =
     Some(DiskPath((0 until path.getNameCount).map(path.getName(_).toString.show).to(List)))
 
-  def parse(value: Text, pwd: Maybe[DiskPath] = Unset): Option[DiskPath] =
-    if value.startsWith(prefix)
-    then
-      val parts: List[Text] = value.drop(prefix.length).cut(separator)
-      Some(DiskPath(List(parts*)))
-    else
-      try pwd.option.map:
-        path =>
-          (path + Relative.parse(value)) match
-            case p: fs.DiskPath => p
-      catch case err: RootParentError => None
+  def parse(value: Text, pwd: Maybe[DiskPath] = Unset): DiskPath throws InvalidPathError =
+    if value.startsWith(prefix) then DiskPath(List(value.drop(prefix.length).cut(separator)*))
+    else try
+      pwd.option.map: path =>
+        (path + Relative.parse(value)) match
+          case p: fs.DiskPath => p
+      .getOrElse:
+        throw InvalidPathError(value)
+    catch case err: RootParentError => throw InvalidPathError(value)
   
   @targetName("access")
   def /(child: Text): Path.Absolute = Path.Absolute(List(child))
@@ -372,7 +368,7 @@ class Filesystem(pathSeparator: Text, fsPrefix: Text) extends Root(pathSeparator
       if !Files.isSymbolicLink(javaFile.toPath)
       then throw IoError(IoError.Op.Access, IoError.Reason.WrongType, this)
       
-      Symlink(this, parse(Showable(Files.readSymbolicLink(Paths.get(fullname.s))).show).get)
+      Symlink(this, unsafely(parse(Showable(Files.readSymbolicLink(Paths.get(fullname.s))).show)))
 
     def descendantFiles(descend: (jovian.Directory => Boolean) = _ => true)
                        : LazyList[File] throws IoError =
@@ -389,7 +385,7 @@ class Filesystem(pathSeparator: Text, fsPrefix: Text) extends Root(pathSeparator
       if isDirectory then Directory(this)
       else if isFile
       then
-        try Symlink(this, parse(Showable(Files.readSymbolicLink(javaPath)).show).get)
+        try Symlink(this, unsafely(parse(Showable(Files.readSymbolicLink(javaPath)).show)))
         catch NoSuchElementException => File(this)
       else File(this)
     
@@ -582,19 +578,19 @@ class Filesystem(pathSeparator: Text, fsPrefix: Text) extends Root(pathSeparator
     val svc: jnf.WatchService = javaFilesystem.newWatchService().nn
     val watches: HashMap[jnf.WatchKey, Directory] = HashMap()
     val directories: HashMap[Directory, jnf.WatchKey] = HashMap()
-    dirs.foreach:
-      dir =>
-        val watchKey = dir.javaPath.register(svc, ENTRY_CREATE, ENTRY_MODIFY, ENTRY_DELETE).nn
-        watches(watchKey) = dir
-        directories(dir) = watchKey
-        Log.info(t"Started watching ${dir.path}")
+    
+    dirs.foreach: dir =>
+      val watchKey = dir.javaPath.register(svc, ENTRY_CREATE, ENTRY_MODIFY, ENTRY_DELETE).nn
+      watches(watchKey) = dir
+      directories(dir) = watchKey
+      Log.info(t"Started watching ${dir.path}")
     
     Watcher(svc, watches, directories)
 
   object Directory:
     given DirectoryProvider[Directory] with
       def make(str: String, readOnly: Boolean = false): Option[Directory] =
-        try parse(Text(str)).map(_.directory(Expect)) catch case err: IoError => None
+        safely(parse(Text(str)).directory(Expect)).option
       
       def path(directory: Directory): String = directory.path.fullname.s
   
@@ -624,11 +620,9 @@ class Filesystem(pathSeparator: Text, fsPrefix: Text) extends Root(pathSeparator
 
     def watch()(using Log): Watcher throws InotifyError | IoError = fs.watch(List(this))
 
-    def children: List[Inode] throws IoError =
-      Option(javaFile.list).fold(Nil):
-        files =>
-          files.nn.immutable(using Unsafe).to(List).map(_.nn).map(Text(_)).map(path.parts :+ _).map(
-              makeAbsolute(_)).map(_.inode)
+    def children: List[Inode] throws IoError = Option(javaFile.list).fold(Nil): files =>
+      files.nn.immutable(using Unsafe).to(List).map(_.nn).map(Text(_)).map(path.parts :+ _).map(
+          makeAbsolute(_)).map(_.inode)
     
     def descendants: LazyList[Inode] throws IoError =
       children.to(LazyList) ++ subdirectories.flatMap(_.descendants)
@@ -760,12 +754,18 @@ object Filesystem:
  
   def defaultSeparator: "/" | "\\" = if ji.File.separator == "\\" then "\\" else "/"
 
-  def parse(text: Text): Option[DiskPath] = roots.flatMap(_.parse(text)).headOption
+  def parse(text: Text): jovian.DiskPath throws InvalidPathError =
+    roots.flatMap: fs =>
+      safely(fs.parse(text)).option
+    .headOption.getOrElse:
+      throw InvalidPathError(text)
+    match
+      case path: jovian.DiskPath => path
 
 object Unix extends Filesystem(t"/", t"/"):
-  def Pwd: DiskPath throws PwdError =
+  def Pwd: DiskPath throws PwdError | InvalidPathError =
     val dir = try Sys.user.dir().show catch case e: KeyNotFoundError => throw PwdError()
-    makeAbsolute(parse(dir).get.parts)
+    makeAbsolute(parse(dir).parts)
 
 case class WindowsRoot(drive: Majuscule) extends Filesystem(t"\\", t"${drive}:\\")
 object windows:
