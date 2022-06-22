@@ -29,25 +29,26 @@ object BaseLayout:
   case class Dir(path: String)
 
 case class BaseLayout(private val path: String, private val env: Maybe[String] = Unset,
-                            readOnly: Boolean = false)
-                       (using baseDir: BaseLayout.Dir):
+                          readOnly: Boolean = false)
+                     (using baseDir: BaseLayout.Dir):
   def absolutePath: String = s"${baseDir.path}/$path"
   given newBaseDir: BaseLayout.Dir = BaseLayout.Dir(absolutePath)
-  
+
   def apply[T]()(using DirectoryProvider[T], EnvVarProvider): T =
     val path: String = env.option match
       case None      => absolutePath
-      case Some(env) => summon[EnvVarProvider](Text(env)) match
-        case None       => absolutePath
-        case Some(path) => path.s
-    summon[DirectoryProvider[T]].make(path, readOnly = readOnly).get
+      case Some(env) => summon[EnvVarProvider](Text(env)).fold(absolutePath)(_.s)
+
+    summon[DirectoryProvider[T]].make(path, readOnly = readOnly) match
+      case None      => throw RuntimeException("failed to parse: '"+path+"'")
+      case Some(dir) => dir
 
 object Root extends BaseLayout("")(using BaseLayout.Dir("")):
   override def absolutePath: String = ""
-  
+
   override def apply[T]()(using DirectoryProvider[T], EnvVarProvider): T =
     summon[DirectoryProvider[T]].make("/", readOnly = true).get
-  
+
   object Boot extends BaseLayout("boot", readOnly = true)
   object Efi extends BaseLayout("efi", readOnly = true)
   object Etc extends BaseLayout("etc")
