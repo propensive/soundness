@@ -102,6 +102,7 @@ case class Property(name: Text) extends Dynamic:
   def apply(): Text throws KeyNotFoundError =
     Text(Option(System.getProperty(name.s)).getOrElse(throw KeyNotFoundError(name)).nn)
   
+  def update(value: Text): Unit = System.setProperty(name.s, value.s)
   def selectDynamic(key: String): Property = Property(Text(s"$name.$key"))
   def applyDynamic(key: String)(): Text throws KeyNotFoundError = selectDynamic(key).apply()
 
