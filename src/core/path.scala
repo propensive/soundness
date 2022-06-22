@@ -34,6 +34,8 @@ object ^ extends Base.Path.Absolute(Nil)
 object ~ extends Relative(0, Nil)
 
 object Relative:
+  val Self = Relative(0, Nil)
+
   given Show[Relative] = relative => relative.parts.join(t"../"*relative.ascent, t"/", t"")
   
   given clairvoyant.HtmlAttribute["href", Relative] with
