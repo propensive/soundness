@@ -175,10 +175,10 @@ case class Request(method: HttpMethod, body: HttpBody.Chunked, query: Text, ssl:
   lazy val headers: Map[RequestHeader, List[Text]] = rawHeaders.map:
     case (RequestHeader(header), values) => header -> values
 
-  lazy val length: Int throws StreamCutError = headers.get(RequestHeader.ContentLength)
-    .map(_.head)
-    .flatMap(Int.unapply(_))
-    .getOrElse(body.stream.map(_.length).sum)
+  lazy val length: Int throws StreamCutError =
+    try headers.get(RequestHeader.ContentLength).map(_.head).map(_.as[Int]).getOrElse:
+      body.stream.map(_.length).sum
+    catch case err: IncompatibleTypeError => throw StreamCutError()
   
   lazy val contentType: Option[MediaType] =
     headers.get(RequestHeader.ContentType).flatMap(_.headOption).flatMap(MediaType.unapply(_))
@@ -199,7 +199,7 @@ def header(using Request)(header: RequestHeader): List[Text] =
   summon[Request].headers.get(header).getOrElse(Nil)
 
 object ParamReader:
-  given ParamReader[Int] = str => Int.unapply(str)
+  given [T](using ext: Unapply[Text, T]): ParamReader[T] = ext.unapply(_)
   given ParamReader[Text] = Some(_)
 
 object UrlPath:
