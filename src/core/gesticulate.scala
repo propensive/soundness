@@ -140,7 +140,8 @@ object Media:
     val xs: List[Text] = string.cut(t";").map(_.trim)
     
     xs match
-      case Nil    => throw Mistake("cannot return empty list from `cut`")
+      case Nil =>
+        throw Mistake("cannot return empty list from `cut`")
       case (h: Text) :: _ =>
         val basic = parseBasic(h)
         MediaType(basic(0), basic(1), basic(2), parseParams(xs.tail))
