@@ -22,6 +22,7 @@ import rudiments.*
 import turbulence.*
 import escapade.*
 import profanity.*
+import slalom.*
 import eucalyptus.*
 
 import scala.concurrent.*
@@ -84,7 +85,7 @@ trait Daemon() extends App:
         Thread(runnable, "exoskeleton-dispatcher").start()
 
   def server(script: Text, fifo: Text, serverPid: Int, watchPid: Int): Unit =
-    val socket: Unix.DiskPath = Unix.parse(fifo).getOrElse(sys.exit(1))
+    val socket: Unix.DiskPath = Unix.parse(fifo)
     
     val death: Runnable = () => try socket.file().delete() catch case e: Exception => ()
     
@@ -99,9 +100,10 @@ trait Daemon() extends App:
                                runDir: Maybe[Directory] = Unset):
       val signals: Funnel[Unit] = Funnel()
       def pwd: Directory throws PwdError =
-        try Unix.parse(env.getOrElse(t"PWD", throw PwdError())).getOrElse(throw PwdError())
-            .directory(Expect)
-        catch case err: IoError => throw PwdError()
+        try Unix.parse(env.getOrElse(t"PWD", throw PwdError())).directory(Expect)
+        catch
+          case err: IoError          => throw PwdError()
+          case err: InvalidPathError => throw PwdError()
 
       def resize(): Unit = signals.put(())
 
@@ -157,12 +159,12 @@ trait Daemon() extends App:
             map.updated(pid.toString.toInt, AppInstance(pid.toString.toInt, spawnCount.getAndIncrement()))
           
           case t"RUNDIR" :: pid :: dir :: _ =>
-            Unix.parse(dir).fold(map):
-              dir => map.updated(pid.toString.toInt, map(pid.toString.toInt).copy(runDir = dir.directory(Expect)))
+            safely(Unix.parse(dir)).option.fold(map): dir =>
+              map.updated(pid.toString.toInt, map(pid.toString.toInt).copy(runDir = dir.directory(Expect)))
           
           case t"SCRIPT" :: pid :: scriptDir :: script :: _ =>
-            Unix.parse(t"$scriptDir/$script").map(_.file(Expect)).fold(map):
-              file => map.updated(pid.toString.toInt, map(pid.toString.toInt).copy(scriptFile = file))
+            safely(Unix.parse(t"$scriptDir/$script")).option.map(_.file(Expect)).fold(map): file =>
+              map.updated(pid.toString.toInt, map(pid.toString.toInt).copy(scriptFile = file))
           
           case t"ARGS" :: pid :: count :: args =>
             map.updated(pid.toString.toInt, map(pid.toString.toInt).copy(args = args.take(count.toString.toInt)))
