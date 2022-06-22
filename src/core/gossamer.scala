@@ -343,30 +343,6 @@ trait Stderr:
 trait Stdout:
   def write(msg: Text): Unit
 
-extension (obj: Boolean.type) def unapply(str: Text): Option[Boolean] =
-  if str == Text("true") then Some(true) else if str == Text("false") then Some(false) else None
-
-extension (obj: Byte.type) def unapply(str: Text): Option[Byte] =
-  try Some(java.lang.Byte.parseByte(str.s)) catch NumberFormatException => None
-
-extension (obj: Short.type) def unapply(str: Text): Option[Short] =
-  try Some(java.lang.Short.parseShort(str.s)) catch NumberFormatException => None
-
-extension (obj: Int.type) def unapply(str: Text): Option[Int] =
-  try Some(java.lang.Integer.parseInt(str.s)) catch NumberFormatException => None
-
-extension (obj: Long.type) def unapply(str: Text): Option[Long] =
-  try Some(java.lang.Long.parseLong(str.s)) catch NumberFormatException => None
-
-extension (obj: Float.type) def unapply(str: Text): Option[Float] =
-  try Some(java.lang.Float.parseFloat(str.s)) catch NumberFormatException => None
-
-extension (obj: Char.type) def unapply(str: Text): Option[Char] =
-  if str.length == 1 then Some(str.s.charAt(0)) else None
-
-extension (obj: Double.type) def unapply(str: Text): Option[Double] =
-  try Some(java.lang.Double.parseDouble(str.s)) catch NumberFormatException => None
-
 object Out:
   def print[T: Show](msg: T)(using stdout: Stdout): Unit = stdout.write(msg.show)
   def println[T: Show](msg: T)(using Stdout): Unit = print(Text(s"${msg.show}\n"))
