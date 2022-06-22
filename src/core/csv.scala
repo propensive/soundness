@@ -75,7 +75,9 @@ object Row:
   given Show[Row] = _.elems.join(t",")
 
 case class Row(elems: Text*):
-  def as[T](using decoder: Csv.Reader[T]): T = decoder.decode(this)
+  def as[T: ColumnParser]: T throws IncompatibleTypeError =
+    summon[ColumnParser[T]].decode(this).getOrElse:
+      throw IncompatibleTypeError()
 
 object Csv extends RowFormat:
   type Type = Csv
@@ -86,42 +88,6 @@ object Csv extends RowFormat:
     def mediaType: String = "text/csv"
     def content(value: Csv): LazyList[IArray[Byte]] =
       LazyList(value.rows.map(Csv.serialize(_)).join(t"\n").bytes)
-
-  given Reader[String] = _.elems.head.s
-  given Reader[Text] = _.elems.head
-  given Reader[Int] = value => Int.unapply(value.elems.head).get
-  given Reader[Boolean] = value => Boolean.unapply(value.elems.head).get
-  given Reader[Double] = value => Double.unapply(value.elems.head).get
-  given Reader[Byte] = value => Byte.unapply(value.elems.head).get
-  given Reader[Short] = value => Short.unapply(value.elems.head).get
-  given Reader[Float] = value => Float.unapply(value.elems.head).get
-  given Reader[Char] = value => Char.unapply(value.elems.head).get
-
-  object Reader extends ProductDerivation[Reader]:
-    def join[T](caseClass: CaseClass[Reader, T]): Reader[T] = Reader[T](
-      fn = { row =>
-        @annotation.tailrec
-        def parseParams(row: Row, typeclasses: Seq[Reader[?]], params: Vector[Any]): T =
-          if typeclasses.isEmpty then caseClass.rawConstruct(params)
-          else
-            val typeclass = typeclasses.head
-            val appended = params :+ typeclass.decode(Row(row.elems.take(typeclass.width)*))
-            parseParams(Row(row.elems.drop(typeclass.width)*), typeclasses.tail, appended)
-        val typeclasses = caseClass.params.map(_.typeclass)
-        parseParams(row, typeclasses, Vector())
-      },
-      width = caseClass.params.map(_.typeclass.width).sum
-    )
-
-    def apply[T](fn: Row => T, width: Int = 1): Reader[T] =
-      val colWidth = width
-      new Reader[T]:
-        def decode(elems: Row): T = fn(elems)
-        override def width: Int = colWidth
-
-  trait Reader[T]:
-    def decode(elems: Row): T
-    def width: Int = 1
 
   given Writer[String] = s => Row(Text(s))
   given Writer[Text] = s => Row(s)
@@ -152,10 +118,10 @@ extension [T](value: Seq[T])
   def tsv(using Csv.Writer[T]): Tsv = Tsv(value.to(List).map(summon[Csv.Writer[T]].write(_)))
 
 case class Csv(rows: List[Row]):
-  def as[T: Csv.Reader]: List[T] = rows.map(_.as[T])
+  def as[T: ColumnParser]: List[T] throws IncompatibleTypeError = rows.map(_.as[T])
 
 case class Tsv(rows: List[Row]):
-  def as[T: Csv.Reader]: List[T] = rows.map(_.as[T])
+  def as[T: ColumnParser]: List[T] throws IncompatibleTypeError = rows.map(_.as[T])
 
 object Tsv extends RowFormat:
   type Type = Tsv
@@ -170,3 +136,34 @@ object Tsv extends RowFormat:
     def content(value: Tsv): LazyList[IArray[Byte]] =
       LazyList(value.rows.map(Tsv.serialize(_)).join(t"\n").bytes)
 
+
+object ColumnParser extends ProductDerivation[ColumnParser]:
+  given [T](using ext: Irrefutable[Text, T]): ColumnParser[T] = v => Some(ext.unapply(v.elems.head))
+  given [T](using ext: Unapply[Text, T]): ColumnParser[T] = v => ext.unapply(v.elems.head)
+  
+  def join[T](caseClass: CaseClass[ColumnParser, T]): ColumnParser[T] = ColumnParser[T](
+    fn = { row =>
+      
+      @annotation.tailrec
+      def parseParams(row: Row, typeclasses: Seq[ColumnParser[?]], params: Vector[Any]): Option[T] =
+        if typeclasses.isEmpty then Some(caseClass.rawConstruct(params))
+        else
+          val typeclass = typeclasses.head
+          val appended = params :+ typeclass.decode(Row(row.elems.take(typeclass.width)*))
+          parseParams(Row(row.elems.drop(typeclass.width)*), typeclasses.tail, appended)
+      
+      val typeclasses = caseClass.params.map(_.typeclass)
+      parseParams(row, typeclasses, Vector())
+    },
+    width = caseClass.params.map(_.typeclass.width).sum
+  )
+
+  def apply[T](fn: Row => Option[T], width: Int = 1): ColumnParser[T] =
+    val colWidth = width
+    new ColumnParser[T]:
+      def decode(elems: Row): Option[T] = fn(elems)
+      override def width: Int = colWidth
+
+trait ColumnParser[T]:
+  def decode(elems: Row): Option[T]
+  def width: Int = 1
