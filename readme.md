@@ -17,9 +17,10 @@ _Scala One_ includes libraries for working with [HTML](https://github.com/propen
 [Markdown](https://github.com/propensive/punctuation/), interacting over
 [HTTP](https://github.com/propensive/scintillate/) or the
 [command line](https://github.com/propensive/exoskeleton/). Additionally, support for
-[disk I/O](https://github.com/propensive/jovian/),
+[disk I/O](https://github.com/propensive/jovian/) and the standard
+[UNIX directory layout](https://github.com/propensive/imperial),
 [shell processes](https://github.com/propensive/guillotine/) (including native
-[keyboard interactivity](https://github.com/propensive/rivulet/)),
+[keyboard interactivity](https://github.com/propensive/profanity/)),
 [cryptographic functions](https://github.com/propensive/gastronomy/),
 [tabular output](https://github.com/propensive/escritoire/) and
 [regular expressions](https://github.com/propensive/kaleidoscope/) is provided, and includes
@@ -27,10 +28,11 @@ representations of [colors](https://github.com/propensive/iridescence/),
 [directed acyclic graphs](https://github.com/propensive/acyclicity/),
 [multilingual strings](https://github.com/propensive/cosmopolite/),
 [MIME types](https://github.com/propensive/gesticulate/) and
-[paths](https://github.com/propensive/slalom/). Fundamental to these projects are utilities for
-[generic derivation](https://github.com/propensive/wisteria/),
+[generalized paths](https://github.com/propensive/slalom/). Fundamental to these projects are
+utilities for [generic derivation](https://github.com/propensive/wisteria/),
 [checked interpolated strings](https://github.com/propensive/contextual/),
 [annotations](https://github.com/propensive/adversaria/),
+[streaming operations](https://github.com/propensive/turbulence),
 [type providers](https://github.com/propensive/polyvinyl/)
 library [decoupling](https://github.com/propensive/clairvoyant/) and
 [unit testing](https://github.com/propensive/probably/) with a
@@ -141,7 +143,7 @@ library should also be small.
 
 _Scala One_ projects already use Scala 3's enhanced exception checking, and in the future, streaming APIs
 built on `LazyList`s will be enhanced to use the experimental capture-checking functionality that is
-expected to be introduced in Scala 3 soon.
+expected to be introduced in Scala 3 soon to provide better safety.
 
 ## _Scala One_ Modules
 
