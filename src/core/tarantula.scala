@@ -24,7 +24,7 @@ import cataract.*
 import honeycomb.*
 import eucalyptus.*
 import rudiments.*
-import clairvoyant.*
+import anticipation.*
 
 import unsafeExceptions.canThrowAny
 import annotation.targetName
