@@ -140,7 +140,9 @@ extension (iarray: IArray.type)
     fn(array)
     array.immutable(using Unsafe)
 
-extension [T](opt: Option[T]) def maybe: Unset.type | T = opt.getOrElse(Unset)
+extension [T](opt: Option[T])
+  def maybe: Unset.type | T = opt.getOrElse(Unset)
+  def assume(using default: Default[T]) = opt.getOrElse(default())
 
 case class Counter(first: Int = 0):
   private var id: Int = first
@@ -321,3 +323,15 @@ case class Uuid(msb: Long, lsb: Long):
   def bytes: Bytes = Bytes(msb) ++ Bytes(lsb)
 
 object Unsafe
+
+object Default:
+  given Default[Int](0)
+  given Default[Long](0L)
+  given Default[Text](Text(""))
+  given Default[String]("")
+  given [T]: Default[List[T]](Nil)
+  given [T]: Default[Set[T]](Set())
+  given [T]: Default[Vector[T]](Vector())
+
+trait Default[+T](default: T):
+  def apply(): T = default
