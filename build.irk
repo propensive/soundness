@@ -9,8 +9,8 @@
       "url": "https://github.com/propensive/kaleidoscope"
     },
     {
-      "base": "../clairvoyant",
-      "url": "https://github.com/propensive/clairvoyant"
+      "base": "../anticipation",
+      "url": "https://github.com/propensive/anticipation"
     },
     {
       "base": "../gastronomy",
@@ -24,7 +24,7 @@
   "imports": [
     "../eucalyptus/build.irk",
     "../kaleidoscope/build.irk",
-    "../clairvoyant/build.irk",
+    "../anticipation/build.irk",
     "../gastronomy/build.irk",
     "../slalom/build.irk"
   ],
@@ -51,9 +51,9 @@
       "name": "Jovian",
       "id": "jovian/core",
       "links": [
-        "clairvoyant/html",
-        "clairvoyant/time",
-        "clairvoyant/file",
+        "anticipation/html",
+        "anticipation/time",
+        "anticipation/file",
         "gastronomy/core",
         "slalom/core",
         "kaleidoscope/core",
