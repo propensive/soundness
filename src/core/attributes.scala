@@ -56,12 +56,12 @@ enum Target:
   case Self, Blank, Parent, Top
 
 object Cls:
-  given clairvoyant.CssSelection[Cls] = cls => t".${cls.name}".s
+  given anticipation.CssSelection[Cls] = cls => t".${cls.name}".s
 
 case class Cls(name: Text)
 
 object DomId:
-  given clairvoyant.CssSelection[DomId] = id => t"#${id.name}".s
+  given anticipation.CssSelection[DomId] = id => t"#${id.name}".s
 
 case class DomId(name: Text)
 
@@ -137,7 +137,7 @@ enum Wrap:
   case Soft, Hard
 
 object HtmlAttribute:
-  given [L <: Label, V, T](using att: clairvoyant.HtmlAttribute[L, V]): HtmlAttribute[L, V, T] with
+  given [L <: Label, V, T](using att: anticipation.HtmlAttribute[L, V]): HtmlAttribute[L, V, T] with
     def convert(value: V): Maybe[Text] = att.serialize(value).show
     override def rename: Option[Text] = Some(att.name.show)
 

@@ -47,7 +47,7 @@ object Html extends Node["html"]:
     Element(label.s, unclosed, inline, verbatim, Map(), Seq(head, body))
 
 object TagType:
-  given clairvoyant.CssSelection[TagType[?, ?, ?]] = _.labelString
+  given anticipation.CssSelection[TagType[?, ?, ?]] = _.labelString
 
 case class TagType[+Name <: Label, Children <: Label, Atts <: Label]
               (labelString: Name, unclosed: Boolean = false, inline: Boolean = false,
@@ -69,7 +69,7 @@ extends Node[Name], Dynamic:
     Element(labelString, unclosed, inline, verbatim, Map(), children)
 
 object TransTagType:
-  given clairvoyant.CssSelection[TransTagType[?, ?, ?]] = _.labelString
+  given anticipation.CssSelection[TransTagType[?, ?, ?]] = _.labelString
 
 case class TransTagType[+Name <: Label, Children <: Label, Atts <: Label]
                    (labelString: Name, unclosed: Boolean = false, inline: Boolean = false,
@@ -104,7 +104,7 @@ case class Element[+Name <: Label](labelString: String, unclosed: Boolean, tagIn
 case class HtmlDoc(root: Node["html"])
 
 object HtmlDoc:
-  given clairvoyant.HttpResponse[HtmlDoc] with
+  given anticipation.HttpResponse[HtmlDoc] with
     def mediaType: String = "text/html; charset=utf-8"
     def content(value: HtmlDoc): LazyList[IArray[Byte]] = LazyList(HtmlDoc.serialize(value).bytes)
 

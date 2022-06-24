@@ -99,7 +99,7 @@ being overly permissive.
 Many such types are not defined in Honeycomb, since their representation is best handled by other
 libraries. Other libraries may nevertheless make their types usable by Honeycomb without adding a
 hard dependency on Honeycomb. This facility is provided through typeclasses defined in
-[Clairvoyant](https://github.com/propensive/clairvoyant), which becomes a necessary dependency
+[Anticipation](https://github.com/propensive/anticipation), which becomes a necessary dependency
 of both libraries, but is tiny, so does not impose any significant burden.
 
 For example, if including [Gesticulate](https://github.com/propensive/gesticulate/) to represent
@@ -111,14 +111,14 @@ val styles = Style(htype = media"text/css")(css)
 ```
 without any additional imports.
 
-A contextual instance of `clairvoyant.HtmlAttribute` is all that is required to make this possible.
+A contextual instance of `anticipation.HtmlAttribute` is all that is required to make this possible.
 
 
 ## Related Projects
 
 The following _Scala One_ libraries are dependencies of _Honeycomb_:
 
-[![Clairvoyant](https://github.com/propensive/clairvoyant/raw/main/doc/images/128x128.png)](https://github.com/propensive/clairvoyant/) &nbsp; [![Gossamer](https://github.com/propensive/gossamer/raw/main/doc/images/128x128.png)](https://github.com/propensive/gossamer/) &nbsp;
+[![Anticipation](https://github.com/propensive/anticipation/raw/main/doc/images/128x128.png)](https://github.com/propensive/anticipation/) &nbsp; [![Gossamer](https://github.com/propensive/gossamer/raw/main/doc/images/128x128.png)](https://github.com/propensive/gossamer/) &nbsp;
 
 The following _Scala One_ libraries are dependents of _Honeycomb_:
 

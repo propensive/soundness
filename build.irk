@@ -1,8 +1,8 @@
 {
   "repos": [
     {
-      "base": "../clairvoyant",
-      "url": "https://github.com/propensive/clairvoyant"
+      "base": "../anticipation",
+      "url": "https://github.com/propensive/anticipation"
     },
     {
       "base": "../gossamer",
@@ -10,7 +10,7 @@
     }
   ],
   "imports": [
-    "../clairvoyant/build.irk",
+    "../anticipation/build.irk",
     "../gossamer/build.irk"
   ],
   "publishing": {
@@ -36,9 +36,9 @@
       "name": "Honeycomb",
       "id": "honeycomb/core",
       "links": [
-        "clairvoyant/html",
-        "clairvoyant/http",
-        "clairvoyant/css",
+        "anticipation/html",
+        "anticipation/http",
+        "anticipation/css",
         "gossamer/core"
       ],
       "sources": [

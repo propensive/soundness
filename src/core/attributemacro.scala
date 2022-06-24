@@ -62,7 +62,7 @@ trait Node[+Name <: Label] extends Shown[Node[?]]:
       case _ => None
 
 object StartTag:
-  given clairvoyant.CssSelection[StartTag[?, ?]] = elem =>
+  given anticipation.CssSelection[StartTag[?, ?]] = elem =>
     val tail = elem.attributes.map:
       case (key, value: Text) => t"[$key=$value]"
       case (key, Unset)       => t"[$key]"
