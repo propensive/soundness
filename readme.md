@@ -1,11 +1,11 @@
-[<img alt="GitHub Workflow" src="https://img.shields.io/github/workflow/status/propensive/clairvoyant/Build/main?style=for-the-badge" height="24">](https://github.com/propensive/clairvoyant/actions)
-[<img src="https://img.shields.io/maven-central/v/com.propensive/clairvoyant-core?color=2465cd&style=for-the-badge" height="24">](https://search.maven.org/artifact/com.propensive/clairvoyant-core)
+[<img alt="GitHub Workflow" src="https://img.shields.io/github/workflow/status/propensive/anticipation/Build/main?style=for-the-badge" height="24">](https://github.com/propensive/anticipation/actions)
+[<img src="https://img.shields.io/maven-central/v/com.propensive/anticipation-core?color=2465cd&style=for-the-badge" height="24">](https://search.maven.org/artifact/com.propensive/anticipation-core)
 [<img src="https://img.shields.io/discord/633198088311537684?color=8899f7&label=DISCORD&style=for-the-badge" height="24">](https://discord.gg/7b6mpF6Qcf)
 <img src="/doc/images/github.png" valign="middle">
 
-# Clairvoyant
+# Anticipation
 
-__Clairvoyant__ provides minimalistic typeclass interfaces to absolve end users
+__Anticipation__ provides minimalistic typeclass interfaces to absolve end users
 of the need for cumbersome dependencies between unrelated projects.
 
 ## Features
@@ -18,11 +18,11 @@ of the need for cumbersome dependencies between unrelated projects.
 
 ## Availability
 
-The current latest release of Clairvoyant is __0.4.0__.
+The current latest release of Anticipation is __0.4.0__.
 
 ## Getting Started
 
-__Clairvoyant__ defines several typeclass interfaces to provide interoperability
+__Anticipation__ defines several typeclass interfaces to provide interoperability
 between different libraries, without requiring a hard dependency between them.
 
 ## The Problem
@@ -52,7 +52,7 @@ Ideally, users should be able to add both J and H (independently) to their
 build, and import no more than the packages of J and H, and automatically get
 access to the integration typeclass instance without any further work.
 
-This is what Clairvoyant provides.
+This is what Anticipation provides.
 
 ## The Solution
 
@@ -66,8 +66,8 @@ library. Whilst this may compromise the utility of these typeclasses, they are
 intended to be used only by the integration libraries; not by end-users.
 
 Continuing the earlier example, the libraries J and H could both depend on
-Clairvoyant. J would then define a typeclass instance for its JSON type in its
-companion object, and H would define a typeclass converter from Clairvoyant's
+Anticipation. J would then define a typeclass instance for its JSON type in its
+companion object, and H would define a typeclass converter from Anticipation's
 typeclass to its own user-facing typeclass interface in its companion object.
 
 Consequently, users of both H and J could depend on both libraries, import both
@@ -77,15 +77,15 @@ between them.
 
 ## Related Projects
 
-_Clairvoyant_ has no dependencies.
+_Anticipation_ has no dependencies.
 
-The following _Scala One_ libraries are dependents of _Clairvoyant_:
+The following _Scala One_ libraries are dependents of _Anticipation_:
 
 [![Caesura](https://github.com/propensive/caesura/raw/main/doc/images/128x128.png)](https://github.com/propensive/caesura/) &nbsp; [![Cataract](https://github.com/propensive/cataract/raw/main/doc/images/128x128.png)](https://github.com/propensive/cataract/) &nbsp; [![Euphemism](https://github.com/propensive/euphemism/raw/main/doc/images/128x128.png)](https://github.com/propensive/euphemism/) &nbsp; [![Gesticulate](https://github.com/propensive/gesticulate/raw/main/doc/images/128x128.png)](https://github.com/propensive/gesticulate/) &nbsp; [![Honeycomb](https://github.com/propensive/honeycomb/raw/main/doc/images/128x128.png)](https://github.com/propensive/honeycomb/) &nbsp; [![Jovian](https://github.com/propensive/jovian/raw/main/doc/images/128x128.png)](https://github.com/propensive/jovian/) &nbsp; [![Punctuation](https://github.com/propensive/punctuation/raw/main/doc/images/128x128.png)](https://github.com/propensive/punctuation/) &nbsp; [![Scintillate](https://github.com/propensive/scintillate/raw/main/doc/images/128x128.png)](https://github.com/propensive/scintillate/) &nbsp; [![Xylophone](https://github.com/propensive/xylophone/raw/main/doc/images/128x128.png)](https://github.com/propensive/xylophone/) &nbsp;
 
 ## Status
 
-Clairvoyant is classified as __fledgling__. Propensive defines the following five stability levels for open-source projects:
+Anticipation is classified as __fledgling__. Propensive defines the following five stability levels for open-source projects:
 
 - _embryonic_: for experimental or demonstrative purposes only, without any guarantees of longevity
 - _fledgling_: of proven utility, seeking contributions, but liable to significant redesigns
@@ -93,11 +93,11 @@ Clairvoyant is classified as __fledgling__. Propensive defines the following fiv
 - _dependable_: production-ready, subject to controlled ongoing maintenance and enhancement; tagged as version `1.0` or later
 - _adamantine_: proven, reliable and production-ready, with no further breaking changes ever anticipated
 
-Clairvoyant is designed to be _small_. Its entire source code currently consists of 30 lines of code.
+Anticipation is designed to be _small_. Its entire source code currently consists of 30 lines of code.
 
 ## Building
 
-Clairvoyant can be built on Linux or Mac OS with Irk, by running the `irk` script in the root directory:
+Anticipation can be built on Linux or Mac OS with Irk, by running the `irk` script in the root directory:
 ```sh
 ./irk
 ```
@@ -107,12 +107,12 @@ invocations will be near-instantaneous.
 
 ## Contributing
 
-Contributors to Clairvoyant are welcome and encouraged. New contributors may like to look for issues marked
-<a href="https://github.com/propensive/clairvoyant/labels/good%20first%20issue"><img alt="label: good first issue"
+Contributors to Anticipation are welcome and encouraged. New contributors may like to look for issues marked
+<a href="https://github.com/propensive/anticipation/labels/good%20first%20issue"><img alt="label: good first issue"
 src="https://img.shields.io/badge/-good%20first%20issue-67b6d0.svg" valign="middle"></a>.
 
 We suggest that all contributors read the [Contributing Guide](/contributing.md) to make the process of
-contributing to Clairvoyant easier.
+contributing to Anticipation easier.
 
 Please __do not__ contact project maintainers privately with questions. While it can be tempting to repsond to
 such questions, private answers cannot be shared with a wider audience, and it can result in duplication of
@@ -120,16 +120,17 @@ effort.
 
 ## Author
 
-Clairvoyant was designed and developed by Jon Pretty, and commercial support and training is available from
+Anticipation was designed and developed by Jon Pretty, and commercial support and training is available from
 [Propensive O&Uuml;](https://propensive.com/).
 
 
 
 ## Name
 
-A _clairvoyant_ is able to foresee the future, as the Clairvoyant modules foresee the need for integration between different libraries. Like the premonitions of a clairvoyant, these integration points may be vague and simplistic.
+Anticipation is the consideration of something before it happens, and _Anticipation_ provides typeclass definitions in expectation of
+their future implementation.
 
 ## License
 
-Clairvoyant is copyright &copy; 2021-22 Jon Pretty & Propensive O&Uuml;, and is made available under the
+Anticipation is copyright &copy; 2021-22 Jon Pretty & Propensive O&Uuml;, and is made available under the
 [Apache 2.0 License](/license.md).

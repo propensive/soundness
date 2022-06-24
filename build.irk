@@ -19,8 +19,8 @@
   },
   "modules": [
     {
-      "name": "Clairvoyant HTTP",
-      "id": "clairvoyant/http",
+      "name": "Anticipation HTTP",
+      "id": "anticipation/http",
       "sources": [
         "src/http"
       ],
@@ -30,8 +30,8 @@
       ]
     },
     {
-      "name": "Clairvoyant File",
-      "id": "clairvoyant/file",
+      "name": "Anticipation File",
+      "id": "anticipation/file",
       "sources": [
         "src/file"
       ],
@@ -41,8 +41,8 @@
       ]
     },
     {
-      "name": "Clairvoyant Time",
-      "id": "clairvoyant/time",
+      "name": "Anticipation Time",
+      "id": "anticipation/time",
       "sources": [
         "src/time"
       ],
@@ -52,8 +52,8 @@
       ]
     },
     {
-      "name": "Clairvoyant URI",
-      "id": "clairvoyant/uri",
+      "name": "Anticipation URI",
+      "id": "anticipation/uri",
       "sources": [
         "src/uri"
       ],
@@ -63,8 +63,8 @@
       ]
     },
     {
-      "name": "Clairvoyant HTML",
-      "id": "clairvoyant/html",
+      "name": "Anticipation HTML",
+      "id": "anticipation/html",
       "sources": [
         "src/html"
       ],
@@ -74,8 +74,8 @@
       ]
     },
     {
-      "name": "Clairvoyant CSS",
-      "id": "clairvoyant/css",
+      "name": "Anticipation CSS",
+      "id": "anticipation/css",
       "sources": [
         "src/css"
       ],
