@@ -130,6 +130,8 @@ extension [T](opt: Maybe[T])
     case Unset => value
     case other: T => other
   
+  def presume(using default: Default[T]): T = otherwise(default())
+  
   def option: Option[T] = opt match
     case Unset => None
     case other: T => Some(other)
@@ -142,7 +144,7 @@ extension (iarray: IArray.type)
 
 extension [T](opt: Option[T])
   def maybe: Unset.type | T = opt.getOrElse(Unset)
-  def assume(using default: Default[T]) = opt.getOrElse(default())
+  def presume(using default: Default[T]) = opt.getOrElse(default())
 
 case class Counter(first: Int = 0):
   private var id: Int = first
