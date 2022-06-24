@@ -17,7 +17,7 @@
 package turbulence
 
 import rudiments.*
-import clairvoyant.*
+import anticipation.*
 
 import scala.collection.IterableFactory
 import scala.collection.mutable.HashMap

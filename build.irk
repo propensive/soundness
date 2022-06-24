@@ -1,8 +1,8 @@
 {
   "repos": [
     {
-      "base": "../clairvoyant",
-      "url": "https://github.com/propensive/clairvoyant"
+      "base": "../anticipation",
+      "url": "https://github.com/propensive/anticipation"
     },
     {
       "base": "../rudiments",
@@ -11,7 +11,7 @@
   ],
   "imports": [
     "../rudiments/build.irk",
-    "../clairvoyant/build.irk"
+    "../anticipation/build.irk"
   ],
   "publishing": {
     "username": "propensive",
@@ -37,7 +37,7 @@
       "id": "turbulence/core",
       "links": [
         "rudiments/core",
-        "clairvoyant/time"
+        "anticipation/time"
       ],
       "sources": [
         "src/core"
