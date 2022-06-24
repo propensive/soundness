@@ -65,11 +65,11 @@ object Json extends Dynamic:
         case int: Int           => t"<missing index: $int>"
         case _                  => throw Mistake("all cases should have been handled")
 
-  given clairvoyant.HttpResponse[Json] with
+  given anticipation.HttpResponse[Json] with
     def mediaType: String = "application/json"
     def content(json: Json): LazyList[IArray[Byte]] = LazyList(json.show.bytes)
 
-  given clairvoyant.HttpReader[Json, JsonParseError] with
+  given anticipation.HttpReader[Json, JsonParseError] with
     def read(value: String): Json throws JsonParseError = Json.parse(Text(value))
 
   given (using readable: Readable[Text]): Readable[Json] with
