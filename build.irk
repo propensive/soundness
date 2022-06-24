@@ -5,13 +5,13 @@
       "url": "https://github.com/propensive/gossamer"
     },
     {
-      "base": "../clairvoyant",
-      "url": "https://github.com/propensive/clairvoyant"
+      "base": "../anticipation",
+      "url": "https://github.com/propensive/anticipation"
     }
   ],
   "imports": [
     "../gossamer/build.irk",
-    "../clairvoyant/build.irk"
+    "../anticipation/build.irk"
   ],
   "publishing": {
     "username": "propensive",
@@ -37,7 +37,7 @@
       "id": "gesticulate/core",
       "links": [
         "gossamer/core",
-        "clairvoyant/html"
+        "anticipation/html"
       ],
       "sources": [
         "src/core"

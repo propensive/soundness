@@ -178,19 +178,19 @@ object MediaType:
   given Show[MediaType] =
     mt => t"${mt.basic}${mt.parameters.map { p => t"; ${p(0)}=${p(1)}" }.join}"
   
-  given formenctype: clairvoyant.HtmlAttribute["formenctype", MediaType] with
+  given formenctype: anticipation.HtmlAttribute["formenctype", MediaType] with
     def name: String = "formenctype"
     def serialize(mediaType: MediaType): String = mediaType.show.s
   
-  given media: clairvoyant.HtmlAttribute["media", MediaType] with
+  given media: anticipation.HtmlAttribute["media", MediaType] with
     def name: String = "media"
     def serialize(mediaType: MediaType): String = mediaType.show.s
   
-  given enctype: clairvoyant.HtmlAttribute["enctype", MediaType] with
+  given enctype: anticipation.HtmlAttribute["enctype", MediaType] with
     def name: String = "enctype"
     def serialize(mediaType: MediaType): String = mediaType.show.s
   
-  given htype: clairvoyant.HtmlAttribute["htype", MediaType] with
+  given htype: anticipation.HtmlAttribute["htype", MediaType] with
     def name: String = "type"
     def serialize(mediaType: MediaType): String = mediaType.show.s
 
