@@ -37,7 +37,7 @@
       "id": "punctuation/core",
       "links": [
         "gossamer/core",
-        "clairvoyant/html"
+        "anticipation/html"
       ],
       "dependencies": [
         "com.vladsch.flexmark:flexmark:0.42.12",
