@@ -9,13 +9,13 @@
       "url": "https://github.com/propensive/probably"
     },
     {
-      "base": "../clairvoyant",
-      "url": "https://github.com/propensive/clairvoyant"
+      "base": "../anticipation",
+      "url": "https://github.com/propensive/anticipation"
     }
   ],
   "imports": [
     "../gossamer/build.irk",
-    "../clairvoyant/build.irk",
+    "../anticipation/build.irk",
     "../probably/build.irk"
   ],
   "publishing": {
@@ -41,7 +41,7 @@
       "name": "Caesura",
       "id": "caesura/core",
       "links": [
-        "clairvoyant/http",
+        "anticipation/http",
         "gossamer/core"
       ],
       "sources": [
