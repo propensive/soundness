@@ -1,8 +1,8 @@
 {
   "repos": [
     {
-      "base": "../clairvoyant",
-      "url": "https://github.com/propensive/clairvoyant"
+      "base": "../anticipation",
+      "url": "https://github.com/propensive/anticipation"
     },
     {
       "base": "../iridescence",
@@ -14,7 +14,7 @@
     }
   ],
   "imports": [
-    "../clairvoyant/build.irk",
+    "../anticipation/build.irk",
     "../iridescence/build.irk",
     "../gossamer/build.irk"
   ],
@@ -43,9 +43,9 @@
       "links": [
         "iridescence/core",
         "gossamer/core",
-        "clairvoyant/http",
-        "clairvoyant/html",
-        "clairvoyant/css"
+        "anticipation/http",
+        "anticipation/html",
+        "anticipation/css"
       ],
       "sources": [
         "src/core"

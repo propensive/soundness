@@ -23,7 +23,7 @@ import annotation.targetName
 import language.dynamics
 
 object CssStylesheet:
-  given clairvoyant.HttpResponse[CssStylesheet] with
+  given anticipation.HttpResponse[CssStylesheet] with
     def mediaType: String = "text/css; charset=utf-8"
     def content(stylesheet: CssStylesheet): LazyList[IArray[Byte]] = LazyList(stylesheet.text.bytes)
   
@@ -51,7 +51,7 @@ case class Import(url: Text) extends CssStylesheet.Item:
   def text: Text = t"@import url('$url');"
 
 object CssStyle:
-  given clairvoyant.HtmlAttribute["style", CssStyle] with
+  given anticipation.HtmlAttribute["style", CssStyle] with
     def serialize(value: CssStyle): String = value.properties.map(_.text).join(t";").s
     def name: String = "style"
 
