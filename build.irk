@@ -5,16 +5,16 @@
       "url": "https://github.com/propensive/rudiments"
     },
     {
-      "base": "../clairvoyant",
-      "url": "https://github.com/propensive/clairvoyant"
+      "base": "../anticipation",
+      "url": "https://github.com/propensive/anticipation"
     }
   ],
-  "imports": ["../rudiments/build.irk", "../clairvoyant/build.irk"],
+  "imports": ["../rudiments/build.irk", "../anticipation/build.irk"],
   "modules": [
     {
       "name": "Imperial",
       "id": "imperial/core",
-      "links": ["rudiments/core", "clairvoyant/file"],
+      "links": ["rudiments/core", "anticipation/file"],
       "sources": ["src/core"],
       "version": "0.4.0",
       "docs": ["doc"]

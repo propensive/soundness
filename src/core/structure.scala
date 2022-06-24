@@ -17,7 +17,7 @@
 package imperial
 
 import rudiments.*
-import clairvoyant.*
+import anticipation.*
 
 object EnvVarProvider:
   given EnvVarProvider = v => Option(System.getenv(v.s)).map(_.nn).map(Text(_))
