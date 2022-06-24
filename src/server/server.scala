@@ -41,7 +41,7 @@ object Handler:
   given [T: Show]: SimpleHandler[T] =
     SimpleHandler(t"text/plain", v => HttpBody.Chunked(LazyList(summon[Show[T]].show(v).bytes)))
 
-  given iarrayByteHandler[T](using hr: clairvoyant.HttpResponse[T]): SimpleHandler[T] =
+  given iarrayByteHandler[T](using hr: anticipation.HttpResponse[T]): SimpleHandler[T] =
     SimpleHandler(Text(hr.mediaType), value => HttpBody.Chunked(hr.content(value).map(identity)))
 
   given Handler[Redirect] with
@@ -209,7 +209,7 @@ trait ParamReader[T]:
   def read(value: Text): Option[T]
 
 object RequestParam:
-  given clairvoyant.HtmlAttribute["name", RequestParam[?]] with
+  given anticipation.HtmlAttribute["name", RequestParam[?]] with
     def name: String = "name"
     def serialize(value: RequestParam[?]): String = value.key.s
 
