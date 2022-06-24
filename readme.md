@@ -34,7 +34,7 @@ utilities for [generic derivation](https://github.com/propensive/wisteria/),
 [annotations](https://github.com/propensive/adversaria/),
 [streaming operations](https://github.com/propensive/turbulence),
 [type providers](https://github.com/propensive/polyvinyl/)
-library [decoupling](https://github.com/propensive/clairvoyant/) and
+library [decoupling](https://github.com/propensive/anticipation/) and
 [unit testing](https://github.com/propensive/probably/) with a
 [WebDriver API](https://github.com/propensive/tarantula/) for browser testing. A module also
 exists for [Scala syntax highlighting](https://github.com/propensive/harlequin/). Everything
@@ -58,7 +58,7 @@ More specifically, each library under the _Scala One_ umbrella adheres to the fo
 - typeclasses—extensibility provided through
   [Wisteria](https://github.com/propensive/wisteria/)'s generic derivation
 - immutability—mutation of state is avoided, even when working with streams
-- decoupled—modules use [Clairvoyant](https://github.com/propensive/clairvoyant/) to minimise
+- decoupled—modules use [Anticipation](https://github.com/propensive/anticipation/) to minimise
   unnecessary dependencies
 - functional programming—embracing the fundamentals of FP, but avoiding the complexity
 - small APIs—above all, code should be legible, natural and elegant
@@ -117,7 +117,7 @@ For example, an HTTP server should be able to serve a XML value with the correct
 too much boilerplate. That is easily achieved by making one library a dependency of the other. But
 the user of a XML library should not need to include an HTTP server (nor should an HTTP server
 require a XML library). The solution is to make use of minimal typeclasses provided by
-[Clairvoyant](https://github.com/propensive/clairvoyant/) to maximally decouple independent
+[Anticipation](https://github.com/propensive/anticipation/) to maximally decouple independent
 libraries.
 
 ### Small APIs
@@ -151,7 +151,7 @@ expected to be introduced in Scala 3 soon to provide better safety.
 [![Adversaria](https://github.com/propensive/adversaria/raw/main/doc/images/128x128.png)](https://github.com/propensive/adversaria/) &nbsp;
 [![Caesura](https://github.com/propensive/caesura/raw/main/doc/images/128x128.png)](https://github.com/propensive/caesura/) &nbsp;
 [![Cataract](https://github.com/propensive/cataract/raw/main/doc/images/128x128.png)](https://github.com/propensive/cataract/) &nbsp;
-[![Clairvoyant](https://github.com/propensive/clairvoyant/raw/main/doc/images/128x128.png)](https://github.com/propensive/clairvoyant/) &nbsp;
+[![Anticipation](https://github.com/propensive/anticipation/raw/main/doc/images/128x128.png)](https://github.com/propensive/anticipation/) &nbsp;
 [![Contextual](https://github.com/propensive/contextual/raw/main/doc/images/128x128.png)](https://github.com/propensive/contextual/) &nbsp;
 [![Cosmopolite](https://github.com/propensive/cosmopolite/raw/main/doc/images/128x128.png)](https://github.com/propensive/cosmopolite/) &nbsp;
 [![Escapade](https://github.com/propensive/escapade/raw/main/doc/images/128x128.png)](https://github.com/propensive/escapade/) &nbsp;
