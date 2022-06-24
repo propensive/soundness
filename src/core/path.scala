@@ -38,7 +38,7 @@ object Relative:
 
   given Show[Relative] = relative => relative.parts.join(t"../"*relative.ascent, t"/", t"")
   
-  given clairvoyant.HtmlAttribute["href", Relative] with
+  given anticipation.HtmlAttribute["href", Relative] with
     def name = "href"
     def serialize(value: Relative): String = value.show.s
 
@@ -137,7 +137,7 @@ object Base extends Root(t"/", t"/"):
     if text.startsWith(t"/") then Path.Absolute(text.dropWhile(_ == '/').cut(t"/"))
     else throw InvalidPathError(text)
 
-  given clairvoyant.HtmlAttribute["href", Path.Absolute] with
+  given anticipation.HtmlAttribute["href", Path.Absolute] with
     def name = "href"
     def serialize(value: Path.Absolute): String = value.show.s
 
