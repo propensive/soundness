@@ -754,11 +754,16 @@ object Filesystem:
  
   def defaultSeparator: "/" | "\\" = if ji.File.separator == "\\" then "\\" else "/"
 
-  def parse(text: Text): jovian.DiskPath throws InvalidPathError =
+  def parse(value: Text, pwd: Maybe[DiskPath] = Unset): jovian.DiskPath throws InvalidPathError =
     roots.flatMap: fs =>
-      safely(fs.parse(text)).option
+      safely(fs.parse(value)).option
     .headOption.getOrElse:
-      throw InvalidPathError(text)
+      pwd.option.flatMap: path =>
+        try (path + Relative.parse(value)) match
+          case p: jovian.DiskPath => Some(p)
+        catch case err: RootParentError => None
+      .getOrElse:
+        throw InvalidPathError(value)
     match
       case path: jovian.DiskPath => path
 
