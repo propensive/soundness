@@ -179,8 +179,15 @@ extension [T](xs: Iterable[T])
   transparent inline def mtwin: Iterable[(T, T)] = xs.map { x => (x, x) }
   transparent inline def mtriple: Iterable[(T, T, T)] = xs.map { x => (x, x, x) }
   transparent inline def sift[S]: Iterable[S] = xs.collect { case x: S => x }
+  
+  def indexBy[S](fn: T => S): Map[S, T] throws DuplicateIndexError =
+    val map = xs.map { value => fn(value) -> value }
+    if xs.size != map.size then throw DuplicateIndexError() else map.to(Map)
 
 object Timer extends ju.Timer(true)
+
+case class DuplicateIndexError() extends Error(EmptyTuple):
+  def message: Text = Text("the sequence contained more than one element that mapped to the same index")
 
 case class TimeoutError() extends Error(EmptyTuple):
   def message: Text = Text("An operation did not complete in the time it was given")
