@@ -29,6 +29,7 @@ import scala.util.*
 import scala.collection.generic.CanBuildFrom
 import scala.collection.mutable.HashMap
 import scala.concurrent.*
+import scala.quoted.*
 
 import java.net.URI
 import java.nio.file as jnf
@@ -52,6 +53,29 @@ extends Error((t"the resource ", path, t" could not be accessed on the classpath
 case class PwdError()
 extends Error(t"the current working directory cannot be determined" *: EmptyTuple):
   def message: Text = t"the current working directory cannot be determined"
+
+case class PathElement(value: Text)
+
+object PathElement:
+  private val forbidden = Set('<', '>', ':', '"', '\\', '|', '?', '*')
+  def make(sc: Expr[StringContext])(using Quotes): Expr[PathElement] =
+    import quotes.*, quotes.reflect.*
+    
+    val str = sc match
+      case '{ StringContext($str: String) } => str.value.get
+
+    if str == "" then report.errorAndAbort("jovian: a path cannot be empty")
+    else if str == "." then report.errorAndAbort("jovian: a path cannot be the string \".\"")
+    else if str == ".." then report.errorAndAbort("jovian: a path cannot be the string \"..\"")
+    else if str.contains("/") then report.errorAndAbort("jovian: a path cannot contain the '/' character")
+    else if str.contains("\u0000") then report.errorAndAbort("jovian: a path cannot contain the 'NUL' character")
+    else
+      val misused = forbidden.intersect(str.to(Set))
+      if !misused.isEmpty then report.errorAndAbort(s"jovian: a path cannot contain the characters ${misused.to(List).map(_.toString).map(Text(_)).join(t"'", t"', '", t"' or '", t"'").s} on Windows, and they're not advised more generally")
+      else '{PathElement(Text(${Expr(str)}))}
+
+extension (inline sc: StringContext)
+  inline def p(): PathElement = ${PathElement.make('sc)}
 
 object Fifo:
   given Sink[Fifo] with
@@ -184,6 +208,7 @@ trait DiskPath:
     
   @targetName("access")
   def /(child: Text): DiskPath throws RootParentError
+  def /(child: PathElement): DiskPath = unsafely(/(child.value))
   
   def descendantFiles(descend: (Directory => Boolean) = _ => true): LazyList[File] throws IoError
 
@@ -207,6 +232,7 @@ trait Directory extends Inode:
   
   @targetName("access")
   def /(child: Text): DiskPath throws RootParentError
+  def /(child: PathElement): DiskPath = unsafely(/(child.value))
 
 object IoError:
   object Reason:
@@ -246,6 +272,7 @@ extends Root(t"/", t""):
 
   @targetName("access")
   def /(child: Text): ClasspathRef = ClasspathRef(List(child))
+  def /(child: PathElement): ClasspathRef = ClasspathRef(List(child.value))
 
   object ClasspathRef:
     given Show[ClasspathRef] = _.parts.join(t"classpath:", t"/", t"")
@@ -295,6 +322,7 @@ class Filesystem(pathSeparator: Text, fsPrefix: Text) extends Root(pathSeparator
   
   @targetName("access")
   def /(child: Text): Path.Absolute = Path.Absolute(List(child))
+  def /(child: PathElement): Path.Absolute = Path.Absolute(List(child.value))
 
   case class DiskPath(elements: List[Text]) extends Path.Absolute(elements), jovian.DiskPath:
     lazy val javaFile: ji.File = ji.File(fullname.s)
@@ -649,7 +677,6 @@ class Filesystem(pathSeparator: Text, fsPrefix: Text) extends Root(pathSeparator
 
     @targetName("access")
     def /(child: Text): DiskPath throws RootParentError = makeAbsolute((path / child).parts)
-
 
 // object OldPath:
 //   def apply(jpath: JavaPath): Path = Path(jpath.show.s match
