@@ -31,7 +31,7 @@ case class InvalidPathError(path: Text) extends Error((t"the path ", path, " was
     txt"the path $path was not absolute, since it did not begin with the / character"
 
 object ^ extends Base.Path.Absolute(Nil)
-object ~ extends Relative(0, Nil)
+object ? extends Relative(0, Nil)
 
 object Relative:
   val Self = Relative(0, Nil)
