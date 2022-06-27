@@ -58,21 +58,35 @@ case class PathElement(value: Text)
 
 object PathElement:
   private val forbidden = Set('<', '>', ':', '"', '\\', '|', '?', '*')
+  
+  private val windowsForbidden = Set(t"con", t"prn", t"aux", t"nul", t"com1", t"com2", t"com3", t"com4",
+      t"com5", t"com6", t"com7", t"com8", t"com9", t"lpt1", t"lpt2", t"lpt3", t"lpt4", t"lpt5", t"lpt6",
+      t"lpt7", t"lpt8", t"lpt9")
+  
   def make(sc: Expr[StringContext])(using Quotes): Expr[PathElement] =
     import quotes.*, quotes.reflect.*
     
     val str = sc match
       case '{ StringContext($str: String) } => str.value.get
 
-    if str == "" then report.errorAndAbort("jovian: a path cannot be empty")
-    else if str == "." then report.errorAndAbort("jovian: a path cannot be the string \".\"")
-    else if str == ".." then report.errorAndAbort("jovian: a path cannot be the string \"..\"")
-    else if str.contains("/") then report.errorAndAbort("jovian: a path cannot contain the '/' character")
-    else if str.contains("\u0000") then report.errorAndAbort("jovian: a path cannot contain the 'NUL' character")
-    else
-      val misused = forbidden.intersect(str.to(Set))
-      if !misused.isEmpty then report.errorAndAbort(s"jovian: a path cannot contain the characters ${misused.to(List).map(_.toString).map(Text(_)).join(t"'", t"', '", t"' or '", t"'").s} on Windows, and they're not advised more generally")
-      else '{PathElement(Text(${Expr(str)}))}
+    str match
+      case "" =>
+        report.errorAndAbort("jovian: a pathname cannot be empty")
+      case "." =>
+        report.errorAndAbort("jovian: a pathname cannot be the string \".\"")
+      case ".." =>
+        report.errorAndAbort("jovian: a pathname cannot be the string \"..\"")
+      case str =>
+        if str.endsWith(".") then report.errorAndAbort("jovian: the pathname cannot end with a '.' character on Windows")
+        else if str.endsWith(" ") then report.errorAndAbort("jovian: the pathname cannot end with a space on Windows")
+        else if windowsForbidden.contains(Text(str).cut(t".").head.lower)
+        then report.errorAndAbort(s"jovian: the pathname $str (with or without an extension) is not valid on Windows")
+        else if str.contains("/") then report.errorAndAbort("jovian: a path cannot contain the '/' character")
+        else if str.exists(_ < 32) then report.errorAndAbort("jovian: a path cannot contain control characters")
+        else
+          val misused = forbidden.intersect(str.to(Set))
+          if !misused.isEmpty then report.errorAndAbort(s"jovian: a path cannot contain the characters ${misused.to(List).map(_.toString).map(Text(_)).join(t"'", t"', '", t"' or '", t"'").s} on Windows, and they're not advised more generally")
+          else '{PathElement(Text(${Expr(str)}))}
 
 extension (inline sc: StringContext)
   inline def p(): PathElement = ${PathElement.make('sc)}
@@ -279,6 +293,7 @@ extends Root(t"/", t""):
 
   case class ClasspathRef(elements: List[Text]) extends Path.Absolute(elements):
     def resource: Resource = Resource(makeAbsolute(parts))
+    def /(child: PathElement): ClasspathRef = unsafely(/(child.value))
 
   case class Resource(path: ClasspathRef):
     def read[T](limit: ByteSize = 64.kb)(using readable: Readable[T])
@@ -478,6 +493,19 @@ class Filesystem(pathSeparator: Text, fsPrefix: Text) extends Root(pathSeparator
       
       dest.file(Expect)
 
+    def moveTo(dest: jovian.DiskPath): jovian.Directory throws IoError =
+      try
+        unsafely(dest.parent.exists())
+        Files.move(javaPath, dest.javaPath, StandardCopyOption.REPLACE_EXISTING).unit
+      catch
+        case e: DirectoryNotEmptyException =>
+          copyTo(dest)
+          delete().unit
+        case e =>
+          throw IoError(IoError.Op.Write, IoError.Reason.AccessDenied, dest)
+
+      dest.directory(Expect)
+      
     def hardLinkCount(): Int throws IoError =
       try Files.getAttribute(javaPath, "unix:nlink") match
         case i: Int => i
@@ -674,96 +702,22 @@ class Filesystem(pathSeparator: Text, fsPrefix: Text) extends Root(pathSeparator
       catch e => throw IoError(IoError.Op.Write, IoError.Reason.AccessDenied, dirPath)
       
       dest.directory(Expect)
+    
+    def moveTo(dest: jovian.DiskPath): jovian.Directory throws IoError =
+      try
+        unsafely(dest.parent.exists())
+        Files.move(javaPath, dest.javaPath, StandardCopyOption.REPLACE_EXISTING).unit
+      catch
+        case e: DirectoryNotEmptyException =>
+          copyTo(dest)
+          delete()
+        case e =>
+          throw IoError(IoError.Op.Write, IoError.Reason.AccessDenied, dest)
+    
+      dest.directory(Expect)
 
     @targetName("access")
     def /(child: Text): DiskPath throws RootParentError = makeAbsolute((path / child).parts)
-
-// object OldPath:
-//   def apply(jpath: JavaPath): Path = Path(jpath.show.s match
-//     case ""    => "."
-//     case other => other
-//   )
-  
-//   def apply(file: JavaFile): Path = Path(file.getAbsolutePath)
-//   def apply(uri: URI): Path = Path(Paths.get(uri))
-
-//   def unapply(str: String): Option[Path] = str match
-//     case r"""${dir: String}@([^*?:;,&|"\%<>]*)""" => Some(Path(dir))
-//     case _                              => None
-
-//   private class CopyFileVisitor(sourcePath: JavaPath, targetPath: JavaPath) extends SimpleFileVisitor[JavaPath]:
-
-//     override def preVisitDirectory(dir: JavaPath, attrs: BasicFileAttributes): FileVisitResult =
-//       targetPath.resolve(sourcePath.relativize(dir)).toFile.mkdirs()
-//       FileVisitResult.CONTINUE
-
-//     override def visitFile(file: JavaPath, attrs: BasicFileAttributes): FileVisitResult =
-//       Files.copy(file, targetPath.resolve(sourcePath.relativize(file)), REPLACE_EXISTING)
-//       FileVisitResult.CONTINUE
-
-
-//   def apply(input: String): Path =
-//     if input == "/" then ji.File.separator
-//     else
-//       def canonicalize(str: List[String], drop: Int = 0): List[String] = str match
-//         case ".." :: tail => canonicalize(tail, drop + 1)
-//         case head :: tail => if drop > 0 then canonicalize(tail, drop - 1) else head :: canonicalize(tail)
-//         case Nil          => List.fill(drop)("..")
-      
-//       canonicalize((input.cut("/").to(List) match
-//         case "" :: xs => "" :: xs.filter { p => p != "." && p != "" }
-//         case xs       => xs.filter { p => p != "." && p != "" }
-//       ).reverse).reverse match
-//         case Nil => "."
-//         case xs  => xs.mkString("/")
-
-  // extension (path: Path)
-  //   def filename: String = path
-  //   def name: String = Showable(javaPath.getFileName).show
-
-  //   def setReadOnly(recursion: Recursion): Unit throws UnchangeablePermissions =
-  //     if !javaFile.setWritable(false) then throw UnchangeablePermissions(path)
-  //     if recursion == Recursion.Recursive then children.foreach(_.setWritable(recursion))
-
-  //   def setWritable(recursion: Recursion): Unit throws UnchangeablePermissions =
-  //     if !javaFile.setWritable(true) then throw UnchangeablePermissions(path)
-  //     if recursion == Recursion.Recursive then children.foreach(_.setWritable(recursion))
-
-  //   def uniquify(): Path =
-  //     if !exists() then path else LazyList.from(2).map { i => rename(_+"-"+i) }.find(!_.exists()).get
-
-  //   def directory: Boolean = Files.isDirectory(javaPath)
-
-  //   def extantParents(): Path =
-  //     parent.mkdir()
-  //     path
-
-  //   def setExecutable(exec: Boolean): Unit throws UnchangeablePermissions =
-  //     try javaFile.setExecutable(exec).unit catch e => throw UnchangeablePermissions(path)
-
-  //   def moveTo(dest: Path): Unit throws NotWritable =
-  //     try
-  //       path.parent.extant()
-  //       Files.move(javaPath, dest.javaPath, StandardCopyOption.REPLACE_EXISTING).unit
-  //     catch
-  //       case e: DirectoryNotEmptyException =>
-  //         copyTo(dest)
-  //         delete().unit
-  //       case e =>
-  //         throw NotWritable(dest)
-
-  //   def relativeSubdirsContaining(pred: String => Boolean): Set[Path] =
-  //     findSubdirsContaining(pred).map { p => Path(p.filename.drop(path.length + 1)) }
-
-  //   def unlink(): Unit throws NotSymbolicLink | NotWritable =
-  //     try if Files.isSymbolicLink(javaPath) then Files.delete(javaPath) else throw NotSymbolicLink(path)
-  //     catch e => throw NotWritable(path)
-
-  //   def rename(fn: String => String): Path = parent / fn(name)
-    
-  //   def symlinkTo(target: Path): Unit throws NotWritable =
-  //     try Files.createSymbolicLink(target.javaPath, javaPath)
-  //     catch case e: ji.IOException => throw NotWritable(path)
 
 object Filesystem:
   lazy val roots: Set[Filesystem] =
