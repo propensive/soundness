@@ -58,8 +58,8 @@ case class TextStyle(fg: Option[Srgb] = None, bg: Option[Srgb] = None, italic: B
   private def strikeEsc: Text = if strike then styles.Strike.on else styles.Strike.off
   
   def changes(next: TextStyle): Text = List(
-    if fg != next.fg then next.fg.map(_.ansiFg24).getOrElse(t"$esc[39m") else t"",
-    if bg != next.bg then next.bg.map(_.ansiBg24).getOrElse(t"$esc[49m") else t"",
+    if fg != next.fg then next.fg.map(_.ansiFg8).getOrElse(t"$esc[39m") else t"",
+    if bg != next.bg then next.bg.map(_.ansiBg8).getOrElse(t"$esc[49m") else t"",
     if italic != next.italic then t"${esc}${next.italicEsc}" else t"",
     if bold != next.bold then t"${esc}${next.boldEsc}" else t"",
     if reverse != next.reverse then t"${esc}${next.reverseEsc}" else t"",
