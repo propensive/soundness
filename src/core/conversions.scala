@@ -58,6 +58,20 @@ case class Srgb(red: Double, green: Double, blue: Double) extends Color:
   def ansiBg24: Text =
     Text(s"${27.toChar}[48;2;${(red*255).toInt};${(green*255).toInt};${(blue*255).toInt}m")
   
+  def ansiFg8: Text =
+    val n =
+      if red == green && green == blue then 232 + (red*23 + 0.99).toInt
+      else 16 + 36*(red*5 + 0.99).toInt + 6*(green*5 + 0.99).toInt + (blue*5 + 0.99).toInt
+    
+    Text(s"${27.toChar}[38;5;${n}m")
+
+  def ansiBg8: Text =
+    val n =
+      if red == green && green == blue then 232 + (red*23 + 0.99).toInt
+      else 16 + 36*(red*5 + 0.99).toInt + 6*(green*5 + 0.99).toInt + (blue*5 + 0.99).toInt
+    
+    Text(s"${27.toChar}[48;5;${n}m")
+
   def hex12: Text =
     val rgb = IArray(red, green, blue).map:
       c => Text(Integer.toHexString((c*16).toInt).nn)
