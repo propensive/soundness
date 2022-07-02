@@ -19,7 +19,7 @@ package scintillate
 import slalom.*
 import gossamer.*
 import rudiments.*
-import clairvoyant.*
+import anticipation.*
 
 object Host:
   given Show[Host] = _.parts.join(t".")

@@ -68,7 +68,7 @@ object Postable extends FallbackPostable:
   given Postable[LazyList[Bytes]] = Postable(media"application/octet-stream", _.map(identity(_)))
   given Postable[DataStream] = Postable(media"application/octet-stream", identity(_))
   
-  given dataStream[T](using response: clairvoyant.HttpResponse[T]): Postable[T] =
+  given dataStream[T](using response: anticipation.HttpResponse[T]): Postable[T] =
     erased given CanThrow[InvalidMediaTypeError] = compiletime.erasedValue
     Postable(Media.parse(response.mediaType.show), response.content(_).map { v => v })
   
@@ -87,7 +87,7 @@ class Postable[T](val contentType: MediaType,
       case err: StreamCutError => t"[broken stream]"
 
 object HttpMethod:
-  given formmethod: clairvoyant.HtmlAttribute["formmethod", HttpMethod] with
+  given formmethod: anticipation.HtmlAttribute["formmethod", HttpMethod] with
     def name: String = "formmethod"
     
     def serialize(method: HttpMethod): String =
@@ -114,7 +114,7 @@ object HttpReadable:
       case HttpBody.Data(body)    => body
       case HttpBody.Chunked(body) => body.slurp(limit = 10.mb)
 
-  given [T, E2 <: Exception](using reader: clairvoyant.HttpReader[T, E2]): HttpReadable[T] with
+  given [T, E2 <: Exception](using reader: anticipation.HttpReader[T, E2]): HttpReadable[T] with
     type E = E2
     def read(status: HttpStatus, body: HttpBody): T throws ExcessDataError | StreamCutError | E2 = body match
       case HttpBody.Empty         => reader.read("")
@@ -352,39 +352,39 @@ object Uri:
 
   given AnsiShow[Uri] = uri => ansi"$Underline(${colors.DeepSkyBlue}(${show.show(uri)}))"
   
-  given action: clairvoyant.HtmlAttribute["action", Uri] with
+  given action: anticipation.HtmlAttribute["action", Uri] with
     def name: String = "action"
     def serialize(uri: Uri): String = uri.show.s
   
-  given codebase: clairvoyant.HtmlAttribute["codebase", Uri] with
+  given codebase: anticipation.HtmlAttribute["codebase", Uri] with
     def name: String = "codebase"
     def serialize(uri: Uri): String = uri.show.s
   
-  given cite: clairvoyant.HtmlAttribute["cite", Uri] with
+  given cite: anticipation.HtmlAttribute["cite", Uri] with
     def name: String = "cite"
     def serialize(uri: Uri): String = uri.show.s
   
-  given data: clairvoyant.HtmlAttribute["data", Uri] with
+  given data: anticipation.HtmlAttribute["data", Uri] with
     def name: String = "data"
     def serialize(uri: Uri): String = uri.show.s
 
-  given formaction: clairvoyant.HtmlAttribute["formaction", Uri] with
+  given formaction: anticipation.HtmlAttribute["formaction", Uri] with
     def name: String = "formaction"
     def serialize(uri: Uri): String = uri.show.s
  
-  given poster: clairvoyant.HtmlAttribute["poster", Uri] with
+  given poster: anticipation.HtmlAttribute["poster", Uri] with
     def name: String = "poster"
     def serialize(uri: Uri): String = uri.show.s
 
-  given src: clairvoyant.HtmlAttribute["src", Uri] with
+  given src: anticipation.HtmlAttribute["src", Uri] with
     def name: String = "src"
     def serialize(uri: Uri): String = uri.show.s
   
-  given href: clairvoyant.HtmlAttribute["href", Uri] with
+  given href: anticipation.HtmlAttribute["href", Uri] with
     def name: String = "href"
     def serialize(uri: Uri): String = uri.show.s
   
-  given manifest: clairvoyant.HtmlAttribute["manifest", Uri] with
+  given manifest: anticipation.HtmlAttribute["manifest", Uri] with
     def name: String = "manifest"
     def serialize(uri: Uri): String = uri.show.s
 
