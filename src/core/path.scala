@@ -112,6 +112,8 @@ trait Root(val separator: Text, val prefix: Text):
         val common = conjunction(base)
         Relative(base.parts.length - common.parts.length, parts.drop(common.parts.length))
 
+      def precedes(path: AbsolutePath): Boolean = conjunction(path).parts == parts
+
       @targetName("access")
       infix def /(filename: Text): AbsolutePath throws RootParentError = filename match
         case t".." => if parts.isEmpty then throw RootParentError(root) else makeAbsolute(parts.init)
