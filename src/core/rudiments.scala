@@ -344,3 +344,13 @@ object Default:
 
 trait Default[+T](default: T):
   def apply(): T = default
+
+package environments:
+  given system: Environment = v => Option(System.getenv(v.s)).map(_.nn).map(Text(_))
+  given empty: Environment = v => None
+
+@implicitNotFound("rudiments: a contextual Environment is required, for example\n    given Environment()\nor,\n"+
+                      "    given Envronment = environments.system")
+trait Environment:
+  def apply(variable: Text): Option[Text]
+
