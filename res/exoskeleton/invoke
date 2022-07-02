@@ -36,7 +36,7 @@ connect() {
   echo "ARGS	$PID	$ARGCOUNT	$ARGS" > "$FIFO"
   echo "ENV	$PID	$(env | tr '\n' '\t')" > "$FIFO"
   echo "START	$PID" > "$FIFO"
-  cat - > "$STDIN" <&0 &
+  cat - 2> /dev/null > "$STDIN" <&0 &
   CATPID="$!"
   cat "$STDOUT" &
   WRITERPID="$!"
