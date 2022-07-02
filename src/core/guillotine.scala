@@ -143,8 +143,8 @@ case class Pipeline(cmds: Command*) extends Executable:
         pb.nn
     ).nn.to(List).last, exec)
 
-@implicitNotFound("guillotine: a contextual Env is required, for example\n    given Env()\nor,\n"+
-                      "    given Env = envs.enclosing")
+@implicitNotFound("guillotine: a contextual rudiments.Environment is required, for example\n    given Environment()\nor,\n"+
+                      "    given Envronment = environments.system")
 case class Env(vars: Map[Text, Text], workDir: Maybe[Text] = Unset):
   private[guillotine] lazy val envArray: Array[String] = vars.map { (k, v) => s"$k=$v" }.to(Array)
   
