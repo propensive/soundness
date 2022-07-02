@@ -251,7 +251,9 @@ trait Directory extends Inode:
 object IoError:
   object Reason:
     given Show[Reason] =
-      case WrongType            => t"the path refers to the wrong type of node"
+      case NotFile              => t"the path does not refer to a file"
+      case NotDirectory         => t"the path does not refer to a directory"
+      case NotSymlink           => t"the path does not refer to a symbolic link"
       case DoesNotExist         => t"no node exists at this path"
       case AlreadyExists        => t"a node already exists at this path"
       case AccessDenied         => t"the operation is not permitted on this path"
@@ -259,7 +261,7 @@ object IoError:
       case NotSupported         => t"the filesystem does not support it"
 
   enum Reason:
-    case WrongType, DoesNotExist, AlreadyExists, AccessDenied, DifferentFilesystems, NotSupported
+    case NotFile, NotDirectory, NotSymlink, DoesNotExist, AlreadyExists, AccessDenied, DifferentFilesystems, NotSupported
 
   object Op:
     given Show[Op] = Showable(_).show.lower
@@ -376,7 +378,7 @@ class Filesystem(pathSeparator: Text, fsPrefix: Text) extends Root(pathSeparator
         catch case err: RootParentError => throw IoError(Op.Create, Reason.AccessDenied, this)
         
         if !exists() then File(this).touch()
-        if !isFile then throw IoError(IoError.Op.Access, IoError.Reason.WrongType, this)
+        if !isFile then throw IoError(IoError.Op.Access, IoError.Reason.NotFile, this)
         
         File(this)
 
@@ -400,7 +402,7 @@ class Filesystem(pathSeparator: Text, fsPrefix: Text) extends Root(pathSeparator
       if !exists() && creation == Creation.Expect
       then throw IoError(IoError.Op.Access, IoError.Reason.DoesNotExist, this)
       
-      if !isDirectory then throw IoError(IoError.Op.Access, IoError.Reason.WrongType, this)
+      if !isDirectory then throw IoError(IoError.Op.Access, IoError.Reason.NotDirectory, this)
       
       Directory(this)
   
@@ -409,7 +411,7 @@ class Filesystem(pathSeparator: Text, fsPrefix: Text) extends Root(pathSeparator
       then throw IoError(IoError.Op.Access, IoError.Reason.DoesNotExist, this)
       
       if !Files.isSymbolicLink(javaFile.toPath)
-      then throw IoError(IoError.Op.Access, IoError.Reason.WrongType, this)
+      then throw IoError(IoError.Op.Access, IoError.Reason.NotSymlink, this)
       
       Symlink(this, unsafely(parse(Showable(Files.readSymbolicLink(Paths.get(fullname.s))).show)))
 
