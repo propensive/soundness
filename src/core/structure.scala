@@ -19,12 +19,6 @@ package imperial
 import rudiments.*
 import anticipation.*
 
-object EnvVarProvider:
-  given EnvVarProvider = v => Option(System.getenv(v.s)).map(_.nn).map(Text(_))
-
-trait EnvVarProvider:
-  def apply(variable: Text): Option[Text]
-
 object BaseLayout:
   case class Dir(path: String)
 
@@ -34,10 +28,10 @@ case class BaseLayout(private val path: String, private val env: Maybe[String] =
   def absolutePath: String = s"${baseDir.path}/$path"
   given newBaseDir: BaseLayout.Dir = BaseLayout.Dir(absolutePath)
 
-  def apply[T]()(using DirectoryProvider[T], EnvVarProvider): T =
+  def apply[T]()(using DirectoryProvider[T], Environment): T =
     val path: String = env.option match
       case None      => absolutePath
-      case Some(env) => summon[EnvVarProvider](Text(env)).fold(absolutePath)(_.s)
+      case Some(env) => summon[Environment](Text(env)).fold(absolutePath)(_.s)
 
     summon[DirectoryProvider[T]].make(path, readOnly = readOnly) match
       case None      => throw RuntimeException("failed to parse: '"+path+"'")
@@ -46,7 +40,7 @@ case class BaseLayout(private val path: String, private val env: Maybe[String] =
 object Root extends BaseLayout("")(using BaseLayout.Dir("")):
   override def absolutePath: String = ""
 
-  override def apply[T]()(using DirectoryProvider[T], EnvVarProvider): T =
+  override def apply[T]()(using DirectoryProvider[T], Environment): T =
     summon[DirectoryProvider[T]].make("/", readOnly = true).get
 
   object Boot extends BaseLayout("boot", readOnly = true)
@@ -81,8 +75,9 @@ object Root extends BaseLayout("")(using BaseLayout.Dir("")):
     object Sys extends BaseLayout("sys", readOnly = true)
   object Sys extends BaseLayout("sys", readOnly = true)
 
-object Home extends BaseLayout("~")(using BaseLayout.Dir(System.getenv("HOME").nn)):
-  override def absolutePath: String = System.getenv("HOME").nn
+class Home()(using env: Environment)
+extends BaseLayout("~")(using BaseLayout.Dir(env(Text("HOME")).get.s)):
+  override def absolutePath: String = env(Text("HOME")).get.s
 
   object Cache extends BaseLayout(".cache", "XDG_CACHE_HOME")
   object Config extends BaseLayout(".config", "XDG_CONFIG_HOME")
