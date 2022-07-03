@@ -135,5 +135,4 @@ object InvalidUrlError:
     case Colon, More, LowerCaseLetter, PortRange, Number
 
 case class InvalidUrlError(text: Text, offset: Int, expected: InvalidUrlError.Expectation)
-extends Error((t"the URL ", text, t" is not valid: expected ", expected, t" at ", offset)):
-  def message: Text = t"Invalid URL: expected $expected at $offset"
+extends Error((t"the URL ", text, t" is not valid: expected ", expected, t" at ", offset))

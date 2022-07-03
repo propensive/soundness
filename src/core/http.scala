@@ -256,7 +256,6 @@ object Http:
             
 case class HttpError(status: HttpStatus & FailureCase, body: HttpBody)
 extends Error((t"HTTP error ", status)):
-  def message: Text = t"HTTP Error ${status.code}: ${status.description}"
   inline def as[T](using readable: HttpReadable[T])
                   : T throws ExcessDataError | StreamCutError | readable.E =
     readable.read(status, body)
