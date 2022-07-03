@@ -152,8 +152,7 @@ case class Env(vars: Map[Text, Text], workDir: Maybe[Text] = Unset):
     ji.File(workDir.otherwise(Text(System.getenv("PWD").nn)).s)
   
 case class ExecError(command: Command, stdout: DataStream, stderr: DataStream)
-extends Error((t"execution of the command ", command, t" failed")):
-  def message: Text = t"execution of the command $command failed"
+extends Error((t"execution of the command ", command, t" failed"))
 
 object Sh:
   case class Params(params: Text*)
