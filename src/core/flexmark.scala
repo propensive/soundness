@@ -26,8 +26,7 @@ import annotation.tailrec
 
 import java.util as ju
 
-case class MarkdownError(detail: Text) extends Error((t"the markdown could not be read: ", detail)):
-  def message: Text = t"the markdown could not be read: $detail"
+case class MarkdownError(detail: Text) extends Error((t"the markdown could not be read: ", detail))
 
 case class Markdown[+M <: Markdown.Ast.Node](nodes: M*)
 
