@@ -47,12 +47,10 @@ type Majuscule = 'A' | 'B' | 'C' | 'D' | 'E' | 'F' | 'G' | 'H' | 'I' | 'J' | 'K'
     'O' | 'P' | 'Q' | 'R' | 'S' | 'T' | 'U' | 'V' | 'W' | 'X' | 'Y' | 'Z'
 
 case class ClasspathRefError(classpath: Classpath)(path: classpath.ClasspathRef)
-extends Error((t"the resource ", path, t" could not be accessed on the classpath")):
-  def message: Text = t"the resource $path could not be accessed"
+extends Error((t"the resource ", path, t" could not be accessed on the classpath"))
 
 case class PwdError()
-extends Error(t"the current working directory cannot be determined" *: EmptyTuple):
-  def message: Text = t"the current working directory cannot be determined"
+extends Error(t"the current working directory cannot be determined" *: EmptyTuple)
 
 case class PathElement(value: Text)
 
@@ -270,13 +268,11 @@ object IoError:
     case Read, Write, Access, Permissions, Create, Delete
 
 case class IoError(operation: IoError.Op, reason: IoError.Reason, path: DiskPath)
-extends Error((t"the ", operation, t" operation at ", path, t" failed because ", reason)):
-  def message: Text = t"the $operation operation at ${path.show} failed because $reason"
+extends Error((t"the ", operation, t" operation at ", path, t" failed because ", reason))
 
 case class InotifyError()
 extends Error(t"the limit on the number of paths that can be watched has been exceeded" *:
-    EmptyTuple):
-  def message: Text = t"the limit on the number of paths that can be watched has been exceeded"
+    EmptyTuple)
 
 open class Classpath(classLoader: ClassLoader = getClass.nn.getClassLoader.nn)
 extends Root(t"/", t""):
