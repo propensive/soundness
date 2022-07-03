@@ -60,9 +60,8 @@ object Chrome extends Browser(t"chrome"):
 
 def browser(using WebDriver#Session): WebDriver#Session = summon[WebDriver#Session]
 
-case class WebDriverError(error: Text, message: Text, browserStacktrace: List[Text])
-extends Error((t"the action caused the error ", error, t" in the browser, with the message ",
-    message))
+case class WebDriverError(error: Text, msg: Text, browserStacktrace: List[Text])
+extends Error((t"the action caused the error ", error, t" in the browser, with the message ", msg))
 
 case class WebDriver(server: Browser#Server):
   private transparent inline def wd: this.type = this
