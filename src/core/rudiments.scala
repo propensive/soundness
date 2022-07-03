@@ -111,8 +111,7 @@ object Sys extends Dynamic:
   def applyDynamic(key: String)(): Text throws KeyNotFoundError = selectDynamic(key).apply()
   def bigEndian: Boolean = java.nio.ByteOrder.nativeOrder == java.nio.ByteOrder.BIG_ENDIAN
 
-case class KeyNotFoundError(name: Text) extends Error((Text("key "), name, Text(" not found"))):
-  def message: Text = Text(s"key $name not found")
+case class KeyNotFoundError(name: Text) extends Error((Text("key "), name, Text(" not found")))
 
 object Mistake:
   def apply(error: Exception): Mistake =
@@ -186,11 +185,12 @@ extension [T](xs: Iterable[T])
 
 object Timer extends ju.Timer(true)
 
-case class DuplicateIndexError() extends Error(EmptyTuple):
-  def message: Text = Text("the sequence contained more than one element that mapped to the same index")
+case class DuplicateIndexError()
+extends Error(Text("the sequence contained more than one element that mapped to the same index") *:
+    EmptyTuple)
 
-case class TimeoutError() extends Error(EmptyTuple):
-  def message: Text = Text("An operation did not complete in the time it was given")
+case class TimeoutError()
+extends Error(Text("An operation did not complete in the time it was given") *: EmptyTuple)
 
 extension [T](future: Future[T])
   def await(): T = Await.result(future, duration.Duration.Inf)
@@ -310,7 +310,13 @@ abstract class Error[T <: Tuple](parts: T, cause: Maybe[Error[?]] = Unset) exten
   override def getMessage: String = component.s+": "+message
   override def getCause: Exception | Null = cause.option.getOrElse(null)
 
-  def message: Text
+  def message: Text =
+    def recur[T <: Tuple](tuple: T): String = tuple match
+      case EmptyTuple   => ""
+      case head *: tail => head.toString+recur(tail)
+
+    Text(recur(parts))
+
   def explanation: Maybe[Text] = Unset
   def stackTrace: StackTrace = StackTrace(this)
 
@@ -346,11 +352,13 @@ trait Default[+T](default: T):
   def apply(): T = default
 
 package environments:
-  given system: Environment = v => Option(System.getenv(v.s)).map(_.nn).map(Text(_))
-  given empty: Environment = v => None
+  given system: Environment(v => Option(System.getenv(v.s)).map(_.nn).map(Text(_)))
+  given empty: Environment(v => None)
 
 @implicitNotFound("rudiments: a contextual Environment is required, for example\n    given Environment()\nor,\n"+
                       "    given Envronment = environments.system")
-trait Environment:
-  def apply(variable: Text): Option[Text]
+class Environment(getEnv: Text => Option[Text]):
+  def apply(variable: Text): Option[Text] = getEnv(variable)
 
+case class EnvError(variable: Text)
+extends Error((Text("The environment variable "), variable, Text(" was not found")))
