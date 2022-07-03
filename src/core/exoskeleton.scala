@@ -23,12 +23,7 @@ import scala.util.*, scala.annotation.tailrec
 
 import java.io.*
 
-case class EnvError(envVar: Text)
-extends Error((t"the environment valiable ", envVar, t" was not found")):
-  def message: Text = t"the environment variable $envVar was not found"
-
-case class InstallError() extends Error(t"installation failed" *: EmptyTuple):
-  def message: Text = t"installation failed"
+case class InstallError() extends Error(t"installation failed" *: EmptyTuple)
 
 object Generate extends Application:
   def main(using CliShell): Exit =
