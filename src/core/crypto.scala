@@ -97,8 +97,7 @@ extends PrivateKey[A](bytes):
     public.verify(value, signature)
 
 case class DecodeError(detail: Text)
-extends Error((t"could not decode the encrypted data: ", detail)):
-  def message: Text = t"could not decode the message: $detail"
+extends Error((t"could not decode the encrypted data: ", detail))
 
 trait ByteCodec[T]:
   def encode(value: T): Bytes
@@ -239,5 +238,4 @@ class Dsa[KS <: 512 | 1024 | 2048 | 3072: ValueOf]() extends CryptoAlgorithm[KS]
 end Dsa
 
 case class PemParseError(detail: Text)
-extends Error((t"could not parse PEM-encoded content: ", detail)):
-  def message: Text = t"could not parse PEM-encoded content: $detail"
+extends Error((t"could not parse PEM-encoded content: ", detail))
