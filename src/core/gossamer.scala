@@ -200,8 +200,7 @@ extension [T](values: Iterable[T])(using joinable: Joinable[T])
     Iterable(left, join(separator, penultimate), right).join
 
 case class OutOfRangeError(idx: Int, from: Int, to: Int)
-extends Error((Text("the index "), idx, Text(" is outside the range "), from, Text("-"), to)):
-  def message: Text = Text(s"the index $idx exceeds the range $from-$to")
+extends Error((Text("the index "), idx, Text(" is outside the range "), from, Text("-"), to))
 
 case class Showable[T](value: T):
   def show: Text = Text(value.toString)
