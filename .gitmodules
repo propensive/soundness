@@ -62,9 +62,9 @@
 	path = mod/contextual
 	url = https://github.com/propensive/contextual
 	branch = main
-[submodule "mod/cataract"]
-	path = mod/cataract
-	url = https://github.com/propensive/cataract
+[submodule "mod/cataclysm"]
+	path = mod/cataclysm
+	url = https://github.com/propensive/cataclysm
 	branch = main
 [submodule "mod/acyclicity"]
 	path = mod/acyclicity

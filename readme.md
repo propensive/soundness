@@ -10,7 +10,7 @@ features of Scala 3 to write web and command-line applications, with a focus on 
 operations to the type-level with safe and expressive syntax.
 
 _Scala One_ includes libraries for working with [HTML](https://github.com/propensive/honeycomb/),
-[CSS](https://github.com/propensive/cataract/), [JSON](https://github.com/propensive/euphemism/),
+[CSS](https://github.com/propensive/cataclysm/), [JSON](https://github.com/propensive/euphemism/),
 [XML](https://github.com/propensive/xylophone/), [CSV](https://github.com/propensive/caesura/),
 [typesafe strings](https://github.com/propensive/gossamer/),
 [ANSI-escaped strings](https://github.com/propensive/escapade/) and
@@ -150,7 +150,7 @@ expected to be introduced in Scala 3 soon to provide better safety.
 [![Acyclicity](https://github.com/propensive/acyclicity/raw/main/doc/images/128x128.png)](https://github.com/propensive/acyclicity/) &nbsp;
 [![Adversaria](https://github.com/propensive/adversaria/raw/main/doc/images/128x128.png)](https://github.com/propensive/adversaria/) &nbsp;
 [![Caesura](https://github.com/propensive/caesura/raw/main/doc/images/128x128.png)](https://github.com/propensive/caesura/) &nbsp;
-[![Cataract](https://github.com/propensive/cataract/raw/main/doc/images/128x128.png)](https://github.com/propensive/cataract/) &nbsp;
+[![Cataclysm](https://github.com/propensive/cataclysm/raw/main/doc/images/128x128.png)](https://github.com/propensive/cataclysm/) &nbsp;
 [![Anticipation](https://github.com/propensive/anticipation/raw/main/doc/images/128x128.png)](https://github.com/propensive/anticipation/) &nbsp;
 [![Contextual](https://github.com/propensive/contextual/raw/main/doc/images/128x128.png)](https://github.com/propensive/contextual/) &nbsp;
 [![Cosmopolite](https://github.com/propensive/cosmopolite/raw/main/doc/images/128x128.png)](https://github.com/propensive/cosmopolite/) &nbsp;

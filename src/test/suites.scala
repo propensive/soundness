@@ -12,7 +12,7 @@ object Tests extends Suite(t"Scala One tests"):
     suite(adversaria.Tests)
     suite(acyclicity.Tests)
     suite(caesura.Tests)
-    suite(cataract.Tests)
+    suite(cataclysm.Tests)
     suite(contextual.Tests)
     //suite(cosmopolite.Tests)
     suite(escapade.Tests)
