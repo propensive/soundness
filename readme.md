@@ -26,7 +26,7 @@ The current latest release of Guillotine is __0.4.0__.
 
 ## Getting Started
 
-## Commands
+### Commands
 
 Shell commands are created using the `sh""` interpolator, which will interpret (at compiletime) a
 command and its arguments, correctly interpreting single- and double-quoted arguments and escaped
@@ -43,7 +43,7 @@ string.
 Substitutions should normally be surrounded by spaces, otherwise they will be prepended or appended
 to adjacent arguments.
 
-### Piping
+#### Piping
 
 Two commands may be combined using the pipe operator (`|`), for example,
 ```scala
@@ -59,7 +59,7 @@ sh"wc -l"(sh"grep $query"(sh"cat /home/work/file"))
 ```
 and the two versions are equivalent.
 
-### Substitutions
+#### Substitutions
 
 Substitutions of a variety of different types may be made into an interpolated `sh` command. Any
 type for which a `gossamer.Show` typeclass exists will be inserted as a single parameter, and
@@ -72,7 +72,7 @@ sh"sh -c '$echo'"
 where the quotes are required aronud `'$echo'` so that the command is passed to `sh -c` as a
 single argument, rather than multiple arguments (of which only the first would be used).
 
-### Environment
+#### Environment
 
 Execution requires an `Env` instance specifying a map of environment variables and a working
 directory as a `String`, and should be specified as a contextual value, for example,
@@ -87,7 +87,7 @@ this, so it must be explicitly enabled with:
 given Env = envs.enclosing
 ```
 
-## Execution
+### Execution
 
 Two methods are provided for starting execution of a process: `fork` and `exec`, both taking a type
 parameter which determines the type of the return value, and may also affect how execution is
@@ -123,7 +123,7 @@ val process: Process[String] = sh"locate lostfile".fork[String]()
 
 The synchronous `exec[T]()` method is always equivalent to `fork[T]().await()`.
 
-## Result interpretation
+### Result interpretation
 
 Different shell processes may behave differently in how their results should be interpreted. Those
 differences include the interpretation of the exit status—where different nonzero codes may be
@@ -177,7 +177,7 @@ Guillotine is classified as __fledgling__. Propensive defines the following five
 - _dependable_: production-ready, subject to controlled ongoing maintenance and enhancement; tagged as version `1.0` or later
 - _adamantine_: proven, reliable and production-ready, with no further breaking changes ever anticipated
 
-Guillotine is designed to be _small_. Its entire source code currently consists of 338 lines of code.
+Guillotine is designed to be _small_. Its entire source code currently consists of 335 lines of code.
 
 ## Building
 
