@@ -14,18 +14,19 @@
     and limitations under the License.
 */
 
-package slalom
+package serpentine
 
 import probably.*
 import rudiments.*
+import turbulence.*
 import gossamer.*
 import eucalyptus.*
 
 import unsafeExceptions.canThrowAny
 
-given Log(Everything |-> Stdout)
+given Log(Everything |-> SystemOut)
 
-object Tests extends Suite(t"Slalom Tests"):
+object Tests extends Suite(t"Serpentine Tests"):
   def run(using Runner): Unit =
     test(t"parse simple relative path"):
       Relative.parse(t"peer")
@@ -46,3 +47,17 @@ object Tests extends Suite(t"Slalom Tests"):
     test(t"parse relative link to current path"):
       Relative.parse(t".")
     .assert(_ == Relative(0, List()))
+    
+    test(t"parse relative link to uncle path"):
+      Relative.parse(t"../path")
+    .assert(_ == Relative(1, List(t"path")))
+    
+    test(t"parse relative link to cousin path"):
+      Relative.parse(t"../path/child")
+    .assert(_ == Relative(1, List(t"path", t"child")))
+
+    suite(t"show paths"):
+      test(t"show simple relative path"):
+        (? / p"hello" / p"world").show
+      .assert(_ == t"hello/world")
+    
