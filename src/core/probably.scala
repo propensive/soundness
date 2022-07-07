@@ -241,7 +241,7 @@ object Macros:
             line = $line,
             expected = $debugString.show($expr),
             info = if result.isEmpty then Map()
-                else Map(t"structure" -> Showable($comparison.compare(result.get, $expr)).show)
+                else Map(t"structure" -> Showable($comparison.compare(result.get, $expr.asInstanceOf[S])).show)
           )
         }
       }
