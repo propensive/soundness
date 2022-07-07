@@ -19,7 +19,7 @@
 	url = https://github.com/propensive/wisteria
 	branch = main
 [submodule "mod/slalom"]
-	path = mod/slalom
+	path = mod/serpentine
 	url = https://github.com/propensive/slalom
 	branch = main
 [submodule "mod/scintillate"]

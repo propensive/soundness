@@ -28,7 +28,7 @@ representations of [colors](https://github.com/propensive/iridescence/),
 [directed acyclic graphs](https://github.com/propensive/acyclicity/),
 [multilingual strings](https://github.com/propensive/cosmopolite/),
 [MIME types](https://github.com/propensive/gesticulate/) and
-[generalized paths](https://github.com/propensive/slalom/). Fundamental to these projects are
+[generalized paths](https://github.com/propensive/serpentine/). Fundamental to these projects are
 utilities for [generic derivation](https://github.com/propensive/wisteria/),
 [checked interpolated strings](https://github.com/propensive/contextual/),
 [annotations](https://github.com/propensive/adversaria/),
@@ -175,7 +175,7 @@ expected to be introduced in Scala 3 soon to provide better safety.
 [![Punctuation](https://github.com/propensive/punctuation/raw/main/doc/images/128x128.png)](https://github.com/propensive/punctuation/) &nbsp;
 [![Rudiments](https://github.com/propensive/rudiments/raw/main/doc/images/128x128.png)](https://github.com/propensive/rudiments/) &nbsp;
 [![Scintillate](https://github.com/propensive/scintillate/raw/main/doc/images/128x128.png)](https://github.com/propensive/scintillate/) &nbsp;
-[![Slalom](https://github.com/propensive/slalom/raw/main/doc/images/128x128.png)](https://github.com/propensive/slalom/) &nbsp;
+[![Serpentine](https://github.com/propensive/serpentine/raw/main/doc/images/128x128.png)](https://github.com/propensive/serpentine/) &nbsp;
 [![Tarantula](https://github.com/propensive/tarantula/raw/main/doc/images/128x128.png)](https://github.com/propensive/tarantula/) &nbsp;
 [![Turbulence](https://github.com/propensive/turbulence/raw/main/doc/images/128x128.png)](https://github.com/propensive/turbulence/) &nbsp;
 [![Wisteria](https://github.com/propensive/wisteria/raw/main/doc/images/128x128.png)](https://github.com/propensive/wisteria/) &nbsp;

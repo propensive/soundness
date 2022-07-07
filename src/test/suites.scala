@@ -32,7 +32,7 @@ object Tests extends Suite(t"Scala One tests"):
     suite(profanity.Tests)
     suite(rudiments.Tests)
     suite(scintillate.Tests)
-    suite(slalom.Tests)
+    suite(serpentine.Tests)
     suite(tarantula.Tests)
     suite(wisteria.Tests)
     suite(xylophone.Tests)
