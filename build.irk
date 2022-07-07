@@ -1,0 +1,86 @@
+{
+  "repos": [
+    {
+      "base": "../gesticulate",
+      "url": "https://github.com/propensive/gesticulate"
+    },
+    {
+      "base": "../eucalyptus",
+      "url": "https://github.com/propensive/eucalyptus"
+    },
+    {
+      "base": "../serpentine",
+      "url": "https://github.com/propensive/serpentine"
+    },
+    {
+      "base": "../anticipation",
+      "url": "https://github.com/propensive/anticipation"
+    },
+    {
+      "base": "../gastronomy",
+      "url": "https://github.com/propensive/gastronomy"
+    }
+  ],
+  "imports": [
+    "../gesticulate/build.irk",
+    "../eucalyptus/build.irk",
+    "../serpentine/build.irk",
+    "../anticipation/build.irk",
+    "../gastronomy/build.irk"
+  ],
+  "publishing": {
+    "username": "propensive",
+    "group": "com.propensive",
+    "url": "https://propensive.com/opensource/",
+    "organization": {
+      "name": "Propensive",
+      "url": "https://propensive.com/"
+    },
+    "sign": "63A884FEB076449CEB80F0F742FEF8A41F22D1F3",
+    "git": "github.com/propensive",
+    "developers": [
+      {
+        "id": "propensive",
+        "name": "Jon Pretty",
+        "url": "https://github.com/propensive"
+      }
+    ]
+  },
+  "modules": [
+    {
+      "name": "Telekinesis URI",
+      "id": "telekinesis/uri",
+      "links": [
+        "serpentine/core",
+        "anticipation/uri",
+        "gossamer/core"
+      ],
+      "sources": [
+        "src/uri"
+      ],
+      "version": "0.4.0",
+      "docs": [
+        "doc"
+      ]
+    },
+    {
+      "name": "Telekinesis Client",
+      "id": "telekinesis/client",
+      "links": [
+        "gesticulate/core",
+        "eucalyptus/core",
+        "serpentine/core",
+        "anticipation/http",
+        "gastronomy/core",
+        "telekinesis/uri"
+      ],
+      "sources": [
+        "src/client"
+      ],
+      "version": "0.4.0",
+      "docs": [
+        "doc"
+      ]
+    }
+  ]
+}
