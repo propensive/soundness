@@ -230,7 +230,7 @@ object HtmlAttribute:
   given max[T]: HtmlAttribute["max", Double | Int, T] = Showable(_).show
   given maxlength[T]: HtmlAttribute["maxlength", Int, T] = _.show
   given minlength[T]: HtmlAttribute["minlength", Int, T] = _.show
-  given media[T]: HtmlAttribute["media", Text, T] = identity(_) // Should be provided by Cataract
+  given media[T]: HtmlAttribute["media", Text, T] = identity(_) // Should be provided by Cataclysm
   given method[T]: HtmlAttribute["method", Method, T] = _.show
   given min[T]: HtmlAttribute["min", Double | Int, T] = Showable(_).show
   given multiple[T]: HtmlAttribute["multiple", Boolean, T] = _ => Unset
@@ -265,10 +265,10 @@ object HtmlAttribute:
   given src[T]: HtmlAttribute["src", Text, T] = identity(_)
   given srcdoc[T]: HtmlAttribute["srcdoc", Html[?], T] = _.show
   given srclang[T]: HtmlAttribute["srclang", Text, T] = identity(_)
-  given srcset[T]: HtmlAttribute["srcset", Text, T] = identity(_) // This should be provided by Cataract
+  given srcset[T]: HtmlAttribute["srcset", Text, T] = identity(_) // This should be provided by Cataclysm
   given start[T]: HtmlAttribute["start", Int, T] = _.show
   given step[T]: HtmlAttribute["step", Double, T] = Showable(_).show
-  given style[T]: HtmlAttribute["style", Text, T] = identity(_) // This should be provided by Cataract
+  given style[T]: HtmlAttribute["style", Text, T] = identity(_) // This should be provided by Cataclysm
   given tabindex[T]: HtmlAttribute["tabindex", Int, T] = _.show
   given target[T]: HtmlAttribute["target", Target, T] = _.show
   given title[T]: HtmlAttribute["title", Text, T] = identity(_)
