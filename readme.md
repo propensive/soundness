@@ -21,7 +21,6 @@ The current latest release of Euphemism is __0.4.0__.
 
 ## Getting Started
 
-
 ### Parsing
 
 A `Json` value may be obtained from any readable value by passing it to the `Json.parse` method. This could be a
@@ -157,6 +156,9 @@ object Email:
   given Json.Writer[Email] = summon[Json.Writer[Text]].contramap(_.value)
 ```
 
+
+
+
 ## Related Projects
 
 The following _Scala One_ libraries are dependencies of _Euphemism_:
@@ -177,7 +179,7 @@ Euphemism is classified as __fledgling__. Propensive defines the following five 
 - _dependable_: production-ready, subject to controlled ongoing maintenance and enhancement; tagged as version `1.0` or later
 - _adamantine_: proven, reliable and production-ready, with no further breaking changes ever anticipated
 
-Euphemism is designed to be _small_. Its entire source code currently consists of 321 lines of code.
+Euphemism is designed to be _small_. Its entire source code currently consists of 327 lines of code.
 
 ## Building
 
