@@ -38,8 +38,8 @@
   },
   "modules": [
     {
-      "name": "Cataract",
-      "id": "cataract/core",
+      "name": "Cataclysm",
+      "id": "cataclysm/core",
       "links": [
         "iridescence/core",
         "gossamer/core",

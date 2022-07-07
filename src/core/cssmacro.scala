@@ -1,5 +1,5 @@
 /*
-    Cataract, version 0.4.0. Copyright 2021-22 Jon Pretty, Propensive OÜ.
+    Cataclysm, version 0.4.0. Copyright 2021-22 Jon Pretty, Propensive OÜ.
 
     The primary distribution site is: https://propensive.com/
 
@@ -14,7 +14,7 @@
     and limitations under the License.
 */
 
-package cataract
+package cataclysm
 
 import rudiments.*
 import gossamer.*
@@ -25,7 +25,7 @@ import scala.quoted.*
 import annotation.targetName
 import language.dynamics
 
-private[cataract] type Label = String & Singleton
+private[cataclysm] type Label = String & Singleton
 
 given Show[Double] = Showable(_).show
 
@@ -47,7 +47,7 @@ object Macro:
             Expr.summon[PropertyDef[k & Label, v]].getOrElse {
               val typeName = TypeRepr.of[v].show
               report.errorAndAbort(
-                  s"cataract: no valid CSS element $att taking values of type $typeName exists")
+                  s"cataclysm: no valid CSS element $att taking values of type $typeName exists")
             }
           
           '{CssProperty(Text($key).dashed, $exp.show($value))} :: recur(tail)
@@ -58,7 +58,7 @@ object Macro:
       case Varargs(exprs) =>
         '{CssStyle(${Expr.ofSeq(recur(exprs))}*)}
       case _ =>
-        report.errorAndAbort("cataract: expected varargs")
+        report.errorAndAbort("cataclysm: expected varargs")
 
   private def words(string: Text): List[Text] =
     try
@@ -67,7 +67,7 @@ object Macro:
     catch case error: OutOfRangeError => List(string.lower)
     
 
-  private[cataract] def dashed(string: Text): Text = words(string).join(t"-")
+  private[cataclysm] def dashed(string: Text): Text = words(string).join(t"-")
 
 case class PropertyDef[Name <: Label, -T: ShowProperty]():
   def show(value: T): Text = summon[ShowProperty[T]].show(value)

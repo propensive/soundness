@@ -1,4 +1,4 @@
-Cataract provides several types for modeling CSS.
+Cataclysm provides several types for modeling CSS.
 
 ## Selectors
 
@@ -29,11 +29,11 @@ Elements are represented by `Tag` types from [Honeycomb](https://github.com/prop
 and CSS classes may be specified using an interpolated string with the `cls` prefix, e.g.
 `cls"hidden"`. Likewise DOM IDs are interpolated strings with the `id` prefix.
 
-Pseudo-classes are available inside the `cataract.pseudo` package, and have the same name as their
+Pseudo-classes are available inside the `cataclysm.pseudo` package, and have the same name as their
 CSS equivalents, though dashed syntax is translated to camelcase. For example, `first-child`
 becomes `firstChild`.
 
-CSS                   | Cataract
+CSS                   | Cataclysm
 ----------------------+---------
 `.myClass`            | `cls"myClass"`
 `#domId`              | `id"domId"`
@@ -154,7 +154,7 @@ For example, the CSS value, `color-dodge` for the attribute, `mix-blend-mode` is
 ### Multi-part values
 
 Some CSS attributes, such as `border`, can accept multiple arguments. While these would be
-separated by spaces in CSS, they should be embedded in a tuple using Cataract. For example,
+separated by spaces in CSS, they should be embedded in a tuple using Cataclysm. For example,
 ```scala
 Css(margin = (1.px, 3.em))
 ```

@@ -1,11 +1,11 @@
-[<img alt="GitHub Workflow" src="https://img.shields.io/github/workflow/status/propensive/cataract/Build/main?style=for-the-badge" height="24">](https://github.com/propensive/cataract/actions)
-[<img src="https://img.shields.io/maven-central/v/com.propensive/cataract-core?color=2465cd&style=for-the-badge" height="24">](https://search.maven.org/artifact/com.propensive/cataract-core)
+[<img alt="GitHub Workflow" src="https://img.shields.io/github/workflow/status/propensive/cataclysm/Build/main?style=for-the-badge" height="24">](https://github.com/propensive/cataclysm/actions)
+[<img src="https://img.shields.io/maven-central/v/com.propensive/cataclysm-core?color=2465cd&style=for-the-badge" height="24">](https://search.maven.org/artifact/com.propensive/cataclysm-core)
 [<img src="https://img.shields.io/discord/633198088311537684?color=8899f7&label=DISCORD&style=for-the-badge" height="24">](https://discord.gg/7b6mpF6Qcf)
 <img src="/doc/images/github.png" valign="middle">
 
-# Cataract
+# Cataclysm
 
-__Cataract__ provides a typesafe representation of CSS, including properties, selectors, rules and
+__Cataclysm__ provides a typesafe representation of CSS, including properties, selectors, rules and
 stylesheets.
 
 ## Features
@@ -19,11 +19,11 @@ stylesheets.
 
 ## Availability
 
-The current latest release of Cataract is __0.4.0__.
+The current latest release of Cataclysm is __0.4.0__.
 
 ## Getting Started
 
-Cataract provides several types for modeling CSS.
+Cataclysm provides several types for modeling CSS.
 
 ## Selectors
 
@@ -54,11 +54,11 @@ Elements are represented by `Tag` types from [Honeycomb](https://github.com/prop
 and CSS classes may be specified using an interpolated string with the `cls` prefix, e.g.
 `cls"hidden"`. Likewise DOM IDs are interpolated strings with the `id` prefix.
 
-Pseudo-classes are available inside the `cataract.pseudo` package, and have the same name as their
+Pseudo-classes are available inside the `cataclysm.pseudo` package, and have the same name as their
 CSS equivalents, though dashed syntax is translated to camelcase. For example, `first-child`
 becomes `firstChild`.
 
-CSS                   | Cataract
+CSS                   | Cataclysm
 ----------------------+---------
 `.myClass`            | `cls"myClass"`
 `#domId`              | `id"domId"`
@@ -179,7 +179,7 @@ For example, the CSS value, `color-dodge` for the attribute, `mix-blend-mode` is
 ### Multi-part values
 
 Some CSS attributes, such as `border`, can accept multiple arguments. While these would be
-separated by spaces in CSS, they should be embedded in a tuple using Cataract. For example,
+separated by spaces in CSS, they should be embedded in a tuple using Cataclysm. For example,
 ```scala
 Css(margin = (1.px, 3.em))
 ```
@@ -188,17 +188,17 @@ Css(margin = (1.px, 3.em))
 
 ## Related Projects
 
-The following _Scala One_ libraries are dependencies of _Cataract_:
+The following _Scala One_ libraries are dependencies of _Cataclysm_:
 
 [![Anticipation](https://github.com/propensive/anticipation/raw/main/doc/images/128x128.png)](https://github.com/propensive/anticipation/) &nbsp; [![Gossamer](https://github.com/propensive/gossamer/raw/main/doc/images/128x128.png)](https://github.com/propensive/gossamer/) &nbsp; [![Iridescence](https://github.com/propensive/iridescence/raw/main/doc/images/128x128.png)](https://github.com/propensive/iridescence/) &nbsp;
 
-The following _Scala One_ libraries are dependents of _Cataract_:
+The following _Scala One_ libraries are dependents of _Cataclysm_:
 
 [![Tarantula](https://github.com/propensive/tarantula/raw/main/doc/images/128x128.png)](https://github.com/propensive/tarantula/) &nbsp;
 
 ## Status
 
-Cataract is classified as __fledgling__. Propensive defines the following five stability levels for open-source projects:
+Cataclysm is classified as __fledgling__. Propensive defines the following five stability levels for open-source projects:
 
 - _embryonic_: for experimental or demonstrative purposes only, without any guarantees of longevity
 - _fledgling_: of proven utility, seeking contributions, but liable to significant redesigns
@@ -206,11 +206,11 @@ Cataract is classified as __fledgling__. Propensive defines the following five s
 - _dependable_: production-ready, subject to controlled ongoing maintenance and enhancement; tagged as version `1.0` or later
 - _adamantine_: proven, reliable and production-ready, with no further breaking changes ever anticipated
 
-Cataract is designed to be _small_. Its entire source code currently consists of 655 lines of code.
+Cataclysm is designed to be _small_. Its entire source code currently consists of 655 lines of code.
 
 ## Building
 
-Cataract can be built on Linux or Mac OS with Irk, by running the `irk` script in the root directory:
+Cataclysm can be built on Linux or Mac OS with Irk, by running the `irk` script in the root directory:
 ```sh
 ./irk
 ```
@@ -220,12 +220,12 @@ invocations will be near-instantaneous.
 
 ## Contributing
 
-Contributors to Cataract are welcome and encouraged. New contributors may like to look for issues marked
-<a href="https://github.com/propensive/cataract/labels/good%20first%20issue"><img alt="label: good first issue"
+Contributors to Cataclysm are welcome and encouraged. New contributors may like to look for issues marked
+<a href="https://github.com/propensive/cataclysm/labels/good%20first%20issue"><img alt="label: good first issue"
 src="https://img.shields.io/badge/-good%20first%20issue-67b6d0.svg" valign="middle"></a>.
 
 We suggest that all contributors read the [Contributing Guide](/contributing.md) to make the process of
-contributing to Cataract easier.
+contributing to Cataclysm easier.
 
 Please __do not__ contact project maintainers privately with questions. While it can be tempting to repsond to
 such questions, private answers cannot be shared with a wider audience, and it can result in duplication of
@@ -233,16 +233,16 @@ effort.
 
 ## Author
 
-Cataract was designed and developed by Jon Pretty, and commercial support and training is available from
+Cataclysm was designed and developed by Jon Pretty, and commercial support and training is available from
 [Propensive O&Uuml;](https://propensive.com/).
 
 
 
 ## Name
 
-Cataract takes its name from the synonym of _waterfall_—or _cascade_—since it represents _Cascading_ Style Sheets.
+Cataclysm takes its name from the sweeping inundation (typical of a _waterfall_, or _cascade_) since it represents _Cascading_ Style Sheets.
 
 ## License
 
-Cataract is copyright &copy; 2021-22 Jon Pretty & Propensive O&Uuml;, and is made available under the
+Cataclysm is copyright &copy; 2021-22 Jon Pretty & Propensive O&Uuml;, and is made available under the
 [Apache 2.0 License](/license.md).

@@ -1,5 +1,5 @@
 /*
-    Cataract, version 0.4.0. Copyright 2021-22 Jon Pretty, Propensive OÜ.
+    Cataclysm, version 0.4.0. Copyright 2021-22 Jon Pretty, Propensive OÜ.
 
     The primary distribution site is: https://propensive.com/
 
@@ -14,7 +14,7 @@
     and limitations under the License.
 */
 
-package cataract
+package cataclysm
 
 import rudiments.*
 import gossamer.*
