@@ -33,8 +33,8 @@
   },
   "modules": [
     {
-      "name": "Slalom",
-      "id": "slalom/core",
+      "name": "Serpentine",
+      "id": "serpentine/core",
       "links": [
         "gossamer/core",
         "anticipation/html"
