@@ -1,5 +1,5 @@
 /*
-    Jovian, version 0.4.0. Copyright 2020-22 Jon Pretty, Propensive OÜ.
+    Joviality, version 0.4.0. Copyright 2020-22 Jon Pretty, Propensive OÜ.
 
     The primary distribution site is: https://propensive.com/
 
@@ -14,7 +14,7 @@
     and limitations under the License.
 */
 
-package jovian
+package joviality
 
 import probably.*
 import gossamer.*
@@ -23,5 +23,5 @@ import unsafeExceptions.canThrowAny
 
 import encodings.Utf8
 
-object Tests extends Suite(t"Jovian tests"):
+object Tests extends Suite(t"Joviality tests"):
   def run(using Runner): Unit = ()

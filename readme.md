@@ -5,9 +5,9 @@
 
 # Jovian
 
-__Jovian__ is a simple library for performing disk I/O with Scala. It provides access to most filesystem
+__Joviality__ is a simple library for performing disk I/O with Scala. It provides access to most filesystem
 operations through the `Path` type—an abstract representation of a file or a directory—plus typeclass-based
-`read` and `write` methods which can use ad-hoc types, including streaming types like `LazyList`. Jovian is
+`read` and `write` methods which can use ad-hoc types, including streaming types like `LazyList`. Joviality is
 designed to take advantage of Scala 3's safer exceptions.
 
 ## Features
@@ -25,7 +25,7 @@ The current latest release of Jovian is __0.4.0__.
 
 ## Getting Started
 
-Unlike many filesystem APIs, __Jovian__ provides different types for `Path`s, `File`s, `Directory`s
+Unlike many filesystem APIs, __Joviality__ provides different types for `Path`s, `File`s, `Directory`s
 and `Symlink`s. While a `Path` (which is defined in [Serpentine](https://github.com/propensive/serpentine/))
 represents some location within a filesystem—which may or may not exist and may be either a file,
 directory or symlink—instances of `File`, `Directory` and `Symlink` should only exist when the
@@ -96,15 +96,14 @@ single `content` parameter, which can be one of a variety of types. As standard,
 - `LazyList[String]`
 which together support complete and streamed byte and character data.
 
+
 ## Related Projects
 
 The following _Scala One_ libraries are dependencies of _Jovian_:
 
 [![Anticipation](https://github.com/propensive/anticipation/raw/main/doc/images/128x128.png)](https://github.com/propensive/anticipation/) &nbsp; [![Eucalyptus](https://github.com/propensive/eucalyptus/raw/main/doc/images/128x128.png)](https://github.com/propensive/eucalyptus/) &nbsp; [![Gastronomy](https://github.com/propensive/gastronomy/raw/main/doc/images/128x128.png)](https://github.com/propensive/gastronomy/) &nbsp; [![Kaleidoscope](https://github.com/propensive/kaleidoscope/raw/main/doc/images/128x128.png)](https://github.com/propensive/kaleidoscope/) &nbsp; [![Serpentine](https://github.com/propensive/serpentine/raw/main/doc/images/128x128.png)](https://github.com/propensive/serpentine/) &nbsp;
 
-The following _Scala One_ libraries are dependents of _Jovian_:
-
-[![Exoskeleton](https://github.com/propensive/exoskeleton/raw/main/doc/images/128x128.png)](https://github.com/propensive/exoskeleton/) &nbsp;
+No other _Scala One_ libraries are dependents of _Jovian_.
 
 ## Status
 
@@ -150,9 +149,9 @@ Jovian was designed and developed by Jon Pretty, and commercial support and trai
 
 ## Name
 
-Jovian's primary focus is handling Input and Output, or _I/O_, and is a pun based on the name of the Jovian moon (i.e. the moon of Jupiter), _Io_.
+Joviality's primary focus is handling Input and Output, or _I/O_, and is a pun based on the name of the Jovian moon _Io_, one of the four moons of Jupiter discovered by Galileo.
 
 ## License
 
-Jovian is copyright &copy; 2020-22 Jon Pretty & Propensive O&Uuml;, and is made available under the
+Jovian is copyright &copy; -22 Jon Pretty & Propensive O&Uuml;, and is made available under the
 [Apache 2.0 License](/license.md).

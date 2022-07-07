@@ -48,8 +48,8 @@
   },
   "modules": [
     {
-      "name": "Jovian",
-      "id": "jovian/core",
+      "name": "Joviality",
+      "id": "joviality/core",
       "links": [
         "anticipation/html",
         "anticipation/time",
