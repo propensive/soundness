@@ -211,11 +211,9 @@ other representations can be used provided a `ToLocation` for that type is in co
 
 The following _Scala One_ libraries are dependencies of _Scintillate_:
 
-[![Anticipation](https://github.com/propensive/anticipation/raw/main/doc/images/128x128.png)](https://github.com/propensive/anticipation/) &nbsp; [![Eucalyptus](https://github.com/propensive/eucalyptus/raw/main/doc/images/128x128.png)](https://github.com/propensive/eucalyptus/) &nbsp; [![Gastronomy](https://github.com/propensive/gastronomy/raw/main/doc/images/128x128.png)](https://github.com/propensive/gastronomy/) &nbsp; [![Gesticulate](https://github.com/propensive/gesticulate/raw/main/doc/images/128x128.png)](https://github.com/propensive/gesticulate/) &nbsp; [![Gossamer](https://github.com/propensive/gossamer/raw/main/doc/images/128x128.png)](https://github.com/propensive/gossamer/) &nbsp; [![Serpentine](https://github.com/propensive/serpentine/raw/main/doc/images/128x128.png)](https://github.com/propensive/serpentine/) &nbsp;
+[![Telekinesis](https://github.com/propensive/telekinesis/raw/main/doc/images/128x128.png)](https://github.com/propensive/telekinesis/) &nbsp;
 
-The following _Scala One_ libraries are dependents of _Scintillate_:
-
-[![Tarantula](https://github.com/propensive/tarantula/raw/main/doc/images/128x128.png)](https://github.com/propensive/tarantula/) &nbsp;
+No other _Scala One_ libraries are dependents of _Scintillate_.
 
 ## Status
 
@@ -227,7 +225,7 @@ Scintillate is classified as __fledgling__. Propensive defines the following fiv
 - _dependable_: production-ready, subject to controlled ongoing maintenance and enhancement; tagged as version `1.0` or later
 - _adamantine_: proven, reliable and production-ready, with no further breaking changes ever anticipated
 
-Scintillate is designed to be _small_. Its entire source code currently consists of 985 lines of code.
+Scintillate is designed to be _small_. Its entire source code currently consists of 377 lines of code.
 
 ## Building
 
