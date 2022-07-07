@@ -93,7 +93,7 @@ The following _Scala One_ libraries are dependencies of _Gesticulate_:
 
 The following _Scala One_ libraries are dependents of _Gesticulate_:
 
-[![Scintillate](https://github.com/propensive/scintillate/raw/main/doc/images/128x128.png)](https://github.com/propensive/scintillate/) &nbsp;
+[![Telekinesis](https://github.com/propensive/telekinesis/raw/main/doc/images/128x128.png)](https://github.com/propensive/telekinesis/) &nbsp;
 
 ## Status
 
