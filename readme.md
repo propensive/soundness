@@ -14,8 +14,9 @@ _Scala One_ includes libraries for working with [HTML](https://github.com/propen
 [XML](https://github.com/propensive/xylophone/), [CSV](https://github.com/propensive/caesura/),
 [typesafe strings](https://github.com/propensive/gossamer/),
 [ANSI-escaped strings](https://github.com/propensive/escapade/) and
-[Markdown](https://github.com/propensive/punctuation/), interacting over
-[HTTP](https://github.com/propensive/scintillate/) or the
+[Markdown](https://github.com/propensive/punctuation/), both
+[calling HTTP](https://github.com/propensive/telekinesis/) and
+[serving HTTP](https://github.com/propensive/scintillate/) or the
 [command line](https://github.com/propensive/exoskeleton/). Additionally, support for
 [disk I/O](https://github.com/propensive/joviality/) and the standard
 [UNIX directory layout](https://github.com/propensive/imperial),
@@ -177,6 +178,7 @@ expected to be introduced in Scala 3 soon to provide better safety.
 [![Scintillate](https://github.com/propensive/scintillate/raw/main/doc/images/128x128.png)](https://github.com/propensive/scintillate/) &nbsp;
 [![Serpentine](https://github.com/propensive/serpentine/raw/main/doc/images/128x128.png)](https://github.com/propensive/serpentine/) &nbsp;
 [![Tarantula](https://github.com/propensive/tarantula/raw/main/doc/images/128x128.png)](https://github.com/propensive/tarantula/) &nbsp;
+[![Telekinesis](https://github.com/propensive/telekinesis/raw/main/doc/images/128x128.png)](https://github.com/propensive/telekinesis/) &nbsp;
 [![Turbulence](https://github.com/propensive/turbulence/raw/main/doc/images/128x128.png)](https://github.com/propensive/turbulence/) &nbsp;
 [![Wisteria](https://github.com/propensive/wisteria/raw/main/doc/images/128x128.png)](https://github.com/propensive/wisteria/) &nbsp;
 [![Xylophone](https://github.com/propensive/xylophone/raw/main/doc/images/128x128.png)](https://github.com/propensive/xylophone/) &nbsp;

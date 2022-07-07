@@ -128,3 +128,6 @@
 [submodule "mod/imperial"]
 	path = mod/imperial
 	url = https://github.com/propensive/imperial
+[submodule "mod/telekinesis"]
+	path = mod/telekinesis
+	url = https://github.com/propensive/telekinesis
