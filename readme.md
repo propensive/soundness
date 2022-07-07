@@ -16,6 +16,7 @@ protocol.
 - uses the standard WebDriver protocol
 - intuitive, but typesafe syntax
 
+
 ## Availability
 
 The current latest release of Tarantula is __0.4.0__.
@@ -74,6 +75,7 @@ repeated applications. The infix syntax is particularly intuitive. For example,
 for elem <- browser / id"menu" / Li / cls"checkbox" do elem.click()
 ```
 would simulate a click on every element with the `checkbox` CSS class inside an `<li>` tag in the element with ID `menu`.
+
 
 ## Related Projects
 
