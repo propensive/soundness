@@ -71,7 +71,9 @@ extension [T](value: T)
   def unit: Unit = ()
   def twin: (T, T) = (value, value)
   def triple: (T, T, T) = (value, value, value)
-  transparent inline def matchable(using erased Unsafe.type): T & Matchable = value.asInstanceOf[T & Matchable]
+  
+  transparent inline def matchable(using erased Unsafe.type): T & Matchable =
+    value.asInstanceOf[T & Matchable]
 
 extension [T](value: IArray[T])
   transparent inline def mutable(using erased Unsafe.type): Array[T] = value match
@@ -235,7 +237,6 @@ class Trigger():
   def future: Future[Trigger] = promise.future
 
 object ByteSize:
-
   given Ordering[ByteSize] = Ordering.Long.on(_.long)
 
   extension (bs: ByteSize)
@@ -302,7 +303,8 @@ object StackTrace:
 case class StackTrace(component: Text, className: Text, message: Text,
     frames: List[StackTrace.Frame], cause: Maybe[StackTrace])
 
-abstract class Error[T <: Tuple](parts: T, cause: Maybe[Error[?]] = Unset) extends Exception():
+abstract class Error[T <: Tuple](val parts: T, val cause: Maybe[Error[?]] = Unset)
+extends Exception():
   def fullClass: List[Text] = List(getClass.nn.getName.nn.split("\\.").nn.map(_.nn).map(Text(_))*)
   def className: Text = fullClass.last
   def component: Text = fullClass.head
@@ -311,9 +313,9 @@ abstract class Error[T <: Tuple](parts: T, cause: Maybe[Error[?]] = Unset) exten
   override def getCause: Exception | Null = cause.option.getOrElse(null)
 
   def message: Text =
-    def recur[T <: Tuple](tuple: T): String = tuple match
-      case EmptyTuple   => ""
-      case head *: tail => head.toString+recur(tail)
+    def recur[T <: Tuple](tuple: T, value: String = ""): String = tuple match
+      case EmptyTuple   => value
+      case head *: tail => recur(tail, value+head.toString)
 
     Text(recur(parts))
 
