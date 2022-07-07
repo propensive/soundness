@@ -111,7 +111,9 @@ The following _Scala One_ libraries are dependencies of _Profanity_:
 
 [![Eucalyptus](https://github.com/propensive/eucalyptus/raw/main/doc/images/128x128.png)](https://github.com/propensive/eucalyptus/) &nbsp;
 
-No other _Scala One_ libraries are dependents of _Profanity_.
+The following _Scala One_ libraries are dependents of _Profanity_:
+
+[![Exoskeleton](https://github.com/propensive/exoskeleton/raw/main/doc/images/128x128.png)](https://github.com/propensive/exoskeleton/) &nbsp;
 
 ## Status
 
@@ -123,7 +125,7 @@ Profanity is classified as __fledgling__. Propensive defines the following five 
 - _dependable_: production-ready, subject to controlled ongoing maintenance and enhancement; tagged as version `1.0` or later
 - _adamantine_: proven, reliable and production-ready, with no further breaking changes ever anticipated
 
-Profanity is designed to be _small_. Its entire source code currently consists of 184 lines of code.
+Profanity is designed to be _small_. Its entire source code currently consists of 195 lines of code.
 
 ## Building
 
