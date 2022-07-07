@@ -46,27 +46,27 @@ object PathElement:
 
     str match
       case "" =>
-        report.errorAndAbort("jovian: a pathname cannot be empty")
+        report.errorAndAbort("joviality: a pathname cannot be empty")
       case "." =>
-        report.errorAndAbort("jovian: a pathname cannot be the string \".\"")
+        report.errorAndAbort("joviality: a pathname cannot be the string \".\"")
       case ".." =>
-        report.errorAndAbort("jovian: a pathname cannot be the string \"..\"")
+        report.errorAndAbort("joviality: a pathname cannot be the string \"..\"")
       case str =>
         if str.endsWith(".")
-        then report.errorAndAbort("jovian: the pathname cannot end with a '.' character on Windows")
+        then report.errorAndAbort("joviality: the pathname cannot end with a '.' character on Windows")
         else if str.endsWith(" ")
-        then report.errorAndAbort("jovian: the pathname cannot end with a space on Windows")
+        then report.errorAndAbort("joviality: the pathname cannot end with a space on Windows")
         else if windowsForbidden.contains(Text(str).cut(t".").head.lower)
-        then report.errorAndAbort(s"jovian: the pathname $str (with or without an extension) is "+
+        then report.errorAndAbort(s"joviality: the pathname $str (with or without an extension) is "+
             "not valid on Windows")
-        else if str.contains("/") then report.errorAndAbort("jovian: a path cannot contain the '/'"+
+        else if str.contains("/") then report.errorAndAbort("joviality: a path cannot contain the '/'"+
             " character")
-        else if str.exists(_ < 32) then report.errorAndAbort("jovian: a path cannot contain "+
+        else if str.exists(_ < 32) then report.errorAndAbort("joviality: a path cannot contain "+
             "control characters")
         else
           val misused = forbidden.intersect(str.to(Set))
           if !misused.isEmpty
-          then report.errorAndAbort(s"jovian: a path cannot contain the characters ${misused.to(List).map(_.toString).map(Text(_)).join(t"'", t"', '", t"' or '", t"'").s} on Windows, and they're not advised more generally")
+          then report.errorAndAbort(s"joviality: a path cannot contain the characters ${misused.to(List).map(_.toString).map(Text(_)).join(t"'", t"', '", t"' or '", t"'").s} on Windows, and they're not advised more generally")
           else '{PathElement(Text(${Expr(str)}))(using unsafeExceptions.canThrowAny)}
 
 extension (inline sc: StringContext)
