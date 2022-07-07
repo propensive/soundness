@@ -88,11 +88,12 @@ val personsTsv: Tsv = persons.tsv
 ```
 
 
+
 ## Related Projects
 
 The following _Scala One_ libraries are dependencies of _Caesura_:
 
-[![Anticipation](https://github.com/propensive/anticipation/raw/main/doc/images/128x128.png)](https://github.com/propensive/anticipation/) &nbsp; [![Gossamer](https://github.com/propensive/gossamer/raw/main/doc/images/128x128.png)](https://github.com/propensive/gossamer/) &nbsp;
+[![Anticipation](https://github.com/propensive/anticipation/raw/main/doc/images/128x128.png)](https://github.com/propensive/anticipation/) &nbsp; [![Gossamer](https://github.com/propensive/gossamer/raw/main/doc/images/128x128.png)](https://github.com/propensive/gossamer/) &nbsp; [![Probably](https://github.com/propensive/probably/raw/main/doc/images/128x128.png)](https://github.com/propensive/probably/) &nbsp;
 
 No other _Scala One_ libraries are dependents of _Caesura_.
 
@@ -106,7 +107,7 @@ Caesura is classified as __fledgling__. Propensive defines the following five st
 - _dependable_: production-ready, subject to controlled ongoing maintenance and enhancement; tagged as version `1.0` or later
 - _adamantine_: proven, reliable and production-ready, with no further breaking changes ever anticipated
 
-Caesura is designed to be _small_. Its entire source code currently consists of 119 lines of code.
+Caesura is designed to be _small_. Its entire source code currently consists of 195 lines of code.
 
 ## Building
 
