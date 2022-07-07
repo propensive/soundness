@@ -200,7 +200,9 @@ The following _Scala One_ libraries are dependencies of _Probably_:
 
 [![Escritoire](https://github.com/propensive/escritoire/raw/main/doc/images/128x128.png)](https://github.com/propensive/escritoire/) &nbsp; [![Eucalyptus](https://github.com/propensive/eucalyptus/raw/main/doc/images/128x128.png)](https://github.com/propensive/eucalyptus/) &nbsp; [![Wisteria](https://github.com/propensive/wisteria/raw/main/doc/images/128x128.png)](https://github.com/propensive/wisteria/) &nbsp;
 
-No other _Scala One_ libraries are dependents of _Probably_.
+The following _Scala One_ libraries are dependents of _Probably_:
+
+[![Caesura](https://github.com/propensive/caesura/raw/main/doc/images/128x128.png)](https://github.com/propensive/caesura/) &nbsp; [![Imperial](https://github.com/propensive/imperial/raw/main/doc/images/128x128.png)](https://github.com/propensive/imperial/) &nbsp;
 
 ## Status
 
@@ -212,7 +214,7 @@ Probably is classified as __fledgling__. Propensive defines the following five s
 - _dependable_: production-ready, subject to controlled ongoing maintenance and enhancement; tagged as version `1.0` or later
 - _adamantine_: proven, reliable and production-ready, with no further breaking changes ever anticipated
 
-Probably is designed to be _small_. Its entire source code currently consists of 584 lines of code.
+Probably is designed to be _small_. Its entire source code currently consists of 598 lines of code.
 
 ## Building
 
