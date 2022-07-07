@@ -17,8 +17,8 @@
       "url": "https://github.com/propensive/gastronomy"
     },
     {
-      "base": "../slalom",
-      "url": "https://github.com/propensive/slalom"
+      "base": "../serpentine",
+      "url": "https://github.com/propensive/serpentine"
     }
   ],
   "imports": [
@@ -26,7 +26,7 @@
     "../kaleidoscope/build.irk",
     "../anticipation/build.irk",
     "../gastronomy/build.irk",
-    "../slalom/build.irk"
+    "../serpentine/build.irk"
   ],
   "publishing": {
     "username": "propensive",
@@ -55,7 +55,7 @@
         "anticipation/time",
         "anticipation/file",
         "gastronomy/core",
-        "slalom/core",
+        "serpentine/core",
         "kaleidoscope/core",
         "eucalyptus/core"
       ],

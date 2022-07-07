@@ -26,7 +26,7 @@ The current latest release of Jovian is __0.4.0__.
 ## Getting Started
 
 Unlike many filesystem APIs, __Jovian__ provides different types for `Path`s, `File`s, `Directory`s
-and `Symlink`s. While a `Path` (which is defined in [Slalom](https://github.com/propensive/slalom/))
+and `Symlink`s. While a `Path` (which is defined in [Serpentine](https://github.com/propensive/serpentine/))
 represents some location within a filesystem—which may or may not exist and may be either a file,
 directory or symlink—instances of `File`, `Directory` and `Symlink` should only exist when the
 corresponding file, directory or symlink exists on disk.
@@ -100,7 +100,7 @@ which together support complete and streamed byte and character data.
 
 The following _Scala One_ libraries are dependencies of _Jovian_:
 
-[![Anticipation](https://github.com/propensive/anticipation/raw/main/doc/images/128x128.png)](https://github.com/propensive/anticipation/) &nbsp; [![Eucalyptus](https://github.com/propensive/eucalyptus/raw/main/doc/images/128x128.png)](https://github.com/propensive/eucalyptus/) &nbsp; [![Gastronomy](https://github.com/propensive/gastronomy/raw/main/doc/images/128x128.png)](https://github.com/propensive/gastronomy/) &nbsp; [![Kaleidoscope](https://github.com/propensive/kaleidoscope/raw/main/doc/images/128x128.png)](https://github.com/propensive/kaleidoscope/) &nbsp; [![Slalom](https://github.com/propensive/slalom/raw/main/doc/images/128x128.png)](https://github.com/propensive/slalom/) &nbsp;
+[![Anticipation](https://github.com/propensive/anticipation/raw/main/doc/images/128x128.png)](https://github.com/propensive/anticipation/) &nbsp; [![Eucalyptus](https://github.com/propensive/eucalyptus/raw/main/doc/images/128x128.png)](https://github.com/propensive/eucalyptus/) &nbsp; [![Gastronomy](https://github.com/propensive/gastronomy/raw/main/doc/images/128x128.png)](https://github.com/propensive/gastronomy/) &nbsp; [![Kaleidoscope](https://github.com/propensive/kaleidoscope/raw/main/doc/images/128x128.png)](https://github.com/propensive/kaleidoscope/) &nbsp; [![Serpentine](https://github.com/propensive/serpentine/raw/main/doc/images/128x128.png)](https://github.com/propensive/serpentine/) &nbsp;
 
 The following _Scala One_ libraries are dependents of _Jovian_:
 
@@ -116,7 +116,7 @@ Jovian is classified as __fledgling__. Propensive defines the following five sta
 - _dependable_: production-ready, subject to controlled ongoing maintenance and enhancement; tagged as version `1.0` or later
 - _adamantine_: proven, reliable and production-ready, with no further breaking changes ever anticipated
 
-Jovian is designed to be _small_. Its entire source code currently consists of 449 lines of code.
+Jovian is designed to be _small_. Its entire source code currently consists of 457 lines of code.
 
 ## Building
 
