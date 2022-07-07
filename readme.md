@@ -16,6 +16,7 @@ Directory](https://specifications.freedesktop.org/basedir-spec/basedir-spec-late
 - Resolves environment variables to correctly use user-specified directory locations
 - Supports alternative sources of environment variables
 
+
 ## Availability
 
 The current latest release of Imperial is __0.4.0__.
@@ -67,11 +68,12 @@ For example, if the `envvars` is a `Map` of values, a new EnvVarProvider may be 
 given EnvVarProvider = envvars.get(_)
 ```
 
+
 ## Related Projects
 
 The following _Scala One_ libraries are dependencies of _Imperial_:
 
-[![Anticipation](https://github.com/propensive/anticipation/raw/main/doc/images/128x128.png)](https://github.com/propensive/anticipation/) &nbsp; [![Rudiments](https://github.com/propensive/rudiments/raw/main/doc/images/128x128.png)](https://github.com/propensive/rudiments/) &nbsp;
+[![Anticipation](https://github.com/propensive/anticipation/raw/main/doc/images/128x128.png)](https://github.com/propensive/anticipation/) &nbsp; [![Probably](https://github.com/propensive/probably/raw/main/doc/images/128x128.png)](https://github.com/propensive/probably/) &nbsp; [![Rudiments](https://github.com/propensive/rudiments/raw/main/doc/images/128x128.png)](https://github.com/propensive/rudiments/) &nbsp;
 
 No other _Scala One_ libraries are dependents of _Imperial_.
 
@@ -85,7 +87,7 @@ Imperial is classified as __fledgling__. Propensive defines the following five s
 - _dependable_: production-ready, subject to controlled ongoing maintenance and enhancement; tagged as version `1.0` or later
 - _adamantine_: proven, reliable and production-ready, with no further breaking changes ever anticipated
 
-Imperial is designed to be _small_. Its entire source code currently consists of 58 lines of code.
+Imperial is designed to be _small_. Its entire source code currently consists of 89 lines of code.
 
 ## Building
 
