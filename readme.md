@@ -90,9 +90,8 @@ catch
 
 An HTTP server can be launched anywhere by calling,
 ```scala
-HttpServer.listen {
+HttpServer.listen:
   // handler
-}
 ```
 
 This is a non-blocking call whose body will be executed every time a request is received. The `listen` method
@@ -106,9 +105,8 @@ how its body is sent: all at once, or streamed.
 
 The simplest sever implementation would look something like this,
 ```scala
-HttpServer.listen {
+HttpServer.listen:
   Response("Hello world!")
-}
 ```
 and would respond with a `200` response with the MIME type `text/plain`, and the string `Hello world!` for every
 request, regardless of its HTTP method, parameters, body or headers.
@@ -117,12 +115,11 @@ Within the body of `listen`, a `Request` instance is contextually available, and
 `request` method. For convenience, the methods `param` and `header` may also be used directly within a `listen`
 block to access a parameter or HTTP header, for example:
 ```scala
-HttpServer.listen {
+HttpServer.listen:
   val name = param("name")
   val age = param("age")
 
   Response(s"The name is $name and age is $age")
-}
 ```
 
 ## Pattern matching on Requests
@@ -132,12 +129,11 @@ for this purpose.
 
 A very simple pattern match on a request object might look like this,
 ```scala
-HttpServer.listen {
+HttpServer.listen:
   request match
     case Path("/")                   => homePage
     case Path("/contact")            => contactUsPage
     case Path(s"/products/$product") => productPage(product)
-}
 ```
 where the `Path` extractor is used to match on the part of the URL after the hostname, and before the query, if
 there is one.
@@ -145,11 +141,10 @@ there is one.
 But other extractors for matching on the HTTP method, headers and parameters also exist, and can be combined in
 the same pattern using the `&` combinator, like so:
 ```scala
-HttpServer.listen {
+HttpServer.listen:
   request match
     case Path("/") & RequestHeader.UserAgent(s"Mozilla/$_")               => mozillaHome
     case Path("/") & Post() & AcceptEncoding(lang) if lang.contains("en") => englishHome
-}
 ```
 
 In these examples, `&` is an extractor which always matches a `Request`, and "extracts" it into two copies. As
@@ -211,11 +206,12 @@ The `Redirect` and `NotFound` case classes provide representations of an HTTP `3
 `Redirect` takes a single parameter, a representation of a location typically as a `Uri` or a `String`, but
 other representations can be used provided a `ToLocation` for that type is in contextual scope.
 
+
 ## Related Projects
 
 The following _Scala One_ libraries are dependencies of _Scintillate_:
 
-[![Anticipation](https://github.com/propensive/anticipation/raw/main/doc/images/128x128.png)](https://github.com/propensive/anticipation/) &nbsp; [![Eucalyptus](https://github.com/propensive/eucalyptus/raw/main/doc/images/128x128.png)](https://github.com/propensive/eucalyptus/) &nbsp; [![Gastronomy](https://github.com/propensive/gastronomy/raw/main/doc/images/128x128.png)](https://github.com/propensive/gastronomy/) &nbsp; [![Gesticulate](https://github.com/propensive/gesticulate/raw/main/doc/images/128x128.png)](https://github.com/propensive/gesticulate/) &nbsp; [![Slalom](https://github.com/propensive/slalom/raw/main/doc/images/128x128.png)](https://github.com/propensive/slalom/) &nbsp;
+[![Anticipation](https://github.com/propensive/anticipation/raw/main/doc/images/128x128.png)](https://github.com/propensive/anticipation/) &nbsp; [![Eucalyptus](https://github.com/propensive/eucalyptus/raw/main/doc/images/128x128.png)](https://github.com/propensive/eucalyptus/) &nbsp; [![Gastronomy](https://github.com/propensive/gastronomy/raw/main/doc/images/128x128.png)](https://github.com/propensive/gastronomy/) &nbsp; [![Gesticulate](https://github.com/propensive/gesticulate/raw/main/doc/images/128x128.png)](https://github.com/propensive/gesticulate/) &nbsp; [![Gossamer](https://github.com/propensive/gossamer/raw/main/doc/images/128x128.png)](https://github.com/propensive/gossamer/) &nbsp; [![Serpentine](https://github.com/propensive/serpentine/raw/main/doc/images/128x128.png)](https://github.com/propensive/serpentine/) &nbsp;
 
 The following _Scala One_ libraries are dependents of _Scintillate_:
 
@@ -231,7 +227,7 @@ Scintillate is classified as __fledgling__. Propensive defines the following fiv
 - _dependable_: production-ready, subject to controlled ongoing maintenance and enhancement; tagged as version `1.0` or later
 - _adamantine_: proven, reliable and production-ready, with no further breaking changes ever anticipated
 
-Scintillate is designed to be _small_. Its entire source code currently consists of 925 lines of code.
+Scintillate is designed to be _small_. Its entire source code currently consists of 985 lines of code.
 
 ## Building
 

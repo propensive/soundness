@@ -9,8 +9,8 @@
       "url": "https://github.com/propensive/eucalyptus"
     },
     {
-      "base": "../slalom",
-      "url": "https://github.com/propensive/slalom"
+      "base": "../serpentine",
+      "url": "https://github.com/propensive/serpentine"
     },
     {
       "base": "../anticipation",
@@ -32,7 +32,7 @@
   "imports": [
     "../gesticulate/build.irk",
     "../eucalyptus/build.irk",
-    "../slalom/build.irk",
+    "../serpentine/build.irk",
     "../turbulence/build.irk",
     "../anticipation/build.irk",
     "../gastronomy/build.irk",
@@ -61,7 +61,7 @@
       "name": "Scintillate URI",
       "id": "scintillate/uri",
       "links": [
-        "slalom/core",
+        "serpentine/core",
         "anticipation/uri",
         "gossamer/core"
       ],
@@ -79,7 +79,7 @@
       "links": [
         "gesticulate/core",
         "eucalyptus/core",
-        "slalom/core",
+        "serpentine/core",
         "anticipation/http",
         "gastronomy/core",
         "scintillate/uri"
