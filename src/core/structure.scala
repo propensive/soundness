@@ -20,28 +20,31 @@ import rudiments.*
 import anticipation.*
 
 object BaseLayout:
-  case class Dir(path: String)
+  case class Dir(home: Boolean, path: String)
 
-case class BaseLayout(private val path: String, private val env: Maybe[String] = Unset,
+case class BaseLayout(private val part: String, private val envVar: Maybe[String] = Unset,
                           readOnly: Boolean = false)
                      (using baseDir: BaseLayout.Dir):
-  def absolutePath: String = s"${baseDir.path}/$path"
-  given newBaseDir: BaseLayout.Dir = BaseLayout.Dir(absolutePath)
+  def absolutePath(using env: Environment): String =
+    if baseDir.home then
+      val home: Text = env(Text("HOME")).getOrElse(Text(System.getProperty("user.home").nn))
+      val slash = if home.s.endsWith("/") then "" else "/"
+      s"$home$slash${baseDir.path}/$part" else s"${baseDir.path}/$part"
 
-  def apply[T]()(using DirectoryProvider[T], Environment): T =
-    val path: String = env.option match
-      case None      => absolutePath
-      case Some(env) => summon[Environment](Text(env)).fold(absolutePath)(_.s)
+  given newBaseDir: BaseLayout.Dir = BaseLayout.Dir(baseDir.home, s"${baseDir.path}/$part")
 
-    summon[DirectoryProvider[T]].make(path, readOnly = readOnly) match
+  def apply[T]()(using PathProvider[T], Environment): T =
+    val path: String = envVar.option match
+      case None         => absolutePath
+      case Some(envVar) => summon[Environment](Text(envVar)).fold(absolutePath)(_.s)
+
+    summon[PathProvider[T]].make(path, readOnly = readOnly) match
       case None      => throw RuntimeException("failed to parse: '"+path+"'")
       case Some(dir) => dir
 
-object Root extends BaseLayout("")(using BaseLayout.Dir("")):
-  override def absolutePath: String = ""
-
-  override def apply[T]()(using DirectoryProvider[T], Environment): T =
-    summon[DirectoryProvider[T]].make("/", readOnly = true).get
+object Root extends BaseLayout("")(using BaseLayout.Dir(false, "")):
+  override def apply[T]()(using PathProvider[T], Environment): T =
+    summon[PathProvider[T]].make("/", readOnly = true).get
 
   object Boot extends BaseLayout("boot", readOnly = true)
   object Efi extends BaseLayout("efi", readOnly = true)
@@ -75,10 +78,7 @@ object Root extends BaseLayout("")(using BaseLayout.Dir("")):
     object Sys extends BaseLayout("sys", readOnly = true)
   object Sys extends BaseLayout("sys", readOnly = true)
 
-class Home()(using env: Environment)
-extends BaseLayout("~")(using BaseLayout.Dir(env(Text("HOME")).get.s)):
-  override def absolutePath: String = env(Text("HOME")).get.s
-
+object Home extends BaseLayout("")(using BaseLayout.Dir(true, "")):
   object Cache extends BaseLayout(".cache", "XDG_CACHE_HOME")
   object Config extends BaseLayout(".config", "XDG_CONFIG_HOME")
   object Local extends BaseLayout(".local"):
@@ -86,3 +86,4 @@ extends BaseLayout("~")(using BaseLayout.Dir(env(Text("HOME")).get.s)):
     object Lib extends BaseLayout("lib")
     object Share extends BaseLayout("share", "XDG_DATA_HOME")
     object State extends BaseLayout("state", "XDG_STATE_HOME")
+    object Foobar extends BaseLayout("foobar", "XDG_FOOBAR_HOME")

@@ -1,15 +1,11 @@
 {
   "repos": [
     {
-      "base": "../rudiments",
-      "url": "https://github.com/propensive/rudiments"
-    },
-    {
-      "base": "../anticipation",
-      "url": "https://github.com/propensive/anticipation"
+      "base": "../probably",
+      "url": "https://github.com/propensive/probably"
     }
   ],
-  "imports": ["../rudiments/build.irk", "../anticipation/build.irk"],
+  "imports": ["../probably/build.irk"],
   "modules": [
     {
       "name": "Imperial",
@@ -18,6 +14,18 @@
       "sources": ["src/core"],
       "version": "0.4.0",
       "docs": ["doc"]
+    },
+    {
+      "name": "Imperial Tests",
+      "id": "imperial/test",
+      "links": ["imperial/core", "probably/cli"],
+      "sources": ["src/test"],
+      "version": "0.4.0",
+      "docs": [],
+      "exec": {
+        "browsers": [],
+        "start": "imperial.Tests"
+      }
     }
   ]
 }
