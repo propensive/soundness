@@ -1,8 +1,8 @@
 {
   "repos": [
     {
-      "base": "../scintillate",
-      "url": "https://github.com/propensive/scintillate"
+      "base": "../telekinesis",
+      "url": "https://github.com/propensive/telekinesis"
     },
     {
       "base": "../cataclysm",
@@ -22,7 +22,7 @@
     }
   ],
   "imports": [
-    "../scintillate/build.irk",
+    "../telekinesis/build.irk",
     "../cataclysm/build.irk",
     "../guillotine/build.irk",
     "../euphemism/build.irk",
@@ -51,7 +51,7 @@
       "name": "Tarantula",
       "id": "tarantula/core",
       "links": [
-        "scintillate/core",
+        "telekinesis/client",
         "cataclysm/core",
         "guillotine/core",
         "euphemism/core",

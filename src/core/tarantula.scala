@@ -19,7 +19,7 @@ package tarantula
 import guillotine.*
 import gossamer.*
 import euphemism.*
-import scintillate.*
+import telekinesis.*
 import cataclysm.*
 import honeycomb.*
 import eucalyptus.*
