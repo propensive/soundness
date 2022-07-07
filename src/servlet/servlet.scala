@@ -19,7 +19,7 @@ package scintillate
 import rudiments.*
 import turbulence.*
 import gossamer.*
-import slalom.*
+import serpentine.*
 
 import javax.servlet.*, http.*
 
@@ -98,5 +98,5 @@ trait Servlet() extends HttpServlet:
   override def service(request: HttpServletRequest, response: HttpServletResponse): Unit =
     handle(request, response)
 
-extension (path: Base.Path)
+extension (path: Absolute[^.type])
   def unapply(request: Request): Option[Text] = Some(request.path)

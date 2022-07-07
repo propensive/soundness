@@ -16,7 +16,7 @@
 
 package scintillate
 
-import slalom.*
+import serpentine.*
 import gossamer.*
 import rudiments.*
 import anticipation.*
