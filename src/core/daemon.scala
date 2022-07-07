@@ -16,13 +16,13 @@
 
 package exoskeleton
 
-import jovian.*
+import joviality.*
 import gossamer.*
 import rudiments.*
 import turbulence.*
 import escapade.*
 import profanity.*
-import slalom.*
+import serpentine.*
 import eucalyptus.*
 
 import scala.concurrent.*
@@ -39,9 +39,9 @@ import rendering.ansi
 
 transparent inline def cli(using cli: CommandLine): CommandLine = cli
 
-case class CommandLine(args: List[Text], env: Map[Text, Text], script: File,
+case class CommandLine(args: List[Text], env: Map[Text, Text], script: File[Unix],
                            stdin: DataStream, stdout: DataStream => Unit, exit: Int => Unit,
-                           pwd: Directory, shutdown: () => Unit, interactive: () => Unit,
+                           pwd: Directory[Unix], shutdown: () => Unit, interactive: () => Unit,
                            resize: LazyList[Unit])
 extends Stdout, InputSource:
   def write(msg: Text): Unit = stdout(LazyList(msg.bytes))
@@ -85,7 +85,7 @@ trait Daemon() extends App:
         Thread(runnable, "exoskeleton-dispatcher").start()
 
   def server(script: Text, fifo: Text, serverPid: Int, watchPid: Int): Unit =
-    val socket: Unix.DiskPath = Unix.parse(fifo)
+    val socket: DiskPath[Unix] = Unix.parse(fifo)
     
     val death: Runnable = () => try socket.file().delete() catch case e: Exception => ()
     
@@ -95,11 +95,11 @@ trait Daemon() extends App:
     Runtime.getRuntime.nn.addShutdownHook:
       Thread(death, "exoskeleton-cleanup")
 
-    case class AppInstance(pid: Int, spawnId: Int, scriptFile: Maybe[File] = Unset,
+    case class AppInstance(pid: Int, spawnId: Int, scriptFile: Maybe[File[Unix]] = Unset,
                                args: List[Text] = Nil, env: Map[Text, Text] = Map(),
-                               runDir: Maybe[Directory] = Unset):
+                               runDir: Maybe[Directory[Unix]] = Unset):
       val signals: Funnel[Unit] = Funnel()
-      def pwd: Directory throws PwdError =
+      def pwd: Directory[Unix] throws PwdError =
         try Unix.parse(env.getOrElse(t"PWD", throw PwdError())).directory(Expect)
         catch
           case err: IoError          => throw PwdError()
@@ -109,7 +109,7 @@ trait Daemon() extends App:
 
       def spawn(): Unit =
         val runnable: Runnable = () =>
-          lazy val out = Fifo:
+          lazy val out = Fifo[Unix]:
             val file = (runDir.otherwise(sys.exit(1)) / t"$script-$pid.stdout.sock").file(Expect)
             file.javaFile.deleteOnExit()
             file
