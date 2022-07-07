@@ -25,7 +25,7 @@ object Tests extends Suite(t"Scala One tests"):
     suite(guillotine.Tests)
     suite(honeycomb.Tests)
     suite(iridescence.Tests)
-    suite(jovian.Tests)
+    suite(joviality.Tests)
     suite(kaleidoscope.Tests)
     suite(probably.Tests)
     suite(punctuation.Tests)

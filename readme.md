@@ -17,7 +17,7 @@ _Scala One_ includes libraries for working with [HTML](https://github.com/propen
 [Markdown](https://github.com/propensive/punctuation/), interacting over
 [HTTP](https://github.com/propensive/scintillate/) or the
 [command line](https://github.com/propensive/exoskeleton/). Additionally, support for
-[disk I/O](https://github.com/propensive/jovian/) and the standard
+[disk I/O](https://github.com/propensive/joviality/) and the standard
 [UNIX directory layout](https://github.com/propensive/imperial),
 [shell processes](https://github.com/propensive/guillotine/) (including native
 [keyboard interactivity](https://github.com/propensive/profanity/)),
@@ -167,7 +167,7 @@ expected to be introduced in Scala 3 soon to provide better safety.
 [![Honeycomb](https://github.com/propensive/honeycomb/raw/main/doc/images/128x128.png)](https://github.com/propensive/honeycomb/) &nbsp;
 [![Imperial](https://github.com/propensive/imperial/raw/main/doc/images/128x128.png)](https://github.com/propensive/imperial/) &nbsp;
 [![Iridescence](https://github.com/propensive/iridescence/raw/main/doc/images/128x128.png)](https://github.com/propensive/iridescence/) &nbsp;
-[![Jovian](https://github.com/propensive/jovian/raw/main/doc/images/128x128.png)](https://github.com/propensive/jovian/) &nbsp;
+[![Joviality](https://github.com/propensive/joviality/raw/main/doc/images/128x128.png)](https://github.com/propensive/joviality/) &nbsp;
 [![Kaleidoscope](https://github.com/propensive/kaleidoscope/raw/main/doc/images/128x128.png)](https://github.com/propensive/kaleidoscope/) &nbsp;
 [![Polyvinyl](https://github.com/propensive/polyvinyl/raw/main/doc/images/128x128.png)](https://github.com/propensive/polyvinyl/) &nbsp;
 [![Probably](https://github.com/propensive/probably/raw/main/doc/images/128x128.png)](https://github.com/propensive/probably/) &nbsp;
