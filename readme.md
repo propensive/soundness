@@ -87,7 +87,7 @@ The following _Scala One_ libraries are dependencies of _Serpentine_:
 
 The following _Scala One_ libraries are dependents of _Serpentine_:
 
-[![Joviality](https://github.com/propensive/joviality/raw/main/doc/images/128x128.png)](https://github.com/propensive/joviality/) &nbsp; [![Scintillate](https://github.com/propensive/scintillate/raw/main/doc/images/128x128.png)](https://github.com/propensive/scintillate/) &nbsp;
+[![Joviality](https://github.com/propensive/joviality/raw/main/doc/images/128x128.png)](https://github.com/propensive/joviality/) &nbsp; [![Telekinesis](https://github.com/propensive/telekinesis/raw/main/doc/images/128x128.png)](https://github.com/propensive/telekinesis/) &nbsp;
 
 ## Status
 
