@@ -23,6 +23,7 @@ import gastronomy.*
 import eucalyptus.*
 import gesticulate.*
 import escapade.*
+import telekinesis.*
 
 import java.net.InetSocketAddress
 import java.io.*
@@ -357,3 +358,5 @@ def basicAuth(validate: (Text, Text) => Boolean)(response: => Response[?])
     case _ =>
       val auth = t"""Basic realm="Some realm", charset="UTF-8""""
       Response("", HttpStatus.Unauthorized, Map(ResponseHeader.WwwAuthenticate -> auth))
+
+given Realm(t"telekinesis")

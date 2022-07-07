@@ -1,42 +1,12 @@
 {
   "repos": [
     {
-      "base": "../gesticulate",
-      "url": "https://github.com/propensive/gesticulate"
-    },
-    {
-      "base": "../eucalyptus",
-      "url": "https://github.com/propensive/eucalyptus"
-    },
-    {
-      "base": "../serpentine",
-      "url": "https://github.com/propensive/serpentine"
-    },
-    {
-      "base": "../anticipation",
-      "url": "https://github.com/propensive/anticipation"
-    },
-    {
-      "base": "../turbulence",
-      "url": "https://github.com/propensive/turbulence"
-    },
-    {
-      "base": "../gastronomy",
-      "url": "https://github.com/propensive/gastronomy"
-    },
-    {
-      "base": "../probably",
-      "url": "https://github.com/propensive/probably"
+      "base": "../telekinesis",
+      "url": "https://github.com/propensive/telekinesis"
     }
   ],
   "imports": [
-    "../gesticulate/build.irk",
-    "../eucalyptus/build.irk",
-    "../serpentine/build.irk",
-    "../turbulence/build.irk",
-    "../anticipation/build.irk",
-    "../gastronomy/build.irk",
-    "../probably/build.irk"
+    "../telekinesis/build.irk"
   ],
   "publishing": {
     "username": "propensive",
@@ -58,45 +28,10 @@
   },
   "modules": [
     {
-      "name": "Scintillate URI",
-      "id": "scintillate/uri",
-      "links": [
-        "serpentine/core",
-        "anticipation/uri",
-        "gossamer/core"
-      ],
-      "sources": [
-        "src/uri"
-      ],
-      "version": "0.4.0",
-      "docs": [
-        "doc"
-      ]
-    },
-    {
-      "name": "Scintillate Core",
-      "id": "scintillate/core",
-      "links": [
-        "gesticulate/core",
-        "eucalyptus/core",
-        "serpentine/core",
-        "anticipation/http",
-        "gastronomy/core",
-        "scintillate/uri"
-      ],
-      "sources": [
-        "src/core"
-      ],
-      "version": "0.4.0",
-      "docs": [
-        "doc"
-      ]
-    },
-    {
       "name": "Scintillate Server",
       "id": "scintillate/server",
       "links": [
-        "scintillate/core"
+        "telekinesis/client"
       ],
       "sources": [
         "src/server"
