@@ -51,7 +51,7 @@ The `title()` method will also return the page title, and `url()` the current UR
 Within a particular page, it's possible to access an element with the `element` method, which takes, as a parameter, a
 way of locating that element, of which several different types are valid:
 - `Text`: finds an element by its link text
-- `Selector`: type from [Cataract](https://github.com/propensive/cataract), which find a value by CSS selection
+- `Selector`: type from [Cataclysm](https://github.com/propensive/cataclysm), which find a value by CSS selection
 - `TagType`, `DomId`, `Cls`: types from [Honeycomb](https://github.com/propensive/honeycomb), which finds a value by an HTML tag, DOM ID or CSS class
 
 For example, the link containing the text `"here"` could be selected with, `browser.element(t"here")` or the element which is an
@@ -81,7 +81,7 @@ would simulate a click on every element with the `checkbox` CSS class inside an 
 
 The following _Scala One_ libraries are dependencies of _Tarantula_:
 
-[![Cataract](https://github.com/propensive/cataract/raw/main/doc/images/128x128.png)](https://github.com/propensive/cataract/) &nbsp; [![Euphemism](https://github.com/propensive/euphemism/raw/main/doc/images/128x128.png)](https://github.com/propensive/euphemism/) &nbsp; [![Guillotine](https://github.com/propensive/guillotine/raw/main/doc/images/128x128.png)](https://github.com/propensive/guillotine/) &nbsp; [![Honeycomb](https://github.com/propensive/honeycomb/raw/main/doc/images/128x128.png)](https://github.com/propensive/honeycomb/) &nbsp; [![Scintillate](https://github.com/propensive/scintillate/raw/main/doc/images/128x128.png)](https://github.com/propensive/scintillate/) &nbsp;
+[![Cataclysm](https://github.com/propensive/cataclysm/raw/main/doc/images/128x128.png)](https://github.com/propensive/cataclysm/) &nbsp; [![Euphemism](https://github.com/propensive/euphemism/raw/main/doc/images/128x128.png)](https://github.com/propensive/euphemism/) &nbsp; [![Guillotine](https://github.com/propensive/guillotine/raw/main/doc/images/128x128.png)](https://github.com/propensive/guillotine/) &nbsp; [![Honeycomb](https://github.com/propensive/honeycomb/raw/main/doc/images/128x128.png)](https://github.com/propensive/honeycomb/) &nbsp; [![Scintillate](https://github.com/propensive/scintillate/raw/main/doc/images/128x128.png)](https://github.com/propensive/scintillate/) &nbsp;
 
 No other _Scala One_ libraries are dependents of _Tarantula_.
 

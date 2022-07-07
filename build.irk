@@ -5,8 +5,8 @@
       "url": "https://github.com/propensive/scintillate"
     },
     {
-      "base": "../cataract",
-      "url": "https://github.com/propensive/cataract"
+      "base": "../cataclysm",
+      "url": "https://github.com/propensive/cataclysm"
     },
     {
       "base": "../guillotine",
@@ -23,7 +23,7 @@
   ],
   "imports": [
     "../scintillate/build.irk",
-    "../cataract/build.irk",
+    "../cataclysm/build.irk",
     "../guillotine/build.irk",
     "../euphemism/build.irk",
     "../honeycomb/build.irk"
@@ -52,7 +52,7 @@
       "id": "tarantula/core",
       "links": [
         "scintillate/core",
-        "cataract/core",
+        "cataclysm/core",
         "guillotine/core",
         "euphemism/core",
         "honeycomb/core"
