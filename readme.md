@@ -224,7 +224,7 @@ Xylophone is classified as __fledgling__. Propensive defines the following five 
 - _dependable_: production-ready, subject to controlled ongoing maintenance and enhancement; tagged as version `1.0` or later
 - _adamantine_: proven, reliable and production-ready, with no further breaking changes ever anticipated
 
-Xylophone is designed to be _small_. Its entire source code currently consists of 598 lines of code.
+Xylophone is designed to be _small_. Its entire source code currently consists of 589 lines of code.
 
 ## Building
 
