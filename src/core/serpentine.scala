@@ -25,6 +25,8 @@ case class InvalidPathError(path: Text) extends Error((t"the path ", path, " was
 trait Root(val prefix: Text, val separator: Text):
   type PathType <: Absolute[this.type]
 
+  def apply(path: GenericPath): PathType = make(path.parts)
+
   @targetName("child")
   infix def /(element: Text): PathType throws InvalidPathError =
     make(List(PathElement(element).value))
@@ -33,6 +35,10 @@ trait Root(val prefix: Text, val separator: Text):
   infix def /(element: PathElement): PathType = make(List(element.value))
 
   def make(elements: List[Text]): PathType
+
+  def parse(text: Text): PathType throws InvalidPathError =
+    if !text.startsWith(prefix) then throw InvalidPathError(text)
+    else make(text.drop(prefix.length).cut(separator))
   
 object Root:
   @targetName("RelativeRoot")
@@ -43,7 +49,12 @@ object Root:
     type PathType = Absolute[^.type]
     def make(elements: List[Text]): PathType = Absolute(^, elements)
 
+trait GetRoot[T]:
+  def apply(value: Iterable[T]): Root
+
 export Root.{?, ^}
+val GenericPath: ^.type = ^
+type GenericPath = Absolute[^.type]
 
 object Relative:
   object Self extends Relative(0, Nil)
@@ -92,8 +103,7 @@ case class Relative(ascent: Int, parts: List[Text]):
   override def hashCode: Int = parts.hashCode ^ ascent
 
 object Absolute:
-  given [R <: Root & Singleton]: Show[Absolute[R]] = path =>
-    path.parts.join(path.root.prefix, path.root.separator, t"")
+  given [R <: Root]: Show[Absolute[R]] = _.text
 
 open class Absolute[+R <: Root](val root: R, val parts: List[Text]):
   def depth: Int = parts.length
@@ -114,6 +124,10 @@ open class Absolute[+R <: Root](val root: R, val parts: List[Text]):
 
   def precedes(other: root.PathType): Boolean =
     conjunction(other).parts == parts
+
+  def generic: GenericPath = Absolute(^, parts)
+
+  def text: Text = parts.join(root.prefix, root.separator, t"")
 
   @targetName("safeChild")
   infix def /(element: PathElement): root.PathType = root.make(parts :+ element.value)
