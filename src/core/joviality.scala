@@ -56,10 +56,6 @@ object IoError:
 case class IoError(operation: IoError.Op, reason: IoError.Reason, path: DiskPath[Filesystem])
 extends Error((t"the ", operation, t" operation at ", path, t" failed because ", reason))
 
-case class InotifyError()
-extends Error(t"the limit on the number of paths that can be watched has been exceeded" *:
-    EmptyTuple)
-
 enum Creation:
   case Expect, Create, Ensure
 
@@ -224,13 +220,15 @@ extends Inode[Fs](path):
 
 object Directory:
   given Show[Directory[?]] = _.path.fullname
-    
-  given provider(using fs: Filesystem): DirectoryProvider[Directory[fs.type]]
-      with DirectoryInterpreter[Directory[fs.type]] with
-    def make(str: String, readOnly: Boolean = false): Option[Directory[fs.type]] =
+
+  given WatchService[Directory[Unix]] = () => Unix.javaFilesystem.newWatchService().nn
+
+  given provider[Fs <: Filesystem](using fs: Fs): DirectoryProvider[Directory[Fs]]
+      with DirectoryInterpreter[Directory[Fs]] with
+    def make(str: String, readOnly: Boolean = false): Option[Directory[Fs]] =
       safely(fs.parse(Text(str)).directory(Expect)).option
     
-    def path(dir: Directory[fs.type]): String = dir.path.fullname.s
+    def path(dir: Directory[Fs]): String = dir.path.fullname.s
 
 case class Directory[+Fs <: Filesystem](override val path: DiskPath[Fs]) extends Inode[Fs](path):
   def directory: Directory[Fs] = this
@@ -407,9 +405,6 @@ extends Absolute[Fs](filesystem, elements):
       catch NoSuchElementException => File(this)
     else File(this)
 
-type Majuscule = 'A' | 'B' | 'C' | 'D' | 'E' | 'F' | 'G' | 'H' | 'I' | 'J' | 'K' | 'L' | 'M' | 'N' |
-    'O' | 'P' | 'Q' | 'R' | 'S' | 'T' | 'U' | 'V' | 'W' | 'X' | 'Y' | 'Z'
-
 object Filesystem:
   lazy val roots: Set[Filesystem] =
     Option(ji.File.listRoots).fold(Set())(_.nn.immutable(using Unsafe).to(Set)).map(_.nn.getAbsolutePath.nn)
@@ -460,6 +455,9 @@ case class WindowsRoot(drive: Majuscule) extends Filesystem(t"\\", t"${drive}:\\
 
 package filesystems:
   given unix: Unix.type = Unix
+
+type Majuscule = 'A' | 'B' | 'C' | 'D' | 'E' | 'F' | 'G' | 'H' | 'I' | 'J' | 'K' | 'L' | 'M' | 'N' |
+    'O' | 'P' | 'Q' | 'R' | 'S' | 'T' | 'U' | 'V' | 'W' | 'X' | 'Y' | 'Z'
 
 object windows:
   object DriveC extends WindowsRoot('C')
