@@ -1,0 +1,3 @@
+__Surveillance__ watches directories for changes, and provides a `LazyList` of streaming `WatchEvent`s. While it
+works well with [Joviality](https://github.com/propensive/joviality/), it can work with any representation of
+paths.
