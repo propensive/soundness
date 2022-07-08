@@ -37,6 +37,9 @@ trait PathProvider[+T]:
 trait PathInterpreter[-T]:
   def path(value: T): String
 
+trait WatchService[+T]:
+  def apply(): jnf.WatchService
+
 package integration:
   given javaNio: FileProvider[jnf.Path] with DirectoryProvider[jnf.Path]
       with DirectoryInterpreter[jnf.Path] with FileInterpreter[jnf.Path]
