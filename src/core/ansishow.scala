@@ -20,6 +20,8 @@ import rudiments.*
 import gossamer.*
 import iridescence.*
 
+import compiletime.summonFrom
+
 trait FallbackAnsiShow:
   given AnsiShow[T: Show]: AnsiShow[T] = str => AnsiText(str.show)
 
@@ -41,9 +43,15 @@ object AnsiShow extends FallbackAnsiShow:
         value
       case head *: tail =>
         val color = if flip then colors.White else colors.Green
-        recurParts[tail.type](tail, !flip, ansi"$value${color}($head)")
+        
+        val part: Text = summonFrom:
+          case ds: DebugString[head.type] => ds.show(head)
+          case show: Show[head.type]      => show.show(head)
+          case _                          => head.toString.show
+
+        recurParts[tail.type](tail, !flip, ansi"$value${color}($part)")
   
-  inline given [T <: Tuple]: AnsiShow[Error[T]] = error =>
+  inline given [T <: Tuple, E <: Error[T]]: AnsiShow[E] = error =>
     recurParts[T](error.parts, true)
 
   given AnsiShow[StackTrace] = stack =>
