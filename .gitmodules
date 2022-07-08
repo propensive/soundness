@@ -131,3 +131,6 @@
 [submodule "mod/telekinesis"]
 	path = mod/telekinesis
 	url = https://github.com/propensive/telekinesis
+[submodule "mod/surveillance"]
+	path = mod/surveillance
+	url = https://github.com/propensive/surveillance

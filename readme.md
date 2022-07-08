@@ -18,7 +18,8 @@ _Scala One_ includes libraries for working with [HTML](https://github.com/propen
 [calling HTTP](https://github.com/propensive/telekinesis/) and
 [serving HTTP](https://github.com/propensive/scintillate/) or the
 [command line](https://github.com/propensive/exoskeleton/). Additionally, support for
-[disk I/O](https://github.com/propensive/joviality/) and the standard
+[disk I/O](https://github.com/propensive/joviality/),
+[filewatching](https://github.com/propensive/surveillance/) and the standard
 [UNIX directory layout](https://github.com/propensive/imperial),
 [shell processes](https://github.com/propensive/guillotine/) (including native
 [keyboard interactivity](https://github.com/propensive/profanity/)),
