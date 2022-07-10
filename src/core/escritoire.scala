@@ -28,7 +28,7 @@ enum Alignment:
 
 case class ColumnWidth(min: Int, max: Int)
 
-enum BorderStyle:
+enum BorderFormat:
   case DoubleSingle, SingleTight, SingleSpaced, Spaced
 
   def spacing(cols: Int): Int = this match
@@ -82,7 +82,7 @@ case class Tabulation[T: ClassTag](cols: Column[T]*):
     val ws = widths(cols.sortBy { c => c.width.max - c.width.min }.to(List), total - mins.sum, Map())
     colsArray.map(ws(_))
 
-  def tabulate(rows: Seq[T], width: Int, style: BorderStyle)
+  def tabulate(rows: Seq[T], width: Int, style: BorderFormat)
               : Unit throws TableWidthError =//IArray[AnsiText] throws TableWidthError =
     val cells: IArray[IArray[AnsiText]] =
       val rowsArray: IArray[T] = IArray.from(rows)
