@@ -86,4 +86,3 @@ object Home extends BaseLayout("")(using BaseLayout.Dir(true, "")):
     object Lib extends BaseLayout("lib")
     object Share extends BaseLayout("share", "XDG_DATA_HOME")
     object State extends BaseLayout("state", "XDG_STATE_HOME")
-    object Foobar extends BaseLayout("foobar", "XDG_FOOBAR_HOME")
