@@ -79,11 +79,13 @@ extension [T](value: T)
 
 extension [T](value: IArray[T])
   transparent inline def mutable(using erased Unsafe.type): Array[T] = value match
-    case array: Array[T] => array
+    case array: Array[T] @unchecked => array
+    case _                          => throw Mistake("Should never match")
 
 extension [T](value: Array[T])
   transparent inline def immutable(using erased Unsafe.type): IArray[T] = value match
-    case array: IArray[T] => array
+    case array: IArray[T] @unchecked => array
+    case _                           => throw Mistake("Should never match")
   
   def snapshot(using ClassTag[T]): IArray[T] =
     val newArray = new Array[T](value.length)
@@ -130,14 +132,14 @@ type Maybe[T] = Unset.type | T
 
 extension [T](opt: Maybe[T])
   def otherwise(value: => T): T = opt match
-    case Unset => value
-    case other: T => other
+    case Unset               => value
+    case other: T @unchecked => other
   
   def presume(using default: Default[T]): T = otherwise(default())
   
   def option: Option[T] = opt match
-    case Unset => None
-    case other: T => Some(other)
+    case Unset               => None
+    case other: T @unchecked => Some(other)
 
 extension (iarray: IArray.type)
   def init[T: ClassTag](size: Int)(fn: Array[T] => Unit): IArray[T] =
@@ -178,8 +180,12 @@ def safely[T](value: => CanThrow[Exception] ?=> T): Maybe[T] =
 
 def unsafely[T](value: => CanThrow[Exception] ?=> T): T = value(using unsafeExceptions.canThrowAny)
 
-object &:
-  def unapply[T](value: T): Some[(T, T)] = Some((value, value))
+object AndExtractor:
+  @targetName("And")
+  object `&`:
+    def unapply[T](value: T): Some[(T, T)] = Some((value, value))
+
+export AndExtractor.&
 
 extension [T](xs: Iterable[T])
   transparent inline def mtwin: Iterable[(T, T)] = xs.map { x => (x, x) }
