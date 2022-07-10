@@ -98,7 +98,7 @@ case class Watcher[Dir](private val svc: jnf.WatchService)
     
     catch case err: Exception => List()
 
-  def add(dir: Dir)(using Log, DirectoryInterpreter[Dir]): Unit = synchronized:
+  def add(dir: Dir)(using Log): Unit = synchronized:
     val path = dirPath(dir)
     val watchKey = path.register(svc, ENTRY_CREATE, ENTRY_MODIFY, ENTRY_DELETE).nn
     watches(watchKey) = path
