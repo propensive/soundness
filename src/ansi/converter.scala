@@ -104,7 +104,7 @@ open class TextConverter():
                     case Flair.String            => ansi"${solarized.Violet}(${code.trim})"
                     case other                   => ansi"${code.trim}"
                   case Token.Unparsed(content)   => ansi"${content}"
-                  case Token.Newline           => throw Mistake("Should not have a newline")
+                  case _                       => throw Mistake("Should not have a newline")
                 .join
             
             acc :+ TextBlock(indent, highlightedLines.join(ansi"\n"))
