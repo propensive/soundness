@@ -29,7 +29,7 @@ private[cataclysm] type Label = String & Singleton
 
 given Show[Double] = Showable(_).show
 
-object Macro:
+object CataclysmMacros:
   def rule(selector: Expr[Selector], props: Expr[Seq[(Label, Any)]])(using Quotes): Expr[CssRule] =
     '{CssRule($selector, ${read(props)})}
 

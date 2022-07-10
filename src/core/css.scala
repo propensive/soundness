@@ -24,7 +24,7 @@ import annotation.targetName
 import language.dynamics
 
 object CssStylesheet:
-  given anticipation.HttpResponse[CssStylesheet] with
+  given HttpResponseStream[CssStylesheet] with
     def mediaType: String = "text/css; charset=utf-8"
     def content(stylesheet: CssStylesheet): LazyList[IArray[Byte]] = LazyList(stylesheet.text.bytes)
   
@@ -42,11 +42,11 @@ case class Keyframe(ref: Text, style: CssStyle):
 
 object From extends Dynamic:
   inline def applyDynamicNamed(method: "apply")(inline properties: (Label, Any)*): Keyframe =
-    ${Macro.keyframe('{"from"}, 'properties)}
+    ${CataclysmMacros.keyframe('{"from"}, 'properties)}
 
 object To extends Dynamic:
   inline def applyDynamicNamed(method: "apply")(inline properties: (Label, Any)*): Keyframe =
-    ${Macro.keyframe('{"to"}, 'properties)}
+    ${CataclysmMacros.keyframe('{"to"}, 'properties)}
   
 case class Import(url: Text) extends CssStylesheet.Item:
   def text: Text = t"@import url('$url');"
@@ -74,11 +74,11 @@ object Css extends Dynamic:
   def applyDynamic(method: "apply")(): CssStyle = CssStyle()
 
   inline def applyDynamicNamed(method: "apply")(inline properties: (Label, Any)*): CssStyle =
-    ${Macro.read('properties)}
+    ${CataclysmMacros.read('properties)}
 
 sealed trait Selector(val value: Text):
   inline def applyDynamicNamed(method: "apply")(inline properties: (Label, Any)*): CssRule =
-    ${Macro.rule('this, 'properties)}
+    ${CataclysmMacros.rule('this, 'properties)}
   
   def normalize: Selector
 
