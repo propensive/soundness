@@ -18,6 +18,7 @@ package serpentine
 
 import rudiments.*
 import gossamer.*
+import anticipation.*
 
 case class RootParentError(root: Root) extends Error((t"attempted to access parent of root ", root))
 case class InvalidPathError(path: Text) extends Error((t"the path ", path, " was not absolute"))
@@ -63,7 +64,7 @@ object Relative:
     case Self                    => t"."
     case Relative(ascent, parts) => parts.join(t"../"*ascent, t"/", t"")
 
-  given anticipation.HtmlAttribute["href", Relative] with
+  given HtmlAttributeWriter["href", Relative] with
     def name = "href"
     def serialize(value: Relative): String = value.show.s
 
