@@ -23,16 +23,16 @@ import scala.annotation.StaticAnnotation as Ann
 case class Annotations[A <: Ann, T](annotations: A*)
 
 object Annotations:
-  inline given [A <: Ann, T]: Annotations[A, T] = ${Macros.typeAnnotations[A, T]}
+  inline given [A <: Ann, T]: Annotations[A, T] = ${AdversariaMacros.typeAnnotations[A, T]}
 
   transparent inline def field[T](inline fn: T => Any): List[Ann] =
-    ${Macros.fieldAnnotations[T]('fn)}
+    ${AdversariaMacros.fieldAnnotations[T]('fn)}
 
   transparent inline def fields[T <: Product, A <: Ann]: List[CaseField[T, A]] =
-    ${Macros.fields[T, A]}
+    ${AdversariaMacros.fields[T, A]}
 
   transparent inline def firstField[T <: Product, A <: Ann]: CaseField[T, A] =
-    ${Macros.firstField[T, A]}
+    ${AdversariaMacros.firstField[T, A]}
 
 object CaseField:
   def apply[T <: Product, A <: Ann, F](name: String, access: T => F, ann: A)
@@ -47,7 +47,7 @@ trait CaseField[T <: Product, A <: Ann](val name: String):
   def apply(value: T): FieldType
   def annotation: A
 
-object Macros:
+object AdversariaMacros:
   def firstField[T <: Product: Type, A <: Ann: Type](using Quotes): Expr[CaseField[T, A]] =
     import quotes.reflect.*
     val tpe = TypeRepr.of[T]
