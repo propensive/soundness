@@ -3,10 +3,15 @@
     {
       "base": "../escapade",
       "url": "https://github.com/propensive/escapade"
+    },
+    {
+      "base": "../turbulence",
+      "url": "https://github.com/propensive/turbulence"
     }
   ],
   "imports": [
-    "../escapade/build.irk"
+    "../escapade/build.irk",
+    "../turbulence/build.irk"
   ],
   "publishing": {
     "username": "propensive",
@@ -31,7 +36,8 @@
       "name": "Eucalyptus",
       "id": "eucalyptus/core",
       "links": [
-        "escapade/core"
+        "escapade/core",
+        "turbulence/core"
       ],
       "sources": [
         "src/core"
