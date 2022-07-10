@@ -55,7 +55,9 @@ object Text:
 
   given CommandLineParser.FromString[Text] = identity(_)
   given Ordering[Text] = Ordering.String.on[Text](_.s)
-  
+ 
+  given Conversion[String, Text] = Text(_)
+
   given typeTest: Typeable[Text] with
     def unapply(value: Any): Option[value.type & Text] = value match
       case str: String => Some(str.asInstanceOf[value.type & Text])
