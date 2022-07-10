@@ -42,7 +42,7 @@ case class BaseLayout(private val part: String, private val envVar: Maybe[String
       case None      => throw RuntimeException("failed to parse: '"+path+"'")
       case Some(dir) => dir
 
-object Root extends BaseLayout("")(using BaseLayout.Dir(false, "")):
+object Xdg extends BaseLayout("")(using BaseLayout.Dir(false, "")):
   override def apply[T]()(using PathProvider[T], Environment): T =
     summon[PathProvider[T]].make("/", readOnly = true).get
 

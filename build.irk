@@ -14,18 +14,6 @@
       "sources": ["src/core"],
       "version": "0.4.0",
       "docs": ["doc"]
-    },
-    {
-      "name": "Imperial Tests",
-      "id": "imperial/test",
-      "links": ["imperial/core", "probably/cli"],
-      "sources": ["src/test"],
-      "version": "0.4.0",
-      "docs": [],
-      "exec": {
-        "browsers": [],
-        "start": "imperial.Tests"
-      }
     }
   ]
 }

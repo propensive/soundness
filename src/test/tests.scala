@@ -24,7 +24,7 @@ import stdouts.stdout
 import anticipation.integration.javaIo
 import eucalyptus.*
 
-given Log(Everything |-> SystemOut)
+given Log(_ => SystemOut.sink)
 
 given Environment({
   case t"HOME" => Some(t"/home/work")
