@@ -178,6 +178,9 @@ def safely[T](value: => CanThrow[Exception] ?=> T): Maybe[T] =
 
 def unsafely[T](value: => CanThrow[Exception] ?=> T): T = value(using unsafeExceptions.canThrowAny)
 
+object &:
+  def unapply[T](value: T): Some[(T, T)] = Some((value, value))
+
 extension [T](xs: Iterable[T])
   transparent inline def mtwin: Iterable[(T, T)] = xs.map { x => (x, x) }
   transparent inline def mtriple: Iterable[(T, T, T)] = xs.map { x => (x, x, x) }
