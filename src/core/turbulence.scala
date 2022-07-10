@@ -86,27 +86,27 @@ trait Source[T]:
   type E <: Exception
   def read(value: T): DataStream throws E
 
-object Sink:
-  given Sink[SystemOut.type] with
+object Writable:
+  given Writable[SystemOut.type] with
     type E = StreamCutError
     def write(value: SystemOut.type, stream: DataStream) =
       if System.out == null then throw StreamCutError() else Util.write(stream, System.out)
   
-  given Sink[SystemErr.type] with
+  given Writable[SystemErr.type] with
     type E = StreamCutError
     def write(value: SystemErr.type, stream: DataStream) =
       if System.err == null then throw StreamCutError() else Util.write(stream, System.err)
   
-  given Sink[ji.OutputStream] with
+  given Writable[ji.OutputStream] with
     type E = StreamCutError
-    def write(sink: ji.OutputStream, stream: DataStream) =
-      val out = sink match
+    def write(writable: ji.OutputStream, stream: DataStream) =
+      val out = writable match
         case out: ji.BufferedOutputStream => out
         case out: ji.OutputStream         => ji.BufferedOutputStream(out)
       
       Util.write(stream, out)
 
-trait Sink[T]:
+trait Writable[T]:
   type E <: Exception
   def write(value: T, stream: DataStream): Unit throws E | StreamCutError
 
@@ -192,12 +192,12 @@ class Pulsar(using time: Timekeeper)(interval: time.Type):
 extension [T](value: T)
   def dataStream(using src: Source[T]): DataStream throws src.E = src.read(value)
   
-  def writeStream(stream: DataStream)(using sink: Sink[T]): Unit throws sink.E | StreamCutError =
-    sink.write(value, stream)
+  def writeStream(stream: DataStream)(using writable: Writable[T]): Unit throws writable.E | StreamCutError =
+    writable.write(value, stream)
   
-  def writeTo[S](destination: S)(using sink: Sink[S], streamable: Streamable[T])
-                : Unit throws sink.E | StreamCutError =
-    sink.write(destination, streamable.stream(value))
+  def writeTo[S](destination: S)(using writable: Writable[S], streamable: Streamable[T])
+                : Unit throws writable.E | StreamCutError =
+    writable.write(destination, streamable.stream(value))
 
   def read[S](using readable: Readable[S], src: Source[T])
       : S throws readable.E | src.E | StreamCutError =
@@ -226,10 +226,9 @@ case class Multiplexer[K, T]():
     if tasks.isEmpty then queue.put(Unset)
   
   def stream: LazyList[T] =
-    def recur(): LazyList[T] =
-      queue.take() match
-        case null | Unset => LazyList()
-        case item: T      => item.nn #:: recur()
+    def recur(): LazyList[T] = queue.take() match
+      case null | Unset       => LazyList()
+      case item: T @unchecked => item.nn #:: recur()
     
     LazyList() #::: recur()
 
@@ -247,6 +246,8 @@ extension [T](stream: LazyList[T])
         val delay = time.to(interval) - (System.currentTimeMillis - last)
         if delay > 0 then Thread.sleep(delay)
         stream
+      case _ =>
+        throw Mistake("Should never match")
 
     recur(stream, System.currentTimeMillis)
 
@@ -263,7 +264,7 @@ extension [T](stream: LazyList[T])
       else stream.head match
         case Tap.Regulation.Start => recur(true, stream.tail, buffer)
         case Tap.Regulation.Stop  => recur(false, stream.tail, Nil)
-        case other: T             => if active then other.nn #:: defer(true, stream.tail, Nil)
+        case other: T @unchecked  => if active then other.nn #:: defer(true, stream.tail, Nil)
                                      else recur(false, stream.tail, other.nn :: buffer)
 
     LazyList() #::: recur(true, stream.multiplexWith(tap.stream), Nil)
@@ -296,7 +297,7 @@ extension [T](stream: LazyList[T])
     LazyList() #::: recur(stream, Nil, Long.MaxValue)
 
 object StreamBuffer:
-  given Sink[StreamBuffer[Bytes throws StreamCutError]] with
+  given Writable[StreamBuffer[Bytes throws StreamCutError]] with
     type E = StreamCutError
     
     def write(buffer: StreamBuffer[Bytes throws StreamCutError], stream: DataStream) =
@@ -324,14 +325,18 @@ class StreamBuffer[T]():
       case Unset =>
         buffer = false
         if closed then LazyList() else stream
-      case value: T =>
+      case value: T @unchecked =>
         value #:: stream
+      case _ =>
+        throw Mistake("Should never match")
     else secondary.take() match
       case Unset =>
         buffer = true
         if closed then LazyList() else stream
-      case value: T =>
+      case value: T @unchecked =>
         value #:: stream
+      case _ =>
+        throw Mistake("Should never match")
     
 
 class Funnel[T]():
