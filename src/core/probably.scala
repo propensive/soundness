@@ -141,7 +141,7 @@ class Runner(subset: Set[TestId] = Set()) extends Dynamic:
       expr
 
     inline def assert(inline pred: Type => Boolean)(using log: Log): Unit =
-      ${Macros.assert[Type]('runner, 'this, 'pred, 'log)}
+      ${ProbablyMacros.assert[Type]('runner, 'this, 'pred, 'log)}
 
     def matches(pf: PartialFunction[Type, Any])(using Log): Type = check(pf.isDefinedAt(_))
 
@@ -208,7 +208,7 @@ case class Debug(found: Option[Text] = None, filename: Maybe[Text] = Unset, line
     
     basicInfo ++ info
 
-object Macros:
+object ProbablyMacros:
   import scala.reflect.*
   def assert[T: Type](runner: Expr[Runner], test: Expr[Runner#Test { type Type = T }], pred: Expr[T => Boolean], log: Expr[Log])(using Quotes): Expr[Unit] =
     import quotes.reflect.*
