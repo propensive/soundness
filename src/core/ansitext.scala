@@ -210,6 +210,7 @@ case class AnsiText(plain: Text, spans: TreeMap[CharSpan, Ansi.Transform] = Tree
   @targetName("add")
   infix def +(text: Text): AnsiText = AnsiText(t"$plain$text", spans)
 
+  @targetName("add2")
   infix def +(text: AnsiText): AnsiText =
     val newSpans: TreeMap[CharSpan, Ansi.Transform] = text.spans.map:
       case (span, transform) => (span.shift(length): CharSpan) -> transform
@@ -225,7 +226,7 @@ case class AnsiText(plain: Text, spans: TreeMap[CharSpan, Ansi.Transform] = Tree
         spans.map: (span, transform) =>
           val charSpan: CharSpan = span.trimLeft(n)
           charSpan -> transform
-        .filterKeys { k => k.isEmpty || k != CharSpan.Nowhere }.to(TreeMap)
+        .view.filterKeys { k => k.isEmpty || k != CharSpan.Nowhere }.to(TreeMap)
       
       AnsiText(plain.drop(n), newSpans)
 
@@ -238,7 +239,7 @@ case class AnsiText(plain: Text, spans: TreeMap[CharSpan, Ansi.Transform] = Tree
         spans.map: (span, tf) =>
           val charSpan: CharSpan = span.takeLeft(n)
           charSpan -> tf
-        .filterKeys { k => k.isEmpty || k != CharSpan.Nowhere }.to(TreeMap)
+        .view.filterKeys { k => k.isEmpty || k != CharSpan.Nowhere }.to(TreeMap)
       
       AnsiText(plain.take(n), newSpans)
 
