@@ -16,7 +16,7 @@
 
 package anticipation
 
-trait HttpResponse[T]:
+trait HttpResponseStream[T]:
   def mediaType: String
   def content(value: T): LazyList[IArray[Byte]]
 
