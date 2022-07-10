@@ -26,7 +26,7 @@ import scala.collection.mutable as scm
 
 import unsafeExceptions.canThrowAny
 
-object JsonMacro:
+object EuphemismMacro:
   def deriveReader[T: Type](using Quotes): Expr[Json.Reader[T]] =
     import quotes.reflect.*
 
@@ -91,7 +91,7 @@ object JsonMacro:
                       val expr: Expr[`paramType`] =
                         '{
                           $reader.read(vs.get($label).getOrElse(
-                              throw JsonAccessError(Text($label))))
+                              throw JsonAccessError(JsonAccessError.Reason.Label(Text($label)))))
                         }
                       expr :: recur(tail)
                     
