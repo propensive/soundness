@@ -24,16 +24,15 @@ import eucalyptus.*
 import escapade.*
 import iridescence.*
 
-import scala.collection.convert.ImplicitConversionsToJava.*
-import scala.collection.convert.ImplicitConversionsToScala.*
 import scala.jdk.StreamConverters.StreamHasToScala
+import scala.jdk.CollectionConverters.MapHasAsJava
+import scala.jdk.CollectionConverters.MapHasAsScala
 
 import annotation.targetName
-
 import java.io as ji
 
 object envs:
-  val enclosing: Env = Env(System.getenv.nn.map(_.show -> _.show).to(Map))
+  val enclosing: Env = Env(System.getenv.nn.asScala.map(_.show -> _.show).to(Map))
   val empty: Env = Env(Map())
 
 enum Context:
@@ -136,12 +135,13 @@ object Pipeline:
 case class Pipeline(cmds: Command*) extends Executable:
   def fork[T]()(using env: Env, exec: Executor[T] = Executor.text)(using Log): Process[T] =
     Log.info(ansi"Starting pipelined processes ${this.ansi} in directory ${env.workDirFile.getAbsolutePath.nn}")
-    new Process[T](ProcessBuilder.startPipeline(cmds.map:
-      cmd =>
-        val pb = ProcessBuilder(cmd.args.map(_.s)*)
-        pb.directory(env.workDirFile)
-        pb.nn
-    ).nn.to(List).last, exec)
+
+    val processBuilders = cmds.map: cmd =>
+      val pb = ProcessBuilder(cmd.args.map(_.s)*)
+      pb.directory(env.workDirFile)
+      pb.nn
+
+    new Process[T](ProcessBuilder.startPipeline(processBuilders.asJava).nn.asScala.to(List).last, exec)
 
 @implicitNotFound("guillotine: a contextual rudiments.Environment is required, for example\n    given Environment()\nor,\n"+
                       "    given Envronment = environments.system")
