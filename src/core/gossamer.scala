@@ -326,14 +326,14 @@ object Line:
       
 object stdouts:
   given stdout: Stdout = txt =>
-    try summon[Sink[SystemOut.type]].write(SystemOut, LazyList(txt.bytes))
+    try summon[Writable[SystemOut.type]].write(SystemOut, LazyList(txt.bytes))
     catch case err: Exception => ()
   
   given drain: Stdout = txt => ()
 
 object Stdout:
-  def apply[T](value: T)(using sink: Sink[T]): Stdout = txt =>
-    try sink.write(value, LazyList(txt.bytes))
+  def apply[T](value: T)(using writable: Writable[T]): Stdout = txt =>
+    try writable.write(value, LazyList(txt.bytes))
     catch case err: Exception => ()
 
 trait Stderr:
