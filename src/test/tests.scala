@@ -25,7 +25,7 @@ import eucalyptus.*
 import unsafeExceptions.canThrowAny
 import encodings.Utf8
 
-given Log(Everything |-> SystemOut)
+given Log(_ => SystemOut.sink)
 
 object Tests extends Suite(t"Caesura tests"):
   def run(using Runner): Unit =

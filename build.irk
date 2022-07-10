@@ -51,21 +51,6 @@
       "docs": [
         "doc"
       ]
-    },
-    {
-      "name": "Caesura Tests",
-      "id": "caesura/test",
-      "links": [
-        "caesura/core",
-        "probably/cli"
-      ],
-      "sources": [
-        "src/test"
-      ],
-      "version": "0.4.0",
-      "docs": [
-        "doc"
-      ]
     }
   ]
 }
