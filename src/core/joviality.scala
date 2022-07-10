@@ -105,7 +105,7 @@ object File:
     
     def path(file: File[Filesystem]): String = file.path.fullname.toString
 
-  given [Fs <: Filesystem]: Sink[File[Fs]] with
+  given [Fs <: Filesystem]: Writable[File[Fs]] with
     type E = IoError
     def write(value: File[Fs], stream: DataStream): Unit throws E | StreamCutError =
       val out = ji.FileOutputStream(value.javaFile, false)
@@ -184,7 +184,7 @@ case class File[+Fs <: Filesystem](override val path: DiskPath[Fs]) extends Inod
 
 
 object Fifo:
-  given [Fs <: Unix]: Sink[Fifo[Fs]] with
+  given [Fs <: Unix]: Writable[Fifo[Fs]] with
     type E = IoError
     def write(value: Fifo[Fs], stream: DataStream): Unit throws E | StreamCutError =
       try Util.write(stream, value.out)
