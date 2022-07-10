@@ -90,8 +90,8 @@ class CliApi[A <: Api & Singleton](shell: Shell, apis: Api*):
 def proffer[A <: Api & Singleton](api: A*)(using Fix[A], Shell): CliApi[A] =
   CliApi(summon[Shell], api*)
 
-class Executable()
+class CanExecute()
 
-def execute(fn: Executable ?=> Return)(using Shell): Return =
+def execute(fn: CanExecute ?=> Return)(using Shell): Return =
   if summon[Shell].completion then Return.Completions(Nil)
-  else fn(using new Executable())
+  else fn(using new CanExecute())
