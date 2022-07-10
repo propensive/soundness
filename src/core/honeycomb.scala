@@ -18,6 +18,7 @@ package honeycomb
 
 import rudiments.*
 import gossamer.*
+import anticipation.*
 
 import scala.quoted.*
 
@@ -32,8 +33,8 @@ object Element:
     new Element(labelString, unclosed, inline, verbatim, attributes, flatten(children))
 
   private def flatten[C <: Label](nodes: Seq[Html[C] | Seq[Html[C]]]): Seq[Html[C]] = nodes.flatMap:
-    case seq: Seq[Html[C]] => seq
-    case node: Html[C]     => Seq(node)
+    case seq: Seq[Html[C] @unchecked] => seq
+    case node: Html[C] @unchecked     => Seq(node)
 
 object Html extends Node["html"]:
   def label: Text = t"html"
@@ -61,7 +62,7 @@ extends Node[Name], Dynamic:
 
   inline def applyDynamicNamed(method: "apply")
                               (inline attributes: (Atts, Any)*): StartTag[Name, Children] =
-    ${Macro.read[Name, Children, Children]('labelString, 'unclosed, 'inline, 'verbatim,
+    ${HoneycombMacros.read[Name, Children, Children]('labelString, 'unclosed, 'inline, 'verbatim,
         'attributes)}
 
   def applyDynamic(method: "apply")
@@ -81,7 +82,7 @@ extends Node[Name], Dynamic:
 
   inline def applyDynamicNamed(method: "apply")
                               (inline attributes: (Atts, Any)*): StartTag[Name, Children] =
-    ${Macro.read[Name, Children, Children]('labelString, 'unclosed, 'inline, 'verbatim,
+    ${HoneycombMacros.read[Name, Children, Children]('labelString, 'unclosed, 'inline, 'verbatim,
         'attributes)}
 
   def applyDynamic[Return <: Label]
@@ -104,7 +105,7 @@ case class Element[+Name <: Label](labelString: String, unclosed: Boolean, tagIn
 case class HtmlDoc(root: Node["html"])
 
 object HtmlDoc:
-  given anticipation.HttpResponse[HtmlDoc] with
+  given HttpResponseStream[HtmlDoc] with
     def mediaType: String = "text/html; charset=utf-8"
     def content(value: HtmlDoc): LazyList[IArray[Byte]] = LazyList(HtmlDoc.serialize(value).bytes)
 

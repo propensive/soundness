@@ -81,7 +81,7 @@ extends Node[Name]:
   def apply(children: (Html[Children] | Seq[Html[Children]])*): Element[Name] =
     Element(labelString, unclosed, inline, verbatim, attributes, children)
 
-object Macro:
+object HoneycombMacros:
   def read[Name <: Label: Type, Children <: Label: Type, Return <: Label: Type]
           (name: Expr[Name], unclosed: Expr[Boolean], inline: Expr[Boolean],
                verbatim: Expr[Boolean], attributes: Expr[Seq[(Label, Any)]])
