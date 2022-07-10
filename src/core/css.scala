@@ -18,6 +18,7 @@ package cataclysm
 
 import rudiments.*
 import gossamer.*
+import anticipation.*
 
 import annotation.targetName
 import language.dynamics
@@ -51,7 +52,7 @@ case class Import(url: Text) extends CssStylesheet.Item:
   def text: Text = t"@import url('$url');"
 
 object CssStyle:
-  given anticipation.HtmlAttribute["style", CssStyle] with
+  given HtmlAttributeWriter["style", CssStyle] with
     def serialize(value: CssStyle): String = value.properties.map(_.text).join(t";").s
     def name: String = "style"
 
