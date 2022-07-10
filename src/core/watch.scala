@@ -76,10 +76,15 @@ case class Watcher[Dir](private val svc: jnf.WatchService)
 
   private def process(key: jnf.WatchKey, event: jnf.WatchEvent[?]): List[WatchEvent] =
     val base = watches(key)
+    val eventCtx = event.context.nn
+
+    val absolute = eventCtx match
+      case path: jnf.Path => base.resolve(path).nn
+      case _              => throw Mistake("Should never match")
     
-    val (absolute, relative) = event.context.nn match
-      case path: jnf.Path => base.resolve(path).nn -> Relative.parse(Showable(path).show)
-      case _              => throw Mistake("the event context should always be a path")
+    val relative = eventCtx match
+      case path: jnf.Path => Relative.parse(Showable(path).show)
+      case _              => throw Mistake("Should never match")
     
     try event.kind match
       case ENTRY_CREATE =>
