@@ -19,6 +19,8 @@ package gesticulate
 import rudiments.*
 import gossamer.*
 import contextual.*
+import anticipation.*
+
 import scala.io.*
 
 object Media:
@@ -177,19 +179,19 @@ object MediaType:
   given Show[MediaType] =
     mt => t"${mt.basic}${mt.parameters.map { p => t"; ${p(0)}=${p(1)}" }.join}"
   
-  given formenctype: anticipation.HtmlAttribute["formenctype", MediaType] with
+  given formenctype: HtmlAttributeWriter["formenctype", MediaType] with
     def name: String = "formenctype"
     def serialize(mediaType: MediaType): String = mediaType.show.s
   
-  given media: anticipation.HtmlAttribute["media", MediaType] with
+  given media: HtmlAttributeWriter["media", MediaType] with
     def name: String = "media"
     def serialize(mediaType: MediaType): String = mediaType.show.s
   
-  given enctype: anticipation.HtmlAttribute["enctype", MediaType] with
+  given enctype: HtmlAttributeWriter["enctype", MediaType] with
     def name: String = "enctype"
     def serialize(mediaType: MediaType): String = mediaType.show.s
   
-  given htype: anticipation.HtmlAttribute["htype", MediaType] with
+  given htype: HtmlAttributeWriter["htype", MediaType] with
     def name: String = "type"
     def serialize(mediaType: MediaType): String = mediaType.show.s
 
