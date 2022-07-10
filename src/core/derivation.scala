@@ -20,7 +20,7 @@ import rudiments.*
 
 import scala.quoted.*
 
-object Macro:
+object WisteriaMacros:
   inline def isObject[T]: Boolean = ${isObject[T]}
   inline def anns[T]: List[Any] = ${anns[T]}
   inline def typeAnns[T]: List[Any] = ${typeAnns[T]}

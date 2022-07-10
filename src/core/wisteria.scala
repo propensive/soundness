@@ -21,7 +21,7 @@ import rudiments.*
 import scala.deriving.Mirror
 import scala.compiletime.*
 import scala.reflect.*
-import Macro.*
+import WisteriaMacros.*
 
 trait CommonDerivation[TypeClass[_]]:
   type Typeclass[T] = TypeClass[T]
