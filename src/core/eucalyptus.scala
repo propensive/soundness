@@ -38,6 +38,8 @@ case class Realm(name: Text):
   def unapply(entry: Entry): Boolean = entry.realm == this
 
 object Level:
+  given Ordering[Level] = Ordering[Int].on[Level](_.ordinal)
+
   given AnsiShow[Level] = level =>
     val color = level match
       case Fine => solarized.Cyan
@@ -49,21 +51,8 @@ object Level:
 
 enum Level:
   case Fine, Info, Warn, Fail
-
   def unapply(entry: Entry): Boolean = entry.level == this
   
-  @targetName("greaterThan")
-  def >(level: Level): Boolean = this.ordinal > level.ordinal
-  
-  @targetName("lessThan")
-  def <(level: Level): Boolean = this.ordinal < level.ordinal
-  
-  @targetName("greaterThanOrEqualTo")
-  def >=(level: Level): Boolean = this.ordinal >= level.ordinal
-  
-  @targetName("lessThanOrEqualTo")
-  def <=(level: Level): Boolean = this.ordinal <= level.ordinal
-
 case class Entry(realm: Realm, level: Level, message: AnsiText, timestamp: Timestamp)
 
 object Timestamp:
