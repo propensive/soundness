@@ -142,5 +142,4 @@ open class HtmlConverter():
     case other =>
       nonInteractive(other)
 
-  def escape(str: Text): Text =
-    str.sub(t"&", t"&amp;").sub(t"<", t"&lt;").sub(t">", t"&gt;")
+  def escape(str: Text): Text = str.sub(t"&", t"&amp;").sub(t"<", t"&lt;").sub(t">", t"&gt;")

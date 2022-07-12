@@ -19,9 +19,9 @@ package punctuation
 import honeycomb.*
 import rudiments.*
 
-extension (value: Markdown[Markdown.Ast.Node])
-  def html: Seq[Html[Flow]] = HtmlConverter().convert(value.nodes)
+extension (value: Markdown[Markdown.Ast.Node])(using conv: HtmlConverter)
+  def html: Seq[Html[Flow]] = conv.convert(value.nodes)
 
-extension (value: Markdown.Ast.Inline)
+extension (value: Markdown.Ast.Inline)(using conv: HtmlConverter)
   @targetName("html2")
-  def html: Seq[Html[Phrasing]] = HtmlConverter().phrasing(value)
+  def html: Seq[Html[Phrasing]] = conv.phrasing(value)
