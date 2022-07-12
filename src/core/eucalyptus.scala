@@ -64,32 +64,25 @@ object Timestamp:
 
 opaque type Timestamp = Long
 
-object ElapsedTime:
-  def between(t0: Timestamp, current: Timestamp): ElapsedTime = (current - t0) max 0
-  given show: Show[ElapsedTime] = ts => numberFormat.format(ts/1000.0).nn.show.pad(7)
-
-  private val numberFormat = jt.DecimalFormat(t"#.000".s)
-
-opaque type ElapsedTime = Long
-
 object Log:
   inline def fine[T](inline value: T)
                     (using inline log: Log, inline show: AnsiShow[T], inline realm: Realm): Unit =
-    ${recordLog('{Level.Fine}, 'value, 'log, 'show, 'realm)}
+    ${EucalyptusMacros.recordLog('{Level.Fine}, 'value, 'log, 'show, 'realm)}
   
   inline def info[T](inline value: T)
                     (using inline log: Log, inline show: AnsiShow[T], inline realm: Realm): Unit =
-    ${recordLog('{Level.Info}, 'value, 'log, 'show, 'realm)}
+    ${EucalyptusMacros.recordLog('{Level.Info}, 'value, 'log, 'show, 'realm)}
   
   inline def warn[T](inline value: T)
                     (using inline log: Log, inline show: AnsiShow[T], inline realm: Realm): Unit =
-    ${recordLog('{Level.Warn}, 'value, 'log, 'show, 'realm)}
+    ${EucalyptusMacros.recordLog('{Level.Warn}, 'value, 'log, 'show, 'realm)}
   
   inline def fail[T](inline value: T)
                     (using inline log: Log, inline show: AnsiShow[T], inline realm: Realm): Unit =
-    ${recordLog('{Level.Fail}, 'value, 'log, 'show, 'realm)}
+    ${EucalyptusMacros.recordLog('{Level.Fail}, 'value, 'log, 'show, 'realm)}
 
-  private def recordLog[T: Type](level: Expr[Level], value: Expr[T], log: Expr[Log],
+object EucalyptusMacros:
+  def recordLog[T: Type](level: Expr[Level], value: Expr[T], log: Expr[Log],
                                      show: Expr[AnsiShow[T]], realm: Expr[Realm])
                                 (using Quotes): Expr[Unit] =
     import quotes.reflect.*
@@ -99,6 +92,7 @@ object Log:
       try $log.record(Entry($realm, $level, $show.ansiShow($value), ts))
       catch case e: Exception => ()
     }
+
 
 case class Log(actions: PartialFunction[Entry, LogSink]*):
   private val funnels: HashMap[LogSink, Funnel[Entry]] = HashMap()
