@@ -60,15 +60,6 @@ object CataclysmMacros:
       case _ =>
         report.errorAndAbort("cataclysm: expected varargs")
 
-  private def words(string: Text): List[Text] =
-    try
-      val i = string.where(_.isUpper, 1)
-      string.take(i).lower :: words(string.drop(i))
-    catch case error: OutOfRangeError => List(string.lower)
-    
-
-  private[cataclysm] def dashed(string: Text): Text = words(string).join(t"-")
-
 case class PropertyDef[Name <: Label, -T: ShowProperty]():
   def show(value: T): Text = summon[ShowProperty[T]].show(value)
 
@@ -406,7 +397,7 @@ object ShowProperty:
   given ShowProperty[Srgb] = _.css
   given ShowProperty[Hsl] = _.css
   given ShowProperty[Color] = _.standardSrgb.css
-  given ShowProperty[PropertyValue] = c => c.show.dashed
+  given ShowProperty[PropertyValue] = _.show
   given ShowProperty[Inherit.type] = c => t"inherit"
   given ShowProperty[Transparent.type] = c => t"transparent"
   given ShowProperty[Initial.type] = c => t"initial"
@@ -415,7 +406,7 @@ trait ShowProperty[-T]:
   def show(value: T): Text
 
 object PropertyValue:
-  given Show[PropertyValue] = Showable(_).show.lower
+  given Show[PropertyValue] = Showable(_).show.dashed
 
 trait PropertyValue
 
