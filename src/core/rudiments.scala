@@ -375,3 +375,10 @@ class Environment(getEnv: Text => Option[Text]):
 
 case class EnvError(variable: Text)
 extends Error((Text("The environment variable "), variable, Text(" was not found")))
+
+sealed class Internet()
+
+def internet[T](fn: Internet ?=> T): T =
+  val inet: Internet = Internet()
+  fn(using inet)
+
