@@ -106,6 +106,10 @@ case class Relative(ascent: Int, parts: List[Text]):
 object Absolute:
   given [R <: Root]: Show[Absolute[R]] = _.text
 
+  given HtmlAttributeWriter["href", GenericPath] with
+    def name = "href"
+    def serialize(value: GenericPath): String = value.show.s
+
 open class Absolute[+R <: Root](val root: R, val parts: List[Text]):
   def depth: Int = parts.length
   def parent: root.PathType throws RootParentError = ancestor(1)
