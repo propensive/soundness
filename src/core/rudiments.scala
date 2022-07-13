@@ -155,21 +155,40 @@ case class Counter(first: Int = 0):
   private var id: Int = first
   def apply(): Int = synchronized(id.tap { _ => id += 1 })
 
+case class TaskAbort() extends Exception
+
 object Task:
   private val count: Counter = Counter()
-  private def nextName(): String = s"rudiments-${count()}"
+  private def nextName(): Text = Text(s"rudiments-${count()}")
 
   @targetName("make")
-  def apply[T](fn: => T): Task[T] = Task(() => fn)
+  def apply[T](fn: Context[T] ?=> T): Task[T] = Task(ctx => fn(using ctx))
 
-case class Task[T] private(fn: () => T):
+  class Context[T](val name: Text):
+    private[Task] var abort: Option[() => T] = None
+    def curtail(value: => T): Unit = abort = Some(() => value)
+    def juncture(): Unit throws TaskAbort = if abort.isDefined then throw TaskAbort()
+
+
+case class Task[T] private(fn: Task.Context[T] => T):
   private val promise: Promise[T] = Promise()
-  private val runnable: Runnable = () => promise.complete(Success(fn()))
-  private val thread: Thread = Thread(runnable, Task.nextName())
+  private val name = Task.nextName()
+  
+  private val runnable: Runnable = () =>
+    val context = Task.Context[T](name)
+    promise.complete:
+      try Success(fn(context)) catch
+        case err: TaskAbort => Success(context.abort.get())
+        case err            => Failure(err)
+  
+  private val thread: Thread = Thread(runnable, name.s)
+  private val context: Task.Context[T] = Task.Context(name)
   
   def apply(): Promise[T] =
     thread.start()
     promise
+  
+  def curtail(value: T): Unit = context.curtail(value)
 
 trait Encoding:
   def name: Text
@@ -190,7 +209,7 @@ export AndExtractor.&
 extension [T](xs: Iterable[T])
   transparent inline def mtwin: Iterable[(T, T)] = xs.map { x => (x, x) }
   transparent inline def mtriple: Iterable[(T, T, T)] = xs.map { x => (x, x, x) }
-  transparent inline def sift[S]: Iterable[S] = xs.collect { case x: S => x }
+  transparent inline def sift[S]: Iterable[S] = xs.collect { case x: S @unchecked => x }
   
   def indexBy[S](fn: T => S): Map[S, T] throws DuplicateIndexError =
     val map = xs.map { value => fn(value) -> value }
