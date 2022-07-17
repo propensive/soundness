@@ -210,9 +210,10 @@ case class Multiplexer[K, T]():
   def close(): Unit = tasks.keys.foreach(remove(_))
 
   @tailrec
-  private def pump(key: K, stream: LazyList[T]): Unit =
+  private def pump(key: K, stream: LazyList[T])(using ctx: Task.Context[Unit]): Unit =
     if stream.isEmpty then remove(key)
     else
+      ctx.curtail(())
       queue.put(stream.head)
       pump(key, stream.tail)
 
