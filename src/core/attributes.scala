@@ -25,7 +25,7 @@ trait HtmlAttribute[Key <: Label, -Value, -T]:
   def rename: Option[Text] = None
 
 object Rel:
-  given Show[Rel] = Showable(_).show.dashed
+  given Show[Rel] = Showable(_).show.uncamel.kebab
 
 enum Rel:
   case Alternate, Author, Bookmark, Canonical, DnsPrefetch, External, Help, Icon, License, Manifest,
@@ -67,7 +67,7 @@ object DomId:
 case class DomId(name: Text)
 
 object Crossorigin:
-  given Show[Crossorigin] = Showable(_).show.dashed
+  given Show[Crossorigin] = Showable(_).show.uncamel.kebab
 
 enum Crossorigin:
   case UseCredentials, Anonymous
@@ -79,7 +79,7 @@ enum Dir:
   case Ltr, Rtl, Auto
 
 object HttpEquiv:
-  given Show[HttpEquiv] = Showable(_).show.dashed
+  given Show[HttpEquiv] = Showable(_).show.uncamel.kebab
 
 enum HttpEquiv:
   case ContentSecurityPolicy, ContentType, DefaultStyle, Refresh
@@ -113,7 +113,7 @@ enum Rev:
       Section, Subsection, Appendix, Help, Bookmark
 
 object Sandbox:
-  given Show[Sandbox] = Showable(_).show.dashed
+  given Show[Sandbox] = Showable(_).show.uncamel.kebab
 
 enum Sandbox:
   case AllowForms, AllowPointerLock, AllowPopups, AllowPresentation, AllowSameOrigin, AllowScripts,
