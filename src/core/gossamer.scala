@@ -53,6 +53,12 @@ extension [V](value: V)
   def cut[D](delimiter: D, limit: Int = Int.MaxValue)(using cuttable: Cuttable[V, D]): List[V] =
     cuttable.cut(value, delimiter, limit)
 
+extension (words: Iterable[Text])
+  def pascal: Text = words.map(_.lower.capitalize).join
+  def camel: Text = pascal.uncapitalize
+  def snake: Text = words.mkString("_")
+  def kebab: Text = words.mkString("-")
+
 extension (text: Text)
   def bytes: IArray[Byte] = text.s.getBytes("UTF-8").nn.immutable(using Unsafe)
   def length: Int = text.s.length
@@ -85,8 +91,8 @@ extension (text: Text)
   def endsWith(suffix: Text): Boolean = text.s.endsWith(suffix.s)
   def sub(from: Text, to: Text): Text = Text(text.s.replaceAll(Pattern.quote(from.s), to.s).nn)
   def tr(from: Char, to: Char): Text = Text(text.s.replace(from, to).nn)
-  def dashed: Text = Text(camelCaseWords.mkString("-"))
   def capitalize: Text = take(1).upper+drop(1)
+  def uncapitalize: Text = take(1).lower+drop(1)
   def reverse: Text = Text(String(text.s.toCharArray.nn.reverse))
   def count(pred: Char => Boolean): Int = text.s.toCharArray.nn.immutable(using Unsafe).count(pred)
   def head: Char = text.s.charAt(0)
@@ -108,10 +114,13 @@ extension (text: Text)
   def snipWhere(pred: Char => Boolean, idx: Int = 0): (Text, Text) throws OutOfRangeError =
     snip(where(pred, idx))
 
-  def camelCaseWords: List[Text] =
+  def uncamel: List[Text] =
     (try text.where(_.isUpper, 1) catch case error: OutOfRangeError => -1) match
       case -1 => List(text.lower)
-      case i  => text.take(i).lower :: text.drop(i).camelCaseWords
+      case i  => text.take(i).lower :: text.drop(i).uncamel
+  
+  def unkebab: List[Text] = text.cut(Text("-"))
+  def unsnake: List[Text] = text.cut(Text("_"))
 
   def fit(width: Int, dir: Direction = Ltr, char: Char = ' '): Text = dir match
     case Ltr => (text + Text(s"$char")*(width - length)).take(width, Ltr)
