@@ -50,7 +50,7 @@ object CataclysmMacros:
                   s"cataclysm: no valid CSS element $att taking values of type $typeName exists")
             }
           
-          '{CssProperty(Text($key).dashed, $exp.show($value))} :: recur(tail)
+          '{CssProperty(Text($key).uncamel.kebab, $exp.show($value))} :: recur(tail)
         case _ =>
           Nil
     
@@ -406,7 +406,7 @@ trait ShowProperty[-T]:
   def show(value: T): Text
 
 object PropertyValue:
-  given Show[PropertyValue] = Showable(_).show.dashed
+  given Show[PropertyValue] = Showable(_).show.uncamel.kebab
 
 trait PropertyValue
 
