@@ -58,7 +58,7 @@ object Media:
     def name: Text = this match
       case JsonSeq => t"json-seq"
       case CborSeq => t"cbor-seq"
-      case other   => Showable(other).show.dashed
+      case other   => Showable(other).show.uncamel.kebab
 
   lazy val systemMediaTypes: Set[Text] =
     try
