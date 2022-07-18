@@ -56,8 +56,8 @@ extension [V](value: V)
 extension (words: Iterable[Text])
   def pascal: Text = words.map(_.lower.capitalize).join
   def camel: Text = pascal.uncapitalize
-  def snake: Text = words.mkString("_")
-  def kebab: Text = words.mkString("-")
+  def snake: Text = words.join(Text("_"))
+  def kebab: Text = words.join(Text("-"))
 
 extension (text: Text)
   def bytes: IArray[Byte] = text.s.getBytes("UTF-8").nn.immutable(using Unsafe)
