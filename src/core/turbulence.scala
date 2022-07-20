@@ -46,11 +46,10 @@ extension (value: DataStream)
         then throw ExcessDataError((acc.length + next.length).b, limit)
         else acc ++ next
 
-case class ExcessDataError(size: ByteSize, limit: ByteSize)
-extends Error((Text("the amount of data in the stream (at least "), size,
-    Text("B) exceeds the limit ("), limit, Text("B)")))
+case class ExcessDataError(size: ByteSize, limit: ByteSize)(using Codepoint)
+extends Error(err"the amount of data in the stream (at least $size) exceeds the limit ($limit)")(pos)
 
-case class StreamCutError() extends Error(Text("the stream was cut prematurely") *: EmptyTuple)
+case class StreamCutError()(using Codepoint) extends Error(err"the stream was cut prematurely")(pos)
 
 object Util:
   def readInputStream(in: ji.InputStream, limit: ByteSize): DataStream = in match
