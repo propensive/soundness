@@ -23,7 +23,7 @@ import scala.util.*, scala.annotation.tailrec
 
 import java.io.*
 
-case class InstallError() extends Error(t"installation failed" *: EmptyTuple)
+case class InstallError()(using Codepoint) extends Error(err"installation failed")(pos)
 
 object Generate extends Application:
   def main(using CliShell): Exit =
