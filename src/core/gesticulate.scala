@@ -165,8 +165,8 @@ object InvalidMediaTypeError:
       case InvalidChar(c)   => txt"the character '$c' is not allowed"
       case InvalidSuffix(s) => txt"the suffix '$s' is not recognized"
 
-case class InvalidMediaTypeError(value: Text, nature: InvalidMediaTypeError.Nature)
-extends Error((t"the value ", value, " is not a valid media type; ", nature.message))
+case class InvalidMediaTypeError(value: Text, nature: InvalidMediaTypeError.Nature)(using Codepoint)
+extends Error(err"the value $value is not a valid media type; ${nature.message}")(pos)
 
 case class MediaType(group: Media.Group, subtype: Media.Subtype, suffixes: List[Media.Suffix] = Nil,
                         parameters: List[(Text, Text)] = Nil):
