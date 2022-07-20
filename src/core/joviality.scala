@@ -53,8 +53,8 @@ object IoError:
   enum Op:
     case Read, Write, Access, Permissions, Create, Delete
 
-case class IoError(operation: IoError.Op, reason: IoError.Reason, path: DiskPath[Filesystem])
-extends Error((t"the ", operation, t" operation at ", path, t" failed because ", reason))
+case class IoError(operation: IoError.Op, reason: IoError.Reason, path: DiskPath[Filesystem])(using Codepoint)
+extends Error(err"the $operation operation at $path failed because $reason")(pos)
 
 enum Creation:
   case Expect, Create, Ensure
@@ -79,6 +79,7 @@ sealed trait Inode[+Fs <: Filesystem](val path: DiskPath[Fs]):
   def symlink: Maybe[Symlink[Fs]]
   def modified(using time: anticipation.Timekeeper): time.Type = time.from(javaFile.lastModified)
   def exists(): Boolean = javaFile.exists()
+  def delete(): Unit throws IoError
 
   def readable: Boolean = Files.isReadable(javaPath)
   def writable: Boolean = Files.isWritable(javaPath)
@@ -467,8 +468,8 @@ object windows:
 
 given realm: Realm = Realm(t"joviality")
 
-case class PwdError()
-extends Error(t"the current working directory cannot be determined" *: EmptyTuple)
+case class PwdError()(using Codepoint)
+extends Error(err"the current working directory cannot be determined")(pos)
 
 open class Classpath(val classLoader: ClassLoader = getClass.nn.getClassLoader.nn)
 extends Root(t"/", t""):
@@ -493,5 +494,5 @@ case class ClasspathResource(path: ClasspathRef[Classpath]):
   
   def name: Text = path.parts.lastOption.getOrElse(path.classpath.prefix)
 
-case class ClasspathRefError(classpath: Classpath)(path: ClasspathRef[Classpath])
-extends Error((t"the resource ", path, t" could not be accessed on the classpath"))
+case class ClasspathRefError(classpath: Classpath)(path: ClasspathRef[Classpath])(using Codepoint)
+extends Error(err"the resource $path could not be accessed on the classpath")(pos)
