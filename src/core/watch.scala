@@ -28,9 +28,8 @@ import scala.collection.mutable.HashMap
 import java.nio.file as jnf
 import jnf.StandardWatchEventKinds.*
 
-case class InotifyError()
-extends Error(t"the limit on the number of paths that can be watched has been exceeded" *:
-    EmptyTuple)
+case class InotifyError()(using Codepoint)
+extends Error(err"the limit on the number of paths that can be watched has been exceeded")(pos)
 
 extension [Dir](dirs: Seq[Dir])(using DirectoryProvider[Dir], DirectoryInterpreter[Dir])
   def watch()(using Log, WatchService[Dir]): Watcher[Dir] throws InotifyError = Watcher[Dir](dirs*)
