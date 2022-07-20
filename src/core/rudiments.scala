@@ -71,6 +71,7 @@ object Bytes:
 extension [T](value: T)
   def only[S](pf: PartialFunction[T, S]): Option[S] = Some(value).collect(pf)
   def unit: Unit = ()
+  def waive: Any => T = _ => value
   def twin: (T, T) = (value, value)
   def triple: (T, T, T) = (value, value, value)
   
@@ -96,7 +97,8 @@ extension [K, V](map: Map[K, V])
   def upsert(key: K, operation: Option[V] => V) = map.updated(key, operation(map.get(key)))
   
   def collate(otherMap: Map[K, V])(merge: (V, V) => V): Map[K, V] =
-    otherMap.foldLeft(map) { case (acc, (k, v)) => acc.updated(k, acc.get(k).fold(v)(merge(v, _))) }
+    otherMap.foldLeft(map): (acc, kv) =>
+      acc.updated(kv(0), acc.get(kv(0)).fold(kv(1))(merge(kv(1), _)))
 
 class Recur[T](fn: => T => T):
   def apply(value: T): T = fn(value)
@@ -117,7 +119,7 @@ object Sys extends Dynamic:
   def applyDynamic(key: String)(): Text throws KeyNotFoundError = selectDynamic(key).apply()
   def bigEndian: Boolean = java.nio.ByteOrder.nativeOrder == java.nio.ByteOrder.BIG_ENDIAN
 
-case class KeyNotFoundError(name: Text) extends Error((Text("key "), name, Text(" not found")))
+case class KeyNotFoundError(name: Text)(using Codepoint) extends Error(err"key $name not found")(pos)
 
 object Mistake:
   def apply(error: Exception): Mistake =
@@ -194,17 +196,15 @@ trait Encoding:
   def name: Text
   def carry(array: Array[Byte]): Int
 
-def safely[T](value: => CanThrow[Exception] ?=> T): Maybe[T] =
-  try value(using unsafeExceptions.canThrowAny) catch NonFatal => Unset
-
-def unsafely[T](value: => CanThrow[Exception] ?=> T): T = value(using unsafeExceptions.canThrowAny)
-
 object AndExtractor:
   @targetName("And")
   object `&`:
     def unapply[T](value: T): Some[(T, T)] = Some((value, value))
 
 export AndExtractor.&
+
+extension (xs: Iterable[Text])
+  transparent inline def ss: Iterable[String] = xs
 
 extension [T](xs: Iterable[T])
   transparent inline def mtwin: Iterable[(T, T)] = xs.map { x => (x, x) }
@@ -217,12 +217,11 @@ extension [T](xs: Iterable[T])
 
 object Timer extends ju.Timer(true)
 
-case class DuplicateIndexError()
-extends Error(Text("the sequence contained more than one element that mapped to the same index") *:
-    EmptyTuple)
+case class DuplicateIndexError()(using Codepoint)
+extends Error(err"the sequence contained more than one element that mapped to the same index")(pos)
 
-case class TimeoutError()
-extends Error(Text("An operation did not complete in the time it was given") *: EmptyTuple)
+case class TimeoutError()(using Codepoint)
+extends Error(err"an operation did not complete in the time it was given")(pos)
 
 extension [T](future: Future[T])
   def await(): T = Await.result(future, duration.Duration.Inf)
@@ -307,51 +306,6 @@ enum ExitStatus:
     case Ok           => 0
     case Fail(status) => status
 
-object StackTrace:
-  case class Frame(className: Text, method: Text, file: Text, line: Int, native: Boolean)
-
-  def apply(exception: Throwable): StackTrace =
-    val frames = List(exception.getStackTrace.nn.map(_.nn)*).map:
-      frame =>
-        StackTrace.Frame(
-          Text(frame.getClassName.nn),
-          Text(frame.getMethodName.nn),
-          Text(frame.getFileName.nn),
-          frame.getLineNumber,
-          frame.isNativeMethod
-        )
-    
-    val cause = Option(exception.getCause)
-    val fullClassName: String = exception.getClass.nn.getName.nn
-    val fullClass: List[Text] = List(fullClassName.split("\\.").nn.map(_.nn).map(Text(_))*)
-    val className: Text = fullClass.last
-    val component: Text = Text(fullClassName.substring(0, 0 max (fullClassName.length - className.s.length - 1)).nn)
-    val message = Text(Option(exception.getMessage).map(_.nn).getOrElse(""))
-    
-    StackTrace(component, className, message, frames, cause.map(_.nn).map(StackTrace(_)).maybe)
-
-case class StackTrace(component: Text, className: Text, message: Text,
-    frames: List[StackTrace.Frame], cause: Maybe[StackTrace])
-
-abstract class Error[T <: Tuple](val parts: T, val cause: Maybe[Error[?]] = Unset)
-extends Exception():
-  def fullClass: List[Text] = List(getClass.nn.getName.nn.split("\\.").nn.map(_.nn).map(Text(_))*)
-  def className: Text = fullClass.last
-  def component: Text = fullClass.head
-
-  override def getMessage: String = component.s+": "+message
-  override def getCause: Exception | Null = cause.option.getOrElse(null)
-
-  def message: Text =
-    def recur[T <: Tuple](tuple: T, value: String = ""): String = tuple match
-      case EmptyTuple   => value
-      case head *: tail => recur(tail, value+head.toString)
-
-    Text(recur(parts))
-
-  def explanation: Maybe[Text] = Unset
-  def stackTrace: StackTrace = StackTrace(this)
-
 case class Pid(value: Long)
 
 object Uuid:
@@ -392,12 +346,11 @@ package environments:
 class Environment(getEnv: Text => Option[Text]):
   def apply(variable: Text): Option[Text] = getEnv(variable)
 
-case class EnvError(variable: Text)
-extends Error((Text("The environment variable "), variable, Text(" was not found")))
+case class EnvError(variable: Text)(using Codepoint)
+extends Error(err"the environment variable $variable was not found")(pos)
 
 sealed class Internet()
 
 def internet[T](fn: Internet ?=> T): T =
   val inet: Internet = Internet()
   fn(using inet)
-

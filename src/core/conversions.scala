@@ -18,7 +18,7 @@ package rudiments
 
 import scala.compiletime.*
 
-case class IncompatibleTypeError() extends Error(("the value is not compatible" *: EmptyTuple))
+case class IncompatibleTypeError()(using Codepoint) extends Error(err"the value is not compatible")(pos)
 
 extension (value: Any)
   transparent inline def as[To](using Unapply[value.type, To]): To throws IncompatibleTypeError =
