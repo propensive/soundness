@@ -20,8 +20,11 @@ import rudiments.*
 import gossamer.*
 import anticipation.*
 
-case class RootParentError(root: Root) extends Error((t"attempted to access parent of root ", root))
-case class InvalidPathError(path: Text) extends Error((t"the path ", path, " was not absolute"))
+case class RootParentError(root: Root)(using Codepoint)
+extends Error(err"attempted to access parent of root $root")(pos)
+
+case class InvalidPathError(path: Text)(using Codepoint)
+extends Error(err"the path $path was not absolute")(pos)
 
 trait Root(val prefix: Text, val separator: Text):
   type PathType <: Absolute[this.type]
