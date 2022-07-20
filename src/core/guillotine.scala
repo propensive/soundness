@@ -113,14 +113,13 @@ object Command:
 
   given DebugString[Command] = cmd =>
     val cmdString: Text = formattedArgs(cmd.args)
-    
     if cmdString.contains(t"\"") then t"sh\"\"\"$cmdString\"\"\"" else t"sh\"$cmdString\""
 
   given AnsiShow[Command] = cmd => ansi"${colors.LightSeaGreen}(${formattedArgs(cmd.args)})"
 
 case class Command(args: Text*) extends Executable:
   def fork[T]()(using env: Env, exec: Executor[T] = Executor.text)(using Log): Process[T] =
-    val processBuilder = ProcessBuilder(args.map(_.s)*)
+    val processBuilder = ProcessBuilder(args.ss*)
     processBuilder.directory(env.workDirFile)
     val t0 = System.currentTimeMillis
     Log.info(ansi"Starting process ${this.ansi} in directory ${env.workDirFile.getAbsolutePath.nn}")
@@ -137,22 +136,24 @@ case class Pipeline(cmds: Command*) extends Executable:
     Log.info(ansi"Starting pipelined processes ${this.ansi} in directory ${env.workDirFile.getAbsolutePath.nn}")
 
     val processBuilders = cmds.map: cmd =>
-      val pb = ProcessBuilder(cmd.args.map(_.s)*)
+      val pb = ProcessBuilder(cmd.args.ss*)
       pb.directory(env.workDirFile)
       pb.nn
 
     new Process[T](ProcessBuilder.startPipeline(processBuilders.asJava).nn.asScala.to(List).last, exec)
 
-@implicitNotFound("guillotine: a contextual rudiments.Environment is required, for example\n    given Environment()\nor,\n"+
-                      "    given Envronment = environments.system")
+@implicitNotFound("guillotine: a contextual rudiments.Environment is required, for example\n"+
+                  "    given Environment()\n"+
+                  "or,\n"+
+                  "    given Envronment = environments.system")
 case class Env(vars: Map[Text, Text], workDir: Maybe[Text] = Unset):
   private[guillotine] lazy val envArray: Array[String] = vars.map { (k, v) => s"$k=$v" }.to(Array)
   
   private[guillotine] lazy val workDirFile: ji.File =
     ji.File(workDir.otherwise(Text(System.getenv("PWD").nn)).s)
   
-case class ExecError(command: Command, stdout: DataStream, stderr: DataStream)
-extends Error((t"execution of the command ", command, t" failed"))
+case class ExecError(command: Command, stdout: DataStream, stderr: DataStream)(using Codepoint)
+extends Error(err"execution of the command $command failed")(pos)
 
 object Sh:
   case class Params(params: Text*)
