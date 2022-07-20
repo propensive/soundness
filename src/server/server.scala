@@ -31,8 +31,8 @@ import java.io.*
 import java.text as jt
 import com.sun.net.httpserver.{HttpServer as JavaHttpServer, *}
 
-case class MissingParamError(key: Text)
-extends Error((t"the parameter ", key, t" was not sent in the request"))
+case class MissingParamError(key: Text)(using Codepoint)
+extends Error(err"the parameter $key was not sent in the request")(pos)
 
 trait Responder:
   def sendBody(status: Int, body: HttpBody): Unit
