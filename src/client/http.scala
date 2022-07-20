@@ -255,8 +255,8 @@ object Http:
       case conn: URLConnection =>
         throw Mistake("URL connection is not HTTP")
             
-case class HttpError(status: HttpStatus & FailureCase, body: HttpBody)
-extends Error((t"HTTP error ", status)):
+case class HttpError(status: HttpStatus & FailureCase, body: HttpBody)(using Codepoint)
+extends Error(err"HTTP error $status")(pos):
   inline def as[T](using readable: HttpReadable[T])
                   : T throws ExcessDataError | StreamCutError | readable.E =
     readable.read(status, body)

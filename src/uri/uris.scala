@@ -134,5 +134,5 @@ object InvalidUrlError:
   enum Expectation:
     case Colon, More, LowerCaseLetter, PortRange, Number
 
-case class InvalidUrlError(text: Text, offset: Int, expected: InvalidUrlError.Expectation)
-extends Error((t"the URL ", text, t" is not valid: expected ", expected, t" at ", offset))
+case class InvalidUrlError(text: Text, offset: Int, expected: InvalidUrlError.Expectation)(using Codepoint)
+extends Error(err"the URL $text is not valid: expected $expected at $offset")(pos)
