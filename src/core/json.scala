@@ -32,8 +32,8 @@ import scala.deriving.*
 
 import language.dynamics
 
-case class JsonParseError(line: Int, column: Int, detail: Text)
-extends Error((t"could not parse JSON at line ", line, t", column ", column, t": ", detail))
+case class JsonParseError(line: Int, column: Int, detail: Text)(using Codepoint)
+extends Error(err"could not parse JSON at line $line, column $column: $detail")(pos)
 
 object JsonAccessError:
   enum Reason:
@@ -49,8 +49,8 @@ object JsonAccessError:
 
 import JsonAccessError.Reason
 
-case class JsonAccessError(reason: JsonAccessError.Reason)
-extends Error((t"could not access the value because", reason))
+case class JsonAccessError(reason: JsonAccessError.Reason)(using Codepoint)
+extends Error(err"could not access the value because $reason")(pos)
 
 object JsonPrimitive:
   given Show[JsonPrimitive] = Showable(_).show
