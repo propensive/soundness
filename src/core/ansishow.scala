@@ -36,23 +36,20 @@ object AnsiShow extends FallbackAnsiShow:
 
   given AnsiShow[Exception] = e => summon[AnsiShow[StackTrace]].ansiShow(StackTrace.apply(e))
 
-  transparent inline def recurParts[T <: Tuple]
-                                   (tuple: T, flip: Boolean, value: AnsiText = ansi""): AnsiText =
+  private transparent inline def recurParts[T <: Tuple](tuple: T, text: Seq[Text], value: AnsiText): AnsiText =
     tuple match
       case EmptyTuple =>
-        value
+        ansi"$value${colors.White}(${text.head})"
       case head *: tail =>
-        val color = if flip then colors.White else colors.Green
-        
         val part: Text = summonFrom:
           case ds: DebugString[head.type] => ds.show(head)
           case show: Show[head.type]      => show.show(head)
           case _                          => head.toString.show
-
-        recurParts[tail.type](tail, !flip, ansi"$value${color}($part)")
-  
+        
+        recurParts(tail, text.tail, ansi"$value${colors.White}(${text.head})${colors.Green}($part)")
+    
   inline given [T <: Tuple, E <: Error[T]]: AnsiShow[E] = error =>
-    recurParts[T](error.parts, true)
+    recurParts[T](error.msg.parts, error.msg.text, ansi"")
 
   given AnsiShow[StackTrace] = stack =>
     val methodWidth = stack.frames.map(_.method.length).max
