@@ -23,10 +23,11 @@ import gossamer.*
 import scala.collection.*
 import scala.compiletime.ops.int.*
 
-import java.util.zip as juz
+import java.util as ju
+import ju.zip as juz
 import java.security.*
 import javax.crypto.Mac, javax.crypto.spec.SecretKeySpec
-import java.util.Base64.{getEncoder as Base64Encoder, getDecoder as Base64Decoder}
+import ju.Base64.{getEncoder as Base64Encoder, getDecoder as Base64Decoder}
 import java.lang as jl
 
 sealed trait HashScheme[Size <: Int & Singleton]
@@ -94,7 +95,12 @@ case object Crc32HashFunction extends HashFunction[Crc32]:
 object Digest:
   given Show[Digest[?]] = digest => t"Digest(${digest.bytes.encode[Base64]})"
 
-case class Digest[A <: HashScheme[?]](bytes: Bytes) extends Encodable, Shown[Digest[?]]
+case class Digest[A <: HashScheme[?]](bytes: Bytes) extends Encodable, Shown[Digest[?]]:
+  override def equals(that: Any) = that match
+    case digest: Digest[?] => ju.Arrays.equals(bytes.mutable(using Unsafe), digest.bytes.mutable(using Unsafe))
+    case _                 => false
+  
+  override def hashCode: Int = bytes.hashCode
 
 object Hashable extends Derivation[Hashable]:
   def join[T](caseClass: CaseClass[Hashable, T]): Hashable[T] =
