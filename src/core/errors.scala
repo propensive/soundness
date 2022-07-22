@@ -11,7 +11,7 @@ extension (ctx: StringContext)
 
 abstract class Error[T <: Tuple]
                     (val msg: ErrorMessage[T], val cause: Maybe[Error[?]] = Unset)
-                    (codepoint: Codepoint)
+                    (val codepoint: Codepoint)
 extends Exception():
   def fullClass: List[Text] = List(getClass.nn.getName.nn.split("\\.").nn.map(_.nn).map(Text(_))*)
   def className: Text = fullClass.last
@@ -36,15 +36,14 @@ object StackTrace:
   private val subscripts = "₀₁₂₃₄₅₆₇₈₉"
 
   def apply(exception: Throwable): StackTrace =
-    val frames = List(exception.getStackTrace.nn.map(_.nn)*).map:
-      frame =>
-        StackTrace.Frame(
-          Text(frame.getClassName.nn),
-          Text(frame.getMethodName.nn),
-          Text(frame.getFileName.nn),
-          frame.getLineNumber,
-          frame.isNativeMethod
-        )
+    val frames = List(exception.getStackTrace.nn.map(_.nn)*).map: frame =>
+      StackTrace.Frame(
+        Text(frame.getClassName.nn),
+        Text(frame.getMethodName.nn),
+        Text(frame.getFileName.nn),
+        frame.getLineNumber,
+        frame.isNativeMethod
+      )
     
     val cause = Option(exception.getCause)
     val fullClassName: String = exception.getClass.nn.getName.nn
@@ -55,8 +54,8 @@ object StackTrace:
     
     StackTrace(component, className, message, frames, cause.map(_.nn).map(StackTrace(_)).maybe)
 
-case class StackTrace(component: Text, className: Text, message: Text,
-    frames: List[StackTrace.Frame], cause: Maybe[StackTrace])
+case class StackTrace(component: Text, className: Text, message: Text, frames: List[StackTrace.Frame],
+                          cause: Maybe[StackTrace])
 
 inline def pos(using Codepoint): Codepoint = summon[Codepoint]
 
