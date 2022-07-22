@@ -106,6 +106,11 @@ case class Relative(ascent: Int, parts: List[Text]):
 
   override def hashCode: Int = parts.hashCode ^ ascent
 
+object `/`:
+  def unapply[R <: Root](abs: Absolute[R]): Option[(R | Absolute[R], Text)] =
+    for left <- abs.init.option; right <- abs.last.option
+    yield (if left.parts.isEmpty then left.root else left, right)
+
 object Absolute:
   given [R <: Root]: Show[Absolute[R]] = _.text
 
@@ -115,6 +120,10 @@ object Absolute:
 
 open class Absolute[+R <: Root](val root: R, val parts: List[Text]):
   def depth: Int = parts.length
+  def init: Maybe[Absolute[R]] = safely(root.make(parts.init))
+  def head: Maybe[Absolute[R]] = safely(root.make(List(parts.head)))
+  def last: Maybe[Text] = safely(parts.last)
+  
   def parent: root.PathType throws RootParentError = ancestor(1)
 
   def ancestor(ascent: Int): root.PathType throws RootParentError =
