@@ -114,7 +114,7 @@ object Media:
       val xs: List[Text] = str.cut(t"+")
       
       xs match
-      case Nil           => throw Mistake("cannot return empty list from `cut`")
+      case Nil            => throw Mistake("cannot return empty list from `cut`")
       case (h: Text) :: _ => (parseSubtype(h), parseSuffixes(xs.tail))
 
     def parseBasic(str: Text): (Group, Subtype, List[Suffix]) = str.cut(t"/").to(List) match
