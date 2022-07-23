@@ -29,6 +29,9 @@ type Asym[V <: Double, T <: Double, F <: Double] <: Double = (V > 0.0) match
 type Min4[A <: Double, B <: Double, C <: Double, D <: Double] = Min[Min[A, B], Min[C, D]]
 type Max4[A <: Double, B <: Double, C <: Double, D <: Double] = Max[Max[A, B], Max[C, D]]
 
+extension (value: Double)
+  def force[D1 <: Double, D2 <: Double]: D1 ~ D2 = value.asInstanceOf[D1 ~ D2]
+
 object NumericRange:
   @targetName("Range")
   opaque infix type ~[D1 <: Double, D2 <: Double] = Double
@@ -63,12 +66,13 @@ object NumericRange:
       @targetName("times2")
       def *[E <: Double & Singleton](right: E): Min[D1*E, D2*E] ~ Max[D1*E, D2*E] = left*right
       
-      @targetName("times2a")
-      def *[E <: Int & Singleton](right: E): Min[D1*ToDouble[E], D2*ToDouble[E]] ~ Max[D1*ToDouble[E], D2*ToDouble[E]] = left*right
-
       @targetName("times3")
       def *(right: Double): Double = left*right
-    
+
+      @targetName("minus")
+      def -[E1 <: Double, E2 <: Double](right: E1 ~ E2): Min[D1 - E1, D1 - E2] ~ Max[D2 - E1, D2 - E2] =
+        left - right
+
       @targetName("minus2")
       def -[E <: Double & Singleton](right: E): Min[D1 - E, D2 - E] ~ Max[D1 - E, D2 - E] = left - right
 
@@ -82,5 +86,8 @@ object NumericRange:
       @targetName("divide2")
       def /[E1 <: Double, E2 <: Double](right: E1 ~ E2): Asym[E1*E2, Min4[D1/E1, D2/E1, D1/E2, D2/E2], -1.0/0.0] ~ Asym[E1*E2, Max4[D1/E1, D2/E1, D1/E2, D2/E2], 1.0/0.0] =
         left/right
+      
+      @targetName("divide3")
+      def /(right: Double): Double = left/right
 
 export NumericRange.`~`
