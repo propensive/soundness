@@ -17,11 +17,12 @@ object NumericRange:
     class Fd[D1 <: Double, D2 <: Double] extends FromDigits.Decimal[D1 ~ D2]:
       def fromDigits(digits: String): Double = apply(digits.toDouble)
 
-    given cardinality[D1 <: Double, D2 <: Double]
-                     : Fd[D1, D2] with
+    given cardinality[D1 <: Double, D2 <: Double]: Fd[D1, D2] with
       override inline def fromDigits(digits: String): D1 ~ D2 = ${CardinalityMacro('digits)}
     
     extension [D1 <: Double, D2 <: Double](left: D1 ~ D2)
+      def double: Double = left
+
       @targetName("add")
       def +[E1 <: Double, E2 <: Double](right: E1 ~ E2): (D1 + E1) ~ (D2 + E2) = left + right
       
@@ -51,7 +52,4 @@ object NumericRange:
       @targetName("minus3")
       def -(right: Double): Double = left - right
 
-
 export NumericRange.`~`
-
-    
