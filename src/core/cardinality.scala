@@ -22,6 +22,13 @@ import annotation.*
 
 import language.experimental.genericNumberLiterals
 
+type Asym[V <: Double, T <: Double, F <: Double] <: Double = (V > 0.0) match
+  case true  => T
+  case false => F
+
+type Min4[A <: Double, B <: Double, C <: Double, D <: Double] = Min[Min[A, B], Min[C, D]]
+type Max4[A <: Double, B <: Double, C <: Double, D <: Double] = Max[Max[A, B], Max[C, D]]
+
 object NumericRange:
   @targetName("Range")
   opaque infix type ~[D1 <: Double, D2 <: Double] = Double
@@ -50,7 +57,7 @@ object NumericRange:
 
       @targetName("times")
       def *[E1 <: Double, E2 <: Double](right: E1 ~ E2)
-           : (Min[Min[D1*E1, D1*E2], Min[D2*E2, D2*E1]]) ~ (Max[Max[D1*E1, D1*E2], Max[D2*E2, D2*E1]]) =
+           : (Min4[D1*E1, D1*E2, D2*E2, D2*E1]) ~ (Max4[D1*E1, D1*E2, D2*E2, D2*E1]) =
         left*right
       
       @targetName("times2")
@@ -67,5 +74,13 @@ object NumericRange:
 
       @targetName("minus3")
       def -(right: Double): Double = left - right
+
+      @targetName("divide")
+      def /[E <: Double & Singleton](right: E): Min[D1/E, D2/E] ~ Max[D1/E, D2/E] =
+        left/right
+      
+      @targetName("divide2")
+      def /[E1 <: Double, E2 <: Double](right: E1 ~ E2): Asym[E1*E2, Min4[D1/E1, D2/E1, D1/E2, D2/E2], -1.0/0.0] ~ Asym[E1*E2, Max4[D1/E1, D2/E1, D1/E2, D2/E2], 1.0/0.0] =
+        left/right
 
 export NumericRange.`~`
