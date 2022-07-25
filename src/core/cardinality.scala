@@ -18,6 +18,7 @@ package cardinality
 
 import compiletime.ops.double.*, compiletime.ops.int.ToDouble
 import scala.util.FromDigits
+import scala.reflect.TypeTest
 import annotation.*
 
 import language.experimental.genericNumberLiterals
@@ -40,6 +41,13 @@ object NumericRange:
 
   @targetName("Range")
   object `~`:
+    given [D1 <: Double & Singleton, D2 <: Double & Singleton](using d1: ValueOf[D1], d2: ValueOf[D2])
+          : TypeTest[Double, D1 ~ D2] =
+      value =>
+        if value >= d1.value && value <= d2.value
+        then Some(value.asInstanceOf[(D1 ~ D2) & value.type])
+        else None
+
     class Fd[D1 <: Double, D2 <: Double] extends FromDigits.Decimal[D1 ~ D2]:
       def fromDigits(digits: String): Double = apply(digits.toDouble)
 
