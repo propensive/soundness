@@ -24,36 +24,22 @@ import telekinesis.*
 
 import javax.servlet.*, http.*
 
-trait Servlet() extends HttpServlet:
-
-  def handle(using Request): Response[?]
-
+trait Servlet(handle: Request ?=> Response[?]) extends HttpServlet:
   protected case class ServletResponseWriter(response: HttpServletResponse) extends Responder:
     def addHeader(key: Text, value: Text): Unit = response.addHeader(key.s, value.s)
     
     def sendBody(status: Int, body: HttpBody): Unit =
-      val length = body match
-        case HttpBody.Empty      => -1
-        case HttpBody.Data(body) => body.length
-        case _               => 0
-      
       response.setStatus(status)
-      addHeader(ResponseHeader.ContentLength.header, length.show)
-
+      val out = response.getOutputStream.nn
+      
       body match
-        case HttpBody.Empty =>
-          ()
+        case HttpBody.Empty         => addHeader(ResponseHeader.ContentLength.header, t"0")
+        case HttpBody.Data(body)    => addHeader(ResponseHeader.ContentLength.header, body.length.show)
+                                       out.write(body.mutable(using Unsafe))
+        case HttpBody.Chunked(body) => addHeader(ResponseHeader.TransferEncoding.header, t"chunked")
+                                       unsafely(body.map(_.mutable(using Unsafe)).foreach(out.write(_)))
 
-        case HttpBody.Data(body) =>
-          response.getOutputStream.nn.write(body.mutable(using Unsafe))
-          response.getOutputStream.nn.flush()
-
-        case HttpBody.Chunked(body) =>
-          try body.map(_.mutable(using Unsafe)).foreach(response.getOutputStream.nn.write(_))
-          catch case e: StreamCutError => () // FIXME: Is it correct to just ignore this?
-          response.getOutputStream.nn.flush()
-
-  private def streamBody(request: HttpServletRequest): HttpBody.Chunked =
+  protected def streamBody(request: HttpServletRequest): HttpBody.Chunked =
     val in = request.getInputStream
     val buffer = new Array[Byte](4096)
     
@@ -64,7 +50,7 @@ trait Servlet() extends HttpServlet:
     
     HttpBody.Chunked(recur())
     
-  private def makeRequest(request: HttpServletRequest): Request =
+  protected def makeRequest(request: HttpServletRequest): Request =
     val query = Option(request.getQueryString)
     
     val params: Map[Text, List[Text]] = query.fold(Map()): query =>
@@ -73,8 +59,8 @@ trait Servlet() extends HttpServlet:
       paramStrings.foldLeft(Map[Text, List[Text]]()): (map, elem) =>
         elem.cut(t"=", 2).to(Seq) match
           case Seq(key: Text, value: Text) => map.updated(key, value :: map.getOrElse(key, Nil))
-          case Seq(key: Text)             => map.updated(key, t"" :: map.getOrElse(key, Nil))
-          case _                         => map
+          case Seq(key: Text)              => map.updated(key, t"" :: map.getOrElse(key, Nil))
+          case _                           => map
     
     val headers = request.getHeaderNames.nn.asScala.to(List).map: k =>
       Text(k) -> request.getHeaders(k).nn.asScala.to(List).map(Text(_))
@@ -93,11 +79,7 @@ trait Servlet() extends HttpServlet:
     )
 
   def handle(servletRequest: HttpServletRequest, servletResponse: HttpServletResponse): Unit =
-    val responseWriter = ServletResponseWriter(servletResponse)
-    handle(using makeRequest(servletRequest)).respond(responseWriter)
+    handle(using makeRequest(servletRequest)).respond(ServletResponseWriter(servletResponse))
 
   override def service(request: HttpServletRequest, response: HttpServletResponse): Unit =
     handle(request, response)
-
-extension (path: Absolute[^.type])
-  def unapply(request: Request): Option[Text] = Some(request.path)

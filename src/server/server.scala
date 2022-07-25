@@ -25,6 +25,7 @@ import gesticulate.*
 import escapade.*
 import telekinesis.*
 import anticipation.*
+import serpentine.*
 
 import java.net.InetSocketAddress
 import java.io.*
@@ -94,9 +95,9 @@ case class Cookie(name: Text, value: Text, domain: Maybe[Text] = Unset,
                       path: Maybe[Text] = Unset, expiry: Maybe[Long] = Unset,
                       ssl: Boolean = false)
 
-case class Response[T: Handler](content: T, status: HttpStatus = HttpStatus.Ok,
-                                    headers: Map[ResponseHeader, Text] = Map(),
-                                    cookies: List[Cookie] = Nil):
+case class Response[T](content: T, status: HttpStatus = HttpStatus.Ok,
+                           headers: Map[ResponseHeader, Text] = Map(), cookies: List[Cookie] = Nil)
+                      (using val handler: Handler[T]):
 
 
   private val df: jt.SimpleDateFormat = jt.SimpleDateFormat("dd MMM yyyy HH:mm:ss")
@@ -115,8 +116,7 @@ case class Response[T: Handler](content: T, status: HttpStatus = HttpStatus.Ok,
         case (k, Some(v)) => t"$k=$v"
       .join(t"; ")
     
-    summon[Handler[T]].process(content, status.code, (headers ++ cookieHeaders).map { (k, v) =>
-        k.header -> v }, responder)
+    handler.process(content, status.code, (headers ++ cookieHeaders).map(_.header -> _), responder)
 
 object Request:
   given Show[Request] = request =>
@@ -148,9 +148,11 @@ object Request:
     ).map { (k, v) => t"$k = $v" }.join(t", ")
 
 case class Request(method: HttpMethod, body: HttpBody.Chunked, query: Text, ssl: Boolean,
-                       hostname: Text, port: Int, path: Text,
+                       hostname: Text, port: Int, pathText: Text,
                        rawHeaders: Map[Text, List[Text]],
                        queryParams: Map[Text, List[Text]]):
+
+  lazy val path: GenericPath = safely(GenericPath.parse(pathText)).otherwise(unsafely(^ / pathText))
 
   // FIXME: The exception in here needs to be handled elsewhere
   val params: Map[Text, Text] =
@@ -204,7 +206,7 @@ object ParamReader:
   given ParamReader[Text] = Some(_)
 
 object UrlPath:
-  def unapply(request: Request): Some[String] = Some(request.path.s)
+  def unapply(request: Request): Some[Text] = Some(request.path.show)
 
 trait ParamReader[T]:
   def read(value: Text): Option[T]
