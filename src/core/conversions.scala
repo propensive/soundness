@@ -17,6 +17,7 @@
 package iridescence
 
 import rudiments.*
+import cardinality.*
 
 trait Color:
   def standardSrgb: Srgb
@@ -78,7 +79,6 @@ case class Srgb(red: Double, green: Double, blue: Double) extends Color:
     
     Text(s"#${rgb(0)}${rgb(1)}${rgb(2)}")
 
-  
   def standardSrgb: Srgb = srgb
   def srgb: Srgb = this
   
@@ -180,6 +180,12 @@ case class Cmyk(cyan: Double, magenta: Double, yellow: Double, key: Double) exte
 
 case class Hsv(hue: Double, saturation: Double, value: Double) extends Color:
   def standardSrgb: Srgb = srgb
+  def saturate: Hsv = Hsv(hue, 1, value)
+  def desaturate: Hsv = Hsv(hue, 0, value)
+  def rotate(degrees: Double): Hsv = Hsv(Color.unitary(hue + degrees/360), saturation, value)
+  def pure: Hsv = Hsv(hue, 1, 0)
+  def tone(black: Double = 0, white: Double = 0) = shade(black).tint(white)
+  def shade(black: Double = 0): Hsv = Hsv(hue, saturation, value*(1 - black) + (1 - value)*black)
   
   def srgb: Srgb =
     if saturation == 0 then Srgb(value, value, value)
@@ -194,21 +200,18 @@ case class Hsv(hue: Double, saturation: Double, value: Double) extends Color:
       val blue = if i/2 == 0 then a1 else if i == 2 then a3 else if i == 5 then a2 else value
 
       Srgb(red, green, blue)
-  
-  def saturate: Hsv = Hsv(hue, 1, value)
-  def desaturate: Hsv = Hsv(hue, 0, value)
-  def rotate(degrees: Double): Hsv = Hsv(Color.unitary(hue + degrees/360), saturation, value)
-  def pure: Hsv = Hsv(hue, 1, 0)
-  
-  def shade(black: Double = 0): Hsv = Hsv(hue, saturation, value*(1 - black) + (1 - value)*black)
  
   def tint(white: Double = 0): Hsv =
     Hsv(hue, saturation*(1 - white) + (1 - saturation)*white, value)
   
-  def tone(black: Double = 0, white: Double = 0) = shade(black).tint(white)
 
 case class Hsl(hue: Double, saturation: Double, lightness: Double) extends Color:
   def standardSrgb: Srgb = srgb
+  def saturate: Hsv = Hsv(hue, 1, lightness)
+  def desaturate: Hsv = Hsv(hue, 0, lightness)
+  def rotate(degrees: Double): Hsv = Hsv(Color.unitary(hue + degrees/360), saturation, lightness)
+  def pure: Hsv = Hsv(hue, 1, 0)
+  
   def srgb: Srgb =
     if saturation == 0 then Srgb(lightness, lightness, lightness)
     else
@@ -229,9 +232,3 @@ case class Hsl(hue: Double, saturation: Double, lightness: Double) extends Color
   
   def css: Text =
     Text(s"hsl(${(hue*360).toInt}, ${(saturation*100).toInt}%, ${(lightness*100).toInt}%)")
-  
-  def saturate: Hsv = Hsv(hue, 1, lightness)
-  def desaturate: Hsv = Hsv(hue, 0, lightness)
-  def rotate(degrees: Double): Hsv = Hsv(Color.unitary(hue + degrees/360), saturation, lightness)
-  def pure: Hsv = Hsv(hue, 1, 0)
-  
