@@ -32,7 +32,7 @@ import language.dynamics
 import scala.util.{Try, Success, Failure}
 
 import java.util.concurrent as juc
-import scala.util.chaining.scalaUtilChainingOps
+export scala.util.chaining.scalaUtilChainingOps
 
 export scala.reflect.{ClassTag, Typeable}
 export scala.collection.immutable.{Set, List, ListMap, Map, TreeSet, TreeMap}
