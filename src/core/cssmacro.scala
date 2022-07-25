@@ -610,10 +610,10 @@ package pseudo:
   val empty = Selector.PseudoClass(t"empty")
   
   def nthChild(a: Int, b: Int) =
-    Selector.PseudoClass(t"nth-child(${if b == 0 then t"${a}n+$b" else t"${a}n"})")
+    Selector.PseudoClass(t"nth-child(${if a == 0 then t"$b" else if b != 0 then t"${a}n+$b" else t"${a}n"})")
   
   def nthLastChild(a: Int, b: Int) =
-    Selector.PseudoClass(t"nth-last-child(${if b == 0 then t"${a}n+$b" else t"${a}n"})")
+    Selector.PseudoClass(t"nth-last-child(${if a == 0 then t"$b" else if b != 0 then t"${a}n+$b" else t"${a}n"})")
   
   val firstChild = Selector.PseudoClass(t"first-child")
   val lastChild = Selector.PseudoClass(t"last-child")
