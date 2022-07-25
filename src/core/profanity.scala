@@ -63,7 +63,7 @@ object Tty:
     Log.fine(ansi"Sent ANSI escape codes to TTY to attempt to get console dimensions")
     Tty.print(t"${esc}[s${esc}[4095C${esc}[4095B${esc}[6n${esc}[u")
 
-  def stream[K](using Tty, Keyboard[K], Log): LazyList[K] = summon[Tty].in.flatMap:
+  def stream[K](using Tty, Log, Keyboard[K]): LazyList[K] = summon[Tty].in.flatMap:
     data => unsafely(summon[Keyboard[K]].interpret(data))
 
   def print(msg: Text)(using Tty) = summon[Tty].out.print(msg.s)
@@ -147,7 +147,7 @@ object LineEditor:
 case class LineEditor(content: Text = t"", pos: Int = 0):
   import Keypress.*
 
-  def apply(keypress: Keypress)(using Log): LineEditor = try keypress match
+  def apply(keypress: Keypress): LineEditor = try keypress match
     case Printable(ch)  => copy(t"${content.take(pos)}$ch${content.drop(pos)}", pos + 1)
     case Ctrl('U')      => copy(content.drop(pos), 0)
     
@@ -159,9 +159,7 @@ case class LineEditor(content: Text = t"", pos: Int = 0):
     case Home           => copy(pos = 0)
     case End            => copy(pos = content.length)
     case LeftArrow      => copy(pos = (pos - 1) max 0)
-    
-    case CtrlLeftArrow  => copy(pos = (pos - 2 max 0 to 0 by -1).find(content(_) == ' ').fold(0)(_ +
-                               1))
+    case CtrlLeftArrow  => copy(pos = (pos - 2 max 0 to 0 by -1).find(content(_) == ' ').fold(0)(_ + 1))
     
     case CtrlRightArrow => val range = ((pos + 1) min (content.length - 1)) to (content.length - 1)
                            val newPos = range.find(content(_) == ' ').fold(content.length)(_ + 1)
@@ -170,46 +168,67 @@ case class LineEditor(content: Text = t"", pos: Int = 0):
     case _              => this
   catch case e: OutOfRangeError => this
 
-object SelectMenu:
-  def ask[T](options: List[T], initial: T, renderOn: T => Text, renderOff: T => Text)
-         (using Tty, Log): T =
+  def unapply(stream: LazyList[Keypress])(using tty: Tty, log: Log, renderer: Renderer[LineEditor, Text])
+             : Option[(Text, LazyList[Keypress])] =
+    renderer(Tty.stream[Keypress], this)(_(_))
+
+trait Renderer[State, R]:
+  def before(): Unit = ()
+  def render(old: Maybe[State], menu: State): Unit
+  def after(): Unit = ()
+  def result(state: State): R
+
+  @tailrec
+  final def recur(stream: LazyList[Keypress], state: State, oldState: Maybe[State])
+                 (key: (State, Keypress) => State)
+                 : Option[(R, LazyList[Keypress])] =
+    render(oldState, state)
+    stream match
+      case Keypress.Enter #:: tail           => Some((result(state), tail))
+      case Keypress.Ctrl('C' | 'D') #:: tail => None
+      case other #:: tail                    => recur(tail, key(state, other), state)(key)
+      case _                                 => None
+
+  def apply(stream: LazyList[Keypress], state: State)(key: (State, Keypress) => State)
+           : Option[(R, LazyList[Keypress])] =
+    before()
+    recur(stream, state, Unset)(key).tap(after().waive)
+
+object Renderer:
+  given [T: Show](using Tty): Renderer[SelectMenu[T], T] with
+    override def before(): Unit = Tty.print(esc(t"?25l"))
+    override def after(): Unit = Tty.print(esc(t"J")+esc(t"?25h"))
     
-    def finished(key: Keypress) =
-      key == Keypress.Enter || key == Keypress.Ctrl('D') || key == Keypress.Ctrl('C')
-
-    def render(options: List[T], current: T): Unit =
-      options.foreach:
-        case opt =>
-          Tty.print(if opt == current then renderOn(opt) else renderOff(opt))
-          Tty.print(esc(t"K"))
-          Tty.print(t"\n")
-      
-      Tty.print(esc(t"${options.length}A"))
-
-    Tty.print(esc(t"?25l"))
+    def render(old: Maybe[SelectMenu[T]], menu: SelectMenu[T]) =
+      menu.options.foreach: opt =>
+        Tty.print((if opt == menu.current then t" > $opt" else t"   $opt")+esc(t"K")+t"\n")
+      Tty.print(esc(t"${menu.options.length}A"))
     
-    val menu = SelectMenu(options, initial)
-    render(menu.options, menu.current)
-    
-    val result = Tty.stream[Keypress].takeWhile(!finished(_)).foldLeft(menu) {
-      case (menu, next) =>
-        val newMenu = menu(next)
-        render(newMenu.options, newMenu.current)
-        newMenu
-    }
+    def result(state: SelectMenu[T]): T = state.current
+  
+  given (using Tty): Renderer[LineEditor, Text] with
+    def render(oldEd: Maybe[LineEditor], newEd: LineEditor): Unit =
+      val old = oldEd.otherwise(newEd)
+      if old.pos > 0 then Tty.print(esc(t"${old.pos}D"))
+      val line = t"${newEd.content}${t" "*(old.content.length - newEd.content.length)}"
+      Tty.print(esc(t"0K"))
+      Tty.print(line)
+      if line.length > 0 then Tty.print(esc(t"${line.length}D"))
+      if newEd.pos > 0 then Tty.print(esc(t"${newEd.pos}C"))
 
-    Tty.print(esc(t"J"))
-    Tty.print(esc(t"?25h"))
-
-    result.current
+    def result(editor: LineEditor): Text = editor.content
 
 case class SelectMenu[T](options: List[T], current: T):
   import Keypress.*
-  def apply(keypress: Keypress)(using Log): SelectMenu[T] = try keypress match
+  def apply(keypress: Keypress): SelectMenu[T] = try keypress match
     case UpArrow   => copy(current = options(0 max options.indexOf(current) - 1))
     case DownArrow => copy(current = options(options.size - 1 min options.indexOf(current) + 1))
     case _         => this
   catch case e: OutOfRangeError => this
+
+  def unapply(stream: LazyList[Keypress])(using tty: Tty, log: Log, renderer: Renderer[SelectMenu[T], T])
+             : Option[(T, LazyList[Keypress])] =
+    renderer(Tty.stream[Keypress], this)(_(_))
 
 given realm: Realm = Realm(t"profanity")
 
