@@ -93,11 +93,23 @@ trait Suite(val name: Text) extends TestSuite:
   
   final def main(args: IArray[Text]): Unit =
     val runner = Runner(args.map(TestId(_)).to(Set))
-    run(using runner)
-    val report = runner.report()
-    // FIXME
-    System.out.nn.println(Suite.show(report).render)
-
-    terminate(report.total == report.passed)
+    
+    val succeeded = try
+      run(using runner)
+      val report = runner.report()
+      System.out.nn.println(Suite.show(report).render)
+      report.total == report.passed
+    catch case error: Throwable =>
+      val report = runner.report()
+      // if !report.pending.isEmpty then
+      //   val tests = report.pending.map: name =>
+      //     ansi"${colors.Turquoise}($name)"
+      //   .join(ansi"${colors.Gray}({)", ansi"${colors.Gray}(,) ", ansi"${colors.Gray}(})")
+      //   System.out.nn.println(ansi"Execution failed while testing ${colors.Crimson}(${tests}), with exception:".render)
+      System.out.nn.println(Suite.show(report).render)
+      System.out.nn.println(StackTrace(error).ansi.render)
+      false
+    
+    terminate(succeeded)
   
   def terminate(success: Boolean): Unit = System.exit(if success then 0 else 1)

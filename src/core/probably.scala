@@ -24,7 +24,7 @@ import eucalyptus.*
 import iridescence.*
 import escapade.*
 
-import scala.collection.mutable.HashMap
+import scala.collection.mutable.{HashMap, HashSet}
 import scala.util.*
 import scala.quoted.*
 
@@ -87,7 +87,7 @@ class Runner(subset: Set[TestId] = Set()) extends Dynamic:
       type Type = T
       def action(): T = fn(using this)
 
-  def time[T](name: Text)(fn: => T)(using Log): T = apply[T](name)(fn).check { _ => true }
+  def time[T](name: Text)(fn: => T)(using Log): T = apply[T](name)(fn).check(true.waive)
   def suite(testSuite: TestSuite)(using Log): Unit = suite(testSuite.name)(testSuite.run)
 
   def suite(name: Text)(fn: Runner ?=> Unit)(using Log): Unit =
@@ -99,17 +99,17 @@ class Runner(subset: Set[TestId] = Set()) extends Dynamic:
         val runner = Runner()
         fn(using runner)
         runner.report()
-    
+
     val t0 = System.currentTimeMillis
     val report = test.check(_.results.forall(_.outcome.passed))
     val t1 = System.currentTimeMillis - t0
 
     if report.results.exists(_.outcome.passed) && report.results.exists(_.outcome.failed)
-    then synchronized {
+    then synchronized:
       results = results.updated(name, results(name).copy(outcome = Outcome.Mixed))
-    }
 
-    report.results.foreach { result => record(result.copy(indent = result.indent + 1)) }
+    report.results.foreach: result =>
+      record(result.copy(indent = result.indent + 1))
    
     Log.fine(ansi"Completed test suite ${colors.Gold}($name) in ${t1.show}ms")
 
@@ -185,11 +185,9 @@ class Runner(subset: Set[TestId] = Set()) extends Dynamic:
   protected def record(summary: Summary) = synchronized:
     results = results.updated(summary.name, summary)
 
-  private def emptyResults(): Map[Text, Summary] = ListMap().withDefault:
-    name =>
-      Summary(TestId(shortDigest(name)), name, 0, Int.MaxValue, 0L, Int.MinValue, Outcome.Passed, 0)
+  private def emptyResults(): Map[Text, Summary] = ListMap().withDefault: name =>
+    Summary(TestId(shortDigest(name)), name, 0, Int.MaxValue, 0L, Int.MinValue, Outcome.Passed, 0)
 
-  @volatile
   protected var results: Map[Text, Summary] = emptyResults()
 end Runner
 
