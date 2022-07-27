@@ -157,40 +157,29 @@ case class Counter(first: Int = 0):
   private var id: Int = first
   def apply(): Int = synchronized(id.tap { _ => id += 1 })
 
-case class TaskAbort() extends Exception
+// object Task:
+//   private val count: Counter = Counter()
+//   private def nextName(): Text = Text(s"rudiments-${count()}")
 
-object Task:
-  private val count: Counter = Counter()
-  private def nextName(): Text = Text(s"rudiments-${count()}")
+//   @targetName("make")
+//   def apply[T](fn: Cancelable ?=> T)(using cancelable: Cancelable): Task[T] = Task(ctx => fn(using cancelable))
 
-  @targetName("make")
-  def apply[T](fn: Context[T] ?=> T): Task[T] = Task(ctx => fn(using ctx))
+// case class CancelError()(using Codepoint) extends Error(err"the operation was cancelled")(pos)
 
-  class Context[T](val name: Text):
-    private[Task] var abort: Option[() => T] = None
-    def curtail(value: => T): Unit = abort = Some(() => value)
-    def juncture(): Unit throws TaskAbort = if abort.isDefined then throw TaskAbort()
-
-
-case class Task[T] private(fn: Task.Context[T] => T):
-  private val promise: Promise[T] = Promise()
-  private val name = Task.nextName()
+// case class Task[T] private(fn: Cancelable => T):
+//   private val result: Promise[T] = Promise()
+//   private val name = Task.nextName()
+//   private val runnable: Runnable = () => result.complete(Try(fn(cancelable)))
+//   private val thread: Thread = Thread(runnable, name.s)
+//   def cancel(): Unit = cancelable.cancel()
   
-  private val runnable: Runnable = () =>
-    val context = Task.Context[T](name)
-    promise.complete:
-      try Success(fn(context)) catch
-        case err: TaskAbort => Success(context.abort.get())
-        case err            => Failure(err)
-  
-  private val thread: Thread = Thread(runnable, name.s)
-  private val context: Task.Context[T] = Task.Context(name)
-  
-  def apply(): Promise[T] =
-    thread.start()
-    promise
-  
-  def curtail(value: T): Unit = context.curtail(value)
+//   def apply(): Promise[T] =
+//     thread.start()
+//     result
+
+// class Cancelable(set: () => Unit, get: () => Boolean):
+//   def cancel(): Unit = set()
+//   def affirm(): Unit throws CancelError = if !get() then throw CancelError()
 
 trait Encoding:
   def name: Text

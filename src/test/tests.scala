@@ -19,36 +19,200 @@ package rudiments
 import probably.*
 import eucalyptus.*
 import gossamer.*
+import turbulence.*
 import stdouts.stdout
 
 import unsafeExceptions.canThrowAny
-given Log(Everything |-> SystemOut)
+given Log({ case _ => SystemOut.sink })
 
 object Tests extends Suite(t"Rudiments tests"):
-  def run(using Runner): Unit =
-    
-    val array = (0 until 65536).to(Array).map(_.toByte)
-    
-    test(t"read Java `InputStream`, chunked") {
-      val in = java.io.ByteArrayInputStream(array)
-      Util.readInputStream(in, 4.kb).map(_.to(Vector)).reduce(_ ++ _)
-    }.assert(_ == array.to(Vector))
-    
-    test(t"read Java `InputStream`, single chunk") {
-      val in = java.io.ByteArrayInputStream(array)
-      Util.readInputStream(in, 64.kb).map(_.to(Vector)).head
-    }.assert(_ == array.to(Vector))
-    
-    test(t"read Java `InputStream`, two chunks") {
-      val in = java.io.ByteArrayInputStream(array)
-      Util.readInputStream(in, 32.kb).map(_.to(Vector)).length
-    }.assert(_ == 2)
 
-    test(t"initialize array") {
-      val iarray: IArray[Text] = IArray.init(3) { arr =>
-        arr(0) = t"zero"
-        arr(1) = t"one"
-        arr(2) = t"two"
-      }
-      iarray.to(List)
-    }.assert(_ == List(t"zero", t"one", t"two"))
+  def async(fn: => Unit): () => Unit =
+    val thread = new Thread:
+      override def run(): Unit = fn
+    
+    thread.start()
+
+    () => thread.join()
+
+  def run(using Runner): Unit =
+
+    suite(t"Promises"):
+      test(t"New promise is incomplete"):
+        val promise = Promise[Int]()
+        promise.ready
+      .assert(_ == false)
+
+      test(t"Completed promise is ready"):
+        val promise = Promise[Int]()
+        promise.supply(42)
+        promise.ready
+      .assert(_ == true)
+      
+      test(t"Completed promise has correct value"):
+        val promise = Promise[Int]()
+        promise.supply(42)
+        promise.get
+      .assert(_ == 42)
+
+      test(t"Promise result can be awaited"):
+        val promise = Promise[Int]()
+        async:
+          Thread.sleep(100)
+          promise.supply(42)
+        promise.await()
+      .assert(_ == 42)
+
+      test(t"Incomplete promise contains exception"):
+        val promise = Promise[Int]()
+        capture(promise.get)
+      .assert(_ == IncompleteError())
+      
+      test(t"Canceled promise contains exception"):
+        val promise = Promise[Int]()
+        promise.cancel()
+        capture(promise.get)
+      .assert(_ == CancelError())
+    
+    suite(t"Tasks"):
+      given Monitor = Supervisor
+      
+      test(t"Simple task produces a result"):
+        val task = Task(t"simple")(100)
+        task.await()
+      .assert(_ == 100)
+      
+      test(t"Mapped task"):
+        val task = Task(t"simple")(100)
+        task.map(_ + 1).await()
+      .assert(_ == 101)
+      
+      test(t"FlatMapped task"):
+        val task = Task(t"simple")(100)
+        task.flatMap: x =>
+          Task(t"next")(x + 1)
+        .await()
+      .assert(_ == 101)
+      
+      test(t"Task name"):
+        val task = Task(t"simple")(100)
+        task.name
+      .assert(_ == t"task://main/simple")
+      
+      test(t"Subtask name"):
+        var name: Option[Text] = None
+        val task = Task(t"simple"):
+          val inner = Task(t"inner")(100)
+          name = Some(inner.name)
+          inner.await()
+          200
+        task.await()
+        name
+      .assert(_ == Some(t"task://main/simple/inner"))
+    
+      test(t"Task creates one new thread"):
+        val threads = Thread.activeCount
+        var insideThreads = 0
+        val task = Task(t"simple"):
+          insideThreads = Thread.activeCount
+        task.await()
+        insideThreads - threads
+      .assert(_ == 1)
+      
+      test(t"Threads do not persist"):
+        val threads = Thread.activeCount
+        val task = Task(t"simple"):
+          Thread.sleep(10)
+        task.await()
+        threads - Thread.activeCount
+      .assert(_ == 0)
+
+      test(t"Sequencing tasks"):
+        Seq(Task(t"a")(3), Task(t"b")(5), Task(t"c")(7)).sequence.await()
+      .assert(_ == Seq(3, 5, 7))
+
+      test(t"Task can be canceled"):
+        var value: Boolean = false
+        
+        val task = Task(t"long"):
+          Thread.sleep(50)
+          value = true
+        task()
+        async(task.cancel())()
+        safely(task.await())
+        value
+      .assert(_ == false)
+
+      def fibonacci(a: Long)(using Monitor): Long =
+        affirm()
+        if a < 2 then 1 else fibonacci(a - 1) + fibonacci(a - 2)
+      
+      test(t"Affirmed calculation without interruption does not cancel it"):
+        val task = Task(t"fibonacci")(fibonacci(30))
+        task()
+        //task.cancel()
+        try task.await() catch case e: CancelError => -1
+      .assert(_ == 1346269)
+      
+      test(t"Affirmed calculation with interruption cancels it"):
+        val task = Task(t"fibonacci")(fibonacci(40))
+        task()
+        task.cancel()
+        capture(task.await())
+      .assert(_ == CancelError())
+
+      test(t"Canceled task cancels child"):
+        var value = true
+        val task = Task(t"outer"):
+          value = false
+          val task2 = Task(t"inner"):
+            Thread.sleep(100)
+            value = true
+          task2.await()
+        task()
+        Thread.sleep(10)
+        task.cancel()
+        safely(task.await())
+        value
+      .assert(_ == false)
+
+      test(t"Cancel read on slow LazyList"):
+        var count = 0
+        val ll = LazyList.continually:
+          count += 1
+          Thread.sleep(10)
+        .take(10)
+
+        val task = Task(t"iterate")(ll.to(List))
+        task()
+        Thread.sleep(15)
+        task.cancel()
+        count
+      .assert(_ == 2)
+
+        
+    // val array = (0 until 65536).to(Array).map(_.toByte)
+    
+    // test(t"read Java `InputStream`, chunked") {
+    //   val in = java.io.ByteArrayInputStream(array)
+    //   Util.readInputStream(in, 4.kb).map(_.to(Vector)).reduce(_ ++ _)
+    // }.assert(_ == array.to(Vector))
+    
+    // test(t"read Java `InputStream`, single chunk") {
+    //   val in = java.io.ByteArrayInputStream(array)
+    //   Util.readInputStream(in, 64.kb).map(_.to(Vector)).head
+    // }.assert(_ == array.to(Vector))
+    
+    // test(t"read Java `InputStream`, two chunks") {
+    //   val in = java.io.ByteArrayInputStream(array)
+    //   Util.readInputStream(in, 32.kb).map(_.to(Vector)).length
+    // }.assert(_ == 2)
+
+    // test(t"initialize array") {
+    //   val iarray: IArray[Text] = IArray.init(3) { arr =>
+    //     arr(0) = t"zero"
+    //     arr(1) = t"one"
+    //     arr(2) = t"two"
+    //   }
+    //   iarray.to(List)
+    // }.assert(_ == List(t"zero", t"one", t"two"))
