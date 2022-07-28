@@ -38,7 +38,7 @@ def supervise[T](id: Text)(fn: Monitor ?=> T): T = fn(using Supervisor(id))
 def hibernate()(using Monitor): Unit = sleep(using timekeeping.long)(Long.MaxValue)
 
 def sleep(using tk: Timekeeper)(time: tk.Type)(using Monitor): Unit =
-  try Thread.sleep(tk.to(time)) catch case err: InterruptedException => ()
+  try Thread.sleep(tk.to(time)) catch case err: InterruptedException => unsafely(throw CancelError())
 
 trait Monitor:
   def id: Text
@@ -60,15 +60,7 @@ case class TaskMonitor(id: Text, interrupted: () => Boolean, stop: () => Unit, p
 
 object Task:
   def apply[T](id: Text)(fn: Monitor ?=> T)(using monitor: Monitor): Task[T] =
-    new Task(id, mon => fn(using mon))(using monitor)
-
-//   def proxy[T, R](id: Text)(start: => T)(conclude: T => R)(stop: T => Unit)(using monitor: Monitor): Task[R] =
-//     new Task(id, mon =>
-//       val result = start()
-//       try hibernate() catch case err: CancelError() =>
-//         stop(result)
-      
-//     )
+    (new Task(id, mon => fn(using mon))(using monitor)).tap(_.start())
 
 case class Promise[T]():
   private var value: Option[T throws CancelError] = None
@@ -100,7 +92,6 @@ case class Promise[T]():
 extension [T](xs: Iterable[Task[T]])
   transparent inline def sequence(using mon: Monitor): Task[Iterable[T]] =
     Task(Text("sequence")):
-      xs.foreach(_())
       unsafely(xs.map(_.await()))
 
 enum TaskStatus:
@@ -111,27 +102,27 @@ class Task[T](id: Text, calc: Monitor => T)(using mon: Monitor):
   private var status: TaskStatus = TaskStatus.New
   def name = Text(mon.name.s+"/"+id)
   def active: Boolean = !result.ready
-  def await(): T throws CancelError = synchronized(apply().await().tap(thread.join().waive))
+  def await(): T throws CancelError = result.await().tap(thread.join().waive)
   
   def await(using tk: Timekeeper)(time: tk.Type): T throws CancelError | TimeoutError =
-    synchronized(apply().await(time)).tap(thread.join().waive)
+    result.await(time).tap(thread.join().waive)
   
-  def apply(): Promise[T] = synchronized:
+  private def start(): Promise[T] = synchronized:
     if !thread.isAlive then
       startTime = System.currentTimeMillis
       status = TaskStatus.Running
       thread.start()
     result
 
-  def cancel(): Unit = synchronized:
+  def cancel(): Unit =
     ctx.cancel()
     result.cancel()
     status = TaskStatus.Canceled
 
-  def map[S](fn: T => S)(using mon: Monitor): Task[S] = new Task(id, ctx => fn(calc(ctx)))
+  def map[S](fn: T => S)(using mon: Monitor): Task[S] = Task(Text("map"))(unsafely(fn(await())))
   
   def flatMap[S](fn: T => Task[S])(using mon: Monitor): Task[S] =
-    new Task(id, ctx => unsafely(fn(calc(ctx)).await()))
+    Task(Text("flatMap"))(unsafely(fn(await()).await()))
   
   private val result: Promise[T] = Promise()
   private lazy val thread: Thread = Thread(runnable, ctx.name.s)
@@ -139,8 +130,7 @@ class Task[T](id: Text, calc: Monitor => T)(using mon: Monitor):
   
   private def runnable: Runnable = () => safely:
     try
-      val answer = calc(ctx)
-      result.supply(answer)
+      result.supply(calc(ctx))
       status = TaskStatus.Completed
     catch
       case err: TimeoutError =>
