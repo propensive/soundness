@@ -18,23 +18,67 @@ package turbulence
 
 import rudiments.*
 import anticipation.*
+import parasitism.*
 
 import scala.collection.IterableFactory
 import scala.collection.mutable.HashMap
 import scala.compiletime.*, ops.int.*
-import scala.concurrent.*
 
 import java.util.regex.*
 import java.util as ju
 import java.io as ji
+import java.nio as jn, java.nio.channels as jnc
+import java.lang.ref as jlr
 
-import scala.util.CommandLineParser
+import scala.collection.mutable as scm
 
 import language.dynamics
 
 import scala.util.{Try, Success, Failure}
 
 import java.util.concurrent as juc
+
+case class OverallocationError(tags: Allocator.Tag*)(using Codepoint)
+extends Error(err"attempted to allocated more memory than available for $tags")(pos)
+
+object Allocator:
+  object Total extends Tag()
+  case class Tag()
+
+  given Allocator = tag => 10.mb
+
+abstract class Allocator():
+  private var allocations: scm.Map[Allocator.Tag, ByteSize] = HashMap().withDefault(0.b.waive)
+  private var weakRefs: scm.Map[jlr.Reference[?], (ByteSize, Set[Allocator.Tag])] = HashMap()
+  private val queue: jlr.ReferenceQueue[Array[Byte]] = jlr.ReferenceQueue()
+  @volatile private var continue = false
+ 
+  @tailrec
+  private def process(): Unit =
+    synchronized:
+      Option(queue.remove(100)).map(_.nn).foreach: ref =>
+        val (size, tags) = weakRefs(ref)
+  
+        tags.foreach: tag =>
+          allocations(tag) -= size
+    
+    if continue then process()
+
+  def release(tag: Allocator.Tag, size: ByteSize): Unit = synchronized:
+    allocations(tag) -= size
+  
+  def limit(tag: Allocator.Tag): ByteSize
+
+  def allocate(size: ByteSize, tags: Allocator.Tag*): Array[Byte] throws OverallocationError = synchronized:
+    val excess = tags.filter: tag =>
+      allocations(tag) + size > limit(tag)
+    
+    if !allocations.isEmpty then throw OverallocationError(excess*) else
+      val array = new Array[Byte](size.long.toInt)
+      val ref = jlr.WeakReference(array, queue)
+      weakRefs(ref) = size -> tags.to(Set)
+      tags.foreach(allocations(_) += size)
+      array
 
 type DataStream = LazyList[IArray[Byte] throws StreamCutError]
 
@@ -52,25 +96,55 @@ extends Error(err"the amount of data in the stream (at least $size) exceeds the 
 case class StreamCutError()(using Codepoint) extends Error(err"the stream was cut prematurely")(pos)
 
 object Util:
-  def readInputStream(in: ji.InputStream, limit: ByteSize): DataStream = in match
-    case in: ji.BufferedInputStream =>
-      def read(): DataStream =
-        try
-          val avail = in.available
-          
-          val buf = new Array[Byte](if avail == 0 then limit.long.toInt else avail min
-              limit.long.toInt)
-          
-          val count = in.read(buf, 0, buf.length)
-          if count < 0 then LazyList()
-          else if avail == 0 then buf.slice(0, count).immutable(using Unsafe) #:: read()
-          else buf.immutable(using Unsafe) #:: read()
-        catch case error: ji.IOException => LazyList(throw StreamCutError())
 
-      read()
+  def readInputStream(in: ji.InputStream, limit: ByteSize, tags: Allocator.Tag*)
+                      (using allocator: Allocator)
+                      : DataStream =
+    val channel = jnc.Channels.newChannel(in).nn
+    try
+      val buf = jn.ByteBuffer.wrap(allocator.allocate(1.mb, tags*)).nn
+
+      def recur(): DataStream =
+        channel.read(buf) match
+          case -1 =>
+            channel.close()
+            LazyList()
+          case 0 =>
+            recur()
+          case count =>
+            try
+              buf.flip()
+              val size = count min 65536
+              val array = allocator.allocate(size.b, tags*)
+              buf.get(array)
+              buf.clear()
+              array.immutable(using Unsafe) #:: recur()
+            catch case e: OverallocationError =>
+              LazyList(throw StreamCutError()): DataStream
+      
+      recur()
+    catch case err: OverallocationError =>
+      LazyList(throw StreamCutError()): DataStream
+
+  // def readInputStream(in: ji.InputStream, limit: ByteSize): DataStream = in match
+  //   case in: ji.BufferedInputStream =>
+  //     def read(): DataStream =
+  //       try
+  //         val avail = in.available
+          
+  //         val buf = new Array[Byte](if avail == 0 then limit.long.toInt else avail min
+  //             limit.long.toInt)
+          
+  //         val count = in.read(buf, 0, buf.length)
+  //         if count < 0 then LazyList()
+  //         else if avail == 0 then buf.slice(0, count).immutable(using Unsafe) #:: read()
+  //         else buf.immutable(using Unsafe) #:: read()
+  //       catch case error: ji.IOException => LazyList(throw StreamCutError())
+
+  //     read()
     
-    case in: ji.InputStream =>
-      readInputStream(ji.BufferedInputStream(in), limit)
+  //   case in: ji.InputStream =>
+  //     readInputStream(ji.BufferedInputStream(in), limit)
   
   def write(stream: DataStream, out: ji.OutputStream): Unit throws StreamCutError =
     stream.map(_.mutable(using Unsafe)).foreach(out.write(_))
@@ -169,24 +243,28 @@ object SystemOut
 object SystemErr
 
 extension (obj: LazyList.type)
-  def multiplex[T](streams: LazyList[T]*): LazyList[T] = multiplexer(streams*).stream
+  def multiplex[T](streams: LazyList[T]*)(using Monitor): LazyList[T] = multiplexer(streams*).stream
   
-  def multiplexer[T](streams: LazyList[T]*): Multiplexer[Any, T] =
+  def multiplexer[T](streams: LazyList[T]*)(using Monitor): Multiplexer[Any, T] =
     val multiplexer = Multiplexer[Any, T]()
     streams.zipWithIndex.map(_.swap).foreach(multiplexer.add)
     multiplexer
   
-  def pulsar(using time: Timekeeper)(interval: time.Type): LazyList[Unit] =
-    Thread.sleep(time.to(interval))
-    () #:: pulsar(interval)
+  def pulsar(using time: Timekeeper)(interval: time.Type)(using Monitor): LazyList[Unit] =
+    try
+      sleep(interval)
+      () #:: pulsar(interval)
+    catch case err: CancelError => LazyList()
 
 class Pulsar(using time: Timekeeper)(interval: time.Type):
   private var continue: Boolean = true
   def stop(): Unit = continue = false
 
-  def stream: LazyList[Unit] = if !continue then LazyList() else
-    Thread.sleep(time.to(interval))
-    () #:: stream
+  def stream(using Monitor): LazyList[Unit] = if !continue then LazyList() else
+    try
+      sleep(interval)
+      () #:: stream
+    catch case err: CancelError => LazyList()
 
 extension [T](value: T)
   def dataStream(using src: Source[T]): DataStream throws src.E = src.read(value)
@@ -202,24 +280,22 @@ extension [T](value: T)
       : S throws readable.E | src.E | StreamCutError =
     readable.read(dataStream)
 
-case class Multiplexer[K, T]():
+case class Multiplexer[K, T]()(using monitor: Monitor):
   private val tasks: HashMap[K, Task[Unit]] = HashMap()
   private val queue: juc.LinkedBlockingQueue[Maybe[T]] = juc.LinkedBlockingQueue()
 
   def close(): Unit = tasks.keys.foreach(remove(_))
 
   @tailrec
-  private def pump(key: K, stream: LazyList[T])(using ctx: Task.Context[Unit]): Unit =
-    if stream.isEmpty then remove(key)
-    else
-      ctx.curtail(())
+  private def pump(key: K, stream: LazyList[T]): Unit =
+    if stream.isEmpty then remove(key) else
+      //ctx.terminate(())
+      monitor.bail()
       queue.put(stream.head)
       pump(key, stream.tail)
 
   def add(key: K, stream: LazyList[T]): Unit = synchronized:
-    val task: Task[Unit] = Task(pump(key, stream))
-    task()
-    tasks(key) = task
+    tasks(key) = Task(Text("pump"))(pump(key, stream))
  
   private def remove(key: K): Unit = synchronized:
     tasks -= key
@@ -233,27 +309,22 @@ case class Multiplexer[K, T]():
     LazyList() #::: recur()
 
 extension [T](stream: LazyList[T])
-  def ready(using ExecutionContext): Future[LazyList[T]] = Future:
-    blocking:
-      stream.isEmpty
-      stream
-
-  def rate(using time: Timekeeper)(interval: time.Type): LazyList[T] =
+  def rate(using time: Timekeeper)(interval: time.Type)(using Monitor): LazyList[T] throws CancelError =
     def recur(stream: LazyList[T], last: Long): LazyList[T] = stream match
       case LazyList() =>
         LazyList()
       case head #:: tail =>
         val delay = time.to(interval) - (System.currentTimeMillis - last)
-        if delay > 0 then Thread.sleep(delay)
+        if delay > 0 then sleep(time.from(delay))
         stream
       case _ =>
         throw Mistake("Should never match")
 
-    recur(stream, System.currentTimeMillis)
+    Task(Text("ratelimiter"))(recur(stream, System.currentTimeMillis)).await()
 
-  def multiplexWith(that: LazyList[T]): LazyList[T] = LazyList.multiplex(stream, that)
+  def multiplexWith(that: LazyList[T])(using Monitor): LazyList[T] = LazyList.multiplex(stream, that)
 
-  def regulate(tap: Tap): LazyList[T] =
+  def regulate(tap: Tap)(using Monitor): LazyList[T] =
     def defer(active: Boolean, stream: LazyList[T | Tap.Regulation], buffer: List[T]): LazyList[T] =
       recur(active, stream, buffer)
 
@@ -271,7 +342,7 @@ extension [T](stream: LazyList[T])
 
   def cluster(using time: Timekeeper)
              (interval: time.Type, maxSize: Maybe[Int] = Unset, maxDelay: Maybe[Long] = Unset)
-             (using ExecutionContext): LazyList[List[T]] =
+             (using Monitor): LazyList[List[T]] =
     
     def defer(stream: LazyList[T], list: List[T], expiry: Long): LazyList[List[T]] =
       recur(stream, list, expiry)
@@ -282,12 +353,12 @@ extension [T](stream: LazyList[T])
         val newExpiry: Long = maxDelay.option.fold(Long.MaxValue)(_ + System.currentTimeMillis)
         if stream.isEmpty then LazyList() else recur(stream.tail, List(stream.head), newExpiry)
       else
-        val hasMore: Future[Boolean] = Future(!stream.isEmpty)
+        val hasMore: Task[Boolean] = Task(Text("cluster"))(!stream.isEmpty)
 
         val recurse: Option[Boolean] = try
-          val deadline = time.to(interval).min(expiry - System.currentTimeMillis).max(0)
-          if hasMore.timeout(deadline).await() then Some(true) else None
-        catch case err: TimeoutError => Some(false)
+          val deadline = time.from(time.to(interval).min(expiry - System.currentTimeMillis).max(0))
+          if hasMore.await(deadline) then Some(true) else None
+        catch case err: (TimeoutError | CancelError) => Some(false)
 
         // The try/catch above seems to fool tail-call identification
         if recurse.isEmpty then LazyList(list)

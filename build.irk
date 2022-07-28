@@ -1,17 +1,12 @@
 {
   "repos": [
     {
-      "base": "../anticipation",
-      "url": "https://github.com/propensive/anticipation"
-    },
-    {
-      "base": "../rudiments",
-      "url": "https://github.com/propensive/rudiments"
+      "base": "../parasitism",
+      "url": "https://github.com/propensive/parasitism"
     }
   ],
   "imports": [
-    "../rudiments/build.irk",
-    "../anticipation/build.irk"
+    "../parasitism/build.irk"
   ],
   "publishing": {
     "username": "propensive",
@@ -36,8 +31,7 @@
       "name": "Turbulence",
       "id": "turbulence/core",
       "links": [
-        "rudiments/core",
-        "anticipation/time"
+        "parasitism/core"
       ],
       "sources": [
         "src/core"

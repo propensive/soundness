@@ -26,4 +26,8 @@ given Log(Everything |-> SystemOut)
 
 object Tests extends Suite(t"Turbulence tests"):
   def run(using Runner): Unit =
-    ()
+    test(t""):
+      val task = Task(sleep(100L))
+      task.await()
+
+
