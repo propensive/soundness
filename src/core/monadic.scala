@@ -38,10 +38,10 @@ object Monadic:
     def map[A, B](from: List[A])(fn: A => B): List[B] = from.map(fn)
     def flatMap[A, B](from: List[A])(fn: A => List[B]): List[B] = from.flatMap(fn)
 
-  given (using ec: ExecutionContext): Monadic[Future] with
-    def point[A](value: A): Future[A] = Future(value)
-    def map[A, B](from: Future[A])(fn: A => B): Future[B] = from.map(fn)
-    def flatMap[A, B](from: Future[A])(fn: A => Future[B]): Future[B] = from.flatMap(fn)
+  // given (using ec: ExecutionContext): Monadic[Future] with
+  //   def point[A](value: A): Future[A] = Future(value)
+  //   def map[A, B](from: Future[A])(fn: A => B): Future[B] = from.map(fn)
+  //   def flatMap[A, B](from: Future[A])(fn: A => Future[B]): Future[B] = from.flatMap(fn)
 
   given [Err]: Monadic[[X] =>> Either[Err, X]] with
     def point[A](value: A): Either[Err, A] = Right(value)
