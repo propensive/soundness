@@ -17,6 +17,7 @@
 package scintillate
 
 import rudiments.*
+import parasitism.*
 import turbulence.*
 import gossamer.*
 import gastronomy.*
@@ -187,10 +188,10 @@ case class Request(method: HttpMethod, body: HttpBody.Chunked, query: Text, ssl:
     headers.get(RequestHeader.ContentType).flatMap(_.headOption).flatMap(MediaType.unapply(_))
   
 trait RequestHandler:
-  def listen(handler: Request ?=> Response[?])(using Log): HttpService
+  def listen(handler: Request ?=> Response[?])(using Log, Monitor): Task[Unit]
 
 extension (value: Http.type)
-  def listen(handler: Request ?=> Response[?])(using RequestHandler, Log): HttpService =
+  def listen(handler: Request ?=> Response[?])(using RequestHandler, Log, Monitor): Task[Unit] =
     summon[RequestHandler].listen(handler)
 
 def request(using Request): Request = summon[Request]
@@ -223,47 +224,36 @@ case class RequestParam[T](key: Text)(using ParamReader[T]):
   def unapply(req: Request): Option[T] = opt(using req)
   def apply()(using Request): T throws MissingParamError = opt.getOrElse(throw MissingParamError(key))
 
-trait HttpService:
-  def stop(): Unit
-  def await(): Unit
+// trait HttpService:
+//   def stop(): Unit
+//   def await(): Unit
 
-@targetName("Ampersand")
-val `&` = Split
+// @targetName("Ampersand")
+// val `&` = Split
 
-object Split:
-  def unapply(req: Request): (Request, Request) = (req, req)
+// object Split:
+//   def unapply(req: Request): (Request, Request) = (req, req)
 
 case class HttpServer(port: Int) extends RequestHandler:
 
-  def listen(handler: Request ?=> Response[?])(using Log): HttpService =
+  def listen(handler: Request ?=> Response[?])(using Log, Monitor): Task[Unit] =
     def handle(exchange: HttpExchange | Null) =
       try handler(using makeRequest(exchange.nn)).respond(SimpleResponder(exchange.nn))
       catch case NonFatal(exception) => exception.printStackTrace()
     
-    val httpServer = JavaHttpServer.create(InetSocketAddress("localhost", port), 0).nn
+    def startServer(): com.sun.net.httpserver.HttpServer =
+      val httpServer = JavaHttpServer.create(InetSocketAddress("localhost", port), 0).nn
+      val context = httpServer.createContext("/").nn
+      context.setHandler(handle(_))
+      httpServer.setExecutor(null)
+      httpServer.start()
+      httpServer
 
-    val context = httpServer.createContext("/").nn
-    context.setHandler(handle(_))
-    httpServer.setExecutor(null)
-    httpServer.start()
-
-    val shutdownThread = new Thread:
-      override def run(): Unit =
-        Log.info(t"Shutting down HTTP service on port $port")
-        httpServer.stop(1)
-    
-    Runtime.getRuntime.nn.addShutdownHook(shutdownThread)
-    
-    new HttpService:
-      private var continue: Boolean = true
-      
-      def stop(): Unit =
-        Runtime.getRuntime.nn.removeShutdownHook(shutdownThread)
-        httpServer.stop(1)
-        continue = false
-      
-      def await(): Unit = while continue do Thread.sleep(100)
-
+    Task(t"http-server"):
+      val serv = startServer()
+      hibernate()
+      serv.stop(1)
+  
   private def streamBody(exchange: HttpExchange): HttpBody.Chunked =
     val in = exchange.getRequestBody.nn
     val buffer = new Array[Byte](65536)
