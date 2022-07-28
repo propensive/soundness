@@ -39,20 +39,17 @@ object CataclysmMacros:
   def read(properties: Expr[Seq[(Label, Any)]])(using Quotes): Expr[CssStyle] =
     import quotes.reflect.*
 
-    def recur(exprs: Seq[Expr[(Label, Any)]]): List[Expr[CssProperty]] =
-      exprs match
-        case '{($key: k & Label, $value: v)} +: tail =>
-          val att = key.valueOrAbort
-          val exp: Expr[PropertyDef[k & Label, v]] =
-            Expr.summon[PropertyDef[k & Label, v]].getOrElse {
-              val typeName = TypeRepr.of[v].show
-              report.errorAndAbort(
-                  s"cataclysm: no valid CSS element $att taking values of type $typeName exists")
-            }
-          
-          '{CssProperty(Text($key).uncamel.kebab, $exp.show($value))} :: recur(tail)
-        case _ =>
-          Nil
+    def recur(exprs: Seq[Expr[(Label, Any)]]): List[Expr[CssProperty]] = exprs match
+      case '{($key: k & Label, $value: v)} +: tail =>
+        val exp: Expr[PropertyDef[k & Label, v]] = Expr.summon[PropertyDef[k & Label, v]].getOrElse:
+          val typeName = TypeRepr.of[v].show
+          report.errorAndAbort(
+              s"cataclysm: no valid CSS element ${key.valueOrAbort} taking values of type $typeName exists")
+        
+        '{CssProperty(Text($key).uncamel.kebab, $exp.show($value))} :: recur(tail)
+      
+      case _ =>
+        Nil
     
     properties match
       case Varargs(exprs) =>
@@ -75,7 +72,6 @@ trait Selectable[-T]:
   def selector(value: T): Selector
 
 extension [T: Selectable](left: T)
-
   @targetName("definedAs")
   infix def :=(css: CssStyle): CssRule = CssRule(summon[Selectable[T]].selector(left), css)
 
@@ -294,10 +290,7 @@ object PropertyDef:
   given padding1: PropertyDef["padding", Dimension] = PropertyDef()
   given padding2: PropertyDef["padding", (Dimension, Dimension)] = PropertyDef()
   given padding3: PropertyDef["padding", (Dimension, Dimension, Dimension)] = PropertyDef()
-  
-  given padding4: PropertyDef["padding", (Dimension, Dimension, Dimension, Dimension)] =
-    PropertyDef()
-  
+  given padding4: PropertyDef["padding", (Dimension, Dimension, Dimension, Dimension)] = PropertyDef()
   given paddingBottom: PropertyDef["paddingBottom", Dimension] = PropertyDef()
   given paddingLeft: PropertyDef["paddingLeft", Dimension] = PropertyDef()
   given paddingRight: PropertyDef["paddingRight", Dimension] = PropertyDef()
@@ -321,8 +314,8 @@ object PropertyDef:
   given textCombineUpright: PropertyDef["textCombineUpright", Text] = PropertyDef()
   given textDecoration1: PropertyDef["textDecoration", TextDecorationLine] = PropertyDef()
   
-  given textDecoration2: PropertyDef["textDecoration", (TextDecorationLine, Text,
-      TextDecorationStyle)] = PropertyDef()
+  given textDecoration2: PropertyDef["textDecoration", (TextDecorationLine, Text, TextDecorationStyle)] =
+    PropertyDef()
 
   given textDecorationColor1: PropertyDef["textDecorationColor", Color] = PropertyDef()
   given textDecorationColor2: PropertyDef["textDecorationColor", Transparent.type] = PropertyDef()
@@ -388,9 +381,9 @@ object ShowProperty:
         summon[ShowProperty[C]].show(tuple(2)), summon[ShowProperty[D]].show(tuple(3)))
       .join(t" ")
   
-  given ShowProperty[Font] = _.names.map { f =>
+  given ShowProperty[Font] = _.names.map: f =>
     if f.contains(t" ") then t"'$f'" else f
-  }.join(t", ")
+  .join(t", ")
 
   given ShowProperty[Text] = identity(_)
   given ShowProperty[Int] = _.show
@@ -609,22 +602,15 @@ package pseudo:
   val root = Selector.PseudoClass(t"root")
   val empty = Selector.PseudoClass(t"empty")
   
-  def nthChild(a: Int, b: Int) =
-    Selector.PseudoClass(t"nth-child(${if a == 0 then t"$b" else if b != 0 then t"${a}n+$b" else t"${a}n"})")
-  
-  def nthLastChild(a: Int, b: Int) =
-    Selector.PseudoClass(t"nth-last-child(${if a == 0 then t"$b" else if b != 0 then t"${a}n+$b" else t"${a}n"})")
+  private def expr(a: Int, b: Int): Text = if a == 0 then t"$b" else if b != 0 then t"${a}n+$b" else t"${a}n"
+  def nthChild(a: Int, b: Int) = Selector.PseudoClass(t"nth-child(${expr(a, b)})")
+  def nthLastChild(a: Int, b: Int) = Selector.PseudoClass(t"nth-last-child(${expr(a, b)})")
+  def nthOfType(a: Int, b: Int) = Selector.PseudoClass(t"nth-of-type(${expr(a, b)})")
+  def nthLastOfType(a: Int, b: Int) = Selector.PseudoClass(t"nth-last-of-type(${expr(a, b)})")
   
   val firstChild = Selector.PseudoClass(t"first-child")
   val lastChild = Selector.PseudoClass(t"last-child")
   val onlyChild = Selector.PseudoClass(t"only-child")
-  
-  def nthOfType(a: Int, b: Int) =
-    Selector.PseudoClass(t"nth-of-type(${if b == 0 then t"${a}n+$b" else t"${a}n"})")
-  
-  def nthLastOfType(a: Int, b: Int) =
-    Selector.PseudoClass(t"nth-last-of-type(${if b == 0 then t"${a}n+$b" else t"${a}n"})")
-  
   val firstOfType = Selector.PseudoClass(t"first-of-type")
   val lastOfType = Selector.PseudoClass(t"last-of-type")
   val onlyOfType = Selector.PseudoClass(t"only-of-type")
