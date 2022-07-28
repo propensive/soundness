@@ -18,7 +18,6 @@ package rudiments
 
 import scala.collection.IterableFactory
 import scala.compiletime.*, ops.int.*
-import scala.concurrent.*
 
 import java.util.regex.*
 import java.io as ji
@@ -41,7 +40,6 @@ export Predef.{nn, genericArrayOps, identity, summon, charWrapper, $conforms, Ar
     intWrapper, longWrapper, shortWrapper, byteWrapper, valueOf, doubleWrapper, floatWrapper,
     classOf, locally}
 
-export scala.concurrent.{Future, ExecutionContext}
 export scala.util.control.NonFatal
 export scala.jdk.CollectionConverters.*
 export scala.annotation.{tailrec, implicitNotFound, targetName, switch, StaticAnnotation}
@@ -155,31 +153,7 @@ extension [T](opt: Option[T])
 
 case class Counter(first: Int = 0):
   private var id: Int = first
-  def apply(): Int = synchronized(id.tap { _ => id += 1 })
-
-// object Task:
-//   private val count: Counter = Counter()
-//   private def nextName(): Text = Text(s"rudiments-${count()}")
-
-//   @targetName("make")
-//   def apply[T](fn: Cancelable ?=> T)(using cancelable: Cancelable): Task[T] = Task(ctx => fn(using cancelable))
-
-// case class CancelError()(using Codepoint) extends Error(err"the operation was cancelled")(pos)
-
-// case class Task[T] private(fn: Cancelable => T):
-//   private val result: Promise[T] = Promise()
-//   private val name = Task.nextName()
-//   private val runnable: Runnable = () => result.complete(Try(fn(cancelable)))
-//   private val thread: Thread = Thread(runnable, name.s)
-//   def cancel(): Unit = cancelable.cancel()
-  
-//   def apply(): Promise[T] =
-//     thread.start()
-//     result
-
-// class Cancelable(set: () => Unit, get: () => Boolean):
-//   def cancel(): Unit = set()
-//   def affirm(): Unit throws CancelError = if !get() then throw CancelError()
+  def apply(): Int = synchronized(id.tap((id += 1).waive))
 
 trait Encoding:
   def name: Text
@@ -212,23 +186,6 @@ extends Error(err"the sequence contained more than one element that mapped to th
 case class TimeoutError()(using Codepoint)
 extends Error(err"an operation did not complete in the time it was given")(pos)
 
-extension [T](future: Future[T])
-  def await(): T = Await.result(future, duration.Duration.Inf)
-  
-  def timeout(timeout: Long)(using ExecutionContext): Future[T] =
-    val p = Promise[T]
-    val timerTask: ju.TimerTask = () => p.tryFailure(TimeoutError())
-    
-    Timer.schedule(timerTask, timeout)
-
-    future.map: a =>
-      if p.trySuccess(a) then timerTask.cancel()
-    .recover:
-      case e: Exception =>
-        if p.tryFailure(e) then timerTask.cancel()
-
-    p.future
-
 extension[T](xs: Seq[T])
   def random: T = xs(util.Random().nextInt(xs.length))
   transparent inline def shuffle: Seq[T] = util.Random().shuffle(xs)
@@ -249,10 +206,9 @@ extension (bs: Long)
 
 opaque type ByteSize = Long
 
-class Trigger():
-  private val promise: Promise[Trigger] = Promise()
-  def pull(): Unit = synchronized(if !promise.isCompleted then promise.complete(Success(this)))
-  def future: Future[Trigger] = promise.future
+// class Trigger():
+//   private val promise: Promise[Trigger] = Promise()
+//   def pull(): Unit = synchronized(safely(promise.supply(this)))
 
 object ByteSize:
   given Ordering[ByteSize] = Ordering.Long.on(_.long)
