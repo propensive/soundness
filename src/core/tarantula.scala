@@ -24,7 +24,8 @@ import cataclysm.*
 import honeycomb.*
 import eucalyptus.*
 import rudiments.*
-import anticipation.*
+import parasitism.*
+import anticipation.*, timekeeping.long
 
 import unsafeExceptions.canThrowAny
 import annotation.targetName
@@ -35,25 +36,25 @@ trait Browser(name: Text):
   case class Server(port: Int, value: Process[Text]):
     def stop()(using Log): Unit = browser.stop(this)
 
-  def launch(port: Int)(using Env, Log): Server
+  def launch(port: Int)(using Env, Log, Monitor): Server
   def stop(server: Server)(using Log): Unit
 
-  def session[T](port: Int = 4444)(fn: WebDriver#Session ?=> T)(using Env, Log): T =
+  def session[T](port: Int = 4444)(fn: WebDriver#Session ?=> T)(using Env, Log, Monitor): T =
     val server = launch(port)
     try fn(using WebDriver(server).startSession()) finally server.stop()
 
 object Firefox extends Browser(t"firefox"):
-  def launch(port: Int)(using Env, Log): Server =
+  def launch(port: Int)(using Env, Log, Monitor): Server =
     val server: Process[Text] = sh"geckodriver --port $port".fork()
-    Thread.sleep(100)
+    sleep(100L)
     Server(port, server)
 
   def stop(server: Server)(using Log): Unit = server.value.abort()
 
 object Chrome extends Browser(t"chrome"):
-  def launch(port: Int)(using Env, Log): Server =
+  def launch(port: Int)(using Env, Log, Monitor): Server =
     val server: Process[Text] = sh"chromedriver --port=$port".fork()
-    Thread.sleep(100)
+    sleep(100L)
     Server(port, server)
 
   def stop(server: Server)(using Log): Unit = server.value.abort()
