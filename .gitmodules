@@ -134,3 +134,9 @@
 [submodule "mod/surveillance"]
 	path = mod/surveillance
 	url = https://github.com/propensive/surveillance
+[submodule "mod/cardinality"]
+	path = mod/cardinality
+	url = https://github.com/propensive/cardinality
+[submodule "mod/parasitism"]
+	path = mod/parasitism
+	url = git@github.com:propensive/parasitism
