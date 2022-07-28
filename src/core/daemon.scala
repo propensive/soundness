@@ -19,13 +19,13 @@ package exoskeleton
 import joviality.*
 import gossamer.*
 import rudiments.*
+import parasitism.*
 import turbulence.*
 import escapade.*
 import profanity.*
 import serpentine.*
 import eucalyptus.*
 
-import scala.concurrent.*
 import scala.util.*
 
 import sun.misc as sm
@@ -65,7 +65,7 @@ enum Signal:
 trait Daemon() extends App:
   daemon =>
 
-  private val spawnCount: AtomicInteger = AtomicInteger(0)
+  private val spawnCount: Counter = Counter(0)
 
   val signalHandler: PartialFunction[Signal, Unit] = PartialFunction.empty
 
@@ -74,17 +74,17 @@ trait Daemon() extends App:
       signal =>
         if signalHandler.isDefinedAt(signal)
         then sm.Signal.handle(sm.Signal(signal.shortName.s), _ => signalHandler(signal))
+    supervise(t"exoskeleton"):
+      args.to(List) match
+        case _ =>
+          val script = Sys.exoskeleton.script()
+          val fifo = Sys.exoskeleton.fifo()
+          val pid = Sys.exoskeleton.pid().toString.toInt
+          val watch = Sys.exoskeleton.watch().toString.toInt
+          
+          Task(t"dispatcher")(server(script, fifo, pid.toString.toInt, watch))
 
-    args.to(List) match
-      case _ =>
-        val script = Sys.exoskeleton.script()
-        val fifo = Sys.exoskeleton.fifo()
-        val pid = Sys.exoskeleton.pid().toString.toInt
-        val watch = Sys.exoskeleton.watch().toString.toInt
-        val runnable: Runnable = () => server(script, fifo, pid.toString.toInt, watch)
-        Thread(runnable, "exoskeleton-dispatcher").start()
-
-  def server(script: Text, fifo: Text, serverPid: Int, watchPid: Int): Unit =
+  def server(script: Text, fifo: Text, serverPid: Int, watchPid: Int)(using Monitor): Unit =
     val socket: DiskPath[Unix] = Unix.parse(fifo)
     
     val death: Runnable = () => try socket.file().delete() catch case e: Exception => ()
@@ -92,9 +92,6 @@ trait Daemon() extends App:
     ProcessHandle.of(watchPid).nn.get.nn.onExit.nn.thenRun:
       () => sys.exit(2)
    
-    Runtime.getRuntime.nn.addShutdownHook:
-      Thread(death, "exoskeleton-cleanup")
-
     case class AppInstance(pid: Int, spawnId: Int, scriptFile: Maybe[File[Unix]] = Unset,
                                args: List[Text] = Nil, env: Map[Text, Text] = Map(),
                                runDir: Maybe[Directory[Unix]] = Unset):
@@ -107,43 +104,39 @@ trait Daemon() extends App:
 
       def resize(): Unit = signals.put(())
 
-      def spawn(): Unit =
-        val runnable: Runnable = () =>
-          lazy val out = Fifo[Unix]:
-            val file = (runDir.otherwise(sys.exit(1)) / t"$script-$pid.stdout.sock").file(Expect)
-            file.javaFile.deleteOnExit()
-            file
-          
-          try
-            val script = scriptFile.otherwise(sys.exit(1)).name
-            val fifoIn = (runDir.otherwise(sys.exit(1)) / t"$script-$pid.stdin.sock").file(Expect)
-            fifoIn.javaFile.deleteOnExit()
-            val terminate = Promise[Int]()
-            val workDir = pwd.otherwise(sys.exit(1))
-            
-            lazy val exitFile = (runDir.otherwise(sys.exit(1)) / t"$script-$pid.exit").file()
-            exitFile.javaFile.deleteOnExit()
-            
-            def interactive(): Unit = 99.show.bytes.writeTo(exitFile)
-            
-            val commandLine = CommandLine(args, env, scriptFile.otherwise(sys.exit(1)),
-                LazyList() #::: fifoIn.read[DataStream](1.mb), _.writeTo(out),
-                exit => terminate.complete(util.Success(exit)), workDir, () => sys.exit(0),
-                () => interactive(), signals.stream)
-            
-            val exit = main(using commandLine)
-            out.close()
-            exit().show.bytes.writeTo(exitFile)
-          
-          catch
-            case err: IoError =>
-              ()
-            case NonFatal(err) =>
-              given Stdout = Stdout(out)
-              Out.println(StackTrace(err).ansi)
+      def spawn(): Task[Unit] = Task(t"spawn"):
+        lazy val out = Fifo[Unix]:
+          val file = (runDir.otherwise(sys.exit(1)) / t"$script-$pid.stdout.sock").file(Expect)
+          file.javaFile.deleteOnExit()
+          file
         
-        val thread = Thread(runnable, t"exoskeleton-$spawnId".s)
-        thread.start()
+        try
+          val script = scriptFile.otherwise(sys.exit(1)).name
+          val fifoIn = (runDir.otherwise(sys.exit(1)) / t"$script-$pid.stdin.sock").file(Expect)
+          fifoIn.javaFile.deleteOnExit()
+          val terminate = Promise[Int]()
+          val workDir = pwd.otherwise(sys.exit(1))
+          
+          lazy val exitFile = (runDir.otherwise(sys.exit(1)) / t"$script-$pid.exit").file()
+          exitFile.javaFile.deleteOnExit()
+          
+          def interactive(): Unit = 99.show.bytes.writeTo(exitFile)
+          
+          val commandLine = CommandLine(args, env, scriptFile.otherwise(sys.exit(1)),
+              LazyList() #::: fifoIn.read[DataStream](1.mb), _.writeTo(out),
+              exit => terminate.supply(exit), workDir, () => sys.exit(0),
+              () => interactive(), signals.stream)
+          
+          val exit = main(using commandLine)
+          out.close()
+          exit().show.bytes.writeTo(exitFile)
+        
+        catch
+          case err: IoError =>
+            ()
+          case NonFatal(err) =>
+            given Stdout = Stdout(out)
+            Out.println(StackTrace(err).ansi)
     
     def parseEnv(env: List[Text]): Map[Text, Text] = env.flatMap:
       pair =>
@@ -156,7 +149,7 @@ trait Daemon() extends App:
       case (map, line) =>
         line.text.cut(t"\t").to(List) match
           case t"PROCESS" :: As[Int](pid) :: _ =>
-            map.updated(pid.toString.toInt, AppInstance(pid, spawnCount.getAndIncrement()))
+            map.updated(pid.toString.toInt, AppInstance(pid, spawnCount()))
           
           case t"RUNDIR" :: As[Int](pid) :: dir :: _ =>
             safely(Unix.parse(dir)).option.fold(map): dir =>
