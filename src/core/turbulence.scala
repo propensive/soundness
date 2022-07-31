@@ -38,48 +38,6 @@ import scala.util.{Try, Success, Failure}
 
 import java.util.concurrent as juc
 
-case class OverallocationError(tags: Allocator.Tag*)(using Codepoint)
-extends Error(err"attempted to allocated more memory than available for $tags")(pos)
-
-object Allocator:
-  object Total extends Tag()
-  case class Tag()
-
-  given Allocator = tag => 10.mb
-
-abstract class Allocator():
-  private var allocations: scm.Map[Allocator.Tag, ByteSize] = HashMap().withDefault(0.b.waive)
-  private var weakRefs: scm.Map[jlr.Reference[?], (ByteSize, Set[Allocator.Tag])] = HashMap()
-  private val queue: jlr.ReferenceQueue[Array[Byte]] = jlr.ReferenceQueue()
-  @volatile private var continue = false
- 
-  @tailrec
-  private def process(): Unit =
-    synchronized:
-      Option(queue.remove(100)).map(_.nn).foreach: ref =>
-        val (size, tags) = weakRefs(ref)
-  
-        tags.foreach: tag =>
-          allocations(tag) -= size
-    
-    if continue then process()
-
-  def release(tag: Allocator.Tag, size: ByteSize): Unit = synchronized:
-    allocations(tag) -= size
-  
-  def limit(tag: Allocator.Tag): ByteSize
-
-  def allocate(size: ByteSize, tags: Allocator.Tag*): Array[Byte] throws OverallocationError = synchronized:
-    val excess = tags.filter: tag =>
-      allocations(tag) + size > limit(tag)
-    
-    if !allocations.isEmpty then throw OverallocationError(excess*) else
-      val array = new Array[Byte](size.long.toInt)
-      val ref = jlr.WeakReference(array, queue)
-      weakRefs(ref) = size -> tags.to(Set)
-      tags.foreach(allocations(_) += size)
-      array
-
 type DataStream = LazyList[IArray[Byte] throws StreamCutError]
 
 extension (value: DataStream)
@@ -97,12 +55,12 @@ case class StreamCutError()(using Codepoint) extends Error(err"the stream was cu
 
 object Util:
 
-  def readInputStream(in: ji.InputStream, limit: ByteSize, tags: Allocator.Tag*)
+  def readInputStream(in: ji.InputStream, limit: ByteSize, rubrics: Rubric*)
                       (using allocator: Allocator)
                       : DataStream =
     val channel = jnc.Channels.newChannel(in).nn
     try
-      val buf = jn.ByteBuffer.wrap(allocator.allocate(1.mb, tags*)).nn
+      val buf = jn.ByteBuffer.wrap(allocator.allocate(1.mb, rubrics*)).nn
 
       def recur(): DataStream =
         channel.read(buf) match
@@ -115,7 +73,7 @@ object Util:
             try
               buf.flip()
               val size = count min 65536
-              val array = allocator.allocate(size.b, tags*)
+              val array = allocator.allocate(size.b, rubrics*)
               buf.get(array)
               buf.clear()
               array.immutable(using Unsafe) #:: recur()
@@ -126,26 +84,6 @@ object Util:
     catch case err: OverallocationError =>
       LazyList(throw StreamCutError()): DataStream
 
-  // def readInputStream(in: ji.InputStream, limit: ByteSize): DataStream = in match
-  //   case in: ji.BufferedInputStream =>
-  //     def read(): DataStream =
-  //       try
-  //         val avail = in.available
-          
-  //         val buf = new Array[Byte](if avail == 0 then limit.long.toInt else avail min
-  //             limit.long.toInt)
-          
-  //         val count = in.read(buf, 0, buf.length)
-  //         if count < 0 then LazyList()
-  //         else if avail == 0 then buf.slice(0, count).immutable(using Unsafe) #:: read()
-  //         else buf.immutable(using Unsafe) #:: read()
-  //       catch case error: ji.IOException => LazyList(throw StreamCutError())
-
-  //     read()
-    
-  //   case in: ji.InputStream =>
-  //     readInputStream(ji.BufferedInputStream(in), limit)
-  
   def write(stream: DataStream, out: ji.OutputStream): Unit throws StreamCutError =
     stream.map(_.mutable(using Unsafe)).foreach(out.write(_))
 
@@ -314,8 +252,8 @@ extension [T](stream: LazyList[T])
       case LazyList() =>
         LazyList()
       case head #:: tail =>
-        val delay = time.to(interval) - (System.currentTimeMillis - last)
-        if delay > 0 then sleep(time.from(delay))
+        val delay = time.from(time.to(interval) - (System.currentTimeMillis - last))
+        if time.to(delay) > 0 then sleep(delay)
         stream
       case _ =>
         throw Mistake("Should never match")
@@ -373,7 +311,7 @@ object StreamBuffer:
     
     def write(buffer: StreamBuffer[Bytes throws StreamCutError], stream: DataStream) =
       stream.foreach(buffer.put(_))
-  
+
 class StreamBuffer[T]():
   private val primary: juc.LinkedBlockingQueue[Maybe[T]] = juc.LinkedBlockingQueue()
   private val secondary: juc.LinkedBlockingQueue[Maybe[T]] = juc.LinkedBlockingQueue()
