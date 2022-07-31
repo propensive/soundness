@@ -18,6 +18,7 @@ package turbulence
 
 import rudiments.*
 import anticipation.*
+import tetromino.*
 import parasitism.*
 
 import scala.collection.IterableFactory
@@ -88,7 +89,7 @@ object Util:
     stream.map(_.mutable(using Unsafe)).foreach(out.write(_))
 
 object Source:
-  given Source[SystemIn.type] with
+  given (using Allocator): Source[SystemIn.type] with
     type E = StreamCutError
     def read(value: SystemIn.type): DataStream throws StreamCutError =
       if System.in == null then throw StreamCutError() else Util.readInputStream(System.in, 10.mb)
