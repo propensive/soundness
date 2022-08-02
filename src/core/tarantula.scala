@@ -36,15 +36,15 @@ trait Browser(name: Text):
   case class Server(port: Int, value: Process[Text]):
     def stop()(using Log): Unit = browser.stop(this)
 
-  def launch(port: Int)(using Env, Log, Monitor): Server
+  def launch(port: Int)(using Environment, Log, Monitor): Server
   def stop(server: Server)(using Log): Unit
 
-  def session[T](port: Int = 4444)(fn: WebDriver#Session ?=> T)(using Env, Log, Monitor): T =
+  def session[T](port: Int = 4444)(fn: WebDriver#Session ?=> T)(using Environment, Log, Monitor): T =
     val server = launch(port)
     try fn(using WebDriver(server).startSession()) finally server.stop()
 
 object Firefox extends Browser(t"firefox"):
-  def launch(port: Int)(using Env, Log, Monitor): Server =
+  def launch(port: Int)(using Environment, Log, Monitor): Server =
     val server: Process[Text] = sh"geckodriver --port $port".fork()
     sleep(100L)
     Server(port, server)
@@ -52,7 +52,7 @@ object Firefox extends Browser(t"firefox"):
   def stop(server: Server)(using Log): Unit = server.value.abort()
 
 object Chrome extends Browser(t"chrome"):
-  def launch(port: Int)(using Env, Log, Monitor): Server =
+  def launch(port: Int)(using Environment, Log, Monitor): Server =
     val server: Process[Text] = sh"chromedriver --port=$port".fork()
     sleep(100L)
     Server(port, server)
@@ -61,8 +61,8 @@ object Chrome extends Browser(t"chrome"):
 
 def browser(using WebDriver#Session): WebDriver#Session = summon[WebDriver#Session]
 
-case class WebDriverError(error: Text, wdMsg: Text, browserStacktrace: List[Text])(using Codepoint)
-extends Error(err"the action caused the error $error in the browser, with the message: $wdMsg")(pos)
+case class WebDriverError(error: Text, wdMsg: Text, browserStacktrace: List[Text])
+extends Error(err"the action caused the error $error in the browser, with the message: $wdMsg")
 
 case class WebDriver(server: Browser#Server):
   private transparent inline def wd: this.type = this
