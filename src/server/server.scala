@@ -18,6 +18,7 @@ package scintillate
 
 import rudiments.*
 import parasitism.*
+import tetromino.*
 import turbulence.*
 import gossamer.*
 import gastronomy.*
@@ -33,8 +34,7 @@ import java.io.*
 import java.text as jt
 import com.sun.net.httpserver.{HttpServer as JavaHttpServer, *}
 
-case class MissingParamError(key: Text)(using Codepoint)
-extends Error(err"the parameter $key was not sent in the request")(pos)
+case class MissingParamError(key: Text) extends Error(err"the parameter $key was not sent in the request")
 
 trait Responder:
   def sendBody(status: Int, body: HttpBody): Unit
@@ -122,7 +122,7 @@ case class Response[T](content: T, status: HttpStatus = HttpStatus.Ok,
 object Request:
   given Show[Request] = request =>
     val bodySample: Text =
-      try request.body.stream.slurp(limit = 256.b).uString catch
+      try request.body.stream.slurp().uString catch
         case err: ExcessDataError => t"[...]"
         case err: StreamCutError  => t"[-/-]"
     
@@ -164,7 +164,7 @@ case class Request(method: HttpMethod, body: HttpBody.Chunked, query: Text, ssl:
         if (method == HttpMethod.Post || method == HttpMethod.Put) &&
             (contentType == Some(media"application/x-www-form-urlencoded") || contentType == None)
         then
-          Map[Text, Text](body.stream.slurp(limit = 1.mb).uString.cut(t"&").map(_.cut(t"=", 2).to(Seq) match
+          Map[Text, Text](body.stream.slurp().uString.cut(t"&").map(_.cut(t"=", 2).to(Seq) match
             case Seq(key: Text)              => key.urlDecode.show -> t""
             case Seq(key: Text, value: Text) => key.urlDecode.show -> value.urlDecode.show
             case _                         => throw Mistake("key/value pair does not match")
