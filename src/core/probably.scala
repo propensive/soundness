@@ -424,8 +424,8 @@ def suite(name: Text)(fn: Runner ?=> Unit)(using runner: Runner, log: Log): Unit
 def suite(suite: TestSuite)(using runner: Runner, log: Log): Unit = runner.suite(suite)
 def time[T](name: Text)(fn: => T)(using Runner, Log): T = test(name)(fn).check { _ => true }
 
-case class UnexpectedSuccessError[T](value: T)(using Codepoint)
-extends Error(err"the expression was expected to throw an exception, but instead returned $value")(pos)
+case class UnexpectedSuccessError[T](value: T)
+extends Error(err"the expression was expected to throw an exception, but instead returned $value")
 
 transparent inline def capture[T](fn: => CanThrow[Exception] ?=> T)
                      : Exception throws UnexpectedSuccessError[T] =
