@@ -23,6 +23,7 @@ import parasitism.*
 import turbulence.*
 import escapade.*
 import profanity.*
+import tetromino.*
 import serpentine.*
 import eucalyptus.*
 
@@ -47,7 +48,7 @@ extends Stdout, InputSource:
   def write(msg: Text): Unit = stdout(LazyList(msg.bytes))
   def cleanup(tty: Tty): Unit = ()
   
-  def init()(using Log): Tty throws TtyError =
+  def init()(using Log, Allocator): Tty throws TtyError =
     interactive()
     Tty(System.out.nn, stdin)
 
@@ -62,19 +63,19 @@ enum Signal:
   def name: Text = t"SIG${this.toString.show.upper}"
   def id: Int = if ordinal < 15 then ordinal - 1 else ordinal
 
+
 trait Daemon() extends App:
-  daemon =>
-
   private val spawnCount: Counter = Counter(0)
-
   val signalHandler: PartialFunction[Signal, Unit] = PartialFunction.empty
 
   final def main(args: IArray[Text]): Unit =
-    Signal.values.foreach:
-      signal =>
-        if signalHandler.isDefinedAt(signal)
-        then sm.Signal.handle(sm.Signal(signal.shortName.s), _ => signalHandler(signal))
+    Signal.values.foreach: signal =>
+      if signalHandler.isDefinedAt(signal)
+      then sm.Signal.handle(sm.Signal(signal.shortName.s), _ => signalHandler(signal))
+    
     supervise(t"exoskeleton"):
+      given Allocator = allocators.default
+      
       args.to(List) match
         case _ =>
           val script = Sys.exoskeleton.script()
@@ -84,7 +85,9 @@ trait Daemon() extends App:
           
           Task(t"dispatcher")(server(script, fifo, pid.toString.toInt, watch))
 
-  def server(script: Text, fifo: Text, serverPid: Int, watchPid: Int)(using Monitor): Unit =
+  def server(script: Text, fifo: Text, serverPid: Int, watchPid: Int, rubrics: Rubric*)
+            (using Allocator, Monitor)
+            : Unit =
     val socket: DiskPath[Unix] = Unix.parse(fifo)
     
     val death: Runnable = () => try socket.file().delete() catch case e: Exception => ()
@@ -123,7 +126,7 @@ trait Daemon() extends App:
           def interactive(): Unit = 99.show.bytes.writeTo(exitFile)
           
           val commandLine = CommandLine(args, env, scriptFile.otherwise(sys.exit(1)),
-              LazyList() #::: fifoIn.read[DataStream](1.mb), _.writeTo(out),
+              LazyList() #::: fifoIn.read[DataStream](), _.writeTo(out),
               exit => terminate.supply(exit), workDir, () => sys.exit(0),
               () => interactive(), signals.stream)
           
@@ -145,7 +148,7 @@ trait Daemon() extends App:
           case _                => Nil
     .to(Map)
 
-    socket.file(Expect).read[LazyList[Line]](256.kb).foldLeft(Map[Int, AppInstance]()):
+    socket.file(Expect).read[LazyList[Line]](rubrics*).foldLeft(Map[Int, AppInstance]()):
       case (map, line) =>
         line.text.cut(t"\t").to(List) match
           case t"PROCESS" :: As[Int](pid) :: _ =>
