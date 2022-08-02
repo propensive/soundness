@@ -19,6 +19,7 @@ package eucalyptus
 import gossamer.*
 import escapade.*
 import rudiments.*
+import parasitism.*
 import turbulence.*
 import iridescence.*
 
@@ -94,14 +95,14 @@ object EucalyptusMacros:
     }
 
 
-case class Log(actions: PartialFunction[Entry, LogSink]*):
+case class Log(actions: PartialFunction[Entry, LogSink]*)(using Monitor):
   private val funnels: HashMap[LogSink, Funnel[Entry]] = HashMap()
   
   private def put(target: LogSink, entry: Entry): Unit =
     if !funnels.contains(target) then
       synchronized:
         val funnel = Funnel[Entry]()
-        Task(target.write(funnel.stream))
+        Task(t"logger")(target.write(funnel.stream))
         funnels(target) = funnel
 
     funnels(target).put(entry)
@@ -109,8 +110,8 @@ case class Log(actions: PartialFunction[Entry, LogSink]*):
   def record(entry: Entry): Unit = actions.flatMap(_.lift(entry)).foreach(put(_, entry))
 
 package logging:
-  given stdout: Log = Log(_ => SystemOut.sink)
-  given silent: Log = Log()
+  given stdout(using Monitor): Log = Log(_ => SystemOut.sink)
+  given silent: Log = Log()(using Supervisor(t"none"))
 
 object LogSink:
   def apply[S](sink: S, writable: Writable[S], format: LogFormat[S]): LogSink = new LogSink:
