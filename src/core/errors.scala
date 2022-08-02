@@ -9,10 +9,9 @@ extension (ctx: StringContext)
     case value: Tuple => ErrorMessage[value.type](ctx.parts.map(Text(_)), value)
     case other        => ErrorMessage[T *: EmptyTuple](ctx.parts.map(Text(_)), other *: EmptyTuple)
 
-abstract class Error[T <: Tuple]
-                    (val msg: ErrorMessage[T], val cause: Maybe[Error[?]] = Unset)
-                    (val codepoint: Codepoint)
+abstract class Error[T <: Tuple](val msg: ErrorMessage[T], val cause: Maybe[Error[?]] = Unset)
 extends Exception():
+  this: Error[T] =>
   def fullClass: List[Text] = List(getClass.nn.getName.nn.split("\\.").nn.map(_.nn).map(Text(_))*)
   def className: Text = fullClass.last
   def component: Text = fullClass.head
@@ -56,8 +55,6 @@ object StackTrace:
 
 case class StackTrace(component: Text, className: Text, message: Text, frames: List[StackTrace.Frame],
                           cause: Maybe[StackTrace])
-
-inline def pos(using Codepoint): Codepoint = summon[Codepoint]
 
 object Codepoint:
   inline given Codepoint = ${RudimentsMacros.location}

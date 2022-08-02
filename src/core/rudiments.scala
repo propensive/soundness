@@ -16,6 +16,8 @@
 
 package rudiments
 
+import anticipation.*
+
 import scala.collection.IterableFactory
 import scala.compiletime.*, ops.int.*
 
@@ -41,7 +43,10 @@ export Predef.{nn, genericArrayOps, identity, summon, charWrapper, $conforms, Ar
     classOf, locally}
 
 export scala.util.control.NonFatal
-export scala.jdk.CollectionConverters.*
+
+export scala.jdk.CollectionConverters.{IteratorHasAsScala, ListHasAsScala, MapHasAsScala, SeqHasAsJava,
+    MapHasAsJava, EnumerationHasAsScala}
+
 export scala.annotation.{tailrec, implicitNotFound, targetName, switch, StaticAnnotation}
 
 type Bytes = IArray[Byte]
@@ -117,7 +122,7 @@ object Sys extends Dynamic:
   def applyDynamic(key: String)(): Text throws KeyNotFoundError = selectDynamic(key).apply()
   def bigEndian: Boolean = java.nio.ByteOrder.nativeOrder == java.nio.ByteOrder.BIG_ENDIAN
 
-case class KeyNotFoundError(name: Text)(using Codepoint) extends Error(err"key $name not found")(pos)
+case class KeyNotFoundError(name: Text) extends Error(err"key $name not found")
 
 object Mistake:
   def apply(error: Exception): Mistake =
@@ -180,11 +185,10 @@ extension [T](xs: Iterable[T])
 
 object Timer extends ju.Timer(true)
 
-case class DuplicateIndexError()(using Codepoint)
-extends Error(err"the sequence contained more than one element that mapped to the same index")(pos)
+case class DuplicateIndexError()
+extends Error(err"the sequence contained more than one element that mapped to the same index")
 
-case class TimeoutError()(using Codepoint)
-extends Error(err"an operation did not complete in the time it was given")(pos)
+case class TimeoutError() extends Error(err"an operation did not complete in the time it was given")
 
 extension[T](xs: Seq[T])
   def random: T = xs(util.Random().nextInt(xs.length))
@@ -291,8 +295,14 @@ package environments:
 class Environment(getEnv: Text => Option[Text]):
   def apply(variable: Text): Option[Text] = getEnv(variable)
 
-case class EnvError(variable: Text)(using Codepoint)
-extends Error(err"the environment variable $variable was not found")(pos)
+def pwd[F]()(using env: Environment, mkdir: DirectoryProvider[F]): F throws PwdError =
+  env(Text("PWD")).flatMap(mkdir.make(_)).getOrElse(throw PwdError())
+
+case class EnvError(variable: Text)
+extends Error(err"the environment variable $variable was not found")
+
+case class PwdError()
+extends Error(err"the current working directory cannot be determined")
 
 sealed class Internet()
 

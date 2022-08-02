@@ -18,7 +18,7 @@ package rudiments
 
 import scala.compiletime.*
 
-case class IncompatibleTypeError()(using Codepoint) extends Error(err"the value is not compatible")(pos)
+case class IncompatibleTypeError() extends Error(err"the value is not compatible")
 
 extension (value: Any)
   transparent inline def as[To](using Unapply[value.type, To]): To throws IncompatibleTypeError =
