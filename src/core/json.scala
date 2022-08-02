@@ -19,6 +19,7 @@ package euphemism
 import wisteria.*
 import rudiments.*
 import turbulence.*
+import tetromino.*
 import gossamer.*
 import anticipation.*
 
@@ -32,8 +33,8 @@ import scala.deriving.*
 
 import language.dynamics
 
-case class JsonParseError(line: Int, column: Int, detail: Text)(using Codepoint)
-extends Error(err"could not parse JSON at line $line, column $column: $detail")(pos)
+case class JsonParseError(line: Int, column: Int, detail: Text)
+extends Error(err"could not parse JSON at line $line, column $column: $detail")
 
 object JsonAccessError:
   enum Reason:
@@ -49,8 +50,8 @@ object JsonAccessError:
 
 import JsonAccessError.Reason
 
-case class JsonAccessError(reason: JsonAccessError.Reason)(using Codepoint)
-extends Error(err"could not access the value because $reason")(pos)
+case class JsonAccessError(reason: JsonAccessError.Reason)
+extends Error(err"could not access the value because $reason")
 
 object JsonPrimitive:
   given Show[JsonPrimitive] = Showable(_).show
@@ -75,8 +76,8 @@ object Json extends Dynamic:
 
   given (using readable: Readable[Text]): Readable[Json] with
     type E = JsonParseError | readable.E
-    def read(stream: DataStream) = Json.parse(readable.read(stream))
-    
+    def read(stream: DataStream, rubrics: Rubric*): Json throws StreamCutError | E =
+      Json.parse(readable.read(stream))
 
   object Writer extends Derivation[Writer]:
     given Writer[Int] = JNum(_)
