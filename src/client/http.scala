@@ -20,6 +20,7 @@ import gossamer.*
 import rudiments.*
 import turbulence.*
 import gesticulate.*
+import tetromino.*
 import wisteria.*
 import eucalyptus.*
 import iridescence.*
@@ -106,21 +107,21 @@ object HttpReadable:
       body match
         case HttpBody.Empty         => t""
         case HttpBody.Data(body)    => body.uString
-        case HttpBody.Chunked(body) => body.slurp(limit = 10.mb).uString
+        case HttpBody.Chunked(body) => body.slurp(HttpRubric).uString
   
   given HttpReadable[Bytes] with
     type E = Nothing
     def read(status: HttpStatus, body: HttpBody): Bytes throws ExcessDataError | StreamCutError | E = body match
       case HttpBody.Empty         => IArray()
       case HttpBody.Data(body)    => body
-      case HttpBody.Chunked(body) => body.slurp(limit = 10.mb)
+      case HttpBody.Chunked(body) => body.slurp(HttpRubric)
 
   given [T, E2 <: Exception](using reader: HttpReader[T, E2]): HttpReadable[T] with
     type E = E2
     def read(status: HttpStatus, body: HttpBody): T throws ExcessDataError | StreamCutError | E2 = body match
       case HttpBody.Empty         => reader.read("")
       case HttpBody.Data(data)    => reader.read(data.uString.s)
-      case HttpBody.Chunked(data) => reader.read(data.slurp(limit = 10.mb).uString.s)
+      case HttpBody.Chunked(data) => reader.read(data.slurp(HttpRubric).uString.s)
 
   given HttpReadable[HttpStatus] with
     type E = StreamCutError
@@ -255,8 +256,8 @@ object Http:
       case conn: URLConnection =>
         throw Mistake("URL connection is not HTTP")
             
-case class HttpError(status: HttpStatus & FailureCase, body: HttpBody)(using Codepoint)
-extends Error(err"HTTP error $status")(pos):
+case class HttpError(status: HttpStatus & FailureCase, body: HttpBody)
+extends Error(err"HTTP error $status"):
   inline def as[T](using readable: HttpReadable[T])
                   : T throws ExcessDataError | StreamCutError | readable.E =
     readable.read(status, body)
@@ -476,3 +477,5 @@ extension (uri: Uri)
   
   def connect(headers: RequestHeader.Value*)(using Internet, Log): HttpResponse throws StreamCutError =
     Http.connect(uri, headers*)
+
+object HttpRubric extends Rubric()
