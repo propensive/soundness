@@ -1,4 +1,13 @@
 {
+  "repos": [
+    {
+      "base": "../anticipation",
+      "url": "https://github.com/propensive/anticipation"
+    }
+  ],
+  "imports": [
+    "../anticipation/build.irk"
+  ],
   "publishing": {
     "username": "propensive",
     "group": "com.propensive",
@@ -21,6 +30,7 @@
     {
       "name": "Rudiments",
       "id": "rudiments/core",
+      "links": ["anticipation/file"],
       "sources": [
         "src/core"
       ],
