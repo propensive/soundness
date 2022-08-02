@@ -22,6 +22,7 @@ import eucalyptus.*
 import escapade.*
 import iridescence.*
 import turbulence.*
+import tetromino.*
 
 import com.sun.jna.*
 import sun.misc.Signal
@@ -45,15 +46,14 @@ enum Keypress:
 trait Keyboard[+KeyType]:
   def interpret(bytes: IArray[Byte])(using Log): LazyList[KeyType]
 
-case class TtyError(ttyMsg: Text)(using Codepoint)
-extends Error(err"STDIN is not attached to a TTY: $ttyMsg")(pos)
+case class TtyError(ttyMsg: Text) extends Error(err"STDIN is not attached to a TTY: $ttyMsg")
 
 case class Tty(out: ji.PrintStream, in: DataStream)
 
 object Tty:
   final val noopOut: ji.PrintStream = ji.PrintStream((_ => ()): ji.OutputStream)
 
-  def capture[T](fn: Tty ?=> T)(using Log, InputSource): T throws TtyError =
+  def capture[T](fn: Tty ?=> T)(using Log, Allocator, InputSource): T throws TtyError =
     val tty = summon[InputSource].init()
     Signal.handle(Signal("WINCH"), sig => reportSize()(using tty))
     try Console.withOut(noopOut)(fn(using tty)) finally summon[InputSource].cleanup(tty)
@@ -233,7 +233,7 @@ case class SelectMenu[T](options: List[T], current: T):
 given realm: Realm = Realm(t"profanity")
 
 trait InputSource:
-  def init()(using Log): Tty throws TtyError
+  def init()(using Log, Allocator): Tty throws TtyError
   def cleanup(tty: Tty): Unit
 
 package inputSource:
@@ -243,7 +243,7 @@ object Jvm extends InputSource:
   lazy val libc: Libc = Native.load("c", classOf[Libc]).nn
   lazy val oldTermios: Termios = Termios()
 
-  def init()(using Log): Tty throws TtyError =
+  def init()(using Log, Allocator): Tty throws TtyError =
     Log.fine(ansi"Loading native libc library")
     libc
     Log.fine(ansi"Checking if process in running within a TTY")
@@ -265,7 +265,7 @@ object Jvm extends InputSource:
     Log.info(ansi"Capturing ${colors.Red}(stdout) for TTY input/output")
     Log.info(ansi"Any output to ${colors.Red}(stdout) henceforth will be discarded")
     
-    val tty: Tty = Tty(stdout, Util.readInputStream(System.in.nn, 1.kb))
+    val tty: Tty = Tty(stdout, Util.readInputStream(System.in.nn))
     System.setOut(Tty.noopOut)
     Log.info(ansi"Setting ${colors.Orange}(SIGWINCH) signal handler")
     tty
