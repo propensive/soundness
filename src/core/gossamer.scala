@@ -20,6 +20,7 @@ import rudiments.*
 import turbulence.*
 import contextual.*
 import wisteria.*
+import tetromino.*
 
 import scala.reflect.*
 import scala.util.*
@@ -208,8 +209,8 @@ extension [T](values: Iterable[T])(using joinable: Joinable[T])
   def join(left: T, separator: T, penultimate: T, right: T): T =
     Iterable(left, join(separator, penultimate), right).join
 
-case class OutOfRangeError(idx: Int, from: Int, to: Int)(using Codepoint)
-extends Error(err"the index $idx is outside the range $from-$to")(pos)
+case class OutOfRangeError(idx: Int, from: Int, to: Int)
+extends Error(err"the index $idx is outside the range $from-$to")
 
 case class Showable[T](value: T):
   def show: Text = Text(value.toString)
@@ -316,8 +317,9 @@ case class Line(text: Text)
 
 object Line:
   given lineReader(using enc: Encoding): Readable[LazyList[Line]] with
-    type E = ExcessDataError
-    def read(stream: DataStream) =
+    type E = StreamCutError
+
+    def read(stream: DataStream, rubric: Rubric*): LazyList[Line] throws StreamCutError | E =
       def recur(stream: LazyList[Text], carry: Text = Text("")): LazyList[Line] =
         if stream.isEmpty then
           if carry.isEmpty then LazyList() else LazyList(Line(carry))
