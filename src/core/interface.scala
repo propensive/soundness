@@ -74,10 +74,9 @@ abstract class CaseClass[Typeclass[_], Type]
 end CaseClass
 
 case class SealedTrait[Typeclass[_], Type]
-                      (typeInfo: TypeInfo,
-                       subtypes: IArray[SealedTrait.Subtype[Typeclass, Type, ?]],
-                       annotations: IArray[Any],
-                       typeAnnotations: IArray[Any]) extends Serializable:
+                      (typeInfo: TypeInfo, subtypes: IArray[SealedTrait.Subtype[Typeclass, Type, ?]],
+                           annotations: IArray[Any], typeAnnotations: IArray[Any])
+extends Serializable:
 
   type Subtype[S] = SealedTrait.SubtypeValue[Typeclass, Type, S]
 
@@ -87,31 +86,27 @@ case class SealedTrait[Typeclass[_], Type]
         val sub = subtypes(ix)
         if sub.cast.isDefinedAt(value) then handle(SealedTrait.SubtypeValue(sub, value))
         else rec(ix + 1)
-      else throw IllegalArgumentException(
-          s"The given value `$value` is not a sub type of `$typeInfo`")
+      else throw IllegalArgumentException(s"The given value `$value` is not a sub type of `$typeInfo`")
 
     rec(0)
-end SealedTrait
 
 object SealedTrait:
   class Subtype[Typeclass[_], Type, SType]
-               (val typeInfo: TypeInfo,
-                val annotations: IArray[Any],
-                val typeAnnotations: IArray[Any],
-                index: Int,
-                callByNeed: CallByNeed[Typeclass[SType]],
-                isType: Type => Boolean,
-                asType: Type => SType & Type
-               ) extends PartialFunction[Type, SType & Type], Serializable:
+               (val typeInfo: TypeInfo, val annotations: IArray[Any], val typeAnnotations: IArray[Any],
+                    index: Int, callByNeed: CallByNeed[Typeclass[SType]], isType: Type => Boolean,
+                    asType: Type => SType & Type):
+
     def typeclass: Typeclass[SType & Type] = callByNeed.value.asInstanceOf[Typeclass[SType & Type]]
-    def cast: PartialFunction[Type, SType & Type] = this
+    
+    def cast: PartialFunction[Type, SType & Type] =
+      case t if isType(t) => asType(t)
+    
     def isDefinedAt(t: Type): Boolean = isType(t)
     def apply(t: Type): SType & Type = asType(t)
 
   class SubtypeValue[Typeclass[_], Type, S](val subtype: Subtype[Typeclass, Type, S], v: Type):
     export subtype.{typeclass, typeAnnotations, annotations, cast, typeInfo}
     def value: S & Type = cast(v)
-end SealedTrait
 
 object CallByNeed:
   def apply[A](a: => A): CallByNeed[A] = new CallByNeed(() => a)
