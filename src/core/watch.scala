@@ -29,8 +29,8 @@ import scala.collection.mutable.HashMap
 import java.nio.file as jnf
 import jnf.StandardWatchEventKinds.*
 
-case class InotifyError()(using Codepoint)
-extends Error(err"the limit on the number of paths that can be watched has been exceeded")(pos)
+case class InotifyError()
+extends Error(err"the limit on the number of paths that can be watched has been exceeded")
 
 extension [Dir](dirs: Seq[Dir])(using DirectoryProvider[Dir], DirectoryInterpreter[Dir], Monitor)
   def watch()(using Log, WatchService[Dir]): Watcher[Dir] throws InotifyError = Watcher[Dir](dirs*)
@@ -137,6 +137,6 @@ enum WatchEvent:
 
       mkdir.make(Showable(jnf.Paths.get(dir.s, relPath.show.s).nn.normalize.nn).show.s).get
 
-export WatchEvent.*
+export WatchEvent.{NewFile, NewDirectory, Modify, Delete}
 
 given Realm(t"surveillance")
