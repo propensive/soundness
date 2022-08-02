@@ -96,8 +96,7 @@ extends PrivateKey[A](bytes):
   def verify[T: ByteCodec](value: T, signature: Signature[A])(using A & Signing): Boolean =
     public.verify(value, signature)
 
-case class DecodeError(detail: Text)(using Codepoint)
-extends Error(err"could not decode the encrypted data: $detail")(pos)
+case class DecodeError(detail: Text) extends Error(err"could not decode the encrypted data: $detail")
 
 trait ByteCodec[T]:
   def encode(value: T): Bytes
@@ -237,5 +236,4 @@ class Dsa[KS <: 512 | 1024 | 2048 | 3072: ValueOf]() extends CryptoAlgorithm[KS]
   private def keyFactory(): js.KeyFactory = js.KeyFactory.getInstance("DSA").nn
 end Dsa
 
-case class PemParseError(detail: Text)(using Codepoint)
-extends Error(err"could not parse PEM-encoded content: $detail")(pos)
+case class PemParseError(detail: Text) extends Error(err"could not parse PEM-encoded content: $detail")
