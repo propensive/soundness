@@ -18,6 +18,7 @@ package guillotine
 
 import contextual.*
 import rudiments.*
+import tetromino.*
 import turbulence.*
 import gossamer.*
 import eucalyptus.*
@@ -31,23 +32,19 @@ import scala.jdk.CollectionConverters.MapHasAsScala
 import annotation.targetName
 import java.io as ji
 
-object envs:
-  val enclosing: Env = Env(System.getenv.nn.asScala.map(_.show -> _.show).to(Map))
-  val empty: Env = Env(Map())
-
 enum Context:
   case Awaiting, Unquoted, Quotes2, Quotes1
 
 case class State(current: Context, esc: Boolean, args: List[Text])
 
 object Executor:
-  given stream: Executor[LazyList[Text]] =
-    proc => ji.BufferedReader(ji.InputStreamReader(proc.getInputStream)).lines().nn.toScala(LazyList).map(_.show)
+  given stream: Executor[LazyList[Text]] = proc =>
+    ji.BufferedReader(ji.InputStreamReader(proc.getInputStream)).lines().nn.toScala(LazyList).map(_.show)
   
   given text: Executor[Text] = stream.map(_.foldLeft(t"") { (acc, line) => t"$acc\n$line" }.trim)
 
-  given dataStream: Executor[DataStream] =
-    proc => Util.readInputStream(proc.getInputStream.nn, 64.kb)
+  given dataStream(using Allocator): Executor[DataStream] = proc =>
+    Util.readInputStream(proc.getInputStream.nn)
   
   given exitStatus: Executor[ExitStatus] = _.waitFor() match
     case 0     => ExitStatus.Ok
@@ -61,14 +58,15 @@ trait Executor[T]:
 
 class Process[T](process: java.lang.Process, executor: Executor[T]):
   def pid: Pid = Pid(process.pid)
-  def stdout(limit: ByteSize = 10.mb): DataStream =
-    Util.readInputStream(process.getInputStream.nn, limit)
+  def stdout(rubrics: Rubric*)(using Allocator): DataStream =
+    Util.readInputStream(process.getInputStream.nn, rubrics*)
   
-  def stderr(limit: ByteSize = 10.mb): DataStream =
-    Util.readInputStream(process.getErrorStream.nn, limit)
+  def stderr(rubrics: Rubric*)(using Allocator): DataStream =
+    Util.readInputStream(process.getErrorStream.nn, rubrics*)
   
-  def stdin(in: DataStream): Unit throws StreamCutError = Util.write(in, process.getOutputStream.nn)
+  def stdin(in: DataStream)(using Allocator): Unit throws StreamCutError = Util.write(in, process.getOutputStream.nn)
   def await(): T = executor.interpret(process)
+  
   def exitStatus(): ExitStatus = process.waitFor() match
     case 0     => ExitStatus.Ok
     case other => ExitStatus.Fail(other)
@@ -82,9 +80,9 @@ class Process[T](process: java.lang.Process, executor: Executor[T]):
     process.destroyForcibly()
 
 sealed trait Executable:
-  def fork[T]()(using env: Env, exec: Executor[T] = Executor.text)(using Log): Process[T]
+  def fork[T]()(using env: Environment, exec: Executor[T] = Executor.text)(using Log): Process[T]
   
-  def exec[T]()(using env: Env, exec: Executor[T] = Executor.text)(using Log): T =
+  def exec[T]()(using env: Environment, exec: Executor[T] = Executor.text)(using Log): T =
     fork[T]().await()
   
   def apply(cmd: Executable): Pipeline = cmd match
@@ -118,11 +116,12 @@ object Command:
   given AnsiShow[Command] = cmd => ansi"${colors.LightSeaGreen}(${formattedArgs(cmd.args)})"
 
 case class Command(args: Text*) extends Executable:
-  def fork[T]()(using env: Env, exec: Executor[T] = Executor.text)(using Log): Process[T] =
+  def fork[T]()(using env: Environment, exec: Executor[T] = Executor.text)(using Log): Process[T] =
     val processBuilder = ProcessBuilder(args.ss*)
-    processBuilder.directory(env.workDirFile)
+    val dir = ji.File(env(t"PWD").get.s)
+    processBuilder.directory(dir)
     val t0 = System.currentTimeMillis
-    Log.info(ansi"Starting process ${this.ansi} in directory ${env.workDirFile.getAbsolutePath.nn}")
+    Log.info(ansi"Starting process ${this.ansi} in directory ${dir.getAbsolutePath.nn}")
     new Process[T](processBuilder.start().nn, summon[Executor[T]])
 
 object Pipeline:
@@ -132,28 +131,19 @@ object Pipeline:
         .join(ansi" ${colors.PowderBlue}(|) ")
 
 case class Pipeline(cmds: Command*) extends Executable:
-  def fork[T]()(using env: Env, exec: Executor[T] = Executor.text)(using Log): Process[T] =
-    Log.info(ansi"Starting pipelined processes ${this.ansi} in directory ${env.workDirFile.getAbsolutePath.nn}")
+  def fork[T]()(using env: Environment, exec: Executor[T] = Executor.text)(using Log): Process[T] =
+    val dir = ji.File(env(t"PWD").get.s)
+    Log.info(ansi"Starting pipelined processes ${this.ansi} in directory ${dir.getAbsolutePath.nn}")
 
     val processBuilders = cmds.map: cmd =>
       val pb = ProcessBuilder(cmd.args.ss*)
-      pb.directory(env.workDirFile)
+      pb.directory(dir)
       pb.nn
 
     new Process[T](ProcessBuilder.startPipeline(processBuilders.asJava).nn.asScala.to(List).last, exec)
 
-@implicitNotFound("guillotine: a contextual rudiments.Environment is required, for example\n"+
-                  "    given Environment()\n"+
-                  "or,\n"+
-                  "    given Envronment = environments.system")
-case class Env(vars: Map[Text, Text], workDir: Maybe[Text] = Unset):
-  private[guillotine] lazy val envArray: Array[String] = vars.map { (k, v) => s"$k=$v" }.to(Array)
-  
-  private[guillotine] lazy val workDirFile: ji.File =
-    ji.File(workDir.otherwise(Text(System.getenv("PWD").nn)).s)
-  
-case class ExecError(command: Command, stdout: DataStream, stderr: DataStream)(using Codepoint)
-extends Error(err"execution of the command $command failed")(pos)
+case class ExecError(command: Command, stdout: DataStream, stderr: DataStream)
+extends Error(err"execution of the command $command failed")
 
 object Sh:
   case class Params(params: Text*)
