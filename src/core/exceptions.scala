@@ -19,10 +19,10 @@ package xylophone
 import rudiments.*
 import gossamer.*
 
-case class XmlParseError(line: Int, column: Int)(using Codepoint)
-extends Error(err"the XML source could not be parsed at line $line, column $column")(pos)
+case class XmlParseError(line: Int, column: Int)
+extends Error(err"the XML source could not be parsed at line $line, column $column")
 
-case class XmlReadError()(using Codepoint) extends Error(err"could not read value")(pos)
+case class XmlReadError() extends Error(err"could not read value")
 
-case class XmlAccessError(index: Int, path: XmlPath)(using Codepoint)
-extends Error(err"could not access ${if index == 0 then t"any nodes" else t"node $index"} at path ${Xml.pathString(path)}")(pos)
+case class XmlAccessError(index: Int, path: XmlPath)
+extends Error(err"could not access ${if index == 0 then t"any nodes" else t"node $index"} at path ${Xml.pathString(path)}")
