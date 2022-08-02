@@ -20,6 +20,7 @@ server() {
   (while true; do sleep 3600; done) > "$FIFO" &
   CATPID="$!"
   exec java \
+      -Xss1536k \
       -Dsun.misc.URLClassPath.disableJarChecking \
       -Dexoskeleton.script="$THIS" \
       -Dexoskeleton.fifo="$FIFO" \
@@ -44,13 +45,17 @@ connect() {
   
   if [ "$EXIT" = "99" ]
   then
-    stty -echo -icanon -isig min 1 time 0
+    case "$-" in
+      *i*) stty -echo -icanon -isig min 1 time 0 ;;
+    esac
     EXIT="$(cat "$EXITFILE")"
   fi
   
   kill "$CATPID" > /dev/null 2>&1
   rm -f "$STDOUT" "$STDIN" "$EXITFILE"
-  stty sane
+  case "$-" in
+    *i*) stty sane
+  esac
   exit "${EXIT:-1}"
 }
 
@@ -59,7 +64,9 @@ resize() {
 }
 
 cleanup() {
-  stty sane
+  case "$-" in
+    *i*) stty sane
+  esac
   printf "\e[0J\e[?25h"
 }
 
