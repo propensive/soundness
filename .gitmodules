@@ -140,3 +140,6 @@
 [submodule "mod/parasitism"]
 	path = mod/parasitism
 	url = git@github.com:propensive/parasitism
+[submodule "mod/tetromino"]
+	path = mod/tetromino
+	url = git@github.com:propensive/tetromino
