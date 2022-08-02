@@ -42,26 +42,18 @@ import java.util.concurrent as juc
 type DataStream = LazyList[IArray[Byte] throws StreamCutError]
 
 extension (value: DataStream)
-  def slurp(limit: ByteSize): Bytes throws ExcessDataError | StreamCutError =
-    value.foldLeft(IArray[Byte]()):
-      (acc, next) =>
-        if acc.length + next.length > limit.long
-        then throw ExcessDataError((acc.length + next.length).b, limit)
-        else acc ++ next
+  def slurp(rubrics: Rubric*): Bytes throws StreamCutError =
+    value.foldLeft(IArray[Byte]()): (acc, next) =>
+      // FIXME: Use Rubric
+      acc ++ next
 
-case class ExcessDataError(size: ByteSize, limit: ByteSize)(using Codepoint)
-extends Error(err"the amount of data in the stream (at least $size) exceeds the limit ($limit)")(pos)
-
-case class StreamCutError()(using Codepoint) extends Error(err"the stream was cut prematurely")(pos)
+case class StreamCutError() extends Error(err"the stream was cut prematurely")
 
 object Util:
-
-  def readInputStream(in: ji.InputStream, limit: ByteSize, rubrics: Rubric*)
-                      (using allocator: Allocator)
-                      : DataStream =
+  def readInputStream(in: ji.InputStream, rubrics: Rubric*)(using allocator: Allocator): DataStream =
     val channel = jnc.Channels.newChannel(in).nn
     try
-      val buf = jn.ByteBuffer.wrap(allocator.allocate(1.mb, rubrics*)).nn
+      val buf = jn.ByteBuffer.wrap(allocator.allocate(64.kb, rubrics*)).nn
 
       def recur(): DataStream =
         channel.read(buf) match
@@ -78,39 +70,35 @@ object Util:
               buf.get(array)
               buf.clear()
               array.immutable(using Unsafe) #:: recur()
-            catch case e: OverallocationError =>
+            catch case e: ExcessDataError =>
               LazyList(throw StreamCutError()): DataStream
       
       recur()
-    catch case err: OverallocationError =>
+    catch case err: ExcessDataError =>
       LazyList(throw StreamCutError()): DataStream
 
   def write(stream: DataStream, out: ji.OutputStream): Unit throws StreamCutError =
     stream.map(_.mutable(using Unsafe)).foreach(out.write(_))
 
-object Source:
-  given (using Allocator): Source[SystemIn.type] with
-    type E = StreamCutError
-    def read(value: SystemIn.type): DataStream throws StreamCutError =
-      if System.in == null then throw StreamCutError() else Util.readInputStream(System.in, 10.mb)
+// object Source:
+//   given (using Allocator): Source[SystemIn.type] with
+//     def read(value: SystemIn.type): DataStream throws StreamCutError =
+//       if System.in == null then throw StreamCutError() else Util.readInputStream(System.in)
 
 trait Source[T]:
   type E <: Exception
-  def read(value: T): DataStream throws E
+  def read(value: T, rubrics: Rubric*): DataStream throws E
 
 object Writable:
   given Writable[SystemOut.type] with
-    type E = StreamCutError
     def write(value: SystemOut.type, stream: DataStream) =
       if System.out == null then throw StreamCutError() else Util.write(stream, System.out)
   
   given Writable[SystemErr.type] with
-    type E = StreamCutError
     def write(value: SystemErr.type, stream: DataStream) =
       if System.err == null then throw StreamCutError() else Util.write(stream, System.err)
   
   given Writable[ji.OutputStream] with
-    type E = StreamCutError
     def write(writable: ji.OutputStream, stream: DataStream) =
       val out = writable match
         case out: ji.BufferedOutputStream => out
@@ -120,7 +108,7 @@ object Writable:
 
 trait Writable[T]:
   type E <: Exception
-  def write(value: T, stream: DataStream): Unit throws E | StreamCutError
+  def write(value: T, stream: DataStream): Unit throws StreamCutError | E
 
 object SafeStreamable:
   given SafeStreamable[LazyList[Bytes]] = identity(_)
@@ -140,21 +128,22 @@ trait SafeStreamable[T] extends Streamable[T]:
 
 object Readable:
   given Readable[DataStream] with
-    type E = Nothing
-    def read(stream: DataStream): DataStream throws E | StreamCutError = stream
+    type E = StreamCutError
+    def read(stream: DataStream, rubrics: Rubric*): DataStream throws StreamCutError | E = stream
   
   given Readable[Bytes] with
-    type E = ExcessDataError
-    def read(stream: DataStream): Bytes throws ExcessDataError | StreamCutError =
-      stream.slurp(10.mb)
+    type E = StreamCutError
+    def read(stream: DataStream, rubrics: Rubric*): Bytes throws StreamCutError | E =
+      stream.slurp(rubrics*)
 
   given (using enc: Encoding): Readable[Text] with
-    type E = ExcessDataError
-    def read(value: DataStream) = Text(String(value.slurp(1.mb).mutable(using Unsafe), enc.name.s))
+    type E = StreamCutError
+    def read(value: DataStream, rubrics: Rubric*) =
+      Text(String(value.slurp(rubrics*).mutable(using Unsafe), enc.name.s))
 
   given textReader(using enc: Encoding): Readable[LazyList[Text]] with
-    type E = ExcessDataError
-    def read(stream: DataStream) =
+    type E = StreamCutError
+    def read(stream: DataStream, rubrics: Rubric*) =
       
       def read(stream: DataStream, carried: Array[Byte] = Array.empty[Byte]): LazyList[Text] =
         if stream.isEmpty then LazyList()
@@ -170,12 +159,14 @@ object Readable:
 
 trait Readable[T]:
   readable =>
-    type E <: Exception
-    def read(stream: DataStream): T throws E | StreamCutError
-    def map[S](fn: T => S): turbulence.Readable[S] { type E = readable.E } =
-      new turbulence.Readable[S]:
-        type E = readable.E
-        def read(stream: DataStream): S throws E | StreamCutError = fn(readable.read(stream))
+  type E <: Exception
+  def read(stream: DataStream, rubrics: Rubric*): T throws StreamCutError | E
+  
+  def map[S](fn: T => S): turbulence.Readable[S] { type E = readable.E } =
+    new turbulence.Readable[S]:
+      type E = readable.E
+      def read(stream: DataStream, rubrics: Rubric*): S throws StreamCutError | readable.E =
+        fn(readable.read(stream))
 
 object SystemIn
 object SystemOut
@@ -208,16 +199,16 @@ class Pulsar(using time: Timekeeper)(interval: time.Type):
 extension [T](value: T)
   def dataStream(using src: Source[T]): DataStream throws src.E = src.read(value)
   
-  def writeStream(stream: DataStream)(using writable: Writable[T]): Unit throws writable.E | StreamCutError =
+  def writeStream(stream: DataStream)(using writable: Writable[T]): Unit throws StreamCutError | writable.E =
     writable.write(value, stream)
   
   def writeTo[S](destination: S)(using writable: Writable[S], streamable: Streamable[T])
-                : Unit throws writable.E | StreamCutError =
+                : Unit throws StreamCutError | writable.E =
     writable.write(destination, streamable.stream(value))
 
-  def read[S](using readable: Readable[S], src: Source[T])
-      : S throws readable.E | src.E | StreamCutError =
-    readable.read(dataStream)
+  def read[S](rubrics: Rubric*)(using readable: Readable[S], src: Source[T])
+          : S throws StreamCutError | src.E | readable.E =
+    readable.read(dataStream, rubrics*)
 
 case class Multiplexer[K, T]()(using monitor: Monitor):
   private val tasks: HashMap[K, Task[Unit]] = HashMap()
@@ -308,8 +299,6 @@ extension [T](stream: LazyList[T])
 
 object StreamBuffer:
   given Writable[StreamBuffer[Bytes throws StreamCutError]] with
-    type E = StreamCutError
-    
     def write(buffer: StreamBuffer[Bytes throws StreamCutError], stream: DataStream) =
       stream.foreach(buffer.put(_))
 
