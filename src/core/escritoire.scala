@@ -47,8 +47,8 @@ object Column:
 case class Column[T](title: AnsiText, cell: T => AnsiText, breaks: Breaks, alignment: Alignment,
                          width: ColumnWidth)
 
-case class TableWidthError(total: Int)(using Codepoint)
-extends Error(err"the table width is not within the valid range of $total")(pos)
+case class TableWidthError(total: Int)
+extends Error(err"the table width is not within the valid range of $total")
 
 case class Tabulation[T: ClassTag](cols: Column[T]*):
 
