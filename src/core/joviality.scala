@@ -19,6 +19,7 @@ package joviality
 import rudiments.*
 import gossamer.*
 import turbulence.*
+import tetromino.*
 import serpentine.*
 import eucalyptus.*
 import anticipation.*
@@ -53,8 +54,8 @@ object IoError:
   enum Op:
     case Read, Write, Access, Permissions, Create, Delete
 
-case class IoError(operation: IoError.Op, reason: IoError.Reason, path: DiskPath[Filesystem])(using Codepoint)
-extends Error(err"the $operation operation at $path failed because $reason")(pos)
+case class IoError(operation: IoError.Op, reason: IoError.Reason, path: DiskPath[Filesystem])
+extends Error(err"the $operation operation at $path failed because $reason")
 
 enum Creation:
   case Expect, Create, Ensure
@@ -108,16 +109,16 @@ object File:
 
   given [Fs <: Filesystem]: Writable[File[Fs]] with
     type E = IoError
-    def write(value: File[Fs], stream: DataStream): Unit throws E | StreamCutError =
+    def write(value: File[Fs], stream: DataStream): Unit throws StreamCutError | IoError =
       val out = ji.FileOutputStream(value.javaFile, false)
       try Util.write(stream, out)
       catch case e => throw IoError(IoError.Op.Write, IoError.Reason.AccessDenied, value.path)
       finally try out.close() catch _ => ()
   
-  given [Fs <: Filesystem]: Source[File[Fs]] with
+  given [Fs <: Filesystem](using Allocator): Source[File[Fs]] with
     type E = IoError
-    def read(file: File[Fs]): DataStream throws E =
-      try Util.readInputStream(ji.FileInputStream(file.javaFile), 64.kb)
+    def read(file: File[Fs], rubrics: Rubric*): DataStream throws IoError =
+      try Util.readInputStream(ji.FileInputStream(file.javaFile), rubrics*)
       catch case e: ji.FileNotFoundException =>
         if e.getMessage.nn.contains("(Permission denied)")
         then throw IoError(IoError.Op.Read, IoError.Reason.AccessDenied, file.path)
@@ -132,9 +133,9 @@ case class File[+Fs <: Filesystem](override val path: DiskPath[Fs]) extends Inod
     try javaFile.delete()
     catch e => throw IoError(IoError.Op.Delete, IoError.Reason.AccessDenied, path)
   
-  def read[T](limit: ByteSize = 64.kb)(using readable: Readable[T])
-      : T throws readable.E | IoError | StreamCutError =
-    val stream = Util.readInputStream(ji.FileInputStream(javaFile), limit)
+  def read[T](rubrics: Rubric*)(using readable: Readable[T], alloc: Allocator)
+      : T throws IoError | StreamCutError | readable.E =
+    val stream = Util.readInputStream(ji.FileInputStream(javaFile), rubrics*)
     try readable.read(stream) catch
       case err: java.io.FileNotFoundException =>
         throw IoError(IoError.Op.Read, IoError.Reason.AccessDenied, path)
@@ -187,7 +188,7 @@ case class File[+Fs <: Filesystem](override val path: DiskPath[Fs]) extends Inod
 object Fifo:
   given [Fs <: Unix]: Writable[Fifo[Fs]] with
     type E = IoError
-    def write(value: Fifo[Fs], stream: DataStream): Unit throws E | StreamCutError =
+    def write(value: Fifo[Fs], stream: DataStream): Unit throws StreamCutError | E =
       try Util.write(stream, value.out)
       catch case e => throw IoError(IoError.Op.Write, IoError.Reason.AccessDenied, value.file.path)
 
@@ -468,9 +469,6 @@ object windows:
 
 given realm: Realm = Realm(t"joviality")
 
-case class PwdError()(using Codepoint)
-extends Error(err"the current working directory cannot be determined")(pos)
-
 open class Classpath(val classLoader: ClassLoader = getClass.nn.getClassLoader.nn)
 extends Root(t"/", t""):
   type PathType = ClasspathRef[this.type]
@@ -485,14 +483,14 @@ extends Absolute[Cp](classpath, elements):
   def resource: ClasspathResource = ClasspathResource(classpath.make(parts))
   
 case class ClasspathResource(path: ClasspathRef[Classpath]):
-  def read[T](limit: ByteSize = 64.kb)(using readable: Readable[T])
+  def read[T](rubrics: Rubric*)(using readable: Readable[T], alloc: Allocator)
           : T throws ClasspathRefError | StreamCutError | readable.E =
     val resource = path.root.classLoader.getResourceAsStream(path.show.drop(10).s)
     if resource == null then throw ClasspathRefError(path.classpath)(path)
-    val stream = Util.readInputStream(resource.nn, limit)
+    val stream = Util.readInputStream(resource.nn, rubrics*)
     readable.read(stream)
   
   def name: Text = path.parts.lastOption.getOrElse(path.classpath.prefix)
 
-case class ClasspathRefError(classpath: Classpath)(path: ClasspathRef[Classpath])(using Codepoint)
-extends Error(err"the resource $path could not be accessed on the classpath")(pos)
+case class ClasspathRefError(classpath: Classpath)(path: ClasspathRef[Classpath])
+extends Error(err"the resource $path could not be accessed on the classpath")
