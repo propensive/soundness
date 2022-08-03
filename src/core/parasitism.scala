@@ -21,6 +21,9 @@ import anticipation.*
 
 import scala.util.*
 
+package monitors:
+  given global: Monitor = Supervisor()
+
 case class CancelError()(using Codepoint) extends Error(err"the operation was cancelled")(pos)
 case class IncompleteError()(using Codepoint) extends Error(err"the task was not completed")(pos)
 case class AlreadyCompleteError()(using Codepoint) extends Error(err"the promise was already completed")(pos)
