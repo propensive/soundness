@@ -1,8 +1,8 @@
 {
   "repos": [
     {
-      "base": "../probably",
-      "url": "https://github.com/propensive/probably"
+      "base": "../rudiments",
+      "url": "https://github.com/propensive/rudiments"
     },
     {
       "base": "../anticipation",
@@ -11,7 +11,7 @@
   ],
   "imports": [
     "../anticipation/build.irk",
-    "../probably/build.irk"
+    "../rudiments/build.irk"
   ],
   "publishing": {
     "username": "propensive",
@@ -37,13 +37,6 @@
       "id": "parasitism/core",
       "sources": ["src/core"],
       "links": ["anticipation/time", "rudiments/core"]
-    },
-    {
-      "name": "Parasitism",
-      "id": "parasitism/test",
-      "sources": ["src/test"],
-      "links": ["probably/cli", "parasitism/core"],
-      "xartifact": { "path": "parasitism.jar", "format": "fat-jar", "main": "parasitism.Tests" }
     }
   ]
 }

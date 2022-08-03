@@ -24,9 +24,9 @@ import scala.util.*
 package monitors:
   given global: Monitor = Supervisor()
 
-case class CancelError()(using Codepoint) extends Error(err"the operation was cancelled")(pos)
-case class IncompleteError()(using Codepoint) extends Error(err"the task was not completed")(pos)
-case class AlreadyCompleteError()(using Codepoint) extends Error(err"the promise was already completed")(pos)
+case class CancelError() extends Error(err"the operation was cancelled")
+case class IncompleteError() extends Error(err"the task was not completed")
+case class AlreadyCompleteError() extends Error(err"the promise was already completed")
 
 case class Supervisor(baseId: Text = Text("main")) extends Monitor:
   @volatile
@@ -62,30 +62,39 @@ case class TaskMonitor(id: Text, interrupted: () => Boolean, stop: () => Unit, p
   def cancel(): Unit = stop()
 
 object Task:
-  def apply[T](id: Text)(fn: Monitor ?=> T)(using monitor: Monitor): Task[T] =
-    (new Task(id, mon => fn(using mon))(using monitor)).tap(_.start())
+  def apply[T](id: Text)(fn: CanThrow[CancelError] ?=> Monitor ?=> T)(using monitor: Monitor): Task[T] =
+    (new Task(id, mon => fn(using unsafeExceptions.canThrowAny)(using mon))(using monitor)).tap(_.start())
 
 case class Promise[T]():
+  @volatile
   private var value: Option[T throws CancelError] = None
 
-  def ready: Boolean = synchronized(!value.isEmpty)
+  @volatile
+  private var triggers: List[() => Unit] = Nil
+  
+  def ready: Boolean = !value.isEmpty
   
   def supply(v: T): Unit throws AlreadyCompleteError = synchronized:
     if value.isEmpty then
       value = Some(v)
       notifyAll()
+      triggers.foreach(_())
     else throw AlreadyCompleteError()
+  
+  def trigger(fn: => Unit): Unit = triggers ::= (() => fn)
 
   def await(): T throws CancelError = synchronized:
     while value.isEmpty do wait()
     value.get
 
   def await(using tk: Timekeeper)(time: tk.Type): T throws CancelError | TimeoutError = synchronized:
-    wait(tk.to(time))
-    if value.isEmpty then throw TimeoutError() else value.get
+    if value.isEmpty then
+      wait(tk.to(time))
+      if value.isEmpty then throw TimeoutError() else value.get
+    else value.get
 
   def cancel(): Unit = synchronized:
-    value = Some(throw CancelError())
+    if value.isEmpty then value = Some(throw CancelError())
 
   def get: T throws IncompleteError | CancelError = value.getOrElse(throw IncompleteError())
 
@@ -94,8 +103,7 @@ case class Promise[T]():
 
 extension [T](xs: Iterable[Task[T]])
   transparent inline def sequence(using mon: Monitor): Task[Iterable[T]] =
-    Task(Text("sequence")):
-      unsafely(xs.map(_.await()))
+    Task(Text("sequence"))(xs.map(_.await()))
 
 enum TaskStatus:
   case New, Running, Completed, Canceled, Failed, Expired
@@ -104,7 +112,7 @@ class Task[T](id: Text, calc: Monitor => T)(using mon: Monitor):
   private var startTime: Long = 0L
   private var status: TaskStatus = TaskStatus.New
   def name = Text(mon.name.s+"/"+id)
-  def active: Boolean = !result.ready
+  //def active: Boolean = !result.ready
   def await(): T throws CancelError = result.await().tap(thread.join().waive)
   
   def await(using tk: Timekeeper)(time: tk.Type): T throws CancelError | TimeoutError =
@@ -117,15 +125,15 @@ class Task[T](id: Text, calc: Monitor => T)(using mon: Monitor):
       thread.start()
     result
 
-  def cancel(): Unit =
+  def cancel(): Unit = synchronized:
     ctx.cancel()
     result.cancel()
     status = TaskStatus.Canceled
 
-  def map[S](fn: T => S)(using mon: Monitor): Task[S] = Task(Text("map"))(unsafely(fn(await())))
+  def map[S](fn: T => S)(using mon: Monitor): Task[S] = Task(Text("map"))(fn(await()))
   
   def flatMap[S](fn: T => Task[S])(using mon: Monitor): Task[S] =
-    Task(Text("flatMap"))(unsafely(fn(await()).await()))
+    Task(Text("flatMap"))(fn(await()).await())
   
   private val result: Promise[T] = Promise()
   private lazy val thread: Thread = Thread(runnable, ctx.name.s)
