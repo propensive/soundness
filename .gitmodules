@@ -125,18 +125,24 @@
 [submodule "mod/turbulence"]
 	path = mod/turbulence
 	url = https://github.com/propensive/turbulence
+	branch = main
 [submodule "mod/imperial"]
 	path = mod/imperial
 	url = https://github.com/propensive/imperial
+	branch = main
 [submodule "mod/telekinesis"]
 	path = mod/telekinesis
 	url = https://github.com/propensive/telekinesis
+	branch = main
 [submodule "mod/surveillance"]
 	path = mod/surveillance
 	url = https://github.com/propensive/surveillance
+	branch = main
 [submodule "mod/cardinality"]
 	path = mod/cardinality
 	url = https://github.com/propensive/cardinality
+	branch = main
 [submodule "mod/parasitism"]
 	path = mod/parasitism
 	url = git@github.com:propensive/parasitism
+	branch = main
