@@ -225,10 +225,10 @@ object Directory:
 
   given WatchService[Directory[Unix]] = () => Unix.javaFilesystem.newWatchService().nn
 
-  given provider[Fs <: Filesystem](using fs: Fs): DirectoryProvider[Directory[Fs]]
+  given provider[Fs <: Filesystem: ValueOf]: DirectoryProvider[Directory[Fs]]
       with DirectoryInterpreter[Directory[Fs]] with
     def make(str: String, readOnly: Boolean = false): Option[Directory[Fs]] =
-      safely(fs.parse(Text(str)).directory(Expect)).option
+      safely(summon[ValueOf[Fs]].value.parse(Text(str)).directory(Expect)).option
     
     def path(dir: Directory[Fs]): String = dir.path.fullname.s
 
@@ -308,10 +308,10 @@ case class Directory[+Fs <: Filesystem](override val path: DiskPath[Fs]) extends
 object DiskPath:
   given Show[DiskPath[?]] = _.fullname
   
-  given provider[Fs <: Filesystem](using fs: Fs): PathProvider[DiskPath[Fs]]
+  given provider[Fs <: Filesystem: ValueOf]: PathProvider[DiskPath[Fs]]
       with PathInterpreter[DiskPath[Fs]] with
     def make(str: String, readOnly: Boolean = false): Option[DiskPath[Fs]] =
-      safely(fs.parse(Text(str))).option
+      safely(summon[ValueOf[Fs]].value.parse(Text(str))).option
   
     def path(path: DiskPath[Fs]): String = path.fullname.s
 
