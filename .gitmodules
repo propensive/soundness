@@ -146,3 +146,7 @@
 	path = mod/parasitism
 	url = git@github.com:propensive/parasitism
 	branch = main
+[submodule "mod/tetromino"]
+	path = mod/tetromino
+	url = git@github.com:propensive/tetromino
+	branch = main
