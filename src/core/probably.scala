@@ -165,12 +165,13 @@ class Runner(subset: Set[TestId] = Set()) extends Dynamic:
         case Success(value) =>
           record(this, time, makeDatapoint(pred, 0, Datapoint.Pass, value))
           value
+
         case Failure(e) =>
           val trace = Option(e.getStackTrace).fold(Nil)(_.nn.immutable(using Unsafe).to(List).map(_.nn))
           
           val info = trace.takeWhile(_.getClassName != "probably.Suite")
             .map { frame => Showable(frame.nn).show }
-            .join(Option(e.getMessage).fold(t"null") { x => t"${x.nn}\n  at " }, t"\n  at ", t"")
+            .join(Option(e.getMessage).fold(t"null") { x => t"${e.getClass.getName.nn}: ${x.nn}\n  at " }, t"\n  at ", t"")
           
           record(this, time, Datapoint.Throws(e, debug(None).add(t"exception", info)))
           
