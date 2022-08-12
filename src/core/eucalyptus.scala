@@ -27,7 +27,6 @@ import scala.quoted.*
 import scala.collection.mutable.HashMap
 
 import java.text as jt
-import java.io as ji
 import java.util as ju
 import java.util.concurrent as juc
 
@@ -90,8 +89,7 @@ object EucalyptusMacros:
 
     '{
       val ts = Timestamp()
-      try $log.record(Entry($realm, $level, $show.ansiShow($value), ts))
-      catch case e: Exception => ()
+      try $log.record(Entry($realm, $level, $show.ansiShow($value), ts)) catch case e: Exception => ()
     }
 
 
@@ -99,11 +97,10 @@ case class Log(actions: PartialFunction[Entry, LogSink]*)(using Monitor):
   private val funnels: HashMap[LogSink, Funnel[Entry]] = HashMap()
   
   private def put(target: LogSink, entry: Entry): Unit =
-    if !funnels.contains(target) then
-      synchronized:
-        val funnel = Funnel[Entry]()
-        Task(t"logger")(target.write(funnel.stream))
-        funnels(target) = funnel
+    if !funnels.contains(target) then synchronized:
+      val funnel = Funnel[Entry]()
+      Task(t"logger")(target.write(funnel.stream))
+      funnels(target) = funnel
 
     funnels(target).put(entry)
   
@@ -124,7 +121,7 @@ trait LogSink:
 
 object LogFormat:
   given standardAnsi: LogFormat[SystemOut.type] = entry =>
-    ansi"${entry.timestamp.ansi} ${entry.level.ansi} ${entry.realm.ansi.span(8)} ${entry.message}".render.bytes
+    ansi"${entry.timestamp.ansi} ${entry.level.ansi} ${entry.realm.ansi.span(8)} ${entry.message}${'\n'}".render.bytes
   
 trait LogFormat[S]:
   def apply(entry: Entry): Bytes
