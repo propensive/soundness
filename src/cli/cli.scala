@@ -27,16 +27,16 @@ import Runner.*
 object Suite:
   val statuses@List(pass, fail, checkThrows, throws, tailFail, mixed) = List(
     '✓' -> colors.YellowGreen,
-    '✗' -> colors.Crimson,
-    '?' -> colors.LightSeaGreen,
-    '!' -> colors.PaleVioletRed,
-    '±' -> colors.DodgerBlue,
-    '#' -> colors.Gold
+    '✗' -> colors.Red,
+    '‼' -> colors.LightSeaGreen,
+    '!' -> colors.OrangeRed,
+    '±' -> colors.CornflowerBlue,
+    '∂' -> colors.Gold
   ).map { (ch, color) => ansi"${Bg(color)}( ${colors.Black}($Bold(${ch.show})) )" }
   
   private val legend: List[AnsiText] =
-    statuses.zip(List(t"Pass", t"Fail", t"Assertion throws", t"Throws an exception",
-        t"Inconsistent", t"Suite partially fails")).map:
+    statuses.zip(List(t"Pass", t"Fail", t"Assertion throws exception", t"Test throws exception",
+        t"Inconsistent test results", t"Suite partially fails")).map:
       (status, desc) => ansi"$status ${desc.show.fit(32)}"
     .to(List)
 
