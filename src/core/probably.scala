@@ -143,7 +143,7 @@ class Runner(subset: Set[TestId] = Set()) extends Dynamic:
     inline def assert(inline pred: Type => Boolean)(using log: Log): Unit =
       ${ProbablyMacros.assert[Type]('runner, 'this, 'pred, 'log)}
 
-    def matches(pf: PartialFunction[Type, Any])(using Log): Type = check(pf.isDefinedAt(_))
+    transparent inline def matches(pf: PartialFunction[Type, Any])(using Log): Unit = assert(pf.isDefinedAt(_))
 
     def check(pred: Type => Boolean, debug: Option[Type] => Debug = v => Debug(v.map(Showable(_).show)))
              (using Log): Type =
