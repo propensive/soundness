@@ -103,6 +103,9 @@ extension [K, V](map: Map[K, V])
     otherMap.foldLeft(map): (acc, kv) =>
       acc.updated(kv(0), acc.get(kv(0)).fold(kv(1))(merge(kv(1), _)))
 
+extension [K, V](map: Map[K, List[V]])
+  def plus(key: K, value: V): Map[K, List[V]] = map.updated(key, map.get(key).fold(List(value))(value :: _))
+
 class Recur[T](fn: => T => T):
   def apply(value: T): T = fn(value)
 
@@ -131,7 +134,8 @@ object Mistake:
 
 case class Mistake(message: String) extends java.lang.Error(message)
 
-object Unset
+object Unset:
+  override def toString(): String = "——"
 
 type Maybe[T] = Unset.type | T
 
