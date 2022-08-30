@@ -40,10 +40,11 @@ trait Responder:
   def sendBody(status: Int, body: HttpBody): Unit
   def addHeader(key: Text, value: Text): Unit
 
-object Handler:
+trait Handler2:
   given [T: Show]: SimpleHandler[T] =
     SimpleHandler(t"text/plain", v => HttpBody.Chunked(LazyList(summon[Show[T]].show(v).bytes)))
 
+object Handler extends Handler2:
   given iarrayByteHandler[T](using hr: HttpResponseStream[T]): SimpleHandler[T] =
     SimpleHandler(Text(hr.mediaType), value => HttpBody.Chunked(hr.content(value).map(identity)))
 
