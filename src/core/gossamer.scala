@@ -215,7 +215,7 @@ extends Error(err"the index $idx is outside the range $from-$to")
 case class Showable[T](value: T):
   def show: Text = Text(value.toString)
 
-trait Shown[T](using Show[T]):
+trait Shown[+T](using Show[T]):
   this: T =>
     override def toString(): String = summon[Show[T]].show(this).s
 

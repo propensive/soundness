@@ -42,6 +42,8 @@ object Show extends Derivation[Show]:
   given Show[Char] = Showable(_).show
   given Show[Boolean] = if _ then Text("true") else Text("false")
   given Show[reflect.Enum] = Showable(_).show
+
+  given Show[Pid] = pid => t"ᴾᴵᴰ${pid.value}"
   
   given [T: Show]: Show[Option[T]] =
     case None    => Text("none")
