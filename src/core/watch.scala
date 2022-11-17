@@ -32,15 +32,15 @@ import jnf.StandardWatchEventKinds.*
 case class InotifyError()
 extends Error(err"the limit on the number of paths that can be watched has been exceeded")
 
-extension [Dir](dirs: Seq[Dir])(using DirectoryProvider[Dir], DirectoryInterpreter[Dir], Monitor)
+extension [Dir](dirs: Seq[Dir])(using DirectoryProvider[Dir], DirectoryInterpreter[Dir], Monitor, Threading)
   def watch()(using Log, WatchService[Dir]): Watcher[Dir] throws InotifyError = Watcher[Dir](dirs*)
 
-extension [Dir](dir: Dir)(using DirectoryProvider[Dir], DirectoryInterpreter[Dir], Monitor)
+extension [Dir](dir: Dir)(using DirectoryProvider[Dir], DirectoryInterpreter[Dir], Monitor, Threading)
   def watch()(using Log, WatchService[Dir]): Watcher[Dir] throws InotifyError = Watcher[Dir](dir)
 
 object Watcher:
   def apply[Dir: WatchService]
-           (dirs: Dir*)(using DirectoryInterpreter[Dir], DirectoryProvider[Dir], Log, Monitor)
+           (dirs: Dir*)(using DirectoryInterpreter[Dir], DirectoryProvider[Dir], Log, Monitor, Threading)
            : Watcher[Dir] =
     val svc: jnf.WatchService = summon[WatchService[Dir]]()
     val watcher = Watcher[Dir](svc)
@@ -49,13 +49,14 @@ object Watcher:
     watcher
 
 case class Watcher[Dir](private val svc: jnf.WatchService)
-                  (using fromDir: DirectoryInterpreter[Dir], mkdir: DirectoryProvider[Dir], monitor: Monitor):
+                  (using fromDir: DirectoryInterpreter[Dir], mkdir: DirectoryProvider[Dir], monitor: Monitor,
+                       threading: Threading):
   
   private val watches: HashMap[jnf.WatchKey, jnf.Path] = HashMap()
   private val dirs: HashMap[jnf.Path, jnf.WatchKey] = HashMap()
   
-  private def dirPath(dir: Dir): jnf.Path = jnf.Paths.get(fromDir.path(dir).show.s).nn
-  private def toDir(path: jnf.Path): Dir = mkdir.make(Showable(path).show.s).get
+  private def dirPath(dir: Dir): jnf.Path = jnf.Paths.get(fromDir.directoryPath(dir).show.s).nn
+  private def toDir(path: jnf.Path): Dir = mkdir.makeDirectory(Showable(path).show.s).get
 
   private val funnel = Funnel[Maybe[WatchEvent]]
   private val pumpTask = Task(t"watcher")(pump())
@@ -135,7 +136,7 @@ enum WatchEvent:
       case Modify(_, file)       => file
       case Delete(_, path)       => path
 
-      mkdir.make(Showable(jnf.Paths.get(dir.s, relPath.show.s).nn.normalize.nn).show.s).get
+      mkdir.makePath(Showable(jnf.Paths.get(dir.s, relPath.show.s).nn.normalize.nn).show.s).get
 
 export WatchEvent.{NewFile, NewDirectory, Modify, Delete}
 
