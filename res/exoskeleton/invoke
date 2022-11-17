@@ -158,6 +158,12 @@ server() {
       -jar "$SCRIPTDIR/$THIS" &
 }
 
+readchar() {
+  stty -icanon -echo raw opost
+  printf "$(dd bs=1 count=1 2>/dev/null)"
+  stty icanon echo -raw
+}
+
 connect() {
   mkfifo "$STDOUT" "$STDIN" "$EXITFILE"
   echo "PROCESS	$PID" > "$FIFO"
@@ -166,17 +172,17 @@ connect() {
   echo "ARGS	$PID	$ARGCOUNT	$ARGS" > "$FIFO"
   echo "ENV	$PID	$(env | tr '\n' '\t')" > "$FIFO"
   echo "START	$PID" > "$FIFO"
-  cat - 2> /dev/null > "$STDIN" <&0 &
-  WAITPID="$!"
+
   cat "$STDOUT" &
   WRITERPID="$!"
   EXIT="$(cat "$EXITFILE")"
   
   if [ "$EXIT" = "99" ]
   then
-    case "$-" in
-      *i*) stty -echo -icanon -isig min 1 time 0 ;;
-    esac
+    while true
+    do readchar
+    done > "$STDIN" <&0 &
+    WAITPID="$!"
     EXIT="$(cat "$EXITFILE")"
   fi
   

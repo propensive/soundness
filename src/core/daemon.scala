@@ -63,7 +63,7 @@ enum Signal:
   def name: Text = t"SIG${this.toString.show.upper}"
   def id: Int = if ordinal < 15 then ordinal - 1 else ordinal
 
-trait Daemon() extends App:
+trait Daemon()(using Log) extends App:
   private val spawnCount: Counter = Counter(0)
   import threading.platform
   val signalHandler: PartialFunction[Signal, Unit] = PartialFunction.empty
@@ -96,7 +96,7 @@ trait Daemon() extends App:
     ProcessHandle.of(watchPid).nn.get.nn.onExit.nn.thenRun:
       () => sys.exit(2)
    
-    case class AppInstance(pid: Int, spawnId: Int, scriptFile: Maybe[File[Unix]] = Unset,
+    case class CliClient(pid: Pid, spawnId: Int, scriptFile: Maybe[File[Unix]] = Unset,
                                args: List[Text] = Nil, instanceEnv: Map[Text, Text] = Map(),
                                runDir: Maybe[Directory[Unix]] = Unset):
       given Environment(instanceEnv.get(_), key => Option(System.getProperty(key.s)).map(_.nn.show))
@@ -108,22 +108,25 @@ trait Daemon() extends App:
 
       def spawn(): Task[Unit] = Task(t"spawn"):
         lazy val out = Fifo[Unix]:
-          val file = (runDir.otherwise(sys.exit(1)) / t"$script-$pid.stdout.sock").file(Expect)
+          val file = (runDir.otherwise(sys.exit(1)) / t"$script-${pid.value}.stdout.sock").file(Expect)
           file.javaFile.deleteOnExit()
           file.path
         
         try
           val script = scriptFile.otherwise(sys.exit(1)).name
-          val fifoIn = (runDir.otherwise(sys.exit(1)) / t"$script-$pid.stdin.sock").file(Expect)
+          val fifoIn = (runDir.otherwise(sys.exit(1)) / t"$script-${pid.value}.stdin.sock").file(Expect)
           fifoIn.javaFile.deleteOnExit()
           val terminate = Promise[Int]()
           
-          lazy val exitFile = (runDir.otherwise(sys.exit(1)) / t"$script-$pid.exit").file()
+          lazy val exitFile = (runDir.otherwise(sys.exit(1)) / t"$script-${pid.value}.exit").file()
           exitFile.javaFile.deleteOnExit()
           
-          def interactive(): Unit = 99.show.bytes.writeTo(exitFile)
+          def interactive(): Unit =
+            Log.info(t"Switching to interactive console mode")
+            99.show.bytes.writeTo(exitFile)
 
           def term(): Unit =
+            Log.info(t"Invoking termination")
             0.show.bytes.writeTo(exitFile)
             sys.exit(0)
             
@@ -139,23 +142,22 @@ trait Daemon() extends App:
         
         catch
           case err: IoError =>
-            ()
+            Log.info(t"Ignored error: $err")
           case NonFatal(err) =>
             given Stdout = Stdout(out)
             Out.println(StackTrace(err).ansi)
     
-    def parseEnv(env: List[Text]): Map[Text, Text] = env.flatMap:
-      pair =>
-        pair.cut(t"=", 2).to(List) match
-          case List(key, value) => List(key -> value)
-          case _                => Nil
+    def parseEnv(env: List[Text]): Map[Text, Text] = env.flatMap: pair =>
+      pair.cut(t"=", 2).to(List) match
+        case List(key, value) => List(key -> value)
+        case _                => Nil
     .to(Map)
 
-    socket.file(Expect).read[LazyList[Line]](rubrics*).foldLeft(Map[Int, AppInstance]()):
+    socket.file(Expect).read[LazyList[Line]](rubrics*).foldLeft(Map[Int, CliClient]()):
       case (map, line) =>
         line.text.cut(t"\t").to(List) match
           case t"PROCESS" :: As[Int](pid) :: _ =>
-            map.updated(pid.toString.toInt, AppInstance(pid, spawnCount()))
+            map.updated(pid.toString.toInt, CliClient(Pid(pid), spawnCount()))
           
           case t"RUNDIR" :: As[Int](pid) :: dir :: _ =>
             safely(Unix.parse(dir)).option.fold(map): dir =>
@@ -176,12 +178,16 @@ trait Daemon() extends App:
             map.updated(pid, map(pid).copy(instanceEnv = parseEnv(env)))
           
           case t"START" :: As[Int](pid) :: _ =>
+            Log.info(t"Spawning new client instance with ${Pid(pid)}")
             map(pid).spawn()
             map
           
           case t"SHUTDOWN" :: _ =>
+            Log.info(t"Shutting down CLI daemon")
             sys.exit(0)
             map
           
           case msg =>
             map
+
+given realm: Realm = Realm(t"exoskeleton")
