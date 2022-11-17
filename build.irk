@@ -3,10 +3,15 @@
     {
       "base": "../eucalyptus",
       "url": "https://github.com/propensive/eucalyptus"
+    },
+    {
+      "base": "../anticipation",
+      "url": "https://github.com/propensive/anticipation"
     }
   ],
   "imports": [
-    "../eucalyptus/build.irk"
+    "../eucalyptus/build.irk",
+    "../anticipation/build.irk"
   ],
   "publishing": {
     "username": "propensive",
@@ -31,7 +36,7 @@
       "name": "Guillotine",
       "id": "guillotine/core",
       "links": [
-        "eucalyptus/core"
+        "eucalyptus/core", "anticipation/file"
       ],
       "sources": [
         "src/core"
