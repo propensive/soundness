@@ -27,6 +27,7 @@ import anticipation.*
 import java.io as ji
 import java.nio.file as jnf
 
+
 import jnf.{FileSystems, FileVisitResult, Files, Paths, SimpleFileVisitor, StandardCopyOption,
     DirectoryNotEmptyException, Path as JavaPath}, jnf.StandardCopyOption.*,
     jnf.attribute.BasicFileAttributes
@@ -46,7 +47,8 @@ object IoError:
       case NotSupported         => t"the filesystem does not support it"
 
   enum Reason:
-    case NotFile, NotDirectory, NotSymlink, DoesNotExist, AlreadyExists, AccessDenied, DifferentFilesystems, NotSupported
+    case NotFile, NotDirectory, NotSymlink, DoesNotExist, AlreadyExists, AccessDenied, DifferentFilesystems,
+        NotSupported
 
   object Op:
     given Show[Op] = Showable(_).show.lower
@@ -98,14 +100,14 @@ sealed trait Inode[+Fs <: Filesystem](val path: DiskPath[Fs]):
     catch case e => throw IoError(IoError.Op.Write, IoError.Reason.NotSupported, path)
 
 object File:
-  given Show[File[?]] = _.path.fullname
+  given Show[File[?]] = t"ᶠ｢"+_.path.fullname+t"｣"
   
-  given provider[Fs <: Filesystem: ValueOf]: FileProvider[File[Fs]]
-      with FileInterpreter[File[Filesystem]] with
-    def make(str: String, readOnly: Boolean = false): Option[File[Fs]] =
-      safely(summon[ValueOf[Fs]].value.parse(Text(str)).file(Expect)).option
-    
-    def path(file: File[Filesystem]): String = file.path.fullname.toString
+  given provider(using fs: Filesystem): (FileProvider[File[fs.type]] & FileInterpreter[File[fs.type]]) =
+    new FileProvider[File[fs.type]] with FileInterpreter[File[fs.type]]:
+      def makeFile(str: String, readOnly: Boolean = false): Option[File[fs.type]] =
+        safely(fs.parse(Text(str)).file(Expect)).option
+      
+      def filePath(file: File[fs.type]): String = file.path.fullname.toString
 
   given [Fs <: Filesystem]: Writable[File[Fs]] with
     type E = IoError
@@ -124,7 +126,7 @@ object File:
         then throw IoError(IoError.Op.Read, IoError.Reason.AccessDenied, file.path)
         else throw IoError(IoError.Op.Read, IoError.Reason.DoesNotExist, file.path)
 
-case class File[+Fs <: Filesystem](override val path: DiskPath[Fs]) extends Inode[Fs](path):
+case class File[+Fs <: Filesystem](filePath: DiskPath[Fs]) extends Inode[Fs](filePath), Shown[File[Fs]]:
   def directory: Unset.type = Unset
   def file: File[Fs] = this
   def symlink: Unset.type = Unset
@@ -186,21 +188,26 @@ case class File[+Fs <: Filesystem](override val path: DiskPath[Fs]) extends Inod
 
 
 object Fifo:
-  given [Fs <: Unix]: Writable[Fifo[Fs]] with
+
+  given Show[Fifo[?]] = t"ˢ｢"+_.path.fullname+t"｣"
+
+  given [Fs <: Filesystem]: Writable[Fifo[Fs]] with
     type E = IoError
     def write(value: Fifo[Fs], stream: DataStream): Unit throws StreamCutError | E =
-      try Util.write(stream, value.out)
-      catch case e => throw IoError(IoError.Op.Write, IoError.Reason.AccessDenied, value.file.path)
+      val out = value.out
+      try Util.write(stream, out)
+      catch case e => throw IoError(IoError.Op.Write, IoError.Reason.AccessDenied, value.path)
+      //finally out.close()
 
-case class Fifo[+Fs <: Unix](file: File[Fs]):
-  val out = ji.FileOutputStream(file.javaFile, false)
+case class Fifo[+Fs <: Filesystem](path: DiskPath[Fs]) extends Shown[Fifo[Fs]]:
+  lazy val out = ji.FileOutputStream(path.javaFile, false)
   def close(): Unit = out.close()
 
 object Symlink:
-  given Show[Symlink[?]] = _.path.fullname
+  given Show[Symlink[?]] = t"ˢʸᵐ｢"+_.path.fullname+t"｣"
 
-case class Symlink[+Fs <: Filesystem](override val path: DiskPath[Fs], target: DiskPath[Fs])
-extends Inode[Fs](path):
+case class Symlink[+Fs <: Filesystem](symlinkPath: DiskPath[Fs], target: DiskPath[Fs])
+extends Inode[Fs](symlinkPath), Shown[Symlink[Fs]]:
   def apply(): DiskPath[Fs] = target
   
   def hardLinkTo(dest: DiskPath[path.root.type]): Symlink[path.root.type] throws IoError =
@@ -221,18 +228,28 @@ extends Inode[Fs](path):
     dest.symlink
 
 object Directory:
-  given Show[Directory[?]] = _.path.fullname
-
+  given Show[Directory[?]] = t"ᵈ｢"+_.path.fullname+t"｣"
   given WatchService[Directory[Unix]] = () => Unix.javaFilesystem.newWatchService().nn
 
-  given provider[Fs <: Filesystem: ValueOf]: DirectoryProvider[Directory[Fs]]
-      with DirectoryInterpreter[Directory[Fs]] with
-    def make(str: String, readOnly: Boolean = false): Option[Directory[Fs]] =
-      safely(summon[ValueOf[Fs]].value.parse(Text(str)).directory(Expect)).option
-    
-    def path(dir: Directory[Fs]): String = dir.path.fullname.s
+  given provider(using fs: Filesystem)
+                : (DirectoryProvider[Directory[fs.type]] & DirectoryInterpreter[Directory[fs.type]]) =
+    new DirectoryProvider[Directory[fs.type]] with DirectoryInterpreter[Directory[fs.type]]:
+      def makeDirectory(str: String, readOnly: Boolean = false): Option[Directory[fs.type]] =
+        safely(fs.parse(Text(str)).directory(Expect)).option
+      
+      def directoryPath(dir: Directory[fs.type]): String = dir.path.fullname.s
+  
+  given pathInterpreter(using fs: Filesystem): PathInterpreter[Directory[fs.type]] =
+    new PathInterpreter[Directory[fs.type]]:
+      def getPath(dir: Directory[fs.type]): String = dir.path.fullname.s
+  
+  given pathProvider(using fs: Filesystem): PathProvider[Directory[fs.type]] =
+    new PathProvider[Directory[fs.type]]:
+      def makePath(str: String, readOnly: Boolean = false): Option[Directory[fs.type]] =
+        safely(fs.parse(Text(str)).directory(Expect)).option
 
-case class Directory[+Fs <: Filesystem](override val path: DiskPath[Fs]) extends Inode[Fs](path):
+case class Directory[+Fs <: Filesystem](directoryPath: DiskPath[Fs])
+extends Inode[Fs](directoryPath), Shown[Directory[Fs]]:
   def directory: Directory[Fs] = this
   def file: Unset.type = Unset
   def symlink: Unset.type = Unset
@@ -252,6 +269,7 @@ case class Directory[+Fs <: Filesystem](override val path: DiskPath[Fs]) extends
   
   @targetName("safeChild")
   infix def /(element: PathElement): DiskPath[Fs] = path / element
+
 
   def delete(): Unit throws IoError =
     def recur(file: JavaFile): Boolean =
@@ -306,17 +324,17 @@ case class Directory[+Fs <: Filesystem](override val path: DiskPath[Fs]) extends
     dest.directory(Expect)
 
 object DiskPath:
-  given Show[DiskPath[?]] = _.fullname
+  given Show[DiskPath[?]] = t"ᵖ｢"+_.fullname+t"｣"
   
-  given provider[Fs <: Filesystem: ValueOf]: PathProvider[DiskPath[Fs]]
-      with PathInterpreter[DiskPath[Fs]] with
-    def make(str: String, readOnly: Boolean = false): Option[DiskPath[Fs]] =
-      safely(summon[ValueOf[Fs]].value.parse(Text(str))).option
-  
-    def path(path: DiskPath[Fs]): String = path.fullname.s
+  given provider(using fs: Filesystem): (PathProvider[DiskPath[fs.type]] & PathInterpreter[DiskPath[fs.type]]) =
+    new PathProvider[DiskPath[fs.type]] with PathInterpreter[DiskPath[fs.type]]:
+      def makePath(str: String, readOnly: Boolean = false): Option[DiskPath[fs.type]] =
+        safely(fs.parse(Text(str))).option
+    
+      def getPath(path: DiskPath[fs.type]): String = path.fullname.s
 
 case class DiskPath[+Fs <: Filesystem](filesystem: Fs, elements: List[Text])
-extends Absolute[Fs](filesystem, elements):
+extends Absolute[Fs](filesystem, elements), Shown[DiskPath[Fs]]:
   lazy val javaFile: ji.File = ji.File(fullname.s)
   lazy val javaPath: jnf.Path = javaFile.toPath.nn
   
@@ -333,6 +351,29 @@ extends Absolute[Fs](filesystem, elements):
   // infix def +(relative: Relative): DiskPath[Fs] throws RootParentError =
   //   if relative.ascent == 0 then fs.make(elements ++ relative.parts)
   //   else parent + relative.copy(ascent = relative.ascent - 1)
+
+  def fifo(creation: Creation = Creation.Ensure): Fifo[Fs] throws IoError = root.synchronized:
+    import IoError.*
+
+    creation match
+      case Create if exists()  => throw IoError(Op.Create, Reason.AlreadyExists, this)
+      case Expect if !exists() => throw IoError(Op.Access, Reason.DoesNotExist, this)
+      case Ensure if !exists() => ()
+      case _                   => ()
+
+    val fifo = Fifo[Fs](this)
+    
+    try
+      if !parent.exists() && !parent.javaFile.mkdirs()
+      then throw IoError(Op.Create, Reason.AccessDenied, this)
+    catch case err: RootParentError => throw IoError(Op.Create, Reason.AccessDenied, this)
+    
+    if !exists()
+    then Runtime.getRuntime.nn.exec(Array[String | Null]("sh", "-c", t"mkfifo $fullname".s)).nn.waitFor()
+    
+    if !isFile then throw IoError(IoError.Op.Access, IoError.Reason.NotFile, this)
+    
+    fifo
 
   def file(creation: Creation = Creation.Ensure): File[Fs] throws IoError = root.synchronized:
     import IoError.*
@@ -408,6 +449,9 @@ extends Absolute[Fs](filesystem, elements):
     else File(this)
 
 object Filesystem:
+
+  given Show[Filesystem] = fs => t"ᶠˢ｢${fs.name}:${fs.prefix}...${fs.separator}｣"
+
   lazy val roots: Set[Filesystem] =
     Option(ji.File.listRoots).fold(Set())(_.nn.immutable(using Unsafe).to(Set)).map(_.nn.getAbsolutePath.nn)
         .collect:
@@ -434,13 +478,14 @@ object Filesystem:
       .getOrElse:
         throw InvalidPathError(value)
 
-abstract class Filesystem(fsPrefix: Text, fsSeparator: Text) extends Root(fsPrefix, fsSeparator):
+abstract class Filesystem(val name: Text, fsPrefix: Text, fsSeparator: Text)
+extends Root(fsPrefix, fsSeparator), Shown[Filesystem]:
   type PathType = DiskPath[this.type]
   
   def root: Directory[this.type] = Directory(DiskPath(this, Nil))
   lazy val javaFilesystem: jnf.FileSystem = root.javaPath.getFileSystem.nn
 
-  def make(parts: List[Text]): DiskPath[this.type] = DiskPath(this, parts)
+  def make(parts: List[Text]): DiskPath[this.type] = DiskPath(this, parts.filter(_ != t""))
 
   def parse(value: Text, pwd: Maybe[DiskPath[this.type]] = Unset)
            : DiskPath[this.type] throws InvalidPathError =
@@ -448,15 +493,15 @@ abstract class Filesystem(fsPrefix: Text, fsSeparator: Text) extends Root(fsPref
     else try pwd.option.map(_ + Relative.parse(value)).getOrElse(throw InvalidPathError(value))
     catch case err: RootParentError => throw InvalidPathError(value)
 
-object Unix extends Filesystem(t"/", t"/"):
+object Unix extends Filesystem(t"unix", t"/", t"/"):
   type PathType = DiskPath[Unix]
 
 type Unix = Unix.type
 
-case class WindowsRoot(drive: Majuscule) extends Filesystem(t"\\", t"${drive}:\\")
+case class WindowsRoot(drive: Majuscule) extends Filesystem(t"win", t"\\", t"${drive}:\\")
 
 package filesystems:
-  given unix: Unix.type = Unix
+  given unix: Unix = Unix
 
 type Majuscule = 'A' | 'B' | 'C' | 'D' | 'E' | 'F' | 'G' | 'H' | 'I' | 'J' | 'K' | 'L' | 'M' | 'N' |
     'O' | 'P' | 'Q' | 'R' | 'S' | 'T' | 'U' | 'V' | 'W' | 'X' | 'Y' | 'Z'
@@ -469,23 +514,35 @@ object windows:
 
 given realm: Realm = Realm(t"joviality")
 
+object Classpath:
+  given Show[Classpath] = cp =>
+    def recur(cp: ClassLoader): Text =
+      val start = Option(cp.getParent).map(_.nn).map(recur(_)).getOrElse(t"")
+      t"$start/${Option(cp.getName).fold(t"-")(_.nn.show)}"
+    
+    recur(cp.classLoader)
+
 open class Classpath(val classLoader: ClassLoader = getClass.nn.getClassLoader.nn)
-extends Root(t"/", t""):
+extends Root(t"/", t""), Shown[Classpath]:
   type PathType = ClasspathRef[this.type]
   protected inline def classpath: this.type = this
   def make(parts: List[Text]): ClasspathRef[this.type] = ClasspathRef[this.type](this, parts)
 
 object ClasspathRef:
-  given Show[ClasspathRef[Classpath]] = _.parts.join(t"classpath:", t"/", t"")
+  given Show[ClasspathRef[Classpath]] = t"ᶜᵖ｢"+_.fullname+t"｣"
 
 case class ClasspathRef[+Cp <: Classpath](classpath: Cp, elements: List[Text])
-extends Absolute[Cp](classpath, elements):
+extends Absolute[Cp](classpath, elements), Shown[ClasspathRef[Cp]]:
   def resource: ClasspathResource = ClasspathResource(classpath.make(parts))
-  
-case class ClasspathResource(path: ClasspathRef[Classpath]):
+  def fullname = parts.join(t"/", t"/", t"")
+
+object ClasspathResource:
+  given Show[ClasspathResource] = cr => t"[resource]"
+
+case class ClasspathResource(path: ClasspathRef[Classpath]) extends Shown[ClasspathResource]:
   def read[T](rubrics: Rubric*)(using readable: Readable[T], alloc: Allocator)
           : T throws ClasspathRefError | StreamCutError | readable.E =
-    val resource = path.root.classLoader.getResourceAsStream(path.show.drop(10).s)
+    val resource = path.root.classLoader.getResourceAsStream(path.fullname.drop(1).s)
     if resource == null then throw ClasspathRefError(path.classpath)(path)
     val stream = Util.readInputStream(resource.nn, rubrics*)
     readable.read(stream)
