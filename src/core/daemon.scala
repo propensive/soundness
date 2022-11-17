@@ -16,7 +16,8 @@
 
 package exoskeleton
 
-import joviality.*
+import joviality.*, filesystems.unix
+import anticipation.integration.jovialityPath
 import gossamer.*
 import rudiments.*
 import parasitism.*
@@ -53,7 +54,7 @@ extends Stdout, InputSource:
     Tty(System.out.nn, stdin)
 
 trait App:
-  def main(using CommandLine): ExitStatus
+  def main(using CommandLine, Environment): ExitStatus
 
 enum Signal:
   case Hup, Int, Quit, Ill, Trap, Abrt, Bus, Fpe, Kill, Usr1, Segv, Usr2, Pipe, Alrm, Term, Chld,
@@ -66,6 +67,7 @@ enum Signal:
 
 trait Daemon() extends App:
   private val spawnCount: Counter = Counter(0)
+  import threading.platform
   val signalHandler: PartialFunction[Signal, Unit] = PartialFunction.empty
 
   final def main(args: IArray[Text]): Unit =
@@ -89,6 +91,7 @@ trait Daemon() extends App:
             (using Allocator, Monitor)
             : Unit =
     val socket: DiskPath[Unix] = Unix.parse(fifo)
+    socket.file().javaFile.deleteOnExit()
     
     val death: Runnable = () => try socket.file().delete() catch case e: Exception => ()
     
@@ -96,14 +99,12 @@ trait Daemon() extends App:
       () => sys.exit(2)
    
     case class AppInstance(pid: Int, spawnId: Int, scriptFile: Maybe[File[Unix]] = Unset,
-                               args: List[Text] = Nil, env: Map[Text, Text] = Map(),
+                               args: List[Text] = Nil, instanceEnv: Map[Text, Text] = Map(),
                                runDir: Maybe[Directory[Unix]] = Unset):
+      given Environment(instanceEnv.get(_), key => Option(System.getProperty(key.s)).map(_.nn.show))
       val signals: Funnel[Unit] = Funnel()
-      def pwd: Directory[Unix] throws PwdError =
-        try Unix.parse(env.getOrElse(t"PWD", throw PwdError())).directory(Expect)
-        catch
-          case err: IoError          => throw PwdError()
-          case err: InvalidPathError => throw PwdError()
+      def pwd: Directory[Unix] throws EnvError = env.pwd[DiskPath[Unix]].directory(Expect)
+
 
       def resize(): Unit = signals.put(())
 
@@ -111,7 +112,7 @@ trait Daemon() extends App:
         lazy val out = Fifo[Unix]:
           val file = (runDir.otherwise(sys.exit(1)) / t"$script-$pid.stdout.sock").file(Expect)
           file.javaFile.deleteOnExit()
-          file
+          file.path
         
         try
           val script = scriptFile.otherwise(sys.exit(1)).name
@@ -125,12 +126,12 @@ trait Daemon() extends App:
           
           def interactive(): Unit = 99.show.bytes.writeTo(exitFile)
           
-          val commandLine = CommandLine(args, env, scriptFile.otherwise(sys.exit(1)),
+          val commandLine = CommandLine(args, instanceEnv, scriptFile.otherwise(sys.exit(1)),
               LazyList() #::: fifoIn.read[DataStream](), _.writeTo(out),
               exit => terminate.supply(exit), workDir, () => sys.exit(0),
               () => interactive(), signals.stream)
           
-          val exit = main(using commandLine)
+          val exit = main(using commandLine, env)
           out.close()
           exit().show.bytes.writeTo(exitFile)
         
@@ -170,7 +171,7 @@ trait Daemon() extends App:
             map
           
           case t"ENV" :: As[Int](pid) :: env =>
-            map.updated(pid, map(pid).copy(env = parseEnv(env)))
+            map.updated(pid, map(pid).copy(instanceEnv = parseEnv(env)))
           
           case t"START" :: As[Int](pid) :: _ =>
             map(pid).spawn()
