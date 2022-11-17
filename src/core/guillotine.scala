@@ -24,6 +24,7 @@ import gossamer.*
 import eucalyptus.*
 import escapade.*
 import iridescence.*
+import anticipation.*
 
 import scala.jdk.StreamConverters.StreamHasToScala
 import scala.jdk.CollectionConverters.MapHasAsJava
@@ -80,9 +81,11 @@ class Process[T](process: java.lang.Process, executor: Executor[T]):
     process.destroyForcibly()
 
 sealed trait Executable:
-  def fork[T]()(using env: Environment, exec: Executor[T] = Executor.text)(using Log): Process[T]
+  def fork[T]()(using env: Environment, exec: Executor[T] = Executor.text)(using Log)
+          : Process[T] throws EnvError
   
-  def exec[T]()(using env: Environment, exec: Executor[T] = Executor.text)(using Log): T =
+  def exec[T]()(using env: Environment, exec: Executor[T] = Executor.text)(using Log)
+          : T throws EnvError =
     fork[T]().await()
   
   def apply(cmd: Executable): Pipeline = cmd match
@@ -99,14 +102,13 @@ sealed trait Executable:
 object Command:
 
   private def formattedArgs(args: Seq[Text]): Text =
-    args.map:
-      arg =>
-        if arg.contains(t"\"") && !arg.contains(t"'") then t"""'$arg'"""
-        else if arg.contains(t"'") && !arg.contains(t"\"") then t""""$arg""""
-        else if arg.contains(t"'") && arg.contains(t"\"")
-          then t""""${arg.rsub(t"\\\"", t"\\\\\"")}""""
-        else if arg.contains(t" ") || arg.contains(t"\t") || arg.contains(t"\\") then t"'$arg'"
-        else arg
+    args.map: arg =>
+      if arg.contains(t"\"") && !arg.contains(t"'") then t"""'$arg'"""
+      else if arg.contains(t"'") && !arg.contains(t"\"") then t""""$arg""""
+      else if arg.contains(t"'") && arg.contains(t"\"")
+        then t""""${arg.rsub(t"\\\"", t"\\\\\"")}""""
+      else if arg.contains(t" ") || arg.contains(t"\t") || arg.contains(t"\\") then t"'$arg'"
+      else arg
     .join(t" ")
 
   given DebugString[Command] = cmd =>
@@ -116,23 +118,26 @@ object Command:
   given AnsiShow[Command] = cmd => ansi"${colors.LightSeaGreen}(${formattedArgs(cmd.args)})"
 
 case class Command(args: Text*) extends Executable:
-  def fork[T]()(using env: Environment, exec: Executor[T] = Executor.text)(using Log): Process[T] =
+  def fork[T]()(using env: Environment, exec: Executor[T] = Executor.text)(using Log)
+          : Process[T] throws EnvError =
     val processBuilder = ProcessBuilder(args.ss*)
-    val dir = ji.File(env(t"PWD").get.s)
+    val dir = env.userHome[java.io.File]
     processBuilder.directory(dir)
+    
     val t0 = System.currentTimeMillis
     Log.info(ansi"Starting process ${this.ansi} in directory ${dir.getAbsolutePath.nn}")
     new Process[T](processBuilder.start().nn, summon[Executor[T]])
 
 object Pipeline:
   given DebugString[Pipeline] = _.cmds.map(summon[DebugString[Command]].show(_)).join(t" | ")
+  
   given AnsiShow[Pipeline] =
-    _.cmds.map(summon[AnsiShow[Command]].ansiShow(_))
-        .join(ansi" ${colors.PowderBlue}(|) ")
+    _.cmds.map(summon[AnsiShow[Command]].ansiShow(_)).join(ansi" ${colors.PowderBlue}(|) ")
 
 case class Pipeline(cmds: Command*) extends Executable:
-  def fork[T]()(using env: Environment, exec: Executor[T] = Executor.text)(using Log): Process[T] =
-    val dir = ji.File(env(t"PWD").get.s)
+  def fork[T]()(using env: Environment, exec: Executor[T] = Executor.text)(using Log)
+          : Process[T] throws EnvError =
+    val dir = env.pwd[ji.File]
     Log.info(ansi"Starting pipelined processes ${this.ansi} in directory ${dir.getAbsolutePath.nn}")
 
     val processBuilders = cmds.map: cmd =>
@@ -167,8 +172,8 @@ object Sh:
     def insert(state: State, value: Params): State =
       value.params.to(List) match
         case h :: t =>
-          if state.esc then throw InterpolationError(txt"""escaping with '\\' is not allowed
-                                                         immediately before a substitution""")
+          if state.esc then throw InterpolationError(txt"""escaping with '\\' is not allowed immediately before
+              a substitution""")
           
           state match
             case State(Awaiting, false, args) =>
@@ -207,6 +212,15 @@ object Sh:
   given Insertion[Params, Text] = value => Params(value)
   given Insertion[Params, List[Text]] = xs => Params(xs*)
   given Insertion[Params, Command] = cmd => Params(cmd.args*)
-  given [T: Show]: Insertion[Params, T] = value => Params(summon[Show[T]].show(value))
+  given [T: CmdShow]: Insertion[Params, T] = value => Params(summon[CmdShow[T]].show(value))
+
+object CmdShow:
+  given [P](using pi: PathInterpreter[P]): CmdShow[P] = pi.getPath(_).show
+  given [F](using fi: FileInterpreter[F]): CmdShow[F] = fi.filePath(_).show
+  given [D](using di: DirectoryInterpreter[D]): CmdShow[D] = di.directoryPath(_).show
+  given CmdShow[Int] = _.show
+
+trait CmdShow[-T]:
+  def show(value: T): Text
 
 given realm: Realm = Realm(t"guillotine")
