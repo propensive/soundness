@@ -43,6 +43,8 @@ def hibernate()(using Monitor): Unit = sleep(using timekeeping.long)(Long.MaxVal
 def sleep(using tk: Timekeeper)(time: tk.Type)(using Monitor): Unit =
   try Thread.sleep(tk.to(time)) catch case err: InterruptedException => unsafely(throw CancelError())
 
+@implicitNotFound("""|parasitism: a contextual Monitor instance is required, for example:
+                     |    import monitors.global  // a top-level supervisor for asynchronous tasks""".stripMargin)
 trait Monitor:
   def id: Text
   def name: Text
@@ -62,7 +64,8 @@ case class TaskMonitor(id: Text, interrupted: () => Boolean, stop: () => Unit, p
   def cancel(): Unit = stop()
 
 object Task:
-  def apply[T](id: Text)(fn: CanThrow[CancelError] ?=> Monitor ?=> T)(using monitor: Monitor): Task[T] =
+  def apply[T](id: Text)(fn: CanThrow[CancelError] ?=> Monitor ?=> T)
+              (using monitor: Monitor, threading: Threading): Task[T] =
     (new Task(id, mon => fn(using unsafeExceptions.canThrowAny)(using mon))(using monitor)).tap(_.start())
 
 case class Promise[T]():
@@ -102,13 +105,25 @@ case class Promise[T]():
     try value.fold("[incomplete]")(_.toString) catch case err: CancelError => "[canceled]"
 
 extension [T](xs: Iterable[Task[T]])
-  transparent inline def sequence(using mon: Monitor): Task[Iterable[T]] =
+  transparent inline def sequence(using mon: Monitor, threading: Threading): Task[Iterable[T]] =
     Task(Text("sequence"))(xs.map(_.await()))
 
 enum TaskStatus:
   case New, Running, Completed, Canceled, Failed, Expired
 
-class Task[T](id: Text, calc: Monitor => T)(using mon: Monitor):
+package threading:
+  // given platform: Threading = (runnable, name) => Thread.ofPlatform.nn.name(name.s).nn.start(runnable).nn
+  given virtual: Threading = (runnable, name) => Thread.ofVirtual.nn.name(name.s).nn.start(runnable).nn
+  given platform: Threading = (runnable, name) => Thread(runnable, name.s)
+
+@implicitNotFound("""|parasitism: a contextual Threading instance is required to create new asynchronous tasks, typically
+                     |one of:
+                     |    import threading.virtual   // use lightweight virtual threads in newer JVMs
+                     |    import threading.platform  // use OS threads""".stripMargin)
+trait Threading:
+  def apply(runnable: Runnable, name: Text): Thread
+
+class Task[T](id: Text, calc: Monitor => T)(using mon: Monitor, threading: Threading):
   private var startTime: Long = 0L
   private var status: TaskStatus = TaskStatus.New
   def name = Text(mon.name.s+"/"+id)
@@ -136,7 +151,7 @@ class Task[T](id: Text, calc: Monitor => T)(using mon: Monitor):
     Task(Text("flatMap"))(fn(await()).await())
   
   private val result: Promise[T] = Promise()
-  private lazy val thread: Thread = Thread(runnable, ctx.name.s)
+  private lazy val thread: Thread = threading(runnable, ctx.name)
   private lazy val ctx = mon.child(id, thread.isInterrupted, thread.interrupt())
   
   private def runnable: Runnable = () => safely:
