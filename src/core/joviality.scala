@@ -117,6 +117,14 @@ object File:
       catch case e => throw IoError(IoError.Op.Write, IoError.Reason.AccessDenied, value.path)
       finally try out.close() catch _ => ()
   
+  given [Fs <: Filesystem]: Appendable[File[Fs]] with
+    type E = IoError
+    def write(value: File[Fs], stream: DataStream): Unit throws StreamCutError | IoError =
+      val out = ji.FileOutputStream(value.javaFile, true)
+      try Util.write(stream, out)
+      catch case e => throw IoError(IoError.Op.Write, IoError.Reason.AccessDenied, value.path)
+      finally try out.close() catch _ => ()
+  
   given [Fs <: Filesystem](using Allocator): Source[File[Fs]] with
     type E = IoError
     def read(file: File[Fs], rubrics: Rubric*): DataStream throws IoError =
