@@ -39,12 +39,11 @@ import encodings.Utf8
 import unsafeExceptions.canThrowAny
 import rendering.ansi
 
-transparent inline def cli(using cli: CommandLine): CommandLine = cli
+inline def cli(using cli: CommandLine): CommandLine = cli
 
 case class CommandLine(args: List[Text], env: Map[Text, Text], script: File[Unix],
                            stdin: DataStream, stdout: DataStream => Unit, exit: Int => Unit,
-                           pwd: Directory[Unix], shutdown: () => Unit, interactive: () => Unit,
-                           resize: LazyList[Unit])
+                           shutdown: () => Unit, interactive: () => Unit, resize: LazyList[Unit])
 extends Stdout, InputSource:
   def write(msg: Text): Unit = stdout(LazyList(msg.bytes))
   def cleanup(tty: Tty): Unit = ()
@@ -63,7 +62,6 @@ enum Signal:
   def shortName: Text = this.toString.show.upper
   def name: Text = t"SIG${this.toString.show.upper}"
   def id: Int = if ordinal < 15 then ordinal - 1 else ordinal
-
 
 trait Daemon() extends App:
   private val spawnCount: Counter = Counter(0)
@@ -119,16 +117,20 @@ trait Daemon() extends App:
           val fifoIn = (runDir.otherwise(sys.exit(1)) / t"$script-$pid.stdin.sock").file(Expect)
           fifoIn.javaFile.deleteOnExit()
           val terminate = Promise[Int]()
-          val workDir = pwd.otherwise(sys.exit(1))
           
           lazy val exitFile = (runDir.otherwise(sys.exit(1)) / t"$script-$pid.exit").file()
           exitFile.javaFile.deleteOnExit()
           
           def interactive(): Unit = 99.show.bytes.writeTo(exitFile)
-          
+
+          def term(): Unit =
+            0.show.bytes.writeTo(exitFile)
+            sys.exit(0)
+            
+
           val commandLine = CommandLine(args, instanceEnv, scriptFile.otherwise(sys.exit(1)),
               LazyList() #::: fifoIn.read[DataStream](), _.writeTo(out),
-              exit => terminate.supply(exit), workDir, () => sys.exit(0),
+              exit => terminate.supply(exit), term,
               () => interactive(), signals.stream)
           
           val exit = main(using commandLine, env)

@@ -142,8 +142,8 @@ server() {
     mkdir -p "$RUNDIR"
   fi
   mkfifo "$FIFO"
-  (while true; do sleep 3600; done) > "$FIFO" &
-  CATPID="$!"
+  (sleep infinity) > "$FIFO" &
+  WAITPID="$!"
 
   get
   
@@ -154,7 +154,7 @@ server() {
       -Dexoskeleton.script="$THIS" \
       -Dexoskeleton.fifo="$FIFO" \
       -Dexoskeleton.pid="$PID" \
-      -Dexoskeleton.watch="$CATPID" \
+      -Dexoskeleton.watch="$WAITPID" \
       -jar "$SCRIPTDIR/$THIS" &
 }
 
@@ -167,7 +167,7 @@ connect() {
   echo "ENV	$PID	$(env | tr '\n' '\t')" > "$FIFO"
   echo "START	$PID" > "$FIFO"
   cat - 2> /dev/null > "$STDIN" <&0 &
-  CATPID="$!"
+  WAITPID="$!"
   cat "$STDOUT" &
   WRITERPID="$!"
   EXIT="$(cat "$EXITFILE")"
@@ -180,7 +180,7 @@ connect() {
     EXIT="$(cat "$EXITFILE")"
   fi
   
-  kill "$CATPID" > /dev/null 2>&1
+  kill "$WAITPID" > /dev/null 2>&1
   rm -f "$STDOUT" "$STDIN" "$EXITFILE"
   case "$-" in
     *i*) stty sane
@@ -196,6 +196,7 @@ cleanup() {
   case "$-" in
     *i*) stty sane
   esac
+  kill "${WAITPID}" > /dev/null 2>&1
   printf "\e[0J\e[?25h"
 }
 
