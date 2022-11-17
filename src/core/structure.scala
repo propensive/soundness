@@ -27,7 +27,7 @@ case class BaseLayout(private val part: String, private val envVar: Maybe[String
                      (using baseDir: BaseLayout.Dir):
   def absolutePath(using env: Environment): String =
     if baseDir.home then
-      val home: Text = env(Text("HOME")).getOrElse(Text(System.getProperty("user.home").nn))
+      val home: Text = unsafely(env(Text("HOME")).otherwise(env.property(Text("user.home"))))
       val slash = if home.s.endsWith("/") then "" else "/"
       s"$home$slash${baseDir.path}/$part" else s"${baseDir.path}/$part"
 
@@ -36,15 +36,15 @@ case class BaseLayout(private val part: String, private val envVar: Maybe[String
   def apply[T]()(using PathProvider[T], Environment): T =
     val path: String = envVar.option match
       case None         => absolutePath
-      case Some(envVar) => summon[Environment](Text(envVar)).fold(absolutePath)(_.s)
+      case Some(envVar) => summon[Environment](Text(envVar)).envelop(absolutePath)(_.s)
 
-    summon[PathProvider[T]].make(path, readOnly = readOnly) match
+    summon[PathProvider[T]].makePath(path, readOnly = readOnly) match
       case None      => throw RuntimeException("failed to parse: '"+path+"'")
       case Some(dir) => dir
 
 object Xdg extends BaseLayout("")(using BaseLayout.Dir(false, "")):
   override def apply[T]()(using PathProvider[T], Environment): T =
-    summon[PathProvider[T]].make("/", readOnly = true).get
+    summon[PathProvider[T]].makePath("/", readOnly = true).get
 
   object Boot extends BaseLayout("boot", readOnly = true)
   object Efi extends BaseLayout("efi", readOnly = true)
@@ -55,7 +55,11 @@ object Xdg extends BaseLayout("")(using BaseLayout.Dir(false, "")):
   object Tmp extends BaseLayout("tmp")
   object Run extends BaseLayout("run"):
     object Log extends BaseLayout("log")
-    object User extends BaseLayout("user")
+    
+    object User extends BaseLayout("user"):
+      def apply(uid: Long): BaseLayout = BaseLayout(uid.toString)
+      def current: BaseLayout = apply(com.sun.security.auth.module.UnixSystem().getUid())
+  
   object Usr extends BaseLayout("usr", readOnly = true):
     object Bin extends BaseLayout("bin", readOnly = true)
     object Include extends BaseLayout("include", readOnly = true)
