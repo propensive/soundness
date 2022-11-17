@@ -66,6 +66,20 @@
       "docs": [
         "doc"
       ]
+    },
+    {
+      "name": "Joviality Integration",
+      "id": "joviality/integration",
+      "links": [
+        "joviality/core"
+      ],
+      "sources": [
+        "src/integration"
+      ],
+      "version": "0.4.0",
+      "docs": [
+        "doc"
+      ]
     }
   ]
 }
