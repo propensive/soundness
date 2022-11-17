@@ -118,6 +118,7 @@ object Streamable:
   given Streamable[Bytes] = LazyList(_)
 
   given Streamable[Text] = value => LazyList(value.s.getBytes("UTF-8").nn.immutable(using Unsafe))
+  given Streamable[LazyList[Text]] = _.map(_.s.getBytes("UTF-8").nn.immutable(using Unsafe))
 
 trait Streamable[T]:
   def stream(value: T): DataStream
@@ -173,9 +174,10 @@ object SystemOut
 object SystemErr
 
 extension (obj: LazyList.type)
-  def multiplex[T](streams: LazyList[T]*)(using Monitor): LazyList[T] = multiplexer(streams*).stream
+  def multiplex[T](streams: LazyList[T]*)(using Monitor, Threading): LazyList[T] =
+    multiplexer(streams*).stream
   
-  def multiplexer[T](streams: LazyList[T]*)(using Monitor): Multiplexer[Any, T] =
+  def multiplexer[T](streams: LazyList[T]*)(using Monitor, Threading): Multiplexer[Any, T] =
     val multiplexer = Multiplexer[Any, T]()
     streams.zipWithIndex.map(_.swap).foreach(multiplexer.add)
     multiplexer
@@ -210,7 +212,7 @@ extension [T](value: T)
           : S throws StreamCutError | src.E | readable.E =
     readable.read(dataStream, rubrics*)
 
-case class Multiplexer[K, T]()(using monitor: Monitor):
+case class Multiplexer[K, T]()(using monitor: Monitor, threading: Threading):
   private val tasks: HashMap[K, Task[Unit]] = HashMap()
   private val queue: juc.LinkedBlockingQueue[Maybe[T]] = juc.LinkedBlockingQueue()
 
@@ -239,7 +241,8 @@ case class Multiplexer[K, T]()(using monitor: Monitor):
     LazyList() #::: recur()
 
 extension [T](stream: LazyList[T])
-  def rate(using time: Timekeeper)(interval: time.Type)(using Monitor): LazyList[T] throws CancelError =
+  def rate(using time: Timekeeper)(interval: time.Type)(using Monitor, Threading)
+          : LazyList[T] throws CancelError =
     def recur(stream: LazyList[T], last: Long): LazyList[T] = stream match
       case LazyList() =>
         LazyList()
@@ -252,9 +255,9 @@ extension [T](stream: LazyList[T])
 
     Task(Text("ratelimiter"))(recur(stream, System.currentTimeMillis)).await()
 
-  def multiplexWith(that: LazyList[T])(using Monitor): LazyList[T] = LazyList.multiplex(stream, that)
+  def multiplexWith(that: LazyList[T])(using Monitor, Threading): LazyList[T] = LazyList.multiplex(stream, that)
 
-  def regulate(tap: Tap)(using Monitor): LazyList[T] =
+  def regulate(tap: Tap)(using Monitor, Threading): LazyList[T] =
     def defer(active: Boolean, stream: LazyList[T | Tap.Regulation], buffer: List[T]): LazyList[T] =
       recur(active, stream, buffer)
 
@@ -272,7 +275,7 @@ extension [T](stream: LazyList[T])
 
   def cluster(using time: Timekeeper)
              (interval: time.Type, maxSize: Maybe[Int] = Unset, maxDelay: Maybe[Long] = Unset)
-             (using Monitor): LazyList[List[T]] =
+             (using Monitor, Threading): LazyList[List[T]] =
     
     def defer(stream: LazyList[T], list: List[T], expiry: Long): LazyList[List[T]] =
       recur(stream, list, expiry)
