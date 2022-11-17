@@ -58,7 +58,7 @@ object Text:
 
   given CommandLineParser.FromString[Text] = identity(_)
   given Ordering[Text] = Ordering.String.on[Text](_.s)
- 
+
   given Conversion[String, Text] = Text(_)
 
   given typeTest: Typeable[Text] with
@@ -77,7 +77,7 @@ extension [T](value: T)
   def waive: Any => T = _ => value
   def twin: (T, T) = (value, value)
   def triple: (T, T, T) = (value, value, value)
-  
+
   transparent inline def matchable(using erased Unsafe.type): T & Matchable =
     value.asInstanceOf[T & Matchable]
 
@@ -90,7 +90,7 @@ extension [T](value: Array[T])
   transparent inline def immutable(using erased Unsafe.type): IArray[T] = value match
     case array: IArray[T] @unchecked => array
     case _                           => throw Mistake("Should never match")
-  
+
   def snapshot(using ClassTag[T]): IArray[T] =
     val newArray = new Array[T](value.length)
     System.arraycopy(value, 0, newArray, 0, value.length)
@@ -98,7 +98,7 @@ extension [T](value: Array[T])
 
 extension [K, V](map: Map[K, V])
   def upsert(key: K, operation: Option[V] => V) = map.updated(key, operation(map.get(key)))
-  
+
   def collate(otherMap: Map[K, V])(merge: (V, V) => V): Map[K, V] =
     otherMap.foldLeft(map): (acc, kv) =>
       acc.updated(kv(0), acc.get(kv(0)).fold(kv(1))(merge(kv(1), _)))
@@ -115,7 +115,7 @@ def recur[T: Recur](value: T): T = summon[Recur[T]](value)
 case class Property(name: Text) extends Dynamic:
   def apply(): Text throws KeyNotFoundError =
     Text(Option(System.getProperty(name.s)).getOrElse(throw KeyNotFoundError(name)).nn)
-  
+
   def update(value: Text): Unit = System.setProperty(name.s, value.s)
   def selectDynamic(key: String): Property = Property(Text(s"$name.$key"))
   def applyDynamic(key: String)(): Text throws KeyNotFoundError = selectDynamic(key).apply()
@@ -126,6 +126,7 @@ object Sys extends Dynamic:
   def bigEndian: Boolean = java.nio.ByteOrder.nativeOrder == java.nio.ByteOrder.BIG_ENDIAN
 
 case class KeyNotFoundError(name: Text) extends Error(err"key $name not found")
+case class UnsetValueError() extends Error(err"the value was not set")
 
 object Mistake:
   def apply(error: Exception): Mistake =
@@ -143,9 +144,14 @@ extension [T](opt: Maybe[T])
   def otherwise(value: => T): T = opt match
     case Unset               => value
     case other: T @unchecked => other
-  
+
   def presume(using default: Default[T]): T = otherwise(default())
-  
+  def bluff: T throws UnsetValueError = otherwise(throw UnsetValueError())
+
+  def envelop[S](default: => S)(fn: T => S) = opt match
+    case Unset               => default
+    case value: T @unchecked => fn(value)
+
   def option: Option[T] = opt match
     case Unset               => None
     case other: T @unchecked => Some(other)
@@ -182,7 +188,7 @@ extension [T](xs: Iterable[T])
   transparent inline def mtwin: Iterable[(T, T)] = xs.map { x => (x, x) }
   transparent inline def mtriple: Iterable[(T, T, T)] = xs.map { x => (x, x, x) }
   transparent inline def sift[S]: Iterable[S] = xs.collect { case x: S @unchecked => x }
-  
+
   def indexBy[S](fn: T => S): Map[S, T] throws DuplicateIndexError =
     val map = xs.map { value => fn(value) -> value }
     if xs.size != map.size then throw DuplicateIndexError() else map.to(Map)
@@ -223,10 +229,10 @@ object ByteSize:
 
   extension (bs: ByteSize)
     def long: Long = bs
-    
+
     @targetName("plus")
     infix def +(that: ByteSize): ByteSize = bs + that
-    
+
     @targetName("gt")
     infix def >(that: ByteSize): Boolean = bs > that
 
@@ -259,7 +265,8 @@ enum ExitStatus:
     case Ok           => 0
     case Fail(status) => status
 
-case class Pid(value: Long)
+case class Pid(value: Long):
+  override def toString(): String = "ᴾᴵᴰ｢"+value+"｣"
 
 object Uuid:
   def unapply(text: Text): Option[Uuid] =
@@ -271,7 +278,7 @@ object Uuid:
   def apply(): Uuid =
     val uuid = ju.UUID.randomUUID().nn
     Uuid(uuid.getMostSignificantBits, uuid.getLeastSignificantBits)
-  
+
 case class Uuid(msb: Long, lsb: Long):
   def javaUuid: ju.UUID = ju.UUID(msb, lsb)
   def bytes: Bytes = Bytes(msb) ++ Bytes(lsb)
@@ -290,23 +297,78 @@ object Default:
 trait Default[+T](default: T):
   def apply(): T = default
 
+inline def env(using env: Environment): Environment = env
+
 package environments:
-  given system: Environment(v => Option(System.getenv(v.s)).map(_.nn).map(Text(_)))
-  given empty: Environment(v => None)
+  given system: Environment(
+    v => Option(System.getenv(v.s)).map(_.nn).map(Text(_)),
+    v => Option(System.getProperty(v.s)).map(_.nn).map(Text(_))
+  )
 
-@implicitNotFound("rudiments: a contextual Environment is required, for example\n    given Environment()\nor,\n"+
-                      "    given Envronment = environments.system")
-class Environment(getEnv: Text => Option[Text]):
-  def apply(variable: Text): Option[Text] = getEnv(variable)
+  given restricted: Environment(
+    v => None,
+    v => Option(System.getProperty(v.s)).map(_.nn).map(Text(_))
+  )
 
-def pwd[F]()(using env: Environment, mkdir: DirectoryProvider[F]): F throws PwdError =
-  env(Text("PWD")).flatMap(mkdir.make(_)).getOrElse(throw PwdError())
+  given empty: Environment(v => None, v => None)
 
-case class EnvError(variable: Text)
-extends Error(err"the environment variable $variable was not found")
+@implicitNotFound("rudiments: a contextual Environment instance is required, for example one of:\n"+
+                  "    given Environment = environments.empty       // no environment variables or system properties\n"+
+                  "    given Environment = environments.restricted  // access to system properties, but no environment variables\n"+
+                  "    given Environment = environments.system      // full access to the JVM's environment")
+class Environment(getEnv: Text => Option[Text], getProperty: Text => Option[Text]):
+  def apply(variable: Text): Maybe[Text] = getEnv(variable) match
+    case None        => Unset
+    case Some(value) => value
 
-case class PwdError()
-extends Error(err"the current working directory cannot be determined")
+  def property(variable: Text): Text throws EnvError =
+    getProperty(variable).getOrElse(throw EnvError(variable, true))
+
+  def fileSeparator: ('/' | '\\') throws EnvError = property(Text("file.separator")).s match
+    case "/"  => '/'
+    case "\\" => '\\'
+    case _    => throw EnvError(Text("file.separator"), true)
+
+  def pathSeparator: (':' | ';') throws EnvError = property(Text("path.separator")).s match
+    case ";" => ';'
+    case ":" => ':'
+    case _    => throw EnvError(Text("path.separator"), true)
+
+  def javaClassPath[P](using pp: PathProvider[P]): List[P] throws EnvError =
+    property(Text("java.class.path")).s.split(pathSeparator).to(List).flatMap(pp.makePath(_))
+
+  def javaHome[P](using pp: PathProvider[P]): P throws EnvError =
+    pp.makePath(property(Text("java.home")).s).getOrElse(throw EnvError(Text("java.home"), true))
+
+  def javaVendor: Text throws EnvError = property(Text("java.vendor"))
+  def javaVendorUrl: Text throws EnvError = property(Text("java.vendor.url"))
+  def javaVersion: Text throws EnvError = property(Text("java.version"))
+
+  def javaSpecificationVersion: Int throws EnvError = property(Text("java.specification.version")) match
+    case As[Int](version) => version
+    case other            => throw EnvError(Text("java.specification.version"), true)
+
+  def lineSeparator: Text throws EnvError = property(Text("line.separator"))
+  def osArch: Text throws EnvError = property(Text("os.arch"))
+  def osVersion: Text throws EnvError = property(Text("os.version"))
+
+  def userDir[P](using pp: PathProvider[P]): P throws EnvError =
+    pp.makePath(property(Text("user.dir")).s).getOrElse(throw EnvError(Text("user.dir"), true))
+
+  def userHome[P](using pp: PathProvider[P]): P throws EnvError =
+    pp.makePath(property(Text("user.home")).s).getOrElse(throw EnvError(Text("user.home"), true))
+
+  def userName: Text throws EnvError = property(Text("user.name"))
+
+  def pwd[P](using pp: PathProvider[P]): P throws EnvError =
+    apply(Text("PWD")).otherwise(safely(property(Text("user.dir")))).envelop(throw EnvError(Text("user.dir"), true)): path =>
+      pp.makePath(path.s).getOrElse(throw EnvError(Text("user.dir"), true))
+
+case class EnvError(variable: Text, property: Boolean)
+extends Error(
+  if property then err"the system property $variable was not found"
+  else err"the environment variable $variable was not found"
+)
 
 sealed class Internet()
 
