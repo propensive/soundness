@@ -6,8 +6,8 @@ case class ErrorMessage[+T <: Tuple](text: Seq[Text], parts: T)
 
 extension (ctx: StringContext)
   transparent inline def err[T](value: T = EmptyTuple): ErrorMessage[Tuple] = value match
-    case value: Tuple if true => ErrorMessage[value.type](ctx.parts.map(Text(_)), value)
-    case other: T             => ErrorMessage[T *: EmptyTuple](ctx.parts.map(Text(_)), other *: EmptyTuple)
+    case value: Tuple => ErrorMessage[value.type](ctx.parts.map(Text(_)), value)
+    case other: T     => ErrorMessage[T *: EmptyTuple](ctx.parts.map(Text(_)), other *: EmptyTuple)
 
 abstract class Error[T <: Tuple](val msg: ErrorMessage[T], val cause: Maybe[Error[?]] = Unset)
 extends Exception():
