@@ -249,7 +249,8 @@ case class HttpServer(port: Int) extends RequestHandler:
       httpServer.setExecutor(null)
       httpServer.start()
       httpServer
-
+    
+    import threading.platform
     Task(t"http-server"):
       val serv = startServer()
       hibernate()
