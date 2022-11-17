@@ -87,9 +87,9 @@ object Log:
     ${EucalyptusMacros.recordLog('{Level.Fail}, 'value, 'log, 'show, 'realm)}
 
 object EucalyptusMacros:
-  def recordLog[T: Type](level: Expr[Level], value: Expr[T], log: Expr[Log],
-                                     show: Expr[AnsiShow[T]], realm: Expr[Realm])
-                                (using Quotes): Expr[Unit] =
+  def recordLog[T: Type](level: Expr[Level], value: Expr[T], log: Expr[Log], show: Expr[AnsiShow[T]],
+                             realm: Expr[Realm])
+                        (using Quotes): Expr[Unit] =
     import quotes.reflect.*
 
     '{
@@ -98,6 +98,9 @@ object EucalyptusMacros:
     }
 
 
+@implicitNotFound("""|eucalyptus: a contextual Log instance is needed, for example:
+                     |    import logging.stdout  // Log everything to standard output
+                     |    import logging.silent  // Do not log anything""".stripMargin)
 case class Log(actions: PartialFunction[Entry, LogSink]*)(using Monitor, Threading):
   private val funnels: HashMap[LogSink, Funnel[Entry]] = HashMap()
   
@@ -116,20 +119,20 @@ package logging:
   given silent(using Threading): Log = Log()(using Supervisor(t"none"))
 
 object LogSink:
-  def apply[S](sink: S, writable: Writable[S], format: LogFormat[S]): LogSink = new LogSink:
+  def apply[S](sink: S, appendable: Appendable[S], format: LogFormat[S]): LogSink = new LogSink:
     type Sink = S
-    def write(stream: LazyList[Entry]): Unit = unsafely(writable.write(sink, stream.map(format(_))))
+    def write(stream: LazyList[Entry]): Unit = unsafely(appendable.write(sink, stream.map(format(_))))
 
 trait LogSink:
   type Sink
   def write(stream: LazyList[Entry]): Unit 
 
 object LogFormat:
-  given standardAnsi: LogFormat[SystemOut.type] = entry =>
+  given standardAnsi[T]: LogFormat[T] = entry =>
     ansi"${entry.timestamp.ansi} ${entry.level.ansi} ${entry.realm.ansi.span(8)} ${entry.message}${'\n'}".render.bytes
   
 trait LogFormat[S]:
   def apply(entry: Entry): Bytes
 
-extension [S: LogFormat: Writable](value: S)
-  def sink: LogSink = LogSink(value, summon[Writable[S]], summon[LogFormat[S]])
+extension [S: LogFormat: Appendable](value: S)
+  def sink: LogSink = LogSink(value, summon[Appendable[S]], summon[LogFormat[S]])
