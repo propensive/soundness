@@ -135,8 +135,6 @@ get() {
     download
     JAVA=$(canonicalize "${SYMLINK}")
   fi
-  
-  printf "%s\n" "${JAVA}"
 }
 
 server() {
@@ -158,14 +156,6 @@ server() {
       -Dexoskeleton.pid="$PID" \
       -Dexoskeleton.watch="$CATPID" \
       -jar "$SCRIPTDIR/$THIS" &
-  JPID="$!"
-  echo ONE
-  wait
-  echo TWO
-  rm -f "$FIFO"
-  echo THREE
-  kill -9 "$CATPID"
-  echo FOUR
 }
 
 connect() {
