@@ -93,7 +93,7 @@ object EucalyptusMacros:
     }
 
 
-case class Log(actions: PartialFunction[Entry, LogSink]*)(using Monitor):
+case class Log(actions: PartialFunction[Entry, LogSink]*)(using Monitor, Threading):
   private val funnels: HashMap[LogSink, Funnel[Entry]] = HashMap()
   
   private def put(target: LogSink, entry: Entry): Unit =
@@ -107,8 +107,8 @@ case class Log(actions: PartialFunction[Entry, LogSink]*)(using Monitor):
   def record(entry: Entry): Unit = actions.flatMap(_.lift(entry)).foreach(put(_, entry))
 
 package logging:
-  given stdout(using Monitor): Log = Log(_ => SystemOut.sink)
-  given silent: Log = Log()(using Supervisor(t"none"))
+  given stdout(using Monitor, Threading): Log = Log(_ => SystemOut.sink)
+  given silent(using Threading): Log = Log()(using Supervisor(t"none"))
 
 object LogSink:
   def apply[S](sink: S, writable: Writable[S], format: LogFormat[S]): LogSink = new LogSink:
