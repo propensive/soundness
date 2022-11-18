@@ -89,22 +89,26 @@ trait Source[T]:
   type E <: Exception
   def read(value: T, rubrics: Rubric*): DataStream throws E
 
-object Writable:
-  given Writable[SystemOut.type] with
+object Appendable:
+  given Appendable[SystemOut.type] with
     def write(value: SystemOut.type, stream: DataStream) =
       if System.out == null then throw StreamCutError() else Util.write(stream, System.out)
   
-  given Writable[SystemErr.type] with
+  given Appendable[SystemErr.type] with
     def write(value: SystemErr.type, stream: DataStream) =
       if System.err == null then throw StreamCutError() else Util.write(stream, System.err)
   
-  given Writable[ji.OutputStream] with
+  given Appendable[ji.OutputStream] with
     def write(writable: ji.OutputStream, stream: DataStream) =
       val out = writable match
         case out: ji.BufferedOutputStream => out
         case out: ji.OutputStream         => ji.BufferedOutputStream(out)
       
       Util.write(stream, out)
+
+trait Appendable[T]:
+  type E <: Exception
+  def write(value: T, stream: DataStream): Unit throws StreamCutError | E
 
 trait Writable[T]:
   type E <: Exception
@@ -204,6 +208,10 @@ extension [T](value: T)
   def writeStream(stream: DataStream)(using writable: Writable[T]): Unit throws StreamCutError | writable.E =
     writable.write(value, stream)
   
+  def appendTo[S](destination: S)(using appendable: Appendable[S], streamable: Streamable[T])
+                : Unit throws StreamCutError | appendable.E =
+    appendable.write(destination, streamable.stream(value))
+
   def writeTo[S](destination: S)(using writable: Writable[S], streamable: Streamable[T])
                 : Unit throws StreamCutError | writable.E =
     writable.write(destination, streamable.stream(value))
@@ -240,7 +248,9 @@ case class Multiplexer[K, T]()(using monitor: Monitor, threading: Threading):
     
     LazyList() #::: recur()
 
+
 extension [T](stream: LazyList[T])
+
   def rate(using time: Timekeeper)(interval: time.Type)(using Monitor, Threading)
           : LazyList[T] throws CancelError =
     def recur(stream: LazyList[T], last: Long): LazyList[T] = stream match
@@ -250,8 +260,6 @@ extension [T](stream: LazyList[T])
         val delay = time.from(time.to(interval) - (System.currentTimeMillis - last))
         if time.to(delay) > 0 then sleep(delay)
         stream
-      case _ =>
-        throw Mistake("Should never match")
 
     Task(Text("ratelimiter"))(recur(stream, System.currentTimeMillis)).await()
 
