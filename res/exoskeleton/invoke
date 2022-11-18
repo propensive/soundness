@@ -16,25 +16,24 @@ TYPE="jdk"
 ACCESS="ea"
 FORCE="0"
 VERSION="20"
-CHECK="0"
 
 base() {
-  local DIR="${XDG_DATA_HOME:-${HOME}/.local/share}/oubliette"
+  DIR="${XDG_DATA_HOME:-${HOME}/.local/share}/oubliette"
   mkdir -p "${DIR}"
   printf "%s" "${DIR}"
 }
 
 canonicalize() {
-  local FILE="${1}"
-  cd "$(dirname "${FILE}")"
-  FILE="$(basename ${FILE})"
+  FILE="${1}"
+  cd "$(dirname "${FILE}")" || return
+  FILE="$(basename "${FILE}")"
   while [ -L "${FILE}" ]
   do
     FILE="$(readlink "${FILE}")"
-    cd "$(dirname "${FILE}")"
+    cd "$(dirname "${FILE}")" || return
     FILE="$(basename "${FILE}")"
   done
-  printf "$(pwd -P)/${FILE}"
+  printf "%s/%s" "$(pwd -P)" "${FILE}"
 }
 
 tmpdir() {
@@ -43,7 +42,7 @@ tmpdir() {
 }
 
 dist() {
-  local DIR="$(base)/dist"
+  DIR="$(base)/dist"
   mkdir -p "${DIR}"
   printf "%s" "${DIR}"
 }
@@ -158,12 +157,6 @@ server() {
       -jar "$SCRIPTDIR/$THIS" &
 }
 
-readchar() {
-  stty -icanon -echo raw opost
-  printf "$(dd bs=1 count=1 2>/dev/null)"
-  stty icanon echo -raw
-}
-
 connect() {
   mkfifo "$STDOUT" "$STDIN" "$EXITFILE"
   echo "PROCESS	$PID" > "$FIFO"
@@ -174,23 +167,25 @@ connect() {
   echo "START	$PID" > "$FIFO"
 
   cat "$STDOUT" &
-  WRITERPID="$!"
   EXIT="$(cat "$EXITFILE")"
   
   if [ "$EXIT" = "99" ]
   then
     while true
-    do readchar
+    do
+      stty -icanon -echo raw opost min 1 time 0 >/dev/null 2>&1
+      dd bs=1 count=1 2>/dev/null
+      stty icanon echo -raw >/dev/null 2>&1
     done > "$STDIN" <&0 &
     WAITPID="$!"
     EXIT="$(cat "$EXITFILE")"
   fi
   
+  DDPID="$(pgrep -P $WAITPID > /dev/null 2>&1)"
   kill "$WAITPID" > /dev/null 2>&1
+  kill "$DDPID" > /dev/null 2>&1
   rm -f "$STDOUT" "$STDIN" "$EXITFILE"
-  case "$-" in
-    *i*) stty sane
-  esac
+  stty sane >/dev/null 2>&1
   exit "${EXIT:-1}"
 }
 
@@ -199,10 +194,10 @@ resize() {
 }
 
 cleanup() {
-  case "$-" in
-    *i*) stty sane
-  esac
+  stty sane >/dev/null 2>&1
+  DDPID="$(pgrep -P $WAITPID > /dev/null 2>&1)"
   kill "${WAITPID}" > /dev/null 2>&1
+  kill "$DDPID" > /dev/null 2>&1
   printf "\e[0J\e[?25h"
 }
 
@@ -210,8 +205,7 @@ trap cleanup EXIT
 trap resize WINCH
 
 if [ ! -p "$FIFO" ]
-then
-  server
+then server
 else
   if [ -f "$FIFO" ]
   then

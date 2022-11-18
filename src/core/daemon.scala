@@ -132,7 +132,7 @@ trait Daemon()(using Log) extends App:
             
 
           val commandLine = CommandLine(args, instanceEnv, scriptFile.otherwise(sys.exit(1)),
-              LazyList() #::: fifoIn.read[DataStream](), _.writeTo(out),
+              LazyList() #::: fifoIn.read[DataStream](), _.appendTo(out),
               exit => terminate.supply(exit), term,
               () => interactive(), signals.stream)
           
@@ -171,6 +171,7 @@ trait Daemon()(using Log) extends App:
             map.updated(pid, map(pid).copy(args = args.take(count)))
           
           case t"RESIZE" :: As[Int](pid) :: _ =>
+            Log.info(t"SIGWINCH received with ${Pid(pid)}")
             map(pid).resize()
             map
           
