@@ -337,7 +337,7 @@ object Line:
       
 object stdouts:
   given stdout: Stdout = txt =>
-    try summon[Writable[SystemOut.type]].write(SystemOut, LazyList(txt.bytes))
+    try summon[Appendable[SystemOut.type]].write(SystemOut, LazyList(txt.bytes))
     catch case err: Exception => ()
   
   given drain: Stdout = txt => ()
