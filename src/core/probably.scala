@@ -221,28 +221,8 @@ object ProbablyMacros:
     val line = Expr(Position.ofMacroExpansion.startLine + 1)
 
     def debugExpr[S: Type](expr: Expr[S]): Expr[Option[S] => Debug] =
-      val debugString = '{DebugString.showAny}
-
-      Expr.summon[Comparison[S]].fold {
-        '{ (result: Option[S]) =>
-          Debug(
-            found = result.map($debugString.show(_)),
-            filename = Text($filename),
-            line = $line,
-            expected = $debugString.show($expr)
-          )
-        }
-      } { comparison =>
-        '{ (result: Option[S]) =>
-          Debug(
-            found = result.map($debugString.show(_)),
-            filename = Text($filename),
-            line = $line,
-            expected = $debugString.show($expr),
-            info = if result.isEmpty then Map()
-                else Map(t"structure" -> Showable($comparison.compare(result.get, $expr.asInstanceOf[S])).show)
-          )
-        }
+      '{ (result: Option[S]) =>
+        Debug(found = result.map { r => Text(r.toString()) }, filename = Text($filename), line = $line, expected = Text($expr.toString()))
       }
 
     def interpret(pred: Expr[T => Boolean]): Expr[Option[T] => Debug] = pred match
@@ -359,32 +339,33 @@ enum Differences:
 trait Comparison[-T]:
   def compare(left: T, right: T): Differences
 
-object Comparison extends Derivation[Comparison]:
-  given Comparison[String] =
-    (a, b) => if a == b then Differences.Same else Differences.Diff(Text(a), Text(b))
+object Comparison: // extends Derivation[Comparison]:
+  given Comparison[Text] = (a, b) =>
+    if a == b then Differences.Same else Differences.Diff(a, b)
   
-  given [T: Show]: Comparison[T] =
-    (a, b) => if a == b then Differences.Same else Differences.Diff(a.show, b.show)
+  given Comparison[String] = (a, b) =>
+    if a == b then Differences.Same else Differences.Diff(Text(a), Text(b))
+  
+  given [T: Show]: Comparison[T] = (a, b) =>
+    if a == b then Differences.Same else Differences.Diff(a.show, b.show)
   
   def join[T](caseClass: CaseClass[Comparison, T]): Comparison[T] = (left, right) =>
     if left == right then Differences.Same
-    else Differences.Structural {
+    else Differences.Structural:
       caseClass.params
         .filter { p => p.deref(left) != p.deref(right) }
         .map { p => Text(p.label) -> p.typeclass.compare(p.deref(left), p.deref(right)) }
         .to(Map)
-    }
   
   def split[T](sealedTrait: SealedTrait[Comparison, T]): Comparison[T] = (left, right) =>
     val leftType = sealedTrait.choose(left)(identity(_))
-    sealedTrait.choose(right) { subtype =>
+    sealedTrait.choose(right): subtype =>
       if leftType == subtype
       then subtype.typeclass.compare(subtype.cast(left), subtype.cast(right))
       else Differences.Diff(t"type: ${leftType.typeInfo.short}", t"type: ${subtype.typeInfo.short}")
-    }
 
-case class Summary(id: TestId, name: Text, count: Int, tmin: Long, ttot: Long, tmax: Long,
-                       outcome: Outcome, indent: Int):
+case class Summary(id: TestId, name: Text, count: Int, tmin: Long, ttot: Long, tmax: Long, outcome: Outcome,
+                       indent: Int):
   def avg: Double = ttot.toDouble/count/1000.0
   def min: Double = tmin.toDouble/1000.0
   def max: Double = tmax.toDouble/1000.0
