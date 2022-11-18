@@ -199,13 +199,20 @@ object Fifo:
 
   given Show[Fifo[?]] = t"ˢ｢"+_.path.fullname+t"｣"
 
+  given [Fs <: Filesystem]: Appendable[Fifo[Fs]] with
+    type E = IoError
+    def write(value: Fifo[Fs], stream: DataStream): Unit throws StreamCutError | E =
+      val out = value.out
+      try Util.write(stream, out)
+      catch case e => throw IoError(IoError.Op.Write, IoError.Reason.AccessDenied, value.path)
+  
   given [Fs <: Filesystem]: Writable[Fifo[Fs]] with
     type E = IoError
     def write(value: Fifo[Fs], stream: DataStream): Unit throws StreamCutError | E =
       val out = value.out
       try Util.write(stream, out)
       catch case e => throw IoError(IoError.Op.Write, IoError.Reason.AccessDenied, value.path)
-      //finally out.close()
+      finally out.close()
 
 case class Fifo[+Fs <: Filesystem](path: DiskPath[Fs]) extends Shown[Fifo[Fs]]:
   lazy val out = ji.FileOutputStream(path.javaFile, false)
