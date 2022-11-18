@@ -20,19 +20,16 @@ import rudiments.*
 import gossamer.*
 import eucalyptus.*
 import escapade.*
+import parasitism.*
 import iridescence.*
 import turbulence.*
 import tetromino.*
+import anticipation.timekeeping.long
 
 import com.sun.jna.*
 import sun.misc.Signal
 import java.nio.*, charset.*
 import java.io as ji
-
-trait Libc extends Library:
-  def tcgetattr(fd: Int, termios: Termios): Int
-  def tcsetattr(fd: Int, opt: Int, termios: Termios): Int
-  def isatty(fd: Int): Int
 
 enum Keypress:
   case Printable(char: Char)
@@ -44,7 +41,7 @@ enum Keypress:
       DownArrow, CtrlLeftArrow, CtrlRightArrow, CtrlUpArrow, CtrlDownArrow, End, Home, Insert
 
 trait Keyboard[+KeyType]:
-  def interpret(bytes: IArray[Byte])(using Log): LazyList[KeyType]
+  def interpret(bytes: List[Byte]): LazyList[KeyType]
 
 case class TtyError(ttyMsg: Text) extends Error(err"STDIN is not attached to a TTY: $ttyMsg")
 
@@ -63,31 +60,29 @@ object Tty:
     Log.fine(ansi"Sent ANSI escape codes to TTY to attempt to get console dimensions")
     Tty.print(t"${esc}[s${esc}[4095C${esc}[4095B${esc}[6n${esc}[u")
 
-  def stream[K](using Tty, Log, Keyboard[K]): LazyList[K] = summon[Tty].in.flatMap:
-    data => unsafely(summon[Keyboard[K]].interpret(data))
+  def stream[K](using Tty, Log, Keyboard[K], Monitor, Threading): LazyList[K] =
+    summon[Tty].in.cluster(15).flatMap: data =>
+      unsafely(summon[Keyboard[K]].interpret(data.map(_.to(List)).flatten))
 
   def print(msg: Text)(using Tty) = summon[Tty].out.print(msg.s)
   def println(msg: Text)(using Tty) = summon[Tty].out.println(msg.s)
 
-
 object Keyboard:
   given Keyboard[Int] with
-    def interpret(bytes: IArray[Byte])(using Log): LazyList[Int] = bytes.map(_.toInt).to(LazyList)
+    def interpret(bytes: List[Byte]): LazyList[Int] = bytes.map(_.toInt).to(LazyList)
   
-  given Keyboard[IArray[Int]] with
-    def interpret(bytes: IArray[Byte])(using Log): LazyList[IArray[Int]] =
-      LazyList(bytes.map(_.toInt))
+  given Keyboard[List[Int]] with
+    def interpret(bytes: List[Byte]): LazyList[List[Int]] = LazyList(bytes.map(_.toInt))
   
-  private def readResize(bytes: List[Int])(using Log): Keypress.Resize =
+  private def readResize(bytes: List[Int]): Keypress.Resize =
     val size = String(bytes.map(_.toByte).init.to(Array)).show.cut(t";")
     val columns = size(0).toString.toInt
     val rows = size(1).toString.toInt
-    Log.fine(ansi"Console has been resized to $columns×$rows")
     
     Keypress.Resize(rows, columns)
 
   given Keyboard[Keypress] with
-    def interpret(bytes: IArray[Byte])(using Log): LazyList[Keypress] =
+    def interpret(bytes: List[Byte]): LazyList[Keypress] =
       bytes.map(_.toInt).to(List) match
         case 9 :: Nil             => LazyList(Keypress.Tab)
         case 10 :: Nil            => LazyList(Keypress.Enter)
@@ -103,7 +98,7 @@ object Keyboard:
                                        .to(LazyList)
                                        .map(Keypress.Printable(_))
     
-    private def control(bytes: List[Int])(using Log): Keypress = bytes match
+    private def control(bytes: List[Int]): Keypress = bytes match
       case List(51, 126)        => Keypress.Delete
       case List(50, 126)        => Keypress.Insert
       case List(70)             => Keypress.End
@@ -126,7 +121,7 @@ def esc(code: Text): Text = t"${27.toChar}[${code}"
 object LineEditor:
   def concealed(str: Text): Text = str.map { _ => '*' }
 
-  def ask(initial: Text = t"", render: Text => Text = identity(_))(using Tty, Log): Text =
+  def ask(initial: Text = t"", render: Text => Text = identity(_))(using Tty, Log, Monitor, Threading): Text =
     Tty.print(render(initial))
     
     def finished(key: Keypress) =
@@ -168,7 +163,8 @@ case class LineEditor(content: Text = t"", pos: Int = 0):
     case _              => this
   catch case e: OutOfRangeError => this
 
-  def unapply(stream: LazyList[Keypress])(using tty: Tty, log: Log, renderer: Renderer[LineEditor, Text])
+  def unapply(stream: LazyList[Keypress])(using renderer: Renderer[LineEditor, Text])
+             (using Monitor, Tty, Log, Threading)
              : Option[(Text, LazyList[Keypress])] =
     renderer(Tty.stream[Keypress], this)(_(_))
 
@@ -227,6 +223,7 @@ case class SelectMenu[T](options: List[T], current: T):
   catch case e: OutOfRangeError => this
 
   def unapply(stream: LazyList[Keypress])(using tty: Tty, log: Log, renderer: Renderer[SelectMenu[T], T])
+             (using Monitor, Threading)
              : Option[(T, LazyList[Keypress])] =
     renderer(Tty.stream[Keypress], this)(_(_))
 
@@ -235,41 +232,3 @@ given realm: Realm = Realm(t"profanity")
 trait InputSource:
   def init()(using Log, Allocator): Tty throws TtyError
   def cleanup(tty: Tty): Unit
-
-package inputSource:
-  given jvm: InputSource = Jvm
-
-object Jvm extends InputSource:
-  lazy val libc: Libc = Native.load("c", classOf[Libc]).nn
-  lazy val oldTermios: Termios = Termios()
-
-  def init()(using Log, Allocator): Tty throws TtyError =
-    Log.fine(ansi"Loading native libc library")
-    libc
-    Log.fine(ansi"Checking if process in running within a TTY")
-    if libc.isatty(0) != 1 then throw TtyError(t"the program is not running within a TTY")
-    oldTermios
-    Log.fine(ansi"Calling ${colors.Purple}(libc.tcgetattr)")
-    libc.tcgetattr(0, oldTermios)
-    val newTermios = Termios(oldTermios)
-    Log.fine(ansi"Updating ${colors.Purple}(termios) flags")
-    newTermios.c_lflag = oldTermios.c_lflag & -76
-    Log.fine(ansi"Calling ${colors.Purple}(libc.tcsetattr) flags")
-    libc.tcsetattr(0, 0, newTermios)
-    
-    val stdout = Option(System.out).map(_.nn).getOrElse:
-      throw TtyError(t"the STDOUT stream is null")
-    
-    if stdout == Tty.noopOut then throw TtyError(t"the TTY has already been captured")
-
-    Log.info(ansi"Capturing ${colors.Red}(stdout) for TTY input/output")
-    Log.info(ansi"Any output to ${colors.Red}(stdout) henceforth will be discarded")
-    
-    val tty: Tty = Tty(stdout, Util.readInputStream(System.in.nn))
-    System.setOut(Tty.noopOut)
-    Log.info(ansi"Setting ${colors.Orange}(SIGWINCH) signal handler")
-    tty
-      
-  def cleanup(tty: Tty): Unit =
-    System.setOut(tty.out)
-    libc.tcsetattr(0, 0, oldTermios)
