@@ -97,11 +97,10 @@ object EucalyptusMacros:
       try $log.record(Entry($realm, $level, $show.ansiShow($value), ts)) catch case e: Exception => ()
     }
 
-
 @implicitNotFound("""|eucalyptus: a contextual Log instance is needed, for example:
                      |    import logging.stdout  // Log everything to standard output
                      |    import logging.silent  // Do not log anything""".stripMargin)
-case class Log(actions: PartialFunction[Entry, LogSink]*)(using Monitor, Threading):
+case class Log(actions: PartialFunction[Entry, LogSink & Singleton]*)(using Monitor, Threading):
   private val funnels: HashMap[LogSink, Funnel[Entry]] = HashMap()
   
   private def put(target: LogSink, entry: Entry): Unit =
@@ -115,7 +114,6 @@ case class Log(actions: PartialFunction[Entry, LogSink]*)(using Monitor, Threadi
   def record(entry: Entry): Unit = actions.flatMap(_.lift(entry)).foreach(put(_, entry))
 
 package logging:
-  given stdout(using Monitor, Threading): Log = Log(_ => SystemOut.sink)
   given silent(using Threading): Log = Log()(using Supervisor(t"none"))
 
 object LogSink:
