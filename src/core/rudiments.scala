@@ -149,8 +149,12 @@ extension [T](opt: Maybe[T])
   def presume(using default: Default[T]): T = otherwise(default())
   def bluff: T throws UnsetValueError = otherwise(throw UnsetValueError())
 
-  def envelop[S](default: => S)(fn: T => S) = opt match
+  def mfold[S](default: => S)(fn: T => S) = opt match
     case Unset               => default
+    case value: T @unchecked => fn(value)
+
+  def mmap[S](fn: T => S): Maybe[S] = opt match
+    case Unset               => Unset
     case value: T @unchecked => fn(value)
 
   def option: Option[T] = opt match
@@ -358,7 +362,7 @@ class Environment(getEnv: Text => Option[Text], getProperty: Text => Option[Text
   def userName: Text throws EnvError = property(Text("user.name"))
 
   def pwd[P](using pp: PathProvider[P]): P throws EnvError =
-    apply(Text("PWD")).otherwise(safely(property(Text("user.dir")))).envelop(throw EnvError(Text("user.dir"), true)): path =>
+    apply(Text("PWD")).otherwise(safely(property(Text("user.dir")))).mfold(throw EnvError(Text("user.dir"), true)): path =>
       pp.makePath(path.s).getOrElse(throw EnvError(Text("user.dir"), true))
 
 case class EnvError(variable: Text, property: Boolean)
