@@ -1,8 +1,8 @@
 {
   "repos": [
     {
-      "base": "../gossamer",
-      "url": "https://github.com/propensive/gossamer"
+      "base": "../probably",
+      "url": "https://github.com/propensive/probably"
     },
     {
       "base": "../anticipation",
@@ -10,7 +10,7 @@
     }
   ],
   "imports": [
-    "../gossamer/build.irk",
+    "../probably/build.irk",
     "../anticipation/build.irk"
   ],
   "publishing": {
@@ -46,6 +46,25 @@
       "docs": [
         "doc"
       ]
+    },
+    {
+      "name": "Xylophone",
+      "id": "xylophone/test",
+      "links": [
+        "xylophone/core",
+	"probably/cli"
+      ],
+      "sources": [
+        "src/test"
+      ],
+      "version": "0.4.0",
+      "docs": [
+        "doc"
+      ],
+      "exec": {
+        "browsers": [],
+	"start": "xylophone.Tests"
+      }
     }
   ]
 }
