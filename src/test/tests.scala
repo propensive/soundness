@@ -36,6 +36,7 @@ object Tests extends Suite(t"Punctuation tests"):
     test(t"get a heading"):
       Markdown.parse(t"# Heading 1") match
         case Markdown(Heading(1, Textual(str))) => str
+        case _                                  => t""
     .check(_ == t"Heading 1")
 
     test(t"get a level 2 heading"):
