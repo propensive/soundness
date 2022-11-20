@@ -59,8 +59,6 @@ do
   printf '.'
   cat doc/templates/readme.md | envsubst | tr '¶' '\n' > $MOD/readme.md
   printf '.'
-  cat doc/templates/contributing.md | envsubst | tr '¶' '\n' > $MOD/contributing.md
-  printf '.'
   cp doc/templates/license.md $MOD/license.md
   printf '.'
   printf "done\n"
