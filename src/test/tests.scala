@@ -19,13 +19,14 @@ package euphemism
 import eucalyptus.*
 import gossamer.*
 import probably.*
+import parasitism.*, threading.platform
 import rudiments.*
 import scala.util.*
 import org.typelevel.jawn.ast.*
 
 import unsafeExceptions.canThrowAny
 
-given Log(Everything |-> Stdout)
+import logging.silent
 
 case class Foo(x: Int, y: Text) derives CanEqual
 

@@ -1,8 +1,8 @@
 {
   "repos": [
     {
-      "base": "../gossamer",
-      "url": "https://github.com/propensive/gossamer"
+      "base": "../probably",
+      "url": "https://github.com/propensive/probably"
     },
     {
       "base": "../anticipation",
@@ -10,7 +10,7 @@
     }
   ],
   "imports": [
-    "../gossamer/build.irk",
+    "../probably/build.irk",
     "../anticipation/build.irk"
   ],
   "publishing": {
@@ -52,6 +52,34 @@
         "src/core"
       ],
       "version": "0.4.0",
+      "docs": [
+        "doc"
+      ]
+    },
+    {
+      "name": "Euphemism Tests",
+      "id": "euphemism/test",
+      "links": [
+        "probably/cli",
+        "euphemism/core"
+      ],
+      "dependencies": [
+        "org.typelevel:jawn-parser_3:1.2.0",
+        "org.typelevel:jawn-ast_3:1.2.0"
+      ],
+      "jars": [
+        "https://repo1.maven.org/maven2/org/typelevel/jawn-parser_3/1.2.0/jawn-parser_3-1.2.0.jar",
+        "https://repo1.maven.org/maven2/org/typelevel/jawn-ast_3/1.2.0/jawn-ast_3-1.2.0.jar",
+        "https://repo1.maven.org/maven2/org/typelevel/jawn-util_3/1.2.0/jawn-util_3-1.2.0.jar"
+      ],
+      "sources": [
+        "src/test"
+      ],
+      "version": "0.4.0",
+      "exec": {
+        "browsers": [],
+	"start": "euphemism.Tests"
+      },
       "docs": [
         "doc"
       ]
