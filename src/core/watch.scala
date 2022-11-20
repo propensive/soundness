@@ -61,7 +61,9 @@ case class Watcher[Dir](private val svc: jnf.WatchService)
   private val funnel = Funnel[Maybe[WatchEvent]]
   private val pumpTask = Task(t"watcher")(pump())
   
-  def stream: LazyList[WatchEvent] = funnel.stream.takeWhile(_ != Unset).sift[WatchEvent]
+  def stream: LazyList[WatchEvent] throws AlreadyStreamingError =
+    funnel.stream.takeWhile(_ != Unset).sift[WatchEvent]
+  
   def removeAll()(using Log): Unit = watches.values.map(toDir(_)).foreach(remove(_))
 
   @tailrec
