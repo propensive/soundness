@@ -103,10 +103,14 @@ case class Relative(ascent: Int, parts: List[Text]):
 
   override def hashCode: Int = parts.hashCode ^ ascent
 
-object `/`:
-  def unapply[R <: Root](abs: Absolute[R]): Option[(R | Absolute[R], Text)] =
-    for left <- abs.init.option; right <- abs.last.option
-    yield (if left.parts.isEmpty then left.root else left, right)
+object Slash:
+  @targetName("Extractor")
+  object `/`:
+    def unapply[R <: Root](abs: Absolute[R]): Option[(R | Absolute[R], Text)] =
+      for left <- abs.init.option; right <- abs.last.option
+      yield (if left.parts.isEmpty then left.root else left, right)
+
+export Slash.`/`
 
 object Absolute:
   given [R <: Root]: Show[Absolute[R]] = _.text
