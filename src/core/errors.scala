@@ -1,14 +1,15 @@
 package rudiments
 
 import scala.quoted.*
+import compiletime.*
 
 case class ErrorMessage[+T <: Tuple](text: Seq[Text], parts: T)
 
 extension (ctx: StringContext)
-  transparent inline def err[T](value: T = EmptyTuple): ErrorMessage[Tuple] = value match
+  transparent inline def err[T](value: T = EmptyTuple): ErrorMessage[Tuple] = (value: @unchecked) match
     case value: Tuple => ErrorMessage[value.type](ctx.parts.map(Text(_)), value)
     case other: T     => ErrorMessage[T *: EmptyTuple](ctx.parts.map(Text(_)), other *: EmptyTuple)
-
+  
 abstract class Error[T <: Tuple](val msg: ErrorMessage[T], val cause: Maybe[Error[?]] = Unset)
 extends Exception():
   this: Error[T] =>
