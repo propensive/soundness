@@ -16,6 +16,8 @@
 
 package iridescence
 
+import language.experimental.captureChecking
+
 object profiles:
   val IncandescentTungsten = Profile(109.850, 100, 35.585, 111.144, 100, 35.200)
   val OldDirectSunlightAtNoon = Profile(99.0927, 100, 85.313, 99.178, 100, 84.3493)

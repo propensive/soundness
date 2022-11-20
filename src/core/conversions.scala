@@ -19,6 +19,8 @@ package iridescence
 import rudiments.*
 import cardinality.*
 
+import language.experimental.captureChecking
+
 trait Color:
   def standardSrgb: Srgb
 
