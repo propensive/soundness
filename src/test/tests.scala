@@ -31,129 +31,129 @@ object Tests extends Suite(t"Gossamer Tests"):
     suite(t"DebugString tests"):
       test(t"serialize boring string"):
         t"Hello world!".debug
-      .check(_ == t""""Hello world!"""")
+      .assert(_ == t""""Hello world!"""")
 
       test(t"serialize string with newline"):
         t"Hello\nworld".debug
-      .check(_ == t"""\"Hello\\nworld\"""")
+      .assert(_ == t"""\"Hello\\nworld\"""")
       
       test(t"serialize string with tab"):
         t"Hello\tworld".debug
-      .check(_ == t"""\"Hello\\tworld\"""")
+      .assert(_ == t"""\"Hello\\tworld\"""")
       
       test(t"serialize string with apostrophe"):
         t"Hell' world".debug
-      .check(_ == t"""\"Hell\\' world\"""")
+      .assert(_ == t"""\"Hell\\' world\"""")
       
       test(t"serialize string with quote"):
         t"Hello \"world\"".debug
-      .check(_ == t"""\"Hello \\\"world\\\"\"""")
+      .assert(_ == t"""\"Hello \\\"world\\\"\"""")
       
       test(t"serialize string with backslash"):
         t"Hello\\world".debug
-      .check(_ == t"""\"Hello\\\\world\"""")
+      .assert(_ == t"""\"Hello\\\\world\"""")
       
       test(t"serialize string with linefeed"):
         t"Hello world\r".debug
-      .check(_ == t"""\"Hello world\\r\"""")
+      .assert(_ == t"""\"Hello world\\r\"""")
       
       test(t"serialize string with unicode escapes"):
         t"Hello мир".debug
-      .check(_ == t"""\"Hello \\u043c\\u0438\\u0440\"""")
+      .assert(_ == t"""\"Hello \\u043c\\u0438\\u0440\"""")
 
       test(t"pattern match on Text"):
         var text = t"Hello"
         text match
           case t"Hello" => true
           case _        => false
-      .check(_ == true)
+      .assert(_ == true)
       
       test(t"pattern non-match on Text"):
         var text = t"Hello"
         text match
           case t"World" => true
           case _        => false
-      .check(_ == false)
+      .assert(_ == false)
 
       test(t"serialize double"):
         3.1.debug
-      .check(_ == t"3.1")
+      .assert(_ == t"3.1")
       
       test(t"serialize float"):
         3.1f.debug
-      .check(_ == t"3.1F")
+      .assert(_ == t"3.1F")
       
       test(t"serialize long"):
         3L.debug
-      .check(_ == t"3L")
+      .assert(_ == t"3L")
       
       test(t"serialize int"):
         3.debug
-      .check(_ == t"3")
+      .assert(_ == t"3")
       
       test(t"serialize short"):
         3.toShort.debug
-      .check(_ == t"3.toShort")
+      .assert(_ == t"3.toShort")
       
       test(t"serialize +infinity"):
         (1.0/0.0).debug
-      .check(_ == t"Double.PositiveInfinity")
+      .assert(_ == t"Double.PositiveInfinity")
       
       test(t"serialize -infinity"):
         (-1.0/0.0).debug
-      .check(_ == t"Double.NegativeInfinity")
+      .assert(_ == t"Double.NegativeInfinity")
       
       test(t"serialize NaN"):
         (0.0/0.0).debug
-      .check(_ == t"Double.NaN")
+      .assert(_ == t"Double.NaN")
       
       test(t"serialize float +infinity"):
         (1.0F/0.0F).debug
-      .check(_ == t"Float.PositiveInfinity")
+      .assert(_ == t"Float.PositiveInfinity")
       
       test(t"serialize float -infinity"):
         (-1.0F/0.0F).debug
-      .check(_ == t"Float.NegativeInfinity")
+      .assert(_ == t"Float.NegativeInfinity")
       
       test(t"serialize float NaN"):
         (0.0F/0.0F).debug
-      .check(_ == t"Float.NaN")
+      .assert(_ == t"Float.NaN")
 
       test(t"serialize tab char"):
         '\t'.debug
-      .check(_ == t"'\\t'")
+      .assert(_ == t"'\\t'")
       
       test(t"serialize backslash char"):
         '\\'.debug
-      .check(_ == t"'\\\\'")
+      .assert(_ == t"'\\\\'")
       
       test(t"serialize newline char"):
         '\n'.debug
-      .check(_ == t"'\\n'")
+      .assert(_ == t"'\\n'")
       
       test(t"serialize backspace char"):
         '\b'.debug
-      .check(_ == t"'\\b'")
+      .assert(_ == t"'\\b'")
       
       test(t"serialize unicode char"):
         '«'.debug
-      .check(_ == t"'\\u00ab'")
+      .assert(_ == t"'\\u00ab'")
       
       test(t"serialize apostrophe char"):
         '\''.debug
-      .check(_ == t"'\\''")
+      .assert(_ == t"'\\''")
       
       test(t"serialize quote char"):
         '\"'.debug
-      .check(_ == t"'\\\"'")
+      .assert(_ == t"'\\\"'")
 
       test(t"serialize case class"):
         Person(t"Simon", 72).debug
-      .check(_ == t"Person(name = \"Simon\", age = 72)")
+      .assert(_ == t"Person(name = \"Simon\", age = 72)")
       
       test(t"serialize list of strings"):
         List(t"one", t"two", t"three").debug
-      .check(_ == t"""List("one", "two", "three")""")
+      .assert(_ == t"""List("one", "two", "three")""")
 
     suite(t"Minimum Edit Distance"):
       test(t"equal strings have zero edit distance"):
@@ -187,27 +187,27 @@ object Tests extends Suite(t"Gossamer Tests"):
     suite(t"String functions"):
       test(t"punycode test"):
         t"www.äpfel.com".punycode: Text
-      .check(_ == t"www.xn--pfel-koa.com")
+      .assert(_ == t"www.xn--pfel-koa.com")
 
       test(t"URL encoding of space"):
         t"hello world".urlEncode: Text
-      .check(_ == t"hello+world")
+      .assert(_ == t"hello+world")
       
       test(t"URL encoding of multibyte UTF-8 character"):
         t"Café".urlEncode: Text
-      .check(_ == t"Caf%C3%A9")
+      .assert(_ == t"Caf%C3%A9")
 
       test(t"URL decoding of UTF-8 string"):
         t"Na%C3%AFve".urlDecode: Text
-      .check(_ == t"Naïve")
+      .assert(_ == t"Naïve")
 
       test(t"Lower-case"):
         t"InDeCiSiVe".lower: Text
-      .check(_ == t"indecisive")
+      .assert(_ == t"indecisive")
       
       test(t"Upper-case"):
         t"InDeCiSiVe".upper: Text
-      .check(_ == t"INDECISIVE")
+      .assert(_ == t"INDECISIVE")
       
       test(t"Empty string not populated"):
         t"".populated
@@ -220,31 +220,31 @@ object Tests extends Suite(t"Gossamer Tests"):
     suite(t"Joining strings"):
       test(t"join with separator"):
         List(t"one", t"two", t"three").join(t", ")
-      .check(_ == t"one, two, three")
+      .assert(_ == t"one, two, three")
       
       test(t"join with separator; different last"):
         List(t"one", t"two", t"three", t"four").join(t", ", t" and ")
-      .check(_ == t"one, two, three and four")
+      .assert(_ == t"one, two, three and four")
       
       test(t"join with separator; different last; two elements"):
         List(t"three", t"four").join(t", ", t" and ")
-      .check(_ == t"three and four")
+      .assert(_ == t"three and four")
       
       test(t"join with separator, prefix and suffix"):
         List(t"one", t"two").join(t"(", t", ", t")")
-      .check(_ == t"(one, two)")
+      .assert(_ == t"(one, two)")
 
     suite(t"txt interpolator"):
       test(t"multiline collapses to space-delimited"):
         txt"""Hello
               world"""
-      .check(_ == t"Hello world")
+      .assert(_ == t"Hello world")
       
       test(t"double newline becomes single newline"):
         txt"""Hello
               
               world"""
-      .check(_ == t"Hello\nworld")
+      .assert(_ == t"Hello\nworld")
       
       test(t"paragraphs"):
         txt"""Hello
@@ -252,319 +252,319 @@ object Tests extends Suite(t"Gossamer Tests"):
               
               Bonjour
               le monde"""
-      .check(_ == t"Hello world\nBonjour le monde")
+      .assert(_ == t"Hello world\nBonjour le monde")
 
     suite(t"Text methods"):
       test(t"get bytes from text"):
         t"hello".bytes.to(List)
-      .check(_ == List(104, 101, 108, 108, 111))
+      .assert(_ == List(104, 101, 108, 108, 111))
       
       test(t"get bytes from empty Text"):
         t"".bytes.to(List)
-      .check(_ == List())
+      .assert(_ == List())
 
       test(t"get Text length"):
         t"hello world".length
-      .check(_ == 11)
+      .assert(_ == 11)
 
       test(t"empty Text should not be populated"):
         t"".populated
-      .check(_ == None)
+      .assert(_ == None)
 
       test(t"non-empty Text should be populated"):
         t"Hello".populated
-      .check(_ == Some(t"Hello"))
+      .assert(_ == Some(t"Hello"))
 
       test(t"convert to lower case"):
         t"Hello World".lower: Text
-      .check(_ == t"hello world")
+      .assert(_ == t"hello world")
 
       test(t"convert to upper case"):
         t"Hello World".upper: Text
-      .check(_ == t"HELLO WORLD")
+      .assert(_ == t"HELLO WORLD")
 
       test(t"URL encode a space"):
         t" ".urlEncode: Text
-      .check(_ == t"+")
+      .assert(_ == t"+")
 
       test(t"URL encode a +"):
         t"+".urlEncode: Text
-      .check(_ == t"%2B")
+      .assert(_ == t"%2B")
 
       test(t"URL encode an é"):
         t"é".urlEncode: Text
-      .check(_ == t"%C3%A9")
+      .assert(_ == t"%C3%A9")
 
       test(t"URL encode a Text"):
         t"Nechť již hříšné saxofony ďáblů rozezvučí síň úděsnými tóny waltzu, tanga a quickstepu.".urlEncode: Text
-      .check(_ == t"Nech%C5%A5+ji%C5%BE+h%C5%99%C3%AD%C5%A1n%C3%A9+saxofony+%C4%8F%C3%A1bl%C5%AF+rozezvu%C4%8D%C3%AD+s%C3%AD%C5%88+%C3%BAd%C4%9Bsn%C3%BDmi+t%C3%B3ny+waltzu%2C+tanga+a+quickstepu.")
+      .assert(_ == t"Nech%C5%A5+ji%C5%BE+h%C5%99%C3%AD%C5%A1n%C3%A9+saxofony+%C4%8F%C3%A1bl%C5%AF+rozezvu%C4%8D%C3%AD+s%C3%AD%C5%88+%C3%BAd%C4%9Bsn%C3%BDmi+t%C3%B3ny+waltzu%2C+tanga+a+quickstepu.")
       
       test(t"URL decode a Text"):
         t"Nech%C5%A5%20ji%C5%BE%20h%C5%99%C3%AD%C5%A1n%C3%A9%20saxofony%20%C4%8F%C3%A1bl%C5%AF%20rozezvu%C4%8D%C3%AD%20s%C3%AD%C5%88%20%C3%BAd%C4%9Bsn%C3%BDmi%20t%C3%B3ny%20waltzu%2C%20tanga%20a%20quickstepu.".urlDecode: Text
-      .check(_ == t"Nechť již hříšné saxofony ďáblů rozezvučí síň úděsnými tóny waltzu, tanga a quickstepu.")
+      .assert(_ == t"Nechť již hříšné saxofony ďáblů rozezvučí síň úděsnými tóny waltzu, tanga a quickstepu.")
 
       test(t"URL decode a space"):
         t"+".urlDecode: Text
-      .check(_ == t" ")
+      .assert(_ == t" ")
 
       test(t"URL decode a +"):
         t"%2B".urlDecode: Text
-      .check(_ == t"+")
+      .assert(_ == t"+")
 
       test(t"drop the first character"):
         t"Hello".drop(1): Text
-      .check(_ == t"ello")
+      .assert(_ == t"ello")
 
       test(t"drop the last character"):
         t"Hello".drop(1, Rtl): Text
-      .check(_ == t"Hell")
+      .assert(_ == t"Hell")
 
       test(t"drop more characters than the length of the Text"):
         t"Hello".drop(10): Text
-      .check(_ == t"")
+      .assert(_ == t"")
 
       test(t"drop more characters from the right than the length of the Text"):
         t"Hello".drop(10, Rtl): Text
-      .check(_ == t"")
+      .assert(_ == t"")
 
       test(t"take the first character"):
         t"Hello".take(1): Text
-      .check(_ == t"H")
+      .assert(_ == t"H")
 
       test(t"take the last character"):
         t"Hello".take(1, Rtl): Text
-      .check(_ == t"o")
+      .assert(_ == t"o")
 
       test(t"take more characters than the length of the Text"):
         t"Hello".take(10): Text
-      .check(_ == t"Hello")
+      .assert(_ == t"Hello")
 
       test(t"take more characters from the right than the length of the Text"):
         t"Hello".take(10, Rtl): Text
-      .check(_ == t"Hello")
+      .assert(_ == t"Hello")
 
       test(t"snip a Text in two"):
         t"Hello".snip(2): (Text, Text)
-      .check(_ == (t"He", t"llo"))
+      .assert(_ == (t"He", t"llo"))
 
       test(t"trim spaces from a Text"):
         t"  Hello   ".trim: Text
-      .check(_ == t"Hello")
+      .assert(_ == t"Hello")
 
       test(t"trim mixed whitespace from a Text"):
         t"\n\r\t Hello\n \t\r".trim: Text
-      .check(_ == t"Hello")
+      .assert(_ == t"Hello")
 
       test(t"take a slice from a Text"):
         t"Hello world".slice(4, 7): Text
-      .check(_ == t"o w")
+      .assert(_ == t"o w")
 
       test(t"take an oversized slice from a Text"):
         t"Hello world".slice(4, 100): Text
-      .check(_ == t"o world")
+      .assert(_ == t"o world")
 
       test(t"Get characters from a Text"):
         t"Hello world".chars.to(List)
-      .check(_ == List('H', 'e', 'l', 'l', 'o', ' ', 'w', 'o', 'r', 'l', 'd'))
+      .assert(_ == List('H', 'e', 'l', 'l', 'o', ' ', 'w', 'o', 'r', 'l', 'd'))
 
       test(t"Flatmap a text"):
         t"ABC".flatMap { c => t"${c}." }: Text
-      .check(_ == t"A.B.C.")
+      .assert(_ == t"A.B.C.")
 
       test(t"Map over a text's characters"):
         t"ABC".map { char => char.toLower }: Text
-      .check(_ == t"abc")
+      .assert(_ == t"abc")
 
       test(t"Check an empty Text is empty"):
         t"".isEmpty
-      .check(_ == true)
+      .assert(_ == true)
 
       test(t"Check a non-empty Text is not empty"):
         t"abc".isEmpty
-      .check(_ == false)
+      .assert(_ == false)
 
       test(t"Cut a Text"):
         t"one,two,three".cut(t",")
-      .check(_ == List(t"one", t"two", t"three"))
+      .assert(_ == List(t"one", t"two", t"three"))
 
       test(t"Cut a Text with empty Text at start"):
         t",one,two".cut(t",")
-      .check(_ == List(t"", t"one", t"two"))
+      .assert(_ == List(t"", t"one", t"two"))
 
       test(t"Cut a Text with empty Text at end"):
         t"one,two,".cut(t",")
-      .check(_ == List(t"one", t"two", t""))
+      .assert(_ == List(t"one", t"two", t""))
       
       test(t"Cut a Text with empty parts at start and end"):
         t",one,two,".cut(t",")
-      .check(_ == List(t"", t"one", t"two", t""))
+      .assert(_ == List(t"", t"one", t"two", t""))
 
       test(t"Cut a series of empty Texts"):
         t",,,".cut(t",")
-      .check(_ == List(t"", t"", t"", t""))
+      .assert(_ == List(t"", t"", t"", t""))
 
       test(t"Cut a Text which doesn't contain the separator"):
         t"one,two,three".cut(t"x")
-      .check(_ == List(t"one,two,three"))
+      .assert(_ == List(t"one,two,three"))
 
       test(t"Cut a Text on an escaped character"):
         t"one\ntwo\nthree".cut(t"\n")
-      .check(_ == List(t"one", t"two", t"three"))
+      .assert(_ == List(t"one", t"two", t"three"))
 
       test(t"Substitute characters"):
         t"one,two,three".tr(',', ';'): Text
-      .check(_ == t"one;two;three")
+      .assert(_ == t"one;two;three")
 
       test(t"Replace substring"):
         t"naive".sub(t"i", t"ï"): Text
-      .check(_ == t"naïve")
+      .assert(_ == t"naïve")
 
       test(t"Replace different-length substring"):
         t"Once upon a time".sub(t"Once", t"Twice"): Text
-      .check(_ == t"Twice upon a time")
+      .assert(_ == t"Twice upon a time")
 
       test(t"Several substitutions"):
         t"foo bar baz".sub(t"ba", t"ma"): Text
-      .check(_ == t"foo mar maz")
+      .assert(_ == t"foo mar maz")
 
       test(t"Overlapping substitutions"):
         t"fofofoo".sub(t"fofo", t"momo"): Text
-      .check(_ == t"momofoo")
+      .assert(_ == t"momofoo")
 
       test(t"Get camel-case words"):
         t"oneTwoThree".camelCaseWords
-      .check(_ == List(t"one", "two", "three"))
+      .assert(_ == List(t"one", "two", "three"))
       
       test(t"Camel-case to dashed words"):
         t"oneTwoThree".dashed: Text
-      .check(_ == t"one-two-three")
+      .assert(_ == t"one-two-three")
     
       test(t"Fit short text into fixed width"):
         t"123".fit(5): Text
-      .check(_ == t"123  ")
+      .assert(_ == t"123  ")
 
       test(t"Fit long text into fixed width"):
         t"12345".fit(3): Text
-      .check(_ == t"123")
+      .assert(_ == t"123")
 
       test(t"Right-fit long text into fixed width"):
         t"12345".fit(3, Rtl): Text
-      .check(_ == t"345")
+      .assert(_ == t"345")
 
       test(t"Right-fit short text into fixed width"):
         t"123".fit(5, Rtl): Text
-      .check(_ == t"  123")
+      .assert(_ == t"  123")
 
       test(t"Right-fit short text with different padding character"):
         t"123".fit(5, Rtl, '.'): Text
-      .check(_ == t"..123")
+      .assert(_ == t"..123")
       
       test(t"Fit short text with different padding character"):
         t"123".fit(5, Ltr, '.'): Text
-      .check(_ == t"123..")
+      .assert(_ == t"123..")
 
       test(t"duplicate text several times"):
         t"123"*3: Text
-      .check(_ == t"123123123")
+      .assert(_ == t"123123123")
 
       test(t"duplicate text zero times"):
         t"123"*0: Text
-      .check(_ == t"")
+      .assert(_ == t"")
 
       test(t"Random access of character"):
         t"123"(0)
-      .check(_ == '1')
+      .assert(_ == '1')
 
       test(t"Random access of out-of-range character"):
         capture(t"123"(5))
-      .check(_ == OutOfRangeError(5, 0, 3))
+      .assert(_ == OutOfRangeError(5, 0, 3))
 
       test(t"Pad-right with space"):
         t"123".pad(5, Rtl): Text
-      .check(_ == t"123  ")
+      .assert(_ == t"123  ")
 
       test(t"Pad-left with space"):
         t"123".pad(5, Ltr): Text
-      .check(_ == t"  123")
+      .assert(_ == t"  123")
 
       test(t"Pad-right with smaller value does not change text"):
         t"12345".pad(3, Rtl): Text
-      .check(_ == t"12345")
+      .assert(_ == t"12345")
 
       test(t"Pad-left with smaller value does not change text"):
         t"12345".pad(3, Ltr): Text
-      .check(_ == t"12345")
+      .assert(_ == t"12345")
 
       test(t"Text does contain value"):
         t"hello world".contains(t"ello")
-      .check(_ == true)
+      .assert(_ == true)
 
       test(t"Text does not contain value"):
         t"hello world".contains(t"goodbye")
-      .check(_ == false)
+      .assert(_ == false)
 
       test(t"Text contains itself"):
         t"hello world".contains(t"hello world")
-      .check(_ == true)
+      .assert(_ == true)
 
       test(t"Text contains empty text"):
         t"hello world".contains(t"")
-      .check(_ == true)
+      .assert(_ == true)
     
       test(t"Empty text contains empty text"):
         t"".contains(t"")
-      .check(_ == true)
+      .assert(_ == true)
 
       test(t"Index of character satisfying predicate"):
         t"oh, Hello World".where(_.isUpper)
-      .check(_ == 4)
+      .assert(_ == 4)
 
       test(t"Index of character satisfying predicate with start point at result index"):
         t"oh, Hello World".where(_.isUpper, 4)
-      .check(_ == 4)
+      .assert(_ == 4)
       
       test(t"Index of character satisfying predicate with start point after first result"):
         t"oh, Hello World".where(_.isUpper, 5)
-      .check(_ == 10)
+      .assert(_ == 10)
 
       test(t"Take characters while predicate is true"):
         t"HELLOworld".upto(_.isUpper): Text
-      .check(_ == t"HELLO")
+      .assert(_ == t"HELLO")
       
       test(t"Take characters when predicate is never true returns empty text"):
         t"hello world".upto(_.isUpper): Text
-      .check(_ == t"")
+      .assert(_ == t"")
       
       test(t"Take characters when predicate isn't initially true returns empty text"):
         t"Helloworld".upto(_.isLower): Text
-      .check(_ == t"")
+      .assert(_ == t"")
     
       test(t"Capitalize a lowercase word"):
         t"hello".capitalize: Text
-      .check(_ == t"Hello")
+      .assert(_ == t"Hello")
 
       test(t"Capitalize a mixed-case word"):
         t"fooBar".capitalize: Text
-      .check(_ == t"FooBar")
+      .assert(_ == t"FooBar")
 
       test(t"Capitalize an uppercase word does not change it"):
         t"HELLO".capitalize: Text
-      .check(_ == t"HELLO")
+      .assert(_ == t"HELLO")
 
     suite(t"Show tests"):
       test(t"Show a string"):
         t"Hello world".show
-      .check(_ == t"Hello world")
+      .assert(_ == t"Hello world")
       
       test(t"Show an Int"):
         43.show
-      .check(_ == t"43")
+      .assert(_ == t"43")
       
       test(t"Show a locally-declared showable"):
         given Show[Exception] = e => txt"<exception>"
         Exception("").show
-      .check(_ == t"<exception>")
+      .assert(_ == t"<exception>")
     
       // test(t"Show a Double"):
       //   3.1415926.show
-      // }.check(_ == "3.1415926")
+      // }.assert(_ == "3.1415926")
