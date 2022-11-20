@@ -18,6 +18,8 @@ package gossamer
 
 import rudiments.*
 
+import language.experimental.captureChecking
+
 extension (inline ctx: StringContext)
   transparent inline def txt(inline parts: Any*): Text =
     ${Interpolation.Text.expand('{Interpolation.Text}, 'ctx, 'parts)}

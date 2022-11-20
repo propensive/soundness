@@ -21,6 +21,8 @@ import rudiments.*
 
 import scala.compiletime.*
 
+import language.experimental.captureChecking
+
 trait FallbackDebugString:
   object Generic extends Derivation[Generic]:
     inline given [T]: Generic[T] = value => summonFrom:

@@ -22,6 +22,8 @@ import contextual.*
 import wisteria.*
 import tetromino.*
 
+import language.experimental.captureChecking
+
 import scala.reflect.*
 import scala.util.*
 
@@ -95,7 +97,7 @@ extension (text: Text)
   def capitalize: Text = take(1).upper+drop(1)
   def uncapitalize: Text = take(1).lower+drop(1)
   def reverse: Text = Text(String(text.s.toCharArray.nn.reverse))
-  def count(pred: Char => Boolean): Int = text.s.toCharArray.nn.immutable(using Unsafe).count(pred)
+  def count(pred: Char -> Boolean): Int = text.s.toCharArray.nn.immutable(using Unsafe).count(pred)
   def head: Char = text.s.charAt(0)
   def last: Char = text.s.charAt(text.s.length - 1)
   def tail: Text = drop(1, Ltr)
@@ -105,14 +107,14 @@ extension (text: Text)
     Text(String(text.s.toCharArray.nn.immutable(using Unsafe).flatMap(fn(_).s.toCharArray.nn
         .immutable(using Unsafe)).immutable(using Unsafe)))
 
-  def dropWhile(pred: Char => Boolean): Text =
+  def dropWhile(pred: Char -> Boolean): Text =
     try Text(text.s.substring(0, where(!pred(_))).nn) catch case err: OutOfRangeError => Text("")
 
   def snip(n: Int): (Text, Text) =
     (Text(text.s.substring(0, n min text.s.length).nn), Text(text.s.substring(n min text.s.length)
         .nn))
   
-  def snipWhere(pred: Char => Boolean, idx: Int = 0): (Text, Text) throws OutOfRangeError =
+  def snipWhere(pred: Char -> Boolean, idx: Int = 0): (Text, Text) throws OutOfRangeError =
     snip(where(pred, idx))
 
   def uncamel: List[Text] =
@@ -145,7 +147,7 @@ extension (text: Text)
   def contains(char: Char): Boolean = text.s.indexOf(char) != -1
 
   @tailrec
-  def where(pred: Char => Boolean, idx: Maybe[Int] = Unset, dir: Direction = Ltr)
+  def where(pred: Char -> Boolean, idx: Maybe[Int] = Unset, dir: Direction = Ltr)
             : Int throws OutOfRangeError = dir match
     case Ltr =>
       val index = idx.otherwise(0)
@@ -157,7 +159,7 @@ extension (text: Text)
       if index < 0 || index >= text.length then throw OutOfRangeError(index, 0, text.s.length)
       if pred(text.s.charAt(index)) then index else where(pred, index - 1, Rtl)
 
-  def upto(pred: Char => Boolean): Text =
+  def upto(pred: Char -> Boolean): Text =
     try Text(text.s.substring(0, where(!pred(_))).nn)
     catch case e: OutOfRangeError => text
 

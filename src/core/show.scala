@@ -16,8 +16,11 @@
 
 package gossamer
 
+
 import wisteria.*
 import rudiments.*
+
+import language.experimental.captureChecking
 
 trait Show[-T]:
   def show(value: T): Text
