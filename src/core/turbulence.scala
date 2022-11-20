@@ -48,6 +48,7 @@ extension (value: DataStream)
       acc ++ next
 
 case class StreamCutError() extends Error(err"the stream was cut prematurely")
+case class AlreadyStreamingError() extends Error(err"the stream was accessed twice, which is not permitted")
 
 object Util:
   def readInputStream(in: ji.InputStream, rubrics: Rubric*)(using allocator: Allocator): DataStream =
@@ -178,7 +179,7 @@ object SystemOut
 object SystemErr
 
 extension (obj: LazyList.type)
-  def multiplex[T](streams: LazyList[T]*)(using Monitor, Threading): LazyList[T] =
+  def multiplex[T](streams: LazyList[T]*)(using Monitor, Threading): LazyList[T] throws AlreadyStreamingError =
     multiplexer(streams*).stream
   
   def multiplexer[T](streams: LazyList[T]*)(using Monitor, Threading): Multiplexer[Any, T] =
@@ -196,8 +197,8 @@ class Pulsar(using time: Timekeeper)(interval: time.Type):
   private var continue: Boolean = true
   def stop(): Unit = continue = false
 
-  def stream(using Monitor): LazyList[Unit] = if !continue then LazyList() else
-    try
+  def stream(using Monitor): LazyList[Unit] throws AlreadyStreamingError =
+    if !continue then LazyList() else try
       sleep(interval)
       () #:: stream
     catch case err: CancelError => LazyList()
@@ -223,6 +224,7 @@ extension [T](value: T)
 case class Multiplexer[K, T]()(using monitor: Monitor, threading: Threading):
   private val tasks: HashMap[K, Task[Unit]] = HashMap()
   private val queue: juc.LinkedBlockingQueue[Maybe[T]] = juc.LinkedBlockingQueue()
+  private var streaming: Boolean = false
 
   def close(): Unit = tasks.keys.foreach(remove(_))
 
@@ -241,12 +243,12 @@ case class Multiplexer[K, T]()(using monitor: Monitor, threading: Threading):
     tasks -= key
     if tasks.isEmpty then queue.put(Unset)
   
-  def stream: LazyList[T] =
+  def stream: LazyList[T] throws AlreadyStreamingError =
     def recur(): LazyList[T] = queue.take() match
       case null | Unset       => LazyList()
       case item: T @unchecked => item.nn #:: recur()
     
-    LazyList() #::: recur()
+    if streaming then throw AlreadyStreamingError() else LazyList() #::: recur()
 
 
 extension [T](stream: LazyList[T])
@@ -254,18 +256,19 @@ extension [T](stream: LazyList[T])
   def rate(using time: Timekeeper)(interval: time.Type)(using Monitor, Threading)
           : LazyList[T] throws CancelError =
     def recur(stream: LazyList[T], last: Long): LazyList[T] = stream match
-      case LazyList() =>
-        LazyList()
       case head #:: tail =>
         val delay = time.from(time.to(interval) - (System.currentTimeMillis - last))
         if time.to(delay) > 0 then sleep(delay)
         stream
+      case _ =>
+        LazyList()
 
     Task(Text("ratelimiter"))(recur(stream, System.currentTimeMillis)).await()
 
-  def multiplexWith(that: LazyList[T])(using Monitor, Threading): LazyList[T] = LazyList.multiplex(stream, that)
+  def multiplexWith(that: LazyList[T])(using Monitor, Threading): LazyList[T] =
+    unsafely(LazyList.multiplex(stream, that))
 
-  def regulate(tap: Tap)(using Monitor, Threading): LazyList[T] =
+  def regulate(tap: Tap)(using Monitor, Threading): LazyList[T] throws AlreadyStreamingError =
     def defer(active: Boolean, stream: LazyList[T | Tap.Regulation], buffer: List[T]): LazyList[T] =
       recur(active, stream, buffer)
 
@@ -318,6 +321,7 @@ class StreamBuffer[T]():
   private val secondary: juc.LinkedBlockingQueue[Maybe[T]] = juc.LinkedBlockingQueue()
   private var buffer: Boolean = true
   private var closed: Boolean = false
+  private var streaming: Boolean = false
 
   def useSecondary() = primary.put(Unset)
   def usePrimary() = secondary.put(Unset)
@@ -330,30 +334,35 @@ class StreamBuffer[T]():
   def put(value: T): Unit = primary.put(value)
   def putSecondary(value: T): Unit = secondary.put(value)
 
-  def stream: LazyList[T] =
-    if buffer then primary.take() match
-      case Unset =>
-        buffer = false
-        if closed then LazyList() else stream
-      case value: T @unchecked =>
-        value #:: stream
-      case _ =>
-        throw Mistake("Should never match")
-    else secondary.take() match
-      case Unset =>
-        buffer = true
-        if closed then LazyList() else stream
-      case value: T @unchecked =>
-        value #:: stream
-      case _ =>
-        throw Mistake("Should never match")
+  
+  def stream: LazyList[T] throws AlreadyStreamingError =
+    def recur(): LazyList[T] =
+      if buffer then primary.take() match
+        case Unset =>
+          buffer = false
+          if closed then LazyList() else recur()
+        case value: T @unchecked =>
+          value #:: recur()
+        case _ =>
+          throw Mistake("Should never match")
+      else secondary.take() match
+        case Unset =>
+          buffer = true
+          if closed then LazyList() else recur()
+        case value: T @unchecked =>
+          value #:: recur()
+        case _ =>
+          throw Mistake("Should never match")
     
+    if streaming then throw AlreadyStreamingError() else recur()
+
 
 class Funnel[T]():
   private val queue: juc.LinkedBlockingQueue[Maybe[T]] = juc.LinkedBlockingQueue()
   def put(value: T): Unit = queue.put(value)
   def stop(): Unit = queue.put(Unset)
-  def stream: LazyList[T] = LazyList.continually(queue.take()).takeWhile(_ != Unset).sift[T]
+  def stream: LazyList[T] throws AlreadyStreamingError =
+    LazyList.continually(queue.take()).takeWhile(_ != Unset).sift[T]
 
 class Gun() extends Funnel[Unit]():
   def fire(): Unit = put(())
@@ -378,4 +387,4 @@ class Tap(initial: Boolean = true):
   
   def stop(): Unit = synchronized(funnel.stop())
   def state(): Boolean = on
-  def stream: LazyList[Tap.Regulation] = funnel.stream
+  def stream: LazyList[Tap.Regulation] throws AlreadyStreamingError = funnel.stream
