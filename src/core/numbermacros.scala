@@ -23,8 +23,8 @@ object CardinalityMacro:
     import quotes.*, reflect.*
     digits.value match
       case Some(str) =>
-        (TypeRepr.of[D1], TypeRepr.of[D2]) match
-          case (ConstantType(lb), ConstantType(ub)) => (lb.value, ub.value) match
+        ((TypeRepr.of[D1], TypeRepr.of[D2]): @unchecked) match
+          case (ConstantType(lb), ConstantType(ub)) => ((lb.value, ub.value): @unchecked) match
             case (lb: Double, ub: Double) =>
               val value = str.toDouble
               

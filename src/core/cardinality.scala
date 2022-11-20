@@ -41,7 +41,7 @@ object NumericRange:
 
   @targetName("Range")
   object `~`:
-    given [D1 <: Double & Singleton, D2 <: Double & Singleton](using d1: ValueOf[D1], d2: ValueOf[D2])
+    given comparable[D1 <: Double & Singleton, D2 <: Double & Singleton](using d1: ValueOf[D1], d2: ValueOf[D2])
           : TypeTest[Double, D1 ~ D2] =
       value =>
         if value >= d1.value && value <= d2.value
