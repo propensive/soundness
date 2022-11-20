@@ -27,12 +27,13 @@ import anticipation.*
 import java.io as ji
 import java.nio.file as jnf
 
-
 import jnf.{FileSystems, FileVisitResult, Files, Paths, SimpleFileVisitor, StandardCopyOption,
     DirectoryNotEmptyException, Path as JavaPath}, jnf.StandardCopyOption.*,
     jnf.attribute.BasicFileAttributes
 
 import ji.{File as JavaFile}
+
+import language.experimental.captureChecking
 
 object IoError:
   object Reason:
@@ -444,7 +445,7 @@ extends Absolute[Fs](filesystem, elements), Shown[DiskPath[Fs]]:
     
     Symlink(this, unsafely(root.parse(Showable(Files.readSymbolicLink(Paths.get(fullname.s))).show)))
 
-  def descendantFiles(descend: (Directory[Fs] => Boolean) = _ => true)
+  def descendantFiles(descend: (Directory[Fs] -> Boolean) = _ => true)
                       : LazyList[File[Fs]] throws IoError =
     if javaFile.isDirectory
     then directory(Expect).files.to(LazyList) #::: directory(Expect).subdirectories.filter(
