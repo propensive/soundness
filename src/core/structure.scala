@@ -36,7 +36,7 @@ case class BaseLayout(private val part: String, private val envVar: Maybe[String
   def apply[T]()(using PathProvider[T], Environment): T =
     val path: String = envVar.option match
       case None         => absolutePath
-      case Some(envVar) => summon[Environment](Text(envVar)).envelop(absolutePath)(_.s)
+      case Some(envVar) => summon[Environment](Text(envVar)).mfold(absolutePath)(_.s)
 
     summon[PathProvider[T]].makePath(path, readOnly = readOnly) match
       case None      => throw RuntimeException("failed to parse: '"+path+"'")
