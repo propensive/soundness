@@ -31,6 +31,7 @@ import scala.util.CommandLineParser
 import language.dynamics
 
 import scala.util.{Try, Success, Failure}
+import scala.deriving.*
 
 import java.util.concurrent as juc
 export scala.util.chaining.scalaUtilChainingOps
@@ -220,10 +221,6 @@ extension (bs: Long)
 
 opaque type ByteSize = Long
 
-// class Trigger():
-//   private val promise: Promise[Trigger] = Promise()
-//   def pull(): Unit = synchronized(safely(promise.supply(this)))
-
 object ByteSize:
   given Ordering[ByteSize] = Ordering.Long.on(_.long)
 
@@ -375,3 +372,9 @@ sealed class Internet()
 def internet[T](fn: Internet ?=> T): T =
   val inet: Internet = Internet()
   fn(using inet)
+
+extension [P <: Product](product: P)(using mirror: Mirror.ProductOf[P])
+  def tuple: mirror.MirroredElemTypes = Tuple.fromProductTyped(product)
+
+extension [T <: Tuple](tuple: T)
+  def to[P](using mirror: Mirror.ProductOf[P]): P = mirror.fromProduct(tuple)
