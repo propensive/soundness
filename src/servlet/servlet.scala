@@ -63,7 +63,7 @@ trait Servlet(handle: Request ?=> Response[?]) extends HttpServlet:
           case _                           => map
     
     val headers = request.getHeaderNames.nn.asScala.to(List).map: k =>
-      Text(k) -> request.getHeaders(k).nn.asScala.to(List).map(Text(_))
+      Text(k).lower -> request.getHeaders(k).nn.asScala.to(List).map(Text(_))
     .to(Map)
 
     Request(

@@ -200,8 +200,8 @@ inline def param(using Request)(key: Text): Text throws MissingParamError =
   summon[Request].params.get(key).getOrElse:
     throw MissingParamError(key)
 
-def header(using Request)(header: RequestHeader): List[Text] =
-  summon[Request].headers.get(header).getOrElse(Nil)
+def header(using Request)(header: RequestHeader): Maybe[List[Text]] =
+  summon[Request].headers.get(header).getOrElse(Unset)
 
 object ParamReader:
   given [T](using ext: Unapply[Text, T]): ParamReader[T] = ext.unapply(_)
