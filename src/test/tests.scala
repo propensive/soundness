@@ -34,72 +34,69 @@ case class InvalidState(name: String) extends Exception("Not a valid state: "+na
 
 object Tests extends Suite(t"Euphemism Tests"):
   def run(using Runner): Unit =
-    suite(t"Parsing tests") {
-      test(t"Parse a number") {
+    suite(t"Parsing tests"):
+      test(t"Parse a number"):
         Json.parse(t"42").as[Int]
-      }.assert(_ == 42)
+      .assert(_ == 42)
 
-      test(t"Parse a string") {
+      test(t"Parse a string"):
         val s = Json.parse(t"\"string\"")
         s.as[Text]
-      }.check(_ == t"string")
+      .check(_ == t"string")
     
-      test(t"Parse true") {
+      test(t"Parse true"):
         Json.parse(t"true").as[Boolean]
-      }.assert(identity)
+      .assert(identity)
 
-      test(t"Parse false") {
+      test(t"Parse false"):
         Json.parse(t"false").as[Boolean]
-      }.assert(!_)
+      .assert(!_)
 
-      test(t"Parse float") {
+      test(t"Parse float"):
         Json.parse(t"3.1415").as[Float]
-      }.assert(_ == 3.1415f)
+      .assert(_ == 3.1415f)
       
-      test(t"Parse double") {
+      test(t"Parse double"):
         Json.parse(t"3.1415926").as[Double]
-      }.assert(_ == 3.1415926)
-    }
+      .assert(_ == 3.1415926)
 
-    suite(t"Serialization") {
-      test(t"Serialize string") {
+    suite(t"Serialization"):
+      test(t"Serialize string"):
         t"foo".json.show
-      }.check(_ == t""""foo"""")
+      .check(_ == t""""foo"""")
 
-      test(t"Serialize double") {
+      test(t"Serialize double"):
         3.14159.json.show
-      }.check(_ == t"3.14159")
+      .check(_ == t"3.14159")
       
-      test(t"Serialize true") {
+      test(t"Serialize true"):
         true.json.show
-      }.check(_ == t"true")
+      .check(_ == t"true")
     
-      test(t"Serialize false") {
+      test(t"Serialize false"):
         false.json.show
-      }.check(_ == t"false")
-    }
+      .check(_ == t"false")
     
-    suite(t"Basic tests") {
-      test(t"Serialize to Json") {
+    suite(t"Basic tests"):
+      test(t"Serialize to Json"):
         Foo(1, t"two").json
-      }.assert(_ == Json.of(x = 1.json, y = t"two".json))
+      .assert(_ == Json.of(x = 1.json, y = t"two".json))
 
-      test(t"Parse from JSON") {
+      test(t"Parse from JSON"):
         Json.parse(t"""{"x": 1}""")
-      }.assert(_ == Json.of(x = 1.json))
+      .assert(_ == Json.of(x = 1.json))
 
-      test(t"Read case class") {
+      test(t"Read case class"):
 
         Json.parse(t"""{"x": 1, "y": "two"}""").as[Foo]
-      }.assert(_ == Foo(1, t"two"))
+      .assert(_ == Foo(1, t"two"))
 
-      test(t"Extract an option") {
+      test(t"Extract an option"):
         case class OptFoo(x: Option[Int])
         Json.parse(t"""{"x": 1}""").as[OptFoo].x
-      }.assert(_ == Some(1))
+      .assert(_ == Some(1))
       
-      test(t"Extract a None") {
+      test(t"Extract a None"):
         case class OptFoo(x: Option[Int])
         Json.parse(t"""{"y": 1}""").as[OptFoo].x
-      }.assert(_ == None)
-    }
+      .assert(_ == None)
