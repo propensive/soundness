@@ -208,7 +208,7 @@ object Http:
     headers.foreach(Log.fine(_))
     Log.fine(ansi"HTTP request body: ${summon[Postable[T]].preview(content)}")
     
-    URL(url.show.s).openConnection.nn match
+    URI(url.show.s).toURL.nn.openConnection.nn match
       case conn: HttpURLConnection =>
         conn.setRequestMethod(Showable(method).show.upper.s)
         
