@@ -21,11 +21,12 @@ import probably.*
 import gossamer.*
 import rudiments.*
 import eucalyptus.*
+import parasitism.*, threading.platform
 import scala.util.Try
 
 import unsafeExceptions.canThrowAny
 
-given Log(Everything |-> Stdout)
+import logging.silent
 
 object Tests extends Suite(t"Probably Tests"):
 
