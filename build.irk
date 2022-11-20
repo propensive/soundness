@@ -81,6 +81,23 @@
       "docs": [
         "doc"
       ]
+    },
+    {
+      "name": "Punctuation Tests",
+      "id": "punctuation/test",
+      "links": [
+        "probably/cli",
+        "punctuation/html"
+      ],
+      "dependencies": [],
+      "jars": [],
+      "sources": ["src/test"],
+      "version": "0.4.0",
+      "exec": {
+        "browsers": [],
+	"start": "punctuation.Tests"
+      },
+      "docs": ["doc"]
     }
   ]
 }

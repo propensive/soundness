@@ -90,7 +90,8 @@ object Markdown:
   private def coalesce[M >: Textual <: Markdown.Ast.Inline](xs: List[M], done: List[M] = Nil): List[M] =
     xs match
       case Nil                                   => done.reverse
-      case Textual(str) :: Textual(str2) :: tail => coalesce(Textual(format(t"$str $str2")) :: tail, done)
+      case Textual(str) :: Textual(str2) :: tail => coalesce(Textual(t"$str$str2") :: tail, done)
+      case Textual(str) :: tail                  => coalesce(tail, Textual(format(str)) :: done)
       case head :: tail                          => coalesce(tail, head :: done)
 
   def format(str: Text): Text = Text:
@@ -111,7 +112,7 @@ object Markdown:
       cvfa.Image | cvfa.ImageRef | cvfa.Link | cvfa.LinkRef | cvfa.MailLink | cvfa.Text | cvfa.SoftLineBreak
 
   def phraseChildren(root: cvfua.Document, node: cvfua.Node)
-      : Seq[Markdown.Ast.Inline] throws MarkdownError = //coalesce:
+      : Seq[Markdown.Ast.Inline] throws MarkdownError = coalesce:
     node.getChildren.nn.iterator.nn.asScala.to(List).collect:
       case node: PhrasingInput => phrasing(root, node)
   
