@@ -58,7 +58,7 @@ enum Level:
   case Fine, Info, Warn, Fail
   def unapply(entry: Entry): Boolean = entry.level == this
   
-case class Entry(realm: Realm, level: Level, message: AnsiText, timestamp: Timestamp)
+case class Entry(realm: Realm, level: Level, message: AnsiText, timestamp: Timestamp, tags: ListMap[Text, Text])
 
 object Timestamp:
   def apply(): Timestamp = System.currentTimeMillis
@@ -87,20 +87,23 @@ object Log:
     ${EucalyptusMacros.recordLog('{Level.Fail}, 'value, 'log, 'show, 'realm)}
 
 object EucalyptusMacros:
-  def recordLog[T: Type](level: Expr[Level], value: Expr[T], log: Expr[Log], show: Expr[AnsiShow[T]],
-                             realm: Expr[Realm])
-                        (using Quotes): Expr[Unit] =
+  def recordLog[T: Type]
+               (level: Expr[Level], value: Expr[T], log: Expr[Log], show: Expr[AnsiShow[T]], realm: Expr[Realm])
+               (using Quotes)
+               : Expr[Unit] =
     import quotes.reflect.*
 
     '{
-      val ts = Timestamp()
-      try $log.record(Entry($realm, $level, $show.ansiShow($value), ts)) catch case e: Exception => ()
+      val time = Timestamp()
+      try $log.record(Entry($realm, $level, $show.ansiShow($value), time, $log.tags)) catch case e: Exception => ()
     }
 
 @implicitNotFound("""|eucalyptus: a contextual Log instance is needed, for example:
                      |    import logging.stdout  // Log everything to standard output
                      |    import logging.silent  // Do not log anything""".stripMargin)
-case class Log(actions: PartialFunction[Entry, LogSink & Singleton]*)(using Monitor, Threading):
+class Log(actions: PartialFunction[Entry, LogSink & Singleton]*)(using Monitor, Threading):
+  transparent inline def thisLog = this
+  def tags: ListMap[Text, Text] = ListMap()
   private val funnels: HashMap[LogSink, Funnel[Entry]] = HashMap()
   
   private def put(target: LogSink, entry: Entry): Unit =
@@ -111,7 +114,14 @@ case class Log(actions: PartialFunction[Entry, LogSink & Singleton]*)(using Moni
 
     funnels(target).put(entry)
   
-  def record(entry: Entry): Unit = actions.flatMap(_.lift(entry)).foreach(put(_, entry))
+  def record(entry: Entry): Unit = actions.flatMap(_.lift(entry)).foreach(thisLog.put(_, entry))
+
+  def tag[T](value: T)(using lt: LogTag[T]): Log = new Log(actions*):
+    override def tags: ListMap[Text, Text] = thisLog.tags.updated(lt.tagName, lt.tag(value))
+
+trait LogTag[-T]:
+  def tagName: Text
+  def tag(value: T): Text
 
 package logging:
   given silent(using Threading): Log = Log()(using Supervisor(t"none"))
