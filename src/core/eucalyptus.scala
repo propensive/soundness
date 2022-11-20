@@ -106,7 +106,7 @@ case class Log(actions: PartialFunction[Entry, LogSink & Singleton]*)(using Moni
   private def put(target: LogSink, entry: Entry): Unit =
     if !funnels.contains(target) then synchronized:
       val funnel = Funnel[Entry]()
-      Task(t"logger")(target.write(funnel.stream))
+      Task(t"logger")(target.write(unsafely(funnel.stream)))
       funnels(target) = funnel
 
     funnels(target).put(entry)
@@ -134,3 +134,4 @@ trait LogFormat[S]:
 
 extension [S: LogFormat: Appendable](value: S)
   def sink: LogSink = LogSink(value, summon[Appendable[S]], summon[LogFormat[S]])
+
