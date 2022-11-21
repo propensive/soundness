@@ -7,10 +7,15 @@
     {
       "base": "../parasitism",
       "url": "https://github.com/propensive/parasitism"
+    },
+    {
+      "base": "../probably",
+      "url": "https://github.com/propensive/probably"
     }
   ],
   "imports": [
     "../tetromino/build.irk",
+    "../probably/build.irk",
     "../parasitism/build.irk"
   ],
   "publishing": {
@@ -43,6 +48,29 @@
         "src/core"
       ],
       "version": "0.4.0",
+      "docs": [
+        "doc"
+      ]
+    },
+    {
+      "name": "Turbulence Tests",
+      "id": "turbulence/test",
+      "links": [
+        "probably/cli",
+        "turbulence/core"
+      ],
+      "dependencies": [
+      ],
+      "jars": [
+      ],
+      "sources": [
+        "src/test"
+      ],
+      "version": "0.4.0",
+      "exec": {
+        "browsers": [],
+	"start": "turbulence.Tests"
+      },
       "docs": [
         "doc"
       ]
