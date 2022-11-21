@@ -291,9 +291,9 @@ extension (buf: StringBuilder)
   def add(char: Char): Unit = buf.append(char)
   def text: Text = Showable(buf).show
 
-object encodings:
+package encodings:
   given Utf8: Encoding with
-    def carry(arr: Array[Byte]): Int =
+    override def carry(arr: Array[Byte]): Int =
       val len = arr.length
       def last = arr(len - 1)
       def last2 = arr(len - 2)
@@ -304,16 +304,17 @@ object encodings:
       else if len > 2 && ((last3 & -8) == -16) then 3
       else 0
     
+    override def run(byte: Byte): Int =
+      if (byte & -32) == -64 then 2 else if (byte & -16) == -32 then 3 else if (byte & -8) == -16 then 4 else 1
+    
     def name: Text = Text("UTF-8")
   
-  given Ascii: Encoding with
-    def carry(arr: Array[Byte]): Int = 0
+  given ASCII: Encoding with
     def name: Text = Text("ASCII")
   
   @targetName("ISO_8859_1")
   given `ISO-8859-1`: Encoding with
     def name: Text = Text("ISO-8859-1")
-    def carry(arr: Array[Byte]): Int = 0
 
 case class Line(text: Text)
 
