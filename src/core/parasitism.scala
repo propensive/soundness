@@ -63,11 +63,6 @@ case class TaskMonitor(id: Text, interrupted: () => Boolean, stop: () => Unit, p
   def continue: Boolean = !interrupted() && parent.continue
   def cancel(): Unit = stop()
 
-object Task:
-  def apply[T](id: Text)(fn: CanThrow[CancelError] ?=> Monitor ?=> T)
-              (using monitor: Monitor, threading: Threading): Task[T] =
-    (new Task(id, mon => fn(using unsafeExceptions.canThrowAny)(using mon))(using monitor)).tap(_.start())
-
 case class Promise[T]():
   @volatile
   private var value: Option[T throws CancelError] = None
@@ -114,7 +109,7 @@ enum TaskStatus:
 package threading:
   // given platform: Threading = (runnable, name) => Thread.ofPlatform.nn.name(name.s).nn.start(runnable).nn
   given virtual: Threading = (runnable, name) => Thread.ofVirtual.nn.name(name.s).nn.start(runnable).nn
-  given platform: Threading = (runnable, name) => Thread(runnable, name.s)
+  given platform: Threading = (runnable, name) => Thread(runnable, name.s).tap(_.start())
 
 @implicitNotFound("""|parasitism: a contextual Threading instance is required to create new asynchronous tasks, typically
                      |one of:
@@ -122,6 +117,11 @@ package threading:
                      |    import threading.platform  // use OS threads""".stripMargin)
 trait Threading:
   def apply(runnable: Runnable, name: Text): Thread
+
+object Task:
+  def apply[T](id: Text)(fn: CanThrow[CancelError] ?=> Monitor ?=> T)
+              (using monitor: Monitor, threading: Threading): Task[T] =
+    (new Task(id, mon => fn(using unsafeExceptions.canThrowAny)(using mon))(using monitor)).tap(_.start())
 
 class Task[T](id: Text, calc: Monitor => T)(using mon: Monitor, threading: Threading):
   private var startTime: Long = 0L
@@ -133,11 +133,12 @@ class Task[T](id: Text, calc: Monitor => T)(using mon: Monitor, threading: Threa
   def await(using tk: Timekeeper)(time: tk.Type): T throws CancelError | TimeoutError =
     result.await(time).tap(thread.join().waive)
   
-  private def start(): Promise[T] = synchronized:
-    if !thread.isAlive then
-      startTime = System.currentTimeMillis
-      status = TaskStatus.Running
-      thread.start()
+  private def start(): Promise[T] = //synchronized:
+    // if startTime == 0 then
+    //   startTime = System.currentTimeMillis
+    //   status = TaskStatus.Running
+    //   thread.start()
+    thread
     result
 
   def cancel(): Unit = synchronized:
@@ -145,10 +146,10 @@ class Task[T](id: Text, calc: Monitor => T)(using mon: Monitor, threading: Threa
     result.cancel()
     status = TaskStatus.Canceled
 
-  def map[S](fn: T => S)(using mon: Monitor): Task[S] = Task(Text("map"))(fn(await()))
+  def map[S](fn: T => S)(using mon: Monitor): Task[S] = Task(Text(s"${id}.map"))(fn(await()))
   
   def flatMap[S](fn: T => Task[S])(using mon: Monitor): Task[S] =
-    Task(Text("flatMap"))(fn(await()).await())
+    Task(Text(s"${id}.flatMap"))(fn(await()).await())
   
   private val result: Promise[T] = Promise()
   private lazy val thread: Thread = threading(runnable, ctx.name)
