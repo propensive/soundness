@@ -30,7 +30,7 @@ import logging.silent
 object Tests extends Suite(t"Turbulence tests"):
   def run(using Runner): Unit =
     suite(t"Streaming Unicode tests"):
-      given Encoding = enc"UTF-8"
+      given Encoding = encodings.Utf8
       val ascii = IArray(t"", t"a", t"ab", t"abc", t"abcd")
       
       val strings = for
@@ -45,7 +45,7 @@ object Tests extends Suite(t"Turbulence tests"):
 
       for
         string <- strings
-        bs     <- 8 to 5 by -1
+        bs     <- 1 to 8
       do
         test(t"length tests"):
           val stream: DataStream = string.bytes.grouped(bs).to(LazyList).map(identity(_))

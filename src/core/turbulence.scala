@@ -55,6 +55,11 @@ case class AlreadyStreamingError() extends Error(err"the stream was accessed twi
 //     def read(value: SystemIn.type): DataStream throws StreamCutError =
 //       if System.in == null then throw StreamCutError() else Util.readInputStream(System.in)
 
+object Source:
+  given Source[DataStream] with
+    type E = Nothing
+    def read(value: DataStream, rubrics: Rubric*) = value
+
 trait Source[T]:
   type E <: Exception
   def read(value: T, rubrics: Rubric*): DataStream throws E
@@ -84,9 +89,6 @@ trait Writable[T]:
   type E <: Exception
   def write(value: T, stream: DataStream): Unit throws StreamCutError | E
 
-object SafeStreamable:
-  given SafeStreamable[LazyList[Bytes]] = identity(_)
-
 object Streamable:
   given Streamable[DataStream] = identity(_)
   given Streamable[Bytes] = LazyList(_)
@@ -96,10 +98,6 @@ object Streamable:
 
 trait Streamable[T]:
   def stream(value: T): DataStream
-
-trait SafeStreamable[T] extends Streamable[T]:
-  def safeStream(value: T): LazyList[Bytes]
-  def stream(value: T): DataStream = safeStream(value).map(identity(_))
 
 object Readable:
   given Readable[DataStream] with
@@ -118,16 +116,24 @@ object Readable:
 
   given textReader(using enc: Encoding): Readable[LazyList[Text]] with
     type E = StreamCutError
+    private final val empty = Array.empty[Byte]
+
     def read(stream: DataStream, rubrics: Rubric*) =
-      
-      def read(stream: DataStream, carried: Array[Byte] = Array.empty[Byte]): LazyList[Text] =
-        if stream.isEmpty then LazyList()
-        else
-          // FIXME: constructing this new array may be unnecessarily costly.
-          val buf = carried ++ stream.head.mutable(using Unsafe)
-          val carry = enc.carry(buf)
-          
-          Text(String(buf, 0, buf.length - carry, enc.name.s)) #:: read(stream.tail, buf.takeRight(carry))
+      def read(stream: DataStream, carried: Array[Byte] = empty, skip: Int = 0): LazyList[Text] = stream match
+        case LazyList() =>
+          LazyList()
+        
+        case head #:: tail =>
+          val buf = head.mutable(using Unsafe)
+          if carried.length > 0 then
+            val need = enc.run(carried(0))
+            val got = buf.length + carried.length
+            if got < need then read(tail, carried ++ buf)
+            else if got == need then Text(String(carried ++ buf, enc.name.s)) #:: read(tail, empty)
+            else Text(String(carried ++ buf.take(need - carried.length), enc.name.s)) #:: read(stream, empty, need - carried.length)
+          else
+            val carry = enc.carry(buf)
+            Text(String(buf, skip, buf.length - carry - skip, enc.name.s)) #:: read(tail, buf.takeRight(carry))
       
       read(stream)
 
