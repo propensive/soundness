@@ -19,15 +19,43 @@ package turbulence
 import probably.*
 import eucalyptus.*
 import gossamer.*
+import rudiments.*
+import parasitism.*, threading.platform
 import stdouts.stdout
 
 import unsafeExceptions.canThrowAny
-given Log(Everything |-> SystemOut)
+
+import logging.silent
 
 object Tests extends Suite(t"Turbulence tests"):
   def run(using Runner): Unit =
-    test(t""):
-      val task = Task(sleep(100L))
-      task.await()
+    suite(t"Streaming Unicode tests"):
+      given Encoding = enc"UTF-8"
+      val ascii = IArray(t"", t"a", t"ab", t"abc", t"abcd")
+      
+      val strings = for
+        asc0 <- Array(t"", t"a", t"ab", t"abc") // 4 combinations
+        cp2  <- Array(t"", t"£")                // 8
+        asc1 <- Array(t"", t"a", t"ab", t"abc") // 32
+        cp3  <- Array(t"", t"€")                // 64
+        asc2 <- Array(t"", t"a", t"ab", t"abc") // 256
+        cp4  <- Array(t"")//, t"𐍈")                // 512
+        asc3 <- Array(t"", t"a", t"ab", t"abc") // 2048
+      yield asc0+cp2+asc1+cp3+asc2+cp4
 
+      for
+        string <- strings
+        bs     <- 8 to 5 by -1
+      do
+        test(t"length tests"):
+          val stream: DataStream = string.bytes.grouped(bs).to(LazyList).map(identity(_))
+          val result = stream.read[LazyList[Text]]()
+          result.join.bytes.length
+        .assert(_ == string.bytes.length)
 
+        test(t"roundtrip tests"):
+          val stream: DataStream = string.bytes.grouped(bs).to(LazyList).map(identity(_))
+          val result = stream.read[LazyList[Text]]()
+          if result.join != string then t"${result.join(t"[", ",", "]")} bs=$bs exp=${string.bytes.toList.map(_.show).join(t"[", t",", t"]")} got=${result.map(_.s.toList.map(_.toInt.toString).mkString(",").show).join(t" :# ")}"
+          else result.join
+        .assert(_ == string)
