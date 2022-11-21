@@ -50,6 +50,8 @@ export scala.jdk.CollectionConverters.{IteratorHasAsScala, ListHasAsScala, MapHa
 
 export scala.annotation.{tailrec, implicitNotFound, targetName, switch, StaticAnnotation}
 
+import language.experimental.captureChecking
+
 type Bytes = IArray[Byte]
 opaque type Text = String
 
@@ -110,7 +112,7 @@ extension [K, V](map: Map[K, List[V]])
 class Recur[T](fn: => T => T):
   def apply(value: T): T = fn(value)
 
-def fix[T](func: Recur[T] ?=> (T => T)): (T => T) = func(using Recur(fix(func)))
+def fix[T](func: Recur[T] ?-> (T => T)): (T => T) = func(using Recur(fix(func)))
 def recur[T: Recur](value: T): T = summon[Recur[T]](value)
 
 case class Property(name: Text) extends Dynamic:
@@ -142,18 +144,20 @@ object Unset:
 type Maybe[T] = Unset.type | T
 
 extension [T](opt: Maybe[T])
-  def otherwise(value: => T): T = opt match
+  def unset: Boolean = opt == Unset
+  
+  def otherwise(value: => T): {value} T = opt match
     case Unset               => value
     case other: T @unchecked => other
 
   def presume(using default: Default[T]): T = otherwise(default())
-  def bluff: T throws UnsetValueError = otherwise(throw UnsetValueError())
+  //def bluff: T throws UnsetValueError = otherwise(throw UnsetValueError())
 
-  def mfold[S](default: => S)(fn: T => S) = opt match
+  def mfold[S](default: -> S)(fn: T -> S) = opt match
     case Unset               => default
     case value: T @unchecked => fn(value)
 
-  def mmap[S](fn: T => S): Maybe[S] = opt match
+  def mmap[S](fn: T -> S): Maybe[S] = opt match
     case Unset               => Unset
     case value: T @unchecked => fn(value)
 
@@ -177,7 +181,8 @@ case class Counter(first: Int = 0):
 
 trait Encoding:
   def name: Text
-  def carry(array: Array[Byte]): Int
+  def carry(array: Array[Byte]): Int = 0
+  def run(byte: Byte): Int = 1
 
 object AndExtractor:
   @targetName("And")
@@ -194,8 +199,10 @@ extension [T](xs: Iterable[T])
   transparent inline def mtriple: Iterable[(T, T, T)] = xs.map { x => (x, x, x) }
   transparent inline def sift[S]: Iterable[S] = xs.collect { case x: S @unchecked => x }
 
-  def indexBy[S](fn: T => S): Map[S, T] throws DuplicateIndexError =
-    val map = xs.map { value => fn(value) -> value }
+  def indexBy[S](fn: T -> S): Map[S, T] throws DuplicateIndexError =
+    val map = xs.map: value =>
+      (fn(value), value)
+    
     if xs.size != map.size then throw DuplicateIndexError() else map.to(Map)
 
 object Timer extends ju.Timer(true)
@@ -312,64 +319,6 @@ package environments:
   )
 
   given empty: Environment(v => None, v => None)
-
-@implicitNotFound("rudiments: a contextual Environment instance is required, for example one of:\n"+
-                  "    given Environment = environments.empty       // no environment variables or system properties\n"+
-                  "    given Environment = environments.restricted  // access to system properties, but no environment variables\n"+
-                  "    given Environment = environments.system      // full access to the JVM's environment")
-class Environment(getEnv: Text => Option[Text], getProperty: Text => Option[Text]):
-  def apply(variable: Text): Maybe[Text] = getEnv(variable) match
-    case None        => Unset
-    case Some(value) => value
-
-  def property(variable: Text): Text throws EnvError =
-    getProperty(variable).getOrElse(throw EnvError(variable, true))
-
-  def fileSeparator: ('/' | '\\') throws EnvError = property(Text("file.separator")).s match
-    case "/"  => '/'
-    case "\\" => '\\'
-    case _    => throw EnvError(Text("file.separator"), true)
-
-  def pathSeparator: (':' | ';') throws EnvError = property(Text("path.separator")).s match
-    case ";" => ';'
-    case ":" => ':'
-    case _    => throw EnvError(Text("path.separator"), true)
-
-  def javaClassPath[P](using pp: PathProvider[P]): List[P] throws EnvError =
-    property(Text("java.class.path")).s.split(pathSeparator).to(List).flatMap(pp.makePath(_))
-
-  def javaHome[P](using pp: PathProvider[P]): P throws EnvError =
-    pp.makePath(property(Text("java.home")).s).getOrElse(throw EnvError(Text("java.home"), true))
-
-  def javaVendor: Text throws EnvError = property(Text("java.vendor"))
-  def javaVendorUrl: Text throws EnvError = property(Text("java.vendor.url"))
-  def javaVersion: Text throws EnvError = property(Text("java.version"))
-
-  def javaSpecificationVersion: Int throws EnvError = property(Text("java.specification.version")) match
-    case As[Int](version) => version
-    case other            => throw EnvError(Text("java.specification.version"), true)
-
-  def lineSeparator: Text throws EnvError = property(Text("line.separator"))
-  def osArch: Text throws EnvError = property(Text("os.arch"))
-  def osVersion: Text throws EnvError = property(Text("os.version"))
-
-  def userDir[P](using pp: PathProvider[P]): P throws EnvError =
-    pp.makePath(property(Text("user.dir")).s).getOrElse(throw EnvError(Text("user.dir"), true))
-
-  def userHome[P](using pp: PathProvider[P]): P throws EnvError =
-    pp.makePath(property(Text("user.home")).s).getOrElse(throw EnvError(Text("user.home"), true))
-
-  def userName: Text throws EnvError = property(Text("user.name"))
-
-  def pwd[P](using pp: PathProvider[P]): P throws EnvError =
-    apply(Text("PWD")).otherwise(safely(property(Text("user.dir")))).mfold(throw EnvError(Text("user.dir"), true)): path =>
-      pp.makePath(path.s).getOrElse(throw EnvError(Text("user.dir"), true))
-
-case class EnvError(variable: Text, property: Boolean)
-extends Error(
-  if property then err"the system property $variable was not found"
-  else err"the environment variable $variable was not found"
-)
 
 sealed class Internet()
 
