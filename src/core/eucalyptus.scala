@@ -125,6 +125,10 @@ trait LogTag[-T]:
 
 package logging:
   given silent(using Threading): Log = Log()(using Supervisor(t"none"))
+  given stdout: Log =
+    val sink = SystemOut.sink
+    Log({ case _ => sink })(using monitors.global, threading.platform)
+    
 
 object LogSink:
   def apply[S](sink: S, appendable: Appendable[S], format: LogFormat[S]): LogSink = new LogSink:
