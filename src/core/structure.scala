@@ -27,7 +27,7 @@ case class BaseLayout(private val part: String, private val envVar: Maybe[String
                      (using baseDir: BaseLayout.Dir):
   def absolutePath(using env: Environment): String =
     if baseDir.home then
-      val home: Text = unsafely(env(Text("HOME")).otherwise(env.property(Text("user.home"))))
+      val home: Text = unsafely(env(Text("HOME")).or(env.property(Text("user.home"))))
       val slash = if home.s.endsWith("/") then "" else "/"
       s"$home$slash${baseDir.path}/$part" else s"${baseDir.path}/$part"
 
