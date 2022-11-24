@@ -271,7 +271,7 @@ extends Inode[Fs](directoryPath), Shown[Directory[Fs]]:
   def symlink: Unset.type = Unset
   
   def tmpPath(suffix: Maybe[Text] = Unset): DiskPath[Fs] =
-    val part = unsafely(PathElement(t"${Uuid().show}${suffix.otherwise(t"")}"))
+    val part = unsafely(PathElement(t"${Uuid().show}${suffix.or(t"")}"))
     path.root.make(path.parts :+ part.value)
   
   def tmpFile(suffix: Maybe[Text] = Unset): File[Fs] throws IoError =
