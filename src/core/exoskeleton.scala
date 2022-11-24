@@ -166,7 +166,7 @@ object Fish extends ShellType(t"fish"):
 
   def serialize(cli: Cli, completions: Completions): LazyList[Text] =
     completions.defs.to(LazyList).map {
-      case Choice(word, desc, hidden, incomplete) => t"$word\t${desc.otherwise(t"")}"
+      case Choice(word, desc, hidden, incomplete) => t"$word\t${desc.or(t"")}"
     }
   
   def script(cmd: Text): Text =

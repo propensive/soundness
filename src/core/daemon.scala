@@ -108,17 +108,17 @@ trait Daemon()(using Log) extends App:
 
       def spawn(): Task[Unit] = Task(t"spawn"):
         lazy val out = Fifo[Unix]:
-          val file = (runDir.otherwise(sys.exit(1)) / t"$script-${pid.value}.stdout.sock").file(Expect)
+          val file = (runDir.or(sys.exit(1)) / t"$script-${pid.value}.stdout.sock").file(Expect)
           file.javaFile.deleteOnExit()
           file.path
         
         try
-          val script = scriptFile.otherwise(sys.exit(1)).name
-          val fifoIn = (runDir.otherwise(sys.exit(1)) / t"$script-${pid.value}.stdin.sock").file(Expect)
+          val script = scriptFile.or(sys.exit(1)).name
+          val fifoIn = (runDir.or(sys.exit(1)) / t"$script-${pid.value}.stdin.sock").file(Expect)
           fifoIn.javaFile.deleteOnExit()
           val terminate = Promise[Int]()
           
-          lazy val exitFile = (runDir.otherwise(sys.exit(1)) / t"$script-${pid.value}.exit").file()
+          lazy val exitFile = (runDir.or(sys.exit(1)) / t"$script-${pid.value}.exit").file()
           exitFile.javaFile.deleteOnExit()
           
           def interactive(): Unit =
@@ -131,7 +131,7 @@ trait Daemon()(using Log) extends App:
             sys.exit(0)
             
 
-          val commandLine = CommandLine(args, instanceEnv, scriptFile.otherwise(sys.exit(1)),
+          val commandLine = CommandLine(args, instanceEnv, scriptFile.or(sys.exit(1)),
               LazyList() #::: fifoIn.read[DataStream](), _.appendTo(out),
               exit => terminate.supply(exit), term,
               () => interactive(), signals.stream)
