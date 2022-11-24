@@ -121,7 +121,7 @@ object XmlInterpolation:
           case ':'                => if state.ns
                                     then throw InterpolationError(t"the tag name can contain at most one ':' character to indicate a namespace", state.offset, 1)
                                     else state(char).namespace
-          case '/'                => if state.current.isEmpty then state(ClosingTag)
+          case '/'                => if state.current.empty then state(ClosingTag)
                                     else state(SelfClosingTagName)
           case '>'                => if state.push.checkNs then state.push(Body)
                                     else throw InterpolationError(t"the tag uses a namespace that has not been declared with an xmlns attribute")
