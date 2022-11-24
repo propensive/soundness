@@ -204,7 +204,7 @@ object Renderer:
   
   given (using Tty): Renderer[LineEditor, Text] with
     def render(oldEd: Maybe[LineEditor], newEd: LineEditor): Unit =
-      val old = oldEd.otherwise(newEd)
+      val old = oldEd.or(newEd)
       if old.pos > 0 then Tty.print(esc(t"${old.pos}D"))
       val line = t"${newEd.content}${t" "*(old.content.length - newEd.content.length)}"
       Tty.print(esc(t"0K"))
