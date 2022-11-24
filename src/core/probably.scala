@@ -46,11 +46,11 @@ object Runner:
     def passed: Boolean = this == Passed
     
     def filename: Text = this match
-      case FailsAt(datapoint, count) => datapoint.debugValue.filename.otherwise(t"(no source)")
+      case FailsAt(datapoint, count) => datapoint.debugValue.filename.or(t"(no source)")
       case _                         => t""
     
     def line: Text = this match
-      case FailsAt(datapoint, count) => datapoint.debugValue.line.otherwise(0).show
+      case FailsAt(datapoint, count) => datapoint.debugValue.line.or(0).show
       case _                         => t""
 
     def debug: Text = this match
