@@ -59,7 +59,7 @@ object Url:
         
         val (pathStart, auth) =
           if value.slice(colon + 1, colon + 3) == t"//" then
-            val authEnd = safely(value.where(_ == '/', colon + 3)).otherwise(value.length)
+            val authEnd = safely(value.where(_ == '/', colon + 3)).or(value.length)
             authEnd -> Some(Authority.parse(value.slice(colon + 3, authEnd)))
           else
             (colon + 1) -> None
