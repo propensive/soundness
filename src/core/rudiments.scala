@@ -146,12 +146,12 @@ type Maybe[T] = Unset.type | T
 extension [T](opt: Maybe[T])
   def unset: Boolean = opt == Unset
   
-  def otherwise(value: => T): {value} T = opt match
+  def or(value: {*}-> T): {value} T = opt match
     case Unset               => value
     case other: T @unchecked => other
 
-  def presume(using default: Default[T]): T = otherwise(default())
-  //def bluff: T throws UnsetValueError = otherwise(throw UnsetValueError())
+  def presume(using default: Default[T]): T = or(default())
+  def assume(using th: CanThrow[UnsetValueError]): {th} T = or(throw UnsetValueError())
 
   def mfold[S](default: -> S)(fn: T -> S) = opt match
     case Unset               => default
