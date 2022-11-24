@@ -47,7 +47,11 @@ object Show extends Derivation[Show]:
   given Show[reflect.Enum] = Showable(_).show
 
   given Show[Pid] = pid => t"ᴾᴵᴰ${pid.value}"
-  
+
+  given [T: Show]: Show[Set[T]] = _.map(_.show).join(t"⦃", t", ", t"⦄")
+  given [T: Show]: Show[List[T]] = _.map(_.show).join(t"⟦", t", ", t"⟧")
+  given [T: Show]: Show[Vector[T]] = _.map(_.show).join(t"⟪", t", ", t"⟫")
+
   given [T: Show]: Show[Option[T]] =
     case None    => Text("none")
     case Some(v) => v.show

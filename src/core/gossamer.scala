@@ -88,7 +88,7 @@ extension (text: Text)
   
   def chars: IArray[Char] = text.s.toCharArray.nn.immutable(using Unsafe)
   def map(fn: Char => Char): Text = Text(String(text.s.toCharArray.nn.map(fn)))
-  def isEmpty: Boolean = text.s.isEmpty
+  def empty: Boolean = text.s.isEmpty
   def rsub(from: Text, to: Text): Text = Text(text.s.replaceAll(from.s, to.s).nn)
   def startsWith(prefix: Text): Boolean = text.s.startsWith(prefix.s)
   def endsWith(suffix: Text): Boolean = text.s.endsWith(suffix.s)
@@ -150,12 +150,12 @@ extension (text: Text)
   def where(pred: Char -> Boolean, idx: Maybe[Int] = Unset, dir: Direction = Ltr)
             : Int throws OutOfRangeError = dir match
     case Ltr =>
-      val index = idx.otherwise(0)
+      val index = idx.or(0)
       if index >= text.length || index < 0 then throw OutOfRangeError(index, 0, text.s.length)
       if pred(text.s.charAt(index)) then index else where(pred, index + 1, Ltr)
     
     case Rtl =>
-      val index = idx.otherwise(text.s.length - 1)
+      val index = idx.or(text.s.length - 1)
       if index < 0 || index >= text.length then throw OutOfRangeError(index, 0, text.s.length)
       if pred(text.s.charAt(index)) then index else where(pred, index - 1, Rtl)
 
@@ -325,7 +325,7 @@ object Line:
     def read(stream: DataStream, rubric: Rubric*): LazyList[Line] throws StreamCutError | E =
       def recur(stream: LazyList[Text], carry: Text = Text("")): LazyList[Line] =
         if stream.isEmpty then
-          if carry.isEmpty then LazyList() else LazyList(Line(carry))
+          if carry.empty then LazyList() else LazyList(Line(carry))
         else
           val parts = stream.head.s.split("\\r?\\n", Int.MaxValue).nn.map(_.nn)
           if parts.length == 1 then recur(stream.tail, carry + parts.head.show)
