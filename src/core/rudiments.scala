@@ -157,7 +157,7 @@ extension [T](opt: Maybe[T])
     case Unset               => default
     case value: T @unchecked => fn(value)
 
-  def mmap[S](fn: T -> S): Maybe[S] = opt match
+  def mm[S](fn: T -> S): Maybe[S] = opt match
     case Unset               => Unset
     case value: T @unchecked => fn(value)
 
