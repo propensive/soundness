@@ -1,0 +1,27 @@
+{
+  "imports": ["../../dev/one/mod/probably/build.irk"],
+  "modules": [
+    {
+      "name": "Quagmire",
+      "id": "quagmire/core",
+      "links": ["gossamer/core", "eucalyptus/core"],
+      "sources": ["src/core"],
+      "version": "0.1.0",
+      "docs": ["doc"]
+    },
+    {
+      "name": "Quagmire tests",
+      "id": "quagmire/test",
+      "links": ["quagmire/core", "probably/cli"],
+      "sources": ["src/test"],
+      "version": "0.1.0",
+      "docs": ["doc"],
+      "exec": {
+        "browsers": [],
+	      "start": "quagmire.Tests"
+      },
+      "dependencies": [
+      ]
+    }
+  ]
+}
