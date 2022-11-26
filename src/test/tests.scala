@@ -56,6 +56,6 @@ object Tests extends Suite(t"Turbulence tests"):
         test(t"roundtrip tests"):
           val stream: DataStream = string.bytes.grouped(bs).to(LazyList).map(identity(_))
           val result = stream.read[LazyList[Text]]()
-          if result.join != string then t"${result.join(t"[", ",", "]")} bs=$bs exp=${string.bytes.toList.map(_.show).join(t"[", t",", t"]")} got=${result.map(_.s.toList.map(_.toInt.toString).mkString(",").show).join(t" :# ")}"
+          if result.join != string then t"${result.join(t"[", t",", t"]")} bs=$bs exp=${string.bytes.toList.map(_.show).join(t"[", t",", t"]")} got=${result.map(_.s.toList.map(_.toInt.toString).mkString(",").show).join(t" :# ")}"
           else result.join
         .assert(_ == string)
