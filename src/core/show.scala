@@ -51,7 +51,17 @@ object Show extends Derivation[Show]:
   given [T: Show]: Show[Set[T]] = _.map(_.show).join(t"⦃", t", ", t"⦄")
   given [T: Show]: Show[List[T]] = _.map(_.show).join(t"⟦", t", ", t"⟧")
   given [T: Show]: Show[Vector[T]] = _.map(_.show).join(t"⟪", t", ", t"⟫")
+  given [T: Show]: Show[Array[T]] = _.map(_.show).join(t"⌊", t", ", t"⌋ₘ")
+  given [T: Show]: Show[IArray[T]] = _.map(_.show).join(t"⌊", t", ", t"⌋ᵢ")
+  
+  given [T: Show]: Show[LazyList[T]] with
+    private def recur(value: LazyList[T]): Text =
+      if value.toString() == "LazyList(<not computed>)" then t"〜"
+      else if value.isEmpty then t"¶"
+      else t"${value.head} ⌗ ${recur(value.tail)}"
 
+    def show(value: LazyList[T]): Text = recur(value.take(3))
+  
   given [T: Show]: Show[Option[T]] =
     case None    => Text("none")
     case Some(v) => v.show
