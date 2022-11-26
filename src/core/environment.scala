@@ -51,7 +51,7 @@ class Environment(getEnv: Text => Option[Text], getProperty: Text => Option[Text
   def userName: Text throws EnvError = property(Text("user.name"))
 
   def pwd[P](using pp: PathProvider[P]): P throws EnvError =
-    apply(Text("PWD")).or(safely(property(Text("user.dir")))).mfold(throw EnvError(Text("user.dir"), true)): path =>
+    apply(Text("PWD")).or(safely(property(Text("user.dir")))).fm(throw EnvError(Text("user.dir"), true)): path =>
       pp.makePath(path.s).getOrElse(throw EnvError(Text("user.dir"), true))
 
 case class EnvError(variable: Text, property: Boolean)

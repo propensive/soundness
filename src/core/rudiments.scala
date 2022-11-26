@@ -153,7 +153,7 @@ extension [T](opt: Maybe[T])
   def presume(using default: Default[T]): T = or(default())
   def assume(using th: CanThrow[UnsetValueError]): {th} T = or(throw UnsetValueError())
 
-  def mfold[S](default: -> S)(fn: T -> S) = opt match
+  def fm[S](default: -> S)(fn: T -> S) = opt match
     case Unset               => default
     case value: T @unchecked => fn(value)
 
@@ -166,7 +166,7 @@ extension [T](opt: Maybe[T])
     case other: T @unchecked => Some(other)
 
 extension (iarray: IArray.type)
-  def init[T: ClassTag](size: Int)(fn: Array[T] => Unit): IArray[T] =
+  def create[T: ClassTag](size: Int)(fn: Array[T] => Unit): IArray[T] =
     val array = new Array[T](size)
     fn(array)
     array.immutable(using Unsafe)
