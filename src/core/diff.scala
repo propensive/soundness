@@ -51,9 +51,28 @@ object Diff:
           : Diff[T] =
     val end = Point(left.size, right.size)
     @tailrec
+    def distance(last: IArray[Point] = IArray(count(Point(0, 0))), trace: List[IArray[Point]] = Nil): Diff[T] =
+      if last.contains(end) then
+        val idx = last.indexOf(end)
+
+        if trace.isEmpty then countback(idx, end, Nil)
+        else if trace.head.length > idx && count(trace.head(idx).ins) == end then countback(idx, end, trace)
+        else countback(idx - 1, end, trace)
+
+      else
+        val round = last.size
+        val next = IArray.create[Point](round + 1): arr =>
+          arr(0) = last(0).ins
+
+          last.indices.foreach: i =>
+            arr(i + 1) = count(last(i).del)
+            count(last(i).ins).pipe { pt => if i == round || pt.x > arr(i).x then arr(i) = pt }
+
+        distance(next, last :: trace)
+
+    @tailrec
     def count(pt: Point): Point =
       if pt.x >= left.size || pt.y >= right.size || !cmp(left(pt.x), right(pt.y)) then pt else count(pt.keep)
-
 
     def countback(idx: Int, cur: Point, trace: List[IArray[Point]], result: List[Change[T]] = Nil): Diff[T] =
       trace match
@@ -83,26 +102,6 @@ object Diff:
         case Del(l, v) :: tail     => sort(tail, cache, Del(l, v) :: result)
         case Nil                   => (cache ::: result).reverse
 
-    @tailrec
-    def distance(last: IArray[Point] = IArray(count(Point(0, 0))), trace: List[IArray[Point]] = Nil): Diff[T] =
-      if last.contains(end) then
-        val idx = last.indexOf(end)
-        
-        if trace.isEmpty then countback(idx, end, Nil)
-        else if trace.head.length > idx && count(trace.head(idx).ins) == end then countback(idx, end, trace)
-        else countback(idx - 1, end, trace)
-      
-      else
-        val round = last.size
-        val next = IArray.create[Point](round + 1): arr =>
-          arr(0) = last(0).ins
-         
-          last.indices.foreach: i =>
-            arr(i + 1) = count(last(i).del)
-            count(last(i).ins).pipe { pt => if i == round || pt.x > arr(i).x then arr(i) = pt }
-
-        distance(next, last :: trace)
-        
     distance()
 
 given Realm = Realm(t"quagmire")
