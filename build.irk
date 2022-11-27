@@ -1,5 +1,5 @@
 {
-  "imports": ["../../dev/one/mod/probably/build.irk"],
+  "imports": ["../probably/build.irk"],
   "modules": [
     {
       "name": "Quagmire",
@@ -16,7 +16,7 @@
       "sources": ["src/test"],
       "version": "0.1.0",
       "docs": ["doc"],
-      "exec": {
+      "xec": {
         "browsers": [],
 	      "start": "quagmire.Tests"
       },
