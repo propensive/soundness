@@ -150,3 +150,6 @@
 	path = mod/tetromino
 	url = git@github.com:propensive/tetromino
 	branch = main
+[submodule "mod/quagmire"]
+	path = mod/quagmire
+	url = git@github.com:propensive/quagmire
