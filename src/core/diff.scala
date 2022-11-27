@@ -60,7 +60,7 @@ object Diff:
         case head :: tail =>
           val target = head(idx)
           
-          if cur == Point(0, 0) then Diff(result*)
+          if cur == Point(0, 0) then Diff(sort(result, Nil, Nil)*)
           else if cur.x > target.x && cur.y > target.y then
             countback(idx, cur.unkeep, trace, Keep(cur.x - 1, cur.y - 1, left(cur.x - 1)) :: result)
           else if cur == target.ins then
@@ -70,8 +70,18 @@ object Diff:
           else throw Mistake("Unexpected")
   
         case Nil =>
-          if cur == Point(0, 0) then Diff(result*)
+          if cur == Point(0, 0) then Diff(sort(result, Nil, Nil)*)
           else countback(0, cur.unkeep, Nil, Keep(cur.x - 1, cur.y - 1, left(cur.x - 1)) :: result)
+
+    @tailrec
+    def sort(values: List[Change[T]], cache: List[Change[T]], result: List[Change[T]]): List[Change[T]] =
+      values match
+        case Keep(l, r, v) :: tail => cache match
+          case Nil                    => sort(tail, Nil, Keep(l, r, v) :: result)
+          case cache                  => sort(tail, Nil, Keep(l, r, v) :: (cache ::: result))
+        case Ins(r, v) :: tail     => sort(tail, Ins(r, v) :: cache, result)
+        case Del(l, v) :: tail     => sort(tail, cache, Del(l, v) :: result)
+        case Nil                   => (cache ::: result).reverse
 
     @tailrec
     def distance(last: IArray[Point] = IArray(count(Point(0, 0))), trace: List[IArray[Point]] = Nil): Diff[T] =

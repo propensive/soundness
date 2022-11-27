@@ -64,12 +64,13 @@ object Tests extends Suite(t"Quagmire tests"):
       .assert(_ == Diff(Keep(0, 0, 'A'), Keep(1, 1, 'B'), Del(2, 'C')))
       
       test(t"Multiple inner keeps"):
+        import logging.stdout
         Diff.diff(t"BCD".chars, t"ABC".chars)
       .assert(_ == Diff(Ins(0, 'A'), Keep(0, 1, 'B'), Keep(1, 2, 'C'), Del(2, 'D')))
       
       test(t"Example from blog"):
         Diff.diff(t"ABCABBA".chars, t"CBABAC".chars)
-      .assert(_ == Diff(Del(0, 'A'), Del(1, 'B'), Keep(2, 0, 'C'), Ins(1, 'B'), Keep(3, 2, 'A'), Keep(4, 3, 'B'), Del(5, 'B'), Keep(6, 4, 'A'), Ins(5, 'C')))
+      .assert(_ == Diff(Del(0, 'A'), Ins(0, 'C'), Keep(1, 1, 'B'), Del(2, 'C'), Keep(3, 2, 'A'), Keep(4, 3, 'B'), Del(5, 'B'), Keep(6, 4, 'A'), Ins(5, 'C')))
       
       test(t"Item swap"):
         Diff.diff(t"AB".chars, t"BA".chars)
