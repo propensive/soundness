@@ -61,7 +61,7 @@
       "docs": [
         "doc"
       ],
-      "exec": {
+      "xexec": {
         "browsers": [],
 	"start": "xylophone.Tests"
       }
