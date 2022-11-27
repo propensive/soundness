@@ -36,7 +36,6 @@ object Diff:
   import Point.*
 
   object Point:
-    given Show[Point] = pt => t"(${pt.x},${pt.y})"
     opaque type Point = Long
     def apply(x: Int, y: Int): Point = (x.toLong << 32) + y
     
@@ -48,13 +47,13 @@ object Diff:
       def keep: Point = Point(x + 1, y + 1)
       def unkeep: Point = Point(x - 1, y - 1)
 
-  def diff[T: Show](left: IArray[T], right: IArray[T], compare: (T, T) -> Boolean = { (a: T, b: T) => a == b })
+  def diff[T: Show](left: IArray[T], right: IArray[T], cmp: (T, T) -> Boolean = { (a: T, b: T) => a == b })
           : Diff[T] =
+    val end = Point(left.size, right.size)
     @tailrec
     def count(pt: Point): Point =
-      if pt.x >= left.size || pt.y >= right.size || !compare(left(pt.x), right(pt.y)) then pt else count(pt.keep)
+      if pt.x >= left.size || pt.y >= right.size || !cmp(left(pt.x), right(pt.y)) then pt else count(pt.keep)
 
-    val end = Point(left.size, right.size)
 
     def countback(idx: Int, cur: Point, trace: List[IArray[Point]], result: List[Change[T]] = Nil): Diff[T] =
       trace match
@@ -65,7 +64,7 @@ object Diff:
           else if cur.x > target.x && cur.y > target.y then
             countback(idx, cur.unkeep, trace, Keep(cur.x - 1, cur.y - 1, left(cur.x - 1)) :: result)
           else if cur == target.ins then
-            countback(idx - 1, target, tail, Ins(target.y, right(target.y)) :: result)
+            countback(0 max (idx - 1), target, tail, Ins(target.y, right(target.y)) :: result)
           else if cur == target.del then
             countback(0 max (idx - 1), target, tail, Del(cur.x - 1, left(cur.x - 1)) :: result)
           else throw Mistake("Unexpected")

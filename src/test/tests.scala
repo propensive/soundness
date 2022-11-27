@@ -71,7 +71,23 @@ object Tests extends Suite(t"Quagmire tests"):
         Diff.diff(t"ABCABBA".chars, t"CBABAC".chars)
       .assert(_ == Diff(Del(0, 'A'), Del(1, 'B'), Keep(2, 0, 'C'), Ins(1, 'B'), Keep(3, 2, 'A'), Keep(4, 3, 'B'), Del(5, 'B'), Keep(6, 4, 'A'), Ins(5, 'C')))
       
-      test(t"Reduced example from blog"):
+      test(t"Item swap"):
+        Diff.diff(t"AB".chars, t"BA".chars)
+      .assert(_ == Diff(Del(0, 'A'), Keep(1, 0, 'B'), Ins(1, 'A')))
+      
+      test(t"Item change"):
         Diff.diff(t"A".chars, t"C".chars)
       .assert(_ == Diff(Del(0, 'A'), Ins(0, 'C')))
+      
+      test(t"Item change between values"):
+        Diff.diff(t"NAN".chars, t"NCN".chars)
+      .assert(_ == Diff(Keep(0, 0, 'N'), Del(1, 'A'), Ins(1, 'C'), Keep(2, 2, 'N')))
+      
+      test(t"Item swap between values"):
+        Diff.diff(t"NABN".chars, t"NBAN".chars)
+      .assert(_ == Diff(Keep(0, 0, 'N'), Del(1, 'A'), Keep(2, 1, 'B'), Ins(2, 'A'), Keep(3, 3, 'N')))
+      
+      test(t"Item swap interspersed with values"):
+        Diff.diff(t"AZB".chars, t"BZA".chars)
+      .assert(_ == Diff(Del(0, 'A'), Ins(0, 'B'), Keep(1, 1, 'Z'), Del(2, 'B'), Ins(2, 'A')))
 
