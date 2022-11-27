@@ -5,9 +5,7 @@ import gossamer.*
 import rudiments.*
 import annotation.*
 
-import logging.stdout
-
-import language.experimental.pureFunctions
+import language.experimental.captureChecking
 
 enum Change[+T]:
   case Ins(right: Int, value: T)
@@ -16,77 +14,86 @@ enum Change[+T]:
 
 import Change.*
 
-case class Diff[T](changes: Change[T]*)
+case class Diff[T](changes: Change[T]*):
+  def flip: Diff[T] =
+    val changes2 = changes.map:
+      case Keep(l, r, v) => Keep(r, l, v)
+      case Del(l, v)     => Ins(l, v)
+      case Ins(r, v)     => Del(r, v)
+    
+    Diff[T](changes2*)
+  
+  def apply(seq: List[T], update: (T, T) -> T): LazyList[T] =
+    def recur(todo: Seq[Change[T]], seq: List[T]): LazyList[T] = todo match
+      case Ins(_, value) :: tail     => value #:: recur(tail, seq)
+      case Del(_, _) :: tail         => recur(tail, seq.tail)
+      case Keep(_, _, value) :: tail => update(value, seq.head) #:: recur(tail, seq.tail)
+      case Nil                   => LazyList()
 
-given Show[(Int, Int)] =
-  case (x, y) => t"($x,$y)"
+    recur(changes, seq)
 
 object Diff:
+  import Point.*
 
-  def diff[T: Show](a: IArray[T], b: IArray[T], compare: (T, T) -> Boolean = { (a: T, b: T) => a == b }): List[IArray[(Int, Int)]] =
-    val n = a.size
-    val m = b.size
-    Log.info(t"Diffing $a and $b")
+  object Point:
+    given Show[Point] = pt => t"(${pt.x},${pt.y})"
+    opaque type Point = Long
+    def apply(x: Int, y: Int): Point = (x.toLong << 32) + y
     
+    extension (point: Point)
+      def x: Int = (point >> 32).toInt
+      def y: Int = point.toInt
+      def del: Point = Point(x + 1, y)
+      def ins: Point = Point(x, y + 1)
+      def keep: Point = Point(x + 1, y + 1)
+      def unkeep: Point = Point(x - 1, y - 1)
+
+  def diff[T: Show](left: IArray[T], right: IArray[T], compare: (T, T) -> Boolean = { (a: T, b: T) => a == b })
+          : Diff[T] =
     @tailrec
-    def distance(i: Int = 2, trace: List[IArray[(Int, Int)]] = List(IArray((0, 0)))): List[IArray[(Int, Int)]] =
-      //Log.info(t"distance($i, $trace)")
-      val array = Array.fill[(Int, Int)](i)((0, 0))
-      def last(x: Int): (Int, Int) = (trace.head(x)(0), trace.head(x)(0) - 2 + i - 2*x)
+    def count(pt: Point): Point =
+      if pt.x >= left.size || pt.y >= right.size || !compare(left(pt.x), right(pt.y)) then pt else count(pt.keep)
 
-      @tailrec
-      def count(x: Int, y: Int): (Int, Int) = if x >= n || y >= m || a(x) != b(y) then (x, y) else count(x + 1, y + 1)
-      
-      array.indices.foreach: j =>
-        Log.info(t"array.index $j")
-        array(j) =
-          if j == 0 then
-            val c = last(j)
-            Log.info(t"${c} vs ${c(0) - 2 + i - 2*j}")
-            count(c(0), c(1) + 1)
-          else if j == i - 1 then
-            val c = last(j - 1)
-            Log.info(t"${c} vs ${c(0) - 2 + i - 2*(j - 1)}")
-            count(c(0) + 1, c(1))
-          else
-            val c1 = last(j - 1)
-            Log.info(t"${c1} vs ${c1(0) - 2 + i - 2*(j - 1)}")
-            val d1 = count(c1(0) + 1, c1(1))
+    val end = Point(left.size, right.size)
+
+    def countback(idx: Int, cur: Point, trace: List[IArray[Point]], result: List[Change[T]] = Nil): Diff[T] =
+      trace match
+        case head :: tail =>
+          val target = head(idx)
+          
+          if cur == Point(0, 0) then Diff(result*)
+          else if cur.x > target.x && cur.y > target.y then
+            countback(idx, cur.unkeep, trace, Keep(cur.x - 1, cur.y - 1, left(cur.x - 1)) :: result)
+          else if cur == target.ins then
+            countback(idx - 1, target, tail, Ins(target.y, right(target.y)) :: result)
+          else if cur == target.del then
+            countback(0 max (idx - 1), target, tail, Del(cur.x - 1, left(cur.x - 1)) :: result)
+          else throw Mistake("Unexpected")
   
-            val c2 = last(j)
-            Log.info(t"${c2} vs ${c2(0) - 2 + i - 2*j}")
-            val d2 = count(c2(0), c2(1) + 1)
-            
-            if d1(0) > d2(0) then d1 else d2
-      
-      Log.info(t"Array ${array}")
-      Log.info(t"Looking for ${(n, m)}")
-      array.indexOf((n, m)) match
-        case -1 =>
-          distance(i + 1, array.immutable(using Unsafe) :: trace)
-        case p  =>
-          Log.info(t"p = $p")
-          array.immutable(using Unsafe) :: trace
+        case Nil =>
+          if cur == Point(0, 0) then Diff(result*)
+          else countback(0, cur.unkeep, Nil, Keep(cur.x - 1, cur.y - 1, left(cur.x - 1)) :: result)
 
+    @tailrec
+    def distance(last: IArray[Point] = IArray(count(Point(0, 0))), trace: List[IArray[Point]] = Nil): Diff[T] =
+      if last.contains(end) then
+        val idx = last.indexOf(end)
+        
+        if trace.isEmpty then countback(idx, end, Nil)
+        else if trace.head.length > idx && count(trace.head(idx).ins) == end then countback(idx, end, trace)
+        else countback(idx - 1, end, trace)
+      
+      else
+        val round = last.size
+        val next = IArray.create[Point](round + 1): arr =>
+          arr(0) = last(0).ins
+         
+          last.indices.foreach: i =>
+            arr(i + 1) = count(last(i).del)
+            count(last(i).ins).pipe { pt => if i == round || pt.x > arr(i).x then arr(i) = pt }
+
+        distance(next, last :: trace)
+        
     distance()
 
 given Realm = Realm(t"quagmire")
-
-/*
-
-   |      0     1     2     3     4     5
-----+-------------------------------    7,6
-    |                                 / 
- 4  |                             7,3   5,6
-    |                           /
- 3  |                       5,2   7,5
-    |                     /
- 2  |                 3,1   5,4   5,5
-    |               /     \     /     \
- 1  |           1,0   2,2   4,5   4,6   
-    |         /     \           \
- 0  |     0,0   0,1   2,4   3,6   ...
-
-          y = x - 2*i + j
-
-*/        
