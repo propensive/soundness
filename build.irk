@@ -1,0 +1,26 @@
+{
+  "imports": ["../../dev/one/mod/quagmire/build.irk", "../../dev/one/mod/polyvinyl/build.irk"],
+  "modules": [
+    {
+      "name": "Cellulose",
+      "id": "cellulose/core",
+      "links": ["gossamer/core", "eucalyptus/core", "quagmire/core", "polyvinyl/core"],
+      "sources": ["src/core"],
+      "version": "0.4.0",
+      "docs": ["doc"]
+    },
+    {
+      "name": "Cellulose Tests",
+      "id": "cellulose/test",
+      "links": ["probably/cli", "cellulose/core"],
+      "sources": ["src/test"],
+      "version": "0.4.0",
+      "docs": ["doc"],
+      "exec": {
+        "browsers": [],
+        "start": "cellulose.Tests"
+      }
+    }
+  ]
+}
+
