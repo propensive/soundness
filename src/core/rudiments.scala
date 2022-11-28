@@ -81,6 +81,7 @@ extension [T](value: T)
   def twin: (T, T) = (value, value)
   def triple: (T, T, T) = (value, value, value)
   def puncture(point: T): Maybe[T] = if value == point then Unset else point
+  def is[S <: T]: Boolean = value.isInstanceOf[S]
 
   transparent inline def matchable(using erased Unsafe.type): T & Matchable =
     value.asInstanceOf[T & Matchable]
