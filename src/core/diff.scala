@@ -47,8 +47,7 @@ object Diff:
       def keep: Point = Point(x + 1, y + 1)
       def unkeep: Point = Point(x - 1, y - 1)
 
-  def diff[T: Show](left: IArray[T], right: IArray[T], cmp: (T, T) -> Boolean = { (a: T, b: T) => a == b })
-          : Diff[T] =
+  def diff[T](left: IArray[T], right: IArray[T], cmp: (T, T) -> Boolean = { (a: T, b: T) => a == b }): Diff[T] =
     val end = Point(left.size, right.size)
     @tailrec
     def distance(last: IArray[Point] = IArray(count(Point(0, 0))), trace: List[IArray[Point]] = Nil): Diff[T] =
