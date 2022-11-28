@@ -80,6 +80,7 @@ extension [T](value: T)
   def waive: Any => T = _ => value
   def twin: (T, T) = (value, value)
   def triple: (T, T, T) = (value, value, value)
+  def puncture(point: T): Maybe[T] = if value == point then Unset else point
 
   transparent inline def matchable(using erased Unsafe.type): T & Matchable =
     value.asInstanceOf[T & Matchable]
@@ -100,7 +101,7 @@ extension [T](value: Array[T])
     newArray.immutable(using Unsafe)
 
 extension [K, V](map: Map[K, V])
-  def upsert(key: K, operation: Option[V] => V) = map.updated(key, operation(map.get(key)))
+  def upsert(key: K, op: Maybe[V] => V) = map.updated(key, op(if map.contains(key) then map(key) else Unset))
 
   def collate(otherMap: Map[K, V])(merge: (V, V) => V): Map[K, V] =
     otherMap.foldLeft(map): (acc, kv) =>
