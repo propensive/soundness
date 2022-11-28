@@ -1,5 +1,5 @@
 {
-  "imports": ["../../dev/one/mod/quagmire/build.irk", "../../dev/one/mod/polyvinyl/build.irk"],
+  "imports": ["../quagmire/build.irk", "../polyvinyl/build.irk"],
   "modules": [
     {
       "name": "Cellulose",
