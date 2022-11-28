@@ -153,3 +153,6 @@
 [submodule "mod/quagmire"]
 	path = mod/quagmire
 	url = git@github.com:propensive/quagmire
+[submodule "mod/cellulose"]
+	path = mod/cellulose
+	url = git@github.com:propensive/cellulose
