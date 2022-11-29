@@ -20,13 +20,11 @@ case class Proto(key: Maybe[Text] = Unset, children: List[Node] = Nil, meta: May
                      schema: Schema = Schema.Free, params: Int = 0, multiline: Boolean = false):
   
   def commit(child: Proto): Proto throws CodlValidationError =
-    // println(s"Adding $child to $this")
     copy(children = child.close :: children, params = params + 1)
   
   def setMeta(meta: Maybe[Meta]): Proto = copy(meta = meta)
 
   def close: Node throws CodlValidationError =
-    // println(s"Closing $this")
     key.fm(Node(Unset, meta)):
       case key: Text =>
         val meta2 = meta.mm { m => m.copy(comments = m.comments.reverse) }
@@ -34,7 +32,6 @@ case class Proto(key: Maybe[Text] = Unset, children: List[Node] = Nil, meta: May
         
         schema.requiredKeys.foreach: key =>
           if !node.data.mm(_.has(key)).or(false) then Codl.fail(node.key, MissingKey(key))
-          //then unsafely(throw new Exception(s"FAILED: ${this}"))
 
         node
 
@@ -51,9 +48,6 @@ object Codl:
     def recur(tokens: LazyList[Token], focus: Proto, peers: List[Node], stack: List[(Proto, List[Node])],
                   lines: Int)
              : Doc =
-      // println(s"Got ${tokens.head}")
-      // println(s"foucs = ${focus.children.toList.map(_.key)}")
-
       
       def schema: Schema = stack.headOption.fold(baseSchema)(_.head.schema.option.get)
       
@@ -82,13 +76,8 @@ object Codl:
               go(LazyList())
             
             case (proto, rest) :: stack2 =>
-              // println(s"Recovered $proto from the stack")
-              // println(s"stack.h.h is ${stack.head.head}")
               val next = if n == 1 then Token.Peer else Token.Outdent(n - 1)
               val focus2 = proto.copy(children = focus.close :: peers ::: proto.children)
-
-              // focus.schema.fm(Nil)(_.requiredKeys).foreach: key =>
-              //   if !focus.has(key) then fail(focus.key, MissingKey(key))
 
               go(next #:: tail, focus = focus2, peers = rest, stack = stack2)
           
@@ -118,8 +107,7 @@ object Codl:
                 case struct@Struct(_, _) => struct.param(focus.children.length) match
                   case Unset                => fail(word, SurplusParams(key))
                   
-                  case entry: Schema.Entry  => // println(s"Set entry $entry")
-                                               val peer = Proto(word, schema = entry.schema)
+                  case entry: Schema.Entry  => val peer = Proto(word, schema = entry.schema)
                                                go(focus = focus.commit(peer), lines = 0)
               
               case _ =>
@@ -136,9 +124,6 @@ object Codl:
 
         case empty => stack match
           case Nil =>
-            // focus.schema.fm(Nil)(_.requiredKeys).foreach: key =>
-            //   if !focus.has(key) then fail(focus.key, MissingKey(key))
-            
             Doc(IArray.from((focus.close :: peers).reverse), baseSchema, margin)
           
           case _ =>
