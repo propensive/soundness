@@ -22,6 +22,7 @@ case class Node(data: Maybe[Data] = Unset, meta: Maybe[Meta] = Unset) extends Dy
   def schema: Maybe[Schema] = data.mm(_.schema)
   def layout: Maybe[Layout] = data.mm(_.layout)
   def id: Maybe[Text] = data.mm(_.id)
+  def uniqueId: Maybe[Text] = data.mm(_.uniqueId)
   def children: IArray[Node] = data.mm(_.children).or(IArray[Node]())
   def paramValue: Maybe[Text] = if children.isEmpty then key else Unset
   def structValue: Maybe[Text] = if children.size == 1 then children.head.paramValue else Unset
@@ -60,7 +61,12 @@ case class Doc(children: IArray[Node], schema: Schema, margin: Int) extends Inde
   def paramIndex: Map[Text, Int] = Map()
 
   def merge(input: Doc): Doc =
-    def cmp(x: Node, y: Node): Boolean = if x.unset || y.unset then x == y else x.id == y.id
+    
+    def cmp(x: Node, y: Node): Boolean =
+      if x.uniqueId.unset || y.uniqueId.unset then
+        if x.data.unset || y.data.unset then x.meta == y.meta
+        else x.data == y.data
+      else x.id == y.id
 
     def recur(original: IArray[Node], updates: IArray[Node]): IArray[Node] =
       val diff = Diff.diff[Node](children, updates, cmp)
@@ -107,11 +113,12 @@ extends Indexed:
       schema.subschemas(idx).key -> idx
     .to(Map)
 
-  def id: Maybe[Text] = schema.subschemas.find(_.schema.arity == Arity.Unique) match
+  def uniqueId: Maybe[Text] = schema.subschemas.find(_.schema.arity == Arity.Unique) match
     case Some(Schema.Entry(name: Text, schema)) =>
-      index(name).mm(_.headOption.maybe).mm(children(_).fieldValue)
-    case _ => key
+      paramIndex.get(name).map(children(_).fieldValue).getOrElse(Unset)
+    case None => Unset
 
+  def id: Maybe[Text] = uniqueId.or(key)
   def has(key: Text): Boolean = index.contains(key) || paramIndex.contains(key)
   
   override def equals(that: Any) = that.matchable(using Unsafe) match
