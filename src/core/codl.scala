@@ -16,8 +16,9 @@ enum Token:
   case Comment(text: Text, line: Int, col: Int)
   case Blank
 
-case class Proto(key: Maybe[Text] = Unset, children: List[Node] = Nil, meta: Maybe[Meta] = Unset,
-                     schema: Schema = Schema.Free, params: Int = 0, multiline: Boolean = false):
+case class Proto(key: Maybe[Text] = Unset, line: Int = 0, col: Int = 0, children: List[Node] = Nil,
+                     meta: Maybe[Meta] = Unset, schema: Schema = Schema.Free, params: Int = 0,
+                     multiline: Boolean = false):
   
   def commit(child: Proto): Proto throws CodlValidationError =
     copy(children = child.close :: children, params = params + 1)
@@ -31,14 +32,15 @@ case class Proto(key: Maybe[Text] = Unset, children: List[Node] = Nil, meta: May
         val node = Node(Data(key, IArray.from(children.reverse), Layout(params, multiline), schema), meta2)
         
         schema.requiredKeys.foreach: key =>
-          if !node.data.mm(_.has(key)).or(false) then Codl.fail(node.key, MissingKey(key))
+          if !node.data.mm(_.has(key)).or(false) then Codl.fail(line, col, node.key, MissingKey(key))
 
         node
 
 object Codl:
 
-  def fail(key: Maybe[Text], issue: CodlValidationError.Issue): Nothing throws CodlValidationError =
-    throw CodlValidationError(key, issue)
+  def fail(line: Int, col: Int, key: Maybe[Text], issue: CodlValidationError.Issue)
+          : Nothing throws CodlValidationError =
+    throw CodlValidationError(line, col, key, issue)
 
   def parse(reader: Reader, schema: Schema = Schema.Free)(using Log)
            : Doc throws CodlParseError | CodlValidationError =
@@ -57,13 +59,13 @@ object Codl:
         recur(tokens, focus, peers, stack, lines)
       
       tokens match
-        case head #:: tail => head match
+        case token #:: tail => token match
           case Token.Peer => focus.key match
             case key: Text =>
               go(focus = Proto(), peers = focus.close :: peers)
           
             case Unset =>
-              go(focus = Proto(Unset, Nil, focus.meta.or(if lines == 0 then Unset else Meta(lines))))
+              go(focus = Proto(Unset, meta = focus.meta.or(if lines == 0 then Unset else Meta(lines))))
             
             case _ =>
               throw Mistake("Should never match")
@@ -94,20 +96,20 @@ object Codl:
             focus.key match
               case Unset =>
                 val fschema = if schema == Schema.Free then schema else schema(word).or:
-                  fail(word, InvalidKey(word))
+                  fail(line, col, word, InvalidKey(word))
 
-                if fschema.unique && peers.exists(_.data.mm(_.key) == word) then fail(word, DuplicateKey(word))
+                if fschema.unique && peers.exists(_.data.mm(_.key) == word) then fail(line, col, word, DuplicateKey(word))
                 
-                go(focus = Proto(word, Nil, meta2, fschema), lines = 0)
+                go(focus = Proto(word, line, col, meta = meta2, schema = fschema), lines = 0)
               
               case key: Text => focus.schema match
-                case field@Field(_, _)   => go(focus = focus.commit(Proto(word)), lines = 0)
-                case Schema.Free         => go(focus = focus.commit(Proto(word)), lines = 0)
+                case field@Field(_, _)   => go(focus = focus.commit(Proto(word, line, col)), lines = 0)
+                case Schema.Free         => go(focus = focus.commit(Proto(word, line, col)), lines = 0)
                 
                 case struct@Struct(_, _) => struct.param(focus.children.length) match
-                  case Unset                => fail(word, SurplusParams(key))
+                  case Unset                => fail(line, col, word, SurplusParams(key))
                   
-                  case entry: Schema.Entry  => val peer = Proto(word, schema = entry.schema)
+                  case entry: Schema.Entry  => val peer = Proto(word, line, col, schema = entry.schema)
                                                go(focus = focus.commit(peer), lines = 0)
               
               case _ =>

@@ -542,7 +542,7 @@ object Tests extends Suite(t"CoDL tests"):
       
       test(t"Invalid top-level node"):
         capture(topSchema.parse(t"riot"))
-      .assert(_ == CodlValidationError(t"riot", InvalidKey(t"riot")))
+      .assert(_ == CodlValidationError(0, 0, t"riot", InvalidKey(t"riot")))
       
       test(t"Validate second top-level node"):
         rootSchema.parse(t"child\nsecond").second().schema
@@ -564,7 +564,7 @@ object Tests extends Suite(t"CoDL tests"):
       
       test(t"Missing required node throws exception"):
         capture(requiredChild.parse(t"root"))
-      .assert(_ == CodlValidationError(t"root", MissingKey(t"child")))
+      .assert(_ == CodlValidationError(0, 0, t"root", MissingKey(t"child")))
       
       test(t"Present required node does not throw exception"):
         requiredChild.parse(t"root\n  child").untyped.root().child()
@@ -578,7 +578,7 @@ object Tests extends Suite(t"CoDL tests"):
       
       test(t"Duplicated unique child is forbidden"):
         capture(requiredChild.parse(t"root\n  child\n  child"))
-      .assert(_ == CodlValidationError(t"child", DuplicateKey(t"child")))
+      .assert(_ == CodlValidationError(2, 2, t"child", DuplicateKey(t"child")))
       
       test(t"Duplicated repeatable child is permitted"):
         repeatableChild.parse(t"root\n  child\n  child").untyped.root().child(1)
@@ -600,7 +600,7 @@ object Tests extends Suite(t"CoDL tests"):
       
       test(t"'At least one' may not mean zero"):
         capture(requiredChild.parse(t"root"))
-      .assert(_ == CodlValidationError(t"root", MissingKey(t"child")))
+      .assert(_ == CodlValidationError(0, 0, t"root", MissingKey(t"child")))
       
       def childWithTwoParams(alpha: Arity, beta: Arity) =
         Struct(Optional,
@@ -626,11 +626,11 @@ object Tests extends Suite(t"CoDL tests"):
 
       test(t"Surplus parameters"):
         capture(childWithTwoParams(One, One).parse(t"root\n  child one two three"))
-      .assert(_ == CodlValidationError(t"three", SurplusParams(t"child")))
+      .assert(_ == CodlValidationError(1, 16, t"three", SurplusParams(t"child")))
       
       test(t"Two surplus parameters"):
         capture(childWithTwoParams(One, One).parse(t"root\n  child one two three four"))
-      .assert(_ == CodlValidationError(t"three", SurplusParams(t"child")))
+      .assert(_ == CodlValidationError(1, 16, t"three", SurplusParams(t"child")))
       
       test(t"Two optional parameters not specified"):
         childWithTwoParams(Optional, Optional).parse(t"root\n  child").root().child().layout.params
@@ -646,7 +646,7 @@ object Tests extends Suite(t"CoDL tests"):
       
       test(t"Two optional parameters with one surplus"):
         capture(childWithTwoParams(Optional, Optional).parse(t"root\n  child one two three").root().child())
-      .assert(_ == CodlValidationError(t"three", SurplusParams(t"child")))
+      .assert(_ == CodlValidationError(1, 16, t"three", SurplusParams(t"child")))
       
       test(t"Variadic parameters are counted"):
         childWithTwoParams(One, Many).parse(t"root\n  child one two three four").root().child().layout.params
@@ -662,11 +662,11 @@ object Tests extends Suite(t"CoDL tests"):
       
       test(t"'at least one' parameters are not optional"):
         capture(childWithTwoParams(One, AtLeastOne).parse(t"root\n  child one"))
-      .assert(_ == CodlValidationError(t"child", MissingKey(t"beta")))
+      .assert(_ == CodlValidationError(1, 2, t"child", MissingKey(t"beta")))
       
       test(t"Variadic first parameters don't count for second"):
         capture(childWithTwoParams(AtLeastOne, AtLeastOne).parse(t"root\n  child one two three"))
-      .assert(_ == CodlValidationError(t"child", MissingKey(t"beta")))
+      .assert(_ == CodlValidationError(1, 2, t"child", MissingKey(t"beta")))
       
       test(t"Two optional parameters not specified on root"):
         rootWithTwoParams(Optional, Optional).parse(t"  child").child().layout.params
@@ -682,7 +682,7 @@ object Tests extends Suite(t"CoDL tests"):
       
       test(t"Two optional parameters with one surplus on root"):
         capture(rootWithTwoParams(Optional, Optional).parse(t"  child one two three").child())
-      .assert(_ == CodlValidationError(t"three", SurplusParams(t"child")))
+      .assert(_ == CodlValidationError(0, 16, t"three", SurplusParams(t"child")))
       
       test(t"Variadic parameters are counted on root"):
         rootWithTwoParams(One, Many).parse(t"  child one two three four").child().layout.params
@@ -698,11 +698,11 @@ object Tests extends Suite(t"CoDL tests"):
       
       test(t"'at least one' parameters are not optional on root"):
         capture(rootWithTwoParams(One, AtLeastOne).parse(t"  child one"))
-      .assert(_ == CodlValidationError(t"child", MissingKey(t"beta")))
+      .assert(_ == CodlValidationError(0, 2, t"child", MissingKey(t"beta")))
       
       test(t"Variadic first parameters don't count for second on root"):
         capture(rootWithTwoParams(AtLeastOne, AtLeastOne).parse(t"  child one two three"))
-      .assert(_ == CodlValidationError(t"child", MissingKey(t"beta")))
+      .assert(_ == CodlValidationError(0, 2, t"child", MissingKey(t"beta")))
       
     suite(t"Path tests"):
       val schema = Struct(Optional,

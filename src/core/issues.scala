@@ -56,8 +56,8 @@ object CodlValidationError:
     case InvalidKey(key: Text)
     case DuplicateId(id: Text)
 
-case class CodlValidationError(word: Maybe[Text], issue: CodlValidationError.Issue)
-extends Error(err"the CoDL document did not conform to the schema at $word because ${issue.show}"), CodlError
+case class CodlValidationError(line: Int, col: Int, word: Maybe[Text], issue: CodlValidationError.Issue)
+extends Error(err"the CoDL document did not conform to the schema at $line:$col ($word) because ${issue.show}"), CodlError
 
 case class MultipleIdentifiersError(key: Text)
 extends Exception(s"multiple parameters of $key have been marked as identifiers")
