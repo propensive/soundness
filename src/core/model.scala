@@ -7,7 +7,6 @@ import quagmire.*
 
 import java.io as ji
 
-import language.experimental.captureChecking
 import language.dynamics
 
 object Node:
@@ -27,6 +26,8 @@ case class Node(data: Maybe[Data] = Unset, meta: Maybe[Meta] = Unset) extends Dy
   def paramValue: Maybe[Text] = if children.isEmpty then key else Unset
   def structValue: Maybe[Text] = if children.size == 1 then children.head.paramValue else Unset
   def fieldValue: Maybe[Text] = paramValue.or(structValue)
+
+  def apply(key: Text): List[Data] = data.fm(List[Node]())(_(key)).map(_.data).sift[Data]
 
   def selectDynamic(key: String): List[Data] throws MissingValueError =
     data.option.getOrElse(throw MissingValueError(key.show)).selectDynamic(key)
@@ -82,7 +83,7 @@ case class Doc(children: IArray[Node], schema: Schema, margin: Int) extends Inde
     copy(children = recur(children, input.children))
 
 
-  def as[T: Codec]: T = summon[Codec[T]].deserialize(List(children))
+  def as[T: Codec]: T = summon[Codec[T]].deserialize(List(this))
   def uncommented: Doc = Doc(children.map(_.uncommented), schema, margin)
   def untyped: Doc = Doc(children.map(_.untyped), Schema.Free, margin)
   def wiped = uncommented.untyped
@@ -158,6 +159,13 @@ trait Indexed extends Dynamic:
     children.lift(idx).getOrElse(throw MissingIndexValueError(idx))
   
   def apply(key: Text): List[Node] = index.get(key).getOrElse(Nil).map(children(_))
+
+  def get(key: Text): List[Indexed] = paramIndex.lift(key) match
+    case None      => index.lift(key) match
+      case None       => Nil
+      case Some(idxs) => unsafely(idxs.map(children(_).data.assume))
+    case Some(idx) => List.range(idx, layout.params).map: idx =>
+                        Data(key, IArray(unsafely(children(idx))), Layout.empty, Schema.Free)
 
   def selectDynamic(key: String): List[Data] throws MissingValueError =
     index(key.show).map(children(_).data).sift[Data]

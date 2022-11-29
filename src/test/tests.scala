@@ -932,15 +932,15 @@ object Tests extends Suite(t"CoDL tests"):
       .assert(_ == t"root child\n    Hello\n    World\n")
       
       test(t"Serialize a node and a child with comment"):
-        Doc(Node(Data(t"root", IArray(Node(Data(t"child"), Meta(comments = List(t"comment"))))))).serialize
+        Doc(Node(Data(t"root", IArray(Node(Data(t"child"), Meta(comments = List(t" comment"))))))).serialize
       .assert(_ == t"root\n  # comment\n  child\n")
       
       test(t"Serialize a node and a child with multiline comment"):
-        Doc(Node(Data(t"root", IArray(Node(Data(t"child"), Meta(comments = List(t"line 1", t"line 2"))))))).serialize
+        Doc(Node(Data(t"root", IArray(Node(Data(t"child"), Meta(comments = List(t" line 1", t" line 2"))))))).serialize
       .assert(_ == t"root\n  # line 1\n  # line 2\n  child\n")
       
       test(t"Serialize a node and a child with multiline comment and blank lines"):
-        Doc(Node(Data(t"root", IArray(Node(Data(t"child"), Meta(blank = 2, comments = List(t"line 1", t"line 2"))))))).serialize
+        Doc(Node(Data(t"root", IArray(Node(Data(t"child"), Meta(blank = 2, comments = List(t" line 1", t" line 2"))))))).serialize
       .assert(_ == t"root\n\n\n  # line 1\n  # line 2\n  child\n")
       
       test(t"Serialize a node and a child with blank lines"):
