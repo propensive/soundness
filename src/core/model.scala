@@ -118,7 +118,11 @@ extends Indexed:
       paramIndex.get(name).map(children(_).fieldValue).getOrElse(Unset)
     case None => Unset
 
-  def id: Maybe[Text] = uniqueId.or(key)
+  def id: Maybe[Text] = schema.subschemas.find(_.schema.arity == Arity.Unique) match
+    case Some(Schema.Entry(name: Text, schema)) =>
+      index(name).mm(_.headOption.maybe).mm(children(_).fieldValue)
+    case _ => key
+
   def has(key: Text): Boolean = index.contains(key) || paramIndex.contains(key)
   
   override def equals(that: Any) = that.matchable(using Unsafe) match
