@@ -82,7 +82,7 @@ case class Doc(children: IArray[Node], schema: Schema, margin: Int) extends Inde
     copy(children = recur(children, input.children))
 
 
-  def as[T: Codec]: T = summon[Codec[T]].deserialize(children)
+  def as[T: Codec]: T = summon[Codec[T]].deserialize(List(children))
   def uncommented: Doc = Doc(children.map(_.uncommented), schema, margin)
   def untyped: Doc = Doc(children.map(_.untyped), Schema.Free, margin)
   def wiped = uncommented.untyped
@@ -156,6 +156,8 @@ trait Indexed extends Dynamic:
 
   def apply(idx: Int = 0): Node throws MissingIndexValueError =
     children.lift(idx).getOrElse(throw MissingIndexValueError(idx))
+  
+  def apply(key: Text): List[Node] = index.get(key).getOrElse(Nil).map(children(_))
 
   def selectDynamic(key: String): List[Data] throws MissingValueError =
     index(key.show).map(children(_).data).sift[Data]

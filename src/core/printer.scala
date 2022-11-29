@@ -16,9 +16,10 @@ object Printer:
           for i <- 0 until meta.blank do out.write('\n')
           meta.comments.foreach: comment =>
             for i <- 0 until indent do out.write(' ')
-            out.write("# ")
+            out.write("#")
             out.write(comment.s)
             out.write('\n')
+        
         data match
           case Data(key, children, layout, schema) =>
             for i <- 0 until indent do out.write(' ')
@@ -57,5 +58,6 @@ object Printer:
   
                 out.write('\n')
                 children.drop(layout.params).foreach(recur(_, indent + 2))
-          case Unset => throw Mistake("Should never match")
+          case Unset =>
+            recur(_, indent)
     doc.children.foreach(recur(_, doc.margin))
