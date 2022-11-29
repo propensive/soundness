@@ -22,7 +22,7 @@ extends Exception():
 
   def message: Text =
     def recur[T <: Tuple](tuple: T, text: Seq[Text], value: String = ""): String = tuple match
-      case EmptyTuple   => value+text.head
+      case EmptyTuple   => value+text.headOption.getOrElse(Text(""))
       case head *: tail => recur(tail, text.tail, value+text.head+head.toString)
 
     Text(recur(msg.parts, msg.text))
