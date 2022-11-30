@@ -546,11 +546,13 @@ object Tests extends Suite(t"CoDL tests"):
       .assert(_ == grandchildSchema)
       
       test(t"Invalid top-level node"):
-        capture(topSchema.parse(t"riot"))
+        capture(topSchema.parse(t"riot")) match
+          case AggregateError(errors) => errors.head
       .assert(_ == CodlError(0, 0, InvalidKey(t"riot", t"riot")))
       
       test(t"Indent after comment forbidden"):
-        capture(Codl.parse(ji.StringReader(t"root\n  # comment\n    child".s).nn))
+        capture(Codl.parse(ji.StringReader(t"root\n  # comment\n    child".s).nn)) match
+          case AggregateError(errors) => errors.head
       .assert(_ == CodlError(1, 2, CodlError.Issue.IndentAfterComment))
       
       test(t"Validate second top-level node"):
@@ -572,7 +574,8 @@ object Tests extends Suite(t"CoDL tests"):
                           )
       
       test(t"Missing required node throws exception"):
-        capture(requiredChild.parse(t"root"))
+        capture(requiredChild.parse(t"root")) match
+          case AggregateError(errors) => errors.head
       .assert(_ == CodlError(0, 0, MissingKey(t"root", t"child")))
       
       test(t"Present required node does not throw exception"):
@@ -586,7 +589,8 @@ object Tests extends Suite(t"CoDL tests"):
                             )
       
       test(t"Duplicated unique child is forbidden"):
-        capture(requiredChild.parse(t"root\n  child\n  child"))
+        capture(requiredChild.parse(t"root\n  child\n  child")) match
+          case AggregateError(errors) => errors.head
       .assert(_ == CodlError(2, 2, DuplicateKey(t"child", t"child")))
       
       test(t"Duplicated repeatable child is permitted"):
@@ -608,7 +612,8 @@ object Tests extends Suite(t"CoDL tests"):
       .assert(_ == Data(t"child"))
       
       test(t"'At least one' may not mean zero"):
-        capture(requiredChild.parse(t"root"))
+        capture(requiredChild.parse(t"root")) match
+          case AggregateError(errors) => errors.head
       .assert(_ == CodlError(0, 0, MissingKey(t"root", t"child")))
       
       def childWithTwoParams(alpha: Arity, beta: Arity) =
@@ -634,11 +639,13 @@ object Tests extends Suite(t"CoDL tests"):
       .assert(_ == Data(t"second", IArray(), schema = Field(One)))
 
       test(t"Surplus parameters"):
-        capture(childWithTwoParams(One, One).parse(t"root\n  child one two three"))
+        capture(childWithTwoParams(One, One).parse(t"root\n  child one two three")) match
+          case AggregateError(errors) => errors.head
       .assert(_ == CodlError(1, 16, SurplusParams(t"three", t"child")))
       
       test(t"Two surplus parameters"):
-        capture(childWithTwoParams(One, One).parse(t"root\n  child one two three four"))
+        capture(childWithTwoParams(One, One).parse(t"root\n  child one two three four")) match
+          case AggregateError(errors) => errors.head
       .assert(_ == CodlError(1, 16, SurplusParams(t"three", t"child")))
       
       test(t"Two optional parameters not specified"):
@@ -654,7 +661,8 @@ object Tests extends Suite(t"CoDL tests"):
       .assert(_ == 2)
       
       test(t"Two optional parameters with one surplus"):
-        capture(childWithTwoParams(Optional, Optional).parse(t"root\n  child one two three").root().child())
+        capture(childWithTwoParams(Optional, Optional).parse(t"root\n  child one two three").root().child()) match
+          case AggregateError(errors) => errors.head
       .assert(_ == CodlError(1, 16, SurplusParams(t"three", t"child")))
       
       test(t"Variadic parameters are counted"):
@@ -670,11 +678,13 @@ object Tests extends Suite(t"CoDL tests"):
       .assert(_ == 1)
       
       test(t"'at least one' parameters are not optional"):
-        capture(childWithTwoParams(One, AtLeastOne).parse(t"root\n  child one"))
+        capture(childWithTwoParams(One, AtLeastOne).parse(t"root\n  child one")) match
+          case AggregateError(errors) => errors.head
       .assert(_ == CodlError(1, 2, MissingKey(t"child", t"beta")))
       
       test(t"Variadic first parameters don't count for second"):
-        capture(childWithTwoParams(AtLeastOne, AtLeastOne).parse(t"root\n  child one two three"))
+        capture(childWithTwoParams(AtLeastOne, AtLeastOne).parse(t"root\n  child one two three")) match
+          case AggregateError(errors) => errors.head
       .assert(_ == CodlError(1, 2, MissingKey(t"child", t"beta")))
       
       test(t"Two optional parameters not specified on root"):
@@ -690,7 +700,8 @@ object Tests extends Suite(t"CoDL tests"):
       .assert(_ == 2)
       
       test(t"Two optional parameters with one surplus on root"):
-        capture(rootWithTwoParams(Optional, Optional).parse(t"  child one two three").child())
+        capture(rootWithTwoParams(Optional, Optional).parse(t"  child one two three").child()) match
+          case AggregateError(errors) => errors.head
       .assert(_ == CodlError(0, 16, SurplusParams(t"three", t"child")))
       
       test(t"Variadic parameters are counted on root"):
@@ -706,11 +717,13 @@ object Tests extends Suite(t"CoDL tests"):
       .assert(_ == 1)
       
       test(t"'at least one' parameters are not optional on root"):
-        capture(rootWithTwoParams(One, AtLeastOne).parse(t"  child one"))
+        capture(rootWithTwoParams(One, AtLeastOne).parse(t"  child one")) match
+          case AggregateError(errors) => errors.head
       .assert(_ == CodlError(0, 2, MissingKey(t"child", t"beta")))
       
       test(t"Variadic first parameters don't count for second on root"):
-        capture(rootWithTwoParams(AtLeastOne, AtLeastOne).parse(t"  child one two three"))
+        capture(rootWithTwoParams(AtLeastOne, AtLeastOne).parse(t"  child one two three")) match
+          case AggregateError(errors) => errors.head
       .assert(_ == CodlError(0, 2, MissingKey(t"child", t"beta")))
       
     suite(t"Path tests"):
@@ -759,7 +772,8 @@ object Tests extends Suite(t"CoDL tests"):
       )
 
       test(t"Cannot have duplicate IDs of the same type"):
-        capture(repetitionSchema.parse(t"ABC first One\nABC second Two\nABC first Primary"))
+        capture(repetitionSchema.parse(t"ABC first One\nABC second Two\nABC first Primary")) match
+          case AggregateError(errors) => errors.head
       .assert(_ == CodlError(0, 0, CodlError.Issue.DuplicateId(t"first", 1, 2)))
     
     suite(t"Binary tests"):
