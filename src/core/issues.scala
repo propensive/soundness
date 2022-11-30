@@ -3,14 +3,11 @@ package cellulose
 import rudiments.*
 import gossamer.*
 
-export CodlParseError.Issue.*
-export CodlValidationError.Issue.*
+export CodlError.Issue.*
 
 import language.experimental.captureChecking
 
-sealed trait CodlError extends Exception
-
-object CodlParseError:
+object CodlError:
   given Show[Issue] =
     case UnexpectedCarriageReturn =>
       t"a carriage return character ('\\r') was followed by a character other than a newline ('\\n')"
@@ -29,6 +26,16 @@ object CodlParseError:
       t"too much indentation was given"
     case InsufficientIndent =>
       t"insufficient indentation was specified"
+    case MissingKey(point, key) =>
+      t"the value $key was missing at $point"
+    case DuplicateKey(point, key) =>
+      t"the unique key $key has already been used at $point"
+    case SurplusParams(point, key) =>
+      t"too many parameters were given to the key $key at $point"
+    case InvalidKey(point, key) =>
+      t"the key $key was invalid at $point"
+    case DuplicateId(point, line, col) =>
+      t"the unique ID has been used before at $line:$col, $point"
   
   enum Issue:
     case UnexpectedCarriageReturn
@@ -36,31 +43,18 @@ object CodlParseError:
     case CarriageReturnMismatch(required: Boolean)
     case UnevenIndent(initial: Int, indent: Int)
     case IndentAfterComment, SurplusIndent, InsufficientIndent
+    
+    case MissingKey(point: Text, key: Text)
+    case DuplicateKey(point: Text, key: Text)
+    case SurplusParams(point: Text, cmd: Text)
+    case InvalidKey(point: Text, key: Text)
+    case DuplicateId(point: Text, line: Int, col: Int)
+
+case class CodlError(line: Int, col: Int, issue: CodlError.Issue)
+extends Error(err"could not read the CoDL document at $line:$col: ${issue.show}")
 
 case class BinaryError(expectation: Text, pos: Int)
 extends Exception(s"expected $expectation at position $pos")
-
-case class CodlParseError(line: Int, col: Int, issue: CodlParseError.Issue)
-extends Error(err"could not parse CoDL document at $line:$col: ${issue.show}"), CodlError
-
-object CodlValidationError:
-  object Issue:
-    given Show[Issue] =
-      case MissingKey(key)        => t"the value $key was missing"
-      case DuplicateKey(key)      => t"the unique key $key has already been used"
-      case SurplusParams(key)     => t"too many parameters were given to the key $key"
-      case InvalidKey(key)        => t"the key $key was invalid"
-      case DuplicateId(line, col) => t"the unique ID has been used before at $line:$col"
-
-  enum Issue:
-    case MissingKey(key: Text)
-    case DuplicateKey(key: Text)
-    case SurplusParams(cmd: Text)
-    case InvalidKey(key: Text)
-    case DuplicateId(line: Int, col: Int)
-
-case class CodlValidationError(line: Int, col: Int, word: Maybe[Text], issue: CodlValidationError.Issue)
-extends Error(err"the CoDL document did not conform to the schema at $line:$col ($word) because ${issue.show}"), CodlError
 
 case class MultipleIdentifiersError(key: Text)
 extends Exception(s"multiple parameters of $key have been marked as identifiers")

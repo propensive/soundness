@@ -46,7 +46,7 @@ class PositionReader(private val in: Reader):
     case _ =>
       lastCol += 1
   
-  def next()(using Log): Character throws CodlParseError =
+  def next()(using Log): Character throws CodlError =
     if finished then throw IllegalStateException("Attempted to read past the end of the stream")
     in.read() match
       case -1 =>
@@ -55,16 +55,16 @@ class PositionReader(private val in: Reader):
       case '\r' =>
         requireCr match
           case Unset => requireCr = true
-          case false => throw CodlParseError(lastLine, lastCol, CarriageReturnMismatch(false))
+          case false => throw CodlError(lastLine, lastCol, CarriageReturnMismatch(false))
           case true  => ()
         
-        if in.read() != '\n' then throw CodlParseError(lastLine, lastCol, UnexpectedCarriageReturn)
+        if in.read() != '\n' then throw CodlError(lastLine, lastCol, UnexpectedCarriageReturn)
         
         Character('\n', lastLine, lastCol).tap(advance)
       
       case '\n' =>
         requireCr match
-          case true  => throw CodlParseError(lastLine, lastCol, CarriageReturnMismatch(true))
+          case true  => throw CodlError(lastLine, lastCol, CarriageReturnMismatch(true))
           case Unset => requireCr = false
           case false => ()
         

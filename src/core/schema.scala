@@ -31,10 +31,7 @@ extends Dynamic:
 
   def optional: Schema
   def entry(n: Int): Entry = subschemas(n)
-
-  def parse(text: Text)(using Log): Doc throws CodlParseError | CodlValidationError =
-    Codl.parse(ji.StringReader(text.s), this)
-  
+  def parse(text: Text)(using Log): Doc throws CodlError = Codl.parse(ji.StringReader(text.s), this)
   def apply(key: Text): Maybe[Schema] = dictionary.get(key).orElse(dictionary.get(Unset)).getOrElse(Unset)
   def apply(idx: Int): Entry = subschemas(idx)
 

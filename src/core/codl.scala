@@ -17,46 +17,46 @@ enum Token:
   case Item(text: Text, line: Int, col: Int, block: Boolean = false)
   case Comment(text: Text, line: Int, col: Int)
   case Blank
+  case Error(error: CodlError)
 
 case class Proto(key: Maybe[Text] = Unset, line: Int = 0, col: Int = 0, children: List[Node] = Nil,
                      meta: Maybe[Meta] = Unset, schema: Schema = Schema.Free, params: Int = 0,
                      multiline: Boolean = false, ids: Map[Text, (Int, Int)] = Map()):
   
-  def commit(child: Proto): Proto throws CodlValidationError =
+  def commit(child: Proto): Proto throws CodlError =
     val ids2 = if child.schema.arity != Arity.Unique then ids else
       child.key.fm(ids): ckey =>
         ids.get(ckey).foreach: (line1, col1) =>
-          Codl.fail(line, col, ckey, DuplicateId(line1, col1))
+          Codl.fail(line, col, DuplicateId(ckey, line1, col1))
       
         ids.updated(ckey, (child.line, child.col))
     
     copy(children = child.close :: children, params = params + 1, ids = ids2)
 
-  def substitute(data: Data): Proto throws CodlValidationError =
+  def substitute(data: Data): Proto throws CodlError =
     copy(children = Node(data) :: children, params = params + 1)
 
   def setMeta(meta: Maybe[Meta]): Proto = copy(meta = meta)
 
-  def close: Node throws CodlValidationError =
+  def close: Node throws CodlError =
     key.fm(Node(Unset, meta)):
       case key: Text =>
         val meta2 = meta.mm { m => m.copy(comments = m.comments.reverse) }
         val node = Node(Data(key, IArray.from(children.reverse), Layout(params, multiline), schema), meta2)
         
         schema.requiredKeys.foreach: key =>
-          if !node.data.mm(_.has(key)).or(false) then Codl.fail(line, col, node.key, MissingKey(key))
+          if !node.data.mm(_.has(key)).or(false) then Codl.fail(line, col, MissingKey(node.key.or(t"?"), key))
 
         node
 
 object Codl:
 
-  def fail(line: Int, col: Int, key: Maybe[Text], issue: CodlValidationError.Issue)
-          : Nothing throws CodlValidationError =
-    throw CodlValidationError(line, col, key, issue)
+  def fail(line: Int, col: Int, issue: CodlError.Issue): Nothing throws CodlError =
+    throw CodlError(line, col, issue)
 
   def parse(reader: Reader, schema: Schema = Schema.Free, subs: List[Data] = Nil, fromStart: Boolean = false)
            (using Log)
-           : Doc throws CodlParseError | CodlValidationError =
+           : Doc throws CodlError =
     val (margin, stream) = tokenize(reader, fromStart)
     val baseSchema: Schema = schema
     @tailrec
@@ -73,6 +73,7 @@ object Codl:
       
       tokens match
         case token #:: tail => token match
+          case Token.Error(err) => throw err
           case Token.Peer => focus.key match
             case key: Text =>
               go(focus = Proto(), peers = focus.close :: peers)
@@ -84,6 +85,7 @@ object Codl:
               throw Mistake("Should never match")
             
           case Token.Indent =>
+            if focus.key.unset then fail(focus.line, focus.col, IndentAfterComment)
             go(focus = Proto(), peers = Nil, stack = (focus -> peers) :: stack)
           
           case Token.Outdent(n) => stack match
@@ -112,9 +114,9 @@ object Codl:
             focus.key match
               case Unset =>
                 val fschema = if schema == Schema.Free then schema else schema(word).or:
-                  fail(line, col, word, InvalidKey(word))
+                  fail(line, col, InvalidKey(word, word))
 
-                if fschema.unique && peers.exists(_.data.mm(_.key) == word) then fail(line, col, word, DuplicateKey(word))
+                if fschema.unique && peers.exists(_.data.mm(_.key) == word) then fail(line, col, DuplicateKey(word, word))
                 
                 go(focus = Proto(word, line, col, meta = meta2, schema = fschema, ids = focus.ids), lines = 0)
               
@@ -123,7 +125,7 @@ object Codl:
                 case Schema.Free                  => go(focus = focus.commit(Proto(word, line, col)), lines = 0)
                 
                 case struct@Struct(_, _)          => struct.param(focus.children.length) match
-                  case Unset                         => fail(line, col, word, SurplusParams(key))
+                  case Unset                         => fail(line, col, SurplusParams(word, key))
                   
                   case entry: Schema.Entry        => val peer = Proto(word, line, col, schema = entry.schema)
                                                      go(focus = focus.commit(peer), lines = 0)
@@ -149,7 +151,7 @@ object Codl:
     
     if stream.isEmpty then Doc() else recur(stream, Proto(), Nil, Nil, 0, subs.reverse)
 
-  def tokenize(in: Reader, fromStart: Boolean = false)(using Log): (Int, LazyList[Token]) throws CodlParseError =
+  def tokenize(in: Reader, fromStart: Boolean = false)(using Log): (Int, LazyList[Token]) =
     val reader: PositionReader = PositionReader(in)
 
     enum State:
@@ -158,31 +160,33 @@ object Codl:
     import State.*
 
     @tailrec
-    def cue(count: Int = 0): (Character, Int) =
+    def cue(count: Int = 0): (Character, Int) throws CodlError =
       val ch = reader.next()
       if ch.char == '\n' || ch.char == ' ' then cue(count + 1) else (ch, count)
     
-    val (first: Character, start: Int) = cue(0)
+    val (first: Character, start: Int) = try cue(0) catch case err: CodlError => ???
     val margin: Int = first.column
 
     def istream(char: Character, state: State = Indent, indent: Int = margin, count: Int): LazyList[Token] =
       stream(char, state, indent, count)
     
     @tailrec
-    def stream(char: Character, state: State = Indent, indent: Int = margin,
-                   count: Int = start): LazyList[Token] =
-      inline def next(): Character = reader.next()
+    def stream(char: Character, state: State = Indent, indent: Int = margin, count: Int = start)
+              : LazyList[Token] =
+      inline def next(): Character throws CodlError = reader.next()
       
       inline def recur(state: State, indent: Int = indent, count: Int = count + 1): LazyList[Token] =
-        stream(next(), state, indent, count)
+        val char = try next() catch case err: CodlError => Character('\n', err.line, err.col)
+        stream(char, state, indent, count)
       
       inline def irecur(state: State, indent: Int = indent, count: Int = count + 1): LazyList[Token] =
-        istream(next(), state, indent, count)
+        val char = try next() catch case err: CodlError => Character('\n', err.line, err.col)
+        istream(char, state, indent, count)
       
       inline def diff: Int = char.column - indent
 
       def token(): Token = state match
-        case Comment => Token.Comment(reader.get(), reader.start()(0), reader.start()(1))
+        case Comment => Token.Comment(reader.get(), reader.start()(0), reader.start()(1) - 1)
         case Margin  => val text = reader.get()
                         val trimmed = if text.last == '\n' then text.drop(1, Rtl) else text
                         Token.Item(trimmed, reader.start()(0), reader.start()(1), true)
@@ -202,11 +206,14 @@ object Codl:
         if diff >= 4 then consume(Margin)
         else if char.char == ' ' then recur(Margin)
         else token() #:: istream(char, count = count + 1)
-        
+
+      inline def fail(next: State, error: CodlError, adjust: Maybe[Int] = Unset): LazyList[Token] =
+        Token.Error(error) #:: irecur(next, indent = adjust.or(char.column))
+
       inline def newline(next: State): LazyList[Token] =
-        if diff > 4 then throw CodlParseError(char.line, col(char), SurplusIndent)
-        else if char.column < margin then throw CodlParseError(char.line, col(char), InsufficientIndent)
-        else if diff%2 != 0 then throw CodlParseError(char.line, col(char), UnevenIndent(margin, char.column))
+        if diff > 4 then fail(Margin, CodlError(char.line, col(char), SurplusIndent), indent)
+        else if char.column < margin then fail(Indent, CodlError(char.line, col(char), InsufficientIndent), margin)
+        else if diff%2 != 0 then fail(Indent, CodlError(char.line, col(char), UnevenIndent(margin, char.column)), char.column + 1)
         else diff match
           case 2 => Token.Indent #:: irecur(next, indent = char.column)
           case 0 => Token.Peer #:: irecur(next, indent = char.column)
@@ -258,16 +265,10 @@ object Codl:
       try Codl.parse(StringReader(state.content.s), Schema.Free, state.subs.reverse, fromStart = true)(using
           logging.silent(using parasitism.threading.platform))
       catch
-        case err: CodlValidationError => err match
-          case CodlValidationError(_, off, key, issue) =>
-            throw InterpolationError(t"validation error: $issue", off, key.fm(0)(_.length))
-        case err: CodlParseError      => err match
-          case CodlParseError(_, off, issue) => throw InterpolationError(t"parse error: $issue", off)
+        case err: CodlError => err match
+          case CodlError(_, off, issue) => throw InterpolationError(t"read error: $issue", off)
     
     def initial: State = State(Nil, Nil)
     def skip(state: State): State = insert(state, List(Data(t"_")))
     def insert(state: State, data: List[Data]): State = state.copy(subs = data.reverse ::: state.subs)
     def parse(state: State, next: Text): State = state.copy(parts = next :: state.parts).tap(complete(_))
-
-given [T: Codec]: Insertion[List[Data], T] =
-  value => summon[Codec[T]].serialize(value).head.to(List).map(_.data).sift[Data]
