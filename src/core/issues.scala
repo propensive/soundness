@@ -20,9 +20,11 @@ object CodlParseError:
     case CarriageReturnMismatch(false) =>
       t"a carriage return ('\\r') was encountered, which does not match the document's prior newline convention"
     case UnevenIndent(initial, indent) =>
-      t"the indentation level of $indent (with a margin of $initial) is not an exact multiple of 2"
+      t"the indentation level of ${indent - initial} (with a margin of $initial) is not an exact multiple of 2"
     case IndentAfterComment =>
       t"indentation was given after a comment; the comment should be aligned with its next key"
+    case BadSubstitution =>
+      t"a substitution cannot be made at this point"
     case SurplusIndent =>
       t"too much indentation was given"
     case InsufficientIndent =>
@@ -30,6 +32,7 @@ object CodlParseError:
   
   enum Issue:
     case UnexpectedCarriageReturn
+    case BadSubstitution
     case CarriageReturnMismatch(required: Boolean)
     case UnevenIndent(initial: Int, indent: Int)
     case IndentAfterComment, SurplusIndent, InsufficientIndent
@@ -43,18 +46,18 @@ extends Error(err"could not parse CoDL document at $line:$col: ${issue.show}"), 
 object CodlValidationError:
   object Issue:
     given Show[Issue] =
-      case MissingKey(key)    => t"the value $key was missing"
-      case DuplicateKey(key)  => t"the unique key $key has already been used"
-      case SurplusParams(key) => t"too many parameters were given to the key $key"
-      case InvalidKey(key)    => t"the key $key was invalid"
-      case DuplicateId(id)    => t"the id $id has been used more than once"
+      case MissingKey(key)        => t"the value $key was missing"
+      case DuplicateKey(key)      => t"the unique key $key has already been used"
+      case SurplusParams(key)     => t"too many parameters were given to the key $key"
+      case InvalidKey(key)        => t"the key $key was invalid"
+      case DuplicateId(line, col) => t"the unique ID has been used before at $line:$col"
 
   enum Issue:
     case MissingKey(key: Text)
     case DuplicateKey(key: Text)
     case SurplusParams(cmd: Text)
     case InvalidKey(key: Text)
-    case DuplicateId(id: Text)
+    case DuplicateId(line: Int, col: Int)
 
 case class CodlValidationError(line: Int, col: Int, word: Maybe[Text], issue: CodlValidationError.Issue)
 extends Error(err"the CoDL document did not conform to the schema at $line:$col ($word) because ${issue.show}"), CodlError

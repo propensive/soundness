@@ -103,5 +103,3 @@ object Codec extends Derivation[Codec]:
     def deserialize(value: List[Indexed]): List[T] =
       value.map { v => codec.deserialize(List(v)) }
   
-extension [T](value: T)(using codec: Codec[T])
-  def codl: Doc = Doc(IArray.from(codec.serialize(value).flatten), codec.schema, 0)

@@ -2,6 +2,7 @@ package cellulose
 
 import rudiments.*
 import gossamer.*
+import contextual.*
 import eucalyptus.*
 import quagmire.*
 
@@ -44,6 +45,9 @@ case class Node(data: Maybe[Data] = Unset, meta: Maybe[Meta] = Unset) extends Dy
     Node(data2, Unset)
 
   def wiped: Node = untyped.uncommented
+  
+  override def toString(): String =
+    if children.isEmpty then key.or(t"##").s else s"$key[${children.mkString(" ")}]"
 
 object Doc:
   def apply(nodes: Node*): Doc = Doc(IArray.from(nodes), Schema.Free, 0)
@@ -104,6 +108,10 @@ case class Doc(children: IArray[Node], schema: Schema, margin: Int) extends Inde
     Printer.print(writer, this)
     writer.toString().show
 
+object Data:
+  given [T: Codec]: Insertion[List[Data], T] =
+    value => summon[Codec[T]].serialize(value).head.to(List).map(_.data).sift[Data]
+
 case class Data(key: Text, children: IArray[Node] = IArray(), layout: Layout = Layout.empty,
                     schema: Schema = Schema.Free)
 extends Indexed:
@@ -125,16 +133,15 @@ extends Indexed:
 
   def has(key: Text): Boolean = index.contains(key) || paramIndex.contains(key)
   
-  override def equals(that: Any) = that.matchable(using Unsafe) match
-    case that: Data =>
-      key == that.key && layout == that.layout && schema == that.schema && children.size ==
-          that.children.size && children.indices.forall { i => children(i) == that.children(i) }
-    case _ => false
-
-  override def hashCode: Int =
-    children.foldLeft(key.hashCode ^ layout.hashCode ^ schema.hashCode ^ children.size.hashCode)(_ ^ _.hashCode)
-  
   override def toString(): String = s"Data(${key}, ${children.mkString("IArray(", ",", ")")}, $layout, $schema)"
+  
+  override def equals(that: Any) = that.matchable(using Unsafe) match
+    case that: Data => key == that.key && children.sameElements(that.children) && layout == that.layout &&
+                           schema == that.schema
+    case _          => false
+
+  override def hashCode: Int = key.hashCode ^ children.toSeq.hashCode ^ layout.hashCode ^ schema.hashCode
+
 
 case class Meta(blank: Int = 0, comments: List[Text] = Nil, remark: Maybe[Text] = Unset, tabs: Tabs = Tabs())
 object Layout:
