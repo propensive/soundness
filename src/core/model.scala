@@ -93,7 +93,7 @@ case class Doc(children: IArray[Node], schema: Schema, margin: Int) extends Inde
     copy(children = recur(children, input.children))
 
 
-  def as[T: Codec]: T = summon[Codec[T]].deserialize(List(this))
+  def as[T](using codec: Codec[T]): T = codec.deserialize(List(this))
   def uncommented: Doc = Doc(children.map(_.uncommented), schema, margin)
   def untyped: Doc = Doc(children.map(_.untyped), Schema.Free, margin)
   def wiped = uncommented.untyped

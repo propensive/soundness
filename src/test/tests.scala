@@ -858,10 +858,11 @@ object Tests extends Suite(t"CoDL tests"):
         roundtrip[Text](t"hello world")
       .assert(_ == t"hello world")
       
-      // test(t"roundtrip a list of strings"):
-      //   roundtrip[List[Text]](List(t"hello", t"world"))
-      // .assert(_ == List(t"hello", t"world"))
+      test(t"roundtrip a list of strings"):
+        roundtrip[List[Text]](List(t"hello", t"world"))
+      .assert(_ == List(t"hello", t"world"))
       
+      // Not sure how possible it is to make this work
       // test(t"roundtrip a list of case classes"):
       //   roundtrip[List[Person]](List(Person(t"Jack", 12), Person(t"Bill", 32)))
       // .assert(_ == List(Person(t"Jack", 12), Person(t"Bill", 32)))

@@ -30,7 +30,7 @@ case class Proto(key: Maybe[Text] = Unset, line: Int = 0, col: Int = 0, children
           Codl.fail(line, col, DuplicateId(ckey, line1, col1))
       
         ids.updated(ckey, (child.line, child.col))
-    
+    val peerIds = children.map(_.id).sift[Text].join(t"{", t",", t"}")
     copy(children = child.close :: children, params = params + 1, ids = ids2)
 
   def substitute(data: Data): Proto throws CodlError =

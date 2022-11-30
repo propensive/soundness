@@ -71,8 +71,7 @@ object Codec extends Derivation[Codec]:
   given Codec[Text] with
     def schema = Field(Arity.One)
     def serialize(value: Text): List[IArray[Node]] = List(IArray(Node(Data(value.show))))
-    def deserialize(value: List[Indexed]): Text =
-      readField(value).option.get
+    def deserialize(value: List[Indexed]): Text = readField(value).option.get
 
   given Codec[Boolean] with
     def schema = Field(Arity.One)
@@ -100,6 +99,9 @@ object Codec extends Derivation[Codec]:
 
     def serialize(value: List[T]): List[IArray[Node]] = value.map { (value: T) => codec.serialize(value).head }
 
-    def deserialize(value: List[Indexed]): List[T] =
-      value.map { v => codec.deserialize(List(v)) }
-  
+    def deserialize(value: List[Indexed]): List[T] = codec.schema match
+      case Field(_, validator) =>
+        value.flatMap(_.children).collect { case node => codec.deserialize(List(Doc(node))) }
+      
+      case struct: Struct =>
+        value.map { v => codec.deserialize(List(v)) }
