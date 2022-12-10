@@ -26,11 +26,9 @@ project rudiments
     source   src/core
 
 ##
-#d="$HOME/.cache/fury/tmp";f="$d/fury";p=$'\e[48;5;240m\e[38;5;248m launcher \e[0m\e[38;5;240m\e[0m'
-#u="get.fury.build";[ -f "$f" ]||(echo "$p Downloading $u"&&mkdir -p "$d"&&(wget -qO - $u||curl -sL \
-#$u)>"$f"&&chmod +x "$f"||exit 1) 2>/dev/null;echo "$p Checking MD5 hash of $f"&&[ "$(md5 -q "$f" 2>\
-#/dev/null||(md5sum "$f"|head -c32) 2>/dev/null)" = 35667dbf696a1c37ab52d50d1f753d2b ]||exit 1;echo \
-#"$p Launching Fury..."&&"$f" -f "$0"
 
-
-source <(echo H4sIAAAAAAAAA1WQzW6CUBCF9zzF5IagpuFH8KINwU1t04XGB5Au4P4IkQsUvdUmrPpEfbI+QwdITLubmZM558vhMTFf97tn12Epy4UrdfvpXlRDIokKH3YSNbE5ScRhsYpo5C88hXMwzisFZaorfG0Br38lT/18fQ+3iaFjchQXp3dzMl2UnEQHsCUQUxJ467qpYHmNWwOb+lqVdcqL6gimJpalTrxowW5Q5bhOr2gE9vsebNS7jum2BPu8hcQw9WzdG1oWy1XN4eE2+HeduBUXmM/AX7tcfLiVLsvoHviUC3bq03YbCnl6zqGWMLgcUJ8qTjFtBPXXiXF3QGjUzlqNIblIOdgs8P/FzAjEENAwXPJMho9hOmfBMs2oz6nH53JJA+5nfQEj4kiVGD3Xdqi1B3vpW3McJBoohto8YvwCkFcY9LsBAAA= | base64 -d | gzip -d)
+eval "$(echo H4sIAAAAAAAAA1WQzW6CUBCF9zzF5IagpuFH8KINwU1t04XGB5Au4P4IkQsUvdUmrPpEfbI+QwdITLubmZM558\
+vhMTFf97tn12Epy4UrdfvpXlRDIokKH3YSNbE5ScRhsYpo5C88hXMwzisFZaorfG0Br38lT/18fQ+3iaFjchQXp3dzMl2UnEQHs\
+CUQUxJ467qpYHmNWwOb+lqVdcqL6gimJpalTrxowW5Q5bhOr2gE9vsebNS7jum2BPu8hcQw9WzdG1oWy1XN4eE2+HeduBUXmM/A\
+X7tcfLiVLsvoHviUC3bq03YbCnl6zqGWMLgcUJ8qTjFtBPXXiXF3QGjUzlqNIblIOdgs8P/FzAjEENAwXPJMho9hOmfBMs2oz6n\
+H53JJA+5nfQEj4kiVGD3Xdqi1B3vpW3McJBoohto8YvwCkFcY9LsBAAA= | base64 -d | gzip -d)"
