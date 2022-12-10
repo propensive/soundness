@@ -27,7 +27,7 @@ project rudiments
 
 ##
 
-msg() { printf "\e[100m\e[37m launcher \e[0m\e[90m\e[0m %s\n" "$@"; }
+msg() { printf "\e[48;5;240m\e[38;5;248m launcher \e[38;5;240m\e[48;5;236m\e[0m\e[38;5;236m\e[0m %s\n" "$@"; }
 
 [ -f "$HOME/.cache/fury/tmp/fury" ] || (msg "Downloading Fury from get.fury.build" && \
   mkdir -p "$HOME/.cache/fury/tmp" && \
