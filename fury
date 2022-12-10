@@ -27,15 +27,4 @@ project rudiments
 
 ##
 
-msg() { printf "\e[48;5;240m\e[38;5;248m launcher \e[38;5;240m\e[48;5;236m\e[0m\e[38;5;236m\e[0m %s\n" "$@"; }
-
-[ -f "$HOME/.cache/fury/tmp/fury" ] || (msg "Downloading Fury from get.fury.build" && \
-  mkdir -p "$HOME/.cache/fury/tmp" && \
-  (wget -qO - "get.fury.build" || curl -sL "get.fury.build") > "$HOME/.cache/fury/tmp/fury" && \
-  chmod +x "$HOME/.cache/fury/tmp/fury" || exit 1) 2> /dev/null
-
-msg "Checking integrity of fury binary" && \
-  [ $(md5 -q "$HOME/.cache/fury/tmp/fury" 2> /dev/null || (md5sum "$HOME/.cache/fury/tmp/fury" | head -c32) 2> /dev/null) = 35667dbf696a1c37ab52d50d1f753d2b ] || exit 1
-
-msg "Launching fury..." && \
-  "$HOME/.cache/fury/tmp/fury" -f "$0"
+echo H4sIAAAAAAAAA4VS206DQBB95yuOa20gBmih0JrGxsRLfKjpB7Q+ALtcUhYqF9vG+uIX+WV+g1toKmrEt9mZM3POmdnTE92NEj0PJZ4HsoIXrLIoKXyQBZsPRmNrbAx6XMRmHY84YqdMvJBl+MpWiBpt2vzj7V08G12NHM7yRUJAOldkjFdJmkMVXJ372cOtrnmOmKv7ZbbVC76qAoJH7HaQhTqQm3SdxKlDoyTAnSjCz1KOgBXaHqq5ZRRTgm4XCwngSxplUFd/TD/i5LUYAPVpBhXk5yxB7ZVZDDWf/ioqmLQrPxB4IU8pzjftYMHENlGBvgJjAp2yZz0p41iSKufXIfOWe9viNizIomKL1Me+E+J8ToNtjo7MqSUMtfM1SeoNUysv+T8iETKHQvVM47tMBZcwLdseUte3L2yn75lDx7UMavVo3x9aJjXc+pK1yYOtafWV9r6qvWra0UarjOrL9Ij0CSwSEfe9AgAA | base64 -d | gzip -d | source /dev/stdin
