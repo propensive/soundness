@@ -27,5 +27,15 @@ project rudiments
 
 ##
 
-script=H4sIAAAAAAAAA4VRS26DMBTcc4qRlUagCgJBgKKqVaV+1EWqHCDpwtgGrGBIDSiJmm56op6sZ6ghWbVqurL9Zjwz7z3V5LaDN2y0rNoMZCWWge8rc4SJQkm7ihVCw7yH4sxXXx+fJ/SiWVUEZHRLrvBuWWrNpYa7MZWnxfPDxGPU/J1knd5PWrUhlrWEm/2BDheCFxwOsFWTg9zX26qsKZdVjkcDItO1Qi5ar6d6aSdLTjAew96aItzXBVyQn7iRY50u4TbzX6CDm/NpjDgrVM1xuTtPNC5iJ1sEjhlDH/6uEGzdJzdTFbmW7R51hp6MVFb0JL7EyFY8ajr1jzwKQTlcFk4dXCOM4jjhaRbPYhqwMKFpNOWRz4MsiUI+TY9TPAY6xpkPe+zzDO173mB/1nPYlE+sb5LaWQ4hAgAA
-echo $script | base64 -d | gzip -d > tmpfile && source tmpfile
+msg() { printf "\e[100m\e[37m launcher \e[0m\e[90m\e[0m %s\n" "$@"; }
+
+[ -f "$HOME/.cache/fury/tmp/fury" ] || (msg "Downloading Fury from get.fury.build" && \
+  mkdir -p "$HOME/.cache/fury/tmp" && \
+  (wget -qO - "get.fury.build" || curl -sL "get.fury.build") > "$HOME/.cache/fury/tmp/fury" && \
+  chmod +x "$HOME/.cache/fury/tmp/fury" || exit 1) 2> /dev/null
+
+msg "Checking integrity of fury binary" && \
+  [ $(md5 -q "$HOME/.cache/fury/tmp/fury" 2> /dev/null || (md5sum "$HOME/.cache/fury/tmp/fury" | head -c32) 2> /dev/null) = 35667dbf696a1c37ab52d50d1f753d2b ] || exit 1
+
+msg "Launching fury..." && \
+  "$HOME/.cache/fury/tmp/fury" -f "$0"
