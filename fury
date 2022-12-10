@@ -1,0 +1,31 @@
+#!/bin/sh
+:<< "##"
+
+         · • ·
+      • ○ ○ ● ● •      ╭────╮
+     ○ ○ ◌ ◌ ◌ ● ●     │ ╭──╯╭─╮╭─╮╭─╮─╮╭─╮╭─╮
+    • ○ ◌ ◌ ◎ ◎ ● •    │ ┌─╯ │ ╰╯ ││ ╭─╯│ ╰╯ │
+     ○ ◌ ◎ ◎ ● ● ●     ╰─╯   ╰────╯╰─╯  ╰──┐ │
+      • ◎ ◎ ● ● •                       ╰────╯
+         · • ·
+
+    This is Fury file which describes how to build something. It can be
+    started by running fury in this directory, or just executing this
+    file from a shell.
+
+universe hell
+
+command default rudiments/core
+
+overlay anticipation https://github.com/propensive/anticipation
+  commit 36a5154b3f6079537f4aa5419814ef4f1c712e38
+
+project rudiments
+  module core
+    include  anticipation/file
+    source   src/core
+
+##
+
+script=H4sIAAAAAAAAA4VRS26DMBTcc4qRlUagCgJBgKKqVaV+1EWqHCDpwtgGrGBIDSiJmm56op6sZ6ghWbVqurL9Zjwz7z3V5LaDN2y0rNoMZCWWge8rc4SJQkm7ihVCw7yH4sxXXx+fJ/SiWVUEZHRLrvBuWWrNpYa7MZWnxfPDxGPU/J1knd5PWrUhlrWEm/2BDheCFxwOsFWTg9zX26qsKZdVjkcDItO1Qi5ar6d6aSdLTjAew96aItzXBVyQn7iRY50u4TbzX6CDm/NpjDgrVM1xuTtPNC5iJ1sEjhlDH/6uEGzdJzdTFbmW7R51hp6MVFb0JL7EyFY8ajr1jzwKQTlcFk4dXCOM4jjhaRbPYhqwMKFpNOWRz4MsiUI+TY9TPAY6xpkPe+zzDO173mB/1nPYlE+sb5LaWQ4hAgAA
+echo $script | base64 -d | gzip -d | source /dev/stdin
