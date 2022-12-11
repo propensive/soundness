@@ -84,7 +84,7 @@ object Suite:
       "Passed" -> report.passed,
       "Failed" -> report.failed,
       "Total" -> report.total
-    ).map { (key, value) => ansi"$Bold($key): ${value.show}" }.join(ansi"   ")
+    ).map { case (key, value) => ansi"$Bold($key): ${value.show}" }.join(ansi"   ")
 
     List(resultsTable, failures, summary, Suite.footer).join(AnsiText(t"\n"))
 
