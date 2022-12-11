@@ -34,7 +34,7 @@ object Dag:
 
 case class Dag[T] private(edgeMap: Map[T, Set[T]] = Map()):
   def keys: Set[T] = edgeMap.keySet
-  def map[S](fn: T => S): Dag[S] = Dag(edgeMap.map(fn(_) -> _.map(fn)))
+  def map[S](fn: T => S): Dag[S] = Dag(edgeMap.map { case (k, v) => (fn(k), v.map(fn)) })
   def subgraph(keep: Set[T]): Dag[T] = (keys &~ keep).foldLeft(this)(_.remove(_))
   def apply(key: T): Set[T] = edgeMap.getOrElse(key, Set())
   def descendants(key: T): Dag[T] = subgraph(reachable(key))
@@ -64,13 +64,13 @@ case class Dag[T] private(edgeMap: Map[T, Set[T]] = Map()):
 
   def flatMap[S](fn: T => Dag[S]): Dag[S] = Dag:
     edgeMap.flatMap:
-      (k, v) => fn(k).edgeMap.map:
-        (h, w) => h -> (w ++ v.flatMap(fn(_).keys))
+      case (k, v) => fn(k).edgeMap.map:
+        case (h, w) => (h, (w ++ v.flatMap(fn(_).keys)))
   .reduction
 
   def reduction: Dag[T] =
     val allEdges = closure.edgeMap
-    val removals = for i <- keys; j <- edgeMap(i); k <- edgeMap(j) if allEdges(i)(k) yield i -> k
+    val removals = for i <- keys; j <- edgeMap(i); k <- edgeMap(j) if allEdges(i)(k) yield (i, k)
     
     Dag:
       removals.foldLeft(edgeMap):
