@@ -118,7 +118,7 @@ case class Response[T](content: T, status: HttpStatus = HttpStatus.Ok,
         case (k, Some(v)) => t"$k=$v"
       .join(t"; ")
     
-    handler.process(content, status.code, (headers ++ cookieHeaders).map(_.header -> _), responder)
+    handler.process(content, status.code, (headers ++ cookieHeaders).map { case (k, v) => k.header -> v }, responder)
 
 object Request:
   given Show[Request] = request =>
@@ -128,12 +128,12 @@ object Request:
         case err: StreamCutError  => t"[-/-]"
     
     val headers: Text =
-      request.rawHeaders.map: (k, vs) =>
-        t"$k: ${vs.join(t"; ")}"
+      request.rawHeaders.map:
+        case (k, vs) => t"$k: ${vs.join(t"; ")}"
       .join(t"\n          ")
     
-    val params: Text = request.params.map: (k, v) =>
-      t"$k=\"$v\""
+    val params: Text = request.params.map:
+      case (k, v) => t"$k=\"$v\""
     .join(t"\n          ")
 
     ListMap[Text, Text](
@@ -147,7 +147,7 @@ object Request:
       t"body"     -> bodySample,
       t"headers"  -> headers,
       t"params"   -> params
-    ).map { (k, v) => t"$k = $v" }.join(t", ")
+    ).map { case (k, v) => t"$k = $v" }.join(t", ")
 
 case class Request(method: HttpMethod, body: HttpBody.Chunked, query: Text, ssl: Boolean,
                        hostname: Text, port: Int, pathText: Text,
@@ -159,8 +159,8 @@ case class Request(method: HttpMethod, body: HttpBody.Chunked, query: Text, ssl:
   // FIXME: The exception in here needs to be handled elsewhere
   val params: Map[Text, Text] =
     try
-      queryParams.map: (k, vs) =>
-        k.urlDecode -> vs.headOption.getOrElse(t"").urlDecode
+      queryParams.map:
+        case (k, vs) => k.urlDecode -> vs.headOption.getOrElse(t"").urlDecode
       .to(Map) ++ {
         if (method == HttpMethod.Post || method == HttpMethod.Put) &&
             (contentType == Some(media"application/x-www-form-urlencoded") || contentType == None)
@@ -287,7 +287,7 @@ case class HttpServer(port: Int) extends RequestHandler:
           .getCanonicalHostName).nn),
       Option(uri.getPort).filter(_ > 0).getOrElse(exchange.getLocalAddress.nn.getPort),
       Text(uri.getPath.nn),
-      headers.map { (k, v) => Text(k) -> v.map(Text(_)) },
+      headers.map { case (k, v) => Text(k) -> v.map(Text(_)) },
       queryParams
     )
 
