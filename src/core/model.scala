@@ -20,6 +20,7 @@ object Node:
 case class Node(data: Maybe[Data] = Unset, meta: Maybe[Meta] = Unset) extends Dynamic:
   def key: Maybe[Text] = data.mm(_.key)
   def empty: Boolean = unsafely(data.unset || data.assume.children.isEmpty)
+  def blank: Boolean = data.unset && meta.unset
   def schema: Maybe[Schema] = data.mm(_.schema)
   def layout: Maybe[Layout] = data.mm(_.layout)
   def id: Maybe[Text] = data.mm(_.id)
@@ -47,12 +48,14 @@ case class Node(data: Maybe[Data] = Unset, meta: Maybe[Meta] = Unset) extends Dy
   def wiped: Node = untyped.uncommented
   
   override def toString(): String =
-    if children.isEmpty then key.or(t"##").s else s"$key[${children.mkString(" ")}]"
+    if !children.isEmpty then s"$key[${children.mkString(" ")}]" else key.mm(_.s).or:
+      meta.toString
 
 object Doc:
   def apply(nodes: Node*): Doc = Doc(IArray.from(nodes), Schema.Free, 0)
 
-case class Doc(children: IArray[Node], schema: Schema, margin: Int) extends Indexed:
+case class Doc(children: IArray[Node], schema: Schema, margin: Int, body: LazyList[Text] = LazyList())
+extends Indexed:
   override def toString(): String = s"[[${children.mkString(" ")}]]"
   
   override def equals(that: Any) = that.matchable(using Unsafe) match
@@ -93,9 +96,9 @@ case class Doc(children: IArray[Node], schema: Schema, margin: Int) extends Inde
     copy(children = recur(children, input.children))
 
 
-  def as[T](using codec: Codec[T]): T = codec.deserialize(List(this))
-  def uncommented: Doc = Doc(children.map(_.uncommented), schema, margin)
-  def untyped: Doc = Doc(children.map(_.untyped), Schema.Free, margin)
+  def as[T](using codec: Codec[T]): T throws IncompatibleTypeError = codec.deserialize(List(this))
+  def uncommented: Doc = Doc(children.map(_.uncommented), schema, margin, body)
+  def untyped: Doc = Doc(children.map(_.untyped), Schema.Free, margin, body)
   def wiped = uncommented.untyped
 
   def binary(using Log): Text =
@@ -132,8 +135,7 @@ extends Indexed:
     case _ => key
 
   def has(key: Text): Boolean = index.contains(key) || paramIndex.contains(key)
-  
-  override def toString(): String = s"Data(${key}, ${children.mkString("IArray(", ",", ")")}, $layout, $schema)"
+  override def toString(): String = s"[${children.mkString(" ")}]"
   
   override def equals(that: Any) = that.matchable(using Unsafe) match
     case that: Data => key == that.key && children.sameElements(that.children) && layout == that.layout &&

@@ -59,5 +59,5 @@ object Printer:
                 out.write('\n')
                 children.drop(layout.params).foreach(recur(_, indent + 2))
           case Unset =>
-            recur(_, indent)
+            ()
     doc.children.foreach(recur(_, doc.margin))

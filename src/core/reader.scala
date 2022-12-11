@@ -55,16 +55,16 @@ class PositionReader(private val in: Reader):
       case '\r' =>
         requireCr match
           case Unset => requireCr = true
-          case false => throw CodlError(lastLine, lastCol, CarriageReturnMismatch(false))
+          case false => throw CodlError(lastLine, lastCol, 1, CarriageReturnMismatch(false))
           case true  => ()
         
-        if in.read() != '\n' then throw CodlError(lastLine, lastCol, UnexpectedCarriageReturn)
+        if in.read() != '\n' then throw CodlError(lastLine, lastCol, 1, UnexpectedCarriageReturn)
         
         Character('\n', lastLine, lastCol).tap(advance)
       
       case '\n' =>
         requireCr match
-          case true  => throw CodlError(lastLine, lastCol, CarriageReturnMismatch(true))
+          case true  => throw CodlError(lastLine, lastCol, 1, CarriageReturnMismatch(true))
           case Unset => requireCr = false
           case false => ()
         

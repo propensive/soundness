@@ -22,6 +22,8 @@ object CodlError:
       t"indentation was given after a comment; the comment should be aligned with its next key"
     case BadSubstitution =>
       t"a substitution cannot be made at this point"
+    case BadTermination =>
+      t"two # symbols terminates the document and must appear alone on a line"
     case SurplusIndent =>
       t"too much indentation was given"
     case InsufficientIndent =>
@@ -40,6 +42,7 @@ object CodlError:
   enum Issue:
     case UnexpectedCarriageReturn
     case BadSubstitution
+    case BadTermination
     case CarriageReturnMismatch(required: Boolean)
     case UnevenIndent(initial: Int, indent: Int)
     case IndentAfterComment, SurplusIndent, InsufficientIndent
@@ -50,7 +53,7 @@ object CodlError:
     case InvalidKey(point: Text, key: Text)
     case DuplicateId(point: Text, line: Int, col: Int)
 
-case class CodlError(line: Int, col: Int, issue: CodlError.Issue)
+case class CodlError(line: Int, col: Int, length: Int, issue: CodlError.Issue)
 extends Error(err"could not read the CoDL document at $line:$col: ${issue.show}")
 
 case class BinaryError(expectation: Text, pos: Int)
