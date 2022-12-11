@@ -33,7 +33,7 @@ import jnf.{FileSystems, FileVisitResult, Files, Paths, SimpleFileVisitor, Stand
 
 import ji.{File as JavaFile}
 
-import language.experimental.captureChecking
+import language.experimental.pureFunctions
 
 object IoError:
   object Reason:
@@ -195,6 +195,8 @@ case class File[+Fs <: Filesystem](filePath: DiskPath[Fs]) extends Inode[Fs](fil
 
     dest.file(Expect)
 
+  def size(): ByteSize = javaFile.length.b
+
 
 object Fifo:
 
@@ -325,6 +327,11 @@ extends Inode[Fs](directoryPath), Shown[Directory[Fs]]:
     catch e => throw IoError(IoError.Op.Write, IoError.Reason.AccessDenied, path)
     
     dest.directory(Expect)
+
+  def renameTo(name: Text): Directory[Fs] throws IoError =
+    val dest = unsafely(parent / name)
+    if javaFile.renameTo(dest.javaFile) then dest.directory(Expect)
+    else throw IoError(IoError.Op.Write, IoError.Reason.AlreadyExists, dest)
   
   def moveTo[Fs2 >: Fs <: Filesystem](dest: DiskPath[Fs2]): Directory[Fs2] throws IoError =
     try
@@ -338,6 +345,8 @@ extends Inode[Fs](directoryPath), Shown[Directory[Fs]]:
         throw IoError(IoError.Op.Write, IoError.Reason.AccessDenied, dest)
   
     dest.directory(Expect)
+  
+  def size(): ByteSize throws IoError = path.descendantFiles().map(_.size().long).sum.b
 
 object DiskPath:
   given Show[DiskPath[?]] = t"ᵖ｢"+_.fullname+t"｣"
@@ -391,7 +400,9 @@ extends Absolute[Fs](filesystem, elements), Shown[DiskPath[Fs]]:
     
     fifo
 
-  def file(creation: Creation = Creation.Ensure): File[Fs] throws IoError = root.synchronized:
+  def file(): Maybe[File[Fs]] = if exists() && isFile then unsafely(file(Expect)) else Unset
+
+  def file(creation: Creation): File[Fs] throws IoError = root.synchronized:
     import IoError.*
     
     creation match
@@ -412,7 +423,7 @@ extends Absolute[Fs](filesystem, elements), Shown[DiskPath[Fs]]:
     
     file
 
-  def directory(creation: Creation = Ensure): Directory[Fs] throws IoError = root.synchronized:
+  def directory(creation: Creation): Directory[Fs] throws IoError = root.synchronized:
     import IoError.*
     creation match
       case Create if exists() =>
@@ -435,6 +446,8 @@ extends Absolute[Fs](filesystem, elements), Shown[DiskPath[Fs]]:
     if !isDirectory then throw IoError(IoError.Op.Access, IoError.Reason.NotDirectory, this)
     
     Directory(this)
+  
+  def directory(): Maybe[Directory[Fs]] = if exists() && isDirectory then unsafely(directory(Expect)) else Unset
 
   def symlink: Symlink[Fs] throws IoError =
     if !javaFile.exists()
