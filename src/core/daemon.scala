@@ -89,9 +89,9 @@ trait Daemon()(using Log) extends App:
             (using Allocator, Monitor)
             : Unit =
     val socket: DiskPath[Unix] = Unix.parse(fifo)
-    socket.file().javaFile.deleteOnExit()
+    socket.file(Expect).javaFile.deleteOnExit()
     
-    val death: Runnable = () => try socket.file().delete() catch case e: Exception => ()
+    val death: Runnable = () => try socket.file(Expect).delete() catch case e: Exception => ()
     
     ProcessHandle.of(watchPid).nn.get.nn.onExit.nn.thenRun:
       () => sys.exit(2)
@@ -118,7 +118,7 @@ trait Daemon()(using Log) extends App:
           fifoIn.javaFile.deleteOnExit()
           val terminate = Promise[Int]()
           
-          lazy val exitFile = (runDir.or(sys.exit(1)) / t"$script-${pid.value}.exit").file()
+          lazy val exitFile = (runDir.or(sys.exit(1)) / t"$script-${pid.value}.exit").file(Ensure)
           exitFile.javaFile.deleteOnExit()
           
           def interactive(): Unit =
