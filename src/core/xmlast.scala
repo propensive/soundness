@@ -23,7 +23,7 @@ object Ast:
   given Show[Ast] =
     case Element(name, children, attributes, _) =>
       val inside = children.map(_.show).join
-      val attributeString = attributes.map { (k, v) => t"${k.show}=$v" }.join(t" ", t" ", t"")
+      val attributeString = attributes.map { case (k, v) => t"${k.show}=$v" }.join(t" ", t" ", t"")
       
       t"<${name.show}${attributeString}>$inside</${name.show}>"
 
