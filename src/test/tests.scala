@@ -247,6 +247,15 @@ object Tests extends Suite(t"CoDL tests"):
                       |""".s.stripMargin.show)
       .assert(_ == (0, LazyList(Item(t"root", 0, 0), Item(t"child content", 1, 4, true))))
       
+      test(t"Unindented line does not terminate long content"):
+        parseText(t"""|root
+                      |    one
+                      |    two
+                      |
+                      |    three""".s.stripMargin.show)
+      .assert(_ == (0, LazyList(Item(t"root", 0, 0), Item(t"one\ntwo\n\nthree", 1, 4, true))))
+      
+      
       test(t"Parse double indentation then peer"):
         parseText(t"""|root
                       |    child content
@@ -519,6 +528,10 @@ object Tests extends Suite(t"CoDL tests"):
       test(t"Long item"):
         read(t"root\n    one two\n").wiped
       .assert(_ == Doc(Node(t"root")(Node(t"one two")())))
+      
+      test(t"Unindented blank line does not terminate long content"):
+        read(t"root\n    one\n    two\n\n    three").wiped
+      .assert(_ == Doc(Node(t"root")(Node(t"one\ntwo\n\nthree")())))
       
       test(t"Multiline item"):
         read(t"root\n  child\n    this\n        one two\n        three four\n").wiped

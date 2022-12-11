@@ -234,7 +234,7 @@ object Codl:
         recur(next)
 
       inline def block(): LazyList[Token] =
-        if diff >= 4 then consume(Margin)
+        if diff >= 4 || char.char == '\n' then consume(Margin)
         else if char.char == ' ' then recur(Margin)
         else token() #:: istream(char, count = count + 1)
 
