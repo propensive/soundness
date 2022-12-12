@@ -40,6 +40,25 @@
       "docs": [
         "doc"
       ]
+    },
+    {
+      "name": "Escritoire Tests",
+      "id": "escritoire/test",
+      "links": [
+        "escritoire/core",
+        "probably/cli"
+      ],
+      "sources": [
+        "src/test"
+      ],
+      "version": "0.4.0",
+      "docs": [
+        "doc"
+      ],
+      "xec": {
+        "browsers": [],
+        "start": "escritoire.Tests"
+      }
     }
   ]
 }

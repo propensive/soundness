@@ -1,158 +1,180 @@
-/*
-    Escritoire, version 0.4.0. Copyright 2018-22 Jon Pretty, Propensive OÜ.
+package escritoire
 
-    The primary distribution site is: https://propensive.com/
-
-    Licensed under the Apache License, Version 2.0 (the "License"); you may not use this
-    file except in compliance with the License. You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-    Unless required by applicable law or agreed to in writing, software distributed under the
-    License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
-    either express or implied. See the License for the specific language governing permissions
-    and limitations under the License.
-*/
-
-package escritoire2
-
-import escapade.*
-import gossamer.*
 import rudiments.*
+import gossamer.*
+import escapade.*
+
+import language.experimental.namedTypeArguments
+
+import Table.BiShort
 
 enum Breaks:
   case Never, Word, Zwsp, Syllable, Character
 
 enum Alignment:
-  case Left, Right, Center, Justify
+  case Left, Right, Center
 
-case class ColumnWidth(min: Int, max: Int)
-
-enum BorderFormat:
-  case DoubleSingle, SingleTight, SingleSpaced, Spaced
-
-  def spacing(cols: Int): Int = this match
-    case DoubleSingle => 3*cols + 1
-    case SingleTight  => 3*cols + 1
-    case SingleSpaced => 2*cols - 2
-    case Spaced       => 2*cols - 2
+enum DelimitRows:
+  case None, Rule, Space, SpaceIfMultiline, RuleIfMultiline
 
 object Column:
-  def apply[T, S: AnsiShow, H: AnsiShow]
-           (title: H, cell: T => S, breaks: Breaks = Breaks.Zwsp,
-                alignment: Alignment = Alignment.Left,
-                width: ColumnWidth = ColumnWidth(4, 100)): Column[T] =
-    Column[T](title.ansi, t => cell(t).ansi, breaks, alignment, width)
+  def apply[T, H, S](title: H, width: Maybe[Int] = Unset, align: Alignment = Alignment.Left,
+                         breaks: Breaks = Breaks.Word)(get: T => S)
+                    (using ashow: AnsiShow[H], ashow2: AnsiShow[S])
+                    : Column[T] =
+    Column[T](ashow.ansiShow(title), get.andThen(ashow2.ansiShow(_)), breaks, align, width)
 
-case class Column[T](title: AnsiText, cell: T => AnsiText, breaks: Breaks, alignment: Alignment,
-                         width: ColumnWidth)
+  def constrain(text: Text, maxWidth: Int, init: Int = 0): Table.BiShort =
 
-case class TableWidthError(total: Int)
-extends Error(err"the table width is not within the valid range of $total")
+    @tailrec
+    def recur(pos: Int, space: Int = 0, count: Int = 0, max: Int = 0, lines: Int = 1): Table.BiShort =
+      if pos == text.length then Table.BiShort(lines, max.max(count))
+      else unsafely(text(pos)) match
+        case ' '  => if count >= maxWidth then recur(pos + 1, 0, 0, max.max(count), lines + 1)
+                     else recur(pos + 1, count, count + 1, max, lines)
+        case '\n' => recur(pos + 1, 0, 0, max.max(count), lines + 1)
+        case ch   => if count >= maxWidth then recur(pos + 1, 0, count - space, max.max(space), lines + 1)
+                     else recur(pos + 1, space, count + 1, max, lines)
+ 
+    recur(init)
 
-case class Tabulation[T: ClassTag](cols: Column[T]*):
+case class Column[T](title: AnsiText, get: T => AnsiText, breaks: Breaks, align: Alignment, width: Maybe[Int])
 
-  lazy val colsArray: IArray[Column[T]] = IArray.from(cols)
-
-  @tailrec 
-  final def widths(cols: List[Column[T]], flex: Int, map: Map[Column[T], Int]): Map[Column[T], Int] =
-    cols match
-      case Nil =>
-        map
-      
-      case col :: rest =>
-        val w = (flex.toDouble/rest.size + 0.5).toInt.min(col.width.max).max(col.width.min)
-        widths(rest, flex - w, map.updated(col, (col.width.min + w)))
-
-  @tailrec 
-  final def rewidth(cols: List[Column[T]], proposed: Map[Column[T], Double], map: Map[Column[T], Int]): Map[Column[T], Int] =
-    cols match
-      case Nil =>
-        map
-      
-      case col :: rest =>
-        val w = (proposed(col) + 0.5).toInt.min(col.width.max).max(col.width.min)
-        rewidth(rest, proposed, map.updated(col, (col.width.min + w)))
-
-  def initialWidths(total: Int): IArray[Int] throws TableWidthError =
-    val mins = colsArray.map(_.width.min)
-    val maxs = colsArray.map(_.width.max)
-    if total < mins.sum || total > maxs.sum then throw TableWidthError(total)
-
-    val ws = widths(cols.sortBy { c => c.width.max - c.width.min }.to(List), total - mins.sum, Map())
-    colsArray.map(ws(_))
-
-  def tabulate(rows: Seq[T], width: Int, style: BorderFormat)
-              : Unit throws TableWidthError =//IArray[AnsiText] throws TableWidthError =
-    val cells: IArray[IArray[AnsiText]] =
-      val rowsArray: IArray[T] = IArray.from(rows)
-      rowsArray.map { row => colsArray.map { col => col.cell(row) } }
-
-    val inits = initialWidths(width - style.spacing(cols.length))
-
-    def height(content: Text, width: Int): Int throws TableWidthError =
-      var idx = 0
-      var lastSpace = -1
-      var lastZwsp = -1
-      var lineStart = 0
-      var height = 0
-      var skip = 0
-      
-      while idx < content.length
-      do try
-        content(idx) match
-          case '\n'     => height += 1
-                           lineStart = idx + 1
-                           skip = 0
-          case ' '      => lastSpace = idx
-          case '\u200b' => lastZwsp = idx
-                           skip += 1
-          case char     => if idx - lineStart - skip > width then
-                             if lastSpace < lineStart then throw TableWidthError(-1)
-                             height += 1
-                             lineStart = lastSpace + 1
-                             skip = 0
-        idx += 1
-      catch case e: OutOfRangeError => throw Mistake("can't be out of range")
-
-      height + 1
+object Table:
+  opaque type BiShort = Int
+  
+  object BiShort:
+    def apply(left: Int, right: Int): BiShort = ((right&65535) << 16) + (left&65535)
     
-    def optimize(widths: IArray[Int], seen: TreeMap[Int, IArray[Int]] = TreeMap(), count: Int = 10)
-                : IArray[Int] =
-      if count == 0 then seen(seen.keys.min)
+    given Ordering[BiShort] = Ordering.Int
+    
+    extension (value: BiShort)
+      def right: Int = value >> 16
+      def left: Int = value&65535
+
+
+case class Table[T](cols: Column[T]*):
+
+  def tabulate(data: Seq[T], maxWidth: Int, delimitRows: DelimitRows = DelimitRows.RuleIfMultiline)
+              (using style: TableStyle)
+              : LazyList[AnsiText] =
+    val titles: IArray[AnsiText] = IArray.from(cols.map(_.title))
+    
+    val cells: IArray[IArray[AnsiText]] = IArray.from:
+      titles +: data.map { row => IArray.from(cols.map(_.get(row))) }
+    
+    val freeWidth: Int = maxWidth - cols.filter(!_.width.unset).map(_.width.or(0)).sum - style.cost(cols.length)
+    
+    val cellRefs: Array[Array[BiShort]] = Array.tabulate(data.length + 1, cols.length): (row, col) =>
+      Column.constrain(cells(row)(col).plain, freeWidth)
+    
+    val widths: Array[Int] = Array.from:
+      cols.indices.map: col =>
+        cellRefs.maxBy(_(col).right).apply(col).right
+
+    @tailrec
+    def recur(): Unit =
+      if widths.sum > freeWidth then
+        val maxLinesByRow: IArray[Int] = cellRefs.map(_.maxBy(_.left).left).immutable(using Unsafe)
+        
+        val totalUnfilledCellsByColumn: IArray[Int] = IArray.tabulate[Int](cols.length): col =>
+          if !cols(col).width.unset then 0 else cellRefs.indices.count: row =>
+            cellRefs(row)(col).left < maxLinesByRow(row)
+        
+        val mostSpaceInAnyColumn = totalUnfilledCellsByColumn.max
+        
+        val focus: Int = cols.indices.maxBy: col =>
+          if totalUnfilledCellsByColumn(col) == mostSpaceInAnyColumn && cols(col).width.unset then widths(col)
+          else -1
+
+        val target = widths(focus) - 1
+        
+        cellRefs.indices.foreach: row =>
+          if cellRefs(row)(focus).right > target
+          then cellRefs(row)(focus) = Column.constrain(cells(row)(focus).plain, target)
+        
+        widths(focus) = target
+        recur()
+      
+    recur()
+
+    val Multiline: Boolean = cellRefs.exists(_.exists(_.left > 1))
+
+    val columns = cols.zip(widths).map: (col, width) =>
+      col.copy(width = width)
+    
+    //import style.*
+    
+    def extent(text: Text, width: Int, start: Int): BiShort =
+      
+      @tailrec
+      def search(pos: Int, space: Int = 0, count: Int = 0): BiShort =
+        if pos >= text.length then BiShort(pos, pos)
+        else unsafely(text(pos)) match
+          case '\n' => BiShort(pos, pos + 1)
+          case ' '  => if count >= width then BiShort(pos, pos + 1) else search(pos + 1, pos, count + 1)
+          
+          case ch =>
+            if count >= width then
+              if space > 0 then BiShort(space, space + 1)
+              else BiShort(pos, pos + 1)
+            else search(pos + 1, space, count + 1)
+      
+      search(start)
+    
+    def rows(row: Int = 0, offsets: Array[Int]): LazyList[AnsiText] =
+      if row >= cells.length then LazyList()
       else
-        val heights: IArray[IArray[Int]] =
-          cells.map { row => IArray.range(0, widths.length).map { i =>
-            height(row(i).plain, widths(i))
-          } }
+        if columns.indices.exists { col => offsets(col) != cells(row)(col).length }
+        then
+          val text = columns.indices.map: col =>
+            val content = cells(row)(col)
+            val ext = extent(content.plain, columns(col).width.or(0), offsets(col))
+            val slice = content.slice(offsets(col), ext.left)
+            offsets(col) = ext.right
+            val width = columns(col).width.or(0)
+            
+            columns(col).align match
+              case Alignment.Left   => slice.pad(width)
+              case Alignment.Center => slice.center(width)
+              case Alignment.Right  => slice.pad(width, Rtl)
+          
+          .join(ansi"${style.left} ", ansi" ${style.sep} ", ansi" ${style.right}")
         
-        //println("Heights: "+heights.to(List).map(_.to(List)))
-  
-        val maxHeights: IArray[Int] = heights.map(_.max)
-        val totalHeight = maxHeights.sum
-  
-        val densities: IArray[IArray[Double]] =
-          heights.zip(maxHeights).map { (row, h) => row.map(_.toDouble/h) }
-        
-        //println("Densities: "+densities.to(List).map(_.to(List)))
-        
-        val meanDensities: IArray[Double] =
-          densities.fold(widths.map(_ => 0.0))(_.zip(_).map(_ + _))
-  
-        val scaled: IArray[Double] = widths.zip(meanDensities).map(_*_)
-        val scaleFactor = width/scaled.sum
-        val approxWidths: IArray[Double] = scaled.map(_*scaleFactor)
-        
-        val optimized = rewidth(
-          cols.sortBy { c => c.width.max - c.width.min }.to(List),
-          colsArray.zip(approxWidths).to(Map),
-          Map()
-        )
-        
-        val newWidths = colsArray.map(optimized(_))
-        val newSeen = seen.updated(totalHeight, newWidths)
-  
-        if newSeen.keys.min > totalHeight then optimize(newWidths, newSeen, count - 1)
-        else newSeen(newSeen.keys.min)
-    
-    //println(optimize(inits).to(List))
+          text #:: rows(row, offsets)
+        else
+          offsets.indices.foreach(offsets(_) = 0)
+          if row + 1 < cells.length
+          then
+            delimitRows match
+              case _ if row == 0 =>
+                rule(style.midLeft, style.midSep, style.midRight, style.midBar) #:: rows(row + 1, offsets)
+              case DelimitRows.Rule =>
+                rule(style.midLeft, style.midSep, style.midRight, style.midBar) #:: rows(row + 1, offsets)
+              case DelimitRows.Space  =>
+                rule(style.left, style.sep, style.right, ' ') #:: rows(row + 1, offsets)
+              case DelimitRows.RuleIfMultiline if Multiline =>
+                rule(style.midLeft, style.midSep, style.midRight, style.midBar) #:: rows(row + 1, offsets)
+              case DelimitRows.SpaceIfMultiline if Multiline =>
+                rule(style.left, style.sep, style.right, ' ') #:: rows(row + 1, offsets)
+              case _ =>
+                rows(row + 1, offsets)
+          else LazyList(rule(style.bottomLeft, style.bottomSep, style.bottomRight, style.bottomBar))
+
+    def rule(left: Char, separator: Char, right: Char, bar: Char): AnsiText =
+      columns.map { col => ansi"$bar"*(col.width.or(0) + 2) }.join(ansi"$left", ansi"$separator", ansi"$right")
+    rule(style.topLeft, style.topSep, style.topRight, style.topBar) #:: rows(0, Array.fill[Int](cols.length)(0))
+
+package tableStyles:
+  given default: TableStyle(1, '│', '│', '│', '┌', '┬', '┐', '└', '┴', '┘', '├', '┼', '┤', '─', '─', '─')
+  given doubled: TableStyle(1, '║', '│', '║', '╔', '╤', '╗', '╚', '╧', '╝', '╟', '┼', '╢', '═', '─', '═')
+  given rounded: TableStyle(1, '│', '│', '│', '╭', '┬', '╮', '╰', '┴', '╯', '├', '┼', '┤', '─', '─', '─')
+  given dotted: TableStyle(1, '┊', '┊', '┊', '┌', '┬', '┐', '└', '┴', '┘', '├', '┼', '┤', '╌', '╌', '╌')
+  given outline: TableStyle(1, '┊', '┊', '┊', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', '╌', '╌', '╌')
+  given ascii: TableStyle(1, '|', '|', '|', '+', '+', '+', '+', '+', '+', '+', '+', '+', '-', '-', '-')
+  given borderless: TableStyle(0, ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ')
+
+case class TableStyle(pad: Int, left: Char, sep: Char, right: Char, topLeft: Char, topSep: Char, topRight: Char,
+                          bottomLeft: Char, bottomSep: Char, bottomRight: Char, midLeft: Char, midSep: Char,
+                          midRight: Char, topBar: Char, midBar: Char, bottomBar: Char):
+  def cost(cols: Int): Int = cols*pad*2 + cols + 1
