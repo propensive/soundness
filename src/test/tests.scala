@@ -19,47 +19,47 @@ package gossamer
 import probably.*
 import rudiments.*
 import eucalyptus.*
+import parasitism.*, threading.virtual
+import logging.silent
 
 import unsafeExceptions.canThrowAny
-
-given Log(Everything |-> Stdout)
 
 case class Person(name: Text, age: Int)
 
 object Tests extends Suite(t"Gossamer Tests"):
   def run(using Runner): Unit =
-    suite(t"DebugString tests"):
+    suite(t"Debug tests"):
       test(t"serialize boring string"):
         t"Hello world!".debug
-      .assert(_ == t""""Hello world!"""")
+      .assert(_ == t"""t"Hello world!"""")
 
       test(t"serialize string with newline"):
         t"Hello\nworld".debug
-      .assert(_ == t"""\"Hello\\nworld\"""")
+      .assert(_ == t"""t\"Hello\\nworld\"""")
       
       test(t"serialize string with tab"):
         t"Hello\tworld".debug
-      .assert(_ == t"""\"Hello\\tworld\"""")
+      .assert(_ == t"""t\"Hello\\tworld\"""")
       
       test(t"serialize string with apostrophe"):
         t"Hell' world".debug
-      .assert(_ == t"""\"Hell\\' world\"""")
+      .assert(_ == t"""t\"Hell\\' world\"""")
       
       test(t"serialize string with quote"):
         t"Hello \"world\"".debug
-      .assert(_ == t"""\"Hello \\\"world\\\"\"""")
+      .assert(_ == t"""t\"Hello \\\"world\\\"\"""")
       
       test(t"serialize string with backslash"):
         t"Hello\\world".debug
-      .assert(_ == t"""\"Hello\\\\world\"""")
+      .assert(_ == t"""t\"Hello\\\\world\"""")
       
       test(t"serialize string with linefeed"):
         t"Hello world\r".debug
-      .assert(_ == t"""\"Hello world\\r\"""")
+      .assert(_ == t"""t\"Hello world\\r\"""")
       
       test(t"serialize string with unicode escapes"):
         t"Hello мир".debug
-      .assert(_ == t"""\"Hello \\u043c\\u0438\\u0440\"""")
+      .assert(_ == t"""t\"Hello \\u043c\\u0438\\u0440\"""")
 
       test(t"pattern match on Text"):
         var text = t"Hello"
@@ -149,11 +149,11 @@ object Tests extends Suite(t"Gossamer Tests"):
 
       test(t"serialize case class"):
         Person(t"Simon", 72).debug
-      .assert(_ == t"Person(name = \"Simon\", age = 72)")
+      .assert(_ == t"Person(name = t\"Simon\", age = 72)")
       
       test(t"serialize list of strings"):
         List(t"one", t"two", t"three").debug
-      .assert(_ == t"""List("one", "two", "three")""")
+      .assert(_ == t"""List(t"one", t"two", t"three")""")
 
     suite(t"Minimum Edit Distance"):
       test(t"equal strings have zero edit distance"):
@@ -376,11 +376,11 @@ object Tests extends Suite(t"Gossamer Tests"):
       .assert(_ == t"abc")
 
       test(t"Check an empty Text is empty"):
-        t"".isEmpty
+        t"".empty
       .assert(_ == true)
 
       test(t"Check a non-empty Text is not empty"):
-        t"abc".isEmpty
+        t"abc".empty
       .assert(_ == false)
 
       test(t"Cut a Text"):
@@ -412,63 +412,63 @@ object Tests extends Suite(t"Gossamer Tests"):
       .assert(_ == List(t"one", t"two", t"three"))
 
       test(t"Substitute characters"):
-        t"one,two,three".tr(',', ';'): Text
+        t"one,two,three".tr(',', ';')
       .assert(_ == t"one;two;three")
 
       test(t"Replace substring"):
-        t"naive".sub(t"i", t"ï"): Text
+        t"naive".sub(t"i", t"ï")
       .assert(_ == t"naïve")
 
       test(t"Replace different-length substring"):
-        t"Once upon a time".sub(t"Once", t"Twice"): Text
+        t"Once upon a time".sub(t"Once", t"Twice")
       .assert(_ == t"Twice upon a time")
 
       test(t"Several substitutions"):
-        t"foo bar baz".sub(t"ba", t"ma"): Text
+        t"foo bar baz".sub(t"ba", t"ma")
       .assert(_ == t"foo mar maz")
 
       test(t"Overlapping substitutions"):
-        t"fofofoo".sub(t"fofo", t"momo"): Text
+        t"fofofoo".sub(t"fofo", t"momo")
       .assert(_ == t"momofoo")
 
       test(t"Get camel-case words"):
-        t"oneTwoThree".camelCaseWords
+        t"oneTwoThree".uncamel
       .assert(_ == List(t"one", "two", "three"))
       
       test(t"Camel-case to dashed words"):
-        t"oneTwoThree".dashed: Text
+        t"oneTwoThree".uncamel.kebab
       .assert(_ == t"one-two-three")
     
       test(t"Fit short text into fixed width"):
-        t"123".fit(5): Text
+        t"123".fit(5)
       .assert(_ == t"123  ")
 
       test(t"Fit long text into fixed width"):
-        t"12345".fit(3): Text
+        t"12345".fit(3)
       .assert(_ == t"123")
 
       test(t"Right-fit long text into fixed width"):
-        t"12345".fit(3, Rtl): Text
+        t"12345".fit(3, Rtl)
       .assert(_ == t"345")
 
       test(t"Right-fit short text into fixed width"):
-        t"123".fit(5, Rtl): Text
+        t"123".fit(5, Rtl)
       .assert(_ == t"  123")
 
       test(t"Right-fit short text with different padding character"):
-        t"123".fit(5, Rtl, '.'): Text
+        t"123".fit(5, Rtl, '.')
       .assert(_ == t"..123")
       
       test(t"Fit short text with different padding character"):
-        t"123".fit(5, Ltr, '.'): Text
+        t"123".fit(5, Ltr, '.')
       .assert(_ == t"123..")
 
       test(t"duplicate text several times"):
-        t"123"*3: Text
+        t"123"*3
       .assert(_ == t"123123123")
 
       test(t"duplicate text zero times"):
-        t"123"*0: Text
+        t"123"*0
       .assert(_ == t"")
 
       test(t"Random access of character"):
@@ -480,19 +480,19 @@ object Tests extends Suite(t"Gossamer Tests"):
       .assert(_ == OutOfRangeError(5, 0, 3))
 
       test(t"Pad-right with space"):
-        t"123".pad(5, Rtl): Text
-      .assert(_ == t"123  ")
-
-      test(t"Pad-left with space"):
-        t"123".pad(5, Ltr): Text
+        t"123".pad(5, Rtl)
       .assert(_ == t"  123")
 
+      test(t"Pad-left with space"):
+        t"123".pad(5, Ltr)
+      .assert(_ == t"123  ")
+
       test(t"Pad-right with smaller value does not change text"):
-        t"12345".pad(3, Rtl): Text
+        t"12345".pad(3, Rtl)
       .assert(_ == t"12345")
 
       test(t"Pad-left with smaller value does not change text"):
-        t"12345".pad(3, Ltr): Text
+        t"12345".pad(3, Ltr)
       .assert(_ == t"12345")
 
       test(t"Text does contain value"):
@@ -528,27 +528,27 @@ object Tests extends Suite(t"Gossamer Tests"):
       .assert(_ == 10)
 
       test(t"Take characters while predicate is true"):
-        t"HELLOworld".upto(_.isUpper): Text
+        t"HELLOworld".upto(_.isUpper)
       .assert(_ == t"HELLO")
       
       test(t"Take characters when predicate is never true returns empty text"):
-        t"hello world".upto(_.isUpper): Text
+        t"hello world".upto(_.isUpper)
       .assert(_ == t"")
       
       test(t"Take characters when predicate isn't initially true returns empty text"):
-        t"Helloworld".upto(_.isLower): Text
+        t"Helloworld".upto(_.isLower)
       .assert(_ == t"")
     
       test(t"Capitalize a lowercase word"):
-        t"hello".capitalize: Text
+        t"hello".capitalize
       .assert(_ == t"Hello")
 
       test(t"Capitalize a mixed-case word"):
-        t"fooBar".capitalize: Text
+        t"fooBar".capitalize
       .assert(_ == t"FooBar")
 
       test(t"Capitalize an uppercase word does not change it"):
-        t"HELLO".capitalize: Text
+        t"HELLO".capitalize
       .assert(_ == t"HELLO")
 
     suite(t"Show tests"):
