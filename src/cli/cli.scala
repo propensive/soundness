@@ -21,6 +21,7 @@ import rudiments.*
 import gossamer.*
 import escapade.*
 import iridescence.*
+import tableStyles.rounded
 
 import Runner.*
 
@@ -43,7 +44,7 @@ object Suite:
   val footer: AnsiText = legend.grouped(2).map(_.join(ansi"  ")).to(Seq).join(AnsiText(t"\n"),
       AnsiText(t"\n"), AnsiText(t"\n"))
   
-  def show(report: Report): AnsiText =
+  def show(report: Report): LazyList[AnsiText] =
     val simple = report.results.forall(_.count == 1)
 
     given AnsiShow[Outcome] =
@@ -54,19 +55,20 @@ object Suite:
       case Outcome.FailsAt(_, n)                                  => tailFail
       case Outcome.Mixed                                          => mixed
 
-    val status = Column[Summary, String, Outcome]("", _.outcome)
-    val hash = Column[Summary, String, Text]("Hash", v => Runner.shortDigest(v.name))
-    val name = Column[Summary, String, String]("Test", s => t"${t"  "*s.indent}${s.name}".s)
-    val count = Column[Summary, String, Int]("Count", _.count)
-    val min = Column[Summary, String, Double]("Min", _.min)
-    val avg = Column[Summary, String, Double](if simple then "Time" else "Avg", _.avg)
-    val max = Column[Summary, String, Double]("Max", _.max)
+    val status: Column[Summary] = Column(ansi"", width = 3)(v => v.outcome)
+    val hash: Column[Summary] = Column(ansi"Hash", width = 6)(v => Runner.shortDigest(v.name))
+    val name: Column[Summary] = Column(ansi"Test")(s => t"${t"  "*s.indent}${s.name}")
+    val count: Column[Summary] = Column(ansi"Count")(_.count)
+    val min: Column[Summary] = Column(ansi"Min")(_.min)
+    val avg: Column[Summary] = Column(if simple then "Time" else "Avg")(_.avg)
+    val max: Column[Summary] = Column(ansi"Max")(_.max)
     
     val table =
-      if simple then Tabulation[Summary](status, hash, name, avg)
-      else Tabulation[Summary](status, hash, name, count, min, avg, max)
+      if simple then Table[Summary](status, hash, name, avg)
+      else Table[Summary](status, hash, name, count, min, avg, max)
 
-    val resultsTable: AnsiText = table.tabulate(100, report.results).join(AnsiText(t"\n")).ansi
+    val resultsTable: LazyList[AnsiText] =
+      table.tabulate(report.results, 120, DelimitRows.SpaceIfMultiline)
 
     val failures: AnsiText =
       report.results.filter:
@@ -75,7 +77,7 @@ object Suite:
         result =>
           List(
             ansi"${result.outcome} $Bold($Underline(${result.name})): ${colors.SkyBlue}(${result.outcome.filename}):${colors.Goldenrod}(${result.outcome.line})",
-            ansi"${(result.outcome.debug.cut(t"\n"): List[Text]).join(t"      ", t"\n      ", t"")}",
+            ansi"${(result.outcome.inspect.cut(t"\n"): List[Text]).join(t"      ", t"\n      ", t"")}",
             ansi""
           )
       .join(AnsiText(t"\n"))
@@ -86,7 +88,7 @@ object Suite:
       "Total" -> report.total
     ).map { case (key, value) => ansi"$Bold($key): ${value.show}" }.join(ansi"   ")
 
-    List(resultsTable, failures, summary, Suite.footer).join(AnsiText(t"\n"))
+    resultsTable #::: LazyList(failures, summary, Suite.footer)
 
 trait Suite(val name: Text) extends TestSuite:
   def run(using Runner): Unit
@@ -97,16 +99,16 @@ trait Suite(val name: Text) extends TestSuite:
     val succeeded = try
       run(using runner)
       val report = runner.report()
-      System.out.nn.println(Suite.show(report).render)
+      
+      Suite.show(report).foreach: line =>
+        System.out.nn.println(line.render)
+
       report.total == report.passed
     catch case error: Throwable =>
       val report = runner.report()
-      // if !report.pending.isEmpty then
-      //   val tests = report.pending.map: name =>
-      //     ansi"${colors.Turquoise}($name)"
-      //   .join(ansi"${colors.Gray}({)", ansi"${colors.Gray}(,) ", ansi"${colors.Gray}(})")
-      //   System.out.nn.println(ansi"Execution failed while testing ${colors.Crimson}(${tests}), with exception:".render)
-      System.out.nn.println(Suite.show(report).render)
+      Suite.show(report).foreach: line =>
+        System.out.nn.println(line.render)
+
       System.out.nn.println(StackTrace(error).ansi.render)
       false
     
