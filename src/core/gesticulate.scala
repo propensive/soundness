@@ -25,7 +25,7 @@ import scala.io.*
 
 object Media:
   object Group:
-    given DebugString[Group] = _.name
+    given Debug[Group] = _.name
     given Show[Group] = _.name.lower
 
   enum Group:
@@ -174,7 +174,7 @@ case class MediaType(group: Media.Group, subtype: Media.Subtype, suffixes: List[
   def basic: Text = t"${group.name}/${subtype.name}$suffixString"
 
 object MediaType:
-  given DebugString[MediaType] = mt => t"""media"${mt}""""
+  given Debug[MediaType] = mt => t"""media"${mt}""""
   
   given Show[MediaType] =
     mt => t"${mt.basic}${mt.parameters.map { p => t"; ${p(0)}=${p(1)}" }.join}"
