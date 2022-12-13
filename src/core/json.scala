@@ -99,7 +99,13 @@ object Json extends Dynamic:
     given [T: Writer]: Writer[Map[String, T]] = values =>
       JObject(mutable.Map(values.view.mapValues(summon[Writer[T]].write(_)).to(Seq)*))
 
-    given [T: Writer]: Writer[Option[T]] = new Writer[Option[T]]:
+    given [T: Writer]: Writer[Maybe[T]] = new Writer[Maybe[T]]:
+      override def omit(t: Maybe[T]): Boolean = t.unset
+      def write(value: Maybe[T]): JValue = value match
+        case Unset    => JNull
+        case value: T => summon[Writer[T]].write(value)
+
+    given opt[T: Writer]: Writer[Option[T]] = new Writer[Option[T]]:
       override def omit(t: Option[T]): Boolean = t.isEmpty
       
       def write(value: Option[T]): JValue = value match
