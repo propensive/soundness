@@ -6,12 +6,22 @@ import eucalyptus.*
 
 import java.io as ji
 
-import language.experimental.captureChecking
+import language.experimental.pureFunctions
 import language.dynamics
 
 object Schema:
-  case class Entry(key: Text, schema: Schema):
-    export schema.arity.{required, variadic, unique}
+
+  object Entry:
+    def apply(key: Text, schema: => Schema): Entry = new Entry(key, () => schema)
+    def unapply(value: Entry): Option[(Text, Schema)] = Some(value.key -> value.schema)
+
+  class Entry(val key: Text, getSchema: () => Schema):
+    def required = schema.arity.required
+    def variadic = schema.arity.variadic
+    def unique = schema.arity.unique
+    def schema: Schema = getSchema()
+    def tuple: (Text, Schema) = key -> schema
+
 
   // FIXME
   object Free extends Struct(List(Entry(t"?", Field(Arity.Many))), Arity.Many):

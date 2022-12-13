@@ -11,7 +11,7 @@ import java.io as ji
 import language.dynamics
 
 object Node:
-  given DebugString[Node] = _.data.option.fold(t"!"): data =>
+  given Debug[Node] = _.data.option.fold(t"!"): data =>
     t"${data.key}[${data.children.map(_.debug).join(t",")}]"
 
   val empty: Node = Node()

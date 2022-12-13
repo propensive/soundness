@@ -6,7 +6,7 @@ import wisteria.*
 
 import Arity.*
 
-import language.experimental.captureChecking
+import language.experimental.pureFunctions
 
 trait Codec[T]:
   def serialize(value: T): List[IArray[Node]]
@@ -37,9 +37,8 @@ object Codec extends Derivation[Codec]:
           Node(Data(p.label.show, value, Layout.empty, p.typeclass.schema))
         .filter(!_.empty)
 
-    def deserialize(value: List[Indexed]): T throws IncompatibleTypeError =
-      ctx.construct: param =>
-        param.typeclass.deserialize(value.head.get(param.label.show))
+    def deserialize(value: List[Indexed]): T throws IncompatibleTypeError = ctx.construct: param =>
+      param.typeclass.deserialize(value.head.get(param.label.show))
   
   def split[T](ctx: SealedTrait[Codec, T]): Codec[T] = ???
   
@@ -102,7 +101,7 @@ object Codec extends Derivation[Codec]:
     def deserialize(value: List[Indexed]): Maybe[T] throws IncompatibleTypeError =
       if value.isEmpty then Unset else codec.deserialize(value)
     
-  given list[T](using codec: Codec[T]): Codec[List[T]] = new Codec[List[T]]:
+  given list[T](using codec: => Codec[T]): Codec[List[T]] = new Codec[List[T]]:
     def schema: Schema = codec.schema match
       case Field(_, validator) => Field(Arity.Many, validator)
       case struct: Struct      => struct.copy(structArity = Arity.Many)
