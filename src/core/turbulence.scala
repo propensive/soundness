@@ -43,9 +43,12 @@ type DataStream = LazyList[IArray[Byte] throws StreamCutError]
 
 extension (value: DataStream)
   def slurp(rubrics: Rubric*): Bytes throws StreamCutError =
-    value.foldLeft(IArray[Byte]()): (acc, next) =>
-      // FIXME: Use Rubric
-      acc ++ next
+    val bld: scm.ArrayBuilder[Byte] = scm.ArrayBuilder.ofByte()
+    
+    value.foreach: bytes =>
+      bld.addAll(bytes.mutable(using Unsafe))
+    
+    bld.result().immutable(using Unsafe)
 
 case class StreamCutError() extends Error(err"the stream was cut prematurely")
 case class AlreadyStreamingError() extends Error(err"the stream was accessed twice, which is not permitted")
