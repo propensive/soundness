@@ -5,7 +5,6 @@ import gossamer.*
 import rudiments.*
 import turbulence.*
 import eucalyptus.*
-import tetromino.*
 import parasitism.*, threading.platform
 
 import java.io as ji
