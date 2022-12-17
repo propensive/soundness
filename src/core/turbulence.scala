@@ -18,7 +18,6 @@ package turbulence
 
 import rudiments.*
 import anticipation.*
-import tetromino.*
 import parasitism.*
 
 import scala.collection.IterableFactory
@@ -42,7 +41,7 @@ import java.util.concurrent as juc
 type DataStream = LazyList[IArray[Byte] throws StreamCutError]
 
 extension (value: DataStream)
-  def slurp(rubrics: Rubric*): Bytes throws StreamCutError =
+  def slurp(): Bytes throws StreamCutError =
     val bld: scm.ArrayBuilder[Byte] = scm.ArrayBuilder.ofByte()
     
     value.foreach: bytes =>
@@ -53,19 +52,14 @@ extension (value: DataStream)
 case class StreamCutError() extends Error(err"the stream was cut prematurely")
 case class AlreadyStreamingError() extends Error(err"the stream was accessed twice, which is not permitted")
 
-// object Source:
-//   given (using Allocator): Source[SystemIn.type] with
-//     def read(value: SystemIn.type): DataStream throws StreamCutError =
-//       if System.in == null then throw StreamCutError() else Util.readInputStream(System.in)
-
 object Source:
   given Source[DataStream] with
     type E = Nothing
-    def read(value: DataStream, rubrics: Rubric*) = value
+    def read(value: DataStream) = value
 
 trait Source[T]:
   type E <: Exception
-  def read(value: T, rubrics: Rubric*): DataStream throws E
+  def read(value: T): DataStream throws E
 
 object Appendable:
   given Appendable[SystemOut.type] with
@@ -105,23 +99,23 @@ trait Streamable[T]:
 object Readable:
   given Readable[DataStream] with
     type E = StreamCutError
-    def read(stream: DataStream, rubrics: Rubric*): DataStream throws StreamCutError | E = stream
+    def read(stream: DataStream): DataStream throws StreamCutError | E = stream
   
   given Readable[Bytes] with
     type E = StreamCutError
-    def read(stream: DataStream, rubrics: Rubric*): Bytes throws StreamCutError | E =
-      stream.slurp(rubrics*)
+    def read(stream: DataStream): Bytes throws StreamCutError | E =
+      stream.slurp()
 
   given (using enc: Encoding): Readable[Text] with
     type E = StreamCutError
-    def read(value: DataStream, rubrics: Rubric*) =
-      Text(String(value.slurp(rubrics*).mutable(using Unsafe), enc.name.s))
+    def read(value: DataStream) =
+      Text(String(value.slurp().mutable(using Unsafe), enc.name.s))
 
   given textReader(using enc: Encoding): Readable[LazyList[Text]] with
     type E = StreamCutError
     private final val empty = Array.empty[Byte]
 
-    def read(stream: DataStream, rubrics: Rubric*) =
+    def read(stream: DataStream) =
       def read(stream: DataStream, carried: Array[Byte] = empty, skip: Int = 0): LazyList[Text] = stream match
         case LazyList() =>
           LazyList()
@@ -143,12 +137,12 @@ object Readable:
 trait Readable[T]:
   readable =>
   type E <: Exception
-  def read(stream: DataStream, rubrics: Rubric*): T throws StreamCutError | E
+  def read(stream: DataStream): T throws StreamCutError | E
   
   def map[S](fn: T => S): turbulence.Readable[S] { type E = readable.E } =
     new turbulence.Readable[S]:
       type E = readable.E
-      def read(stream: DataStream, rubrics: Rubric*): S throws StreamCutError | readable.E =
+      def read(stream: DataStream): S throws StreamCutError | readable.E =
         fn(readable.read(stream))
 
 object SystemIn
@@ -194,9 +188,9 @@ extension [T](value: T)
                 : Unit throws StreamCutError | writable.E =
     writable.write(destination, streamable.stream(value))
 
-  def read[S](rubrics: Rubric*)(using readable: Readable[S], src: Source[T])
+  def read[S]()(using readable: Readable[S], src: Source[T])
           : S throws StreamCutError | src.E | readable.E =
-    readable.read(dataStream, rubrics*)
+    readable.read(dataStream)
 
 case class Multiplexer[K, T]()(using monitor: Monitor, threading: Threading):
   private val tasks: HashMap[K, Task[Unit]] = HashMap()
@@ -209,7 +203,7 @@ case class Multiplexer[K, T]()(using monitor: Monitor, threading: Threading):
   private def pump(key: K, stream: LazyList[T]): Unit =
     if stream.isEmpty then remove(key) else
       //ctx.terminate(())
-      monitor.bail()
+      monitor.accede()
       queue.put(stream.head)
       pump(key, stream.tail)
 
