@@ -23,7 +23,6 @@ import escapade.*
 import parasitism.*
 import iridescence.*
 import turbulence.*
-import tetromino.*
 import anticipation.timekeeping.long
 
 import com.sun.jna.*
@@ -50,7 +49,7 @@ case class Tty(out: ji.PrintStream, in: DataStream)
 object Tty:
   final val noopOut: ji.PrintStream = ji.PrintStream((_ => ()): ji.OutputStream)
 
-  def capture[T](fn: Tty ?=> T)(using Log, Allocator, InputSource): T throws TtyError =
+  def capture[T](fn: Tty ?=> T)(using Log, InputSource): T throws TtyError =
     val tty = summon[InputSource].init()
     Signal.handle(Signal("WINCH"), sig => reportSize()(using tty))
     try Console.withOut(noopOut)(fn(using tty)) finally summon[InputSource].cleanup(tty)
@@ -230,5 +229,5 @@ case class SelectMenu[T](options: List[T], current: T):
 given realm: Realm = Realm(t"profanity")
 
 trait InputSource:
-  def init()(using Log, Allocator): Tty throws TtyError
+  def init()(using Log): Tty throws TtyError
   def cleanup(tty: Tty): Unit
