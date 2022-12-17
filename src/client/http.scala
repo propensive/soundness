@@ -20,7 +20,6 @@ import gossamer.*
 import rudiments.*
 import turbulence.*
 import gesticulate.*
-import tetromino.*
 import wisteria.*
 import eucalyptus.*
 import iridescence.*
@@ -42,7 +41,7 @@ enum HttpBody:
   case Data(data: IArray[Byte])
 
   def as[T](using readable: HttpReadable[T])
-           : T throws StreamCutError | readable.E | ExcessDataError =
+           : T throws StreamCutError | readable.E =
     readable.read(HttpStatus.Ok, this)
 
 object QuerySerializer extends ProductDerivation[QuerySerializer]:
@@ -103,25 +102,25 @@ enum HttpMethod:
 object HttpReadable:
   given HttpReadable[Text] with
     type E = StreamCutError
-    def read(status: HttpStatus, body: HttpBody): Text throws ExcessDataError | StreamCutError | E =
+    def read(status: HttpStatus, body: HttpBody): Text throws StreamCutError | E =
       body match
         case HttpBody.Empty         => t""
         case HttpBody.Data(body)    => body.uString
-        case HttpBody.Chunked(body) => body.slurp(HttpRubric).uString
+        case HttpBody.Chunked(body) => body.slurp().uString
   
   given HttpReadable[Bytes] with
     type E = Nothing
-    def read(status: HttpStatus, body: HttpBody): Bytes throws ExcessDataError | StreamCutError | E = body match
+    def read(status: HttpStatus, body: HttpBody): Bytes throws StreamCutError | E = body match
       case HttpBody.Empty         => IArray()
       case HttpBody.Data(body)    => body
-      case HttpBody.Chunked(body) => body.slurp(HttpRubric)
+      case HttpBody.Chunked(body) => body.slurp()
 
   given [T, E2 <: Exception](using reader: HttpReader[T, E2]): HttpReadable[T] with
     type E = E2
-    def read(status: HttpStatus, body: HttpBody): T throws ExcessDataError | StreamCutError | E2 = body match
+    def read(status: HttpStatus, body: HttpBody): T throws StreamCutError | E2 = body match
       case HttpBody.Empty         => reader.read("")
       case HttpBody.Data(data)    => reader.read(data.uString.s)
-      case HttpBody.Chunked(data) => reader.read(data.slurp(HttpRubric).uString.s)
+      case HttpBody.Chunked(data) => reader.read(data.slurp().uString.s)
 
   given HttpReadable[HttpStatus] with
     type E = StreamCutError
@@ -129,10 +128,10 @@ object HttpReadable:
 
 trait HttpReadable[+T]:
   type E <: Exception
-  def read(status: HttpStatus, body: HttpBody): T throws ExcessDataError | StreamCutError | E
+  def read(status: HttpStatus, body: HttpBody): T throws StreamCutError | E
 
 case class HttpResponse(status: HttpStatus, headers: Map[ResponseHeader, List[String]], body: HttpBody):
-  inline def as[T](using readable: HttpReadable[T]): T throws HttpError | ExcessDataError | StreamCutError | readable.E =
+  inline def as[T](using readable: HttpReadable[T]): T throws HttpError | StreamCutError | readable.E =
     status match
       case status: FailureCase => throw HttpError(status, body)
       case status              => readable.read(status, body)
@@ -259,7 +258,7 @@ object Http:
 case class HttpError(status: HttpStatus & FailureCase, body: HttpBody)
 extends Error(err"HTTP error $status"):
   inline def as[T](using readable: HttpReadable[T])
-                  : T throws ExcessDataError | StreamCutError | readable.E =
+                  : T throws StreamCutError | readable.E =
     readable.read(status, body)
 
 trait FailureCase
@@ -391,7 +390,6 @@ object Uri:
 
   given (using Internet, Log): Streamable[Uri] = uri => LazyList:
     try uri.get().as[Bytes] catch
-      case err: ExcessDataError => throw StreamCutError()
       case err: HttpError => throw StreamCutError()
 
 case class Uri(location: Text, params: Params = Params(Nil)) extends Dynamic, Shown[Uri]:
@@ -477,5 +475,3 @@ extension (uri: Uri)
   
   def connect(headers: RequestHeader.Value*)(using Internet, Log): HttpResponse throws StreamCutError =
     Http.connect(uri, headers*)
-
-object HttpRubric extends Rubric()
