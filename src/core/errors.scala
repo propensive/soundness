@@ -40,7 +40,7 @@ object StackTrace:
       StackTrace.Frame(
         Text(frame.getClassName.nn),
         Text(frame.getMethodName.nn),
-        Text(frame.getFileName.nn),
+        Text(Option(frame.getFileName).map(_.nn).getOrElse("[no file]")),
         frame.getLineNumber,
         frame.isNativeMethod
       )
