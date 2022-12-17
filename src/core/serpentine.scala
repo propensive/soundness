@@ -42,6 +42,11 @@ trait Root(val prefix: Text, val separator: Text):
     else make(text.drop(prefix.length).cut(separator))
   
 object Root:
+  
+  given rootAttributeWriter: HtmlAttributeWriter["href", Root.^.type] with
+    def name: String = "href"
+    def serialize(value: Root.^.type): String = "/"
+
   @targetName("RelativeRoot")
   object ? extends Relative(0, Nil)
   
@@ -65,9 +70,9 @@ object Relative:
     case Relative(ascent, parts) => parts.join(t"../"*ascent, t"/", t"")
 
   given HtmlAttributeWriter["href", Relative] with
-    def name = "href"
+    def name: String = "href"
     def serialize(value: Relative): String = value.show.s
-
+  
   def parse(text: Text): Relative =
     def recur(text: Text, ascent: Int): Relative =
       if text == t"." then Self
