@@ -18,7 +18,6 @@ package scintillate
 
 import rudiments.*
 import parasitism.*
-import tetromino.*
 import turbulence.*
 import gossamer.*
 import gastronomy.*
@@ -124,7 +123,6 @@ object Request:
   given Show[Request] = request =>
     val bodySample: Text =
       try request.body.stream.slurp().uString catch
-        case err: ExcessDataError => t"[...]"
         case err: StreamCutError  => t"[-/-]"
     
     val headers: Text =
@@ -172,9 +170,7 @@ case class Request(method: HttpMethod, body: HttpBody.Chunked, query: Text, ssl:
           )*)
         else Map[Text, Text]()
       }
-    catch
-      case e: ExcessDataError => Map()
-      case e: StreamCutError  => Map()
+    catch case e: StreamCutError  => Map()
 
   
   lazy val headers: Map[RequestHeader, List[Text]] = rawHeaders.map:
