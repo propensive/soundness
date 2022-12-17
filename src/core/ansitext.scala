@@ -199,7 +199,7 @@ object AnsiText:
 case class AnsiText(plain: Text, spans: TreeMap[CharSpan, Ansi.Transform] = TreeMap(),
                         insertions: TreeMap[Int, Text] = TreeMap()):
   def length: Int = plain.length
-  def span(n: Int): AnsiText = take(n).padTo(n)
+  def span(n: Int): AnsiText = take(n).pad(n, Ltr)
   def explicit: Text = render.flatMap { ch => if ch.toInt == 27 then t"\\e" else ch.show }
   def upper: AnsiText = AnsiText(plain.upper, spans)
   def lower: AnsiText = AnsiText(plain.lower, spans)
@@ -247,8 +247,13 @@ case class AnsiText(plain: Text, spans: TreeMap[CharSpan, Ansi.Transform] = Tree
 
   def slice(from: Int, to: Int): AnsiText = drop(from).take(to - from)
 
-  def padTo(n: Int, char: Char = ' ') =
-    if length < n then this + AnsiText(char.show*(n - length)) else this
+  def pad(n: Int, direction: Direction = Ltr, char: Char = ' ') = direction match
+    case Ltr => if length < n then this + AnsiText(char.show*(n - length)) else this
+    case Rtl => if length < n then AnsiText(char.show*(n - length)) + this else this
+  
+  def center(n: Int, char: Char = ' '): AnsiText =
+    if length < n then AnsiText(char.show*((n - length)/2)) + this + AnsiText(char.show*((n - length + 1)/2))
+    else this
 
   def render: Text =
     val buf = StringBuilder()

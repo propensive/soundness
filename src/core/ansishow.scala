@@ -42,9 +42,9 @@ object AnsiShow extends FallbackAnsiShow:
         ansi"$value${colors.White}(${text.head})"
       case head *: tail =>
         val part: Text = summonFrom:
-          case ds: DebugString[head.type] => ds.show(head)
-          case show: Show[head.type]      => show.show(head)
-          case _                          => head.toString.show
+          case ds: Debug[head.type]  => ds.show(head)
+          case show: Show[head.type] => show.show(head)
+          case _                     => head.toString.show
         
         recurParts(tail, text.tail, ansi"$value${colors.White}(${text.head})${colors.Green}($part)")
     
