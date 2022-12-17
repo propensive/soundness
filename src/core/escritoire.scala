@@ -9,7 +9,7 @@ import language.experimental.namedTypeArguments
 import Table.BiShort
 
 enum Breaks:
-  case Never, Word, Zwsp, Syllable, Character
+  case Never, Space, Zwsp, Character
 
 enum Alignment:
   case Left, Right, Center
@@ -19,22 +19,31 @@ enum DelimitRows:
 
 object Column:
   def apply[T, H, S](title: H, width: Maybe[Int] = Unset, align: Alignment = Alignment.Left,
-                         breaks: Breaks = Breaks.Word)(get: T => S)
+                         breaks: Breaks = Breaks.Space)(get: T => S)
                     (using ashow: AnsiShow[H], ashow2: AnsiShow[S])
                     : Column[T] =
     Column[T](ashow.ansiShow(title), get.andThen(ashow2.ansiShow(_)), breaks, align, width)
 
-  def constrain(text: Text, maxWidth: Int, init: Int = 0): Table.BiShort =
+  def constrain(text: Text, breaks: Breaks, maxWidth: Int, init: Int = 0): Table.BiShort =
 
     @tailrec
     def recur(pos: Int, space: Int = 0, count: Int = 0, max: Int = 0, lines: Int = 1): Table.BiShort =
       if pos == text.length then Table.BiShort(lines, max.max(count))
       else unsafely(text(pos)) match
-        case ' '  => if count >= maxWidth then recur(pos + 1, 0, 0, max.max(count), lines + 1)
-                     else recur(pos + 1, count, count + 1, max, lines)
-        case '\n' => recur(pos + 1, 0, 0, max.max(count), lines + 1)
-        case ch   => if count >= maxWidth then recur(pos + 1, 0, count - space, max.max(space), lines + 1)
-                     else recur(pos + 1, space, count + 1, max, lines)
+        case ' ' if breaks == Breaks.Space || breaks == Breaks.Zwsp =>
+          if count >= maxWidth then recur(pos + 1, 0, 0, max.max(count), lines + 1)
+          else recur(pos + 1, count, count + 1, max, lines)
+        case '\u200b' if breaks == Breaks.Zwsp =>
+          if count >= maxWidth then recur(pos + 1, 0, 0, max.max(count), lines + 1)
+          else recur(pos + 1, count, count + 1, max, lines)
+        case '\n' =>
+          recur(pos + 1, 0, 0, max.max(count), lines + 1)
+        case ch if breaks == Breaks.Character =>
+          if count >= maxWidth then recur(pos + 1, 0, 0, max.max(count), lines + 1)
+          else recur(pos + 1, count, count + 1, max, lines)
+        case ch =>
+          if count >= maxWidth then recur(pos + 1, 0, count - space, max.max(space), lines + 1)
+          else recur(pos + 1, space, count + 1, max, lines)
  
     recur(init)
 
@@ -66,7 +75,7 @@ case class Table[T](cols: Column[T]*):
     val freeWidth: Int = maxWidth - cols.filter(!_.width.unset).map(_.width.or(0)).sum - style.cost(cols.length)
     
     val cellRefs: Array[Array[BiShort]] = Array.tabulate(data.length + 1, cols.length): (row, col) =>
-      Column.constrain(cells(row)(col).plain, freeWidth)
+      Column.constrain(cells(row)(col).plain, cols(col).breaks, freeWidth)
     
     val widths: Array[Int] = Array.from:
       cols.indices.map: col =>
@@ -91,7 +100,7 @@ case class Table[T](cols: Column[T]*):
         
         cellRefs.indices.foreach: row =>
           if cellRefs(row)(focus).right > target
-          then cellRefs(row)(focus) = Column.constrain(cells(row)(focus).plain, target)
+          then cellRefs(row)(focus) = Column.constrain(cells(row)(focus).plain, cols(focus).breaks, target)
         
         widths(focus) = target
         recur()
@@ -166,13 +175,16 @@ case class Table[T](cols: Column[T]*):
     rule(style.topLeft, style.topSep, style.topRight, style.topBar) #:: rows(0, Array.fill[Int](cols.length)(0))
 
 package tableStyles:
-  given default: TableStyle(1, '│', '│', '│', '┌', '┬', '┐', '└', '┴', '┘', '├', '┼', '┤', '─', '─', '─')
-  given doubled: TableStyle(1, '║', '│', '║', '╔', '╤', '╗', '╚', '╧', '╝', '╟', '┼', '╢', '═', '─', '═')
-  given rounded: TableStyle(1, '│', '│', '│', '╭', '┬', '╮', '╰', '┴', '╯', '├', '┼', '┤', '─', '─', '─')
-  given dotted: TableStyle(1, '┊', '┊', '┊', '┌', '┬', '┐', '└', '┴', '┘', '├', '┼', '┤', '╌', '╌', '╌')
-  given outline: TableStyle(1, '┊', '┊', '┊', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', '╌', '╌', '╌')
-  given ascii: TableStyle(1, '|', '|', '|', '+', '+', '+', '+', '+', '+', '+', '+', '+', '-', '-', '-')
-  given borderless: TableStyle(0, ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ')
+  given default:        TableStyle(1, '│', '│', '│', '┌', '┬', '┐', '└', '┴', '┘', '├', '┼', '┤', '─', '─', '─')
+  given horizontal:     TableStyle(1, ' ', ' ', ' ', ' ', '─', ' ', ' ', '─', ' ', ' ', '─', ' ', '─', '─', '─')
+  given horizontalGaps: TableStyle(1, ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', '─', '─', '─')
+  given horizontalDots: TableStyle(1, ' ', ' ', ' ', ' ', '╌', ' ', ' ', '╌', ' ', ' ', '╌', ' ', '╌', '╌', '╌')
+  given doubled:        TableStyle(1, '║', '│', '║', '╔', '╤', '╗', '╚', '╧', '╝', '╟', '┼', '╢', '═', '─', '═')
+  given rounded:        TableStyle(1, '│', '│', '│', '╭', '┬', '╮', '╰', '┴', '╯', '├', '┼', '┤', '─', '─', '─')
+  given dotted:         TableStyle(1, '┊', '┊', '┊', '┌', '┬', '┐', '└', '┴', '┘', '├', '┼', '┤', '╌', '╌', '╌')
+  given outline:        TableStyle(1, '┊', '┊', '┊', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', '╌', '╌', '╌')
+  given ascii:          TableStyle(1, '|', '|', '|', '+', '+', '+', '+', '+', '+', '+', '+', '+', '-', '-', '-')
+  given borderless:     TableStyle(0, ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ')
 
 case class TableStyle(pad: Int, left: Char, sep: Char, right: Char, topLeft: Char, topSep: Char, topRight: Char,
                           bottomLeft: Char, bottomSep: Char, bottomRight: Char, midLeft: Char, midSep: Char,
