@@ -52,6 +52,25 @@
       "docs": [
         "doc"
       ]
+    },
+    {
+      "name": "Gossamer Tests",
+      "id": "gossamer/test",
+      "links": [
+        "gossamer/core",
+        "probably/cli"
+      ],
+      "sources": [
+        "src/test"
+      ],
+      "version": "0.4.0",
+      "docs": [
+        "doc"
+      ],
+      "xec": {
+        "browsers": [],
+        "start": "gossamer.Tests"
+      }
     }
   ]
 }
