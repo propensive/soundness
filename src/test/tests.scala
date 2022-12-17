@@ -152,7 +152,7 @@ object Tests extends Suite(t"Parasitism tests"):
         .assert(_ == false)
 
         def fibonacci(a: Long)(using Monitor): Long =
-          bail()
+          accede()
           if a < 2 then 1 else fibonacci(a - 1) + fibonacci(a - 2)
         
         test(t"Affirmed calculation without interruption does not cancel it"):

@@ -51,7 +51,7 @@ trait Monitor:
   def continue: Boolean
   def cancel(): Unit
   
-  final def bail(cleanup: => Unit = ()): Unit =
+  final def accede(cleanup: => Unit = ()): Unit =
     import unsafeExceptions.canThrowAny
     if !continue then cleanup.pipe((throw CancelError()).waive)
 
@@ -170,6 +170,6 @@ class Task[T](id: Text, calc: Monitor => T)(using mon: Monitor, threading: Threa
     
   override def toString: String = s"Task(${result.toString})"
 
-def bail(cleanup: => Unit = ())(using mon: Monitor): Unit =
+def accede(cleanup: => Unit = ())(using mon: Monitor): Unit =
   import unsafeExceptions.canThrowAny
-  mon.bail(cleanup)
+  mon.accede(cleanup)
