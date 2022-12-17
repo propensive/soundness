@@ -24,7 +24,6 @@ import parasitism.*
 import turbulence.*
 import escapade.*
 import profanity.*
-import tetromino.*
 import serpentine.*
 import eucalyptus.*
 
@@ -48,7 +47,7 @@ extends Stdout, InputSource:
   def write(msg: Text): Unit = stdout(LazyList(msg.bytes))
   def cleanup(tty: Tty): Unit = ()
   
-  def init()(using Log, Allocator): Tty throws TtyError =
+  def init()(using Log): Tty throws TtyError =
     interactive()
     Tty(System.out.nn, stdin)
 
@@ -74,8 +73,6 @@ trait Daemon()(using Log) extends App:
       then sm.Signal.handle(sm.Signal(signal.shortName.s), _ => signalHandler(signal))
     
     supervise(t"exoskeleton"):
-      given Allocator = allocators.default
-      
       args.to(List) match
         case _ =>
           val script = Sys.exoskeleton.script()
@@ -85,8 +82,8 @@ trait Daemon()(using Log) extends App:
           
           Task(t"dispatcher")(server(script, fifo, pid.toString.toInt, watch))
 
-  def server(script: Text, fifo: Text, serverPid: Int, watchPid: Int, rubrics: Rubric*)
-            (using Allocator, Monitor)
+  def server(script: Text, fifo: Text, serverPid: Int, watchPid: Int)
+            (using Monitor)
             : Unit =
     val socket: DiskPath[Unix] = Unix.parse(fifo)
     socket.file(Expect).javaFile.deleteOnExit()
@@ -153,7 +150,7 @@ trait Daemon()(using Log) extends App:
         case _                => Nil
     .to(Map)
 
-    socket.file(Expect).read[LazyList[Line]](rubrics*).foldLeft(Map[Int, CliClient]()):
+    socket.file(Expect).read[LazyList[Line]]().foldLeft(Map[Int, CliClient]()):
       case (map, line) =>
         line.text.cut(t"\t").to(List) match
           case t"PROCESS" :: As[Int](pid) :: _ =>
