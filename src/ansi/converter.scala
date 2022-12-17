@@ -143,7 +143,7 @@ open class TextConverter():
     case Markdown.Ast.Inline.Break()                => ansi""
     case Markdown.Ast.Inline.Emphasis(children*)    => ansi"$Italic(${text(children)})"
     case Markdown.Ast.Inline.Strong(children*)      => ansi"$Bold(${text(children)})"
-    case Markdown.Ast.Inline.Code(code)             => ansi"${colors.YellowGreen}(${Bg(Srgb(0, 0.1, 0))}($code))"
+    case Markdown.Ast.Inline.SourceCode(code)       => ansi"${colors.YellowGreen}(${Bg(Srgb(0, 0.1, 0))}($code))"
     case Markdown.Ast.Inline.Textual(text)          => ansi"$text"
     case Markdown.Ast.Block.BulletList(_, _, _, _*) => ansi""
     case Markdown.Ast.Block.Reference(_, _)         => ansi""
@@ -161,6 +161,6 @@ open class TextConverter():
     case Markdown.Ast.Inline.Break()                  => ansi"\n"
     case Markdown.Ast.Inline.Emphasis(children*)      => ansi"$Italic(${children.map(phrasing).join})"
     case Markdown.Ast.Inline.Strong(children*)        => ansi"$Bold(${children.map(phrasing).join})"
-    case Markdown.Ast.Inline.Code(code)               => ansi"${colors.YellowGreen}(${Bg(Srgb(0, 0.1, 0))}($code))"
+    case Markdown.Ast.Inline.SourceCode(code)         => ansi"${colors.YellowGreen}(${Bg(Srgb(0, 0.1, 0))}($code))"
     case Markdown.Ast.Inline.Textual(str)             => ansi"${Showable(str.sub(t"\n", t" ")).show}"
     case _                                            => text(Seq(node))

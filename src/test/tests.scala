@@ -85,7 +85,7 @@ object Tests extends Suite(t"Punctuation tests"):
     
     test(t"some code"):
       Markdown.parseInline(t"Here is some `source code`.")
-    .assert(_ == Markdown(Textual(t"Here is some "), Code(t"source code"), Textual(t".")))
+    .assert(_ == Markdown(Textual(t"Here is some "), SourceCode(t"source code"), Textual(t".")))
     
     test(t"a code block"):
       Markdown.parse(t"""```

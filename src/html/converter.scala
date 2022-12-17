@@ -74,7 +74,7 @@ open class HtmlConverter():
     case Markdown.Ast.Block.Heading(level, children*)       => Seq(heading(level, children))
     case Markdown.Ast.Block.Blockquote(children*)           => Seq(Blockquote(convert(children)*))
     case Markdown.Ast.Block.ThematicBreak()                 => Seq(Hr)
-    case Markdown.Ast.Block.FencedCode(syntax, meta, value) => Seq(Pre(Code(escape(value))))
+    case Markdown.Ast.Block.FencedCode(syntax, meta, value) => Seq(Pre(honeycomb.Code(escape(value))))
     case Markdown.Ast.Block.Reference(_, _)                 => Seq()
     case Markdown.Ast.Block.BulletList(num, _, _, items*)   => Seq((if num.isEmpty then Ul else Ol)(
                                                                    items.flatMap(listItem)*))
@@ -108,7 +108,7 @@ open class HtmlConverter():
     case Markdown.Ast.Block.ThematicBreak()         => t""
     case Markdown.Ast.Inline.Emphasis(children*)    => text(children)
     case Markdown.Ast.Inline.Strong(children*)      => text(children)
-    case Markdown.Ast.Inline.Code(code)             => code
+    case Markdown.Ast.Inline.SourceCode(code)       => code
     case Markdown.Ast.Block.Paragraph(children*)    => text(children)
     case Markdown.Ast.Block.Heading(_, children*)   => text(children)
     case Markdown.Ast.Block.Blockquote(children*)   => text(children)
@@ -122,7 +122,7 @@ open class HtmlConverter():
     case Markdown.Ast.Inline.Break()                  => List(Br)
     case Markdown.Ast.Inline.Emphasis(children*)      => List(Em(children.flatMap(phrasing)))
     case Markdown.Ast.Inline.Strong(children*)        => List(Strong(children.flatMap(phrasing)))
-    case Markdown.Ast.Inline.Code(code)               => List(Code(code))
+    case Markdown.Ast.Inline.SourceCode(code)         => List(honeycomb.Code(code))
     case Markdown.Ast.Inline.Textual(str)             => List(escape(str))
     case _                                            => Nil
 
