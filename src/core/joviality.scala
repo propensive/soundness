@@ -19,7 +19,6 @@ package joviality
 import rudiments.*
 import gossamer.*
 import turbulence.*
-import tetromino.*
 import serpentine.*
 import eucalyptus.*
 import anticipation.*
@@ -64,6 +63,13 @@ enum Creation:
   case Expect, Create, Ensure
 
 export Creation.{Expect, Create, Ensure}
+
+extension [Fs <: Filesystem](inodes: Seq[Inode[Fs]])
+  transparent inline def files: Seq[File[Fs]] = inodes.collect:
+    case file: File[Fs] => file
+  
+  transparent inline def directories: Seq[Directory[Fs]] = inodes.collect:
+    case dir: Directory[Fs] => dir
 
 sealed trait Inode[+Fs <: Filesystem](val path: DiskPath[Fs]):
   type PathType = path.root.PathType
@@ -126,10 +132,10 @@ object File:
       catch case e => throw IoError(IoError.Op.Write, IoError.Reason.AccessDenied, value.path)
       finally try out.close() catch _ => ()
   
-  given [Fs <: Filesystem](using Allocator): Source[File[Fs]] with
+  given [Fs <: Filesystem]: Source[File[Fs]] with
     type E = IoError
-    def read(file: File[Fs], rubrics: Rubric*): DataStream throws IoError =
-      try Util.readInputStream(ji.FileInputStream(file.javaFile), rubrics*)
+    def read(file: File[Fs]): DataStream throws IoError =
+      try Util.readInputStream(ji.FileInputStream(file.javaFile))
       catch case e: ji.FileNotFoundException =>
         if e.getMessage.nn.contains("(Permission denied)")
         then throw IoError(IoError.Op.Read, IoError.Reason.AccessDenied, file.path)
@@ -144,9 +150,9 @@ case class File[+Fs <: Filesystem](filePath: DiskPath[Fs]) extends Inode[Fs](fil
     try javaFile.delete()
     catch e => throw IoError(IoError.Op.Delete, IoError.Reason.AccessDenied, path)
   
-  def read[T](rubrics: Rubric*)(using readable: Readable[T], alloc: Allocator)
+  def read[T]()(using readable: Readable[T])
       : T throws IoError | StreamCutError | readable.E =
-    val stream = Util.readInputStream(ji.FileInputStream(javaFile), rubrics*)
+    val stream = Util.readInputStream(ji.FileInputStream(javaFile))
     try readable.read(stream) catch
       case err: java.io.FileNotFoundException =>
         throw IoError(IoError.Op.Read, IoError.Reason.AccessDenied, path)
@@ -569,11 +575,11 @@ object ClasspathResource:
   given Show[ClasspathResource] = cr => t"[resource]"
 
 case class ClasspathResource(path: ClasspathRef[Classpath]) extends Shown[ClasspathResource]:
-  def read[T](rubrics: Rubric*)(using readable: Readable[T], alloc: Allocator)
+  def read[T]()(using readable: Readable[T])
           : T throws ClasspathRefError | StreamCutError | readable.E =
     val resource = path.root.classLoader.getResourceAsStream(path.fullname.drop(1).s)
     if resource == null then throw ClasspathRefError(path.classpath)(path)
-    val stream = Util.readInputStream(resource.nn, rubrics*)
+    val stream = Util.readInputStream(resource.nn)
     readable.read(stream)
   
   def name: Text = path.parts.lastOption.getOrElse(path.classpath.prefix)
