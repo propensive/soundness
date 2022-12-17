@@ -29,6 +29,7 @@ case class Node(data: Maybe[Data] = Unset, meta: Maybe[Meta] = Unset) extends Dy
   def paramValue: Maybe[Text] = if children.isEmpty then key else Unset
   def structValue: Maybe[Text] = if children.size == 1 then children.head.paramValue else Unset
   def fieldValue: Maybe[Text] = paramValue.or(structValue)
+  def promote(n: Int) = copy(data = data.mm(_.promote(n)))
 
   def apply(key: Text): List[Data] = data.fm(List[Node]())(_(key)).map(_.data).sift[Data]
 
@@ -133,6 +134,8 @@ extends Indexed:
     case Some(Schema.Entry(name: Text, schema)) =>
       index(name).mm(_.headOption.maybe).mm(children(_).fieldValue)
     case _ => key
+
+  def promote(n: Int): Data = copy(layout = layout.copy(params = n))
 
   def has(key: Text): Boolean = index.contains(key) || paramIndex.contains(key)
   override def toString(): String = s"[${children.mkString(" ")}]"

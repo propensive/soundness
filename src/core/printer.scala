@@ -36,7 +36,7 @@ object Printer:
               case Struct(_, _) =>
                 val ps = if layout.multiline then children.take(layout.params - 1) else children.take(layout.params)
                 ps.foreach:
-                  case Node(Data(key, _, _, _), _) =>
+                  case Node(Data(_, IArray(Node(Data(key, _, _, _), _)), _, _), _) =>
                     out.write(' ')
                     out.write(key.s)
                   case _ =>
