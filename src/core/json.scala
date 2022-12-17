@@ -19,7 +19,6 @@ package euphemism
 import wisteria.*
 import rudiments.*
 import turbulence.*
-import tetromino.*
 import gossamer.*
 import anticipation.*
 
@@ -76,7 +75,7 @@ object Json extends Dynamic:
 
   given (using readable: Readable[Text]): Readable[Json] with
     type E = JsonParseError | readable.E
-    def read(stream: DataStream, rubrics: Rubric*): Json throws StreamCutError | E =
+    def read(stream: DataStream): Json throws StreamCutError | E =
       Json.parse(readable.read(stream))
 
   object Writer extends Derivation[Writer]:
