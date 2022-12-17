@@ -80,14 +80,13 @@ extends Node[Name], Dynamic:
   def children: Seq[Html[?]] = Nil
   def label: Text = labelString.show
 
-  inline def applyDynamicNamed(method: "apply")
-                              (inline attributes: (Atts, Any)*): StartTag[Name, Children] =
-    ${HoneycombMacros.read[Name, Children, Children]('labelString, 'unclosed, 'inline, 'verbatim,
-        'attributes)}
+  inline def applyDynamicNamed(method: "apply")(inline attributes: (Atts, Any)*): StartTag[Name, Children] =
+    ${HoneycombMacros.read[Name, Children, Children]('labelString, 'unclosed, 'inline, 'verbatim, 'attributes)}
 
   def applyDynamic[Return <: Label]
                   (method: "apply")
-                  (children: (Html[Return] | Seq[Html[Return]])*): Element[Return] =
+                  (children: (Html[Return] | Seq[Html[Return]])*)
+                  : Element[Return] =
     Element(labelString, unclosed, inline, verbatim, Map(), children)
 
 case class Element[+Name <: Label](labelString: String, unclosed: Boolean, tagInline: Boolean,
