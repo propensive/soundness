@@ -1,10 +1,6 @@
 {
   "repos": [
     {
-      "base": "../tetromino",
-      "url": "https://github.com/propensive/tetromino"
-    },
-    {
       "base": "../parasitism",
       "url": "https://github.com/propensive/parasitism"
     },
@@ -14,7 +10,6 @@
     }
   ],
   "imports": [
-    "../tetromino/build.irk",
     "../probably/build.irk",
     "../parasitism/build.irk"
   ],
@@ -41,8 +36,7 @@
       "name": "Turbulence",
       "id": "turbulence/core",
       "links": [
-        "parasitism/core",
-        "tetromino/core"
+        "parasitism/core"
       ],
       "sources": [
         "src/core"
