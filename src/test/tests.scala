@@ -134,7 +134,7 @@ object Tests extends Suite(t"Guillotine tests"):
         sh"""ls \' """
       .assert(_ == Command(t"ls", t"'"))
 
-    suite(t"rendering DebugString")
+    suite(t"rendering Debug")
       test(t"simple command"):
         sh"echo Hello World".debug
       .check(_ == t"""sh"echo Hello World"""")

@@ -18,7 +18,6 @@ package guillotine
 
 import contextual.*
 import rudiments.*
-import tetromino.*
 import turbulence.*
 import gossamer.*
 import eucalyptus.*
@@ -44,7 +43,7 @@ object Executor:
   
   given text: Executor[Text] = stream.map(_.foldLeft(t"") { (acc, line) => t"$acc\n$line" }.trim)
 
-  given dataStream(using Allocator): Executor[DataStream] = proc =>
+  given dataStream: Executor[DataStream] = proc =>
     Util.readInputStream(proc.getInputStream.nn)
   
   given exitStatus: Executor[ExitStatus] = _.waitFor() match
@@ -59,13 +58,13 @@ trait Executor[T]:
 
 class Process[T](process: java.lang.Process, executor: Executor[T]):
   def pid: Pid = Pid(process.pid)
-  def stdout(rubrics: Rubric*)(using Allocator): DataStream =
-    Util.readInputStream(process.getInputStream.nn, rubrics*)
+  def stdout(): DataStream =
+    Util.readInputStream(process.getInputStream.nn)
   
-  def stderr(rubrics: Rubric*)(using Allocator): DataStream =
-    Util.readInputStream(process.getErrorStream.nn, rubrics*)
+  def stderr(): DataStream =
+    Util.readInputStream(process.getErrorStream.nn)
   
-  def stdin(in: DataStream)(using Allocator): Unit throws StreamCutError = Util.write(in, process.getOutputStream.nn)
+  def stdin(in: DataStream): Unit throws StreamCutError = Util.write(in, process.getOutputStream.nn)
   def await(): T = executor.interpret(process)
   
   def exitStatus(): ExitStatus = process.waitFor() match
@@ -111,7 +110,7 @@ object Command:
       else arg
     .join(t" ")
 
-  given DebugString[Command] = cmd =>
+  given Debug[Command] = cmd =>
     val cmdString: Text = formattedArgs(cmd.args)
     if cmdString.contains(t"\"") then t"sh\"\"\"$cmdString\"\"\"" else t"sh\"$cmdString\""
 
@@ -129,7 +128,7 @@ case class Command(args: Text*) extends Executable:
     new Process[T](processBuilder.start().nn, summon[Executor[T]])
 
 object Pipeline:
-  given DebugString[Pipeline] = _.cmds.map(summon[DebugString[Command]].show(_)).join(t" | ")
+  given Debug[Pipeline] = _.cmds.map(summon[Debug[Command]].show(_)).join(t" | ")
   
   given AnsiShow[Pipeline] =
     _.cmds.map(summon[AnsiShow[Command]].ansiShow(_)).join(ansi" ${colors.PowderBlue}(|) ")
