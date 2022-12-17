@@ -20,7 +20,6 @@ import rudiments.*
 import turbulence.*
 import contextual.*
 import wisteria.*
-import tetromino.*
 
 import language.experimental.captureChecking
 
@@ -322,7 +321,7 @@ object Line:
   given lineReader(using enc: Encoding): Readable[LazyList[Line]] with
     type E = StreamCutError
 
-    def read(stream: DataStream, rubric: Rubric*): LazyList[Line] throws StreamCutError | E =
+    def read(stream: DataStream): LazyList[Line] throws StreamCutError | E =
       def recur(stream: LazyList[Text], carry: Text = Text("")): LazyList[Line] =
         if stream.isEmpty then
           if carry.empty then LazyList() else LazyList(Line(carry))
@@ -338,7 +337,7 @@ object Line:
       
       recur(summon[Readable[LazyList[Text]]].read(stream))
       
-object stdouts:
+package stdouts:
   given stdout: Stdout = txt =>
     try summon[Appendable[SystemOut.type]].write(SystemOut, LazyList(txt.bytes))
     catch case err: Exception => ()
