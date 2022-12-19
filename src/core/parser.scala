@@ -8,85 +8,97 @@ import scala.collection.mutable.{HashMap, ListBuffer, ArrayBuffer}
 
 import stdouts.stdout
 
-type JsonNum = Long | Double | BigDecimal | BigInt
-type RawJson = JsonNum | String | (IArray[String], IArray[Any]) | IArray[Any] | Boolean | Null
+type JsonNum = Long | Double | BigDecimal
+type RawJson = Long | Double | BigDecimal | String | (IArray[String], IArray[Any]) | IArray[Any] | Boolean | Null
 
 object AsciiByte:
-  inline final val OpenBracket: 91 = 91 // '['
-  inline final val CloseBracket: 93 = 93 // ']'
-  inline final val OpenBrace: 123 = 123 // '{'
-  inline final val CloseBrace: 125 = 125 // '}'
-  inline final val Comma: 44 = 44 // ','
-  inline final val Colon: 58 = 58 // ':'
-  inline final val Quote: 34 = 34 // '"'
-  inline final val Minus: 45 = 45 // '-'
-  inline final val Plus: 43 = 43 // '+'
-  inline final val Slash: 47 = 47 // '/'
-  inline final val Period: 46 = 46 // '.'
-  inline final val Backslash: 92 = 92 // '\\'
-  inline final val Num0: 48 = 48 //'0'
-  inline final val Num1: 49 = 49 //'1'
-  inline final val Num2: 50 = 50 //'2'
-  inline final val Num3: 51 = 51 //'3'
-  inline final val Num4: 52 = 52 //'4'
-  inline final val Num5: 53 = 53 //'5'
-  inline final val Num6: 54 = 54 //'6'
-  inline final val Num7: 55 = 55 //'7'
-  inline final val Num8: 56 = 56 //'8'
-  inline final val Num9: 57 = 57 //'9'
-  inline final val LowerA: 97 = 97 // 'a'
-  inline final val LowerB: 98 = 98 // 'b'
-  inline final val LowerC: 99 = 99 // 'c'
-  inline final val LowerD: 100 = 100 // 'd'
-  inline final val LowerE: 101 = 101 // 'e'
-  inline final val LowerF: 102 = 102 // 'f'
-  inline final val LowerL: 108 = 108 // 'l'
-  inline final val LowerN: 110 = 110 // 'n'
-  inline final val LowerR: 114 = 114 // 'r'
-  inline final val LowerS: 115 = 115 // 's'
-  inline final val LowerT: 116 = 116 // 't'
-  inline final val LowerU: 117 = 117 // 'u'
-  inline final val UpperA: 65 = 65 // 'A'
-  inline final val UpperB: 66 = 66 // 'B'
-  inline final val UpperC: 67 = 67 // 'C'
-  inline final val UpperD: 68 = 68 // 'D'
-  inline final val UpperE: 69 = 69 // 'E'
-  inline final val UpperF: 70 = 70 // 'F'
-  inline final val Tab: 9 = 9 // '\t'
-  inline final val Space: 32 = 32 // ' '
-  inline final val Newline: 10 = 10 // '\n'
-  inline final val Return: 13 = 13 // '\r'
+  inline final val Tab:          9   = 9   // '\t'
+  inline final val Newline:      10  = 10  // '\n'
+  inline final val Return:       13  = 13  // '\r'
+  inline final val Space:        32  = 32  // ' '
+  inline final val Comma:        44  = 44  // ','
+  inline final val Quote:        34  = 34  // '"'
+  inline final val Minus:        45  = 45  // '-'
+  inline final val Plus:         43  = 43  // '+'
+  inline final val Slash:        47  = 47  // '/'
+  inline final val Period:       46  = 46  // '.'
+  inline final val Num0:         48  = 48  //'0'
+  inline final val Num1:         49  = 49  //'1'
+  inline final val Num2:         50  = 50  //'2'
+  inline final val Num3:         51  = 51  //'3'
+  inline final val Num4:         52  = 52  //'4'
+  inline final val Num5:         53  = 53  //'5'
+  inline final val Num6:         54  = 54  //'6'
+  inline final val Num7:         55  = 55  //'7'
+  inline final val Num8:         56  = 56  //'8'
+  inline final val Num9:         57  = 57  //'9'
+  inline final val Colon:        58  = 58  // ':'
+  inline final val UpperA:       65  = 65  // 'A'
+  inline final val UpperB:       66  = 66  // 'B'
+  inline final val UpperC:       67  = 67  // 'C'
+  inline final val UpperD:       68  = 68  // 'D'
+  inline final val UpperE:       69  = 69  // 'E'
+  inline final val UpperF:       70  = 70  // 'F'
+  inline final val OpenBracket:  91  = 91  // '['
+  inline final val CloseBracket: 93  = 93  // ']'
+  inline final val Backslash:    92  = 92  // '\\'
+  inline final val LowerA:       97  = 97  // 'a'
+  inline final val LowerB:       98  = 98  // 'b'
+  inline final val LowerC:       99  = 99  // 'c'
+  inline final val LowerD:       100 = 100 // 'd'
+  inline final val LowerE:       101 = 101 // 'e'
+  inline final val LowerF:       102 = 102 // 'f'
+  inline final val LowerL:       108 = 108 // 'l'
+  inline final val LowerN:       110 = 110 // 'n'
+  inline final val LowerR:       114 = 114 // 'r'
+  inline final val LowerS:       115 = 115 // 's'
+  inline final val LowerT:       116 = 116 // 't'
+  inline final val LowerU:       117 = 117 // 'u'
+  inline final val OpenBrace:    123 = 123 // '{'
+  inline final val CloseBrace:   125 = 125 // '}'
 
 import AsciiByte.*
-
-// object Flag:
-//   final inline val DecimalPoint = 1 << 0
-//   final inline val Exponent = 1 << 1
-//   final inline val Negative = 1 << 2
-//   final inline val NegativeExponent = 1 << 3
-//   final inline val LeadingZero = 1 << 4
-//   final inline val Large = 1 << 5
 
 object JsonParseError:
   enum Issue:
     case EmptyInput
-    case UnexpectedChar(found: Byte)
-    case ExpectedValue(json: RawJson)
-    case ExpectedSomeValue(char: Byte)
-    case ExpectedColon(found: Byte)
-    case ExpectedEnd(found: Byte)
+    case UnexpectedChar(found: Char)
+    case ExpectedTrue
+    case ExpectedFalse
+    case ExpectedNull
+    case ExpectedSomeValue(char: Char)
+    case ExpectedColon(found: Char)
     case InvalidWhitespace
-    case ExpectedString(found: Byte)
-    case NumberStartsWithDecimalPoint
-    case ExpectedHexDigit(found: Byte)
+    case ExpectedString(found: Char)
+    case ExpectedHexDigit(found: Char)
     case PrematureEnd
     case NumberHasLeadingZero
-    case SpuriousContent(found: Byte)
+    case SpuriousContent(found: Char)
     case LeadingDecimalPoint
-    case NotEscaped(char: Byte)
-    case IncorrectEscape(char: Byte)
+    case NotEscaped(char: Char)
+    case IncorrectEscape(char: Char)
     case MultipleDecimalPoints
-    case ExpectedDigit(found: Byte)
+    case ExpectedDigit(found: Char)
+  
+  given Show[Issue] =
+    case Issue.EmptyInput              => t"the input was empty"
+    case Issue.UnexpectedChar(found)   => t"the character $found was not expected"
+    case Issue.ExpectedTrue            => t"true was expected"
+    case Issue.ExpectedFalse           => t"false was expected"
+    case Issue.ExpectedNull            => t"null was expected"
+    case Issue.ExpectedSomeValue(char) => t"a value was expected but instead found $char"
+    case Issue.ExpectedColon(found)    => t"a colon was expected but instead found $found"
+    case Issue.InvalidWhitespace       => t"invalid whitespace was found"
+    case Issue.ExpectedString(found)   => t"expected a string but instead found $found"
+    case Issue.ExpectedHexDigit(found) => t"expected a hexadecimal digit"
+    case Issue.PrematureEnd            => t"the stream was ended prematurely"
+    case Issue.NumberHasLeadingZero    => t"a number cannot start with a zero except when followed by a decimal point"
+    case Issue.SpuriousContent(found)  => t"$found was found after the full JSON value was read"
+    case Issue.LeadingDecimalPoint     => t"a number cannot start with a decimal point"
+    case Issue.NotEscaped(char)        => t"the character $char must be escaped with a backslash"
+    case Issue.IncorrectEscape(char)   => t"the character $char was escaped with a backslash unnecessarily"
+    case Issue.MultipleDecimalPoints   => t"the number cannot contain more than one decimal point"
+    case Issue.ExpectedDigit(found)    => t"expected a digit but instead found $found"
 
 import JsonParseError.Issue
 
@@ -173,7 +185,7 @@ object Json:
       if (ch & -8.toByte) == Num0 || (ch & -2.toByte) == 56 then
         next()
         parseNumber(ch & 15, minus)
-      else if minus then abort(Issue.ExpectedDigit(ch))
+      else if minus then abort(Issue.ExpectedDigit(ch.toChar))
       else (current: @switch) match
         case Quote       => next(); parseString()
         case Minus       => next(); parseValue(true)
@@ -182,7 +194,7 @@ object Json:
         case LowerN      => next(); parseNull()
         case LowerT      => next(); parseTrue()
         case OpenBrace   => next(); parseObject()
-        case ch          => abort(Issue.ExpectedSomeValue(ch))
+        case ch          => abort(Issue.ExpectedSomeValue(ch.toChar))
 
     def parseObject(): (IArray[String], IArray[Any]) =
       val keys: ArrayBuffer[String] = getStringArrayBuffer()
@@ -212,13 +224,13 @@ object Json:
                     keys += str
                     values += value
                     continue = false
-                  case ch  => abort(Issue.UnexpectedChar(ch))
-              case ch => abort(Issue.ExpectedColon(ch))
+                  case ch  => abort(Issue.UnexpectedChar(ch.toChar))
+              case ch => abort(Issue.ExpectedColon(ch.toChar))
           case CloseBrace =>
             if !keys.isEmpty then abort(Issue.ExpectedSomeValue('}'))
             next()
             continue = false
-          case ch => abort(Issue.ExpectedString(ch))
+          case ch => abort(Issue.ExpectedString(ch.toChar))
       
       val result = (keys.toArray.immutable(using Unsafe), values.toArray.immutable(using Unsafe))
       relinquishStringArrayBuffer()
@@ -240,7 +252,7 @@ object Json:
             current match
               case Comma        => arrayItems += value
               case CloseBracket => arrayItems += value; continue = false
-              case ch           => abort(Issue.ExpectedEnd(ch))
+              case ch           => abort(Issue.ExpectedSomeValue(ch.toChar))
         
         next()
       
@@ -310,12 +322,12 @@ object Json:
               case LowerR    => appendChar('\r')
               case LowerT    => appendChar('\t')
               case LowerU    => appendChar(parseUnicode())
-              case ch        => abort(Issue.IncorrectEscape(ch))
+              case ch        => abort(Issue.IncorrectEscape(ch.toChar))
             next()
 
           case ch =>
             ((ch >> 5): @switch) match
-              case 0 => abort(Issue.NotEscaped(ch))
+              case 0 => abort(Issue.NotEscaped(ch.toChar))
               case 1 | 2 | 3 | 4 | 5 => appendChar(ch.toChar)
               case _ =>
                 if (ch & 224) == 192 then
@@ -343,7 +355,7 @@ object Json:
       if ch <= Num9 && ch >= Num0 then ch - Num0
       else if ch <= UpperF && ch >= UpperA then ch - UpperA
       else if ch <= LowerF && ch >= LowerA then ch - LowerA
-      else abort(Issue.ExpectedHexDigit(ch))
+      else abort(Issue.ExpectedHexDigit(ch.toChar))
 
     def parseFalse(): false =
       var x: Long = current << 8
@@ -352,7 +364,7 @@ object Json:
       x |= getNext()
       x <<= 8
       x |= getNext()
-      if x != 1634497381L then abort(Issue.ExpectedValue(false))
+      if x != 1634497381L then abort(Issue.ExpectedFalse)
       next()
       false
     
@@ -361,7 +373,7 @@ object Json:
       x |= getNext()
       x <<= 8
       x |= getNext()
-      if x != 7501157L then abort(Issue.ExpectedValue(true))
+      if x != 7501157L then abort(Issue.ExpectedTrue)
       next()
       true
     
@@ -370,7 +382,7 @@ object Json:
       x |= getNext()
       x <<= 8
       x |= getNext()
-      if x != 7695468L then abort(Issue.ExpectedValue(null))
+      if x != 7695468L then abort(Issue.ExpectedNull)
       next()
       null
 
@@ -409,7 +421,7 @@ object Json:
               next()
               ch = current
               if ch <= Num9 && ch >= Num0 then digit(decimalPosition != 0, ch)
-              else abort(Issue.ExpectedDigit(ch))
+              else abort(Issue.ExpectedDigit(ch.toChar))
               
               while
                 ch = current
@@ -437,7 +449,7 @@ object Json:
                 
                 case _ =>
                   ()
-              if ch <= Num9 && ch >= Num0 then exponent = (ch & 15) else abort(Issue.ExpectedDigit(ch))
+              if ch <= Num9 && ch >= Num0 then exponent = (ch & 15) else abort(Issue.ExpectedDigit(ch.toChar))
               if minus then exponent *= -1
               next()
               while
@@ -460,7 +472,7 @@ object Json:
               continue = false
             
             case ch =>
-              abort(Issue.UnexpectedChar(ch))
+              abort(Issue.UnexpectedChar(ch.toChar))
           end if
         end while
         number
@@ -512,17 +524,13 @@ object Json:
           
           case Tab | Return | Newline | Space | Comma | CloseBracket | CloseBrace =>
             number = 
-              try
-                val number = Text(numberText.toString)
-                numberText.setLength(0)
-                BigDecimal(number.s)
-              catch
-                case err: NumberFormatException => throw err
+              try BigDecimal(numberText.toCharArray).tap(numberText.setLength(0).waive)
+              catch case err: NumberFormatException => throw err
             
             continue = false
           
           case ch =>
-            abort(Issue.UnexpectedChar(ch))
+            abort(Issue.UnexpectedChar(ch.toChar))
     
     skip()
     val result = parseValue()
@@ -531,7 +539,7 @@ object Json:
       (current: @switch) match
         case Tab | Newline | Return | Space => ()
         case other =>
-          abort(Issue.SpuriousContent(other))
+          abort(Issue.SpuriousContent(other.toChar))
       
       next()
 
