@@ -22,11 +22,11 @@ import probably.*
 import parasitism.*, threading.platform
 import rudiments.*
 import scala.util.*
-import org.typelevel.jawn.ast.*
 
 import unsafeExceptions.canThrowAny
 
 import logging.silent
+import jsonSerializers.minimal
 
 case class Foo(x: Int, y: Text) derives CanEqual
 

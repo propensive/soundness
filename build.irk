@@ -5,11 +5,16 @@
       "url": "https://github.com/propensive/probably"
     },
     {
+      "base": "../merino",
+      "url": "https://github.com/propensive/merino"
+    },
+    {
       "base": "../anticipation",
       "url": "https://github.com/propensive/anticipation"
     }
   ],
   "imports": [
+    "../merino/build.irk",
     "../probably/build.irk",
     "../anticipation/build.irk"
   ],
@@ -19,16 +24,12 @@
       "id": "euphemism/core",
       "links": [
         "gossamer/core",
-        "anticipation/http"
+        "anticipation/http",
+        "merino/core"
       ],
       "dependencies": [
-        "org.typelevel:jawn-parser_3:1.2.0",
-        "org.typelevel:jawn-ast_3:1.2.0"
       ],
       "jars": [
-        "https://repo1.maven.org/maven2/org/typelevel/jawn-parser_3/1.2.0/jawn-parser_3-1.2.0.jar",
-        "https://repo1.maven.org/maven2/org/typelevel/jawn-ast_3/1.2.0/jawn-ast_3-1.2.0.jar",
-        "https://repo1.maven.org/maven2/org/typelevel/jawn-util_3/1.2.0/jawn-util_3-1.2.0.jar"
       ],
       "sources": [
         "src/core"
@@ -46,19 +47,14 @@
         "euphemism/core"
       ],
       "dependencies": [
-        "org.typelevel:jawn-parser_3:1.2.0",
-        "org.typelevel:jawn-ast_3:1.2.0"
       ],
       "jars": [
-        "https://repo1.maven.org/maven2/org/typelevel/jawn-parser_3/1.2.0/jawn-parser_3-1.2.0.jar",
-        "https://repo1.maven.org/maven2/org/typelevel/jawn-ast_3/1.2.0/jawn-ast_3-1.2.0.jar",
-        "https://repo1.maven.org/maven2/org/typelevel/jawn-util_3/1.2.0/jawn-util_3-1.2.0.jar"
       ],
       "sources": [
         "src/test"
       ],
       "version": "0.4.0",
-      "xec": {
+      "exec": {
         "browsers": [],
 	"start": "euphemism.Tests"
       },

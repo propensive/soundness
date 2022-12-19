@@ -13,13 +13,11 @@
     either express or implied. See the License for the specific language governing permissions
     and limitations under the License.
 */
-
+/*
 package euphemism
 
 import rudiments.*
 import gossamer.*
-
-import org.typelevel.jawn.*, ast.*
 
 import scala.quoted.*
 import scala.collection.mutable as scm
@@ -110,3 +108,4 @@ object EuphemismMacro:
       }
 
       case _ => throw Mistake("the case '[errorUnion] should be irrefutable")
+*/
