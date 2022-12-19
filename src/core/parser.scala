@@ -3,122 +3,191 @@ package merino
 import annotation.*
 import gossamer.*
 import rudiments.*
-import scala.collection.mutable.{HashMap, ListBuffer}
+import turbulence.*
+import scala.collection.mutable.{HashMap, ListBuffer, ArrayBuffer}
 
 import stdouts.stdout
 
-enum Json:
-  case Number(value: Long | BigDecimal | Double)
-  case JString(value: String)
-  case JObject(values: Map[String, Json])
-  case JArray(values: List[Json])
-  case True
-  case False
-  case Null
 
-  override def toString(): String = this match
-    case Number(value)   => value.toString
-    case JString(value)  => t"\"${value}\"".s
-    case JObject(values) => values.map { (k, v) => t"\"$k\": $v" }.join(t"{ ", t", ", t" }").s
-    case JArray(values) => values.map(_.show).join(t"[ ", t", ", t" ]").s
-    case True            => "true"
-    case False           => "false"
-    case Null            => "null"
+type JsonNum = Long | Double | BigDecimal | BigInt
+type RawJson = JsonNum | String | (IArray[String], IArray[Any]) | IArray[Any] | Boolean | Null
 
 object AsciiByte:
-  final val OpenBracket = '['.toByte
-  final val CloseBracket = ']'.toByte
-  final val OpenBrace = '{'.toByte
-  final val CloseBrace = '}'.toByte
-  final val Comma = ','.toByte
-  final val Colon = ':'.toByte
-  final val Quote = '"'.toByte
-  final val Minus = '-'.toByte
-  final val Plus = '+'.toByte
-  final val Slash = '/'.toByte
-  final val Period = '.'.toByte
-  final val Backslash = '\\'.toByte
-  final val Num0 = '0'.toByte
-  final val Num1 = '1'.toByte
-  final val Num2 = '2'.toByte
-  final val Num3 = '3'.toByte
-  final val Num4 = '4'.toByte
-  final val Num5 = '5'.toByte
-  final val Num6 = '6'.toByte
-  final val Num7 = '7'.toByte
-  final val Num8 = '8'.toByte
-  final val Num9 = '9'.toByte
-  final val LowerA = 'a'.toByte
-  final val LowerB = 'b'.toByte
-  final val LowerC = 'c'.toByte
-  final val LowerD = 'd'.toByte
-  final val LowerE = 'e'.toByte
-  final val LowerF = 'f'.toByte
-  final val LowerN = 'n'.toByte
-  final val LowerL = 'l'.toByte
-  final val LowerR = 'r'.toByte
-  final val LowerS = 's'.toByte
-  final val LowerT = 't'.toByte
-  final val LowerU = 'u'.toByte
-  final val UpperA = 'A'.toByte
-  final val UpperB = 'B'.toByte
-  final val UpperC = 'C'.toByte
-  final val UpperD = 'D'.toByte
-  final val UpperE = 'E'.toByte
-  final val UpperF = 'F'.toByte
-  final val Tab = '\t'.toByte
-  final val Space = ' '.toByte
-  final val Newline = '\n'.toByte
-  final val Return = '\r'.toByte
+  inline final val OpenBracket: 91 = 91 // '['
+  inline final val CloseBracket: 93 = 93 // ']'
+  inline final val OpenBrace: 123 = 123 // '{'
+  inline final val CloseBrace: 125 = 125 // '}'
+  inline final val Comma: 44 = 44 // ','
+  inline final val Colon: 58 = 58 // ':'
+  inline final val Quote: 34 = 34 // '"'
+  inline final val Minus: 45 = 45 // '-'
+  inline final val Plus: 43 = 43 // '+'
+  inline final val Slash: 47 = 47 // '/'
+  inline final val Period: 46 = 46 // '.'
+  inline final val Backslash: 92 = 92 // '\\'
+  inline final val Num0: 48 = 48 //'0'
+  inline final val Num1: 49 = 49 //'1'
+  inline final val Num2: 50 = 50 //'2'
+  inline final val Num3: 51 = 51 //'3'
+  inline final val Num4: 52 = 52 //'4'
+  inline final val Num5: 53 = 53 //'5'
+  inline final val Num6: 54 = 54 //'6'
+  inline final val Num7: 55 = 55 //'7'
+  inline final val Num8: 56 = 56 //'8'
+  inline final val Num9: 57 = 57 //'9'
+  inline final val LowerA: 97 = 97 // 'a'
+  inline final val LowerB: 98 = 98 // 'b'
+  inline final val LowerC: 99 = 99 // 'c'
+  inline final val LowerD: 100 = 100 // 'd'
+  inline final val LowerE: 101 = 101 // 'e'
+  inline final val LowerF: 102 = 102 // 'f'
+  inline final val LowerL: 108 = 108 // 'l'
+  inline final val LowerN: 110 = 110 // 'n'
+  inline final val LowerR: 114 = 114 // 'r'
+  inline final val LowerS: 115 = 115 // 's'
+  inline final val LowerT: 116 = 116 // 't'
+  inline final val LowerU: 117 = 117 // 'u'
+  inline final val UpperA: 65 = 65 // 'A'
+  inline final val UpperB: 66 = 66 // 'B'
+  inline final val UpperC: 67 = 67 // 'C'
+  inline final val UpperD: 68 = 68 // 'D'
+  inline final val UpperE: 69 = 69 // 'E'
+  inline final val UpperF: 70 = 70 // 'F'
+  inline final val Tab: 9 = 9 // '\t'
+  inline final val Space: 32 = 32 // ' '
+  inline final val Newline: 10 = 10 // '\n'
+  inline final val Return: 13 = 13 // '\r'
+
 import AsciiByte.*
 
-object Flag:
-  final val DecimalPoint = 1 << 0
-  final val Exponent = 1 << 1
-  final val Negative = 1 << 2
-  final val NegativeExponent = 1 << 3
-  final val LeadingZero = 1 << 4
-  final val Large = 1 << 5
-  final val Tail = 1 << 6
-  final val Interminible = 1 << 7
+// object Flag:
+//   final inline val DecimalPoint = 1 << 0
+//   final inline val Exponent = 1 << 1
+//   final inline val Negative = 1 << 2
+//   final inline val NegativeExponent = 1 << 3
+//   final inline val LeadingZero = 1 << 4
+//   final inline val Large = 1 << 5
 
-case class JsonParseError(pos: Int, message: Text) extends Exception(message.s)
+object JsonParseError:
+  enum Issue:
+    case EmptyInput
+    case UnexpectedChar(found: Byte)
+    case ExpectedValue(json: RawJson)
+    case ExpectedSomeValue(char: Byte)
+    case ExpectedColon(found: Byte)
+    case ExpectedEnd(found: Byte)
+    case InvalidWhitespace
+    case ExpectedString(found: Byte)
+    case NumberStartsWithDecimalPoint
+    case ExpectedHexDigit(found: Byte)
+    case PrematureEnd
+    case NumberHasLeadingZero
+    case SpuriousContent(found: Byte)
+    case LeadingDecimalPoint
+    case NotEscaped(char: Byte)
+    case IncorrectEscape(char: Byte)
+    case MultipleDecimalPoints
+    case ExpectedDigit(found: Byte)
+
+import JsonParseError.Issue
+
+case class JsonParseError(pos: Int, issue: Issue) extends Error(err"Could not parse JSON because $issue at $pos")
+
+case class Json(value: RawJson)
 
 object Json:
   def parse(stream: DataStream): Json throws JsonParseError | StreamCutError = try
+    if stream.isEmpty then throw JsonParseError(0, Issue.EmptyInput)
     val block: Bytes = stream.head
     val penultimate = block.length - 1
     var cur: Int = 0
+    val numberText: StringBuilder = StringBuilder()
+    var continue: Boolean = true
+    var number: JsonNum = 0L
+    var arrayBufferId: Int = -1
+    var stringArrayBufferId: Int = -1
+    val arrayBuffers: ArrayBuffer[ArrayBuffer[Any]] = ArrayBuffer.empty[ArrayBuffer[Any]]
+    val stringArrayBuffers: ArrayBuffer[ArrayBuffer[String]] = ArrayBuffer.empty[ArrayBuffer[String]]
+    
+    def getArrayBuffer(): ArrayBuffer[Any] =
+      arrayBufferId += 1
+      if arrayBuffers.length <= arrayBufferId then
+        val newBuffer = ArrayBuffer.empty[Any]
+        arrayBuffers += newBuffer
+        newBuffer
+      else
+        val buf = arrayBuffers(arrayBufferId)
+        buf.clear()
+        buf
+    
+    def relinquishArrayBuffer(): Unit = arrayBufferId -= 1
+    
+    def getStringArrayBuffer(): ArrayBuffer[String] =
+      stringArrayBufferId += 1
+      if stringArrayBuffers.length <= stringArrayBufferId then
+        val newBuffer = ArrayBuffer.empty[String]
+        stringArrayBuffers += newBuffer
+        newBuffer
+      else
+        val buf = stringArrayBuffers(stringArrayBufferId)
+        buf.clear()
+        buf
+    
+    def relinquishStringArrayBuffer(): Unit = stringArrayBufferId -= 1
+
+    var arraySize: Int = 16
+    var stringArray: Array[Char] = new Array(arraySize)
+    var stringCursor: Int = 0
+    inline def resetString(): Unit = stringCursor = 0
+    
+    def appendChar(char: Char): Unit = 
+      if stringCursor == arraySize then
+        arraySize *= 2
+        val newArray = new Array[Char](arraySize)
+        System.arraycopy(stringArray, 0, newArray, 0, stringCursor)
+        stringArray = newArray
+      
+      stringArray(stringCursor) = char
+      stringCursor += 1
+    
+    def getString(): String = String(stringArray, 0, stringCursor).intern.nn
 
     if penultimate > 2 && block(0) == -17 && block(1) == -69 && block(2) == -65 then cur = 3
 
     def current: Byte = block(cur)
     def next(): Unit = cur += 1
+    
+    inline def getNext(): Byte =
+      cur += 1
+      block(cur)
 
     def skip(): Unit =
       while
-        (current: @switch) match
-          case Space | Return | Newline | Tab => true
-          case _                              => false
+        val ch = current
+        ch == Space || (ch & 8) == 8 && (ch == Newline || ch == Tab || ch == Return)
       do next()
 
-    def abort(message: Text): Nothing = throw JsonParseError(cur, message)
+    def abort(issue: Issue): Nothing = throw JsonParseError(cur, issue)
 
-    def parseValue(): Json =
-      (current: @switch) match
-        case Quote                                     => next(); parseString()
-        case Minus                                     => next(); parseNumber(cur, true)
-        case Num0 | Num1 | Num2 | Num3 | Num4 | Num5 |
-                 Num6 | Num7 | Num8 | Num9             => parseNumber(cur, false)
-        case OpenBracket                               => next(); parseArray()
-        case LowerF                                    => next(); parseFalse()
-        case LowerN                                    => next(); parseNull()
-        case LowerT                                    => next(); parseTrue()
-        case OpenBrace                                 => next(); parseObject()
-        case ch                                        => abort(t"expected a value but found '${ch.toChar}'")
+    def parseValue(minus: Boolean = false): RawJson =
+      val ch = current
+      if (ch & -8.toByte) == Num0 || (ch & -2.toByte) == 56 then
+        next()
+        parseNumber(ch & 15, minus)
+      else if minus then abort(Issue.ExpectedDigit(ch))
+      else (current: @switch) match
+        case Quote       => next(); parseString()
+        case Minus       => next(); parseValue(true)
+        case OpenBracket => next(); parseArray()
+        case LowerF      => next(); parseFalse()
+        case LowerN      => next(); parseNull()
+        case LowerT      => next(); parseTrue()
+        case OpenBrace   => next(); parseObject()
+        case ch          => abort(Issue.ExpectedSomeValue(ch))
 
-    def parseObject(): Json.JObject =
-      val items: HashMap[String, Json] = HashMap()
+    def parseObject(): (IArray[String], IArray[Any]) =
+      val keys: ArrayBuffer[String] = getStringArrayBuffer()
+      val values: ArrayBuffer[Any] = getArrayBuffer()
       var continue = true
       while continue do
         skip()
@@ -134,47 +203,55 @@ object Json:
                 val value = parseValue()
                 skip()
                 current match
-                  case CloseBrace =>
-                    next()
-                    continue = false
                   case Comma =>
                     next()
+                    keys += str
+                    values += value
                     skip()
-                    items += (str.value -> value)
-                  case ch  => abort(t"unexpected character: '${ch.toChar}'")
-              case ch => abort(t"expected a colon but found '${ch.toChar}'")
+                  case CloseBrace =>
+                    next()
+                    keys += str
+                    values += value
+                    continue = false
+                  case ch  => abort(Issue.UnexpectedChar(ch))
+              case ch => abort(Issue.ExpectedColon(ch))
           case CloseBrace =>
-            if !items.isEmpty then abort(t"closing brace appears after comma")
+            if !keys.isEmpty then abort(Issue.ExpectedSomeValue('}'))
             next()
             continue = false
-          case ch => abort(t"expected a string but found '${ch.toChar}'")
+          case ch => abort(Issue.ExpectedString(ch))
       
-      Json.JObject(items.to(Map))
+      val result = (keys.toArray.immutable(using Unsafe), values.toArray.immutable(using Unsafe))
+      relinquishStringArrayBuffer()
+      relinquishArrayBuffer()
+      result
 
-    def parseArray(): Json.JArray =
-      val items: ListBuffer[Json] = ListBuffer()
+    def parseArray(): IArray[Any] =
+      val arrayItems: ArrayBuffer[Any] = getArrayBuffer()
       var continue = true
       while continue do
         skip()
         current match
           case CloseBracket =>
-            if !items.isEmpty then abort(t"closing bracket appears after comma")
+            if !arrayItems.isEmpty then abort(Issue.ExpectedSomeValue(']'))
             continue = false
           case ch =>
             val value = parseValue()
             skip()
             current match
-              case Comma        => items += value
-              case CloseBracket => continue = false
-              case ch           => abort(t"expected ',' or ']' but found '${ch.toChar}'")
+              case Comma        => arrayItems += value
+              case CloseBracket => arrayItems += value; continue = false
+              case ch           => abort(Issue.ExpectedEnd(ch))
         
         next()
       
-      Json.JArray(items.to(List))
+      val result: IArray[Any] = arrayItems.toArray.immutable(using Unsafe)
+      relinquishArrayBuffer()
+      result
 
-    def parseString(): Json.JString =
+    def parseString(): String =
       val start = cur
-      var continue = true
+      continue = true
       var difference = 0
       var size = 0
 
@@ -185,263 +262,282 @@ object Json:
             size = cur - start - difference
           
           case Tab | Newline | Return =>
-            abort(t"invalid unescaped whitespace character in string")
+            abort(Issue.InvalidWhitespace)
 
           case Backslash =>
-            next()
-            current match
+            getNext() match
               case LowerU =>
-                next(); next(); next(); next()
+                cur += 4
                 difference += 5
               case ch =>
                 difference += 1
           
           case ch =>
-            // FIXME: Optimization opportunity by reversing and nesting these
-            if (ch & 224) == 192 then
-              difference += 1
-              next()
-            else if (ch & 240) == 224 then
-              difference += 2
-              next(); next()
-            else if (ch & 248) == 240 then
-              difference += 3
-              next(); next(); next()
+            if (ch >> 5) > 5 then
+              if (ch & 224) == 192 then
+                difference += 1
+                next()
+              else if (ch & 240) == 224 then
+                difference += 2
+                cur += 2
+              else if (ch & 248) == 240 then
+                difference += 3
+                cur += 3
 
         next()
 
-      val array: Array[Char] = new Array(size)
+      resetString()
 
-      continue = true
+      val end = cur - 1
       cur = start
 
-      var offset: Int = 0
-      
-      def append(char: Char): Unit =
-        array(offset) = char
-        offset += 1
-
       def parseUnicode(): Char =
-        next()
-        var acc = fromHex(current)*4096
-        next()
-        acc = acc + fromHex(current)*256
-        next()
-        acc = acc + fromHex(current)*16
-        next()
-        acc = acc + fromHex(current)
+        var acc = fromHex(getNext())*4096
+        acc = acc | fromHex(getNext())*256
+        acc = acc | fromHex(getNext())*16
+        acc = acc | fromHex(getNext())
         acc.toChar
 
-      while continue do
+      while cur < end do
         current match
-          case Quote =>
-            next()
-            continue = false
-          
           case Backslash =>
-            next()
-            current match
-              case Quote     => append('"')
-              case Slash     => append('/')
-              case Backslash => append('\\')
-              case LowerB    => append('\b')
-              case LowerF    => append('\f')
-              case LowerN    => append('\n')
-              case LowerR    => append('\r')
-              case LowerT    => append('\t')
-              case LowerU    => append(parseUnicode())
-              case ch        => abort(t"the character '$ch' should not be escaped")
+            (getNext(): @switch) match
+              case Quote     => appendChar('"')
+              case Slash     => appendChar('/')
+              case Backslash => appendChar('\\')
+              case LowerB    => appendChar('\b')
+              case LowerF    => appendChar('\f')
+              case LowerN    => appendChar('\n')
+              case LowerR    => appendChar('\r')
+              case LowerT    => appendChar('\t')
+              case LowerU    => appendChar(parseUnicode())
+              case ch        => abort(Issue.IncorrectEscape(ch))
             next()
 
           case ch =>
-            if ch >= 0 && ch < 32 then abort(t"unescaped control character '$ch'")
-            // FIXME: Optimization opportunity by reversing and nesting these
-            var char = 0
-            if (ch & 224) == 192 then
-              char = ((ch & 31) << 6)
-              next()
-              char += current & 63
-              append(char.toChar)
-            else if (ch & 240) == 224 then
-              char = ((ch & 31) << 12)
-              next()
-              char += (current & 63) << 6
-              next()
-              char += current & 63
-              append(char.toChar)
-            else if (ch & 248) == 240 then
-              char = ((ch & 31) << 18)
-              next()
-              char += (current & 63) << 12
-              next()
-              char += (current & 63) << 6
-              next()
-              char += current & 63
-              append(char.toChar)
-            else append(ch.toChar)
+            ((ch >> 5): @switch) match
+              case 0 => abort(Issue.NotEscaped(ch))
+              case 1 | 2 | 3 | 4 | 5 => appendChar(ch.toChar)
+              case _ =>
+                if (ch & 224) == 192 then
+                  var char: Int = ((ch & 31) << 6)
+                  char |= getNext() & 63
+                  appendChar(char.toChar)
+                else if (ch & 240) == 224 then
+                  var char: Int = ((ch & 31) << 12)
+                  char |= (getNext() & 63) << 6
+                  char |= getNext() & 63
+                  appendChar(char.toChar)
+                else if (ch & 248) == 240 then
+                  var char: Int = ((ch & 31) << 18)
+                  char |= (getNext() & 63) << 12
+                  char |= (getNext() & 63) << 6
+                  char |= getNext() & 63
+                  appendChar(char.toChar)
             
             next()
+      next()
       
-      Json.JString(String(array))
+      String(getString())
               
-    def fromHex(byte: Byte): Byte = (byte: @switch) match
-      case Num0  => 0
-      case Num1  => 1
-      case Num2  => 2
-      case Num3  => 3
-      case Num4  => 4
-      case Num5  => 5
-      case Num6  => 6
-      case Num7  => 7
-      case Num8  => 8
-      case Num9  => 9
-      case _   => (byte: @switch) match
-        case UpperA  => 10
-        case UpperB  => 11
-        case UpperC  => 12
-        case UpperD  => 13
-        case UpperE  => 14
-        case UpperF  => 15
-        case _   => (byte: @switch) match
-          case LowerA  => 10
-          case LowerB => 11
-          case LowerC => 12
-          case LowerD => 13
-          case LowerE => 14
-          case LowerF => 15
-          case _   => abort(t"expected a hexadecimal digit")
+    def fromHex(ch: Byte): Int =
+      if ch <= Num9 && ch >= Num0 then ch - Num0
+      else if ch <= UpperF && ch >= UpperA then ch - UpperA
+      else if ch <= LowerF && ch >= LowerA then ch - LowerA
+      else abort(Issue.ExpectedHexDigit(ch))
 
-    def parseFalse(): Json.False.type =
-      if current != LowerA then abort(t"expected 'false'")
+    def parseFalse(): false =
+      var x: Long = current << 8
+      x |= getNext()
+      x <<= 8
+      x |= getNext()
+      x <<= 8
+      x |= getNext()
+      if x != 1634497381L then abort(Issue.ExpectedValue(false))
       next()
-      if current != LowerL then abort(t"expected 'false'")
-      next()
-      if current != LowerS then abort(t"expected 'false'")
-      next()
-      if current != LowerE then abort(t"expected 'false'")
-      next()
-      Json.False
+      false
     
-    def parseTrue(): Json.True.type =
-      if current != LowerR then abort(t"expected 'true'")
+    def parseTrue(): RawJson =
+      var x: Int = current << 8
+      x |= getNext()
+      x <<= 8
+      x |= getNext()
+      if x != 7501157L then abort(Issue.ExpectedValue(true))
       next()
-      if current != LowerU then abort(t"expected 'true'")
-      next()
-      if current != LowerE then abort(t"expected 'true'")
-      next()
-      Json.True
+      true
     
-    def parseNull(): Json.Null.type =
-      if current != LowerU then abort(t"expected 'null'")
+    def parseNull(): RawJson =
+      var x: Int = current << 8
+      x |= getNext()
+      x <<= 8
+      x |= getNext()
+      if x != 7695468L then abort(Issue.ExpectedValue(null))
       next()
-      if current != LowerL then abort(t"expected 'null'")
-      next()
-      if current != LowerL then abort(t"expected 'null'")
-      next()
-      Json.Null
+      null
 
-    def parseNumber(start: Int, negative: Boolean): Json.Number =
-      import Flag.*
-      var mantissa: Long = 0L
-      lazy val bigDecimal: StringBuffer = StringBuffer()
-      var fractional: Long = 0L
-      var exponent: Long = 0L
-      var continue: Boolean = true
-      var hasExponent: Boolean = false
-      var terminible: Boolean = false
-      var decimalPoint: Boolean = false
-      var divisor: Double = 1.0
-      var leadingZero: Boolean = current == Num0
-      var negativeExponent: Boolean = false
-      var large: Boolean = false
-      var result: Double | BigDecimal | Long = 0L
+    def parseNumber(first: Long, negative: Boolean): JsonNum =
+      var mantissa: Long = first
+      var exponent: Long = 0
+      var decimalPosition: Int = 0
+      var scale: Int = 0
+      var ch: Byte = 0
+      continue = true
       
-      if current == Period then abort(t"cannot start a number with a decimal point")
-
-      while continue do
-        (current: @switch) match
-          case Num0 | Num1 | Num2 | Num3 | Num4 | Num5 | Num6 | Num7 | Num8 | Num9 =>
-            if large then bigDecimal.append(current.toChar)
-            else if hasExponent then exponent = exponent*10 + current - 48
-            else if decimalPoint then
-              fractional = fractional*10 + current - 48
-              divisor *= 10
+      try
+        val leadingZero: Boolean = first == 0
+  
+        transparent inline def digit(inline dec: Boolean, inline ch: Byte): Unit =
+          if dec then
+            mantissa = mantissa*10 + (ch & 15)
+            next()
+          else
+            if mantissa >= 922337203685477580L then
+              if negative then numberText.append('-')
+              numberText.append(mantissa.toString)
+              parseLargeNumber(decimalPosition != 0)
+              continue = false
             else
-              val newMantissa = mantissa*10 + current - 48
-              if newMantissa < mantissa then
-                if negative then bigDecimal.append('-')
-                bigDecimal.append(mantissa.toString)
-                bigDecimal.append(current.toChar)
-                large = true
-              else mantissa = newMantissa
-            terminible = true
-            if cur == penultimate then continue = false
+              mantissa = mantissa*10 + (ch & 15)
+              next()
+  
+        while continue do
+          ch = current
+          if ch <= Num9 && ch >= Num0 then digit(decimalPosition != 0, ch)
+          else (ch: @switch) match
+            case Period =>
+              if decimalPosition != 0 then abort(Issue.MultipleDecimalPoints)
+              decimalPosition = cur
+              next()
+              ch = current
+              if ch <= Num9 && ch >= Num0 then digit(decimalPosition != 0, ch)
+              else abort(Issue.ExpectedDigit(ch))
+              
+              while
+                ch = current
+                ch <= Num9 && ch >= Num0
+              do
+                mantissa = mantissa*10 + (ch & 15)
+                ch = getNext()
+              
+            
+            case UpperE | LowerE =>
+              if decimalPosition != 0 then scale = decimalPosition - cur + 1
+              next()
+              
+              ch = current
+              var minus = false
+              (ch: @switch) match
+                case Minus =>
+                  minus = true
+                  next()
+                  ch = current
+                
+                case Plus =>
+                  next()
+                  ch = current
+                
+                case _ =>
+                  ()
+              if ch <= Num9 && ch >= Num0 then exponent = (ch & 15) else abort(Issue.ExpectedDigit(ch))
+              if minus then exponent *= -1
+              next()
+              while
+                ch = current
+                ch <= Num9 && ch >= Num0
+              do
+                exponent = exponent*10 + (ch & 15)
+                next()
+              
+              continue = false
+            
+            case Tab | Return | Newline | Space | Comma | CloseBracket | CloseBrace =>
+              if decimalPosition != 0 && scale == 0 then scale = decimalPosition - cur + 1
+              else if leadingZero && mantissa != 0 then abort(Issue.NumberHasLeadingZero)
+              
+              if negative then mantissa *= -1
+              number = mantissa*math.pow(10, exponent + scale)
+
+              continue = false
+            
+            case ch =>
+              abort(Issue.UnexpectedChar(ch))
+          end if
+        end while
+        number
+      catch
+        case err: ArrayIndexOutOfBoundsException =>
+          cur -= 1
+          if decimalPosition != 0 && scale == 0 then scale = decimalPosition - cur
+          if current <= Num9 && current >= Num0 then
             next()
-          
+            (if negative then -mantissa else mantissa).toDouble*math.pow(10, exponent + scale)
+          else abort(Issue.PrematureEnd)
+    
+    def parseLargeNumber(hasDecimalPoint: Boolean): Unit =
+      var decimalPoint: Boolean = hasDecimalPoint
+      continue = true
+      var ch: Byte = 0
+      
+      while continue do
+        ch = current
+        if ch <= Num9 && ch >= Num0 then
+          numberText.append(ch.toChar)
+          continue = cur != penultimate
+          next()
+        else (ch: @switch) match
           case Period =>
-            if large then bigDecimal.append('.')
-            if decimalPoint then abort(t"a number can have at most one decimal point")
-            if hasExponent then abort(t"the exponent must be an integer")
+            if decimalPoint then abort(Issue.MultipleDecimalPoints)
+            numberText.append('.')
             decimalPoint = true
-            terminible = false
             next()
+            ch = current
+            if ch <= Num9 && ch >= Num0 then
+              numberText.append(ch.toChar)
+              continue = cur != penultimate
+              next()
           
           case UpperE | LowerE =>
-            if large then bigDecimal.append('e')
-            if hasExponent then abort(t"a number can have at most one exponent")
-            if !terminible then abort(t"the mantissa requires at least one digit after the decimal point")
-            
+            numberText.append('e')
             next()
             
-            (current: @switch) match
-              case Minus =>
-                if large then bigDecimal.append('-')
-                negativeExponent = true
+            ch = current
+            if ch == Minus || ch == Plus then
+              numberText.append(ch)
+              next()
+              ch = current
+              if ch <= Num9 && ch >= Num0 then
+                numberText.append(ch.toChar)
+                continue = cur != penultimate
                 next()
-              
-              case Plus =>
-                next()
-              
-              case _ =>
-                ()
-            
-            hasExponent = true
-            terminible = false
           
           case Tab | Return | Newline | Space | Comma | CloseBracket | CloseBrace =>
-            if !terminible then abort(t"the number was incomplete")
-            if leadingZero && mantissa != 0 then abort(t"the number should not have a leading zero")
-            
-            if mantissa == 0 && !decimalPoint && hasExponent && exponent != 1
-            then abort(t"the integer 0 cannot have an exponent other than 1")
-            
-            result = 
-              if large then
-                try BigDecimal(bigDecimal.toString)
-                catch
-                  case err: NumberFormatException => Out.println(t"Tried to parse '${bigDecimal.toString}'"); throw err
-              else if decimalPoint then (mantissa + fractional/divisor)*(if negative then -1 else 1)
-              else if negative then -mantissa else mantissa
+            number = 
+              try
+                val number = Text(numberText.toString)
+                numberText.setLength(0)
+                BigDecimal(number.s)
+              catch
+                case err: NumberFormatException => throw err
             
             continue = false
           
           case ch =>
-            abort(t"found an unexpected character '$ch'")
-      
-      Json.Number(result)
+            abort(Issue.UnexpectedChar(ch))
     
     skip()
     val result = parseValue()
     while cur < block.length
     do
-      current match
+      (current: @switch) match
         case Tab | Newline | Return | Space => ()
         case other =>
-          abort(t"spurious extra characters were found at the end")
+          abort(Issue.SpuriousContent(other))
       
       next()
 
-    result
+    Json(result)
+
   catch
     case err: ArrayIndexOutOfBoundsException =>
-      throw JsonParseError(stream.head.length, t"the JSON was not properly terminated")
+      throw JsonParseError(stream.head.length, Issue.PrematureEnd)
+
