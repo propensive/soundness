@@ -65,7 +65,7 @@ object Tests extends Suite(t"Merino tests"):
     //             Left(err.toString.show)
     //       .check(_.isRight)
       
-    for i <- 1 to 10 do
+    for i <- 1 to 5 do
       test(t"Parse with Jawn"):
         import org.typelevel.jawn.*, ast.*
         JParser.parseFromByteBuffer(java.nio.ByteBuffer.wrap(file.mutable(using Unsafe)).nn)

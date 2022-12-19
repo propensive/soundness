@@ -8,7 +8,6 @@ import scala.collection.mutable.{HashMap, ListBuffer, ArrayBuffer}
 
 import stdouts.stdout
 
-
 type JsonNum = Long | Double | BigDecimal | BigInt
 type RawJson = JsonNum | String | (IArray[String], IArray[Any]) | IArray[Any] | Boolean | Null
 
@@ -150,7 +149,7 @@ object Json:
       stringArray(stringCursor) = char
       stringCursor += 1
     
-    def getString(): String = String(stringArray, 0, stringCursor).intern.nn
+    def getString(): String = String(stringArray, 0, stringCursor)
 
     if penultimate > 2 && block(0) == -17 && block(1) == -69 && block(2) == -65 then cur = 3
 
