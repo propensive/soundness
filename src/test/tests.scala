@@ -26,16 +26,16 @@ object Tests extends Suite(t"Merino tests"):
     suite(t"Positive tests"):
       (tests.files.filter(_.name.startsWith(t"y_")) ++ tests2.files).foreach: file =>
         test(file.name.drop(5, Rtl)):
-          Json.parse(file.read[DataStream]())
+          JsonAst.parse(file.read[DataStream]())
         .check(_ => true)
     
     suite(t"Negative tests"):
       tests.files.filter(_.name.startsWith(t"n_")).foreach: file =>
         test(file.name.drop(5, Rtl)):
-          capture(Json.parse(file.read[DataStream]()))
+          capture(JsonAst.parse(file.read[DataStream]()))
         .matches:
-          case JsonParseError(_, _) => true
-          case _                    => false
+          case JsonParseError(_, _, _) => true
+          case _                       => false
 
     suite(t"Parse large files"):
       val file: Bytes = test(t"Read file"):
@@ -46,108 +46,108 @@ object Tests extends Suite(t"Merino tests"):
         (env.pwd / p"huge2.json").file(Expect).read[DataStream]().slurp()
       .check(_ => true)
       
-      for i <- 1 to 10 do
+      for i <- 1 to 1 do
         test(t"Parse huge file with Jawn $i"):
           import org.typelevel.jawn.*, ast.*
           JParser.parseFromByteBuffer(java.nio.ByteBuffer.wrap(file.mutable(using Unsafe)).nn)
         .assert(_ => true)
         
-      for i <- 1 to 10 do
+      for i <- 1 to 1 do
         test(t"Parse huge file with Merino $i"):
-          Json.parse(LazyList(file))
+          JsonAst.parse(LazyList(file))
         .assert(_ => true)
         
-      for i <- 1 to 10 do
+      for i <- 1 to 1 do
         test(t"Parse big file with Jawn $i"):
           import org.typelevel.jawn.*, ast.*
           JParser.parseFromByteBuffer(java.nio.ByteBuffer.wrap(file2.mutable(using Unsafe)).nn)
         .assert(_ => true)
       
-      for i <- 1 to 10 do
+      for i <- 1 to 1 do
         test(t"Parse big file with Merino $i"):
-          Json.parse(LazyList(file2))
+          JsonAst.parse(LazyList(file2))
         .assert(_ => true)
 
     suite(t"Number tests"):
       test(t"Parse 0e+1"):
-        Json.parse(LazyList(t"0e+1".bytes))
-      .assert(_ == Json(0L))
+        JsonAst.parse(LazyList(t"0e+1".bytes))
+      .assert(_ == JsonAst(0L))
       
       test(t"Parse 0e1"):
-        Json.parse(LazyList(t"0e1".bytes))
-      .assert(_ == Json(0L))
+        JsonAst.parse(LazyList(t"0e1".bytes))
+      .assert(_ == JsonAst(0L))
       
       test(t"Parse ' 4'"):
-        Json.parse(LazyList(t" 4".bytes))
-      .assert(_ == Json(4L))
+        JsonAst.parse(LazyList(t" 4".bytes))
+      .assert(_ == JsonAst(4L))
       
       test(t"Parse small negative number"):
-        Json.parse(LazyList(t"-0.000000000000000000000000000000000000000000000000000000000000000000000000000001".bytes))
-      .assert(_ == Json(-1.0e-78))
+        JsonAst.parse(LazyList(t"-0.000000000000000000000000000000000000000000000000000000000000000000000000000001".bytes))
+      .assert(_ == JsonAst(-1.0e-78))
       
       test(t"Parse 20e1"):
-        Json.parse(LazyList(t"20e1".bytes))
-      .assert(_ == Json(200L))
+        JsonAst.parse(LazyList(t"20e1".bytes))
+      .assert(_ == JsonAst(200L))
       
       test(t"Parse 123e65"):
-        Json.parse(LazyList(t"123e65".bytes))
-      .assert(_ == Json(1.23e67))
+        JsonAst.parse(LazyList(t"123e65".bytes))
+      .assert(_ == JsonAst(1.23e67))
       
       test(t"Parse -0"):
-        Json.parse(LazyList(t"-0".bytes))
-      .assert(_ == Json(-0.0))
+        JsonAst.parse(LazyList(t"-0".bytes))
+      .assert(_ == JsonAst(-0.0))
       
       test(t"Parse -123"):
-        Json.parse(LazyList(t"-123".bytes))
-      .assert(_ == Json(-123L))
+        JsonAst.parse(LazyList(t"-123".bytes))
+      .assert(_ == JsonAst(-123L))
       
       test(t"Parse -1"):
-        Json.parse(LazyList(t"-1".bytes))
-      .assert(_ == Json(-1L))
+        JsonAst.parse(LazyList(t"-1".bytes))
+      .assert(_ == JsonAst(-1L))
       
       test(t"Parse 1E22"):
-        Json.parse(LazyList(t"1E22".bytes))
-      .assert(_ == Json(1.0E22))
+        JsonAst.parse(LazyList(t"1E22".bytes))
+      .assert(_ == JsonAst(1.0E22))
       
       test(t"Parse 1E-2"):
-        Json.parse(LazyList(t"1E-2".bytes))
-      .assert(_ == Json(1.0E-2))
+        JsonAst.parse(LazyList(t"1E-2".bytes))
+      .assert(_ == JsonAst(1.0E-2))
       
       test(t"Parse 1E+2"):
-        Json.parse(LazyList(t"1E+2".bytes))
-      .assert(_ == Json(1.0E2))
+        JsonAst.parse(LazyList(t"1E+2".bytes))
+      .assert(_ == JsonAst(1.0E2))
       
       test(t"Parse 123e45"):
-        Json.parse(LazyList(t"123e45".bytes))
-      .assert(_ == Json(1.23E47))
+        JsonAst.parse(LazyList(t"123e45".bytes))
+      .assert(_ == JsonAst(1.23E47))
       
       test(t"Parse 123.456e78"):
-        Json.parse(LazyList(t"123.456e78".bytes))
-      .assert(_ == Json(1.23456E80))
+        JsonAst.parse(LazyList(t"123.456e78".bytes))
+      .assert(_ == JsonAst(1.23456E80))
       
       test(t"Parse 1e-2"):
-        Json.parse(LazyList(t"1e-2".bytes))
-      .assert(_ == Json(1.0E-2))
+        JsonAst.parse(LazyList(t"1e-2".bytes))
+      .assert(_ == JsonAst(1.0E-2))
       
       test(t"Parse 1e+2"):
-        Json.parse(LazyList(t"1e+2".bytes))
-      .assert(_ == Json(1.0E2))
+        JsonAst.parse(LazyList(t"1e+2".bytes))
+      .assert(_ == JsonAst(1.0E2))
       
       test(t"Parse 123"):
-        Json.parse(LazyList(t"123".bytes))
-      .assert(_ == Json(123L))
+        JsonAst.parse(LazyList(t"123".bytes))
+      .assert(_ == JsonAst(123L))
       
       test(t"Parse 123.456789"):
-        Json.parse(LazyList(t"123.456789".bytes))
-      .assert(_ == Json(123.456789))
+        JsonAst.parse(LazyList(t"123.456789".bytes))
+      .assert(_ == JsonAst(123.456789))
       
       test(t"Parse \"Hello World\""):
-        Json.parse(LazyList(t"\"Hello World\"".bytes))
-      .assert(_ == Json("Hello World"))
+        JsonAst.parse(LazyList(t"\"Hello World\"".bytes))
+      .assert(_ == JsonAst("Hello World"))
       
       test(t"Parse \"\""):
-        Json.parse(LazyList(t"\"\"".bytes))
-      .assert(_ == Json(""))
+        JsonAst.parse(LazyList(t"\"\"".bytes))
+      .assert(_ == JsonAst(""))
 
 
 
