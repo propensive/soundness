@@ -1,5 +1,5 @@
 {
-  "imports": ["../../dev/one/mod/probably/build.irk", "../../dev/one/mod/joviality/build.irk"],
+  "imports": ["../probably/build.irk", "../joviality/build.irk"],
   "modules": [
     {
       "name": "Merino",
