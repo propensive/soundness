@@ -454,7 +454,8 @@ object Json:
               else if leadingZero && mantissa != 0 then abort(Issue.NumberHasLeadingZero)
               
               if negative then mantissa *= -1
-              number = mantissa*math.pow(10, exponent + scale)
+              val exp = exponent + scale
+              number = if exp == 0 then mantissa else mantissa*math.pow(10, exponent + scale)
 
               continue = false
             
@@ -539,4 +540,3 @@ object Json:
   catch
     case err: ArrayIndexOutOfBoundsException =>
       throw JsonParseError(stream.head.length, Issue.PrematureEnd)
-

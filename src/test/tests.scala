@@ -45,24 +45,28 @@ object Tests extends Suite(t"Merino tests"):
       val file2: Bytes = test(t"Read file 2"):
         (env.pwd / p"huge2.json").file(Expect).read[DataStream]().slurp()
       .check(_ => true)
-
-      test(t"Parse with Jawn"):
-        import org.typelevel.jawn.*, ast.*
-        JParser.parseFromByteBuffer(java.nio.ByteBuffer.wrap(file.mutable(using Unsafe)).nn)
-      .assert(_ => true)
       
-      test(t"Parse with Merino"):
-        Json.parse(LazyList(file))
-      .assert(_ => true)
+      for i <- 1 to 10 do
+        test(t"Parse huge file with Jawn $i"):
+          import org.typelevel.jawn.*, ast.*
+          JParser.parseFromByteBuffer(java.nio.ByteBuffer.wrap(file.mutable(using Unsafe)).nn)
+        .assert(_ => true)
+        
+      for i <- 1 to 10 do
+        test(t"Parse huge file with Merino $i"):
+          Json.parse(LazyList(file))
+        .assert(_ => true)
+        
+      for i <- 1 to 10 do
+        test(t"Parse big file with Jawn $i"):
+          import org.typelevel.jawn.*, ast.*
+          JParser.parseFromByteBuffer(java.nio.ByteBuffer.wrap(file2.mutable(using Unsafe)).nn)
+        .assert(_ => true)
       
-      test(t"Parse with Jawn 2"):
-        import org.typelevel.jawn.*, ast.*
-        JParser.parseFromByteBuffer(java.nio.ByteBuffer.wrap(file2.mutable(using Unsafe)).nn)
-      .assert(_ => true)
-    
-      test(t"Parse with Merino 2"):
-        Json.parse(LazyList(file2))
-      .assert(_ => true)
+      for i <- 1 to 10 do
+        test(t"Parse big file with Merino $i"):
+          Json.parse(LazyList(file2))
+        .assert(_ => true)
 
     suite(t"Number tests"):
       test(t"Parse 0e+1"):
