@@ -23,49 +23,29 @@ object Tests extends Suite(t"Merino tests"):
     val tests = (env.pwd / p"tests" / p"test_parsing").directory(Expect)
     val tests2 = (env.pwd / p"tests" / p"test_transform").directory(Expect)
     
-    val file: Bytes = test(t"Read file"):
-      (env.pwd / p"huge.json").file(Expect).read[DataStream]().slurp()
-    .check(_ => true)
+    suite(t"Positive tests"):
+      (tests.files.filter(_.name.startsWith(t"y_")) ++ tests2.files).foreach: file =>
+        test(file.name.drop(5, Rtl)):
+          Json.parse(file.read[DataStream]())
+        .check(_ => true)
     
-    val file2: Bytes = test(t"Read file 2"):
-      (env.pwd / p"huge2.json").file(Expect).read[DataStream]().slurp()
-    .check(_ => true)
-    
-    // (tests.files ++ tests2.files).foreach: file =>
-    //     if file.name.startsWith(t"n_")
-    //     then
-    //       test(t"Negative test: ${file.name.drop(2).drop(5, Rtl)}"):
-    //         try
-    //           Json.parse(file.read[DataStream]())
-    //           Left(t"success")
-    //         catch
-    //           case err: JsonParseError => err match
-    //             case JsonParseError(_, msg) => Right(msg)
-    //           case err: Throwable  =>
-    //             err.printStackTrace()
-    //             Right(err.toString.show)
-    //       .check(_.isRight)
-    //     else
-    //       test(t"Positive test: ${file.name.drop(5, Rtl)}"):
-    //         try
-    //           val data = file.read[DataStream]()
-    //           val j = Json.parse(file.read[DataStream]())
-    //           if data.head.length < 100 then
-    //             val a = data.head.uString.s
-    //             val b = j.toString
-    //             if a.replaceAll(" ", "") != b.replaceAll(" ", "") then
-    //               println(t"${a} != ${b}")
-              
-    //           Right(j.toString)
-    //         catch
-    //           case err: JsonParseError => err match
-    //             case JsonParseError(_, msg) => Left(msg)
-    //           case err: Throwable =>
-    //             err.printStackTrace()
-    //             Left(err.toString.show)
-    //       .check(_.isRight)
+    suite(t"Negative tests"):
+      tests.files.filter(_.name.startsWith(t"n_")).foreach: file =>
+        test(file.name.drop(5, Rtl)):
+          capture(Json.parse(file.read[DataStream]()))
+        .matches:
+          case JsonParseError(_, _) => true
+          case _                    => false
+
+    suite(t"Parse large files"):
+      val file: Bytes = test(t"Read file"):
+        (env.pwd / p"huge.json").file(Expect).read[DataStream]().slurp()
+      .check(_ => true)
       
-    for i <- 1 to 5 do
+      val file2: Bytes = test(t"Read file 2"):
+        (env.pwd / p"huge2.json").file(Expect).read[DataStream]().slurp()
+      .check(_ => true)
+
       test(t"Parse with Jawn"):
         import org.typelevel.jawn.*, ast.*
         JParser.parseFromByteBuffer(java.nio.ByteBuffer.wrap(file.mutable(using Unsafe)).nn)
