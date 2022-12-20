@@ -22,7 +22,7 @@ object Util:
             try
               buf.flip()
               val size = count min 65536
-              val array = new Array[Byte](65536)
+              val array = new Array[Byte](size)
               buf.get(array)
               buf.clear()
               array.immutable(using Unsafe) #:: recur()
