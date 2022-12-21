@@ -1,0 +1,30 @@
+{
+  "imports": ["../../dev/one/mod/gossamer/build.irk", "../../dev/one/mod/cardinality/build.irk", "../../dev/one/mod/kaleidoscope/build.irk"],
+  "modules": [
+    {
+      "name": "Temporaneous",
+      "id": "temporaneous/core",
+      "links": ["gossamer/core", "cardinality/core", "kaleidoscope/core", "eucalyptus/core"],
+      "sources": ["src/core"],
+      "resources": ["res"],
+      "version": "0.4.0",
+      "docs": ["doc"],
+      "xartifact": {
+        "path": "temporaneous.jar", "format": "fat-jar"
+      }
+    },
+    {
+      "name": "Temporaneous Tests",
+      "id": "temporaneous/test",
+      "links": ["probably/cli", "temporaneous/core"],
+      "sources": ["src/test"],
+      "version": "0.4.0",
+      "docs": ["doc"],
+      "exec": {
+        "browsers": [],
+        "start": "temporaneous.Tests"
+      }
+    }
+  ]
+}
+
