@@ -38,7 +38,7 @@ trait Root(val prefix: Text, val separator: Text):
   def make(elements: List[Text]): PathType
 
   def parse(text: Text): PathType throws InvalidPathError =
-    if !text.startsWith(prefix) then throw InvalidPathError(text)
+    if !text.starts(prefix) then throw InvalidPathError(text)
     else make(text.drop(prefix.length).cut(separator))
   
 object Root:
@@ -77,7 +77,7 @@ object Relative:
     def recur(text: Text, ascent: Int): Relative =
       if text == t"." then Self
       else if text == t".." then Relative(ascent + 1, Nil)
-      else if text.startsWith(t"../") then recur(text.drop(3), ascent + 1)
+      else if text.starts(t"../") then recur(text.drop(3), ascent + 1)
       else Relative(ascent, List(text.cut(t"/")*))
     
     recur(text, 0)
