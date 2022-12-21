@@ -89,8 +89,8 @@ extension (text: Text)
   def map(fn: Char => Char): Text = Text(String(text.s.toCharArray.nn.map(fn)))
   def empty: Boolean = text.s.isEmpty
   def rsub(from: Text, to: Text): Text = Text(text.s.replaceAll(from.s, to.s).nn)
-  def startsWith(prefix: Text): Boolean = text.s.startsWith(prefix.s)
-  def endsWith(suffix: Text): Boolean = text.s.endsWith(suffix.s)
+  inline def starts(prefix: Text): Boolean = text.s.startsWith(prefix.s)
+  inline def ends(suffix: Text): Boolean = text.s.endsWith(suffix.s)
   def sub(from: Text, to: Text): Text = Text(text.s.replaceAll(Pattern.quote(from.s), to.s).nn)
   def tr(from: Char, to: Char): Text = Text(text.s.replace(from, to).nn)
   def capitalize: Text = take(1).upper+drop(1)
@@ -159,8 +159,7 @@ extension (text: Text)
       if pred(text.s.charAt(index)) then index else where(pred, index - 1, Rtl)
 
   def upto(pred: Char -> Boolean): Text =
-    try Text(text.s.substring(0, where(!pred(_))).nn)
-    catch case e: OutOfRangeError => text
+    try Text(text.s.substring(0, where(!pred(_))).nn) catch case e: OutOfRangeError => text
 
   def lev(other: Text): Int =
     val m = text.s.length
