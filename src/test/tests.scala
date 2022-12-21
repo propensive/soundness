@@ -24,13 +24,13 @@ object Tests extends Suite(t"Merino tests"):
     val tests2 = (env.pwd / p"tests" / p"test_transform").directory(Expect)
     
     suite(t"Positive tests"):
-      (tests.files.filter(_.name.startsWith(t"y_")) ++ tests2.files).foreach: file =>
+      (tests.files.filter(_.name.starts(t"y_")) ++ tests2.files).foreach: file =>
         test(file.name.drop(5, Rtl)):
           JsonAst.parse(file.read[DataStream]())
         .check(_ => true)
     
     suite(t"Negative tests"):
-      tests.files.filter(_.name.startsWith(t"n_")).foreach: file =>
+      tests.files.filter(_.name.starts(t"n_")).foreach: file =>
         test(file.name.drop(5, Rtl)):
           capture(JsonAst.parse(file.read[DataStream]()))
         .matches:
