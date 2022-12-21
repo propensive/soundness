@@ -101,7 +101,7 @@ object Zsh extends ShellType(t"zsh"):
   def destination(env: Map[Text, Text]): File = File(File(xdgConfig(env), t"exoskeleton".s), shell.s)
   
   def serialize(cli: Cli, completions: Completions): LazyList[Text] =
-    val width = maxLength(completions.defs.filter(_.word.startsWith(cli.currentArg)))
+    val width = maxLength(completions.defs.filter(_.word.starts(cli.currentArg)))
     (completions.title.option.map(List(t"", t"-X", _).join(t"\t")) ++ completions.defs.flatMap {
       case Choice(word, desc, hidden, incomplete) =>
         val hide = if hidden then List(t"-n") else Nil
@@ -140,7 +140,7 @@ object Bash extends ShellType(t"bash"):
   def destination(env: Map[Text, Text]): File = File(s"${env(t"HOME")}/.bash_completion")
 
   def serialize(cli: Cli, completions: Completions): LazyList[Text] =
-    LazyList(completions.defs.filter(_.word.startsWith(cli.currentArg)).collect {
+    LazyList(completions.defs.filter(_.word.starts(cli.currentArg)).collect {
       case Choice(word, desc, false, _) => word
     }.join(t"\t"))
   
