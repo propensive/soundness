@@ -149,7 +149,7 @@ object XmlInterpolation:
           case TagChar()          => state(char)
           case WhitespaceChar()   => state(InAttributeName)
           case '>'                => throw InterpolationError(t"attribute value has not been specified", state.offset, 1)
-          case '='                => if state.current.startsWith(t"xmlns:")
+          case '='                => if state.current.starts(t"xmlns:")
                                     then state.addNamespace(state.current.drop(6))(AttributeEquals)
                                     else state(AttributeEquals)
           case ':'                => if state.ns
