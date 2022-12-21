@@ -134,9 +134,9 @@ object Media:
         val ch = try str(idx) catch case error: OutOfRangeError => throw Mistake(error)
         throw InvalidMediaTypeError(string, InvalidMediaTypeError.Nature.InvalidChar(ch))
       catch case e: OutOfRangeError =>
-        if str.startsWith(t"vnd.") then Subtype.Vendor(str.drop(4))
-        else if str.startsWith(t"prs.") then Subtype.Personal(str.drop(4))
-        else if str.startsWith(t"x.") || str.startsWith(t"x-") then Subtype.X(str.drop(2))
+        if str.starts(t"vnd.") then Subtype.Vendor(str.drop(4))
+        else if str.starts(t"prs.") then Subtype.Personal(str.drop(4))
+        else if str.starts(t"x.") || str.starts(t"x-") then Subtype.X(str.drop(2))
         else Subtype.Standard(str)
         
     val xs: List[Text] = string.cut(t";").map(_.trim)
