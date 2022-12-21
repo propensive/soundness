@@ -319,7 +319,7 @@ extends Inode[Fs](directoryPath), Shown[Directory[Fs]]:
       case dir: Directory[Fs] => dir
   
   def deepSubdirectories: LazyList[Directory[Fs]] throws IoError =
-    val subdirs = subdirectories.to(LazyList).filter(!_.name.startsWith(t"."))
+    val subdirs = subdirectories.to(LazyList).filter(!_.name.starts(t"."))
     subdirs #::: subdirs.flatMap(_.deepSubdirectories)
 
   def files: List[File[Fs]] throws IoError = children.collect:
@@ -524,7 +524,7 @@ extends Root(fsPrefix, fsSeparator), Shown[Filesystem]:
 
   def parse(value: Text, pwd: Maybe[DiskPath[this.type]] = Unset)
            : DiskPath[this.type] throws InvalidPathError =
-    if value.startsWith(prefix) then make(List(value.drop(prefix.length).cut(separator)*))
+    if value.starts(prefix) then make(List(value.drop(prefix.length).cut(separator)*))
     else try pwd.option.map(_ + Relative.parse(value)).getOrElse(throw InvalidPathError(value))
     catch case err: RootParentError => throw InvalidPathError(value)
 
