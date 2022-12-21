@@ -398,7 +398,7 @@ case class Uri(location: Text, params: Params = Params(Nil)) extends Dynamic, Sh
 
   @targetName("slash")
   def /(part: Text): Uri =
-    Uri(if location.endsWith(t"/") then t"$location$part" else t"$location/$part", Params(Nil))
+    Uri(if location.ends(t"/") then t"$location$part" else t"$location/$part", Params(Nil))
 
   def applyDynamicNamed(method: "query")(params: (String, Text)*): Uri =
     makeQuery(Params(params.map { (k, v) => Text(k) -> v }.to(List)))
