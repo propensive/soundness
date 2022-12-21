@@ -216,7 +216,7 @@ object ProbablyMacros:
       val absolute = Showable(Position.ofMacroExpansion).show.cut(t":").head
       val pwd = try Sys.user.dir().show catch case e: KeyNotFoundError => throw Mistake("should not happen")
       
-      if absolute.startsWith(pwd) then absolute.drop(pwd.length + 1).s else absolute.s
+      if absolute.starts(pwd) then absolute.drop(pwd.length + 1).s else absolute.s
     
     val line = Expr(Position.ofMacroExpansion.startLine + 1)
 
