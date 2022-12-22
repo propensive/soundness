@@ -159,6 +159,9 @@ extension (text: Text)
       if pred(text.s.charAt(index)) then index else where(pred, index - 1, Rtl)
 
   def upto(pred: Char -> Boolean): Text =
+    try Text(text.s.substring(0, where(pred(_))).nn) catch case e: OutOfRangeError => text
+  
+  def whilst(pred: Char -> Boolean): Text =
     try Text(text.s.substring(0, where(!pred(_))).nn) catch case e: OutOfRangeError => text
 
   def lev(other: Text): Int =
