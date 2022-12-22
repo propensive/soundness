@@ -43,7 +43,10 @@ object Dates:
     def julianDay: Int = date
     def at(time: Time)(using Calendar): Timestamp = Timestamp(date, time)
     
-    @targetName("add")
+    @targetName("plus")
+    def +(period: Timespan)(using cal: Calendar): Date = cal.add(date, period)
+
+    @targetName("addDays")
     def +(days: Int): Date = date + days
 
 export Dates.Date
@@ -60,6 +63,7 @@ trait Calendar:
   def getDay(date: Date): D
   def zerothDayOfYear(year: Y): Date
   def julianDay(year: Y, month: M, day: D): Date
+  def add(date: Date, period: Timespan): Date
 
 abstract class RomanCalendar() extends Calendar:
   type Y = Int
@@ -73,6 +77,12 @@ abstract class RomanCalendar() extends Calendar:
     case Apr | Jun | Sep | Nov                   => 30
     case Feb                                     => if leapYear(year) then 29 else 28
 
+  def add(date: Date, period: Timespan): Date =
+    val monthTotal = getMonth(date).ordinal + period.months
+    val month2 = MonthName.fromOrdinal(monthTotal%12)
+    val year2 = getYear(date) + period.years + monthTotal/12
+    julianDay(year2, month2, getDay(date)) + period.days
+  
   def leapYearsSinceEpoch(year: Int): Int
   def daysInYear(year: Y): Int = if leapYear(year) then 366 else 365
   def zerothDayOfYear(year: Y): Date = Date.of(year*365 + leapYearsSinceEpoch(year) + 1721059)
@@ -82,16 +92,11 @@ abstract class RomanCalendar() extends Calendar:
       val z = zerothDayOfYear(year).julianDay
       if z < date.julianDay && z + daysInYear(year) > date.julianDay then year else recur(year + 1)
     
-    recur(((date.julianDay - 1721059)/365 - 1).toInt)
+    recur(((date.julianDay - 1721059)/366).toInt)
   
   def getMonth(date: Date): MonthName =
     val year = getYear(date)
     val ly = leapYear(year)
-    println(year)
-    println(ly)
-    println(date)
-    println(zerothDayOfYear(year))
-    println(date.yearDay(using this))
     MonthName.values.takeWhile(_.offset(ly) < date.yearDay(using this)).last
   
   def getDay(date: Date): Int =
@@ -101,8 +106,6 @@ abstract class RomanCalendar() extends Calendar:
   
   def julianDay(year: Int, month: MonthName, day: Int): Date = 
     zerothDayOfYear(year) + month.offset(leapYear(year)) + day
-
-
 
 class YearMonth[Y <: Int & Singleton, M <: MonthName & Singleton](year: Y, month: M):
   import compiletime.ops.int.*
@@ -255,6 +258,7 @@ case class Timezone(name: Text, offset: Duration)
 case class Time(hour: Base24, minute: Base60, second: Base60 = 0)
 
 case class Timestamp(date: Date, time: Time)(using cal: Calendar):
+  @targetName("plus")
   def +(period: Timespan): Timestamp =
     Timestamp(date, time)
 
@@ -341,16 +345,6 @@ extension (i: Int)
     x match
       case v: Base60 => v
       case _: Int    => throw Mistake("Modular arithmetic should produce value in range")
-
-extension (sc: StringContext)
-  def hms(value: String): Time = value.show match
-    case r"${As[Base24](h)}@([0-2][0-9]):${As[Base60](m)}@([0-5][0-9]):${As[Base60](s)}@([0-5][0-9])" =>
-      Time(h, m, s)
-  
-  def hm(value: String): Time = value.show match
-    case r"${As[Base24](h)}@([0-2][0-9]):${As[Base60](m)}@([0-5][0-9])" => Time(h, m)
-
-
 
 import compiletime.ops.double.{ToInt, + as ++, - as --, `*` as **}, compiletime.ops.int.*
 

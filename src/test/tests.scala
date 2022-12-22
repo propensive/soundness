@@ -8,6 +8,8 @@ import parasitism.*, threading.virtual
 
 import logging.silent
 
+import unsafeExceptions.canThrowAny
+
 object Tests extends Suite(t"Temporaneous Tests"):
   def run(using Runner): Unit =
     suite(t"Gregorian Calendar Tests"):
@@ -126,4 +128,27 @@ object Tests extends Suite(t"Temporaneous Tests"):
       test(t"Specify datetime"):
         2018-Aug-11 at 5.25.pm
       .assert(_ == Timestamp(Date(2018, Aug, 11), Time(17, 25, 0)))
+
+      test(t"Add two months to a date"):
+        2014-Nov-20 + 2.months
+      .assert(_ == 2015-Jan-20)
       
+      test(t"Add two days to a date"):
+        2014-Nov-20 + 2.days
+      .assert(_ == 2014-Nov-22)
+      
+      test(t"Add one year to a date"):
+        2014-Nov-20 + 1.year
+      .assert(_ == 2015-Nov-20)
+      
+      test(t"Add two years to a date"):
+        2014-Nov-20 + 2.years
+      .assert(_ == 2016-Nov-20)
+      
+      test(t"Add three years to a date"):
+        2014-Nov-20 + 3.years
+      .assert(_ == 2017-Nov-20)
+      
+      test(t"Read TZDB file"):
+        Tzdb.parseFile(t"europe")
+      .assert(_ == List())
