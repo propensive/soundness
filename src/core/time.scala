@@ -183,7 +183,7 @@ open class TimeSystem[Units <: Denomination]():
   def ambiguousTimes: TimeSystem.AmbiguousTimes = TimeSystem.AmbiguousTimes.Dilate
   def monthArithmetic: TimeSystem.MonthArithmetic = TimeSystem.MonthArithmetic.Scale
   def leapDayArithmetic: TimeSystem.LeapDayArithmetic = TimeSystem.LeapDayArithmetic.PreferFeb28
-  def simplify(period: Period[Units]): Period[Units] = period
+  def simplify(period: Period): Period = period
 
 given TimeSystem[StandardTime] with
   override def simplify(timespan: Timespan): Timespan =
@@ -199,29 +199,48 @@ given TimeSystem[StandardTime] with
       val adjust = timespan3.months/12
       timespan3 + adjust.years - (adjust*12).months
     
-    Period(result.units.filter { (k, v) => v != 0 })
+    result
 
-type Timespan = Period[StandardTime]
+type Timespan = Period
 
 object Period:
-  def apply[U <: Denomination](denomination: U, n: Int): Period[U] = Period(Map(denomination -> n))
+  def apply(denomination: StandardTime, n: Int): Period = denomination match
+    case StandardTime.Year   => Period(n, 0, 0, 0, 0, 0)
+    case StandardTime.Month  => Period(0, n, 0, 0, 0, 0)
+    case StandardTime.Day    => Period(0, 0, n, 0, 0, 0)
+    case StandardTime.Hour   => Period(0, 0, 0, n, 0, 0)
+    case StandardTime.Minute => Period(0, 0, 0, 0, n, 0)
+    case StandardTime.Second => Period(0, 0, 0, 0, 0, n)
 
-case class Period[U <: Denomination](units: Map[U, Int]):
+trait DiurnalPeriod:
+  def years: Int
+  def months: Int
+  def days: Int
+
+  
+
+trait TemporalPeriod:
+  def hours: Int
+  def minutes: Int
+  def seconds: Int
+
+case class Period(override val years: Int, override val months: Int, override val days: Int, hours: Int,
+                      minutes: Int, seconds: Int)
+extends DiurnalPeriod, TemporalPeriod:
   @targetName("plus")
-  def +(period: Period[U])(using timeSys: TimeSystem[U]): Period[U] =
-    val map = (units.keySet ++ period.units.keySet).foldLeft(Map[U, Int]()): (acc, key) =>
-      acc.updated(key, units.getOrElse(key, 0) + period.units.getOrElse(key, 0))
-    
-    Period(map)
+  def +(p: Period)(using timeSys: TimeSystem[StandardTime]): Period =
+    Period(years + p.years, months + p.months, days + p.days, hours + p.hours, minutes + p.minutes, seconds +
+        p.seconds)
   
   @targetName("minus")
-  def -(period: Period[U])(using timeSys: TimeSystem[U]): Period[U] =
-    this + Period(period.units.view.mapValues(-_).to(Map))
+  def -(p: Period)(using timeSys: TimeSystem[StandardTime]): Period =
+    Period(years - p.years, months - p.months, days - p.days, hours - p.hours, minutes - p.minutes, seconds -
+        p.seconds)
   
-  def simplify(using timeSys: TimeSystem[U]): Period[U] = timeSys.simplify(this)
+  def simplify(using timeSys: TimeSystem[StandardTime]): Period = timeSys.simplify(this)
 
   @targetName("times")
-  def *(n: Int): Period[U] = Period(units.view.mapValues(_*n).to(Map))
+  def *(n: Int): Period = Period(years*n, months*n, days*n, hours*n, minutes*n, seconds*n)
 
 extension (int: 1)
   def year: Timespan = Period(StandardTime.Year, 1)
@@ -240,15 +259,6 @@ extension (int: Int)
   def hours: Timespan = Period(StandardTime.Hour, int)
   def minutes: Timespan = Period(StandardTime.Minute, int)
   def seconds: Timespan = Period(StandardTime.Second, int)
-
-extension (timespan: Timespan)
-  def years: Int = timespan.units.getOrElse(StandardTime.Year, 0)
-  def months: Int = timespan.units.getOrElse(StandardTime.Month, 0)
-  def weeks: Int = timespan.units.getOrElse(StandardTime.Week, 0)
-  def days: Int = timespan.units.getOrElse(StandardTime.Day, 0)
-  def hours: Int = timespan.units.getOrElse(StandardTime.Hour, 0)
-  def minutes: Int = timespan.units.getOrElse(StandardTime.Minute, 0)
-  def seconds: Int = timespan.units.getOrElse(StandardTime.Second, 0)
 
 enum WorldRegion:
   case Africa, Antarctica, Asia, Australasia, Etcetera, Europe, NorthAmerica, SouthAmerica
