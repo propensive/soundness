@@ -161,11 +161,11 @@ since all `Executor`s are functors.
 
 The following _Scala One_ libraries are dependencies of _Guillotine_:
 
-[![Eucalyptus](https://github.com/propensive/eucalyptus/raw/main/doc/images/128x128.png)](https://github.com/propensive/eucalyptus/) &nbsp;
+[![Anticipation](https://github.com/propensive/anticipation/raw/main/doc/images/128x128.png)](https://github.com/propensive/anticipation/) &nbsp; [![Eucalyptus](https://github.com/propensive/eucalyptus/raw/main/doc/images/128x128.png)](https://github.com/propensive/eucalyptus/) &nbsp;
 
 The following _Scala One_ libraries are dependents of _Guillotine_:
 
-[![Tarantula](https://github.com/propensive/tarantula/raw/main/doc/images/128x128.png)](https://github.com/propensive/tarantula/) &nbsp;
+[![Oubliette](https://github.com/propensive/oubliette/raw/main/doc/images/128x128.png)](https://github.com/propensive/oubliette/) &nbsp; [![Tarantula](https://github.com/propensive/tarantula/raw/main/doc/images/128x128.png)](https://github.com/propensive/tarantula/) &nbsp;
 
 ## Status
 
@@ -177,7 +177,7 @@ Guillotine is classified as __fledgling__. Propensive defines the following five
 - _dependable_: production-ready, subject to controlled ongoing maintenance and enhancement; tagged as version `1.0` or later
 - _adamantine_: proven, reliable and production-ready, with no further breaking changes ever anticipated
 
-Guillotine is designed to be _small_. Its entire source code currently consists of 335 lines of code.
+Guillotine is designed to be _small_. Its entire source code currently consists of 337 lines of code.
 
 ## Building
 
@@ -215,5 +215,5 @@ Guillotine is named after the Eighteenth Century execution apparatus, as both pe
 
 ## License
 
-Guillotine is copyright &copy; 2018-22 Jon Pretty & Propensive O&Uuml;, and is made available under the
+Guillotine is copyright &copy; 2018-23 Jon Pretty & Propensive O&Uuml;, and is made available under the
 [Apache 2.0 License](/license.md).
