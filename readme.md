@@ -105,7 +105,7 @@ The following _Scala One_ libraries are dependencies of _Joviality_:
 
 The following _Scala One_ libraries are dependents of _Joviality_:
 
-[![Exoskeleton](https://github.com/propensive/exoskeleton/raw/main/doc/images/128x128.png)](https://github.com/propensive/exoskeleton/) &nbsp;
+[![Exoskeleton](https://github.com/propensive/exoskeleton/raw/main/doc/images/128x128.png)](https://github.com/propensive/exoskeleton/) &nbsp; [![Merino](https://github.com/propensive/merino/raw/main/doc/images/128x128.png)](https://github.com/propensive/merino/) &nbsp; [![Oubliette](https://github.com/propensive/oubliette/raw/main/doc/images/128x128.png)](https://github.com/propensive/oubliette/) &nbsp;
 
 ## Status
 
@@ -117,7 +117,7 @@ Joviality is classified as __fledgling__. Propensive defines the following five 
 - _dependable_: production-ready, subject to controlled ongoing maintenance and enhancement; tagged as version `1.0` or later
 - _adamantine_: proven, reliable and production-ready, with no further breaking changes ever anticipated
 
-Joviality is designed to be _small_. Its entire source code currently consists of 370 lines of code.
+Joviality is designed to be _small_. Its entire source code currently consists of 452 lines of code.
 
 ## Building
 
@@ -155,5 +155,5 @@ Joviality's primary focus is handling Input and Output, or _I/O_, and is a pun b
 
 ## License
 
-Joviality is copyright &copy; 2020-22 Jon Pretty & Propensive O&Uuml;, and is made available under the
+Joviality is copyright &copy; 2020-23 Jon Pretty & Propensive O&Uuml;, and is made available under the
 [Apache 2.0 License](/license.md).
