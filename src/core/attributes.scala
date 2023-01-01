@@ -72,10 +72,10 @@ object Crossorigin:
 enum Crossorigin:
   case UseCredentials, Anonymous
 
-object Dir:
-  given Show[Dir] = Showable(_).show.lower
+object HDir:
+  given Show[HDir] = Showable(_).show.lower
 
-enum Dir:
+enum HDir:
   case Ltr, Rtl, Auto
 
 object HttpEquiv:
@@ -185,7 +185,7 @@ object HtmlAttribute:
   given datetime[T]: HtmlAttribute["datetime", Text, T] = identity(_) // To be provided by Temporaneous
   given default[T]: HtmlAttribute["default", Boolean, T] = _ => Unset
   given defer[T]: HtmlAttribute["defer", Boolean, T] = _ => Unset
-  given dir[T]: HtmlAttribute["dir", Dir, T] = _.show
+  given dir[T]: HtmlAttribute["dir", HDir, T] = _.show
   given dirname[T]: HtmlAttribute["dirname", Text, T] = identity(_) // Should be the name of an input in a form, followed by `.dir`
   given disabled[T]: HtmlAttribute["disabled", Boolean, T] = _ => Unset
   given download[T]: HtmlAttribute["download", Text, T] = identity(_) // should be a filename, but probably best as `Text`
