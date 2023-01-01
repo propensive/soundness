@@ -163,7 +163,7 @@ object Email:
 
 The following _Scala One_ libraries are dependencies of _Euphemism_:
 
-[![Anticipation](https://github.com/propensive/anticipation/raw/main/doc/images/128x128.png)](https://github.com/propensive/anticipation/) &nbsp; [![Gossamer](https://github.com/propensive/gossamer/raw/main/doc/images/128x128.png)](https://github.com/propensive/gossamer/) &nbsp;
+[![Anticipation](https://github.com/propensive/anticipation/raw/main/doc/images/128x128.png)](https://github.com/propensive/anticipation/) &nbsp; [![Gossamer](https://github.com/propensive/gossamer/raw/main/doc/images/128x128.png)](https://github.com/propensive/gossamer/) &nbsp; [![Merino](https://github.com/propensive/merino/raw/main/doc/images/128x128.png)](https://github.com/propensive/merino/) &nbsp; [![Probably](https://github.com/propensive/probably/raw/main/doc/images/128x128.png)](https://github.com/propensive/probably/) &nbsp;
 
 The following _Scala One_ libraries are dependents of _Euphemism_:
 
@@ -179,7 +179,7 @@ Euphemism is classified as __fledgling__. Propensive defines the following five 
 - _dependable_: production-ready, subject to controlled ongoing maintenance and enhancement; tagged as version `1.0` or later
 - _adamantine_: proven, reliable and production-ready, with no further breaking changes ever anticipated
 
-Euphemism is designed to be _small_. Its entire source code currently consists of 327 lines of code.
+Euphemism is designed to be _small_. Its entire source code currently consists of 409 lines of code.
 
 ## Building
 
@@ -217,5 +217,5 @@ A _euphemism_ is a means to describe something harsh with an inoffensive express
 
 ## License
 
-Euphemism is copyright &copy; 2019-22 Jon Pretty & Propensive O&Uuml;, and is made available under the
+Euphemism is copyright &copy; 2019-23 Jon Pretty & Propensive O&Uuml;, and is made available under the
 [Apache 2.0 License](/license.md).
