@@ -93,15 +93,15 @@ open class TextConverter():
               line =>
                 line.map:
                   case Token.Code(code, flair) => flair match
-                    case Flair.Type              => ansi"${solarized.Blue}(${code.trim})"
-                    case Flair.Term              => ansi"${solarized.Green}(${code.trim})"
-                    case Flair.Symbol            => ansi"${solarized.Red}(${code.trim})"
-                    case Flair.Keyword           => ansi"${solarized.Orange}(${code.trim})"
-                    case Flair.Modifier          => ansi"${solarized.Yellow}(${code.trim})"
-                    case Flair.Ident             => ansi"${solarized.Cyan}(${code.trim})"
-                    case Flair.Error             => ansi"${solarized.Red}($Underline(${code.trim}))"
-                    case Flair.Number            => ansi"${solarized.Violet}(${code.trim})"
-                    case Flair.String            => ansi"${solarized.Violet}(${code.trim})"
+                    case Accent.Type              => ansi"${solarized.Blue}(${code.trim})"
+                    case Accent.Term              => ansi"${solarized.Green}(${code.trim})"
+                    case Accent.Symbol            => ansi"${solarized.Red}(${code.trim})"
+                    case Accent.Keyword           => ansi"${solarized.Orange}(${code.trim})"
+                    case Accent.Modifier          => ansi"${solarized.Yellow}(${code.trim})"
+                    case Accent.Ident             => ansi"${solarized.Cyan}(${code.trim})"
+                    case Accent.Error             => ansi"${solarized.Red}($Underline(${code.trim}))"
+                    case Accent.Number            => ansi"${solarized.Violet}(${code.trim})"
+                    case Accent.String            => ansi"${solarized.Violet}(${code.trim})"
                     case other                   => ansi"${code.trim}"
                   case Token.Unparsed(content)   => ansi"${content}"
                   case _                       => throw Mistake("Should not have a newline")
