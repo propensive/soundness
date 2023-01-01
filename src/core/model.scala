@@ -68,15 +68,15 @@ case class Node(data: Maybe[Data] = Unset, meta: Maybe[Meta] = Unset) extends Dy
     if !children.isEmpty then s"$key[${children.mkString(" ")}]" else key.mm(_.s).or:
       meta.toString
 
-object Doc:
-  def apply(nodes: Node*): Doc = Doc(IArray.from(nodes), CodlSchema.Free, 0)
+object CodlDoc:
+  def apply(nodes: Node*): CodlDoc = CodlDoc(IArray.from(nodes), CodlSchema.Free, 0)
 
-case class Doc(children: IArray[Node], schema: CodlSchema, margin: Int, body: LazyList[Text] = LazyList())
+case class CodlDoc(children: IArray[Node], schema: CodlSchema, margin: Int, body: LazyList[Text] = LazyList())
 extends Indexed:
   override def toString(): String = s"[[${children.mkString(" ")}]]"
   
   override def equals(that: Any) = that.matchable(using Unsafe) match
-    case that: Doc => schema == that.schema && margin == that.margin && children.sameElements(that.children)
+    case that: CodlDoc => schema == that.schema && margin == that.margin && children.sameElements(that.children)
     case _         => false
 
   override def hashCode: Int = children.toSeq.hashCode ^ schema.hashCode ^ margin.hashCode
@@ -84,7 +84,7 @@ extends Indexed:
   def layout: Layout = Layout.empty
   def paramIndex: Map[Text, Int] = Map()
 
-  def merge(input: Doc): Doc =
+  def merge(input: CodlDoc): CodlDoc =
     
     def cmp(x: Node, y: Node): Boolean =
       if x.uniqueId.unset || y.uniqueId.unset then
@@ -114,8 +114,8 @@ extends Indexed:
 
 
   def as[T](using codec: Codec[T]): T throws IncompatibleTypeError = codec.deserialize(List(this))
-  def uncommented: Doc = Doc(children.map(_.uncommented), schema, margin, body)
-  def untyped: Doc = Doc(children.map(_.untyped), CodlSchema.Free, margin, body)
+  def uncommented: CodlDoc = CodlDoc(children.map(_.uncommented), schema, margin, body)
+  def untyped: CodlDoc = CodlDoc(children.map(_.untyped), CodlSchema.Free, margin, body)
   def wiped = uncommented.untyped
 
   def binary(using Log): Text =

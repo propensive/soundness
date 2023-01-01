@@ -412,7 +412,7 @@ object Tests extends Suite(t"CoDL tests"):
       .assert(_ contains CodlToken.Error(CodlError(2, 1, 1, CodlError.Issue.UnevenIndent(0, 1))))
 
     suite(t"Access tests"):
-      val doc = Doc(
+      val doc = CodlDoc(
         Node(t"term")(
           Node(t"name")(Node(t"alpha")(), Node(t"beta")()),
           Node(t"name")(Node(t"gamma")()),
@@ -447,118 +447,118 @@ object Tests extends Suite(t"CoDL tests"):
         doc.term().name()(1)
       .assert(_ == Node(Data(t"beta")))
 
-    def read(text: Text)(using Log): Doc = Codl.parse(ji.StringReader(text.s))
+    def read(text: Text)(using Log): CodlDoc = Codl.parse(ji.StringReader(text.s))
     
     suite(t"Untyped parsing tests"):
       test(t"Empty document"):
         read(t"")
-      .assert(_ == Doc())
+      .assert(_ == CodlDoc())
 
       test(t"Simplest non-empty document"):
         read(t"root").wiped
-      .assert(_ == Doc(Node(Data(t"root"))))
+      .assert(_ == CodlDoc(Node(Data(t"root"))))
       
       test(t"Root peers"):
         read(t"root\nelement\n").wiped
-      .assert(_ == Doc(Node(t"root")(), Node(t"element")()))
+      .assert(_ == CodlDoc(Node(t"root")(), Node(t"element")()))
 
       test(t"Single child"):
         read(t"root\n  child").wiped
-      .assert(_ == Doc(Node(t"root")(Node(t"child")())))
+      .assert(_ == CodlDoc(Node(t"root")(Node(t"child")())))
       
       test(t"Single child and peer"):
         read(t"root\n  child\npeer").wiped
-      .assert(_ == Doc(Node(t"root")(Node(t"child")()), Node(t"peer")()))
+      .assert(_ == CodlDoc(Node(t"root")(Node(t"child")()), Node(t"peer")()))
       
       test(t"Single child and grandchild"):
         read(t"root\n  child\n    grandchild").wiped
-      .assert(_ == Doc(Node(t"root")(Node(t"child")(Node(t"grandchild")()))))
+      .assert(_ == CodlDoc(Node(t"root")(Node(t"child")(Node(t"grandchild")()))))
       
       test(t"Single child and grandchild and peer"):
         read(t"root\n  child\n    grandchild\npeer").wiped
-      .assert(_ == Doc(Node(t"root")(Node(t"child")(Node(t"grandchild")())), Node(t"peer")()))
+      .assert(_ == CodlDoc(Node(t"root")(Node(t"child")(Node(t"grandchild")())), Node(t"peer")()))
       
       test(t"Peers at multiple levels"):
         read(t"root\n  child\n    grandchild\n  child\n    grandchild\npeer").wiped
-      .assert(_ == Doc(Node(t"root")(Node(t"child")(Node(t"grandchild")()),
+      .assert(_ == CodlDoc(Node(t"root")(Node(t"child")(Node(t"grandchild")()),
           Node(t"child")(Node(t"grandchild")())), Node(t"peer")()))
     
       test(t"Data with parameter"):
         read(t"root param").wiped
-      .assert(_ == Doc(Node(t"root")(Node(t"param")())))
+      .assert(_ == CodlDoc(Node(t"root")(Node(t"param")())))
       
       test(t"Data with remark"):
         read(t"root # remark").untyped
-      .assert(_ == Doc(Node(Data(t"root"), Meta(0, Nil, t"remark"))))
+      .assert(_ == CodlDoc(Node(Data(t"root"), Meta(0, Nil, t"remark"))))
       
       test(t"Data after comment"):
         read(t"# comment\nroot").untyped
-      .assert(_ == Doc(Node(Data(t"root"), Meta(0, List(t" comment"), Unset))))
+      .assert(_ == CodlDoc(Node(Data(t"root"), Meta(0, List(t" comment"), Unset))))
       
       test(t"Data after two comments"):
         read(t"# comment 1\n# comment 2\nroot").untyped
-      .assert(_ == Doc(Node(Data(t"root"), Meta(0, List(t" comment 1", t" comment 2"), Unset))))
+      .assert(_ == CodlDoc(Node(Data(t"root"), Meta(0, List(t" comment 1", t" comment 2"), Unset))))
       
       test(t"Comment on child"):
         read(t"root\n  # comment\n  child").untyped
-      .assert(_ == Doc(Node(Data(t"root", IArray(Node(Data(t"child"), Meta(0, List(t" comment"),
+      .assert(_ == CodlDoc(Node(Data(t"root", IArray(Node(Data(t"child"), Meta(0, List(t" comment"),
           Unset)))))))
       
       test(t"Comment and blank line on child"):
         read(t"root\n\n  # comment\n  child").untyped
-      .assert(_ == Doc(Node(Data(t"root", IArray(Node(Data(t"child"), Meta(1, List(t" comment"),
+      .assert(_ == CodlDoc(Node(Data(t"root", IArray(Node(Data(t"child"), Meta(1, List(t" comment"),
           Unset)))))))
       
       test(t"Data with multiple parameters"):
         read(t"root param1 param2").wiped
-      .assert(_ == Doc(Node(t"root")(Node(t"param1")(), Node(t"param2")())))
+      .assert(_ == CodlDoc(Node(t"root")(Node(t"param1")(), Node(t"param2")())))
       
       test(t"Blank line before child"):
         read(t"root\n\n  child").untyped
-      .assert(_ == Doc(Node(Data(t"root", IArray(Node(Data(t"child"), Meta(1, Nil)))))))
+      .assert(_ == CodlDoc(Node(Data(t"root", IArray(Node(Data(t"child"), Meta(1, Nil)))))))
       
       test(t"Two blank lines before child"):
         read(t"root\n\n \n  child").untyped
-      .assert(_ == Doc(Node(Data(t"root", IArray(Node(Data(t"child", IArray()), Meta(2, Nil, Unset)))))))
+      .assert(_ == CodlDoc(Node(Data(t"root", IArray(Node(Data(t"child", IArray()), Meta(2, Nil, Unset)))))))
       
       test(t"Data with multiple parameters, remark and comment"):
         read(t"# comment\nroot param1 param2 # remark").untyped
-      .assert(_ == Doc(Node(Data(t"root", IArray(Node(t"param1")(), Node(t"param2")())), Meta(0,
+      .assert(_ == CodlDoc(Node(Data(t"root", IArray(Node(t"param1")(), Node(t"param2")())), Meta(0,
           List(t" comment"), t"remark"))))
       
       test(t"Data with multiple parameters, remark, comment and peer"):
         read(t"# comment\nroot param1 param2 # remark\npeer").untyped
-      .assert(_ == Doc(Node(Data(t"root", IArray(Node(t"param1")(), Node(t"param2")())), Meta(0,
+      .assert(_ == CodlDoc(Node(Data(t"root", IArray(Node(t"param1")(), Node(t"param2")())), Meta(0,
           List(t" comment"), t"remark")), Node(t"peer")()))
       
       test(t"Comment on blank node"):
         read(t"# comment\n\nroot").untyped
-      .assert(_ == Doc(Node(Unset, Meta(0, List(t" comment"), Unset)), Node(Data(t"root"), Meta(1,
+      .assert(_ == CodlDoc(Node(Unset, Meta(0, List(t" comment"), Unset)), Node(Data(t"root"), Meta(1,
           Nil, Unset))))
       
       test(t"Remark after blank line"):
         read(t"root\n\npeer # remark").untyped
-      .assert(_ == Doc(Node(t"root")(), Node(Data(t"peer"), Meta(0, Nil, t"remark"))))
+      .assert(_ == CodlDoc(Node(t"root")(), Node(Data(t"peer"), Meta(0, Nil, t"remark"))))
       
       test(t"Long item"):
         read(t"root\n    one two\n").wiped
-      .assert(_ == Doc(Node(t"root")(Node(t"one two")())))
+      .assert(_ == CodlDoc(Node(t"root")(Node(t"one two")())))
       
       test(t"Unindented blank line does not terminate long content"):
         read(t"root\n    one\n    two\n\n    three").wiped
-      .assert(_ == Doc(Node(t"root")(Node(t"one\ntwo\n\nthree")())))
+      .assert(_ == CodlDoc(Node(t"root")(Node(t"one\ntwo\n\nthree")())))
       
       test(t"Multiline item"):
         read(t"root\n  child\n    this\n        one two\n        three four\n").wiped
-      .assert(_ == Doc(Node(t"root")(Node(t"child")(Node(t"this")(Node(t"one two\nthree four")())))))
+      .assert(_ == CodlDoc(Node(t"root")(Node(t"child")(Node(t"this")(Node(t"one two\nthree four")())))))
       
       test(t"Terminated content"):
         read(t"ROOT\n  one two\n##\nfoobar\nbaz").wiped
-      .assert(_ == Doc(Node(t"ROOT")(Node(t"one")(Node(t"two")()))))
+      .assert(_ == CodlDoc(Node(t"ROOT")(Node(t"one")(Node(t"two")()))))
       
       test(t"Terminated content without newline"):
         read(t"root\n    one two\n##").wiped
-      .assert(_ == Doc(Node(t"root")(Node(t"one two")())))
+      .assert(_ == CodlDoc(Node(t"root")(Node(t"one two")())))
       
       test(t"Terminated content with body"):
         read(t"root\n    one two\n##\nunparsed content").body
@@ -872,7 +872,7 @@ object Tests extends Suite(t"CoDL tests"):
         t"field3" -> Field(Optional)
       )
       
-      def roundtrip(doc: Doc)(using Log): Doc = Bin.read(doc.schema, ji.StringReader(doc.binary.s).nn)
+      def roundtrip(doc: CodlDoc)(using Log): CodlDoc = Bin.read(doc.schema, ji.StringReader(doc.binary.s).nn)
 
       val doc = schema.parse(t"field")
       
@@ -911,36 +911,36 @@ object Tests extends Suite(t"CoDL tests"):
 
       test(t"write a simple case class"):
         Person(t"John Smith", 65).codl.untyped
-      .assert(_ == Doc(Node(t"name")(Node(t"John Smith")()), Node(t"age")(Node(t"65")())))
+      .assert(_ == CodlDoc(Node(t"name")(Node(t"John Smith")()), Node(t"age")(Node(t"65")())))
       
       test(t"write a nested case class"):
         val person1 = Person(t"Alpha", 1)
         Organisation(t"Acme", person1).codl.untyped
-      .assert(_ == Doc(Node(t"name")(Node(t"Acme")()), Node(t"ceo")(Node(t"name")(Node(t"Alpha")()),
+      .assert(_ == CodlDoc(Node(t"name")(Node(t"Acme")()), Node(t"ceo")(Node(t"name")(Node(t"Alpha")()),
           Node(t"age")(Node(t"1")()))))
       
       test(t"write a case class with optional field specified"):
         Player(t"Barry", 1).codl.untyped
-      .assert(_ == Doc(Node(t"name")(Node(t"Barry")()), Node(t"rank")(Node(t"1")())))
+      .assert(_ == CodlDoc(Node(t"name")(Node(t"Barry")()), Node(t"rank")(Node(t"1")())))
       
       test(t"write a case class with optional field unspecified"):
         Player(t"Barry", Unset).codl.untyped
-      .assert(_ == Doc(Node(t"name")(Node(t"Barry")())))
+      .assert(_ == CodlDoc(Node(t"name")(Node(t"Barry")())))
       
       test(t"serialize a List of case classes"):
         List(Person(t"John Smith", 65), Person(t"Jim Calvin", 11)).codl.untyped
-      .assert(_ == Doc(
+      .assert(_ == CodlDoc(
         Node(t"name")(Node(t"John Smith")()), Node(t"age")(Node(t"65")()),
         Node(t"name")(Node(t"Jim Calvin")()), Node(t"age")(Node(t"11")())
       ))
       
       test(t"serialize a List of integers"):
         List(1, 2, 3).codl.untyped
-      .assert(_ == Doc(Node(t"1")(), Node(t"2")(), Node(t"3")()))
+      .assert(_ == CodlDoc(Node(t"1")(), Node(t"2")(), Node(t"3")()))
       
       test(t"serialize a List of booleans"):
         List(true, false, true).codl.untyped
-      .assert(_ == Doc(Node(t"yes")(), Node(t"no")(), Node(t"yes")()))
+      .assert(_ == CodlDoc(Node(t"yes")(), Node(t"no")(), Node(t"yes")()))
 
       test(t"roundtrip a true boolean"):
         roundtrip[Boolean](true)
@@ -1034,43 +1034,43 @@ object Tests extends Suite(t"CoDL tests"):
     suite(t"Serialization tests"):
 
       test(t"Serialize a node"):
-        Doc(Node(Data(t"root"))).serialize
+        CodlDoc(Node(Data(t"root"))).serialize
       .assert(_ == t"root\n")
 
       test(t"Serialize a node and a child"):
-        Doc(Node(Data(t"root", IArray(Node(Data(t"child")))))).serialize
+        CodlDoc(Node(Data(t"root", IArray(Node(Data(t"child")))))).serialize
       .assert(_ == t"root\n  child\n")
       
       test(t"Serialize a node and a child with params layout"):
-        Doc(Node(Data(t"root", IArray(Node(Data(t"child"))), Layout(1, false)))).serialize
+        CodlDoc(Node(Data(t"root", IArray(Node(Data(t"child"))), Layout(1, false)))).serialize
       .assert(_ == t"root child\n")
       
       test(t"Serialize a node and a child with block param"):
-        Doc(Node(Data(t"root", IArray(Node(Data(t"child")), Node(Data(t"Hello World"))), Layout(2, true)))).serialize
+        CodlDoc(Node(Data(t"root", IArray(Node(Data(t"child")), Node(Data(t"Hello World"))), Layout(2, true)))).serialize
       .assert(_ == t"root child\n    Hello World\n")
       
       test(t"Serialize a node and a child with multiline block param"):
-        Doc(Node(Data(t"root", IArray(Node(Data(t"child")), Node(Data(t"Hello\nWorld"))), Layout(2, true)))).serialize
+        CodlDoc(Node(Data(t"root", IArray(Node(Data(t"child")), Node(Data(t"Hello\nWorld"))), Layout(2, true)))).serialize
       .assert(_ == t"root child\n    Hello\n    World\n")
       
       test(t"Serialize a node and a child with comment"):
-        Doc(Node(Data(t"root", IArray(Node(Data(t"child"), Meta(comments = List(t" comment"))))))).serialize
+        CodlDoc(Node(Data(t"root", IArray(Node(Data(t"child"), Meta(comments = List(t" comment"))))))).serialize
       .assert(_ == t"root\n  # comment\n  child\n")
       
       test(t"Serialize a node and a child with multiline comment"):
-        Doc(Node(Data(t"root", IArray(Node(Data(t"child"), Meta(comments = List(t" line 1", t" line 2"))))))).serialize
+        CodlDoc(Node(Data(t"root", IArray(Node(Data(t"child"), Meta(comments = List(t" line 1", t" line 2"))))))).serialize
       .assert(_ == t"root\n  # line 1\n  # line 2\n  child\n")
       
       test(t"Serialize a node and a child with multiline comment and blank lines"):
-        Doc(Node(Data(t"root", IArray(Node(Data(t"child"), Meta(blank = 2, comments = List(t" line 1", t" line 2"))))))).serialize
+        CodlDoc(Node(Data(t"root", IArray(Node(Data(t"child"), Meta(blank = 2, comments = List(t" line 1", t" line 2"))))))).serialize
       .assert(_ == t"root\n\n\n  # line 1\n  # line 2\n  child\n")
       
       test(t"Serialize a node and a child with blank lines"):
-        Doc(Node(Data(t"root", IArray(Node(Data(t"child"), Meta(blank = 2)))))).serialize
+        CodlDoc(Node(Data(t"root", IArray(Node(Data(t"child"), Meta(blank = 2)))))).serialize
       .assert(_ == t"root\n\n\n  child\n")
       
       test(t"Serialize a node and a child with a remark"):
-        Doc(Node(Data(t"root", IArray(Node(Data(t"child"), Meta(remark = t"some remark")))))).serialize
+        CodlDoc(Node(Data(t"root", IArray(Node(Data(t"child"), Meta(remark = t"some remark")))))).serialize
       .assert(_ == t"root\n  child # some remark\n")
 
     // suite(t"Interpolation suite"):
@@ -1081,7 +1081,7 @@ object Tests extends Suite(t"CoDL tests"):
     //         child value
     //       test
     //     """.untyped.copy(margin = 0)
-    //   .assert(_ == Doc(Node(t"root")(Node(t"child")(Node(t"value")())), Node(t"test")()))
+    //   .assert(_ == CodlDoc(Node(t"root")(Node(t"child")(Node(t"value")())), Node(t"test")()))
       
     //   test(t"Interpolator with one substitutions"):
     //     val bar = t"Hello"
@@ -1091,7 +1091,7 @@ object Tests extends Suite(t"CoDL tests"):
     //         child value
     //       test
     //     """.untyped.copy(margin = 0)
-    //   .assert(_ == Doc(Node(t"root")(Node(t"Hello")(), Node(t"child")(Node(t"value")())), Node(t"test")()))
+    //   .assert(_ == CodlDoc(Node(t"root")(Node(t"Hello")(), Node(t"child")(Node(t"value")())), Node(t"test")()))
 
     //   test(t"Interpolator with substitution containing space"):
     //     val bar = t"Hello World"
@@ -1101,4 +1101,4 @@ object Tests extends Suite(t"CoDL tests"):
     //         child value
     //       test
     //     """.untyped.copy(margin = 0)
-    //   .assert(_ == Doc(Node(t"root")(Node(t"Hello World")(), Node(t"child")(Node(t"value")())), Node(t"test")()))
+    //   .assert(_ == CodlDoc(Node(t"root")(Node(t"Hello World")(), Node(t"child")(Node(t"value")())), Node(t"test")()))

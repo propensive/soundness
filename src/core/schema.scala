@@ -57,7 +57,7 @@ extends Dynamic:
 
   def optional: CodlSchema
   def entry(n: Int): Entry = subschemas(n)
-  def parse(text: Text)(using Log): Doc throws AggregateError = Codl.parse(ji.StringReader(text.s), this)
+  def parse(text: Text)(using Log): CodlDoc throws AggregateError = Codl.parse(ji.StringReader(text.s), this)
   def apply(key: Text): Maybe[CodlSchema] = dictionary.get(key).orElse(dictionary.get(Unset)).getOrElse(Unset)
   def apply(idx: Int): Entry = subschemas(idx)
 

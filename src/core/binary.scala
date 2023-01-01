@@ -30,7 +30,7 @@ object Bin:
     write(out, text.length)
     out.write(text.s)
 
-  def write(out: ji.Writer, doc: Doc): Unit =
+  def write(out: ji.Writer, doc: CodlDoc): Unit =
     out.write("\u00b1\u00c0\u00d1")
     write(out, doc.schema, doc.children)
 
@@ -48,7 +48,7 @@ object Bin:
             write(out, idx)
             write(out, schema.entry(idx - 1).schema, children)
       
-  def read(schema: CodlSchema, reader: ji.Reader): Doc throws BinaryError =
+  def read(schema: CodlSchema, reader: ji.Reader): CodlDoc throws BinaryError =
     if reader.read() != '\u00b1' || reader.read() != '\u00c0' || reader.read() != '\u00d1'
     then throw BinaryError(t"header 0xb1c0d1", 0)
     
@@ -70,7 +70,7 @@ object Bin:
             
             Node(Data(key, children, Layout.empty, subschema(1)))
     
-    Doc(IArray.from(recur(schema)), schema, 0)
+    CodlDoc(IArray.from(recur(schema)), schema, 0)
 
   private def readNumber(in: ji.Reader): Int = in.read - 32
 

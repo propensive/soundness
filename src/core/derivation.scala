@@ -126,7 +126,7 @@ object Codec extends Derivation[Codec]:
 
     def deserialize(value: List[Indexed]): List[T] throws IncompatibleTypeError = codec.schema match
       case Field(_, validator) => value.flatMap(_.children).map: node =>
-        codec.deserialize(List(Doc(node)))
+        codec.deserialize(List(CodlDoc(node)))
       
       case struct: Struct =>
         value.map { v => codec.deserialize(List(v)) }
@@ -142,7 +142,7 @@ object Codec extends Derivation[Codec]:
     def deserialize(value: List[Indexed]): Set[T] throws IncompatibleTypeError = codec.schema match
       case Field(_, validator) =>
         value.flatMap(_.children).map: node =>
-          codec.deserialize(List(Doc(node)))
+          codec.deserialize(List(CodlDoc(node)))
         .to(Set)
       
       case struct: Struct =>

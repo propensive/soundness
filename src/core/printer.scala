@@ -24,7 +24,7 @@ import java.io as ji
 import language.experimental.captureChecking
 
 object Printer:
-  def print(out: ji.Writer, doc: Doc): Unit =
+  def print(out: ji.Writer, doc: CodlDoc): Unit =
     
     def recur(node: Node, indent: Int): Unit = node match
       case Node(data, meta) =>

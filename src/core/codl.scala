@@ -41,7 +41,7 @@ object Codl:
   
   def parse(reader: Reader, schema: CodlSchema = CodlSchema.Free, subs: List[Data] = Nil, fromStart: Boolean = false)
            (using Log)
-           : Doc throws AggregateError =
+           : CodlDoc throws AggregateError =
     val (margin, stream) = tokenize(reader, fromStart)
     val baseSchema: CodlSchema = schema
     
@@ -81,14 +81,14 @@ object Codl:
     @tailrec
     def recur(tokens: LazyList[CodlToken], focus: Proto, peers: List[Node], stack: List[(Proto, List[Node])],
                   lines: Int, subs: List[Data], errors: List[CodlError], body: LazyList[Text])
-             : Doc =
+             : CodlDoc =
       
       def schema: CodlSchema = stack.headOption.fold(baseSchema)(_.head.schema.option.get)
       
       inline def go(tokens: LazyList[CodlToken] = tokens.tail, focus: Proto = focus, peers: List[Node] = peers,
                         stack: List[(Proto, List[Node])] = stack, lines: Int = lines, subs: List[Data] = subs,
                         errors: List[CodlError] = errors, body: LazyList[Text] = LazyList())
-                   : Doc =
+                   : CodlDoc =
         recur(tokens, focus, peers, stack, lines, subs, errors, body)
       
       tokens match
@@ -97,7 +97,7 @@ object Codl:
             val (closed, errors2) = focus.close
             val allErrors = errors2 ::: errors
             val children = if closed.blank then peers.reverse else (closed :: peers).reverse
-            if allErrors.isEmpty then Doc(IArray.from(children), baseSchema, margin, body)
+            if allErrors.isEmpty then CodlDoc(IArray.from(children), baseSchema, margin, body)
             else throw AggregateError(allErrors.reverse)
           
           case _ =>
@@ -189,7 +189,7 @@ object Codl:
             case _ => throw Mistake("Should never match")
 
 
-    if stream.isEmpty then Doc() else recur(stream, Proto(), Nil, Nil, 0, subs.reverse, Nil, LazyList())
+    if stream.isEmpty then CodlDoc() else recur(stream, Proto(), Nil, Nil, 0, subs.reverse, Nil, LazyList())
 
   def tokenize(in: Reader, fromStart: Boolean = false)(using Log): (Int, LazyList[CodlToken]) =
     val reader: PositionReader = PositionReader(in)
@@ -311,8 +311,8 @@ object Codl:
   case class State(parts: List[Text], subs: List[Data]):
     def content: Text = parts.reverse.join(t"\u0000")
 
-  object Prefix extends Interpolator[List[Data], State, Doc]:
-    protected def complete(state: State): Doc =
+  object Prefix extends Interpolator[List[Data], State, CodlDoc]:
+    protected def complete(state: State): CodlDoc =
       try Codl.parse(StringReader(state.content.s), CodlSchema.Free, state.subs.reverse, fromStart = true)(using
           logging.silent(using parasitism.threading.platform))
       catch
