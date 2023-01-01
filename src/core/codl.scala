@@ -25,7 +25,7 @@ import quagmire.*
 
 given Realm(t"codl")
 
-enum Token:
+enum CodlToken:
   case Indent, Peer, Blank, Argument
   case Line(text: Text)
   case Outdent(n: Int)
@@ -79,13 +79,13 @@ object Codl:
             (node, errors)
 
     @tailrec
-    def recur(tokens: LazyList[Token], focus: Proto, peers: List[Node], stack: List[(Proto, List[Node])],
+    def recur(tokens: LazyList[CodlToken], focus: Proto, peers: List[Node], stack: List[(Proto, List[Node])],
                   lines: Int, subs: List[Data], errors: List[CodlError], body: LazyList[Text])
              : Doc =
       
       def schema: CodlSchema = stack.headOption.fold(baseSchema)(_.head.schema.option.get)
       
-      inline def go(tokens: LazyList[Token] = tokens.tail, focus: Proto = focus, peers: List[Node] = peers,
+      inline def go(tokens: LazyList[CodlToken] = tokens.tail, focus: Proto = focus, peers: List[Node] = peers,
                         stack: List[(Proto, List[Node])] = stack, lines: Int = lines, subs: List[Data] = subs,
                         errors: List[CodlError] = errors, body: LazyList[Text] = LazyList())
                    : Doc =
@@ -101,13 +101,13 @@ object Codl:
             else throw AggregateError(allErrors.reverse)
           
           case _ =>
-            go(LazyList(Token.Outdent(stack.length + 1)))
+            go(LazyList(CodlToken.Outdent(stack.length + 1)))
     
         case token #:: tail => token match
-          case Token.Line(_) =>
-            go(tokens = LazyList(), body = tokens.collect { case Token.Line(txt) => txt })
-          case Token.Error(err) => go(errors = err :: errors)
-          case Token.Peer => focus.key match
+          case CodlToken.Line(_) =>
+            go(tokens = LazyList(), body = tokens.collect { case CodlToken.Line(txt) => txt })
+          case CodlToken.Error(err) => go(errors = err :: errors)
+          case CodlToken.Peer => focus.key match
             case key: Text =>
               val (closed, errors2) = focus.close
               go(focus = Proto(), peers = closed :: peers, errors = errors2 ::: errors)
@@ -118,33 +118,33 @@ object Codl:
             case _ =>
               throw Mistake("Should never match")
             
-          case Token.Indent =>
+          case CodlToken.Indent =>
             val errors2 = if focus.key.unset then CodlError(focus.line, focus.col, 1, IndentAfterComment) :: errors else errors
             go(focus = Proto(), peers = Nil, stack = (focus -> peers) :: stack, errors = errors2)
           
-          case Token.Outdent(n) => stack match
+          case CodlToken.Outdent(n) => stack match
             case Nil =>
               go(LazyList())
             
             case (proto, rest) :: stack2 =>
-              val next = if n == 1 then Token.Peer else Token.Outdent(n - 1)
+              val next = if n == 1 then CodlToken.Peer else CodlToken.Outdent(n - 1)
               val (closed, errors2) = focus.close
               val focus2 = proto.copy(children = closed :: peers ::: proto.children)
 
               go(next #:: tail, focus = focus2, peers = rest, stack = stack2, errors = errors2 ::: errors)
           
-          case Token.Tab(n) =>
+          case CodlToken.Tab(n) =>
             go()
           
-          case Token.Blank => focus.meta match
+          case CodlToken.Blank => focus.meta match
             case Unset            => go(lines = lines + 1)
             case Meta(l, _, _, _) => val (closed, errors2) = focus.close
                                      go(focus = Proto(), peers = closed :: peers, lines = lines + 1, errors = errors2 ::: errors)
           
-          case Token.Argument =>
+          case CodlToken.Argument =>
             go(focus = focus.substitute(subs.head), subs = subs.tail)
 
-          case Token.Item(word, line, col, block) =>
+          case CodlToken.Item(word, line, col, block) =>
             val meta2: Maybe[Meta] = focus.meta.or(if lines == 0 then Unset else Meta(blank = lines))
             
             focus.key match
@@ -180,7 +180,7 @@ object Codl:
               case _ =>
                 throw Mistake("Should never match")
           
-          case Token.Comment(txt, line, col) => focus.key match
+          case CodlToken.Comment(txt, line, col) => focus.key match
             case Unset => val meta = focus.meta.or(Meta())
                           go(focus = Proto(line = line, col = col, meta = meta.copy(blank = lines, comments = txt :: meta.comments)))
             
@@ -191,7 +191,7 @@ object Codl:
 
     if stream.isEmpty then Doc() else recur(stream, Proto(), Nil, Nil, 0, subs.reverse, Nil, LazyList())
 
-  def tokenize(in: Reader, fromStart: Boolean = false)(using Log): (Int, LazyList[Token]) =
+  def tokenize(in: Reader, fromStart: Boolean = false)(using Log): (Int, LazyList[CodlToken]) =
     val reader: PositionReader = PositionReader(in)
 
     enum State:
@@ -207,19 +207,19 @@ object Codl:
     val (first: Character, start: Int) = try cue(0) catch case err: CodlError => ???
     val margin: Int = first.column
 
-    def istream(char: Character, state: State = Indent, indent: Int = margin, count: Int): LazyList[Token] =
+    def istream(char: Character, state: State = Indent, indent: Int = margin, count: Int): LazyList[CodlToken] =
       stream(char, state, indent, count)
     
     @tailrec
     def stream(char: Character, state: State = Indent, indent: Int = margin, count: Int = start)
-              : LazyList[Token] =
+              : LazyList[CodlToken] =
       inline def next(): Character =
         try reader.next() catch case err: CodlError => Character('\n', err.line, err.col)
       
-      inline def recur(state: State, indent: Int = indent, count: Int = count + 1): LazyList[Token] =
+      inline def recur(state: State, indent: Int = indent, count: Int = count + 1): LazyList[CodlToken] =
         stream(next(), state, indent, count)
       
-      inline def line(): LazyList[Token] =
+      inline def line(): LazyList[CodlToken] =
         reader.get()
         val char = next()
         if char.char != '\n' && char != Character.End then ???
@@ -227,56 +227,56 @@ object Codl:
           LazyList()
         else stream(next(), Line, indent, count + 1)
       
-      inline def irecur(state: State, indent: Int = indent, count: Int = count + 1): LazyList[Token] =
+      inline def irecur(state: State, indent: Int = indent, count: Int = count + 1): LazyList[CodlToken] =
         istream(next(), state, indent, count)
       
       inline def diff: Int = char.column - indent
       inline def col(char: Character): Int = if fromStart then count else char.column
       
-      def put(next: State, stop: Boolean = false): LazyList[Token] = token() #:: irecur(next)
+      def put(next: State, stop: Boolean = false): LazyList[CodlToken] = token() #:: irecur(next)
 
-      def token(): Token = state match
-        case Comment => Token.Comment(reader.get(), reader.start()(0), reader.start()(1) - 1)
+      def token(): CodlToken = state match
+        case Comment => CodlToken.Comment(reader.get(), reader.start()(0), reader.start()(1) - 1)
         case Margin  => val text = reader.get()
                         val trimmed = if text.last == '\n' then text.drop(1, Rtl) else text
-                        Token.Item(trimmed, reader.start()(0), reader.start()(1), true)
+                        CodlToken.Item(trimmed, reader.start()(0), reader.start()(1), true)
         case Word    => val word = reader.get()
-                        if word == t"\u0000" then Token.Argument
-                        else Token.Item(word, reader.start()(0), reader.start()(1), false)
+                        if word == t"\u0000" then CodlToken.Argument
+                        else CodlToken.Item(word, reader.start()(0), reader.start()(1), false)
         case _       => ???
 
-      inline def consume(next: State): LazyList[Token] =
+      inline def consume(next: State): LazyList[CodlToken] =
         reader.put(char)
         recur(next)
 
-      inline def block(): LazyList[Token] =
+      inline def block(): LazyList[CodlToken] =
         if diff >= 4 || char.char == '\n' then consume(Margin)
         else if char.char == ' ' then recur(Margin)
         else token() #:: istream(char, count = count + 1)
 
-      inline def fail(next: State, error: CodlError, adjust: Maybe[Int] = Unset): LazyList[Token] =
-        Token.Error(error) #:: irecur(next, indent = adjust.or(char.column))
+      inline def fail(next: State, error: CodlError, adjust: Maybe[Int] = Unset): LazyList[CodlToken] =
+        CodlToken.Error(error) #:: irecur(next, indent = adjust.or(char.column))
 
-      inline def newline(next: State): LazyList[Token] =
+      inline def newline(next: State): LazyList[CodlToken] =
         if diff > 4 then fail(Margin, CodlError(char.line, col(char), 1, SurplusIndent), indent)
         else if char.column < margin then fail(Indent, CodlError(char.line, col(char), 1, InsufficientIndent), margin)
         else if diff%2 != 0 then fail(Indent, CodlError(char.line, col(char), 1, UnevenIndent(margin, char.column)), char.column + 1)
         else diff match
-          case 2 => Token.Indent #:: irecur(next, indent = char.column)
-          case 0 => Token.Peer #:: irecur(next, indent = char.column)
-          case n => Token.Outdent(-diff/2) #:: irecur(next, indent = char.column)
+          case 2 => CodlToken.Indent #:: irecur(next, indent = char.column)
+          case 0 => CodlToken.Peer #:: irecur(next, indent = char.column)
+          case n => CodlToken.Outdent(-diff/2) #:: irecur(next, indent = char.column)
 
       char.char match
         case _ if char == Character.End => state match
           case Indent | Space | Tab | Hash => LazyList()
           case Comment | Word | Margin     => LazyList(token())
-          case Line                        => LazyList(Token.Line(reader.get()))
+          case Line                        => LazyList(CodlToken.Line(reader.get()))
         
         case '\n' => state match
           case Word | Comment       => put(Indent)
           case Margin               => block()
-          case Indent | Space | Tab => Token.Blank #:: irecur(Indent)
-          case Line                 => Token.Line(reader.get()) #:: irecur(Line)
+          case Indent | Space | Tab => CodlToken.Blank #:: irecur(Indent)
+          case Line                 => CodlToken.Line(reader.get()) #:: irecur(Line)
           case _                    => recur(Indent)
         
         case ' ' => state match

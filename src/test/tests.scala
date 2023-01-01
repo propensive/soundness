@@ -34,7 +34,7 @@ object Tests extends Suite(t"CoDL tests"):
 
   def run(using Runner): Unit = supervise(t"main"):
     import logging.silent
-    import Token.*
+    import CodlToken.*
     import Arity.*
 
     suite(t"Reader tests"):
@@ -183,7 +183,7 @@ object Tests extends Suite(t"CoDL tests"):
         case _: IllegalStateException =>
 
     suite(t"Tokenizer tests"):
-      def parseText(text: Text)(using Log): (Int, LazyList[Token]) =
+      def parseText(text: Text)(using Log): (Int, LazyList[CodlToken]) =
         val result = Codl.tokenize(ji.StringReader(text.s))
         result(1).length
         result
@@ -384,32 +384,32 @@ object Tests extends Suite(t"CoDL tests"):
         parseText(t"""|root
                       |     surplus-indented
                       |""".s.stripMargin.show)(1)
-      .assert(_ contains Token.Error(CodlError(1, 5, 1, CodlError.Issue.SurplusIndent)))
+      .assert(_ contains CodlToken.Error(CodlError(1, 5, 1, CodlError.Issue.SurplusIndent)))
       
       test(t"Uneven indentation"):
         parseText(t"""|root
                       | uneven indented
                       |""".s.stripMargin.show)(1)
-      .assert(_ contains Token.Error(CodlError(1, 1, 1, CodlError.Issue.UnevenIndent(0, 1))))
+      .assert(_ contains CodlToken.Error(CodlError(1, 1, 1, CodlError.Issue.UnevenIndent(0, 1))))
 
       test(t"Uneven indentation 2"):
         parseText(t"""|root
                       |   uneven indented
                       |""".s.stripMargin.show)(1)
-      .assert(_ contains Token.Error(CodlError(1, 3, 1, CodlError.Issue.UnevenIndent(0, 3))))
+      .assert(_ contains CodlToken.Error(CodlError(1, 3, 1, CodlError.Issue.UnevenIndent(0, 3))))
       
       test(t"Insufficient indentation"):
         parseText(t"""|     root
                       |    uneven indented
                       |""".s.stripMargin.show)(1)
-      .assert(_ contains Token.Error(CodlError(1, 4, 1, CodlError.Issue.InsufficientIndent)))
+      .assert(_ contains CodlToken.Error(CodlError(1, 4, 1, CodlError.Issue.InsufficientIndent)))
       
       test(t"Uneven de-indentation"):
         parseText(t"""|root
                       |  child
                       | deindentation
                       |""".s.stripMargin.show)(1)
-      .assert(_ contains Token.Error(CodlError(2, 1, 1, CodlError.Issue.UnevenIndent(0, 1))))
+      .assert(_ contains CodlToken.Error(CodlError(2, 1, 1, CodlError.Issue.UnevenIndent(0, 1))))
 
     suite(t"Access tests"):
       val doc = Doc(
