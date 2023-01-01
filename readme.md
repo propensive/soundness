@@ -149,5 +149,5 @@ Acyclicity takes its name from the graphs it represents, which must not contain 
 
 ## License
 
-Acyclicity is copyright &copy; 2021-22 Jon Pretty & Propensive O&Uuml;, and is made available under the
+Acyclicity is copyright &copy; 2021-23 Jon Pretty & Propensive O&Uuml;, and is made available under the
 [Apache 2.0 License](/license.md).
