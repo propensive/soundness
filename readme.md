@@ -33,7 +33,7 @@ The following _Scala One_ libraries are dependents of _Merino_:
 
 ## Status
 
-Merino is classified as __experimental__. Propensive defines the following five stability levels for open-source projects:
+Merino is classified as __fledgling__. Propensive defines the following five stability levels for open-source projects:
 
 - _embryonic_: for experimental or demonstrative purposes only, without any guarantees of longevity
 - _fledgling_: of proven utility, seeking contributions, but liable to significant redesigns
