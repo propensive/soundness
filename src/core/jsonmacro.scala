@@ -1,5 +1,5 @@
 /*
-    Euphemism, version 0.4.0. Copyright 2019-22 Jon Pretty, Propensive OÜ.
+    Euphemism, version 0.4.0. Copyright 2019-23 Jon Pretty, Propensive OÜ.
 
     The primary distribution site is: https://propensive.com/
 
@@ -13,7 +13,7 @@
     either express or implied. See the License for the specific language governing permissions
     and limitations under the License.
 */
-/*
+
 package euphemism
 
 import rudiments.*
