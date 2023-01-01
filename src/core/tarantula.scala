@@ -18,7 +18,7 @@ package tarantula
 
 import guillotine.*
 import gossamer.*
-import euphemism.*
+import euphemism.*, jsonSerializers.minimal
 import telekinesis.*
 import cataclysm.*
 import honeycomb.*
@@ -123,8 +123,7 @@ case class WebDriver(server: Browser#Server):
   
     private def post(address: Text, content: Json)(using Log): Json = safe:
       internet:
-        uri"http://localhost:${server.port.show}/session/$sessionId/$address"
-          .post(content).as[Json]
+        uri"http://localhost:${server.port.show}/session/$sessionId/$address".post(content).as[Json]
     
     def navigateTo[U: UriConverter](url: U)(using Log): Json =
       case class Data(url: Text)
