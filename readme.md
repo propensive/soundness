@@ -24,7 +24,29 @@ The current latest release of Surveillance is __0.4.0__.
 
 ## Getting Started
 
-TBC
+Surveillance watches directories for changes to their contents, through an extension method, `watch()`, on a
+type representing a directory or a `Seq` of such types. For [Joviality](https://github.com/propensive/joviality)'s
+`Directory` type, this works straight away. Other libraries which provide directory-like types can integrate with
+Surveillance just by defining two simple [typeclass instances](#defining-typeclass-instances).
+
+## Watching
+
+A simple setup for watching a directory looks like this:
+```scala
+import joviality.*
+import serpentine.*
+import surveillance.*
+
+val dir = (Unix / p"home" / p"work" / p"updates").directory()
+val watcher = dir.watch()
+```
+
+Constructing a new `Watcher` on a directory will register that directory with the filesystem's filewatching service
+and start a new thread to respond to updates.
+
+The most important method of a `Watcher` is its `stream` method, which will return a `LazyList[WatchEvent]`
+
+## Defining Typeclass Instances
 
 
 ## Related Projects
@@ -45,7 +67,7 @@ Surveillance is classified as __fledgling__. Propensive defines the following fi
 - _dependable_: production-ready, subject to controlled ongoing maintenance and enhancement; tagged as version `1.0` or later
 - _adamantine_: proven, reliable and production-ready, with no further breaking changes ever anticipated
 
-Surveillance is designed to be _small_. Its entire source code currently consists of 98 lines of code.
+Surveillance is designed to be _small_. Its entire source code currently consists of 103 lines of code.
 
 ## Building
 
@@ -83,5 +105,5 @@ This library watches directories for changes, which is to say it keeps them unde
 
 ## License
 
-Surveillance is copyright &copy; 2022 Jon Pretty & Propensive O&Uuml;, and is made available under the
+Surveillance is copyright &copy; 2022-23 Jon Pretty & Propensive O&Uuml;, and is made available under the
 [Apache 2.0 License](/license.md).
