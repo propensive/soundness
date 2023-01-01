@@ -211,5 +211,5 @@ Cosmopolite is so-named because it provides multilingual strings, which are free
 
 ## License
 
-Cosmopolite is copyright &copy; 2021-22 Jon Pretty & Propensive O&Uuml;, and is made available under the
+Cosmopolite is copyright &copy; 2021-23 Jon Pretty & Propensive O&Uuml;, and is made available under the
 [Apache 2.0 License](/license.md).
