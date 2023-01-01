@@ -31,7 +31,7 @@ No other _Scala One_ libraries are dependents of _Temporaneous_.
 
 ## Status
 
-Temporaneous is classified as __experimental__. Propensive defines the following five stability levels for open-source projects:
+Temporaneous is classified as __embryonic__. Propensive defines the following five stability levels for open-source projects:
 
 - _embryonic_: for experimental or demonstrative purposes only, without any guarantees of longevity
 - _fledgling_: of proven utility, seeking contributions, but liable to significant redesigns
