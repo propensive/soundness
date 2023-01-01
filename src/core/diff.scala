@@ -1,5 +1,5 @@
 /*
-    Quagmire, version 0.1.0. Copyright 2022-23 Jon Pretty, Propensive OÜ.
+    Dissonance, version 0.1.0. Copyright 2022-23 Jon Pretty, Propensive OÜ.
 
     The primary distribution site is: https://propensive.com/
 
@@ -14,7 +14,7 @@
     and limitations under the License.
 */
 
-package quagmire
+package dissonance
 
 import eucalyptus.*
 import gossamer.*
@@ -119,4 +119,4 @@ object Diff:
 
     distance()
 
-given Realm = Realm(t"quagmire")
+given Realm = Realm(t"dissonance")

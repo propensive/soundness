@@ -2,23 +2,23 @@
   "imports": ["../probably/build.irk"],
   "modules": [
     {
-      "name": "Quagmire",
-      "id": "quagmire/core",
+      "name": "Dissonance",
+      "id": "dissonance/core",
       "links": ["gossamer/core", "eucalyptus/core"],
       "sources": ["src/core"],
       "version": "0.1.0",
       "docs": ["doc"]
     },
     {
-      "name": "Quagmire tests",
-      "id": "quagmire/test",
-      "links": ["quagmire/core", "probably/cli"],
+      "name": "Dissonance tests",
+      "id": "dissonance/test",
+      "links": ["dissonance/core", "probably/cli"],
       "sources": ["src/test"],
       "version": "0.1.0",
       "docs": ["doc"],
       "xec": {
         "browsers": [],
-	      "start": "quagmire.Tests"
+	      "start": "dissonance.Tests"
       },
       "dependencies": [
       ]
