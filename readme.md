@@ -90,7 +90,7 @@ Wisteria is classified as __maturescent__. Propensive defines the following five
 - _dependable_: production-ready, subject to controlled ongoing maintenance and enhancement; tagged as version `1.0` or later
 - _adamantine_: proven, reliable and production-ready, with no further breaking changes ever anticipated
 
-Wisteria is designed to be _small_. Its entire source code currently consists of 871 lines of code.
+Wisteria is designed to be _small_. Its entire source code currently consists of 858 lines of code.
 
 ## Building
 
@@ -128,5 +128,5 @@ Wisteria is a flowering plant, much like magnolia is, and Wisteria is a derivati
 
 ## License
 
-Wisteria is copyright &copy; 2017-22 Jon Pretty & Propensive O&Uuml;, and is made available under the
+Wisteria is copyright &copy; 2017-23 Jon Pretty & Propensive O&Uuml;, and is made available under the
 [Apache 2.0 License](/license.md).
