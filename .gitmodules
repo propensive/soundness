@@ -146,13 +146,15 @@
 	path = mod/parasitism
 	url = git@github.com:propensive/parasitism
 	branch = main
-[submodule "mod/tetromino"]
-	path = mod/tetromino
-	url = git@github.com:propensive/tetromino
-	branch = main
 [submodule "mod/quagmire"]
-	path = mod/quagmire
+	path = mod/dissonance
 	url = git@github.com:propensive/quagmire
 [submodule "mod/cellulose"]
 	path = mod/cellulose
 	url = git@github.com:propensive/cellulose
+[submodule "mod/merino"]
+	path = mod/merino
+	url = git@github.com:propensive/merino
+[submodule "mod/temporaneous"]
+	path = mod/temporaneous
+	url = git@github.com:propensive/temporaneous
