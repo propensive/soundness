@@ -26,7 +26,7 @@ trait Color:
   def standardSrgb: Srgb
 
 object Color:
-  private[iridescence] def unitary(d: Double): Double = d - d.toInt + (if d < 0 then 1 else 0)
+  private[iridescence] inline def unitary(d: Double): Double = d - d.toInt + (if d < 0 then 1 else 0)
 
 case class Xyz(x: Double, y: Double, z: Double) extends Color:
   
@@ -47,9 +47,9 @@ case class Xyz(x: Double, y: Double, z: Double) extends Color:
   def cielab(using profile: ColorProfile): Cielab =
     def limit(v: Double): Double = if v > 0.008856 then math.pow(v, 1.0/3) else 7.787*v + 0.13793
 
-    val l = 116*limit(y/profile.y2) - 16
-    val a = 500*(limit(x/profile.x2) - limit(y/profile.y2))
-    val b = 200*(limit(y/profile.y2) - limit(z/profile.z2))
+    val l: Double = 116*limit(y/profile.y2) - 16
+    val a: Double = 500*(limit(x/profile.x2) - limit(y/profile.y2))
+    val b: Double = 200*(limit(y/profile.y2) - limit(z/profile.z2))
 
     Cielab(l, a, b)
 
@@ -57,10 +57,10 @@ object RgbHex extends Interpolator[Nothing, Option[Rgb24], Rgb24]:
 
   def initial: Option[Rgb24] = None
   
+  
   def parse(state: Option[Rgb24], next: Text): Option[Rgb24] =
     if next.s.length == 7 && next.s.startsWith("#") then parse(state, Text(next.s.substring(1).nn))
-    else if next.s.length == 6 && (next.s.forall { ch => ch.isDigit || (ch >= 'a' && ch <= 'f') || (ch >= 'A' &&
-        ch <= 'F') })
+    else if next.s.length == 6 && (next.s.forall { ch => ch.isDigit || ((ch|32) >= 'a' && (ch|32) <= 'f') })
     then
       val red = Integer.parseInt(next.s.substring(0, 2).nn, 16)
       val green = Integer.parseInt(next.s.substring(2, 4).nn, 16)
@@ -106,6 +106,7 @@ object Rgb32Opaque:
     def red: Int = (color >> 22)&1023
     def green: Int = (color >> 10)&4095
     def blue: Int = color&1023
+    def srgb: Srgb = Srgb(red/1023.0, green/4095.0, blue/1023.0)
   
 object Rgb12Opaque:
   opaque type Rgb12 = Int
@@ -118,6 +119,7 @@ object Rgb12Opaque:
     def green: Int = (color >> 4)&15
     def blue: Int = color&15
     def hex: Text = Text("#"+IArray(red, green, blue).map(Integer.toHexString(_).nn).mkString)
+    def srgb: Srgb = Srgb(red/15.0, green/15.0, blue/15.0)
 
 export Rgb12Opaque.Rgb12
 export Rgb24Opaque.Rgb24
