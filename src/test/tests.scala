@@ -1,5 +1,5 @@
 /*
-    Surveillance, version 0.4.0. Copyright 2020-22 Jon Pretty, Propensive OÜ.
+    Surveillance, version 0.4.0. Copyright 2022-23 Jon Pretty, Propensive OÜ.
 
     The primary distribution site is: https://propensive.com/
 
