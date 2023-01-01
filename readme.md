@@ -225,7 +225,7 @@ Scintillate is classified as __fledgling__. Propensive defines the following fiv
 - _dependable_: production-ready, subject to controlled ongoing maintenance and enhancement; tagged as version `1.0` or later
 - _adamantine_: proven, reliable and production-ready, with no further breaking changes ever anticipated
 
-Scintillate is designed to be _small_. Its entire source code currently consists of 377 lines of code.
+Scintillate is designed to be _small_. Its entire source code currently consists of 353 lines of code.
 
 ## Building
 
@@ -263,5 +263,5 @@ To _scintillate_ is "to fluoresce momentarily when struck by a charged particle"
 
 ## License
 
-Scintillate is copyright &copy; 2021-22 Jon Pretty & Propensive O&Uuml;, and is made available under the
+Scintillate is copyright &copy; 2021-23 Jon Pretty & Propensive O&Uuml;, and is made available under the
 [Apache 2.0 License](/license.md).
