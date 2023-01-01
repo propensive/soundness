@@ -74,7 +74,7 @@ object XmlInterpolation:
   given genInsert[T](using writer: XmlWriter[T]): Insertion[Input, T] =
     value => Input.XmlLike(writer.write(value))
 
-  object XmlInterpolator extends Interpolator[Input, ParseState, Doc]:
+  object XmlInterpolator extends Interpolator[Input, ParseState, XmlDoc]:
     import ContextType.*
     val Letters = ('a' to 'z').to(Set) ++ ('A' to 'Z').to(Set)
     val Digits = ('0' to '9').to(Set)
@@ -107,7 +107,7 @@ object XmlInterpolation:
         case _ =>
           throw InterpolationError(t"a substitution cannot be made in this position")
     
-    def complete(state: ParseState): Doc =
+    def complete(state: ParseState): XmlDoc =
       if state.stack.nonEmpty then throw InterpolationError(t"expected closing tag: ${state.stack.head.name}")
       try Xml.parse(state.source)
       catch case e: XmlParseError => throw InterpolationError(t"the XML could not be parsed")
