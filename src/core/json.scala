@@ -98,17 +98,17 @@ object Json extends Dynamic:
   given (using JsonSerializer): Show[Json] = json =>
     try json.normalize.root.show catch case err: JsonAccessError => t"<${err.reason}>"
 
-  given (using JsonSerializer): HttpResponseStream[JsonAst] with
+  given (using JsonSerializer): HttpResponseStream[Json] with
     def mediaType: String = "application/json"
-    def content(json: JsonAst): LazyList[IArray[Byte]] = LazyList(json.show.bytes)
+    def content(json: Json): LazyList[IArray[Byte]] = LazyList(json.show.bytes)
 
-  given anticipation.HttpReader[JsonAst, JsonParseError] with
-    def read(value: String): JsonAst throws JsonParseError =
-      JsonAst.parse(LazyList(value.getBytes("UTF-8").nn.immutable(using Unsafe)))
+  given anticipation.HttpReader[Json, JsonParseError] with
+    def read(value: String): Json throws JsonParseError =
+      Json(JsonAst.parse(LazyList(value.getBytes("UTF-8").nn.immutable(using Unsafe))), Nil)
 
-  // given (using CanThrow[StreamCutError], CanThrow[JsonAccessError]): Readable[JsonAst] = new Readable[JsonAst]:
-  //   def read(value: DataStream): JsonAst = JsonAst.parse(value)
-
+  given (using CanThrow[StreamCutError], CanThrow[JsonAccessError]): Readable[Json] = new Readable[Json]:
+    def read(value: DataStream) = Json(JsonAst.parse(value), Nil)
+  
   object Writer extends Derivation[Writer]:
     given Writer[Int] = v => JsonAst(v.toLong)
     given Writer[Text] = v => JsonAst(v.s)
@@ -162,6 +162,7 @@ object Json extends Dynamic:
 
   object Reader extends Derivation[Reader]:
     given Reader[JsonAst] = identity(_)
+    given Reader[Json] = Json(_)
     given Reader[Int] = _.long.toInt
     given Reader[Byte] = _.long.toByte
     given Reader[Short] = _.long.toShort
