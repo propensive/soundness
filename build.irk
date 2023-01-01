@@ -1,24 +1,29 @@
 {
   "repos": [
     {
-      "base": "../rudiments",
-      "url": "https://github.com/propensive/rudiments"
+      "base": "../contextual",
+      "url": "https://github.com/propensive/contextual"
     },
     {
       "base": "../cardinality",
       "url": "https://github.com/propensive/cardinality"
+    },
+    {
+      "base": "../probably",
+      "url": "https://github.com/propensive/probably"
     }
   ],
   "imports": [
-    "../rudiments/build.irk",
-    "../cardinality/build.irk"
+    "../contextual/build.irk",
+    "../cardinality/build.irk",
+    "../probably/build.irk"
   ],
   "modules": [
     {
       "name": "Iridescence",
       "id": "iridescence/core",
       "links": [
-        "rudiments/core",
+        "contextual/core",
         "cardinality/core"
       ],
       "sources": [
@@ -28,6 +33,22 @@
       "docs": [
         "doc"
       ]
+    },
+    {
+      "name": "Iridescence Tests",
+      "id": "iridescence/test",
+      "links": [
+        "iridescence/core",
+        "probably/cli",
+        "probably/tolerance"
+      ],
+      "exec": {
+        "browsers": [],
+        "start": "iridescence.Tests"
+      },
+      "sources": ["src/test"],
+      "version": "0.4.0",
+      "docs": ["doc"]
     }
   ]
 }
