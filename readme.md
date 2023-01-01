@@ -56,7 +56,9 @@ to an expected ranged type.
 
 _Cardinality_ has no dependencies.
 
-No other _Scala One_ libraries are dependents of _Cardinality_.
+The following _Scala One_ libraries are dependents of _Cardinality_:
+
+[![Iridescence](https://github.com/propensive/iridescence/raw/main/doc/images/128x128.png)](https://github.com/propensive/iridescence/) &nbsp; [![Temporaneous](https://github.com/propensive/temporaneous/raw/main/doc/images/128x128.png)](https://github.com/propensive/temporaneous/) &nbsp;
 
 ## Status
 
@@ -68,7 +70,7 @@ Cardinality is classified as __fledgling__. Propensive defines the following fiv
 - _dependable_: production-ready, subject to controlled ongoing maintenance and enhancement; tagged as version `1.0` or later
 - _adamantine_: proven, reliable and production-ready, with no further breaking changes ever anticipated
 
-Cardinality is designed to be _small_. Its entire source code currently consists of 72 lines of code.
+Cardinality is designed to be _small_. Its entire source code currently consists of 79 lines of code.
 
 ## Building
 
@@ -106,5 +108,5 @@ The _cardinality_ of a set is the number of elements it contains, while _Cardina
 
 ## License
 
-Cardinality is copyright &copy; 2022 Jon Pretty & Propensive O&Uuml;, and is made available under the
+Cardinality is copyright &copy; 2022-23 Jon Pretty & Propensive O&Uuml;, and is made available under the
 [Apache 2.0 License](/license.md).
