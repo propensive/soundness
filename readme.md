@@ -5,10 +5,10 @@
 
 # Dissonance
 
-Dissonance implements Eugene Myers' diff algorithm in Scala as an immutable function. Using it is as
-simple as calling `Diff.diff(left, right)`, where `left` and `right` are sequences of like-typed
-data to be comparied; the result is an instance of `Diff`, a sequence of additions, deletions and
-no-change nodes representing each item in the left and right sequence.
+Dissonance implements Eugene Myers' diff algorithm in Scala as a pure function on immutable data
+structures. Using it is as simple as calling `Diff.diff(left, right)`, where `left` and `right`
+are sequences of like-typed data to be comparied; the result is an instance of `Diff`, a sequence
+of additions, deletions and no-change nodes representing each item in the left and right sequence.
 
 ## Features
 
@@ -81,7 +81,7 @@ Dissonance was designed and developed by Jon Pretty, and commercial support and 
 
 ## Name
 
-The name Myers' original meaning is derived from "marsh" or "marshland", or a _dissonance_.
+_Dissonance_'s purpose is to detect differences—or dissonance, the places where they are not in agreement—between different objects.
 
 ## License
 
