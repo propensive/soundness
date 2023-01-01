@@ -137,7 +137,7 @@ Escapade is classified as __fledgling__. Propensive defines the following five s
 - _dependable_: production-ready, subject to controlled ongoing maintenance and enhancement; tagged as version `1.0` or later
 - _adamantine_: proven, reliable and production-ready, with no further breaking changes ever anticipated
 
-Escapade is designed to be _small_. Its entire source code currently consists of 365 lines of code.
+Escapade is designed to be _small_. Its entire source code currently consists of 371 lines of code.
 
 ## Building
 
@@ -175,5 +175,5 @@ An __escapade__ is a "wild and exciting undertaking" which is "not necessarily l
 
 ## License
 
-Escapade is copyright &copy; 2021-22 Jon Pretty & Propensive O&Uuml;, and is made available under the
+Escapade is copyright &copy; 2021-23 Jon Pretty & Propensive O&Uuml;, and is made available under the
 [Apache 2.0 License](/license.md).
