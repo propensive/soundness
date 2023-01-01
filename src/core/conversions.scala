@@ -77,7 +77,7 @@ object RgbHex extends Interpolator[Nothing, Option[Rgb24], Rgb24]:
   def skip(state: Option[Rgb24]): Option[Rgb24] = state
   def complete(color: Option[Rgb24]): Rgb24 = color.get
 
-object Rgb:
+object Rgb24Opaque:
   opaque type Rgb24 = Int
   
   object Rgb24:
@@ -88,15 +88,40 @@ object Rgb:
     def green: Int = (color >> 8)&255
     def blue: Int = color&255
   
-    def ansiFg24: Text = Text(s"${27.toChar}[38;2;${red};${green};${blue}m")
-    def ansiBg24: Text = Text(s"${27.toChar}[48;2;${red};${green};${blue}m")
-    def hex12: Text = Text("#"+IArray(red/16, green/16, blue/16).map(Integer.toHexString(_).nn).mkString)
+    def ansiFg: Text = Text(s"${27.toChar}[38;2;${red};${green};${blue}m")
+    def ansiBg: Text = Text(s"${27.toChar}[48;2;${red};${green};${blue}m")
+    def srgb: Srgb = Srgb(red/255.0, green/255.0, blue/255.0)
   
-    def hex24: Text = Text:
+    def hex: Text = Text:
       IArray(red, green, blue).foldLeft("#"): (acc, c) =>
         acc+(Integer.toHexString(c).nn.pipe { s => if s.length < 2 then "0"+s else s })
 
-export Rgb.Rgb24
+object Rgb32Opaque:
+  opaque type Rgb32 = Int
+  
+  object Rgb32:
+    def apply(red: Int, green: Int, blue: Int): Rgb32 = ((red&1023) << 22) + ((green&4095) << 10) + (blue&1023)
+  
+  extension (color: Rgb32)
+    def red: Int = (color >> 22)&1023
+    def green: Int = (color >> 10)&4095
+    def blue: Int = color&1023
+  
+object Rgb12Opaque:
+  opaque type Rgb12 = Int
+  
+  object Rgb12:
+    def apply(red: Int, green: Int, blue: Int): Rgb12 = ((red&15) << 8) + ((green&15) << 4) + (blue&15)
+  
+  extension (color: Rgb12)
+    def red: Int = (color >> 8)&15
+    def green: Int = (color >> 4)&15
+    def blue: Int = color&15
+    def hex: Text = Text("#"+IArray(red, green, blue).map(Integer.toHexString(_).nn).mkString)
+
+export Rgb12Opaque.Rgb12
+export Rgb24Opaque.Rgb24
+export Rgb32Opaque.Rgb32
 
 case class Srgb(red: Double, green: Double, blue: Double) extends Color:
   def css: Text = Text(s"rgb(${(red*255).toInt}, ${(green*255).toInt}, ${(blue*255).toInt})")
