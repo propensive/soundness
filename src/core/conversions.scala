@@ -43,7 +43,7 @@ case class Xyz(x: Double, y: Double, z: Double) extends Color:
 
     Srgb(red, green, blue)
   
-  def cielab(using profile: Profile): Cielab =
+  def cielab(using profile: ColorProfile): Cielab =
     def limit(v: Double): Double = if v > 0.008856 then math.pow(v, 1.0/3) else 7.787*v + 0.13793
 
     val l = 116*limit(y/profile.y2) - 16
@@ -92,7 +92,7 @@ case class Srgb(red: Double, green: Double, blue: Double) extends Color:
     
     Text(s"#${rgb(0)}${rgb(1)}${rgb(2)}")
 
-  def xyz(using profile: Profile): Xyz =
+  def xyz(using ColorProfile): Xyz =
     def limit(v: Double): Double =
       if v > 0.04045 then math.pow((v + 0.055)/1.055, 2.4) else v/12.92
 
@@ -104,7 +104,7 @@ case class Srgb(red: Double, green: Double, blue: Double) extends Color:
 
     Xyz(x, y, z)
   
-  def cielab(using profile: Profile): Cielab = xyz.cielab
+  def cielab(using ColorProfile): Cielab = xyz.cielab
   def cmy: Cmy = Cmy(1 - red, 1 - green, 1 - blue)
   def cmyk: Cmyk = cmy.cmyk
 
@@ -148,10 +148,10 @@ case class Srgb(red: Double, green: Double, blue: Double) extends Color:
       Hsv(Color.unitary(hue), saturation, value)
 
 case class Cielab(l: Double, a: Double, b: Double) extends Color:
-  def srgb(using Profile): Srgb = xyz.srgb
-  def standardSrgb: Srgb = srgb(using profiles.Daylight)
+  def srgb(using ColorProfile): Srgb = xyz.srgb
+  def standardSrgb: Srgb = srgb(using colorProfiles.Daylight)
 
-  def xyz(using profile: Profile): Xyz =
+  def xyz(using profile: ColorProfile): Xyz =
     def limit(v: Double): Double = if v*v*v > 0.008856 then v*v*v else (v - 16.0/116)/7.787
   
     val y = limit((l + 16)/116)*profile.y2
