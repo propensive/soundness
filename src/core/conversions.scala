@@ -52,19 +52,38 @@ case class Xyz(x: Double, y: Double, z: Double) extends Color:
 
     Cielab(l, a, b)
 
+object Rgb:
+  opaque type Rgb24 = Int
+  
+  object Rgb24:
+    def apply(red: Int, green: Int, blue: Int): Rgb24 = ((red&255) << 16) + ((green&255) << 8) + (blue&255)
+  
+  extension (color: Rgb24)
+    def red: Int = (color >> 16)&255
+    def green: Int = (color >> 8)&255
+    def blue: Int = color&255
+  
+    def ansiFg24: Text = Text(s"${27.toChar}[38;2;${red};${green};${blue}m")
+    def ansiBg24: Text = Text(s"${27.toChar}[48;2;${red};${green};${blue}m")
+    def hex12: Text = Text("#"+IArray(red/16, green/16, blue/16).map(Integer.toHexString(_).nn).mkString)
+  
+    def hex24: Text = Text:
+      IArray(red, green, blue).foldLeft("#"): (acc, c) =>
+        acc+(Integer.toHexString(c).nn.pipe { s => if s.length < 2 then "0"+s else s })
+
+export Rgb.Rgb24
+
+
 case class Srgb(red: Double, green: Double, blue: Double) extends Color:
   def css: Text = Text(s"rgb(${(red*255).toInt}, ${(green*255).toInt}, ${(blue*255).toInt})")
   
-  def ansiFg24: Text =
-    Text(s"${27.toChar}[38;2;${(red*255).toInt};${(green*255).toInt};${(blue*255).toInt}m")
-  
-  def ansiBg24: Text =
-    Text(s"${27.toChar}[48;2;${(red*255).toInt};${(green*255).toInt};${(blue*255).toInt}m")
+  def rgb24: Rgb24 = Rgb24((red*255).toInt, (green*255).toInt, (blue*255).toInt)
+  def standardSrgb: Srgb = srgb
+  def srgb: Srgb = this
   
   def ansiFg8: Text =
-    val n =
-      if red == green && green == blue then 232 + (red*23 + 0.99).toInt
-      else 16 + 36*(red*5 + 0.99).toInt + 6*(green*5 + 0.99).toInt + (blue*5 + 0.99).toInt
+    val n = if red == green && green == blue then 232 + (red*23 + 0.99).toInt else 16 +
+        36*(red*5 + 0.99).toInt + 6*(green*5 + 0.99).toInt + (blue*5 + 0.99).toInt
     
     Text(s"${27.toChar}[38;5;${n}m")
 
@@ -74,23 +93,6 @@ case class Srgb(red: Double, green: Double, blue: Double) extends Color:
       else 16 + 36*(red*5 + 0.99).toInt + 6*(green*5 + 0.99).toInt + (blue*5 + 0.99).toInt
     
     Text(s"${27.toChar}[48;5;${n}m")
-
-  def hex12: Text =
-    val rgb = IArray(red, green, blue).map:
-      c => Text(Integer.toHexString((c*16).toInt).nn)
-    
-    Text(s"#${rgb(0)}${rgb(1)}${rgb(2)}")
-
-  def standardSrgb: Srgb = srgb
-  def srgb: Srgb = this
-  
-  def hex24: Text =
-    val rgb = IArray(red, green, blue).map:
-      c =>
-        val hex: String = Integer.toHexString((c*255).toInt).nn
-        if hex.length < 2 then Text(s"0$hex") else Text(hex)
-    
-    Text(s"#${rgb(0)}${rgb(1)}${rgb(2)}")
 
   def xyz(using ColorProfile): Xyz =
     def limit(v: Double): Double =
