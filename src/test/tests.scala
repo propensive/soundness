@@ -44,97 +44,97 @@ case class Pixel(x: Int, y: Int, color: ColorVal)
 object Tests extends Suite(t"Xylophone tests"):
 
   def run(using Runner): Unit =
-    test(t"extract integer") {
+    test(t"extract integer"):
       Xml.parse(t"""<message>1</message>""").as[Int]
-    }.assert(_ == 1)
+    .assert(_ == 1)
     
-    test(t"extract string") {
+    test(t"extract string"):
       Xml.parse(t"""<message>Hello world</message>""").as[Text]
-    }.check(_ == t"Hello world")
+    .assert(_ == t"Hello world")
 
-    test(t"extract string from fragment") {
+    test(t"extract string from fragment"):
       val xml = Xml.parse(t"""<message><info>Hello world</info></message>""")
       xml.info.as[Text]
-    }.check(_ == t"Hello world")
+    .assert(_ == t"Hello world")
     
-    test(t"extract string from node") {
+    test(t"extract string from node"):
       val xml = Xml.parse(t"""<message><info>Hello world</info></message>""")
       xml.info().as[Text]
-    }.check(_ == t"Hello world")
+    .assert(_ == t"Hello world")
 
-    test(t"serialize simple case class") {
+    test(t"serialize simple case class"):
       val person = Worker(t"Jack", 50)
       person.xml.string
-    }.check(_ == t"<Worker><name>Jack</name><age>50</age></Worker>")
+    .assert(_ == t"<Worker><name>Jack</name><age>50</age></Worker>")
     
-    test(t"serialize nested case class") {
+    test(t"serialize nested case class"):
       val person = Worker(t"Jack", 50)
       val company = Firm(t"Acme Inc", person)
       company.xml.string
-    }.check(_ == t"<Firm><name>Acme Inc</name><ceo><name>Jack</name><age>50</age></ceo></Firm>")
+    .assert(_ == t"<Firm><name>Acme Inc</name><ceo><name>Jack</name><age>50</age></ceo></Firm>")
 
-    test(t"access second element") {
+    test(t"access second element"):
       val xml = Xml.parse(t"""<events><eventId>1</eventId><eventId>2</eventId></events>""")
       xml.eventId(1).as[Int]
-    }.assert(_ == 2)
+    .assert(_ == 2)
     
-    test(t"extract to simple case class") {
+    test(t"extract to simple case class"):
       val string = t"<jack><name>Jack</name><age>50</age></jack>"
       val xml = Xml.parse(string)
       xml.as[Worker]
-    }.assert(_ == Worker(t"Jack", 50))
+    .assert(_ == Worker(t"Jack", 50))
     
-    test(t"extract to nested case class") {
+    test(t"extract to nested case class"):
       val string = t"<Firm><name>Acme Inc</name><ceo><name>Jack</name><age>50</age></ceo></Firm>"
       val xml = Xml.parse(string)
       xml.as[Firm]
-    }.assert(_ == Firm(t"Acme Inc", Worker(t"Jack", 50)))
+    .assert(_ == Firm(t"Acme Inc", Worker(t"Jack", 50)))
 
-    test(t"serialize with attribute") {
+    test(t"serialize with attribute"):
       val book = Book(t"Lord of the Flies", t"9780399529207")
       book.xml.string
-    }.check(_ == t"<Book isbn=\"9780399529207\"><title>Lord of the Flies</title></Book>")
+    .assert(_ == t"<Book isbn=\"9780399529207\"><title>Lord of the Flies</title></Book>")
     
-    test(t"serialize nested type with attribute") {
+    test(t"serialize nested type with attribute"):
       val bibliography = Bibliography(t"William Golding", Book(t"Lord of the Flies", t"9780399529207"))
       bibliography.xml.string
-    }.check(_ == t"<Bibliography><author>William Golding</author><book isbn=\"9780399529207\"><title>Lord of the Flies</title></book></Bibliography>")
+    .assert(_ == t"<Bibliography><author>William Golding</author><book isbn=\"9780399529207\"><title>Lord of the Flies</title></book></Bibliography>")
 
-    test(t"serialize coproduct") {
+    test(t"serialize coproduct"):
       val color: ColorVal = ColorVal.Rgb(5, 10, 15)
       color.xml.string
-    }.check(_ == t"""<ColorVal type="Rgb"><red>5</red><green>10</green><blue>15</blue></ColorVal>""")
+    .assert(_ == t"""<ColorVal type="Rgb"><red>5</red><green>10</green><blue>15</blue></ColorVal>""")
     
-    test(t"serialize nested coproduct") {
+    test(t"serialize nested coproduct"):
       val pixel: Pixel = Pixel(100, 200, ColorVal.Cmyk(1, 2, 3, 4))
       pixel.xml.string
-    }.check(_ == t"""<Pixel><x>100</x><y>200</y><color type="Cmyk"><cyan>1</cyan><magenta>2</magenta><yellow>3</yellow><key>4</key></color></Pixel>""")
+    .assert(_ == t"""<Pixel><x>100</x><y>200</y><color type="Cmyk"><cyan>1</cyan><magenta>2</magenta><yellow>3</yellow><key>4</key></color></Pixel>""")
 
-    test(t"read coproduct") {
+    test(t"read coproduct"):
       val string = t"""<ColorVal type="Cmyk"><cyan>1</cyan><magenta>2</magenta><yellow>3</yellow><key>4</key></ColorVal>"""
       val xml = Xml.parse(string)
       xml.as[ColorVal]
-    }.assert(_ == ColorVal.Cmyk(1, 2, 3, 4))
+    .assert(_ == ColorVal.Cmyk(1, 2, 3, 4))
     
-    test(t"read nested coproduct") {
+    test(t"read nested coproduct"):
       val string = t"""<Pixel><x>100</x><y>200</y><color type="Cmyk"><cyan>1</cyan><magenta>2</magenta><yellow>3</yellow><key>4</key></color></Pixel>"""
       val xml = Xml.parse(string)
       xml.as[Pixel]
-    }.assert(_ == Pixel(100, 200, ColorVal.Cmyk(1, 2, 3, 4)))
+    .assert(_ == Pixel(100, 200, ColorVal.Cmyk(1, 2, 3, 4)))
 
-    test(t"read attribute value from fragment") {
+    test(t"read attribute value from fragment"):
       val string = t"""<node><content key="value"/></node>"""
       val xml = Xml.parse(string)
       xml.content.attribute(t"key").as[Text]
-    }.check(_ == t"value")
+    .assert(_ == t"value")
     
-    test(t"read attribute value from node") {
+    test(t"read attribute value from node"):
       val string = t"""<node><content key="value"/></node>"""
       val xml = Xml.parse(string)
       xml.content().attribute(t"key").as[Text]
-    }.check(_ == t"value")
+    .assert(_ == t"value")
 
-    test(t"read with namespace") {
+    test(t"read with namespace"):
       val string = t"""<?xml version="1.0"?>
                         |<root>
                         |<h:table xmlns:h="http://www.w3.org/TR/html4/">
@@ -147,53 +147,53 @@ object Tests extends Suite(t"Xylophone tests"):
 
       val xml = Xml.parse(Text(string))
       xml.table.tr.td().as[Text]
-    }.check(_ == t"Apples")
+    .assert(_ == t"Apples")
 
-    test(t"serialize list of strings") {
+    test(t"serialize list of strings"):
       val xs = List(t"one", t"two", t"three")
       Xml.print(xs.xml)
-    }.check(_ == t"<List><Text>one</Text><Text>two</Text><Text>three</Text></List>")
+    .assert(_ == t"<List><Text>one</Text><Text>two</Text><Text>three</Text></List>")
     
-    test(t"serialize list of complex objects") {
+    test(t"serialize list of complex objects"):
       val book1 = Book(t"Lord of the Flies", t"9780399529207")
       val book2 = Book(t"Brave New World", t"9781907704345")
       val books = List(book1, book2)
       Xml.print(books.xml)
-    }.check(_ == t"""<List><Book isbn="9780399529207"><title>Lord of the Flies</title></Book><Book isbn="9781907704345"><title>Brave New World</title></Book></List>""")
+    .assert(_ == t"""<List><Book isbn="9780399529207"><title>Lord of the Flies</title></Book><Book isbn="9781907704345"><title>Brave New World</title></Book></List>""")
 
-    test(t"serialize empty node") {
+    test(t"serialize empty node"):
       Xml.print(List[Text]().xml)
-    }.check(_ == t"<List/>")
+    .assert(_ == t"<List/>")
 
-    test(t"serialize case object") {
+    test(t"serialize case object"):
       case object Foo
       Xml.print(Foo.xml)
-    }.check(_ == t"<Foo/>")
+    .assert(_ == t"<Foo/>")
 
-    test(t"parse error: unclosed tag") {
+    test(t"parse error: unclosed tag"):
       Try(Xml.parse(t"""<foo key="value"><bar></foo>"""))
-    }.assert(_ == Failure(XmlParseError(0, 24)))
+    .assert(_ == Failure(XmlParseError(0, 24)))
 
-    test(t"parse error: unclosed string") {
+    test(t"parse error: unclosed string"):
       Try(Xml.parse(t"""<foo key="value><bar/></foo>"""))
-    }.assert(_ == Failure(XmlParseError(0, 16)))
+    .assert(_ == Failure(XmlParseError(0, 16)))
 
-    test(t"read error: not an integer") {
+    test(t"read error: not an integer"):
       val xml = Xml.parse(t"""<foo>not an integer</foo>""")
       Try(xml.as[Int])
-    }.assert(Failure(XmlReadError()) == _)
+    .assert(Failure(XmlReadError()) == _)
 
-    test(t"access error; proactively resolving head nodes") {
+    test(t"access error; proactively resolving head nodes"):
       val xml = Xml.parse(t"""<root><company><staff><ceo><name>Xyz</name></ceo></staff></company></root>""")
       Try(xml.company().staff().cto().name().as[Text])
-    }.assert(_ == Failure(XmlAccessError(0, List(t"company", 0, t"staff", 0, t"cto"))))
+    .assert(_ == Failure(XmlAccessError(0, List(t"company", 0, t"staff", 0, t"cto"))))
     
-    test(t"access error; taking all children") {
+    test(t"access error; taking all children"):
       val xml = Xml.parse(t"""<root><company><staff><ceo><name>Xyz</name></ceo></staff></company></root>""")
       Try(xml.company.staff.cto.name().as[Text])
-    }.assert(_ == Failure(XmlAccessError(0, List(t"company", t"staff", t"cto", t"name"))))
+    .assert(_ == Failure(XmlAccessError(0, List(t"company", t"staff", t"cto", t"name"))))
     
-    test(t"access non-zero node") {
+    test(t"access non-zero node"):
       val xml = Xml.parse(t"""<root><company><staff><ceo><name>Xyz</name></ceo></staff></company></root>""")
       Try(xml.company(1).staff().cto.name().as[Text])
-    }.assert(_ == Failure(XmlAccessError(1, List(t"company"))))
+    .assert(_ == Failure(XmlAccessError(1, List(t"company"))))
