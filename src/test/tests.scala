@@ -29,8 +29,8 @@ import scala.util.{Try, Success, Failure}
 import unsafeExceptions.canThrowAny
 import logging.silent
 
-case class Person(name: Text, age: Int)
-case class Firm(name: Text, ceo: Person)
+case class Worker(name: Text, age: Int)
+case class Firm(name: Text, ceo: Worker)
 
 case class Book(title: Text, @xmlAttribute isbn: Text)
 case class Bibliography(author: Text, book: Book)
@@ -63,12 +63,12 @@ object Tests extends Suite(t"Xylophone tests"):
     }.check(_ == t"Hello world")
 
     test(t"serialize simple case class") {
-      val person = Person(t"Jack", 50)
+      val person = Worker(t"Jack", 50)
       person.xml.string
-    }.check(_ == t"<Person><name>Jack</name><age>50</age></Person>")
+    }.check(_ == t"<Worker><name>Jack</name><age>50</age></Worker>")
     
     test(t"serialize nested case class") {
-      val person = Person(t"Jack", 50)
+      val person = Worker(t"Jack", 50)
       val company = Firm(t"Acme Inc", person)
       company.xml.string
     }.check(_ == t"<Firm><name>Acme Inc</name><ceo><name>Jack</name><age>50</age></ceo></Firm>")
@@ -81,14 +81,14 @@ object Tests extends Suite(t"Xylophone tests"):
     test(t"extract to simple case class") {
       val string = t"<jack><name>Jack</name><age>50</age></jack>"
       val xml = Xml.parse(string)
-      xml.as[Person]
-    }.assert(_ == Person(t"Jack", 50))
+      xml.as[Worker]
+    }.assert(_ == Worker(t"Jack", 50))
     
     test(t"extract to nested case class") {
       val string = t"<Firm><name>Acme Inc</name><ceo><name>Jack</name><age>50</age></ceo></Firm>"
       val xml = Xml.parse(string)
       xml.as[Firm]
-    }.assert(_ == Firm(t"Acme Inc", Person(t"Jack", 50)))
+    }.assert(_ == Firm(t"Acme Inc", Worker(t"Jack", 50)))
 
     test(t"serialize with attribute") {
       val book = Book(t"Lord of the Flies", t"9780399529207")
