@@ -108,5 +108,5 @@ _Adversaria_ are miscellaneous collections of notes or _annotations_, after whic
 
 ## License
 
-Adversaria is copyright &copy; 2019-22 Jon Pretty & Propensive O&Uuml;, and is made available under the
+Adversaria is copyright &copy; 2019-23 Jon Pretty & Propensive O&Uuml;, and is made available under the
 [Apache 2.0 License](/license.md).
