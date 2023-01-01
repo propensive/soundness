@@ -27,7 +27,7 @@ import language.experimental.pureFunctions
 trait Codec[T]:
   def serialize(value: T): List[IArray[Node]]
   def deserialize(value: List[Indexed]): T throws IncompatibleTypeError
-  def schema: Schema
+  def schema: CodlSchema
 
   def text[T](nodes: List[Indexed]): Text throws IncompatibleTypeError =
     nodes.headOption.getOrElse(throw IncompatibleTypeError()).children match
@@ -37,9 +37,9 @@ trait Codec[T]:
 object Codec extends Derivation[Codec]:
   
   def join[T](ctx: CaseClass[Codec, T]): Codec[T] = new Codec[T]:
-    def schema: Schema =
-      val entries: IArray[Schema.Entry] = ctx.params.map: param =>
-        Schema.Entry(param.label.show, param.typeclass.schema)
+    def schema: CodlSchema =
+      val entries: IArray[CodlSchema.Entry] = ctx.params.map: param =>
+        CodlSchema.Entry(param.label.show, param.typeclass.schema)
 
       Struct(entries.to(List), Arity.One)
     
@@ -98,7 +98,7 @@ object Codec extends Derivation[Codec]:
       case value  => throw IncompatibleTypeError()
   
   given option[T](using codec: Codec[T]): Codec[Option[T]] = new Codec[Option[T]]:
-    def schema: Schema = summon[Codec[T]].schema.optional
+    def schema: CodlSchema = summon[Codec[T]].schema.optional
   
     def serialize(value: Option[T]): List[IArray[Node]] = value match
       case None        => List()
@@ -108,7 +108,7 @@ object Codec extends Derivation[Codec]:
       if value.isEmpty then None else Some(codec.deserialize(value))
     
   given maybe[T](using codec: Codec[T]): Codec[Maybe[T]] = new Codec[Maybe[T]]:
-    def schema: Schema = summon[Codec[T]].schema.optional
+    def schema: CodlSchema = summon[Codec[T]].schema.optional
   
     def serialize(value: Maybe[T]): List[IArray[Node]] = value match
       case Unset               => List()
@@ -118,7 +118,7 @@ object Codec extends Derivation[Codec]:
       if value.isEmpty then Unset else codec.deserialize(value)
     
   given list[T](using codec: => Codec[T]): Codec[List[T]] = new Codec[List[T]]:
-    def schema: Schema = codec.schema match
+    def schema: CodlSchema = codec.schema match
       case Field(_, validator) => Field(Arity.Many, validator)
       case struct: Struct      => struct.copy(structArity = Arity.Many)
 
@@ -132,7 +132,7 @@ object Codec extends Derivation[Codec]:
         value.map { v => codec.deserialize(List(v)) }
   
   given set[T](using codec: Codec[T]): Codec[Set[T]] = new Codec[Set[T]]:
-    def schema: Schema = codec.schema match
+    def schema: CodlSchema = codec.schema match
       case Field(_, validator) => Field(Arity.Many, validator)
       case struct: Struct      => struct.copy(structArity = Arity.Many)
 

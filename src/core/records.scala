@@ -16,15 +16,15 @@
 
 package cellulose
 
-import polyvinyl.{Schema => PvSchema, *}
+import polyvinyl.*
 import gossamer.*
 import rudiments.*
 
-abstract class RecordType(schema: Schema) extends PvSchema[Arity]:
+abstract class RecordType(schema: CodlSchema) extends Schema[Arity]:
   import Arity.*
 
   lazy val types: Map[String, Arity] = schema.subschemas.collect:
-    case Schema.Entry(key: Text, sch) => key.s -> sch.arity
+    case CodlSchema.Entry(key: Text, sch) => key.s -> sch.arity
   .to(Map)
 
   type Result[T <: Arity] = T match

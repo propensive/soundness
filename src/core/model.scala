@@ -37,7 +37,7 @@ case class Node(data: Maybe[Data] = Unset, meta: Maybe[Meta] = Unset) extends Dy
   def key: Maybe[Text] = data.mm(_.key)
   def empty: Boolean = unsafely(data.unset || data.assume.children.isEmpty)
   def blank: Boolean = data.unset && meta.unset
-  def schema: Maybe[Schema] = data.mm(_.schema)
+  def schema: Maybe[CodlSchema] = data.mm(_.schema)
   def layout: Maybe[Layout] = data.mm(_.layout)
   def id: Maybe[Text] = data.mm(_.id)
   def uniqueId: Maybe[Text] = data.mm(_.uniqueId)
@@ -69,9 +69,9 @@ case class Node(data: Maybe[Data] = Unset, meta: Maybe[Meta] = Unset) extends Dy
       meta.toString
 
 object Doc:
-  def apply(nodes: Node*): Doc = Doc(IArray.from(nodes), Schema.Free, 0)
+  def apply(nodes: Node*): Doc = Doc(IArray.from(nodes), CodlSchema.Free, 0)
 
-case class Doc(children: IArray[Node], schema: Schema, margin: Int, body: LazyList[Text] = LazyList())
+case class Doc(children: IArray[Node], schema: CodlSchema, margin: Int, body: LazyList[Text] = LazyList())
 extends Indexed:
   override def toString(): String = s"[[${children.mkString(" ")}]]"
   
@@ -115,7 +115,7 @@ extends Indexed:
 
   def as[T](using codec: Codec[T]): T throws IncompatibleTypeError = codec.deserialize(List(this))
   def uncommented: Doc = Doc(children.map(_.uncommented), schema, margin, body)
-  def untyped: Doc = Doc(children.map(_.untyped), Schema.Free, margin, body)
+  def untyped: Doc = Doc(children.map(_.untyped), CodlSchema.Free, margin, body)
   def wiped = uncommented.untyped
 
   def binary(using Log): Text =
@@ -133,7 +133,7 @@ object Data:
     value => summon[Codec[T]].serialize(value).head.to(List).map(_.data).sift[Data]
 
 case class Data(key: Text, children: IArray[Node] = IArray(), layout: Layout = Layout.empty,
-                    schema: Schema = Schema.Free)
+                    schema: CodlSchema = CodlSchema.Free)
 extends Indexed:
 
   lazy val paramIndex: Map[Text, Int] =
@@ -142,12 +142,12 @@ extends Indexed:
     .to(Map)
 
   def uniqueId: Maybe[Text] = schema.subschemas.find(_.schema.arity == Arity.Unique) match
-    case Some(Schema.Entry(name: Text, schema)) =>
+    case Some(CodlSchema.Entry(name: Text, schema)) =>
       paramIndex.get(name).map(children(_).fieldValue).getOrElse(Unset)
     case None => Unset
 
   def id: Maybe[Text] = schema.subschemas.find(_.schema.arity == Arity.Unique) match
-    case Some(Schema.Entry(name: Text, schema)) =>
+    case Some(CodlSchema.Entry(name: Text, schema)) =>
       index(name).mm(_.headOption.maybe).mm(children(_).fieldValue)
     case _ => key
 
@@ -173,7 +173,7 @@ case class Tabs(stops: TreeSet[Int] = TreeSet())
 
 trait Indexed extends Dynamic:
   def children: IArray[Node]
-  def schema: Schema
+  def schema: CodlSchema
   def layout: Layout
   def paramIndex: Map[Text, Int]
 
@@ -204,7 +204,7 @@ trait Indexed extends Dynamic:
       case None       => Nil
       case Some(idxs) => unsafely(idxs.map(children(_).data.assume))
     case Some(idx) => List.range(idx, layout.params).map: idx =>
-                        Data(key, IArray(unsafely(children(idx))), Layout.empty, Schema.Free)
+                        Data(key, IArray(unsafely(children(idx))), Layout.empty, CodlSchema.Free)
 
   def selectDynamic(key: String): List[Data] throws MissingValueError =
     index(key.show).map(children(_).data).sift[Data]

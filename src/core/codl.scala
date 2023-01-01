@@ -39,14 +39,14 @@ object Codl:
   def read[T: Codec](text: Text)(using Log): T throws AggregateError | IncompatibleTypeError = // FIXME: Should only be aggregate error
     summon[Codec[T]].schema.parse(text).as[T]
   
-  def parse(reader: Reader, schema: Schema = Schema.Free, subs: List[Data] = Nil, fromStart: Boolean = false)
+  def parse(reader: Reader, schema: CodlSchema = CodlSchema.Free, subs: List[Data] = Nil, fromStart: Boolean = false)
            (using Log)
            : Doc throws AggregateError =
     val (margin, stream) = tokenize(reader, fromStart)
-    val baseSchema: Schema = schema
+    val baseSchema: CodlSchema = schema
     
     case class Proto(key: Maybe[Text] = Unset, line: Int = 0, col: Int = 0, children: List[Node] = Nil,
-                        meta: Maybe[Meta] = Unset, schema: Schema = Schema.Free, params: Int = 0,
+                        meta: Maybe[Meta] = Unset, schema: CodlSchema = CodlSchema.Free, params: Int = 0,
                         multiline: Boolean = false, ids: Map[Text, (Int, Int)] = Map()):
       
       def commit(child: Proto): (Proto, List[CodlError]) =
@@ -83,7 +83,7 @@ object Codl:
                   lines: Int, subs: List[Data], errors: List[CodlError], body: LazyList[Text])
              : Doc =
       
-      def schema: Schema = stack.headOption.fold(baseSchema)(_.head.schema.option.get)
+      def schema: CodlSchema = stack.headOption.fold(baseSchema)(_.head.schema.option.get)
       
       inline def go(tokens: LazyList[Token] = tokens.tail, focus: Proto = focus, peers: List[Node] = peers,
                         stack: List[(Proto, List[Node])] = stack, lines: Int = lines, subs: List[Data] = subs,
@@ -149,10 +149,10 @@ object Codl:
             
             focus.key match
               case Unset =>
-                val (fschema: Schema, errors2: List[CodlError]) =
-                  if schema == Schema.Free then (schema, errors)
+                val (fschema: CodlSchema, errors2: List[CodlError]) =
+                  if schema == CodlSchema.Free then (schema, errors)
                   else schema(word).mm((_, errors)).or:
-                    (Schema.Free, List(CodlError(line, col, word.length, InvalidKey(word, word))))
+                    (CodlSchema.Free, List(CodlError(line, col, word.length, InvalidKey(word, word))))
 
                 val errors3 =
                   if fschema.unique && peers.exists(_.data.mm(_.key) == word)
@@ -166,14 +166,14 @@ object Codl:
                 case field@Field(_, _)            => val (focus2, errors2) = focus.commit(Proto(word, line, col))
                                                      go(focus = focus2, lines = 0, errors = errors2 ::: errors)
                 
-                case Schema.Free                  => val (focus2, errors2) = focus.commit(Proto(word, line, col))
+                case CodlSchema.Free              => val (focus2, errors2) = focus.commit(Proto(word, line, col))
                                                      go(focus = focus2, lines = 0, errors = errors2 ::: errors)
                 
                 case struct@Struct(_, _)          => struct.param(focus.children.length) match
                   case Unset                         => val error = CodlError(line, col, word.length, SurplusParams(word, key))
                                                         go(errors = error :: errors)
                   
-                  case entry: Schema.Entry        => val peer = Proto(word, line, col, schema = entry.schema)
+                  case entry: CodlSchema.Entry    => val peer = Proto(word, line, col, schema = entry.schema)
                                                      val (focus2, errors2) = focus.commit(peer)
                                                      go(focus = focus2, lines = 0, errors = errors2 ::: errors)
               
@@ -313,7 +313,7 @@ object Codl:
 
   object Prefix extends Interpolator[List[Data], State, Doc]:
     protected def complete(state: State): Doc =
-      try Codl.parse(StringReader(state.content.s), Schema.Free, state.subs.reverse, fromStart = true)(using
+      try Codl.parse(StringReader(state.content.s), CodlSchema.Free, state.subs.reverse, fromStart = true)(using
           logging.silent(using parasitism.threading.platform))
       catch
         case err: AggregateError => err.errors.head match
