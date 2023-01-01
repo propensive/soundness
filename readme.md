@@ -182,11 +182,11 @@ will print `Hello` once per second, forever.
 
 The following _Scala One_ libraries are dependencies of _Turbulence_:
 
-[![Anticipation](https://github.com/propensive/anticipation/raw/main/doc/images/128x128.png)](https://github.com/propensive/anticipation/) &nbsp; [![Rudiments](https://github.com/propensive/rudiments/raw/main/doc/images/128x128.png)](https://github.com/propensive/rudiments/) &nbsp;
+[![Parasitism](https://github.com/propensive/parasitism/raw/main/doc/images/128x128.png)](https://github.com/propensive/parasitism/) &nbsp; [![Probably](https://github.com/propensive/probably/raw/main/doc/images/128x128.png)](https://github.com/propensive/probably/) &nbsp;
 
 The following _Scala One_ libraries are dependents of _Turbulence_:
 
-[![Gossamer](https://github.com/propensive/gossamer/raw/main/doc/images/128x128.png)](https://github.com/propensive/gossamer/) &nbsp;
+[![Eucalyptus](https://github.com/propensive/eucalyptus/raw/main/doc/images/128x128.png)](https://github.com/propensive/eucalyptus/) &nbsp; [![Gossamer](https://github.com/propensive/gossamer/raw/main/doc/images/128x128.png)](https://github.com/propensive/gossamer/) &nbsp;
 
 ## Status
 
@@ -198,7 +198,7 @@ Turbulence is classified as __fledgling__. Propensive defines the following five
 - _dependable_: production-ready, subject to controlled ongoing maintenance and enhancement; tagged as version `1.0` or later
 - _adamantine_: proven, reliable and production-ready, with no further breaking changes ever anticipated
 
-Turbulence is designed to be _small_. Its entire source code currently consists of 276 lines of code.
+Turbulence is designed to be _small_. Its entire source code currently consists of 332 lines of code.
 
 ## Building
 
@@ -236,5 +236,5 @@ _Turbulence_ describes multiple interacting flows, or streams, of fluids; this l
 
 ## License
 
-Turbulence is copyright &copy; 2022 Jon Pretty & Propensive O&Uuml;, and is made available under the
+Turbulence is copyright &copy; 2022-23 Jon Pretty & Propensive O&Uuml;, and is made available under the
 [Apache 2.0 License](/license.md).
