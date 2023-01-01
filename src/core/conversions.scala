@@ -18,6 +18,7 @@ package iridescence
 
 import rudiments.*
 import cardinality.*
+import contextual.*
 
 import language.experimental.captureChecking
 
@@ -52,6 +53,30 @@ case class Xyz(x: Double, y: Double, z: Double) extends Color:
 
     Cielab(l, a, b)
 
+object RgbHex extends Interpolator[Nothing, Option[Rgb24], Rgb24]:
+
+  def initial: Option[Rgb24] = None
+  
+  def parse(state: Option[Rgb24], next: Text): Option[Rgb24] =
+    if next.s.length == 7 && next.s.startsWith("#") then parse(state, Text(next.s.substring(1).nn))
+    else if next.s.length == 6 && (next.s.forall { ch => ch.isDigit || (ch >= 'a' && ch <= 'f') || (ch >= 'A' &&
+        ch <= 'F') })
+    then
+      val red = Integer.parseInt(next.s.substring(0, 2).nn, 16)
+      val green = Integer.parseInt(next.s.substring(2, 4).nn, 16)
+      val blue = Integer.parseInt(next.s.substring(4, 6).nn, 16)
+
+      Some(Rgb24(red, green, blue))
+    
+    else throw InterpolationError(Text("""the color must be in the form rgb"#<r><g><b>" or rgb"<r><g><b>" """+
+                                       """where <r>, <g> and <b> are 2-digit hex values"""), 0)
+  
+  def insert(state: Option[Rgb24], value: Nothing): Option[Rgb24] =
+    throw InterpolationError(Text("""insertions into an rgb"" interpolator are not supported"""))
+  
+  def skip(state: Option[Rgb24]): Option[Rgb24] = state
+  def complete(color: Option[Rgb24]): Rgb24 = color.get
+
 object Rgb:
   opaque type Rgb24 = Int
   
@@ -72,7 +97,6 @@ object Rgb:
         acc+(Integer.toHexString(c).nn.pipe { s => if s.length < 2 then "0"+s else s })
 
 export Rgb.Rgb24
-
 
 case class Srgb(red: Double, green: Double, blue: Double) extends Color:
   def css: Text = Text(s"rgb(${(red*255).toInt}, ${(green*255).toInt}, ${(blue*255).toInt})")

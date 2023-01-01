@@ -18,40 +18,58 @@ package iridescence
 
 import probably.*
 import eucalyptus.*
+import parasitism.*, threading.virtual
 import rudiments.*
 import gossamer.*
 
 import unsafeExceptions.canThrowAny
 
-given Log(Everything |-> Stdout)
+import logging.silent
+given ColorProfile = colorProfiles.Daylight
 
 object Tests extends Suite(t"Iridescence tests"):
-  
-  given Profile = profiles.Daylight
   given Tolerance[Double] = (a, b) => math.abs(a - b) < 0.05
   
   def run(using Runner): Unit =
-    for color <- colors.all.reverse do
-      test(t"sRGB to L*a*b*") {
-        color.cielab.srgb
-      }.assert(_ ~~ color)
+    suite(t"Roundtrip tests"):
+      for color <- colors.all.reverse do
+        test(t"sRGB to L*a*b*"):
+          color.cielab.srgb
+        .assert(_ ~~ color)
 
-      test(t"HSV to sRGB and back") {
-        color.hsv.srgb.hsv
-      }.assert(_ ~~ color.hsv)
+        test(t"HSV to sRGB and back"):
+          color.hsv.srgb.hsv
+        .assert(_ ~~ color.hsv)
+        
+        test(t"sRGB to CMY and back"):
+          color.cmy.srgb
+        .assert(_ ~~ color)
+        
+        test(t"sRGB to CMYK and back"):
+          color.cmyk.srgb
+        .assert(_ ~~ color)
+        
+        test(t"sRGB to XYZ and back"):
+          color.xyz.srgb
+        .assert(_ ~~ color)
+        
+        test(t"sRGB to HSL and back"):
+          color.hsl.srgb
+        .assert(_ ~~ color)
+
+    suite(t"Interpolator tests"):
+      test(t"Read a hex value with a leading hash"):
+        rgb"#abcdef"
+      .assert(_ == Rgb24(171, 205, 239))
       
-      test(t"sRGB to CMY and back") {
-        color.cmy.srgb
-      }.assert(_ ~~ color)
+      test(t"Read a hex value without a leading hash"):
+        rgb"abcdef"
+      .assert(_ == Rgb24(171, 205, 239))
       
-      test(t"sRGB to CMYK and back") {
-        color.cmyk.srgb
-      }.assert(_ ~~ color)
+      test(t"Read black"):
+        rgb"#000000"
+      .assert(_ == Rgb24(0, 0, 0))
       
-      test(t"sRGB to XYZ and back") {
-        color.xyz.srgb
-      }.assert(_ ~~ color)
-      
-      test(t"sRGB to HSL and back") {
-        color.hsl.srgb
-      }.assert(_ ~~ color)
+      test(t"Read white"):
+        rgb"#ffffff"
+      .assert(_ == Rgb24(255, 255, 255))
