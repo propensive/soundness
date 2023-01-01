@@ -26,14 +26,14 @@ import java.io as ji
 
 import language.dynamics
 
-object Node:
-  given Debug[Node] = _.data.option.fold(t"!"): data =>
+object Nodule:
+  given Debug[Nodule] = _.data.option.fold(t"!"): data =>
     t"${data.key}[${data.children.map(_.debug).join(t",")}]"
 
-  val empty: Node = Node()
-  def apply(key: Text)(child: Node*): Node = Node(Data(key, IArray.from(child)))
+  val empty: Nodule = Nodule()
+  def apply(key: Text)(child: Nodule*): Nodule = Nodule(Data(key, IArray.from(child)))
 
-case class Node(data: Maybe[Data] = Unset, meta: Maybe[Meta] = Unset) extends Dynamic:
+case class Nodule(data: Maybe[Data] = Unset, meta: Maybe[Meta] = Unset) extends Dynamic:
   def key: Maybe[Text] = data.mm(_.key)
   def empty: Boolean = unsafely(data.unset || data.assume.children.isEmpty)
   def blank: Boolean = data.unset && meta.unset
@@ -41,37 +41,37 @@ case class Node(data: Maybe[Data] = Unset, meta: Maybe[Meta] = Unset) extends Dy
   def layout: Maybe[Layout] = data.mm(_.layout)
   def id: Maybe[Text] = data.mm(_.id)
   def uniqueId: Maybe[Text] = data.mm(_.uniqueId)
-  def children: IArray[Node] = data.mm(_.children).or(IArray[Node]())
+  def children: IArray[Nodule] = data.mm(_.children).or(IArray[Nodule]())
   def paramValue: Maybe[Text] = if children.isEmpty then key else Unset
   def structValue: Maybe[Text] = if children.size == 1 then children.head.paramValue else Unset
   def fieldValue: Maybe[Text] = paramValue.or(structValue)
   def promote(n: Int) = copy(data = data.mm(_.promote(n)))
 
-  def apply(key: Text): List[Data] = data.fm(List[Node]())(_(key)).map(_.data).sift[Data]
+  def apply(key: Text): List[Data] = data.fm(List[Nodule]())(_(key)).map(_.data).sift[Data]
 
   def selectDynamic(key: String): List[Data] throws MissingValueError =
     data.option.getOrElse(throw MissingValueError(key.show)).selectDynamic(key)
   
   def applyDynamic(key: String)(idx: Int = 0): Data throws MissingValueError = selectDynamic(key)(idx)
 
-  def untyped: Node =
+  def untyped: Nodule =
     val data2 = data.mm { data => Data(data.key, children = data.children.map(_.untyped)) }
-    Node(data2, meta)
+    Nodule(data2, meta)
   
-  def uncommented: Node =
+  def uncommented: Nodule =
     val data2 = data.mm { data => Data(data.key, children = data.children.map(_.uncommented), Layout.empty, data.schema) }
-    Node(data2, Unset)
+    Nodule(data2, Unset)
 
-  def wiped: Node = untyped.uncommented
+  def wiped: Nodule = untyped.uncommented
   
   override def toString(): String =
     if !children.isEmpty then s"$key[${children.mkString(" ")}]" else key.mm(_.s).or:
       meta.toString
 
 object CodlDoc:
-  def apply(nodes: Node*): CodlDoc = CodlDoc(IArray.from(nodes), CodlSchema.Free, 0)
+  def apply(nodes: Nodule*): CodlDoc = CodlDoc(IArray.from(nodes), CodlSchema.Free, 0)
 
-case class CodlDoc(children: IArray[Node], schema: CodlSchema, margin: Int, body: LazyList[Text] = LazyList())
+case class CodlDoc(children: IArray[Nodule], schema: CodlSchema, margin: Int, body: LazyList[Text] = LazyList())
 extends Indexed:
   override def toString(): String = s"[[${children.mkString(" ")}]]"
   
@@ -86,20 +86,20 @@ extends Indexed:
 
   def merge(input: CodlDoc): CodlDoc =
     
-    def cmp(x: Node, y: Node): Boolean =
+    def cmp(x: Nodule, y: Nodule): Boolean =
       if x.uniqueId.unset || y.uniqueId.unset then
         if x.data.unset || y.data.unset then x.meta == y.meta
         else x.data == y.data
       else x.id == y.id
 
-    def recur(original: IArray[Node], updates: IArray[Node]): IArray[Node] =
-      val diff = Diff.diff[Node](children, updates, cmp)
+    def recur(original: IArray[Nodule], updates: IArray[Nodule]): IArray[Nodule] =
+      val diff = Diff.diff[Nodule](children, updates, cmp)
       
-      val nodes2 = diff.changes.foldLeft(List[Node]()):
+      val nodes2 = diff.changes.foldLeft(List[Nodule]()):
         case (nodes, Change.Del(left, value))         => nodes
         case (nodes, Change.Ins(right, value))        => value :: nodes
         case (nodes, Change.Keep(left, right, value)) =>
-          val orig: Node = original(left)
+          val orig: Nodule = original(left)
           val origData: Data = orig.data.or(???)
           
           if orig.id.unset || updates(right).id.unset then orig :: nodes
@@ -132,7 +132,7 @@ object Data:
   given [T: Codec]: Insertion[List[Data], T] =
     value => summon[Codec[T]].serialize(value).head.to(List).map(_.data).sift[Data]
 
-case class Data(key: Text, children: IArray[Node] = IArray(), layout: Layout = Layout.empty,
+case class Data(key: Text, children: IArray[Nodule] = IArray(), layout: Layout = Layout.empty,
                     schema: CodlSchema = CodlSchema.Free)
 extends Indexed:
 
@@ -172,7 +172,7 @@ case class Layout(params: Int, multiline: Boolean)
 case class Tabs(stops: TreeSet[Int] = TreeSet())
 
 trait Indexed extends Dynamic:
-  def children: IArray[Node]
+  def children: IArray[Nodule]
   def schema: CodlSchema
   def layout: Layout
   def paramIndex: Map[Text, Int]
@@ -194,10 +194,10 @@ trait Indexed extends Dynamic:
 
   def ids: Set[Text] = idIndex.keySet
 
-  def apply(idx: Int = 0): Node throws MissingIndexValueError =
+  def apply(idx: Int = 0): Nodule throws MissingIndexValueError =
     children.lift(idx).getOrElse(throw MissingIndexValueError(idx))
   
-  def apply(key: Text): List[Node] = index.get(key).getOrElse(Nil).map(children(_))
+  def apply(key: Text): List[Nodule] = index.get(key).getOrElse(Nil).map(children(_))
 
   def get(key: Text): List[Indexed] = paramIndex.lift(key) match
     case None      => index.lift(key) match

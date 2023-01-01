@@ -34,7 +34,7 @@ object Bin:
     out.write("\u00b1\u00c0\u00d1")
     write(out, doc.schema, doc.children)
 
-  private def write(out: ji.Writer, schema: CodlSchema, nodes: IArray[Node]): Unit =
+  private def write(out: ji.Writer, schema: CodlSchema, nodes: IArray[Nodule]): Unit =
     val dataNodes = nodes.map(_.data).sift[Data]
     write(out, dataNodes.length)
     
@@ -52,12 +52,12 @@ object Bin:
     if reader.read() != '\u00b1' || reader.read() != '\u00c0' || reader.read() != '\u00d1'
     then throw BinaryError(t"header 0xb1c0d1", 0)
     
-    def recur(schema: CodlSchema): List[Node] =
+    def recur(schema: CodlSchema): List[Nodule] =
       List.range(0, readNumber(reader)).map: _ =>
         schema match
           case Field(_, _) =>
             val key = readText(reader)
-            Node(Data(key, IArray(), Layout.empty, CodlSchema.Free))
+            Nodule(Data(key, IArray(), Layout.empty, CodlSchema.Free))
           
           case schema =>
             val subschema = readNumber(reader) match
@@ -68,7 +68,7 @@ object Bin:
 
             val children = IArray.from(recur(subschema(1)))
             
-            Node(Data(key, children, Layout.empty, subschema(1)))
+            Nodule(Data(key, children, Layout.empty, subschema(1)))
     
     CodlDoc(IArray.from(recur(schema)), schema, 0)
 

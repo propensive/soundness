@@ -26,8 +26,8 @@ import language.experimental.captureChecking
 object Printer:
   def print(out: ji.Writer, doc: CodlDoc): Unit =
     
-    def recur(node: Node, indent: Int): Unit = node match
-      case Node(data, meta) =>
+    def recur(node: Nodule, indent: Int): Unit = node match
+      case Nodule(data, meta) =>
         meta.mm: meta =>
           for i <- 0 until meta.blank do out.write('\n')
           meta.comments.foreach: comment =>
@@ -44,7 +44,7 @@ object Printer:
             schema match
               case Field(_, _) =>
                 children.foreach:
-                  case Node(Data(key, _, _, _), _) =>
+                  case Nodule(Data(key, _, _, _), _) =>
                     out.write(' ')
                     out.write(key.s)
                   case _ => throw Mistake("Should never match")
@@ -52,7 +52,7 @@ object Printer:
               case Struct(_, _) =>
                 val ps = if layout.multiline then children.take(layout.params - 1) else children.take(layout.params)
                 ps.foreach:
-                  case Node(Data(_, IArray(Node(Data(key, _, _, _), _)), _, _), _) =>
+                  case Nodule(Data(_, IArray(Nodule(Data(key, _, _, _), _)), _, _), _) =>
                     out.write(' ')
                     out.write(key.s)
                   case _ =>
@@ -65,7 +65,7 @@ object Printer:
                 if layout.multiline then
                   out.write('\n')
                   if children.length >= layout.params then children(layout.params - 1) match
-                    case Node(Data(key, _, _, _), _) =>
+                    case Nodule(Data(key, _, _, _), _) =>
                       for i <- 0 until (indent + 4) do out.write(' ')
                       for ch <- key.chars do
                         out.write(ch)
