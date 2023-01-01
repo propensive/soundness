@@ -24,6 +24,7 @@ import scala.collection.mutable as scm
 
 import unsafeExceptions.canThrowAny
 
+/*
 object EuphemismMacro:
   def deriveReader[T: Type](using Quotes): Expr[Json.Reader[T]] =
     import quotes.reflect.*
