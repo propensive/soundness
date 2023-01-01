@@ -95,7 +95,7 @@ Tarantula is classified as __embryonic__. Propensive defines the following five 
 - _dependable_: production-ready, subject to controlled ongoing maintenance and enhancement; tagged as version `1.0` or later
 - _adamantine_: proven, reliable and production-ready, with no further breaking changes ever anticipated
 
-Tarantula is designed to be _small_. Its entire source code currently consists of 125 lines of code.
+Tarantula is designed to be _small_. Its entire source code currently consists of 130 lines of code.
 
 ## Building
 
@@ -133,5 +133,5 @@ __Tarantulas__ are spiders, known for making webs, and Tarantula is a library fo
 
 ## License
 
-Tarantula is copyright &copy; 2021-22 Jon Pretty & Propensive O&Uuml;, and is made available under the
+Tarantula is copyright &copy; 2021-23 Jon Pretty & Propensive O&Uuml;, and is made available under the
 [Apache 2.0 License](/license.md).
