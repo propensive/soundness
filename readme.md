@@ -238,7 +238,7 @@ Gastronomy is classified as __maturescent__. Propensive defines the following fi
 - _dependable_: production-ready, subject to controlled ongoing maintenance and enhancement; tagged as version `1.0` or later
 - _adamantine_: proven, reliable and production-ready, with no further breaking changes ever anticipated
 
-Gastronomy is designed to be _small_. Its entire source code currently consists of 441 lines of code.
+Gastronomy is designed to be _small_. Its entire source code currently consists of 444 lines of code.
 
 ## Building
 
@@ -276,5 +276,5 @@ Gastronomy is named after the art and science of "good eating", which leads to d
 
 ## License
 
-Gastronomy is copyright &copy; 2018-22 Jon Pretty & Propensive O&Uuml;, and is made available under the
+Gastronomy is copyright &copy; 2018-23 Jon Pretty & Propensive O&Uuml;, and is made available under the
 [Apache 2.0 License](/license.md).
