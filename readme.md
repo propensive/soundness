@@ -80,5 +80,5 @@ JSON libraries to allude to the story of Jason and the Argonauts.
 
 ## License
 
-Merino is copyright &copy; 2022 Jon Pretty & Propensive O&Uuml;, and is made available under the
+Merino is copyright &copy; 2022-23 Jon Pretty & Propensive O&Uuml;, and is made available under the
 [Apache 2.0 License](/license.md).
