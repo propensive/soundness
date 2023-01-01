@@ -35,11 +35,11 @@ case class Firm(name: Text, ceo: Person)
 case class Book(title: Text, @xmlAttribute isbn: Text)
 case class Bibliography(author: Text, book: Book)
 
-enum Color:
+enum ColorVal:
   case Rgb(red: Int, green: Int, blue: Int)
   case Cmyk(cyan: Int, magenta: Int, yellow: Int, key: Int)
 
-case class Pixel(x: Int, y: Int, color: Color)
+case class Pixel(x: Int, y: Int, color: ColorVal)
 
 object Tests extends Suite(t"Xylophone tests"):
 
@@ -101,26 +101,26 @@ object Tests extends Suite(t"Xylophone tests"):
     }.check(_ == t"<Bibliography><author>William Golding</author><book isbn=\"9780399529207\"><title>Lord of the Flies</title></book></Bibliography>")
 
     test(t"serialize coproduct") {
-      val color: Color = Color.Rgb(5, 10, 15)
+      val color: ColorVal = ColorVal.Rgb(5, 10, 15)
       color.xml.string
-    }.check(_ == t"""<Color type="Rgb"><red>5</red><green>10</green><blue>15</blue></Color>""")
+    }.check(_ == t"""<ColorVal type="Rgb"><red>5</red><green>10</green><blue>15</blue></ColorVal>""")
     
     test(t"serialize nested coproduct") {
-      val pixel: Pixel = Pixel(100, 200, Color.Cmyk(1, 2, 3, 4))
+      val pixel: Pixel = Pixel(100, 200, ColorVal.Cmyk(1, 2, 3, 4))
       pixel.xml.string
     }.check(_ == t"""<Pixel><x>100</x><y>200</y><color type="Cmyk"><cyan>1</cyan><magenta>2</magenta><yellow>3</yellow><key>4</key></color></Pixel>""")
 
     test(t"read coproduct") {
-      val string = t"""<Color type="Cmyk"><cyan>1</cyan><magenta>2</magenta><yellow>3</yellow><key>4</key></Color>"""
+      val string = t"""<ColorVal type="Cmyk"><cyan>1</cyan><magenta>2</magenta><yellow>3</yellow><key>4</key></ColorVal>"""
       val xml = Xml.parse(string)
-      xml.as[Color]
-    }.assert(_ == Color.Cmyk(1, 2, 3, 4))
+      xml.as[ColorVal]
+    }.assert(_ == ColorVal.Cmyk(1, 2, 3, 4))
     
     test(t"read nested coproduct") {
       val string = t"""<Pixel><x>100</x><y>200</y><color type="Cmyk"><cyan>1</cyan><magenta>2</magenta><yellow>3</yellow><key>4</key></color></Pixel>"""
       val xml = Xml.parse(string)
       xml.as[Pixel]
-    }.assert(_ == Pixel(100, 200, Color.Cmyk(1, 2, 3, 4)))
+    }.assert(_ == Pixel(100, 200, ColorVal.Cmyk(1, 2, 3, 4)))
 
     test(t"read attribute value from fragment") {
       val string = t"""<node><content key="value"/></node>"""
