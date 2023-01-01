@@ -73,9 +73,11 @@ given EnvVarProvider = envvars.get(_)
 
 The following _Scala One_ libraries are dependencies of _Imperial_:
 
-[![Anticipation](https://github.com/propensive/anticipation/raw/main/doc/images/128x128.png)](https://github.com/propensive/anticipation/) &nbsp; [![Probably](https://github.com/propensive/probably/raw/main/doc/images/128x128.png)](https://github.com/propensive/probably/) &nbsp; [![Rudiments](https://github.com/propensive/rudiments/raw/main/doc/images/128x128.png)](https://github.com/propensive/rudiments/) &nbsp;
+[![Anticipation](https://github.com/propensive/anticipation/raw/main/doc/images/128x128.png)](https://github.com/propensive/anticipation/) &nbsp; [![Rudiments](https://github.com/propensive/rudiments/raw/main/doc/images/128x128.png)](https://github.com/propensive/rudiments/) &nbsp;
 
-No other _Scala One_ libraries are dependents of _Imperial_.
+The following _Scala One_ libraries are dependents of _Imperial_:
+
+[![Oubliette](https://github.com/propensive/oubliette/raw/main/doc/images/128x128.png)](https://github.com/propensive/oubliette/) &nbsp;
 
 ## Status
 
@@ -87,7 +89,7 @@ Imperial is classified as __fledgling__. Propensive defines the following five s
 - _dependable_: production-ready, subject to controlled ongoing maintenance and enhancement; tagged as version `1.0` or later
 - _adamantine_: proven, reliable and production-ready, with no further breaking changes ever anticipated
 
-Imperial is designed to be _small_. Its entire source code currently consists of 89 lines of code.
+Imperial is designed to be _small_. Its entire source code currently consists of 90 lines of code.
 
 ## Building
 
@@ -126,5 +128,5 @@ operating system's own (little) empire, "Emperor" is also a species of penguin.
 
 ## License
 
-Imperial is copyright &copy; 2022 Jon Pretty & Propensive O&Uuml;, and is made available under the
+Imperial is copyright &copy; 2022-23 Jon Pretty & Propensive O&Uuml;, and is made available under the
 [Apache 2.0 License](/license.md).
