@@ -206,7 +206,7 @@ Cataclysm is classified as __fledgling__. Propensive defines the following five 
 - _dependable_: production-ready, subject to controlled ongoing maintenance and enhancement; tagged as version `1.0` or later
 - _adamantine_: proven, reliable and production-ready, with no further breaking changes ever anticipated
 
-Cataclysm is designed to be _small_. Its entire source code currently consists of 655 lines of code.
+Cataclysm is designed to be _small_. Its entire source code currently consists of 642 lines of code.
 
 ## Building
 
@@ -244,5 +244,5 @@ Cataclysm takes its name from the sweeping inundation (typical of a _waterfall_,
 
 ## License
 
-Cataclysm is copyright &copy; 2021-22 Jon Pretty & Propensive O&Uuml;, and is made available under the
+Cataclysm is copyright &copy; 2021-23 Jon Pretty & Propensive O&Uuml;, and is made available under the
 [Apache 2.0 License](/license.md).
