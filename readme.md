@@ -205,7 +205,9 @@ The following _Scala One_ libraries are dependencies of _Polyvinyl_:
 
 [![Rudiments](https://github.com/propensive/rudiments/raw/main/doc/images/128x128.png)](https://github.com/propensive/rudiments/) &nbsp;
 
-No other _Scala One_ libraries are dependents of _Polyvinyl_.
+The following _Scala One_ libraries are dependents of _Polyvinyl_:
+
+[![Cellulose](https://github.com/propensive/cellulose/raw/main/doc/images/128x128.png)](https://github.com/propensive/cellulose/) &nbsp;
 
 ## Status
 
@@ -255,5 +257,5 @@ Polyvinyl is the substance from which records (LPs) are made; the purpose of thi
 
 ## License
 
-Polyvinyl is copyright &copy; 2021-22 Jon Pretty & Propensive O&Uuml;, and is made available under the
+Polyvinyl is copyright &copy; 2021-23 Jon Pretty & Propensive O&Uuml;, and is made available under the
 [Apache 2.0 License](/license.md).
