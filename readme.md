@@ -263,5 +263,5 @@ The library provides a representation of URIs. The most famous Uri was famed for
 
 ## License
 
-Telekinesis is copyright &copy; 2022 Jon Pretty & Propensive O&Uuml;, and is made available under the
+Telekinesis is copyright &copy; 2022-23 Jon Pretty & Propensive O&Uuml;, and is made available under the
 [Apache 2.0 License](/license.md).
