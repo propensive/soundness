@@ -64,7 +64,7 @@ will return a sequence of `String`s which will print as,
 
 The following _Scala One_ libraries are dependencies of _Escritoire_:
 
-[![Escapade](https://github.com/propensive/escapade/raw/main/doc/images/128x128.png)](https://github.com/propensive/escapade/) &nbsp;
+[![Escapade](https://github.com/propensive/escapade/raw/main/doc/images/128x128.png)](https://github.com/propensive/escapade/) &nbsp; [![Probably](https://github.com/propensive/probably/raw/main/doc/images/128x128.png)](https://github.com/propensive/probably/) &nbsp;
 
 The following _Scala One_ libraries are dependents of _Escritoire_:
 
@@ -80,7 +80,7 @@ Escritoire is classified as __fledgling__. Propensive defines the following five
 - _dependable_: production-ready, subject to controlled ongoing maintenance and enhancement; tagged as version `1.0` or later
 - _adamantine_: proven, reliable and production-ready, with no further breaking changes ever anticipated
 
-Escritoire is designed to be _small_. Its entire source code currently consists of 200 lines of code.
+Escritoire is designed to be _small_. Its entire source code currently consists of 195 lines of code.
 
 ## Building
 
@@ -118,5 +118,5 @@ Escritoire is a pun: it is named after a type of writing table, since its purpos
 
 ## License
 
-Escritoire is copyright &copy; 2018-22 Jon Pretty & Propensive O&Uuml;, and is made available under the
+Escritoire is copyright &copy; 2018-23 Jon Pretty & Propensive O&Uuml;, and is made available under the
 [Apache 2.0 License](/license.md).
