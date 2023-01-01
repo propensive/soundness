@@ -20,7 +20,7 @@ used to track tasks unintrusively, while documenting a thread's blocking nature 
 
 ## Availability
 
-The current latest release of Parasitism is __0.4.0__.
+The current latest release of Parasitism is __null__.
 
 ## Getting Started
 
@@ -33,7 +33,9 @@ The following _Scala One_ libraries are dependencies of _Parasitism_:
 
 [![Anticipation](https://github.com/propensive/anticipation/raw/main/doc/images/128x128.png)](https://github.com/propensive/anticipation/) &nbsp; [![Rudiments](https://github.com/propensive/rudiments/raw/main/doc/images/128x128.png)](https://github.com/propensive/rudiments/) &nbsp;
 
-No other _Scala One_ libraries are dependents of _Parasitism_.
+The following _Scala One_ libraries are dependents of _Parasitism_:
+
+[![Turbulence](https://github.com/propensive/turbulence/raw/main/doc/images/128x128.png)](https://github.com/propensive/turbulence/) &nbsp;
 
 ## Status
 
@@ -45,7 +47,7 @@ Parasitism is classified as __fledgling__. Propensive defines the following five
 - _dependable_: production-ready, subject to controlled ongoing maintenance and enhancement; tagged as version `1.0` or later
 - _adamantine_: proven, reliable and production-ready, with no further breaking changes ever anticipated
 
-Parasitism is designed to be _small_. Its entire source code currently consists of 101 lines of code.
+Parasitism is designed to be _small_. Its entire source code currently consists of 263 lines of code.
 
 ## Building
 
@@ -83,5 +85,5 @@ A tick represents the completion of a task, while also being the name of a commo
 
 ## License
 
-Parasitism is copyright &copy; 2022 Jon Pretty & Propensive O&Uuml;, and is made available under the
+Parasitism is copyright &copy; 2022-23 Jon Pretty & Propensive O&Uuml;, and is made available under the
 [Apache 2.0 License](/license.md).
