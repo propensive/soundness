@@ -134,7 +134,7 @@ Honeycomb is classified as __fledgling__. Propensive defines the following five 
 - _dependable_: production-ready, subject to controlled ongoing maintenance and enhancement; tagged as version `1.0` or later
 - _adamantine_: proven, reliable and production-ready, with no further breaking changes ever anticipated
 
-Honeycomb is designed to be _small_. Its entire source code currently consists of 715 lines of code.
+Honeycomb is designed to be _small_. Its entire source code currently consists of 713 lines of code.
 
 ## Building
 
@@ -172,5 +172,5 @@ Honeycomb is named after the hexagonal prismic cells in a bees' nest, where they
 
 ## License
 
-Honeycomb is copyright &copy; 2018-22 Jon Pretty & Propensive O&Uuml;, and is made available under the
+Honeycomb is copyright &copy; 2018-23 Jon Pretty & Propensive O&Uuml;, and is made available under the
 [Apache 2.0 License](/license.md).
