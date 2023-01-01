@@ -112,11 +112,11 @@ given Log(
 
 The following _Scala One_ libraries are dependencies of _Eucalyptus_:
 
-[![Escapade](https://github.com/propensive/escapade/raw/main/doc/images/128x128.png)](https://github.com/propensive/escapade/) &nbsp;
+[![Escapade](https://github.com/propensive/escapade/raw/main/doc/images/128x128.png)](https://github.com/propensive/escapade/) &nbsp; [![Turbulence](https://github.com/propensive/turbulence/raw/main/doc/images/128x128.png)](https://github.com/propensive/turbulence/) &nbsp;
 
 The following _Scala One_ libraries are dependents of _Eucalyptus_:
 
-[![Guillotine](https://github.com/propensive/guillotine/raw/main/doc/images/128x128.png)](https://github.com/propensive/guillotine/) &nbsp; [![Joviality](https://github.com/propensive/joviality/raw/main/doc/images/128x128.png)](https://github.com/propensive/joviality/) &nbsp; [![Probably](https://github.com/propensive/probably/raw/main/doc/images/128x128.png)](https://github.com/propensive/probably/) &nbsp; [![Profanity](https://github.com/propensive/profanity/raw/main/doc/images/128x128.png)](https://github.com/propensive/profanity/) &nbsp; [![Surveillance](https://github.com/propensive/surveillance/raw/main/doc/images/128x128.png)](https://github.com/propensive/surveillance/) &nbsp; [![Telekinesis](https://github.com/propensive/telekinesis/raw/main/doc/images/128x128.png)](https://github.com/propensive/telekinesis/) &nbsp;
+[![Cellulose](https://github.com/propensive/cellulose/raw/main/doc/images/128x128.png)](https://github.com/propensive/cellulose/) &nbsp; [![Guillotine](https://github.com/propensive/guillotine/raw/main/doc/images/128x128.png)](https://github.com/propensive/guillotine/) &nbsp; [![Joviality](https://github.com/propensive/joviality/raw/main/doc/images/128x128.png)](https://github.com/propensive/joviality/) &nbsp; [![Probably](https://github.com/propensive/probably/raw/main/doc/images/128x128.png)](https://github.com/propensive/probably/) &nbsp; [![Profanity](https://github.com/propensive/profanity/raw/main/doc/images/128x128.png)](https://github.com/propensive/profanity/) &nbsp; [![Quagmire](https://github.com/propensive/quagmire/raw/main/doc/images/128x128.png)](https://github.com/propensive/quagmire/) &nbsp; [![Surveillance](https://github.com/propensive/surveillance/raw/main/doc/images/128x128.png)](https://github.com/propensive/surveillance/) &nbsp; [![Telekinesis](https://github.com/propensive/telekinesis/raw/main/doc/images/128x128.png)](https://github.com/propensive/telekinesis/) &nbsp; [![Temporaneous](https://github.com/propensive/temporaneous/raw/main/doc/images/128x128.png)](https://github.com/propensive/temporaneous/) &nbsp;
 
 ## Status
 
@@ -128,7 +128,7 @@ Eucalyptus is classified as __fledgling__. Propensive defines the following five
 - _dependable_: production-ready, subject to controlled ongoing maintenance and enhancement; tagged as version `1.0` or later
 - _adamantine_: proven, reliable and production-ready, with no further breaking changes ever anticipated
 
-Eucalyptus is designed to be _small_. Its entire source code currently consists of 159 lines of code.
+Eucalyptus is designed to be _small_. Its entire source code currently consists of 102 lines of code.
 
 ## Building
 
@@ -166,5 +166,5 @@ The _Eucalyptus_ tree is flexible and good for logging.
 
 ## License
 
-Eucalyptus is copyright &copy; 2018-22 Jon Pretty & Propensive O&Uuml;, and is made available under the
+Eucalyptus is copyright &copy; 2018-23 Jon Pretty & Propensive O&Uuml;, and is made available under the
 [Apache 2.0 License](/license.md).
