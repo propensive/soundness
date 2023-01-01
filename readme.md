@@ -105,7 +105,7 @@ Gesticulate is classified as __maturescent__. Propensive defines the following f
 - _dependable_: production-ready, subject to controlled ongoing maintenance and enhancement; tagged as version `1.0` or later
 - _adamantine_: proven, reliable and production-ready, with no further breaking changes ever anticipated
 
-Gesticulate is designed to be _small_. Its entire source code currently consists of 255 lines of code.
+Gesticulate is designed to be _small_. Its entire source code currently consists of 256 lines of code.
 
 ## Building
 
@@ -143,5 +143,5 @@ Since _Gesticulate_ provides a representation for MIME types, it's appropriate t
 
 ## License
 
-Gesticulate is copyright &copy; 2021-22 Jon Pretty & Propensive O&Uuml;, and is made available under the
+Gesticulate is copyright &copy; 2021-23 Jon Pretty & Propensive O&Uuml;, and is made available under the
 [Apache 2.0 License](/license.md).
