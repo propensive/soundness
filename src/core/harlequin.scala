@@ -28,7 +28,7 @@ enum Token:
   case Unparsed(text: Text)
   case Markup(text: Text)
   case Newline
-  case Code(text: Text, flair: Flair)
+  case Code(text: Text, flair: Accent)
 
   def length: Int = this match
     case Unparsed(text) => text.length
@@ -36,19 +36,19 @@ enum Token:
     case Newline        => 1
     case Code(text, _)  => text.length
 
-enum Flair:
+enum Accent:
   case Error, Number, String, Ident, Term, Type, Keyword, Symbol, Parens, Modifier
 
 object ScalaSyntax: 
-  def flair(token: Int): Flair =
-    if token <= 2 then Flair.Error
-    else if token == 3 || token == 10 || token == 13 then Flair.String
-    else if token >= 4 && token <= 9 then Flair.Number
-    else if token == 14 || token == 15 then Flair.Ident
-    else if token >= 20 && token <= 62 && Tokens.modifierTokens.contains(token) then Flair.Modifier
-    else if token >= 20 && token <= 62 then Flair.Keyword
-    else if token >= 63 && token <= 84 then Flair.Symbol
-    else Flair.Parens
+  def flair(token: Int): Accent =
+    if token <= 2 then Accent.Error
+    else if token == 3 || token == 10 || token == 13 then Accent.String
+    else if token >= 4 && token <= 9 then Accent.Number
+    else if token == 14 || token == 15 then Accent.Ident
+    else if token >= 20 && token <= 62 && Tokens.modifierTokens.contains(token) then Accent.Modifier
+    else if token >= 20 && token <= 62 then Accent.Keyword
+    else if token >= 63 && token <= 84 then Accent.Symbol
+    else Accent.Parens
   
   def highlight(text: Text): IArray[Seq[Token]] =
     val initCtx = Contexts.ContextBase().initialCtx.fresh.setReporter(Reporter.NoReporter)
@@ -106,9 +106,9 @@ object ScalaSyntax:
   private class Trees() extends ast.untpd.UntypedTreeTraverser:
     import ast.*, untpd.*
     
-    private val trees: scm.HashMap[(Int, Int), Flair] = scm.HashMap()
+    private val trees: scm.HashMap[(Int, Int), Accent] = scm.HashMap()
     
-    def apply(start: Int, end: Int): Option[Flair] = trees.get((start, end))
+    def apply(start: Int, end: Int): Option[Accent] = trees.get((start, end))
     
     def ignored(tree: NameTree): Boolean =
       val name = tree.name.toTermName
@@ -121,18 +121,18 @@ object ScalaSyntax:
         
         case tree: ValOrDefDef =>
           if tree.nameSpan.exists
-          then trees += (tree.nameSpan.start, tree.nameSpan.end) -> Flair.Term
+          then trees += (tree.nameSpan.start, tree.nameSpan.end) -> Accent.Term
         
         case tree: MemberDef =>
           if tree.nameSpan.exists
-          then trees += (tree.nameSpan.start, tree.nameSpan.end) -> Flair.Type
+          then trees += (tree.nameSpan.start, tree.nameSpan.end) -> Accent.Type
         
         case tree: Ident if tree.isType =>
           if tree.span.exists
-          then trees += (tree.span.start, tree.span.end) -> Flair.Type
+          then trees += (tree.span.start, tree.span.end) -> Accent.Type
         
         case _: TypTree =>
-          if tree.span.exists then trees += (tree.span.start, tree.span.end) -> Flair.Type
+          if tree.span.exists then trees += (tree.span.start, tree.span.end) -> Accent.Type
         
         case _ =>
           ()
