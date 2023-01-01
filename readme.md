@@ -157,7 +157,7 @@ There is no support for transparency.
 
 The following _Scala One_ libraries are dependencies of _Iridescence_:
 
-[![Rudiments](https://github.com/propensive/rudiments/raw/main/doc/images/128x128.png)](https://github.com/propensive/rudiments/) &nbsp;
+[![Cardinality](https://github.com/propensive/cardinality/raw/main/doc/images/128x128.png)](https://github.com/propensive/cardinality/) &nbsp; [![Contextual](https://github.com/propensive/contextual/raw/main/doc/images/128x128.png)](https://github.com/propensive/contextual/) &nbsp; [![Probably](https://github.com/propensive/probably/raw/main/doc/images/128x128.png)](https://github.com/propensive/probably/) &nbsp;
 
 The following _Scala One_ libraries are dependents of _Iridescence_:
 
@@ -173,7 +173,7 @@ Iridescence is classified as __fledgling__. Propensive defines the following fiv
 - _dependable_: production-ready, subject to controlled ongoing maintenance and enhancement; tagged as version `1.0` or later
 - _adamantine_: proven, reliable and production-ready, with no further breaking changes ever anticipated
 
-Iridescence is designed to be _small_. Its entire source code currently consists of 389 lines of code.
+Iridescence is designed to be _small_. Its entire source code currently consists of 455 lines of code.
 
 ## Building
 
@@ -211,5 +211,5 @@ The word _iridescent_, defined as "having a play of changeable colors", also des
 
 ## License
 
-Iridescence is copyright &copy; 2021-22 Jon Pretty & Propensive O&Uuml;, and is made available under the
+Iridescence is copyright &copy; 2021-23 Jon Pretty & Propensive O&Uuml;, and is made available under the
 [Apache 2.0 License](/license.md).
