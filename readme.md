@@ -91,7 +91,7 @@ Exoskeleton is classified as __fledgling__. Propensive defines the following fiv
 - _dependable_: production-ready, subject to controlled ongoing maintenance and enhancement; tagged as version `1.0` or later
 - _adamantine_: proven, reliable and production-ready, with no further breaking changes ever anticipated
 
-Exoskeleton is designed to be _small_. Its entire source code currently consists of 337 lines of code.
+Exoskeleton is designed to be _small_. Its entire source code currently consists of 339 lines of code.
 
 ## Building
 
@@ -129,5 +129,5 @@ Exoskeleton is a library for interacting with shells, which are their exterior s
 
 ## License
 
-Exoskeleton is copyright &copy; 2017-22 Jon Pretty & Propensive O&Uuml;, and is made available under the
+Exoskeleton is copyright &copy; 2017-23 Jon Pretty & Propensive O&Uuml;, and is made available under the
 [Apache 2.0 License](/license.md).
