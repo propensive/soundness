@@ -1,5 +1,19 @@
 {
-  "imports": ["../../dev/one/mod/gossamer/build.irk", "../../dev/one/mod/cardinality/build.irk", "../../dev/one/mod/kaleidoscope/build.irk"],
+  "repos": [
+    {
+      "base": "../gossamer",
+      "url": "https://github.com/propensive/gossamer"
+    },
+    {
+      "base": "../cardinality",
+      "url": "https://github.com/propensive/cardinality"
+    },
+    {
+      "base": "../kaleidoscope",
+      "url": "https://github.com/propensive/kaleidoscope"
+    }
+  ],
+  "imports": ["../gossamer/build.irk", "../cardinality/build.irk", "../kaleidoscope/build.irk"],
   "modules": [
     {
       "name": "Temporaneous",
