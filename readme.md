@@ -202,7 +202,7 @@ The following _Scala One_ libraries are dependencies of _Probably_:
 
 The following _Scala One_ libraries are dependents of _Probably_:
 
-[![Caesura](https://github.com/propensive/caesura/raw/main/doc/images/128x128.png)](https://github.com/propensive/caesura/) &nbsp; [![Imperial](https://github.com/propensive/imperial/raw/main/doc/images/128x128.png)](https://github.com/propensive/imperial/) &nbsp;
+[![Cellulose](https://github.com/propensive/cellulose/raw/main/doc/images/128x128.png)](https://github.com/propensive/cellulose/) &nbsp; [![Escritoire](https://github.com/propensive/escritoire/raw/main/doc/images/128x128.png)](https://github.com/propensive/escritoire/) &nbsp; [![Euphemism](https://github.com/propensive/euphemism/raw/main/doc/images/128x128.png)](https://github.com/propensive/euphemism/) &nbsp; [![Gossamer](https://github.com/propensive/gossamer/raw/main/doc/images/128x128.png)](https://github.com/propensive/gossamer/) &nbsp; [![Iridescence](https://github.com/propensive/iridescence/raw/main/doc/images/128x128.png)](https://github.com/propensive/iridescence/) &nbsp; [![Merino](https://github.com/propensive/merino/raw/main/doc/images/128x128.png)](https://github.com/propensive/merino/) &nbsp; [![Punctuation](https://github.com/propensive/punctuation/raw/main/doc/images/128x128.png)](https://github.com/propensive/punctuation/) &nbsp; [![Quagmire](https://github.com/propensive/quagmire/raw/main/doc/images/128x128.png)](https://github.com/propensive/quagmire/) &nbsp; [![Temporaneous](https://github.com/propensive/temporaneous/raw/main/doc/images/128x128.png)](https://github.com/propensive/temporaneous/) &nbsp; [![Turbulence](https://github.com/propensive/turbulence/raw/main/doc/images/128x128.png)](https://github.com/propensive/turbulence/) &nbsp; [![Xylophone](https://github.com/propensive/xylophone/raw/main/doc/images/128x128.png)](https://github.com/propensive/xylophone/) &nbsp;
 
 ## Status
 
@@ -214,7 +214,7 @@ Probably is classified as __fledgling__. Propensive defines the following five s
 - _dependable_: production-ready, subject to controlled ongoing maintenance and enhancement; tagged as version `1.0` or later
 - _adamantine_: proven, reliable and production-ready, with no further breaking changes ever anticipated
 
-Probably is designed to be _small_. Its entire source code currently consists of 598 lines of code.
+Probably is designed to be _small_. Its entire source code currently consists of 589 lines of code.
 
 ## Building
 
@@ -252,5 +252,5 @@ The name _Probably_ acknowledges an appropriate level of confidence in writing t
 
 ## License
 
-Probably is copyright &copy; 2017-22 Jon Pretty & Propensive O&Uuml;, and is made available under the
+Probably is copyright &copy; 2017-23 Jon Pretty & Propensive O&Uuml;, and is made available under the
 [Apache 2.0 License](/license.md).
