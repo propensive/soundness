@@ -99,7 +99,7 @@ Serpentine is classified as __fledgling__. Propensive defines the following five
 - _dependable_: production-ready, subject to controlled ongoing maintenance and enhancement; tagged as version `1.0` or later
 - _adamantine_: proven, reliable and production-ready, with no further breaking changes ever anticipated
 
-Serpentine is designed to be _small_. Its entire source code currently consists of 170 lines of code.
+Serpentine is designed to be _small_. Its entire source code currently consists of 187 lines of code.
 
 ## Building
 
@@ -137,5 +137,5 @@ A path which is _serpentine_ may be a challenge to navigate, which is where _Ser
 
 ## License
 
-Serpentine is copyright &copy; 2021-22 Jon Pretty & Propensive O&Uuml;, and is made available under the
+Serpentine is copyright &copy; 2021-23 Jon Pretty & Propensive O&Uuml;, and is made available under the
 [Apache 2.0 License](/license.md).
