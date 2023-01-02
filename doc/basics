@@ -1,4 +1,4 @@
-Unlike many filesystem APIs, __Joviality__ provides different types for `Path`s, `File`s, `Directory`s
+Unlike many filesystem APIs, __Galilei__ provides different types for `Path`s, `File`s, `Directory`s
 and `Symlink`s. While a `Path` (which is defined in [Serpentine](https://github.com/propensive/serpentine/))
 represents some location within a filesystem—which may or may not exist and may be either a file,
 directory or symlink—instances of `File`, `Directory` and `Symlink` should only exist when the
