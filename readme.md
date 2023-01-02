@@ -31,7 +31,7 @@ Json.parse(t"""{ "name": "Alfred", "age": 83 }""")
 ```
 but could also be a file or any other data stream with an appropirate `Readable` typeclass instance in scope:
 ```scala
-import joviality.*
+import galilei.*
 val input = (dir / t"source.json").file
 Json.parse(input)
 ```
