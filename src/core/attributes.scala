@@ -138,7 +138,7 @@ enum Wrap:
   case Soft, Hard
 
 object HtmlAttribute:
-  given [L <: Label, V, T](using att: HtmlAttributeWriter[L, V]): HtmlAttribute[L, V, T] with
+  given [L <: Label, V, T](using att: GenericHtmlAttribute[L, V]): HtmlAttribute[L, V, T] with
     def convert(value: V): Maybe[Text] = att.serialize(value).show
     override def rename: Option[Text] = Some(att.name.show)
 
