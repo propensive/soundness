@@ -158,13 +158,13 @@ extension (obj: LazyList.type)
     streams.zipWithIndex.map(_.swap).foreach(multiplexer.add)
     multiplexer
   
-  def pulsar(using time: GenericInstant)(interval: time.Type)(using Monitor): LazyList[Unit] =
+  def pulsar(using time: GenericDuration)(interval: time.Duration)(using Monitor): LazyList[Unit] =
     try
       sleep(interval)
       () #:: pulsar(interval)
     catch case err: CancelError => LazyList()
 
-class Pulsar(using time: GenericInstant)(interval: time.Type):
+class Pulsar(using time: GenericDuration)(interval: time.Duration):
   private var continue: Boolean = true
   def stop(): Unit = continue = false
 
@@ -224,12 +224,12 @@ case class Multiplexer[K, T]()(using monitor: Monitor, threading: Threading):
 
 extension [T](stream: LazyList[T])
 
-  def rate(using time: GenericInstant)(interval: time.Type)(using Monitor, Threading)
+  def rate(using time: GenericDuration)(interval: time.Duration)(using Monitor, Threading)
           : LazyList[T] throws CancelError =
     def recur(stream: LazyList[T], last: Long): LazyList[T] = stream match
       case head #:: tail =>
-        val delay = time.from(time.to(interval) - (System.currentTimeMillis - last))
-        if time.to(delay) > 0 then sleep(delay)
+        val delay = makeDuration(readDuration(interval) - (System.currentTimeMillis - last))
+        if time.readDuration(delay) > 0 then sleep(delay)
         stream
       case _ =>
         LazyList()
@@ -255,9 +255,9 @@ extension [T](stream: LazyList[T])
 
     LazyList() #::: recur(true, stream.multiplexWith(tap.stream), Nil)
 
-  def cluster(using time: GenericInstant)
-             (interval: time.Type, maxSize: Maybe[Int] = Unset, maxDelay: Maybe[Long] = Unset)
-             (using Monitor, Threading): LazyList[List[T]] =
+  def cluster(using time: GenericDuration)
+             (interval: time.Duration, maxSize: Maybe[Int] = Unset, maxDelay: Maybe[Long] = Unset)
+             (using Monitor, Threading, GenericInstant { type Instant = Long }): LazyList[List[T]] =
     
     def defer(stream: LazyList[T], list: List[T], expiry: Long): LazyList[List[T]] =
       recur(stream, list, expiry)
@@ -271,7 +271,7 @@ extension [T](stream: LazyList[T])
         val hasMore: Task[Boolean] = Task(Text("cluster"))(!stream.isEmpty)
 
         val recurse: Option[Boolean] = try
-          val deadline = time.from(time.to(interval).min(expiry - System.currentTimeMillis).max(0))
+          val deadline: Long = readDuration(interval).min(expiry - System.currentTimeMillis).max(0)
           if hasMore.await(deadline) then Some(true) else None
         catch case err: (TimeoutError | CancelError) => Some(false)
 
