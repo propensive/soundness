@@ -321,9 +321,7 @@ case class Line(text: Text)
 
 object Line:
   given lineReader(using enc: Encoding): Readable[LazyList[Line]] with
-    type E = StreamCutError
-
-    def read(stream: DataStream): LazyList[Line] throws StreamCutError | E =
+    def read(stream: DataStream): LazyList[Line] throws StreamCutError =
       def recur(stream: LazyList[Text], carry: Text = Text("")): LazyList[Line] =
         if stream.isEmpty then
           if carry.empty then LazyList() else LazyList(Line(carry))
