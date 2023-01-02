@@ -179,19 +179,19 @@ object MediaType:
   given Show[MediaType] =
     mt => t"${mt.basic}${mt.parameters.map { p => t"; ${p(0)}=${p(1)}" }.join}"
   
-  given formenctype: HtmlAttributeWriter["formenctype", MediaType] with
+  given formenctype: GenericHtmlAttribute["formenctype", MediaType] with
     def name: String = "formenctype"
     def serialize(mediaType: MediaType): String = mediaType.show.s
   
-  given media: HtmlAttributeWriter["media", MediaType] with
+  given media: GenericHtmlAttribute["media", MediaType] with
     def name: String = "media"
     def serialize(mediaType: MediaType): String = mediaType.show.s
   
-  given enctype: HtmlAttributeWriter["enctype", MediaType] with
+  given enctype: GenericHtmlAttribute["enctype", MediaType] with
     def name: String = "enctype"
     def serialize(mediaType: MediaType): String = mediaType.show.s
   
-  given htype: HtmlAttributeWriter["htype", MediaType] with
+  given htype: GenericHtmlAttribute["htype", MediaType] with
     def name: String = "type"
     def serialize(mediaType: MediaType): String = mediaType.show.s
 
