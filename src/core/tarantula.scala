@@ -125,10 +125,10 @@ case class WebDriver(server: Browser#Server):
       internet:
         uri"http://localhost:${server.port.show}/session/$sessionId/$address".post(content).as[Json]
     
-    def navigateTo[U: UriConverter](url: U)(using Log): Json =
+    def navigateTo[U: GenericUrl](url: U)(using Log): Json =
       case class Data(url: Text)
-      println(summon[UriConverter[U]](url).show)
-      post(t"url", Data(summon[UriConverter[U]](url).show).json)
+      println(summon[GenericUrl[U]](url).show)
+      post(t"url", Data(summon[GenericUrl[U]](url).show).json)
     
     def refresh()(using Log): Unit = post(t"refresh", Json.parse(t"{}")).as[Json]
     def forward()(using Log): Unit = post(t"forward", Json.parse(t"{}")).as[Json]
