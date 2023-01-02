@@ -38,9 +38,9 @@ object Scheme:
 case class Scheme(name: Text)
 
 object Url:
-  given GenericUrl[Url] with
-    def apply(url: Url): String = url.show.s
-    def unapply(value: String): Option[Url] = safely(Url.parse(value.show)).option
+  given (using CanThrow[InvalidUrlError]): GenericUrl[Url] = new GenericUrl[Url]:
+    def readUrl(url: Url): String = url.show.s
+    def makeUrl(value: String): Url = Url.parse(value.show)
 
   given show: Show[Url] = url =>
     val auth = url.authority.fold(t"")(t"//"+_.show)
