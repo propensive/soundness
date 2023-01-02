@@ -6,7 +6,7 @@
 # Surveillance
 
 __Surveillance__ watches directories for changes, and provides a `LazyList` of streaming `WatchEvent`s. While it
-works well with [Joviality](https://github.com/propensive/joviality/), it can work with any representation of
+works well with [Galilei](https://github.com/propensive/galilei/), it can work with any representation of
 paths.
 
 ## Features
@@ -25,7 +25,7 @@ The current latest release of Surveillance is __0.4.0__.
 ## Getting Started
 
 Surveillance watches directories for changes to their contents, through an extension method, `watch()`, on a
-type representing a directory or a `Seq` of such types. For [Joviality](https://github.com/propensive/joviality)'s
+type representing a directory or a `Seq` of such types. For [Galilei](https://github.com/propensive/galilei)'s
 `Directory` type, this works straight away. Other libraries which provide directory-like types can integrate with
 Surveillance just by defining two simple [typeclass instances](#defining-typeclass-instances).
 
@@ -33,7 +33,7 @@ Surveillance just by defining two simple [typeclass instances](#defining-typecla
 
 A simple setup for watching a directory looks like this:
 ```scala
-import joviality.*
+import galilei.*
 import serpentine.*
 import surveillance.*
 
