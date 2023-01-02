@@ -28,10 +28,9 @@ trait RowFormat:
   def wrap(seq: List[Row]): Type
   
   def parse[T](input: T)(using source: Source[T], readable: Readable[LazyList[Line]])
-           : Type throws StreamCutError | readable.E | source.E =
-      wrap:
-        readable.read(source.read(input)).to(List).map:
-          line => parseLine(line.text)
+           : Type throws StreamCutError = wrap:
+      readable.read(source.read(input)).to(List).map:
+        line => parseLine(line.text)
 
   def parseLine(line: Text): Row =
     @tailrec
