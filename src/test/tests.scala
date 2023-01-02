@@ -18,8 +18,8 @@ package merino
 
 import probably.*
 import gossamer.*
-import joviality.*, filesystems.unix
-import anticipation.*, integration.jovialityPath
+import galilei.*, filesystems.unix
+import anticipation.*, integration.galileiPath
 import eucalyptus.*
 import serpentine.*
 import rudiments.*

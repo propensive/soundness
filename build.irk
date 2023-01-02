@@ -1,10 +1,10 @@
 {
-  "imports": ["../probably/build.irk", "../joviality/build.irk"],
+  "imports": ["../probably/build.irk", "../galilei/build.irk"],
   "modules": [
     {
       "name": "Merino",
       "id": "merino/core",
-      "links": ["gossamer/core", "joviality/integration"],
+      "links": ["gossamer/core", "galilei/integration"],
       "sources": ["src/core"],
       "version": "0.1.0",
       "docs": ["doc"]
