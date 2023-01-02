@@ -69,7 +69,7 @@ object Postable extends FallbackPostable:
   given Postable[LazyList[Bytes]] = Postable(media"application/octet-stream", _.map(identity(_)))
   given Postable[DataStream] = Postable(media"application/octet-stream", identity(_))
   
-  given dataStream[T](using response: HttpResponseStream[T]): Postable[T] =
+  given dataStream[T](using response: GenericHttpResponseStream[T]): Postable[T] =
     erased given CanThrow[InvalidMediaTypeError] = compiletime.erasedValue
     Postable(Media.parse(response.mediaType.show), response.content(_).map { v => v })
   
@@ -115,7 +115,7 @@ object HttpReadable:
       case HttpBody.Data(body)    => body
       case HttpBody.Chunked(body) => body.slurp()
 
-  given [T, E2 <: Exception](using reader: HttpReader[T, E2]): HttpReadable[T] with
+  given [T, E2 <: Exception](using reader: GenericHttpReader[T, E2]): HttpReadable[T] with
     type E = E2
     def read(status: HttpStatus, body: HttpBody): T throws StreamCutError | E2 = body match
       case HttpBody.Empty         => reader.read("")
