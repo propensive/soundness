@@ -52,7 +52,7 @@ case class Import(url: Text) extends CssStylesheet.Item:
   def text: Text = t"@import url('$url');"
 
 object CssStyle:
-  given HtmlAttributeWriter["style", CssStyle] with
+  given GenericHtmlAttribute["style", CssStyle] with
     def serialize(value: CssStyle): String = value.properties.map(_.text).join(t";").s
     def name: String = "style"
 
