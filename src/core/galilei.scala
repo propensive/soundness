@@ -116,27 +116,23 @@ object File:
       
       def filePath(file: File[fs.type]): String = file.path.fullname.toString
 
-  given [Fs <: Filesystem]: Writable[File[Fs]] with
-    type E = IoError
-    def write(value: File[Fs], stream: DataStream): Unit throws StreamCutError | IoError =
+  given [Fs <: Filesystem](using CanThrow[IoError]): Writable[File[Fs]] with
+    def write(value: File[Fs], stream: DataStream): Unit throws StreamCutError =
       val out = ji.FileOutputStream(value.javaFile, false)
       try Util.write(stream, out)
       catch case e => throw IoError(IoError.Op.Write, IoError.Reason.AccessDenied, value.path)
       finally try out.close() catch _ => ()
   
-  given [Fs <: Filesystem]: Appendable[File[Fs]] with
-    type E = IoError
-    def write(value: File[Fs], stream: DataStream): Unit throws StreamCutError | IoError =
+  given [Fs <: Filesystem](using CanThrow[IoError]): Appendable[File[Fs]] with
+    def write(value: File[Fs], stream: DataStream): Unit throws StreamCutError =
       val out = ji.FileOutputStream(value.javaFile, true)
       try Util.write(stream, out)
       catch case e => throw IoError(IoError.Op.Write, IoError.Reason.AccessDenied, value.path)
       finally try out.close() catch _ => ()
   
-  given [Fs <: Filesystem]: Source[File[Fs]] with
-    type E = IoError
-    def read(file: File[Fs]): DataStream throws IoError =
-      try Util.readInputStream(ji.FileInputStream(file.javaFile))
-      catch case e: ji.FileNotFoundException =>
+  given [Fs <: Filesystem](using CanThrow[IoError]): Source[File[Fs]] with
+    def read(file: File[Fs]): DataStream =
+      try Util.readInputStream(ji.FileInputStream(file.javaFile)) catch case e: ji.FileNotFoundException =>
         if e.getMessage.nn.contains("(Permission denied)")
         then throw IoError(IoError.Op.Read, IoError.Reason.AccessDenied, file.path)
         else throw IoError(IoError.Op.Read, IoError.Reason.DoesNotExist, file.path)
@@ -151,7 +147,7 @@ case class File[+Fs <: Filesystem](filePath: DiskPath[Fs]) extends Inode[Fs](fil
     catch e => throw IoError(IoError.Op.Delete, IoError.Reason.AccessDenied, path)
   
   def read[T]()(using readable: Readable[T])
-      : T throws IoError | StreamCutError | readable.E =
+      : T throws IoError | StreamCutError =
     val stream = Util.readInputStream(ji.FileInputStream(javaFile))
     try readable.read(stream) catch
       case err: java.io.FileNotFoundException =>
@@ -208,16 +204,14 @@ object Fifo:
 
   given Show[Fifo[?]] = t"ˢ｢"+_.path.fullname+t"｣"
 
-  given [Fs <: Filesystem]: Appendable[Fifo[Fs]] with
-    type E = IoError
-    def write(value: Fifo[Fs], stream: DataStream): Unit throws StreamCutError | E =
+  given [Fs <: Filesystem](using CanThrow[IoError]): Appendable[Fifo[Fs]] with
+    def write(value: Fifo[Fs], stream: DataStream): Unit throws StreamCutError =
       val out = value.out
       try Util.write(stream, out)
       catch case e => throw IoError(IoError.Op.Write, IoError.Reason.AccessDenied, value.path)
   
-  given [Fs <: Filesystem]: Writable[Fifo[Fs]] with
-    type E = IoError
-    def write(value: Fifo[Fs], stream: DataStream): Unit throws StreamCutError | E =
+  given [Fs <: Filesystem](using CanThrow[IoError]): Writable[Fifo[Fs]] with
+    def write(value: Fifo[Fs], stream: DataStream): Unit throws StreamCutError =
       val out = value.out
       try Util.write(stream, out)
       catch case e => throw IoError(IoError.Op.Write, IoError.Reason.AccessDenied, value.path)
@@ -575,8 +569,7 @@ object ClasspathResource:
   given Show[ClasspathResource] = cr => t"[resource]"
 
 case class ClasspathResource(path: ClasspathRef[Classpath]) extends Shown[ClasspathResource]:
-  def read[T]()(using readable: Readable[T])
-          : T throws ClasspathRefError | StreamCutError | readable.E =
+  def read[T]()(using readable: Readable[T]): T throws ClasspathRefError | StreamCutError =
     val resource = path.root.classLoader.getResourceAsStream(path.fullname.drop(1).s)
     if resource == null then throw ClasspathRefError(path.classpath)(path)
     val stream = Util.readInputStream(resource.nn)
