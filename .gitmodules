@@ -27,7 +27,7 @@
 	url = git@github.com:propensive/scintillate
 	branch = main
 [submodule "mod/joviality"]
-	path = mod/joviality
+	path = mod/galilei
 	url = git@github.com:propensive/joviality
 	branch = main
 [submodule "mod/iridescence"]
