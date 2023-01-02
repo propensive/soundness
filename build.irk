@@ -81,6 +81,25 @@
       "docs": [
         "doc"
       ]
+    },
+    {
+      "name": "Telekinesis Tests",
+      "id": "telekinesis/test",
+      "links": [
+        "telekinesis/client",
+	"probably/cli"
+      ],
+      "sources": [
+        "src/test"
+      ],
+      "exec": {
+        "browsers": [],
+	"start": "telekinesis.Tests"
+      },
+      "version": "0.4.0",
+      "docs": [
+        "doc"
+      ]
     }
   ]
 }
