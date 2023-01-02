@@ -26,9 +26,9 @@ object DirectoryProvider:
   given DirectoryProvider[jnf.Path] = integration.javaNioPath
 
 @implicitNotFound("""|anticipation: a contextual DirectoryProvider[${T}] instance is required, for example one of:
-                     |    import integration.javaNioPath    // represent a directory as a java.nio.Path
-                     |    import integration.javaIo         // represent a directory as a java.io.File
-                     |    import integration.jovialityPath  // represent a directory as a jovialitiy.Directory (requires Joviality)""".stripMargin)
+                     |    import integration.javaNioPath  // represent a directory as a java.nio.Path
+                     |    import integration.javaIo       // represent a directory as a java.io.File
+                     |    import integration.galileiPath  // represent a directory as a galilei.Directory (requires Galilei)""".stripMargin)
 trait DirectoryProvider[+T]:
   def makeDirectory(path: String, readOnly: Boolean = false): Option[T]
 
@@ -44,9 +44,9 @@ object FileProvider:
   given FileProvider[jnf.Path] = integration.javaNioPath
 
 @implicitNotFound("""|anticipation: a contextual FileProvider[${T}] instance is required, for example one of:
-                     |    import integration.javaNioPath    // represent a file as a java.nio.Path
-                     |    import integration.javaIo         // represent a file as a java.io.File
-                     |    import integration.jovialityPath  // represent a file as a jovialitiy.File (requires Joviality)""".stripMargin)
+                     |    import integration.javaNioPath  // represent a file as a java.nio.Path
+                     |    import integration.javaIo       // represent a file as a java.io.File
+                     |    import integration.galileiPath  // represent a file as a galilei.File (requires Galilei)""".stripMargin)
 trait FileProvider[+T]:
   def makeFile(path: String, readOnly: Boolean = false): Option[T]
 
@@ -62,9 +62,9 @@ object PathProvider:
   given PathProvider[jnf.Path] = integration.javaNioPath
 
 @implicitNotFound("""|anticipation: a contextual PathProvider[${T}] instance is required, for example one of:
-                     |    import integration.javaNioPath    // represent a path as a java.nio.Path
-                     |    import integration.javaIo         // represent a path as a java.io.File
-                     |    import integration.jovialityPath  // represent a path as a jovialitiy.Path (requires Joviality)""".stripMargin)
+                     |    import integration.javaNioPath  // represent a path as a java.nio.Path
+                     |    import integration.javaIo       // represent a path as a java.io.File
+                     |    import integration.galileiPath  // represent a path as a galilei.Path (requires Galilei)""".stripMargin)
 trait PathProvider[+T]:
   def makePath(path: String, readOnly: Boolean = false): Option[T]
 
