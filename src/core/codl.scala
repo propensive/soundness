@@ -92,17 +92,6 @@ object Codl:
         recur(tokens, focus, peers, stack, lines, subs, errors, body)
       
       tokens match
-        case LazyList() => stack match
-          case Nil =>
-            val (closed, errors2) = focus.close
-            val allErrors = errors2 ::: errors
-            val children = if closed.blank then peers.reverse else (closed :: peers).reverse
-            if allErrors.isEmpty then CodlDoc(IArray.from(children), baseSchema, margin, body)
-            else throw AggregateError(allErrors.reverse)
-          
-          case _ =>
-            go(LazyList(CodlToken.Outdent(stack.length + 1)))
-    
         case token #:: tail => token match
           case CodlToken.Line(_) =>
             go(tokens = LazyList(), body = tokens.collect { case CodlToken.Line(txt) => txt })
@@ -187,6 +176,18 @@ object Codl:
             case key: Text => go(focus = focus.setMeta(focus.meta.or(Meta()).copy(remark = txt, blank = lines)))
           
             case _ => throw Mistake("Should never match")
+        
+        case _ => stack match
+          case Nil =>
+            val (closed, errors2) = focus.close
+            val allErrors = errors2 ::: errors
+            val children = if closed.blank then peers.reverse else (closed :: peers).reverse
+            if allErrors.isEmpty then CodlDoc(IArray.from(children), baseSchema, margin, body)
+            else throw AggregateError(allErrors.reverse)
+          
+          case _ =>
+            go(LazyList(CodlToken.Outdent(stack.length + 1)))
+    
 
 
     if stream.isEmpty then CodlDoc() else recur(stream, Proto(), Nil, Nil, 0, subs.reverse, Nil, LazyList())

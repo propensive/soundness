@@ -50,7 +50,7 @@ object Printer:
                   case _ => throw Mistake("Should never match")
                 out.write('\n')
               case Struct(_, _) =>
-                val ps = if layout.multiline then children.take(layout.params - 1) else children.take(layout.params)
+                val ps = children.take(if layout.multiline then layout.params - 1 else layout.params)
                 ps.foreach:
                   case Nodule(Data(key, IArray(), _, _), _) =>
                     out.write(' ')
