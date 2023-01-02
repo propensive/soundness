@@ -1,5 +1,5 @@
 /*
-    Joviality, version 0.4.0. Copyright 2020-23 Jon Pretty, Propensive OÜ.
+    Galilei, version 0.4.0. Copyright 2020-23 Jon Pretty, Propensive OÜ.
 
     The primary distribution site is: https://propensive.com/
 
@@ -14,7 +14,7 @@
     and limitations under the License.
 */
 
-package joviality
+package galilei
 
 import probably.*
 import gossamer.*
@@ -23,5 +23,5 @@ import unsafeExceptions.canThrowAny
 
 import encodings.Utf8
 
-object Tests extends Suite(t"Joviality tests"):
+object Tests extends Suite(t"Galilei tests"):
   def run(using Runner): Unit = ()

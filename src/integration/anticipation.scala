@@ -1,5 +1,5 @@
 /*
-    Joviality, version 0.4.0. Copyright 2020-23 Jon Pretty, Propensive OÜ.
+    Galilei, version 0.4.0. Copyright 2020-23 Jon Pretty, Propensive OÜ.
 
     The primary distribution site is: https://propensive.com/
 
@@ -18,21 +18,21 @@ package anticipation.integration
 
 import anticipation.*
 import rudiments.*
-import _root_.joviality as jov
+import _root_.galilei as gal
 
 import language.experimental.captureChecking
 
-given jovialityPath[Fs <: jov.Filesystem](using fs: Fs): (PathProvider[jov.DiskPath[Fs]] & DirectoryProvider[jov.Directory[Fs]] & FileProvider[jov.File[Fs]] & PathInterpreter[jov.DiskPath[Fs]] & FileInterpreter[jov.File[Fs]] & DirectoryInterpreter[jov.Directory[Fs]]) =
-  new PathProvider[jov.DiskPath[Fs]] with DirectoryProvider[jov.Directory[Fs]] with FileProvider[jov.File[Fs]] with PathInterpreter[jov.DiskPath[Fs]] with FileInterpreter[jov.File[Fs]] with DirectoryInterpreter[jov.Directory[Fs]]:
-    def makePath(str: String, readOnly: Boolean = false): Option[jov.DiskPath[Fs]] =
+given galileiPath[Fs <: gal.Filesystem](using fs: Fs): (PathProvider[gal.DiskPath[Fs]] & DirectoryProvider[gal.Directory[Fs]] & FileProvider[gal.File[Fs]] & PathInterpreter[gal.DiskPath[Fs]] & FileInterpreter[gal.File[Fs]] & DirectoryInterpreter[gal.Directory[Fs]]) =
+  new PathProvider[gal.DiskPath[Fs]] with DirectoryProvider[gal.Directory[Fs]] with FileProvider[gal.File[Fs]] with PathInterpreter[gal.DiskPath[Fs]] with FileInterpreter[gal.File[Fs]] with DirectoryInterpreter[gal.Directory[Fs]]:
+    def makePath(str: String, readOnly: Boolean = false): Option[gal.DiskPath[Fs]] =
       safely(fs.parse(Text(str))).option
     
-    def makeDirectory(str: String, readOnly: Boolean = false): Option[jov.Directory[Fs]] =
-      safely(fs.parse(Text(str)).directory(jov.Expect)).option
+    def makeDirectory(str: String, readOnly: Boolean = false): Option[gal.Directory[Fs]] =
+      safely(fs.parse(Text(str)).directory(gal.Expect)).option
     
-    def makeFile(str: String, readOnly: Boolean = false): Option[jov.File[Fs]] =
-      safely(fs.parse(Text(str)).file(jov.Expect)).option
+    def makeFile(str: String, readOnly: Boolean = false): Option[gal.File[Fs]] =
+      safely(fs.parse(Text(str)).file(gal.Expect)).option
 
-    def getPath(value: jov.DiskPath[Fs]): String = value.fullname.s
-    def directoryPath(value: jov.Directory[Fs]): String = value.path.fullname.s
-    def filePath(value: jov.File[Fs]): String = value.path.fullname.s
+    def getPath(value: gal.DiskPath[Fs]): String = value.fullname.s
+    def directoryPath(value: gal.Directory[Fs]): String = value.path.fullname.s
+    def filePath(value: gal.File[Fs]): String = value.path.fullname.s

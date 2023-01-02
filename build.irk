@@ -48,8 +48,8 @@
   },
   "modules": [
     {
-      "name": "Joviality",
-      "id": "joviality/core",
+      "name": "Galilei",
+      "id": "galilei/core",
       "links": [
         "anticipation/html",
         "anticipation/time",
@@ -68,10 +68,10 @@
       ]
     },
     {
-      "name": "Joviality Integration",
-      "id": "joviality/integration",
+      "name": "Galilei Integration",
+      "id": "galilei/integration",
       "links": [
-        "joviality/core"
+        "galilei/core"
       ],
       "sources": [
         "src/integration"

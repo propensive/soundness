@@ -1,5 +1,5 @@
 /*
-    Joviality, version 0.4.0. Copyright 2020-23 Jon Pretty, Propensive OÜ.
+    Galilei, version 0.4.0. Copyright 2020-23 Jon Pretty, Propensive OÜ.
 
     The primary distribution site is: https://propensive.com/
 
@@ -14,7 +14,7 @@
     and limitations under the License.
 */
 
-package joviality
+package galilei
 
 import rudiments.*
 import gossamer.*
@@ -547,7 +547,7 @@ object windows:
   object DriveE extends WindowsRoot('E')
   object DriveF extends WindowsRoot('F')
 
-given realm: Realm = Realm(t"joviality")
+given realm: Realm = Realm(t"galilei")
 
 object Classpath:
   given Show[Classpath] = cp =>
