@@ -19,6 +19,7 @@ package cataclysm
 import rudiments.*
 import gossamer.*
 import iridescence.*
+import anticipation.*
 
 import scala.quoted.*
 
@@ -63,7 +64,7 @@ case class PropertyDef[Name <: Label, -T: ShowProperty]():
 object Selectable:
   given ident: Selectable[Selector] = identity(_)
 
-  given [T](using sel: anticipation.CssSelection[T]): Selectable[T] = sel.selection(_) match
+  given [T](using sel: GenericCssSelection[T]): Selectable[T] = sel.selection(_) match
     case s".$cls" => Selector.Class(Text(cls))
     case s"#$id"  => Selector.Id(Text(id))
     case elem     => Selector.Element(Text(elem))
