@@ -98,11 +98,11 @@ object Json extends Dynamic:
   given (using JsonSerializer): Show[Json] = json =>
     try json.normalize.root.show catch case err: JsonAccessError => t"<${err.reason}>"
 
-  given (using JsonSerializer): HttpResponseStream[Json] with
+  given (using JsonSerializer): GenericHttpResponseStream[Json] with
     def mediaType: String = "application/json"
     def content(json: Json): LazyList[IArray[Byte]] = LazyList(json.show.bytes)
 
-  given anticipation.HttpReader[Json, JsonParseError] with
+  given GenericHttpReader[Json, JsonParseError] with
     def read(value: String): Json throws JsonParseError =
       Json(JsonAst.parse(LazyList(value.getBytes("UTF-8").nn.immutable(using Unsafe))), Nil)
 
