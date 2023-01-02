@@ -24,10 +24,10 @@ The current latest release of Caesura is __0.4.0__.
 ### Reading CSV Data
 
 CSV data can be read from any value whose type has a `Source` typeclass instance in scope, such as `Text` or a `File` from
-[Joviality](https://github.com/propensive/joviality), passing it to the `Csv.parse` method. For example,
+[Galilei](https://github.com/propensive/galilei), passing it to the `Csv.parse` method. For example,
 ```scala
 import caesura.*
-import joviality.*
+import galilei.*
 val file: File = ...
 val csv: Csv = Csv.parse(file)
 ```
@@ -35,7 +35,7 @@ val csv: Csv = Csv.parse(file)
 Likewise, TSV data can be read with:
 ```scala
 import caesura.*
-import joviality.*
+import galilei.*
 val file: File = ...
 val tsv: Tsv = Tsv.parse(file)
 ```
