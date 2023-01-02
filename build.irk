@@ -1,8 +1,8 @@
 {
   "repos": [
     {
-      "base": "../joviality",
-      "url": "https://github.com/propensive/joviality"
+      "base": "../galilei",
+      "url": "https://github.com/propensive/galilei"
     },
     {
       "base": "../profanity",
@@ -10,7 +10,7 @@
     }
   ],
   "imports": [
-    "../joviality/build.irk",
+    "../galilei/build.irk",
     "../profanity/build.irk"
   ],
   "publishing": {
@@ -36,7 +36,7 @@
       "name": "Exoskeleton",
       "id": "exoskeleton/core",
       "links": [
-        "joviality/integration", "profanity/core"
+        "galilei/integration", "profanity/core"
       ],
       "sources": [
         "src/core"

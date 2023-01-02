@@ -77,7 +77,7 @@ directory in which the script should be written.
 
 The following _Scala One_ libraries are dependencies of _Exoskeleton_:
 
-[![Joviality](https://github.com/propensive/joviality/raw/main/doc/images/128x128.png)](https://github.com/propensive/joviality/) &nbsp; [![Profanity](https://github.com/propensive/profanity/raw/main/doc/images/128x128.png)](https://github.com/propensive/profanity/) &nbsp;
+[![Galilei](https://github.com/propensive/galilei/raw/main/doc/images/128x128.png)](https://github.com/propensive/galilei/) &nbsp; [![Profanity](https://github.com/propensive/profanity/raw/main/doc/images/128x128.png)](https://github.com/propensive/profanity/) &nbsp;
 
 No other _Scala One_ libraries are dependents of _Exoskeleton_.
 

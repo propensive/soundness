@@ -16,8 +16,8 @@
 
 package exoskeleton
 
-import joviality.*, filesystems.unix
-import anticipation.integration.jovialityPath
+import galilei.*, filesystems.unix
+import anticipation.integration.galileiPath
 import gossamer.*
 import rudiments.*
 import parasitism.*
