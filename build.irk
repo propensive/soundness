@@ -48,15 +48,15 @@
   },
   "modules": [
     {
-      "name": "Telekinesis URI",
-      "id": "telekinesis/uri",
+      "name": "Telekinesis URL",
+      "id": "telekinesis/url",
       "links": [
         "serpentine/core",
-        "anticipation/uri",
+        "anticipation/url",
         "gossamer/core"
       ],
       "sources": [
-        "src/uri"
+        "src/url"
       ],
       "version": "0.4.0",
       "docs": [
@@ -72,7 +72,7 @@
         "serpentine/core",
         "anticipation/http",
         "gastronomy/core",
-        "telekinesis/uri"
+        "telekinesis/url"
       ],
       "sources": [
         "src/client"
