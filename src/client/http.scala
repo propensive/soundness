@@ -88,7 +88,7 @@ class Postable[T](val contentType: MediaType,
       case err: StreamCutError => t"[broken stream]"
 
 object HttpMethod:
-  given formmethod: HtmlAttributeWriter["formmethod", HttpMethod] with
+  given formmethod: GenericHtmlAttribute["formmethod", HttpMethod] with
     def name: String = "formmethod"
     
     def serialize(method: HttpMethod): String =
@@ -352,39 +352,39 @@ object Uri:
 
   given AnsiShow[Uri] = uri => ansi"$Underline(${colors.DeepSkyBlue}(${show.show(uri)}))"
   
-  given action: HtmlAttributeWriter["action", Uri] with
+  given action: GenericHtmlAttribute["action", Uri] with
     def name: String = "action"
     def serialize(uri: Uri): String = uri.show.s
   
-  given codebase: HtmlAttributeWriter["codebase", Uri] with
+  given codebase: GenericHtmlAttribute["codebase", Uri] with
     def name: String = "codebase"
     def serialize(uri: Uri): String = uri.show.s
   
-  given cite: HtmlAttributeWriter["cite", Uri] with
+  given cite: GenericHtmlAttribute["cite", Uri] with
     def name: String = "cite"
     def serialize(uri: Uri): String = uri.show.s
   
-  given data: HtmlAttributeWriter["data", Uri] with
+  given data: GenericHtmlAttribute["data", Uri] with
     def name: String = "data"
     def serialize(uri: Uri): String = uri.show.s
 
-  given formaction: HtmlAttributeWriter["formaction", Uri] with
+  given formaction: GenericHtmlAttribute["formaction", Uri] with
     def name: String = "formaction"
     def serialize(uri: Uri): String = uri.show.s
  
-  given poster: HtmlAttributeWriter["poster", Uri] with
+  given poster: GenericHtmlAttribute["poster", Uri] with
     def name: String = "poster"
     def serialize(uri: Uri): String = uri.show.s
 
-  given src: HtmlAttributeWriter["src", Uri] with
+  given src: GenericHtmlAttribute["src", Uri] with
     def name: String = "src"
     def serialize(uri: Uri): String = uri.show.s
   
-  given href: HtmlAttributeWriter["href", Uri] with
+  given href: GenericHtmlAttribute["href", Uri] with
     def name: String = "href"
     def serialize(uri: Uri): String = uri.show.s
   
-  given manifest: HtmlAttributeWriter["manifest", Uri] with
+  given manifest: GenericHtmlAttribute["manifest", Uri] with
     def name: String = "manifest"
     def serialize(uri: Uri): String = uri.show.s
 
