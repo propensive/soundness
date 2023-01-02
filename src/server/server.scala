@@ -210,7 +210,7 @@ trait ParamReader[T]:
   def read(value: Text): Option[T]
 
 object RequestParam:
-  given HtmlAttributeWriter["name", RequestParam[?]] with
+  given GenericHtmlAttribute["name", RequestParam[?]] with
     def name: String = "name"
     def serialize(value: RequestParam[?]): String = value.key.s
 
