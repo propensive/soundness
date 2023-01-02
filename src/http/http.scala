@@ -20,5 +20,5 @@ trait GenericHttpResponseStream[T]:
   def mediaType: String
   def content(value: T): LazyList[IArray[Byte]]
 
-trait GenericHttpReader[T, E <: Exception]:
-  def read(value: String): T throws E
+trait GenericHttpReader[T]:
+  def read(value: String): T
