@@ -43,7 +43,7 @@ trait Root(val prefix: Text, val separator: Text):
   
 object Root:
   
-  given rootAttributeWriter: HtmlAttributeWriter["href", Root.^.type] with
+  given rootAttributeWriter: GenericHtmlAttribute["href", Root.^.type] with
     def name: String = "href"
     def serialize(value: Root.^.type): String = "/"
 
@@ -69,7 +69,7 @@ object Relative:
     case Self                    => t"."
     case Relative(ascent, parts) => parts.join(t"../"*ascent, t"/", t"")
 
-  given HtmlAttributeWriter["href", Relative] with
+  given GenericHtmlAttribute["href", Relative] with
     def name: String = "href"
     def serialize(value: Relative): String = value.show.s
   
@@ -120,7 +120,7 @@ export Slash.`/`
 object Absolute:
   given [R <: Root]: Show[Absolute[R]] = _.text
 
-  given HtmlAttributeWriter["href", GenericPath] with
+  given GenericHtmlAttribute["href", GenericPath] with
     def name = "href"
     def serialize(value: GenericPath): String = value.show.s
 
