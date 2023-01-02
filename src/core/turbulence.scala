@@ -158,13 +158,13 @@ extension (obj: LazyList.type)
     streams.zipWithIndex.map(_.swap).foreach(multiplexer.add)
     multiplexer
   
-  def pulsar(using time: Timekeeper)(interval: time.Type)(using Monitor): LazyList[Unit] =
+  def pulsar(using time: GenericInstant)(interval: time.Type)(using Monitor): LazyList[Unit] =
     try
       sleep(interval)
       () #:: pulsar(interval)
     catch case err: CancelError => LazyList()
 
-class Pulsar(using time: Timekeeper)(interval: time.Type):
+class Pulsar(using time: GenericInstant)(interval: time.Type):
   private var continue: Boolean = true
   def stop(): Unit = continue = false
 
@@ -224,7 +224,7 @@ case class Multiplexer[K, T]()(using monitor: Monitor, threading: Threading):
 
 extension [T](stream: LazyList[T])
 
-  def rate(using time: Timekeeper)(interval: time.Type)(using Monitor, Threading)
+  def rate(using time: GenericInstant)(interval: time.Type)(using Monitor, Threading)
           : LazyList[T] throws CancelError =
     def recur(stream: LazyList[T], last: Long): LazyList[T] = stream match
       case head #:: tail =>
@@ -255,7 +255,7 @@ extension [T](stream: LazyList[T])
 
     LazyList() #::: recur(true, stream.multiplexWith(tap.stream), Nil)
 
-  def cluster(using time: Timekeeper)
+  def cluster(using time: GenericInstant)
              (interval: time.Type, maxSize: Maybe[Int] = Unset, maxDelay: Maybe[Long] = Unset)
              (using Monitor, Threading): LazyList[List[T]] =
     
