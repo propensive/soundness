@@ -43,13 +43,13 @@ Conversely, `Home.Config` would normally resolve to `$HOME/.config`, but if the 
 variable set to something else, it would simply resolve to `$XDG_CONFIG_HOME`.
 
 The type of each of these objects is `BaseLayout`, which provides a `BaseLayout#apply()` method for constructing an instance of
-a directory type (such as `java.io.File` or `joviality.Directory`) representing the directory. Imperial is designed to be
+a directory type (such as `java.io.File` or `galilei.Directory`) representing the directory. Imperial is designed to be
 compatible with different file and directory representations, but it works automatically with
-[Joviality](https://github.com/propensive/joviality).
+[Galilei](https://github.com/propensive/galilei).
 
 For example, it would be possible to access a `myapp` configuration directory with,
 ```scala
-import joviality.*
+import galilei.*
 val dir: Directory = Home.Config() / t"myapp"
 ```
 
