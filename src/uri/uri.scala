@@ -17,5 +17,8 @@
 package anticipation
 
 trait GenericUrl[T]:
-  def apply(value: T): String
-  def unapply(string: String): Option[T]
+  def readUrl(value: T): String
+  def makeUrl(string: String): T
+
+def readUrl[T](url: T)(using GenericUrl[T]): String = summon[GenericUrl[T]].readUrl(url)
+def makeUrl[T](url: String)(using GenericUrl[T]): T = summon[GenericUrl[T]].makeUrl(url)
