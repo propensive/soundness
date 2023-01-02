@@ -40,9 +40,7 @@ enum HttpBody:
   case Chunked(stream: LazyList[IArray[Byte] throws StreamCutError])
   case Data(data: IArray[Byte])
 
-  def as[T](using readable: HttpReadable[T])
-           : T throws StreamCutError | readable.E =
-    readable.read(HttpStatus.Ok, this)
+  def as[T](using readable: HttpReadable[T]): T throws StreamCutError = readable.read(HttpStatus.Ok, this)
 
 object QuerySerializer extends ProductDerivation[QuerySerializer]:
   def join[T](ctx: CaseClass[QuerySerializer, T]): QuerySerializer[T] = value =>
@@ -101,37 +99,31 @@ enum HttpMethod:
 
 object HttpReadable:
   given HttpReadable[Text] with
-    type E = StreamCutError
-    def read(status: HttpStatus, body: HttpBody): Text throws StreamCutError | E =
-      body match
-        case HttpBody.Empty         => t""
-        case HttpBody.Data(body)    => body.uString
-        case HttpBody.Chunked(body) => body.slurp().uString
+    def read(status: HttpStatus, body: HttpBody): Text throws StreamCutError = body match
+      case HttpBody.Empty         => t""
+      case HttpBody.Data(body)    => body.uString
+      case HttpBody.Chunked(body) => body.slurp().uString
   
   given HttpReadable[Bytes] with
-    type E = Nothing
-    def read(status: HttpStatus, body: HttpBody): Bytes throws StreamCutError | E = body match
+    def read(status: HttpStatus, body: HttpBody): Bytes throws StreamCutError = body match
       case HttpBody.Empty         => IArray()
       case HttpBody.Data(body)    => body
       case HttpBody.Chunked(body) => body.slurp()
 
-  given [T, E2 <: Exception](using reader: GenericHttpReader[T, E2]): HttpReadable[T] with
-    type E = E2
-    def read(status: HttpStatus, body: HttpBody): T throws StreamCutError | E2 = body match
+  given [T](using reader: GenericHttpReader[T]): HttpReadable[T] with
+    def read(status: HttpStatus, body: HttpBody): T throws StreamCutError = body match
       case HttpBody.Empty         => reader.read("")
       case HttpBody.Data(data)    => reader.read(data.uString.s)
       case HttpBody.Chunked(data) => reader.read(data.slurp().uString.s)
 
   given HttpReadable[HttpStatus] with
-    type E = StreamCutError
     def read(status: HttpStatus, body: HttpBody) = status
 
 trait HttpReadable[+T]:
-  type E <: Exception
-  def read(status: HttpStatus, body: HttpBody): T throws StreamCutError | E
+  def read(status: HttpStatus, body: HttpBody): T throws StreamCutError
 
 case class HttpResponse(status: HttpStatus, headers: Map[ResponseHeader, List[String]], body: HttpBody):
-  inline def as[T](using readable: HttpReadable[T]): T throws HttpError | StreamCutError | readable.E =
+  inline def as[T](using readable: HttpReadable[T]): T throws HttpError | StreamCutError =
     status match
       case status: FailureCase => throw HttpError(status, body)
       case status              => readable.read(status, body)
@@ -257,9 +249,7 @@ object Http:
             
 case class HttpError(status: HttpStatus & FailureCase, body: HttpBody)
 extends Error(err"HTTP error $status"):
-  inline def as[T](using readable: HttpReadable[T])
-                  : T throws StreamCutError | readable.E =
-    readable.read(status, body)
+  inline def as[T](using readable: HttpReadable[T]): T throws StreamCutError = readable.read(status, body)
 
 trait FailureCase
 
