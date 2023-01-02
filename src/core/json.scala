@@ -102,8 +102,8 @@ object Json extends Dynamic:
     def mediaType: String = "application/json"
     def content(json: Json): LazyList[IArray[Byte]] = LazyList(json.show.bytes)
 
-  given GenericHttpReader[Json, JsonParseError] with
-    def read(value: String): Json throws JsonParseError =
+  given (using CanThrow[JsonParseError]): GenericHttpReader[Json] with
+    def read(value: String): Json =
       Json(JsonAst.parse(LazyList(value.getBytes("UTF-8").nn.immutable(using Unsafe))), Nil)
 
   given (using CanThrow[StreamCutError], CanThrow[JsonAccessError]): Readable[Json] = new Readable[Json]:
