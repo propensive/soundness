@@ -87,7 +87,7 @@ sealed trait Inode[+Fs <: Filesystem](val path: DiskPath[Fs]):
   def directory: Maybe[Directory[Fs]]
   def file: Maybe[File[Fs]]
   def symlink: Maybe[Symlink[Fs]]
-  def modified(using time: GenericInstant): time.Type = time.from(javaFile.lastModified)
+  def modified(using time: GenericInstant): time.Instant = makeInstant(javaFile.lastModified)
   def exists(): Boolean = javaFile.exists()
   def delete(): Unit throws IoError
 
