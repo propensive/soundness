@@ -44,7 +44,7 @@ trait Handler2:
     SimpleHandler(t"text/plain", v => HttpBody.Chunked(LazyList(summon[Show[T]].show(v).bytes)))
 
 object Handler extends Handler2:
-  given iarrayByteHandler[T](using hr: HttpResponseStream[T]): SimpleHandler[T] =
+  given iarrayByteHandler[T](using hr: GenericHttpResponseStream[T]): SimpleHandler[T] =
     SimpleHandler(Text(hr.mediaType), value => HttpBody.Chunked(hr.content(value).map(identity)))
 
   given Handler[Redirect] with
