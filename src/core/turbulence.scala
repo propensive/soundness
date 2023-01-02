@@ -54,12 +54,10 @@ case class AlreadyStreamingError() extends Error(err"the stream was accessed twi
 
 object Source:
   given Source[DataStream] with
-    type E = Nothing
     def read(value: DataStream) = value
 
 trait Source[T]:
-  type E <: Exception
-  def read(value: T): DataStream throws E
+  def read(value: T): DataStream
 
 object Appendable:
   given Appendable[SystemOut.type] with
@@ -79,12 +77,10 @@ object Appendable:
       Util.write(stream, out)
 
 trait Appendable[T]:
-  type E <: Exception
-  def write(value: T, stream: DataStream): Unit throws StreamCutError | E
+  def write(value: T, stream: DataStream): Unit throws StreamCutError
 
 trait Writable[T]:
-  type E <: Exception
-  def write(value: T, stream: DataStream): Unit throws StreamCutError | E
+  def write(value: T, stream: DataStream): Unit throws StreamCutError
 
 object Streamable:
   given Streamable[DataStream] = identity(_)
@@ -98,21 +94,17 @@ trait Streamable[T]:
 
 object Readable:
   given Readable[DataStream] with
-    type E = StreamCutError
-    def read(stream: DataStream): DataStream throws StreamCutError | E = stream
+    def read(stream: DataStream): DataStream throws StreamCutError = stream
   
   given Readable[Bytes] with
-    type E = StreamCutError
-    def read(stream: DataStream): Bytes throws StreamCutError | E =
+    def read(stream: DataStream): Bytes throws StreamCutError =
       stream.slurp()
 
   given (using enc: Encoding): Readable[Text] with
-    type E = StreamCutError
     def read(value: DataStream) =
       Text(String(value.slurp().mutable(using Unsafe), enc.name.s))
 
   given textReader(using enc: Encoding): Readable[LazyList[Text]] with
-    type E = StreamCutError
     private final val empty = Array.empty[Byte]
 
     def read(stream: DataStream) =
@@ -136,13 +128,11 @@ object Readable:
 
 trait Readable[T]:
   readable =>
-  type E <: Exception
-  def read(stream: DataStream): T throws StreamCutError | E
+  def read(stream: DataStream): T throws StreamCutError
   
-  def map[S](fn: T => S): turbulence.Readable[S] { type E = readable.E } =
+  def map[S](fn: T => S): turbulence.Readable[S] =
     new turbulence.Readable[S]:
-      type E = readable.E
-      def read(stream: DataStream): S throws StreamCutError | readable.E =
+      def read(stream: DataStream): S throws StreamCutError =
         fn(readable.read(stream))
 
 object SystemIn
@@ -175,21 +165,20 @@ class Pulsar(using time: GenericDuration)(interval: time.Duration):
     catch case err: CancelError => LazyList()
 
 extension [T](value: T)
-  def dataStream(using src: Source[T]): DataStream throws src.E = src.read(value)
+  def dataStream(using src: Source[T]): DataStream = src.read(value)
   
-  def writeStream(stream: DataStream)(using writable: Writable[T]): Unit throws StreamCutError | writable.E =
+  def writeStream(stream: DataStream)(using writable: Writable[T]): Unit throws StreamCutError =
     writable.write(value, stream)
   
   def appendTo[S](destination: S)(using appendable: Appendable[S], streamable: Streamable[T])
-                : Unit throws StreamCutError | appendable.E =
+                : Unit throws StreamCutError =
     appendable.write(destination, streamable.stream(value))
 
   def writeTo[S](destination: S)(using writable: Writable[S], streamable: Streamable[T])
-                : Unit throws StreamCutError | writable.E =
+                : Unit throws StreamCutError =
     writable.write(destination, streamable.stream(value))
 
-  def read[S]()(using readable: Readable[S], src: Source[T])
-          : S throws StreamCutError | src.E | readable.E =
+  def read[S]()(using readable: Readable[S], src: Source[T]): S throws StreamCutError =
     readable.read(dataStream)
 
 case class Multiplexer[K, T]()(using monitor: Monitor, threading: Threading):
