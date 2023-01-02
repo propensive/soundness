@@ -16,7 +16,6 @@
 
 package anticipation
 
-trait HtmlAttributeWriter[-L <: String & Singleton, -T]:
+trait GenericHtmlAttribute[-L <: String & Singleton, -T]:
   def name: String
   def serialize(value: T): String
-
