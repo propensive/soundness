@@ -495,7 +495,7 @@ object JsonAst:
                 
                 if negative then mantissa *= -1
                 val exp = exponent + scale
-                number = if exp == 0 then mantissa else mantissa*math.pow(10, exponent + scale)
+                number = if exp == 0 then mantissa else mantissa*math.pow(10.0, exponent.toDouble + scale)
 
                 continue = false
               
@@ -510,7 +510,7 @@ object JsonAst:
             if decimalPosition != 0 && scale == 0 then scale = decimalPosition - cur
             if current <= Num9 && current >= Num0 then
               next()
-              (if negative then -mantissa else mantissa).toDouble*math.pow(10, exponent + scale)
+              (if negative then -mantissa else mantissa).toDouble*math.pow(10.0, exponent.toDouble + scale)
             else abort(Issue.PrematureEnd)
       
       def parseLargeNumber(hasDecimalPoint: Boolean): Unit =
