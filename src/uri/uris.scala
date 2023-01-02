@@ -38,7 +38,7 @@ object Scheme:
 case class Scheme(name: Text)
 
 object Url:
-  given UriConverter[Url] with
+  given GenericUrl[Url] with
     def apply(url: Url): String = url.show.s
     def unapply(value: String): Option[Url] = safely(Url.parse(value.show)).option
 
