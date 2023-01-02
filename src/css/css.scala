@@ -16,5 +16,5 @@
 
 package anticipation
 
-trait CssSelection[-T]:
+trait GenericCssSelection[-T]:
   def selection(value: T): String
