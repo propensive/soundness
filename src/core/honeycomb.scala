@@ -48,7 +48,7 @@ object Html extends Node["html"]:
     Element(label.s, unclosed, inline, verbatim, Map(), Seq(head, body))
 
 object TagType:
-  given anticipation.CssSelection[TagType[?, ?, ?]] = _.labelString
+  given GenericCssSelection[TagType[?, ?, ?]] = _.labelString
 
 case class TagType[+Name <: Label, Children <: Label, Atts <: Label]
               (labelString: Name, unclosed: Boolean = false, inline: Boolean = false,
@@ -70,7 +70,7 @@ extends Node[Name], Dynamic:
     Element(labelString, unclosed, inline, verbatim, Map(), children)
 
 object TransTagType:
-  given anticipation.CssSelection[TransTagType[?, ?, ?]] = _.labelString
+  given GenericCssSelection[TransTagType[?, ?, ?]] = _.labelString
 
 case class TransTagType[+Name <: Label, Children <: Label, Atts <: Label]
                    (labelString: Name, unclosed: Boolean = false, inline: Boolean = false,

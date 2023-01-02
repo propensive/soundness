@@ -57,12 +57,12 @@ enum Target:
   case Self, Blank, Parent, Top
 
 object Cls:
-  given CssSelection[Cls] = cls => t".${cls.name}".s
+  given GenericCssSelection[Cls] = cls => t".${cls.name}".s
 
 case class Cls(name: Text)
 
 object DomId:
-  given CssSelection[DomId] = id => t"#${id.name}".s
+  given GenericCssSelection[DomId] = id => t"#${id.name}".s
 
 case class DomId(name: Text)
 

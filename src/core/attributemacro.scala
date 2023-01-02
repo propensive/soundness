@@ -18,6 +18,7 @@ package honeycomb
 
 import rudiments.*
 import gossamer.*
+import anticipation.*
 
 import scala.quoted.*
 
@@ -62,7 +63,7 @@ trait Node[+Name <: Label] extends Shown[Node[?]]:
       case _ => None
 
 object StartTag:
-  given anticipation.CssSelection[StartTag[?, ?]] = elem =>
+  given GenericCssSelection[StartTag[?, ?]] = elem =>
     val tail = elem.attributes.map:
       case (key, value: Text) => t"[$key=$value]"
       case (key, Unset)       => t"[$key]"
