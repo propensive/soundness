@@ -16,9 +16,9 @@
 
 package anticipation
 
-trait HttpResponseStream[T]:
+trait GenericHttpResponseStream[T]:
   def mediaType: String
   def content(value: T): LazyList[IArray[Byte]]
 
-trait HttpReader[T, E <: Exception]:
+trait GenericHttpReader[T, E <: Exception]:
   def read(value: String): T throws E
