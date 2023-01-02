@@ -36,7 +36,7 @@ enum CodlToken:
 
 object Codl:
 
-  def read[T: Codec](text: Text)(using Log): T throws AggregateError | IncompatibleTypeError = // FIXME: Should only be aggregate error
+  def read[T: Codec](text: Text)(using Log): T throws AggregateError | CodlReadError = // FIXME: Should only be aggregate error
     summon[Codec[T]].schema.parse(text).as[T]
   
   def parse(reader: Reader, schema: CodlSchema = CodlSchema.Free, subs: List[Data] = Nil, fromStart: Boolean = false)

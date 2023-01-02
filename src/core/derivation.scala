@@ -24,18 +24,35 @@ import Arity.*
 
 import language.experimental.pureFunctions
 
+case class CodlReadError() extends Error(err"the CoDL value is not of the right format")
+
 trait Codec[T]:
   def serialize(value: T): List[IArray[Nodule]]
-  def deserialize(value: List[Indexed]): T throws IncompatibleTypeError
+  def deserialize(value: List[Indexed]): T throws CodlReadError
   def schema: CodlSchema
 
-  def text[T](nodes: List[Indexed]): Text throws IncompatibleTypeError =
-    nodes.headOption.getOrElse(throw IncompatibleTypeError()).children match
-      case IArray(Nodule(Data(value, _, _, _), _)) => value
-      case _                                     => throw IncompatibleTypeError()
-
-object Codec extends Derivation[Codec]:
+class FieldCodec[T](serializer: T => Text, deserializer: Text => T) extends Codec[T]:
+  val schema: CodlSchema = Field(Arity.One)
+  def serialize(value: T): List[IArray[Nodule]] = List(IArray(Nodule(Data(serializer(value)))))
   
+  def deserialize(nodes: List[Indexed]): T throws CodlReadError =
+    nodes.headOption.getOrElse(throw CodlReadError()).children match
+      case IArray(Nodule(Data(value, _, _, _), _)) => deserializer(value)
+      case _                                       => throw CodlReadError()
+
+trait LowerPriorityCodec:
+  given maybe[T](using codec: Codec[T]): Codec[Maybe[T]] = new Codec[Maybe[T]]:
+    def schema: CodlSchema = summon[Codec[T]].schema.optional
+  
+    def serialize(value: Maybe[T]): List[IArray[Nodule]] = value match
+      case Unset               => List()
+      case value: T @unchecked => codec.serialize(value)
+    
+    def deserialize(value: List[Indexed]): Maybe[T] throws CodlReadError =
+      if value.isEmpty then Unset else codec.deserialize(value)
+    
+
+object Codec extends ProductDerivation[Codec], LowerPriorityCodec:
   def join[T](ctx: CaseClass[Codec, T]): Codec[T] = new Codec[T]:
     def schema: CodlSchema =
       val entries: IArray[CodlSchema.Entry] = ctx.params.map: param =>
@@ -53,50 +70,19 @@ object Codec extends Derivation[Codec]:
           Nodule(Data(p.label.show, value, Layout.empty, p.typeclass.schema))
         .filter(!_.empty)
 
-    def deserialize(value: List[Indexed]): T throws IncompatibleTypeError = ctx.construct: param =>
+    def deserialize(value: List[Indexed]): T throws CodlReadError = ctx.construct: param =>
       param.typeclass.deserialize(value.head.get(param.label.show))
   
-  def split[T](ctx: SealedTrait[Codec, T]): Codec[T] = ???
+  given (using CanThrow[IncompatibleTypeError]): Codec[Byte] = FieldCodec(_.show, _.as[Byte])
+  given (using CanThrow[IncompatibleTypeError]): Codec[Short] = FieldCodec(_.show, _.as[Short])
+  given (using CanThrow[IncompatibleTypeError]): Codec[Long] = FieldCodec(_.show, _.as[Long])
+  given (using CanThrow[IncompatibleTypeError]): Codec[Char] = FieldCodec(_.show, _.as[Char])
+  given (using CanThrow[IncompatibleTypeError]): Codec[Int] = FieldCodec(_.show, _.as[Int])
+  given Codec[Text] = FieldCodec(_.show, identity(_))
   
-  given Codec[Byte] with
-    def schema = Field(Arity.One)
-    def serialize(value: Byte): List[IArray[Nodule]] = List(IArray(Nodule(Data(value.show))))
-    def deserialize(value: List[Indexed]): Byte throws IncompatibleTypeError = text(value).as[Byte]
- 
-  given Codec[Short] with
-    def schema = Field(Arity.One)
-    def serialize(value: Short): List[IArray[Nodule]] = List(IArray(Nodule(Data(value.show))))
-    def deserialize(value: List[Indexed]): Short throws IncompatibleTypeError = text(value).as[Short]
+  given (using CanThrow[IncompatibleTypeError]): Codec[Boolean] =
+    FieldCodec(v => if v then t"yes" else t"no", _ == t"yes")
 
-  given Codec[Long] with
-    def schema = Field(Arity.One)
-    def serialize(value: Long): List[IArray[Nodule]] = List(IArray(Nodule(Data(value.show))))
-    def deserialize(value: List[Indexed]): Long throws IncompatibleTypeError = text(value).as[Long]
-
-  given Codec[Char] with
-    def schema = Field(Arity.One)
-    def serialize(value: Char): List[IArray[Nodule]] = List(IArray(Nodule(Data(value.show))))
-    def deserialize(value: List[Indexed]): Char throws IncompatibleTypeError = text(value).as[Char]
-
-  given Codec[Int] with
-    def schema = Field(Arity.One)
-    def serialize(value: Int): List[IArray[Nodule]] = List(IArray(Nodule(Data(value.show))))
-    def deserialize(value: List[Indexed]): Int throws IncompatibleTypeError = text(value).as[Int]
-
-  given Codec[Text] with
-    def schema = Field(Arity.One)
-    def serialize(value: Text): List[IArray[Nodule]] = List(IArray(Nodule(Data(value.show))))
-    def deserialize(value: List[Indexed]): Text throws IncompatibleTypeError = text(value)
-
-  given Codec[Boolean] with
-    def schema = Field(Arity.One)
-    def serialize(value: Boolean): List[IArray[Nodule]] = List(IArray(Nodule(Data(if value then t"yes" else t"no"))))
-
-    def deserialize(value: List[Indexed]): Boolean throws IncompatibleTypeError = text(value) match
-      case t"yes" => true
-      case t"no"  => false
-      case value  => throw IncompatibleTypeError()
-  
   given option[T](using codec: Codec[T]): Codec[Option[T]] = new Codec[Option[T]]:
     def schema: CodlSchema = summon[Codec[T]].schema.optional
   
@@ -104,18 +90,8 @@ object Codec extends Derivation[Codec]:
       case None        => List()
       case Some(value) => codec.serialize(value)
     
-    def deserialize(value: List[Indexed]): Option[T] throws IncompatibleTypeError =
+    def deserialize(value: List[Indexed]): Option[T] throws CodlReadError =
       if value.isEmpty then None else Some(codec.deserialize(value))
-    
-  given maybe[T](using codec: Codec[T]): Codec[Maybe[T]] = new Codec[Maybe[T]]:
-    def schema: CodlSchema = summon[Codec[T]].schema.optional
-  
-    def serialize(value: Maybe[T]): List[IArray[Nodule]] = value match
-      case Unset               => List()
-      case value: T @unchecked => codec.serialize(value)
-    
-    def deserialize(value: List[Indexed]): Maybe[T] throws IncompatibleTypeError =
-      if value.isEmpty then Unset else codec.deserialize(value)
     
   given list[T](using codec: => Codec[T]): Codec[List[T]] = new Codec[List[T]]:
     def schema: CodlSchema = codec.schema match
@@ -124,7 +100,7 @@ object Codec extends Derivation[Codec]:
 
     def serialize(value: List[T]): List[IArray[Nodule]] = value.map { (value: T) => codec.serialize(value).head }
 
-    def deserialize(value: List[Indexed]): List[T] throws IncompatibleTypeError = codec.schema match
+    def deserialize(value: List[Indexed]): List[T] throws CodlReadError = codec.schema match
       case Field(_, validator) => value.flatMap(_.children).map: node =>
         codec.deserialize(List(CodlDoc(node)))
       
@@ -139,11 +115,9 @@ object Codec extends Derivation[Codec]:
     def serialize(value: Set[T]): List[IArray[Nodule]] =
       value.map { (value: T) => codec.serialize(value).head }.to(List)
 
-    def deserialize(value: List[Indexed]): Set[T] throws IncompatibleTypeError = codec.schema match
+    def deserialize(value: List[Indexed]): Set[T] throws CodlReadError = codec.schema match
       case Field(_, validator) =>
-        value.flatMap(_.children).map: node =>
-          codec.deserialize(List(CodlDoc(node)))
-        .to(Set)
+        value.flatMap(_.children).map { node => codec.deserialize(List(CodlDoc(node))) }.to(Set)
       
       case struct: Struct =>
         value.map { v => codec.deserialize(List(v)) }.to(Set)

@@ -113,7 +113,7 @@ extends Indexed:
     copy(children = recur(children, input.children))
 
 
-  def as[T](using codec: Codec[T]): T throws IncompatibleTypeError = codec.deserialize(List(this))
+  def as[T](using codec: Codec[T]): T throws CodlReadError = codec.deserialize(List(this))
   def uncommented: CodlDoc = CodlDoc(children.map(_.uncommented), schema, margin, body)
   def untyped: CodlDoc = CodlDoc(children.map(_.untyped), CodlSchema.Free, margin, body)
   def wiped = uncommented.untyped
