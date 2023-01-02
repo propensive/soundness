@@ -40,8 +40,8 @@ case class Supervisor(baseId: Text = Text("main")) extends Monitor:
 def supervise[T](id: Text)(fn: Monitor ?=> T): T = fn(using Supervisor(id))
 def hibernate()(using Monitor): Unit = sleep(using timekeeping.long)(Long.MaxValue)
 
-def sleep(using t: GenericInstant)(time: t.Type)(using Monitor): Unit =
-  try Thread.sleep(t.to(time)) catch case err: InterruptedException => unsafely(throw CancelError())
+def sleep(using t: GenericDuration)(time: t.Duration)(using Monitor): Unit =
+  try Thread.sleep(readDuration(time)) catch case err: InterruptedException => unsafely(throw CancelError())
 
 @implicitNotFound("""|parasitism: a contextual Monitor instance is required, for example:
                      |    import monitors.global  // a top-level supervisor for asynchronous tasks""".stripMargin)
@@ -85,9 +85,9 @@ case class Promise[T]():
     while value.isEmpty do wait()
     value.get
 
-  def await(using t: GenericInstant)(time: t.Type): T throws CancelError | TimeoutError = synchronized:
+  def await(using t: GenericInstant)(time: t.Instant): T throws CancelError | TimeoutError = synchronized:
     if value.isEmpty then
-      wait(t.to(time))
+      wait(readInstant(time))
       if value.isEmpty then throw TimeoutError() else value.get
     else value.get
 
@@ -130,7 +130,7 @@ class Task[T](id: Text, calc: Monitor => T)(using mon: Monitor, threading: Threa
   //def active: Boolean = !result.ready
   def await(): T throws CancelError = result.await().tap(thread.join().waive)
   
-  def await(using t: GenericInstant)(time: t.Type): T throws CancelError | TimeoutError =
+  def await(using t: GenericInstant)(time: t.Instant): T throws CancelError | TimeoutError =
     result.await(time).tap(thread.join().waive)
   
   private def start(): Promise[T] = //synchronized:
