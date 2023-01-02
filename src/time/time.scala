@@ -18,21 +18,38 @@ package anticipation
 
 import annotation.implicitNotFound
 
-@implicitNotFound("an implicit Timekeeper instance is required to determine what type should be used to represent instants in time")
+@implicitNotFound("a contextual GenericInstant instance is required to work with instants in time")
 trait GenericInstant:
-  type Type
-  def from(long: Long): Type
-  def to(value: Type): Long
+  type Instant
+  def makeInstant(long: Long): Instant
+  def readInstant(value: Instant): Long
+
+@implicitNotFound("a contextual GenericDuration instance is required to work with time durations")
+trait GenericDuration:
+  type Duration
+  def makeDuration(long: Long): Duration
+  def readDuration(value: Duration): Long
 
 object timekeeping:
-  given long: GenericInstant with
-    type Type = Long
-    def from(long: Long): Long = long
-    def to(value: Long): Long = value
+  given long: GenericInstant with GenericDuration with
+    type Instant = Long
+    type Duration = Long
+    def readInstant(long: Long): Long = long
+    def makeInstant(value: Long): Long = value
+    def readDuration(long: Long): Long = long
+    def makeDuration(value: Long): Long = value
 
-  given date: GenericInstant with
-    type Type = java.util.Date
-    def from(long: Long): java.util.Date = java.util.Date(long)
-    def to(value: java.util.Date): Long = value.getTime
+  given date: GenericInstant with GenericDuration with
+    type Instant = java.util.Date
+    type Duration = Long
+    def makeInstant(long: Long): java.util.Date = java.util.Date(long)
+    def readInstant(value: java.util.Date): Long = value.getTime
+    def readDuration(long: Long): Long = long
+    def makeDuration(value: Long): Long = value
 
-def now()(using time: GenericInstant): time.Type = time.from(System.currentTimeMillis)
+def now()(using time: GenericInstant): time.Instant = time.makeInstant(System.currentTimeMillis)
+
+def makeInstant(value: Long)(using time: GenericInstant): time.Instant = time.makeInstant(value)
+def readInstant(using time: GenericInstant)(value: time.Instant): Long = time.readInstant(value)
+def makeDuration(value: Long)(using time: GenericDuration): time.Duration = time.makeDuration(value)
+def readDuration(using time: GenericDuration)(value: time.Duration): Long = time.readDuration(value)
