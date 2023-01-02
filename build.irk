@@ -27,6 +27,7 @@
     "mod/escapade/build.irk",
     "mod/surveillance/build.irk",
     "mod/oubliette/build.irk",
+    "mod/temporaneous/build.irk",
     "mod/gastronomy/build.irk",
     "mod/caesura/build.irk",
     "mod/eucalyptus/build.irk",
