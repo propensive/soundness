@@ -16,6 +16,6 @@
 
 package anticipation
 
-trait UriConverter[T]:
+trait GenericUrl[T]:
   def apply(value: T): String
   def unapply(string: String): Option[T]
