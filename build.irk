@@ -67,7 +67,7 @@
       "docs": [
         "doc"
       ],
-      "xec": {
+      "exec": {
         "browsers": [],
         "start": "gossamer.Tests"
       }

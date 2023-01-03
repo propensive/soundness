@@ -18,9 +18,7 @@ package gossamer
 
 import probably.*
 import rudiments.*
-import eucalyptus.*
-import parasitism.*, threading.virtual
-import logging.silent
+import eucalyptus.*, logging.stdout
 
 import unsafeExceptions.canThrowAny
 
@@ -528,15 +526,15 @@ object Tests extends Suite(t"Gossamer Tests"):
       .assert(_ == 10)
 
       test(t"Take characters while predicate is true"):
-        t"HELLOworld".upto(_.isUpper)
+        t"HELLOworld".whilst(_.isUpper)
       .assert(_ == t"HELLO")
       
       test(t"Take characters when predicate is never true returns empty text"):
-        t"hello world".upto(_.isUpper)
+        t"hello world".whilst(_.isUpper)
       .assert(_ == t"")
       
       test(t"Take characters when predicate isn't initially true returns empty text"):
-        t"Helloworld".upto(_.isLower)
+        t"Helloworld".whilst(_.isLower)
       .assert(_ == t"")
     
       test(t"Capitalize a lowercase word"):
