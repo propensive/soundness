@@ -17,17 +17,15 @@
 package xylophone
 
 import probably.*
-import eucalyptus.*
+import eucalyptus.*, logging.stdout
 import rudiments.*
 import turbulence.*
 import gossamer.*
-import parasitism.*, monitors.global, threading.platform
 import printers.compact
 
 import scala.util.{Try, Success, Failure}
 
 import unsafeExceptions.canThrowAny
-import logging.silent
 
 case class Worker(name: Text, age: Int)
 case class Firm(name: Text, ceo: Worker)
