@@ -87,12 +87,12 @@ case class WebDriver(server: Browser#Server):
       
       private def get(address: Text)(using Log): Json = safe:
         internet:
-          uri"http://localhost:${server.port.show}/session/$sessionId/element/$elementId/$address"
+          url"http://localhost:${server.port}/session/$sessionId/element/$elementId/$address"
             .get(RequestHeader.ContentType(t"application/json")).as[Json]
       
       private def post(address: Text, content: Json)(using Log): Json = safe:
         internet:
-          uri"http://localhost:${server.port.show}/session/$sessionId/element/$elementId/$address"
+          url"http://localhost:${server.port}/session/$sessionId/element/$elementId/$address"
             .post(content).as[Json]
       
       def click()(using Log): Unit = post(t"click", Json.parse(t"{}"))
@@ -118,12 +118,12 @@ case class WebDriver(server: Browser#Server):
       
     private def get(address: Text)(using Log): Json = safe:
       internet:
-        uri"http://localhost:${server.port.show}/session/$sessionId/$address"
+        url"http://localhost:${server.port}/session/$sessionId/$address"
           .get(RequestHeader.ContentType(t"application/json")).as[Json]
   
     private def post(address: Text, content: Json)(using Log): Json = safe:
       internet:
-        uri"http://localhost:${server.port.show}/session/$sessionId/$address".post(content).as[Json]
+        url"http://localhost:${server.port}/session/$sessionId/$address".post(content).as[Json]
     
     def navigateTo[U: GenericUrl](url: U)(using Log): Json =
       case class Data(url: Text)
@@ -154,7 +154,7 @@ case class WebDriver(server: Browser#Server):
       Element(get(t"element/active").value.selectDynamic(Wei.s).as[Text])
 
   def startSession()(using Log): Session = internet:
-    val url = uri"http://localhost:${server.port.show}/session"
+    val url = url"http://localhost:${server.port}/session"
     val json = url.post(Json.parse(t"""{"capabilities":{}}""")).as[Json]
     
     Session(json.value.sessionId.as[Text])
