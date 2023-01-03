@@ -124,11 +124,15 @@ trait LogTag[-T]:
   def tag(value: T): Text
 
 package logging:
-  given silent(using Threading): Log = Log()(using Supervisor(t"none"))
+  import monitors.global, threading.platform
+  given silent: Log = Log()
+  
   given stdout: Log =
+    import monitors.global, threading.platform
     val sink = SystemOut.sink
-    Log({ case _ => sink })(using monitors.global, threading.platform)
     
+    Log:
+      case _ => sink
 
 object LogSink:
   def apply[S](sink: S, appendable: Appendable[S], format: LogFormat[S]): LogSink = new LogSink:
@@ -148,4 +152,3 @@ trait LogFormat[S]:
 
 extension [S: LogFormat: Appendable](value: S)
   def sink: LogSink = LogSink(value, summon[Appendable[S]], summon[LogFormat[S]])
-
