@@ -108,7 +108,7 @@ object Json extends Dynamic:
 
   given (using CanThrow[StreamCutError], CanThrow[JsonAccessError]): Readable[Json] = new Readable[Json]:
     def read(value: DataStream) = Json(JsonAst.parse(value), Nil)
-  
+
   object Writer extends Derivation[Writer]:
     given Writer[Int] = v => JsonAst(v.toLong)
     given Writer[Text] = v => JsonAst(v.s)
@@ -117,6 +117,8 @@ object Json extends Dynamic:
     given Writer[Byte] = v => JsonAst(v.toLong)
     given Writer[Short] = v => JsonAst(v.toLong)
     given Writer[Boolean] = JsonAst(_)
+  
+    given [T](using canon: Canonical[T]): Writer[T] = v => JsonAst(canon.serialize(v).s)
     
     given (using CanThrow[JsonAccessError]): Writer[Json] = _.normalize.toOption.get.root
     
@@ -171,6 +173,8 @@ object Json extends Dynamic:
     given Reader[Long] = _.long
     given Reader[Text] = _.string
     given Reader[Boolean] = _.boolean
+    
+    given [T](using canon: Canonical[T]): Reader[T] = v => canon.deserialize(v.string)
 
     given opt[T](using Reader[T]): Reader[Option[T]] with
       def read(value: => JsonAst): Option[T] =
