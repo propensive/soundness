@@ -30,7 +30,7 @@ object Suite:
     '✓' -> colors.YellowGreen,
     '✗' -> colors.Red,
     '‼' -> colors.LightSeaGreen,
-    '!' -> colors.OrangeRed,
+    '!' -> rgb"#fca103",
     '±' -> colors.CornflowerBlue,
     '∂' -> colors.Gold
   ).map { (ch, color) => ansi"${Bg(color)}( ${colors.Black}($Bold(${ch.show})) )" }
