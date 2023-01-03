@@ -19,8 +19,7 @@ package telekinesis
 import rudiments.*
 import probably.*
 import serpentine.*
-import parasitism.*, threading.virtual
-import eucalyptus.*
+import eucalyptus.*, logging.stdout
 import gossamer.*, stdouts.stdout
 import turbulence.*
 import rudiments.*
@@ -29,7 +28,6 @@ import scala.collection.immutable.ListMap
 
 import unsafeExceptions.canThrowAny
 
-import logging.silent
 
 case class Address(house: Int, street: Text, city: Text, country: Text)
 case class Person(name: Text, address: Address)
