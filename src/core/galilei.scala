@@ -350,7 +350,10 @@ extends Inode[Fs](directoryPath), Shown[Directory[Fs]]:
 
 object DiskPath:
   given Show[DiskPath[?]] = t"ᵖ｢"+_.fullname+t"｣"
-  
+
+  given [Fs <: Filesystem](using fs: Fs, ct: CanThrow[InvalidPathError]): Canonical[DiskPath[Fs]] =
+    Canonical(fs.parse(_), _.show)
+
   given provider(using fs: Filesystem): (PathProvider[DiskPath[fs.type]] & PathInterpreter[DiskPath[fs.type]]) =
     new PathProvider[DiskPath[fs.type]] with PathInterpreter[DiskPath[fs.type]]:
       def makePath(str: String, readOnly: Boolean = false): Option[DiskPath[fs.type]] =
