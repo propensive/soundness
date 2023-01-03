@@ -44,7 +44,7 @@ extension (span: CharSpan)
 object TextStyle:
   val esc: Char = 27.toChar
 
-case class TextStyle(fg: Option[Srgb] = None, bg: Option[Srgb] = None, italic: Boolean = false,
+case class TextStyle(fg: Maybe[Rgb24] = Unset, bg: Maybe[Rgb24] = Unset, italic: Boolean = false,
                          bold: Boolean = false, reverse: Boolean = false, underline: Boolean = false,
                          conceal: Boolean = false, strike: Boolean = false):
   import escapes.*
@@ -57,16 +57,15 @@ case class TextStyle(fg: Option[Srgb] = None, bg: Option[Srgb] = None, italic: B
   private def concealEsc: Text = if conceal then styles.Conceal.on else styles.Conceal.off
   private def strikeEsc: Text = if strike then styles.Strike.on else styles.Strike.off
   
-  def changes(next: TextStyle): Text = List(
-    if fg != next.fg then next.fg.map(_.ansiFg8).getOrElse(t"$esc[39m") else t"",
-    if bg != next.bg then next.bg.map(_.ansiBg8).getOrElse(t"$esc[49m") else t"",
-    if italic != next.italic then t"${esc}${next.italicEsc}" else t"",
-    if bold != next.bold then t"${esc}${next.boldEsc}" else t"",
-    if reverse != next.reverse then t"${esc}${next.reverseEsc}" else t"",
-    if underline != next.underline then t"${esc}${next.underlineEsc}" else t"",
-    if conceal != next.conceal then t"${esc}${next.concealEsc}" else t"",
-    if strike != next.strike then t"${esc}${next.strikeEsc}" else t""
-  ).join
+  def addChanges(buf: StringBuilder, next: TextStyle): Unit =
+    if fg != next.fg then buf.add(next.fg.mm(_.ansiFg).or(t"$esc[39m"))
+    if bg != next.bg then buf.add(next.bg.mm(_.ansiBg).or(t"$esc[49m"))
+    if italic != next.italic then buf.add(t"${esc}${next.italicEsc}")
+    if bold != next.bold then buf.add(t"${esc}${next.boldEsc}")
+    if reverse != next.reverse then buf.add(t"${esc}${next.reverseEsc}")
+    if underline != next.underline then buf.add(t"${esc}${next.underlineEsc}")
+    if conceal != next.conceal then buf.add(t"${esc}${next.concealEsc}")
+    if strike != next.strike then buf.add(t"${esc}${next.strikeEsc}")
 
 object rendering:
   given plain: Show[AnsiText] = _.plain
@@ -90,8 +89,9 @@ object Ansi:
     value => Ansi.Input.Textual(summon[AnsiShow[T]].ansiShow(value))
   
   given Stylize[Escape] = identity(_)
-  given Stylize[Color] = color => Stylize(_.copy(fg = Some(color.standardSrgb)))
-  given Stylize[Bg] = bgColor => Stylize(_.copy(bg = Some(bgColor.color.standardSrgb)))
+  given Stylize[Color] = color => Stylize(_.copy(fg = color.standardSrgb.rgb24))
+  given Stylize[Rgb24] = color => Stylize(_.copy(fg = color))
+  given Stylize[Bg] = bgColor => Stylize(_.copy(bg = bgColor.color))
 
   given Stylize[Bold.type] = _ => Stylize(_.copy(bold = true))
   given Stylize[Italic.type] = _ => Stylize(_.copy(italic = true))
@@ -265,7 +265,7 @@ case class AnsiText(plain: Text, spans: TreeMap[CharSpan, Ansi.Transform] = Tree
       inline def addSpan(): Text =
         val newInsertions = addText(pos, spans.head(0).start, insertions)
         val newStyle = spans.head(1)(style)
-        buf.add(style.changes(newStyle))
+        style.addChanges(buf, newStyle)
         val newStack = if spans.head(0).isEmpty then stack else (spans.head(0) -> style) :: stack
         recur(spans.tail, spans.head(0).start, newStyle, newStack, newInsertions)
       
@@ -292,7 +292,7 @@ case class AnsiText(plain: Text, spans: TreeMap[CharSpan, Ansi.Transform] = Tree
         if spans.isEmpty || stack.head(0).end <= spans.head(0).start then
           val newInsertions = addText(pos, stack.head(0).end, insertions)
           val newStyle = stack.head(1)
-          buf.add(style.changes(newStyle))
+          style.addChanges(buf, newStyle)
           recur(spans, stack.head(0).end, newStyle, stack.tail, newInsertions)
         else addSpan()
 
@@ -304,6 +304,10 @@ object Underline
 object Strike
 object Reverse
 object Conceal
-case class Bg(color: Color)
+
+object Bg:
+  def apply(color: Color): Bg = Bg(color.standardSrgb.rgb24)
+
+case class Bg(color: Rgb24)
 
 type Stylize[T] = Substitution[Ansi.Input, T, "esc"]

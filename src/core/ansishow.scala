@@ -75,12 +75,11 @@ object AnsiShow extends FallbackAnsiShow:
     df
 
   given AnsiShow[Double] =
-    double => AnsiText.make(decimalFormat.format(double).nn, _.copy(fg = Some(colors.Gold)))
+    double => AnsiText.make(decimalFormat.format(double).nn, _.copy(fg = colors.Gold))
 
-  given AnsiShow[Throwable] =
-    throwable =>
-      AnsiText.make[String](throwable.getClass.getName.nn.show.cut(t".").last.s,
-          _.copy(fg = Some(colors.Crimson)))
+  given AnsiShow[Throwable] = throwable =>
+    AnsiText.make[String](throwable.getClass.getName.nn.show.cut(t".").last.s,
+        _.copy(fg = colors.Crimson))
 
 trait AnsiShow[-T] extends Show[T]:
   def show(value: T): Text = ansiShow(value).plain
