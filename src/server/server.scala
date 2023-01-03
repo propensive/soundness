@@ -74,7 +74,7 @@ object Redirect:
   def apply[T: Locatable](location: T): Redirect =
     new Redirect(summon[Locatable[T]].location(location))
 
-case class Redirect(location: Uri)
+case class Redirect(location: Url)
 
 trait Handler[T]:
   def process(content: T, status: Int, headers: Map[Text, Text], responder: Responder): Unit
