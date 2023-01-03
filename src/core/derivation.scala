@@ -24,6 +24,8 @@ import Arity.*
 
 import language.experimental.pureFunctions
 
+case class codlLabel(label: String) extends StaticAnnotation
+
 case class CodlReadError() extends Error(err"the CoDL value is not of the right format")
 
 trait Codec[T]:
@@ -56,7 +58,8 @@ object Codec extends ProductDerivation[Codec], LowerPriorityCodec:
   def join[T](ctx: CaseClass[Codec, T]): Codec[T] = new Codec[T]:
     def schema: CodlSchema =
       val entries: IArray[CodlSchema.Entry] = ctx.params.map: param =>
-        CodlSchema.Entry(param.label.show, param.typeclass.schema)
+        val label = param.annotations.collectFirst { case `codlLabel`(name) => name }.getOrElse(param.label)
+        CodlSchema.Entry(label.show, param.typeclass.schema)
 
       Struct(entries.to(List), Arity.One)
     
@@ -72,12 +75,9 @@ object Codec extends ProductDerivation[Codec], LowerPriorityCodec:
 
     def deserialize(value: List[Indexed]): T throws CodlReadError = ctx.construct: param =>
       param.typeclass.deserialize(value.head.get(param.label.show))
-  
-  given (using CanThrow[IncompatibleTypeError]): Codec[Byte] = FieldCodec(_.show, _.as[Byte])
-  given (using CanThrow[IncompatibleTypeError]): Codec[Short] = FieldCodec(_.show, _.as[Short])
-  given (using CanThrow[IncompatibleTypeError]): Codec[Long] = FieldCodec(_.show, _.as[Long])
+
+  given [T](using canon: Canonical[T]): Codec[T] = FieldCodec(canon.serialize, canon.deserialize)
   given (using CanThrow[IncompatibleTypeError]): Codec[Char] = FieldCodec(_.show, _.as[Char])
-  given (using CanThrow[IncompatibleTypeError]): Codec[Int] = FieldCodec(_.show, _.as[Int])
   given Codec[Text] = FieldCodec(_.show, identity(_))
   
   given (using CanThrow[IncompatibleTypeError]): Codec[Boolean] =
