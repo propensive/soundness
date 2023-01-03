@@ -18,13 +18,12 @@ package parasitism
 
 import probably.*
 import rudiments.*
-import eucalyptus.*
+import eucalyptus.*, logging.stdout
 import gossamer.*
 import turbulence.*, stdouts.stdout
 import anticipation.*, timekeeping.long
 
 import unsafeExceptions.canThrowAny
-given Log = logging.silent
 
 object Tests extends Suite(t"Parasitism tests"):
 
