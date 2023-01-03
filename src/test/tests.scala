@@ -20,8 +20,7 @@ import probably.*
 import gossamer.*
 import rudiments.*
 import turbulence.*
-import eucalyptus.*
-import parasitism.*, threading.platform
+import eucalyptus.*, logging.stdout
 
 import java.io as ji
 
@@ -32,8 +31,7 @@ object Tests extends Suite(t"CoDL tests"):
   given Realm(t"tests")
 
 
-  def run(using Runner): Unit = supervise(t"main"):
-    import logging.silent
+  def run(using Runner): Unit =
     import CodlToken.*
     import Arity.*
 
