@@ -42,8 +42,8 @@ class FieldCodec[T](serializer: T => Text, deserializer: Text => T) extends Code
       case IArray(Nodule(Data(value, _, _, _), _)) => deserializer(value)
       case _                                       => throw CodlReadError()
 
-trait LowerPriorityCodec:
-  given maybe[T](using codec: Codec[T]): Codec[Maybe[T]] = new Codec[Maybe[T]]:
+object Codec extends ProductDerivation[Codec]:
+  given maybe[T](using codec: Codec[T]): Codec[T | Unset.type] = new Codec[Maybe[T]]:
     def schema: CodlSchema = summon[Codec[T]].schema.optional
   
     def serialize(value: Maybe[T]): List[IArray[Nodule]] = value match
@@ -52,9 +52,7 @@ trait LowerPriorityCodec:
     
     def deserialize(value: List[Indexed]): Maybe[T] throws CodlReadError =
       if value.isEmpty then Unset else codec.deserialize(value)
-    
 
-object Codec extends ProductDerivation[Codec], LowerPriorityCodec:
   def join[T](ctx: CaseClass[Codec, T]): Codec[T] = new Codec[T]:
     def schema: CodlSchema =
       val entries: IArray[CodlSchema.Entry] = ctx.params.map: param =>
