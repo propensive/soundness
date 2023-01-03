@@ -3,6 +3,7 @@ package temporaneous
 import rudiments.*
 import gossamer.*
 import cardinality.*
+import anticipation.*
 import kaleidoscope.*
 
 import math.Ordering.Implicits.infixOrderingOps
@@ -138,6 +139,18 @@ extension (year: Int & Singleton)
 
 object Timing:
   opaque type Instant = Long
+
+  object Instant:
+    given GenericInstant with
+      type Instant = Timing.Instant
+      def makeInstant(long: Long): Instant = long
+      def readInstant(instant: Instant): Long = instant
+    
+    given GenericDuration with
+      type Duration = Timing.Duration
+      def makeDuration(long: Long): Duration = long
+      def readDuration(duration: Duration): Long = duration
+
   opaque type Duration = Long
 
   extension (instant: Instant)

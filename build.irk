@@ -18,7 +18,7 @@
     {
       "name": "Temporaneous",
       "id": "temporaneous/core",
-      "links": ["gossamer/core", "cardinality/core", "kaleidoscope/core", "eucalyptus/core"],
+      "links": ["gossamer/core", "cardinality/core", "kaleidoscope/core", "eucalyptus/core", "anticipation/time"],
       "sources": ["src/core"],
       "resources": ["res"],
       "version": "0.4.0",
