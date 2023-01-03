@@ -65,6 +65,8 @@ type GenericPath = Absolute[^.type]
 object Relative:
   object Self extends Relative(0, Nil)
   
+  given Canonical[Relative] = Canonical(parse(_), _.show)
+
   given Show[Relative] =
     case Self                    => t"."
     case Relative(ascent, parts) => parts.join(t"../"*ascent, t"/", t"")
