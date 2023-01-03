@@ -19,12 +19,10 @@ package punctuation
 import probably.*
 import gossamer.*
 import rudiments.*
-import eucalyptus.*
-import parasitism.*, threading.platform
+import eucalyptus.*, logging.stdout
 
 import unsafeExceptions.canThrowAny
 
-import logging.silent
 
 case class Example(str: Text, int: Int)
 
