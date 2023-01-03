@@ -100,5 +100,4 @@ trait Irrefutable[-From, +To]:
   def unapply(value: From): To
 
 object As:
-  transparent inline def unapply[T](v: Any)(using ext: Unapply[v.type, T]): Option[T] =
-    ext.unapply(v)
+  transparent inline def unapply[T](v: Any)(using ext: Unapply[v.type, T]): Option[T] = ext.unapply(v)
