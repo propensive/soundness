@@ -17,15 +17,11 @@
 package turbulence
 
 import probably.*
-import eucalyptus.*
+import eucalyptus.*, logging.stdout
 import gossamer.*
 import rudiments.*
-import parasitism.*, threading.platform
-import stdouts.stdout
 
 import unsafeExceptions.canThrowAny
-
-import logging.silent
 
 object Tests extends Suite(t"Turbulence tests"):
   def run(using Runner): Unit =
