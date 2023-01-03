@@ -315,7 +315,7 @@ object Codl:
   object Prefix extends Interpolator[List[Data], State, CodlDoc]:
     protected def complete(state: State): CodlDoc =
       try Codl.parse(StringReader(state.content.s), CodlSchema.Free, state.subs.reverse, fromStart = true)(using
-          logging.silent(using parasitism.threading.platform))
+          logging.silent)
       catch
         case err: AggregateError => err.errors.head match
           case CodlError(_, off, _, issue) => throw InterpolationError(t"read error: $issue", off)
