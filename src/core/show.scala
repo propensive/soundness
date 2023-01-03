@@ -62,7 +62,6 @@ extension (ctx: StringContext)
   def t = SimpleTExtractor(ctx.parts.head.show)
 
 object Debug extends Derivation[Debug]:
-
   given text: Debug[Text] = text =>
     val escaped = text.flatMap:
       case '\n'     => t"\\n"
@@ -213,3 +212,17 @@ object Show extends Derivation[Show]:
   
   def split[T](ctx: SealedTrait[Show, T]): Show[T] = value =>
     ctx.choose(value) { subtype => subtype.typeclass.show(subtype.cast(value)) }
+
+object Canonical:
+  def apply[T](read: Text -> T, write: T -> Text): Canonical[T] = new Canonical[T]:
+    def serialize(value: T): Text = write(value)
+    def deserialize(value: Text): T = read(value)
+
+  given (using CanThrow[IncompatibleTypeError]): Canonical[Byte] = Canonical[Byte](_.as[Byte], _.show)
+  given (using CanThrow[IncompatibleTypeError]): Canonical[Short] = Canonical[Short](_.as[Short], _.show)
+  given (using CanThrow[IncompatibleTypeError]): Canonical[Int] = Canonical[Int](_.as[Int], _.show)
+  given (using CanThrow[IncompatibleTypeError]): Canonical[Long] = Canonical[Long](_.as[Long], _.show)
+
+trait Canonical[T]:
+  def serialize(value: T): Text
+  def deserialize(value: Text): T
