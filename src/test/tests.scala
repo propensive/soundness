@@ -33,28 +33,28 @@ object Tests extends Suite(t"Iridescence tests"):
     suite(t"Roundtrip tests"):
       for color <- colors.all.reverse do
         test(t"sRGB to L*a*b*"):
-          color.cielab.srgb
-        .assert(_ ~~ color)
+          color.srgb.cielab.srgb
+        .assert(_ ~~ color.srgb)
 
         test(t"HSV to sRGB and back"):
-          color.hsv.srgb.hsv
-        .assert(_ ~~ color.hsv)
+          color.srgb.hsv.srgb.hsv
+        .assert(_ ~~ color.srgb.hsv)
         
         test(t"sRGB to CMY and back"):
-          color.cmy.srgb
-        .assert(_ ~~ color)
+          color.srgb.cmy.srgb
+        .assert(_ ~~ color.srgb)
         
         test(t"sRGB to CMYK and back"):
-          color.cmyk.srgb
-        .assert(_ ~~ color)
+          color.srgb.cmyk.srgb
+        .assert(_ ~~ color.srgb)
         
         test(t"sRGB to XYZ and back"):
-          color.xyz.srgb
-        .assert(_ ~~ color)
+          color.srgb.xyz.srgb
+        .assert(_ ~~ color.srgb)
         
         test(t"sRGB to HSL and back"):
-          color.hsl.srgb
-        .assert(_ ~~ color)
+          color.srgb.hsl.srgb
+        .assert(_ ~~ color.srgb)
 
     suite(t"Interpolator tests"):
       test(t"Read a hex value with a leading hash"):
