@@ -18,6 +18,7 @@ package telekinesis
 
 import rudiments.*
 import probably.*
+import serpentine.*
 import parasitism.*, threading.virtual
 import eucalyptus.*
 import gossamer.*, stdouts.stdout
@@ -58,9 +59,8 @@ object Tests extends Suite(t"Telekinesis tests"):
 
       test(t"Authority with invalid port fails"):
         capture(Authority.parse(t"username@example.com:no"))
-      .assert:
-        case InvalidUrlError(_, 21, InvalidUrlError.Expectation.Number) => true
-        case _                                                          => false
+      .matches:
+        case InvalidUrlError(_, 21, InvalidUrlError.Expectation.Number) =>
       
       test(t"Parse full URI"):
         Url.parse(t"http://user:pw@example.com:8080/path/to/location?query=1#ref")
@@ -85,4 +85,28 @@ object Tests extends Suite(t"Telekinesis tests"):
       .assert(_ == Url(Scheme(t"ftp"), Authority(Host(t"example", t"com"), t"user:pw", 8080),
           t"/path/to/location"))
       
+      test(t"Parse URL at compiletime with substitution"):
+        val port = 1234
+        url"http://user:pw@example.com:$port/path/to/location"
+      .assert(_ == Url(Scheme(t"http"), Authority(Host(t"example", t"com"), t"user:pw", 1234),
+          t"/path/to/location"))
       
+      test(t"Parse URL at compiletime with escaped substitution"):
+        val message: Text = t"Hello world!"
+        url"http://user:pw@example.com/$message"
+      .assert(_ == Url(Scheme(t"http"), Authority(Host(t"example", t"com"), t"user:pw"), t"/Hello+world%21"))
+      
+      test(t"Parse URL at compiletime with unescaped substitution"):
+        val message = Raw(t"Hello world!")
+        url"http://user:pw@example.com/$message"
+      .assert(_ == Url(Scheme(t"http"), Authority(Host(t"example", t"com"), t"user:pw"), t"/Hello world!"))
+      
+      test(t"Relative path is unescaped"):
+        val message: Text = t"Hello world!"
+        url"http://user:pw@example.com/$message/foo".path
+      .assert(_ == Relative(0, List(t"Hello world!", t"foo")))
+      
+      test(t"Relative path with raw substitution is unescaped"):
+        val message: Raw = Raw(t"Hello+world%21")
+        url"http://user:pw@example.com/$message/foo".path
+      .assert(_ == Relative(0, List(t"Hello world!", t"foo")))

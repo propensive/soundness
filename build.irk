@@ -53,7 +53,8 @@
       "links": [
         "serpentine/core",
         "anticipation/url",
-        "gossamer/core"
+        "gossamer/core",
+	"escapade/core"
       ],
       "sources": [
         "src/url"

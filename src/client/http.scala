@@ -76,21 +76,14 @@ class Postable[T](val contentType: MediaType,
   def preview(value: T): Text = content(value).headOption.fold(t""): bytes =>
     try
       val sample = bytes.take(256)
-    
-      val str: Text =
-        if sample.forall { b => b >= 32 && b <= 127 } then sample.uString else sample.hex
-      
+      val str: Text = if sample.forall { b => b >= 32 && b <= 127 } then sample.uString else sample.hex
       if bytes.length > 128 then t"$str..." else str
-    
-    catch
-      case err: StreamCutError => t"[broken stream]"
+    catch case err: StreamCutError => t"[broken stream]"
 
 object HttpMethod:
   given formmethod: GenericHtmlAttribute["formmethod", HttpMethod] with
     def name: String = "formmethod"
-    
-    def serialize(method: HttpMethod): String =
-      summon[AnsiShow[HttpMethod]].ansiShow(method).plain.s
+    def serialize(method: HttpMethod): String = summon[AnsiShow[HttpMethod]].ansiShow(method).plain.s
 
   given AnsiShow[HttpMethod] = method => ansi"${colors.Crimson}[${Showable(method).show.upper}]"
 
@@ -123,18 +116,15 @@ trait HttpReadable[+T]:
   def read(status: HttpStatus, body: HttpBody): T throws StreamCutError
 
 case class HttpResponse(status: HttpStatus, headers: Map[ResponseHeader, List[String]], body: HttpBody):
-  inline def as[T](using readable: HttpReadable[T]): T throws HttpError | StreamCutError =
-    status match
-      case status: FailureCase => throw HttpError(status, body)
-      case status              => readable.read(status, body)
+  def as[T](using readable: HttpReadable[T]): T throws HttpError | StreamCutError = status match
+    case status: FailureCase => throw HttpError(status, body)
+    case status              => readable.read(status, body)
 
 object Locatable:
-  given Locatable[Uri] = identity(_)
-  given Locatable[Text] = Uri(_, Params(Nil))
-  //given Locatable[Url] = url => Uri(Url.show.show(url), Params(Nil))
+  given Locatable[Url] = identity(_)
 
 trait Locatable[-T]:
-  def location(value: T): Uri
+  def location(value: T): Url
 
 object Http:
   def post[T: Postable, L: Locatable]
@@ -149,51 +139,37 @@ object Http:
          : HttpResponse throws StreamCutError =
     request[T](summon[Locatable[L]].location(uri), content, HttpMethod.Put, headers)
   
-  def get[L: Locatable]
-         (uri: L, headers: Seq[RequestHeader.Value] = Nil)
-         (using Internet, Log)
+  def get[L: Locatable](uri: L, headers: Seq[RequestHeader.Value] = Nil)(using Internet, Log)
          : HttpResponse throws StreamCutError =
     request(summon[Locatable[L]].location(uri), (), HttpMethod.Get, headers)
 
-  def options[L: Locatable]
-             (uri: L, headers: RequestHeader.Value*)
-             (using Internet, Log)
+  def options[L: Locatable](uri: L, headers: RequestHeader.Value*)(using Internet, Log)
              : HttpResponse throws StreamCutError =
     request(summon[Locatable[L]].location(uri), (), HttpMethod.Options, headers)
 
-  def head[L: Locatable]
-          (uri: L, headers: RequestHeader.Value*)
-          (using Internet, Log)
+  def head[L: Locatable](uri: L, headers: RequestHeader.Value*)(using Internet, Log)
           : HttpResponse throws StreamCutError =
     request(summon[Locatable[L]].location(uri), (), HttpMethod.Head, headers)
   
-  def delete[L: Locatable]
-            (uri: L, headers: RequestHeader.Value*)
-            (using Internet, Log)
+  def delete[L: Locatable](uri: L, headers: RequestHeader.Value*)(using Internet, Log)
             : HttpResponse throws StreamCutError =
     request(summon[Locatable[L]].location(uri), (), HttpMethod.Delete, headers)
   
-  def connect[L: Locatable]
-             (uri: L, headers: RequestHeader.Value*)
-             (using Internet, Log)
+  def connect[L: Locatable](uri: L, headers: RequestHeader.Value*)(using Internet, Log)
              : HttpResponse throws StreamCutError =
     request(summon[Locatable[L]].location(uri), (), HttpMethod.Connect, headers)
   
-  def trace[L: Locatable]
-           (uri: L, headers: RequestHeader.Value*)
-           (using Internet, Log)
+  def trace[L: Locatable](uri: L, headers: RequestHeader.Value*)(using Internet, Log)
            : HttpResponse throws StreamCutError =
     request(summon[Locatable[L]].location(uri), (), HttpMethod.Trace, headers)
   
-  def patch[L: Locatable]
-           (uri: L, headers: RequestHeader.Value*)
-           (using Internet, Log)
+  def patch[L: Locatable](uri: L, headers: RequestHeader.Value*)(using Internet, Log)
            : HttpResponse throws StreamCutError =
     request(summon[Locatable[L]].location(uri), (), HttpMethod.Patch, headers)
 
   private def request[T: Postable]
-                     (url: Uri, content: T, method: HttpMethod,
-                          headers: Seq[RequestHeader.Value])(using Internet, Log)
+                     (url: Url, content: T, method: HttpMethod,headers: Seq[RequestHeader.Value])
+                     (using Internet, Log)
                      : HttpResponse throws StreamCutError =
     Log.info(ansi"Sending HTTP $method request to $url")
     headers.foreach(Log.fine(_))
@@ -202,10 +178,7 @@ object Http:
     URI(url.show.s).toURL.nn.openConnection.nn match
       case conn: HttpURLConnection =>
         conn.setRequestMethod(Showable(method).show.upper.s)
-        
-        conn.setRequestProperty(RequestHeader.ContentType.header.s, summon[Postable[T]]
-            .contentType.show.s)
-        
+        conn.setRequestProperty(RequestHeader.ContentType.header.s, summon[Postable[T]].contentType.show.s)
         conn.setRequestProperty("User-Agent", "Telekinesis/1.0.0")
         
         headers.foreach:
@@ -222,13 +195,12 @@ object Http:
         def read(in: InputStream): HttpBody.Chunked =
           val len = in.read(buf, 0, buf.length)
           
-          HttpBody.Chunked(if len < 0 then LazyList() else IArray(buf.slice(0, len)*) #::
-              read(in).stream)
+          HttpBody.Chunked(if len < 0 then LazyList() else IArray(buf.slice(0, len)*) #:: read(in).stream)
        
 
         def body: HttpBody =
-          try read(conn.getInputStream.nn) catch Exception =>
-            try read(conn.getErrorStream.nn) catch Exception => HttpBody.Empty
+          try read(conn.getInputStream.nn) catch case _: Exception =>
+            try read(conn.getErrorStream.nn) catch case _: Exception => HttpBody.Empty
         
         val HttpStatus(status) = conn.getResponseCode: @unchecked
         Log.info(ansi"Received response with HTTP status ${status.show}")
@@ -249,7 +221,7 @@ object Http:
             
 case class HttpError(status: HttpStatus & FailureCase, body: HttpBody)
 extends Error(err"HTTP error $status"):
-  inline def as[T](using readable: HttpReadable[T]): T throws StreamCutError = readable.read(status, body)
+  def as[T](using readable: HttpReadable[T]): T throws StreamCutError = readable.read(status, body)
 
 trait FailureCase
 
@@ -259,209 +231,86 @@ object HttpStatus:
 
   given Show[HttpStatus] = status => t"${status.code} (${status.description})"
 
-enum HttpStatus(val code: Int, val description: String):
-  case Continue extends HttpStatus(100, "Continue"), FailureCase
-  case SwitchingProtocols extends HttpStatus(101, "Switching Protocols"), FailureCase
-  case EarlyHints extends HttpStatus(103, "Early Hints"), FailureCase
-  case Ok extends HttpStatus(200, "OK")
-  case Created extends HttpStatus(201, "Created")
-  case Accepted extends HttpStatus(202, "Accepted")
-  case NonAuthoritativeInformation extends HttpStatus(203, "Non-Authoritative Information")
-  case NoContent extends HttpStatus(204, "No Content")
-  case ResetContent extends HttpStatus(205, "Reset Content")
-  case PartialContent extends HttpStatus(206, "Partial Content")
-  case MultipleChoices extends HttpStatus(300, "Multiple Choices")
-  case MovedPermanently extends HttpStatus(301, "Moved Permanently"), FailureCase
-  case Found extends HttpStatus(302, "Found"), FailureCase
-  case SeeOther extends HttpStatus(303, "See Other"), FailureCase
-  case NotModified extends HttpStatus(304, "Not Modified"), FailureCase
-  case TemporaryRedirect extends HttpStatus(307, "Temporary Redirect"), FailureCase
-  case PermanentRedirect extends HttpStatus(308, "Permanent Redirect"), FailureCase
-  case BadRequest extends HttpStatus(400, "Bad Request"), FailureCase
-  case Unauthorized extends HttpStatus(401, "Unauthorized"), FailureCase
-  case PaymentRequired extends HttpStatus(402, "Payment Required"), FailureCase
-  case Forbidden extends HttpStatus(403, "Forbidden"), FailureCase
-  case NotFound extends HttpStatus(404, "Not Found"), FailureCase
-  case MethodNotAllowed extends HttpStatus(405, "Method Not Allowed"), FailureCase
-  case NotAcceptable extends HttpStatus(406, "Not Acceptable"), FailureCase
-  
-  case ProxyAuthenticationRequired
-  extends HttpStatus(407, "Proxy Authentication Required"), FailureCase
-  
-  case RequestTimeout extends HttpStatus(408, "Request Timeout"), FailureCase
-  case Conflict extends HttpStatus(409, "Conflict"), FailureCase
-  case Gone extends HttpStatus(410, "Gone"), FailureCase
-  case LengthRequired extends HttpStatus(411, "Length Required"), FailureCase
-  case PreconditionFailed extends HttpStatus(412, "Precondition Failed"), FailureCase
-  case PayloadTooLarge extends HttpStatus(413, "Payload Too Large"), FailureCase
-  case UriTooLong extends HttpStatus(414, "URI Too Long"), FailureCase
-  case UnsupportedMediaType extends HttpStatus(415, "Unsupported Media Type"), FailureCase
-  case RangeNotSatisfiable extends HttpStatus(416, "Range Not Satisfiable"), FailureCase
-  case ExpectationFailed extends HttpStatus(417, "Expectation Failed"), FailureCase
-  case UnprocessableEntity extends HttpStatus(422, "Unprocessable Entity"), FailureCase
-  case TooEarly extends HttpStatus(425, "Too Early"), FailureCase
-  case UpgradeRequired extends HttpStatus(426, "Upgrade Required"), FailureCase
-  case PreconditionRequired extends HttpStatus(428, "Precondition Required"), FailureCase
-  case TooManyRequests extends HttpStatus(429, "Too Many Requests"), FailureCase
-  
-  case RequestHeaderFieldsTooLarge
-  extends HttpStatus(431, "Request Header Fields Too Large"), FailureCase
-  
-  case UnavailableForLegalReasons
-  extends HttpStatus(451, "Unavailable For Legal Reasons"), FailureCase
-  
-  case InternalServerError extends HttpStatus(500, "Internal Server Error"), FailureCase
-  case NotImplemented extends HttpStatus(501, "Not Implemented"), FailureCase
-  case BadGateway extends HttpStatus(502, "Bad Gateway"), FailureCase
-  case ServiceUnavailable extends HttpStatus(503, "Service Unavailable"), FailureCase
-  case GatewayTimeout extends HttpStatus(504, "Gateway Timeout"), FailureCase
-  case HttpVersionNotSupported extends HttpStatus(505, "HTTP Version Not Supported"), FailureCase
-  case VariantAlsoNegotiates extends HttpStatus(506, "Variant Also Negotiates"), FailureCase
-  case InsufficientStorage extends HttpStatus(507, "Insufficient Storage"), FailureCase
-  case LoopDetected extends HttpStatus(508, "Loop Detected"), FailureCase
-  case NotExtended extends HttpStatus(510, "Not Extended"), FailureCase
-  
-  case NetworkAuthenticationRequired
-  extends HttpStatus(511, "Network Authentication Required"), FailureCase
+enum HttpStatus(val code: Int, val description: Text):
+  case Continue extends HttpStatus(100, t"Continue"), FailureCase
+  case SwitchingProtocols extends HttpStatus(101, t"Switching Protocols"), FailureCase
+  case EarlyHints extends HttpStatus(103, t"Early Hints"), FailureCase
+  case Ok extends HttpStatus(200, t"OK")
+  case Created extends HttpStatus(201, t"Created")
+  case Accepted extends HttpStatus(202, t"Accepted")
+  case NonAuthoritativeInformation extends HttpStatus(203, t"Non-Authoritative Information")
+  case NoContent extends HttpStatus(204, t"No Content")
+  case ResetContent extends HttpStatus(205, t"Reset Content")
+  case PartialContent extends HttpStatus(206, t"Partial Content")
+  case MultipleChoices extends HttpStatus(300, t"Multiple Choices")
+  case MovedPermanently extends HttpStatus(301, t"Moved Permanently"), FailureCase
+  case Found extends HttpStatus(302, t"Found"), FailureCase
+  case SeeOther extends HttpStatus(303, t"See Other"), FailureCase
+  case NotModified extends HttpStatus(304, t"Not Modified"), FailureCase
+  case TemporaryRedirect extends HttpStatus(307, t"Temporary Redirect"), FailureCase
+  case PermanentRedirect extends HttpStatus(308, t"Permanent Redirect"), FailureCase
+  case BadRequest extends HttpStatus(400, t"Bad Request"), FailureCase
+  case Unauthorized extends HttpStatus(401, t"Unauthorized"), FailureCase
+  case PaymentRequired extends HttpStatus(402, t"Payment Required"), FailureCase
+  case Forbidden extends HttpStatus(403, t"Forbidden"), FailureCase
+  case NotFound extends HttpStatus(404, t"Not Found"), FailureCase
+  case MethodNotAllowed extends HttpStatus(405, t"Method Not Allowed"), FailureCase
+  case NotAcceptable extends HttpStatus(406, t"Not Acceptable"), FailureCase
+  case ProxyAuthenticationRequired extends HttpStatus(407, t"Proxy Authentication Required"), FailureCase
+  case RequestTimeout extends HttpStatus(408, t"Request Timeout"), FailureCase
+  case Conflict extends HttpStatus(409, t"Conflict"), FailureCase
+  case Gone extends HttpStatus(410, t"Gone"), FailureCase
+  case LengthRequired extends HttpStatus(411, t"Length Required"), FailureCase
+  case PreconditionFailed extends HttpStatus(412, t"Precondition Failed"), FailureCase
+  case PayloadTooLarge extends HttpStatus(413, t"Payload Too Large"), FailureCase
+  case UriTooLong extends HttpStatus(414, t"URI Too Long"), FailureCase
+  case UnsupportedMediaType extends HttpStatus(415, t"Unsupported Media Type"), FailureCase
+  case RangeNotSatisfiable extends HttpStatus(416, t"Range Not Satisfiable"), FailureCase
+  case ExpectationFailed extends HttpStatus(417, t"Expectation Failed"), FailureCase
+  case UnprocessableEntity extends HttpStatus(422, t"Unprocessable Entity"), FailureCase
+  case TooEarly extends HttpStatus(425, t"Too Early"), FailureCase
+  case UpgradeRequired extends HttpStatus(426, t"Upgrade Required"), FailureCase
+  case PreconditionRequired extends HttpStatus(428, t"Precondition Required"), FailureCase
+  case TooManyRequests extends HttpStatus(429, t"Too Many Requests"), FailureCase
+  case RequestHeaderFieldsTooLarge extends HttpStatus(431, t"Request Header Fields Too Large"), FailureCase
+  case UnavailableForLegalReasons extends HttpStatus(451, t"Unavailable For Legal Reasons"), FailureCase
+  case InternalServerError extends HttpStatus(500, t"Internal Server Error"), FailureCase
+  case NotImplemented extends HttpStatus(501, t"Not Implemented"), FailureCase
+  case BadGateway extends HttpStatus(502, t"Bad Gateway"), FailureCase
+  case ServiceUnavailable extends HttpStatus(503, t"Service Unavailable"), FailureCase
+  case GatewayTimeout extends HttpStatus(504, t"Gateway Timeout"), FailureCase
+  case HttpVersionNotSupported extends HttpStatus(505, t"HTTP Version Not Supported"), FailureCase
+  case VariantAlsoNegotiates extends HttpStatus(506, t"Variant Also Negotiates"), FailureCase
+  case InsufficientStorage extends HttpStatus(507, t"Insufficient Storage"), FailureCase
+  case LoopDetected extends HttpStatus(508, t"Loop Detected"), FailureCase
+  case NotExtended extends HttpStatus(510, t"Not Extended"), FailureCase
+  case NetworkAuthenticationRequired extends HttpStatus(511, t"Network Authentication Required"), FailureCase
 
 case class Params(values: List[(Text, Text)]):
   def append(more: Params): Params = Params(values ++ more.values)
   def isEmpty: Boolean = values.isEmpty
   
   def prefix(str: Text): Params = Params:
-    values.map: (k, v) =>
-      if k.length == 0 then str -> v else t"$str.$k" -> v
+    values.map { (k, v) => if k.length == 0 then str -> v else t"$str.$k" -> v }
 
   def queryString: Text = values.map: (k, v) =>
     if k.length == 0 then v.urlEncode else t"${k.urlEncode}=${v.urlEncode}"
   .join(t"&")
 
-object Uri:
-  given show: Show[Uri] = uri =>
-    if uri.params.isEmpty then uri.location else t"${uri.location}?${uri.params.queryString}"
 
-  given AnsiShow[Uri] = uri => ansi"$Underline(${colors.DeepSkyBlue}(${show.show(uri)}))"
+extension (url: Url)(using Internet, Log)
+  def post[T: Postable](headers: RequestHeader.Value*)(body: T): HttpResponse throws StreamCutError =
+    Http.post(url, body, headers*)
   
-  given action: GenericHtmlAttribute["action", Uri] with
-    def name: String = "action"
-    def serialize(uri: Uri): String = uri.show.s
+  def put[T: Postable](headers: RequestHeader.Value*)(body: T): HttpResponse throws StreamCutError =
+    Http.put(url, body, headers*)
   
-  given codebase: GenericHtmlAttribute["codebase", Uri] with
-    def name: String = "codebase"
-    def serialize(uri: Uri): String = uri.show.s
-  
-  given cite: GenericHtmlAttribute["cite", Uri] with
-    def name: String = "cite"
-    def serialize(uri: Uri): String = uri.show.s
-  
-  given data: GenericHtmlAttribute["data", Uri] with
-    def name: String = "data"
-    def serialize(uri: Uri): String = uri.show.s
-
-  given formaction: GenericHtmlAttribute["formaction", Uri] with
-    def name: String = "formaction"
-    def serialize(uri: Uri): String = uri.show.s
- 
-  given poster: GenericHtmlAttribute["poster", Uri] with
-    def name: String = "poster"
-    def serialize(uri: Uri): String = uri.show.s
-
-  given src: GenericHtmlAttribute["src", Uri] with
-    def name: String = "src"
-    def serialize(uri: Uri): String = uri.show.s
-  
-  given href: GenericHtmlAttribute["href", Uri] with
-    def name: String = "href"
-    def serialize(uri: Uri): String = uri.show.s
-  
-  given manifest: GenericHtmlAttribute["manifest", Uri] with
-    def name: String = "manifest"
-    def serialize(uri: Uri): String = uri.show.s
-
-  given (using Internet, Log): Streamable[Uri] = uri => LazyList:
-    try uri.get().as[Bytes] catch
-      case err: HttpError => throw StreamCutError()
-
-case class Uri(location: Text, params: Params = Params(Nil)) extends Dynamic, Shown[Uri]:
-  private def makeQuery[T: QuerySerializer](value: T): Uri =
-    Uri(location, params.append(summon[QuerySerializer[T]].params(value)))
-
-  @targetName("slash")
-  def /(part: Text): Uri =
-    Uri(if location.ends(t"/") then t"$location$part" else t"$location/$part", Params(Nil))
-
-  def applyDynamicNamed(method: "query")(params: (String, Text)*): Uri =
-    makeQuery(Params(params.map { (k, v) => Text(k) -> v }.to(List)))
-  
-  def applyDynamic[T: QuerySerializer](method: "query")(value: T) = makeQuery(value)
-
-  def post[T: Postable](headers: RequestHeader.Value*)(body: T)(using Internet, Log)
-          : HttpResponse throws StreamCutError =
-    Http.post(this, body, headers*)
-  
-  def post[T: Postable](body: T)(using Internet, Log): HttpResponse throws StreamCutError =
-    Http.post(this, body)
-  
-  def put[T: Postable](headers: RequestHeader.Value*)(body: T)(using Internet, Log)
-         : HttpResponse throws StreamCutError =
-    Http.put(this, body, headers*)
-  
-  def put[T: Postable](body: T)(using Internet, Log): HttpResponse throws StreamCutError =
-    Http.put(this, body)
-  
-  def get(headers: RequestHeader.Value*)(using Internet, Log): HttpResponse throws StreamCutError =
-    Http.get(this, headers)
-  
-  def options(headers: RequestHeader.Value*)(using Internet, Log): HttpResponse throws StreamCutError =
-    Http.options(this, headers*)
-  
-  def trace(headers: RequestHeader.Value*)(using Internet, Log): HttpResponse throws StreamCutError =
-    Http.trace(this, headers*)
-  
-  def patch(headers: RequestHeader.Value*)(using Internet, Log): HttpResponse throws StreamCutError =
-    Http.patch(this, headers*)
-  
-  def head(headers: RequestHeader.Value*)(using Internet, Log): HttpResponse throws StreamCutError =
-    Http.head(this, headers*)
-  
-  def delete(headers: RequestHeader.Value*)(using Internet, Log): HttpResponse throws StreamCutError =
-    Http.delete(this, headers*)
-  
-  def connect(headers: RequestHeader.Value*)(using Internet, Log): HttpResponse throws StreamCutError =
-    Http.connect(this, headers*)
-  
-  def bare: Uri = Uri(location, Params(Nil))
-
-extension (ctx: StringContext)
-  def uri(subs: Text*): Uri =
-    Uri(ctx.parts.zip(subs).map { (k, v) => t"$k$v" }.join(t"", t"", Text(ctx.parts.last)),
-        Params(List()))
-
-extension (uri: Uri)
-  def post[T: Postable](content: T, headers: RequestHeader.Value*)(using Internet, Log)
-          : HttpResponse throws StreamCutError =
-    Http.post(uri, content, headers*)
-
-  def put[T: Postable](content: T, headers: RequestHeader.Value*)(using Internet, Log)
-         : HttpResponse throws StreamCutError =
-    Http.put(uri, content, headers*)
-
-  def get(headers: RequestHeader.Value*)(using Internet, Log): HttpResponse throws StreamCutError =
-    Http.get(uri, headers)
-  def options(headers: RequestHeader.Value*)(using Internet, Log): HttpResponse throws StreamCutError =
-    Http.options(uri, headers*)
-  
-  def trace(headers: RequestHeader.Value*)(using Internet, Log): HttpResponse throws StreamCutError =
-    Http.trace(uri, headers*)
-  
-  def patch(headers: RequestHeader.Value*)(using Internet, Log): HttpResponse throws StreamCutError =
-    Http.patch(uri, headers*)
-  
-  def head(headers: RequestHeader.Value*)(using Internet, Log): HttpResponse throws StreamCutError =
-    Http.head(uri, headers*)
-  
-  def delete(headers: RequestHeader.Value*)(using Internet, Log): HttpResponse throws StreamCutError =
-    Http.delete(uri, headers*)
-  
-  def connect(headers: RequestHeader.Value*)(using Internet, Log): HttpResponse throws StreamCutError =
-    Http.connect(uri, headers*)
+  def post[T: Postable](body: T): HttpResponse throws StreamCutError = Http.post(url, body)
+  def put[T: Postable](body: T): HttpResponse throws StreamCutError = Http.put(url, body)
+  def get(headers: RequestHeader.Value*): HttpResponse throws StreamCutError = Http.get(url, headers)
+  def options(headers: RequestHeader.Value*): HttpResponse throws StreamCutError = Http.options(url, headers*)
+  def trace(headers: RequestHeader.Value*): HttpResponse throws StreamCutError = Http.trace(url, headers*)
+  def patch(headers: RequestHeader.Value*): HttpResponse throws StreamCutError = Http.patch(url, headers*)
+  def head(headers: RequestHeader.Value*): HttpResponse throws StreamCutError = Http.head(url, headers*)
+  def delete(headers: RequestHeader.Value*): HttpResponse throws StreamCutError = Http.delete(url, headers*)
+  def connect(headers: RequestHeader.Value*): HttpResponse throws StreamCutError = Http.connect(url, headers*)
