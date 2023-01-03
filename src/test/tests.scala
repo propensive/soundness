@@ -19,12 +19,10 @@ package escritoire
 import probably.*
 import gossamer.*
 import rudiments.*
-import parasitism.*, threading.virtual
-import eucalyptus.*
+import eucalyptus.*, logging.stdout
 import escapade.*
 
 import unsafeExceptions.canThrowAny
-import logging.silent
 
 object Tests extends Suite(t"Escritoire tests"):
 
