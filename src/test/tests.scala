@@ -20,8 +20,7 @@ import probably.*
 import gossamer.*
 import rudiments.*
 import turbulence.*
-import eucalyptus.*
-import parasitism.*, threading.platform
+import eucalyptus.*, logging.stdout
 
 import unsafeExceptions.canThrowAny
 
@@ -31,8 +30,6 @@ object Tests extends Suite(t"Dissonance tests"):
   given Realm(t"tests")
 
   def run(using Runner): Unit =
-    import logging.silent
-
     suite(t"Diff tests"):
       test(t"Empty lists"):
         Diff.diff(IArray[Char](), IArray[Char]())
