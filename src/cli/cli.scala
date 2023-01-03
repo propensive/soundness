@@ -71,15 +71,14 @@ object Suite:
       table.tabulate(report.results, 120, DelimitRows.SpaceIfMultiline)
 
     val failures: AnsiText =
-      report.results.filter:
-        result => result.outcome != Outcome.Passed && result.outcome != Outcome.Mixed
-      .flatMap:
-        result =>
-          List(
-            ansi"${result.outcome} $Bold($Underline(${result.name})): ${colors.SkyBlue}(${result.outcome.filename}):${colors.Goldenrod}(${result.outcome.line})",
-            ansi"${(result.outcome.inspect.cut(t"\n"): List[Text]).join(t"      ", t"\n      ", t"")}",
-            ansi""
-          )
+      report.results.filter: result =>
+        result.outcome != Outcome.Passed && result.outcome != Outcome.Mixed
+      .flatMap: result =>
+        List(
+          ansi"${result.outcome} $Bold($Underline(${result.name})): ${colors.SkyBlue}(${result.outcome.filename}):${colors.Goldenrod}(${result.outcome.line})",
+          ansi"${(result.outcome.inspect.cut(t"\n"): List[Text]).join(t"      ", t"\n      ", t"")}",
+          ansi""
+        )
       .join(AnsiText(t"\n"))
 
     val summary: AnsiText = Map(

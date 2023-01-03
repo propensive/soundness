@@ -20,13 +20,11 @@ import probably.Runner.*
 import probably.*
 import gossamer.*
 import rudiments.*
-import eucalyptus.*
-import parasitism.*, threading.platform
+import eucalyptus.*, logging.stdout
 import scala.util.Try
 
 import unsafeExceptions.canThrowAny
 
-import logging.silent
 
 object Tests extends Suite(t"Probably Tests"):
 
