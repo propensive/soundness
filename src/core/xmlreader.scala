@@ -28,8 +28,8 @@ object XmlReader extends Derivation[XmlReader]:
   given txt: XmlReader[Text] =
     childElements(_).collect { case Ast.Textual(txt) => txt }.headOption
   
-  given [T](using ext: Unapply[Text, T]): XmlReader[T] =
-    case Ast.Element(_, Ast.Textual(text) +: _, _, _) +: _ => ext.unapply(text)
+  given [T](using canon: Canonical[T]): XmlReader[T] =
+    case Ast.Element(_, Ast.Textual(text) +: _, _, _) +: _ => Some(canon.deserialize(text))
   
   def join[T](caseClass: CaseClass[XmlReader, T]): XmlReader[T] = seq =>
     val elems = childElements(seq)
