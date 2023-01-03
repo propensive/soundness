@@ -6,7 +6,6 @@ import eucalyptus.*
 import rudiments.*
 
 object TzdbError:
-
   given Show[Issue] =
     case Issue.CouldNotParseTime(time) => t"could not parse time $time"
     case Issue.UnexpectedRule          => t"unexpected rule"
@@ -28,7 +27,7 @@ object TzdbError:
     case ZoneFileMissing(name: Text)
 
 case class TzdbError(issue: TzdbError.Issue, line: Int)
-extends Error(err"temporaneous: the timezone could not be parsed at line $line: $issue.show")
+extends Error(err"the timezone could not be parsed at line $line: ${issue.show}")
 
 object Tzdb:
   case class Time(hours: Int, minutes: Int, seconds: Int, suffix: Maybe[Char])
@@ -52,9 +51,8 @@ object Tzdb:
 
   def parseFile(name: Text)(using Log): List[Tzdb.Entry] throws TzdbError =
     val lines: LazyList[Text] =
-      val stream = Option(getClass.getResourceAsStream(s"/temporaneous/tzdb/$name")).getOrElse:
+      val stream = safely(getClass.getResourceAsStream(s"/temporaneous/tzdb/$name").nn).or:
         throw TzdbError(TzdbError.Issue.ZoneFileMissing(name), 0)
-      .nn
 
       scala.io.Source.fromInputStream(stream).getLines.map(Text(_)).map(_.cut(t"\t").head.lower).to(LazyList)
 
