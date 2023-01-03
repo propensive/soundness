@@ -4,9 +4,7 @@ import probably.*
 import rudiments.*
 import gossamer.*
 import eucalyptus.{Timestamp => _, *}
-import parasitism.*, threading.virtual
-
-import logging.silent
+import logging.stdout
 
 import unsafeExceptions.canThrowAny
 
