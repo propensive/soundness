@@ -35,6 +35,9 @@ import Markdown.Ast.Block.*
 import Markdown.Ast.TablePart
 import Markdown.Ast.ListItem
 
+type InlineMd = Markdown[Markdown.Ast.Inline]
+type Md = Markdown[Markdown.Ast.Block]
+
 object Markdown:
   object Ast:
   
@@ -74,14 +77,14 @@ object Markdown:
   
   private val parser = Parser.builder(options).nn.build().nn
 
-  def parse(string: Text): Markdown[Markdown.Ast.Block] throws MarkdownError =
+  def parse(string: Text): Md throws MarkdownError =
     val root = parser.parse(string.s).nn
     val nodes = root.getChildIterator.nn.asScala.to(List).map(convert(root, _).getOrElse(
         throw MarkdownError(t"could not parse markdown")))
     
     Markdown(nodes.collect { case child: Markdown.Ast.Block => child }*)
 
-  def parseInline(string: Text): Markdown[Markdown.Ast.Inline] throws MarkdownError =
+  def parseInline(string: Text): InlineMd throws MarkdownError =
     parse(string) match
       case Markdown(Paragraph(xs*)) => Markdown[Markdown.Ast.Inline](xs*)
       case other                    => throw MarkdownError(t"markdown contains block-level elements")
