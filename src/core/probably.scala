@@ -409,8 +409,13 @@ def time[T](name: Text)(fn: => T)(using Runner, Log): T = test(name)(fn).check {
 case class UnexpectedSuccessError[T](value: T)
 extends Error(err"the expression was expected to throw an exception, but instead returned $value")
 
-transparent inline def capture[T](fn: => CanThrow[Exception] ?=> T)
-                     : Exception throws UnexpectedSuccessError[T] =
+extension (inline value: Any)
+  transparent inline def hasType[T]: Boolean = inline value match
+    case _: T => true
+    case _    => false
+
+transparent inline def capture[T](inline fn: => CanThrow[Exception] ?=> T)
+                              : Exception throws UnexpectedSuccessError[T] =
   try
     val result = fn
     throw UnexpectedSuccessError(result)
