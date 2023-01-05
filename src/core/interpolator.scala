@@ -20,6 +20,8 @@ import rudiments.*
 import contextual.*
 import gossamer.*
 
+import scala.compiletime.*
+
 object Md:
   enum Input:
     case Block(content: Text)

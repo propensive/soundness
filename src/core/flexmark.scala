@@ -28,7 +28,15 @@ import java.util as ju
 
 case class MarkdownError(detail: Text) extends Error(err"the markdown could not be read: $detail")
 
-case class Markdown[+M <: Markdown.Ast.Node](nodes: M*)
+case class Markdown[+M <: Markdown.Ast.Node](nodes: M*):
+  def serialize: Text =
+    val buf = StringBuilder()
+    
+    nodes.foreach:
+      case node: Markdown.Ast.Inline => node.serialize(buf)
+      case node: Markdown.Ast.Block  => node.serialize(buf)
+    
+    buf.text
 
 import Markdown.Ast.Inline.*
 import Markdown.Ast.Block.*
@@ -39,8 +47,11 @@ type InlineMd = Markdown[Markdown.Ast.Inline]
 type Md = Markdown[Markdown.Ast.Block]
 
 object Markdown:
+
+  given (using CanThrow[MarkdownError]): Canonical[InlineMd] = Canonical(parseInline(_), _.serialize)
+  given Show[InlineMd] = _.serialize
+
   object Ast:
-  
     type Node = Block | Inline
   
     enum Block:
@@ -54,6 +65,8 @@ object Markdown:
       case Table(children: TablePart*)
       case Row(cells: Cell*)
       case Cell(children: Inline*)
+
+      def serialize(buf: StringBuilder): Unit = buf.add(t"Serialization of block elements is not currently supported!")
 
     case class ListItem(children: Block*)
     
@@ -71,6 +84,16 @@ object Markdown:
       case Textual(string: Text)
       case Link(location: Text, children: Inline*)
 
+      def serialize(buf: StringBuilder): Unit = this match
+        case Break()                   => buf.add('\n')
+        case Emphasis(children*)       => buf.add('_'); children.foreach(_.serialize(buf)); buf.add('_')
+        case HtmlNode(value)           => buf.add(value)
+        case Image(alt, src)           => buf.add(t"!["); buf.add(alt); buf.add(t"]("); buf.add(src); buf.add(t")")
+        case SourceCode(value)         => buf.add('`'); buf.add(value); buf.add('`')
+        case Strong(children*)         => buf.add('*'); children.foreach(_.serialize(buf)); buf.add('*')
+        case Textual(text)             => buf.add(text)
+        case Link(location, children*) => buf.add('['); children.foreach(_.serialize(buf)); buf.add(t"]("); buf.add(location); buf.add(')')
+        
   private val options = MutableDataSet()
   //options.set[ju.Collection[com.vladsch.flexmark.util.misc.Extension]](Parser.EXTENSIONS,
   //    ju.Arrays.asList(TablesExtension.create()))
