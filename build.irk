@@ -3,10 +3,15 @@
     {
       "base": "../eucalyptus",
       "url": "https://github.com/propensive/eucalyptus"
+    },
+    {
+      "base": "../diuretic",
+      "url": "https://github.com/propensive/diuretic"
     }
   ],
   "imports": [
-    "../eucalyptus/build.irk"
+    "../eucalyptus/build.irk",
+    "../diuretic/build.irk"
   ],
   "publishing": {
     "username": "propensive",
@@ -31,11 +36,10 @@
       "name": "Profanity",
       "id": "profanity/core",
       "links": [
-        "eucalyptus/core"
+        "eucalyptus/core",
+        "diuretic/core"
       ],
-      "dependencies": [
-        "net.java.dev.jna:jna:5.10.0"
-      ],
+      "dependencies": [],
       "sources": [
         "src/core",
         "src/java"
