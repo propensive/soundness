@@ -21,6 +21,8 @@ package calendars:
 enum Weekday:
   case Mon, Tue, Wed, Thu, Fri, Sat, Sun
 
+case class InvalidDateError(text: Text) extends Error(err"the value $text is not a valid date")
+
 object Dates:
   opaque type Date = Int
 
@@ -30,11 +32,20 @@ object Dates:
     def apply(using cal: Calendar)(year: cal.Y, month: cal.M, day: cal.D): Date =
       cal.julianDay(year, month, day)
 
-  given Ordering[Date] = Ordering.Int
+    given (using CanThrow[InvalidDateError]): Canonical[Date] = Canonical(parse(_), _.show)
   
-  given Show[Date] = d =>
-    given RomanCalendar = calendars.gregorian
-    t"${d.day.toString.show}-${d.month.show}-${d.year.toString.show}"
+    given Ordering[Date] = Ordering.Int
+    
+    given Show[Date] = d =>
+      given RomanCalendar = calendars.gregorian
+      t"${d.day.toString.show}-${d.month.show}-${d.year.toString.show}"
+    
+    def parse(value: Text): Date throws InvalidDateError = value.cut(t"-") match
+      case As[Int](y) :: As[Int](m) :: As[Int](d) :: Nil =>
+        Date(using calendars.gregorian)(y, MonthName.fromOrdinal(m - 1), d)
+      
+      case _ =>
+        throw InvalidDateError(value)
 
   extension (date: Date)
     def day(using cal: Calendar): cal.D = cal.getDay(date)
