@@ -38,7 +38,7 @@ case class Supervisor(baseId: Text = Text("main")) extends Monitor:
   def cancel(): Unit = interrupted = true
 
 def supervise[T](id: Text)(fn: Monitor ?=> T): T = fn(using Supervisor(id))
-def hibernate()(using Monitor): Unit = sleep(using timekeeping.long)(Long.MaxValue)
+def hibernate()(using Monitor): Unit = sleep(using timeRepresentation.long)(Long.MaxValue)
 
 def sleep(using t: GenericDuration)(time: t.Duration)(using Monitor): Unit =
   try Thread.sleep(readDuration(time)) catch case err: InterruptedException => unsafely(throw CancelError())

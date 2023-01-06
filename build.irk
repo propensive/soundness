@@ -5,12 +5,12 @@
       "url": "https://github.com/propensive/rudiments"
     },
     {
-      "base": "../anticipation",
-      "url": "https://github.com/propensive/anticipation"
+      "base": "../diuretic",
+      "url": "https://github.com/propensive/diuretic"
     }
   ],
   "imports": [
-    "../anticipation/build.irk",
+    "../diuretic/build.irk",
     "../rudiments/build.irk"
   ],
   "publishing": {
@@ -36,7 +36,7 @@
       "name": "Parasitism",
       "id": "parasitism/core",
       "sources": ["src/core"],
-      "links": ["anticipation/time", "rudiments/core"]
+      "links": ["diuretic/core", "rudiments/core"]
     }
   ]
 }
