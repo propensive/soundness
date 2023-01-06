@@ -32,6 +32,7 @@ import language.dynamics
 
 import scala.util.{Try, Success, Failure}
 import scala.deriving.*
+import scala.quoted.*
 
 import java.util.concurrent as juc
 export scala.util.chaining.scalaUtilChainingOps
@@ -61,6 +62,12 @@ object Text:
 
   given CommandLineParser.FromString[Text] = identity(_)
   given Ordering[Text] = Ordering.String.on[Text](_.s)
+
+  given (using fromExpr: FromExpr[String]): FromExpr[Text] with
+    def unapply(expr: Expr[Text])(using Quotes): Option[Text] = fromExpr.unapply(expr).map(Text(_))
+  
+  given (using toExpr: ToExpr[String]): ToExpr[Text] with
+    def apply(txt: Text)(using Quotes): Expr[Text] = toExpr(txt.s)
 
   given Conversion[String, Text] = Text(_)
 

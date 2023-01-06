@@ -49,23 +49,61 @@ extends Exception():
 object StackTrace:
   case class Frame(className: Text, method: Text, file: Text, line: Int, native: Boolean)
   
-  private val subscripts = "₀₁₂₃₄₅₆₇₈₉"
+  // FIXME: This is going to be gloriously inefficient, and it doesn't unescape other non-ASCII characters
+  def rewriteClassname(name: String): Text = Text:
+    name
+      .replaceAll("\\$anonfun", "λ").nn
+      .replaceAll("\\$anon", "Γ").nn
+      .replaceAll("\\$package", "Π").nn
+      .replaceAll("initial\\$", "ι").nn
+      .replaceAll("\\$default\\$", "δ").nn
+      .replaceAll("\\$_avoid_name_clash_\\$", "′").nn
+      .replaceAll("super\\$", "σ").nn
+      .replaceAll("\\$tilde", "~").nn
+      .replaceAll("\\$eq", "=").nn
+      .replaceAll("\\$less", "<").nn
+      .replaceAll("\\$greater", ">").nn
+      .replaceAll("\\$bang", "!").nn
+      .replaceAll("\\$hash", "#").nn
+      .replaceAll("\\$percent", "%").nn
+      .replaceAll("\\$up", "^").nn
+      .replaceAll("\\$amp", "&").nn
+      .replaceAll("\\$bar", "|").nn
+      .replaceAll("\\$times", "*").nn
+      .replaceAll("\\$div", "/").nn
+      .replaceAll("\\$plus", "+").nn
+      .replaceAll("\\$minus", "-").nn
+      .replaceAll("\\$colon", ":").nn
+      .replaceAll("\\$bslash", "\\").nn
+      .replaceAll("\\$qmark", "?").nn
+      .replaceAll("\\$at", "@").nn
+      .replaceAll("\\$0", "₀").nn
+      .replaceAll("\\$1", "₁").nn
+      .replaceAll("\\$2", "₂").nn
+      .replaceAll("\\$3", "₃").nn
+      .replaceAll("\\$4", "₄").nn
+      .replaceAll("\\$5", "₅").nn
+      .replaceAll("\\$6", "₆").nn
+      .replaceAll("\\$7", "₇").nn
+      .replaceAll("\\$8", "₈").nn
+      .replaceAll("\\$9", "₉").nn
+      .replaceAll("\\$\\$", "#").nn
 
   def apply(exception: Throwable): StackTrace =
     val frames = List(exception.getStackTrace.nn.map(_.nn)*).map: frame =>
       StackTrace.Frame(
-        Text(frame.getClassName.nn),
-        Text(frame.getMethodName.nn),
+        rewriteClassname(frame.getClassName.nn),
+        rewriteClassname(frame.getMethodName.nn),
         Text(Option(frame.getFileName).map(_.nn).getOrElse("[no file]")),
         frame.getLineNumber,
         frame.isNativeMethod
       )
     
     val cause = Option(exception.getCause)
-    val fullClassName: String = exception.getClass.nn.getName.nn
-    val fullClass: List[Text] = List(fullClassName.split("\\.").nn.map(_.nn).map(Text(_))*)
+    val fullClassName: Text = rewriteClassname(exception.getClass.nn.getName.nn)
+    val fullClass: List[Text] = List(fullClassName.s.split("\\.").nn.map(_.nn).map(Text(_))*)
     val className: Text = fullClass.last
-    val component: Text = Text(fullClassName.substring(0, 0 max (fullClassName.length - className.s.length - 1)).nn)
+    val component: Text = Text(fullClassName.s.substring(0, 0 max (fullClassName.s.length - className.s.length - 1)).nn)
     val message = Text(Option(exception.getMessage).map(_.nn).getOrElse(""))
     
     StackTrace(component, className, message, frames, cause.map(_.nn).map(StackTrace(_)).maybe)
