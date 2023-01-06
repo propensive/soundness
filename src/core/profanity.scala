@@ -23,7 +23,7 @@ import escapade.*
 import parasitism.*
 import iridescence.*
 import turbulence.*
-import anticipation.timekeeping.long
+import anticipation.*, timeRepresentation.long
 
 import com.sun.jna.*
 import sun.misc.Signal
