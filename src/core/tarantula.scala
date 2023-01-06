@@ -25,7 +25,7 @@ import honeycomb.*
 import eucalyptus.*
 import rudiments.*
 import parasitism.*
-import anticipation.*, timekeeping.long
+import anticipation.*, timeRepresentation.long
 
 import unsafeExceptions.canThrowAny
 import annotation.targetName
