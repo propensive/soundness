@@ -30,22 +30,7 @@ trait GenericDuration:
   def makeDuration(long: Long): Duration
   def readDuration(value: Duration): Long
 
-object timekeeping:
-  given long: GenericInstant with GenericDuration with
-    type Instant = Long
-    type Duration = Long
-    def readInstant(long: Long): Long = long
-    def makeInstant(value: Long): Long = value
-    def readDuration(long: Long): Long = long
-    def makeDuration(value: Long): Long = value
-
-  given date: GenericInstant with GenericDuration with
-    type Instant = java.util.Date
-    type Duration = Long
-    def makeInstant(long: Long): java.util.Date = java.util.Date(long)
-    def readInstant(value: java.util.Date): Long = value.getTime
-    def readDuration(long: Long): Long = long
-    def makeDuration(value: Long): Long = value
+package timekeeping {}
 
 def now()(using time: GenericInstant): time.Instant = time.makeInstant(System.currentTimeMillis)
 

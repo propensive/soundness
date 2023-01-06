@@ -21,45 +21,46 @@ import annotation.implicitNotFound
 import java.nio.file as jnf
 import java.io as ji
 
-object DirectoryProvider:
-  given DirectoryProvider[ji.File] = integration.javaIoFile
-  given DirectoryProvider[jnf.Path] = integration.javaNioPath
+//object DirectoryProvider:
+//  given DirectoryProvider[ji.File] = integration.javaIoFile
+//  given DirectoryProvider[jnf.Path] = integration.javaNioPath
 
 @implicitNotFound("""|anticipation: a contextual DirectoryProvider[${T}] instance is required, for example one of:
-                     |    import integration.javaNioPath  // represent a directory as a java.nio.Path
-                     |    import integration.javaIo       // represent a directory as a java.io.File
-                     |    import integration.galileiPath  // represent a directory as a galilei.Directory (requires Galilei)""".stripMargin)
+                     |    import filesystemIntegration.javaNioPath  // represent a directory as a java.nio.Path (requires Dierutic)
+                     |    import filesystemIntegration.javaIo       // represent a directory as a java.io.File (requires Dierutic)
+                     |    import filesystemIntegration.galileiPath  // represent a directory as a galilei.Directory (requires Galilei)""".stripMargin)
 trait DirectoryProvider[+T]:
   def makeDirectory(path: String, readOnly: Boolean = false): Option[T]
 
-object DirectoryInterpreter:
-  given DirectoryInterpreter[ji.File] = integration.javaIoFile
-  given DirectoryInterpreter[jnf.Path] = integration.javaNioPath
+
+//object DirectoryInterpreter:
+//  given DirectoryInterpreter[ji.File] = integration.javaIoFile
+//  given DirectoryInterpreter[jnf.Path] = integration.javaNioPath
 
 trait DirectoryInterpreter[-T]:
   def directoryPath(value: T): String
 
-object FileProvider:
-  given FileProvider[ji.File] = integration.javaIoFile
-  given FileProvider[jnf.Path] = integration.javaNioPath
+//object FileProvider:
+  //given FileProvider[ji.File] = integration.javaIoFile
+  //given FileProvider[jnf.Path] = integration.javaNioPath
 
 @implicitNotFound("""|anticipation: a contextual FileProvider[${T}] instance is required, for example one of:
-                     |    import integration.javaNioPath  // represent a file as a java.nio.Path
-                     |    import integration.javaIo       // represent a file as a java.io.File
-                     |    import integration.galileiPath  // represent a file as a galilei.File (requires Galilei)""".stripMargin)
+                     |    import filesystemIntegration.javaNioPath  // represent a file as a java.nio.Path (requires Diuretic)
+                     |    import filesystemIntegration.javaIo       // represent a file as a java.io.File (requires Diuretic)
+                     |    import filesystemIntegration.galileiPath  // represent a file as a galilei.File (requires Galilei)""".stripMargin)
 trait FileProvider[+T]:
   def makeFile(path: String, readOnly: Boolean = false): Option[T]
 
-object FileInterpreter:
-  given FileInterpreter[ji.File] = integration.javaIoFile
-  given FileInterpreter[jnf.Path] = integration.javaNioPath
+//object FileInterpreter:
+//  given FileInterpreter[ji.File] = integration.javaIoFile
+//  given FileInterpreter[jnf.Path] = integration.javaNioPath
 
 trait FileInterpreter[-T]:
   def filePath(value: T): String
 
-object PathProvider:
-  given PathProvider[ji.File] = integration.javaIoFile
-  given PathProvider[jnf.Path] = integration.javaNioPath
+//object PathProvider:
+//  given PathProvider[ji.File] = integration.javaIoFile
+//  given PathProvider[jnf.Path] = integration.javaNioPath
 
 @implicitNotFound("""|anticipation: a contextual PathProvider[${T}] instance is required, for example one of:
                      |    import integration.javaNioPath  // represent a path as a java.nio.Path
@@ -68,9 +69,9 @@ object PathProvider:
 trait PathProvider[+T]:
   def makePath(path: String, readOnly: Boolean = false): Option[T]
 
-object PathInterpreter:
-  given PathInterpreter[ji.File] = integration.javaIoFile
-  given PathInterpreter[jnf.Path] = integration.javaNioPath
+//object PathInterpreter:
+//  given PathInterpreter[ji.File] = integration.javaIoFile
+//  given PathInterpreter[jnf.Path] = integration.javaNioPath
 
 trait PathInterpreter[-T]:
   def getPath(value: T): String
@@ -79,31 +80,4 @@ trait PathInterpreter[-T]:
 trait WatchService[+T]:
   def apply(): jnf.WatchService
 
-package integration:
-  given javaNioPath: FileProvider[jnf.Path] with DirectoryProvider[jnf.Path]
-      with DirectoryInterpreter[jnf.Path] with FileInterpreter[jnf.Path]
-      with PathProvider[jnf.Path] with PathInterpreter[jnf.Path] with
-
-    def makePath(path: String, readOnly: Boolean = false): Option[jnf.Path] =
-      try Some(jnf.Paths.get(path).nn) catch case err: jnf.InvalidPathException => None
-
-    def makeFile(path: String, readOnly: Boolean = false): Option[jnf.Path] = makePath(path, readOnly)
-    def makeDirectory(path: String, readOnly: Boolean = false): Option[jnf.Path] = makePath(path, readOnly)
-
-    def getPath(value: jnf.Path): String = value.toAbsolutePath.nn.toString
-    def filePath(value: jnf.Path): String = getPath(value)
-    def directoryPath(value: jnf.Path): String = getPath(value)
-
-  given javaIoFile: FileProvider[ji.File] with DirectoryProvider[ji.File]
-      with DirectoryInterpreter[ji.File] with FileInterpreter[ji.File]
-      with PathProvider[ji.File] with PathInterpreter[ji.File] with
-
-    def makePath(path: String, readOnly: Boolean = false): Option[ji.File] =
-      try Some(ji.File(path).nn) catch case err: jnf.InvalidPathException => None
-
-    def makeFile(path: String, readOnly: Boolean = false): Option[ji.File] = makePath(path, readOnly)
-    def makeDirectory(path: String, readOnly: Boolean = false): Option[ji.File] = makePath(path, readOnly)
-
-    def getPath(value: ji.File): String = value.getAbsolutePath.nn.toString
-    def filePath(value: ji.File): String = getPath(value)
-    def directoryPath(value: ji.File): String = getPath(value)
+package filesystemIntegration {}
