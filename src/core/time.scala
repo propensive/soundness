@@ -6,6 +6,8 @@ import cardinality.*
 import anticipation.*
 import kaleidoscope.*
 
+import scala.quoted.*
+
 import math.Ordering.Implicits.infixOrderingOps
 
 package calendars:
@@ -380,24 +382,33 @@ extension (i: Int)
       case v: Base60 => v
       case _: Int    => throw Mistake("Modular arithmetic should produce value in range")
 
-import compiletime.ops.double.{ToInt, + as ++, - as --, `*` as **}, compiletime.ops.int.*
+extension (inline double: Double)
+  inline def am: Time = ${TemporaneousMacros.validTime('double, false)}
+  inline def pm: Time = ${TemporaneousMacros.validTime('double, true)}
 
-@implicitNotFound("This is not a valid time in the form HH.MM.am or HH.MM.pm")
-trait ValidTime[D <: Double & Singleton]
-
-erased given [D <: Double & Singleton]
-             (using ToInt[D] <= 12 =:= true, ToInt[D] > 0 =:= true,
-                  ToInt[(D -- ToDouble[ToInt[D]]) ** 100.0] >= 0 =:= true,
-                  ToInt[(D -- ToDouble[ToInt[D]]) ** 100.0] <= 59 =:= true): ValidTime[D] =
-  compiletime.erasedValue
-
-extension (double: Double)(using erased ValidTime[double.type])
-  def am: Time =
-    val hour: Base24 = (double.toInt%12).asInstanceOf[Base24]
-    val minute: Base60 = ((double - double.toInt)*100.0 + 0.5).toInt.asInstanceOf[Base60]
-    Time(hour, minute)
-  
-  def pm: Time =
-    val hour: Base24 = ((double.toInt%12) + 12).toInt.asInstanceOf[Base24]
-    val minute: Base60 = ((double - double.toInt)*100.0 + 0.5).toInt.asInstanceOf[Base60]
-    Time(hour, minute)
+object TemporaneousMacros:
+  def validTime(time: Expr[Double], pm: Boolean)(using Quotes): Expr[Time] =
+    import quotes.reflect.*
+    time.asTerm match
+      case Inlined(None, Nil, lit@Literal(DoubleConstant(d))) =>
+        val hour = d.toInt
+        val minutes = ((d - hour) * 100 + 0.5).toInt
+        
+        if minutes >= 60
+        then report.errorAndAbort("temporaneous: a time cannot have a minute value above 59", lit.pos)
+        
+        if hour < 0 then report.errorAndAbort("temporaneous: a time cannot be negative", lit.pos)
+        
+        if hour > 12
+        then report.errorAndAbort("temporaneous: a time cannot have an hour value above 12", lit.pos)
+        
+        val h: Base24 = (hour + (if pm then 12 else 0)).asInstanceOf[Base24]
+        val length = lit.pos.endColumn - lit.pos.startColumn
+        
+        if (hour < 10 && length != 4) || (hour >= 10 && length != 5)
+        then report.errorAndAbort("temporaneous: the time should have exactly two minutes digits", lit.pos)
+        
+        val m: Base60 = minutes.asInstanceOf[Base60]
+        '{Time(${Expr(h)}, ${Expr(m)}, 0)}
+      case _ =>
+        report.errorAndAbort("temporaneous: expected a literal double value")
