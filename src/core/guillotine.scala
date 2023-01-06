@@ -23,7 +23,7 @@ import gossamer.*
 import eucalyptus.*
 import escapade.*
 import iridescence.*
-import anticipation.*
+import anticipation.*, fileRepresentation.javaIo
 
 import scala.jdk.StreamConverters.StreamHasToScala
 import scala.jdk.CollectionConverters.MapHasAsJava

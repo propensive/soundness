@@ -5,13 +5,13 @@
       "url": "https://github.com/propensive/eucalyptus"
     },
     {
-      "base": "../anticipation",
-      "url": "https://github.com/propensive/anticipation"
+      "base": "../diuretic",
+      "url": "https://github.com/propensive/diuretic"
     }
   ],
   "imports": [
     "../eucalyptus/build.irk",
-    "../anticipation/build.irk"
+    "../diuretic/build.irk"
   ],
   "publishing": {
     "username": "propensive",
@@ -36,7 +36,7 @@
       "name": "Guillotine",
       "id": "guillotine/core",
       "links": [
-        "eucalyptus/core", "anticipation/file"
+        "eucalyptus/core", "diuretic/core"
       ],
       "sources": [
         "src/core"
