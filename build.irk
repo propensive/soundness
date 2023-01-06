@@ -1,0 +1,25 @@
+{
+  "repos": [
+    {
+      "base": "../anticipation",
+      "url": "https://github.com/propensive/anticipation"
+    }
+  ],
+  "imports": [
+    "../anticipation/build.irk"
+  ],
+  "modules": [
+    {
+      "name": "Diuretic",
+      "id": "diuretic/core",
+      "links": ["anticipation/file", "anticipation/time", "anticipation/url"],
+      "sources": [
+        "src/core"
+      ],
+      "version": "0.4.0",
+      "docs": [
+        "doc"
+      ]
+    }
+  ]
+}
