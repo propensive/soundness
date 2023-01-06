@@ -158,3 +158,6 @@
 [submodule "mod/temporaneous"]
 	path = mod/temporaneous
 	url = git@github.com:propensive/temporaneous
+[submodule "mod/diuretic"]
+	path = mod/diuretic
+	url = git@github.com:propensive/diuretic
