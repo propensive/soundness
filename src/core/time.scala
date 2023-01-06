@@ -19,6 +19,20 @@ package calendars:
     def leapYear(year: Y): Boolean = year%4 == 0 && year%100 != 0 || year%400 == 0
     def leapYearsSinceEpoch(year: Int): Int = year/4 - year/100 + year/400 + 1
 
+def now()(using src: TimeSource): Instant = src()
+
+abstract class TimeSource():
+  def apply(): Instant
+
+object TimeSource:
+  given current: TimeSource with
+    def apply(): Instant = Instant.of(System.currentTimeMillis)
+  
+  def fixed(instant: Instant): TimeSource = new TimeSource():
+    def apply(): Instant = instant
+
+  def offset(diff: Duration): TimeSource = new TimeSource():
+    def apply(): Instant = Instant.of(System.currentTimeMillis) + diff
 
 enum Weekday:
   case Mon, Tue, Wed, Thu, Fri, Sat, Sun
@@ -154,6 +168,8 @@ object Timing:
   opaque type Instant = Long
 
   object Instant:
+    def of(millis: Long): Instant = millis
+    
     given GenericInstant with
       type Instant = Timing.Instant
       def makeInstant(long: Long): Instant = long
