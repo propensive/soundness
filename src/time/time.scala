@@ -32,8 +32,6 @@ trait GenericDuration:
 
 package timekeeping {}
 
-def now()(using time: GenericInstant): time.Instant = time.makeInstant(System.currentTimeMillis)
-
 def makeInstant(value: Long)(using time: GenericInstant): time.Instant = time.makeInstant(value)
 def readInstant(using time: GenericInstant)(value: time.Instant): Long = time.readInstant(value)
 def makeDuration(value: Long)(using time: GenericDuration): time.Duration = time.makeDuration(value)
