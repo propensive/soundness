@@ -62,6 +62,9 @@ extension (ctx: StringContext)
   def t = SimpleTExtractor(ctx.parts.head.show)
 
 object Debug extends Derivation[Debug]:
+  object any extends Debug[Any]:
+    def show(value: Any): Text = Text(value.toString)
+
   given text: Debug[Text] = text =>
     val escaped = text.flatMap:
       case '\n'     => t"\\n"
