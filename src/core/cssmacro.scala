@@ -391,6 +391,8 @@ object ShowProperty:
   given ShowProperty[Srgb] = _.css
   given ShowProperty[Hsl] = _.css
   given ShowProperty[Color] = _.standardSrgb.css
+  given ShowProperty[Rgb24] = _.srgb.css
+  given ShowProperty[Rgb12] = _.srgb.css
   given ShowProperty[PropertyValue] = _.show
   given ShowProperty[Inherit.type] = c => t"inherit"
   given ShowProperty[Transparent.type] = c => t"transparent"
