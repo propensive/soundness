@@ -34,8 +34,9 @@ object JavaUtilTime extends GenericInstant, GenericDuration:
   def readDuration(long: Long): Long = long
   def makeDuration(value: Long): Long = value
 
-object JavaNioFile extends FileProvider[jnf.Path], DirectoryProvider[jnf.Path], DirectoryInterpreter[jnf.Path],
-    FileInterpreter[jnf.Path], PathProvider[jnf.Path], PathInterpreter[jnf.Path]:
+object JavaNioFile extends GenericFileMaker[jnf.Path], GenericDirectoryMaker[jnf.Path],
+    GenericDirectoryReader[jnf.Path], GenericFileReader[jnf.Path], GenericPathMaker[jnf.Path],
+    GenericPathReader[jnf.Path]:
 
   def makePath(path: String, readOnly: Boolean = false): Option[jnf.Path] =
     try Some(jnf.Paths.get(path).nn) catch case err: jnf.InvalidPathException => None
@@ -47,8 +48,9 @@ object JavaNioFile extends FileProvider[jnf.Path], DirectoryProvider[jnf.Path], 
   def filePath(value: jnf.Path): String = getPath(value)
   def directoryPath(value: jnf.Path): String = getPath(value)
 
-object JavaIoFile extends FileProvider[ji.File], DirectoryProvider[ji.File], DirectoryInterpreter[ji.File],
-    FileInterpreter[ji.File], PathProvider[ji.File], PathInterpreter[ji.File]:
+object JavaIoFile extends GenericFileMaker[ji.File], GenericDirectoryMaker[ji.File],
+    GenericDirectoryReader[ji.File], GenericFileReader[ji.File], GenericPathMaker[ji.File],
+    GenericPathReader[ji.File]:
 
   def makePath(path: String, readOnly: Boolean = false): Option[ji.File] =
     try Some(ji.File(path).nn) catch case err: jnf.InvalidPathException => None
