@@ -161,3 +161,6 @@
 [submodule "mod/diuretic"]
 	path = mod/diuretic
 	url = git@github.com:propensive/diuretic
+[submodule "mod/hyperbole"]
+	path = mod/hyperbole
+	url = git@github.com:propensive/hyperbole
