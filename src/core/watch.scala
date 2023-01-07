@@ -32,25 +32,25 @@ import jnf.StandardWatchEventKinds.*
 case class InotifyError()
 extends Error(err"the limit on the number of paths that can be watched has been exceeded")
 
-extension [Dir](dirs: Seq[Dir])(using DirectoryProvider[Dir], DirectoryInterpreter[Dir], Monitor, Threading)
-  def watch()(using Log, WatchService[Dir]): Watcher[Dir] throws InotifyError = Watcher[Dir](dirs*)
+extension [Dir: GenericDirectoryMaker: GenericDirectoryReader](dirs: Seq[Dir])(using Monitor, Threading)
+  def watch()(using Log, GenericWatchService[Dir]): Watcher[Dir] throws InotifyError = Watcher[Dir](dirs*)
 
-extension [Dir](dir: Dir)(using DirectoryProvider[Dir], DirectoryInterpreter[Dir], Monitor, Threading)
-  def watch()(using Log, WatchService[Dir]): Watcher[Dir] throws InotifyError = Watcher[Dir](dir)
+extension [Dir: GenericDirectoryMaker: GenericDirectoryReader](dir: Dir)(using Monitor, Threading)
+  def watch()(using Log, GenericWatchService[Dir]): Watcher[Dir] throws InotifyError = Watcher[Dir](dir)
 
 object Watcher:
-  def apply[Dir: WatchService]
-           (dirs: Dir*)(using DirectoryInterpreter[Dir], DirectoryProvider[Dir], Log, Monitor, Threading)
+  def apply[Dir: GenericWatchService: GenericDirectoryMaker: GenericDirectoryReader]
+           (dirs: Dir*)(using Log, Monitor, Threading)
            : Watcher[Dir] =
-    val svc: jnf.WatchService = summon[WatchService[Dir]]()
+    val svc: jnf.WatchService = summon[GenericWatchService[Dir]]()
     val watcher = Watcher[Dir](svc)
     dirs.foreach(watcher.add(_))
 
     watcher
 
 case class Watcher[Dir](private val svc: jnf.WatchService)
-                  (using fromDir: DirectoryInterpreter[Dir], mkdir: DirectoryProvider[Dir], monitor: Monitor,
-                       threading: Threading):
+                  (using fromDir: GenericDirectoryReader[Dir], mkdir: GenericDirectoryMaker[Dir],
+                       monitor: Monitor, threading: Threading):
   
   private val watches: HashMap[jnf.WatchKey, jnf.Path] = HashMap()
   private val dirs: HashMap[jnf.Path, jnf.WatchKey] = HashMap()
@@ -131,7 +131,7 @@ enum WatchEvent:
 
   def dir: Text
 
-  def path[Dir](using mkdir: PathProvider[Dir]): Dir = unsafely:
+  def path[Dir](using mkdir: GenericPathMaker[Dir]): Dir = unsafely:
     val relPath = this match
       case NewFile(_, file)      => file
       case NewDirectory(_, path) => path
