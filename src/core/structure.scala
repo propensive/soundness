@@ -33,18 +33,18 @@ case class BaseLayout(private val part: String, private val envVar: Maybe[String
 
   given newBaseDir: BaseLayout.Dir = BaseLayout.Dir(baseDir.home, s"${baseDir.path}/$part")
 
-  def apply[T]()(using PathProvider[T], Environment): T =
+  def apply[T]()(using GenericPathMaker[T], Environment): T =
     val path: String = envVar.option match
       case None         => absolutePath
       case Some(envVar) => summon[Environment](Text(envVar)).fm(absolutePath)(_.s)
 
-    summon[PathProvider[T]].makePath(path, readOnly = readOnly) match
+    summon[GenericPathMaker[T]].makePath(path, readOnly = readOnly) match
       case None      => throw RuntimeException("failed to parse: '"+path+"'")
       case Some(dir) => dir
 
 object Xdg extends BaseLayout("")(using BaseLayout.Dir(false, "")):
-  override def apply[T]()(using PathProvider[T], Environment): T =
-    summon[PathProvider[T]].makePath("/", readOnly = true).get
+  override def apply[T]()(using GenericPathMaker[T], Environment): T =
+    summon[GenericPathMaker[T]].makePath("/", readOnly = true).get
 
   object Boot extends BaseLayout("boot", readOnly = true)
   object Efi extends BaseLayout("efi", readOnly = true)
