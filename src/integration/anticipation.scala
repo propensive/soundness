@@ -22,8 +22,8 @@ import _root_.galilei as gal
 
 import language.experimental.captureChecking
 
-given galileiPath[Fs <: gal.Filesystem](using fs: Fs): (PathProvider[gal.DiskPath[Fs]] & DirectoryProvider[gal.Directory[Fs]] & FileProvider[gal.File[Fs]] & PathInterpreter[gal.DiskPath[Fs]] & FileInterpreter[gal.File[Fs]] & DirectoryInterpreter[gal.Directory[Fs]]) =
-  new PathProvider[gal.DiskPath[Fs]] with DirectoryProvider[gal.Directory[Fs]] with FileProvider[gal.File[Fs]] with PathInterpreter[gal.DiskPath[Fs]] with FileInterpreter[gal.File[Fs]] with DirectoryInterpreter[gal.Directory[Fs]]:
+given galileiPath[Fs <: gal.Filesystem](using fs: Fs): (GenericPathMaker[gal.DiskPath[Fs]] & GenericDirectoryMaker[gal.Directory[Fs]] & GenericFileMaker[gal.File[Fs]] & GenericPathReader[gal.DiskPath[Fs]] & GenericFileReader[gal.File[Fs]] & GenericDirectoryReader[gal.Directory[Fs]]) =
+  new GenericPathMaker[gal.DiskPath[Fs]] with GenericDirectoryMaker[gal.Directory[Fs]] with GenericFileMaker[gal.File[Fs]] with GenericPathReader[gal.DiskPath[Fs]] with GenericFileReader[gal.File[Fs]] with GenericDirectoryReader[gal.Directory[Fs]]:
     def makePath(str: String, readOnly: Boolean = false): Option[gal.DiskPath[Fs]] =
       safely(fs.parse(Text(str))).option
     

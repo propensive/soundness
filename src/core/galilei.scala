@@ -109,8 +109,8 @@ sealed trait Inode[+Fs <: Filesystem](val path: DiskPath[Fs]):
 object File:
   given Show[File[?]] = t"ᶠ｢"+_.path.fullname+t"｣"
   
-  given provider(using fs: Filesystem): (FileProvider[File[fs.type]] & FileInterpreter[File[fs.type]]) =
-    new FileProvider[File[fs.type]] with FileInterpreter[File[fs.type]]:
+  given provider(using fs: Filesystem): (GenericFileMaker[File[fs.type]] & GenericFileReader[File[fs.type]]) =
+    new GenericFileMaker[File[fs.type]] with GenericFileReader[File[fs.type]]:
       def makeFile(str: String, readOnly: Boolean = false): Option[File[fs.type]] =
         safely(fs.parse(Text(str)).file(Expect)).option
       
@@ -247,22 +247,22 @@ extends Inode[Fs](symlinkPath), Shown[Symlink[Fs]]:
 
 object Directory:
   given Show[Directory[?]] = t"ᵈ｢"+_.path.fullname+t"｣"
-  given WatchService[Directory[Unix]] = () => Unix.javaFilesystem.newWatchService().nn
+  given GenericWatchService[Directory[Unix]] = () => Unix.javaFilesystem.newWatchService().nn
 
   given provider(using fs: Filesystem)
-                : (DirectoryProvider[Directory[fs.type]] & DirectoryInterpreter[Directory[fs.type]]) =
-    new DirectoryProvider[Directory[fs.type]] with DirectoryInterpreter[Directory[fs.type]]:
+                : (GenericDirectoryMaker[Directory[fs.type]] & GenericDirectoryReader[Directory[fs.type]]) =
+    new GenericDirectoryMaker[Directory[fs.type]] with GenericDirectoryReader[Directory[fs.type]]:
       def makeDirectory(str: String, readOnly: Boolean = false): Option[Directory[fs.type]] =
         safely(fs.parse(Text(str)).directory(Expect)).option
       
       def directoryPath(dir: Directory[fs.type]): String = dir.path.fullname.s
   
-  given pathInterpreter(using fs: Filesystem): PathInterpreter[Directory[fs.type]] =
-    new PathInterpreter[Directory[fs.type]]:
+  given pathReader(using fs: Filesystem): GenericPathReader[Directory[fs.type]] =
+    new GenericPathReader[Directory[fs.type]]:
       def getPath(dir: Directory[fs.type]): String = dir.path.fullname.s
   
-  given pathProvider(using fs: Filesystem): PathProvider[Directory[fs.type]] =
-    new PathProvider[Directory[fs.type]]:
+  given pathMaker(using fs: Filesystem): GenericPathMaker[Directory[fs.type]] =
+    new GenericPathMaker[Directory[fs.type]]:
       def makePath(str: String, readOnly: Boolean = false): Option[Directory[fs.type]] =
         safely(fs.parse(Text(str)).directory(Expect)).option
 
@@ -354,8 +354,8 @@ object DiskPath:
   given [Fs <: Filesystem](using fs: Fs, ct: CanThrow[InvalidPathError]): Canonical[DiskPath[Fs]] =
     Canonical(fs.parse(_), _.show)
 
-  given provider(using fs: Filesystem): (PathProvider[DiskPath[fs.type]] & PathInterpreter[DiskPath[fs.type]]) =
-    new PathProvider[DiskPath[fs.type]] with PathInterpreter[DiskPath[fs.type]]:
+  given provider(using fs: Filesystem): (GenericPathMaker[DiskPath[fs.type]] & GenericPathReader[DiskPath[fs.type]]) =
+    new GenericPathMaker[DiskPath[fs.type]] with GenericPathReader[DiskPath[fs.type]]:
       def makePath(str: String, readOnly: Boolean = false): Option[DiskPath[fs.type]] =
         safely(fs.parse(Text(str))).option
     
