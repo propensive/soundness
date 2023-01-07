@@ -1,0 +1,39 @@
+{
+  "repos": [
+    {
+      "base": "../escritoire",
+      "url": "https://github.com/propensive/escritoire"
+    },
+    {
+      "base": "../escapade",
+      "url": "https://github.com/propensive/escapade"
+    },
+    {
+      "base": "../harlequin",
+      "url": "https://github.com/propensive/harlequin"
+    }
+  ],
+  "imports": [
+    "../escritoire/build.irk",
+    "../escapade/build.irk",
+    "../harlequin/build.irk"
+  ],
+  "modules": [
+    {
+      "name": "Hyperbole",
+      "id": "hyperbole/core",
+      "links": ["escritoire/core", "escapade/core", "harlequin/core"],
+      "sources": ["src/core"],
+      "version": "0.4.0",
+      "docs": []
+    },
+    {
+      "name": "Hyperbole",
+      "id": "hyperbole/test",
+      "links": ["hyperbole/core", "escritoire/core"],
+      "sources": ["src/test"],
+      "version": "0.4.0",
+      "docs": []
+    }
+  ]
+}
