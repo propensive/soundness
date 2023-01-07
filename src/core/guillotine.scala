@@ -214,9 +214,9 @@ object Sh:
   given [T: CmdShow]: Insertion[Params, T] = value => Params(summon[CmdShow[T]].show(value))
 
 object CmdShow:
-  given [P](using pi: PathInterpreter[P]): CmdShow[P] = pi.getPath(_).show
-  given [F](using fi: FileInterpreter[F]): CmdShow[F] = fi.filePath(_).show
-  given [D](using di: DirectoryInterpreter[D]): CmdShow[D] = di.directoryPath(_).show
+  given [P](using pi: GenericPathReader[P]): CmdShow[P] = pi.getPath(_).show
+  given [F](using fi: GenericFileReader[F]): CmdShow[F] = fi.filePath(_).show
+  given [D](using di: GenericDirectoryReader[D]): CmdShow[D] = di.directoryPath(_).show
   given CmdShow[Int] = _.show
 
 trait CmdShow[-T]:
