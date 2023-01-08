@@ -3,12 +3,18 @@ package dendrology
 import rudiments.*
 import gossamer.*
 
+package treeStyles:
+  given default: TreeStyle = TreeStyle(t"  ", t"└─", t"├─", t"│ ")
+  given rounded: TreeStyle = TreeStyle(t"  ", t"╰─", t"├─", t"│ ")
+
+case class TreeStyle(space: Text, last: Text, branch: Text, extender: Text)
+
 object TreeTile:
-  given Show[TreeTile] =
-    case TreeTile.Space    => t"  "
-    case TreeTile.Last     => t"└─"
-    case TreeTile.Branch   => t"├─"
-    case TreeTile.Extender => t"│ "
+  given (using style: TreeStyle): Show[TreeTile] =
+    case TreeTile.Space    => style.space
+    case TreeTile.Last     => style.last
+    case TreeTile.Branch   => style.branch
+    case TreeTile.Extender => style.extender
 
 enum TreeTile:
   case Space, Last, Branch, Extender
@@ -21,3 +27,4 @@ def textualizeTree[S, T](getChildren: S => Seq[S], mkLine: (List[TreeTile], S) =
       current #:: recur((if idx == last then TreeTile.Space else TreeTile.Extender) :: level, getChildren(item))
 
   recur(Nil, top)
+
