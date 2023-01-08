@@ -6,98 +6,65 @@ import escapade.*
 import rudiments.*
 import gossamer.*
 import iridescence.*
+import dendrology.*
 
 import scala.quoted.*
-import dotty.tools.*, dotc.util as dtdu
+import dotty.tools.*, dotc.util as dtdu, dotc.ast as dtda
 
 object reflection:
   def expand[T](expr: Expr[T])(using Quotes): Text =
     import quotes.reflect.*
-    expr.asTerm.show.show
 
     def init = expr.asTerm.pos.startColumn
-
-    def source(term: Term): AnsiText = term.pos match
-      case pos: dtdu.SourcePosition =>
-        ((t" "*(pos.startColumn - init))+pos.lineContent.show.slice(pos.startColumn, pos.endColumn)).ansi
-      case _ =>
-        ansi""
     
-    def typeSource(term: TypeTree): AnsiText = term.pos match
-      case pos: dtdu.SourcePosition =>
-        ((t" "*(pos.startColumn - init))+pos.lineContent.show.slice(pos.startColumn, pos.endColumn)).ansi
-      case _ =>
-        ansi""
-    
-    def caseDefSource(term: CaseDef): AnsiText = term.pos match
+    def source(tree: Tree): AnsiText = tree.pos match
       case pos: dtdu.SourcePosition =>
         ((t" "*(pos.startColumn - init))+pos.lineContent.show.slice(pos.startColumn, pos.endColumn)).ansi
       case _ =>
         ansi""
 
-    object Expansion:
-      def apply(i: List[Boolean], name: Text, term: Term, parameter: Maybe[Text] = Unset): Expansion =
-        Expansion(i, name, term.show.show, source(term).plain, parameter)
-      
-      def ofType(i: List[Boolean], name: Text, tt: TypeTree, parameter: Maybe[Text] = Unset): Expansion =
-        Expansion(i, name, tt.show.show, typeSource(tt).plain, parameter)
-      
-      def ofCaseDef(i: List[Boolean], name: Text, caseDef: CaseDef, parameter: Maybe[Text] = Unset): Expansion =
-        Expansion(i, name, caseDef.show.show, caseDefSource(caseDef).plain, parameter)
+    case class TastyTree(name: Text, expr: Text, source: Text, children: List[TastyTree], param: Maybe[Text]):
+      def shortCode: Text =
+        val c = expr.upto(_ != '\n')
+        if c.length != expr.length then t"$c..." else expr
+
+   
+    object TastyTree:
+      def apply(name: Text, tree: Tree, children: List[TastyTree], parameter: Maybe[Text] = Unset): TastyTree =
+        TastyTree(name, tree.show.show, source(tree).plain, children, parameter)
     
-    case class Expansion(lines: List[Boolean], name: Text, code: Text, source: Text, parameter: Maybe[Text]):
-      def heading: AnsiText = if lines.isEmpty then ansi"▪ ${Srgb(0.2, 0.8, 0.1)}($name)" else
-        val end = if lines.head then t"└─" else t"├─"
-        ansi"${lines.tail.reverse.map { l => if l then t"  " else t"│ " }.join}${end}▪ $name"
-      
-      def param: AnsiText = parameter match
-        case txt: Text => txt.ansi
-        case unset: Unset.type => ansi""
+      def expand(tree: Tree): TastyTree = tree match
+        case PackageClause(ref, chs)    => TastyTree(t"PackageClause", tree, expand(ref) :: chs.map(expand))
+        case Bind(name, term)           => TastyTree(t"Bind", tree, List(expand(term)), name.show)
+        case Typed(focus, tt)           => TastyTree(t"Typed", tree, List(expand(focus), expand(tt)))
+        case CaseDef(focus, t1, t2)     => TastyTree(t"CaseDef", tree, expand(focus) +: t1.to(List).map(expand) :+ expand(t2))
+        case Inlined(_, _, child)       => TastyTree(t"Inlined", tree, List(expand(child)))
+        case Apply(focus, children)     => TastyTree(t"Apply", tree, expand(focus) :: children.map(expand))
+        case TypeApply(focus, children) => TastyTree(t"TypeApply", tree, expand(focus) :: children.map(expand))
+        case Select(focus, name)        => TastyTree(t"Select", tree, List(expand(focus)), name.show)
+        case Ident(name)                => TastyTree(t"Ident", tree, Nil, name.show)
+        case TypeIdent(name)            => TastyTree(t"TypeIdent", tree, Nil, name.show)
+        case TypeSelect(term, name)     => TastyTree(t"TypeIdent", tree, List(expand(term)), name.show)
+        case Block(statements, last)   => TastyTree(t"Block", tree, statements.map(expand) :+ expand(last))
+        case Closure(focus, _)          => TastyTree(t"Closure", tree, List(expand(focus)))
+        case Literal(value)             => TastyTree(t"Literal", tree, Nil, value.show.show)
+        case Match(focus, cases)        => TastyTree(t"Match", tree, expand(focus) :: cases.map(expand))
+        case Applied(name, tts)         => TastyTree(t"Applied", tree, expand(name) :: tts.map(expand))
+        case Repeated(xs, _)            => TastyTree(t"Repeated", tree, Nil)
+        case _                                => TastyTree(t"?${tree.toString}: ${tree.getClass.toString}", tree, Nil)
 
-    def expandType(i: List[Boolean], tt: TypeTree): List[Expansion] = tt match
-      case _ =>
-        Expansion.ofType(i, t"Type", tt, tt.show.show) :: Nil
-
-    def expandCaseDef(i: List[Boolean], caseDef: CaseDef): List[Expansion] = caseDef match
-      case CaseDef(_, t1, t2) =>
-        Expansion.ofCaseDef(i, t"CaseDef", caseDef) :: t1.to(List).flatMap(expandTerm(false :: i, _)) ::: expandTerm(true :: i, t2)
-
-    def expandTerm(i: List[Boolean], term: Term): List[Expansion] = term match
-      case Inlined(_, _, child) =>
-        Expansion(i, t"Inlined", term) :: expandTerm(true :: i, child)
-      case Apply(focus, children) =>
-        Expansion(i, t"Apply", term) :: expandTerm(children.isEmpty :: i, focus) ::: children.zipWithIndex.flatMap: (ch, idx) =>
-          expandTerm((idx == children.length - 1) :: i, ch)
-      case TypeApply(focus, children) =>
-        Expansion(i, t"TypeApply", term) :: expandTerm(children.isEmpty :: i, focus) ::: children.zipWithIndex.flatMap: (ch, idx) =>
-          expandType((idx == children.length - 1) :: i, ch)
-      case Select(focus, name) =>
-        Expansion(i, t"Select", term, name.show) :: expandTerm(true :: i, focus)
-      case Ident(name) =>
-        Expansion(i, t"Ident", term, name.show) :: Nil
-      case Typed(focus, tt) =>
-        Expansion(i, t"Typed", term) :: expandTerm(false :: i, focus) ::: expandType(true :: i, tt)
-      case Block(statements, focus) =>
-        Expansion(i, t"Block", term) :: expandTerm(true :: i, focus)
-      case Closure(focus, _) =>
-        Expansion(i, t"Closure", term) :: expandTerm(true :: i, focus)
-      case Literal(value) =>
-        Expansion(i, t"Literal", term, value.show.show) :: Nil
-      case Bind(name, tree) =>
-        Expansion(i, t"Bind", term, name.show) :: Nil
-      case Match(focus, cases) =>
-        Expansion(i, t"Match", term) :: cases.zipWithIndex.flatMap: (ch, idx) =>
-          expandCaseDef((idx == cases.length - 1) :: i, ch)
-      case dotc.ast.Trees.SeqLiteral(elems, _) =>
-        Expansion(i, t"SeqLiteral", term) :: Nil
-      case _ =>
-        Expansion(i, t"?${term.toString}: ${term.getClass.toString}", term, source(term).plain) :: Nil
+    val tree = TastyTree.expand(expr.asTerm)
+    def exp(prefix: List[TreeTile], node: TastyTree) = Expansion(prefix.map(_.show).join+t"▪ "+node.name, node.param, node.shortCode, node.source)
+    val seq = textualizeTree[TastyTree, Expansion](_.children, exp)(List(tree))
 
 
     Table[Expansion](
-      Column(ansi"TASTy")(_.heading.ansi),
-      Column(ansi"Param")(_.param),
-      Column(ansi"Code")(_.code.upto(_ != '\n')),
-      Column(ansi"Source")(_.source)
-    ).tabulate(expandTerm(Nil, expr.asTerm), 200, DelimitRows.None).join(ansi"${'\n'}").render
+      Column(ansi"TASTy")(_.text.ansi),
+      Column(ansi"Param")(_.param.otherwise(t"")),
+      Column(ansi"Source")(_.source),
+      Column(ansi"Code")(_.expr)
+    ).tabulate(seq, 200, DelimitRows.None).join(ansi"${'\n'}").render
+
+
+case class Expansion(text: Text, param: Maybe[Text], expr: Text, source: Text)
 
