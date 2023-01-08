@@ -1,1 +1,5 @@
-TBC
+- display any tree-structured data as a tree in a console
+- input data can be of any type whose children can be accessed recursively
+- output is a linearized sequence of any type
+- input is processed lazily, and output is a stream
+- can be easily adapted to any grid-like layout, e.g. an HTML table
