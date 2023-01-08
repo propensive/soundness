@@ -165,5 +165,5 @@
 	path = mod/hyperbole
 	url = git@github.com:propensive/hyperbole
 [submodule "mod/mod/dendrology"]
-	path = mod/mod/dendrology
+	path = mod/dendrology
 	url = git@github.com:propensive/dendrology
