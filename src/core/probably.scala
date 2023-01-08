@@ -304,7 +304,7 @@ object ProbablyMacros:
       case '{ (x: Boolean) => ($expr: Boolean) == x } => inspectExpr(expr)
       
       case expr =>
-        '{ (opt: Option[?]) => Inspect(found = opt.map(_.toString), filename = Text($filename),
+        '{ (opt: Option[?]) => Inspect(found = opt.map(_.toString.asInstanceOf[Text]), filename = Text($filename),
             line = $line) }
     
     '{

@@ -1,6 +1,10 @@
 {
   "repos": [
     {
+      "base": "../dissonance",
+      "url": "https://github.com/propensive/dissonance"
+    },
+    {
       "base": "../escritoire",
       "url": "https://github.com/propensive/escritoire"
     },
@@ -10,6 +14,7 @@
     }
   ],
   "imports": [
+    "../dissonance/build.irk",
     "../escritoire/build.irk",
     "../eucalyptus/build.irk"
   ],
@@ -37,7 +42,8 @@
       "id": "probably/core",
       "links": [
         "escritoire/core",
-        "eucalyptus/core"
+        "eucalyptus/core",
+	"dissonance/core"
       ],
       "sources": [
         "src/core"
@@ -89,9 +95,9 @@
       "docs": [
         "doc"
       ],
-      "xexec": {
+      "exec": {
         "browsers": [],
-	"start": "probably.Tests"
+	"start": "probably2.Tests"
       }
     }
   ]
