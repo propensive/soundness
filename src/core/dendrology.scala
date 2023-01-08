@@ -6,6 +6,7 @@ import gossamer.*
 package treeStyles:
   given default: TreeStyle = TreeStyle(t"  ", t"└─", t"├─", t"│ ")
   given rounded: TreeStyle = TreeStyle(t"  ", t"╰─", t"├─", t"│ ")
+  given ascii: TreeStyle   = TreeStyle(t"  ", t"+-", t"|-", t"| ")
 
 case class TreeStyle(space: Text, last: Text, branch: Text, extender: Text)
 
@@ -19,8 +20,8 @@ object TreeTile:
 enum TreeTile:
   case Space, Last, Branch, Extender
 
-def textualizeTree[S, T](getChildren: S => Seq[S], mkLine: (List[TreeTile], S) => T)(top: Seq[S]): LazyList[T] =
-  def recur(level: List[TreeTile], input: Seq[S]): LazyList[T] =
+def textualizeTree[N, L](getChildren: N => Seq[N], mkLine: (List[TreeTile], N) => L)(top: Seq[N]): LazyList[L] =
+  def recur(level: List[TreeTile], input: Seq[N]): LazyList[L] =
     val last = input.size - 1
     input.zipWithIndex.to(LazyList).flatMap: (item, idx) =>
       val current = mkLine(((if idx == last then TreeTile.Last else TreeTile.Branch) :: level).reverse, item)
