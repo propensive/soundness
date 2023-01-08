@@ -2,6 +2,7 @@
 
   "imports": [
     "mod/polyvinyl/build.irk",
+    "mod/diuretic/build.irk",
     "mod/rudiments/build.irk",
     "mod/parasitism/build.irk",
     "mod/turbulence/build.irk",
