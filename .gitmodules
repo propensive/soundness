@@ -167,3 +167,6 @@
 [submodule "mod/mod/dendrology"]
 	path = mod/dendrology
 	url = git@github.com:propensive/dendrology
+[submodule "mod/oubliette"]
+	path = mod/oubliette
+	url = git@github.com:propensive/oubliette
