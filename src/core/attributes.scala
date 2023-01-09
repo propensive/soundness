@@ -182,7 +182,7 @@ object HtmlAttribute:
   given coords[T]: HtmlAttribute["coords", Seq[Double], T] = _.map(Showable(_).show).join(t",")
   given crossorigin[T]: HtmlAttribute["crossorigin", Crossorigin, T] = _.show
   given data[T]: HtmlAttribute["data", Text, T] = identity(_)
-  given datetime[T]: HtmlAttribute["datetime", Text, T] = identity(_) // To be provided by Temporaneous
+  given datetime[T]: HtmlAttribute["datetime", Text, T] = identity(_) // To be provided by Aviation
   given default[T]: HtmlAttribute["default", Boolean, T] = _ => Unset
   given defer[T]: HtmlAttribute["defer", Boolean, T] = _ => Unset
   given dir[T]: HtmlAttribute["dir", HDir, T] = _.show
