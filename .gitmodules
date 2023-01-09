@@ -156,7 +156,7 @@
 	path = mod/merino
 	url = git@github.com:propensive/merino
 [submodule "mod/temporaneous"]
-	path = mod/temporaneous
+	path = mod/aviation
 	url = git@github.com:propensive/temporaneous
 [submodule "mod/diuretic"]
 	path = mod/diuretic
