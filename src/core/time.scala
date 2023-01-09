@@ -1,4 +1,4 @@
-package temporaneous
+package aviation
 
 import rudiments.*
 import gossamer.*
@@ -399,10 +399,10 @@ extension (i: Int)
       case _: Int    => throw Mistake("Modular arithmetic should produce value in range")
 
 extension (inline double: Double)
-  inline def am: Time = ${TemporaneousMacros.validTime('double, false)}
-  inline def pm: Time = ${TemporaneousMacros.validTime('double, true)}
+  inline def am: Time = ${AviationMacros.validTime('double, false)}
+  inline def pm: Time = ${AviationMacros.validTime('double, true)}
 
-object TemporaneousMacros:
+object AviationMacros:
   def validTime(time: Expr[Double], pm: Boolean)(using Quotes): Expr[Time] =
     import quotes.reflect.*
     time.asTerm match
@@ -411,20 +411,20 @@ object TemporaneousMacros:
         val minutes = ((d - hour) * 100 + 0.5).toInt
         
         if minutes >= 60
-        then report.errorAndAbort("temporaneous: a time cannot have a minute value above 59", lit.pos)
+        then report.errorAndAbort("aviation: a time cannot have a minute value above 59", lit.pos)
         
-        if hour < 0 then report.errorAndAbort("temporaneous: a time cannot be negative", lit.pos)
+        if hour < 0 then report.errorAndAbort("aviation: a time cannot be negative", lit.pos)
         
         if hour > 12
-        then report.errorAndAbort("temporaneous: a time cannot have an hour value above 12", lit.pos)
+        then report.errorAndAbort("aviation: a time cannot have an hour value above 12", lit.pos)
         
         val h: Base24 = (hour + (if pm then 12 else 0)).asInstanceOf[Base24]
         val length = lit.pos.endColumn - lit.pos.startColumn
         
         if (hour < 10 && length != 4) || (hour >= 10 && length != 5)
-        then report.errorAndAbort("temporaneous: the time should have exactly two minutes digits", lit.pos)
+        then report.errorAndAbort("aviation: the time should have exactly two minutes digits", lit.pos)
         
         val m: Base60 = minutes.asInstanceOf[Base60]
         '{Time(${Expr(h)}, ${Expr(m)}, 0)}
       case _ =>
-        report.errorAndAbort("temporaneous: expected a literal double value")
+        report.errorAndAbort("aviation: expected a literal double value")

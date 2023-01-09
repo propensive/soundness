@@ -1,4 +1,4 @@
-package temporaneous
+package aviation
 
 import probably.*
 import rudiments.*
@@ -8,7 +8,7 @@ import logging.stdout
 
 import unsafeExceptions.canThrowAny
 
-object Tests extends Suite(t"Temporaneous Tests"):
+object Tests extends Suite(t"Aviation Tests"):
   def run(using Runner): Unit =
     suite(t"Gregorian Calendar Tests"):
       test(t"2000 is a leap year"):

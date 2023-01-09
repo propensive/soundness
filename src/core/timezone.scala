@@ -1,4 +1,4 @@
-package temporaneous
+package aviation
 
 import gossamer.*
 import kaleidoscope.*
@@ -51,7 +51,7 @@ object Tzdb:
 
   def parseFile(name: Text)(using Log): List[Tzdb.Entry] throws TzdbError =
     val lines: LazyList[Text] =
-      val stream = safely(getClass.getResourceAsStream(s"/temporaneous/tzdb/$name").nn).or:
+      val stream = safely(getClass.getResourceAsStream(s"/aviation/tzdb/$name").nn).or:
         throw TzdbError(TzdbError.Issue.ZoneFileMissing(name), 0)
 
       scala.io.Source.fromInputStream(stream).getLines.map(Text(_)).map(_.cut(t"\t").head.lower).to(LazyList)
@@ -177,4 +177,4 @@ object Tzdb:
 
     recur(1, lines, Nil, None)
 
-given realm: Realm = Realm(t"temporaneous")
+given realm: Realm = Realm(t"aviation")

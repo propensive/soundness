@@ -16,27 +16,27 @@
   "imports": ["../gossamer/build.irk", "../cardinality/build.irk", "../kaleidoscope/build.irk"],
   "modules": [
     {
-      "name": "Temporaneous",
-      "id": "temporaneous/core",
+      "name": "Aviation",
+      "id": "aviation/core",
       "links": ["gossamer/core", "cardinality/core", "kaleidoscope/core", "eucalyptus/core", "anticipation/time"],
       "sources": ["src/core"],
       "resources": ["res"],
       "version": "0.4.0",
       "docs": ["doc"],
       "xartifact": {
-        "path": "temporaneous.jar", "format": "fat-jar"
+        "path": "aviation.jar", "format": "fat-jar"
       }
     },
     {
-      "name": "Temporaneous Tests",
-      "id": "temporaneous/test",
-      "links": ["probably/cli", "temporaneous/core"],
+      "name": "Aviation Tests",
+      "id": "aviation/test",
+      "links": ["probably/cli", "aviation/core"],
       "sources": ["src/test"],
       "version": "0.4.0",
       "docs": ["doc"],
       "exec": {
         "browsers": [],
-        "start": "temporaneous.Tests"
+        "start": "aviation.Tests"
       }
     }
   ]
