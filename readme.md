@@ -4,11 +4,24 @@
 
 # Diuretic
 
-TBC
+_Diuretic_ provides typeclass instances for
+[Anticipation](/propensive/anticipation/) typeclasses for the Java Standard
+Library. Many of these types have better alternatives in the [Scala
+One](/propensive/one/) ecosystem, but there are times when it is necessary to
+work with types from the Java Standard Library.
 
 ## Features
 
-TBC
+- provides typeclasses for working with time, filesystem objects and URLs
+- implementations for `java.time.Instant` & `java.util` time types, `java.io` &
+  `java.nio` filesystem types, and `java.net.URL`
+- enables Java URLs to be used with the [Telekinesis](/propensive/telekinesis/)
+  HTTP client
+- enables numerous projects like [Surveillance](/propensive/surveillance/) to
+  work with Java IO and NIO types like `File` and `Path`
+- allows numerous projects to use `java.time` or `java.util` types
+- integration with other libraries that use
+  [Anticipation](/propensive/anticipation/) is seamless
 
 
 ## Availability
@@ -17,7 +30,34 @@ Diuretic has not yet been published as a binary, though work is ongoing to fix t
 
 ## Getting Started
 
-TBC
+Using Diuretic is usually as simple as adding an import, alongside another
+project which implements [Anticipation](/propensive/anticipation/) typeclasses.
+Currently six contextual imports are available for three different Anticipation
+modules.
+
+## Time Representation
+
+Diuretic provides a choice of three different representations of durations and instants:
+
+- `timeRepresentation.javaTime`—uses `java.time.Instant` for instants and
+  `Long` for durations
+- `timeRepresentation.javaLongTime`—uses `Long` for both instants and durations
+- `timeRepresentation.javaUtil`—uses `java.util.Date` for instants and `Long`
+  for durations
+
+## File Representation
+
+Diuretic provides a choice of two different file representations:
+
+- `fileRepresentation.javaNio`—uses `java.nio.file.Path` for files, directories and paths
+- `fileRepresentation.javaIo`—uses `java.io.File` for files, directories and paths
+
+A possible future version may offer representations which use distinct types
+for paths (which may not relate to a file or directory) and files/directories.
+
+## URL Representation
+
+- `urlRepresentation.javaNet`—uses `java.net.URL` for URLs
 
 
 ## Related Projects
@@ -32,7 +72,7 @@ The following _Scala One_ libraries are dependents of _Diuretic_:
 
 ## Status
 
-Diuretic is classified as __fledgling__. For reference, Scala One projects are
+Diuretic is classified as __maturescent__. For reference, Scala One projects are
 categorized into one of the following five stability levels:
 
 - _embryonic_: for experimental or demonstrative purposes only, without any guarantees of longevity
