@@ -5,23 +5,24 @@
 # Diuretic
 
 _Diuretic_ provides typeclass instances for
-[Anticipation](/propensive/anticipation/) typeclasses for the Java Standard
-Library. Many of these types have better alternatives in the [Scala
-One](/propensive/one/) ecosystem, but there are times when it is necessary to
-work with types from the Java Standard Library.
+[Anticipation](https://github.com/propensive/anticipation/) typeclasses for the
+Java Standard Library. Many of these types have better alternatives in the
+[Scala One](https://github.com/propensive/one/) ecosystem, but there are times
+when it is necessary to work with types from the Java Standard Library.
 
 ## Features
 
 - provides typeclasses for working with time, filesystem objects and URLs
 - implementations for `java.time.Instant` & `java.util` time types, `java.io` &
   `java.nio` filesystem types, and `java.net.URL`
-- enables Java URLs to be used with the [Telekinesis](/propensive/telekinesis/)
-  HTTP client
-- enables numerous projects like [Surveillance](/propensive/surveillance/) to
-  work with Java IO and NIO types like `File` and `Path`
+- enables Java URLs to be used with the
+  [Telekinesis](https://github.com/propensive/telekinesis/) HTTP client
+- enables numerous projects like
+  [Surveillance](https://github.com/propensive/surveillance/) to work with Java
+IO and NIO types like `File` and `Path`
 - allows numerous projects to use `java.time` or `java.util` types
 - integration with other libraries that use
-  [Anticipation](/propensive/anticipation/) is seamless
+  [Anticipation](https://github.com/propensive/anticipation/) is seamless
 
 
 ## Availability
@@ -31,7 +32,8 @@ Diuretic has not yet been published as a binary, though work is ongoing to fix t
 ## Getting Started
 
 Using Diuretic is usually as simple as adding an import, alongside another
-project which implements [Anticipation](/propensive/anticipation/) typeclasses.
+project which implements
+[Anticipation](https://github.com/propensive/anticipation/) typeclasses.
 Currently six contextual imports are available for three different Anticipation
 modules.
 
