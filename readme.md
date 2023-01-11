@@ -1,4 +1,4 @@
-[<img alt="GitHub Workflow" src="https://img.shields.io/github/workflow/status/propensive/aviation/Build/main?style=for-the-badge" height="24">](https://github.com/propensive/aviation/actions)
+[<img alt="GitHub Workflow" src="https://img.shields.io/github/actions/workflow/status/propensive/aviation/main.yml?style=for-the-badge" height="24">](https://github.com/propensive/aviation/actions)
 [<img src="https://img.shields.io/discord/633198088311537684?color=8899f7&label=DISCORD&style=for-the-badge" height="24">](https://discord.gg/7b6mpF6Qcf)
 <img src="/doc/images/github.png" valign="middle">
 
