@@ -1,4 +1,4 @@
-[<img alt="GitHub Workflow" src="https://img.shields.io/github/workflow/status/propensive/galilei/Build/main?style=for-the-badge" height="24">](https://github.com/propensive/galilei/actions)
+[<img alt="GitHub Workflow" src="https://img.shields.io/github/actions/workflow/status/propensive/galilei/main.yml?style=for-the-badge" height="24">](https://github.com/propensive/galilei/actions)
 [<img src="https://img.shields.io/discord/633198088311537684?color=8899f7&label=DISCORD&style=for-the-badge" height="24">](https://discord.gg/7b6mpF6Qcf)
 <img src="/doc/images/github.png" valign="middle">
 
@@ -104,7 +104,7 @@ The following _Scala One_ libraries are dependencies of _Galilei_:
 
 The following _Scala One_ libraries are dependents of _Galilei_:
 
-[![Exoskeleton](https://github.com/propensive/exoskeleton/raw/main/doc/images/128x128.png)](https://github.com/propensive/exoskeleton/) &nbsp; [![Merino](https://github.com/propensive/merino/raw/main/doc/images/128x128.png)](https://github.com/propensive/merino/) &nbsp;
+[![Exoskeleton](https://github.com/propensive/exoskeleton/raw/main/doc/images/128x128.png)](https://github.com/propensive/exoskeleton/) &nbsp; [![Merino](https://github.com/propensive/merino/raw/main/doc/images/128x128.png)](https://github.com/propensive/merino/) &nbsp; [![Oubliette](https://github.com/propensive/oubliette/raw/main/doc/images/128x128.png)](https://github.com/propensive/oubliette/) &nbsp;
 
 ## Status
 
