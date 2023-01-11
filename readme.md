@@ -1,4 +1,4 @@
-[<img alt="GitHub Workflow" src="https://img.shields.io/github/workflow/status/propensive/guillotine/Build/main?style=for-the-badge" height="24">](https://github.com/propensive/guillotine/actions)
+[<img alt="GitHub Workflow" src="https://img.shields.io/github/actions/workflow/status/propensive/guillotine/main.yml?style=for-the-badge" height="24">](https://github.com/propensive/guillotine/actions)
 [<img src="https://img.shields.io/discord/633198088311537684?color=8899f7&label=DISCORD&style=for-the-badge" height="24">](https://discord.gg/7b6mpF6Qcf)
 <img src="/doc/images/github.png" valign="middle">
 
@@ -164,7 +164,7 @@ The following _Scala One_ libraries are dependencies of _Guillotine_:
 
 The following _Scala One_ libraries are dependents of _Guillotine_:
 
-[![Tarantula](https://github.com/propensive/tarantula/raw/main/doc/images/128x128.png)](https://github.com/propensive/tarantula/) &nbsp;
+[![Oubliette](https://github.com/propensive/oubliette/raw/main/doc/images/128x128.png)](https://github.com/propensive/oubliette/) &nbsp; [![Tarantula](https://github.com/propensive/tarantula/raw/main/doc/images/128x128.png)](https://github.com/propensive/tarantula/) &nbsp;
 
 ## Status
 
