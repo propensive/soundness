@@ -20,8 +20,8 @@
   ],
   "modules": [
     {
-      "name": "Euphemism",
-      "id": "euphemism/core",
+      "name": "Javanais",
+      "id": "javanais/core",
       "links": [
         "gossamer/core",
         "anticipation/http",
@@ -40,11 +40,11 @@
       ]
     },
     {
-      "name": "Euphemism Tests",
-      "id": "euphemism/test",
+      "name": "Javanais Tests",
+      "id": "javanais/test",
       "links": [
         "probably/cli",
-        "euphemism/core"
+        "javanais/core"
       ],
       "dependencies": [
       ],
@@ -56,7 +56,7 @@
       "version": "0.4.0",
       "exec": {
         "browsers": [],
-	"start": "euphemism.Tests"
+	"start": "javanais.Tests"
       },
       "docs": [
         "doc"
