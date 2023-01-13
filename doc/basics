@@ -3,7 +3,7 @@
 A `Json` value may be obtained from any readable value by passing it to the `Json.parse` method. This could be a
 string value, for example,
 ```scala
-import euphemism.*
+import javanais.*
 Json.parse(t"""{ "name": "Alfred", "age": 83 }""")
 ```
 but could also be a file or any other data stream with an appropirate `Readable` typeclass instance in scope:

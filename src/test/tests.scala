@@ -1,5 +1,5 @@
 /*
-    Euphemism, version 0.4.0. Copyright 2019-23 Jon Pretty, Propensive OÜ.
+    Javanais, version 0.4.0. Copyright 2019-23 Jon Pretty, Propensive OÜ.
 
     The primary distribution site is: https://propensive.com/
 
@@ -14,7 +14,7 @@
     and limitations under the License.
 */
 
-package euphemism
+package javanais
 
 import eucalyptus.*
 import gossamer.*
@@ -31,7 +31,7 @@ case class Foo(x: Int, y: Text) derives CanEqual
 
 case class InvalidState(name: String) extends Exception("Not a valid state: "+name)
 
-object Tests extends Suite(t"Euphemism Tests"):
+object Tests extends Suite(t"Javanais Tests"):
   def run(using Runner): Unit =
     suite(t"Parsing tests"):
       test(t"Parse a number"):

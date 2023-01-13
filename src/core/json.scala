@@ -1,5 +1,5 @@
 /*
-    Euphemism, version 0.4.0. Copyright 2019-23 Jon Pretty, Propensive OÜ.
+    Javanais, version 0.4.0. Copyright 2019-23 Jon Pretty, Propensive OÜ.
 
     The primary distribution site is: https://propensive.com/
 
@@ -14,7 +14,7 @@
     and limitations under the License.
 */
 
-package euphemism
+package javanais
 
 import wisteria.*
 import rudiments.*

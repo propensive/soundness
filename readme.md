@@ -1,10 +1,10 @@
-[<img alt="GitHub Workflow" src="https://img.shields.io/github/actions/workflow/status/propensive/euphemism/main.yml?style=for-the-badge" height="24">](https://github.com/propensive/euphemism/actions)
+[<img alt="GitHub Workflow" src="https://img.shields.io/github/actions/workflow/status/propensive/javanais/main.yml?style=for-the-badge" height="24">](https://github.com/propensive/javanais/actions)
 [<img src="https://img.shields.io/discord/633198088311537684?color=8899f7&label=DISCORD&style=for-the-badge" height="24">](https://discord.gg/7b6mpF6Qcf)
 <img src="/doc/images/github.png" valign="middle">
 
-# Euphemism
+# Javanais
 
-_Euphemism_ is a fully-featured JSON library built upon the JSON parser,
+_Javanais_ is a fully-featured JSON library built upon the JSON parser,
 [Merino](https://github.com/propensive/merino/), and designed to make it easy
 and safe to work with JSON in Scala.
 
@@ -18,7 +18,7 @@ and safe to work with JSON in Scala.
 
 ## Availability
 
-Euphemism has not yet been published as a binary, though work is ongoing to fix this.
+Javanais has not yet been published as a binary, though work is ongoing to fix this.
 
 ## Getting Started
 
@@ -27,7 +27,7 @@ Euphemism has not yet been published as a binary, though work is ongoing to fix 
 A `Json` value may be obtained from any readable value by passing it to the `Json.parse` method. This could be a
 string value, for example,
 ```scala
-import euphemism.*
+import javanais.*
 Json.parse(t"""{ "name": "Alfred", "age": 83 }""")
 ```
 but could also be a file or any other data stream with an appropirate `Readable` typeclass instance in scope:
@@ -162,17 +162,15 @@ object Email:
 
 ## Related Projects
 
-The following _Scala One_ libraries are dependencies of _Euphemism_:
+The following _Scala One_ libraries are dependencies of _Javanais_:
 
 [![Anticipation](https://github.com/propensive/anticipation/raw/main/doc/images/128x128.png)](https://github.com/propensive/anticipation/) &nbsp; [![Gossamer](https://github.com/propensive/gossamer/raw/main/doc/images/128x128.png)](https://github.com/propensive/gossamer/) &nbsp; [![Merino](https://github.com/propensive/merino/raw/main/doc/images/128x128.png)](https://github.com/propensive/merino/) &nbsp; [![Probably](https://github.com/propensive/probably/raw/main/doc/images/128x128.png)](https://github.com/propensive/probably/) &nbsp;
 
-The following _Scala One_ libraries are dependents of _Euphemism_:
-
-[![Tarantula](https://github.com/propensive/tarantula/raw/main/doc/images/128x128.png)](https://github.com/propensive/tarantula/) &nbsp;
+No other _Scala One_ libraries are dependents of _Javanais_.
 
 ## Status
 
-Euphemism is classified as __fledgling__. For reference, Scala One projects are
+Javanais is classified as __fledgling__. For reference, Scala One projects are
 categorized into one of the following five stability levels:
 
 - _embryonic_: for experimental or demonstrative purposes only, without any guarantees of longevity
@@ -185,22 +183,22 @@ Projects at any stability level, even _embryonic_ projects, are still ready to
 be used, but caution should be taken if there is a mismatch between the
 project's stability level and the importance of your own project.
 
-Euphemism is designed to be _small_. Its entire source code currently consists
+Javanais is designed to be _small_. Its entire source code currently consists
 of 413 lines of code.
 
 ## Building
 
-Euphemism can be built on Linux or Mac OS with [Fury](/propensive/fury), however
+Javanais can be built on Linux or Mac OS with [Fury](/propensive/fury), however
 the approach to building is currently in a state of flux, and is likely to
 change.
 
 ## Contributing
 
-Contributors to Euphemism are welcome and encouraged. New contributors may like to look for issues marked
-<a href="https://github.com/propensive/euphemism/labels/beginner">beginner</a>.
+Contributors to Javanais are welcome and encouraged. New contributors may like to look for issues marked
+<a href="https://github.com/propensive/javanais/labels/beginner">beginner</a>.
 
 We suggest that all contributors read the [Contributing Guide](/contributing.md) to make the process of
-contributing to Euphemism easier.
+contributing to Javanais easier.
 
 Please __do not__ contact project maintainers privately with questions unless
 there is a good reason to keep them private. While it can be tempting to
@@ -209,16 +207,18 @@ audience, and it can result in duplication of effort.
 
 ## Author
 
-Euphemism was designed and developed by Jon Pretty, and commercial support and training is available from
+Javanais was designed and developed by Jon Pretty, and commercial support and training is available from
 [Propensive O&Uuml;](https://propensive.com/).
 
 
 
 ## Name
 
-A _euphemism_ is a means to describe something harsh with an inoffensive expression, while the JSON format, through its use of just a few simple types, can be considered a way of hiding unpleasant details when exchanging data.
+_Javanais_ is a form of French slang that involves artificially adding
+syllables to words, and a dialect that people can be learn to encode or decode,
+like JSON. Its initial letter is also a nod towards JSON.
 
 ## License
 
-Euphemism is copyright &copy; 2019-23 Jon Pretty & Propensive O&Uuml;, and is made available under the
+Javanais is copyright &copy; 2019-23 Jon Pretty & Propensive O&Uuml;, and is made available under the
 [Apache 2.0 License](/license.md).
