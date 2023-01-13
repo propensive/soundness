@@ -13,8 +13,8 @@
       "url": "https://github.com/propensive/guillotine"
     },
     {
-      "base": "../euphemism",
-      "url": "https://github.com/propensive/euphemism"
+      "base": "../javanais",
+      "url": "https://github.com/propensive/javanais"
     },
     {
       "base": "../honeycomb",
@@ -25,7 +25,7 @@
     "../telekinesis/build.irk",
     "../cataclysm/build.irk",
     "../guillotine/build.irk",
-    "../euphemism/build.irk",
+    "../javanais/build.irk",
     "../honeycomb/build.irk"
   ],
   "publishing": {
@@ -54,7 +54,7 @@
         "telekinesis/client",
         "cataclysm/core",
         "guillotine/core",
-        "euphemism/core",
+        "javanais/core",
         "honeycomb/core"
       ],
       "sources": [
