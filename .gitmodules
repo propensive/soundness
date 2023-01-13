@@ -47,7 +47,7 @@
 	url = git@github.com:propensive/gastronomy
 	branch = main
 [submodule "mod/euphemism"]
-	path = mod/euphemism
+	path = mod/javanais
 	url = git@github.com:propensive/euphemism
 	branch = main
 [submodule "mod/escritoire"]
