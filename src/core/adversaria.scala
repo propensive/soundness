@@ -53,13 +53,12 @@ object AdversariaMacros:
     val tpe = TypeRepr.of[T]
     val fields = tpe.typeSymbol.caseFields
     
-    fields.flatMap:
-      fld =>
-        val name = Expr(fld.name)
-        
-        fld.annotations.map(_.asExpr).collect { case '{ $ann: A } => ann }.map:
-          ann => '{ CaseField($name, (t: T) => ${'t.asTerm.select(fld).asExpr}, $ann) }
-        .reverse
+    fields.flatMap: fld =>
+      val name = Expr(fld.name)
+      
+      fld.annotations.map(_.asExpr).collect { case '{ $ann: A } => ann }.map: ann =>
+        '{ CaseField($name, (t: T) => ${'t.asTerm.select(fld).asExpr}, $ann) }
+      .reverse
     .head
 
   def fields[T <: Product: Type, A <: Ann: Type](using Quotes): Expr[List[CaseField[T, A]]] =
@@ -67,12 +66,11 @@ object AdversariaMacros:
     val tpe = TypeRepr.of[T]
     val fields = tpe.typeSymbol.caseFields
     
-    val elements: List[Expr[CaseField[T, A]]] = fields.flatMap:
-      fld =>
-        val name = Expr(fld.name)
-        fld.annotations.map(_.asExpr).collect { case '{ $ann: A } => ann }.map:
-          ann => '{ CaseField($name, (t: T) => ${'t.asTerm.select(fld).asExpr}, $ann) }
-        .reverse
+    val elements: List[Expr[CaseField[T, A]]] = fields.flatMap: fld =>
+      val name = Expr(fld.name)
+      fld.annotations.map(_.asExpr).collect { case '{ $ann: A } => ann }.map: ann =>
+        '{ CaseField($name, (t: T) => ${'t.asTerm.select(fld).asExpr}, $ann) }
+      .reverse
 
     Expr.ofList(elements)
 
