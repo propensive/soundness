@@ -43,7 +43,7 @@ reattach every incoming edge to every outgoing edge of that node.
 The method `Dag#reduction` will calculate the transitive reduction of the graph, removing any direct edge
 between two nodes when transitive edges exist between those nodes.
 
-The duel of this operation is the transitive closure, which adds direct edges between each pair of nodes between
+The dual of this operation is the transitive closure, which adds direct edges between each pair of nodes between
 which a transitive path exists. This is available with the `Dag#closure` method.
 
 A list of nodes will be returned in topologically-sorted order by calling `Dag#sorted`.
