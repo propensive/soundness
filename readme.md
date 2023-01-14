@@ -48,7 +48,7 @@ val factors = Dag(
 )
 ```
 
-## Monadic Operations
+### Monadic Operations
 
 A `Dag[T]` may be mapped to a `Dag[S]` with a function `T => S`, like so:
 ```scala
@@ -65,7 +65,7 @@ edges attached to all destination nodes of the subgraph.
 A `Dag[T]` may also be filtered with a predicate, `T => Boolean`. The removal of a node during filtering will
 reattach every incoming edge to every outgoing edge of that node.
 
-## Other Operations
+### Other Operations
 
 The method `Dag#reduction` will calculate the transitive reduction of the graph, removing any direct edge
 between two nodes when transitive edges exist between those nodes.
@@ -75,7 +75,7 @@ which a transitive path exists. This is available with the `Dag#closure` method.
 
 A list of nodes will be returned in topologically-sorted order by calling `Dag#sorted`.
 
-## DOT output
+### DOT output
 
 An extension method, `dot`, on `Dag`s of `String`s will produce a `Dot` instance, an AST of the DOT code
 necessary to render a graph. This can then be serialized to a `String` with the `serialize` method.
@@ -86,7 +86,7 @@ serialize it, for example:
 println(dag.map(_.name).dot.serialize)
 ```
 
-## Limitations
+### Limitations
 
 This library is incomplete, inadequately tested and subject to further development, and is recommended to be
 used by developers who do not mind examining the source code to diagnose unexpected behavior.
