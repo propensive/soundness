@@ -29,7 +29,7 @@ Here is an example of a simple HTTP request:
 ```scala
 import telekinesis.*
 
-val response = uri"http://example.com/test".query(flag = "yes", param = "7").get().as[String]
+val response = url"http://example.com/test".query(flag = "yes", param = "7").get().as[String]
 ```
 
 ## Sending an HTTP request
@@ -47,12 +47,12 @@ and `body` which will be a representation of the response body, in bytes.
 The easiest way to access the body is by converting it to another type, using a contextual reader. That can be
 achieved by calling `as` with an appropriate type, for example,
 ```scala
-uri"https://example.com/service".get().as[String]
+url"https://example.com/service".get().as[String]
 ```
 or with a suitable JSON library such as [Javanais](https://propensive.com/opensource/javanais/),
 ```scala
 import javanais.*
-uri"http://example.com/file".post(content).as[Json]
+url"http://example.com/file".post(content).as[Json]
 ```
 
 ## Request and response bodies
@@ -75,7 +75,7 @@ any other, albeit from the `HttpError` instance.
 Here is an example of an HTTP error being handled:
 
 ```scala
-try uri.get().as[String]
+try url.get().as[String]
 catch
   case error@HttpError(HttpStatus.NotFound, _) =>
     s"The page was not found. The server responded with: ${error.as[String]}"
@@ -168,7 +168,7 @@ in the form `key=value`, but plain strings can also be used.
 There are two ways to call the `query` method. Firstly, it may be invoked with variadic dynamically-named
 arguments, and `String` parameters, like so:
 ```scala
-uri.query(param = "one", value = "two", flag = "three", option = "four")
+url.query(param = "one", value = "two", flag = "three", option = "four")
 ```
 the names of these parameters may be any valid Scala identifier, and do not need to be quoted.
 
@@ -189,7 +189,7 @@ case class Address(number: Int, street: String, city: String)
 case class Person(name: String, address: Address)
 
 val person = Person("Jack", Address(17, "East Street", "Birmingham"))
-uri"http://example.com/person/add".query(person).get()
+url"http://example.com/person/add".query(person).get()
 ```
 
 The process of serializing this case class instance to query parameters would send the parameters, `name`,
