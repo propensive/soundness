@@ -1,6 +1,6 @@
 ## Parsing
 
-A `Text` or `String` value containing XML may be parsed with,
+A `Text` value containing XML may be parsed with,
 ```scala
 Xml.parse(text)
 ```
@@ -103,16 +103,16 @@ For example, the `XmlNode`,
 ```scala
 val name: XmlNode = xml"<author>Virginia Woolf</author>"
 ```
-could be converted to a `String` with, `name.as[String]`. Or,
+could be converted to a `Text` with, `name.as[Text]`. Or,
 ```scala
 val age: XmlNode = xml"<age>18</age>"
 ```
 can be read as a `Long` with, `age.as[Long]`.
 
-This works for `String`s and primitive types. But will also work for case classes composed of these types (or
+This works for `Text`s and primitive types. But will also work for case classes composed of these types (or
 of other nested case classes). For example, given the definition,
 ```scala
-case class Book(title: String, author: String)
+case class Book(title: Text, author: Text)
 ```
 a book from the _library_ example above could be read with:
 ```scala
@@ -134,8 +134,8 @@ These exist on the `XmlReader` companion object for the basic types, collection 
 Likewise, these same types may be converted to `Xml` by calling the `xml` extension method on them, for
 example, given,
 ```scala
-case class Book(title: String, author: String)
-val book = Book("Mrs. Dalloway", "Virginia Woolf")
+case class Book(title: Text, author: Text)
+val book = Book(t"Mrs. Dalloway", t"Virginia Woolf")
 ```
 we could create an `XmlNode` value of,
 ```xml
@@ -167,8 +167,8 @@ to a case class or a case class field to change its name when written or read.
 
 For example, the definition,
 ```
-@xmlLabel("book")
-case class Book(title: String, author: String, @xmlLabel("type") kind: String)
+@xmlLabel(t"book")
+case class Book(title: Text, author: Text, @xmlLabel(t"type") kind: Text)
 ```
 would ensure that a `Book` instance is written using the lower-case tag name, `book`, and the `kind`
 field would be serialized the name `type` (which cannot be used so easily in Scala, as it's a keyword).
