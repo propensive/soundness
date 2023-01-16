@@ -3,14 +3,14 @@ Here is an example of a simple HTTP request:
 ```scala
 import telekinesis.*
 
-val response = url"http://example.com/test".query(flag = "yes", param = "7").get().as[String]
+val response = url"http://example.com/test".query(flag = t"yes", param = t"7").get().as[Text]
 ```
 
 ## Sending an HTTP request
 
 An HTTP request may be sent by calling one of the HTTP methods—`get`, `post`, `put`, `options`, `head`, `trace`,
 `delete`, `connect` or `patch`—on the `Http` object. As a minimum, these methods all take a URL as their first
-parameter. This may be provided as a `Uri` (see below) or a `String`, or any type which has a contextual
+parameter. This may be provided as a `Url` (see below) or a `Text`, or any type which has a contextual
 `ToLocation` instance which can convert it into URL string. This may be useful for integration with alternitave
 URL representations.
 
@@ -21,7 +21,7 @@ and `body` which will be a representation of the response body, in bytes.
 The easiest way to access the body is by converting it to another type, using a contextual reader. That can be
 achieved by calling `as` with an appropriate type, for example,
 ```scala
-url"https://example.com/service".get().as[String]
+url"https://example.com/service".get().as[Text]
 ```
 or with a suitable JSON library such as [Javanais](https://propensive.com/opensource/javanais/),
 ```scala
@@ -49,12 +49,12 @@ any other, albeit from the `HttpError` instance.
 Here is an example of an HTTP error being handled:
 
 ```scala
-try uri.get().as[String]
+try uri.get().as[Text]
 catch
   case error@HttpError(HttpStatus.NotFound, _) =>
-    s"The page was not found. The server responded with: ${error.as[String]}"
+    t"The page was not found. The server responded with: ${error.as[Text]}"
   case HttpError(_, _) =>
-    s"The request failed"
+    t"The request failed"
 ```
 
 ## Launching an HTTP server
@@ -77,7 +77,7 @@ how its body is sent: all at once, or streamed.
 The simplest sever implementation would look something like this,
 ```scala
 HttpServer.listen:
-  Response("Hello world!")
+  Response(t"Hello world!")
 ```
 and would respond with a `200` response with the MIME type `text/plain`, and the string `Hello world!` for every
 request, regardless of its HTTP method, parameters, body or headers.
@@ -87,10 +87,10 @@ Within the body of `listen`, a `Request` instance is contextually available, and
 block to access a parameter or HTTP header, for example:
 ```scala
 HttpServer.listen:
-  val name = param("name")
-  val age = param("age")
+  val name = param(t"name")
+  val age = param(t"age")
 
-  Response(s"The name is $name and age is $age")
+  Response(t"The name is $name and age is $age")
 ```
 
 ## Pattern matching on Requests
@@ -102,9 +102,9 @@ A very simple pattern match on a request object might look like this,
 ```scala
 HttpServer.listen:
   request match
-    case Path("/")                   => homePage
-    case Path("/contact")            => contactUsPage
-    case Path(s"/products/$product") => productPage(product)
+    case Path(t"/")                  => homePage
+    case Path(t"/contact")           => contactUsPage
+    case Path(t"/products/$product") => productPage(product)
 ```
 where the `Path` extractor is used to match on the part of the URL after the hostname, and before the query, if
 there is one.
@@ -114,8 +114,8 @@ the same pattern using the `&` combinator, like so:
 ```scala
 HttpServer.listen:
   request match
-    case Path("/") & RequestHeader.UserAgent(s"Mozilla/$_")               => mozillaHome
-    case Path("/") & Post() & AcceptEncoding(lang) if lang.contains("en") => englishHome
+    case Path(t"/") & RequestHeader.UserAgent(r"Mozilla/.*")                => mozillaHome
+    case Path(t"/") & Post() & AcceptEncoding(lang) if lang.contains(t"en") => englishHome
 ```
 
 In these examples, `&` is an extractor which always matches a `Request`, and "extracts" it into two copies. As
@@ -124,32 +124,32 @@ any number of times in the same case clause.
 
 ## URIs
 
-Telekinesis uses the `Uri` type to represent a URI. This will always use either the `http` or `https` URL
+Telekinesis uses the `Url` type to represent a URI. This will always use either the `http` or `https` URL
 scheme, and will not represent URIs containing unescaped characters. The `hostname`, `path` and `queryString`
-are also available or `Uri` instances.
+are also available or `Url` instances.
 
-Additionally, the HTTP methods `get`, `post`, and others are available to call directly on `Uri` instances, as
+Additionally, the HTTP methods `get`, `post`, and others are available to call directly on `Url` instances, as
 an alternative to their equivalent methods in the `Http` object. There is a one-to-one correspondence between
-the methods on a `Uri` instance an the `Http` object, except that the first parameter of each of the `Http`
+the methods on a `Url` instance an the `Http` object, except that the first parameter of each of the `Http`
 methods—the URI itself—is the subject of the method invocation.
 
 ### Queries
 
-A `Uri` instance may include a query string, which would be written following a `?` character after the path.
-The `Uri#query` method may be used to append parameters to an existing `Uri`. Usually these are key/value pairs
+A `Url` instance may include a query string, which would be written following a `?` character after the path.
+The `Url#query` method may be used to append parameters to an existing `Url`. Usually these are key/value pairs
 in the form `key=value`, but plain strings can also be used.
 
 There are two ways to call the `query` method. Firstly, it may be invoked with variadic dynamically-named
-arguments, and `String` parameters, like so:
+arguments, and `Text` parameters, like so:
 ```scala
-uri.query(param = "one", value = "two", flag = "three", option = "four")
+uri.query(param = t"one", value = t"two", flag = t"three", option = t"four")
 ```
 the names of these parameters may be any valid Scala identifier, and do not need to be quoted.
 
 Another variant of the `query` method exists which takes a single parameter of a type that can be interpreted
 as a set of parameters, based on a contextual `ToQuery` instance.
 
-Default given `ToQuery` instances are provided for the primitive types, `String` and `Int`, and instances will
+Default given `ToQuery` instances are provided for the primitive types, `Text` and `Int`, and instances will
 be derived for case classes composed of other types for which `ToQuery` instances exist. That includes nested
 case classes.
 
@@ -159,10 +159,10 @@ name, separated by a `.`.
 
 For example,
 ```scala
-case class Address(number: Int, street: String, city: String)
-case class Person(name: String, address: Address)
+case class Address(number: Int, street: Text, city: Text)
+case class Person(name: Text, address: Address)
 
-val person = Person("Jack", Address(17, "East Street", "Birmingham"))
+val person = Person(t"Jack", Address(17, t"East Street", t"Birmingham"))
 url"http://example.com/person/add".query(person).get()
 ```
 
@@ -174,5 +174,5 @@ The process of serializing this case class instance to query parameters would se
 The `Redirect` and `NotFound` case classes provide representations of an HTTP `301` redirect repsonse and a
 `404` "not found" page respectively.
 
-`Redirect` takes a single parameter, a representation of a location typically as a `Uri` or a `String`, but
+`Redirect` takes a single parameter, a representation of a location typically as a `Url` or a `Text`, but
 other representations can be used provided a `ToLocation` for that type is in contextual scope.
