@@ -184,7 +184,7 @@ Record { def age: Double; def name: String; def employed: Boolean }
 This means that, not only is the return value a `Record`, but it additionally has fields called,
 `age`, `name` and `employed` returning a `Double`, a `String` and a `Boolean` respectively.
 
-## Compilation Order
+### Compilation Order
 
 It is crucial that the schema singleton is defined in a different file from the invocation. This
 is to guarantee that the object (and hence the fields it defines) is available as a runtime object
@@ -192,11 +192,12 @@ during later compilations which use it. Scala is able to compile a macro definit
 in the correct order so long as they are defined in separate files (and no cyclic dependencies
 exist between those files).
 
-## Limitations
+### Limitations
 
 `SimpleSchema` and `Schema` do not currently make their precise record types available except as the
 return type of calling `record`. However the type is statically known, and could potentially be made
 available as a type member.
+
 
 ## Related Projects
 
