@@ -16,12 +16,12 @@ List(Code("def", Keyword), Space(1), Code("inc", Term), Code("(", Parens), Code(
 ```
 
 Here, each token is either, a space of a particular size, for example, `Space(2)` represents two
-space characters, a `Newline`, or a fragment of code, consisting of the text with a "flair"; an
+space characters, a `Newline`, or a fragment of code, consisting of the text with an "accent"; an
 indication of the meaning of that code token.
 
-## Flair
+### Accents
 
-The flair will be one of the following possible values:
+The accent will be one of the following possible values:
 
 - `Error`, an erroneous token,
 - `Ident`, a reference to a term,
@@ -35,4 +35,4 @@ The flair will be one of the following possible values:
 
 Typically, these would be mapped to different colors during conversion to markup.
 
-It is likely that as Harlequin evolves, the set of `Flair` values will grow.
+It is likely that as Harlequin evolves, the set of `Accent` values will grow.
