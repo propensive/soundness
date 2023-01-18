@@ -78,7 +78,7 @@ val lines = textualizeText(_.children, mkLine)(myNodes)
 lines.foreach(println(_))
 ```
 
-## Laziness
+### Laziness
 
 The `textualizeText` implementation accesses the tree data structure mostly
 lazily, but _does_ need to know the number of elements in each ancestor of the
