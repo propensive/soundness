@@ -10,7 +10,7 @@ objects to represent _mutable_ disk objects which could be changed by other oper
 processes—this is a race condition (and would be with other designs, too), and is _recoverable_
 through exception handling.
 
-## Filesystems
+### Filesystems
 
 `Path`s may be relative or absolute, and must be rooted against a particular filesystem. On Linux
 Mac OS X, and other UNIX-like systems, there is a single root (with the type `Filesystem`, called
@@ -27,7 +27,7 @@ or,
 val programsPath = windows.DriveC / "Program Files"
 ```
 
-## Path-dependent Types
+### Path-dependent Types
 
 The types `Path`, `File`, `Directory` and `Symlink` are all path-dependent types, defined within
 a particular `Filesystem` object, and the type system will not allow them to be mixed arbitrarily
@@ -46,7 +46,7 @@ List(Unix / "home" / "work", windows.DriveC / "Documents").map(_.directory.paren
 ```
 has the type `List[Filesystem#Directory]`
 
-## Reading
+### Reading
 
 `File`s can be read with the `File#read` method, which takes, as a parameter, the type it should
 return, for example, `path.read[String]()` or `path.read[LazyList[String]]()`. If used in a position
@@ -59,7 +59,7 @@ The `read` method takes an optional `limit` value parameter which specifies a li
 bytes that may be read. This defaults to the conservative figure of `65536`. If this is exceeded, a
 `TooMuchData` exception is thrown.
 
-## Writing
+### Writing
 
 It's possible to write to a file using the `File#write` and `File#append` methods. These each take a
 single `content` parameter, which can be one of a variety of types. As standard, these include,
