@@ -1,4 +1,4 @@
-## Constructing HTML nodes
+### Constructing HTML nodes
 
 Simple HTML nodes can be constructed by applying other nodes (or strings) to `Tag` instances, for example:
 ```scala
@@ -56,7 +56,7 @@ There are some limitations to this in cases where HTML's rules are defined in te
 simple nesting relationship, but work is ongoing to encode as many constraints as possible. In all
 cases where HTML 5 rules are not fully implemented, Honeycomb is more permissive.
 
-## Attributes
+### Attributes
 
 HTML nodes may also have attributes. These can be applied to an additional parameter block _before_
 the child nodes, in the style of named parameters, for example,
