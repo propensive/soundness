@@ -54,7 +54,7 @@ would serialize to the string `"www.example.com"`.
 Note that the `separator` is not included between the `prefix` and the first path element when
 serializing, so _may_ need to be included in the `prefix` value itself.
 
-## Other Methods
+### Other Methods
 
 The method `++` can add a `Relative` path to an `Absolute` path, and return a new `Absolute` path.
 
@@ -66,17 +66,18 @@ The `Absolute#conjunction` method will find the closest common parent of the pat
 Note that `Path`s are not aware of their children, so there is no `children` method, but this may be
 provided by individual implementations.
 
-## Exceptions
+### Exceptions
 
 Many operations on `Path`s may attempt (directly or indirectly) to access the parent of the root.
 This is not possible, and if this happens, a `RootBoundaryExceeded` exception will be thrown.
 
-## Generic relative paths
+### Generic relative paths
 
 Given that a relative path is (by definition) not attached to any particular root, all instances of
 `Root#Path.Relative` inherit from `GenericRelative` which gives users the choice, when implementing
 APIs that accept relative paths, between accepting _any_ kind of relative path (regardless of its
 origin) and accepting just those originating from a particular root.
+
 
 ## Related Projects
 
