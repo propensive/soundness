@@ -1,6 +1,6 @@
-## Operations on `LazyList`s
+### Operations on `LazyList`s
 
-### `Funnel`s
+#### `Funnel`s
 
 A `Funnel` receives asynchronous events, potentially from multiple threads, and puts them into a
 `LazyList`
@@ -17,7 +17,7 @@ Note that evaluation of the `Funnel#stream` method constructs a `LazyList` which
 and should be called exactly once. Later releases of Turbulence will change the API to avoid this
 trap.
 
-### Clustering
+#### Clustering
 
 An event stream provided by a `LazyList[T]` may yield events irregularly, often with several events
 happening at the same time. A simple event-handling loop, which performs a slow operation, such as,
@@ -77,7 +77,7 @@ stream.cluster(100, 10)
 
 The `LazyList#cluster` extension method expects a parameter of the contextual `Timekeeping` type.
 
-### Multiplexing
+#### Multiplexing
 
 Multiple `LazyList` streams may be combined into a single stream by multiplexing them. The
 extension method `LazyList.multiplex` takes a variable number of `LazyList` arguments to construct
@@ -89,7 +89,7 @@ val combinedStream = LazyList.multiplex(source1, source2, source3)
 The type parameter of the resultant `LazyList` will be the least upper-bound of that of the input
 streams.
 
-### Rate-limiting
+#### Rate-limiting
 
 Often a stream will produce results faster than desired if it is actively consumed. The
 `LazyList#rate` method will guarantee a minimum amount of time passes between consecutive values.
@@ -105,7 +105,7 @@ will count from `1`, yielding approximately ten numbers per second.
 Note that a rate-limited `LazyList` which has already been partially or completely evaluated will
 evaluate without any delay on subsequent reads.
 
-### Mutable Multiplexing
+#### Mutable Multiplexing
 
 It may be desirable to add or remove streams from the set being multiplexed. This is possible with
 a `Multiplexer` instance, which takes two type parameters: `K`, the type of the keys with which
@@ -123,7 +123,7 @@ multiplexer.stream.take(10).foreach(println(_))
 multiplexer.close()
 ```
 
-### Tap
+#### Tap
 
 Sometimes it's useful to have direct control over when a `LazyList` is yielding values and when
 it is "paused", using an external trigger. This functionality is provided by a `Tap`, a mutable
@@ -143,7 +143,7 @@ resume output on the `LazyList`. Any events which arise while the `Tap` is close
 and emitted when it is re-opened. Accessing `isEmpty`, `head` or `tail` on the `LazyList` will, of
 course, block while the tap is closed.
 
-### Pulsar
+#### Pulsar
 
 A `Pulsar` provides a regular stream of `Unit` values and a predefined rate. It may be created
 simply with the `pulsar` extension method on the `LazyList` object, taking a time duration as its
