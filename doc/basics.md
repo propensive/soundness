@@ -4,7 +4,7 @@ be rendered.
 
 For example,
 ```scala
-case class Person(name: String, age: Int, active: Boolean)
+case class Person(name: Text, age: Int, active: Boolean)
 
 val table = Tabulation[Person](
   Column("Name", _.name),
@@ -14,11 +14,11 @@ val table = Tabulation[Person](
 ```
 describes a table of three columns, `Name`, `Age` and `Active`, defined for rows of type `Person`,
 where the content for each column is defined by a lambda, such as `_.name` and `_.age`. The return
-types of these lambdas are any types which can be rendered as `AnsiString`s. In other words, any
+types of these lambdas are any types which can be rendered as `AnsiText`s. In other words, any
 type for which an `AnsiShow` instance exists.
 
 Given such a definition, any collection of instances of `Person`, `ps`, can be rendered as a table
-(a `Seq[String]` of each output line) of maximum width `width` by calling
+(a `Seq[Text]` of each output line) of maximum width `width` by calling
 `table.tabulate(width, ps)`.
 
 For example,
@@ -26,7 +26,7 @@ For example,
 val persons = List(Person("Bill", 48, true), Person("Janet", 54, false))
 table.tabulate(100, persons)
 ```
-will return a sequence of `String`s which will print as,
+will return a sequence of `Text`s which will print as,
 ```
 ┌───────┬─────┬────────┐
 │ Name  │ Age │ Active │
