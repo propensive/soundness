@@ -25,7 +25,7 @@ Rudiments has not yet been published as a binary, though work is ongoing to fix 
 Utilities in _Rudiments_ are mostly provided through extension methods, and importing the `rudiments` package
 will bring all utility methods into scope.
 
-## Y-Combinator
+### Y-Combinator
 
 An implementation of a [Y-Combinator](https://shorturl.at/jqKOY), called `fix`, is provided, implemented using a
 Scala 3 context function, which enables slightly more favorable syntax than was possible in Scala 2. This method
@@ -44,7 +44,7 @@ def factorial(n: Int): Int =
 This avoids the explicit definition of a private or nested helper function, which would normally be necessary
 for a definition such as this.
 
-## Primitive `String` Extractors
+### Primitive `String` Extractors
 
 Extractors for all the primitive types are provided for matching on `String`s. These are defines as extensions
 to the (virtual) companion objects of the primitive types, so they have the same names as the types they
@@ -60,7 +60,7 @@ def parse(number: String): Boolean | Int | Double =
     case _          => 0
 ```
 
-## Typesafe `String` operations
+### Typesafe `String` operations
 
 The extension method `String#cut` has identical semantics to `String#split`, but returns an immutable `IArray`
 instead of an `Array`. Likewise, the methods `String#bytes` and `String#chars` mirror `String#getBytes` and
@@ -80,7 +80,7 @@ List("one", "two", "three").join(", ", " or maybe ")
 ```
 will produce the string `one, two or maybe three`.
 
-## Lightweight system property access
+### Lightweight system property access
 
 Many JVM system properties are available in the map, `System.getProperties` and are typically given identifiers
 written in a dot-notation style, such as `user.dir`. Rudiments provides syntactic sugar for accessing these
@@ -89,7 +89,7 @@ dynamically through the `Sys` object, for example,
 val pwd: Option[String] = Sys.user.dir()
 ```
 
-## `unit`
+### `unit`
 
 Often a side-effecting expression returns a value which is not used at a particular call site, and can be
 discarded. However, the expression's return type can result in type-inference choosing an undesired return type,
@@ -98,7 +98,7 @@ when `Unit` would be preferable, or a compile-time warning about discarded value
 The `unit` extension method silently discards the return value of any expression, and instead produces a `Unit`,
 `()`.
 
-## `only`
+### `only`
 
 The `only` extension method applies a partial function to a value and lifts the result into an option.
 
@@ -107,13 +107,13 @@ For example,
 val result: Option[Int] = string.only { case Int(i) => i*i }
 ```
 
-## `str""` Interpolator
+### `str""` Interpolator
 
 The `s""` interpolator takes parameters of `Any` type as substitutions, calling `String#toString` on them as
 necessary. This may be considered too permissive, so `str""` is provided as a typesafe alternative that requires
 every substitution to be a `String`.
 
-## `twin` and `triple`
+### `twin` and `triple`
 
 These two extension methods produce a two-tuple and a three-tuple (respectively) of repetitions of the value it
 is applied to. This can be useful in a subsequent `map` operation.
