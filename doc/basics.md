@@ -1,6 +1,6 @@
 _Gossamer_ provides a collection of useful methods and constructors for working with strings.
 
-## `Show` typeclass
+### `Show` typeclass
 
 A standard `Show` typeclass is provided which will convert values of different types into `String`s.
 
@@ -14,7 +14,7 @@ Using [Wisteria](https://github.com/propensive/wisteria), `Show` instances for p
 as case classes and tuples) and coproduct types (such as enumerations and sealed traits) will be
 automatically derived.
 
-## `Text`, a typesafe `String`
+### `Text`, a typesafe `String`
 
 The `Text` type is provided as an opaque alias of `String`, duplicating most of the functionality
 of `String` (and its associated extension methods), but without the typesafety risks associated
@@ -24,7 +24,7 @@ instance exists for that type.
 Furthermore, every method of `Text` is guaranteed not to be `null` and declares any exceptions it
 may throw.
 
-### Interpolators
+#### Interpolators
 
 Scala's standard library provides the `s` interpolator which allows elements of any type to be
 substituted into a `String`. This presents a typesafety hole, since `toString` must be applied to
@@ -35,7 +35,7 @@ So Gossamer introduces the `str""` interpolator which only permits types with a 
 `Show` typeclass instance to be substituted into a string: other types will result in an error.
 The `toString` method will never be called on these substitutions.
 
-### Long strings
+#### Long strings
 
 Additionally, a `txt""` interpolator is provided for constructing "long" strings which need to be
 split across several lines of code, but where any whitespace (such as indentation and newlines)
@@ -55,7 +55,7 @@ val msg: String = txt"""This is a long message which will not fit into a
 
 The `String` `msg` will contain a single `'\n'` character, between `lines.` and `But`.
 
-### `DebugString` typeclass
+#### `DebugString` typeclass
 
 In addition to `Show`, Gossamer provides a `DebugString` single-abstract-method typeclass which is
 designed to provide `String` representations of values as valid Scala expressions that could be
@@ -64,14 +64,14 @@ copied and pasted into code.
 Like the `Show` typeclass, product and coproduct instances of `DebugString` are automatically
 derived.
 
-## Encodings
+### Encodings
 
 Simple extension methods which provide a number of string-based encodings are provided. The
 `urlEncode` and `urlDecode` methods will convert to and from (respectively) strings in the
 URL encoding scheme. The `punycode` method will convert the string (most commonly, a domain name)
 into a ASCII-only representation of the string, encoding any non-ASCII characters as Punycode.
 
-## Safer `String` methods
+### Safer `String` methods
 
 Safer alternatives to many of the commonly-used methods of `String` are provided. These typically
 delegate to existing methods on `String`, but will:
@@ -80,7 +80,7 @@ delegate to existing methods on `String`, but will:
 - never accept `Any` as a parameter type, or implicitly use `String#toString` to convert
   non-`String` types to `String`s
 
-## Minimum Edit Distance
+### Minimum Edit Distance
 
 An implementation of the _Minimum Edit Distance_ or [Levenshtein
 distance](https://en.wikipedia.org/wiki/Levenshtein_distance), `lev` is provided as an extension
@@ -91,7 +91,7 @@ the other.
 For example, `"Hello".lev("Hallo!")` returns `2`: the replacement of `e` with `a` counts as one
 edit, and the addition of `!` counts as the second edit. The algorithm is symmetrical.
 
-## Joining
+### Joining
 
 Scala's standard library provides the `mkString` method on collection types, but this unfortunately
 calls `toString` on every element in the collection, without warning. Gossamer provides a `join`
