@@ -38,6 +38,6 @@ While any object may be used to define a derivation, if you control the typeclas
 companion object of the typeclass is the obvious choice since it generic derivations for that typeclass will
 be automatically available for consideration during contextual search.
 
-## Limitations
+### Limitations
 
 Wisteria is not currently able to access default values for case class parameters.
