@@ -1,4 +1,4 @@
-## Launching an HTTP server
+### Launching an HTTP server
 
 An HTTP server can be launched anywhere by calling,
 ```scala
@@ -34,7 +34,7 @@ HttpServer.listen:
   Response(s"The name is $name and age is $age")
 ```
 
-## Pattern matching on Requests
+### Pattern matching on Requests
 
 Another way to work with `Request`s is by pattern matching against them. Several pattern extractors are provided
 for this purpose.
@@ -63,7 +63,7 @@ In these examples, `&` is an extractor which always matches a `Request`, and "ex
 an infix extractor, both sides may then be matched with their own patterns. Of course, this can be repeated
 any number of times in the same case clause.
 
-## URLs
+### URLs
 
 Scintillate uses the `Url` type to represent a URL. This will always use either the `http` or `https` URL
 scheme, and will not represent URLs containing unescaped characters. The `hostname`, `path` and `queryString`
@@ -74,7 +74,7 @@ an alternative to their equivalent methods in the `Http` object. There is a one-
 the methods on a `Url` instance an the `Http` object, except that the first parameter of each of the `Http`
 methods—the URL itself—is the subject of the method invocation.
 
-### Queries
+#### Queries
 
 A `Url` instance may include a query string, which would be written following a `?` character after the path.
 The `Url#query` method may be used to append parameters to an existing `Url`. Usually these are key/value pairs
@@ -110,7 +110,7 @@ url"http://example.com/person/add".query(person).get()
 The process of serializing this case class instance to query parameters would send the parameters, `name`,
 `address.number`, `address.street` and `address.city`.
 
-## Redirection and Missing Pages
+### Redirection and Missing Pages
 
 The `Redirect` and `NotFound` case classes provide representations of an HTTP `301` redirect repsonse and a
 `404` "not found" page respectively.
