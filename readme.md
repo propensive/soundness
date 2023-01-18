@@ -33,7 +33,7 @@ language, with the exception of the strings which provide the text to be used in
 It is therefore useful to abstract over just the parts which differ, and to minimise repetition of the parts
 which are the same.
 
-## Language types
+### Language types
 
 Languages are represented by types named after their ISO 639-1 code, for example `En` (English), `La` (Latin) or
 `De` (German). These are found in the `cosmopolite.languages` object, and each of these would typically be
@@ -63,7 +63,7 @@ for example, the languages English, Polish and Russian would be represented as `
 The order of the language types in the union is not significant, as Scala will consider `Pl | En | Ru` an
 identical type to `En | Pl | Ru`, or any other permutation.
 
-## Multilingual strings
+### Multilingual strings
 
 A multilingual string is represented by an instance of `Messages[L]` where `L` is the set of languages that
 instance has, as a union type, and which is guaranteed by its construction.
@@ -83,7 +83,7 @@ The `&` combinator adds the further guarantee that every additional language com
 multilingual string must not already be defined, so it should be impossible to accidentally overwrite a string
 for one language with another when constructing a `Messages` instance.
 
-### Defining constructors for other languages
+#### Defining constructors for other languages
 
 Convenient constructors for languages that are not in the `common` object can be provided as extensions on
 Scala's built-in `StringContext` type, and follow this pattern,
@@ -93,7 +93,7 @@ extension (ctx: StringContext)
 ```
 which defines a constructor for the `La` language (Latin) on strings starting with the prefix `la""`.
 
-## The `Language` type
+### The `Language` type
 
 In addition to representing product types for a collection of languages, we need a type that represents a single
 language chosen from a collection of languages.
@@ -115,7 +115,7 @@ Language.parse[En | Fr]("es")
 ```
 would return `None`.
 
-## Type Aliases
+### Type Aliases
 
 It's likely that an application will use the same set of languages globally, so it's useful to define a global
 type alias for these languages, for example,
@@ -138,7 +138,7 @@ provide an Italian string.
 This offers an additional level of safety when developing for multilingual applications, as it becomes
 impossible to compile code which does not provide language strings for every language required.
 
-## Abstract Languages
+### Abstract Languages
 
 It is also largely possible to define methods and classes which are language-independent. It is possible to
 define a method which takes both `Messages[L]` instances and a `Language[L]` instance, and combines them without
@@ -153,6 +153,7 @@ the `Language` coproduct with each of the `Messages` products, their type parame
 
 Note, however, that the `Language.parse` method, however, can only be invoked on a concrete type, as it needs
 to build a concrete parser for the languages in the union type.
+
 
 ## Related Projects
 
