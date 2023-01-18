@@ -46,7 +46,7 @@ serialized to bytes.
 The objects `PrivateKey` and `SymmetricKey` both have `generate` methods which will generate new
 random keys.
 
-## Signing
+### Signing
 
 Given, for example, a `PrivateKey[Dsa[1024]]` instance, `key`, data may be signed with, for example,
 ```scala
@@ -55,7 +55,7 @@ val signature: Signature[Dsa[1024]] = key.sign(data)
 This works for any value, `data`, that has an appropriate `ByteCodec` instance. The type parameter
 of the signature will depend on the type parameter of the private key.
 
-## Verifying a signature
+### Verifying a signature
 
 A public key, `pubKey`, which could, for example, be derived from the private key in the previous
 example,
@@ -70,7 +70,7 @@ val valid: Boolean = pubKey.verify(data, signature)
 Here, `data` must be the same object that was used (with the private key) to produce the signature,
 and may be any type that has a contextual `ByteCodec` instance.
 
-## Encryption
+### Encryption
 
 A public key instance, for example, `pubKey` of type `PublicKey[Rsa[2048]]`, can encrypt some data
 by calling,
@@ -78,7 +78,7 @@ by calling,
 val encrypted: Message[Rsa[2048]] = pubKey.encrypt(data)
 ```
 
-## Decryption
+### Decryption
 
 An encrypted message may conversely be decrypted using the corresponding `PrivateKey[Rsa[2048]]`
 instance, `key`:
@@ -91,7 +91,7 @@ method, and may be any type for which a corresponding `ByteCodec` exists in cont
 type should be the same as the type of the object that was originally encrypted, otherwise it may
 fail to decode.
 
-## Digests
+### Digests
 
 A cryptographic digest (or hash) of any value may be calculated by calling `digest[A]` on that
 value, for an appropriate choice of `A`, provided a `Hashable` instance is in context for that type
@@ -105,7 +105,7 @@ For example,
 val digest: Digest[Sha2[384]] = (10, "alpha", 'z').digest[Sha2[384]]
 ```
 
-## HMACs
+### HMACs
 
 Any value whose type has a corresponding `ByteCodec` instance in context may have an HMAC value
 calculated, of type `Hmac[A]` (where `A` is the cryptographic algorithm). As a parameter, this
@@ -116,7 +116,7 @@ Here is an example using SHA-512:
 val hmac: Hmac[Sha2[512]] = "Hello world".hmac("secret".bytes)
 ```
 
-## Type inference
+### Type inference
 
 Whenever an expression is used in a position with an expected type, the type parameters of the
 methods `decrypt`, `digest` and `hmac` may be omitted, for example given the case class,
@@ -131,7 +131,7 @@ val block = Block(data.digest, data.decrypt, value.hmac)
 Alternatively, a particular given may be imported directly into the current scope to prioritize it,
 such that it may be used in preference to the alternatives.
 
-## Byte data
+### Byte data
 
 Representations of binary data are common with low-level cryptographic operations. All operations in
 Gastronomy use the immutable `IArray[Byte]` type as the underlying representation of binary data,
@@ -155,7 +155,7 @@ The `encode` method, which exists as an extension on `IArray[Byte]`, as well as 
 types representing byte data. It takes one of these as a type parameter to produce a `String` of
 that data, encoded with the specified encoding.
 
-### Algorithms
+#### Algorithms
 
 Gastronomy's cryptographic functions are implemented through different algorithms, which are
 represented by types. Their names follow the conventions of other Scala types, hence:
@@ -171,7 +171,7 @@ represented by types. Their names follow the conventions of other Scala types, h
 Additionally, the types `Base64`, `Base64Url`, `Hex` and `Binary` represent non-cryptographic
 byte-to-string encodings.
 
-## Generating keys
+### Generating keys
 
 The `PrivateKey` object provides the `generate[A]()` method, where `A` is `Rsa[B]`, `Dsa[B]` or
 `Aes[B]` for an appropriate choice of `B`.
@@ -179,7 +179,7 @@ The `PrivateKey` object provides the `generate[A]()` method, where `A` is `Rsa[B
 The algorithm `Aes[B]` can also be used with the `SymmetricKey` object to get a symmetric key which
 has the functionality of both a public and private key.
 
-## Byte codecs
+### Byte codecs
 
 Any object which can be serialized to bytes may be digested, signed, verified, HMACked or encrypted,
 and can be returned from a decryption operation, provided a corresponding `ByteCodec` instance is
@@ -188,7 +188,7 @@ available for that type.
 `ByteCodec`s are provided for `IArray[Byte]` (trivially) and for `String`s (assuming a UTF-8
 encoding).
 
-## PEM encoding
+### PEM encoding
 
 The _Privacy-Enhanced Mail_ format is commonly used for exchanging cryptographic values safely in
 ASCII-only environments.
@@ -210,7 +210,7 @@ value containing that key, however to avoid the risk of accidentally exposing a 
 privateKey.pem(RevealSecretKey)
 ```
 
-## Other Cryptographic Algorithms
+### Other Cryptographic Algorithms
 
 Gastronomy may be easily extended to support other cryptographic algorithms. The existing
 implementations of `Rsa`, `Dsa`, `Aes`, `Sha1`, `Sha2` and `Md5` should be studied to investigate
