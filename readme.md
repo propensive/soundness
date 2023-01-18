@@ -24,7 +24,7 @@ Cataclysm has not yet been published as a binary, though work is ongoing to fix 
 
 Cataclysm provides several types for modeling CSS.
 
-## Selectors
+### Selectors
 
 CSS selectors are currently unparsed, and represented by the `Selector` type, which is just a
 wrapper for a `String`. The easiest way to construct a new `Selector` is with the `sel`
@@ -92,7 +92,7 @@ or,
 Tr(hclass = hide)(Th(heading))
 ```
 
-## Specifying attributes
+### Specifying attributes
 
 CSS attributes may be added to a `Selector` to create a `Rule` by binding the selector to a
 `Style` value (typically created with the `Css` constructor) using the `:=` operator. For example,
@@ -118,7 +118,7 @@ For example,
 val rule: Rule = sel".form input[type=radio]"(fontWeight = 600, textAlign = TextAlign.Center)
 ```
 
-## Stylesheets
+### Stylesheets
 
 A number of `Rule`s may be combined into a single `Stylesheet`. The `Stylesheet` constructor can
 take repeated `Rule` arguments, for example:
@@ -130,7 +130,7 @@ val styles = Stylesheet(
 )
 ```
 
-## Other directives
+### Other directives
 
 In addition to `Rule`s, a `Stylesheet` may contain a number of other directives, such as imports and
 media queries.
@@ -141,7 +141,7 @@ These include:
 
 Support for others, in particular media queries, will be added in due course.
 
-## Attribute values
+### Attribute values
 
 As much as possible, attribute values are strongly typed, which means arbitrary Scala expressions
 may be used for attribute values, provided they conform to a suitable type.
@@ -153,20 +153,20 @@ Additionally, arithmetic expressions involving dimensional values will use CSS's
 where necessary, while any Scala expression is valid for an attribute value, as long as it returns
 a value of a suitable type.
 
-### Dimensional values
+#### Dimensional values
 
 Lengths and other values use instances of the `Length` enumeration. This provides representations of
 all CSS unit types (`px`, `pt`, `in`, `pc`, `cm`, `mm`, `em`, `ex`, `ch`, `rem`, `vw`, `vh`, `vmin`
 and `vmax`). These are made available as extension methods on `Double` values.
 
-### Colors
+#### Colors
 
 Colours are provided by [Iridescence](https://github.com/propensive/iridescence/) which can
 represent colors in a variety of different models. Colors defined using color models which are
 natively supported by CSS will be embedded using that same model, while other colors will be
 converted automatically to SRGB.
 
-### Enumerated values
+#### Enumerated values
 
 Many CSS attributes take one of a selection of enumerated possibilities. These are generally
 represented by an `enum` whose name is taken from the capitalized, camelcase name of that attribute,
@@ -175,7 +175,7 @@ and whose members' names are similarly transformed.
 For example, the CSS value, `color-dodge` for the attribute, `mix-blend-mode` is called,
 `MixBlendMode.ColorDodge`.
 
-### Multi-part values
+#### Multi-part values
 
 Some CSS attributes, such as `border`, can accept multiple arguments. While these would be
 separated by spaces in CSS, they should be embedded in a tuple using Cataclysm. For example,
