@@ -1,4 +1,4 @@
-## Defining a logger
+### Defining a logger
 
 Libraries which use Eucalyptus for logging will need a contextual `Log` instance before they can
 be used. This may be as simple as defining a `given Log()` instance in the package where the
@@ -18,27 +18,27 @@ or which logs everything at `Warn` level or hight to `STDOUT`:
 given Log(Everything.warn |-> Stdout)
 ```
 
-## Library Code
+### Library Code
 
-### Contextual `Log` instances
+#### Contextual `Log` instances
 
 Any method which requires logging should request a contextual `Log` parameter. This
 is as simple as adding the parameter block, `(using Log)` to the method. Any methods
 which call such a method will also need to include a `using Log` parameter.
 
-### Log messages
+#### Log messages
 
 Messages may be logged (at a particular level) by calling one of four methods,
 - `Log.fine`
 - `Log.info`
 - `Log.warn`
 - `Log.fail`
-passing the single parameter of an `AnsiString` containing the message to be logged.
+passing the single parameter of an `AnsiText` containing the message to be logged.
 
-These methods each take a single parameter which is typically an `AnsiString` or a
-`String`, but can be any type that has a given `AnsiShow` instance available.
+These methods each take a single parameter which is typically an `AnsiText` or a
+`Text`, but can be any type that has a given `AnsiShow` instance available.
 
-### Realm
+#### Realm
 
 These four methods require a contextual `Realm` instance. Conventionally, this would 
 be declared in the main application package, and called `realm`, like so,
@@ -56,7 +56,7 @@ Log(mylibrary.realm |-> Stdout)
 Since `given` instances are not imported by default with a wildcard import, a `Realm`
 definition does not need to be marked as private.
 
-## Configuration
+### Configuration
 
 When working with libraries such as [Scintillate](https://github.com/propensive/scintillate) or
 [Guillotine](https://github.com/propensive/guillotine), whose methods require
