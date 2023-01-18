@@ -22,14 +22,14 @@ Escapade has not yet been published as a binary, though work is ongoing to fix t
 
 ## Getting Started
 
-## About ANSI Codes
+### About ANSI Codes
 
 [ANSI escape codes](https://en.wikipedia.org/wiki/ANSI_escape_code) provide a variety of features in
 terminal emulators for performing operations such as positioning the cursor, changing the appearance
 of text with styles like bold, italic and strike-through, as well as foreground and background
 colors.
 
-## Creating ANSI strings
+### Creating ANSI strings
 
 To create an ANSI string, we use the `ansi""` interpolator. This works like an ordinary string
 interpolator, allowing substitutions of stringlike values.
@@ -74,7 +74,7 @@ might be intending to display the final word, `text`, in italic but not bold. Bu
 brackets would treat `italic] text.` as literal text, rendered in italic. And, in fact, the ANSI
 string would not compile due to the unclosed `[` bracket.
 
-## Combining colors
+### Combining colors
 
 While styles such as _bold_, _italic_, _underline_ and _reverse_ may be combined independently in a
 string, the situation is more complex with colors, as a new color simply replaces an old one, and
@@ -93,7 +93,7 @@ import colors.*
 ansi"$Gold[gold, $Indigo[indigo, $HotPink[hot pink], indigo] $White[and] gold]"
 ```
 
-## Manipulating colors
+### Manipulating colors
 
 Each substitution into an `ansi""` string interpolator may apply a change to the existing style,
 represented by and tracked throughout the string as an instance of the case class, `Style`.
