@@ -22,7 +22,7 @@ Xylophone has not yet been published as a binary, though work is ongoing to fix 
 
 ## Getting Started
 
-## Parsing
+### Parsing
 
 A `Text` value containing XML may be parsed with,
 ```scala
@@ -30,7 +30,7 @@ Xml.parse(text)
 ```
 which will return an instance of `Xml`, or throw an `XmlParseError` if the XML is not well-formed.
 
-## XML Literals
+### XML Literals
 
 `Xml` values may also be constructed using the `xml""` interpolator. These will be checked for well-formedness
 at compiletime: all syntax must be valid, special characters escaped, and all tags must be closed and nested
@@ -40,7 +40,7 @@ correctly.
 val book = xml"<book><author>H. G. Wells</author><title>War of the Worlds</title></book>"
 ```
 
-## XML AST Representation
+### XML AST Representation
 
 An `Xml` value is a general type representing XML in three different forms, subtypes of `Xml`:
 - `XmlDoc` is a complete XML document, and includes the `<?xml...` header
@@ -63,7 +63,7 @@ enumeration:
 Of these types, `Element` and `Root` include fields which may include sequences of other `Ast` nodes, thereby
 forming a tree structure.
 
-## Accessing elements
+### Accessing elements
 
 Unlike some other data definition languages such as JSON, XML requires a distinction to be made between a
 single node (`XmlNode`) and a sequence of nodes (`XmlFragment`). Multiple nodes with the same tag name
@@ -117,7 +117,7 @@ value. For example, `library.book().*` would return an `XmlFragment` of,
 <author>H. G. Wells</author>
 ```
 
-## Extracting typed values
+### Extracting typed values
 
 An `Xml` value is _dynamic_ in the sense that it could represent a single string value or deeply-nested structured
 data. Usually we want to convert `Xml` values to other Scala types in order to use them. This can be achieved by
@@ -153,7 +153,7 @@ In general, extraction requires a contextual `XmlReader` typeclass instance for 
 These exist on the `XmlReader` companion object for the basic types, collection types, product types
 (e.g. case classes) and coproduct types (e.g. enumerations), but other instances may be provided.
 
-## Writing to XML
+### Writing to XML
 
 Likewise, these same types may be converted to `Xml` by calling the `xml` extension method on them, for
 example, given,
@@ -197,7 +197,7 @@ case class Book(title: Text, author: Text, @xmlLabel(t"type") kind: Text)
 would ensure that a `Book` instance is written using the lower-case tag name, `book`, and the `kind`
 field would be serialized the name `type` (which cannot be used so easily in Scala, as it's a keyword).
 
-## Serialization
+### Serialization
 
 XML usually needs to be serialized to a string. Xylophone provides a `show` method that will serialize
 an `Xml` value to a `Text` value using a contextual `XmlPrinter`, of which two are available by default:
