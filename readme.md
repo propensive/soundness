@@ -28,7 +28,7 @@ type representing a directory or a `Seq` of such types. For [Galilei](https://gi
 `Directory` type, this works straight away. Other libraries which provide directory-like types can integrate with
 Surveillance just by defining two simple [typeclass instances](#defining-typeclass-instances).
 
-## Watching
+### Watching
 
 A simple setup for watching a directory looks like this:
 ```scala
@@ -45,7 +45,6 @@ and start a new thread to respond to updates.
 
 The most important method of a `Watcher` is its `stream` method, which will return a `LazyList[WatchEvent]`
 
-## Defining Typeclass Instances
 
 
 ## Related Projects
