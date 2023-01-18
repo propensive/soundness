@@ -48,7 +48,7 @@ perceptual difference between those colors, as determined by experimentation.
 
 The particular color model should be chosen according to the requirements of the particular task.
 
-## A Quick Example
+### A Quick Example
 
 ```scala
 import iridescence.*
@@ -60,7 +60,7 @@ val palePink: Srgb = pink.srgb.hsv.tint(0.5).srgb
 println(s"${color.ansiFg24}Hello World!")
 ```
 
-## Types
+### Types
 
 Iridescence provides case classes to immutably represent each of the seven color models, above. Colors in one
 representation can be directly converted into many of the other representations, and the remaining conversions
@@ -87,11 +87,11 @@ val Gold: Hsv = Srgb(1, 0.843, 0).hsv
 val Gold2: Cmyk = Gold.srgb.cmyk
 ```
 
-## Palette
+### Palette
 
 The `colors` object provides a standard palette of about 140 named colors defined in sRGB space.
 
-## Color profiles
+### Color profiles
 
 Certain color representations rely on additional information that characterizes the conditions under which the
 colors are encoded, and this information is necessary for conversions between certain color spaces.
@@ -115,7 +115,7 @@ not used). This restriction may be lifted later. A good default profile to use i
 given Profile = profiles.Daylight
 ```
 
-## Color methods
+### Color methods
 
 Additional methods are provided on certain color types for producing new colors from old. In general, these
 methods are particular to the color model being used.
@@ -136,7 +136,7 @@ them as necessary, before converting back. For example,
 colors.IndianRed.hsv.tone(0.2, 0.4).srgb
 ```
 
-## Serialization
+### Serialization
 
 Different formats, languages and protocols will represent colors as strings in a number of different ways.
 Iridescence provides serialization methods to the following formats:
@@ -147,7 +147,7 @@ Iridescence provides serialization methods to the following formats:
 
 These are available on the `Srgb` type, with the exception of `Hsl#css`.
 
-## Limitations
+### Limitations
 
 There is no support for transparency.
 
