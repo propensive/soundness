@@ -25,7 +25,7 @@ Gesticulate has not yet been published as a binary, though work is ongoing to fi
 
 ## Getting Started
 
-## `MediaType`
+### `MediaType`
 
 Gesticulate primarily provides the `MediaType` type, consisting of:
  - a main "type" (called `group` to avoid a conflict with Scala's `type` keyword)
@@ -68,7 +68,7 @@ will statically parse, check and destructure the type into the `MediaType` insta
 the method `basic` to provide the media type with any parameters removed. This may be useful in
 some comparisons.
 
-## Checking Registered Types
+### Checking Registered Types
 
 Media types are checked against a recent copy of IANA's list of registered types, generated from the
 lists [published online](https://www.iana.org/assignments/media-types/media-types.xhtml), and
@@ -77,7 +77,7 @@ release of Gesticulate, but may be supplanted by an alternative list appearing i
 format for the file is a newline delimited list of media types including suffixes, but excluding
 parameters.
 
-## Parsing
+### Parsing
 
 Media types may be parsed using `MediaType.parse(string)` which returns a `MediaType` or throws an
 `InvalidMediaTypeError`. The `InvalidMediaTypeError.Nature` type encodes different varieties of
