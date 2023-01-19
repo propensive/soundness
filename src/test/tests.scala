@@ -23,10 +23,11 @@ import rudiments.*
 
 import unsafeExceptions.canThrowAny
 
+given Encoding = characterEncodings.utf8
+
 object Tests extends Suite(t"Turbulence tests"):
   def run(using Runner): Unit =
     suite(t"Streaming Unicode tests"):
-      given Encoding = encodings.Utf8
       val ascii = IArray(t"", t"a", t"ab", t"abc", t"abcd")
       
       val strings = for
