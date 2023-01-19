@@ -292,31 +292,6 @@ extension (buf: StringBuilder)
   def add(char: Char): Unit = buf.append(char)
   def text: Text = Showable(buf).show
 
-package encodings:
-  given Utf8: Encoding with
-    override def carry(arr: Array[Byte]): Int =
-      val len = arr.length
-      def last = arr(len - 1)
-      def last2 = arr(len - 2)
-      def last3 = arr(len - 3)
-      
-      if len > 0 && ((last & -32) == -64 || (last & -16) == -32 || (last & -8) == -16) then 1
-      else if len > 1 && ((last2 & -16) == -32 || (last2 & -8) == -16) then 2
-      else if len > 2 && ((last3 & -8) == -16) then 3
-      else 0
-    
-    override def run(byte: Byte): Int =
-      if (byte & -32) == -64 then 2 else if (byte & -16) == -32 then 3 else if (byte & -8) == -16 then 4 else 1
-    
-    def name: Text = Text("UTF-8")
-  
-  given ASCII: Encoding with
-    def name: Text = Text("ASCII")
-  
-  @targetName("ISO_8859_1")
-  given `ISO-8859-1`: Encoding with
-    def name: Text = Text("ISO-8859-1")
-
 case class Line(text: Text)
 
 object Line:
@@ -358,3 +333,16 @@ trait Stdout:
 object Out:
   def print[T: Show](msg: T)(using stdout: Stdout): Unit = stdout.write(msg.show)
   def println[T: Show](msg: T)(using Stdout): Unit = print(Text(s"${msg.show}\n"))
+
+object EncodingPrefix extends Interpolator[Unit, Text, Encoding]:
+  protected def complete(value: Text): Encoding = value match
+    case Encoding(enc) => enc
+    case _             => throw InterpolationError(Text(s"$value is not a valid character encoding"))
+
+  protected def initial: Text = Text("")
+  
+  protected def insert(state: Text, value: Unit): Text =
+    throw InterpolationError(Text("variable substitutions are not supported in an encoding literal"))
+  
+  protected def parse(state: Text, next: Text): Text = state+next
+  protected def skip(state: Text): Text = state

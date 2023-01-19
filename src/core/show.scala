@@ -229,3 +229,7 @@ object Canonical:
 trait Canonical[T]:
   def serialize(value: T): Text
   def deserialize(value: Text): T
+
+extension (inline ctx: StringContext)
+  transparent inline def enc(inline parts: Any*): Encoding =
+    ${EncodingPrefix.expand('EncodingPrefix, 'ctx, 'parts)}
