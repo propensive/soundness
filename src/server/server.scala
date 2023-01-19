@@ -92,30 +92,35 @@ trait SimpleHandler[T](val mime: Text, val stream: T => HttpBody) extends Handle
 case class NotFound[T: SimpleHandler](content: T)
 case class ServerError[T: SimpleHandler](content: T)
 
+object Cookie:
+  given genericHttpRequestParam: GenericHttpRequestParam["set-cookie", Cookie] = _.serialize.s
+  given genericHttpRequestParam2: GenericHttpRequestParam["cookie", Cookie] = _.serialize.s
+
+  val dateFormat: jt.SimpleDateFormat = jt.SimpleDateFormat("dd MMM yyyy HH:mm:ss")
+
 case class Cookie(name: Text, value: Text, domain: Maybe[Text] = Unset,
                       path: Maybe[Text] = Unset, expiry: Maybe[Long] = Unset,
-                      ssl: Boolean = false)
+                      ssl: Boolean = false):
+  def serialize: Text =
+    List(
+      name        -> Some(value),
+      t"Expires"  -> expiry.option.map { t => t"${Cookie.dateFormat.format(t).nn} GMT" },
+      t"Domain"   -> domain.option,
+      t"Path"     -> path.option,
+      t"Secure"   -> ssl,
+      t"HttpOnly" -> false
+    ).collect:
+      case (k, true)    => k
+      case (k, Some(v)) => t"$k=$v"
+    .join(t"; ")
 
 case class Response[T](content: T, status: HttpStatus = HttpStatus.Ok,
                            headers: Map[ResponseHeader, Text] = Map(), cookies: List[Cookie] = Nil)
                       (using val handler: Handler[T]):
 
 
-  private val df: jt.SimpleDateFormat = jt.SimpleDateFormat("dd MMM yyyy HH:mm:ss")
-
   def respond(responder: Responder): Unit =
-    val cookieHeaders: List[(ResponseHeader, Text)] = cookies.map: cookie =>
-      ResponseHeader.SetCookie -> List[(Text, Boolean | Option[Text])](
-        cookie.name -> Some(cookie.value),
-        t"Expires"  -> cookie.expiry.option.map { t => t"${df.format(t).nn} GMT" },
-        t"Domain"   -> cookie.domain.option,
-        t"Path"     -> cookie.path.option,
-        t"Secure"   -> cookie.ssl,
-        t"HttpOnly" -> false
-      ).collect:
-        case (k, true)    => k
-        case (k, Some(v)) => t"$k=$v"
-      .join(t"; ")
+    val cookieHeaders: List[(ResponseHeader, Text)] = cookies.map(ResponseHeader.SetCookie -> _.serialize)
     
     handler.process(content, status.code, (headers ++ cookieHeaders).map { case (k, v) => k.header -> v }, responder)
 
@@ -173,7 +178,7 @@ case class Request(method: HttpMethod, body: HttpBody.Chunked, query: Text, ssl:
     catch case e: StreamCutError  => Map()
 
   
-  lazy val headers: Map[RequestHeader, List[Text]] = rawHeaders.map:
+  lazy val headers: Map[RequestHeader[?], List[Text]] = rawHeaders.map:
     case (RequestHeader(header), values) => header -> values
 
   lazy val length: Int throws StreamCutError =
@@ -196,7 +201,7 @@ inline def param(using Request)(key: Text): Text throws MissingParamError =
   summon[Request].params.get(key).getOrElse:
     throw MissingParamError(key)
 
-def header(using Request)(header: RequestHeader): Maybe[List[Text]] =
+def header(using Request)(header: RequestHeader[?]): Maybe[List[Text]] =
   summon[Request].headers.get(header).getOrElse(Unset)
 
 object ParamReader:
