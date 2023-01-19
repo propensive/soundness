@@ -109,9 +109,6 @@ object Readable:
 
     def read(stream: DataStream) =
       def read(stream: DataStream, carried: Array[Byte] = empty, skip: Int = 0): LazyList[Text] = stream match
-        case LazyList() =>
-          LazyList()
-        
         case head #:: tail =>
           val buf = head.mutable(using Unsafe)
           if carried.length > 0 then
@@ -123,6 +120,10 @@ object Readable:
           else
             val carry = enc.carry(buf)
             Text(String(buf, skip, buf.length - carry - skip, enc.name.s)) #:: read(tail, buf.takeRight(carry))
+        
+        case _ =>
+          LazyList()
+        
       
       read(stream)
 
