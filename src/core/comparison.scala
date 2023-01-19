@@ -20,7 +20,7 @@ object Comparable extends Derivation[Comparable]:
   given [T: ClassTag](using cmp: Comparable[T], debug: Debug[T]): Comparable[Seq[T]] = (left, right) =>
     Comparison.Structural:
       IArray.from:
-        Diff.diff(IArray.from(left), IArray.from(right)).changes.map:
+        diff(IArray.from(left), IArray.from(right)).changes.map:
           case Change.Keep(lid, rid, v) => (if lid == rid then lid.show else t"$lid/$rid") -> Comparison.Same
           case Change.Ins(rid, v)       => t"/$rid"     -> Comparison.Different(t"—", v.debug)
           case Change.Del(lid, v)       => t"$lid/"     -> Comparison.Different(v.debug, t"—")
