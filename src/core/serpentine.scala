@@ -121,6 +121,7 @@ export Slash.`/`
 
 object Absolute:
   given [R <: Root]: Show[Absolute[R]] = _.text
+  given GenericHttpRequestParam["location", GenericPath] = _.show.s
 
   given GenericHtmlAttribute["href", GenericPath] with
     def name = "href"
