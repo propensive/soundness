@@ -18,6 +18,7 @@ package dissonance
 
 import gossamer.*
 import rudiments.*
+import eucalyptus.*
 import annotation.*
 
 import language.experimental.captureChecking
@@ -60,7 +61,7 @@ object Diff:
       def keep: Point = Point(x + 1, y + 1)
       def unkeep: Point = Point(x - 1, y - 1)
 
-import Diff.Point.*
+import Diff.Point, Point.*
 
 def diff[T](left: IArray[T], right: IArray[T], cmp: (T, T) -> Boolean = { (a: T, b: T) => a == b }): Diff[T] =
   val end = Point(left.size, right.size)
