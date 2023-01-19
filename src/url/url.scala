@@ -101,6 +101,8 @@ object Url:
     def readUrl(url: Url): String = url.show.s
     def makeUrl(value: String): Url = Url.parse(value.show)
 
+  given GenericHttpRequestParam["location", Url] = show.show(_).s
+
   given (using CanThrow[InvalidUrlError]): Canonical[Url] = Canonical(parse(_), _.show)
 
   // There's not a convenient way to have this in scope if the HTTP client is defined separately from the URL

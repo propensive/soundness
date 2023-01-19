@@ -17,11 +17,21 @@
 package telekinesis
 
 import rudiments.*
+import anticipation.*
 import gossamer.*
 import gastronomy.*
 
+trait RequestHeader[L <: String]():
+  def header: Text
+  
+  def apply[T](content: T)(using ghrp: GenericHttpRequestParam[L, T]): RequestHeader.Value =
+    RequestHeader.Value(this, Text(ghrp(content)))
+
+class SimpleRequestHeader[L <: String & Singleton: ValueOf]() extends RequestHeader[L]():
+  def header: Text = Text(summon[ValueOf[L]].value)
+
 object RequestHeader:
-  lazy val standard: Map[Text, RequestHeader] = Set(AIm, Accept, AcceptCharset, AcceptDatetime,
+  lazy val standard: Map[Text, RequestHeader[?]] = Set(AIm, Accept, AcceptCh, AcceptDatetime,
       AcceptEncoding, AcceptLanguage, AccessControlRequestMethod, AccessControlRequestHeaders,
       Authorization, CacheControl, Connection, ContentEncoding, ContentLength, ContentMd5,
       ContentType, Cookie, Date, Expect, Forwarded, From, Host, Http2Settings, IfMatch,
@@ -29,81 +39,81 @@ object RequestHeader:
       ProxyAuthorization, Range, Referer, Te, Trailer, TransferEncoding, UserAgent, Upgrade, Via,
       Warning).mtwin.map(_.header -> _).to(Map)
 
-  def unapply(str: Text): Some[RequestHeader] = Some(standard.get(str.lower).getOrElse(Custom(str)))
+  def unapply(str: Text): Some[RequestHeader[?]] =
+    Some(standard.get(str.lower).getOrElse(RequestHeader(str.s)))
   
   object Value:
     given Show[Value] = value => t"${value.header}: ${value.value}"
 
-  case class Value(header: RequestHeader, value: Text)
+  case class Value(header: RequestHeader[?], value: Text)
 
   object nonStandard:
-    val UpgradeInsecureRequests = RequestHeader.Custom(t"upgrade-insecure-requests")
-    val XRequestedWith = RequestHeader.Custom(t"x-requested-with")
-    val Dnt = RequestHeader.Custom(t"dnt")
-    val XForwardedFor = RequestHeader.Custom(t"x-forwarded-for")
-    val XForwardedHost = RequestHeader.Custom(t"x-forwarded-host")
-    val XForwardedProto = RequestHeader.Custom(t"x-forwarded-proto")
-    val FrontEndHttps = RequestHeader.Custom(t"front-end-https")
-    val XHttpMethodOverride = RequestHeader.Custom(t"x-http-method-override")
-    val XattDeviceId = RequestHeader.Custom(t"x-att-deviceid")
-    val XWapProfile = RequestHeader.Custom(t"x-wap-profile")
-    val ProxyConnection = RequestHeader.Custom(t"proxy-connection")
-    val Xuidh = RequestHeader.Custom(t"x-uidh")
-    val XCsrfToken = RequestHeader.Custom(t"x-csrf-token")
-    val XRequestId = RequestHeader.Custom(t"x-request-id")
-    val XCorrelationId = RequestHeader.Custom(t"x-correlation-id")
-    val SaveData = RequestHeader.Custom(t"save-data")
+    case object UpgradeInsecureRequests extends SimpleRequestHeader["upgrade-insecure-requests"]()
+    case object XRequestedWith extends SimpleRequestHeader["x-requested-with"]()
+    case object Dnt extends SimpleRequestHeader["dnt"]()
+    case object XForwardedFor extends SimpleRequestHeader["x-forwarded-for"]()
+    case object XForwardedHost extends SimpleRequestHeader["x-forwarded-host"]()
+    case object XForwardedProto extends SimpleRequestHeader["x-forwarded-proto"]()
+    case object FrontEndHttps extends SimpleRequestHeader["front-end-https"]()
+    case object XHttpMethodOverride extends SimpleRequestHeader["x-http-method-override"]()
+    case object XattDeviceId extends SimpleRequestHeader["x-att-deviceid"]()
+    case object XWapProfile extends SimpleRequestHeader["x-wap-profile"]()
+    case object ProxyConnection extends SimpleRequestHeader["proxy-connection"]()
+    case object Xuidh extends SimpleRequestHeader["x-uidh"]()
+    case object XCsrfToken extends SimpleRequestHeader["x-csrf-token"]()
+    case object XSimpleRequestId extends SimpleRequestHeader["x-request-id"]()
+    case object XCorrelationId extends SimpleRequestHeader["x-correlation-id"]()
+    case object SaveData extends SimpleRequestHeader["save-data"]()
 
-  given Show[RequestHeader] = _.header
+  given Show[RequestHeader[?]] = _.header
 
-enum RequestHeader(val header: Text):
-  case AIm extends RequestHeader(t"a-im")
-  case Accept extends RequestHeader(t"accept")
-  case AcceptCharset extends RequestHeader(t"accept-charset")
-  case AcceptDatetime extends RequestHeader(t"accept-datetime")
-  case AcceptEncoding extends RequestHeader(t"accept-encoding")
-  case AcceptLanguage extends RequestHeader(t"accept-language")
-  case AccessControlRequestMethod extends RequestHeader(t"access-control-request-method")
-  case AccessControlRequestHeaders extends RequestHeader(t"access-control-request-headers")
-  case Authorization extends RequestHeader(t"authorization")
-  case CacheControl extends RequestHeader(t"cache-control")
-  case Connection extends RequestHeader(t"connection")
-  case ContentEncoding extends RequestHeader(t"content-encoding")
-  case ContentLength extends RequestHeader(t"content-length")
-  case ContentMd5 extends RequestHeader(t"content-md5")
-  case ContentType extends RequestHeader(t"content-type")
-  case Cookie extends RequestHeader(t"cookie")
-  case Date extends RequestHeader(t"date")
-  case Expect extends RequestHeader(t"expect")
-  case Forwarded extends RequestHeader(t"forwarded")
-  case From extends RequestHeader(t"from")
-  case Host extends RequestHeader(t"host")
-  case Http2Settings extends RequestHeader(t"http2-settings")
-  case IfMatch extends RequestHeader(t"if-match")
-  case IfModifiedSince extends RequestHeader(t"if-modified-since")
-  case IfNoneMatch extends RequestHeader(t"if-none-match")
-  case IfRange extends RequestHeader(t"if-range")
-  case IfUnmodifiedSince extends RequestHeader(t"if-unmodified-since")
-  case MaxForwards extends RequestHeader(t"max-forwards")
-  case Origin extends RequestHeader(t"origin")
-  case Pragma extends RequestHeader(t"pragma")
-  case Prefer extends RequestHeader(t"prefer")
-  case ProxyAuthorization extends RequestHeader(t"proxy-authorization")
-  case Range extends RequestHeader(t"range")
-  case Referer extends RequestHeader(t"referer")
-  case Te extends RequestHeader(t"te")
-  case Trailer extends RequestHeader(t"trailer")
-  case TransferEncoding extends RequestHeader(t"transfer-encoding")
-  case UserAgent extends RequestHeader(t"user-agent")
-  case Upgrade extends RequestHeader(t"upgrade")
-  case Via extends RequestHeader(t"via")
-  case Warning extends RequestHeader(t"warning")
-  case Custom(name: Text) extends RequestHeader(name.lower)
+  def apply[L <: String](paramName: L): RequestHeader[L] = new RequestHeader[L]():
+    def header: Text = Text(paramName)
+
+  case object AIm extends SimpleRequestHeader["a-im"]()
+  case object Accept extends SimpleRequestHeader["accept"]()
+  case object AcceptCh extends SimpleRequestHeader["accept-ch"]()
+  case object AcceptDatetime extends SimpleRequestHeader["accept-datetime"]()
+  case object AcceptEncoding extends SimpleRequestHeader["accept-encoding"]()
+  case object AcceptLanguage extends SimpleRequestHeader["accept-language"]()
+  case object AccessControlRequestMethod extends SimpleRequestHeader["access-control-request-method"]()
+  case object AccessControlRequestHeaders extends SimpleRequestHeader["access-control-request-headers"]()
+  case object Authorization extends SimpleRequestHeader["authorization"]()
+  case object CacheControl extends SimpleRequestHeader["cache-control"]()
+  case object Connection extends SimpleRequestHeader["connection"]()
+  case object ContentEncoding extends SimpleRequestHeader["content-encoding"]()
+  case object ContentLength extends SimpleRequestHeader["content-length"]()
+  case object ContentMd5 extends SimpleRequestHeader["content-md5"]()
+  case object ContentType extends SimpleRequestHeader["content-type"]()
+  case object Cookie extends SimpleRequestHeader["cookie"]()
+  case object Date extends SimpleRequestHeader["date"]()
+  case object Expect extends SimpleRequestHeader["expect"]()
+  case object Forwarded extends SimpleRequestHeader["forwarded"]()
+  case object From extends SimpleRequestHeader["from"]()
+  case object Host extends SimpleRequestHeader["host"]()
+  case object Http2Settings extends SimpleRequestHeader["http2-settings"]()
+  case object IfMatch extends SimpleRequestHeader["if-match"]()
+  case object IfModifiedSince extends SimpleRequestHeader["if-modified-since"]()
+  case object IfNoneMatch extends SimpleRequestHeader["if-none-match"]()
+  case object IfRange extends SimpleRequestHeader["if-range"]()
+  case object IfUnmodifiedSince extends SimpleRequestHeader["if-unmodified-since"]()
+  case object MaxForwards extends SimpleRequestHeader["max-forwards"]()
+  case object Origin extends SimpleRequestHeader["origin"]()
+  case object Pragma extends SimpleRequestHeader["pragma"]()
+  case object Prefer extends SimpleRequestHeader["prefer"]()
+  case object ProxyAuthorization extends SimpleRequestHeader["proxy-authorization"]()
+  case object Range extends SimpleRequestHeader["range"]()
+  case object Referer extends SimpleRequestHeader["referer"]()
+  case object Te extends SimpleRequestHeader["te"]()
+  case object Trailer extends SimpleRequestHeader["trailer"]()
+  case object TransferEncoding extends SimpleRequestHeader["transfer-encoding"]()
+  case object UserAgent extends SimpleRequestHeader["user-agent"]()
+  case object Upgrade extends SimpleRequestHeader["upgrade"]()
+  case object Via extends SimpleRequestHeader["via"]()
+  case object Warning extends SimpleRequestHeader["warning"]()
   
-  def apply(content: Text): RequestHeader.Value = RequestHeader.Value(this, content)
-
 object ResponseHeader:
-  lazy val standard: Map[Text, ResponseHeader] = List(AcceptCh, AccessControlAllowOrigin,
+  lazy val standard: Map[Text, ResponseHeader] = List(AcceptCharset, AccessControlAllowOrigin,
       AccessControlAllowCredentials, AccessControlExposeHeaders, AccessControlMaxAge,
       AccessControlAllowMethods, AccessControlAllowHeaders, AcceptPatch, AcceptRanges, Age, Allow,
       AltSvc, CacheControl, Connection, ContentDisposition, ContentEncoding, ContentLanguage,
@@ -119,7 +129,7 @@ object ResponseHeader:
   given Show[ResponseHeader] = _.header
 
 enum ResponseHeader(val header: Text):
-  case AcceptCh extends ResponseHeader(t"accept-ch")
+  case AcceptCharset extends ResponseHeader(t"accept-charset")
   case AccessControlAllowOrigin extends ResponseHeader(t"access-control-allow-origin")
   case AccessControlAllowCredentials extends ResponseHeader(t"access-control-allow-credentials")
   case AccessControlExposeHeaders extends ResponseHeader(t"access-control-expose-headers")
@@ -193,5 +203,3 @@ enum Auth:
   case ScramSha1(text: Text)
   case ScramSha256(text: Text)
   case Vapid(text: Text)
-
-  def apply(): RequestHeader.Value = RequestHeader.Authorization(this.show)
