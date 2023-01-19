@@ -46,9 +46,9 @@
 	path = mod/gastronomy
 	url = git@github.com:propensive/gastronomy
 	branch = main
-[submodule "mod/euphemism"]
+[submodule "mod/javanais"]
 	path = mod/javanais
-	url = git@github.com:propensive/euphemism
+	url = git@github.com:propensive/javanais
 	branch = main
 [submodule "mod/escritoire"]
 	path = mod/escritoire
@@ -155,9 +155,9 @@
 [submodule "mod/merino"]
 	path = mod/merino
 	url = git@github.com:propensive/merino
-[submodule "mod/temporaneous"]
+[submodule "mod/aviation"]
 	path = mod/aviation
-	url = git@github.com:propensive/temporaneous
+	url = git@github.com:propensive/aviation
 [submodule "mod/diuretic"]
 	path = mod/diuretic
 	url = git@github.com:propensive/diuretic
