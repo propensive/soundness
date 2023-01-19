@@ -93,9 +93,9 @@ extends Indexed:
       else x.id == y.id
 
     def recur(original: IArray[Nodule], updates: IArray[Nodule]): IArray[Nodule] =
-      val diff = Diff.diff[Nodule](children, updates, cmp)
+      val changes = diff[Nodule](children, updates, cmp).changes
       
-      val nodes2 = diff.changes.foldLeft(List[Nodule]()):
+      val nodes2 = changes.foldLeft(List[Nodule]()):
         case (nodes, Change.Del(left, value))         => nodes
         case (nodes, Change.Ins(right, value))        => value :: nodes
         case (nodes, Change.Keep(left, right, value)) =>
