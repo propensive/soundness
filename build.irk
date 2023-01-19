@@ -13,6 +13,10 @@
       "url": "https://github.com/propensive/guillotine"
     },
     {
+      "base": "../gesticulate",
+      "url": "https://github.com/propensive/gesticulate"
+    },
+    {
       "base": "../javanais",
       "url": "https://github.com/propensive/javanais"
     },
@@ -25,6 +29,7 @@
     "../telekinesis/build.irk",
     "../cataclysm/build.irk",
     "../guillotine/build.irk",
+    "../gesticulate/build.irk",
     "../javanais/build.irk",
     "../honeycomb/build.irk"
   ],
@@ -54,6 +59,7 @@
         "telekinesis/client",
         "cataclysm/core",
         "guillotine/core",
+        "gesticulate/core",
         "javanais/core",
         "honeycomb/core"
       ],
