@@ -62,6 +62,7 @@ object Text:
 
   given CommandLineParser.FromString[Text] = identity(_)
   given Ordering[Text] = Ordering.String.on[Text](_.s)
+  given GenericHttpRequestParam[String, Text] = _.s
 
   given (using fromExpr: FromExpr[String]): FromExpr[Text] with
     def unapply(expr: Expr[Text])(using Quotes): Option[Text] = fromExpr.unapply(expr).map(Text(_))
@@ -209,6 +210,7 @@ package characterEncodings:
 
 object Encoding:
   import scala.jdk.CollectionConverters.SetHasAsScala
+
   val all: Set[Text] =
     jnc.Charset.availableCharsets.nn.asScala.to(Map).values.to(Set).flatMap: cs =>
       cs.aliases.nn.asScala.to(Set) + cs.displayName.nn
@@ -272,6 +274,7 @@ extension (bs: Long)
 opaque type ByteSize = Long
 
 object ByteSize:
+  given GenericHttpRequestParam["content-length", ByteSize] = _.long.toString
   given Ordering[ByteSize] = Ordering.Long.on(_.long)
 
   extension (bs: ByteSize)

@@ -12,7 +12,7 @@
     {
       "name": "Rudiments",
       "id": "rudiments/core",
-      "links": ["anticipation/file"],
+      "links": ["anticipation/file", "anticipation/http"],
       "sources": [
         "src/core"
       ],
