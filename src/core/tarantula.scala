@@ -24,6 +24,7 @@ import cataclysm.*
 import honeycomb.*
 import eucalyptus.*
 import rudiments.*
+import gesticulate.*
 import parasitism.*
 import anticipation.*, timeRepresentation.long
 
@@ -88,7 +89,7 @@ case class WebDriver(server: Browser#Server):
       private def get(address: Text)(using Log): Json = safe:
         internet:
           url"http://localhost:${server.port}/session/$sessionId/element/$elementId/$address"
-            .get(RequestHeader.ContentType(t"application/json")).as[Json]
+            .get(RequestHeader.ContentType(media"application/json")).as[Json]
       
       private def post(address: Text, content: Json)(using Log): Json = safe:
         internet:
