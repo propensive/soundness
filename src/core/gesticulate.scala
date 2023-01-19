@@ -175,8 +175,10 @@ case class MediaType(group: Media.Group, subtype: Media.Subtype, suffixes: List[
 
 object MediaType:
   given Debug[MediaType] = mt => t"""media"${mt}""""
-  
-  given Show[MediaType] =
+
+  given GenericHttpRequestParam["content-type", MediaType] = show.show(_).s
+
+  given show: Show[MediaType] =
     mt => t"${mt.basic}${mt.parameters.map { p => t"; ${p(0)}=${p(1)}" }.join}"
   
   given formenctype: GenericHtmlAttribute["formenctype", MediaType] with
