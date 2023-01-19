@@ -23,8 +23,8 @@ trait GenericHttpResponseStream[T]:
 trait GenericHttpReader[T]:
   def read(value: String): T
 
-trait GenericHttpRequestParam[L <: String & Singleton, T]:
+trait GenericHttpRequestParam[-L <: String, -T]:
   def apply(value: T): String
 
-trait GenericHttpResponseParam[L <: String & Singleton, T]:
+trait GenericHttpResponseParam[-L <: String, +T]:
   def unapply(value: String): Option[T]
