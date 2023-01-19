@@ -25,6 +25,7 @@ import java.util.regex.*
 import java.io as ji
 import java.util as ju
 import java.util.concurrent as juc
+import java.nio.charset as jnc
 
 import scala.util.CommandLineParser
 
@@ -34,7 +35,6 @@ import scala.util.{Try, Success, Failure}
 import scala.deriving.*
 import scala.quoted.*
 
-import java.util.concurrent as juc
 export scala.util.chaining.scalaUtilChainingOps
 
 export scala.reflect.{ClassTag, Typeable}
@@ -188,8 +188,38 @@ case class Counter(first: Int = 0):
   private var id: Int = first
   def apply(): Int = synchronized(id.tap((id += 1).waive))
 
-trait Encoding:
-  def name: Text
+package characterEncodings:
+  given utf8: Encoding = new Encoding(Text("UTF-8")):
+    override def carry(arr: Array[Byte]): Int =
+      val len = arr.length
+      def last = arr(len - 1)
+      def last2 = arr(len - 2)
+      def last3 = arr(len - 3)
+      
+      if len > 0 && ((last & -32) == -64 || (last & -16) == -32 || (last & -8) == -16) then 1
+      else if len > 1 && ((last2 & -16) == -32 || (last2 & -8) == -16) then 2
+      else if len > 2 && ((last3 & -8) == -16) then 3
+      else 0
+    
+    override def run(byte: Byte): Int =
+      if (byte & -32) == -64 then 2 else if (byte & -16) == -32 then 3 else if (byte & -8) == -16 then 4 else 1
+    
+  given ascii: Encoding = Encoding(Text("US-ASCII"))
+  given iso88591: Encoding = Encoding(Text("ISO-8859-1"))
+
+object Encoding:
+  import scala.jdk.CollectionConverters.SetHasAsScala
+  val all: Set[Text] =
+    jnc.Charset.availableCharsets.nn.asScala.to(Map).values.to(Set).flatMap: cs =>
+      cs.aliases.nn.asScala.to(Set) + cs.displayName.nn
+    .map(_.toLowerCase.nn).map(Text(_))
+  
+  def unapply(name: Text): Option[Encoding] =
+    if !all.contains(Text(name.s.toLowerCase.nn)) then None else Some:
+      val charset = jnc.Charset.forName(name.s).nn.displayName.nn
+      if charset == "UTF-8" then characterEncodings.utf8 else Encoding(Text(charset))
+
+case class Encoding(name: Text):
   def carry(array: Array[Byte]): Int = 0
   def run(byte: Byte): Int = 1
 
