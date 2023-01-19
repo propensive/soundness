@@ -7,7 +7,7 @@
    viewBox="0 0 120 120"
    version="1.1"
    id="svg5"
-   inkscape:version="1.1 (c68e22c387, 2021-05-23)"
+   inkscape:version="1.2.1 (9c6d41e410, 2022-07-14)"
    sodipodi:docname="diuretic.svg"
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
    xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
@@ -29,14 +29,16 @@
      fit-margin-right="0"
      fit-margin-bottom="0"
      inkscape:zoom="0.98142809"
-     inkscape:cx="210.40767"
-     inkscape:cy="-161.49935"
-     inkscape:window-width="4498"
-     inkscape:window-height="2978"
+     inkscape:cx="211.4266"
+     inkscape:cy="-160.98989"
+     inkscape:window-width="1438"
+     inkscape:window-height="1488"
      inkscape:window-x="0"
      inkscape:window-y="20"
      inkscape:window-maximized="1"
-     inkscape:current-layer="layer1">
+     inkscape:current-layer="layer1"
+     inkscape:showpageshadow="0"
+     inkscape:deskcolor="#d1d1d1">
     <inkscape:grid
        type="xygrid"
        id="grid3974"
@@ -117,13 +119,68 @@
     </clipPath>
     <clipPath
        clipPathUnits="userSpaceOnUse"
-       id="clipPath2086">
-      <circle
-         style="vector-effect:non-scaling-stroke;fill:none;fill-opacity:1;stroke:#1a1a8c;stroke-width:0.000251915;stroke-opacity:1;-inkscape-stroke:hairline;stop-color:#000000"
-         id="circle2088"
-         cx="103.09518"
-         cy="146.64403"
-         r="60" />
+       id="clipPath824">
+      <g
+         id="g828">
+        <circle
+           style="vector-effect:non-scaling-stroke;fill:none;fill-opacity:1;stroke:#1a1a8c;stroke-width:0.000251915;stroke-opacity:1;-inkscape-stroke:hairline;stop-color:#000000"
+           id="circle826"
+           cx="103.09518"
+           cy="146.64403"
+           r="60" />
+      </g>
+    </clipPath>
+    <clipPath
+       clipPathUnits="userSpaceOnUse"
+       id="clipPath830">
+      <g
+         id="g834">
+        <circle
+           style="vector-effect:non-scaling-stroke;fill:none;fill-opacity:1;stroke:#1a1a8c;stroke-width:0.000251915;stroke-opacity:1;-inkscape-stroke:hairline;stop-color:#000000"
+           id="circle832"
+           cx="103.09518"
+           cy="146.64403"
+           r="60" />
+      </g>
+    </clipPath>
+    <clipPath
+       clipPathUnits="userSpaceOnUse"
+       id="clipPath836">
+      <g
+         id="g840">
+        <circle
+           style="vector-effect:non-scaling-stroke;fill:none;fill-opacity:1;stroke:#1a1a8c;stroke-width:0.000251915;stroke-opacity:1;-inkscape-stroke:hairline;stop-color:#000000"
+           id="circle838"
+           cx="103.09518"
+           cy="146.64403"
+           r="60" />
+      </g>
+    </clipPath>
+    <clipPath
+       clipPathUnits="userSpaceOnUse"
+       id="clipPath842">
+      <g
+         id="g846">
+        <circle
+           style="vector-effect:non-scaling-stroke;fill:none;fill-opacity:1;stroke:#1a1a8c;stroke-width:0.000251915;stroke-opacity:1;-inkscape-stroke:hairline;stop-color:#000000"
+           id="circle844"
+           cx="103.09518"
+           cy="146.64403"
+           r="60" />
+      </g>
+    </clipPath>
+    <clipPath
+       clipPathUnits="userSpaceOnUse"
+       id="clipPath848">
+      <g
+         id="g852">
+        <circle
+           style="vector-effect:non-scaling-stroke;fill:none;fill-opacity:1;stroke:#1a1a8c;stroke-width:0.000251915;stroke-opacity:1;-inkscape-stroke:hairline;stop-color:#000000"
+           id="circle850"
+           cx="103.09518"
+           cy="146.64403"
+           r="60" />
+      </g>
     </clipPath>
   </defs>
   <g
@@ -132,38 +189,42 @@
      id="layer1"
      transform="translate(-43.095177,-86.644028)">
     <g
-       id="g2026"
-       clip-path="url(#clipPath2086)">
+       id="g909">
       <circle
-         style="vector-effect:non-scaling-stroke;fill:url(#radialGradient7482);fill-opacity:1;stroke:none;stroke-width:0.000251915;stroke-opacity:1;-inkscape-stroke:hairline;stop-color:#000000"
+         style="fill:url(#radialGradient7482);fill-opacity:1;stroke:none;stroke-width:0.000251915;stroke-opacity:1;stop-color:#000000"
          id="path3852"
          cx="103.09518"
          cy="146.64403"
-         r="60" />
+         r="60"
+         clip-path="url(#clipPath848)" />
       <ellipse
-         style="vector-effect:non-scaling-stroke;fill:#ffbd2a;fill-opacity:0.5027802;stroke:none;stroke-width:0.0003114;stroke-opacity:1;-inkscape-stroke:hairline;stop-color:#000000"
+         style="fill:#dd0000;fill-opacity:0.50774837;stroke:none;stroke-width:0.0003114;stroke-opacity:1;stop-color:#000000"
          id="path3852-0"
          cx="103.09518"
          cy="177.07344"
          rx="91.681137"
-         ry="60" />
+         ry="60"
+         clip-path="url(#clipPath842)" />
       <ellipse
-         style="vector-effect:non-scaling-stroke;fill:#ffbd2a;fill-opacity:0.78777194;stroke:none;stroke-width:0.0003114;stroke-opacity:1;-inkscape-stroke:hairline;stop-color:#000000"
+         style="fill:#ffbd2a;fill-opacity:0.787772;stroke:none;stroke-width:0.0003114;stroke-opacity:1;stop-color:#000000"
          id="path3852-0-3"
          cx="103.09518"
          cy="240.5735"
          rx="91.681137"
-         ry="60" />
+         ry="60"
+         clip-path="url(#clipPath836)" />
       <path
          style="fill:#ffffff;fill-opacity:0.849887;stroke:none;stroke-width:0.218162px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
          d="m 55.965911,135.89293 c -2.860252,34.51611 23.564634,43.27761 23.564634,69.24418 7.854877,8.65553 39.274395,8.65553 47.129265,0 0,-25.96657 26.37592,-34.72448 23.56464,-69.24418 -31.59922,11.26278 -63.719914,10.92909 -94.258539,0 z"
          id="path4588-2"
-         sodipodi:nodetypes="ccccc" />
+         sodipodi:nodetypes="ccccc"
+         clip-path="url(#clipPath830)" />
       <path
          style="opacity:0.671869;fill:#cbae74;fill-opacity:1;stroke:none;stroke-width:0.169692px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
          d="m 66.437031,132.49956 c 0,26.92982 20.82328,33.66225 20.82328,53.85962 6.109691,6.73246 25.560059,6.73246 31.669749,0 0,-20.19737 20.82329,-26.9298 20.82329,-53.85962 -24.43641,-6.74014 -48.86386,-6.68778 -73.316319,0 z"
          id="path4588-2-3"
-         sodipodi:nodetypes="ccccc" />
+         sodipodi:nodetypes="ccccc"
+         clip-path="url(#clipPath824)" />
     </g>
   </g>
 </svg>
