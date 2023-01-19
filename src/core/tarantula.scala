@@ -18,7 +18,7 @@ package tarantula
 
 import guillotine.*
 import gossamer.*
-import euphemism.*, jsonSerializers.minimal
+import javanais.*, jsonSerializers.minimal
 import telekinesis.*
 import cataclysm.*
 import honeycomb.*
