@@ -33,7 +33,7 @@ import sun.misc as sm
 
 import java.util.concurrent.atomic.AtomicInteger
 
-import encodings.Utf8
+import characterEncodings.utf8
 
 import unsafeExceptions.canThrowAny
 import rendering.ansi
