@@ -46,17 +46,17 @@ object reflection:
         case Ident(name)                => TastyTree(t"Ident", tree, Nil, name.show)
         case TypeIdent(name)            => TastyTree(t"TypeIdent", tree, Nil, name.show)
         case TypeSelect(term, name)     => TastyTree(t"TypeIdent", tree, List(expand(term)), name.show)
-        case Block(statements, last)   => TastyTree(t"Block", tree, statements.map(expand) :+ expand(last))
+        case Block(statements, last)    => TastyTree(t"Block", tree, statements.map(expand) :+ expand(last))
         case Closure(focus, _)          => TastyTree(t"Closure", tree, List(expand(focus)))
         case Literal(value)             => TastyTree(t"Literal", tree, Nil, value.show.show)
         case Match(focus, cases)        => TastyTree(t"Match", tree, expand(focus) :: cases.map(expand))
         case Applied(name, tts)         => TastyTree(t"Applied", tree, expand(name) :: tts.map(expand))
         case Repeated(xs, _)            => TastyTree(t"Repeated", tree, Nil)
-        case _                                => TastyTree(t"?${tree.toString}: ${tree.getClass.toString}", tree, Nil)
+        case _                          => TastyTree(t"?${tree.toString}: ${tree.getClass.toString}", tree, Nil)
 
     val tree = TastyTree.expand(expr.asTerm)
-    def exp(prefix: List[TreeTile], node: TastyTree) = Expansion(prefix.map(_.show).join+t"▪ "+node.name, node.param, node.shortCode, node.source)
-    val seq = textualizeTree[TastyTree, Expansion](_.children, exp)(List(tree))
+    def exp(prefix: List[TreeTile], node: TastyTree) = Expansion(prefix.drop(1).map(_.show).join+t"▪ "+node.name, node.param, node.shortCode, node.source)
+    val seq: Seq[Expansion] = textualizeTree[TastyTree, Expansion](_.children, exp)(List(tree))
 
 
     Table[Expansion](
