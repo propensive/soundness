@@ -251,7 +251,6 @@ case class HttpServer(port: Int) extends RequestHandler:
       httpServer.start()
       httpServer
     
-    import threading.platform
     Task(t"http-server"):
       val serv = startServer()
       hibernate()
