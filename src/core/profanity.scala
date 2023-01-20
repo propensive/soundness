@@ -59,7 +59,7 @@ object Tty:
     Log.fine(ansi"Sent ANSI escape codes to TTY to attempt to get console dimensions")
     Tty.print(t"${esc}[s${esc}[4095C${esc}[4095B${esc}[6n${esc}[u")
 
-  def stream[K](using Tty, Log, Keyboard[K], Monitor, Threading): LazyList[K] =
+  def stream[K](using Tty, Log, Keyboard[K], Monitor): LazyList[K] =
     summon[Tty].in.cluster(15).flatMap: data =>
       unsafely(summon[Keyboard[K]].interpret(data.map(_.to(List)).flatten))
 
@@ -120,7 +120,7 @@ def esc(code: Text): Text = t"${27.toChar}[${code}"
 object LineEditor:
   def concealed(str: Text): Text = str.map { _ => '*' }
 
-  def ask(initial: Text = t"", render: Text => Text = identity(_))(using Tty, Log, Monitor, Threading): Text =
+  def ask(initial: Text = t"", render: Text => Text = identity(_))(using Tty, Log, Monitor): Text =
     Tty.print(render(initial))
     
     def finished(key: Keypress) =
@@ -163,7 +163,7 @@ case class LineEditor(content: Text = t"", pos: Int = 0):
   catch case e: OutOfRangeError => this
 
   def unapply(stream: LazyList[Keypress])(using renderer: Renderer[LineEditor, Text])
-             (using Monitor, Tty, Log, Threading)
+             (using Monitor, Tty, Log)
              : Option[(Text, LazyList[Keypress])] =
     renderer(Tty.stream[Keypress], this)(_(_))
 
@@ -222,7 +222,7 @@ case class SelectMenu[T](options: List[T], current: T):
   catch case e: OutOfRangeError => this
 
   def unapply(stream: LazyList[Keypress])(using tty: Tty, log: Log, renderer: Renderer[SelectMenu[T], T])
-             (using Monitor, Threading)
+             (using Monitor)
              : Option[(T, LazyList[Keypress])] =
     renderer(Tty.stream[Keypress], this)(_(_))
 
