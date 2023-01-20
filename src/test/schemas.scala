@@ -19,7 +19,7 @@ package cellulose
 import gossamer.*
 import rudiments.*
 import eucalyptus.*
-import parasitism.*, threading.platform
+import parasitism.*
 import logging.silent
 
 import Arity.*
