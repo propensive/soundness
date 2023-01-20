@@ -47,10 +47,10 @@ extends Exception():
   def stackTrace: StackTrace = StackTrace(this)
 
 object StackTrace:
-  case class Frame(className: Text, method: Text, file: Text, line: Int, native: Boolean)
+  case class Frame(className: Text, method: Text, file: Text, line: Maybe[Int], native: Boolean)
   
   // FIXME: This is going to be gloriously inefficient, and it doesn't unescape other non-ASCII characters
-  def rewriteClassname(name: String): Text = Text:
+  def rewrite(name: String, method: Boolean = false): Text = Text:
     name
       .replaceAll("\\$anonfun", "λ").nn
       .replaceAll("\\$anon", "Γ").nn
@@ -87,20 +87,20 @@ object StackTrace:
       .replaceAll("\\$7", "₇").nn
       .replaceAll("\\$8", "₈").nn
       .replaceAll("\\$9", "₉").nn
-      .replaceAll("\\$\\$", "#").nn
+      .replaceAll("\\$", if method then "." else "#").nn
 
   def apply(exception: Throwable): StackTrace =
     val frames = List(exception.getStackTrace.nn.map(_.nn)*).map: frame =>
       StackTrace.Frame(
-        rewriteClassname(frame.getClassName.nn),
-        rewriteClassname(frame.getMethodName.nn),
+        rewrite(frame.getClassName.nn),
+        rewrite(frame.getMethodName.nn, method = true),
         Text(Option(frame.getFileName).map(_.nn).getOrElse("[no file]")),
-        frame.getLineNumber,
+        if frame.getLineNumber < 0 then Unset else frame.getLineNumber,
         frame.isNativeMethod
       )
     
     val cause = Option(exception.getCause)
-    val fullClassName: Text = rewriteClassname(exception.getClass.nn.getName.nn)
+    val fullClassName: Text = rewrite(exception.getClass.nn.getName.nn)
     val fullClass: List[Text] = List(fullClassName.s.split("\\.").nn.map(_.nn).map(Text(_))*)
     val className: Text = fullClass.last
     val component: Text = Text(fullClassName.s.substring(0, 0 max (fullClassName.s.length - className.s.length - 1)).nn)
