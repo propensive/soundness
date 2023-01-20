@@ -16,6 +16,8 @@
 
 package xylophone
 
+import rudiments.*
+
 extension (inline stringContext: StringContext)
   transparent inline def x(inline parts: Any*): Xml =
     ${XmlInterpolation.XmlInterpolator.expand('{XmlInterpolation.XmlInterpolator}, 'stringContext, 'parts)}

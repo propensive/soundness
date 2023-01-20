@@ -48,7 +48,7 @@
       ]
     },
     {
-      "name": "Xylophone",
+      "name": "Xylophone Tests",
       "id": "xylophone/test",
       "links": [
         "xylophone/core",
@@ -61,7 +61,7 @@
       "docs": [
         "doc"
       ],
-      "xexec": {
+      "exec": {
         "browsers": [],
 	"start": "xylophone.Tests"
       }

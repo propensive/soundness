@@ -150,18 +150,18 @@ object Tests extends Suite(t"Xylophone tests"):
     test(t"serialize list of strings"):
       val xs = List(t"one", t"two", t"three")
       Xml.print(xs.xml)
-    .assert(_ == t"<List><Text>one</Text><Text>two</Text><Text>three</Text></List>")
+    .assert(_ == t"<Seq><Text>one</Text><Text>two</Text><Text>three</Text></Seq>")
     
     test(t"serialize list of complex objects"):
       val book1 = Book(t"Lord of the Flies", t"9780399529207")
       val book2 = Book(t"Brave New World", t"9781907704345")
       val books = List(book1, book2)
       Xml.print(books.xml)
-    .assert(_ == t"""<List><Book isbn="9780399529207"><title>Lord of the Flies</title></Book><Book isbn="9781907704345"><title>Brave New World</title></Book></List>""")
+    .assert(_ == t"""<Seq><Book isbn="9780399529207"><title>Lord of the Flies</title></Book><Book isbn="9781907704345"><title>Brave New World</title></Book></Seq>""")
 
     test(t"serialize empty node"):
       Xml.print(List[Text]().xml)
-    .assert(_ == t"<List/>")
+    .assert(_ == t"<Seq/>")
 
     test(t"serialize case object"):
       case object Foo
@@ -179,7 +179,7 @@ object Tests extends Suite(t"Xylophone tests"):
     test(t"read error: not an integer"):
       val xml = Xml.parse(t"""<foo>not an integer</foo>""")
       Try(xml.as[Int])
-    .assert(Failure(XmlReadError()) == _)
+    .assert(Failure(IncompatibleTypeError()) == _)
 
     test(t"access error; proactively resolving head nodes"):
       val xml = Xml.parse(t"""<root><company><staff><ceo><name>Xyz</name></ceo></staff></company></root>""")
@@ -195,3 +195,11 @@ object Tests extends Suite(t"Xylophone tests"):
       val xml = Xml.parse(t"""<root><company><staff><ceo><name>Xyz</name></ceo></staff></company></root>""")
       Try(xml.company(1).staff().cto.name().as[Text])
     .assert(_ == Failure(XmlAccessError(1, List(t"company"))))
+    
+    test(t"simple literal content is as expected"): 
+      x"""<root attribute=""/>""".show
+    .assert(_ == t"""<root attribute=""/>""")
+
+    test(t"literal content is as expected"): 
+      x"<root><company><staff><ceo><name>Xyz</name></ceo></staff></company></root>"
+    .assert(_ == t"""<root><company><staff><ceo><name>Xyz</name></ceo></staff></company></root>""")

@@ -24,6 +24,7 @@ import anticipation.*
 
 import annotation.targetName
 import language.dynamics
+import scala.util.NotGiven
 
 case class Namespace(id: Text, uri: Text)
 
@@ -194,7 +195,7 @@ case class XmlDoc(root: Ast.Root) extends Xml, Dynamic:
   def applyDynamic(tagName: String)(idx: Int = 0): XmlNode = selectDynamic(tagName).apply(idx)
   
   @targetName("all")
-  def * : Fragment = Fragment((), Nil, root)
+  def `*`: Fragment = Fragment((), Nil, root)
   
   @targetName("add")
   infix def +(other: Xml): XmlDoc throws XmlAccessError =
@@ -216,5 +217,5 @@ case class Attribute(node: XmlNode, attribute: Text):
 case class xmlAttribute() extends StaticAnnotation
 case class xmlLabel(name: String) extends StaticAnnotation
 
-extension [T](value: T)
+extension [T](value: T)(using NotGiven[T =:= StringContext])
   def xml(using writer: XmlWriter[T]): XmlDoc = XmlDoc(Ast.Root(writer.write(value)))

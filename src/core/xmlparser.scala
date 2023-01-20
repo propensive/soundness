@@ -22,9 +22,9 @@ import gossamer.*
 
 object XmlInterpolation:
 
-  enum Input:
-    case StringLike(str: Text)
-    case XmlLike(xml: Ast.Element)
+  enum XmlInput:
+    case Flat(text: Text)
+    case Structured(xml: Ast.Element)
 
   enum ContextType:
     case AttributeValue, InTagName, SelfClosingTagName, TagClose, ClosingTag, InAttributeName,
@@ -69,13 +69,13 @@ object XmlInterpolation:
       case None =>
         throw InterpolationError(t"spurious closing tag: $current", offset - current.length, current.length)
 
-  given Substitution[Input, Text, "t"] with
-    def embed(value: Text) = Input.StringLike(value)
+  given Substitution[XmlInput, Text, "t"] with
+    def embed(value: Text) = XmlInput.Flat(value)
 
-  given genInsert[T](using writer: XmlWriter[T]): Insertion[Input, T] =
-    value => Input.XmlLike(writer.write(value))
+  given genInsert[T](using writer: XmlWriter[T]): Insertion[XmlInput, T] = value =>
+    XmlInput.Structured(writer.write(value))
 
-  object XmlInterpolator extends Interpolator[Input, ParseState, XmlDoc]:
+  object XmlInterpolator extends Interpolator[XmlInput, ParseState, XmlDoc]:
     import ContextType.*
     val Letters = ('a' to 'z').to(Set) ++ ('A' to 'Z').to(Set)
     val Digits = ('0' to '9').to(Set)
@@ -85,11 +85,7 @@ object XmlInterpolation:
     def initial: ParseState = ParseState(0, ContextType.Body, Nil, t"", t"", false)
 
     private def escape(str: Text): Text =
-      str.sub(t"\"", t"&quot;")
-        .sub(t"'", t"&apos;")
-        .sub(t"<", t"&lt;")
-        .sub(t">", t"&gt;")
-        .sub(t"&", t"&amp;")
+      str.sub(t"\"", t"&quot;").sub(t"'", t"&apos;").sub(t"<", t"&lt;").sub(t">", t"&gt;").sub(t"&", t"&amp;")
 
     def skip(state: ParseState): ParseState = state.context match
       case AttributeValue | Body => parse(state, t"")
@@ -97,14 +93,14 @@ object XmlInterpolation:
       case _                     => throw InterpolationError(t"a substitution cannot be made in this"+
                                         t" position")
 
-    def insert(state: ParseState, value: Input): ParseState =
+    def insert(state: ParseState, value: XmlInput): ParseState =
       state.context match
         case AttributeValue | Body => value match
-          case Input.StringLike(str) => parse(state, escape(str))
-          case Input.XmlLike(xml)    => parse(state, xml.show)
+          case XmlInput.Flat(str)       => parse(state, escape(str))
+          case XmlInput.Structured(xml) => parse(state, xml.show)
         case AttributeEquals       => value match
-            case Input.StringLike(str) => parse(state, t"\"${escape(str)}\"")
-            case Input.XmlLike(xml)    => parse(state, t"\"${escape(xml.show)}\"")
+            case XmlInput.Flat(str)       => parse(state, t"\"${escape(str)}\"")
+            case XmlInput.Structured(xml) => parse(state, t"\"${escape(xml.show)}\"")
         case _ =>
           throw InterpolationError(t"a substitution cannot be made in this position")
     
@@ -113,7 +109,7 @@ object XmlInterpolation:
       try Xml.parse(state.source)
       catch case e: XmlParseError => throw InterpolationError(t"the XML could not be parsed")
 
-    def parse(state: ParseState, string: Text): ParseState = string.chars.foldLeft(state.copy(offset = 0)) {
+    def parse(state: ParseState, string: Text): ParseState = string.chars.foldLeft(state.copy(offset = 0)):
       case (state@ParseState(_, _, _, _, _, _), char) => state.context match
         
         case InTagName          => char match
@@ -217,4 +213,4 @@ object XmlInterpolation:
           case TagChar()          => state()
           case ch                 => throw InterpolationError(t"character '$ch' is not valid in an entity name",
                                          state.offset, 1)
-    }.copy(source = t"${state.source}$string")
+    .copy(source = t"${state.source}$string")

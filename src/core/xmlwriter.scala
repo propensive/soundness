@@ -21,14 +21,14 @@ import rudiments.*
 import gossamer.*
 
 object XmlWriter extends Derivation[XmlWriter]:
-  given XmlWriter[Text] = str =>
-    Ast.Element(XmlName(t"Text"), List(Ast.Textual(str)))
+  given XmlWriter[Text] = str => Ast.Element(XmlName(t"Text"), List(Ast.Textual(str)))
+  given XmlWriter[String] = str => Ast.Element(XmlName(t"String"), List(Ast.Textual(str.show)))
 
   given [T](using canon: Canonical[T]): XmlWriter[T] = value =>
     Ast.Element(XmlName(t"value"), List(Ast.Textual(canon.serialize(value))))
 
-  given [T: XmlWriter]: XmlWriter[List[T]] = xs =>
-    Ast.Element(XmlName(t"List"), xs.map(summon[XmlWriter[T]].write(_)))
+  given [T: XmlWriter, Coll[E] <: Seq[E]]: XmlWriter[Coll[T]] = xs =>
+    Ast.Element(XmlName(t"Seq"), xs.map(summon[XmlWriter[T]].write(_)))
 
   given XmlWriter[Int] = int =>
     Ast.Element(XmlName(t"Int"), List(Ast.Textual(int.show)))
