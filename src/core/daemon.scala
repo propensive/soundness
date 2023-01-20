@@ -64,7 +64,6 @@ enum Signal:
 
 trait Daemon()(using Log) extends App:
   private val spawnCount: Counter = Counter(0)
-  import threading.platform
   val signalHandler: PartialFunction[Signal, Unit] = PartialFunction.empty
 
   final def main(args: IArray[Text]): Unit =
