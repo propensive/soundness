@@ -141,10 +141,10 @@ object SystemOut
 object SystemErr
 
 extension (obj: LazyList.type)
-  def multiplex[T](streams: LazyList[T]*)(using Monitor, Threading): LazyList[T] throws AlreadyStreamingError =
+  def multiplex[T](streams: LazyList[T]*)(using Monitor): LazyList[T] throws AlreadyStreamingError =
     multiplexer(streams*).stream
   
-  def multiplexer[T](streams: LazyList[T]*)(using Monitor, Threading): Multiplexer[Any, T] =
+  def multiplexer[T](streams: LazyList[T]*)(using Monitor): Multiplexer[Any, T] =
     val multiplexer = Multiplexer[Any, T]()
     streams.zipWithIndex.map(_.swap).foreach(multiplexer.add)
     multiplexer
@@ -182,7 +182,7 @@ extension [T](value: T)
   def read[S]()(using readable: Readable[S], src: Source[T]): S throws StreamCutError =
     readable.read(dataStream)
 
-case class Multiplexer[K, T]()(using monitor: Monitor, threading: Threading):
+case class Multiplexer[K, T]()(using monitor: Monitor):
   private val tasks: HashMap[K, Task[Unit]] = HashMap()
   private val queue: juc.LinkedBlockingQueue[Maybe[T]] = juc.LinkedBlockingQueue()
   private var streaming: Boolean = false
@@ -214,7 +214,7 @@ case class Multiplexer[K, T]()(using monitor: Monitor, threading: Threading):
 
 extension [T](stream: LazyList[T])
 
-  def rate(using time: GenericDuration)(interval: time.Duration)(using Monitor, Threading)
+  def rate(using time: GenericDuration)(interval: time.Duration)(using Monitor)
           : LazyList[T] throws CancelError =
     def recur(stream: LazyList[T], last: Long): LazyList[T] = stream match
       case head #:: tail =>
@@ -226,10 +226,10 @@ extension [T](stream: LazyList[T])
 
     Task(Text("ratelimiter"))(recur(stream, System.currentTimeMillis)).await()
 
-  def multiplexWith(that: LazyList[T])(using Monitor, Threading): LazyList[T] =
+  def multiplexWith(that: LazyList[T])(using Monitor): LazyList[T] =
     unsafely(LazyList.multiplex(stream, that))
 
-  def regulate(tap: Tap)(using Monitor, Threading): LazyList[T] throws AlreadyStreamingError =
+  def regulate(tap: Tap)(using Monitor): LazyList[T] throws AlreadyStreamingError =
     def defer(active: Boolean, stream: LazyList[T | Tap.Regulation], buffer: List[T]): LazyList[T] =
       recur(active, stream, buffer)
 
@@ -247,7 +247,7 @@ extension [T](stream: LazyList[T])
 
   def cluster(using time: GenericDuration)
              (interval: time.Duration, maxSize: Maybe[Int] = Unset, maxDelay: Maybe[Long] = Unset)
-             (using Monitor, Threading, GenericInstant { type Instant = Long }): LazyList[List[T]] =
+             (using Monitor, GenericInstant { type Instant = Long }): LazyList[List[T]] =
     
     def defer(stream: LazyList[T], list: List[T], expiry: Long): LazyList[List[T]] =
       recur(stream, list, expiry)
