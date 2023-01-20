@@ -10,7 +10,7 @@ provide intuitive syntax for manipulating XML, as well as better typesafety and 
 ## Features
 
 - parse and represent XML in Scala
-- statically check XML in `xml""` interpolators
+- statically check XML in `x""` interpolators
 - substitute standard and custom types (provided by typeclasses) into XML
 - automatically derive typeclasses to convert case classes and product types to and from XML
 - safe dynamic interface for accessing nested fields
@@ -32,12 +32,12 @@ which will return an instance of `Xml`, or throw an `XmlParseError` if the XML i
 
 ### XML Literals
 
-`Xml` values may also be constructed using the `xml""` interpolator. These will be checked for well-formedness
+`Xml` values may also be constructed using the `x""` interpolator. These will be checked for well-formedness
 at compiletime: all syntax must be valid, special characters escaped, and all tags must be closed and nested
 correctly.
 
 ```scala
-val book = xml"<book><author>H. G. Wells</author><title>War of the Worlds</title></book>"
+val book = x"<book><author>H. G. Wells</author><title>War of the Worlds</title></book>"
 ```
 
 ### XML AST Representation
@@ -125,11 +125,11 @@ calling `as[T]` on the value, for an appropriate choice of `T`.
 
 For example, the `XmlNode`,
 ```scala
-val name: XmlNode = xml"<author>Virginia Woolf</author>"
+val name: XmlNode = x"<author>Virginia Woolf</author>"
 ```
 could be converted to a `Text` with, `name.as[Text]`. Or,
 ```scala
-val age: XmlNode = xml"<age>18</age>"
+val age: XmlNode = x"<age>18</age>"
 ```
 can be read as a `Long` with, `age.as[Long]`.
 
