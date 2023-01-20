@@ -101,7 +101,7 @@ object EucalyptusMacros:
 @implicitNotFound("""|eucalyptus: a contextual Log instance is needed, for example:
                      |    import logging.stdout  // Log everything to standard output
                      |    import logging.silent  // Do not log anything""".stripMargin)
-class Log(actions: PartialFunction[Entry, LogSink & Singleton]*)(using Monitor, Threading):
+class Log(actions: PartialFunction[Entry, LogSink & Singleton]*)(using Monitor):
   transparent inline def thisLog = this
   def tags: ListMap[Text, Text] = ListMap()
   private val funnels: HashMap[LogSink, Funnel[Entry]] = HashMap()
@@ -124,11 +124,11 @@ trait LogTag[-T]:
   def tag(value: T): Text
 
 package logging:
-  import monitors.global, threading.platform
+  import monitors.global
   given silent: Log = Log()
   
   given stdout: Log =
-    import monitors.global, threading.platform
+    import monitors.global
     val sink = SystemOut.sink
     
     Log:
