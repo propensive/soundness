@@ -24,7 +24,7 @@ import eucalyptus.*
 import serpentine.*
 import rudiments.*
 import turbulence.*
-import parasitism.*, monitors.global, threading.platform
+import parasitism.*, monitors.global
 
 import unsafeExceptions.canThrowAny
 import environments.system
