@@ -22,13 +22,14 @@ import anticipation.*
 import scala.util.*
 
 package monitors:
-  given global: Monitor = Supervisor()
+  given global: Monitor = Supervisor(daemon = true)
 
 case class CancelError() extends Error(err"the operation was cancelled")
 case class IncompleteError() extends Error(err"the task was not completed")
 case class AlreadyCompleteError() extends Error(err"the promise was already completed")
 
-case class Supervisor(baseId: Text = Text("main")) extends Monitor:
+case class Supervisor(baseId: Text = Text("main"), daemon: Boolean = false, virtualThreads: Boolean = false)
+extends Monitor:
   @volatile
   private var interrupted: Boolean = false
 
@@ -36,6 +37,10 @@ case class Supervisor(baseId: Text = Text("main")) extends Monitor:
   def id: Text = name
   def continue = !interrupted
   def cancel(): Unit = interrupted = true
+
+  def makeThread(runnable: Runnable, name: Text): Thread =
+    if virtualThreads then Thread.ofVirtual.nn.name(name.s).nn.start(runnable).nn
+    else Thread(runnable, name.s).nn.tap(_.setDaemon(daemon)).tap(_.start())
 
 def supervise[T](id: Text)(fn: Monitor ?=> T): T = fn(using Supervisor(id))
 def hibernate()(using Monitor): Unit = sleep(using timeRepresentation.long)(Long.MaxValue)
@@ -50,6 +55,7 @@ trait Monitor:
   def name: Text
   def continue: Boolean
   def cancel(): Unit
+  def makeThread(runnable: Runnable, name: Text): Thread
   
   final def accede(cleanup: => Unit = ()): Unit =
     import unsafeExceptions.canThrowAny
@@ -62,6 +68,7 @@ case class TaskMonitor(id: Text, interrupted: () => Boolean, stop: () => Unit, p
   def name: Text = Text(parent.name.s+"/"+id)
   def continue: Boolean = !interrupted() && parent.continue
   def cancel(): Unit = stop()
+  def makeThread(runnable: Runnable, name: Text): Thread = parent.makeThread(runnable, name)
 
 case class Promise[T]():
   @volatile
@@ -100,30 +107,17 @@ case class Promise[T]():
     try value.fold("[incomplete]")(_.toString) catch case err: CancelError => "[canceled]"
 
 extension [T](xs: Iterable[Task[T]])
-  transparent inline def sequence(using mon: Monitor, threading: Threading): Task[Iterable[T]] =
+  transparent inline def sequence(using mon: Monitor): Task[Iterable[T]] =
     Task(Text("sequence"))(xs.map(_.await()))
 
 enum TaskStatus:
   case New, Running, Completed, Canceled, Failed, Expired
 
-package threading:
-  // given platform: Threading = (runnable, name) => Thread.ofPlatform.nn.name(name.s).nn.start(runnable).nn
-  given virtual: Threading = (runnable, name) => Thread.ofVirtual.nn.name(name.s).nn.start(runnable).nn
-  given platform: Threading = (runnable, name) => Thread(runnable, name.s).tap(_.start())
-
-@implicitNotFound("""|parasitism: a contextual Threading instance is required to create new asynchronous tasks, typically
-                     |one of:
-                     |    import threading.virtual   // use lightweight virtual threads in newer JVMs
-                     |    import threading.platform  // use OS threads""".stripMargin)
-trait Threading:
-  def apply(runnable: Runnable, name: Text): Thread
-
 object Task:
-  def apply[T](id: Text)(fn: CanThrow[CancelError] ?=> Monitor ?=> T)
-              (using monitor: Monitor, threading: Threading): Task[T] =
+  def apply[T](id: Text)(fn: CanThrow[CancelError] ?=> Monitor ?=> T)(using monitor: Monitor): Task[T] =
     (new Task(id, mon => fn(using unsafeExceptions.canThrowAny)(using mon))(using monitor)).tap(_.start())
 
-class Task[T](id: Text, calc: Monitor => T)(using mon: Monitor, threading: Threading):
+class Task[T](id: Text, calc: Monitor => T)(using mon: Monitor):
   private var startTime: Long = 0L
   private var status: TaskStatus = TaskStatus.New
   def name = Text(mon.name.s+"/"+id)
@@ -152,7 +146,7 @@ class Task[T](id: Text, calc: Monitor => T)(using mon: Monitor, threading: Threa
     Task(Text(s"${id}.flatMap"))(fn(await()).await())
   
   private val result: Promise[T] = Promise()
-  private lazy val thread: Thread = threading(runnable, ctx.name)
+  private lazy val thread: Thread = mon.makeThread(runnable, ctx.name)
   private lazy val ctx = mon.child(id, thread.isInterrupted, thread.interrupt())
   
   private def runnable: Runnable = () => safely:
