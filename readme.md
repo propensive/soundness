@@ -33,10 +33,10 @@ is simple. For example,
 ```scala
 import probably.*
 
-test("the sum of two identical integers is divisible by two") {
+test(t"the sum of two identical integers is divisible by two"):
   val x: Int = 7
   x + x
-}.assert(_%2 == 0)
+.assert(_%2 == 0)
 ```
 
 Note that the assertion takes a predicate lambda, which operates on the result from evaluating the body of the
@@ -56,7 +56,7 @@ These different cases will be distinguished in the test report.
 It is important to note that a test can be defined anywhere, such as,
 - in the `main` method of an application
 - in a `lazy val`
-- inside a `Future`
+- inside an asynchronous `Task`
 - in a parameterized method, testing a property of that parameter
 - in the request handler on a web server
 - in a pattern extractor (`unapply` method)
@@ -81,13 +81,13 @@ not impose constraints on new code, or require non-local changes to existing cod
 
 As tests may appear anywhere, they are easy to parameterize. We could, for example, rewrite the test above like
 so,
-```
+```scala
 import probably.*
 
 def runTest(x: Int): Unit =
-  test("the sum of three identical integers is divisible by 3") {
+  test(t"the sum of three identical integers is divisible by 3"):
     x + x + x
-  }.assert(_%3 == 0)
+  .assert(_%3 == 0)
 
 runTest(2)
 runTest(50)
@@ -96,13 +96,13 @@ runTest(Int.MaxValue)
 
 However, if the test were to fail, it would be useful to know what input caused it to fail. Any number of inputs
 can be logged by including them as additional named parameters after the test name, like this:
-```
+```scala
 import probably.*
 
 def runTest(x: Int): Unit =
-  test("the sum of three identical integers is divisible by 3", input = x) {
+  test(t"the sum of three identical integers is divisible by 3", input = x):
     x + x + x
-  }.assert(_%3 == 0)
+  .assert(_%3 == 0)
 ```
 
 The choice of the parameter name `input` is the user&rsquo;s choice: any name that is a valid identifier may be
@@ -120,12 +120,12 @@ each of the parameters.
 ```scala
 import probably.*
 
-case class Person(name: String, age: Int)
+case class Person(name: Text, age: Int)
 
 Generate.stream[Person](1000).foreach { person =>
-  test("all persons have realistic ages", v = person) {
+  test(t"all persons have realistic ages", v = person):
     person.age
-  }.assert { a => a >= 0 && a < 100 }
+  .assert { a => a >= 0 && a < 100 }
 }
 ```
 
@@ -140,9 +140,9 @@ the tests, in order, like so:
 ```scala
 object ProjectTests extends Suite("Project tests"):
   def run(using Runner): Unit =
-    test("first test") {
+    test(t"first test"):
       // test body
-    }.assert(/* predicate */)
+    .assert(/* predicate */)
 ```
 
 The `Suite` class provides an implementation of a `main` method, so any object which subclasses `Suite` may be
@@ -155,9 +155,9 @@ _Probably_ provides a second way of defining a test: as an expression. For examp
 import probably.*
 import java.io.*
 
-test("check the backup exists") {
+test(t"check the backup exists"):
   File("data.bak")
-}.check(_.exists).setReadOnly()
+.check(_.exists).setReadOnly()
 ```
 
 This style should look familiar, apart from one superficial difference: the test predicate is applied to a
@@ -175,9 +175,9 @@ A test suite is a convenient grouping of related tests, and can be launched from
 the following example) like so:
 ```scala
 test.suite("integration tests") { test =>
-  test("end-to-end process") {
+  test(t"end-to-end process"):
     System.process()
-  }.assert(_.isSuccess)
+  .assert(_.isSuccess)
 }
 ```
 
@@ -219,7 +219,7 @@ be used, but caution should be taken if there is a mismatch between the
 project's stability level and the importance of your own project.
 
 Probably is designed to be _small_. Its entire source code currently consists
-of 759 lines of code.
+of 780 lines of code.
 
 ## Building
 
