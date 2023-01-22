@@ -35,10 +35,10 @@ enum DelimitRows:
 
 object Column:
   def apply[T, H, S](title: H, width: Maybe[Int] = Unset, align: Alignment = Alignment.Left,
-                         breaks: Breaks = Breaks.Space)(get: T => S)
+                         breaks: Breaks = Breaks.Space, hide: Boolean = false)(get: T => S)
                     (using ashow: AnsiShow[H], ashow2: AnsiShow[S])
                     : Column[T] =
-    Column[T](ashow.ansiShow(title), get.andThen(ashow2.ansiShow(_)), breaks, align, width)
+    Column[T](ashow.ansiShow(title), get.andThen(ashow2.ansiShow(_)), breaks, align, width, hide)
 
   def constrain(text: Text, breaks: Breaks, maxWidth: Int, init: Int = 0): Table.BiShort =
 
@@ -63,7 +63,8 @@ object Column:
  
     recur(init)
 
-case class Column[T](title: AnsiText, get: T => AnsiText, breaks: Breaks, align: Alignment, width: Maybe[Int])
+case class Column[T](title: AnsiText, get: T => AnsiText, breaks: Breaks, align: Alignment, width: Maybe[Int],
+                         hide: Boolean)
 
 object Table:
   opaque type BiShort = Int
@@ -78,11 +79,12 @@ object Table:
       def left: Int = value&65535
 
 
-case class Table[T](cols: Column[T]*):
+case class Table[T: ClassTag](initCols: Column[T]*):
 
   def tabulate(data: Seq[T], maxWidth: Int, delimitRows: DelimitRows = DelimitRows.RuleIfMultiline)
               (using style: TableStyle)
               : LazyList[AnsiText] =
+    val cols: IArray[Column[T]] = IArray.from(initCols.filterNot(_.hide))
     val titles: IArray[AnsiText] = IArray.from(cols.map(_.title))
     
     val cells: IArray[IArray[AnsiText]] = IArray.from:
@@ -98,28 +100,27 @@ case class Table[T](cols: Column[T]*):
         cellRefs.maxBy(_(col).right).apply(col).right
 
     @tailrec
-    def recur(): Unit =
-      if widths.sum > freeWidth then
-        val maxLinesByRow: IArray[Int] = cellRefs.map(_.maxBy(_.left).left).immutable(using Unsafe)
-        
-        val totalUnfilledCellsByColumn: IArray[Int] = IArray.tabulate[Int](cols.length): col =>
-          if !cols(col).width.unset then 0 else cellRefs.indices.count: row =>
-            cellRefs(row)(col).left < maxLinesByRow(row)
-        
-        val mostSpaceInAnyColumn = totalUnfilledCellsByColumn.max
-        
-        val focus: Int = cols.indices.maxBy: col =>
-          if totalUnfilledCellsByColumn(col) == mostSpaceInAnyColumn && cols(col).width.unset then widths(col)
-          else -1
+    def recur(): Unit = if widths.sum > freeWidth then
+      val maxLinesByRow: IArray[Int] = cellRefs.map(_.maxBy(_.left).left).immutable(using Unsafe)
+      
+      val totalUnfilledCellsByColumn: IArray[Int] = IArray.tabulate[Int](cols.length): col =>
+        if !cols(col).width.unset then 0 else cellRefs.indices.count: row =>
+          cellRefs(row)(col).left < maxLinesByRow(row)
+      
+      val mostSpaceInAnyColumn = totalUnfilledCellsByColumn.max
+      
+      val focus: Int = cols.indices.maxBy: col =>
+        if totalUnfilledCellsByColumn(col) == mostSpaceInAnyColumn && cols(col).width.unset then widths(col)
+        else -1
 
-        val target = widths(focus) - 1
-        
-        cellRefs.indices.foreach: row =>
-          if cellRefs(row)(focus).right > target
-          then cellRefs(row)(focus) = Column.constrain(cells(row)(focus).plain, cols(focus).breaks, target)
-        
-        widths(focus) = target
-        recur()
+      val target = widths(focus) - 1
+      
+      cellRefs.indices.foreach: row =>
+        if cellRefs(row)(focus).right > target
+        then cellRefs(row)(focus) = Column.constrain(cells(row)(focus).plain, cols(focus).breaks, target)
+      
+      widths(focus) = target
+      recur()
       
     recur()
 
@@ -127,8 +128,6 @@ case class Table[T](cols: Column[T]*):
 
     val columns = cols.zip(widths).map: (col, width) =>
       col.copy(width = width)
-    
-    //import style.*
     
     def extent(text: Text, width: Int, start: Int): BiShort =
       
