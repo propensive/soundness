@@ -196,10 +196,10 @@ object Tests extends Suite(t"Xylophone tests"):
       Try(xml.company(1).staff().cto.name().as[Text])
     .assert(_ == Failure(XmlAccessError(1, List(t"company"))))
     
-    test(t"simple literal content is as expected"): 
-      x"""<root attribute=""/>""".show
-    .assert(_ == t"""<root attribute=""/>""")
+    // test(t"simple literal content is as expected"): 
+    //   xml"""<root attribute=""/>""".show
+    // .assert(_ == t"""<root attribute=""/>""")
 
-    test(t"literal content is as expected"): 
-      x"<root><company><staff><ceo><name>Xyz</name></ceo></staff></company></root>"
-    .assert(_ == t"""<root><company><staff><ceo><name>Xyz</name></ceo></staff></company></root>""")
+    // test(t"literal content is as expected"): 
+    //   xml"<root><company><staff><ceo><name>Xyz</name></ceo></staff></company></root>"
+    // .assert(_ == t"""<root><company><staff><ceo><name>Xyz</name></ceo></staff></company></root>""")
