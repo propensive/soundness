@@ -97,7 +97,7 @@
       ],
       "exec": {
         "browsers": [],
-	"start": "probably2.Tests"
+	"start": "probably.Tests"
       }
     }
   ]

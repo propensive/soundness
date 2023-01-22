@@ -50,11 +50,11 @@ class TestReport():
     case Pass, Fail, Throws, CheckThrows, Mixed, Suite
 
     def symbol: AnsiText = this match
-      case Pass        => ansi"${Bg(rgb"#8abd00")}( $Bold(✓) )"
-      case Fail        => ansi"${Bg(colors.Tomato)}( $Bold(✗) )"
-      case Throws      => ansi"${Bg(colors.DarkOrange)}( $Bold(!) )"
-      case CheckThrows => ansi"${Bg(rgb"#dd40a0")}( $Bold(‼) )"
-      case Mixed       => ansi"${Bg(rgb"#ddd700")}( $Bold(?) )"
+      case Pass        => ansi"${Bg(rgb"#8abd00")}( $Bold(${colors.Black}(✓)) )"
+      case Fail        => ansi"${Bg(colors.Tomato)}( $Bold(${colors.Black}(✗)) )"
+      case Throws      => ansi"${Bg(colors.DarkOrange)}( $Bold(${colors.Black}(!)) )"
+      case CheckThrows => ansi"${Bg(rgb"#dd40a0")}( $Bold(${colors.Black}(‼)) )"
+      case Mixed       => ansi"${Bg(rgb"#ddd700")}( $Bold(${colors.Black}(?)) )"
       case Suite       => ansi"   "
 
   case class Summary(status: Status, id: TestId, count: Int, min: Long, max: Long, avg: Long):
