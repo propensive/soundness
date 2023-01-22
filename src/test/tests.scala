@@ -22,5 +22,5 @@ import gossamer.*
 import unsafeExceptions.canThrowAny
 
 object Tests extends Suite(t"Profanity Tests"):
-  def run(using Runner): Unit =
+  def run(): Unit =
     ()
