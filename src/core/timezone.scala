@@ -148,7 +148,7 @@ object Tzdb:
     @tailrec 
     def recur(lineNo: Int, lines: LazyList[Text], entries: List[Tzdb.Entry], zone: Option[Tzdb.Entry.Zone]): List[Tzdb.Entry] =
       if lines.isEmpty then
-        Log.fine(t"Finished parsing $lineNo lines of $name, and got ${entries.size} entries")
+        //Log.fine(t"Finished parsing $lineNo lines of $name, and got ${entries.size} entries")
         entries ++ zone
       else
         val line: Text = lines.head.upto(_ == '#')
