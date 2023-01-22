@@ -41,7 +41,7 @@ case class Pixel(x: Int, y: Int, color: ColorVal)
 
 object Tests extends Suite(t"Xylophone tests"):
 
-  def run(using Runner): Unit =
+  def run(): Unit =
     test(t"extract integer"):
       Xml.parse(t"""<message>1</message>""").as[Int]
     .assert(_ == 1)
