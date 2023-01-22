@@ -29,7 +29,7 @@ import Change.*
 object Tests extends Suite(t"Dissonance tests"):
   given Realm(t"tests")
 
-  def run(using Runner): Unit =
+  def run(): Unit =
     suite(t"Diff tests"):
       test(t"Empty lists"):
         diff(IArray[Char](), IArray[Char]())
