@@ -26,7 +26,7 @@ import unsafeExceptions.canThrowAny
 given Log(Everything |-> Stdout)
 
 object Tests extends Suite(t"Gesticulate tests"):
-  def run(using Runner): Unit =
+  def run(): Unit =
     test(t"parse media type's type") {
       Media.parse(t"application/json").group
     }.assert(_ == Media.Group.Application)
