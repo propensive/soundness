@@ -58,16 +58,16 @@ enum Level:
   case Fine, Info, Warn, Fail
   def unapply(entry: Entry): Boolean = entry.level == this
   
-case class Entry(realm: Realm, level: Level, message: AnsiText, timestamp: LogTime, tags: ListMap[Text, Text])
+case class Entry(realm: Realm, level: Level, message: AnsiText, timestamp: Timestamp, tags: ListMap[Text, Text])
 
-object LogTime:
-  def apply(): LogTime = System.currentTimeMillis
-  given show: Show[LogTime] = ts => dateFormat.format(ju.Date(ts)).nn.show
-  given AnsiShow[LogTime] = timestamp => ansi"${colors.Tan}(${show.show(timestamp)})"
+object Timestamp:
+  def apply(): Timestamp = System.currentTimeMillis
+  given show: Show[Timestamp] = ts => dateFormat.format(ju.Date(ts)).nn.show
+  given AnsiShow[Timestamp] = timestamp => ansi"${colors.Tan}(${show.show(timestamp)})"
 
   private val dateFormat = jt.SimpleDateFormat(t"yyyy-MMM-dd HH:mm:ss.SSS".s)
 
-opaque type LogTime = Long
+opaque type Timestamp = Long
 
 object Log:
   inline def fine[T](inline value: T)
@@ -94,7 +94,7 @@ object EucalyptusMacros:
     import quotes.reflect.*
 
     '{
-      val time = LogTime()
+      val time = Timestamp()
       try $log.record(Entry($realm, $level, $show.ansiShow($value), time, $log.tags)) catch case e: Exception => ()
     }
 
