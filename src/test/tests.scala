@@ -3,13 +3,11 @@ package aviation
 import probably.*
 import rudiments.*
 import gossamer.*
-import eucalyptus.{Timestamp => _, *}
-import logging.stdout
 
 import unsafeExceptions.canThrowAny
 
 object Tests extends Suite(t"Aviation Tests"):
-  def run(using Runner): Unit =
+  def run(): Unit =
     suite(t"Gregorian Calendar Tests"):
       test(t"2000 is a leap year"):
         calendars.gregorian.leapYear(2000)
