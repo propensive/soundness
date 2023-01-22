@@ -35,7 +35,7 @@ val StdoutSink = SystemOut.sink
 given Log({ case _ => StdoutSink })
 
 object Tests extends Suite(t"Merino tests"):
-  def run(using Runner): Unit =
+  def run(): Unit =
     val tests = (env.pwd / p"tests" / p"test_parsing").directory(Expect)
     val tests2 = (env.pwd / p"tests" / p"test_transform").directory(Expect)
     
