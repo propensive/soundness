@@ -22,5 +22,5 @@ import gossamer.*
 import unsafeExceptions.canThrowAny
 
 object Tests extends Suite(t"Exoskeleton Tests"):
-  def run(using Runner): Unit =
+  def run(): Unit =
     ()
