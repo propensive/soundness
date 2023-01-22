@@ -30,7 +30,7 @@ object Tests extends Suite(t"Punctuation tests"):
 
   import Markdown.Ast.Block.*, Markdown.Ast.Inline.*, Markdown.Ast.ListItem
 
-  def run(using Runner): Unit =
+  def run(): Unit =
     test(t"get a heading"):
       Markdown.parse(t"# Heading 1") match
         case Markdown(Heading(1, Textual(str))) => str
