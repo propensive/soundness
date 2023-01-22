@@ -21,30 +21,40 @@ import rudiments.*
 import eucalyptus.*, logging.stdout
 import unsafeExceptions.canThrowAny
 
-
-object Tests2:
-  def main(args: Array[String]): Unit =
-
-    given Runner = Runner()
-
+object Tests extends Suite(t"Probably 2 Tests"):
+  def run(): Unit =
     def sum(a: Int, b: Int): Int = a + b
 
     suite(t"main suite"):
       test(t"One plus one equals two"):
         val x = 12
-        //sum(-11, x).inspect
+        sum(-11, x).inspect
         2
-      .assert(_ == 2)
+      .assert(_ == 3)
 
       test(t"Two is equal to one plus one")(1 + 1).assert(2 == _)
       
       case class Foo(x: Int, y: String)
       val t = Foo(1, "two")
       
-      test(t"Compare 1"):
-        t
-      .assert(Foo(1, "two") == _)
+      for i <- 1 to 100 do
+        test(t"i is less than ten"):
+          i
+        .assert(_ < 10)
+
+      for i <- 1 to 5 do
+        test(t"Compare 1"):
+          t
+          throw Exception("broken")
+        .assert(Foo(1, "two") == _)
       
-      test(t"Compare 2"):
-        Foo(1, "two")
-      .assert(t == _)
+        test(t"Compare 3"):
+          Thread.sleep(90)
+          Foo(1, "two")
+        .assert(t == _)
+
+    suite(t"subsuite"):
+      suite(t"Deeper subsuite"):
+        test(t"Subtest"):
+          1 + 1
+        .assert(_ == ({ throw Exception(); 2 }))

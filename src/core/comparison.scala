@@ -1,4 +1,4 @@
-package probably2
+package probably
 
 import wisteria.*
 import rudiments.*
@@ -25,7 +25,6 @@ object Comparable extends Derivation[Comparable]:
           case Change.Ins(rid, v)       => t"/$rid"     -> Comparison.Different(t"—", v.debug)
           case Change.Del(lid, v)       => t"$lid/"     -> Comparison.Different(v.debug, t"—")
       
-
   def join[T](caseClass: CaseClass[Comparable, T]): Comparable[T] = (left, right) =>
     val same = caseClass.params.forall: param =>
       param.deref(left) == param.deref(right)
