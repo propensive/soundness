@@ -26,7 +26,7 @@ import unsafeExceptions.canThrowAny
 given Log(Everything |-> Stdout)
 
 object Tests extends Suite(t"Honeycomb Tests"):
-  def run(using Runner): Unit =
+  def run(): Unit =
     suite(t"Showing HTML"):
       test(t"empty normal tag"):
         Div.show
