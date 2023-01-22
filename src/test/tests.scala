@@ -25,7 +25,7 @@ import unsafeExceptions.canThrowAny
 case class Person(name: Text, age: Int)
 
 object Tests extends Suite(t"Rudiments Tests"):
-  def run(using Runner): Unit =
+  def run(): Unit =
     suite(t"Exception tests"):
       test(t"Show exception"):
         try
