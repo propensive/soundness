@@ -35,7 +35,7 @@ object Tests extends Suite(t"Parasitism tests"):
 
     () => thread.join()
 
-  def run(using Runner): Unit =
+  def run(): Unit =
     supervise(t"runner"):
       suite(t"Promises"):
         test(t"New promise is incomplete"):
