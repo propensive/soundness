@@ -28,7 +28,7 @@ object Tests extends Suite(t"Escritoire tests"):
 
   import Table.BiShort
 
-  def run(using Runner): Unit =
+  def run(): Unit =
     test(t"Constrain to full width plus one is single line"):
       Column.constrain(t"the quick brown fox", Breaks.Space, 20).left
     .assert(_ == 1)
