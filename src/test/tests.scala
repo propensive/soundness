@@ -28,7 +28,7 @@ import unsafeExceptions.canThrowAny
 given Log(Everything |-> Stdout)
 
 object Tests extends Suite(t"Escapade tests"):
-  def run(using Runner): Unit =
+  def run(): Unit =
     test(t"normal string") {
       ansi"hello world".render
     }.check(_ == t"hello world")
