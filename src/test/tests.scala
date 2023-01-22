@@ -28,7 +28,7 @@ import unsafeExceptions.canThrowAny
 given Log(Everything |-> Stdout)
 
 object Tests extends Suite(t"Cosmopolite Tests"):
-  def run(using Runner): Unit =
+  def run(): Unit =
     test(t"extract language from string (English)") {
       val two = en"two" & fr"deux"
       two[En]
