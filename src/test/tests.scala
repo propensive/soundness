@@ -45,7 +45,7 @@ object Tests extends Suite(t"Gastronomy tests"):
 
   val pangram: Text = t"The quick brown fox jumps over the lazy dog"
 
-  def run(using Runner): Unit = {
+  def run(): Unit = {
     test(t"Sha256, Hex") {
       t"Hello world".digest[Sha2[256]].encode[Hex]
     }.check(_ == t"64EC88CA00B268E5BA1A35678A1B5316D212F4F366B2477232534A8AECA37F3C")
