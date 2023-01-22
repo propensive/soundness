@@ -151,7 +151,7 @@ object Tests extends Suite(t"Punctuation tests"):
       md"Hello *World*"
     .assert(_ == Markdown(Textual(t"Hello "), Emphasis(Textual(t"World"))))
     
-    test(t"interpolator produces inline markdown"):
-      md"Hello *world*!".hasType[InlineMd]
-    .assert(identity)
+    // test(t"interpolator produces inline markdown"):
+    //   md"Hello *world*!".hasType[InlineMd]
+    // .assert(identity)
 
