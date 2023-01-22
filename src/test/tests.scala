@@ -33,7 +33,7 @@ case class Address(house: Int, street: Text, city: Text, country: Text)
 case class Person(name: Text, address: Address)
 
 object Tests extends Suite(t"Telekinesis tests"):
-  def run(using Runner): Unit =
+  def run(): Unit =
     suite(t"Parsing tests"):
       test(t"parse Authority with username and password"):
         Authority.parse(t"username:password@example.com")
