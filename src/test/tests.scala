@@ -31,7 +31,7 @@ object Tests extends Suite(t"CoDL tests"):
   given Realm(t"tests")
 
 
-  def run(using Runner): Unit =
+  def run(): Unit =
     import CodlToken.*
     import Arity.*
 
