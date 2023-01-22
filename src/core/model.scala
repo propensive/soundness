@@ -64,16 +64,16 @@ case class Nodule(data: Maybe[Data] = Unset, meta: Maybe[Meta] = Unset) extends 
 
   def wiped: Nodule = untyped.uncommented
   
-  override def toString(): String =
-    if !children.isEmpty then s"$key[${children.mkString(" ")}]" else key.mm(_.s).or:
-      meta.toString
+  // override def toString(): String =
+  //   if !children.isEmpty then s"$key[${children.mkString(" ")}]" else key.mm(_.s).or:
+  //     meta.toString
 
 object CodlDoc:
   def apply(nodes: Nodule*): CodlDoc = CodlDoc(IArray.from(nodes), CodlSchema.Free, 0)
 
 case class CodlDoc(children: IArray[Nodule], schema: CodlSchema, margin: Int, body: LazyList[Text] = LazyList())
 extends Indexed:
-  override def toString(): String = s"[[${children.mkString(" ")}]]"
+  //override def toString(): String = s"[[${children.mkString(" ")}]]"
   
   override def equals(that: Any) = that.matchable(using Unsafe) match
     case that: CodlDoc => schema == that.schema && margin == that.margin && children.sameElements(that.children)
@@ -154,7 +154,7 @@ extends Indexed:
   def promote(n: Int): Data = copy(layout = layout.copy(params = n))
 
   def has(key: Text): Boolean = index.contains(key) || paramIndex.contains(key)
-  override def toString(): String = s"[${children.mkString(" ")}]"
+  //override def toString(): String = s"[${children.mkString(" ")}]"
   
   override def equals(that: Any) = that.matchable(using Unsafe) match
     case that: Data => key == that.key && children.sameElements(that.children) && layout == that.layout &&
