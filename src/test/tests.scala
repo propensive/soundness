@@ -22,5 +22,5 @@ import gossamer.*
 import unsafeExceptions.canThrowAny
 
 object Tests extends Suite(t"Cataclysm Tests"):
-  def run(using Runner): Unit =
+  def run(): Unit =
     ()
