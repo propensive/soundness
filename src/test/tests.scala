@@ -32,7 +32,7 @@ given Environment({
 })
 
 object Tests extends Suite(t"Imperial tests"):
-  def run(using Runner): Unit =
+  def run(): Unit =
     println("Hello")
     test(t"Home directory"):
       Home().getAbsolutePath
