@@ -27,7 +27,7 @@ import unsafeExceptions.canThrowAny
 given Log(Everything |-> SystemOut)
 
 object Tests extends Suite(t"Serpentine Tests"):
-  def run(using Runner): Unit =
+  def run(): Unit =
     test(t"parse simple relative path"):
       Relative.parse(t"peer")
     .assert(_ == Relative(0, List(t"peer")))
