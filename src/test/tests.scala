@@ -24,4 +24,4 @@ import unsafeExceptions.canThrowAny
 import encodings.Utf8
 
 object Tests extends Suite(t"Galilei tests"):
-  def run(using Runner): Unit = ()
+  def run(): Unit = ()
