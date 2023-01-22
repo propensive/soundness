@@ -224,7 +224,7 @@ final case class Louie(height: Int) extends BadChild
 
 object Tests extends Suite(t"Wisteria tests"):
 
-  def run(using Runner) =
+  def run() =
     test(t"construct a AsShow product instance with alternative apply functions") {
       AsString.derived[TestEntry].asString(TestEntry(t"a", t"b"))
     }.check(_ == t"""TestEntry(param=Param(a=a,b=b))""")
