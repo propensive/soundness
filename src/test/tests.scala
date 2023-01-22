@@ -33,7 +33,7 @@ case class Address(house: Int, street: Text, city: Text, country: Text)
 case class Person(name: Text, address: Address)
 
 object Tests extends Suite(t"Scintillate tests"):
-  def run(using Runner): Unit =
+  def run(): Unit =
 
     // val IntParam = RequestParam[Int](t"one")
 
