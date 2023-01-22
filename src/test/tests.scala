@@ -32,7 +32,7 @@ case class Foo(x: Int, y: Text) derives CanEqual
 case class InvalidState(name: String) extends Exception("Not a valid state: "+name)
 
 object Tests extends Suite(t"Javanais Tests"):
-  def run(using Runner): Unit =
+  def run(): Unit =
     suite(t"Parsing tests"):
       test(t"Parse a number"):
         Json.parse(t"42").as[Int]
