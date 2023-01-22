@@ -20,5 +20,5 @@ import gossamer.*
 import probably.*
 
 object Tests extends Suite(t"Tarantula Tests"):
-  def run(using Runner): Unit =
+  def run(): Unit =
     ()
