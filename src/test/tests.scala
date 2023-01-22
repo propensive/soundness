@@ -20,7 +20,6 @@ import probably.*
 import gossamer.*
 import rudiments.*
 import turbulence.*
-import eucalyptus.*
 
 import unsafeExceptions.canThrowAny
 import encodings.Utf8
@@ -28,7 +27,7 @@ import encodings.Utf8
 given Log(_ => SystemOut.sink)
 
 object Tests extends Suite(t"Caesura tests"):
-  def run(using Runner): Unit =
+  def run(): Unit =
     test(t"simple parse"):
       Csv.parseLine(t"""hello,world""")
     .assert(_ == Row(t"hello", t"world"))
