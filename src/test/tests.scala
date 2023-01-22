@@ -18,11 +18,8 @@ package adversaria
 
 import probably.*
 import rudiments.*
-import eucalyptus.*
 import gossamer.*
 import annotation.StaticAnnotation
-
-given Log(Everything |-> Stdout)
 
 import unsafeExceptions.canThrowAny
 
@@ -41,7 +38,7 @@ case class Letters(@ref(1) alpha: Int, @ref(2) @ref(3) beta: Int, gamma: Int, @r
 
 object Tests extends Suite(t"Adversaria tests"):
 
-  def run(using Runner): Unit =
+  def run(): Unit =
 
     test(t"first field") {
       val letters = Letters(5, 6, 7, 8)
