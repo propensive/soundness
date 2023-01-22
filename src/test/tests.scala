@@ -29,7 +29,7 @@ import unsafeExceptions.canThrowAny
 given Log(Everything.fine |-> Stdout)
 
 object Tests extends Suite(t"Guillotine tests"):
-  def run(using Runner): Unit =
+  def run(): Unit =
     suite(t"Parsing tests"):
       test(t"parse simple command"):
         sh"ls -la"
