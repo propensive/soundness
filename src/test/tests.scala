@@ -29,7 +29,7 @@ given ColorProfile = colorProfiles.Daylight
 object Tests extends Suite(t"Iridescence tests"):
   given Tolerance[Double] = (a, b) => math.abs(a - b) < 0.05
   
-  def run(using Runner): Unit =
+  def run(): Unit =
     suite(t"Roundtrip tests"):
       for color <- colors.all.reverse do
         test(t"sRGB to L*a*b*"):
