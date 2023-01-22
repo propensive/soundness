@@ -25,7 +25,7 @@ import unsafeExceptions.canThrowAny
 case class Person(name: Text, age: Int)
 
 object Tests extends Suite(t"Gossamer Tests"):
-  def run(using Runner): Unit =
+  def run(): Unit =
     suite(t"Debug tests"):
       test(t"serialize boring string"):
         t"Hello world!".debug
