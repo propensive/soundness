@@ -190,10 +190,10 @@ case class Request(method: HttpMethod, body: HttpBody.Chunked, query: Text, ssl:
     headers.get(RequestHeader.ContentType).flatMap(_.headOption).flatMap(MediaType.unapply(_))
   
 trait RequestHandler:
-  def listen(handler: Request ?=> Response[?])(using Log, Monitor): Task[Unit]
+  def listen(handler: Request ?=> Response[?])(using Log, Monitor): ActiveServer
 
 extension (value: Http.type)
-  def listen(handler: Request ?=> Response[?])(using RequestHandler, Log, Monitor): Task[Unit] =
+  def listen(handler: Request ?=> Response[?])(using RequestHandler, Log, Monitor): ActiveServer =
     summon[RequestHandler].listen(handler)
 
 def request(using Request): Request = summon[Request]
@@ -236,9 +236,10 @@ case class RequestParam[T](key: Text)(using ParamReader[T]):
 // object Split:
 //   def unapply(req: Request): (Request, Request) = (req, req)
 
-case class HttpServer(port: Int) extends RequestHandler:
+case class ActiveServer(port: Int, task: Task[Unit], cancel: () => Unit)
 
-  def listen(handler: Request ?=> Response[?])(using Log, Monitor): Task[Unit] =
+case class HttpServer(port: Int) extends RequestHandler:
+  def listen(handler: Request ?=> Response[?])(using Log, Monitor): ActiveServer =
     def handle(exchange: HttpExchange | Null) =
       try handler(using makeRequest(exchange.nn)).respond(SimpleResponder(exchange.nn))
       catch case NonFatal(exception) => exception.printStackTrace()
@@ -251,10 +252,15 @@ case class HttpServer(port: Int) extends RequestHandler:
       httpServer.start()
       httpServer
     
-    Task(t"http-server"):
-      val serv = startServer()
-      hibernate()
-      serv.stop(1)
+    val cancel: Promise[Unit] = Promise[Unit]()
+    
+    val task = Task(t"scintillate"):
+      val server = startServer()
+      cancel.await()
+      server.stop(1)
+    
+    ActiveServer(port, task, () => safely(cancel.supply(())))
+    
   
   private def streamBody(exchange: HttpExchange): HttpBody.Chunked =
     val in = exchange.getRequestBody.nn
