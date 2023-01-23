@@ -72,6 +72,8 @@ object Selectable:
 trait Selectable[-T]:
   def selector(value: T): Selector
 
+def select[T: Selectable](sel: T)(css: CssStyle) = CssRule(summon[Selectable[T]].selector(sel), css)
+
 extension [T: Selectable](left: T)
   @targetName("definedAs")
   infix def :=(css: CssStyle): CssRule = CssRule(summon[Selectable[T]].selector(left), css)
@@ -89,11 +91,11 @@ extension [T: Selectable](left: T)
     summon[Selectable[T]].selector(left) + summon[Selectable[S]].selector(right)
   
   @targetName("or")
-  infix def |[S: Selectable](right: S): Selector =
+  infix def ||[S: Selectable](right: S): Selector =
     summon[Selectable[T]].selector(left) | summon[Selectable[S]].selector(right)
   
   @targetName("and")
-  infix def &[S: Selectable](right: S): Selector =
+  infix def &&[S: Selectable](right: S): Selector =
     summon[Selectable[T]].selector(left) & summon[Selectable[S]].selector(right)
   
   @targetName("before")
