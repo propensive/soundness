@@ -7,6 +7,9 @@ import dotty.tools.dotc.util as dtdu
 import scala.quoted.*
 
 object ProbablyMacros:
+  
+  inline def succeed: Any => Boolean = (value: Any) => true
+  
   def check[T: Type, R: Type]
            (test: Expr[Test[T]], pred: Expr[T => Boolean], runner: Expr[Runner[R]],
                 inc: Expr[Inclusion[R, Outcome]])

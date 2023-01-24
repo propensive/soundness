@@ -115,6 +115,12 @@ extension [T](test: Test[T])
   
   inline def check[R](inline pred: T => Boolean)(using runner: Runner[R], inc: Inclusion[R, Outcome]): T =
     ${ProbablyMacros.check[T, R]('test, 'pred, 'runner, 'inc)}
+
+  inline def assert[R]()(using runner: Runner[R], inc: Inclusion[R, Outcome]): Unit =
+    ${ProbablyMacros.assert[T, R]('test, '{ProbablyMacros.succeed}, 'runner, 'inc)}
+  
+  inline def check[R]()(using runner: Runner[R], inc: Inclusion[R, Outcome]): Unit =
+    ${ProbablyMacros.check[T, R]('test, '{ProbablyMacros.succeed}, 'runner, 'inc)}
   
   inline def matches[R](inline pf: PartialFunction[T, Any])
                        (using runner: Runner[R], inc: Inclusion[R, Outcome]): Unit =
