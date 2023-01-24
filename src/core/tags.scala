@@ -129,7 +129,7 @@ val Input = TagType["input", Nothing, Global | "accept" | "alt" | "autocomplete"
 
 val Ins = TransTagType["ins", Label, Global | "cite" | "datetime"]("ins", inline = true)
 val Kbd = TagType["kbd", Phrasing, Global]("kbd", inline = true)
-val Label = TagType["label", Phrasing, Global | "hfor"]("label", inline = true)
+val Label = TagType["label", Phrasing, Global | "hfor" | "for"]("label", inline = true)
 val Legend = TagType["legend", Phrasing | Heading, Global]("legend")
 val Li = TagType["li", Flow, Global | "value"]("li")
 

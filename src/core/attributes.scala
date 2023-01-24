@@ -199,6 +199,13 @@ object HtmlAttribute:
   given hfors[T]: HtmlAttribute["hfor", Seq[DomId], T] with
     override def rename: Option[Text] = Some(t"for")
     def convert(value: Seq[DomId]): Text = value.map(_.name).join(t" ")
+  
+  given `for`[T]: HtmlAttribute["for", DomId, T] with
+    def convert(value: DomId): Text = value.name
+  
+  given fors[T]: HtmlAttribute["for", Seq[DomId], T] with
+    def convert(value: Seq[DomId]): Text = value.map(_.name).join(t" ")
+
 
   given form[T]: HtmlAttribute["form", DomId, T] = _.name
   given formaction[T]: HtmlAttribute["formaction", Text, T] = identity(_) // Provided by Scintillate
