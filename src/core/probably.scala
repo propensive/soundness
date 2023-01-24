@@ -122,14 +122,14 @@ extension [T](test: Test[T])
   
   inline def typed[R](using runner: Runner[R]): Unit = ${ProbablyMacros.typed[T, R]('test, 'runner)}
   
-case class UnexpectedSuccessError[T](value: T)
+case class UnexpectedSuccessError(value: Any)
 extends Error(err"the expression was expected to throw an exception, but instead returned $value")
 
-transparent inline def capture[T](inline fn: => CanThrow[Exception] ?=> T)
-                              : Exception throws UnexpectedSuccessError[T] =
+transparent inline def capture[E <: Exception](inline fn: => CanThrow[E] ?=> Any)
+                              : E throws UnexpectedSuccessError =
   try
-    val result = fn
+    val result = fn(using unsafeExceptions.canThrowAny)
     throw UnexpectedSuccessError(result)
   catch
-    case error: UnexpectedSuccessError[T] => throw error
-    case error: Exception                 => error
+    case error: E                      => error
+    case error: UnexpectedSuccessError => throw error
