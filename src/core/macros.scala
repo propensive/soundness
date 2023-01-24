@@ -8,7 +8,7 @@ import scala.quoted.*
 
 object ProbablyMacros:
   
-  inline def succeed: Any => Boolean = (value: Any) => true
+  def succeed: Any => Boolean = (value: Any) => true
   
   def check[T: Type, R: Type]
            (test: Expr[Test[T]], pred: Expr[T => Boolean], runner: Expr[Runner[R]],
