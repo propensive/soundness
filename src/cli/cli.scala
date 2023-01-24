@@ -11,4 +11,7 @@ extends TestSuite(name):
   def run(): Unit
   
   final def main(args: IArray[Text]): Unit =
-    try run() finally runner.complete()
+    try run()
+    catch case err: Throwable =>
+      println(StackTrace(err).ansi.render)
+    finally runner.complete()
