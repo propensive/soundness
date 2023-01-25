@@ -9,7 +9,6 @@ import unsafeExceptions.canThrowAny
 
 object Tests extends Suite(t"Aviation Tests"):
   def run(): Unit =
-
     suite(t"Parsing tests"):
       test(t"Parse a canonical date"):
         Date.parse(t"2011-12-13")
@@ -22,6 +21,22 @@ object Tests extends Suite(t"Aviation Tests"):
       test(t"Parse a date in the distant past"):
         Date.parse(t"59-09-13")
       .assert(_ == 59-Sep-13)
+      
+      test(t"Month cannot be higher than 12"):
+        capture(Date.parse(t"59-13-13"))
+      .assert(_ == InvalidDateError(t"59-13-13"))
+      
+      test(t"Month cannot be less than 1"):
+        capture(Date.parse(t"59-0-13"))
+      .assert(_ == InvalidDateError(t"59-0-13"))
+      
+      test(t"Day cannot be over 31"):
+        capture(Date.parse(t"59-11-32"))
+      .assert(_ == InvalidDateError(t"59-11-32"))
+      
+      test(t"Day must exist in month"):
+        capture(Date.parse(t"59-11-31"))
+      .assert(_ == InvalidDateError(t"59-11-31"))
 
 
     suite(t"Gregorian Calendar Tests"):

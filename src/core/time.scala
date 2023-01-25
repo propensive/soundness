@@ -46,7 +46,7 @@ object Dates:
   object Date:
     def of(day: Int): Date = day
     
-    def apply(using cal: Calendar)(year: cal.Y, month: cal.M, day: cal.D): Date =
+    def apply(using cal: Calendar)(year: cal.Y, month: cal.M, day: cal.D): Date throws InvalidDateError =
       cal.julianDay(year, month, day)
 
     given (using CanThrow[InvalidDateError]): Canonical[Date] = Canonical(parse(_), _.show)
@@ -60,11 +60,8 @@ object Dates:
     def parse(value: Text): Date throws InvalidDateError = value.cut(t"-") match
       case y :: m :: d :: Nil =>
         try
-          val y2 = y.s.toInt
-          val m2 = m.s.toInt
-          val d2 = d.s.toInt
           import calendars.gregorian
-          Date(y2, MonthName(m2), d2)
+          Date(y.s.toInt, MonthName(m.s.toInt), d.s.toInt)
         catch
           case err: NumberFormatException     => throw InvalidDateError(value)
           case err: ju.NoSuchElementException => throw InvalidDateError(value)
@@ -100,7 +97,7 @@ trait Calendar:
   def getMonth(date: Date): M
   def getDay(date: Date): D
   def zerothDayOfYear(year: Y): Date
-  def julianDay(year: Y, month: M, day: D): Date
+  def julianDay(year: Y, month: M, day: D): Date throws InvalidDateError
   def add(date: Date, period: Timespan): Date
 
 abstract class RomanCalendar() extends Calendar:
@@ -119,7 +116,7 @@ abstract class RomanCalendar() extends Calendar:
     val monthTotal = getMonth(date).ordinal + period.months
     val month2 = MonthName.fromOrdinal(monthTotal%12)
     val year2 = getYear(date) + period.years + monthTotal/12
-    julianDay(year2, month2, getDay(date)) + period.days
+    unsafely(julianDay(year2, month2, getDay(date)) + period.days)
   
   def leapYearsSinceEpoch(year: Int): Int
   def daysInYear(year: Y): Int = if leapYear(year) then 366 else 365
@@ -142,7 +139,8 @@ abstract class RomanCalendar() extends Calendar:
     val month = getMonth(date)
     date.julianDay - zerothDayOfYear(year).julianDay - month.offset(leapYear(year))
   
-  def julianDay(year: Int, month: MonthName, day: Int): Date = 
+  def julianDay(year: Int, month: MonthName, day: Int): Date throws InvalidDateError =
+    if day < 1 || day > daysInMonth(month, year) then throw InvalidDateError(t"$year-${month.numerical}-$day")
     zerothDayOfYear(year) + month.offset(leapYear(year)) + day
 
 class YearMonth[Y <: Int & Singleton, M <: MonthName & Singleton](year: Y, month: M):
@@ -167,7 +165,7 @@ class YearMonth[Y <: Int & Singleton, M <: MonthName & Singleton](year: Y, month
       case _ => CommonDays
 
   @targetName("of")
-  inline def -(day: Days): Date = calendars.gregorian.julianDay(year, month, day)
+  inline def -(day: Days): Date = unsafely(calendars.gregorian.julianDay(year, month, day))
 
 
 extension (year: Int & Singleton)
