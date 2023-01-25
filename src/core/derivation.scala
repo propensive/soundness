@@ -68,11 +68,13 @@ object Codec extends ProductDerivation[Codec]:
             case (map, (child, idx)) => child.mm(_.id).fm(map)(map.updated(_, idx))
 
         p.typeclass.serialize(p.deref(value)).map: value =>
-          Nodule(Data(p.label.show, value, Layout.empty, p.typeclass.schema))
+          val label = p.annotations.collectFirst { case `codlLabel`(name) => name }.getOrElse(p.label)
+          Nodule(Data(label.show, value, Layout.empty, p.typeclass.schema))
         .filter(!_.empty)
 
     def deserialize(value: List[Indexed]): T throws CodlReadError = ctx.construct: param =>
-      param.typeclass.deserialize(value.head.get(param.label.show))
+      val label = param.annotations.collectFirst { case `codlLabel`(name) => name }.getOrElse(param.label)
+      param.typeclass.deserialize(value.head.get(label.show))
 
   given [T](using canon: Canonical[T]): Codec[T] = FieldCodec(canon.serialize, canon.deserialize)
   given (using CanThrow[IncompatibleTypeError]): Codec[Char] = FieldCodec(_.show, _.as[Char])
