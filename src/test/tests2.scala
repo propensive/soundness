@@ -44,7 +44,6 @@ object Tests extends Suite(t"Probably 2 Tests"):
 
       for i <- 1 to 5 do
         test(t"Compare 1"):
-          t
           throw Exception("broken")
         .assert(Foo(1, "two") == _)
       
