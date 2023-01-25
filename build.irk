@@ -16,9 +16,9 @@
       "sources": ["src/test"],
       "version": "0.1.0",
       "docs": ["doc"],
-      "xec": {
+      "exec": {
         "browsers": [],
-	      "start": "dissonance.Tests"
+        "start": "dissonance.Tests"
       },
       "dependencies": [
       ]

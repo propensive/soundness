@@ -39,14 +39,14 @@ case class Diff[T](changes: Change[T]*):
     
     Diff[T](changes2*)
   
-  def apply(seq: List[T], update: (T, T) -> T): LazyList[T] =
-    def recur(todo: Seq[Change[T]], seq: List[T]): LazyList[T] = todo match
-      case Ins(_, value) :: tail     => value #:: recur(tail, seq)
-      case Del(_, _) :: tail         => recur(tail, seq.tail)
-      case Keep(_, _, value) :: tail => update(value, seq.head) #:: recur(tail, seq.tail)
+  def apply(list: List[T], update: (T, T) -> T): LazyList[T] =
+    def recur(todo: List[Change[T]], list: List[T]): LazyList[T] = todo match
+      case Ins(_, value) :: tail     => value #:: recur(tail, list)
+      case Del(_, _) :: tail         => recur(tail, list.tail)
+      case Keep(_, _, value) :: tail => update(value, list.head) #:: recur(tail, list.tail)
       case Nil                   => LazyList()
 
-    recur(changes, seq)
+    recur(changes.to(List), list)
 
 object Diff:
   object Point:
