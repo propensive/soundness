@@ -87,7 +87,7 @@ extension [T: Selectable](left: T)
     summon[Selectable[T]].selector(left) > summon[Selectable[S]].selector(right)
   
   @targetName("after")
-  infix def +[S: Selectable](right: S): Selector =
+  infix def ~[S: Selectable](right: S): Selector =
     summon[Selectable[T]].selector(left) + summon[Selectable[S]].selector(right)
   
   @targetName("or")
@@ -99,7 +99,7 @@ extension [T: Selectable](left: T)
     summon[Selectable[T]].selector(left) & summon[Selectable[S]].selector(right)
   
   @targetName("before")
-  infix def ~[S: Selectable](right: S): Selector =
+  infix def ~~[S: Selectable](right: S): Selector =
     summon[Selectable[T]].selector(left) ~ summon[Selectable[S]].selector(right)
   
 object PropertyDef:
