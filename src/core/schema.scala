@@ -38,6 +38,8 @@ object CodlSchema:
     def schema: CodlSchema = getSchema()
     def tuple: (Text, CodlSchema) = key -> schema
 
+    override def toString(): String = t"$key${schema.arity.symbol}".s
+
 
   // FIXME
   object Free extends Struct(List(Entry(t"?", Field(Arity.Many))), Arity.Many):
@@ -89,6 +91,13 @@ enum Arity:
   def variadic: Boolean = this == AtLeastOne || this == Many
   def unique: Boolean = !variadic
 
+  def symbol: Text = this match
+    case One        => t""
+    case AtLeastOne => t"+"
+    case Optional   => t"?"
+    case Many       => t"*"
+    case Unique     => t"!"
+
 object Struct:
   def apply(arity: Arity, subschemas: (Text, CodlSchema)*): Struct =
     Struct(subschemas.map(CodlSchema.Entry(_, _)).to(List), arity)
@@ -110,6 +119,9 @@ extends CodlSchema(IArray.from(structSubschemas), structArity, Unset):
       case Entry(key, field: Field) :: tail                => recur(tail, Entry(key, field) :: fields)
 
     recur(subschemas.to(List), Nil)
+
+  override def toString(): String =
+    structSubschemas.map(_.toString).map(Text(_)).join(t"(", t", ", t")${structArity.symbol}").s
 
 case class Field(fieldArity: Arity, fieldValidator: Maybe[Text -> Boolean] = Unset)
 extends CodlSchema(IArray(), fieldArity, fieldValidator):
