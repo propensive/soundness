@@ -9,6 +9,21 @@ import unsafeExceptions.canThrowAny
 
 object Tests extends Suite(t"Aviation Tests"):
   def run(): Unit =
+
+    suite(t"Parsing tests"):
+      test(t"Parse a canonical date"):
+        Date.parse(t"2011-12-13")
+      .check(_ == 2011-Dec-13)
+      
+      test(t"Parse a date with a single-digit month"):
+        Date.parse(t"2011-09-13")
+      .assert(_ == 2011-Sep-13)
+      
+      test(t"Parse a date in the distant past"):
+        Date.parse(t"59-09-13")
+      .assert(_ == 59-Sep-13)
+
+
     suite(t"Gregorian Calendar Tests"):
       test(t"2000 is a leap year"):
         calendars.gregorian.leapYear(2000)

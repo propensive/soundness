@@ -7,6 +7,7 @@ import anticipation.*
 import kaleidoscope.*
 
 import scala.quoted.*
+import java.util as ju
 
 import math.Ordering.Implicits.infixOrderingOps
 
@@ -57,11 +58,20 @@ object Dates:
       t"${d.day.toString.show}-${d.month.show}-${d.year.toString.show}"
     
     def parse(value: Text): Date throws InvalidDateError = value.cut(t"-") match
-      case As[Int](y) :: As[Int](m) :: As[Int](d) :: Nil =>
-        Date(using calendars.gregorian)(y, MonthName.fromOrdinal(m - 1), d)
+      case y :: m :: d :: Nil =>
+        try
+          val y2 = y.s.toInt
+          val m2 = m.s.toInt
+          val d2 = d.s.toInt
+          import calendars.gregorian
+          Date(y2, MonthName(m2), d2)
+        catch
+          case err: NumberFormatException     => throw InvalidDateError(value)
+          case err: ju.NoSuchElementException => throw InvalidDateError(value)
       
-      case _ =>
+      case cnt =>
         throw InvalidDateError(value)
+
 
   extension (date: Date)
     def day(using cal: Calendar): cal.D = cal.getDay(date)
@@ -284,7 +294,7 @@ extends DiurnalPeriod, TemporalPeriod:
   @targetName("times")
   def *(n: Int): Period = Period(years*n, months*n, days*n, hours*n, minutes*n, seconds*n)
 
-extension (int: 1)
+extension (one: 1)
   def year: Timespan = Period(StandardTime.Year, 1)
   def month: Timespan = Period(StandardTime.Month, 1)
   def week: Timespan = Period(StandardTime.Week, 1)
@@ -313,6 +323,9 @@ case class Timestamp(date: Date, time: Time)(using cal: Calendar):
   @targetName("plus")
   def +(period: Timespan): Timestamp =
     Timestamp(date, time)
+
+object MonthName:
+  def apply(i: Int): MonthName = MonthName.fromOrdinal(i - 1)
 
 enum MonthName:
   case Jan, Feb, Mar, Apr, May, Jun, Jul, Aug, Sep, Oct, Nov, Dec
