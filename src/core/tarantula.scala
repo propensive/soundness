@@ -24,6 +24,7 @@ import cataclysm.*
 import honeycomb.*
 import eucalyptus.*
 import rudiments.*
+import deviation.*
 import gesticulate.*
 import parasitism.*
 import anticipation.*, timeRepresentation.long
