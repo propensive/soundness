@@ -17,6 +17,7 @@
 package gossamer
 
 import rudiments.*
+import deviation.*
 import turbulence.*
 import contextual.*
 import wisteria.*
@@ -137,6 +138,8 @@ extension (text: Text)
   def apply(idx: Int): Char throws OutOfRangeError =
     if idx >= 0 && idx < text.s.length then text.s.charAt(idx)
     else throw OutOfRangeError(idx, 0, text.s.length)
+  
+  def char(idx: Int): Maybe[Char] = if idx >= 0 && idx < text.s.length then text.s.charAt(idx) else Unset
 
   def pad(length: Int, dir: Direction = Ltr, char: Char = ' '): Text = dir match
     case Ltr => if text.length < length then text+Text(s"$char")*(length - text.length) else text
