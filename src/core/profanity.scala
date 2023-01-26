@@ -17,6 +17,7 @@
 package profanity
 
 import rudiments.*
+import deviation.*
 import gossamer.*
 import eucalyptus.*
 import escapade.*
