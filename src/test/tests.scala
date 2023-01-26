@@ -19,6 +19,7 @@ package cellulose
 import probably.*
 import gossamer.*
 import rudiments.*
+import deviation.*
 import turbulence.*
 import eucalyptus.*, logging.stdout
 

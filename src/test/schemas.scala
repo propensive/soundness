@@ -18,6 +18,7 @@ package cellulose
 
 import gossamer.*
 import rudiments.*
+import deviation.*
 import eucalyptus.*
 import parasitism.*
 import logging.silent
