@@ -116,7 +116,10 @@ object StackTrace:
           case 'c' => recur(token(idx,           "$colon",               ":"))
           case 'd' => char(idx + 2) match
             case 'e' => recur(token(idx,         "$default",             "δ"))
-            case 'i' => recur(token(idx,         "$div",                 "/"))
+            case 'i' => char(idx + 3) match
+              case 'r' => recur(token(idx,       "$direct",              "⋮ϕ"))
+              case 'v' => recur(token(idx,       "$div",                 "/"))
+              case _   => skip()
             case _   => skip()
           case 'e' => char(idx + 2) match
             case 'q' => recur(token(idx,         "$eq",                  "="))
