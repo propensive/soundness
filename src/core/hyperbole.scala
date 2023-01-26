@@ -4,6 +4,7 @@ import tableStyles.horizontalGaps
 import harlequin.*
 import escapade.*
 import rudiments.*
+import deviation.*
 import gossamer.*
 import iridescence.*
 import dendrology.*

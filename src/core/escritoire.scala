@@ -17,6 +17,7 @@
 package hyperbole
 
 import rudiments.*
+import deviation.*
 import gossamer.*
 import escapade.*
 
