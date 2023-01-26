@@ -92,7 +92,7 @@ The following _Scala One_ libraries are dependencies of _Gesticulate_:
 
 The following _Scala One_ libraries are dependents of _Gesticulate_:
 
-[![Telekinesis](https://github.com/propensive/telekinesis/raw/main/doc/images/128x128.png)](https://github.com/propensive/telekinesis/) &nbsp;
+[![Tarantula](https://github.com/propensive/tarantula/raw/main/doc/images/128x128.png)](https://github.com/propensive/tarantula/) &nbsp; [![Telekinesis](https://github.com/propensive/telekinesis/raw/main/doc/images/128x128.png)](https://github.com/propensive/telekinesis/) &nbsp;
 
 ## Status
 
@@ -110,7 +110,7 @@ be used, but caution should be taken if there is a mismatch between the
 project's stability level and the importance of your own project.
 
 Gesticulate is designed to be _small_. Its entire source code currently consists
-of 256 lines of code.
+of 258 lines of code.
 
 ## Building
 
