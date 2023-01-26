@@ -1,8 +1,8 @@
 {
   "repos": [
     {
-      "base": "../rudiments",
-      "url": "https://github.com/propensive/rudiments"
+      "base": "../deviation",
+      "url": "https://github.com/propensive/deviation"
     },
     {
       "base": "../diuretic",
@@ -11,7 +11,7 @@
   ],
   "imports": [
     "../diuretic/build.irk",
-    "../rudiments/build.irk"
+    "../deviation/build.irk"
   ],
   "publishing": {
     "username": "propensive",
@@ -36,7 +36,7 @@
       "name": "Parasitism",
       "id": "parasitism/core",
       "sources": ["src/core"],
-      "links": ["diuretic/core", "rudiments/core"]
+      "links": ["diuretic/core", "deviation/core"]
     }
   ]
 }

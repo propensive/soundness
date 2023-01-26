@@ -17,6 +17,7 @@
 package parasitism
 
 import rudiments.*
+import deviation.*
 import anticipation.*
 
 import scala.util.*
