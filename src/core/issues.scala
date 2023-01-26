@@ -85,4 +85,4 @@ case class MissingIndexValueError(index: Int)
 extends Error(err"the index $index does not exist in the CoDL document")
 
 case class AggregateError(errors: List[CodlError])
-extends Error(err"aggregation of errors: ${errors.map(_.toString.show).join.s}")
+extends Error(err"aggregation of errors: ${errors.map(_.toString.show).join(t"\n", t"\n", t"").s}")

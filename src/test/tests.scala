@@ -411,14 +411,14 @@ object Tests extends Suite(t"CoDL tests"):
 
     suite(t"Access tests"):
       val doc = CodlDoc(
-        Nodule(t"term")(
-          Nodule(t"name")(Nodule(t"alpha")(), Nodule(t"beta")()),
-          Nodule(t"name")(Nodule(t"gamma")()),
-          Nodule(t"kind")(
-            Nodule(t"query")(Nodule(t"value")())
+        CodlNode(t"term")(
+          CodlNode(t"name")(CodlNode(t"alpha")(), CodlNode(t"beta")()),
+          CodlNode(t"name")(CodlNode(t"gamma")()),
+          CodlNode(t"kind")(
+            CodlNode(t"query")(CodlNode(t"value")())
           )
         ),
-        Nodule(t"element")()
+        CodlNode(t"element")()
       )
 
       test(t"Access first element"):
@@ -439,11 +439,11 @@ object Tests extends Suite(t"CoDL tests"):
       
       test(t"Access deeper nested key"):
         doc.term(0).name(1)()
-      .assert(_ == Nodule(Data(t"gamma")))
+      .assert(_ == CodlNode(Data(t"gamma")))
       
       test(t"Access deeper nested param"):
         doc.term().name()(1)
-      .assert(_ == Nodule(Data(t"beta")))
+      .assert(_ == CodlNode(Data(t"beta")))
 
     def read(text: Text)(using Log): CodlDoc = Codl.parse(ji.StringReader(text.s))
     
@@ -454,109 +454,109 @@ object Tests extends Suite(t"CoDL tests"):
 
       test(t"Simplest non-empty document"):
         read(t"root").wiped
-      .assert(_ == CodlDoc(Nodule(Data(t"root"))))
+      .assert(_ == CodlDoc(CodlNode(Data(t"root"))))
       
       test(t"Root peers"):
         read(t"root\nelement\n").wiped
-      .assert(_ == CodlDoc(Nodule(t"root")(), Nodule(t"element")()))
+      .assert(_ == CodlDoc(CodlNode(t"root")(), CodlNode(t"element")()))
 
       test(t"Single child"):
         read(t"root\n  child").wiped
-      .assert(_ == CodlDoc(Nodule(t"root")(Nodule(t"child")())))
+      .assert(_ == CodlDoc(CodlNode(t"root")(CodlNode(t"child")())))
       
       test(t"Single child and peer"):
         read(t"root\n  child\npeer").wiped
-      .assert(_ == CodlDoc(Nodule(t"root")(Nodule(t"child")()), Nodule(t"peer")()))
+      .assert(_ == CodlDoc(CodlNode(t"root")(CodlNode(t"child")()), CodlNode(t"peer")()))
       
       test(t"Single child and grandchild"):
         read(t"root\n  child\n    grandchild").wiped
-      .assert(_ == CodlDoc(Nodule(t"root")(Nodule(t"child")(Nodule(t"grandchild")()))))
+      .assert(_ == CodlDoc(CodlNode(t"root")(CodlNode(t"child")(CodlNode(t"grandchild")()))))
       
       test(t"Single child and grandchild and peer"):
         read(t"root\n  child\n    grandchild\npeer").wiped
-      .assert(_ == CodlDoc(Nodule(t"root")(Nodule(t"child")(Nodule(t"grandchild")())), Nodule(t"peer")()))
+      .assert(_ == CodlDoc(CodlNode(t"root")(CodlNode(t"child")(CodlNode(t"grandchild")())), CodlNode(t"peer")()))
       
       test(t"Peers at multiple levels"):
         read(t"root\n  child\n    grandchild\n  child\n    grandchild\npeer").wiped
-      .assert(_ == CodlDoc(Nodule(t"root")(Nodule(t"child")(Nodule(t"grandchild")()),
-          Nodule(t"child")(Nodule(t"grandchild")())), Nodule(t"peer")()))
+      .assert(_ == CodlDoc(CodlNode(t"root")(CodlNode(t"child")(CodlNode(t"grandchild")()),
+          CodlNode(t"child")(CodlNode(t"grandchild")())), CodlNode(t"peer")()))
     
       test(t"Data with parameter"):
         read(t"root param").wiped
-      .assert(_ == CodlDoc(Nodule(t"root")(Nodule(t"param")())))
+      .assert(_ == CodlDoc(CodlNode(t"root")(CodlNode(t"param")())))
       
       test(t"Data with remark"):
         read(t"root # remark").untyped
-      .assert(_ == CodlDoc(Nodule(Data(t"root"), Meta(0, Nil, t"remark"))))
+      .assert(_ == CodlDoc(CodlNode(Data(t"root"), Meta(0, Nil, t"remark"))))
       
       test(t"Data after comment"):
         read(t"# comment\nroot").untyped
-      .assert(_ == CodlDoc(Nodule(Data(t"root"), Meta(0, List(t" comment"), Unset))))
+      .assert(_ == CodlDoc(CodlNode(Data(t"root"), Meta(0, List(t" comment"), Unset))))
       
       test(t"Data after two comments"):
         read(t"# comment 1\n# comment 2\nroot").untyped
-      .assert(_ == CodlDoc(Nodule(Data(t"root"), Meta(0, List(t" comment 1", t" comment 2"), Unset))))
+      .assert(_ == CodlDoc(CodlNode(Data(t"root"), Meta(0, List(t" comment 1", t" comment 2"), Unset))))
       
       test(t"Comment on child"):
         read(t"root\n  # comment\n  child").untyped
-      .assert(_ == CodlDoc(Nodule(Data(t"root", IArray(Nodule(Data(t"child"), Meta(0, List(t" comment"),
+      .assert(_ == CodlDoc(CodlNode(Data(t"root", IArray(CodlNode(Data(t"child"), Meta(0, List(t" comment"),
           Unset)))))))
       
       test(t"Comment and blank line on child"):
         read(t"root\n\n  # comment\n  child").untyped
-      .assert(_ == CodlDoc(Nodule(Data(t"root", IArray(Nodule(Data(t"child"), Meta(1, List(t" comment"),
+      .assert(_ == CodlDoc(CodlNode(Data(t"root", IArray(CodlNode(Data(t"child"), Meta(1, List(t" comment"),
           Unset)))))))
       
       test(t"Data with multiple parameters"):
         read(t"root param1 param2").wiped
-      .assert(_ == CodlDoc(Nodule(t"root")(Nodule(t"param1")(), Nodule(t"param2")())))
+      .assert(_ == CodlDoc(CodlNode(t"root")(CodlNode(t"param1")(), CodlNode(t"param2")())))
       
       test(t"Blank line before child"):
         read(t"root\n\n  child").untyped
-      .assert(_ == CodlDoc(Nodule(Data(t"root", IArray(Nodule(Data(t"child"), Meta(1, Nil)))))))
+      .assert(_ == CodlDoc(CodlNode(Data(t"root", IArray(CodlNode(Data(t"child"), Meta(1, Nil)))))))
       
       test(t"Two blank lines before child"):
         read(t"root\n\n \n  child").untyped
-      .assert(_ == CodlDoc(Nodule(Data(t"root", IArray(Nodule(Data(t"child", IArray()), Meta(2, Nil, Unset)))))))
+      .assert(_ == CodlDoc(CodlNode(Data(t"root", IArray(CodlNode(Data(t"child", IArray()), Meta(2, Nil, Unset)))))))
       
       test(t"Data with multiple parameters, remark and comment"):
         read(t"# comment\nroot param1 param2 # remark").untyped
-      .assert(_ == CodlDoc(Nodule(Data(t"root", IArray(Nodule(t"param1")(), Nodule(t"param2")())), Meta(0,
+      .assert(_ == CodlDoc(CodlNode(Data(t"root", IArray(CodlNode(t"param1")(), CodlNode(t"param2")())), Meta(0,
           List(t" comment"), t"remark"))))
       
       test(t"Data with multiple parameters, remark, comment and peer"):
         read(t"# comment\nroot param1 param2 # remark\npeer").untyped
-      .assert(_ == CodlDoc(Nodule(Data(t"root", IArray(Nodule(t"param1")(), Nodule(t"param2")())), Meta(0,
-          List(t" comment"), t"remark")), Nodule(t"peer")()))
+      .assert(_ == CodlDoc(CodlNode(Data(t"root", IArray(CodlNode(t"param1")(), CodlNode(t"param2")())), Meta(0,
+          List(t" comment"), t"remark")), CodlNode(t"peer")()))
       
       test(t"Comment on blank node"):
         read(t"# comment\n\nroot").untyped
-      .assert(_ == CodlDoc(Nodule(Unset, Meta(0, List(t" comment"), Unset)), Nodule(Data(t"root"), Meta(1,
+      .assert(_ == CodlDoc(CodlNode(Unset, Meta(0, List(t" comment"), Unset)), CodlNode(Data(t"root"), Meta(1,
           Nil, Unset))))
       
       test(t"Remark after blank line"):
         read(t"root\n\npeer # remark").untyped
-      .assert(_ == CodlDoc(Nodule(t"root")(), Nodule(Data(t"peer"), Meta(0, Nil, t"remark"))))
+      .assert(_ == CodlDoc(CodlNode(t"root")(), CodlNode(Data(t"peer"), Meta(0, Nil, t"remark"))))
       
       test(t"Long item"):
         read(t"root\n    one two\n").wiped
-      .assert(_ == CodlDoc(Nodule(t"root")(Nodule(t"one two")())))
+      .assert(_ == CodlDoc(CodlNode(t"root")(CodlNode(t"one two")())))
       
       test(t"Unindented blank line does not terminate long content"):
         read(t"root\n    one\n    two\n\n    three").wiped
-      .assert(_ == CodlDoc(Nodule(t"root")(Nodule(t"one\ntwo\n\nthree")())))
+      .assert(_ == CodlDoc(CodlNode(t"root")(CodlNode(t"one\ntwo\n\nthree")())))
       
       test(t"Multiline item"):
         read(t"root\n  child\n    this\n        one two\n        three four\n").wiped
-      .assert(_ == CodlDoc(Nodule(t"root")(Nodule(t"child")(Nodule(t"this")(Nodule(t"one two\nthree four")())))))
+      .assert(_ == CodlDoc(CodlNode(t"root")(CodlNode(t"child")(CodlNode(t"this")(CodlNode(t"one two\nthree four")())))))
       
       test(t"Terminated content"):
         read(t"ROOT\n  one two\n##\nfoobar\nbaz").wiped
-      .assert(_ == CodlDoc(Nodule(t"ROOT")(Nodule(t"one")(Nodule(t"two")()))))
+      .assert(_ == CodlDoc(CodlNode(t"ROOT")(CodlNode(t"one")(CodlNode(t"two")()))))
       
       test(t"Terminated content without newline"):
         read(t"root\n    one two\n##").wiped
-      .assert(_ == CodlDoc(Nodule(t"root")(Nodule(t"one two")())))
+      .assert(_ == CodlDoc(CodlNode(t"root")(CodlNode(t"one two")())))
       
       test(t"Terminated content with body"):
         read(t"root\n    one two\n##\nunparsed content").body
@@ -597,7 +597,7 @@ object Tests extends Suite(t"CoDL tests"):
       
       test(t"Root node has correct name"):
         topSchema.parse(t"root").untyped()
-      .assert(_ == Nodule(Data(t"root")))
+      .assert(_ == CodlNode(Data(t"root")))
       
       test(t"Root node has correct schema"):
         topSchema.parse(t"root")().schema
@@ -828,23 +828,23 @@ object Tests extends Suite(t"CoDL tests"):
       )
 
 
-      test(t"Nodule contains reference to an ident param"):
+      test(t"CodlNode contains reference to an ident param"):
         schema.parse(t"""root\n  field apple Braeburn red""").root().ids
       .assert(_ == Set(t"apple"))
       
-      test(t"Nodule contains reference to an ident param with children"):
+      test(t"CodlNode contains reference to an ident param with children"):
         schema.parse(t"""root\n  field apple Braeburn\n    description red""").root().ids
       .assert(_ == Set(t"apple"))
       
-      test(t"Nodule contains reference to an ident param as a child"):
+      test(t"CodlNode contains reference to an ident param as a child"):
         schema.parse(t"""root\n  another\n    id jack\n    name Jack\n    color blue\n    size 8""").root().ids
       .assert(_ == Set(t"jack"))
       
-      test(t"Nodule contains multiple ids"):
+      test(t"CodlNode contains multiple ids"):
         schema.parse(t"""root\n  another jill\n    name Jill\n    color foo\n  another\n    id jack\n    name Jack\n""").root().ids
       .assert(_ == Set(t"jack", t"jill"))
       
-      test(t"Nodule contains multiple ids (tweaked)"):
+      test(t"CodlNode contains multiple ids (tweaked)"):
         schema.parse(t"""root\n  another jill\n    name Jill\n  another\n    id jack\n    name Jack\n    color blue\n    size 8""").root().ids
       .assert(_ == Set(t"jack", t"jill"))
       
@@ -909,36 +909,36 @@ object Tests extends Suite(t"CoDL tests"):
 
       test(t"write a simple case class"):
         Person(t"John Smith", 65).codl.untyped
-      .assert(_ == CodlDoc(Nodule(t"name")(Nodule(t"John Smith")()), Nodule(t"age")(Nodule(t"65")())))
+      .assert(_ == CodlDoc(CodlNode(t"name")(CodlNode(t"John Smith")()), CodlNode(t"age")(CodlNode(t"65")())))
       
       test(t"write a nested case class"):
         val person1 = Person(t"Alpha", 1)
         Organisation(t"Acme", person1).codl.untyped
-      .assert(_ == CodlDoc(Nodule(t"name")(Nodule(t"Acme")()), Nodule(t"ceo")(Nodule(t"name")(Nodule(t"Alpha")()),
-          Nodule(t"age")(Nodule(t"1")()))))
+      .assert(_ == CodlDoc(CodlNode(t"name")(CodlNode(t"Acme")()), CodlNode(t"ceo")(CodlNode(t"name")(CodlNode(t"Alpha")()),
+          CodlNode(t"age")(CodlNode(t"1")()))))
       
       test(t"write a case class with optional field specified"):
         Player(t"Barry", 1).codl.untyped
-      .assert(_ == CodlDoc(Nodule(t"name")(Nodule(t"Barry")()), Nodule(t"rank")(Nodule(t"1")())))
+      .assert(_ == CodlDoc(CodlNode(t"name")(CodlNode(t"Barry")()), CodlNode(t"rank")(CodlNode(t"1")())))
       
       test(t"write a case class with optional field unspecified"):
         Player(t"Barry", Unset).codl.untyped
-      .assert(_ == CodlDoc(Nodule(t"name")(Nodule(t"Barry")())))
+      .assert(_ == CodlDoc(CodlNode(t"name")(CodlNode(t"Barry")())))
       
       test(t"serialize a List of case classes"):
         List(Person(t"John Smith", 65), Person(t"Jim Calvin", 11)).codl.untyped
       .assert(_ == CodlDoc(
-        Nodule(t"name")(Nodule(t"John Smith")()), Nodule(t"age")(Nodule(t"65")()),
-        Nodule(t"name")(Nodule(t"Jim Calvin")()), Nodule(t"age")(Nodule(t"11")())
+        CodlNode(t"name")(CodlNode(t"John Smith")()), CodlNode(t"age")(CodlNode(t"65")()),
+        CodlNode(t"name")(CodlNode(t"Jim Calvin")()), CodlNode(t"age")(CodlNode(t"11")())
       ))
       
       test(t"serialize a List of integers"):
         List(1, 2, 3).codl.untyped
-      .assert(_ == CodlDoc(Nodule(t"1")(), Nodule(t"2")(), Nodule(t"3")()))
+      .assert(_ == CodlDoc(CodlNode(t"1")(), CodlNode(t"2")(), CodlNode(t"3")()))
       
       test(t"serialize a List of booleans"):
         List(true, false, true).codl.untyped
-      .assert(_ == CodlDoc(Nodule(t"yes")(), Nodule(t"no")(), Nodule(t"yes")()))
+      .assert(_ == CodlDoc(CodlNode(t"yes")(), CodlNode(t"no")(), CodlNode(t"yes")()))
 
       test(t"roundtrip a true boolean"):
         roundtrip[Boolean](true)
@@ -1032,43 +1032,43 @@ object Tests extends Suite(t"CoDL tests"):
     suite(t"Serialization tests"):
 
       test(t"Serialize a node"):
-        CodlDoc(Nodule(Data(t"root"))).serialize
+        CodlDoc(CodlNode(Data(t"root"))).serialize
       .assert(_ == t"root\n")
 
       test(t"Serialize a node and a child"):
-        CodlDoc(Nodule(Data(t"root", IArray(Nodule(Data(t"child")))))).serialize
+        CodlDoc(CodlNode(Data(t"root", IArray(CodlNode(Data(t"child")))))).serialize
       .assert(_ == t"root\n  child\n")
       
       test(t"Serialize a node and a child with params layout"):
-        CodlDoc(Nodule(Data(t"root", IArray(Nodule(Data(t"child"))), Layout(1, false)))).serialize
+        CodlDoc(CodlNode(Data(t"root", IArray(CodlNode(Data(t"child"))), Layout(1, false)))).serialize
       .assert(_ == t"root child\n")
       
       test(t"Serialize a node and a child with block param"):
-        CodlDoc(Nodule(Data(t"root", IArray(Nodule(Data(t"child")), Nodule(Data(t"Hello World"))), Layout(2, true)))).serialize
+        CodlDoc(CodlNode(Data(t"root", IArray(CodlNode(Data(t"child")), CodlNode(Data(t"Hello World"))), Layout(2, true)))).serialize
       .assert(_ == t"root child\n    Hello World\n")
       
       test(t"Serialize a node and a child with multiline block param"):
-        CodlDoc(Nodule(Data(t"root", IArray(Nodule(Data(t"child")), Nodule(Data(t"Hello\nWorld"))), Layout(2, true)))).serialize
+        CodlDoc(CodlNode(Data(t"root", IArray(CodlNode(Data(t"child")), CodlNode(Data(t"Hello\nWorld"))), Layout(2, true)))).serialize
       .assert(_ == t"root child\n    Hello\n    World\n")
       
       test(t"Serialize a node and a child with comment"):
-        CodlDoc(Nodule(Data(t"root", IArray(Nodule(Data(t"child"), Meta(comments = List(t" comment"))))))).serialize
+        CodlDoc(CodlNode(Data(t"root", IArray(CodlNode(Data(t"child"), Meta(comments = List(t" comment"))))))).serialize
       .assert(_ == t"root\n  # comment\n  child\n")
       
       test(t"Serialize a node and a child with multiline comment"):
-        CodlDoc(Nodule(Data(t"root", IArray(Nodule(Data(t"child"), Meta(comments = List(t" line 1", t" line 2"))))))).serialize
+        CodlDoc(CodlNode(Data(t"root", IArray(CodlNode(Data(t"child"), Meta(comments = List(t" line 1", t" line 2"))))))).serialize
       .assert(_ == t"root\n  # line 1\n  # line 2\n  child\n")
       
       test(t"Serialize a node and a child with multiline comment and blank lines"):
-        CodlDoc(Nodule(Data(t"root", IArray(Nodule(Data(t"child"), Meta(blank = 2, comments = List(t" line 1", t" line 2"))))))).serialize
+        CodlDoc(CodlNode(Data(t"root", IArray(CodlNode(Data(t"child"), Meta(blank = 2, comments = List(t" line 1", t" line 2"))))))).serialize
       .assert(_ == t"root\n\n\n  # line 1\n  # line 2\n  child\n")
       
       test(t"Serialize a node and a child with blank lines"):
-        CodlDoc(Nodule(Data(t"root", IArray(Nodule(Data(t"child"), Meta(blank = 2)))))).serialize
+        CodlDoc(CodlNode(Data(t"root", IArray(CodlNode(Data(t"child"), Meta(blank = 2)))))).serialize
       .assert(_ == t"root\n\n\n  child\n")
       
       test(t"Serialize a node and a child with a remark"):
-        CodlDoc(Nodule(Data(t"root", IArray(Nodule(Data(t"child"), Meta(remark = t"some remark")))))).serialize
+        CodlDoc(CodlNode(Data(t"root", IArray(CodlNode(Data(t"child"), Meta(remark = t"some remark")))))).serialize
       .assert(_ == t"root\n  child # some remark\n")
 
     // suite(t"Interpolation suite"):
@@ -1079,7 +1079,7 @@ object Tests extends Suite(t"CoDL tests"):
     //         child value
     //       test
     //     """.untyped.copy(margin = 0)
-    //   .assert(_ == CodlDoc(Nodule(t"root")(Nodule(t"child")(Nodule(t"value")())), Nodule(t"test")()))
+    //   .assert(_ == CodlDoc(CodlNode(t"root")(CodlNode(t"child")(CodlNode(t"value")())), CodlNode(t"test")()))
       
     //   test(t"Interpolator with one substitutions"):
     //     val bar = t"Hello"
@@ -1089,7 +1089,7 @@ object Tests extends Suite(t"CoDL tests"):
     //         child value
     //       test
     //     """.untyped.copy(margin = 0)
-    //   .assert(_ == CodlDoc(Nodule(t"root")(Nodule(t"Hello")(), Nodule(t"child")(Nodule(t"value")())), Nodule(t"test")()))
+    //   .assert(_ == CodlDoc(CodlNode(t"root")(CodlNode(t"Hello")(), CodlNode(t"child")(CodlNode(t"value")())), CodlNode(t"test")()))
 
     //   test(t"Interpolator with substitution containing space"):
     //     val bar = t"Hello World"
@@ -1099,4 +1099,4 @@ object Tests extends Suite(t"CoDL tests"):
     //         child value
     //       test
     //     """.untyped.copy(margin = 0)
-    //   .assert(_ == CodlDoc(Nodule(t"root")(Nodule(t"Hello World")(), Nodule(t"child")(Nodule(t"value")())), Nodule(t"test")()))
+    //   .assert(_ == CodlDoc(CodlNode(t"root")(CodlNode(t"Hello World")(), CodlNode(t"child")(CodlNode(t"value")())), CodlNode(t"test")()))

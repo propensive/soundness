@@ -45,7 +45,7 @@ object Codl:
     val (margin, stream) = tokenize(reader, fromStart)
     val baseSchema: CodlSchema = schema
     
-    case class Proto(key: Maybe[Text] = Unset, line: Int = 0, col: Int = 0, children: List[Nodule] = Nil,
+    case class Proto(key: Maybe[Text] = Unset, line: Int = 0, col: Int = 0, children: List[CodlNode] = Nil,
                         meta: Maybe[Meta] = Unset, schema: CodlSchema = CodlSchema.Free, params: Int = 0,
                         multiline: Boolean = false, ids: Map[Text, (Int, Int)] = Map()):
       
@@ -61,15 +61,15 @@ object Codl:
         val (closed, errors2) = child.close
         (copy(children = closed :: children, params = params + 1), errors2)
 
-      def substitute(data: Data): Proto = copy(children = Nodule(data) :: children, params = params + 1)
+      def substitute(data: Data): Proto = copy(children = CodlNode(data) :: children, params = params + 1)
       def setMeta(meta: Maybe[Meta]): Proto = copy(meta = meta)
 
-      def close: (Nodule, List[CodlError]) =
-        key.fm((Nodule(Unset, meta), Nil)):
+      def close: (CodlNode, List[CodlError]) =
+        key.fm((CodlNode(Unset, meta), Nil)):
           case key: Text =>
             val meta2 = meta.mm { m => m.copy(comments = m.comments.reverse) }
             val data = Data(key, IArray.from(children.reverse), Layout(params, multiline), schema)
-            val node = Nodule(data, meta2)
+            val node = CodlNode(data, meta2)
             
             val errors = schema.requiredKeys.to(List).flatMap: key =>
               if !node.data.mm(_.has(key)).or(false)
@@ -79,14 +79,14 @@ object Codl:
             (node, errors)
 
     @tailrec
-    def recur(tokens: LazyList[CodlToken], focus: Proto, peers: List[Nodule], stack: List[(Proto, List[Nodule])],
+    def recur(tokens: LazyList[CodlToken], focus: Proto, peers: List[CodlNode], stack: List[(Proto, List[CodlNode])],
                   lines: Int, subs: List[Data], errors: List[CodlError], body: LazyList[Text])
              : CodlDoc =
       
       def schema: CodlSchema = stack.headOption.fold(baseSchema)(_.head.schema.option.get)
       
-      inline def go(tokens: LazyList[CodlToken] = tokens.tail, focus: Proto = focus, peers: List[Nodule] = peers,
-                        stack: List[(Proto, List[Nodule])] = stack, lines: Int = lines, subs: List[Data] = subs,
+      inline def go(tokens: LazyList[CodlToken] = tokens.tail, focus: Proto = focus, peers: List[CodlNode] = peers,
+                        stack: List[(Proto, List[CodlNode])] = stack, lines: Int = lines, subs: List[Data] = subs,
                         errors: List[CodlError] = errors, body: LazyList[Text] = LazyList())
                    : CodlDoc =
         recur(tokens, focus, peers, stack, lines, subs, errors, body)

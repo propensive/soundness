@@ -29,24 +29,24 @@ case class codlLabel(label: String) extends StaticAnnotation
 case class CodlReadError() extends Error(err"the CoDL value is not of the right format")
 
 trait Codec[T]:
-  def serialize(value: T): List[IArray[Nodule]]
+  def serialize(value: T): List[IArray[CodlNode]]
   def deserialize(value: List[Indexed]): T throws CodlReadError
   def schema: CodlSchema
 
 class FieldCodec[T](serializer: T => Text, deserializer: Text => T) extends Codec[T]:
   val schema: CodlSchema = Field(Arity.One)
-  def serialize(value: T): List[IArray[Nodule]] = List(IArray(Nodule(Data(serializer(value)))))
+  def serialize(value: T): List[IArray[CodlNode]] = List(IArray(CodlNode(Data(serializer(value)))))
   
   def deserialize(nodes: List[Indexed]): T throws CodlReadError =
     nodes.headOption.getOrElse(throw CodlReadError()).children match
-      case IArray(Nodule(Data(value, _, _, _), _)) => deserializer(value)
+      case IArray(CodlNode(Data(value, _, _, _), _)) => deserializer(value)
       case _                                       => throw CodlReadError()
 
 object Codec extends ProductDerivation[Codec]:
   given maybe[T](using codec: Codec[T]): Codec[T | Unset.type] = new Codec[Maybe[T]]:
     def schema: CodlSchema = summon[Codec[T]].schema.optional
   
-    def serialize(value: Maybe[T]): List[IArray[Nodule]] = value match
+    def serialize(value: Maybe[T]): List[IArray[CodlNode]] = value match
       case Unset               => List()
       case value: T @unchecked => codec.serialize(value)
     
@@ -61,7 +61,7 @@ object Codec extends ProductDerivation[Codec]:
 
       Struct(entries.to(List), Arity.One)
     
-    def serialize(value: T): List[IArray[Nodule]] = List:
+    def serialize(value: T): List[IArray[CodlNode]] = List:
       ctx.params.flatMap: p =>
         val children = p.typeclass.serialize(p.deref(value)).map: children =>
           val index = children.zipWithIndex.foldLeft(Map[Text, Int]()):
@@ -69,7 +69,7 @@ object Codec extends ProductDerivation[Codec]:
 
         p.typeclass.serialize(p.deref(value)).map: value =>
           val label = p.annotations.collectFirst { case `codlLabel`(name) => name }.getOrElse(p.label)
-          Nodule(Data(label.show, value, Layout.empty, p.typeclass.schema))
+          CodlNode(Data(label.show, value, Layout.empty, p.typeclass.schema))
         .filter(!_.empty)
 
     def deserialize(value: List[Indexed]): T throws CodlReadError = ctx.construct: param =>
@@ -86,7 +86,7 @@ object Codec extends ProductDerivation[Codec]:
   given option[T](using codec: Codec[T]): Codec[Option[T]] = new Codec[Option[T]]:
     def schema: CodlSchema = summon[Codec[T]].schema.optional
   
-    def serialize(value: Option[T]): List[IArray[Nodule]] = value match
+    def serialize(value: Option[T]): List[IArray[CodlNode]] = value match
       case None        => List()
       case Some(value) => codec.serialize(value)
     
@@ -98,7 +98,7 @@ object Codec extends ProductDerivation[Codec]:
       case Field(_, validator) => Field(Arity.Many, validator)
       case struct: Struct      => struct.copy(structArity = Arity.Many)
 
-    def serialize(value: List[T]): List[IArray[Nodule]] = value.map { (value: T) => codec.serialize(value).head }
+    def serialize(value: List[T]): List[IArray[CodlNode]] = value.map { (value: T) => codec.serialize(value).head }
 
     def deserialize(value: List[Indexed]): List[T] throws CodlReadError = codec.schema match
       case Field(_, validator) => value.flatMap(_.children).map: node =>
@@ -112,7 +112,7 @@ object Codec extends ProductDerivation[Codec]:
       case Field(_, validator) => Field(Arity.Many, validator)
       case struct: Struct      => struct.copy(structArity = Arity.Many)
 
-    def serialize(value: Set[T]): List[IArray[Nodule]] =
+    def serialize(value: Set[T]): List[IArray[CodlNode]] =
       value.map { (value: T) => codec.serialize(value).head }.to(List)
 
     def deserialize(value: List[Indexed]): Set[T] throws CodlReadError = codec.schema match
