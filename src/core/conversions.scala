@@ -17,6 +17,7 @@
 package iridescence
 
 import rudiments.*
+import deviation.*
 import cardinality.*
 import contextual.*
 
