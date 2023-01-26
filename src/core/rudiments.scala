@@ -54,6 +54,7 @@ export scala.annotation.{tailrec, implicitNotFound, targetName, switch, StaticAn
 import language.experimental.captureChecking
 
 type Bytes = IArray[Byte]
+
 opaque type Text = String
 
 object Text:
@@ -138,52 +139,14 @@ object Sys extends Dynamic:
   def applyDynamic(key: String)(): Text throws KeyNotFoundError = selectDynamic(key).apply()
   def bigEndian: Boolean = java.nio.ByteOrder.nativeOrder == java.nio.ByteOrder.BIG_ENDIAN
 
-case class KeyNotFoundError(name: Text) extends Error(err"key $name not found")
-case class UnsetValueError() extends Error(err"the value was not set")
-
-object Mistake:
-  def apply(error: Exception): Mistake =
-    Mistake(s"rudiments: an ${error.getClass.getName} exception was thrown when this was not "+
-        s"believed to be possible; the error was '${error.getMessage}'")
-
-case class Mistake(message: String) extends java.lang.Error(message)
-
-object Unset:
-  override def toString(): String = "——"
-
-type Maybe[T] = Unset.type | T
-
-extension [T](opt: Maybe[T])
-  def unset: Boolean = opt == Unset
-  
-  def or(value: {*}-> T): {value} T = opt match
-    case Unset               => value
-    case other: T @unchecked => other
-
-  def presume(using default: Default[T]): T = or(default())
-  def assume(using th: CanThrow[UnsetValueError]): {th} T = or(throw UnsetValueError())
-
-  def fm[S](default: -> S)(fn: T -> S) = opt match
-    case Unset               => default
-    case value: T @unchecked => fn(value)
-
-  def mm[S](fn: T -> S): Maybe[S] = opt match
-    case Unset               => Unset
-    case value: T @unchecked => fn(value)
-
-  def option: Option[T] = opt match
-    case Unset               => None
-    case other: T @unchecked => Some(other)
+case class KeyNotFoundError(name: Text)
+extends Error(ErrorMessage[Text *: EmptyTuple](List(Text("key "), Text(" not found")), name *: EmptyTuple))
 
 extension (iarray: IArray.type)
   def create[T: ClassTag](size: Int)(fn: Array[T] => Unit): IArray[T] =
     val array = new Array[T](size)
     fn(array)
     array.immutable(using Unsafe)
-
-extension [T](opt: Option[T])
-  def maybe: Unset.type | T = opt.getOrElse(Unset)
-  def presume(using default: Default[T]) = opt.getOrElse(default())
 
 case class Counter(first: Int = 0):
   private var id: Int = first
@@ -249,9 +212,11 @@ extension [T](xs: Iterable[T])
 object Timer extends ju.Timer(true)
 
 case class DuplicateIndexError()
-extends Error(err"the sequence contained more than one element that mapped to the same index")
+extends Error(ErrorMessage[EmptyTuple](
+  List(Text("the sequence contained more than one element that mapped to the same index")), EmptyTuple
+))
 
-case class TimeoutError() extends Error(err"an operation did not complete in the time it was given")
+//case class TimeoutError() extends Error(err"an operation did not complete in the time it was given")
 
 extension[T](xs: Seq[T])
   def random: T = xs(util.Random().nextInt(xs.length))
@@ -320,10 +285,10 @@ case class Pid(value: Long):
 
 object Uuid:
   def unapply(text: Text): Option[Uuid] =
-    safely:
+    try Some:
       val uuid = ju.UUID.fromString(text.s).nn
       Uuid(uuid.getMostSignificantBits, uuid.getLeastSignificantBits)
-    .option
+    catch case err: Exception => None
 
   def apply(): Uuid =
     val uuid = ju.UUID.randomUUID().nn
@@ -332,20 +297,6 @@ object Uuid:
 case class Uuid(msb: Long, lsb: Long):
   def javaUuid: ju.UUID = ju.UUID(msb, lsb)
   def bytes: Bytes = Bytes(msb) ++ Bytes(lsb)
-
-object Unsafe
-
-object Default:
-  given Default[Int](0)
-  given Default[Long](0L)
-  given Default[Text](Text(""))
-  given Default[String]("")
-  given [T]: Default[List[T]](Nil)
-  given [T]: Default[Set[T]](Set())
-  given [T]: Default[Vector[T]](Vector())
-
-trait Default[+T](default: T):
-  def apply(): T = default
 
 inline def env(using env: Environment): Environment = env
 
@@ -373,3 +324,17 @@ extension [P <: Product](product: P)(using mirror: Mirror.ProductOf[P])
 
 extension [T <: Tuple](tuple: T)
   def to[P](using mirror: Mirror.ProductOf[P]): P = mirror.fromProduct(tuple)
+
+object Unsafe
+
+object Default:
+  given Default[Int](0)
+  given Default[Long](0L)
+  given Default[Text](Text(""))
+  given Default[String]("")
+  given [T]: Default[List[T]](Nil)
+  given [T]: Default[Set[T]](Set())
+  given [T]: Default[Vector[T]](Vector())
+
+trait Default[+T](default: T):
+  def apply(): T = default

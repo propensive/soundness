@@ -67,11 +67,12 @@ class Environment(getEnv: Text => Option[Text], getProperty: Text => Option[Text
   def userName: Text throws EnvError = property(Text("user.name"))
 
   def pwd[P](using pp: GenericPathMaker[P]): P throws EnvError =
-    apply(Text("PWD")).or(safely(property(Text("user.dir")))).fm(throw EnvError(Text("user.dir"), true)): path =>
+    val userDir = try property(Text("user.dir")) catch case err: Exception => Unset
+    apply(Text("PWD")).or(userDir).fm(throw EnvError(Text("user.dir"), true)): path =>
       pp.makePath(path.s).getOrElse(throw EnvError(Text("user.dir"), true))
 
 case class EnvError(variable: Text, property: Boolean)
-extends Error(
-  if property then err"the system property $variable was not found"
-  else err"the environment variable $variable was not found"
-)
+extends Error(ErrorMessage[Text *: EmptyTuple](
+  List(Text(if property then "the system property " else "the environment variable "), Text(" was not found")),
+  variable *: EmptyTuple
+))
