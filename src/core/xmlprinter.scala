@@ -17,6 +17,7 @@
 package xylophone
 
 import rudiments.*
+import deviation.*
 import gossamer.*
 
 trait XmlPrinter[T]:

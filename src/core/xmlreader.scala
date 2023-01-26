@@ -18,6 +18,7 @@ package xylophone
 
 import wisteria.*
 import rudiments.*
+import deviation.*
 import gossamer.*
 
 trait XmlReader[T]:

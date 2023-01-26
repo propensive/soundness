@@ -18,6 +18,7 @@ package xylophone
 
 import contextual.*
 import rudiments.*
+import deviation.*
 import gossamer.*
 
 object XmlInterpolation:
