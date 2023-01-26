@@ -26,7 +26,9 @@ The following _Scala One_ libraries are dependencies of _Deviation_:
 
 [![Rudiments](https://github.com/propensive/rudiments/raw/main/doc/images/128x128.png)](https://github.com/propensive/rudiments/) &nbsp;
 
-No other _Scala One_ libraries are dependents of _Deviation_.
+The following _Scala One_ libraries are dependents of _Deviation_:
+
+[![Contextual](https://github.com/propensive/contextual/raw/main/doc/images/128x128.png)](https://github.com/propensive/contextual/) &nbsp; [![Imperial](https://github.com/propensive/imperial/raw/main/doc/images/128x128.png)](https://github.com/propensive/imperial/) &nbsp; [![Parasitism](https://github.com/propensive/parasitism/raw/main/doc/images/128x128.png)](https://github.com/propensive/parasitism/) &nbsp;
 
 ## Status
 
