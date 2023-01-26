@@ -277,6 +277,15 @@ object Tests extends Suite(t"CoDL tests"):
       .assert(_ == (0, LazyList(Item(t"root", 0, 0), Item(t"child content", 1, 4, true), Peer,
           Item(t"next", 2, 0))))
       
+      test(t"Parse double indentation then peer as children"):
+        parseText(t"""|root
+                      |  child
+                      |      content
+                      |  next
+                      |""".s.stripMargin.show)
+      .assert(_ == (0, LazyList(Item(t"root", 0, 0), Indent, Item(t"child", 1, 2, true), Item(t"content", 2, 6), Peer,
+          Item(t"next", 3, 2))))
+      
       test(t"Parse double indentation then peer with margin"):
         parseText(t"""| root
                       |     child content

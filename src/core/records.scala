@@ -19,6 +19,7 @@ package cellulose
 import polyvinyl.*
 import gossamer.*
 import rudiments.*
+import deviation.*
 
 abstract class RecordType(schema: CodlSchema) extends Schema[Arity]:
   import Arity.*

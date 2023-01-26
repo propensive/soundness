@@ -17,6 +17,7 @@
 package cellulose
 
 import rudiments.*
+import deviation.*
 import gossamer.*
 
 export CodlError.Issue.*

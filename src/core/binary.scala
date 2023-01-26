@@ -18,6 +18,7 @@ package cellulose
 
 import java.io as ji
 import rudiments.*
+import deviation.*
 import gossamer.*
 import eucalyptus.*
 

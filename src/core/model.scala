@@ -17,6 +17,7 @@
 package cellulose
 
 import rudiments.*
+import deviation.*
 import gossamer.*
 import contextual.*
 import eucalyptus.*
