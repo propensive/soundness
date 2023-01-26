@@ -18,6 +18,7 @@ package anticipation.integration
 
 import anticipation.*
 import rudiments.*
+import deviation.*
 import _root_.galilei as gal
 
 import language.experimental.captureChecking
