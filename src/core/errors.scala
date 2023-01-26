@@ -34,33 +34,33 @@ object StackTrace:
   def rewrite(name: String, method: Boolean = false): Text =
     val sb: StringBuilder = StringBuilder()
     
-    def token(idx: Int, str: String, text: String): Int =
-      if (0 until str.length).forall { i => char(idx + i) == str(i) }
-      then
-        sb.append(text)
-        idx + str.length
-      else
-        sb.append('#')
-        idx + 1
-    
-    inline def char(idx: Int): Maybe[Char] =
-      if idx < 0 || idx >= name.length then Unset else name.charAt(idx)
+    inline def char(idx: Int): Maybe[Char] = if idx < 0 || idx >= name.length then Unset else name.charAt(idx)
 
     @tailrec
     def recur(idx: Int, digits: Boolean = false): Text =
-      inline def skip(): Text = recur(token(idx, "$", if method then "()." else "#"))
+      inline def token(idx: Int, str: String, text: String, digits: Boolean = false): Text =
+        if (0 until str.length).forall { i => char(idx + i) == str(i) }
+        then
+          sb.append(text)
+          recur(idx + str.length, digits)
+        else
+          sb.append('#')
+          recur(idx + 1, digits)
+      
+      inline def skip(): Text = token(idx, "$", if method then "()." else "#")
+
       if idx >= name.length then Text(sb.toString+(if method then "()" else ""))
       else if digits then char(idx) match
-        case '0' => recur(token(idx,             "0",                    "₀"), true)
-        case '1' => recur(token(idx,             "1",                    "₁"), true)
-        case '2' => recur(token(idx,             "2",                    "₂"), true)
-        case '3' => recur(token(idx,             "3",                    "₃"), true)
-        case '4' => recur(token(idx,             "4",                    "₄"), true)
-        case '5' => recur(token(idx,             "5",                    "₅"), true)
-        case '6' => recur(token(idx,             "6",                    "₆"), true)
-        case '7' => recur(token(idx,             "7",                    "₇"), true)
-        case '8' => recur(token(idx,             "8",                    "₈"), true)
-        case '9' => recur(token(idx,             "9",                    "₉"), true)
+        case '0' => token(idx,             "0",                    "₀", true)
+        case '1' => token(idx,             "1",                    "₁", true)
+        case '2' => token(idx,             "2",                    "₂", true)
+        case '3' => token(idx,             "3",                    "₃", true)
+        case '4' => token(idx,             "4",                    "₄", true)
+        case '5' => token(idx,             "5",                    "₅", true)
+        case '6' => token(idx,             "6",                    "₆", true)
+        case '7' => token(idx,             "7",                    "₇", true)
+        case '8' => token(idx,             "8",                    "₈", true)
+        case '9' => token(idx,             "9",                    "₉", true)
         case _   => recur(idx, false)
       else char(idx) match
         case 'i' =>
@@ -80,50 +80,50 @@ object StackTrace:
             sb.append("s")
             recur(idx + 1)
         case '$' => char(idx + 1) match
-          case '_' => recur(token(idx,           "$_avoid_name_clash_$", "′"))
+          case '_' => token(idx,           "$_avoid_name_clash_$", "′")
           case 'a' => char(idx + 2) match
-            case 'm' => recur(token(idx,         "$amp",                 "&"))
+            case 'm' => token(idx,         "$amp",                 "&")
             case 'n' => char(idx + 5) match
-              case 'f' => recur(token(idx,       "$anonfun",             "λ"))
-              case _   => recur(token(idx,       "$anon",                "α"))
-            case 't' => recur(token(idx,         "$at",                  "@"))
+              case 'f' => token(idx,       "$anonfun",             "λ")
+              case _   => token(idx,       "$anon",                "α")
+            case 't' => token(idx,         "$at",                  "@")
             case _   => skip()
           case 'b' => char(idx + 2) match
             case 'a' => char(idx + 3) match
-              case 'n' => recur(token(idx,       "$bang",                "!"))
-              case 'r' => recur(token(idx,       "$bar",                 "|"))
+              case 'n' => token(idx,       "$bang",                "!")
+              case 'r' => token(idx,       "$bar",                 "|")
               case _   => skip()
-            case 's' => recur(token(idx,         "$bslash",              "\\"))
+            case 's' => token(idx,         "$bslash",              "\\")
             case _   => skip()
-          case 'c' => recur(token(idx,           "$colon",               ":"))
+          case 'c' => token(idx,           "$colon",               ":")
           case 'd' => char(idx + 2) match
-            case 'e' => recur(token(idx,         "$default",             "δ"))
+            case 'e' => token(idx,         "$default",             "δ")
             case 'i' => char(idx + 3) match
-              case 'r' => recur(token(idx,       "$direct",              "⋮ϕ"))
-              case 'v' => recur(token(idx,       "$div",                 "/"))
+              case 'r' => token(idx,       "$direct",              "⋮ϕ")
+              case 'v' => token(idx,       "$div",                 "/")
               case _   => skip()
             case _   => skip()
           case 'e' => char(idx + 2) match
-            case 'q' => recur(token(idx,         "$eq",                  "="))
-            case 'x' => recur(token(idx,         "$extension",           "⋮ε"))
+            case 'q' => token(idx,         "$eq",                  "=")
+            case 'x' => token(idx,         "$extension",           "⋮ε")
             case _   => skip()
-          case 'g' => recur(token(idx,           "$greater",             ">"))
-          case 'h' => recur(token(idx,           "$hash",                "#"))
-          case 'l' => recur(token(idx,           "$less",                "<"))
-          case 'm' => recur(token(idx,           "$minus",               "-"))
+          case 'g' => token(idx,           "$greater",             ">")
+          case 'h' => token(idx,           "$hash",                "#")
+          case 'l' => token(idx,           "$less",                "<")
+          case 'm' => token(idx,           "$minus",               "-")
           case 'p' => char(idx + 2) match
-            case 'a' => recur(token(idx,         "$package",             "⋮π"))
-            case 'e' => recur(token(idx,         "$percent",             "%"))
-            case 'l' => recur(token(idx,         "$plus",                "+"))
+            case 'a' => token(idx,         "$package",             "⋮π")
+            case 'e' => token(idx,         "$percent",             "%")
+            case 'l' => token(idx,         "$plus",                "+")
             case _   => skip()
-          case 'q' => recur(token(idx,           "$qmark",               "?"))
+          case 'q' => token(idx,           "$qmark",               "?")
           case 't' => char(idx + 2) match
             case 'i' => char(idx + 3) match
-              case 'l' => recur(token(idx,       "$tilde",               "~"))
-              case 'm' => recur(token(idx,       "$times",               "*"))
+              case 'l' => token(idx,       "$tilde",               "~")
+              case 'm' => token(idx,       "$times",               "*")
               case _   => skip()
             case _  => skip()
-          case 'u' => recur(token(idx,           "$up",                  "^"))
+          case 'u' => token(idx,           "$up",                  "^")
           case '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' => recur(idx + 1, true)
           case _   => skip()
         case ch  =>
