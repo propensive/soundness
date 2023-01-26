@@ -18,6 +18,7 @@ package javanais
 
 import wisteria.*
 import rudiments.*
+import deviation.*
 import turbulence.*
 import gossamer.*
 import anticipation.*
