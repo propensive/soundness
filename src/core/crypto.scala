@@ -20,6 +20,7 @@ import javax.crypto.*, javax.crypto.spec.*
 import java.security as js, js.spec.*
 
 import rudiments.*
+import deviation.*
 import gossamer.*
 
 import java.nio.*, charset.*

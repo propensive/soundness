@@ -17,6 +17,7 @@
 package gastronomy
 
 import rudiments.*
+import deviation.*
 import gossamer.*
 
 case class Pem(kind: Text, data: Bytes):

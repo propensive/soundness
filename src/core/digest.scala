@@ -18,6 +18,7 @@ package gastronomy
 
 import wisteria.*
 import rudiments.*
+import deviation.*
 import gossamer.*
 
 import scala.collection.*
