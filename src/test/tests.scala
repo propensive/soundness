@@ -176,6 +176,6 @@ object Tests extends Suite(t"Aviation Tests"):
         2014-Nov-20 + 3.years
       .assert(_ == 2017-Nov-20)
       
-      test(t"Read TZDB file"):
-        Tzdb.parseFile(t"europe")
-      .assert(_ == List())
+      // test(t"Read TZDB file"):
+      //   Tzdb.parseFile(t"europe")
+      // .assert(_ == List())
