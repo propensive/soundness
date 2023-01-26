@@ -56,7 +56,7 @@ object reflection:
 
     val tree = TastyTree.expand(expr.asTerm)
     def exp(prefix: List[TreeTile], node: TastyTree) = Expansion(prefix.drop(1).map(_.show).join+t"▪ "+node.name, node.param, node.shortCode, node.source)
-    val seq: Seq[Expansion] = textualizeTree[TastyTree, Expansion](_.children, exp)(List(tree))
+    val seq: Seq[Expansion] = drawTree[TastyTree, Expansion](_.children, exp)(List(tree))
 
 
     Table[Expansion](
