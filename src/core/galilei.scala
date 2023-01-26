@@ -17,6 +17,7 @@
 package galilei
 
 import rudiments.*
+import deviation.*
 import gossamer.*
 import turbulence.*
 import serpentine.*
