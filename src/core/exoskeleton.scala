@@ -17,6 +17,7 @@
 package exoskeleton
 
 import rudiments.*
+import deviation.*
 import gossamer.*
 
 import scala.util.*, scala.annotation.tailrec

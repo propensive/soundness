@@ -20,6 +20,7 @@ import galilei.*, filesystems.unix
 import anticipation.integration.galileiPath
 import gossamer.*
 import rudiments.*
+import deviation.*
 import parasitism.*
 import turbulence.*
 import escapade.*
