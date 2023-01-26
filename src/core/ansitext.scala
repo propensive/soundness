@@ -18,6 +18,7 @@ package escapade
 
 import gossamer.*
 import rudiments.*
+import deviation.*
 import iridescence.*
 import contextual.*
 
