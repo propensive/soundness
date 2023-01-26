@@ -35,6 +35,19 @@ enum CodlToken:
   case Comment(text: Text, line: Int, col: Int)
   case Error(error: CodlError)
 
+object CodlToken:
+  given Debug[CodlToken] =
+    case Indent                       => t"Indent"
+    case Peer                         => t"Peer"
+    case Blank                        => t"Blank"
+    case Argument                     => t"Argument"
+    case Line(text)                   => t"Line($text)"
+    case Outdent(n)                   => t"Outdent($n)"
+    case Tab(n)                       => t"Tab($n)"
+    case Item(text, line, col, block) => t"Item($text, $line, $col, $block)"
+    case Comment(text, line, col)     => t"Comment($text, $line, $col)"
+    case Error(error)                 => t"Error(${error.message})"
+
 object Codl:
 
   def read[T: Codec](text: Text)(using Log): T throws AggregateError | CodlReadError = // FIXME: Should only be aggregate error
