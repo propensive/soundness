@@ -4,6 +4,7 @@ import gossamer.*
 import kaleidoscope.*
 import eucalyptus.*
 import rudiments.*
+import deviation.*
 
 object TzdbError:
   given Show[Issue] =

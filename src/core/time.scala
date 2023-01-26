@@ -1,6 +1,7 @@
 package aviation
 
 import rudiments.*
+import deviation.*
 import gossamer.*
 import cardinality.*
 import anticipation.*
