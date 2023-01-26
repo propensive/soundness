@@ -17,6 +17,7 @@
 package turbulence
 
 import rudiments.*
+import deviation.*
 import anticipation.*
 import parasitism.*
 
