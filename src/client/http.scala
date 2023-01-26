@@ -18,6 +18,7 @@ package telekinesis
 
 import gossamer.*
 import rudiments.*
+import deviation.*
 import turbulence.*
 import gesticulate.*
 import wisteria.*

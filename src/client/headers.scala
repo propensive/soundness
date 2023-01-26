@@ -17,6 +17,7 @@
 package telekinesis
 
 import rudiments.*
+import deviation.*
 import anticipation.*
 import gossamer.*
 import gastronomy.*

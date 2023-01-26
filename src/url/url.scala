@@ -19,6 +19,7 @@ package telekinesis
 import serpentine.*
 import gossamer.*
 import rudiments.*
+import deviation.*
 import escapade.*
 import iridescence.*
 import anticipation.*
