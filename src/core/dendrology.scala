@@ -20,7 +20,7 @@ object TreeTile:
 enum TreeTile:
   case Space, Last, Branch, Extender
 
-def textualizeTree[N, L](getChildren: N => Seq[N], mkLine: (List[TreeTile], N) => L)(top: Seq[N]): LazyList[L] =
+def drawTree[N, L](getChildren: N => Seq[N], mkLine: (List[TreeTile], N) => L)(top: Seq[N]): LazyList[L] =
   def recur(level: List[TreeTile], input: Seq[N]): LazyList[L] =
     val last = input.size - 1
     input.zipWithIndex.to(LazyList).flatMap: (item, idx) =>

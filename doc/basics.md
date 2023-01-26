@@ -38,7 +38,7 @@ These are defined in the `TreeTile` enumeration, and have a corresponding
 should be used to render the tiles as text. Three implementations are provided
 in the `dendrology.treeStyles` package: `default`, `rounded` and `ascii`.
 
-Calling `textualizeText` with appropriate `getChildren` and this `mkLine`
+Calling `drawText` with appropriate `getChildren` and this `mkLine`
 lambda will produce a `LazyList[Text]` instance which could, for example, be
 printed to standard output, like so:
 
@@ -49,13 +49,13 @@ import treeStyles.rounded
 def mkLine(tiles: List[TreeTile], node: Node): Text =
   t"${tiles.map(_.show).join}> ${node.title}"
 
-val lines = textualizeText(_.children, mkLine)(myNodes)
+val lines = drawText(_.children, mkLine)(myNodes)
 lines.foreach(println(_))
 ```
 
 ### Laziness
 
-The `textualizeText` implementation accesses the tree data structure mostly
+The `drawTree` implementation accesses the tree data structure mostly
 lazily, but _does_ need to know the number of elements in each ancestor of the
 current node, but does not need to know anything about the descendants of
 subsequent nodes in the traversal until they are reached in their natural
