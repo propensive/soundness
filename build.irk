@@ -10,7 +10,7 @@
     {
       "name": "Imperial",
       "id": "imperial/core",
-      "links": ["rudiments/core", "anticipation/file"],
+      "links": ["deviation/core", "anticipation/file"],
       "sources": ["src/core"],
       "version": "0.4.0",
       "docs": ["doc"]

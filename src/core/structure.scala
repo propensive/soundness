@@ -17,6 +17,7 @@
 package imperial
 
 import rudiments.*
+import deviation.*
 import anticipation.*
 
 object BaseLayout:
