@@ -80,7 +80,7 @@ would simulate a click on every element with the `checkbox` CSS class inside an 
 
 The following _Scala One_ libraries are dependencies of _Tarantula_:
 
-[![Cataclysm](https://github.com/propensive/cataclysm/raw/main/doc/images/128x128.png)](https://github.com/propensive/cataclysm/) &nbsp; [![Guillotine](https://github.com/propensive/guillotine/raw/main/doc/images/128x128.png)](https://github.com/propensive/guillotine/) &nbsp; [![Honeycomb](https://github.com/propensive/honeycomb/raw/main/doc/images/128x128.png)](https://github.com/propensive/honeycomb/) &nbsp; [![Javanais](https://github.com/propensive/javanais/raw/main/doc/images/128x128.png)](https://github.com/propensive/javanais/) &nbsp; [![Telekinesis](https://github.com/propensive/telekinesis/raw/main/doc/images/128x128.png)](https://github.com/propensive/telekinesis/) &nbsp;
+[![Cataclysm](https://github.com/propensive/cataclysm/raw/main/doc/images/128x128.png)](https://github.com/propensive/cataclysm/) &nbsp; [![Gesticulate](https://github.com/propensive/gesticulate/raw/main/doc/images/128x128.png)](https://github.com/propensive/gesticulate/) &nbsp; [![Guillotine](https://github.com/propensive/guillotine/raw/main/doc/images/128x128.png)](https://github.com/propensive/guillotine/) &nbsp; [![Honeycomb](https://github.com/propensive/honeycomb/raw/main/doc/images/128x128.png)](https://github.com/propensive/honeycomb/) &nbsp; [![Javanais](https://github.com/propensive/javanais/raw/main/doc/images/128x128.png)](https://github.com/propensive/javanais/) &nbsp; [![Telekinesis](https://github.com/propensive/telekinesis/raw/main/doc/images/128x128.png)](https://github.com/propensive/telekinesis/) &nbsp;
 
 No other _Scala One_ libraries are dependents of _Tarantula_.
 
@@ -100,7 +100,7 @@ be used, but caution should be taken if there is a mismatch between the
 project's stability level and the importance of your own project.
 
 Tarantula is designed to be _small_. Its entire source code currently consists
-of 128 lines of code.
+of 130 lines of code.
 
 ## Building
 
