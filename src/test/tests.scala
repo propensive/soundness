@@ -17,6 +17,7 @@
 package scintillate
 
 import rudiments.*
+import deviation.*
 import probably.*
 import eucalyptus.*
 import gossamer.*, stdouts.stdout
