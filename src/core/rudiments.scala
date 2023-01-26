@@ -53,6 +53,11 @@ export scala.annotation.{tailrec, implicitNotFound, targetName, switch, StaticAn
 
 import language.experimental.captureChecking
 
+object Unset:
+  override def toString(): String = "——"
+
+type Maybe[T] = Unset.type | T
+
 type Bytes = IArray[Byte]
 
 opaque type Text = String
