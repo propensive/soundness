@@ -17,13 +17,14 @@
 package honeycomb
 
 import rudiments.*
+import deviation.*
 import gossamer.*
 import anticipation.*
 
 import scala.quoted.*
 
 type Label = String & Singleton
-type Attributes = Map[String, Maybe[Text]]
+type Attributes = Map[String, Unset.type | Text]
 type Html[Children <: Label] = Node[Children] | Text | Int
 
 object Node:

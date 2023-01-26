@@ -17,6 +17,7 @@
 package honeycomb
 
 import rudiments.*
+import deviation.*
 import gossamer.*
 import anticipation.*
 
@@ -116,7 +117,7 @@ object HtmlDoc:
                         (using att: HtmlAttribute["href", Stylesheet, ?]): HtmlDoc =
     val link = att.convert(stylesheet) match
       case Unset      => Nil
-      case text: Text => Seq(Link(rel = t"stylesheet", href = text))
+      case text: Text => Seq(Link(rel = Text("stylesheet"), href = text))
       case _          => throw Mistake("should never match")
 
     HtmlDoc(Html(Head(Title(title), link), Body(content*)))
