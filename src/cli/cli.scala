@@ -1,6 +1,7 @@
 package probably
 
 import rudiments.*
+import deviation.*
 import gossamer.*
 import escapade.*
 

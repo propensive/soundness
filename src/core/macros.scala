@@ -2,6 +2,7 @@ package probably
 
 import gossamer.*
 import rudiments.*
+import deviation.*
 
 import dotty.tools.dotc.util as dtdu
 import scala.quoted.*
@@ -27,16 +28,11 @@ object ProbablyMacros:
         case _ => None
       
       case other =>
-        report.warning(s"could not decipher assertion ${pred.show}")
         None
     
     val opt = extract(pred)
     
-    '{
-      $runner.run($test).pipe: run =>
-        $inc.include($runner.report, $test.id, Outcome(run, $pred))
-        run.get
-    }
+    '{ assertion($runner, $test, $pred, $inc, _.get) }
   
   def assert[T: Type, R: Type]
             (test: Expr[Test[T]], pred: Expr[T => Boolean], runner: Expr[Runner[R]],
@@ -46,10 +42,13 @@ object ProbablyMacros:
     import quotes.reflect.*
     val chk: Expr[T] = check[T, R](test, pred, runner, inc)
     
-    '{
-      $runner.run($test).pipe: run =>
-        $inc.include($runner.report, $test.id, Outcome(run, $pred))
-    }
+    '{ assertion($runner, $test, $pred, $inc, _ => ()) }
+
+  def assertion[T, R, S](runner: Runner[R], test: Test[T], pred: T => Boolean, inc: Inclusion[R, Outcome],
+                             result: TestRun[T] => S): S =
+    runner.run(test).pipe: run =>
+      inc.include(runner.report, test.id, Outcome(run, pred))
+      result(run)
 
   def typed[T: Type, R: Type](test: Expr[Test[T]], runner: Expr[Runner[R]])(using Quotes): Expr[Unit] =
     import quotes.reflect.*

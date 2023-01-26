@@ -4,6 +4,7 @@ import eucalyptus.*
 import gossamer.*
 import anticipation.*
 import rudiments.*
+import deviation.*
 
 import scala.collection.mutable as scm
 
@@ -97,7 +98,7 @@ class Runner[ReportType]()(using reporter: TestReporter[ReportType]):
 
   def suite(suite: TestSuite, fn: TestSuite ?=> Unit): Unit =
     if !skip(suite.id) then
-      reporter.declareSuite(report, suite)
+      declareSuite(suite)
       fn(using suite)
   
   def complete(): Unit = reporter.complete(report)

@@ -2,6 +2,7 @@ package probably
 
 import wisteria.*
 import rudiments.*
+import deviation.*
 import gossamer.*
 import dissonance.*
 

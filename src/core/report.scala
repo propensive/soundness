@@ -1,6 +1,7 @@
 package probably
 
 import rudiments.*
+import deviation.*
 import gossamer.*
 import escritoire.*
 import escapade.*
@@ -9,8 +10,8 @@ import iridescence.*
 import scala.collection.mutable as scm
 
 enum DebugInfo:
-  case Throws(exception: Throwable)
-  case AssertThrows(exception: Throwable)
+  case Throws(stack: StackTrace)
+  case CheckThrows(stack: StackTrace)
   case Capture(ident: Text, value: Text)
   case Compare(comparison: Comparison)
 
@@ -29,14 +30,23 @@ object TestReporter:
     def complete(report: TestReport): Unit = report.complete()
 
 object TestReport:
-  given Inclusion[TestReport, Outcome] = _.addOutcome(_, _)
+  given Inclusion[TestReport, Outcome] with
+    def include(report: TestReport, testId: TestId, outcome: Outcome): TestReport = 
+      val report2 = report.addOutcome(testId, outcome)
+      outcome match
+        case Outcome.Pass(_) => report2
+        case Outcome.Fail(_) => report2
+        case Outcome.Throws(error, _) => report2.addDebugInfo(testId, DebugInfo.Throws(StackTrace(error)))
+        case Outcome.CheckThrows(error, _) => report2.addDebugInfo(testId, DebugInfo.CheckThrows(StackTrace(error)))
+  
   given Inclusion[TestReport, DebugInfo] = _.addDebugInfo(_, _)
 
 class TestReport():
   private val tests: scm.SortedMap[TestId, scm.ArrayBuffer[Outcome]] =
     scm.TreeMap[TestId, scm.ArrayBuffer[Outcome]]().withDefault { _ => scm.ArrayBuffer[Outcome]() }
   
-  private val details: scm.HashMap[TestId, scm.ArrayBuffer[DebugInfo]] = scm.HashMap()
+  private val details: scm.SortedMap[TestId, scm.ArrayBuffer[DebugInfo]] =
+    scm.TreeMap[TestId, scm.ArrayBuffer[DebugInfo]]().withDefault { _ => scm.ArrayBuffer[DebugInfo]() }
 
   def declareSuite(suite: TestSuite): TestReport =
     this.tap { _ => tests(suite.id) = scm.ArrayBuffer[Outcome]() }
@@ -44,7 +54,8 @@ class TestReport():
   def addOutcome(testId: TestId, outcome: Outcome): TestReport =
     this.tap { _ => tests(testId) = tests(testId).append(outcome) }
   
-  def addDebugInfo(testId: TestId, info: DebugInfo): TestReport = this.tap { _ => details(testId).append(info) }
+  def addDebugInfo(testId: TestId, info: DebugInfo): TestReport =
+    this.tap { _ => details(testId) = details(testId).append(info) }
 
   enum Status:
     case Pass, Fail, Throws, CheckThrows, Mixed, Suite
@@ -117,3 +128,14 @@ class TestReport():
     import tableStyles.rounded
     
     table.tabulate(summaries, 120).map(_.render).foreach(println(_))
+    details.foreach: (id, info) =>
+      println(ansi"$Bold(${id.name}) ᐳ ".render)
+      
+      info.foreach:
+        case DebugInfo.Throws(err) =>
+          println(ansi"Exception was thrown while running test:".render)
+          println(err.crop(t"probably.Runner", t"run()").ansi.render)
+        case DebugInfo.CheckThrows(err) =>
+          println(ansi"Exception was thrown while checking predicate:".render)
+          println(err.crop(t"probably.Outcome#", t"apply()").dropRight(1).ansi.render)
+        case _ => ()
