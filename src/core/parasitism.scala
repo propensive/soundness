@@ -28,6 +28,7 @@ package monitors:
 case class CancelError() extends Error(err"the operation was cancelled")
 case class IncompleteError() extends Error(err"the task was not completed")
 case class AlreadyCompleteError() extends Error(err"the promise was already completed")
+case class TimeoutError() extends Error(err"the operation timed out")
 
 case class Supervisor(baseId: Text = Text("main"), daemon: Boolean = false, virtualThreads: Boolean = false)
 extends Monitor:
