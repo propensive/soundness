@@ -39,6 +39,7 @@ extension [T](value: T)
   def show(using show: Show[T]): Text = show.show(value)
   def debug(using debug: Debug[T]): Text = debug.show(value)
   def code(using code: ScalaCode[T]): Text = code.show(value)
+  def canon(using canonical: Canonical[T]): Text = canonical.serialize(value)
 
   inline def txt: Text = summonFrom:
     case show: Show[T]      => show.show(value)
