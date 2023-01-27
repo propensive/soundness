@@ -53,6 +53,7 @@ object reflection:
         case Match(focus, cases)        => TastyTree(t"Match", tree, expand(focus) :: cases.map(expand))
         case Applied(name, tts)         => TastyTree(t"Applied", tree, expand(name) :: tts.map(expand))
         case Repeated(xs, _)            => TastyTree(t"Repeated", tree, Nil)
+        case DefDef(name, ps, typs, ch) => TastyTree(t"DefDef", tree, ch.to(List).map(expand))
         case _                          => TastyTree(t"?${tree.toString}: ${tree.getClass.toString}", tree, Nil)
 
     val tree = TastyTree.expand(expr.asTerm)
@@ -65,7 +66,7 @@ object reflection:
       Column(ansi"Param")(_.param.otherwise(t"")),
       Column(ansi"Source")(_.source),
       Column(ansi"Code")(_.expr)
-    ).tabulate(seq, 200, DelimitRows.None).join(ansi"${'\n'}").render
+    ).tabulate(seq, 400, DelimitRows.None).join(ansi"${'\n'}").render
 
 
 case class Expansion(text: Text, param: Maybe[Text], expr: Text, source: Text)
