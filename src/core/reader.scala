@@ -20,6 +20,7 @@ import rudiments.*
 import deviation.*
 import gossamer.*
 import eucalyptus.*
+import kaleidoscope.*
 
 import java.io.*
 
@@ -31,7 +32,13 @@ object Character:
   val End: Character = Long.MaxValue
   def apply(int: Int, line: Int, col: Int): Character =
     int.toLong | ((line.toLong&0xffffff) << 48) | ((col.toLong&0xffffff) << 24)
-  
+
+  given Canonical[Character] with
+    def serialize(ch: Character): Text = if ch == End then t"[END]" else t"[${ch.char}:${ch.line}:${ch.column}]"
+    def deserialize(txt: Text): Character = txt match
+      case r"[$ch@(.):${As[Int](line)}@([0-9]+):${As[Int](col)}@([0-9]+)]" =>
+        Character(unsafely(ch(0).toInt), line, col)
+
   given Typeable[Character] with
     def unapply(value: Any): Option[value.type & Character] = value match
       case char: Char => Some(value.asInstanceOf[value.type & Character])

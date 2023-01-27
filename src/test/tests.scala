@@ -283,9 +283,9 @@ object Tests extends Suite(t"CoDL tests"):
                       |  child
                       |      content
                       |  next
-                      |""".s.stripMargin.show)
-      .assert(_ == (0, LazyList(Item(t"root", 0, 0), Indent, Item(t"child", 1, 2, true), Item(t"content", 2, 6), Peer,
-          Item(t"next", 3, 2))))
+                      |""".s.stripMargin.show)(1).to(List)
+      .assert(_ == LazyList(Item(t"root", 0, 0), Indent, Item(t"child", 1, 2, false),
+          Item(t"content", 2, 6, true), Peer, Item(t"next", 3, 2, false)).to(List))
       
       test(t"Parse double indentation then peer with margin"):
         parseText(t"""| root
