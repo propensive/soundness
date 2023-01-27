@@ -5,8 +5,8 @@
       "url": "https://github.com/propensive/dissonance"
     },
     {
-      "base": "../escritoire",
-      "url": "https://github.com/propensive/escritoire"
+      "base": "../hyperbole",
+      "url": "https://github.com/propensive/hyperbole"
     },
     {
       "base": "../eucalyptus",
@@ -15,7 +15,7 @@
   ],
   "imports": [
     "../dissonance/build.irk",
-    "../escritoire/build.irk",
+    "../hyperbole/build.irk",
     "../eucalyptus/build.irk"
   ],
   "publishing": {
@@ -41,7 +41,7 @@
       "name": "Probably Core",
       "id": "probably/core",
       "links": [
-        "escritoire/core",
+        "hyperbole/core",
         "eucalyptus/core",
 	"dissonance/core"
       ],

@@ -39,20 +39,6 @@ class TestSuite(val name: Text, val parent: Maybe[TestSuite] = Unset):
 
   val id: TestId = TestId(name, parent)
 
-object Outcome:
-  def apply[T](run: TestRun[T], pred: T => Boolean): Outcome = run match
-    case TestRun.Throws(err, duration, context) =>
-      val exception: Exception =
-        try
-          err()
-          ???
-        catch case exc: Exception => exc
-      Outcome.Throws(exception, duration)
-    
-    case TestRun.Returns(value, duration, context) =>
-      try if pred(value) then Outcome.Pass(duration) else Outcome.Fail(duration)
-      catch case err: Exception => Outcome.CheckThrows(err, duration)
-
 enum Outcome:
   case Pass(duration: Long)
   case Fail(duration: Long)
@@ -72,8 +58,6 @@ enum TestRun[+T]:
 class Runner[ReportType]()(using reporter: TestReporter[ReportType]):
   def skip(id: TestId): Boolean = false
   val report: ReportType = reporter.make()
-
-  def declareSuite(suite: TestSuite): Unit = reporter.declareSuite(report, suite)
 
   def maybeRun[T, S](test: Test[T]): Maybe[TestRun[T]] = if skip(test.id) then Unset else run[T, S](test)
 
@@ -98,12 +82,12 @@ class Runner[ReportType]()(using reporter: TestReporter[ReportType]):
 
   def suite(suite: TestSuite, fn: TestSuite ?=> Unit): Unit =
     if !skip(suite.id) then
-      declareSuite(suite)
+      reporter.declareSuite(report, suite)
       fn(using suite)
   
   def complete(): Unit = reporter.complete(report)
 
-case class Test[Return](id: TestId, action: TestContext => Return)
+case class Test[+Return](id: TestId, action: TestContext => Return)
 
 def test[ReportType](name: Text)(using suite: TestSuite): TestId = TestId(name, suite)
 
@@ -111,20 +95,27 @@ def suite[R](name: Text)(using suite: TestSuite, runner: Runner[R])(fn: TestSuit
   runner.suite(TestSuite(name, suite), fn)
 
 extension [T](test: Test[T])
-  inline def assert[R](inline pred: T => Boolean)(using runner: Runner[R], inc: Inclusion[R, Outcome]): Unit =
-    ${ProbablyMacros.assert[T, R]('test, 'pred, 'runner, 'inc)}
+  inline def assert[R](inline pred: T => Boolean)
+                      (using runner: Runner[R], inc: Inclusion[R, Outcome], inc2: Inclusion[R, DebugInfo])
+                      : Unit =
+    ${ProbablyMacros.assert[T, R]('test, 'pred, 'runner, 'inc, 'inc2)}
   
-  inline def check[R](inline pred: T => Boolean)(using runner: Runner[R], inc: Inclusion[R, Outcome]): T =
-    ${ProbablyMacros.check[T, R]('test, 'pred, 'runner, 'inc)}
+  inline def check[R](inline pred: T => Boolean)
+                     (using runner: Runner[R], inc: Inclusion[R, Outcome], comparable: Comparable[T],
+                           inc2: Inclusion[R, DebugInfo]): T =
+    ${ProbablyMacros.check[T, R]('test, 'pred, 'runner, 'inc, 'comparable, 'inc2)}
 
-  inline def assert[R]()(using runner: Runner[R], inc: Inclusion[R, Outcome]): Unit =
-    ${ProbablyMacros.assert[T, R]('test, '{ProbablyMacros.succeed}, 'runner, 'inc)}
+  inline def assert[R]()(using runner: Runner[R], inc: Inclusion[R, Outcome],
+                           inc2: Inclusion[R, DebugInfo]): Unit =
+    ${ProbablyMacros.assert[T, R]('test, '{ProbablyMacros.succeed}, 'runner, 'inc, 'inc2)}
   
-  inline def check[R]()(using runner: Runner[R], inc: Inclusion[R, Outcome]): T =
-    ${ProbablyMacros.check[T, R]('test, '{ProbablyMacros.succeed}, 'runner, 'inc)}
+  inline def check[R]()(using runner: Runner[R], inc: Inclusion[R, Outcome],
+                           inc2: Inclusion[R, DebugInfo]): T =
+    ${ProbablyMacros.check[T, R]('test, '{ProbablyMacros.succeed}, 'runner, 'inc, '{Comparable.nothing}, 'inc2)}
   
   inline def matches[R](inline pf: PartialFunction[T, Any])
-                       (using runner: Runner[R], inc: Inclusion[R, Outcome]): Unit =
+                       (using runner: Runner[R], inc: Inclusion[R, Outcome], comparable: Comparable[T],
+                            inc2: Inclusion[R, DebugInfo]): Unit =
     assert[R](pf.isDefinedAt(_))
   
   inline def typed[R](using runner: Runner[R]): Unit = ${ProbablyMacros.typed[T, R]('test, 'runner)}

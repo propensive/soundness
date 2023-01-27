@@ -11,43 +11,89 @@ object ProbablyMacros:
   
   def succeed: Any => Boolean = (value: Any) => true
   
+  // private inline def extract[T: Type](pred: Expr[T => Boolean])(using quotes: Quotes): Expr[Option[T]] =
+  //   import quotes.reflect.*
+  //   pred match
+  //     case '{ (a: t) => $p(a): Boolean } => p.asTerm match
+  //       case Inlined(_, _, Block(List(DefDef(af1, _, _, Some(ap))), Closure(Ident(af2), _))) =>
+  //         ap match
+  //           case Apply(Select(term, "=="), List(Ident(_))) => term.asExpr match
+  //             case '{ $expr: T } => '{Some($expr)}
+  //             case _             =>
+  //               //report.errorAndAbort(hyperbole.reflection.expand(term.asExpr).s)
+  //               '{None}
+  //           case Apply(Select(Ident(_), "=="), List(term)) => term.asExpr match
+  //             case '{ $expr: T } => '{Some($expr)}
+  //             case _             =>
+  //               //report.errorAndAbort(hyperbole.reflection.expand(term.asExpr).s)
+  //               '{None}
+  //           case _                                         => '{None}
+  //       case _ =>
+  //         //report.errorAndAbort(hyperbole.reflection.expand(p).s)
+  //         '{None}
+  //     case _ =>
+  //       report.errorAndAbort(hyperbole.reflection.expand(pred).s)
+  //       '{None}
+    
   def check[T: Type, R: Type]
            (test: Expr[Test[T]], pred: Expr[T => Boolean], runner: Expr[Runner[R]],
-                inc: Expr[Inclusion[R, Outcome]])
+                inc: Expr[Inclusion[R, Outcome]], comparable: Expr[Comparable[T]],
+                inc2: Expr[Inclusion[R, DebugInfo]])
            (using Quotes)
            : Expr[T] =
     import quotes.reflect.*
     
-    def extract(pred: Expr[T => Boolean]): Option[Expr[Any]] = pred match
-      case '{ (a: T) => $p(a): Boolean } => p.asTerm match
-        case Block(List(DefDef(af1, _, _, Some(ap))), Closure(Ident(af2), _)) if af1 == af2 =>
-          ap match
-            case Apply(Select(term, "=="), List(Ident(_))) => Some(term.asExpr)
-            case Apply(Select(Ident(_), "=="), List(term)) => Some(term.asExpr)
-            case _                                         => None
-        case _ => None
-      
-      case other =>
-        None
-    
-    val opt = extract(pred)
-    
-    '{ assertion($runner, $test, $pred, $inc, _.get) }
+    '{ assertion($runner, $test, $pred, _.get, $comparable, None, $inc, $inc2) }
   
   def assert[T: Type, R: Type]
             (test: Expr[Test[T]], pred: Expr[T => Boolean], runner: Expr[Runner[R]],
-                 inc: Expr[Inclusion[R, Outcome]])
+                 inc: Expr[Inclusion[R, Outcome]],
+                 inc2: Expr[Inclusion[R, DebugInfo]])
             (using Quotes)
             : Expr[Unit] =
     import quotes.reflect.*
-    val chk: Expr[T] = check[T, R](test, pred, runner, inc)
-    
-    '{ assertion($runner, $test, $pred, $inc, _ => ()) }
 
-  def assertion[T, R, S](runner: Runner[R], test: Test[T], pred: T => Boolean, inc: Inclusion[R, Outcome],
-                             result: TestRun[T] => S): S =
+    val exp: Option[Expr[Any]] = pred.asTerm match
+      case Inlined(_, _, Block(List(DefDef(a1, _, _, Some(e))), Closure(Ident(a2), _))) if a1 == a2 => e match
+        case Apply(Select(Ident(_), "=="), List(term)) => Some(term.asExpr)
+        case Apply(Select(term, "=="), List(Ident(_))) => Some(term.asExpr)
+        case other                                     => None
+      case _                                                                                        => None
+
+    exp match
+      case Some('{ $expr: t }) =>
+        val comparable = Expr.summon[Comparable[t | T]].getOrElse('{Comparable.nothing[t | T]})
+        '{ assertion[t | T, T, R, Unit]($runner, $test, $pred, _ => (), $comparable, Some($expr), $inc, $inc2) }
+      case None =>
+        '{ assertion[T, T, R, Unit]($runner, $test, $pred, _ => (), Comparable.nothing[T], None, $inc, $inc2) }
+        
+
+  def assertion[T, T0 <: T, R, S](runner: Runner[R], test: Test[T0], pred: T0 => Boolean, result: TestRun[T0] => S,
+                                      comparable: Comparable[T], exp: Option[T], inc: Inclusion[R, Outcome],
+                                       inc2: Inclusion[R, DebugInfo]): S =
     runner.run(test).pipe: run =>
-      inc.include(runner.report, test.id, Outcome(run, pred))
+      val outcome = run match
+        case TestRun.Throws(err, duration, context) =>
+          val exception: Exception =
+            try
+              err()
+              ???
+            catch case exc: Exception => exc
+          Outcome.Throws(exception, duration)
+    
+        case TestRun.Returns(value, duration, context) =>
+          try if pred(value) then Outcome.Pass(duration) else
+            exp match
+              case Some(exp) =>
+                println(comparable)
+                inc2.include(runner.report, test.id, DebugInfo.Compare(comparable.compare(value, exp)))
+              case None =>
+                //inc2.include(runner.report, test.id, DebugInfo.Compare(summon[Comparable[Any]].compare(value, 1)))
+            
+            Outcome.Fail(duration)
+          catch case err: Exception => Outcome.CheckThrows(err, duration)
+
+      inc.include(runner.report, test.id, outcome)
       result(run)
 
   def typed[T: Type, R: Type](test: Expr[Test[T]], runner: Expr[Runner[R]])(using Quotes): Expr[Unit] =
@@ -64,5 +110,3 @@ object ProbablyMacros:
     val debug: Expr[Debug[T]] = Expr.summon[Debug[T]].getOrElse('{ Debug.any })
     
     '{ $test.capture(Text(${Expr[String](exprName.s)}), $expr)(using $debug) }
-
-  //def assertion[T](run: TestRun[T]): Test.Outcome = Test.Outcome.Pass(run.duration)

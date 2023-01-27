@@ -5,32 +5,84 @@ import rudiments.*
 import deviation.*
 import gossamer.*
 import dissonance.*
+import escapade.*
+import iridescence.*
+import dendrology.*
+import escritoire.*
 
 enum Comparison:
-  case Same
+  case Same(value: Text)
   case Different(left: Text, right: Text)
   case Structural(comparison: IArray[(Text, Comparison)])
+
+object Comparison:
+  given AnsiShow[Comparison] =
+    case Comparison.Structural(cmp) =>
+      import tableStyles.horizontal
+      import treeStyles.default
+      def children(comp: (Text, Comparison)): List[(Text, Comparison)] = comp(1) match
+        case Same(value)            => Nil
+        case Different(left, right) => Nil
+        case Structural(comparison) => comparison.to(List)
+      
+      case class Row(treeLine: Text, left: AnsiText, right: AnsiText)
+
+      def mkLine(tiles: List[TreeTile], data: (Text, Comparison)): Row =
+        def line(bullet: Text) = t"${tiles.map(_.show).join}$bullet ${data(0)}"
+        
+        data(1) match
+          case Same(v)         => Row(line(t"▪"), ansi"${colors.Gray}($v)", ansi"${colors.Gray}($v)")
+          case Different(l, r) => Row(line(t"▪"), ansi"${colors.YellowGreen}($l)", ansi"${colors.Crimson}($r)")
+          case Structural(cmp) => Row(line(t"■"), ansi"", ansi"")
+      
+      Table[Row](
+        Column(t"")(_.treeLine),
+        Column(t"Expected", align = Alignment.Right)(_.left),
+        Column(t"Found")(_.right)
+      ).tabulate(drawTree(children, mkLine)(cmp), maxWidth = 200).tail.join(ansi"${'\n'}")
+    
+    case Different(left, right) => ansi"${colors.YellowGreen}($left) != ${colors.Crimson}($right)"
+    case Same(value)            => ansi"${colors.Gray}($value)"
+    
 
 trait Comparable[-T]:
   def compare(a: T, b: T): Comparison
 
 object Comparable extends Derivation[Comparable]:
-  given [T](using debug: Debug[T]): Comparable[T] = (left, right) =>
-    if left == right then Comparison.Same else Comparison.Different(left.debug, right.debug)
+  def nothing[T]: Comparable[T] = (a, b) => Comparison.Same(a.toString.show)
+  
+  def simplistic[T]: Comparable[T] = (a, b) =>
+    if a == b then Comparison.Same(a.toString.show) else Comparison.Different(a.toString.show, b.toString.show)
 
-  given [T: ClassTag](using cmp: Comparable[T], debug: Debug[T]): Comparable[Seq[T]] = (left, right) =>
+  given [T: Canonical]: Comparable[T] = (left, right) =>
+    if left.canon == right.canon
+    then Comparison.Same(left.canon) else Comparison.Different(left.canon, right.canon)
+  
+  given Comparable[Text] = (left, right) =>
+    if left == right then Comparison.Same(left.debug) else Comparison.Different(left.debug, right.debug)
+  
+  given Comparable[Int] = (left, right) =>
+    if left == right then Comparison.Same(left.debug) else Comparison.Different(left.debug, right.debug)
+  
+  given Comparable[Exception] = (left, right) =>
+    val leftMsg = Option(left.getMessage).fold(t"null")(_.nn.show)
+    val rightMsg = Option(right.getMessage).fold(t"null")(_.nn.show)
+    if left.getClass == right.getClass && leftMsg == rightMsg then Comparison.Same(leftMsg)
+    else Comparison.Different(leftMsg, rightMsg)
+  
+  given seq[T: Debug: ClassTag, Coll[X] <: Seq[X]]: Comparable[Coll[T]] = (left, right) =>
     Comparison.Structural:
       IArray.from:
-        diff(IArray.from(left), IArray.from(right)).changes.map:
-          case Change.Keep(lid, rid, v) => (if lid == rid then lid.show else t"$lid/$rid") -> Comparison.Same
-          case Change.Ins(rid, v)       => t"/$rid"     -> Comparison.Different(t"—", v.debug)
-          case Change.Del(lid, v)       => t"$lid/"     -> Comparison.Different(v.debug, t"—")
+        diff(IArray.from[T](left), IArray.from[T](right)).changes.map:
+          case Change.Keep(lid, rid, v) => (if lid == rid then lid.show else t"$lid/$rid") -> Comparison.Same(v.debug)
+          case Change.Ins(rid, v)       => t"/$rid" -> Comparison.Different(t"—", v.debug)
+          case Change.Del(lid, v)       => t"$lid/" -> Comparison.Different(v.debug, t"—")
       
   def join[T](caseClass: CaseClass[Comparable, T]): Comparable[T] = (left, right) =>
     val same = caseClass.params.forall: param =>
       param.deref(left) == param.deref(right)
 
-    if same then Comparison.Same
+    if same then Comparison.Same(left.toString.show)
     else Comparison.Structural:
       caseClass.params.map: param =>
         (Text(param.label), param.typeclass.compare(param.deref(left), param.deref(right)))

@@ -34,8 +34,8 @@ object Tests extends Suite(t"Probably 2 Tests"):
 
       test(t"Two is equal to one plus one")(1 + 1).assert(2 == _)
       
-      case class Foo(x: Int, y: String)
-      val t = Foo(1, "two")
+      case class Foo(x: Int, y: Text)
+      //val t = Foo(1, "two")
       
       for i <- 1 to 100 do
         test(t"i is less than ten"):
@@ -45,12 +45,25 @@ object Tests extends Suite(t"Probably 2 Tests"):
       for i <- 1 to 5 do
         test(t"Compare 1"):
           throw Exception("broken")
-        .assert(Foo(1, "two") == _)
+        .assert(Foo(1, t"two") == _)
       
         test(t"Compare 3"):
           Thread.sleep(90)
-          Foo(1, "two")
-        .assert(t == _)
+          Foo(1, t"two")
+        .assert(Foo(1, t"two") == _)
+
+      case class Bar(foo: Foo, foo2: Foo, foo3: Foo)
+
+      val debugString = summon[Debug[Text]]
+      val debugInt = summon[Debug[Int]]
+      val compInt = summon[Comparable[Int]]
+      val compText = summon[Comparable[Text]]
+      val compFoo = summon[Comparable[Foo]]
+      val compBar = summon[Comparable[Bar]]
+
+      test(t"Compare two Bars"):
+        Bar(Foo(0, t"un"), Foo(1, t"two"), Foo(3, t"three"))
+      .assert(_ == Bar(Foo(1, t"one"), Foo(2, t"two"), Foo(3, t"three")))
 
     suite(t"subsuite"):
       suite(t"Deeper subsuite"):

@@ -6,6 +6,7 @@ import gossamer.*
 import escritoire.*
 import escapade.*
 import iridescence.*
+import dendrology.*
 
 import scala.collection.mutable as scm
 
@@ -34,10 +35,14 @@ object TestReport:
     def include(report: TestReport, testId: TestId, outcome: Outcome): TestReport = 
       val report2 = report.addOutcome(testId, outcome)
       outcome match
-        case Outcome.Pass(_) => report2
-        case Outcome.Fail(_) => report2
-        case Outcome.Throws(error, _) => report2.addDebugInfo(testId, DebugInfo.Throws(StackTrace(error)))
-        case Outcome.CheckThrows(error, _) => report2.addDebugInfo(testId, DebugInfo.CheckThrows(StackTrace(error)))
+        case Outcome.Pass(_) =>
+          report2
+        case Outcome.Fail(_) =>
+          report2
+        case Outcome.Throws(error, _) =>
+          report2.addDebugInfo(testId, DebugInfo.Throws(StackTrace(error)))
+        case Outcome.CheckThrows(error, _) =>
+          report2.addDebugInfo(testId, DebugInfo.CheckThrows(StackTrace(error)))
   
   given Inclusion[TestReport, DebugInfo] = _.addDebugInfo(_, _)
 
@@ -111,7 +116,7 @@ class TestReport():
     
     val table: Table[Summary] =
       val stats = !summaries.forall(_.count < 2)
-      Table[Summary](
+      Table(
         Column(ansi"")(_.status.symbol),
         Column(ansi"$Bold(Hash)"): s =>
           ansi"${colors.CadetBlue}(${s.id.id})",
@@ -128,6 +133,9 @@ class TestReport():
     import tableStyles.rounded
     
     table.tabulate(summaries, 120).map(_.render).foreach(println(_))
+    
+    import tableStyles.horizontalGaps, treeStyles.default
+    
     details.foreach: (id, info) =>
       println(ansi"$Bold(${id.name}) ᐳ ".render)
       
@@ -138,4 +146,6 @@ class TestReport():
         case DebugInfo.CheckThrows(err) =>
           println(ansi"Exception was thrown while checking predicate:".render)
           println(err.crop(t"probably.Outcome#", t"apply()").dropRight(1).ansi.render)
-        case _ => ()
+        case DebugInfo.Compare(cmp) =>
+          println(cmp.ansi.render)
+          
