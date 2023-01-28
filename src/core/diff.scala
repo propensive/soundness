@@ -28,6 +28,12 @@ enum Change[+T]:
   case Del(left: Int, value: T)
   case Keep(left: Int, right: Int, value: T)
 
+enum ChangeBlock[+T]:
+  case Ins(startRight: Int, values: List[T])
+  case Del(startLeft: Int, values: List[T])
+  case Keep(startLeft: Int, startRight: Int, values: List[T])
+  case Swap(startLeft: Int, startRight: Int, valuesLeft: List[T], valuesRight: List[T])
+
 import Change.*
 
 case class Diff[T](changes: Change[T]*):
