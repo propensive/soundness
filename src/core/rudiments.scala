@@ -221,11 +221,37 @@ extends Error(ErrorMessage[EmptyTuple](
   List(Text("the sequence contained more than one element that mapped to the same index")), EmptyTuple
 ))
 
-//case class TimeoutError() extends Error(err"an operation did not complete in the time it was given")
-
 extension[T](xs: Seq[T])
   def random: T = xs(util.Random().nextInt(xs.length))
   transparent inline def shuffle: Seq[T] = util.Random().shuffle(xs)
+
+object Cursor:
+  opaque type Cursor = Int
+  opaque type CursorSeq[T] = IndexedSeq[T]
+
+  extension [T](xs: CursorSeq[T])
+    def apply(idx: Cursor): T = xs(idx)
+    def apply(idx: Cursor, offset: Int): Maybe[T] =
+      if (idx + offset) >= 0 && (idx + offset) < xs.length then apply(idx + offset) else Unset
+    
+  extension (cursor: Cursor) def index: Int = cursor
+
+  transparent inline def curse[T, S](xs: IndexedSeq[T])(inline fn: (CursorSeq[T], Cursor) ?=> S)
+                              : IndexedSeq[S] =
+    xs.indices.map { i => fn(using xs, i) }
+
+inline def cursor[T](using inline xs: Cursor.CursorSeq[T], inline cur: Cursor.Cursor): T = xs(cur)
+inline def precursor[T](using inline xs: Cursor.CursorSeq[T], inline cur: Cursor.Cursor): Maybe[T] = xs(cur, -1)
+inline def postcursor[T](using inline xs: Cursor.CursorSeq[T], inline cur: Cursor.Cursor): Maybe[T] = xs(cur, 1)
+inline def cursorIndex(using inline cur: Cursor.Cursor): Int = cur.index
+
+inline def cursor[T](n: Int)(using inline xs: Cursor.CursorSeq[T], inline cur: Cursor.Cursor): Maybe[T] =
+  xs(cur, n)
+
+
+extension [T](xs: IndexedSeq[T])
+  transparent inline def curse[S](inline fn: (Cursor.CursorSeq[T], Cursor.Cursor) ?=> S): IndexedSeq[S] =
+    Cursor.curse(xs)(fn)
 
 extension (bs: Int)
   def b: ByteSize = bs
