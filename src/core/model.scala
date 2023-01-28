@@ -22,6 +22,7 @@ import gossamer.*
 import contextual.*
 import eucalyptus.*
 import dissonance.*
+import probably.*
 
 import java.io as ji
 
@@ -33,6 +34,11 @@ object CodlNode:
 
   val empty: CodlNode = CodlNode()
   def apply(key: Text)(child: CodlNode*): CodlNode = CodlNode(Data(key, IArray.from(child)))
+  
+  given Comparable[CodlNode] = (left, right) =>
+    if left == right then Comparison.Same(left.debug) else
+      Comparable.seq.compare(left.children, right.children)
+    
 
 case class CodlNode(data: Maybe[Data] = Unset, meta: Maybe[Meta] = Unset) extends Dynamic:
   def key: Maybe[Text] = data.mm(_.key)
@@ -71,6 +77,18 @@ case class CodlNode(data: Maybe[Data] = Unset, meta: Maybe[Meta] = Unset) extend
 
 object CodlDoc:
   def apply(nodes: CodlNode*): CodlDoc = CodlDoc(IArray.from(nodes), CodlSchema.Free, 0)
+
+  given Debug[CodlDoc] = _.serialize
+  
+  given Comparable[CodlDoc] = (left, right) =>
+    if left == right then Comparison.Same(left.debug) else Comparison.Structural:
+      IArray.from:
+        //(t"<schema>", summon[Comparable[CodlSchema]].compare(left.schema, right.schema)) +:
+        (t"<margin>", summon[Comparable[Int]].compare(left.margin, right.margin)) +:
+        diff(left.children, right.children).changes.map:
+          case Change.Keep(_, _, v) => v.key.or(t"—") -> Comparison.Same(v.debug)
+          case Change.Ins(_, v)     => v.key.or(t"—") -> Comparison.Different(t"—", v.debug)
+          case Change.Del(_, v)     => v.key.or(t"—") -> Comparison.Different(v.debug, t"—")
 
 case class CodlDoc(children: IArray[CodlNode], schema: CodlSchema, margin: Int, body: LazyList[Text] = LazyList())
 extends Indexed:
@@ -132,6 +150,8 @@ extends Indexed:
 object Data:
   given [T: Codec]: Insertion[List[Data], T] =
     value => summon[Codec[T]].serialize(value).head.to(List).map(_.data).sift[Data]
+
+  given debug: Debug[Data] = data => t"Data(${data.key}, ${data.children.length})"
 
 case class Data(key: Text, children: IArray[CodlNode] = IArray(), layout: Layout = Layout.empty,
                     schema: CodlSchema = CodlSchema.Free)
