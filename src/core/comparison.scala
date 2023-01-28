@@ -18,7 +18,7 @@ enum Comparison:
 object Comparison:
   given AnsiShow[Comparison] =
     case Comparison.Structural(cmp) =>
-      import tableStyles.horizontal
+      import tableStyles.horizontalGaps
       import treeStyles.default
       def children(comp: (Text, Comparison)): List[(Text, Comparison)] = comp(1) match
         case Same(value)            => Nil
@@ -39,10 +39,10 @@ object Comparison:
         Column(t"")(_.treeLine),
         Column(t"Expected", align = Alignment.Right)(_.left),
         Column(t"Found")(_.right)
-      ).tabulate(drawTree(children, mkLine)(cmp), maxWidth = 200).tail.join(ansi"${'\n'}")
+      ).tabulate(drawTree(children, mkLine)(cmp), maxWidth = 200).join(ansi"${'\n'}")
     
-    case Different(left, right) => ansi"${colors.YellowGreen}($left) != ${colors.Crimson}($right)"
-    case Same(value)            => ansi"${colors.Gray}($value)"
+    case Different(left, right) => ansi"The value ${colors.YellowGreen}($left) did not equal ${colors.Crimson}($right)"
+    case Same(value)            => ansi"The value ${colors.Gray}($value) was expected"
     
 
 trait Comparable[-T]:
@@ -57,6 +57,14 @@ object Comparable extends Derivation[Comparable]:
   given [T: Canonical]: Comparable[T] = (left, right) =>
     if left.canon == right.canon
     then Comparison.Same(left.canon) else Comparison.Different(left.canon, right.canon)
+  
+  // given [T: Comparable]: Comparable[Maybe[T]] = (left, right) => left match
+  //   case Unset    => right match
+  //     case Unset    => Comparison.Same(t"——")
+  //     case right: T => Comparison.Different(t"——", right.toString.show)
+  //   case left: T => right match
+  //     case Unset    => Comparison.Different(left.toString.show, t"——")
+  //     case right: T => summon[Comparable[T]].compare(left, right)
   
   given Comparable[Text] = (left, right) =>
     if left == right then Comparison.Same(left.debug) else Comparison.Different(left.debug, right.debug)

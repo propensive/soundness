@@ -52,6 +52,11 @@ object Tests extends Suite(t"Probably 2 Tests"):
           Foo(1, t"two")
         .assert(Foo(1, t"two") == _)
 
+      val seq = IArray("zero", "one", "two", "three", "four", "five")
+
+      seq.curse:
+        println(":"+precursor+"/"+cursor+"/"+postcursor)
+
       case class Bar(foo: Foo, foo2: Foo, foo3: Foo)
 
       val debugString = summon[Debug[Text]]

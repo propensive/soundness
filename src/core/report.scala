@@ -13,8 +13,8 @@ import scala.collection.mutable as scm
 enum DebugInfo:
   case Throws(stack: StackTrace)
   case CheckThrows(stack: StackTrace)
-  case Capture(ident: Text, value: Text)
-  case Compare(comparison: Comparison)
+  case Captures(values: Map[Text, Text])
+  case Compare(expected: Text, found: Text, comparison: Comparison)
 
 trait Inclusion[ReportType, DataType]:
   def include(report: ReportType, testId: TestId, data: DataType): ReportType
@@ -64,6 +64,14 @@ class TestReport():
 
   enum Status:
     case Pass, Fail, Throws, CheckThrows, Mixed, Suite
+
+    def color: Rgb24 = this match
+      case Pass        => rgb"#8abd00"
+      case Fail        => colors.Tomato
+      case Throws      => colors.DarkOrange
+      case CheckThrows => rgb"#dd40a0"
+      case Mixed       => rgb"#ddd700"
+      case Suite       => colors.SlateBlue
 
     def symbol: AnsiText = this match
       case Pass        => ansi"${Bg(rgb"#8abd00")}( $Bold(${colors.Black}(✓)) )"
@@ -130,22 +138,35 @@ class TestReport():
           if s.count < 2 then ansi"" else s.maxTime
       )
       
-    import tableStyles.rounded
-    
+    import tableStyles.rounded, treeStyles.default
     table.tabulate(summaries, 120).map(_.render).foreach(println(_))
-    
-    import tableStyles.horizontalGaps, treeStyles.default
-    
+
     details.foreach: (id, info) =>
-      println(ansi"$Bold(${id.name}) ᐳ ".render)
+      val color = tests(id)
+      val ribbon = Ribbon(colors.FireBrick.srgb, Status.Fail.color.srgb)
+      println(ribbon.fill(ansi"$Bold(${id.id})", id.name.ansi).render)
       
-      info.foreach:
-        case DebugInfo.Throws(err) =>
-          println(ansi"Exception was thrown while running test:".render)
-          println(err.crop(t"probably.Runner", t"run()").ansi.render)
-        case DebugInfo.CheckThrows(err) =>
-          println(ansi"Exception was thrown while checking predicate:".render)
-          println(err.crop(t"probably.Outcome#", t"apply()").dropRight(1).ansi.render)
-        case DebugInfo.Compare(cmp) =>
-          println(cmp.ansi.render)
+      info.foreach: debugInfo =>
+        println()
+        debugInfo match
+          case DebugInfo.Throws(err) =>
+            val name = ansi"$Italic(${colors.White}(${err.component}.${err.className}))"
+            println(ansi"${colors.Silver}(Exception $name was thrown while running test)".render)
+            println(err.crop(t"probably.Runner", t"run()").ansi.render)
+          case DebugInfo.CheckThrows(err) =>
+            val name = ansi"$Italic(${colors.White}(${err.component}.${err.className}))"
+            println(ansi"${colors.Silver}(Exception $name was thrown while checking predicate)".render)
+            println(err.crop(t"probably.Outcome#", t"apply()").dropRight(1).ansi.render)
+          case DebugInfo.Compare(expected, found, cmp) =>
+            val expected2: AnsiText = ansi"$Italic(${colors.White}($expected))"
+            val found2: AnsiText = ansi"$Italic(${colors.White}($found))"
+            println(ansi"${colors.Silver}(Test was expected to return $expected2 but instead returned $found2)".render)
+            println(cmp.ansi.render)
+          case DebugInfo.Captures(map) =>
+            Table[(Text, Text)](
+              Column(ansi"Expression", align = Alignment.Right)(_(0)),
+              Column(ansi"Value")(_(1)),
+            ).tabulate(map.to(List), 140).map(_.render).foreach(println(_))
+      
+      println()
           
