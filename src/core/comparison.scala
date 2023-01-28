@@ -86,6 +86,14 @@ object Comparable extends Derivation[Comparable]:
           case Change.Ins(rid, v)       => t"/$rid" -> Comparison.Different(t"—", v.debug)
           case Change.Del(lid, v)       => t"$lid/" -> Comparison.Different(v.debug, t"—")
       
+  given iarray[T: Debug]: Comparable[IArray[T]] = (left, right) =>
+    Comparison.Structural:
+      IArray.from:
+        diff(left, right).changes.map:
+          case Change.Keep(lid, rid, v) => (if lid == rid then lid.show else t"$lid/$rid") -> Comparison.Same(v.debug)
+          case Change.Ins(rid, v)       => t"/$rid" -> Comparison.Different(t"—", v.debug)
+          case Change.Del(lid, v)       => t"$lid/" -> Comparison.Different(v.debug, t"—")
+
   def join[T](caseClass: CaseClass[Comparable, T]): Comparable[T] = (left, right) =>
     val same = caseClass.params.forall: param =>
       param.deref(left) == param.deref(right)
