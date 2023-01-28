@@ -28,7 +28,6 @@ trait FallbackAnsiShow:
 
 object AnsiShow extends FallbackAnsiShow:
   given AnsiShow[AnsiText] = identity(_)
-
   given AnsiShow[Pid] = pid => ansi"${colors.FireBrick}(${pid.value.show})"
 
   given [T: AnsiShow]: AnsiShow[Option[T]] =
@@ -57,7 +56,7 @@ object AnsiShow extends FallbackAnsiShow:
     val classWidth = stack.frames.map(_.className.length).max
     val fileWidth = stack.frames.map(_.file.length).max
     
-    val root = stack.frames.foldLeft(ansi"${Bg(colors.OrangeRed)}(${colors.Black}( ${stack.component} ))${colors.OrangeRed}(${Bg(colors.Orange)}())${Bg(colors.Orange)}( ${colors.Black}(${stack.className}) )${colors.Orange}() ${colors.Ivory}(${stack.message})"):
+    val root = stack.frames.foldLeft(ansi"${colors.White}(${stack.className}): ${stack.message}"):
       case (msg, frame) =>
         val obj: Boolean = frame.className.ends(t"#")
         ansi"$msg${'\n'}  ${colors.Gray}(at) ${colors.Plum}(${frame.className.drop(if obj then 1 else 0, Rtl).fit(classWidth, Rtl)})${colors.Gray}(${if obj then t"." else t"#"})${colors.Peru}(${frame.method.fit(methodWidth)}) ${colors.LightBlue}(${frame.file.fit(fileWidth, Rtl)})${colors.Gray}(:)${colors.Yellow}(${frame.line.mm(_.show).or(t"?")})"
