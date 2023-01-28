@@ -30,9 +30,7 @@ object Color:
   private[iridescence] inline def unitary(d: Double): Double = d - d.toInt + (if d < 0 then 1 else 0)
 
 case class Xyz(x: Double, y: Double, z: Double) extends Color:
-  
   def luminescence: Double = y
-  
   def standardSrgb: Srgb = srgb
   def srgb: Srgb =
     
