@@ -73,7 +73,7 @@ object RgbHex extends Interpolator[Nothing, Option[Rgb24], Rgb24]:
                                        """where <r>, <g> and <b> are 2-digit hex values"""), 0)
   
   def insert(state: Option[Rgb24], value: Nothing): Option[Rgb24] =
-    throw InterpolationError(Text("""insertions into an rgb"" interpolator are not supported"""))
+    throw InterpolationError(Text("""substitutions into an rgb"" interpolator are not supported"""))
   
   def skip(state: Option[Rgb24]): Option[Rgb24] = state
   def complete(color: Option[Rgb24]): Rgb24 = color.get
@@ -132,7 +132,9 @@ case class Srgb(red: Double, green: Double, blue: Double) extends Color:
   def rgb24: Rgb24 = Rgb24((red*255).toInt, (green*255).toInt, (blue*255).toInt)
   def standardSrgb: Srgb = srgb
   def srgb: Srgb = this
-  
+
+  def highContrast: Srgb = if hsl.lightness >= 0.5 then Srgb(0, 0, 0) else Srgb(1, 1, 1)
+
   def ansiFg8: Text =
     val n = if red == green && green == blue then 232 + (red*23 + 0.99).toInt else 16 +
         36*(red*5 + 0.99).toInt + 6*(green*5 + 0.99).toInt + (blue*5 + 0.99).toInt
