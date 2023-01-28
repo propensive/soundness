@@ -37,15 +37,26 @@ object ProbablyMacros:
     
   def check[T: Type, R: Type]
            (test: Expr[Test[T]], pred: Expr[T => Boolean], runner: Expr[Runner[R]],
-                inc: Expr[Inclusion[R, Outcome]], comparable: Expr[Comparable[T]],
-                inc2: Expr[Inclusion[R, DebugInfo]])
+                inc: Expr[Inclusion[R, Outcome]], inc2: Expr[Inclusion[R, DebugInfo]])
            (using Quotes)
            : Expr[T] =
     import quotes.reflect.*
     
-    val debug: Expr[Debug[T]] = Expr.summon[Debug[T]].getOrElse('{ Debug.any })
+    val exp: Option[Expr[Any]] = pred.asTerm match
+      case Inlined(_, _, Block(List(DefDef(a1, _, _, Some(e))), Closure(Ident(a2), _))) if a1 == a2 => e match
+        case Apply(Select(Ident(_), "=="), List(term)) => Some(term.asExpr)
+        case Apply(Select(term, "=="), List(Ident(_))) => Some(term.asExpr)
+        case other                                     => None
+      case _                                                                                        => None
     
-    '{ assertion($runner, $test, $pred, _.get, $comparable, None, $inc, $inc2, $debug) }
+    exp match
+      case Some('{ $expr: t }) =>
+        val debug: Expr[Debug[t | T]] = Expr.summon[Debug[t | T]].getOrElse('{ Debug.any })
+        val comparable = Expr.summon[Comparable[t | T]].getOrElse('{Comparable.simplistic[t | T]})
+        '{ assertion[t | T, T, R, T]($runner, $test, $pred, _.get, $comparable, Some($expr), $inc, $inc2, $debug) }
+      
+      case None =>
+        '{ assertion[T, T, R, T]($runner, $test, $pred, _.get, Comparable.nothing[T], None, $inc, $inc2, Debug.any) }
   
   def assert[T: Type, R: Type]
             (test: Expr[Test[T]], pred: Expr[T => Boolean], runner: Expr[Runner[R]],
@@ -64,7 +75,7 @@ object ProbablyMacros:
     exp match
       case Some('{ $expr: t }) =>
         val debug: Expr[Debug[t | T]] = Expr.summon[Debug[t | T]].getOrElse('{ Debug.any })
-        val comparable = Expr.summon[Comparable[t | T]].getOrElse('{Comparable.nothing[t | T]})
+        val comparable = Expr.summon[Comparable[t | T]].getOrElse('{Comparable.simplistic[t | T]})
         '{ assertion[t | T, T, R, Unit]($runner, $test, $pred, _ => (), $comparable, Some($expr), $inc, $inc2, $debug) }
       case None =>
         '{ assertion[T, T, R, Unit]($runner, $test, $pred, _ => (), Comparable.nothing[T], None, $inc, $inc2, Debug.any) }

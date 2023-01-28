@@ -101,9 +101,8 @@ extension [T](test: Test[T])
     ${ProbablyMacros.assert[T, R]('test, 'pred, 'runner, 'inc, 'inc2)}
   
   inline def check[R](inline pred: T => Boolean)
-                     (using runner: Runner[R], inc: Inclusion[R, Outcome], comparable: Comparable[T],
-                           inc2: Inclusion[R, DebugInfo]): T =
-    ${ProbablyMacros.check[T, R]('test, 'pred, 'runner, 'inc, 'comparable, 'inc2)}
+                     (using runner: Runner[R], inc: Inclusion[R, Outcome], inc2: Inclusion[R, DebugInfo]): T =
+    ${ProbablyMacros.check[T, R]('test, 'pred, 'runner, 'inc, 'inc2)}
 
   inline def assert[R]()(using runner: Runner[R], inc: Inclusion[R, Outcome],
                            inc2: Inclusion[R, DebugInfo]): Unit =
@@ -111,11 +110,11 @@ extension [T](test: Test[T])
   
   inline def check[R]()(using runner: Runner[R], inc: Inclusion[R, Outcome],
                            inc2: Inclusion[R, DebugInfo]): T =
-    ${ProbablyMacros.check[T, R]('test, '{ProbablyMacros.succeed}, 'runner, 'inc, '{Comparable.nothing}, 'inc2)}
+    ${ProbablyMacros.check[T, R]('test, '{ProbablyMacros.succeed}, 'runner, 'inc, 'inc2)}
   
   inline def matches[R](inline pf: PartialFunction[T, Any])
-                       (using runner: Runner[R], inc: Inclusion[R, Outcome], comparable: Comparable[T],
-                            inc2: Inclusion[R, DebugInfo]): Unit =
+                    (using runner: Runner[R], inc: Inclusion[R, Outcome], inc2: Inclusion[R, DebugInfo])
+                    : Unit =
     assert[R](pf.isDefinedAt(_))
   
   inline def typed[R](using runner: Runner[R]): Unit = ${ProbablyMacros.typed[T, R]('test, 'runner)}
