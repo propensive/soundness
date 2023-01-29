@@ -13,12 +13,19 @@ given realm: Realm = Realm(t"probably")
 extension [T](inline value: T)(using inline test: TestContext)
   inline def inspect(using Debug[T]): T = ${ProbablyMacros.inspect('value, 'test)}
 
+package testContexts:
+  given threadLocal: TestContext = new TestContext():
+    private val delegate: Option[TestContext] = Option(Runner.testContextThreadLocal.get()).map(_.nn).flatten
+    
+    override def capture[T](name: Text, value: T)(using Debug[T]): T =
+      delegate.map(_.capture[T](name, value)).getOrElse(value)
+
 @annotation.capability
 class TestContext():
-  private[probably] val captured: scm.HashMap[Text, Text] = scm.HashMap()
+  private[probably] val captured: scm.ArrayBuffer[(Text, Text)] = scm.ArrayBuffer()
   
   def capture[T](name: Text, value: T)(using Debug[T]): T =
-    captured(name) = value.debug
+    captured.append(name -> value.debug)
     value
 
 object TestId:
@@ -55,6 +62,9 @@ enum TestRun[+T]:
     case Returns(result, _, _)   => result
     case Throws(exception, _, _) => exception()
 
+object Runner:
+  private[probably] val testContextThreadLocal: ThreadLocal[Option[TestContext]] = ThreadLocal()
+
 class Runner[ReportType]()(using reporter: TestReporter[ReportType]):
   def skip(id: TestId): Boolean = false
   val report: ReportType = reporter.make()
@@ -63,6 +73,7 @@ class Runner[ReportType]()(using reporter: TestReporter[ReportType]):
 
   def run[T, S](test: Test[T]): TestRun[T] =
     val ctx = TestContext()
+    Runner.testContextThreadLocal.set(Some(ctx))
     val ns0 = System.nanoTime
     
     try
@@ -79,6 +90,7 @@ class Runner[ReportType]()(using reporter: TestReporter[ReportType]):
         throw err
 
       TestRun.Throws(lazyException, ns, ctx.captured.to(Map))
+    finally Runner.testContextThreadLocal.set(None)
 
   def suite(suite: TestSuite, fn: TestSuite ?=> Unit): Unit =
     if !skip(suite.id) then

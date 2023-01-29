@@ -20,6 +20,7 @@ import gossamer.*
 import rudiments.*
 import eucalyptus.*, logging.stdout
 import unsafeExceptions.canThrowAny
+import testContexts.threadLocal
 
 object Tests extends Suite(t"Probably 2 Tests"):
   def run(): Unit =
@@ -33,6 +34,10 @@ object Tests extends Suite(t"Probably 2 Tests"):
       .assert(_ == 3)
 
       test(t"Two is equal to one plus one")(1 + 1).assert(2 == _)
+
+      test(t"Check whether foo is 11"):
+        Example.foo()
+      .assert(_ == 11)
       
       case class Foo(x: Int, y: Text)
       //val t = Foo(1, "two")
@@ -75,3 +80,10 @@ object Tests extends Suite(t"Probably 2 Tests"):
         test(t"Subtest"):
           1 + 1
         .assert(_ == ({ throw Exception(); 2 }))
+
+
+object Example:
+  def foo(): Int =
+    val x = 10
+    x.inspect
+    (x + 2).inspect

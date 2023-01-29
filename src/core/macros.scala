@@ -8,33 +8,6 @@ import dotty.tools.dotc.util as dtdu
 import scala.quoted.*
 
 object ProbablyMacros:
-  
-  def succeed: Any => Boolean = (value: Any) => true
-  
-  // private inline def extract[T: Type](pred: Expr[T => Boolean])(using quotes: Quotes): Expr[Option[T]] =
-  //   import quotes.reflect.*
-  //   pred match
-  //     case '{ (a: t) => $p(a): Boolean } => p.asTerm match
-  //       case Inlined(_, _, Block(List(DefDef(af1, _, _, Some(ap))), Closure(Ident(af2), _))) =>
-  //         ap match
-  //           case Apply(Select(term, "=="), List(Ident(_))) => term.asExpr match
-  //             case '{ $expr: T } => '{Some($expr)}
-  //             case _             =>
-  //               //report.errorAndAbort(hyperbole.reflection.expand(term.asExpr).s)
-  //               '{None}
-  //           case Apply(Select(Ident(_), "=="), List(term)) => term.asExpr match
-  //             case '{ $expr: T } => '{Some($expr)}
-  //             case _             =>
-  //               //report.errorAndAbort(hyperbole.reflection.expand(term.asExpr).s)
-  //               '{None}
-  //           case _                                         => '{None}
-  //       case _ =>
-  //         //report.errorAndAbort(hyperbole.reflection.expand(p).s)
-  //         '{None}
-  //     case _ =>
-  //       report.errorAndAbort(hyperbole.reflection.expand(pred).s)
-  //       '{None}
-    
   def check[T: Type, R: Type]
            (test: Expr[Test[T]], pred: Expr[T => Boolean], runner: Expr[Runner[R]],
                 inc: Expr[Inclusion[R, Outcome]], inc2: Expr[Inclusion[R, DebugInfo]])
@@ -80,7 +53,8 @@ object ProbablyMacros:
       case None =>
         '{ assertion[T, T, R, Unit]($runner, $test, $pred, _ => (), Comparable.nothing[T], None, $inc, $inc2, Debug.any) }
         
-
+  def succeed: Any => Boolean = (value: Any) => true
+  
   def assertion[T, T0 <: T, R, S](runner: Runner[R], test: Test[T0], pred: T0 => Boolean, result: TestRun[T0] => S,
                                       comparable: Comparable[T], exp: Option[T], inc: Inclusion[R, Outcome],
                                       inc2: Inclusion[R, DebugInfo], debug: Debug[T]): S =
