@@ -178,8 +178,8 @@ object StackTrace:
 
 case class StackTrace(component: Text, className: Text, message: Text, frames: List[StackTrace.Frame],
                           cause: Maybe[StackTrace]):
-  def crop(className: Text, method: Text): StackTrace =
-    val frames2 = frames.takeWhile { f => f.className != className || f.method != method }
+  def crop(cutClassName: Text, cutMethod: Text): StackTrace =
+    val frames2 = frames.takeWhile { f => f.className != cutClassName || f.method != cutMethod }
     StackTrace(component, className, message, frames2, cause)
   
   def drop(n: Int): StackTrace =
