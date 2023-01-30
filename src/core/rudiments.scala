@@ -224,6 +224,17 @@ extends Error(ErrorMessage[EmptyTuple](
 extension[T](xs: Seq[T])
   def random: T = xs(util.Random().nextInt(xs.length))
   transparent inline def shuffle: Seq[T] = util.Random().shuffle(xs)
+  
+  def runs(fn: T => Any): List[List[T]] =
+    @tailrec
+    def recur(current: Any, todo: Seq[T], run: List[T], done: List[List[T]]): List[List[T]] =
+      if todo.isEmpty then (run.reverse :: done).reverse
+      else
+        val focus = fn(todo.head)
+        if current == focus then recur(current, todo.tail, todo.head :: run, done)
+        else recur(focus, todo.tail, List(todo.head), run.reverse :: done)
+
+    if xs.isEmpty then Nil else recur(fn(xs.head), xs.tail, List(xs.head), Nil)
 
 object Cursor:
   opaque type Cursor = Int
