@@ -152,16 +152,16 @@ class TestReport():
         debugInfo match
           case DebugInfo.Throws(err) =>
             val name = ansi"$Italic(${colors.White}(${err.component}.${err.className}))"
-            println(ansi"${colors.Silver}(Exception $name was thrown while running test)".render)
+            println(ansi"${colors.Silver}(An exception was thrown while running test:)".render)
             println(err.crop(t"probably.Runner", t"run()").ansi.render)
           case DebugInfo.CheckThrows(err) =>
             val name = ansi"$Italic(${colors.White}(${err.component}.${err.className}))"
-            println(ansi"${colors.Silver}(Exception $name was thrown while checking predicate)".render)
+            println(ansi"${colors.Silver}(An exception was thrown while checking the test predicate:)".render)
             println(err.crop(t"probably.Outcome#", t"apply()").dropRight(1).ansi.render)
           case DebugInfo.Compare(expected, found, cmp) =>
             val expected2: AnsiText = ansi"$Italic(${colors.White}($expected))"
             val found2: AnsiText = ansi"$Italic(${colors.White}($found))"
-            println(ansi"${colors.Silver}(Test was expected to return $expected2 but instead returned $found2)".render)
+            println(ansi"${colors.Silver}(The test was expected to return $expected2 but instead it returned $found2:)".render)
             println(cmp.ansi.render)
           case DebugInfo.Captures(map) =>
             Table[(Text, Text)](
