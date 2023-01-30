@@ -22,7 +22,7 @@ import gossamer.*
 import contextual.*
 import eucalyptus.*
 import dissonance.*
-import probably.*
+import chiaroscuro.*
 
 import java.io as ji
 

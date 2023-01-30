@@ -22,6 +22,7 @@ import eucalyptus.*
 import rudiments.*
 import deviation.*
 import contextual.*
+import chiaroscuro.*
 import dissonance.*
 
 given Realm(t"codl")
@@ -49,7 +50,6 @@ object CodlToken:
     case Error(error)                 => t"Error(${error.message})"
 
 object Codl:
-
   def read[T: Codec](text: Text)(using Log): T throws AggregateError | CodlReadError = // FIXME: Should only be aggregate error
     summon[Codec[T]].schema.parse(text).as[T]
   

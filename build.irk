@@ -4,7 +4,7 @@
     {
       "name": "Cellulose",
       "id": "cellulose/core",
-      "links": ["gossamer/core", "eucalyptus/core", "dissonance/core", "polyvinyl/core", "kaleidoscope/core", "probably/core"],
+      "links": ["gossamer/core", "eucalyptus/core", "dissonance/core", "polyvinyl/core", "kaleidoscope/core", "chiaroscuro/core"],
       "sources": ["src/core"],
       "version": "0.4.0",
       "docs": ["doc"]
