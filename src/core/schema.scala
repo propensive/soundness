@@ -19,6 +19,7 @@ package cellulose
 import rudiments.*
 import deviation.*
 import gossamer.*
+import chiaroscuro.*
 import eucalyptus.*
 
 import java.io as ji
@@ -27,7 +28,6 @@ import language.experimental.pureFunctions
 import language.dynamics
 
 object CodlSchema:
-
   object Entry:
     def apply(key: Text, schema: => CodlSchema): Entry = new Entry(key, () => schema)
     def unapply(value: Entry): Option[(Text, CodlSchema)] = Some(value.key -> value.schema)
@@ -41,6 +41,7 @@ object CodlSchema:
 
     override def toString(): String = t"$key${schema.arity.symbol}".s
 
+  given Comparable[CodlSchema] = Comparable.simplistic
 
   // FIXME
   object Free extends Struct(List(Entry(t"?", Field(Arity.Many))), Arity.Many):

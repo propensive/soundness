@@ -48,6 +48,8 @@ object CodlToken:
     case Item(text, line, col, block) => t"Item($text, $line, $col, $block)"
     case Comment(text, line, col)     => t"Comment($text, $line, $col)"
     case Error(error)                 => t"Error(${error.message})"
+  
+  given Comparable[CodlToken] = Comparable.derived[CodlToken]
 
 object Codl:
   def read[T: Codec](text: Text)(using Log): T throws AggregateError | CodlReadError = // FIXME: Should only be aggregate error

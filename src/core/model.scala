@@ -36,10 +36,17 @@ object CodlNode:
   def apply(key: Text)(child: CodlNode*): CodlNode = CodlNode(Data(key, IArray.from(child)))
   
   given Comparable[CodlNode] = (left, right) =>
-    if left == right then Comparison.Same(left.debug) else
-      Comparable.seq.compare(left.children, right.children)
-    
+    if left == right then Comparison.Same(left.debug) else Comparison.Structural:
+      IArray.from:
+        diff(left.children, right.children).rdiff(_.id == _.id).changes.map:
+          case Change.Keep(_, _, v)         => v.key.or(t"—") -> Comparison.Same(v.debug)
+          case Change.Ins(_, v)             => v.key.or(t"—") -> Comparison.Different(t"—", v.debug)
+          case Change.Del(_, v)             => v.key.or(t"—") -> Comparison.Different(v.debug, t"—")
+          case Change.Replace(_, v, lv, rv) =>
+            if lv.key == rv.key then lv.key.or(t"—") -> summon[Comparable[CodlNode]].compare(lv, rv)
+            else t"[key]" -> Comparison.Different(lv.key.or(t"—"), rv.key.or(t"—"))
 
+  
 case class CodlNode(data: Maybe[Data] = Unset, meta: Maybe[Meta] = Unset) extends Dynamic:
   def key: Maybe[Text] = data.mm(_.key)
   def empty: Boolean = unsafely(data.unset || data.assume.children.isEmpty)
@@ -80,15 +87,21 @@ object CodlDoc:
 
   given Debug[CodlDoc] = _.serialize
   
+  given Similar[CodlDoc] = _.schema == _.schema
+  //given Comparable[CodlDoc] = Comparable.derived[CodlDoc]
+
   given Comparable[CodlDoc] = (left, right) =>
     if left == right then Comparison.Same(left.debug) else Comparison.Structural:
       IArray.from:
-        //(t"<schema>", summon[Comparable[CodlSchema]].compare(left.schema, right.schema)) +:
-        (t"<margin>", summon[Comparable[Int]].compare(left.margin, right.margin)) +:
-        diff(left.children, right.children).changes.map:
-          case Change.Keep(_, _, v) => v.key.or(t"—") -> Comparison.Same(v.debug)
-          case Change.Ins(_, v)     => v.key.or(t"—") -> Comparison.Different(t"—", v.debug)
-          case Change.Del(_, v)     => v.key.or(t"—") -> Comparison.Different(v.debug, t"—")
+        (t"[schema]", summon[Comparable[CodlSchema]].compare(left.schema, right.schema)) +:
+        (t"[margin]", summon[Comparable[Int]].compare(left.margin, right.margin)) +:
+        diff(left.children, right.children).rdiff(_.id == _.id).changes.map:
+          case Change.Keep(_, _, v)         => v.key.or(t"—") -> Comparison.Same(v.debug)
+          case Change.Ins(_, v)             => v.key.or(t"—") -> Comparison.Different(t"—", v.debug)
+          case Change.Del(_, v)             => v.key.or(t"—") -> Comparison.Different(v.debug, t"—")
+          case Change.Replace(_, v, lv, rv) =>
+            val key = if lv.key == rv.key then lv.key.or(t"—") else t"${lv.key.or(t"—")}/${rv.key.or(t"—")}"
+            key -> summon[Comparable[CodlNode]].compare(lv, rv)
 
 case class CodlDoc(children: IArray[CodlNode], schema: CodlSchema, margin: Int, body: LazyList[Text] = LazyList())
 extends Indexed:
