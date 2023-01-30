@@ -93,7 +93,7 @@ extends Serializable:
 object SealedTrait:
   class Subtype[Typeclass[_], Type, SType]
                (val typeInfo: TypeInfo, val annotations: IArray[Any], val typeAnnotations: IArray[Any],
-                    index: Int, callByNeed: CallByNeed[Typeclass[SType]], isType: Type => Boolean,
+                    val index: Int, callByNeed: CallByNeed[Typeclass[SType]], isType: Type => Boolean,
                     asType: Type => SType & Type):
 
     def typeclass: Typeclass[SType & Type] = callByNeed.value.asInstanceOf[Typeclass[SType & Type]]
