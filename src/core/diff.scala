@@ -23,20 +23,36 @@ import annotation.*
 
 import language.experimental.captureChecking
 
-enum Change[+T]:
-  case Ins(right: Int, value: T)
-  case Del(left: Int, value: T)
-  case Keep(left: Int, right: Int, value: T)
+sealed trait Change[+T] extends Product
+
+sealed trait SimpleChange[+T] extends Change[T]:
+  def value: T
+
+object Change:
+  case class Ins[+T](right: Int, value: T) extends SimpleChange[T]
+  case class Del[+T](left: Int, value: T) extends SimpleChange[T]
+  case class Keep[+T](left: Int, right: Int, value: T) extends SimpleChange[T]
+  case class Replace[+T](left: Int, right: Int, leftValue: T, rightValue: T) extends Change[T]
+
+import Change.*
 
 enum ChangeBlock[+T]:
   case Ins(startRight: Int, values: List[T])
   case Del(startLeft: Int, values: List[T])
   case Keep(startLeft: Int, startRight: Int, values: List[T])
-  case Swap(startLeft: Int, startRight: Int, valuesLeft: List[T], valuesRight: List[T])
+  case Replace(startLeft: Int, startRight: Int, valuesLeft: List[T], valuesRight: List[T])
 
-import Change.*
+case class RDiff[T](changes: Change[T]*):
+  def flip: RDiff[T] =
+    val changes2 = changes.map:
+      case Keep(l, r, v)         => Keep(r, l, v)
+      case Del(l, v)             => Ins(l, v)
+      case Ins(r, v)             => Del(r, v)
+      case Replace(l, r, lv, rv) => Replace(r, l, rv, lv)
+    
+    RDiff[T](changes2*)
 
-case class Diff[T](changes: Change[T]*):
+case class Diff[T](changes: SimpleChange[T]*):
   def flip: Diff[T] =
     val changes2 = changes.map:
       case Keep(l, r, v) => Keep(r, l, v)
@@ -46,13 +62,57 @@ case class Diff[T](changes: Change[T]*):
     Diff[T](changes2*)
   
   def apply(list: List[T], update: (T, T) -> T): LazyList[T] =
-    def recur(todo: List[Change[T]], list: List[T]): LazyList[T] = todo match
+    def recur(todo: List[SimpleChange[T]], list: List[T]): LazyList[T] = todo match
       case Ins(_, value) :: tail     => value #:: recur(tail, list)
       case Del(_, _) :: tail         => recur(tail, list.tail)
       case Keep(_, _, value) :: tail => update(value, list.head) #:: recur(tail, list.tail)
-      case Nil                   => LazyList()
+      case Nil                       => LazyList()
 
     recur(changes.to(List), list)
+
+  def collate(similar: (T, T) -> Boolean, bySize: Int = 1): List[ChangeBlock[T]] =
+    changes.runs:
+      case Keep(_, _, _) => true
+      case _             => false
+    .flatMap:
+      case xs@(Keep(left, right, _) :: _) => List(ChangeBlock.Keep(left, right, xs.map(_.value)))
+      case xs@(Ins(idx, _) :: _)          => List(ChangeBlock.Ins(idx, xs.map(_.value)))
+      
+      case xs@(Del(leftIdx, _) :: _) =>
+        val dels =
+          xs.takeWhile:
+            case Del(_, _) => true
+            case _         => false
+          .to(IndexedSeq)
+        
+        val delValues = dels.map(_.value).to(List)
+
+        if dels.length == xs.length then List(ChangeBlock.Del(leftIdx, xs.map(_.value)))
+        else
+          val inss = xs.drop(dels.length).to(IndexedSeq)
+          val insValues = inss.map(_.value).to(List)
+          val rightIdx = inss.head match { case Ins(idx, _) => idx }
+
+          if dels.length <= bySize && inss.length <= bySize
+          then List(ChangeBlock.Replace(leftIdx, rightIdx, delValues, insValues))
+          else diff(delValues.to(IndexedSeq), insValues.to(IndexedSeq), similar).changes.runs(_.productPrefix).map:
+            case xs@(Ins(idx, _) :: _) => ChangeBlock.Ins(leftIdx + idx, xs.map(_.value))
+            case xs@(Del(idx, _) :: _) => ChangeBlock.Del(leftIdx + idx, xs.map(_.value))
+            
+            case xs@(Keep(left, right, _) :: _) =>
+              val valuesLeft = delValues.drop(left).take(xs.length)
+              val valuesRight = insValues.drop(right).take(xs.length)
+              ChangeBlock.Replace(left + leftIdx, right + rightIdx, valuesLeft, valuesRight)
+  
+  def rdiff(similar: (T, T) -> Boolean, bySize: Int = 1): RDiff[T] =
+    val changes = collate(similar, bySize).flatMap:
+      case ChangeBlock.Ins(r, vs)              => vs.zipWithIndex.map { (v, i) => Ins(r + i, v) }
+      case ChangeBlock.Del(l, vs)              => vs.zipWithIndex.map { (v, i) => Del(l + i, v) }
+      case ChangeBlock.Keep(l, r, vs)          => vs.zipWithIndex.map { (v, i) => Keep(l + i, r + i, v) }
+      case ChangeBlock.Replace(l, r, lvs, rvs) => lvs.zip(rvs).zipWithIndex.map:
+        case ((lv, rv), i) => Replace(l + i, r + i, lv, rv)
+    
+    RDiff[T](changes*)
 
 object Diff:
   object Point:
@@ -69,7 +129,7 @@ object Diff:
 
 import Diff.Point, Point.*
 
-def diff[T](left: IArray[T], right: IArray[T], cmp: (T, T) -> Boolean = { (a: T, b: T) => a == b }): Diff[T] =
+def diff[T](left: IndexedSeq[T], right: IndexedSeq[T], cmp: (T, T) -> Boolean = { (a: T, b: T) => a == b }): Diff[T] =
   val end = Point(left.size, right.size)
   @tailrec
   def distance(last: IArray[Point] = IArray(count(Point(0, 0))), trace: List[IArray[Point]] = Nil): Diff[T] =
@@ -95,7 +155,7 @@ def diff[T](left: IArray[T], right: IArray[T], cmp: (T, T) -> Boolean = { (a: T,
   def count(pt: Point): Point =
     if pt.x >= left.size || pt.y >= right.size || !cmp(left(pt.x), right(pt.y)) then pt else count(pt.keep)
 
-  def countback(idx: Int, cur: Point, trace: List[IArray[Point]], result: List[Change[T]] = Nil): Diff[T] =
+  def countback(idx: Int, cur: Point, trace: List[IArray[Point]], result: List[SimpleChange[T]] = Nil): Diff[T] =
     trace match
       case head :: tail =>
         val target = head(idx)
@@ -114,7 +174,7 @@ def diff[T](left: IArray[T], right: IArray[T], cmp: (T, T) -> Boolean = { (a: T,
         else countback(0, cur.unkeep, Nil, Keep(cur.x - 1, cur.y - 1, left(cur.x - 1)) :: result)
 
   @tailrec
-  def sort(values: List[Change[T]], cache: List[Change[T]], result: List[Change[T]]): List[Change[T]] =
+  def sort(values: List[SimpleChange[T]], cache: List[SimpleChange[T]], result: List[SimpleChange[T]]): List[SimpleChange[T]] =
     values match
       case Keep(l, r, v) :: tail => cache match
         case Nil                    => sort(tail, Nil, Keep(l, r, v) :: result)

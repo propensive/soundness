@@ -104,3 +104,9 @@ object Tests extends Suite(t"Dissonance tests"):
         diff(t"AZB".chars, t"BZA".chars)
       .assert(_ == Diff(Del(0, 'A'), Ins(0, 'B'), Keep(1, 1, 'Z'), Del(2, 'B'), Ins(2, 'A')))
 
+    suite(t"Collation tests"):
+      import ChangeBlock.*
+
+      test(t"Collate differences"):
+        diff(IArray(100, 150, 180, 200, 999, 300, 400, 500, 600), IArray(100, 150, 180, 202, 303, 404, 500, 123, 600)).collate(_/10 == _/10)
+      .assert(_ == List())
