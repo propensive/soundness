@@ -3,6 +3,7 @@ package probably
 import gossamer.*
 import rudiments.*
 import deviation.*
+import chiaroscuro.*
 
 import dotty.tools.dotc.util as dtdu
 import scala.quoted.*

@@ -1,8 +1,8 @@
 {
   "repos": [
     {
-      "base": "../dissonance",
-      "url": "https://github.com/propensive/dissonance"
+      "base": "../chiaroscuro",
+      "url": "https://github.com/propensive/chiaroscuro"
     },
     {
       "base": "../hyperbole",
@@ -14,7 +14,7 @@
     }
   ],
   "imports": [
-    "../dissonance/build.irk",
+    "../chiaroscuro/build.irk",
     "../hyperbole/build.irk",
     "../eucalyptus/build.irk"
   ],
@@ -43,7 +43,7 @@
       "links": [
         "hyperbole/core",
         "eucalyptus/core",
-	"dissonance/core"
+	"chiaroscuro/core"
       ],
       "sources": [
         "src/core"

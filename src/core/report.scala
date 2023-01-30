@@ -3,6 +3,7 @@ package probably
 import rudiments.*
 import deviation.*
 import gossamer.*
+import chiaroscuro.*
 import escritoire.*
 import escapade.*
 import iridescence.*

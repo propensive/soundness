@@ -18,6 +18,7 @@ package probably
 
 import gossamer.*
 import rudiments.*
+import chiaroscuro.*
 import eucalyptus.*, logging.stdout
 import unsafeExceptions.canThrowAny
 import testContexts.threadLocal
