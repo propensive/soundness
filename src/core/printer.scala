@@ -56,6 +56,9 @@ object Printer:
                   case CodlNode(Data(key, IArray(CodlNode(Data(value, _, _, _), _)), _, _), _) =>
                     out.write(' ')
                     out.write(value.s)
+                  case CodlNode(Data(key, IArray(), _, _), _) =>
+                    out.write(' ')
+                    out.write(key.s)
                   case matched =>
                     throw Mistake("Should never match")
                 
