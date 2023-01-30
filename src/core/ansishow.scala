@@ -56,17 +56,17 @@ object AnsiShow extends FallbackAnsiShow:
     val classWidth = stack.frames.map(_.className.length).max
     val fileWidth = stack.frames.map(_.file.length).max
     
-    val root = stack.frames.foldLeft(ansi"${colors.White}(${stack.className}): ${stack.message}"):
+    val root = stack.frames.foldLeft(ansi"${colors.White}($Italic(${stack.component}.$Bold(${stack.className}))): ${stack.message}"):
       case (msg, frame) =>
         val obj: Boolean = frame.className.ends(t"#")
-        ansi"$msg${'\n'}  ${colors.Gray}(at) ${colors.Plum}(${frame.className.drop(if obj then 1 else 0, Rtl).fit(classWidth, Rtl)})${colors.Gray}(${if obj then t"." else t"#"})${colors.Peru}(${frame.method.fit(methodWidth)}) ${colors.LightBlue}(${frame.file.fit(fileWidth, Rtl)})${colors.Gray}(:)${colors.Yellow}(${frame.line.mm(_.show).or(t"?")})"
+        ansi"$msg${'\n'}  ${colors.Gray}(at) ${colors.MediumVioletRed}(${frame.className.drop(if obj then 1 else 0, Rtl).fit(classWidth, Rtl)})${colors.Gray}(${if obj then t"." else t"#"})${colors.PaleVioletRed}(${frame.method.fit(methodWidth)}) ${colors.CadetBlue}(${frame.file.fit(fileWidth, Rtl)})${colors.Gray}(:)${colors.MediumTurquoise}(${frame.line.mm(_.show).or(t"?")})"
     
     stack.cause.option match
       case None        => root
       case Some(cause) => ansi"$root${'\n'}${colors.White}(caused by:)${'\n'}${cause.ansi}"
   
   given AnsiShow[StackTrace.Frame] = frame =>
-    ansi"${colors.Plum}(${frame.className.fit(40, Rtl)})${colors.Gray}(#)${colors.Peru}(${frame.method.fit(40)}) ${colors.LightBlue}(${frame.file.fit(18, Rtl)})${colors.Gray}(:)${colors.Yellow}(${frame.line.mm(_.show).or(t"?")})"
+    ansi"${colors.MediumVioletRed}(${frame.className.fit(40, Rtl)})${colors.Gray}(#)${colors.PaleVioletRed}(${frame.method.fit(40)}) ${colors.CadetBlue}(${frame.file.fit(18, Rtl)})${colors.Gray}(:)${colors.MediumTurquoise}(${frame.line.mm(_.show).or(t"?")})"
 
   private val decimalFormat =
     val df = new java.text.DecimalFormat()
