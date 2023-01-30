@@ -29,7 +29,7 @@ object ProbablyMacros:
         val comparable = Expr.summon[Comparable[t | T]].getOrElse('{Comparable.simplistic[t | T]})
         '{ assertion[t | T, T, R, T]($runner, $test, $pred, _.get, $comparable, Some($expr), $inc, $inc2, $debug) }
       
-      case None =>
+      case _ =>
         '{ assertion[T, T, R, T]($runner, $test, $pred, _.get, Comparable.nothing[T], None, $inc, $inc2, Debug.any) }
   
   def assert[T: Type, R: Type]
@@ -51,7 +51,7 @@ object ProbablyMacros:
         val debug: Expr[Debug[t | T]] = Expr.summon[Debug[t | T]].getOrElse('{ Debug.any })
         val comparable = Expr.summon[Comparable[t | T]].getOrElse('{Comparable.simplistic[t | T]})
         '{ assertion[t | T, T, R, Unit]($runner, $test, $pred, _ => (), $comparable, Some($expr), $inc, $inc2, $debug) }
-      case None =>
+      case _ =>
         '{ assertion[T, T, R, Unit]($runner, $test, $pred, _ => (), Comparable.nothing[T], None, $inc, $inc2, Debug.any) }
         
   def succeed: Any => Boolean = (value: Any) => true
