@@ -161,7 +161,8 @@ class TestReport():
           case DebugInfo.Compare(expected, found, cmp) =>
             val expected2: AnsiText = ansi"$Italic(${colors.White}($expected))"
             val found2: AnsiText = ansi"$Italic(${colors.White}($found))"
-            println(ansi"${colors.Silver}(The test was expected to return $expected2 but instead it returned $found2:)".render)
+            val nl = if expected.contains(t"\n") || found.contains(t"\n") then '\n' else ' '
+            println(ansi"${colors.Silver}(The test was expected to return$nl$expected2${nl}but instead it returned$nl$found2${nl})".render)
             println(cmp.ansi.render)
           case DebugInfo.Captures(map) =>
             Table[(Text, Text)](
@@ -170,4 +171,3 @@ class TestReport():
             ).tabulate(map.to(List), 140).map(_.render).foreach(println(_))
       
       println()
-          
