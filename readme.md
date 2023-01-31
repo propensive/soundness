@@ -68,7 +68,7 @@ The following _Scala One_ libraries are dependencies of _Escritoire_:
 
 The following _Scala One_ libraries are dependents of _Escritoire_:
 
-[![Hyperbole](https://github.com/propensive/hyperbole/raw/main/doc/images/128x128.png)](https://github.com/propensive/hyperbole/) &nbsp; [![Probably](https://github.com/propensive/probably/raw/main/doc/images/128x128.png)](https://github.com/propensive/probably/) &nbsp;
+[![Chiaroscuro](https://github.com/propensive/chiaroscuro/raw/main/doc/images/128x128.png)](https://github.com/propensive/chiaroscuro/) &nbsp; [![Hyperbole](https://github.com/propensive/hyperbole/raw/main/doc/images/128x128.png)](https://github.com/propensive/hyperbole/) &nbsp;
 
 ## Status
 
