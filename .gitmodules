@@ -173,3 +173,6 @@
 [submodule "mod/deviation"]
 	path = mod/deviation
 	url = git@github.com:propensive/deviation
+[submodule "mod/chiaroscuro"]
+	path = mod/chiaroscuro
+	url = git@github.com:propensive/chiaroscuro
