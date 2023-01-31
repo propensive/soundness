@@ -248,7 +248,7 @@ extension [T](stream: LazyList[T])
 
   def cluster(using time: GenericDuration)
              (interval: time.Duration, maxSize: Maybe[Int] = Unset, maxDelay: Maybe[Long] = Unset)
-             (using Monitor, GenericInstant { type Instant = Long }): LazyList[List[T]] =
+             (using Monitor): LazyList[List[T]] =
     
     def defer(stream: LazyList[T], list: List[T], expiry: Long): LazyList[List[T]] =
       recur(stream, list, expiry)
@@ -263,7 +263,7 @@ extension [T](stream: LazyList[T])
 
         val recurse: Option[Boolean] = try
           val deadline: Long = readDuration(interval).min(expiry - System.currentTimeMillis).max(0)
-          if hasMore.await(deadline) then Some(true) else None
+          if hasMore.await(deadline)(using timeRepresentation.long) then Some(true) else None
         catch case err: (TimeoutError | CancelError) => Some(false)
 
         // The try/catch above seems to fool tail-call identification
