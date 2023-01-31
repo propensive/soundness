@@ -197,7 +197,7 @@ defined inside other test suites, making it possible to organise tests into a hi
 
 The following _Scala One_ libraries are dependencies of _Probably_:
 
-[![Dissonance](https://github.com/propensive/dissonance/raw/main/doc/images/128x128.png)](https://github.com/propensive/dissonance/) &nbsp; [![Escritoire](https://github.com/propensive/escritoire/raw/main/doc/images/128x128.png)](https://github.com/propensive/escritoire/) &nbsp; [![Eucalyptus](https://github.com/propensive/eucalyptus/raw/main/doc/images/128x128.png)](https://github.com/propensive/eucalyptus/) &nbsp; [![Wisteria](https://github.com/propensive/wisteria/raw/main/doc/images/128x128.png)](https://github.com/propensive/wisteria/) &nbsp;
+[![Chiaroscuro](https://github.com/propensive/chiaroscuro/raw/main/doc/images/128x128.png)](https://github.com/propensive/chiaroscuro/) &nbsp; [![Eucalyptus](https://github.com/propensive/eucalyptus/raw/main/doc/images/128x128.png)](https://github.com/propensive/eucalyptus/) &nbsp; [![Hyperbole](https://github.com/propensive/hyperbole/raw/main/doc/images/128x128.png)](https://github.com/propensive/hyperbole/) &nbsp; [![Wisteria](https://github.com/propensive/wisteria/raw/main/doc/images/128x128.png)](https://github.com/propensive/wisteria/) &nbsp;
 
 The following _Scala One_ libraries are dependents of _Probably_:
 
@@ -219,7 +219,7 @@ be used, but caution should be taken if there is a mismatch between the
 project's stability level and the importance of your own project.
 
 Probably is designed to be _small_. Its entire source code currently consists
-of 426 lines of code.
+of 473 lines of code.
 
 ## Building
 
