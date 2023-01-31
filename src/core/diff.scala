@@ -36,6 +36,10 @@ object Change:
 
 import Change.*
 
+enum Region[T]:
+  case Changed(deletions: List[Change.Del[T]], insertions: List[Change.Ins[T]])
+  case Unchanged(retentions: List[Change.Keep[T]])
+
 enum ChangeBlock[+T]:
   case Ins(startRight: Int, values: List[T])
   case Del(startLeft: Int, values: List[T])
@@ -69,6 +73,31 @@ case class Diff[T](changes: SimpleChange[T]*):
       case Nil                       => LazyList()
 
     recur(changes.to(List), list)
+
+  def collate2: List[Region[T]] =
+    changes.runs:
+      case Keep(_, _, _) => true
+      case _             => false
+    .map:
+      case xs@(Keep(_, _, _) :: _) => Region.Unchanged(xs.sift[Change.Keep[T]])
+      case xs                      => Region.Changed(xs.sift[Change.Del[T]], xs.sift[Change.Ins[T]])
+  
+  def rdiff2(similar: (T, T) -> Boolean, swapSize: Int = 1): RDiff[T] =
+    val changes = collate2.flatMap:
+      case Region.Unchanged(keeps)   => keeps
+      case Region.Changed(dels, Nil) => dels
+      case Region.Changed(Nil, inss) => inss
+      
+      case Region.Changed(dels, inss) =>
+        if inss.length == dels.length && inss.length <= swapSize
+        then dels.zip(inss).map { (del, ins) => Change.Replace[T](del.left, ins.right, del.value, ins.value) }
+        else diff(dels.map(_.value).to(IndexedSeq), inss.map(_.value).to(IndexedSeq), similar).changes.map:
+          case Keep(l, r, _) => Change.Replace[T](dels(l).left, inss(r).right, dels(l).value, inss(r).value)
+          case Del(l, v)     => Change.Del[T](dels(l).left, dels(l).value)
+          case Ins(r, v)     => Change.Ins[T](inss(r).right, inss(r).value)
+    
+    RDiff(changes*)
+          
 
   def collate(similar: (T, T) -> Boolean, bySize: Int = 1): List[ChangeBlock[T]] =
     changes.runs:
