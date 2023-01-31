@@ -18,19 +18,23 @@ package anticipation
 
 import annotation.implicitNotFound
 
-@implicitNotFound("a contextual GenericInstant instance is required to work with instants in time")
+@implicitNotFound("a contextual GenericInstant instance is required to work with instants in time, for example,\n"+
+                  "    import timeRepresentation.long     // Use Longs to represent instants\n"+
+                  "    import timeRepresentation.aviation // Use Aviation types for instants")
 trait GenericInstant:
   type Instant
   def makeInstant(long: Long): Instant
   def readInstant(value: Instant): Long
 
-@implicitNotFound("a contextual GenericDuration instance is required to work with time durations")
+@implicitNotFound("a contextual GenericInstant instance is required to work with durations of time, for example,\n"+
+                  "    import timeRepresentation.long     // Use Longs for time durations\n"+
+                  "    import timeRepresentation.aviation // Use Aviation types for time durations")
 trait GenericDuration:
   type Duration
   def makeDuration(long: Long): Duration
   def readDuration(value: Duration): Long
 
-package timekeeping {}
+package timeRepresentation {}
 
 def makeInstant(value: Long)(using time: GenericInstant): time.Instant = time.makeInstant(value)
 def readInstant(using time: GenericInstant)(value: time.Instant): Long = time.readInstant(value)
