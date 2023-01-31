@@ -67,7 +67,7 @@ The following _Scala One_ libraries are dependencies of _Dissonance_:
 
 The following _Scala One_ libraries are dependents of _Dissonance_:
 
-[![Cellulose](https://github.com/propensive/cellulose/raw/main/doc/images/128x128.png)](https://github.com/propensive/cellulose/) &nbsp; [![Probably](https://github.com/propensive/probably/raw/main/doc/images/128x128.png)](https://github.com/propensive/probably/) &nbsp;
+[![Cellulose](https://github.com/propensive/cellulose/raw/main/doc/images/128x128.png)](https://github.com/propensive/cellulose/) &nbsp; [![Chiaroscuro](https://github.com/propensive/chiaroscuro/raw/main/doc/images/128x128.png)](https://github.com/propensive/chiaroscuro/) &nbsp;
 
 ## Status
 
@@ -85,7 +85,7 @@ be used, but caution should be taken if there is a mismatch between the
 project's stability level and the importance of your own project.
 
 Dissonance is designed to be _small_. Its entire source code currently consists
-of 150 lines of code.
+of 208 lines of code.
 
 ## Building
 
