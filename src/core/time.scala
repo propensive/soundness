@@ -173,23 +173,29 @@ extension (year: Int & Singleton)
   @targetName("of")
   inline def -(month: MonthName & Singleton): YearMonth[year.type, month.type] = new YearMonth(year, month)
 
+package timeRepresentation:
+  given aviation: (GenericInstant & GenericDuration) = new GenericInstant with GenericDuration:
+    export Timing.Instant.generic.{Instant, makeInstant, readInstant}
+    export Timing.Duration.generic.{Duration, makeDuration, readDuration}
+
 object Timing:
   opaque type Instant = Long
 
   object Instant:
     def of(millis: Long): Instant = millis
     
-    given GenericInstant with
+    given generic: GenericInstant with
       type Instant = Timing.Instant
       def makeInstant(long: Long): Instant = long
       def readInstant(instant: Instant): Long = instant
-    
-    given GenericDuration with
+
+  opaque type Duration = Long
+
+  object Duration:
+    given generic: GenericDuration with
       type Duration = Timing.Duration
       def makeDuration(long: Long): Duration = long
       def readDuration(duration: Duration): Long = duration
-
-  opaque type Duration = Long
 
   extension (instant: Instant)
     @targetName("minus")
@@ -254,7 +260,24 @@ given TimeSystem[StandardTime] with
 
 type Timespan = Period
 
+
+trait FixedDuration:
+  this: Period =>
+
 object Period:
+  given GenericDuration with
+    type Duration = Period & FixedDuration
+    
+    def makeDuration(long: Long): Duration =
+      val hours: Int = (long/3600000L).toInt
+      val minutes: Int = ((long%3600000L)/60000L).toInt
+      val seconds: Int = ((long%60000L)/1000L).toInt
+      
+      new Period(0, 0, 0, hours, minutes, seconds) with FixedDuration
+    
+    def readDuration(period: Period & FixedDuration): Long =
+      period.hours*3600000L + period.minutes*60000L + period.seconds*1000L
+  
   def apply(denomination: StandardTime, n: Int): Period = denomination match
     case StandardTime.Year   => Period(n, 0, 0, 0, 0, 0)
     case StandardTime.Month  => Period(0, n, 0, 0, 0, 0)
@@ -262,13 +285,18 @@ object Period:
     case StandardTime.Hour   => Period(0, 0, 0, n, 0, 0)
     case StandardTime.Minute => Period(0, 0, 0, 0, n, 0)
     case StandardTime.Second => Period(0, 0, 0, 0, 0, n)
+  
+  def fixed(denomination: (StandardTime.Second.type | StandardTime.Minute.type | StandardTime.Hour.type),
+                n: Int): Period & FixedDuration =
+    denomination match
+      case StandardTime.Hour   => new Period(0, 0, 0, n, 0, 0) with FixedDuration
+      case StandardTime.Minute => new Period(0, 0, 0, 0, n, 0) with FixedDuration
+      case StandardTime.Second => new Period(0, 0, 0, 0, 0, n) with FixedDuration
 
 trait DiurnalPeriod:
   def years: Int
   def months: Int
   def days: Int
-
-  
 
 trait TemporalPeriod:
   def hours: Int
@@ -298,18 +326,18 @@ extension (one: 1)
   def month: Timespan = Period(StandardTime.Month, 1)
   def week: Timespan = Period(StandardTime.Week, 1)
   def day: Timespan = Period(StandardTime.Day, 1)
-  def hour: Timespan = Period(StandardTime.Hour, 1)
-  def minute: Timespan = Period(StandardTime.Minute, 1)
-  def second: Timespan = Period(StandardTime.Second, 1)
+  def hour: Timespan & FixedDuration = Period.fixed(StandardTime.Hour, 1)
+  def minute: Timespan & FixedDuration = Period.fixed(StandardTime.Minute, 1)
+  def second: Timespan & FixedDuration = Period.fixed(StandardTime.Second, 1)
 
 extension (int: Int)
   def years: Timespan = Period(StandardTime.Year, int)
   def months: Timespan = Period(StandardTime.Month, int)
   def weeks: Timespan = Period(StandardTime.Week, int)
   def days: Timespan = Period(StandardTime.Day, int)
-  def hours: Timespan = Period(StandardTime.Hour, int)
-  def minutes: Timespan = Period(StandardTime.Minute, int)
-  def seconds: Timespan = Period(StandardTime.Second, int)
+  def hours: Timespan & FixedDuration = Period.fixed(StandardTime.Hour, int)
+  def minutes: Timespan & FixedDuration = Period.fixed(StandardTime.Minute, int)
+  def seconds: Timespan & FixedDuration = Period.fixed(StandardTime.Second, int)
 
 enum WorldRegion:
   case Africa, Antarctica, Asia, Australasia, Etcetera, Europe, NorthAmerica, SouthAmerica
