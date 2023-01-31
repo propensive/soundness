@@ -21,7 +21,7 @@ import rudiments.*
 import eucalyptus.*, logging.stdout
 import gossamer.*
 import turbulence.*, stdouts.stdout
-import anticipation.*, timekeeping.long
+import anticipation.*, timeRepresentation.long
 
 import unsafeExceptions.canThrowAny
 

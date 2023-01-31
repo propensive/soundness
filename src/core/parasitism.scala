@@ -94,11 +94,12 @@ case class Promise[T]():
     while value.isEmpty do wait()
     value.get
 
-  def await(using t: GenericInstant)(time: t.Instant): T throws CancelError | TimeoutError = synchronized:
-    if value.isEmpty then
-      wait(readInstant(time))
-      if value.isEmpty then throw TimeoutError() else value.get
-    else value.get
+  def await[D](time: D)(using GenericDuration { type Duration = D }): T throws CancelError | TimeoutError =
+    synchronized:
+      if value.isEmpty then
+        wait(readDuration(time))
+        if value.isEmpty then throw TimeoutError() else value.get
+      else value.get
 
   def cancel(): Unit = synchronized:
     if value.isEmpty then value = Some(throw CancelError())
@@ -126,7 +127,7 @@ class Task[T](id: Text, calc: Monitor => T)(using mon: Monitor):
   //def active: Boolean = !result.ready
   def await(): T throws CancelError = result.await().tap(thread.join().waive)
   
-  def await(using t: GenericInstant)(time: t.Instant): T throws CancelError | TimeoutError =
+  def await[D](time: D)(using GenericDuration { type Duration = D }): T throws CancelError | TimeoutError =
     result.await(time).tap(thread.join().waive)
   
   private def start(): Promise[T] = //synchronized:
