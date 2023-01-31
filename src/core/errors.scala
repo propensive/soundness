@@ -191,7 +191,8 @@ case class StackTrace(component: Text, className: Text, message: Text, frames: L
 object Codepoint:
   inline given Codepoint = ${DeviationMacros.location}
 
-case class Codepoint(source: Text, line: Int)
+case class Codepoint(source: Text, line: Int):
+  def text: Text = Text(s"${source.s.split("/").nn.last.nn}:$line")
 
 object DeviationMacros:
   def location(using Quotes): Expr[Codepoint] =
