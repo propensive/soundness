@@ -87,22 +87,30 @@ case class Diff[T](changes: SimpleChange[T]*):
         
         val delValues = dels.map(_.value).to(List)
 
-        if dels.length == xs.length then List(ChangeBlock.Del(leftIdx, xs.map(_.value)))
-        else
-          val inss = xs.drop(dels.length).to(IndexedSeq)
-          val insValues = inss.map(_.value).to(List)
-          val rightIdx = inss.head match { case Ins(idx, _) => idx }
+        xs.drop(dels.length) match
+          case Nil =>
+            List(ChangeBlock.Del(leftIdx, xs.map(_.value)))
+          
+          case inss@(Ins(rightIdx, _) :: _) =>
+            val insValues = inss.map(_.value)
+  
+            if dels.length <= bySize && insValues.length <= bySize
+            then List(ChangeBlock.Replace(leftIdx, rightIdx, delValues, insValues))
+            else diff(delValues.to(IndexedSeq), insValues.to(IndexedSeq), similar).changes.runs(_.productPrefix).map:
+              case xs@(Ins(idx, _) :: _) => ChangeBlock.Ins(leftIdx + idx, xs.map(_.value))
+              case xs@(Del(idx, _) :: _) => ChangeBlock.Del(leftIdx + idx, xs.map(_.value))
+              
+              case xs@(Keep(left, right, _) :: _) =>
+                val valuesLeft = delValues.drop(left).take(xs.length)
+                val valuesRight = insValues.drop(right).take(xs.length)
+                ChangeBlock.Replace(left + leftIdx, right + rightIdx, valuesLeft, valuesRight)
+              case Nil =>
+                throw Mistake("Should never have an empty list here")
+          case _ =>
+            throw Mistake("Should never have an empty list here")
 
-          if dels.length <= bySize && inss.length <= bySize
-          then List(ChangeBlock.Replace(leftIdx, rightIdx, delValues, insValues))
-          else diff(delValues.to(IndexedSeq), insValues.to(IndexedSeq), similar).changes.runs(_.productPrefix).map:
-            case xs@(Ins(idx, _) :: _) => ChangeBlock.Ins(leftIdx + idx, xs.map(_.value))
-            case xs@(Del(idx, _) :: _) => ChangeBlock.Del(leftIdx + idx, xs.map(_.value))
-            
-            case xs@(Keep(left, right, _) :: _) =>
-              val valuesLeft = delValues.drop(left).take(xs.length)
-              val valuesRight = insValues.drop(right).take(xs.length)
-              ChangeBlock.Replace(left + leftIdx, right + rightIdx, valuesLeft, valuesRight)
+      case Nil =>
+        throw Mistake("Should never have an empty list here")
   
   def rdiff(similar: (T, T) -> Boolean, bySize: Int = 1): RDiff[T] =
     val changes = collate(similar, bySize).flatMap:
@@ -126,6 +134,7 @@ object Diff:
       def ins: Point = Point(x, y + 1)
       def keep: Point = Point(x + 1, y + 1)
       def unkeep: Point = Point(x - 1, y - 1)
+      def text: Text = t"[$x,$y]"
 
 import Diff.Point, Point.*
 
@@ -160,28 +169,18 @@ def diff[T](left: IndexedSeq[T], right: IndexedSeq[T], cmp: (T, T) -> Boolean = 
       case head :: tail =>
         val target = head(idx)
         
-        if cur == Point(0, 0) then Diff(sort(result, Nil, Nil)*)
+        if cur == Point(0, 0) then Diff(result*)
         else if cur.x > target.x && cur.y > target.y then
           countback(idx, cur.unkeep, trace, Keep(cur.x - 1, cur.y - 1, left(cur.x - 1)) :: result)
         else if cur == target.ins then
-          countback(0 max (idx - 1), target, tail, Ins(target.y, right(target.y)) :: result)
+          countback(idx min (tail.length - 1), target, tail, Ins(target.y, right(target.y)) :: result)
         else if cur == target.del then
           countback(0 max (idx - 1), target, tail, Del(cur.x - 1, left(cur.x - 1)) :: result)
-        else throw Mistake("Unexpected")
+        else throw Mistake(s"Unexpected: idx=$idx cur=${cur.text} result=${result}")
 
       case Nil =>
-        if cur == Point(0, 0) then Diff(sort(result, Nil, Nil)*)
+        if cur == Point(0, 0) then Diff(result*)
         else countback(0, cur.unkeep, Nil, Keep(cur.x - 1, cur.y - 1, left(cur.x - 1)) :: result)
-
-  @tailrec
-  def sort(values: List[SimpleChange[T]], cache: List[SimpleChange[T]], result: List[SimpleChange[T]]): List[SimpleChange[T]] =
-    values match
-      case Keep(l, r, v) :: tail => cache match
-        case Nil                    => sort(tail, Nil, Keep(l, r, v) :: result)
-        case cache                  => sort(tail, Nil, Keep(l, r, v) :: (cache ::: result))
-      case Ins(r, v) :: tail     => sort(tail, Ins(r, v) :: cache, result)
-      case Del(l, v) :: tail     => sort(tail, cache, Del(l, v) :: result)
-      case Nil                   => (cache ::: result).reverse
 
   distance()
 

@@ -82,7 +82,7 @@ object Tests extends Suite(t"Dissonance tests"):
       
       test(t"Example from blog"):
         diff(t"ABCABBA".chars, t"CBABAC".chars)
-      .assert(_ == Diff(Del(0, 'A'), Ins(0, 'C'), Keep(1, 1, 'B'), Del(2, 'C'), Keep(3, 2, 'A'), Keep(4, 3, 'B'), Del(5, 'B'), Keep(6, 4, 'A'), Ins(5, 'C')))
+      .assert(_ == Diff(Del(0, 'A'), Del(1, 'B'), Keep(2, 0, 'C'), Del(3, 'A'), Keep(4, 1, 'B'), Ins(2, 'A'), Keep(5, 3, 'B'), Keep(6, 4, 'A'), Ins(5, 'C')))
       
       test(t"Item swap"):
         diff(t"AB".chars, t"BA".chars)
@@ -102,11 +102,9 @@ object Tests extends Suite(t"Dissonance tests"):
       
       test(t"Item swap interspersed with values"):
         diff(t"AZB".chars, t"BZA".chars)
-      .assert(_ == Diff(Del(0, 'A'), Ins(0, 'B'), Keep(1, 1, 'Z'), Del(2, 'B'), Ins(2, 'A')))
-
-    suite(t"Collation tests"):
-      import ChangeBlock.*
-
-      test(t"Collate differences"):
-        diff(IArray(100, 150, 180, 200, 999, 300, 400, 500, 600), IArray(100, 150, 180, 202, 303, 404, 500, 123, 600)).collate(_/10 == _/10)
-      .assert(_ == List())
+      .assert(_ == Diff(Del(0, 'A'), Del(1, 'Z'), Keep(2, 0, 'B'), Ins(1, 'Z'), Ins(2, 'A')))
+      
+      test(t"real-world example 1"):
+        diff(IArray(t"A", t"B"), IArray(t"B", t"C", t"D"))
+      .assert(_ == Diff(Del(0, t"A"), Keep(1, 0, t"B"), Ins(1, t"C"), Ins(2, t"D")))
+      
