@@ -20,6 +20,7 @@ import probably.*
 import gossamer.*
 import rudiments.*
 import deviation.*
+import aviation.*
 import turbulence.*
 import eucalyptus.*, logging.stdout
 
@@ -30,7 +31,6 @@ import unsafeExceptions.canThrowAny
 object Tests extends Suite(t"CoDL tests"):
 
   given Realm(t"tests")
-
 
   def run(): Unit =
     import CodlToken.*
@@ -284,8 +284,41 @@ object Tests extends Suite(t"CoDL tests"):
                       |      content
                       |  next
                       |""".s.stripMargin.show)(1).to(List)
-      .assert(_ == LazyList(Item(t"root", 0, 0), Indent, Item(t"child", 1, 2, false),
-          Item(t"content", 2, 6, true), Peer, Item(t"next", 3, 2, false)).to(List))
+      .assert(_ == List(Item(t"root", 0, 0), Indent, Item(t"child", 1, 2, false),
+          Item(t"content", 2, 6, true), Peer, Item(t"next", 3, 2, false)))
+      
+      test(t"Parse triple indentation then peer as children"):
+        parseText(t"""|root
+                      |  child
+                      |    grandchild
+                      |        content
+                      |    next
+                      |""".s.stripMargin.show)(1).to(List)
+      .assert(_ == LazyList(Item(t"root", 0, 0), Indent, Item(t"child", 1, 2, false), Indent,
+          Item(t"grandchild", 2, 4, false), Item(t"content", 3, 8, true), Peer,
+          Item(t"next", 4, 4, false)).to(List))
+      
+      test(t"Parse triple indentation then outdent"):
+        parseText(t"""|root
+                      |  child
+                      |    grandchild
+                      |        content
+                      |  next
+                      |""".s.stripMargin.show)(1).to(List)
+      .assert(_ == List(Item(t"root", 0, 0), Indent, Item(t"child", 1, 2, false), Indent,
+          Item(t"grandchild", 2, 4, false), Item(t"content", 3, 8, true), Outdent(1),
+          Item(t"next", 4, 2, false)))
+      
+      test(t"Parse triple indentation then double outdent"):
+        parseText(t"""|root
+                      |  child
+                      |    grandchild
+                      |        content
+                      |next
+                      |""".s.stripMargin.show)(1).to(List)
+      .assert(_ == List(Item(t"root", 0, 0), Indent, Item(t"child", 1, 2, false), Indent,
+          Item(t"grandchild", 2, 4, false), Item(t"content", 3, 8, true), Outdent(2),
+          Item(t"next", 4, 0, false)))
       
       test(t"Parse double indentation then peer with margin"):
         parseText(t"""| root

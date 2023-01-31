@@ -1,5 +1,5 @@
 {
-  "imports": ["../dissonance/build.irk", "../polyvinyl/build.irk", "../kaleidoscope/build.irk"],
+  "imports": ["../dissonance/build.irk", "../polyvinyl/build.irk", "../kaleidoscope/build.irk", "../aviation/build.irk"],
   "modules": [
     {
       "name": "Cellulose",
@@ -12,7 +12,7 @@
     {
       "name": "Cellulose Tests",
       "id": "cellulose/test",
-      "links": ["probably/cli", "cellulose/core"],
+      "links": ["probably/cli", "cellulose/core", "aviation/core"],
       "sources": ["src/test"],
       "version": "0.4.0",
       "docs": ["doc"],

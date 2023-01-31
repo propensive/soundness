@@ -227,6 +227,7 @@ object Codl:
     @tailrec
     def stream(char: Character, state: State = Indent, indent: Int = margin, count: Int = start)
               : LazyList[CodlToken] =
+      //println(s"'${if char.char == '\n' then "\\n" else char.char}', $state, $indent, $count) diff=$diff")
       inline def next(): Character =
         try reader.next() catch case err: CodlError => Character('\n', err.line, err.col)
       
@@ -266,7 +267,7 @@ object Codl:
       inline def block(): LazyList[CodlToken] =
         if diff >= 4 || char.char == '\n' then consume(Margin)
         else if char.char == ' ' then recur(Margin)
-        else token() #:: istream(char, count = count + 1)
+        else token() #:: istream(char, count = count + 1, indent = indent)
 
       inline def fail(next: State, error: CodlError, adjust: Maybe[Int] = Unset): LazyList[CodlToken] =
         CodlToken.Error(error) #:: irecur(next, indent = adjust.or(char.column))
