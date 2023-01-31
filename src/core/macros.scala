@@ -69,7 +69,7 @@ object ProbablyMacros:
           try if pred(value) then Outcome.Pass(duration) else
             exp match
               case Some(exp) =>
-                inc2.include(runner.report, test.id, DebugInfo.Compare(debug.show(exp), debug.show(value), comparable.compare(value, exp)))
+                inc2.include(runner.report, test.id, DebugInfo.Compare(debug.show(exp), debug.show(value), comparable.compare(exp, value)))
               case None =>
                 //inc2.include(runner.report, test.id, DebugInfo.Compare(summon[Comparable[Any]].compare(value, 1)))
             

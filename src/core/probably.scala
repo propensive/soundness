@@ -31,20 +31,20 @@ class TestContext():
 object TestId:
   given Ordering[TestId] = math.Ordering.Implicits.seqOrdering[List, Text].on(_.ids.reverse)
 
-case class TestId(name: Text, suite: Maybe[TestSuite]):
+case class TestId(name: Text, suite: Maybe[TestSuite], codepoint: Codepoint):
   lazy val id: Text = Integer.toHexString(suite.hashCode ^ name.hashCode).nn.show.pad(6, Rtl, '0').take(6, Rtl)
   lazy val ids: List[Text] =  id :: suite.mm(_.id.ids).or(Nil)
   def apply[T](ctx: TestContext ?=> T): Test[T] = Test[T](this, ctx(using _))
   def depth: Int = suite.mm(_.id.depth).or(0) + 1
 
-class TestSuite(val name: Text, val parent: Maybe[TestSuite] = Unset):
+class TestSuite(val name: Text, val parent: Maybe[TestSuite] = Unset)(using codepoint: Codepoint):
   override def equals(that: Any): Boolean = that match
     case that: TestSuite => name == that.name && parent == that.parent
     case _               => false
   
   override def hashCode: Int = name.hashCode + parent.hashCode
 
-  val id: TestId = TestId(name, parent)
+  val id: TestId = TestId(name, parent, codepoint)
 
 enum Outcome:
   case Pass(duration: Long)
@@ -101,7 +101,8 @@ class Runner[ReportType]()(using reporter: TestReporter[ReportType]):
 
 case class Test[+Return](id: TestId, action: TestContext => Return)
 
-def test[ReportType](name: Text)(using suite: TestSuite): TestId = TestId(name, suite)
+def test[ReportType](name: Text)(using suite: TestSuite, codepoint: Codepoint): TestId =
+  TestId(name, suite, codepoint)
 
 def suite[R](name: Text)(using suite: TestSuite, runner: Runner[R])(fn: TestSuite ?=> Unit): Unit =
   runner.suite(TestSuite(name, suite), fn)

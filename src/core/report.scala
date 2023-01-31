@@ -144,8 +144,8 @@ class TestReport():
 
     details.foreach: (id, info) =>
       val color = tests(id)
-      val ribbon = Ribbon(colors.FireBrick.srgb, Status.Fail.color.srgb)
-      println(ribbon.fill(ansi"$Bold(${id.id})", id.name.ansi).render)
+      val ribbon = Ribbon(colors.DarkRed.srgb, colors.FireBrick.srgb, colors.Tomato.srgb)
+      println(ribbon.fill(ansi"$Bold(${id.id})", id.codepoint.text.ansi, id.name.ansi).render)
       
       info.foreach: debugInfo =>
         println()
@@ -154,16 +154,19 @@ class TestReport():
             val name = ansi"$Italic(${colors.White}(${err.component}.${err.className}))"
             println(ansi"${colors.Silver}(An exception was thrown while running test:)".render)
             println(err.crop(t"probably.Runner", t"run()").ansi.render)
+          
           case DebugInfo.CheckThrows(err) =>
             val name = ansi"$Italic(${colors.White}(${err.component}.${err.className}))"
             println(ansi"${colors.Silver}(An exception was thrown while checking the test predicate:)".render)
             println(err.crop(t"probably.Outcome#", t"apply()").dropRight(1).ansi.render)
+          
           case DebugInfo.Compare(expected, found, cmp) =>
             val expected2: AnsiText = ansi"$Italic(${colors.White}($expected))"
             val found2: AnsiText = ansi"$Italic(${colors.White}($found))"
             val nl = if expected.contains(t"\n") || found.contains(t"\n") then '\n' else ' '
             println(ansi"${colors.Silver}(The test was expected to return$nl$expected2${nl}but instead it returned$nl$found2${nl})".render)
             println(cmp.ansi.render)
+          
           case DebugInfo.Captures(map) =>
             Table[(Text, Text)](
               Column(ansi"Expression", align = Alignment.Right)(_(0)),
