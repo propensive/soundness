@@ -31,7 +31,7 @@ object Comparison:
         def line(bullet: Text) = t"${tiles.map(_.show).join}$bullet ${data(0)}"
         
         data(1) match
-          case Same(v)         => Row(line(t"▪"), ansi"${colors.Gray}($v)", ansi"${colors.Gray}($v)")
+          case Same(v)         => Row(line(t"▪"), ansi"${rgb"#667799"}($v)", ansi"${rgb"#667799"}($v)")
           case Different(l, r) => Row(line(t"▪"), ansi"${colors.YellowGreen}($l)", ansi"${colors.Crimson}($r)")
           case Structural(cmp) => Row(line(t"■"), ansi"", ansi"")
       
