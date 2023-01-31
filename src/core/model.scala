@@ -178,7 +178,7 @@ extends Indexed:
   def uniqueId: Maybe[Text] = schema.subschemas.find(_.schema.arity == Arity.Unique) match
     case Some(CodlSchema.Entry(name: Text, schema)) =>
       paramIndex.get(name).map(children(_).fieldValue).getOrElse(Unset)
-    case None => Unset
+    case _ => Unset
 
   def id: Maybe[Text] = schema.subschemas.find(_.schema.arity == Arity.Unique) match
     case Some(CodlSchema.Entry(name: Text, schema)) =>

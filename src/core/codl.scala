@@ -37,6 +37,8 @@ enum CodlToken:
   case Error(error: CodlError)
 
 object CodlToken:
+  //given Similar[CodlToken] = _.productPrefix == _.productPrefix
+
   given Debug[CodlToken] =
     case Indent                       => t"Indent"
     case Peer                         => t"Peer"
@@ -66,18 +68,11 @@ object Codl:
                         multiline: Boolean = false, ids: Map[Text, (Int, Int)] = Map()):
       
       def commit(child: Proto): (Proto, List[CodlError]) =
-        // val ids2 = if child.schema.arity != Arity.Unique then ids else
-        //   child.key.fm(ids): ckey =>
-        //     ids.get(ckey).foreach: (line1, col1) =>
-        //       Codl.fail(line, col, DuplicateId(ckey, line1, col1))
-          
-        //     ids.updated(ckey, (child.line, child.col))
-        //val peerIds = children.map(_.id).sift[Text].join(t"{", t",", t"}")
-
         val (closed, errors2) = child.close
         (copy(children = closed :: children, params = params + 1), errors2)
 
       def substitute(data: Data): Proto = copy(children = CodlNode(data) :: children, params = params + 1)
+      
       def setMeta(meta: Maybe[Meta]): Proto = copy(meta = meta)
 
       def close: (CodlNode, List[CodlError]) =
@@ -142,9 +137,11 @@ object Codl:
             go()
           
           case CodlToken.Blank => focus.meta match
-            case Unset            => go(lines = lines + 1)
-            case Meta(l, _, _, _) => val (closed, errors2) = focus.close
-                                     go(focus = Proto(), peers = closed :: peers, lines = lines + 1, errors = errors2 ::: errors)
+            case Unset            =>
+              go(lines = lines + 1)
+            case Meta(l, _, _, _) =>
+              val (closed, errors2) = focus.close
+              go(focus = Proto(), peers = closed :: peers, lines = lines + 1, errors = errors2 ::: errors)
           
           case CodlToken.Argument =>
             go(focus = focus.substitute(subs.head), subs = subs.tail)

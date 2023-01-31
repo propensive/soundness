@@ -81,7 +81,6 @@ extends Dynamic:
     else if endlessParams && paramCount > 0 then subschemas(paramCount - 1) else Unset
 
   def has(key: Maybe[Text]): Boolean = dictionary.contains(key)
-  
   lazy val requiredKeys: List[Text] = subschemas.filter(_.required).map(_.key).sift[Text].to(List)
   
   export arity.{required, variadic, unique}
@@ -115,10 +114,10 @@ extends CodlSchema(IArray.from(structSubschemas), structArity, Unset):
   
   lazy val params: IArray[Entry] =
     def recur(subschemas: List[Entry], fields: List[Entry]): IArray[Entry] = subschemas match
-      case Nil                                             => IArray.from(fields.reverse)
       case Entry(key, struct: Struct) :: _                 => recur(Nil, fields)
       case Entry(key, field: Field) :: _ if field.variadic => recur(Nil, Entry(key, field) :: fields)
       case Entry(key, field: Field) :: tail                => recur(tail, Entry(key, field) :: fields)
+      case _                                               => IArray.from(fields.reverse)
 
     recur(subschemas.to(List), Nil)
 
