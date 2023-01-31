@@ -84,7 +84,9 @@ The following _Scala One_ libraries are dependencies of _Hyperbole_:
 
 [![Dendrology](https://github.com/propensive/dendrology/raw/main/doc/images/128x128.png)](https://github.com/propensive/dendrology/) &nbsp; [![Escapade](https://github.com/propensive/escapade/raw/main/doc/images/128x128.png)](https://github.com/propensive/escapade/) &nbsp; [![Escritoire](https://github.com/propensive/escritoire/raw/main/doc/images/128x128.png)](https://github.com/propensive/escritoire/) &nbsp; [![Harlequin](https://github.com/propensive/harlequin/raw/main/doc/images/128x128.png)](https://github.com/propensive/harlequin/) &nbsp;
 
-No other _Scala One_ libraries are dependents of _Hyperbole_.
+The following _Scala One_ libraries are dependents of _Hyperbole_:
+
+[![Probably](https://github.com/propensive/probably/raw/main/doc/images/128x128.png)](https://github.com/propensive/probably/) &nbsp;
 
 ## Status
 
@@ -102,7 +104,7 @@ be used, but caution should be taken if there is a mismatch between the
 project's stability level and the importance of your own project.
 
 Hyperbole is designed to be _small_. Its entire source code currently consists
-of 224 lines of code.
+of 225 lines of code.
 
 ## Building
 
