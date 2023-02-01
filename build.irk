@@ -29,6 +29,20 @@
       "docs": [
         "doc"
       ]
+    },
+    {
+      "name": "Chiaroscuro tests",
+      "id": "chiaroscuro/test",
+      "links": ["chiaroscuro/core", "probably/cli"],
+      "sources": ["src/test"],
+      "version": "0.1.0",
+      "docs": ["doc"],
+      "xec": {
+        "browsers": [],
+        "start": "chiaroscuro.Tests"
+      },
+      "dependencies": [
+      ]
     }
   ]
 }

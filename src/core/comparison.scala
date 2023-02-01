@@ -13,17 +13,21 @@ import escritoire.*
 enum Comparison:
   case Same(value: Text)
   case Different(left: Text, right: Text)
-  case Structural(comparison: IArray[(Text, Comparison)])
+  case Structural(comparison: IArray[(Text, Comparison)], left: Text, right: Text)
+
+extension [T](value: T)
+  def compareTo(other: T)(using comparable: Comparable[T]): Comparison = comparable.compare(value, other)
 
 object Comparison:
   given AnsiShow[Comparison] =
-    case Comparison.Structural(cmp) =>
+    case Comparison.Structural(cmp, l, r) =>
       import tableStyles.horizontalGaps
       import treeStyles.default
+      
       def children(comp: (Text, Comparison)): List[(Text, Comparison)] = comp(1) match
-        case Same(value)            => Nil
-        case Different(left, right) => Nil
-        case Structural(comparison) => comparison.to(List)
+        case Same(value)                         => Nil
+        case Different(left, right)              => Nil
+        case Structural(comparison, left, right) => comparison.to(List)
       
       case class Row(treeLine: Text, left: AnsiText, right: AnsiText)
 
@@ -31,9 +35,14 @@ object Comparison:
         def line(bullet: Text) = t"${tiles.map(_.show).join}$bullet ${data(0)}"
         
         data(1) match
-          case Same(v)         => Row(line(t"▪"), ansi"${rgb"#667799"}($v)", ansi"${rgb"#667799"}($v)")
-          case Different(l, r) => Row(line(t"▪"), ansi"${colors.YellowGreen}($l)", ansi"${colors.Crimson}($r)")
-          case Structural(cmp) => Row(line(t"■"), ansi"", ansi"")
+          case Same(v) =>
+            Row(line(t"▪"), ansi"${rgb"#667799"}($v)", ansi"${rgb"#667799"}($v)")
+          
+          case Different(left, right) =>
+            Row(line(t"▪"), ansi"${colors.YellowGreen}($left)", ansi"${colors.Crimson}($right)")
+          
+          case Structural(cmp, left, right) =>
+            Row(line(t"■"), ansi"$left", ansi"$right")
       
       Table[Row](
         Column(t"")(_.treeLine),
@@ -75,21 +84,27 @@ object Comparable extends Derivation[Comparable]:
     if left.getClass == right.getClass && leftMsg == rightMsg then Comparison.Same(leftMsg)
     else Comparison.Different(leftMsg, rightMsg)
   
-  given seq[T: Debug: Comparable: Similar, Coll[X] <: Seq[X]]: Comparable[Coll[T]] = (left, right) =>
-    Comparison.Structural:
-      IArray.from:
-        diff(left.to(IndexedSeq), right.to(IndexedSeq)).rdiff(summon[Similar[T]].similar).changes.map:
+  given seq[T: Debug: Comparable: Similar, Coll[X] <: Seq[X]]
+           : Comparable[Coll[T]] = (left, right) =>
+    val leftSeq = left.to(IndexedSeq)
+    val rightSeq = right.to(IndexedSeq)
+
+    if leftSeq == rightSeq then Comparison.Same(leftSeq.map(_.debug).join(t"[", t", ", t"]")) else
+      val comparison = IArray.from:
+        diff(leftSeq, rightSeq).rdiff2(summon[Similar[T]].similar).changes.map:
           case Change.Keep(lid, rid, v) =>
             (if lid == rid then lid.show else t"$lid/$rid") -> Comparison.Same(v.debug)
           
           case Change.Ins(rid, v) =>
-            t"/$rid" -> Comparison.Different(t"—", v.debug)
+            t" /$rid" -> Comparison.Different(t"—", v.debug)
           
           case Change.Del(lid, v) =>
             t"$lid/" -> Comparison.Different(v.debug, t"—")
           
           case Change.Replace(lid, rid, lv, rv) =>
             t"$lid/$rid" -> summon[Comparable[T]].compare(lv, rv)
+      
+      Comparison.Structural(comparison, left.toString.show, right.toString.show)
   
   given iarray[T: Debug: Comparable: Similar]: Comparable[IArray[T]] = (left, right) =>
     seq[T, IndexedSeq].compare(left.to(IndexedSeq), right.to(IndexedSeq))
@@ -99,9 +114,10 @@ object Comparable extends Derivation[Comparable]:
       param.deref(left) == param.deref(right)
 
     if same then Comparison.Same(left.toString.show)
-    else Comparison.Structural:
-      caseClass.params.map: param =>
+    else
+      val comparison = caseClass.params.map: param =>
         (Text(param.label), param.typeclass.compare(param.deref(left), param.deref(right)))
+      Comparison.Structural(comparison, left.toString.show, right.toString.show)
   
   def split[T](sealedTrait: SealedTrait[Comparable, T]): Comparable[T] = (left, right) =>
     sealedTrait.choose(left): subtype =>
