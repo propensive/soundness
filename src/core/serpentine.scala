@@ -81,7 +81,7 @@ object Relative:
       if text == t"." then Self
       else if text == t".." then Relative(ascent + 1, Nil)
       else if text.starts(t"../") then recur(text.drop(3), ascent + 1)
-      else Relative(ascent, List(text.cut(t"/")*))
+      else Relative(ascent, List(text.cut(t"/").filter(_ != t"")*))
     
     recur(text, 0)
 
