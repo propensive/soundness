@@ -24,6 +24,8 @@ import anticipation.*
 
 import scala.io.*
 
+import language.dynamics
+
 object Media:
   object Group:
     given Debug[Group] = _.name
@@ -170,9 +172,12 @@ case class InvalidMediaTypeError(value: Text, nature: InvalidMediaTypeError.Natu
 extends Error(err"the value $value is not a valid media type; ${nature.message}")
 
 case class MediaType(group: Media.Group, subtype: Media.Subtype, suffixes: List[Media.Suffix] = Nil,
-                        parameters: List[(Text, Text)] = Nil):
+                        parameters: List[(Text, Text)] = Nil) extends Dynamic:
   private def suffixString: Text = suffixes.map { s => t"+${s.name}" }.join
   def basic: Text = t"${group.name}/${subtype.name}$suffixString"
+  
+  def applyDynamicNamed(apply: "apply")(kvs: (String, Text)*): MediaType =
+    copy(parameters = parameters ::: kvs.map(_.show -> _).to(List))
 
 object MediaType:
   given Debug[MediaType] = mt => t"""media"${mt}""""
