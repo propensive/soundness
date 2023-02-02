@@ -40,13 +40,15 @@ trait Responder:
   def sendBody(status: Int, body: HttpBody): Unit
   def addHeader(key: Text, value: Text): Unit
 
-trait Handler2:
-  given [T: Show]: SimpleHandler[T] =
-    SimpleHandler(t"text/plain", v => HttpBody.Chunked(LazyList(summon[Show[T]].show(v).bytes)))
+trait FallbackHandler:
+  given [T: Show](using enc: Encoding): SimpleHandler[T] =
+    SimpleHandler(media"text/plain"(charset = enc.name), v =>
+        HttpBody.Chunked(LazyList(summon[Show[T]].show(v).bytes)))
 
-object Handler extends Handler2:
-  given iarrayByteHandler[T](using hr: GenericHttpResponseStream[T]): SimpleHandler[T] =
-    SimpleHandler(Text(hr.mediaType), value => HttpBody.Chunked(hr.content(value).map(identity)))
+object Handler extends FallbackHandler:
+  given iarrayByteHandler[T](using hr: GenericHttpResponseStream[T], ct: CanThrow[InvalidMediaTypeError])
+                         : SimpleHandler[T] =
+    SimpleHandler(Media.parse(hr.mediaType.show), value => HttpBody.Chunked(hr.content(value).map(identity)))
 
   given Handler[Redirect] with
     def process(content: Redirect, status: Int, headers: Map[Text, Text],
@@ -59,7 +61,7 @@ object Handler extends Handler2:
     def process(notFound: NotFound[T], status: Int, headers: Map[Text, Text],
                     responder: Responder): Unit =
       val handler = summon[SimpleHandler[T]]
-      responder.addHeader(ResponseHeader.ContentType.header, handler.mime)
+      responder.addHeader(ResponseHeader.ContentType.header, handler.mediaType.show)
       headers.foreach(responder.addHeader)
       responder.sendBody(404, handler.stream(notFound.content))
 
@@ -67,9 +69,11 @@ object Handler extends Handler2:
     def process(notFound: ServerError[T], status: Int, headers: Map[Text, Text],
                     responder: Responder): Unit =
       val handler = summon[SimpleHandler[T]]
-      responder.addHeader(ResponseHeader.ContentType.header, handler.mime)
+      responder.addHeader(ResponseHeader.ContentType.header, handler.mediaType.show)
       headers.foreach(responder.addHeader)
       responder.sendBody(500, handler.stream(notFound.content))
+
+  given SimpleHandler[Bytes](media"application/octet-stream", HttpBody.Data(_))
 
 object Redirect:
   def apply[T: Locatable](location: T): Redirect =
@@ -80,13 +84,9 @@ case class Redirect(location: Url)
 trait Handler[T]:
   def process(content: T, status: Int, headers: Map[Text, Text], responder: Responder): Unit
 
-object SimpleHandler:
-  def apply[T](mime: Text, stream: T => HttpBody): SimpleHandler[T] =
-    new SimpleHandler(mime, stream) {}
-
-trait SimpleHandler[T](val mime: Text, val stream: T => HttpBody) extends Handler[T]:
+case class SimpleHandler[T](mediaType: MediaType, stream: T => HttpBody) extends Handler[T]:
   def process(content: T, status: Int, headers: Map[Text, Text], responder: Responder): Unit =
-    responder.addHeader(ResponseHeader.ContentType.header, mime)
+    responder.addHeader(ResponseHeader.ContentType.header, mediaType.show)
     headers.foreach(responder.addHeader)
     responder.sendBody(status, stream(content))
 
@@ -330,22 +330,24 @@ case class HttpServer(port: Int) extends RequestHandler:
 case class Svg(content: Text)
 
 object Svg:
-  given SimpleHandler[Svg] = SimpleHandler(t"image/svg+xml", svg => HttpBody.Data(svg.content.bytes))
+  // FIXME: The character encoding depends on the XML header, which should be parsed
+  given SimpleHandler[Svg] =
+    SimpleHandler(media"image/svg+xml", svg => HttpBody.Data(svg.content.bytes(using characterEncodings.utf8)))
 
 case class Jpeg(content: IArray[Byte])
 
 object Jpeg:
-  given SimpleHandler[Jpeg] = SimpleHandler(t"image/jpeg", jpeg => HttpBody.Data(jpeg.content))
+  given SimpleHandler[Jpeg] = SimpleHandler(media"image/jpeg", jpeg => HttpBody.Data(jpeg.content))
 
 case class Gif(content: IArray[Byte])
 
 object Gif:
-  given SimpleHandler[Gif] = SimpleHandler(t"image/gif", gif => HttpBody.Data(gif.content))
+  given SimpleHandler[Gif] = SimpleHandler(media"image/gif", gif => HttpBody.Data(gif.content))
 
 case class Png(content: IArray[Byte])
 
 object Png:
-  given SimpleHandler[Png] = SimpleHandler(t"image/png", png => HttpBody.Data(png.content))
+  given SimpleHandler[Png] = SimpleHandler(media"image/png", png => HttpBody.Data(png.content))
 
 def basicAuth(validate: (Text, Text) => Boolean, realm: Text)(response: => Response[?])
              (using Request): Response[?] =
@@ -355,10 +357,10 @@ def basicAuth(validate: (Text, Text) => Boolean, realm: Text)(response: => Respo
         val text: Text = credentials.show.decode[Base64].uString
         text.cut(t":").to(Seq)
       
-      if validate(username, password) then response else Response("", HttpStatus.Forbidden)
+      if validate(username, password) then response else Response(Bytes(), HttpStatus.Forbidden)
 
     case _ =>
       val auth = t"""Basic realm="$realm", charset="UTF-8""""
-      Response("", HttpStatus.Unauthorized, Map(ResponseHeader.WwwAuthenticate -> auth))
+      Response(Bytes(), HttpStatus.Unauthorized, Map(ResponseHeader.WwwAuthenticate -> auth))
 
 given Realm(t"telekinesis")
