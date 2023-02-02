@@ -158,7 +158,7 @@ case class Request(method: HttpMethod, body: HttpBody.Chunked, query: Text, ssl:
                        rawHeaders: Map[Text, List[Text]],
                        queryParams: Map[Text, List[Text]]):
 
-  lazy val path: GenericPath = safely(GenericPath.parse(pathText)).or(unsafely(^ / pathText))
+  lazy val path: GenericPath = safely(Root.parse(pathText)).or(unsafely(^ / pathText))
 
   // FIXME: The exception in here needs to be handled elsewhere
   val params: Map[Text, Text] =
