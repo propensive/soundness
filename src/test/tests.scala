@@ -22,7 +22,7 @@ import galilei.*, filesystems.unix
 import anticipation.*, integration.galileiPath
 import eucalyptus.*
 import serpentine.*
-import rudiments.*
+import rudiments.*, characterEncodings.utf8
 import turbulence.*
 import parasitism.*, monitors.global
 
