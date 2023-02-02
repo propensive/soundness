@@ -53,9 +53,10 @@ object Xml:
     try printers.compact.print(XmlDoc(Ast.Root(Xml.normalize(xml)*)))
     catch case error: XmlAccessError => t"undefined"
 
-  given (using XmlPrinter[Text]): GenericHttpResponseStream[Xml] with
-    def mediaType: String = "application/xml; charset=utf-8"
-    def content(xml: Xml): LazyList[IArray[Byte]] = LazyList(summon[XmlPrinter[Text]].print(xml).bytes)
+  given (using enc: Encoding, printer: XmlPrinter[Text]): GenericHttpResponseStream[Xml] with
+    def mediaType: String = t"application/xml; charset=${enc.name}".s
+    def content(xml: Xml): LazyList[IArray[Byte]] =
+      LazyList(summon[XmlPrinter[Text]].print(xml).bytes(using characterEncodings.utf8))
 
   def print(xml: Xml)(using XmlPrinter[Text]): Text = summon[XmlPrinter[Text]].print(xml)
 
@@ -77,7 +78,9 @@ object Xml:
     val builder = factory.newDocumentBuilder().nn
 
     val root = 
-      try builder.parse(ByteArrayInputStream(content.bytes.mutable(using Unsafe))).nn
+      try
+        val array = content.bytes(using characterEncodings.utf8).mutable(using Unsafe)
+        builder.parse(ByteArrayInputStream(array)).nn
       catch case e: oxs.SAXParseException =>
         throw XmlParseError(e.getLineNumber - 1, e.getColumnNumber - 1)
 
