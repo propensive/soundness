@@ -2,7 +2,7 @@ package rudiments
 
 case class ErrorMessage[+T <: Tuple](text: Seq[Text], parts: T)
 
-abstract class Error[T <: Tuple](val msg: ErrorMessage[T], val cause: Maybe[Error[?]] = Unset)
+transparent abstract class Error[T <: Tuple](val msg: ErrorMessage[T], val cause: Maybe[Error[?]] = Unset)
 extends Exception():
   this: Error[T] =>
   def fullClass: List[Text] = List(getClass.nn.getName.nn.split("\\.").nn.map(_.nn).map(Text(_))*)
