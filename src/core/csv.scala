@@ -27,9 +27,9 @@ trait RowFormat:
   type Type
   def wrap(seq: List[Row]): Type
   
-  def parse[T](input: T)(using source: Source[T], readable: Readable[LazyList[Line]])
+  def parse[T: Streamable](input: T)(using readable: Readable[LazyList[Line]])
            : Type throws StreamCutError = wrap:
-      readable.read(source.read(input)).to(List).map:
+      readable.read(input.stream).to(List).map:
         line => parseLine(line.text)
 
   def parseLine(line: Text): Row =
