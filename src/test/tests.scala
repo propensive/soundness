@@ -37,7 +37,7 @@ object Tests extends Suite(t"CoDL tests"):
     import Arity.*
 
     suite(t"Reader tests"):
-      def interpret(text: Text)(using Log): PositionReader = PositionReader(ji.StringReader(text.s))
+      def interpret(text: Text)(using Log): PositionReader = PositionReader(LazyList(text))
 
       test(t"Character can store line"):
         Character('©', 123, 456).line
@@ -183,7 +183,7 @@ object Tests extends Suite(t"CoDL tests"):
 
     suite(t"Tokenizer tests"):
       def parseText(text: Text)(using Log): (Int, LazyList[CodlToken]) =
-        val result = Codl.tokenize(ji.StringReader(text.s))
+        val result = Codl.tokenize(LazyList(text))
         result(1).length
         result
 
@@ -488,7 +488,7 @@ object Tests extends Suite(t"CoDL tests"):
         doc.term().name()(1)
       .assert(_ == CodlNode(Data(t"beta")))
 
-    def read(text: Text)(using Log): CodlDoc = Codl.parse(ji.StringReader(text.s))
+    def read(text: Text)(using Log): CodlDoc = Codl.parse(LazyList(text))
     
     suite(t"Untyped parsing tests"):
       test(t"Empty document"):
@@ -678,7 +678,7 @@ object Tests extends Suite(t"CoDL tests"):
       .assert(_ == CodlError(0, 0, 4, InvalidKey(t"riot", t"riot")))
       
       test(t"Indent after comment forbidden"):
-        capture(Codl.parse(ji.StringReader(t"root\n  # comment\n    child".s).nn)) match
+        capture(Codl.parse(LazyList(t"root\n  # comment\n    child"))) match
           case AggregateError(errors) => errors.head
       .assert(_ == CodlError(1, 2, 1, CodlError.Issue.IndentAfterComment))
       

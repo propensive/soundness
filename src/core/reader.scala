@@ -55,7 +55,7 @@ object Character:
 
 import Character.*
 
-class PositionReader(private val in: Reader):
+class PositionReader(private var in: LazyList[Text]):
   private var lastLine: Int = 0
   private var lastCol: Int = 0
   private var startLine: Int = 0
@@ -64,6 +64,23 @@ class PositionReader(private val in: Reader):
   private var finished: Boolean = false
   private val buf: StringBuilder = StringBuilder()
   
+  private var current: Int = -1
+  
+  private var text: Text = if in.isEmpty then t"" else
+    val result = in.head
+    in = in.tail
+    result
+
+  @tailrec
+  private def read(): Int =
+    current += 1
+    
+    if current < text.length then unsafely(text(current)).toInt else if in.isEmpty then -1 else
+      text = in.head
+      in = in.tail
+      current = -1
+      read()
+
   private def advance(char: Character): Unit = char.char match
     case '\n' =>
       lastLine += 1
@@ -73,7 +90,7 @@ class PositionReader(private val in: Reader):
   
   def next()(using Log): Character throws CodlError =
     if finished then throw IllegalStateException("Attempted to read past the end of the stream")
-    in.read() match
+    read() match
       case -1 =>
         finished = true
         Character.End
@@ -83,7 +100,7 @@ class PositionReader(private val in: Reader):
           case false => throw CodlError(lastLine, lastCol, 1, CarriageReturnMismatch(false))
           case true  => ()
         
-        if in.read() != '\n' then throw CodlError(lastLine, lastCol, 1, UnexpectedCarriageReturn)
+        if read() != '\n' then throw CodlError(lastLine, lastCol, 1, UnexpectedCarriageReturn)
         
         Character('\n', lastLine, lastCol).tap(advance)
       

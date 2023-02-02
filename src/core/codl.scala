@@ -57,10 +57,10 @@ object Codl:
   def read[T: Codec](text: Text)(using Log): T throws AggregateError | CodlReadError = // FIXME: Should only be aggregate error
     summon[Codec[T]].schema.parse(text).as[T]
   
-  def parse(reader: Reader, schema: CodlSchema = CodlSchema.Free, subs: List[Data] = Nil, fromStart: Boolean = false)
+  def parse(in: LazyList[Text], schema: CodlSchema = CodlSchema.Free, subs: List[Data] = Nil, fromStart: Boolean = false)
            (using Log)
            : CodlDoc throws AggregateError =
-    val (margin, stream) = tokenize(reader, fromStart)
+    val (margin, stream) = tokenize(in, fromStart)
     val baseSchema: CodlSchema = schema
     
     case class Proto(key: Maybe[Text] = Unset, line: Int = 0, col: Int = 0, children: List[CodlNode] = Nil,
@@ -205,7 +205,7 @@ object Codl:
 
     if stream.isEmpty then CodlDoc() else recur(stream, Proto(), Nil, Nil, 0, subs.reverse, Nil, LazyList())
 
-  def tokenize(in: Reader, fromStart: Boolean = false)(using Log): (Int, LazyList[CodlToken]) =
+  def tokenize(in: LazyList[Text], fromStart: Boolean = false)(using Log): (Int, LazyList[CodlToken]) =
     val reader: PositionReader = PositionReader(in)
 
     enum State:
@@ -328,7 +328,7 @@ object Codl:
 
   object Prefix extends Interpolator[List[Data], State, CodlDoc]:
     protected def complete(state: State): CodlDoc =
-      try Codl.parse(StringReader(state.content.s), CodlSchema.Free, state.subs.reverse, fromStart = true)(using
+      try Codl.parse(LazyList(state.content), CodlSchema.Free, state.subs.reverse, fromStart = true)(using
           logging.silent)
       catch
         case err: AggregateError => err.errors.head match
