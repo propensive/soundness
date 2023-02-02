@@ -25,7 +25,7 @@ case class RootParentError(root: Root) extends Error(err"attempted to access par
 case class InvalidPathError(path: Text) extends Error(err"the path $path was not absolute")
 
 trait Root(val prefix: Text, val separator: Text):
-  type PathType <: Absolute[this.type]
+  type PathType <: Absolute
 
   def apply(path: GenericPath): PathType = make(path.parts)
 
@@ -42,7 +42,10 @@ trait Root(val prefix: Text, val separator: Text):
     if !text.starts(prefix) then throw InvalidPathError(text)
     else make(text.drop(prefix.length).cut(separator))
   
-object Root:
+object Root extends Root(t"/", t"/"):
+  type PathType = GenericPath
+  
+  def make(elements: List[Text]): GenericPath = GenericPath(elements)
   
   given rootAttributeWriter: GenericHtmlAttribute["href", Root.^.type] with
     def name: String = "href"
@@ -53,15 +56,16 @@ object Root:
   
   @targetName("GenericRoot")
   object ^ extends Root(t"/", t"/"):
-    type PathType = Absolute[^.type]
-    def make(elements: List[Text]): PathType = Absolute(^, elements)
+    type PathType = GenericPath
+    def make(elements: List[Text]): PathType = GenericPath(elements)
 
 trait GetRoot[T]:
   def apply(value: Iterable[T]): Root
 
 export Root.{?, ^}
-val GenericPath: ^.type = ^
-type GenericPath = Absolute[^.type]
+class GenericPath(parts: List[Text]) extends Absolute(parts):
+  type RootType = ^.type
+  val root: ^.type = ^
 
 object Relative:
   object Self extends Relative(0, Nil)
@@ -114,24 +118,26 @@ case class Relative(ascent: Int, parts: List[Text]):
 object Slash:
   @targetName("Extractor")
   object `/`:
-    def unapply[R <: Root](abs: Absolute[R]): Option[(R | Absolute[R], Text)] =
+    def unapply(abs: Absolute): Option[(Root | Absolute, Text)] =
       for left <- abs.init.option; right <- abs.last.option
       yield (if left.parts.isEmpty then left.root else left, right)
 
 export Slash.`/`
 
 object Absolute:
-  given [R <: Root]: Show[Absolute[R]] = _.text
+  given [R <: Root]: Show[Absolute] = _.text
   given GenericHttpRequestParam["location", GenericPath] = _.show.s
 
   given GenericHtmlAttribute["href", GenericPath] with
     def name = "href"
     def serialize(value: GenericPath): String = value.show.s
 
-open class Absolute[+R <: Root](val root: R, val parts: List[Text]):
+abstract class Absolute(val parts: List[Text]):
+  type RootType <: Root
+  val root: RootType
   def depth: Int = parts.length
-  def init: Maybe[Absolute[R]] = safely(root.make(parts.init))
-  def head: Maybe[Absolute[R]] = safely(root.make(List(parts.head)))
+  def init: Maybe[Absolute] = safely(root.make(parts.init))
+  def head: Maybe[Absolute] = safely(root.make(List(parts.head)))
   def last: Maybe[Text] = safely(parts.last)
   
   def parent: root.PathType throws RootParentError = ancestor(1)
@@ -142,7 +148,7 @@ open class Absolute[+R <: Root](val root: R, val parts: List[Text]):
     else if ascent > depth then throw RootParentError(root)
     else root.make(parts.dropRight(ascent))
 
-  def conjunction(other: root.PathType): root.PathType & Absolute[R] =
+  def conjunction(other: root.PathType): root.PathType & Absolute =
     root.make(parts.zip(other.parts).takeWhile(_ == _).map(_(0)))
   
   def relativeTo(other: root.PathType): Relative =
@@ -152,7 +158,7 @@ open class Absolute[+R <: Root](val root: R, val parts: List[Text]):
   def precedes(other: root.PathType): Boolean =
     conjunction(other).parts == parts
 
-  def generic: GenericPath = Absolute(^, parts)
+  def generic: GenericPath = GenericPath(parts)
 
   def text: Text = parts.join(root.prefix, root.separator, t"")
 
