@@ -88,7 +88,7 @@ class PositionReader(private var in: LazyList[Text]):
     case _ =>
       lastCol += 1
   
-  def next()(using Log): Character throws CodlError =
+  def next(): Character throws CodlError =
     if finished then throw IllegalStateException("Attempted to read past the end of the stream")
     read() match
       case -1 =>

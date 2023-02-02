@@ -488,7 +488,7 @@ object Tests extends Suite(t"CoDL tests"):
         doc.term().name()(1)
       .assert(_ == CodlNode(Data(t"beta")))
 
-    def read(text: Text)(using Log): CodlDoc = Codl.parse(LazyList(text))
+    def read(text: Text)(using Log): CodlDoc = Codl.parse(text)
     
     suite(t"Untyped parsing tests"):
       test(t"Empty document"):
@@ -643,7 +643,7 @@ object Tests extends Suite(t"CoDL tests"):
       .assert(_ == CodlNode(Data(t"root")))
       
       test(t"Root node has correct schema"):
-        topSchema.parse(t"root")().schema
+        topSchema.parse(t"root").schema
       .assert(_ == rootSchema)
       
       test(t"First child of root param is validated"):
@@ -678,7 +678,7 @@ object Tests extends Suite(t"CoDL tests"):
       .assert(_ == CodlError(0, 0, 4, InvalidKey(t"riot", t"riot")))
       
       test(t"Indent after comment forbidden"):
-        capture(Codl.parse(LazyList(t"root\n  # comment\n    child"))) match
+        capture(Codl.parse(t"root\n  # comment\n    child")) match
           case AggregateError(errors) => errors.head
       .assert(_ == CodlError(1, 2, 1, CodlError.Issue.IndentAfterComment))
       
