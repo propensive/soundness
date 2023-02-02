@@ -117,22 +117,22 @@ object File:
       
       def filePath(file: File[fs.type]): String = file.path.fullname.toString
 
-  given [Fs <: Filesystem](using CanThrow[IoError]): Writable[File[Fs]] with
-    def write(value: File[Fs], stream: DataStream): Unit throws StreamCutError =
+  given [Fs <: Filesystem](using CanThrow[IoError], CanThrow[StreamCutError]): Writable[File[Fs]] with
+    def write(value: File[Fs], stream: DataStream): Unit =
       val out = ji.FileOutputStream(value.javaFile, false)
       try Util.write(stream, out)
       catch case e => throw IoError(IoError.Op.Write, IoError.Reason.AccessDenied, value.path)
       finally try out.close() catch _ => ()
   
-  given [Fs <: Filesystem](using CanThrow[IoError]): Appendable[File[Fs]] with
-    def write(value: File[Fs], stream: DataStream): Unit throws StreamCutError =
+  given [Fs <: Filesystem](using CanThrow[IoError], CanThrow[StreamCutError]): Appendable[File[Fs]] with
+    def write(value: File[Fs], stream: DataStream): Unit =
       val out = ji.FileOutputStream(value.javaFile, true)
       try Util.write(stream, out)
       catch case e => throw IoError(IoError.Op.Write, IoError.Reason.AccessDenied, value.path)
       finally try out.close() catch _ => ()
   
-  given [Fs <: Filesystem](using CanThrow[IoError]): Source[File[Fs]] with
-    def read(file: File[Fs]): DataStream =
+  given [Fs <: Filesystem](using CanThrow[IoError]): Streamable[File[Fs]] with
+    def stream(file: File[Fs]): DataStream =
       try Util.readInputStream(ji.FileInputStream(file.javaFile)) catch case e: ji.FileNotFoundException =>
         if e.getMessage.nn.contains("(Permission denied)")
         then throw IoError(IoError.Op.Read, IoError.Reason.AccessDenied, file.path)
@@ -205,14 +205,14 @@ object Fifo:
 
   given Show[Fifo[?]] = t"ˢ｢"+_.path.fullname+t"｣"
 
-  given [Fs <: Filesystem](using CanThrow[IoError]): Appendable[Fifo[Fs]] with
-    def write(value: Fifo[Fs], stream: DataStream): Unit throws StreamCutError =
+  given [Fs <: Filesystem](using CanThrow[IoError], CanThrow[StreamCutError]): Appendable[Fifo[Fs]] with
+    def write(value: Fifo[Fs], stream: DataStream): Unit =
       val out = value.out
       try Util.write(stream, out)
       catch case e => throw IoError(IoError.Op.Write, IoError.Reason.AccessDenied, value.path)
   
-  given [Fs <: Filesystem](using CanThrow[IoError]): Writable[Fifo[Fs]] with
-    def write(value: Fifo[Fs], stream: DataStream): Unit throws StreamCutError =
+  given [Fs <: Filesystem](using CanThrow[IoError], CanThrow[StreamCutError]): Writable[Fifo[Fs]] with
+    def write(value: Fifo[Fs], stream: DataStream): Unit =
       val out = value.out
       try Util.write(stream, out)
       catch case e => throw IoError(IoError.Op.Write, IoError.Reason.AccessDenied, value.path)
