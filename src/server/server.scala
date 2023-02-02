@@ -347,7 +347,7 @@ case class Png(content: IArray[Byte])
 object Png:
   given SimpleHandler[Png] = SimpleHandler(t"image/png", png => HttpBody.Data(png.content))
 
-def basicAuth(validate: (Text, Text) => Boolean)(response: => Response[?])
+def basicAuth(validate: (Text, Text) => Boolean, realm: Text)(response: => Response[?])
              (using Request): Response[?] =
   request.headers.get(RequestHeader.Authorization) match
     case Some(List(s"Basic $credentials")) =>
@@ -358,7 +358,7 @@ def basicAuth(validate: (Text, Text) => Boolean)(response: => Response[?])
       if validate(username, password) then response else Response("", HttpStatus.Forbidden)
 
     case _ =>
-      val auth = t"""Basic realm="Some realm", charset="UTF-8""""
+      val auth = t"""Basic realm="$realm", charset="UTF-8""""
       Response("", HttpStatus.Unauthorized, Map(ResponseHeader.WwwAuthenticate -> auth))
 
 given Realm(t"telekinesis")
