@@ -19,21 +19,21 @@ package anticipation.integration
 import anticipation.*
 import rudiments.*
 import deviation.*
-import _root_.galilei as gal
+import galilei.* //_root_.galilei as gal
 
 import language.experimental.captureChecking
 
-given galileiPath[Fs <: gal.Filesystem](using fs: Fs): (GenericPathMaker[gal.DiskPath[Fs]] & GenericDirectoryMaker[gal.Directory[Fs]] & GenericFileMaker[gal.File[Fs]] & GenericPathReader[gal.DiskPath[Fs]] & GenericFileReader[gal.File[Fs]] & GenericDirectoryReader[gal.Directory[Fs]]) =
-  new GenericPathMaker[gal.DiskPath[Fs]] with GenericDirectoryMaker[gal.Directory[Fs]] with GenericFileMaker[gal.File[Fs]] with GenericPathReader[gal.DiskPath[Fs]] with GenericFileReader[gal.File[Fs]] with GenericDirectoryReader[gal.Directory[Fs]]:
-    def makePath(str: String, readOnly: Boolean = false): Option[gal.DiskPath[Fs]] =
+given galileiPath(using fs: Filesystem): (GenericPathMaker[DiskPath] & GenericDirectoryMaker[Directory] & GenericFileMaker[File] & GenericPathReader[DiskPath] & GenericFileReader[File] & GenericDirectoryReader[Directory]) =
+  new GenericPathMaker[DiskPath] with GenericDirectoryMaker[Directory] with GenericFileMaker[File] with GenericPathReader[DiskPath] with GenericFileReader[File] with GenericDirectoryReader[Directory]:
+    def makePath(str: String, readOnly: Boolean = false): Option[DiskPath] =
       safely(fs.parse(Text(str))).option
     
-    def makeDirectory(str: String, readOnly: Boolean = false): Option[gal.Directory[Fs]] =
-      safely(fs.parse(Text(str)).directory(gal.Expect)).option
+    def makeDirectory(str: String, readOnly: Boolean = false): Option[Directory] =
+      safely(fs.parse(Text(str)).directory(Expect)).option
     
-    def makeFile(str: String, readOnly: Boolean = false): Option[gal.File[Fs]] =
-      safely(fs.parse(Text(str)).file(gal.Expect)).option
+    def makeFile(str: String, readOnly: Boolean = false): Option[File] =
+      safely(fs.parse(Text(str)).file(Expect)).option
 
-    def getPath(value: gal.DiskPath[Fs]): String = value.fullname.s
-    def directoryPath(value: gal.Directory[Fs]): String = value.path.fullname.s
-    def filePath(value: gal.File[Fs]): String = value.path.fullname.s
+    def getPath(value: DiskPath): String = value.fullname.s
+    def directoryPath(value: Directory): String = value.path.fullname.s
+    def filePath(value: File): String = value.path.fullname.s
