@@ -44,50 +44,37 @@ type DataStream = LazyList[IArray[Byte] throws StreamCutError]
 extension (value: DataStream)
   def slurp(): Bytes throws StreamCutError =
     val bld: scm.ArrayBuilder[Byte] = scm.ArrayBuilder.ofByte()
-    
-    value.foreach: bytes =>
-      bld.addAll(bytes.mutable(using Unsafe))
+    value.foreach { bs => bld.addAll(bs.mutable(using Unsafe)) }
     
     bld.result().immutable(using Unsafe)
 
 case class StreamCutError() extends Error(err"the stream was cut prematurely")
 case class AlreadyStreamingError() extends Error(err"the stream was accessed twice, which is not permitted")
 
-object Source:
-  given Source[DataStream] with
-    def read(value: DataStream) = value
-
-trait Source[T]:
-  def read(value: T): DataStream
-
 object Appendable:
-  given Appendable[SystemOut.type] with
-    def write(value: SystemOut.type, stream: DataStream) =
-      if System.out == null then throw StreamCutError() else Util.write(stream, System.out)
+  given systemOut(using CanThrow[StreamCutError]): Appendable[SystemOut.type] = (value, stream) =>
+    if System.out == null then throw StreamCutError() else Util.write(stream, System.out)
   
-  given Appendable[SystemErr.type] with
-    def write(value: SystemErr.type, stream: DataStream) =
-      if System.err == null then throw StreamCutError() else Util.write(stream, System.err)
+  given systemErr(using CanThrow[StreamCutError]): Appendable[SystemErr.type] = (value, stream) =>
+    if System.err == null then throw StreamCutError() else Util.write(stream, System.err)
   
-  given Appendable[ji.OutputStream] with
-    def write(writable: ji.OutputStream, stream: DataStream) =
-      val out = writable match
-        case out: ji.BufferedOutputStream => out
-        case out: ji.OutputStream         => ji.BufferedOutputStream(out)
-      
-      Util.write(stream, out)
+  given outputStream(using CanThrow[StreamCutError]): Appendable[ji.OutputStream] = (writable, stream) =>
+    val out = writable match
+      case out: ji.BufferedOutputStream => out
+      case out: ji.OutputStream         => ji.BufferedOutputStream(out)
+    
+    Util.write(stream, out)
 
 trait Appendable[T]:
-  def write(value: T, stream: DataStream): Unit throws StreamCutError
+  def write(value: T, stream: DataStream): Unit
 
 trait Writable[T]:
-  def write(value: T, stream: DataStream): Unit throws StreamCutError
+  def write(value: T, stream: DataStream): Unit
 
 object Streamable:
-  given Streamable[DataStream] = identity(_)
   given Streamable[Bytes] = LazyList(_)
-
   given Streamable[Text] = value => LazyList(value.s.getBytes("UTF-8").nn.immutable(using Unsafe))
+  given Streamable[DataStream] = identity(_)
   given Streamable[LazyList[Text]] = _.map(_.s.getBytes("UTF-8").nn.immutable(using Unsafe))
 
 trait Streamable[T]:
@@ -98,8 +85,7 @@ object Readable:
     def read(stream: DataStream): DataStream throws StreamCutError = stream
   
   given Readable[Bytes] with
-    def read(stream: DataStream): Bytes throws StreamCutError =
-      stream.slurp()
+    def read(stream: DataStream): Bytes throws StreamCutError = stream.slurp()
 
   given (using enc: Encoding): Readable[Text] with
     def read(value: DataStream) =
@@ -167,21 +153,22 @@ class Pulsar(using time: GenericDuration)(interval: time.Duration):
     catch case err: CancelError => LazyList()
 
 extension [T](value: T)
-  def dataStream(using src: Source[T]): DataStream = src.read(value)
+  def stream(using streamable: Streamable[T]): DataStream = streamable.stream(value)
   
-  def writeStream(stream: DataStream)(using writable: Writable[T]): Unit throws StreamCutError =
-    writable.write(value, stream)
+  def writeStream(data: DataStream)(using writable: Writable[T]): Unit throws StreamCutError =
+    writable.write(value, data)
   
-  def appendTo[S](destination: S)(using appendable: Appendable[S], streamable: Streamable[T])
-                : Unit throws StreamCutError =
-    appendable.write(destination, streamable.stream(value))
 
   def writeTo[S](destination: S)(using writable: Writable[S], streamable: Streamable[T])
                 : Unit throws StreamCutError =
     writable.write(destination, streamable.stream(value))
 
-  def read[S]()(using readable: Readable[S], src: Source[T]): S throws StreamCutError =
-    readable.read(dataStream)
+  def appendTo[S](destination: S)(using appendable: Appendable[S], streamable: Streamable[T])
+                : Unit throws StreamCutError =
+    appendable.write(destination, streamable.stream(value))
+  
+  def read[S]()(using readable: Readable[S], streamable: Streamable[T]): S throws StreamCutError =
+    readable.read(stream)
 
 case class Multiplexer[K, T]()(using monitor: Monitor):
   private val tasks: HashMap[K, Task[Unit]] = HashMap()
