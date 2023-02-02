@@ -24,9 +24,11 @@ import annotation.targetName
 import language.dynamics
 
 object CssStylesheet:
-  given GenericHttpResponseStream[CssStylesheet] with
-    def mediaType: String = "text/css; charset=utf-8"
-    def content(stylesheet: CssStylesheet): LazyList[IArray[Byte]] = LazyList(stylesheet.text.bytes)
+  given (using enc: Encoding): GenericHttpResponseStream[CssStylesheet] with
+    def mediaType: String = t"text/css; charset=${enc.name}".s
+    
+    def content(stylesheet: CssStylesheet): LazyList[IArray[Byte]] =
+      LazyList(stylesheet.text.bytes)
   
   trait Item:
     def text: Text
