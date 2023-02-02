@@ -41,7 +41,7 @@ import rendering.ansi
 
 inline def cli(using cli: CommandLine): CommandLine = cli
 
-case class CommandLine(args: List[Text], env: Map[Text, Text], script: File[Unix],
+case class CommandLine(args: List[Text], env: Map[Text, Text], script: File,
                            stdin: DataStream, stdout: DataStream => Unit, exit: Int => Unit,
                            shutdown: () => Unit, interactive: () => Unit, resize: LazyList[Unit])
 extends Stdout, InputSource:
@@ -85,7 +85,7 @@ trait Daemon()(using Log) extends App:
   def server(script: Text, fifo: Text, serverPid: Int, watchPid: Int)
             (using Monitor)
             : Unit =
-    val socket: DiskPath[Unix] = Unix.parse(fifo)
+    val socket: DiskPath = Unix.parse(fifo)
     socket.file(Expect).javaFile.deleteOnExit()
     
     val death: Runnable = () => try socket.file(Expect).delete() catch case e: Exception => ()
@@ -93,18 +93,18 @@ trait Daemon()(using Log) extends App:
     ProcessHandle.of(watchPid).nn.get.nn.onExit.nn.thenRun:
       () => sys.exit(2)
    
-    case class CliClient(pid: Pid, spawnId: Int, scriptFile: Maybe[File[Unix]] = Unset,
+    case class CliClient(pid: Pid, spawnId: Int, scriptFile: Maybe[File] = Unset,
                                args: List[Text] = Nil, instanceEnv: Map[Text, Text] = Map(),
-                               runDir: Maybe[Directory[Unix]] = Unset):
+                               runDir: Maybe[Directory] = Unset):
       given Environment(instanceEnv.get(_), key => Option(System.getProperty(key.s)).map(_.nn.show))
       val signals: Funnel[Unit] = Funnel()
-      def pwd: Directory[Unix] throws EnvError = env.pwd[DiskPath[Unix]].directory(Expect)
+      def pwd: Directory throws EnvError = env.pwd[DiskPath].directory(Expect)
 
 
       def resize(): Unit = signals.put(())
 
       def spawn(): Task[Unit] = Task(t"spawn"):
-        lazy val out = Fifo[Unix]:
+        lazy val out = Fifo:
           val file = (runDir.or(sys.exit(1)) / t"$script-${pid.value}.stdout.sock").file(Expect)
           file.javaFile.deleteOnExit()
           file.path
