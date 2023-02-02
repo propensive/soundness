@@ -41,9 +41,9 @@ object Html extends Node["html"]:
   def label: Text = t"html"
   def attributes: Attributes = Map()
   def children: Seq[Html[?]] = Nil
-  def inline = false
-  def unclosed = false
-  def verbatim = false
+  def inline: Boolean = false
+  def unclosed: Boolean = false
+  def verbatim: Boolean = false
 
   def apply(head: Node["head"], body: Node["body"]): Element["html"] =
     Element(label.s, unclosed, inline, verbatim, Map(), Seq(head, body))
@@ -105,8 +105,8 @@ case class Element[+Name <: Label](labelString: String, unclosed: Boolean, tagIn
 case class HtmlDoc(root: Node["html"])
 
 object HtmlDoc:
-  given GenericHttpResponseStream[HtmlDoc] with
-    def mediaType: String = "text/html; charset=utf-8"
+  given (using enc: Encoding): GenericHttpResponseStream[HtmlDoc] with
+    def mediaType: String = t"text/html; charset=${enc.name}".s
     def content(value: HtmlDoc): LazyList[IArray[Byte]] = LazyList(HtmlDoc.serialize(value).bytes)
 
   def serialize[T](doc: HtmlDoc, maxWidth: Int = -1)(using HtmlSerializer[T]): T =
