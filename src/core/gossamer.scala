@@ -63,7 +63,8 @@ extension (words: Iterable[Text])
   def kebab: Text = words.join(Text("-"))
 
 extension (text: Text)
-  def bytes: IArray[Byte] = text.s.getBytes("UTF-8").nn.immutable(using Unsafe)
+  def bytes(using enc: Encoding): IArray[Byte] = text.s.getBytes(enc.name.s).nn.immutable(using Unsafe)
+  def sysBytes: IArray[Byte] = text.s.getBytes().nn.immutable(using Unsafe)
   def length: Int = text.s.length
   def populated: Option[Text] = if text.s.length == 0 then None else Some(text)
   def lower: Text = Text(text.s.toLowerCase.nn)
@@ -317,15 +318,14 @@ object Line:
       
 package stdouts:
   given stdout: Stdout = txt =>
-    try summon[Appendable[SystemOut.type]].write(SystemOut, LazyList(txt.bytes))
+    try summon[Appendable[SystemOut.type]].write(SystemOut, LazyList(txt.sysBytes))
     catch case err: Exception => ()
   
   given drain: Stdout = txt => ()
 
 object Stdout:
   def apply[T](value: T)(using writable: Writable[T]): Stdout = txt =>
-    try writable.write(value, LazyList(txt.bytes))
-    catch case err: Exception => ()
+    try writable.write(value, LazyList(txt.sysBytes)) catch case err: Exception => ()
 
 trait Stderr:
   def write(msg: Text): Unit

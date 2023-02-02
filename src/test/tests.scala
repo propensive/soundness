@@ -17,7 +17,7 @@
 package gossamer
 
 import probably.*
-import rudiments.*
+import rudiments.*, characterEncodings.utf8
 import eucalyptus.*, logging.stdout
 
 import unsafeExceptions.canThrowAny
