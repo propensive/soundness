@@ -99,8 +99,8 @@ object Json extends Dynamic:
   given (using JsonSerializer): Show[Json] = json =>
     try json.normalize.root.show catch case err: JsonAccessError => t"<${err.reason}>"
 
-  given (using JsonSerializer): GenericHttpResponseStream[Json] with
-    def mediaType: String = "application/json"
+  given (using enc: Encoding, serializer: JsonSerializer): GenericHttpResponseStream[Json] with
+    def mediaType: String = t"application/json; charset=${enc.name}".s
     def content(json: Json): LazyList[IArray[Byte]] = LazyList(json.show.bytes)
 
   given (using CanThrow[JsonParseError]): GenericHttpReader[Json] with

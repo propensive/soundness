@@ -19,7 +19,7 @@ package javanais
 import eucalyptus.*
 import gossamer.*
 import probably.*
-import rudiments.*
+import rudiments.*, characterEncodings.utf8
 import scala.util.*
 
 import unsafeExceptions.canThrowAny
