@@ -23,7 +23,7 @@ import telekinesis.*
 import cataclysm.*
 import honeycomb.*
 import eucalyptus.*
-import rudiments.*
+import rudiments.*, characterEncodings.utf8
 import deviation.*
 import gesticulate.*
 import parasitism.*
