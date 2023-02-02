@@ -71,14 +71,26 @@ trait Appendable[T]:
 trait Writable[T]:
   def write(value: T, stream: DataStream): Unit
 
+trait CharWritable[T]:
+  def write(value: T, stream: LazyList[Text throws StreamCutError]): Unit
+
 object Streamable:
   given Streamable[Bytes] = LazyList(_)
-  given Streamable[Text] = value => LazyList(value.s.getBytes("UTF-8").nn.immutable(using Unsafe))
   given Streamable[DataStream] = identity(_)
-  given Streamable[LazyList[Text]] = _.map(_.s.getBytes("UTF-8").nn.immutable(using Unsafe))
+  
+  given (using enc: Encoding): Streamable[Text] = value =>
+    LazyList(value.s.getBytes(enc.name.s).nn.immutable(using Unsafe))
+  
 
 trait Streamable[T]:
   def stream(value: T): DataStream
+
+object CharStreamable:
+  given CharStreamable[Text] = value => LazyList(value)
+  given CharStreamable[LazyList[Text throws StreamCutError]] = _.map(identity(_))
+
+trait CharStreamable[T]:
+  def stream(value: T): LazyList[Text throws StreamCutError]
 
 object Readable:
   given Readable[DataStream] with

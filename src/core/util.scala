@@ -51,3 +51,6 @@ object Util:
 
   def write(stream: DataStream, out: ji.OutputStream): Unit throws StreamCutError =
     stream.map(_.mutable(using Unsafe)).foreach(out.write(_))
+  
+  def write(stream: LazyList[Text throws StreamCutError], out: ji.Writer): Unit throws StreamCutError =
+    stream.foreach { text => out.write(text.s) }
