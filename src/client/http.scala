@@ -58,11 +58,17 @@ trait QuerySerializer[T]:
   def params(value: T): Params
 
 trait FallbackPostable:
-  given [T: QuerySerializer]: Postable[T] = Postable(media"application/x-www-form-urlencoded",
-      value => LazyList(summon[QuerySerializer[T]].params(value).queryString.bytes))
+  given [T](using serializer: QuerySerializer[T]): Postable[T] =
+    Postable(media"application/x-www-form-urlencoded", v =>
+        LazyList(serializer.params(v).queryString.bytes(using characterEncodings.utf8)))
 
 object Postable extends FallbackPostable:
-  given Postable[Text] = Postable(media"text/plain", value => LazyList(IArray.from(value.bytes)))
+  given (using enc: Encoding): Postable[Text] =
+    Postable(media"text/plain", value => LazyList(IArray.from(value.bytes)))
+  
+  given (using enc: Encoding): Postable[LazyList[Text]] =
+    Postable(media"application/octet-stream", _.map(_.bytes))
+  
   given Postable[Unit] = Postable(media"text/plain", unit => LazyList())
   given Postable[Bytes] = Postable(media"application/octet-stream", LazyList(_))
   given Postable[LazyList[Bytes]] = Postable(media"application/octet-stream", _.map(identity(_)))
@@ -70,7 +76,7 @@ object Postable extends FallbackPostable:
   
   given dataStream[T](using response: GenericHttpResponseStream[T]): Postable[T] =
     erased given CanThrow[InvalidMediaTypeError] = compiletime.erasedValue
-    Postable(Media.parse(response.mediaType.show), response.content(_).map { v => v })
+    Postable(Media.parse(response.mediaType.show), response.content(_).map(identity))
   
 class Postable[T](val contentType: MediaType,
                       val content: T => LazyList[Bytes throws StreamCutError]):
