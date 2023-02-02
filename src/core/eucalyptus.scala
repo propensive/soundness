@@ -146,7 +146,8 @@ trait LogSink:
 
 object LogFormat:
   given standardAnsi[T]: LogFormat[T] = entry =>
-    ansi"${entry.timestamp.ansi} ${entry.level.ansi} ${entry.realm.ansi.span(8)} ${entry.message}${'\n'}".render.bytes
+    val text = ansi"${entry.timestamp.ansi} ${entry.level.ansi} ${entry.realm.ansi.span(8)} ${entry.message}${'\n'}"
+    text.render.bytes(using characterEncodings.utf8)
   
 trait LogFormat[S]:
   def apply(entry: Entry): Bytes
