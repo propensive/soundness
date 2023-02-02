@@ -84,7 +84,7 @@ object Csv extends RowFormat:
   def wrap(seq: List[Row]): Csv = Csv(seq)
   given Show[Csv] = _.rows.map(serialize).join(t"\n")
 
-  given GenericHttpResponseStream[Csv] with
+  given (using Encoding): GenericHttpResponseStream[Csv] with
     def mediaType: String = "text/csv"
     def content(value: Csv): LazyList[IArray[Byte]] =
       LazyList(value.rows.map(Csv.serialize(_)).join(t"\n").bytes)
@@ -130,7 +130,7 @@ object Tsv extends RowFormat:
   def escape(str: Text): Text = Text(str.s.replaceAll("\t", "        ").nn)
   given Show[Tsv] = _.rows.map(serialize).join(t"\n")
 
-  given GenericHttpResponseStream[Tsv] with
+  given (using enc: Encoding): GenericHttpResponseStream[Tsv] with
     def mediaType: String = t"text/tab-separated-values".s
     
     def content(value: Tsv): LazyList[IArray[Byte]] =
