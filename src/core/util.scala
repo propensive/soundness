@@ -21,36 +21,36 @@ import rudiments.*
 import java.nio as jn, java.nio.channels as jnc
 import java.io as ji
 
-object Util:
-  def readInputStream(in: ji.InputStream): DataStream =
-    val channel = jnc.Channels.newChannel(in).nn
-    try
-      val buf = jn.ByteBuffer.wrap(new Array[Byte](65536)).nn
+// object Util:
+//   def readInputStream(in: ji.InputStream): DataStream =
+//     val channel = jnc.Channels.newChannel(in).nn
+//     try
+//       val buf = jn.ByteBuffer.wrap(new Array[Byte](65536)).nn
 
-      def recur(): DataStream =
-        channel.read(buf) match
-          case -1 =>
-            channel.close()
-            LazyList()
-          case 0 =>
-            recur()
-          case count =>
-            try
-              buf.flip()
-              val size = count min 65536
-              val array = new Array[Byte](size)
-              buf.get(array)
-              buf.clear()
-              array.immutable(using Unsafe) #:: recur()
-            catch case e: Exception =>
-              LazyList(throw StreamCutError()): DataStream
+//       def recur(total: Long): DataStream =
+//         channel.read(buf) match
+//           case -1 => LazyList().tap(_ => channel.close())
+//           case 0  => recur(total)
+          
+//           case count =>
+//             try
+//               buf.flip()
+//               val size: Int = count.min(65536)
+//               val array: Array[Byte] = new Array[Byte](size)
+//               buf.get(array)
+//               buf.clear()
+
+//               array.immutable(using Unsafe) #:: recur(total + count)
+            
+//             catch case e: Exception => LazyList(throw StreamCutError(total.b)): DataStream
+//             finally try channel.close() catch case err: Exception => ()
       
-      recur()
-    catch case err: Exception =>
-      LazyList(throw StreamCutError()): DataStream
+//       recur(0)
+//     catch case err: Exception => LazyList(throw StreamCutError(0.b)): DataStream
+//     finally try channel.close() catch case err: Exception => ()
 
-  def write(stream: DataStream, out: ji.OutputStream): Unit throws StreamCutError =
-    stream.map(_.mutable(using Unsafe)).foreach(out.write(_))
+//   def write(stream: DataStream, out: ji.OutputStream): Unit throws StreamCutError =
+//     stream.map(_.mutable(using Unsafe)).foreach(out.write(_))
   
-  def write(stream: LazyList[Text throws StreamCutError], out: ji.Writer): Unit throws StreamCutError =
-    stream.foreach { text => out.write(text.s) }
+//   def write(stream: LazyList[Text throws StreamCutError], out: ji.Writer): Unit throws StreamCutError =
+//     stream.foreach { text => out.write(text.s) }

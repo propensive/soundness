@@ -28,12 +28,13 @@ import scala.compiletime.*, ops.int.*
 import java.util.regex.*
 import java.util as ju
 import java.io as ji
-import java.nio as jn, java.nio.channels as jnc
+import java.nio as jn
 import java.lang.ref as jlr
 
 import scala.collection.mutable as scm
 
 import language.dynamics
+import language.experimental.captureChecking
 
 import scala.util.{Try, Success, Failure}
 
@@ -48,99 +49,93 @@ extension (value: DataStream)
     
     bld.result().immutable(using Unsafe)
 
-case class StreamCutError() extends Error(err"the stream was cut prematurely")
-case class AlreadyStreamingError() extends Error(err"the stream was accessed twice, which is not permitted")
+case class StreamCutError(total: ByteSize) extends Error(err"the stream was cut prematurely after $total")
+case class StreamUnavailableError() extends Error(err"the stream is unavailable")
 
-object Appendable:
-  given systemOut(using CanThrow[StreamCutError]): Appendable[SystemOut.type] = (value, stream) =>
-    if System.out == null then throw StreamCutError() else Util.write(stream, System.out)
+// object Appendable:
+//   given outputStream(using ct: CanThrow[StreamCutError]): ({ct} Appendable[ji.OutputStream]) =
+//     (writable, stream) =>
+//       val out = writable match
+//         case out: ji.BufferedOutputStream => out
+//         case out: ji.OutputStream         => ji.BufferedOutputStream(out)
+      
+//       Util.write(stream, out)
+
+// trait Appendable[T]:
+//   def write(value: T, stream: DataStream): Unit
+
+// trait Writable[T]:
+//   def write(value: T, stream: DataStream): Unit
+
+// trait CharWritable[T]:
+//   def write(value: T, stream: LazyList[Text throws StreamCutError]): Unit
+
+// object Streamable:
+//   given Streamable[Bytes] = LazyList(_)
+//   given Streamable[DataStream] = identity(_)
   
-  given systemErr(using CanThrow[StreamCutError]): Appendable[SystemErr.type] = (value, stream) =>
-    if System.err == null then throw StreamCutError() else Util.write(stream, System.err)
+//   given (using enc: Encoding): Streamable[Text] = value =>
+//     LazyList(value.s.getBytes(enc.name.s).nn.immutable(using Unsafe))
+
+// trait Streamable[T]:
+//   def stream(value: T): DataStream
+
+// object CharStreamable:
+//   given CharStreamable[Text] = value => LazyList(value)
+//   given CharStreamable[LazyList[Text throws StreamCutError]] = _.map(identity(_))
+
+// trait CharStreamable[T]:
+//   def stream(value: T): LazyList[Text throws StreamCutError]
+
+// object Readable:
+//   given Readable[DataStream] with
+//     def read(stream: DataStream): DataStream throws StreamCutError = stream
   
-  given outputStream(using CanThrow[StreamCutError]): Appendable[ji.OutputStream] = (writable, stream) =>
-    val out = writable match
-      case out: ji.BufferedOutputStream => out
-      case out: ji.OutputStream         => ji.BufferedOutputStream(out)
-    
-    Util.write(stream, out)
+//   given Readable[Bytes] with
+//     def read(stream: DataStream): Bytes throws StreamCutError = stream.slurp()
 
-trait Appendable[T]:
-  def write(value: T, stream: DataStream): Unit
+//   given (using enc: Encoding): Readable[Text] with
+//     def read(value: DataStream) =
+//       Text(String(value.slurp().mutable(using Unsafe), enc.name.s))
 
-trait Writable[T]:
-  def write(value: T, stream: DataStream): Unit
+//   given textReader(using enc: Encoding): Readable[LazyList[Text]] with
+//     private final val empty = Array.empty[Byte]
 
-trait CharWritable[T]:
-  def write(value: T, stream: LazyList[Text throws StreamCutError]): Unit
-
-object Streamable:
-  given Streamable[Bytes] = LazyList(_)
-  given Streamable[DataStream] = identity(_)
-  
-  given (using enc: Encoding): Streamable[Text] = value =>
-    LazyList(value.s.getBytes(enc.name.s).nn.immutable(using Unsafe))
-  
-
-trait Streamable[T]:
-  def stream(value: T): DataStream
-
-object CharStreamable:
-  given CharStreamable[Text] = value => LazyList(value)
-  given CharStreamable[LazyList[Text throws StreamCutError]] = _.map(identity(_))
-
-trait CharStreamable[T]:
-  def stream(value: T): LazyList[Text throws StreamCutError]
-
-object Readable:
-  given Readable[DataStream] with
-    def read(stream: DataStream): DataStream throws StreamCutError = stream
-  
-  given Readable[Bytes] with
-    def read(stream: DataStream): Bytes throws StreamCutError = stream.slurp()
-
-  given (using enc: Encoding): Readable[Text] with
-    def read(value: DataStream) =
-      Text(String(value.slurp().mutable(using Unsafe), enc.name.s))
-
-  given textReader(using enc: Encoding): Readable[LazyList[Text]] with
-    private final val empty = Array.empty[Byte]
-
-    def read(stream: DataStream) =
-      def read(stream: DataStream, carried: Array[Byte] = empty, skip: Int = 0): LazyList[Text] = stream match
-        case head #:: tail =>
-          val buf = head.mutable(using Unsafe)
-          if carried.length > 0 then
-            val need = enc.run(carried(0))
-            val got = buf.length + carried.length
-            if got < need then read(tail, carried ++ buf)
-            else if got == need then Text(String(carried ++ buf, enc.name.s)) #:: read(tail, empty)
-            else Text(String(carried ++ buf.take(need - carried.length), enc.name.s)) #:: read(stream, empty, need - carried.length)
-          else
-            val carry = enc.carry(buf)
-            Text(String(buf, skip, buf.length - carry - skip, enc.name.s)) #:: read(tail, buf.takeRight(carry))
+//     def read(stream: DataStream) =
+//       def read(stream: DataStream, carried: Array[Byte] = empty, skip: Int = 0): LazyList[Text] = stream match
+//         case head #:: tail =>
+//           val buf = head.mutable(using Unsafe)
+//           if carried.length > 0 then
+//             val need = enc.run(carried(0))
+//             val got = buf.length + carried.length
+//             if got < need then read(tail, carried ++ buf)
+//             else if got == need then Text(String(carried ++ buf, enc.name.s)) #:: read(tail, empty)
+//             else Text(String(carried ++ buf.take(need - carried.length), enc.name.s)) #:: read(stream, empty, need - carried.length)
+//           else
+//             val carry = enc.carry(buf)
+//             Text(String(buf, skip, buf.length - carry - skip, enc.name.s)) #:: read(tail, buf.takeRight(carry))
         
-        case _ =>
-          LazyList()
+//         case _ =>
+//           LazyList()
         
       
-      read(stream)
+//       read(stream)
 
-trait Readable[T]:
-  readable =>
-  def read(stream: DataStream): T throws StreamCutError
+// trait Readable[T]:
+//   readable =>
+//   def read(stream: DataStream): T throws StreamCutError
   
-  def map[S](fn: T => S): turbulence.Readable[S] =
-    new turbulence.Readable[S]:
-      def read(stream: DataStream): S throws StreamCutError =
-        fn(readable.read(stream))
+//   // def map[S](fn: T => S): turbulence.Readable[S] =
+//   //   new turbulence.Readable[S]:
+//   //     def read(stream: DataStream): S throws StreamCutError =
+//   //       fn(readable.read(stream))
 
-object SystemIn
-object SystemOut
-object SystemErr
+// object SystemIn
+// object SystemOut
+// object SystemErr
 
 extension (obj: LazyList.type)
-  def multiplex[T](streams: LazyList[T]*)(using Monitor): LazyList[T] throws AlreadyStreamingError =
+  def multiplex[T](streams: LazyList[T]*)(using Monitor): LazyList[T] =
     multiplexer(streams*).stream
   
   def multiplexer[T](streams: LazyList[T]*)(using Monitor): Multiplexer[Any, T] =
@@ -158,34 +153,33 @@ class Pulsar(using time: GenericDuration)(interval: time.Duration):
   private var continue: Boolean = true
   def stop(): Unit = continue = false
 
-  def stream(using Monitor): LazyList[Unit] throws AlreadyStreamingError =
+  def stream(using Monitor): LazyList[Unit] =
     if !continue then LazyList() else try
       sleep(interval)
       () #:: stream
     catch case err: CancelError => LazyList()
 
-extension [T](value: T)
-  def stream(using streamable: Streamable[T]): DataStream = streamable.stream(value)
+// extension [T](value: T)
+//   def stream(using streamable: Streamable[T]): DataStream = streamable.stream(value)
   
-  def writeStream(data: DataStream)(using writable: Writable[T]): Unit throws StreamCutError =
-    writable.write(value, data)
+//   def writeStream(data: DataStream)(using writable: Writable[T]): Unit throws StreamCutError =
+//     writable.write(value, data)
   
 
-  def writeTo[S](destination: S)(using writable: Writable[S], streamable: Streamable[T])
-                : Unit throws StreamCutError =
-    writable.write(destination, streamable.stream(value))
+//   def writeTo[S](destination: S)(using writable: Writable[S], streamable: Streamable[T])
+//                 : Unit throws StreamCutError =
+//     writable.write(destination, streamable.stream(value))
 
-  def appendTo[S](destination: S)(using appendable: Appendable[S], streamable: Streamable[T])
-                : Unit throws StreamCutError =
-    appendable.write(destination, streamable.stream(value))
+//   def appendTo[S](destination: S)(using appendable: Appendable[S], streamable: Streamable[T])
+//                 : Unit throws StreamCutError =
+//     appendable.write(destination, streamable.stream(value))
   
-  def read[S]()(using readable: Readable[S], streamable: Streamable[T]): S throws StreamCutError =
-    readable.read(stream)
+//   def read[S]()(using readable: Readable[S], streamable: Streamable[T]): S throws StreamCutError =
+//     readable.read(stream)
 
 case class Multiplexer[K, T]()(using monitor: Monitor):
   private val tasks: HashMap[K, Task[Unit]] = HashMap()
   private val queue: juc.LinkedBlockingQueue[Maybe[T]] = juc.LinkedBlockingQueue()
-  private var streaming: Boolean = false
 
   def close(): Unit = tasks.keys.foreach(remove(_))
 
@@ -204,16 +198,17 @@ case class Multiplexer[K, T]()(using monitor: Monitor):
     tasks -= key
     if tasks.isEmpty then queue.put(Unset)
   
-  def stream: LazyList[T] throws AlreadyStreamingError =
+  def stream: LazyList[T] =
     def recur(): LazyList[T] = queue.take() match
       case null | Unset       => LazyList()
       case item: T @unchecked => item.nn #:: recur()
     
-    if streaming then throw AlreadyStreamingError() else LazyList() #::: recur()
+    // FIXME: This should be identical to recur(), but recur is not tail-recursive so
+    // it can lead to stack overflow. It may still be a memory leak, though.
+    LazyList() #::: recur()
 
 
 extension [T](stream: LazyList[T])
-
   def rate(using time: GenericDuration)(interval: time.Duration)(using Monitor)
           : LazyList[T] throws CancelError =
     def recur(stream: LazyList[T], last: Long): LazyList[T] = stream match
@@ -229,7 +224,7 @@ extension [T](stream: LazyList[T])
   def multiplexWith(that: LazyList[T])(using Monitor): LazyList[T] =
     unsafely(LazyList.multiplex(stream, that))
 
-  def regulate(tap: Tap)(using Monitor): LazyList[T] throws AlreadyStreamingError =
+  def regulate(tap: Tap)(using Monitor): LazyList[T] =
     def defer(active: Boolean, stream: LazyList[T | Tap.Regulation], buffer: List[T]): LazyList[T] =
       recur(active, stream, buffer)
 
@@ -272,17 +267,41 @@ extension [T](stream: LazyList[T])
     
     LazyList() #::: recur(stream, Nil, Long.MaxValue)
 
-object StreamBuffer:
-  given Writable[StreamBuffer[Bytes throws StreamCutError]] with
-    def write(buffer: StreamBuffer[Bytes throws StreamCutError], stream: DataStream) =
-      stream.foreach(buffer.put(_))
+// object StreamBuffer:
+//   given Writable[StreamBuffer[Bytes throws StreamCutError]] with
+//     def write(buffer: StreamBuffer[Bytes throws StreamCutError], stream: DataStream) =
+//       stream.foreach(buffer.put(_))
+
+trait BasicIo:
+  def writeStdoutText(text: Text): Unit
+  def writeStderrText(text: Text): Unit
+  def writeStdoutBytes(bytes: Bytes): Unit
+  def writeStderrBytes(bytes: Bytes): Unit
+
+object Stderr
+object Stdout
+
+package basicIo:
+  given jvm(using streamCut: CanThrow[StreamCutError]): ({streamCut} BasicIo) = new BasicIo:
+    def writeStdoutBytes(bytes: Bytes): Unit =
+      if System.out == null then throw StreamCutError(0.b)
+      else System.out.nn.writeBytes(bytes.mutable(using Unsafe))
+    
+    def writeStdoutText(text: Text): Unit =
+      if System.out == null then throw StreamCutError(0.b) else System.err.nn.print(text.s)
+    
+    def writeStderrBytes(bytes: Bytes): Unit =
+      if System.out == null then throw StreamCutError(0.b)
+      else System.out.nn.writeBytes(bytes.mutable(using Unsafe))
+    
+    def writeStderrText(text: Text): Unit =
+      if System.out == null then throw StreamCutError(0.b) else System.err.nn.print(text.s)
 
 class StreamBuffer[T]():
   private val primary: juc.LinkedBlockingQueue[Maybe[T]] = juc.LinkedBlockingQueue()
   private val secondary: juc.LinkedBlockingQueue[Maybe[T]] = juc.LinkedBlockingQueue()
   private var buffer: Boolean = true
   private var closed: Boolean = false
-  private var streaming: Boolean = false
 
   def useSecondary() = primary.put(Unset)
   def usePrimary() = secondary.put(Unset)
@@ -294,9 +313,8 @@ class StreamBuffer[T]():
 
   def put(value: T): Unit = primary.put(value)
   def putSecondary(value: T): Unit = secondary.put(value)
-
   
-  def stream: LazyList[T] throws AlreadyStreamingError =
+  def stream: LazyList[T] =
     def recur(): LazyList[T] =
       if buffer then primary.take() match
         case Unset =>
@@ -315,14 +333,14 @@ class StreamBuffer[T]():
         case _ =>
           throw Mistake("Should never match")
     
-    if streaming then throw AlreadyStreamingError() else recur()
+    recur()
 
 
 class Funnel[T]():
   private val queue: juc.LinkedBlockingQueue[Maybe[T]] = juc.LinkedBlockingQueue()
   def put(value: T): Unit = queue.put(value)
   def stop(): Unit = queue.put(Unset)
-  def stream: LazyList[T] throws AlreadyStreamingError =
+  def stream: LazyList[T] =
     LazyList.continually(queue.take()).takeWhile(_ != Unset).sift[T]
 
 class Gun() extends Funnel[Unit]():
@@ -348,4 +366,150 @@ class Tap(initial: Boolean = true):
   
   def stop(): Unit = synchronized(funnel.stop())
   def state(): Boolean = on
-  def stream: LazyList[Tap.Regulation] throws AlreadyStreamingError = funnel.stream
+  def stream: LazyList[Tap.Regulation] = funnel.stream
+
+
+case class IoFailure() extends Exception("I/O Failure")
+
+object Writable
+
+trait Writable[-TargetType, -ChunkType]:
+  def write(target: TargetType, stream: LazyList[ChunkType]): Unit
+
+object Appendable:
+  given stdoutBytes(using basicIo: {*} BasicIo): ({basicIo} Appendable[Stdout.type, Bytes]) =
+    (stderr, bytes) => basicIo.writeStdoutBytes(bytes)
+  
+  given stdoutText(using basicIo: {*} BasicIo): ({basicIo} Appendable[Stdout.type, Text]) =
+    (stderr, text) => basicIo.writeStdoutText(text)
+
+  given stderrBytes(using basicIo: {*} BasicIo): ({basicIo} Appendable[Stderr.type, Bytes]) =
+    (stderr, bytes) => basicIo.writeStderrBytes(bytes)
+  
+  given stderrText(using basicIo: {*} BasicIo): ({basicIo} Appendable[Stderr.type, Text]) =
+    (stderr, text) => basicIo.writeStderrText(text)
+
+  given outputStreamBytes(using streamCut: CanThrow[StreamCutError])
+        : ({streamCut} Appendable[ji.OutputStream, Bytes]) =
+    (out, bytes) => out.write(bytes.mutable(using Unsafe))
+
+trait Appendable[-TargetType, -ChunkType]:
+  def append(target: TargetType, stream: LazyList[ChunkType]): Unit = stream match
+    case head #:: tail => appendChunk(target, head)
+                          append(target, tail)
+    case _             => ()
+
+  def appendChunk(target: TargetType, chunk: ChunkType): Unit
+
+
+object Readable:
+  given readableFileBytes(using ioFailure: CanThrow[IoFailure],
+                              readable: {*} Readable[java.io.InputStream, Bytes])
+        : ({readable, ioFailure} Readable[java.io.File, Bytes]) = file =>
+    if file.exists() then readable.read(java.io.FileInputStream(file)) else throw IoFailure()
+
+  given readableBytesToReadableText[T](using readable: {*} Readable[T, Bytes], enc: {*} Encoding,
+                                           handler: {*} BadEncodingHandler)
+        : ({readable, enc, handler} Readable[T, Text]) = value => enc.convertStream(readable.read(value))
+
+  given readableInputStream(using streamCut: CanThrow[StreamCutError])
+                           : ({streamCut} Readable[java.io.InputStream, Bytes]) =
+    in =>
+      val channel: jn.channels.ReadableByteChannel = jn.channels.Channels.newChannel(in).nn
+      try
+        val buf: jn.ByteBuffer = jn.ByteBuffer.wrap(new Array[Byte](65536)).nn
+  
+        def recur(total: Long): {streamCut} LazyList[Bytes] =
+          channel.read(buf) match
+            case -1 => LazyList().tap(_ => try channel.close() catch case err: Exception => ())
+            case 0  => recur(total)
+            
+            case count =>
+              try
+                buf.flip()
+                val size: Int = count.min(65536)
+                val array: Array[Byte] = new Array[Byte](size)
+                buf.get(array)
+                buf.clear()
+  
+                LazyList.cons(array.immutable(using Unsafe), recur(total + count))
+              
+              catch case e: Exception => LazyList(throw StreamCutError(total.b))
+              finally try channel.close() catch case err: Exception => ()
+        
+        recur(0)
+      catch case err: Exception => LazyList(throw StreamCutError(0.b)): {streamCut} LazyList[Bytes]
+      finally try channel.close() catch case err: Exception => ()
+
+trait Readable[-SourceType, +ChunkType]:
+  def read(value: SourceType): LazyList[ChunkType]
+
+object Aggregable
+
+trait Aggregable[-ChunkType, +ResultType]:
+  def aggregate(source: LazyList[ChunkType]): ResultType
+
+extension [ChunkType](stream: LazyList[ChunkType])
+  def readAs[ResultType](using aggregable: {*} Aggregable[ChunkType, ResultType]): {aggregable} ResultType =
+    aggregable.aggregate(stream)
+  
+  def writeTo[TargetType](target: TargetType)(using writable: {*} Writable[TargetType, ChunkType])
+              : {writable} Unit =
+    writable.write(target, stream)
+  
+  def appendTo[TargetType](target: TargetType)(using appendable: {*} Appendable[TargetType, ChunkType])
+              : {appendable} Unit =
+    appendable.append(target, stream)
+  
+extension [ValueType](value: ValueType)
+  def read[ChunkType](using readable: {*} Readable[ValueType, ChunkType]): {readable} LazyList[ChunkType] =
+    readable.read(value)
+  
+  def readAs[ResultType, ChunkType]
+            (using readable: {*} Readable[ValueType, ChunkType],
+                  aggregable: {*} Aggregable[ChunkType, ResultType])
+            : {readable, aggregable} ResultType =
+    aggregable.aggregate(readable.read(value))
+  
+  def writeStreamTo[TargetType, ChunkType](target: TargetType)
+                    (using readable: {*} Readable[ValueType, ChunkType],
+                        writable: {*} Writable[TargetType, ChunkType])
+                    : {readable, writable} Unit =
+    writable.write(target, readable.read(value))
+  
+  def appendStreamTo[TargetType, ChunkType](target: TargetType)
+                    (using readable: {*} Readable[ValueType, ChunkType],
+                          appendable: {*} Appendable[TargetType, ChunkType])
+                    : {readable, appendable} Unit =
+    appendable.append(target, readable.read(value))
+
+
+
+import characterEncodings.utf8
+
+def testing(): Unit =
+  import badEncodingHandler.strict
+  try java.io.File("/home/propensive/manifesto.md").read[Text]
+  catch
+    case err: IoFailure => ()
+    case err: StreamCutError => ()
+    case err: BadEncodingError => ()
+
+// object Streamable:
+//   given (using ct: CanThrow[StreamCutError]): ({ct} Streamable[Text, Bytes]) = value =>
+//     LazyList(throw StreamCutError(0.b))
+  
+//   given Streamable[Int, Bytes] = value => Bytes(1) #:: LazyList()
+
+//   given (using enc: {*} Encoding): Streamable[String, {enc} Bytes] =
+//     value => value.getBytes("").nn.immutable(using Unsafe) #:: LazyList()
+
+// extension [T](value: T)
+//   def stream[Part](using source: {*} Streamable[T, Part]): LazyList[{source} Part] = source.stream(value)
+
+
+// val x: LazyList[Bytes] = 100.stream
+// def y(using ct: CanThrow[StreamCutError]): LazyList[{ct} Bytes] = Text("Hello World").stream
+// def z(using enc: {*} Encoding): LazyList[{enc} Bytes] = "bar".stream
+
+// try y catch case err: StreamCutError => ()
