@@ -33,6 +33,8 @@ import scala.jdk.CollectionConverters.MapHasAsScala
 import annotation.targetName
 import java.io as ji
 
+import language.experimental.captureChecking
+
 enum Context:
   case Awaiting, Unquoted, Quotes2, Quotes1
 
@@ -44,8 +46,8 @@ object Executor:
   
   given text: Executor[Text] = stream.map(_.foldLeft(t"") { (acc, line) => t"$acc\n$line" }.trim)
 
-  given dataStream: Executor[DataStream] = proc =>
-    Util.readInputStream(proc.getInputStream.nn)
+  given dataStream(using readable: {*} Readable[ji.InputStream, Bytes]): ({readable} Executor[LazyList[Bytes]]) =
+    proc => readable.read(proc.getInputStream.nn)
   
   given exitStatus: Executor[ExitStatus] = _.waitFor() match
     case 0     => ExitStatus.Ok
@@ -55,18 +57,25 @@ object Executor:
  
 trait Executor[T]:
   def interpret(process: java.lang.Process): T
-  def map[S](fn: T => S): Executor[S] = process => fn(interpret(process))
+  def map[S](fn: T => S): {this, fn} Executor[S] = process => fn(interpret(process))
 
-class Process[T](process: java.lang.Process, executor: Executor[T]):
+class Process[ResultType](process: java.lang.Process):
   def pid: Pid = Pid(process.pid)
-  def stdout(): DataStream =
-    Util.readInputStream(process.getInputStream.nn)
   
-  def stderr(): DataStream =
-    Util.readInputStream(process.getErrorStream.nn)
+  def stdout[ChunkType]()(using readable: {*} Readable[ji.InputStream, ChunkType])
+            : {readable} LazyList[ChunkType] =
+    readable.read(process.getInputStream.nn)
   
-  def stdin(in: DataStream): Unit throws StreamCutError = Util.write(in, process.getOutputStream.nn)
-  def await(): T = executor.interpret(process)
+  def stderr[ChunkType]()(using readable: {*} Readable[ji.InputStream, ChunkType])
+            : {readable} LazyList[ChunkType] =
+    readable.read(process.getErrorStream.nn)
+
+  def stdin[ChunkType]
+           (stream: {*} LazyList[ChunkType])(using writable: {*} Writable[ji.OutputStream, ChunkType])
+           : {stream, writable} Unit =
+    writable.write(process.getOutputStream.nn, stream)
+
+  def await()(using executor: {*} Executor[ResultType]): {executor} ResultType = executor.interpret(process)
   
   def exitStatus(): ExitStatus = process.waitFor() match
     case 0     => ExitStatus.Ok
@@ -81,12 +90,9 @@ class Process[T](process: java.lang.Process, executor: Executor[T]):
     process.destroyForcibly()
 
 sealed trait Executable:
-  def fork[T]()(using env: Environment, exec: Executor[T] = Executor.text)(using Log)
-          : Process[T] throws EnvError
+  def fork[T]()(using env: Environment)(using Log): Process[T] throws EnvError
   
-  def exec[T]()(using env: Environment, exec: Executor[T] = Executor.text)(using Log)
-          : T throws EnvError =
-    fork[T]().await()
+  def exec[T]()(using env: Environment)(using Log, Executor[T]): T throws EnvError = fork[T]().await()
   
   def apply(cmd: Executable): Pipeline = cmd match
     case Pipeline(cmds*) => this match
@@ -118,15 +124,14 @@ object Command:
   given AnsiShow[Command] = cmd => ansi"${colors.LightSeaGreen}(${formattedArgs(cmd.args)})"
 
 case class Command(args: Text*) extends Executable:
-  def fork[T]()(using env: Environment, exec: Executor[T] = Executor.text)(using Log)
-          : Process[T] throws EnvError =
+  def fork[T]()(using env: Environment)(using Log): Process[T] throws EnvError =
     val processBuilder = ProcessBuilder(args.ss*)
     val dir = env.userHome[java.io.File]
     processBuilder.directory(dir)
     
     val t0 = System.currentTimeMillis
     Log.info(ansi"Starting process ${this.ansi} in directory ${dir.getAbsolutePath.nn}")
-    new Process[T](processBuilder.start().nn, summon[Executor[T]])
+    new Process[T](processBuilder.start().nn)
 
 object Pipeline:
   given Debug[Pipeline] = _.cmds.map(summon[Debug[Command]].show(_)).join(t" | ")
@@ -135,8 +140,7 @@ object Pipeline:
     _.cmds.map(summon[AnsiShow[Command]].ansiShow(_)).join(ansi" ${colors.PowderBlue}(|) ")
 
 case class Pipeline(cmds: Command*) extends Executable:
-  def fork[T]()(using env: Environment, exec: Executor[T] = Executor.text)(using Log)
-          : Process[T] throws EnvError =
+  def fork[T]()(using env: Environment)(using Log): Process[T] throws EnvError =
     val dir = env.pwd[ji.File]
     Log.info(ansi"Starting pipelined processes ${this.ansi} in directory ${dir.getAbsolutePath.nn}")
 
@@ -145,7 +149,7 @@ case class Pipeline(cmds: Command*) extends Executable:
       pb.directory(dir)
       pb.nn
 
-    new Process[T](ProcessBuilder.startPipeline(processBuilders.asJava).nn.asScala.to(List).last, exec)
+    new Process[T](ProcessBuilder.startPipeline(processBuilders.asJava).nn.asScala.to(List).last)
 
 case class ExecError(command: Command, stdout: DataStream, stderr: DataStream)
 extends Error(err"execution of the command $command failed")
