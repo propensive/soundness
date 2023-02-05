@@ -20,10 +20,10 @@ import annotation.*
 import gossamer.*
 import rudiments.*
 import deviation.*
-import turbulence.*
+import turbulence.*, characterEncodings.utf8
 import scala.collection.mutable.{HashMap, ListBuffer, ArrayBuffer}
 
-import stdouts.stdout
+import language.experimental.captureChecking
 
 object AsciiByte:
   inline final val Tab:          9   = 9   // '\t'
@@ -126,7 +126,9 @@ object JsonAst:
 
   def apply(value: Long | Double | BigDecimal | String | (IArray[String], IArray[Any]) | IArray[Any] | Boolean | Null): JsonAst = value
 
-  def parse(stream: DataStream): JsonAst throws JsonParseError | StreamCutError =
+  def parse[SourceType](source: SourceType)(using readable: {*} Readable[SourceType, Bytes])
+           : {readable} JsonAst throws JsonParseError | StreamCutError =
+    val stream = readable.read(source)
     var line: Int = 0
     var colStart: Int = 0
     try
