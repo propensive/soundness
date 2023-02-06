@@ -45,7 +45,7 @@ trait Keyboard[+KeyType]:
 
 case class TtyError(ttyMsg: Text) extends Error(err"STDIN is not attached to a TTY: $ttyMsg")
 
-case class Tty(out: ji.PrintStream, in: DataStream)
+case class Tty(out: ji.PrintStream, in: LazyList[Bytes])
 
 object Tty:
   final val noopOut: ji.PrintStream = ji.PrintStream((_ => ()): ji.OutputStream)
