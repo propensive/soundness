@@ -128,17 +128,17 @@ package logging:
   import monitors.global
   given silent: Log = Log()
   
-  given stdout(using CanThrow[StreamCutError]): Log =
+  given stdout(using BasicIo, CanThrow[StreamCutError]): Log =
     import monitors.global
-    val sink = SystemOut.sink
+    val sink = Stdout.sink
     
     Log:
       case _ => sink
 
 object LogSink:
-  def apply[S](sink: S, appendable: Appendable[S], format: LogFormat[S]): LogSink = new LogSink:
+  def apply[S](sink: S, appendable: Appendable[S, Text], format: LogFormat[S]): LogSink = new LogSink:
     type Sink = S
-    def write(stream: LazyList[Entry]): Unit = unsafely(appendable.write(sink, stream.map(format(_))))
+    def write(stream: LazyList[Entry]): Unit = unsafely(appendable.append(sink, stream.map(format(_))))
 
 trait LogSink:
   type Sink
@@ -147,10 +147,11 @@ trait LogSink:
 object LogFormat:
   given standardAnsi[T]: LogFormat[T] = entry =>
     val text = ansi"${entry.timestamp.ansi} ${entry.level.ansi} ${entry.realm.ansi.span(8)} ${entry.message}${'\n'}"
-    text.render.bytes(using characterEncodings.utf8)
+    text.render
   
 trait LogFormat[S]:
-  def apply(entry: Entry): Bytes
+  def apply(entry: Entry): Text
 
-extension [S: LogFormat: Appendable](value: S)
-  def sink: LogSink = LogSink(value, summon[Appendable[S]], summon[LogFormat[S]])
+extension [S: LogFormat](value: S)
+  def sink(using appendable: Appendable[S, Text]): LogSink =
+    LogSink(value, appendable, summon[LogFormat[S]])
