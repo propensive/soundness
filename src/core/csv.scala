@@ -27,10 +27,10 @@ trait RowFormat:
   type Type
   def wrap(seq: List[Row]): Type
   
-  def parse[T: Streamable](input: T)(using readable: Readable[LazyList[Line]])
-           : Type throws StreamCutError = wrap:
-      readable.read(input.stream).to(List).map:
-        line => parseLine(line.text)
+  def parse[SourceType](source: SourceType)(using readable: Readable[SourceType, Line])
+           : Type = wrap:
+      readable.read(source).to(List).map:
+        line => parseLine(line.content)
 
   def parseLine(line: Text): Row =
     @tailrec
