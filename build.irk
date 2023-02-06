@@ -95,7 +95,7 @@
       "docs": [
         "doc"
       ],
-      "exec": {
+      "xec": {
         "browsers": [],
 	"start": "probably.Tests"
       }
