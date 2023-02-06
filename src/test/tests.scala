@@ -19,8 +19,8 @@ package telekinesis
 import rudiments.*
 import probably.*
 import serpentine.*
-import eucalyptus.*, logging.stdout
-import gossamer.*, stdouts.stdout
+import eucalyptus.*
+import gossamer.*
 import turbulence.*
 import rudiments.*
 

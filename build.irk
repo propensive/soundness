@@ -93,7 +93,7 @@
       "sources": [
         "src/test"
       ],
-      "exec": {
+      "xec": {
         "browsers": [],
 	"start": "telekinesis.Tests"
       },

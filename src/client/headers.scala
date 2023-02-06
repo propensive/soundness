@@ -20,6 +20,7 @@ import rudiments.*
 import deviation.*
 import anticipation.*
 import gossamer.*
+import turbulence.*, characterEncodings.utf8
 import gastronomy.*
 
 trait RequestHeader[L <: String]():
@@ -182,7 +183,7 @@ enum ResponseHeader(val header: Text):
 
 object Auth:
   given Show[Auth] =
-    case Basic(username, password) => t"Basic ${t"$username:$password".bytes(using characterEncodings.utf8).encode[Base64]}"
+    case Basic(username, password) => t"Basic ${t"$username:$password".bytes.encode[Base64]}"
     case Bearer(token)             => t"Bearer $token"
     case Digest(digest)            => t"Digest $digest"
     case Hoba(text)                => t"HOBA $text"
