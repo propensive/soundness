@@ -64,7 +64,7 @@ The following _Scala One_ libraries are dependencies of _Merino_:
 
 The following _Scala One_ libraries are dependents of _Merino_:
 
-[![Javanais](https://github.com/propensive/javanais/raw/main/doc/images/128x128.png)](https://github.com/propensive/javanais/) &nbsp;
+[![Jacinta](https://github.com/propensive/jacinta/raw/main/doc/images/128x128.png)](https://github.com/propensive/jacinta/) &nbsp;
 
 ## Status
 
