@@ -47,7 +47,7 @@
 	url = git@github.com:propensive/gastronomy
 	branch = main
 [submodule "mod/javanais"]
-	path = mod/javanais
+	path = mod/jacinta
 	url = git@github.com:propensive/javanais
 	branch = main
 [submodule "mod/escritoire"]
@@ -164,12 +164,9 @@
 [submodule "mod/hyperbole"]
 	path = mod/hyperbole
 	url = git@github.com:propensive/hyperbole
-[submodule "mod/mod/dendrology"]
+[submodule "mod/dendrology"]
 	path = mod/dendrology
 	url = git@github.com:propensive/dendrology
-[submodule "mod/oubliette"]
-	path = mod/oubliette
-	url = git@github.com:propensive/oubliette
 [submodule "mod/deviation"]
 	path = mod/deviation
 	url = git@github.com:propensive/deviation
