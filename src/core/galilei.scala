@@ -133,15 +133,15 @@ object File:
       
       ji.BufferedOutputStream(ji.FileOutputStream(file.javaFile, true))
 
-  given readable[ChunkType](using io: CanThrow[IoError], readable: {*} Readable[ji.InputStream, ChunkType])
-                     : ({io, readable} Readable[File, ChunkType]) =
-    readable.contraMap: file =>
+  given readableBytes(using io: CanThrow[IoError], streamCut: CanThrow[StreamCutError])
+                : ({io, streamCut} Readable[File, Bytes]) =
+    Readable.inputStream.contraMap: file =>
       if !file.javaFile.canRead() then throw IoError(IoError.Op.Read, IoError.Reason.AccessDenied, file.path)
       else ji.BufferedInputStream(ji.FileInputStream(file.javaFile))
   
-  given lineReadable[ChunkType](using io: CanThrow[IoError], readable: {*} Readable[ji.BufferedReader, ChunkType])
-                     : ({io, readable} Readable[File, ChunkType]) =
-    readable.contraMap: file =>
+  given readableLine(using io: CanThrow[IoError], streamCut: CanThrow[StreamCutError])
+                     : ({io, streamCut} Readable[File, Line]) =
+    Readable.bufferedReader.contraMap: file =>
       if !file.javaFile.canRead() then throw IoError(IoError.Op.Read, IoError.Reason.AccessDenied, file.path)
       else ji.BufferedReader(ji.FileReader(file.javaFile))
     
@@ -571,11 +571,9 @@ extends Root(t"/", t""), Shown[Classpath]:
 object ClasspathRef:
   given Show[ClasspathRef] = t"ᶜᵖ｢"+_.fullname+t"｣"
 
-  // FIXME: This seems to need to be inline to avoid problems with erased values
-  inline given readable[ChunkType](using readable: {*} Readable[ji.InputStream, ChunkType],
-                                classpathRef: CanThrow[ClasspathRefError])
-                : ({classpathRef, readable} Readable[ClasspathRef, ChunkType]) =
-    readable.contraMap: ref =>
+  given readable(using classpathRef: CanThrow[ClasspathRefError], streamCut: CanThrow[StreamCutError])
+                : ({classpathRef, streamCut} Readable[ClasspathRef, Bytes]) =
+    Readable.inputStream.contraMap: ref =>
       ref.classpath.classLoader.getResourceAsStream(ref.fullname.drop(1).s) match
         case null => throw ClasspathRefError(ref)
         case in   => in.nn
