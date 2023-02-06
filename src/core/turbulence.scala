@@ -52,88 +52,6 @@ extension (value: DataStream)
 case class StreamCutError(total: ByteSize) extends Error(err"the stream was cut prematurely after $total")
 case class StreamUnavailableError() extends Error(err"the stream is unavailable")
 
-// object Appendable:
-//   given outputStream(using ct: CanThrow[StreamCutError]): ({ct} Appendable[ji.OutputStream]) =
-//     (writable, stream) =>
-//       val out = writable match
-//         case out: ji.BufferedOutputStream => out
-//         case out: ji.OutputStream         => ji.BufferedOutputStream(out)
-      
-//       Util.write(stream, out)
-
-// trait Appendable[T]:
-//   def write(value: T, stream: DataStream): Unit
-
-// trait Writable[T]:
-//   def write(value: T, stream: DataStream): Unit
-
-// trait CharWritable[T]:
-//   def write(value: T, stream: LazyList[Text throws StreamCutError]): Unit
-
-// object Streamable:
-//   given Streamable[Bytes] = LazyList(_)
-//   given Streamable[DataStream] = identity(_)
-  
-//   given (using enc: Encoding): Streamable[Text] = value =>
-//     LazyList(value.s.getBytes(enc.name.s).nn.immutable(using Unsafe))
-
-// trait Streamable[T]:
-//   def stream(value: T): DataStream
-
-// object CharStreamable:
-//   given CharStreamable[Text] = value => LazyList(value)
-//   given CharStreamable[LazyList[Text throws StreamCutError]] = _.map(identity(_))
-
-// trait CharStreamable[T]:
-//   def stream(value: T): LazyList[Text throws StreamCutError]
-
-// object Readable:
-//   given Readable[DataStream] with
-//     def read(stream: DataStream): DataStream throws StreamCutError = stream
-  
-//   given Readable[Bytes] with
-//     def read(stream: DataStream): Bytes throws StreamCutError = stream.slurp()
-
-//   given (using enc: Encoding): Readable[Text] with
-//     def read(value: DataStream) =
-//       Text(String(value.slurp().mutable(using Unsafe), enc.name.s))
-
-//   given textReader(using enc: Encoding): Readable[LazyList[Text]] with
-//     private final val empty = Array.empty[Byte]
-
-//     def read(stream: DataStream) =
-//       def read(stream: DataStream, carried: Array[Byte] = empty, skip: Int = 0): LazyList[Text] = stream match
-//         case head #:: tail =>
-//           val buf = head.mutable(using Unsafe)
-//           if carried.length > 0 then
-//             val need = enc.run(carried(0))
-//             val got = buf.length + carried.length
-//             if got < need then read(tail, carried ++ buf)
-//             else if got == need then Text(String(carried ++ buf, enc.name.s)) #:: read(tail, empty)
-//             else Text(String(carried ++ buf.take(need - carried.length), enc.name.s)) #:: read(stream, empty, need - carried.length)
-//           else
-//             val carry = enc.carry(buf)
-//             Text(String(buf, skip, buf.length - carry - skip, enc.name.s)) #:: read(tail, buf.takeRight(carry))
-        
-//         case _ =>
-//           LazyList()
-        
-      
-//       read(stream)
-
-// trait Readable[T]:
-//   readable =>
-//   def read(stream: DataStream): T throws StreamCutError
-  
-//   // def map[S](fn: T => S): turbulence.Readable[S] =
-//   //   new turbulence.Readable[S]:
-//   //     def read(stream: DataStream): S throws StreamCutError =
-//   //       fn(readable.read(stream))
-
-// object SystemIn
-// object SystemOut
-// object SystemErr
-
 extension (obj: LazyList.type)
   def multiplex[T](streams: LazyList[T]*)(using Monitor): LazyList[T] =
     multiplexer(streams*).stream
@@ -158,24 +76,6 @@ class Pulsar(using time: GenericDuration)(interval: time.Duration):
       sleep(interval)
       () #:: stream
     catch case err: CancelError => LazyList()
-
-// extension [T](value: T)
-//   def stream(using streamable: Streamable[T]): DataStream = streamable.stream(value)
-  
-//   def writeStream(data: DataStream)(using writable: Writable[T]): Unit throws StreamCutError =
-//     writable.write(value, data)
-  
-
-//   def writeTo[S](destination: S)(using writable: Writable[S], streamable: Streamable[T])
-//                 : Unit throws StreamCutError =
-//     writable.write(destination, streamable.stream(value))
-
-//   def appendTo[S](destination: S)(using appendable: Appendable[S], streamable: Streamable[T])
-//                 : Unit throws StreamCutError =
-//     appendable.write(destination, streamable.stream(value))
-  
-//   def read[S]()(using readable: Readable[S], streamable: Streamable[T]): S throws StreamCutError =
-//     readable.read(stream)
 
 case class Multiplexer[K, T]()(using monitor: Monitor):
   private val tasks: HashMap[K, Task[Unit]] = HashMap()
@@ -272,6 +172,7 @@ extension [T](stream: LazyList[T])
 //     def write(buffer: StreamBuffer[Bytes throws StreamCutError], stream: DataStream) =
 //       stream.foreach(buffer.put(_))
 
+@capability
 trait BasicIo:
   def writeStdoutText(text: Text): Unit
   def writeStderrText(text: Text): Unit
@@ -279,10 +180,16 @@ trait BasicIo:
   def writeStderrBytes(bytes: Bytes): Unit
 
 object Stderr
-object Stdout
+object Stdout:
+  def print(text: Text)(using basicIo: BasicIo): Unit =
+    basicIo.writeStdoutText(text)
+  
+  def println(text: Text)(using basicIo: BasicIo): Unit =
+    basicIo.writeStdoutText(text)
+    basicIo.writeStdoutText(Text("\n"))
 
 package basicIo:
-  given jvm(using streamCut: CanThrow[StreamCutError]): ({streamCut} BasicIo) = new BasicIo:
+  given jvm(using streamCut: CanThrow[StreamCutError]): BasicIo = new BasicIo:
     def writeStdoutBytes(bytes: Bytes): Unit =
       if System.out == null then throw StreamCutError(0.b)
       else System.out.nn.writeBytes(bytes.mutable(using Unsafe))
@@ -368,32 +275,66 @@ class Tap(initial: Boolean = true):
   def state(): Boolean = on
   def stream: LazyList[Tap.Regulation] = funnel.stream
 
-
 case class IoFailure() extends Exception("I/O Failure")
 
-object Writable
+object Writable:
+  given outputStreamBytes(using streamCut: CanThrow[StreamCutError])
+        : ({streamCut} SimpleWritable[ji.OutputStream, Bytes]) =
+    (outputStream, bytes) => outputStream.write(bytes.mutable(using Unsafe))
+  
+  given outputStreamText(using streamCut: CanThrow[StreamCutError], enc: {*} Encoding)
+        : ({streamCut, enc} SimpleWritable[ji.OutputStream, Text]) =
+    (outputStream, text) => outputStream.write(text.s.getBytes(enc.name.s).nn)
 
+trait SimpleWritable[-TargetType, -ChunkType] extends Writable[TargetType, ChunkType]:
+  def write(target: TargetType, stream: LazyList[ChunkType]): Unit = stream match
+    case head #:: tail => writeChunk(target, head)
+                          write(target, tail)
+    case _             => ()
+
+  def writeChunk(target: TargetType, chunk: ChunkType): Unit
+
+@implicitNotFound("An contextual turbulence.Writable instance is required to write to a ${TargetType} instance"+
+                  ".\nIf writing Text (rather than Bytes), it may be necessary to have a character encoding in"+
+                  " scope, for example with,\n    import characterEncodings.utf8, or,\n    import characterEnc"+
+                  "odings.ascii,\nplus an appropriate way of handling bad encodings, such as:\n    import badE"+
+                  "ncodingHandlers.strict, or,\n    import badEncodingHandlers.skip")
 trait Writable[-TargetType, -ChunkType]:
   def write(target: TargetType, stream: LazyList[ChunkType]): Unit
 
+  def contraMap[TargetType2](fn: TargetType2 => TargetType): {this, fn} Writable[TargetType2, ChunkType] =
+    (target, stream) => write(fn(target), stream)
+
 object Appendable:
-  given stdoutBytes(using basicIo: {*} BasicIo): ({basicIo} Appendable[Stdout.type, Bytes]) =
+  given stdoutBytes(using basicIo: BasicIo): ({basicIo} SimpleAppendable[Stdout.type, Bytes]) =
     (stderr, bytes) => basicIo.writeStdoutBytes(bytes)
   
-  given stdoutText(using basicIo: {*} BasicIo): ({basicIo} Appendable[Stdout.type, Text]) =
+  given stdoutText(using basicIo: BasicIo): ({basicIo} SimpleAppendable[Stdout.type, Text]) =
     (stderr, text) => basicIo.writeStdoutText(text)
 
-  given stderrBytes(using basicIo: {*} BasicIo): ({basicIo} Appendable[Stderr.type, Bytes]) =
+  given stderrBytes(using basicIo: BasicIo): ({basicIo} SimpleAppendable[Stderr.type, Bytes]) =
     (stderr, bytes) => basicIo.writeStderrBytes(bytes)
   
-  given stderrText(using basicIo: {*} BasicIo): ({basicIo} Appendable[Stderr.type, Text]) =
+  given stderrText(using basicIo: BasicIo): ({basicIo} SimpleAppendable[Stderr.type, Text]) =
     (stderr, text) => basicIo.writeStderrText(text)
 
   given outputStreamBytes(using streamCut: CanThrow[StreamCutError])
-        : ({streamCut} Appendable[ji.OutputStream, Bytes]) =
-    (out, bytes) => out.write(bytes.mutable(using Unsafe))
+        : ({streamCut} SimpleAppendable[ji.OutputStream, Bytes]) =
+    (outputStream, bytes) => outputStream.write(bytes.mutable(using Unsafe))
+  
+  given outputStreamText(using streamCut: CanThrow[StreamCutError], enc: {*} Encoding)
+        : ({streamCut, enc} SimpleWritable[ji.OutputStream, Text]) =
+    (outputStream, text) => outputStream.write(text.s.getBytes(enc.name.s).nn)
 
 trait Appendable[-TargetType, -ChunkType]:
+  def append(target: TargetType, stream: LazyList[ChunkType]): Unit
+  
+  def contraMap[TargetType2](fn: TargetType2 => TargetType): {this, fn} Appendable[TargetType2, ChunkType] =
+    (target, stream) => append(fn(target), stream)
+  
+  def asWritable: Writable[TargetType, ChunkType] = append(_, _)
+
+trait SimpleAppendable[-TargetType, -ChunkType] extends Appendable[TargetType, ChunkType]:
   def append(target: TargetType, stream: LazyList[ChunkType]): Unit = stream match
     case head #:: tail => appendChunk(target, head)
                           append(target, tail)
@@ -401,19 +342,32 @@ trait Appendable[-TargetType, -ChunkType]:
 
   def appendChunk(target: TargetType, chunk: ChunkType): Unit
 
-
 object Readable:
-  given readableFileBytes(using ioFailure: CanThrow[IoFailure],
-                              readable: {*} Readable[java.io.InputStream, Bytes])
-        : ({readable, ioFailure} Readable[java.io.File, Bytes]) = file =>
-    if file.exists() then readable.read(java.io.FileInputStream(file)) else throw IoFailure()
+  given bytes: Readable[Bytes, Bytes] = LazyList(_)
+  given text: Readable[Text, Text] = LazyList(_)
+  given textToBytes(using enc: {*} Encoding): ({enc} Readable[Text, Bytes]) =
+    text => LazyList(text.s.getBytes(enc.name.s).nn.immutable(using Unsafe))
 
-  given readableBytesToReadableText[T](using readable: {*} Readable[T, Bytes], enc: {*} Encoding,
-                                           handler: {*} BadEncodingHandler)
-        : ({readable, enc, handler} Readable[T, Text]) = value => enc.convertStream(readable.read(value))
+  given lazyList[ChunkType]: Readable[LazyList[ChunkType], ChunkType] = identity(_)
+  
+  given bytesToText[SourceType]
+                   (using readable: {*} Readable[SourceType, Bytes], enc: {*} Encoding,
+                        handler: {*} BadEncodingHandler)
+                   : ({readable, enc, handler} Readable[SourceType, Text]) =
+    value => enc.convertStream(readable.read(value))
 
-  given readableInputStream(using streamCut: CanThrow[StreamCutError])
-                           : ({streamCut} Readable[java.io.InputStream, Bytes]) =
+  given reader(using streamCut: CanThrow[StreamCutError]): ({streamCut} Readable[ji.BufferedReader, Line]) =
+    reader =>
+      def recur(count: ByteSize): LazyList[Line] =
+        try reader.readLine match
+          case null         => LazyList()
+          case line: String => Line(Text(line)) #:: recur(count + line.length.b + 1.b)
+        catch case err: ji.IOException => throw StreamCutError(count)
+        finally reader.close()
+      recur(0L.b)
+
+
+  given inputStream(using streamCut: CanThrow[StreamCutError]): ({streamCut} Readable[ji.InputStream, Bytes]) =
     in =>
       val channel: jn.channels.ReadableByteChannel = jn.channels.Channels.newChannel(in).nn
       try
@@ -443,24 +397,22 @@ object Readable:
 
 trait Readable[-SourceType, +ChunkType]:
   def read(value: SourceType): LazyList[ChunkType]
+  
+  def contraMap[SourceType2](fn: SourceType2 => SourceType): {fn, this} Readable[SourceType2, ChunkType] =
+    source => read(fn(source))
 
-object Aggregable
+object Aggregable:
+  given bytes: Aggregable[Bytes, Bytes] = source =>
+    def recur(buf: ji.ByteArrayOutputStream, source: LazyList[Bytes]): Bytes = source match
+      case head #:: tail => buf.write(head.mutable(using Unsafe))
+                            recur(buf, tail)
+      case _             => buf.toByteArray().nn.immutable(using Unsafe)
+    
+    recur(ji.ByteArrayOutputStream(), source)
 
 trait Aggregable[-ChunkType, +ResultType]:
   def aggregate(source: LazyList[ChunkType]): ResultType
 
-extension [ChunkType](stream: LazyList[ChunkType])
-  def readAs[ResultType](using aggregable: {*} Aggregable[ChunkType, ResultType]): {aggregable} ResultType =
-    aggregable.aggregate(stream)
-  
-  def writeTo[TargetType](target: TargetType)(using writable: {*} Writable[TargetType, ChunkType])
-              : {writable} Unit =
-    writable.write(target, stream)
-  
-  def appendTo[TargetType](target: TargetType)(using appendable: {*} Appendable[TargetType, ChunkType])
-              : {appendable} Unit =
-    appendable.append(target, stream)
-  
 extension [ValueType](value: ValueType)
   def read[ChunkType](using readable: {*} Readable[ValueType, ChunkType]): {readable} LazyList[ChunkType] =
     readable.read(value)
@@ -471,45 +423,16 @@ extension [ValueType](value: ValueType)
             : {readable, aggregable} ResultType =
     aggregable.aggregate(readable.read(value))
   
-  def writeStreamTo[TargetType, ChunkType](target: TargetType)
-                    (using readable: {*} Readable[ValueType, ChunkType],
-                        writable: {*} Writable[TargetType, ChunkType])
-                    : {readable, writable} Unit =
+  def writeTo[TargetType, ChunkType](target: TargetType)
+             (using readable: {*} Readable[ValueType, ChunkType],
+                  writable: {*} Writable[TargetType, ChunkType])
+             : {readable, writable} Unit =
     writable.write(target, readable.read(value))
   
-  def appendStreamTo[TargetType, ChunkType](target: TargetType)
-                    (using readable: {*} Readable[ValueType, ChunkType],
-                          appendable: {*} Appendable[TargetType, ChunkType])
-                    : {readable, appendable} Unit =
+  def appendTo[TargetType, ChunkType](target: TargetType)
+              (using readable: {*} Readable[ValueType, ChunkType],
+                    appendable: {*} Appendable[TargetType, ChunkType])
+              : {readable, appendable} Unit =
     appendable.append(target, readable.read(value))
 
-
-
-import characterEncodings.utf8
-
-def testing(): Unit =
-  import badEncodingHandler.strict
-  try java.io.File("/home/propensive/manifesto.md").read[Text]
-  catch
-    case err: IoFailure => ()
-    case err: StreamCutError => ()
-    case err: BadEncodingError => ()
-
-// object Streamable:
-//   given (using ct: CanThrow[StreamCutError]): ({ct} Streamable[Text, Bytes]) = value =>
-//     LazyList(throw StreamCutError(0.b))
-  
-//   given Streamable[Int, Bytes] = value => Bytes(1) #:: LazyList()
-
-//   given (using enc: {*} Encoding): Streamable[String, {enc} Bytes] =
-//     value => value.getBytes("").nn.immutable(using Unsafe) #:: LazyList()
-
-// extension [T](value: T)
-//   def stream[Part](using source: {*} Streamable[T, Part]): LazyList[{source} Part] = source.stream(value)
-
-
-// val x: LazyList[Bytes] = 100.stream
-// def y(using ct: CanThrow[StreamCutError]): LazyList[{ct} Bytes] = Text("Hello World").stream
-// def z(using enc: {*} Encoding): LazyList[{enc} Bytes] = "bar".stream
-
-// try y catch case err: StreamCutError => ()
+case class Line(content: Text)

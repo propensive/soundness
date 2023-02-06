@@ -115,7 +115,7 @@ trait BadEncodingHandler:
   def handle(pos: Int, bytes: Bytes, suggestion: Maybe[Char]): Maybe[Char]
   def complete(): Unit
 
-package badEncodingHandler:
+package badEncodingHandlers:
   given strict(using badEncoding: CanThrow[BadEncodingError]): ({badEncoding} BadEncodingHandler) =
     new BadEncodingHandler:
       def handle(pos: Int, bytes: Bytes, suggestion: Maybe[Char]): Char = throw BadEncodingError(pos, bytes)
