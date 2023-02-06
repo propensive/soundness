@@ -66,10 +66,12 @@ class PositionReader(private var in: LazyList[Text]):
   
   private var current: Int = -1
   
-  private var text: Text = if in.isEmpty then t"" else
-    val result = in.head
-    in = in.tail
-    result
+  private var text: Text =
+    if in.isEmpty then t""
+    else
+      val result = in.head
+      in = in.tail
+      result
 
   @tailrec
   private def read(): Int =

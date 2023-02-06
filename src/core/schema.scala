@@ -25,12 +25,12 @@ import eucalyptus.*
 
 import java.io as ji
 
-import language.experimental.pureFunctions
+import language.experimental.captureChecking
 import language.dynamics
 
 object CodlSchema:
   object Entry:
-    def apply(key: Text, schema: => CodlSchema): Entry = new Entry(key, () => schema)
+    def apply(key: Text, schema: -> CodlSchema): Entry = new Entry(key, () => schema)
     def unapply(value: Entry): Option[(Text, CodlSchema)] = Some(value.key -> value.schema)
 
   class Entry(val key: Text, getSchema: () => CodlSchema):
@@ -62,8 +62,12 @@ extends Dynamic:
 
   def optional: CodlSchema
   def entry(n: Int): Entry = subschemas(n)
-  def parse[T: CharStreamable](stream: T): CodlDoc throws AggregateError | StreamCutError =
-    Codl.parse(stream, this)
+
+  def parse[SourceType](source: SourceType)
+           (using streamCut: CanThrow[StreamCutError], aggregate: CanThrow[AggregateError[CodlError]],
+                readable: {*} Readable[SourceType, Text])
+           : {aggregate, streamCut, readable} CodlDoc =
+    Codl.parse(source, this)
   
   def apply(key: Text): Maybe[CodlSchema] = dictionary.get(key).orElse(dictionary.get(Unset)).getOrElse(Unset)
   def apply(idx: Int): Entry = subschemas(idx)

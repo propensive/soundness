@@ -26,6 +26,8 @@ import turbulence.*
 import chiaroscuro.*
 import dissonance.*
 
+import language.experimental.captureChecking
+
 given Realm(t"codl")
 
 enum CodlToken:
@@ -55,14 +57,16 @@ object CodlToken:
   given Comparable[CodlToken] = Comparable.derived[CodlToken]
 
 object Codl:
-  def read[T: Codec](stream: Any)(using streamable: CharStreamable[stream.type])
-          : T throws AggregateError | CodlReadError | StreamCutError = // FIXME: Should only be aggregate error
-    summon[Codec[T]].schema.parse(streamable.stream(stream)).as[T]
+  def read[T: Codec](source: Any)(using readable: Readable[source.type, Text])
+          : T throws AggregateError[CodlError] | CodlReadError | StreamCutError = // FIXME: Should only be aggregate error
+    summon[Codec[T]].schema.parse(readable.read(source)).as[T]
   
-  def parse[T](in: T, schema: CodlSchema = CodlSchema.Free, subs: List[Data] = Nil, fromStart: Boolean = false)
-           (using streamable: CharStreamable[T])
-           : CodlDoc throws AggregateError | StreamCutError =
-    val (margin, stream) = tokenize(streamable.stream(in), fromStart)
+  def parse[SourceType]
+           (source: SourceType, schema: CodlSchema = CodlSchema.Free, subs: List[Data] = Nil,
+                fromStart: Boolean = false)
+           (using readable: {*} Readable[SourceType, Text])
+           : {readable} CodlDoc throws AggregateError[CodlError] | StreamCutError =
+    val (margin, stream) = tokenize(readable.read(source), fromStart)
     val baseSchema: CodlSchema = schema
     
     case class Proto(key: Maybe[Text] = Unset, line: Int = 0, col: Int = 0, children: List[CodlNode] = Nil,
@@ -198,7 +202,7 @@ object Codl:
             val allErrors = errors2 ::: errors
             val children = if closed.blank then peers.reverse else (closed :: peers).reverse
             if allErrors.isEmpty then CodlDoc(IArray.from(children), baseSchema, margin, body)
-            else throw AggregateError(allErrors.reverse)
+            else throw AggregateError[CodlError](allErrors.reverse)
           
           case _ =>
             go(LazyList(CodlToken.Outdent(stack.length + 1)))
@@ -207,7 +211,7 @@ object Codl:
 
     if stream.isEmpty then CodlDoc() else recur(stream, Proto(), Nil, Nil, 0, subs.reverse, Nil, LazyList())
 
-  def tokenize(in: LazyList[Text throws StreamCutError], fromStart: Boolean = false): (Int, LazyList[CodlToken]) throws StreamCutError =
+  def tokenize(in: {*} LazyList[Text], fromStart: Boolean = false): (Int, {in} LazyList[CodlToken]) =
     val reader: PositionReader = PositionReader(in.map(identity))
 
     enum State:
@@ -333,7 +337,7 @@ object Codl:
       try Codl.parse(state.content, CodlSchema.Free, state.subs.reverse, fromStart = true)
       catch
         case err: StreamCutError => throw Mistake("Should be impossible")
-        case err: AggregateError => err.errors.head match
+        case err: AggregateError[CodlError] => err.errors.head match
           case CodlError(_, off, _, issue) => throw InterpolationError(t"read error: $issue", off)
     
     def initial: State = State(Nil, Nil)
