@@ -173,3 +173,6 @@
 [submodule "mod/chiaroscuro"]
 	path = mod/chiaroscuro
 	url = git@github.com:propensive/chiaroscuro
+[submodule "mod/oubliette"]
+	path = mod/oubliette
+	url = git@github.com:propensive/oubliette
