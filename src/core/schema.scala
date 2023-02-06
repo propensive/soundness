@@ -88,7 +88,7 @@ extends Dynamic:
     else if endlessParams && paramCount > 0 then subschemas(paramCount - 1) else Unset
 
   def has(key: Maybe[Text]): Boolean = dictionary.contains(key)
-  lazy val requiredKeys: List[Text] = subschemas.filter(_.required).map(_.key).sift[Text].to(List)
+  lazy val requiredKeys: List[Text] = subschemas.filter(_.required).map(_.key).collect { case text: Text => text }.to(List)
   
   export arity.{required, variadic, unique}
 

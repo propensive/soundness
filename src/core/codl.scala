@@ -28,7 +28,7 @@ import dissonance.*
 
 import language.experimental.captureChecking
 
-given Realm(t"codl")
+given Realm = Realm(t"codl")
 
 enum CodlToken:
   case Indent, Peer, Blank, Argument
@@ -212,7 +212,7 @@ object Codl:
     if stream.isEmpty then CodlDoc() else recur(stream, Proto(), Nil, Nil, 0, subs.reverse, Nil, LazyList())
 
   def tokenize(in: {*} LazyList[Text], fromStart: Boolean = false): (Int, {in} LazyList[CodlToken]) =
-    val reader: PositionReader = PositionReader(in.map(identity))
+    val reader: PositionReader = new PositionReader(in.map(identity))
 
     enum State:
       case Word, Hash, Comment, Indent, Space, Tab, Margin, Line

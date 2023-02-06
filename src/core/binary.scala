@@ -22,8 +22,6 @@ import deviation.*
 import gossamer.*
 import eucalyptus.*
 
-import language.experimental.captureChecking
-
 object Bin:
   private def write(out: ji.Writer, number: Int): Unit = out.write((number + 32).toChar)
 
@@ -36,7 +34,9 @@ object Bin:
     write(out, doc.schema, doc.children)
 
   private def write(out: ji.Writer, schema: CodlSchema, nodes: IArray[CodlNode]): Unit =
-    val dataNodes = nodes.map(_.data).sift[Data]
+    val dataNodes = nodes.map(_.data).collect:
+      case data: Data => data
+
     write(out, dataNodes.length)
     
     dataNodes.foreach:
@@ -49,7 +49,7 @@ object Bin:
             write(out, idx)
             write(out, schema.entry(idx - 1).schema, children)
       
-  def read(schema: CodlSchema, reader: ji.Reader): CodlDoc throws BinaryError =
+  def read(schema: CodlSchema, reader: ji.Reader)(using binary: CanThrow[BinaryError]): CodlDoc =
     if reader.read() != '\u00b1' || reader.read() != '\u00c0' || reader.read() != '\u00d1'
     then throw BinaryError(t"header 0xb1c0d1", 0)
     

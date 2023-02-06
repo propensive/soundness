@@ -63,7 +63,8 @@ case class CodlNode(data: Maybe[Data] = Unset, meta: Maybe[Meta] = Unset) extend
   def fieldValue: Maybe[Text] = paramValue.or(structValue)
   def promote(n: Int) = copy(data = data.mm(_.promote(n)))
 
-  def apply(key: Text): List[Data] = data.fm(List[CodlNode]())(_(key)).map(_.data).sift[Data]
+  def apply(key: Text): List[Data] = data.fm(List[CodlNode]())(_(key)).map(_.data).collect:
+    case data: Data => data
 
   def selectDynamic(key: String): List[Data] throws MissingValueError =
     data.option.getOrElse(throw MissingValueError(key.show)).selectDynamic(key)
@@ -166,7 +167,7 @@ extends Indexed:
 
 object Data:
   given [T: Codec]: Insertion[List[Data], T] =
-    value => summon[Codec[T]].serialize(value).head.to(List).map(_.data).sift[Data]
+    value => summon[Codec[T]].serialize(value).head.to(List).map(_.data).collect { case data: Data => data }
 
   given debug: Debug[Data] = data => t"Data(${data.key}, ${data.children.length})"
 
@@ -245,6 +246,7 @@ trait Indexed extends Dynamic:
                         Data(key, IArray(unsafely(children(idx))), Layout.empty, CodlSchema.Free)
 
   def selectDynamic(key: String): List[Data] throws MissingValueError =
-    index(key.show).map(children(_).data).sift[Data]
+    index(key.show).map(children(_).data).collect:
+      case data: Data => data
   
   def applyDynamic(key: String)(idx: Int = 0): Data throws MissingValueError = selectDynamic(key)(idx)
