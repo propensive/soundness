@@ -79,8 +79,11 @@ case class Diff[T](changes: SimpleChange[T]*):
       case Keep(_, _, _) => true
       case _             => false
     .map:
-      case xs@(Keep(_, _, _) :: _) => Region.Unchanged(xs.sift[Change.Keep[T]])
-      case xs                      => Region.Changed(xs.sift[Change.Del[T]], xs.sift[Change.Ins[T]])
+      case xs@(Keep(_, _, _) :: _) => val keeps = xs.collect { case keep@Keep(_, _, _) => keep }
+                                      Region.Unchanged(keeps)
+      case xs                      => val dels = xs.collect { case del@Del(_, _) => del }
+                                      val inss = xs.collect { case ins@Ins(_, _) => ins }
+                                      Region.Changed(dels, inss)
   
   def rdiff2(similar: (T, T) -> Boolean, swapSize: Int = 1): RDiff[T] =
     val changes = collate2.flatMap:
