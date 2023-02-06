@@ -1,5 +1,5 @@
 /*
-    Javanais, version 0.4.0. Copyright 2019-23 Jon Pretty, Propensive OÜ.
+    Jacinta, version 0.4.0. Copyright 2019-23 Jon Pretty, Propensive OÜ.
 
     The primary distribution site is: https://propensive.com/
 
@@ -14,24 +14,25 @@
     and limitations under the License.
 */
 
-package javanais
+package jacinta
 
 import eucalyptus.*
 import gossamer.*
 import probably.*
-import rudiments.*, characterEncodings.utf8
+import rudiments.*
+import turbulence.*, characterEncodings.utf8, badEncodingHandlers.strict
 import scala.util.*
 
 import unsafeExceptions.canThrowAny
 
 import logging.stdout
-import jsonSerializers.minimal
+import jsonPrinters.minimal
 
 case class Foo(x: Int, y: Text) derives CanEqual
 
 case class InvalidState(name: String) extends Exception("Not a valid state: "+name)
 
-object Tests extends Suite(t"Javanais Tests"):
+object Tests extends Suite(t"Jacinta Tests"):
   def run(): Unit =
     suite(t"Parsing tests"):
       test(t"Parse a number"):

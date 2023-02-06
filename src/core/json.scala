@@ -1,5 +1,5 @@
 /*
-    Javanais, version 0.4.0. Copyright 2019-23 Jon Pretty, Propensive OÜ.
+    Jacinta, version 0.4.0. Copyright 2019-23 Jon Pretty, Propensive OÜ.
 
     The primary distribution site is: https://propensive.com/
 
@@ -14,7 +14,7 @@
     and limitations under the License.
 */
 
-package javanais
+package jacinta
 
 import wisteria.*
 import rudiments.*
@@ -31,11 +31,12 @@ import scala.quoted.*
 import scala.deriving.*
 
 import language.dynamics
+import language.experimental.captureChecking
 
 import unsafeExceptions.canThrowAny
 import JsonAccessError.Issue
 
-given (using js: JsonSerializer): Show[JsonAst] = js.serialize(_)
+given (using js: JsonPrinter): Show[JsonAst] = js.serialize(_)
 
 extension (json: JsonAst)
   inline def isNumber: Boolean = isDouble || isLong || isBigDecimal
@@ -90,140 +91,141 @@ extension (json: JsonAst)
     if isLong then long else if isDouble then double else if isBigDecimal then bigDecimal
     else throw JsonAccessError(Issue.Type(JsonPrimitive.Number))
   
-extension [T: Json.Writer](value: T)
-  def json: Json = Json(summon[Json.Writer[T]].write(value))
+extension [T: JsonWriter](value: T)
+  def json: Json = Json(summon[JsonWriter[T]].write(value))
 
 object Json extends Dynamic:
-  def parse[T: Streamable](value: T): Json = Json(JsonAst.parse(summon[Streamable[T]].stream(value)), Nil)
+  def parse[SourceType](value: SourceType)(using readable: {*} Readable[SourceType, Bytes]): {readable} Json =
+    Json(JsonAst.parse(value), Nil)
 
-  given (using JsonSerializer): Show[Json] = json =>
+  given (using JsonPrinter): Show[Json] = json =>
     try json.normalize.root.show catch case err: JsonAccessError => t"<${err.reason}>"
 
-  given (using enc: Encoding, serializer: JsonSerializer): GenericHttpResponseStream[Json] with
+  given (using enc: Encoding, serializer: JsonPrinter): GenericHttpResponseStream[Json] with
     def mediaType: String = t"application/json; charset=${enc.name}".s
-    def content(json: Json): LazyList[IArray[Byte]] = LazyList(json.show.bytes)
+    def content(json: Json): LazyList[Bytes] = LazyList(json.show.bytes)
 
-  given (using CanThrow[JsonParseError]): GenericHttpReader[Json] with
-    def read(value: String): Json =
-      Json(JsonAst.parse(LazyList(value.getBytes("UTF-8").nn.immutable(using Unsafe))), Nil)
+  given (using jsonParse: CanThrow[JsonParseError]): ({jsonParse} GenericHttpReader[Json]) =
+    new GenericHttpReader[Json]:
+      def read(string: String): Json =
+        Json(JsonAst.parse(LazyList(string.getBytes("UTF-8").nn.immutable(using Unsafe))), Nil)
 
-  given (using CanThrow[StreamCutError], CanThrow[JsonAccessError]): Readable[Json] = new Readable[Json]:
-    def read(value: DataStream) = Json(JsonAst.parse(value), Nil)
-
-  object Writer extends Derivation[Writer]:
-    given Writer[Int] = v => JsonAst(v.toLong)
-    given Writer[Text] = v => JsonAst(v.s)
-    given Writer[Double] = JsonAst(_)
-    given Writer[Long] = JsonAst(_)
-    given Writer[Byte] = v => JsonAst(v.toLong)
-    given Writer[Short] = v => JsonAst(v.toLong)
-    given Writer[Boolean] = JsonAst(_)
-  
-    given [T](using canon: Canonical[T]): Writer[T] = v => JsonAst(canon.serialize(v).s)
-    
-    given (using CanThrow[JsonAccessError]): Writer[Json] = _.normalize.toOption.get.root
-    
-    given Writer[Nil.type] = value => JsonAst(IArray[JsonAst]())
-
-    given [Coll[T1] <: Traversable[T1], T: Writer]: Writer[Coll[T]] = values =>
-      JsonAst(IArray.from(values.map(summon[Writer[T]].write(_))))
-
-    // given [T: Writer]: Writer[Map[String, T]] = values =>
-    //   JObject(mutable.Map(values.view.mapValues(summon[Writer[T]].write(_)).to(Seq)*))
-
-    given [T: Writer]: Writer[Maybe[T]] = new Writer[Maybe[T]]:
-      override def omit(t: Maybe[T]): Boolean = t.unset
-      def write(value: Maybe[T]): JsonAst = value match
-        case Unset               => JsonAst(null)
-        case value: T @unchecked => summon[Writer[T]].write(value)
-
-    given opt[T: Writer]: Writer[Option[T]] = new Writer[Option[T]]:
-      override def omit(t: Option[T]): Boolean = t.isEmpty
-      
-      def write(value: Option[T]): JsonAst = value match
-        case None        => JsonAst(null)
-        case Some(value) => summon[Writer[T]].write(value)
-
-    def join[T](caseClass: CaseClass[Writer, T]): Writer[T] = value =>
-      val labels: IArray[String] = caseClass.params.collect:
-        case p if !p.typeclass.omit(p.deref(value)) => p.label
-
-      val values: IArray[JsonAst] = caseClass.params.collect:
-        case p if !p.typeclass.omit(p.deref(value)) => p.typeclass.write(p.deref(value))
-      
-      JsonAst((labels, values))
-      
-    def split[T](sealedTrait: SealedTrait[Writer, T]): Writer[T] = value =>
-      sealedTrait.choose(value): subtype =>
-        val obj = subtype.typeclass.write(subtype.cast(value)).obj
-          JsonAst((obj(0) :+ "_type", obj(1) :+ subtype.typeInfo.short))
-
-  trait Writer[T]:
-    def omit(t: T): Boolean = false
-    def write(t: T): JsonAst
-    def contramap[S](fn: S => T): Writer[S] = (v: S) => fn.andThen(write)(v)
-
-  object Reader extends Derivation[Reader]:
-    given Reader[JsonAst] = identity(_)
-    given Reader[Json] = Json(_)
-    given Reader[Int] = _.long.toInt
-    given Reader[Byte] = _.long.toByte
-    given Reader[Short] = _.long.toShort
-    given Reader[Float] = _.double.toFloat
-    given Reader[Double] = _.double
-    given Reader[Long] = _.long
-    given Reader[Text] = _.string
-    given Reader[Boolean] = _.boolean
-    
-    given [T](using canon: Canonical[T]): Reader[T] = v => canon.deserialize(v.string)
-
-    given opt[T](using Reader[T]): Reader[Option[T]] with
-      def read(value: => JsonAst): Option[T] =
-        try Some(summon[Reader[T]].read(value)) catch case e: Throwable => None
-
-    given array[Coll[T1] <: Traversable[T1], T]
-               (using reader: Reader[T], factory: Factory[T, Coll[T]]): Reader[Coll[T]] =
-      new Reader[Coll[T]]:
-        def read(value: => JsonAst): Coll[T] =
-          val bld = factory.newBuilder
-          value.array.foreach(bld += reader.read(_))
-          bld.result()
-
-    given map[T](using reader: Reader[T]): Reader[Map[String, T]] = new Reader[Map[String, T]]:
-      def read(value: => JsonAst): Map[String, T] =
-        val (keys, values) = value.obj
-        
-        keys.indices.foldLeft(Map[String, T]()): (acc, i) =>
-          acc.updated(keys(i), reader.read(values(i)))
-
-    def join[T](caseClass: CaseClass[Reader, T]): Reader[T] = new Reader[T]:
-      def read(value: => JsonAst) =
-        caseClass.construct: param =>
-          val (keys, values) = value.obj
-            param.typeclass.read:
-              keys.indexOf(param.label) match
-                case -1  => throw JsonAccessError(Issue.Label(Text(param.label)))
-                case idx => values(idx)
-
-    def split[T](sealedTrait: SealedTrait[Reader, T]): Reader[T] = new Reader[T]:
-      def read(value: => JsonAst) =
-        val _type = Json(value, Nil)._type.as[Text]
-        val subtype = sealedTrait.subtypes.find { t => Text(t.typeInfo.short) == _type }
-          .getOrElse(throw JsonAccessError(Issue.Type(JsonPrimitive.Object))) // FIXME
-        
-        subtype.typeclass.read(value)
-
-  trait Reader[T]:
-    private inline def self: this.type = this
-    
-    def read(json: => JsonAst): T
-    def map[S](fn: T => S): Reader[S] = new Reader[S]:
-      def read(json: => JsonAst): S = fn(self.read(json))
+  given aggregable: Aggregable[Bytes, Json] = value => Json(JsonAst.parse(value), Nil)
 
   def applyDynamicNamed[T <: String](methodName: "of")(elements: (String, Json)*): Json =
     val keys: IArray[String] = IArray.from(elements.map(_(0)))
     val values: IArray[JsonAst] = IArray.from(elements.map(_(1).normalize.root))
     Json(JsonAst((keys, values)), Nil)
+
+object JsonWriter extends Derivation[JsonWriter]:
+  given JsonWriter[Int] = v => JsonAst(v.toLong)
+  given JsonWriter[Text] = v => JsonAst(v.s)
+  given JsonWriter[Double] = JsonAst(_)
+  given JsonWriter[Long] = JsonAst(_)
+  given JsonWriter[Byte] = v => JsonAst(v.toLong)
+  given JsonWriter[Short] = v => JsonAst(v.toLong)
+  given JsonWriter[Boolean] = JsonAst(_)
+
+  given [T](using canon: Canonical[T]): JsonWriter[T] = v => JsonAst(canon.serialize(v).s)
+  
+  given (using jsonAccess: CanThrow[JsonAccessError]): ({jsonAccess} JsonWriter[Json]) = _.normalize.root
+  
+  given JsonWriter[Nil.type] = value => JsonAst(IArray[JsonAst]())
+
+  given [Coll[T1] <: Traversable[T1], T: JsonWriter]: JsonWriter[Coll[T]] = values =>
+    JsonAst(IArray.from(values.map(summon[JsonWriter[T]].write(_))))
+
+  // given [T: JsonWriter]: JsonWriter[Map[String, T]] = values =>
+  //   JObject(mutable.Map(values.view.mapValues(summon[JsonWriter[T]].write(_)).to(Seq)*))
+
+  given [T: JsonWriter]: JsonWriter[Maybe[T]] = new JsonWriter[Maybe[T]]:
+    override def omit(t: Maybe[T]): Boolean = t.unset
+    def write(value: Maybe[T]): JsonAst = value match
+      case Unset               => JsonAst(null)
+      case value: T @unchecked => summon[JsonWriter[T]].write(value)
+
+  given opt[T: JsonWriter]: JsonWriter[Option[T]] = new JsonWriter[Option[T]]:
+    override def omit(t: Option[T]): Boolean = t.isEmpty
+    
+    def write(value: Option[T]): JsonAst = value match
+      case None        => JsonAst(null)
+      case Some(value) => summon[JsonWriter[T]].write(value)
+
+  def join[T](caseClass: CaseClass[JsonWriter, T]): JsonWriter[T] = value =>
+    val labels: IArray[String] = caseClass.params.collect:
+      case p if !p.typeclass.omit(p.deref(value)) => p.label
+
+    val values: IArray[JsonAst] = caseClass.params.collect:
+      case p if !p.typeclass.omit(p.deref(value)) => p.typeclass.write(p.deref(value))
+    
+    JsonAst((labels, values))
+    
+  def split[T](sealedTrait: SealedTrait[JsonWriter, T]): JsonWriter[T] = value =>
+    sealedTrait.choose(value): subtype =>
+      val obj = subtype.typeclass.write(subtype.cast(value)).obj
+        JsonAst((obj(0) :+ "_type", obj(1) :+ subtype.typeInfo.short))
+
+trait JsonWriter[T]:
+  def omit(t: T): Boolean = false
+  def write(t: T): JsonAst
+  def contraMap[S](fn: S => T): {this, fn} JsonWriter[S] = (v: S) => fn.andThen(write)(v)
+
+object JsonReader extends Derivation[JsonReader]:
+  given jsonAst: JsonReader[JsonAst] = identity(_)
+  given json: JsonReader[Json] = Json(_)
+  given int: JsonReader[Int] = _.long.toInt
+  given byte: JsonReader[Byte] = _.long.toByte
+  given short: JsonReader[Short] = _.long.toShort
+  given float: JsonReader[Float] = _.double.toFloat
+  given double: JsonReader[Double] = _.double
+  given long: JsonReader[Long] = _.long
+  given text: JsonReader[Text] = _.string
+  given boolean: JsonReader[Boolean] = _.boolean
+  
+  given [T](using canon: Canonical[T]): JsonReader[T] = v => canon.deserialize(v.string)
+
+  given opt[T](using JsonReader[T]): JsonReader[Option[T]] with
+    def read(value: => JsonAst): Option[T] =
+      try Some(summon[JsonReader[T]].read(value)) catch case e: Throwable => None
+
+  given array[Coll[T1] <: Traversable[T1], T]
+              (using reader: JsonReader[T], factory: Factory[T, Coll[T]]): JsonReader[Coll[T]] =
+    new JsonReader[Coll[T]]:
+      def read(value: => JsonAst): Coll[T] =
+        val bld = factory.newBuilder
+        value.array.foreach(bld += reader.read(_))
+        bld.result()
+
+  given map[T](using reader: JsonReader[T]): JsonReader[Map[String, T]] = new JsonReader[Map[String, T]]:
+    def read(value: => JsonAst): Map[String, T] =
+      val (keys, values) = value.obj
+      
+      keys.indices.foldLeft(Map[String, T]()): (acc, i) =>
+        acc.updated(keys(i), reader.read(values(i)))
+
+  def join[T](caseClass: CaseClass[JsonReader, T]): JsonReader[T] = new JsonReader[T]:
+    def read(value: => JsonAst) =
+      caseClass.construct: param =>
+        val (keys, values) = value.obj
+          param.typeclass.read:
+            keys.indexOf(param.label) match
+              case -1  => throw JsonAccessError(Issue.Label(Text(param.label)))
+              case idx => values(idx)
+
+  def split[T](sealedTrait: SealedTrait[JsonReader, T]): JsonReader[T] = new JsonReader[T]:
+    def read(value: => JsonAst) =
+      val _type = Json(value, Nil).selectDynamic("_type").as[Text]
+      val subtype = sealedTrait.subtypes.find { t => Text(t.typeInfo.short) == _type }
+        .getOrElse(throw JsonAccessError(Issue.Type(JsonPrimitive.Object))) // FIXME
+      
+      subtype.typeclass.read(value)
+
+    
+trait JsonReader[T]:
+  private inline def reader: this.type = this
+  
+  def read(json: => JsonAst): T
+  def map[S](fn: T => S): {this, fn} JsonReader[S] = json => fn(reader.read(json))
 
 case class Json(root: JsonAst, path: List[Int | Text] = Nil) extends Dynamic derives CanEqual:
   def apply(idx: Int): Json = Json(root, idx :: path)
@@ -320,17 +322,17 @@ case class Json(root: JsonAst, path: List[Int | Text] = Nil) extends Dynamic der
       
     Json(deref(root, path.reverse), Nil)
 
-  def as[T](using reader: Json.Reader[T]): T throws JsonAccessError =
+  def as[T](using reader: JsonReader[T]): T throws JsonAccessError =
     reader.read(normalize.root)
 
-trait JsonSerializer:
+trait JsonPrinter:
   def serialize(json: JsonAst): Text
 
-package jsonSerializers:
-  given humanReadable: JsonSerializer = HumanReadableSerializer
-  given minimal: JsonSerializer = MinimalSerializer
+package jsonPrinters:
+  given humanReadable: JsonPrinter = HumanReadableSerializer
+  given minimal: JsonPrinter = MinimalSerializer
 
-object MinimalSerializer extends JsonSerializer:
+object MinimalSerializer extends JsonPrinter:
   def serialize(json: JsonAst): Text =
     val sb: StringBuilder = StringBuilder()
     def appendString(str: String): Unit =
@@ -374,7 +376,7 @@ object MinimalSerializer extends JsonSerializer:
     sb.toString.show
 
 // FIXME: Implement this
-object HumanReadableSerializer extends JsonSerializer:
+object HumanReadableSerializer extends JsonPrinter:
   def serialize(json: JsonAst): Text =
     val sb: StringBuilder = StringBuilder()
     def appendString(str: String): Unit =

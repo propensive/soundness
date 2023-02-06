@@ -1,5 +1,5 @@
 /*
-    Javanais, version 0.4.0. Copyright 2019-23 Jon Pretty, Propensive OÜ.
+    Jacinta, version 0.4.0. Copyright 2019-23 Jon Pretty, Propensive OÜ.
 
     The primary distribution site is: https://propensive.com/
 
@@ -14,7 +14,7 @@
     and limitations under the License.
 */
 
-package javanais
+package jacinta
 
 import rudiments.*
 import gossamer.*
@@ -25,7 +25,7 @@ import scala.collection.mutable as scm
 import unsafeExceptions.canThrowAny
 
 /*
-object JavanaisMacro:
+object JacintaMacro:
   def deriveReader[T: Type](using Quotes): Expr[Json.Reader[T]] =
     import quotes.reflect.*
 
@@ -83,7 +83,7 @@ object JavanaisMacro:
                   Expr.summon[Json.Reader[paramType]].getOrElse:
                     val typeName = TypeRepr.of[paramType].show
                     report.errorAndAbort(
-                        s"javanais: cannot find Reader for case field of type $typeName")
+                        s"jacinta: cannot find Reader for case field of type $typeName")
                   match
                     case '{ $reader: Json.Reader[`paramType`] } =>
                       val label = Expr(head.name)

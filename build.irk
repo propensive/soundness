@@ -20,8 +20,8 @@
   ],
   "modules": [
     {
-      "name": "Javanais",
-      "id": "javanais/core",
+      "name": "Jacinta",
+      "id": "jacinta/core",
       "links": [
         "gossamer/core",
         "anticipation/http",
@@ -40,11 +40,11 @@
       ]
     },
     {
-      "name": "Javanais Tests",
-      "id": "javanais/test",
+      "name": "Jacinta Tests",
+      "id": "jacinta/test",
       "links": [
         "probably/cli",
-        "javanais/core"
+        "jacinta/core"
       ],
       "dependencies": [
       ],
@@ -54,9 +54,9 @@
         "src/test"
       ],
       "version": "0.4.0",
-      "exec": {
+      "xec": {
         "browsers": [],
-	"start": "javanais.Tests"
+	"start": "jacinta.Tests"
       },
       "docs": [
         "doc"
