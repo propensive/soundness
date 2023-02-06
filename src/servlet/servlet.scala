@@ -44,12 +44,13 @@ trait Servlet(handle: Request ?=> Response[?]) extends HttpServlet:
     val in = request.getInputStream
     val buffer = new Array[Byte](4096)
     
-    def recur(): DataStream = try
-      val len = in.nn.read(buffer)
-      if len > 0 then buffer.slice(0, len).snapshot #:: recur() else LazyList.empty
-    catch case _: Exception => LazyList(throw StreamCutError())
+    def recur(total: Long): DataStream =
+      try
+        val len: Int = in.nn.read(buffer)
+        if len > 0 then buffer.slice(0, len).snapshot #:: recur(total + len) else LazyList.empty
+      catch case _: Exception => LazyList(throw StreamCutError(total.b))
     
-    HttpBody.Chunked(recur())
+    HttpBody.Chunked(recur(0))
     
   protected def makeRequest(request: HttpServletRequest): Request =
     val query = Option(request.getQueryString)

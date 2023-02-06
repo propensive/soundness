@@ -185,7 +185,7 @@ case class Request(method: HttpMethod, body: HttpBody.Chunked, query: Text, ssl:
   lazy val length: Int throws StreamCutError =
     try headers.get(RequestHeader.ContentLength).map(_.head).map(_.as[Int]).getOrElse:
       body.stream.map(_.length).sum
-    catch case err: IncompatibleTypeError => throw StreamCutError()
+    catch case err: IncompatibleTypeError => throw StreamCutError(0.b)
   
   lazy val contentType: Option[MediaType] =
     headers.get(RequestHeader.ContentType).flatMap(_.headOption).flatMap(MediaType.unapply(_))
