@@ -21,6 +21,9 @@ import rudiments.*
 import scala.quoted.*
 import compiletime.*
 
+case class AggregateError[ErrorType <: Error[?]](errors: List[ErrorType])
+extends Error(err"aggregation of errors: ${Text(errors.map(_.toString).mkString("\n", "\n", ""))}")
+
 extension (ctx: StringContext)
   transparent inline def err[T](value: T = EmptyTuple): ErrorMessage[Tuple] = (value: @unchecked) match
     case value: Tuple => ErrorMessage[value.type](ctx.parts.map(Text(_)), value)
