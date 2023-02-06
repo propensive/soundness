@@ -19,6 +19,7 @@ package gossamer
 
 import wisteria.*
 import rudiments.*
+import turbulence.*
 
 import compiletime.summonFrom
 import language.experimental.captureChecking

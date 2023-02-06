@@ -52,7 +52,8 @@
       "docs": [
         "doc"
       ]
-    },
+    }],
+ "non-modules": [
     {
       "name": "Gossamer Tests",
       "id": "gossamer/test",
@@ -67,7 +68,7 @@
       "docs": [
         "doc"
       ],
-      "exec": {
+      "xec": {
         "browsers": [],
         "start": "gossamer.Tests"
       }

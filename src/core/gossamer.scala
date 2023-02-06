@@ -63,15 +63,17 @@ extension (words: Iterable[Text])
   def kebab: Text = words.join(Text("-"))
 
 extension (text: Text)
-  def bytes(using enc: Encoding): IArray[Byte] = text.s.getBytes(enc.name.s).nn.immutable(using Unsafe)
-  def sysBytes: IArray[Byte] = text.s.getBytes().nn.immutable(using Unsafe)
-  def length: Int = text.s.length
-  def populated: Option[Text] = if text.s.length == 0 then None else Some(text)
-  def lower: Text = Text(text.s.toLowerCase.nn)
-  def upper: Text = Text(text.s.toUpperCase.nn)
-  def urlEncode: Text = Text(URLEncoder.encode(text.s, "UTF-8").nn)
-  def urlDecode: Text = Text(URLDecoder.decode(text.s, "UTF-8").nn)
-  def punycode: Text = Text(java.net.IDN.toASCII(text.s).nn)
+  inline def bytes(using enc: Encoding): IArray[Byte] =
+    text.s.getBytes(enc.name.s).nn.immutable(using Unsafe)
+  
+  inline def sysBytes: IArray[Byte] = text.s.getBytes().nn.immutable(using Unsafe)
+  inline def length: Int = text.s.length
+  inline def populated: Option[Text] = if text.s.length == 0 then None else Some(text)
+  inline def lower: Text = Text(text.s.toLowerCase.nn)
+  inline def upper: Text = Text(text.s.toUpperCase.nn)
+  inline def urlEncode: Text = Text(URLEncoder.encode(text.s, "UTF-8").nn)
+  inline def urlDecode: Text = Text(URLDecoder.decode(text.s, "UTF-8").nn)
+  inline def punycode: Text = Text(java.net.IDN.toASCII(text.s).nn)
   
   def drop(n: Int, dir: Direction = Ltr): Text = dir match
     case Ltr => Text(text.s.substring(n min length max 0).nn)
@@ -81,28 +83,28 @@ extension (text: Text)
     case Ltr => Text(text.s.substring(0, n min length max 0).nn)
     case Rtl => Text(text.s.substring(0 max (text.s.length - n) min length, length).nn)
 
-  def trim: Text = Text(text.s.trim.nn)
+  inline def trim: Text = Text(text.s.trim.nn)
   
   def slice(from: Int, to: Int): Text =
     if to <= from then Text("")
     else Text(text.s.substring(from max 0 min length, to min length max 0).nn)
   
-  def chars: IArray[Char] = text.s.toCharArray.nn.immutable(using Unsafe)
+  inline def chars: IArray[Char] = text.s.toCharArray.nn.immutable(using Unsafe)
   def map(fn: Char => Char): Text = Text(String(text.s.toCharArray.nn.map(fn)))
-  def empty: Boolean = text.s.isEmpty
-  def rsub(from: Text, to: Text): Text = Text(text.s.replaceAll(from.s, to.s).nn)
+  inline def empty: Boolean = text.s.isEmpty
+  inline def rsub(from: Text, to: Text): Text = Text(text.s.replaceAll(from.s, to.s).nn)
   inline def starts(prefix: Text): Boolean = text.s.startsWith(prefix.s)
   inline def ends(suffix: Text): Boolean = text.s.endsWith(suffix.s)
-  def sub(from: Text, to: Text): Text = Text(text.s.replaceAll(Pattern.quote(from.s), to.s).nn)
-  def tr(from: Char, to: Char): Text = Text(text.s.replace(from, to).nn)
-  def capitalize: Text = take(1).upper+drop(1)
-  def uncapitalize: Text = take(1).lower+drop(1)
-  def reverse: Text = Text(String(text.s.toCharArray.nn.reverse))
-  def count(pred: Char -> Boolean): Int = text.s.toCharArray.nn.immutable(using Unsafe).count(pred)
-  def head: Char = text.s.charAt(0)
-  def last: Char = text.s.charAt(text.s.length - 1)
-  def tail: Text = drop(1, Ltr)
-  def init: Text = drop(1, Rtl)
+  inline def sub(from: Text, to: Text): Text = Text(text.s.replaceAll(Pattern.quote(from.s), to.s).nn)
+  inline def tr(from: Char, to: Char): Text = Text(text.s.replace(from, to).nn)
+  inline def capitalize: Text = take(1).upper+drop(1)
+  inline def uncapitalize: Text = take(1).lower+drop(1)
+  inline def reverse: Text = Text(String(text.s.toCharArray.nn.reverse))
+  inline def count(pred: Char -> Boolean): Int = text.s.toCharArray.nn.immutable(using Unsafe).count(pred)
+  inline def head: Char = text.s.charAt(0)
+  inline def last: Char = text.s.charAt(text.s.length - 1)
+  inline def tail: Text = drop(1, Ltr)
+  inline def init: Text = drop(1, Rtl)
 
   def flatMap(fn: Char => Text): Text =
     Text(String(text.s.toCharArray.nn.immutable(using Unsafe).flatMap(fn(_).s.toCharArray.nn
@@ -296,56 +298,46 @@ extension (buf: StringBuilder)
   def add(char: Char): Unit = buf.append(char)
   def text: Text = Showable(buf).show
 
-case class Line(text: Text)
-
-object Line:
-  given lineReader(using enc: Encoding): Readable[LazyList[Line]] with
-    def read(stream: DataStream): LazyList[Line] throws StreamCutError =
-      def recur(stream: LazyList[Text], carry: Text = Text("")): LazyList[Line] =
-        if stream.isEmpty then
-          if carry.empty then LazyList() else LazyList(Line(carry))
-        else
-          val parts = stream.head.s.split("\\r?\\n", Int.MaxValue).nn.map(_.nn)
-          if parts.length == 1 then recur(stream.tail, carry + parts.head.show)
-          else if parts.length == 2
-          then Line(carry + parts.head.show) #:: recur(stream.tail, parts.last.show)
-          else
-            Line(carry + parts.head.show) #::
-                LazyList(parts.tail.init.map(str => Line(str.show))*) #:::
-                recur(stream.tail, parts.last.show)
+// object Line:
+//   given lineReader(using enc: Encoding): Readable[LazyList[Line]] with
+//     def read(stream: DataStream): LazyList[Line] throws StreamCutError =
+//       def recur(stream: LazyList[Text], carry: Text = Text("")): LazyList[Line] =
+//         if stream.isEmpty then
+//           if carry.empty then LazyList() else LazyList(Line(carry))
+//         else
+//           val parts = stream.head.s.split("\\r?\\n", Int.MaxValue).nn.map(_.nn)
+//           if parts.length == 1 then recur(stream.tail, carry + parts.head.show)
+//           else if parts.length == 2
+//           then Line(carry + parts.head.show) #:: recur(stream.tail, parts.last.show)
+//           else
+//             Line(carry + parts.head.show) #::
+//                 LazyList(parts.tail.init.map(str => Line(str.show))*) #:::
+//                 recur(stream.tail, parts.last.show)
       
-      recur(summon[Readable[LazyList[Text]]].read(stream))
+//       recur(summon[Readable[LazyList[Text]]].read(stream))
       
-package stdouts:
-  given stdout: Stdout = txt =>
-    try summon[Appendable[SystemOut.type]].write(SystemOut, LazyList(txt.sysBytes))
-    catch case err: Exception => ()
+// package stdouts:
+//   given stdout: Stdout = txt =>
+//     try summon[Appendable[SystemOut.type]].write(SystemOut, LazyList(txt.sysBytes))
+//     catch case err: Exception => ()
   
-  given drain: Stdout = txt => ()
+//   given drain: Stdout = txt => ()
 
-object Stdout:
-  def apply[T](value: T)(using writable: Writable[T]): Stdout = txt =>
-    try writable.write(value, LazyList(txt.sysBytes)) catch case err: Exception => ()
+// object Stdout:
+//   def apply[T](value: T)(using writable: Writable[T]): Stdout = txt =>
+//     try writable.write(value, LazyList(txt.sysBytes)) catch case err: Exception => ()
 
-trait Stderr:
-  def write(msg: Text): Unit
+// trait Stderr:
+//   def write(msg: Text): Unit
 
-trait Stdout:
-  def write(msg: Text): Unit
+// trait Stdout:
+//   def write(msg: Text): Unit
 
-object Out:
-  def print[T: Show](msg: T)(using stdout: Stdout): Unit = stdout.write(msg.show)
-  def println[T: Show](msg: T)(using Stdout): Unit = print(Text(s"${msg.show}\n"))
+// object Out:
+//   def print[T: Show](msg: T)(using stdout: Stdout): Unit = stdout.write(msg.show)
+//   def println[T: Show](msg: T)(using Stdout): Unit = print(Text(s"${msg.show}\n"))
 
-object EncodingPrefix extends Interpolator[Unit, Text, Encoding]:
-  protected def complete(value: Text): Encoding = value match
+object EncodingPrefix extends Verifier[Encoding]:
+  def verify(value: Text): Encoding = value match
     case Encoding(enc) => enc
     case _             => throw InterpolationError(Text(s"$value is not a valid character encoding"))
-
-  protected def initial: Text = Text("")
-  
-  protected def insert(state: Text, value: Unit): Text =
-    throw InterpolationError(Text("variable substitutions are not supported in an encoding literal"))
-  
-  protected def parse(state: Text, next: Text): Text = state+next
-  protected def skip(state: Text): Text = state
