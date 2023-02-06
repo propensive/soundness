@@ -342,21 +342,23 @@ trait SimpleAppendable[-TargetType, -ChunkType] extends Appendable[TargetType, C
 
   def appendChunk(target: TargetType, chunk: ChunkType): Unit
 
+
 object Readable:
   given bytes: Readable[Bytes, Bytes] = LazyList(_)
   given text: Readable[Text, Text] = LazyList(_)
   given textToBytes(using enc: {*} Encoding): ({enc} Readable[Text, Bytes]) =
     text => LazyList(text.s.getBytes(enc.name.s).nn.immutable(using Unsafe))
 
-  given lazyList[ChunkType]: Readable[LazyList[ChunkType], ChunkType] = identity(_)
-  
   given bytesToText[SourceType]
                    (using readable: {*} Readable[SourceType, Bytes], enc: {*} Encoding,
                         handler: {*} BadEncodingHandler)
                    : ({readable, enc, handler} Readable[SourceType, Text]) =
     value => enc.convertStream(readable.read(value))
+  
+  given lazyList[ChunkType]: Readable[LazyList[ChunkType], ChunkType] = identity(_)
 
-  given reader(using streamCut: CanThrow[StreamCutError]): ({streamCut} Readable[ji.BufferedReader, Line]) =
+  given bufferedReader(using streamCut: CanThrow[StreamCutError])
+                      : ({streamCut} Readable[ji.BufferedReader, Line]) =
     reader =>
       def recur(count: ByteSize): LazyList[Line] =
         try reader.readLine match
@@ -364,6 +366,7 @@ object Readable:
           case line: String => Line(Text(line)) #:: recur(count + line.length.b + 1.b)
         catch case err: ji.IOException => throw StreamCutError(count)
         finally reader.close()
+      
       recur(0L.b)
 
 
