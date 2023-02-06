@@ -49,9 +49,9 @@ achieved by calling `as` with an appropriate type, for example,
 ```scala
 url"https://example.com/service".get().as[Text]
 ```
-or with a suitable JSON library such as [Javanais](https://propensive.com/opensource/javanais/),
+or with a suitable JSON library such as [Jacinta](https://propensive.com/opensource/jacinta/),
 ```scala
-import javanais.*
+import jacinta.*
 url"http://example.com/file".post(content).as[Json]
 ```
 
