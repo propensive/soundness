@@ -17,8 +17,8 @@
       "url": "https://github.com/propensive/gesticulate"
     },
     {
-      "base": "../javanais",
-      "url": "https://github.com/propensive/javanais"
+      "base": "../jacinta",
+      "url": "https://github.com/propensive/jacinta"
     },
     {
       "base": "../honeycomb",
@@ -30,7 +30,7 @@
     "../cataclysm/build.irk",
     "../guillotine/build.irk",
     "../gesticulate/build.irk",
-    "../javanais/build.irk",
+    "../jacinta/build.irk",
     "../honeycomb/build.irk"
   ],
   "publishing": {
@@ -60,7 +60,7 @@
         "cataclysm/core",
         "guillotine/core",
         "gesticulate/core",
-        "javanais/core",
+        "jacinta/core",
         "honeycomb/core"
       ],
       "sources": [
