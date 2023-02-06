@@ -33,7 +33,7 @@ import jnf.{FileSystems, FileVisitResult, Files, Paths, SimpleFileVisitor, Stand
 
 import ji.{File as JavaFile}
 
-import language.experimental.pureFunctions
+import language.experimental.captureChecking
 
 object IoError:
   object Reason:
@@ -116,27 +116,36 @@ object File:
       
       def filePath(file: File): String = file.path.fullname.toString
 
-  given (using CanThrow[IoError], CanThrow[StreamCutError]): Writable[File] with
-    def write(value: File, stream: DataStream): Unit =
-      val out = ji.FileOutputStream(value.javaFile, false)
-      try Util.write(stream, out)
-      catch case e => throw IoError(IoError.Op.Write, IoError.Reason.AccessDenied, value.path)
-      finally try out.close() catch _ => ()
-  
-  given (using CanThrow[IoError], CanThrow[StreamCutError]): Appendable[File] with
-    def write(value: File, stream: DataStream): Unit =
-      val out = ji.FileOutputStream(value.javaFile, true)
-      try Util.write(stream, out)
-      catch case e => throw IoError(IoError.Op.Write, IoError.Reason.AccessDenied, value.path)
-      finally try out.close() catch _ => ()
-  
-  given (using CanThrow[IoError]): Streamable[File] with
-    def stream(file: File): DataStream =
-      try Util.readInputStream(ji.FileInputStream(file.javaFile)) catch case e: ji.FileNotFoundException =>
-        if e.getMessage.nn.contains("(Permission denied)")
-        then throw IoError(IoError.Op.Read, IoError.Reason.AccessDenied, file.path)
-        else throw IoError(IoError.Op.Read, IoError.Reason.DoesNotExist, file.path)
+  given writable[ChunkType](using io: CanThrow[IoError], appendable: {*} Appendable[ji.OutputStream, ChunkType])
+        : ({io, appendable} Writable[File, ChunkType]) =
+    appendable.asWritable.contraMap: file =>
+      if !file.javaFile.canWrite()
+      then throw IoError(IoError.Op.Write, IoError.Reason.AccessDenied, file.path)
+      
+      ji.BufferedOutputStream(ji.FileOutputStream(file.javaFile, false))
 
+  given appendable[ChunkType](using io: CanThrow[IoError],
+                                  appendable: {*} Appendable[ji.OutputStream, ChunkType])
+        : ({io, appendable} Appendable[File, ChunkType]) =
+    appendable.contraMap: file =>
+      if !file.javaFile.canWrite()
+      then throw IoError(IoError.Op.Write, IoError.Reason.AccessDenied, file.path)
+      
+      ji.BufferedOutputStream(ji.FileOutputStream(file.javaFile, true))
+
+  given readable[ChunkType](using io: CanThrow[IoError], readable: {*} Readable[ji.InputStream, ChunkType])
+                     : ({io, readable} Readable[File, ChunkType]) =
+    readable.contraMap: file =>
+      if !file.javaFile.canRead() then throw IoError(IoError.Op.Read, IoError.Reason.AccessDenied, file.path)
+      else ji.BufferedInputStream(ji.FileInputStream(file.javaFile))
+  
+  given lineReadable[ChunkType](using io: CanThrow[IoError], readable: {*} Readable[ji.BufferedReader, ChunkType])
+                     : ({io, readable} Readable[File, ChunkType]) =
+    readable.contraMap: file =>
+      if !file.javaFile.canRead() then throw IoError(IoError.Op.Read, IoError.Reason.AccessDenied, file.path)
+      else ji.BufferedReader(ji.FileReader(file.javaFile))
+    
+    
 case class File(filePath: DiskPath) extends Inode(filePath), Shown[File]:
   def directory: Unset.type = Unset
   def file: File = this
@@ -146,13 +155,6 @@ case class File(filePath: DiskPath) extends Inode(filePath), Shown[File]:
     try javaFile.delete()
     catch e => throw IoError(IoError.Op.Delete, IoError.Reason.AccessDenied, path)
   
-  def read[T]()(using readable: Readable[T])
-      : T throws IoError | StreamCutError =
-    val stream = Util.readInputStream(ji.FileInputStream(javaFile))
-    try readable.read(stream) catch
-      case err: java.io.FileNotFoundException =>
-        throw IoError(IoError.Op.Read, IoError.Reason.AccessDenied, path)
-
   def copyTo(dest: DiskPath): File throws IoError =
     if dest.exists()
     then throw IoError(IoError.Op.Create, IoError.Reason.AlreadyExists, dest)
@@ -201,24 +203,29 @@ case class File(filePath: DiskPath) extends Inode(filePath), Shown[File]:
 
 
 object Fifo:
-
   given Show[Fifo] = t"ˢ｢"+_.path.fullname+t"｣"
-
-  given (using CanThrow[IoError], CanThrow[StreamCutError]): Appendable[Fifo] with
-    def write(value: Fifo, stream: DataStream): Unit =
-      val out = value.out
-      try Util.write(stream, out)
-      catch case e => throw IoError(IoError.Op.Write, IoError.Reason.AccessDenied, value.path)
   
-  given (using CanThrow[IoError], CanThrow[StreamCutError]): Writable[Fifo] with
-    def write(value: Fifo, stream: DataStream): Unit =
-      val out = value.out
-      try Util.write(stream, out)
-      catch case e => throw IoError(IoError.Op.Write, IoError.Reason.AccessDenied, value.path)
-      finally out.close()
+  given appendable[ChunkType](using io: CanThrow[IoError],
+                                  appendable: {*} Appendable[ji.OutputStream, ChunkType])
+        : ({io, appendable} Appendable[Fifo, ChunkType]) =
+    appendable.contraMap: fifo =>
+      if !fifo.writable()
+      then throw IoError(IoError.Op.Write, IoError.Reason.AccessDenied, fifo.path)
+      
+      fifo.out
 
+  given readable[ChunkType](using io: CanThrow[IoError], readable: {*} Readable[ji.InputStream, ChunkType])
+                     : ({io, readable} Readable[Fifo, ChunkType]) =
+    readable.contraMap: fifo =>
+      if !fifo.readable() then throw IoError(IoError.Op.Read, IoError.Reason.AccessDenied, fifo.path)
+      else fifo.in
+  
+    
 case class Fifo(path: DiskPath) extends Shown[Fifo]:
+  def writable(): Boolean = path.javaFile.canWrite()
+  def readable(): Boolean = path.javaFile.canRead()
   lazy val out = ji.FileOutputStream(path.javaFile, false)
+  lazy val in = ji.FileInputStream(path.javaFile)
   def close(): Unit = out.close()
 
 object Symlink:
@@ -346,13 +353,14 @@ extends Inode(directoryPath), Shown[Directory]:
   
     dest.directory(Expect)
   
-  def size(): ByteSize throws IoError = path.descendantFiles().map(_.size().long).sum.b
+  //def size(): ByteSize throws IoError = path.descendantFiles().map(_.size().long).sum.b
 
 object DiskPath:
   given Show[DiskPath] = t"ᵖ｢"+_.fullname+t"｣"
 
-  given (using fs: Filesystem, ct: CanThrow[InvalidPathError]): Canonical[DiskPath] =
-    Canonical(fs.parse(_), _.show)
+  // given (using filesystem: Filesystem, invalidPath: CanThrow[InvalidPathError])
+  //       : ({invalidPath} Canonical[DiskPath]) =
+  //   Canonical(filesystem.parse(_), _.show)
 
   given provider(using fs: Filesystem): (GenericPathMaker[DiskPath] & GenericPathReader[DiskPath]) =
     new GenericPathMaker[DiskPath] with GenericPathReader[DiskPath]:
@@ -563,24 +571,20 @@ extends Root(t"/", t""), Shown[Classpath]:
 object ClasspathRef:
   given Show[ClasspathRef] = t"ᶜᵖ｢"+_.fullname+t"｣"
 
+  // FIXME: This seems to need to be inline to avoid problems with erased values
+  inline given readable[ChunkType](using readable: {*} Readable[ji.InputStream, ChunkType],
+                                classpathRef: CanThrow[ClasspathRefError])
+                : ({classpathRef, readable} Readable[ClasspathRef, ChunkType]) =
+    readable.contraMap: ref =>
+      ref.classpath.classLoader.getResourceAsStream(ref.fullname.drop(1).s) match
+        case null => throw ClasspathRefError(ref)
+        case in   => in.nn
+
 case class ClasspathRef(classpath: Classpath, elements: List[Text])
 extends Absolute(elements), Shown[ClasspathRef]:
   type RootType = Classpath
   val root: Classpath = classpath
-  def resource: ClasspathResource = ClasspathResource(classpath.make(parts))
   def fullname = parts.join(t"/", t"/", t"")
 
-object ClasspathResource:
-  given Show[ClasspathResource] = cr => t"[resource]"
-
-case class ClasspathResource(path: ClasspathRef) extends Shown[ClasspathResource]:
-  def read[T]()(using readable: Readable[T]): T throws ClasspathRefError | StreamCutError =
-    val resource = path.classpath.classLoader.getResourceAsStream(path.fullname.drop(1).s)
-    if resource == null then throw ClasspathRefError(path.classpath)(path)
-    val stream = Util.readInputStream(resource.nn)
-    readable.read(stream)
-  
-  def name: Text = path.parts.lastOption.getOrElse(path.classpath.prefix)
-
-case class ClasspathRefError(classpath: Classpath)(path: ClasspathRef)
-extends Error(err"the resource $path could not be accessed on the classpath")
+case class ClasspathRefError(path: ClasspathRef)
+extends Error(err"the resource $path is not on the claspath")
