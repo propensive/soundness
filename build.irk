@@ -93,7 +93,7 @@
       "jars": [],
       "sources": ["src/test"],
       "version": "0.4.0",
-      "xexec": {
+      "xec": {
         "browsers": [],
 	"start": "punctuation.Tests"
       },
