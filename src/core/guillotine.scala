@@ -46,8 +46,8 @@ object Executor:
   
   given text: Executor[Text] = stream.map(_.foldLeft(t"") { (acc, line) => t"$acc\n$line" }.trim)
 
-  given dataStream(using readable: {*} Readable[ji.InputStream, Bytes]): ({readable} Executor[LazyList[Bytes]]) =
-    proc => readable.read(proc.getInputStream.nn)
+  given dataStream(using streamCut: CanThrow[StreamCutError]): ({streamCut} Executor[LazyList[Bytes]]) =
+    proc => Readable.inputStream.read(proc.getInputStream.nn)
   
   given exitStatus: Executor[ExitStatus] = _.waitFor() match
     case 0     => ExitStatus.Ok
