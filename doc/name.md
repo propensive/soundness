@@ -1,4 +1,1 @@
-_Javanais_ is a form of French slang that involves artificially adding
-syllables to words, and a dialect that people can be learn to encode or decode,
-like JSON. Its initial letter is also a nod towards JSON.
-
+_Jacinta_ is one of the feminine forms of the given name Jason, which is homophonous to JSON.

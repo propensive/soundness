@@ -1,10 +1,10 @@
-[<img alt="GitHub Workflow" src="https://img.shields.io/github/actions/workflow/status/propensive/javanais/main.yml?style=for-the-badge" height="24">](https://github.com/propensive/javanais/actions)
+[<img alt="GitHub Workflow" src="https://img.shields.io/github/actions/workflow/status/propensive/jacinta/main.yml?style=for-the-badge" height="24">](https://github.com/propensive/jacinta/actions)
 [<img src="https://img.shields.io/discord/633198088311537684?color=8899f7&label=DISCORD&style=for-the-badge" height="24">](https://discord.gg/7b6mpF6Qcf)
 <img src="/doc/images/github.png" valign="middle">
 
-# Javanais
+# Jacinta
 
-_Javanais_ is a fully-featured JSON library built upon the JSON parser,
+_Jacinta_ is a fully-featured JSON library built upon the JSON parser,
 [Merino](https://github.com/propensive/merino/), and designed to make it easy
 and safe to work with JSON in Scala.
 
@@ -18,7 +18,7 @@ and safe to work with JSON in Scala.
 
 ## Availability
 
-Javanais has not yet been published as a binary, though work is ongoing to fix this.
+Jacinta has not yet been published as a binary, though work is ongoing to fix this.
 
 ## Getting Started
 
@@ -27,7 +27,7 @@ Javanais has not yet been published as a binary, though work is ongoing to fix t
 A `Json` value may be obtained from any readable value by passing it to the `Json.parse` method. This could be a
 string value, for example,
 ```scala
-import javanais.*
+import jacinta.*
 Json.parse(t"""{ "name": "Alfred", "age": 83 }""")
 ```
 but could also be a file or any other data stream with an appropirate `Readable` typeclass instance in scope:
@@ -162,17 +162,17 @@ object Email:
 
 ## Related Projects
 
-The following _Scala One_ libraries are dependencies of _Javanais_:
+The following _Scala One_ libraries are dependencies of _Jacinta_:
 
 [![Anticipation](https://github.com/propensive/anticipation/raw/main/doc/images/128x128.png)](https://github.com/propensive/anticipation/) &nbsp; [![Gossamer](https://github.com/propensive/gossamer/raw/main/doc/images/128x128.png)](https://github.com/propensive/gossamer/) &nbsp; [![Merino](https://github.com/propensive/merino/raw/main/doc/images/128x128.png)](https://github.com/propensive/merino/) &nbsp; [![Probably](https://github.com/propensive/probably/raw/main/doc/images/128x128.png)](https://github.com/propensive/probably/) &nbsp;
 
-The following _Scala One_ libraries are dependents of _Javanais_:
+The following _Scala One_ libraries are dependents of _Jacinta_:
 
 [![Tarantula](https://github.com/propensive/tarantula/raw/main/doc/images/128x128.png)](https://github.com/propensive/tarantula/) &nbsp;
 
 ## Status
 
-Javanais is classified as __fledgling__. For reference, Scala One projects are
+Jacinta is classified as __fledgling__. For reference, Scala One projects are
 categorized into one of the following five stability levels:
 
 - _embryonic_: for experimental or demonstrative purposes only, without any guarantees of longevity
@@ -185,22 +185,22 @@ Projects at any stability level, even _embryonic_ projects, are still ready to
 be used, but caution should be taken if there is a mismatch between the
 project's stability level and the importance of your own project.
 
-Javanais is designed to be _small_. Its entire source code currently consists
+Jacinta is designed to be _small_. Its entire source code currently consists
 of 414 lines of code.
 
 ## Building
 
-Javanais can be built on Linux or Mac OS with [Fury](/propensive/fury), however
+Jacinta can be built on Linux or Mac OS with [Fury](/propensive/fury), however
 the approach to building is currently in a state of flux, and is likely to
 change.
 
 ## Contributing
 
-Contributors to Javanais are welcome and encouraged. New contributors may like to look for issues marked
-<a href="https://github.com/propensive/javanais/labels/beginner">beginner</a>.
+Contributors to Jacinta are welcome and encouraged. New contributors may like to look for issues marked
+<a href="https://github.com/propensive/jacinta/labels/beginner">beginner</a>.
 
 We suggest that all contributors read the [Contributing Guide](/contributing.md) to make the process of
-contributing to Javanais easier.
+contributing to Jacinta easier.
 
 Please __do not__ contact project maintainers privately with questions unless
 there is a good reason to keep them private. While it can be tempting to
@@ -209,18 +209,16 @@ audience, and it can result in duplication of effort.
 
 ## Author
 
-Javanais was designed and developed by Jon Pretty, and commercial support and training is available from
+Jacinta was designed and developed by Jon Pretty, and commercial support and training is available from
 [Propensive O&Uuml;](https://propensive.com/).
 
 
 
 ## Name
 
-_Javanais_ is a form of French slang that involves artificially adding
-syllables to words, and a dialect that people can be learn to encode or decode,
-like JSON. Its initial letter is also a nod towards JSON.
+_Jacinta_ is one of the feminine forms of the given name Jason, which is homophonous to JSON.
 
 ## License
 
-Javanais is copyright &copy; 2019-23 Jon Pretty & Propensive O&Uuml;, and is made available under the
+Jacinta is copyright &copy; 2019-23 Jon Pretty & Propensive O&Uuml;, and is made available under the
 [Apache 2.0 License](/license.md).
