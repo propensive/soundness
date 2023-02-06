@@ -18,12 +18,13 @@ package tarantula
 
 import guillotine.*
 import gossamer.*
-import javanais.*, jsonSerializers.minimal
+import jacinta.*, jsonPrinters.minimal
 import telekinesis.*
 import cataclysm.*
 import honeycomb.*
 import eucalyptus.*
-import rudiments.*, characterEncodings.utf8
+import rudiments.*
+import turbulence.*, characterEncodings.utf8
 import deviation.*
 import gesticulate.*
 import parasitism.*
