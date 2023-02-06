@@ -49,7 +49,7 @@ export scala.util.control.NonFatal
 export scala.jdk.CollectionConverters.{IteratorHasAsScala, ListHasAsScala, MapHasAsScala, SeqHasAsJava,
     MapHasAsJava, EnumerationHasAsScala}
 
-export scala.annotation.{tailrec, implicitNotFound, targetName, switch, StaticAnnotation}
+export scala.annotation.{tailrec, implicitNotFound, targetName, switch, StaticAnnotation, capability}
 
 import language.experimental.captureChecking
 
@@ -156,42 +156,6 @@ extension (iarray: IArray.type)
 case class Counter(first: Int = 0):
   private var id: Int = first
   def apply(): Int = synchronized(id.tap((id += 1).waive))
-
-package characterEncodings:
-  given utf8: Encoding = new Encoding(Text("UTF-8")):
-    override def carry(arr: Array[Byte]): Int =
-      val len = arr.length
-      def last = arr(len - 1)
-      def last2 = arr(len - 2)
-      def last3 = arr(len - 3)
-      
-      if len > 0 && ((last & -32) == -64 || (last & -16) == -32 || (last & -8) == -16) then 1
-      else if len > 1 && ((last2 & -16) == -32 || (last2 & -8) == -16) then 2
-      else if len > 2 && ((last3 & -8) == -16) then 3
-      else 0
-    
-    override def run(byte: Byte): Int =
-      if (byte & -32) == -64 then 2 else if (byte & -16) == -32 then 3 else if (byte & -8) == -16 then 4 else 1
-    
-  given ascii: Encoding = Encoding(Text("US-ASCII"))
-  given iso88591: Encoding = Encoding(Text("ISO-8859-1"))
-
-object Encoding:
-  import scala.jdk.CollectionConverters.SetHasAsScala
-
-  val all: Set[Text] =
-    jnc.Charset.availableCharsets.nn.asScala.to(Map).values.to(Set).flatMap: cs =>
-      cs.aliases.nn.asScala.to(Set) + cs.displayName.nn
-    .map(_.toLowerCase.nn).map(Text(_))
-  
-  def unapply(name: Text): Option[Encoding] =
-    if !all.contains(Text(name.s.toLowerCase.nn)) then None else Some:
-      val charset = jnc.Charset.forName(name.s).nn.displayName.nn
-      if charset == "UTF-8" then characterEncodings.utf8 else Encoding(Text(charset))
-
-case class Encoding(name: Text):
-  def carry(array: Array[Byte]): Int = 0
-  def run(byte: Byte): Int = 1
 
 object AndExtractor:
   @targetName("And")
@@ -355,11 +319,16 @@ package environments:
 
   given empty: Environment(v => None, v => None)
 
-sealed class Internet()
+sealed class LocalhostAccess()
+sealed class Internet() extends LocalhostAccess()
 
 def internet[T](fn: Internet ?=> T): T =
   val inet: Internet = Internet()
   fn(using inet)
+
+def localhostAccess[T](fn: LocalhostAccess ?=> T): T =
+  val access: LocalhostAccess = LocalhostAccess()
+  fn(using access)
 
 extension [P <: Product](product: P)(using mirror: Mirror.ProductOf[P])
   def tuple: mirror.MirroredElemTypes = Tuple.fromProductTyped(product)
