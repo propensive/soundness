@@ -117,11 +117,11 @@ these types include:
 - [Caesura](https://github.com/propensive/caesura/), for `caesura.Csv` and `caesura.Tsv` types
 - [Cataclysm](https://github.com/propensive/cataclysm/), for `cataclysm.CssStylesheet`s
 - [Honeycomb](https://github.com/propensive/honeycomb/), for `honeycomb.HtmlDoc`s
-- [Javanais](https://github.com/propensive/javanais/), for `Json` values
+- [Jacinta](https://github.com/propensive/jacinta/), for `Json` values
 - [Xylophone](https://github.com/propensive/xylophone/), for `Xml` values
 
 A `GenericHttpReader` instance is provided in
-[Javanais](https://github.com/propensive/javanais/) for reading a `Json` value
+[Jacinta](https://github.com/propensive/jacinta/) for reading a `Json` value
 directly from an HTTP response.
 
 #### `GenericInstant` and `GenericDuration` in the `time` module
