@@ -62,14 +62,12 @@ trait Executor[T]:
 class Process[ResultType](process: java.lang.Process):
   def pid: Pid = Pid(process.pid)
   
-  def stdout[ChunkType]()(using readable: {*} Readable[ji.InputStream, ChunkType])
-            : {readable} LazyList[ChunkType] =
-    readable.read(process.getInputStream.nn)
+  def stdout(): LazyList[Bytes] throws StreamCutError =
+    Readable.inputStream.read(process.getInputStream.nn)
   
-  def stderr[ChunkType]()(using readable: {*} Readable[ji.InputStream, ChunkType])
-            : {readable} LazyList[ChunkType] =
-    readable.read(process.getErrorStream.nn)
-
+  def stderr(): LazyList[Bytes] throws StreamCutError =
+    Readable.inputStream.read(process.getErrorStream.nn)
+  
   def stdin[ChunkType]
            (stream: {*} LazyList[ChunkType])(using writable: {*} Writable[ji.OutputStream, ChunkType])
            : {stream, writable} Unit =
