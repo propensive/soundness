@@ -20,6 +20,7 @@ import rudiments.*
 import deviation.*
 import gossamer.*
 import anticipation.*
+import turbulence.*
 
 import scala.quoted.*
 

@@ -19,6 +19,7 @@ package honeycomb
 import rudiments.*
 import deviation.*
 import gossamer.*
+import turbulence.*
 import anticipation.*
 
 trait HtmlAttribute[Key <: Label, -Value, -T]:
