@@ -64,7 +64,7 @@ will return a sequence of `Text`s which will print as,
 
 The following _Scala One_ libraries are dependencies of _Escritoire_:
 
-[![Escapade](https://github.com/propensive/escapade/raw/main/doc/images/128x128.png)](https://github.com/propensive/escapade/) &nbsp; [![Probably](https://github.com/propensive/probably/raw/main/doc/images/128x128.png)](https://github.com/propensive/probably/) &nbsp;
+[![Escapade](https://github.com/propensive/escapade/raw/main/doc/images/128x128.png)](https://github.com/propensive/escapade/) &nbsp; [![Hieronymus](https://github.com/propensive/hieronymus/raw/main/doc/images/128x128.png)](https://github.com/propensive/hieronymus/) &nbsp; [![Probably](https://github.com/propensive/probably/raw/main/doc/images/128x128.png)](https://github.com/propensive/probably/) &nbsp;
 
 The following _Scala One_ libraries are dependents of _Escritoire_:
 
@@ -86,7 +86,7 @@ be used, but caution should be taken if there is a mismatch between the
 project's stability level and the importance of your own project.
 
 Escritoire is designed to be _small_. Its entire source code currently consists
-of 195 lines of code.
+of 198 lines of code.
 
 ## Building
 
