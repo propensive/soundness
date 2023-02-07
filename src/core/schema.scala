@@ -52,6 +52,7 @@ object CodlSchema:
 
   def apply(subschemas: List[(Text, CodlSchema)]): CodlSchema = Struct(subschemas.map(Entry(_, _)), Arity.Optional)
 
+
 sealed trait CodlSchema(val subschemas: IArray[CodlSchema.Entry], val arity: Arity,
                         val validator: Maybe[Text -> Boolean])
 extends Dynamic:
@@ -65,8 +66,8 @@ extends Dynamic:
 
   def parse[SourceType](source: SourceType)
            (using streamCut: CanThrow[StreamCutError], aggregate: CanThrow[AggregateError[CodlError]],
-                readable: {*} Readable[SourceType, Text])
-           : {aggregate, streamCut, readable} CodlDoc =
+                readable: Readable[SourceType, Text])
+           : {aggregate, streamCut} CodlDoc =
     Codl.parse(source, this)
   
   def apply(key: Text): Maybe[CodlSchema] = dictionary.get(key).orElse(dictionary.get(Unset)).getOrElse(Unset)
