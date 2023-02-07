@@ -22,6 +22,8 @@ import rudiments.*
 import eucalyptus.*, logging.stdout
 import escapade.*
 
+import textWidthCalculation.uniform
+
 import unsafeExceptions.canThrowAny
 
 object Tests extends Suite(t"Escritoire tests"):

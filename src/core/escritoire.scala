@@ -20,6 +20,7 @@ import rudiments.*
 import gossamer.*
 import escapade.*
 import deviation.*
+import hieronymus.*
 
 import language.experimental.namedTypeArguments
 
@@ -41,7 +42,8 @@ object Column:
                     : Column[T] =
     Column[T](ashow.ansiShow(title), get.andThen(ashow2.ansiShow(_)), breaks, align, width, hide)
 
-  def constrain(text: Text, breaks: Breaks, maxWidth: Int, init: Int = 0): Table.BiShort =
+  def constrain(text: Text, breaks: Breaks, maxWidth: Int, init: Int = 0)
+               (using calc: TextWidthCalculator): Table.BiShort =
 
     @tailrec
     def recur(pos: Int, space: Int = 0, count: Int = 0, max: Int = 0, lines: Int = 1): Table.BiShort =
@@ -52,15 +54,15 @@ object Column:
           else recur(pos + 1, count, count + 1, max, lines)
         case '\u200b' if breaks == Breaks.Zwsp =>
           if count >= maxWidth then recur(pos + 1, 0, 0, max.max(count), lines + 1)
-          else recur(pos + 1, count, count + 1, max, lines)
+          else recur(pos + 1, count, count, max, lines)
         case '\n' =>
           recur(pos + 1, 0, 0, max.max(count), lines + 1)
         case ch if breaks == Breaks.Character =>
           if count >= maxWidth then recur(pos + 1, 0, 0, max.max(count), lines + 1)
-          else recur(pos + 1, count, count + 1, max, lines)
+          else recur(pos + 1, count, count + calc.width(ch), max, lines)
         case ch =>
           if count >= maxWidth then recur(pos + 1, 0, count - space, max.max(space), lines + 1)
-          else recur(pos + 1, space, count + 1, max, lines)
+          else recur(pos + 1, space, count + calc.width(ch), max, lines)
  
     recur(init)
 
@@ -83,7 +85,7 @@ object Table:
 case class Table[T: ClassTag](initCols: Column[T]*):
 
   def tabulate(data: Seq[T], maxWidth: Int, delimitRows: DelimitRows = DelimitRows.RuleIfMultiline)
-              (using style: TableStyle)
+              (using style: TableStyle, calc: TextWidthCalculator)
               : LazyList[AnsiText] =
     val cols: IArray[Column[T]] = IArray.from(initCols.filterNot(_.hide))
     val titles: IArray[AnsiText] = IArray.from(cols.map(_.title))
@@ -160,9 +162,9 @@ case class Table[T: ClassTag](initCols: Column[T]*):
             val width = columns(col).width.or(0)
             
             columns(col).align match
-              case Alignment.Left   => slice.pad(width)
-              case Alignment.Center => slice.center(width)
-              case Alignment.Right  => slice.pad(width, Rtl)
+              case Alignment.Left   => slice.pad(width)(using calc)
+              case Alignment.Center => slice.center(width)(using calc)
+              case Alignment.Right  => slice.pad(width, Rtl)(using calc)
           
           .join(ansi"${style.left} ", ansi" ${style.sep} ", ansi" ${style.right}")
         
