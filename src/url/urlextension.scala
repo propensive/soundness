@@ -16,9 +16,6 @@
 
 package telekinesis
 
-import rudiments.*
-import gossamer.*
-
 extension (inline ctx: StringContext)
   transparent inline def url(inline parts: Any*): Url =
     ${UrlInterpolator.expand('UrlInterpolator, 'ctx, 'parts)}

@@ -25,7 +25,6 @@ import wisteria.*
 import eucalyptus.*
 import iridescence.*
 import escapade.*
-import serpentine.*
 import anticipation.*
 
 import java.net.*
