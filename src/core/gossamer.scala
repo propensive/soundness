@@ -89,7 +89,7 @@ extension (text: Text)
     if to <= from then Text("")
     else Text(text.s.substring(from max 0 min length, to min length max 0).nn)
   
-  inline def chars: IArray[Char] = text.s.toCharArray.nn.immutable(using Unsafe)
+  def chars: IArray[Char] = text.s.toCharArray.nn.immutable(using Unsafe)
   def map(fn: Char => Char): Text = Text(String(text.s.toCharArray.nn.map(fn)))
   inline def empty: Boolean = text.s.isEmpty
   inline def rsub(from: Text, to: Text): Text = Text(text.s.replaceAll(from.s, to.s).nn)
@@ -108,7 +108,7 @@ extension (text: Text)
 
   def flatMap(fn: Char => Text): Text =
     Text(String(text.s.toCharArray.nn.immutable(using Unsafe).flatMap(fn(_).s.toCharArray.nn
-        .immutable(using Unsafe)).immutable(using Unsafe)))
+        .immutable(using Unsafe)).mutable(using Unsafe)))
 
   def dropWhile(pred: Char -> Boolean): Text =
     try Text(text.s.substring(0, where(!pred(_))).nn) catch case err: OutOfRangeError => Text("")
