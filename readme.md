@@ -71,7 +71,7 @@ be used, but caution should be taken if there is a mismatch between the
 project's stability level and the importance of your own project.
 
 Surveillance is designed to be _small_. Its entire source code currently consists
-of 104 lines of code.
+of 103 lines of code.
 
 ## Building
 
