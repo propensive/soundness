@@ -248,7 +248,7 @@ class Funnel[T]():
   def put(value: T): Unit = queue.put(value)
   def stop(): Unit = queue.put(Unset)
   def stream: LazyList[T] =
-    LazyList.continually(queue.take()).takeWhile(_ != Unset).sift[T]
+    LazyList.continually(queue.take()).takeWhile(_ != Unset).collect { case t: T => t }
 
 class Gun() extends Funnel[Unit]():
   def fire(): Unit = put(())
@@ -302,7 +302,7 @@ trait SimpleWritable[-TargetType, -ChunkType] extends Writable[TargetType, Chunk
 trait Writable[-TargetType, -ChunkType]:
   def write(target: TargetType, stream: LazyList[ChunkType]): Unit
 
-  def contraMap[TargetType2](fn: TargetType2 => TargetType): {this, fn} Writable[TargetType2, ChunkType] =
+  def contraMap[TargetType2](fn: TargetType2 => TargetType): {fn} Writable[TargetType2, ChunkType] =
     (target, stream) => write(fn(target), stream)
 
 object Appendable:
@@ -319,17 +319,17 @@ object Appendable:
     (stderr, text) => basicIo.writeStderrText(text)
 
   given outputStreamBytes(using streamCut: CanThrow[StreamCutError])
-        : ({streamCut} SimpleAppendable[ji.OutputStream, Bytes]) =
+                         : ({streamCut} SimpleAppendable[ji.OutputStream, Bytes]) =
     (outputStream, bytes) => outputStream.write(bytes.mutable(using Unsafe))
   
   given outputStreamText(using streamCut: CanThrow[StreamCutError], enc: {*} Encoding)
-        : ({streamCut, enc} SimpleWritable[ji.OutputStream, Text]) =
+                        : ({streamCut, enc} SimpleWritable[ji.OutputStream, Text]) =
     (outputStream, text) => outputStream.write(text.s.getBytes(enc.name.s).nn)
 
 trait Appendable[-TargetType, -ChunkType]:
   def append(target: TargetType, stream: LazyList[ChunkType]): Unit
   
-  def contraMap[TargetType2](fn: TargetType2 => TargetType): {this, fn} Appendable[TargetType2, ChunkType] =
+  def contraMap[TargetType2](fn: TargetType2 => TargetType): {fn} Appendable[TargetType2, ChunkType] =
     (target, stream) => append(fn(target), stream)
   
   def asWritable: Writable[TargetType, ChunkType] = append(_, _)
@@ -401,7 +401,7 @@ object Readable:
 trait Readable[-SourceType, +ChunkType]:
   def read(value: SourceType): LazyList[ChunkType]
   
-  def contraMap[SourceType2](fn: SourceType2 => SourceType): {fn, this} Readable[SourceType2, ChunkType] =
+  def contraMap[SourceType2](fn: SourceType2 => SourceType): {fn} Readable[SourceType2, ChunkType] =
     source => read(fn(source))
 
 object Aggregable:

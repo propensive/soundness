@@ -48,7 +48,7 @@ trait VariableLengthEncoding extends Encoding:
               Text(String(carried ++ array.take(need - carried.length), name.s)) #::
                   read(stream, Encoding.empty, need - carried.length)
           else
-            val carry = trimLength(array)
+            val carry = trimLength(array.immutable(using Unsafe))
             Text(String(array, skip, array.length - carry - skip, name.s)) #::
                 read(tail, array.takeRight(carry))
         
