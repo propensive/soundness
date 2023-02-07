@@ -176,3 +176,6 @@
 [submodule "mod/oubliette"]
 	path = mod/oubliette
 	url = git@github.com:propensive/oubliette
+[submodule "mod/hieronymus"]
+	path = mod/hieronymus
+	url = git@github.com:propensive/hieronymus
