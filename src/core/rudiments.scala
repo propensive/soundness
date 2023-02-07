@@ -101,12 +101,12 @@ extension [T](value: T)
     value.asInstanceOf[T & Matchable]
 
 extension [T](value: IArray[T])
-  transparent inline def mutable(using erased Unsafe.type): Array[T] = value match
+  inline def mutable(using erased Unsafe.type): Array[T] = value match
     case array: Array[T] @unchecked => array
     case _                          => throw Mistake("Should never match")
 
 extension [T](value: Array[T])
-  transparent inline def immutable(using erased Unsafe.type): IArray[T] = value match
+  inline def immutable(using erased Unsafe.type): IArray[T] = value match
     case array: IArray[T] @unchecked => array
     case _                           => throw Mistake("Should never match")
 
@@ -170,7 +170,6 @@ extension (xs: Iterable[Text])
 extension [T](xs: Iterable[T])
   transparent inline def mtwin: Iterable[(T, T)] = xs.map { x => (x, x) }
   transparent inline def mtriple: Iterable[(T, T, T)] = xs.map { x => (x, x, x) }
-  transparent inline def sift[S]: Iterable[S] = xs.collect { case x: S @unchecked => x }
 
   def indexBy[S](fn: T -> S): Map[S, T] throws DuplicateIndexError =
     val map = xs.map: value =>
