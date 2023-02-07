@@ -260,7 +260,7 @@ object JsonAst:
               continue = false
             case ch => abort(Issue.ExpectedString(ch.toChar))
         
-        val result = (keys.toArray.immutable(using Unsafe), values.toArray.immutable(using Unsafe))
+        val result = (keys.toArray.asInstanceOf[IArray[String]], values.toArray.asInstanceOf[IArray[Any]])
         relinquishStringArrayBuffer()
         relinquishArrayBuffer()
         result
@@ -284,7 +284,7 @@ object JsonAst:
           
           next()
         
-        val result: IArray[Any] = arrayItems.toArray.immutable(using Unsafe)
+        val result: IArray[Any] = arrayItems.toArray.asInstanceOf[IArray[Any]]
         relinquishArrayBuffer()
         result
 
