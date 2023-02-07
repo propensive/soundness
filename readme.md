@@ -181,7 +181,7 @@ will print `Hello` once per second, forever.
 
 The following _Scala One_ libraries are dependencies of _Turbulence_:
 
-[![Parasitism](https://github.com/propensive/parasitism/raw/main/doc/images/128x128.png)](https://github.com/propensive/parasitism/) &nbsp; [![Probably](https://github.com/propensive/probably/raw/main/doc/images/128x128.png)](https://github.com/propensive/probably/) &nbsp;
+[![Parasitism](https://github.com/propensive/parasitism/raw/main/doc/images/128x128.png)](https://github.com/propensive/parasitism/) &nbsp;
 
 The following _Scala One_ libraries are dependents of _Turbulence_:
 
@@ -203,7 +203,7 @@ be used, but caution should be taken if there is a mismatch between the
 project's stability level and the importance of your own project.
 
 Turbulence is designed to be _small_. Its entire source code currently consists
-of 319 lines of code.
+of 467 lines of code.
 
 ## Building
 
