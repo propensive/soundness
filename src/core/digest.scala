@@ -99,7 +99,9 @@ object Digest:
 
 case class Digest[A <: HashScheme[?]](bytes: Bytes) extends Encodable, Shown[Digest[?]]:
   override def equals(that: Any) = that match
-    case digest: Digest[?] => ju.Arrays.equals(bytes.mutable(using Unsafe), digest.bytes.mutable(using Unsafe))
+    case digest: Digest[?] => val left: Array[Byte] = bytes.mutable(using Unsafe)
+                              val right: Array[Byte] = bytes.mutable(using Unsafe)
+                              ju.Arrays.equals(left, right)
     case _                 => false
   
   override def hashCode: Int = bytes.hashCode
