@@ -1,0 +1,51 @@
+{
+  "repos": [
+    {
+      "base": "../gossamer",
+      "url": "https://github.com/propensive/gossamer"
+    },
+    {
+      "base": "../kaleidoscope",
+      "url": "https://github.com/propensive/kaleidoscope"
+    }
+  ],
+  "imports": [
+    "../gossamer/build.irk",
+    "../kaleidoscope/build.irk"
+  ],
+  "modules": [
+    {
+      "name": "Hieronymus",
+      "id": "hieronymus/core",
+      "links": [
+        "gossamer/core",
+        "kaleidoscope/core"
+      ],
+      "sources": [
+        "src/core"
+      ],
+      "resources": [
+        "res"
+      ],
+      "version": "0.4.0",
+      "docs": [
+        "doc"
+      ]
+    },
+    {
+      "name": "Hieronymus Tests",
+      "id": "hieronymus/test",
+      "links": [
+        "hieronymus/core",
+        "probably/cli"
+      ],
+      "exec": {
+        "browsers": [],
+        "start": "hieronymus.Tests"
+      },
+      "sources": ["src/test"],
+      "version": "0.4.0",
+      "docs": ["doc"]
+    }
+  ]
+}
