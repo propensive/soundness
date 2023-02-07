@@ -11,11 +11,16 @@
     {
       "base": "../eucalyptus",
       "url": "https://github.com/propensive/eucalyptus"
+    },
+    {
+      "base": "../hieronymus",
+      "url": "https://github.com/propensive/hieronymus"
     }
   ],
   "imports": [
     "../chiaroscuro/build.irk",
     "../hyperbole/build.irk",
+    "../hieronymus/build.irk",
     "../eucalyptus/build.irk"
   ],
   "publishing": {
@@ -43,6 +48,7 @@
       "links": [
         "hyperbole/core",
         "eucalyptus/core",
+        "hieronymus/core",
 	"chiaroscuro/core"
       ],
       "sources": [

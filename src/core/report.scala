@@ -101,7 +101,7 @@ class TestReport():
       case unit :: rest =>
         if n > 100000L then time(n/1000L, rest) else
           val sig = (n/1000L).show
-          val frac = (n%1000).show.pad(3, Rtl, '0')
+          val frac = (n%1000).show.pad(3, Rtl, '0')(using textWidthCalculation.uniform)
           ansi"${colors.Silver}(${sig}.$frac) ${unit}"
 
     def minTime: AnsiText = if min == 0L then ansi"" else time(min)
@@ -110,6 +110,7 @@ class TestReport():
     def iterations: AnsiText = if count == 0 then ansi"" else count.ansi
 
   def complete(): Unit =
+    import hieronymus.textWidthCalculation.eastAsianScripts
     val summaries: List[Summary] = tests.to(List).map: (id, buf) =>
       val status =
         if buf.isEmpty then Status.Suite
