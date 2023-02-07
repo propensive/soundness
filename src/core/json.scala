@@ -101,14 +101,16 @@ object Json extends Dynamic:
   given (using JsonPrinter): Show[Json] = json =>
     try json.normalize.root.show catch case err: JsonAccessError => t"<${err.reason}>"
 
-  given (using enc: Encoding, serializer: JsonPrinter): GenericHttpResponseStream[Json] with
-    def mediaType: String = t"application/json; charset=${enc.name}".s
-    def content(json: Json): LazyList[Bytes] = LazyList(json.show.bytes)
+  given (using enc: {*} Encoding, printer: JsonPrinter): ({enc} GenericHttpResponseStream[Json]) =
+    new GenericHttpResponseStream[Json]:
+      def mediaType: String = t"application/json; charset=${enc.name}".s
+      def content(json: Json): LazyList[Bytes] =
+        LazyList(json.show.s.getBytes(enc.name.s).asInstanceOf[Bytes])
 
   given (using jsonParse: CanThrow[JsonParseError]): ({jsonParse} GenericHttpReader[Json]) =
     new GenericHttpReader[Json]:
       def read(string: String): Json =
-        Json(JsonAst.parse(LazyList(string.getBytes("UTF-8").nn.immutable(using Unsafe))), Nil)
+        Json(JsonAst.parse(LazyList(string.getBytes("UTF-8").nn.asInstanceOf[Bytes])), Nil)
 
   given aggregable: Aggregable[Bytes, Json] = value => Json(JsonAst.parse(value), Nil)
 
@@ -184,27 +186,27 @@ object JsonReader extends Derivation[JsonReader]:
   
   given [T](using canon: Canonical[T]): JsonReader[T] = v => canon.deserialize(v.string)
 
-  given opt[T](using JsonReader[T]): JsonReader[Option[T]] with
-    def read(value: => JsonAst): Option[T] =
-      try Some(summon[JsonReader[T]].read(value)) catch case e: Throwable => None
+  given opt[T](using reader: {*} JsonReader[T]): ({reader} JsonReader[Option[T]]) = new JsonReader[Option[T]]:
+    def read(value: JsonAst): Option[T] =
+      Option(reader.read(value))
 
   given array[Coll[T1] <: Traversable[T1], T]
               (using reader: JsonReader[T], factory: Factory[T, Coll[T]]): JsonReader[Coll[T]] =
     new JsonReader[Coll[T]]:
-      def read(value: => JsonAst): Coll[T] =
+      def read(value: JsonAst): Coll[T] =
         val bld = factory.newBuilder
         value.array.foreach(bld += reader.read(_))
         bld.result()
 
   given map[T](using reader: JsonReader[T]): JsonReader[Map[String, T]] = new JsonReader[Map[String, T]]:
-    def read(value: => JsonAst): Map[String, T] =
+    def read(value: JsonAst): Map[String, T] =
       val (keys, values) = value.obj
       
       keys.indices.foldLeft(Map[String, T]()): (acc, i) =>
         acc.updated(keys(i), reader.read(values(i)))
 
   def join[T](caseClass: CaseClass[JsonReader, T]): JsonReader[T] = new JsonReader[T]:
-    def read(value: => JsonAst) =
+    def read(value: JsonAst): T =
       caseClass.construct: param =>
         val (keys, values) = value.obj
           param.typeclass.read:
@@ -213,7 +215,7 @@ object JsonReader extends Derivation[JsonReader]:
               case idx => values(idx)
 
   def split[T](sealedTrait: SealedTrait[JsonReader, T]): JsonReader[T] = new JsonReader[T]:
-    def read(value: => JsonAst) =
+    def read(value: JsonAst) =
       val _type = Json(value, Nil).selectDynamic("_type").as[Text]
       val subtype = sealedTrait.subtypes.find { t => Text(t.typeInfo.short) == _type }
         .getOrElse(throw JsonAccessError(Issue.Type(JsonPrimitive.Object))) // FIXME
@@ -224,7 +226,7 @@ object JsonReader extends Derivation[JsonReader]:
 trait JsonReader[T]:
   private inline def reader: this.type = this
   
-  def read(json: => JsonAst): T
+  def read(json: JsonAst): T
   def map[S](fn: T => S): {this, fn} JsonReader[S] = json => fn(reader.read(json))
 
 case class Json(root: JsonAst, path: List[Int | Text] = Nil) extends Dynamic derives CanEqual:
@@ -297,7 +299,7 @@ case class Json(root: JsonAst, path: List[Int | Text] = Nil) extends Dynamic der
     case _ =>
       false
 
-  def normalize: Json throws JsonAccessError =
+  def normalize(using jsonAccess: CanThrow[JsonAccessError]): {jsonAccess} Json =
     def deref(value: JsonAst, path: List[Int | Text]): JsonAst throws JsonAccessError = path match
       case Nil =>
         value
@@ -323,7 +325,8 @@ case class Json(root: JsonAst, path: List[Int | Text] = Nil) extends Dynamic der
     Json(deref(root, path.reverse), Nil)
 
   def as[T](using reader: JsonReader[T]): T throws JsonAccessError =
-    reader.read(normalize.root)
+    val root = normalize.root
+    reader.read(root)
 
 trait JsonPrinter:
   def serialize(json: JsonAst): Text
