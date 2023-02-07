@@ -146,6 +146,7 @@ trait LogSink:
 
 object LogFormat:
   given standardAnsi[T]: LogFormat[T] = entry =>
+    import textWidthCalculation.uniform
     val text = ansi"${entry.timestamp.ansi} ${entry.level.ansi} ${entry.realm.ansi.span(8)} ${entry.message}${'\n'}"
     text.render
   
