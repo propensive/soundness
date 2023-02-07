@@ -26,7 +26,9 @@ The following _Scala One_ libraries are dependencies of _Hieronymus_:
 
 [![Gossamer](https://github.com/propensive/gossamer/raw/main/doc/images/128x128.png)](https://github.com/propensive/gossamer/) &nbsp; [![Kaleidoscope](https://github.com/propensive/kaleidoscope/raw/main/doc/images/128x128.png)](https://github.com/propensive/kaleidoscope/) &nbsp; [![Probably](https://github.com/propensive/probably/raw/main/doc/images/128x128.png)](https://github.com/propensive/probably/) &nbsp;
 
-No other _Scala One_ libraries are dependents of _Hieronymus_.
+The following _Scala One_ libraries are dependents of _Hieronymus_:
+
+[![Escritoire](https://github.com/propensive/escritoire/raw/main/doc/images/128x128.png)](https://github.com/propensive/escritoire/) &nbsp; [![Probably](https://github.com/propensive/probably/raw/main/doc/images/128x128.png)](https://github.com/propensive/probably/) &nbsp;
 
 ## Status
 
@@ -44,7 +46,7 @@ be used, but caution should be taken if there is a mismatch between the
 project's stability level and the importance of your own project.
 
 Hieronymus is designed to be _small_. Its entire source code currently consists
-of 81 lines of code.
+of 87 lines of code.
 
 ## Building
 
