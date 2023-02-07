@@ -20,8 +20,6 @@ import rudiments.*
 import deviation.*
 import gossamer.*
 
-import scala.util.*, scala.annotation.tailrec
-
 import java.io.*
 
 case class InstallError() extends Error(err"installation failed")

@@ -17,7 +17,6 @@
 package exoskeleton
 
 import rudiments.*
-import deviation.*
 import gossamer.*
 
 private[exoskeleton] type Label = String & Singleton

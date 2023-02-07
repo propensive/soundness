@@ -16,12 +16,7 @@
 
 package exoskeleton
 
-import gossamer.*
 import rudiments.*
-
-import scala.util.*
-
-import java.io.*
 
 def arguments(using CliShell): List[Text] = summon[CliShell].args
 

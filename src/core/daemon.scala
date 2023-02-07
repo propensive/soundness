@@ -25,20 +25,14 @@ import parasitism.*
 import turbulence.*
 import escapade.*
 import profanity.*
-import serpentine.*
 import eucalyptus.*
 import basicIo.jvm
 
-import scala.util.*
-
 import sun.misc as sm
-
-import java.util.concurrent.atomic.AtomicInteger
 
 import characterEncodings.utf8
 
 import unsafeExceptions.canThrowAny
-import rendering.ansi
 
 inline def cli(using cli: CommandLine): CommandLine = cli
 
