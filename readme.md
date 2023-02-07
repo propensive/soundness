@@ -38,7 +38,9 @@ The following _Scala One_ libraries are dependencies of _Aviation_:
 
 [![Anticipation](https://github.com/propensive/anticipation/raw/main/doc/images/128x128.png)](https://github.com/propensive/anticipation/) &nbsp; [![Cardinality](https://github.com/propensive/cardinality/raw/main/doc/images/128x128.png)](https://github.com/propensive/cardinality/) &nbsp; [![Eucalyptus](https://github.com/propensive/eucalyptus/raw/main/doc/images/128x128.png)](https://github.com/propensive/eucalyptus/) &nbsp; [![Gossamer](https://github.com/propensive/gossamer/raw/main/doc/images/128x128.png)](https://github.com/propensive/gossamer/) &nbsp; [![Kaleidoscope](https://github.com/propensive/kaleidoscope/raw/main/doc/images/128x128.png)](https://github.com/propensive/kaleidoscope/) &nbsp; [![Probably](https://github.com/propensive/probably/raw/main/doc/images/128x128.png)](https://github.com/propensive/probably/) &nbsp;
 
-No other _Scala One_ libraries are dependents of _Aviation_.
+The following _Scala One_ libraries are dependents of _Aviation_:
+
+[![Cellulose](https://github.com/propensive/cellulose/raw/main/doc/images/128x128.png)](https://github.com/propensive/cellulose/) &nbsp;
 
 ## Status
 
@@ -56,7 +58,7 @@ be used, but caution should be taken if there is a mismatch between the
 project's stability level and the importance of your own project.
 
 Aviation is designed to be _small_. Its entire source code currently consists
-of 607 lines of code.
+of 629 lines of code.
 
 ## Building
 
