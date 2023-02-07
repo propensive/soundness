@@ -16,7 +16,7 @@
       "sources": ["src/test"],
       "version": "0.1.0",
       "docs": ["doc"],
-      "exec": {
+      "xec": {
         "browsers": [],
         "start": "dissonance.Tests"
       },
