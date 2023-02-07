@@ -168,7 +168,7 @@ case class Table[T](cols: Column[T]*):
             
             columns(col).align match
               case Alignment.Left   => slice.padding(width)
-              case Alignment.Center => slice.center(width)
+              case Alignment.Center => slice.center(width)(using textWidthCalculation.uniform)
               case Alignment.Right  => slice.padding(width, Rtl)
           
           .join(ansi"${style.left} ", ansi" ${style.sep} ", ansi" ${style.right}")
