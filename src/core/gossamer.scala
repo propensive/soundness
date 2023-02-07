@@ -37,6 +37,16 @@ enum Direction:
 
 export Direction.Ltr, Direction.Rtl
 
+@implicitNotFound("a contextual TextWidthCalculator is required to work out the horizontal space a string of text takes when rendered in a monospaced font; for most purposes,\n\n    gossamer.textWidthCalculation.uniform\n\nwill suffice, but if using East Asian scripts,\n\n    import gossamer.textWidthCalculation.eastAsianScripts\n\nshould be used.")
+trait TextWidthCalculator:
+  def width(text: Text): Int
+  def width(char: Char): Int
+
+package textWidthCalculation:
+  given uniform: TextWidthCalculator with
+    def width(text: Text): Int = text.length
+    def width(char: Char): Int = 1
+
 extension (value: Bytes)
   def uString: Text = Text(String(value.to(Array), "UTF-8"))
   def hex: Text = Text(value.map { b => String.format("\\u%04x", b.toInt).nn }.mkString)
@@ -144,9 +154,10 @@ extension (text: Text)
   
   def char(idx: Int): Maybe[Char] = if idx >= 0 && idx < text.s.length then text.s.charAt(idx) else Unset
 
-  def pad(length: Int, dir: Direction = Ltr, char: Char = ' '): Text = dir match
-    case Ltr => if text.length < length then text+Text(s"$char")*(length - text.length) else text
-    case Rtl => if text.length < length then Text(s"$char")*(length - text.length)+text else text
+  def pad(length: Int, dir: Direction = Ltr, char: Char = ' ')(using calc: TextWidthCalculator): Text =
+    dir match
+      case Ltr => if calc.width(text) < length then text+Text(s"$char")*(length - calc.width(text)) else text
+      case Rtl => if calc.width(text) < length then Text(s"$char")*(length - calc.width(text))+text else text
 
   def contains(substring: Text): Boolean = text.s.contains(substring.s)
   def contains(char: Char): Boolean = text.s.indexOf(char) != -1
