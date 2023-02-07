@@ -19,7 +19,7 @@ extension [T](value: T)
   def compareTo(other: T)(using comparable: Comparable[T]): Comparison = comparable.compare(value, other)
 
 object Comparison:
-  given AnsiShow[Comparison] =
+  given (using calc: TextWidthCalculator): AnsiShow[Comparison] =
     case Comparison.Structural(cmp, l, r) =>
       import tableStyles.horizontalGaps
       import treeStyles.default
