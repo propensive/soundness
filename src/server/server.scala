@@ -24,13 +24,11 @@ import gossamer.*
 import gastronomy.*
 import eucalyptus.*
 import gesticulate.*
-import escapade.*
 import telekinesis.*
 import anticipation.*
 import serpentine.*
 
 import java.net.InetSocketAddress
-import java.io.*
 import java.text as jt
 import com.sun.net.httpserver.{HttpServer as JavaHttpServer, *}
 
