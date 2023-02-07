@@ -45,24 +45,25 @@ trait Root(val prefix: Text, val separator: Text):
 object Root extends Root(t"/", t"/"):
   type PathType = GenericPath
   
-  def make(elements: List[Text]): GenericPath = GenericPath(elements)
+  def make(elements: List[Text]): GenericPath = new GenericPath(elements)
   
-  given rootAttributeWriter: GenericHtmlAttribute["href", Root.^.type] with
+  given rootAttributeWriter: GenericHtmlAttribute["href", GenericRoots.^.type] with
     def name: String = "href"
-    def serialize(value: Root.^.type): String = "/"
+    def serialize(value: GenericRoots.^.type): String = "/"
 
+object GenericRoots:
   @targetName("RelativeRoot")
   object ? extends Relative(0, Nil)
   
   @targetName("GenericRoot")
   object ^ extends Root(t"/", t"/"):
     type PathType = GenericPath
-    def make(elements: List[Text]): PathType = GenericPath(elements)
+    def make(elements: List[Text]): PathType = new GenericPath(elements)
 
 trait GetRoot[T]:
   def apply(value: Iterable[T]): Root
 
-export Root.{?, ^}
+export GenericRoots.{?, ^}
 class GenericPath(parts: List[Text]) extends Absolute(parts):
   type RootType = ^.type
   val root: ^.type = ^
@@ -158,7 +159,7 @@ abstract class Absolute(val parts: List[Text]):
   def precedes(other: root.PathType): Boolean =
     conjunction(other).parts == parts
 
-  def generic: GenericPath = GenericPath(parts)
+  def generic: GenericPath = new GenericPath(parts)
 
   def text: Text = parts.join(root.prefix, root.separator, t"")
 
