@@ -42,7 +42,7 @@
         "probably/cli",
         "probably/tolerance"
       ],
-      "exec": {
+      "xec": {
         "browsers": [],
         "start": "iridescence.Tests"
       },
