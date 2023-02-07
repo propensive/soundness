@@ -7,6 +7,11 @@ import java.io as ji
 
 import scala.collection.immutable.{TreeMap, SortedMap}
 
+package textWidthCalculation:
+  given eastAsianScripts: TextWidthCalculator = new TextWidthCalculator:
+    def width(text: Text): Int = text.displayWidth
+    def width(char: Char): Int = char.displayWidth
+
 object HieronymusOpaques:
   opaque type CharRange = Long
   object CharRange:
