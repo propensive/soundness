@@ -27,10 +27,7 @@ import anticipation.*
 import java.io as ji
 import java.nio.file as jnf
 
-import jnf.{FileSystems, FileVisitResult, Files, Paths, SimpleFileVisitor, StandardCopyOption,
-    DirectoryNotEmptyException, Path as JavaPath}, jnf.StandardCopyOption.*,
-    jnf.attribute.BasicFileAttributes
-
+import jnf.{Files, Paths, StandardCopyOption, DirectoryNotEmptyException}, jnf.StandardCopyOption.*
 import ji.{File as JavaFile}
 
 import language.experimental.captureChecking
