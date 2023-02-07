@@ -116,18 +116,17 @@ object File:
       
       def filePath(file: File): String = file.path.fullname.toString
 
-  given writable[ChunkType](using io: CanThrow[IoError], appendable: {*} Appendable[ji.OutputStream, ChunkType])
-        : ({io, appendable} Writable[File, ChunkType]) =
-    appendable.asWritable.contraMap: file =>
+  given writable(using io: CanThrow[IoError], streamCut: CanThrow[StreamCutError])
+        : ({io, streamCut} Writable[File, Bytes]) =
+    Appendable.outputStreamBytes.asWritable.contraMap: file =>
       if !file.javaFile.canWrite()
       then throw IoError(IoError.Op.Write, IoError.Reason.AccessDenied, file.path)
       
       ji.BufferedOutputStream(ji.FileOutputStream(file.javaFile, false))
 
-  given appendable[ChunkType](using io: CanThrow[IoError],
-                                  appendable: {*} Appendable[ji.OutputStream, ChunkType])
-        : ({io, appendable} Appendable[File, ChunkType]) =
-    appendable.contraMap: file =>
+  given appendable(using io: CanThrow[IoError], streamCut: CanThrow[StreamCutError])
+        : ({io, streamCut} Appendable[File, Bytes]) =
+    Appendable.outputStreamBytes.contraMap: file =>
       if !file.javaFile.canWrite()
       then throw IoError(IoError.Op.Write, IoError.Reason.AccessDenied, file.path)
       
