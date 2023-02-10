@@ -1,12 +1,12 @@
 {
   "repos": [
     {
-      "base": "../rudiments",
-      "url": "https://github.com/propensive/rudiments"
+      "base": "../probably",
+      "url": "https://github.com/propensive/probably"
     }
   ],
   "imports": [
-    "../rudiments/build.irk"
+    "../probably/build.irk"
   ],
   "publishing": {
     "username": "propensive",
@@ -31,7 +31,7 @@
       "name": "Polyvinyl",
       "id": "polyvinyl/core",
       "links": [
-        "rudiments/core"
+        "probably/cli"
       ],
       "sources": [
         "src/core"
@@ -40,6 +40,25 @@
       "docs": [
         "doc"
       ]
+    },
+    {
+      "name": "Polyvinyl Tests",
+      "id": "polyvinyl/test",
+      "links": [
+        "polyvinyl/core",
+        "probably/cli"
+      ],
+      "sources": [
+        "src/test"
+      ],
+      "version": "0.4.0",
+      "docs": [
+        "doc"
+      ],
+      "exec": {
+        "browsers": [],
+        "start": "polyvinyl.Tests"
+      }
     }
   ]
 }
