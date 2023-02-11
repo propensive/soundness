@@ -21,7 +21,7 @@ import rudiments.*
 import scala.quoted.*
 import compiletime.*
 
-case class AggregateError[ErrorType <: Error[?]](errors: List[ErrorType])
+case class AggregateError(errors: List[Exception])
 extends Error(err"aggregation of errors: ${Text(errors.map(_.toString).mkString("\n", "\n", ""))}")
 
 extension (ctx: StringContext)
