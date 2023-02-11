@@ -129,11 +129,11 @@ package badEncodingHandlers:
     def handle(pos: Int, bytes: Bytes, suggestion: Maybe[Char]): Maybe[Char] = '?'
     def complete(): Unit = ()
   
-  given collect(using aggregate: CanThrow[AggregateError[BadEncodingError]]): ({aggregate} BadEncodingHandler) =
+  given collect(using aggregate: CanThrow[AggregateError]): ({aggregate} BadEncodingHandler) =
     new BadEncodingHandler:
       private val mistakes: scm.ArrayBuffer[BadEncodingError] = scm.ArrayBuffer()
       def handle(pos: Int, bytes: Bytes, suggestion: Maybe[Char]): Maybe[Char] = Unset
-      def complete(): Unit = if !mistakes.isEmpty then throw AggregateError[BadEncodingError](mistakes.to(List))
+      def complete(): Unit = if !mistakes.isEmpty then throw AggregateError(mistakes.to(List))
 
 case class BadEncodingError(pos: Int, bytes: Bytes)
 extends Error(err"The byte sequence $bytes at position $pos is not valid")

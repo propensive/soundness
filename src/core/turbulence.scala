@@ -345,7 +345,7 @@ trait SimpleAppendable[-TargetType, -ChunkType] extends Appendable[TargetType, C
 
 object Readable:
   given bytes: Readable[Bytes, Bytes] = LazyList(_)
-  given text: Readable[Text, Text] = LazyList(_)
+  given text: ({} Readable[Text, Text]) = LazyList(_)
   given textToBytes(using enc: {*} Encoding): ({enc} Readable[Text, Bytes]) =
     text => LazyList(text.s.getBytes(enc.name.s).nn.immutable(using Unsafe))
 
@@ -427,8 +427,7 @@ extension [ValueType](value: ValueType)
     aggregable.aggregate(readable.read(value))
   
   def writeTo[TargetType, ChunkType](target: TargetType)
-             (using readable: {*} Readable[ValueType, ChunkType],
-                  writable: {*} Writable[TargetType, ChunkType])
+             (using readable: {*} Readable[ValueType, ChunkType], writable: {*} Writable[TargetType, ChunkType])
              : {readable, writable} Unit =
     writable.write(target, readable.read(value))
   
