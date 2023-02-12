@@ -16,15 +16,15 @@
 
 package anticipation
 
-trait GenericHttpResponseStream[T]:
+trait GenericHttpResponseStream[ValueType]:
   def mediaType: String
-  def content(value: T): LazyList[IArray[Byte]]
+  def content(value: ValueType): LazyList[IArray[Byte]]
 
-trait GenericHttpReader[T]:
-  def read(value: String): T
+trait GenericHttpReader[ValueType]:
+  def read(value: String): ValueType
 
-trait GenericHttpRequestParam[-L <: String, -T]:
-  def apply(value: T): String
+trait GenericHttpRequestParam[-LabelType <: String, -ValueType]:
+  def apply(value: ValueType): String
 
-trait GenericHttpResponseParam[-L <: String, +T]:
-  def unapply(value: String): Option[T]
+trait GenericHttpResponseParam[-LabelType <: String, +ValueType]:
+  def unapply(value: String): Option[ValueType]

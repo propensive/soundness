@@ -16,6 +16,6 @@
 
 package anticipation
 
-trait GenericHtmlAttribute[-L <: String & Singleton, -T]:
+trait GenericHtmlAttribute[-LabelType <: String & Singleton, -ValueType]:
   def name: String
-  def serialize(value: T): String
+  def serialize(value: ValueType): String

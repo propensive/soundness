@@ -16,11 +16,11 @@
 
 package anticipation
 
-trait GenericUrl[T]:
-  def readUrl(value: T): String
-  def makeUrl(string: String): T
+trait GenericUrl[UrlType]:
+  def readUrl(url: UrlType): String
+  def makeUrl(string: String): UrlType
 
-def readUrl[T](url: T)(using GenericUrl[T]): String = summon[GenericUrl[T]].readUrl(url)
-def makeUrl[T](url: String)(using GenericUrl[T]): T = summon[GenericUrl[T]].makeUrl(url)
+def readUrl[UrlType](url: UrlType)(using GenericUrl[UrlType]): String = summon[GenericUrl[UrlType]].readUrl(url)
+def makeUrl[UrlType](url: String)(using GenericUrl[UrlType]): UrlType = summon[GenericUrl[UrlType]].makeUrl(url)
 
 package urlRepresentation {}
