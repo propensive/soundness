@@ -90,3 +90,5 @@ package environments:
   )
 
   given empty: Environment(v => None, v => None)
+
+inline def env(using env: Environment): Environment = env
