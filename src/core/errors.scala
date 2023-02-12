@@ -34,6 +34,16 @@ extension [T <: Tuple](error: Error[T]) def stackTrace: StackTrace = StackTrace(
 object StackTrace:
   case class Frame(className: Text, method: Text, file: Text, line: Maybe[Int], native: Boolean)
   
+  val legend: Map[Text, Text] = Map(
+    Text("λₙ") -> Text("anonymous function"),
+    Text("αₙ") -> Text("anonymous class"),
+    Text("ι")  -> Text("initialization"),
+    Text("ς")  -> Text("super reference"),
+    Text("ε")  -> Text("extension method"),
+    Text("ϕ")  -> Text("direct"),
+    Text("π")  -> Text("package file")
+  )
+
   def rewrite(name: String, method: Boolean = false): Text =
     val sb: StringBuilder = StringBuilder()
     
