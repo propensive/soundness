@@ -58,8 +58,6 @@ object AndExtractor:
 
 export AndExtractor.&
 
-inline def env(using env: Environment): Environment = env
-
 extension [ProductType <: Product](product: ProductType)(using mirror: Mirror.ProductOf[ProductType])
   def tuple: mirror.MirroredElemTypes = Tuple.fromProductTyped(product)
 
