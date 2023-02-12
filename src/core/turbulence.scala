@@ -53,11 +53,11 @@ case class StreamCutError(total: ByteSize) extends Error(err"the stream was cut 
 case class StreamUnavailableError() extends Error(err"the stream is unavailable")
 
 extension (obj: LazyList.type)
-  def multiplex[T](streams: LazyList[T]*)(using Monitor): LazyList[T] =
+  def multiplex[ElemType](streams: LazyList[ElemType]*)(using Monitor): LazyList[ElemType] =
     multiplexer(streams*).stream
   
-  def multiplexer[T](streams: LazyList[T]*)(using Monitor): Multiplexer[Any, T] =
-    val multiplexer = Multiplexer[Any, T]()
+  def multiplexer[ElemType](streams: LazyList[ElemType]*)(using Monitor): Multiplexer[Any, ElemType] =
+    val multiplexer = Multiplexer[Any, ElemType]()
     streams.zipWithIndex.map(_.swap).foreach(multiplexer.add)
     multiplexer
   
@@ -77,41 +77,41 @@ class Pulsar(using time: GenericDuration)(interval: time.Duration):
       () #:: stream
     catch case err: CancelError => LazyList()
 
-case class Multiplexer[K, T]()(using monitor: Monitor):
-  private val tasks: HashMap[K, Task[Unit]] = HashMap()
-  private val queue: juc.LinkedBlockingQueue[Maybe[T]] = juc.LinkedBlockingQueue()
+case class Multiplexer[KeyType, ElemType]()(using monitor: Monitor):
+  private val tasks: HashMap[KeyType, Task[Unit]] = HashMap()
+  private val queue: juc.LinkedBlockingQueue[Maybe[ElemType]] = juc.LinkedBlockingQueue()
 
   def close(): Unit = tasks.keys.foreach(remove(_))
 
   @tailrec
-  private def pump(key: K, stream: LazyList[T]): Unit =
+  private def pump(key: KeyType, stream: LazyList[ElemType]): Unit =
     if stream.isEmpty then remove(key) else
       //ctx.terminate(())
       monitor.accede()
       queue.put(stream.head)
       pump(key, stream.tail)
 
-  def add(key: K, stream: LazyList[T]): Unit = synchronized:
+  def add(key: KeyType, stream: LazyList[ElemType]): Unit = synchronized:
     tasks(key) = Task(Text("pump"))(pump(key, stream))
  
-  private def remove(key: K): Unit = synchronized:
+  private def remove(key: KeyType): Unit = synchronized:
     tasks -= key
     if tasks.isEmpty then queue.put(Unset)
   
-  def stream: LazyList[T] =
-    def recur(): LazyList[T] = queue.take() match
+  def stream: LazyList[ElemType] =
+    def recur(): LazyList[ElemType] = queue.take() match
       case null | Unset       => LazyList()
-      case item: T @unchecked => item.nn #:: recur()
+      case item: ElemType @unchecked => item.nn #:: recur()
     
     // FIXME: This should be identical to recur(), but recur is not tail-recursive so
     // it can lead to stack overflow. It may still be a memory leak, though.
     LazyList() #::: recur()
 
 
-extension [T](stream: LazyList[T])
+extension [ElemType](stream: LazyList[ElemType])
   def rate(using time: GenericDuration)(interval: time.Duration)(using Monitor)
-          : LazyList[T] throws CancelError =
-    def recur(stream: LazyList[T], last: Long): LazyList[T] = stream match
+          : LazyList[ElemType] throws CancelError =
+    def recur(stream: LazyList[ElemType], last: Long): LazyList[ElemType] = stream match
       case head #:: tail =>
         val delay = makeDuration(readDuration(interval) - (System.currentTimeMillis - last))
         if time.readDuration(delay) > 0 then sleep(delay)
@@ -121,34 +121,36 @@ extension [T](stream: LazyList[T])
 
     Task(Text("ratelimiter"))(recur(stream, System.currentTimeMillis)).await()
 
-  def multiplexWith(that: LazyList[T])(using Monitor): LazyList[T] =
+  def multiplexWith(that: LazyList[ElemType])(using Monitor): LazyList[ElemType] =
     unsafely(LazyList.multiplex(stream, that))
 
-  def regulate(tap: Tap)(using Monitor): LazyList[T] =
-    def defer(active: Boolean, stream: LazyList[T | Tap.Regulation], buffer: List[T]): LazyList[T] =
+  def regulate(tap: Tap)(using Monitor): LazyList[ElemType] =
+    def defer(active: Boolean, stream: LazyList[ElemType | Tap.Regulation], buffer: List[ElemType])
+             : LazyList[ElemType] =
       recur(active, stream, buffer)
 
     @tailrec
-    def recur(active: Boolean, stream: LazyList[T | Tap.Regulation], buffer: List[T]): LazyList[T] =
+    def recur(active: Boolean, stream: LazyList[ElemType | Tap.Regulation], buffer: List[ElemType])
+             : LazyList[ElemType] =
       if active && buffer.nonEmpty then buffer.head #:: defer(true, stream, buffer.tail)
       else if stream.isEmpty then LazyList()
       else stream.head match
-        case Tap.Regulation.Start => recur(true, stream.tail, buffer)
-        case Tap.Regulation.Stop  => recur(false, stream.tail, Nil)
-        case other: T @unchecked  => if active then other.nn #:: defer(true, stream.tail, Nil)
-                                     else recur(false, stream.tail, other.nn :: buffer)
+        case Tap.Regulation.Start        => recur(true, stream.tail, buffer)
+        case Tap.Regulation.Stop         => recur(false, stream.tail, Nil)
+        case other: ElemType @unchecked  => if active then other.nn #:: defer(true, stream.tail, Nil)
+                                            else recur(false, stream.tail, other.nn :: buffer)
 
     LazyList() #::: recur(true, stream.multiplexWith(tap.stream), Nil)
 
   def cluster(using time: GenericDuration)
              (interval: time.Duration, maxSize: Maybe[Int] = Unset, maxDelay: Maybe[Long] = Unset)
-             (using Monitor): LazyList[List[T]] =
+             (using Monitor): LazyList[List[ElemType]] =
     
-    def defer(stream: LazyList[T], list: List[T], expiry: Long): LazyList[List[T]] =
+    def defer(stream: LazyList[ElemType], list: List[ElemType], expiry: Long): LazyList[List[ElemType]] =
       recur(stream, list, expiry)
 
     @tailrec
-    def recur(stream: LazyList[T], list: List[T], expiry: Long): LazyList[List[T]] =
+    def recur(stream: LazyList[ElemType], list: List[ElemType], expiry: Long): LazyList[List[ElemType]] =
       if list.isEmpty then
         val newExpiry: Long = maxDelay.option.fold(Long.MaxValue)(_ + System.currentTimeMillis)
         if stream.isEmpty then LazyList() else recur(stream.tail, List(stream.head), newExpiry)
@@ -243,12 +245,12 @@ class StreamBuffer[T]():
     recur()
 
 
-class Funnel[T]():
-  private val queue: juc.LinkedBlockingQueue[Maybe[T]] = juc.LinkedBlockingQueue()
-  def put(value: T): Unit = queue.put(value)
+class Funnel[ItemType]():
+  private val queue: juc.LinkedBlockingQueue[Maybe[ItemType]] = juc.LinkedBlockingQueue()
+  def put(item: ItemType): Unit = queue.put(item)
   def stop(): Unit = queue.put(Unset)
-  def stream: LazyList[T] =
-    LazyList.continually(queue.take()).takeWhile(_ != Unset).collect { case t: T => t }
+  def stream: LazyList[ItemType] =
+    LazyList.continually(queue.take()).takeWhile(_ != Unset).collect { case item: ItemType => item }
 
 class Gun() extends Funnel[Unit]():
   def fire(): Unit = put(())
