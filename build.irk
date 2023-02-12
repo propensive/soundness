@@ -3,14 +3,18 @@
     {
       "base": "../probably",
       "url": "https://github.com/propensive/probably"
+    },
+    {
+      "base": "../ambience",
+      "url": "https://github.com/propensive/ambience"
     }
   ],
-  "imports": ["../probably/build.irk"],
+  "imports": ["../probably/build.irk", "../ambience/build.irk"],
   "modules": [
     {
       "name": "Imperial",
       "id": "imperial/core",
-      "links": ["deviation/core", "anticipation/file"],
+      "links": ["deviation/core", "anticipation/file", "ambience/core"],
       "sources": ["src/core"],
       "version": "0.4.0",
       "docs": ["doc"]
