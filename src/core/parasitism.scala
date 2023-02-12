@@ -41,10 +41,11 @@ extends Monitor:
   def cancel(): Unit = interrupted = true
 
   def makeThread(runnable: Runnable, name: Text): Thread =
-    if virtualThreads then Thread.ofVirtual.nn.name(name.s).nn.start(runnable).nn
-    else Thread(runnable, name.s).nn.tap(_.setDaemon(daemon)).tap(_.start())
+    // if virtualThreads then Thread.ofVirtual.nn.name(name.s).nn.start(runnable).nn
+    // else
+      Thread(runnable, name.s).nn.tap(_.setDaemon(daemon)).tap(_.start())
 
-def supervise[T](id: Text)(fn: Monitor ?=> T): T = fn(using Supervisor(id))
+def supervise[ResultType](id: Text)(fn: Monitor ?=> ResultType): ResultType = fn(using Supervisor(id))
 def hibernate()(using Monitor): Unit = sleep(using timeRepresentation.long)(Long.MaxValue)
 
 def sleep(using t: GenericDuration)(time: t.Duration)(using Monitor): Unit =
@@ -72,65 +73,68 @@ case class TaskMonitor(id: Text, interrupted: () => Boolean, stop: () => Unit, p
   def cancel(): Unit = stop()
   def makeThread(runnable: Runnable, name: Text): Thread = parent.makeThread(runnable, name)
 
-case class Promise[T]():
+case class Promise[ValueType]():
   @volatile
-  private var value: Option[T throws CancelError] = None
+  private var value: Option[ValueType throws CancelError] = None
 
   @volatile
   private var triggers: List[() => Unit] = Nil
   
   def ready: Boolean = !value.isEmpty
   
-  def supply(v: T): Unit throws AlreadyCompleteError = synchronized:
+  def supply(suppliedValue: ValueType): Unit throws AlreadyCompleteError = synchronized:
     if value.isEmpty then
-      value = Some(v)
+      value = Some(suppliedValue)
       notifyAll()
       triggers.foreach(_())
     else throw AlreadyCompleteError()
   
   def trigger(fn: => Unit): Unit = triggers ::= (() => fn)
 
-  def await(): T throws CancelError = synchronized:
+  def await(): ValueType throws CancelError = synchronized:
     while value.isEmpty do wait()
     value.get
 
-  def await[D](time: D)(using GenericDuration { type Duration = D }): T throws CancelError | TimeoutError =
+  def await[DurationType](duration: DurationType)(using GenericDuration { type Duration = DurationType })
+           : ValueType throws CancelError | TimeoutError =
     synchronized:
       if value.isEmpty then
-        wait(readDuration(time))
+        wait(readDuration(duration))
         if value.isEmpty then throw TimeoutError() else value.get
       else value.get
 
   def cancel(): Unit = synchronized:
     if value.isEmpty then value = Some(throw CancelError())
 
-  def get: T throws IncompleteError | CancelError = value.getOrElse(throw IncompleteError())
+  def get: ValueType throws IncompleteError | CancelError = value.getOrElse(throw IncompleteError())
 
   override def toString: String =
     try value.fold("[incomplete]")(_.toString) catch case err: CancelError => "[canceled]"
 
-extension [T](xs: Iterable[Task[T]])
-  transparent inline def sequence(using mon: Monitor): Task[Iterable[T]] =
+extension [ResultType](xs: Iterable[Task[ResultType]])
+  transparent inline def sequence(using mon: Monitor): Task[Iterable[ResultType]] =
     Task(Text("sequence"))(xs.map(_.await()))
 
 enum TaskStatus:
   case New, Running, Completed, Canceled, Failed, Expired
 
 object Task:
-  def apply[T](id: Text)(fn: CanThrow[CancelError] ?=> Monitor ?=> T)(using monitor: Monitor): Task[T] =
+  def apply[ResultType](id: Text)(fn: CanThrow[CancelError] ?=> Monitor ?=> ResultType)(using monitor: Monitor)
+           : Task[ResultType] =
     (new Task(id, mon => fn(using unsafeExceptions.canThrowAny)(using mon))(using monitor)).tap(_.start())
 
-class Task[T](id: Text, calc: Monitor => T)(using mon: Monitor):
+class Task[ResultType](id: Text, calc: Monitor => ResultType)(using mon: Monitor):
   private var startTime: Long = 0L
   private var status: TaskStatus = TaskStatus.New
   def name = Text(mon.name.s+"/"+id)
   //def active: Boolean = !result.ready
-  def await(): T throws CancelError = result.await().tap(thread.join().waive)
+  def await(): ResultType throws CancelError = result.await().tap(thread.join().waive)
   
-  def await[D](time: D)(using GenericDuration { type Duration = D }): T throws CancelError | TimeoutError =
+  def await[DurationType](time: DurationType)(using GenericDuration { type Duration = DurationType })
+           : ResultType throws CancelError | TimeoutError =
     result.await(time).tap(thread.join().waive)
   
-  private def start(): Promise[T] = //synchronized:
+  private def start(): Promise[ResultType] = //synchronized:
     // if startTime == 0 then
     //   startTime = System.currentTimeMillis
     //   status = TaskStatus.Running
@@ -143,12 +147,13 @@ class Task[T](id: Text, calc: Monitor => T)(using mon: Monitor):
     result.cancel()
     status = TaskStatus.Canceled
 
-  def map[S](fn: T => S)(using mon: Monitor): Task[S] = Task(Text(s"${id}.map"))(fn(await()))
+  def map[ResultType2](fn: ResultType => ResultType2)(using mon: Monitor): Task[ResultType2] =
+    Task(Text(s"${id}.map"))(fn(await()))
   
-  def flatMap[S](fn: T => Task[S])(using mon: Monitor): Task[S] =
+  def flatMap[ResultType2](fn: ResultType => Task[ResultType2])(using mon: Monitor): Task[ResultType2] =
     Task(Text(s"${id}.flatMap"))(fn(await()).await())
   
-  private val result: Promise[T] = Promise()
+  private val result: Promise[ResultType] = Promise()
   private lazy val thread: Thread = mon.makeThread(runnable, ctx.name)
   private lazy val ctx = mon.child(id, thread.isInterrupted, thread.interrupt())
   
