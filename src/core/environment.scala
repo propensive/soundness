@@ -76,3 +76,16 @@ extends Error(ErrorMessage[Text *: EmptyTuple](
   List(Text(if property then "the system property " else "the environment variable "), Text(" was not found")),
   variable *: EmptyTuple
 ))
+
+package environments:
+  given system: Environment(
+    v => Option(System.getenv(v.s)).map(_.nn).map(Text(_)),
+    v => Option(System.getProperty(v.s)).map(_.nn).map(Text(_))
+  )
+
+  given restricted: Environment(
+    v => None,
+    v => Option(System.getProperty(v.s)).map(_.nn).map(Text(_))
+  )
+
+  given empty: Environment(v => None, v => None)

@@ -18,6 +18,11 @@ package rudiments
 
 import language.experimental.captureChecking
 
+object Unset:
+  override def toString(): String = "[unset]"
+
+type Maybe[ValueType] = Unset.type | ValueType
+
 case class UnsetValueError()
 extends Error(ErrorMessage[EmptyTuple](List(Text("the value was not set")), EmptyTuple))
 
