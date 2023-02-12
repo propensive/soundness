@@ -1,10 +1,12 @@
 package rudiments
 
-case class ErrorMessage[+T <: Tuple](text: Seq[Text], parts: T)
+import language.experimental.captureChecking
 
-transparent abstract class Error[T <: Tuple](val msg: ErrorMessage[T], val cause: Maybe[Error[?]] = Unset)
+case class ErrorMessage[+TupleType <: Tuple](text: Seq[Text], parts: TupleType)
+
+transparent abstract class Error[TupleType <: Tuple](val msg: ErrorMessage[TupleType], val cause: Maybe[Error[?]] = Unset)
 extends Exception():
-  this: Error[T] =>
+  this: Error[TupleType] =>
   def fullClass: List[Text] = List(getClass.nn.getName.nn.split("\\.").nn.map(_.nn).map(Text(_))*)
   def className: Text = fullClass.last
   def component: Text = fullClass.head
@@ -13,7 +15,7 @@ extends Exception():
   override def getCause: Exception | Null = cause.option.getOrElse(null)
 
   def message: Text =
-    def recur[T <: Tuple](tuple: T, text: Seq[Text], value: String = ""): String = tuple match
+    def recur[TupleType <: Tuple](tuple: TupleType, text: Seq[Text], value: String = ""): String = tuple match
       case EmptyTuple   => value+text.headOption.getOrElse(Text(""))
       case head *: tail => recur(tail, text.tail, value+text.head+head.toString)
 

@@ -56,7 +56,7 @@ import language.experimental.captureChecking
 object Unset:
   override def toString(): String = "——"
 
-type Maybe[T] = Unset.type | T
+type Maybe[ValueType] = Unset.type | ValueType
 
 type Bytes = IArray[Byte]
 
@@ -88,48 +88,52 @@ object Bytes:
   def apply(long: Long): Bytes = IArray((56 to 0 by -8).map(long >> _).map(_.toByte)*)
   def empty: Bytes = IArray()
 
-extension [T](value: T)
-  def only[S](pf: PartialFunction[T, S]): Option[S] = Some(value).collect(pf)
+extension [ValueType](value: ValueType)
+  def only[ValueType2](fn: PartialFunction[ValueType, ValueType2]): Option[ValueType2] = Some(value).collect(fn)
   def unit: Unit = ()
-  def waive: Any => T = _ => value
-  def twin: (T, T) = (value, value)
-  def triple: (T, T, T) = (value, value, value)
-  def puncture(point: T): Maybe[T] = if value == point then Unset else point
-  inline def is[S <: T]: Boolean = value.isInstanceOf[S]
+  def waive: Any => ValueType = _ => value
+  def twin: (ValueType, ValueType) = (value, value)
+  def triple: (ValueType, ValueType, ValueType) = (value, value, value)
+  def puncture(point: ValueType): Maybe[ValueType] = if value == point then Unset else point
+  inline def is[ValueSubtype <: ValueType]: Boolean = value.isInstanceOf[ValueSubtype]
 
-  transparent inline def matchable(using erased Unsafe.type): T & Matchable =
-    value.asInstanceOf[T & Matchable]
+  transparent inline def matchable(using erased Unsafe.type): ValueType & Matchable =
+    value.asInstanceOf[ValueType & Matchable]
 
-extension [T](value: IArray[T])
-  inline def mutable(using erased Unsafe.type): Array[T] = value match
-    case array: Array[T] @unchecked => array
-    case _                          => throw Mistake("Should never match")
+extension [ElemType](value: IArray[ElemType])
+  inline def mutable(using erased Unsafe.type): Array[ElemType] = value match
+    case array: Array[ElemType] @unchecked => array
+    case _                                  => throw Mistake("Should never match")
 
-extension [T](value: Array[T])
-  inline def immutable(using erased Unsafe.type): IArray[T] = value match
-    case array: IArray[T] @unchecked => array
-    case _                           => throw Mistake("Should never match")
+extension [ElemType](value: Array[ElemType])
+  inline def immutable(using erased Unsafe.type): IArray[ElemType] = value match
+    case array: IArray[ElemType] @unchecked => array
+    case _                                  => throw Mistake("Should never match")
 
-  def snapshot(using ClassTag[T]): IArray[T] =
-    val newArray = new Array[T](value.length)
+  def snapshot(using ClassTag[ElemType]): IArray[ElemType] =
+    val newArray = new Array[ElemType](value.length)
     System.arraycopy(value, 0, newArray, 0, value.length)
     newArray.immutable(using Unsafe)
 
-extension [K, V](map: Map[K, V])
-  def upsert(key: K, op: Maybe[V] => V) = map.updated(key, op(if map.contains(key) then map(key) else Unset))
+extension [KeyType, ValueType](map: Map[KeyType, ValueType])
+  def upsert(key: KeyType, op: Maybe[ValueType] => ValueType): Map[KeyType, ValueType] =
+    map.updated(key, op(if map.contains(key) then map(key) else Unset))
 
-  def collate(otherMap: Map[K, V])(merge: (V, V) => V): Map[K, V] =
+  def collate(otherMap: Map[KeyType, ValueType])(merge: (ValueType, ValueType) => ValueType)
+             : Map[KeyType, ValueType] =
     otherMap.foldLeft(map): (acc, kv) =>
       acc.updated(kv(0), acc.get(kv(0)).fold(kv(1))(merge(kv(1), _)))
 
 extension [K, V](map: Map[K, List[V]])
   def plus(key: K, value: V): Map[K, List[V]] = map.updated(key, map.get(key).fold(List(value))(value :: _))
 
-class Recur[T](fn: => T => T):
-  def apply(value: T): T = fn(value)
+class Recur[ValueType](fn: => ValueType => ValueType):
+  def apply(value: ValueType): ValueType = fn(value)
 
-def fix[T](func: Recur[T] ?-> (T => T)): (T => T) = func(using Recur(fix(func)))
-def recur[T: Recur](value: T): T = summon[Recur[T]](value)
+def fix[ValueType](fn: Recur[ValueType] ?-> (ValueType => ValueType)): (ValueType => ValueType) =
+  fn(using Recur(fix(fn)))
+
+def recur[ValueType: Recur](value: ValueType): ValueType = summon[Recur[ValueType]](value)
 
 case class Property(name: Text) extends Dynamic:
   def apply(): Text throws KeyNotFoundError =
@@ -148,8 +152,8 @@ case class KeyNotFoundError(name: Text)
 extends Error(ErrorMessage[Text *: EmptyTuple](List(Text("key "), Text(" not found")), name *: EmptyTuple))
 
 extension (iarray: IArray.type)
-  def create[T: ClassTag](size: Int)(fn: Array[T] => Unit): IArray[T] =
-    val array = new Array[T](size)
+  def create[ElemType: ClassTag](size: Int)(fn: Array[ElemType] => Unit): IArray[ElemType] =
+    val array = new Array[ElemType](size)
     fn(array)
     array.immutable(using Unsafe)
 
@@ -160,18 +164,18 @@ case class Counter(first: Int = 0):
 object AndExtractor:
   @targetName("And")
   object `&`:
-    def unapply[T](value: T): Some[(T, T)] = Some((value, value))
+    def unapply[ValueType](value: ValueType): Some[(ValueType, ValueType)] = Some((value, value))
 
 export AndExtractor.&
 
 extension (xs: Iterable[Text])
   transparent inline def ss: Iterable[String] = xs
 
-extension [T](xs: Iterable[T])
-  transparent inline def mtwin: Iterable[(T, T)] = xs.map { x => (x, x) }
-  transparent inline def mtriple: Iterable[(T, T, T)] = xs.map { x => (x, x, x) }
+extension [ValueType](xs: Iterable[ValueType])
+  transparent inline def mtwin: Iterable[(ValueType, ValueType)] = xs.map { x => (x, x) }
+  transparent inline def mtriple: Iterable[(ValueType, ValueType, ValueType)] = xs.map { x => (x, x, x) }
 
-  def indexBy[S](fn: T -> S): Map[S, T] throws DuplicateIndexError =
+  def indexBy[ValueType2](fn: ValueType -> ValueType2): Map[ValueType2, ValueType] throws DuplicateIndexError =
     val map = xs.map: value =>
       (fn(value), value)
     
@@ -184,13 +188,15 @@ extends Error(ErrorMessage[EmptyTuple](
   List(Text("the sequence contained more than one element that mapped to the same index")), EmptyTuple
 ))
 
-extension[T](xs: Seq[T])
-  def random: T = xs(util.Random().nextInt(xs.length))
-  transparent inline def shuffle: Seq[T] = util.Random().shuffle(xs)
+extension[ElemType](xs: Seq[ElemType])
+  def random: ElemType = xs(util.Random().nextInt(xs.length))
+  transparent inline def shuffle: Seq[ElemType] = util.Random().shuffle(xs)
   
-  def runs(fn: T => Any): List[List[T]] =
+  def runs(fn: ElemType => Any): List[List[ElemType]] =
+    
     @tailrec
-    def recur(current: Any, todo: Seq[T], run: List[T], done: List[List[T]]): List[List[T]] =
+    def recur(current: Any, todo: Seq[ElemType], run: List[ElemType], done: List[List[ElemType]])
+             : List[List[ElemType]] =
       if todo.isEmpty then (run.reverse :: done).reverse
       else
         val focus = fn(todo.head)
@@ -214,17 +220,27 @@ object Cursor:
                               : IndexedSeq[S] =
     xs.indices.map { i => fn(using xs, i) }
 
-inline def cursor[T](using inline xs: Cursor.CursorSeq[T], inline cur: Cursor.Cursor): T = xs(cur)
-inline def precursor[T](using inline xs: Cursor.CursorSeq[T], inline cur: Cursor.Cursor): Maybe[T] = xs(cur, -1)
-inline def postcursor[T](using inline xs: Cursor.CursorSeq[T], inline cur: Cursor.Cursor): Maybe[T] = xs(cur, 1)
+inline def cursor[ElemType](using inline xs: Cursor.CursorSeq[ElemType], inline cur: Cursor.Cursor): ElemType =
+  xs(cur)
+
+inline def precursor[ElemType](using inline xs: Cursor.CursorSeq[ElemType], inline cur: Cursor.Cursor)
+                    : Maybe[ElemType] =
+  xs(cur, -1)
+
+inline def postcursor[ElemType](using inline xs: Cursor.CursorSeq[ElemType], inline cur: Cursor.Cursor)
+                     : Maybe[ElemType] =
+  xs(cur, 1)
+
 inline def cursorIndex(using inline cur: Cursor.Cursor): Int = cur.index
 
-inline def cursor[T](n: Int)(using inline xs: Cursor.CursorSeq[T], inline cur: Cursor.Cursor): Maybe[T] =
+inline def cursor[ElemType](n: Int)(using inline xs: Cursor.CursorSeq[ElemType], inline cur: Cursor.Cursor)
+                 : Maybe[ElemType] =
   xs(cur, n)
 
 
-extension [T](xs: IndexedSeq[T])
-  transparent inline def curse[S](inline fn: (Cursor.CursorSeq[T], Cursor.Cursor) ?=> S): IndexedSeq[S] =
+extension [ElemType](xs: IndexedSeq[ElemType])
+  transparent inline def curse[ElemType2](inline fn: (Cursor.CursorSeq[ElemType], Cursor.Cursor) ?=> ElemType2)
+                              : IndexedSeq[ElemType2] =
     Cursor.curse(xs)(fn)
 
 extension (bs: Int)
@@ -329,11 +345,11 @@ def localhostAccess[T](fn: LocalhostAccess ?=> T): T =
   val access: LocalhostAccess = LocalhostAccess()
   fn(using access)
 
-extension [P <: Product](product: P)(using mirror: Mirror.ProductOf[P])
+extension [ProductType <: Product](product: ProductType)(using mirror: Mirror.ProductOf[ProductType])
   def tuple: mirror.MirroredElemTypes = Tuple.fromProductTyped(product)
 
-extension [T <: Tuple](tuple: T)
-  def to[P](using mirror: Mirror.ProductOf[P]): P = mirror.fromProduct(tuple)
+extension [TupleType <: Tuple](tuple: TupleType)
+  def to[ProductType](using mirror: Mirror.ProductOf[ProductType]): ProductType = mirror.fromProduct(tuple)
 
 object Unsafe
 
@@ -342,9 +358,9 @@ object Default:
   given Default[Long](0L)
   given Default[Text](Text(""))
   given Default[String]("")
-  given [T]: Default[List[T]](Nil)
-  given [T]: Default[Set[T]](Set())
-  given [T]: Default[Vector[T]](Vector())
+  given [ElemType]: Default[List[ElemType]](Nil)
+  given [ElemType]: Default[Set[ElemType]](Set())
+  given [ElemType]: Default[Vector[ElemType]](Vector())
 
-trait Default[+T](default: T):
-  def apply(): T = default
+trait Default[+ValueType](default: ValueType):
+  def apply(): ValueType = default

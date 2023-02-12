@@ -18,87 +18,92 @@ package rudiments
 
 import scala.compiletime.*
 
+import language.experimental.captureChecking
+
 case class IncompatibleTypeError()
 extends Error(ErrorMessage[EmptyTuple](List(Text("the value is not compatible")), EmptyTuple))
 
 extension (value: Any)
-  transparent inline def as[To](using Unapply[value.type, To]): To throws IncompatibleTypeError =
-    summon[Unapply[value.type, To]].unapply(value).getOrElse(throw IncompatibleTypeError())
+  transparent inline def as[ResultType](using Unapply[value.type, ResultType])
+                           : ResultType throws IncompatibleTypeError =
+    summon[Unapply[value.type, ResultType]].unapply(value).getOrElse(throw IncompatibleTypeError())
   
-  transparent inline def as[To](using Irrefutable[value.type, To]): To =
-    summon[Irrefutable[value.type, To]].unapply(value)
+  transparent inline def as[ResultType](using Irrefutable[value.type, ResultType]): ResultType =
+    summon[Irrefutable[value.type, ResultType]].unapply(value)
 
 object Irrefutable:
-  given Irrefutable[String, Text] = Text(_)
-  given [T](using ext: Irrefutable[Text, T]): Irrefutable[String, T] = v => ext.unapply(Text(v))
-
-  given Irrefutable[Text, String] = _.s
-
-  given [T]: Irrefutable[T, T] = identity(_)
+  given stringText: Irrefutable[String, Text] = Text(_)
   
-  given Irrefutable[Byte, Short] = _.toShort
-  given Irrefutable[Byte, Int] = _.toInt
-  given Irrefutable[Byte, Long] = _.toLong
-  given Irrefutable[Byte, Float] = _.toFloat
-  given Irrefutable[Byte, Double] = _.toDouble
+  given [ResultType](using ext: Irrefutable[Text, ResultType]): Irrefutable[String, ResultType] = v =>
+    ext.unapply(Text(v))
 
-  given Irrefutable[Short, Int] = _.toInt
-  given Irrefutable[Short, Long] = _.toLong
-  given Irrefutable[Short, Float] = _.toShort
-  given Irrefutable[Short, Double] = _.toDouble
-  given Irrefutable[Int, Long] = _.toLong
-  given Irrefutable[Int, Double] = _.toDouble
-  given Irrefutable[Float, Double] = _.toDouble
+  given textString: Irrefutable[Text, String] = _.s
+  given ident[ResultType]: Irrefutable[ResultType, ResultType] = identity(_)
+  
+  given byteShort: Irrefutable[Byte, Short] = _.toShort
+  given byteInt: Irrefutable[Byte, Int] = _.toInt
+  given byteLong: Irrefutable[Byte, Long] = _.toLong
+  given byteFloat: Irrefutable[Byte, Float] = _.toFloat
+  given byteDouble: Irrefutable[Byte, Double] = _.toDouble
+
+  given shortInt: Irrefutable[Short, Int] = _.toInt
+  given shortLong: Irrefutable[Short, Long] = _.toLong
+  given shortFloat: Irrefutable[Short, Float] = _.toShort
+  given shortDouble: Irrefutable[Short, Double] = _.toDouble
+  given intLong: Irrefutable[Int, Long] = _.toLong
+  given intDoule: Irrefutable[Int, Double] = _.toDouble
+  given floatDouble: Irrefutable[Float, Double] = _.toDouble
 
 object Unapply:
-  given [T](using ext: Irrefutable[Text, T]): Irrefutable[String, T] = v => ext.unapply(Text(v))
+  given [ResultType](using ext: Irrefutable[Text, ResultType]): Irrefutable[String, ResultType] = v =>
+    ext.unapply(Text(v))
   
-  given Unapply[Text, Char] = v => if v.s.length == 1 then Some(v.s.head) else None
-  given Unapply[Text, Byte] = v => try Some(v.s.toByte) catch case e: NumberFormatException => None
+  given textChar: Unapply[Text, Char] = v => if v.s.length == 1 then Some(v.s.head) else None
+  given textByte: Unapply[Text, Byte] = v => try Some(v.s.toByte) catch case e: NumberFormatException => None
   
-  given Unapply[Text, Short] = v =>
+  given textShort: Unapply[Text, Short] = v =>
     try Some(v.s.toShort) catch case e: NumberFormatException => None
   
-  given Unapply[Text, Int] = v => try Some(v.s.toInt) catch case e: NumberFormatException => None
-  given Unapply[Text, Long] = v => try Some(v.s.toLong) catch case e: NumberFormatException => None
+  given textInt: Unapply[Text, Int] = v => try Some(v.s.toInt) catch case e: NumberFormatException => None
+  given textLong: Unapply[Text, Long] = v => try Some(v.s.toLong) catch case e: NumberFormatException => None
   
-  given Unapply[Text, Float] = v =>
+  given textFloat: Unapply[Text, Float] = v =>
     try Some(v.s.toFloat) catch case e: NumberFormatException => None
   
-  given Unapply[Text, Double] = v =>
+  given textDouble: Unapply[Text, Double] = v =>
     try Some(v.s.toDouble) catch case e: NumberFormatException => None
   
-  given Unapply[Text, Boolean] = v =>
+  given textBoolean: Unapply[Text, Boolean] = v =>
     if v.s == "true" then Some(true) else if v.s == "false" then Some(false) else None
 
-  given Unapply[Short, Byte] = v => if v.toByte.toShort == v then Some(v.toByte) else None
+  given shortByte: Unapply[Short, Byte] = v => if v.toByte.toShort == v then Some(v.toByte) else None
   
-  given Unapply[Int, Byte] = v => if v.toByte.toInt == v then Some(v.toByte) else None
-  given Unapply[Int, Short] = v => if v.toShort.toInt == v then Some(v.toShort) else None
-  given Unapply[Int, Float] = v => if v.toFloat.toInt == v then Some(v.toFloat) else None
+  given intByte: Unapply[Int, Byte] = v => if v.toByte.toInt == v then Some(v.toByte) else None
+  given intShort: Unapply[Int, Short] = v => if v.toShort.toInt == v then Some(v.toShort) else None
+  given intFloat: Unapply[Int, Float] = v => if v.toFloat.toInt == v then Some(v.toFloat) else None
   
-  given Unapply[Long, Byte] = v => if v.toByte.toLong == v then Some(v.toByte) else None
-  given Unapply[Long, Short] = v => if v.toShort.toLong == v then Some(v.toShort) else None
-  given Unapply[Long, Int] = v => if v.toInt.toLong == v then Some(v.toInt) else None
-  given Unapply[Long, Float] = v => if v.toFloat.toLong == v then Some(v.toFloat) else None
-  given Unapply[Long, Double] = v => if v.toDouble.toLong == v then Some(v.toDouble) else None
+  given longByte: Unapply[Long, Byte] = v => if v.toByte.toLong == v then Some(v.toByte) else None
+  given longShort: Unapply[Long, Short] = v => if v.toShort.toLong == v then Some(v.toShort) else None
+  given longInt: Unapply[Long, Int] = v => if v.toInt.toLong == v then Some(v.toInt) else None
+  given longFloat: Unapply[Long, Float] = v => if v.toFloat.toLong == v then Some(v.toFloat) else None
+  given longDouble: Unapply[Long, Double] = v => if v.toDouble.toLong == v then Some(v.toDouble) else None
   
-  given Unapply[Float, Byte] = v => if v.toByte.toFloat == v then Some(v.toByte) else None
-  given Unapply[Float, Short] = v => if v.toShort.toFloat == v then Some(v.toShort) else None
-  given Unapply[Float, Int] = v => if v.toInt.toFloat == v then Some(v.toInt) else None
-  given Unapply[Float, Long] = v => if v.toLong.toFloat == v then Some(v.toLong) else None
+  given floatByte: Unapply[Float, Byte] = v => if v.toByte.toFloat == v then Some(v.toByte) else None
+  given floatShort: Unapply[Float, Short] = v => if v.toShort.toFloat == v then Some(v.toShort) else None
+  given floatInt: Unapply[Float, Int] = v => if v.toInt.toFloat == v then Some(v.toInt) else None
+  given floatLong: Unapply[Float, Long] = v => if v.toLong.toFloat == v then Some(v.toLong) else None
   
-  given Unapply[Double, Byte] = v => if v.toByte.toDouble == v then Some(v.toByte) else None
-  given Unapply[Double, Short] = v => if v.toShort.toDouble == v then Some(v.toShort) else None
-  given Unapply[Double, Int] = v => if v.toInt.toDouble == v then Some(v.toInt) else None
-  given Unapply[Double, Long] = v => if v.toLong.toDouble == v then Some(v.toLong) else None
-  given Unapply[Double, Float] = v => if v.toFloat.toDouble == v then Some(v.toFloat) else None
+  given doubleByte: Unapply[Double, Byte] = v => if v.toByte.toDouble == v then Some(v.toByte) else None
+  given doubleShort: Unapply[Double, Short] = v => if v.toShort.toDouble == v then Some(v.toShort) else None
+  given doubleInt: Unapply[Double, Int] = v => if v.toInt.toDouble == v then Some(v.toInt) else None
+  given doubleLong: Unapply[Double, Long] = v => if v.toLong.toDouble == v then Some(v.toLong) else None
+  given doubleFloat: Unapply[Double, Float] = v => if v.toFloat.toDouble == v then Some(v.toFloat) else None
 
-trait Unapply[-From, +To]:
-  def unapply(value: From): Option[To]
+trait Unapply[-ValueType, +ResultType]:
+  def unapply(value: ValueType): Option[ResultType]
 
-trait Irrefutable[-From, +To]:
-  def unapply(value: From): To
+trait Irrefutable[-ValueType, +ResultType]:
+  def unapply(value: ValueType): ResultType
 
 object As:
   transparent inline def unapply[T](v: Any)(using ext: Unapply[v.type, T]): Option[T] = ext.unapply(v)
