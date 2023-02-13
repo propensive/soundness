@@ -26,7 +26,7 @@ trait GenericInstant:
   def makeInstant(long: Long): Instant
   def readInstant(value: Instant): Long
 
-@implicitNotFound("a contextual GenericInstant instance is required to work with durations of time, for example,\n"+
+@implicitNotFound("a contextual GenericDuration instance is required to work with durations of time, for example,\n"+
                   "    import timeRepresentation.long     // Use Longs for time durations\n"+
                   "    import timeRepresentation.aviation // Use Aviation types for time durations")
 trait GenericDuration:
