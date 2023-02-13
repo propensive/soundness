@@ -32,10 +32,10 @@ import java.net.{URLEncoder, URLDecoder}
 
 type TextStream = LazyList[Text throws StreamCutError]
 
-enum Direction:
+enum Bidi:
   case Ltr, Rtl
 
-export Direction.Ltr, Direction.Rtl
+export Bidi.Ltr, Bidi.Rtl
 
 @implicitNotFound("a contextual TextWidthCalculator is required to work out the horizontal space a string of text takes when rendered in a monospaced font; for most purposes,\n\n    gossamer.textWidthCalculation.uniform\n\nwill suffice, but if using East Asian scripts,\n\n    import gossamer.textWidthCalculation.eastAsianScripts\n\nshould be used.")
 trait TextWidthCalculator:
@@ -85,11 +85,11 @@ extension (text: Text)
   inline def urlDecode: Text = Text(URLDecoder.decode(text.s, "UTF-8").nn)
   inline def punycode: Text = Text(java.net.IDN.toASCII(text.s).nn)
   
-  def drop(n: Int, dir: Direction = Ltr): Text = dir match
+  def drop(n: Int, dir: Bidi = Ltr): Text = dir match
     case Ltr => Text(text.s.substring(n min length max 0).nn)
     case Rtl => Text(text.s.substring(0, 0 max (text.s.length - n) min length).nn)
   
-  def take(n: Int, dir: Direction = Ltr): Text = dir match
+  def take(n: Int, dir: Bidi = Ltr): Text = dir match
     case Ltr => Text(text.s.substring(0, n min length max 0).nn)
     case Rtl => Text(text.s.substring(0 max (text.s.length - n) min length, length).nn)
 
@@ -138,7 +138,7 @@ extension (text: Text)
   def unkebab: List[Text] = text.cut(Text("-"))
   def unsnake: List[Text] = text.cut(Text("_"))
 
-  def fit(width: Int, dir: Direction = Ltr, char: Char = ' '): Text = dir match
+  def fit(width: Int, dir: Bidi = Ltr, char: Char = ' '): Text = dir match
     case Ltr => (text + Text(s"$char")*(width - length)).take(width, Ltr)
     case Rtl => (Text(s"$char")*(width - length) + text).take(width, Rtl)
 
@@ -154,7 +154,7 @@ extension (text: Text)
   
   def char(idx: Int): Maybe[Char] = if idx >= 0 && idx < text.s.length then text.s.charAt(idx) else Unset
 
-  def pad(length: Int, dir: Direction = Ltr, char: Char = ' ')(using calc: TextWidthCalculator): Text =
+  def pad(length: Int, dir: Bidi = Ltr, char: Char = ' ')(using calc: TextWidthCalculator): Text =
     dir match
       case Ltr => if calc.width(text) < length then text+Text(s"$char")*(length - calc.width(text)) else text
       case Rtl => if calc.width(text) < length then Text(s"$char")*(length - calc.width(text))+text else text
@@ -163,7 +163,7 @@ extension (text: Text)
   def contains(char: Char): Boolean = text.s.indexOf(char) != -1
 
   @tailrec
-  def where(pred: Char -> Boolean, idx: Maybe[Int] = Unset, dir: Direction = Ltr)
+  def where(pred: Char -> Boolean, idx: Maybe[Int] = Unset, dir: Bidi = Ltr)
             : Int throws OutOfRangeError = dir match
     case Ltr =>
       val index = idx.or(0)
