@@ -112,7 +112,6 @@ inline def cursor[ElemType](n: Int)(using inline xs: Cursor.CursorSeq[ElemType],
                  : Maybe[ElemType] =
   xs(cur, n)
 
-
 extension [ElemType](xs: IndexedSeq[ElemType])
   transparent inline def curse[ElemType2](inline fn: (Cursor.CursorSeq[ElemType], Cursor.Cursor) ?=> ElemType2)
                               : IndexedSeq[ElemType2] =
