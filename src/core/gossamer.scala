@@ -85,11 +85,11 @@ extension (text: Text)
   inline def urlDecode: Text = Text(URLDecoder.decode(text.s, "UTF-8").nn)
   inline def punycode: Text = Text(java.net.IDN.toASCII(text.s).nn)
   
-  def drop(n: Int, dir: Bidi = Ltr): Text = dir match
+  def drop(n: Int, bidi: Bidi = Ltr): Text = bidi match
     case Ltr => Text(text.s.substring(n min length max 0).nn)
     case Rtl => Text(text.s.substring(0, 0 max (text.s.length - n) min length).nn)
   
-  def take(n: Int, dir: Bidi = Ltr): Text = dir match
+  def take(n: Int, bidi: Bidi = Ltr): Text = bidi match
     case Ltr => Text(text.s.substring(0, n min length max 0).nn)
     case Rtl => Text(text.s.substring(0 max (text.s.length - n) min length, length).nn)
 
@@ -138,7 +138,7 @@ extension (text: Text)
   def unkebab: List[Text] = text.cut(Text("-"))
   def unsnake: List[Text] = text.cut(Text("_"))
 
-  def fit(width: Int, dir: Bidi = Ltr, char: Char = ' '): Text = dir match
+  def fit(width: Int, bidi: Bidi = Ltr, char: Char = ' '): Text = bidi match
     case Ltr => (text + Text(s"$char")*(width - length)).take(width, Ltr)
     case Rtl => (Text(s"$char")*(width - length) + text).take(width, Rtl)
 
@@ -154,8 +154,8 @@ extension (text: Text)
   
   def char(idx: Int): Maybe[Char] = if idx >= 0 && idx < text.s.length then text.s.charAt(idx) else Unset
 
-  def pad(length: Int, dir: Bidi = Ltr, char: Char = ' ')(using calc: TextWidthCalculator): Text =
-    dir match
+  def pad(length: Int, bidi: Bidi = Ltr, char: Char = ' ')(using calc: TextWidthCalculator): Text =
+    bidi match
       case Ltr => if calc.width(text) < length then text+Text(s"$char")*(length - calc.width(text)) else text
       case Rtl => if calc.width(text) < length then Text(s"$char")*(length - calc.width(text))+text else text
 
@@ -163,8 +163,8 @@ extension (text: Text)
   def contains(char: Char): Boolean = text.s.indexOf(char) != -1
 
   @tailrec
-  def where(pred: Char -> Boolean, idx: Maybe[Int] = Unset, dir: Bidi = Ltr)
-            : Int throws OutOfRangeError = dir match
+  def where(pred: Char -> Boolean, idx: Maybe[Int] = Unset, bidi: Bidi = Ltr)
+            : Int throws OutOfRangeError = bidi match
     case Ltr =>
       val index = idx.or(0)
       if index >= text.length || index < 0 then throw OutOfRangeError(index, 0, text.s.length)
