@@ -169,11 +169,36 @@ extension [ElemType](stream: LazyList[ElemType])
     
     LazyList() #::: recur(stream, Nil, Long.MaxValue)
 
+  def parallelMap[ElemType2](fn: ElemType => ElemType2)(using monitor: {*} Monitor)
+                 : {monitor, fn} LazyList[ElemType2] =
+    val out: Funnel[ElemType2] = Funnel()
+    Task(Text("parallelMap")):
+      stream.map: elem =>
+        Task(Text("elem")):
+          out.put(fn(elem))
+    
+    out.stream
+
 // object StreamBuffer:
 //   given Writable[StreamBuffer[Bytes throws StreamCutError]] with
 //     def write(buffer: StreamBuffer[Bytes throws StreamCutError], stream: DataStream) =
 //       stream.foreach(buffer.put(_))
 
+trait Printable[-TextType]:
+  def print(text: TextType): Bytes
+
+object Io:
+  def print[TextType](text: TextType)
+           (using basicIo: BasicIo)(using printable: Printable[basicIo.OutputType, TextType])
+           : {basicIo, printable} Unit =
+    basicIo.writeStdoutBytes(printable.print(text))
+  
+  def println[TextType](text: TextType)(using basicIo: BasicIo, printable: Printable[TextType],
+                                           lineSeparators: LineSeparators)
+             : {basicIo, printable, lineSeparators} Unit =
+    basicIo.writeStdoutBytes(printable.print(text))
+    basicIo.writeStdoutBytes(lineSeparators.newlineBytes)
+  
 @capability
 trait BasicIo:
   def writeStdoutText(text: Text): Unit
@@ -182,6 +207,7 @@ trait BasicIo:
   def writeStderrBytes(bytes: Bytes): Unit
 
 object Stderr
+
 object Stdout:
   def print(text: Text)(using basicIo: BasicIo): Unit =
     basicIo.writeStdoutText(text)
