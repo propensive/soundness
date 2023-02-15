@@ -10,7 +10,7 @@ features of Scala 3 to write web and command-line applications, with a focus on 
 operations to the type-level with safe and expressive syntax.
 
 _Scala One_ includes libraries for working with [HTML](https://github.com/propensive/honeycomb/),
-[CSS](https://github.com/propensive/cataclysm/), [JSON](https://github.com/propensive/javanais/),
+[CSS](https://github.com/propensive/cataclysm/), [JSON](https://github.com/propensive/jacinta/),
 [XML](https://github.com/propensive/xylophone/), [CSV](https://github.com/propensive/caesura/),
 [typesafe strings](https://github.com/propensive/gossamer/),
 [ANSI-escaped strings](https://github.com/propensive/escapade/) and
@@ -21,6 +21,7 @@ _Scala One_ includes libraries for working with [HTML](https://github.com/propen
 [disk I/O](https://github.com/propensive/galilei/),
 [filewatching](https://github.com/propensive/surveillance/) and the standard
 [UNIX directory layout](https://github.com/propensive/imperial),
+[environment variables](https://github.com/propensive/ambience),
 [shell processes](https://github.com/propensive/guillotine/) (including native
 [keyboard interactivity](https://github.com/propensive/profanity/)),
 [cryptographic functions](https://github.com/propensive/gastronomy/),
@@ -151,12 +152,14 @@ expected to be introduced in Scala 3 soon to provide better safety.
 
 [![Acyclicity](https://github.com/propensive/acyclicity/raw/main/doc/images/128x128.png)](https://github.com/propensive/acyclicity/) &nbsp;
 [![Adversaria](https://github.com/propensive/adversaria/raw/main/doc/images/128x128.png)](https://github.com/propensive/adversaria/) &nbsp;
+[![Ambience](https://github.com/propensive/ambience/raw/main/doc/images/128x128.png)](https://github.com/propensive/ambience/) &nbsp;
 [![Anticipation](https://github.com/propensive/anticipation/raw/main/doc/images/128x128.png)](https://github.com/propensive/anticipation/) &nbsp;
 [![Aviation](https://github.com/propensive/aviation/raw/main/doc/images/128x128.png)](https://github.com/propensive/aviation/) &nbsp;
 [![Caesura](https://github.com/propensive/caesura/raw/main/doc/images/128x128.png)](https://github.com/propensive/caesura/) &nbsp;
 [![Cardinality](https://github.com/propensive/cardinality/raw/main/doc/images/128x128.png)](https://github.com/propensive/cardinality/) &nbsp;
 [![Cataclysm](https://github.com/propensive/cataclysm/raw/main/doc/images/128x128.png)](https://github.com/propensive/cataclysm/) &nbsp;
 [![Cellulose](https://github.com/propensive/cellulose/raw/main/doc/images/128x128.png)](https://github.com/propensive/cellulose/) &nbsp;
+[![Chiaroscuro](https://github.com/propensive/chiaroscuro/raw/main/doc/images/128x128.png)](https://github.com/propensive/chiaroscuro/) &nbsp;
 [![Contextual](https://github.com/propensive/contextual/raw/main/doc/images/128x128.png)](https://github.com/propensive/contextual/) &nbsp;
 [![Cosmopolite](https://github.com/propensive/cosmopolite/raw/main/doc/images/128x128.png)](https://github.com/propensive/cosmopolite/) &nbsp;
 [![Dendrology](https://github.com/propensive/dendrology/raw/main/doc/images/128x128.png)](https://github.com/propensive/dendrology/) &nbsp;
@@ -172,11 +175,12 @@ expected to be introduced in Scala 3 soon to provide better safety.
 [![Gossamer](https://github.com/propensive/gossamer/raw/main/doc/images/128x128.png)](https://github.com/propensive/gossamer/) &nbsp;
 [![Guillotine](https://github.com/propensive/guillotine/raw/main/doc/images/128x128.png)](https://github.com/propensive/guillotine/) &nbsp;
 [![Harlequin](https://github.com/propensive/harlequin/raw/main/doc/images/128x128.png)](https://github.com/propensive/harlequin/) &nbsp;
+[![Hieronymus](https://github.com/propensive/hieronymus/raw/main/doc/images/128x128.png)](https://github.com/propensive/hieronymus/) &nbsp;
 [![Honeycomb](https://github.com/propensive/honeycomb/raw/main/doc/images/128x128.png)](https://github.com/propensive/honeycomb/) &nbsp;
 [![Hyperbole](https://github.com/propensive/hyperbole/raw/main/doc/images/128x128.png)](https://github.com/propensive/hyperbole/) &nbsp;
 [![Imperial](https://github.com/propensive/imperial/raw/main/doc/images/128x128.png)](https://github.com/propensive/imperial/) &nbsp;
 [![Iridescence](https://github.com/propensive/iridescence/raw/main/doc/images/128x128.png)](https://github.com/propensive/iridescence/) &nbsp;
-[![Javanais](https://github.com/propensive/javanais/raw/main/doc/images/128x128.png)](https://github.com/propensive/javanais/) &nbsp;
+[![Jacinta](https://github.com/propensive/jacinta/raw/main/doc/images/128x128.png)](https://github.com/propensive/jacinta/) &nbsp;
 [![Kaleidoscope](https://github.com/propensive/kaleidoscope/raw/main/doc/images/128x128.png)](https://github.com/propensive/kaleidoscope/) &nbsp;
 [![Merino](https://github.com/propensive/merino/raw/main/doc/images/128x128.png)](https://github.com/propensive/merino/) &nbsp;
 [![Oubliette](https://github.com/propensive/oubliette/raw/main/doc/images/128x128.png)](https://github.com/propensive/oubliette/) &nbsp;
