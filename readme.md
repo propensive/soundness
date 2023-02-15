@@ -150,7 +150,6 @@ expected to be introduced in Scala 3 soon to provide better safety.
 
 ## _Scala One_ Modules
 
-<small>
 [![Acyclicity](https://github.com/propensive/acyclicity/raw/main/doc/images/128x128.png)](https://github.com/propensive/acyclicity/) &nbsp;
 [![Adversaria](https://github.com/propensive/adversaria/raw/main/doc/images/128x128.png)](https://github.com/propensive/adversaria/) &nbsp;
 [![Ambience](https://github.com/propensive/ambience/raw/main/doc/images/128x128.png)](https://github.com/propensive/ambience/) &nbsp;
@@ -199,4 +198,3 @@ expected to be introduced in Scala 3 soon to provide better safety.
 [![Turbulence](https://github.com/propensive/turbulence/raw/main/doc/images/128x128.png)](https://github.com/propensive/turbulence/) &nbsp;
 [![Wisteria](https://github.com/propensive/wisteria/raw/main/doc/images/128x128.png)](https://github.com/propensive/wisteria/) &nbsp;
 [![Xylophone](https://github.com/propensive/xylophone/raw/main/doc/images/128x128.png)](https://github.com/propensive/xylophone/)
-</small>
