@@ -119,7 +119,7 @@ Here are some other examples which apply, by precedent, in Scala One projects:
   type, if the name makes sense; an abbreviated form should not be used, nor
   should a parameter use its type name if other parameters exist of the same type
 - converters to generic types like JSON or XML that are defined as extension
-  methods should take the name of the resultant type, e.g. `javanais.json`,
+  methods should take the name of the resultant type, e.g. `jacinta.json`,
   `xylophone.xml`, `cellulose.codl`, `punctuation.markdown`
 - exception types should all be suffixed with `Error`
 - generic typeclass instances in
@@ -127,7 +127,7 @@ Here are some other examples which apply, by precedent, in Scala One projects:
   prefixed with `Generic`
 - readers and writer typeclasses (sometimes called encoders and decoders)
   should be named `Reader` and `Writer` prefixed with the type they decode and
-  encode for, e.g. `javanais.JsonReader`, `javanais.JsonWriter`,
+  encode for, e.g. `jacinta.JsonReader`, `jacinta.JsonWriter`,
   `xylophone.XmlReader`
 
 These conventions are not exhaustive, nor are they universally applied, but any
