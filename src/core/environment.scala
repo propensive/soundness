@@ -19,17 +19,18 @@ package ambience
 import anticipation.*
 import rudiments.*
 
+import language.experimental.captureChecking
+
 @implicitNotFound("rudiments: a contextual Environment instance is required, for example one of:\n"+
                   "    given Environment = environments.empty       // no environment variables or system properties\n"+
                   "    given Environment = environments.restricted  // access to system properties, but no environment variables\n"+
                   "    given Environment = environments.system      // full access to the JVM's environment")
-class Environment(getEnv: Text => Option[Text], getProperty: Text => Option[Text]):
-  def apply(variable: Text): Maybe[Text] = getEnv(variable) match
-    case None        => Unset
-    case Some(value) => value
+@capability
+class Environment(getEnv: Text -> Maybe[Text], getProperty: Text -> Maybe[Text]):
+  def apply(variable: Text): Maybe[Text] = getEnv(variable)
 
   def property(variable: Text): Text throws EnvError =
-    getProperty(variable).getOrElse(throw EnvError(variable, true))
+    getProperty(variable).option.getOrElse(throw EnvError(variable, true))
 
   def fileSeparator: ('/' | '\\') throws EnvError = property(Text("file.separator")).s match
     case "/"  => '/'
@@ -68,9 +69,11 @@ class Environment(getEnv: Text => Option[Text], getProperty: Text => Option[Text
   def userName: Text throws EnvError = property(Text("user.name"))
 
   def pwd[PathType](using GenericPathMaker[PathType]): PathType throws EnvError =
-    val userDir = try property(Text("user.dir")) catch case err: Exception => Unset
-    apply(Text("PWD")).or(userDir).fm(throw EnvError(Text("user.dir"), true)): path =>
-      makeGenericPath(path.s).getOrElse(throw EnvError(Text("user.dir"), true))
+    apply(Text("PWD")) match
+      case path: Text => makeGenericPath(path.s).getOrElse(throw EnvError(Text("user.dir"), true))
+      case _          => (try property(Text("user.dir")) catch case err: Exception => Unset) match
+        case path: Text => makeGenericPath(path.s).getOrElse(throw EnvError(Text("user.dir"), true))
+        case _          => throw EnvError(Text("user.dir"), true)
 
 case class EnvError(variable: Text, property: Boolean)
 extends Error(ErrorMessage[Text *: EmptyTuple](
@@ -80,15 +83,15 @@ extends Error(ErrorMessage[Text *: EmptyTuple](
 
 package environments:
   given system: Environment(
-    v => Option(System.getenv(v.s)).map(_.nn).map(Text(_)),
-    v => Option(System.getProperty(v.s)).map(_.nn).map(Text(_))
+    v => Option(System.getenv(v.s)).map(_.nn).map(Text(_)).maybe,
+    v => Option(System.getProperty(v.s)).map(_.nn).map(Text(_)).maybe
   )
 
   given restricted: Environment(
-    v => None,
-    v => Option(System.getProperty(v.s)).map(_.nn).map(Text(_))
+    v => Unset,
+    v => Option(System.getProperty(v.s)).map(_.nn).map(Text(_)).maybe
   )
 
-  given empty: Environment(v => None, v => None)
+  given empty: Environment(v => Unset, v => Unset)
 
 inline def env(using env: Environment): Environment = env
