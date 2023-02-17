@@ -6,31 +6,23 @@ import java.time as jt
 import java.io as ji
 import java.nio.file as jnf
 import java.net as jn
+import java.util as ju
 
-object JavaTime extends GenericInstant, GenericDuration:
-  type Instant = jt.Instant
-  type Duration = Long
-  
-  def readInstant(value: Instant): Long = value.toEpochMilli
-  def makeInstant(long: Long): Instant = jt.Instant.ofEpochMilli(long).nn
+object JavaTime extends GenericInstant[jt.Instant], GenericDuration[Long]:
+  def readInstant(value: jt.Instant): Long = value.toEpochMilli
+  def makeInstant(long: Long): jt.Instant = jt.Instant.ofEpochMilli(long).nn
   def readDuration(long: Long): Long = long
   def makeDuration(value: Long): Long = value
 
-object JavaLongTime extends GenericInstant, GenericDuration:
-  type Instant = Long
-  type Duration = Long
-  
+object JavaLongTime extends GenericInstant[Long], GenericDuration[Long]:
   def readInstant(long: Long): Long = long
   def makeInstant(value: Long): Long = value
   def readDuration(long: Long): Long = long
   def makeDuration(value: Long): Long = value
 
-object JavaUtilTime extends GenericInstant, GenericDuration:
-  type Instant = java.util.Date
-  type Duration = Long
-  
-  def makeInstant(long: Long): java.util.Date = java.util.Date(long)
-  def readInstant(value: java.util.Date): Long = value.getTime
+object JavaUtilTime extends GenericInstant[ju.Date], GenericDuration[Long]:
+  def makeInstant(long: Long): ju.Date = ju.Date(long)
+  def readInstant(value: ju.Date): Long = value.getTime
   def readDuration(long: Long): Long = long
   def makeDuration(value: Long): Long = value
 
