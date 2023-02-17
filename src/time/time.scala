@@ -21,22 +21,27 @@ import annotation.implicitNotFound
 @implicitNotFound("a contextual GenericInstant instance is required to work with instants in time, for example,\n"+
                   "    import timeRepresentation.long     // Use Longs to represent instants\n"+
                   "    import timeRepresentation.aviation // Use Aviation types for instants")
-trait GenericInstant:
-  type Instant
-  def makeInstant(long: Long): Instant
-  def readInstant(value: Instant): Long
+trait GenericInstant[InstantType]:
+  def makeInstant(long: Long): InstantType
+  def readInstant(value: InstantType): Long
 
 @implicitNotFound("a contextual GenericDuration instance is required to work with durations of time, for example,\n"+
                   "    import timeRepresentation.long     // Use Longs for time durations\n"+
                   "    import timeRepresentation.aviation // Use Aviation types for time durations")
-trait GenericDuration:
-  type Duration
-  def makeDuration(long: Long): Duration
-  def readDuration(value: Duration): Long
+trait GenericDuration[DurationType]:
+  def makeDuration(long: Long): DurationType
+  def readDuration(value: DurationType): Long
 
 package timeRepresentation {}
 
-def makeInstant(value: Long)(using time: GenericInstant): time.Instant = time.makeInstant(value)
-def readInstant(using time: GenericInstant)(value: time.Instant): Long = time.readInstant(value)
-def makeDuration(value: Long)(using time: GenericDuration): time.Duration = time.makeDuration(value)
-def readDuration(using time: GenericDuration)(value: time.Duration): Long = time.readDuration(value)
+def makeInstant[InstantType](instant: Long)(using generic: GenericInstant[InstantType]): InstantType =
+  generic.makeInstant(instant)
+
+def readInstant[InstantType](using generic: GenericInstant[InstantType])(instant: InstantType): Long =
+  generic.readInstant(instant)
+
+def makeDuration[DurationType](duration: Long)(using generic: GenericDuration[DurationType]): DurationType =
+  generic.makeDuration(duration)
+
+def readDuration[DurationType](using generic: GenericDuration[DurationType])(duration: DurationType): Long =
+  generic.readDuration(duration)
