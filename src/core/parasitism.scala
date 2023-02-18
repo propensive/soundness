@@ -22,156 +22,107 @@ import anticipation.*
 
 import scala.util.*
 
-package monitors:
-  given global: Monitor = Supervisor(daemon = true)
+import language.experimental.captureChecking
+
+// package monitors:
+//   given global: Monitor = Supervisor(daemon = true)
 
 case class CancelError() extends Error(err"the operation was cancelled")
 case class IncompleteError() extends Error(err"the task was not completed")
 case class AlreadyCompleteError() extends Error(err"the promise was already completed")
 case class TimeoutError() extends Error(err"the operation timed out")
 
-case class Supervisor(baseId: Text = Text("main"), daemon: Boolean = false, virtualThreads: Boolean = false)
-extends Monitor:
-  @volatile
-  private var interrupted: Boolean = false
+// case class Supervisor(baseId: Text = Text("main"), daemon: Boolean = false, virtualThreads: Boolean = false)
+// extends Monitor:
+//   @volatile
+//   private var interrupted: Boolean = false
 
-  def name: Text = Text("task://"+baseId)
-  def id: Text = name
-  def continue = !interrupted
-  def cancel(): Unit = interrupted = true
+//   def name: Text = Text("task://"+baseId)
+//   def id: Text = name
+//   def continue = !interrupted
+//   def cancel(): Unit = interrupted = true
 
-  def makeThread(runnable: Runnable, name: Text): Thread =
-    // if virtualThreads then Thread.ofVirtual.nn.name(name.s).nn.start(runnable).nn
-    // else
-      Thread(runnable, name.s).nn.tap(_.setDaemon(daemon)).tap(_.start())
+//   def makeThread(runnable: {*} Runnable, name: Text): {runnable} Thread =
+//     if virtualThreads then Thread.ofVirtual.nn.name(name.s).nn.start(runnable).nn
+//     else Thread(runnable, name.s).nn.tap(_.setDaemon(daemon)).tap(_.start())
 
-def supervise[ResultType](id: Text)(fn: Monitor ?=> ResultType): ResultType = fn(using Supervisor(id))
-def hibernate()(using Monitor): Unit = sleep(using timeRepresentation.long)(Long.MaxValue)
+// def supervise[ResultType](id: Text)(fn: Monitor ?=> ResultType): ResultType = fn(using Supervisor(id))
+// def hibernate()(using Monitor): Unit = sleep(using timeRepresentation.long)(Long.MaxValue)
 
-def sleep(using t: GenericDuration)(time: t.Duration)(using Monitor): Unit =
-  try Thread.sleep(readDuration(time)) catch case err: InterruptedException => unsafely(throw CancelError())
+// def sleep(using t: GenericDuration)(time: t.Duration)(using Monitor): Unit =
+//   try Thread.sleep(readDuration(time)) catch case err: InterruptedException => unsafely(throw CancelError())
 
-@implicitNotFound("""|parasitism: a contextual Monitor instance is required, for example:
-                     |    import monitors.global  // a top-level supervisor for asynchronous tasks""".stripMargin)
-trait Monitor:
-  def id: Text
-  def name: Text
-  def continue: Boolean
-  def cancel(): Unit
-  def makeThread(runnable: Runnable, name: Text): Thread
+// @implicitNotFound("""|parasitism: a contextual Monitor instance is required, for example:
+//                      |    import monitors.global  // a top-level supervisor for asynchronous tasks""".stripMargin)
+// @capability
+// trait Monitor:
+//   def id: Text
+//   def name: Text
+//   def continue: Boolean
+//   def cancel(): Unit
+//   def makeThread(runnable: {*} Runnable, name: Text): {runnable} Thread
   
-  final def accede(cleanup: => Unit = ()): Unit =
-    import unsafeExceptions.canThrowAny
-    if !continue then cleanup.pipe((throw CancelError()).waive)
+//   final def accede(cleanup: => Unit = ()): Unit =
+//     import unsafeExceptions.canThrowAny
+//     if !continue then cleanup.pipe((throw CancelError()).waive)
 
-  def child(id: Text, check: => Boolean, abort: => Unit): Monitor =
-    TaskMonitor(id, () => check, () => abort, this)
+//   def child(id: Text, check: => Boolean, abort: => Unit): Monitor =
+//     TaskMonitor(id, () => check, () => abort, this)
 
-case class TaskMonitor(id: Text, interrupted: () => Boolean, stop: () => Unit, parent: Monitor) extends Monitor:
-  def name: Text = Text(parent.name.s+"/"+id)
-  def continue: Boolean = !interrupted() && parent.continue
-  def cancel(): Unit = stop()
-  def makeThread(runnable: Runnable, name: Text): Thread = parent.makeThread(runnable, name)
+// case class TaskMonitor(id: Text, interrupted: () => Boolean, stop: () => Unit, parent: Monitor) extends Monitor:
+//   def name: Text = Text(parent.name.s+"/"+id)
+//   def continue: Boolean = !interrupted() && parent.continue
+//   def cancel(): Unit = stop()
+//   def makeThread(runnable: {*} Runnable, name: Text): {runnable} Thread = parent.makeThread(runnable, name)
 
-case class Promise[ValueType]():
-  @volatile
-  private var value: Option[ValueType throws CancelError] = None
+// extension [ResultType](xs: Iterable[Task[ResultType]])
+//   transparent inline def sequence(using monitor: Monitor): Task[Iterable[ResultType]] throws CancelError =
+//     Task(Text("sequence"))(xs.map(_.await()))
 
-  @volatile
-  private var triggers: List[() => Unit] = Nil
+// enum TaskStatus:
+//   case New, Running, Completed, Canceled, Failed, Expired
+
+// object Task:
+//   def apply[ResultType]
+//            (id: Text)(fn: Monitor ?=> ResultType)(using monitor: Monitor, cancel: CanThrow[CancelError])
+//            : {cancel, monitor} Task[ResultType] =
+//     (new Task(id, (mon: Monitor) => fn(using mon)))
+
+// class Task[ResultType](id: Text, calc: Monitor => ResultType)(using @annotation.constructorOnly monitor: Monitor):
+//   private val result: Promise[ResultType] = Promise()
+//   private lazy val thread: {calc} Thread = monitor.makeThread(runnable, context.name)
+//   private lazy val context = monitor.child(id, thread.isInterrupted, thread.interrupt())
   
-  def ready: Boolean = !value.isEmpty
+//   def name: Text = Text(monitor.name.s+"/"+id)
+//   def await()(using cancel: CanThrow[CancelError]): ResultType = result.await().tap(thread.join().waive)
   
-  def supply(suppliedValue: ValueType): Unit throws AlreadyCompleteError = synchronized:
-    if value.isEmpty then
-      value = Some(suppliedValue)
-      notifyAll()
-      triggers.foreach(_())
-    else throw AlreadyCompleteError()
+//   def await[DurationType](duration: DurationType)
+//            (using genericDuration: GenericDuration { type Duration = DurationType },
+//                 cancel: CanThrow[CancelError], timeout: CanThrow[TimeoutError])
+//            : {cancel, timeout} ResultType =
+//     result.await(duration).tap(thread.join().waive)
+
+//   def cancel(): Unit = synchronized:
+//     context.cancel()
+//     result.cancel()
+
+//   def map[ResultType2](fn: ResultType => ResultType2)(using monitor: Monitor, cancel: CanThrow[CancelError])
+//          : {monitor, cancel} Task[ResultType2] =
+//     Task(Text(s"${id}.map"))(fn(await()))
   
-  def trigger(fn: => Unit): Unit = triggers ::= (() => fn)
-
-  def await(): ValueType throws CancelError = synchronized:
-    while value.isEmpty do wait()
-    value.get
-
-  def await[DurationType](duration: DurationType)(using GenericDuration { type Duration = DurationType })
-           : ValueType throws CancelError | TimeoutError =
-    synchronized:
-      if value.isEmpty then
-        wait(readDuration(duration))
-        if value.isEmpty then throw TimeoutError() else value.get
-      else value.get
-
-  def cancel(): Unit = synchronized:
-    if value.isEmpty then value = Some(throw CancelError())
-
-  def get: ValueType throws IncompleteError | CancelError = value.getOrElse(throw IncompleteError())
-
-  override def toString: String =
-    try value.fold("[incomplete]")(_.toString) catch case err: CancelError => "[canceled]"
-
-extension [ResultType](xs: Iterable[Task[ResultType]])
-  transparent inline def sequence(using mon: Monitor): Task[Iterable[ResultType]] =
-    Task(Text("sequence"))(xs.map(_.await()))
-
-enum TaskStatus:
-  case New, Running, Completed, Canceled, Failed, Expired
-
-object Task:
-  def apply[ResultType](id: Text)(fn: CanThrow[CancelError] ?=> Monitor ?=> ResultType)(using monitor: Monitor)
-           : Task[ResultType] =
-    (new Task(id, mon => fn(using unsafeExceptions.canThrowAny)(using mon))(using monitor)).tap(_.start())
-
-class Task[ResultType](id: Text, calc: Monitor => ResultType)(using mon: Monitor):
-  private var startTime: Long = 0L
-  private var status: TaskStatus = TaskStatus.New
-  def name = Text(mon.name.s+"/"+id)
-  //def active: Boolean = !result.ready
-  def await(): ResultType throws CancelError = result.await().tap(thread.join().waive)
+//   def flatMap[ResultType2](fn: ResultType => Task[ResultType2])
+//              (using monitor: Monitor, cancel: CanThrow[CancelError])
+//              : {monitor, cancel} Task[ResultType2] =
+//     Task(Text(s"${id}.flatMap"))(fn(await()).await())
   
-  def await[DurationType](time: DurationType)(using GenericDuration { type Duration = DurationType })
-           : ResultType throws CancelError | TimeoutError =
-    result.await(time).tap(thread.join().waive)
-  
-  private def start(): Promise[ResultType] = //synchronized:
-    // if startTime == 0 then
-    //   startTime = System.currentTimeMillis
-    //   status = TaskStatus.Running
-    //   thread.start()
-    thread
-    result
-
-  def cancel(): Unit = synchronized:
-    ctx.cancel()
-    result.cancel()
-    status = TaskStatus.Canceled
-
-  def map[ResultType2](fn: ResultType => ResultType2)(using mon: Monitor): Task[ResultType2] =
-    Task(Text(s"${id}.map"))(fn(await()))
-  
-  def flatMap[ResultType2](fn: ResultType => Task[ResultType2])(using mon: Monitor): Task[ResultType2] =
-    Task(Text(s"${id}.flatMap"))(fn(await()).await())
-  
-  private val result: Promise[ResultType] = Promise()
-  private lazy val thread: Thread = mon.makeThread(runnable, ctx.name)
-  private lazy val ctx = mon.child(id, thread.isInterrupted, thread.interrupt())
-  
-  private def runnable: Runnable = () => safely:
-    try
-      result.supply(calc(ctx))
-      status = TaskStatus.Completed
-    catch
-      case err: TimeoutError =>
-        result.supply(throw err)
-        status = TaskStatus.Expired
-
-      case err: Throwable =>
-        result.supply(throw err)
-        status = TaskStatus.Failed
+//   private def runnable: {calc} Runnable = () => safely:
+//     try result.supply(calc(context))
+//     catch
+//       case err: TimeoutError => result.supply(throw err)
+//       case err: Throwable    => result.supply(throw err)
     
-  override def toString: String = s"Task(${result.toString})"
+//   override def toString: String = s"Task(${result.toString})"
 
-def accede(cleanup: => Unit = ())(using mon: Monitor): Unit =
-  import unsafeExceptions.canThrowAny
-  mon.accede(cleanup)
+// def accede(cleanup: => Unit = ())(using mon: Monitor): Unit =
+//   import unsafeExceptions.canThrowAny
+//   mon.accede(cleanup)
