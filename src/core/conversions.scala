@@ -203,7 +203,7 @@ case class Srgb(red: Double, green: Double, blue: Double) extends Color:
 
 case class Cielab(l: Double, a: Double, b: Double) extends Color:
   def srgb(using ColorProfile): Srgb = xyz.srgb
-  def standardSrgb: Srgb = srgb(using colorProfiles.Daylight)
+  def standardSrgb: Srgb = srgb(using colorProfiles.daylight)
 
   def xyz(using profile: ColorProfile): Xyz =
     def limit(v: Double): Double = if v*v*v > 0.008856 then v*v*v else (v - 16.0/116)/7.787
