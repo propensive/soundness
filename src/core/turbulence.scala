@@ -61,13 +61,13 @@ extension (obj: LazyList.type)
     streams.zipWithIndex.map(_.swap).foreach(multiplexer.add)
     multiplexer
   
-  def pulsar(using time: GenericDuration)(interval: time.Duration)(using Monitor): LazyList[Unit] =
+  def pulsar[DurationType: GenericDuration](interval: DurationType)(using Monitor): LazyList[Unit] =
     try
       sleep(interval)
       () #:: pulsar(interval)
     catch case err: CancelError => LazyList()
 
-class Pulsar(using time: GenericDuration)(interval: time.Duration):
+class Pulsar[DurationType: GenericDuration](interval: DurationType):
   private var continue: Boolean = true
   def stop(): Unit = continue = false
 
@@ -78,7 +78,7 @@ class Pulsar(using time: GenericDuration)(interval: time.Duration):
     catch case err: CancelError => LazyList()
 
 case class Multiplexer[KeyType, ElemType]()(using monitor: Monitor):
-  private val tasks: HashMap[KeyType, Task[Unit]] = HashMap()
+  private val tasks: HashMap[KeyType, {monitor} Task[Unit]] = HashMap()
   private val queue: juc.LinkedBlockingQueue[Maybe[ElemType]] = juc.LinkedBlockingQueue()
 
   def close(): Unit = tasks.keys.foreach(remove(_))
@@ -87,12 +87,13 @@ case class Multiplexer[KeyType, ElemType]()(using monitor: Monitor):
   private def pump(key: KeyType, stream: LazyList[ElemType]): Unit =
     if stream.isEmpty then remove(key) else
       //ctx.terminate(())
-      monitor.accede()
+      relinquish()
       queue.put(stream.head)
       pump(key, stream.tail)
 
   def add(key: KeyType, stream: LazyList[ElemType]): Unit = synchronized:
-    tasks(key) = Task(Text("pump"))(pump(key, stream))
+    tasks(key) = Task(Text("pump")):
+      pump(key, stream)
  
   private def remove(key: KeyType): Unit = synchronized:
     tasks -= key
@@ -109,12 +110,14 @@ case class Multiplexer[KeyType, ElemType]()(using monitor: Monitor):
 
 
 extension [ElemType](stream: LazyList[ElemType])
-  def rate(using time: GenericDuration)(interval: time.Duration)(using Monitor)
-          : LazyList[ElemType] throws CancelError =
+  def rate
+      [DurationType: GenericDuration](interval: DurationType)
+      (using monitor: Monitor, cancel: CanThrow[CancelError])
+      : {monitor, cancel} LazyList[ElemType] =
     def recur(stream: LazyList[ElemType], last: Long): LazyList[ElemType] = stream match
       case head #:: tail =>
         val delay = makeDuration(readDuration(interval) - (System.currentTimeMillis - last))
-        if time.readDuration(delay) > 0 then sleep(delay)
+        if readDuration(delay) > 0 then sleep(delay)
         stream
       case _ =>
         LazyList()
@@ -125,13 +128,15 @@ extension [ElemType](stream: LazyList[ElemType])
     unsafely(LazyList.multiplex(stream, that))
 
   def regulate(tap: Tap)(using Monitor): LazyList[ElemType] =
-    def defer(active: Boolean, stream: LazyList[ElemType | Tap.Regulation], buffer: List[ElemType])
-             : LazyList[ElemType] =
+    def defer
+        (active: Boolean, stream: LazyList[ElemType | Tap.Regulation], buffer: List[ElemType])
+        : LazyList[ElemType] =
       recur(active, stream, buffer)
 
     @tailrec
-    def recur(active: Boolean, stream: LazyList[ElemType | Tap.Regulation], buffer: List[ElemType])
-             : LazyList[ElemType] =
+    def recur
+        (active: Boolean, stream: LazyList[ElemType | Tap.Regulation], buffer: List[ElemType])
+        : LazyList[ElemType] =
       if active && buffer.nonEmpty then buffer.head #:: defer(true, stream, buffer.tail)
       else if stream.isEmpty then LazyList()
       else stream.head match
@@ -142,9 +147,10 @@ extension [ElemType](stream: LazyList[ElemType])
 
     LazyList() #::: recur(true, stream.multiplexWith(tap.stream), Nil)
 
-  def cluster(using time: GenericDuration)
-             (interval: time.Duration, maxSize: Maybe[Int] = Unset, maxDelay: Maybe[Long] = Unset)
-             (using Monitor): LazyList[List[ElemType]] =
+  def cluster
+      [DurationType: GenericDuration]
+      (interval: DurationType, maxSize: Maybe[Int] = Unset, maxDelay: Maybe[DurationType] = Unset)
+      (using Monitor): LazyList[List[ElemType]] =
     
     def defer(stream: LazyList[ElemType], list: List[ElemType], expiry: Long): LazyList[List[ElemType]] =
       recur(stream, list, expiry)
@@ -152,7 +158,7 @@ extension [ElemType](stream: LazyList[ElemType])
     @tailrec
     def recur(stream: LazyList[ElemType], list: List[ElemType], expiry: Long): LazyList[List[ElemType]] =
       if list.isEmpty then
-        val newExpiry: Long = maxDelay.option.fold(Long.MaxValue)(_ + System.currentTimeMillis)
+        val newExpiry: Long = maxDelay.option.map(readDuration).fold(Long.MaxValue)(_ + System.currentTimeMillis)
         if stream.isEmpty then LazyList() else recur(stream.tail, List(stream.head), newExpiry)
       else
         val hasMore: Task[Boolean] = Task(Text("cluster"))(!stream.isEmpty)
@@ -169,8 +175,8 @@ extension [ElemType](stream: LazyList[ElemType])
     
     LazyList() #::: recur(stream, Nil, Long.MaxValue)
 
-  def parallelMap[ElemType2](fn: ElemType => ElemType2)(using monitor: {*} Monitor)
-                 : {monitor, fn} LazyList[ElemType2] =
+  def parallelMap
+      [ElemType2](fn: ElemType => ElemType2)(using monitor: Monitor): {monitor, fn} LazyList[ElemType2] =
     val out: Funnel[ElemType2] = Funnel()
     Task(Text("parallelMap")):
       stream.map: elem =>
@@ -184,20 +190,21 @@ extension [ElemType](stream: LazyList[ElemType])
 //     def write(buffer: StreamBuffer[Bytes throws StreamCutError], stream: DataStream) =
 //       stream.foreach(buffer.put(_))
 
+@capability
 trait Printable[-TextType]:
   def print(text: TextType): Bytes
 
 object Io:
-  def print[TextType](text: TextType)
-           (using basicIo: BasicIo)(using printable: Printable[basicIo.OutputType, TextType])
-           : {basicIo, printable} Unit =
-    basicIo.writeStdoutBytes(printable.print(text))
+  def print
+      [TextType](text: TextType)(using io: BasicIo)(using printable: Printable[TextType])
+      : {io, printable} Unit =
+    io.writeStdoutBytes(printable.print(text))
   
-  def println[TextType](text: TextType)(using basicIo: BasicIo, printable: Printable[TextType],
-                                           lineSeparators: LineSeparators)
-             : {basicIo, printable, lineSeparators} Unit =
-    basicIo.writeStdoutBytes(printable.print(text))
-    basicIo.writeStdoutBytes(lineSeparators.newlineBytes)
+  def println
+      [TextType](text: TextType)(using io: BasicIo, printable: Printable[TextType], lines: LineSeparation)
+      : {io, printable, lines} Unit =
+    io.writeStdoutBytes(printable.print(text))
+    io.writeStdoutBytes(lines.newlineBytes)
   
 @capability
 trait BasicIo:
@@ -209,12 +216,12 @@ trait BasicIo:
 object Stderr
 
 object Stdout:
-  def print(text: Text)(using basicIo: BasicIo): Unit =
-    basicIo.writeStdoutText(text)
+  def print(text: Text)(using io: BasicIo): Unit =
+    io.writeStdoutText(text)
   
-  def println(text: Text)(using basicIo: BasicIo): Unit =
-    basicIo.writeStdoutText(text)
-    basicIo.writeStdoutText(Text("\n"))
+  def println(text: Text)(using io: BasicIo): Unit =
+    io.writeStdoutText(text)
+    io.writeStdoutText(Text("\n"))
 
 package basicIo:
   given jvm(using streamCut: CanThrow[StreamCutError]): BasicIo = new BasicIo:
@@ -275,6 +282,7 @@ class Funnel[ItemType]():
   private val queue: juc.LinkedBlockingQueue[Maybe[ItemType]] = juc.LinkedBlockingQueue()
   def put(item: ItemType): Unit = queue.put(item)
   def stop(): Unit = queue.put(Unset)
+  
   def stream: LazyList[ItemType] =
     LazyList.continually(queue.take()).takeWhile(_ != Unset).collect { case item: ItemType => item }
 
@@ -306,12 +314,14 @@ class Tap(initial: Boolean = true):
 case class IoFailure() extends Exception("I/O Failure")
 
 object Writable:
-  given outputStreamBytes(using streamCut: CanThrow[StreamCutError])
-        : ({streamCut} SimpleWritable[ji.OutputStream, Bytes]) =
+  given outputStreamBytes
+      (using streamCut: CanThrow[StreamCutError])
+      : ({streamCut} SimpleWritable[ji.OutputStream, Bytes]) =
     (outputStream, bytes) => outputStream.write(bytes.mutable(using Unsafe))
   
-  given outputStreamText(using streamCut: CanThrow[StreamCutError], enc: {*} Encoding)
-        : ({streamCut, enc} SimpleWritable[ji.OutputStream, Text]) =
+  given outputStreamText
+    (using streamCut: CanThrow[StreamCutError], enc: {*} Encoding)
+    : ({streamCut, enc} SimpleWritable[ji.OutputStream, Text]) =
     (outputStream, text) => outputStream.write(text.s.getBytes(enc.name.s).nn)
 
 trait SimpleWritable[-TargetType, -ChunkType] extends Writable[TargetType, ChunkType]:
@@ -322,11 +332,21 @@ trait SimpleWritable[-TargetType, -ChunkType] extends Writable[TargetType, Chunk
 
   def writeChunk(target: TargetType, chunk: ChunkType): Unit
 
-@implicitNotFound("An contextual turbulence.Writable instance is required to write to a ${TargetType} instance"+
-                  ".\nIf writing Text (rather than Bytes), it may be necessary to have a character encoding in"+
-                  " scope, for example with,\n    import characterEncodings.utf8, or,\n    import characterEnc"+
-                  "odings.ascii,\nplus an appropriate way of handling bad encodings, such as:\n    import badE"+
-                  "ncodingHandlers.strict, or,\n    import badEncodingHandlers.skip")
+@missingContext(contextMessage(module = "turbulence", typeclass = "Writable", param = "${TargetType}")())
+// @missingContext(multiline"""
+// An contextual turbulence.Writable instance is required to write to a $${TargetType} instance.
+  
+// If writing Text (rather than Bytes), it may be necessary to have a character encoding in scope, for example
+// with,
+  
+//     import characterEncodings.utf8, or,
+//     import characterEncodings.ascii,
+  
+// plus an appropriate way of handling bad encodings, such as:
+
+//     import badEncodingHandlers.strict, or,
+//     import badEncodingHandlers.skip
+// """)
 trait Writable[-TargetType, -ChunkType]:
   def write(target: TargetType, stream: LazyList[ChunkType]): Unit
 
@@ -334,17 +354,17 @@ trait Writable[-TargetType, -ChunkType]:
     (target, stream) => write(fn(target), stream)
 
 object Appendable:
-  given stdoutBytes(using basicIo: BasicIo): ({basicIo} SimpleAppendable[Stdout.type, Bytes]) =
-    (stderr, bytes) => basicIo.writeStdoutBytes(bytes)
+  given stdoutBytes(using io: BasicIo): ({io} SimpleAppendable[Stdout.type, Bytes]) =
+    (stderr, bytes) => io.writeStdoutBytes(bytes)
   
-  given stdoutText(using basicIo: BasicIo): ({basicIo} SimpleAppendable[Stdout.type, Text]) =
-    (stderr, text) => basicIo.writeStdoutText(text)
+  given stdoutText(using io: BasicIo): ({io} SimpleAppendable[Stdout.type, Text]) =
+    (stderr, text) => io.writeStdoutText(text)
 
-  given stderrBytes(using basicIo: BasicIo): ({basicIo} SimpleAppendable[Stderr.type, Bytes]) =
-    (stderr, bytes) => basicIo.writeStderrBytes(bytes)
+  given stderrBytes(using io: BasicIo): ({io} SimpleAppendable[Stderr.type, Bytes]) =
+    (stderr, bytes) => io.writeStderrBytes(bytes)
   
-  given stderrText(using basicIo: BasicIo): ({basicIo} SimpleAppendable[Stderr.type, Text]) =
-    (stderr, text) => basicIo.writeStderrText(text)
+  given stderrText(using io: BasicIo): ({io} SimpleAppendable[Stderr.type, Text]) =
+    (stderr, text) => io.writeStderrText(text)
 
   given outputStreamBytes(using streamCut: CanThrow[StreamCutError])
                          : ({streamCut} SimpleAppendable[ji.OutputStream, Bytes]) =
