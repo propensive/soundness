@@ -32,4 +32,5 @@ export scala.util.control.NonFatal
 export scala.jdk.CollectionConverters.{IteratorHasAsScala, ListHasAsScala, MapHasAsScala, SeqHasAsJava,
     MapHasAsJava, EnumerationHasAsScala}
 
-export scala.annotation.{tailrec, implicitNotFound, targetName, switch, StaticAnnotation, capability}
+export scala.annotation.{tailrec, implicitNotFound as missingContext, targetName, switch, StaticAnnotation,
+    capability}
