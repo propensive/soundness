@@ -21,10 +21,11 @@ import rudiments.*
 
 import language.experimental.captureChecking
 
-@implicitNotFound("rudiments: a contextual Environment instance is required, for example one of:\n"+
-                  "    given Environment = environments.empty       // no environment variables or system properties\n"+
-                  "    given Environment = environments.restricted  // access to system properties, but no environment variables\n"+
-                  "    given Environment = environments.system      // full access to the JVM's environment")
+@missingContext(contextMessage(module = "ambience", typeclass = "Environment")(
+  "environments.empty"      -> "no environment variables",
+  "environments.restricted" -> "access to system properties, but no environment variables",
+  "environments.system"     -> "full access to the JVM's environment"
+))
 @capability
 class Environment(getEnv: Text -> Maybe[Text], getProperty: Text -> Maybe[Text]):
   def apply(variable: Text): Maybe[Text] = getEnv(variable)
