@@ -32,7 +32,7 @@ transparent inline def contextMessage
     case name: String => "\n\nFor many purposes, importing "+code+name+reset+" provides a good default."
     case _            => ""
 
-  val padWidth: Int =
+  def padWidth: Int =
     options.map:
       case (ctx, _)    => ctx.length
       case ctx: String => ctx.length
@@ -53,9 +53,9 @@ transparent inline def contextMessage
       code+"  import "+context+reset
   .mkString("\n")
 
-  inline options.length match
+  val optionsText = inline options.length match
     case 0 => ""
     case 1 => "\n\nThis import may fix the problem:\n\n"+formatOptions
     case _ => "\n\nOne of the following imports may fix the problem:\n\n"+formatOptions
   
-  prefix+"a contextual "+typeclassName+" instance is required"+paramName+suggestion
+  prefix+"a contextual "+typeclassName+" instance is required"+paramName+suggestion+optionsText
