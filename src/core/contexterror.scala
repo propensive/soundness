@@ -2,8 +2,8 @@ package rudiments
 
 import annotation.*
 
-transparent inline def contextMessage
-    (inline module: Maybe[String] = Unset,
+def contextMessage
+    (module: Maybe[String] = Unset,
      typeclass: Maybe[String] = Unset,
      param: Maybe[String] = Unset,
      reason: Maybe[String] = Unset,
@@ -16,19 +16,19 @@ transparent inline def contextMessage
   def bold: String = "\u001b[1m"
   def reset: String = "\u001b[0m"
   
-  def prefix: String = inline module match
+  def prefix: String = module match
     case name: String => bold+name+reset+": "
     case _            => ""
   
-  def typeclassName = inline typeclass match
+  def typeclassName = typeclass match
     case name: String => code+name+reset
     case _            => "typeclass"
   
-  def paramName: String = inline param match
+  def paramName: String = param match
     case name: String => " for the "+code+param+reset+" type parameter"
     case _            => ""
   
-  def suggestion: String = inline suggest match
+  def suggestion: String = suggest match
     case name: String => "\n\nFor many purposes, importing "+code+name+reset+" provides a good default."
     case _            => ""
 
@@ -53,7 +53,7 @@ transparent inline def contextMessage
       code+"  import "+context+reset
   .mkString("\n")
 
-  val optionsText = inline options.length match
+  val optionsText = options.length match
     case 0 => ""
     case 1 => "\n\nThis import may fix the problem:\n\n"+formatOptions
     case _ => "\n\nOne of the following imports may fix the problem:\n\n"+formatOptions

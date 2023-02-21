@@ -24,11 +24,11 @@ case class IncompatibleTypeError()
 extends Error(ErrorMessage[EmptyTuple](List(Text("the value is not compatible")), EmptyTuple))
 
 extension (value: Any)
-  transparent inline def as[ResultType](using Unapply[value.type, ResultType])
+  def as[ResultType](using Unapply[value.type, ResultType])
                            : ResultType throws IncompatibleTypeError =
     summon[Unapply[value.type, ResultType]].unapply(value).getOrElse(throw IncompatibleTypeError())
   
-  transparent inline def as[ResultType](using Irrefutable[value.type, ResultType]): ResultType =
+  def as[ResultType](using Irrefutable[value.type, ResultType]): ResultType =
     summon[Irrefutable[value.type, ResultType]].unapply(value)
 
 object Irrefutable:
@@ -106,4 +106,4 @@ trait Irrefutable[-ValueType, +ResultType]:
   def unapply(value: ValueType): ResultType
 
 object As:
-  transparent inline def unapply[T](v: Any)(using ext: Unapply[v.type, T]): Option[T] = ext.unapply(v)
+  def unapply[T](v: Any)(using ext: Unapply[v.type, T]): Option[T] = ext.unapply(v)
