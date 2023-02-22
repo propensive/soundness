@@ -18,15 +18,15 @@ package rudiments
 
 import language.experimental.captureChecking
 
-extension [ValueType](xs: Iterable[ValueType])
-  transparent inline def mtwin: Iterable[(ValueType, ValueType)] = xs.map { x => (x, x) }
-  transparent inline def mtriple: Iterable[(ValueType, ValueType, ValueType)] = xs.map { x => (x, x, x) }
+extension [ValueType](seq: Iterable[ValueType])
+  transparent inline def mtwin: Iterable[(ValueType, ValueType)] = seq.map { x => (x, x) }
+  transparent inline def mtriple: Iterable[(ValueType, ValueType, ValueType)] = seq.map { x => (x, x, x) }
 
   def indexBy[ValueType2](fn: ValueType -> ValueType2): Map[ValueType2, ValueType] throws DuplicateIndexError =
-    val map = xs.map: value =>
+    val map = seq.map: value =>
       (fn(value), value)
     
-    if xs.size != map.size then throw DuplicateIndexError() else map.to(Map)
+    if seq.size != map.size then throw DuplicateIndexError() else map.to(Map)
 
 case class KeyNotFoundError(name: Text)
 extends Error(ErrorMessage[Text *: EmptyTuple](List(Text("key "), Text(" not found")), name *: EmptyTuple))
@@ -63,9 +63,9 @@ extension [KeyType, ValueType](map: Map[KeyType, ValueType])
 extension [K, V](map: Map[K, List[V]])
   def plus(key: K, value: V): Map[K, List[V]] = map.updated(key, map.get(key).fold(List(value))(value :: _))
 
-extension[ElemType](xs: Seq[ElemType])
-  def random: ElemType = xs(util.Random().nextInt(xs.length))
-  transparent inline def shuffle: Seq[ElemType] = util.Random().shuffle(xs)
+extension[ElemType](seq: Seq[ElemType])
+  def random: ElemType = seq(util.Random().nextInt(seq.length))
+  transparent inline def shuffle: Seq[ElemType] = util.Random().shuffle(seq)
   
   def runs(fn: ElemType => Any): List[List[ElemType]] =
     
@@ -78,41 +78,46 @@ extension[ElemType](xs: Seq[ElemType])
         if current == focus then recur(current, todo.tail, todo.head :: run, done)
         else recur(focus, todo.tail, List(todo.head), run.reverse :: done)
 
-    if xs.isEmpty then Nil else recur(fn(xs.head), xs.tail, List(xs.head), Nil)
+    if seq.isEmpty then Nil else recur(fn(seq.head), seq.tail, List(seq.head), Nil)
 
 object Cursor:
   opaque type Cursor = Int
-  opaque type CursorSeq[T] = IndexedSeq[T]
+  opaque type CursorSeq[T] <: IndexedSeq[T] = IndexedSeq[T]
 
-  extension [T](xs: CursorSeq[T])
-    def apply(idx: Cursor): T = xs(idx)
-    def apply(idx: Cursor, offset: Int): Maybe[T] =
-      if (idx + offset) >= 0 && (idx + offset) < xs.length then apply(idx + offset) else Unset
+  extension (cursor: Cursor)
+    inline def index: Int = cursor
     
-  extension (cursor: Cursor) def index: Int = cursor
+    inline def of[ElemType](inline seq: CursorSeq[ElemType]): ElemType = seq(cursor.index)
+    
+    inline def of[ElemType](inline seq: CursorSeq[ElemType], inline offset: Int): Maybe[ElemType] =
+      if (cursor.index + offset) >= 0 && (cursor.index + offset) < seq.length then seq(cursor.index + offset)
+      else Unset
 
-  transparent inline def curse[T, S](xs: IndexedSeq[T])(inline fn: (CursorSeq[T], Cursor) ?=> S)
-                              : IndexedSeq[S] =
-    xs.indices.map { i => fn(using xs, i) }
+  inline def curse
+      [ElemType, ElemType2](seq: IndexedSeq[ElemType])(inline fn: (CursorSeq[ElemType], Cursor) ?=> ElemType2)
+      : IndexedSeq[ElemType2] =
+    seq.indices.map { index => fn(using seq, index) }
 
-inline def cursor[ElemType](using inline xs: Cursor.CursorSeq[ElemType], inline cur: Cursor.Cursor): ElemType =
-  xs(cur)
+inline def cursor
+    [ElemType](using inline seq: Cursor.CursorSeq[ElemType], inline cursor: Cursor.Cursor): ElemType =
+  cursor.of(seq)
 
-inline def precursor[ElemType](using inline xs: Cursor.CursorSeq[ElemType], inline cur: Cursor.Cursor)
-                    : Maybe[ElemType] =
-  xs(cur, -1)
+inline def precursor
+    [ElemType](using inline seq: Cursor.CursorSeq[ElemType], inline cursor: Cursor.Cursor): Maybe[ElemType] =
+  cursor.of(seq, -1)
 
-inline def postcursor[ElemType](using inline xs: Cursor.CursorSeq[ElemType], inline cur: Cursor.Cursor)
-                     : Maybe[ElemType] =
-  xs(cur, 1)
+inline def postcursor
+    [ElemType](using inline seq: Cursor.CursorSeq[ElemType], inline cursor: Cursor.Cursor): Maybe[ElemType] =
+  cursor.of(seq, 1)
 
-inline def cursorIndex(using inline cur: Cursor.Cursor): Int = cur.index
+inline def cursorIndex(using inline cursor: Cursor.Cursor): Int = cursor.index
 
-inline def cursor[ElemType](n: Int)(using inline xs: Cursor.CursorSeq[ElemType], inline cur: Cursor.Cursor)
-                 : Maybe[ElemType] =
-  xs(cur, n)
+inline def cursorOffset
+    [ElemType](n: Int)(using inline seq: Cursor.CursorSeq[ElemType], inline cursor: Cursor.Cursor)
+    : Maybe[ElemType] =
+  cursor.of(seq, n)
 
-extension [ElemType](xs: IndexedSeq[ElemType])
-  transparent inline def curse[ElemType2](inline fn: (Cursor.CursorSeq[ElemType], Cursor.Cursor) ?=> ElemType2)
-                              : IndexedSeq[ElemType2] =
-    Cursor.curse(xs)(fn)
+extension [ElemType](seq: IndexedSeq[ElemType])
+  transparent inline def curse
+      [ElemType2](inline fn: (Cursor.CursorSeq[ElemType], Cursor.Cursor) ?=> ElemType2): IndexedSeq[ElemType2] =
+    Cursor.curse(seq)(fn)
