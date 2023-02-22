@@ -5,10 +5,6 @@ import rudiments.*
 import deviation.*
 
 @capability
-// @missingContext(multiline"""
-// A contextual `parasitism.Monitor` instance is required for operations involving threading, such as starting a
-// new `Task`. A `Monitor` can be provided by wrapping the code in a `supervise` block
-// """)
 @missingContext(contextMessage(module = "parasitism", typeclass = "Monitor")())
 sealed trait Monitor:
   def id: Text
@@ -17,8 +13,7 @@ sealed trait Monitor:
   private var continue: Boolean = true
 
   final def relinquish(cleanup: => Unit): Unit =
-    import unsafeExceptions.canThrowAny
-    if !continue then cleanup.pipe((throw CancelError()).waive)
+    unsafely(if !continue then cleanup.pipe((throw CancelError()).waive))
 
   def fork(runnable: Runnable, id: Text): Thread =
     if virtualThreads then Thread.ofVirtual.nn.name(id.s).nn.start(runnable).nn
@@ -36,17 +31,17 @@ case class Supervisor(virtualThreads: Boolean, daemon: Boolean) extends Monitor:
   def id: Text = Text("")
 
 object Task:
-  def apply[ResultType](name: Text)(eval: Monitor ?=> ResultType)(using monitor: Monitor): Task[ResultType] =
+  def apply[ResultType](name: Text)(eval: /*(m: Monitor) ?=> {m} ResultType*/ Monitor ?=> ResultType)(using monitor: Monitor): Task[ResultType] =
     new Task[ResultType](name, m => eval(using m), monitor.child(name))
 
 class Task
     [+ResultType]
-    (val id: Text, val evaluate: Monitor => ResultType, monitor: Monitor):
-  private final val promise: Promise[ResultType] = Promise()
+    (val id: Text, val eval: Monitor => /*(m: {*} Monitor) => {m}*/ ResultType, monitor: Monitor):
+  private final val promise: Promise[/*{eval, monitor}*/ ResultType] = Promise()
 
   private val runnable: Runnable = new Runnable():
     def run(): Unit =
-      try promise.supply(evaluate(monitor))
+      try promise.supply(eval(monitor))
       catch
         case err: AlreadyCompleteError => ()
         case err: CancelError          => ()
@@ -61,9 +56,9 @@ class Task
   def cancel(): Unit = thread.interrupt().tap:
     (try promise.cancel() catch case err: CancelError => ()).waive
   
-  def await[DurationType](duration: DurationType)
-           (using GenericDuration[DurationType], Monitor)
-           (using cancel: CanThrow[CancelError], timeout: CanThrow[TimeoutError])
+  def await
+      [DurationType](duration: DurationType)(using GenericDuration[DurationType], Monitor)
+      (using cancel: CanThrow[CancelError], timeout: CanThrow[TimeoutError])
       : ResultType =
     promise.await(duration).tap(thread.join().waive)
 
@@ -74,8 +69,8 @@ def relinquish(cleanup: => Unit = ())(using mon: Monitor): Unit =
   import unsafeExceptions.canThrowAny
   mon.relinquish(cleanup)
 
-def supervise[ResultType]
-      (virtualThreads: Boolean = false, daemon: Boolean = false)(fn: Supervisor ?=> ResultType)
-      : ResultType =
+def supervise
+    [ResultType](virtualThreads: Boolean = false, daemon: Boolean = false)(fn: Supervisor ?=> ResultType)
+    : ResultType =
   val supervisor = Supervisor(virtualThreads, daemon)
   fn(using supervisor)
