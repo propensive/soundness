@@ -16,7 +16,5 @@
 
 package iridescence
 
-import contextual.*
-
 extension (inline ctx: StringContext)
   transparent inline def rgb(inline parts: Any*): Rgb24 = ${RgbHex.expand('RgbHex, 'ctx, 'parts)}
