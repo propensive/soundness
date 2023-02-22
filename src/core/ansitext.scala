@@ -218,7 +218,7 @@ case class AnsiText(plain: Text, spans: TreeMap[CharSpan, Ansi.Transform] = Tree
     
     AnsiText(plain+text.plain, spans ++ newSpans)
 
-  def drop(n: Int, dir: Direction = Ltr): AnsiText = dir match
+  def drop(n: Int, dir: Bidi = Ltr): AnsiText = dir match
     case Rtl =>
       take(length - n)
     
@@ -232,7 +232,7 @@ case class AnsiText(plain: Text, spans: TreeMap[CharSpan, Ansi.Transform] = Tree
       
       AnsiText(plain.drop(n), newSpans)
 
-  def take(n: Int, dir: Direction = Ltr): AnsiText = dir match
+  def take(n: Int, dir: Bidi = Ltr): AnsiText = dir match
     case Rtl =>
       drop(length - n)
 
@@ -248,7 +248,7 @@ case class AnsiText(plain: Text, spans: TreeMap[CharSpan, Ansi.Transform] = Tree
 
   def slice(from: Int, to: Int): AnsiText = drop(from).take(to - from)
 
-  def pad(n: Int, direction: Direction = Ltr, char: Char = ' ')(using calc: TextWidthCalculator): AnsiText = direction match
+  def pad(n: Int, direction: Bidi = Ltr, char: Char = ' ')(using calc: TextWidthCalculator): AnsiText = direction match
     case Ltr => if calc.width(plain) < n then this + AnsiText(char.show*(n - calc.width(plain))) else this
     case Rtl => if calc.width(plain) < n then AnsiText(char.show*(n - calc.width(plain))) + this else this
   
