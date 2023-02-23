@@ -101,7 +101,7 @@ extension (text: Text)
     else Text(text.s.substring(from max 0 min length, to min length max 0).nn)
   
   def chars: IArray[Char] = text.s.toCharArray.nn.immutable(using Unsafe)
-  def map(fn: Char => Char): {fn} Text = Text(String(text.s.toCharArray.nn.map(fn)))
+  def mapChars(fn: Char => Char): {fn} Text = Text(String(text.s.toCharArray.nn.map(fn)))
   inline def empty: Boolean = text.s.isEmpty
   inline def rsub(from: Text, to: Text): Text = Text(text.s.replaceAll(from.s, to.s).nn)
   inline def starts(prefix: Text): Boolean = text.s.startsWith(prefix.s)
