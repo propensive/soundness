@@ -24,6 +24,7 @@ import gossamer.*
 import eucalyptus.*
 import escapade.*
 import iridescence.*
+import ambience.*
 import anticipation.*, fileRepresentation.javaIo
 
 import scala.jdk.StreamConverters.StreamHasToScala
@@ -33,7 +34,7 @@ import scala.jdk.CollectionConverters.MapHasAsScala
 import annotation.targetName
 import java.io as ji
 
-import language.experimental.captureChecking
+//import language.experimental.captureChecking
 
 enum Context:
   case Awaiting, Unquoted, Quotes2, Quotes1
@@ -46,7 +47,7 @@ object Executor:
   
   given text: Executor[Text] = stream.map(_.foldLeft(t"") { (acc, line) => t"$acc\n$line" }.trim)
 
-  given dataStream(using streamCut: CanThrow[StreamCutError]): ({streamCut} Executor[LazyList[Bytes]]) =
+  given dataStream(using streamCut: CanThrow[StreamCutError]): (/*{streamCut}*/ Executor[LazyList[Bytes]]) =
     proc => Readable.inputStream.read(proc.getInputStream.nn)
   
   given exitStatus: Executor[ExitStatus] = _.waitFor() match
@@ -57,7 +58,7 @@ object Executor:
  
 trait Executor[T]:
   def interpret(process: java.lang.Process): T
-  def map[S](fn: T => S): {this, fn} Executor[S] = process => fn(interpret(process))
+  def map[S](fn: T => S): /*{this, fn}*/ Executor[S] = process => fn(interpret(process))
 
 class Process[ResultType](process: java.lang.Process):
   def pid: Pid = Pid(process.pid)
@@ -69,11 +70,11 @@ class Process[ResultType](process: java.lang.Process):
     Readable.inputStream.read(process.getErrorStream.nn)
   
   def stdin[ChunkType]
-           (stream: {*} LazyList[ChunkType])(using writable: {*} Writable[ji.OutputStream, ChunkType])
-           : {stream, writable} Unit =
+           (stream: /*{*}*/ LazyList[ChunkType])(using writable: /*{*}*/ Writable[ji.OutputStream, ChunkType])
+           : /*{stream, writable}*/ Unit =
     writable.write(process.getOutputStream.nn, stream)
 
-  def await()(using executor: {*} Executor[ResultType]): {executor} ResultType = executor.interpret(process)
+  def await()(using executor: /*{*}*/ Executor[ResultType]): /*{executor}*/ ResultType = executor.interpret(process)
   
   def exitStatus(): ExitStatus = process.waitFor() match
     case 0     => ExitStatus.Ok
