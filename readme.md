@@ -72,7 +72,7 @@ given EnvVarProvider = envvars.get(_)
 
 The following _Scala One_ libraries are dependencies of _Imperial_:
 
-[![Anticipation](https://github.com/propensive/anticipation/raw/main/doc/images/128x128.png)](https://github.com/propensive/anticipation/) &nbsp; [![Deviation](https://github.com/propensive/deviation/raw/main/doc/images/128x128.png)](https://github.com/propensive/deviation/) &nbsp;
+[![Ambience](https://github.com/propensive/ambience/raw/main/doc/images/128x128.png)](https://github.com/propensive/ambience/) &nbsp; [![Anticipation](https://github.com/propensive/anticipation/raw/main/doc/images/128x128.png)](https://github.com/propensive/anticipation/) &nbsp; [![Deviation](https://github.com/propensive/deviation/raw/main/doc/images/128x128.png)](https://github.com/propensive/deviation/) &nbsp;
 
 The following _Scala One_ libraries are dependents of _Imperial_:
 
@@ -94,7 +94,7 @@ be used, but caution should be taken if there is a mismatch between the
 project's stability level and the importance of your own project.
 
 Imperial is designed to be _small_. Its entire source code currently consists
-of 91 lines of code.
+of 92 lines of code.
 
 ## Building
 
