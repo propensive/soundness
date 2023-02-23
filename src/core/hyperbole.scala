@@ -1,11 +1,11 @@
 package hyperbole
 
-import tableStyles.horizontalGaps
 import harlequin.*
 import escapade.*
 import rudiments.*
 import deviation.*
-import gossamer.*
+import gossamer.*, textWidthCalculation.uniform
+import escritoire.*, tableStyles.horizontalGaps
 import iridescence.*
 import dendrology.*
 
@@ -63,7 +63,7 @@ object reflection:
 
     Table[Expansion](
       Column(ansi"TASTy")(_.text.ansi),
-      Column(ansi"Param")(_.param.otherwise(t"")),
+      Column(ansi"Param")(_.param.or(t"")),
       Column(ansi"Source")(_.source),
       Column(ansi"Code")(_.expr)
     ).tabulate(seq, 400, DelimitRows.None).join(ansi"${'\n'}").render
