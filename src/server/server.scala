@@ -255,7 +255,7 @@ case class HttpServer(port: Int) extends RequestHandler:
     
     val task = Task(t"scintillate"):
       val server = startServer()
-      cancel.await()
+      try cancel.await() catch case err: CancelError => ()
       server.stop(1)
     
     ActiveServer(port, task, () => safely(cancel.supply(())))
