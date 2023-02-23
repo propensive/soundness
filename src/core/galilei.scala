@@ -30,8 +30,6 @@ import java.nio.file as jnf
 import jnf.{Files, Paths, StandardCopyOption, DirectoryNotEmptyException}, jnf.StandardCopyOption.*
 import ji.{File as JavaFile}
 
-import language.experimental.captureChecking
-
 object IoError:
   object Reason:
     given Show[Reason] =
@@ -84,7 +82,7 @@ sealed trait Inode(val path: DiskPath):
   def directory: Maybe[Directory]
   def file: Maybe[File]
   def symlink: Maybe[Symlink]
-  def modified(using time: GenericInstant): time.Instant = makeInstant(javaFile.lastModified)
+  def modified[InstantType: GenericInstant]: InstantType = makeInstant(javaFile.lastModified)
   def exists(): Boolean = javaFile.exists()
   def delete(): Unit throws IoError
 
@@ -113,34 +111,37 @@ object File:
       
       def filePath(file: File): String = file.path.fullname.toString
 
-  given writable(using io: CanThrow[IoError], streamCut: CanThrow[StreamCutError])
-        : ({io, streamCut} Writable[File, Bytes]) =
+  given writable
+      (using io: CanThrow[IoError], streamCut: CanThrow[StreamCutError])
+      : (/*{io, streamCut}*/ Writable[File, Bytes]) =
     Appendable.outputStreamBytes.asWritable.contraMap: file =>
       if !file.javaFile.canWrite()
       then throw IoError(IoError.Op.Write, IoError.Reason.AccessDenied, file.path)
       
       ji.BufferedOutputStream(ji.FileOutputStream(file.javaFile, false))
 
-  given appendable(using io: CanThrow[IoError], streamCut: CanThrow[StreamCutError])
-        : ({io, streamCut} Appendable[File, Bytes]) =
+  given appendable
+      (using io: CanThrow[IoError], streamCut: CanThrow[StreamCutError])
+      : (/*{io, streamCut}*/ Appendable[File, Bytes]) =
     Appendable.outputStreamBytes.contraMap: file =>
       if !file.javaFile.canWrite()
       then throw IoError(IoError.Op.Write, IoError.Reason.AccessDenied, file.path)
       
       ji.BufferedOutputStream(ji.FileOutputStream(file.javaFile, true))
 
-  given readableBytes(using io: CanThrow[IoError], streamCut: CanThrow[StreamCutError])
-                : ({io, streamCut} Readable[File, Bytes]) =
+  given readableBytes
+      (using io: CanThrow[IoError], streamCut: CanThrow[StreamCutError])
+      : (/*{io, streamCut}*/ Readable[File, Bytes]) =
     Readable.inputStream.contraMap: file =>
       if !file.javaFile.canRead() then throw IoError(IoError.Op.Read, IoError.Reason.AccessDenied, file.path)
       else ji.BufferedInputStream(ji.FileInputStream(file.javaFile))
   
-  given readableLine(using io: CanThrow[IoError], streamCut: CanThrow[StreamCutError])
-                     : ({io, streamCut} Readable[File, Line]) =
+  given readableLine
+      (using io: CanThrow[IoError], streamCut: CanThrow[StreamCutError])
+      : (/*{io, streamCut}*/ Readable[File, Line]) =
     Readable.bufferedReader.contraMap: file =>
       if !file.javaFile.canRead() then throw IoError(IoError.Op.Read, IoError.Reason.AccessDenied, file.path)
       else ji.BufferedReader(ji.FileReader(file.javaFile))
-    
     
 case class File(filePath: DiskPath) extends Inode(filePath), Shown[File]:
   def directory: Unset.type = Unset
@@ -202,16 +203,16 @@ object Fifo:
   given Show[Fifo] = t"ˢ｢"+_.path.fullname+t"｣"
   
   given appendable[ChunkType](using io: CanThrow[IoError],
-                                  appendable: {*} Appendable[ji.OutputStream, ChunkType])
-        : ({io, appendable} Appendable[Fifo, ChunkType]) =
+                                  appendable: /*{*}*/ Appendable[ji.OutputStream, ChunkType])
+        : (/*{io, appendable}*/ Appendable[Fifo, ChunkType]) =
     appendable.contraMap: fifo =>
       if !fifo.writable()
       then throw IoError(IoError.Op.Write, IoError.Reason.AccessDenied, fifo.path)
       
       fifo.out
 
-  given readable[ChunkType](using io: CanThrow[IoError], readable: {*} Readable[ji.InputStream, ChunkType])
-                     : ({io, readable} Readable[Fifo, ChunkType]) =
+  given readable[ChunkType](using io: CanThrow[IoError], readable: /*{*}*/ Readable[ji.InputStream, ChunkType])
+                     : (/*{io, readable}*/ Readable[Fifo, ChunkType]) =
     readable.contraMap: fifo =>
       if !fifo.readable() then throw IoError(IoError.Op.Read, IoError.Reason.AccessDenied, fifo.path)
       else fifo.in
@@ -355,7 +356,7 @@ object DiskPath:
   given Show[DiskPath] = t"ᵖ｢"+_.fullname+t"｣"
 
   // given (using filesystem: Filesystem, invalidPath: CanThrow[InvalidPathError])
-  //       : ({invalidPath} Canonical[DiskPath]) =
+  //       : (/*{invalidPath}*/ Canonical[DiskPath]) =
   //   Canonical(filesystem.parse(_), _.show)
 
   given provider(using fs: Filesystem): (GenericPathMaker[DiskPath] & GenericPathReader[DiskPath]) =
@@ -467,7 +468,7 @@ extends Absolute(elements), Shown[DiskPath]:
     
     Symlink(this, unsafely(root.parse(Showable(Files.readSymbolicLink(Paths.get(fullname.s))).show)))
 
-  def descendantFiles(descend: (Directory -> Boolean) = _ => true)
+  def descendantFiles(descend: (Directory => Boolean) = _ => true)
                       : LazyList[File] throws IoError =
     if javaFile.isDirectory
     then directory(Expect).files.to(LazyList) #::: directory(Expect).subdirectories.filter(
@@ -568,7 +569,7 @@ object ClasspathRef:
   given Show[ClasspathRef] = t"ᶜᵖ｢"+_.fullname+t"｣"
 
   given readable(using classpathRef: CanThrow[ClasspathRefError], streamCut: CanThrow[StreamCutError])
-                : ({classpathRef, streamCut} Readable[ClasspathRef, Bytes]) =
+                : (/*{classpathRef, streamCut}*/ Readable[ClasspathRef, Bytes]) =
     Readable.inputStream.contraMap: ref =>
       ref.classpath.classLoader.getResourceAsStream(ref.fullname.drop(1).s) match
         case null => throw ClasspathRefError(ref)
