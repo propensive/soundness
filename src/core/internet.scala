@@ -18,8 +18,8 @@ package rudiments
 
 import language.experimental.captureChecking
 
-erased sealed class Internet()
+sealed class Internet()
 
-def internet[T](fn: (erased Internet) ?=> T): T =
+def internet[T](fn: Internet ?=> T): T =
   val inet: Internet = Internet()
   fn(using inet)

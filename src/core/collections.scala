@@ -63,12 +63,11 @@ extension [KeyType, ValueType](map: Map[KeyType, ValueType])
 extension [K, V](map: Map[K, List[V]])
   def plus(key: K, value: V): Map[K, List[V]] = map.updated(key, map.get(key).fold(List(value))(value :: _))
 
-extension[ElemType](seq: Seq[ElemType])
+extension [ElemType](seq: Seq[ElemType])
   def random: ElemType = seq(util.Random().nextInt(seq.length))
   transparent inline def shuffle: Seq[ElemType] = util.Random().shuffle(seq)
   
   def runs(fn: ElemType => Any): List[List[ElemType]] =
-    
     @tailrec
     def recur(current: Any, todo: Seq[ElemType], run: List[ElemType], done: List[List[ElemType]])
              : List[List[ElemType]] =
@@ -121,3 +120,9 @@ extension [ElemType](seq: IndexedSeq[ElemType])
   transparent inline def curse
       [ElemType2](inline fn: (Cursor.CursorSeq[ElemType], Cursor.Cursor) ?=> ElemType2): IndexedSeq[ElemType2] =
     Cursor.curse(seq)(fn)
+
+extension (iarray: IArray.type)
+  def create[ElemType: ClassTag](size: Int)(fn: Array[ElemType] => Unit): IArray[ElemType] =
+    val array: Array[ElemType] = new Array[ElemType](size)
+    fn(array)
+    array.immutable(using Unsafe)
