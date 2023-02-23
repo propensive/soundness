@@ -35,7 +35,7 @@ object Realm:
   given Show[Realm] = _.name
   given AnsiShow[Realm] = realm => ansi"${colors.LightGreen}(${realm.name})"
 
-@implicitNotFound("""|A contextual Realm is needed in scope. This is required for logging commands like `Log.info` and `Log.warn`, in order to tag them in log output. A realm can be specified with,
+@missingContext("""|A contextual Realm is needed in scope. This is required for logging commands like `Log.info` and `Log.warn`, in order to tag them in log output. A realm can be specified with,
                      |    given Realm(t"project")
                      |typically at the top-level in a package called `project`. It is often useful to name the realm so that it can be referenced externally, for example when pattern matching on log messages, so,
                      |    given realm: Realm = Realm(t"project")
@@ -99,7 +99,7 @@ object EucalyptusMacros:
       try $log.record(Entry($realm, $level, $show.ansiShow($value), time, $log.tags)) catch case e: Exception => ()
     }
 
-@implicitNotFound("""|eucalyptus: a contextual Log instance is needed, for example:
+@missingContext("""|eucalyptus: a contextual Log instance is needed, for example:
                      |    import logging.stdout  // Log everything to standard output
                      |    import logging.silent  // Do not log anything""".stripMargin)
 class Log(actions: PartialFunction[Entry, LogSink & Singleton]*)(using Monitor):
