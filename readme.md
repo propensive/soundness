@@ -203,7 +203,7 @@ available as a type member.
 
 The following _Scala One_ libraries are dependencies of _Polyvinyl_:
 
-[![Rudiments](https://github.com/propensive/rudiments/raw/main/doc/images/128x128.png)](https://github.com/propensive/rudiments/) &nbsp;
+[![Probably](https://github.com/propensive/probably/raw/main/doc/images/128x128.png)](https://github.com/propensive/probably/) &nbsp;
 
 The following _Scala One_ libraries are dependents of _Polyvinyl_:
 
@@ -225,7 +225,7 @@ be used, but caution should be taken if there is a mismatch between the
 project's stability level and the importance of your own project.
 
 Polyvinyl is designed to be _small_. Its entire source code currently consists
-of 34 lines of code.
+of 85 lines of code.
 
 ## Building
 
