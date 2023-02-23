@@ -21,14 +21,19 @@ sealed trait Monitor:
   
   def child(childId: Text): TaskMonitor = TaskMonitor(Text(id.s+"/"+childId.s), this)
 
+package monitors:
+  given global: Monitor = new Monitor:
+    def id: Text = Text("")
+    def virtualThreads: Boolean = false
+    def daemon: Boolean = true
+
 @capability
 case class TaskMonitor(id: Text, parent: Monitor) extends Monitor:
   def virtualThreads: Boolean = parent.virtualThreads
   def daemon: Boolean = parent.daemon
 
 @capability
-case class Supervisor(virtualThreads: Boolean, daemon: Boolean) extends Monitor:
-  def id: Text = Text("")
+case class Supervisor(id: Text, virtualThreads: Boolean, daemon: Boolean) extends Monitor
 
 object Task:
   def apply[ResultType](name: Text)(eval: /*(m: Monitor) ?=> {m} ResultType*/ Monitor ?=> ResultType)(using monitor: Monitor): Task[ResultType] =
@@ -70,7 +75,7 @@ def relinquish(cleanup: => Unit = ())(using mon: Monitor): Unit =
   mon.relinquish(cleanup)
 
 def supervise
-    [ResultType](virtualThreads: Boolean = false, daemon: Boolean = false)(fn: Supervisor ?=> ResultType)
-    : ResultType =
-  val supervisor = Supervisor(virtualThreads, daemon)
+    [ResultType](id: Text, virtualThreads: Boolean = false, daemon: Boolean = false)
+    (fn: Supervisor ?=> ResultType): ResultType =
+  val supervisor = Supervisor(id, virtualThreads, daemon)
   fn(using supervisor)
