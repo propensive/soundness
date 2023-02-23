@@ -115,6 +115,7 @@ object Tzdb:
         def f(str: Text) = format.cut(t"%s", 2).to(List) match
           case value :: Nil           => value
           case before :: after :: Nil => before+str+after
+          case _                      => throw Mistake("Should never match")
 
         ZoneInfo(s, rules, f, if until.isEmpty then None else Some(until.join(t" ")))
       

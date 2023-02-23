@@ -174,9 +174,10 @@ extension (year: Int & Singleton)
   inline def -(month: MonthName & Singleton): YearMonth[year.type, month.type] = new YearMonth(year, month)
 
 package timeRepresentation:
-  given aviation: (GenericInstant & GenericDuration) = new GenericInstant with GenericDuration:
-    export Timing.Instant.generic.{Instant, makeInstant, readInstant}
-    export Timing.Duration.generic.{Duration, makeDuration, readDuration}
+  given aviation: (GenericInstant[Timing.Instant] & GenericDuration[Timing.Duration]) =
+    new GenericInstant[Timing.Instant] with GenericDuration[Timing.Duration]:
+      export Timing.Instant.generic.{makeInstant, readInstant}
+      export Timing.Duration.generic.{makeDuration, readDuration}
 
 object Timing:
   opaque type Instant = Long
@@ -184,18 +185,17 @@ object Timing:
   object Instant:
     def of(millis: Long): Instant = millis
     
-    given generic: GenericInstant with
-      type Instant = Timing.Instant
-      def makeInstant(long: Long): Instant = long
-      def readInstant(instant: Instant): Long = instant
+    given generic: GenericInstant[Timing.Instant] with
+      def makeInstant(long: Long): Timing.Instant = long
+      def readInstant(instant: Timing.Instant): Long = instant
 
   opaque type Duration = Long
 
   object Duration:
-    given generic: GenericDuration with
+    given generic: GenericDuration[Long] with
       type Duration = Timing.Duration
-      def makeDuration(long: Long): Duration = long
-      def readDuration(duration: Duration): Long = duration
+      def makeDuration(long: Long): Timing.Duration = long
+      def readDuration(duration: Timing.Duration): Long = duration
 
   extension (instant: Instant)
     @targetName("minus")
@@ -265,10 +265,8 @@ trait FixedDuration:
   this: Period =>
 
 object Period:
-  given GenericDuration with
-    type Duration = Period & FixedDuration
-    
-    def makeDuration(long: Long): Duration =
+  given genericDuration: GenericDuration[Period & FixedDuration] with
+    def makeDuration(long: Long): Period & FixedDuration =
       val hours: Int = (long/3600000L).toInt
       val minutes: Int = ((long%3600000L)/60000L).toInt
       val seconds: Int = ((long%60000L)/1000L).toInt
