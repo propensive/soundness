@@ -61,7 +61,7 @@ object Tty:
     Tty.print(t"${esc}[s${esc}[4095C${esc}[4095B${esc}[6n${esc}[u")
 
   def stream[K](using Tty, Log, Keyboard[K], Monitor): LazyList[K] =
-    summon[Tty].in.cluster(15).flatMap: data =>
+    summon[Tty].in.cluster(15L).flatMap: data =>
       unsafely(summon[Keyboard[K]].interpret(data.map(_.to(List)).flatten))
 
   def print(msg: Text)(using Tty) = summon[Tty].out.print(msg.s)
@@ -119,7 +119,7 @@ object Keyboard:
 def esc(code: Text): Text = t"${27.toChar}[${code}"
 
 object LineEditor:
-  def concealed(str: Text): Text = str.map { _ => '*' }
+  def concealed(str: Text): Text = str.mapChars { _ => '*' }
 
   def ask(initial: Text = t"", render: Text => Text = identity(_))(using Tty, Log, Monitor): Text =
     Tty.print(render(initial))
