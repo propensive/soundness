@@ -65,7 +65,7 @@ extends Dynamic:
   def entry(n: Int): Entry = subschemas(n)
 
   def parse[SourceType](source: SourceType)
-           (using streamCut: CanThrow[StreamCutError], aggregate: CanThrow[AggregateError[CodlError]],
+           (using streamCut: CanThrow[StreamCutError], aggregate: CanThrow[AggregateError],
                 readable: Readable[SourceType, Text])
            : {aggregate, streamCut} CodlDoc =
     Codl.parse(source, this)

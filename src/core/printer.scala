@@ -37,7 +37,7 @@ object Printer:
             out.write(comment.s)
             out.write('\n')
         
-        data match
+        (data: Maybe[Data]) match
           case Data(key, children, layout, schema) =>
             for i <- 0 until indent do out.write(' ')
             out.write(key.s)
