@@ -20,6 +20,7 @@ import guillotine.*
 import gossamer.*
 import jacinta.*, jsonPrinters.minimal
 import telekinesis.*
+import ambience.*
 import cataclysm.*
 import honeycomb.*
 import eucalyptus.*
