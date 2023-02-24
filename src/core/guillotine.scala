@@ -25,7 +25,7 @@ import eucalyptus.*
 import escapade.*
 import iridescence.*
 import ambience.*
-import anticipation.*, fileRepresentation.javaIo
+import anticipation.*, fileApi.javaIo
 
 import scala.jdk.StreamConverters.StreamHasToScala
 import scala.jdk.CollectionConverters.MapHasAsJava
