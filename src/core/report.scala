@@ -110,7 +110,7 @@ class TestReport():
     def iterations: AnsiText = if count == 0 then ansi"" else count.ansi
 
   def complete(): Unit =
-    import hieronymus.textWidthCalculation.eastAsianScripts
+    import textWidthCalculation.eastAsianScripts
     val summaries: List[Summary] = tests.to(List).map: (id, buf) =>
       val status =
         if buf.isEmpty then Status.Suite
