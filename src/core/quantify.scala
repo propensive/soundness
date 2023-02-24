@@ -31,17 +31,17 @@ object Ampere extends Quantity[Ampere[1]](1)
 object Kelvin extends Quantity[Kelvin[1]](1)
 object Second extends Quantity[Second[1]](1)
 
-trait UnitName[-ValueType <: Units[?, ?]]:
+trait UnitName[-ValueType]:
   def name(): String
 
-object Show:
-  given UnitName[Metre[?]] = () => "m"
-  given UnitName[Kilogram[?]] = () => "kg"
-  given UnitName[Candela[?]] = () => "cd"
-  given UnitName[Mole[?]] = () => "mol"
-  given UnitName[Ampere[?]] = () => "A"
-  given UnitName[Kelvin[?]] = () => "K"
-  given UnitName[Second[?]] = () => "s"
+object UnitName:
+  given UnitName[Metre[1]] = () => "m"
+  given UnitName[Kilogram[1]] = () => "kg"
+  given UnitName[Candela[1]] = () => "cd"
+  given UnitName[Mole[1]] = () => "mol"
+  given UnitName[Ampere[1]] = () => "A"
+  given UnitName[Kelvin[1]] = () => "K"
+  given UnitName[Second[1]] = () => "s"
 
 object Coefficient:
   given Coefficient[Metre[1], Inch[1]](39.3701)
@@ -58,6 +58,8 @@ object PrincipalUnit:
   given PrincipalUnit[Luminosity, Candela[1]]()
   given PrincipalUnit[Temperature, Kelvin[1]]()
   given PrincipalUnit[AmountOfSubstance, Mole[1]]()
+
+object Quantity
 
 case class Quantity[UnitsType <: Units[?, ?]](value: Double):
   @targetName("plus")
@@ -79,6 +81,26 @@ case class Quantity[UnitsType <: Units[?, ?]](value: Double):
   @targetName("divide")
   transparent inline def /[UnitsType2 <: Units[?, ?]](inline amount2: Quantity[UnitsType2]): Any =
     ${QuantifyMacros.multiply[UnitsType, UnitsType2]('this, 'amount2, true)}
+
+  inline def units: Map[String, Int] = ${QuantifyMacros.collectUnits[UnitsType]}
+  
+  inline def renderUnits: String =
+    units.map: (unit, power) =>
+      if power == 1 then unit
+      else unit+power.toString.map:
+        case '0' => "⁰"
+        case '1' => "¹"
+        case '2' => "²"
+        case '3' => "³"
+        case '4' => "⁴"
+        case '5' => "⁵"
+        case '6' => "⁶"
+        case '7' => "⁷"
+        case '8' => "⁸"
+        case '9' => "⁹"
+        case '-' => "⁻"
+      .mkString("")
+    .mkString("·")
 
 extension (value: Double)
   @targetName("times")

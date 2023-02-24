@@ -4,13 +4,12 @@ import scala.quoted.*
 import scala.compiletime.ops.int
 
 object QuantifyMacros:
-  def multiply
-      [LeftType <: Units[?, ?]: Type, RightType <: Units[?, ?]: Type]
-      (left: Expr[Quantity[LeftType]], right: Expr[Quantity[RightType]], invert: Boolean)(using Quotes)
-      : Expr[Any] =
+
+  def deconstruct
+      (using quotes: Quotes)(typ: quotes.reflect.TypeRepr, invert: Boolean)
+      : Map[quotes.reflect.TypeRef, (quotes.reflect.TypeRef, Int)] =
     import quotes.*, reflect.*
-    
-    def deconstruct(typ: TypeRepr, invert: Boolean): Map[TypeRef, (TypeRef, Int)] = typ match
+    typ match
       case AndType(left, right) =>
         deconstruct(left, invert) ++ deconstruct(right, invert)
       
@@ -22,6 +21,26 @@ object QuantifyMacros:
           case _ => ???
       
       case other => report.errorAndAbort(other.toString)
+  
+  def collectUnits[UnitsType <: Units[?, ?]: Type](using Quotes): Expr[Map[String, Int]] =
+    import quotes.*, reflect.*
+    
+    def mkMap(expr: Expr[Map[String, Int]], todo: List[(TypeRef, Int)]): Expr[Map[String, Int]] = todo match
+      case Nil =>
+        expr
+      
+      case (ref, power) :: todo2 => AppliedType(ref, List(ConstantType(IntConstant(1)))).asType match
+        case '[ refType ] =>
+          val unitName = Expr.summon[UnitName[refType]].get
+          mkMap('{$expr.updated($unitName.name(), ${Expr(power)})}, todo2)
+    
+    mkMap('{Map[String, Int]()}, deconstruct(TypeRepr.of[UnitsType], false).values.to(List))
+
+  def multiply
+      [LeftType <: Units[?, ?]: Type, RightType <: Units[?, ?]: Type]
+      (left: Expr[Quantity[LeftType]], right: Expr[Quantity[RightType]], invert: Boolean)(using Quotes)
+      : Expr[Any] =
+    import quotes.*, reflect.*
 
     val rightMap: Map[TypeRef, (TypeRef, Int)] = deconstruct(TypeRepr.of[RightType], invert)
     val leftMap: Map[TypeRef, (TypeRef, Int)] = deconstruct(TypeRepr.of[LeftType], false)
