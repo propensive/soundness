@@ -17,13 +17,13 @@
 package exoskeleton
 
 import galilei.*, filesystems.unix
-import anticipation.integration.galileiPath
+import anticipation.*, fileApi.galilei
 import gossamer.*
 import ambience.*
 import rudiments.*
 import deviation.*
 import parasitism.*
-import turbulence.*
+import turbulence.*, lineSeparation.jvm
 import escapade.*
 import profanity.*
 import eucalyptus.*
@@ -40,17 +40,15 @@ inline def cli(using cli: CommandLine): CommandLine = cli
 case class CommandLine(args: List[Text], env: Map[Text, Text], script: File, stdin: LazyList[Bytes],
                            stdout: LazyList[Bytes] => Unit, exit: Int => Unit, shutdown: () => Unit,
                            interactive: () => Unit, resize: LazyList[Unit])
-extends BasicIo, InputSource:
+extends Stdio, InputSource:
   def write(msg: Text): Unit = stdout(LazyList(msg.bytes))
   def cleanup(tty: Tty): Unit = ()
   
   val stdoutFunnel: Funnel[Bytes] = Funnel()
   val stderrFunnel: Funnel[Bytes] = Funnel()
   
-  def writeStdoutText(text: Text): Unit = stdoutFunnel.put(text.s.getBytes.nn.immutable(using Unsafe))
-  def writeStdoutBytes(bytes: Bytes): Unit = stdoutFunnel.put(bytes)
-  def writeStderrText(text: Text): Unit = stderrFunnel.put(text.s.getBytes.nn.immutable(using Unsafe))
-  def writeStderrBytes(bytes: Bytes): Unit = stderrFunnel.put(bytes)
+  def putOut(bytes: Bytes): Unit = stdoutFunnel.put(bytes)
+  def putErr(bytes: Bytes): Unit = stderrFunnel.put(bytes)
 
   def init()(using Log): Tty throws TtyError =
     interactive()
@@ -133,7 +131,7 @@ trait Daemon()(using Log) extends App:
             
 
           val commandLine = CommandLine(args, instanceEnv, scriptFile.or(sys.exit(1)),
-              LazyList() #::: fifoIn.read[Bytes], _.appendTo(out),
+              LazyList() #::: fifoIn.stream[Bytes], _.appendTo(out),
               exit => terminate.supply(exit), term,
               () => interactive(), signals.stream)
           
@@ -146,7 +144,7 @@ trait Daemon()(using Log) extends App:
             val message: Text = err.toString
             Log.info(t"Ignored error: $message")
           case NonFatal(err) =>
-            Stdout.println(StackTrace(err).ansi.render)
+            Io.println(StackTrace(err).ansi)
     
     def parseEnv(env: List[Text]): Map[Text, Text] = env.flatMap: pair =>
       pair.cut(t"=", 2).to(List) match
@@ -154,7 +152,7 @@ trait Daemon()(using Log) extends App:
         case _                => Nil
     .to(Map)
 
-    socket.file(Expect).read[Line].foldLeft(Map[Int, CliClient]()):
+    socket.file(Expect).stream[Line].foldLeft(Map[Int, CliClient]()):
       case (map, line) =>
         line.content.cut(t"\t").to(List) match
           case t"PROCESS" :: As[Int](pid) :: _ =>
