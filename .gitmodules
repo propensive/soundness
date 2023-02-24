@@ -182,3 +182,6 @@
 [submodule "mod/ambience"]
 	path = mod/ambience
 	url = git@github.com:propensive/ambience
+[submodule "mod/quantify"]
+	path = mod/quantify
+	url = git@github.com:propensive/quantify
