@@ -173,12 +173,6 @@ extension (year: Int & Singleton)
   @targetName("of")
   inline def -(month: MonthName & Singleton): YearMonth[year.type, month.type] = new YearMonth(year, month)
 
-package timeRepresentation:
-  given aviation: (GenericInstant[Timing.Instant] & GenericDuration[Timing.Duration]) =
-    new GenericInstant[Timing.Instant] with GenericDuration[Timing.Duration]:
-      export Timing.Instant.generic.{makeInstant, readInstant}
-      export Timing.Duration.generic.{makeDuration, readDuration}
-
 object Timing:
   opaque type Instant = Long
 
