@@ -21,6 +21,7 @@ import rudiments.*
 import deviation.*
 import iridescence.*
 import contextual.*
+import turbulence.*
 
 opaque type CharSpan = Long
 
@@ -172,9 +173,12 @@ object Ansi:
 
 object AnsiText:
   def empty: AnsiText = AnsiText(t"")
-  given Joinable[AnsiText] = _.fold(empty)(_ + _)
+  given joinable: Joinable[AnsiText] = _.fold(empty)(_ + _)
 
-  given Cuttable[AnsiText, Text] = (text, delimiter, limit) =>
+  // FIXME: Should look at the TTY to determine capabilities
+  given printable(using enc: Encoding): Printable[AnsiText] = _.render.bytes
+
+  given cuttable: Cuttable[AnsiText, Text] = (text, delimiter, limit) =>
     import java.util.regex.*
     val pattern = Pattern.compile(t"(.*)${Pattern.quote(delimiter.s).nn}(.*)".s).nn
     
