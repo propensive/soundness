@@ -11,14 +11,14 @@ erased trait TimeMeasurement extends Dimension
 erased trait Current extends Dimension
 erased trait Luminosity extends Dimension
 erased trait Temperature extends Dimension
-erased trait SubstanceAmount extends Dimension
+erased trait AmountOfSubstance extends Dimension
 
 trait Units[PowerType <: Int & Singleton, DimensionType <: Dimension]
 
 erased trait Metre[Power <: Int & Singleton] extends Units[Power, Length]
 erased trait Kilogram[Power <: Int & Singleton] extends Units[Power, Mass]
 erased trait Candela[Power <: Int & Singleton] extends Units[Power, Luminosity]
-erased trait Mole[Power <: Int & Singleton] extends Units[Power, SubstanceAmount]
+erased trait Mole[Power <: Int & Singleton] extends Units[Power, AmountOfSubstance]
 erased trait Ampere[Power <: Int & Singleton] extends Units[Power, Current]
 erased trait Kelvin[Power <: Int & Singleton] extends Units[Power, Temperature]
 erased trait Second[Power <: Int & Singleton] extends Units[Power, TimeMeasurement]
@@ -49,8 +49,17 @@ object Coefficient:
 
 trait Coefficient[FromType <: Units[1, ?], ToType <: Units[1, ?]](val value: Double)
 
-case class Quantity[UnitsType <: Units[?, ?]](value: Double):
+trait PrincipalUnit[DimensionType <: Dimension, UnitType <: Units[1, DimensionType]]()
+object PrincipalUnit:
+  given PrincipalUnit[Length, Metre[1]]()
+  given PrincipalUnit[Mass, Kilogram[1]]()
+  given PrincipalUnit[TimeMeasurement, Second[1]]()
+  given PrincipalUnit[Current, Ampere[1]]()
+  given PrincipalUnit[Luminosity, Candela[1]]()
+  given PrincipalUnit[Temperature, Kelvin[1]]()
+  given PrincipalUnit[AmountOfSubstance, Mole[1]]()
 
+case class Quantity[UnitsType <: Units[?, ?]](value: Double):
   @targetName("plus")
   def +(amount2: Quantity[UnitsType]): Quantity[UnitsType] = Quantity(value + amount2.value)
   
@@ -62,16 +71,19 @@ case class Quantity[UnitsType <: Units[?, ?]](value: Double):
   
   @targetName("times")
   transparent inline def *[UnitsType2 <: Units[?, ?]](inline amount2: Quantity[UnitsType2]): Any =
-    ${QuantifyMacros.multiply[UnitsType, UnitsType2]('this, 'amount2)}
+    ${QuantifyMacros.multiply[UnitsType, UnitsType2]('this, 'amount2, false)}
   
   @targetName("divide")
   def /(value2: Double): Quantity[UnitsType] = Quantity(value/value2)
 
   @targetName("divide")
   transparent inline def /[UnitsType2 <: Units[?, ?]](inline amount2: Quantity[UnitsType2]): Any =
-    ${QuantifyMacros.divide[UnitsType, UnitsType2]('this, 'amount2)}
+    ${QuantifyMacros.multiply[UnitsType, UnitsType2]('this, 'amount2, true)}
 
 extension (value: Double)
   @targetName("times")
-  def *[UnitsType <: Units[?, ?]](quantity: Quantity[UnitsType]): Quantity[UnitsType] = Quantity(value)
+  def *[UnitsType <: Units[?, ?]](quantity: Quantity[UnitsType]): Quantity[UnitsType] = quantity*value
+  
+  // @targetName("divide")
+  // def /[UnitsType <: Units[?, ?]](quantity: Quantity[UnitsType]): Quantity[UnitsType] = quantity.invert*value
   

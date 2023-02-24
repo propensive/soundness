@@ -18,20 +18,3 @@ type Force = Quantity[Kilogram[1] & Metre[1] & Second[-2]]
   val force: Force = mass*acc
 
   println(force)
-
-
-  val width: Distance = 10*Metre
-  val height: Quantity[Inch[1]] = 10*Inch
-
-  val size = width*height
-  println(size)
-
-  println(size/(1.0*Metre)*Metre)
-
-  val c = 299792458*Metre/Second
-  val c2 = c*c
-
-  val abs = acc/c
-  val ħ = 1.054571817e-34*Joule*Second
-
-  println(abs)
