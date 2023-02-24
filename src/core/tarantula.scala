@@ -29,7 +29,7 @@ import turbulence.*, characterEncodings.utf8
 import deviation.*
 import gesticulate.*
 import parasitism.*
-import anticipation.*, timeRepresentation.long
+import anticipation.*, timeApi.long
 
 import unsafeExceptions.canThrowAny
 import annotation.targetName
