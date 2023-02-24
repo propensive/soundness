@@ -23,4 +23,4 @@ trait GenericUrl[UrlType]:
 def readUrl[UrlType](url: UrlType)(using GenericUrl[UrlType]): String = summon[GenericUrl[UrlType]].readUrl(url)
 def makeUrl[UrlType](url: String)(using GenericUrl[UrlType]): UrlType = summon[GenericUrl[UrlType]].makeUrl(url)
 
-package urlRepresentation {}
+package urlApi {}
