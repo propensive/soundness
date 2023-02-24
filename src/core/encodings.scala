@@ -31,6 +31,9 @@ trait Encoding:
   def runLength(byte: Byte): Int = 1
   def convertStream(stream: {*} LazyList[Bytes])(using handler: {*} BadEncodingHandler)
                    : {stream, handler} LazyList[Text]
+  
+  def readBytes(bytes: Bytes): Text = Text(String(bytes.mutable(using Unsafe), name.s))
+  def getBytes(text: Text): Bytes = text.s.getBytes(name.s).nn.immutable(using Unsafe)
 
 trait VariableLengthEncoding extends Encoding:
   def convertStream(stream: {*} LazyList[Bytes])(using handler: {*} BadEncodingHandler)
@@ -56,7 +59,7 @@ trait VariableLengthEncoding extends Encoding:
           LazyList()
       
     read(stream)
-
+  
 package characterEncodings:
   given utf8: Encoding = new VariableLengthEncoding:
     def name: Text = Text("UTF-8")

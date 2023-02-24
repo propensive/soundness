@@ -165,7 +165,7 @@ extension [ElemType](stream: LazyList[ElemType])
 
         val recurse: Option[Boolean] = try
           val deadline: Long = readDuration(interval).min(expiry - System.currentTimeMillis).max(0)
-          if hasMore.await(deadline)(using timeRepresentation.long) then Some(true) else None
+          if hasMore.await(deadline)(using timeApi.long) then Some(true) else None
         catch case err: (TimeoutError | CancelError) => Some(false)
 
         // The try/catch above seems to fool tail-call identification
@@ -190,55 +190,41 @@ extension [ElemType](stream: LazyList[ElemType])
 //     def write(buffer: StreamBuffer[Bytes throws StreamCutError], stream: DataStream) =
 //       stream.foreach(buffer.put(_))
 
+object Printable:
+  given text(using enc: Encoding): Printable[Text] = enc.getBytes(_)
+
 @capability
 trait Printable[-TextType]:
   def print(text: TextType): Bytes
 
 object Io:
-  def print
-      [TextType](text: TextType)(using io: BasicIo)(using printable: Printable[TextType])
-      : /*{io, printable}*/ Unit =
-    io.writeStdoutBytes(printable.print(text))
+  def print[TextType](text: TextType)(using io: Stdio)(using printable: Printable[TextType]): Unit =
+    io.putOut(printable.print(text))
   
   def println
-      [TextType](text: TextType)(using io: BasicIo, printable: Printable[TextType], lines: LineSeparation)
+      [TextType](text: TextType)(using io: Stdio, printable: Printable[TextType], lines: LineSeparation)
       : /*{io, printable, lines}*/ Unit =
-    io.writeStdoutBytes(printable.print(text))
-    io.writeStdoutBytes(lines.newlineBytes)
+    io.putOut(printable.print(text))
+    io.putOut(lines.newlineBytes)
   
 @capability
-trait BasicIo:
-  def writeStdoutText(text: Text): Unit
-  def writeStderrText(text: Text): Unit
-  def writeStdoutBytes(bytes: Bytes): Unit
-  def writeStderrBytes(bytes: Bytes): Unit
+trait Stdio:
+  def putOut(bytes: Bytes): Unit
+  def putErr(bytes: Bytes): Unit
 
 object Stderr
-
-object Stdout:
-  def print(text: Text)(using io: BasicIo): Unit =
-    io.writeStdoutText(text)
-  
-  def println(text: Text)(using io: BasicIo): Unit =
-    io.writeStdoutText(text)
-    io.writeStdoutText(Text("\n"))
+object Stdout
 
 package basicIo:
-  given jvm(using streamCut: CanThrow[StreamCutError]): BasicIo = new BasicIo:
-    def writeStdoutBytes(bytes: Bytes): Unit =
+  given jvm(using streamCut: CanThrow[StreamCutError]): Stdio = new Stdio:
+    def putOut(bytes: Bytes): Unit =
       if System.out == null then throw StreamCutError(0.b)
       else System.out.nn.writeBytes(bytes.mutable(using Unsafe))
     
-    def writeStdoutText(text: Text): Unit =
-      if System.out == null then throw StreamCutError(0.b) else System.err.nn.print(text.s)
-    
-    def writeStderrBytes(bytes: Bytes): Unit =
+    def putErr(bytes: Bytes): Unit =
       if System.out == null then throw StreamCutError(0.b)
       else System.out.nn.writeBytes(bytes.mutable(using Unsafe))
     
-    def writeStderrText(text: Text): Unit =
-      if System.out == null then throw StreamCutError(0.b) else System.err.nn.print(text.s)
-
 class StreamBuffer[T]():
   private val primary: juc.LinkedBlockingQueue[Maybe[T]] = juc.LinkedBlockingQueue()
   private val secondary: juc.LinkedBlockingQueue[Maybe[T]] = juc.LinkedBlockingQueue()
@@ -354,17 +340,17 @@ trait Writable[-TargetType, -ChunkType]:
     (target, stream) => write(fn(target), stream)
 
 object Appendable:
-  given stdoutBytes(using io: BasicIo): (/*{io}*/ SimpleAppendable[Stdout.type, Bytes]) =
-    (stderr, bytes) => io.writeStdoutBytes(bytes)
+  given stdoutBytes(using io: Stdio): (/*{io}*/ SimpleAppendable[Stdout.type, Bytes]) =
+    (stderr, bytes) => io.putOut(bytes)
   
-  given stdoutText(using io: BasicIo): (/*{io}*/ SimpleAppendable[Stdout.type, Text]) =
-    (stderr, text) => io.writeStdoutText(text)
+  given stdoutText(using io: Stdio, enc: Encoding): (/*{io}*/ SimpleAppendable[Stdout.type, Text]) =
+    (stderr, text) => io.putOut(enc.getBytes(text))
 
-  given stderrBytes(using io: BasicIo): (/*{io}*/ SimpleAppendable[Stderr.type, Bytes]) =
-    (stderr, bytes) => io.writeStderrBytes(bytes)
+  given stderrBytes(using io: Stdio): (/*{io}*/ SimpleAppendable[Stderr.type, Bytes]) =
+    (stderr, bytes) => io.putErr(bytes)
   
-  given stderrText(using io: BasicIo): (/*{io}*/ SimpleAppendable[Stderr.type, Text]) =
-    (stderr, text) => io.writeStderrText(text)
+  given stderrText(using io: Stdio, enc: Encoding): (/*{io}*/ SimpleAppendable[Stderr.type, Text]) =
+    (stderr, text) => io.putErr(enc.getBytes(text))
 
   given outputStreamBytes(using streamCut: CanThrow[StreamCutError])
                          : (/*{streamCut}*/ SimpleAppendable[ji.OutputStream, Bytes]) =
@@ -453,24 +439,34 @@ trait Readable[-SourceType, +ChunkType]:
     source => read(fn(source))
 
 object Aggregable:
-  given bytes: Aggregable[Bytes, Bytes] = source =>
+  given bytesBytes: Aggregable[Bytes, Bytes] = source =>
     def recur(buf: ji.ByteArrayOutputStream, source: LazyList[Bytes]): Bytes = source match
       case head #:: tail => buf.write(head.mutable(using Unsafe))
                             recur(buf, tail)
       case _             => buf.toByteArray().nn.immutable(using Unsafe)
     
     recur(ji.ByteArrayOutputStream(), source)
+  
+  given bytesText(using enc: Encoding): Aggregable[Bytes, Text] = bytesBytes.map(enc.readBytes)
+
+  given functor[ChunkType]: Functor[[ValueType] =>> Aggregable[ChunkType, ValueType]] = new Functor:
+    def map
+        [ResultType, ResultType2]
+        (aggregable: Aggregable[ChunkType, ResultType], fn: ResultType => ResultType2)
+        : Aggregable[ChunkType, ResultType2] =
+      new Aggregable:
+        def aggregate(value: LazyList[ChunkType]): ResultType2 = fn(aggregable.aggregate(value))
+      
 
 trait Aggregable[-ChunkType, +ResultType]:
   def aggregate(source: LazyList[ChunkType]): ResultType
 
 extension [ValueType](value: ValueType)
-  def read[ChunkType](using readable: /*{*}*/ Readable[ValueType, ChunkType]): /*{readable}*/ LazyList[ChunkType] =
+  def stream[ChunkType](using readable: /*{*}*/ Readable[ValueType, ChunkType]): /*{readable}*/ LazyList[ChunkType] =
     readable.read(value)
   
-  def readAs[ResultType, ChunkType]
-            (using readable: /*{*}*/ Readable[ValueType, ChunkType],
-                  aggregable: /*{*}*/ Aggregable[ChunkType, ResultType])
+  def read[ResultType]
+          (using readable: /*{*}*/ Readable[ValueType, Bytes], aggregable: /*{*}*/ Aggregable[Bytes, ResultType])
             : /*{readable, aggregable}*/ ResultType =
     aggregable.aggregate(readable.read(value))
   
