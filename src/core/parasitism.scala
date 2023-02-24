@@ -47,7 +47,7 @@ case class TimeoutError() extends Error(err"the operation timed out")
 //     else Thread(runnable, name.s).nn.tap(_.setDaemon(daemon)).tap(_.start())
 
 // def supervise[ResultType](id: Text)(fn: Monitor ?=> ResultType): ResultType = fn(using Supervisor(id))
-// def hibernate()(using Monitor): Unit = sleep(using timeRepresentation.long)(Long.MaxValue)
+// def hibernate()(using Monitor): Unit = sleep(using timeApi.long)(Long.MaxValue)
 
 // def sleep(using t: GenericDuration)(time: t.Duration)(using Monitor): Unit =
 //   try Thread.sleep(readDuration(time)) catch case err: InterruptedException => unsafely(throw CancelError())
