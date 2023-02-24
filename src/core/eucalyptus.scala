@@ -128,7 +128,7 @@ package logging:
   import monitors.global
   given silent: Log = Log()
   
-  given stdout(using BasicIo, CanThrow[StreamCutError]): Log =
+  given stdout(using Stdio, CanThrow[StreamCutError], Encoding): Log =
     import monitors.global
     val sink = Stdout.sink
     
