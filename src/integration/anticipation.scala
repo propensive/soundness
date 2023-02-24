@@ -14,26 +14,27 @@
     and limitations under the License.
 */
 
-package anticipation.integration
+package anticipation
 
 import anticipation.*
 import rudiments.*
 import deviation.*
-import galilei.* //_root_.galilei as gal
+import galilei.*
 
 import language.experimental.captureChecking
 
-given galileiPath(using fs: Filesystem): (GenericPathMaker[DiskPath] & GenericDirectoryMaker[Directory] & GenericFileMaker[File] & GenericPathReader[DiskPath] & GenericFileReader[File] & GenericDirectoryReader[Directory]) =
-  new GenericPathMaker[DiskPath] with GenericDirectoryMaker[Directory] with GenericFileMaker[File] with GenericPathReader[DiskPath] with GenericFileReader[File] with GenericDirectoryReader[Directory]:
-    def makePath(str: String, readOnly: Boolean = false): Option[DiskPath] =
-      safely(fs.parse(Text(str))).option
-    
-    def makeDirectory(str: String, readOnly: Boolean = false): Option[Directory] =
-      safely(fs.parse(Text(str)).directory(Expect)).option
-    
-    def makeFile(str: String, readOnly: Boolean = false): Option[File] =
-      safely(fs.parse(Text(str)).file(Expect)).option
-
-    def getPath(value: DiskPath): String = value.fullname.s
-    def directoryPath(value: Directory): String = value.path.fullname.s
-    def filePath(value: File): String = value.path.fullname.s
+package fileApi:
+  given galilei(using fs: Filesystem): (GenericPathMaker[DiskPath] & GenericDirectoryMaker[Directory] & GenericFileMaker[File] & GenericPathReader[DiskPath] & GenericFileReader[File] & GenericDirectoryReader[Directory]) =
+    new GenericPathMaker[DiskPath] with GenericDirectoryMaker[Directory] with GenericFileMaker[File] with GenericPathReader[DiskPath] with GenericFileReader[File] with GenericDirectoryReader[Directory]:
+      def makePath(str: String, readOnly: Boolean = false): Option[DiskPath] =
+        safely(fs.parse(Text(str))).option
+      
+      def makeDirectory(str: String, readOnly: Boolean = false): Option[Directory] =
+        safely(fs.parse(Text(str)).directory(Expect)).option
+      
+      def makeFile(str: String, readOnly: Boolean = false): Option[File] =
+        safely(fs.parse(Text(str)).file(Expect)).option
+  
+      def getPath(value: DiskPath): String = value.fullname.s
+      def directoryPath(value: Directory): String = value.path.fullname.s
+      def filePath(value: File): String = value.path.fullname.s
