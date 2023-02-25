@@ -31,7 +31,7 @@ m² s¯², and it's more useful for the type to reflect a product of simpler uni
 So the type of `energy` is `Quantity[Kilogram[1] & Metre[2] & Second[-2]]`, using a combination of three SI base
 units raised to different powers. They are combined into an intersection type with the `&` type operator, which
 provides the useful property that the order of the intersection is unimportant;
-`Second[-2] & Metre[2] & Kilogram[1]` is an _identical_ type, much as `kg m² s¯²` and `s¯² m² kg` are identical
+`Second[-2] & Metre[2] & Kilogram[1]` is an _identical_ type, much as kg m²s¯² and s¯²m²kg are identical
 units.
 
 Just as we could construct an area by multiplying two lengths, we can compute a new value with appropriate units
@@ -42,6 +42,33 @@ val energyDensity = energy/volume
 ```
 and its type will be inferred with the parameter `Kilogram[1] & Metre[-1] & Second[-2]`.
 
-If we had instead calculated `energy/area`, whose units do not include metres, the type would be just
-`Kilogram[1] & Second[-2]`; the redundant `Metre[0]` would be automatically elided.
+If we had instead calculated `energy/area`, whose units do not include metres, the type parameter would be just
+`Kilogram[1] & Second[-2]`; the redundant `Metre[0]` would be automatically removed from the conjunction.
 
+### Different Units
+
+Kilograms, metres and seconds are units of three different dimensions which are never interchangeable, we often
+need to work with different units of the same dimension, such as feet, metres, yards and miles as different (but
+interchangeable) units of length, or kilograms and pounds, as units of mass.
+
+Each type representing units, such as `Metre` or `Kilogram`, must be a subtype of the `Units` type,
+which is parameterized on its power (with a singleton literal integer) and a _dimension_, that is, another type
+representing the nature of the measurement. For `Metre` the dimension is `Length`; for `Kilogram`'s it is
+`Mass`; `Candela`'s is `Luminosity`.
+
+It is possible to create new length or mass units, such as `Inch` or `Pound`, which share the `Length` or `Mass`
+dimensions. This allows them to be considered equivalent in some calculations, if a conversion coefficient is
+available.
+
+Quantify will automatically convert units of the same dimension to the same units in multiplications and
+divisions. For example,
+```scala
+val width = 0.3*Metre
+val height = 5*Inch
+val area = width*height
+```
+will infer the type `Quantity[Metre[2]]` for `area`.
+
+However, the conversion of one of the units from inches to metres was necessary only to avoid a mixture of
+`Inch` and `Metre` in the resultant type, but the expression, `height*height` would produce a value with the
+units, `Inch[2]`, performing no unnecessary conversions.
