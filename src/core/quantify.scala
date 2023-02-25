@@ -1,7 +1,11 @@
 package quantify
 
+import gossamer.*
+import rudiments.*
+
 import scala.quoted.*
 import annotation.targetName
+
 
 trait Dimension
 
@@ -32,16 +36,16 @@ object Kelvin extends Quantity[Kelvin[1]](1)
 object Second extends Quantity[Second[1]](1)
 
 trait UnitName[-ValueType]:
-  def name(): String
+  def name(): Text
 
 object UnitName:
-  given UnitName[Metre[1]] = () => "m"
-  given UnitName[Kilogram[1]] = () => "kg"
-  given UnitName[Candela[1]] = () => "cd"
-  given UnitName[Mole[1]] = () => "mol"
-  given UnitName[Ampere[1]] = () => "A"
-  given UnitName[Kelvin[1]] = () => "K"
-  given UnitName[Second[1]] = () => "s"
+  given UnitName[Metre[1]] = () => t"m"
+  given UnitName[Kilogram[1]] = () => t"kg"
+  given UnitName[Candela[1]] = () => t"cd"
+  given UnitName[Mole[1]] = () => t"mol"
+  given UnitName[Ampere[1]] = () => t"A"
+  given UnitName[Kelvin[1]] = () => t"K"
+  given UnitName[Second[1]] = () => t"s"
 
 object Coefficient:
   given Coefficient[Metre[1], Inch[1]](39.3701)
@@ -61,7 +65,7 @@ object PrincipalUnit:
 
 object Quantity
 
-case class Quantity[UnitsType <: Units[?, ?]](value: Double):
+class Quantity[UnitsType <: Units[?, ?]](val value: Double):
   @targetName("plus")
   def +(amount2: Quantity[UnitsType]): Quantity[UnitsType] = Quantity(value + amount2.value)
   
@@ -82,25 +86,25 @@ case class Quantity[UnitsType <: Units[?, ?]](value: Double):
   transparent inline def /[UnitsType2 <: Units[?, ?]](inline amount2: Quantity[UnitsType2]): Any =
     ${QuantifyMacros.multiply[UnitsType, UnitsType2]('this, 'amount2, true)}
 
-  inline def units: Map[String, Int] = ${QuantifyMacros.collectUnits[UnitsType]}
+  inline def units: Map[Text, Int] = ${QuantifyMacros.collectUnits[UnitsType]}
   
-  inline def renderUnits: String =
-    units.map: (unit, power) =>
+  inline def renderUnits: Text =
+    units.to(List).map: (unit, power) =>
       if power == 1 then unit
-      else unit+power.toString.map:
-        case '0' => "⁰"
-        case '1' => "¹"
-        case '2' => "²"
-        case '3' => "³"
-        case '4' => "⁴"
-        case '5' => "⁵"
-        case '6' => "⁶"
-        case '7' => "⁷"
-        case '8' => "⁸"
-        case '9' => "⁹"
-        case '-' => "⁻"
-      .mkString("")
-    .mkString("·")
+      else unit+power.show.mapChars:
+        case '0' => '⁰'
+        case '1' => '¹'
+        case '2' => '²'
+        case '3' => '³'
+        case '4' => '⁴'
+        case '5' => '⁵'
+        case '6' => '⁶'
+        case '7' => '⁷'
+        case '8' => '⁸'
+        case '9' => '⁹'
+        case '-' => '⁻'
+        case _   => ' '
+    .join(t"·")
 
 extension (value: Double)
   @targetName("times")

@@ -1,5 +1,7 @@
 package quantify
 
+import rudiments.*
+
 import scala.quoted.*
 import scala.compiletime.ops.int
 
@@ -22,10 +24,10 @@ object QuantifyMacros:
       
       case other => report.errorAndAbort(other.toString)
   
-  def collectUnits[UnitsType <: Units[?, ?]: Type](using Quotes): Expr[Map[String, Int]] =
+  def collectUnits[UnitsType <: Units[?, ?]: Type](using Quotes): Expr[Map[Text, Int]] =
     import quotes.*, reflect.*
     
-    def mkMap(expr: Expr[Map[String, Int]], todo: List[(TypeRef, Int)]): Expr[Map[String, Int]] = todo match
+    def mkMap(expr: Expr[Map[Text, Int]], todo: List[(TypeRef, Int)]): Expr[Map[Text, Int]] = todo match
       case Nil =>
         expr
       
@@ -34,7 +36,7 @@ object QuantifyMacros:
           val unitName = Expr.summon[UnitName[refType]].get
           mkMap('{$expr.updated($unitName.name(), ${Expr(power)})}, todo2)
     
-    mkMap('{Map[String, Int]()}, deconstruct(TypeRepr.of[UnitsType], false).values.to(List))
+    mkMap('{Map[Text, Int]()}, deconstruct(TypeRepr.of[UnitsType], false).values.to(List))
 
   def multiply
       [LeftType <: Units[?, ?]: Type, RightType <: Units[?, ?]: Type]
