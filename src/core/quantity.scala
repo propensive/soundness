@@ -6,21 +6,20 @@ import scala.quoted.*
 import scala.compiletime.ops.int
 
 object QuantifyMacros:
-
-  def deconstruct
+  private def deconjunct
       (using quotes: Quotes)(typ: quotes.reflect.TypeRepr, invert: Boolean)
       : Map[quotes.reflect.TypeRef, (quotes.reflect.TypeRef, Int)] =
     import quotes.*, reflect.*
     typ match
       case AndType(left, right) =>
-        deconstruct(left, invert) ++ deconstruct(right, invert)
+        deconjunct(left, invert) ++ deconjunct(right, invert)
       
       case AppliedType(unit@TypeRef(_, _), List(ConstantType(IntConstant(power)))) =>
         unit.asType match
           case '[ Units[p, u] ] => TypeRepr.of[u] match
             case ref@TypeRef(_, _) => Map(ref -> (unit, power))
-            case _ => ???
-          case _ => ???
+            case _ => throw Mistake("Should never match")
+          case _ => throw Mistake("Should never match")
       
       case other => report.errorAndAbort(other.toString)
   
@@ -35,8 +34,11 @@ object QuantifyMacros:
         case '[ refType ] =>
           val unitName = Expr.summon[UnitName[refType]].get
           mkMap('{$expr.updated($unitName.name(), ${Expr(power)})}, todo2)
+      
+        case _ =>
+          throw Mistake("Should never match")
     
-    mkMap('{Map[Text, Int]()}, deconstruct(TypeRepr.of[UnitsType], false).values.to(List))
+    mkMap('{Map[Text, Int]()}, deconjunct(TypeRepr.of[UnitsType], false).values.to(List))
 
   def multiply
       [LeftType <: Units[?, ?]: Type, RightType <: Units[?, ?]: Type]
@@ -44,8 +46,8 @@ object QuantifyMacros:
       : Expr[Any] =
     import quotes.*, reflect.*
 
-    val rightMap: Map[TypeRef, (TypeRef, Int)] = deconstruct(TypeRepr.of[RightType], invert)
-    val leftMap: Map[TypeRef, (TypeRef, Int)] = deconstruct(TypeRepr.of[LeftType], false)
+    val rightMap: Map[TypeRef, (TypeRef, Int)] = deconjunct(TypeRepr.of[RightType], invert)
+    val leftMap: Map[TypeRef, (TypeRef, Int)] = deconjunct(TypeRepr.of[LeftType], false)
 
     def recur
         (map: Map[TypeRef, (TypeRef, Int)], todo: List[(TypeRef, (TypeRef, Int))], multiplier: Expr[Double])
@@ -60,7 +62,7 @@ object QuantifyMacros:
                 case '[ left ] => AppliedType(rightUnit, List(ConstantType(IntConstant(1)))).asType match
                   case '[ right ] => 
                     val multiplier2: Expr[Double] =
-                      if leftUnit == rightUnit then multiplier else
+                      if leftUnit.typeSymbol == rightUnit.typeSymbol then multiplier else
                         def coefficient = Expr.summon[Coefficient[right & Units[1, ?], left & Units[1, ?]]]
                         def coefficient2 = Expr.summon[Coefficient[left & Units[1, ?], right & Units[1, ?]]]
 

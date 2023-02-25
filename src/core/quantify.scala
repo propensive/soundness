@@ -6,12 +6,11 @@ import rudiments.*
 import scala.quoted.*
 import annotation.targetName
 
-
 trait Dimension
 
 erased trait Length extends Dimension
 erased trait Mass extends Dimension
-erased trait TimeMeasurement extends Dimension
+erased trait TimeLength extends Dimension
 erased trait Current extends Dimension
 erased trait Luminosity extends Dimension
 erased trait Temperature extends Dimension
@@ -25,7 +24,7 @@ erased trait Candela[Power <: Int & Singleton] extends Units[Power, Luminosity]
 erased trait Mole[Power <: Int & Singleton] extends Units[Power, AmountOfSubstance]
 erased trait Ampere[Power <: Int & Singleton] extends Units[Power, Current]
 erased trait Kelvin[Power <: Int & Singleton] extends Units[Power, Temperature]
-erased trait Second[Power <: Int & Singleton] extends Units[Power, TimeMeasurement]
+erased trait Second[Power <: Int & Singleton] extends Units[Power, TimeLength]
 
 object Metre extends Quantity[Metre[1]](1)
 object Kilogram extends Quantity[Kilogram[1]](1)
@@ -57,53 +56,67 @@ trait PrincipalUnit[DimensionType <: Dimension, UnitType <: Units[1, DimensionTy
 object PrincipalUnit:
   given PrincipalUnit[Length, Metre[1]]()
   given PrincipalUnit[Mass, Kilogram[1]]()
-  given PrincipalUnit[TimeMeasurement, Second[1]]()
+  given PrincipalUnit[TimeLength, Second[1]]()
   given PrincipalUnit[Current, Ampere[1]]()
   given PrincipalUnit[Luminosity, Candela[1]]()
   given PrincipalUnit[Temperature, Kelvin[1]]()
   given PrincipalUnit[AmountOfSubstance, Mole[1]]()
 
-object Quantity
+object Opaques:
+  opaque type Quantity2[UnitsType <: Units[?, ?]] = Double
+
+object Quantity:
+  inline given [UnitsType <: Units[?, ?]](using DecimalFormat): Show[Quantity[UnitsType]] =
+    new Show[Quantity[UnitsType]]:
+      def show(value: Quantity[UnitsType]): Text = value.render
 
 class Quantity[UnitsType <: Units[?, ?]](val value: Double):
+  quantity =>
+  
+  @targetName("times")
+  def *(value2: Double): Quantity[UnitsType] = Quantity(quantity.value*value2)
+  
+  @targetName("divide")
+  def /(value2: Double): Quantity[UnitsType] = Quantity(quantity.value/value2)
+
   @targetName("plus")
-  def +(amount2: Quantity[UnitsType]): Quantity[UnitsType] = Quantity(value + amount2.value)
+  inline def +(quantity2: Quantity[UnitsType]): Quantity[UnitsType] = Quantity(quantity.value + quantity2.value)
   
   @targetName("minus")
-  def -(amount2: Quantity[UnitsType]): Quantity[UnitsType] = Quantity(value - amount2.value)
+  inline def -(quantity2: Quantity[UnitsType]): Quantity[UnitsType] = Quantity(quantity.value - quantity2.value)
   
-  @targetName("times")
-  def *(value2: Double): Quantity[UnitsType] = Quantity(value*value2)
+  @targetName("times2")
+  transparent inline def *[UnitsType2 <: Units[?, ?]](inline quantity2: Quantity[UnitsType2]): Any =
+    ${QuantifyMacros.multiply[UnitsType, UnitsType2]('quantity, 'quantity2, false)}
   
-  @targetName("times")
-  transparent inline def *[UnitsType2 <: Units[?, ?]](inline amount2: Quantity[UnitsType2]): Any =
-    ${QuantifyMacros.multiply[UnitsType, UnitsType2]('this, 'amount2, false)}
-  
-  @targetName("divide")
-  def /(value2: Double): Quantity[UnitsType] = Quantity(value/value2)
-
-  @targetName("divide")
-  transparent inline def /[UnitsType2 <: Units[?, ?]](inline amount2: Quantity[UnitsType2]): Any =
-    ${QuantifyMacros.multiply[UnitsType, UnitsType2]('this, 'amount2, true)}
+  @targetName("divide2")
+  transparent inline def /[UnitsType2 <: Units[?, ?]](inline quantity2: Quantity[UnitsType2]): Any =
+    ${QuantifyMacros.multiply[UnitsType, UnitsType2]('quantity, 'quantity2, true)}
 
   inline def units: Map[Text, Int] = ${QuantifyMacros.collectUnits[UnitsType]}
-  
+
+  inline def render(using DecimalFormat): Text = t"${quantity.value}$renderUnits"
+
   inline def renderUnits: Text =
     units.to(List).map: (unit, power) =>
       if power == 1 then unit
-      else unit+power.show.mapChars:
-        case '0' => '⁰'
-        case '1' => '¹'
-        case '2' => '²'
-        case '3' => '³'
-        case '4' => '⁴'
-        case '5' => '⁵'
-        case '6' => '⁶'
-        case '7' => '⁷'
-        case '8' => '⁸'
-        case '9' => '⁹'
-        case '-' => '⁻'
-        case _   => ' '
+      else 
+        val exponent: Text =
+          power.show.mapChars:
+            case '0' => '⁰'
+            case '1' => '¹'
+            case '2' => '²'
+            case '3' => '³'
+            case '4' => '⁴'
+            case '5' => '⁵'
+            case '6' => '⁶'
+            case '7' => '⁷'
+            case '8' => '⁸'
+            case '9' => '⁹'
+            case '-' => '⁻'
+            case _   => ' '
+        
+        t"$unit$exponent"
     .join(t"·")
 
 extension (value: Double)
