@@ -21,7 +21,8 @@ object QuantifyMacros:
             case _ => throw Mistake("Should never match")
           case _ => throw Mistake("Should never match")
       
-      case other => report.errorAndAbort(other.toString)
+      case other =>
+        Map()
   
   def collectUnits[UnitsType <: Units[?, ?]: Type](using Quotes): Expr[Map[Text, Int]] =
     import quotes.*, reflect.*

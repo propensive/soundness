@@ -4,7 +4,9 @@ import gossamer.*
 import rudiments.*
 
 import scala.quoted.*
-import annotation.targetName
+import annotation.{targetName, allowConversions}
+
+import language.implicitConversions
 
 trait Dimension
 
@@ -26,13 +28,13 @@ erased trait Ampere[Power <: Int & Singleton] extends Units[Power, Current]
 erased trait Kelvin[Power <: Int & Singleton] extends Units[Power, Temperature]
 erased trait Second[Power <: Int & Singleton] extends Units[Power, TimeLength]
 
-object Metre extends Quantity[Metre[1]](1)
-object Kilogram extends Quantity[Kilogram[1]](1)
-object Candela extends Quantity[Candela[1]](1)
-object Mole extends Quantity[Mole[1]](1)
-object Ampere extends Quantity[Ampere[1]](1)
-object Kelvin extends Quantity[Kelvin[1]](1)
-object Second extends Quantity[Second[1]](1)
+val Metre = Quantity[Metre[1]](1)
+val Kilogram = Quantity[Kilogram[1]](1)
+val Candela = Quantity[Candela[1]](1)
+val Mole = Quantity[Mole[1]](1)
+val Ampere = Quantity[Ampere[1]](1)
+val Kelvin = Quantity[Kelvin[1]](1)
+val Second = Quantity[Second[1]](1)
 
 trait UnitName[-ValueType]:
   def name(): Text
@@ -63,22 +65,29 @@ object PrincipalUnit:
   given PrincipalUnit[AmountOfSubstance, Mole[1]]()
 
 object Opaques:
-  opaque type Quantity2[UnitsType <: Units[?, ?]] = Double
 
-object Quantity:
-  inline given [UnitsType <: Units[?, ?]](using DecimalFormat): Show[Quantity[UnitsType]] =
-    new Show[Quantity[UnitsType]]:
-      def show(value: Quantity[UnitsType]): Text = value.render
+  opaque type Quantity[UnitsType <: Units[?, ?]] = Double
 
-class Quantity[UnitsType <: Units[?, ?]](val value: Double):
-  quantity =>
-  
-  @targetName("times")
-  def *(value2: Double): Quantity[UnitsType] = Quantity(quantity.value*value2)
-  
-  @targetName("divide")
-  def /(value2: Double): Quantity[UnitsType] = Quantity(quantity.value/value2)
+  extension [UnitsType <: Units[?, ?]](quantity: Quantity[UnitsType])
+    def value: Double = quantity
 
+
+  object Quantity:
+    def apply[UnitsType <: Units[?, ?]](value: Double): Quantity[UnitsType] = value
+    
+    given convertDouble[UnitsType <: Units[?, ?]]: Conversion[Double, Quantity[UnitsType]] = Quantity(_)
+    given convertInt[UnitsType <: Units[?, ?]]: Conversion[Int, Quantity[UnitsType]] = int => Quantity(int.toDouble)
+
+    inline given [UnitsType <: Units[?, ?]](using DecimalFormat): Show[Quantity[UnitsType]] =
+      new Show[Quantity[UnitsType]]:
+        def show(value: Quantity[UnitsType]): Text = value.render
+
+export Opaques.Quantity
+
+// class Quantity[UnitsType <: Units[?, ?]](val value: Double):
+//   quantity =>
+
+extension [UnitsType <: Units[?, ?]](inline quantity: Quantity[UnitsType])
   @targetName("plus")
   inline def +(quantity2: Quantity[UnitsType]): Quantity[UnitsType] = Quantity(quantity.value + quantity2.value)
   
@@ -86,11 +95,11 @@ class Quantity[UnitsType <: Units[?, ?]](val value: Double):
   inline def -(quantity2: Quantity[UnitsType]): Quantity[UnitsType] = Quantity(quantity.value - quantity2.value)
   
   @targetName("times2")
-  transparent inline def *[UnitsType2 <: Units[?, ?]](inline quantity2: Quantity[UnitsType2]): Any =
+  transparent inline def *[UnitsType2 <: Units[?, ?]](@allowConversions inline quantity2: Quantity[UnitsType2]): Any =
     ${QuantifyMacros.multiply[UnitsType, UnitsType2]('quantity, 'quantity2, false)}
   
   @targetName("divide2")
-  transparent inline def /[UnitsType2 <: Units[?, ?]](inline quantity2: Quantity[UnitsType2]): Any =
+  transparent inline def /[UnitsType2 <: Units[?, ?]](@allowConversions inline quantity2: Quantity[UnitsType2]): Any =
     ${QuantifyMacros.multiply[UnitsType, UnitsType2]('quantity, 'quantity2, true)}
 
   inline def units: Map[Text, Int] = ${QuantifyMacros.collectUnits[UnitsType]}

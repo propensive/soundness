@@ -1,6 +1,6 @@
 package quantify
 
-object Hertz extends Quantity[Second[-1]](1.0)
+val Hertz = Quantity[Second[-1]](1.0)
 val Newton = Metre*Kilogram/(Second*Second)
 val Pascal = Newton/(Metre*Metre)
 val Joule = Newton*Metre
@@ -14,7 +14,7 @@ val Weber = Volt*Second
 val Tesla = Weber/(Metre*Metre)
 val Henry = Weber/Ampere
 val Lux = Candela/(Metre*Metre)
-object Becquerel extends Quantity[Second[-1]](1.0)
+val Becquerel = Quantity[Second[-1]](1.0)
 val Gray = Joule/Kilogram
 val Sievert = Joule/Kilogram
 val Katal = Mole/Second
