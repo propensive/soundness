@@ -1,0 +1,146 @@
+[<img alt="GitHub Workflow" src="https://img.shields.io/github/actions/workflow/status/propensive/quantify/main.yml?style=for-the-badge" height="24">](https://github.com/propensive/quantify/actions)
+[<img src="https://img.shields.io/discord/633198088311537684?color=8899f7&label=DISCORD&style=for-the-badge" height="24">](https://discord.gg/7b6mpF6Qcf)
+<img src="/doc/images/github.png" valign="middle">
+
+# Quantify
+
+TBC
+
+## Features
+
+- statically checks that physical quantities have consistent units by making them distinct types
+- `Quantity` values encode the (nonzero) power of each unit in their type
+- all `Quantity`s are opaque aliases of `Double`, so are stored and processed efficiently
+- enforces homogeneous units for all additions and subtractions
+- calculates resultant units for multiplications and divisions
+- unitless values are seamlessly represented by `Double`s
+- distinguishes between _dimensions_ (such as length or mass) and _units_ (such as metres or feet)
+- different units of the same dimension may be combined
+- convertions between different units of the same dimension
+- requires no new or special syntax
+- fully extensible: new units, dimensions and conversions can be introduced
+- provides implementations of base and most derived SI units
+
+## Availability
+
+Quantify has not yet been published as a binary, though work is ongoing to fix this.
+
+## Getting Started
+
+### `Quantity` types
+
+Physical quantities can be represented by different `Quantity` types, with an appropriate parameter that encodes
+the value's units. We can create a quantity by multiplying an existing `Double` (or any numeric type) by some
+unit value, such as `Metre` or `Joule`â€”which are just `Quantity` values equal to `1.0` of the appropriate unit.
+For example:
+```scala
+val distance = 58.3*Metre
+```
+
+The types of these values will be inferred. The value `distance` will get the type `Quantity[Metre[1]]`, since
+its value is a number of metres (raised to the power `1`).
+
+We can compute an `area` value by squaring the distance,
+```scala
+val area = distance*distance
+```
+which should have units of square metres (`m
+²`). Quantify represents this as the type, `Quantity[Metre[2]]`; the
+`2` singleton literal value represents the metres being squared. Likewise, a volume would have the parameter
+`Metre[3]`.
+
+We can also define:
+```scala
+val energy = Joule*28000
+```
+
+The type of the `energy` value _could_ have been defined as `Quantity[Joule[1]]`, but 1 J is equivalent to 1 kg
+m
+² s
+¯
+², and it's more useful for the type to reflect a product of simpler units (even though we can use the
+`Joule` value to construct it).
+
+So the type of `energy` is `Quantity[Kilogram[1] & Metre[2] & Second[-2]]`, using a combination of three SI base
+units raised to different powers. They are combined into an intersection type with the `&` type operator, which
+provides the useful property that the order of the intersection is unimportant;
+`Second[-2] & Metre[2] & Kilogram[1]` is an _identical_ type, much as `kg m
+² s
+¯
+²` and `s
+¯
+² m
+² kg` are identical
+units.
+
+Just as we could construct an area by multiplying two lengths, we can compute a new value with appropriate units
+by combining, say, `area` and `energy`,
+```scala
+val volume = distance*distance*distance
+val energyDensity = energy/volume
+```
+and its type will be inferred with the parameter `Kilogram[1] & Metre[-1] & Second[-2]`.
+
+If we had instead calculated `energy/area`, whose units do not include metres, the type would be just
+`Kilogram[1] & Second[-2]`; the redundant `Metre[0]` would be automatically elided.
+
+
+
+## Related Projects
+
+_Quantify_ has no dependencies.
+
+No other _Scala One_ libraries are dependents of _Quantify_.
+
+## Status
+
+Quantify is classified as __fledgling__. For reference, Scala One projects are
+categorized into one of the following five stability levels:
+
+- _embryonic_: for experimental or demonstrative purposes only, without any guarantees of longevity
+- _fledgling_: of proven utility, seeking contributions, but liable to significant redesigns
+- _maturescent_: major design decisions broady settled, seeking probatory adoption and refinement
+- _dependable_: production-ready, subject to controlled ongoing maintenance and enhancement; tagged as version `1.0` or later
+- _adamantine_: proven, reliable and production-ready, with no further breaking changes ever anticipated
+
+Projects at any stability level, even _embryonic_ projects, are still ready to
+be used, but caution should be taken if there is a mismatch between the
+project's stability level and the importance of your own project.
+
+Quantify is designed to be _small_. Its entire source code currently consists
+of 229 lines of code.
+
+## Building
+
+Quantify can be built on Linux or Mac OS with [Fury](/propensive/fury), however
+the approach to building is currently in a state of flux, and is likely to
+change.
+
+## Contributing
+
+Contributors to Quantify are welcome and encouraged. New contributors may like to look for issues marked
+<a href="https://github.com/propensive/quantify/labels/beginner">beginner</a>.
+
+We suggest that all contributors read the [Contributing Guide](/contributing.md) to make the process of
+contributing to Quantify easier.
+
+Please __do not__ contact project maintainers privately with questions unless
+there is a good reason to keep them private. While it can be tempting to
+repsond to such questions, private answers cannot be shared with a wider
+audience, and it can result in duplication of effort.
+
+## Author
+
+Quantify was designed and developed by Jon Pretty, and commercial support and training is available from
+[Propensive O&Uuml;](https://propensive.com/).
+
+
+
+## Name
+
+TBC
+
+## License
+
+Quantify is copyright &copy; 2023 Jon Pretty & Propensive O&Uuml;, and is made available under the
+[Apache 2.0 License](/license.md).
