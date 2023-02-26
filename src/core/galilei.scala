@@ -387,13 +387,14 @@ extends Absolute(elements), Shown[DiskPath]:
   //   if relative.ascent == 0 then fs.make(elements ++ relative.parts)
   //   else parent + relative.copy(ascent = relative.ascent - 1)
 
-  def fifo(creation: Creation = Creation.Ensure): Fifo throws IoError = root.synchronized:
+  def fifo(creation: Creation = Creation.Ensure): Fifo throws IoError =
     import IoError.*
 
+    val existant: Boolean = exists()
+
     creation match
-      case Create if exists()  => throw IoError(Op.Create, Reason.AlreadyExists, this)
-      case Expect if !exists() => throw IoError(Op.Access, Reason.DoesNotExist, this)
-      case Ensure if !exists() => ()
+      case Create if existant  => throw IoError(Op.Create, Reason.AlreadyExists, this)
+      case Expect if !existant => throw IoError(Op.Access, Reason.DoesNotExist, this)
       case _                   => ()
 
     val fifo = Fifo(this)
@@ -412,16 +413,16 @@ extends Absolute(elements), Shown[DiskPath]:
 
   def file(): Maybe[File] = if exists() && isFile then unsafely(file(Expect)) else Unset
 
-  def file(creation: Creation): File throws IoError = root.synchronized:
+  def file(creation: Creation): File throws IoError =
     import IoError.*
     
+    val existant: Boolean = exists()
     creation match
-      case Create if exists()  => throw IoError(Op.Create, Reason.AlreadyExists, this)
-      case Expect if !exists() => throw IoError(Op.Access, Reason.DoesNotExist, this)
-      case Ensure if !exists() => ()
+      case Create if existant  => throw IoError(Op.Create, Reason.AlreadyExists, this)
+      case Expect if !existant => throw IoError(Op.Access, Reason.DoesNotExist, this)
       case _                   => ()
 
-    val file = File(this)
+    val file: File = File(this)
     
     try
       if !parent.exists() && !parent.javaFile.mkdirs()
@@ -433,16 +434,17 @@ extends Absolute(elements), Shown[DiskPath]:
     
     file
 
-  def directory(creation: Creation): Directory throws IoError = root.synchronized:
+  def directory(creation: Creation): Directory throws IoError =
     import IoError.*
+    val existant: Boolean = exists()
     creation match
-      case Create if exists() =>
+      case Create if existant =>
         throw IoError(Op.Create, Reason.AlreadyExists, this)
       
-      case Expect if !exists() =>
+      case Expect if !existant =>
         throw IoError(Op.Access, Reason.DoesNotExist, this)
       
-      case Ensure if !exists() =>
+      case Ensure if !existant =>
         if !javaFile.mkdirs() then throw IoError(Op.Create, Reason.AccessDenied, this)
       
       case _ =>
