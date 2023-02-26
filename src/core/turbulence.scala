@@ -30,6 +30,7 @@ import java.util as ju
 import java.io as ji
 import java.nio as jn
 import java.lang.ref as jlr
+import java.util.concurrent.atomic as juca
 
 import scala.collection.mutable as scm
 
@@ -78,7 +79,7 @@ class Pulsar[DurationType: GenericDuration](interval: DurationType):
     catch case err: CancelError => LazyList()
 
 case class Multiplexer[KeyType, ElemType]()(using monitor: Monitor):
-  private val tasks: HashMap[KeyType, /*{monitor}*/ Task[Unit]] = HashMap()
+  private val tasks: TrieMap[KeyType, /*{monitor}*/ Task[Unit]] = TrieMap()
   private val queue: juc.LinkedBlockingQueue[Maybe[ElemType]] = juc.LinkedBlockingQueue()
 
   def close(): Unit = tasks.keys.foreach(remove(_))
@@ -91,9 +92,7 @@ case class Multiplexer[KeyType, ElemType]()(using monitor: Monitor):
       queue.put(stream.head)
       pump(key, stream.tail)
 
-  def add(key: KeyType, stream: LazyList[ElemType]): Unit = synchronized:
-    tasks(key) = Task(Text("pump")):
-      pump(key, stream)
+  def add(key: KeyType, stream: LazyList[ElemType]): Unit = tasks(key) = Task(Text("pump"))(pump(key, stream))
  
   private def remove(key: KeyType): Unit = synchronized:
     tasks -= key
@@ -101,7 +100,7 @@ case class Multiplexer[KeyType, ElemType]()(using monitor: Monitor):
   
   def stream: LazyList[ElemType] =
     def recur(): LazyList[ElemType] = queue.take() match
-      case null | Unset       => LazyList()
+      case null | Unset              => LazyList()
       case item: ElemType @unchecked => item.nn #:: recur()
     
     // FIXME: This should be identical to recur(), but recur is not tail-recursive so
@@ -150,7 +149,8 @@ extension [ElemType](stream: LazyList[ElemType])
   def cluster
       [DurationType: GenericDuration]
       (interval: DurationType, maxSize: Maybe[Int] = Unset, maxDelay: Maybe[DurationType] = Unset)
-      (using Monitor): LazyList[List[ElemType]] =
+      (using Monitor)
+      : LazyList[List[ElemType]] =
     
     def defer(stream: LazyList[ElemType], list: List[ElemType], expiry: Long): LazyList[List[ElemType]] =
       recur(stream, list, expiry)
@@ -265,12 +265,14 @@ class StreamBuffer[T]():
 
 
 class Funnel[ItemType]():
-  private val queue: juc.LinkedBlockingQueue[Maybe[ItemType]] = juc.LinkedBlockingQueue()
-  def put(item: ItemType): Unit = queue.put(item)
-  def stop(): Unit = queue.put(Unset)
+  private object Terminate
+  private val queue: juc.LinkedBlockingQueue[ItemType | Terminate.type] = juc.LinkedBlockingQueue()
   
-  def stream: LazyList[ItemType] =
-    LazyList.continually(queue.take()).takeWhile(_ != Unset).collect { case item: ItemType => item }
+  def put(item: ItemType): Unit = queue.put(item)
+  def stop(): Unit = queue.put(Terminate)
+  
+  def stream: LazyList[ItemType] = LazyList.continually(queue.take()).takeWhile(_ != Terminate).collect:
+    case item: ItemType => item
 
 class Gun() extends Funnel[Unit]():
   def fire(): Unit = put(())
@@ -280,21 +282,13 @@ object Tap:
     case Start, Stop
 
 class Tap(initial: Boolean = true):
-  private var on: Boolean = initial
+  private val flowing: juca.AtomicBoolean = juca.AtomicBoolean(initial)
   private val funnel: Funnel[Tap.Regulation] = Funnel()
   
-  def pause(): Unit = synchronized:
-    if on then
-      on = false
-      funnel.put(Tap.Regulation.Stop)
-
-  def open(): Unit = synchronized:
-    if !on then
-      on = true
-      funnel.put(Tap.Regulation.Start)
-  
-  def stop(): Unit = synchronized(funnel.stop())
-  def state(): Boolean = on
+  def open(): Unit = if !flowing.getAndSet(true) then funnel.put(Tap.Regulation.Start)
+  def pause(): Unit = if flowing.getAndSet(false) then funnel.put(Tap.Regulation.Stop)
+  def stop(): Unit = funnel.stop()
+  def state(): Boolean = flowing.get
   def stream: LazyList[Tap.Regulation] = funnel.stream
 
 case class IoFailure() extends Exception("I/O Failure")
