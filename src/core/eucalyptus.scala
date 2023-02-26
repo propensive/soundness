@@ -105,15 +105,18 @@ object EucalyptusMacros:
 class Log(actions: PartialFunction[Entry, LogSink & Singleton]*)(using Monitor):
   transparent inline def thisLog = this
   def tags: ListMap[Text, Text] = ListMap()
-  private val funnels: HashMap[LogSink, Funnel[Entry]] = HashMap()
+  
+  class Streamer(target: LogSink):
+    lazy val funnel: Funnel[Entry] = Funnel()
+    lazy val task: Task[Unit] = Task(t"logger")(target.write(unsafely(funnel.stream)))
+
+  private val streamers: TrieMap[LogSink, Streamer] = TrieMap()
   
   private def put(target: LogSink, entry: Entry): Unit =
-    if !funnels.contains(target) then synchronized:
-      val funnel = Funnel[Entry]()
-      Task(t"logger")(target.write(unsafely(funnel.stream)))
-      funnels(target) = funnel
-
-    funnels(target).put(entry)
+    streamers.putIfAbsent(target, Streamer(target))
+    val streamer = streamers(target)
+    streamer.funnel.put(entry)
+    streamer.task
   
   def record(entry: Entry): Unit = actions.flatMap(_.lift(entry)).foreach(thisLog.put(_, entry))
 
