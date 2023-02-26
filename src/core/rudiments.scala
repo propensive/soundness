@@ -20,6 +20,8 @@ import language.dynamics
 
 import scala.deriving.*
 
+import java.util.concurrent.atomic as juca
+
 import language.experimental.captureChecking
 
 extension [ValueType](value: ValueType)
@@ -48,8 +50,8 @@ object Sys extends Dynamic:
   def bigEndian: Boolean = java.nio.ByteOrder.nativeOrder == java.nio.ByteOrder.BIG_ENDIAN
 
 case class Counter(first: Int = 0):
-  private var id: Int = first
-  def apply(): Int = synchronized(id.tap((id += 1).waive))
+  private val atomicInt: juca.AtomicInteger = juca.AtomicInteger(first)
+  def apply(): Int = atomicInt.incrementAndGet()
 
 object AndExtractor:
   @annotation.targetName("And")

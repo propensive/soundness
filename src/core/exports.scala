@@ -22,6 +22,7 @@ export scala.util.chaining.scalaUtilChainingOps
 
 export scala.reflect.{ClassTag, Typeable}
 export scala.collection.immutable.{Set, List, ListMap, Map, TreeSet, TreeMap}
+export scala.collection.concurrent.TrieMap
 
 export Predef.{nn, genericArrayOps, identity, summon, charWrapper, $conforms, ArrowAssoc,
     intWrapper, longWrapper, shortWrapper, byteWrapper, valueOf, doubleWrapper, floatWrapper,
