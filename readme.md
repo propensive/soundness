@@ -171,7 +171,7 @@ Quantify was designed and developed by Jon Pretty, and commercial support and tr
 
 ## Name
 
-TBC
+To _quantify_ is "to qualify with respect to quantity". This is exactly Quantify's remit.
 
 ## License
 
