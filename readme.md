@@ -56,8 +56,7 @@ We can compute an `area` value by squaring the distance,
 ```scala
 val area = distance*distance
 ```
-which should have units of square metres (`m
-²`). Quantify represents this as the type, `Quantity[Metre[2]]`; the
+which should have units of square metres (`m²`). Quantify represents this as the type, `Quantity[Metre[2]]`; the
 `2` singleton literal value represents the metres being squared. Likewise, a volume would have the parameter
 `Metre[3]`.
 
@@ -67,22 +66,13 @@ val energy = Joule*28000
 ```
 
 The type of the `energy` value _could_ have been defined as `Quantity[Joule[1]]`, but 1 J is equivalent to 1 kg
-m
-² s
-¯
-², and it's more useful for the type to reflect a product of simpler units (even though we can use the
+m² s¯², and it's more useful for the type to reflect a product of simpler units (even though we can use the
 `Joule` value to construct it).
 
 So the type of `energy` is `Quantity[Kilogram[1] & Metre[2] & Second[-2]]`, using a combination of three SI base
 units raised to different powers. They are combined into an intersection type with the `&` type operator, which
 provides the useful property that the order of the intersection is unimportant;
-`Second[-2] & Metre[2] & Kilogram[1]` is an _identical_ type, much as kg m
-²s
-¯
-² and s
-¯
-²m
-²kg are identical
+`Second[-2] & Metre[2] & Kilogram[1]` is an _identical_ type, much as kg m²s¯² and s¯²m²kg are identical
 units.
 
 Just as we could construct an area by multiplying two lengths, we can compute a new value with appropriate units
