@@ -17,7 +17,7 @@
 package exoskeleton
 
 import galilei.*, filesystems.unix
-import anticipation.*, fileApi.galilei
+import anticipation.*, fileApi.galileiApi
 import gossamer.*
 import ambience.*
 import rudiments.*
