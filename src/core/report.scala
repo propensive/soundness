@@ -49,10 +49,10 @@ object TestReport:
 
 class TestReport():
   private val tests: scm.SortedMap[TestId, scm.ArrayBuffer[Outcome]] =
-    scm.TreeMap[TestId, scm.ArrayBuffer[Outcome]]().withDefault { _ => scm.ArrayBuffer[Outcome]() }
+    scm.TreeMap[TestId, scm.ArrayBuffer[Outcome]]().withDefault(scm.ArrayBuffer[Outcome]().waive)
   
   private val details: scm.SortedMap[TestId, scm.ArrayBuffer[DebugInfo]] =
-    scm.TreeMap[TestId, scm.ArrayBuffer[DebugInfo]]().withDefault { _ => scm.ArrayBuffer[DebugInfo]() }
+    scm.TreeMap[TestId, scm.ArrayBuffer[DebugInfo]]().withDefault(scm.ArrayBuffer[DebugInfo]().waive)
 
   def declareSuite(suite: TestSuite): TestReport =
     this.tap { _ => tests(suite.id) = scm.ArrayBuffer[Outcome]() }
@@ -128,14 +128,20 @@ class TestReport():
       val stats = !summaries.forall(_.count < 2)
       Table(
         Column(ansi"")(_.status.symbol),
+        
         Column(ansi"$Bold(Hash)"): s =>
           ansi"${colors.CadetBlue}(${s.id.id})",
+        
         Column(ansi"$Bold(Test)")(_.indentedName),
+        
         Column(ansi"$Bold(Count)", align = Alignment.Right, hide = !stats): s =>
           ansi"${colors.SteelBlue}(${s.iterations})",
+        
         Column(ansi"$Bold(Min)", align = Alignment.Right, hide = !stats): s =>
           if s.count < 2 then ansi"" else s.minTime,
-        Column(ansi"$Bold(${if stats then t"Avg" else t"Time"})", align = Alignment.Right) { s => s.avgTime },
+        
+        Column(ansi"$Bold(${if stats then t"Avg" else t"Time"})", align = Alignment.Right)(_.avgTime),
+        
         Column(ansi"$Bold(Max)", align = Alignment.Right, hide = !stats): s =>
           if s.count < 2 then ansi"" else s.maxTime
       )
@@ -165,7 +171,8 @@ class TestReport():
             val expected2: AnsiText = ansi"$Italic(${colors.White}($expected))"
             val found2: AnsiText = ansi"$Italic(${colors.White}($found))"
             val nl = if expected.contains(t"\n") || found.contains(t"\n") then '\n' else ' '
-            println(ansi"${colors.Silver}(The test was expected to return$nl$expected2${nl}but instead it returned$nl$found2${nl})".render)
+            val instead = ansi"but instead it returned$nl$found2$nl"
+            println(ansi"${colors.Silver}(The test was expected to return$nl$expected2$nl$instead)".render)
             println(cmp.ansi.render)
           
           case DebugInfo.Captures(map) =>
