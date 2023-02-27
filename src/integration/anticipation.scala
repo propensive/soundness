@@ -24,8 +24,12 @@ import galilei.*
 import language.experimental.captureChecking
 
 package fileApi:
-  given galilei(using fs: Filesystem): (GenericPathMaker[DiskPath] & GenericDirectoryMaker[Directory] & GenericFileMaker[File] & GenericPathReader[DiskPath] & GenericFileReader[File] & GenericDirectoryReader[Directory]) =
-    new GenericPathMaker[DiskPath] with GenericDirectoryMaker[Directory] with GenericFileMaker[File] with GenericPathReader[DiskPath] with GenericFileReader[File] with GenericDirectoryReader[Directory]:
+  given galileiApi
+      (using fs: Filesystem)
+      : (GenericPathMaker[DiskPath] & GenericDirectoryMaker[Directory] & GenericFileMaker[File] &
+          GenericPathReader[DiskPath] & GenericFileReader[File] & GenericDirectoryReader[Directory]) =
+    new GenericPathMaker[DiskPath] with GenericDirectoryMaker[Directory] with GenericFileMaker[File]
+        with GenericPathReader[DiskPath] with GenericFileReader[File] with GenericDirectoryReader[Directory]:
       def makePath(str: String, readOnly: Boolean = false): Option[DiskPath] =
         safely(fs.parse(Text(str))).option
       
