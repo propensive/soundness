@@ -16,5 +16,3 @@ type Force = Quantity[Kilogram[1] & Metre[1] & Second[-2]]
   val mass: Bodymass = 94*Kilogram
 
   val force: Force = mass*acc
-
-  println(force.renderUnits)

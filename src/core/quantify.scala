@@ -64,13 +64,11 @@ object PrincipalUnit:
   given PrincipalUnit[Temperature, Kelvin[1]]()
   given PrincipalUnit[AmountOfSubstance, Mole[1]]()
 
-object Opaques:
-
+object QuantityOpaques:
   opaque type Quantity[UnitsType <: Units[?, ?]] = Double
 
   extension [UnitsType <: Units[?, ?]](quantity: Quantity[UnitsType])
     def value: Double = quantity
-
 
   object Quantity:
     def apply[UnitsType <: Units[?, ?]](value: Double): Quantity[UnitsType] = value
@@ -81,8 +79,31 @@ object Opaques:
     inline given [UnitsType <: Units[?, ?]](using DecimalFormat): Show[Quantity[UnitsType]] =
       new Show[Quantity[UnitsType]]:
         def show(value: Quantity[UnitsType]): Text = value.render
+  
+    def renderUnits(units: Map[Text, Int]): Text =
+      units.to(List).map: (unit, power) =>
+        if power == 1 then unit
+        else 
+          val exponent: Text =
+            power.show.mapChars:
+              case '0' => '⁰'
+              case '1' => '¹'
+              case '2' => '²'
+              case '3' => '³'
+              case '4' => '⁴'
+              case '5' => '⁵'
+              case '6' => '⁶'
+              case '7' => '⁷'
+              case '8' => '⁸'
+              case '9' => '⁹'
+              case '-' => '⁻'
+              case _   => ' '
+          
+          t"$unit$exponent"
+      .join(t"·")
 
-export Opaques.Quantity
+
+export QuantityOpaques.Quantity
 
 // class Quantity[UnitsType <: Units[?, ?]](val value: Double):
 //   quantity =>
@@ -95,43 +116,22 @@ extension [UnitsType <: Units[?, ?]](inline quantity: Quantity[UnitsType])
   inline def -(quantity2: Quantity[UnitsType]): Quantity[UnitsType] = Quantity(quantity.value - quantity2.value)
   
   @targetName("times2")
-  transparent inline def *[UnitsType2 <: Units[?, ?]](@allowConversions inline quantity2: Quantity[UnitsType2]): Any =
+  transparent inline def *
+      [UnitsType2 <: Units[?, ?]](@allowConversions inline quantity2: Quantity[UnitsType2]): Any =
     ${QuantifyMacros.multiply[UnitsType, UnitsType2]('quantity, 'quantity2, false)}
   
   @targetName("divide2")
-  transparent inline def /[UnitsType2 <: Units[?, ?]](@allowConversions inline quantity2: Quantity[UnitsType2]): Any =
+  transparent inline def /
+      [UnitsType2 <: Units[?, ?]](@allowConversions inline quantity2: Quantity[UnitsType2]): Any =
     ${QuantifyMacros.multiply[UnitsType, UnitsType2]('quantity, 'quantity2, true)}
 
   inline def units: Map[Text, Int] = ${QuantifyMacros.collectUnits[UnitsType]}
-
-  inline def render(using DecimalFormat): Text = t"${quantity.value}$renderUnits"
-
-  inline def renderUnits: Text =
-    units.to(List).map: (unit, power) =>
-      if power == 1 then unit
-      else 
-        val exponent: Text =
-          power.show.mapChars:
-            case '0' => '⁰'
-            case '1' => '¹'
-            case '2' => '²'
-            case '3' => '³'
-            case '4' => '⁴'
-            case '5' => '⁵'
-            case '6' => '⁶'
-            case '7' => '⁷'
-            case '8' => '⁸'
-            case '9' => '⁹'
-            case '-' => '⁻'
-            case _   => ' '
-        
-        t"$unit$exponent"
-    .join(t"·")
+  inline def render(using DecimalFormat): Text = t"${quantity.value}${Quantity.renderUnits(units)}"
 
 extension (value: Double)
   @targetName("times")
   def *[UnitsType <: Units[?, ?]](quantity: Quantity[UnitsType]): Quantity[UnitsType] = quantity*value
   
-  // @targetName("divide")
+  // @tarhgetName("divide")
   // def /[UnitsType <: Units[?, ?]](quantity: Quantity[UnitsType]): Quantity[UnitsType] = quantity.invert*value
   
