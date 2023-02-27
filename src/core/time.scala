@@ -182,14 +182,21 @@ object Timing:
     given generic: GenericInstant[Timing.Instant] with
       def makeInstant(long: Long): Timing.Instant = long
       def readInstant(instant: Timing.Instant): Long = instant
+    
+    given ordering: Ordering[Instant] = Ordering.Long
 
   opaque type Duration = Long
 
   object Duration:
+
+    def of(millis: Long): Duration = millis
+
     given generic: GenericDuration[Long] with
       type Duration = Timing.Duration
       def makeDuration(long: Long): Timing.Duration = long
       def readDuration(duration: Timing.Duration): Long = duration
+    
+    given ordering: Ordering[Duration] = Ordering.Long
 
   extension (instant: Instant)
     @targetName("minus")
