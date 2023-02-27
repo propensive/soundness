@@ -67,6 +67,14 @@ class Task
       : ResultType =
     promise.await(duration).tap(thread.join().waive)
 
+  def map[ResultType2](fn: ResultType => ResultType2)(using Monitor, CanThrow[CancelError]): Task[ResultType2] =
+    Task(Text(id.s+".map"))(fn(await()))
+  
+  def flatMap
+      [ResultType2](fn: ResultType => Task[ResultType2])(using Monitor, CanThrow[CancelError])
+      : Task[ResultType2] =
+    Task(Text(id.s+".flatMap"))(fn(await()).await())
+
 def sleep[DurationType](using GenericDuration[DurationType])(time: DurationType)(using Monitor): Unit =
   try Thread.sleep(readDuration(time)) catch case err: InterruptedException => unsafely(throw CancelError())
 
@@ -79,3 +87,7 @@ def supervise
     (fn: Supervisor ?=> ResultType): ResultType =
   val supervisor = Supervisor(id, virtualThreads, daemon)
   fn(using supervisor)
+
+extension [ResultType](xs: Iterable[Task[ResultType]])
+  transparent inline def sequence(using monitor: Monitor): Task[Iterable[ResultType]] throws CancelError =
+    Task(Text("sequence"))(xs.map(_.await()))
