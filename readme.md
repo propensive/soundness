@@ -4,13 +4,19 @@
 
 # Quantify
 
-If we work with physical quantities, such as lengths, masses or temperatures, it's too easy to mix them up,
-especially if we use `Double`s to represent all of them, which we may want to do to avoid the space and
-performance overhead of using different class instances for each physical value.
+When working with physical quantities, such as lengths, masses or temperatures,
+it can be easy to mix up quantities with different units, especially if we
+represent all quantities with `Double`s—which is often necessary for
+performance.
 
-Quantify provides a general type, `Quantity`, for representing physical quantities with all the desirable
-guarantees we need on the homogeneity of units, but with all the performance of using `Double`s, and without
-compromising on intuitive syntax for arithmetic operations. Mismatched units on physical values are type errors.
+Quantify represents physical quantities with a generic `Quantity` type, an
+opaque alias of `Double`, which statically encodes the value's units in its
+type parameter. This provides all the desirable homogeneity constraints when
+combining quantities, with the performance of `Double`s, and without
+compromising on intuitive syntax for arithmetic operations.
+
+Quantities can be multiplied and divided arbitrarily, with new units computed
+by the compiler, and checked for consistency in additions and subtractions.
 
 ## Features
 
@@ -141,7 +147,7 @@ be used, but caution should be taken if there is a mismatch between the
 project's stability level and the importance of your own project.
 
 Quantify is designed to be _small_. Its entire source code currently consists
-of 229 lines of code.
+of 231 lines of code.
 
 ## Building
 
