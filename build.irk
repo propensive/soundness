@@ -1,0 +1,30 @@
+{
+  "modules": [
+    {
+      "name": "Umbrageous Plugin",
+      "id": "umbrageous/core",
+      "links": [],
+      "sources": ["src/core"],
+      "version": "1.0.0",
+      "docs": [],
+      "main": "umbrageous.UmbrageousPlugin",
+      "artifact": {
+        "path": "umbrageous.jar",
+        "format": "compiler-plugin"
+      }
+    },
+    {
+      "name": "Test Umbrageous Plugin",
+      "id": "umbrageous/test",
+      "links": [],
+      "plugins": [{ "id": "umbrageous/core" }],
+      "sources": ["src/test"],
+      "version": "1.0.0",
+      "docs": [],
+      "artifact": {
+        "path": "test.jar",
+        "format": "jar"
+      }
+    }
+  ]
+}
