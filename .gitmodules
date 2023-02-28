@@ -185,3 +185,6 @@
 [submodule "mod/quantify"]
 	path = mod/quantify
 	url = git@github.com:propensive/quantify
+[submodule "mod/umbrageous"]
+	path = mod/umbrageous
+	url = git@github.com:propensive/umbrageous
