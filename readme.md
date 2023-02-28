@@ -21,6 +21,7 @@ modifying its source code.
 - avoids the need to modify source code
 - avoids slow bytecode rewriting after compilation
 - customizable with compiler parameters; no configuration files required
+- automatically unshades shaded packages in downstream compilations
 
 
 ## Availability
@@ -56,6 +57,15 @@ import com.example
 will allow the shaded `com.example` package (shaded by the `shade` prefix)
 resolve anywhere in the scope of the import (whether imported, or referred to
 by fully-qualified classname).
+
+Including the parameter, `-P:umbrageous:com.example:shade` will automatically
+unshade the `com.example` package from subsequent compilations without the need
+for the import.
+
+Note that this parameter is the same whether applying or using shading.
+However, caution should be taken to avoid including nonexistant shaded
+packages: doing so will add the synthetic wildcard import, but it will not
+resolve, and a compile error will result.
 
 ### Limitations
 
@@ -95,7 +105,7 @@ be used, but caution should be taken if there is a mismatch between the
 project's stability level and the importance of your own project.
 
 Umbrageous is designed to be _small_. Its entire source code currently consists
-of 40 lines of code.
+of 46 lines of code.
 
 ## Building
 

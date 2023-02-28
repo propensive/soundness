@@ -26,6 +26,15 @@ will allow the shaded `com.example` package (shaded by the `shade` prefix)
 resolve anywhere in the scope of the import (whether imported, or referred to
 by fully-qualified classname).
 
+Including the parameter, `-P:umbrageous:com.example:shade` will automatically
+unshade the `com.example` package from subsequent compilations without the need
+for the import.
+
+Note that this parameter is the same whether applying or using shading.
+However, caution should be taken to avoid including nonexistant shaded
+packages: doing so will add the synthetic wildcard import, but it will not
+resolve, and a compile error will result.
+
 ### Limitations
 
 Umbrageous does not currently match package names that are defined in multiple
