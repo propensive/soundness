@@ -56,7 +56,8 @@ because `missingMethod` is not a member of `Int`.
 
 But despite this, if the Larceny plugin is enabled, then the code will compile.
 
-And any invalid code that is _not_ within a `captureCompileErrors` block 
+And any invalid code that is _not_ within a `captureCompileErrors` block will
+still result in the expected compilation errors.
 
 The compilation error from each `captureCompileErrors` block will be
 returned (in a `List`) from each block. We could adjust the code to see them,
