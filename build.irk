@@ -1,0 +1,26 @@
+{
+  "modules": [
+    {
+      "name": "Larceny Plugin",
+      "id": "larceny/core",
+      "links": [],
+      "sources": ["src/core"],
+      "version": "1.0.0",
+      "docs": [],
+      "main": "larceny.LarcenyPlugin",
+      "artifact": {
+        "path": "larceny.jar",
+        "format": "compiler-plugin"
+      }
+    },
+    {
+      "name": "Test Larceny Plugin",
+      "id": "larceny/test",
+      "links": [],
+      "plugins": [{ "id": "larceny/core" }],
+      "sources": ["src/test"],
+      "version": "1.0.0",
+      "docs": []
+    }
+  ]
+}
