@@ -38,11 +38,12 @@ like so:
     "Hello world".substring("5")
 
   errors.foreach:
-    case CompileError(message, code, offset) =>
-      println(s"Found error '$message' in the code '$code' with offset $offset")
+    case CompileError(id, message, code, offset) =>
+      println(s"[$id] Found error '$message' in the code '$code' with offset $offset")
 ```
 
-The three parameters of `CompileError` need some explanation:
+The four parameters of `CompileError` need some explanation:
+- `id` is an integer representing the type of error
 - `message` is the human-readable error message text that would be output by
   the compiler
 - `code` is the fragment of code which would be marked as problematic (often
@@ -64,6 +65,18 @@ while the `code` value would be `x.missingMethod` (note that the surrounding
 `println` is not considered erroneous), and the `offset` would be `2`. The
 value `2` is because the erroneous code begins `x.`, but the point of the error
 is considered to be the `m` of `missingMethod`, which is character `2`.
+
+The error IDs are defined in the Scala compiler and correspond to an
+enumeration of values. For convenience, these values are exported into the
+`ErrorId` object, and can be accessed by the `errorId` method of
+`CompileError`.
+
+`ErrorId` is also an extractor on `CompileError`, so it's possible to write:
+```scala
+captureCompileErrors(summon[Ordering[Exception]]) match
+  case ErrorId(ErrorId.MissingImplicitArgumentID) => "expected"
+  case _                                          => "unexpected"
+```
 
 ### Implementation
 
