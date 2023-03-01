@@ -26,10 +26,10 @@ def run(): Unit =
     "foo".substring("x")
     "foo".substring("y")
   
-  errors.foreach(println(_))
+  errors.map(_.errorId).foreach(println(_))
   
   val errors2 = captureCompileErrors:
-    val x = 12
-    x.whatever("y")
+    summon[Ordering[Exception]]
+
   
-  errors2.foreach(println(_))
+  errors2.map(_.errorId).foreach(println(_))

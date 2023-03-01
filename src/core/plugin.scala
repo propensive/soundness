@@ -51,7 +51,10 @@ class LarcenyTransformer() extends PluginPhase:
               val offset = pos.point - pos.start
               
               Apply(Select(Select(Ident(nme.ROOTPKG), "larceny".toTermName), "CompileError".toTermName), List(
-                Literal(Constant(diagnostic.msg.message)), Literal(Constant(code)), Literal(Constant(offset))
+                Literal(Constant(diagnostic.msg.errorId.ordinal)),
+                Literal(Constant(diagnostic.msg.message)),
+                Literal(Constant(code)),
+                Literal(Constant(offset))
               ))
             
             Apply(Ident(name), List(Block(List(), Apply(Select(Select(Ident(nme.ROOTPKG), nme.scala),nme.List),
