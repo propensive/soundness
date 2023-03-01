@@ -49,10 +49,10 @@ object TestReport:
 
 class TestReport():
   private val tests: scm.SortedMap[TestId, scm.ArrayBuffer[Outcome]] =
-    scm.TreeMap[TestId, scm.ArrayBuffer[Outcome]]().withDefault(scm.ArrayBuffer[Outcome]().waive)
+    scm.TreeMap[TestId, scm.ArrayBuffer[Outcome]]().withDefault(_ => scm.ArrayBuffer[Outcome]())
   
   private val details: scm.SortedMap[TestId, scm.ArrayBuffer[DebugInfo]] =
-    scm.TreeMap[TestId, scm.ArrayBuffer[DebugInfo]]().withDefault(scm.ArrayBuffer[DebugInfo]().waive)
+    scm.TreeMap[TestId, scm.ArrayBuffer[DebugInfo]]().withDefault(_ => scm.ArrayBuffer[DebugInfo]())
 
   def declareSuite(suite: TestSuite): TestReport =
     this.tap { _ => tests(suite.id) = scm.ArrayBuffer[Outcome]() }
@@ -110,7 +110,7 @@ class TestReport():
     def iterations: AnsiText = if count == 0 then ansi"" else count.ansi
 
   def complete(): Unit =
-    import textWidthCalculation.eastAsianScripts
+    import textWidthCalculation.uniform
     val summaries: List[Summary] = tests.to(List).map: (id, buf) =>
       val status =
         if buf.isEmpty then Status.Suite
