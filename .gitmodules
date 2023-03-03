@@ -188,3 +188,6 @@
 [submodule "mod/umbrageous"]
 	path = mod/umbrageous
 	url = git@github.com:propensive/umbrageous
+[submodule "mod/larceny"]
+	path = mod/larceny
+	url = git@github.com:propensive/larceny
