@@ -1,0 +1,5 @@
+[rudiments/core]
+refs = anticipation/http
+
+[rudiments/test]
+refs = rudiments/core probably/cli
