@@ -22,5 +22,6 @@ jobs:
       with:
         repository: 'git@github.com:propensive/wrath'
         path: 'wrath'
+        ref: '0.1.0'
     - name: Build
       run: "wrath/wrath -t rudiments/test -F"
