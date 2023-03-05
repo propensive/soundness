@@ -1,7 +1,5 @@
 package rudiments
 
-import annotation.*
-
 def contextMessage
     (module: Maybe[String] = Unset,
      typeclass: Maybe[String] = Unset,

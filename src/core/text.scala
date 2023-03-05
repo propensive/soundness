@@ -23,7 +23,7 @@ import scala.quoted.*
 
 import language.experimental.captureChecking
 
-opaque type Text = String
+opaque type Text <: Matchable = String
 
 object Text:
   def apply(string: String): Text = string
@@ -42,7 +42,7 @@ object Text:
   given stringText: Conversion[String, Text] = Text(_)
 
   given typeTest: Typeable[Text] with
-    def unapply(value: Any): Option[value.type & Text] = value match
+    def unapply(value: Any): Option[value.type & Text] = value.matchable(using Unsafe) match
       case str: String => Some(str.asInstanceOf[value.type & Text])
       case _           => None
 

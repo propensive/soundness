@@ -16,8 +16,6 @@
 
 package rudiments
 
-import scala.compiletime.*
-
 import language.experimental.captureChecking
 
 case class IncompatibleTypeError()

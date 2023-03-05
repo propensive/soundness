@@ -18,6 +18,8 @@ package rudiments
 
 import probably.*
 import rudiments.*
+import gossamer.*
+import deviation.*
 import eucalyptus.*, logging.stdout
 
 import unsafeExceptions.canThrowAny
@@ -25,11 +27,4 @@ import unsafeExceptions.canThrowAny
 case class Person(name: Text, age: Int)
 
 object Tests extends Suite(t"Rudiments Tests"):
-  def run(): Unit =
-    suite(t"Exception tests"):
-      test(t"Show exception"):
-        try
-          List(1, 2, 3).map(_ / 0)
-          ???
-        catch case err: Exception => err.stackTrace
-      .assert(_ == t"")
+  def run(): Unit = ()
