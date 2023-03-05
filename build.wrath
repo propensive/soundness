@@ -1,3 +1,4 @@
+[aviation]
 
 [aviation/core]
 refs = eucalyptus/core cardinality/core kaleidoscope/core
