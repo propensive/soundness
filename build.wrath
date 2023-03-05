@@ -1,3 +1,4 @@
+[guillotine]
 
 [guillotine/core]
 refs = eucalyptus/core ambience/core
