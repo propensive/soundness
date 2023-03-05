@@ -1,4 +1,6 @@
 
+[acyclicity]
+
 [acyclicity/core]
 refs = gossamer/core
 
