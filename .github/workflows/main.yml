@@ -20,7 +20,7 @@ jobs:
     - name: Get Wrath
       uses: actions/checkout@v2
       with:
-        repository: 'git@github.com:propensive/wrath'
+        repository: 'propensive/wrath'
         path: 'wrath'
         ref: '0.1.0'
     - name: Build
