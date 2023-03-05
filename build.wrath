@@ -1,0 +1,9 @@
+
+[wisteria/core]
+refs = deviation/core
+
+[wisteria/examples]
+refs = gossamer/cli wisteria/core
+
+[wisteria/test]
+refs = probably/cli wisteria/core wisteria/examples
