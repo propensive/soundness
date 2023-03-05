@@ -1,0 +1,7 @@
+
+[merino/core]
+refs = gossamer/core
+
+[merino/test]
+refs = probably/cli merino/core galilei/core
+
