@@ -1,3 +1,4 @@
+[honeycomb]
 
 [honeycomb/core]
 refs = gossamer/core anticipation/html anticipation/css
