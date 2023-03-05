@@ -1,3 +1,4 @@
+[tarantula]
 
 [tarantula/core]
 refs = jacinta/core telekinesis/client guillotine/core cataclysm/core honeycomb/core
