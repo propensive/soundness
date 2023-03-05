@@ -1,0 +1,7 @@
+
+[jacinta/core]
+refs = wisteria/core gossamer/core merino/core
+
+[jacinta/test]
+refs = probably/cli jacinta/core
+
