@@ -1,0 +1,7 @@
+
+[telekinesis/client]
+refs = gastronomy/core gesticulate/core telekinesis/url eucalyptus/core
+
+[telekinesis/url]
+refs = serpentine/core escapade/core
+
