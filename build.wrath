@@ -1,0 +1,7 @@
+
+[gesticulate/core]
+refs = gossamer/core anticipation/html
+
+[gesticulate/test]
+refs = probably/cli gesticulate/core
+
