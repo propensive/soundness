@@ -1,0 +1,7 @@
+
+[guillotine/core]
+refs = eucalyptus/core ambience/core
+
+[guillotine/test]
+refs = probably/cli guillotine/core
+
