@@ -1,0 +1,7 @@
+
+[quantify/core]
+refs = gossamer/core
+
+[quantify/test]
+refs = probably/cli quantify/core
+
