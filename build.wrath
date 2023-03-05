@@ -1,0 +1,7 @@
+
+[gossamer/core]
+refs = turbulence/core wisteria/core contextual/core
+
+[gossamer/test]
+refs = probably/cli gossamer/core
+
