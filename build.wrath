@@ -1,3 +1,4 @@
+[cellulose]
 
 [cellulose/core]
 refs = eucalyptus/core chiaroscuro/core kaleidoscope/core polyvinyl/core
