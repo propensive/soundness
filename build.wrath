@@ -1,3 +1,4 @@
+[gossamer]
 
 [gossamer/core]
 refs = turbulence/core wisteria/core contextual/core
