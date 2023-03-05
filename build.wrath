@@ -1,0 +1,7 @@
+
+[scintillate/server]
+refs = telekinesis/client
+
+[scintillate/servlet]
+refs = scintillate/server
+
