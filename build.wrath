@@ -1,0 +1,4 @@
+
+[iridescence/core]
+refs = cardinality/core deviation/core contextual/core
+
