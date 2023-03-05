@@ -1,3 +1,4 @@
+[telekinesis]
 
 [telekinesis/client]
 refs = gastronomy/core gesticulate/core telekinesis/url eucalyptus/core
