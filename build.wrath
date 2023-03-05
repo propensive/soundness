@@ -1,0 +1,4 @@
+
+[exoskeleton/core]
+refs = galilei/core ambience/core profanity/core
+
