@@ -1,0 +1,7 @@
+
+[probably/cli]
+refs = probably/core
+
+[probably/core]
+refs = eucalyptus/core escritoire/core chiaroscuro/core gossamer/core larceny/core
+
