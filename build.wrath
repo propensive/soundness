@@ -1,0 +1,7 @@
+
+[dissonance/core]
+refs = eucalyptus/core
+
+[dissonance/test]
+refs = probably/cli dissonance/core
+
