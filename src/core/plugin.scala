@@ -35,6 +35,8 @@ class LarcenyTransformer() extends PluginPhase:
 
   override def transformUnit(tree: Tree)(using Context): Tree =
     import ast.untpd.*
+    val classpath = ctx.settings.classpath.value
+    System.out.nn.println("Using classpath: "+classpath)
     lazy val allErrors: List[Diagnostic] =
       Subcompiler.compile(ctx.settings.classpath.value, List(ctx.compilationUnit.source.file))
 
@@ -43,19 +45,21 @@ class LarcenyTransformer() extends PluginPhase:
         tree match
           case Apply(Ident(name), List(b)) if name.toString == "captureCompileErrors" =>
             val captured = allErrors.filter: diagnostic =>
-              diagnostic.pos.point >= b.span.start && diagnostic.pos.point <= b.span.end
+              try diagnostic.pos.point >= b.span.start && diagnostic.pos.point <= b.span.end
+              catch case err: AssertionError => false
             
-            val msgs = captured.map: diagnostic =>
-              val pos = diagnostic.pos
-              val code = String(ctx.compilationUnit.source.content.slice(pos.start, pos.end))
-              val offset = pos.point - pos.start
-              
-              Apply(Select(Select(Ident(nme.ROOTPKG), "larceny".toTermName), "CompileError".toTermName), List(
-                Literal(Constant(diagnostic.msg.errorId.ordinal)),
-                Literal(Constant(diagnostic.msg.message)),
-                Literal(Constant(code)),
-                Literal(Constant(offset))
-              ))
+            val msgs =
+              captured.map: diagnostic =>
+                val pos = diagnostic.pos
+                val code = String(ctx.compilationUnit.source.content.slice(pos.start, pos.end))
+                val offset = pos.point - pos.start
+                
+                Apply(Select(Select(Ident(nme.ROOTPKG), "larceny".toTermName), "CompileError".toTermName), List(
+                  Literal(Constant(diagnostic.msg.errorId.ordinal)),
+                  Literal(Constant(diagnostic.msg.message)),
+                  Literal(Constant(code)),
+                  Literal(Constant(offset))
+                ))
             
             Apply(Ident(name), List(Block(List(), Apply(Select(Select(Ident(nme.ROOTPKG), nme.scala),nme.List),
                 msgs))))
@@ -80,13 +84,15 @@ object Subcompiler:
 
       val currentCtx: Context =
         val ctx = initCtx.fresh
-        setup(Array[String](""), ctx).map(_(1)).get
+        val ctx2 = ctx.setSetting(ctx.settings.classpath, classpath)
+        setup(Array[String](""), ctx2).map(_(1)).get
       
       def run(): List[Diagnostic] =
         val ctx = currentCtx.fresh
         val ctx2 = ctx.setReporter(reporter).setSetting(ctx.settings.classpath, classpath)
         val run = Scala3.newRun(using ctx2)
         run.compile(sources)
+        finish(Scala3, run)(using ctx2)
         reporter.errors.to(List)
     
     driver.run()
