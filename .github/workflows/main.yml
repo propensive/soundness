@@ -18,9 +18,9 @@ jobs:
         distribution: 'temurin'
         java-version: '11'
     - name: Get Wrath
-      uses: gautemo/fetch-api-data-action@1.0.2
+      uses: actions/checkout@v2
       with:
-        url: 'https://github.com/propensive/wrath/releases/download/0.1.0/wrath'
-        file: 'wrath'
+        repository: 'git@github.com:propensive/wrath'
+        path: 'wrath'
     - name: Build
-      run: "./wrath -t rudiments/test -F"
+      run: "wrath/wrath -t rudiments/test -F"
