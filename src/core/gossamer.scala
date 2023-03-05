@@ -20,12 +20,10 @@ import rudiments.*
 import deviation.*
 import turbulence.*
 import contextual.*
-import wisteria.*
 
 import language.experimental.captureChecking
 
 import scala.reflect.*
-import scala.util.*
 
 import java.util.regex.*
 import java.net.{URLEncoder, URLDecoder}
@@ -36,7 +34,6 @@ enum Bidi:
   case Ltr, Rtl
 
 export Bidi.Ltr, Bidi.Rtl
-
 
 @missingContext("a contextual TextWidthCalculator is required to work out the horizontal space a string of text takes when rendered in a monospaced font; for most purposes,\n\n    gossamer.textWidthCalculation.uniform\n\nwill suffice, but if using East Asian scripts,\n\n    import gossamer.textWidthCalculation.eastAsianScripts\n\nshould be used.")
 trait TextWidthCalculator:

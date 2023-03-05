@@ -20,8 +20,11 @@ import probably.*
 import rudiments.*
 import turbulence.*, characterEncodings.utf8
 import eucalyptus.*, logging.stdout
+import larceny.*
 
 import unsafeExceptions.canThrowAny
+
+import textWidthCalculation.uniform
 
 case class Person(name: Text, age: Int)
 
@@ -371,7 +374,7 @@ object Tests extends Suite(t"Gossamer Tests"):
       .assert(_ == t"A.B.C.")
 
       test(t"Map over a text's characters"):
-        t"ABC".map { char => char.toLower }: Text
+        t"ABC".mapChars { char => char.toLower }: Text
       .assert(_ == t"abc")
 
       test(t"Check an empty Text is empty"):
@@ -549,6 +552,12 @@ object Tests extends Suite(t"Gossamer Tests"):
       test(t"Capitalize an uppercase word does not change it"):
         t"HELLO".capitalize
       .assert(_ == t"HELLO")
+
+    suite(t"Compile errors"):
+      test(t"Check that Text and String are incompatible"):
+        captureCompileErrors:
+          val x: String = Text("text")
+      .assert(_.head.errorId == ErrorId.TypeMismatchID)
 
     suite(t"Show tests"):
       test(t"Show a string"):
