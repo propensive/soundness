@@ -1,0 +1,7 @@
+
+[cellulose/core]
+refs = eucalyptus/core chiaroscuro/core kaleidoscope/core polyvinyl/core
+
+[cellulose/test]
+refs = probably/cli cellulose/core aviation/core
+
