@@ -19,7 +19,6 @@ package anticipation
 import annotation.implicitNotFound
 
 import java.nio.file as jnf
-import java.io as ji
 
 @implicitNotFound("""|anticipation: a contextual DirectoryProvider[${T}] instance is required, for example one of:
                      |    import filesystemIntegration.javaNioPath  // represent a directory as a java.nio.Path (requires Dierutic)
