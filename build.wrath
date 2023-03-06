@@ -4,6 +4,9 @@ target = anticipation/all
 [anticipation/css]
 src = src/css
 
+[anticipation/url]
+src = src/url
+
 [anticipation/html]
 src = src/html
 
