@@ -1,5 +1,8 @@
 [cosmopolite]
+target = cosmopolite/core
+repos = propensive/gossamer
 
 [cosmopolite/core]
+src = src/core
 refs = gossamer/core
 
