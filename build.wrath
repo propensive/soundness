@@ -1,5 +1,8 @@
 [exoskeleton]
+repos = propensive/galilei propensive/ambience propensive/profanity
+target = exoskeleton/core
 
 [exoskeleton/core]
+src = src/core
 refs = galilei/core ambience/core profanity/core
 
