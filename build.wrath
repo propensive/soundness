@@ -1,5 +1,8 @@
 [gastronomy]
+target = gastronomy/core
+repos = propensive/gossamer
 
 [gastronomy/core]
+src = src/core
 refs = gossamer/core
 
