@@ -1,3 +1,5 @@
 [cardinality]
+target = cardinality/core
 
 [cardinality/core]
+src = src/core
