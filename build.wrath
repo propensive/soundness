@@ -1,10 +1,15 @@
 [wisteria]
+target = wisteria/test
+repos = propensive/probably propensive/gossamer propensive/deviation
 
 [wisteria/core]
+src = src/core
 refs = deviation/core
 
 [wisteria/examples]
+src = src/examples
 refs = gossamer/cli wisteria/core
 
 [wisteria/test]
+src = src/test
 refs = probably/cli wisteria/core wisteria/examples
