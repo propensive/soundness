@@ -1,5 +1,8 @@
 [caesura]
+target = caesura/core
+repos = propensive/wisteria propensive/gossamer
 
 [caesura/core]
+src = src/core
 refs = wisteria/core gossamer/core
 
