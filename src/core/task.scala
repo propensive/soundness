@@ -16,7 +16,7 @@ sealed trait Monitor:
     unsafely(if !continue then cleanup.pipe((throw CancelError()).waive))
 
   def fork(runnable: Runnable, id: Text): Thread =
-    if virtualThreads then Thread.ofVirtual.nn.name(id.s).nn.start(runnable).nn
+    if virtualThreads then throw Mistake("Not yet supported") //Thread.ofVirtual.nn.name(id.s).nn.start(runnable).nn
     else Thread(runnable, id.s).nn.tap(_.setDaemon(daemon)).tap(_.start())
   
   def child(childId: Text): TaskMonitor = TaskMonitor(Text(id.s+"/"+childId.s), this)
