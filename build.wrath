@@ -1,5 +1,8 @@
 [hyperbole]
+target = hyperbole/core
+repos = propensive/harlequin propensive/escapade propensive/escritoire propensive/dendrology
 
 [hyperbole/core]
+src = src/core
 refs = harlequin/core escapade/core escritoire/core dendrology/core
 
