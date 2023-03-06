@@ -1,7 +1,11 @@
 [rudiments]
+repos = propensive/anticipation propensive/probably
+target = rudiments/test
 
 [rudiments/core]
+src = src/core
 refs = anticipation/css anticipation/http
 
 [rudiments/test]
+src = src/test
 refs = rudiments/core probably/cli
