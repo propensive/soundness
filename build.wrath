@@ -1,5 +1,8 @@
 [cataclysm]
+target = cataclysm/core
+repos = propensive/gossamer propensive/iridescence propensive/anticipation
 
 [cataclysm/core]
+src = src/core
 refs = gossamer/core iridescence/core anticipation/css anticipation/html
 
