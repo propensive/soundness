@@ -1,5 +1,8 @@
 [imperial]
+target = imperial/core
+repos = propensive/anticipation
 
 [imperial/core]
+src = src/core
 refs = anticipation/file deviation/core ambience/core
 
