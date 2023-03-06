@@ -1,6 +1,20 @@
 [anticipation]
+target = anticipation/all
+
 [anticipation/css]
+src = src/css
+
 [anticipation/html]
+src = src/html
+
 [anticipation/http]
+src = src/http
+
 [anticipation/file]
+src = src/file
+
 [anticipation/time]
+src = src/time
+
+[anticipation/all]
+refs = anticipation/css anticipation/html anticipation/http anticipation/file anticipation/time
