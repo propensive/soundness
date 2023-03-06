@@ -1,3 +1,4 @@
+# This is a Wrath buildfile. More information is available at: https://github.com/propensive/wrath/
 [dissonance]
 target = dissonance/test
 repos = propensive/eucalyptus propensive/probably
