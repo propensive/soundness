@@ -1,5 +1,8 @@
 [deviation]
+repos = propensive/rudiments
+target = deviation/core
 
 [deviation/core]
+src = src/core
 refs = rudiments/core
 
