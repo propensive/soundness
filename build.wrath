@@ -1,8 +1,12 @@
 [telekinesis]
+repos = propensive/gastronomy propensive/gesticulate propensive/eucalyptus
+target = telekinesis/client
 
 [telekinesis/client]
 refs = gastronomy/core gesticulate/core telekinesis/url eucalyptus/core
+src = src/client
 
 [telekinesis/url]
+src = src/url
 refs = serpentine/core escapade/core
 
