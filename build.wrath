@@ -1,5 +1,8 @@
 [escapade]
+target = escapade/core
+repos = propensive/gossamer propensive/iridescence
 
 [escapade/core]
+src = src/core
 refs = gossamer/core iridescence/core
 
