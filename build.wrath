@@ -1,5 +1,8 @@
 [punctuation]
+target = punctuation/core
+repos = propensive/gossamer
 
 [punctuation/core]
+src = src/core
 refs = gossamer/core
 
