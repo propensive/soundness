@@ -1,5 +1,8 @@
 [profanity]
+repos = propensive/eucalyptus
+target = profanity/core
 
 [profanity/core]
+src = src/core
 refs = eucalyptus/core
 
