@@ -1,8 +1,12 @@
 [jacinta]
+target = jacinta/test
+repos = propensive/wisteria propensive/probably propensive/merino propensive/gossamer
 
 [jacinta/core]
+src = src/core
 refs = wisteria/core gossamer/core merino/core
 
 [jacinta/test]
+src = src/test
 refs = probably/cli jacinta/core
 
