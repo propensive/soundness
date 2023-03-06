@@ -1,8 +1,12 @@
 [cellulose]
+target = cellulose/test
+repos = propensive/eucalyptus propensive/chiaroscuro propensive/kaleidoscope propensive/polyvinyl
 
 [cellulose/core]
+src = src/core
 refs = eucalyptus/core chiaroscuro/core kaleidoscope/core polyvinyl/core
 
 [cellulose/test]
+src = src/test
 refs = probably/cli cellulose/core aviation/core
 
