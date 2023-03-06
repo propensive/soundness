@@ -1,5 +1,8 @@
 [polyvinyl]
+target = polyvinyl/core
+repos = propensive/rudiments
 
 [polyvinyl/core]
+src = src/core
 refs = rudiments/core
 
