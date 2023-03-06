@@ -1,5 +1,8 @@
 [hieronymus]
+target = hieronymus/core
+repos = propensive/kaleidoscope
 
 [hieronymus/core]
+src = src/core
 refs = kaleidoscope/core
 
