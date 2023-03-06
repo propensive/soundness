@@ -1,5 +1,8 @@
 [xylophone]
+target = xylophone/core
+repos = propensive/wisteria propensive/gossamer
 
 [xylophone/core]
+src = src/core
 refs = wisteria/core gossamer/core
 
