@@ -1,5 +1,8 @@
 [surveillance]
+repos = propensive/anticipation propensive/eucalyptus propensive/serpentine
+target = surveillance/core
 
 [surveillance/core]
+src = src/core
 refs = anticipation/file eucalyptus/core serpentine/core
 
