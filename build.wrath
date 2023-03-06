@@ -1,2 +1,5 @@
+[larceny]
+target = larceny/core
 
 [larceny/core]
+src = src/core
