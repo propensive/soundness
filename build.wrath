@@ -1,5 +1,8 @@
 [turbulence]
+repos = propensive/parasitism propensive/diuretic
+target = turbulence/core
 
 [turbulence/core]
+src = src/core
 refs = parasitism/core diuretic/core
 
