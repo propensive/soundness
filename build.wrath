@@ -1,8 +1,12 @@
 [scintillate]
+target = scintillate/servlet
+repos = propensive/telekinesis
 
 [scintillate/server]
+src = src/server
 refs = telekinesis/client
 
 [scintillate/servlet]
+src = src/servlet
 refs = scintillate/server
 
