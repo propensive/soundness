@@ -1,5 +1,8 @@
 [chiaroscuro]
+target = chiaroscuro/core
+repos = propensive/dissonance propensive/dendrology propensive/escritoire
 
 [chiaroscuro/core]
+src = src/core
 refs = dissonance/core dendrology/core escritoire/core
 
