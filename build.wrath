@@ -1,5 +1,8 @@
 [ambience]
+target = ambience/core
+repos = propensive/rudiments propensive/anticipation
 
 [ambience/core]
+src = src/core
 refs = rudiments/core anticipation/file
 
