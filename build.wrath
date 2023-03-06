@@ -1,5 +1,8 @@
 [serpentine]
+target = serpentine/core
+repos = propensive/gossamer propensive/anticipation
 
 [serpentine/core]
+src = src/core
 refs = gossamer/core anticipation/html
 
