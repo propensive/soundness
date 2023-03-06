@@ -1,5 +1,8 @@
 [diuretic]
+repos = propensive/anticipation
+target = diuretic/core
 
 [diuretic/core]
+src = src/core
 refs = anticipation/file anticipation/url anticipation/time
 
