@@ -1,5 +1,8 @@
 [escritoire]
+target = escritoire/core
+repos = propensive/escapade propensive/hieronymus
 
 [escritoire/core]
+src = src/core
 refs = hieronymus/core escapade/core
 
