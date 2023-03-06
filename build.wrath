@@ -1,8 +1,12 @@
 [quantify]
+repos = propensive/gossamer propensive/probably
+target = quantify/test
 
 [quantify/core]
+src = src/core
 refs = gossamer/core
 
 [quantify/test]
+src = src/test
 refs = probably/cli quantify/core
 
