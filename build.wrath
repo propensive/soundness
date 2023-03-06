@@ -1,5 +1,8 @@
 [parasitism]
+target = parasitism/core
+repos = propensive/deviation propensive/anticipation
 
 [parasitism/core]
+src = src/core
 refs = deviation/core anticipation/time
 
