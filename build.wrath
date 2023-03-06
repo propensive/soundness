@@ -1,5 +1,8 @@
 [tarantula]
+repos = propensive/jacinta propensive/telekinesis propensive/guillotine propensive/cataclysm propensive/honeycomb
+target = tarantula/core
 
 [tarantula/core]
+src = src/core
 refs = jacinta/core telekinesis/client guillotine/core cataclysm/core honeycomb/core
 
