@@ -1,3 +1,4 @@
+# This is a Wrath buildfile. More information is available at: https://github.com/propensive/wrath/
 [jacinta]
 target = jacinta/test
 repos = propensive/wisteria propensive/probably propensive/merino propensive/gossamer
