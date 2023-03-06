@@ -1,5 +1,8 @@
 [adversaria]
+target = adversaria/core
+repos = propensive/rudiments
 
 [adversaria/core]
+src = src/core
 refs = rudiments/core
 
