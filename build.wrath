@@ -1,5 +1,8 @@
 [eucalyptus]
+repos = propensive/escapade
+target = eucalyptus/core
 
 [eucalyptus/core]
+src = src/core
 refs = escapade/core
 
