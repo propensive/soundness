@@ -1,6 +1,9 @@
 [gesticulate]
+target = gesticulate/test
+repos = propensive/probably propensive/gossamer propensive/anticipation
 
 [gesticulate/core]
+src = src/core
 refs = gossamer/core anticipation/html
 
 [gesticulate/test]
