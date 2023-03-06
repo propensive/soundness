@@ -1,5 +1,8 @@
 [harlequin]
+target = harlequin/core
+repos = propensive/gossamer propensive/kaleidoscope
 
 [harlequin/core]
+src = src/core
 refs = gossamer/core kaleidoscope/core
 
