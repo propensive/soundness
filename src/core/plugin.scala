@@ -36,7 +36,7 @@ class LarcenyTransformer() extends PluginPhase:
   override def transformUnit(tree: Tree)(using Context): Tree =
     import ast.untpd.*
     val classpath = ctx.settings.classpath.value
-    System.out.nn.println("Using classpath: "+classpath)
+    //System.out.nn.println("Using classpath: "+classpath)
     lazy val allErrors: List[Diagnostic] =
       Subcompiler.compile(ctx.settings.classpath.value, List(ctx.compilationUnit.source.file))
 
