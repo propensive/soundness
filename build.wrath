@@ -1,5 +1,8 @@
 [aviation]
+repos = propensive/eucalyptus propensive/cardinality propensive/kaleidoscope
+target = aviation/core
 
 [aviation/core]
+src = src/core
 refs = eucalyptus/core cardinality/core kaleidoscope/core
 
