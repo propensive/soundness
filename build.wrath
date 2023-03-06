@@ -1,6 +1,8 @@
-
 [acyclicity]
+target = acyclicity/core
+repos = propensive/gossamer
 
 [acyclicity/core]
+src = src/core
 refs = gossamer/core
 
