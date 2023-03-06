@@ -1,5 +1,8 @@
 [galilei]
+target = galilei/core
+repos = propensive/deviation propensive/serpentine propensive/eucalyptus
 
 [galilei/core]
+src = src/core
 refs = deviation/core serpentine/core eucalyptus/core
 
