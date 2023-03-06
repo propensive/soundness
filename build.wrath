@@ -1,5 +1,8 @@
 [iridescence]
+target = iridescence/core
+repos = propensive/deviation propensive/cardinality propensive/contextual
 
 [iridescence/core]
+src = src/core
 refs = cardinality/core deviation/core contextual/core
 
