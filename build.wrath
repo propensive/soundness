@@ -1,3 +1,4 @@
+# This is a Wrath buildfile. More information is available at: https://github.com/propensive/wrath/
 [surveillance]
 repos = propensive/anticipation propensive/eucalyptus propensive/serpentine
 target = surveillance/core
