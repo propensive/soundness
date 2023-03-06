@@ -1,8 +1,12 @@
 [dissonance]
+target = dissonance/test
+repos = propensive/eucalyptus propensive/probably
 
 [dissonance/core]
+src = src/core
 refs = eucalyptus/core
 
 [dissonance/test]
+src = src/test
 refs = probably/cli dissonance/core
 
