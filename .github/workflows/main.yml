@@ -24,4 +24,4 @@ jobs:
         path: 'wrath'
         ref: '0.2.5'
     - name: Build
-      run: "wrath/wrath -x -F"
+      run: "wrath/wrath -F"
