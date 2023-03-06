@@ -1,8 +1,12 @@
 [merino]
+target = merino/test
+repos = propensive/gossamer propensive/probably propensive/galilei
 
 [merino/core]
+src = src/core
 refs = gossamer/core
 
 [merino/test]
+src = src/test
 refs = probably/cli merino/core galilei/core
 
