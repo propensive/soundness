@@ -1,8 +1,12 @@
 [gossamer]
+repos = propensive/wisteria propensive/turbulence propensive/contextual
+target = gossamer/test
 
 [gossamer/core]
+src = src/core
 refs = turbulence/core wisteria/core contextual/core
 
 [gossamer/test]
+src = src/test
 refs = probably/cli gossamer/core
 
