@@ -1,8 +1,12 @@
 [guillotine]
+repos = propensive/eucalyptus propensive/ambience
+target = guillotine/test
 
 [guillotine/core]
+src = src/core
 refs = eucalyptus/core ambience/core
 
 [guillotine/test]
+src = src/test
 refs = probably/cli guillotine/core
 
