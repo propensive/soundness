@@ -1,5 +1,8 @@
 [honeycomb]
+target = honeycomb/core
+repos = propensive/anticipation propensive/gossamer
 
 [honeycomb/core]
+src = src/core
 refs = gossamer/core anticipation/html anticipation/css
 
