@@ -1,8 +1,12 @@
 [probably]
+repos = propensive/eucalyptus propensive/escritoire propensive/chiaroscuro propensive/gossamer propensive/larceny
+target = probably/cli
 
 [probably/cli]
 refs = probably/core
+src = src/cli
 
 [probably/core]
+src = src/core
 refs = eucalyptus/core escritoire/core chiaroscuro/core gossamer/core larceny/core
 
