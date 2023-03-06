@@ -9,3 +9,4 @@ refs = anticipation/css anticipation/http
 [rudiments/test]
 src = src/test
 refs = rudiments/core probably/cli
+main = rudiments.Tests
