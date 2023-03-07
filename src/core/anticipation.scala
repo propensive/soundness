@@ -16,7 +16,6 @@
 
 package anticipation
 
-import anticipation.*
 import rudiments.*
 import deviation.*
 import galilei.*
