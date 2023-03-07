@@ -10,4 +10,4 @@ refs = turbulence/core wisteria/core contextual/core
 [gossamer/test]
 src = src/test
 refs = probably/cli gossamer/core
-
+main = gossamer.Tests
