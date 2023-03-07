@@ -1,6 +1,6 @@
 # This is a Wrath buildfile. More information is available at: https://github.com/propensive/wrath/
 [telekinesis]
-repos = propensive/gastronomy propensive/gesticulate propensive/eucalyptus
+repos = propensive/gastronomy propensive/gesticulate propensive/eucalyptus propensive/serpentine
 target = telekinesis/client
 
 [telekinesis/client]
