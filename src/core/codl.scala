@@ -220,7 +220,7 @@ object Codl:
     import State.*
 
     @tailrec
-    def cue(count: Int = 0): (Character, Int) throws CodlError =
+    def cue(count: Int = 0)(using CanThrow[CodlError]): (Character, Int) =
       val ch = reader.next()
       if ch.char == '\n' || ch.char == ' ' then cue(count + 1) else (ch, count)
     

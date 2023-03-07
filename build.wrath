@@ -10,4 +10,4 @@ refs = eucalyptus/core chiaroscuro/core kaleidoscope/core polyvinyl/core
 [cellulose/test]
 src = src/test
 refs = probably/cli cellulose/core aviation/core
-
+main = cellulose.Tests
