@@ -42,6 +42,7 @@
 [<img alt="GitHub Workflow" src="https://img.shields.io/github/actions/workflow/status/propensive/quantify/main.yml?style=for-the-badge" height="24">](https://github.com/propensive/quantify/actions)
 [<img alt="GitHub Workflow" src="https://img.shields.io/github/actions/workflow/status/propensive/rudiments/main.yml?style=for-the-badge" height="24">](https://github.com/propensive/rudiments/actions)
 [<img alt="GitHub Workflow" src="https://img.shields.io/github/actions/workflow/status/propensive/scintillate/main.yml?style=for-the-badge" height="24">](https://github.com/propensive/scintillate/actions)
+[<img alt="GitHub Workflow" src="https://img.shields.io/github/actions/workflow/status/propensive/serpentine/main.yml?style=for-the-badge" height="24">](https://github.com/propensive/serpentine/actions)
 [<img alt="GitHub Workflow" src="https://img.shields.io/github/actions/workflow/status/propensive/surveillance/main.yml?style=for-the-badge" height="24">](https://github.com/propensive/surveillance/actions)
 [<img alt="GitHub Workflow" src="https://img.shields.io/github/actions/workflow/status/propensive/tarantula/main.yml?style=for-the-badge" height="24">](https://github.com/propensive/tarantula/actions)
 [<img alt="GitHub Workflow" src="https://img.shields.io/github/actions/workflow/status/propensive/telekinesis/main.yml?style=for-the-badge" height="24">](https://github.com/propensive/telekinesis/actions)
