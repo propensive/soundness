@@ -1,6 +1,6 @@
 # This is a Wrath buildfile. More information is available at: https://github.com/propensive/wrath/
 [guillotine]
-repos = propensive/eucalyptus propensive/ambience propensive/probably
+repos = propensive/eucalyptus propensive/ambience propensive/probably probably/ambience
 target = guillotine/test
 
 [guillotine/core]
@@ -10,4 +10,5 @@ refs = eucalyptus/core ambience/core
 [guillotine/test]
 src = src/test
 refs = probably/cli guillotine/core
+main = guillotine.Tests
 

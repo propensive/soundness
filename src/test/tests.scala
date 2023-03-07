@@ -19,14 +19,13 @@ package guillotine
 import contextual.*
 import rudiments.*
 import gossamer.*
+import turbulence.*
+import ambience.*
 import escapade.*
 import probably.*
-import eucalyptus.*
-import scala.quoted.*
+import eucalyptus.*, logging.silent
 
 import unsafeExceptions.canThrowAny
-
-given Log(Everything.fine |-> Stdout)
 
 object Tests extends Suite(t"Guillotine tests"):
   def run(): Unit =
@@ -166,15 +165,15 @@ object Tests extends Suite(t"Guillotine tests"):
 
     suite(t"Execution tests"):
 
-      given Env = envs.enclosing
+      given Environment = environments.system
 
       test(t"Echo string"):
         sh"echo hello".exec[Text]()
       .check(_ == t"hello")
 
       test(t"substitute string into echo"):
-        val string = "Hello world!"
-        sh"echo $string".exec[Text]()
+        val text = t"Hello world!"
+        sh"echo $text".exec[Text]()
       .check(_ == t"Hello world!")
 
       test(t"pipe output through two commands"):
@@ -186,8 +185,8 @@ object Tests extends Suite(t"Guillotine tests"):
       .assert(_ == List("Hello world"))
 
       test(t"read stream of bytes"):
-        sh"echo 'Hello world'".exec[DataStream]().slurp(12).to(List)
-      .assert(_ == List(72, 101, 108, 108, 111, 32, 119, 111, 114, 108, 100, 10))
+        sh"echo 'Hello world'".exec[LazyList[Bytes]]().read[Bytes]
+      .assert(_ == Bytes(72, 101, 108, 108, 111, 32, 119, 111, 114, 108, 100, 10))
 
       test(t"fork sleeping process"):
         val t0 = System.currentTimeMillis
