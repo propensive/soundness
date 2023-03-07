@@ -24,9 +24,9 @@ import ambience.*
 import cataclysm.*
 import honeycomb.*
 import eucalyptus.*
+import deviation.*
 import rudiments.*
 import turbulence.*, characterEncodings.utf8
-import deviation.*
 import gesticulate.*
 import parasitism.*
 import anticipation.*, timeApi.long
@@ -163,11 +163,6 @@ case class WebDriver(server: Browser#Server):
     
     Session(json.value.sessionId.as[Text])
 
-extension (elems: List[WebDriver#Session#Element])
-  @targetName("at")
-  def /[T](value: T)(using el: ElementLocator[T])(using Log): List[WebDriver#Session#Element] =
-    elems.flatMap(_ / value)
-    
 case class ElementLocator[-T](strategy: Text, value: T => Text)
 
 object ElementLocator:
@@ -177,4 +172,4 @@ object ElementLocator:
   given ElementLocator[DomId](t"css selector", v => t"#${v.name}")
   given ElementLocator[Cls](t"css selector", v => t".${v.name}")
 
-given realm: Realm(t"tarantula")
+given realm: Realm = Realm(t"tarantula")
