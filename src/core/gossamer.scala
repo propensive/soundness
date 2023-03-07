@@ -161,8 +161,8 @@ extension (text: Text)
   def contains(char: Char): Boolean = text.s.indexOf(char) != -1
 
   @tailrec
-  def where(pred: Char -> Boolean, idx: Maybe[Int] = Unset, bidi: Bidi = Ltr)
-            : Int throws OutOfRangeError = bidi match
+  def where(pred: Char -> Boolean, idx: Maybe[Int] = Unset, bidi: Bidi = Ltr)(using CanThrow[OutOfRangeError])
+            : Int = bidi match
     case Ltr =>
       val index = idx.or(0)
       if index >= text.length || index < 0 then throw OutOfRangeError(index, 0, text.s.length)
