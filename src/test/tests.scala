@@ -19,7 +19,7 @@ package merino
 import probably.*
 import gossamer.*
 import galilei.*, filesystems.unix
-import anticipation.*, integration.galileiPath
+import anticipation.*, fileApi.galileiApi
 import eucalyptus.*
 import serpentine.*
 import rudiments.*
