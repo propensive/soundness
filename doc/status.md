@@ -40,13 +40,10 @@
 [<img alt="GitHub Workflow" src="https://img.shields.io/github/actions/workflow/status/propensive/profanity/main.yml?style=for-the-badge" height="24">](https://github.com/propensive/profanity/actions)
 [<img alt="GitHub Workflow" src="https://img.shields.io/github/actions/workflow/status/propensive/punctuation/main.yml?style=for-the-badge" height="24">](https://github.com/propensive/punctuation/actions)
 [<img alt="GitHub Workflow" src="https://img.shields.io/github/actions/workflow/status/propensive/quantify/main.yml?style=for-the-badge" height="24">](https://github.com/propensive/quantify/actions)
-by the compiler, and checked for consistency in additions and subtractions.
-- enforces homogeneous units for all additions and subtractions
 [<img alt="GitHub Workflow" src="https://img.shields.io/github/actions/workflow/status/propensive/rudiments/main.yml?style=for-the-badge" height="24">](https://github.com/propensive/rudiments/actions)
 [<img alt="GitHub Workflow" src="https://img.shields.io/github/actions/workflow/status/propensive/scintillate/main.yml?style=for-the-badge" height="24">](https://github.com/propensive/scintillate/actions)
 [<img alt="GitHub Workflow" src="https://img.shields.io/github/actions/workflow/status/propensive/surveillance/main.yml?style=for-the-badge" height="24">](https://github.com/propensive/surveillance/actions)
 [<img alt="GitHub Workflow" src="https://img.shields.io/github/actions/workflow/status/propensive/tarantula/main.yml?style=for-the-badge" height="24">](https://github.com/propensive/tarantula/actions)
-  // Browser actions are carried out in this scope
 [<img alt="GitHub Workflow" src="https://img.shields.io/github/actions/workflow/status/propensive/telekinesis/main.yml?style=for-the-badge" height="24">](https://github.com/propensive/telekinesis/actions)
 [<img alt="GitHub Workflow" src="https://img.shields.io/github/actions/workflow/status/propensive/turbulence/main.yml?style=for-the-badge" height="24">](https://github.com/propensive/turbulence/actions)
 [<img alt="GitHub Workflow" src="https://img.shields.io/github/actions/workflow/status/propensive/umbrageous/main.yml?style=for-the-badge" height="24">](https://github.com/propensive/umbrageous/actions)
