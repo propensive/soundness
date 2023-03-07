@@ -21,23 +21,13 @@ import deviation.*
 import anticipation.*
 import parasitism.*
 
-import scala.collection.IterableFactory
-import scala.collection.mutable.HashMap
-import scala.compiletime.*, ops.int.*
-
-import java.util.regex.*
-import java.util as ju
 import java.io as ji
 import java.nio as jn
-import java.lang.ref as jlr
 import java.util.concurrent.atomic as juca
 
 import scala.collection.mutable as scm
 
 import language.dynamics
-//import language.experimental.captureChecking
-
-import scala.util.{Try, Success, Failure}
 
 import java.util.concurrent as juc
 
