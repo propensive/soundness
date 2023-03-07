@@ -25,11 +25,9 @@ import turbulence.*
 import iridescence.*
 
 import scala.quoted.*
-import scala.collection.mutable.HashMap
 
 import java.text as jt
 import java.util as ju
-import java.util.concurrent as juc
 
 object Realm:
   given Show[Realm] = _.name
@@ -88,16 +86,14 @@ object Log:
     ${EucalyptusMacros.recordLog('{Level.Fail}, 'value, 'log, 'show, 'realm)}
 
 object EucalyptusMacros:
-  def recordLog[T: Type]
-               (level: Expr[Level], value: Expr[T], log: Expr[Log], show: Expr[AnsiShow[T]], realm: Expr[Realm])
-               (using Quotes)
-               : Expr[Unit] =
-    import quotes.reflect.*
-
-    '{
-      val time = Timestamp()
-      try $log.record(Entry($realm, $level, $show.ansiShow($value), time, $log.tags)) catch case e: Exception => ()
-    }
+  def recordLog
+      [T: Type]
+      (level: Expr[Level], value: Expr[T], log: Expr[Log], show: Expr[AnsiShow[T]], realm: Expr[Realm])
+      (using Quotes)
+      : Expr[Unit] = '{
+    val time = Timestamp()
+    try $log.record(Entry($realm, $level, $show.ansiShow($value), time, $log.tags)) catch case e: Exception => ()
+  }
 
 @missingContext("""|eucalyptus: a contextual Log instance is needed, for example:
                      |    import logging.stdout  // Log everything to standard output
