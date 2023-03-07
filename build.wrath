@@ -1,16 +1,12 @@
 # This is a Wrath buildfile. More information is available at: https://github.com/propensive/wrath/
 [wisteria]
-target = wisteria/test
+target = wisteria/core
 repos = propensive/probably propensive/gossamer propensive/deviation
 
 [wisteria/core]
 src = src/core
 refs = deviation/core
 
-[wisteria/examples]
-src = src/examples
-refs = gossamer/cli wisteria/core
-
 [wisteria/test]
 src = src/test
-refs = probably/cli wisteria/core wisteria/examples
+refs = probably/cli wisteria/core
