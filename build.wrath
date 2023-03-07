@@ -1,6 +1,6 @@
 # This is a Wrath buildfile. More information is available at: https://github.com/propensive/wrath/
 [merino]
-target = merino/test
+target = merino/core
 repos = propensive/gossamer propensive/probably propensive/galilei
 
 [merino/core]
