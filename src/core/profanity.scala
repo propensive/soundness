@@ -22,13 +22,10 @@ import gossamer.*
 import eucalyptus.*
 import escapade.*
 import parasitism.*
-import iridescence.*
 import turbulence.*
 import anticipation.*, timeApi.long
 
-import com.sun.jna.*
 import sun.misc.Signal
-import java.nio.*, charset.*
 import java.io as ji
 
 enum Keypress:
