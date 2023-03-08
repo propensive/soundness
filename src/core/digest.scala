@@ -18,7 +18,6 @@ package gastronomy
 
 import wisteria.*
 import rudiments.*
-import deviation.*
 import turbulence.*
 import gossamer.*
 
