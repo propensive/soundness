@@ -21,6 +21,8 @@ sealed trait Monitor:
   
   def child(childId: Text): TaskMonitor = TaskMonitor(Text(id.s+"/"+childId.s), this)
 
+  def cancel(): Unit = () // FIXME
+
 package monitors:
   given global: Monitor = new Monitor:
     def id: Text = Text("")
