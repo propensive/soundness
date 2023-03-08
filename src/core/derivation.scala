@@ -20,9 +20,9 @@ import scala.quoted.*
 
 object WisteriaMacros:
   inline def isObject[T]: Boolean = ${isObject[T]}
-  inline def anns[T]: List[Any] = ${anns[T]}
+  inline def anns[T]: List[Matchable] = ${anns[T]}
   inline def typeAnns[T]: List[Any] = ${typeAnns[T]}
-  inline def paramAnns[T]: List[(String, List[Any])] = ${paramAnns[T]}
+  inline def paramAnns[T]: List[(String, List[Matchable])] = ${paramAnns[T]}
   inline def isValueClass[T]: Boolean = ${isValueClass[T]}
   inline def defaultValue[T]: List[(String, Option[Any])] = ${defaultValue[T]}
   inline def paramTypeAnns[T]: List[(String, List[Any])] = ${paramTypeAnns[T]}
@@ -40,7 +40,7 @@ object WisteriaMacros:
 
     Expr(TypeRepr.of[T].typeSymbol.flags.is(Flags.Module))
 
-  def paramAnns[T: Type](using Quotes): Expr[List[(String, List[Any])]] =
+  def paramAnns[T: Type](using Quotes): Expr[List[(String, List[Matchable])]] =
     import quotes.reflect.*
 
     val tpe = TypeRepr.of[T]
@@ -59,12 +59,13 @@ object WisteriaMacros:
           field.name -> field.annotations.filter(filterAnn).map(_.asExpr)
       }
 
-      (constructorAnns ++ fieldAnns).filter(_(1).nonEmpty).groupBy(_(0)).to(List).map {
-        case (name, l) => Expr(name) -> l.flatMap(_(1))
-      }.map { (name, anns) => Expr.ofTuple(name, Expr.ofList(anns)) }
+      (constructorAnns ++ fieldAnns).filter(_(1).nonEmpty).groupBy(_(0)).to(List).map: (name, l) =>
+        Expr(name) -> l.flatMap(_(1))
+      .map: (name, anns) =>
+        Expr.ofTuple(name, Expr.ofList(anns.map(_.asExprOf[Matchable])))
     }
   
-  def anns[T: Type](using Quotes): Expr[List[Any]] =
+  def anns[T: Type](using Quotes): Expr[List[Matchable]] =
     import quotes.reflect.*
 
     val tpe = TypeRepr.of[T]
@@ -73,7 +74,7 @@ object WisteriaMacros:
       tpe.typeSymbol.annotations.filter { a =>
         a.tpe.typeSymbol.maybeOwner.isNoSymbol || a.tpe.typeSymbol.owner.fullName !=
             "scala.annotation.internal"
-      }.map(_.asExpr)
+      }.map(_.asExprOf[Matchable])
     }
   
   def typeAnns[T: Type](using Quotes): Expr[List[Any]] =

@@ -62,7 +62,7 @@ trait CommonDerivation[TypeClass[_]]:
     join(caseClass)
 
   inline def getParams[T, Labels <: Tuple, Params <: Tuple]
-                      (annotations: Map[String, List[Any]], typeAnnotations: Map[String, List[Any]],
+                      (annotations: Map[String, List[Matchable]], typeAnnotations: Map[String, List[Any]],
                           repeated: Map[String, Boolean], idx: Int = 0)
                       : List[CaseClass.Param[Typeclass, T]] =
 
@@ -97,13 +97,13 @@ trait Derivation[TypeClass[_]] extends CommonDerivation[TypeClass]:
         Nil
       
       case _: (s *: tail) =>
-        new SealedTrait.Subtype(typeInfo[s], IArray[Any](), IArray.from(paramTypeAnns[T]), idx,
+        new SealedTrait.Subtype(typeInfo[s], IArray[Matchable](), IArray.from(paramTypeAnns[T]), idx,
             CallByNeed(summonInline[Typeclass[s]]), x => sum.ordinal(x) == idx,
             _.asInstanceOf[s & T]) :: subtypes[T, tail](sum, idx + 1)
 
   inline def derivedMirrorSum[A](sum: Mirror.SumOf[A]): Typeclass[A] =
     val sealedTrait = SealedTrait(typeInfo[A], IArray(subtypes[A, sum.MirroredElemTypes](sum)*),
-        IArray[Any](), IArray(paramTypeAnns[A]*))
+        IArray[Matchable](), IArray(paramTypeAnns[A]*))
     
     split(sealedTrait)
 

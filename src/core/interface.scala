@@ -17,14 +17,13 @@
 package wisteria
 
 import rudiments.*
-import scala.reflect.*
 
 case class TypeInfo(owner: String, short: String, typeParams: Iterable[TypeInfo]):
   def full: String = s"$owner.$short"
 
 object CaseClass:
   trait Param[Typeclass[_], Type](val label: String, val index: Int,
-      val repeated: Boolean, val annotations: IArray[Any], val typeAnnotations: IArray[Any]):
+      val repeated: Boolean, val annotations: IArray[Matchable], val typeAnnotations: IArray[Any]):
     
     type PType
     
@@ -34,7 +33,7 @@ object CaseClass:
   
   object Param:
     def apply[F[_], T, P](name: String, idx: Int, repeated: Boolean, cbn: CallByNeed[F[P]],
-        defaultVal: CallByNeed[Option[P]], annotations: IArray[Any],
+        defaultVal: CallByNeed[Option[P]], annotations: IArray[Matchable],
         typeAnnotations: IArray[Any]): Param[F, T] =
       new CaseClass.Param[F, T](name, idx, repeated, annotations, typeAnnotations):
         type PType = P
@@ -50,7 +49,7 @@ abstract class CaseClass[Typeclass[_], Type]
                          val isObject: Boolean,
                          val isValueClass: Boolean,
                          val params: IArray[CaseClass.Param[Typeclass, Type]],
-                         val annotations: IArray[Any],
+                         val annotations: IArray[Matchable],
                          val typeAnnotations: IArray[Any]) extends Serializable:
 
   type Param = CaseClass.Param[Typeclass, Type]
@@ -64,7 +63,7 @@ abstract class CaseClass[Typeclass[_], Type]
   def rawConstruct(fieldValues: Seq[Any]): Type
 
   def param[P](name: String, idx: Int, repeated: Boolean, cbn: CallByNeed[Typeclass[P]],
-      defaultVal: CallByNeed[Option[P]], annotations: IArray[Any],
+      defaultVal: CallByNeed[Option[P]], annotations: IArray[Matchable],
       typeAnnotations: IArray[Any]): Param =
     new CaseClass.Param[Typeclass, Type](name, idx, repeated, annotations, typeAnnotations):
       type PType = P
@@ -75,7 +74,7 @@ end CaseClass
 
 case class SealedTrait[Typeclass[_], Type]
                       (typeInfo: TypeInfo, subtypes: IArray[SealedTrait.Subtype[Typeclass, Type, ?]],
-                           annotations: IArray[Any], typeAnnotations: IArray[Any])
+                           annotations: IArray[Matchable], typeAnnotations: IArray[Any])
 extends Serializable:
 
   type Subtype[S] = SealedTrait.SubtypeValue[Typeclass, Type, S]
@@ -92,7 +91,7 @@ extends Serializable:
 
 object SealedTrait:
   class Subtype[Typeclass[_], Type, SType]
-               (val typeInfo: TypeInfo, val annotations: IArray[Any], val typeAnnotations: IArray[Any],
+               (val typeInfo: TypeInfo, val annotations: IArray[Matchable], val typeAnnotations: IArray[Any],
                     val index: Int, callByNeed: CallByNeed[Typeclass[SType]], isType: Type => Boolean,
                     asType: Type => SType & Type):
 
