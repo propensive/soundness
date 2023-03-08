@@ -43,12 +43,12 @@ extension [T](value: T)
   def code(using code: ScalaCode[T]): Text = code.show(value)
   def canon(using canonical: Canonical[T]): Text = canonical.serialize(value)
 
-  inline def txt: Text = summonFrom:
+  inline def txt: Text = compiletime.summonFrom:
     case show: Show[T]      => show.show(value)
     case debug: Debug[T]    => debug.show(value)
     case code: ScalaCode[T] => code.show(value)
   
-  inline def report: Text = summonFrom:
+  inline def report: Text = compiletime.summonFrom:
     case code: ScalaCode[T] => code.show(value)
     case debug: Debug[T]    => debug.show(value)
     case show: Show[T]      => show.show(value)

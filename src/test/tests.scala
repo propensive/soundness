@@ -19,7 +19,6 @@ package gossamer
 import probably.*
 import rudiments.*
 import turbulence.*, characterEncodings.utf8
-import eucalyptus.*, logging.stdout
 import larceny.*
 
 import unsafeExceptions.canThrowAny
