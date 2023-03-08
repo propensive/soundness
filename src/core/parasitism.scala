@@ -18,9 +18,9 @@ package parasitism
 
 import rudiments.*
 import deviation.*
-import anticipation.*
+//import anticipation.*
 
-import scala.util.*
+//import scala.util.*
 
 import language.experimental.captureChecking
 
