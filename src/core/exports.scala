@@ -35,3 +35,5 @@ export scala.jdk.CollectionConverters.{IteratorHasAsScala, ListHasAsScala, MapHa
 
 export scala.annotation.{tailrec, implicitNotFound as missingContext, targetName, switch, StaticAnnotation,
     capability}
+
+export scala.compiletime.summonFrom
