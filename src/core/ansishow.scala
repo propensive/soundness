@@ -21,8 +21,6 @@ import deviation.*
 import gossamer.*
 import iridescence.*
 
-import compiletime.summonFrom
-
 trait FallbackAnsiShow:
   given AnsiShow[T: Show]: AnsiShow[T] = str => AnsiText(str.show)
 
