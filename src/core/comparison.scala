@@ -2,7 +2,6 @@ package chiaroscuro
 
 import wisteria.*
 import rudiments.*
-import deviation.*
 import gossamer.*
 import dissonance.*
 import escapade.*
