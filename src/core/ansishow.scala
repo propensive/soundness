@@ -39,7 +39,7 @@ object AnsiShow extends FallbackAnsiShow:
       case EmptyTuple =>
         ansi"$value${colors.White}(${text.head})"
       case head *: tail =>
-        val part: Text = summonFrom:
+        val part: Text = compiletime.summonFrom:
           case ds: Debug[head.type]  => ds.show(head)
           case show: Show[head.type] => show.show(head)
           case _                     => head.toString.show
