@@ -37,16 +37,14 @@ object XmlWriter extends Derivation[XmlWriter]:
   private val attributeAttribute = xmlAttribute()
 
   def join[T](caseClass: CaseClass[XmlWriter, T]): XmlWriter[T] = value =>
-    val elements =
-      caseClass.params
-        .filter(!_.annotations.contains(attributeAttribute))
-        .map { p => p.typeclass.write(p.deref(value)).copy(name = XmlName(Text(p.label))) }
+    val elements = caseClass.params
+      .filter(!_.annotations.contains(attributeAttribute))
+      .map { p => p.typeclass.write(p.deref(value)).copy(name = XmlName(Text(p.label))) }
 
-    val attributes =
-      caseClass.params
-        .filter(_.annotations.contains(attributeAttribute))
-        .map { p => XmlName(Text(p.label)) -> textElements(p.typeclass.write(p.deref(value))) }
-        .to(Map)
+    val attributes = caseClass.params
+      .filter(_.annotations.contains(attributeAttribute))
+      .map { p => XmlName(Text(p.label)) -> textElements(p.typeclass.write(p.deref(value))) }
+      .to(Map)
 
     val tag = caseClass.annotations.collect:
       case `xmlLabel`(name) => name.show

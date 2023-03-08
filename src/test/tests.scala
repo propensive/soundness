@@ -17,13 +17,9 @@
 package xylophone
 
 import probably.*
-import eucalyptus.*, logging.stdout
 import rudiments.*
-import turbulence.*
 import gossamer.*
 import printers.compact
-
-import scala.util.{Try, Success, Failure}
 
 import unsafeExceptions.canThrowAny
 
@@ -40,7 +36,6 @@ enum ColorVal:
 case class Pixel(x: Int, y: Int, color: ColorVal)
 
 object Tests extends Suite(t"Xylophone tests"):
-
   def run(): Unit =
     test(t"extract integer"):
       Xml.parse(t"""<message>1</message>""").as[Int]
@@ -169,32 +164,32 @@ object Tests extends Suite(t"Xylophone tests"):
     .assert(_ == t"<Foo/>")
 
     test(t"parse error: unclosed tag"):
-      Try(Xml.parse(t"""<foo key="value"><bar></foo>"""))
-    .assert(_ == Failure(XmlParseError(0, 24)))
+      capture(Xml.parse(t"""<foo key="value"><bar></foo>"""))
+    .assert(_ == XmlParseError(0, 24))
 
     test(t"parse error: unclosed string"):
-      Try(Xml.parse(t"""<foo key="value><bar/></foo>"""))
-    .assert(_ == Failure(XmlParseError(0, 16)))
+      capture(Xml.parse(t"""<foo key="value><bar/></foo>"""))
+    .assert(_ == XmlParseError(0, 16))
 
     test(t"read error: not an integer"):
       val xml = Xml.parse(t"""<foo>not an integer</foo>""")
-      Try(xml.as[Int])
-    .assert(Failure(IncompatibleTypeError()) == _)
+      capture(xml.as[Int])
+    .assert(IncompatibleTypeError() == _)
 
     test(t"access error; proactively resolving head nodes"):
       val xml = Xml.parse(t"""<root><company><staff><ceo><name>Xyz</name></ceo></staff></company></root>""")
-      Try(xml.company().staff().cto().name().as[Text])
-    .assert(_ == Failure(XmlAccessError(0, List(t"company", 0, t"staff", 0, t"cto"))))
+      capture(xml.company().staff().cto().name().as[Text])
+    .assert(_ == XmlAccessError(0, List(t"company", 0, t"staff", 0, t"cto")))
     
     test(t"access error; taking all children"):
       val xml = Xml.parse(t"""<root><company><staff><ceo><name>Xyz</name></ceo></staff></company></root>""")
-      Try(xml.company.staff.cto.name().as[Text])
-    .assert(_ == Failure(XmlAccessError(0, List(t"company", t"staff", t"cto", t"name"))))
+      capture(xml.company.staff.cto.name().as[Text])
+    .assert(_ == XmlAccessError(0, List(t"company", t"staff", t"cto", t"name")))
     
     test(t"access non-zero node"):
       val xml = Xml.parse(t"""<root><company><staff><ceo><name>Xyz</name></ceo></staff></company></root>""")
-      Try(xml.company(1).staff().cto.name().as[Text])
-    .assert(_ == Failure(XmlAccessError(1, List(t"company"))))
+      capture(xml.company(1).staff().cto.name().as[Text])
+    .assert(_ == XmlAccessError(1, List(t"company")))
     
     // test(t"simple literal content is as expected"): 
     //   xml"""<root attribute=""/>""".show

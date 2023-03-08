@@ -16,7 +16,6 @@
 
 package xylophone
 
-import rudiments.*
 import deviation.*
 
 extension (inline stringContext: StringContext)

@@ -1,9 +1,13 @@
 # This is a Wrath buildfile. More information is available at: https://github.com/propensive/wrath/
 [xylophone]
-target = xylophone/core
-repos = propensive/wisteria propensive/gossamer
+target = xylophone/test
+repos = propensive/wisteria propensive/gossamer propensive/probably
 
 [xylophone/core]
 src = src/core
 refs = wisteria/core gossamer/core
 
+[xylophone/test]
+src = src/test
+refs = xylophone/core probably/cli
+main = xylophone.Tests

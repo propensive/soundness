@@ -16,11 +16,9 @@
 
 package xylophone
 
-import wisteria.*
 import rudiments.*
 import deviation.*
 import gossamer.*
-import contextual.*
 import turbulence.*
 import anticipation.*
 
