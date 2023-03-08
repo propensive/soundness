@@ -47,9 +47,7 @@ object Codec extends ProductDerivation[Codec]:
   given maybe[T](using codec: Codec[T]): Codec[T | Unset.type] = new Codec[Maybe[T]]:
     def schema: CodlSchema = summon[Codec[T]].schema.optional
   
-    def serialize(value: Maybe[T]): List[IArray[CodlNode]] = value match
-      case Unset               => List()
-      case value: T @unchecked => codec.serialize(value)
+    def serialize(value: Maybe[T]): List[IArray[CodlNode]] = value.mm(codec.serialize(_)).or(List())
     
     def deserialize(value: List[Indexed]): Maybe[T] throws CodlReadError =
       if value.isEmpty then Unset else codec.deserialize(value)

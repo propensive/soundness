@@ -16,7 +16,6 @@
 
 package cellulose
 
-import java.io.*
 import gossamer.*
 import eucalyptus.*
 import rudiments.*
@@ -24,7 +23,6 @@ import deviation.*
 import contextual.*
 import turbulence.*
 import chiaroscuro.*
-import dissonance.*
 
 import language.experimental.captureChecking
 

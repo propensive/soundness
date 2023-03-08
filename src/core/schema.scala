@@ -21,9 +21,6 @@ import deviation.*
 import gossamer.*
 import turbulence.*
 import chiaroscuro.*
-import eucalyptus.*
-
-import java.io as ji
 
 import language.experimental.captureChecking
 import language.dynamics
@@ -56,7 +53,7 @@ object CodlSchema:
 sealed trait CodlSchema(val subschemas: IArray[CodlSchema.Entry], val arity: Arity,
                         val validator: Maybe[Text -> Boolean])
 extends Dynamic:
-  import CodlSchema.{Free, Entry}
+  import CodlSchema.Entry
   protected lazy val dictionary: Map[Maybe[Text], CodlSchema] = subschemas.map(_.tuple).to(Map)
   
   lazy val keyMap: Map[Maybe[Text], Int] = subschemas.map(_.key).zipWithIndex.to(Map)
@@ -113,7 +110,7 @@ object Struct:
 
 case class Struct(structSubschemas: List[CodlSchema.Entry], structArity: Arity = Arity.Optional)
 extends CodlSchema(IArray.from(structSubschemas), structArity, Unset):
-  import CodlSchema.{Free, Entry}
+  import CodlSchema.Entry
   
   def optional: Struct = Struct(structSubschemas, Arity.Optional)
   def uniqueIndex: Maybe[Int] = subschemas.indexWhere(_.schema.arity == Arity.Unique) match

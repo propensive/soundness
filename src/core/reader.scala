@@ -17,12 +17,9 @@
 package cellulose
 
 import rudiments.*
-import deviation.*
 import gossamer.*
-import eucalyptus.*
 import kaleidoscope.*
-
-import java.io.*
+import deviation.*
 
 import language.experimental.captureChecking
 
@@ -41,7 +38,7 @@ object Character:
       case _                                                          => End
 
   given Typeable[Character] with
-    def unapply(value: Any): Option[value.type & Character] = value match
+    def unapply(value: Any): Option[value.type & Character] = value.matchable(using Unsafe) match
       case char: Char => Some(value.asInstanceOf[value.type & Character])
       case _          => None
 

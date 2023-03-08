@@ -17,7 +17,6 @@
 package cellulose
 
 import rudiments.*
-import deviation.*
 import gossamer.*
 
 import java.io as ji
