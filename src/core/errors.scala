@@ -19,7 +19,7 @@ package deviation
 export rudiments.ErrorMessage
 import rudiments.*
 
-case class AggregateError(errors: List[Exception])
+case class AggregateError[ErrorType <: Exception](errors: List[ErrorType])
 extends Error(err"aggregation of errors: ${Text(errors.map(_.toString).mkString("\n", "\n", ""))}")
 
 extension (ctx: StringContext)
