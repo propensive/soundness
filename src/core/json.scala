@@ -24,11 +24,7 @@ import gossamer.*
 import anticipation.*
 import merino.*
 
-import scala.collection.mutable, collection.Factory
-import scala.util.*
-
-import scala.quoted.*
-import scala.deriving.*
+import collection.Factory
 
 import language.dynamics
 import language.experimental.captureChecking
