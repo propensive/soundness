@@ -1,6 +1,6 @@
 package umbrageous
 
-import dotty.tools.dotc.*, util.*, ast.*, core.*, Contexts.*, Decorators.*, Symbols.*, Names.*, plugins.*
+import dotty.tools.dotc.*, ast.*, core.*, Contexts.*, Decorators.*, Names.*, plugins.*
 
 class UmbrageousPlugin() extends StandardPlugin:
   val name: String = "umbrageous"
