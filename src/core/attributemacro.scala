@@ -17,7 +17,6 @@
 package honeycomb
 
 import rudiments.*
-import deviation.*
 import gossamer.*
 import anticipation.*
 
