@@ -98,7 +98,7 @@ trait Daemon()(using Log) extends App:
     case class CliClient(pid: Pid, spawnId: Int, scriptFile: Maybe[File] = Unset,
                                args: List[Text] = Nil, instanceEnv: Map[Text, Text] = Map(),
                                runDir: Maybe[Directory] = Unset):
-      given Environment(instanceEnv.get(_).maybe, key => Option(System.getProperty(key.s)).map(_.nn.show).maybe)
+      given Environment = Environment(instanceEnv.get(_).maybe, key => Option(System.getProperty(key.s)).map(_.nn.show).maybe)
       val signals: Funnel[Unit] = Funnel()
       def pwd: Directory throws EnvError = env.pwd[DiskPath].directory(Expect)
 
@@ -141,7 +141,7 @@ trait Daemon()(using Log) extends App:
         
         catch
           case err: IoError =>
-            val message: Text = err.toString
+            val message: Text = Text(err.toString)
             Log.info(t"Ignored error: $message")
           case NonFatal(err) =>
             Io.println(StackTrace(err).ansi)
