@@ -20,7 +20,7 @@ import rudiments.*
 import gossamer.*
 import kaleidoscope.*
 
-import dotty.tools.dotc.*, printing.*, core.*, parsing.*, util.*, reporting.*
+import dotty.tools.dotc.*, core.*, parsing.*, util.*, reporting.*
 
 import scala.collection.mutable as scm
 
