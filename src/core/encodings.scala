@@ -132,7 +132,9 @@ package badEncodingHandlers:
     def handle(pos: Int, bytes: Bytes, suggestion: Maybe[Char]): Maybe[Char] = '?'
     def complete(): Unit = ()
   
-  given collect(using aggregate: CanThrow[AggregateError]): ({aggregate} BadEncodingHandler) =
+  given collect
+      (using aggregate: CanThrow[AggregateError[BadEncodingError]])
+      : ({aggregate} BadEncodingHandler) =
     new BadEncodingHandler:
       private val mistakes: scm.ArrayBuffer[BadEncodingError] = scm.ArrayBuffer()
       def handle(pos: Int, bytes: Bytes, suggestion: Maybe[Char]): Maybe[Char] = Unset
