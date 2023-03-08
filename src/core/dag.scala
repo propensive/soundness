@@ -16,7 +16,6 @@
 
 package acyclicity
 
-import gossamer.*
 import rudiments.*
 
 object Dag:
