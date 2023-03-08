@@ -46,8 +46,8 @@ object AnsiShow extends FallbackAnsiShow:
         
         recurParts(tail, text.tail, ansi"$value${colors.White}(${text.head})${colors.Green}($part)")
     
-  inline given [T <: Tuple, E <: Error[T]]: AnsiShow[E] = error =>
-    recurParts[T](error.msg.parts, error.msg.text, ansi"")
+  inline given [T <: Tuple, E <: Error[T]]: AnsiShow[E] = new AnsiShow[E]:
+    def ansiShow(error: E): AnsiText = recurParts[T](error.msg.parts, error.msg.text, ansi"")
 
   given AnsiShow[StackTrace] = stack =>
     val methodWidth = stack.frames.map(_.method.length).max
