@@ -21,6 +21,8 @@ import dotty.tools.*, dotc.*, reporting.*, ast.Trees.*, ast.tpd, core.*, Constan
 
 import scala.collection.mutable as scm
 
+import language.adhocExtensions
+
 class LarcenyPlugin() extends StandardPlugin:
   val name: String = "larceny"
   override val description: String = "capture errors"

@@ -18,9 +18,9 @@ package larceny
 
 import dotty.tools.dotc.reporting as dtdr
 
-def captureCompileErrors(code: Any): List[CompileError] = code match
-  case xs: List[?] => xs.collect:
-    case error: CompileError => error
+def captureCompileErrors(code: Matchable): List[CompileError] = code match
+  case xs: List[CompileError] @unchecked => xs
+  case _ => Nil
 
 case class CompileError(id: Int, text: String, badCode: String, offset: Int):
   def errorId: dtdr.ErrorMessageID = dtdr.ErrorMessageID.fromOrdinal(id)
