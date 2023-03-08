@@ -20,8 +20,8 @@ import annotation.*
 import gossamer.*
 import rudiments.*
 import deviation.*
-import turbulence.*, characterEncodings.utf8
-import scala.collection.mutable.{HashMap, ListBuffer, ArrayBuffer}
+import turbulence.*
+import scala.collection.mutable.ArrayBuffer
 
 import language.experimental.captureChecking
 
