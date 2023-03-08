@@ -16,7 +16,7 @@
 
 package cardinality
 
-import compiletime.ops.double.*, compiletime.ops.int.ToDouble
+import compiletime.ops.double.*
 import scala.util.FromDigits
 import scala.reflect.TypeTest
 import annotation.*
