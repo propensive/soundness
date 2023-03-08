@@ -28,8 +28,6 @@ import ambience.*
 import anticipation.*, fileApi.javaIo
 
 import scala.jdk.StreamConverters.StreamHasToScala
-import scala.jdk.CollectionConverters.MapHasAsJava
-import scala.jdk.CollectionConverters.MapHasAsScala
 
 import annotation.targetName
 import java.io as ji
