@@ -17,7 +17,6 @@
 package serpentine
 
 import rudiments.*
-import deviation.*
 import gossamer.*
 
 import scala.quoted.*
