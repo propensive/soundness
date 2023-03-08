@@ -10,4 +10,4 @@ refs = wisteria/core gossamer/core merino/core
 [jacinta/test]
 src = src/test
 refs = probably/cli jacinta/core
-
+main = jacinta.Tests
