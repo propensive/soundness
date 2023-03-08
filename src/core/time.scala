@@ -3,14 +3,10 @@ package aviation
 import rudiments.*
 import deviation.*
 import gossamer.*
-import cardinality.*
 import anticipation.*
-import kaleidoscope.*
 
 import scala.quoted.*
 import java.util as ju
-
-import math.Ordering.Implicits.infixOrderingOps
 
 package calendars:
   given julian: RomanCalendar() with
