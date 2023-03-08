@@ -56,14 +56,14 @@ object CodlToken:
 
 object Codl:
   def read[T: Codec](source: Any)(using readable: Readable[source.type, Text])
-          : T throws AggregateError | CodlReadError | StreamCutError = // FIXME: Should only be aggregate error
+          : T throws AggregateError[CodlError] | CodlReadError | StreamCutError = // FIXME: Should only be aggregate error
     summon[Codec[T]].schema.parse(readable.read(source)).as[T]
   
   def parse[SourceType]
            (source: SourceType, schema: CodlSchema = CodlSchema.Free, subs: List[Data] = Nil,
                 fromStart: Boolean = false)
            (using readable: {*} Readable[SourceType, Text])
-           : {readable} CodlDoc throws AggregateError | StreamCutError =
+           : {readable} CodlDoc throws AggregateError[CodlError] | StreamCutError =
     val (margin, stream) = tokenize(readable.read(source), fromStart)
     val baseSchema: CodlSchema = schema
     
@@ -197,7 +197,7 @@ object Codl:
         case _ => stack match
           case Nil =>
             val (closed, errors2) = focus.close
-            val allErrors = errors2 ::: errors
+            val allErrors: List[CodlError] = errors2 ::: errors
             val children = if closed.blank then peers.reverse else (closed :: peers).reverse
             if allErrors.isEmpty then CodlDoc(IArray.from(children), baseSchema, margin, body)
             else throw AggregateError(allErrors.reverse)
@@ -335,8 +335,8 @@ object Codl:
       try Codl.parse(state.content, CodlSchema.Free, state.subs.reverse, fromStart = true)
       catch
         case err: StreamCutError => throw Mistake("Should be impossible")
-        case err: AggregateError => err.errors.head match
-          case CodlError(_, off, _, issue) => throw InterpolationError(t"read error: $issue", off)
+        case err: AggregateError[CodlError] => err.errors.head match
+          case CodlError(_, off, _, issue)  => throw InterpolationError(t"read error: $issue", off)
     
     def initial: State = State(Nil, Nil)
     def skip(state: State): State = insert(state, List(Data(t"_")))
