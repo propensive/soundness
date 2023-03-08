@@ -5,7 +5,7 @@ import rudiments.*
 import kaleidoscope.*
 import java.io as ji
 
-import scala.collection.immutable.{TreeMap, SortedMap}
+import scala.collection.immutable.TreeMap
 
 object HieronymusOpaques:
   opaque type CharRange = Long
