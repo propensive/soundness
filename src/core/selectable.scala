@@ -19,7 +19,6 @@ package polyvinyl
 import rudiments.*
 
 import scala.quoted.*
-import scala.compiletime.*
 
 trait SimpleSchema[F]:
   def fields: List[String]
