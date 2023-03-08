@@ -142,4 +142,4 @@ enum WatchEvent:
 
 export WatchEvent.{NewFile, NewDirectory, Modify, Delete}
 
-given Realm(t"surveillance")
+given Realm = Realm(t"surveillance")
