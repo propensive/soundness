@@ -33,7 +33,7 @@ import java.util as ju
 
 import language.dynamics
 
-private[telekinesis] given Realm(t"telekinesis")
+given Realm = Realm(t"telekinesis")
 
 enum HttpBody:
   case Empty
