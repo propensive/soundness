@@ -1,16 +1,13 @@
 package hyperbole
 
-import harlequin.*
 import escapade.*
 import rudiments.*
-import deviation.*
 import gossamer.*, textWidthCalculation.uniform
 import escritoire.*, tableStyles.horizontalGaps
-import iridescence.*
 import dendrology.*
 
 import scala.quoted.*
-import dotty.tools.*, dotc.util as dtdu, dotc.ast as dtda
+import dotty.tools.*, dotc.util as dtdu
 
 object reflection:
   def expand[T](expr: Expr[T])(using Quotes): Text =
