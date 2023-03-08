@@ -10,4 +10,4 @@ refs = eucalyptus/core
 [dissonance/test]
 src = src/test
 refs = probably/cli dissonance/core
-
+main = dissonance.Tests
