@@ -7,7 +7,6 @@ import chiaroscuro.*
 import escritoire.*
 import escapade.*
 import iridescence.*
-import dendrology.*
 
 import scala.collection.mutable as scm
 
@@ -146,7 +145,7 @@ class TestReport():
           if s.count < 2 then ansi"" else s.maxTime
       )
       
-    import tableStyles.rounded, treeStyles.default
+    import tableStyles.rounded
     table.tabulate(summaries, 120).map(_.render).foreach(println(_))
 
     details.foreach: (id, info) =>

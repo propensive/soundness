@@ -38,7 +38,6 @@ object ProbablyMacros:
                 inc: Expr[Inclusion[R, Outcome]], inc2: Expr[Inclusion[R, DebugInfo]])
            (using Quotes)
            : Expr[T] =
-    import quotes.reflect.*
     general[T, R, T](test, pred, runner, inc, inc2, '{ (t: TestRun[T]) => t.get })
     
   def assert[T: Type, R: Type]
@@ -46,7 +45,6 @@ object ProbablyMacros:
                  inc: Expr[Inclusion[R, Outcome]], inc2: Expr[Inclusion[R, DebugInfo]])
             (using Quotes)
             : Expr[Unit] =
-    import quotes.reflect.*
     general[T, R, Unit](test, pred, runner, inc, inc2, '{ (t: TestRun[T]) => () })
 
   def succeed: Any => Boolean = (value: Any) => true
@@ -82,7 +80,6 @@ object ProbablyMacros:
       result(run)
 
   def typed[T: Type, R: Type](test: Expr[Test[T]], runner: Expr[Runner[R]])(using Quotes): Expr[Unit] =
-    import quotes.reflect.*
     '{()}
 
   def inspect[T: Type](expr: Expr[T], test: Expr[TestContext])(using Quotes): Expr[T] =

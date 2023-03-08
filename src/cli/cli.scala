@@ -2,8 +2,9 @@ package probably
 
 import rudiments.*
 import deviation.*
-import gossamer.*
 import escapade.*
+
+import language.adhocExtensions
 
 abstract class Suite[ReportType](name: Text)(using reporter: TestReporter[ReportType])
 extends TestSuite(name):
