@@ -17,7 +17,6 @@
 package xylophone
 
 import rudiments.*
-import deviation.*
 import gossamer.*
 
 object Ast:
