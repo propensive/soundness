@@ -17,7 +17,6 @@
 package iridescence
 
 import rudiments.*
-import deviation.*
 import contextual.*
 
 import language.experimental.captureChecking
