@@ -16,6 +16,7 @@
 
 package deviation
 
+export rudiments.ErrorMessage
 import rudiments.*
 
 case class AggregateError(errors: List[Exception])
