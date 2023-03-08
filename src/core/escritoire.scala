@@ -20,7 +20,6 @@ import rudiments.*
 import gossamer.*
 import escapade.*
 import deviation.*
-import hieronymus.*
 
 import language.experimental.namedTypeArguments
 
