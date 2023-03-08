@@ -22,10 +22,8 @@ import gossamer.*
 
 import com.vladsch.flexmark as cvf
 import cvf.ast as cvfa, cvf.parser.*, cvf.util.options.*, cvf.ext.tables,
-    tables.TablesExtension, cvf.util.ast as cvfua
+    cvf.util.ast as cvfua
 import annotation.tailrec
-
-import java.util as ju
 
 case class MarkdownError(detail: Text) extends Error(err"the markdown could not be read: $detail")
 
