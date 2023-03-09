@@ -9,5 +9,6 @@ refs = gossamer/core
 
 [quantify/test]
 src = src/test
-refs = probably/cli quantify/core
+refs = probably/cli quantify/core larceny/core
+main = quantify.Tests
 
