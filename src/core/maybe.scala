@@ -28,25 +28,23 @@ extends Error(ErrorMessage[EmptyTuple](List(Text("the value was not set")), Empt
 
 extension [ValueType](opt: Maybe[ValueType])
   def unset: Boolean = opt == Unset
+  def cast(using Unsafe.type): ValueType = opt.asInstanceOf[ValueType]
+  def or(value: => ValueType): {value} ValueType = if unset then value else cast(using Unsafe)
+  def presume(using default: => Default[ValueType]): {default} ValueType = or(default())
   
-  def or(value: {*}-> ValueType): {value} ValueType = opt match
-    case Unset                       => value
-    case other: ValueType @unchecked => other
+  def assume(using unsetValue: CanThrow[UnsetValueError]): {unsetValue} ValueType =
+    or(throw UnsetValueError())
+  
+  def option: Option[ValueType] = if unset then None else Some(cast(using Unsafe))
 
-  def presume(using default: Default[ValueType]): ValueType = or(default())
-  def assume(using unsetValue: CanThrow[UnsetValueError]): {unsetValue} ValueType = or(throw UnsetValueError())
+  def fm
+      [ValueType2]
+      (default: => ValueType2)(fn: ValueType => ValueType2)
+      : {default, fn} ValueType2 =
+    if unset then default else fn(cast(using Unsafe))
 
-  def fm[ValueType2](default: -> ValueType2)(fn: ValueType -> ValueType2) = opt match
-    case Unset                       => default
-    case value: ValueType @unchecked => fn(value)
-
-  def mm[ValueType2](fn: ValueType -> ValueType2): Maybe[ValueType2] = opt match
-    case Unset                       => Unset
-    case value: ValueType @unchecked => fn(value)
-
-  def option: Option[ValueType] = opt match
-    case Unset                       => None
-    case other: ValueType @unchecked => Some(other)
+  def mm[ValueType2](fn: ValueType => ValueType2): {fn} Maybe[ValueType2] =
+    if unset then Unset else fn(cast(using Unsafe))
 
 extension [ValueType](opt: Option[ValueType])
   def maybe: Unset.type | ValueType = opt.getOrElse(Unset)
