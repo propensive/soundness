@@ -92,6 +92,13 @@ captured. Each compilation error which is positioned within a
 a new `CompileError` instance, and inserted into the `captureCompileErrors`
 block, in place of entire erroneous contents.
 
+If there are multiple `captureCompileErrors` blocks in the same source file,
+some errors which occur in earlier phases of compilation may prevent later
+phases from running, and the errors from those later phases will not be
+captured during the first compilation. Larceny will rerun the compiler as
+many times as necessary to capture errors from later phases, each time
+removing more code which would have precluded these later phases.
+
 The main compilation is then allowed to continue to typechecking, which will
 only see the `CompileError` constructions, not the original code. As long as
 there are no compilation errors _outside_ of a `captureCompileErrors` block,
