@@ -4,3 +4,8 @@ target = larceny/core
 
 [larceny/core]
 src = src/core
+
+[larceny/test]
+refs = larceny/core
+src = src/test
+main = larceny.run

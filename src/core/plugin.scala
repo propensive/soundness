@@ -16,9 +16,10 @@
 
 package larceny
 
-import dotty.tools.*, dotc.*, reporting.*, ast.Trees.*, ast.tpd, core.*, Constants.Constant, Contexts.*,
+import dotty.tools.*, dotc.*, util.*, reporting.*, ast.Trees.*, ast.tpd, core.*, Constants.Constant, Contexts.*,
     Decorators.*, StdNames.*, plugins.*
 
+import scala.util.chaining.*
 import scala.collection.mutable as scm
 
 import language.adhocExtensions
@@ -38,63 +39,122 @@ class LarcenyTransformer() extends PluginPhase:
   override def transformUnit(tree: Tree)(using Context): Tree =
     import ast.untpd.*
     val classpath = ctx.settings.classpath.value
-    //System.out.nn.println("Using classpath: "+classpath)
-    lazy val allErrors: List[Diagnostic] =
-      Subcompiler.compile(ctx.settings.classpath.value, List(ctx.compilationUnit.source.file))
-
-    val transformer = new UntypedTreeMap:
-      override def transform(tree: Tree)(using Context): Tree =
-        tree match
-          case Apply(Ident(name), List(b)) if name.toString == "captureCompileErrors" =>
-            val captured = allErrors.filter: diagnostic =>
-              try diagnostic.pos.point >= b.span.start && diagnostic.pos.point <= b.span.end
-              catch case err: AssertionError => false
-            
-            val msgs =
-              captured.map: diagnostic =>
-                val pos = diagnostic.pos
-                val code = String(ctx.compilationUnit.source.content.slice(pos.start, pos.end))
-                val offset = pos.point - pos.start
-                
-                Apply(Select(Select(Ident(nme.ROOTPKG), "larceny".toTermName), "CompileError".toTermName), List(
-                  Literal(Constant(diagnostic.msg.errorId.ordinal)),
-                  Literal(Constant(diagnostic.msg.message)),
-                  Literal(Constant(code)),
-                  Literal(Constant(offset))
-                ))
-            
-            Apply(Ident(name), List(Block(List(), Apply(Select(Select(Ident(nme.ROOTPKG), nme.scala),nme.List),
-                msgs))))
+    
+    object collector extends UntypedTreeMap:
+      val regions: scm.ListBuffer[(Int, Int)] = scm.ListBuffer()
+      
+      override def transform(tree: Tree)(using Context): Tree = tree match
+        case Apply(Ident(name), List(body)) if name.toString == "captureCompileErrors" =>
+          try regions += (body.span.start -> body.span.end) catch case err: AssertionError => ()
+          tree
+        
+        case _ =>
+          super.transform(tree)
           
-          case _ =>
-            super.transform(tree)
+    collector.transform(ctx.compilationUnit.untpdTree)
+    val regions = collector.regions.to(Set)
 
+    val source = String(ctx.compilationUnit.source.content)
+
+    val errors: List[CompileError] =
+      Subcompiler.compile(ctx.settings.classpath.value, source, regions)
+    
+    object transformer extends UntypedTreeMap:
+
+      override def transform(tree: Tree)(using Context): Tree = tree match
+        case Apply(Ident(name), List(b)) if name.toString == "captureCompileErrors" =>
+          
+          val captured = errors.filter: error =>
+            try error.point >= b.span.start && error.point <= b.span.end
+            catch case err: AssertionError => false
+          
+          val msgs = captured.map: error =>
+            Apply(Select(Select(Ident(nme.ROOTPKG), "larceny".toTermName), "CompileError".toTermName), List(
+              Literal(Constant(error.id)),
+              Literal(Constant(error.message)),
+              Literal(Constant(error.code)),
+              Literal(Constant(error.start)),
+              Literal(Constant(error.offset))
+            ))
+          
+          Apply(Ident(name), List(Block(List(), Apply(Select(Select(Ident(nme.ROOTPKG), nme.scala), nme.List),
+              msgs))))
+        
+        case _ =>
+          super.transform(tree)
+    
     ctx.compilationUnit.untpdTree = transformer.transform(ctx.compilationUnit.untpdTree)
     super.transformUnit(tree)
 
 object Subcompiler:
-  
   val Scala3: Compiler = new Compiler()
 
   class CustomReporter() extends Reporter, UniqueMessagePositions, HideNonSensicalMessages:
-    val errors: scm.ListBuffer[Diagnostic] = scm.ListBuffer()
-    def doReport(diagnostic: Diagnostic)(using Context): Unit = errors += diagnostic
-
-  def compile(classpath: String, sources: List[io.AbstractFile]): List[Diagnostic] =
-    val reporter = CustomReporter()
+    val errors: scm.ListBuffer[CompileError] = scm.ListBuffer()
+    
+    def doReport(diagnostic: Diagnostic)(using Context): Unit =
+      try
+        val pos = diagnostic.pos
+        val code = String(ctx.compilationUnit.source.content.slice(pos.start, pos.end))
+        val offset = pos.point - pos.start
+        errors += CompileError(diagnostic.msg.errorId.ordinal, diagnostic.msg.message, code, pos.start, offset)
+      catch
+        case err: Throwable => ()
+  
+  def compile(classpath: String, source: String, regions: Set[(Int, Int)]): List[CompileError] =
+    
     object driver extends Driver:
-
       val currentCtx: Context =
         val ctx = initCtx.fresh
         val ctx2 = ctx.setSetting(ctx.settings.classpath, classpath)
         setup(Array[String](""), ctx2).map(_(1)).get
       
-      def run(): List[Diagnostic] =
-        val ctx = currentCtx.fresh
-        val ctx2 = ctx.setReporter(reporter).setSetting(ctx.settings.classpath, classpath)
-        val run = Scala3.newRun(using ctx2)
-        run.compile(sources)
-        finish(Scala3, run)(using ctx2)
-        reporter.errors.to(List)
+      def run(source: String, regions: Set[(Int, Int)], errors: List[CompileError]): List[CompileError] =
+        if regions.isEmpty then errors
+        else
+          val reporter: CustomReporter = CustomReporter()
+          val sourceFile: SourceFile = SourceFile.virtual("<subcompilation>", source)
+          val ctx = currentCtx.fresh
+          
+          val ctx2 = ctx.setReporter(reporter)
+              .setSetting(ctx.settings.classpath, classpath)
+              .setSetting(ctx.settings.color, "never")
+          
+          Scala3.newRun(using ctx2).tap: run =>
+            run.compileSources(List(sourceFile))
+            if !reporter.hasErrors then finish(Scala3, run)(using ctx2)
+          
+          val newErrors = reporter.errors.to(List)
+
+          def recompile(todo: List[CompileError], done: Set[(Int, Int)], source: String): List[CompileError] =
+            todo match
+              case Nil =>
+                if done.isEmpty then errors ::: newErrors else run(source, regions -- done, errors ::: newErrors)
+              case error :: tail =>
+                regions.find: (start, end) =>
+                  error.point >= start && error.point <= end
+                .match
+                  case None =>
+                    recompile(tail, done, source)
+                  
+                  case Some(region@(from, to)) =>
+                    if done.contains(region) then recompile(tail, done, source) else
+                      val newSource = source.take(from)+"{}"+(" "*(to - from - 2))+source.drop(to)
+                      recompile(tail, done + region, newSource)
     
-    driver.run()
+          recompile(newErrors, Set(), source)
+          //  match
+          //   case None            => errors ::: newErrors
+          //   case Some(newSource) => run(newSource, regions -- done, errors ::: newErrors)
+      
+    driver.run(source, regions, Nil)
+
+object Macros:
+  import scala.quoted.*
+
+  def helloImpl()(using Quotes): Expr[String] =
+    import quotes.reflect.*
+    report.errorAndAbort("Goodbye")
+    '{"Hello world"}
+  
+  inline def hello(): String = ${helloImpl()}

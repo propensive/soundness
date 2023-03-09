@@ -14,22 +14,25 @@
     and limitations under the License.
 */
 
-package testing
-
-import larceny.*
-import annotation.*
+package larceny
 
 @main
 def run(): Unit =
   val errors = captureCompileErrors:
     val x = 10
-    "foo".substring("x")
-    "foo".substring("y")
+    "foo".substring("1")
   
-  errors.map(_.errorId).foreach(println(_))
+  errors.foreach(println(_))
   
   val errors2 = captureCompileErrors:
-    summon[Ordering[Exception]]
+    Macros.hello()
 
-  
-  errors2.map(_.errorId).foreach(println(_))
+  errors2.foreach(println(_))
+
+  val errors3 = captureCompileErrors:
+    class Baz() extends Incomplete
+
+  errors3.foreach(println(_))
+
+trait Incomplete:
+  def foo: Int

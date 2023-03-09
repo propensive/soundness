@@ -22,8 +22,9 @@ def captureCompileErrors(code: Matchable): List[CompileError] = code match
   case xs: List[CompileError] @unchecked => xs
   case _ => Nil
 
-case class CompileError(id: Int, text: String, badCode: String, offset: Int):
+case class CompileError(id: Int, message: String, code: String, start: Int, offset: Int):
   def errorId: dtdr.ErrorMessageID = dtdr.ErrorMessageID.fromOrdinal(id)
+  def point: Int = start + offset
 
 object ErrorId:
   export dtdr.ErrorMessageID.*
