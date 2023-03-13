@@ -18,12 +18,12 @@ package adversaria
 
 import probably.*
 import rudiments.*
+import larceny.*
 import gossamer.*
 import annotation.StaticAnnotation
 
-import unsafeExceptions.canThrowAny
-
 final case class id() extends StaticAnnotation
+final case class unique() extends StaticAnnotation
 final case class count(number: Int) extends StaticAnnotation
 final case class ref(x: Int) extends StaticAnnotation
 
@@ -32,71 +32,63 @@ case class Person(name: Text, @id email: Text)
 @count(10)
 case class Company(name: Text)
 
-case class Employee(person: Person, @id code: Long)
-
+case class Employee(person: Person, @id @unique code: Long)
 case class Letters(@ref(1) alpha: Int, @ref(2) @ref(3) beta: Int, gamma: Int, @ref(4) delta: Int)
 
 object Tests extends Suite(t"Adversaria tests"):
 
   def run(): Unit =
 
-    test(t"first field") {
+    test(t"first field"):
       val letters = Letters(5, 6, 7, 8)
       Annotations.firstField[Letters, ref](letters)
-    }.assert(_ == 5)
+    .assert(_ == 5)
 
-    // test("access field annotations") {
-    //   Annotations.field[Employee](_.code)
-    // }.assert(_ == List(id()))
+    test(t"access field annotations"):
+      Annotations.field[Employee](_.code)
+    .assert(_.contains(unique()))
     
-    test(t"check nonexistant annotations") {
+    test(t"check nonexistant annotations"):
       Annotations.field[Employee](_.person)
-    }.assert(_ == Nil)
+    .assert(_ == Nil)
 
-    // test("get field values") {
-    //   val letters = Letters(5, 6, 7, 8)
-    //   Annotations.fields[Letters, ref].map(_(letters))
-    // }.assert(_ == List(5, 6, 6, 8))
+    test(t"get field values"):
+      val letters = Letters(5, 6, 7, 8)
+      Annotations.fields[Letters, ref].map(_(letters))
+    .assert(_ == List(5, 6, 6, 8))
     
-    // test("get field annotations") {
-    //   val letters = Letters(5, 6, 7, 8)
-    //   Annotations.fields[Letters, ref].map(_.annotation)
-    // }.assert(_ == List(ref(1), ref(2), ref(3), ref(4)))
+    test(t"get field annotations"):
+      val letters = Letters(5, 6, 7, 8)
+      Annotations.fields[Letters, ref].map(_.annotation)
+    .assert(_ == List(ref(1), ref(2), ref(3), ref(4)))
 
-    // test("get field names") {
-    //   val letters = Letters(5, 6, 7, 8)
-    //   Annotations.fields[Letters, ref].map(_.name)
-    // }.assert(_ == List("alpha", "beta", "beta", "delta"))
+    test(t"get field names"):
+      val letters = Letters(5, 6, 7, 8)
+      Annotations.fields[Letters, ref].map(_.name)
+    .assert(_ == List("alpha", "beta", "beta", "delta"))
 
-    // test("get annotations on type") {
-    //   implicitly[TypeMetadata[Company]].annotations
-    // }.assert(_ == List(count(10)))
+    test(t"get annotations on type"):
+      summon[Annotations[StaticAnnotation, Company]].annotations
+    .assert(_ == List(count(10)))
 
-    // test("get the short name of the type") {
-    //   implicitly[TypeMetadata[Person]].typeName
-    // }.assert(_ == "Person")
+    test(t"find the field with a particular annotation"):
+      val ann = summon[CaseField[Person, id]]
+      val person = Person(t"John Smith", t"test@example.com")
+      ann(person)
+    .assert(_ == t"test@example.com")
     
-    // test("get the full name of the type") {
-    //   implicitly[TypeMetadata[Person]].fullTypeName
-    // }.assert(_ == "adversaria.tests.Person")
+    test(t"check the name of the field found by an annotation"):
+      summon[CaseField[Person, id]].name
+    .assert(_ == t"email")
     
-    // test("find the field with a particular annotation") {
-    //   val ann = implicitly[FindMetadata[id, Person]]
-    //   val person = Person("John Smith", "test@example.com")
-    //   ann.get(person)
-    // }.assert(_ == "test@example.com")
-    
-    // test("check the name of the field found by an annotation") {
-    //   implicitly[FindMetadata[id, Person]].parameter.fieldName
-    // }.assert(_ == "email")
-    
-    // test("check that implicit for missing annotation is not resolved") {
-    //   scalac"implicitly[FindMetadata[id, Company]]"
-    // }.assert(_ == TypecheckError("adversaria: could not find matching annotation"))
+    test(t"check that given for missing annotation is not resolved"):
+      captureCompileErrors:
+        summon[CaseField[Company, id]]
+      .map(_.errorId)
+    .assert(_ == List(ErrorId.MissingImplicitArgumentID))
 
-    // test("extract annotation value generically") {
-    //   def getId[T](value: T)(implicit anns: FindMetadata[id, T]): Text =
-    //     anns.get(value).toString
+    test(t"extract annotation value generically"):
+      def getId[T <: Product](value: T)(using ann: CaseField[T, id]): ann.FieldType = ann(value)
 
-    //   getId(Employee(Person("John Smith", "test@example.com"), 3141592))
-    // }.assert(_ == "3141592")
+      getId(Employee(Person(t"John Smith", t"test@example.com"), 3141592))
+    .assert(_ == 3141592)

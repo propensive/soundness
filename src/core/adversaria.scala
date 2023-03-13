@@ -35,14 +35,16 @@ object Annotations:
     ${AdversariaMacros.firstField[T, A]}
 
 object CaseField:
-  def apply[T <: Product, A <: Ann, F](name: String, access: T => F, ann: A)
+  def apply[T <: Product, A <: Ann, F](name: Text, access: T => F, ann: A)
       : CaseField[T, A] { type FieldType = F } =
     new CaseField[T, A](name):
       type FieldType = F
       def apply(value: T) = access(value)
       def annotation: A = ann
 
-trait CaseField[T <: Product, A <: Ann](val name: String):
+  transparent inline given [T <: Product, A <: Ann]: CaseField[T, A] = Annotations.firstField[T, A]
+
+trait CaseField[T <: Product, A <: Ann](val name: Text):
   type FieldType
   def apply(value: T): FieldType
   def annotation: A
@@ -54,10 +56,8 @@ object AdversariaMacros:
     val fields = tpe.typeSymbol.caseFields
     
     fields.flatMap: fld =>
-      val name = Expr(fld.name)
-      
       fld.annotations.map(_.asExpr).collect { case '{ $ann: A } => ann }.map: ann =>
-        '{ CaseField($name, (t: T) => ${'t.asTerm.select(fld).asExpr}, $ann) }
+        '{ CaseField(Text(${Expr(fld.name)}), (t: T) => ${'t.asTerm.select(fld).asExpr}, $ann) }
       .reverse
     .head
 
@@ -69,7 +69,7 @@ object AdversariaMacros:
     val elements: List[Expr[CaseField[T, A]]] = fields.flatMap: fld =>
       val name = Expr(fld.name)
       fld.annotations.map(_.asExpr).collect { case '{ $ann: A } => ann }.map: ann =>
-        '{ CaseField($name, (t: T) => ${'t.asTerm.select(fld).asExpr}, $ann) }
+        '{ CaseField(Text($name), (t: T) => ${'t.asTerm.select(fld).asExpr}, $ann) }
       .reverse
 
     Expr.ofList(elements)
@@ -87,9 +87,7 @@ object AdversariaMacros:
         report.errorAndAbort:
           """adversaria: the lambda must be a simple reference to a case class field"""
 
-    Expr.ofList(field.annotations.map(_.asExpr).collect:
-      case '{ $ann: Ann } => ann
-    )
+    Expr.ofList(field.annotations.map(_.asExpr).collect { case '{ $ann: Ann } => ann })
 
   def typeAnnotations[A <: Ann: Type, T: Type](using Quotes): Expr[Annotations[A, T]] =
     import quotes.reflect.*
@@ -98,5 +96,6 @@ object AdversariaMacros:
     val annotations = tpe.typeSymbol.annotations.map(_.asExpr).collect { case '{ $a: A } => a }
     
     if annotations.isEmpty
-    then report.errorAndAbort(s"""adversaria: the type ${TypeRepr.of[T].show} did not have the annotation ${TypeRepr.of[A].show}""")
+    then report.errorAndAbort(
+        s"""adversaria: the type ${tpe.show} did not have the annotation ${TypeRepr.of[A].show}""")
     else '{ Annotations[A, T](${Expr.ofList(annotations)}*) }

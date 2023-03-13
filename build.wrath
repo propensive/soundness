@@ -1,9 +1,13 @@
 # This is a Wrath buildfile. More information is available at: https://github.com/propensive/wrath/
 [adversaria]
-target = adversaria/core
-repos = propensive/rudiments
+target = adversaria/test
+repos = propensive/probably
 
 [adversaria/core]
 src = src/core
 refs = rudiments/core
 
+[adversaria/test]
+src = src/test
+refs = probably/cli adversaria/core
+main = adversaria.Tests
