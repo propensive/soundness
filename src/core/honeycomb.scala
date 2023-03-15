@@ -105,9 +105,10 @@ case class Element[+Name <: Label](labelString: String, unclosed: Boolean, tagIn
 case class HtmlDoc(root: Node["html"])
 
 object HtmlDoc:
-  given (using enc: Encoding): GenericHttpResponseStream[HtmlDoc] with
-    def mediaType: String = t"text/html; charset=${enc.name}".s
-    def content(value: HtmlDoc): LazyList[IArray[Byte]] = LazyList(HtmlDoc.serialize(value).bytes)
+  given generic(using enc: Encoding): GenericHttpResponseStream[HtmlDoc] =
+    new GenericHttpResponseStream[HtmlDoc]:
+      def mediaType: String = t"text/html; charset=${enc.name}".s
+      def content(value: HtmlDoc): LazyList[IArray[Byte]] = LazyList(HtmlDoc.serialize(value).bytes)
 
   def serialize[T](doc: HtmlDoc, maxWidth: Int = -1)(using HtmlSerializer[T]): T =
     summon[HtmlSerializer[T]].serialize(doc, maxWidth)
