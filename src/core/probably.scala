@@ -104,42 +104,54 @@ case class Test[+Return](id: TestId, action: TestContext => Return)
 def test[ReportType](name: Text)(using suite: TestSuite, codepoint: Codepoint): TestId =
   TestId(name, suite, codepoint)
 
-def suite[R](name: Text)(using suite: TestSuite, runner: Runner[R])(fn: TestSuite ?=> Unit): Unit =
+def suite
+    [ReportType](name: Text)(using suite: TestSuite, runner: Runner[ReportType])
+    (fn: TestSuite ?=> Unit): Unit =
   runner.suite(TestSuite(name, suite), fn)
 
-extension [T](test: Test[T])
-  inline def assert[R](inline pred: T => Boolean)
-                      (using runner: Runner[R], inc: Inclusion[R, Outcome], inc2: Inclusion[R, DebugInfo])
-                      : Unit =
-    ${ProbablyMacros.assert[T, R]('test, 'pred, 'runner, 'inc, 'inc2)}
+extension [TestType](test: Test[TestType])
+  inline def assert[ReportType]
+      (inline pred: TestType => Boolean)
+      (using runner: Runner[ReportType], inc: Inclusion[ReportType, Outcome],
+          inc2: Inclusion[ReportType, DebugInfo])
+      : Unit =
+    ${ProbablyMacros.assert[TestType, ReportType]('test, 'pred, 'runner, 'inc, 'inc2)}
   
-  inline def check[R](inline pred: T => Boolean)
-                     (using runner: Runner[R], inc: Inclusion[R, Outcome], inc2: Inclusion[R, DebugInfo]): T =
-    ${ProbablyMacros.check[T, R]('test, 'pred, 'runner, 'inc, 'inc2)}
+  inline def check[ReportType]
+      (inline pred: TestType => Boolean)
+      (using runner: Runner[ReportType], inc: Inclusion[ReportType, Outcome],
+          inc2: Inclusion[ReportType, DebugInfo])
+      : TestType =
+    ${ProbablyMacros.check[TestType, ReportType]('test, 'pred, 'runner, 'inc, 'inc2)}
 
-  inline def assert[R]()(using runner: Runner[R], inc: Inclusion[R, Outcome],
-                           inc2: Inclusion[R, DebugInfo]): Unit =
-    ${ProbablyMacros.assert[T, R]('test, '{ProbablyMacros.succeed}, 'runner, 'inc, 'inc2)}
+  inline def assert[ReportType]()
+      (using runner: Runner[ReportType], inc: Inclusion[ReportType, Outcome],
+          inc2: Inclusion[ReportType, DebugInfo])
+      : Unit =
+    ${ProbablyMacros.assert[TestType, ReportType]('test, '{ProbablyMacros.succeed}, 'runner, 'inc, 'inc2)}
   
-  inline def check[R]()(using runner: Runner[R], inc: Inclusion[R, Outcome],
-                           inc2: Inclusion[R, DebugInfo]): T =
-    ${ProbablyMacros.check[T, R]('test, '{ProbablyMacros.succeed}, 'runner, 'inc, 'inc2)}
+  inline def check[ReportType]()
+      (using runner: Runner[ReportType], inc: Inclusion[ReportType, Outcome],
+          inc2: Inclusion[ReportType, DebugInfo])
+      : TestType =
+    ${ProbablyMacros.check[TestType, ReportType]('test, '{ProbablyMacros.succeed}, 'runner, 'inc, 'inc2)}
   
-  inline def matches[R](inline pf: PartialFunction[T, Any])
-                    (using runner: Runner[R], inc: Inclusion[R, Outcome], inc2: Inclusion[R, DebugInfo])
-                    : Unit =
-    assert[R](pf.isDefinedAt(_))
-  
-  inline def typed[R](using runner: Runner[R]): Unit = ${ProbablyMacros.typed[T, R]('test, 'runner)}
+  inline def matches[ReportType]
+      (inline pf: PartialFunction[TestType, Any])
+      (using runner: Runner[ReportType], inc: Inclusion[ReportType, Outcome],
+          inc2: Inclusion[ReportType, DebugInfo])
+      : Unit =
+    assert[ReportType](pf.isDefinedAt(_))
   
 case class UnexpectedSuccessError(value: Any)
 extends Error(err"the expression was expected to throw an exception, but instead returned $value")
 
-transparent inline def capture[E <: Exception](inline fn: => CanThrow[E] ?=> Any)
-                              : E throws UnexpectedSuccessError =
+transparent inline def capture
+    [ExceptionType <: Exception](inline fn: => CanThrow[ExceptionType] ?=> Any)
+    : ExceptionType throws UnexpectedSuccessError =
   try
     val result = fn(using unsafeExceptions.canThrowAny)
     throw UnexpectedSuccessError(result)
   catch
-    case error: E                      => error
+    case error: ExceptionType          => error
     case error: UnexpectedSuccessError => throw error

@@ -78,9 +78,6 @@ object ProbablyMacros:
       inc.include(runner.report, test.id, outcome)
       result(run)
 
-  def typed[T: Type, R: Type](test: Expr[Test[T]], runner: Expr[Runner[R]])(using Quotes): Expr[Unit] =
-    '{()}
-
   def inspect[T: Type](expr: Expr[T], test: Expr[TestContext])(using Quotes): Expr[T] =
     import quotes.reflect.*
 
