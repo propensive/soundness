@@ -1,0 +1,13 @@
+# This is a Wrath buildfile. More information is available at: https://github.com/propensive/wrath/
+[panopticon]
+target = panopticon/test
+repos = propensive/probably
+
+
+[panopticon/core]
+src = src/core
+
+[panopticon/test]
+src = src/test
+refs = probably/cli panopticon/core
+main = panopticon.Tests
