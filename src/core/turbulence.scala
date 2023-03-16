@@ -44,10 +44,12 @@ case class StreamCutError(total: ByteSize) extends Error(err"the stream was cut 
 case class StreamUnavailableError() extends Error(err"the stream is unavailable")
 
 extension (obj: LazyList.type)
-  def multiplex[ElemType](streams: LazyList[ElemType]*)(using Monitor): LazyList[ElemType] =
+  def multiplex
+      [ElemType](streams: LazyList[ElemType]*)(using Monitor): LazyList[ElemType] =
     multiplexer(streams*).stream
   
-  def multiplexer[ElemType](streams: LazyList[ElemType]*)(using Monitor): Multiplexer[Any, ElemType] =
+  def multiplexer
+      [ElemType](streams: LazyList[ElemType]*)(using Monitor): Multiplexer[Any, ElemType] =
     val multiplexer = Multiplexer[Any, ElemType]()
     streams.zipWithIndex.map(_.swap).foreach(multiplexer.add)
     multiplexer
@@ -90,8 +92,8 @@ case class Multiplexer[KeyType, ElemType]()(using monitor: Monitor):
   
   def stream: LazyList[ElemType] =
     def recur(): LazyList[ElemType] = queue.take() match
-      case null | Unset              => LazyList()
-      case item: ElemType @unchecked => item.nn #:: recur()
+      case null | Unset   => LazyList()
+      case item: ElemType => item.nn #:: recur()
     
     // FIXME: This should be identical to recur(), but recur is not tail-recursive so
     // it can lead to stack overflow. It may still be a memory leak, though.
@@ -129,10 +131,10 @@ extension [ElemType](stream: LazyList[ElemType])
       if active && buffer.nonEmpty then buffer.head #:: defer(true, stream, buffer.tail)
       else if stream.isEmpty then LazyList()
       else stream.head match
-        case Tap.Regulation.Start        => recur(true, stream.tail, buffer)
-        case Tap.Regulation.Stop         => recur(false, stream.tail, Nil)
-        case other: ElemType @unchecked  => if active then other.nn #:: defer(true, stream.tail, Nil)
-                                            else recur(false, stream.tail, other.nn :: buffer)
+        case Tap.Regulation.Start => recur(true, stream.tail, buffer)
+        case Tap.Regulation.Stop  => recur(false, stream.tail, Nil)
+        case other: ElemType      => if active then other.nn #:: defer(true, stream.tail, Nil)
+                                     else recur(false, stream.tail, other.nn :: buffer)
 
     LazyList() #::: recur(true, stream.multiplexWith(tap.stream), Nil)
 
@@ -215,9 +217,9 @@ package basicIo:
       if System.out == null then throw StreamCutError(0.b)
       else System.out.nn.writeBytes(bytes.mutable(using Unsafe))
     
-class StreamBuffer[T]():
-  private val primary: juc.LinkedBlockingQueue[Maybe[T]] = juc.LinkedBlockingQueue()
-  private val secondary: juc.LinkedBlockingQueue[Maybe[T]] = juc.LinkedBlockingQueue()
+class StreamBuffer[ElemType]():
+  private val primary: juc.LinkedBlockingQueue[Maybe[ElemType]] = juc.LinkedBlockingQueue()
+  private val secondary: juc.LinkedBlockingQueue[Maybe[ElemType]] = juc.LinkedBlockingQueue()
   private var buffer: Boolean = true
   private var closed: Boolean = false
 
@@ -229,16 +231,16 @@ class StreamBuffer[T]():
     primary.put(Unset)
     secondary.put(Unset)
 
-  def put(value: T): Unit = primary.put(value)
-  def putSecondary(value: T): Unit = secondary.put(value)
+  def put(value: ElemType): Unit = primary.put(value)
+  def putSecondary(value: ElemType): Unit = secondary.put(value)
   
-  def stream: LazyList[T] =
-    def recur(): LazyList[T] =
+  def stream: LazyList[ElemType] =
+    def recur(): LazyList[ElemType] =
       if buffer then primary.take() match
         case Unset =>
           buffer = false
           if closed then LazyList() else recur()
-        case value: T @unchecked =>
+        case value: ElemType =>
           value #:: recur()
         case _ =>
           throw Mistake("Should never match")
@@ -246,7 +248,7 @@ class StreamBuffer[T]():
         case Unset =>
           buffer = true
           if closed then LazyList() else recur()
-        case value: T @unchecked =>
+        case value: ElemType =>
           value #:: recur()
         case _ =>
           throw Mistake("Should never match")
