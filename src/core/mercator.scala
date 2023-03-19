@@ -7,6 +7,9 @@ object Functor:
   inline given [FunctorType[_]]: Functor[FunctorType] = ${MercatorMacros.functor[FunctorType]}
 
 object Point:
+  given Point[[T] =>> Either[?, T]] with
+    def point[ValueType](value: ValueType): Either[Nothing, ValueType] = Right(value)
+
   inline given [TypeConstructorType[_]]: Point[TypeConstructorType] =
     ${MercatorMacros.point[TypeConstructorType]}
 
@@ -64,8 +67,8 @@ object MercatorMacros:
           }
     }
     else if applyMethods.length == 0
-    then report.errorAndAbort("mercator: the companion object has no candidate apply methods")
-    else report.errorAndAbort("mercator: the companion object has more than one candidate apply method")
+    then report.errorAndAbort(s"mercator: the companion object ${companion.name} has no candidate apply methods")
+    else report.errorAndAbort(s"mercator: the companion object ${companion.name} has more than one candidate apply method")
 
   def functor[FunctorType[_]](using Type[FunctorType], Quotes): Expr[Functor[FunctorType]] =
     import quotes.reflect.*
