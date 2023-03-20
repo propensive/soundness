@@ -1,0 +1,4 @@
+- provides an abstraction over functor-like and monad-like types
+- generates `Monad`, `Functor` and `Point` typeclasses for type constructors
+- constructs a monad typeclass instance for any type with `flatMap`, `map` and a "unit" constructor
+- implements `sequence` and `traverse` extension methods for instances of monadic types
