@@ -1,9 +1,9 @@
 # This is a Wrath buildfile. More information is available at: https://github.com/propensive/wrath/
-[deviation]
-repos = propensive/rudiments
-target = deviation/core
+target deviation/core
+repo propensive/rudiments
 
-[deviation/core]
-src = src/core
-refs = rudiments/core
+project deviation
+  module core
+    sources src/core
+    include rudiments/core
 
