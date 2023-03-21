@@ -1,10 +1,9 @@
 # This is a Wrath buildfile. More information is available at: https://github.com/propensive/wrath/
 
-target anticipation/all
-repo propensive/probably
+target  anticipation/all
+repo    propensive/probably
 
 project anticipation
-
   module css
     sources src/css
 
@@ -17,6 +16,7 @@ project anticipation
   module http
     sources src/http
 
+  # Rename this to `path` at some point
   module file
     sources src/file
 
