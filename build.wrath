@@ -1,24 +1,33 @@
 # This is a Wrath buildfile. More information is available at: https://github.com/propensive/wrath/
-[anticipation]
-target = anticipation/all
 
-[anticipation/css]
-src = src/css
+target anticipation/all
+repo propensive/probably
 
-[anticipation/url]
-src = src/url
+project anticipation
 
-[anticipation/html]
-src = src/html
+  module css
+    sources src/css
 
-[anticipation/http]
-src = src/http
+  module url
+    sources src/url
 
-[anticipation/file]
-src = src/file
+  module html
+    sources src/html
 
-[anticipation/time]
-src = src/time
+  module http
+    sources src/http
 
-[anticipation/all]
-refs = anticipation/css anticipation/html anticipation/http anticipation/file anticipation/time
+  module file
+    sources src/file
+
+  module time
+    sources src/time
+
+  module all
+    include anticipation/css
+    include anticipation/html
+    include anticipation/http
+    include anticipation/file
+    include anticipation/time
+    include anticipation/url
+  
