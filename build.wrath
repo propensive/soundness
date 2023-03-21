@@ -1,8 +1,10 @@
-[parasitism]
-target = parasitism/core
-repos = propensive/deviation propensive/anticipation
+target parasitism/core
 
-[parasitism/core]
-src = src/core
-refs = deviation/core anticipation/time
+repo propensive/deviation
+repo propensive/anticipation
+
+project parasitism
+  module core
+    include deviation/core anticipation/time
+    sources src/core
 
