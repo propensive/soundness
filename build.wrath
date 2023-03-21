@@ -1,9 +1,11 @@
 # This is a Wrath buildfile. More information is available at: https://github.com/propensive/wrath/
-[turbulence]
-repos = propensive/parasitism propensive/diuretic
-target = turbulence/core
 
-[turbulence/core]
-src = src/core
-refs = parasitism/core diuretic/core
+repo propensive/parasitism
+repo propensive/diuretic
 
+target turbulence/core
+
+project turbulence
+  module core
+    sources src/core
+    include parasitism/core diuretic/core
