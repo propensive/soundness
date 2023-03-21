@@ -1,9 +1,11 @@
 # This is a Wrath buildfile. More information is available at: https://github.com/propensive/wrath/
-[diuretic]
-repos = propensive/anticipation
-target = diuretic/core
 
-[diuretic/core]
-src = src/core
-refs = anticipation/file anticipation/url anticipation/time
+target diuretic/core
+
+repo propensive/anticipation
+
+project diuretic
+  module core
+    sources src/core
+    include anticipation/file anticipation/url anticipation/time
 
