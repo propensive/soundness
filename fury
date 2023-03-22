@@ -1,6 +1,7 @@
 # This is a Wrath buildfile. More information is available at: https://github.com/propensive/wrath/
 
 repo propensive/probably
+repo propensive/larceny
 
 target mercator/test
 
@@ -11,5 +12,5 @@ project mercator
   module test
     sources  src/test
     main     mercator.Tests
-    include  mercator/core probably/cli
+    include  mercator/core probably/cli larceny/plugin
 
