@@ -1,4 +1,5 @@
-# This is a Wrath buildfile. More information is available at: https://github.com/propensive/wrath/
+# This is a buildfile for Fury or Wrath.
+# More information is available at: https://github.com/propensive/wrath/
 
 repo propensive/wisteria
 repo propensive/turbulence
@@ -9,10 +10,12 @@ target gossamer/test
 
 project gossamer
   module core
-    sources  src/core
-    include  turbulence/core wisteria/core contextual/core
+    compiler  scala
+    sources   src/core
+    include   turbulence/core wisteria/core contextual/core
 
   module test
-    sources  src/test
-    include  probably/cli gossamer/core larceny/plugin
-    main     gossamer.Tests
+    compiler  scala
+    sources   src/test
+    include   probably/cli gossamer/core larceny/plugin
+    main      gossamer.Tests
