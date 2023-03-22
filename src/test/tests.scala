@@ -23,32 +23,30 @@ import rudiments.*
 
 import unsafeExceptions.canThrowAny
 
-given Log(Everything |-> Stdout)
-
 object Tests extends Suite(t"Gesticulate tests"):
   def run(): Unit =
-    test(t"parse media type's type") {
+    test(t"parse media type's type"):
       Media.parse(t"application/json").group
-    }.assert(_ == Media.Group.Application)
+    .assert(_ == Media.Group.Application)
     
-    test(t"parse media type's subtype") {
+    test(t"parse media type's subtype"):
       Media.parse(t"application/json").subtype
-    }.assert(_ == Media.Subtype.Standard(t"json"))
+    .assert(_ == Media.Subtype.Standard(t"json"))
 
-    test(t"parse media type suffix") {
+    test(t"parse media type suffix"):
       Media.parse(t"application/epub+zip").suffixes
-    }.assert(_ == List(Media.Suffix.Zip))
+    .assert(_ == List(Media.Suffix.Zip))
 
-    test(t"parse full media type") {
+    test(t"parse full media type"):
       Media.parse(t"application/json")
-    }.assert(_ == MediaType(Media.Group.Application, Media.Subtype.Standard(t"json")))
+    .assert(_ == MediaType(Media.Group.Application, Media.Subtype.Standard(t"json")))
 
-    test(t"parse full media type with parameter") {
+    test(t"parse full media type with parameter"):
       Media.parse(t"application/json; charset=UTF-8")
-    }.assert(_ == MediaType(Media.Group.Application, Media.Subtype.Standard(t"json"),
+    .assert(_ == MediaType(Media.Group.Application, Media.Subtype.Standard(t"json"),
         parameters = List((t"charset", t"UTF-8"))))
     
-    test(t"invalid media type") {
+    test(t"invalid media type"):
       capture(Media.parse(t"applicationjson"))
-    }.assert(_ == InvalidMediaTypeError(t"applicationjson",
+    .assert(_ == InvalidMediaTypeError(t"applicationjson",
         InvalidMediaTypeError.Nature.NotOneSlash))
