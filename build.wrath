@@ -1,9 +1,0 @@
-# This is a Wrath buildfile. More information is available at: https://github.com/propensive/wrath/
-[galilei]
-target = galilei/core
-repos = propensive/deviation propensive/serpentine propensive/eucalyptus
-
-[galilei/core]
-src = src/core
-refs = deviation/core serpentine/core eucalyptus/core
-
