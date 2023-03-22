@@ -1,0 +1,13 @@
+# This is a buildfile for Fury or Wrath.
+# More information is available at: https://github.com/propensive/wrath/
+
+repo propensive/dissonance
+repo propensive/dendrology
+repo propensive/escritoire
+
+target chiaroscuro/core
+
+project chiaroscuro
+  module core
+    sources src/core
+    include dissonance/core escritoire/core dendrology/core
