@@ -24,7 +24,7 @@ import gossamer.*
 import unsafeExceptions.canThrowAny
 
 import logging.stdout
-given ColorProfile = colorProfiles.Daylight
+given ColorProfile = colorProfiles.daylight
 
 object Tests extends Suite(t"Iridescence tests"):
   given Tolerance[Double] = (a, b) => math.abs(a - b) < 0.05
