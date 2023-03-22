@@ -7,5 +7,6 @@ target eucalyptus/core
 
 project eucalyptus
   module core
-    sources src/core
-    include escapade/core
+    compiler  scala
+    sources   src/core
+    include   escapade/core
