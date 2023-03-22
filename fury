@@ -1,51 +1,14 @@
-#!/bin/sh
-:<< "##"
-    ───────────────────────────────────────────────────────────────────────
+# This is a Wrath buildfile. More information is available at: https://github.com/propensive/wrath/
+target rudiments/core
 
-         · • ·
-      • ○ ○ ● ● •      ╭────╮
-     ○ ○ ◌ ◌ ◌ ● ●     │ ╭──╯╭─╮╭─╮╭─╮─╮╭─╮╭─╮
-    · ○ ◌ ◌ ◎ ◎ ● ·    │ ┌─╯ │ ╰╯ ││ ╭─╯│ ╰╯ │
-     ○ ◌ ◎ ◎ ● ● ●     ╰─╯   ╰────╯╰─╯  ╰──┐ │
-      • ◎ ◎ ● ● •                       ╰────╯
-         · • ·
-
-    This is Fury build file which describes how to build something. It can
-    be started by running fury in this directory, or just executing this
-    file from a shell.
-
-    ───────────────────────────────────────────────────────────────────────
-
-overlay  anticipation  gh:propensive/anticipation
-    36a5154b3f6079537f4aa5419814ef4f1c712e38
-
-command compile rudiments/core
-command test rudiments/test
-command package
-  bundle rudiments/core
-
-default compile
+repo propensive/anticipation
 
 project rudiments
   module core
-    include   anticipation/file
-    source    src/core
-    provide   rudiments
-    
-    artifact jar bin/rudiments.jar
-      
+    sources src/core
+    include anticipation/css anticipation/http
 
-  module test
-    include  core
-    source   src/test
-    main     rudiments.Tests
-
-##
-
-code=H4sIAAAAAAAAA1WQzW6CUBCF9zzF5IagpuFH8KINwU1t04XGB5Au4P4IkQsUvdUmrPpEfbI+QwdITLubmZM558vhMTFf97tn12Epy4Urdf\
-vpXlRDIokKH3YSNbE5ScRhsYpo5C88hXMwzisFZaorfG0Br38lT/18fQ+3iaFjchQXp3dzMl2UnEQHsCUQUxJ467qpYHmNWwOb+lqVdcqL6gimJ\
-palTrxowW5Q5bhOr2gE9vsebNS7jum2BPu8hcQw9WzdG1oWy1XN4eE2+HeduBUXmM/AX7tcfLiVLsvoHviUC3bq03YbCnl6zqGWMLgcUJ8qTjFt\
-BPXXiXF3QGjUzlqNIblIOdgs8P/FzAjEENAwXPJMho9hOmfBMs2oz6nH53JJA+5nfQEj4kiVGD3Xdqi1B3vpW3McJBoohto8YvwCkFcY9LsBAAA=
-
-eval "$(echo $code | base64 -d | gzip -d)"
-# echo $code | base64 -d | gzip -d
+  #module test
+  #  sources src/test
+  #  refs rudiments/core probably/cli
+  #  main rudiments.Tests
