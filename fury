@@ -8,10 +8,12 @@ repo propensive/probably
 
 project merino
   module core
-    sources src/core
-    include gossamer/core
+    compiler  scala
+    sources   src/core
+    include   gossamer/core
 
   module test
-    sources src/test
-    include probably/cli merino/core galilei/core
+    compiler  scala
+    sources   src/test
+    include   probably/cli merino/core galilei/core
 
