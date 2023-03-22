@@ -1,9 +1,9 @@
 # This is a Wrath buildfile. More information is available at: https://github.com/propensive/wrath/
-[gastronomy]
-target = gastronomy/core
-repos = propensive/gossamer
 
-[gastronomy/core]
-src = src/core
-refs = gossamer/core
+repo propensive/gossamer
+target gastronomy/core
+project gastronomy
+  module core
+    sources src/core
+    include gossamer/core
 
