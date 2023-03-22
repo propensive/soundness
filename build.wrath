@@ -1,9 +1,0 @@
-# This is a Wrath buildfile. More information is available at: https://github.com/propensive/wrath/
-[polyvinyl]
-target = polyvinyl/core
-repos = propensive/rudiments
-
-[polyvinyl/core]
-src = src/core
-refs = rudiments/core
-

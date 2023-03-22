@@ -1,0 +1,12 @@
+# This is a buildfile for Fury or Wrath.
+# More information is available at: https://github.com/propensive/wrath/
+
+target polyvinyl/core
+
+repo propensive/rudiments
+
+project polyvinyl
+  module core
+    sources  src/core
+    include  rudiments/core
+
