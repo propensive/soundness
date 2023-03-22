@@ -8,10 +8,12 @@ repo propensive/kaleidoscope
 
 project aviation
   module core
-    sources  src/core
-    include  eucalyptus/core cardinality/core kaleidoscope/core
+    compiler  scala
+    sources   src/core
+    include   eucalyptus/core cardinality/core kaleidoscope/core
 
   module test
-    sources  src/test
-    include  aviation/core probably/cli
-    main     aviation.Tests
+    compiler  scala
+    sources   src/test
+    include   aviation/core probably/cli
+    main      aviation.Tests
