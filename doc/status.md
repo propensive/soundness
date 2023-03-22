@@ -66,9 +66,13 @@
 
 [<img alt="GitHub Workflow" src="https://img.shields.io/github/actions/workflow/status/propensive/larceny/main.yml?style=for-the-badge" height="24">](https://github.com/propensive/larceny/actions) `propensive/larceny`
 
+[<img alt="GitHub Workflow" src="https://img.shields.io/github/actions/workflow/status/propensive/mercator/main.yml?style=for-the-badge" height="24">](https://github.com/propensive/mercator/actions) `propensive/mercator`
+
 [<img alt="GitHub Workflow" src="https://img.shields.io/github/actions/workflow/status/propensive/merino/main.yml?style=for-the-badge" height="24">](https://github.com/propensive/merino/actions) `propensive/merino`
 
 [<img alt="GitHub Workflow" src="https://img.shields.io/github/actions/workflow/status/propensive/oubliette/main.yml?style=for-the-badge" height="24">](https://github.com/propensive/oubliette/actions) `propensive/oubliette`
+
+[<img alt="GitHub Workflow" src="https://img.shields.io/github/actions/workflow/status/propensive/panopticon/main.yml?style=for-the-badge" height="24">](https://github.com/propensive/panopticon/actions) `propensive/panopticon`
 
 [<img alt="GitHub Workflow" src="https://img.shields.io/github/actions/workflow/status/propensive/parasitism/main.yml?style=for-the-badge" height="24">](https://github.com/propensive/parasitism/actions) `propensive/parasitism`
 

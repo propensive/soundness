@@ -191,3 +191,9 @@
 [submodule "mod/larceny"]
 	path = mod/larceny
 	url = git@github.com:propensive/larceny
+[submodule "mod/mercator"]
+	path = mod/mercator
+	url = git@github.com:propensive/mercator
+[submodule "mod/panopticon"]
+	path = mod/panopticon
+	url = git@github.com:propensive/panopticon
