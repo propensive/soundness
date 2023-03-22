@@ -1,9 +1,0 @@
-# This is a Wrath buildfile. More information is available at: https://github.com/propensive/wrath/
-[caesura]
-target = caesura/core
-repos = propensive/wisteria propensive/gossamer
-
-[caesura/core]
-src = src/core
-refs = wisteria/core gossamer/core
-
