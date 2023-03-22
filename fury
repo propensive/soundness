@@ -1,0 +1,8 @@
+# This is a Wrath buildfile. More information is available at: https://github.com/propensive/wrath/
+
+target umbrageous/plugin
+
+project umbrageous
+  module plugin
+    sources  umbrageous/plugin
+    plugin   yes
