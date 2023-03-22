@@ -1,9 +1,12 @@
 # This is a Wrath buildfile. More information is available at: https://github.com/propensive/wrath/
-[exoskeleton]
-repos = propensive/galilei propensive/ambience propensive/profanity
-target = exoskeleton/core
 
-[exoskeleton/core]
-src = src/core
-refs = galilei/core ambience/core profanity/core
+target exoskeleton/core
+repo propensive/galilei
+repo propensive/ambience
+repo propensive/profanity
+
+project exoskeleton
+  module core
+    sources  src/core
+    include  galilei/core ambience/core profanity/core
 
