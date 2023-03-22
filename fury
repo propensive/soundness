@@ -12,3 +12,4 @@ project adversaria
   module test
     include  larceny/plugin adversaria/core probably/cli
     sources  src/test
+    main     adversaria.Tests
