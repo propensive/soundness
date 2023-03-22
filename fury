@@ -1,13 +1,18 @@
 # This is a Wrath buildfile. More information is available at: https://github.com/propensive/wrath/
-[telekinesis]
-repos = propensive/gastronomy propensive/gesticulate propensive/eucalyptus propensive/serpentine propensive/escapade
-target = telekinesis/client
 
-[telekinesis/client]
-refs = gastronomy/core gesticulate/core telekinesis/url eucalyptus/core
-src = src/client
+repo propensive/gastronomy
+repo propensive/gesticulate
+repo propensive/eucalyptus
+repo propensive/serpentine
+repo propensive/escapade
 
-[telekinesis/url]
-src = src/url
-refs = serpentine/core escapade/core
+target telekinesis/client
+
+project telekinesis
+  module url
+    sources  src/url
+    include  serpentine/core escapade/core
+  module client
+    sources  src/client
+    include  gastronomy/core gesticulate/core telekinesis/url eucalyptus/core
 
