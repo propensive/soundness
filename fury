@@ -11,4 +11,4 @@ target tarantula/core
 project tarantula
   module core
     sources  src/core
-    include  jacinta/core telekinesis/core guillotine/core cataclysm/core honeycomb/core
+    include  jacinta/core telekinesis/client guillotine/core cataclysm/core honeycomb/core
