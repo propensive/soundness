@@ -1,6 +1,8 @@
 # This is a Wrath buildfile. More information is available at: https://github.com/propensive/wrath/
 target rudiments/core
 
+repo propensive/anticipation
+
 project rudiments
   module core
     sources src/core
