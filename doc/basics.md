@@ -3,7 +3,6 @@ output in different ways:
 - as a message reported at compiletime
 - as a terminal compile error
 - as a value which can be used in some way at runtime
-- logged or printed as a side-effect at runtime
 
 It can be invoked on an expression in ordinary code, or in an inline context
 where a `Quotes` instance is available, on a lifted `Expr` or a `Tree` value.
@@ -20,9 +19,6 @@ from a call to `introspect`. This given value can determine not only the result
 type, but whether the expression is evaluated or its value retained. Three
 implementations offered:
 
-- `introspection.log`—uses a contextual
-  [Eucalyptus](https://github.com/propensive/eucalyptus/) log to record the
-  introspection details as a side-effect, and returns the expression value
 - `introspection.println`—records the introspection details to `stdout` with
   `println`, and returns the expression value
 - `introspection.text`—constructs a `Text` value containing the introspection
