@@ -1,13 +1,16 @@
 # This is a Wrath buildfile. More information is available at: https://github.com/propensive/wrath/
-[cellulose]
-target = cellulose/test
-repos = propensive/eucalyptus propensive/chiaroscuro propensive/kaleidoscope propensive/polyvinyl propensive/probably propensive/aviation
 
-[cellulose/core]
-src = src/core
-refs = eucalyptus/core chiaroscuro/core kaleidoscope/core polyvinyl/core
+repo propensive/probably
+repo propensive/aviation
 
-[cellulose/test]
-src = src/test
-refs = probably/cli cellulose/core aviation/core
-main = cellulose.Tests
+target cellulose/test
+
+project cellulose
+  module core
+    sources  src/core
+    include  eucalyptus/core chiaroscuro/core kaleidoscope/core polyvinyl/core
+  
+  module test
+    sources  src/test
+    include  cellulose/core probably/cli aviation/core
+    main     cellulose.Tests
