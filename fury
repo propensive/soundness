@@ -1,0 +1,16 @@
+# This is a buildfile for Fury or Wrath.
+# More information is available at: https://github.com/propensive/wrath/
+
+target serpentine/test
+
+repo propensive/probably
+
+project serpentine
+  module core
+    sources  src/core
+    include  anticipation/html gossamer/core
+
+  module test
+    sources  src/test
+    include  serpentine/core probably/cli
+    main     serpentine.Tests

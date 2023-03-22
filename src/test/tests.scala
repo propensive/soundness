@@ -20,11 +20,6 @@ import probably.*
 import rudiments.*
 import turbulence.*
 import gossamer.*
-import eucalyptus.*
-
-import unsafeExceptions.canThrowAny
-
-given Log(Everything |-> SystemOut)
 
 object Tests extends Suite(t"Serpentine Tests"):
   def run(): Unit =
@@ -56,7 +51,7 @@ object Tests extends Suite(t"Serpentine Tests"):
       Relative.parse(t"../path/child")
     .assert(_ == Relative(1, List(t"path", t"child")))
 
-    suite(t"show paths"):
+    suite(t"Show paths"):
       test(t"show simple relative path"):
         (? / p"hello" / p"world").show
       .assert(_ == t"hello/world")

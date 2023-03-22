@@ -1,9 +1,0 @@
-# This is a Wrath buildfile. More information is available at: https://github.com/propensive/wrath/
-[serpentine]
-target = serpentine/core
-repos = propensive/gossamer propensive/anticipation
-
-[serpentine/core]
-src = src/core
-refs = gossamer/core anticipation/html
-
