@@ -1,9 +1,0 @@
-# This is a Wrath buildfile. More information is available at: https://github.com/propensive/wrath/
-[iridescence]
-target = iridescence/core
-repos = propensive/deviation propensive/cardinality propensive/contextual
-
-[iridescence/core]
-src = src/core
-refs = cardinality/core deviation/core contextual/core
-
