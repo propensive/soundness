@@ -1,13 +1,15 @@
 # This is a Wrath buildfile. More information is available at: https://github.com/propensive/wrath/
-[scintillate]
-target = scintillate/servlet
-repos = propensive/telekinesis
 
-[scintillate/server]
-src = src/server
-refs = telekinesis/client
+repo propensive/telekinesis
 
-[scintillate/servlet]
-src = src/servlet
-refs = scintillate/server
-lib = https://repo1.maven.org/maven2/javax/servlet/javax.servlet-api/3.0.1/javax.servlet-api-3.0.1.jar
+target scintillate/server
+
+project scintillate
+  module server
+    sources  src/server
+    include  telekinesis/client
+
+#  module servlet
+#    sources  src/servlet
+#    include  scintillate/server
+#    lib      servlet-api https://repo1.maven.org/maven2/javax/servlet/javax.servlet-api/3.0.1/javax.servlet-api-3.0.1.jar
