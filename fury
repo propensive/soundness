@@ -1,0 +1,11 @@
+# This is a buildfile for Fury or Wrath.
+# More information is available at: https://github.com/propensive/wrath/
+
+repo propensive/escapade
+
+target eucalyptus/core
+
+project eucalyptus
+  module core
+    sources src/core
+    include escapade/core

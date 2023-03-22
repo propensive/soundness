@@ -1,9 +1,0 @@
-# This is a Wrath buildfile. More information is available at: https://github.com/propensive/wrath/
-[eucalyptus]
-repos = propensive/escapade
-target = eucalyptus/core
-
-[eucalyptus/core]
-src = src/core
-refs = escapade/core
-
