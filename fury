@@ -3,10 +3,10 @@
 
 target caesura/core
 
-repo propensive/wisteria
+repo propensive/gossamer
 
 project caesura
   module core
     sources  src/core
-    include  wisteria/core
+    include  gossamer/core
 
