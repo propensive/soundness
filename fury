@@ -6,10 +6,12 @@ repo propensive/probably
 project panopticon
 
   module core
-    sources src/core
+    compiler  scala
+    sources   src/core
 
   module test
-    sources src/test
-    include panopticon/core
-    include probably/cli
-    main panopticon.Tests
+    compiler  scala
+    sources   src/test
+    include   panopticon/core
+    include   probably/cli
+    main      panopticon.Tests
