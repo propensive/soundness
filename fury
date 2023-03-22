@@ -3,6 +3,7 @@
 
 target panopticon/test
 repo propensive/probably
+repo propensive/larceny
 project panopticon
 
   module core
@@ -14,4 +15,5 @@ project panopticon
     sources   src/test
     include   panopticon/core
     include   probably/cli
+    include   larceny/plugin
     main      panopticon.Tests
