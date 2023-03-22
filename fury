@@ -1,9 +1,11 @@
 # This is a Wrath buildfile. More information is available at: https://github.com/propensive/wrath/
-[harlequin]
-target = harlequin/core
-repos = propensive/gossamer propensive/kaleidoscope
 
-[harlequin/core]
-src = src/core
-refs = gossamer/core kaleidoscope/core
+target harlequin/core
+repo propensive/kaleidoscope
+repo propensive/gossamer
+
+project harlequin
+  module core
+    sources src/core
+    include propensive/gossamer propensive/kaleidoscope
 
