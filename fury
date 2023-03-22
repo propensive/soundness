@@ -8,5 +8,6 @@ repo propensive/ambience
 
 project imperial
   module core
-    sources src/core
-    include anticipation/file deviation/core ambience/core
+    compiler  scala
+    sources   src/core
+    include   anticipation/file deviation/core ambience/core
