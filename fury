@@ -1,12 +1,15 @@
-# This is a Wrath buildfile. More information is available at: https://github.com/propensive/wrath/
-[gesticulate]
-target = gesticulate/test
-repos = propensive/probably propensive/gossamer propensive/anticipation
 
-[gesticulate/core]
-src = src/core
-refs = gossamer/core anticipation/html
 
-[gesticulate/test]
-refs = probably/cli gesticulate/core
+repo propensive/probably
 
+target gesticulate/test
+
+project gesticulate
+  module core
+    sources src/core
+    include gossamer/core anticipation/html
+
+  module test
+    sources  src/test
+    include  probably/cli gesticulate/core
+    main     gesticulate.Tests
