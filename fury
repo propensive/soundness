@@ -4,7 +4,7 @@
 repo propensive/eucalyptus
 repo propensive/probably
 
-target dissonance/core
+target dissonance/test
 
 project dissonance
   module core
