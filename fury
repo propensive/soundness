@@ -1,13 +1,14 @@
-# This is a Wrath buildfile. More information is available at: https://github.com/propensive/wrath/
-[jacinta]
-target = jacinta/test
-repos = propensive/wisteria propensive/probably propensive/merino propensive/gossamer
 
-[jacinta/core]
-src = src/core
-refs = wisteria/core gossamer/core merino/core
+repo propensive/probably
+repo propensive/merino
 
-[jacinta/test]
-src = src/test
-refs = probably/cli jacinta/core
-main = jacinta.Tests
+target jacinta/test
+
+project jacinta
+  module core
+    sources  src/core
+    include  merino/core gossamer/core wisteria/core
+  module test
+    sources  src/test
+    include  jacinta/core probably/cli
+    main     jacinta.Tests
