@@ -1,0 +1,18 @@
+# This is a buildfile for Fury or Wrath.
+# More information is available at: https://github.com/propensive/wrath/
+
+repo propensive/eucalyptus
+repo propensive/escritoire
+repo propensive/chiaroscuro
+repo propensive/gossamer
+
+target probably/cli
+
+project probably
+  module core
+    sources src/core
+    include gossamer/core chiaroscuro/core
+  
+  module cli
+    sources src/cli
+    include probably/core escritoire/core
