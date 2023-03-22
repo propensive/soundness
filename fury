@@ -1,9 +1,12 @@
-# This is a Wrath buildfile. More information is available at: https://github.com/propensive/wrath/
-[cosmopolite]
-target = cosmopolite/core
-repos = propensive/gossamer
+# This is a buildfile for Fury or Wrath.
+# More information is available at: https://github.com/propensive/wrath/
 
-[cosmopolite/core]
-src = src/core
-refs = gossamer/core
+target cosmopolite/core
+
+repo propensive/gossamer
+
+project cosmopolite
+  module core
+    sources  src/core
+    include  gossamer/core
 
