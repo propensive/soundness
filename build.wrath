@@ -1,9 +1,10 @@
 # This is a Wrath buildfile. More information is available at: https://github.com/propensive/wrath/
-[ambience]
-target = ambience/core
-repos = propensive/rudiments propensive/anticipation
 
-[ambience/core]
-src = src/core
-refs = rudiments/core anticipation/file
+target ambience/core
+repo propensive/rudiments
+
+project ambience
+  module core
+    sources src/core
+    include rudiments/core anticipation/file
 
