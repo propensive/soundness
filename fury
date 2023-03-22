@@ -9,6 +9,7 @@ target galilei/core
 
 project galilei
   module core
-    sources  src/core
-    include  deviation/core serpentine/core eucalyptus/core
+    compiler  scala
+    sources   src/core
+    include   deviation/core serpentine/core eucalyptus/core
 
