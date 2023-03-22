@@ -15,5 +15,5 @@ project iridescence
 
   module test
     sources  src/test
-    include  iridescence/core probably/cli
+    include  iridescence/core probably/cli probably/tolerance
     main     iridescence.Tests
