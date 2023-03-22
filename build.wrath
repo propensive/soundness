@@ -1,9 +1,0 @@
-# This is a Wrath buildfile. More information is available at: https://github.com/propensive/wrath/
-[hyperbole]
-target = hyperbole/core
-repos = propensive/harlequin propensive/escapade propensive/escritoire propensive/dendrology
-
-[hyperbole/core]
-src = src/core
-refs = harlequin/core escapade/core escritoire/core dendrology/core
-

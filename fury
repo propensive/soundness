@@ -1,0 +1,13 @@
+# This is a Wrath buildfile. More information is available at: https://github.com/propensive/wrath/
+[hyperbole]
+target = hyperbole/test
+repos = propensive/harlequin propensive/escapade propensive/escritoire propensive/dendrology propensive/probably
+
+[hyperbole/core]
+src = src/core
+refs = harlequin/core escapade/core escritoire/core dendrology/core
+
+[hyperbole/test]
+src = src/test
+refs = hyperbole/core probably/cli
+main = hyperbole.Tests
