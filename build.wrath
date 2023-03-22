@@ -1,6 +1,0 @@
-# This is a Wrath buildfile. More information is available at: https://github.com/propensive/wrath/
-[cardinality]
-target = cardinality/core
-
-[cardinality/core]
-src = src/core
