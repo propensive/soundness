@@ -10,10 +10,12 @@ target iridescence/test
 
 project iridescence
   module core
-    sources src/core
-    include cardinality/core deviation/core contextual/core
+    compiler  scala
+    sources   src/core
+    include   cardinality/core deviation/core contextual/core
 
   module test
-    sources  src/test
-    include  iridescence/core probably/cli probably/tolerance
-    main     iridescence.Tests
+    compiler  scala
+    sources   src/test
+    include   iridescence/core probably/cli probably/tolerance
+    main      iridescence.Tests
