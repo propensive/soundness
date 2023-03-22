@@ -1,9 +1,0 @@
-# This is a Wrath buildfile. More information is available at: https://github.com/propensive/wrath/
-[dendrology]
-target = dendrology/core
-repos = propensive/gossamer
-
-[dendrology/core]
-src = src/core
-refs = gossamer/core
-
