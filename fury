@@ -7,5 +7,5 @@ repo propensive/gossamer
 project harlequin
   module core
     sources src/core
-    include propensive/gossamer propensive/kaleidoscope
+    include gossamer/core kaleidoscope/core
 
