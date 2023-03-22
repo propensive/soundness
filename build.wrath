@@ -1,9 +1,0 @@
-# This is a Wrath buildfile. More information is available at: https://github.com/propensive/wrath/
-[hieronymus]
-target = hieronymus/core
-repos = propensive/kaleidoscope
-
-[hieronymus/core]
-src = src/core
-refs = kaleidoscope/core
-
