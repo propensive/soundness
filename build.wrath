@@ -1,9 +1,9 @@
 # This is a Wrath buildfile. More information is available at: https://github.com/propensive/wrath/
-[acyclicity]
-target = acyclicity/core
-repos = propensive/gossamer
 
-[acyclicity/core]
-src = src/core
-refs = gossamer/core
+target acyclicity/core
+repo propensive/gossamer
+project acyclicity
+  module core
+    sources src/core
+    include gossamer/core
 
