@@ -1,9 +1,14 @@
 # This is a Wrath buildfile. More information is available at: https://github.com/propensive/wrath/
-[tarantula]
-repos = propensive/jacinta propensive/telekinesis propensive/guillotine propensive/cataclysm propensive/honeycomb
-target = tarantula/core
 
-[tarantula/core]
-src = src/core
-refs = jacinta/core telekinesis/client guillotine/core cataclysm/core honeycomb/core
+repo propensive/jacinta
+repo propensive/telekinesis
+repo propensive/guillotine
+repo propensive/cataclysm
+repo propensive/honeycomb
 
+target tarantula/core
+
+project tarantula
+  module core
+    sources  src/core
+    include  jacinta/core telekinesis/core guillotine/core cataclysm/core honeycomb/core
