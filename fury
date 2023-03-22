@@ -7,10 +7,12 @@ repo propensive/probably
 
 project serpentine
   module core
-    sources  src/core
-    include  anticipation/html gossamer/core
+    compiler  scala
+    sources   src/core
+    include   anticipation/html gossamer/core
 
   module test
-    sources  src/test
-    include  serpentine/core probably/cli
-    main     serpentine.Tests
+    compiler  scala
+    sources   src/test
+    include   serpentine/core probably/cli
+    main      serpentine.Tests
