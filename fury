@@ -5,6 +5,7 @@ target acyclicity/core
 repo propensive/gossamer
 project acyclicity
   module core
-    sources src/core
-    include gossamer/core
+    compiler  scala
+    sources   src/core
+    include   gossamer/core
 
