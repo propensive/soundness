@@ -3,7 +3,10 @@
 
 target cardinality/core
 
+repo propensive/rudiments
+
 project cardinality
   module core
     compiler  scala
     sources   src/core
+    include   rudiments/core
