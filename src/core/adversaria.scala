@@ -81,11 +81,10 @@ object AdversariaMacros:
     val field = fn.asTerm match
       case Inlined(_, _, Block(List(DefDef(_, _, _, Some(Select(_, term)))), _)) =>
         tpe.typeSymbol.caseFields.find(_.name == term).getOrElse:
-          report.errorAndAbort(s"adversaria: the member $term is not a case class field")
+          fail(s"the member $term is not a case class field")
       
       case _ =>
-        report.errorAndAbort:
-          """adversaria: the lambda must be a simple reference to a case class field"""
+        fail("the lambda must be a simple reference to a case class field")
 
     Expr.ofList(field.annotations.map(_.asExpr).collect { case '{ $ann: Ann } => ann })
 
@@ -96,6 +95,5 @@ object AdversariaMacros:
     val annotations = tpe.typeSymbol.annotations.map(_.asExpr).collect { case '{ $a: A } => a }
     
     if annotations.isEmpty
-    then report.errorAndAbort(
-        s"""adversaria: the type ${tpe.show} did not have the annotation ${TypeRepr.of[A].show}""")
+    then fail(s"the type ${tpe.show} did not have the annotation ${TypeRepr.of[A].show}")
     else '{ Annotations[A, T](${Expr.ofList(annotations)}*) }
