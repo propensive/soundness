@@ -16,6 +16,8 @@
 
 package mercator
 
+import rudiments.*
+
 import scala.quoted.*
 import scala.collection.BuildFrom
 import language.dynamics
@@ -73,9 +75,7 @@ object MercatorMacros:
         case _ => false
       
     if applyMethods.length == 1
-    then
-    
-    '{
+    then '{
       new Point[TypeConstructorType]:
         def point[ValueType](value: ValueType): TypeConstructorType[ValueType] =
           ${
@@ -87,8 +87,8 @@ object MercatorMacros:
           }
     }
     else if applyMethods.length == 0
-    then report.errorAndAbort(s"mercator: the companion object ${pointType.name} has no candidate apply methods")
-    else report.errorAndAbort(s"mercator: the companion object ${pointType.name} has more than one candidate apply method")
+    then fail(s"the companion object ${pointType.name} has no candidate apply methods")
+    else fail(s"the companion object ${pointType.name} has more than one candidate apply method")
 
   def functor[FunctorType[_]](using Type[FunctorType], Quotes): Expr[Functor[FunctorType]] =
     import quotes.reflect.*
@@ -100,7 +100,7 @@ object MercatorMacros:
         case _                      => false
     
     val pointExpr: Expr[Point[FunctorType]] = Expr.summon[Point[FunctorType]].getOrElse:
-      report.errorAndAbort(s"mercator: could not find Point value for ${functorType.name}")
+      fail(s"could not find Point value for ${functorType.name}")
 
     lazy val makeFunctor = '{
       new Functor[FunctorType]:
@@ -114,9 +114,8 @@ object MercatorMacros:
     }
 
     if mapMethods.length == 1 then makeFunctor else if mapMethods.length == 0 then
-      report.errorAndAbort(s"mercator: the type ${functorType.name} has no map methods")
-    else report.errorAndAbort(
-        s"mercator: the type ${functorType.name} has more than one possible map method")
+      fail(s"the type ${functorType.name} has no map methods")
+    else fail(s"the type ${functorType.name} has more than one possible map method")
     
   def monad[MonadType[_]](using Type[MonadType], Quotes): Expr[Monad[MonadType]] =
     import quotes.reflect.*
@@ -128,7 +127,7 @@ object MercatorMacros:
         case _                      => false
     
     val functorExpr: Expr[Functor[MonadType]] = Expr.summon[Functor[MonadType]].getOrElse:
-      report.errorAndAbort(s"mercator: could not find Functor value for ${monadType.name}")
+      fail(s"could not find Functor value for ${monadType.name}")
 
     lazy val makeMonad = '{
       new Monad[MonadType]:
@@ -150,10 +149,10 @@ object MercatorMacros:
               .asExprOf[MonadType[ValueType2]]}
     }
 
-    if flatMapMethods.length == 1 then makeMonad else if flatMapMethods.length == 0 then
-      report.errorAndAbort(s"mercator: the type ${monadType.name} has no flatMap methods")
-    else report.errorAndAbort(
-        s"mercator: the type ${monadType.name} has more than one possible flatMap method")
+    if flatMapMethods.length == 1 then makeMonad
+    else if flatMapMethods.length == 0
+    then fail(s"the type ${monadType.name} has no flatMap methods")
+    else fail(s"the type ${monadType.name} has more than one possible flatMap method")
 
 extension [ValueType, FunctorType[_]]
     (using functor: Functor[FunctorType])(value: FunctorType[ValueType])
