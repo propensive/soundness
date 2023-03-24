@@ -7,6 +7,7 @@ repo propensive/rudiments
 
 project polyvinyl
   module core
-    sources  src/core
-    include  rudiments/core
+    compiler  scala
+    sources   src/core
+    include   rudiments/core
 
