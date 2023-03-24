@@ -69,7 +69,8 @@ class Runner[ReportType]()(using reporter: TestReporter[ReportType]):
   def skip(id: TestId): Boolean = false
   val report: ReportType = reporter.make()
 
-  def maybeRun[T, S](test: Test[T]): Maybe[TestRun[T]] = if skip(test.id) then Unset else run[T, S](test)
+  def maybeRun[T, S](test: Test[T]): Maybe[TestRun[T]] =
+    if skip(test.id) then Unset else run[T, S](test)
 
   def run[T, S](test: Test[T]): TestRun[T] =
     val ctx = TestContext()
@@ -110,6 +111,13 @@ def suite
   runner.suite(TestSuite(name, suite), fn)
 
 extension [TestType](test: Test[TestType])
+  inline def aspire[ReportType]
+      (inline pred: TestType => Boolean)
+      (using runner: Runner[ReportType], inc: Inclusion[ReportType, Outcome],
+          inc2: Inclusion[ReportType, DebugInfo])
+      : Unit =
+    ${ProbablyMacros.aspire[TestType, ReportType]('test, 'runner, 'inc, 'inc2)}
+  
   inline def assert[ReportType]
       (inline pred: TestType => Boolean)
       (using runner: Runner[ReportType], inc: Inclusion[ReportType, Outcome],
