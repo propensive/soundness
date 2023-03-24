@@ -8,5 +8,6 @@ target escapade/core
 
 project escapade
   module core
-    sources  src/core
-    include  gossamer/core iridescence/core
+    compiler  scala
+    sources   src/core
+    include   gossamer/core iridescence/core
