@@ -37,9 +37,7 @@ extends Error(ErrorMessage[EmptyTuple](
 ))
 
 extension [ElemType](value: IArray[ElemType])
-  inline def mutable(using erased Unsafe.type): Array[ElemType] = value match
-    case array: Array[ElemType] @unchecked => array
-    case _                                  => throw Mistake("Should never match")
+  inline def mutable(using erased Unsafe.type): Array[ElemType] = value.asInstanceOf[Array[ElemType]]
 
 extension [ElemType](value: Array[ElemType])
   inline def immutable(using erased Unsafe.type): IArray[ElemType] = value match
