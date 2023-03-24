@@ -7,6 +7,7 @@ repo propensive/gossamer
 
 project caesura
   module core
-    sources  src/core
-    include  gossamer/core
+    compiler  scala
+    sources   src/core
+    include   gossamer/core
 
