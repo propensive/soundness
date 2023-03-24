@@ -4,5 +4,6 @@ target umbrageous/plugin
 
 project umbrageous
   module plugin
-    sources  umbrageous/plugin
-    plugin   yes
+    compiler  scala
+    sources   umbrageous/plugin
+    plugin    yes
