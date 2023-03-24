@@ -5,4 +5,5 @@ target cardinality/core
 
 project cardinality
   module core
-    sources src/core
+    compiler  scala
+    sources   src/core
