@@ -9,5 +9,6 @@ target chiaroscuro/core
 
 project chiaroscuro
   module core
-    sources src/core
-    include dissonance/core escritoire/core dendrology/core
+    compiler  scala
+    sources   src/core
+    include   dissonance/core escritoire/core dendrology/core
