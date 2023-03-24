@@ -103,12 +103,18 @@ extension (text: Text)
   inline def rsub(from: Text, to: Text): Text = Text(text.s.replaceAll(from.s, to.s).nn)
   inline def starts(prefix: Text): Boolean = text.s.startsWith(prefix.s)
   inline def ends(suffix: Text): Boolean = text.s.endsWith(suffix.s)
-  inline def sub(from: Text, to: Text): Text = Text(text.s.replaceAll(Pattern.quote(from.s), to.s).nn)
+  
+  inline def sub(from: Text, to: Text): Text =
+    Text(text.s.replaceAll(Pattern.quote(from.s), to.s).nn)
+  
   inline def tr(from: Char, to: Char): Text = Text(text.s.replace(from, to).nn)
   inline def capitalize: Text = take(1).upper+drop(1)
   inline def uncapitalize: Text = take(1).lower+drop(1)
   inline def reverse: Text = Text(String(text.s.toCharArray.nn.reverse))
-  inline def count(pred: Char -> Boolean): Int = text.s.toCharArray.nn.immutable(using Unsafe).count(pred)
+  
+  inline def count(pred: Char -> Boolean): Int =
+    text.s.toCharArray.nn.immutable(using Unsafe).count(pred)
+  
   inline def head: Char = text.s.charAt(0)
   inline def last: Char = text.s.charAt(text.s.length - 1)
   inline def tail: Text = drop(1, Ltr)
@@ -150,19 +156,25 @@ extension (text: Text)
     if idx >= 0 && idx < text.s.length then text.s.charAt(idx)
     else throw OutOfRangeError(idx, 0, text.s.length)
   
-  def char(idx: Int): Maybe[Char] = if idx >= 0 && idx < text.s.length then text.s.charAt(idx) else Unset
+  def char(idx: Int): Maybe[Char] =
+    if idx >= 0 && idx < text.s.length then text.s.charAt(idx) else Unset
 
   def pad(length: Int, bidi: Bidi = Ltr, char: Char = ' ')(using calc: TextWidthCalculator): Text =
     bidi match
-      case Ltr => if calc.width(text) < length then text+Text(s"$char")*(length - calc.width(text)) else text
-      case Rtl => if calc.width(text) < length then Text(s"$char")*(length - calc.width(text))+text else text
+      case Ltr =>
+        if calc.width(text) < length then text+Text(s"$char")*(length - calc.width(text)) else text
+      
+      case Rtl =>
+        if calc.width(text) < length then Text(s"$char")*(length - calc.width(text))+text else text
 
   def contains(substring: Text): Boolean = text.s.contains(substring.s)
   def contains(char: Char): Boolean = text.s.indexOf(char) != -1
 
   @tailrec
-  def where(pred: Char -> Boolean, idx: Maybe[Int] = Unset, bidi: Bidi = Ltr)(using CanThrow[OutOfRangeError])
-            : Int = bidi match
+  def where
+      (pred: Char -> Boolean, idx: Maybe[Int] = Unset, bidi: Bidi = Ltr)
+      (using CanThrow[OutOfRangeError])
+      : Int = bidi match
     case Ltr =>
       val index = idx.or(0)
       if index >= text.length || index < 0 then throw OutOfRangeError(index, 0, text.s.length)
@@ -246,7 +258,8 @@ object Interpolation:
     val buf: StringBuilder = StringBuilder()
     
     def parseUnicode(chars: Text): Char =
-      if chars.length < 4 then throw InterpolationError(rudiments.Text("the unicode escape is incomplete"))
+      if chars.length < 4
+      then throw InterpolationError(rudiments.Text("the unicode escape is incomplete"))
       else Integer.parseInt(chars.s, 16).toChar
 
     @tailrec
@@ -279,7 +292,8 @@ object Interpolation:
                                    rudiments.Text(s"the character '$ch' should not be escaped"))
           case ch           => buf.add(ch)
                                recur(cur + 1)
-      else if esc then throw InterpolationError(rudiments.Text("the final character cannot be an escape"))
+      else if esc then throw InterpolationError(
+          rudiments.Text("the final character cannot be an escape"))
     
     recur()
     
