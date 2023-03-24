@@ -1,3 +1,5 @@
+# This is a buildfile for Fury or Wrath.
+# More information is available at: https://github.com/propensive/wrath/
 target parasitism/core
 
 repo propensive/deviation
@@ -5,6 +7,7 @@ repo propensive/anticipation
 
 project parasitism
   module core
-    include deviation/core anticipation/time
-    sources src/core
+    compiler  scala
+    include   deviation/core anticipation/time
+    sources   src/core
 
