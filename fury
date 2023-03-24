@@ -10,14 +10,17 @@ target probably/cli
 
 project probably
   module core
-    sources src/core
-    include gossamer/core chiaroscuro/core
+    compiler  scala
+    sources   src/core
+    include   gossamer/core chiaroscuro/core
   
   module cli
-    sources src/cli
-    include probably/core escritoire/core
+    compiler  scala
+    sources   src/cli
+    include   probably/core escritoire/core
 
   module tolerance
-    sources src/tolerance
-    include probably/core wisteria/core
+    compiler  scala
+    sources   src/tolerance
+    include   probably/core wisteria/core
 
