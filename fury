@@ -7,5 +7,6 @@ target hieronymus/core
 
 project hieronymus
   module core
-    sources src/core
-    include kaleidoscope/core
+    compiler  scala
+    sources  src/core
+    include  kaleidoscope/core
