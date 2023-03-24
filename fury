@@ -7,12 +7,14 @@ repo propensive/larceny
 
 project quantify
   module core
-    sources  src/core
-    include  gossamer/core
+    compiler  scala
+    sources   src/core
+    include   gossamer/core
 
   module test
-    sources  src/test
-    include  probably/cli quantify/core larceny/plugin
-    main     quantity.Tests
+    compiler  scala
+    sources   src/test
+    include   probably/cli quantify/core larceny/plugin
+    main      quantity.Tests
 
 
