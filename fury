@@ -8,5 +8,6 @@ target escritoire/core
 
 project escritoire
   module core
-    include hieronymus/core escapade/core
-    sources src/core
+    compiler  scala
+    include   hieronymus/core escapade/core
+    sources   src/core
