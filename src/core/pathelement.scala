@@ -31,42 +31,42 @@ object PathElement:
 
   private val forbidden = Set('<', '>', ':', '"', '\\', '|', '?', '*')
   
-  private val windowsForbidden = Set(t"con", t"prn", t"aux", t"nul", t"com1", t"com2", t"com3", t"com4",
-      t"com5", t"com6", t"com7", t"com8", t"com9", t"lpt1", t"lpt2", t"lpt3", t"lpt4", t"lpt5", t"lpt6",
-      t"lpt7", t"lpt8", t"lpt9")
+  private val windowsForbidden = Set(t"con", t"prn", t"aux", t"nul", t"com1", t"com2", t"com3",
+      t"com4", t"com5", t"com6", t"com7", t"com8", t"com9", t"lpt1", t"lpt2", t"lpt3", t"lpt4",
+      t"lpt5", t"lpt6", t"lpt7", t"lpt8", t"lpt9")
   
   def make(sc: Expr[StringContext])(using Quotes): Expr[PathElement] =
-    import quotes.*, quotes.reflect.*
+    import quotes.reflect.*
     
     val str = sc match
-      case '{ StringContext($str: String) } =>
+      case '{StringContext($str: String)} =>
         str.value.get
-      case _                                =>
+      
+      case _ =>
         throw Mistake("A StringContext should contain literals")
 
     str match
-      case "" =>
-        report.errorAndAbort("serpentine: a pathname cannot be empty")
-      case "." =>
-        report.errorAndAbort("serpentine: a pathname cannot be the string \".\"")
-      case ".." =>
-        report.errorAndAbort("serpentine: a pathname cannot be the string \"..\"")
+      case ""   => fail("a pathname cannot be empty")
+      case "."  => fail("a pathname cannot be the string \".\"")
+      case ".." => fail("a pathname cannot be the string \"..\"")
+
       case str =>
         if str.endsWith(".")
-        then report.errorAndAbort("serpentine: the pathname cannot end with a '.' character on Windows")
+        then fail("the pathname cannot end with a '.' character on Windows")
         else if str.endsWith(" ")
-        then report.errorAndAbort("serpentine: the pathname cannot end with a space on Windows")
+        then fail("the pathname cannot end with a space on Windows")
         else if windowsForbidden.contains(Text(str).cut(t".").head.lower)
-        then report.errorAndAbort(s"serpentine: the pathname $str (with or without an extension) is "+
-            "not valid on Windows")
-        else if str.contains("/") then report.errorAndAbort("serpentine: a path cannot contain the '/'"+
-            " character")
-        else if str.exists(_ < 32) then report.errorAndAbort("serpentine: a path cannot contain "+
-            "control characters")
+        then fail(s"the pathname $str (with or without an extension) is not valid on Windows")
+        else if str.contains("/") then fail("a path cannot contain the '/' character")
+        else if str.exists(_ < 32) then fail("a path cannot contain control characters")
         else
           val misused = forbidden.intersect(str.to(Set))
           if !misused.isEmpty
-          then report.errorAndAbort(s"serpentine: a path cannot contain the characters ${misused.to(List).map(_.toString).map(Text(_)).join(t"'", t"', '", t"' or '", t"'").s} on Windows, and they're not advised more generally")
+          then
+            val detail = misused.to(List).map(_.toString).map(Text(_)).join(t"'", t"', '",
+                t"' or '", t"'").s
+            
+            fail(s"a path cannot contain the characters $detail on Windows, and should not more generally")
           else '{PathElement(Text(${Expr(str)}))(using unsafeExceptions.canThrowAny)}
 
 extension (inline sc: StringContext)

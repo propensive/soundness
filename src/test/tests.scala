@@ -20,6 +20,7 @@ import probably.*
 import rudiments.*
 import turbulence.*
 import gossamer.*
+import larceny.*
 
 object Tests extends Suite(t"Serpentine Tests"):
   def run(): Unit =
@@ -56,3 +57,33 @@ object Tests extends Suite(t"Serpentine Tests"):
         (? / p"hello" / p"world").show
       .assert(_ == t"hello/world")
     
+    suite(t"invalid paths"):
+
+      test(t"con is not a valid path name"):
+        captureCompileErrors(p"con").map(_.message)
+      .assert(_ == List("serpentine: the pathname con (with or without an extension) is not valid on Windows"))
+      
+      test(t"con.xyz is not a valid path name"):
+        captureCompileErrors(p"con.xyz").map(_.message)
+      .assert(_ == List("serpentine: the pathname con.xyz (with or without an extension) is not valid on Windows"))
+      
+      test(t"lpt4 is not a valid path name"):
+        captureCompileErrors(p"lpt4").map(_.message)
+      .assert(_ == List("serpentine: the pathname lpt4 (with or without an extension) is not valid on Windows"))
+      
+      test(t"LPT4 is not a valid path name"):
+        captureCompileErrors(p"lpt4").map(_.message)
+      .assert(_ == List("serpentine: the pathname lpt4 (with or without an extension) is not valid on Windows"))
+      
+      test(t"Empty path is invalid"):
+        captureCompileErrors(p"").map(_.message)
+      .assert(_ == List("serpentine: a pathname cannot be empty"))
+      
+      test(t"Current directory (.) is not a valid path"):
+        captureCompileErrors(p".").map(_.message)
+      .assert(_ == List("serpentine: a pathname cannot be the string \".\""))
+      
+      test(t"Parent directory (..) is not a valid path"):
+        captureCompileErrors(p"..").map(_.message)
+      .assert(_ == List("serpentine: a pathname cannot be the string \"..\""))
+          
