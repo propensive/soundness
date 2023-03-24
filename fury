@@ -7,23 +7,29 @@ repo propensive/probably
 
 project anticipation
   module css
-    sources src/css
+    compiler  scala
+    sources   src/css
 
   module url
-    sources src/url
+    compiler  scala
+    sources   src/url
 
   module html
-    sources src/html
+    compiler  scala
+    sources   src/html
 
   module http
-    sources src/http
+    compiler  scala
+    sources   src/http
 
   # Rename this to `path` at some point
   module file
-    sources src/file
+    compiler  scala
+    sources   src/file
 
   module time
-    sources src/time
+    compiler  scala
+    sources   src/time
 
   module all
     include anticipation/css
