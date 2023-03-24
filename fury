@@ -8,10 +8,12 @@ target dissonance/test
 
 project dissonance
   module core
-    sources src/core
-    include eucalyptus/core
+    compiler  scala
+    sources   src/core
+    include   eucalyptus/core
 
   module test
-    sources  src/test
-    include  dissonance/core probably/cli
-    main     dissonance.Tests
+    compiler  scala
+    sources   src/test
+    include   dissonance/core probably/cli
+    main      dissonance.Tests
