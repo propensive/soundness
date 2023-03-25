@@ -48,8 +48,6 @@ object UnitName:
   given UnitName[Kelvin[1]] = () => t"K"
   given UnitName[Second[1]] = () => t"s"
 
-trait Coefficient[FromType <: Units[1, ?], ToType <: Units[1, ?]](val value: Double)
-
 trait PrincipalUnit[DimensionType <: Dimension, UnitType <: Units[1, DimensionType]]()
 object PrincipalUnit:
   given PrincipalUnit[Length, Metre[1]]()
