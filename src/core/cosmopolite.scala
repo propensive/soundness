@@ -19,7 +19,6 @@ package cosmopolite
 import rudiments.*
 import gossamer.*
 
-import scala.reflect.*
 import scala.util.NotGiven
 import scala.quoted.*
 
@@ -38,20 +37,17 @@ object Language:
     import quotes.reflect.*
 
     def langs(t: TypeRepr): Set[String] = t.dealias match
-      case OrType(left, right) =>
-        langs(left) ++ langs(right)
-      case ConstantType(StringConstant(lang)) =>
-        Set(lang)
-      case _ =>
-        report.errorAndAbort("cosmopolite: expected a union or constant type")
+      case OrType(left, right)                => langs(left) ++ langs(right)
+      case ConstantType(StringConstant(lang)) => Set(lang)
+      case _                                  => fail("expected a union or constant type")
 
     Expr(langs(TypeRepr.of[L]))
 
 object Messages:
   def apply[L <: String: ValueOf](seq: Seq[Text], parts: Seq[Messages[? >: L]]): Messages[L] =
-    val string: Text = parts.zip(seq.tail.map(_.show)).map {
-      case (msg, s) => t"${msg(using summon[ValueOf[L]])}$s"
-    }.join(seq.head, t"", t"")
+    val string: Text = parts.zip(seq.tail.map(_.show)).map: (msg, s) =>
+      t"${msg(using summon[ValueOf[L]])}$s"
+    .join(seq.head, t"", t"")
 
     Messages[L](Map(summon[ValueOf[L]].value.show -> string))
    
