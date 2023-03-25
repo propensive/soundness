@@ -148,13 +148,3 @@ object Subcompiler:
           //   case Some(newSource) => run(newSource, regions -- done, errors ::: newErrors)
       
     driver.run(source, regions, Nil)
-
-object Macros:
-  import scala.quoted.*
-
-  def helloImpl()(using Quotes): Expr[String] =
-    import quotes.reflect.*
-    report.errorAndAbort("Goodbye")
-    '{"Hello world"}
-  
-  inline def hello(): String = ${helloImpl()}
