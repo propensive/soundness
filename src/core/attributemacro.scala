@@ -96,8 +96,7 @@ object HoneycombMacros:
         val exp: Expr[HtmlAttribute[k & Label, v, Name]] =
           Expr.summon[HtmlAttribute[k & Label, v, Name]].getOrElse:
             val typeName = TypeRepr.of[v].show
-            report.errorAndAbort:
-              t"""honeycomb: the attribute $att cannot take a value of type $typeName""".s
+            fail(t"""the attribute $att cannot take a value of type $typeName""".s)
         
         '{($exp.rename.getOrElse(Text($key)).s, $exp.convert($value))} :: recur(tail)
       
