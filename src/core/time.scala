@@ -73,7 +73,8 @@ object Dates:
     def year(using cal: Calendar): cal.Y = cal.getYear(date)
     def yearDay(using cal: Calendar): Int = date - cal.zerothDayOfYear(cal.getYear(date))
     def julianDay: Int = date
-    def at(time: Time)(using Calendar): Timestamp = Timestamp(date, time)
+    
+    infix def at(time: Time)(using Calendar): Timestamp = Timestamp(date, time)
     
     @targetName("plus")
     def +(period: Timespan)(using cal: Calendar): Date = cal.add(date, period)
@@ -445,21 +446,17 @@ object AviationMacros:
         val hour = d.toInt
         val minutes = ((d - hour) * 100 + 0.5).toInt
         
-        if minutes >= 60
-        then report.errorAndAbort("aviation: a time cannot have a minute value above 59", lit.pos)
-        
-        if hour < 0 then report.errorAndAbort("aviation: a time cannot be negative", lit.pos)
-        
-        if hour > 12
-        then report.errorAndAbort("aviation: a time cannot have an hour value above 12", lit.pos)
+        if minutes >= 60 then fail("a time cannot have a minute value above 59", lit.pos)
+        if hour < 0 then fail("a time cannot be negative", lit.pos)
+        if hour > 12 then fail("a time cannot have an hour value above 12", lit.pos)
         
         val h: Base24 = (hour + (if pm then 12 else 0)).asInstanceOf[Base24]
         val length = lit.pos.endColumn - lit.pos.startColumn
         
         if (hour < 10 && length != 4) || (hour >= 10 && length != 5)
-        then report.errorAndAbort("aviation: the time should have exactly two minutes digits", lit.pos)
+        then fail("the time should have exactly two minutes digits", lit.pos)
         
         val m: Base60 = minutes.asInstanceOf[Base60]
         '{Time(${Expr(h)}, ${Expr(m)}, 0)}
       case _ =>
-        report.errorAndAbort("aviation: expected a literal double value")
+        fail("expected a literal double value")

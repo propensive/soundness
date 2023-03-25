@@ -3,7 +3,6 @@ package aviation
 import probably.*
 import rudiments.*
 import gossamer.*
-import eucalyptus.{Timestamp as _, *}, logging.stdout
 
 import unsafeExceptions.canThrowAny
 
