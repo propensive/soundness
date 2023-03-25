@@ -15,6 +15,6 @@ project quantify
     compiler  scala
     sources   src/test
     include   probably/cli quantify/core larceny/plugin
-    main      quantity.Tests
+    main      quantify.Tests
 
 

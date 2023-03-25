@@ -48,10 +48,6 @@ object UnitName:
   given UnitName[Kelvin[1]] = () => t"K"
   given UnitName[Second[1]] = () => t"s"
 
-object Coefficient:
-  given Coefficient[Metre[1], Inch[1]](39.3701)
-  given Coefficient[Inch[1], Metre[1]](1.0/39.3701)
-
 trait Coefficient[FromType <: Units[1, ?], ToType <: Units[1, ?]](val value: Double)
 
 trait PrincipalUnit[DimensionType <: Dimension, UnitType <: Units[1, DimensionType]]()
@@ -101,7 +97,6 @@ object QuantityOpaques:
           
           t"$unit$exponent"
       .join(t"·")
-
 
 export QuantityOpaques.Quantity
 
