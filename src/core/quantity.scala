@@ -3,7 +3,6 @@ package quantify
 import rudiments.*
 
 import scala.quoted.*
-import scala.compiletime.ops.int
 
 object QuantifyMacros:
   private def deconjunct
@@ -57,7 +56,8 @@ object QuantifyMacros:
         case Nil => (map, multiplier)
         case (dimension, (rightUnit, rightPower)) :: todo2 =>
           map.get(dimension) match
-            case None     => recur(map.updated(dimension, (rightUnit, if invert then -rightPower else rightPower)), todo2, multiplier)
+            case None =>
+              recur(map.updated(dimension, (rightUnit, if invert then -rightPower else rightPower)), todo2, multiplier)
             case Some((leftUnit, leftPower)) =>
               AppliedType(leftUnit, List(ConstantType(IntConstant(1)))).asType match
                 case '[ left ] => AppliedType(rightUnit, List(ConstantType(IntConstant(1)))).asType match
@@ -75,7 +75,7 @@ object QuantifyMacros:
                             val leftName = leftUnit match { case TypeRef(_, name) => name }
                             val rightName = rightUnit match { case TypeRef(_, name) => name }
 
-                            report.errorAndAbort(s"quantify: the left and right operand use incompatible units for the $dimName dimension\n\nThe left operand uses $leftName.\nThe right operand uses $rightName.\n\nThis can be resolved by defining a contextual Coefficient[$leftName[1], $rightName[1]].")
+                            fail(s"the left and right operand use incompatible units for the $dimName dimension\n\nThe left operand uses $leftName.\nThe right operand uses $rightName.\n\nThis can be resolved by defining a contextual Coefficient[$leftName[1], $rightName[1]].")
                     
                         '{$coefficientExpr*$multiplier}
                     
