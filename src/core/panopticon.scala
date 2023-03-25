@@ -16,6 +16,8 @@
 
 package panopticon
 
+import rudiments.*
+
 import language.dynamics
 import scala.quoted.*
 
@@ -103,7 +105,7 @@ object PanopticonMacros:
               Apply(Select(New(TypeIdent(classSymbol)), term.tpe.typeSymbol.primaryConstructor),
                   newParams)
             case None =>
-              report.errorAndAbort(s"panopticon: the type ${fromTypeRepr.show} does not have a primary constructor")
+              fail(s"the type ${fromTypeRepr.show} does not have a primary constructor")
         
     rewrite(getPath[PathType](), value.asTerm).asExprOf[FromType]
   
@@ -117,8 +119,7 @@ object PanopticonMacros:
 
     targetType.typeSymbol.caseFields.find(_.name == fieldName) match
       case None =>
-        report.errorAndAbort(
-            s"panopticon: the field $fieldName is not a member of ${targetType.show}")
+        fail(s"the field $fieldName is not a member of ${targetType.show}")
       case Some(sym) => sym.info.asType match
         case '[returnType] => fieldNameType match
           case '[fieldName] =>
