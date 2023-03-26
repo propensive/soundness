@@ -28,14 +28,6 @@ erased trait Ampere[Power <: Int & Singleton] extends Units[Power, Current]
 erased trait Kelvin[Power <: Int & Singleton] extends Units[Power, Temperature]
 erased trait Second[Power <: Int & Singleton] extends Units[Power, TimeLength]
 
-val Metre = Quantity[Metre[1]](1)
-val Kilogram = Quantity[Kilogram[1]](1)
-val Candela = Quantity[Candela[1]](1)
-val Mole = Quantity[Mole[1]](1)
-val Ampere = Quantity[Ampere[1]](1)
-val Kelvin = Quantity[Kelvin[1]](1)
-val Second = Quantity[Second[1]](1)
-
 trait UnitName[-ValueType]:
   def name(): Text
 
@@ -58,11 +50,15 @@ object PrincipalUnit:
   given PrincipalUnit[Temperature, Kelvin[1]]()
   given PrincipalUnit[AmountOfSubstance, Mole[1]]()
 
-object QuantityOpaques:
+object QuantifyOpaques:
   opaque type Quantity[UnitsType <: Units[?, ?]] = Double
+  opaque type SiUnit[UnitsType <: Units[?, ?]] <: Quantity[UnitsType] = Double
 
   extension [UnitsType <: Units[?, ?]](quantity: Quantity[UnitsType])
     def value: Double = quantity
+
+  object SiUnit:
+    def apply[UnitsType <: Units[?, ?]](value: Double): SiUnit[UnitsType] = value
 
   object Quantity:
     def apply[UnitsType <: Units[?, ?]](value: Double): Quantity[UnitsType] = value
@@ -96,7 +92,15 @@ object QuantityOpaques:
           t"$unit$exponent"
       .join(t"·")
 
-export QuantityOpaques.Quantity
+export QuantifyOpaques.{Quantity, SiUnit}
+
+val Metre = SiUnit[Metre[1]](1)
+val Kilogram = SiUnit[Kilogram[1]](1)
+val Candela = SiUnit[Candela[1]](1)
+val Mole = SiUnit[Mole[1]](1)
+val Ampere = SiUnit[Ampere[1]](1)
+val Kelvin = SiUnit[Kelvin[1]](1)
+val Second = SiUnit[Second[1]](1)
 
 // class Quantity[UnitsType <: Units[?, ?]](val value: Double):
 //   quantity =>

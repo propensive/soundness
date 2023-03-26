@@ -3,7 +3,6 @@ package quantify
 import rudiments.*
 
 import scala.quoted.*
-import scala.annotation.nowarn
 
 object QuantifyMacros:
   private def deconjunct

@@ -68,4 +68,36 @@ object Tests extends Suite(Text("Quantify Tests")):
       val z: Quantity[Metre[1]] = y/x
       z
     .assert(_ == 0.1393545510813086*Metre)
+  
+    test(Text("SI kilo prefix multiplies by 10^3")):
+      15.0*Kilo(Metre)
+    .assert(_ == 15000.0*Metre)
+    
+    test(Text("SI mega prefix multiplies by 10^6")):
+      15.0*Mega(Metre)
+    .assert(_ == 15000000.0*Metre)
+    
+    test(Text("SI giga prefix multiplies by 10^9")):
+      15.0*Giga(Metre)
+    .assert(_ == 15000000000.0*Metre)
+    
+    test(Text("SI kibi prefix multiplies by 2^10")):
+      10*Kibi(Metre)
+    .assert(_ == 10240*Metre)
+    
+    test(Text("SI mebi prefix multiplies by 2^20")):
+      10*Mebi(Metre)
+    .assert(_ == (1024*1024*10)*Metre)
+    
+    test(Text("SI milli prefix multiplies by 10^-3")):
+      1.5*Milli(Metre)
+    .assert(_ == 0.0015*Metre)
+    
+    test(Text("SI micro prefix multiplies by 10^-6")):
+      1.5*Micro(Metre)
+    .assert(_ == 0.0000015*Metre)
+    
+    test(Text("SI nano prefix multiplies by 10^-9")):
+      2.5*Nano(Metre)
+    .assert(_ == 0.0000000025*Metre)
     
