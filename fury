@@ -15,4 +15,4 @@ project xylophone
   module test
     sources  src/test
     include  xylophone/core probably/cli
-    main     xylohpone.Tests
+    main     xylophone.Tests
