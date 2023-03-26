@@ -21,7 +21,7 @@ erased trait AmountOfSubstance extends Dimension
 trait Units[PowerType <: Int & Singleton, DimensionType <: Dimension]
 
 erased trait Metre[Power <: Int & Singleton] extends Units[Power, Length]
-erased trait Kilogram[Power <: Int & Singleton] extends Units[Power, Mass]
+erased trait Gram[Power <: Int & Singleton] extends Units[Power, Mass]
 erased trait Candela[Power <: Int & Singleton] extends Units[Power, Luminosity]
 erased trait Mole[Power <: Int & Singleton] extends Units[Power, AmountOfSubstance]
 erased trait Ampere[Power <: Int & Singleton] extends Units[Power, Current]
@@ -33,22 +33,25 @@ trait UnitName[-ValueType]:
 
 object UnitName:
   given UnitName[Metre[1]] = () => t"m"
-  given UnitName[Kilogram[1]] = () => t"kg"
+  given UnitName[Gram[1]] = () => t"g"
   given UnitName[Candela[1]] = () => t"cd"
   given UnitName[Mole[1]] = () => t"mol"
   given UnitName[Ampere[1]] = () => t"A"
   given UnitName[Kelvin[1]] = () => t"K"
   given UnitName[Second[1]] = () => t"s"
 
-trait PrincipalUnit[DimensionType <: Dimension, UnitType <: Units[1, DimensionType]]()
+trait PrincipalUnit
+    [DimensionType <: Dimension, UnitType <: Units[1, DimensionType], PowerType <: Int & Singleton]
+    ()
+
 object PrincipalUnit:
-  given PrincipalUnit[Length, Metre[1]]()
-  given PrincipalUnit[Mass, Kilogram[1]]()
-  given PrincipalUnit[TimeLength, Second[1]]()
-  given PrincipalUnit[Current, Ampere[1]]()
-  given PrincipalUnit[Luminosity, Candela[1]]()
-  given PrincipalUnit[Temperature, Kelvin[1]]()
-  given PrincipalUnit[AmountOfSubstance, Mole[1]]()
+  given PrincipalUnit[Length, Metre[1], 0]()
+  given PrincipalUnit[Mass, Gram[1], 3]()
+  given PrincipalUnit[TimeLength, Second[1], 0]()
+  given PrincipalUnit[Current, Ampere[1], 0]()
+  given PrincipalUnit[Luminosity, Candela[1], 0]()
+  given PrincipalUnit[Temperature, Kelvin[1], 0]()
+  given PrincipalUnit[AmountOfSubstance, Mole[1], 0]()
 
 object QuantifyOpaques:
   opaque type Quantity[UnitsType <: Units[?, ?]] = Double
@@ -95,7 +98,7 @@ object QuantifyOpaques:
 export QuantifyOpaques.{Quantity, SiUnit}
 
 val Metre = SiUnit[Metre[1]](1)
-val Kilogram = SiUnit[Kilogram[1]](1)
+val Gram = SiUnit[Gram[1]](1)
 val Candela = SiUnit[Candela[1]](1)
 val Mole = SiUnit[Mole[1]](1)
 val Ampere = SiUnit[Ampere[1]](1)

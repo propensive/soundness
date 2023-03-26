@@ -78,7 +78,7 @@ object QuantifyMacros:
                   type lUnits = left & Units[1, dim]
                   type rUnits = right & Units[1, dim]
                     
-                  val preferRight = Expr.summon[PrincipalUnit[dim, rUnits]].isDefined
+                  val preferRight = Expr.summon[PrincipalUnit[dim, rUnits, ?]].isDefined
                     
                   val multiplier2: Expr[Double] =
                     if leftUnit.typeSymbol == rightUnit.typeSymbol then multiplier else
