@@ -16,16 +16,13 @@
 
 package jacinta
 
-import eucalyptus.*
 import gossamer.*
 import probably.*
 import rudiments.*
-import turbulence.*, characterEncodings.utf8, badEncodingHandlers.strict
-import scala.util.*
+import turbulence.*, characterEncodings.utf8
 
 import unsafeExceptions.canThrowAny
 
-import logging.stdout
 import jsonPrinters.minimal
 
 case class Foo(x: Int, y: Text) derives CanEqual
