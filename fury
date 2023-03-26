@@ -1,0 +1,14 @@
+
+repo propensive/probably
+
+target plutocrat/test
+
+project plutocrat
+  module core
+    sources  src/core
+    include  gossamer/core
+
+  module test
+    include  plutocrat/core probably/cli
+    sources  src/test
+    main     plutocrat.Tests
