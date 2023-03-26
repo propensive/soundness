@@ -60,28 +60,33 @@ val Gallon = Millilitre*4546.09
 
 // Units of Mass
 
-trait Grains[Power <: Int & Singleton] extends Units[Power, Length]
+trait Grains[Power <: Int & Singleton] extends Units[Power, Mass]
 object Grains:
   given grainsPerKilogram: Ratio[Grains[1] & Kilogram[-1]] = Ratio(Quantity(15432.4))
 
-trait Ounces[Power <: Int & Singleton] extends Units[Power, Length]
+trait Ounces[Power <: Int & Singleton] extends Units[Power, Mass]
 object Ounces:
   given ouncesPerKilogram: Ratio[Ounces[1] & Kilogram[-1]] = Ratio(Quantity(35.274))
 
-trait Pounds[Power <: Int & Singleton] extends Units[Power, Length]
+trait Pounds[Power <: Int & Singleton] extends Units[Power, Mass]
 object Pounds:
-  given poundsPerKilogram: Ratio[Pounds[1] & Kilogram[-1]] = Ratio(Quantity(2.20462))
+  given kgPerPound: Ratio[Kilogram[1] & Pounds[-1]] = Ratio(Quantity(0.45359237))
 
-trait Stones[Power <: Int & Singleton] extends Units[Power, Length]
+trait Stones[Power <: Int & Singleton] extends Units[Power, Mass]
 object Stones:
-  given stonePerKilogram: Ratio[Stones[1] & Kilogram[-1]] = Ratio(Quantity(0.157473))
+  given kgPerStone: Ratio[Kilogram[1] & Stones[-1]] = Ratio(Quantity(6.35029318))
 
-trait Hundredweights[Power <: Int & Singleton] extends Units[Power, Length]
+trait Hundredweights[Power <: Int & Singleton] extends Units[Power, Mass]
 object Hundredweights:
-  given kgPerHundredweight: Ratio[Hundredweights[1] & Kilogram[-1]] = Ratio(Quantity(50.80234544))
+  given kgPerHundredweight: Ratio[Kilogram[1] & Hundredweights[-1]] = Ratio(Quantity(50.80234544))
+
+trait Tons[Power <: Int & Singleton] extends Units[Power, Mass]
+object Tons:
+  given kgPerTon: Ratio[Kilogram[1] & Tons[1]] = Ratio(Quantity(1016.0469088))
 
 val Grain = Quantity[Grains[1]](1.0)
 val Ounce = Quantity[Ounces[1]](1.0)
 val Pound = Quantity[Pounds[1]](1.0)
 val Stone = Quantity[Stones[1]](1.0)
 val Hundredweight = Quantity[Hundredweights[1]](1.0)
+val Ton = Quantity[Tons[1]](1.0)
