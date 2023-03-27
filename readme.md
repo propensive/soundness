@@ -4,7 +4,7 @@
 
 # Plutocrat
 
-____
+__Typesafe representations of monetary values in Scala__
 
 TBC
 
