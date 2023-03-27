@@ -27,4 +27,3 @@ object PlutocratOpaques:
 
 export PlutocratOpaques.Money
 
-
