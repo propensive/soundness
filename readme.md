@@ -68,7 +68,7 @@ Plutocrat was designed and developed by Jon Pretty, and commercial support and t
 
 ## Name
 
-
+TBC
 
 In general, Scala One project names are always chosen with some rationale, however it is usually
 frivolous. Each name is chosen for more for its _uniqueness_ and _intrigue_ than its concision or
