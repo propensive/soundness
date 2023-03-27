@@ -1,6 +1,6 @@
 # This is a buildfile for Fury or Wrath.
 # More information is available at: https://github.com/propensive/wrath/
-target rudiments/core
+target rudiments/test
 
 repo propensive/anticipation
 
@@ -10,8 +10,8 @@ project rudiments
     sources   src/core
     include   anticipation/css anticipation/http
 
-  #module test
-  #  compiler  scala
-  #  sources src/test
-  #  refs rudiments/core probably/cli
-  #  main rudiments.Tests
+  module test
+    compiler  scala
+    sources   src/test
+    include   rudiments/core probably/cli
+    main      rudiments.Tests

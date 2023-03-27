@@ -19,10 +19,6 @@ package rudiments
 import probably.*
 import rudiments.*
 import gossamer.*
-import deviation.*
-import eucalyptus.*, logging.stdout
-
-import unsafeExceptions.canThrowAny
 
 case class Person(name: Text, age: Int)
 
