@@ -10,3 +10,4 @@ object Tests extends Suite(t"Plutocrat tests"):
       t"Received $amount"
     .assert(_ == t"Received €3.01")
 
+
