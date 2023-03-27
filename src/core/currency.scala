@@ -26,4 +26,3 @@ object PlutocratOpaques:
       t"${currency.symbol+integral}.${fractional.toString.show.pad(2, Rtl, '0')}"
 
 export PlutocratOpaques.Money
-
