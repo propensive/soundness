@@ -81,5 +81,5 @@ often arrived in English via a romance language.
 
 ## License
 
-Plutocrat is copyright &copy; -23 Jon Pretty & Propensive O&Uuml;, and is made available under the
+Plutocrat is copyright &copy; 2023 Jon Pretty & Propensive O&Uuml;, and is made available under the
 [Apache 2.0 License](/license.md).
