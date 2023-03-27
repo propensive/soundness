@@ -4,6 +4,7 @@ on:
     branches: [ main ]
     paths:
       - doc/logo.svg
+      - src/*/*.scala
 jobs:
   logos:
     runs-on: ubuntu-latest
