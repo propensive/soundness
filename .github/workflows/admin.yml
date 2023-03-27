@@ -1,4 +1,4 @@
-name: Run Tumult
+name: Repo Admin
 on:
   push:
     branches: [ main ]
@@ -6,7 +6,7 @@ on:
       - doc/logo.svg
       - src/*/*.scala
 jobs:
-  logos:
+  admin:
     runs-on: ubuntu-latest
     permissions:
       contents: write
