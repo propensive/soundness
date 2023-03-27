@@ -13,7 +13,7 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v3
     - name: Generate logos
-      uses: propensive/tumult
+      uses: propensive/tumult@v2
     - name: Commit changes
       uses: stefanzweifel/git-auto-commit-action@v4
       with:
