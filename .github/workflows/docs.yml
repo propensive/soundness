@@ -4,11 +4,11 @@ on:
     branches: [ main ]
     paths:
       - doc/logo.svg
-  pull_request:
-    branches: [ main ]
 jobs:
   logos:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
     - name: Checkout
       uses: actions/checkout@v3
