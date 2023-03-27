@@ -4,10 +4,11 @@
 target caesura/core
 
 repo propensive/gossamer
+repo propensive/wisteria
 
 project caesura
   module core
     compiler  scala
     sources   src/core
-    include   gossamer/core
+    include   gossamer/core wisteria/core
 
