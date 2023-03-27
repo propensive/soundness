@@ -9,3 +9,4 @@ object Tests extends Suite(t"Plutocrat tests"):
       val amount = Eur(3.01)
       t"Received $amount"
     .assert(_ == t"Received €3.01")
+
