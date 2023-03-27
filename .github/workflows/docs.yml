@@ -26,7 +26,7 @@ jobs:
         convert doc/images/1000x1000.png -resize 48x48 doc/images/48x48.png
         convert doc/images/1000x1000.png -resize 16x16 doc/images/16x16.png
     - name: Commit changes
-      uses: stefanzweifel/git-auto-commit@v4
+      uses: stefanzweifel/git-auto-commit-action@v4
       with:
         commit_message: 'Automated update of logos'
         file_pattern: 'doc/images/*.png'
