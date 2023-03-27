@@ -11,7 +11,7 @@ case class Currency(isoCode: String, symbol: String, name: String, fractionalNam
 object Eur extends Currency("EUR", "€", "Euro", "Cent", 100)
 object Usd extends Currency("USD", "$", "US Dollar", "Cent", 100)
 
-object opaques:
+object PlutocratOpaques:
   opaque type Money[CurrencyType <: Currency & Singleton] = Long
 
   object Money:
@@ -25,4 +25,5 @@ object opaques:
         
       t"${currency.symbol+integral}.${fractional.toString.show.pad(2, Rtl, '0')}"
 
-export opaques.Money
+export PlutocratOpaques.Money
+
