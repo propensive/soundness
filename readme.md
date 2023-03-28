@@ -65,6 +65,7 @@ Mercator also provides a `Functor` typeclass, which provides implementations of 
 `point` and `map`. If `map` is required for a particular operation, but `flatMap` is not,
 then only the `Functor` typeclass should be summoned.
 
+
 ## Status
 
 Mercator is classified as __fledgling__. For reference, Scala One projects are
