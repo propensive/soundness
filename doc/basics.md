@@ -67,3 +67,4 @@ This can then be serialized to `Text` with the `Codl#serialize` method:
 ```scala
 val txt = personCodl.serialize
 ```
+
