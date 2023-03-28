@@ -4,6 +4,8 @@
 
 # Cosmopolite
 
+__Typesafe internationalization for Scala__
+
 _Cosmopolite_ provides a typesafe representation for working with multilingual strings, `Messages`, with
 convenient constructors which guarantee through their types that translations for a specific set of languages
 exist in each instance. Furthermore, a `Language` type provides a coproduct representation of a language from
@@ -22,7 +24,8 @@ the same set which can safely select one string from the set.
 
 ## Availability
 
-Cosmopolite has not yet been published as a binary, though work is ongoing to fix this.
+Cosmopolite has not yet been published as a binary. It is currently waiting for the
+final release of Scala 3.3.
 
 ## Getting Started
 
@@ -155,13 +158,6 @@ Note, however, that the `Language.parse` method, however, can only be invoked on
 to build a concrete parser for the languages in the union type.
 
 
-## Related Projects
-
-The following _Scala One_ libraries are dependencies of _Cosmopolite_:
-
-[![Gossamer](https://github.com/propensive/gossamer/raw/main/doc/images/128x128.png)](https://github.com/propensive/gossamer/) &nbsp;
-
-No other _Scala One_ libraries are dependents of _Cosmopolite_.
 
 ## Status
 
@@ -171,7 +167,7 @@ categorized into one of the following five stability levels:
 - _embryonic_: for experimental or demonstrative purposes only, without any guarantees of longevity
 - _fledgling_: of proven utility, seeking contributions, but liable to significant redesigns
 - _maturescent_: major design decisions broady settled, seeking probatory adoption and refinement
-- _dependable_: production-ready, subject to controlled ongoing maintenance and enhancement; tagged as version `1.0` or later
+- _dependable_: production-ready, subject to controlled ongoing maintenance and enhancement; tagged as version `1.0.0` or later
 - _adamantine_: proven, reliable and production-ready, with no further breaking changes ever anticipated
 
 Projects at any stability level, even _embryonic_ projects, are still ready to
@@ -179,7 +175,7 @@ be used, but caution should be taken if there is a mismatch between the
 project's stability level and the importance of your own project.
 
 Cosmopolite is designed to be _small_. Its entire source code currently consists
-of 304 lines of code.
+of 300 lines of code.
 
 ## Building
 
@@ -211,7 +207,16 @@ Cosmopolite was designed and developed by Jon Pretty, and commercial support and
 
 Cosmopolite is so-named because it provides multilingual strings, which are free to travel, and are not associated with any particular nation.
 
+In general, Scala One project names are always chosen with some rationale, however it is usually
+frivolous. Each name is chosen for more for its _uniqueness_ and _intrigue_ than its concision or
+catchiness, and there is no bias towards names with positive or "nice" meanings—since many of the
+libraries perform some quite unpleasant tasks.
+
+Names should be English words, though many are obscure or archaic, and it should be noted how
+willingly English adopts foreign words. Names are generally of Greek or Latin origin, and have
+often arrived in English via a romance language.
+
 ## License
 
-Cosmopolite is copyright &copy; 2021-23 Jon Pretty & Propensive O&Uuml;, and is made available under the
+Cosmopolite is copyright &copy; 2023 Jon Pretty & Propensive O&Uuml;, and is made available under the
 [Apache 2.0 License](/license.md).
