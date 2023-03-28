@@ -41,3 +41,4 @@ be automatically available for consideration during contextual search.
 ### Limitations
 
 Wisteria is not currently able to access default values for case class parameters.
+
