@@ -4,6 +4,8 @@
 
 # Cellulose
 
+__Comprehensive tools for working with CoDL in Scala__
+
 _Cellulose_ is the reference implementation of the CoDL specification, and aims
 to provide and demonstrate the working machinery of the language in Scala. The
 functionality in Cellulose is similar to that found in typical JSON or XML
@@ -19,7 +21,8 @@ libraries.
 
 ## Availability
 
-Cellulose has not yet been published as a binary, though work is ongoing to fix this.
+Cellulose has not yet been published as a binary. It is currently waiting for the
+final release of Scala 3.3.
 
 ## Getting Started
 
@@ -94,13 +97,6 @@ val txt = personCodl.serialize
 ```
 
 
-## Related Projects
-
-The following _Scala One_ libraries are dependencies of _Cellulose_:
-
-[![Aviation](https://github.com/propensive/aviation/raw/main/doc/images/128x128.png)](https://github.com/propensive/aviation/) &nbsp; [![Chiaroscuro](https://github.com/propensive/chiaroscuro/raw/main/doc/images/128x128.png)](https://github.com/propensive/chiaroscuro/) &nbsp; [![Dissonance](https://github.com/propensive/dissonance/raw/main/doc/images/128x128.png)](https://github.com/propensive/dissonance/) &nbsp; [![Eucalyptus](https://github.com/propensive/eucalyptus/raw/main/doc/images/128x128.png)](https://github.com/propensive/eucalyptus/) &nbsp; [![Gossamer](https://github.com/propensive/gossamer/raw/main/doc/images/128x128.png)](https://github.com/propensive/gossamer/) &nbsp; [![Kaleidoscope](https://github.com/propensive/kaleidoscope/raw/main/doc/images/128x128.png)](https://github.com/propensive/kaleidoscope/) &nbsp; [![Polyvinyl](https://github.com/propensive/polyvinyl/raw/main/doc/images/128x128.png)](https://github.com/propensive/polyvinyl/) &nbsp; [![Probably](https://github.com/propensive/probably/raw/main/doc/images/128x128.png)](https://github.com/propensive/probably/) &nbsp;
-
-No other _Scala One_ libraries are dependents of _Cellulose_.
 
 ## Status
 
@@ -110,7 +106,7 @@ categorized into one of the following five stability levels:
 - _embryonic_: for experimental or demonstrative purposes only, without any guarantees of longevity
 - _fledgling_: of proven utility, seeking contributions, but liable to significant redesigns
 - _maturescent_: major design decisions broady settled, seeking probatory adoption and refinement
-- _dependable_: production-ready, subject to controlled ongoing maintenance and enhancement; tagged as version `1.0` or later
+- _dependable_: production-ready, subject to controlled ongoing maintenance and enhancement; tagged as version `1.0.0` or later
 - _adamantine_: proven, reliable and production-ready, with no further breaking changes ever anticipated
 
 Projects at any stability level, even _embryonic_ projects, are still ready to
@@ -118,7 +114,7 @@ be used, but caution should be taken if there is a mismatch between the
 project's stability level and the importance of your own project.
 
 Cellulose is designed to be _small_. Its entire source code currently consists
-of 920 lines of code.
+of 907 lines of code.
 
 ## Building
 
@@ -151,7 +147,16 @@ Cellulose was designed and developed by Jon Pretty, and commercial support and t
 To _coddle_, a homonym of CoDL, means—proverbially—to "wrap in cotton wool"; cotton wool is 90%
 _cellulose_.
 
+In general, Scala One project names are always chosen with some rationale, however it is usually
+frivolous. Each name is chosen for more for its _uniqueness_ and _intrigue_ than its concision or
+catchiness, and there is no bias towards names with positive or "nice" meanings—since many of the
+libraries perform some quite unpleasant tasks.
+
+Names should be English words, though many are obscure or archaic, and it should be noted how
+willingly English adopts foreign words. Names are generally of Greek or Latin origin, and have
+often arrived in English via a romance language.
+
 ## License
 
-Cellulose is copyright &copy; 2022-23 Jon Pretty & Propensive O&Uuml;, and is made available under the
+Cellulose is copyright &copy; 2023 Jon Pretty & Propensive O&Uuml;, and is made available under the
 [Apache 2.0 License](/license.md).
