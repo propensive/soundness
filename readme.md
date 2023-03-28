@@ -4,6 +4,8 @@
 
 # Caesura
 
+__Simple parsing of CSV into case classes__
+
 Caesura provides an API for reading and writing CSV and TSV.
 
 ## Features
@@ -16,7 +18,8 @@ Caesura provides an API for reading and writing CSV and TSV.
 
 ## Availability
 
-Caesura has not yet been published as a binary, though work is ongoing to fix this.
+Caesura has not yet been published as a binary. It is currently waiting for the
+final release of Scala 3.3.
 
 ## Getting Started
 
@@ -88,13 +91,6 @@ val personsTsv: Tsv = persons.tsv
 
 
 
-## Related Projects
-
-The following _Scala One_ libraries are dependencies of _Caesura_:
-
-[![Anticipation](https://github.com/propensive/anticipation/raw/main/doc/images/128x128.png)](https://github.com/propensive/anticipation/) &nbsp; [![Gossamer](https://github.com/propensive/gossamer/raw/main/doc/images/128x128.png)](https://github.com/propensive/gossamer/) &nbsp;
-
-No other _Scala One_ libraries are dependents of _Caesura_.
 
 ## Status
 
@@ -104,7 +100,7 @@ categorized into one of the following five stability levels:
 - _embryonic_: for experimental or demonstrative purposes only, without any guarantees of longevity
 - _fledgling_: of proven utility, seeking contributions, but liable to significant redesigns
 - _maturescent_: major design decisions broady settled, seeking probatory adoption and refinement
-- _dependable_: production-ready, subject to controlled ongoing maintenance and enhancement; tagged as version `1.0` or later
+- _dependable_: production-ready, subject to controlled ongoing maintenance and enhancement; tagged as version `1.0.0` or later
 - _adamantine_: proven, reliable and production-ready, with no further breaking changes ever anticipated
 
 Projects at any stability level, even _embryonic_ projects, are still ready to
@@ -144,7 +140,16 @@ Caesura was designed and developed by Jon Pretty, and commercial support and tra
 
 A _caesura_ is break or pause in a sentence, often indicated by a comma—the same symbol that is used to indicate breaks in a CSV file.
 
+In general, Scala One project names are always chosen with some rationale, however it is usually
+frivolous. Each name is chosen for more for its _uniqueness_ and _intrigue_ than its concision or
+catchiness, and there is no bias towards names with positive or "nice" meanings—since many of the
+libraries perform some quite unpleasant tasks.
+
+Names should be English words, though many are obscure or archaic, and it should be noted how
+willingly English adopts foreign words. Names are generally of Greek or Latin origin, and have
+often arrived in English via a romance language.
+
 ## License
 
-Caesura is copyright &copy; 2018-23 Jon Pretty & Propensive O&Uuml;, and is made available under the
+Caesura is copyright &copy; 2023 Jon Pretty & Propensive O&Uuml;, and is made available under the
 [Apache 2.0 License](/license.md).
