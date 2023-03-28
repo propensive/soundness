@@ -4,6 +4,8 @@
 
 # Imperial
 
+__Access the operating system's standard directory structure__
+
 _Imperial_ provides access to the standard directory structure in UNIX and Linux, as defined by the
 [systemd](https://www.freedesktop.org/software/systemd/man/file-hierarchy.html) and [XDG Base
 Directory](https://specifications.freedesktop.org/basedir-spec/basedir-spec-latest.html) specifications.
@@ -18,7 +20,8 @@ Directory](https://specifications.freedesktop.org/basedir-spec/basedir-spec-late
 
 ## Availability
 
-Imperial has not yet been published as a binary, though work is ongoing to fix this.
+Imperial has not yet been published as a binary. It is currently waiting for the
+final release of Scala 3.3.
 
 ## Getting Started
 
@@ -68,15 +71,6 @@ given EnvVarProvider = envvars.get(_)
 ```
 
 
-## Related Projects
-
-The following _Scala One_ libraries are dependencies of _Imperial_:
-
-[![Ambience](https://github.com/propensive/ambience/raw/main/doc/images/128x128.png)](https://github.com/propensive/ambience/) &nbsp; [![Anticipation](https://github.com/propensive/anticipation/raw/main/doc/images/128x128.png)](https://github.com/propensive/anticipation/) &nbsp; [![Deviation](https://github.com/propensive/deviation/raw/main/doc/images/128x128.png)](https://github.com/propensive/deviation/) &nbsp;
-
-The following _Scala One_ libraries are dependents of _Imperial_:
-
-[![Oubliette](https://github.com/propensive/oubliette/raw/main/doc/images/128x128.png)](https://github.com/propensive/oubliette/) &nbsp;
 
 ## Status
 
@@ -86,7 +80,7 @@ categorized into one of the following five stability levels:
 - _embryonic_: for experimental or demonstrative purposes only, without any guarantees of longevity
 - _fledgling_: of proven utility, seeking contributions, but liable to significant redesigns
 - _maturescent_: major design decisions broady settled, seeking probatory adoption and refinement
-- _dependable_: production-ready, subject to controlled ongoing maintenance and enhancement; tagged as version `1.0` or later
+- _dependable_: production-ready, subject to controlled ongoing maintenance and enhancement; tagged as version `1.0.0` or later
 - _adamantine_: proven, reliable and production-ready, with no further breaking changes ever anticipated
 
 Projects at any stability level, even _embryonic_ projects, are still ready to
@@ -127,7 +121,16 @@ Imperial was designed and developed by Jon Pretty, and commercial support and tr
 This project is particular to Linux operating systems, whos mascot is a penguin. While __Imperial__ defines the layout of the
 operating system's own (little) empire, "Emperor" is also a species of penguin.
 
+In general, Scala One project names are always chosen with some rationale, however it is usually
+frivolous. Each name is chosen for more for its _uniqueness_ and _intrigue_ than its concision or
+catchiness, and there is no bias towards names with positive or "nice" meanings—since many of the
+libraries perform some quite unpleasant tasks.
+
+Names should be English words, though many are obscure or archaic, and it should be noted how
+willingly English adopts foreign words. Names are generally of Greek or Latin origin, and have
+often arrived in English via a romance language.
+
 ## License
 
-Imperial is copyright &copy; 2022-23 Jon Pretty & Propensive O&Uuml;, and is made available under the
+Imperial is copyright &copy; 2023 Jon Pretty & Propensive O&Uuml;, and is made available under the
 [Apache 2.0 License](/license.md).
