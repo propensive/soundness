@@ -27,3 +27,4 @@ for paths (which may not relate to a file or directory) and files/directories.
 ### URL Representation
 
 - `urlApi.javaNet`—uses `java.net.URL` for URLs
+
