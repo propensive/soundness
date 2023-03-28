@@ -4,6 +4,8 @@
 
 # Dissonance
 
+__Myers' diff algorithm in Scala__
+
 Dissonance implements Eugene Myers' diff algorithm in Scala as a pure function
 on immutable data structures. Using it is as simple as calling
 `diff(left, right)`, where `left` and `right` are sequences of like-typed data
@@ -21,7 +23,8 @@ sequence.
 
 ## Availability
 
-Dissonance has not yet been published as a binary, though work is ongoing to fix this.
+Dissonance has not yet been published as a binary. It is currently waiting for the
+final release of Scala 3.3.
 
 ## Getting Started
 
@@ -59,15 +62,6 @@ of the diff.
 
 
 
-## Related Projects
-
-The following _Scala One_ libraries are dependencies of _Dissonance_:
-
-[![Eucalyptus](https://github.com/propensive/eucalyptus/raw/main/doc/images/128x128.png)](https://github.com/propensive/eucalyptus/) &nbsp; [![Gossamer](https://github.com/propensive/gossamer/raw/main/doc/images/128x128.png)](https://github.com/propensive/gossamer/) &nbsp; [![Probably](https://github.com/propensive/probably/raw/main/doc/images/128x128.png)](https://github.com/propensive/probably/) &nbsp;
-
-The following _Scala One_ libraries are dependents of _Dissonance_:
-
-[![Cellulose](https://github.com/propensive/cellulose/raw/main/doc/images/128x128.png)](https://github.com/propensive/cellulose/) &nbsp; [![Chiaroscuro](https://github.com/propensive/chiaroscuro/raw/main/doc/images/128x128.png)](https://github.com/propensive/chiaroscuro/) &nbsp;
 
 ## Status
 
@@ -77,7 +71,7 @@ categorized into one of the following five stability levels:
 - _embryonic_: for experimental or demonstrative purposes only, without any guarantees of longevity
 - _fledgling_: of proven utility, seeking contributions, but liable to significant redesigns
 - _maturescent_: major design decisions broady settled, seeking probatory adoption and refinement
-- _dependable_: production-ready, subject to controlled ongoing maintenance and enhancement; tagged as version `1.0` or later
+- _dependable_: production-ready, subject to controlled ongoing maintenance and enhancement; tagged as version `1.0.0` or later
 - _adamantine_: proven, reliable and production-ready, with no further breaking changes ever anticipated
 
 Projects at any stability level, even _embryonic_ projects, are still ready to
@@ -117,7 +111,16 @@ Dissonance was designed and developed by Jon Pretty, and commercial support and 
 
 _Dissonance_'s purpose is to detect differences—or dissonance, the places where they are not in agreement—between different objects.
 
+In general, Scala One project names are always chosen with some rationale, however it is usually
+frivolous. Each name is chosen for more for its _uniqueness_ and _intrigue_ than its concision or
+catchiness, and there is no bias towards names with positive or "nice" meanings—since many of the
+libraries perform some quite unpleasant tasks.
+
+Names should be English words, though many are obscure or archaic, and it should be noted how
+willingly English adopts foreign words. Names are generally of Greek or Latin origin, and have
+often arrived in English via a romance language.
+
 ## License
 
-Dissonance is copyright &copy; 2022-23 Jon Pretty & Propensive O&Uuml;, and is made available under the
+Dissonance is copyright &copy; 2023 Jon Pretty & Propensive O&Uuml;, and is made available under the
 [Apache 2.0 License](/license.md).
