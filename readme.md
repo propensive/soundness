@@ -4,6 +4,8 @@
 
 # Aviation
 
+__Representations of time, in its various forms__
+
 The representation of time is complex, in part because the domain is
 intrinsically complicated, and in part because we mean mean by "time" is
 different in different contexts. _Aviation_ is an attempt to rationalize this
@@ -23,7 +25,8 @@ opportunities Scala offers to make these APIs as intuitive as possible.
 
 ## Availability
 
-Aviation has not yet been published as a binary, though work is ongoing to fix this.
+Aviation has not yet been published as a binary. It is currently waiting for the
+final release of Scala 3.3.
 
 ## Getting Started
 
@@ -32,15 +35,6 @@ _Aviation_ provides a variety of types representing different time-related conce
 TBC
 
 
-## Related Projects
-
-The following _Scala One_ libraries are dependencies of _Aviation_:
-
-[![Anticipation](https://github.com/propensive/anticipation/raw/main/doc/images/128x128.png)](https://github.com/propensive/anticipation/) &nbsp; [![Cardinality](https://github.com/propensive/cardinality/raw/main/doc/images/128x128.png)](https://github.com/propensive/cardinality/) &nbsp; [![Eucalyptus](https://github.com/propensive/eucalyptus/raw/main/doc/images/128x128.png)](https://github.com/propensive/eucalyptus/) &nbsp; [![Gossamer](https://github.com/propensive/gossamer/raw/main/doc/images/128x128.png)](https://github.com/propensive/gossamer/) &nbsp; [![Kaleidoscope](https://github.com/propensive/kaleidoscope/raw/main/doc/images/128x128.png)](https://github.com/propensive/kaleidoscope/) &nbsp; [![Probably](https://github.com/propensive/probably/raw/main/doc/images/128x128.png)](https://github.com/propensive/probably/) &nbsp;
-
-The following _Scala One_ libraries are dependents of _Aviation_:
-
-[![Cellulose](https://github.com/propensive/cellulose/raw/main/doc/images/128x128.png)](https://github.com/propensive/cellulose/) &nbsp;
 
 ## Status
 
@@ -50,7 +44,7 @@ categorized into one of the following five stability levels:
 - _embryonic_: for experimental or demonstrative purposes only, without any guarantees of longevity
 - _fledgling_: of proven utility, seeking contributions, but liable to significant redesigns
 - _maturescent_: major design decisions broady settled, seeking probatory adoption and refinement
-- _dependable_: production-ready, subject to controlled ongoing maintenance and enhancement; tagged as version `1.0` or later
+- _dependable_: production-ready, subject to controlled ongoing maintenance and enhancement; tagged as version `1.0.0` or later
 - _adamantine_: proven, reliable and production-ready, with no further breaking changes ever anticipated
 
 Projects at any stability level, even _embryonic_ projects, are still ready to
@@ -58,7 +52,7 @@ be used, but caution should be taken if there is a mismatch between the
 project's stability level and the importance of your own project.
 
 Aviation is designed to be _small_. Its entire source code currently consists
-of 629 lines of code.
+of 628 lines of code.
 
 ## Building
 
@@ -90,7 +84,16 @@ Aviation was designed and developed by Jon Pretty, and commercial support and tr
 
 _Tempus fugit_, or, _time flies_.
 
+In general, Scala One project names are always chosen with some rationale, however it is usually
+frivolous. Each name is chosen for more for its _uniqueness_ and _intrigue_ than its concision or
+catchiness, and there is no bias towards names with positive or "nice" meanings—since many of the
+libraries perform some quite unpleasant tasks.
+
+Names should be English words, though many are obscure or archaic, and it should be noted how
+willingly English adopts foreign words. Names are generally of Greek or Latin origin, and have
+often arrived in English via a romance language.
+
 ## License
 
-Aviation is copyright &copy; 2022-23 Jon Pretty & Propensive O&Uuml;, and is made available under the
+Aviation is copyright &copy; 2023 Jon Pretty & Propensive O&Uuml;, and is made available under the
 [Apache 2.0 License](/license.md).
