@@ -127,3 +127,4 @@ or by mapping across an existing `Executor`, for example,
 given Executor[Int] = summon[Executor[String]].map(_.toInt)
 ```
 since all `Executor`s are functors.
+
