@@ -35,3 +35,4 @@ will return a sequence of `Text`s which will print as,
 │ Janet │ 54  │ No     │
 └───────┴─────┴────────┘
 ```
+
