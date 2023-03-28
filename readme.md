@@ -4,6 +4,8 @@
 
 # Rudiments
 
+__Rudimentary utilities for writing everyday Scala__
+
 _Rudiments_ provides a small collection of tiny but useful utilities for everyday programming in Scala, and
 could be considered an enhanced "predef".
 
@@ -18,7 +20,8 @@ could be considered an enhanced "predef".
 
 ## Availability
 
-Rudiments has not yet been published as a binary, though work is ongoing to fix this.
+Rudiments has not yet been published as a binary. It is currently waiting for the
+final release of Scala 3.3.
 
 ## Getting Started
 
@@ -119,16 +122,6 @@ These two extension methods produce a two-tuple and a three-tuple (respectively)
 is applied to. This can be useful in a subsequent `map` operation.
 
 
-## Related Projects
-
-The following _Scala One_ libraries are dependencies of _Rudiments_:
-
-[![Anticipation](https://github.com/propensive/anticipation/raw/main/doc/images/128x128.png)](https://github.com/propensive/anticipation/) &nbsp;
-
-The following _Scala One_ libraries are dependents of _Rudiments_:
-
-[![Adversaria](https://github.com/propensive/adversaria/raw/main/doc/images/128x128.png)](https://github.com/propensive/adversaria/) &nbsp; [![Ambience](https://github.com/propensive/ambience/raw/main/doc/images/128x128.png)](https://github.com/propensive/ambience/) &nbsp; [![Deviation](https://github.com/propensive/deviation/raw/main/doc/images/128x128.png)](https://github.com/propensive/deviation/) &nbsp; [![Wisteria](https://github.com/propensive/wisteria/raw/main/doc/images/128x128.png)](https://github.com/propensive/wisteria/) &nbsp;
-
 ## Status
 
 Rudiments is classified as __fledgling__. For reference, Scala One projects are
@@ -137,7 +130,7 @@ categorized into one of the following five stability levels:
 - _embryonic_: for experimental or demonstrative purposes only, without any guarantees of longevity
 - _fledgling_: of proven utility, seeking contributions, but liable to significant redesigns
 - _maturescent_: major design decisions broady settled, seeking probatory adoption and refinement
-- _dependable_: production-ready, subject to controlled ongoing maintenance and enhancement; tagged as version `1.0` or later
+- _dependable_: production-ready, subject to controlled ongoing maintenance and enhancement; tagged as version `1.0.0` or later
 - _adamantine_: proven, reliable and production-ready, with no further breaking changes ever anticipated
 
 Projects at any stability level, even _embryonic_ projects, are still ready to
@@ -145,7 +138,7 @@ be used, but caution should be taken if there is a mismatch between the
 project's stability level and the importance of your own project.
 
 Rudiments is designed to be _small_. Its entire source code currently consists
-of 454 lines of code.
+of 449 lines of code.
 
 ## Building
 
@@ -177,7 +170,16 @@ Rudiments was designed and developed by Jon Pretty, and commercial support and t
 
 The word _rudiment_ is defined as, "the principle which lies at the bottom of any development; an unfinished beginning", which is apt for a library whose purpose is to provide such common functionality that it might lie at the start of many other libries.
 
+In general, Scala One project names are always chosen with some rationale, however it is usually
+frivolous. Each name is chosen for more for its _uniqueness_ and _intrigue_ than its concision or
+catchiness, and there is no bias towards names with positive or "nice" meanings—since many of the
+libraries perform some quite unpleasant tasks.
+
+Names should be English words, though many are obscure or archaic, and it should be noted how
+willingly English adopts foreign words. Names are generally of Greek or Latin origin, and have
+often arrived in English via a romance language.
+
 ## License
 
-Rudiments is copyright &copy; 2020-23 Jon Pretty & Propensive O&Uuml;, and is made available under the
+Rudiments is copyright &copy; 2023 Jon Pretty & Propensive O&Uuml;, and is made available under the
 [Apache 2.0 License](/license.md).
