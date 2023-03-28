@@ -4,6 +4,8 @@
 
 # Tarantula
 
+__Drive a web browser using the WebDriver protocol__
+
 _Tarantula_ makes it possible to interact with a web browser through a programmatic interface. It
 provides an immutable API for controlling the web browser from Scala, through the WebDriver
 protocol.
@@ -18,7 +20,8 @@ protocol.
 
 ## Availability
 
-Tarantula has not yet been published as a binary, though work is ongoing to fix this.
+Tarantula has not yet been published as a binary. It is currently waiting for the
+final release of Scala 3.3.
 
 ## Getting Started
 
@@ -76,13 +79,6 @@ for elem <- browser / id"menu" / Li / cls"checkbox" do elem.click()
 would simulate a click on every element with the `checkbox` CSS class inside an `<li>` tag in the element with ID `menu`.
 
 
-## Related Projects
-
-The following _Scala One_ libraries are dependencies of _Tarantula_:
-
-[![Cataclysm](https://github.com/propensive/cataclysm/raw/main/doc/images/128x128.png)](https://github.com/propensive/cataclysm/) &nbsp; [![Gesticulate](https://github.com/propensive/gesticulate/raw/main/doc/images/128x128.png)](https://github.com/propensive/gesticulate/) &nbsp; [![Guillotine](https://github.com/propensive/guillotine/raw/main/doc/images/128x128.png)](https://github.com/propensive/guillotine/) &nbsp; [![Honeycomb](https://github.com/propensive/honeycomb/raw/main/doc/images/128x128.png)](https://github.com/propensive/honeycomb/) &nbsp; [![Jacinta](https://github.com/propensive/jacinta/raw/main/doc/images/128x128.png)](https://github.com/propensive/jacinta/) &nbsp; [![Telekinesis](https://github.com/propensive/telekinesis/raw/main/doc/images/128x128.png)](https://github.com/propensive/telekinesis/) &nbsp;
-
-No other _Scala One_ libraries are dependents of _Tarantula_.
 
 ## Status
 
@@ -92,7 +88,7 @@ categorized into one of the following five stability levels:
 - _embryonic_: for experimental or demonstrative purposes only, without any guarantees of longevity
 - _fledgling_: of proven utility, seeking contributions, but liable to significant redesigns
 - _maturescent_: major design decisions broady settled, seeking probatory adoption and refinement
-- _dependable_: production-ready, subject to controlled ongoing maintenance and enhancement; tagged as version `1.0` or later
+- _dependable_: production-ready, subject to controlled ongoing maintenance and enhancement; tagged as version `1.0.0` or later
 - _adamantine_: proven, reliable and production-ready, with no further breaking changes ever anticipated
 
 Projects at any stability level, even _embryonic_ projects, are still ready to
@@ -100,7 +96,7 @@ be used, but caution should be taken if there is a mismatch between the
 project's stability level and the importance of your own project.
 
 Tarantula is designed to be _small_. Its entire source code currently consists
-of 132 lines of code.
+of 128 lines of code.
 
 ## Building
 
@@ -132,7 +128,16 @@ Tarantula was designed and developed by Jon Pretty, and commercial support and t
 
 __Tarantulas__ are spiders, known for making webs, and Tarantula is a library for the WebDriver protocol.
 
+In general, Scala One project names are always chosen with some rationale, however it is usually
+frivolous. Each name is chosen for more for its _uniqueness_ and _intrigue_ than its concision or
+catchiness, and there is no bias towards names with positive or "nice" meanings—since many of the
+libraries perform some quite unpleasant tasks.
+
+Names should be English words, though many are obscure or archaic, and it should be noted how
+willingly English adopts foreign words. Names are generally of Greek or Latin origin, and have
+often arrived in English via a romance language.
+
 ## License
 
-Tarantula is copyright &copy; 2021-23 Jon Pretty & Propensive O&Uuml;, and is made available under the
+Tarantula is copyright &copy; 2023 Jon Pretty & Propensive O&Uuml;, and is made available under the
 [Apache 2.0 License](/license.md).
