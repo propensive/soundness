@@ -124,3 +124,4 @@ These are available on the `Srgb` type, with the exception of `Hsl#css`.
 ### Limitations
 
 There is no support for transparency.
+
