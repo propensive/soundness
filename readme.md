@@ -4,6 +4,8 @@
 
 # Galilei
 
+__To make I/O in Scala elegant and typesafe__
+
 __Galilei__ is a simple library for performing disk I/O with Scala. It provides access to most filesystem
 operations through the `Path` type—an abstract representation of a file or a directory—plus typeclass-based
 `read` and `write` methods which can use ad-hoc types, including streaming types like `LazyList`. Galilei is
@@ -20,7 +22,8 @@ designed to take advantage of Scala 3's safer exceptions.
 
 ## Availability
 
-Galilei has not yet been published as a binary, though work is ongoing to fix this.
+Galilei has not yet been published as a binary. It is currently waiting for the
+final release of Scala 3.3.
 
 ## Getting Started
 
@@ -96,15 +99,6 @@ single `content` parameter, which can be one of a variety of types. As standard,
 which together support complete and streamed byte and character data.
 
 
-## Related Projects
-
-The following _Scala One_ libraries are dependencies of _Galilei_:
-
-[![Anticipation](https://github.com/propensive/anticipation/raw/main/doc/images/128x128.png)](https://github.com/propensive/anticipation/) &nbsp; [![Eucalyptus](https://github.com/propensive/eucalyptus/raw/main/doc/images/128x128.png)](https://github.com/propensive/eucalyptus/) &nbsp; [![Gastronomy](https://github.com/propensive/gastronomy/raw/main/doc/images/128x128.png)](https://github.com/propensive/gastronomy/) &nbsp; [![Kaleidoscope](https://github.com/propensive/kaleidoscope/raw/main/doc/images/128x128.png)](https://github.com/propensive/kaleidoscope/) &nbsp; [![Serpentine](https://github.com/propensive/serpentine/raw/main/doc/images/128x128.png)](https://github.com/propensive/serpentine/) &nbsp;
-
-The following _Scala One_ libraries are dependents of _Galilei_:
-
-[![Exoskeleton](https://github.com/propensive/exoskeleton/raw/main/doc/images/128x128.png)](https://github.com/propensive/exoskeleton/) &nbsp; [![Merino](https://github.com/propensive/merino/raw/main/doc/images/128x128.png)](https://github.com/propensive/merino/) &nbsp; [![Oubliette](https://github.com/propensive/oubliette/raw/main/doc/images/128x128.png)](https://github.com/propensive/oubliette/) &nbsp;
 
 ## Status
 
@@ -114,7 +108,7 @@ categorized into one of the following five stability levels:
 - _embryonic_: for experimental or demonstrative purposes only, without any guarantees of longevity
 - _fledgling_: of proven utility, seeking contributions, but liable to significant redesigns
 - _maturescent_: major design decisions broady settled, seeking probatory adoption and refinement
-- _dependable_: production-ready, subject to controlled ongoing maintenance and enhancement; tagged as version `1.0` or later
+- _dependable_: production-ready, subject to controlled ongoing maintenance and enhancement; tagged as version `1.0.0` or later
 - _adamantine_: proven, reliable and production-ready, with no further breaking changes ever anticipated
 
 Projects at any stability level, even _embryonic_ projects, are still ready to
@@ -122,7 +116,7 @@ be used, but caution should be taken if there is a mismatch between the
 project's stability level and the importance of your own project.
 
 Galilei is designed to be _small_. Its entire source code currently consists
-of 446 lines of code.
+of 451 lines of code.
 
 ## Building
 
@@ -154,7 +148,16 @@ Galilei was designed and developed by Jon Pretty, and commercial support and tra
 
 Galilei's primary focus is handling Input and Output, or _I/O_, and is a pun based on the name of the moon _Io_, one of the four moons of Jupiter discovered by Galileo Galilei.
 
+In general, Scala One project names are always chosen with some rationale, however it is usually
+frivolous. Each name is chosen for more for its _uniqueness_ and _intrigue_ than its concision or
+catchiness, and there is no bias towards names with positive or "nice" meanings—since many of the
+libraries perform some quite unpleasant tasks.
+
+Names should be English words, though many are obscure or archaic, and it should be noted how
+willingly English adopts foreign words. Names are generally of Greek or Latin origin, and have
+often arrived in English via a romance language.
+
 ## License
 
-Galilei is copyright &copy; 2020-23 Jon Pretty & Propensive O&Uuml;, and is made available under the
+Galilei is copyright &copy; 2023 Jon Pretty & Propensive O&Uuml;, and is made available under the
 [Apache 2.0 License](/license.md).
