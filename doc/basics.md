@@ -57,3 +57,4 @@ Any errors in the Markdown content will be detected at compiletime, causing comp
 Substitutions into Markdown literals are also supported, provided the type of the substitution can be
 converted to Markdown, and can appear at the position it's substituted. Conversion of a particular type
 to Markdown is permitted by the existence of a contextual typeclass instance.
+
