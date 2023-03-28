@@ -170,3 +170,4 @@ exist between those files).
 `SimpleSchema` and `Schema` do not currently make their precise record types available except as the
 return type of calling `record`. However the type is statically known, and could potentially be made
 available as a type member.
+
