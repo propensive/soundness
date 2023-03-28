@@ -88,3 +88,4 @@ given Stylize[Fade] = fade =>
     style.copy(fg = style.fg.hsv.shade(fade.amount).srgb)
   }
 ```
+
