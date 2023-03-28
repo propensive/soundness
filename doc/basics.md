@@ -38,3 +38,4 @@ java -cp exoskeleton.jar exoskeleton.Generate <shell> <command> <dir>
 where _shell_ is one of `bash`, `zsh` and `fish`, _command_ is the name of
 the command that completions are being provided for, and _dir_ is the
 directory in which the script should be written.
+
