@@ -72,3 +72,4 @@ will infer the type `Quantity[Metre[2]]` for `area`.
 However, the conversion of one of the units from inches to metres was necessary only to avoid a mixture of
 `Inch` and `Metre` in the resultant type, but the expression, `height*height` would produce a value with the
 units, `Inch[2]`, performing no unnecessary conversions.
+
