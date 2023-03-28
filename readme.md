@@ -4,6 +4,8 @@
 
 # Diuretic
 
+__Simple typeclass instances for integration with the Java Standard Library__
+
 _Diuretic_ provides typeclass instances for
 [Anticipation](https://github.com/propensive/anticipation/) typeclasses for the
 Java Standard Library. Many of these types have better alternatives in the
@@ -27,7 +29,8 @@ IO and NIO types like `File` and `Path`
 
 ## Availability
 
-Diuretic has not yet been published as a binary, though work is ongoing to fix this.
+Diuretic has not yet been published as a binary. It is currently waiting for the
+final release of Scala 3.3.
 
 ## Getting Started
 
@@ -62,15 +65,6 @@ for paths (which may not relate to a file or directory) and files/directories.
 - `urlApi.javaNet`—uses `java.net.URL` for URLs
 
 
-## Related Projects
-
-The following _Scala One_ libraries are dependencies of _Diuretic_:
-
-[![Anticipation](https://github.com/propensive/anticipation/raw/main/doc/images/128x128.png)](https://github.com/propensive/anticipation/) &nbsp;
-
-The following _Scala One_ libraries are dependents of _Diuretic_:
-
-[![Guillotine](https://github.com/propensive/guillotine/raw/main/doc/images/128x128.png)](https://github.com/propensive/guillotine/) &nbsp; [![Parasitism](https://github.com/propensive/parasitism/raw/main/doc/images/128x128.png)](https://github.com/propensive/parasitism/) &nbsp; [![Profanity](https://github.com/propensive/profanity/raw/main/doc/images/128x128.png)](https://github.com/propensive/profanity/) &nbsp;
 
 ## Status
 
@@ -80,7 +74,7 @@ categorized into one of the following five stability levels:
 - _embryonic_: for experimental or demonstrative purposes only, without any guarantees of longevity
 - _fledgling_: of proven utility, seeking contributions, but liable to significant redesigns
 - _maturescent_: major design decisions broady settled, seeking probatory adoption and refinement
-- _dependable_: production-ready, subject to controlled ongoing maintenance and enhancement; tagged as version `1.0` or later
+- _dependable_: production-ready, subject to controlled ongoing maintenance and enhancement; tagged as version `1.0.0` or later
 - _adamantine_: proven, reliable and production-ready, with no further breaking changes ever anticipated
 
 Projects at any stability level, even _embryonic_ projects, are still ready to
@@ -119,6 +113,15 @@ Diuretic was designed and developed by Jon Pretty, and commercial support and tr
 ## Name
 
 The name _Diuretic_ alludes to a side-effect of drinking coffee, or in our case, Java.
+
+In general, Scala One project names are always chosen with some rationale, however it is usually
+frivolous. Each name is chosen for more for its _uniqueness_ and _intrigue_ than its concision or
+catchiness, and there is no bias towards names with positive or "nice" meanings—since many of the
+libraries perform some quite unpleasant tasks.
+
+Names should be English words, though many are obscure or archaic, and it should be noted how
+willingly English adopts foreign words. Names are generally of Greek or Latin origin, and have
+often arrived in English via a romance language.
 
 ## License
 
