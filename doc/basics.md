@@ -30,3 +30,4 @@ The `diff` method takes an optional third parameter, `cmp`, of type `(T, T) ->
 Boolean` which determines whether two elements are _the same_ for the purposes
 of the diff.
 
+
