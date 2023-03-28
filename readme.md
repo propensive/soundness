@@ -15,11 +15,13 @@ TBC
 
 ## Availability
 
-Plutocrat has not yet been published as a binary, though work is ongoing to fix this.
+Plutocrat has not yet been published as a binary. It is currently waiting for the
+final release of Scala 3.3.
 
 ## Getting Started
 
 TBC
+
 
 
 ## Status
