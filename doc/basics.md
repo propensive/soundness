@@ -42,3 +42,4 @@ For example, if the `envvars` is a `Map` of values, a new EnvVarProvider may be 
 ```scala
 given EnvVarProvider = envvars.get(_)
 ```
+
