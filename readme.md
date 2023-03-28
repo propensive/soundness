@@ -23,6 +23,7 @@ final release of Scala 3.3.
 TBC
 
 
+
 ## Status
 
 Panopticon is classified as __fledgling__. For reference, Scala One projects are
