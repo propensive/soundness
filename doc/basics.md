@@ -36,3 +36,4 @@ The accent will be one of the following possible values:
 Typically, these would be mapped to different colors during conversion to markup.
 
 It is likely that as Harlequin evolves, the set of `Accent` values will grow.
+
