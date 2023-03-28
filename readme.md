@@ -4,6 +4,8 @@
 
 # Gesticulate
 
+__Safe representations of MIME types__
+
 _Gesticulate_ provides a structural representation of media types (previously known as MIME types),
 representing their main type (e.g. `image`), subtype (e.g. `png`), suffixes (e.g. `+xml`) and
 parameters (e.g. `charset=UTF-8`). It endorses the philosophy that impossible states should be
@@ -21,7 +23,8 @@ unrepresentable, which is contravened when media types are represented by string
 
 ## Availability
 
-Gesticulate has not yet been published as a binary, though work is ongoing to fix this.
+Gesticulate has not yet been published as a binary. It is currently waiting for the
+final release of Scala 3.3.
 
 ## Getting Started
 
@@ -84,15 +87,6 @@ Media types may be parsed using `MediaType.parse(string)` which returns a `Media
 parsing failure, should it be useful to distinguish between these.
 
 
-## Related Projects
-
-The following _Scala One_ libraries are dependencies of _Gesticulate_:
-
-[![Anticipation](https://github.com/propensive/anticipation/raw/main/doc/images/128x128.png)](https://github.com/propensive/anticipation/) &nbsp; [![Gossamer](https://github.com/propensive/gossamer/raw/main/doc/images/128x128.png)](https://github.com/propensive/gossamer/) &nbsp;
-
-The following _Scala One_ libraries are dependents of _Gesticulate_:
-
-[![Tarantula](https://github.com/propensive/tarantula/raw/main/doc/images/128x128.png)](https://github.com/propensive/tarantula/) &nbsp; [![Telekinesis](https://github.com/propensive/telekinesis/raw/main/doc/images/128x128.png)](https://github.com/propensive/telekinesis/) &nbsp;
 
 ## Status
 
@@ -102,7 +96,7 @@ categorized into one of the following five stability levels:
 - _embryonic_: for experimental or demonstrative purposes only, without any guarantees of longevity
 - _fledgling_: of proven utility, seeking contributions, but liable to significant redesigns
 - _maturescent_: major design decisions broady settled, seeking probatory adoption and refinement
-- _dependable_: production-ready, subject to controlled ongoing maintenance and enhancement; tagged as version `1.0` or later
+- _dependable_: production-ready, subject to controlled ongoing maintenance and enhancement; tagged as version `1.0.0` or later
 - _adamantine_: proven, reliable and production-ready, with no further breaking changes ever anticipated
 
 Projects at any stability level, even _embryonic_ projects, are still ready to
@@ -110,7 +104,7 @@ be used, but caution should be taken if there is a mismatch between the
 project's stability level and the importance of your own project.
 
 Gesticulate is designed to be _small_. Its entire source code currently consists
-of 261 lines of code.
+of 260 lines of code.
 
 ## Building
 
@@ -142,7 +136,16 @@ Gesticulate was designed and developed by Jon Pretty, and commercial support and
 
 Since _Gesticulate_ provides a representation for MIME types, it's appropriate that miming involves gesticulation.
 
+In general, Scala One project names are always chosen with some rationale, however it is usually
+frivolous. Each name is chosen for more for its _uniqueness_ and _intrigue_ than its concision or
+catchiness, and there is no bias towards names with positive or "nice" meanings—since many of the
+libraries perform some quite unpleasant tasks.
+
+Names should be English words, though many are obscure or archaic, and it should be noted how
+willingly English adopts foreign words. Names are generally of Greek or Latin origin, and have
+often arrived in English via a romance language.
+
 ## License
 
-Gesticulate is copyright &copy; 2021-23 Jon Pretty & Propensive O&Uuml;, and is made available under the
+Gesticulate is copyright &copy; 2023 Jon Pretty & Propensive O&Uuml;, and is made available under the
 [Apache 2.0 License](/license.md).
