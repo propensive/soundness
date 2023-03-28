@@ -54,3 +54,4 @@ Given that a relative path is (by definition) not attached to any particular roo
 `Root#Path.Relative` inherit from `GenericRelative` which gives users the choice, when implementing
 APIs that accept relative paths, between accepting _any_ kind of relative path (regardless of its
 origin) and accepting just those originating from a particular root.
+
