@@ -4,6 +4,8 @@
 
 # Turbulence
 
+__Simple tools for working with data streams in `LazyList`s__
+
 _Turbulence_ provides a few useful methods for working with `LazyList`s for streaming
 
 ## Features
@@ -15,7 +17,8 @@ _Turbulence_ provides a few useful methods for working with `LazyList`s for stre
 
 ## Availability
 
-Turbulence has not yet been published as a binary, though work is ongoing to fix this.
+Turbulence has not yet been published as a binary. It is currently waiting for the
+final release of Scala 3.3.
 
 ## Getting Started
 
@@ -177,15 +180,6 @@ will print `Hello` once per second, forever.
 
 
 
-## Related Projects
-
-The following _Scala One_ libraries are dependencies of _Turbulence_:
-
-[![Parasitism](https://github.com/propensive/parasitism/raw/main/doc/images/128x128.png)](https://github.com/propensive/parasitism/) &nbsp;
-
-The following _Scala One_ libraries are dependents of _Turbulence_:
-
-[![Eucalyptus](https://github.com/propensive/eucalyptus/raw/main/doc/images/128x128.png)](https://github.com/propensive/eucalyptus/) &nbsp; [![Gossamer](https://github.com/propensive/gossamer/raw/main/doc/images/128x128.png)](https://github.com/propensive/gossamer/) &nbsp;
 
 ## Status
 
@@ -195,7 +189,7 @@ categorized into one of the following five stability levels:
 - _embryonic_: for experimental or demonstrative purposes only, without any guarantees of longevity
 - _fledgling_: of proven utility, seeking contributions, but liable to significant redesigns
 - _maturescent_: major design decisions broady settled, seeking probatory adoption and refinement
-- _dependable_: production-ready, subject to controlled ongoing maintenance and enhancement; tagged as version `1.0` or later
+- _dependable_: production-ready, subject to controlled ongoing maintenance and enhancement; tagged as version `1.0.0` or later
 - _adamantine_: proven, reliable and production-ready, with no further breaking changes ever anticipated
 
 Projects at any stability level, even _embryonic_ projects, are still ready to
@@ -203,7 +197,7 @@ be used, but caution should be taken if there is a mismatch between the
 project's stability level and the importance of your own project.
 
 Turbulence is designed to be _small_. Its entire source code currently consists
-of 555 lines of code.
+of 541 lines of code.
 
 ## Building
 
@@ -235,7 +229,16 @@ Turbulence was designed and developed by Jon Pretty, and commercial support and 
 
 _Turbulence_ describes multiple interacting flows, or streams, of fluids; this library makes it easier to streamline interacting streams.
 
+In general, Scala One project names are always chosen with some rationale, however it is usually
+frivolous. Each name is chosen for more for its _uniqueness_ and _intrigue_ than its concision or
+catchiness, and there is no bias towards names with positive or "nice" meanings—since many of the
+libraries perform some quite unpleasant tasks.
+
+Names should be English words, though many are obscure or archaic, and it should be noted how
+willingly English adopts foreign words. Names are generally of Greek or Latin origin, and have
+often arrived in English via a romance language.
+
 ## License
 
-Turbulence is copyright &copy; 2022-23 Jon Pretty & Propensive O&Uuml;, and is made available under the
+Turbulence is copyright &copy; 2023 Jon Pretty & Propensive O&Uuml;, and is made available under the
 [Apache 2.0 License](/license.md).
