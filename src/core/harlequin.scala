@@ -1,5 +1,5 @@
 /*
-    Harlequin, version 0.4.0. Copyright 2021-23 Jon Pretty, Propensive OÜ.
+    Harlequin, version [unreleased]. Copyright 2023 Jon Pretty, Propensive OÜ.
 
     The primary distribution site is: https://propensive.com/
 
