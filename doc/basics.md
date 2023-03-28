@@ -116,3 +116,4 @@ test(t"cannot sort data without an Ordering"):
 .assert(_.startsWith("No implicit Ordering"))
 ```
 
+
