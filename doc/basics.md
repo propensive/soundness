@@ -179,3 +179,4 @@ XML usually needs to be serialized to a string. Xylophone provides a `show` meth
 an `Xml` value to a `Text` value using a contextual `XmlPrinter`, of which two are available by default:
 one which omits all unnecessary whitespace, and one which "pretty prints" the XML with indentation for
 nesting.
+
