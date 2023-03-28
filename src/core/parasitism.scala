@@ -1,5 +1,5 @@
 /*
-    Parasitism, version null. Copyright 2022-23 Jon Pretty, Propensive OÜ.
+    Parasitism, version [unreleased]. Copyright 2023 Jon Pretty, Propensive OÜ.
 
     The primary distribution site is: https://propensive.com/
 

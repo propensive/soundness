@@ -4,6 +4,8 @@
 
 # Parasitism
 
+__Structured asynchronous task management__
+
 _Parasitism_ provides an implementation of asynchronous tasks, built upon Java threads for use in high-availability applications running on a Loom JVM,
 or smaller-scale applications on other JVMs. All tasks form a supervisor hierarchy, where each task is "owned" by a supervising parent task, and
 cancelation of tasks cascades through the hierarchy. This makes it easier to avoid thread leaks in complex systems. Scala 3's context functions are
@@ -19,7 +21,8 @@ used to track tasks unintrusively, while documenting a thread's blocking nature 
 
 ## Availability
 
-Parasitism has not yet been published as a binary, though work is ongoing to fix this.
+Parasitism has not yet been published as a binary. It is currently waiting for the
+final release of Scala 3.3.
 
 ## Getting Started
 
@@ -77,15 +80,6 @@ execute to completion.
 
 
 
-## Related Projects
-
-The following _Scala One_ libraries are dependencies of _Parasitism_:
-
-[![Deviation](https://github.com/propensive/deviation/raw/main/doc/images/128x128.png)](https://github.com/propensive/deviation/) &nbsp; [![Diuretic](https://github.com/propensive/diuretic/raw/main/doc/images/128x128.png)](https://github.com/propensive/diuretic/) &nbsp;
-
-The following _Scala One_ libraries are dependents of _Parasitism_:
-
-[![Turbulence](https://github.com/propensive/turbulence/raw/main/doc/images/128x128.png)](https://github.com/propensive/turbulence/) &nbsp;
 
 ## Status
 
@@ -95,7 +89,7 @@ categorized into one of the following five stability levels:
 - _embryonic_: for experimental or demonstrative purposes only, without any guarantees of longevity
 - _fledgling_: of proven utility, seeking contributions, but liable to significant redesigns
 - _maturescent_: major design decisions broady settled, seeking probatory adoption and refinement
-- _dependable_: production-ready, subject to controlled ongoing maintenance and enhancement; tagged as version `1.0` or later
+- _dependable_: production-ready, subject to controlled ongoing maintenance and enhancement; tagged as version `1.0.0` or later
 - _adamantine_: proven, reliable and production-ready, with no further breaking changes ever anticipated
 
 Projects at any stability level, even _embryonic_ projects, are still ready to
@@ -103,7 +97,7 @@ be used, but caution should be taken if there is a mismatch between the
 project's stability level and the importance of your own project.
 
 Parasitism is designed to be _small_. Its entire source code currently consists
-of 243 lines of code.
+of 251 lines of code.
 
 ## Building
 
@@ -135,7 +129,16 @@ Parasitism was designed and developed by Jon Pretty, and commercial support and 
 
 A tick represents the completion of a task, while also being the name of a common human parasite, while threads can be parasites to a JVM.
 
+In general, Scala One project names are always chosen with some rationale, however it is usually
+frivolous. Each name is chosen for more for its _uniqueness_ and _intrigue_ than its concision or
+catchiness, and there is no bias towards names with positive or "nice" meanings—since many of the
+libraries perform some quite unpleasant tasks.
+
+Names should be English words, though many are obscure or archaic, and it should be noted how
+willingly English adopts foreign words. Names are generally of Greek or Latin origin, and have
+often arrived in English via a romance language.
+
 ## License
 
-Parasitism is copyright &copy; 2022-23 Jon Pretty & Propensive O&Uuml;, and is made available under the
+Parasitism is copyright &copy; 2023 Jon Pretty & Propensive O&Uuml;, and is made available under the
 [Apache 2.0 License](/license.md).
