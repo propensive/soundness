@@ -4,6 +4,8 @@
 
 # Dendrology
 
+__Rendering of tree-like structures in the console__
+
 _Dendrology_ provides a single method, `drawTree`, to produce a
 line-by-line visual representation of tree-structured data in a monospaced
 font, typically in a console, but potentially in any grid-based layout.
@@ -19,7 +21,8 @@ font, typically in a console, but potentially in any grid-based layout.
 
 ## Availability
 
-Dendrology has not yet been published as a binary, though work is ongoing to fix this.
+Dendrology has not yet been published as a binary. It is currently waiting for the
+final release of Scala 3.3.
 
 ## Getting Started
 
@@ -88,15 +91,6 @@ order.
 
 
 
-## Related Projects
-
-The following _Scala One_ libraries are dependencies of _Dendrology_:
-
-[![Gossamer](https://github.com/propensive/gossamer/raw/main/doc/images/128x128.png)](https://github.com/propensive/gossamer/) &nbsp;
-
-The following _Scala One_ libraries are dependents of _Dendrology_:
-
-[![Chiaroscuro](https://github.com/propensive/chiaroscuro/raw/main/doc/images/128x128.png)](https://github.com/propensive/chiaroscuro/) &nbsp; [![Hyperbole](https://github.com/propensive/hyperbole/raw/main/doc/images/128x128.png)](https://github.com/propensive/hyperbole/) &nbsp;
 
 ## Status
 
@@ -106,7 +100,7 @@ categorized into one of the following five stability levels:
 - _embryonic_: for experimental or demonstrative purposes only, without any guarantees of longevity
 - _fledgling_: of proven utility, seeking contributions, but liable to significant redesigns
 - _maturescent_: major design decisions broady settled, seeking probatory adoption and refinement
-- _dependable_: production-ready, subject to controlled ongoing maintenance and enhancement; tagged as version `1.0` or later
+- _dependable_: production-ready, subject to controlled ongoing maintenance and enhancement; tagged as version `1.0.0` or later
 - _adamantine_: proven, reliable and production-ready, with no further breaking changes ever anticipated
 
 Projects at any stability level, even _embryonic_ projects, are still ready to
@@ -145,6 +139,15 @@ Dendrology was designed and developed by Jon Pretty, and commercial support and 
 ## Name
 
 _Dendrology_ is the study of trees.
+
+In general, Scala One project names are always chosen with some rationale, however it is usually
+frivolous. Each name is chosen for more for its _uniqueness_ and _intrigue_ than its concision or
+catchiness, and there is no bias towards names with positive or "nice" meanings—since many of the
+libraries perform some quite unpleasant tasks.
+
+Names should be English words, though many are obscure or archaic, and it should be noted how
+willingly English adopts foreign words. Names are generally of Greek or Latin origin, and have
+often arrived in English via a romance language.
 
 ## License
 
