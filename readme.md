@@ -4,6 +4,8 @@
 
 # Exoskeleton
 
+__Interfaces for interacting with the shell__
+
 Exoskeleton is a Scala library for to make it easy to write command-line applications which
 interact through tab-completion in
 [`bash`](https://www.gnu.org/software/bash/),
@@ -26,7 +28,8 @@ define the execution of parameters.
 
 ## Availability
 
-Exoskeleton has not yet been published as a binary, though work is ongoing to fix this.
+Exoskeleton has not yet been published as a binary. It is currently waiting for the
+final release of Scala 3.3.
 
 ## Getting Started
 
@@ -72,13 +75,6 @@ the command that completions are being provided for, and _dir_ is the
 directory in which the script should be written.
 
 
-## Related Projects
-
-The following _Scala One_ libraries are dependencies of _Exoskeleton_:
-
-[![Galilei](https://github.com/propensive/galilei/raw/main/doc/images/128x128.png)](https://github.com/propensive/galilei/) &nbsp; [![Profanity](https://github.com/propensive/profanity/raw/main/doc/images/128x128.png)](https://github.com/propensive/profanity/) &nbsp;
-
-No other _Scala One_ libraries are dependents of _Exoskeleton_.
 
 ## Status
 
@@ -88,7 +84,7 @@ categorized into one of the following five stability levels:
 - _embryonic_: for experimental or demonstrative purposes only, without any guarantees of longevity
 - _fledgling_: of proven utility, seeking contributions, but liable to significant redesigns
 - _maturescent_: major design decisions broady settled, seeking probatory adoption and refinement
-- _dependable_: production-ready, subject to controlled ongoing maintenance and enhancement; tagged as version `1.0` or later
+- _dependable_: production-ready, subject to controlled ongoing maintenance and enhancement; tagged as version `1.0.0` or later
 - _adamantine_: proven, reliable and production-ready, with no further breaking changes ever anticipated
 
 Projects at any stability level, even _embryonic_ projects, are still ready to
@@ -96,7 +92,7 @@ be used, but caution should be taken if there is a mismatch between the
 project's stability level and the importance of your own project.
 
 Exoskeleton is designed to be _small_. Its entire source code currently consists
-of 341 lines of code.
+of 339 lines of code.
 
 ## Building
 
@@ -128,7 +124,16 @@ Exoskeleton was designed and developed by Jon Pretty, and commercial support and
 
 Exoskeleton is a library for interacting with shells, which are their exterior skeletons—or Exoskeletons.
 
+In general, Scala One project names are always chosen with some rationale, however it is usually
+frivolous. Each name is chosen for more for its _uniqueness_ and _intrigue_ than its concision or
+catchiness, and there is no bias towards names with positive or "nice" meanings—since many of the
+libraries perform some quite unpleasant tasks.
+
+Names should be English words, though many are obscure or archaic, and it should be noted how
+willingly English adopts foreign words. Names are generally of Greek or Latin origin, and have
+often arrived in English via a romance language.
+
 ## License
 
-Exoskeleton is copyright &copy; 2017-23 Jon Pretty & Propensive O&Uuml;, and is made available under the
+Exoskeleton is copyright &copy; 2023 Jon Pretty & Propensive O&Uuml;, and is made available under the
 [Apache 2.0 License](/license.md).
