@@ -4,6 +4,8 @@
 
 # Cataclysm
 
+__Typesafe CSS in Scala__
+
 __Cataclysm__ provides a typesafe representation of CSS, including properties, selectors, rules and
 stylesheets.
 
@@ -18,7 +20,8 @@ stylesheets.
 
 ## Availability
 
-Cataclysm has not yet been published as a binary, though work is ongoing to fix this.
+Cataclysm has not yet been published as a binary. It is currently waiting for the
+final release of Scala 3.3.
 
 ## Getting Started
 
@@ -185,15 +188,6 @@ Css(margin = (1.px, 3.em))
 
 
 
-## Related Projects
-
-The following _Scala One_ libraries are dependencies of _Cataclysm_:
-
-[![Anticipation](https://github.com/propensive/anticipation/raw/main/doc/images/128x128.png)](https://github.com/propensive/anticipation/) &nbsp; [![Gossamer](https://github.com/propensive/gossamer/raw/main/doc/images/128x128.png)](https://github.com/propensive/gossamer/) &nbsp; [![Iridescence](https://github.com/propensive/iridescence/raw/main/doc/images/128x128.png)](https://github.com/propensive/iridescence/) &nbsp;
-
-The following _Scala One_ libraries are dependents of _Cataclysm_:
-
-[![Tarantula](https://github.com/propensive/tarantula/raw/main/doc/images/128x128.png)](https://github.com/propensive/tarantula/) &nbsp;
 
 ## Status
 
@@ -203,7 +197,7 @@ categorized into one of the following five stability levels:
 - _embryonic_: for experimental or demonstrative purposes only, without any guarantees of longevity
 - _fledgling_: of proven utility, seeking contributions, but liable to significant redesigns
 - _maturescent_: major design decisions broady settled, seeking probatory adoption and refinement
-- _dependable_: production-ready, subject to controlled ongoing maintenance and enhancement; tagged as version `1.0` or later
+- _dependable_: production-ready, subject to controlled ongoing maintenance and enhancement; tagged as version `1.0.0` or later
 - _adamantine_: proven, reliable and production-ready, with no further breaking changes ever anticipated
 
 Projects at any stability level, even _embryonic_ projects, are still ready to
@@ -211,7 +205,7 @@ be used, but caution should be taken if there is a mismatch between the
 project's stability level and the importance of your own project.
 
 Cataclysm is designed to be _small_. Its entire source code currently consists
-of 665 lines of code.
+of 662 lines of code.
 
 ## Building
 
@@ -243,7 +237,16 @@ Cataclysm was designed and developed by Jon Pretty, and commercial support and t
 
 Cataclysm takes its name from the sweeping inundation (typical of a _waterfall_, or _cascade_) since it represents _Cascading_ Style Sheets.
 
+In general, Scala One project names are always chosen with some rationale, however it is usually
+frivolous. Each name is chosen for more for its _uniqueness_ and _intrigue_ than its concision or
+catchiness, and there is no bias towards names with positive or "nice" meanings—since many of the
+libraries perform some quite unpleasant tasks.
+
+Names should be English words, though many are obscure or archaic, and it should be noted how
+willingly English adopts foreign words. Names are generally of Greek or Latin origin, and have
+often arrived in English via a romance language.
+
 ## License
 
-Cataclysm is copyright &copy; 2021-23 Jon Pretty & Propensive O&Uuml;, and is made available under the
+Cataclysm is copyright &copy; 2023 Jon Pretty & Propensive O&Uuml;, and is made available under the
 [Apache 2.0 License](/license.md).
