@@ -4,6 +4,8 @@
 
 # Escritoire
 
+__A library for writing tables__
+
 _Escritoire_ is a simple library for printing tabular data in monospaced fonts,
 typically for use in console applications.
 
@@ -17,7 +19,8 @@ typically for use in console applications.
 
 ## Availability
 
-Escritoire has not yet been published as a binary, though work is ongoing to fix this.
+Escritoire has not yet been published as a binary. It is currently waiting for the
+final release of Scala 3.3.
 
 ## Getting Started
 
@@ -60,15 +63,6 @@ will return a sequence of `Text`s which will print as,
 ```
 
 
-## Related Projects
-
-The following _Scala One_ libraries are dependencies of _Escritoire_:
-
-[![Escapade](https://github.com/propensive/escapade/raw/main/doc/images/128x128.png)](https://github.com/propensive/escapade/) &nbsp; [![Hieronymus](https://github.com/propensive/hieronymus/raw/main/doc/images/128x128.png)](https://github.com/propensive/hieronymus/) &nbsp; [![Probably](https://github.com/propensive/probably/raw/main/doc/images/128x128.png)](https://github.com/propensive/probably/) &nbsp;
-
-The following _Scala One_ libraries are dependents of _Escritoire_:
-
-[![Chiaroscuro](https://github.com/propensive/chiaroscuro/raw/main/doc/images/128x128.png)](https://github.com/propensive/chiaroscuro/) &nbsp; [![Hyperbole](https://github.com/propensive/hyperbole/raw/main/doc/images/128x128.png)](https://github.com/propensive/hyperbole/) &nbsp;
 
 ## Status
 
@@ -78,7 +72,7 @@ categorized into one of the following five stability levels:
 - _embryonic_: for experimental or demonstrative purposes only, without any guarantees of longevity
 - _fledgling_: of proven utility, seeking contributions, but liable to significant redesigns
 - _maturescent_: major design decisions broady settled, seeking probatory adoption and refinement
-- _dependable_: production-ready, subject to controlled ongoing maintenance and enhancement; tagged as version `1.0` or later
+- _dependable_: production-ready, subject to controlled ongoing maintenance and enhancement; tagged as version `1.0.0` or later
 - _adamantine_: proven, reliable and production-ready, with no further breaking changes ever anticipated
 
 Projects at any stability level, even _embryonic_ projects, are still ready to
@@ -86,7 +80,7 @@ be used, but caution should be taken if there is a mismatch between the
 project's stability level and the importance of your own project.
 
 Escritoire is designed to be _small_. Its entire source code currently consists
-of 198 lines of code.
+of 197 lines of code.
 
 ## Building
 
@@ -122,7 +116,16 @@ Escritoire is a pun: it is named after a type of writing table, since its purpos
 
 /ˌɛskɹiˈtwɑː/
 
+In general, Scala One project names are always chosen with some rationale, however it is usually
+frivolous. Each name is chosen for more for its _uniqueness_ and _intrigue_ than its concision or
+catchiness, and there is no bias towards names with positive or "nice" meanings—since many of the
+libraries perform some quite unpleasant tasks.
+
+Names should be English words, though many are obscure or archaic, and it should be noted how
+willingly English adopts foreign words. Names are generally of Greek or Latin origin, and have
+often arrived in English via a romance language.
+
 ## License
 
-Escritoire is copyright &copy; 2018-23 Jon Pretty & Propensive O&Uuml;, and is made available under the
+Escritoire is copyright &copy; 2023 Jon Pretty & Propensive O&Uuml;, and is made available under the
 [Apache 2.0 License](/license.md).
