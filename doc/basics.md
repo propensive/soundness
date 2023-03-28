@@ -79,3 +79,4 @@ _on_ or _off_) to be specified.
 ### Limitations
 
 Profanity does not currently support Windows.
+
