@@ -433,7 +433,6 @@ object Readable:
                 LazyList.cons(array.immutable(using Unsafe), recur(total + count))
               
               catch case e: Exception => LazyList(throw StreamCutError(total.b))
-              finally try channel.close() catch case err: Exception => ()
         
         recur(0)
       catch case err: Exception => LazyList(throw StreamCutError(0.b)): /*{streamCut}*/ LazyList[Bytes]
