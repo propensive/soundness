@@ -183,37 +183,55 @@ extension [ElemType](stream: LazyList[ElemType])
 //       stream.foreach(buffer.put(_))
 
 object Printable:
-  given text(using enc: Encoding): Printable[Text] = enc.getBytes(_)
+  given text: Printable[Text] = identity(_)
 
 @capability
 trait Printable[-TextType]:
-  def print(text: TextType): Bytes
+  def print(text: TextType): Text
 
 object Io:
+  def put(bytes: Bytes)(using io: Stdio): Unit =
+    io.putOutBytes(bytes)
+
   def print[TextType](text: TextType)(using io: Stdio)(using printable: Printable[TextType]): Unit =
-    io.putOut(printable.print(text))
+    io.putOutText(printable.print(text))
+  
+  def printErr[TextType](text: TextType)(using io: Stdio)(using printable: Printable[TextType]): Unit =
+    io.putErrText(printable.print(text))
   
   def println
       [TextType](text: TextType)(using io: Stdio, printable: Printable[TextType], lines: LineSeparation)
       : /*{io, printable, lines}*/ Unit =
-    io.putOut(printable.print(text))
-    io.putOut(lines.newlineBytes)
+    io.putOutText(printable.print(text))
+    io.putOutBytes(lines.newlineBytes)
+  
+  def printlnErr
+      [TextType](text: TextType)(using io: Stdio, printable: Printable[TextType], lines: LineSeparation)
+      : /*{io, printable, lines}*/ Unit =
+    io.putErrText(printable.print(text))
+    io.putErrBytes(lines.newlineBytes)
   
 @capability
 trait Stdio:
-  def putOut(bytes: Bytes): Unit
-  def putErr(bytes: Bytes): Unit
+  def putErrBytes(bytes: Bytes): Unit
+  def putErrText(text: Text): Unit
+  def putOutBytes(bytes: Bytes): Unit
+  def putOutText(text: Text): Unit
 
 object Stderr
 object Stdout
 
 package basicIo:
   given jvm(using streamCut: CanThrow[StreamCutError]): Stdio = new Stdio:
-    def putOut(bytes: Bytes): Unit =
+    val enc = Encoding.system.get
+    def putOutText(text: Text): Unit = putOutBytes(enc.getBytes(text))
+    def putErrText(text: Text): Unit = putErrBytes(enc.getBytes(text))
+    
+    def putOutBytes(bytes: Bytes): Unit =
       if System.out == null then throw StreamCutError(0.b)
       else System.out.nn.writeBytes(bytes.mutable(using Unsafe))
     
-    def putErr(bytes: Bytes): Unit =
+    def putErrBytes(bytes: Bytes): Unit =
       if System.out == null then throw StreamCutError(0.b)
       else System.out.nn.writeBytes(bytes.mutable(using Unsafe))
     
@@ -327,16 +345,16 @@ trait Writable[-TargetType, -ChunkType]:
 
 object Appendable:
   given stdoutBytes(using io: Stdio): (/*{io}*/ SimpleAppendable[Stdout.type, Bytes]) =
-    (stderr, bytes) => io.putOut(bytes)
+    (stderr, bytes) => io.putOutBytes(bytes)
   
   given stdoutText(using io: Stdio, enc: Encoding): (/*{io}*/ SimpleAppendable[Stdout.type, Text]) =
-    (stderr, text) => io.putOut(enc.getBytes(text))
+    (stderr, text) => io.putOutText(text)
 
   given stderrBytes(using io: Stdio): (/*{io}*/ SimpleAppendable[Stderr.type, Bytes]) =
-    (stderr, bytes) => io.putErr(bytes)
+    (stderr, bytes) => io.putErrBytes(bytes)
   
   given stderrText(using io: Stdio, enc: Encoding): (/*{io}*/ SimpleAppendable[Stderr.type, Text]) =
-    (stderr, text) => io.putErr(enc.getBytes(text))
+    (stderr, text) => io.putErrText(text)
 
   given outputStreamBytes(using streamCut: CanThrow[StreamCutError])
                          : (/*{streamCut}*/ SimpleAppendable[ji.OutputStream, Bytes]) =
