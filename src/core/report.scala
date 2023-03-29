@@ -63,20 +63,55 @@ object TestReport:
   given Inclusion[TestReport, DebugInfo] = _.addDebugInfo(_, _)
 
 class TestReport():
-  private val tests: scm.SortedMap[TestId, scm.ArrayBuffer[Outcome]] =
-    scm.TreeMap[TestId, scm.ArrayBuffer[Outcome]]().withDefault(_ => scm.ArrayBuffer[Outcome]())
+
+  enum ReportLine:
+    case Suite(suite: Maybe[TestSuite], tests: scm.ListMap[TestId, ReportLine] = scm.ListMap())
+    case Test(test: TestId, outcomes: scm.ArrayBuffer[Outcome] = scm.ArrayBuffer())
+
+    def summaries: List[Summary] = this match
+      case Suite(suite, tests)  =>
+        val rest = tests.values.flatMap(_.summaries).to(List)
+        if suite.unset then rest else Summary(Status.Suite, suite.option.get.id, 0, 0, 0, 0) :: rest
+      
+      case Test(testId, buf) =>
+        val status =
+          if buf.forall(_.is[Outcome.Pass]) then Status.Pass
+          else if buf.forall(_.is[Outcome.Fail]) then Status.Fail
+          else if buf.forall(_.is[Outcome.Throws]) then Status.Throws
+          else if buf.forall(_.is[Outcome.CheckThrows]) then Status.CheckThrows
+          else Status.Mixed
+      
+        val min: Long = buf.map(_.duration).min
+        val max: Long = buf.map(_.duration).max
+        val avg: Long = buf.foldLeft(0L)(_ + _.duration)/buf.length
+          
+        List(Summary(status, testId, buf.length, min, max, avg))
+
+  private val lines: ReportLine.Suite = ReportLine.Suite(Unset)
   
+  def resolve(suite: Maybe[TestSuite]): ReportLine.Suite =
+    suite.option.map: suite =>
+      resolve(suite.parent).tests(suite.id) match
+        case suite@ReportLine.Suite(_, _) => suite
+        case _                            => throw Mistake("should never occur")
+    .getOrElse(lines)
+
   private val details: scm.SortedMap[TestId, scm.ArrayBuffer[DebugInfo]] =
     scm.TreeMap[TestId, scm.ArrayBuffer[DebugInfo]]().withDefault(_ => scm.ArrayBuffer[DebugInfo]())
 
-  def declareSuite(suite: TestSuite): TestReport =
-    this.tap { _ => tests(suite.id) = scm.ArrayBuffer[Outcome]() }
+  def declareSuite(suite: TestSuite): TestReport = this.tap: _ =>
+    resolve(suite.parent).tests(suite.id) = ReportLine.Suite(suite, scm.ListMap())
 
-  def addOutcome(testId: TestId, outcome: Outcome): TestReport =
-    this.tap { _ => tests(testId) = tests(testId).append(outcome) }
+  def addOutcome(testId: TestId, outcome: Outcome): TestReport = this.tap: _ =>
+    val tests = resolve(testId.suite).tests
+    
+    tests.getOrElseUpdate(testId, ReportLine.Test(testId, scm.ArrayBuffer[Outcome]())) match
+      case ReportLine.Test(_, buf) => buf.append(outcome)
+      case _                       => throw Mistake("should never match")
   
   def addDebugInfo(testId: TestId, info: DebugInfo): TestReport =
-    this.tap { _ => details(testId) = details(testId).append(info) }
+    this.tap: _ =>
+      details(testId) = details(testId).append(info)
 
   enum Status:
     case Pass, Fail, Throws, CheckThrows, Mixed, Suite
@@ -97,8 +132,7 @@ class TestReport():
       case Mixed       => ansi"${Bg(rgb"#ddd700")}( $Bold(${colors.Black}(?)) )"
       case Suite       => ansi"   "
 
-  case class Summary
-      (status: Status, id: TestId, count: Int, min: Long, max: Long, avg: Long, timestamp: Long):
+  case class Summary(status: Status, id: TestId, count: Int, min: Long, max: Long, avg: Long):
     def indentedName: AnsiText =
       val depth = id.suite.mm(_.id.depth).or(0) + 1
       
@@ -106,7 +140,7 @@ class TestReport():
         if status == Status.Suite then ansi"${colors.Silver}($Bold(${id.name}))"
         else ansi"${id.name}"
       
-      ansi"${t"  "*(depth - 2)}$title"
+      ansi"${t"  "*depth}$title"
 
     val unitsSeq: List[AnsiText] = List(
       ansi"${colors.BurlyWood}(µs)",
@@ -131,24 +165,11 @@ class TestReport():
 
   def complete(): Unit =
     import textWidthCalculation.uniform
-    val summaries: List[Summary] = tests.to(List).map: (id, buf) =>
-      val status =
-        if buf.isEmpty then Status.Suite
-        else if buf.forall(_.is[Outcome.Pass]) then Status.Pass
-        else if buf.forall(_.is[Outcome.Fail]) then Status.Fail
-        else if buf.forall(_.is[Outcome.Throws]) then Status.Throws
-        else if buf.forall(_.is[Outcome.CheckThrows]) then Status.CheckThrows
-        else Status.Mixed
-      
-      if buf.length == 0 then Summary(status, id, 0, 0, 0, 0, 0) else
-        val avg: Long = buf.foldLeft(0L)(_ + _.duration)/buf.length
-        
-        Summary(status, id, buf.length, buf.map(_.duration).min, buf.map(_.duration).max, avg,
-            buf.map(_.timestamp).min)
     
     val table: Table[Summary] =
-      val showStats = !summaries.forall(_.count < 2)
+      val showStats = !lines.summaries.forall(_.count < 2)
       val timeTitle = if showStats then t"Avg" else t"Time"
+      
       Table(
         Column(ansi"")(_.status.symbol),
         
@@ -170,10 +191,9 @@ class TestReport():
       )
       
     import tableStyles.rounded
-    table.tabulate(summaries.sortBy(_.timestamp), 120).map(_.render).foreach(println(_))
+    table.tabulate(lines.summaries, 120).map(_.render).foreach(println(_))
 
     details.foreach: (id, info) =>
-      val color = tests(id)
       val ribbon = Ribbon(colors.DarkRed.srgb, colors.FireBrick.srgb, colors.Tomato.srgb)
       println(ribbon.fill(ansi"$Bold(${id.id})", id.codepoint.text.ansi, id.name.ansi).render)
       

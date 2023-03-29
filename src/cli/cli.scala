@@ -29,7 +29,6 @@ extends TestSuite(name):
   def run(): Unit
   
   final def main(args: IArray[Text]): Unit =
-    try run()
-    catch case err: Throwable =>
-      println(StackTrace(err).ansi.render)
+    try runner.suite(this, run())
+    catch case err: Throwable => println(StackTrace(err).ansi.render)
     finally runner.complete()
