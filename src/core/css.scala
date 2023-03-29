@@ -50,7 +50,35 @@ object From extends Dynamic:
 object To extends Dynamic:
   inline def applyDynamicNamed(method: "apply")(inline properties: (Label, Any)*): Keyframe =
     ${CataclysmMacros.keyframe('{"to"}, 'properties)}
+
+case class FontFace
+    (ascentOverride: Maybe[Text] = Unset, descentOverride: Maybe[Text] = Unset,
+        fontDisplay: Maybe[Text] = Unset, fontFamily: Maybe[Text] = Unset,
+        fontStretch: Maybe[Text] = Unset, fontStyle: Maybe[Text] = Unset,
+        fontWeight: Maybe[Text] = Unset, fontVariationSettings: Maybe[Text] = Unset,
+        lineGapOverride: Maybe[Text] = Unset, sizeAdjust: Maybe[Text] = Unset,
+        src: Maybe[Text] = Unset, unicodeRange: Maybe[Text] = Unset)
+extends CssStylesheet.Item:
   
+  def text: Text =
+    val params = List(
+      t"ascent-override"         -> ascentOverride,
+      t"descent-override"        -> descentOverride,
+      t"font-display"            -> fontDisplay,
+      t"font-family"             -> fontFamily,
+      t"font-weight"             -> fontWeight,
+      t"font-variation-settings" -> fontVariationSettings,
+      t"line-gap-override"       -> lineGapOverride,
+      t"size-adjust"             -> sizeAdjust,
+      t"src"                     -> src,
+      t"unicode-range"           -> unicodeRange
+    ).filter(!_(1).unset)
+    
+    params.collect:
+      case (key: Text, value: Text) => t"$key: $value;"
+    .join(t"@font-face { ", t" ", t" }")
+    
+
 case class Import(url: Text) extends CssStylesheet.Item:
   def text: Text = t"@import url('$url');"
 
