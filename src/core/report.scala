@@ -97,10 +97,15 @@ class TestReport():
       case Mixed       => ansi"${Bg(rgb"#ddd700")}( $Bold(${colors.Black}(?)) )"
       case Suite       => ansi"   "
 
-  case class Summary(status: Status, id: TestId, count: Int, min: Long, max: Long, avg: Long):
+  case class Summary
+      (status: Status, id: TestId, count: Int, min: Long, max: Long, avg: Long, timestamp: Long):
     def indentedName: AnsiText =
       val depth = id.suite.mm(_.id.depth).or(0) + 1
-      val title = if status == Status.Suite then ansi"${colors.Silver}($Bold(${id.name}))" else ansi"${id.name}"
+      
+      val title =
+        if status == Status.Suite then ansi"${colors.Silver}($Bold(${id.name}))"
+        else ansi"${id.name}"
+      
       ansi"${t"  "*(depth - 2)}$title"
 
     val unitsSeq: List[AnsiText] = List(
@@ -135,12 +140,15 @@ class TestReport():
         else if buf.forall(_.is[Outcome.CheckThrows]) then Status.CheckThrows
         else Status.Mixed
       
-      if buf.length == 0 then Summary(status, id, 0, 0, 0, 0) else
+      if buf.length == 0 then Summary(status, id, 0, 0, 0, 0, 0) else
         val avg: Long = buf.foldLeft(0L)(_ + _.duration)/buf.length
-        Summary(status, id, buf.length, buf.map(_.duration).min, buf.map(_.duration).max, avg)
+        
+        Summary(status, id, buf.length, buf.map(_.duration).min, buf.map(_.duration).max, avg,
+            buf.map(_.timestamp).min)
     
     val table: Table[Summary] =
-      val stats = !summaries.forall(_.count < 2)
+      val showStats = !summaries.forall(_.count < 2)
+      val timeTitle = if showStats then t"Avg" else t"Time"
       Table(
         Column(ansi"")(_.status.symbol),
         
@@ -149,20 +157,20 @@ class TestReport():
         
         Column(ansi"$Bold(Test)")(_.indentedName),
         
-        Column(ansi"$Bold(Count)", align = Alignment.Right, hide = !stats): s =>
+        Column(ansi"$Bold(Count)", align = Alignment.Right, hide = !showStats): s =>
           ansi"${colors.SteelBlue}(${s.iterations})",
         
-        Column(ansi"$Bold(Min)", align = Alignment.Right, hide = !stats): s =>
+        Column(ansi"$Bold(Min)", align = Alignment.Right, hide = !showStats): s =>
           if s.count < 2 then ansi"" else s.minTime,
         
-        Column(ansi"$Bold(${if stats then t"Avg" else t"Time"})", align = Alignment.Right)(_.avgTime),
+        Column(ansi"$Bold($timeTitle)", align = Alignment.Right)(_.avgTime),
         
-        Column(ansi"$Bold(Max)", align = Alignment.Right, hide = !stats): s =>
+        Column(ansi"$Bold(Max)", align = Alignment.Right, hide = !showStats): s =>
           if s.count < 2 then ansi"" else s.maxTime
       )
       
     import tableStyles.rounded
-    table.tabulate(summaries, 120).map(_.render).foreach(println(_))
+    table.tabulate(summaries.sortBy(_.timestamp), 120).map(_.render).foreach(println(_))
 
     details.foreach: (id, info) =>
       val color = tests(id)

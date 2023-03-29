@@ -68,6 +68,7 @@ enum Outcome:
   case Throws(exception: Exception, duration: Long)
   case CheckThrows(exception: Exception, duration: Long)
 
+  val timestamp: Long = System.currentTimeMillis
   def duration: Long
 
 enum TestRun[+T]:
