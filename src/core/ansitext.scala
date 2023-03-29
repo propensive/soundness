@@ -175,8 +175,7 @@ object AnsiText:
   def empty: AnsiText = AnsiText(t"")
   given joinable: Joinable[AnsiText] = _.fold(empty)(_ + _)
 
-  // FIXME: Should look at the TTY to determine capabilities
-  given printable(using enc: Encoding): Printable[AnsiText] = _.render.bytes
+  given printable: Printable[AnsiText] = _.render
 
   given cuttable: Cuttable[AnsiText, Text] = (text, delimiter, limit) =>
     import java.util.regex.*
