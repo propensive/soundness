@@ -204,6 +204,9 @@ object Io:
       : /*{io, printable, lines}*/ Unit =
     io.putOutText(printable.print(text))
     io.putOutText(Text("\n"))
+
+  def println()(using io: Stdio): Unit = io.putOutText(Text("\n"))
+  def printlnErr()(using io: Stdio): Unit = io.putErrText(Text("\n"))
   
   def printlnErr
       [TextType](text: TextType)(using io: Stdio, printable: Printable[TextType])
