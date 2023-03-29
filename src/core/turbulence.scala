@@ -200,16 +200,16 @@ object Io:
     io.putErrText(printable.print(text))
   
   def println
-      [TextType](text: TextType)(using io: Stdio, printable: Printable[TextType], lines: LineSeparation)
+      [TextType](text: TextType)(using io: Stdio, printable: Printable[TextType])
       : /*{io, printable, lines}*/ Unit =
     io.putOutText(printable.print(text))
-    io.putOutBytes(lines.newlineBytes)
+    io.putOutText(Text("\n"))
   
   def printlnErr
-      [TextType](text: TextType)(using io: Stdio, printable: Printable[TextType], lines: LineSeparation)
+      [TextType](text: TextType)(using io: Stdio, printable: Printable[TextType])
       : /*{io, printable, lines}*/ Unit =
     io.putErrText(printable.print(text))
-    io.putErrBytes(lines.newlineBytes)
+    io.putErrText(Text("\n"))
   
 @capability
 trait Stdio:
