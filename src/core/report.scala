@@ -140,7 +140,7 @@ class TestReport():
         if status == Status.Suite then ansi"${colors.Silver}($Bold(${id.name}))"
         else ansi"${id.name}"
       
-      ansi"${t"  "*depth}$title"
+      ansi"${t"  "*(depth - 1)}$title"
 
     val unitsSeq: List[AnsiText] = List(
       ansi"${colors.BurlyWood}(µs)",
