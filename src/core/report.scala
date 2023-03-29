@@ -22,6 +22,7 @@ import gossamer.*
 import chiaroscuro.*
 import escritoire.*
 import escapade.*
+import turbulence.*
 import iridescence.*
 
 import scala.collection.mutable as scm
@@ -41,7 +42,7 @@ trait TestReporter[ReportType]:
   def complete(report: ReportType): Unit
 
 object TestReporter:
-  given TestReporter[TestReport] with
+  given (using Stdio): TestReporter[TestReport] with
     def make(): TestReport = TestReport()
     def declareSuite(report: TestReport, suite: TestSuite): Unit = report.declareSuite(suite)
     def complete(report: TestReport): Unit = report.complete()
@@ -163,7 +164,7 @@ class TestReport():
     def avgTime: AnsiText = if avg == 0L then ansi"" else time(avg)
     def iterations: AnsiText = if count == 0 then ansi"" else count.ansi
 
-  def complete(): Unit =
+  def complete()(using Stdio): Unit =
     import textWidthCalculation.uniform
     
     val table: Table[Summary] =
@@ -191,37 +192,37 @@ class TestReport():
       )
       
     import tableStyles.rounded
-    table.tabulate(lines.summaries, 120).map(_.render).foreach(println(_))
+    table.tabulate(lines.summaries, 120).map(_.render).foreach(Io.println(_))
 
     details.foreach: (id, info) =>
       val ribbon = Ribbon(colors.DarkRed.srgb, colors.FireBrick.srgb, colors.Tomato.srgb)
-      println(ribbon.fill(ansi"$Bold(${id.id})", id.codepoint.text.ansi, id.name.ansi).render)
+      Io.println(ribbon.fill(ansi"$Bold(${id.id})", id.codepoint.text.ansi, id.name.ansi).render)
       
       info.foreach: debugInfo =>
-        println()
+        Io.println(t"")
         debugInfo match
           case DebugInfo.Throws(err) =>
             val name = ansi"$Italic(${colors.White}(${err.component}.${err.className}))"
-            println(ansi"${colors.Silver}(An exception was thrown while running test:)".render)
-            println(err.crop(t"probably.Runner", t"run()").ansi.render)
+            Io.println(ansi"${colors.Silver}(An exception was thrown while running test:)".render)
+            Io.println(err.crop(t"probably.Runner", t"run()").ansi.render)
           
           case DebugInfo.CheckThrows(err) =>
             val name = ansi"$Italic(${colors.White}(${err.component}.${err.className}))"
-            println(ansi"${colors.Silver}(An exception was thrown while checking the test predicate:)".render)
-            println(err.crop(t"probably.Outcome#", t"apply()").dropRight(1).ansi.render)
+            Io.println(ansi"${colors.Silver}(An exception was thrown while checking the test predicate:)".render)
+            Io.println(err.crop(t"probably.Outcome#", t"apply()").dropRight(1).ansi.render)
           
           case DebugInfo.Compare(expected, found, cmp) =>
             val expected2: AnsiText = ansi"$Italic(${colors.White}($expected))"
             val found2: AnsiText = ansi"$Italic(${colors.White}($found))"
             val nl = if expected.contains(t"\n") || found.contains(t"\n") then '\n' else ' '
             val instead = ansi"but instead it returned$nl$found2$nl"
-            println(ansi"${colors.Silver}(The test was expected to return$nl$expected2$nl$instead)".render)
-            println(cmp.ansi.render)
+            Io.println(ansi"${colors.Silver}(The test was expected to return$nl$expected2$nl$instead)".render)
+            Io.println(cmp.ansi.render)
           
           case DebugInfo.Captures(map) =>
             Table[(Text, Text)](
               Column(ansi"Expression", align = Alignment.Right)(_(0)),
               Column(ansi"Value")(_(1)),
-            ).tabulate(map.to(List), 140).map(_.render).foreach(println(_))
+            ).tabulate(map.to(List), 140).map(_.render).foreach(Io.println(_))
       
-      println()
+      Io.println()

@@ -19,12 +19,17 @@ package probably
 import rudiments.*
 import deviation.*
 import escapade.*
+import turbulence.*
 
 import language.adhocExtensions
 
-abstract class Suite[ReportType](name: Text)(using reporter: TestReporter[ReportType])
+abstract class Suite(name: Text)
 extends TestSuite(name):
-  given runner: Runner[ReportType] = Runner()
+  val io = unsafely(basicIo.jvm)
+  given runner: Runner[TestReport] =
+    given Stdio = io
+    Runner()
+
   given TestSuite = this
   def run(): Unit
   
