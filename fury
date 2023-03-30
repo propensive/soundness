@@ -4,9 +4,10 @@ target cataclysm/core
 
 repo propensive/gossamer
 repo propensive/iridescence
+repo propensive/serpentine
 
 project cataclysm
   module core
     sources  src/core
-    include  gossamer/core iridescence/core anticipation/cess anticipation/html
+    include  gossamer/core iridescence/core anticipation/cess anticipation/html serpentine/core
 

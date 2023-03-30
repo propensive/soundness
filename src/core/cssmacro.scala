@@ -20,6 +20,7 @@ import rudiments.*
 import gossamer.*
 import iridescence.*
 import anticipation.*
+import serpentine.*
 
 import scala.quoted.*
 
@@ -122,10 +123,13 @@ object PropertyDef:
   given backgroundColor2: PropertyDef["backgroundColor", Transparent.type] = PropertyDef()
   given backgroundColor3: PropertyDef["backgroundColor", Rgb24] = PropertyDef()
   given backgroundImage: PropertyDef["backgroundImage", Text] = PropertyDef()
+  given backgroundImage2: PropertyDef["backgroundImage", Relative] = PropertyDef()
+  given backgroundImage3: PropertyDef["backgroundImage", GenericPath] = PropertyDef()
   given backgroundOrigin: PropertyDef["backgroundOrigin", Text] = PropertyDef()
   given backgroundPosition: PropertyDef["backgroundPosition", Text] = PropertyDef()
   given backgroundRepeat: PropertyDef["backgroundRepeat", Text] = PropertyDef()
   given backgroundSize: PropertyDef["backgroundSize", Text] = PropertyDef()
+  given backgroundSize2: PropertyDef["backgroundSize", Dimension] = PropertyDef()
   given border: PropertyDef["border", (BorderStyle, Dimension, Color)] = PropertyDef()
   given border2: PropertyDef["border", (BorderStyle, Dimension, Rgb24)] = PropertyDef()
   given borderBottom: PropertyDef["borderBottom", (BorderStyle, Dimension, Color)] = PropertyDef()
@@ -408,6 +412,8 @@ object ShowProperty:
   given ShowProperty[Hsl] = _.css
   given ShowProperty[Color] = _.standardSrgb.css
   given ShowProperty[Rgb24] = _.srgb.css
+  given ShowProperty[Relative] = rel => t"url('$rel')"
+  given ShowProperty[GenericPath] = rel => t"url('$rel')"
   given ShowProperty[Rgb12] = _.srgb.css
   given ShowProperty[PropertyValue] = _.show
   given ShowProperty[Inherit.type] = c => t"inherit"
