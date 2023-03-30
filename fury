@@ -2,8 +2,9 @@
 
 target honeycomb/core
 repo propensive/gossamer
+repo propensive/serpentine
 
 project honeycomb
   module core
     sources  src/core
-    include  gossamer/core anticipation/html anticipation/css
+    include  gossamer/core anticipation/html anticipation/css serpentine/core

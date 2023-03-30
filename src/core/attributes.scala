@@ -20,6 +20,7 @@ import rudiments.*
 import gossamer.*
 import turbulence.*
 import anticipation.*
+import serpentine.*
 
 trait HtmlAttribute[Key <: Label, -Value, -T]:
   def convert(value: Value): Maybe[Text]
@@ -272,6 +273,8 @@ object HtmlAttribute:
   given span[T]: HtmlAttribute["span", Int, T] = _.show
   given spellcheck[T]: HtmlAttribute["spellcheck", Boolean, T] = if _ then t"true" else t"false"
   given src[T]: HtmlAttribute["src", Text, T] = identity(_)
+  given src2[T]: HtmlAttribute["src", Relative, T] = _.show
+  given src3[T]: HtmlAttribute["src", GenericPath, T] = _.show
   given srcdoc[T]: HtmlAttribute["srcdoc", Html[?], T] = _.show
   given srclang[T]: HtmlAttribute["srclang", Text, T] = identity(_)
   given srcset[T]: HtmlAttribute["srcset", Text, T] = identity(_) // This should be provided by Cataclysm
