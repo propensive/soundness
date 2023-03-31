@@ -41,8 +41,10 @@ object NumericRange:
 
   @targetName("Range")
   object `~`:
-    given comparable[D1 <: Double & Singleton, D2 <: Double & Singleton](using d1: ValueOf[D1], d2: ValueOf[D2])
-          : TypeTest[Double, D1 ~ D2] =
+    given comparable
+        [D1 <: Double & Singleton, D2 <: Double & Singleton]
+        (using d1: ValueOf[D1], d2: ValueOf[D2])
+        : TypeTest[Double, D1 ~ D2] =
       value =>
         if value >= d1.value && value <= d2.value
         then Some(value.asInstanceOf[(D1 ~ D2) & value.type])
@@ -78,11 +80,15 @@ object NumericRange:
       def *(right: Double): Double = left*right
 
       @targetName("minus")
-      def -[E1 <: Double, E2 <: Double](right: E1 ~ E2): Min[D1 - E1, D1 - E2] ~ Max[D2 - E1, D2 - E2] =
+      def -
+          [E1 <: Double, E2 <: Double]
+          (right: E1 ~ E2)
+          : Min[D1 - E1, D1 - E2] ~ Max[D2 - E1, D2 - E2] =
         left - right
 
       @targetName("minus2")
-      def -[E <: Double & Singleton](right: E): Min[D1 - E, D2 - E] ~ Max[D1 - E, D2 - E] = left - right
+      def -[E <: Double & Singleton](right: E): Min[D1 - E, D2 - E] ~ Max[D1 - E, D2 - E] =
+        left - right
 
       @targetName("minus3")
       def -(right: Double): Double = left - right
@@ -92,7 +98,10 @@ object NumericRange:
         left/right
       
       @targetName("divide2")
-      def /[E1 <: Double, E2 <: Double](right: E1 ~ E2): Asym[E1*E2, Min4[D1/E1, D2/E1, D1/E2, D2/E2], -1.0/0.0] ~ Asym[E1*E2, Max4[D1/E1, D2/E1, D1/E2, D2/E2], 1.0/0.0] =
+      def /
+          [E1 <: Double, E2 <: Double](right: E1 ~ E2)
+          : Asym[E1*E2, Min4[D1/E1, D2/E1, D1/E2, D2/E2], -1.0/0.0] ~
+              Asym[E1*E2, Max4[D1/E1, D2/E1, D1/E2, D2/E2], 1.0/0.0] =
         left/right
       
       @targetName("divide3")
