@@ -127,6 +127,8 @@ object PropertyDef:
   given backgroundImage3: PropertyDef["backgroundImage", GenericPath] = PropertyDef()
   given backgroundOrigin: PropertyDef["backgroundOrigin", Text] = PropertyDef()
   given backgroundPosition: PropertyDef["backgroundPosition", Text] = PropertyDef()
+  given backgroundPosition2: PropertyDef["backgroundPosition", Dimension] = PropertyDef()
+  given backgroundPosition3: PropertyDef["backgroundPosition", (Dimension, Dimension)] = PropertyDef()
   given backgroundRepeat: PropertyDef["backgroundRepeat", Text] = PropertyDef()
   given backgroundRepeat2: PropertyDef["backgroundRepeat", BackgroundRepeat] = PropertyDef()
   
