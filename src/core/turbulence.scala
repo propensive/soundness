@@ -414,29 +414,26 @@ object Readable:
   given inputStream(using streamCut: CanThrow[StreamCutError]): (/*{streamCut}*/ Readable[ji.InputStream, Bytes]) =
     in =>
       val channel: jn.channels.ReadableByteChannel = jn.channels.Channels.newChannel(in).nn
-      try
-        val buf: jn.ByteBuffer = jn.ByteBuffer.wrap(new Array[Byte](65536)).nn
+      val buf: jn.ByteBuffer = jn.ByteBuffer.wrap(new Array[Byte](65536)).nn
   
-        def recur(total: Long): /*{streamCut}*/ LazyList[Bytes] =
+      def recur(total: Long): /*{streamCut}*/ LazyList[Bytes] =
+        try
           channel.read(buf) match
             case -1 => LazyList().tap(_ => try channel.close() catch case err: Exception => ())
             case 0  => recur(total)
             
             case count =>
-              try
-                buf.flip()
-                val size: Int = count.min(65536)
-                val array: Array[Byte] = new Array[Byte](size)
-                buf.get(array)
-                buf.clear()
-  
-                LazyList.cons(array.immutable(using Unsafe), recur(total + count))
-              
-              catch case e: Exception => LazyList(throw StreamCutError(total.b))
+              buf.flip()
+              val size: Int = count.min(65536)
+              val array: Array[Byte] = new Array[Byte](size)
+              buf.get(array)
+              buf.clear()
+
+              LazyList.cons(array.immutable(using Unsafe), recur(total + count))
+            
+        catch case e: Exception => LazyList(throw StreamCutError(total.b))
         
-        recur(0)
-      catch case err: Exception => LazyList(throw StreamCutError(0.b)): /*{streamCut}*/ LazyList[Bytes]
-      finally try channel.close() catch case err: Exception => ()
+      recur(0)
 
 trait Readable[-SourceType, +ChunkType]:
   def read(value: SourceType): LazyList[ChunkType]
