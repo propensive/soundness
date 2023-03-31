@@ -47,8 +47,11 @@ extends Stdio, InputSource:
   val stdoutFunnel: Funnel[Bytes] = Funnel()
   val stderrFunnel: Funnel[Bytes] = Funnel()
   
-  def putOut(bytes: Bytes): Unit = stdoutFunnel.put(bytes)
-  def putErr(bytes: Bytes): Unit = stderrFunnel.put(bytes)
+  def putOutBytes(bytes: Bytes): Unit = stdoutFunnel.put(bytes)
+  def putErrBytes(bytes: Bytes): Unit = stderrFunnel.put(bytes)
+  
+  def putOutText(text: Text): Unit = stdoutFunnel.put(text.sysBytes)
+  def putErrText(text: Text): Unit = stderrFunnel.put(text.sysBytes)
 
   def init()(using Log): Tty throws TtyError =
     interactive()
