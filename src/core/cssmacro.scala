@@ -334,6 +334,7 @@ object PropertyDef:
   given right: PropertyDef["right", Dimension] = PropertyDef()
   given rowGap: PropertyDef["rowGap", Text] = PropertyDef()
   given scrollBehavior: PropertyDef["scrollBehavior", Text] = PropertyDef()
+  given scrollbarWidth: PropertyDef["scrollbarWidth", Text] = PropertyDef()
   given tabSize: PropertyDef["tabSize", Text] = PropertyDef()
   given tableLayout: PropertyDef["tableLayout", Text] = PropertyDef()
   given textAlign: PropertyDef["textAlign", TextAlign] = PropertyDef()
@@ -593,6 +594,7 @@ enum Dir:
 package pseudo:
   def dir(direction: Dir) = Selector.PseudoClass(t"dir(${direction.show.lower})")
   def has(sel: Selector) = Selector.PseudoClass(t"has(${sel.value})")
+  def webkitScrollbar = Selector.PseudoClass(t":-webkit-scrollbar")
   def lang(language: Text) = Selector.PseudoClass(t"lang($language)")
   val after = Selector.PseudoClass(t":after")
   val before = Selector.PseudoClass(t":before")
