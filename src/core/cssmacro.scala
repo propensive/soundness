@@ -582,6 +582,7 @@ enum Dir:
 
 package pseudo:
   def dir(direction: Dir) = Selector.PseudoClass(t"dir(${direction.show.lower})")
+  def has(sel: Selector) = Selector.PseudoClass(t"has(${sel.value})")
   def lang(language: Text) = Selector.PseudoClass(t"lang($language)")
   val after = Selector.PseudoClass(t":after")
   val before = Selector.PseudoClass(t":before")

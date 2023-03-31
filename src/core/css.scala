@@ -37,6 +37,9 @@ object CssStylesheet:
 case class CssStylesheet(rules: CssStylesheet.Item*):
   def text: Text = rules.map(_.text).join(t"\n")
 
+case class MediaRule(query: Text)(rules: CssStylesheet.Item*) extends CssStylesheet.Item:
+  def text: Text = rules.map(t"  "+_.text).join(t"@media $query {\n", t"\n", t"\n}")
+
 case class Keyframes(name: Text)(frames: Keyframe*) extends CssStylesheet.Item:
   def text: Text = frames.map(_.text).join(t"@keyframes ${name} {\n  ", t"\n  ", t"\n}\n")
   
