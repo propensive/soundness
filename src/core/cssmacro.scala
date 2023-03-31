@@ -128,6 +128,11 @@ object PropertyDef:
   given backgroundOrigin: PropertyDef["backgroundOrigin", Text] = PropertyDef()
   given backgroundPosition: PropertyDef["backgroundPosition", Text] = PropertyDef()
   given backgroundRepeat: PropertyDef["backgroundRepeat", Text] = PropertyDef()
+  given backgroundRepeat2: PropertyDef["backgroundRepeat", BackgroundRepeat] = PropertyDef()
+  
+  given backgroundRepeat3: PropertyDef["backgroundRepeat", (BackgroundRepeat, BackgroundRepeat)] =
+      PropertyDef()
+  
   given backgroundSize: PropertyDef["backgroundSize", Text] = PropertyDef()
   given backgroundSize2: PropertyDef["backgroundSize", Dimension] = PropertyDef()
   given border: PropertyDef["border", (BorderStyle, Dimension, Color)] = PropertyDef()
@@ -555,6 +560,9 @@ enum Float extends PropertyValue:
 
 enum TextAlign extends PropertyValue:
   case Left, Right, Center, Justify
+
+enum BackgroundRepeat extends PropertyValue:
+  case NoRepeat, RepeatX, RepeatY, Repeat, Space, Round
 
 enum MixBlendMode extends PropertyValue:
   case Normal, Multiply, Screen, Overlay, Darken, Lighten, ColorDodge, ColorDurn, Difference,
