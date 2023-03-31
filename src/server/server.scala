@@ -342,6 +342,10 @@ case class Gif(content: IArray[Byte])
 object Gif:
   given SimpleHandler[Gif] = SimpleHandler(media"image/gif", gif => HttpBody.Data(gif.content))
 
+case class Ttf(content: Bytes)
+object Ttf:
+  given SimpleHandler[Ttf] = SimpleHandler(media"application/octet-stream", ttf => HttpBody.Data(ttf.content))
+
 case class Png(content: IArray[Byte])
 
 object Png:
