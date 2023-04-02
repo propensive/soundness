@@ -23,7 +23,7 @@ import deviation.*
 
 import language.experimental.namedTypeArguments
 
-import Table.BiShort
+import Table.ShortPair
 
 enum Breaks:
   case Never, Space, Zwsp, Character
@@ -35,18 +35,20 @@ enum DelimitRows:
   case None, Rule, Space, SpaceIfMultiline, RuleIfMultiline
 
 object Column:
-  def apply[T, H, S](title: H, width: Maybe[Int] = Unset, align: Alignment = Alignment.Left,
-                         breaks: Breaks = Breaks.Space, hide: Boolean = false)(get: T => S)
-                    (using ashow: AnsiShow[H], ashow2: AnsiShow[S])
-                    : Column[T] =
-    Column[T](ashow.ansiShow(title), get.andThen(ashow2.ansiShow(_)), breaks, align, width, hide)
+  def apply
+      [RowType, TitleType, CellType]
+      (title: TitleType, width: Maybe[Int] = Unset, align: Alignment = Alignment.Left,
+          breaks: Breaks = Breaks.Space, hide: Boolean = false)(get: RowType => CellType)
+      (using ashow: AnsiShow[TitleType], ashow2: AnsiShow[CellType])
+      : Column[RowType] =
+    Column(ashow.ansiShow(title), get.andThen(ashow2.ansiShow(_)), breaks, align, width, hide)
 
   def constrain(text: Text, breaks: Breaks, maxWidth: Int, init: Int = 0)
-               (using calc: TextWidthCalculator): Table.BiShort =
+               (using calc: TextWidthCalculator): Table.ShortPair =
 
     @tailrec
-    def recur(pos: Int, space: Int = 0, count: Int = 0, max: Int = 0, lines: Int = 1): Table.BiShort =
-      if pos == text.length then Table.BiShort(lines, max.max(count))
+    def recur(pos: Int, space: Int = 0, count: Int = 0, max: Int = 0, lines: Int = 1): Table.ShortPair =
+      if pos == text.length then Table.ShortPair(lines, max.max(count))
       else unsafely(text(pos)) match
         case ' ' if breaks == Breaks.Space || breaks == Breaks.Zwsp =>
           if count >= maxWidth then recur(pos + 1, 0, 0, max.max(count), lines + 1)
@@ -65,28 +67,29 @@ object Column:
  
     recur(init)
 
-case class Column[T](title: AnsiText, get: T => AnsiText, breaks: Breaks, align: Alignment, width: Maybe[Int],
-                         hide: Boolean)
+case class Column[RowType]
+    (title: AnsiText, get: RowType => AnsiText, breaks: Breaks, align: Alignment, width: Maybe[Int],
+        hide: Boolean)
 
 object Table:
-  opaque type BiShort = Int
+  opaque type ShortPair = Int
   
-  object BiShort:
-    def apply(left: Int, right: Int): BiShort = ((right&65535) << 16) + (left&65535)
+  object ShortPair:
+    def apply(left: Int, right: Int): ShortPair = ((right&65535) << 16) + (left&65535)
     
-    given Ordering[BiShort] = Ordering.Int
+    given Ordering[ShortPair] = Ordering.Int
     
-    extension (value: BiShort)
+    extension (value: ShortPair)
       def right: Int = value >> 16
       def left: Int = value&65535
 
 
-case class Table[T: ClassTag](initCols: Column[T]*):
+case class Table[RowType: ClassTag](initCols: Column[RowType]*):
 
-  def tabulate(data: Seq[T], maxWidth: Int, delimitRows: DelimitRows = DelimitRows.RuleIfMultiline)
+  def tabulate(data: Seq[RowType], maxWidth: Int, delimitRows: DelimitRows = DelimitRows.RuleIfMultiline)
               (using style: TableStyle, calc: TextWidthCalculator)
               : LazyList[AnsiText] =
-    val cols: IArray[Column[T]] = IArray.from(initCols.filterNot(_.hide))
+    val cols: IArray[Column[RowType]] = IArray.from(initCols.filterNot(_.hide))
     val titles: IArray[AnsiText] = IArray.from(cols.map(_.title))
     
     val cells: IArray[IArray[AnsiText]] = IArray.from:
@@ -94,7 +97,7 @@ case class Table[T: ClassTag](initCols: Column[T]*):
     
     val freeWidth: Int = maxWidth - cols.filter(!_.width.unset).map(_.width.or(0)).sum - style.cost(cols.length)
     
-    val cellRefs: Array[Array[BiShort]] = Array.tabulate(data.length + 1, cols.length): (row, col) =>
+    val cellRefs: Array[Array[ShortPair]] = Array.tabulate(data.length + 1, cols.length): (row, col) =>
       Column.constrain(cells(row)(col).plain, cols(col).breaks, freeWidth)
     
     val widths: Array[Int] = Array.from:
@@ -131,19 +134,19 @@ case class Table[T: ClassTag](initCols: Column[T]*):
     val columns = cols.zip(widths).map: (col, width) =>
       col.copy(width = width)
     
-    def extent(text: Text, width: Int, start: Int): BiShort =
+    def extent(text: Text, width: Int, start: Int): ShortPair =
       
       @tailrec
-      def search(pos: Int, space: Int = 0, count: Int = 0): BiShort =
-        if pos >= text.length then BiShort(pos, pos)
+      def search(pos: Int, space: Int = 0, count: Int = 0): ShortPair =
+        if pos >= text.length then ShortPair(pos, pos)
         else unsafely(text(pos)) match
-          case '\n' => BiShort(pos, pos + 1)
-          case ' '  => if count >= width then BiShort(pos, pos + 1) else search(pos + 1, pos, count + 1)
+          case '\n' => ShortPair(pos, pos + 1)
+          case ' '  => if count >= width then ShortPair(pos, pos + 1) else search(pos + 1, pos, count + 1)
           
           case ch =>
             if count >= width then
-              if space > 0 then BiShort(space, space + 1)
-              else BiShort(pos, pos + 1)
+              if space > 0 then ShortPair(space, space + 1)
+              else ShortPair(pos, pos + 1)
             else search(pos + 1, space, count + 1)
       
       search(start)
