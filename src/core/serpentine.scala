@@ -156,6 +156,8 @@ abstract class Absolute(val parts: List[Text]):
     val common = conjunction(other).parts.length
     Relative(other.parts.length - common, parts.drop(common))
 
+  def relative: Relative = Relative(0, parts)
+
   def precedes(other: root.PathType): Boolean =
     conjunction(other).parts == parts
 
