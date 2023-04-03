@@ -593,7 +593,7 @@ enum Dir:
 
 package pseudo:
   def dir(direction: Dir) = Selector.PseudoClass(t"dir(${direction.show.lower})")
-  def has(sel: Selector) = Selector.PseudoClass(t"has(${sel.value})")
+  def has[T](sel: T)(using selectable: Selectable[T]) = Selector.PseudoClass(t"has(${selectable.selector(sel).value})")
   def webkitScrollbar = Selector.PseudoClass(t":-webkit-scrollbar")
   def lang(language: Text) = Selector.PseudoClass(t"lang($language)")
   val after = Selector.PseudoClass(t":after")
