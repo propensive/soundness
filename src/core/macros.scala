@@ -90,10 +90,7 @@ object ProbablyMacros:
       val outcome = run match
         case TestRun.Throws(err, duration, map) =>
           val exception: Exception =
-            try
-              err()
-              ???
-            catch case exc: Exception => exc
+            try err() catch case exc: Exception => exc
           if !map.isEmpty then inc2.include(runner.report, test.id, DebugInfo.Captures(map))
           Outcome.Throws(exception, duration)
     

@@ -73,7 +73,7 @@ enum Outcome:
 
 enum TestRun[+T]:
   case Returns(result: T, duration: Long, context: Map[Text, Text])
-  case Throws(exception: () => T, duration: Long, context: Map[Text, Text])
+  case Throws(exception: () => Nothing, duration: Long, context: Map[Text, Text])
 
   def get: T = this match
     case Returns(result, _, _)   => result
@@ -103,7 +103,7 @@ class Runner[ReportType]()(using reporter: TestReporter[ReportType]):
     catch case err: Exception =>
       val ns: Long = System.nanoTime - ns0
       
-      val lazyException = () =>
+      def lazyException(): Nothing =
         import unsafeExceptions.canThrowAny
         throw err
 
