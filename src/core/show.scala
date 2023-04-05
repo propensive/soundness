@@ -130,6 +130,14 @@ object Debug:
               val value = summonInline[Debug[head.type]].show(head)
               Text(label+" = "+value) :: deriveProduct[tailLabels](tail)
 
+  private transparent inline def deriveSum[TupleType <: Tuple, DerivedType](ordinal: Int): Debug[DerivedType] =
+    inline erasedValue[TupleType] match
+      case _: (head *: tail) =>
+        if ordinal == 0 then
+          summonInline[Debug[head]].asInstanceOf[Debug[DerivedType]]
+        else deriveSum[tail, DerivedType](ordinal - 1)
+
+
   inline given derived[P](using mirror: Mirror.Of[P]): Debug[P] = inline mirror match
     case given Mirror.ProductOf[P & Product] => (value: P) => value.asMatchable match
       case value: Product =>
@@ -137,9 +145,8 @@ object Debug:
         val typeName = Text(valueOf[mirror.MirroredLabel])
         typeName+elements.join(Text("("), Text(", "), Text(")"))
     
-    case given Mirror.SumOf[P] =>
-      (value: P) =>
-        ???
+    case s: Mirror.SumOf[P] =>
+      (value: P) => deriveSum[s.MirroredElemTypes, P](s.ordinal(value)).show(value)
 
 object Show:
   given Show[String] = Text(_)
