@@ -158,6 +158,7 @@ object Show:
   given Show[Uuid] = _.javaUuid.toString.show
 
   given (using format: DecimalFormat): Show[Double] = format.render(_)
+  given (using format: DecimalFormat): Show[Float] = format.render(_)
   
   given Show[ByteSize] = bs =>
     if bs.long > 10L*1024*1024*1024*1024 then Text(s"${(bs.long/1024*1024*1024*1024).show}TB")
