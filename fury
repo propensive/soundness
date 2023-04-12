@@ -1,14 +1,17 @@
 # This is a buildfile for Fury or Wrath.
 # More information is available at: https://github.com/propensive/wrath/
-target savagery/test
+target savagery/core
 
-repo propensive/xylophone propensive/cataclysm propensive/iridescence propensive/quantify
+repo propensive/xylophone
+repo propensive/cataclysm
+repo propensive/iridescence
+repo propensive/quantify
 
 project savagery
   module core
     compiler  scala
+    include   cataclysm/core xylophone/core quantify/core
     sources   src/core
-    include   xylophone/core cataclysm/core iridescence/core quantify/core
 
   module test
     compiler  scala
