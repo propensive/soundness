@@ -131,12 +131,15 @@ extends Shape:
 object Circle:
   def apply(center: Xy, radius: Float): Ellipse = Ellipse(center, radius, radius, Degrees(0.0))
 
-case class Rectangle() extends Shape:
-  def xml: Xml = Xml.parse(t"<rect/>")
+case class Rectangle(position: Xy, width: Float, height: Float) extends Shape:
+  def xml: Xml = Xml.parse(t"""<rect x="${position.x} y="${position.y}" width="$width" height="$height"/>""")
 
 case class Ellipse(center: Xy, xRadius: Float, yRadius: Float, angle: Degrees) extends Shape:
   def circle: Boolean = xRadius == yRadius
-  def xml: Xml = Xml.parse(if circle then t"<circle/>" else t"<ellipse/>")
+  
+  def xml: Xml = Xml.parse:
+    if circle then t"""<circle cx="${center.x}" cy="${center.y}" r="${xRadius}"/>"""
+    else t"""<ellipse cx="${center.x}" cy="${center.y}" rx="$xRadius" ry="$yRadius"/>"""
 
 case class Svg(width: Quantity[Units[1, Length]], height: Quantity[Units[1, Length]], viewWidth: Float, viewHeight: Float, defs: List[SvgDef], shapes: List[Shape])
 
