@@ -13,42 +13,40 @@ import java.lang as jl
 
 import unsafeExceptions.canThrowAny
 
+extension (left: Float) def !(right: Float) = Xy(left, right)
+
+case class Xy(x: Float, y: Float)
+case class DxDy(dx: Float, dy: Float)
+
+object DxDy:
+  given show: Show[DxDy] = value => t"${value.dx.toString} ${value.dy.toString}"
+
+object Xy:
+  given show: Show[Xy] = value => t"${value.x.toString} ${value.y.toString}"
+  
 object SavageryInternals:
-  opaque type Xy = Long
-  opaque type DxDy = Long
   opaque type Degrees = Double
   opaque type SvgId = Text
 
   object SvgId:
     def apply(id: Text): SvgId = id
 
-  object DxDy:
-    def apply(dx: Float, dy: Float): DxDy =
-      (jl.Float.floatToRawIntBits(dx).toLong << 32) + jl.Float.floatToRawIntBits(dy)
-    
-    given show: Show[DxDy] = value => t"${value.dx.toString} ${value.dy.toString}"
-
-  object Xy:
-    def apply(x: Float, y: Float): Xy =
-      (jl.Float.floatToRawIntBits(x).toLong << 32) + jl.Float.floatToRawIntBits(y)
-
-    given show: Show[Xy] = value => t"${value.x.toString} ${value.y.toString}"
-  
   object Degrees:
     def apply(degrees: Double): Degrees = degrees
 
     given Show[Degrees] = _.toString.show
     
   extension (point: Xy)
-    def x: Float = jl.Float.intBitsToFloat((point >> 32).toInt)
-    def y: Float = jl.Float.intBitsToFloat(point.toInt)
-    def unary_~ : DxDy = DxDy(x, y)
+    @targetName("plus")
+    def +(vector: DxDy): Xy = Xy(point.x + vector.dx, point.y + vector.dy)
+    
+    def unary_~ : DxDy = DxDy(point.x, point.y)
   
   extension (vector: DxDy)
-    def dx: Float = jl.Float.intBitsToFloat((vector >> 32).toInt)
-    def dy: Float = jl.Float.intBitsToFloat(vector.toInt)
+    @targetName("plus2")
+    def +(right: DxDy): DxDy = DxDy(vector.dx + right.dx, vector.dy + right.dy)
 
-export SavageryInternals.{Xy, DxDy, Degrees, SvgId}
+export SavageryInternals.{Degrees, SvgId}
 
 object Coords:
   given Show[Coords] =
@@ -78,6 +76,8 @@ object PathOp:
   
   given Show[PathOp] =
     case Move(coords)                => t"${coords.key('m')} $coords"
+    case Line(Rel(DxDy(0.0f, v)))    => t"v $v"
+    case Line(Rel(DxDy(h, 0.0f)))    => t"h $h"
     case Line(coords)                => t"${coords.key('l')} $coords"
     case Close                       => t"Z"
     case Cubic(Unset, ctrl2, coords) => t"${coords.key('s')} $ctrl2, $coords"
@@ -89,7 +89,7 @@ object PathOp:
       t"${coords.key('a')} $rx $ry $angle ${bit(largeArc)} ${bit(sweep)} $coords"
 
 case class Path
-    (ops: List[PathOp], style: Maybe[CssStyle] = Unset, id: Maybe[SvgId] = Unset,
+    (ops: List[PathOp] = Nil, style: Maybe[CssStyle] = Unset, id: Maybe[SvgId] = Unset,
         transform: List[Transform] = Nil)
 extends Shape:
   import PathOp.*
