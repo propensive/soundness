@@ -80,7 +80,6 @@ object XmlInterpolation:
     val Letters = ('a' to 'z').to(Set) ++ ('A' to 'Z').to(Set)
     val Digits = ('0' to '9').to(Set)
     val TagChar = CharExtractor(Letters ++ Digits + '.' + '-' + '_')
-    val WhitespaceChar = CharExtractor(Set(' ', '\t', '\n', '\r'))
 
     def initial: ParseState = ParseState(0, ContextType.Body, Nil, t"", t"", false)
 
@@ -112,105 +111,156 @@ object XmlInterpolation:
     def parse(state: ParseState, string: Text): ParseState = string.chars.foldLeft(state.copy(offset = 0)):
       case (state@ParseState(_, _, _, _, _, _), char) => state.context match
         
-        case InTagName          => char match
-          case TagChar()          => state(char)
-          case WhitespaceChar()   => state.push(InTagBody)
-          case ':'                => if state.ns
-                                     then throw InterpolationError(txt"""the tag name can contain at most one
-                                                                         ':' character to indicate a namespace
-                                                                      """, state.offset, 1)
-                                     else state(char).namespace
-          case '/'                => if state.current.empty then state(ClosingTag)
-                                     else state(SelfClosingTagName)
-          case '>'                => if state.push.checkNs then state.push(Body)
-                                     else throw InterpolationError(txt"""the tag uses a namespace that has not
-                                                                         been declared with an xmlns attribute
-                                                                      """)
-          case _                  => throw InterpolationError(txt"""not a valid tag name character
-                                                                 """, state.offset, 1)
+        case InTagName => char match
+          case TagChar() =>
+            state(char)
+          
+          case ' ' | '\n' | '\r' | '\t' =>
+            state.push(InTagBody)
+          
+          case ':' =>
+            if state.ns then throw InterpolationError(
+                txt"""the tag name can contain at most one ':' character to indicate a namespace""",
+                state.offset, 1)
+            else state(char).namespace
+          
+          case '/' =>
+            if state.current.empty then state(ClosingTag) else state(SelfClosingTagName)
+          
+          case '>' =>
+            if state.push.checkNs then state.push(Body)
+            else throw InterpolationError(
+                t"""the tag uses a namespace that has not been declared with an xmlns attribute""")
+          
+          case _ =>
+            throw InterpolationError(txt"""not a valid tag name character""", state.offset, 1)
         
         case SelfClosingTagName => char match
           case TagChar()          => state(char)
-          case ':'                => if state.ns
-                                     then throw InterpolationError(txt"""the tag name can contain at most one
-                                                                         ':' character to indicate a namespace
-                                                                      """, state.offset, 1)
-                                     else state(char).namespace
-          case '>'                => if state.checkNs then state(Body)
-                                     else throw InterpolationError(txt"""the tag uses a namespace that has not
-                                                                         been declared with an xmlns attribute
-                                                                      """)
-          case _                  => throw InterpolationError(t"expected '>'", state.offset, 1)
+          
+          case ':' =>
+            if state.ns then throw InterpolationError(
+                t"the tag name can contain at most one ':' character to indicate a namespace", state.offset, 1)
+            else state(char).namespace
+          
+          case '>' =>
+            if state.checkNs then state(Body)
+            else throw InterpolationError(
+                t"the tag uses a namespace that has not been declared with an xmlns attribute")
+          
+          case _ => throw InterpolationError(t"expected '>'", state.offset, 1)
         
-        case ClosingTag         => char match
-          case TagChar()          => state(char)
-          case ':'                => if state.ns
-                                     then throw InterpolationError(txt"""the tag name can contain at most one
-                                                                         ':' character to indicate a namespace
-                                                                      """, state.offset, 1)
-                                     else state(char).namespace
-          case '>'                => state.pop(Body)
-          case WhitespaceChar()   => state()
-          case _                  => throw InterpolationError(t"expected '>' or whitespace", state.offset, 1)
+        case ClosingTag => char match
+          case TagChar() =>
+            state(char)
+          
+          case ':' =>
+            if state.ns then throw InterpolationError(
+                t"the tag name can contain at most one ':' character to indicate a namespace", state.offset, 1)
+            else state(char).namespace
+          
+          case '>' =>
+            state.pop(Body)
+          
+          case ' ' | '\n' | '\t' | '\r' =>
+            state()
+          
+          case _ =>
+            throw InterpolationError(t"expected '>' or whitespace", state.offset, 1)
 
-        case InAttributeName    => char match
-          case TagChar()          => state(char)
-          case WhitespaceChar()   => state(InAttributeName)
-          case '>'                => throw InterpolationError(t"attribute value has not been specified",
-                                         state.offset, 1)
-          case '='                => if state.current.starts(t"xmlns:")
-                                     then state.addNamespace(state.current.drop(6))(AttributeEquals)
-                                     else state(AttributeEquals)
-          case ':'                => if state.ns
-                                     then throw InterpolationError(txt"""the attribute name can contain at most
-                                                                         one ':' character to indicate a
-                                                                         namespace
-                                                                      """, state.offset, 1)
-                                     else state(char).namespace
-          case ch                 => throw InterpolationError(txt"""character '$ch' is not valid in an attribute
-                                                                    name
-                                                                 """, state.offset, 1)
+        case InAttributeName => char match
+          case TagChar() =>
+            state(char)
+          
+          case ' ' | '\n' | '\r' | '\t' =>
+            state(InAttributeName)
+          
+          case '>' =>
+            throw InterpolationError(t"attribute value has not been specified", state.offset, 1)
+          
+          case '=' =>
+            if state.current.starts(t"xmlns:") then state.addNamespace(state.current.drop(6))(AttributeEquals)
+            else state(AttributeEquals)
+          
+          case ':' =>
+            if state.ns then throw InterpolationError(
+                t"the attribute name can contain at most one ':' character to indicate a namespace",
+                state.offset, 1)
+            else state(char).namespace
+          
+          case ch =>
+            throw InterpolationError(t"character '$ch' is not valid in an attribute name", state.offset, 1)
         
-        case AttributeEquals    => char match
-          case WhitespaceChar()   => state()
-          case '"'                => state(AttributeValue)
-          case _                  => throw InterpolationError(t"expected '\"'", state.offset, 1)
+        case AttributeEquals => char match
+          case ' ' | '\n' | '\r' | '\t' =>
+            state()
+          
+          case '"' =>
+            state(AttributeValue)
+          
+          case _ =>
+            throw InterpolationError(t"expected '\"'", state.offset, 1)
         
-        case AttributeValue     => char match
-          case '"'                => state(InTagBody)
-          case '&'                => state(InAttributeEntity)
-          case char               => state(char)
+        case AttributeValue => char match
+          case '"' =>
+            state(InTagBody)
+          
+          case '&' =>
+            state(InAttributeEntity)
+          
+          case ch =>
+            state(ch)
         
-        case InTagBody          => char match
-          case WhitespaceChar()   => state(InTagBody)
-          case TagChar()          => state(InAttributeName, char)
-          case '>'                => if state.checkNs then state(Body)
-                                     else throw InterpolationError(txt"""the tag uses a namespace that has not
-                                                                         been declared with an xmlns attribute
-                                                                      """)
-          case '/'                => state(TagClose)
-          case ch                 => throw InterpolationError(txt"""character '$ch' is not permitted in a tag
-                                                                    name
-                                                                 """, state.offset)
+        case InTagBody => char match
+          case ' ' | '\n' | '\r' | '\t' =>
+            state(InTagBody)
+          
+          case TagChar() =>
+            state(InAttributeName, char)
+          
+          case '>' =>
+            if state.checkNs then state(Body)
+            else throw InterpolationError(
+                t"the tag uses a namespace that has not been declared with an xmlns attribute")
+          
+          case '/' =>
+            state(TagClose)
+          
+          case ch =>
+            throw InterpolationError(t"character '$ch' is not permitted in a tag name", state.offset)
 
-        case TagClose           => char match
-          case '>'                => state.pop(Body)
-          case _                  => throw InterpolationError(t"expected '>'", state.offset, 1)
+        case TagClose => char match
+          case '>' =>
+            state.pop(Body)
+          
+          case _ =>
+            throw InterpolationError(t"expected '>'", state.offset, 1)
         
-        case Body               => char match
-          case '<'                => state(InTagName)
-          case '&'                => state(InBodyEntity)
-          case _                  => state()
+        case Body => char match
+          case '<' =>
+            state(InTagName)
+          
+          case '&' =>
+            state(InBodyEntity)
+          
+          case _ =>
+            state()
         
-        case InBodyEntity       => char match
-          case ';'                => state()
-          case ch                 => throw InterpolationError(txt"""character '$ch' is not valid in an entity
-                                                                    name
-                                                                 """, state.offset, 1)
+        case InBodyEntity => char match
+          case ';' =>
+            state()
+          
+          case ch =>
+            throw InterpolationError(t"character '$ch' is not valid in an entity name", state.offset, 1)
 
         case InAttributeEntity  => char match
-          case ';'                => state()
-          case TagChar()          => state()
-          case ch                 => throw InterpolationError(t"character '$ch' is not valid in an entity name",
-                                         state.offset, 1)
+          case ';' =>
+            state()
+          
+          case TagChar() =>
+            state()
+          
+          case ch =>
+            throw InterpolationError(t"character '$ch' is not valid in an entity name", state.offset, 1)
+
     .copy(source = t"${state.source}$string")
