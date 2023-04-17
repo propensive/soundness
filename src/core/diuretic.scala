@@ -73,3 +73,25 @@ object JavaIoFile extends GenericFileMaker[ji.File], GenericDirectoryMaker[ji.Fi
 object JavaNetUrl extends GenericUrl[jn.URL]:
   def readUrl(value: jn.URL): String = value.toString
   def makeUrl(string: String): jn.URL = jn.URI(string).nn.toURL().nn
+
+extension (stream: LazyList[IArray[Byte]])
+  def inputStream: ji.InputStream = new ji.InputStream:
+    private var lazyList: LazyList[IArray[Byte]] = stream
+    private var total: Int = 0
+    private var index: Int = -1
+    private var current: IArray[Byte] = IArray[Byte]()
+
+    def read(): Int =
+      index += 1
+      if index < current.length then current(index)
+      else lazyList match
+        case head #:: tail =>
+          lazyList = tail
+          current = head
+          total += index
+          index = -1
+          read()
+        
+        case _ =>
+          -1
+
