@@ -1,0 +1,20 @@
+# This is a buildfile for Fury or Wrath.
+# More information is available at: https://github.com/propensive/wrath/
+target zeppelin/test
+
+repo propensive/galilei
+repo propensive/probably
+repo propensive/ambience
+repo propensive/imperial
+
+project zeppelin
+  module core
+    compiler  scala
+    sources   src/core
+    include   galilei/core ambience/core imperial/core anticipation/file
+
+  module test
+    compiler  scala
+    sources   src/test
+    include   zeppelin/core probably/cli
+    main      zeppelin.Tests
