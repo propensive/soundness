@@ -1,0 +1,55 @@
+package probably
+
+import rudiments.*
+import oubliette.*
+import anticipation.*
+import gossamer.*, decimalFormats.twoPlaces
+
+import scala.collection.mutable as scm
+
+object Benchmark:
+  given Inclusion[TestReport, Benchmark] with
+    def include(report: TestReport, testId: TestId, benchmark: Benchmark): TestReport =
+      report.addBenchmark(testId, benchmark)
+
+case class Benchmark(total: Long, count: Int, mean: Long, sd: Long, confidence: Double):
+  def confidenceInterval: Long = (confidence*sd/math.sqrt(count.toDouble)).toLong
+  def throughput: Long = (1000000000.0/mean).toLong
+
+extension [TestType](test: Test[TestType])
+  inline def benchmark
+      [DurationType, ReportType]
+      (confidence: Maybe[Double] = Unset, fork: Maybe[Jdk] = Unset, iterations: Maybe[Int] = Unset,
+          duration: Maybe[DurationType] = Unset, warmup: Maybe[DurationType] = Unset)
+      (using runner: Runner[ReportType], inc: Inclusion[ReportType, Benchmark],
+          genericDuration: GenericDuration[DurationType] = timeApi.long)
+      : Unit =
+    val action = test.action
+    var end = System.currentTimeMillis + readDuration(warmup.or(makeDuration(10000L)))
+    val times: scm.ArrayBuffer[Long] = scm.ArrayBuffer()
+    times.sizeHint(4096)
+    val ctx = new TestContext()
+    
+    while System.currentTimeMillis < end do
+      val t0 = System.nanoTime
+      val result = action(ctx)
+      val t1 = System.nanoTime - t0
+      times += t1
+    
+    times.clear()
+    
+    end = System.currentTimeMillis + readDuration(duration.or(makeDuration(10000L)))
+    
+    while System.currentTimeMillis < end do
+      val t0 = System.nanoTime
+      val result = action(ctx)
+      val t1 = System.nanoTime - t0
+      times += t1
+    
+    val count = times.size
+    val total = times.sum
+    val mean = total/count
+    val variance = (times.to(List).map { t => (mean - t)*(mean - t) }.sum)/count
+    val sd = math.sqrt(variance.toDouble).toLong
+    val benchmark = Benchmark(total, times.size, mean, sd, confidence.or(0.95))
+    inc.include(runner.report, test.id, benchmark)

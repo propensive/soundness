@@ -32,6 +32,7 @@ enum DebugInfo:
   case CheckThrows(stack: StackTrace)
   case Captures(values: Map[Text, Text])
   case Compare(expected: Text, found: Text, comparison: Comparison)
+  case Message(message: Text)
 
 trait Inclusion[ReportType, DataType]:
   def include(report: ReportType, testId: TestId, data: DataType): ReportType
@@ -68,12 +69,16 @@ class TestReport():
   enum ReportLine:
     case Suite(suite: Maybe[TestSuite], tests: scm.ListMap[TestId, ReportLine] = scm.ListMap())
     case Test(test: TestId, outcomes: scm.ArrayBuffer[Outcome] = scm.ArrayBuffer())
+    case Bench(test: TestId, benchmark: Benchmark)
 
     def summaries: List[Summary] = this match
       case Suite(suite, tests)  =>
         val rest = tests.values.flatMap(_.summaries).to(List)
-        if suite.unset then rest else Summary(Status.Suite, suite.option.get.id, 0, 0, 0, 0) :: rest
+        if suite.unset then rest else Summary(Status.Suite, suite.option.get.id, 0, 0, 0, 0, 0, 0) :: rest
       
+      case Bench(testId, bench@Benchmark(total, count, mean, _, _)) =>
+        List(Summary(Status.Suite, testId, count, 0, 0, mean, bench.confidenceInterval, bench.throughput))
+
       case Test(testId, buf) =>
         val status =
           if buf.forall(_.is[Outcome.Pass]) then Status.Pass
@@ -86,7 +91,7 @@ class TestReport():
         val max: Long = buf.map(_.duration).max
         val avg: Long = buf.foldLeft(0L)(_ + _.duration)/buf.length
           
-        List(Summary(status, testId, buf.length, min, max, avg))
+        List(Summary(status, testId, buf.length, min, max, avg, 0, 0))
 
   private val lines: ReportLine.Suite = ReportLine.Suite(Unset)
   
@@ -103,6 +108,10 @@ class TestReport():
   def declareSuite(suite: TestSuite): TestReport = this.tap: _ =>
     resolve(suite.parent).tests(suite.id) = ReportLine.Suite(suite, scm.ListMap())
 
+  def addBenchmark(testId: TestId, benchmark: Benchmark): TestReport = this.tap: _ =>
+    val benchmarks = resolve(testId.suite).tests
+    benchmarks.getOrElseUpdate(testId, ReportLine.Bench(testId, benchmark))
+  
   def addOutcome(testId: TestId, outcome: Outcome): TestReport = this.tap: _ =>
     val tests = resolve(testId.suite).tests
     
@@ -115,7 +124,7 @@ class TestReport():
       details(testId) = details(testId).append(info)
 
   enum Status:
-    case Pass, Fail, Throws, CheckThrows, Mixed, Suite
+    case Pass, Fail, Throws, CheckThrows, Mixed, Suite, Bench
 
     def color: Rgb24 = this match
       case Pass        => rgb"#8abd00"
@@ -124,6 +133,7 @@ class TestReport():
       case CheckThrows => rgb"#dd40a0"
       case Mixed       => rgb"#ddd700"
       case Suite       => colors.SlateBlue
+      case Bench       => colors.CadetBlue
 
     def symbol: AnsiText = this match
       case Pass        => ansi"${Bg(rgb"#8abd00")}( $Bold(${colors.Black}(✓)) )"
@@ -132,8 +142,10 @@ class TestReport():
       case CheckThrows => ansi"${Bg(rgb"#dd40a0")}( $Bold(${colors.Black}(‼)) )"
       case Mixed       => ansi"${Bg(rgb"#ddd700")}( $Bold(${colors.Black}(?)) )"
       case Suite       => ansi"   "
+      case Bench       => ansi"${Bg(colors.CadetBlue)}( $Bold(${colors.Black}(*)) )"
 
-  case class Summary(status: Status, id: TestId, count: Int, min: Long, max: Long, avg: Long):
+  case class Summary
+      (status: Status, id: TestId, count: Int, min: Long, max: Long, avg: Long, conf: Long, throughput: Long):
     def indentedName: AnsiText =
       val depth = id.suite.mm(_.id.depth).or(0) + 1
       
@@ -158,17 +170,22 @@ class TestReport():
           val sig = (n/1000L).show
           val frac = (n%1000).show.pad(3, Rtl, '0')(using textWidthCalculation.uniform)
           ansi"${colors.Silver}(${sig}.$frac) ${unit}"
+    
+    private def ops(n: Long): AnsiText = ansi"${colors.Silver}($n) ops/s"
 
     def minTime: AnsiText = if min == 0L then ansi"" else time(min)
     def maxTime: AnsiText = if max == 0L then ansi"" else time(max)
     def avgTime: AnsiText = if avg == 0L then ansi"" else time(avg)
+    def confInt: AnsiText = if conf == 0.0 then ansi"" else ansi"±${time(conf)}"
     def iterations: AnsiText = if count == 0 then ansi"" else count.ansi
+    def opsPerS: AnsiText = if throughput == 0 then ansi"" else ops(throughput)
 
   def complete()(using Stdio): Unit =
     import textWidthCalculation.uniform
     
     val table: Table[Summary] =
       val showStats = !lines.summaries.forall(_.count < 2)
+      val showBench = lines.summaries.exists(_.throughput > 0)
       val timeTitle = if showStats then t"Avg" else t"Time"
       
       Table(
@@ -188,7 +205,12 @@ class TestReport():
         Column(ansi"$Bold($timeTitle)", align = Alignment.Right)(_.avgTime),
         
         Column(ansi"$Bold(Max)", align = Alignment.Right, hide = !showStats): s =>
-          if s.count < 2 then ansi"" else s.maxTime
+          if s.count < 2 then ansi"" else s.maxTime,
+        
+        Column(ansi"$Bold(Confidence)", align = Alignment.Right, hide = !showBench): s =>
+          if s.throughput == 0 then ansi"" else s.confInt,
+        
+        Column(ansi"$Bold(T/put)", align = Alignment.Right, hide = !showBench)(_.opsPerS)
       )
       
     import tableStyles.rounded
@@ -224,5 +246,8 @@ class TestReport():
               Column(ansi"Expression", align = Alignment.Right)(_(0)),
               Column(ansi"Value")(_(1)),
             ).tabulate(map.to(List), 140).map(_.render).foreach(Io.println(_))
+          
+          case DebugInfo.Message(text) =>
+            Io.println(text)
       
       Io.println()
