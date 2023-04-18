@@ -57,7 +57,7 @@ object Tests extends Suite(t"Serpentine Tests"):
         (? / p"hello" / p"world").show
       .assert(_ == t"hello/world")
     
-    suite(t"invalid paths"):
+    suite(t"Invalid paths"):
 
       test(t"con is not a valid path name"):
         captureCompileErrors(p"con").map(_.message)

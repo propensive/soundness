@@ -27,7 +27,7 @@ class PathElement(val value: Text)
 object PathElement:
 
   // FIXME: Do the checks
-  def apply(value: Text): PathElement throws InvalidPathError = new PathElement(value)
+  def apply(value: Text): PathElement throws PathError = new PathElement(value)
 
   private val forbidden = Set('<', '>', ':', '"', '\\', '|', '?', '*')
   

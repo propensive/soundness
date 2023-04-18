@@ -21,8 +21,8 @@ import deviation.*
 import gossamer.*
 import anticipation.*
 
-case class RootParentError(root: Root) extends Error(err"attempted to access parent of root $root")
-case class InvalidPathError(path: Text) extends Error(err"the path $path was not absolute")
+case class RootParentError(root: Root) extends Error(err"attempted to access the parent of root $root")
+case class PathError(path: Text) extends Error(err"the path $path was not valid")
 
 trait Root(val prefix: Text, val separator: Text):
   type PathType <: Absolute
@@ -30,7 +30,7 @@ trait Root(val prefix: Text, val separator: Text):
   def apply(path: GenericPath): PathType = make(path.parts)
 
   @targetName("child")
-  infix def /(element: Text): PathType throws InvalidPathError =
+  infix def /(element: Text): PathType throws PathError =
     make(List(PathElement(element).value))
   
   @targetName("safeChild")
@@ -38,8 +38,8 @@ trait Root(val prefix: Text, val separator: Text):
 
   def make(elements: List[Text]): PathType
 
-  def parse(text: Text): PathType throws InvalidPathError =
-    if !text.starts(prefix) then throw InvalidPathError(text)
+  def parse(text: Text): PathType throws PathError =
+    if !text.starts(prefix) then throw PathError(text)
     else make(text.drop(prefix.length).cut(separator))
   
 object Root extends Root(t"/", t"/"):
@@ -169,7 +169,7 @@ abstract class Absolute(val parts: List[Text]):
   infix def /(element: PathElement): root.PathType = root.make(parts :+ element.value)
 
   @targetName("child")
-  infix def /(value: Text): root.PathType throws InvalidPathError =
+  infix def /(value: Text): root.PathType throws PathError =
     /(PathElement(value))
 
   @targetName("add") 
