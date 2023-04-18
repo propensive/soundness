@@ -286,7 +286,7 @@ extends Inode(directoryPath), Shown[Directory]:
     file
 
   @targetName("child")
-  infix def /(element: Text): DiskPath throws InvalidPathError =
+  infix def /(element: Text): DiskPath throws PathError =
     path / PathElement(element)
   
   @targetName("safeChild")
@@ -355,7 +355,7 @@ extends Inode(directoryPath), Shown[Directory]:
 object DiskPath:
   given Show[DiskPath] = t"ᵖ｢"+_.fullname+t"｣"
 
-  // given (using filesystem: Filesystem, invalidPath: CanThrow[InvalidPathError])
+  // given (using filesystem: Filesystem, invalidPath: CanThrow[PathError])
   //       : (/*{invalidPath}*/ Canonical[DiskPath]) =
   //   Canonical(filesystem.parse(_), _.show)
 
@@ -508,7 +508,7 @@ object Filesystem:
  
   def defaultSeparator: "/" | "\\" = if ji.File.separator == "\\" then "\\" else "/"
 
-  def parse(value: Text, pwd: Maybe[DiskPath] = Unset): DiskPath throws InvalidPathError =
+  def parse(value: Text, pwd: Maybe[DiskPath] = Unset): DiskPath throws PathError =
     roots.flatMap: fs =>
       safely(fs.parse(value)).option
     .headOption.getOrElse:
@@ -516,7 +516,7 @@ object Filesystem:
       pwd.option.flatMap: path =>
         try Some(path + rel) catch case err: RootParentError => None
       .getOrElse:
-        throw InvalidPathError(value)
+        throw PathError(value)
 
 abstract class Filesystem(val name: Text, fsPrefix: Text, fsSeparator: Text)
 extends Root(fsPrefix, fsSeparator), Shown[Filesystem]:
@@ -528,10 +528,10 @@ extends Root(fsPrefix, fsSeparator), Shown[Filesystem]:
   def make(parts: List[Text]): DiskPath = DiskPath(this, parts.filter(_ != t""))
 
   def parse(value: Text, pwd: Maybe[DiskPath] = Unset)
-           : DiskPath throws InvalidPathError =
+           : DiskPath throws PathError =
     if value.starts(prefix) then make(List(value.drop(prefix.length).cut(separator)*))
-    else try pwd.option.map(_ + Relative.parse(value)).getOrElse(throw InvalidPathError(value))
-    catch case err: RootParentError => throw InvalidPathError(value)
+    else try pwd.option.map(_ + Relative.parse(value)).getOrElse(throw PathError(value))
+    catch case err: RootParentError => throw PathError(value)
 
 object Unix extends Filesystem(t"unix", t"/", t"/")
 
