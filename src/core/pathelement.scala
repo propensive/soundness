@@ -35,10 +35,10 @@ object PathElement:
       t"com4", t"com5", t"com6", t"com7", t"com8", t"com9", t"lpt1", t"lpt2", t"lpt3", t"lpt4",
       t"lpt5", t"lpt6", t"lpt7", t"lpt8", t"lpt9")
   
-  def make(sc: Expr[StringContext])(using Quotes): Expr[PathElement] =
+  def make(ctx: Expr[StringContext])(using Quotes): Expr[PathElement] =
     import quotes.reflect.*
     
-    val str = sc match
+    val str = ctx match
       case '{StringContext($str: String)} =>
         str.value.get
       
@@ -69,5 +69,5 @@ object PathElement:
             fail(s"a path cannot contain the characters $detail on Windows, and should not more generally")
           else '{PathElement(Text(${Expr(str)}))(using unsafeExceptions.canThrowAny)}
 
-extension (inline sc: StringContext)
-  inline def p(): PathElement = ${PathElement.make('sc)}
+extension (inline ctx: StringContext)
+  inline def p(): PathElement = ${PathElement.make('ctx)}

@@ -15,4 +15,4 @@ project serpentine
     compiler  scala
     sources   src/test
     include   serpentine/core probably/cli larceny/plugin
-    main      serpentine.Tests
+    main      serpentine2.Tests
