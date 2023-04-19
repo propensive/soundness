@@ -35,40 +35,70 @@ object PathError:
 
 case class PathError(reason: PathError.Reason) extends Error(err"the path is invalid because $reason")
 
-trait Pathlike[-PathType]:
+object Hierarchy:
+  given show[PathType](using hierarchy: Hierarchy[PathType]): Show[PathType] = path =>
+    t"${hierarchy.prefix(path)}${path.elements.map(_.show).reverse.join(hierarchy.separator)}"
+
+trait Hierarchy[PathType]:
+
   type ForbiddenType <: Singleton & (Char | String)
-  type RootType
-  type ChildType
   def separator: Text
-  def prefix(root: RootType): Text
-  def root(path: PathType): RootType
+  def prefix(root: PathType): Text
+  def root(path: PathType): PathType
   def elements(path: PathType): List[PathElement[ForbiddenType]]
-  def child(base: PathType, element: PathElement[ForbiddenType]): ChildType
-  def parent(path: PathType): ChildType
+  def child(base: PathType, element: PathElement[ForbiddenType]): PathType
+  def parent(path: PathType): PathType
 
 object PathBounds:
-  given [PathType, RootType](using pathError: CanThrow[PathError]): PathBounds[PathType] = isRoot =>
+  given [PathType](using pathError: CanThrow[PathError]): PathBounds[PathType] = isRoot =>
     if isRoot then throw PathError(PathError.Reason.ParentOfRoot)
 
 @capability
-trait PathBounds[PathType]:
+trait PathBounds[-PathType]:
   def hasParent(isRoot: Boolean): Unit
 
-extension [PathType](path: PathType)(using pathlike: Pathlike[PathType])
-  def elements: List[PathElement[pathlike.ForbiddenType]] = pathlike.elements(path)
-  def root: pathlike.RootType = pathlike.root(path)
+extension [PathType, PathType2 >: PathType](path: PathType)(using hierarchy: Hierarchy[PathType2])
+  def elements: List[PathElement[hierarchy.ForbiddenType]] = hierarchy.elements(path)
+  def root: PathType2 = hierarchy.root(path)
   
-  def parent(using pathBounds: PathBounds[PathType]): {pathBounds} pathlike.ChildType =
+  def parent(using pathBounds: PathBounds[PathType]): {pathBounds} PathType2 =
     pathBounds.hasParent(path.elements.isEmpty)
-    pathlike.parent(path)
+    hierarchy.parent(path)
   
-  def text: Text = pathlike.elements(path).reverse.map(_.show).join(pathlike.prefix(root), pathlike.separator, t"")
+  def text: Text =
+    hierarchy.elements(path).reverse.map(_.show).join(hierarchy.prefix(root), hierarchy.separator, t"")
 
-  def depth: Int = pathlike.elements(path).length
-
-extension [PathType](path: PathType)(using pathlike: Pathlike[PathType])
+  def depth: Int = hierarchy.elements(path).length
+  
   @targetName("child")
-  infix def /(element: PathElement[pathlike.ForbiddenType]): pathlike.ChildType = pathlike.child(path, element)
+  infix def /(element: PathElement[hierarchy.ForbiddenType]): PathType2 = hierarchy.child(path, element)
+  
+  def ancestor(n: Int): PathType2 =
+    def recur(path: PathType2, n: Int): PathType2 = if n == 0 then path else recur(hierarchy.parent(path), n - 1)
+    if depth > n then recur(path, n) else hierarchy.root(path)
+  
+  def take(n: Int): PathType2 = ancestor(depth - n)
+  
+  def conjunction(other: PathType2): PathType2 =
+    take(elements.reverse.zip(other.elements.reverse).takeWhile(_ == _).length)
+
+  def relativeTo(other: PathType2): Relative =
+    val common: Int = conjunction(other).depth
+    Relative(depth - common, other.elements.reverse.drop(common).map(_.show).reverse)
+  
+  def precedes(other: PathType): Boolean = conjunction(other).elements == elements
+
+  @targetName("add") 
+  infix def ++
+      (relative: Relative)
+      (using pathError: CanThrow[PathError], pathBounds: PathBounds[PathType])
+      : {pathBounds, pathError} PathType2 =
+    if relative.ascent > depth then throw PathError(PathError.Reason.ParentOfRoot) else
+      def recur(path: PathType2, elements: List[Text]): PathType2 = elements match
+        case head :: tail => recur(hierarchy.child(path, PathElement(head)), tail)
+        case Nil          => path
+      
+      recur(ancestor(relative.ascent), relative.elements.reverse)
 
 object SerpentineExports:
   @targetName("RelativeRoot")
@@ -86,18 +116,16 @@ object Relative:
     if rel == ? then t"."
     else (List.fill(rel.ascent)(t"..") ::: rel.elements.reverse.map(_.show)).join(t"", t"/", t"")
 
-  given pathlike: Pathlike[Relative] with
-    type RootType = `?`.type
-    type ChildType = Relative
+  given hierarchy: Hierarchy[Relative] with
     type ForbiddenType = '/' | ".." | ""
     
     def separator: Text = t"/"
-    def prefix(root: `?`.type): Text = t"./"
-    def root(path: Relative): `?`.type = ?
-    def elements(path: Relative): List[PathElement[ForbiddenType]] = path.elements
+    def prefix(root: Relative): Text = t"./"
+    def root(path: Relative): Relative = ?
+    def elements(path: Relative): List[PathElement[ForbiddenType]] = path.elements.map(PathElement(_))
     
     def child(base: Relative, element: PathElement[ForbiddenType]): Relative =
-      base.copy(elements = element :: base.elements)
+      base.copy(elements = element.show :: base.elements)
     
     def parent(path: Relative): Relative =
       if path.elements.isEmpty then Relative(path.ascent + 1, Nil)
@@ -108,20 +136,20 @@ object Relative:
       if text == t"." then ?
       else if text == t".." then Relative(ascent + 1, Nil)
       else if text.starts(t"../") then recur(text.drop(3), ascent + 1)
-      else Relative(ascent, List(text.cut(t"/").filter(_ != t"").map(PathElement(_))*).reverse)
+      else Relative(ascent, List(text.cut(t"/").filter(_ != t"")*).reverse)
     
     recur(text, 0)
 
-case class Relative(ascent: Int, elements: List[PathElement['/' | ".." | ""]])
+case class Relative(ascent: Int, elements: List[Text])
 
 object GenericPath:
-  given pathlike: Pathlike[GenericPath] with
-    type RootType = `^`.type
-    type ChildType = GenericPath
+  given Show[GenericPath] = Hierarchy.show[GenericPath]
+
+  given hierarchy: Hierarchy[GenericPath] with
     type ForbiddenType = '/' | ".." | ""
 
     def separator: Text = t"/"
-    def prefix(root: `^`.type): Text = t"/"
+    def prefix(root: GenericPath): Text = t"/"
     def root(path: GenericPath): `^`.type = ^
     def elements(path: GenericPath): List[PathElement['/' | ".." | ""]] = path.elements
     def child(base: GenericPath, child: PathElement['/' | ".." | ""]): GenericPath =

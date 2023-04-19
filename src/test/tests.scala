@@ -27,11 +27,11 @@ object Tests extends Suite(t"Serpentine Tests"):
     suite(t"Relative parsing"):
       test(t"parse simple relative path"):
         unsafely(Relative.parse(t"peer"))
-      .assert(_ == Relative(0, List(p"peer")))
+      .assert(_ == Relative(0, List(t"peer")))
 
       test(t"parse three-part relative subpath"):
         unsafely(Relative.parse(t"path/to/child"))
-      .assert(_ == Relative(0, List(p"child", p"to", p"path")))
+      .assert(_ == Relative(0, List(t"child", t"to", t"path")))
 
       test(t"parse parent relative path"):
         unsafely(Relative.parse(t".."))
@@ -47,11 +47,11 @@ object Tests extends Suite(t"Serpentine Tests"):
       
       test(t"parse relative link to uncle path"):
         unsafely(Relative.parse(t"../path"))
-      .assert(_ == Relative(1, List(p"path")))
+      .assert(_ == Relative(1, List(t"path")))
       
       test(t"parse relative link to cousin path"):
         unsafely(Relative.parse(t"../path/child"))
-      .assert(_ == Relative(1, List(p"child", p"path")))
+      .assert(_ == Relative(1, List(t"child", t"path")))
 
     suite(t"Show paths"):
       test(t"show simple relative path"):
@@ -85,6 +85,18 @@ object Tests extends Suite(t"Serpentine Tests"):
       test(t"show cousin path"):
         (?.parent.parent / p"foo" / p"bar").show
       .assert(_ == t"../../foo/bar")
+
+      test(t"show a simple generic path"):
+        (^ / p"foo").show
+      .assert(_ == t"/foo")
+
+      test(t"show a deeper generic path"):
+        (^ / p"foo" / p"bar").show
+      .assert(_ == t"/foo/bar")
+      
+      test(t"show the root path"):
+        ^.show
+      .assert(_ == t"/")
     
     suite(t"Path tests"):
       test(t"simple path from forbidden string does not compile"):
@@ -120,12 +132,10 @@ object Tests extends Suite(t"Serpentine Tests"):
 
       object Address extends Address(Nil)
 
-      given Pathlike[Address] with
+      given Hierarchy[Address] with
         type ForbiddenType = '!' | ',' | '*' | '/' | ""
-        type RootType = Address.type
-        type ChildType = Address
         def separator: Text = t"\n"
-        def prefix(root: Address.type): Text = t""
+        def prefix(root: Address): Text = t""
         def elements(address: Address): List[PathElement[ForbiddenType]] = address.elements
         def root(address: Address): Address.type = Address
         def child(base: Address, child: PathElement[ForbiddenType]): Address = Address(child :: base.elements)
@@ -148,7 +158,7 @@ object Tests extends Suite(t"Serpentine Tests"):
       .assert(_ == List(t"serpentine2: the character '!' is not permitted in a path element"))
 
       test(t"Relative path's parent is safe"):
-        val relative = Relative(3, List(p"some"))
+        val relative = Relative(3, List(t"some"))
         relative.parent
       .assert(_ == Relative(3, Nil))
       
@@ -167,7 +177,7 @@ object Tests extends Suite(t"Serpentine Tests"):
 
       test(t"Relative path with safe path elements"):
         ? / p"foo" / p"bar"
-      .assert(_ == Relative(0, List(p"bar", p"foo")))
+      .assert(_ == Relative(0, List(t"bar", t"foo")))
       
       test(t"Relative path cannot have '..' path"):
         captureCompileErrors:
@@ -203,4 +213,121 @@ object Tests extends Suite(t"Serpentine Tests"):
         (?.parent.parent / p"foo").parent
       .assert(_ == ?.parent.parent)
 
+    suite(t"Relative path tests"):
+      test(t"Find conjunction of distinct paths"):
+        val p1 = ^ / p"foo" / p"bar"
+        val p2 = ^ / p"bar" / p"baz"
+        p1.conjunction(p2)
+      .assert(_ == ^)
       
+      test(t"Find conjunction of paths with one common dir"):
+        val p1 = ^ / p"foo" / p"bar"
+        val p2 = ^ / p"foo" / p"baz"
+        p1.conjunction(p2)
+      .assert(_ == ^ / p"foo")
+      
+      test(t"Find conjunction of paths with two common dirs"):
+        val p1 = ^ / p"foo" / p"bar" / p"baz"
+        val p2 = ^ / p"foo" / p"bar" / p"quux"
+        p1.conjunction(p2)
+      .assert(_ == ^ / p"foo" / p"bar")
+      
+      test(t"Find conjunction of paths with common last name"):
+        val p1 = ^ / p"foo" / p"bar" / p"quux"
+        val p2 = ^ / p"foo" / p"baz" / p"quux"
+        p1.conjunction(p2)
+      .assert(_ == ^ / p"foo")
+      
+      test(t"Find conjunction of paths with different length"):
+        val p1 = ^ / p"foo" / p"bar"
+        val p2 = ^ / p"foo" / p"baz" / p"quux"
+        p1.conjunction(p2)
+      .assert(_ == ^ / p"foo")
+
+      test(t"Find relation between identical paths"):
+        val p1 = ^ / p"foo" / p"bar"
+        val p2 = ^ / p"foo" / p"bar"
+        p1.relativeTo(p2)
+      .assert(_ == ?)
+      
+      test(t"Find relation to child path"):
+        val p1 = ^ / p"foo" / p"bar"
+        val p2 = ^ / p"foo" / p"bar" / p"baz"
+        p1.relativeTo(p2)
+      .assert(_ == ? / p"baz")
+      
+      test(t"Find relation to parent path"):
+        val p1 = ^ / p"foo" / p"bar"
+        val p2 = ^ / p"foo"
+        p1.relativeTo(p2)
+      .assert(_ == ?.parent)
+      
+      test(t"Find relation between distinct paths"):
+        val p1 = ^ / p"foo" / p"bar"
+        val p2 = ^ / p"bar" / p"baz"
+        p1.relativeTo(p2)
+      .assert(_ == ?.parent.parent / p"bar" / p"baz")
+      
+      test(t"Find relation between paths with one common dir"):
+        val p1 = ^ / p"foo" / p"bar"
+        val p2 = ^ / p"foo" / p"baz"
+        p1.relativeTo(p2)
+      .assert(_ == ?.parent / p"baz")
+      
+      test(t"Find relation between paths with two common dirs"):
+        val p1 = ^ / p"foo" / p"bar" / p"baz"
+        val p2 = ^ / p"foo" / p"bar" / p"quux"
+        p1.relativeTo(p2)
+      .assert(_ == ?.parent / p"quux")
+      
+      test(t"Find relation between paths with common last name"):
+        val p1 = ^ / p"foo" / p"bar" / p"quux"
+        val p2 = ^ / p"foo" / p"baz" / p"quux"
+        p1.relativeTo(p2)
+      .assert(_ == ?.parent.parent / p"baz" / p"quux")
+      
+      test(t"Find relation between paths with different length"):
+        val p1 = ^ / p"foo" / p"bar"
+        val p2 = ^ / p"foo" / p"baz" / p"quux"
+        p1.relativeTo(p2)
+      .assert(_ == ?.parent / p"baz" / p"quux")
+      
+      test(t"precedence of root"):
+        ^.precedes(^ / p"foo")
+      .assert(_ == true)
+      
+      test(t"self-precedence"):
+        (^ / p"foo").precedes(^ / p"foo")
+      .assert(_ == true)
+      
+      test(t"non-precedence"):
+        (^ / p"foo").precedes(^ / p"bar")
+      .assert(_ == false)
+      
+      test(t"non-precedence with root"):
+        (^ / p"foo").precedes(^)
+      .assert(_ == false)
+      
+      test(t"add relative parent"):
+        given CanThrow[PathError] = unsafeExceptions.canThrowAny
+        val rel = ?.parent
+        (^ / p"foo" / p"bar") ++ rel
+      .assert(_ == ^ / p"foo")
+      
+      test(t"add relative grandparent"):
+        given CanThrow[PathError] = unsafeExceptions.canThrowAny
+        val rel = ?.parent.parent
+        (^ / p"foo" / p"bar" / p"baz") ++ rel
+      .assert(_ == ^ / p"foo")
+      
+      test(t"add relative uncle"):
+        given CanThrow[PathError] = unsafeExceptions.canThrowAny
+        val rel = ?.parent.parent / p"quux"
+        (^ / p"foo" / p"bar" / p"baz") ++ rel
+      .assert(_ == ^ / p"foo" / p"quux")
+      
+      test(t"add relative cousin"):
+        given CanThrow[PathError] = unsafeExceptions.canThrowAny
+        val rel = ?.parent.parent / p"quux" / p"bar"
+        (^ / p"foo" / p"bar" / p"baz") ++ rel
+      .assert(_ == ^ / p"foo" / p"quux" / p"bar")

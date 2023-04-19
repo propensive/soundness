@@ -29,11 +29,9 @@ trait Root(val prefix: Text, val separator: Text):
 
   def apply(path: GenericPath): PathType = make(path.parts)
 
-  @targetName("child")
   infix def /(element: Text): PathType throws PathError =
     make(List(PathElement(element).value))
   
-  @targetName("safeChild")
   infix def /(element: PathElement): PathType = make(List(element.value))
 
   def make(elements: List[Text]): PathType
@@ -52,10 +50,8 @@ object Root extends Root(t"/", t"/"):
     def serialize(value: GenericRoots.^.type): String = "/"
 
 object GenericRoots:
-  @targetName("RelativeRoot")
   object ? extends Relative(0, Nil)
   
-  @targetName("GenericRoot")
   object ^ extends Root(t"/", t"/"):
     type PathType = GenericPath
     def make(elements: List[Text]): PathType = new GenericPath(elements)
@@ -96,16 +92,13 @@ case class Relative(ascent: Int, parts: List[Text]):
   
   def ancestor(n: Int): Relative = if n == 0 then this else parent.ancestor(n - 1)
   
-  @targetName("child")
   infix def /(filename: Text): Relative = filename match
     case t".." => if parts.isEmpty then Relative(ascent + 1, Nil) else Relative(ascent, parts.init)
     case t"."  => Relative(ascent, parts)
     case _     => Relative(ascent, parts :+ filename)
   
-  @targetName("safeChild")
   infix def /(element: PathElement): Relative = Relative(ascent, parts :+ element.value)
 
-  @targetName("add")
   infix def +(relative: Relative): Relative =
     if relative.ascent == 0 then Relative(ascent, parts ++ relative.parts)
     else ancestor(relative.ascent) + Relative(0, relative.parts)
@@ -117,7 +110,6 @@ case class Relative(ascent: Int, parts: List[Text]):
   override def hashCode: Int = parts.hashCode ^ ascent
 
 object Slash:
-  @targetName("Extractor")
   object `/`:
     def unapply(abs: Absolute): Option[(Root | Absolute, Text)] =
       for left <- abs.init.option; right <- abs.last.option
@@ -165,14 +157,11 @@ abstract class Absolute(val parts: List[Text]):
 
   def text: Text = parts.join(root.prefix, root.separator, t"")
 
-  @targetName("safeChild")
   infix def /(element: PathElement): root.PathType = root.make(parts :+ element.value)
 
-  @targetName("child")
   infix def /(value: Text): root.PathType throws PathError =
     /(PathElement(value))
 
-  @targetName("add") 
   infix def +(relative: Relative): root.PathType throws RootParentError =
     if relative.ascent > parts.length then throw RootParentError(root)
     else root.make(parts.dropRight(relative.ascent) ++ relative.parts)
