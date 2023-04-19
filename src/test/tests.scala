@@ -14,7 +14,7 @@
     and limitations under the License.
 */
 
-package serpentine2
+package serpentine
 
 import probably.*
 import rudiments.*
@@ -103,13 +103,13 @@ object Tests extends Suite(t"Serpentine Tests"):
         captureCompileErrors:
           val elem: PathElement["bad"] = p"bad"
         .map(_.message)
-      .assert(_ == List(t"serpentine2: 'bad' is not a valid name for a path element"))
+      .assert(_ == List(t"serpentine: 'bad' is not a valid name for a path element"))
       
       test(t"simple path from forbidden set of strings does not compile"):
         captureCompileErrors:
           val elem: PathElement["bad" | "awful"] = p"bad"
         .map(_.message)
-      .assert(_ == List(t"serpentine2: 'bad' is not a valid name for a path element"))
+      .assert(_ == List(t"serpentine: 'bad' is not a valid name for a path element"))
       
       test(t"simple path not in forbidden set of strings does compile"):
         captureCompileErrors:
@@ -120,13 +120,13 @@ object Tests extends Suite(t"Serpentine Tests"):
         captureCompileErrors:
           val elem: PathElement["bad" | 'n'] = p"unsafe"
         .map(_.message)
-      .assert(_ == List(t"serpentine2: the character 'n' is not permitted in a path element"))
+      .assert(_ == List(t"serpentine: the character 'n' is not permitted in a path element"))
       
       test(t"path with forbidden character does compile"):
         captureCompileErrors:
           val elem: PathElement['a' | 'e' | 'i' | 'o' | 'u'] = p"unsafe"
         .map(_.message)
-      .assert(_ == List(t"serpentine2: the character 'a' is not permitted in a path element"))
+      .assert(_ == List(t"serpentine: the character 'a' is not permitted in a path element"))
 
       case class Address(elements: List[PathElement['!' | ',' | '*' | '/' | ""]])
 
@@ -151,11 +151,11 @@ object Tests extends Suite(t"Serpentine Tests"):
       
       test(t"Bad child path is forbidden"):
         captureCompileErrors(Address / p"foo" / p"ba*r").map(_.message)
-      .assert(_ == List(t"serpentine2: the character '*' is not permitted in a path element"))
+      .assert(_ == List(t"serpentine: the character '*' is not permitted in a path element"))
       
       test(t"Forbidden path elements are inferred"):
         captureCompileErrors(Address / p"foo!").map(_.message)
-      .assert(_ == List(t"serpentine2: the character '!' is not permitted in a path element"))
+      .assert(_ == List(t"serpentine: the character '!' is not permitted in a path element"))
 
       test(t"Relative path's parent is safe"):
         val relative = Relative(3, List(t"some"))
