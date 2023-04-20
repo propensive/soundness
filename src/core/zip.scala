@@ -49,8 +49,7 @@ object ZipFile:
 case class ZipFile(file: File):
   def append
       [InstantType]
-      (inputs: LazyList[ZipEntry], base: Maybe[File] = Unset, prefix: Maybe[Bytes] = Unset,
-          timestamp: Maybe[InstantType] = Unset)
+      (inputs: LazyList[ZipEntry], prefix: Maybe[Bytes] = Unset, timestamp: Maybe[InstantType] = Unset)
       (using env: Environment, instant: GenericInstant[InstantType] = timeApi.long, fs: Filesystem)
       : Unit throws IoError | ZipError | StreamCutError =
     
@@ -59,7 +58,7 @@ case class ZipFile(file: File):
 
     val tmpDir: Directory = Xdg.Var.Tmp().directory(Ensure)
     val tmpPath = tmpDir.tmpPath()
-    val tmpFile: File = base.mm(_.copyTo(tmpPath)).option.getOrElse(ZipFile.create(tmpPath).file)
+    val tmpFile: File = file.copyTo(tmpPath)
     val uri: java.net.URI = java.net.URI.create(t"jar:file:${tmpPath.fullname}".s).nn
   
     lazy val javaFs =
