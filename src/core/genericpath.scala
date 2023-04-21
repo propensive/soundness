@@ -11,6 +11,10 @@ object GenericPath:
 
   given Show[GenericPath] = Hierarchy.show[GenericPath]
 
+  def parse(text: Text): GenericPath throws PathError =
+    if text.starts(t"/") then GenericPath(text.drop(1).cut(t"/").filter(_ != t"").map(PathElement(_)))
+    else throw PathError(PathError.Reason.NotRooted)
+
   given hierarchy: Hierarchy[GenericPath] with
     type ForbiddenType = '/' | ".." | ""
 
