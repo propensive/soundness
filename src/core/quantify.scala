@@ -82,8 +82,11 @@ object QuantifyOpaques:
   object Quantity:
     def apply[UnitsType <: Units[?, ?]](value: Double): Quantity[UnitsType] = value
     
-    given convertDouble[UnitsType <: Units[?, ?]]: Conversion[Double, Quantity[UnitsType]] = Quantity(_)
-    given convertInt[UnitsType <: Units[?, ?]]: Conversion[Int, Quantity[UnitsType]] = int => Quantity(int.toDouble)
+    given convertDouble[UnitsType <: Units[?, ?]]: Conversion[Double, Quantity[UnitsType]] =
+      Quantity(_)
+    
+    given convertInt[UnitsType <: Units[?, ?]]: Conversion[Int, Quantity[UnitsType]] = int =>
+      Quantity(int.toDouble)
 
     inline given [UnitsType <: Units[?, ?]](using DecimalFormat): Show[Quantity[UnitsType]] =
       new Show[Quantity[UnitsType]]:
@@ -121,15 +124,14 @@ val Ampere = SiUnit[Ampere[1]](1)
 val Kelvin = SiUnit[Kelvin[1]](1)
 val Second = SiUnit[Second[1]](1)
 
-// class Quantity[UnitsType <: Units[?, ?]](val value: Double):
-//   quantity =>
-
 extension [UnitsType <: Units[?, ?]](inline quantity: Quantity[UnitsType])
   @targetName("plus")
   inline def +(quantity2: Quantity[UnitsType]): Quantity[UnitsType] = Quantity(quantity.value + quantity2.value)
   
   @targetName("minus")
   inline def -(quantity2: Quantity[UnitsType]): Quantity[UnitsType] = Quantity(quantity.value - quantity2.value)
+
+  transparent inline def invert: Any = Quantity[Units[?, ?]](1.0)/quantity
   
   @targetName("times2")
   transparent inline def *
@@ -148,6 +150,6 @@ extension (value: Double)
   @targetName("times")
   def *[UnitsType <: Units[?, ?]](quantity: Quantity[UnitsType]): Quantity[UnitsType] = quantity*value
   
-  // @tarhgetName("divide")
-  // def /[UnitsType <: Units[?, ?]](quantity: Quantity[UnitsType]): Quantity[UnitsType] = quantity.invert*value
+  @targetName("divide")
+  def /[UnitsType <: Units[?, ?]](quantity: Quantity[UnitsType]): Quantity[UnitsType] = quantity.invert*value
   

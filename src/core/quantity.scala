@@ -25,6 +25,7 @@ object QuantifyMacros:
       (using quotes: Quotes)(typ: quotes.reflect.TypeRepr, division: Boolean)
       : Map[quotes.reflect.TypeRef, (quotes.reflect.TypeRef, Int)] =
     import quotes.*, reflect.*
+    
     typ match
       case AndType(left, right) =>
         deconjunct(left, division) ++ deconjunct(right, division)

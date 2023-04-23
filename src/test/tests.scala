@@ -116,4 +116,21 @@ object Tests extends Suite(Text("Quantify Tests")):
     test(Text("SI nano prefix multiplies by 10^-9")):
       2.5*Nano(Metre)
     .assert(_ == 0.0000000025*Metre)
+
+    // test(Text("Mixed units of the same type can be added")):
+    //   2*Metre + 2*Foot
+    // .assert(_ == 2*Metre)
+    
+    // test(Text("Mixed units of the same type can be added (reverse order)")):
+    //   2*Foot + 2*Metre
+    // .assert(_ == 2*Metre)
+
+    test(Text("Invert a quantity")):
+      (2*Metre/Second).invert
+    .assert(_ == 0.5*Second/Metre)
+    
+    test(Text("Divide a double by a quantity")):
+      1.0/(2.0*Metre/Second)
+    .assert(_ == 0.5*Second/Metre)
+      
     
