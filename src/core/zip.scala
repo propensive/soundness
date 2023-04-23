@@ -30,24 +30,22 @@ import java.io as ji
 import java.nio.file as jnf
 import java.util.zip as juz
 
-import language.experimental.captureChecking
-
 case class ZipError(filename: Text) extends Error(err"Could not create ZIP file ${filename}")
 
 object ZipFile:
   def apply[FileType]
       (file: FileType)
-      (using genericFileReader: {*} GenericFileReader[FileType], streamCut: CanThrow[StreamCutError])
-      : {genericFileReader, streamCut} ZipFile =
+      (using genericFileReader: /*{*}*/ GenericFileReader[FileType], streamCut: CanThrow[StreamCutError])
+      : /*{genericFileReader, streamCut}*/ ZipFile =
     val pathname: String = genericFileReader.filePath(file)
     new ZipFile(pathname.show)
 
   def create[PathType]
       (path: PathType)
-      (using genericPathReader: {*} GenericPathReader[PathType], streamCut: CanThrow[StreamCutError])
-      : {genericPathReader, streamCut} ZipFile =
+      (using genericPathReader: /*{*}*/ GenericPathReader[PathType], streamCut: CanThrow[StreamCutError])
+      : /*{genericPathReader, streamCut}*/ ZipFile =
     val pathname: String = genericPathReader.getPath(path)
-    val out: {genericPathReader} juz.ZipOutputStream =
+    val out: /*{genericPathReader}*/ juz.ZipOutputStream =
       juz.ZipOutputStream(ji.FileOutputStream(ji.File(pathname)))
     
     out.putNextEntry(juz.ZipEntry("/"))
@@ -60,7 +58,7 @@ case class ZipFile(private val filename: Text):
   def append
       [InstantType]
       (inputs: LazyList[ZipEntry], prefix: Maybe[Bytes] = Unset, timestamp: Maybe[InstantType] = Unset)
-      (using env: Environment, instant: GenericInstant[InstantType] = timeApi.long)
+      (using env: Environment, instant: GenericInstant[InstantType] = timeApi.long, hierarchy: Hierarchy[GenericPath])
       : Unit throws ZipError | StreamCutError =
     
     val writeTimestamp: jnf.attribute.FileTime =
@@ -74,7 +72,6 @@ case class ZipFile(private val filename: Text):
       try jnf.FileSystems.newFileSystem(uri, Map("zipinfo-time" -> "false").asJava).nn
       catch case exception: jnf.ProviderNotFoundException => throw ZipError(tmpFile.getName.nn.show)
 
-    
     val dirs = inputs.map(_.path).to(Set).flatMap: path =>
       try Set(path.parent) catch case err: PathError => Set()
 

@@ -16,5 +16,5 @@ project zeppelin
   module test
     compiler  scala
     sources   src/test
-    include   zeppelin/core probably/cli
+    include   zeppelin/core probably/cli galilei/core
     main      zeppelin.Tests
