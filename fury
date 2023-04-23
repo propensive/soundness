@@ -2,8 +2,8 @@
 # More information is available at: https://github.com/propensive/wrath/
 target zeppelin/test
 
-repo propensive/galilei
 repo propensive/probably
+repo propensive/serpentine
 repo propensive/ambience
 repo propensive/imperial
 
@@ -11,7 +11,7 @@ project zeppelin
   module core
     compiler  scala
     sources   src/core
-    include   galilei/core ambience/core imperial/core anticipation/file
+    include   ambience/core imperial/core anticipation/file serpentine/core
 
   module test
     compiler  scala
