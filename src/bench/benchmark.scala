@@ -23,15 +23,6 @@ import gossamer.*, decimalFormats.twoPlaces
 
 import scala.collection.mutable as scm
 
-object Benchmark:
-  given Inclusion[TestReport, Benchmark] with
-    def include(report: TestReport, testId: TestId, benchmark: Benchmark): TestReport =
-      report.addBenchmark(testId, benchmark)
-
-case class Benchmark(total: Long, count: Int, mean: Long, sd: Long, confidence: Double):
-  def confidenceInterval: Long = (confidence*sd/math.sqrt(count.toDouble)).toLong
-  def throughput: Long = (1000000000.0/mean).toLong
-
 extension [TestType](test: Test[TestType])
   inline def benchmark
       [DurationType, ReportType]

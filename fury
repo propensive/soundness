@@ -13,7 +13,12 @@ project probably
   module core
     compiler  scala
     sources   src/core
-    include   gossamer/core chiaroscuro/core oubliette/core
+    include   gossamer/core chiaroscuro/core
+
+  module bench
+    compiler  scala
+    sources   src/bench
+    include   probably/core oubliette/core
 
   module cli
     compiler  scala
