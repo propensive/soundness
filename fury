@@ -2,7 +2,7 @@
 # More information is available at: https://github.com/propensive/wrath/
 
 repo propensive/cardinality
-repo propensive/deviation
+repo propensive/digression
 repo propensive/contextual
 repo propensive/probably
 
@@ -12,7 +12,7 @@ project iridescence
   module core
     compiler  scala
     sources   src/core
-    include   cardinality/core deviation/core contextual/core
+    include   cardinality/core digression/core contextual/core
 
   module test
     compiler  scala
