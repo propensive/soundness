@@ -19,7 +19,7 @@ package merino
 import annotation.*
 import gossamer.*
 import rudiments.*
-import deviation.*
+import digression.*
 import turbulence.*
 import scala.collection.mutable.ArrayBuffer
 
