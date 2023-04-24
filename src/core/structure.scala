@@ -17,7 +17,7 @@
 package imperial
 
 import rudiments.*
-import deviation.*
+import digression.*
 import ambience.*
 import anticipation.*
 

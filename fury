@@ -3,11 +3,11 @@
 
 target imperial/core
 
-repo propensive/deviation
+repo propensive/digression
 repo propensive/ambience
 
 project imperial
   module core
     compiler  scala
     sources   src/core
-    include   anticipation/file deviation/core ambience/core
+    include   anticipation/file digression/core ambience/core
