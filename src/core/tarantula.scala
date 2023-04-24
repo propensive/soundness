@@ -24,7 +24,7 @@ import ambience.*
 import cataclysm.*
 import honeycomb.*
 import eucalyptus.*
-import deviation.*
+import digression.*
 import rudiments.*
 import turbulence.*, characterEncodings.utf8
 import gesticulate.*
