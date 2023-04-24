@@ -18,7 +18,7 @@ package punctuation
 
 import honeycomb.*
 import rudiments.*
-import deviation.*
+import digression.*
 import gossamer.*
 
 open class HtmlConverter():

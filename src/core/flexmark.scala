@@ -17,7 +17,7 @@
 package punctuation
 
 import rudiments.*
-import deviation.*
+import digression.*
 import gossamer.*
 
 import com.vladsch.flexmark as cvf
