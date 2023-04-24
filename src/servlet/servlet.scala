@@ -17,7 +17,7 @@
 package scintillate
 
 import rudiments.*
-import deviation.*
+import digression.*
 import turbulence.*
 import gossamer.*
 import telekinesis.*
