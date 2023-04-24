@@ -18,7 +18,7 @@ package parasitism
 
 import anticipation.*
 import rudiments.*
-import deviation.*
+import digression.*
 
 @capability
 @missingContext(contextMessage(module = "parasitism", typeclass = "Monitor")())
