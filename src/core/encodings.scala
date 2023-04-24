@@ -17,7 +17,7 @@
 package turbulence
 
 import rudiments.*
-import deviation.*
+import digression.*
 
 import scala.collection.mutable as scm
 import java.nio as jn, jn.charset as jnc
