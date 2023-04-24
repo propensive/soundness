@@ -1,5 +1,5 @@
 /*
-    Deviation, version [unreleased]. Copyright 2023 Jon Pretty, Propensive OÜ.
+    Digression, version [unreleased]. Copyright 2023 Jon Pretty, Propensive OÜ.
 
     The primary distribution site is: https://propensive.com/
 
@@ -14,7 +14,7 @@
     and limitations under the License.
 */
 
-package deviation
+package digression
 
 import rudiments.*
 
@@ -23,12 +23,12 @@ import scala.quoted.*
 import language.experimental.captureChecking
 
 object Codepoint:
-  inline given Codepoint = ${DeviationMacros.location}
+  inline given Codepoint = ${DigressionMacros.location}
 
 case class Codepoint(source: Text, line: Int):
   def text: Text = Text(s"${source.s.split("/").nn.last.nn}:$line")
 
-object DeviationMacros:
+object DigressionMacros:
   def location(using Quotes): Expr[Codepoint] =
     import quotes.*, reflect.*
     val path = Expr(Position.ofMacroExpansion.sourceFile.path)

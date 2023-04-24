@@ -1,5 +1,5 @@
 /*
-    Deviation, version [unreleased]. Copyright 2023 Jon Pretty, Propensive OÜ.
+    Digression, version [unreleased]. Copyright 2023 Jon Pretty, Propensive OÜ.
 
     The primary distribution site is: https://propensive.com/
 
@@ -14,7 +14,7 @@
     and limitations under the License.
 */
 
-package deviation
+package digression
 
 export rudiments.ErrorMessage
 import rudiments.*

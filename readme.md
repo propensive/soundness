@@ -1,8 +1,8 @@
-[<img alt="GitHub Workflow" src="https://img.shields.io/github/actions/workflow/status/propensive/deviation/main.yml?style=for-the-badge" height="24">](https://github.com/propensive/deviation/actions)
+[<img alt="GitHub Workflow" src="https://img.shields.io/github/actions/workflow/status/propensive/digression/main.yml?style=for-the-badge" height="24">](https://github.com/propensive/digression/actions)
 [<img src="https://img.shields.io/discord/633198088311537684?color=8899f7&label=DISCORD&style=for-the-badge" height="24">](https://discord.gg/7b6mpF6Qcf)
 <img src="/doc/images/github.png" valign="middle">
 
-# Deviation
+# Digression
 
 __TBC__
 
@@ -15,7 +15,7 @@ TBC
 
 ## Availability
 
-Deviation has not yet been published as a binary. It is currently waiting for the
+Digression has not yet been published as a binary. It is currently waiting for the
 final release of Scala 3.3.
 
 ## Getting Started
@@ -26,7 +26,7 @@ TBC
 
 ## Status
 
-Deviation is classified as __fledgling__. For reference, Scala One projects are
+Digression is classified as __fledgling__. For reference, Scala One projects are
 categorized into one of the following five stability levels:
 
 - _embryonic_: for experimental or demonstrative purposes only, without any guarantees of longevity
@@ -39,22 +39,22 @@ Projects at any stability level, even _embryonic_ projects, are still ready to
 be used, but caution should be taken if there is a mismatch between the
 project's stability level and the importance of your own project.
 
-Deviation is designed to be _small_. Its entire source code currently consists
+Digression is designed to be _small_. Its entire source code currently consists
 of 207 lines of code.
 
 ## Building
 
-Deviation can be built on Linux or Mac OS with [Fury](/propensive/fury), however
+Digression can be built on Linux or Mac OS with [Fury](/propensive/fury), however
 the approach to building is currently in a state of flux, and is likely to
 change.
 
 ## Contributing
 
-Contributors to Deviation are welcome and encouraged. New contributors may like to look for issues marked
-<a href="https://github.com/propensive/deviation/labels/beginner">beginner</a>.
+Contributors to Digression are welcome and encouraged. New contributors may like to look for issues marked
+<a href="https://github.com/propensive/digression/labels/beginner">beginner</a>.
 
 We suggest that all contributors read the [Contributing Guide](/contributing.md) to make the process of
-contributing to Deviation easier.
+contributing to Digression easier.
 
 Please __do not__ contact project maintainers privately with questions unless
 there is a good reason to keep them private. While it can be tempting to
@@ -63,7 +63,7 @@ audience, and it can result in duplication of effort.
 
 ## Author
 
-Deviation was designed and developed by Jon Pretty, and commercial support and training is available from
+Digression was designed and developed by Jon Pretty, and commercial support and training is available from
 [Propensive O&Uuml;](https://propensive.com/).
 
 
@@ -83,5 +83,5 @@ often arrived in English via a romance language.
 
 ## License
 
-Deviation is copyright &copy; 2023 Jon Pretty & Propensive O&Uuml;, and is made available under the
+Digression is copyright &copy; 2023 Jon Pretty & Propensive O&Uuml;, and is made available under the
 [Apache 2.0 License](/license.md).
