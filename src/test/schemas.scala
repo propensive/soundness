@@ -18,7 +18,7 @@ package cellulose
 
 import gossamer.*
 import rudiments.*
-import deviation.*
+import digression.*
 
 import Arity.*
 

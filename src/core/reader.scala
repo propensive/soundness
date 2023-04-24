@@ -19,7 +19,7 @@ package cellulose
 import rudiments.*
 import gossamer.*
 import kaleidoscope.*
-import deviation.*
+import digression.*
 
 import language.experimental.captureChecking
 

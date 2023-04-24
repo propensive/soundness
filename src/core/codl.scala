@@ -19,7 +19,7 @@ package cellulose
 import gossamer.*
 import eucalyptus.*
 import rudiments.*
-import deviation.*
+import digression.*
 import contextual.*
 import turbulence.*
 import chiaroscuro.*

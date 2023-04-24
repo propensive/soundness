@@ -19,7 +19,7 @@ package cellulose
 import probably.*
 import gossamer.*
 import rudiments.*
-import deviation.*
+import digression.*
 import turbulence.*, basicIo.jvm, characterEncodings.utf8
 import eucalyptus.*, logging.stdout
 
