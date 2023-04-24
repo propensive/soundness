@@ -25,39 +25,59 @@ object QuantifyMacros:
 
   object UnitsTypeRepr:
     def of[UnitsTypeType: Type](using quotes: Quotes): UnitsTypeRepr[quotes.type] =
-      UnitsTypeRepr(quotes.reflect.TypeRepr.of[UnitsTypeType])
-
-  class UnitsTypeRepr[QuotesType <: Quotes](using val quotes: QuotesType)(val repr: quotes.reflect.TypeRepr):
-    lazy val map: Map[quotes.reflect.TypeRef, (UnitTypeRef[QuotesType], Int)] =
       import quotes.reflect.*
       
-      def recur(repr: TypeRepr): Map[TypeRef, (UnitTypeRef[QuotesType], Int)] = repr match
-        case AndType(left, right) =>
-          recur(left) ++ recur(right)
-        
-        case AppliedType(unit@TypeRef(_, _), List(ConstantType(IntConstant(power)))) =>
-          unit.asType match
-            case '[ Units[p, u] ] => TypeRepr.of[u] match
-              case ref@TypeRef(_, _) => Map(ref -> (UnitTypeRef[QuotesType](unit), power))
+      def recur(repr: TypeRepr): Map[TypeRef, (UnitTypeRef[quotes.type], Int)] =
+        repr match
+          case AndType(left, right) =>
+            recur(left) ++ recur(right)
+          
+          case AppliedType(unit@TypeRef(_, _), List(ConstantType(IntConstant(power)))) =>
+            unit.asType match
+              case '[ Units[p, u] ] => TypeRepr.of[u] match
+                case ref@TypeRef(_, _) => Map(ref -> (UnitTypeRef[quotes.type](unit), power))
+                case _ => throw Mistake("Should never match")
               case _ => throw Mistake("Should never match")
-            case _ => throw Mistake("Should never match")
-        
-        case other =>
-          Map()
+          
+          case other =>
+            Map()
       
-      recur(repr)
+      UnitsTypeRepr(recur(quotes.reflect.TypeRepr.of[UnitsTypeType]))
+
+  class UnitsTypeRepr
+      [QuotesType <: Quotes]
+      (using val quotes: QuotesType)
+      (val map: Map[quotes.reflect.TypeRef, (UnitTypeRef[quotes.type], Int)]):
+    import quotes.reflect.*
+    
+    def repr: Option[quotes.reflect.TypeRepr] = construct(map.values.to(List))
     
     def inverseMap: Map[quotes.reflect.TypeRef, (UnitTypeRef[QuotesType], Int)] =
       map.map { case (key, (unit, power)) => (key, (unit, -power)) }
   
+    private def construct
+        (using quotes: Quotes)(types: List[(UnitTypeRef[quotes.type], Int)])
+        : Option[quotes.reflect.TypeRepr] =
+      import quotes.reflect.*
+
+      types.filter(_(1) != 0) match
+        case Nil =>
+          None
+        
+        case (ref, power) :: Nil =>
+          Some(AppliedType(ref.ref, List(ConstantType(IntConstant(power)))))
+        
+        case (ref, power) :: more =>
+          Some(AndType(AppliedType(ref.ref, List(ConstantType(IntConstant(power)))), construct(more).get))
+    
     def power(n: Int): quotes.reflect.TypeRepr =
       import quotes.reflect.*
-      AppliedType(repr, List(ConstantType(IntConstant(n))))
+      AppliedType(repr.get, List(ConstantType(IntConstant(n))))
     
     def unitType(dimension: quotes.reflect.TypeRef): UnitTypeRef[QuotesType] = map(dimension)(0)
     def unitPower(dimension: quotes.reflect.TypeRef): Int = map(dimension)(1)
   
-  class UnitTypeRef[QuotesType <: Quotes](using val quotes: QuotesType)(val ref: quotes.reflect.TypeRef):
+  class UnitTypeRef[+QuotesType <: Quotes](using val quotes: QuotesType)(val ref: quotes.reflect.TypeRef):
     def name: String = ref match { case quotes.reflect.TypeRef(_, name) => name }
 
   private def deconjunct
@@ -174,9 +194,6 @@ object QuantifyMacros:
 
     val rightUnits = UnitsTypeRepr.of[RightType]
     val leftUnits = UnitsTypeRepr.of[LeftType]
-    
-    val rightMap: Map[TypeRef, (TypeRef, Int)] = deconjunct(TypeRepr.of[RightType], division)
-    val leftMap: Map[TypeRef, (TypeRef, Int)] = deconjunct(TypeRepr.of[LeftType], false)
 
     def recur
         (map: Map[TypeRef, (UnitTypeRef[quotes.type], Int)], todo: List[TypeRef], multiplier: Expr[Double])
@@ -237,12 +254,13 @@ object QuantifyMacros:
                 
                 case _ => fail("could not interpret unit types")
   
-      
-    val (map, multiplier) = recur(leftUnits.map, rightMap.keys.to(List), Expr(1.0))
+    val (map, multiplier) = recur(leftUnits.map, rightUnits.map.keys.to(List), Expr(1.0))
 
     val number = if division then '{$left.value/$right.value} else '{$left.value*$right.value}
     
-    construct(map.values.to(List)) match
+    val repr: Option[quotes.reflect.TypeRepr] = UnitsTypeRepr[quotes.type](using quotes)(map).repr
+    
+    repr match
       case None => '{$multiplier*$number}
       case Some(typeRepr) => typeRepr.asType match
         case '[ t ] => '{Quantity[t & Units[?, ?]]($multiplier*$number)}
