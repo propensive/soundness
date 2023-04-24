@@ -24,7 +24,7 @@ import anticipation.*, fileApi.javaIo
 import imperial.*
 import turbulence.*
 import ambience.*
-import deviation.*
+import digression.*
 
 import java.io as ji
 import java.nio.file as jnf
