@@ -21,7 +21,7 @@ import anticipation.*, fileApi.galileiApi
 import gossamer.*
 import ambience.*
 import rudiments.*
-import deviation.*
+import digression.*
 import parasitism.*
 import turbulence.*, lineSeparation.jvm
 import escapade.*

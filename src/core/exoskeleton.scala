@@ -17,7 +17,7 @@
 package exoskeleton
 
 import rudiments.*
-import deviation.*
+import digression.*
 import gossamer.*
 import ambience.*
 
