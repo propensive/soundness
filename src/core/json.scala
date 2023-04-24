@@ -18,7 +18,7 @@ package jacinta
 
 import wisteria.*
 import rudiments.*
-import deviation.*
+import digression.*
 import turbulence.*
 import gossamer.*
 import anticipation.*
