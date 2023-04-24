@@ -42,7 +42,7 @@ object PathBounds:
     if isRoot then throw PathError(PathError.Reason.ParentOfRoot)
 
 @capability
-trait PathBounds[-PathType]:
+trait PathBounds[PathType]:
   def hasParent(isRoot: Boolean): Unit
 
 extension [PathType, PathType2 >: PathType](path: PathType)(using hierarchy: Hierarchy[PathType2])
@@ -69,6 +69,8 @@ extension [PathType, PathType2 >: PathType](path: PathType)(using hierarchy: Hie
   
   def conjunction(other: PathType2): PathType2 =
     take(elements.reverse.zip(other.elements.reverse).takeWhile(_ == _).length)
+
+  def relative: Relative = Relative(0, elements.map(_.show))
 
   def relativeTo(other: PathType2): Relative =
     val common: Int = conjunction(other).depth

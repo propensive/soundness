@@ -18,7 +18,7 @@ package serpentine
 
 import probably.*
 import rudiments.*
-import deviation.*
+import digression.*
 import gossamer.*
 import larceny.*
 

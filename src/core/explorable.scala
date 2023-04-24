@@ -16,6 +16,8 @@
 
 package serpentine
 
+import language.experimental.captureChecking
+
 trait Explorable[PathType] extends Hierarchy[PathType]:
   def children(path: PathType): List[PathElement[ForbiddenType]]
 

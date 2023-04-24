@@ -18,7 +18,7 @@ package serpentine
 
 import gossamer.*
 import rudiments.*
-import deviation.*
+import digression.*
 
 import language.experimental.captureChecking
 
