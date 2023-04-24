@@ -17,7 +17,7 @@
 package anticipation
 
 import rudiments.*
-import deviation.*
+import digression.*
 import galilei.*
 
 import language.experimental.captureChecking
