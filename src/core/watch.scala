@@ -20,7 +20,7 @@ import eucalyptus.*
 import turbulence.*
 import gossamer.*
 import rudiments.*
-import deviation.*
+import digression.*
 import parasitism.*
 import serpentine.*
 import anticipation.*
