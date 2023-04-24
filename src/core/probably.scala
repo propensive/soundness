@@ -19,7 +19,7 @@ package probably
 import eucalyptus.*
 import gossamer.*
 import rudiments.*
-import deviation.*
+import digression.*
 
 import scala.collection.mutable as scm
 

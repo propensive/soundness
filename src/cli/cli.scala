@@ -17,7 +17,7 @@
 package probably
 
 import rudiments.*
-import deviation.*
+import digression.*
 import escapade.*
 import turbulence.*
 
