@@ -19,7 +19,7 @@ package escritoire
 import rudiments.*
 import gossamer.*
 import escapade.*
-import deviation.*
+import digression.*
 
 import language.experimental.namedTypeArguments
 
