@@ -20,7 +20,7 @@ import gossamer.*
 import kaleidoscope.*
 import eucalyptus.*
 import rudiments.*
-import deviation.*
+import digression.*
 
 object TzdbError:
   given Show[Issue] =
