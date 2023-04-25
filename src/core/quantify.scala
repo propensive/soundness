@@ -155,6 +155,18 @@ extension [UnitsType <: Units[?, ?]](inline quantity: Quantity[UnitsType])
   inline def units: Map[Text, Int] = ${QuantifyMacros.collectUnits[UnitsType]}
   inline def render(using DecimalFormat): Text = t"${quantity.value}${Quantity.renderUnits(units)}"
 
+  inline def >[UnitsType2 <: Units[?, ?]](that: Quantity[UnitsType2]): Boolean =
+    ${QuantifyMacros.greaterThan[UnitsType, UnitsType2]('quantity, 'that, false)}
+  
+  inline def >=[UnitsType2 <: Units[?, ?]](that: Quantity[UnitsType2]): Boolean =
+    ${QuantifyMacros.greaterThan[UnitsType, UnitsType2]('quantity, 'that, true)}
+  
+  inline def <=[UnitsType2 <: Units[?, ?]](that: Quantity[UnitsType2]): Boolean =
+    ${QuantifyMacros.greaterThan[UnitsType2, UnitsType]('that, 'quantity, true)}
+  
+  inline def <[UnitsType2 <: Units[?, ?]](that: Quantity[UnitsType2]): Boolean =
+    ${QuantifyMacros.greaterThan[UnitsType2, UnitsType]('that, 'quantity, false)}
+
 extension (value: Double)
   @targetName("times")
   def *[UnitsType <: Units[?, ?]](quantity: Quantity[UnitsType]): Quantity[UnitsType] = quantity*value

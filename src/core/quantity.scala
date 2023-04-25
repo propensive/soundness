@@ -206,6 +206,22 @@ object QuantifyMacros:
       case Some('[units]) => '{Quantity[units & Units[?, ?]]($resultValue)}
       case None           => resultValue
 
+  def greaterThan
+      [LeftType <: Units[?, ?]: Type, RightType <: Units[?, ?]: Type]
+      (leftExpr: Expr[Quantity[LeftType]], rightExpr: Expr[Quantity[RightType]], closed: Boolean)
+      (using Quotes)
+      : Expr[Boolean] =
+    import quotes.reflect.*
+
+    val left: UnitsTypeRepr = UnitsTypeRepr[LeftType]
+    val right: UnitsTypeRepr = UnitsTypeRepr[RightType]
+
+    val (left2, leftValue) = normalize(left, right, '{$leftExpr.value})
+    val (right2, rightValue) = normalize(right, left, '{$rightExpr.value})
+
+    if left2.map != right2.map then fail("the operands have incompatible types")
+    if closed then '{$leftValue >= $rightValue} else '{$leftValue > $rightValue}
+
   def add
       [LeftType <: Units[?, ?]: Type, RightType <: Units[?, ?]: Type]
       (leftExpr: Expr[Quantity[LeftType]], rightExpr: Expr[Quantity[RightType]], sub: Boolean)

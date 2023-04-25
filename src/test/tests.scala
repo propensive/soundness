@@ -155,3 +155,31 @@ object Tests extends Suite(Text("Quantify Tests")):
       (3.0*Metre).in[Second]
     .assert(_ == 3.0*Metre)
     
+    test(Text("6ft < 2m")):
+      6*Foot < 2*Metre
+    .assert(_ == true)
+    
+    test(Text("6ft <= 2m")):
+      6*Foot < 2*Metre
+    .assert(_ == true)
+    
+    test(Text("7ft > 2m")):
+      7*Foot > 2*Metre
+    .assert(_ == true)
+    
+    test(Text("7ft >= 2m")):
+      7*Foot >= 2*Metre
+    .assert(_ == true)
+    
+    test(Text("Different dimensions are incomparable")):
+      captureCompileErrors:
+        7*Metre >= 2*Kilo(Gram)
+      .map(_.message)
+    .assert(_ == List("quantify: the operands have incompatible types"))
+    
+    test(Text("Different powers of the same dimension are incomparable")):
+      captureCompileErrors:
+        7*Metre >= 2*Metre*Metre
+      .map(_.message)
+    .assert(_ == List("quantify: the operands have incompatible types"))
+    
