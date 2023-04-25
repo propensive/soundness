@@ -20,45 +20,48 @@ import probably.*
 import rudiments.*
 import larceny.*
 
+import language.strictEquality
+
 object Tests extends Suite(Text("Quantify Tests")):
   def run(): Unit =
-    test(Text("Add two lengths")):
-      Metre + Metre*2
-    .assert(_ == Metre*3)
+    suite(Text("Arithmetic tests")):
+      test(Text("Add two lengths")):
+        Metre + Metre*2
+      .assert(_ == Metre*3)
+    
+      test(Text("Multiply two different units")):
+        2*Second * 3*Metre
+      .assert(_ == 6*Metre*Second)
     
     test(Text("Cannot add quantities of different units")):
       captureCompileErrors:
         Metre + 2*Second
       .map(_.errorId)
-    .assert(_ == List(ErrorId.NoExplanationID))
+    .assert(_.contains(ErrorId.NoExplanationID))
   
     test(Text("Cannot subtract quantities of different units")):
       captureCompileErrors:
         Metre - 2*Second
       .map(_.errorId)
-    .assert(_ == List(ErrorId.NoExplanationID))
-    
-    test(Text("Multiply two different units")):
-      2*Second * 3*Metre
-    .assert(_ == 6*Metre)
+    .assert(_.contains(ErrorId.NoExplanationID))
     
     test(Text("Add two different units")):
       captureCompileErrors:
         Second*2 + Metre*3
       .map(_.errorId)
-    .assert(_ == List(ErrorId.NoExplanationID))
+    .assert(_.contains(ErrorId.NoExplanationID))
 
     test(Text("Units cancel out")):
       captureCompileErrors:
         (20*Metre*Second)/(Metre*Second): Double
-    .assert(_ == Nil)
+    .assert(_.isEmpty)
   
     test(Text("Principal units are preferred")):
       captureCompileErrors:
         val x = 2*Metre
         val y = 3*Foot
         val z: Quantity[Metre[2]] = x*y
-    .assert(_ == Nil)
+    .assert(_.isEmpty)
     
     test(Text("Conversions are applied automatically to RHS in multiplication")):
       val x = 2*Metre
@@ -169,6 +172,18 @@ object Tests extends Suite(Text("Quantify Tests")):
     
     test(Text("7ft >= 2m")):
       7*Foot >= 2*Metre
+    .assert(_ == true)
+    
+    test(Text("9ft² < 1m²")):
+      9*Foot*Foot < Metre*Metre
+    .assert(_ == true)
+    
+    test(Text("10ft² < 1m²")):
+      10*Foot*Foot < Metre*Metre
+    .assert(_ == true)
+    
+    test(Text("11ft² > 1m²")):
+      11*Foot*Foot > Metre*Metre
     .assert(_ == true)
     
     test(Text("Different dimensions are incomparable")):

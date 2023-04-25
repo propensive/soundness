@@ -80,6 +80,10 @@ object QuantifyOpaques:
     def apply[UnitsType <: Units[?, ?]](value: Double): SiUnit[UnitsType] = value
 
   object Quantity:
+
+    erased given [UnitsType <: Units[?, ?]]: CanEqual[Quantity[UnitsType], Quantity[UnitsType]] =
+      compiletime.erasedValue
+
     def apply[UnitsType <: Units[?, ?]](value: Double): Quantity[UnitsType] = value
     
     given convertDouble[UnitsType <: Units[?, ?]]: Conversion[Double, Quantity[UnitsType]] =
@@ -155,15 +159,19 @@ extension [UnitsType <: Units[?, ?]](inline quantity: Quantity[UnitsType])
   inline def units: Map[Text, Int] = ${QuantifyMacros.collectUnits[UnitsType]}
   inline def render(using DecimalFormat): Text = t"${quantity.value}${Quantity.renderUnits(units)}"
 
+  @targetName("greaterThan")
   inline def >[UnitsType2 <: Units[?, ?]](that: Quantity[UnitsType2]): Boolean =
     ${QuantifyMacros.greaterThan[UnitsType, UnitsType2]('quantity, 'that, false)}
   
+  @targetName("greaterThanOrEqualTo")
   inline def >=[UnitsType2 <: Units[?, ?]](that: Quantity[UnitsType2]): Boolean =
     ${QuantifyMacros.greaterThan[UnitsType, UnitsType2]('quantity, 'that, true)}
   
+  @targetName("lessThanOrEqualTo")
   inline def <=[UnitsType2 <: Units[?, ?]](that: Quantity[UnitsType2]): Boolean =
     ${QuantifyMacros.greaterThan[UnitsType2, UnitsType]('that, 'quantity, true)}
   
+  @targetName("lessThan")
   inline def <[UnitsType2 <: Units[?, ?]](that: Quantity[UnitsType2]): Boolean =
     ${QuantifyMacros.greaterThan[UnitsType2, UnitsType]('that, 'quantity, false)}
 
@@ -172,5 +180,6 @@ extension (value: Double)
   def *[UnitsType <: Units[?, ?]](quantity: Quantity[UnitsType]): Quantity[UnitsType] = quantity*value
   
   @targetName("divide")
-  def /[UnitsType <: Units[?, ?]](quantity: Quantity[UnitsType]): Quantity[UnitsType] = quantity.invert*value
+  transparent inline def /[UnitsType <: Units[?, ?]](quantity: Quantity[UnitsType]): Any =
+    ((1.0/value)*quantity).invert
   
