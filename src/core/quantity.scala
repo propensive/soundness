@@ -23,13 +23,13 @@ import scala.quoted.*
 
 object QuantifyMacros:
 
-  type UnitsMap = Map[DimensionTypeRef, (UnitTypeRef, Int)]
-
-  object UnitsTypeRepr:
-    def apply[UnitsTypeType <: Units[?, ?]: Type](using Quotes): UnitsTypeRepr =
+  private case class UnitPower(ref: UnitRef, power: Int)
+  
+  private object UnitsMap:
+    def apply[UnitsTypeType <: Measure: Type](using Quotes): UnitsMap =
       import quotes.reflect.*
       
-      def recur(repr: TypeRepr): UnitsMap =
+      def recur(repr: TypeRepr): Map[DimensionRef, UnitPower] =
         repr match
           case AndType(left, right) =>
             recur(left) ++ recur(right)
@@ -38,8 +38,8 @@ object QuantifyMacros:
             unit.asType match
               case '[ Units[power, unitType] ] => TypeRepr.of[unitType] match
                 case ref@TypeRef(_, _) =>
-                  val unitTypeRef = UnitTypeRef(unit.asType, unit.show)
-                  Map(DimensionTypeRef(ref.asType, ref.show) -> (unitTypeRef, power))
+                  val unitTypeRef = UnitRef(unit.asType, unit.show)
+                  Map(DimensionRef(ref.asType, ref.show) -> UnitPower(unitTypeRef, power))
                 case _ =>
                   throw Mistake("Should never match")
               case _ =>
@@ -48,48 +48,53 @@ object QuantifyMacros:
           case other =>
             Map()
       
-      new UnitsTypeRepr(recur(quotes.reflect.TypeRepr.of[UnitsTypeType]))
+      new UnitsMap(recur(quotes.reflect.TypeRepr.of[UnitsTypeType]))
 
-  class UnitsTypeRepr(val map: UnitsMap):
+  private case class UnitsMap(map: Map[DimensionRef, UnitPower]):
     def repr(using Quotes): Option[quotes.reflect.TypeRepr] = construct(map.values.to(List))
-    def inverseMap: UnitsMap = map.mapValues { case (unit, power) => (unit, -power) }.to(Map)
-    def dimensionality: Map[DimensionTypeRef, Int] = map.mapValues(_(1)).to(Map)
-    def dimensions: List[DimensionTypeRef] = map.keys.to(List)
-    def empty: Boolean = map.values.forall(_(1) == 0)
+    
+    def inverseMap: Map[DimensionRef, UnitPower] =
+      map.mapValues { case UnitPower(unit, power) => UnitPower(unit, -power) }.to(Map)
 
-    def *(that: UnitsTypeRepr): UnitsTypeRepr = new UnitsTypeRepr(
+    def dimensionality: Map[DimensionRef, Int] = map.mapValues(_.power).to(Map)
+    def dimensions: List[DimensionRef] = map.keys.to(List)
+    def empty: Boolean = map.values.forall(_.power == 0)
+
+    def *(that: UnitsMap): UnitsMap = new UnitsMap(
       (dimensions ++ that.dimensions).to(Set).to(List).map: dim =>
-        dim -> (unit(dim).orElse(that.unit(dim)).get, (unitPower(dim) + that.unitPower(dim)))
-      .to(Map).filter(_(1)(1) != 0)
+        val dimUnit = unit(dim).orElse(that.unit(dim)).get
+        dim -> UnitPower(dimUnit, (unitPower(dim) + that.unitPower(dim)))
+      .to(Map).filter(_(1).power != 0)
     )
     
-    def /(that: UnitsTypeRepr): UnitsTypeRepr = new UnitsTypeRepr(
+    def /(that: UnitsMap): UnitsMap = new UnitsMap(
       (dimensions ++ that.dimensions).to(Set).to(List).map: dim =>
-        dim -> (unit(dim).orElse(that.unit(dim)).get, (unitPower(dim) - that.unitPower(dim)))
-      .to(Map).filter(_(1)(1) != 0)
+        val dimUnit = unit(dim).orElse(that.unit(dim)).get
+        dim -> UnitPower(dimUnit, (unitPower(dim) - that.unitPower(dim)))
+      .to(Map).filter(_(1).power != 0)
     )
 
-    def construct(using Quotes)(types: List[(UnitTypeRef, Int)]): Option[quotes.reflect.TypeRepr] =
+    def construct(using Quotes)(types: List[UnitPower]): Option[quotes.reflect.TypeRepr] =
       import quotes.reflect.*
 
-      types.filter(_(1) != 0) match
+      types.filter(_.power != 0) match
         case Nil =>
           None
         
-        case (ref, power) :: Nil =>
-          Some(AppliedType(ref.ref, List(ConstantType(IntConstant(power)))))
+        case UnitPower(unit, power) :: Nil =>
+          Some(AppliedType(unit.ref, List(ConstantType(IntConstant(power)))))
         
-        case (ref, power) :: more =>
-          Some(AndType(AppliedType(ref.ref, List(ConstantType(IntConstant(power)))),
+        case UnitPower(unit, power) :: more =>
+          Some(AndType(AppliedType(unit.ref, List(ConstantType(IntConstant(power)))),
               construct(more).get))
     
-    def sub(dimension: DimensionTypeRef, unit: UnitTypeRef, power: Int): UnitsTypeRepr =
-      new UnitsTypeRepr(map.updated(dimension, (unit, power)))
+    def sub(dimension: DimensionRef, unit: UnitRef, power: Int): UnitsMap =
+      new UnitsMap(map.updated(dimension, UnitPower(unit, power)))
     
-    def unit(dimension: DimensionTypeRef): Option[UnitTypeRef] = map.get(dimension).map(_(0))
-    def unitPower(dimension: DimensionTypeRef): Int = map.get(dimension).map(_(1)).getOrElse(0)
+    def unit(dimension: DimensionRef): Option[UnitRef] = map.get(dimension).map(_.ref)
+    def unitPower(dimension: DimensionRef): Int = map.get(dimension).map(_.power).getOrElse(0)
   
-  class UnitTypeRef(val typ: Type[?], val name: String):
+  private class UnitRef(val typ: Type[?], val name: String):
     def ref(using Quotes): quotes.reflect.TypeRepr =
       typ match { case '[ref] => quotes.reflect.TypeRepr.of[ref] }
 
@@ -98,41 +103,41 @@ object QuantifyMacros:
       AppliedType(ref, List(ConstantType(IntConstant(n))))
     
     override def equals(that: Any): Boolean = that match
-      case that: UnitTypeRef => name == that.name
+      case that: UnitRef => name == that.name
       case _                 => false
     
     override def hashCode: Int = name.hashCode
     override def toString(): String = name
 
-  class DimensionTypeRef(val typ: Type[?], val name: String):
+  private class DimensionRef(val typ: Type[?], val name: String):
     def ref(using Quotes): quotes.reflect.TypeRepr =
       typ match { case '[ref] => quotes.reflect.TypeRepr.of[ref] }
     
-    def principal(using Quotes): UnitTypeRef =
+    def principal(using Quotes): UnitRef =
       import quotes.reflect.*
       typ match
-        case '[dim] => Expr.summon[PrincipalUnit[dim & Dimension, ?, ?]] match
+        case '[dim] => Expr.summon[PrincipalUnit[dim & Dimension, ?]] match
           case None =>
             fail(s"there is no principal unit specified for the dimension $name")
           case Some('{ $expr: principalUnit }) => Type.of[principalUnit] match
-            case '[ PrincipalUnit[dim, units, power] ] => TypeRepr.of[units] match
+            case '[ PrincipalUnit[dim, units] ] => TypeRepr.of[units] match
               case AppliedType(ref@TypeRef(_, _), List(ConstantType(IntConstant(power)))) =>
-                UnitTypeRef(ref.asType, ref.show)
+                UnitRef(ref.asType, ref.show)
               case other =>
                 fail(s"principal units had unexpected type: $other")
         
     
     override def equals(that: Any): Boolean = that match
-      case that: DimensionTypeRef => name == that.name
+      case that: DimensionRef => name == that.name
       case _                      => false
     
     override def hashCode: Int = name.hashCode
     override def toString(): String = name
 
-  private def ratio(using Quotes)(from: UnitTypeRef, to: UnitTypeRef, power: Int, retry: Boolean = true): Expr[Double] =
+  private def ratio(using Quotes)(from: UnitRef, to: UnitRef, power: Int, retry: Boolean = true): Expr[Double] =
     if from == to then Expr(1.0) else (from.power(-1).asType, to.power(1).asType) match
       case ('[from], '[to]) =>
-        Expr.summon[Ratio[from & to & Units[?, ?]]] match
+        Expr.summon[Ratio[from & to & Measure]] match
           case None =>
             if retry then ratio(to, from, -power, false)
             else fail(s"can't convert from ${from.name} to ${to.name}")
@@ -142,11 +147,11 @@ object QuantifyMacros:
 
   private def normalize
       (using Quotes)
-      (units: UnitsTypeRepr, other: UnitsTypeRepr, init: Expr[Double], force: Boolean = false)
-      : (UnitsTypeRepr, Expr[Double]) =
+      (units: UnitsMap, other: UnitsMap, init: Expr[Double], force: Boolean = false)
+      : (UnitsMap, Expr[Double]) =
     def recur
-        (dimensions: List[DimensionTypeRef], target: UnitsTypeRepr, expr: Expr[Double])
-        : (UnitsTypeRepr, Expr[Double]) =
+        (dimensions: List[DimensionRef], target: UnitsMap, expr: Expr[Double])
+        : (UnitsMap, Expr[Double]) =
       dimensions match
         case Nil =>
           (target, expr)
@@ -167,16 +172,16 @@ object QuantifyMacros:
     
     recur(units.dimensions, units, init)
   
-  def collectUnits[UnitsType <: Units[?, ?]: Type](using Quotes): Expr[Map[Text, Int]] =
+  def collectUnits[UnitsType <: Measure: Type](using Quotes): Expr[Map[Text, Int]] =
     import quotes.reflect.*
     
-    def recur(expr: Expr[Map[Text, Int]], todo: List[(UnitTypeRef, Int)]): Expr[Map[Text, Int]] =
+    def recur(expr: Expr[Map[Text, Int]], todo: List[UnitPower]): Expr[Map[Text, Int]] =
       todo match
         case Nil =>
           expr
         
-        case (ref, power) :: todo2 =>
-          AppliedType(ref.ref, List(ConstantType(IntConstant(1)))).asType match
+        case UnitPower(unit, power) :: todo2 =>
+          AppliedType(unit.ref, List(ConstantType(IntConstant(1)))).asType match
             case '[ refType ] =>
               val unitName = Expr.summon[UnitName[refType]].get
               recur('{$expr.updated($unitName.name(), ${Expr(power)})}, todo2)
@@ -184,17 +189,17 @@ object QuantifyMacros:
             case _ =>
               throw Mistake("Should never match")
     
-    recur('{Map[Text, Int]()}, UnitsTypeRepr[UnitsType].map.values.to(List))
+    recur('{Map[Text, Int]()}, UnitsMap[UnitsType].map.values.to(List))
 
   def multiply
-      [LeftType <: Units[?, ?]: Type, RightType <: Units[?, ?]: Type]
+      [LeftType <: Measure: Type, RightType <: Measure: Type]
       (leftExpr: Expr[Quantity[LeftType]], rightExpr: Expr[Quantity[RightType]], division: Boolean)
       (using Quotes)
       : Expr[Any] =
     import quotes.reflect.*
 
-    val left: UnitsTypeRepr = UnitsTypeRepr[LeftType]
-    val right: UnitsTypeRepr = UnitsTypeRepr[RightType]
+    val left: UnitsMap = UnitsMap[LeftType]
+    val right: UnitsMap = UnitsMap[RightType]
     
     val (left2, leftValue) = normalize(left, right, '{$leftExpr.value})
     val (right2, rightValue) = normalize(right, left, '{$rightExpr.value})
@@ -203,54 +208,54 @@ object QuantifyMacros:
     val resultValue = if division then '{$leftValue/$rightValue} else '{$leftValue*$rightValue}
     
     resultUnits.repr.map(_.asType) match
-      case Some('[units]) => '{Quantity[units & Units[?, ?]]($resultValue)}
+      case Some('[units]) => '{Quantity[units & Measure]($resultValue)}
       case None           => resultValue
 
   def greaterThan
-      [LeftType <: Units[?, ?]: Type, RightType <: Units[?, ?]: Type]
+      [LeftType <: Measure: Type, RightType <: Measure: Type]
       (leftExpr: Expr[Quantity[LeftType]], rightExpr: Expr[Quantity[RightType]], closed: Boolean)
       (using Quotes)
       : Expr[Boolean] =
     import quotes.reflect.*
 
-    val left: UnitsTypeRepr = UnitsTypeRepr[LeftType]
-    val right: UnitsTypeRepr = UnitsTypeRepr[RightType]
+    val left: UnitsMap = UnitsMap[LeftType]
+    val right: UnitsMap = UnitsMap[RightType]
 
     val (left2, leftValue) = normalize(left, right, '{$leftExpr.value})
     val (right2, rightValue) = normalize(right, left, '{$rightExpr.value})
 
-    if left2.map != right2.map then fail("the operands have incompatible types")
+    if left2 != right2 then fail("the operands have incompatible types")
     if closed then '{$leftValue >= $rightValue} else '{$leftValue > $rightValue}
 
   def add
-      [LeftType <: Units[?, ?]: Type, RightType <: Units[?, ?]: Type]
+      [LeftType <: Measure: Type, RightType <: Measure: Type]
       (leftExpr: Expr[Quantity[LeftType]], rightExpr: Expr[Quantity[RightType]], sub: Boolean)
       (using Quotes)
       : Expr[Any] =
     import quotes.reflect.*
 
-    val left: UnitsTypeRepr = UnitsTypeRepr[LeftType]
-    val right: UnitsTypeRepr = UnitsTypeRepr[RightType]
+    val left: UnitsMap = UnitsMap[LeftType]
+    val right: UnitsMap = UnitsMap[RightType]
 
     val (left2, leftValue) = normalize(left, right, '{$leftExpr.value})
     val (right2, rightValue) = normalize(right, left, '{$rightExpr.value})
 
-    if left2.map != right2.map then fail("the operands have incompatible types")
+    if left2 != right2 then fail("the operands have incompatible types")
     val resultValue = if sub then '{$leftValue - $rightValue} else '{$leftValue + $rightValue}
     
     left2.repr.map(_.asType) match
-      case Some('[units]) => '{Quantity[units & Units[?, ?]]($resultValue)}
+      case Some('[units]) => '{Quantity[units & Measure]($resultValue)}
       case None           => resultValue
 
   def norm
-      [UnitsType <: Units[?, ?]: Type, NormType[power <: Int & Singleton] <: Units[power, ?]: Type]
+      [UnitsType <: Measure: Type, NormType[power <: Int & Singleton] <: Units[power, ?]: Type]
       (expr: Expr[Quantity[UnitsType]])(using Quotes)
       : Expr[Any] =
     import quotes.reflect.*
-    val units: UnitsTypeRepr = UnitsTypeRepr[UnitsType]
-    val norm: UnitsTypeRepr = UnitsTypeRepr[NormType[1]]
+    val units: UnitsMap = UnitsMap[UnitsType]
+    val norm: UnitsMap = UnitsMap[NormType[1]]
     val (units2, value) = normalize(units, norm, '{$expr.value}, true)
 
     units2.repr.map(_.asType) match
-      case Some('[units]) => '{Quantity[units & Units[?, ?]]($value)}
+      case Some('[units]) => '{Quantity[units & Measure]($value)}
       case None           => value

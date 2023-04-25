@@ -16,7 +16,7 @@
 
 package quantify
 
-case class Ratio[UnitsType <: Units[?, ?]](value: Quantity[UnitsType])
+case class Ratio[UnitsType <: Measure](value: Quantity[UnitsType])
 
 // Units of length
 
