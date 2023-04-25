@@ -30,13 +30,13 @@ object Tests extends Suite(Text("Quantify Tests")):
       captureCompileErrors:
         Metre + 2*Second
       .map(_.errorId)
-    .assert(_ == List(ErrorId.TypeMismatchID))
+    .assert(_ == List(ErrorId.NoExplanationID))
   
     test(Text("Cannot subtract quantities of different units")):
       captureCompileErrors:
         Metre - 2*Second
       .map(_.errorId)
-    .assert(_ == List(ErrorId.TypeMismatchID))
+    .assert(_ == List(ErrorId.NoExplanationID))
     
     test(Text("Multiply two different units")):
       2*Second * 3*Metre
@@ -46,7 +46,7 @@ object Tests extends Suite(Text("Quantify Tests")):
       captureCompileErrors:
         Second*2 + Metre*3
       .map(_.errorId)
-    .assert(_ == List(ErrorId.TypeMismatchID))
+    .assert(_ == List(ErrorId.NoExplanationID))
 
     test(Text("Units cancel out")):
       captureCompileErrors:
@@ -117,13 +117,23 @@ object Tests extends Suite(Text("Quantify Tests")):
       2.5*Nano(Metre)
     .assert(_ == 0.0000000025*Metre)
 
-    // test(Text("Mixed units of the same type can be added")):
-    //   2*Metre + 2*Foot
-    // .assert(_ == 2*Metre)
+    test(Text("Mixed units of the same type can be added")):
+      2*Metre + 2*Foot
+    .assert(_ == 2.6095999804928005*Metre)
     
-    // test(Text("Mixed units of the same type can be added (reverse order)")):
-    //   2*Foot + 2*Metre
-    // .assert(_ == 2*Metre)
+    test(Text("Mixed units of the same type can be subtracted")):
+      2*Metre - 2*Foot
+    .assert(_ == 1.3904000195071995*Metre)
+    
+    test(Text("Mixed units of the same type can be added (reverse order)")):
+      2*Foot + 2*Metre
+    .assert(_ == 2.6095999804928005*Metre)
+    
+    test(Text("Units of different dimension cannot be added")):
+      captureCompileErrors:
+        2*Metre + 2*Joule
+      .map(_.message)
+    .assert(_ == List("quantify: the operands have incompatible types"))
 
     test(Text("Invert a quantity")):
       (2*Metre/Second).invert

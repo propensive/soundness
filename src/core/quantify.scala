@@ -57,7 +57,7 @@ object UnitName:
   given UnitName[Second[1]] = () => t"s"
 
 trait PrincipalUnit
-    [DimensionType <: Dimension, UnitType <: Units[1, DimensionType], PowerType <: Int & Singleton]
+    [DimensionType <: Dimension, UnitType/* <: Units[1, DimensionType]*/, PowerType <: Int & Singleton]
     ()
 
 object PrincipalUnit:
@@ -88,6 +88,10 @@ object QuantifyOpaques:
     given convertInt[UnitsType <: Units[?, ?]]: Conversion[Int, Quantity[UnitsType]] = int =>
       Quantity(int.toDouble)
 
+    inline given [UnitsType <: Units[?, ?]](using DecimalFormat): Debug[Quantity[UnitsType]] =
+      new Debug[Quantity[UnitsType]]:
+        def show(value: Quantity[UnitsType]): Text = value.render
+    
     inline given [UnitsType <: Units[?, ?]](using DecimalFormat): Show[Quantity[UnitsType]] =
       new Show[Quantity[UnitsType]]:
         def show(value: Quantity[UnitsType]): Text = value.render
@@ -126,10 +130,12 @@ val Second = SiUnit[Second[1]](1)
 
 extension [UnitsType <: Units[?, ?]](inline quantity: Quantity[UnitsType])
   @targetName("plus")
-  inline def +(quantity2: Quantity[UnitsType]): Quantity[UnitsType] = Quantity(quantity.value + quantity2.value)
+  transparent inline def +[UnitsType2 <: Units[?, ?]](quantity2: Quantity[UnitsType2]): Any =
+    ${QuantifyMacros.add[UnitsType, UnitsType2]('quantity, 'quantity2, false)}
   
   @targetName("minus")
-  inline def -(quantity2: Quantity[UnitsType]): Quantity[UnitsType] = Quantity(quantity.value - quantity2.value)
+  transparent inline def -[UnitsType2 <: Units[?, ?]](quantity2: Quantity[UnitsType2]): Any =
+    ${QuantifyMacros.add[UnitsType, UnitsType2]('quantity, 'quantity2, true)}
 
   transparent inline def invert: Any = Quantity[Units[?, ?]](1.0)/quantity
   
