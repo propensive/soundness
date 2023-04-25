@@ -143,4 +143,11 @@ object Tests extends Suite(Text("Quantify Tests")):
       1.0/(2.0*Metre/Second)
     .assert(_ == 0.5*Second/Metre)
       
+    test(Text("Convert feet to metres")):
+      (3.0*Foot).in[Metre]
+    .assert(_ == 0.914399970739201*Metre)
+    
+    test(Text("Convert metres to feet")):
+      (3.0*Metre).in[Feet]
+    .assert(_ == 9.84252*Foot)
     

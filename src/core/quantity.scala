@@ -129,26 +129,7 @@ object QuantifyMacros:
     override def hashCode: Int = name.hashCode
     override def toString(): String = name
 
-  def collectUnits[UnitsType <: Units[?, ?]: Type](using Quotes): Expr[Map[Text, Int]] =
-    import quotes.reflect.*
-    
-    def mkMap(expr: Expr[Map[Text, Int]], todo: List[(UnitTypeRef, Int)]): Expr[Map[Text, Int]] =
-      todo match
-        case Nil =>
-          expr
-        
-        case (ref, power) :: todo2 =>
-          AppliedType(ref.ref, List(ConstantType(IntConstant(1)))).asType match
-            case '[ refType ] =>
-              val unitName = Expr.summon[UnitName[refType]].get
-              mkMap('{$expr.updated($unitName.name(), ${Expr(power)})}, todo2)
-          
-            case _ =>
-              throw Mistake("Should never match")
-    
-    mkMap('{Map[Text, Int]()}, UnitsTypeRepr[UnitsType].map.values.to(List))
-
-  def ratio(using Quotes)(from: UnitTypeRef, to: UnitTypeRef, power: Int, retry: Boolean = true): Expr[Double] =
+  private def ratio(using Quotes)(from: UnitTypeRef, to: UnitTypeRef, power: Int, retry: Boolean = true): Expr[Double] =
     if from == to then Expr(1.0) else (from.power(-1).asType, to.power(1).asType) match
       case ('[from], '[to]) =>
         Expr.summon[Ratio[from & to & Units[?, ?]]] match
@@ -159,8 +140,9 @@ object QuantifyMacros:
             if power == 1 then '{$ratio.value.value}
             else '{math.pow($ratio.value.value, ${Expr(power)})}
 
-  def normalize
-      (using Quotes)(units: UnitsTypeRepr, other: UnitsTypeRepr, init: Expr[Double])
+  private def normalize
+      (using Quotes)
+      (units: UnitsTypeRepr, other: UnitsTypeRepr, init: Expr[Double], force: Boolean = false)
       : (UnitsTypeRepr, Expr[Double]) =
     def recur
         (dimensions: List[DimensionTypeRef], target: UnitsTypeRepr, expr: Expr[Double])
@@ -175,12 +157,35 @@ object QuantifyMacros:
           else
             val unit = target.unit(dimension).get
             val power = target.unitPower(dimension)
-            val unit2 = dimension.principal
+            
+            val unit2 =
+              if force then other.unit(dimension).orElse(target.unit(dimension)).get
+              else dimension.principal
+            
             val value = '{$expr*${ratio(unit, unit2, power)}}
             recur(dimensions, target.sub(dimension, unit2, power), value)
     
     recur(units.dimensions, units, init)
   
+  def collectUnits[UnitsType <: Units[?, ?]: Type](using Quotes): Expr[Map[Text, Int]] =
+    import quotes.reflect.*
+    
+    def recur(expr: Expr[Map[Text, Int]], todo: List[(UnitTypeRef, Int)]): Expr[Map[Text, Int]] =
+      todo match
+        case Nil =>
+          expr
+        
+        case (ref, power) :: todo2 =>
+          AppliedType(ref.ref, List(ConstantType(IntConstant(1)))).asType match
+            case '[ refType ] =>
+              val unitName = Expr.summon[UnitName[refType]].get
+              recur('{$expr.updated($unitName.name(), ${Expr(power)})}, todo2)
+          
+            case _ =>
+              throw Mistake("Should never match")
+    
+    recur('{Map[Text, Int]()}, UnitsTypeRepr[UnitsType].map.values.to(List))
+
   def multiply
       [LeftType <: Units[?, ?]: Type, RightType <: Units[?, ?]: Type]
       (leftExpr: Expr[Quantity[LeftType]], rightExpr: Expr[Quantity[RightType]], division: Boolean)
@@ -220,4 +225,16 @@ object QuantifyMacros:
     left2.repr.map(_.asType) match
       case Some('[units]) => '{Quantity[units & Units[?, ?]]($resultValue)}
       case None           => resultValue
-  
+
+  def norm
+      [UnitsType <: Units[?, ?]: Type, NormType[power <: Int & Singleton] <: Units[power, ?]: Type]
+      (expr: Expr[Quantity[UnitsType]])(using Quotes)
+      : Expr[Any] =
+    import quotes.reflect.*
+    val units: UnitsTypeRepr = UnitsTypeRepr[UnitsType]
+    val norm: UnitsTypeRepr = UnitsTypeRepr[NormType[1]]
+    val (units2, value) = normalize(units, norm, '{$expr.value}, true)
+
+    units2.repr.map(_.asType) match
+      case Some('[units]) => '{Quantity[units & Units[?, ?]]($value)}
+      case None           => value

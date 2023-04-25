@@ -138,6 +138,9 @@ extension [UnitsType <: Units[?, ?]](inline quantity: Quantity[UnitsType])
     ${QuantifyMacros.add[UnitsType, UnitsType2]('quantity, 'quantity2, true)}
 
   transparent inline def invert: Any = Quantity[Units[?, ?]](1.0)/quantity
+
+  transparent inline def in[UnitsType2[power <: Singleton & Int] <: Units[power, ?]]: Any =
+    ${QuantifyMacros.norm[UnitsType, UnitsType2]('quantity)}
   
   @targetName("times2")
   transparent inline def *
