@@ -24,6 +24,9 @@ import java.util.concurrent.atomic as juca
 
 import language.experimental.captureChecking
 
+type Nat = Int & Singleton
+type Label = String & Singleton
+
 extension [ValueType](value: ValueType)
   def only[ValueType2](fn: PartialFunction[ValueType, ValueType2]): Option[ValueType2] = Some(value).collect(fn)
   def unit: Unit = ()
