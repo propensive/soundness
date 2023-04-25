@@ -31,13 +31,13 @@ import javax.crypto.Mac, javax.crypto.spec.SecretKeySpec
 import ju.Base64.{getEncoder as Base64Encoder, getDecoder as Base64Decoder}
 import java.lang as jl
 
-sealed trait HashScheme[Size <: Int & Singleton]
+sealed trait HashScheme[Size <: Nat]
 
 sealed trait Md5 extends HashScheme[16]
 
 sealed trait Crc32 extends HashScheme[32]
 
-type ByteCount[Bits] <: Int & Singleton = Bits match
+type ByteCount[Bits] <: Nat = Bits match
   case 224 => 28
   case 256 => 32
   case 384 => 48

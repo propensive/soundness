@@ -26,7 +26,7 @@ import gossamer.*
 
 import java.nio.*, charset.*
 
-trait CryptoAlgorithm[+KeySize <: Int & Singleton]:
+trait CryptoAlgorithm[+KeySize <: Nat]:
   def keySize: KeySize
   def privateToPublic(key: Bytes): Bytes
   def genKey(): Bytes
