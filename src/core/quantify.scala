@@ -34,7 +34,8 @@ erased trait Luminosity extends Dimension
 erased trait Temperature extends Dimension
 erased trait AmountOfSubstance extends Dimension
 
-trait Units[PowerType <: Int & Singleton, DimensionType <: Dimension]
+sealed trait Measure
+trait Units[PowerType <: Int & Singleton, DimensionType <: Dimension] extends Measure
 
 erased trait Metre[Power <: Int & Singleton] extends Units[Power, Length]
 erased trait Gram[Power <: Int & Singleton] extends Units[Power, Mass]
@@ -56,47 +57,44 @@ object UnitName:
   given UnitName[Kelvin[1]] = () => t"K"
   given UnitName[Second[1]] = () => t"s"
 
-trait PrincipalUnit
-    [DimensionType <: Dimension, UnitType/* <: Units[1, DimensionType]*/, PowerType <: Int & Singleton]
-    ()
+trait PrincipalUnit[DimensionType <: Dimension, UnitType <: Measure]()
 
 object PrincipalUnit:
-  given PrincipalUnit[Length, Metre[1], 0]()
-  given PrincipalUnit[Mass, Gram[1], 3]()
-  given PrincipalUnit[TimeLength, Second[1], 0]()
-  given PrincipalUnit[Current, Ampere[1], 0]()
-  given PrincipalUnit[Luminosity, Candela[1], 0]()
-  given PrincipalUnit[Temperature, Kelvin[1], 0]()
-  given PrincipalUnit[AmountOfSubstance, Mole[1], 0]()
+  given PrincipalUnit[Length, Metre[1]]()
+  given PrincipalUnit[Mass, Gram[1]]()
+  given PrincipalUnit[TimeLength, Second[1]]()
+  given PrincipalUnit[Current, Ampere[1]]()
+  given PrincipalUnit[Luminosity, Candela[1]]()
+  given PrincipalUnit[Temperature, Kelvin[1]]()
+  given PrincipalUnit[AmountOfSubstance, Mole[1]]()
 
 object QuantifyOpaques:
-  opaque type Quantity[UnitsType <: Units[?, ?]] = Double
-  opaque type SiUnit[UnitsType <: Units[?, ?]] <: Quantity[UnitsType] = Double
+  opaque type Quantity[UnitsType <: Measure] = Double
+  opaque type SiUnit[UnitsType <: Measure] <: Quantity[UnitsType] = Double
 
-  extension [UnitsType <: Units[?, ?]](quantity: Quantity[UnitsType])
+  extension [UnitsType <: Measure](quantity: Quantity[UnitsType])
     def value: Double = quantity
 
   object SiUnit:
-    def apply[UnitsType <: Units[?, ?]](value: Double): SiUnit[UnitsType] = value
+    def apply[UnitsType <: Measure](value: Double): SiUnit[UnitsType] = value
 
   object Quantity:
-
-    erased given [UnitsType <: Units[?, ?]]: CanEqual[Quantity[UnitsType], Quantity[UnitsType]] =
+    erased given [UnitsType <: Measure]: CanEqual[Quantity[UnitsType], Quantity[UnitsType]] =
       compiletime.erasedValue
 
-    def apply[UnitsType <: Units[?, ?]](value: Double): Quantity[UnitsType] = value
+    def apply[UnitsType <: Measure](value: Double): Quantity[UnitsType] = value
     
-    given convertDouble[UnitsType <: Units[?, ?]]: Conversion[Double, Quantity[UnitsType]] =
+    given convertDouble[UnitsType <: Measure]: Conversion[Double, Quantity[UnitsType]] =
       Quantity(_)
     
-    given convertInt[UnitsType <: Units[?, ?]]: Conversion[Int, Quantity[UnitsType]] = int =>
+    given convertInt[UnitsType <: Measure]: Conversion[Int, Quantity[UnitsType]] = int =>
       Quantity(int.toDouble)
 
-    inline given [UnitsType <: Units[?, ?]](using DecimalFormat): Debug[Quantity[UnitsType]] =
+    inline given [UnitsType <: Measure](using DecimalFormat): Debug[Quantity[UnitsType]] =
       new Debug[Quantity[UnitsType]]:
         def show(value: Quantity[UnitsType]): Text = value.render
     
-    inline given [UnitsType <: Units[?, ?]](using DecimalFormat): Show[Quantity[UnitsType]] =
+    inline given [UnitsType <: Measure](using DecimalFormat): Show[Quantity[UnitsType]] =
       new Show[Quantity[UnitsType]]:
         def show(value: Quantity[UnitsType]): Text = value.render
   
@@ -116,7 +114,7 @@ object QuantifyOpaques:
               case '7' => '⁷'
               case '8' => '⁸'
               case '9' => '⁹'
-              case '-' => '⁻'
+              case '-' => '¯'
               case _   => ' '
           
           t"$unit$exponent"
@@ -132,54 +130,54 @@ val Ampere = SiUnit[Ampere[1]](1)
 val Kelvin = SiUnit[Kelvin[1]](1)
 val Second = SiUnit[Second[1]](1)
 
-extension [UnitsType <: Units[?, ?]](inline quantity: Quantity[UnitsType])
+extension [UnitsType <: Measure](inline quantity: Quantity[UnitsType])
   @targetName("plus")
-  transparent inline def +[UnitsType2 <: Units[?, ?]](quantity2: Quantity[UnitsType2]): Any =
+  transparent inline def +[UnitsType2 <: Measure](quantity2: Quantity[UnitsType2]): Any =
     ${QuantifyMacros.add[UnitsType, UnitsType2]('quantity, 'quantity2, false)}
   
   @targetName("minus")
-  transparent inline def -[UnitsType2 <: Units[?, ?]](quantity2: Quantity[UnitsType2]): Any =
+  transparent inline def -[UnitsType2 <: Measure](quantity2: Quantity[UnitsType2]): Any =
     ${QuantifyMacros.add[UnitsType, UnitsType2]('quantity, 'quantity2, true)}
 
-  transparent inline def invert: Any = Quantity[Units[?, ?]](1.0)/quantity
+  transparent inline def invert: Any = Quantity[Measure](1.0)/quantity
 
   transparent inline def in[UnitsType2[power <: Singleton & Int] <: Units[power, ?]]: Any =
     ${QuantifyMacros.norm[UnitsType, UnitsType2]('quantity)}
   
   @targetName("times2")
   transparent inline def *
-      [UnitsType2 <: Units[?, ?]](@allowConversions inline quantity2: Quantity[UnitsType2]): Any =
+      [UnitsType2 <: Measure](@allowConversions inline quantity2: Quantity[UnitsType2]): Any =
     ${QuantifyMacros.multiply[UnitsType, UnitsType2]('quantity, 'quantity2, false)}
   
   @targetName("divide2")
   transparent inline def /
-      [UnitsType2 <: Units[?, ?]](@allowConversions inline quantity2: Quantity[UnitsType2]): Any =
+      [UnitsType2 <: Measure](@allowConversions inline quantity2: Quantity[UnitsType2]): Any =
     ${QuantifyMacros.multiply[UnitsType, UnitsType2]('quantity, 'quantity2, true)}
 
   inline def units: Map[Text, Int] = ${QuantifyMacros.collectUnits[UnitsType]}
   inline def render(using DecimalFormat): Text = t"${quantity.value}${Quantity.renderUnits(units)}"
 
   @targetName("greaterThan")
-  inline def >[UnitsType2 <: Units[?, ?]](that: Quantity[UnitsType2]): Boolean =
+  inline def >[UnitsType2 <: Measure](that: Quantity[UnitsType2]): Boolean =
     ${QuantifyMacros.greaterThan[UnitsType, UnitsType2]('quantity, 'that, false)}
   
   @targetName("greaterThanOrEqualTo")
-  inline def >=[UnitsType2 <: Units[?, ?]](that: Quantity[UnitsType2]): Boolean =
+  inline def >=[UnitsType2 <: Measure](that: Quantity[UnitsType2]): Boolean =
     ${QuantifyMacros.greaterThan[UnitsType, UnitsType2]('quantity, 'that, true)}
   
   @targetName("lessThanOrEqualTo")
-  inline def <=[UnitsType2 <: Units[?, ?]](that: Quantity[UnitsType2]): Boolean =
+  inline def <=[UnitsType2 <: Measure](that: Quantity[UnitsType2]): Boolean =
     ${QuantifyMacros.greaterThan[UnitsType2, UnitsType]('that, 'quantity, true)}
   
   @targetName("lessThan")
-  inline def <[UnitsType2 <: Units[?, ?]](that: Quantity[UnitsType2]): Boolean =
+  inline def <[UnitsType2 <: Measure](that: Quantity[UnitsType2]): Boolean =
     ${QuantifyMacros.greaterThan[UnitsType2, UnitsType]('that, 'quantity, false)}
 
 extension (value: Double)
   @targetName("times")
-  def *[UnitsType <: Units[?, ?]](quantity: Quantity[UnitsType]): Quantity[UnitsType] = quantity*value
+  def *[UnitsType <: Measure](quantity: Quantity[UnitsType]): Quantity[UnitsType] = quantity*value
   
   @targetName("divide")
-  transparent inline def /[UnitsType <: Units[?, ?]](quantity: Quantity[UnitsType]): Any =
+  transparent inline def /[UnitsType <: Measure](quantity: Quantity[UnitsType]): Any =
     ((1.0/value)*quantity).invert
   
