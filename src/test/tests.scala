@@ -84,8 +84,7 @@ object Tests extends Suite(Text("Quantify Tests")):
     test(Text("Conversions are applied automatically to LHS in division")):
       val x = 2*Metre
       val y = 3*Foot*Foot
-      val z: Quantity[Metre[1]] = y/x
-      z
+      y/x
     .assert(_ == 0.1393545510813086*Metre)
   
     test(Text("SI kilo prefix multiplies by 10^3")):
@@ -153,6 +152,10 @@ object Tests extends Suite(Text("Quantify Tests")):
     test(Text("Convert metres to feet")):
       (3.0*Metre).in[Feet]
     .assert(_ == 9.84252*Foot)
+    
+    test(Text("Convert m² to ft²")):
+      (Metre*Metre).in[Feet]
+    .assert(_ == 10.7639111056*Foot*Foot)
     
     test(Text("Conversion to seconds does nothing")):
       (3.0*Metre).in[Second]
