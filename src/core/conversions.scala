@@ -108,3 +108,23 @@ val Pound = Quantity[Pounds[1]](1.0)
 val Stone = Quantity[Stones[1]](1.0)
 val Hundredweight = Quantity[Hundredweights[1]](1.0)
 val Ton = Quantity[Tons[1]](1.0)
+
+val Day = Quantity[Days[1]](1.0)
+val Hour = Quantity[Hours[1]](1.0)
+val Minute = Quantity[Minutes[1]](1.0)
+
+trait SiderealDays[Power <: Nat] extends Units[Power, TimeLength]
+object SiderealDays:
+  given secondsPerSiderealDay: Ratio[Seconds[1] & SiderealDays[-1]] = Ratio(Quantity(86164.0905))
+
+trait Days[Power <: Nat] extends Units[Power, TimeLength]
+object Days:
+  given secondsPerDay: Ratio[Seconds[1] & Days[-1]] = Ratio(Quantity(60*60*24))
+
+trait Hours[Power <: Nat] extends Units[Power, TimeLength]
+object Hours:
+  given secondsPerHour: Ratio[Seconds[1] & Hours[-1]] = Ratio(Quantity(60*60))
+
+trait Minutes[Power <: Nat] extends Units[Power, TimeLength]
+object Minutes:
+  given secondsPerMinute: Ratio[Seconds[1] & Minutes[-1]] = Ratio(Quantity(60))

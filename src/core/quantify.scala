@@ -128,13 +128,13 @@ object QuantifyOpaques:
 
 export QuantifyOpaques.{Quantity, SiUnit}
 
-val Metre = SiUnit[Metres[1]](1)
-val Gram = SiUnit[Grams[1]](1)
-val Candela = SiUnit[Candelas[1]](1)
-val Mole = SiUnit[Moles[1]](1)
-val Ampere = SiUnit[Amperes[1]](1)
-val Kelvin = SiUnit[Kelvins[1]](1)
-val Second = SiUnit[Seconds[1]](1)
+val Metre: SiUnit[Metres[1]] = SiUnit[Metres[1]](1)
+val Gram: SiUnit[Grams[1]] = SiUnit[Grams[1]](1)
+val Candela: SiUnit[Candelas[1]] = SiUnit[Candelas[1]](1)
+val Mole: SiUnit[Moles[1]] = SiUnit[Moles[1]](1)
+val Ampere: SiUnit[Amperes[1]] = SiUnit[Amperes[1]](1)
+val Kelvin: SiUnit[Kelvins[1]] = SiUnit[Kelvins[1]](1)
+val Second: SiUnit[Seconds[1]] = SiUnit[Seconds[1]](1)
 
 extension [UnitsType <: Measure](inline quantity: Quantity[UnitsType])
   @targetName("plus")
