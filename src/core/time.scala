@@ -157,13 +157,13 @@ abstract class RomanCalendar() extends Calendar:
     if day < 1 || day > daysInMonth(month, year) then throw InvalidDateError(t"$year-${month.numerical}-$day")
     zerothDayOfYear(year) + month.offset(leapYear(year)) + day
 
-class YearMonth[Y <: Int & Singleton, M <: MonthName & Singleton](year: Y, month: M):
+class YearMonth[Y <: Nat, M <: MonthName & Singleton](year: Y, month: M):
   import compiletime.ops.int.*
   
   type CommonDays = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19 | 20 |
       21 | 22 | 23 | 24 | 25 | 26 | 27 | 28
 
-  type Days <: Int & Singleton = M match
+  type Days <: Nat = M match
     case Jan.type | Mar.type | May.type | Jul.type | Aug.type | Oct.type | Dec.type =>
       CommonDays | 29 | 30 | 31
     
@@ -182,7 +182,7 @@ class YearMonth[Y <: Int & Singleton, M <: MonthName & Singleton](year: Y, month
   inline def -(day: Days): Date = unsafely(calendars.gregorian.julianDay(year, month, day))
 
 
-extension (year: Int & Singleton)
+extension (year: Nat)
   @targetName("of")
   inline def -(month: MonthName & Singleton): YearMonth[year.type, month.type] = new YearMonth(year, month)
 
