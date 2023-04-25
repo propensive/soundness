@@ -151,3 +151,7 @@ object Tests extends Suite(Text("Quantify Tests")):
       (3.0*Metre).in[Feet]
     .assert(_ == 9.84252*Foot)
     
+    test(Text("Conversion to seconds does nothing")):
+      (3.0*Metre).in[Second]
+    .assert(_ == 3.0*Metre)
+    
