@@ -35,38 +35,44 @@ erased trait Temperature extends Dimension
 erased trait AmountOfSubstance extends Dimension
 
 sealed trait Measure
-trait Units[PowerType <: Int & Singleton, DimensionType <: Dimension] extends Measure
+trait Units[PowerType <: Nat, DimensionType <: Dimension] extends Measure
 
-erased trait Metre[Power <: Int & Singleton] extends Units[Power, Length]
-erased trait Gram[Power <: Int & Singleton] extends Units[Power, Mass]
-erased trait Candela[Power <: Int & Singleton] extends Units[Power, Luminosity]
-erased trait Mole[Power <: Int & Singleton] extends Units[Power, AmountOfSubstance]
-erased trait Ampere[Power <: Int & Singleton] extends Units[Power, Current]
-erased trait Kelvin[Power <: Int & Singleton] extends Units[Power, Temperature]
-erased trait Second[Power <: Int & Singleton] extends Units[Power, TimeLength]
+erased trait Metres[Power <: Nat] extends Units[Power, Length]
+erased trait Grams[Power <: Nat] extends Units[Power, Mass]
+erased trait Candelas[Power <: Nat] extends Units[Power, Luminosity]
+erased trait Moles[Power <: Nat] extends Units[Power, AmountOfSubstance]
+erased trait Amperes[Power <: Nat] extends Units[Power, Current]
+erased trait Kelvins[Power <: Nat] extends Units[Power, Temperature]
+erased trait Seconds[Power <: Nat] extends Units[Power, TimeLength]
 
 trait UnitName[-ValueType]:
   def name(): Text
 
 object UnitName:
-  given UnitName[Metre[1]] = () => t"m"
-  given UnitName[Gram[1]] = () => t"g"
-  given UnitName[Candela[1]] = () => t"cd"
-  given UnitName[Mole[1]] = () => t"mol"
-  given UnitName[Ampere[1]] = () => t"A"
-  given UnitName[Kelvin[1]] = () => t"K"
-  given UnitName[Second[1]] = () => t"s"
+  given UnitName[Metres[1]] = () => t"m"
+  given UnitName[Grams[1]] = () => t"g"
+  given UnitName[Candelas[1]] = () => t"cd"
+  given UnitName[Moles[1]] = () => t"mol"
+  given UnitName[Amperes[1]] = () => t"A"
+  given UnitName[Kelvins[1]] = () => t"K"
+  given UnitName[Seconds[1]] = () => t"s"
+
+trait PrincipalBase[UnitType <: Measure, Power <: Nat]()
+
+object PrincipalBase:
+  given [UnitType <: Measure]: PrincipalBase[UnitType, 0]()
+  given PrincipalBase[Grams[1], 3]()
 
 trait PrincipalUnit[DimensionType <: Dimension, UnitType <: Measure]()
 
 object PrincipalUnit:
-  given PrincipalUnit[Length, Metre[1]]()
-  given PrincipalUnit[Mass, Gram[1]]()
-  given PrincipalUnit[TimeLength, Second[1]]()
-  given PrincipalUnit[Current, Ampere[1]]()
-  given PrincipalUnit[Luminosity, Candela[1]]()
-  given PrincipalUnit[Temperature, Kelvin[1]]()
-  given PrincipalUnit[AmountOfSubstance, Mole[1]]()
+  given PrincipalUnit[Length, Metres[1]]()
+  given PrincipalUnit[Mass, Grams[1]]()
+  given PrincipalUnit[TimeLength, Seconds[1]]()
+  given PrincipalUnit[Current, Amperes[1]]()
+  given PrincipalUnit[Luminosity, Candelas[1]]()
+  given PrincipalUnit[Temperature, Kelvins[1]]()
+  given PrincipalUnit[AmountOfSubstance, Moles[1]]()
 
 object QuantifyOpaques:
   opaque type Quantity[UnitsType <: Measure] = Double
@@ -122,13 +128,13 @@ object QuantifyOpaques:
 
 export QuantifyOpaques.{Quantity, SiUnit}
 
-val Metre = SiUnit[Metre[1]](1)
-val Gram = SiUnit[Gram[1]](1)
-val Candela = SiUnit[Candela[1]](1)
-val Mole = SiUnit[Mole[1]](1)
-val Ampere = SiUnit[Ampere[1]](1)
-val Kelvin = SiUnit[Kelvin[1]](1)
-val Second = SiUnit[Second[1]](1)
+val Metre = SiUnit[Metres[1]](1)
+val Gram = SiUnit[Grams[1]](1)
+val Candela = SiUnit[Candelas[1]](1)
+val Mole = SiUnit[Moles[1]](1)
+val Ampere = SiUnit[Amperes[1]](1)
+val Kelvin = SiUnit[Kelvins[1]](1)
+val Second = SiUnit[Seconds[1]](1)
 
 extension [UnitsType <: Measure](inline quantity: Quantity[UnitsType])
   @targetName("plus")
@@ -141,7 +147,7 @@ extension [UnitsType <: Measure](inline quantity: Quantity[UnitsType])
 
   transparent inline def invert: Any = Quantity[Measure](1.0)/quantity
 
-  transparent inline def in[UnitsType2[power <: Singleton & Int] <: Units[power, ?]]: Any =
+  transparent inline def in[UnitsType2[power <: Nat] <: Units[power, ?]]: Any =
     ${QuantifyMacros.norm[UnitsType, UnitsType2]('quantity)}
   
   @targetName("times2")

@@ -17,7 +17,7 @@
 package quantify
 
 class SiPrefix(name: String, symbol: String, exponent: Int, base: 2 | 10):
-  def apply[UnitsType <: Units[?, ?]](unit: SiUnit[UnitsType]): Quantity[UnitsType] =
+  def apply[UnitsType <: Measure](unit: SiUnit[UnitsType]): Quantity[UnitsType] =
     unit*math.pow(base, exponent)
 
 object Deka extends SiPrefix("deka", "da", 1, 10)

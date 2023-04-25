@@ -248,7 +248,7 @@ object QuantifyMacros:
       case None           => resultValue
 
   def norm
-      [UnitsType <: Measure: Type, NormType[power <: Int & Singleton] <: Units[power, ?]: Type]
+      [UnitsType <: Measure: Type, NormType[power <: Nat] <: Units[power, ?]: Type]
       (expr: Expr[Quantity[UnitsType]])(using Quotes)
       : Expr[Any] =
     import quotes.reflect.*

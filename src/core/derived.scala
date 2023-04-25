@@ -16,7 +16,7 @@
 
 package quantify
 
-val Hertz = Quantity[Second[-1]](1.0)
+val Hertz = 1.0/Second
 val Newton = Metre*Kilo(Gram)/(Second*Second)
 val Pascal = Newton/(Metre*Metre)
 val Joule = Newton*Metre
@@ -30,7 +30,7 @@ val Weber = Volt*Second
 val Tesla = Weber/(Metre*Metre)
 val Henry = Weber/Ampere
 val Lux = Candela/(Metre*Metre)
-val Becquerel = Quantity[Second[-1]](1.0)
+val Becquerel = 1.0/Second
 val Gray = Joule/Kilo(Gram)
 val Sievert = Joule/Kilo(Gram)
 val Katal = Mole/Second

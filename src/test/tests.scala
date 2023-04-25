@@ -70,7 +70,7 @@ object Tests extends Suite(Text("Quantify Tests")):
         captureCompileErrors:
           val x = 2*Metre
           val y = 3*Foot
-          val z: Quantity[Metre[2]] = x*y
+          val z: Quantity[Metres[2]] = x*y
       .assert(_.isEmpty)
     
       test(Text("Units of different dimension cannot be added")):
@@ -164,7 +164,7 @@ object Tests extends Suite(Text("Quantify Tests")):
 
     suite(t"Explicit conversion tests"):
       test(Text("Convert feet to metres")):
-        (3.0*Foot).in[Metre]
+        (3.0*Foot).in[Metres]
       .assert(_ == 0.914399970739201*Metre)
       
       test(Text("Convert metres to feet")):
