@@ -28,7 +28,7 @@ trait Dimension
 
 erased trait Length extends Dimension
 erased trait Mass extends Dimension
-erased trait TimeLength extends Dimension
+erased trait Time extends Dimension
 erased trait Current extends Dimension
 erased trait Luminosity extends Dimension
 erased trait Temperature extends Dimension
@@ -38,37 +38,36 @@ sealed trait Measure
 trait Units[PowerType <: Nat, DimensionType <: Dimension] extends Measure
 
 erased trait Metres[Power <: Nat] extends Units[Power, Length]
-erased trait Grams[Power <: Nat] extends Units[Power, Mass]
+erased trait Kilograms[Power <: Nat] extends Units[Power, Mass]
 erased trait Candelas[Power <: Nat] extends Units[Power, Luminosity]
 erased trait Moles[Power <: Nat] extends Units[Power, AmountOfSubstance]
 erased trait Amperes[Power <: Nat] extends Units[Power, Current]
 erased trait Kelvins[Power <: Nat] extends Units[Power, Temperature]
-erased trait Seconds[Power <: Nat] extends Units[Power, TimeLength]
+erased trait Seconds[Power <: Nat] extends Units[Power, Time]
 
 trait UnitName[-ValueType]:
+  def siPrefix: SiPrefix = NoPrefix
   def name(): Text
+  def text: Text = t"${siPrefix.symbol}${name()}"
 
 object UnitName:
   given UnitName[Metres[1]] = () => t"m"
-  given UnitName[Grams[1]] = () => t"g"
   given UnitName[Candelas[1]] = () => t"cd"
   given UnitName[Moles[1]] = () => t"mol"
   given UnitName[Amperes[1]] = () => t"A"
   given UnitName[Kelvins[1]] = () => t"K"
   given UnitName[Seconds[1]] = () => t"s"
 
-trait PrincipalBase[UnitType <: Measure, Power <: Nat]()
-
-object PrincipalBase:
-  given [UnitType <: Measure]: PrincipalBase[UnitType, 0]()
-  given PrincipalBase[Grams[1], 3]()
+  given UnitName[Kilograms[1]] with
+    override def siPrefix: SiPrefix = Kilo
+    def name(): Text = t"g"
 
 trait PrincipalUnit[DimensionType <: Dimension, UnitType <: Measure]()
 
 object PrincipalUnit:
   given PrincipalUnit[Length, Metres[1]]()
-  given PrincipalUnit[Mass, Grams[1]]()
-  given PrincipalUnit[TimeLength, Seconds[1]]()
+  given PrincipalUnit[Mass, Kilograms[1]]()
+  given PrincipalUnit[Time, Seconds[1]]()
   given PrincipalUnit[Current, Amperes[1]]()
   given PrincipalUnit[Luminosity, Candelas[1]]()
   given PrincipalUnit[Temperature, Kelvins[1]]()
@@ -129,7 +128,7 @@ object QuantifyOpaques:
 export QuantifyOpaques.{Quantity, SiUnit}
 
 val Metre: SiUnit[Metres[1]] = SiUnit[Metres[1]](1)
-val Gram: SiUnit[Grams[1]] = SiUnit[Grams[1]](1)
+val Gram: SiUnit[Kilograms[1]] = SiUnit[Kilograms[1]](0.001)
 val Candela: SiUnit[Candelas[1]] = SiUnit[Candelas[1]](1)
 val Mole: SiUnit[Moles[1]] = SiUnit[Moles[1]](1)
 val Ampere: SiUnit[Amperes[1]] = SiUnit[Amperes[1]](1)

@@ -184,7 +184,7 @@ object QuantifyMacros:
           AppliedType(unit.ref, List(ConstantType(IntConstant(1)))).asType match
             case '[ refType ] =>
               val unitName = Expr.summon[UnitName[refType]].get
-              recur('{$expr.updated($unitName.name(), ${Expr(power)})}, todo2)
+              recur('{$expr.updated($unitName.text, ${Expr(power)})}, todo2)
           
             case _ =>
               throw Mistake("Should never match")

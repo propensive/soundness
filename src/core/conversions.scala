@@ -80,27 +80,27 @@ val Gallon = Millilitre*4546.09
 
 trait Grains[Power <: Nat] extends Units[Power, Mass]
 object Grains:
-  given grainsPerGram: Ratio[Grains[1] & Grams[-1]] = Ratio(Quantity(15.4324))
+  given grainsPerGram: Ratio[Grains[1] & Kilograms[-1]] = Ratio(Quantity(0.0154324))
 
 trait Ounces[Power <: Nat] extends Units[Power, Mass]
 object Ounces:
-  given ouncesPerGram: Ratio[Ounces[1] & Grams[-1]] = Ratio(Quantity(0.035274))
+  given ouncesPerGram: Ratio[Ounces[1] & Kilograms[-1]] = Ratio(Quantity(0.000035274))
 
 trait Pounds[Power <: Nat] extends Units[Power, Mass]
 object Pounds:
-  given gramsPerPound: Ratio[Grams[1] & Pounds[-1]] = Ratio(Quantity(453.59237))
+  given gramsPerPound: Ratio[Kilograms[1] & Pounds[-1]] = Ratio(Quantity(0.45359237))
 
 trait Stones[Power <: Nat] extends Units[Power, Mass]
 object Stones:
-  given gramsPerStone: Ratio[Grams[1] & Stones[-1]] = Ratio(Quantity(6350.29318))
+  given gramsPerStone: Ratio[Kilograms[1] & Stones[-1]] = Ratio(Quantity(6.35029318))
 
 trait Hundredweights[Power <: Nat] extends Units[Power, Mass]
 object Hundredweights:
-  given gramsPerHundredweight: Ratio[Grams[1] & Hundredweights[-1]] = Ratio(Quantity(50802.34544))
+  given gramsPerHundredweight: Ratio[Kilograms[1] & Hundredweights[-1]] = Ratio(Quantity(50.80234544))
 
 trait Tons[Power <: Nat] extends Units[Power, Mass]
 object Tons:
-  given gramsPerTon: Ratio[Grams[1] & Tons[1]] = Ratio(Quantity(1016046.9088))
+  given gramsPerTon: Ratio[Kilograms[1] & Tons[1]] = Ratio(Quantity(1016.0469088))
 
 val Grain = Quantity[Grains[1]](1.0)
 val Ounce = Quantity[Ounces[1]](1.0)
@@ -109,22 +109,24 @@ val Stone = Quantity[Stones[1]](1.0)
 val Hundredweight = Quantity[Hundredweights[1]](1.0)
 val Ton = Quantity[Tons[1]](1.0)
 
+// Units of Time
+
 val Day = Quantity[Days[1]](1.0)
 val Hour = Quantity[Hours[1]](1.0)
 val Minute = Quantity[Minutes[1]](1.0)
 
-trait SiderealDays[Power <: Nat] extends Units[Power, TimeLength]
+trait SiderealDays[Power <: Nat] extends Units[Power, Time]
 object SiderealDays:
   given secondsPerSiderealDay: Ratio[Seconds[1] & SiderealDays[-1]] = Ratio(Quantity(86164.0905))
 
-trait Days[Power <: Nat] extends Units[Power, TimeLength]
+trait Days[Power <: Nat] extends Units[Power, Time]
 object Days:
   given secondsPerDay: Ratio[Seconds[1] & Days[-1]] = Ratio(Quantity(60*60*24))
 
-trait Hours[Power <: Nat] extends Units[Power, TimeLength]
+trait Hours[Power <: Nat] extends Units[Power, Time]
 object Hours:
   given secondsPerHour: Ratio[Seconds[1] & Hours[-1]] = Ratio(Quantity(60*60))
 
-trait Minutes[Power <: Nat] extends Units[Power, TimeLength]
+trait Minutes[Power <: Nat] extends Units[Power, Time]
 object Minutes:
   given secondsPerMinute: Ratio[Seconds[1] & Minutes[-1]] = Ratio(Quantity(60))
