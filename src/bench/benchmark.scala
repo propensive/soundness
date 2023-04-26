@@ -17,16 +17,14 @@
 package probably
 
 import rudiments.*
-import oubliette.*
 import anticipation.*
-import gossamer.*, decimalFormats.twoPlaces
 
 import scala.collection.mutable as scm
 
 extension [TestType](test: Test[TestType])
   inline def benchmark
       [DurationType, ReportType]
-      (confidence: Maybe[Double] = Unset, fork: Maybe[Jdk] = Unset, iterations: Maybe[Int] = Unset,
+      (confidence: Maybe[Double] = Unset, iterations: Maybe[Int] = Unset,
           duration: Maybe[DurationType] = Unset, warmup: Maybe[DurationType] = Unset)
       (using runner: Runner[ReportType], inc: Inclusion[ReportType, Benchmark],
           genericDuration: GenericDuration[DurationType] = timeApi.long)

@@ -20,6 +20,7 @@ import rudiments.*
 import digression.*
 import gossamer.*
 import chiaroscuro.*
+import ambience.*
 import escritoire.*
 import escapade.*
 import turbulence.*
@@ -52,7 +53,7 @@ trait TestReporter[ReportType]:
   def complete(report: ReportType): Unit
 
 object TestReporter:
-  given (using Stdio): TestReporter[TestReport] with
+  given (using Stdio, Environment): TestReporter[TestReport] with
     def make(): TestReport = TestReport()
     def declareSuite(report: TestReport, suite: TestSuite): Unit = report.declareSuite(suite)
     def complete(report: TestReport): Unit = report.complete()
@@ -73,7 +74,7 @@ object TestReport:
   
   given Inclusion[TestReport, DebugInfo] = _.addDebugInfo(_, _)
 
-class TestReport():
+class TestReport(using env: Environment):
 
   enum ReportLine:
     case Suite(suite: Maybe[TestSuite], tests: scm.ListMap[TestId, ReportLine] = scm.ListMap())
@@ -223,7 +224,11 @@ class TestReport():
       )
       
     import tableStyles.rounded
-    table.tabulate(lines.summaries, 120).map(_.render).foreach(Io.println(_))
+    val columns = env("COLUMNS") match
+      case As[Int](cols) => cols
+      case _             => 120
+
+    table.tabulate(lines.summaries, columns).map(_.render).foreach(Io.println(_))
 
     details.foreach: (id, info) =>
       val ribbon = Ribbon(colors.DarkRed.srgb, colors.FireBrick.srgb, colors.Tomato.srgb)
