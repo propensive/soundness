@@ -16,7 +16,7 @@
 
 package quantify
 
-object Constants:
+package constants:
   val SpeedOfLightInVacuum = 299792458*Metre/Second
   val MagneticConstant = 4*math.Pi*10e-7*Newton/(Ampere*Ampere)
   val ElectricConstant = 8.854187817*10e-12*Farad/Metre

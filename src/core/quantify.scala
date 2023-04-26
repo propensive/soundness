@@ -79,6 +79,7 @@ object QuantifyOpaques:
 
   extension [UnitsType <: Measure](quantity: Quantity[UnitsType])
     def value: Double = quantity
+    def asSiUnit: SiUnit[UnitsType] = quantity
 
   object SiUnit:
     def apply[UnitsType <: Measure](value: Double): SiUnit[UnitsType] = value
@@ -160,7 +161,7 @@ extension [UnitsType <: Measure](inline quantity: Quantity[UnitsType])
     ${QuantifyMacros.multiply[UnitsType, UnitsType2]('quantity, 'quantity2, true)}
 
   inline def units: Map[Text, Int] = ${QuantifyMacros.collectUnits[UnitsType]}
-  inline def render(using DecimalFormat): Text = t"${quantity.value}${Quantity.renderUnits(units)}"
+  inline def render(using DecimalFormat): Text = t"${quantity.value} ${Quantity.renderUnits(units)}"
 
   @targetName("greaterThan")
   inline def >[UnitsType2 <: Measure](that: Quantity[UnitsType2]): Boolean =

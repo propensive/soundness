@@ -213,20 +213,28 @@ object Tests extends Suite(Text("Quantify Tests")):
 
       test(Text("Show a value in metres")):
         (7.567*Metre).show
-      .assert(_ == Text("7.57m"))
+      .assert(_ == Text("7.57 m"))
       
       test(Text("Show a value in square metres")):
         (1.4*Metre*Metre).show
-      .assert(_ == Text("1.4m²"))
+      .assert(_ == Text("1.4 m²"))
       
       test(Text("Show a value in metres per second")):
         (8.54*Metre/Second).show
-      .assert(_ == Text("8.54m·s¯¹"))
+      .assert(_ == Text("8.54 m·s¯¹"))
       
       test(Text("Show a value in kilometres per second")):
         (8.54*Kilo(Metre)/Second).show
-      .assert(_ == Text("8540m·s¯¹"))
+      .assert(_ == Text("8540 m·s¯¹"))
       
       test(Text("Show a value in kilograms")):
         (10.4*Kilo(Gram)/Second).show
-      .assert(_ == Text("10.4kg·s¯¹"))
+      .assert(_ == Text("10.4 kg·s¯¹"))
+      
+      test(Text("Show the speed of light")):
+        constants.SpeedOfLightInVacuum.show
+      .assert(_ == Text("299792458 m·s¯¹"))
+      
+      test(Text("Show Planck's constant")):
+        constants.PlanckConstant.show
+      .assert(_ == Text("6.62607015×10¯³⁴ kg·m²·s¯¹"))
