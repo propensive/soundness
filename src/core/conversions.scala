@@ -65,16 +65,16 @@ val Chain = Quantity[Chains[1]](1.0)
 
 // Units of Area
 
+val Are = SiUnit[Metres[2]](100.0)
 val Acre = Furlong*Furlong/10.0
 
 // Units of Volume
 
-val Litre = Quantity[Metres[3]](0.001)
-val Millilitre = Litre/1000.0
-val FluidOunce = Millilitre*28.4130625
-val Pint = Millilitre*568.26125
-val Quart = Millilitre*1136.5225
-val Gallon = Millilitre*4546.09
+val Litre = SiUnit[Metres[3]](0.001)
+val FluidOunce = Milli(Litre)*28.4130625
+val Pint = Milli(Litre)*568.26125
+val Quart = Milli(Litre)*1136.5225
+val Gallon = Milli(Litre)*4546.09
 
 // Units of Mass
 
@@ -100,7 +100,7 @@ object Hundredweights:
 
 trait Tons[Power <: Nat] extends Units[Power, Mass]
 object Tons:
-  given gramsPerTon: Ratio[Kilograms[1] & Tons[1]] = Ratio(Quantity(1016.0469088))
+  given gramsPerTon: Ratio[Kilograms[1] & Tons[-1]] = Ratio(Quantity(1016.0469088))
 
 val Grain = Quantity[Grains[1]](1.0)
 val Ounce = Quantity[Ounces[1]](1.0)

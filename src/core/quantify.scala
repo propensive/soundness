@@ -65,13 +65,13 @@ object UnitName:
 trait PrincipalUnit[DimensionType <: Dimension, UnitType <: Measure]()
 
 object PrincipalUnit:
-  given PrincipalUnit[Length, Metres[1]]()
-  given PrincipalUnit[Mass, Kilograms[1]]()
-  given PrincipalUnit[Time, Seconds[1]]()
-  given PrincipalUnit[Current, Amperes[1]]()
-  given PrincipalUnit[Luminosity, Candelas[1]]()
-  given PrincipalUnit[Temperature, Kelvins[1]]()
-  given PrincipalUnit[AmountOfSubstance, Moles[1]]()
+  given length: PrincipalUnit[Length, Metres[1]]()
+  given mass: PrincipalUnit[Mass, Kilograms[1]]()
+  given time: PrincipalUnit[Time, Seconds[1]]()
+  given current: PrincipalUnit[Current, Amperes[1]]()
+  given luminosity: PrincipalUnit[Luminosity, Candelas[1]]()
+  given temperature: PrincipalUnit[Temperature, Kelvins[1]]()
+  given amountOfSubstance: PrincipalUnit[AmountOfSubstance, Moles[1]]()
 
 object QuantifyOpaques:
   opaque type Quantity[UnitsType <: Measure] = Double
@@ -130,13 +130,13 @@ object QuantifyOpaques:
 
 export QuantifyOpaques.{Quantity, SiUnit}
 
-val Metre: SiUnit[Metres[1]] = SiUnit[Metres[1]](1)
-val Gram: SiUnit[Kilograms[1]] = SiUnit[Kilograms[1]](0.001)
-val Candela: SiUnit[Candelas[1]] = SiUnit[Candelas[1]](1)
-val Mole: SiUnit[Moles[1]] = SiUnit[Moles[1]](1)
-val Ampere: SiUnit[Amperes[1]] = SiUnit[Amperes[1]](1)
-val Kelvin: SiUnit[Kelvins[1]] = SiUnit[Kelvins[1]](1)
-val Second: SiUnit[Seconds[1]] = SiUnit[Seconds[1]](1)
+val Metre: SiUnit[Metres[1]] = SiUnit(1)
+val Gram: SiUnit[Kilograms[1]] = SiUnit(0.001)
+val Candela: SiUnit[Candelas[1]] = SiUnit(1)
+val Mole: SiUnit[Moles[1]] = SiUnit(1)
+val Ampere: SiUnit[Amperes[1]] = SiUnit(1)
+val Kelvin: SiUnit[Kelvins[1]] = SiUnit(1)
+val Second: SiUnit[Seconds[1]] = SiUnit(1)
 
 extension [UnitsType <: Measure](inline quantity: Quantity[UnitsType])
   @targetName("plus")
