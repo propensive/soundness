@@ -79,10 +79,12 @@ object QuantifyOpaques:
 
   extension [UnitsType <: Measure](quantity: Quantity[UnitsType])
     def value: Double = quantity
-    def asSiUnit: SiUnit[UnitsType] = quantity
 
   object SiUnit:
     def apply[UnitsType <: Measure](value: Double): SiUnit[UnitsType] = value
+
+    @targetName("makeDerivedUnit")
+    def apply[UnitsType <: Measure](value: Quantity[UnitsType]): SiUnit[UnitsType] = value
 
   object Quantity:
     erased given [UnitsType <: Measure]: CanEqual[Quantity[UnitsType], Quantity[UnitsType]] =
