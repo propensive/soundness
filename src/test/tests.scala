@@ -18,6 +18,7 @@ package plutocrat
 
 import probably.*
 import gossamer.*
+import larceny.*
 
 object Tests extends Suite(t"Plutocrat tests"):
   def run(): Unit =
@@ -25,5 +26,43 @@ object Tests extends Suite(t"Plutocrat tests"):
       val amount = Eur(3.01)
       t"Received $amount"
     .assert(_ == t"Received €3.01")
+    
+    test(t"Add two amounts"):
+      Eur(3.01) + Eur(0.02)
+    .assert(_ == Eur(3.03))
+    
+    test(t"Subtract an amounts"):
+      Eur(3.01) - Eur(0.02)
+    .assert(_ == Eur(2.99))
+    
+    test(t"Multiply an amount"):
+      Eur(3.01)*3
+    .assert(_ == Eur(9.03))
+    
+    test(t"Divide an amount"):
+      Eur(3.01)/3
+    .assert(_ == Eur(1.00))
+    
+    test(t"Split an amount"):
+      Eur(3.01).split(3).total
+    .assert(_ == Eur(3.01))
+
+    test(t"Different currencies cannot be combined"):
+      captureCompileErrors:
+        Eur(1.00) + Gbp(1.00)
+      .map(_.errorId)
+    .assert(_ == List(ErrorId.MissingImplicitArgumentID))
+
+    // test(t"Compare amounts"):
+    //   Eur(1.01) > Eur(2.10)
+    // .assert(_ == false)
+    
+    // test(t"Compare equal amounts"):
+    //   Eur(1.01) > Eur(1.01)
+    // .assert(_ == false)
+    
+    // test(t"Compare equal amounts"):
+    //   Eur(1.01) >= Eur(1.01)
+    // .assert(_ == true)
 
 

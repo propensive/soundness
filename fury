@@ -1,5 +1,6 @@
 
 repo propensive/probably
+repo propensive/larceny
 
 target plutocrat/test
 
@@ -9,6 +10,6 @@ project plutocrat
     include  gossamer/core
 
   module test
-    include  plutocrat/core probably/cli
+    include  plutocrat/core probably/cli larceny/plugin
     sources  src/test
     main     plutocrat.Tests
