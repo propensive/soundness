@@ -16,3 +16,9 @@ project serpentine
     sources   src/test
     include   serpentine/core probably/cli larceny/plugin
     main      serpentine.Tests
+  
+  module bench
+    compiler   scala
+    sources    src/bench
+    include    serpentine/core probably/cli probably/bench
+    main       serpentine.Benchmarks

@@ -30,6 +30,7 @@ object Hierarchy:
 trait Hierarchy[PathType]:
 
   type ForbiddenType <: Singleton & (Char | String)
+  
   def separator: Text
   def prefix(root: PathType): Text
   def root(path: PathType): PathType
@@ -65,10 +66,10 @@ extension [PathType, PathType2 >: PathType](path: PathType)(using hierarchy: Hie
     def recur(path: PathType2, n: Int): PathType2 = if n == 0 then path else recur(hierarchy.parent(path), n - 1)
     if depth > n then recur(path, n) else hierarchy.root(path)
   
-  def take(n: Int): PathType2 = ancestor(depth - n)
+  def keep(n: Int): PathType2 = ancestor(depth - n)
   
   def conjunction(other: PathType2): PathType2 =
-    take(elements.reverse.zip(other.elements.reverse).takeWhile(_ == _).length)
+    keep(elements.reverse.zip(other.elements.reverse).takeWhile(_ == _).length)
 
   def relative: Relative = Relative(0, elements.map(_.show))
 
