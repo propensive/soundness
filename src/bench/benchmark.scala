@@ -25,7 +25,8 @@ extension [TestType](test: Test[TestType])
   inline def benchmark
       [DurationType, ReportType]
       (confidence: Maybe[Double] = Unset, iterations: Maybe[Int] = Unset,
-          duration: Maybe[DurationType] = Unset, warmup: Maybe[DurationType] = Unset)
+          duration: Maybe[DurationType] = Unset, warmup: Maybe[DurationType] = Unset,
+          baseline: Maybe[Baseline] = Unset)
       (using runner: Runner[ReportType], inc: Inclusion[ReportType, Benchmark],
           genericDuration: GenericDuration[DurationType] = timeApi.long)
       : Unit =
@@ -53,8 +54,10 @@ extension [TestType](test: Test[TestType])
     
     val count = times.size
     val total = times.sum
-    val mean = total/count
-    val variance = (times.to(List).map { t => (mean - t)*(mean - t) }.sum)/count
-    val sd = math.sqrt(variance.toDouble).toLong
-    val benchmark = Benchmark(total, times.size, mean, sd, confidence.or(0.95))
+    val min: Long = times.min
+    val mean: Double = total.toDouble/count
+    val max: Long = times.max
+    val variance: Double = (times.map { t => (mean - t)*(mean - t) }.sum)/count
+    val stdDev: Double = math.sqrt(variance.toDouble)
+    val benchmark = Benchmark(total, times.size, min, mean, max, stdDev, confidence.or(0.95), baseline)
     inc.include(runner.report, test.id, benchmark)

@@ -28,12 +28,22 @@ import iridescence.*
 
 import scala.collection.mutable as scm
 
+enum Compare:
+  case Min, Mean, Max
+
+enum Ratio:
+  case Speed, Time
+
+case class Baseline(compare: Compare = Compare.Mean, ratio: Ratio = Ratio.Speed)
+
 object Benchmark:
   given Inclusion[TestReport, Benchmark] with
     def include(report: TestReport, testId: TestId, benchmark: Benchmark): TestReport =
       report.addBenchmark(testId, benchmark)
 
-case class Benchmark(total: Long, count: Int, mean: Long, sd: Long, confidence: Double):
+case class Benchmark
+    (total: Long, count: Int, min: Long, mean: Double, max: Double, sd: Double, confidence: Double,
+        baseline: Maybe[Baseline]):
   def confidenceInterval: Long = (confidence*sd/math.sqrt(count.toDouble)).toLong
   def throughput: Long = (1000000000.0/mean).toLong
 
@@ -84,10 +94,10 @@ class TestReport(using env: Environment):
     def summaries: List[Summary] = this match
       case Suite(suite, tests)  =>
         val rest = tests.values.flatMap(_.summaries).to(List)
-        if suite.unset then rest else Summary(Status.Suite, suite.option.get.id, 0, 0, 0, 0, 0, 0) :: rest
+        if suite.unset then rest else Summary(Status.Suite, suite.option.get.id, 0, 0, 0, 0) :: rest
       
-      case Bench(testId, bench@Benchmark(total, count, mean, _, _)) =>
-        List(Summary(Status.Suite, testId, count, 0, 0, mean, bench.confidenceInterval, bench.throughput))
+      case Bench(testId, bench@Benchmark(_, _, _, _, _, _, _, _)) =>
+        Nil
 
       case Test(testId, buf) =>
         val status =
@@ -101,8 +111,8 @@ class TestReport(using env: Environment):
         val max: Long = buf.map(_.duration).max
         val avg: Long = buf.foldLeft(0L)(_ + _.duration)/buf.length
           
-        List(Summary(status, testId, buf.length, min, max, avg, 0, 0))
-
+        List(Summary(status, testId, buf.length, min, max, avg))
+    
   private val lines: ReportLine.Suite = ReportLine.Suite(Unset)
   
   def resolve(suite: Maybe[TestSuite]): ReportLine.Suite =
@@ -154,8 +164,23 @@ class TestReport(using env: Environment):
       case Suite       => ansi"   "
       case Bench       => ansi"${Bg(colors.CadetBlue)}( $Bold(${colors.Black}(*)) )"
 
-  case class Summary
-      (status: Status, id: TestId, count: Int, min: Long, max: Long, avg: Long, conf: Long, throughput: Long):
+  val unitsSeq: List[AnsiText] = List(
+    ansi"${colors.BurlyWood}(µs)",
+    ansi"${colors.Goldenrod}(ms)",
+    ansi"${colors.Sienna}(s) "
+  )
+    
+  def showTime(n: Long, units: List[AnsiText] = unitsSeq): AnsiText = units match
+    case Nil =>
+      n.show.ansi
+    
+    case unit :: rest =>
+      if n > 100000L then showTime(n/1000L, rest) else
+        val sig = (n/1000L).show
+        val frac = (n%1000).show.pad(3, Rtl, '0')(using textWidthCalculation.uniform)
+        ansi"${colors.Silver}(${sig}.$frac) ${unit}"
+    
+  case class Summary(status: Status, id: TestId, count: Int, min: Long, max: Long, avg: Long):
     def indentedName: AnsiText =
       val depth = id.suite.mm(_.id.depth).or(0) + 1
       
@@ -165,37 +190,16 @@ class TestReport(using env: Environment):
       
       ansi"${t"  "*(depth - 1)}$title"
 
-    val unitsSeq: List[AnsiText] = List(
-      ansi"${colors.BurlyWood}(µs)",
-      ansi"${colors.Goldenrod}(ms)",
-      ansi"${colors.Sienna}(s) "
-    )
-    
-    protected def time(n: Long, units: List[AnsiText] = unitsSeq): AnsiText = units match
-      case Nil =>
-        n.show.ansi
-      
-      case unit :: rest =>
-        if n > 100000L then time(n/1000L, rest) else
-          val sig = (n/1000L).show
-          val frac = (n%1000).show.pad(3, Rtl, '0')(using textWidthCalculation.uniform)
-          ansi"${colors.Silver}(${sig}.$frac) ${unit}"
-    
-    private def ops(n: Long): AnsiText = ansi"${colors.Silver}($n) ops/s"
-
-    def minTime: AnsiText = if min == 0L then ansi"" else time(min)
-    def maxTime: AnsiText = if max == 0L then ansi"" else time(max)
-    def avgTime: AnsiText = if avg == 0L then ansi"" else time(avg)
-    def confInt: AnsiText = if conf == 0.0 then ansi"" else ansi"±${time(conf)}"
+    def minTime: AnsiText = if min == 0L then ansi"" else showTime(min)
+    def maxTime: AnsiText = if max == 0L then ansi"" else showTime(max)
+    def avgTime: AnsiText = if avg == 0L then ansi"" else showTime(avg)
     def iterations: AnsiText = if count == 0 then ansi"" else count.ansi
-    def opsPerS: AnsiText = if throughput == 0 then ansi"" else ops(throughput)
 
   def complete()(using Stdio): Unit =
     import textWidthCalculation.uniform
     
     val table: Table[Summary] =
       val showStats = !lines.summaries.forall(_.count < 2)
-      val showBench = lines.summaries.exists(_.throughput > 0)
       val timeTitle = if showStats then t"Avg" else t"Time"
       
       Table(
@@ -215,20 +219,76 @@ class TestReport(using env: Environment):
         Column(ansi"$Bold($timeTitle)", align = Alignment.Right)(_.avgTime),
         
         Column(ansi"$Bold(Max)", align = Alignment.Right, hide = !showStats): s =>
-          if s.count < 2 then ansi"" else s.maxTime,
-        
-        Column(ansi"$Bold(Confidence)", align = Alignment.Right, hide = !showBench): s =>
-          if s.throughput == 0 then ansi"" else s.confInt,
-        
-        Column(ansi"$Bold(T/put)", align = Alignment.Right, hide = !showBench)(_.opsPerS)
+          if s.count < 2 then ansi"" else s.maxTime
       )
       
     import tableStyles.rounded
-    val columns = env("COLUMNS") match
+    val columns = env(t"COLUMNS") match
       case As[Int](cols) => cols
       case _             => 120
 
-    table.tabulate(lines.summaries, columns).map(_.render).foreach(Io.println(_))
+    if lines.summaries.exists(_.count > 0)
+    then table.tabulate(lines.summaries, columns).map(_.render).foreach(Io.println(_))
+
+    def benches(line: ReportLine): Iterable[ReportLine.Bench] =
+      line match
+        case bench@ReportLine.Bench(_, _) => Iterable(bench)
+        case ReportLine.Suite(_, tests)   => tests.map(_(1)).flatMap(benches(_))
+        case _                            => Nil
+    
+    
+    benches(lines).groupBy(_.test.suite).foreach: (suite, benchmarks) =>
+      val ribbon = Ribbon(colors.DarkGreen.srgb, colors.MediumSeaGreen.srgb, colors.PaleGreen.srgb)
+      Io.println(ribbon.fill(ansi"${suite.mm(_.id.id).or(t"")}", ansi"Benchmarks", ansi"${suite.mm(_.name).or(t"")}"))
+      
+      val comparisons: List[ReportLine.Bench] =
+        benchmarks.filter(!_.benchmark.baseline.unset).to(List)
+      
+      def ops(n: Long): AnsiText = ansi"${colors.Silver}($n) ops/s"
+      
+      def confInt(b: Benchmark): AnsiText =
+        if b.confidence == 0 then ansi"" else ansi"±${showTime(b.confidence.toLong)}"
+      
+      def opsPerS(b: Benchmark): AnsiText = if b.throughput == 0 then ansi"" else ops(b.throughput)
+
+      import decimalFormats.threePlaces
+
+      val bench: Table[ReportLine.Bench] = Table(
+        (List(
+          Column(ansi"$Bold(Hash)"): s =>
+            ansi"${colors.CadetBlue}(${s.test.id})",
+          Column(ansi"$Bold(Test)"): s =>
+            ansi"${s.test.name}",
+
+          Column(ansi"$Bold(Min)", align = Alignment.Right): s =>
+            showTime(s.benchmark.min),
+        
+          Column(ansi"$Bold(Mean)", align = Alignment.Right): s =>
+            showTime(s.benchmark.mean.toLong),
+          
+          Column(ansi"$Bold(Confidence)", align = Alignment.Right): s =>
+            ansi"${confInt(s.benchmark)}",
+          
+          Column(ansi"$Bold(Throughput)", align = Alignment.Right): s =>
+            ansi"${opsPerS(s.benchmark)}"
+        ) ::: (
+          comparisons.map: c =>
+            val baseline = unsafely(c.benchmark.baseline.assume)
+            Column(ansi"$Bold(${c.test.id})", align = Alignment.Right): (s: ReportLine.Bench) =>
+              val ratio = baseline.compare match
+                case Compare.Min  => s.benchmark.min.toDouble/c.benchmark.min
+                case Compare.Mean => s.benchmark.mean.toDouble/c.benchmark.mean
+                case Compare.Max  => s.benchmark.max.toDouble/c.benchmark.max
+
+              val ratio2 = if baseline.ratio == Ratio.Time then ratio else 1/ratio
+              if ratio == 1.0 then ansi"-" else ansi"${ratio2.show}"
+        ))*
+      )
+
+      bench.tabulate(benchmarks.to(List).sortBy(_.benchmark.throughput), columns).map(_.render).foreach(Io.println(_))
+      
+    
+
 
     details.foreach: (id, info) =>
       val ribbon = Ribbon(colors.DarkRed.srgb, colors.FireBrick.srgb, colors.Tomato.srgb)

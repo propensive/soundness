@@ -104,7 +104,7 @@ class Runner[ReportType]()(using reporter: TestReporter[ReportType]):
       val ns: Long = System.nanoTime - ns0
       
       def lazyException(): Nothing =
-        import unsafeExceptions.canThrowAny
+        given CanThrow[Exception] = unsafeExceptions.canThrowAny
         throw err
 
       TestRun.Throws(lazyException, ns, ctx.captured.to(Map))
@@ -168,15 +168,16 @@ extension [TestType](test: Test[TestType])
       : Unit =
     assert[ReportType](pf.isDefinedAt(_))
   
-case class UnexpectedSuccessError(value: Any)
+case class UnexpectedSuccessError(value: Text)
 extends Error(err"the expression was expected to throw an exception, but instead returned $value")
 
 transparent inline def capture
-    [ExceptionType <: Exception](inline fn: => CanThrow[ExceptionType] ?=> Any)
+    [ExceptionType <: Exception, ResultType: Debug]
+    (inline fn: => CanThrow[ExceptionType] ?=> ResultType)
     : ExceptionType throws UnexpectedSuccessError =
   try
     val result = fn(using unsafeExceptions.canThrowAny)
-    throw UnexpectedSuccessError(result)
+    throw UnexpectedSuccessError(result.debug)
   catch
     case error: ExceptionType          => error
     case error: UnexpectedSuccessError => throw error
