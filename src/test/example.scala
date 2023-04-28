@@ -17,22 +17,16 @@
 package larceny
 
 @main
-def run(): Unit =
-  val errors = captureCompileErrors:
-    val x = 10
-    "foo".substring("1")
+def run(): Unit = for i <- 1 to 40 do repeat()
+
+def repeat(): Unit =
   
-  errors.foreach(println(_))
+  val t0 = System.currentTimeMillis
   
-  val errors2 = captureCompileErrors:
-    Macros.hello()
-
-  errors2.foreach(println(_))
-
-  val errors3 = captureCompileErrors:
-    class Baz() extends Incomplete
-
-  errors3.foreach(println(_))
+  deferCompilation:
+    def foo(x: Int): Unit = x*x + x/x
+  
+  println(-t0 + System.currentTimeMillis)
 
 trait Incomplete:
   def foo: Int

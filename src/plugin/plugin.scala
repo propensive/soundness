@@ -58,14 +58,24 @@ class LarcenyTransformer() extends PluginPhase:
 
     val errors: List[CompileError] =
       Subcompiler.compile(ctx.settings.classpath.value, source, regions)
-    
+
+
     object transformer extends UntypedTreeMap:
 
       override def transform(tree: Tree)(using Context): Tree = tree match
-        case Apply(Ident(name), List(b)) if name.toString == "captureCompileErrors" =>
+        case Apply(Ident(name), List(content)) if name.toString == "deferCompilation" =>
+          val source2 = source.substring(content.span.start, content.span.end)
+          val javaClasspath = System.getProperty("java.class.path").nn
+          Apply(Select(Select(Select(Ident(nme.ROOTPKG), "larceny".toTermName),
+              "Subcompiler".toTermName), "compile".toTermName), List(
+            Literal(Constant(javaClasspath+":"+ctx.settings.classpath.value)),
+            Literal(Constant(source2))
+          ))
+
+        case Apply(Ident(name), List(content)) if name.toString == "captureCompileErrors" =>
           
           val captured = errors.filter: error =>
-            try error.point >= b.span.start && error.point <= b.span.end
+            try error.point >= content.span.start && error.point <= content.span.end
             catch case err: AssertionError => false
           
           val msgs = captured.map: error =>
@@ -77,8 +87,8 @@ class LarcenyTransformer() extends PluginPhase:
               Literal(Constant(error.offset))
             ))
           
-          Apply(Ident(name), List(Block(List(), Apply(Select(Select(Ident(nme.ROOTPKG), nme.scala), nme.List),
-              msgs))))
+          Apply(Ident(name), List(Block(List(), Apply(Select(Select(Ident(nme.ROOTPKG), nme.scala),
+              nme.List), msgs))))
         
         case _ =>
           super.transform(tree)
@@ -97,10 +107,15 @@ object Subcompiler:
         val pos = diagnostic.pos
         val code = String(ctx.compilationUnit.source.content.slice(pos.start, pos.end))
         val offset = pos.point - pos.start
-        errors += CompileError(diagnostic.msg.errorId.ordinal, diagnostic.msg.message, code, pos.start, offset)
-      catch
-        case err: Throwable => ()
-  
+        
+        errors += CompileError(diagnostic.msg.errorId.ordinal, diagnostic.msg.message, code,
+            pos.start, offset)
+      
+      catch case err: Throwable => ()
+
+  def compile(classpath: String, source: String): List[CompileError] =
+    compile(classpath, source, Set((0, source.length)))
+
   def compile(classpath: String, source: String, regions: Set[(Int, Int)]): List[CompileError] =
     
     object driver extends Driver:
@@ -109,9 +124,10 @@ object Subcompiler:
         val ctx2 = ctx.setSetting(ctx.settings.classpath, classpath)
         setup(Array[String](""), ctx2).map(_(1)).get
       
-      def run(source: String, regions: Set[(Int, Int)], errors: List[CompileError]): List[CompileError] =
-        if regions.isEmpty then errors
-        else
+      def run
+          (source: String, regions: Set[(Int, Int)], errors: List[CompileError])
+          : List[CompileError] =
+        if regions.isEmpty then errors else
           val reporter: CustomReporter = CustomReporter()
           val sourceFile: SourceFile = SourceFile.virtual("<subcompilation>", source)
           val ctx = currentCtx.fresh
@@ -126,10 +142,13 @@ object Subcompiler:
           
           val newErrors = reporter.errors.to(List)
 
-          def recompile(todo: List[CompileError], done: Set[(Int, Int)], source: String): List[CompileError] =
+          def recompile
+              (todo: List[CompileError], done: Set[(Int, Int)], source: String)
+              : List[CompileError] =
             todo match
               case Nil =>
-                if done.isEmpty then errors ::: newErrors else run(source, regions -- done, errors ::: newErrors)
+                if done.isEmpty then errors ::: newErrors
+                else run(source, regions -- done, errors ::: newErrors)
               case error :: tail =>
                 regions.find: (start, end) =>
                   error.point >= start && error.point <= end
@@ -143,8 +162,5 @@ object Subcompiler:
                       recompile(tail, done + region, newSource)
     
           recompile(newErrors, Set(), source)
-          //  match
-          //   case None            => errors ::: newErrors
-          //   case Some(newSource) => run(newSource, regions -- done, errors ::: newErrors)
       
     driver.run(source, regions, Nil)
