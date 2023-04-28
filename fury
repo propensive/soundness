@@ -5,7 +5,7 @@ repo propensive/turbulence
 repo propensive/contextual
 repo propensive/larceny
 
-target gossamer/test
+target gossamer/bench
 
 project gossamer
   module core
@@ -18,3 +18,9 @@ project gossamer
     sources   src/test
     include   probably/cli gossamer/core larceny/plugin
     main      gossamer.Tests
+
+  module bench
+    compiler  scala
+    sources   src/bench
+    include   probably/cli gossamer/core larceny/plugin probably/bench
+    main      gossamer.Benchmarks
