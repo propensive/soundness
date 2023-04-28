@@ -22,13 +22,21 @@ import rudiments.*
 case class Currency(isoCode: String, symbol: String, name: String, fractionalName: String, modulo: Int):
   def apply(value: Double): Money[this.type] =
     val integral = value.toLong
-    Money(this)(integral, ((value - integral + (0.5/modulo))*modulo).toInt)
+    val tweak = (if integral < 0 then -0.5 else 0.5)/modulo
+    Money(this)(integral, ((value - integral + tweak)*modulo).toInt)
   
   def zero: Money[this.type] = apply(0.00)
 
 object Eur extends Currency("EUR", "€", "Euro", "Cent", 100)
 object Usd extends Currency("USD", "$", "US Dollar", "Cent", 100)
 object Gbp extends Currency("GBP", "£", "Pounds Sterling", "Pence", 100)
+
+case class Price[CurrencyType <: Currency & Singleton: ValueOf](principal: Money[CurrencyType], tax: Money[CurrencyType]):
+  def taxRate: Double = tax/principal
+
+  def +(right: Price[CurrencyType]): Price[CurrencyType] = Price(principal + right.principal, tax + right.tax)
+  def -(right: Price[CurrencyType]): Price[CurrencyType] = Price(principal - right.principal, tax - right.tax)
+  def unary_- : Price[CurrencyType] = Price(-principal, -tax)
 
 object PlutocratOpaques:
   opaque type Money[+CurrencyType <: Currency & Singleton] = Long
@@ -58,9 +66,19 @@ object PlutocratOpaques:
     @targetName("multiply")
     def *(right: Int): Money[CurrencyType] = left*right
     
+    @targetName("multiply2")
+    def *(right: Double): Money[CurrencyType] = (left.toDouble*right).toLong
+    
     @targetName("divide")
     def /(right: Int): Money[CurrencyType] = (left + right/2)/right
-    
+
+    @targetName("divide2")
+    def /(right: Money[CurrencyType]): Double = left.toDouble/right.toDouble
+
+    def `unary_-`: Money[CurrencyType] = -left
+
+    def tax(rate: Double): Price[CurrencyType] = Price(left, (left*rate).toLong)
+
     @tailrec
     def split(right: Int, result: List[Money[CurrencyType]] = Nil): List[Money[CurrencyType]] =
       if right == 1 then left :: result else

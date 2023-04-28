@@ -53,6 +53,10 @@ object Tests extends Suite(t"Plutocrat tests"):
       .map(_.errorId)
     .assert(_ == List(ErrorId.MissingImplicitArgumentID))
 
+    test(t"Monetary values can be negated"):
+      -Eur(1.99)
+    .assert(_ == Eur(-1.99))
+
     // test(t"Compare amounts"):
     //   Eur(1.01) > Eur(2.10)
     // .assert(_ == false)
