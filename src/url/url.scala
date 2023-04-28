@@ -215,9 +215,9 @@ case class Authority(host: Host, userInfo: Maybe[Text] = Unset, port: Maybe[Int]
 
 case class Url(scheme: Scheme, authority: Maybe[Authority], pathText: Text, query: Maybe[Text] = Unset,
                    fragment: Maybe[Text] = Unset):
-  lazy val path: Relative =
+  lazy val path: Relative throws PathError =
     val rel = Relative.parse(pathText.drop(1))
-    rel.copy(parts = rel.parts.map(_.urlDecode))
+    rel.copy(elements = rel.elements.map(_.urlDecode))
 
 object InvalidUrlError:
   enum Expectation:
