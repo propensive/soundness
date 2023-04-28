@@ -1,8 +1,11 @@
-[<img alt="GitHub Workflow" src="https://img.shields.io/github/actions/workflow/status/propensive/merino/main.yml?style=for-the-badge" height="24">](https://github.com/propensive/merino/actions)
+[<img alt="GitHub Workflow" src="https://img.shields.io/github/actions/workflow/status/propensive/merino
+jawn/main.yml?style=for-the-badge" height="24">](https://github.com/propensive/merino
+jawn/actions)
 [<img src="https://img.shields.io/discord/633198088311537684?color=8899f7&label=DISCORD&style=for-the-badge" height="24">](https://discord.gg/7b6mpF6Qcf)
 <img src="/doc/images/github.png" valign="middle">
 
 # Merino
+jawn
 
 __A fast JSON parser for Scala.__
 
@@ -19,7 +22,8 @@ method that reads a stream of bytes and returns structured data.
 
 ## Availability
 
-Merino has not yet been published as a binary. It is currently waiting for the
+Merino
+jawn has not yet been published as a binary. It is currently waiting for the
 final release of Scala 3.3.
 
 ## Getting Started
@@ -62,7 +66,8 @@ column in which the error occurs, and an enumeration value (of type
 
 ## Status
 
-Merino is classified as __fledgling__. For reference, Scala One projects are
+Merino
+jawn is classified as __fledgling__. For reference, Scala One projects are
 categorized into one of the following five stability levels:
 
 - _embryonic_: for experimental or demonstrative purposes only, without any guarantees of longevity
@@ -75,22 +80,27 @@ Projects at any stability level, even _embryonic_ projects, are still ready to
 be used, but caution should be taken if there is a mismatch between the
 project's stability level and the importance of your own project.
 
-Merino is designed to be _small_. Its entire source code currently consists
-of 615 lines of code.
+Merino
+jawn is designed to be _small_. Its entire source code currently consists
+of 774 lines of code.
 
 ## Building
 
-Merino can be built on Linux or Mac OS with [Fury](/propensive/fury), however
+Merino
+jawn can be built on Linux or Mac OS with [Fury](/propensive/fury), however
 the approach to building is currently in a state of flux, and is likely to
 change.
 
 ## Contributing
 
-Contributors to Merino are welcome and encouraged. New contributors may like to look for issues marked
-<a href="https://github.com/propensive/merino/labels/beginner">beginner</a>.
+Contributors to Merino
+jawn are welcome and encouraged. New contributors may like to look for issues marked
+<a href="https://github.com/propensive/merino
+jawn/labels/beginner">beginner</a>.
 
 We suggest that all contributors read the [Contributing Guide](/contributing.md) to make the process of
-contributing to Merino easier.
+contributing to Merino
+jawn easier.
 
 Please __do not__ contact project maintainers privately with questions unless
 there is a good reason to keep them private. While it can be tempting to
@@ -99,7 +109,8 @@ audience, and it can result in duplication of effort.
 
 ## Author
 
-Merino was designed and developed by Jon Pretty, and commercial support and training is available from
+Merino
+jawn was designed and developed by Jon Pretty, and commercial support and training is available from
 [Propensive O&Uuml;](https://propensive.com/).
 
 
@@ -120,5 +131,6 @@ often arrived in English via a romance language.
 
 ## License
 
-Merino is copyright &copy; 2023 Jon Pretty & Propensive O&Uuml;, and is made available under the
+Merino
+jawn is copyright &copy; 2023 Jon Pretty & Propensive O&Uuml;, and is made available under the
 [Apache 2.0 License](/license.md).
