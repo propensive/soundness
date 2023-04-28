@@ -57,16 +57,16 @@ object Tests extends Suite(t"Plutocrat tests"):
       -Eur(1.99)
     .assert(_ == Eur(-1.99))
 
-    // test(t"Compare amounts"):
-    //   Eur(1.01) > Eur(2.10)
-    // .assert(_ == false)
+    test(t"Compare amounts"):
+      Eur(1.01) > Eur(2.10)
+    .assert(_ == false)
     
-    // test(t"Compare equal amounts"):
-    //   Eur(1.01) > Eur(1.01)
-    // .assert(_ == false)
+    test(t"Compare equal amounts"):
+      Eur(1.01) > Eur(1.01)
+    .assert(_ == false)
     
-    // test(t"Compare equal amounts"):
-    //   Eur(1.01) >= Eur(1.01)
-    // .assert(_ == true)
+    test(t"Compare equal amounts"):
+      Eur(1.01) >= Eur(1.01)
+    .assert(_ == true)
 
 

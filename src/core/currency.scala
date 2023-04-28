@@ -56,7 +56,18 @@ object PlutocratOpaques:
       t"${currency.symbol+integral}.${fractional.toString.show.pad(2, Rtl, '0')}"
   
   extension [CurrencyType <: Currency & Singleton: ValueOf](left: Money[CurrencyType])
-    
+    @targetName("greaterThan")
+    def >(right: Money[CurrencyType]): Boolean = (left: Long) > (right: Long)
+
+    @targetName("greaterThanOrEqual")
+    def >=(right: Money[CurrencyType]): Boolean = (left: Long) >= (right: Long)
+
+    @targetName("lessThan")
+    def <(right: Money[CurrencyType]): Boolean = (left: Long) < (right: Long)
+
+    @targetName("lessThanOrEqual")
+    def <=(right: Money[CurrencyType]): Boolean = (left: Long) <= (right: Long)
+
     @targetName("add")
     def +(right: Money[CurrencyType]): Money[CurrencyType] = left + right
     
