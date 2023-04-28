@@ -24,7 +24,7 @@ import scala.collection.mutable as scm
 extension [TestType](test: Test[TestType])
   inline def benchmark
       [DurationType, ReportType]
-      (confidence: Maybe[Double] = Unset, iterations: Maybe[Int] = Unset,
+      (confidence: Maybe[Benchmark.Percentiles] = Unset, iterations: Maybe[Int] = Unset,
           duration: Maybe[DurationType] = Unset, warmup: Maybe[DurationType] = Unset,
           baseline: Maybe[Baseline] = Unset)
       (using runner: Runner[ReportType], inc: Inclusion[ReportType, Benchmark],
@@ -59,5 +59,5 @@ extension [TestType](test: Test[TestType])
     val max: Long = times.max
     val variance: Double = (times.map { t => (mean - t)*(mean - t) }.sum)/count
     val stdDev: Double = math.sqrt(variance.toDouble)
-    val benchmark = Benchmark(total, times.size, min, mean, max, stdDev, confidence.or(0.95), baseline)
+    val benchmark = Benchmark(total, times.size, min, mean, max, stdDev, confidence.or(95), baseline)
     inc.include(runner.report, test.id, benchmark)

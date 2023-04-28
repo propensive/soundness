@@ -40,11 +40,23 @@ object Benchmark:
   given Inclusion[TestReport, Benchmark] with
     def include(report: TestReport, testId: TestId, benchmark: Benchmark): TestReport =
       report.addBenchmark(testId, benchmark)
+  type Percentiles = 80 | 85 | 90 | 95 | 96 | 97 | 98 | 99
 
 case class Benchmark
-    (total: Long, count: Int, min: Long, mean: Double, max: Double, sd: Double, confidence: Double,
-        baseline: Maybe[Baseline]):
-  def confidenceInterval: Long = (confidence*sd/math.sqrt(count.toDouble)).toLong
+    (total: Long, count: Int, min: Long, mean: Double, max: Double, sd: Double,
+        confidence: Benchmark.Percentiles, baseline: Maybe[Baseline]):
+  
+  def zScore(percentile: Benchmark.Percentiles): Double = percentile match
+    case 80 => 0.842
+    case 85 => 1.036
+    case 90 => 1.282
+    case 95 => 1.645
+    case 96 => 1.751
+    case 97 => 1.881
+    case 98 => 2.054
+    case 99 => 2.326
+    
+  def confidenceInterval: Long = (zScore(confidence)*sd/math.sqrt(count.toDouble)).toLong
   def throughput: Long = (1000000000.0/mean).toLong
 
 enum DebugInfo:
@@ -247,7 +259,7 @@ class TestReport(using env: Environment):
       def ops(n: Long): AnsiText = ansi"${colors.Silver}($n) ops/s"
       
       def confInt(b: Benchmark): AnsiText =
-        if b.confidence == 0 then ansi"" else ansi"±${showTime(b.confidence.toLong)}"
+        if b.confidenceInterval == 0 then ansi"" else ansi"±${showTime(b.confidenceInterval)}"
       
       def opsPerS(b: Benchmark): AnsiText = if b.throughput == 0 then ansi"" else ops(b.throughput)
 
@@ -267,7 +279,7 @@ class TestReport(using env: Environment):
             showTime(s.benchmark.mean.toLong),
           
           Column(ansi"$Bold(Confidence)", align = Alignment.Right): s =>
-            ansi"${confInt(s.benchmark)}",
+            ansi"P${s.benchmark.confidence} ${confInt(s.benchmark)}",
           
           Column(ansi"$Bold(Throughput)", align = Alignment.Right): s =>
             ansi"${opsPerS(s.benchmark)}"
