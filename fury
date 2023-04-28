@@ -1,9 +1,9 @@
 # This is a buildfile for Fury or Wrath.
 # More information is available at: https://github.com/propensive/wrath/
 
-target merino/core
+target merino/bench
 
-repo propensive/galilei
+repo propensive/serpentine
 repo propensive/probably
 
 project merino
@@ -12,8 +12,21 @@ project merino
     sources   src/core
     include   gossamer/core
 
+  module bench
+    compiler  scala
+    sources   src/bench
+    include   jawn/core merino/core probably/cli probably/bench
+    main      merino.Benchmarks
+
   module test
     compiler  scala
     sources   src/test
-    include   probably/cli merino/core galilei/core
+    include   serpentine/core probably/cli merino/core jawn/core
+    main      merino.Tests
+
+project jawn
+  module core
+    lib  jawn-parser  https://repo1.maven.org/maven2/org/typelevel/jawn-parser_2.13/1.3.2/jawn-parser_2.13-1.3.2.jar
+    lib  jawn-ast     https://repo1.maven.org/maven2/org/typelevel/jawn-ast_2.13/1.3.2/jawn-ast_2.13-1.3.2.jar
+    lib  jawn-util    https://repo1.maven.org/maven2/org/typelevel/jawn-util_2.13/1.3.2/jawn-util_2.13-1.3.2.jar
 

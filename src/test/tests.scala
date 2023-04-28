@@ -18,10 +18,9 @@ package merino
 
 import probably.*
 import gossamer.*
-import galilei.*, filesystems.unix
-import anticipation.*, fileApi.galileiApi
+//import galilei.*, filesystems.unix
+import anticipation.* //, fileApi.galileiApi
 import eucalyptus.*
-import serpentine.*
 import rudiments.*
 import turbulence.*, characterEncodings.utf8, badEncodingHandlers.strict
 import parasitism.*, monitors.global
@@ -29,7 +28,7 @@ import parasitism.*, monitors.global
 
 import basicIo.jvm
 import unsafeExceptions.canThrowAny
-import environments.system
+import ambience.*, environments.system
 
 import LogFormat.standardAnsi
 
