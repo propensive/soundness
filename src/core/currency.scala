@@ -19,17 +19,13 @@ package plutocrat
 import gossamer.*, textWidthCalculation.uniform
 import rudiments.*
 
-case class Currency(isoCode: String, symbol: String, name: String, fractionalName: String, modulo: Int):
+open case class Currency(isoCode: Text, symbol: Text, name: Text, modulus: Int):
   def apply(value: Double): Money[this.type] =
     val integral = value.toLong
-    val tweak = (if integral < 0 then -0.5 else 0.5)/modulo
-    Money(this)(integral, ((value - integral + tweak)*modulo).toInt)
+    val tweak = (if integral < 0 then -0.5 else 0.5)/modulus
+    Money(this)(integral, ((value - integral + tweak)*modulus).toInt)
   
   def zero: Money[this.type] = apply(0.00)
-
-object Eur extends Currency("EUR", "€", "Euro", "Cent", 100)
-object Usd extends Currency("USD", "$", "US Dollar", "Cent", 100)
-object Gbp extends Currency("GBP", "£", "Pounds Sterling", "Pence", 100)
 
 case class Price[CurrencyType <: Currency & Singleton: ValueOf](principal: Money[CurrencyType], tax: Money[CurrencyType]):
   def taxRate: Double = tax/principal
@@ -42,18 +38,18 @@ object PlutocratOpaques:
   opaque type Money[+CurrencyType <: Currency & Singleton] = Long
 
   object Money:
-    def apply(currency: Currency & Singleton)(wholePart: Long, fractional: Int): Money[currency.type] =
-      wholePart*currency.modulo + fractional
+    def apply(currency: Currency & Singleton)(wholePart: Long, subunit: Int): Money[currency.type] =
+      wholePart*currency.modulus + subunit
     
     given [CurrencyType <: Currency & Singleton]: Ordering[Money[CurrencyType]] =
       (a, b) => if a < b then 1 else if b < a then -1 else 0
 
     given [CurrencyType <: Currency & Singleton: ValueOf]: Show[Money[CurrencyType]] = money =>
       val currency = valueOf[CurrencyType]
-      val integral = money/currency.modulo
-      val fractional = money%currency.modulo
+      val integral = money/currency.modulus
+      val subunit = money%currency.modulus
         
-      t"${currency.symbol+integral}.${fractional.toString.show.pad(2, Rtl, '0')}"
+      t"${currency.symbol}${integral.toString}.${subunit.toString.show.pad(2, Rtl, '0')}"
   
   extension [CurrencyType <: Currency & Singleton: ValueOf](left: Money[CurrencyType])
     @targetName("greaterThan")
