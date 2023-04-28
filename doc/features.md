@@ -1,1 +1,4 @@
-TBC
+- provides simple representations of currencies
+- monetary values are represented precisely as fixed-point decimals
+- currencies are stored in memory as `Long`s using opaque types
+- implementations of the 16 most traded currencies are included
