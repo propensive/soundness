@@ -30,10 +30,19 @@ open case class Currency(isoCode: Text, symbol: Text, name: Text, modulus: Int):
 case class Price[CurrencyType <: Currency & Singleton: ValueOf](principal: Money[CurrencyType], tax: Money[CurrencyType]):
   def effectiveTaxRate: Double = tax/principal
 
+  @targetName("add")
   def +(right: Price[CurrencyType]): Price[CurrencyType] = Price(principal + right.principal, tax + right.tax)
+  
+  @targetName("subtract")
   def -(right: Price[CurrencyType]): Price[CurrencyType] = Price(principal - right.principal, tax - right.tax)
+  
+  @targetName("negate")
   def unary_- : Price[CurrencyType] = Price(-principal, -tax)
+  
+  @targetName("multiply")
   def *(right: Double): Price[CurrencyType] = Price(principal*right, tax*right)
+  
+  @targetName("divide")
   def /(right: Double): Price[CurrencyType] = Price(principal/right, tax/right)
 
   def inclusive: Money[CurrencyType] = principal + tax
@@ -56,6 +65,7 @@ object PlutocratOpaques:
       t"${currency.symbol}${integral.toString}.${subunit.toString.show.pad(2, Rtl, '0')}"
   
   extension [CurrencyType <: Currency & Singleton: ValueOf](left: Money[CurrencyType])
+
     @targetName("greaterThan")
     def >(right: Money[CurrencyType]): Boolean = (left: Long) > (right: Long)
 
@@ -78,14 +88,19 @@ object PlutocratOpaques:
     def *(right: Int): Money[CurrencyType] = left*right
     
     @targetName("multiply2")
-    def *(right: Double): Money[CurrencyType] = (left.toDouble*right).toLong
+    def *(right: Double): Money[CurrencyType] =
+      val value = left*right
+      (value + math.signum(value)/2).toLong
     
     @targetName("divide")
-    def /(right: Double): Money[CurrencyType] = (left/right + 0.5).toLong
+    def /(right: Double): Money[CurrencyType] =
+      val value = left/right
+      (value + math.signum(value)/2).toLong
 
     @targetName("divide2")
     def /(right: Money[CurrencyType]): Double = left.toDouble/right.toDouble
 
+    @targetName("negate")
     def `unary_-`: Money[CurrencyType] = -left
 
     def tax(rate: Double): Price[CurrencyType] = Price(left, (left*rate + 0.5).toLong)
