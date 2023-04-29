@@ -28,11 +28,15 @@ open case class Currency(isoCode: Text, symbol: Text, name: Text, modulus: Int):
   def zero: Money[this.type] = apply(0.00)
 
 case class Price[CurrencyType <: Currency & Singleton: ValueOf](principal: Money[CurrencyType], tax: Money[CurrencyType]):
-  def taxRate: Double = tax/principal
+  def effectiveTaxRate: Double = tax/principal
 
   def +(right: Price[CurrencyType]): Price[CurrencyType] = Price(principal + right.principal, tax + right.tax)
   def -(right: Price[CurrencyType]): Price[CurrencyType] = Price(principal - right.principal, tax - right.tax)
   def unary_- : Price[CurrencyType] = Price(-principal, -tax)
+  def *(right: Double): Price[CurrencyType] = Price(principal*right, tax*right)
+  def /(right: Double): Price[CurrencyType] = Price(principal/right, tax/right)
+
+  def inclusive: Money[CurrencyType] = principal + tax
 
 object PlutocratOpaques:
   opaque type Money[+CurrencyType <: Currency & Singleton] = Long
@@ -77,14 +81,14 @@ object PlutocratOpaques:
     def *(right: Double): Money[CurrencyType] = (left.toDouble*right).toLong
     
     @targetName("divide")
-    def /(right: Int): Money[CurrencyType] = (left + right/2)/right
+    def /(right: Double): Money[CurrencyType] = (left/right + 0.5).toLong
 
     @targetName("divide2")
     def /(right: Money[CurrencyType]): Double = left.toDouble/right.toDouble
 
     def `unary_-`: Money[CurrencyType] = -left
 
-    def tax(rate: Double): Price[CurrencyType] = Price(left, (left*rate).toLong)
+    def tax(rate: Double): Price[CurrencyType] = Price(left, (left*rate + 0.5).toLong)
 
     @tailrec
     def split(right: Int, result: List[Money[CurrencyType]] = Nil): List[Money[CurrencyType]] =
