@@ -10,7 +10,10 @@ TBC
 
 ## Features
 
-TBC
+- provides simple representations of currencies
+- monetary values are represented precisely as fixed-point decimals
+- currencies are stored in memory as `Long`s using opaque types
+- implementations of the 16 most traded currencies are included
 
 
 ## Availability
@@ -40,7 +43,7 @@ be used, but caution should be taken if there is a mismatch between the
 project's stability level and the importance of your own project.
 
 Plutocrat is designed to be _small_. Its entire source code currently consists
-of 107 lines of code.
+of 122 lines of code.
 
 ## Building
 
