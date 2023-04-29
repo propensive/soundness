@@ -47,6 +47,13 @@ case class Price[CurrencyType <: Currency & Singleton: ValueOf](principal: Money
 
   def inclusive: Money[CurrencyType] = principal + tax
 
+trait CurrencyStyle:
+  def format(currency: Currency, unit: Text, subunit: Text): Text
+
+package currencyStyles:
+  given local: CurrencyStyle = (currency, unit, subunit) => t"${currency.symbol}$unit.$subunit"
+  given generic: CurrencyStyle = (currency, unit, subunit) => t"$unit.$subunit ${currency.isoCode}"
+
 object PlutocratOpaques:
   opaque type Money[+CurrencyType <: Currency & Singleton] = Long
 
@@ -57,12 +64,12 @@ object PlutocratOpaques:
     given [CurrencyType <: Currency & Singleton]: Ordering[Money[CurrencyType]] =
       (a, b) => if a < b then 1 else if b < a then -1 else 0
 
-    given [CurrencyType <: Currency & Singleton: ValueOf]: Show[Money[CurrencyType]] = money =>
+    given [CurrencyType <: Currency & Singleton: ValueOf](using currencyStyle: CurrencyStyle): Show[Money[CurrencyType]] = money =>
       val currency = valueOf[CurrencyType]
-      val integral = money/currency.modulus
-      val subunit = money%currency.modulus
-        
-      t"${currency.symbol}${integral.toString}.${subunit.toString.show.pad(2, Rtl, '0')}"
+      val units = (money/currency.modulus).toString.show
+      val subunit = (money%currency.modulus).toString.show.pad(2, Rtl, '0')
+      
+      currencyStyle.format(currency, units, subunit)
   
   extension [CurrencyType <: Currency & Singleton: ValueOf](left: Money[CurrencyType])
 

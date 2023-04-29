@@ -23,10 +23,17 @@ import larceny.*
 object Tests extends Suite(t"Plutocrat tests"):
   def run(): Unit =
     suite(t"Money tests"):
-      test(t"Show a monetary value"):
+      test(t"Show a local monetary value"):
+        import currencyStyles.local
         val amount = Eur(3.01)
         t"Received $amount"
       .assert(_ == t"Received €3.01")
+      
+      test(t"Show a monetary value"):
+        import currencyStyles.generic
+        val amount = Eur(3.01)
+        t"Received $amount"
+      .assert(_ == t"Received 3.01 EUR")
       
       test(t"Add two amounts"):
         Eur(3.01) + Eur(0.02)
