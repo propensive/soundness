@@ -32,7 +32,8 @@ object StackTrace:
     Text("ς")  -> Text("super reference"),
     Text("ε")  -> Text("extension method"),
     Text("ϕ")  -> Text("direct"),
-    Text("π")  -> Text("package file")
+    Text("π")  -> Text("package file"),
+    Text("ⲛ")  -> Text("class initializer")
   )
 
   def rewrite(name: String, method: Boolean = false): Text =
@@ -67,6 +68,14 @@ object StackTrace:
         case '9' => token(idx, "9", "₉", true)
         case _   => recur(idx, false)
       else char(idx) match
+        case '<' =>
+          if (0 until 6).forall { i => char(idx + i) == "<init>"(i) }
+          then
+            sb.append("ⲛ")
+            recur(idx + 6)
+          else
+            sb.append("<")
+            recur(idx + 1)
         case 'i' =>
           if (0 until 8).forall { i => char(idx + i) == "initial$"(i) }
           then
