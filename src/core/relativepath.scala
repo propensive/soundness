@@ -32,7 +32,7 @@ object Relative:
     else (List.fill(rel.ascent)(t"..") ::: rel.elements.reverse.map(_.show)).join(t"", t"/", t"")
 
   given hierarchy: Hierarchy[Relative] with
-    type ForbiddenType = '/' | ".." | ""
+    type ForbiddenType = ".*/.*" | "\\.\\." | ""
     
     def separator(path: Relative): Text = t"/"
     def prefix(root: Relative): Text = t"./"

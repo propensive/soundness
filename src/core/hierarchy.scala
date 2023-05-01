@@ -21,8 +21,6 @@ import gossamer.*
 
 import language.experimental.captureChecking
 
-type ForbiddenSet = Singleton & (Char | String)
-
 object Hierarchy:
   given show[PathType](using hierarchy: Hierarchy[PathType]): Show[PathType] = path =>
     val separator = hierarchy.separator(path)
@@ -30,7 +28,7 @@ object Hierarchy:
 
 trait Hierarchy[PathType]:
 
-  type ForbiddenType <: Singleton & (Char | String)
+  type ForbiddenType <: Label
   
   def separator(path: PathType): Text
   def prefix(root: PathType): Text

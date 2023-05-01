@@ -103,13 +103,13 @@ object Tests extends Suite(t"Serpentine Tests"):
         captureCompileErrors:
           val elem: PathElement["bad"] = p"bad"
         .map(_.message)
-      .assert(_ == List(t"serpentine: 'bad' is not a valid name for a path element"))
+      .assert(_ == List(t"serpentine: a path element may not be 'bad'"))
       
       test(t"simple path from forbidden set of strings does not compile"):
         captureCompileErrors:
           val elem: PathElement["bad" | "awful"] = p"bad"
         .map(_.message)
-      .assert(_ == List(t"serpentine: 'bad' is not a valid name for a path element"))
+      .assert(_ == List(t"serpentine: a path element may not be 'bad'"))
       
       test(t"simple path not in forbidden set of strings does compile"):
         captureCompileErrors:
@@ -118,22 +118,22 @@ object Tests extends Suite(t"Serpentine Tests"):
       
       test(t"path with forbidden character does compile"):
         captureCompileErrors:
-          val elem: PathElement["bad" | 'n'] = p"unsafe"
+          val elem: PathElement["bad" | ".*n.*"] = p"unsafe"
         .map(_.message)
-      .assert(_ == List(t"serpentine: the character 'n' is not permitted in a path element"))
+      .assert(_ == List(t"serpentine: a path element may not contain the character 'n'"))
       
       test(t"path with forbidden character does compile"):
         captureCompileErrors:
-          val elem: PathElement['a' | 'e' | 'i' | 'o' | 'u'] = p"unsafe"
+          val elem: PathElement[".*a.*" | ".*e.*" | ".*i.*" | ".*o.*" | ".*u.*"] = p"unsafe"
         .map(_.message)
-      .assert(_ == List(t"serpentine: the character 'a' is not permitted in a path element"))
+      .assert(_ == List(t"serpentine: a path element may not contain the character 'a'"))
 
-      case class Address(elements: List[PathElement['!' | ',' | '*' | '/' | ""]])
+      case class Address(elements: List[PathElement[".*!.*" | ".*,.*" | ".*\\*.*" | ".*/.*" | ""]])
 
       object Address extends Address(Nil)
 
       given Hierarchy[Address] with
-        type ForbiddenType = '!' | ',' | '*' | '/' | ""
+        type ForbiddenType = ".*!.*" | ".*,.*" | ".*\\*.*" | ".*/.*" | ""
         def separator(address: Address): Text = t"\n"
         def prefix(root: Address): Text = t""
         def elements(address: Address): List[PathElement[ForbiddenType]] = address.elements
@@ -151,11 +151,11 @@ object Tests extends Suite(t"Serpentine Tests"):
       
       test(t"Bad child path is forbidden"):
         captureCompileErrors(Address / p"foo" / p"ba*r").map(_.message)
-      .assert(_ == List(t"serpentine: the character '*' is not permitted in a path element"))
+      .assert(_ == List(t"serpentine: a path element may not contain the character '*'"))
       
       test(t"Forbidden path elements are inferred"):
         captureCompileErrors(Address / p"foo!").map(_.message)
-      .assert(_ == List(t"serpentine: the character '!' is not permitted in a path element"))
+      .assert(_ == List(t"serpentine: a path element may not contain the character '!'"))
 
       test(t"Relative path's parent is safe"):
         val relative = Relative(3, List(t"some"))

@@ -32,17 +32,17 @@ object GenericPath:
     else throw PathError(PathError.Reason.NotRooted)
 
   given hierarchy: Hierarchy[GenericPath] with
-    type ForbiddenType = '/' | ".." | ""
+    type ForbiddenType = ".*/.*" | "\\.\\." | ""
 
     def separator(path: GenericPath): Text = t"/"
     def prefix(root: GenericPath): Text = t"/"
     def root(path: GenericPath): `^`.type = ^
-    def elements(path: GenericPath): List[PathElement['/' | ".." | ""]] = path.elements
-    def child(base: GenericPath, child: PathElement['/' | ".." | ""]): GenericPath =
+    def elements(path: GenericPath): List[PathElement[".*/.*" | "\\.\\." | ""]] = path.elements
+    def child(base: GenericPath, child: PathElement[".*/.*" | "\\.\\." | ""]): GenericPath =
       base.copy(elements = child :: base.elements)
     
     def parent(path: GenericPath): GenericPath = path.copy(elements = path.elements.tail)
 
-case class GenericPath(elements: List[SerpentineInternals.PathElement['/' | ".." | ""]])
+case class GenericPath(elements: List[SerpentineInternals.PathElement[".*/.*" | "\\.\\." | ""]])
 
 export GenericPath.`^`

@@ -17,6 +17,7 @@
 package serpentine
 
 import rudiments.*
+import kaleidoscope.*
 
 import scala.compiletime.*
 import scala.quoted.*
@@ -25,7 +26,7 @@ import language.experimental.captureChecking
 
 object SerpentineMacros:
   def parse
-      [ForbiddenType <: ForbiddenSet: Type](ctx: Expr[StringContext])(using Quotes)
+      [ForbiddenType <: Label: Type](ctx: Expr[StringContext])(using Quotes)
       : Expr[PathElement[ForbiddenType]] =
     import quotes.reflect.*
     
@@ -38,16 +39,18 @@ object SerpentineMacros:
         checkType(left)
         checkType(right)
       
-      case ConstantType(StringConstant(str)) =>
-        if element == str then fail(s"'$str' is not a valid name for a path element", pos)
+      case ConstantType(StringConstant(pattern)) =>
+        if element.matches(pattern) then
+          Text(pattern) match
+            case r"\.\*\\?$char@(.)\.\*" =>
+              fail(s"a path element may not contain the character '$char'", pos)
+            case r"$start@([a-zA-Z0-9]*)\.\*" =>
+              fail(s"a path element may not start with '$start'", pos)
+            case r"[a-zA-Z0-9]*" =>
+              fail(s"a path element may not be '$pattern'", pos)
+            case other =>
+              fail(s"a path element may not match the pattern '$other'")
 
-      case ConstantType(CharConstant(char)) =>
-        element.indexOf(char) match
-          case -1  => ()
-          case idx =>
-            val pos2 = Position(pos.sourceFile, pos.start + idx, pos.start + idx + 1)
-            fail(s"the character '$char' is not permitted in a path element", pos2)
-    
       case other =>
         fail(s"Unexpectedly found type $other")
     
@@ -56,5 +59,5 @@ object SerpentineMacros:
     '{${Expr(element)}.asInstanceOf[PathElement[ForbiddenType]]}
 
 extension (inline ctx: StringContext)
-  inline def p[ForbiddenType <: ForbiddenSet](): PathElement[ForbiddenType] =
+  inline def p[ForbiddenType <: Label](): PathElement[ForbiddenType] =
     ${SerpentineMacros.parse[ForbiddenType]('ctx)}
