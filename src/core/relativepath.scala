@@ -34,7 +34,7 @@ object Relative:
   given hierarchy: Hierarchy[Relative] with
     type ForbiddenType = '/' | ".." | ""
     
-    def separator: Text = t"/"
+    def separator(path: Relative): Text = t"/"
     def prefix(root: Relative): Text = t"./"
     def root(path: Relative): Relative = ?
     def elements(path: Relative): List[PathElement[ForbiddenType]] = path.elements.map(PathElement(_))

@@ -34,7 +34,7 @@ object GenericPath:
   given hierarchy: Hierarchy[GenericPath] with
     type ForbiddenType = '/' | ".." | ""
 
-    def separator: Text = t"/"
+    def separator(path: GenericPath): Text = t"/"
     def prefix(root: GenericPath): Text = t"/"
     def root(path: GenericPath): `^`.type = ^
     def elements(path: GenericPath): List[PathElement['/' | ".." | ""]] = path.elements

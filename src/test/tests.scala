@@ -134,7 +134,7 @@ object Tests extends Suite(t"Serpentine Tests"):
 
       given Hierarchy[Address] with
         type ForbiddenType = '!' | ',' | '*' | '/' | ""
-        def separator: Text = t"\n"
+        def separator(address: Address): Text = t"\n"
         def prefix(root: Address): Text = t""
         def elements(address: Address): List[PathElement[ForbiddenType]] = address.elements
         def root(address: Address): Address.type = Address

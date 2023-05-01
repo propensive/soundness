@@ -25,13 +25,14 @@ type ForbiddenSet = Singleton & (Char | String)
 
 object Hierarchy:
   given show[PathType](using hierarchy: Hierarchy[PathType]): Show[PathType] = path =>
-    t"${hierarchy.prefix(path)}${path.elements.map(_.show).reverse.join(hierarchy.separator)}"
+    val separator = hierarchy.separator(path)
+    t"${hierarchy.prefix(path)}${path.elements.map(_.show).reverse.join(separator)}"
 
 trait Hierarchy[PathType]:
 
   type ForbiddenType <: Singleton & (Char | String)
   
-  def separator: Text
+  def separator(path: PathType): Text
   def prefix(root: PathType): Text
   def root(path: PathType): PathType
   def elements(path: PathType): List[PathElement[ForbiddenType]]
@@ -55,7 +56,8 @@ extension [PathType, PathType2 >: PathType](path: PathType)(using hierarchy: Hie
     hierarchy.parent(path)
   
   def text: Text =
-    hierarchy.elements(path).reverse.map(_.show).join(hierarchy.prefix(root), hierarchy.separator, t"")
+    val separator = hierarchy.separator(path)
+    hierarchy.elements(path).reverse.map(_.show).join(hierarchy.prefix(root), separator, t"")
 
   def depth: Int = hierarchy.elements(path).length
   
