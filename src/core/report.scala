@@ -28,13 +28,22 @@ import iridescence.*
 
 import scala.collection.mutable as scm
 
-enum Compare:
-  case Min, Mean, Max
+object Baseline:
+  enum Compare:
+    case Min, Mean, Max
+  
+  enum Metric:
+    case Speed, Time
+  
+  enum Calc:
+    case Ratio, Difference
 
-enum Ratio:
-  case Speed, Time
+export Baseline.Compare.{Min, Mean, Max}
+export Baseline.Metric.{Speed, Time}
+export Baseline.Calc.{Ratio, Difference}
 
-case class Baseline(compare: Compare = Compare.Mean, ratio: Ratio = Ratio.Speed)
+case class Baseline
+    (compare: Baseline.Compare = Mean, metric: Baseline.Metric = Speed, calc: Baseline.Calc = Ratio)
 
 object Benchmark:
   given Inclusion[TestReport, Benchmark] with
@@ -256,12 +265,12 @@ class TestReport(using env: Environment):
       val comparisons: List[ReportLine.Bench] =
         benchmarks.filter(!_.benchmark.baseline.unset).to(List)
       
-      def ops(n: Long): AnsiText = ansi"${colors.Silver}($n) ops/s"
-      
       def confInt(b: Benchmark): AnsiText =
-        if b.confidenceInterval == 0 then ansi"" else ansi"±${showTime(b.confidenceInterval)}"
+        if b.confidenceInterval == 0 then ansi"" else ansi"${colors.Thistle}(±)${showTime(b.confidenceInterval)}"
       
-      def opsPerS(b: Benchmark): AnsiText = if b.throughput == 0 then ansi"" else ops(b.throughput)
+      def opsPerS(b: Benchmark): AnsiText =
+        if b.throughput == 0 then ansi""
+        else ansi"${colors.Silver}(${b.throughput}) ${colors.Turquoise}(op${colors.Gray}(·)s¯¹)"
 
       import decimalFormats.threePlaces
 
@@ -285,19 +294,38 @@ class TestReport(using env: Environment):
             ansi"${opsPerS(s.benchmark)}"
         ) ::: (
           comparisons.map: c =>
+            import Baseline.*
             val baseline = unsafely(c.benchmark.baseline.assume)
-            Column(ansi"$Bold(${c.test.id})", align = Alignment.Right): (s: ReportLine.Bench) =>
-              val ratio = baseline.compare match
-                case Compare.Min  => s.benchmark.min.toDouble/c.benchmark.min
-                case Compare.Mean => s.benchmark.mean.toDouble/c.benchmark.mean
-                case Compare.Max  => s.benchmark.max.toDouble/c.benchmark.max
+            Column(ansi"$Bold(${colors.CadetBlue}(${c.test.id}))", align = Alignment.Right): (s: ReportLine.Bench) =>
+              def op(left: Double, right: Double): Double = baseline.calc match
+                case Difference => left - right
+                case Ratio      => left/right
+              
+              def metric(value: Double) = if baseline.metric == Time then value else 1/value
+              
+              val value = baseline.compare match
+                case Compare.Min  => op(metric(s.benchmark.min), metric(c.benchmark.min))
+                case Compare.Mean => op(metric(s.benchmark.mean), metric(c.benchmark.mean))
+                case Compare.Max  => op(metric(s.benchmark.max), metric(c.benchmark.max))
+              
+              val valueWithUnits = baseline.metric match
+                case Time =>
+                  showTime(value.toLong)
+                
+                case Speed =>
+                  ansi"${colors.Silver}(${value}) ${colors.Turquoise}(op${colors.Gray}(·)s¯¹)"
 
-              val ratio2 = if baseline.ratio == Ratio.Time then ratio else 1/ratio
-              if ratio == 1.0 then ansi"-" else ansi"${ratio2.show}"
+              baseline.calc match
+                case Difference => if value == 0 then ansi"★"
+                                   else if value < 0
+                                   then ansi"${colors.Thistle}(-)${valueWithUnits.drop(1)}"
+                                   else ansi"${colors.Thistle}(+)$valueWithUnits"
+                
+                case Ratio      => if value == 1 then ansi"★" else ansi"${colors.Silver}($value)"
         ))*
       )
 
-      bench.tabulate(benchmarks.to(List).sortBy(_.benchmark.throughput), columns).map(_.render).foreach(Io.println(_))
+      bench.tabulate(benchmarks.to(List).sortBy(-_.benchmark.throughput), columns).map(_.render).foreach(Io.println(_))
       
     
 
