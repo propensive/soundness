@@ -572,22 +572,6 @@ object Tests extends Suite(t"Gossamer Tests"):
         Exception("").show
       .assert(_ == t"<exception>")
     
-      // test(t"Show a Double"):
-      //   3.1415926.show
-      // }.assert(_ == "3.1415926")
-
-    // suite(t"Decimalization benchmarks"):
-    //   val df = java.text.DecimalFormat("#.###")
-    //   val decimalizer = Decimalizer('.', 3, 6)
-
-    //   test(t"Decimalize Pi"):
-    //     df.format(math.Pi)
-    //   .benchmark(baseline = Baseline(calc = Ratio, metric = Speed))
-
-    //   test(t"Decimalize Pi with Decimalizer"):
-    //     decimalizer.decimalize(math.Pi)
-    //   .benchmark()
-
     suite(t"Decimalization tests"):
       test(t"Write negative pi"):
         Decimalizer(1).decimalize(-math.Pi)

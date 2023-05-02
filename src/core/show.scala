@@ -22,8 +22,6 @@ import turbulence.*
 import scala.deriving.*
 import scala.compiletime.*
 
-import java.text as jt
-
 import language.experimental.pureFunctions
 
 
@@ -157,8 +155,8 @@ object Show:
   given Show[Byte] = Showable(_).show
   given Show[Uuid] = _.javaUuid.toString.show
 
-  given (using format: DecimalFormat): Show[Double] = format.render(_)
-  given (using format: DecimalFormat): Show[Float] = format.render(_)
+  given (using decimalizer: Decimalizer): Show[Double] = decimalizer.decimalize(_)
+  given (using decimalizer: Decimalizer): Show[Float] = decimalizer.decimalize(_)
   
   given Show[ByteSize] = bs =>
     if bs.long > 10L*1024*1024*1024*1024 then Text(s"${(bs.long/1024*1024*1024*1024).show}TB")
@@ -215,14 +213,3 @@ trait Canonical[T]:
 extension (inline ctx: StringContext)
   transparent inline def enc(inline parts: Any*): Encoding =
     ${EncodingPrefix.expand('EncodingPrefix, 'ctx, 'parts)}
-
-package decimalFormats:
-  given exact: DecimalFormat = DecimalFormat(t"0.#################")
-  given onePlace: DecimalFormat = DecimalFormat(t"0.#")
-  given twoPlaces: DecimalFormat = DecimalFormat(t"0.##")
-  given threePlaces: DecimalFormat = DecimalFormat(t"0.###")
-  given fourPlaces: DecimalFormat = DecimalFormat(t"0.####")
-
-case class DecimalFormat(pattern: Text):
-  private lazy val decimalFormat: jt.DecimalFormat = jt.DecimalFormat(pattern.s)
-  def render(value: Double): Text = Text(decimalFormat.format(value).nn)
