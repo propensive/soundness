@@ -5,7 +5,7 @@ repo propensive/turbulence
 repo propensive/contextual
 repo propensive/larceny
 
-target gossamer/bench
+target gossamer/test
 
 project gossamer
   module core

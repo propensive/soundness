@@ -575,3 +575,252 @@ object Tests extends Suite(t"Gossamer Tests"):
       // test(t"Show a Double"):
       //   3.1415926.show
       // }.assert(_ == "3.1415926")
+
+    // suite(t"Decimalization benchmarks"):
+    //   val df = java.text.DecimalFormat("#.###")
+    //   val decimalizer = Decimalizer('.', 3, 6)
+
+    //   test(t"Decimalize Pi"):
+    //     df.format(math.Pi)
+    //   .benchmark(baseline = Baseline(calc = Ratio, metric = Speed))
+
+    //   test(t"Decimalize Pi with Decimalizer"):
+    //     decimalizer.decimalize(math.Pi)
+    //   .benchmark()
+
+    suite(t"Decimalization tests"):
+      test(t"Write negative pi"):
+        Decimalizer(1).decimalize(-math.Pi)
+      .assert(_ == t"-3")
+      
+      test(t"Write negative pi to 2 s.f."):
+        Decimalizer(2).decimalize(-math.Pi)
+      .assert(_ == t"-3.1")
+      
+      test(t"Write negative pi to 3 s.f."):
+        Decimalizer(3).decimalize(-math.Pi)
+      .assert(_ == t"-3.14")
+      
+      test(t"Write 1 s.f. pi"):
+        Decimalizer(1).decimalize(math.Pi)
+      .assert(_ == t"3")
+      
+      test(t"Write 2 s.f. pi"):
+        Decimalizer(2).decimalize(math.Pi)
+      .assert(_ == t"3.1")
+      
+      test(t"Write 3 s.f. pi"):
+        Decimalizer(3).decimalize(math.Pi)
+      .assert(_ == t"3.14")
+      
+      test(t"Write 4 s.f. pi"):
+        Decimalizer(4).decimalize(math.Pi)
+      .assert(_ == t"3.142")
+      
+      test(t"Write 5 s.f. pi"):
+        Decimalizer(5).decimalize(math.Pi)
+      .assert(_ == t"3.1416")
+      
+      test(t"Write 6 s.f. pi"):
+        Decimalizer(6).decimalize(math.Pi)
+      .assert(_ == t"3.14159")
+      
+      test(t"Write 7 s.f. pi"):
+        Decimalizer(7).decimalize(math.Pi)
+      .assert(_ == t"3.141593")
+      
+      test(t"Write 8 s.f. pi"):
+        Decimalizer(8).decimalize(math.Pi)
+      .assert(_ == t"3.1415927")
+      
+      test(t"Write 1 s.f. 10*pi"):
+        Decimalizer(1).decimalize(10*math.Pi)
+      .assert(_ == t"30")
+      
+      test(t"Write 2 s.f. 10*pi"):
+        Decimalizer(2).decimalize(10*math.Pi)
+      .assert(_ == t"31")
+      
+      test(t"Write 3 s.f. 10*pi"):
+        Decimalizer(3).decimalize(10*math.Pi)
+      .assert(_ == t"31.4")
+      
+      test(t"Write 4 s.f. 10*pi"):
+        Decimalizer(4).decimalize(10*math.Pi)
+      .assert(_ == t"31.42")
+      
+      test(t"Write 5 s.f. 10*pi"):
+        Decimalizer(5).decimalize(10*math.Pi)
+      .assert(_ == t"31.416")
+      
+      test(t"Write 6 s.f. 10*pi"):
+        Decimalizer(6).decimalize(10*math.Pi)
+      .assert(_ == t"31.4159")
+      
+      test(t"Write 7 s.f. 10*pi"):
+        Decimalizer(7).decimalize(10*math.Pi)
+      .assert(_ == t"31.41593")
+      
+      test(t"Write 8 s.f. 10*pi"):
+        Decimalizer(8).decimalize(10*math.Pi)
+      .assert(_ == t"31.415927")
+      
+      test(t"Write 1 s.f. 100*pi"):
+        Decimalizer(1).decimalize(100*math.Pi)
+      .assert(_ == t"300")
+      
+      test(t"Write 2 s.f. 100*pi"):
+        Decimalizer(2).decimalize(100*math.Pi)
+      .assert(_ == t"310")
+      
+      test(t"Write 3 s.f. 100*pi"):
+        Decimalizer(3).decimalize(100*math.Pi)
+      .assert(_ == t"314")
+      
+      test(t"Write 4 s.f. 100*pi"):
+        Decimalizer(4).decimalize(100*math.Pi)
+      .assert(_ == t"314.2")
+      
+      test(t"Write 5 s.f. 100*pi"):
+        Decimalizer(5).decimalize(100*math.Pi)
+      .assert(_ == t"314.16")
+      
+      test(t"Write 6 s.f. 100*pi"):
+        Decimalizer(6).decimalize(100*math.Pi)
+      .assert(_ == t"314.159")
+      
+      test(t"Write 7 s.f. 100*pi"):
+        Decimalizer(7).decimalize(100*math.Pi)
+      .assert(_ == t"314.1593")
+      
+      test(t"Write 8 s.f. 100*pi"):
+        Decimalizer(8).decimalize(100*math.Pi)
+      .assert(_ == t"314.15927")
+      
+      test(t"Write 1 s.f. pi/10"):
+        Decimalizer(1).decimalize(math.Pi/10)
+      .assert(_ == t"0.3")
+      
+      test(t"Write 2 s.f. pi/10"):
+        Decimalizer(2).decimalize(math.Pi/10)
+      .assert(_ == t"0.31")
+      
+      test(t"Write 3 s.f. pi/10"):
+        Decimalizer(3).decimalize(math.Pi/10)
+      .assert(_ == t"0.314")
+      
+      test(t"Write 4 s.f. pi/10"):
+        Decimalizer(4).decimalize(math.Pi/10)
+      .assert(_ == t"0.3142")
+      
+      test(t"Write 5 s.f. pi/10"):
+        Decimalizer(5).decimalize(math.Pi/10)
+      .assert(_ == t"0.31416")
+      
+      test(t"Write 6 s.f. pi/10"):
+        Decimalizer(6).decimalize(math.Pi/10)
+      .assert(_ == t"0.314159")
+      
+      test(t"Write 7 s.f. pi/10"):
+        Decimalizer(7).decimalize(math.Pi/10)
+      .assert(_ == t"0.3141593")
+      
+      test(t"Write 8 s.f. pi/10"):
+        Decimalizer(8).decimalize(math.Pi/10)
+      .assert(_ == t"0.31415927")
+      
+      test(t"Write 1 s.f. pi/100"):
+        Decimalizer(1).decimalize(math.Pi/100)
+      .assert(_ == t"0.03")
+      
+      test(t"Write 2 s.f. pi/100"):
+        Decimalizer(2).decimalize(math.Pi/100)
+      .assert(_ == t"0.031")
+      
+      test(t"Write 3 s.f. pi/100"):
+        Decimalizer(3).decimalize(math.Pi/100)
+      .assert(_ == t"0.0314")
+      
+      test(t"Write 4 s.f. pi/100"):
+        Decimalizer(4).decimalize(math.Pi/100)
+      .assert(_ == t"0.03142")
+      
+      test(t"Write 5 s.f. pi/100"):
+        Decimalizer(5).decimalize(math.Pi/100)
+      .assert(_ == t"0.031416")
+      
+      test(t"Write 6 s.f. pi/100"):
+        Decimalizer(6).decimalize(math.Pi/100)
+      .assert(_ == t"0.0314159")
+      
+      test(t"Write 7 s.f. pi/100"):
+        Decimalizer(7).decimalize(math.Pi/100)
+      .assert(_ == t"0.03141593")
+      
+      test(t"Write 8 s.f. pi/100"):
+        Decimalizer(8).decimalize(math.Pi/100)
+      .assert(_ == t"0.031415927")
+      
+      test(t"Write 1 s.f. pi/1000"):
+        Decimalizer(1).decimalize(math.Pi/1000)
+      .assert(_ == t"3×10¯³")
+      
+      test(t"Write 2 s.f. pi/1000"):
+        Decimalizer(2).decimalize(math.Pi/1000)
+      .assert(_ == t"3.1×10¯³")
+      
+      test(t"Write 3 s.f. pi/1000"):
+        Decimalizer(3).decimalize(math.Pi/1000)
+      .assert(_ == t"3.14×10¯³")
+      
+      test(t"Write 4 s.f. pi/1000"):
+        Decimalizer(4).decimalize(math.Pi/1000)
+      .assert(_ == t"3.142×10¯³")
+      
+      test(t"Write 5 s.f. pi/1000"):
+        Decimalizer(5).decimalize(math.Pi/1000)
+      .assert(_ == t"3.1416×10¯³")
+      
+      test(t"Write 6 s.f. pi/1000"):
+        Decimalizer(6).decimalize(math.Pi/1000)
+      .assert(_ == t"3.14159×10¯³")
+      
+      test(t"Write 7 s.f. pi/1000"):
+        Decimalizer(7).decimalize(math.Pi/1000)
+      .assert(_ == t"3.141593×10¯³")
+      
+      test(t"Show Avogadro's number"):
+        Decimalizer(5).decimalize(6.0221408e23)
+      .assert(_ == t"6.0221×10²³")
+      
+      test(t"Write 8 s.f. pi/1000"):
+        Decimalizer(8).decimalize(math.Pi/1000)
+      .assert(_ == t"3.1415927×10¯³")
+    
+      test(t"Show Avogadro's number to 7 s.f."):
+        Decimalizer(7).decimalize(6.0221408e23)
+      .assert(_ == t"6.022141×10²³")
+      
+      test(t"Show Planck's constant to 7 s.f."):
+        Decimalizer(7, decimalPoint = '·').decimalize(6.626070e-34)
+      .assert(_ == t"6·626070×10¯³⁴")
+      
+      test(t"Show Avogadro's numer with decimal multiplier"):
+        Decimalizer(7, exponentMultiple = 3).decimalize(6.0221408e23)
+      .assert(_ == t"602.2141×10²¹")
+      
+      test(t"Show Planck's constant with decimal multiplier"):
+        Decimalizer(7, decimalPoint = '·', exponentMultiple = 3).decimalize(6.626070e-34)
+      .assert(_ == t"0·6626070×10¯³³")
+      
+      test(t"Show positive infinity"):
+        Decimalizer(7, decimalPoint = '·', exponentMultiple = 3).decimalize(1.0/0.0)
+      .assert(_ == t"∞")
+      
+      test(t"Show negative infinity"):
+        Decimalizer(7, decimalPoint = '·', exponentMultiple = 3).decimalize(-1.0/0.0)
+      .assert(_ == t"-∞")
+      
+      test(t"Show not-a-number"):
+        Decimalizer(7, decimalPoint = '·', exponentMultiple = 3).decimalize(0.0/0.0)
+      .assert(_ == t"∉ℝ")

@@ -9,13 +9,13 @@ case class Person(name: String, age: Int)
 object Benchmarks extends Suite(t"Gossamer Benchmarks"):
   def run(): Unit =
     suite(t"Compile performance"):
-      test("Resolve a Show instance"):
+      test(t"Resolve a Show instance"):
         deferCompilation:
           import gossamer.*
           Group(List(Person("Jack", 30))).show
       .benchmark(warmup = 30000L, duration = 30000L)
       
-      test("Resolve a Debug instance"):
+      test(t"Resolve a Debug instance"):
         deferCompilation:
           import gossamer.*
           Group(List(Person("Jack", 30))).debug
