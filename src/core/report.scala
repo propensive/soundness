@@ -26,6 +26,8 @@ import escapade.*
 import turbulence.*
 import iridescence.*
 
+given Decimalizer(3)
+
 import scala.collection.mutable as scm
 
 object Baseline:
