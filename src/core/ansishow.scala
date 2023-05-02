@@ -66,14 +66,8 @@ object AnsiShow extends FallbackAnsiShow:
   given AnsiShow[StackTrace.Frame] = frame =>
     ansi"${colors.MediumVioletRed}(${frame.className.fit(40, Rtl)})${colors.Gray}(#)${colors.PaleVioletRed}(${frame.method.fit(40)}) ${colors.CadetBlue}(${frame.file.fit(18, Rtl)})${colors.Gray}(:)${colors.MediumTurquoise}(${frame.line.mm(_.show).or(t"?")})"
 
-  private val decimalFormat =
-    val df = new java.text.DecimalFormat()
-    df.setMinimumFractionDigits(3)
-    df.setMaximumFractionDigits(3)
-    df
-
-  given AnsiShow[Double] =
-    double => AnsiText.make(decimalFormat.format(double).nn, _.copy(fg = colors.Gold))
+  given (using decimalizer: Decimalizer): AnsiShow[Double] =
+    double => AnsiText.make(decimalizer.decimalize(double).nn, _.copy(fg = colors.Gold))
 
   given AnsiShow[Throwable] = throwable =>
     AnsiText.make[String](throwable.getClass.getName.nn.show.cut(t".").last.s,
