@@ -47,6 +47,7 @@ object TestId:
   given Ordering[TestId] = math.Ordering.Implicits.seqOrdering[List, Text].on(_.ids.reverse)
 
 case class TestId(name: Text, suite: Maybe[TestSuite], codepoint: Codepoint):
+  val timestamp: Long = System.currentTimeMillis
   import textWidthCalculation.uniform
   lazy val id: Text = Integer.toHexString(suite.hashCode ^ name.hashCode).nn.show.pad(6, Rtl, '0').take(6, Rtl)
   lazy val ids: List[Text] =  id :: suite.mm(_.id.ids).or(Nil)

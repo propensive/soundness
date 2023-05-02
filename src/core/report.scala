@@ -114,7 +114,7 @@ class TestReport(using env: Environment):
 
     def summaries: List[Summary] = this match
       case Suite(suite, tests)  =>
-        val rest = tests.values.flatMap(_.summaries).to(List)
+        val rest = tests.to(List).sortBy(_(0).timestamp).flatMap(_(1).summaries)
         if suite.unset then rest else Summary(Status.Suite, suite.option.get.id, 0, 0, 0, 0) :: rest
       
       case Bench(testId, bench@Benchmark(_, _, _, _, _, _, _, _)) =>
@@ -330,7 +330,7 @@ class TestReport(using env: Environment):
     
 
 
-    details.foreach: (id, info) =>
+    details.to(List).sortBy(_(0).timestamp).foreach: (id, info) =>
       val ribbon = Ribbon(colors.DarkRed.srgb, colors.FireBrick.srgb, colors.Tomato.srgb)
       Io.println(ribbon.fill(ansi"$Bold(${id.id})", id.codepoint.text.ansi, id.name.ansi).render)
       
