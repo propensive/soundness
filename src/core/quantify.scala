@@ -98,11 +98,11 @@ object QuantifyOpaques:
     given convertInt[UnitsType <: Measure]: Conversion[Int, Quantity[UnitsType]] = int =>
       Quantity(int.toDouble)
 
-    inline given [UnitsType <: Measure](using DecimalFormat): Debug[Quantity[UnitsType]] =
+    inline given [UnitsType <: Measure](using Decimalizer): Debug[Quantity[UnitsType]] =
       new Debug[Quantity[UnitsType]]:
         def show(value: Quantity[UnitsType]): Text = value.render
     
-    inline given [UnitsType <: Measure](using DecimalFormat): Show[Quantity[UnitsType]] =
+    inline given [UnitsType <: Measure](using Decimalizer): Show[Quantity[UnitsType]] =
       new Show[Quantity[UnitsType]]:
         def show(value: Quantity[UnitsType]): Text = value.render
   
@@ -163,7 +163,7 @@ extension [UnitsType <: Measure](inline quantity: Quantity[UnitsType])
     ${QuantifyMacros.multiply[UnitsType, UnitsType2]('quantity, 'quantity2, true)}
 
   inline def units: Map[Text, Int] = ${QuantifyMacros.collectUnits[UnitsType]}
-  inline def render(using DecimalFormat): Text = t"${quantity.value} ${Quantity.renderUnits(units)}"
+  inline def render(using Decimalizer): Text = t"${quantity.value} ${Quantity.renderUnits(units)}"
 
   @targetName("greaterThan")
   inline def >[UnitsType2 <: Measure](that: Quantity[UnitsType2]): Boolean =
