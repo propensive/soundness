@@ -274,8 +274,6 @@ class TestReport(using env: Environment):
         if b.throughput == 0 then ansi""
         else ansi"${colors.Silver}(${b.throughput}) ${colors.Turquoise}(op${colors.Gray}(·)s¯¹)"
 
-      import decimalFormats.threePlaces
-
       val bench: Table[ReportLine.Bench] = Table(
         (List(
           Column(ansi"$Bold(Hash)"): s =>
