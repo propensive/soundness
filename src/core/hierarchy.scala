@@ -23,70 +23,80 @@ import language.experimental.captureChecking
 
 object Hierarchy:
   given show[PathType](using hierarchy: Hierarchy[PathType]): Show[PathType] = path =>
-    val separator = hierarchy.separator(path)
-    t"${hierarchy.prefix(path)}${path.elements.map(_.show).reverse.join(separator)}"
+    val separator = hierarchy.separator
+    t"${hierarchy.root(path).prefix}${path.elements.map(_.show).reverse.join(separator)}"
+
+trait PathRoot:
+  def prefix: Text
 
 trait Hierarchy[PathType]:
-
-  type ForbiddenType <: Label
+  type Forbidden <: Label
+  type RootType <: PathRoot
   
-  def separator(path: PathType): Text
-  def prefix(root: PathType): Text
-  def root(path: PathType): PathType
-  def elements(path: PathType): List[PathElement[ForbiddenType]]
-  def child(base: PathType, element: PathElement[ForbiddenType]): PathType
-  def parent(path: PathType): PathType
+  def selfName: Text
+  def parentName: Text
+  def separator: Text
+  
+  def root(path: PathType): RootType
+  def parseElement(text: Text): PathElement[Forbidden] throws PathError
+  def elements(path: PathType): List[PathElement[Forbidden]]
+  def remake(path: {*} PathType, elements: List[PathElement[Forbidden]]): {path} PathType
+
+  def child(path: PathType, element: PathElement[Forbidden]): PathType =
+    remake(path, element :: elements(path))
+  
+  def ancestor
+      (path: PathType, count: Int)(using pathBounds: PathBounds[PathType])
+      : {pathBounds} PathType = pathBounds.ancestor(path, count)
+  
+  def parent
+      (path: PathType)(using pathBounds: PathBounds[PathType])
+      : {pathBounds} PathType = pathBounds.parent(path)
 
 object PathBounds:
-  given [PathType](using pathError: CanThrow[PathError]): PathBounds[PathType] = isRoot =>
-    if isRoot then throw PathError(PathError.Reason.ParentOfRoot)
+  given [PathType](using pathError: CanThrow[PathError]): PathBounds[PathType] =
+    path => throw PathError(PathError.Reason.ParentOfRoot)
 
 @capability
 trait PathBounds[PathType]:
-  def hasParent(isRoot: Boolean): Unit
+  def parent(path: PathType): PathType
+  
+  def ancestor(path: PathType, count: Int): PathType =
+    if count == 0 then path else ancestor(parent(path), count - 1)
 
 extension [PathType, PathType2 >: PathType](path: PathType)(using hierarchy: Hierarchy[PathType2])
-  def elements: List[PathElement[hierarchy.ForbiddenType]] = hierarchy.elements(path)
-  def root: PathType2 = hierarchy.root(path)
-  
-  def parent(using pathBounds: PathBounds[PathType]): {pathBounds} PathType2 =
-    pathBounds.hasParent(path.elements.isEmpty)
-    hierarchy.parent(path)
+  def elements: List[PathElement[hierarchy.Forbidden]] = hierarchy.elements(path)
+  def root: hierarchy.RootType = hierarchy.root(path)
   
   def text: Text =
-    val separator = hierarchy.separator(path)
-    hierarchy.elements(path).reverse.map(_.show).join(hierarchy.prefix(root), separator, t"")
+    val separator = hierarchy.separator
+    hierarchy.elements(path).reverse.map(_.show).join(hierarchy.root(path).prefix, separator, t"")
 
-  def depth: Int = hierarchy.elements(path).length
-  
   @targetName("child")
-  infix def /(element: PathElement[hierarchy.ForbiddenType]): PathType2 = hierarchy.child(path, element)
+  infix def /(element: PathElement[hierarchy.Forbidden]): PathType2 = hierarchy.child(path, element)
   
-  def ancestor(n: Int): PathType2 =
-    def recur(path: PathType2, n: Int): PathType2 = if n == 0 then path else recur(hierarchy.parent(path), n - 1)
-    if depth > n then recur(path, n) else hierarchy.root(path)
+  def parent(using pathBounds: PathBounds[PathType2]): {pathBounds} PathType2 =
+    ancestor(1)
   
-  def keep(n: Int): PathType2 = ancestor(depth - n)
+  def ancestor(count: Int)(using pathBounds: PathBounds[PathType2]): {pathBounds} PathType2 =
+    if depth < count then pathBounds.ancestor(path, count - depth)
+    else hierarchy.remake(path, elements.drop(count))
+    
+  def depth: Int = hierarchy.elements(path).length
+  def keep(count: Int): PathType2 = hierarchy.remake(path, hierarchy.elements(path).take(count))
+  def precedes(other: PathType): Boolean = conjunction(other).elements == elements
+  def relative: Relative[hierarchy.Forbidden] = Relative(0, elements)
   
   def conjunction(other: PathType2): PathType2 =
     keep(elements.reverse.zip(other.elements.reverse).takeWhile(_ == _).length)
 
-  def relative: Relative = Relative(0, elements.map(_.show))
-
-  def relativeTo(other: PathType2): Relative =
+  def relativeTo(other: PathType2): Relative[hierarchy.Forbidden] =
     val common: Int = conjunction(other).depth
-    Relative(depth - common, other.elements.reverse.drop(common).map(_.show).reverse)
-  
-  def precedes(other: PathType): Boolean = conjunction(other).elements == elements
+    Relative(depth - common, other.elements.reverse.drop(common).reverse)
 
   @targetName("add") 
   infix def ++
-      (relative: Relative)
-      (using pathError: CanThrow[PathError], pathBounds: PathBounds[PathType])
-      : {pathBounds, pathError} PathType2 =
-    if relative.ascent > depth then throw PathError(PathError.Reason.ParentOfRoot) else
-      def recur(path: PathType2, elements: List[Text]): PathType2 = elements match
-        case head :: tail => recur(hierarchy.child(path, PathElement(head)), tail)
-        case Nil          => path
-      
-      recur(ancestor(relative.ascent), relative.elements.reverse)
+      (relative: Relative[hierarchy.Forbidden])(using pathBounds: PathBounds[PathType2])
+      : {pathBounds} PathType2 =
+    val base: {pathBounds} PathType2 = ancestor(relative.ascent)
+    hierarchy.remake(base, relative.elements ::: elements)

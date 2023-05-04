@@ -26,32 +26,32 @@ object Tests extends Suite(t"Serpentine Tests"):
   def run(): Unit =
     suite(t"Relative parsing"):
       test(t"parse simple relative path"):
-        unsafely(Relative.parse(t"peer"))
-      .assert(_ == Relative(0, List(t"peer")))
+        unsafely(Relative.parse[GenericPath](t"peer"))
+      .assert(_ == Relative(0, List(PathElement(t"peer"))))
 
       test(t"parse three-part relative subpath"):
-        unsafely(Relative.parse(t"path/to/child"))
-      .assert(_ == Relative(0, List(t"child", t"to", t"path")))
+        unsafely(Relative.parse[GenericPath](t"path/to/child"))
+      .assert(_ == Relative(0, List(t"child", t"to", t"path").map(PathElement(_))))
 
       test(t"parse parent relative path"):
-        unsafely(Relative.parse(t".."))
+        unsafely(Relative.parse[GenericPath](t".."))
       .assert(_ == Relative(1, List()))
 
       test(t"parse ancestor relative path"):
-        unsafely(Relative.parse(t"../../.."))
+        unsafely(Relative.parse[GenericPath](t"../../.."))
       .assert(_ == Relative(3, List()))
     
       test(t"parse relative link to current path"):
-        unsafely(Relative.parse(t"."))
+        unsafely(Relative.parse[GenericPath](t"."))
       .assert(_ == Relative(0, List()))
       
       test(t"parse relative link to uncle path"):
-        unsafely(Relative.parse(t"../path"))
-      .assert(_ == Relative(1, List(t"path")))
+        unsafely(Relative.parse[GenericPath](t"../path"))
+      .assert(_ == Relative(1, List(PathElement(t"path"))))
       
       test(t"parse relative link to cousin path"):
-        unsafely(Relative.parse(t"../path/child"))
-      .assert(_ == Relative(1, List(t"child", t"path")))
+        unsafely(Relative.parse[GenericPath](t"../path/child"))
+      .assert(_ == Relative(1, List(t"child", t"path").map(PathElement(_))))
 
     suite(t"Show paths"):
       test(t"show simple relative path"):

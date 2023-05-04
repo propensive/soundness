@@ -23,7 +23,8 @@ import language.experimental.captureChecking
 
 object GenericPath:
   @targetName("GeneralPathRoot")
-  object `^` extends GenericPath(Nil)
+  object `^` extends PathRoot:
+    def prefix: Text = t"/"
 
   given Show[GenericPath] = Hierarchy.show[GenericPath]
 
@@ -32,14 +33,23 @@ object GenericPath:
     else throw PathError(PathError.Reason.NotRooted)
 
   given hierarchy: Hierarchy[GenericPath] with
-    type ForbiddenType = ".*/.*" | "\\.\\." | ""
+    type RootType = `^`.type
+    type Forbidden = ".*/.*" | "\\.\\." | ""
 
-    def separator(path: GenericPath): Text = t"/"
-    def prefix(root: GenericPath): Text = t"/"
+    def separator: Text = t"/"
+    def selfName: Text = t"."
+    def parentName: Text = t".."
+    
+    def parseElement(text: Text): PathElement[Forbidden] throws PathError = text match
+      case t".." => throw PathError(PathError.Reason.InvalidName(t".."))
+      case t""   => throw PathError(PathError.Reason.InvalidName(t""))
+      case text  => if text.contains('/') then throw PathError(PathError.Reason.InvalidName(text))
+                    else PathElement(text)
+
     def root(path: GenericPath): `^`.type = ^
-    def elements(path: GenericPath): List[PathElement[".*/.*" | "\\.\\." | ""]] = path.elements
-    def child(base: GenericPath, child: PathElement[".*/.*" | "\\.\\." | ""]): GenericPath =
-      base.copy(elements = child :: base.elements)
+    def elements(path: GenericPath): List[PathElement[Forbidden]] = path.elements
+    def remake(path: {*} GenericPath, elements: List[PathElement[Forbidden]]): {path} GenericPath =
+      GenericPath(elements)
     
     def parent(path: GenericPath): GenericPath = path.copy(elements = path.elements.tail)
 

@@ -23,38 +23,56 @@ import language.experimental.captureChecking
 
 object Relative:
   @targetName("RelativeRoot")
-  object `?` extends Relative(0, Nil)
+  object `?` extends Relative[GenericPath](0, Nil)
   
-  given [RelativeType <: Relative]: PathBounds[RelativeType] = isRoot => ()
+  case class Self[ForbiddenType <: Label]() extends PathRoot:
+    def prefix = t"./"
   
-  given Show[Relative] = rel =>
+  given [ForbiddenType <: Label]: PathBounds[Relative[ForbiddenType]] = path =>
+    path match
+      case Relative(ascent, head :: tail) => Relative(ascent, tail)
+      case Relative(ascent, Nil)          => Relative(ascent + 1, Nil)
+  
+  given Show[Relative[? <: Label]] = rel =>
     if rel == ? then t"."
     else (List.fill(rel.ascent)(t"..") ::: rel.elements.reverse.map(_.show)).join(t"", t"/", t"")
 
-  given hierarchy: Hierarchy[Relative] with
-    type ForbiddenType = ".*/.*" | "\\.\\." | ""
+  given [PathType](using hierarchy: Hierarchy[PathType])
+      : Hierarchy[Relative[hierarchy.Forbidden]] =
+    new Hierarchy[Relative[hierarchy.Forbidden]]:
+      type Forbidden = hierarchy.Forbidden
+      type RootType = Self[hierarchy.Forbidden]
+      
+      def separator: Text = hierarchy.separator
+      def selfName: Text = hierarchy.selfName
+      def parentName: Text = hierarchy.parentName
+      def root(path: Relative[Forbidden]): Self[Forbidden] = Self()
+      def elements(path: Relative[Forbidden]): List[PathElement[Forbidden]] = path.elements
+      
+      def remake
+          (path: {*} Relative[Forbidden], elements: List[PathElement[Forbidden]])
+          : {path} Relative[Forbidden] =
+        Relative(path.ascent, elements)
+      
+      def parseElement(text: Text): PathElement[Forbidden] throws PathError =
+        hierarchy.parseElement(text)
+      
+  def parse
+      [PathType]
+      (text: Text)(using hierarchy: Hierarchy[PathType])
+      : Relative[hierarchy.Forbidden] throws PathError =
     
-    def separator(path: Relative): Text = t"/"
-    def prefix(root: Relative): Text = t"./"
-    def root(path: Relative): Relative = ?
-    def elements(path: Relative): List[PathElement[ForbiddenType]] = path.elements.map(PathElement(_))
-    
-    def child(base: Relative, element: PathElement[ForbiddenType]): Relative =
-      base.copy(elements = element.show :: base.elements)
-    
-    def parent(path: Relative): Relative =
-      if path.elements.isEmpty then Relative(path.ascent + 1, Nil)
-      else Relative(path.ascent, path.elements.tail)
-
-  def parse(text: Text): Relative throws PathError =
-    def recur(text: Text, ascent: Int): Relative =
-      if text == t"." then ?
-      else if text == t".." then Relative(ascent + 1, Nil)
-      else if text.starts(t"../") then recur(text.drop(3), ascent + 1)
-      else Relative(ascent, List(text.cut(t"/").filter(_ != t"")*).reverse)
+    val parentPrefix = t"${hierarchy.parentName}${hierarchy.separator}"
+    def recur(text: Text, ascent: Int): Relative[hierarchy.Forbidden] =
+      if text == hierarchy.selfName then Relative(0, Nil)
+      else if text == hierarchy.parentName then Relative(ascent + 1, Nil)
+      else if text.starts(parentPrefix) then recur(text.drop(parentPrefix.length), ascent + 1)
+      else
+        val elements = text.cut(hierarchy.separator).filter(_ != t"").map(hierarchy.parseElement(_))
+        Relative(ascent, elements.reverse)
     
     recur(text, 0)
 
-case class Relative(ascent: Int, elements: List[Text])
+case class Relative[ForbiddenType <: Label](ascent: Int, elements: List[PathElement[ForbiddenType]])
 
 export Relative.`?`
