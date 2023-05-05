@@ -808,3 +808,12 @@ object Tests extends Suite(t"Gossamer Tests"):
       test(t"Show not-a-number"):
         Decimalizer(7, decimalPoint = '·', exponentMultiple = 3).decimalize(0.0/0.0)
       .assert(_ == t"∉ℝ")
+
+      test(t"Show 100.0"):
+        Decimalizer(decimalPlaces = 1).decimalize(100.0)
+      .assert(_ == t"100.0")
+      
+      test(t"Show 0.0"):
+        Decimalizer(decimalPlaces = 1).decimalize(0.0)
+      .assert(_ == t"0.0")
+

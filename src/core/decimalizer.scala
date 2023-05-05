@@ -31,7 +31,7 @@ case class Decimalizer
       val negative: Boolean = double < 0.0
       val abs: Double = if negative then -double else double
       
-      val baseScale: Int = math.log10(abs).floor.toInt
+      val baseScale: Int = if double == 0 then 0 else math.log10(abs).floor.toInt
       val exponentiate = math.abs(baseScale) >= exponentThreshold
       val exponentValue = if exponentiate then (baseScale/exponentMultiple)*exponentMultiple else 0
 
@@ -68,7 +68,6 @@ case class Decimalizer
           
           val suffix: Int = if exponentiate then exponent.length + (if exponentValue < 0 then 1 else
               0) + (exponentScale(exponentValue, 0)) else 0
-          
           val fullLength = (if negative then 1 else 0) + (if point < length then 1 else 0) + length
           val array = new Array[Char](fullLength + suffix)
           
