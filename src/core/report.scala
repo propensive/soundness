@@ -26,7 +26,7 @@ import escapade.*
 import turbulence.*
 import iridescence.*
 
-given Decimalizer(3)
+given Decimalizer = Decimalizer(3)
 
 import scala.collection.mutable as scm
 
@@ -186,6 +186,15 @@ class TestReport(using env: Environment):
       case Mixed       => ansi"${Bg(rgb"#ddd700")}( $Bold(${colors.Black}(?)) )"
       case Suite       => ansi"   "
       case Bench       => ansi"${Bg(colors.CadetBlue)}( $Bold(${colors.Black}(*)) )"
+    
+    def describe: AnsiText = this match
+      case Pass        => ansi"Pass"
+      case Fail        => ansi"Fail"
+      case Throws      => ansi"Throws exception"
+      case CheckThrows => ansi"Exception in check"
+      case Mixed       => ansi"Mixed"
+      case Suite       => ansi"Suite"
+      case Bench       => ansi"Benchmark"
 
   val unitsSeq: List[AnsiText] = List(
     ansi"${colors.BurlyWood}(µs)",
@@ -250,15 +259,32 @@ class TestReport(using env: Environment):
       case As[Int](cols) => cols
       case _             => 120
 
-    if lines.summaries.exists(_.count > 0)
-    then table.tabulate(lines.summaries, columns).map(_.render).foreach(Io.println(_))
+    val summaryLines = lines.summaries
+
+    if summaryLines.exists(_.count > 0)
+    then
+
+      val totals = summaryLines.groupBy(_.status).mapValues(_.size).to(Map) - Status.Suite
+      val passed: Int = totals.getOrElse(Status.Pass, 0) + totals.getOrElse(Status.Bench, 0)
+      val total: Int = totals.values.sum
+      val failed: Int = total - passed
+
+      table.tabulate(summaryLines, columns).map(_.render).foreach(Io.println(_))
+      given Decimalizer = Decimalizer(decimalPlaces = 1)
+      Io.println(ansi" $Bold(${colors.White}($passed)) passed (${100.0*passed/total}%), $Bold(${colors.White}($failed)) failed (${100.0*failed/total}%), $Bold(${colors.White}(${passed + failed})) total")
+      Io.println(t"─"*72)
+      List(Status.Pass, Status.Bench, Status.Throws, Status.Fail, Status.Mixed, Status.CheckThrows).grouped(3).foreach: statuses =>
+        Io.println:
+          statuses.map: status =>
+            ansi"  ${status.symbol} ${status.describe}".pad(20)
+          .join(ansi" ")
+      Io.println(t"─"*72)
 
     def benches(line: ReportLine): Iterable[ReportLine.Bench] =
       line match
         case bench@ReportLine.Bench(_, _) => Iterable(bench)
         case ReportLine.Suite(_, tests)   => tests.map(_(1)).flatMap(benches(_))
         case _                            => Nil
-    
     
     benches(lines).groupBy(_.test.suite).foreach: (suite, benchmarks) =>
       val ribbon = Ribbon(colors.DarkGreen.srgb, colors.MediumSeaGreen.srgb, colors.PaleGreen.srgb)
@@ -326,9 +352,6 @@ class TestReport(using env: Environment):
       )
 
       bench.tabulate(benchmarks.to(List).sortBy(-_.benchmark.throughput), columns).map(_.render).foreach(Io.println(_))
-      
-    
-
 
     details.to(List).sortBy(_(0).timestamp).foreach: (id, info) =>
       val ribbon = Ribbon(colors.DarkRed.srgb, colors.FireBrick.srgb, colors.Tomato.srgb)
