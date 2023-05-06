@@ -1,1 +1,4 @@
-TBC
+- provides quick `safely` and `unsafely` wrapper methods for muting checked exceptions
+- provides an `err""` constructor for typed exception messages
+- introduces a `Codepoint` contextual value containing the sourcefile and line
+- stack trace rewriting, for much more readable Scala stack traces
