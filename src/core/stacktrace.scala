@@ -31,9 +31,9 @@ object StackTrace:
     Text("αₙ") -> Text("anonymous class"),
     Text("ι")  -> Text("initialization"),
     Text("ς")  -> Text("super reference"),
-    Text("ε")  -> Text("extension method"),
+    Text("⋮ε")  -> Text("extension method"),
     Text("ϕ")  -> Text("direct"),
-    Text("π")  -> Text("package file"),
+    Text("⋮π")  -> Text("package file"),
     Text("ⲛ")  -> Text("class initializer")
   )
 
