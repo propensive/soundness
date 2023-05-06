@@ -4,7 +4,7 @@
 
 # Digression
 
-__TBC__
+__Utilities for working with exceptions in Scala__
 
 _Digression_ makes Java exceptions a little more pleasant to work with in Scala,
 particularly when checked exceptions are enabled.
@@ -167,7 +167,7 @@ be used, but caution should be taken if there is a mismatch between the
 project's stability level and the importance of your own project.
 
 Digression is designed to be _small_. Its entire source code currently consists
-of 216 lines of code.
+of 224 lines of code.
 
 ## Building
 
