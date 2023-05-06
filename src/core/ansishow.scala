@@ -34,20 +34,19 @@ object AnsiShow extends FallbackAnsiShow:
 
   given AnsiShow[Exception] = e => summon[AnsiShow[StackTrace]].ansiShow(StackTrace.apply(e))
 
-  private transparent inline def recurParts[T <: Tuple](tuple: T, text: Seq[Text], value: AnsiText): AnsiText =
-    tuple match
-      case EmptyTuple =>
-        ansi"$value${colors.White}(${text.head})"
-      case head *: tail =>
-        val part: Text = compiletime.summonFrom:
-          case ds: Debug[head.type]  => ds.show(head)
-          case show: Show[head.type] => show.show(head)
-          case _                     => head.toString.show
-        
-        recurParts(tail, text.tail, ansi"$value${colors.White}(${text.head})${colors.Green}($part)")
-    
+  inline def showMessage[TupleType <: Tuple](value: TupleType, text: List[Text]): AnsiText =
+    inline value match
+      case cons: (? *: ?) => cons match
+        case head *: tail =>
+          val shown = compiletime.summonFrom:
+            case debug: Debug[head.type] => debug.show(head)
+            case show: Show[head.type]   => show.show(head)
+          
+          ansi"${text.head}$Italic($shown)${showMessage[tail.type](tail, text.tail)}"
+      case _              => ansi"${text.head}"
+
   inline given [T <: Tuple, E <: Error[T]]: AnsiShow[E] = new AnsiShow[E]:
-    def ansiShow(error: E): AnsiText = recurParts[T](error.msg.parts, error.msg.text, ansi"")
+    def ansiShow(error: E): AnsiText = showMessage[T](error.msg.parts, error.msg.text.to(List))
 
   given AnsiShow[StackTrace] = stack =>
     val methodWidth = stack.frames.map(_.method.length).max
