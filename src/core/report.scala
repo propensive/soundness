@@ -353,6 +353,14 @@ class TestReport(using env: Environment):
 
       bench.tabulate(benchmarks.to(List).sortBy(-_.benchmark.throughput), columns).map(_.render).foreach(Io.println(_))
 
+    def showLegend(): Unit =
+      Io.println(t"─"*100)
+      Io.println:
+        StackTrace.legend.to(List).map: (symbol, description) =>
+          ansi"$Bold(${colors.White}(${symbol.pad(3, Rtl)}))  ${description.pad(20)}"
+        .grouped(4).to(List).map(_.to(List).join).join(ansi"${t"\n"}")
+      Io.println(t"─"*100)
+
     details.to(List).sortBy(_(0).timestamp).foreach: (id, info) =>
       val ribbon = Ribbon(colors.DarkRed.srgb, colors.FireBrick.srgb, colors.Tomato.srgb)
       Io.println(ribbon.fill(ansi"$Bold(${id.id})", id.codepoint.text.ansi, id.name.ansi).render)
@@ -364,11 +372,13 @@ class TestReport(using env: Environment):
             val name = ansi"$Italic(${colors.White}(${err.component}.${err.className}))"
             Io.println(ansi"${colors.Silver}(An exception was thrown while running test:)".render)
             Io.println(err.crop(t"probably.Runner", t"run()").ansi.render)
+            showLegend()
           
           case DebugInfo.CheckThrows(err) =>
             val name = ansi"$Italic(${colors.White}(${err.component}.${err.className}))"
             Io.println(ansi"${colors.Silver}(An exception was thrown while checking the test predicate:)".render)
             Io.println(err.crop(t"probably.Outcome#", t"apply()").dropRight(1).ansi.render)
+            showLegend()
           
           case DebugInfo.Compare(expected, found, cmp) =>
             val expected2: AnsiText = ansi"$Italic(${colors.White}($expected))"
