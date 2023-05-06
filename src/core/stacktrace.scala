@@ -20,7 +20,8 @@ import rudiments.*
 
 import language.experimental.captureChecking
 
-extension [TupleType <: Tuple](error: Error[TupleType]) def stackTrace: StackTrace = StackTrace(error)
+extension [TupleType <: Tuple](error: Error[TupleType])
+  def stackTrace: StackTrace = StackTrace(error)
 
 object StackTrace:
   case class Frame(className: Text, method: Text, file: Text, line: Maybe[Int], native: Boolean)
@@ -39,7 +40,8 @@ object StackTrace:
   def rewrite(name: String, method: Boolean = false): Text =
     val sb: StringBuilder = StringBuilder()
     
-    inline def char(idx: Int): Maybe[Char] = if idx < 0 || idx >= name.length then Unset else name.charAt(idx)
+    inline def char(idx: Int): Maybe[Char] =
+      if idx < 0 || idx >= name.length then Unset else name.charAt(idx)
 
     @tailrec
     def recur(idx: Int, digits: Boolean = false): Text =
@@ -189,13 +191,18 @@ object StackTrace:
     val fullClassName: Text = rewrite(exception.getClass.nn.getName.nn)
     val fullClass: List[Text] = List(fullClassName.s.split("\\.").nn.map(_.nn).map(Text(_))*)
     val className: Text = fullClass.last
-    val component: Text = Text(fullClassName.s.substring(0, 0 max (fullClassName.s.length - className.s.length - 1)).nn)
+    
+    val component: Text =
+      val length = fullClassName.s.length - className.s.length - 1
+      Text(fullClassName.s.substring(0, 0.max(length)).nn)
+    
     val message = Text(Option(exception.getMessage).map(_.nn).getOrElse(""))
     
     StackTrace(component, className, message, frames, cause.map(_.nn).map(StackTrace(_)).maybe)
 
-case class StackTrace(component: Text, className: Text, message: Text, frames: List[StackTrace.Frame],
-                          cause: Maybe[StackTrace]):
+case class StackTrace
+    (component: Text, className: Text, message: Text, frames: List[StackTrace.Frame],
+        cause: Maybe[StackTrace]):
   def crop(cutClassName: Text, cutMethod: Text): StackTrace =
     val frames2 = frames.takeWhile { f => f.className != cutClassName || f.method != cutMethod }
     StackTrace(component, className, message, frames2, cause)

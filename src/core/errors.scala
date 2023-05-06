@@ -23,7 +23,10 @@ case class AggregateError[ErrorType <: Exception](errors: List[ErrorType])
 extends Error(err"aggregation of errors: ${Text(errors.map(_.toString).mkString("\n", "\n", ""))}")
 
 extension (ctx: StringContext)
-  transparent inline def err[TupleType <: Matchable](value: TupleType = EmptyTuple): ErrorMessage[Tuple] =
+  transparent inline def err
+      [TupleType <: Matchable]
+      (value: TupleType = EmptyTuple)
+      : ErrorMessage[Tuple] =
     inline value match
       case value: Tuple =>
         ErrorMessage[value.type](ctx.parts.map(Text(_)), value)
