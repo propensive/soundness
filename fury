@@ -10,5 +10,5 @@ project jacinta
     include  merino/core gossamer/core wisteria/core
   module test
     sources  src/test
-    include  jacinta/core probably/cli
+    include  jacinta/core probably/cli probably/bench
     main     jacinta.Tests
