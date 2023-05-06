@@ -59,5 +59,8 @@ extension [TestType](test: Test[TestType])
     val max: Long = times.max
     val variance: Double = (times.map { t => (mean - t)*(mean - t) }.sum)/count
     val stdDev: Double = math.sqrt(variance)
-    val benchmark = Benchmark(total, times.size, min, mean, max.toDouble, stdDev, confidence.or(95), baseline)
+    
+    val benchmark = Benchmark(total, times.size, min.toDouble, mean, max.toDouble, stdDev,
+        confidence.or(95), baseline)
+    
     inc.include(runner.report, test.id, benchmark)

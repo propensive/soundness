@@ -54,7 +54,7 @@ object Benchmark:
   type Percentiles = 80 | 85 | 90 | 95 | 96 | 97 | 98 | 99
 
 case class Benchmark
-    (total: Long, count: Int, min: Long, mean: Double, max: Double, sd: Double,
+    (total: Long, count: Int, min: Double, mean: Double, max: Double, sd: Double,
         confidence: Benchmark.Percentiles, baseline: Maybe[Baseline]):
   
   def zScore(percentile: Benchmark.Percentiles): Double = percentile match
@@ -264,7 +264,7 @@ class TestReport(using env: Environment):
     if summaryLines.exists(_.count > 0)
     then
 
-      val totals = summaryLines.groupBy(_.status).mapValues(_.size).to(Map) - Status.Suite
+      val totals = summaryLines.groupBy(_.status).view.mapValues(_.size).to(Map) - Status.Suite
       val passed: Int = totals.getOrElse(Status.Pass, 0) + totals.getOrElse(Status.Bench, 0)
       val total: Int = totals.values.sum
       val failed: Int = total - passed
@@ -308,7 +308,7 @@ class TestReport(using env: Environment):
             ansi"${s.test.name}",
 
           Column(ansi"$Bold(Min)", align = Alignment.Right): s =>
-            showTime(s.benchmark.min),
+            showTime(s.benchmark.min.toLong),
         
           Column(ansi"$Bold(Mean)", align = Alignment.Right): s =>
             showTime(s.benchmark.mean.toLong),
