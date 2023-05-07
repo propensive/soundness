@@ -36,8 +36,8 @@ object TreeTile:
 enum TreeTile:
   case Space, Last, Branch, Extender
 
-def drawTree[N, L](getChildren: N => Seq[N], mkLine: (List[TreeTile], N) => L)(top: Seq[N]): LazyList[L] =
-  def recur(level: List[TreeTile], input: Seq[N]): LazyList[L] =
+def drawTree[NodeType, LineType](getChildren: NodeType => Seq[NodeType], mkLine: (List[TreeTile], NodeType) => LineType)(top: Seq[NodeType]): LazyList[LineType] =
+  def recur(level: List[TreeTile], input: Seq[NodeType]): LazyList[LineType] =
     val last = input.size - 1
     input.zipWithIndex.to(LazyList).flatMap: (item, idx) =>
       val current = mkLine(((if idx == last then TreeTile.Last else TreeTile.Branch) :: level).reverse, item)

@@ -1,15 +1,15 @@
 To convert some data in a tree-like structure into visual tree, we need a few
 things:
- - a type, `N`, which represents each node in the tree,
- - a type, `L`, for each line of output (often just a string),
- - a way to access the children of each node, as a `Seq[N]`, called `getChildren`,
- - a way to construct each line, `L`, from its node plus a sequence of "tiles"
+ - a type, `NodeType`, which represents each node in the tree,
+ - a type, `LineType`, for each line of output (often just a string),
+ - a way to access the children of each node, as a `Seq[NodeType]`, called `getChildren`,
+ - a way to construct each line, `LineType`, from its node plus a sequence of "tiles"
    representing the lines and spaces of the tree layout, called `mkLine`, and
  - the data to convert.
 
 The algorithm performs a depth-first traversal of the data, mapping each node
 to a line, and flattening the data in the process. The output will be a
-`LazyList[L]`. This traversal and conversion would be trivial, except for the
+`LazyList[LineType]`. This traversal and conversion would be trivial, except for the
 additional `List[TreeTile]` that is provided for the construction of each line.
 
 The `List[TreeTile]` parameter is a sequence of tiles representing the lines
@@ -61,4 +61,8 @@ current node, but does not need to know anything about the descendants of
 subsequent nodes in the traversal until they are reached in their natural
 order.
 
+This is necessary because any subsequent siblings of any ancestor nodes will
+require an additional descending vertical line to be rendered in the
+appropriate column of the current line, whereas that vertical line should be
+absent for each ancestor that is the last of its siblings.
 
