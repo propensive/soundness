@@ -1,7 +1,7 @@
 # This is a buildfile for Fury or Wrath.
 # More information is available at: https://github.com/propensive/wrath/
 
-repo propensive/hieronymus
+repo propensive/lithography
 repo propensive/escapade
 
 target escritoire/core
@@ -9,5 +9,5 @@ target escritoire/core
 project escritoire
   module core
     compiler  scala
-    include   hieronymus/core escapade/core
+    include   lithography/core escapade/core
     sources   src/core
