@@ -3,9 +3,9 @@
 
 repo propensive/kaleidoscope
 
-target hieronymus/core
+target lithography/core
 
-project hieronymus
+project lithography
   module core
     compiler  scala
     sources  src/core

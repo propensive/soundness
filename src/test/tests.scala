@@ -1,5 +1,5 @@
 /*
-    Hieronymus, version [unreleased]. Copyright 2023 Jon Pretty, Propensive OÜ.
+    Lithography, version [unreleased]. Copyright 2023 Jon Pretty, Propensive OÜ.
 
     The primary distribution site is: https://propensive.com/
 
@@ -14,13 +14,13 @@
     and limitations under the License.
 */
 
-package hieronymus
+package lithography
 
 import probably.*
 import rudiments.*
 import gossamer.*
 
-object Tests extends Suite(t"Hieronymus tests"):
+object Tests extends Suite(t"Lithography tests"):
   def run(): Unit =
     test(t"Check narrow character width"):
       'a'.displayWidth

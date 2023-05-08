@@ -1,8 +1,8 @@
-[<img alt="GitHub Workflow" src="https://img.shields.io/github/actions/workflow/status/propensive/hieronymus/main.yml?style=for-the-badge" height="24">](https://github.com/propensive/hieronymus/actions)
+[<img alt="GitHub Workflow" src="https://img.shields.io/github/actions/workflow/status/propensive/lithography/main.yml?style=for-the-badge" height="24">](https://github.com/propensive/lithography/actions)
 [<img src="https://img.shields.io/discord/633198088311537684?color=8899f7&label=DISCORD&style=for-the-badge" height="24">](https://discord.gg/7b6mpF6Qcf)
 <img src="/doc/images/github.png" valign="middle">
 
-# Hieronymus
+# Lithography
 
 __TBC__
 
@@ -15,7 +15,7 @@ TBC
 
 ## Availability
 
-Hieronymus has not yet been published as a binary. It is currently waiting for the
+Lithography has not yet been published as a binary. It is currently waiting for the
 final release of Scala 3.3.
 
 ## Getting Started
@@ -26,7 +26,7 @@ TBC
 
 ## Status
 
-Hieronymus is classified as __fledgling__. For reference, Scala One projects are
+Lithography is classified as __fledgling__. For reference, Scala One projects are
 categorized into one of the following five stability levels:
 
 - _embryonic_: for experimental or demonstrative purposes only, without any guarantees of longevity
@@ -39,22 +39,22 @@ Projects at any stability level, even _embryonic_ projects, are still ready to
 be used, but caution should be taken if there is a mismatch between the
 project's stability level and the importance of your own project.
 
-Hieronymus is designed to be _small_. Its entire source code currently consists
+Lithography is designed to be _small_. Its entire source code currently consists
 of 90 lines of code.
 
 ## Building
 
-Hieronymus can be built on Linux or Mac OS with [Fury](/propensive/fury), however
+Lithography can be built on Linux or Mac OS with [Fury](/propensive/fury), however
 the approach to building is currently in a state of flux, and is likely to
 change.
 
 ## Contributing
 
-Contributors to Hieronymus are welcome and encouraged. New contributors may like to look for issues marked
-<a href="https://github.com/propensive/hieronymus/labels/beginner">beginner</a>.
+Contributors to Lithography are welcome and encouraged. New contributors may like to look for issues marked
+<a href="https://github.com/propensive/lithography/labels/beginner">beginner</a>.
 
 We suggest that all contributors read the [Contributing Guide](/contributing.md) to make the process of
-contributing to Hieronymus easier.
+contributing to Lithography easier.
 
 Please __do not__ contact project maintainers privately with questions unless
 there is a good reason to keep them private. While it can be tempting to
@@ -63,7 +63,7 @@ audience, and it can result in duplication of effort.
 
 ## Author
 
-Hieronymus was designed and developed by Jon Pretty, and commercial support and training is available from
+Lithography was designed and developed by Jon Pretty, and commercial support and training is available from
 [Propensive O&Uuml;](https://propensive.com/).
 
 
@@ -83,5 +83,5 @@ often arrived in English via a romance language.
 
 ## License
 
-Hieronymus is copyright &copy; 2023 Jon Pretty & Propensive O&Uuml;, and is made available under the
+Lithography is copyright &copy; 2023 Jon Pretty & Propensive O&Uuml;, and is made available under the
 [Apache 2.0 License](/license.md).

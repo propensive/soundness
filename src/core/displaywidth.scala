@@ -1,5 +1,5 @@
 /*
-    Hieronymus, version [unreleased]. Copyright 2023 Jon Pretty, Propensive OÜ.
+    Lithography, version [unreleased]. Copyright 2023 Jon Pretty, Propensive OÜ.
 
     The primary distribution site is: https://propensive.com/
 
@@ -14,7 +14,7 @@
     and limitations under the License.
 */
 
-package hieronymus
+package lithography
 
 import gossamer.*
 import rudiments.*
@@ -23,7 +23,7 @@ import java.io as ji
 
 import scala.collection.immutable.TreeMap
 
-object HieronymusOpaques:
+object LithographyOpaques:
   opaque type CharRange = Long
   object CharRange:
     def apply(from: Int, to: Int): CharRange = (from.toLong << 32) + to.toLong
@@ -40,7 +40,7 @@ object HieronymusOpaques:
     def contains(char: Char): Boolean = char.toInt >= from && char.toInt <= to
 
 object Unicode:
-  import HieronymusOpaques.*
+  import LithographyOpaques.*
   
   object EaWidth:
     def unapply(code: Text): Option[EaWidth] = code.only:
@@ -87,8 +87,8 @@ object Unicode:
         case _ =>
           map
     
-    val in: ji.InputStream = Option(getClass.getResourceAsStream("/hieronymus/EastAsianWidth.txt")).map(_.nn).getOrElse:
-      throw Mistake("Could not find hieronymus/EastAsianWidth.txt on the classpath")
+    val in: ji.InputStream = Option(getClass.getResourceAsStream("/lithography/EastAsianWidth.txt")).map(_.nn).getOrElse:
+      throw Mistake("Could not find lithography/EastAsianWidth.txt on the classpath")
     
     val stream = scala.io.Source.fromInputStream(in).getLines.map(Text(_)).to(LazyList)
   

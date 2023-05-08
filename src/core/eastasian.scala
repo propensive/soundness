@@ -1,5 +1,5 @@
 /*
-    Hieronymus, version [unreleased]. Copyright 2023 Jon Pretty, Propensive OÜ.
+    Lithography, version [unreleased]. Copyright 2023 Jon Pretty, Propensive OÜ.
 
     The primary distribution site is: https://propensive.com/
 
@@ -17,7 +17,7 @@
 package gossamer
 
 import rudiments.*
-import hieronymus.*
+import lithography.*
 
 package textWidthCalculation:
   given eastAsianScripts: TextWidthCalculator = new TextWidthCalculator:
