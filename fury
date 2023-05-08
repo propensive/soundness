@@ -10,4 +10,4 @@ project imperial
   module core
     compiler  scala
     sources   src/core
-    include   anticipation/file digression/core ambience/core
+    include   anticipation/path digression/core ambience/core
