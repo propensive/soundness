@@ -16,14 +16,8 @@
 
 package anticipation
 
-import annotation.implicitNotFound
-
 import java.nio.file as jnf
 
-@implicitNotFound("""|anticipation: a contextual DirectoryProvider[${T}] instance is required, for example one of:
-                     |    import filesystemIntegration.javaNioPath  // represent a directory as a java.nio.Path (requires Dierutic)
-                     |    import filesystemIntegration.javaIo       // represent a directory as a java.io.File (requires Dierutic)
-                     |    import filesystemIntegration.galileiPath  // represent a directory as a galilei.Directory (requires Galilei)""".stripMargin)
 trait GenericDirectoryMaker[+DirectoryType]:
   def makeDirectory(directory: String, readOnly: Boolean = false): Option[DirectoryType]
 
@@ -31,29 +25,26 @@ trait GenericDirectoryMaker[+DirectoryType]:
 trait GenericDirectoryReader[-DirectoryType]:
   def directoryPath(directory: DirectoryType): String
 
-@implicitNotFound("""|anticipation: a contextual FileProvider[${T}] instance is required, for example one of:
-                     |    import filesystemIntegration.javaNioPath  // represent a file as a java.nio.Path (requires Diuretic)
-                     |    import filesystemIntegration.javaIo       // represent a file as a java.io.File (requires Diuretic)
-                     |    import filesystemIntegration.galileiPath  // represent a file as a galilei.File (requires Galilei)""".stripMargin)
 trait GenericFileMaker[+FileType]:
   def makeFile(file: String, readOnly: Boolean = false): Option[FileType]
 
 trait GenericFileReader[-FileType]:
   def filePath(file: FileType): String
 
-@implicitNotFound("""|anticipation: a contextual PathProvider[${T}] instance is required, for example one of:
-                     |    import integration.javaNioPath  // represent a path as a java.nio.Path
-                     |    import integration.javaIo       // represent a path as a java.io.File
-                     |    import integration.galileiPath  // represent a path as a galilei.Path (requires Galilei)""".stripMargin)
 trait GenericPathMaker[+PathType]:
   def makePath(path: String, readOnly: Boolean = false): Option[PathType]
 
 trait GenericPathReader[-PathType]:
   def getPath(path: PathType): String
 
-@implicitNotFound("""|anticipation: a contextual WatchService[${T}] instance is required.""".stripMargin)
 trait GenericWatchService[+T]:
   def apply(): jnf.WatchService
+
+trait AbstractPathMaker[+PathType]:
+  def makePath(path: String): Option[PathType]
+
+trait AbstractPathReader[-PathType]:
+  def getPath(path: PathType): String
 
 def makeGenericPath[PathType](path: String, readOnly: Boolean = false)(using maker: GenericPathMaker[PathType])
                    : Option[PathType] =
@@ -78,3 +69,11 @@ def readGenericDirectory[DirectoryType](directory: DirectoryType)
                         (using reader: GenericDirectoryReader[DirectoryType])
                         : String =
   reader.directoryPath(directory)
+
+def makeAbstractPath
+    [PathType](path: String)(using maker: AbstractPathMaker[PathType]): Option[PathType] =
+  maker.makePath(path)
+
+def readAbstractPath
+    [PathType](path: PathType)(using reader: AbstractPathReader[PathType]): String =
+  reader.getPath(path)
