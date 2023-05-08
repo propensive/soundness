@@ -2,6 +2,8 @@
 # More information is available at: https://github.com/propensive/wrath/
 
 repo propensive/kaleidoscope
+repo propensive/spectacular
+repo propensive/digression
 
 target lithography/core
 
@@ -9,4 +11,4 @@ project lithography
   module core
     compiler  scala
     sources  src/core
-    include  kaleidoscope/core
+    include  kaleidoscope/core digression/core spectacular/core

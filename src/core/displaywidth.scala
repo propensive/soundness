@@ -16,9 +16,9 @@
 
 package lithography
 
-import gossamer.*
 import rudiments.*
 import kaleidoscope.*
+import spectacular.*
 import java.io as ji
 
 import scala.collection.immutable.TreeMap
@@ -30,7 +30,7 @@ object LithographyOpaques:
     def apply(char: Char): CharRange = (char.toLong << 32) + char.toInt
     def apply(char: Int): CharRange = (char.toLong << 32) + char
 
-    given Show[CharRange] = range => t"${range.from}..${range.to}"
+    given show: Show[CharRange, AsciiOnly & Complete] = range => Text("${range.from}..${range.to}")
 
   given Ordering[CharRange] = Ordering.Long
 
@@ -43,13 +43,13 @@ object Unicode:
   import LithographyOpaques.*
   
   object EaWidth:
-    def unapply(code: Text): Option[EaWidth] = code.only:
-      case t"N"  => Neutral
-      case t"W"  => Wide
-      case t"A"  => Ambiguous
-      case t"H"  => HalfWidth
-      case t"F"  => FullWidth
-      case t"Na" => Narrow
+    def unapply(code: Text): Option[EaWidth] = code.s.only:
+      case "N"  => Neutral
+      case "W"  => Wide
+      case "A"  => Ambiguous
+      case "H"  => HalfWidth
+      case "F"  => FullWidth
+      case "Na" => Narrow
   
   enum EaWidth:
     case Neutral, Narrow, Wide, Ambiguous, FullWidth, HalfWidth
@@ -98,4 +98,14 @@ extension (char: Char)
   def displayWidth: Int = Unicode.eastAsianWidth(char).mm(_.width).or(1)
 
 extension (text: Text)
-  def displayWidth: Int = text.chars.map(_.displayWidth).sum
+  def displayWidth: Int = text.s.toCharArray.nn.immutable(using Unsafe).map(_.displayWidth).sum
+
+@missingContext("a contextual TextWidthCalculator is required to work out the horizontal space a string of text takes when rendered in a monospaced font; for most purposes,\n\n    gossamer.textWidthCalculation.uniform\n\nwill suffice, but if using East Asian scripts,\n\n    import gossamer.textWidthCalculation.eastAsianScripts\n\nshould be used.")
+trait TextWidthCalculator:
+  def width(text: Text): Int
+  def width(char: Char): Int
+
+package textWidthcalculation:
+  given uniform: TextWidthCalculator with
+    def width(text: Text): Int = text.s.length
+    def width(char: Char): Int = 1
