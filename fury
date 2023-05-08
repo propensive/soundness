@@ -9,5 +9,5 @@ project diuretic
   module core
     compiler  scala
     sources   src/core
-    include   anticipation/file anticipation/url anticipation/time
+    include   anticipation/path anticipation/url anticipation/time
 
