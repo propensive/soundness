@@ -10,5 +10,5 @@ project surveillance
   module core
     compiler  scala
     sources   src/core
-    include   anticipation/file eucalyptus/core serpentine/core
+    include   anticipation/path eucalyptus/core serpentine/core
 
