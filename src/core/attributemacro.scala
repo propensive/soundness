@@ -22,7 +22,6 @@ import anticipation.*
 
 import scala.quoted.*
 
-type Label = String & Singleton
 type Attributes = Map[String, Unset.type | Text]
 type Html[Children <: Label] = Node[Children] | Text | Int
 

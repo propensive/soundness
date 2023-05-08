@@ -16,6 +16,8 @@
 
 package honeycomb
 
+import rudiments.*
+
 import language.dynamics
 
 val A = TransTagType["a", NonInteractive, Global | "href" | "target" | "download" | "ping" | "rel" |
