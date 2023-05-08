@@ -22,10 +22,9 @@ project anticipation
     compiler  scala
     sources   src/http
 
-  # Rename this to `path` at some point
-  module file
+  module path
     compiler  scala
-    sources   src/file
+    sources   src/path
 
   module time
     compiler  scala
@@ -35,7 +34,6 @@ project anticipation
     include anticipation/css
     include anticipation/html
     include anticipation/http
-    include anticipation/file
+    include anticipation/path
     include anticipation/time
     include anticipation/url
-  
