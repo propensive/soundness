@@ -9,5 +9,5 @@ project ambience
   module core
     compiler  scala
     sources   src/core
-    include   rudiments/core anticipation/file
+    include   rudiments/core anticipation/path
 
