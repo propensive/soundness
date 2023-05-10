@@ -23,6 +23,8 @@ import digression.*
 import parasitism.*
 import turbulence.*
 import iridescence.*
+import spectacular.*
+import lithography.*
 
 import scala.quoted.*
 
@@ -62,7 +64,7 @@ case class Entry(realm: Realm, level: Level, message: AnsiText, timestamp: Times
 object Timestamp:
   def apply(): Timestamp = System.currentTimeMillis
   given show: Show[Timestamp] = ts => dateFormat.format(ju.Date(ts)).nn.show
-  given AnsiShow[Timestamp] = timestamp => ansi"${colors.Tan}(${show.show(timestamp)})"
+  given AnsiShow[Timestamp] = timestamp => ansi"${colors.Tan}(${show(timestamp)})"
 
   private val dateFormat = jt.SimpleDateFormat(t"yyyy-MMM-dd HH:mm:ss.SSS".s)
 
@@ -92,7 +94,7 @@ object EucalyptusMacros:
       (using Quotes)
       : Expr[Unit] = '{
     val time = Timestamp()
-    try $log.record(Entry($realm, $level, $show.ansiShow($value), time, $log.tags)) catch case e: Exception => ()
+    try $log.record(Entry($realm, $level, $show.ansi($value), time, $log.tags)) catch case e: Exception => ()
   }
 
 @missingContext("""|eucalyptus: a contextual Log instance is needed, for example:
@@ -146,7 +148,8 @@ trait LogSink:
 object LogFormat:
   given standardAnsi[T]: LogFormat[T] = entry =>
     import textWidthCalculation.uniform
-    val text = ansi"${entry.timestamp.ansi} ${entry.level.ansi} ${entry.realm.ansi.span(8)} ${entry.message}${'\n'}"
+    val realm: AnsiText = gossamer.fit[AnsiText](entry.realm.ansi)(8)
+    val text = ansi"${entry.timestamp.ansi} ${entry.level.ansi} $realm ${entry.message}${'\n'}"
     text.render
   
 trait LogFormat[S]:

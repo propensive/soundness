@@ -2,6 +2,7 @@
 # More information is available at: https://github.com/propensive/wrath/
 
 repo propensive/escapade
+repo propensive/turbulence
 
 target eucalyptus/core
 
@@ -9,4 +10,4 @@ project eucalyptus
   module core
     compiler  scala
     sources   src/core
-    include   escapade/core
+    include   escapade/core turbulence/core
