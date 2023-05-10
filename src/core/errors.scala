@@ -16,21 +16,16 @@
 
 package digression
 
-export rudiments.ErrorMessage
 import rudiments.*
+import spectacular.*
 
-case class AggregateError[ErrorType <: Exception](errors: List[ErrorType])
-extends Error(err"aggregation of errors: ${Text(errors.map(_.toString).mkString("\n", "\n", ""))}")
+case class AggregateError[ErrorType <: Error](errors: List[ErrorType])
+extends Error(err"aggregated errors:${Text(errors.map(_.message).mkString("\n", "\n", ""))}")
 
 extension (ctx: StringContext)
-  transparent inline def err
-      [TupleType <: Matchable]
-      (value: TupleType = EmptyTuple)
-      : ErrorMessage[Tuple] =
-    inline value match
-      case value: Tuple =>
-        ErrorMessage[value.type](ctx.parts.map(Text(_)), value)
-      
-      case other: TupleType =>
-        ErrorMessage[TupleType *: EmptyTuple](ctx.parts.map(Text(_)), other *: EmptyTuple)
+  transparent inline def err(subs: Any*): ErrorMessage =
+    def recur(subs: Seq[Any]): List[Text] =
+      if subs.isEmpty then Nil else subs.head.debug :: recur(subs.tail)
+    
+    ErrorMessage(ctx.parts.to(List).map(Text(_)), recur(subs))
   

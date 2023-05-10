@@ -20,8 +20,7 @@ import rudiments.*
 
 import language.experimental.captureChecking
 
-extension [TupleType <: Tuple](error: Error[TupleType])
-  def stackTrace: StackTrace = StackTrace(error)
+extension (error: Error) def stackTrace: StackTrace = StackTrace(error)
 
 object StackTrace:
   case class Frame(className: Text, method: Text, file: Text, line: Maybe[Int], native: Boolean)
@@ -31,9 +30,9 @@ object StackTrace:
     Text("αₙ") -> Text("anonymous class"),
     Text("ι")  -> Text("initialization"),
     Text("ς")  -> Text("super reference"),
-    Text("⋮ε")  -> Text("extension method"),
+    Text("⋮ε") -> Text("extension method"),
     Text("ϕ")  -> Text("direct"),
-    Text("⋮π")  -> Text("package file"),
+    Text("⋮π") -> Text("package file"),
     Text("ⲛ")  -> Text("class initializer")
   )
 
