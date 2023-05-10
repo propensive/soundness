@@ -18,8 +18,9 @@ package escritoire
 
 import rudiments.*
 import gossamer.*
-import escapade.*
+import lithography.*
 import digression.*
+import spectacular.*
 
 import language.experimental.namedTypeArguments
 
@@ -36,14 +37,16 @@ enum DelimitRows:
 
 object Column:
   def apply
-      [RowType, TitleType, CellType]
-      (title: TitleType, width: Maybe[Int] = Unset, align: Alignment = Alignment.Left,
+      [RowType, CellType]
+      (using defaultTextType: DefaultTextType)
+      (title: defaultTextType.TextType, width: Maybe[Int] = Unset, align: Alignment = Alignment.Left,
           breaks: Breaks = Breaks.Space, hide: Boolean = false)(get: RowType => CellType)
-      (using ashow: AnsiShow[TitleType], ashow2: AnsiShow[CellType])
-      : Column[RowType] =
-    Column(ashow.ansiShow(title), get.andThen(ashow2.ansiShow(_)), breaks, align, width, hide)
+      (using show2: Display[CellType, EndUser], show3: Display[defaultTextType.TextType, EndUser],
+          textual: Textual[defaultTextType.TextType])
+      : Column[RowType, defaultTextType.TextType] =
+    Column(textual.make(show(title).s), get.andThen { value => textual.make(show2(value).s) }, breaks, align, width, hide)
 
-  def constrain(text: Text, breaks: Breaks, maxWidth: Int, init: Int = 0)
+  def constrain[TextType: Textual](text: TextType, breaks: Breaks, maxWidth: Int, init: Int = 0)
                (using calc: TextWidthCalculator): Table.ShortPair =
 
     @tailrec
@@ -67,8 +70,8 @@ object Column:
  
     recur(init)
 
-case class Column[RowType]
-    (title: AnsiText, get: RowType => AnsiText, breaks: Breaks, align: Alignment, width: Maybe[Int],
+case class Column[RowType, TextType: Textual]
+    (title: TextType, get: RowType => TextType, breaks: Breaks, align: Alignment, width: Maybe[Int],
         hide: Boolean)
 
 object Table:
@@ -84,21 +87,35 @@ object Table:
       def left: Int = value&65535
 
 
-case class Table[RowType: ClassTag](initCols: Column[RowType]*):
+  @targetName("make")
+  def apply
+      [RowType: ClassTag]
+      (using defaultTextType: DefaultTextType)
+      (initCols: Column[RowType, defaultTextType.TextType]*)
+      (using classTag: ClassTag[defaultTextType.TextType],
+          textual: Textual[defaultTextType.TextType]) =
+    new Table[RowType, defaultTextType.TextType](initCols*)
+
+
+
+case class Table
+    [RowType: ClassTag, TextType]
+    (initCols: Column[RowType, TextType]*)
+    (using classTag: ClassTag[TextType], textual: Textual[TextType]):
 
   def tabulate(data: Seq[RowType], maxWidth: Int, delimitRows: DelimitRows = DelimitRows.RuleIfMultiline)
               (using style: TableStyle, calc: TextWidthCalculator)
-              : LazyList[AnsiText] =
-    val cols: IArray[Column[RowType]] = IArray.from(initCols.filterNot(_.hide))
-    val titles: IArray[AnsiText] = IArray.from(cols.map(_.title))
+              : LazyList[TextType] =
+    val cols: IArray[Column[RowType, TextType]] = IArray.from(initCols.filterNot(_.hide))
+    val titles: IArray[TextType] = IArray.from(cols.map(_.title))
     
-    val cells: IArray[IArray[AnsiText]] = IArray.from:
+    val cells: IArray[IArray[TextType]] = IArray.from:
       titles +: data.map { row => IArray.from(cols.map(_.get(row))) }
     
     val freeWidth: Int = maxWidth - cols.filter(!_.width.unset).map(_.width.or(0)).sum - style.cost(cols.length)
     
     val cellRefs: Array[Array[ShortPair]] = Array.tabulate(data.length + 1, cols.length): (row, col) =>
-      Column.constrain(cells(row)(col).plain, cols(col).breaks, freeWidth)
+      Column.constrain(cells(row)(col), cols(col).breaks, freeWidth)
     
     val widths: Array[Int] = Array.from:
       cols.indices.map: col =>
@@ -134,7 +151,7 @@ case class Table[RowType: ClassTag](initCols: Column[RowType]*):
     val columns = cols.zip(widths).map: (col, width) =>
       col.copy(width = width)
     
-    def extent(text: Text, width: Int, start: Int): ShortPair =
+    def extent(text: TextType, width: Int, start: Int): ShortPair =
       
       @tailrec
       def search(pos: Int, space: Int = 0, count: Int = 0): ShortPair =
@@ -151,24 +168,25 @@ case class Table[RowType: ClassTag](initCols: Column[RowType]*):
       
       search(start)
     
-    def rows(row: Int = 0, offsets: Array[Int]): LazyList[AnsiText] =
+    def rows(row: Int = 0, offsets: Array[Int]): LazyList[TextType] =
       if row >= cells.length then LazyList()
       else
         if columns.indices.exists { col => offsets(col) != cells(row)(col).length }
         then
-          val text = columns.indices.map: col =>
-            val content = cells(row)(col)
-            val ext = extent(content.plain, columns(col).width.or(0), offsets(col))
-            val slice = content.slice(offsets(col), ext.left)
+          val text: TextType = columns.indices.map: col =>
+            val content: TextType = cells(row)(col)
+            val ext: ShortPair = extent(content, columns(col).width.or(0), offsets(col))
+            val slice: TextType = content.slice(offsets(col), ext.left)
             offsets(col) = ext.right
-            val width = columns(col).width.or(0)
+            val width: Int = columns(col).width.or(0)
             
             columns(col).align match
               case Alignment.Left   => slice.pad(width)(using calc)
               case Alignment.Center => slice.center(width)(using calc)
               case Alignment.Right  => slice.pad(width, Rtl)(using calc)
           
-          .join(ansi"${style.left} ", ansi" ${style.sep} ", ansi" ${style.right}")
+          .join(textual.make(t"${style.left} ".s), textual.make(t" ${style.sep} ".s),
+              textual.make(t" ${style.right}".s))
         
           text #:: rows(row, offsets)
         else
@@ -190,8 +208,11 @@ case class Table[RowType: ClassTag](initCols: Column[RowType]*):
                 rows(row + 1, offsets)
           else LazyList(rule(style.bottomLeft, style.bottomSep, style.bottomRight, style.bottomBar))
 
-    def rule(left: Char, separator: Char, right: Char, bar: Char): AnsiText =
-      columns.map { col => ansi"$bar"*(col.width.or(0) + 2) }.join(ansi"$left", ansi"$separator", ansi"$right")
+    def rule(left: Char, separator: Char, right: Char, bar: Char): TextType =
+      columns.map: col =>
+        textual.make(bar.show.s)*(col.width.or(0) + 2)
+      .join(textual.make(left.show.s), textual.make(separator.show.s), textual.make(right.show.s))
+
     rule(style.topLeft, style.topSep, style.topRight, style.topBar) #:: rows(0, Array.fill[Int](cols.length)(0))
 
 package tableStyles:
