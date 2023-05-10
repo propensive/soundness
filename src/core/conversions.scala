@@ -19,7 +19,10 @@ package rudiments
 import language.experimental.captureChecking
 
 case class IncompatibleTypeError()
-extends Error(ErrorMessage[EmptyTuple](List(Text("the value is not compatible")), EmptyTuple))
+extends Error(ErrorMessage(List(Text("the value is not compatible")), Nil))
+
+trait DecimalConverter:
+  def decimalize(value: Double): Text
 
 extension (value: Any)
   def as[ResultType](using Unapply[value.type, ResultType])

@@ -29,12 +29,11 @@ extension [ValueType](seq: Iterable[ValueType])
     if seq.size != map.size then throw DuplicateIndexError() else map.to(Map)
 
 case class KeyNotFoundError(name: Text)
-extends Error(ErrorMessage[Text *: EmptyTuple](List(Text("key "), Text(" not found")), name *: EmptyTuple))
+extends Error(ErrorMessage(List(Text("key "), Text(" not found")), List(name)))
 
 case class DuplicateIndexError()
-extends Error(ErrorMessage[EmptyTuple](
-  List(Text("the sequence contained more than one element that mapped to the same index")), EmptyTuple
-))
+extends Error(ErrorMessage(List(Text(
+    "the sequence contained more than one element that mapped to the same index")), Nil))
 
 extension [ElemType](value: IArray[ElemType])
   inline def mutable(using erased Unsafe.type): Array[ElemType] = value.asInstanceOf[Array[ElemType]]
