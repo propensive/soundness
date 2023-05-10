@@ -18,12 +18,14 @@ package chiaroscuro
 
 import wisteria.*
 import rudiments.*
-import gossamer.*
+import gossamer.*, defaultTextTypes.ansiText
 import dissonance.*
 import escapade.*
 import iridescence.*
 import dendrology.*
 import escritoire.*
+import spectacular.*
+import lithography.*
 
 enum Comparison:
   case Same(value: Text)
@@ -47,7 +49,7 @@ object Comparison:
       case class Row(treeLine: Text, left: AnsiText, right: AnsiText)
 
       def mkLine(tiles: List[TreeTile], data: (Text, Comparison)): Row =
-        def line(bullet: Text) = t"${tiles.map(_.show).join}$bullet ${data(0)}"
+        def line(bullet: Text) = t"${tiles.map(_.text).join}$bullet ${data(0)}"
         
         data(1) match
           case Same(v) =>
@@ -59,11 +61,13 @@ object Comparison:
           case Structural(cmp, left, right) =>
             Row(line(t"■"), ansi"$left", ansi"$right")
       
-      Table[Row](
-        Column(t"")(_.treeLine),
-        Column(t"Expected", align = Alignment.Right)(_.left),
-        Column(t"Found")(_.right)
-      ).tabulate(drawTree(children, mkLine)(cmp), maxWidth = 200).join(ansi"${'\n'}")
+      val table = Table[Row](
+        Column(ansi"")(_.treeLine),
+        Column(ansi"Expected", align = Alignment.Right)(_.left),
+        Column(ansi"Found")(_.right)
+      )
+
+      table.tabulate(drawTree(children, mkLine)(cmp), maxWidth = 200).join(ansi"${'\n'}")
     
     case Different(left, right) => ansi"The value ${colors.YellowGreen}($left) did not equal ${colors.Crimson}($right)"
     case Same(value)            => ansi"The value ${colors.Gray}($value) was expected"
@@ -83,10 +87,6 @@ object Comparable extends Derivation[Comparable]:
   def simplistic[T]: Comparable[T] = (a, b) =>
     if a == b then Comparison.Same(a.toString.show) else Comparison.Different(a.toString.show, b.toString.show)
 
-  given [T: Canonical]: Comparable[T] = (left, right) =>
-    if left.canon == right.canon
-    then Comparison.Same(left.canon) else Comparison.Different(left.canon, right.canon)
-  
   given Comparable[Text] = (left, right) =>
     if left == right then Comparison.Same(left.debug) else Comparison.Different(left.debug, right.debug)
   
@@ -99,8 +99,7 @@ object Comparable extends Derivation[Comparable]:
     if left.getClass == right.getClass && leftMsg == rightMsg then Comparison.Same(leftMsg)
     else Comparison.Different(leftMsg, rightMsg)
   
-  given seq[T: Debug: Comparable: Similar, Coll[X] <: Seq[X]]
-           : Comparable[Coll[T]] = (left, right) =>
+  given seq[T: Comparable: Similar, Coll[X] <: Seq[X]]: Comparable[Coll[T]] = (left, right) =>
     val leftSeq = left.to(IndexedSeq)
     val rightSeq = right.to(IndexedSeq)
 
@@ -121,7 +120,7 @@ object Comparable extends Derivation[Comparable]:
       
       Comparison.Structural(comparison, left.toString.show, right.toString.show)
   
-  given iarray[T: Debug: Comparable: Similar]: Comparable[IArray[T]] = (left, right) =>
+  given iarray[T: Comparable: Similar]: Comparable[IArray[T]] = (left, right) =>
     seq[T, IndexedSeq].compare(left.to(IndexedSeq), right.to(IndexedSeq))
   
   def join[T](caseClass: CaseClass[Comparable, T]): Comparable[T] = (left, right) =>
