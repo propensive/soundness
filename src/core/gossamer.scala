@@ -18,7 +18,9 @@ package gossamer
 
 import rudiments.*
 import digression.*
-import turbulence.*
+import lithography.*
+import spectacular.*
+import kaleidoscope.*
 import contextual.*
 
 import language.experimental.captureChecking
@@ -35,24 +37,43 @@ enum Bidi:
 
 export Bidi.Ltr, Bidi.Rtl
 
-@missingContext("a contextual TextWidthCalculator is required to work out the horizontal space a string of text takes when rendered in a monospaced font; for most purposes,\n\n    gossamer.textWidthCalculation.uniform\n\nwill suffice, but if using East Asian scripts,\n\n    import gossamer.textWidthCalculation.eastAsianScripts\n\nshould be used.")
-trait TextWidthCalculator:
-  def width(text: Text): Int
-  def width(char: Char): Int
-
-package textWidthCalculation:
-  given uniform: TextWidthCalculator with
-    def width(text: Text): Int = text.length
-    def width(char: Char): Int = 1
-
 extension (value: Bytes)
   def uString: Text = Text(String(value.to(Array), "UTF-8"))
   def hex: Text = Text(value.map { b => String.format("\\u%04x", b.toInt).nn }.mkString)
   def text[Enc <: Encoding](using enc: Enc): Text = Text(String(value.to(Array), enc.name.s))
 
 object Cuttable:
+  given [TextType: Textual](using textual: Textual[TextType]): Cuttable[TextType, Text] =
+    (text, delimiter, limit) =>
+      val string = textual.string(text)
+      val dLength = delimiter.s.length
+      
+      @tailrec
+      def recur(start: Int, results: List[TextType]): List[TextType] =
+        string.indexOf(delimiter.s) match
+          case -1    => Nil
+          case index => recur(index + dLength, textual.slice(text, start, index) :: results)
+    
+      recur(0, Nil).reverse
+
+  given [TextType: Textual](using textual: Textual[TextType]): Cuttable[TextType, Regex] =
+    (text, regex, limit) =>
+      val string = textual.string(text)
+      val matcher = Pattern.compile(regex.pattern).nn.matcher(string).nn
+      
+      @tailrec
+      def recur(start: Int, results: List[TextType]): List[TextType] =
+        if matcher.find(start)
+        then recur(matcher.end, textual.slice(text, matcher.start, matcher.end) :: results)
+        else results
+        
+      recur(0, Nil).reverse
+
   given Cuttable[Text, Text] = (text, delimiter, limit) =>
     List(text.s.split(Pattern.quote(delimiter.s), limit).nn.map(_.nn).map(Text(_))*)
+  
+  given Cuttable[Text, Regex] = (text, regex, limit) =>
+    List(text.s.split(regex.pattern, limit).nn.map(_.nn).map(Text(_))*)
 
   given [T](using cuttable: Cuttable[T, Text]): Cuttable[T, Char] = (text, delimiter, limit) =>
     cuttable.cut(text, delimiter.show, limit)
@@ -70,127 +91,175 @@ extension (words: Iterable[Text])
   def snake: Text = words.join(Text("_"))
   def kebab: Text = words.join(Text("-"))
 
-extension (text: Text)
-  inline def bytes(using enc: Encoding): IArray[Byte] =
-    text.s.getBytes(enc.name.s).nn.immutable(using Unsafe)
+extension [TextType](using textual: Textual[TextType])(text: TextType)
+  inline def length: Int = textual.string(text).length
+  inline def populated: Maybe[TextType] = if textual.string(text).length == 0 then Unset else text
+  inline def lower: TextType = textual.map(text, _.toLower)
+  inline def upper: TextType = textual.map(text, _.toUpper)
+  def plain: Text = Text(textual.string(text))
   
-  inline def sysBytes: IArray[Byte] = text.s.getBytes().nn.immutable(using Unsafe)
-  inline def length: Int = text.s.length
-  inline def populated: Option[Text] = if text.s.length == 0 then None else Some(text)
-  inline def lower: Text = Text(text.s.toLowerCase.nn)
-  inline def upper: Text = Text(text.s.toUpperCase.nn)
-  inline def urlEncode: Text = Text(URLEncoder.encode(text.s, "UTF-8").nn)
-  inline def urlDecode: Text = Text(URLDecoder.decode(text.s, "UTF-8").nn)
-  inline def punycode: Text = Text(java.net.IDN.toASCII(text.s).nn)
+  def drop(n: Int, bidi: Bidi = Ltr): TextType =
+    val length = text.length
+    bidi match
+      case Ltr => textual.slice(text, n min length max 0, length)
+      case Rtl => textual.slice(text, 0, 0 max (length - n) min length)
   
-  def drop(n: Int, bidi: Bidi = Ltr): Text = bidi match
-    case Ltr => Text(text.s.substring(n min length max 0).nn)
-    case Rtl => Text(text.s.substring(0, 0 max (text.s.length - n) min length).nn)
+  def take(n: Int, bidi: Bidi = Ltr): TextType =
+    val length = text.length
+    bidi match
+      case Ltr => textual.slice(text, 0, n min length max 0)
+      case Rtl => textual.slice(text, 0 max (length - n) min length, length)
   
-  def take(n: Int, bidi: Bidi = Ltr): Text = bidi match
-    case Ltr => Text(text.s.substring(0, n min length max 0).nn)
-    case Rtl => Text(text.s.substring(0 max (text.s.length - n) min length, length).nn)
+  def capitalize: TextType = textual.concat(text.take(1).upper, text.drop(1))
+  def uncapitalize: TextType = textual.concat(text.take(1).lower, text.drop(1))
 
-  inline def trim: Text = Text(text.s.trim.nn)
+  inline def head: Char = textual.unsafeChar(text, 0)
+  inline def last: Char = textual.unsafeChar(text, text.length - 1)
+  inline def tail: TextType = text.drop(1, Ltr)
+  inline def init: TextType = text.drop(1, Rtl)
+  inline def empty: Boolean = text.length == 0
+  def chars: IArray[Char] = textual.string(text).toCharArray.nn.immutable(using Unsafe)
   
-  def slice(from: Int, to: Int): Text =
-    if to <= from then Text("")
-    else Text(text.s.substring(from max 0 min length, to min length max 0).nn)
+  def slice(start: Int, end: Int): TextType =
+    if end <= start then textual.empty
+    else textual.slice(text, start max 0 min text.length, end min text.length max 0)
   
-  def chars: IArray[Char] = text.s.toCharArray.nn.immutable(using Unsafe)
-  def mapChars(fn: Char => Char): {fn} Text = Text(String(text.s.toCharArray.nn.map(fn)))
-  inline def empty: Boolean = text.s.isEmpty
+  def snip(n: Int): (TextType, TextType) =
+    (text.slice(0, n min text.length), text.slice(n min text.length, text.length))
+  
+  def char(index: Int): Maybe[Char] =
+    if index >= 0 && index < text.length then textual.unsafeChar(text, index) else Unset
+
+  inline def reverse: TextType =
+    val length = text.length
+    
+    def recur(index: Int, result: TextType): TextType =
+      if index < length then recur(index + 1, textual.concat(text.slice(index, index + 1), result))
+      else result
+    
+    recur(0, textual.empty)
+  
+  def contains(substring: Text): Boolean = textual.indexOf(text, substring) != -1
+  def contains(char: Char): Boolean = textual.indexOf(text, char.show) != -1
+
+  @targetName("add")
+  infix def +(other: TextType): TextType = textual.concat(text, other)
+
+  @targetName("times")
+  infix def *(count: Int): TextType =
+    def recur(n: Int, acc: TextType): TextType =
+      if n == 0 then acc else recur(n - 1, textual.concat(acc, text))
+    
+    recur(count.max(0), textual.empty)
+  
+  def apply(index: Int): Char throws OutOfRangeError =
+    if index >= 0 && index < text.length then textual.unsafeChar(text, index)
+    else throw OutOfRangeError(index, 0, text.length)
+  
+  inline def trim: TextType =
+    val start = text.where(_ != ' ').or(text.length)
+    val end = text.where(_ != ' ', bidi = Rtl).or(0)
+    text.slice(start, end + 1)
+  
+  def where(pred: Char -> Boolean, start: Maybe[Int] = Unset, bidi: Bidi = Ltr): Maybe[Int] =
+    val length = text.length
+    
+    def recurLtr(i: Int): Maybe[Int] =
+      if i >= length then Unset
+      else if pred(textual.unsafeChar(text, i)) then i else recurLtr(i + 1)
+    
+    def recurRtl(i: Int): Maybe[Int] =
+      if i < 0 then Unset else if pred(textual.unsafeChar(text, i)) then i else recurLtr(i - 1)
+      
+    bidi match
+      case Ltr => recurLtr(start.or(0))
+      case Rtl => recurRtl(start.or(length - 1))
+
+  def upto(pred: Char -> Boolean): TextType =
+    val end: Int = text.where(pred).or(text.length)
+    text.slice(0, end)
+  
+  def dropWhile(pred: Char -> Boolean): TextType = text.where(!pred(_)) match
+    case Unset  => textual.empty
+    case i: Int => text.slice(i, text.length)
+
+  def snipWhere(pred: Char -> Boolean, index: Int = 0): Maybe[(TextType, TextType)] =
+    text.where(pred, index).mm(text.snip(_))
+
+  def whilst(pred: Char -> Boolean): TextType = text.upto(!pred(_))
+  def mapChars(fn: Char -> Char): TextType = textual.map(text, fn)
+
+  inline def count(pred: Char -> Boolean): Int =
+    val length: Int = text.length
+    
+    def recur(index: Int, sum: Int): Int = if index >= length then sum else
+      val increment = if pred(textual.unsafeChar(text, index)) then 1 else 0
+      recur(index + 1, sum + increment)
+    
+    recur(0, 0)
+  
+  def pad(length: Int, bidi: Bidi = Ltr, char: Char = ' ')(using TextWidthCalculator): TextType =
+    val padding = textual.make(char.toString)*(length - text.length)
+    
+    bidi match
+      case Ltr => textual.concat(text, padding)
+      case Rtl => textual.concat(padding, text)
+  
+  def center(length: Int, char: Char = ' ')(using TextWidthCalculator): TextType =
+    text.pad((length + text.length)/2, char = char).pad(length, Rtl, char = char)
+  
+  def fit(length: Int, bidi: Bidi = Ltr, char: Char = ' ')(using TextWidthCalculator): TextType =
+    bidi match
+      case Ltr => text.pad(length, bidi, char).take(length, Ltr)
+      case Rtl => text.pad(length, bidi, char).take(length, Rtl)
+  
+  def uncamel: List[TextType] = text.where(_.isUpper, 1) match
+    case Unset  => List(text.lower)
+    case i: Int => text.take(i).lower :: text.drop(i).uncamel
+  
+  def unkebab: List[TextType] = text.cut(Text("-"))
+  def unsnake: List[TextType] = text.cut(Text("_"))
+  
+  inline def starts(prefix: Text): Boolean =
+    val length: Int = prefix.s.length
+    
+    def recur(index: Int): Boolean =
+      index == length || textual.unsafeChar(text, index) == prefix.s.charAt(index) && recur(index + 1)
+
+    length <= text.length && recur(0)
+  
+  inline def ends(suffix: Text): Boolean =
+    val length: Int = suffix.s.length
+    val offset: Int = text.length - length
+    
+    def recur(index: Int): Boolean =
+      index == length || textual.unsafeChar(text, offset + index) == suffix.s.charAt(index) &&
+          recur(index + 1)
+
+    length <= text.length && recur(0)
+  
+  inline def tr(from: Char, to: Char): TextType =
+    textual.map(text, char => if char == from then to else char)
+  
+extension (text: Text)
   inline def rsub(from: Text, to: Text): Text = Text(text.s.replaceAll(from.s, to.s).nn)
-  inline def starts(prefix: Text): Boolean = text.s.startsWith(prefix.s)
-  inline def ends(suffix: Text): Boolean = text.s.endsWith(suffix.s)
   
   inline def sub(from: Text, to: Text): Text =
     Text(text.s.replaceAll(Pattern.quote(from.s), to.s).nn)
   
-  inline def tr(from: Char, to: Char): Text = Text(text.s.replace(from, to).nn)
-  inline def capitalize: Text = take(1).upper+drop(1)
-  inline def uncapitalize: Text = take(1).lower+drop(1)
-  inline def reverse: Text = Text(String(text.s.toCharArray.nn.reverse))
-  
-  inline def count(pred: Char -> Boolean): Int =
-    text.s.toCharArray.nn.immutable(using Unsafe).count(pred)
-  
-  inline def head: Char = text.s.charAt(0)
-  inline def last: Char = text.s.charAt(text.s.length - 1)
-  inline def tail: Text = drop(1, Ltr)
-  inline def init: Text = drop(1, Rtl)
-
   def flatMap(fn: Char => Text): Text =
     Text(String(text.s.toCharArray.nn.immutable(using Unsafe).flatMap(fn(_).s.toCharArray.nn
         .immutable(using Unsafe)).mutable(using Unsafe)))
 
-  def dropWhile(pred: Char -> Boolean): Text =
-    try Text(text.s.substring(0, where(!pred(_))).nn) catch case err: OutOfRangeError => Text("")
-
-  def snip(n: Int): (Text, Text) =
-    (Text(text.s.substring(0, n min text.s.length).nn), Text(text.s.substring(n min text.s.length)
-        .nn))
+  inline def urlEncode: Text = Text(URLEncoder.encode(text.s, "UTF-8").nn)
+  inline def urlDecode: Text = Text(URLDecoder.decode(text.s, "UTF-8").nn)
+  inline def punycode: Text = Text(java.net.IDN.toASCII(text.s).nn)
   
-  def snipWhere(pred: Char -> Boolean, idx: Int = 0): (Text, Text) throws OutOfRangeError =
-    snip(where(pred, idx))
-
-  def uncamel: List[Text] =
-    (try text.where(_.isUpper, 1) catch case error: OutOfRangeError => -1) match
-      case -1 => List(text.lower)
-      case i  => text.take(i).lower :: text.drop(i).uncamel
+  inline def bytes(using enc: Encoding): IArray[Byte] =
+    text.s.getBytes(enc.name.s).nn.immutable(using Unsafe)
   
-  def unkebab: List[Text] = text.cut(Text("-"))
-  def unsnake: List[Text] = text.cut(Text("_"))
-
-  def fit(width: Int, bidi: Bidi = Ltr, char: Char = ' '): Text = bidi match
-    case Ltr => (text + Text(s"$char")*(width - length)).take(width, Ltr)
-    case Rtl => (Text(s"$char")*(width - length) + text).take(width, Rtl)
-
-  @targetName("add")
-  infix def +(other: Text): Text = Text(text.s+other)
-
-  @targetName("times")
-  infix def *(n: Int): Text = Text(IArray.fill(n)(text.s).mkString)
+  inline def sysBytes: IArray[Byte] = text.s.getBytes().nn.immutable(using Unsafe)
   
-  def apply(idx: Int): Char throws OutOfRangeError =
-    if idx >= 0 && idx < text.s.length then text.s.charAt(idx)
-    else throw OutOfRangeError(idx, 0, text.s.length)
-  
-  def char(idx: Int): Maybe[Char] =
-    if idx >= 0 && idx < text.s.length then text.s.charAt(idx) else Unset
-
-  def pad(length: Int, bidi: Bidi = Ltr, char: Char = ' ')(using calc: TextWidthCalculator): Text =
-    bidi match
-      case Ltr =>
-        if calc.width(text) < length then text+Text(s"$char")*(length - calc.width(text)) else text
-      
-      case Rtl =>
-        if calc.width(text) < length then Text(s"$char")*(length - calc.width(text))+text else text
-
-  def contains(substring: Text): Boolean = text.s.contains(substring.s)
-  def contains(char: Char): Boolean = text.s.indexOf(char) != -1
-
-  @tailrec
-  def where
-      (pred: Char -> Boolean, idx: Maybe[Int] = Unset, bidi: Bidi = Ltr)
-      (using CanThrow[OutOfRangeError])
-      : Int = bidi match
-    case Ltr =>
-      val index = idx.or(0)
-      if index >= text.length || index < 0 then throw OutOfRangeError(index, 0, text.s.length)
-      if pred(text.s.charAt(index)) then index else where(pred, index + 1, Ltr)
-    
-    case Rtl =>
-      val index = idx.or(text.s.length - 1)
-      if index < 0 || index >= text.length then throw OutOfRangeError(index, 0, text.s.length)
-      if pred(text.s.charAt(index)) then index else where(pred, index - 1, Rtl)
-
-  def upto(pred: Char -> Boolean): Text =
-    try Text(text.s.substring(0, where(pred(_))).nn) catch case e: OutOfRangeError => text
-  
-  def whilst(pred: Char -> Boolean): Text =
-    try Text(text.s.substring(0, where(!pred(_))).nn) catch case e: OutOfRangeError => text
-
   def lev(other: Text): Int =
     val m = text.s.length
     val n = other.length
@@ -215,44 +284,48 @@ case class Numerous(word: Text, pluralEnd: Text = Text("s"), singularEnd: Text =
   def apply(value: Int): Text = word+(if value == 1 then singularEnd else pluralEnd)
 
 object Joinable:
-  given Joinable[Text] = xs => Text(xs.mkString)
+  given [TextType](using textual: Textual[TextType]): Joinable[TextType] = elements =>
+    var acc: TextType = textual.empty
+    for element <- elements do acc = textual.concat(acc, element)
+    acc
 
-trait Joinable[T]:
-  def join(elements: Iterable[T]): T
+trait Joinable[TextType]:
+  def join(elements: Iterable[TextType]): TextType
 
 extension (iarray: IArray[Char]) def text: Text = Text(String(iarray.mutable(using Unsafe)))
 
-extension [T](values: Iterable[T])(using joinable: Joinable[T])
-  def join: T = joinable.join(values)
+extension [TextType](values: Iterable[TextType])(using joinable: Joinable[TextType])
+  def join: TextType = joinable.join(values)
   
-  def join(separator: T): T =
+  def join(separator: TextType): TextType =
     joinable.join(values.flatMap(Iterable(separator, _)).drop(1))
   
-  def join(left: T, separator: T, right: T): T =
+  def join(left: TextType, separator: TextType, right: TextType): TextType =
     Iterable(left, join(separator), right).join
   
-  def join(separator: T, penultimate: T): T = values.size match
+  def join(separator: TextType, penultimate: TextType): TextType = values.size match
     case 0 => Iterable().join
     case 1 => values.head
     case _ => Iterable(values.init.join(separator), penultimate, values.last).join
   
-  def join(left: T, separator: T, penultimate: T, right: T): T =
+  def join(left: TextType, separator: TextType, penultimate: TextType, right: TextType): TextType =
     Iterable(left, join(separator, penultimate), right).join
 
-case class OutOfRangeError(idx: Int, from: Int, to: Int)
-extends Error(err"the index $idx is outside the range $from-$to")
+case class OutOfRangeError(index: Int, from: Int, to: Int)
+extends Error(err"the index $index is outside the range $from-$to")
 
 case class Showable[T](value: T):
   def show: Text = Text(value.toString)
 
 trait Shown[+T](using Show[T]):
   this: T =>
-    override def toString(): String = summon[Show[T]].show(this).s
+    override def toString(): String = summon[Show[T]](this).s
 
 object Interpolation:
   case class Input(txt: Text)
 
-  given [T: Show]: Insertion[Input, T] = value => Input(summon[Show[T]].show(value))
+  given [ValueType](using display: Display[ValueType, EndUser]): Insertion[Input, ValueType] =
+    value => Input(display(value))
 
   private def escape(str: Text): Text throws InterpolationError =
     val buf: StringBuilder = StringBuilder()

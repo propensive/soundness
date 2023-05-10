@@ -22,7 +22,8 @@ case class Decimalizer
     (significantFigures: Maybe[Int] = Unset, decimalPlaces: Maybe[Int] = Unset,
         decimalPoint: Char = '.', minusSign: Char = '-', exponent: Text = t"×10",
         exponentThreshold: Int = 3, superscript: Boolean = true, exponentMultiple: Int = 1,
-        infinity: Text = t"∞", nan: Text = t"∉ℝ"):
+        infinity: Text = t"∞", nan: Text = t"∉ℝ")
+extends DecimalConverter:
   
   def exponentScale(i: Int, a: Int): Int = if i == 0 then a else exponentScale(i/10, a + 1)
 

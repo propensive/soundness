@@ -17,7 +17,7 @@
 package gossamer
 
 import rudiments.*
-import turbulence.*
+import spectacular.*
 
 import scala.deriving.*
 import scala.compiletime.*
@@ -25,28 +25,8 @@ import scala.compiletime.*
 import language.experimental.pureFunctions
 
 
-trait Show[-T]:
-  def show(value: T): Text
-
-trait Debug[-T]:
-  def show(value: T): Text
-
 case class SimpleTExtractor(text: Text):
   def unapply(scrutinee: Text): Boolean = text == scrutinee
-
-extension [T](value: T)
-  def show(using show: Show[T]): Text = show.show(value)
-  def debug(using debug: Debug[T]): Text = debug.show(value)
-  def canon(using canonical: Canonical[T]): Text = canonical.serialize(value)
-
-  inline def txt: Text = compiletime.summonFrom:
-    case show: Show[T]      => show.show(value)
-    case debug: Debug[T]    => debug.show(value)
-  
-  inline def report: Text = compiletime.summonFrom:
-    case debug: Debug[T]    => debug.show(value)
-    case show: Show[T]      => show.show(value)
-    case _                  => Text(value.toString)
 
 extension (inline ctx: StringContext)
   transparent inline def txt(inline parts: Any*): Text =
@@ -58,35 +38,15 @@ extension (inline ctx: StringContext)
 extension (ctx: StringContext)
   def t = SimpleTExtractor(ctx.parts.head.show)
 
+/*
 object Debug:
   object any extends Debug[Any]:
-    def show(value: Any): Text = Text(value.toString)
-
-  given text: Debug[Text] = text =>
-    val escaped = text.flatMap:
-      case '\n'     => t"\\n"
-      case '\u001b' => t"\\e"
-      case '\t'     => t"\\t"
-      case '\r'     => t"\\r"
-      case '\\'     => t"\\\\"
-      case '\"'     => t"\\\""
-      case '\''     => t"\\\'"
-      case '\b'     => t"\\b"
-      case '\f'     => t"\\f"
-      case ch       => if ch < 128 && ch >= 32 then ch.show
-                       else String.format("\\u%04x", ch.toInt).nn.show
-
-    t"t\"$escaped\""
-
+  
   given [T: Debug]: Debug[Option[T]] =
     case None        => t"None"
     case Some(value) => t"Some(${value.debug})"
 
   given long: Debug[Long] = long => Text(s"${long}L")
-  given Debug[Int] = int => Text(s"${int}")
-  given Debug[Short] = short => Text(s"${short}.toShort")
-  given Debug[Byte] = byte => Text(s"${byte}.toByte")
-  given Debug[Char] = char => Text(s"'${char.show.debug.drop(2).drop(1, Rtl)}'")
 
   given Debug[Double] = double =>
     if double != double then t"Double.NaN"
@@ -147,35 +107,8 @@ object Debug:
       (value: P) => deriveSum[s.MirroredElemTypes, P](s.ordinal(value)).show(value)
 
 object Show:
-  given Show[String] = Text(_)
-  given Show[Text] = identity(_)
-  given Show[Int] = Showable(_).show
-  given Show[Short] = Showable(_).show
-  given Show[Long] = Showable(_).show
-  given Show[Byte] = Showable(_).show
-  given Show[Uuid] = _.javaUuid.toString.show
-
   given (using decimalizer: Decimalizer): Show[Double] = decimalizer.decimalize(_)
   given (using decimalizer: Decimalizer): Show[Float] = decimalizer.decimalize(_)
-  
-  given Show[ByteSize] = bs =>
-    if bs.long > 10L*1024*1024*1024*1024 then Text(s"${(bs.long/1024*1024*1024*1024).show}TB")
-    else if bs.long > 10L*1024*1024*1024 then Text(s"${(bs.long/1024*1024*1024).show}GB")
-    else if bs.long > 10*1024*1024 then Text(s"${bs.long/1024*1024}MB")
-    else if bs.long > 10*1024 then Text(s"${bs.long/1024}kB")
-    else Text(s"${bs.long}B")
-  
-  given Show[Char] = Showable(_).show
-  given Show[Boolean] = if _ then Text("true") else Text("false")
-  given Show[reflect.Enum] = Showable(_).show
-
-  given Show[Pid] = pid => t"ᴾᴵᴰ${pid.value}"
-
-  given [T: Show]: Show[Set[T]] = _.map(_.show).join(t"⦃", t", ", t"⦄")
-  given [T: Show]: Show[List[T]] = _.map(_.show).join(t"⟦", t", ", t"⟧")
-  given [T: Show]: Show[Vector[T]] = _.map(_.show).join(t"⟪", t", ", t"⟫")
-  given [T: Show]: Show[Array[T]] = _.map(_.show).join(t"⌊", t", ", t"⌋ₘ")
-  given [T: Show]: Show[IArray[T]] = _.map(_.show).join(t"⌊", t", ", t"⌋ᵢ")
   
   given [T: Show]: Show[LazyList[T]] with
     private def recur(value: LazyList[T]): Text =
@@ -189,27 +122,7 @@ object Show:
     case None    => Text("none")
     case Some(v) => v.show
 
-object Canonical:
-  def apply[T](read: Text -> T, write: T -> Text): Canonical[T] = new Canonical[T]:
-    def serialize(value: T): Text = write(value)
-    def deserialize(value: Text): T = read(value)
-
-  given (using CanThrow[IncompatibleTypeError]): Canonical[Byte] =
-    Canonical[Byte](_.as[Byte], _.show)
-  
-  given (using CanThrow[IncompatibleTypeError]): Canonical[Short] =
-    Canonical[Short](_.as[Short], _.show)
-  
-  given (using CanThrow[IncompatibleTypeError]): Canonical[Int] =
-    Canonical[Int](_.as[Int], _.show)
-  
-  given (using CanThrow[IncompatibleTypeError]): Canonical[Long] =
-    Canonical[Long](_.as[Long], _.show)
-
-trait Canonical[T]:
-  def serialize(value: T): Text
-  def deserialize(value: Text): T
-
 extension (inline ctx: StringContext)
   transparent inline def enc(inline parts: Any*): Encoding =
     ${EncodingPrefix.expand('EncodingPrefix, 'ctx, 'parts)}
+*/
