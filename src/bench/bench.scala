@@ -41,31 +41,31 @@ object Benchmarks extends Suite(t"Merino tests"):
       test(t"Parse file with Jawn"):
         import org.typelevel.jawn.*, ast.*
         JParser.parseFromByteBuffer(java.nio.ByteBuffer.wrap(jsonExample1).nn)
-      .benchmark(warmup = 1000L, duration = 1000L, baseline = Baseline(compare = Compare.Min))
+      .benchmark(warmup = 1000L, duration = 1000L, baseline = Baseline(compare = Compare.Min), confidence = 99)
       
       test(t"Parse file with Merino"):
         JsonAst.parse(jsonExample1.nn.immutable(using Unsafe))
-      .benchmark(warmup = 1000L, duration = 1000L)
+      .benchmark(warmup = 1000L, duration = 1000L, confidence = 99)
     
     suite(t"Parse example 2"):
       test(t"Parse file with Jawn"):
         import org.typelevel.jawn.*, ast.*
         JParser.parseFromByteBuffer(java.nio.ByteBuffer.wrap(jsonExample2).nn)
-      .benchmark(warmup = 1000L, duration = 1000L, baseline = Baseline(compare = Compare.Min))
+      .benchmark(warmup = 1000L, duration = 1000L, baseline = Baseline(compare = Compare.Min), confidence = 99)
       
       test(t"Parse file with Merino"):
         JsonAst.parse(jsonExample2.nn.immutable(using Unsafe))
-      .benchmark(warmup = 1000L, duration = 1000L)
+      .benchmark(warmup = 1000L, duration = 1000L, confidence = 99)
     
     suite(t"Parse example 3"):
       test(t"Parse file with Jawn"):
         import org.typelevel.jawn.*, ast.*
         JParser.parseFromByteBuffer(java.nio.ByteBuffer.wrap(jsonExample3).nn)
-      .benchmark(warmup = 1000L, duration = 1000L, baseline = Baseline(compare = Compare.Min))
+      .benchmark(warmup = 1000L, duration = 1000L, baseline = Baseline(compare = Compare.Min), confidence = 99)
       
       test(t"Parse file with Merino"):
         JsonAst.parse(jsonExample3.nn.immutable(using Unsafe))
-      .benchmark(warmup = 1000L, duration = 1000L)
+      .benchmark(warmup = 1000L, duration = 1000L, confidence = 99)
         
 given realm: Realm = Realm(t"tests")
 

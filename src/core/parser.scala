@@ -21,6 +21,7 @@ import gossamer.*
 import rudiments.*
 import digression.*
 import turbulence.*
+import spectacular.*
 import scala.collection.mutable.ArrayBuffer
 
 import language.experimental.captureChecking
