@@ -14,7 +14,7 @@
     and limitations under the License.
 */
 
-package gossamer
+package lithography
 
 import rudiments.*
 import lithography.*

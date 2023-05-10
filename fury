@@ -5,10 +5,16 @@ repo propensive/kaleidoscope
 repo propensive/spectacular
 repo propensive/digression
 
-target lithography/core
+target lithography/test
 
 project lithography
   module core
     compiler  scala
-    sources  src/core
-    include  kaleidoscope/core digression/core spectacular/core
+    sources   src/core
+    include   kaleidoscope/core digression/core spectacular/core
+  
+  module test
+    compiler  scala
+    sources   src/test
+    main      lithography.Tests
+    include   lithography/core probably/cli

@@ -30,7 +30,7 @@ object LithographyOpaques:
     def apply(char: Char): CharRange = (char.toLong << 32) + char.toInt
     def apply(char: Int): CharRange = (char.toLong << 32) + char
 
-    given show: Show[CharRange, AsciiOnly & Complete] = range => Text("${range.from}..${range.to}")
+    given show: Show[CharRange] = range => Text("${range.from}..${range.to}")
 
   given Ordering[CharRange] = Ordering.Long
 
@@ -100,12 +100,12 @@ extension (char: Char)
 extension (text: Text)
   def displayWidth: Int = text.s.toCharArray.nn.immutable(using Unsafe).map(_.displayWidth).sum
 
-@missingContext("a contextual TextWidthCalculator is required to work out the horizontal space a string of text takes when rendered in a monospaced font; for most purposes,\n\n    gossamer.textWidthCalculation.uniform\n\nwill suffice, but if using East Asian scripts,\n\n    import gossamer.textWidthCalculation.eastAsianScripts\n\nshould be used.")
+@missingContext("a contextual TextWidthCalculator is required to work out the horizontal space a string of text takes when rendered in a monospaced font; for most purposes,\n\n    lithography.textWidthCalculation.uniform\n\nwill suffice, but if using East Asian scripts,\n\n    import lithography.textWidthCalculation.eastAsianScripts\n\nshould be used.")
 trait TextWidthCalculator:
   def width(text: Text): Int
   def width(char: Char): Int
 
-package textWidthcalculation:
+package textWidthCalculation:
   given uniform: TextWidthCalculator with
     def width(text: Text): Int = text.s.length
     def width(char: Char): Int = 1
