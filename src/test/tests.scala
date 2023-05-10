@@ -18,8 +18,9 @@ package quantify
 
 import probably.*
 import rudiments.*
-import gossamer.{show, t, Decimalizer}
+import gossamer.{t, Decimalizer}
 import larceny.*
+import spectacular.*
 
 import language.strictEquality
 
@@ -178,7 +179,7 @@ object Tests extends Suite(Text("Quantify Tests")):
       .assert(_ == 10.7639111056*Foot*Foot)
       
       test(Text("Conversion to seconds does nothing")):
-        (3.0*Metre).in[Second]
+        (3.0*Metre).in[Seconds]
       .assert(_ == 3.0*Metre)
     
     suite(t"Inequalities"):
