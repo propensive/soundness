@@ -1,5 +1,6 @@
 /*
-    Merino, version [unreleased]. Copyright 2023 Jon Pretty, Propensive OÜ.
+    Merino
+jawn, version [unreleased]. Copyright 2023 Jon Pretty, Propensive OÜ.
 
     The primary distribution site is: https://propensive.com/
 
