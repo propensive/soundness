@@ -77,9 +77,9 @@ class Environment(getEnv: Text -> Maybe[Text], getProperty: Text -> Maybe[Text])
         case _          => throw EnvError(Text("user.dir"), true)
 
 case class EnvError(variable: Text, property: Boolean)
-extends Error(ErrorMessage[Text *: EmptyTuple](
+extends Error(ErrorMessage(
   List(Text(if property then "the system property " else "the environment variable "), Text(" was not found")),
-  variable *: EmptyTuple
+  List(variable)
 ))
 
 package environments:
