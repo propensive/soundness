@@ -18,13 +18,15 @@ package probably
 
 import rudiments.*
 import digression.*
-import gossamer.*
+import gossamer.*, defaultTextTypes.ansiText
 import chiaroscuro.*
 import ambience.*
 import escritoire.*
 import escapade.*
 import turbulence.*
 import iridescence.*
+import spectacular.*
+import lithography.*
 
 given Decimalizer = Decimalizer(3)
 
@@ -120,7 +122,7 @@ class TestReport(using env: Environment):
         if suite.unset then rest else Summary(Status.Suite, suite.option.get.id, 0, 0, 0, 0) :: rest
       
       case Bench(testId, bench@Benchmark(_, _, _, _, _, _, _, _)) =>
-        Nil
+        List(Summary(Status.Bench, testId, 0, 0, 0, 0))
 
       case Test(testId, buf) =>
         val status =
@@ -230,11 +232,11 @@ class TestReport(using env: Environment):
   def complete()(using Stdio): Unit =
     import textWidthCalculation.uniform
     
-    val table: Table[Summary] =
+    val table =
       val showStats = !lines.summaries.forall(_.count < 2)
       val timeTitle = if showStats then t"Avg" else t"Time"
       
-      Table(
+      Table[Summary](
         Column(ansi"")(_.status.symbol),
         
         Column(ansi"$Bold(Hash)"): s =>
@@ -263,7 +265,6 @@ class TestReport(using env: Environment):
 
     if summaryLines.exists(_.count > 0)
     then
-
       val totals = summaryLines.groupBy(_.status).view.mapValues(_.size).to(Map) - Status.Suite
       val passed: Int = totals.getOrElse(Status.Pass, 0) + totals.getOrElse(Status.Bench, 0)
       val total: Int = totals.values.sum
@@ -275,8 +276,8 @@ class TestReport(using env: Environment):
       Io.println(t"─"*72)
       List(Status.Pass, Status.Bench, Status.Throws, Status.Fail, Status.Mixed, Status.CheckThrows).grouped(3).foreach: statuses =>
         Io.println:
-          statuses.map: status =>
-            ansi"  ${status.symbol} ${status.describe}".pad(20)
+          statuses.map[AnsiText]: status =>
+            gossamer.pad[AnsiText](ansi"  ${status.symbol} ${status.describe}")(20)
           .join(ansi" ")
       Io.println(t"─"*72)
 
@@ -300,7 +301,7 @@ class TestReport(using env: Environment):
         if b.throughput == 0 then ansi""
         else ansi"${colors.Silver}(${b.throughput}) ${colors.Turquoise}(op${colors.Gray}(·)s¯¹)"
 
-      val bench: Table[ReportLine.Bench] = Table(
+      val bench: Table[ReportLine.Bench, AnsiText] = Table[ReportLine.Bench](
         (List(
           Column(ansi"$Bold(Hash)"): s =>
             ansi"${colors.CadetBlue}(${s.test.id})",
@@ -344,7 +345,7 @@ class TestReport(using env: Environment):
               baseline.calc match
                 case Difference => if value == 0 then ansi"★"
                                    else if value < 0
-                                   then ansi"${colors.Thistle}(-)${valueWithUnits.drop(1)}"
+                                   then ansi"${colors.Thistle}(-)${valueWithUnits.dropChars(1)}"
                                    else ansi"${colors.Thistle}(+)$valueWithUnits"
                 
                 case Ratio      => if value == 1 then ansi"★" else ansi"${colors.Silver}($value)"
@@ -389,7 +390,7 @@ class TestReport(using env: Environment):
             Io.println(cmp.ansi.render)
           
           case DebugInfo.Captures(map) =>
-            Table[(Text, Text)](
+            Table[(Text, Text), AnsiText](
               Column(ansi"Expression", align = Alignment.Right)(_(0)),
               Column(ansi"Value")(_(1)),
             ).tabulate(map.to(List), 140).map(_.render).foreach(Io.println(_))

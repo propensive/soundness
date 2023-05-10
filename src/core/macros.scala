@@ -19,6 +19,8 @@ package probably
 import gossamer.*
 import rudiments.*
 import chiaroscuro.*
+import spectacular.*
+import lithography.*
 
 import dotty.tools.dotc.util as dtdu
 import scala.quoted.*
@@ -46,14 +48,14 @@ object ProbablyMacros:
     
     exp match
       case Some('{ $expr: t }) =>
-        val debug: Expr[Debug[t | T]] = Expr.summon[Debug[t | T]].getOrElse('{ Debug.any })
+        val debug: Expr[Display[t | T, Developer]] = Expr.summon[Display[t | T, Developer]].getOrElse('{ Display.any })
         val comparable = Expr.summon[Comparable[t | T]].getOrElse('{Comparable.simplistic[t | T]})
         '{ assertion[t | T, T, R, S]($runner, $test, $pred, $action, $comparable, Some($expr), $inc,
             $inc2, $debug) }
       
       case _ =>
         '{ assertion[T, T, R, S]($runner, $test, $pred, $action, Comparable.nothing[T], None, $inc,
-            $inc2, Debug.any) }
+            $inc2, Display.any) }
   
   def check
       [T: Type, R: Type]
@@ -85,7 +87,7 @@ object ProbablyMacros:
       [T, T0 <: T, R, S]
       (runner: Runner[R], test: Test[T0], pred: T0 => Boolean, result: TestRun[T0] => S,
           comparable: Comparable[T], exp: Option[T], inc: Inclusion[R, Outcome],
-          inc2: Inclusion[R, DebugInfo], debug: Debug[T]): S =
+          inc2: Inclusion[R, DebugInfo], display: Display[T, Developer]): S =
     runner.run(test).pipe: run =>
       val outcome = run match
         case TestRun.Throws(err, duration, map) =>
@@ -98,8 +100,8 @@ object ProbablyMacros:
           try if pred(value) then Outcome.Pass(duration) else
             exp match
               case Some(exp) =>
-                inc2.include(runner.report, test.id, DebugInfo.Compare(debug.show(exp),
-                    debug.show(value), comparable.compare(exp, value)))
+                inc2.include(runner.report, test.id, DebugInfo.Compare(display(exp),
+                    display(value), comparable.compare(exp, value)))
               case None =>
                 //inc2.include(runner.report, test.id, DebugInfo.Compare(summon[Comparable[Any]].compare(value, 1)))
             
@@ -118,6 +120,6 @@ object ProbablyMacros:
       case pos: dtdu.SourcePosition => pos.lineContent.show.slice(pos.startColumn, pos.endColumn)
       case _                        => t"<unknown>"
     
-    val debug: Expr[Debug[T]] = Expr.summon[Debug[T]].getOrElse('{ Debug.any })
+    val debug: Expr[Display[T, Developer]] = Expr.summon[Display[T, Developer]].getOrElse('{ Display.any })
     
     '{ $test.capture(Text(${Expr[String](exprName.s)}), $expr)(using $debug) }

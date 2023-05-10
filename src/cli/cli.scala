@@ -21,6 +21,7 @@ import digression.*
 import escapade.*
 import turbulence.*
 import ambience.*, environments.system
+import lithography.*, textWidthCalculation.uniform
 
 import language.adhocExtensions
 

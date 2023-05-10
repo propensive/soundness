@@ -20,26 +20,28 @@ import eucalyptus.*
 import gossamer.*
 import rudiments.*
 import digression.*
+import spectacular.*
+import lithography.*
 
 import scala.collection.mutable as scm
 
 given realm: Realm = Realm(t"probably")
 
 extension [T](inline value: T)(using inline test: TestContext)
-  inline def inspect(using Debug[T]): T = ${ProbablyMacros.inspect('value, 'test)}
+  inline def inspect(using Display[T, Developer]): T = ${ProbablyMacros.inspect('value, 'test)}
 
 package testContexts:
   given threadLocal: TestContext = new TestContext():
     private val delegate: Option[TestContext] = Option(Runner.testContextThreadLocal.get()).map(_.nn).flatten
     
-    override def capture[T](name: Text, value: T)(using Debug[T]): T =
+    override def capture[T](name: Text, value: T)(using Display[T, Developer]): T =
       delegate.map(_.capture[T](name, value)).getOrElse(value)
 
 @annotation.capability
 class TestContext():
   private[probably] val captured: scm.ArrayBuffer[(Text, Text)] = scm.ArrayBuffer()
   
-  def capture[T](name: Text, value: T)(using Debug[T]): T =
+  def capture[T](name: Text, value: T)(using Display[T, Developer]): T =
     captured.append(name -> value.debug)
     value
 
@@ -173,7 +175,8 @@ case class UnexpectedSuccessError(value: Text)
 extends Error(err"the expression was expected to throw an exception, but instead returned $value")
 
 transparent inline def capture
-    [ExceptionType <: Exception, ResultType: Debug]
+    [ExceptionType <: Exception, ResultType]
+    (using Display[ResultType, Developer])
     (inline fn: => CanThrow[ExceptionType] ?=> ResultType)
     : ExceptionType throws UnexpectedSuccessError =
   try
