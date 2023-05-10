@@ -20,35 +20,28 @@ import rudiments.*
 import digression.*
 import gossamer.*
 import iridescence.*
+import lithography.*
+import spectacular.*
 
-trait FallbackAnsiShow:
-  given AnsiShow[T: Show]: AnsiShow[T] = str => AnsiText(str.show)
-
-object AnsiShow extends FallbackAnsiShow:
+object AnsiShow:
   given AnsiShow[AnsiText] = identity(_)
+  given AnsiShow[Text] = text => AnsiText(text)
   given AnsiShow[Pid] = pid => ansi"${colors.FireBrick}(${pid.value.show})"
 
   given [T: AnsiShow]: AnsiShow[Option[T]] =
     case None    => AnsiText("empty".show)
-    case Some(v) => summon[AnsiShow[T]].ansiShow(v)
+    case Some(v) => summon[AnsiShow[T]].ansi(v)
+  
+  given [ValueType](using display: Display[ValueType, EndUser]): AnsiShow[ValueType] = value =>
+    AnsiText(display(value))
 
-  given AnsiShow[Exception] = e => summon[AnsiShow[StackTrace]].ansiShow(StackTrace.apply(e))
+  given (using TextWidthCalculator): AnsiShow[Exception] = e =>
+    summon[AnsiShow[StackTrace]].ansi(StackTrace.apply(e))
 
-  inline def showMessage[TupleType <: Tuple](value: TupleType, text: List[Text]): AnsiText =
-    inline value match
-      case cons: (? *: ?) => cons match
-        case head *: tail =>
-          val shown = compiletime.summonFrom:
-            case debug: Debug[head.type] => debug.show(head)
-            case show: Show[head.type]   => show.show(head)
-          
-          ansi"${text.head}$Italic($shown)${showMessage[tail.type](tail, text.tail)}"
-      case _              => ansi"${text.head}"
+  given AnsiShow[Error] = error =>
+    error.message.fold(ansi"")((msg, txt) => ansi"$msg$txt", (msg, sub) => ansi"$msg$Italic($sub)")
 
-  inline given [T <: Tuple, E <: Error[T]]: AnsiShow[E] = new AnsiShow[E]:
-    def ansiShow(error: E): AnsiText = showMessage[T](error.msg.parts, error.msg.text.to(List))
-
-  given AnsiShow[StackTrace] = stack =>
+  given (using TextWidthCalculator): AnsiShow[StackTrace] = stack =>
     val methodWidth = stack.frames.map(_.method.length).max
     val classWidth = stack.frames.map(_.className.length).max
     val fileWidth = stack.frames.map(_.file.length).max
@@ -62,16 +55,16 @@ object AnsiShow extends FallbackAnsiShow:
       case None        => root
       case Some(cause) => ansi"$root${'\n'}${colors.White}(caused by:)${'\n'}${cause.ansi}"
   
-  given AnsiShow[StackTrace.Frame] = frame =>
+  given (using TextWidthCalculator): AnsiShow[StackTrace.Frame] = frame =>
     ansi"${colors.MediumVioletRed}(${frame.className.fit(40, Rtl)})${colors.Gray}(#)${colors.PaleVioletRed}(${frame.method.fit(40)}) ${colors.CadetBlue}(${frame.file.fit(18, Rtl)})${colors.Gray}(:)${colors.MediumTurquoise}(${frame.line.mm(_.show).or(t"?")})"
 
   given (using decimalizer: Decimalizer): AnsiShow[Double] =
-    double => AnsiText.make(decimalizer.decimalize(double).nn, _.copy(fg = colors.Gold))
+    double => AnsiText.make(decimalizer.decimalize(double), _.copy(fg = colors.Gold))
 
   given AnsiShow[Throwable] = throwable =>
     AnsiText.make[String](throwable.getClass.getName.nn.show.cut(t".").last.s,
         _.copy(fg = colors.Crimson))
 
-trait AnsiShow[-T] extends Show[T]:
-  def show(value: T): Text = ansiShow(value).plain
-  def ansiShow(value: T): AnsiText
+trait AnsiShow[-ValueType] extends Display[ValueType, EndUser]:
+  def apply(value: ValueType): Text = ansi(value).plain
+  def ansi(value: ValueType): AnsiText

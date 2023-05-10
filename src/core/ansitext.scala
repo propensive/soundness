@@ -21,7 +21,7 @@ import rudiments.*
 import digression.*
 import iridescence.*
 import contextual.*
-import turbulence.*
+import spectacular.*
 
 opaque type CharSpan = Long
 
@@ -84,11 +84,13 @@ object Ansi:
   given Substitution[Ansi.Input, Text, "t"] = str => Ansi.Input.Textual(AnsiText(str))
   given Substitution[Ansi.Input, String, "t"] = str => Ansi.Input.Textual(AnsiText(Text(str)))
   
-  given [T: Show]: Substitution[Ansi.Input, T, "t"] =
-    value => Ansi.Input.Textual(AnsiText(summon[Show[T]].show(value)))
+  given [ValueType]
+      (using display: Display[ValueType, EndUser])
+      : Substitution[Ansi.Input, ValueType, "t"] =
+    value => Ansi.Input.Textual(AnsiText(display(value)))
   
-  given [T: AnsiShow]: Substitution[Ansi.Input, T, "t"] =
-    value => Ansi.Input.Textual(summon[AnsiShow[T]].ansiShow(value))
+  given [ValueType: AnsiShow]: Substitution[Ansi.Input, ValueType, "t"] =
+    value => Ansi.Input.Textual(summon[AnsiShow[ValueType]].ansi(value))
   
   given Stylize[Escape] = identity(_)
   given Stylize[Color] = color => Stylize(_.copy(fg = color.standardSrgb.rgb24))
@@ -172,6 +174,26 @@ object Ansi:
       AnsiText(state.text, state.spans, state.insertions)
 
 object AnsiText:
+
+  given Display[AnsiText, EndUser] = _.plain
+
+  given textual: Textual[AnsiText] = new Textual[AnsiText]:
+    def string(text: AnsiText): String = text.plain.s
+    def length(text: AnsiText): Int = text.plain.s.length
+    def make(string: String): AnsiText = AnsiText(Text(string))
+    
+    def map(text: AnsiText, fn: Char => Char): AnsiText =
+      AnsiText(Text(text.plain.s.map(fn)), text.spans, text.insertions)
+
+    def slice(text: AnsiText, start: Int, end: Int): AnsiText =
+      text.dropChars(start).takeChars(end - start)
+    
+    def empty: AnsiText = AnsiText.empty
+    def concat(left: AnsiText, right: AnsiText): AnsiText = left+right
+    def unsafeChar(text: AnsiText, index: Int): Char = text.plain.s.charAt(index)
+    def indexOf(text: AnsiText, sub: Text): Int = text.plain.s.indexOf(sub.s)
+
+
   def empty: AnsiText = AnsiText(t"")
   given joinable: Joinable[AnsiText] = _.fold(empty)(_ + _)
 
@@ -196,34 +218,30 @@ object AnsiText:
 
   given Ordering[AnsiText] = Ordering.by(_.plain)
 
-  def make[T: Show](value: T, transform: Ansi.Transform): AnsiText =
-    val str: Text = value.show
-    AnsiText(str, TreeMap(CharSpan(0, str.length) -> transform))
+  def make
+      [ValueType]
+      (value: ValueType, transform: Ansi.Transform)(using display: Display[ValueType, EndUser])
+      : AnsiText =
+    val text: Text = display(value)
+    AnsiText(text, TreeMap(CharSpan(0, text.s.length) -> transform))
 
 case class AnsiText(plain: Text, spans: TreeMap[CharSpan, Ansi.Transform] = TreeMap(),
                         insertions: TreeMap[Int, Text] = TreeMap()):
-  def length: Int = plain.length
-  def span(n: Int)(using TextWidthCalculator): AnsiText = take(n).pad(n, Ltr)
   def explicit: Text = render.flatMap { ch => if ch.toInt == 27 then t"\\e" else ch.show }
-  def upper: AnsiText = AnsiText(plain.upper, spans)
-  def lower: AnsiText = AnsiText(plain.lower, spans)
 
-  @targetName("times")
-  infix def *(n: Int): AnsiText = if n == 0 then AnsiText.empty else this*(n - 1)+this
-  
   @targetName("add")
   infix def +(text: Text): AnsiText = AnsiText(t"$plain$text", spans)
 
   @targetName("add2")
   infix def +(text: AnsiText): AnsiText =
     val newSpans: TreeMap[CharSpan, Ansi.Transform] = text.spans.map:
-      case (span, transform) => (span.shift(length): CharSpan) -> transform
+      case (span, transform) => (span.shift(plain.length): CharSpan) -> transform
     
     AnsiText(plain+text.plain, spans ++ newSpans)
 
-  def drop(n: Int, dir: Bidi = Ltr): AnsiText = dir match
+  def dropChars(n: Int, dir: Bidi = Ltr): AnsiText = dir match
     case Rtl =>
-      take(length - n)
+      takeChars(plain.length - n)
     
     case Ltr =>
       val newSpans: TreeMap[CharSpan, Ansi.Transform] =
@@ -235,9 +253,9 @@ case class AnsiText(plain: Text, spans: TreeMap[CharSpan, Ansi.Transform] = Tree
       
       AnsiText(plain.drop(n), newSpans)
 
-  def take(n: Int, dir: Bidi = Ltr): AnsiText = dir match
+  def takeChars(n: Int, dir: Bidi = Ltr): AnsiText = dir match
     case Rtl =>
-      drop(length - n)
+      dropChars(plain.length - n)
 
     case Ltr =>
       val newSpans: TreeMap[CharSpan, Ansi.Transform] =
@@ -248,16 +266,6 @@ case class AnsiText(plain: Text, spans: TreeMap[CharSpan, Ansi.Transform] = Tree
         .view.filterKeys { k => k.isEmpty || k != CharSpan.Nowhere }.to(TreeMap)
       
       AnsiText(plain.take(n), newSpans)
-
-  def slice(from: Int, to: Int): AnsiText = drop(from).take(to - from)
-
-  def pad(n: Int, direction: Bidi = Ltr, char: Char = ' ')(using calc: TextWidthCalculator): AnsiText = direction match
-    case Ltr => if calc.width(plain) < n then this + AnsiText(char.show*(n - calc.width(plain))) else this
-    case Rtl => if calc.width(plain) < n then AnsiText(char.show*(n - calc.width(plain))) + this else this
-  
-  def center(n: Int, char: Char = ' ')(using calc: TextWidthCalculator): AnsiText =
-    if calc.width(plain) < n then AnsiText(char.show*((n - calc.width(plain))/2)) + this + AnsiText(char.show*((n - calc.width(plain) + 1)/2))
-    else this
 
   def render: Text =
     val buf = StringBuilder()
