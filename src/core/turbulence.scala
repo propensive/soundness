@@ -20,6 +20,7 @@ import rudiments.*
 import digression.*
 import anticipation.*
 import parasitism.*
+import lithography.*
 
 import java.io as ji
 import java.nio as jn
@@ -40,7 +41,6 @@ extension (value: DataStream)
     
     bld.result().immutable(using Unsafe)
 
-case class StreamCutError(total: ByteSize) extends Error(err"the stream was cut prematurely after $total")
 case class StreamUnavailableError() extends Error(err"the stream is unavailable")
 
 extension (obj: LazyList.type)
@@ -181,13 +181,6 @@ extension [ElemType](stream: LazyList[ElemType])
 //   given Writable[StreamBuffer[Bytes throws StreamCutError]] with
 //     def write(buffer: StreamBuffer[Bytes throws StreamCutError], stream: DataStream) =
 //       stream.foreach(buffer.put(_))
-
-object Printable:
-  given text: Printable[Text] = identity(_)
-
-@capability
-trait Printable[-TextType]:
-  def print(text: TextType): Text
 
 object Io:
   def put(bytes: Bytes)(using io: Stdio): Unit =
