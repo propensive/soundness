@@ -157,23 +157,26 @@ extension [TextType](using textual: Textual[TextType])(text: TextType)
     else throw OutOfRangeError(index, 0, text.length)
   
   inline def trim: TextType =
-    val start = text.where(_ != ' ').or(text.length)
-    val end = text.where(_ != ' ', bidi = Rtl).or(0)
+    val start = text.where(!_.isWhitespace).or(text.length)
+    val end = text.where(!_.isWhitespace, bidi = Rtl).or(0)
     text.slice(start, end + 1)
   
   def where(pred: Char -> Boolean, start: Maybe[Int] = Unset, bidi: Bidi = Ltr): Maybe[Int] =
     val length = text.length
     
-    def recurLtr(i: Int): Maybe[Int] =
-      if i >= length then Unset
-      else if pred(textual.unsafeChar(text, i)) then i else recurLtr(i + 1)
+    val step: Int = bidi match
+      case Ltr => 1
+      case Rtl => -1
     
-    def recurRtl(i: Int): Maybe[Int] =
-      if i < 0 then Unset else if pred(textual.unsafeChar(text, i)) then i else recurLtr(i - 1)
-      
-    bidi match
-      case Ltr => recurLtr(start.or(0))
-      case Rtl => recurRtl(start.or(length - 1))
+    val first: Int = bidi match
+      case Ltr => start.or(0)
+      case Rtl => start.or((length - 1).max(0))
+
+    def recur(i: Int): Maybe[Int] =
+      if i >= length || i < 0 then Unset else if pred(textual.unsafeChar(text, i)) then i
+      else recur(i + step)
+    
+    recur(first)
 
   def upto(pred: Char -> Boolean): TextType =
     val end: Int = text.where(pred).or(text.length)
@@ -327,48 +330,44 @@ object Interpolation:
   given [ValueType](using display: Display[ValueType, EndUser]): Insertion[Input, ValueType] =
     value => Input(display(value))
 
+  def standardEscape
+      (text: Text, cur: Int, esc: Boolean)
+      : (Maybe[Char], Int, Boolean) throws InterpolationError =
+    text.s.charAt(cur) match
+      case '\\' if !esc => (Unset, cur + 1, true)
+      case '\\'         => ('\\', cur + 1, false)
+      case 'n' if esc   => ('\n', cur + 1, false)
+      case 'r' if esc   => ('\r', cur + 1, false)
+      case 'f' if esc   => ('\f', cur + 1, false)
+      case 'b' if esc   => ('\b', cur + 1, false)
+      case 't' if esc   => ('\t', cur + 1, false)
+      case 'u' if esc   => (parseUnicode(text.slice(cur + 1, cur + 5)), cur + 5, false)
+      case 'e' if esc   => ('\u001b', cur + 1, false)
+      case '"' if esc   => ('"', cur + 1, false)
+      case '\'' if esc  => ('\'', cur + 1, false)
+      case ch if esc    => throw InterpolationError(
+                                rudiments.Text(s"the character '$ch' should not be escaped"))
+      case ch           => (ch, cur + 1, false)
+
+  private def parseUnicode(chars: Text): Char throws InterpolationError =
+    if chars.length < 4
+    then throw InterpolationError(rudiments.Text("the unicode escape is incomplete"))
+    else Integer.parseInt(chars.s, 16).toChar
+
   private def escape(str: Text): Text throws InterpolationError =
     val buf: StringBuilder = StringBuilder()
     
-    def parseUnicode(chars: Text): Char =
-      if chars.length < 4
-      then throw InterpolationError(rudiments.Text("the unicode escape is incomplete"))
-      else Integer.parseInt(chars.s, 16).toChar
-
     @tailrec
-    def recur(cur: Int = 0, esc: Boolean = false): Unit =
+    def recur(cur: Int = 0, esc: Boolean): Unit =
       if cur < str.length
       then
-        str.s.charAt(cur) match
-          case '\\' if !esc => recur(cur + 1, true)
-          case '\\'         => buf.add('\\')
-                               recur(cur + 1, false)
-          case 'n' if esc   => buf.add('\n')
-                               recur(cur + 1)
-          case 'r' if esc   => buf.add('\r')
-                               recur(cur + 1)
-          case 'f' if esc   => buf.add('\f')
-                               recur(cur + 1)
-          case 'b' if esc   => buf.add('\b')
-                               recur(cur + 1)
-          case 't' if esc   => buf.add('\t')
-                               recur(cur + 1)
-          case 'u' if esc   => buf.add(parseUnicode(str.slice(cur + 1, cur + 5)))
-                               recur(cur + 4)
-          case 'e' if esc   => buf.add('\u001b')
-                               recur(cur + 1)
-          case '"' if esc   => buf.add('"')
-                               recur(cur + 1)
-          case '\'' if esc  => buf.add('\'')
-                               recur(cur + 1)
-          case ch if esc    => throw InterpolationError(
-                                   rudiments.Text(s"the character '$ch' should not be escaped"))
-          case ch           => buf.add(ch)
-                               recur(cur + 1)
+        val (char, idx, escape) = standardEscape(str, cur, esc)
+        char.mm(buf.add(_))
+        recur(idx, escape)
       else if esc then throw InterpolationError(
           rudiments.Text("the final character cannot be an escape"))
     
-    recur()
+    recur(0, false)
     
     buf.text
       

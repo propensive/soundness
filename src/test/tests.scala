@@ -18,7 +18,8 @@ package gossamer
 
 import probably.*
 import rudiments.*
-import turbulence.*, characterEncodings.utf8
+import lithography.*, characterEncodings.utf8, textWidthCalculation.uniform
+import spectacular.*
 import larceny.*
 
 import unsafeExceptions.canThrowAny
@@ -29,133 +30,6 @@ case class Person(name: Text, age: Int)
 
 object Tests extends Suite(t"Gossamer Tests"):
   def run(): Unit =
-    suite(t"Debug tests"):
-      test(t"serialize boring string"):
-        t"Hello world!".debug
-      .assert(_ == t"""t"Hello world!"""")
-
-      test(t"serialize string with newline"):
-        t"Hello\nworld".debug
-      .assert(_ == t"""t\"Hello\\nworld\"""")
-      
-      test(t"serialize string with tab"):
-        t"Hello\tworld".debug
-      .assert(_ == t"""t\"Hello\\tworld\"""")
-      
-      test(t"serialize string with apostrophe"):
-        t"Hell' world".debug
-      .assert(_ == t"""t\"Hell\\' world\"""")
-      
-      test(t"serialize string with quote"):
-        t"Hello \"world\"".debug
-      .assert(_ == t"""t\"Hello \\\"world\\\"\"""")
-      
-      test(t"serialize string with backslash"):
-        t"Hello\\world".debug
-      .assert(_ == t"""t\"Hello\\\\world\"""")
-      
-      test(t"serialize string with linefeed"):
-        t"Hello world\r".debug
-      .assert(_ == t"""t\"Hello world\\r\"""")
-      
-      test(t"serialize string with unicode escapes"):
-        t"Hello мир".debug
-      .assert(_ == t"""t\"Hello \\u043c\\u0438\\u0440\"""")
-
-      test(t"pattern match on Text"):
-        var text = t"Hello"
-        text match
-          case t"Hello" => true
-          case _        => false
-      .assert(_ == true)
-      
-      test(t"pattern non-match on Text"):
-        var text = t"Hello"
-        text match
-          case t"World" => true
-          case _        => false
-      .assert(_ == false)
-
-      test(t"serialize double"):
-        3.1.debug
-      .assert(_ == t"3.1")
-      
-      test(t"serialize float"):
-        3.1f.debug
-      .assert(_ == t"3.1F")
-      
-      test(t"serialize long"):
-        3L.debug
-      .assert(_ == t"3L")
-      
-      test(t"serialize int"):
-        3.debug
-      .assert(_ == t"3")
-      
-      test(t"serialize short"):
-        3.toShort.debug
-      .assert(_ == t"3.toShort")
-      
-      test(t"serialize +infinity"):
-        (1.0/0.0).debug
-      .assert(_ == t"Double.PositiveInfinity")
-      
-      test(t"serialize -infinity"):
-        (-1.0/0.0).debug
-      .assert(_ == t"Double.NegativeInfinity")
-      
-      test(t"serialize NaN"):
-        (0.0/0.0).debug
-      .assert(_ == t"Double.NaN")
-      
-      test(t"serialize float +infinity"):
-        (1.0F/0.0F).debug
-      .assert(_ == t"Float.PositiveInfinity")
-      
-      test(t"serialize float -infinity"):
-        (-1.0F/0.0F).debug
-      .assert(_ == t"Float.NegativeInfinity")
-      
-      test(t"serialize float NaN"):
-        (0.0F/0.0F).debug
-      .assert(_ == t"Float.NaN")
-
-      test(t"serialize tab char"):
-        '\t'.debug
-      .assert(_ == t"'\\t'")
-      
-      test(t"serialize backslash char"):
-        '\\'.debug
-      .assert(_ == t"'\\\\'")
-      
-      test(t"serialize newline char"):
-        '\n'.debug
-      .assert(_ == t"'\\n'")
-      
-      test(t"serialize backspace char"):
-        '\b'.debug
-      .assert(_ == t"'\\b'")
-      
-      test(t"serialize unicode char"):
-        '«'.debug
-      .assert(_ == t"'\\u00ab'")
-      
-      test(t"serialize apostrophe char"):
-        '\''.debug
-      .assert(_ == t"'\\''")
-      
-      test(t"serialize quote char"):
-        '\"'.debug
-      .assert(_ == t"'\\\"'")
-
-      test(t"serialize case class"):
-        Person(t"Simon", 72).debug
-      .assert(_ == t"Person(name = t\"Simon\", age = 72)")
-      
-      test(t"serialize list of strings"):
-        List(t"one", t"two", t"three").debug
-      .assert(_ == t"""List(t"one", t"two", t"three")""")
-
     suite(t"Minimum Edit Distance"):
       test(t"equal strings have zero edit distance"):
         t"Hello world".lev(t"Hello world")
@@ -187,36 +61,36 @@ object Tests extends Suite(t"Gossamer Tests"):
 
     suite(t"String functions"):
       test(t"punycode test"):
-        t"www.äpfel.com".punycode: Text
+        t"www.äpfel.com".punycode
       .assert(_ == t"www.xn--pfel-koa.com")
 
       test(t"URL encoding of space"):
-        t"hello world".urlEncode: Text
+        t"hello world".urlEncode
       .assert(_ == t"hello+world")
       
       test(t"URL encoding of multibyte UTF-8 character"):
-        t"Café".urlEncode: Text
+        t"Café".urlEncode
       .assert(_ == t"Caf%C3%A9")
 
       test(t"URL decoding of UTF-8 string"):
-        t"Na%C3%AFve".urlDecode: Text
+        t"Na%C3%AFve".urlDecode
       .assert(_ == t"Naïve")
 
       test(t"Lower-case"):
-        t"InDeCiSiVe".lower: Text
+        t"InDeCiSiVe".lower
       .assert(_ == t"indecisive")
       
       test(t"Upper-case"):
-        t"InDeCiSiVe".upper: Text
+        t"InDeCiSiVe".upper
       .assert(_ == t"INDECISIVE")
       
       test(t"Empty string not populated"):
         t"".populated
-      .assert(_ == None)
+      .assert(_ == Unset)
       
       test(t"Non-empty string populated"):
         t"Hello World".populated
-      .assert(_ == Some("Hello World"))
+      .assert(_ == t"Hello World")
 
     suite(t"Joining strings"):
       test(t"join with separator"):
@@ -270,78 +144,78 @@ object Tests extends Suite(t"Gossamer Tests"):
 
       test(t"empty Text should not be populated"):
         t"".populated
-      .assert(_ == None)
+      .assert(_ == Unset)
 
       test(t"non-empty Text should be populated"):
         t"Hello".populated
-      .assert(_ == Some(t"Hello"))
+      .assert(_ == t"Hello")
 
       test(t"convert to lower case"):
-        t"Hello World".lower: Text
+        t"Hello World".lower
       .assert(_ == t"hello world")
 
       test(t"convert to upper case"):
-        t"Hello World".upper: Text
+        t"Hello World".upper
       .assert(_ == t"HELLO WORLD")
 
       test(t"URL encode a space"):
-        t" ".urlEncode: Text
+        t" ".urlEncode
       .assert(_ == t"+")
 
       test(t"URL encode a +"):
-        t"+".urlEncode: Text
+        t"+".urlEncode
       .assert(_ == t"%2B")
 
       test(t"URL encode an é"):
-        t"é".urlEncode: Text
+        t"é".urlEncode
       .assert(_ == t"%C3%A9")
 
       test(t"URL encode a Text"):
-        t"Nechť již hříšné saxofony ďáblů rozezvučí síň úděsnými tóny waltzu, tanga a quickstepu.".urlEncode: Text
+        t"Nechť již hříšné saxofony ďáblů rozezvučí síň úděsnými tóny waltzu, tanga a quickstepu.".urlEncode
       .assert(_ == t"Nech%C5%A5+ji%C5%BE+h%C5%99%C3%AD%C5%A1n%C3%A9+saxofony+%C4%8F%C3%A1bl%C5%AF+rozezvu%C4%8D%C3%AD+s%C3%AD%C5%88+%C3%BAd%C4%9Bsn%C3%BDmi+t%C3%B3ny+waltzu%2C+tanga+a+quickstepu.")
       
       test(t"URL decode a Text"):
-        t"Nech%C5%A5%20ji%C5%BE%20h%C5%99%C3%AD%C5%A1n%C3%A9%20saxofony%20%C4%8F%C3%A1bl%C5%AF%20rozezvu%C4%8D%C3%AD%20s%C3%AD%C5%88%20%C3%BAd%C4%9Bsn%C3%BDmi%20t%C3%B3ny%20waltzu%2C%20tanga%20a%20quickstepu.".urlDecode: Text
+        t"Nech%C5%A5%20ji%C5%BE%20h%C5%99%C3%AD%C5%A1n%C3%A9%20saxofony%20%C4%8F%C3%A1bl%C5%AF%20rozezvu%C4%8D%C3%AD%20s%C3%AD%C5%88%20%C3%BAd%C4%9Bsn%C3%BDmi%20t%C3%B3ny%20waltzu%2C%20tanga%20a%20quickstepu.".urlDecode
       .assert(_ == t"Nechť již hříšné saxofony ďáblů rozezvučí síň úděsnými tóny waltzu, tanga a quickstepu.")
 
       test(t"URL decode a space"):
-        t"+".urlDecode: Text
+        t"+".urlDecode
       .assert(_ == t" ")
 
       test(t"URL decode a +"):
-        t"%2B".urlDecode: Text
+        t"%2B".urlDecode
       .assert(_ == t"+")
 
       test(t"drop the first character"):
-        t"Hello".drop(1): Text
+        t"Hello".drop(1)
       .assert(_ == t"ello")
 
       test(t"drop the last character"):
-        t"Hello".drop(1, Rtl): Text
+        t"Hello".drop(1, Rtl)
       .assert(_ == t"Hell")
 
       test(t"drop more characters than the length of the Text"):
-        t"Hello".drop(10): Text
+        t"Hello".drop(10)
       .assert(_ == t"")
 
       test(t"drop more characters from the right than the length of the Text"):
-        t"Hello".drop(10, Rtl): Text
+        t"Hello".drop(10, Rtl)
       .assert(_ == t"")
 
       test(t"take the first character"):
-        t"Hello".take(1): Text
+        t"Hello".take(1)
       .assert(_ == t"H")
 
       test(t"take the last character"):
-        t"Hello".take(1, Rtl): Text
+        t"Hello".take(1, Rtl)
       .assert(_ == t"o")
 
       test(t"take more characters than the length of the Text"):
-        t"Hello".take(10): Text
+        t"Hello".take(10)
       .assert(_ == t"Hello")
 
       test(t"take more characters from the right than the length of the Text"):
-        t"Hello".take(10, Rtl): Text
+        t"Hello".take(10, Rtl)
       .assert(_ == t"Hello")
 
       test(t"snip a Text in two"):
@@ -349,19 +223,19 @@ object Tests extends Suite(t"Gossamer Tests"):
       .assert(_ == (t"He", t"llo"))
 
       test(t"trim spaces from a Text"):
-        t"  Hello   ".trim: Text
+        t"  Hello   ".trim
       .assert(_ == t"Hello")
 
       test(t"trim mixed whitespace from a Text"):
-        t"\n\r\t Hello\n \t\r".trim: Text
+        t"\n\r\t Hello\n \t\r".trim
       .assert(_ == t"Hello")
 
       test(t"take a slice from a Text"):
-        t"Hello world".slice(4, 7): Text
+        t"Hello world".slice(4, 7)
       .assert(_ == t"o w")
 
       test(t"take an oversized slice from a Text"):
-        t"Hello world".slice(4, 100): Text
+        t"Hello world".slice(4, 100)
       .assert(_ == t"o world")
 
       test(t"Get characters from a Text"):
@@ -369,11 +243,11 @@ object Tests extends Suite(t"Gossamer Tests"):
       .assert(_ == List('H', 'e', 'l', 'l', 'o', ' ', 'w', 'o', 'r', 'l', 'd'))
 
       test(t"Flatmap a text"):
-        t"ABC".flatMap { c => t"${c}." }: Text
+        t"ABC".flatMap { c => t"${c}." }
       .assert(_ == t"A.B.C.")
 
       test(t"Map over a text's characters"):
-        t"ABC".mapChars { char => char.toLower }: Text
+        t"ABC".mapChars { char => char.toLower }
       .assert(_ == t"abc")
 
       test(t"Check an empty Text is empty"):
@@ -477,7 +351,7 @@ object Tests extends Suite(t"Gossamer Tests"):
       .assert(_ == '1')
 
       test(t"Random access of out-of-range character"):
-        capture(t"123"(5))
+        capture[OutOfRangeError, Char](t"123"(5))
       .assert(_ == OutOfRangeError(5, 0, 3))
 
       test(t"Pad-right with space"):
@@ -558,20 +432,6 @@ object Tests extends Suite(t"Gossamer Tests"):
           val x: String = Text("text")
       .assert(_.head.errorId == ErrorId.TypeMismatchID)
 
-    suite(t"Show tests"):
-      test(t"Show a string"):
-        t"Hello world".show
-      .assert(_ == t"Hello world")
-      
-      test(t"Show an Int"):
-        43.show
-      .assert(_ == t"43")
-      
-      test(t"Show a locally-declared showable"):
-        given Show[Exception] = e => txt"<exception>"
-        Exception("").show
-      .assert(_ == t"<exception>")
-    
     suite(t"Decimalization tests"):
       test(t"Write negative pi"):
         Decimalizer(1).decimalize(-math.Pi)
