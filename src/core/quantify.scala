@@ -21,7 +21,7 @@ import rudiments.*
 import spectacular.*
 
 import scala.quoted.*
-import annotation.{targetName, allowConversions}
+import scala.compiletime.*
 
 import language.implicitConversions
 
@@ -34,6 +34,58 @@ erased trait Current extends Dimension
 erased trait Luminosity extends Dimension
 erased trait Temperature extends Dimension
 erased trait AmountOfSubstance extends Dimension
+
+erased trait DimensionName[DimensionType <: Units[?, ?], LabelType <: Label]()
+
+object DimensionName:
+  // base units
+  erased given length: DimensionName[Units[1, Length], "length"] = erasedValue
+  erased given mass: DimensionName[Units[1, Mass], "mass"] = erasedValue
+  erased given time: DimensionName[Units[1, Time], "time"] = erasedValue
+  erased given current: DimensionName[Units[1, Current], "current"] = erasedValue
+  erased given temperature: DimensionName[Units[1, Temperature], "temperature"] = erasedValue
+  erased given luminosity: DimensionName[Units[1, Luminosity], "luminosity"] = erasedValue
+  
+  // derived units from https://en.wikipedia.org/wiki/List_of_physical_quantities
+  erased given absement: DimensionName[Units[1, Mass] & Units[1, Time], "absement"] = erasedValue
+  erased given absorbedDoseRate: DimensionName[Units[2, Length] & Units[-3, Time], "absorbed dose rate"] = erasedValue
+  erased given acceleration: DimensionName[Units[1, Length] & Units[-2, Time], "acceleration"] = erasedValue
+  erased given action: DimensionName[Units[2, Length] & Units[-1, Time] & Units[1, Mass], "action"] = erasedValue
+  erased given angulaMomentum: DimensionName[Units[1, Mass] & Units[2, Length] & Units[-1, Time], "angular momentum"] = erasedValue
+  erased given area: DimensionName[Units[2, Length], "area"] = erasedValue
+  erased given areaDensity: DimensionName[Units[-2, Length] & Units[1, Mass], "area density"] = erasedValue
+  erased given capacitance: DimensionName[Units[-2, Length] & Units[-1, Mass] & Units[4, Time] & Units[1, Current], "capacitance"] = erasedValue
+  erased given catalyticActivityConcentration: DimensionName[Units[-3, Length] & Units[-1, Time] & Units[1, AmountOfSubstance], "catalytic activity concentration"] = erasedValue
+  erased given centrifugalForce: DimensionName[Units[1, Mass] & Units[1, Length] & Units[-2, Time], "centrifugal force"] = erasedValue
+  erased given chemicalPotential: DimensionName[Units[2, Length] & Units[1, Mass] & Units[-2, Time] & Units[-1, AmountOfSubstance], "chemical potential"] = erasedValue
+  erased given crackle: DimensionName[Units[1, Length] & Units[-5, Time], "crackle"] = erasedValue
+  erased given currentDensity: DimensionName[Units[-2, Length] & Units[1, Current], "current density"] = erasedValue
+  erased given doseEquivalent: DimensionName[Units[2, Length] & Units[-2, Time], "dose equivalent"] = erasedValue
+  erased given dynamicViscosity: DimensionName[Units[-1, Length] & Units[1, Mass] & Units[-1, Time], "dynamic viscosity"] = erasedValue
+  erased given electricCharge: DimensionName[Units[1, Time] & Units[1, Current], "electric charge"] = erasedValue
+  erased given electricChargeDensity: DimensionName[Units[-3, Length] & Units[1, Time] & Units[1, Current], "electric charge density"] = erasedValue
+  erased given electricDipoleMoment: DimensionName[Units[1, Length] & Units[1, Time] & Units[1, Current], "electric dipole moment"] = erasedValue
+  erased given electricDisplacementField: DimensionName[Units[-2, Length] & Units[1, Time] & Units[1, Current], "electric displacement field"] = erasedValue
+  erased given electricFieldStrength: DimensionName[Units[1, Length] & Units[1, Mass] & Units[-3, Time] & Units[-1, Current], "electric field strength"] = erasedValue
+  erased given electricalConductance: DimensionName[Units[-2, Length] & Units[-1, Mass] & Units[3, Time] & Units[2, Current], "electric conductance"] = erasedValue
+  erased given electricalConductivity: DimensionName[Units[-3, Length] & Units[-1, Mass] & Units[3, Time] & Units[2, Current], "electric conductivity"] = erasedValue
+  erased given electricalPotential: DimensionName[Units[2, Length] & Units[1, Mass] & Units[-3, Time] & Units[-1, Current], "electric potential"] = erasedValue
+  erased given electricalResistance: DimensionName[Units[2, Length] & Units[1, Mass] & Units[-3, Time] & Units[-2, Current], "electric resistance"] = erasedValue
+  erased given electricalResistivity: DimensionName[Units[3, Length] & Units[1, Mass] & Units[-3, Time] & Units[-2, Current], "electric resistivity"] = erasedValue
+  erased given energy: DimensionName[Units[2, Length] & Units[1, Mass] & Units[-2, Time], "energy"] = erasedValue
+  erased given energyDensity: DimensionName[Units[-1, Length] & Units[1, Mass] & Units[-2, Time], "energy density"] = erasedValue
+  erased given entropy: DimensionName[Units[2, Length] & Units[1, Mass] & Units[-2, Time] & Units[-1, Temperature], "entropy"] = erasedValue
+  erased given force: DimensionName[Units[1, Mass] & Units[1, Length] & Units[-2, Time], "force"] = erasedValue
+  erased given frequency: DimensionName[Units[-1, Time], "frequency"] = erasedValue
+  
+  // need to continue alphabetically
+
+  erased given substance: DimensionName[Units[1, AmountOfSubstance], "amount of substance"] =
+    erasedValue
+  
+  erased given velocity: DimensionName[Units[1, Length] & Units[-1, Time], "velocity"] = erasedValue
+  
+  
 
 sealed trait Measure
 trait Units[PowerType <: Nat, DimensionType <: Dimension] extends Measure
@@ -156,16 +208,18 @@ extension [UnitsType <: Measure](inline quantity: Quantity[UnitsType])
   
   @targetName("times2")
   transparent inline def *
-      [UnitsType2 <: Measure](@allowConversions inline quantity2: Quantity[UnitsType2]): Any =
+      [UnitsType2 <: Measure](@convertible inline quantity2: Quantity[UnitsType2]): Any =
     ${QuantifyMacros.multiply[UnitsType, UnitsType2]('quantity, 'quantity2, false)}
   
   @targetName("divide2")
   transparent inline def /
-      [UnitsType2 <: Measure](@allowConversions inline quantity2: Quantity[UnitsType2]): Any =
+      [UnitsType2 <: Measure](@convertible inline quantity2: Quantity[UnitsType2]): Any =
     ${QuantifyMacros.multiply[UnitsType, UnitsType2]('quantity, 'quantity2, true)}
 
   inline def units: Map[Text, Int] = ${QuantifyMacros.collectUnits[UnitsType]}
   inline def render(using Decimalizer): Text = t"${quantity.value} ${Quantity.renderUnits(units)}"
+
+  inline def dimension: Text = ${QuantifyMacros.describe[UnitsType]}
 
   @targetName("greaterThan")
   inline def >[UnitsType2 <: Measure](that: Quantity[UnitsType2]): Boolean =

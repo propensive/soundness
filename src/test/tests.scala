@@ -80,19 +80,19 @@ object Tests extends Suite(Text("Quantify Tests")):
         captureCompileErrors:
           2*Metre + 2*Joule
         .map(_.message)
-      .assert(_ == List("quantify: the operands have incompatible types"))
+      .assert(_ == List("quantify: the left operand represents length, but the right operand represents energy; these are incompatible physical quantities"))
       
       test(Text("Different dimensions are incomparable")):
         captureCompileErrors:
           7*Metre >= 2*Kilo(Gram)
         .map(_.message)
-      .assert(_ == List("quantify: the operands have incompatible types"))
+      .assert(_ == List("quantify: the left operand represents length, but the right operand represents mass; these are incompatible physical quantities"))
       
       test(Text("Different powers of the same dimension are incomparable")):
         captureCompileErrors:
           7*Metre >= 2*Metre*Metre
         .map(_.message)
-      .assert(_ == List("quantify: the operands have incompatible types"))
+      .assert(_ == List("quantify: the left operand represents length, but the right operand represents area; these are incompatible physical quantities"))
     
     suite(t"Automatic conversions"):
       test(Text("Conversions are applied automatically to RHS in multiplication")):
@@ -239,3 +239,17 @@ object Tests extends Suite(Text("Quantify Tests")):
       test(Text("Show Planck's constant")):
         constants.PlanckConstant.show
       .assert(_ == Text("6.63×10¯³⁴ m²·kg·s¯¹"))
+
+    suite(t"Quantity descriptions"):
+      test(t"describe a base dimension"):
+        Metre.dimension
+      .assert(_ == t"length")
+      
+      test(t"describe a compound dimension"):
+        (Metre/Second).dimension
+      .assert(_ == t"velocity")
+      
+      test(t"describe a complex compound dimension"):
+        (Foot*Foot*Kilo(Gram)/(Second*Second*Mole)).dimension
+      .assert(_ == t"chemical potential")
+        
