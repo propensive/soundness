@@ -37,20 +37,29 @@ enum DelimitRows:
 
 object Column:
   def apply
-      [RowType, CellType]
+      [RowType, CellType, TextType]
       (using defaultTextType: DefaultTextType)
       (title: defaultTextType.TextType, width: Maybe[Int] = Unset, align: Alignment = Alignment.Left,
           breaks: Breaks = Breaks.Space, hide: Boolean = false)(get: RowType => CellType)
       (using show2: Display[CellType, EndUser], show3: Display[defaultTextType.TextType, EndUser],
           textual: Textual[defaultTextType.TextType])
       : Column[RowType, defaultTextType.TextType] =
-    Column(textual.make(show(title).s), get.andThen { value => textual.make(show2(value).s) }, breaks, align, width, hide)
 
-  def constrain[TextType: Textual](text: TextType, breaks: Breaks, maxWidth: Int, init: Int = 0)
-               (using calc: TextWidthCalculator): Table.ShortPair =
+    val contents = get.andThen { value => textual.make(show2(value).s) }
+    
+    Column(textual.make(show(title).s), contents, breaks, align, width, hide)
+
+  def constrain
+      [TextType: Textual]
+      (text: TextType, breaks: Breaks, maxWidth: Int, init: Int = 0)
+      (using calc: TextWidthCalculator)
+      : Table.ShortPair =
 
     @tailrec
-    def recur(pos: Int, space: Int = 0, count: Int = 0, max: Int = 0, lines: Int = 1): Table.ShortPair =
+    def recur
+        (pos: Int, space: Int = 0, count: Int = 0, max: Int = 0, lines: Int = 1)
+        : Table.ShortPair =
+
       if pos == text.length then Table.ShortPair(lines, max.max(count))
       else unsafely(text(pos)) match
         case ' ' if breaks == Breaks.Space || breaks == Breaks.Zwsp =>
@@ -70,7 +79,8 @@ object Column:
  
     recur(init)
 
-case class Column[RowType, TextType: Textual]
+case class Column
+    [RowType, TextType: Textual]
     (title: TextType, get: RowType => TextType, breaks: Breaks, align: Alignment, width: Maybe[Int],
         hide: Boolean)
 
@@ -103,19 +113,23 @@ case class Table
     (initCols: Column[RowType, TextType]*)
     (using classTag: ClassTag[TextType], textual: Textual[TextType]):
 
-  def tabulate(data: Seq[RowType], maxWidth: Int, delimitRows: DelimitRows = DelimitRows.RuleIfMultiline)
-              (using style: TableStyle, calc: TextWidthCalculator)
-              : LazyList[TextType] =
+  def tabulate
+      (data: Seq[RowType], maxWidth: Int, delimitRows: DelimitRows = DelimitRows.RuleIfMultiline)
+      (using style: TableStyle, calc: TextWidthCalculator)
+      : LazyList[TextType] =
+
     val cols: IArray[Column[RowType, TextType]] = IArray.from(initCols.filterNot(_.hide))
     val titles: IArray[TextType] = IArray.from(cols.map(_.title))
     
     val cells: IArray[IArray[TextType]] = IArray.from:
       titles +: data.map { row => IArray.from(cols.map(_.get(row))) }
     
-    val freeWidth: Int = maxWidth - cols.filter(!_.width.unset).map(_.width.or(0)).sum - style.cost(cols.length)
+    val freeWidth: Int =
+      maxWidth - cols.filter(!_.width.unset).map(_.width.or(0)).sum - style.cost(cols.length)
     
-    val cellRefs: Array[Array[ShortPair]] = Array.tabulate(data.length + 1, cols.length): (row, col) =>
-      Column.constrain(cells(row)(col), cols(col).breaks, freeWidth)
+    val cellRefs: Array[Array[ShortPair]] =
+      Array.tabulate(data.length + 1, cols.length): (row, col) =>
+        Column.constrain(cells(row)(col), cols(col).breaks, freeWidth)
     
     val widths: Array[Int] = Array.from:
       cols.indices.map: col =>
@@ -132,14 +146,16 @@ case class Table
       val mostSpaceInAnyColumn = totalUnfilledCellsByColumn.max
       
       val focus: Int = cols.indices.maxBy: col =>
-        if totalUnfilledCellsByColumn(col) == mostSpaceInAnyColumn && cols(col).width.unset then widths(col)
+        if totalUnfilledCellsByColumn(col) == mostSpaceInAnyColumn && cols(col).width.unset
+        then widths(col)
         else -1
 
       val target = widths(focus) - 1
       
       cellRefs.indices.foreach: row =>
         if cellRefs(row)(focus).right > target
-        then cellRefs(row)(focus) = Column.constrain(cells(row)(focus).plain, cols(focus).breaks, target)
+        then cellRefs(row)(focus) = Column.constrain(cells(row)(focus).plain, cols(focus).breaks,
+            target)
       
       widths(focus) = target
       recur()
@@ -158,12 +174,12 @@ case class Table
         if pos >= text.length then ShortPair(pos, pos)
         else unsafely(text(pos)) match
           case '\n' => ShortPair(pos, pos + 1)
-          case ' '  => if count >= width then ShortPair(pos, pos + 1) else search(pos + 1, pos, count + 1)
+          case ' '  => if count >= width then ShortPair(pos, pos + 1)
+                       else search(pos + 1, pos, count + 1)
           
           case ch =>
             if count >= width then
-              if space > 0 then ShortPair(space, space + 1)
-              else ShortPair(pos, pos + 1)
+              if space > 0 then ShortPair(space, space + 1) else ShortPair(pos, pos + 1)
             else search(pos + 1, space, count + 1)
       
       search(start)
@@ -191,21 +207,24 @@ case class Table
           text #:: rows(row, offsets)
         else
           offsets.indices.foreach(offsets(_) = 0)
+          
           if row + 1 < cells.length
-          then
-            delimitRows match
-              case _ if row == 0 =>
-                rule(style.midLeft, style.midSep, style.midRight, style.midBar) #:: rows(row + 1, offsets)
-              case DelimitRows.Rule =>
-                rule(style.midLeft, style.midSep, style.midRight, style.midBar) #:: rows(row + 1, offsets)
-              case DelimitRows.Space  =>
-                rule(style.left, style.sep, style.right, ' ') #:: rows(row + 1, offsets)
-              case DelimitRows.RuleIfMultiline if Multiline =>
-                rule(style.midLeft, style.midSep, style.midRight, style.midBar) #:: rows(row + 1, offsets)
-              case DelimitRows.SpaceIfMultiline if Multiline =>
-                rule(style.left, style.sep, style.right, ' ') #:: rows(row + 1, offsets)
-              case _ =>
-                rows(row + 1, offsets)
+          then delimitRows match
+            case _ if row == 0 =>
+              val next = rule(style.midLeft, style.midSep, style.midRight, style.midBar)
+              next #:: rows(row + 1, offsets)
+            case DelimitRows.Rule =>
+              val next = rule(style.midLeft, style.midSep, style.midRight, style.midBar)
+              next #:: rows(row + 1, offsets)
+            case DelimitRows.Space  =>
+              rule(style.left, style.sep, style.right, ' ') #:: rows(row + 1, offsets)
+            case DelimitRows.RuleIfMultiline if Multiline =>
+              val next = rule(style.midLeft, style.midSep, style.midRight, style.midBar)
+              next #:: rows(row + 1, offsets)
+            case DelimitRows.SpaceIfMultiline if Multiline =>
+              rule(style.left, style.sep, style.right, ' ') #:: rows(row + 1, offsets)
+            case _ =>
+              rows(row + 1, offsets)
           else LazyList(rule(style.bottomLeft, style.bottomSep, style.bottomRight, style.bottomBar))
 
     def rule(left: Char, separator: Char, right: Char, bar: Char): TextType =
@@ -213,21 +232,43 @@ case class Table
         textual.make(bar.show.s)*(col.width.or(0) + 2)
       .join(textual.make(left.show.s), textual.make(separator.show.s), textual.make(right.show.s))
 
-    rule(style.topLeft, style.topSep, style.topRight, style.topBar) #:: rows(0, Array.fill[Int](cols.length)(0))
+    val next = rule(style.topLeft, style.topSep, style.topRight, style.topBar)
+    next #:: rows(0, Array.fill[Int](cols.length)(0))
 
 package tableStyles:
-  given default:        TableStyle(1, '│', '│', '│', '┌', '┬', '┐', '└', '┴', '┘', '├', '┼', '┤', '─', '─', '─')
-  given horizontal:     TableStyle(1, ' ', ' ', ' ', ' ', '─', ' ', ' ', '─', ' ', ' ', '─', ' ', '─', '─', '─')
-  given horizontalGaps: TableStyle(1, ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', '─', '─', '─')
-  given horizontalDots: TableStyle(1, ' ', ' ', ' ', ' ', '╌', ' ', ' ', '╌', ' ', ' ', '╌', ' ', '╌', '╌', '╌')
-  given doubled:        TableStyle(1, '║', '│', '║', '╔', '╤', '╗', '╚', '╧', '╝', '╟', '┼', '╢', '═', '─', '═')
-  given rounded:        TableStyle(1, '│', '│', '│', '╭', '┬', '╮', '╰', '┴', '╯', '├', '┼', '┤', '─', '─', '─')
-  given dotted:         TableStyle(1, '┊', '┊', '┊', '┌', '┬', '┐', '└', '┴', '┘', '├', '┼', '┤', '╌', '╌', '╌')
-  given outline:        TableStyle(1, '┊', '┊', '┊', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', '╌', '╌', '╌')
-  given ascii:          TableStyle(1, '|', '|', '|', '+', '+', '+', '+', '+', '+', '+', '+', '+', '-', '-', '-')
-  given borderless:     TableStyle(0, ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ')
+ given default: TableStyle =
+   TableStyle(1, '│', '│', '│', '┌', '┬', '┐', '└', '┴', '┘', '├', '┼', '┤', '─', '─', '─')
+ 
+ given horizontal: TableStyle =
+   TableStyle(1, ' ', ' ', ' ', ' ', '─', ' ', ' ', '─', ' ', ' ', '─', ' ', '─', '─', '─')
+ 
+ given horizontalGaps: TableStyle =
+   TableStyle(1, ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', '─', '─', '─')
+ 
+ given horizontalDots: TableStyle =
+   TableStyle(1, ' ', ' ', ' ', ' ', '╌', ' ', ' ', '╌', ' ', ' ', '╌', ' ', '╌', '╌', '╌')
+ 
+ given doubled: TableStyle =
+   TableStyle(1, '║', '│', '║', '╔', '╤', '╗', '╚', '╧', '╝', '╟', '┼', '╢', '═', '─', '═')
+ 
+ given rounded: TableStyle =
+   TableStyle(1, '│', '│', '│', '╭', '┬', '╮', '╰', '┴', '╯', '├', '┼', '┤', '─', '─', '─')
+ 
+ given dotted: TableStyle =
+   TableStyle(1, '┊', '┊', '┊', '┌', '┬', '┐', '└', '┴', '┘', '├', '┼', '┤', '╌', '╌', '╌')
+ 
+ given outline: TableStyle =
+   TableStyle(1, '┊', '┊', '┊', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', '╌', '╌', '╌')
+ 
+ given ascii: TableStyle =
+   TableStyle(1, '|', '|', '|', '+', '+', '+', '+', '+', '+', '+', '+', '+', '-', '-', '-')
+ 
+ given borderless: TableStyle =
+   TableStyle(0, ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ')
 
-case class TableStyle(pad: Int, left: Char, sep: Char, right: Char, topLeft: Char, topSep: Char, topRight: Char,
-                          bottomLeft: Char, bottomSep: Char, bottomRight: Char, midLeft: Char, midSep: Char,
-                          midRight: Char, topBar: Char, midBar: Char, bottomBar: Char):
+case class TableStyle
+    (pad: Int, left: Char, sep: Char, right: Char, topLeft: Char, topSep: Char, topRight: Char,
+        bottomLeft: Char, bottomSep: Char, bottomRight: Char, midLeft: Char, midSep: Char,
+        midRight: Char, topBar: Char, midBar: Char, bottomBar: Char):
+
   def cost(cols: Int): Int = cols*pad*2 + cols + 1
