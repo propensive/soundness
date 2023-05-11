@@ -47,15 +47,15 @@ trait Encoding:
   def name: Text
   def trimLength(buf: Bytes): Int = 0
   def runLength(byte: Byte): Int = 1
-  def convertStream(stream: {*} LazyList[Bytes])(using handler: {*} BadEncodingHandler)
-                   : {stream, handler} LazyList[Text]
+  def convertStream(stream: LazyList[Bytes]^)(using handler: BadEncodingHandler^)
+                   : LazyList[Text]^{stream, handler}
   
   def readBytes(bytes: Bytes): Text = Text(String(bytes.mutable(using Unsafe), name.s))
   def getBytes(text: Text): Bytes = text.s.getBytes(name.s).nn.immutable(using Unsafe)
 
 trait VariableLengthEncoding extends Encoding:
-  def convertStream(stream: {*} LazyList[Bytes])(using handler: {*} BadEncodingHandler)
-                   : {stream, handler} LazyList[Text] =
+  def convertStream(stream: LazyList[Bytes]^)(using handler: BadEncodingHandler^)
+                   : LazyList[Text]^{stream, handler} =
     def read(stream: LazyList[Bytes], carried: Array[Byte] = Encoding.empty, skip: Int = 0): LazyList[Text] =
       stream match
         case head #:: tail =>
@@ -99,10 +99,10 @@ package characterEncodings:
   given ascii: Encoding with
     def name: Text = Text("ASCII")
     
-    def convertStream(stream: {*} LazyList[Bytes])(using handler: {*} BadEncodingHandler)
-                     : {stream, handler} LazyList[Text] =
+    def convertStream(stream: LazyList[Bytes]^)(using handler: BadEncodingHandler^)
+                     : LazyList[Text]^{stream, handler} =
       val builder: StringBuilder = StringBuilder()
-      def recur(stream: {*} LazyList[Bytes], count: Int): {stream} LazyList[Text] = stream match
+      def recur(stream: LazyList[Bytes]^, count: Int): LazyList[Text]^{stream} = stream match
         case head #:: tail =>
           head.indices.foreach: index =>
             val char: Int = head(index)
@@ -121,9 +121,9 @@ package characterEncodings:
 
 case class JavaEncoding(name: Text) extends Encoding:
   private val javaCharset: jnc.Charset = jnc.Charset.forName(name.s).nn
-  def convertStream(stream: {*} LazyList[Bytes])(using handler: {*} BadEncodingHandler)
-                   : {stream, handler} LazyList[Text] =
-    def recur(stream: {*} LazyList[Bytes], count: Int): {stream} LazyList[Text] = stream match
+  def convertStream(stream: LazyList[Bytes]^)(using handler: BadEncodingHandler^)
+                   : LazyList[Text]^{stream, handler} =
+    def recur(stream: LazyList[Bytes]^, count: Int): LazyList[Text]^{stream} = stream match
       case head #:: tail =>
         val next = Text(javaCharset.decode(jn.ByteBuffer.wrap(head.mutable(using Unsafe))).toString)
         next #:: recur(tail, count + head.length)
@@ -136,7 +136,7 @@ trait BadEncodingHandler:
   def complete(): Unit
 
 package badEncodingHandlers:
-  given strict(using badEncoding: CanThrow[BadEncodingError]): ({badEncoding} BadEncodingHandler) =
+  given strict(using badEncoding: CanThrow[BadEncodingError]): BadEncodingHandler^{badEncoding} =
     new BadEncodingHandler:
       def handle(pos: Int, bytes: Bytes, suggestion: Maybe[Char]): Char = throw BadEncodingError(pos, bytes)
       def complete(): Unit = ()
@@ -151,7 +151,7 @@ package badEncodingHandlers:
   
   given collect
       (using aggregate: CanThrow[AggregateError[BadEncodingError]])
-      : ({aggregate} BadEncodingHandler) =
+      : BadEncodingHandler^{aggregate} =
     new BadEncodingHandler:
       private val mistakes: scm.ArrayBuffer[BadEncodingError] = scm.ArrayBuffer()
       def handle(pos: Int, bytes: Bytes, suggestion: Maybe[Char]): Maybe[Char] = Unset
