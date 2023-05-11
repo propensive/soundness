@@ -23,11 +23,9 @@ import gossamer.*
 import anticipation.* //, fileApi.galileiApi
 import eucalyptus.*
 import rudiments.*
-import turbulence.*, characterEncodings.utf8, badEncodingHandlers.strict
+import lithography.*, characterEncodings.utf8, badEncodingHandlers.strict
 import parasitism.*, monitors.global
-
-
-import basicIo.jvm
+import turbulence.*, basicIo.jvm
 import unsafeExceptions.canThrowAny
 import ambience.*, environments.system
 
@@ -42,7 +40,7 @@ object Benchmarks extends Suite(t"Merino tests"):
       test(t"Parse file with Jawn"):
         import org.typelevel.jawn.*, ast.*
         JParser.parseFromByteBuffer(java.nio.ByteBuffer.wrap(jsonExample1).nn)
-      .benchmark(warmup = 1000L, duration = 1000L, baseline = Baseline(compare = Compare.Min), confidence = 99)
+      .benchmark(warmup = 1000L, duration = 1000L, baseline = Baseline(compare = Min), confidence = 99)
       
       test(t"Parse file with Merino"):
         JsonAst.parse(jsonExample1.nn.immutable(using Unsafe))
@@ -52,7 +50,7 @@ object Benchmarks extends Suite(t"Merino tests"):
       test(t"Parse file with Jawn"):
         import org.typelevel.jawn.*, ast.*
         JParser.parseFromByteBuffer(java.nio.ByteBuffer.wrap(jsonExample2).nn)
-      .benchmark(warmup = 1000L, duration = 1000L, baseline = Baseline(compare = Compare.Min), confidence = 99)
+      .benchmark(warmup = 1000L, duration = 1000L, baseline = Baseline(compare = Min), confidence = 99)
       
       test(t"Parse file with Merino"):
         JsonAst.parse(jsonExample2.nn.immutable(using Unsafe))
@@ -62,7 +60,7 @@ object Benchmarks extends Suite(t"Merino tests"):
       test(t"Parse file with Jawn"):
         import org.typelevel.jawn.*, ast.*
         JParser.parseFromByteBuffer(java.nio.ByteBuffer.wrap(jsonExample3).nn)
-      .benchmark(warmup = 1000L, duration = 1000L, baseline = Baseline(compare = Compare.Min), confidence = 99)
+      .benchmark(warmup = 1000L, duration = 1000L, baseline = Baseline(compare = Min), confidence = 99)
       
       test(t"Parse file with Merino"):
         JsonAst.parse(jsonExample3.nn.immutable(using Unsafe))
