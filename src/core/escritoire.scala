@@ -36,16 +36,15 @@ enum DelimitRows:
 object Column:
   def apply
       [RowType, CellType, TextType]
-      (using defaultTextType: DefaultTextType)
-      (title: defaultTextType.TextType, width: Maybe[Int] = Unset, align: Alignment = Alignment.Left,
+      (title: TextType, width: Maybe[Int] = Unset, align: Alignment = Alignment.Left,
           breaks: Breaks = Breaks.Space, hide: Boolean = false)(get: RowType => CellType)
-      (using show2: Display[CellType, EndUser], show3: Display[defaultTextType.TextType, EndUser],
-          textual: Textual[defaultTextType.TextType])
-      : Column[RowType, defaultTextType.TextType] =
+      (using textual: Textual[TextType])
+      (using textual.ShowType[CellType])
+      : Column[RowType, TextType] =
 
-    val contents = get.andThen { value => textual.make(show2(value).s) }
+    val contents = get.andThen { value => textual.show(value) }
     
-    Column(textual.make(show(title).s), contents, breaks, align, width, hide)
+    Column(title, contents, breaks, align, width, hide)
 
   def constrain
       [TextType: Textual]
@@ -104,8 +103,6 @@ object Table:
           textual: Textual[defaultTextType.TextType]) =
     new Table[RowType, defaultTextType.TextType](initCols*)
 
-
-
 case class Table
     [RowType: ClassTag, TextType]
     (initCols: Column[RowType, TextType]*)
@@ -152,8 +149,7 @@ case class Table
       
       cellRefs.indices.foreach: row =>
         if cellRefs(row)(focus).right > target
-        then cellRefs(row)(focus) = Column.constrain(cells(row)(focus).plain, cols(focus).breaks,
-            target)
+        then cellRefs(row)(focus) = Column.constrain(cells(row)(focus), cols(focus).breaks, target)
       
       widths(focus) = target
       recur()
