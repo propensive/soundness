@@ -7,7 +7,7 @@ import language.experimental.captureChecking
 erased trait DefaultTextType:
   type TextType
 
-package defaultTextType:
+package defaultTextTypes:
   given text: DefaultTextType { type TextType = Text } = compiletime.erasedValue
 
 trait Textual[TextType]:
