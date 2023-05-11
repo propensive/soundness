@@ -60,7 +60,22 @@ object Display:
   given Display[Byte, EndUser] = byte => Text(byte.toString)
   given Display[Byte, Developer] = byte => Text(byte.toString+".toByte")
   
+  given Display[Short, EndUser] = short => Text(short.toString)
+  given Display[Short, Developer] = short => Text(short.toString+".toShort")
+  
   given (using decimalizer: DecimalConverter): Display[Double, EndUser] = decimalizer.decimalize(_)
+  
+  given Display[Float, Developer] =
+    case Float.PositiveInfinity => Text("Float.PositiveInfinity")
+    case Float.NegativeInfinity => Text("Float.NegativeInfinity")
+    case float if float.isNaN   => Text("Float.NaN")
+    case float                  => Text(float.toString+"F")
+  
+  given Display[Double, Developer] = 
+    case Double.PositiveInfinity => Text("Double.PositiveInfinity")
+    case Double.NegativeInfinity => Text("Double.NegativeInfinity")
+    case double if double.isNaN  => Text("Double.NaN")
+    case double                  => Text(double.toString)
 
   given (using booleanStyle: BooleanStyle): Display[Boolean, EndUser] = booleanStyle(_)
   given Display[Boolean, Developer] = boolean => Text(if boolean then "true" else "false")

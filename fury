@@ -1,9 +1,10 @@
 # This is a buildfile for Fury or Wrath.
 # More information is available at: https://github.com/propensive/wrath/
 
-repo propensive/rudiments
+repo propensive/probably
+repo propensive/larceny
 
-target spectacular/core
+target spectacular/test
 
 project spectacular
   module core
@@ -14,4 +15,5 @@ project spectacular
   module test
     sources   src/test
     compiler  scala
-    include   spectacular/core
+    include   spectacular/core probably/cli larceny/plugin
+    main      spectacular.Tests
