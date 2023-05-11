@@ -128,8 +128,13 @@ object JsonAst:
 
   def apply(value: Long | Double | BigDecimal | String | (IArray[String], IArray[Any]) | IArray[Any] | Boolean | Null): JsonAst = value
 
-  def parse[SourceType](source: SourceType)(using readable: {*} Readable[SourceType, Bytes])
-           : {readable} JsonAst throws JsonParseError | StreamCutError =
+  def parse
+      [SourceType]
+      (source: SourceType)
+      (using readable: Readable[SourceType, Bytes]^, jsonParse: CanThrow[JsonParseError],
+          streamCut: CanThrow[StreamCutError])
+      : JsonAst^{readable, jsonParse, streamCut} =
+
     val stream = readable.read(source)
     var line: Int = 0
     var colStart: Int = 0
