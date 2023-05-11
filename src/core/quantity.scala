@@ -134,7 +134,10 @@ object QuantifyMacros:
     override def hashCode: Int = name.hashCode
     override def toString(): String = name
 
-  private def ratio(using Quotes)(from: UnitRef, to: UnitRef, power: Int, retry: Boolean = true): Expr[Double] =
+  private def ratio
+      (using Quotes)
+      (from: UnitRef, to: UnitRef, power: Int, retry: Boolean = true)
+      : Expr[Double] =
     if from == to then Expr(1.0) else (from.power(-1).asType, to.power(1).asType) match
       case ('[from], '[to]) =>
         Expr.summon[Ratio[from & to & Measure]] match

@@ -96,7 +96,8 @@ object Stones:
 
 trait Hundredweights[Power <: Nat] extends Units[Power, Mass]
 object Hundredweights:
-  given gramsPerHundredweight: Ratio[Kilograms[1] & Hundredweights[-1]] = Ratio(Quantity(50.80234544))
+  given gramsPerHundredweight: Ratio[Kilograms[1] & Hundredweights[-1]] =
+    Ratio(Quantity(50.80234544))
 
 trait Tons[Power <: Nat] extends Units[Power, Mass]
 object Tons:
