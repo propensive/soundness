@@ -204,16 +204,16 @@ object UnitName:
     override def siPrefix: SiPrefix = Kilo
     def name(): Text = t"g"
 
-trait PrincipalUnit[DimensionType <: Dimension, UnitType <: Measure]()
+trait PrincipalUnit[DimensionType <: Dimension, UnitType[_ <: Nat] <: Measure]()
 
 object PrincipalUnit:
-  given length: PrincipalUnit[Length, Metres[1]]()
-  given mass: PrincipalUnit[Mass, Kilograms[1]]()
-  given time: PrincipalUnit[Time, Seconds[1]]()
-  given current: PrincipalUnit[Current, Amperes[1]]()
-  given luminosity: PrincipalUnit[Luminosity, Candelas[1]]()
-  given temperature: PrincipalUnit[Temperature, Kelvins[1]]()
-  given amountOfSubstance: PrincipalUnit[AmountOfSubstance, Moles[1]]()
+  given length: PrincipalUnit[Length, Metres]()
+  given mass: PrincipalUnit[Mass, Kilograms]()
+  given time: PrincipalUnit[Time, Seconds]()
+  given current: PrincipalUnit[Current, Amperes]()
+  given luminosity: PrincipalUnit[Luminosity, Candelas]()
+  given temperature: PrincipalUnit[Temperature, Kelvins]()
+  given amountOfSubstance: PrincipalUnit[AmountOfSubstance, Moles]()
 
 object QuantifyOpaques:
   opaque type Quantity[UnitsType <: Measure] = Double

@@ -153,7 +153,7 @@ object QuantifyMacros:
             """.s)
           case Some('{ $expr: principalUnit }) => Type.of[principalUnit] match
             case '[ PrincipalUnit[dim, units] ] => TypeRepr.of[units] match
-              case AppliedType(ref@TypeRef(_, _), List(ConstantType(IntConstant(power)))) =>
+              case TypeLambda(_, _, AppliedType(ref@TypeRef(_, _), _)) =>
                 UnitRef(ref.asType, ref.show)
               case other =>
                 fail(s"principal units had an unexpected type: $other")
