@@ -65,12 +65,12 @@ val Chain = Quantity[Chains[1]](1.0)
 
 // Units of Area
 
-val Are = SiUnit[Metres[2]](100.0)
+val Are = MetricUnit[Metres[2]](100.0)
 val Acre = Furlong*Furlong/10.0
 
 // Units of Volume
 
-val Litre = SiUnit[Metres[3]](0.001)
+val Litre = MetricUnit[Metres[3]](0.001)
 val FluidOunce = Milli(Litre)*28.4130625
 val Pint = Milli(Litre)*568.26125
 val Quart = Milli(Litre)*1136.5225

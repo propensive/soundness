@@ -128,16 +128,16 @@ object PrincipalUnit:
 
 object QuantifyOpaques:
   opaque type Quantity[UnitsType <: Measure] = Double
-  opaque type SiUnit[UnitsType <: Measure] <: Quantity[UnitsType] = Double
+  opaque type MetricUnit[UnitsType <: Measure] <: Quantity[UnitsType] = Double
 
   extension [UnitsType <: Measure](quantity: Quantity[UnitsType])
     def value: Double = quantity
 
-  object SiUnit:
-    def apply[UnitsType <: Measure](value: Double): SiUnit[UnitsType] = value
+  object MetricUnit:
+    def apply[UnitsType <: Measure](value: Double): MetricUnit[UnitsType] = value
 
     @targetName("makeDerivedUnit")
-    def apply[UnitsType <: Measure](value: Quantity[UnitsType]): SiUnit[UnitsType] = value
+    def apply[UnitsType <: Measure](value: Quantity[UnitsType]): MetricUnit[UnitsType] = value
 
   object Quantity:
     erased given [UnitsType <: Measure]: CanEqual[Quantity[UnitsType], Quantity[UnitsType]] =
@@ -182,15 +182,15 @@ object QuantifyOpaques:
           t"$unit$exponent"
       .join(t"·")
 
-export QuantifyOpaques.{Quantity, SiUnit}
+export QuantifyOpaques.{Quantity, MetricUnit}
 
-val Metre: SiUnit[Metres[1]] = SiUnit(1)
-val Gram: SiUnit[Kilograms[1]] = SiUnit(0.001)
-val Candela: SiUnit[Candelas[1]] = SiUnit(1)
-val Mole: SiUnit[Moles[1]] = SiUnit(1)
-val Ampere: SiUnit[Amperes[1]] = SiUnit(1)
-val Kelvin: SiUnit[Kelvins[1]] = SiUnit(1)
-val Second: SiUnit[Seconds[1]] = SiUnit(1)
+val Metre: MetricUnit[Metres[1]] = MetricUnit(1)
+val Gram: MetricUnit[Kilograms[1]] = MetricUnit(0.001)
+val Candela: MetricUnit[Candelas[1]] = MetricUnit(1)
+val Mole: MetricUnit[Moles[1]] = MetricUnit(1)
+val Ampere: MetricUnit[Amperes[1]] = MetricUnit(1)
+val Kelvin: MetricUnit[Kelvins[1]] = MetricUnit(1)
+val Second: MetricUnit[Seconds[1]] = MetricUnit(1)
 
 extension [UnitsType <: Measure](inline quantity: Quantity[UnitsType])
   @targetName("plus")
