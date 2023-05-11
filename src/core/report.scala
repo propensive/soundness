@@ -270,7 +270,7 @@ class TestReport(using env: Environment):
       val total: Int = totals.values.sum
       val failed: Int = total - passed
 
-      table.tabulate(summaryLines, columns).map(_.render).foreach(Io.println(_))
+      table.tabulate(summaryLines, columns, delimitRows = DelimitRows.SpaceIfMultiline).map(_.render).foreach(Io.println(_))
       given Decimalizer = Decimalizer(decimalPlaces = 1)
       Io.println(ansi" $Bold(${colors.White}($passed)) passed (${100.0*passed/total}%), $Bold(${colors.White}($failed)) failed (${100.0*failed/total}%), $Bold(${colors.White}(${passed + failed})) total")
       Io.println(t"─"*72)
