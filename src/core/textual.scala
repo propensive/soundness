@@ -17,6 +17,7 @@
 package gossamer
 
 import rudiments.*
+import spectacular.*
 
 import language.experimental.captureChecking
 
@@ -27,6 +28,7 @@ package defaultTextTypes:
   given text: DefaultTextType { type TextType = Text } = compiletime.erasedValue
 
 trait Textual[TextType]:
+  type ShowType[-ValueType]
   def length(text: TextType): Int
   def string(text: TextType): String
   def make(string: String): TextType
@@ -36,9 +38,11 @@ trait Textual[TextType]:
   def concat(left: TextType, right: TextType): TextType
   def unsafeChar(text: TextType, index: Int): Char
   def indexOf(text: TextType, sub: Text): Int
+  def show[ValueType](value: ValueType)(using ShowType[ValueType]): TextType
 
 object Textual:
   given Textual[Text] with
+    type ShowType[-ValueType] = Display[ValueType, EndUser]
     def string(text: Text): String = text.s
     def length(text: Text): Int = text.s.length
     def make(string: String): Text = Text(string)
@@ -48,7 +52,10 @@ object Textual:
     def concat(left: Text, right: Text): Text = Text(left.s+right.s)
     def unsafeChar(text: Text, index: Int): Char = text.s.charAt(index)
     def indexOf(text: Text, sub: Text): Int = text.s.indexOf(sub.s)
-
+    
+    def show[ValueType](value: ValueType)(using display: Display[ValueType, EndUser]): Text =
+      display(value)
+    
   // given Textual[String] with
   //   def string(string: String): String = string
   //   def length(string: String): Int = string.length
