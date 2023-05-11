@@ -174,7 +174,7 @@ object QuantifyMacros:
 
     if from == to then Expr(1.0) else (from.power(-1).asType, to.power(1).asType) match
       case ('[from], '[to]) =>
-        Expr.summon[Ratio[from & to & Measure]] match
+        Expr.summon[Ratio[from & to & Measure, ?]] match
           case None =>
             if retry then ratio(to, from, -power, false)
             else
@@ -191,9 +191,10 @@ object QuantifyMacros:
                 the type, `Ratio[${from.name}[1] & ${to.name}[-1]]`, or `Ratio[${to.name}[1] &
                 ${from.name}[-1]]`.
               """.s)
-          case Some(ratio) =>
-            if power == 1 then '{$ratio.value.value}
-            else '{math.pow($ratio.value.value, ${Expr(power)})}
+          case Some('{ $ratio: ratioType }) => Type.of[ratioType] match
+            case '[Ratio[?, double]] => TypeRepr.of[double] match
+              case ConstantType(DoubleConstant(double)) =>
+                if power == 1 then Expr(double) else '{math.pow(${Expr(double)}, ${Expr(power)})}
 
   private def normalize
       (using Quotes)

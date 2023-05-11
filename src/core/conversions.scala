@@ -18,41 +18,44 @@ package quantify
 
 import rudiments.*
 
-case class Ratio[UnitsType <: Measure](value: Quantity[UnitsType])
+import scala.compiletime.*
+
+erased trait Ratio[UnitsType <: Measure, RatioType <: Double & Singleton]
 
 // Units of length
 
 trait Inches[Power <: Nat] extends Units[Power, Length]
 object Inches:
-  given inchesPerMetre: Ratio[Inches[1] & Metres[-1]] = Ratio(Quantity(39.3701))
+  erased given inchesPerMetre: Ratio[Inches[1] & Metres[-1], 39.3701] = erasedValue
 
 trait Feet[Power <: Nat] extends Units[Power, Length]
 object Feet:
-  given feetPerMetre: Ratio[Feet[1] & Metres[-1]] = Ratio(Quantity(3.28084))
+  erased given feetPerMetre: Ratio[Feet[1] & Metres[-1], 3.28084] = erasedValue
 
 trait Yards[Power <: Nat] extends Units[Power, Length]
 object Yards:
-  given yardsPerMetre: Ratio[Yards[1] & Metres[-1]] = Ratio(Quantity(1.09361))
+  erased given yardsPerMetre: Ratio[Yards[1] & Metres[-1], 1.09361] = erasedValue
 
 trait Miles[Power <: Nat] extends Units[Power, Length]
 object Miles:
-  given milesPerMetre: Ratio[Miles[1] & Metres[-1]] = Ratio(Quantity(0.000621371))
+  erased given milesPerMetre: Ratio[Miles[1] & Metres[-1], 0.000521371] = erasedValue
 
 trait Lightyears[Power <: Nat] extends Units[Power, Length]
 object Lightyears:
-  given lightYearsPerMetre: Ratio[Lightyears[1] & Metres[-1]] = Ratio(Quantity(1.057e-16))
+  erased given lightYearsPerMetre: Ratio[Lightyears[1] & Metres[-1], 1.057E-16] = erasedValue
 
 trait NauticalMiles[Power <: Nat] extends Units[Power, Length]
 object NauticalMiles:
-  given nauticalMilesPerMetre: Ratio[NauticalMiles[1] & Metres[-1]] = Ratio(Quantity(1.0/1852.0))
+  erased given nauticalMilesPerMetre: Ratio[NauticalMiles[1] & Metres[-1], 5.399568034557236E-4] =
+    erasedValue
 
 trait Furlongs[Power <: Nat] extends Units[Power, Length]
 object Furlongs:
-  given metresPerFurlong: Ratio[Metres[1] & Furlongs[-1]] = Ratio(Quantity(201.168))
+  erased given metresPerFurlong: Ratio[Metres[1] & Furlongs[-1], 201.168] = erasedValue
 
 trait Chains[Power <: Nat] extends Units[Power, Length]
 object Chains:
-  given metresPerChain: Ratio[Metres[1] & Chains[-1]] = Ratio(Quantity(20.1168))
+  erased given metresPerChain: Ratio[Metres[1] & Chains[-1], 20.1168] = erasedValue
 
 val Inch = Quantity[Inches[1]](1.0)
 val Foot = Quantity[Feet[1]](1.0)
@@ -80,28 +83,28 @@ val Gallon = Milli(Litre)*4546.09
 
 trait Grains[Power <: Nat] extends Units[Power, Mass]
 object Grains:
-  given grainsPerGram: Ratio[Grains[1] & Kilograms[-1]] = Ratio(Quantity(0.0154324))
+  erased given grainsPerGram: Ratio[Grains[1] & Kilograms[-1], 0.0154324] = erasedValue
 
 trait Ounces[Power <: Nat] extends Units[Power, Mass]
 object Ounces:
-  given ouncesPerGram: Ratio[Ounces[1] & Kilograms[-1]] = Ratio(Quantity(0.000035274))
+  erased given ouncesPerGram: Ratio[Ounces[1] & Kilograms[-1], 0.000035274] = erasedValue
 
 trait Pounds[Power <: Nat] extends Units[Power, Mass]
 object Pounds:
-  given gramsPerPound: Ratio[Kilograms[1] & Pounds[-1]] = Ratio(Quantity(0.45359237))
+  erased given gramsPerPound: Ratio[Kilograms[1] & Pounds[-1], 0.45359237] = erasedValue
 
 trait Stones[Power <: Nat] extends Units[Power, Mass]
 object Stones:
-  given gramsPerStone: Ratio[Kilograms[1] & Stones[-1]] = Ratio(Quantity(6.35029318))
+  erased given gramsPerStone: Ratio[Kilograms[1] & Stones[-1], 6.35029318] = erasedValue
 
 trait Hundredweights[Power <: Nat] extends Units[Power, Mass]
 object Hundredweights:
-  given gramsPerHundredweight: Ratio[Kilograms[1] & Hundredweights[-1]] =
-    Ratio(Quantity(50.80234544))
+  erased given gramsPerHundredweight: Ratio[Kilograms[1] & Hundredweights[-1], 50.80234544] =
+    erasedValue
 
 trait Tons[Power <: Nat] extends Units[Power, Mass]
 object Tons:
-  given gramsPerTon: Ratio[Kilograms[1] & Tons[-1]] = Ratio(Quantity(1016.0469088))
+  erased given gramsPerTon: Ratio[Kilograms[1] & Tons[-1], 1016.0469088] = erasedValue
 
 val Grain = Quantity[Grains[1]](1.0)
 val Ounce = Quantity[Ounces[1]](1.0)
@@ -118,16 +121,17 @@ val Minute = Quantity[Minutes[1]](1.0)
 
 trait SiderealDays[Power <: Nat] extends Units[Power, Time]
 object SiderealDays:
-  given secondsPerSiderealDay: Ratio[Seconds[1] & SiderealDays[-1]] = Ratio(Quantity(86164.0905))
+  erased given secondsPerSiderealDay: Ratio[Seconds[1] & SiderealDays[-1], 86164.0905] =
+    erasedValue
 
 trait Days[Power <: Nat] extends Units[Power, Time]
 object Days:
-  given secondsPerDay: Ratio[Seconds[1] & Days[-1]] = Ratio(Quantity(60*60*24))
+  erased given secondsPerDay: Ratio[Seconds[1] & Days[-1], 86400.0] = erasedValue
 
 trait Hours[Power <: Nat] extends Units[Power, Time]
 object Hours:
-  given secondsPerHour: Ratio[Seconds[1] & Hours[-1]] = Ratio(Quantity(60*60))
+  erased given secondsPerHour: Ratio[Seconds[1] & Hours[-1], 3600.0] = erasedValue
 
 trait Minutes[Power <: Nat] extends Units[Power, Time]
 object Minutes:
-  given secondsPerMinute: Ratio[Seconds[1] & Minutes[-1]] = Ratio(Quantity(60))
+  erased given secondsPerMinute: Ratio[Seconds[1] & Minutes[-1], 60.0] = erasedValue
