@@ -47,43 +47,132 @@ object DimensionName:
   erased given luminosity: DimensionName[Units[1, Luminosity], "luminosity"] = erasedValue
   
   // derived units from https://en.wikipedia.org/wiki/List_of_physical_quantities
-  erased given absement: DimensionName[Units[1, Mass] & Units[1, Time], "absement"] = erasedValue
-  erased given absorbedDoseRate: DimensionName[Units[2, Length] & Units[-3, Time], "absorbed dose rate"] = erasedValue
-  erased given acceleration: DimensionName[Units[1, Length] & Units[-2, Time], "acceleration"] = erasedValue
-  erased given action: DimensionName[Units[2, Length] & Units[-1, Time] & Units[1, Mass], "action"] = erasedValue
-  erased given angulaMomentum: DimensionName[Units[1, Mass] & Units[2, Length] & Units[-1, Time], "angular momentum"] = erasedValue
-  erased given area: DimensionName[Units[2, Length], "area"] = erasedValue
-  erased given areaDensity: DimensionName[Units[-2, Length] & Units[1, Mass], "area density"] = erasedValue
-  erased given capacitance: DimensionName[Units[-2, Length] & Units[-1, Mass] & Units[4, Time] & Units[1, Current], "capacitance"] = erasedValue
-  erased given catalyticActivityConcentration: DimensionName[Units[-3, Length] & Units[-1, Time] & Units[1, AmountOfSubstance], "catalytic activity concentration"] = erasedValue
-  erased given centrifugalForce: DimensionName[Units[1, Mass] & Units[1, Length] & Units[-2, Time], "centrifugal force"] = erasedValue
-  erased given chemicalPotential: DimensionName[Units[2, Length] & Units[1, Mass] & Units[-2, Time] & Units[-1, AmountOfSubstance], "chemical potential"] = erasedValue
-  erased given crackle: DimensionName[Units[1, Length] & Units[-5, Time], "crackle"] = erasedValue
-  erased given currentDensity: DimensionName[Units[-2, Length] & Units[1, Current], "current density"] = erasedValue
-  erased given doseEquivalent: DimensionName[Units[2, Length] & Units[-2, Time], "dose equivalent"] = erasedValue
-  erased given dynamicViscosity: DimensionName[Units[-1, Length] & Units[1, Mass] & Units[-1, Time], "dynamic viscosity"] = erasedValue
-  erased given electricCharge: DimensionName[Units[1, Time] & Units[1, Current], "electric charge"] = erasedValue
-  erased given electricChargeDensity: DimensionName[Units[-3, Length] & Units[1, Time] & Units[1, Current], "electric charge density"] = erasedValue
-  erased given electricDipoleMoment: DimensionName[Units[1, Length] & Units[1, Time] & Units[1, Current], "electric dipole moment"] = erasedValue
-  erased given electricDisplacementField: DimensionName[Units[-2, Length] & Units[1, Time] & Units[1, Current], "electric displacement field"] = erasedValue
-  erased given electricFieldStrength: DimensionName[Units[1, Length] & Units[1, Mass] & Units[-3, Time] & Units[-1, Current], "electric field strength"] = erasedValue
-  erased given electricalConductance: DimensionName[Units[-2, Length] & Units[-1, Mass] & Units[3, Time] & Units[2, Current], "electric conductance"] = erasedValue
-  erased given electricalConductivity: DimensionName[Units[-3, Length] & Units[-1, Mass] & Units[3, Time] & Units[2, Current], "electric conductivity"] = erasedValue
-  erased given electricalPotential: DimensionName[Units[2, Length] & Units[1, Mass] & Units[-3, Time] & Units[-1, Current], "electric potential"] = erasedValue
-  erased given electricalResistance: DimensionName[Units[2, Length] & Units[1, Mass] & Units[-3, Time] & Units[-2, Current], "electric resistance"] = erasedValue
-  erased given electricalResistivity: DimensionName[Units[3, Length] & Units[1, Mass] & Units[-3, Time] & Units[-2, Current], "electric resistivity"] = erasedValue
-  erased given energy: DimensionName[Units[2, Length] & Units[1, Mass] & Units[-2, Time], "energy"] = erasedValue
-  erased given energyDensity: DimensionName[Units[-1, Length] & Units[1, Mass] & Units[-2, Time], "energy density"] = erasedValue
-  erased given entropy: DimensionName[Units[2, Length] & Units[1, Mass] & Units[-2, Time] & Units[-1, Temperature], "entropy"] = erasedValue
-  erased given force: DimensionName[Units[1, Mass] & Units[1, Length] & Units[-2, Time], "force"] = erasedValue
-  erased given frequency: DimensionName[Units[-1, Time], "frequency"] = erasedValue
+  type Absement = Units[1, Mass] & Units[1, Time]
+  erased given absement: DimensionName[Absement, "absement"] = erasedValue
+
+  type AbsorbedDoseRate = Units[2, Length] & Units[-3, Time]
+  erased given absorbedDoseRate: DimensionName[AbsorbedDoseRate, "absorbed dose rate"] = erasedValue
+
+  type Acceleration = Units[1, Length] & Units[-2, Time]
+  erased given acceleration: DimensionName[Acceleration, "acceleration"] = erasedValue
+
+  type Action = Units[2, Length] & Units[-1, Time] & Units[1, Mass]
+  erased given action: DimensionName[Action, "action"] = erasedValue
+
+  type AngularMomentum = Units[1, Mass] & Units[2, Length] & Units[-1, Time]
+  erased given angularMomentum: DimensionName[AngularMomentum, "angular momentum"] = erasedValue
+
+  type Area = Units[2, Length]
+  erased given area: DimensionName[Area, "area"] = erasedValue
+
+  type AreaDensity = Units[-2, Length] & Units[1, Mass]
+  erased given areaDensity: DimensionName[AreaDensity, "area density"] = erasedValue
+
+  type Capacitance = Units[-2, Length] & Units[-1, Mass] & Units[4, Time] & Units[1, Current]
+  erased given capacitance: DimensionName[Capacitance, "capacitance"] = erasedValue
+
+  type CatalyticActivityConcentration = Units[-3, Length] & Units[-1, Time] & Units[1,
+      AmountOfSubstance]
+  
+  erased given catalyticActivityConcentration: DimensionName[CatalyticActivityConcentration,
+     "catalytic activity concentration"] = erasedValue
+
+  type CentrifugalForce = Units[1, Mass] & Units[1, Length] & Units[-2, Time]
+  erased given centrifugalForce: DimensionName[CentrifugalForce, "centrifugal force"] = erasedValue
+  
+  type ChemicalPotential = Units[2, Length] & Units[1, Mass] & Units[-2, Time] & Units[-1,
+      AmountOfSubstance]
+  
+  erased given chemicalPotential: DimensionName[ChemicalPotential, "chemical potential"] =
+    erasedValue
+  
+  type Crackle = Units[1, Length] & Units[-5, Time]
+  erased given crackle: DimensionName[Crackle, "crackle"] = erasedValue
+  
+  type CurrentDensity = Units[-2, Length] & Units[1, Current]
+  erased given currentDensity: DimensionName[CurrentDensity, "current density"] = erasedValue
+  
+  type DoseEquivalent = Units[2, Length] & Units[-2, Time]
+  erased given doseEquivalent: DimensionName[DoseEquivalent, "dose equivalent"] = erasedValue
+  
+  type DynamicViscosity = Units[-1, Length] & Units[1, Mass] & Units[-1, Time]
+  erased given dynamicViscosity: DimensionName[DynamicViscosity, "dynamic viscosity"] = erasedValue
+  
+  type ElectricCharge = Units[1, Time] & Units[1, Current]
+  erased given electricCharge: DimensionName[ElectricCharge, "electric charge"] = erasedValue
+  
+  type ElectricChargeDensity = Units[-3, Length] & Units[1, Time] & Units[1, Current]
+  
+  erased given electricChargeDensity: DimensionName[ElectricChargeDensity,
+      "electric charge density"] = erasedValue
+  
+  type ElectricDipoleMoment = Units[1, Length] & Units[1, Time] & Units[1, Current]
+  
+  erased given electricDipoleMoment: DimensionName[ElectricDipoleMoment, "electric dipole moment"] =
+    erasedValue
+  
+  type ElectricDisplacementField = Units[-2, Length] & Units[1, Time] & Units[1, Current]
+  
+  erased given electricDisplacementField: DimensionName[ElectricDisplacementField,
+      "electric displacement field"] = erasedValue
+  
+  type ElectricFieldStrength = Units[1, Length] & Units[1, Mass] & Units[-3, Time] & Units[-1,
+      Current]
+  
+  erased given electricFieldStrength: DimensionName[ElectricFieldStrength,
+      "electric field strength"] = erasedValue
+  
+  type ElectricalConductance = Units[-2, Length] & Units[-1, Mass] & Units[3, Time] & Units[2,
+      Current]
+  
+  erased given electricalConductance: DimensionName[ElectricalConductance, "electric conductance"] =
+    erasedValue
+  
+  type ElectricalConductivity = Units[-3, Length] & Units[-1, Mass] & Units[3, Time] & Units[2,
+      Current]
+  
+  erased given electricalConductivity: DimensionName[ElectricalConductivity,
+      "electric conductivity"] = erasedValue
+  
+  type ElectricalPotential = Units[2, Length] & Units[1, Mass] & Units[-3, Time] & Units[-1,
+      Current]
+  
+  erased given electricalPotential: DimensionName[ElectricalPotential, "electric potential"] =
+    erasedValue
+  
+  type ElectricalResistance = Units[2, Length] & Units[1, Mass] & Units[-3, Time] & Units[-2,
+      Current]
+  
+  erased given electricalResistance: DimensionName[ElectricalResistance, "electric resistance"] =
+    erasedValue
+  
+  type ElectricalResistivity = Units[3, Length] & Units[1, Mass] & Units[-3, Time] & Units[-2,
+      Current]
+  
+  erased given electricalResistivity: DimensionName[ElectricalResistivity, "electric resistivity"] =
+    erasedValue
+  
+  type Energy = Units[2, Length] & Units[1, Mass] & Units[-2, Time]
+  erased given energy: DimensionName[Energy, "energy"] = erasedValue
+  
+  type EnergyDensity = Units[-1, Length] & Units[1, Mass] & Units[-2, Time]
+  erased given energyDensity: DimensionName[EnergyDensity, "energy density"] = erasedValue
+  
+  type Entropy = Units[2, Length] & Units[1, Mass] & Units[-2, Time] & Units[-1, Temperature]
+  erased given entropy: DimensionName[Entropy, "entropy"] = erasedValue
+  
+  type Force = Units[1, Mass] & Units[1, Length] & Units[-2, Time]
+  erased given force: DimensionName[Force, "force"] = erasedValue
+  
+  type Frequency = Units[-1, Time]
+  erased given frequency: DimensionName[Frequency, "frequency"] = erasedValue
   
   // need to continue alphabetically
-
   erased given substance: DimensionName[Units[1, AmountOfSubstance], "amount of substance"] =
     erasedValue
   
-  erased given velocity: DimensionName[Units[1, Length] & Units[-1, Time], "velocity"] = erasedValue
+  type Velocity = Units[1, Length] & Units[-1, Time]
+  erased given velocity: DimensionName[Velocity, "velocity"] = erasedValue
   
   
 
