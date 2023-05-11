@@ -384,6 +384,31 @@ massÃ—lengthÃ—time
 ¯
 ².
 
+### Substituting simplified units
+
+While the SI base units can be used to describe the units of most physical quantities, there often
+exist simpler forms of their units. For example, the Joule, `J`, is equal to `kgâ‹…m
+²â‹…s
+¯
+²`, and is
+much easier to write.
+
+By default, Quantify will use the latter form, but it is possible to define alternative
+representations of units where these exist, and Quantify will use these whenever a quantity is
+displayed. A contextual value can be defined, such as the following,
+```scala
+given SubstituteUnits[Kilograms[1] & Metres[2] & Seconds[-2]](t"J")
+```
+and then a value such as, `2.8*Kilo(Joule)` will be rendered as `2800 J` instead of `2800 kgâ‹…m
+²â‹…s
+¯
+²`.
+
+Note that this only applies if the quantity's units exactly match the type parameter of
+`SubstituteUnits`, and units such as Joule-seconds would still be displayed as `kgâ‹…m
+²â‹…s
+¯
+¹`.
 
 ## Status
 
