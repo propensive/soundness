@@ -303,3 +303,25 @@ with a contextual instance of `UnitName[Flops[1]]`,
 given UnitName[Flops[1]] = () => t"FLOPS"
 ```
 which will allow `show` to be called on a quantity involving FLOPs.
+
+### Describing physical quantities
+
+English provides many names for physical quantities, including the familiar base dimensions of
+_length_, _mass_, _time_ and so on, as well as combinations of these, such as _velocity_,
+_acceleration_ and _electrical resistance_.
+
+Definitions of names for many of these physical quantities are already defined, and will appear in
+error messages when a mismatch occurs.
+```
+scala> Metre/Second + Metre/(Second*Second)
+
+quantify: the left operand represents velocity, but the right operand represents acceleration;
+these are incompatible physical quantities
+```
+It is also possible to define your own, for example, here is the definition for "force":
+```scala
+erased given DimensionName[Units[1, Mass] & Units[1, Length] & Units[-2, Time], "force"] = erasedValue
+```
+
+The singleton type `"force"` is the provided name for any units corresponding to the dimensions,
+mass×length×time¯².
