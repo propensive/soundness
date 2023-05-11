@@ -22,8 +22,6 @@ import lithography.*
 import digression.*
 import spectacular.*
 
-import language.experimental.namedTypeArguments
-
 import Table.ShortPair
 
 enum Breaks:
