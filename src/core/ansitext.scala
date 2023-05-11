@@ -177,7 +177,8 @@ object AnsiText:
 
   given Display[AnsiText, EndUser] = _.plain
 
-  given textual: Textual[AnsiText] = new Textual[AnsiText]:
+  given textual: Textual[AnsiText] with
+    type ShowType[-ValueType] = AnsiShow[ValueType]
     def string(text: AnsiText): String = text.plain.s
     def length(text: AnsiText): Int = text.plain.s.length
     def make(string: String): AnsiText = AnsiText(Text(string))
@@ -192,7 +193,9 @@ object AnsiText:
     def concat(left: AnsiText, right: AnsiText): AnsiText = left+right
     def unsafeChar(text: AnsiText, index: Int): Char = text.plain.s.charAt(index)
     def indexOf(text: AnsiText, sub: Text): Int = text.plain.s.indexOf(sub.s)
-
+    
+    def show[ValueType](value: ValueType)(using ansiShow: AnsiShow[ValueType]) =
+      ansiShow.ansi(value)
 
   def empty: AnsiText = AnsiText(t"")
   given joinable: Joinable[AnsiText] = _.fold(empty)(_ + _)
