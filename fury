@@ -1,7 +1,7 @@
 # This is a buildfile for Fury or Wrath.
 # More information is available at: https://github.com/propensive/wrath/
 
-target merino/bench
+target merino/test
 
 repo propensive/serpentine
 repo propensive/probably
@@ -21,7 +21,7 @@ project merino
   module test
     compiler  scala
     sources   src/test
-    include   serpentine/core probably/cli merino/core jawn/core
+    include   probably/cli merino/core jawn/core
     main      merino.Tests
 
 project jawn
