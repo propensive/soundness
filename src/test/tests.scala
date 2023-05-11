@@ -19,15 +19,12 @@ package dissonance
 import probably.*
 import gossamer.*
 import rudiments.*
-import turbulence.*
-import eucalyptus.*, logging.stdout
-
-import unsafeExceptions.canThrowAny
+import eucalyptus.*
 
 import Change.*
 
 object Tests extends Suite(t"Dissonance tests"):
-  given Realm(t"tests")
+  given Realm = Realm(t"tests")
 
   def run(): Unit =
     suite(t"Diff tests"):
@@ -76,7 +73,6 @@ object Tests extends Suite(t"Dissonance tests"):
       .assert(_ == Diff(Keep(0, 0, 'A'), Keep(1, 1, 'B'), Del(2, 'C')))
       
       test(t"Multiple inner keeps"):
-        import logging.stdout
         diff(t"BCD".chars, t"ABC".chars)
       .assert(_ == Diff(Ins(0, 'A'), Keep(0, 1, 'B'), Keep(1, 2, 'C'), Del(2, 'D')))
       
