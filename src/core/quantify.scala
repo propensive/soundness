@@ -215,6 +215,12 @@ object PrincipalUnit:
   given temperature: PrincipalUnit[Temperature, Kelvins]()
   given amountOfSubstance: PrincipalUnit[AmountOfSubstance, Moles]()
 
+trait SubstituteUnits[UnitsType <: Measure](val name: Text)
+
+object SubstituteUnits:
+  given joules: SubstituteUnits[Kilograms[1] & Metres[2] & Seconds[-2]](t"J")
+  given newtons: SubstituteUnits[Kilograms[1] & Metres[1] & Seconds[-2]](t"N")
+
 object QuantifyOpaques:
   opaque type Quantity[UnitsType <: Measure] = Double
   opaque type MetricUnit[UnitsType <: Measure] <: Quantity[UnitsType] = Double

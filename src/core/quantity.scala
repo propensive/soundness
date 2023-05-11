@@ -239,7 +239,11 @@ object QuantifyMacros:
             case _ =>
               throw Mistake("Should never match")
     
-    recur('{Map[Text, Int]()}, UnitsMap[UnitsType].map.values.to(List))
+    Expr.summon[SubstituteUnits[UnitsType]] match
+      case Some('{ $substitute: SubstituteUnits[?] }) =>
+        '{Map[Text, Int](($substitute.name -> 1))}
+      case None =>
+        recur('{Map[Text, Int]()}, UnitsMap[UnitsType].map.values.to(List))
 
   def multiply
       [LeftType <: Measure: Type, RightType <: Measure: Type]

@@ -239,6 +239,14 @@ object Tests extends Suite(Text("Quantify Tests")):
       test(Text("Show Planck's constant")):
         constants.PlanckConstant.show
       .assert(_ == Text("6.63×10¯³⁴ m²·kg·s¯¹"))
+    
+      test(Text("Show an energy using custom units")):
+        (45*Joule).show
+      .assert(_ == Text("45.0 J"))
+      
+      test(Text("Show a force in Newtons")):
+        (100*Newton).show
+      .assert(_ == Text("100 N"))
 
     suite(t"Quantity descriptions"):
       test(t"describe a base dimension"):
