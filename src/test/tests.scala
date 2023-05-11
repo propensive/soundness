@@ -253,3 +253,14 @@ object Tests extends Suite(Text("Quantify Tests")):
         (Foot*Foot*Kilo(Gram)/(Second*Second*Mole)).dimension
       .assert(_ == t"chemical potential")
         
+    suite(t"Quantifiability tests"):
+      case class Pts(value: Double)
+      given Quantifiable[Pts, Inches[1]] = pts => (Inch*pts.value)/72
+      
+      test(t"quantify a length"):
+        Pts(71).quantify < Inch
+      .assert(_ == true)
+      
+      test(t"quantify a length"):
+        Pts(73).quantify > Inch
+      .assert(_ == true)
