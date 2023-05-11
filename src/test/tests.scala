@@ -19,16 +19,14 @@ package escritoire
 import probably.*
 import gossamer.*
 import rudiments.*
+import lithography.*
 import eucalyptus.*, logging.stdout
-import escapade.*
 
 import textWidthCalculation.uniform
 
 import unsafeExceptions.canThrowAny
 
 object Tests extends Suite(t"Escritoire tests"):
-
-  import Table.BiShort
 
   def run(): Unit =
     test(t"Constrain to full width plus one is single line"):
