@@ -34,4 +34,4 @@ export scala.jdk.CollectionConverters.{IteratorHasAsScala, ListHasAsScala, MapHa
     MapHasAsJava, EnumerationHasAsScala}
 
 export scala.annotation.{tailrec, implicitNotFound as missingContext, targetName, switch, StaticAnnotation,
-    capability}
+    capability, allowConversions as convertible}
