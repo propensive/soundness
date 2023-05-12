@@ -17,7 +17,7 @@
 package cellulose
 
 extension (inline ctx: StringContext)
-  transparent inline def codl(inline parts: Any*): CodlDoc = ${Codl.Prefix.expand('{Codl.Prefix}, 'ctx, 'parts)}
+  transparent inline def codl(inline parts: Any*): CodlDoc = ${Codl.Prefix.expand('ctx, 'parts)}
 
 extension [T](value: T)(using codec: Codec[T])
   def codl: CodlDoc = CodlDoc(IArray.from(codec.serialize(value).flatten), codec.schema, 0)
