@@ -16,7 +16,7 @@
 
 package acyclicity
 
-import gossamer.*
+import spectacular.*
 
 extension (inline stringContext: StringContext)
   transparent inline def ref(inline parts: Any*): Dot.Ref =

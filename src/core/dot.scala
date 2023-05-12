@@ -18,6 +18,7 @@ package acyclicity
 
 import contextual.*
 import rudiments.*
+import spectacular.*
 import gossamer.*
 
 import language.dynamics
@@ -41,7 +42,7 @@ object Dot:
 
   object Attachment:
     // FIXME: This needs to include the port
-    given Show[Attachment] = _.id.key
+    given Display[Attachment, EndUser] = _.id.key
   
   case class Attachment(id: Id, compass: Option[CompassPoint] = None)
 
