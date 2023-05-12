@@ -23,7 +23,7 @@ import iridescence.*
 import harlequin.*
 
 case class BodyText(blocks: TextBlock*):
-  def serialize(width: Int): AnsiText = blocks.map(_.render(width)).join(ansi"${'\n'}${'\n'}")
+  def serialize(width: Int): AnsiText = blocks.map(_.render(width)).join(ansi"\n\n")
 
 case class TextBlock(indent: Int, text: AnsiText):
   @targetName("add")
@@ -39,7 +39,7 @@ case class TextBlock(indent: Int, text: AnsiText):
         catch case err: OutOfRangeError =>
           rest(text.drop(width - indent*2), text.take(width - indent*2) :: lines)
     
-    rest(text, Nil).map((ansi"  "*indent)+_).join(ansi"${'\n'}")
+    rest(text, Nil).map((ansi"  "*indent)+_).join(ansi"\n")
 
 open class TextConverter():
   private def heading(level: 1 | 2 | 3 | 4 | 5 | 6, children: Seq[Markdown.Ast.Inline]): TextBlock =
@@ -113,7 +113,7 @@ open class TextConverter():
         case Markdown.Ast.Block.BulletList(num, loose, _, items*) =>
           acc :+ TextBlock(indent, items.zipWithIndex.map { case (item, idx) =>
             ansi"${num.fold(t"  » ") { n => t"${(n + idx).show.fit(3)}. " }}${Showable(item).show}"
-          }.join(ansi"${'\n'}"))
+          }.join(ansi"\n"))
     
         case Markdown.Ast.Block.Table(parts*) =>
           acc :+ TextBlock(indent, ansi"[table]")
