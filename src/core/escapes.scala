@@ -22,8 +22,7 @@ import gossamer.*
 type Escape = Ansi.Input.Escape
 
 object Escape:
-  def apply(code: Text, reset: Maybe[Text] = Unset): Escape =
-    Ansi.Input.Escape(code, reset.or(t""))
+  def apply(code: Text, reset: Maybe[Text] = Unset): Escape = Ansi.Input.Escape(code, reset.or(t""))
 
 object escapes:
   object foreground:

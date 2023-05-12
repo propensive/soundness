@@ -46,20 +46,36 @@ object AnsiShow:
     val classWidth = stack.frames.map(_.className.length).max
     val fileWidth = stack.frames.map(_.file.length).max
     
-    val root = stack.frames.foldLeft(ansi"${colors.White}($Italic(${stack.component}.$Bold(${stack.className}))): ${stack.message}"):
+    val fullClass = ansi"$Italic(${stack.component}.$Bold(${stack.className}))"
+    val init = ansi"${colors.White}($fullClass): ${stack.message}"
+    
+    val root = stack.frames.foldLeft(init):
       case (msg, frame) =>
-        val obj: Boolean = frame.className.ends(t"#")
-        ansi"$msg${'\n'}  ${colors.Gray}(at) ${colors.MediumVioletRed}(${frame.className.drop(if obj then 1 else 0, Rtl).fit(classWidth, Rtl)})${colors.Gray}(${if obj then t"." else t"#"})${colors.PaleVioletRed}(${frame.method.fit(methodWidth)}) ${colors.CadetBlue}(${frame.file.fit(fileWidth, Rtl)})${colors.Gray}(:)${colors.MediumTurquoise}(${frame.line.mm(_.show).or(t"?")})"
+        val obj = frame.className.ends(t"#")
+        import colors.*
+        val drop = if obj then 1 else 0
+        val file = ansi"$CadetBlue(${frame.file.fit(fileWidth, Rtl)})"
+        val dot = if obj then t"." else t"#"
+        val cls = ansi"$MediumVioletRed(${frame.className.drop(drop, Rtl).fit(classWidth, Rtl)})"
+        val method = ansi"$PaleVioletRed(${frame.method.fit(methodWidth)})"
+        val line = ansi"$MediumTurquoise(${frame.line.mm(_.show).or(t"?")})"
+        
+        ansi"$msg${'\n'}  $Gray(at) $cls$Gray($dot)$method $file$Gray(:)$line"
     
     stack.cause.option match
       case None        => root
       case Some(cause) => ansi"$root${'\n'}${colors.White}(caused by:)${'\n'}${cause.ansi}"
   
   given (using TextWidthCalculator): AnsiShow[StackTrace.Frame] = frame =>
-    ansi"${colors.MediumVioletRed}(${frame.className.fit(40, Rtl)})${colors.Gray}(#)${colors.PaleVioletRed}(${frame.method.fit(40)}) ${colors.CadetBlue}(${frame.file.fit(18, Rtl)})${colors.Gray}(:)${colors.MediumTurquoise}(${frame.line.mm(_.show).or(t"?")})"
+    import colors.*
+    val cls = ansi"$MediumVioletRed(${frame.className.fit(40, Rtl)})"
+    val method = ansi"$PaleVioletRed(${frame.method.fit(40)})"
+    val file = ansi"$CadetBlue(${frame.file.fit(18, Rtl)})"
+    val line = ansi"$MediumTurquoise(${frame.line.mm(_.show).or(t"?")})"
+    ansi"$cls$Gray(#)$method $file$Gray(:)$line"
 
-  given (using decimalizer: Decimalizer): AnsiShow[Double] =
-    double => AnsiText.make(decimalizer.decimalize(double), _.copy(fg = colors.Gold))
+  given (using decimalizer: Decimalizer): AnsiShow[Double] = double =>
+    AnsiText.make(decimalizer.decimalize(double), _.copy(fg = colors.Gold))
 
   given AnsiShow[Throwable] = throwable =>
     AnsiText.make[String](throwable.getClass.getName.nn.show.cut(t".").last.s,

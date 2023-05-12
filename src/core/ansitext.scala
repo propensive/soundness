@@ -36,7 +36,8 @@ extension (span: CharSpan)
   def isEmpty: Boolean = start == end
   
   def trimLeft(n: Int): CharSpan = 
-    if n >= end then CharSpan.Nowhere else if n <= start then CharSpan(start - n, end - n) else CharSpan(0, end - n)
+    if n >= end then CharSpan.Nowhere else if n <= start then CharSpan(start - n, end - n)
+    else CharSpan(0, end - n)
   
   def takeLeft(n: Int): CharSpan =
     if n <= start then CharSpan.Nowhere else if n >= end then span else CharSpan(start, n)
@@ -46,9 +47,10 @@ extension (span: CharSpan)
 object TextStyle:
   val esc: Char = 27.toChar
 
-case class TextStyle(fg: Maybe[Rgb24] = Unset, bg: Maybe[Rgb24] = Unset, italic: Boolean = false,
-                         bold: Boolean = false, reverse: Boolean = false, underline: Boolean = false,
-                         conceal: Boolean = false, strike: Boolean = false):
+case class TextStyle
+    (fg: Maybe[Rgb24] = Unset, bg: Maybe[Rgb24] = Unset, italic: Boolean = false,
+        bold: Boolean = false, reverse: Boolean = false, underline: Boolean = false,
+        conceal: Boolean = false, strike: Boolean = false):
   import escapes.*
   import TextStyle.esc
   
@@ -111,22 +113,25 @@ object Ansi:
 
   case class Frame(bracket: Char, start: Int, transform: Transform)
   
-  case class State(text: Text = t"", last: Option[Transform] = None, stack: List[Frame] = Nil,
-                       spans: TreeMap[CharSpan, Transform] = TreeMap(),
-                       insertions: TreeMap[Int, Text] = TreeMap()):
+  case class State
+      (text: Text = t"", last: Option[Transform] = None, stack: List[Frame] = Nil,
+          spans: TreeMap[CharSpan, Transform] = TreeMap(),
+          insertions: TreeMap[Int, Text] = TreeMap()):
+
     def add(span: CharSpan, transform: Transform): State =
       copy(spans = spans.updated(span, spans.get(span).fold(transform)(transform.andThen(_))))
     
     def add(pos: Int, esc: Escape): State =
-      copy(insertions = insertions.updated(pos, insertions.get(pos).fold(t"\e"+esc.on)(_+t"\e"+esc.on)))
+      val insertions2 = insertions.get(pos).fold(t"\e"+esc.on)(_+t"\e"+esc.on)
+      copy(insertions = insertions.updated(pos, insertions2))
 
   object Interpolator extends contextual.Interpolator[Input, State, AnsiText]:
     private val complement = Map('[' -> ']', '(' -> ')', '{' -> '}', '<' -> '>', '«' -> '»')
     def initial: State = State()
 
     def parse(state: State, text: Text): State =
-      state.last.fold(closures(state, text)):
-        transform => safely(text(0)) match
+      state.last.fold(closures(state, text)): transform =>
+        safely(text(0)) match
           case '\\' =>
             closures(state.copy(last = None), text.drop(1))
           case '[' | '(' | '<' | '«' | '{' =>
@@ -134,7 +139,8 @@ object Ansi:
             closures(state.copy(stack = frame :: state.stack, last = None), text.drop(1))
   
           case _ =>
-            closures(state.add(CharSpan(state.text.length, state.text.length), transform).copy(last = None), text)
+            val state2 = state.add(CharSpan(state.text.length, state.text.length), transform)
+            closures(state2.copy(last = None), text)
 
     private def closures(state: State, text: Text): State =
       state.stack.headOption.fold(state.copy(text = state.text+text)):
@@ -144,10 +150,11 @@ object Ansi:
               state.copy(text = state.text+text)
             
             case idx: Int =>
-              val newText = state.text+text.take(idx)
-              val newSpan: CharSpan = CharSpan(frame.start, state.text.length + idx)
-              val newState: State = state.add(newSpan, frame.transform).copy(text = newText, last = None, stack = state.stack.tail)
-              closures(newState, text.drop(idx + 1))
+              val text2 = state.text+text.take(idx)
+              val span2: CharSpan = CharSpan(frame.start, state.text.length + idx)
+              val state2: State = state.add(span2, frame.transform)
+              val state3: State = state2.copy(text = text2, last = None, stack = state.stack.tail)
+              closures(state3, text.drop(idx + 1))
 
     def insert(state: State, value: Input): State = value match
       case Input.Textual(text) =>
@@ -211,8 +218,10 @@ object AnsiText:
       if limit <= 0 then acc
       else
         val matcher = pattern.matcher(source.plain.s).nn
-        if matcher.matches then
-          recur(source.take(matcher.group(1).nn.length), limit - 1, source.take(matcher.group(2).nn.length, Rtl) :: acc)
+        if matcher.matches
+        then
+          val ansiText = source.take(matcher.group(2).nn.length, Rtl)
+          recur(source.take(matcher.group(1).nn.length), limit - 1, ansiText :: acc)
         else source :: acc
 
 
@@ -274,8 +283,10 @@ case class AnsiText(plain: Text, spans: TreeMap[CharSpan, Ansi.Transform] = Tree
     val buf = StringBuilder()
 
     @tailrec
-    def recur(spans: TreeMap[CharSpan, Ansi.Transform], pos: Int = 0, style: TextStyle = TextStyle(),
-                  stack: List[(CharSpan, TextStyle)] = Nil, insertions: TreeMap[Int, Text] = TreeMap()): Text =
+    def recur
+        (spans: TreeMap[CharSpan, Ansi.Transform], pos: Int = 0, style: TextStyle = TextStyle(),
+            stack: List[(CharSpan, TextStyle)] = Nil, insertions: TreeMap[Int, Text] = TreeMap())
+        : Text =
 
       inline def addSpan(): Text =
         val newInsertions = addText(pos, spans.head(0).start, insertions)
