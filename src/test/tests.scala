@@ -1,5 +1,5 @@
 /*
-    Gossamer, version [unreleased]. Copyright 2023 Jon Pretty, Propensive OÜ.
+    Spectacular, version [unreleased]. Copyright 2023 Jon Pretty, Propensive OÜ.
 
     The primary distribution site is: https://propensive.com/
 
