@@ -21,6 +21,7 @@ import digression.*
 import gossamer.*
 import contextual.*
 import anticipation.*
+import spectacular.*
 
 import scala.io.*
 
@@ -28,8 +29,8 @@ import language.dynamics
 
 object Media:
   object Group:
-    given Debug[Group] = _.name
-    given Show[Group] = _.name.lower
+    given Display[Group, Developer] = _.name
+    given Display[Group, EndUser] = _.name.lower
 
   enum Group:
     case Application, Audio, Image, Message, Multipart, Text, Video, Font, Example, Model
@@ -37,7 +38,7 @@ object Media:
     def name: Text = Showable(this).show.lower
 
   object Subtype:
-    given Show[Subtype] = _.name
+    given Display[Subtype, EndUser] = _.name
 
   enum Subtype:
     case Standard(value: Text)
@@ -52,7 +53,7 @@ object Media:
       case X(value)        => t"x-$value"
 
   object Suffix:
-    given Show[Suffix] = Showable(_).show.lower
+    given Display[Suffix, EndUser] = Showable(_).show.lower
 
   enum Suffix:
     case Xml, Json, Ber, Cbor, Der, FastInfoset, Wbxml, Zip, Tlv, JsonSeq, Sqlite3, Jwt, Gzip,
@@ -132,11 +133,9 @@ object Media:
         throw InvalidMediaTypeError(string, InvalidMediaTypeError.Nature.InvalidGroup)
 
     def parseSubtype(str: Text): Subtype =
-      try
-        val idx = (str.where { ch => ch.isWhitespace || ch.isControl || specials.contains(ch) })
-        val ch = try str(idx) catch case error: OutOfRangeError => throw Mistake(error)
-        throw InvalidMediaTypeError(string, InvalidMediaTypeError.Nature.InvalidChar(ch))
-      catch case e: OutOfRangeError =>
+      str.chars.find { ch => ch.isWhitespace || ch.isControl || specials.contains(ch) }.map: char =>
+        throw InvalidMediaTypeError(string, InvalidMediaTypeError.Nature.InvalidChar(char))
+      .getOrElse:
         if str.starts(t"vnd.") then Subtype.Vendor(str.drop(4))
         else if str.starts(t"prs.") then Subtype.Personal(str.drop(4))
         else if str.starts(t"x.") || str.starts(t"x-") then Subtype.X(str.drop(2))
@@ -180,11 +179,11 @@ case class MediaType(group: Media.Group, subtype: Media.Subtype, suffixes: List[
     copy(parameters = parameters ::: kvs.map(_.show -> _).to(List))
 
 object MediaType:
-  given Debug[MediaType] = mt => t"""media"${mt}""""
+  given Display[MediaType, Developer] = mt => t"""media"${mt}""""
 
-  given GenericHttpRequestParam["content-type", MediaType] = show.show(_).s
+  given GenericHttpRequestParam["content-type", MediaType] = show(_).s
 
-  given show: Show[MediaType] =
+  given show: Display[MediaType, EndUser] =
     mt => t"${mt.basic}${mt.parameters.map { p => t"; ${p(0)}=${p(1)}" }.join}"
   
   given formenctype: GenericHtmlAttribute["formenctype", MediaType] with

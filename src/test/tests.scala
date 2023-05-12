@@ -18,7 +18,6 @@ package gesticulate
 
 import gossamer.*
 import probably.*
-import eucalyptus.*
 import rudiments.*
 
 import unsafeExceptions.canThrowAny
@@ -47,6 +46,6 @@ object Tests extends Suite(t"Gesticulate tests"):
         parameters = List((t"charset", t"UTF-8"))))
     
     test(t"invalid media type"):
-      capture(Media.parse(t"applicationjson"))
+      capture[InvalidMediaTypeError, MediaType](Media.parse(t"applicationjson"))
     .assert(_ == InvalidMediaTypeError(t"applicationjson",
         InvalidMediaTypeError.Nature.NotOneSlash))
