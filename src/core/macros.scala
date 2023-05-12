@@ -20,7 +20,6 @@ import gossamer.*
 import rudiments.*
 import chiaroscuro.*
 import spectacular.*
-import lithography.*
 
 import dotty.tools.dotc.util as dtdu
 import scala.quoted.*
@@ -48,7 +47,9 @@ object ProbablyMacros:
     
     exp match
       case Some('{ $expr: t }) =>
-        val debug: Expr[Display[t | T, Developer]] = Expr.summon[Display[t | T, Developer]].getOrElse('{ Display.any })
+        val debug: Expr[Display[t | T, Developer]] =
+          Expr.summon[Display[t | T, Developer]].getOrElse('{ Display.any })
+        
         val comparable = Expr.summon[Comparable[t | T]].getOrElse('{Comparable.simplistic[t | T]})
         '{ assertion[t | T, T, R, S]($runner, $test, $pred, $action, $comparable, Some($expr), $inc,
             $inc2, $debug) }
@@ -120,6 +121,7 @@ object ProbablyMacros:
       case pos: dtdu.SourcePosition => pos.lineContent.show.slice(pos.startColumn, pos.endColumn)
       case _                        => t"<unknown>"
     
-    val debug: Expr[Display[T, Developer]] = Expr.summon[Display[T, Developer]].getOrElse('{ Display.any })
+    val debug: Expr[Display[T, Developer]] =
+      Expr.summon[Display[T, Developer]].getOrElse('{ Display.any })
     
     '{ $test.capture(Text(${Expr[String](exprName.s)}), $expr)(using $debug) }

@@ -323,7 +323,7 @@ class TestReport(using env: Environment):
           comparisons.map: c =>
             import Baseline.*
             val baseline = unsafely(c.benchmark.baseline.assume)
-            Column(ansi"$Bold(${colors.CadetBlue}(${c.test.id}))", align = Alignment.Right): (s: ReportLine.Bench) =>
+            Column(ansi"$Bold(${colors.CadetBlue}(${c.test.id}))", align = Alignment.Right): (bench: ReportLine.Bench) =>
               def op(left: Double, right: Double): Double = baseline.calc match
                 case Difference => left - right
                 case Ratio      => left/right
@@ -331,9 +331,9 @@ class TestReport(using env: Environment):
               def metric(value: Double) = if baseline.metric == Time then value else 1/value
               
               val value = baseline.compare match
-                case Compare.Min  => op(metric(s.benchmark.min), metric(c.benchmark.min))
-                case Compare.Mean => op(metric(s.benchmark.mean), metric(c.benchmark.mean))
-                case Compare.Max  => op(metric(s.benchmark.max), metric(c.benchmark.max))
+                case Compare.Min  => op(metric(bench.benchmark.min), metric(c.benchmark.min))
+                case Compare.Mean => op(metric(bench.benchmark.mean), metric(c.benchmark.mean))
+                case Compare.Max  => op(metric(bench.benchmark.max), metric(c.benchmark.max))
               
               val valueWithUnits = baseline.metric match
                 case Time =>
