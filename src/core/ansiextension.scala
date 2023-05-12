@@ -18,7 +18,7 @@ package escapade
 
 extension (inline ctx: StringContext)
   transparent inline def ansi(inline parts: Any*): AnsiText =
-    ${Ansi.Interpolator.expand('{Ansi.Interpolator}, 'ctx, 'parts)}
+    ${Ansi.Interpolator.expand('ctx, 'parts)}
 
 extension [T](value: T)
   def ansi(using AnsiShow[T]): AnsiText = summon[AnsiShow[T]].ansi(value)
