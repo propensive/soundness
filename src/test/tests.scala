@@ -34,35 +34,35 @@ object Tests extends Suite(t"Spectacular Tests"):
     suite(t"Debug tests"):
       test(t"serialize boring string"):
         t"Hello world!".debug
-      .assert(_ == t"""t"Hello world!"""")
+      .assert(_ == t"t\"Hello world!\"")
 
       test(t"serialize string with newline"):
         t"Hello\nworld".debug
-      .assert(_ == t"""t\"Hello\\nworld\"""")
+      .assert(_ == t"t\"Hello\\nworld\"")
       
       test(t"serialize string with tab"):
         t"Hello\tworld".debug
-      .assert(_ == t"""t\"Hello\\tworld\"""")
+      .assert(_ == t"t\"Hello\\tworld\"")
       
       test(t"serialize string with apostrophe"):
         t"Hell' world".debug
-      .assert(_ == t"""t\"Hell\\' world\"""")
+      .assert(_ == t"t\"Hell\\' world\"")
       
       test(t"serialize string with quote"):
         t"Hello \"world\"".debug
-      .assert(_ == t"""t\"Hello \\\"world\\\"\"""")
+      .assert(_ == t"t\"Hello \\\"world\\\"\"")
       
       test(t"serialize string with backslash"):
         t"Hello\\world".debug
-      .assert(_ == t"""t\"Hello\\\\world\"""")
+      .assert(_ == t"t\"Hello\\\\world\"")
       
       test(t"serialize string with linefeed"):
         t"Hello world\r".debug
-      .assert(_ == t"""t\"Hello world\\r\"""")
+      .assert(_ == t"t\"Hello world\\r\"")
       
       test(t"serialize string with unicode escapes"):
         t"Hello мир".debug
-      .assert(_ == t"""t\"Hello \\u043c\\u0438\\u0440\"""")
+      .assert(_ == t"t\"Hello \\u043c\\u0438\\u0440\"")
 
       test(t"pattern match on Text"):
         var text = t"Hello"
