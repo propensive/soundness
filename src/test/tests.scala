@@ -19,13 +19,7 @@ package spectacular
 import probably.*
 import rudiments.*
 import gossamer.*
-import lithography.*, characterEncodings.utf8, textWidthCalculation.uniform
 import spectacular.*
-import larceny.*
-
-import unsafeExceptions.canThrowAny
-
-import textWidthCalculation.uniform
 
 case class Person(name: Text, age: Int)
 
