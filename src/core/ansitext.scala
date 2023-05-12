@@ -143,7 +143,7 @@ object Ansi:
             closures(state2.copy(last = None), text)
 
     private def closures(state: State, text: Text): State =
-      state.stack.headOption.fold(state.copy(text = state.text+text)):
+      state.stack.headOption.fold(state.copy(text = state.text+Interpolation.escape(text))):
         frame =>
           safely(text.where(_ == frame.bracket)) match
             case Unset =>
