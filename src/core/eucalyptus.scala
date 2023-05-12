@@ -149,7 +149,7 @@ object LogFormat:
   given standardAnsi[T]: LogFormat[T] = entry =>
     import textWidthCalculation.uniform
     val realm: AnsiText = gossamer.fit[AnsiText](entry.realm.ansi)(8)
-    val text = ansi"${entry.timestamp.ansi} ${entry.level.ansi} $realm ${entry.message}${'\n'}"
+    val text = ansi"${entry.timestamp.ansi} ${entry.level.ansi} $realm ${entry.message}\n"
     text.render
   
 trait LogFormat[S]:
