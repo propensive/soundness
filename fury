@@ -12,4 +12,5 @@ project gesticulate
   module test
     sources  src/test
     include  probably/cli gesticulate/core
+    coverage gesticulate/core
     main     gesticulate.Tests
