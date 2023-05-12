@@ -67,7 +67,7 @@ object Comparison:
         Column(ansi"Found")(_.right)
       )
 
-      table.tabulate(drawTree(children, mkLine)(cmp), maxWidth = 200).join(ansi"${'\n'}")
+      table.tabulate(drawTree(children, mkLine)(cmp), maxWidth = 200).join(ansi"\n")
     
     case Different(left, right) => ansi"The value ${colors.YellowGreen}($left) did not equal ${colors.Crimson}($right)"
     case Same(value)            => ansi"The value ${colors.Gray}($value) was expected"
