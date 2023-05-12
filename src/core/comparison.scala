@@ -33,7 +33,8 @@ enum Comparison:
   case Structural(comparison: IArray[(Text, Comparison)], left: Text, right: Text)
 
 extension [T](value: T)
-  def compareTo(other: T)(using comparable: Comparable[T]): Comparison = comparable.compare(value, other)
+  def compareTo(other: T)(using comparable: Comparable[T]): Comparison =
+    comparable.compare(value, other)
 
 object Comparison:
   given (using calc: TextWidthCalculator): AnsiShow[Comparison] =
@@ -69,73 +70,91 @@ object Comparison:
 
       table.tabulate(drawTree(children, mkLine)(cmp), maxWidth = 200).join(ansi"\n")
     
-    case Different(left, right) => ansi"The value ${colors.YellowGreen}($left) did not equal ${colors.Crimson}($right)"
-    case Same(value)            => ansi"The value ${colors.Gray}($value) was expected"
+    case Different(left, right) =>
+      ansi"The result ${colors.Crimson}($right) did not equal ${colors.YellowGreen}($left)"
+    
+    case Same(value) =>
+      ansi"The value ${colors.Gray}($value) was expected"
 
 object Similar:
-  given [T]: Similar[T] = (a, b) => a == b
+  given [ValueType]: Similar[ValueType] = (a, b) => a == b
 
-trait Similar[-T]:
-  def similar(a: T, b: T): Boolean
+trait Similar[-ValueType]:
+  def similar(a: ValueType, b: ValueType): Boolean
 
-trait Comparable[-T]:
-  def compare(a: T, b: T): Comparison
+trait Comparable[-ValueType]:
+  def compare(a: ValueType, b: ValueType): Comparison
 
 object Comparable extends Derivation[Comparable]:
-  def nothing[T]: Comparable[T] = (a, b) => Comparison.Same(a.toString.show)
+  def nothing[ValueType]: Comparable[ValueType] = (a, b) => Comparison.Same(a.toString.debug)
   
-  def simplistic[T]: Comparable[T] = (a, b) =>
-    if a == b then Comparison.Same(a.toString.show) else Comparison.Different(a.toString.show, b.toString.show)
+  inline def simplistic[ValueType]: Comparable[ValueType] = new Comparable[ValueType]:
+    def compare(a: ValueType, b: ValueType): Comparison =
+      if a == b then Comparison.Same(a.debug)
+      else Comparison.Different(a.debug, b.debug)
 
-  given Comparable[Text] = (left, right) =>
-    if left == right then Comparison.Same(left.debug) else Comparison.Different(left.debug, right.debug)
+  inline given Comparable[Text] = new Comparable[Text]:
+    def compare(left: Text, right: Text): Comparison =
+      if left == right then Comparison.Same(left.debug)
+      else Comparison.Different(left.debug, right.debug)
   
-  given Comparable[Int] = (left, right) =>
-    if left == right then Comparison.Same(left.debug) else Comparison.Different(left.debug, right.debug)
+  inline given Comparable[Int] = new Comparable[Int]:
+    def compare(left: Int, right: Int): Comparison =
+      if left == right then Comparison.Same(left.debug)
+      else Comparison.Different(left.debug, right.debug)
 
-  given Comparable[Exception] = (left, right) =>
-    val leftMsg = Option(left.getMessage).fold(t"null")(_.nn.show)
-    val rightMsg = Option(right.getMessage).fold(t"null")(_.nn.show)
-    if left.getClass == right.getClass && leftMsg == rightMsg then Comparison.Same(leftMsg)
-    else Comparison.Different(leftMsg, rightMsg)
+  inline given Comparable[Exception] = new Comparable[Exception]:
+    def compare(left: Exception, right: Exception): Comparison =
+      val leftMsg = Option(left.getMessage).fold(t"null")(_.nn.debug)
+      val rightMsg = Option(right.getMessage).fold(t"null")(_.nn.debug)
+      if left.getClass == right.getClass && leftMsg == rightMsg then Comparison.Same(leftMsg)
+      else Comparison.Different(leftMsg, rightMsg)
   
-  given seq[T: Comparable: Similar, Coll[X] <: Seq[X]]: Comparable[Coll[T]] = (left, right) =>
-    val leftSeq = left.to(IndexedSeq)
-    val rightSeq = right.to(IndexedSeq)
-
-    if leftSeq == rightSeq then Comparison.Same(leftSeq.map(_.debug).join(t"[", t", ", t"]")) else
-      val comparison = IArray.from:
-        diff(leftSeq, rightSeq).rdiff2(summon[Similar[T]].similar).changes.map:
-          case Change.Keep(lid, rid, v) =>
-            (if lid == rid then lid.show else t"$lid/$rid") -> Comparison.Same(v.debug)
+  inline given seq[ValueType: Comparable: Similar, CollectionType[ElemType] <: Seq[ElemType]]
+      : Comparable[CollectionType[ValueType]] =
+    new Comparable[CollectionType[ValueType]]:
+      def compare(left: CollectionType[ValueType], right: CollectionType[ValueType]): Comparison =
+        val leftSeq = left.to(IndexedSeq)
+        val rightSeq = right.to(IndexedSeq)
+    
+        if leftSeq == rightSeq then Comparison.Same(leftSeq.map(_.debug).join(t"[", t", ", t"]"))
+        else
+          val comparison = IArray.from:
+            diff(leftSeq, rightSeq).rdiff2(summon[Similar[ValueType]].similar).changes.map:
+              case Change.Keep(lid, rid, v) =>
+                (if lid == rid then lid.debug else t"$lid/$rid") -> Comparison.Same(v.debug)
+              
+              case Change.Ins(rid, v) =>
+                t" /$rid" -> Comparison.Different(t"—", v.debug)
+              
+              case Change.Del(lid, v) =>
+                t"$lid/" -> Comparison.Different(v.debug, t"—")
+              
+              case Change.Replace(lid, rid, lv, rv) =>
+                t"$lid/$rid" -> summon[Comparable[ValueType]].compare(lv, rv)
           
-          case Change.Ins(rid, v) =>
-            t" /$rid" -> Comparison.Different(t"—", v.debug)
-          
-          case Change.Del(lid, v) =>
-            t"$lid/" -> Comparison.Different(v.debug, t"—")
-          
-          case Change.Replace(lid, rid, lv, rv) =>
-            t"$lid/$rid" -> summon[Comparable[T]].compare(lv, rv)
-      
-      Comparison.Structural(comparison, left.toString.show, right.toString.show)
+          Comparison.Structural(comparison, left.debug, right.debug)
   
-  given iarray[T: Comparable: Similar]: Comparable[IArray[T]] = (left, right) =>
-    seq[T, IndexedSeq].compare(left.to(IndexedSeq), right.to(IndexedSeq))
+  inline given iarray[ElemType: Comparable: Similar]: Comparable[IArray[ElemType]] =
+    new Comparable[IArray[ElemType]]:
+      def compare(left: IArray[ElemType], right: IArray[ElemType]): Comparison =
+        seq[ElemType, IndexedSeq].compare(left.to(IndexedSeq), right.to(IndexedSeq))
   
-  def join[T](caseClass: CaseClass[Comparable, T]): Comparable[T] = (left, right) =>
-    val same = caseClass.params.forall: param =>
-      param.deref(left) == param.deref(right)
-
-    if same then Comparison.Same(left.toString.show)
-    else
-      val comparison = caseClass.params.map: param =>
-        (Text(param.label), param.typeclass.compare(param.deref(left), param.deref(right)))
-      Comparison.Structural(comparison, left.toString.show, right.toString.show)
+  def join[ValueType](caseClass: CaseClass[Comparable, ValueType]): Comparable[ValueType] =
+    (left, right) =>
+      val same = caseClass.params.forall: param =>
+        param.deref(left) == param.deref(right)
   
-  def split[T](sealedTrait: SealedTrait[Comparable, T]): Comparable[T] = (left, right) =>
-    sealedTrait.choose(left): subtype =>
-      sealedTrait.choose(right): subtype2 =>
-        if subtype.subtype.index == subtype2.subtype.index
-        then subtype.typeclass.compare(subtype.cast(left), subtype.cast(right))
-        else Comparison.Different(left.toString.show, right.toString.show)
+      if same then Comparison.Same(left.toString.show)
+      else
+        val comparison = caseClass.params.map: param =>
+          (Text(param.label), param.typeclass.compare(param.deref(left), param.deref(right)))
+        Comparison.Structural(comparison, left.toString.show, right.toString.show)
+  
+  def split[ValueType](sealedTrait: SealedTrait[Comparable, ValueType]): Comparable[ValueType] =
+    (left, right) =>
+      sealedTrait.choose(left): subtype =>
+        sealedTrait.choose(right): subtype2 =>
+          if subtype.subtype.index == subtype2.subtype.index
+          then subtype.typeclass.compare(subtype.cast(left), subtype.cast(right))
+          else Comparison.Different(left.toString.show, right.toString.show)
