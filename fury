@@ -16,6 +16,7 @@ project gossamer
   module test
     compiler  scala
     sources   src/test
+    coverage  gossamer/core
     include   probably/cli gossamer/core larceny/plugin
     main      gossamer.Tests
 
