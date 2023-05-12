@@ -373,6 +373,8 @@ class TestReport(using env: Environment):
       
       val data = coverage.spec.groupBy(_.path).to(List).map: (path, branches) =>
         CoverageData(path, branches.size, branches.map(_.id).map(coverage.hits.contains).count(identity(_)))
+
+      val maxBranches = data.map(_.branches).max
       
       val coverageTable = Table[CoverageData](
         Column(ansi"Source file", align = Alignment.Right): data =>
@@ -382,7 +384,11 @@ class TestReport(using env: Environment):
         Column(ansi"Hits"): data =>
           data.hits,
         Column(ansi"Covered"): data =>
-          ansi"${(100*data.hits/data.branches.toDouble)}%"
+          ansi"${(100*data.hits/data.branches.toDouble)}%",
+        Column(ansi"Coverage"): data =>
+          val covered: Text = t"⣿"*(72*data.hits/maxBranches)
+          val notCovered: Text = t"⣿"*(72*(data.branches - data.hits)/maxBranches)
+          ansi"${colors.YellowGreen}($covered)${colors.Peru}($notCovered)"
       )
 
       coverageTable.tabulate(data, columns).map(_.render).foreach(Io.println)
