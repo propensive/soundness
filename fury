@@ -17,3 +17,4 @@ project spectacular
     compiler  scala
     include   spectacular/core probably/cli larceny/plugin
     main      spectacular.Tests
+    coverage  spectacular/core
