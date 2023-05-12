@@ -18,4 +18,4 @@ package guillotine
 
 extension (inline stringContext: StringContext)
   transparent inline def sh(inline parts: Any*): Command =
-    ${Sh.Prefix.expand('{Sh.Prefix}, 'stringContext, 'parts)}
+    ${Sh.Prefix.expand('stringContext, 'parts)}
