@@ -354,14 +354,14 @@ object Interpolation:
     then throw InterpolationError(rudiments.Text("the unicode escape is incomplete"))
     else Integer.parseInt(chars.s, 16).toChar
 
-  private def escape(str: Text): Text throws InterpolationError =
+  def escape(text: Text): Text throws InterpolationError =
     val buf: StringBuilder = StringBuilder()
     
     @tailrec
     def recur(cur: Int = 0, esc: Boolean): Unit =
-      if cur < str.length
+      if cur < text.length
       then
-        val (char, idx, escape) = standardEscape(str, cur, esc)
+        val (char, idx, escape) = standardEscape(text, cur, esc)
         char.mm(buf.add(_))
         recur(idx, escape)
       else if esc then throw InterpolationError(
