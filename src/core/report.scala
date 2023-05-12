@@ -91,7 +91,8 @@ object TestReporter:
   given (using Stdio, Environment): TestReporter[TestReport] with
     def make(): TestReport = TestReport()
     def declareSuite(report: TestReport, suite: TestSuite): Unit = report.declareSuite(suite)
-    def complete(report: TestReport): Unit = report.complete()
+    def complete(report: TestReport): Unit =
+      report.complete(Coverage())
 
 object TestReport:
   given Inclusion[TestReport, Outcome] with
@@ -146,6 +147,8 @@ class TestReport(using env: Environment):
         case suite@ReportLine.Suite(_, _) => suite
         case _                            => throw Mistake("should never occur")
     .getOrElse(lines)
+
+  private var coverage: Option[CoverageResults] = None
 
   private val details: scm.SortedMap[TestId, scm.ArrayBuffer[DebugInfo]] =
     scm.TreeMap[TestId, scm.ArrayBuffer[DebugInfo]]().withDefault(_ => scm.ArrayBuffer[DebugInfo]())
@@ -229,7 +232,9 @@ class TestReport(using env: Environment):
     def avgTime: AnsiText = if avg == 0L then ansi"" else showTime(avg)
     def iterations: AnsiText = if count == 0 then ansi"" else count.ansi
 
-  def complete()(using Stdio): Unit =
+  
+
+  def complete(coverage: Option[CoverageResults])(using Stdio): Unit =
     import textWidthCalculation.uniform
     
     val table =
@@ -361,6 +366,26 @@ class TestReport(using env: Environment):
           ansi"$Bold(${colors.White}(${symbol.pad(3, Rtl)}))  ${description.pad(20)}"
         .grouped(4).to(List).map(_.to(List).join).join(ansi"${t"\n"}")
       Io.println(t"─"*100)
+
+    coverage.foreach: coverage =>
+      Io.println(ansi"$Bold($Underline(Test coverage))")
+      case class  CoverageData(path: Text, branches: Int, hits: Int)
+      
+      val data = coverage.spec.groupBy(_.path).to(List).map: (path, branches) =>
+        CoverageData(path, branches.size, branches.map(_.id).map(coverage.hits.contains).count(identity(_)))
+      
+      val coverageTable = Table[CoverageData](
+        Column(ansi"Source file", align = Alignment.Right): data =>
+          data.path,
+        Column(ansi"Branches"): data =>
+          data.branches,
+        Column(ansi"Hits"): data =>
+          data.hits,
+        Column(ansi"Covered"): data =>
+          ansi"${(100*data.hits/data.branches.toDouble)}%"
+      )
+
+      coverageTable.tabulate(data, columns).map(_.render).foreach(Io.println)
 
     details.to(List).sortBy(_(0).timestamp).foreach: (id, info) =>
       val ribbon = Ribbon(colors.DarkRed.srgb, colors.FireBrick.srgb, colors.Tomato.srgb)

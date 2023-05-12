@@ -13,7 +13,7 @@ project probably
   module core
     compiler  scala
     sources   src/core
-    include   gossamer/core chiaroscuro/core ambience/core
+    include   gossamer/core chiaroscuro/core ambience/core probably/coverage
 
   module bench
     compiler  scala
@@ -29,4 +29,9 @@ project probably
     compiler  scala
     sources   src/tolerance
     include   probably/core wisteria/core
+  
+  module coverage
+    compiler  scala
+    sources   src/coverage
+    include   gossamer/core
 
