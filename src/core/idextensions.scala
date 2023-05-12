@@ -20,7 +20,7 @@ import spectacular.*
 
 extension (inline stringContext: StringContext)
   transparent inline def ref(inline parts: Any*): Dot.Ref =
-    ${NodeParser.expand('NodeParser, 'stringContext, 'parts)}
+    ${NodeParser.expand('stringContext, 'parts)}
 
 extension (stringContext: StringContext)
   def id(): Dot.Id = Dot.Id(stringContext.parts.head.show)
