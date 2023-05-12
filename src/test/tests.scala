@@ -20,8 +20,8 @@ import contextual.*
 import rudiments.*
 import gossamer.*
 import turbulence.*
-import ambience.*
-import escapade.*
+import ambience.*, environments.system
+import spectacular.*
 import probably.*
 import eucalyptus.*, logging.silent
 

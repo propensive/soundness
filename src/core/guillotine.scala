@@ -21,6 +21,7 @@ import rudiments.*
 import digression.*
 import turbulence.*
 import gossamer.*
+import spectacular.*
 import eucalyptus.*
 import escapade.*
 import iridescence.*
@@ -114,7 +115,7 @@ object Command:
       else arg
     .join(t" ")
 
-  given Debug[Command] = cmd =>
+  given Display[Command, Developer] = cmd =>
     val cmdString: Text = formattedArgs(cmd.args)
     if cmdString.contains(t"\"") then t"sh\"\"\"$cmdString\"\"\"" else t"sh\"$cmdString\""
 
@@ -131,10 +132,10 @@ case class Command(args: Text*) extends Executable:
     new Process[T](processBuilder.start().nn)
 
 object Pipeline:
-  given Debug[Pipeline] = _.cmds.map(summon[Debug[Command]].show(_)).join(t" | ")
+  inline given Display[Pipeline, Developer] = _.cmds.map(_.debug).join(t" | ")
   
   given AnsiShow[Pipeline] =
-    _.cmds.map(summon[AnsiShow[Command]].ansiShow(_)).join(ansi" ${colors.PowderBlue}(|) ")
+    _.cmds.map(_.ansi).join(ansi" ${colors.PowderBlue}(|) ")
 
 case class Pipeline(cmds: Command*) extends Executable:
   def fork[T]()(using env: Environment)(using Log): Process[T] throws EnvError =
