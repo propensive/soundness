@@ -17,5 +17,4 @@
 package telekinesis
 
 extension (inline ctx: StringContext)
-  transparent inline def url(inline parts: Any*): Url =
-    ${UrlInterpolator.expand('UrlInterpolator, 'ctx, 'parts)}
+  transparent inline def url(inline parts: Any*): Url = ${UrlInterpolator.expand('ctx, 'parts)}
