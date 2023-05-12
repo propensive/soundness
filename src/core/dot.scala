@@ -29,12 +29,12 @@ enum Dot:
 
   def serialize: Text = Dot.serialize(Dot.tokenize(this))
 
-  def add(newStatements: Dot.Statement*): Dot = this match
+  def add(additions: Dot.Statement*): Dot = this match
     case Dot.Graph(id, strict, statements*) =>
-      Dot.Graph(id, strict, (statements ++ newStatements)*)
+      Dot.Graph(id, strict, (statements ++ additions)*)
     
     case Dot.Digraph(id, strict, statements*) =>
-      Dot.Digraph(id, strict, (statements ++ newStatements)*)
+      Dot.Digraph(id, strict, (statements ++ additions)*)
 
 object Dot:
   case class Target(directed: Boolean, dest: Ref | Statement.Subgraph, link: Option[Target])
@@ -74,7 +74,7 @@ object Dot:
     case Assignment(id: Id, id2: Id)
     case Subgraph(id: Option[Id], statements: Statement*)
 
-  def serialize(tokens: Vector[Text]): Text =
+  def serialize(tokens: LazyList[Text]): Text =
     val buf: StringBuilder = StringBuilder()
     var level: Int = 0
     var end: Boolean = true
@@ -102,47 +102,48 @@ object Dot:
 
     Showable(buf).show
 
-  private def tokenize(graph: Ref | Dot | Target | Statement | Property): Vector[Text] = graph match
+  private def tokenize(graph: Ref | Dot | Target | Statement | Property): LazyList[Text] = graph match
     case Ref(id, port) =>
-      Vector(port.fold(t""""${id.key}"""") { p => t""""${id.key}:$p""""" })
+      LazyList(port.fold(t"\"${id.key}\"") { p => t"\"${id.key}:$p\"" })
     
     case Property(key, value) =>
-      Vector(t"""$key="$value"""")
+      LazyList(t"$key=\"$value\"")
     
     case Target(directed, dest, link) =>
       val op = if directed then t"->" else t"--"
-      Vector(op) ++ tokenize(dest) ++ link.to(Vector).flatMap(tokenize(_)) ++ Vector(t";")
+      op #:: tokenize(dest) #::: link.to(LazyList).flatMap(tokenize(_)) #::: LazyList(t";")
 
     case Statement.Node(id, attrs*) =>
-      Vector(t""""${id.key}"""") ++ (if attrs.isEmpty then Vector() else (Vector(t"[") ++
-          attrs.to(Vector).flatMap(tokenize(_) :+ t",").init ++ Vector(t"]"))) ++ Vector(t";")
+      t"\"${id.key}\"" #:: (if attrs.isEmpty then LazyList() else (LazyList(t"[") #:::
+          attrs.to(LazyList).flatMap(tokenize(_) :+ t",").init #::: LazyList(t"]"))) #:::
+          LazyList(t";")
     
     case Statement.Edge(id, rhs, attrs*) =>
-      tokenize(id) ++ tokenize(rhs)
+      tokenize(id) #::: tokenize(rhs)
     
     case Statement.Assignment(id, id2) =>
-      Vector(t""""${id.key}"""", t"=", t""""${id2.key}"""", t";")
+      LazyList(t"\"${id.key}\"", t"=", t"\"${id2.key}\"", t";")
     
     case Statement.Subgraph(id, statements*) =>
-      Vector(t"subgraph") ++ id.to(Vector).map(_.key) ++ Vector(t"{") ++
-          statements.flatMap(tokenize(_)) ++ Vector(t"}")
+      t"subgraph" #:: id.to(LazyList).map(_.key) #::: t"{" #::
+          statements.to(LazyList).flatMap(tokenize(_)) #::: LazyList(t"}")
     
     case Dot.Graph(id, strict, statements*) =>
-      Vector(
-        if strict then Vector(t"strict") else Vector(),
-        Vector(t"graph"),
-        id.to(Vector).map(_.key), Vector(t"{"),
-        statements.flatMap(tokenize(_)), Vector(t"}")
+      LazyList(
+        if strict then LazyList(t"strict") else LazyList(),
+        LazyList(t"graph"),
+        id.to(LazyList).map(_.key), LazyList(t"{"),
+        statements.flatMap(tokenize(_)), LazyList(t"}")
       ).flatten
     
     case Dot.Digraph(id, strict, statements*) =>
-      Vector(
-        if strict then Vector(t"strict") else Vector(),
-        Vector(t"digraph"),
-        id.to(Vector).map(_.key),
-        Vector(t"{"),
+      LazyList(
+        if strict then LazyList(t"strict") else LazyList(),
+        LazyList(t"digraph"),
+        id.to(LazyList).map(_.key),
+        LazyList(t"{"),
         statements.flatMap(tokenize(_)),
-        Vector(t"}")
+        LazyList(t"}")
       ).flatten
 
 object Digraph:
