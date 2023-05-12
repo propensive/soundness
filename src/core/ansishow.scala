@@ -60,11 +60,11 @@ object AnsiShow:
         val method = ansi"$PaleVioletRed(${frame.method.fit(methodWidth)})"
         val line = ansi"$MediumTurquoise(${frame.line.mm(_.show).or(t"?")})"
         
-        ansi"$msg${'\n'}  $Gray(at) $cls$Gray($dot)$method $file$Gray(:)$line"
+        ansi"$msg\n  $Gray(at) $cls$Gray($dot)$method $file$Gray(:)$line"
     
     stack.cause.option match
       case None        => root
-      case Some(cause) => ansi"$root${'\n'}${colors.White}(caused by:)${'\n'}${cause.ansi}"
+      case Some(cause) => ansi"$root\n${colors.White}(caused by:)\n${cause.ansi}"
   
   given (using TextWidthCalculator): AnsiShow[StackTrace.Frame] = frame =>
     import colors.*
