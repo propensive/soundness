@@ -15,3 +15,4 @@ project rudiments
     sources   src/test
     include   rudiments/core probably/cli
     main      rudiments.Tests
+    coverage  rudiments/core

@@ -52,7 +52,7 @@ extension [KeyType, ValueType](map: Map[KeyType, ValueType])
   def upsert(key: KeyType, op: Maybe[ValueType] => ValueType): Map[KeyType, ValueType] =
     map.updated(key, op(if map.contains(key) then map(key) else Unset))
 
-  def collate(otherMap: Map[KeyType, ValueType])(merge: (ValueType, ValueType) => ValueType)
+  def collate(otherMap: Map[KeyType, ValueType])(merge: (ValueType, ValueType) -> ValueType)
              : Map[KeyType, ValueType] =
     otherMap.foldLeft(map): (acc, kv) =>
       acc.updated(kv(0), acc.get(kv(0)).fold(kv(1))(merge(kv(1), _)))
