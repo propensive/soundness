@@ -45,7 +45,7 @@ class Target[FromType, PathType <: Tuple]() extends Dynamic:
 export opaques.Lens
 
 extension [FromType, PathType <: Tuple, ToType](lens: Lens[FromType, PathType, ToType])
-  def ++
+  infix def ++
       [ToType2, PathType2 <: Tuple]
       (right: Lens[ToType, PathType2, ToType2])
       : Lens[FromType, Tuple.Concat[PathType, PathType2], ToType2] =
