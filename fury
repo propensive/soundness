@@ -10,6 +10,7 @@ project plutocrat
     include  gossamer/core
 
   module test
-    include  plutocrat/core probably/cli larceny/plugin
-    sources  src/test
-    main     plutocrat.Tests
+    include   plutocrat/core probably/cli larceny/plugin
+    sources   src/test
+    main      plutocrat.Tests
+    coverage  plutocrat/core
