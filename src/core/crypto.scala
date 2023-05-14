@@ -23,6 +23,8 @@ import rudiments.*
 import turbulence.*
 import digression.*
 import gossamer.*
+import spectacular.*
+import lithography.*
 
 import java.nio.*, charset.*
 
@@ -114,7 +116,7 @@ object ByteCodec:
     def decode(bytes: Bytes): Text throws DecodeError =
       val buffer = ByteBuffer.wrap(bytes.mutable(using Unsafe))
       
-      try Showable(Charset.forName("UTF-8").nn.newDecoder().nn.decode(buffer)).show
+      try Charset.forName("UTF-8").nn.newDecoder().nn.decode(buffer).toString.show
       catch CharacterCodingException =>
         throw DecodeError(t"the message did not contain a valid UTF-8 string")
 

@@ -1,11 +1,12 @@
 # This is a Wrath buildfile. More information is available at: https://github.com/propensive/wrath/
 
 repo propensive/gossamer
+repo propensive/turbulence
 repo propensive/wisteria
 target gastronomy/core
 
 project gastronomy
   module core
     sources src/core
-    include gossamer/core wisteria/core
+    include gossamer/core wisteria/core turbulence/core
 

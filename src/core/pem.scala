@@ -18,6 +18,7 @@ package gastronomy
 
 import rudiments.*
 import gossamer.*
+import spectacular.*
 
 case class Pem(kind: Text, data: Bytes):
   def serialize: Text = Seq(

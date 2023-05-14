@@ -20,6 +20,8 @@ import wisteria.*
 import rudiments.*
 import turbulence.*
 import gossamer.*
+import spectacular.*
+import lithography.*, textWidthCalculation.uniform
 
 import scala.collection.*
 import scala.compiletime.ops.int.*
