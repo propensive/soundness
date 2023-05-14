@@ -112,7 +112,10 @@ Mercator was designed and developed by Jon Pretty, and commercial support and tr
 
 ## Name
 
-TBC
+Gerardus Mercator was a cartographer who developed a general method of
+projecting a map of the surface of a sphere onto a flat surface, while
+preserving straight lines. Similarly, _Mercator_ provides `map` and `flatMap`
+methods to objects which support them.
 
 In general, Scala One project names are always chosen with some rationale, however it is usually
 frivolous. Each name is chosen for more for its _uniqueness_ and _intrigue_ than its concision or
