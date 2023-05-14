@@ -18,7 +18,7 @@ package chiaroscuro
 
 import wisteria.*
 import rudiments.*
-import gossamer.*, defaultTextTypes.ansiText
+import gossamer.*, defaultTextTypes.output
 import dissonance.*
 import escapade.*
 import iridescence.*
@@ -47,34 +47,34 @@ object Comparison:
         case Different(left, right)              => Nil
         case Structural(comparison, left, right) => comparison.to(List)
       
-      case class Row(treeLine: Text, left: AnsiText, right: AnsiText)
+      case class Row(treeLine: Text, left: Output, right: Output)
 
       def mkLine(tiles: List[TreeTile], data: (Text, Comparison)): Row =
         def line(bullet: Text) = t"${tiles.map(_.text).join}$bullet ${data(0)}"
         
         data(1) match
           case Same(v) =>
-            Row(line(t"▪"), ansi"${rgb"#667799"}($v)", ansi"${rgb"#667799"}($v)")
+            Row(line(t"▪"), out"${rgb"#667799"}($v)", out"${rgb"#667799"}($v)")
           
           case Different(left, right) =>
-            Row(line(t"▪"), ansi"${colors.YellowGreen}($left)", ansi"${colors.Crimson}($right)")
+            Row(line(t"▪"), out"${colors.YellowGreen}($left)", out"${colors.Crimson}($right)")
           
           case Structural(cmp, left, right) =>
-            Row(line(t"■"), ansi"$left", ansi"$right")
+            Row(line(t"■"), out"$left", out"$right")
       
       val table = Table[Row](
-        Column(ansi"")(_.treeLine),
-        Column(ansi"Expected", align = Alignment.Right)(_.left),
-        Column(ansi"Found")(_.right)
+        Column(out"")(_.treeLine),
+        Column(out"Expected", align = Alignment.Right)(_.left),
+        Column(out"Found")(_.right)
       )
 
-      table.tabulate(drawTree(children, mkLine)(cmp), maxWidth = 200).join(ansi"\n")
+      table.tabulate(drawTree(children, mkLine)(cmp), maxWidth = 200).join(out"\n")
     
     case Different(left, right) =>
-      ansi"The result ${colors.Crimson}($right) did not equal ${colors.YellowGreen}($left)"
+      out"The result ${colors.Crimson}($right) did not equal ${colors.YellowGreen}($left)"
     
     case Same(value) =>
-      ansi"The value ${colors.Gray}($value) was expected"
+      out"The value ${colors.Gray}($value) was expected"
 
 object Similar:
   given [ValueType]: Similar[ValueType] = (a, b) => a == b
