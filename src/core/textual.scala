@@ -42,7 +42,7 @@ trait Textual[TextType]:
 
 object Textual:
   given Textual[Text] with
-    type ShowType[-ValueType] = Display[ValueType, EndUser]
+    type ShowType[-ValueType] = Show[ValueType]
     def string(text: Text): String = text.s
     def length(text: Text): Int = text.s.length
     def make(string: String): Text = Text(string)
@@ -53,8 +53,7 @@ object Textual:
     def unsafeChar(text: Text, index: Int): Char = text.s.charAt(index)
     def indexOf(text: Text, sub: Text): Int = text.s.indexOf(sub.s)
     
-    def show[ValueType](value: ValueType)(using display: Display[ValueType, EndUser]): Text =
-      display(value)
+    def show[ValueType](value: ValueType)(using show: Show[ValueType]): Text = show(value)
     
   // given Textual[String] with
   //   def string(string: String): String = string

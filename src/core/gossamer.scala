@@ -331,8 +331,8 @@ trait Shown[+T](using Show[T]):
 object Interpolation:
   case class Input(txt: Text)
 
-  given [ValueType](using display: Display[ValueType, EndUser]): Insertion[Input, ValueType] =
-    value => Input(display(value))
+  given [ValueType](using show: Show[ValueType]): Insertion[Input, ValueType] =
+    value => Input(show(value))
 
   def standardEscape
       (text: Text, cur: Int, esc: Boolean)
