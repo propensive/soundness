@@ -86,7 +86,7 @@ object TextConversion:
     case Some(value) => show(value)
     case None        => Text("none")
   
-  given Show[Uuid] = _.javaUuid.toString.show
+  given Show[Uuid] = _.text
   given Show[ByteSize] = _.text
   given Show[reflect.Enum] = _.toString.show
   given Debug[reflect.Enum] = _.toString.show
