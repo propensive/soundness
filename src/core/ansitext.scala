@@ -89,8 +89,8 @@ object Ansi:
   given [ValueType](using Show[ValueType]): Substitution[Ansi.Input, ValueType, "t"] =
     value => Ansi.Input.Textual(AnsiText(value.show))
   
-  given [ValueType: AnsiShow]: Substitution[Ansi.Input, ValueType, "t"] =
-    value => Ansi.Input.Textual(summon[AnsiShow[ValueType]].ansi(value))
+  given [ValueType: Display]: Substitution[Ansi.Input, ValueType, "t"] =
+    value => Ansi.Input.Textual(summon[Display[ValueType]].ansi(value))
   
   given Stylize[Escape] = identity(_)
   given Stylize[Color] = color => Stylize(_.copy(fg = color.standardSrgb.rgb24))
@@ -183,7 +183,7 @@ object AnsiText:
   given Show[AnsiText] = _.plain
 
   given textual: Textual[AnsiText] with
-    type ShowType[-ValueType] = AnsiShow[ValueType]
+    type ShowType[-ValueType] = Display[ValueType]
     def string(text: AnsiText): String = text.plain.s
     def length(text: AnsiText): Int = text.plain.s.length
     def make(string: String): AnsiText = AnsiText(Text(string))
@@ -199,7 +199,7 @@ object AnsiText:
     def unsafeChar(text: AnsiText, index: Int): Char = text.plain.s.charAt(index)
     def indexOf(text: AnsiText, sub: Text): Int = text.plain.s.indexOf(sub.s)
     
-    def show[ValueType](value: ValueType)(using ansiShow: AnsiShow[ValueType]) =
+    def show[ValueType](value: ValueType)(using ansiShow: Display[ValueType]) =
       ansiShow.ansi(value)
 
   def empty: AnsiText = AnsiText(t"")

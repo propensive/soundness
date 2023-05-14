@@ -23,25 +23,25 @@ import iridescence.*
 import lithography.*
 import spectacular.*
 
-object AnsiShow:
-  given AnsiShow[AnsiText] = identity(_)
-  given AnsiShow[Text] = text => AnsiText(text)
-  given AnsiShow[Pid] = pid => ansi"${colors.FireBrick}(${pid.value.show})"
+object Display:
+  given Display[AnsiText] = identity(_)
+  given Display[Text] = text => AnsiText(text)
+  given Display[Pid] = pid => ansi"${colors.FireBrick}(${pid.value.show})"
 
-  given [T: AnsiShow]: AnsiShow[Option[T]] =
+  given [T: Display]: Display[Option[T]] =
     case None    => AnsiText("empty".show)
-    case Some(v) => summon[AnsiShow[T]].ansi(v)
+    case Some(v) => summon[Display[T]].ansi(v)
   
-  given [ValueType](using show: Show[ValueType]): AnsiShow[ValueType] = value =>
+  given [ValueType](using show: Show[ValueType]): Display[ValueType] = value =>
     AnsiText(show(value))
 
-  given (using TextWidthCalculator): AnsiShow[Exception] = e =>
-    summon[AnsiShow[StackTrace]].ansi(StackTrace.apply(e))
+  given (using TextWidthCalculator): Display[Exception] = e =>
+    summon[Display[StackTrace]].ansi(StackTrace.apply(e))
 
-  given AnsiShow[Error] = error =>
+  given Display[Error] = error =>
     error.message.fold(ansi"")((msg, txt) => ansi"$msg$txt", (msg, sub) => ansi"$msg$Italic($sub)")
 
-  given (using TextWidthCalculator): AnsiShow[StackTrace] = stack =>
+  given (using TextWidthCalculator): Display[StackTrace] = stack =>
     val methodWidth = stack.frames.map(_.method.length).max
     val classWidth = stack.frames.map(_.className.length).max
     val fileWidth = stack.frames.map(_.file.length).max
@@ -66,7 +66,7 @@ object AnsiShow:
       case None        => root
       case Some(cause) => ansi"$root\n${colors.White}(caused by:)\n${cause.ansi}"
   
-  given (using TextWidthCalculator): AnsiShow[StackTrace.Frame] = frame =>
+  given (using TextWidthCalculator): Display[StackTrace.Frame] = frame =>
     import colors.*
     val cls = ansi"$MediumVioletRed(${frame.className.fit(40, Rtl)})"
     val method = ansi"$PaleVioletRed(${frame.method.fit(40)})"
@@ -74,13 +74,13 @@ object AnsiShow:
     val line = ansi"$MediumTurquoise(${frame.line.mm(_.show).or(t"?")})"
     ansi"$cls$Gray(#)$method $file$Gray(:)$line"
 
-  given (using decimalizer: Decimalizer): AnsiShow[Double] = double =>
+  given (using decimalizer: Decimalizer): Display[Double] = double =>
     AnsiText.make(decimalizer.decimalize(double), _.copy(fg = colors.Gold))
 
-  given AnsiShow[Throwable] = throwable =>
+  given Display[Throwable] = throwable =>
     AnsiText.make[String](throwable.getClass.getName.nn.show.cut(t".").last.s,
         _.copy(fg = colors.Crimson))
 
-trait AnsiShow[-ValueType] extends Show[ValueType]:
+trait Display[-ValueType] extends Show[ValueType]:
   def apply(value: ValueType): Text = ansi(value).plain
   def ansi(value: ValueType): AnsiText

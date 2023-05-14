@@ -21,4 +21,4 @@ extension (inline ctx: StringContext)
     ${Ansi.Interpolator.expand('ctx, 'parts)}
 
 extension [T](value: T)
-  def ansi(using AnsiShow[T]): AnsiText = summon[AnsiShow[T]].ansi(value)
+  def ansi(using Display[T]): AnsiText = summon[Display[T]].ansi(value)
