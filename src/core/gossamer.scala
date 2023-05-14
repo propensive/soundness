@@ -243,6 +243,10 @@ extension [TextType](using textual: Textual[TextType])(text: TextType)
   
   inline def tr(from: Char, to: Char): TextType =
     textual.map(text, char => if char == from then to else char)
+
+  // Extension method is applied explicitly because it appears ambiguous otherwise
+  inline def subscript: TextType = textual.map(text, lithography.subscript(_).or(' '))
+  inline def superscript: TextType = textual.map(text, lithography.superscript(_).or(' '))
   
 extension (text: Text)
   inline def rsub(from: Text, to: Text): Text = Text(text.s.replaceAll(from.s, to.s).nn)
