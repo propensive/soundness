@@ -33,7 +33,7 @@ import java.util as ju
 
 object Realm:
   given Show[Realm] = _.name
-  given AnsiShow[Realm] = realm => ansi"${colors.LightGreen}(${realm.name})"
+  given Display[Realm] = realm => ansi"${colors.LightGreen}(${realm.name})"
 
 @missingContext("""|A contextual Realm is needed in scope. This is required for logging commands like `Log.info` and `Log.warn`, in order to tag them in log output. A realm can be specified with,
                      |    given Realm(t"project")
@@ -46,7 +46,7 @@ case class Realm(name: Text):
 object Level:
   given Ordering[Level] = Ordering[Int].on[Level](_.ordinal)
 
-  given AnsiShow[Level] = level =>
+  given Display[Level] = level =>
     val color = level match
       case Fine => solarized.Cyan
       case Info => solarized.Green
@@ -64,7 +64,7 @@ case class Entry(realm: Realm, level: Level, message: AnsiText, timestamp: Times
 object Timestamp:
   def apply(): Timestamp = System.currentTimeMillis
   given show: Show[Timestamp] = ts => dateFormat.format(ju.Date(ts)).nn.show
-  given AnsiShow[Timestamp] = timestamp => ansi"${colors.Tan}(${show(timestamp)})"
+  given Display[Timestamp] = timestamp => ansi"${colors.Tan}(${show(timestamp)})"
 
   private val dateFormat = jt.SimpleDateFormat(t"yyyy-MMM-dd HH:mm:ss.SSS".s)
 
@@ -72,25 +72,25 @@ opaque type Timestamp = Long
 
 object Log:
   inline def fine[T](inline value: T)
-                    (using inline log: Log, inline show: AnsiShow[T], inline realm: Realm): Unit =
+                    (using inline log: Log, inline show: Display[T], inline realm: Realm): Unit =
     ${EucalyptusMacros.recordLog('{Level.Fine}, 'value, 'log, 'show, 'realm)}
   
   inline def info[T](inline value: T)
-                    (using inline log: Log, inline show: AnsiShow[T], inline realm: Realm): Unit =
+                    (using inline log: Log, inline show: Display[T], inline realm: Realm): Unit =
     ${EucalyptusMacros.recordLog('{Level.Info}, 'value, 'log, 'show, 'realm)}
   
   inline def warn[T](inline value: T)
-                    (using inline log: Log, inline show: AnsiShow[T], inline realm: Realm): Unit =
+                    (using inline log: Log, inline show: Display[T], inline realm: Realm): Unit =
     ${EucalyptusMacros.recordLog('{Level.Warn}, 'value, 'log, 'show, 'realm)}
   
   inline def fail[T](inline value: T)
-                    (using inline log: Log, inline show: AnsiShow[T], inline realm: Realm): Unit =
+                    (using inline log: Log, inline show: Display[T], inline realm: Realm): Unit =
     ${EucalyptusMacros.recordLog('{Level.Fail}, 'value, 'log, 'show, 'realm)}
 
 object EucalyptusMacros:
   def recordLog
       [T: Type]
-      (level: Expr[Level], value: Expr[T], log: Expr[Log], show: Expr[AnsiShow[T]], realm: Expr[Realm])
+      (level: Expr[Level], value: Expr[T], log: Expr[Log], show: Expr[Display[T]], realm: Expr[Realm])
       (using Quotes)
       : Expr[Unit] = '{
     val time = Timestamp()
