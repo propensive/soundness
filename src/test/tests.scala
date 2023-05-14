@@ -19,9 +19,8 @@ package gastronomy
 import probably.*
 import rudiments.*
 import gossamer.*
-import eucalyptus.*
-
-given Log(Everything |-> Stdout)
+import spectacular.*
+import lithography.*, characterEncodings.utf8
 
 import unsafeExceptions.canThrowAny
 
