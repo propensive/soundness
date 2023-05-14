@@ -33,7 +33,8 @@ object StackTrace:
     Text("⋮ε") -> Text("extension method"),
     Text("ϕ")  -> Text("direct"),
     Text("⋮π") -> Text("package file"),
-    Text("ⲛ")  -> Text("class initializer")
+    Text("ⲛ")  -> Text("class initializer"),
+    Text("ℓ")  -> Text("lazy initializer")
   )
 
   def rewrite(name: String, method: Boolean = false): Text =
@@ -84,6 +85,14 @@ object StackTrace:
             recur(idx + 8)
           else
             sb.append("i")
+            recur(idx + 1)
+        case 'l' =>
+          if (0 until 7).forall { i => char(idx + i) == "lzyINIT"(i) }
+          then
+            sb.append("ℓ")
+            recur(idx + 7, true)
+          else
+            sb.append("l")
             recur(idx + 1)
         case 's' =>
           if (0 until 6).forall { i => char(idx + i) == "super$"(i) }
