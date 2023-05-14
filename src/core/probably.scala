@@ -176,7 +176,6 @@ extends Error(err"the expression was expected to throw an exception, but instead
 
 transparent inline def capture
     [ExceptionType <: Exception, ResultType]
-    (using Debug[ResultType])
     (inline fn: => CanThrow[ExceptionType] ?=> ResultType)
     : ExceptionType throws UnexpectedSuccessError =
   try
