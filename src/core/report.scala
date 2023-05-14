@@ -37,17 +37,17 @@ object Baseline:
     case Min, Mean, Max
   
   enum Metric:
-    case Speed, Time
+    case BySpeed, ByTime
   
   enum Calc:
     case Ratio, Difference
 
 export Baseline.Compare.{Min, Mean, Max}
-export Baseline.Metric.{Speed, Time}
+export Baseline.Metric.{BySpeed, ByTime}
 export Baseline.Calc.{Ratio, Difference}
 
 case class Baseline
-    (compare: Baseline.Compare = Mean, metric: Baseline.Metric = Speed, calc: Baseline.Calc = Ratio)
+    (compare: Baseline.Compare = Mean, metric: Baseline.Metric = BySpeed, calc: Baseline.Calc = Ratio)
 
 object Benchmark:
   given Inclusion[TestReport, Benchmark] with
@@ -333,7 +333,7 @@ class TestReport(using env: Environment):
                 case Difference => left - right
                 case Ratio      => left/right
               
-              def metric(value: Double) = if baseline.metric == Time then value else 1/value
+              def metric(value: Double) = if baseline.metric == ByTime then value else 1/value
               
               val value = baseline.compare match
                 case Compare.Min  => op(metric(bench.benchmark.min), metric(c.benchmark.min))
@@ -341,10 +341,10 @@ class TestReport(using env: Environment):
                 case Compare.Max  => op(metric(bench.benchmark.max), metric(c.benchmark.max))
               
               val valueWithUnits = baseline.metric match
-                case Time =>
+                case ByTime =>
                   showTime(value.toLong)
                 
-                case Speed =>
+                case BySpeed =>
                   out"${colors.Silver}(${value}) ${colors.Turquoise}(op${colors.Gray}(·)s¯¹)"
 
               baseline.calc match
