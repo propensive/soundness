@@ -11,7 +11,7 @@ project mercator
     include  rudiments/core
 
   module test
-    sources  src/test
-    main     mercator.Tests
-    include  mercator/core probably/cli larceny/plugin
-
+    sources   src/test
+    main      mercator.Tests
+    include   mercator/core probably/cli larceny/plugin
+    coverage  mercator/core
