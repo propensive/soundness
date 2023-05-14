@@ -197,7 +197,7 @@ object ByteEncoder:
     Text(Base64Encoder.nn.encodeToString(bytes.to(Array)).nn)
       .tr('+', '-')
       .tr('/', '_')
-      .upto(_ != '=')
+      .upto(_ == '=')
 
 trait ByteDecoder[ES <: EncodingScheme]:
   def decode(value: Text): Bytes
