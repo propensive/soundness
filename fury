@@ -18,3 +18,4 @@ project panopticon
     include   probably/cli
     include   larceny/plugin
     main      panopticon.Tests
+    coverage  panopticon/core
