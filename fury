@@ -17,3 +17,4 @@ project aviation
     sources   src/test
     include   aviation/core probably/cli
     main      aviation.Tests
+    coverage  aviation/core
