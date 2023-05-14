@@ -29,8 +29,8 @@ import language.dynamics
 
 object Media:
   object Group:
-    given Display[Group, Developer] = _.name
-    given Display[Group, EndUser] = _.name.lower
+    given Debug[Group] = _.name
+    given Show[Group] = _.name.lower
 
   enum Group:
     case Application, Audio, Image, Message, Multipart, Text, Video, Font, Example, Model
@@ -38,7 +38,7 @@ object Media:
     def name: Text = Showable(this).show.lower
 
   object Subtype:
-    given Display[Subtype, EndUser] = _.name
+    given Show[Subtype] = _.name
 
   enum Subtype:
     case Standard(value: Text)
@@ -53,7 +53,7 @@ object Media:
       case X(value)        => t"x-$value"
 
   object Suffix:
-    given Display[Suffix, EndUser] = Showable(_).show.lower
+    given Show[Suffix] = Showable(_).show.lower
 
   enum Suffix:
     case Xml, Json, Ber, Cbor, Der, FastInfoset, Wbxml, Zip, Tlv, JsonSeq, Sqlite3, Jwt, Gzip,
@@ -179,11 +179,10 @@ case class MediaType(group: Media.Group, subtype: Media.Subtype, suffixes: List[
     copy(parameters = parameters ::: kvs.map(_.show -> _).to(List))
 
 object MediaType:
-  given Display[MediaType, Developer] = mt => t"""media"${mt}""""
-
+  given Debug[MediaType] = mt => t"""media"${mt}""""
   given GenericHttpRequestParam["content-type", MediaType] = show(_).s
 
-  given show: Display[MediaType, EndUser] =
+  given show: Show[MediaType] =
     mt => t"${mt.basic}${mt.parameters.map { p => t"; ${p(0)}=${p(1)}" }.join}"
   
   given formenctype: GenericHtmlAttribute["formenctype", MediaType] with
