@@ -119,7 +119,7 @@ object Command:
     val cmdString: Text = formattedArgs(cmd.args)
     if cmdString.contains(t"\"") then t"sh\"\"\"$cmdString\"\"\"" else t"sh\"$cmdString\""
 
-  given AnsiShow[Command] = cmd => ansi"${colors.LightSeaGreen}(${formattedArgs(cmd.args)})"
+  given Display[Command] = cmd => ansi"${colors.LightSeaGreen}(${formattedArgs(cmd.args)})"
 
 case class Command(args: Text*) extends Executable:
   def fork[T]()(using env: Environment)(using Log): Process[T] throws EnvError =
@@ -135,7 +135,7 @@ object Pipeline:
   inline given Debug[Pipeline] = new Debug[Pipeline]:
     def apply(pipeline: Pipeline): Text = pipeline.cmds.map(_.debug).join(t" | ")
   
-  given AnsiShow[Pipeline] =
+  given Display[Pipeline] =
     _.cmds.map(_.ansi).join(ansi" ${colors.PowderBlue}(|) ")
 
 case class Pipeline(cmds: Command*) extends Executable:
