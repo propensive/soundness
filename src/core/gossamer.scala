@@ -321,9 +321,6 @@ extension [TextType](values: Iterable[TextType])(using joinable: Joinable[TextTy
 case class OutOfRangeError(index: Int, from: Int, to: Int)
 extends Error(err"the index $index is outside the range $from-$to")
 
-case class Showable[T](value: T):
-  def show: Text = Text(value.toString)
-
 trait Shown[+T](using Show[T]):
   this: T =>
     override def toString(): String = summon[Show[T]](this).s
@@ -395,7 +392,7 @@ object Interpolation:
 extension (buf: StringBuilder)
   def add(text: Text): Unit = buf.append(text.s)
   def add(char: Char): Unit = buf.append(char)
-  def text: Text = Showable(buf).show
+  def text: Text = Text(buf.toString)
 
 // object Line:
 //   given lineReader(using enc: Encoding): Readable[LazyList[Line]] with
