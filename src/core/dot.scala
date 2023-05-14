@@ -42,7 +42,7 @@ object Dot:
 
   object Attachment:
     // FIXME: This needs to include the port
-    given Display[Attachment, EndUser] = _.id.key
+    given Show[Attachment] = _.id.key
   
   case class Attachment(id: Id, compass: Option[CompassPoint] = None)
 
