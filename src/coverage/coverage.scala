@@ -23,13 +23,23 @@ import scala.runtime.coverage.*
 import scala.io.*
 import scala.collection.mutable.BitSet
 
+import java.io.*
+
 case class CodeBranch(id: Int, path: Text)
-case class CoverageResults(path: Text, spec: IArray[CodeBranch], hits: Set[Int])
+case class CoverageResults(path: Text, spec: IArray[CodeBranch], oldHits: Set[Int], hits: Set[Int])
 
 object Coverage:
-
   def apply(): Option[CoverageResults] = currentDir.map: dir =>
-    CoverageResults(dir, spec(dir), measurements(dir))
+    val currentFile = Invoker.measurementFile(dir.s)
+    val hits = measurements(currentFile)
+    
+    val otherFiles = File(dir.s).listFiles.nn.map(_.nn).filter(_.getName.nn.startsWith(
+        "scoverage.measurements"))
+    
+    val allHits: Set[Int] = otherFiles.flatMap(measurements(_)).to(Set)
+    val oldHits: Set[Int] = allHits -- hits
+    
+    CoverageResults(dir, spec(dir), oldHits, hits)
 
   private def currentDir: Option[Text] =
     Option(System.getProperty("scalac.coverage")).map(_.nn).map(Text(_))
@@ -47,10 +57,10 @@ object Coverage:
       
     IArray.from(recur(lines.dropWhile(_.starts(t"#"))))
   
-  private def measurements(dir: Text): Set[Int] =
+  private def measurements(file: File): Set[Int] =
     val ids = BitSet()
     
-    Source.fromFile(Invoker.measurementFile(dir.s)).getLines.to(LazyList).foreach: id =>
+    Source.fromFile(file).getLines.to(LazyList).foreach: id =>
       ids(id.toInt) = true
     
     ids.to(Set)

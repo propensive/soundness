@@ -214,7 +214,7 @@ class TestReport(using env: Environment):
     case unit :: rest =>
       if n > 100000L then showTime(n/1000L, rest) else
         val sig = (n/1000L).show
-        val frac = (n%1000).show.pad(3, Rtl, '0')(using textWidthCalculation.uniform)
+        val frac = (n%1000).show.pad(3, Rtl, '0')(using textWidthCalculation.eastAsianScripts)
         ansi"${colors.Silver}(${sig}.$frac) ${unit}"
     
   case class Summary(status: Status, id: TestId, count: Int, min: Long, max: Long, avg: Long):
@@ -235,7 +235,7 @@ class TestReport(using env: Environment):
   
 
   def complete(coverage: Option[CoverageResults])(using Stdio): Unit =
-    import textWidthCalculation.uniform
+    import textWidthCalculation.eastAsianScripts
     
     val table =
       val showStats = !lines.summaries.forall(_.count < 2)
@@ -369,26 +369,31 @@ class TestReport(using env: Environment):
 
     coverage.foreach: coverage =>
       Io.println(ansi"$Bold($Underline(Test coverage))")
-      case class  CoverageData(path: Text, branches: Int, hits: Int)
+      case class  CoverageData(path: Text, branches: Int, hits: Int, oldHits: Int):
+        def hitsText: AnsiText =
+          val main = ansi"${if hits == 0 then colors.Gray else colors.ForestGreen}($hits)"
+          if oldHits == 0 then main else ansi"${colors.Goldenrod}(${oldHits.show.subscript}) $main"
       
       val data = coverage.spec.groupBy(_.path).to(List).map: (path, branches) =>
-        CoverageData(path, branches.size, branches.map(_.id).map(coverage.hits.contains).count(identity(_)))
+        val hitCount = branches.map(_.id).map(coverage.hits.contains).count(identity(_))
+        val oldHitCount = branches.map(_.id).map(coverage.oldHits.contains).count(identity(_))
+        CoverageData(path, branches.size, hitCount, oldHitCount)
 
       val maxBranches = data.map(_.branches).max
       
       val coverageTable = Table[CoverageData](
-        Column(ansi"Source file", align = Alignment.Right): data =>
+        Column(ansi"Source file", align = Alignment.Left): data =>
           data.path,
-        Column(ansi"Branches"): data =>
-          data.branches,
-        Column(ansi"Hits"): data =>
-          data.hits,
-        Column(ansi"Covered"): data =>
-          ansi"${(100*data.hits/data.branches.toDouble)}%",
-        Column(ansi"Coverage"): data =>
-          val covered: Text = t"⣿"*(72*data.hits/maxBranches)
-          val notCovered: Text = t"⣿"*(72*(data.branches - data.hits)/maxBranches)
-          ansi"${colors.YellowGreen}($covered)${colors.Peru}($notCovered)"
+        Column(ansi"Hits", align = Alignment.Right)(_.hitsText),
+        Column(ansi"Size", align = Alignment.Right)(_.branches),
+        Column(ansi"Coverage", align = Alignment.Right): data =>
+          ansi"${(100*(data.hits + data.oldHits)/data.branches.toDouble)}%",
+        Column(ansi""): data =>
+          def width(n: Double): Text = if n == 0 then t"" else t"━"*(1 + (70*n).toInt)
+          val covered: Text = width(data.hits.toDouble/maxBranches)
+          val oldCovered: Text = width(data.oldHits.toDouble/maxBranches)
+          val notCovered: Text = width((data.branches.toDouble - data.hits - data.oldHits)/maxBranches)
+          ansi"${colors.ForestGreen}($covered)${colors.Goldenrod}($oldCovered)${colors.Brown}($notCovered)"
       )
 
       coverageTable.tabulate(data, columns).map(_.render).foreach(Io.println)
