@@ -351,7 +351,7 @@ object Tests extends Suite(t"Gossamer Tests"):
       .assert(_ == '1')
 
       test(t"Random access of out-of-range character"):
-        capture[OutOfRangeError, Char](t"123"(5))
+        capture(t"123"(5))
       .assert(_ == OutOfRangeError(5, 0, 3))
 
       test(t"Pad-right with space"):
