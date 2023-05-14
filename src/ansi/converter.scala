@@ -23,14 +23,14 @@ import iridescence.*
 import harlequin.*
 
 case class BodyText(blocks: TextBlock*):
-  def serialize(width: Int): AnsiText = blocks.map(_.render(width)).join(ansi"\n\n")
+  def serialize(width: Int): Output = blocks.map(_.render(width)).join(out"\n\n")
 
-case class TextBlock(indent: Int, text: AnsiText):
+case class TextBlock(indent: Int, text: Output):
   @targetName("add")
-  def +(txt: AnsiText): TextBlock = TextBlock(indent, text+txt)
+  def +(txt: Output): TextBlock = TextBlock(indent, text+txt)
   
-  def render(width: Int): AnsiText =
-    def rest(text: AnsiText, lines: List[AnsiText]): List[AnsiText] =
+  def render(width: Int): Output =
+    def rest(text: Output, lines: List[Output]): List[Output] =
       if text.length == 0 then lines.reverse
       else
         try
@@ -39,19 +39,19 @@ case class TextBlock(indent: Int, text: AnsiText):
         catch case err: OutOfRangeError =>
           rest(text.drop(width - indent*2), text.take(width - indent*2) :: lines)
     
-    rest(text, Nil).map((ansi"  "*indent)+_).join(ansi"\n")
+    rest(text, Nil).map((out"  "*indent)+_).join(out"\n")
 
 open class TextConverter():
   private def heading(level: 1 | 2 | 3 | 4 | 5 | 6, children: Seq[Markdown.Ast.Inline]): TextBlock =
-    val content = ansi"${children.map(phrasing).join}"
+    val content = out"${children.map(phrasing).join}"
     
     TextBlock(0, level match
-      case 1 => ansi"$Bold($Underline(${content.upper}))"
-      case 2 => ansi"$Bold($Underline($content))"
-      case 3 => ansi"$Bold($content)"
-      case 4 => ansi"$Underline($content)"
-      case 5 => ansi"$Underline($content)"
-      case 6 => ansi"$Underline($content)"
+      case 1 => out"$Bold($Underline(${content.upper}))"
+      case 2 => out"$Bold($Underline($content))"
+      case 3 => out"$Bold($content)"
+      case 4 => out"$Underline($content)"
+      case 5 => out"$Underline($content)"
+      case 6 => out"$Underline($content)"
     )
 
   def blockify(nodes: Seq[Markdown.Ast.Node]): Seq[Markdown.Ast.Block] =
@@ -85,7 +85,7 @@ open class TextConverter():
           acc ++ convert(children, indent + 1).blocks
         
         case Markdown.Ast.Block.ThematicBreak() =>
-          acc :+ TextBlock(indent, ansi"---")
+          acc :+ TextBlock(indent, out"---")
         
         case Markdown.Ast.Block.FencedCode(syntax, meta, value) =>
           if syntax == Some(t"scala") then
@@ -93,30 +93,30 @@ open class TextConverter():
               line =>
                 line.map:
                   case Token.Code(code, flair) => flair match
-                    case Accent.Type              => ansi"${solarized.Blue}(${code.trim})"
-                    case Accent.Term              => ansi"${solarized.Green}(${code.trim})"
-                    case Accent.Symbol            => ansi"${solarized.Red}(${code.trim})"
-                    case Accent.Keyword           => ansi"${solarized.Orange}(${code.trim})"
-                    case Accent.Modifier          => ansi"${solarized.Yellow}(${code.trim})"
-                    case Accent.Ident             => ansi"${solarized.Cyan}(${code.trim})"
-                    case Accent.Error             => ansi"${solarized.Red}($Underline(${code.trim}))"
-                    case Accent.Number            => ansi"${solarized.Violet}(${code.trim})"
-                    case Accent.String            => ansi"${solarized.Violet}(${code.trim})"
-                    case other                   => ansi"${code.trim}"
-                  case Token.Unparsed(content)   => ansi"${content}"
+                    case Accent.Type              => out"${solarized.Blue}(${code.trim})"
+                    case Accent.Term              => out"${solarized.Green}(${code.trim})"
+                    case Accent.Symbol            => out"${solarized.Red}(${code.trim})"
+                    case Accent.Keyword           => out"${solarized.Orange}(${code.trim})"
+                    case Accent.Modifier          => out"${solarized.Yellow}(${code.trim})"
+                    case Accent.Ident             => out"${solarized.Cyan}(${code.trim})"
+                    case Accent.Error             => out"${solarized.Red}($Underline(${code.trim}))"
+                    case Accent.Number            => out"${solarized.Violet}(${code.trim})"
+                    case Accent.String            => out"${solarized.Violet}(${code.trim})"
+                    case other                   => out"${code.trim}"
+                  case Token.Unparsed(content)   => out"${content}"
                   case _                       => throw Mistake("Should not have a newline")
                 .join
             
-            acc :+ TextBlock(indent, highlightedLines.join(ansi"\n"))
-          else acc :+ TextBlock(indent, ansi"${foreground.BrightGreen}($value)")
+            acc :+ TextBlock(indent, highlightedLines.join(out"\n"))
+          else acc :+ TextBlock(indent, out"${foreground.BrightGreen}($value)")
         
         case Markdown.Ast.Block.BulletList(num, loose, _, items*) =>
           acc :+ TextBlock(indent, items.zipWithIndex.map { case (item, idx) =>
-            ansi"${num.fold(t"  » ") { n => t"${(n + idx).show.fit(3)}. " }}${Showable(item).show}"
-          }.join(ansi"\n"))
+            out"${num.fold(t"  » ") { n => t"${(n + idx).show.fit(3)}. " }}${Showable(item).show}"
+          }.join(out"\n"))
     
         case Markdown.Ast.Block.Table(parts*) =>
-          acc :+ TextBlock(indent, ansi"[table]")
+          acc :+ TextBlock(indent, out"[table]")
         
         case other =>
           acc
@@ -137,30 +137,30 @@ open class TextConverter():
   // def listItem(node: Markdown.Ast.ListItem): Seq[Item["li"]] = node match
   //   case Markdown.Ast.ListItem(children*) => List(Li(convert(children)*))
 
-  def text(node: Seq[Markdown.Ast.Node]): AnsiText = node.map:
-    case Markdown.Ast.Inline.Image(text, _)         => ansi"[ $text ]"
-    case Markdown.Ast.Inline.Link(s, desc)          => ansi"${colors.DeepSkyBlue}($Underline(${text(Seq(desc))})${colors.DarkGray}([)${colors.RoyalBlue}($Underline($s))${colors.DarkGray}(])) "
-    case Markdown.Ast.Inline.Break()                => ansi""
-    case Markdown.Ast.Inline.Emphasis(children*)    => ansi"$Italic(${text(children)})"
-    case Markdown.Ast.Inline.Strong(children*)      => ansi"$Bold(${text(children)})"
-    case Markdown.Ast.Inline.SourceCode(code)       => ansi"${colors.YellowGreen}(${Bg(Srgb(0, 0.1, 0))}($code))"
-    case Markdown.Ast.Inline.Textual(text)          => ansi"$text"
-    case Markdown.Ast.Block.BulletList(_, _, _, _*) => ansi""
-    case Markdown.Ast.Block.Reference(_, _)         => ansi""
-    case Markdown.Ast.Block.ThematicBreak()         => ansi""
+  def text(node: Seq[Markdown.Ast.Node]): Output = node.map:
+    case Markdown.Ast.Inline.Image(text, _)         => out"[ $text ]"
+    case Markdown.Ast.Inline.Link(s, desc)          => out"${colors.DeepSkyBlue}($Underline(${text(Seq(desc))})${colors.DarkGray}([)${colors.RoyalBlue}($Underline($s))${colors.DarkGray}(])) "
+    case Markdown.Ast.Inline.Break()                => out""
+    case Markdown.Ast.Inline.Emphasis(children*)    => out"$Italic(${text(children)})"
+    case Markdown.Ast.Inline.Strong(children*)      => out"$Bold(${text(children)})"
+    case Markdown.Ast.Inline.SourceCode(code)       => out"${colors.YellowGreen}(${Bg(Srgb(0, 0.1, 0))}($code))"
+    case Markdown.Ast.Inline.Textual(text)          => out"$text"
+    case Markdown.Ast.Block.BulletList(_, _, _, _*) => out""
+    case Markdown.Ast.Block.Reference(_, _)         => out""
+    case Markdown.Ast.Block.ThematicBreak()         => out""
     case Markdown.Ast.Block.Paragraph(children*)    => text(children)
     case Markdown.Ast.Block.Heading(_, children*)   => text(children)
     case Markdown.Ast.Block.Blockquote(children*)   => text(children)
-    case Markdown.Ast.Block.FencedCode(_, _, code)  => ansi"${colors.YellowGreen}($code)"
+    case Markdown.Ast.Block.FencedCode(_, _, code)  => out"${colors.YellowGreen}($code)"
     case Markdown.Ast.Block.Cell(content*)          => text(content)
-    case _                                          => ansi""
+    case _                                          => out""
   .join
 
-  def phrasing(node: Markdown.Ast.Inline): AnsiText = node match
-    case Markdown.Ast.Inline.Image(altText, location) => ansi"[ $altText ]"
-    case Markdown.Ast.Inline.Break()                  => ansi"\n"
-    case Markdown.Ast.Inline.Emphasis(children*)      => ansi"$Italic(${children.map(phrasing).join})"
-    case Markdown.Ast.Inline.Strong(children*)        => ansi"$Bold(${children.map(phrasing).join})"
-    case Markdown.Ast.Inline.SourceCode(code)         => ansi"${colors.YellowGreen}(${Bg(Srgb(0, 0.1, 0))}($code))"
-    case Markdown.Ast.Inline.Textual(str)             => ansi"${Showable(str.sub(t"\n", t" ")).show}"
+  def phrasing(node: Markdown.Ast.Inline): Output = node match
+    case Markdown.Ast.Inline.Image(altText, location) => out"[ $altText ]"
+    case Markdown.Ast.Inline.Break()                  => out"\n"
+    case Markdown.Ast.Inline.Emphasis(children*)      => out"$Italic(${children.map(phrasing).join})"
+    case Markdown.Ast.Inline.Strong(children*)        => out"$Bold(${children.map(phrasing).join})"
+    case Markdown.Ast.Inline.SourceCode(code)         => out"${colors.YellowGreen}(${Bg(Srgb(0, 0.1, 0))}($code))"
+    case Markdown.Ast.Inline.Textual(str)             => out"${Showable(str.sub(t"\n", t" ")).show}"
     case _                                            => text(Seq(node))
