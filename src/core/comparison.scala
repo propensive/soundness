@@ -37,7 +37,7 @@ extension [T](value: T)
     comparable.compare(value, other)
 
 object Comparison:
-  given (using calc: TextWidthCalculator): AnsiShow[Comparison] =
+  given (using calc: TextWidthCalculator): Display[Comparison] =
     case Comparison.Structural(cmp, l, r) =>
       import tableStyles.horizontalGaps
       import treeStyles.default
