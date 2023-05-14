@@ -33,7 +33,7 @@ import java.util as ju
 
 object Realm:
   given Show[Realm] = _.name
-  given Display[Realm] = realm => ansi"${colors.LightGreen}(${realm.name})"
+  given Display[Realm] = realm => out"${colors.LightGreen}(${realm.name})"
 
 @missingContext("""|A contextual Realm is needed in scope. This is required for logging commands like `Log.info` and `Log.warn`, in order to tag them in log output. A realm can be specified with,
                      |    given Realm(t"project")
@@ -53,18 +53,18 @@ object Level:
       case Warn => solarized.Yellow
       case Fail => solarized.Red
 
-    ansi"${Bg(color)}[${colors.Black}($Bold( ${Showable(level).show.upper} ))]"
+    out"${Bg(color)}[${colors.Black}($Bold( ${level.show.upper} ))]"
 
 enum Level:
   case Fine, Info, Warn, Fail
   def unapply(entry: Entry): Boolean = entry.level == this
   
-case class Entry(realm: Realm, level: Level, message: AnsiText, timestamp: Timestamp, tags: ListMap[Text, Text])
+case class Entry(realm: Realm, level: Level, message: Output, timestamp: Timestamp, tags: ListMap[Text, Text])
 
 object Timestamp:
   def apply(): Timestamp = System.currentTimeMillis
   given show: Show[Timestamp] = ts => dateFormat.format(ju.Date(ts)).nn.show
-  given Display[Timestamp] = timestamp => ansi"${colors.Tan}(${show(timestamp)})"
+  given Display[Timestamp] = timestamp => out"${colors.Tan}(${show(timestamp)})"
 
   private val dateFormat = jt.SimpleDateFormat(t"yyyy-MMM-dd HH:mm:ss.SSS".s)
 
@@ -72,29 +72,29 @@ opaque type Timestamp = Long
 
 object Log:
   inline def fine[T](inline value: T)
-                    (using inline log: Log, inline show: Display[T], inline realm: Realm): Unit =
-    ${EucalyptusMacros.recordLog('{Level.Fine}, 'value, 'log, 'show, 'realm)}
+                    (using inline log: Log, inline display: Display[T], inline realm: Realm): Unit =
+    ${EucalyptusMacros.recordLog('{Level.Fine}, 'value, 'log, 'display, 'realm)}
   
   inline def info[T](inline value: T)
-                    (using inline log: Log, inline show: Display[T], inline realm: Realm): Unit =
-    ${EucalyptusMacros.recordLog('{Level.Info}, 'value, 'log, 'show, 'realm)}
+                    (using inline log: Log, inline display: Display[T], inline realm: Realm): Unit =
+    ${EucalyptusMacros.recordLog('{Level.Info}, 'value, 'log, 'display, 'realm)}
   
   inline def warn[T](inline value: T)
-                    (using inline log: Log, inline show: Display[T], inline realm: Realm): Unit =
-    ${EucalyptusMacros.recordLog('{Level.Warn}, 'value, 'log, 'show, 'realm)}
+                    (using inline log: Log, inline display: Display[T], inline realm: Realm): Unit =
+    ${EucalyptusMacros.recordLog('{Level.Warn}, 'value, 'log, 'display, 'realm)}
   
   inline def fail[T](inline value: T)
-                    (using inline log: Log, inline show: Display[T], inline realm: Realm): Unit =
-    ${EucalyptusMacros.recordLog('{Level.Fail}, 'value, 'log, 'show, 'realm)}
+                    (using inline log: Log, inline display: Display[T], inline realm: Realm): Unit =
+    ${EucalyptusMacros.recordLog('{Level.Fail}, 'value, 'log, 'display, 'realm)}
 
 object EucalyptusMacros:
   def recordLog
       [T: Type]
-      (level: Expr[Level], value: Expr[T], log: Expr[Log], show: Expr[Display[T]], realm: Expr[Realm])
+      (level: Expr[Level], value: Expr[T], log: Expr[Log], display: Expr[Display[T]], realm: Expr[Realm])
       (using Quotes)
       : Expr[Unit] = '{
     val time = Timestamp()
-    try $log.record(Entry($realm, $level, $show.ansi($value), time, $log.tags)) catch case e: Exception => ()
+    try $log.record(Entry($realm, $level, $display($value), time, $log.tags)) catch case e: Exception => ()
   }
 
 @missingContext("""|eucalyptus: a contextual Log instance is needed, for example:
@@ -148,8 +148,8 @@ trait LogSink:
 object LogFormat:
   given standardAnsi[T]: LogFormat[T] = entry =>
     import textWidthCalculation.uniform
-    val realm: AnsiText = gossamer.fit[AnsiText](entry.realm.ansi)(8)
-    val text = ansi"${entry.timestamp.ansi} ${entry.level.ansi} $realm ${entry.message}\n"
+    val realm: Output = gossamer.fit[Output](entry.realm.out)(8)
+    val text = out"${entry.timestamp} ${entry.level} $realm ${entry.message}\n"
     text.render
   
 trait LogFormat[S]:
