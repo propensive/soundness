@@ -115,7 +115,7 @@ object Command:
       else arg
     .join(t" ")
 
-  given Display[Command, Developer] = cmd =>
+  given Debug[Command] = cmd =>
     val cmdString: Text = formattedArgs(cmd.args)
     if cmdString.contains(t"\"") then t"sh\"\"\"$cmdString\"\"\"" else t"sh\"$cmdString\""
 
@@ -132,7 +132,8 @@ case class Command(args: Text*) extends Executable:
     new Process[T](processBuilder.start().nn)
 
 object Pipeline:
-  inline given Display[Pipeline, Developer] = _.cmds.map(_.debug).join(t" | ")
+  inline given Debug[Pipeline] = new Debug[Pipeline]:
+    def apply(pipeline: Pipeline): Text = pipeline.cmds.map(_.debug).join(t" | ")
   
   given AnsiShow[Pipeline] =
     _.cmds.map(_.ansi).join(ansi" ${colors.PowderBlue}(|) ")
