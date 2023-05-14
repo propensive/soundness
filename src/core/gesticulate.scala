@@ -35,7 +35,7 @@ object Media:
   enum Group:
     case Application, Audio, Image, Message, Multipart, Text, Video, Font, Example, Model
 
-    def name: Text = Showable(this).show.lower
+    def name: Text = this.toString.show.lower
 
   object Subtype:
     given Show[Subtype] = _.name
@@ -53,7 +53,7 @@ object Media:
       case X(value)        => t"x-$value"
 
   object Suffix:
-    given Show[Suffix] = Showable(_).show.lower
+    given Show[Suffix] = _.toString.show.lower
 
   enum Suffix:
     case Xml, Json, Ber, Cbor, Der, FastInfoset, Wbxml, Zip, Tlv, JsonSeq, Sqlite3, Jwt, Gzip,
@@ -62,7 +62,7 @@ object Media:
     def name: Text = this match
       case JsonSeq => t"json-seq"
       case CborSeq => t"cbor-seq"
-      case other   => Showable(other).show.uncamel.kebab
+      case other   => other.toString.show.uncamel.kebab
 
   lazy val systemMediaTypes: Set[Text] =
     try
