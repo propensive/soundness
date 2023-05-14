@@ -19,8 +19,106 @@ package rudiments
 import probably.*
 import rudiments.*
 import gossamer.*
+import larceny.*
 
 case class Person(name: Text, age: Int)
 
 object Tests extends Suite(t"Rudiments Tests"):
-  def run(): Unit = ()
+  def run(): Unit =
+    
+    def remoteCall()(using Internet): Unit = ()
+
+    test(t"Check remote call is callable with `Internet`"):
+      internet:
+        remoteCall()
+    .assert()
+    
+    test(t"Check remote call is not callable without `Internet`"):
+      captureCompileErrors:
+        remoteCall()
+      .map(_.errorId)
+    .assert(_ == List(ErrorId.MissingImplicitArgumentID))
+
+    test(t"Display a PID"):
+      Pid(2999).toString
+    .assert(_ == "PID:2999")
+    
+    suite(t"PID & exit status tests"):
+      test(t"Zero exit-status is OK"):
+        ExitStatus(0)
+      .assert(_ == ExitStatus.Ok)
+      
+      test(t"Positive exit-status is a failure"):
+        ExitStatus(1)
+      .assert(_ == ExitStatus.Fail(1))
+
+      test(t"Ok has exit status 0"):
+        ExitStatus.Ok
+      .assert(_() == 0)
+      
+      test(t"Failure has non-zero exit status"):
+        ExitStatus.Fail(3)
+      .assert(_() == 3)
+    
+    suite(t"Bytes tests"):
+      test(t"Construct a `Bytes` literal"):
+        Bytes(1, 2, 3)
+      .assert(_.length == 3)
+      
+      test(t"Construct a `Bytes` value from a Long"):
+        Bytes(Long.MaxValue)
+      .assert(_.length == 8)
+      
+      test(t"Construct an empty `Bytes`"):
+        Bytes()
+      .assert(_.length == 0)
+
+    suite(t"Byte Size tests"):
+      test(t"Construct a simple ByteSize"):
+        4.b: ByteSize
+      .assert(_ == ByteSize(4))
+      
+      test(t"Construct a simple ByteSize in kB"):
+        4.kb: ByteSize
+      .assert(_ == ByteSize(4096))
+      
+      test(t"Construct a simple ByteSize in MB"):
+        4.mb: ByteSize
+      .assert(_ == ByteSize(4096*1024L))
+      
+      test(t"Construct a simple ByteSize in GB"):
+        4.gb: ByteSize
+      .assert(_ == ByteSize(4096*1024L*1024L))
+
+      test(t"Construct a simple ByteSize in TB"):
+        4.tb: ByteSize
+      .assert(_ == ByteSize(4096*1024L*1024L*1024L))
+
+      test(t"Compare bytes with >"):
+        4.gb > 4.mb
+      .assert(_ == true)
+      
+      test(t"Compare bytes with >="):
+        4.gb >= 4.mb*1024
+      .assert(_ == true)
+
+      test(t"Sort some byte sizes"):
+        List(1.b, 1.mb, 1.kb).sorted
+      .assert(_ == List(1.b, 1.kb, 1.mb))
+    
+    suite(t"Y-combinator test"):
+      test(t"Check factorial implementation"):
+        def factorial(n: Int): Int = fix[Int] { i => if i <= 0 then 1 else i*recur(i - 1) } (n)
+        factorial(4)
+      .assert(_ == 24)
+   
+    suite(t"UUID tests"):
+      test(t"Construct a new UUID"):
+        Uuid()
+      .matches:
+        case Uuid(a, b) =>
+      
+      test(t"Get bytes from UUID"):
+        Uuid().bytes
+      .assert(_.length == 16)
+

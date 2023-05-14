@@ -37,12 +37,13 @@ extension (bs: Long)
 opaque type ByteSize = Long
 
 object ByteSize:
+  def apply(long: Long): ByteSize = long
   given GenericHttpRequestParam["content-length", ByteSize] = _.long.toString
   given Ordering[ByteSize] = Ordering.Long.on(_.long)
 
   extension (bs: ByteSize)
     def long: Long = bs
-    def text: Text = Text(bs.toString+"bytes")
+    def text: Text = Text(bs.toString+" bytes")
 
     @targetName("plus")
     infix def +(that: ByteSize): ByteSize = bs + that

@@ -30,4 +30,4 @@ enum ExitStatus:
     case Fail(status) => status
 
 case class Pid(value: Long):
-  override def toString(): String = "ᴾᴵᴰ｢"+value+"｣"
+  override def toString(): String = "PID:"+value
