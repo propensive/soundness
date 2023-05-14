@@ -34,3 +34,4 @@ object Uuid:
 case class Uuid(msb: Long, lsb: Long):
   def javaUuid: ju.UUID = ju.UUID(msb, lsb)
   def bytes: Bytes = Bytes(msb) ++ Bytes(lsb)
+  def text: Text = Text(javaUuid.toString)
