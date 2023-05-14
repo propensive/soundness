@@ -246,13 +246,12 @@ object QuantifyOpaques:
     given convertInt[UnitsType <: Measure]: Conversion[Int, Quantity[UnitsType]] = int =>
       Quantity(int.toDouble)
 
-    inline given [UnitsType <: Measure](using Decimalizer): Display[Quantity[UnitsType], EndUser] =
-      new Display[Quantity[UnitsType], EndUser]:
+    inline given [UnitsType <: Measure](using Decimalizer): Show[Quantity[UnitsType]] =
+      new Show[Quantity[UnitsType]]:
         def apply(value: Quantity[UnitsType]): Text = value.render
     
-    inline given [UnitsType <: Measure](using Decimalizer)
-        : Display[Quantity[UnitsType], Developer] =
-      new Display[Quantity[UnitsType], Developer]:
+    inline given [UnitsType <: Measure](using Decimalizer): Debug[Quantity[UnitsType]] =
+      new Debug[Quantity[UnitsType]]:
         def apply(value: Quantity[UnitsType]): Text = value.render
   
     def renderUnits(units: Map[Text, Int]): Text =
