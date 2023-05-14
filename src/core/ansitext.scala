@@ -86,10 +86,8 @@ object Ansi:
   given Substitution[Ansi.Input, Text, "t"] = str => Ansi.Input.Textual(AnsiText(str))
   given Substitution[Ansi.Input, String, "t"] = str => Ansi.Input.Textual(AnsiText(Text(str)))
   
-  given [ValueType]
-      (using display: Display[ValueType, EndUser])
-      : Substitution[Ansi.Input, ValueType, "t"] =
-    value => Ansi.Input.Textual(AnsiText(display(value)))
+  given [ValueType](using Show[ValueType]): Substitution[Ansi.Input, ValueType, "t"] =
+    value => Ansi.Input.Textual(AnsiText(value.show))
   
   given [ValueType: AnsiShow]: Substitution[Ansi.Input, ValueType, "t"] =
     value => Ansi.Input.Textual(summon[AnsiShow[ValueType]].ansi(value))
@@ -182,7 +180,7 @@ object Ansi:
 
 object AnsiText:
 
-  given Display[AnsiText, EndUser] = _.plain
+  given Show[AnsiText] = _.plain
 
   given textual: Textual[AnsiText] with
     type ShowType[-ValueType] = AnsiShow[ValueType]
@@ -232,9 +230,9 @@ object AnsiText:
 
   def make
       [ValueType]
-      (value: ValueType, transform: Ansi.Transform)(using display: Display[ValueType, EndUser])
+      (value: ValueType, transform: Ansi.Transform)(using Show[ValueType])
       : AnsiText =
-    val text: Text = display(value)
+    val text: Text = value.show
     AnsiText(text, TreeMap(CharSpan(0, text.s.length) -> transform))
 
 case class AnsiText(plain: Text, spans: TreeMap[CharSpan, Ansi.Transform] = TreeMap(),

@@ -32,8 +32,8 @@ object AnsiShow:
     case None    => AnsiText("empty".show)
     case Some(v) => summon[AnsiShow[T]].ansi(v)
   
-  given [ValueType](using display: Display[ValueType, EndUser]): AnsiShow[ValueType] = value =>
-    AnsiText(display(value))
+  given [ValueType](using show: Show[ValueType]): AnsiShow[ValueType] = value =>
+    AnsiText(show(value))
 
   given (using TextWidthCalculator): AnsiShow[Exception] = e =>
     summon[AnsiShow[StackTrace]].ansi(StackTrace.apply(e))
@@ -81,6 +81,6 @@ object AnsiShow:
     AnsiText.make[String](throwable.getClass.getName.nn.show.cut(t".").last.s,
         _.copy(fg = colors.Crimson))
 
-trait AnsiShow[-ValueType] extends Display[ValueType, EndUser]:
+trait AnsiShow[-ValueType] extends Show[ValueType]:
   def apply(value: ValueType): Text = ansi(value).plain
   def ansi(value: ValueType): AnsiText
