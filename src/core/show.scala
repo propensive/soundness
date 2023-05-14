@@ -27,9 +27,15 @@ trait TextConversion[-ValueType]:
 trait Show[-ValueType] extends TextConversion[ValueType]
 trait Debug[-ValueType] extends TextConversion[ValueType]
 
+trait Showable[-ValueType]:
+  def show(value: ValueType): Text
+
+object Show:
+  given showable[ValueType](using showable: Showable[ValueType]): Show[ValueType] = showable.show(_)
+
 object TextConversion:
   val any: Debug[Any] = value => Text(value.toString)
-  
+
   def escape(char: Char, eEscape: Boolean = false): Text = char match
     case '\n' => Text("\\n")
     case '\t' => Text("\\t")
