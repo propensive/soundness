@@ -176,7 +176,7 @@ object Tests extends Suite(t"CoDL tests"):
       test(t"cannot read end twice"):
         val reader = interpret(t"")
         reader.next()
-        capture[IllegalStateException](reader.next())
+        capture(reader.next())
       .matches:
         case _: IllegalStateException =>
 
@@ -787,7 +787,7 @@ object Tests extends Suite(t"CoDL tests"):
       .assert(_ == 2)
       
       test(t"Two optional parameters with one surplus"):
-        capture[AggregateError[CodlError]](childWithTwoParams(Optional, Optional).parse(t"root\n  child one two three").root().child()) match
+        capture(childWithTwoParams(Optional, Optional).parse(t"root\n  child one two three").root().child()) match
           case AggregateError[CodlError](errors) => errors.head
       .assert(_ == CodlError(1, 16, 5, SurplusParams(t"three", t"child")))
       
@@ -826,7 +826,7 @@ object Tests extends Suite(t"CoDL tests"):
       .assert(_ == 2)
       
       test(t"Two optional parameters with one surplus on root"):
-        capture[AggregateError[CodlError]](rootWithTwoParams(Optional, Optional).parse(t"  child one two three").child()) match
+        capture(rootWithTwoParams(Optional, Optional).parse(t"  child one two three").child()) match
           case AggregateError[CodlError](errors) => errors.head
       .assert(_ == CodlError(0, 16, 5, SurplusParams(t"three", t"child")))
       
