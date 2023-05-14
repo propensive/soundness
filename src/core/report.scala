@@ -360,12 +360,12 @@ class TestReport(using env: Environment):
       bench.tabulate(benchmarks.to(List).sortBy(-_.benchmark.throughput), columns).foreach(Io.println(_))
 
     def showLegend(): Unit =
-      Io.println(t"─"*100)
+      Io.println(t"─"*74)
       Io.println:
         StackTrace.legend.to(List).map: (symbol, description) =>
           out"$Bold(${colors.White}(${symbol.pad(3, Rtl)}))  ${description.pad(20)}"
-        .grouped(4).to(List).map(_.to(List).join).join(out"${t"\n"}")
-      Io.println(t"─"*100)
+        .grouped(3).to(List).map(_.to(List).join).join(out"${t"\n"}")
+      Io.println(t"─"*74)
 
     coverage.foreach: coverage =>
       Io.println(out"$Bold($Underline(Test coverage))")
