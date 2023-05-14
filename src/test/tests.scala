@@ -44,32 +44,32 @@ object Tests extends Suite(t"Gastronomy tests"):
 
   val pangram: Text = t"The quick brown fox jumps over the lazy dog"
 
-  def run(): Unit = {
-    test(t"Sha256, Hex") {
+  def run(): Unit =
+    test(t"Sha256, Hex"):
       t"Hello world".digest[Sha2[256]].encode[Hex]
-    }.check(_ == t"64EC88CA00B268E5BA1A35678A1B5316D212F4F366B2477232534A8AECA37F3C")
+    .assert(_ == t"64EC88CA00B268E5BA1A35678A1B5316D212F4F366B2477232534A8AECA37F3C")
 
-    test(t"Md5, Base64") {
+    test(t"Md5, Base64"):
       t"Hello world".digest[Md5].encode[Base64]
-    }.check(_ == t"PiWWCnnbxptnTNTsZ6csYg==")
+    .assert(_ == t"PiWWCnnbxptnTNTsZ6csYg==")
 
-    test(t"Sha1, Base64Url") {
+    test(t"Sha1, Base64Url"):
       t"Hello world".digest[Sha1].encode[Base64Url]
-    }.check(_ == t"e1AsOh9IyGCa4hLN-2Od7jlnP14")
+    .assert(_ == t"e1AsOh9IyGCa4hLN-2Od7jlnP14")
 
-    test(t"Sha384, Base64") {
+    test(t"Sha384, Base64"):
       t"Hello world".digest[Sha2[384]].encode[Base64]
-    }.check(_ == t"kgOwxEOf0eauWHiGYze3xTKs1tkmAVDIAxjoq4wnzjMBifjflPuJDfHSmP82Bifh")
+    .assert(_ == t"kgOwxEOf0eauWHiGYze3xTKs1tkmAVDIAxjoq4wnzjMBifjflPuJDfHSmP82Bifh")
     
-    test(t"Sha512, Base64") {
+    test(t"Sha512, Base64"):
       t"Hello world".digest[Sha2[512]].encode[Base64]
-    }.check(_ == t"t/eDuu2Cl/DbkXRiGE/08I5pwtXl95qUJgD5cl9Yzh8pwYE5v4CwbA//K900c4RS7PQMSIwip+PYDN9vnBwNRw==")
+    .assert(_ == t"t/eDuu2Cl/DbkXRiGE/08I5pwtXl95qUJgD5cl9Yzh8pwYE5v4CwbA//K900c4RS7PQMSIwip+PYDN9vnBwNRw==")
 
-    test(t"Encode to Binary") {
+    test(t"Encode to Binary"):
       IArray[Byte](1, 2, 3, 4).encode[Binary]
-    }.check(_ == t"00000001000000100000001100000100")
+    .assert(_ == t"00000001000000100000001100000100")
 
-    test(t"Extract PEM message type") {
+    test(t"Extract PEM message type"):
       val example = t"""
         |-----BEGIN EXAMPLE-----
         |MIIB9TCCAWACAQAwgbgxGTAXBgNVBAoMEFF1b1ZhZGlzIExpbWl0ZWQxHDAaBgNV
@@ -77,59 +77,58 @@ object Tests extends Suite(t"Gastronomy tests"):
         """.s.stripMargin.show
       
       Pem.parse(example).kind
-    }.check(_ == t"EXAMPLE")
+    .assert(_ == t"EXAMPLE")
 
-    test(t"Decode PEM certificate") {
+    test(t"Decode PEM certificate"):
       Pem.parse(request).data.digest[Md5].encode[Base64]
-    }.check(_ == t"iMwRdyDFStqq08vqjPbzYw==")
+    .assert(_ == t"iMwRdyDFStqq08vqjPbzYw==")
   
-    test(t"PEM roundtrip") {
+    test(t"PEM roundtrip"):
       Pem.parse(request).serialize
-    }.check(_ == request.trim)
+    .assert(_ == request.trim)
 
-    test(t"RSA roundtrip") {
+    test(t"RSA roundtrip"):
       val privateKey: PrivateKey[Rsa[1024]] = PrivateKey.generate[Rsa[1024]]()
       val message: Message[Rsa[1024]] = privateKey.public.encrypt(t"Hello world")
       privateKey.decrypt[Text](message.bytes)
-    }.check(_ == t"Hello world")
+    .assert(_ == t"Hello world")
     
-    test(t"AES roundtrip") {
+    test(t"AES roundtrip"):
       val key: SymmetricKey[Aes[256]] = SymmetricKey.generate[Aes[256]]()
       val message = key.encrypt(t"Hello world")
       key.decrypt[Text](message.bytes)
-    }.check(_ == t"Hello world")
+    .assert(_ == t"Hello world")
 
-    test(t"Sign some data with DSA") {
+    test(t"Sign some data with DSA"):
       val privateKey: PrivateKey[Dsa[1024]] = PrivateKey.generate[Dsa[1024]]()
       val message = t"Hello world"
       val signature = privateKey.sign(message)
       privateKey.public.verify(message, signature)
-    }.assert(identity)
+    .assert(identity)
 
-    test(t"Check bad signature") {
+    test(t"Check bad signature"):
       val privateKey: PrivateKey[Dsa[1024]] = PrivateKey.generate[Dsa[1024]]()
       val message = t"Hello world"
       val signature = privateKey.sign(t"Something else")
       privateKey.public.verify(message, signature)
-    }.assert(!identity(_))
+    .assert(!identity(_))
 
-    test(t"MD5 HMAC") {
+    test(t"MD5 HMAC"):
       pangram.hmac[Md5](t"key".bytes).encode[Hex]
-    }.check(_ == t"80070713463E7749B90C2DC24911E275")
+    .check(_ == t"80070713463E7749B90C2DC24911E275")
     
-    test(t"SHA1 HMAC") {
+    test(t"SHA1 HMAC"):
       pangram.hmac[Sha1](t"key".bytes).encode[Hex]
-    }.check(_ == t"DE7C9B85B8B78AA6BC8A7A36F70A90701C9DB4D9")
+    .assert(_ == t"DE7C9B85B8B78AA6BC8A7A36F70A90701C9DB4D9")
 
-    test(t"SHA256 HMAC") {
+    test(t"SHA256 HMAC"):
       pangram.hmac[Sha2[256]](t"key".bytes).encode[Hex]
-    }.check(_ == t"F7BC83F430538424B13298E6AA6FB143EF4D59A14946175997479DBC2D1A3CD8")
+    .assert(_ == t"F7BC83F430538424B13298E6AA6FB143EF4D59A14946175997479DBC2D1A3CD8")
     
-    test(t"SHA384 HMAC") {
+    test(t"SHA384 HMAC"):
       pangram.hmac[Sha2[384]](t"key".bytes).encode[Base64]
-    }.check(_ == t"1/RyfiwLOa4PHkDMlvYCQtW3gBhBzqb8WSxdPhrlBwBYKpbPNeHlVJlf5OAzgcI3")
+    .assert(_ == t"1/RyfiwLOa4PHkDMlvYCQtW3gBhBzqb8WSxdPhrlBwBYKpbPNeHlVJlf5OAzgcI3")
     
-    test(t"SHA512 HMAC") {
+    test(t"SHA512 HMAC"):
       pangram.hmac[Sha2[512]](t"key".bytes).encode[Base64]
-    }.check(_ == t"tCrwkFe6weLUFwjkipAuCbX/fxKrQopP6GZTxz3SSPuC+UilSfe3kaW0GRXuTR7Dk1NX5OIxclDQNyr6Lr7rOg==")
-  }
+    .assert(_ == t"tCrwkFe6weLUFwjkipAuCbX/fxKrQopP6GZTxz3SSPuC+UilSfe3kaW0GRXuTR7Dk1NX5OIxclDQNyr6Lr7rOg==")
