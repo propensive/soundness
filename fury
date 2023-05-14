@@ -11,6 +11,7 @@ project gastronomy
     sources src/core
     include gossamer/core wisteria/core turbulence/core
   module test
-    sources  src/test
-    main     gastronomy.Tests
-    include  gastronomy/core probably/cli
+    sources   src/test
+    main      gastronomy.Tests
+    include   gastronomy/core probably/cli
+    coverage  gastronomy/core
