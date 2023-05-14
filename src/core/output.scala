@@ -72,26 +72,26 @@ case class TextStyle
     if strike != next.strike then buf.add(t"${esc}${next.strikeEsc}")
 
 object rendering:
-  given plain: Show[AnsiText] = _.plain
-  given ansi: Show[AnsiText] = _.render
+  given plain: Show[Output] = _.plain
+  given output: Show[Output] = _.render
   
 object Stylize:
   def apply(fn: TextStyle => TextStyle): Ansi.Input.Markup = Ansi.Input.Markup(fn)
 
-object Ansi:
+trait Ansi2:
+  inline given display[ValueType]: Substitution[Ansi.Input, ValueType, "t"] =
+    new Substitution[Ansi.Input, ValueType, "t"]:
+      def embed(value: ValueType) = Ansi.Input.TextInput:
+        compiletime.summonFrom:
+          case display: Display[ValueType] => display(value)
+          case show: Show[ValueType]       => Output(show(value))
+  
+
+object Ansi extends Ansi2:
   type Transform = TextStyle => TextStyle
 
   def strip(txt: Text): Text = txt.sub(t"""\e\\[?.*?[\\@-~]""", t"")
 
-  given Substitution[Ansi.Input, Text, "t"] = str => Ansi.Input.Textual(AnsiText(str))
-  given Substitution[Ansi.Input, String, "t"] = str => Ansi.Input.Textual(AnsiText(Text(str)))
-  
-  given [ValueType](using Show[ValueType]): Substitution[Ansi.Input, ValueType, "t"] =
-    value => Ansi.Input.Textual(AnsiText(value.show))
-  
-  given [ValueType: Display]: Substitution[Ansi.Input, ValueType, "t"] =
-    value => Ansi.Input.Textual(summon[Display[ValueType]].ansi(value))
-  
   given Stylize[Escape] = identity(_)
   given Stylize[Color] = color => Stylize(_.copy(fg = color.standardSrgb.rgb24))
   given Stylize[Rgb24] = color => Stylize(_.copy(fg = color))
@@ -105,7 +105,7 @@ object Ansi:
   given Stylize[Reverse.type] = _ => Stylize(_.copy(reverse = true))
   
   enum Input:
-    case Textual(text: AnsiText)
+    case TextInput(text: Output)
     case Markup(transform: Transform)
     case Escape(on: Text, off: Text)
 
@@ -123,7 +123,7 @@ object Ansi:
       val insertions2 = insertions.get(pos).fold(t"\e"+esc.on)(_+t"\e"+esc.on)
       copy(insertions = insertions.updated(pos, insertions2))
 
-  object Interpolator extends contextual.Interpolator[Input, State, AnsiText]:
+  object Interpolator extends contextual.Interpolator[Input, State, Output]:
     private val complement = Map('[' -> ']', '(' -> ')', '{' -> '}', '<' -> '>', '«' -> '»')
     def initial: State = State()
 
@@ -155,7 +155,7 @@ object Ansi:
               closures(state3, text.drop(idx + 1))
 
     def insert(state: State, value: Input): State = value match
-      case Input.Textual(text) =>
+      case Input.TextInput(text) =>
         val textSpans: TreeMap[CharSpan, Transform] = text.spans.map:
           case (span, transform) => (span.shift(state.text.length): CharSpan) -> transform
 
@@ -171,85 +171,83 @@ object Ansi:
       case esc@Input.Escape(on, off) =>
         state.copy(last = None).add(state.text.length, esc)
     
-    def skip(state: State): State = insert(state, Input.Textual(AnsiText.empty))
+    def skip(state: State): State = insert(state, Input.TextInput(Output.empty))
     
-    def complete(state: State): AnsiText =
+    def complete(state: State): Output =
       if !state.stack.isEmpty then throw InterpolationError(t"mismatched closing brace")
 
-      AnsiText(state.text, state.spans, state.insertions)
+      Output(state.text, state.spans, state.insertions)
 
-object AnsiText:
+object Output:
 
-  given Show[AnsiText] = _.plain
-
-  given textual: Textual[AnsiText] with
+  given textual: Textual[Output] with
     type ShowType[-ValueType] = Display[ValueType]
-    def string(text: AnsiText): String = text.plain.s
-    def length(text: AnsiText): Int = text.plain.s.length
-    def make(string: String): AnsiText = AnsiText(Text(string))
+    def string(text: Output): String = text.plain.s
+    def length(text: Output): Int = text.plain.s.length
+    def make(string: String): Output = Output(Text(string))
     
-    def map(text: AnsiText, fn: Char => Char): AnsiText =
-      AnsiText(Text(text.plain.s.map(fn)), text.spans, text.insertions)
+    def map(text: Output, fn: Char => Char): Output =
+      Output(Text(text.plain.s.map(fn)), text.spans, text.insertions)
 
-    def slice(text: AnsiText, start: Int, end: Int): AnsiText =
+    def slice(text: Output, start: Int, end: Int): Output =
       text.dropChars(start).takeChars(end - start)
     
-    def empty: AnsiText = AnsiText.empty
-    def concat(left: AnsiText, right: AnsiText): AnsiText = left+right
-    def unsafeChar(text: AnsiText, index: Int): Char = text.plain.s.charAt(index)
-    def indexOf(text: AnsiText, sub: Text): Int = text.plain.s.indexOf(sub.s)
+    def empty: Output = Output.empty
+    def concat(left: Output, right: Output): Output = left+right
+    def unsafeChar(text: Output, index: Int): Char = text.plain.s.charAt(index)
+    def indexOf(text: Output, sub: Text): Int = text.plain.s.indexOf(sub.s)
     
-    def show[ValueType](value: ValueType)(using ansiShow: Display[ValueType]) =
-      ansiShow.ansi(value)
+    def show[ValueType](value: ValueType)(using display: Display[ValueType]) =
+      display(value)
 
-  def empty: AnsiText = AnsiText(t"")
-  given joinable: Joinable[AnsiText] = _.fold(empty)(_ + _)
+  def empty: Output = Output(t"")
+  given joinable: Joinable[Output] = _.fold(empty)(_ + _)
 
-  given printable: Printable[AnsiText] = _.render
+  given printable: Printable[Output] = _.render
 
-  given cuttable: Cuttable[AnsiText, Text] = (text, delimiter, limit) =>
+  given cuttable: Cuttable[Output, Text] = (text, delimiter, limit) =>
     import java.util.regex.*
     val pattern = Pattern.compile(t"(.*)${Pattern.quote(delimiter.s).nn}(.*)".s).nn
     
     @tailrec
-    def recur(source: AnsiText, limit: Int, acc: List[AnsiText]): List[AnsiText] =
+    def recur(source: Output, limit: Int, acc: List[Output]): List[Output] =
       if limit <= 0 then acc
       else
         val matcher = pattern.matcher(source.plain.s).nn
         if matcher.matches
         then
-          val ansiText = source.take(matcher.group(2).nn.length, Rtl)
-          recur(source.take(matcher.group(1).nn.length), limit - 1, ansiText :: acc)
+          val output = source.take(matcher.group(2).nn.length, Rtl)
+          recur(source.take(matcher.group(1).nn.length), limit - 1, output :: acc)
         else source :: acc
 
 
 
     recur(text, limit, Nil)
 
-  given Ordering[AnsiText] = Ordering.by(_.plain)
+  given Ordering[Output] = Ordering.by(_.plain)
 
   def make
       [ValueType]
       (value: ValueType, transform: Ansi.Transform)(using Show[ValueType])
-      : AnsiText =
+      : Output =
     val text: Text = value.show
-    AnsiText(text, TreeMap(CharSpan(0, text.s.length) -> transform))
+    Output(text, TreeMap(CharSpan(0, text.s.length) -> transform))
 
-case class AnsiText(plain: Text, spans: TreeMap[CharSpan, Ansi.Transform] = TreeMap(),
+case class Output(plain: Text, spans: TreeMap[CharSpan, Ansi.Transform] = TreeMap(),
                         insertions: TreeMap[Int, Text] = TreeMap()):
   def explicit: Text = render.flatMap { ch => if ch.toInt == 27 then t"\\e" else ch.show }
 
   @targetName("add")
-  infix def +(text: Text): AnsiText = AnsiText(t"$plain$text", spans)
+  infix def +(text: Text): Output = Output(t"$plain$text", spans)
 
   @targetName("add2")
-  infix def +(text: AnsiText): AnsiText =
+  infix def +(text: Output): Output =
     val newSpans: TreeMap[CharSpan, Ansi.Transform] = text.spans.map:
       case (span, transform) => (span.shift(plain.length): CharSpan) -> transform
     
-    AnsiText(plain+text.plain, spans ++ newSpans)
+    Output(plain+text.plain, spans ++ newSpans)
 
-  def dropChars(n: Int, dir: Bidi = Ltr): AnsiText = dir match
+  def dropChars(n: Int, dir: Bidi = Ltr): Output = dir match
     case Rtl =>
       takeChars(plain.length - n)
     
@@ -261,9 +259,9 @@ case class AnsiText(plain: Text, spans: TreeMap[CharSpan, Ansi.Transform] = Tree
             charSpan -> transform
         .view.filterKeys { k => k.isEmpty || k != CharSpan.Nowhere }.to(TreeMap)
       
-      AnsiText(plain.drop(n), newSpans)
+      Output(plain.drop(n), newSpans)
 
-  def takeChars(n: Int, dir: Bidi = Ltr): AnsiText = dir match
+  def takeChars(n: Int, dir: Bidi = Ltr): Output = dir match
     case Rtl =>
       dropChars(plain.length - n)
 
@@ -275,7 +273,7 @@ case class AnsiText(plain: Text, spans: TreeMap[CharSpan, Ansi.Transform] = Tree
             charSpan -> tf
         .view.filterKeys { k => k.isEmpty || k != CharSpan.Nowhere }.to(TreeMap)
       
-      AnsiText(plain.take(n), newSpans)
+      Output(plain.take(n), newSpans)
 
   def render: Text =
     val buf = StringBuilder()
