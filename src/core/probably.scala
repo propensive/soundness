@@ -28,7 +28,7 @@ import scala.collection.mutable as scm
 given realm: Realm = Realm(t"probably")
 
 extension [T](inline value: T)(using inline test: TestContext)
-  inline def inspect(using Debug[T]): T = ${ProbablyMacros.inspect('value, 'test)}
+  inline def inspect: T = ${ProbablyMacros.inspect('value, 'test)}
 
 package testContexts:
   given threadLocal: TestContext = new TestContext():
