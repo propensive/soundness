@@ -28,20 +28,20 @@ import scala.collection.mutable as scm
 given realm: Realm = Realm(t"probably")
 
 extension [T](inline value: T)(using inline test: TestContext)
-  inline def inspect(using Display[T, Developer]): T = ${ProbablyMacros.inspect('value, 'test)}
+  inline def inspect(using Debug[T]): T = ${ProbablyMacros.inspect('value, 'test)}
 
 package testContexts:
   given threadLocal: TestContext = new TestContext():
     private val delegate: Option[TestContext] = Option(Runner.testContextThreadLocal.get()).map(_.nn).flatten
     
-    override def capture[T](name: Text, value: T)(using Display[T, Developer]): T =
+    override def capture[T](name: Text, value: T)(using Debug[T]): T =
       delegate.map(_.capture[T](name, value)).getOrElse(value)
 
 @annotation.capability
 class TestContext():
   private[probably] val captured: scm.ArrayBuffer[(Text, Text)] = scm.ArrayBuffer()
   
-  def capture[T](name: Text, value: T)(using Display[T, Developer]): T =
+  def capture[T](name: Text, value: T)(using Debug[T]): T =
     captured.append(name -> value.debug)
     value
 
@@ -176,7 +176,7 @@ extends Error(err"the expression was expected to throw an exception, but instead
 
 transparent inline def capture
     [ExceptionType <: Exception, ResultType]
-    (using Display[ResultType, Developer])
+    (using Debug[ResultType])
     (inline fn: => CanThrow[ExceptionType] ?=> ResultType)
     : ExceptionType throws UnexpectedSuccessError =
   try

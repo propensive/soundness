@@ -47,8 +47,8 @@ object ProbablyMacros:
     
     exp match
       case Some('{ $expr: t }) =>
-        val debug: Expr[Display[t | T, Developer]] =
-          Expr.summon[Display[t | T, Developer]].getOrElse('{ Display.any })
+        val debug: Expr[Debug[t | T]] =
+          Expr.summon[Debug[t | T]].getOrElse('{ TextConversion.any })
         
         val comparable = Expr.summon[Comparable[t | T]].getOrElse('{Comparable.simplistic[t | T]})
         '{ assertion[t | T, T, R, S]($runner, $test, $pred, $action, $comparable, Some($expr), $inc,
@@ -56,7 +56,7 @@ object ProbablyMacros:
       
       case _ =>
         '{ assertion[T, T, R, S]($runner, $test, $pred, $action, Comparable.nothing[T], None, $inc,
-            $inc2, Display.any) }
+            $inc2, TextConversion.any) }
   
   def check
       [T: Type, R: Type]
@@ -88,7 +88,7 @@ object ProbablyMacros:
       [T, T0 <: T, R, S]
       (runner: Runner[R], test: Test[T0], pred: T0 => Boolean, result: TestRun[T0] => S,
           comparable: Comparable[T], exp: Option[T], inc: Inclusion[R, Outcome],
-          inc2: Inclusion[R, DebugInfo], display: Display[T, Developer]): S =
+          inc2: Inclusion[R, DebugInfo], display: Debug[T]): S =
     runner.run(test).pipe: run =>
       val outcome = run match
         case TestRun.Throws(err, duration, map) =>
@@ -121,7 +121,7 @@ object ProbablyMacros:
       case pos: dtdu.SourcePosition => pos.lineContent.show.slice(pos.startColumn, pos.endColumn)
       case _                        => t"<unknown>"
     
-    val debug: Expr[Display[T, Developer]] =
-      Expr.summon[Display[T, Developer]].getOrElse('{ Display.any })
+    val debug: Expr[Debug[T]] =
+      Expr.summon[Debug[T]].getOrElse('{ TextConversion.any })
     
     '{ $test.capture(Text(${Expr[String](exprName.s)}), $expr)(using $debug) }
