@@ -18,7 +18,7 @@ package probably
 
 import rudiments.*
 import digression.*
-import gossamer.*, defaultTextTypes.ansiText
+import gossamer.*, defaultTextTypes.output
 import chiaroscuro.*
 import ambience.*
 import escritoire.*
@@ -183,54 +183,54 @@ class TestReport(using env: Environment):
       case Suite       => colors.SlateBlue
       case Bench       => colors.CadetBlue
 
-    def symbol: AnsiText = this match
-      case Pass        => ansi"${Bg(rgb"#8abd00")}( $Bold(${colors.Black}(✓)) )"
-      case Fail        => ansi"${Bg(colors.Tomato)}( $Bold(${colors.Black}(✗)) )"
-      case Throws      => ansi"${Bg(colors.DarkOrange)}( $Bold(${colors.Black}(!)) )"
-      case CheckThrows => ansi"${Bg(rgb"#dd40a0")}( $Bold(${colors.Black}(‼)) )"
-      case Mixed       => ansi"${Bg(rgb"#ddd700")}( $Bold(${colors.Black}(?)) )"
-      case Suite       => ansi"   "
-      case Bench       => ansi"${Bg(colors.CadetBlue)}( $Bold(${colors.Black}(*)) )"
+    def symbol: Output = this match
+      case Pass        => out"${Bg(rgb"#8abd00")}( $Bold(${colors.Black}(✓)) )"
+      case Fail        => out"${Bg(colors.Tomato)}( $Bold(${colors.Black}(✗)) )"
+      case Throws      => out"${Bg(colors.DarkOrange)}( $Bold(${colors.Black}(!)) )"
+      case CheckThrows => out"${Bg(rgb"#dd40a0")}( $Bold(${colors.Black}(‼)) )"
+      case Mixed       => out"${Bg(rgb"#ddd700")}( $Bold(${colors.Black}(?)) )"
+      case Suite       => out"   "
+      case Bench       => out"${Bg(colors.CadetBlue)}( $Bold(${colors.Black}(*)) )"
     
-    def describe: AnsiText = this match
-      case Pass        => ansi"Pass"
-      case Fail        => ansi"Fail"
-      case Throws      => ansi"Throws exception"
-      case CheckThrows => ansi"Exception in check"
-      case Mixed       => ansi"Mixed"
-      case Suite       => ansi"Suite"
-      case Bench       => ansi"Benchmark"
+    def describe: Output = this match
+      case Pass        => out"Pass"
+      case Fail        => out"Fail"
+      case Throws      => out"Throws exception"
+      case CheckThrows => out"Exception in check"
+      case Mixed       => out"Mixed"
+      case Suite       => out"Suite"
+      case Bench       => out"Benchmark"
 
-  val unitsSeq: List[AnsiText] = List(
-    ansi"${colors.BurlyWood}(µs)",
-    ansi"${colors.Goldenrod}(ms)",
-    ansi"${colors.Sienna}(s) "
+  val unitsSeq: List[Output] = List(
+    out"${colors.BurlyWood}(µs)",
+    out"${colors.Goldenrod}(ms)",
+    out"${colors.Sienna}(s) "
   )
     
-  def showTime(n: Long, units: List[AnsiText] = unitsSeq): AnsiText = units match
+  def showTime(n: Long, units: List[Output] = unitsSeq): Output = units match
     case Nil =>
-      n.show.ansi
+      n.show.out
     
     case unit :: rest =>
       if n > 100000L then showTime(n/1000L, rest) else
         val sig = (n/1000L).show
         val frac = (n%1000).show.pad(3, Rtl, '0')(using textWidthCalculation.eastAsianScripts)
-        ansi"${colors.Silver}(${sig}.$frac) ${unit}"
+        out"${colors.Silver}(${sig}.$frac) ${unit}"
     
   case class Summary(status: Status, id: TestId, count: Int, min: Long, max: Long, avg: Long):
-    def indentedName: AnsiText =
+    def indentedName: Output =
       val depth = id.suite.mm(_.id.depth).or(0) + 1
       
       val title =
-        if status == Status.Suite then ansi"${colors.Silver}($Bold(${id.name}))"
-        else ansi"${id.name}"
+        if status == Status.Suite then out"${colors.Silver}($Bold(${id.name}))"
+        else out"${id.name}"
       
-      ansi"${t"  "*(depth - 1)}$title"
+      out"${t"  "*(depth - 1)}$title"
 
-    def minTime: AnsiText = if min == 0L then ansi"" else showTime(min)
-    def maxTime: AnsiText = if max == 0L then ansi"" else showTime(max)
-    def avgTime: AnsiText = if avg == 0L then ansi"" else showTime(avg)
-    def iterations: AnsiText = if count == 0 then ansi"" else count.ansi
+    def minTime: Output = if min == 0L then out"" else showTime(min)
+    def maxTime: Output = if max == 0L then out"" else showTime(max)
+    def avgTime: Output = if avg == 0L then out"" else showTime(avg)
+    def iterations: Output = if count == 0 then out"" else count.out
 
   
 
@@ -242,23 +242,23 @@ class TestReport(using env: Environment):
       val timeTitle = if showStats then t"Avg" else t"Time"
       
       Table[Summary](
-        Column(ansi"")(_.status.symbol),
+        Column(out"")(_.status.symbol),
         
-        Column(ansi"$Bold(Hash)"): s =>
-          ansi"${colors.CadetBlue}(${s.id.id})",
+        Column(out"$Bold(Hash)"): s =>
+          out"${colors.CadetBlue}(${s.id.id})",
         
-        Column(ansi"$Bold(Test)")(_.indentedName),
+        Column(out"$Bold(Test)")(_.indentedName),
         
-        Column(ansi"$Bold(Count)", align = Alignment.Right, hide = !showStats): s =>
-          ansi"${colors.SteelBlue}(${s.iterations})",
+        Column(out"$Bold(Count)", align = Alignment.Right, hide = !showStats): s =>
+          out"${colors.SteelBlue}(${s.iterations})",
         
-        Column(ansi"$Bold(Min)", align = Alignment.Right, hide = !showStats): s =>
-          if s.count < 2 then ansi"" else s.minTime,
+        Column(out"$Bold(Min)", align = Alignment.Right, hide = !showStats): s =>
+          if s.count < 2 then out"" else s.minTime,
         
-        Column(ansi"$Bold($timeTitle)", align = Alignment.Right)(_.avgTime),
+        Column(out"$Bold($timeTitle)", align = Alignment.Right)(_.avgTime),
         
-        Column(ansi"$Bold(Max)", align = Alignment.Right, hide = !showStats): s =>
-          if s.count < 2 then ansi"" else s.maxTime
+        Column(out"$Bold(Max)", align = Alignment.Right, hide = !showStats): s =>
+          if s.count < 2 then out"" else s.maxTime
       )
       
     import tableStyles.rounded
@@ -277,13 +277,13 @@ class TestReport(using env: Environment):
 
       table.tabulate(summaryLines, columns, delimitRows = DelimitRows.SpaceIfMultiline).map(_.render).foreach(Io.println(_))
       given Decimalizer = Decimalizer(decimalPlaces = 1)
-      Io.println(ansi" $Bold(${colors.White}($passed)) passed (${100.0*passed/total}%), $Bold(${colors.White}($failed)) failed (${100.0*failed/total}%), $Bold(${colors.White}(${passed + failed})) total")
+      Io.println(out" $Bold(${colors.White}($passed)) passed (${100.0*passed/total}%), $Bold(${colors.White}($failed)) failed (${100.0*failed/total}%), $Bold(${colors.White}(${passed + failed})) total")
       Io.println(t"─"*72)
       List(Status.Pass, Status.Bench, Status.Throws, Status.Fail, Status.Mixed, Status.CheckThrows).grouped(3).foreach: statuses =>
         Io.println:
-          statuses.map[AnsiText]: status =>
-            gossamer.pad[AnsiText](ansi"  ${status.symbol} ${status.describe}")(20)
-          .join(ansi" ")
+          statuses.map[Output]: status =>
+            gossamer.pad[Output](out"  ${status.symbol} ${status.describe}")(20)
+          .join(out" ")
       Io.println(t"─"*72)
 
     def benches(line: ReportLine): Iterable[ReportLine.Bench] =
@@ -294,41 +294,41 @@ class TestReport(using env: Environment):
     
     benches(lines).groupBy(_.test.suite).foreach: (suite, benchmarks) =>
       val ribbon = Ribbon(colors.DarkGreen.srgb, colors.MediumSeaGreen.srgb, colors.PaleGreen.srgb)
-      Io.println(ribbon.fill(ansi"${suite.mm(_.id.id).or(t"")}", ansi"Benchmarks", ansi"${suite.mm(_.name).or(t"")}"))
+      Io.println(ribbon.fill(out"${suite.mm(_.id.id).or(t"")}", out"Benchmarks", out"${suite.mm(_.name).or(t"")}"))
       
       val comparisons: List[ReportLine.Bench] =
         benchmarks.filter(!_.benchmark.baseline.unset).to(List)
       
-      def confInt(b: Benchmark): AnsiText =
-        if b.confidenceInterval == 0 then ansi"" else ansi"${colors.Thistle}(±)${showTime(b.confidenceInterval)}"
+      def confInt(b: Benchmark): Output =
+        if b.confidenceInterval == 0 then out"" else out"${colors.Thistle}(±)${showTime(b.confidenceInterval)}"
       
-      def opsPerS(b: Benchmark): AnsiText =
-        if b.throughput == 0 then ansi""
-        else ansi"${colors.Silver}(${b.throughput}) ${colors.Turquoise}(op${colors.Gray}(·)s¯¹)"
+      def opsPerS(b: Benchmark): Output =
+        if b.throughput == 0 then out""
+        else out"${colors.Silver}(${b.throughput}) ${colors.Turquoise}(op${colors.Gray}(·)s¯¹)"
 
-      val bench: Table[ReportLine.Bench, AnsiText] = Table[ReportLine.Bench](
+      val bench: Table[ReportLine.Bench, Output] = Table[ReportLine.Bench](
         (List(
-          Column(ansi"$Bold(Hash)"): s =>
-            ansi"${colors.CadetBlue}(${s.test.id})",
-          Column(ansi"$Bold(Test)"): s =>
-            ansi"${s.test.name}",
+          Column(out"$Bold(Hash)"): s =>
+            out"${colors.CadetBlue}(${s.test.id})",
+          Column(out"$Bold(Test)"): s =>
+            out"${s.test.name}",
 
-          Column(ansi"$Bold(Min)", align = Alignment.Right): s =>
+          Column(out"$Bold(Min)", align = Alignment.Right): s =>
             showTime(s.benchmark.min.toLong),
         
-          Column(ansi"$Bold(Mean)", align = Alignment.Right): s =>
+          Column(out"$Bold(Mean)", align = Alignment.Right): s =>
             showTime(s.benchmark.mean.toLong),
           
-          Column(ansi"$Bold(Confidence)", align = Alignment.Right): s =>
-            ansi"P${s.benchmark.confidence} ${confInt(s.benchmark)}",
+          Column(out"$Bold(Confidence)", align = Alignment.Right): s =>
+            out"P${s.benchmark.confidence} ${confInt(s.benchmark)}",
           
-          Column(ansi"$Bold(Throughput)", align = Alignment.Right): s =>
-            ansi"${opsPerS(s.benchmark)}"
+          Column(out"$Bold(Throughput)", align = Alignment.Right): s =>
+            out"${opsPerS(s.benchmark)}"
         ) ::: (
           comparisons.map: c =>
             import Baseline.*
             val baseline = unsafely(c.benchmark.baseline.assume)
-            Column(ansi"$Bold(${colors.CadetBlue}(${c.test.id}))", align = Alignment.Right): (bench: ReportLine.Bench) =>
+            Column(out"$Bold(${colors.CadetBlue}(${c.test.id}))", align = Alignment.Right): (bench: ReportLine.Bench) =>
               def op(left: Double, right: Double): Double = baseline.calc match
                 case Difference => left - right
                 case Ratio      => left/right
@@ -345,15 +345,15 @@ class TestReport(using env: Environment):
                   showTime(value.toLong)
                 
                 case Speed =>
-                  ansi"${colors.Silver}(${value}) ${colors.Turquoise}(op${colors.Gray}(·)s¯¹)"
+                  out"${colors.Silver}(${value}) ${colors.Turquoise}(op${colors.Gray}(·)s¯¹)"
 
               baseline.calc match
-                case Difference => if value == 0 then ansi"★"
+                case Difference => if value == 0 then out"★"
                                    else if value < 0
-                                   then ansi"${colors.Thistle}(-)${valueWithUnits.dropChars(1)}"
-                                   else ansi"${colors.Thistle}(+)$valueWithUnits"
+                                   then out"${colors.Thistle}(-)${valueWithUnits.dropChars(1)}"
+                                   else out"${colors.Thistle}(+)$valueWithUnits"
                 
-                case Ratio      => if value == 1 then ansi"★" else ansi"${colors.Silver}($value)"
+                case Ratio      => if value == 1 then out"★" else out"${colors.Silver}($value)"
         ))*
       )
 
@@ -363,16 +363,16 @@ class TestReport(using env: Environment):
       Io.println(t"─"*100)
       Io.println:
         StackTrace.legend.to(List).map: (symbol, description) =>
-          ansi"$Bold(${colors.White}(${symbol.pad(3, Rtl)}))  ${description.pad(20)}"
-        .grouped(4).to(List).map(_.to(List).join).join(ansi"${t"\n"}")
+          out"$Bold(${colors.White}(${symbol.pad(3, Rtl)}))  ${description.pad(20)}"
+        .grouped(4).to(List).map(_.to(List).join).join(out"${t"\n"}")
       Io.println(t"─"*100)
 
     coverage.foreach: coverage =>
-      Io.println(ansi"$Bold($Underline(Test coverage))")
+      Io.println(out"$Bold($Underline(Test coverage))")
       case class  CoverageData(path: Text, branches: Int, hits: Int, oldHits: Int):
-        def hitsText: AnsiText =
-          val main = ansi"${if hits == 0 then colors.Gray else colors.ForestGreen}($hits)"
-          if oldHits == 0 then main else ansi"${colors.Goldenrod}(${oldHits.show.subscript}) $main"
+        def hitsText: Output =
+          val main = out"${if hits == 0 then colors.Gray else colors.ForestGreen}($hits)"
+          if oldHits == 0 then main else out"${colors.Goldenrod}(${oldHits.show.subscript}) $main"
       
       val data = coverage.spec.groupBy(_.path).to(List).map: (path, branches) =>
         val hitCount = branches.map(_.id).map(coverage.hits.contains).count(identity(_))
@@ -382,53 +382,53 @@ class TestReport(using env: Environment):
       val maxBranches = data.map(_.branches).max
       
       val coverageTable = Table[CoverageData](
-        Column(ansi"Source file", align = Alignment.Left): data =>
+        Column(out"Source file", align = Alignment.Left): data =>
           data.path,
-        Column(ansi"Hits", align = Alignment.Right)(_.hitsText),
-        Column(ansi"Size", align = Alignment.Right)(_.branches),
-        Column(ansi"Coverage", align = Alignment.Right): data =>
-          ansi"${(100*(data.hits + data.oldHits)/data.branches.toDouble)}%",
-        Column(ansi""): data =>
+        Column(out"Hits", align = Alignment.Right)(_.hitsText),
+        Column(out"Size", align = Alignment.Right)(_.branches),
+        Column(out"Coverage", align = Alignment.Right): data =>
+          out"${(100*(data.hits + data.oldHits)/data.branches.toDouble)}%",
+        Column(out""): data =>
           def width(n: Double): Text = if n == 0 then t"" else t"━"*(1 + (70*n).toInt)
           val covered: Text = width(data.hits.toDouble/maxBranches)
           val oldCovered: Text = width(data.oldHits.toDouble/maxBranches)
           val notCovered: Text = width((data.branches.toDouble - data.hits - data.oldHits)/maxBranches)
-          ansi"${colors.ForestGreen}($covered)${colors.Goldenrod}($oldCovered)${colors.Brown}($notCovered)"
+          out"${colors.ForestGreen}($covered)${colors.Goldenrod}($oldCovered)${colors.Brown}($notCovered)"
       )
 
       coverageTable.tabulate(data, columns).map(_.render).foreach(Io.println)
 
     details.to(List).sortBy(_(0).timestamp).foreach: (id, info) =>
       val ribbon = Ribbon(colors.DarkRed.srgb, colors.FireBrick.srgb, colors.Tomato.srgb)
-      Io.println(ribbon.fill(ansi"$Bold(${id.id})", id.codepoint.text.ansi, id.name.ansi).render)
+      Io.println(ribbon.fill(out"$Bold(${id.id})", id.codepoint.text.out, id.name.out).render)
       
       info.foreach: debugInfo =>
         Io.println(t"")
         debugInfo match
           case DebugInfo.Throws(err) =>
-            val name = ansi"$Italic(${colors.White}(${err.component}.${err.className}))"
-            Io.println(ansi"${colors.Silver}(An exception was thrown while running test:)".render)
-            Io.println(err.crop(t"probably.Runner", t"run()").ansi.render)
+            val name = out"$Italic(${colors.White}(${err.component}.${err.className}))"
+            Io.println(out"${colors.Silver}(An exception was thrown while running test:)".render)
+            Io.println(err.crop(t"probably.Runner", t"run()").out.render)
             showLegend()
           
           case DebugInfo.CheckThrows(err) =>
-            val name = ansi"$Italic(${colors.White}(${err.component}.${err.className}))"
-            Io.println(ansi"${colors.Silver}(An exception was thrown while checking the test predicate:)".render)
-            Io.println(err.crop(t"probably.Outcome#", t"apply()").dropRight(1).ansi.render)
+            val name = out"$Italic(${colors.White}(${err.component}.${err.className}))"
+            Io.println(out"${colors.Silver}(An exception was thrown while checking the test predicate:)".render)
+            Io.println(err.crop(t"probably.Outcome#", t"apply()").dropRight(1).out.render)
             showLegend()
           
           case DebugInfo.Compare(expected, found, cmp) =>
-            val expected2: AnsiText = ansi"$Italic(${colors.White}($expected))"
-            val found2: AnsiText = ansi"$Italic(${colors.White}($found))"
+            val expected2: Output = out"$Italic(${colors.White}($expected))"
+            val found2: Output = out"$Italic(${colors.White}($found))"
             val nl = if expected.contains(t"\n") || found.contains(t"\n") then '\n' else ' '
-            val instead = ansi"but instead it returned$nl$found2$nl"
-            Io.println(ansi"${colors.Silver}(The test was expected to return$nl$expected2$nl$instead)".render)
-            Io.println(cmp.ansi.render)
+            val instead = out"but instead it returned$nl$found2$nl"
+            Io.println(out"${colors.Silver}(The test was expected to return$nl$expected2$nl$instead)".render)
+            Io.println(cmp.out.render)
           
           case DebugInfo.Captures(map) =>
-            Table[(Text, Text), AnsiText](
-              Column(ansi"Expression", align = Alignment.Right)(_(0)),
-              Column(ansi"Value")(_(1)),
+            Table[(Text, Text), Output](
+              Column(out"Expression", align = Alignment.Right)(_(0)),
+              Column(out"Value")(_(1)),
             ).tabulate(map.to(List), 140).map(_.render).foreach(Io.println(_))
           
           case DebugInfo.Message(text) =>

@@ -37,5 +37,5 @@ extends TestSuite(name):
   
   final def main(args: IArray[Text]): Unit =
     try runner.suite(this, run())
-    catch case err: Throwable => println(StackTrace(err).ansi.render)
+    catch case err: Throwable => println(StackTrace(err).out.render)
     finally runner.complete()
