@@ -16,7 +16,8 @@
 
 package plutocrat
 
-import gossamer.*, textWidthCalculation.uniform
+import gossamer.*
+import lithography.*, textWidthCalculation.uniform
 import rudiments.*
 
 open case class Currency(isoCode: Text, symbol: Text, name: Text, modulus: Int):
