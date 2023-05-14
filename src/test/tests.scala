@@ -19,6 +19,7 @@ package aviation
 import probably.*
 import rudiments.*
 import gossamer.*
+import spectacular.*
 
 import unsafeExceptions.canThrowAny
 

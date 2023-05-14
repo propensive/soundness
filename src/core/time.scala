@@ -17,6 +17,7 @@
 package aviation
 
 import rudiments.*
+import spectacular.*
 import digression.*
 import gossamer.*
 import anticipation.*
@@ -62,7 +63,7 @@ object Dates:
     def apply(using cal: Calendar)(year: cal.Y, month: cal.M, day: cal.D): Date throws InvalidDateError =
       cal.julianDay(year, month, day)
 
-    given (using CanThrow[InvalidDateError]): Canonical[Date] = Canonical(parse(_), _.show)
+    //given (using CanThrow[InvalidDateError]): Canonical[Date] = Canonical(parse(_), _.show)
   
     given Ordering[Date] = Ordering.Int
     

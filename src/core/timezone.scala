@@ -18,6 +18,7 @@ package aviation
 
 import gossamer.*
 import kaleidoscope.*
+import spectacular.*
 import eucalyptus.*
 import rudiments.*
 import digression.*
