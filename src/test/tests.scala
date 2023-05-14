@@ -164,5 +164,5 @@ object Tests extends Suite(t"Spectacular Tests"):
       test(t"Show a locally-declared showable"):
         given Show[Exception] = e => txt"<exception>"
         Exception("error message").debug
-      .assert(_ == t"java.lang.Exception: error message")
-    
+      .assert(_ == t"<exception>")
+      

@@ -21,21 +21,15 @@ import rudiments.*
 import scala.deriving.*
 import scala.compiletime.*
 
-sealed erased trait Audience
-
-sealed erased trait EndUser extends Audience
-sealed erased trait Developer extends Audience
-sealed erased trait Machine extends Audience
-
-trait Display[-ValueType, +DisplayAudienceType <: Audience]:
+trait TextConversion[-ValueType]:
   def apply(value: ValueType): Text
 
-trait Show[-ValueType] extends Display[ValueType, Audience]
+trait Show[-ValueType] extends TextConversion[ValueType]
+trait Debug[-ValueType] extends TextConversion[ValueType]
 
-object Display:
-
-  val any: Display[Any, Developer] = value => Text(value.toString)
-
+object TextConversion:
+  val any: Debug[Any] = value => Text(value.toString)
+  
   def escape(char: Char, eEscape: Boolean = false): Text = char match
     case '\n' => Text("\\n")
     case '\t' => Text("\\t")
@@ -52,92 +46,84 @@ object Display:
     case ch =>
       Text(if ch < 128 && ch >= 32 then ch.toString else String.format("\\u%04x", ch.toInt).nn)
 
-  given Display[Text, EndUser] = identity(_)
-  given Display[String, EndUser] = Text(_)
+  given Debug[Char] = char => Text("'"+escape(char).s+"'")
+  given Debug[Long] = long => Text(long.toString+"L")
+  given Debug[String] = string => Text(summon[Debug[Text]](Text(string)).s.substring(1).nn)
+  given Debug[Byte] = byte => Text(byte.toString+".toByte")
+  given Debug[Short] = short => Text(short.toString+".toShort")
   
-  given Display[Text, Developer] = text =>
+  given Debug[Text] = text =>
     val builder: StringBuilder = new StringBuilder()
     text.s.foreach { char => builder.append(escape(char, true)) }
     
     Text("t\""+builder.toString+"\"")
-  
-  given Display[String, Developer] = string =>
-    Text(summon[Display[Text, Developer]](Text(string)).s.substring(1).nn)
 
-  given Display[Char, Developer] = char => Text("'"+escape(char).s+"'")
-  given Display[Char, EndUser] = char => Text(char.toString)
-
-  given Display[Long, Developer] = long => Text(long.toString+"L")
-  given Display[Long, EndUser] = long => Text(long.toString)
+  given Show[Text] = identity(_)
+  given Show[String] = Text(_)
+  given Show[Char] = char => Text(char.toString)
+  given Show[Long] = long => Text(long.toString)
+  given Show[Int] = int => Text(int.toString)
+  given Show[Short] = short => Text(short.toString)
+  given Show[Byte] = byte => Text(byte.toString)
+  given (using decimalizer: DecimalConverter): Show[Double] = decimalizer.decimalize(_)
   
-  given [AudienceType <: Audience]: Display[Int, AudienceType] = int => Text(int.toString)
-  given [AudienceType <: Audience]: Display[Short, AudienceType] = short => Text(short.toString)
-  
-  given Display[Byte, EndUser] = byte => Text(byte.toString)
-  given Display[Byte, Developer] = byte => Text(byte.toString+".toByte")
-  
-  given Display[Short, EndUser] = short => Text(short.toString)
-  given Display[Short, Developer] = short => Text(short.toString+".toShort")
-  
-  given (using decimalizer: DecimalConverter): Display[Double, EndUser] = decimalizer.decimalize(_)
-  
-  given Display[Float, Developer] =
+  given Debug[Float] =
     case Float.PositiveInfinity => Text("Float.PositiveInfinity")
     case Float.NegativeInfinity => Text("Float.NegativeInfinity")
     case float if float.isNaN   => Text("Float.NaN")
     case float                  => Text(float.toString+"F")
   
-  given Display[Double, Developer] = 
+  given Debug[Double] = 
     case Double.PositiveInfinity => Text("Double.PositiveInfinity")
     case Double.NegativeInfinity => Text("Double.NegativeInfinity")
     case double if double.isNaN  => Text("Double.NaN")
     case double                  => Text(double.toString)
 
-  given (using booleanStyle: BooleanStyle): Display[Boolean, EndUser] = booleanStyle(_)
-  given Display[Boolean, Developer] = boolean => Text(if boolean then "true" else "false")
+  given (using booleanStyle: BooleanStyle): Show[Boolean] = booleanStyle(_)
+  given Debug[Boolean] = boolean => Text(if boolean then "true" else "false")
 
-  given [ValueType](using show: Display[ValueType, EndUser]): Display[Option[ValueType], EndUser] =
+  given [ValueType](using show: Show[ValueType]): Show[Option[ValueType]] =
     case Some(value) => show(value)
     case None        => Text("none")
   
-  given Display[Uuid, EndUser] = _.javaUuid.toString.show
-  given Display[ByteSize, EndUser] = _.text
-  given Display[reflect.Enum, EndUser] = _.toString.show
-  given Display[reflect.Enum, Developer] = _.toString.show
-  given Display[Pid, Developer] = pid => Text("[PID:"+pid.value+"]")
+  given Show[Uuid] = _.javaUuid.toString.show
+  given Show[ByteSize] = _.text
+  given Show[reflect.Enum] = _.toString.show
+  given Debug[reflect.Enum] = _.toString.show
+  given Debug[Pid] = pid => Text("[PID:"+pid.value+"]")
 
-  given set[ElemType](using Display[ElemType, EndUser]): Display[Set[ElemType], EndUser] = set =>
+  given set[ElemType](using Show[ElemType]): Show[Set[ElemType]] = set =>
     Text(set.map(_.show).mkString("{", ", ", "}"))
   
-  given list[ElemType](using Display[ElemType, EndUser]): Display[List[ElemType], EndUser] = list =>
+  given list[ElemType](using Show[ElemType]): Show[List[ElemType]] = list =>
     Text(list.map(_.show).mkString("[", ", ", "]"))
   
-  given vector[ElemType](using Display[ElemType, EndUser]): Display[Vector[ElemType], EndUser] =
+  given vector[ElemType](using Show[ElemType]): Show[Vector[ElemType]] =
     vector => Text(vector.map(_.show).mkString("[ ", " ", " ]"))
   
-  inline given set2[ElemType]: Display[Set[ElemType], Developer] =
-    new Display[Set[ElemType], Developer]:
+  inline given set2[ElemType]: Debug[Set[ElemType]] =
+    new Debug[Set[ElemType]]:
       def apply(set: Set[ElemType]): Text = Text(set.map(_.debug).mkString("{", ", ", "}"))
   
-  inline given list2[ElemType]: Display[List[ElemType], Developer] =
-    new Display[List[ElemType], Developer]:
+  inline given list2[ElemType]: Debug[List[ElemType]] =
+    new Debug[List[ElemType]]:
       def apply(list: List[ElemType]): Text = Text(list.map(_.debug).mkString("[", ", ", "]"))
   
-  inline given vector2[ElemType]: Display[Vector[ElemType], Developer] =
-    new Display[Vector[ElemType], Developer]:
+  inline given vector2[ElemType]: Debug[Vector[ElemType]] =
+    new Debug[Vector[ElemType]]:
       def apply(vector: Vector[ElemType]): Text =
         Text(vector.map(_.debug).mkString("⟨ ", " ", " ⟩"))
   
-  inline given array[ElemType]: Display[Array[ElemType], Developer] =
-    new Display[Array[ElemType], Developer]:
+  inline given array[ElemType]: Debug[Array[ElemType]] =
+    new Debug[Array[ElemType]]:
       def apply(array: Array[ElemType]): Text = Text:
         array.zipWithIndex.map: (value, index) =>
           val subscript = index.toString.map { digit => (digit + 8272).toChar }.mkString
           Text(subscript+value.debug.s)
         .mkString("⦋"+arrayPrefix(array.toString), "∣", "⦌")
   
-  inline given iarray[ElemType]: Display[IArray[ElemType], Developer] =
-    new Display[IArray[ElemType], Developer]:
+  inline given iarray[ElemType]: Debug[IArray[ElemType]] =
+    new Debug[IArray[ElemType]]:
       def apply(iarray: IArray[ElemType]): Text = Text:
         iarray.zipWithIndex.map: (value, index) =>
           val subscript = index.toString.map { digit => (digit + 8272).toChar }.mkString
@@ -166,20 +152,20 @@ object Display:
     
     arrayType+("⁰¹²³⁴⁵⁶⁷⁸⁹"(dimension))+"¦"+renderBraille(str.split("@").nn(1).nn)+"¦"
 
-  inline given [ValueType]: Display[Option[ValueType], Developer] =
+  inline given [ValueType]: Debug[Option[ValueType]] =
     case None =>
       Text("None")
     
     case Some(value) =>
       val valueText = compiletime.summonFrom:
-        case display: Display[ValueType, Developer] => display(value)
-        case display: Display[ValueType, EndUser]   => display(value)
+        case display: Debug[ValueType] => display(value)
+        case display: Show[ValueType]   => display(value)
         case _                                      => Text(value.toString)
       
       Text("Some("+valueText+")")
   
-  given Display[None.type, EndUser] = none => Text("none")
-  given Display[None.type, Developer] = none => Text("None")
+  given Show[None.type] = none => Text("none")
+  given Debug[None.type] = none => Text("None")
   
   private transparent inline def deriveProduct[Labels <: Tuple](tuple: Tuple): List[Text] =
     inline tuple match
@@ -194,14 +180,14 @@ object Display:
   private transparent inline def deriveSum
       [TupleType <: Tuple, DerivedType]
       (ordinal: Int)
-      : Display[DerivedType, Developer] =
+      : Debug[DerivedType] =
     inline erasedValue[TupleType] match
       case _: (head *: tail) =>
         if ordinal == 0
-        then summonInline[Display[head, Developer]].asInstanceOf[Display[DerivedType, Developer]]
+        then summonInline[Debug[head]].asInstanceOf[Debug[DerivedType]]
         else deriveSum[tail, DerivedType](ordinal - 1)
 
-  inline given derived[DerivationType](using mirror: Mirror.Of[DerivationType]): Display[DerivationType, Developer] = inline mirror match
+  inline given derived[DerivationType](using mirror: Mirror.Of[DerivationType]): Debug[DerivationType] = inline mirror match
     case given Mirror.ProductOf[DerivationType & Product] => (value: DerivationType) => value.asMatchable match
       case value: Product =>
         val elements = deriveProduct[mirror.MirroredElemLabels](Tuple.fromProductTyped(value))
@@ -212,11 +198,11 @@ object Display:
       (value: DerivationType) => deriveSum[s.MirroredElemTypes, DerivationType](s.ordinal(value))(value)
 
 extension [ValueType](value: ValueType)
-  inline def show(using display: Display[ValueType, EndUser]): Text = display(value)
+  inline def show(using display: Show[ValueType]): Text = display(value)
   
   inline def debug: Text = compiletime.summonFrom:
-    case display: Display[ValueType, Developer] => display(value)
-    case display: Display[ValueType, EndUser]   => display(value)
+    case display: Debug[ValueType] => display(value)
+    case display: Show[ValueType]   => display(value)
     case _                                      => Text(value.toString)
 
 case class BooleanStyle(yes: Text, no: Text):
