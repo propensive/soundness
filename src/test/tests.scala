@@ -24,8 +24,6 @@ import larceny.*
 
 import unsafeExceptions.canThrowAny
 
-import textWidthCalculation.uniform
-
 case class Person(name: Text, age: Int)
 
 object Tests extends Suite(t"Gossamer Tests"):

@@ -70,10 +70,12 @@ object Cuttable:
       recur(0, Nil).reverse
 
   given Cuttable[Text, Text] = (text, delimiter, limit) =>
-    List(text.s.split(Pattern.quote(delimiter.s), limit).nn.map(_.nn).map(Text(_))*)
+    val parts = text.s.split(Pattern.quote(delimiter.s), limit).nn
+    val nnParts = parts.map(_.nn)
+    nnParts.map(Text(_)).to(List)
   
   given Cuttable[Text, Regex] = (text, regex, limit) =>
-    List(text.s.split(regex.pattern, limit).nn.map(_.nn).map(Text(_))*)
+    text.s.split(regex.pattern, limit).nn.map(_.nn).map(Text(_)).to(List)
 
   given [T](using cuttable: Cuttable[T, Text]): Cuttable[T, Char] = (text, delimiter, limit) =>
     cuttable.cut(text, delimiter.show, limit)
@@ -201,16 +203,17 @@ extension [TextType](using textual: Textual[TextType])(text: TextType)
     
     recur(0, 0)
   
+  def displayWidth(using calc: TextWidthCalculator) = calc.width(Text(textual.string(text)))
+  
   def pad(length: Int, bidi: Bidi = Ltr, char: Char = ' ')(using TextWidthCalculator): TextType =
-    val width = (0 until text.length).map(textual.unsafeChar(text, _).displayWidth).sum
-    val padding = textual.make(char.toString)*(length - width)
+    val padding = textual.make(char.toString)*(length - text.displayWidth)
     
     bidi match
       case Ltr => textual.concat(text, padding)
       case Rtl => textual.concat(padding, text)
   
   def center(length: Int, char: Char = ' ')(using TextWidthCalculator): TextType =
-    text.pad((length + text.length)/2, char = char).pad(length, Rtl, char = char)
+    text.pad((length + text.displayWidth)/2, char = char).pad(length, Rtl, char = char)
   
   def fit(length: Int, bidi: Bidi = Ltr, char: Char = ' ')(using TextWidthCalculator): TextType =
     bidi match
