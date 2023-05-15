@@ -4,13 +4,15 @@
 
 # Lithography
 
-__TBC__
+__Tools for working with characters in Scala__
 
-TBC
+Lithography provides facilities for working with characters, in particular, by providing support for
+different character encodings, and utilizing additional Unicode metadata.
 
 ## Features
 
-TBC
+- provides additional character metadata from the Unicode database
+- facilitates accurate text width calculations, particularly for East Asian scripts
 
 
 ## Availability
@@ -20,8 +22,43 @@ final release of Scala 3.3.
 
 ## Getting Started
 
-TBC
+### Character Display Width
 
+Lithography provides an extension method, `displayWidth`, on `Char` which will
+return the amount of space the glyph for that character will take up, when
+rendered in a mono-spaced font.
+
+Unsurprisingly, this will usually be `1`, but many characters in alphabets that
+are not based on the Latin Alphabet will need two normal character widths of
+space when rendered.
+
+However, calculating the width of a character (and, in particular a string of
+characters) will be much slower if every character must be checked individually,
+and totalled, when the `length` field of a string can provide the same value in
+constant (and fast) time, for strings which are known not to contain any "wide"
+characters.
+
+Therefore, methods which need to perform text width calculations can use either
+a `uniform` mode or an `eastAsianScripts` mode, depending on the contextual
+value imported from the `textWidthCalculation` package.
+
+For example, compare,
+```scala
+import textWidthCalculation.uniform
+'x'.displayWidth   // returns 1
+'好'.displayWidth  // returns 1
+```
+and,
+```scala
+import textWidthCalculation.eastAsianScripts
+'x'.displayWidth   // returns 1
+'好'.displayWidth  // returns 2
+```
+
+[Gossamer](https://github.com/propensive/gossamer/) provides a corresponding
+`displayWidth` extension method on all text-like types, which calculates the
+display width of the entire string by summing its character widths, or, with
+`textWidthCalculation.uniform` in scope, simply returns the `length` value.
 
 
 ## Status
@@ -70,7 +107,8 @@ Lithography was designed and developed by Jon Pretty, and commercial support and
 
 ## Name
 
-TBC
+Lithography is a process used for printing ink on paper. This library provides information on
+how to print characters on screen.
 
 In general, Scala One project names are always chosen with some rationale, however it is usually
 frivolous. Each name is chosen for more for its _uniqueness_ and _intrigue_ than its concision or
