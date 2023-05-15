@@ -204,7 +204,7 @@ object TextConversion:
         else deriveSum[tail, DerivedType](ordinal - 1)
 
   inline given derived[DerivationType](using mirror: Mirror.Of[DerivationType]): Debug[DerivationType] = inline mirror match
-    case given Mirror.ProductOf[DerivationType & Product] => (value: DerivationType) => value.asMatchable match
+    case given Mirror.ProductOf[DerivationType & Product] => (value: DerivationType) => (value.asMatchable: @unchecked) match
       case value: Product =>
         val elements = deriveProduct[mirror.MirroredElemLabels](Tuple.fromProductTyped(value))
         val typeName = Text(valueOf[mirror.MirroredLabel])
