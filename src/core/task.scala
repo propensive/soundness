@@ -97,7 +97,6 @@ def sleep[DurationType](using GenericDuration[DurationType])(time: DurationType)
   try Thread.sleep(readDuration(time)) catch case err: InterruptedException => unsafely(throw CancelError())
 
 def relinquish(cleanup: => Unit = ())(using mon: Monitor): Unit =
-  import unsafeExceptions.canThrowAny
   mon.relinquish(cleanup)
 
 def supervise
