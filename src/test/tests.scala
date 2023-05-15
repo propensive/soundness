@@ -19,8 +19,6 @@ package acyclicity
 import probably.*
 import gossamer.*
 
-import unsafeExceptions.canThrowAny
-
 object Tests extends Suite(t"Acyclicity Tests"):
   def run(): Unit =
     ()
