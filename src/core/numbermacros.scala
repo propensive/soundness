@@ -19,6 +19,7 @@ package cardinality
 import rudiments.*
 
 import scala.quoted.*
+import scala.compiletime.*
 
 object CardinalityMacro:
   def apply
@@ -27,19 +28,23 @@ object CardinalityMacro:
     
     digits.value match
       case Some(str) =>
-        (TypeRepr.of[D1], TypeRepr.of[D2]) match
-          case (ConstantType(DoubleConstant(lb)), ConstantType(DoubleConstant(ub))) =>
-            val value = str.toDouble
+        TypeRepr.of[D1].asMatchable match
+          case ConstantType(DoubleConstant(lb)) =>
+            TypeRepr.of[D2].asMatchable match
+              case ConstantType(DoubleConstant(ub)) =>
+                val value = str.toDouble
             
-            if value < lb
-            then fail(s"the value $str is less than the lower bound for this value, $lb")
+                if value < lb
+                then fail(s"the value $str is less than the lower bound for this value, $lb")
             
-            if value > ub
-            then fail(s"the value $str is greater than the upper bound for this value, $ub")
+                if value > ub
+                then fail(s"the value $str is greater than the upper bound for this value, $ub")
   
-            '{${Expr(value)}.asInstanceOf[D1 ~ D2]}
+                '{${Expr(value)}.asInstanceOf[D1 ~ D2]}
           
+              case _ =>
+                fail("upper bound must be a Double singleton literal types")
           case _ =>
-            fail("upper and lower bounds must be Double singleton literal types")
+            fail("lower bound must be a Double singleton literal types")
       case None =>
         '{NumericRange($digits.toDouble)}
