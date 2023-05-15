@@ -1,1 +1,2 @@
-TBC
+- provides additional character metadata from the Unicode database
+- facilitates accurate text width calculations, particularly for East Asian scripts
