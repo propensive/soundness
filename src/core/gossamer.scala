@@ -202,7 +202,8 @@ extension [TextType](using textual: Textual[TextType])(text: TextType)
     recur(0, 0)
   
   def pad(length: Int, bidi: Bidi = Ltr, char: Char = ' ')(using TextWidthCalculator): TextType =
-    val padding = textual.make(char.toString)*(length - text.length)
+    val width = (0 until text.length).map(textual.unsafeChar(text, _).displayWidth).sum
+    val padding = textual.make(char.toString)*(length - width)
     
     bidi match
       case Ltr => textual.concat(text, padding)
