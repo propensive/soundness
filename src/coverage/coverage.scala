@@ -32,14 +32,17 @@ object Coverage:
   def apply(): Option[CoverageResults] = currentDir.map: dir =>
     val currentFile = Invoker.measurementFile(dir.s)
     val hits = measurements(currentFile)
-    
-    val otherFiles = File(dir.s).listFiles.nn.map(_.nn).filter(_.getName.nn.startsWith(
-        "scoverage.measurements"))
-    
-    val allHits: Set[Int] = otherFiles.flatMap(measurements(_)).to(Set)
-    val oldHits: Set[Int] = allHits -- hits
-    
-    CoverageResults(dir, spec(dir), oldHits, hits)
+    val dirFile = File(dir.s)
+
+    if !dirFile.exists() then CoverageResults(dir, IArray(), Set(), Set())
+    else
+      val otherFiles = Option(dirFile.listFiles).map(_.nn).map(_.to(List).map(_.nn)).getOrElse(Nil)
+      val measurementFiles = otherFiles.filter(_.getName.nn.startsWith("scoverage.measurements"))
+      
+      val allHits: Set[Int] = measurementFiles.flatMap(measurements(_)).to(Set)
+      val oldHits: Set[Int] = allHits -- hits
+      
+      CoverageResults(dir, spec(dir), oldHits, hits)
 
   private def currentDir: Option[Text] =
     Option(System.getProperty("scalac.coverage")).map(_.nn).map(Text(_))
@@ -59,8 +62,8 @@ object Coverage:
   
   private def measurements(file: File): Set[Int] =
     val ids = BitSet()
-    
-    Source.fromFile(file).getLines.to(LazyList).foreach: id =>
+    if !file.exists() then Set()
+    else Source.fromFile(file).getLines.to(LazyList).foreach: id =>
       ids(id.toInt) = true
     
     ids.to(Set)
