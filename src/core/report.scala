@@ -384,7 +384,7 @@ class TestReport(using env: Environment):
         val oldHitCount = branches.map(_.id).map(coverage.oldHits.contains).count(identity(_))
         CoverageData(path, branches.size, hitCount, oldHitCount)
 
-      val maxBranches = data.map(_.branches).maxOption
+      val maxHits = data.map(_.branches).maxOption
       
       val coverageTable = Table[CoverageData](
         Column(out"Source file", align = Alignment.Left): data =>
@@ -395,10 +395,16 @@ class TestReport(using env: Environment):
           out"${(100*(data.hits + data.oldHits)/data.branches.toDouble)}%",
         Column(out""): data =>
           def width(n: Double): Text = if n == 0 then t"" else t"━"*(1 + (70*n).toInt)
-          val covered: Text = width(maxBranches.map(data.hits.toDouble/_).getOrElse(0))
-          val oldCovered: Text = width(maxBranches.map(data.oldHits.toDouble/_).getOrElse(0))
-          val notCovered: Text = width(maxBranches.map((data.branches.toDouble - data.hits - data.oldHits)/_).getOrElse(0))
-          out"${colors.ForestGreen}($covered)${colors.Goldenrod}($oldCovered)${colors.Brown}($notCovered)"
+          val covered: Text = width(maxHits.map(data.hits.toDouble/_).getOrElse(0))
+          val oldCovered: Text = width(maxHits.map(data.oldHits.toDouble/_).getOrElse(0))
+          
+          val notCovered: Text = width(maxHits.map((data.branches.toDouble - data.hits -
+              data.oldHits)/_).getOrElse(0))
+          
+          val bars = List(colors.ForestGreen -> covered, colors.Goldenrod -> oldCovered,
+              colors.Brown -> notCovered)
+          
+          bars.filter(_(1).length > 0).map { (color, bar) => out"$color($bar)" }.join
       )
 
       coverageTable.tabulate(data, columns).foreach(Io.println)
