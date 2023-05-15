@@ -18,13 +18,12 @@ package gastronomy
 
 import wisteria.*
 import rudiments.*
-import turbulence.*
 import gossamer.*
 import spectacular.*
 import lithography.*, textWidthCalculation.uniform
 
 import scala.collection.*
-import scala.compiletime.ops.int.*
+import scala.compiletime.*, ops.int.*
 
 import java.util as ju
 import ju.zip as juz
@@ -99,7 +98,7 @@ object Digest:
   given Show[Digest[?]] = digest => t"Digest(${digest.bytes.encode[Base64]})"
 
 case class Digest[A <: HashScheme[?]](bytes: Bytes) extends Encodable, Shown[Digest[?]]:
-  override def equals(that: Any) = that match
+  override def equals(that: Any) = that.asMatchable match
     case digest: Digest[?] => val left: Array[Byte] = bytes.mutable(using Unsafe)
                               val right: Array[Byte] = bytes.mutable(using Unsafe)
                               ju.Arrays.equals(left, right)
