@@ -120,23 +120,31 @@ extension [ElemType](stream: LazyList[ElemType])
 
   def regulate(tap: Tap)(using Monitor): LazyList[ElemType] =
     def defer
-        (active: Boolean, stream: LazyList[ElemType | Tap.Regulation], buffer: List[ElemType])
+        (active: Boolean, stream: LazyList[Some[ElemType] | Tap.Regulation],
+            buffer: List[ElemType])
         : LazyList[ElemType] =
       recur(active, stream, buffer)
 
     @tailrec
     def recur
-        (active: Boolean, stream: LazyList[ElemType | Tap.Regulation], buffer: List[ElemType])
+        (active: Boolean, stream: LazyList[Some[ElemType] | Tap.Regulation],
+            buffer: List[ElemType])
+
         : LazyList[ElemType] =
       if active && buffer.nonEmpty then buffer.head #:: defer(true, stream, buffer.tail)
       else if stream.isEmpty then LazyList()
       else stream.head match
-        case Tap.Regulation.Start => recur(true, stream.tail, buffer)
-        case Tap.Regulation.Stop  => recur(false, stream.tail, Nil)
-        case other: ElemType      => if active then other.nn #:: defer(true, stream.tail, Nil)
-                                     else recur(false, stream.tail, other.nn :: buffer)
+        case Tap.Regulation.Start =>
+          recur(true, stream.tail, buffer)
+        
+        case Tap.Regulation.Stop =>
+          recur(false, stream.tail, Nil)
+        
+        case Some(other) =>
+          if active then other.nn #:: defer(true, stream.tail, Nil)
+          else recur(false, stream.tail, other.nn :: buffer)
 
-    LazyList() #::: recur(true, stream.multiplexWith(tap.stream), Nil)
+    LazyList() #::: recur(true, stream.map(Some(_)).multiplexWith(tap.stream), Nil)
 
   def cluster
       [DurationType: GenericDuration]
@@ -232,53 +240,49 @@ package basicIo:
       else System.out.nn.writeBytes(bytes.mutable(using Unsafe))
     
 class StreamBuffer[ElemType]():
-  private val primary: juc.LinkedBlockingQueue[Maybe[ElemType]] = juc.LinkedBlockingQueue()
-  private val secondary: juc.LinkedBlockingQueue[Maybe[ElemType]] = juc.LinkedBlockingQueue()
+  private val primary: juc.LinkedBlockingQueue[Option[ElemType]] = juc.LinkedBlockingQueue()
+  private val secondary: juc.LinkedBlockingQueue[Option[ElemType]] = juc.LinkedBlockingQueue()
   private var buffer: Boolean = true
   private var closed: Boolean = false
 
-  def useSecondary() = primary.put(Unset)
-  def usePrimary() = secondary.put(Unset)
+  def useSecondary() = primary.put(None)
+  def usePrimary() = secondary.put(None)
 
   def close(): Unit =
     closed = true
-    primary.put(Unset)
-    secondary.put(Unset)
+    primary.put(None)
+    secondary.put(None)
 
-  def put(value: ElemType): Unit = primary.put(value)
-  def putSecondary(value: ElemType): Unit = secondary.put(value)
+  def put(value: ElemType): Unit = primary.put(Some(value))
+  def putSecondary(value: ElemType): Unit = secondary.put(Some(value))
   
   def stream: LazyList[ElemType] =
     def recur(): LazyList[ElemType] =
       if buffer then primary.take() match
-        case Unset =>
+        case null | None =>
           buffer = false
           if closed then LazyList() else recur()
-        case value: ElemType =>
+        case Some(value) =>
           value #:: recur()
-        case _ =>
-          throw Mistake("Should never match")
       else secondary.take() match
-        case Unset =>
+        case null | None =>
           buffer = true
           if closed then LazyList() else recur()
-        case value: ElemType =>
+        case Some(value) =>
           value #:: recur()
-        case _ =>
-          throw Mistake("Should never match")
     
     recur()
 
 
 class Funnel[ItemType]():
-  private object Terminate
-  private val queue: juc.LinkedBlockingQueue[ItemType | Terminate.type] = juc.LinkedBlockingQueue()
+  private val queue: juc.LinkedBlockingQueue[Option[ItemType]] = juc.LinkedBlockingQueue()
   
-  def put(item: ItemType): Unit = queue.put(item)
-  def stop(): Unit = queue.put(Terminate)
+  def put(item: ItemType): Unit = queue.put(Some(item))
+  def stop(): Unit = queue.put(None)
   
-  def stream: LazyList[ItemType] = LazyList.continually(queue.take()).takeWhile(_ != Terminate).collect:
-    case item: ItemType => item
+  def stream: LazyList[ItemType] =
+    LazyList.continually(queue.take()).takeWhile(_ != None).collect:
+      case Some(item) => item
 
 class Gun() extends Funnel[Unit]():
   def fire(): Unit = put(())
