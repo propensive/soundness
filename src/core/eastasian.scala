@@ -20,6 +20,6 @@ import rudiments.*
 import lithography.*
 
 package textWidthCalculation:
-  given eastAsianScripts: TextWidthCalculator = new TextWidthCalculator:
-    def width(text: Text): Int = text.displayWidth
+  given eastAsianScripts: TextWidthCalculator with
+    def width(text: Text): Int = text.s.map(width(_)).sum
     def width(char: Char): Int = char.displayWidth

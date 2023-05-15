@@ -97,9 +97,6 @@ object Unicode:
 extension (char: Char)
   def displayWidth: Int = Unicode.eastAsianWidth(char).mm(_.width).or(1)
 
-extension (text: Text)
-  def displayWidth: Int = text.s.toCharArray.nn.immutable(using Unsafe).map(_.displayWidth).sum
-
 @missingContext("a contextual TextWidthCalculator is required to work out the horizontal space a string of text takes when rendered in a monospaced font; for most purposes,\n\n    lithography.textWidthCalculation.uniform\n\nwill suffice, but if using East Asian scripts,\n\n    import lithography.textWidthCalculation.eastAsianScripts\n\nshould be used.")
 trait TextWidthCalculator:
   def width(text: Text): Int
