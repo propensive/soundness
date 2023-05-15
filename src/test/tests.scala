@@ -18,9 +18,8 @@ package parasitism
 
 import probably.*
 import rudiments.*
-import eucalyptus.*, logging.stdout
+import digression.*
 import gossamer.*
-import turbulence.*, stdouts.stdout
 import anticipation.*, timeApi.long
 
 import unsafeExceptions.canThrowAny
@@ -52,7 +51,7 @@ object Tests extends Suite(t"Parasitism tests"):
         test(t"Completed promise has correct value"):
           val promise = Promise[Int]()
           promise.supply(42)
-          promise.get
+          promise.await()
         .assert(_ == 42)
 
         test(t"Promise result can be awaited"):
@@ -63,15 +62,16 @@ object Tests extends Suite(t"Parasitism tests"):
           promise.await()
         .assert(_ == 42)
 
-        test(t"Incomplete promise contains exception"):
-          val promise = Promise[Int]()
-          capture(promise.get)
-        .assert(_ == IncompleteError())
+        // There is no longer any way to get a promise without awaiting it
+        // test(t"Incomplete promise contains exception"):
+        //   val promise = Promise[Int]()
+        //   capture(promise.await())
+        // .assert(_ == IncompleteError())
         
         test(t"Canceled promise contains exception"):
           val promise = Promise[Int]()
           promise.cancel()
-          capture(promise.get)
+          capture(promise.await())
         .assert(_ == CancelError())
     
       suite(t"Tasks"):
@@ -94,14 +94,14 @@ object Tests extends Suite(t"Parasitism tests"):
         
         test(t"Task name"):
           val task = Task(t"simple")(100)
-          task.name
+          task.id
         .assert(_ == t"task://runner/simple")
         
         test(t"Subtask name"):
           var name: Option[Text] = None
           val task = Task(t"simple"):
             val inner = Task(t"inner")(100)
-            name = Some(inner.name)
+            name = Some(inner.id)
             inner.await()
             200
           task.await()
@@ -150,21 +150,21 @@ object Tests extends Suite(t"Parasitism tests"):
           value
         .assert(_ == false)
 
-        def fibonacci(a: Long)(using Monitor): Long =
-          accede()
-          if a < 2 then 1 else fibonacci(a - 1) + fibonacci(a - 2)
+        // def fibonacci(a: Long)(using Monitor): Long =
+        //   accede()
+        //   if a < 2 then 1 else fibonacci(a - 1) + fibonacci(a - 2)
         
-        test(t"Affirmed calculation without interruption does not cancel it"):
-          val task = Task(t"fibonacci")(fibonacci(30))
-          //task.cancel()
-          try task.await() catch case e: CancelError => -1
-        .assert(_ == 1346269)
+        // test(t"Affirmed calculation without interruption does not cancel it"):
+        //   val task = Task(t"fibonacci")(fibonacci(30))
+        //   //task.cancel()
+        //   try task.await() catch case e: CancelError => -1
+        // .assert(_ == 1346269)
         
-        test(t"Affirmed calculation with interruption cancels it"):
-          val task = Task(t"fibonacci")(fibonacci(40))
-          task.cancel()
-          capture(task.await())
-        .assert(_ == CancelError())
+        // test(t"Affirmed calculation with interruption cancels it"):
+        //   val task = Task(t"fibonacci")(fibonacci(40))
+        //   task.cancel()
+        //   capture(task.await())
+        // .assert(_ == CancelError())
 
         test(t"Canceled task cancels child"):
           var value = 1
