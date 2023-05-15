@@ -17,13 +17,10 @@
 package escapade
 
 import probably.*
-import eucalyptus.*
 import rudiments.*
 import gossamer.*
 
 import escapes.*
-
-import unsafeExceptions.canThrowAny
 
 object Tests extends Suite(t"Escapade tests"):
   def run(): Unit =
