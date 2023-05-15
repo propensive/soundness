@@ -17,3 +17,4 @@ project cardinality
     sources   src/test
     include   probably/cli larceny/plugin cardinality/core
     main      cardinality.Tests
+    coverage  cardinality/core
