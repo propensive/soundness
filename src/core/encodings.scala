@@ -159,3 +159,12 @@ package badEncodingHandlers:
 
 case class BadEncodingError(pos: Int, bytes: Bytes)
 extends Error(err"The byte sequence $bytes at position $pos is not valid")
+
+// FIXME: This code was copied from Gossamer, which depends on Contextual, while Lithography does not.
+// extension (inline ctx: StringContext)
+//   transparent inline def enc(inline parts: Any*): Encoding = ${EncodingPrefix.expand('ctx, 'parts)
+
+// object EncodingPrefix extends Verifier[Encoding]:
+//   def verify(enc: Text): Encoding = enc match
+//     case Encoding(enc) => enc
+//     case _             => throw InterpolationError(Text(s"$enc is not a valid character encoding"))

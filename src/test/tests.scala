@@ -18,7 +18,10 @@ package lithography
 
 import probably.*
 import rudiments.*
-import gossamer.*
+// FIXME: resolution of overloaded `displayWidth` does not work
+import gossamer.{displayWidth as _, *}
+
+import textWidthCalculation.eastAsianScripts
 
 object Tests extends Suite(t"Lithography tests"):
   def run(): Unit =
@@ -31,9 +34,6 @@ object Tests extends Suite(t"Lithography tests"):
     .assert(_ == 2)
 
     test(t"Check displayWidth of string of Japanese text"):
-      t"平ぱ記動テ使村方島おゃぎむ万離ワ学つス携".displayWidth
-    .assert(_ == 40)
-    
-    test(t"Check displayWidth of 平ぱ記動テ使村方島おゃぎむ万離ワ学つス携"):
+      import gossamer.displayWidth
       t"平ぱ記動テ使村方島おゃぎむ万離ワ学つス携".displayWidth
     .assert(_ == 40)
