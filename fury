@@ -17,3 +17,4 @@ project dissonance
     sources   src/test
     include   dissonance/core probably/cli
     main      dissonance.Tests
+    coverage  dissonance/core
