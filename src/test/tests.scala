@@ -33,7 +33,7 @@ object Tests extends Suite(t"Lithography tests"):
       '身'.displayWidth
     .assert(_ == 2)
 
-    test(t"Check displayWidth of string of Japanese text"):
+    test(t"Check displayWidth of string of Japanese text: \"平ぱ記...つス携\""):
       import gossamer.displayWidth
       t"平ぱ記動テ使村方島おゃぎむ万離ワ学つス携".displayWidth
     .assert(_ == 40)
