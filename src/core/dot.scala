@@ -100,7 +100,7 @@ object Dot:
       case t";" => newline()
       case word => whitespace(); buf.add(word)
 
-    Showable(buf).show
+    buf.text
 
   private def tokenize(graph: Ref | Dot | Target | Statement | Property): LazyList[Text] = graph match
     case Ref(id, port) =>
