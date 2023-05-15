@@ -127,7 +127,17 @@ object TextConversion:
           val subscript = index.toString.map { digit => (digit + 8272).toChar }.mkString
           Text(subscript+value.debug.s)
         .mkString("⦋"+arrayPrefix(array.toString), "∣", "⦌")
-  
+
+  inline given lazyList[ElemType]: Debug[LazyList[ElemType]] =
+    new Debug[LazyList[ElemType]]:
+      def apply(value: LazyList[ElemType]): Text = recur(value, 3)
+      
+      private def recur(lazyList: LazyList[ElemType], todo: Int): Text =
+        if todo <= 0 then Text("..?")
+        else if lazyList.toString == "LazyList(<not computed>)" then Text("〜")
+        else if lazyList.isEmpty then Text("¶")
+        else Text(lazyList.head.debug.s+"⌗"+recur(lazyList.tail, todo - 1))
+
   inline given iarray[ElemType]: Debug[IArray[ElemType]] =
     new Debug[IArray[ElemType]]:
       def apply(iarray: IArray[ElemType]): Text = Text:
