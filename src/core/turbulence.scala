@@ -72,7 +72,7 @@ class Pulsar[DurationType: GenericDuration](interval: DurationType):
 
 case class Multiplexer[KeyType, ElemType]()(using monitor: Monitor):
   private val tasks: TrieMap[KeyType, /*{monitor}*/ Task[Unit]] = TrieMap()
-  private val queue: juc.LinkedBlockingQueue[Maybe[ElemType]] = juc.LinkedBlockingQueue()
+  private val queue: juc.LinkedBlockingQueue[Option[ElemType]] = juc.LinkedBlockingQueue()
 
   def close(): Unit = tasks.keys.foreach(remove(_))
 
@@ -81,19 +81,19 @@ case class Multiplexer[KeyType, ElemType]()(using monitor: Monitor):
     if stream.isEmpty then remove(key) else
       //ctx.terminate(())
       relinquish()
-      queue.put(stream.head)
+      queue.put(Some(stream.head))
       pump(key, stream.tail)
 
   def add(key: KeyType, stream: LazyList[ElemType]): Unit = tasks(key) = Task(Text("pump"))(pump(key, stream))
  
   private def remove(key: KeyType): Unit = synchronized:
     tasks -= key
-    if tasks.isEmpty then queue.put(Unset)
+    if tasks.isEmpty then queue.put(None)
   
   def stream: LazyList[ElemType] =
     def recur(): LazyList[ElemType] = queue.take() match
-      case null | Unset   => LazyList()
-      case item: ElemType => item.nn #:: recur()
+      case null | None => LazyList()
+      case Some(item)  => item #:: recur()
     
     // FIXME: This should be identical to recur(), but recur is not tail-recursive so
     // it can lead to stack overflow. It may still be a memory leak, though.
@@ -478,3 +478,4 @@ extension [ValueType](value: ValueType)
     appendable.append(target, readable.read(value))
 
 case class Line(content: Text)
+
