@@ -108,6 +108,8 @@ object Tzdb:
     def parseLeap(lineNo: Int, args: List[Text]): Tzdb.Entry.Leap = args match
       case As[Int](year) :: month :: As[Int](day) :: time :: add :: s :: Nil =>
         Tzdb.Entry.Leap(year, parseMonth(month), day, parseTime(lineNo, time), add == t"+")
+      case other =>
+        throw TzdbError(TzdbError.Issue.UnexpectedRule, lineNo)
 
     def parseMonth(str: Text) = MonthName.valueOf(str.s)
 

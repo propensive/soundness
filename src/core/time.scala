@@ -291,7 +291,7 @@ object Period:
     def readDuration(period: Period & FixedDuration): Long =
       period.hours*3600000L + period.minutes*60000L + period.seconds*1000L
   
-  def apply(denomination: StandardTime, n: Int): Period = denomination match
+  def apply(denomination: StandardTime, n: Int): Period = (denomination: @unchecked) match
     case StandardTime.Year   => Period(n, 0, 0, 0, 0, 0)
     case StandardTime.Month  => Period(0, n, 0, 0, 0, 0)
     case StandardTime.Day    => Period(0, 0, n, 0, 0, 0)
