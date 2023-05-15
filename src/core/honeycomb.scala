@@ -19,7 +19,8 @@ package honeycomb
 import rudiments.*
 import gossamer.*
 import anticipation.*
-import turbulence.*
+import spectacular.*
+import lithography.*
 
 import scala.quoted.*
 

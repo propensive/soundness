@@ -19,11 +19,7 @@ package honeycomb
 import probably.*
 import gossamer.*
 import rudiments.*
-import eucalyptus.*
-
-import unsafeExceptions.canThrowAny
-
-given Log(Everything |-> Stdout)
+import spectacular.*
 
 object Tests extends Suite(t"Honeycomb Tests"):
   def run(): Unit =

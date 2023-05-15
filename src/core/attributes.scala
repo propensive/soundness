@@ -18,15 +18,16 @@ package honeycomb
 
 import rudiments.*
 import gossamer.*
-import turbulence.*
 import anticipation.*
+import lithography.*
+import spectacular.*
 
 trait HtmlAttribute[Key <: Label, -Value, -T]:
   def convert(value: Value): Maybe[Text]
   def rename: Option[Text] = None
 
 object Rel:
-  given Show[Rel] = Showable(_).show.uncamel.kebab
+  given Show[Rel] = _.toString.show.uncamel.kebab
 
 enum Rel:
   case Alternate, Author, Bookmark, Canonical, DnsPrefetch, External, Help, Icon, License, Manifest,
@@ -34,13 +35,13 @@ enum Rel:
       Preload, Prerender, Prev, Search, Stylesheet, Tag
 
 object Autocomplete:
-  given Show[Autocomplete] = Showable(_).show.lower
+  given Show[Autocomplete] = _.toString.show.lower
 
 enum Autocomplete:
   case On, Off
 
 object Method:
-  given Show[Method] = Showable(_).show.lower
+  given Show[Method] = _.toString.show.lower
 
 enum Method:
   case Post, Get, Dialog
@@ -68,19 +69,19 @@ object DomId:
 case class DomId(name: Text)
 
 object Crossorigin:
-  given Show[Crossorigin] = Showable(_).show.uncamel.kebab
+  given Show[Crossorigin] = _.toString.show.uncamel.kebab
 
 enum Crossorigin:
   case UseCredentials, Anonymous
 
 object HDir:
-  given Show[HDir] = Showable(_).show.lower
+  given Show[HDir] = _.toString.show.lower
 
 enum HDir:
   case Ltr, Rtl, Auto
 
 object HttpEquiv:
-  given Show[HttpEquiv] = Showable(_).show.uncamel.kebab
+  given Show[HttpEquiv] = _.toString.show.uncamel.kebab
 
 enum HttpEquiv:
   case ContentSecurityPolicy, ContentType, DefaultStyle, Refresh
@@ -88,52 +89,52 @@ enum HttpEquiv:
 object HType:
   given Show[HType] =
     case DatetimeLocal => t"datetime-local"
-    case other         => Showable(other).show.lower
+    case other         => other.toString.show.lower
 
 enum HType:
   case Button, Checkbox, Color, Date, DatetimeLocal, Email, File, Hidden, Image, Month, Number,
       Password, Radio, Range, Reset, Search, Submit, Tel, Text, Time, Url, Week
 
 object Kind:
-  given Show[Kind] = Showable(_).show.lower
+  given Show[Kind] = _.toString.show.lower
 
 enum Kind:
   case Subtitles, Captions, Descriptions, Chapters, Metadata
 
 object Preload:
-  given Show[Preload] = Showable(_).show.lower
+  given Show[Preload] = _.toString.show.lower
 
 enum Preload:
   case None, Metadata, Auto
 
 object Rev:
-  given Show[Rev] = Showable(_).show.lower
+  given Show[Rev] = _.toString.show.lower
 
 enum Rev:
   case Alternate, Stylesheet, Start, Next, Prev, Contents, Index, Glossary, Copyright, Chapter,
       Section, Subsection, Appendix, Help, Bookmark
 
 object Sandbox:
-  given Show[Sandbox] = Showable(_).show.uncamel.kebab
+  given Show[Sandbox] = _.toString.show.uncamel.kebab
 
 enum Sandbox:
   case AllowForms, AllowPointerLock, AllowPopups, AllowPresentation, AllowSameOrigin, AllowScripts,
       AllowTopNavigation
 
 object Scope:
-  given Show[Scope] = Showable(_).show.lower
+  given Show[Scope] = _.toString.show.lower
 
 enum Scope:
   case Row, Col, Rowgroup, Colgroup
 
 object Shape:
-  given Show[Shape] = Showable(_).show.lower
+  given Show[Shape] = _.toString.show.lower
 
 enum Shape:
   case Circle, Default, Poly, Rect
 
 object Wrap:
-  given Show[Wrap] = Showable(_).show.lower
+  given Show[Wrap] = _.toString.show.lower
 
 enum Wrap:
   case Soft, Hard
@@ -180,7 +181,7 @@ object HtmlAttribute:
   given content[T]: HtmlAttribute["content", Text, T] = identity(_)
   given contenteditable[T]: HtmlAttribute["contenteditable", Boolean, T] = if _ then t"true" else t"false"
   given controls[T]: HtmlAttribute["controls", Boolean, T] = _ => Unset
-  given coords[T]: HtmlAttribute["coords", Seq[Double], T] = _.map(Showable(_).show).join(t",")
+  given coords[T]: HtmlAttribute["coords", Seq[Double], T] = _.map(_.toString.show).join(t",")
   given crossorigin[T]: HtmlAttribute["crossorigin", Crossorigin, T] = _.show
   given data[T]: HtmlAttribute["data", Text, T] = identity(_)
   given datetime[T]: HtmlAttribute["datetime", Text, T] = identity(_) // To be provided by Aviation
@@ -218,7 +219,7 @@ object HtmlAttribute:
   given headers2[T]: HtmlAttribute["headers", Set[DomId], T] = _.map(_.name).join(t" ")
   given height[T]: HtmlAttribute["height", Int, T] = _.show
   given hidden[T]: HtmlAttribute["hidden", Boolean, T] = _ => Unset
-  given high[T]: HtmlAttribute["high", Double, T] = Showable(_).show
+  given high[T]: HtmlAttribute["high", Double, T] = _.toString.show
   given href: HtmlAttribute["href", Text, Text] = identity(_)
   given hreflang[T]: HtmlAttribute["hreflang", Text, T] = identity(_) // Needs to be provided by Cosmopolite
   
@@ -234,14 +235,14 @@ object HtmlAttribute:
   given list[T]: HtmlAttribute["list", Seq[DomId], T] = _.map(_.name).join(t" ")
   given list2[T]: HtmlAttribute["list", DomId, T] = _.name
   given loop[T]: HtmlAttribute["loop", Boolean, T] = _ => Unset
-  given low[T]: HtmlAttribute["low", Double, T] = Showable(_).show
+  given low[T]: HtmlAttribute["low", Double, T] = _.toString.show
   given manifest[T]: HtmlAttribute["manifest", Text, T] = identity(_) // Provided by Scintillate
-  given max[T]: HtmlAttribute["max", Double | Int, T] = Showable(_).show
+  given max[T]: HtmlAttribute["max", Double | Int, T] = _.toString.show
   given maxlength[T]: HtmlAttribute["maxlength", Int, T] = _.show
   given minlength[T]: HtmlAttribute["minlength", Int, T] = _.show
   given media[T]: HtmlAttribute["media", Text, T] = identity(_) // Should be provided by Cataclysm
   given method[T]: HtmlAttribute["method", Method, T] = _.show
-  given min[T]: HtmlAttribute["min", Double | Int, T] = Showable(_).show
+  given min[T]: HtmlAttribute["min", Double | Int, T] = _.toString.show
   given multiple[T]: HtmlAttribute["multiple", Boolean, T] = _ => Unset
   given muted[T]: HtmlAttribute["muted", Boolean, T] = _ => Unset
   given name[T]: HtmlAttribute["name", Text, T] = identity(_) // Should provide special `name` identifiers
@@ -249,7 +250,7 @@ object HtmlAttribute:
   given nonce[T]: HtmlAttribute["nonce", Text, T] = identity(_) // Should be provided by Gastronomy
   given novalidate[T]: HtmlAttribute["novalidate", Boolean, T] = _ => Unset
   given open[T]: HtmlAttribute["open", Boolean, T] = _ => Unset
-  given optimum[T]: HtmlAttribute["optimum", Double, T] = Showable(_).show
+  given optimum[T]: HtmlAttribute["optimum", Double, T] = _.toString.show
   given pattern[T]: HtmlAttribute["pattern", Text, T] = identity(_) // Provide with Kaleidoscope
   given placeholder[T]: HtmlAttribute["placeholder", Text, T] = identity(_)
   given poster[T]: HtmlAttribute["poster", Text, T] = identity(_)
@@ -280,7 +281,7 @@ object HtmlAttribute:
   given srclang[T]: HtmlAttribute["srclang", Text, T] = identity(_)
   given srcset[T]: HtmlAttribute["srcset", Text, T] = identity(_) // This should be provided by Cataclysm
   given start[T]: HtmlAttribute["start", Int, T] = _.show
-  given step[T]: HtmlAttribute["step", Double, T] = Showable(_).show
+  given step[T]: HtmlAttribute["step", Double, T] = _.toString.show
   given style[T]: HtmlAttribute["style", Text, T] = identity(_) // This should be provided by Cataclysm
   given tabindex[T]: HtmlAttribute["tabindex", Int, T] = _.show
   given target[T]: HtmlAttribute["target", Target, T] = _.show
@@ -292,7 +293,7 @@ object HtmlAttribute:
     def convert(value: HType): Text = value.show
   
   given usemap[T]: HtmlAttribute["usemap", Text, T] = identity(_) // This needs a representation of HTML names
-  given value[T]: HtmlAttribute["value", Double, T] = Showable(_).show
+  given value[T]: HtmlAttribute["value", Double, T] = _.toString.show
   given valueInt[T]: HtmlAttribute["value", Int, T] = _.show
   given width[T]: HtmlAttribute["width", Int, T] = _.show
   given wrap[T]: HtmlAttribute["wrap", Wrap, T] = _.show
