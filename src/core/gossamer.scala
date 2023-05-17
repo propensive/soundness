@@ -59,7 +59,7 @@ object Cuttable:
   given [TextType: Textual](using textual: Textual[TextType]): Cuttable[TextType, Regex] =
     (text, regex, limit) =>
       val string = textual.string(text)
-      val matcher = Pattern.compile(regex.pattern).nn.matcher(string).nn
+      val matcher = Pattern.compile(regex.pattern.s).nn.matcher(string).nn
       
       @tailrec
       def recur(start: Int, results: List[TextType]): List[TextType] =
@@ -75,7 +75,7 @@ object Cuttable:
     nnParts.map(Text(_)).to(List)
   
   given Cuttable[Text, Regex] = (text, regex, limit) =>
-    text.s.split(regex.pattern, limit).nn.map(_.nn).map(Text(_)).to(List)
+    text.s.split(regex.pattern.s, limit).nn.map(_.nn).map(Text(_)).to(List)
 
   given [T](using cuttable: Cuttable[T, Text]): Cuttable[T, Char] = (text, delimiter, limit) =>
     cuttable.cut(text, delimiter.show, limit)
