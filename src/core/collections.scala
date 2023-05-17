@@ -16,6 +16,8 @@
 
 package rudiments
 
+import scala.compiletime.*
+
 import language.experimental.captureChecking
 
 extension [ValueType](seq: Iterable[ValueType])
@@ -36,12 +38,12 @@ extends Error(ErrorMessage(List(Text(
     "the sequence contained more than one element that mapped to the same index")), Nil))
 
 extension [ElemType](value: IArray[ElemType])
-  inline def mutable(using erased Unsafe.type): Array[ElemType] = value.asInstanceOf[Array[ElemType]]
+  inline def mutable(using erased Unsafe.type): Array[ElemType] = (value.asMatchable: @unchecked) match
+    case array: Array[ElemType] => array
 
 extension [ElemType](value: Array[ElemType])
-  inline def immutable(using erased Unsafe.type): IArray[ElemType] = value match
-    case array: IArray[ElemType] @unchecked => array
-    case _                                  => throw Mistake("Should never match")
+  inline def immutable(using erased Unsafe.type): IArray[ElemType] = (value: @unchecked) match
+    case array: IArray[ElemType] => array
 
   def snapshot(using ClassTag[ElemType]): IArray[ElemType] =
     val newArray = new Array[ElemType](value.length)
