@@ -34,3 +34,4 @@ object Text:
 
 extension (xs: Iterable[Text])
   transparent inline def ss: Iterable[String] = xs
+
