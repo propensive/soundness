@@ -20,40 +20,49 @@ import rudiments.*
 
 import scala.quoted.*
 
-trait SimpleSchema[F]:
+trait SimpleSchema[FieldType]:
   def fields: List[String]
-  transparent inline def record(inline fn: String => F): SimpleRecord[F]
+  transparent inline def record(inline access: String => FieldType): SimpleRecord[FieldType]
   
-  final def build[F: Type](fn: Expr[String => F])(using Quotes): Expr[SimpleRecord[F]] =
-    import quotes.*, quotes.reflect.*
-    fields.foldLeft(TypeRepr.of[SimpleRecord[F]])(Refinement(_, _, TypeRepr.of[F])).asType match
-      case '[typ] => '{new SimpleRecord[F]($fn(_)).asInstanceOf[typ & SimpleRecord[F]]}
-      case _      => throw Mistake("the first case should always match")
+  final def build
+      [FieldType: Type]
+      (access: Expr[String => FieldType])(using Quotes)
+      : Expr[SimpleRecord[FieldType]] =
+    import quotes.reflect.*
+    
+    val simpleRecordType = TypeRepr.of[SimpleRecord[FieldType]]
+    val refinedType = fields.foldLeft(simpleRecordType)(Refinement(_, _, TypeRepr.of[FieldType]))
+    
+    (refinedType.asType: @unchecked) match
+      case '[refinedType] =>
+        '{new SimpleRecord[FieldType]($access).asInstanceOf[refinedType & SimpleRecord[FieldType]]}
   
-class SimpleRecord[Field](fn: String => Field) extends Selectable:
-  def selectDynamic(name: String): Field = fn(name)
+class SimpleRecord[FieldType](access: String => FieldType) extends Selectable:
+  def selectDynamic(name: String): FieldType = access(name)
 
-class Record(fn: String => Any) extends Selectable:
-  def selectDynamic(name: String): Any = fn(name)
+class Record(access: String => Any) extends Selectable:
+  def selectDynamic(name: String): Any = access(name)
 
-trait Schema[E <: reflect.Enum]:
-  def types: Map[String, E]
-  transparent inline def record(inline fn: String => Any): Record
-  type EnumType = E
-  type Result[_ <: E]
+trait Schema[InitEnumType <: reflect.Enum]:
+  type EnumType = InitEnumType
+  type Result[_ <: EnumType]
+  
+  def types: Map[String, EnumType]
+  
+  transparent inline def record(inline access: String => Any): Record
 
-  def build(fn: Expr[String => Any])(using Quotes, Type[E], Type[Result]): Expr[Record] =
+  def build(access: Expr[String => Any])(using Quotes, Type[EnumType], Type[Result]): Expr[Record] =
     import quotes.*, quotes.reflect.*
 
-    types.foldLeft(TypeRepr.of[Record]):
-      case (acc, (key, etype)) =>
-        val companion = Ref(TypeRepr.of[E].typeSymbol.companionModule)
-        val sym = companion.symbol.declaredField(etype.toString)
-        val returnType = Singleton(companion.select(sym)).tpe.asType match
-          case '[typ] => TypeRepr.of[Result[typ & E]].simplified
-          case _      => throw Mistake("the first case should always match")
+    val refinedType = types.foldLeft(TypeRepr.of[Record]):
+      case (acc, (key, enumType)) =>
+        val companion = Ref(TypeRepr.of[EnumType].typeSymbol.companionModule)
+        val sym = companion.symbol.declaredField(enumType.toString)
+        
+        val returnType = (Singleton(companion.select(sym)).tpe.asType: @unchecked) match
+          case '[typ] => TypeRepr.of[Result[typ & EnumType]].simplified
 
         Refinement(acc, key, returnType)
-    .asType match
-      case '[typ] => '{new Record($fn(_)).asInstanceOf[typ & Record]}
-      case _      => ???
+    
+    (refinedType.asType: @unchecked) match
+      case '[refinedType] => '{new Record($access(_)).asInstanceOf[refinedType & Record]}
