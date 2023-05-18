@@ -169,7 +169,7 @@ Rudiments was designed and developed by Jon Pretty, and commercial support and t
 
 ## Name
 
-The word _rudiment_ is defined as, "the principle which lies at the bottom of any development; an unfinished beginning", which is apt for a library whose purpose is to provide such common functionality that it might lie at the start of many other libries.
+The word _rudiment_ is defined as, "the principle which lies at the bottom of any development; an unfinished beginning", which is apt for a library whose purpose is to provide such common functionality that it might lie at the start of many other libraries.
 
 In general, Scala One project names are always chosen with some rationale, however it is usually
 frivolous. Each name is chosen for more for its _uniqueness_ and _intrigue_ than its concision or
