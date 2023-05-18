@@ -175,8 +175,8 @@ object TextConversion:
     case Some(value) =>
       val valueText = compiletime.summonFrom:
         case display: Debug[ValueType] => display(value)
-        case display: Show[ValueType]   => display(value)
-        case _                                      => Text(value.toString)
+        case display: Show[ValueType]  => display(value)
+        case _                         => Text(value.toString)
       
       Text("Some("+valueText+")")
   
@@ -203,23 +203,28 @@ object TextConversion:
         then summonInline[Debug[head]].asInstanceOf[Debug[DerivedType]]
         else deriveSum[tail, DerivedType](ordinal - 1)
 
-  inline given derived[DerivationType](using mirror: Mirror.Of[DerivationType]): Debug[DerivationType] = inline mirror match
-    case given Mirror.ProductOf[DerivationType & Product] => (value: DerivationType) => (value.asMatchable: @unchecked) match
-      case value: Product =>
-        val elements = deriveProduct[mirror.MirroredElemLabels](Tuple.fromProductTyped(value))
-        val typeName = Text(valueOf[mirror.MirroredLabel])
-        Text(typeName.s+elements.mkString("(", "∣", ")"))
+  inline given derived
+      [DerivationType](using mirror: Mirror.Of[DerivationType])
+      : Debug[DerivationType] =
+    inline mirror match
+      case given Mirror.ProductOf[DerivationType & Product] => (value: DerivationType) =>
+        (value.asMatchable: @unchecked) match
+          case value: Product =>
+            val elements = deriveProduct[mirror.MirroredElemLabels](Tuple.fromProductTyped(value))
+            val typeName = Text(valueOf[mirror.MirroredLabel])
+            Text(typeName.s+elements.mkString("(", "∣", ")"))
     
-    case s: Mirror.SumOf[DerivationType] =>
-      (value: DerivationType) => deriveSum[s.MirroredElemTypes, DerivationType](s.ordinal(value))(value)
+      case s: Mirror.SumOf[DerivationType] =>
+        (value: DerivationType) =>
+          deriveSum[s.MirroredElemTypes, DerivationType](s.ordinal(value))(value)
 
 extension [ValueType](value: ValueType)
   inline def show(using display: Show[ValueType]): Text = display(value)
   
   inline def debug: Text = compiletime.summonFrom:
     case display: Debug[ValueType] => display(value)
-    case display: Show[ValueType]   => display(value)
-    case _                                      => Text(value.toString)
+    case display: Show[ValueType]  => display(value)
+    case _                         => Text(value.toString)
 
 case class BooleanStyle(yes: Text, no: Text):
   def apply(boolean: Boolean): Text = if boolean then yes else no
