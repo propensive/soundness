@@ -107,37 +107,46 @@ object Contrast:
       val rightMsg = Option(right.getMessage).fold(t"null")(_.nn.debug)
       if left.getClass == right.getClass && leftMsg == rightMsg then Accordance.Accord(leftMsg)
       else Accordance.Discord(leftMsg, rightMsg)
-  
-  inline given seq[ValueType: Contrast: Assimilable, CollectionType[ElemType] <: Seq[ElemType]]
-      : Contrast[CollectionType[ValueType]] =
-    new Contrast[CollectionType[ValueType]]:
-      def apply(left: CollectionType[ValueType], right: CollectionType[ValueType]): Accordance =
-        val leftSeq = left.to(IndexedSeq)
-        val rightSeq = right.to(IndexedSeq)
-    
-        if leftSeq == rightSeq then Accordance.Accord(leftSeq.map(_.debug).join(t"[", t", ", t"]"))
-        else
-          val comparison = IArray.from:
-            diff(leftSeq, rightSeq).rdiff2(summon[Assimilable[ValueType]].similar).changes.map:
-              case Change.Keep(lid, rid, v) =>
-                (if lid == rid then lid.debug else t"${lid.show.superscript}⧸${rid.show.subscript}") -> Accordance.Accord(v.debug)
-              
-              case Change.Ins(rid, v) =>
-                t" ⫽${rid.show.subscript}" -> Accordance.Discord(t"—", v.debug)
-              
-              case Change.Del(lid, v) =>
-                t"${lid.show.superscript}⫽" -> Accordance.Discord(v.debug, t"—")
-              
-              case Change.Replace(lid, rid, lv, rv) =>
-                t"${lid.show.superscript}⧸${rid.show.subscript}" -> summon[Contrast[ValueType]](lv, rv)
-          
-          Accordance.Collation(comparison, left.debug, right.debug)
-  
-  inline given iarray[ElemType: Contrast: Assimilable]: Contrast[IArray[ElemType]] =
-    new Contrast[IArray[ElemType]]:
-      def apply(left: IArray[ElemType], right: IArray[ElemType]): Accordance =
-        seq[ElemType, IndexedSeq](left.to(IndexedSeq), right.to(IndexedSeq))
 
+  inline def compareSeq
+      [ValueType: Contrast: Assimilable]
+      (left: IndexedSeq[ValueType], right: IndexedSeq[ValueType], leftDebug: Text, rightDebug: Text)
+      : Accordance =
+    if left == right then Accordance.Accord(leftDebug)
+    else
+      val comparison = IArray.from:
+        diff(left, right).rdiff2(summon[Assimilable[ValueType]].similar).changes.map:
+          case Change.Keep(leftIndex, rightIndex, value) =>
+            (if leftIndex == rightIndex then leftIndex.show else t"${leftIndex.show.superscript}⫽${rightIndex.show.subscript}") ->
+                Accordance.Accord(value.debug)
+          
+          case Change.Ins(rightIndex, value) =>
+            t" ⧸${rightIndex.show.subscript}" -> Accordance.Discord(t"—", value.debug)
+          
+          case Change.Del(leftIndex, value) =>
+            t"${leftIndex.show.superscript}⧸" -> Accordance.Discord(value.debug, t"—")
+          
+          case Change.Replace(leftIndex, rightIndex, leftValue, rightValue) =>
+            t"${leftIndex.show.superscript}⫽${rightIndex.show.subscript}" -> leftValue.contrastWith(rightValue)
+      
+      Accordance.Collation(comparison, leftDebug, rightDebug)
+    
+
+  inline given iarray[ValueType: Contrast: Assimilable]: Contrast[IArray[ValueType]] =
+    new Contrast[IArray[ValueType]]:
+      def apply(left: IArray[ValueType], right: IArray[ValueType]): Accordance =
+        compareSeq[ValueType](left.to(IndexedSeq), right.to(IndexedSeq), left.debug, right.debug)
+  
+  inline given list[ValueType: Contrast: Assimilable]: Contrast[List[ValueType]] =
+    new Contrast[List[ValueType]]:
+      def apply(left: List[ValueType], right: List[ValueType]): Accordance =
+        compareSeq[ValueType](left.to(IndexedSeq), right.to(IndexedSeq), left.debug, right.debug)
+  
+  inline given vector[ValueType: Contrast: Assimilable]: Contrast[Vector[ValueType]] =
+    new Contrast[Vector[ValueType]]:
+      def apply(left: Vector[ValueType], right: Vector[ValueType]): Accordance =
+        compareSeq[ValueType](left.to(IndexedSeq), right.to(IndexedSeq), left.debug, right.debug)
+  
   private transparent inline def deriveSum
       [TupleType <: Tuple, DerivedType]
       (ordinal: Int)
@@ -160,8 +169,8 @@ object Contrast:
               case _: (headLabel *: tailLabels) => inline valueOf[headLabel].asMatchable match
                 case label: String =>
                   val item =
-                    if leftHead == rightHead then Accordance.Accord(left.debug)
-                    else summonInline[Contrast[leftHead.type]].asInstanceOf[Contrast[leftHead.type | rightHead.type]](leftHead, rightHead)
+                    if leftHead == rightHead then Accordance.Accord(leftHead.debug)
+                    else summonInline[Contrast[leftHead.type | rightHead.type]](leftHead, rightHead)
                   
                   (Text(label), item) :: deriveProduct[tailLabels](leftTail, rightTail)
         
@@ -170,11 +179,12 @@ object Contrast:
     inline mirror match
       case given Mirror.ProductOf[DerivationType & Product] =>
         (left: DerivationType, right: DerivationType) => inline (left.asMatchable: @unchecked) match
-          case left: Product => inline (right.asMatchable: @unchecked) match
-            case right: Product =>
-              val leftTuple = Tuple.fromProductTyped(left)
-              val rightTuple = Tuple.fromProductTyped(right)
-              Accordance.Collation(IArray.from(deriveProduct[mirror.MirroredElemLabels](leftTuple, rightTuple)), left.debug, right.debug)
+          case leftProduct: Product => inline (right.asMatchable: @unchecked) match
+            case rightProduct: Product =>
+              val leftTuple = Tuple.fromProductTyped(leftProduct)
+              val rightTuple = Tuple.fromProductTyped(rightProduct)
+              val product = deriveProduct[mirror.MirroredElemLabels](leftTuple, rightTuple)
+              Accordance.Collation(IArray.from(product), left.debug, right.debug)
      
       case mirror: Mirror.SumOf[DerivationType] => (left: DerivationType, right: DerivationType) =>
         if mirror.ordinal(left) == mirror.ordinal(right)

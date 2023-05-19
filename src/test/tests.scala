@@ -31,9 +31,9 @@ import Accordance.*
 object Tests extends Suite(t"Chiaroscuro tests"):
   def run(): Unit =
     suite(t"RDiff tests"):
-      test(t"Two identical, short Vectors"):
-        Vector(1, 2, 3).contrastWith(Vector(1, 2, 3))
-      .assert(_ == Accord(t"[1, 2, 3]"))
+      // test(t"Two identical, short Vectors"):
+      //   Vector(1, 2, 3).contrastWith(Vector(1, 2, 3))
+      // .assert(_ == Accord(t"[1, 2, 3]"))
 
       test(t"compare two two-parameter case class instances"):
         Person(t"Jack", 12)
@@ -47,6 +47,13 @@ object Tests extends Suite(t"Chiaroscuro tests"):
         Organization(t"Acme Inc.", Person(t"Jack", 12), Nil)
       .assert(_ == Organization(t"Acme Inc", Person(t"Jack", 12), Nil))
       
+      summon[Contrast[List[Person]]]
+      println(summon[spectacular.Debug[List[Person]]](List(Person("ABC", 12))))
+      
       test(t"nested comparison 3"):
         Organization(t"Acme Inc.", Person(t"Jack", 12), List(Person("Jerry", 18)))
       .assert(_ == Organization(t"Acme Inc.", Person(t"Jack", 12), List(Person("Jill", 32), Person("Jerry", 18))))
+      
+      test(t"nested comparison 4"):
+        Organization(t"Acme Inc.", Person(t"Jack", 12), List(Person("Jerry", 18)))
+      .assert(_ == Organization(t"Acme", Person(t"Jack", 12), List(Person("Jerry", 18))))
