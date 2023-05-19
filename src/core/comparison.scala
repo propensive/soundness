@@ -121,7 +121,7 @@ object Contrast:
           val comparison = IArray.from:
             diff(leftSeq, rightSeq).rdiff2(summon[Assimilable[ValueType]].assimilate).changes.map:
               case Change.Keep(lid, rid, v) =>
-                (if lid == rid then lid.debug else t"$lid/$rid") -> Comparison.Same(v.debug)
+                (if lid == rid then lid.debug else t"${lid.show.superscript}⧸${rid.show.subscript}") -> Comparison.Same(v.debug)
               
               case Change.Ins(rid, v) =>
                 t" ⫽${rid.show.subscript}" -> Comparison.Different(t"—", v.debug)
@@ -130,7 +130,7 @@ object Contrast:
                 t"${lid.show.superscript}⫽" -> Comparison.Different(v.debug, t"—")
               
               case Change.Replace(lid, rid, lv, rv) =>
-                t"${lid.show.superscript}⫽${rid.show.subscript}" -> summon[Contrast[ValueType]].compare(lv, rv)
+                t"${lid.show.superscript}⧸${rid.show.subscript}" -> summon[Contrast[ValueType]].compare(lv, rv)
           
           Comparison.Structural(comparison, left.debug, right.debug)
   

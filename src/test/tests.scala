@@ -24,6 +24,7 @@ import rudiments.*
 import Change.*
 
 case class Person(name: Text, age: Int)
+case class Organization(name: Text, ceo: Person, staff: List[Person])
 
 import Comparison.*
 
@@ -37,3 +38,15 @@ object Tests extends Suite(t"Chiaroscuro tests"):
       test(t"compare two two-parameter case class instances"):
         Person(t"Jack", 12)
       .assert(_ == Person(t"Jill", 12))
+      
+      test(t"nested comparison"):
+        Organization(t"Acme Inc", Person(t"Jack", 12), Nil)
+      .assert(_ == Organization(t"Acme Inc", Person(t"Jill", 12), Nil))
+      
+      test(t"nested comparison 2"):
+        Organization(t"Acme Inc.", Person(t"Jack", 12), Nil)
+      .assert(_ == Organization(t"Acme Inc", Person(t"Jack", 12), Nil))
+      
+      test(t"nested comparison 3"):
+        Organization(t"Acme Inc.", Person(t"Jack", 12), List(Person("Jerry", 18)))
+      .assert(_ == Organization(t"Acme Inc.", Person(t"Jack", 12), List(Person("Jill", 32), Person("Jerry", 18))))
