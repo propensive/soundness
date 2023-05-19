@@ -29,39 +29,38 @@ import lithography.*
 import scala.deriving.*
 import scala.compiletime.*
 
-enum Comparison:
-  case Same(value: Text)
-  case Different(left: Text, right: Text)
-  case Structural(comparison: IArray[(Text, Comparison)], left: Text, right: Text)
+enum Accordance:
+  case Accord(value: Text)
+  case Discord(left: Text, right: Text)
+  case Collation(comparison: IArray[(Text, Accordance)], left: Text, right: Text)
 
 extension [T](value: T)
-  def compareTo(other: T)(using comparable: Contrast[T]): Comparison =
-    comparable.compare(value, other)
+  def contrastWith(other: T)(using contrast: Contrast[T]): Accordance = contrast(value, other)
 
-object Comparison:
-  given (using calc: TextWidthCalculator): Display[Comparison] =
-    case Comparison.Structural(cmp, l, r) =>
+object Accordance:
+  given (using calc: TextWidthCalculator): Display[Accordance] =
+    case Accordance.Collation(cmp, l, r) =>
       import tableStyles.horizontalGaps
       import treeStyles.default
       
-      def children(comp: (Text, Comparison)): List[(Text, Comparison)] = comp(1) match
-        case Same(value)                         => Nil
-        case Different(left, right)              => Nil
-        case Structural(comparison, left, right) => comparison.to(List)
+      def children(comp: (Text, Accordance)): List[(Text, Accordance)] = comp(1) match
+        case Accord(value)                         => Nil
+        case Discord(left, right)              => Nil
+        case Collation(comparison, left, right) => comparison.to(List)
       
       case class Row(treeLine: Text, left: Output, right: Output)
 
-      def mkLine(tiles: List[TreeTile], data: (Text, Comparison)): Row =
+      def mkLine(tiles: List[TreeTile], data: (Text, Accordance)): Row =
         def line(bullet: Text) = t"${tiles.map(_.text).join}$bullet ${data(0)}"
         
         data(1) match
-          case Same(v) =>
+          case Accord(v) =>
             Row(line(t"▪"), out"${rgb"#667799"}($v)", out"${rgb"#667799"}($v)")
           
-          case Different(left, right) =>
+          case Discord(left, right) =>
             Row(line(t"▪"), out"${colors.YellowGreen}($left)", out"${colors.Crimson}($right)")
           
-          case Structural(cmp, left, right) =>
+          case Collation(cmp, left, right) =>
             Row(line(t"■"), out"$left", out"$right")
       
       val table = Table[Row](
@@ -72,72 +71,72 @@ object Comparison:
 
       table.tabulate(drawTree(children, mkLine)(cmp), maxWidth = 200).join(out"\n")
     
-    case Different(left, right) =>
+    case Discord(left, right) =>
       out"The result ${colors.Crimson}($right) did not equal ${colors.YellowGreen}($left)"
     
-    case Same(value) =>
+    case Accord(value) =>
       out"The value ${colors.Gray}($value) was expected"
 
 object Assimilable:
   given [ValueType]: Assimilable[ValueType] = (a, b) => a == b
 
 trait Assimilable[-ValueType]:
-  def assimilate(a: ValueType, b: ValueType): Boolean
+  def similar(a: ValueType, b: ValueType): Boolean
 
 trait Contrast[-ValueType]:
-  def compare(a: ValueType, b: ValueType): Comparison
+  def apply(a: ValueType, b: ValueType): Accordance
 
 object Contrast:
-  def nothing[ValueType]: Contrast[ValueType] = (a, b) => Comparison.Same(a.toString.debug)
+  def nothing[ValueType]: Contrast[ValueType] = (a, b) => Accordance.Accord(a.toString.debug)
   
   inline def simplistic[ValueType]: Contrast[ValueType] = new Contrast[ValueType]:
-    def compare(a: ValueType, b: ValueType): Comparison =
-      if a == b then Comparison.Same(a.debug)
-      else Comparison.Different(a.debug, b.debug)
+    def apply(a: ValueType, b: ValueType): Accordance =
+      if a == b then Accordance.Accord(a.debug)
+      else Accordance.Discord(a.debug, b.debug)
 
-  inline given Contrast[Text] = simplistic.compare(_, _)
-  inline given Contrast[Int] = simplistic.compare(_, _)
-  inline given Contrast[Long] = simplistic.compare(_, _)
-  inline given Contrast[Double] = simplistic.compare(_, _)
-  inline given Contrast[Float] = simplistic.compare(_, _)
-  inline given [EnumType <: reflect.Enum]: Contrast[EnumType] = simplistic.compare(_, _)
+  inline given Contrast[Text] = simplistic(_, _)
+  inline given Contrast[Int] = simplistic(_, _)
+  inline given Contrast[Long] = simplistic(_, _)
+  inline given Contrast[Double] = simplistic(_, _)
+  inline given Contrast[Float] = simplistic(_, _)
+  inline given [EnumType <: reflect.Enum]: Contrast[EnumType] = simplistic(_, _)
 
   inline given Contrast[Exception] = new Contrast[Exception]:
-    def compare(left: Exception, right: Exception): Comparison =
+    def apply(left: Exception, right: Exception): Accordance =
       val leftMsg = Option(left.getMessage).fold(t"null")(_.nn.debug)
       val rightMsg = Option(right.getMessage).fold(t"null")(_.nn.debug)
-      if left.getClass == right.getClass && leftMsg == rightMsg then Comparison.Same(leftMsg)
-      else Comparison.Different(leftMsg, rightMsg)
+      if left.getClass == right.getClass && leftMsg == rightMsg then Accordance.Accord(leftMsg)
+      else Accordance.Discord(leftMsg, rightMsg)
   
   inline given seq[ValueType: Contrast: Assimilable, CollectionType[ElemType] <: Seq[ElemType]]
       : Contrast[CollectionType[ValueType]] =
     new Contrast[CollectionType[ValueType]]:
-      def compare(left: CollectionType[ValueType], right: CollectionType[ValueType]): Comparison =
+      def apply(left: CollectionType[ValueType], right: CollectionType[ValueType]): Accordance =
         val leftSeq = left.to(IndexedSeq)
         val rightSeq = right.to(IndexedSeq)
     
-        if leftSeq == rightSeq then Comparison.Same(leftSeq.map(_.debug).join(t"[", t", ", t"]"))
+        if leftSeq == rightSeq then Accordance.Accord(leftSeq.map(_.debug).join(t"[", t", ", t"]"))
         else
           val comparison = IArray.from:
-            diff(leftSeq, rightSeq).rdiff2(summon[Assimilable[ValueType]].assimilate).changes.map:
+            diff(leftSeq, rightSeq).rdiff2(summon[Assimilable[ValueType]].similar).changes.map:
               case Change.Keep(lid, rid, v) =>
-                (if lid == rid then lid.debug else t"${lid.show.superscript}⧸${rid.show.subscript}") -> Comparison.Same(v.debug)
+                (if lid == rid then lid.debug else t"${lid.show.superscript}⧸${rid.show.subscript}") -> Accordance.Accord(v.debug)
               
               case Change.Ins(rid, v) =>
-                t" ⫽${rid.show.subscript}" -> Comparison.Different(t"—", v.debug)
+                t" ⫽${rid.show.subscript}" -> Accordance.Discord(t"—", v.debug)
               
               case Change.Del(lid, v) =>
-                t"${lid.show.superscript}⫽" -> Comparison.Different(v.debug, t"—")
+                t"${lid.show.superscript}⫽" -> Accordance.Discord(v.debug, t"—")
               
               case Change.Replace(lid, rid, lv, rv) =>
-                t"${lid.show.superscript}⧸${rid.show.subscript}" -> summon[Contrast[ValueType]].compare(lv, rv)
+                t"${lid.show.superscript}⧸${rid.show.subscript}" -> summon[Contrast[ValueType]](lv, rv)
           
-          Comparison.Structural(comparison, left.debug, right.debug)
+          Accordance.Collation(comparison, left.debug, right.debug)
   
   inline given iarray[ElemType: Contrast: Assimilable]: Contrast[IArray[ElemType]] =
     new Contrast[IArray[ElemType]]:
-      def compare(left: IArray[ElemType], right: IArray[ElemType]): Comparison =
-        seq[ElemType, IndexedSeq].compare(left.to(IndexedSeq), right.to(IndexedSeq))
+      def apply(left: IArray[ElemType], right: IArray[ElemType]): Accordance =
+        seq[ElemType, IndexedSeq](left.to(IndexedSeq), right.to(IndexedSeq))
 
   private transparent inline def deriveSum
       [TupleType <: Tuple, DerivedType]
@@ -151,7 +150,7 @@ object Contrast:
   private transparent inline def deriveProduct
       [Labels <: Tuple]
       (left: Tuple, right: Tuple)
-      : List[(Text, Comparison)] =
+      : List[(Text, Accordance)] =
     inline left match
       case EmptyTuple => Nil
       case leftCons: (? *: ?) => leftCons match
@@ -161,8 +160,8 @@ object Contrast:
               case _: (headLabel *: tailLabels) => inline valueOf[headLabel].asMatchable match
                 case label: String =>
                   val item =
-                    if leftHead == rightHead then Comparison.Same(left.debug)
-                    else summonInline[Contrast[leftHead.type]].asInstanceOf[Contrast[leftHead.type | rightHead.type]].compare(leftHead, rightHead)
+                    if leftHead == rightHead then Accordance.Accord(left.debug)
+                    else summonInline[Contrast[leftHead.type]].asInstanceOf[Contrast[leftHead.type | rightHead.type]](leftHead, rightHead)
                   
                   (Text(label), item) :: deriveProduct[tailLabels](leftTail, rightTail)
         
@@ -175,28 +174,9 @@ object Contrast:
             case right: Product =>
               val leftTuple = Tuple.fromProductTyped(left)
               val rightTuple = Tuple.fromProductTyped(right)
-              Comparison.Structural(IArray.from(deriveProduct[mirror.MirroredElemLabels](leftTuple, rightTuple)), left.debug, right.debug)
+              Accordance.Collation(IArray.from(deriveProduct[mirror.MirroredElemLabels](leftTuple, rightTuple)), left.debug, right.debug)
      
       case mirror: Mirror.SumOf[DerivationType] => (left: DerivationType, right: DerivationType) =>
         if mirror.ordinal(left) == mirror.ordinal(right)
-        then deriveSum[mirror.MirroredElemTypes, DerivationType](mirror.ordinal(left)).compare(left, right)
-        else Comparison.Different(left.debug, right.debug)
-
-  // def join[ValueType](caseClass: CaseClass[Contrast, ValueType]): Contrast[ValueType] =
-  //   (left, right) =>
-  //     val same = caseClass.params.forall: param =>
-  //       param.deref(left) == param.deref(right)
-  
-  //     if same then Comparison.Same(left.toString.show)
-  //     else
-  //       val comparison = caseClass.params.map: param =>
-  //         (Text(param.label), param.typeclass.compare(param.deref(left), param.deref(right)))
-  //       Comparison.Structural(comparison, left.toString.show, right.toString.show)
-  
-  // def split[ValueType](sealedTrait: SealedTrait[Contrast, ValueType]): Contrast[ValueType] =
-  //   (left, right) =>
-  //     sealedTrait.choose(left): subtype =>
-  //       sealedTrait.choose(right): subtype2 =>
-  //         if subtype.subtype.index == subtype2.subtype.index
-  //         then subtype.typeclass.compare(subtype.cast(left), subtype.cast(right))
-  //         else Comparison.Different(left.toString.show, right.toString.show)
+        then deriveSum[mirror.MirroredElemTypes, DerivationType](mirror.ordinal(left))(left, right)
+        else Accordance.Discord(left.debug, right.debug)

@@ -26,14 +26,14 @@ import Change.*
 case class Person(name: Text, age: Int)
 case class Organization(name: Text, ceo: Person, staff: List[Person])
 
-import Comparison.*
+import Accordance.*
 
 object Tests extends Suite(t"Chiaroscuro tests"):
   def run(): Unit =
     suite(t"RDiff tests"):
       test(t"Two identical, short Vectors"):
-        Vector(1, 2, 3).compareTo(Vector(1, 2, 3))
-      .assert(_ == Comparison.Same(t"[1, 2, 3]"))
+        Vector(1, 2, 3).contrastWith(Vector(1, 2, 3))
+      .assert(_ == Accord(t"[1, 2, 3]"))
 
       test(t"compare two two-parameter case class instances"):
         Person(t"Jack", 12)
