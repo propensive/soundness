@@ -16,7 +16,6 @@
 
 package chiaroscuro
 
-import wisteria.*
 import rudiments.*
 import gossamer.*, defaultTextTypes.output
 import dissonance.*
@@ -27,13 +26,16 @@ import escritoire.*
 import spectacular.*
 import lithography.*
 
+import scala.deriving.*
+import scala.compiletime.*
+
 enum Comparison:
   case Same(value: Text)
   case Different(left: Text, right: Text)
   case Structural(comparison: IArray[(Text, Comparison)], left: Text, right: Text)
 
 extension [T](value: T)
-  def compareTo(other: T)(using comparable: Comparable[T]): Comparison =
+  def compareTo(other: T)(using comparable: Contrast[T]): Comparison =
     comparable.compare(value, other)
 
 object Comparison:
@@ -76,43 +78,40 @@ object Comparison:
     case Same(value) =>
       out"The value ${colors.Gray}($value) was expected"
 
-object Similar:
-  given [ValueType]: Similar[ValueType] = (a, b) => a == b
+object Assimilable:
+  given [ValueType]: Assimilable[ValueType] = (a, b) => a == b
 
-trait Similar[-ValueType]:
-  def similar(a: ValueType, b: ValueType): Boolean
+trait Assimilable[-ValueType]:
+  def assimilate(a: ValueType, b: ValueType): Boolean
 
-trait Comparable[-ValueType]:
+trait Contrast[-ValueType]:
   def compare(a: ValueType, b: ValueType): Comparison
 
-object Comparable extends Derivation[Comparable]:
-  def nothing[ValueType]: Comparable[ValueType] = (a, b) => Comparison.Same(a.toString.debug)
+object Contrast:
+  def nothing[ValueType]: Contrast[ValueType] = (a, b) => Comparison.Same(a.toString.debug)
   
-  inline def simplistic[ValueType]: Comparable[ValueType] = new Comparable[ValueType]:
+  inline def simplistic[ValueType]: Contrast[ValueType] = new Contrast[ValueType]:
     def compare(a: ValueType, b: ValueType): Comparison =
       if a == b then Comparison.Same(a.debug)
       else Comparison.Different(a.debug, b.debug)
 
-  inline given Comparable[Text] = new Comparable[Text]:
-    def compare(left: Text, right: Text): Comparison =
-      if left == right then Comparison.Same(left.debug)
-      else Comparison.Different(left.debug, right.debug)
-  
-  inline given Comparable[Int] = new Comparable[Int]:
-    def compare(left: Int, right: Int): Comparison =
-      if left == right then Comparison.Same(left.debug)
-      else Comparison.Different(left.debug, right.debug)
+  inline given Contrast[Text] = simplistic.compare(_, _)
+  inline given Contrast[Int] = simplistic.compare(_, _)
+  inline given Contrast[Long] = simplistic.compare(_, _)
+  inline given Contrast[Double] = simplistic.compare(_, _)
+  inline given Contrast[Float] = simplistic.compare(_, _)
+  inline given [EnumType <: reflect.Enum]: Contrast[EnumType] = simplistic.compare(_, _)
 
-  inline given Comparable[Exception] = new Comparable[Exception]:
+  inline given Contrast[Exception] = new Contrast[Exception]:
     def compare(left: Exception, right: Exception): Comparison =
       val leftMsg = Option(left.getMessage).fold(t"null")(_.nn.debug)
       val rightMsg = Option(right.getMessage).fold(t"null")(_.nn.debug)
       if left.getClass == right.getClass && leftMsg == rightMsg then Comparison.Same(leftMsg)
       else Comparison.Different(leftMsg, rightMsg)
   
-  inline given seq[ValueType: Comparable: Similar, CollectionType[ElemType] <: Seq[ElemType]]
-      : Comparable[CollectionType[ValueType]] =
-    new Comparable[CollectionType[ValueType]]:
+  inline given seq[ValueType: Contrast: Assimilable, CollectionType[ElemType] <: Seq[ElemType]]
+      : Contrast[CollectionType[ValueType]] =
+    new Contrast[CollectionType[ValueType]]:
       def compare(left: CollectionType[ValueType], right: CollectionType[ValueType]): Comparison =
         val leftSeq = left.to(IndexedSeq)
         val rightSeq = right.to(IndexedSeq)
@@ -120,41 +119,84 @@ object Comparable extends Derivation[Comparable]:
         if leftSeq == rightSeq then Comparison.Same(leftSeq.map(_.debug).join(t"[", t", ", t"]"))
         else
           val comparison = IArray.from:
-            diff(leftSeq, rightSeq).rdiff2(summon[Similar[ValueType]].similar).changes.map:
+            diff(leftSeq, rightSeq).rdiff2(summon[Assimilable[ValueType]].assimilate).changes.map:
               case Change.Keep(lid, rid, v) =>
                 (if lid == rid then lid.debug else t"$lid/$rid") -> Comparison.Same(v.debug)
               
               case Change.Ins(rid, v) =>
-                t" /$rid" -> Comparison.Different(t"—", v.debug)
+                t" ⫽${rid.show.subscript}" -> Comparison.Different(t"—", v.debug)
               
               case Change.Del(lid, v) =>
-                t"$lid/" -> Comparison.Different(v.debug, t"—")
+                t"${lid.show.superscript}⫽" -> Comparison.Different(v.debug, t"—")
               
               case Change.Replace(lid, rid, lv, rv) =>
-                t"$lid/$rid" -> summon[Comparable[ValueType]].compare(lv, rv)
+                t"${lid.show.superscript}⫽${rid.show.subscript}" -> summon[Contrast[ValueType]].compare(lv, rv)
           
           Comparison.Structural(comparison, left.debug, right.debug)
   
-  inline given iarray[ElemType: Comparable: Similar]: Comparable[IArray[ElemType]] =
-    new Comparable[IArray[ElemType]]:
+  inline given iarray[ElemType: Contrast: Assimilable]: Contrast[IArray[ElemType]] =
+    new Contrast[IArray[ElemType]]:
       def compare(left: IArray[ElemType], right: IArray[ElemType]): Comparison =
         seq[ElemType, IndexedSeq].compare(left.to(IndexedSeq), right.to(IndexedSeq))
+
+  private transparent inline def deriveSum
+      [TupleType <: Tuple, DerivedType]
+      (ordinal: Int)
+      : Contrast[DerivedType] =
+    inline erasedValue[TupleType] match
+      case _: (head *: tail) =>
+        if ordinal == 0 then summonInline[Contrast[head]].asInstanceOf[Contrast[DerivedType]]
+        else deriveSum[tail, DerivedType](ordinal - 1)
+
+  private transparent inline def deriveProduct
+      [Labels <: Tuple]
+      (left: Tuple, right: Tuple)
+      : List[(Text, Comparison)] =
+    inline left match
+      case EmptyTuple => Nil
+      case leftCons: (? *: ?) => leftCons match
+        case leftHead *: leftTail => inline right match
+          case rightCons: (? *: ?) => rightCons match
+            case rightHead *: rightTail => inline erasedValue[Labels] match
+              case _: (headLabel *: tailLabels) => inline valueOf[headLabel].asMatchable match
+                case label: String =>
+                  val item =
+                    if leftHead == rightHead then Comparison.Same(left.debug)
+                    else summonInline[Contrast[leftHead.type]].asInstanceOf[Contrast[leftHead.type | rightHead.type]].compare(leftHead, rightHead)
+                  
+                  (Text(label), item) :: deriveProduct[tailLabels](leftTail, rightTail)
+        
+  inline given derived
+      [DerivationType](using mirror: Mirror.Of[DerivationType]): Contrast[DerivationType] =
+    inline mirror match
+      case given Mirror.ProductOf[DerivationType & Product] =>
+        (left: DerivationType, right: DerivationType) => inline (left.asMatchable: @unchecked) match
+          case left: Product => inline (right.asMatchable: @unchecked) match
+            case right: Product =>
+              val leftTuple = Tuple.fromProductTyped(left)
+              val rightTuple = Tuple.fromProductTyped(right)
+              Comparison.Structural(IArray.from(deriveProduct[mirror.MirroredElemLabels](leftTuple, rightTuple)), left.debug, right.debug)
+     
+      case mirror: Mirror.SumOf[DerivationType] => (left: DerivationType, right: DerivationType) =>
+        if mirror.ordinal(left) == mirror.ordinal(right)
+        then deriveSum[mirror.MirroredElemTypes, DerivationType](mirror.ordinal(left)).compare(left, right)
+        else Comparison.Different(left.debug, right.debug)
+
+  // def join[ValueType](caseClass: CaseClass[Contrast, ValueType]): Contrast[ValueType] =
+  //   (left, right) =>
+  //     val same = caseClass.params.forall: param =>
+  //       param.deref(left) == param.deref(right)
   
-  def join[ValueType](caseClass: CaseClass[Comparable, ValueType]): Comparable[ValueType] =
-    (left, right) =>
-      val same = caseClass.params.forall: param =>
-        param.deref(left) == param.deref(right)
+  //     if same then Comparison.Same(left.toString.show)
+  //     else
+  //       val comparison = caseClass.params.map: param =>
+  //         (Text(param.label), param.typeclass.compare(param.deref(left), param.deref(right)))
+  //       Comparison.Structural(comparison, left.toString.show, right.toString.show)
   
-      if same then Comparison.Same(left.toString.show)
-      else
-        val comparison = caseClass.params.map: param =>
-          (Text(param.label), param.typeclass.compare(param.deref(left), param.deref(right)))
-        Comparison.Structural(comparison, left.toString.show, right.toString.show)
-  
-  def split[ValueType](sealedTrait: SealedTrait[Comparable, ValueType]): Comparable[ValueType] =
-    (left, right) =>
-      sealedTrait.choose(left): subtype =>
-        sealedTrait.choose(right): subtype2 =>
-          if subtype.subtype.index == subtype2.subtype.index
-          then subtype.typeclass.compare(subtype.cast(left), subtype.cast(right))
-          else Comparison.Different(left.toString.show, right.toString.show)
+  // def split[ValueType](sealedTrait: SealedTrait[Contrast, ValueType]): Contrast[ValueType] =
+  //   (left, right) =>
+  //     sealedTrait.choose(left): subtype =>
+  //       sealedTrait.choose(right): subtype2 =>
+  //         if subtype.subtype.index == subtype2.subtype.index
+  //         then subtype.typeclass.compare(subtype.cast(left), subtype.cast(right))
+  //         else Comparison.Different(left.toString.show, right.toString.show)
