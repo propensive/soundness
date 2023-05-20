@@ -212,7 +212,7 @@ object TextConversion:
           case value: Product =>
             val elements = deriveProduct[mirror.MirroredElemLabels](Tuple.fromProductTyped(value))
             val typeName = Text(valueOf[mirror.MirroredLabel])
-            Text(typeName.s+elements.mkString("(", "∣", ")"))
+            Text(typeName.s+elements.mkString("(", "·", ")"))
     
       case s: Mirror.SumOf[DerivationType] =>
         (value: DerivationType) =>
