@@ -23,50 +23,50 @@ import annotation.*
 
 import language.experimental.captureChecking
 
-sealed trait Change[+T] extends Product
+sealed trait Change[+ElemType] extends Product
 
-sealed trait SimpleChange[+T] extends Change[T]:
-  def value: T
+sealed trait SimpleChange[+ElemType] extends Change[ElemType]:
+  def value: ElemType
 
 object Change:
-  case class Ins[+T](right: Int, value: T) extends SimpleChange[T]
-  case class Del[+T](left: Int, value: T) extends SimpleChange[T]
-  case class Keep[+T](left: Int, right: Int, value: T) extends SimpleChange[T]
-  case class Replace[+T](left: Int, right: Int, leftValue: T, rightValue: T) extends Change[T]
+  case class Ins[+ElemType](right: Int, value: ElemType) extends SimpleChange[ElemType]
+  case class Del[+ElemType](left: Int, value: ElemType) extends SimpleChange[ElemType]
+  case class Keep[+ElemType](left: Int, right: Int, value: ElemType) extends SimpleChange[ElemType]
+  case class Replace[+ElemType](left: Int, right: Int, leftValue: ElemType, rightValue: ElemType) extends Change[ElemType]
 
 import Change.*
 
-enum Region[T]:
-  case Changed(deletions: List[Change.Del[T]], insertions: List[Change.Ins[T]])
-  case Unchanged(retentions: List[Change.Keep[T]])
+enum Region[ElemType]:
+  case Changed(deletions: List[Change.Del[ElemType]], insertions: List[Change.Ins[ElemType]])
+  case Unchanged(retentions: List[Change.Keep[ElemType]])
 
-enum ChangeBlock[+T]:
-  case Ins(startRight: Int, values: List[T])
-  case Del(startLeft: Int, values: List[T])
-  case Keep(startLeft: Int, startRight: Int, values: List[T])
-  case Replace(startLeft: Int, startRight: Int, valuesLeft: List[T], valuesRight: List[T])
+enum ChangeBlock[+ElemType]:
+  case Ins(startRight: Int, values: List[ElemType])
+  case Del(startLeft: Int, values: List[ElemType])
+  case Keep(startLeft: Int, startRight: Int, values: List[ElemType])
+  case Replace(startLeft: Int, startRight: Int, valuesLeft: List[ElemType], valuesRight: List[ElemType])
 
-case class RDiff[T](changes: Change[T]*):
-  def flip: RDiff[T] =
+case class RDiff[ElemType](changes: Change[ElemType]*):
+  def flip: RDiff[ElemType] =
     val changes2 = changes.map:
       case Keep(l, r, v)         => Keep(r, l, v)
       case Del(l, v)             => Ins(l, v)
       case Ins(r, v)             => Del(r, v)
       case Replace(l, r, lv, rv) => Replace(r, l, rv, lv)
     
-    RDiff[T](changes2*)
+    RDiff[ElemType](changes2*)
 
-case class Diff[T](changes: SimpleChange[T]*):
-  def flip: Diff[T] =
+case class Diff[ElemType](changes: SimpleChange[ElemType]*):
+  def flip: Diff[ElemType] =
     val changes2 = changes.map:
       case Keep(l, r, v) => Keep(r, l, v)
       case Del(l, v)     => Ins(l, v)
       case Ins(r, v)     => Del(r, v)
     
-    Diff[T](changes2*)
+    Diff[ElemType](changes2*)
   
-  def apply(list: List[T], update: (T, T) -> T): LazyList[T] =
-    def recur(todo: List[SimpleChange[T]], list: List[T]): LazyList[T] = todo match
+  def apply(list: List[ElemType], update: (ElemType, ElemType) -> ElemType): LazyList[ElemType] =
+    def recur(todo: List[SimpleChange[ElemType]], list: List[ElemType]): LazyList[ElemType] = todo match
       case Ins(_, value) :: tail     => value #:: recur(tail, list)
       case Del(_, _) :: tail         => recur(tail, list.tail)
       case Keep(_, _, value) :: tail => update(value, list.head) #:: recur(tail, list.tail)
@@ -74,7 +74,7 @@ case class Diff[T](changes: SimpleChange[T]*):
 
     recur(changes.to(List), list)
 
-  def collate2: List[Region[T]] =
+  def collate2: List[Region[ElemType]] =
     changes.runs:
       case Keep(_, _, _) => true
       case _             => false
@@ -85,7 +85,7 @@ case class Diff[T](changes: SimpleChange[T]*):
                                       val inss = xs.collect { case ins@Ins(_, _) => ins }
                                       Region.Changed(dels, inss)
   
-  def rdiff2(similar: (T, T) -> Boolean, swapSize: Int = 1): RDiff[T] =
+  def rdiff2(similar: (ElemType, ElemType) -> Boolean, swapSize: Int = 1): RDiff[ElemType] =
     val changes = collate2.flatMap:
       case Region.Unchanged(keeps)   => keeps
       case Region.Changed(dels, Nil) => dels
@@ -93,16 +93,16 @@ case class Diff[T](changes: SimpleChange[T]*):
       
       case Region.Changed(dels, inss) =>
         if inss.length == dels.length && inss.length <= swapSize
-        then dels.zip(inss).map { (del, ins) => Change.Replace[T](del.left, ins.right, del.value, ins.value) }
+        then dels.zip(inss).map { (del, ins) => Change.Replace[ElemType](del.left, ins.right, del.value, ins.value) }
         else diff(dels.map(_.value).to(IndexedSeq), inss.map(_.value).to(IndexedSeq), similar).changes.map:
-          case Keep(l, r, _) => Change.Replace[T](dels(l).left, inss(r).right, dels(l).value, inss(r).value)
-          case Del(l, v)     => Change.Del[T](dels(l).left, dels(l).value)
-          case Ins(r, v)     => Change.Ins[T](inss(r).right, inss(r).value)
+          case Keep(l, r, _) => Change.Replace[ElemType](dels(l).left, inss(r).right, dels(l).value, inss(r).value)
+          case Del(l, v)     => Change.Del[ElemType](dels(l).left, dels(l).value)
+          case Ins(r, v)     => Change.Ins[ElemType](inss(r).right, inss(r).value)
     
     RDiff(changes*)
           
 
-  def collate(similar: (T, T) -> Boolean, bySize: Int = 1): List[ChangeBlock[T]] =
+  def collate(similar: (ElemType, ElemType) -> Boolean, bySize: Int = 1): List[ChangeBlock[ElemType]] =
     changes.runs:
       case Keep(_, _, _) => true
       case _             => false
@@ -144,7 +144,7 @@ case class Diff[T](changes: SimpleChange[T]*):
       case Nil =>
         throw Mistake("Should never have an empty list here")
   
-  def rdiff(similar: (T, T) -> Boolean, bySize: Int = 1): RDiff[T] =
+  def rdiff(similar: (ElemType, ElemType) -> Boolean, bySize: Int = 1): RDiff[ElemType] =
     val changes = collate(similar, bySize).flatMap:
       case ChangeBlock.Ins(r, vs)              => vs.zipWithIndex.map { (v, i) => Ins(r + i, v) }
       case ChangeBlock.Del(l, vs)              => vs.zipWithIndex.map { (v, i) => Del(l + i, v) }
@@ -152,7 +152,7 @@ case class Diff[T](changes: SimpleChange[T]*):
       case ChangeBlock.Replace(l, r, lvs, rvs) => lvs.zip(rvs).zipWithIndex.map:
         case ((lv, rv), i) => Replace(l + i, r + i, lv, rv)
     
-    RDiff[T](changes*)
+    RDiff[ElemType](changes*)
 
 object Diff:
   object Point:
@@ -170,10 +170,10 @@ object Diff:
 
 import Diff.Point, Point.*
 
-def diff[T](left: IndexedSeq[T], right: IndexedSeq[T], cmp: (T, T) -> Boolean = { (a: T, b: T) => a == b }): Diff[T] =
+def diff[ElemType](left: IndexedSeq[ElemType], right: IndexedSeq[ElemType], cmp: (ElemType, ElemType) -> Boolean = { (a: ElemType, b: ElemType) => a == b }): Diff[ElemType] =
   val end = Point(left.size, right.size)
   @tailrec
-  def distance(last: IArray[Point] = IArray(count(Point(0, 0))), trace: List[IArray[Point]] = Nil): Diff[T] =
+  def distance(last: IArray[Point] = IArray(count(Point(0, 0))), trace: List[IArray[Point]] = Nil): Diff[ElemType] =
     if last.contains(end) then
       val idx = last.indexOf(end)
 
@@ -196,7 +196,7 @@ def diff[T](left: IndexedSeq[T], right: IndexedSeq[T], cmp: (T, T) -> Boolean = 
   def count(pt: Point): Point =
     if pt.x >= left.size || pt.y >= right.size || !cmp(left(pt.x), right(pt.y)) then pt else count(pt.keep)
 
-  def countback(idx: Int, cur: Point, trace: List[IArray[Point]], result: List[SimpleChange[T]] = Nil): Diff[T] =
+  def countback(idx: Int, cur: Point, trace: List[IArray[Point]], result: List[SimpleChange[ElemType]] = Nil): Diff[ElemType] =
     trace match
       case head :: tail =>
         val target = head(idx)
