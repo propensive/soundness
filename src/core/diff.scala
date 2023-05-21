@@ -19,6 +19,7 @@ package dissonance
 import gossamer.*
 import rudiments.*
 import eucalyptus.*
+import spectacular.*
 import annotation.*
 
 import language.experimental.captureChecking
@@ -93,16 +94,45 @@ case class Diff[ElemType](changes: SimpleChange[ElemType]*):
       
       case Region.Changed(dels, inss) =>
         if inss.length == dels.length && inss.length <= swapSize
-        then dels.zip(inss).map { (del, ins) => Change.Replace[ElemType](del.left, ins.right, del.value, ins.value) }
-        else diff(dels.map(_.value).to(IndexedSeq), inss.map(_.value).to(IndexedSeq), similar).changes.map:
-          case Keep(l, r, _) => Change.Replace[ElemType](dels(l).left, inss(r).right, dels(l).value, inss(r).value)
-          case Del(l, v)     => Change.Del[ElemType](dels(l).left, dels(l).value)
-          case Ins(r, v)     => Change.Ins[ElemType](inss(r).right, inss(r).value)
+        then dels.zip(inss).map: (del, ins) =>
+          Change.Replace[ElemType](del.left, ins.right, del.value, ins.value)
+        else
+          diff(dels.map(_.value).to(IndexedSeq), inss.map(_.value).to(IndexedSeq), similar).changes.map:
+            case Keep(l, r, _) =>
+              Change.Replace[ElemType](dels(l).left, inss(r).right, dels(l).value, inss(r).value)
+            
+            case Del(l, v) =>
+              Change.Del[ElemType](dels(l).left, dels(l).value)
+            
+            case Ins(r, v) =>
+              Change.Ins[ElemType](inss(r).right, inss(r).value)
     
     RDiff(changes*)
           
+  def rdiff(similar: (ElemType, ElemType) -> Boolean, bySize: Int = 1): RDiff[ElemType] =
+    val changes = collate(similar, bySize).flatMap:
+      case ChangeBlock.Ins(rightIndex, values) =>
+        values.zipWithIndex.map: (value, offset) =>
+          Ins(rightIndex + offset, value)
+      
+      case ChangeBlock.Del(leftIndex, values) =>
+        values.zipWithIndex.map: (value, offset) =>
+          Del(leftIndex + offset, value)
+      
+      case ChangeBlock.Keep(leftIndex, rightIndex, values) =>
+        values.zipWithIndex.map: (value, offset) =>
+          Keep(leftIndex + offset, rightIndex + offset, value)
+      
+      case ChangeBlock.Replace(leftIndex, rightIndex, leftValues, rightValues) =>
+        leftValues.zip(rightValues).zipWithIndex.map:
+          case ((leftValue, rightValue), offset) =>
+            Replace(leftIndex + offset, rightIndex + offset, leftValue, rightValue)
+    
+    RDiff(changes*)
 
-  def collate(similar: (ElemType, ElemType) -> Boolean, bySize: Int = 1): List[ChangeBlock[ElemType]] =
+  def collate
+      (similar: (ElemType, ElemType) -> Boolean, bySize: Int = 1)
+      : List[ChangeBlock[ElemType]] =
     changes.runs:
       case Keep(_, _, _) => true
       case _             => false
@@ -128,7 +158,8 @@ case class Diff[ElemType](changes: SimpleChange[ElemType]*):
   
             if dels.length <= bySize && insValues.length <= bySize
             then List(ChangeBlock.Replace(leftIdx, rightIdx, delValues, insValues))
-            else diff(delValues.to(IndexedSeq), insValues.to(IndexedSeq), similar).changes.runs(_.productPrefix).map:
+            else diff(delValues.to(IndexedSeq), insValues.to(IndexedSeq),
+                similar).changes.runs(_.productPrefix).map:
               case xs@(Ins(idx, _) :: _) => ChangeBlock.Ins(leftIdx + idx, xs.map(_.value))
               case xs@(Del(idx, _) :: _) => ChangeBlock.Del(leftIdx + idx, xs.map(_.value))
               
@@ -144,21 +175,12 @@ case class Diff[ElemType](changes: SimpleChange[ElemType]*):
       case Nil =>
         throw Mistake("Should never have an empty list here")
   
-  def rdiff(similar: (ElemType, ElemType) -> Boolean, bySize: Int = 1): RDiff[ElemType] =
-    val changes = collate(similar, bySize).flatMap:
-      case ChangeBlock.Ins(r, vs)              => vs.zipWithIndex.map { (v, i) => Ins(r + i, v) }
-      case ChangeBlock.Del(l, vs)              => vs.zipWithIndex.map { (v, i) => Del(l + i, v) }
-      case ChangeBlock.Keep(l, r, vs)          => vs.zipWithIndex.map { (v, i) => Keep(l + i, r + i, v) }
-      case ChangeBlock.Replace(l, r, lvs, rvs) => lvs.zip(rvs).zipWithIndex.map:
-        case ((lv, rv), i) => Replace(l + i, r + i, lv, rv)
-    
-    RDiff[ElemType](changes*)
-
 object Diff:
   object Point:
     opaque type Point = Long
     def apply(x: Int, y: Int): Point = (x.toLong << 32) + y
     
+    given Debug[Point] = point => t"(${point.x},${point.y})"
     extension (point: Point)
       def x: Int = (point >> 32).toInt
       def y: Int = point.toInt
@@ -170,44 +192,69 @@ object Diff:
 
 import Diff.Point, Point.*
 
-def diff[ElemType](left: IndexedSeq[ElemType], right: IndexedSeq[ElemType], cmp: (ElemType, ElemType) -> Boolean = { (a: ElemType, b: ElemType) => a == b }): Diff[ElemType] =
+def diff
+    [ElemType]
+    (left: IndexedSeq[ElemType], right: IndexedSeq[ElemType],
+        cmp: (ElemType, ElemType) -> Boolean = { (a: ElemType, b: ElemType) => a == b })
+    : Diff[ElemType] =
   val end = Point(left.size, right.size)
+  
   @tailrec
-  def distance(last: IArray[Point] = IArray(count(Point(0, 0))), trace: List[IArray[Point]] = Nil): Diff[ElemType] =
+  def distance
+      (last: IArray[Point] = IArray(count(Point(0, 0))), trace: List[IArray[Point]] = Nil)
+      : Diff[ElemType] =
+    //println(s"distance(last=${last.debug}, trace=${trace.debug})")
     if last.contains(end) then
       val idx = last.indexOf(end)
-
       if trace.isEmpty then countback(idx, end, Nil)
-      else if trace.head.length > idx && count(trace.head(idx).ins) == end then countback(idx, end, trace)
-      else countback(idx - 1, end, trace)
-
+      else
+        if trace.head.length > idx && count(trace.head(idx).ins) == end
+        then countback(idx, end, trace)
+        else countback(idx - 1, end, trace)
+    
     else
       val round = last.size
+      
       val next = IArray.create[Point](round + 1): arr =>
         arr(0) = last(0).ins
 
         last.indices.foreach: i =>
           arr(i + 1) = count(last(i).del)
           count(last(i).ins).pipe { pt => if i == round || pt.x > arr(i).x then arr(i) = pt }
+      
+      println(next.debug)
 
       distance(next, last :: trace)
 
   @tailrec
   def count(pt: Point): Point =
-    if pt.x >= left.size || pt.y >= right.size || !cmp(left(pt.x), right(pt.y)) then pt else count(pt.keep)
+    if pt.x >= left.size || pt.y >= right.size || !cmp(left(pt.x), right(pt.y)) then pt
+    else count(pt.keep)
 
-  def countback(idx: Int, cur: Point, trace: List[IArray[Point]], result: List[SimpleChange[ElemType]] = Nil): Diff[ElemType] =
+  def countback
+     (idx: Int, cur: Point, trace: List[IArray[Point]], result: List[SimpleChange[ElemType]] = Nil)
+     : Diff[ElemType] =
     trace match
       case head :: tail =>
         val target = head(idx)
-        
+        println("countback: "+cur.debug+" : "+result.debug)
         if cur == Point(0, 0) then Diff(result*)
+        else if cur.x + target.y - cur.y - target.x < 0 then
+          println("ins target="+target.debug+" idx="+idx.debug)
+          val idx2 = (idx - 1).min(tail.length - 1).max(0)
+          val cb = countback(idx2, target, tail, Ins(target.y, right(target.y)) :: result)
+          println(cb.debug)
+          cb
+        else if cur.x + target.y - cur.y - target.x > 0 then
+          println("del target="+target.debug+" idx="+idx.debug)
+          val cb = countback(0.max(idx).min(tail.length - 1), target, tail, Del(cur.x - 1, left(cur.x - 1)) :: result)
+          println(cb.debug)
+          cb
         else if cur.x > target.x && cur.y > target.y then
-          countback(idx, cur.unkeep, trace, Keep(cur.x - 1, cur.y - 1, left(cur.x - 1)) :: result)
-        else if cur == target.ins then
-          countback(idx min (tail.length - 1), target, tail, Ins(target.y, right(target.y)) :: result)
-        else if cur == target.del then
-          countback(0 max (idx - 1), target, tail, Del(cur.x - 1, left(cur.x - 1)) :: result)
+          println("keep target="+target.debug+" idx="+idx.debug)
+          val cb = countback(idx, cur.unkeep, trace, Keep(cur.x - 1, cur.y - 1, left(cur.x - 1)) :: result)
+          println(cb.debug)
+          cb
         else throw Mistake(s"Unexpected: idx=$idx cur=${cur.text} result=${result}")
 
       case Nil =>
