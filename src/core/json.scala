@@ -23,6 +23,8 @@ import turbulence.*
 import gossamer.*
 import anticipation.*
 import merino.*
+import lithography.*
+import spectacular.*
 
 import collection.Factory
 
@@ -91,19 +93,19 @@ extension [T: JsonWriter](value: T)
   def json: Json = Json(summon[JsonWriter[T]].write(value))
 
 object Json extends Dynamic:
-  def parse[SourceType](value: SourceType)(using readable: {*} Readable[SourceType, Bytes]): {readable} Json =
+  def parse[SourceType](value: SourceType)(using readable: Readable[SourceType, Bytes]^): Json^{readable} =
     Json(JsonAst.parse(value), Nil)
 
   given (using JsonPrinter): Show[Json] = json =>
-    try json.normalize.root.show catch case err: JsonAccessError => t"<${err.reason}>"
+    try json.normalize.root.show catch case err: JsonAccessError => t"<${err.reason.show}>"
 
-  given (using enc: {*} Encoding, printer: JsonPrinter): ({enc} GenericHttpResponseStream[Json]) =
+  given (using enc: Encoding^, printer: JsonPrinter): GenericHttpResponseStream[Json]^{enc} =
     new GenericHttpResponseStream[Json]:
       def mediaType: String = t"application/json; charset=${enc.name}".s
       def content(json: Json): LazyList[Bytes] =
         LazyList(json.show.s.getBytes(enc.name.s).asInstanceOf[Bytes])
 
-  given (using jsonParse: CanThrow[JsonParseError]): ({jsonParse} GenericHttpReader[Json]) =
+  given (using jsonParse: CanThrow[JsonParseError]): GenericHttpReader[Json]^{jsonParse} =
     new GenericHttpReader[Json]:
       def read(string: String): Json =
         Json(JsonAst.parse(LazyList(string.getBytes("UTF-8").nn.asInstanceOf[Bytes])), Nil)
@@ -126,7 +128,7 @@ object JsonWriter extends Derivation[JsonWriter]:
 
   given [T](using canon: Canonical[T]): JsonWriter[T] = v => JsonAst(canon.serialize(v).s)
   
-  given (using jsonAccess: CanThrow[JsonAccessError]): ({jsonAccess} JsonWriter[Json]) = _.normalize.root
+  given (using jsonAccess: CanThrow[JsonAccessError]): JsonWriter[Json]^{jsonAccess} = _.normalize.root
   
   given JsonWriter[Nil.type] = value => JsonAst(IArray[JsonAst]())
 
@@ -166,7 +168,7 @@ object JsonWriter extends Derivation[JsonWriter]:
 trait JsonWriter[T]:
   def omit(t: T): Boolean = false
   def write(t: T): JsonAst
-  def contraMap[S](fn: S => T): {this, fn} JsonWriter[S] = (v: S) => fn.andThen(write)(v)
+  def contraMap[S](fn: S => T): JsonWriter[S]^{this, fn} = (v: S) => fn.andThen(write)(v)
 
 object JsonReader extends Derivation[JsonReader]:
   given jsonAst: JsonReader[JsonAst] = identity(_)
@@ -182,7 +184,7 @@ object JsonReader extends Derivation[JsonReader]:
   
   given [T](using canon: Canonical[T]): JsonReader[T] = v => canon.deserialize(v.string)
 
-  given opt[T](using reader: {*} JsonReader[T]): ({reader} JsonReader[Option[T]]) = new JsonReader[Option[T]]:
+  given opt[T](using reader: JsonReader[T]^): JsonReader[Option[T]]^{reader} = new JsonReader[Option[T]]:
     def read(value: JsonAst): Option[T] =
       Option(reader.read(value))
 
@@ -223,7 +225,7 @@ trait JsonReader[T]:
   private inline def reader: this.type = this
   
   def read(json: JsonAst): T
-  def map[S](fn: T => S): {this, fn} JsonReader[S] = json => fn(reader.read(json))
+  def map[S](fn: T => S): JsonReader[S]^{this, fn} = json => fn(reader.read(json))
 
 case class Json(root: JsonAst, path: List[Int | Text] = Nil) extends Dynamic derives CanEqual:
   def apply(idx: Int): Json = Json(root, idx :: path)
@@ -295,7 +297,7 @@ case class Json(root: JsonAst, path: List[Int | Text] = Nil) extends Dynamic der
     case _ =>
       false
 
-  def normalize(using jsonAccess: CanThrow[JsonAccessError]): {jsonAccess} Json =
+  def normalize(using jsonAccess: CanThrow[JsonAccessError]): Json^{jsonAccess} =
     def deref(value: JsonAst, path: List[Int | Text]): JsonAst throws JsonAccessError = path match
       case Nil =>
         value
@@ -435,7 +437,7 @@ case class JsonAccessError(reason: JsonAccessError.Issue)
 extends Error(err"could not access the value because $reason")
 
 object JsonPrimitive:
-  given Show[JsonPrimitive] = Showable(_).show
+  given Show[JsonPrimitive] = _.toString.show
 
 enum JsonPrimitive:
   case Array, Object, Number, Null, Boolean, String
