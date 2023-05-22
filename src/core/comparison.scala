@@ -86,21 +86,15 @@ trait Assimilable[-ValueType]:
 trait Contrast[-ValueType]:
   def apply(a: ValueType, b: ValueType): Accordance
 
-object Contrast:
-  def nothing[ValueType]: Contrast[ValueType] = (a, b) => Accordance.Accord(a.toString.debug)
-  
-  inline def simplistic[ValueType]: Contrast[ValueType] = new Contrast[ValueType]:
+trait FallbackContrast:
+  given [ValueType]: Contrast[ValueType] = new Contrast[ValueType]:
     def apply(a: ValueType, b: ValueType): Accordance =
       if a == b then Accordance.Accord(a.debug)
       else Accordance.Discord(a.debug, b.debug)
 
-  inline given Contrast[Text] = simplistic(_, _)
-  inline given Contrast[Int] = simplistic(_, _)
-  inline given Contrast[Long] = simplistic(_, _)
-  inline given Contrast[Double] = simplistic(_, _)
-  inline given Contrast[Float] = simplistic(_, _)
-  inline given [EnumType <: reflect.Enum]: Contrast[EnumType] = simplistic(_, _)
-
+object Contrast extends FallbackContrast:
+  def nothing[ValueType]: Contrast[ValueType] = (a, b) => Accordance.Accord(a.debug)
+  
   inline given Contrast[Exception] = new Contrast[Exception]:
     def apply(left: Exception, right: Exception): Accordance =
       val leftMsg = Option(left.getMessage).fold(t"null")(_.nn.debug)
@@ -117,8 +111,11 @@ object Contrast:
       val comparison = IArray.from:
         diff(left, right).rdiff2(summon[Assimilable[ValueType]].similar).changes.map:
           case Change.Keep(leftIndex, rightIndex, value) =>
-            (if leftIndex == rightIndex then leftIndex.show else t"${leftIndex.show.superscript}⫽${rightIndex.show.subscript}") ->
-                Accordance.Accord(value.debug)
+            val label =
+              if leftIndex == rightIndex then leftIndex.show
+              else t"${leftIndex.show.superscript}⫽${rightIndex.show.subscript}"
+            
+            label -> Accordance.Accord(value.debug)
           
           case Change.Ins(rightIndex, value) =>
             t" ⧸${rightIndex.show.subscript}" -> Accordance.Discord(t"—", value.debug)
@@ -127,7 +124,9 @@ object Contrast:
             t"${leftIndex.show.superscript}⧸" -> Accordance.Discord(value.debug, t"—")
           
           case Change.Replace(leftIndex, rightIndex, leftValue, rightValue) =>
-            t"${leftIndex.show.superscript}⫽${rightIndex.show.subscript}" -> leftValue.contrastWith(rightValue)
+            val label = t"${leftIndex.show.superscript}⫽${rightIndex.show.subscript}"
+            
+            label -> leftValue.contrastWith(rightValue)
       
       Accordance.Collation(comparison, leftDebug, rightDebug)
     
