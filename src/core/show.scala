@@ -21,6 +21,8 @@ import rudiments.*
 import scala.deriving.*
 import scala.compiletime.*
 
+import language.experimental.captureChecking
+
 trait TextConversion[-ValueType]:
   def apply(value: ValueType): Text
 
