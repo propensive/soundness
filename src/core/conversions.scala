@@ -25,7 +25,8 @@ trait Color:
   def standardSrgb: Srgb
 
 object Color:
-  private[iridescence] inline def unitary(d: Double): Double = d - d.toInt + (if d < 0 then 1 else 0)
+  private[iridescence] inline def unitary(d: Double): Double =
+    d - d.toInt + (if d < 0 then 1 else 0)
 
 case class Xyz(x: Double, y: Double, z: Double) extends Color:
   def luminescence: Double = y
@@ -57,7 +58,8 @@ object RgbHex extends Interpolator[Nothing, Option[Rgb24], Rgb24]:
   
   def parse(state: Option[Rgb24], next: Text): Option[Rgb24] =
     if next.s.length == 7 && next.s.startsWith("#") then parse(state, Text(next.s.substring(1).nn))
-    else if next.s.length == 6 && (next.s.forall { ch => ch.isDigit || ((ch|32) >= 'a' && (ch|32) <= 'f') })
+    else if next.s.length == 6 && next.s.forall: char =>
+      char.isDigit || ((char | 32) >= 'a' && (char | 32) <= 'f')
     then
       val red = Integer.parseInt(next.s.substring(0, 2).nn, 16)
       val green = Integer.parseInt(next.s.substring(2, 4).nn, 16)
@@ -65,8 +67,8 @@ object RgbHex extends Interpolator[Nothing, Option[Rgb24], Rgb24]:
 
       Some(Rgb24(red, green, blue))
     
-    else throw InterpolationError(Text("""the color must be in the form rgb"#<r><g><b>" or rgb"<r><g><b>" """+
-                                       """where <r>, <g> and <b> are 2-digit hex values"""), 0)
+    else throw InterpolationError(s"""the color must be in the form rgb"#<r><g><b>" or
+        rgb"<r><g><b>" where <r>, <g> and <b> are 2-digit hex values""".unwrap, 0)
   
   def insert(state: Option[Rgb24], value: Nothing): Option[Rgb24] =
     throw InterpolationError(Text("""substitutions into an rgb"" interpolator are not supported"""))
