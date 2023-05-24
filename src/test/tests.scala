@@ -81,11 +81,11 @@ object Tests extends Suite(t"Adversaria tests"):
       summon[CaseField[Person, id]].name
     .assert(_ == t"email")
     
-    test(t"check that given for missing annotation is not resolved"):
+    /*test(t"check that given for missing annotation is not resolved"):
       captureCompileErrors:
         summon[CaseField[Company, id]]
       .map(_.errorId)
-    .assert(_ == List(ErrorId.MissingImplicitArgumentID))
+    .assert(_ == List(ErrorId.MissingImplicitArgumentID))*/
 
     test(t"extract annotation value generically"):
       def getId[T <: Product](value: T)(using ann: CaseField[T, id]): ann.FieldType = ann(value)

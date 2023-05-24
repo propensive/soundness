@@ -17,83 +17,121 @@
 package adversaria
 
 import rudiments.*
-import scala.quoted.*
-import scala.annotation.StaticAnnotation as Ann
 
-case class Annotations[A <: Ann, T](annotations: A*)
+import scala.quoted.*
+
+case class Annotations[AnnotationType <: StaticAnnotation, TargetType](annotations: AnnotationType*)
 
 object Annotations:
-  inline given [A <: Ann, T]: Annotations[A, T] = ${AdversariaMacros.typeAnnotations[A, T]}
+  inline given [AnnotationType <: StaticAnnotation, TargetType]
+      : Annotations[AnnotationType, TargetType] =
+    ${AdversariaMacros.typeAnnotations[AnnotationType, TargetType]}
 
-  transparent inline def field[T](inline fn: T => Any): List[Ann] =
-    ${AdversariaMacros.fieldAnnotations[T]('fn)}
+  transparent inline def field[TargetType](inline fn: TargetType => Any): List[StaticAnnotation] =
+    ${AdversariaMacros.fieldAnnotations[TargetType]('fn)}
 
-  transparent inline def fields[T <: Product, A <: Ann]: List[CaseField[T, A]] =
-    ${AdversariaMacros.fields[T, A]}
+  transparent inline def fields[TargetType <: Product, AnnotationType <: StaticAnnotation]
+      : List[CaseField[TargetType, AnnotationType]] =
+    ${AdversariaMacros.fields[TargetType, AnnotationType]}
 
-  transparent inline def firstField[T <: Product, A <: Ann]: CaseField[T, A] =
-    ${AdversariaMacros.firstField[T, A]}
+  transparent inline def firstField[TargetType <: Product, AnnotationType <: StaticAnnotation]
+      : CaseField[TargetType, AnnotationType] =
+    ${AdversariaMacros.firstField[TargetType, AnnotationType]}
 
 object CaseField:
-  def apply[T <: Product, A <: Ann, F](name: Text, access: T => F, ann: A)
-      : CaseField[T, A] { type FieldType = F } =
-    new CaseField[T, A](name):
-      type FieldType = F
-      def apply(value: T) = access(value)
-      def annotation: A = ann
+  def apply
+      [TargetType <: Product, AnnotationType <: StaticAnnotation, InitFieldType]
+      (name: Text, access: TargetType => InitFieldType, annotation: AnnotationType)
+      : CaseField[TargetType, AnnotationType] { type FieldType = InitFieldType } =
+    
+    inline def initAnnotation = annotation
+    
+    new CaseField[TargetType, AnnotationType](name):
+      type FieldType = InitFieldType
+      def apply(value: TargetType) = access(value)
+      def annotation: AnnotationType = initAnnotation
 
-  transparent inline given [T <: Product, A <: Ann]: CaseField[T, A] = Annotations.firstField[T, A]
+  transparent inline given [TargetType <: Product, AnnotationType <: StaticAnnotation]
+      : CaseField[TargetType, AnnotationType] =
+    Annotations.firstField[TargetType, AnnotationType]
 
-trait CaseField[T <: Product, A <: Ann](val name: Text):
+trait CaseField[TargetType <: Product, AnnotationType <: StaticAnnotation](val name: Text):
   type FieldType
-  def apply(value: T): FieldType
-  def annotation: A
+  def apply(value: TargetType): FieldType
+  def annotation: AnnotationType
 
 object AdversariaMacros:
-  def firstField[T <: Product: Type, A <: Ann: Type](using Quotes): Expr[CaseField[T, A]] =
+  def firstField
+      [TargetType <: Product: Type, AnnotationType <: StaticAnnotation: Type]
+      (using Quotes)
+      : Expr[CaseField[TargetType, AnnotationType]] =
     import quotes.reflect.*
-    val tpe = TypeRepr.of[T]
-    val fields = tpe.typeSymbol.caseFields
     
-    fields.flatMap: fld =>
-      fld.annotations.map(_.asExpr).collect { case '{ $ann: A } => ann }.map: ann =>
-        '{ CaseField(Text(${Expr(fld.name)}), (t: T) => ${'t.asTerm.select(fld).asExpr}, $ann) }
+    val targetType = TypeRepr.of[TargetType]
+    val fields = targetType.typeSymbol.caseFields
+    
+    fields.flatMap: field =>
+      field.annotations.map(_.asExpr).collect:
+        case '{ $annotation: AnnotationType } => annotation
+      .map: annotation =>
+        '{CaseField(Text(${Expr(field.name)}), (target: TargetType) =>
+            ${'target.asTerm.select(field).asExpr}, $annotation)}
       .reverse
     .head
 
-  def fields[T <: Product: Type, A <: Ann: Type](using Quotes): Expr[List[CaseField[T, A]]] =
+  def fields
+      [TargetType <: Product: Type, AnnotationType <: StaticAnnotation: Type]
+      (using Quotes)
+      : Expr[List[CaseField[TargetType, AnnotationType]]] =
     import quotes.reflect.*
-    val tpe = TypeRepr.of[T]
-    val fields = tpe.typeSymbol.caseFields
     
-    val elements: List[Expr[CaseField[T, A]]] = fields.flatMap: fld =>
-      val name = Expr(fld.name)
-      fld.annotations.map(_.asExpr).collect { case '{ $ann: A } => ann }.map: ann =>
-        '{ CaseField(Text($name), (t: T) => ${'t.asTerm.select(fld).asExpr}, $ann) }
+    val targetType = TypeRepr.of[TargetType]
+    val fields = targetType.typeSymbol.caseFields
+    
+    val elements: List[Expr[CaseField[TargetType, AnnotationType]]] = fields.flatMap: field =>
+      val name = Expr(field.name)
+      field.annotations.map(_.asExpr).collect:
+        case '{ $annotation: AnnotationType } => annotation
+      .map: annotation =>
+        '{ CaseField(Text($name), (target: TargetType) =>
+            ${'target.asTerm.select(field).asExpr}, $annotation)}
       .reverse
 
     Expr.ofList(elements)
 
-  def fieldAnnotations[T: Type](fn: Expr[T => Any])(using Quotes): Expr[List[Ann]] =
+  def fieldAnnotations
+      [TargetType: Type]
+      (fn: Expr[TargetType => Any])
+      (using Quotes)
+      : Expr[List[StaticAnnotation]] =
     import quotes.reflect.*
-    val tpe = TypeRepr.of[T]
+    
+    val targetType = TypeRepr.of[TargetType]
 
     val field = fn.asTerm match
       case Inlined(_, _, Block(List(DefDef(_, _, _, Some(Select(_, term)))), _)) =>
-        tpe.typeSymbol.caseFields.find(_.name == term).getOrElse:
+        targetType.typeSymbol.caseFields.find(_.name == term).getOrElse:
           fail(s"the member $term is not a case class field")
       
       case _ =>
         fail("the lambda must be a simple reference to a case class field")
 
-    Expr.ofList(field.annotations.map(_.asExpr).collect { case '{ $ann: Ann } => ann })
+    Expr.ofList:
+      field.annotations.map(_.asExpr).collect:
+        case '{ $annotation: StaticAnnotation } => annotation
 
-  def typeAnnotations[A <: Ann: Type, T: Type](using Quotes): Expr[Annotations[A, T]] =
+  def typeAnnotations
+      [AnnotationType <: StaticAnnotation: Type, TargetType: Type]
+      (using Quotes)
+      : Expr[Annotations[AnnotationType, TargetType]] =
     import quotes.reflect.*
 
-    val tpe = TypeRepr.of[T]
-    val annotations = tpe.typeSymbol.annotations.map(_.asExpr).collect { case '{ $a: A } => a }
+    val targetType = TypeRepr.of[TargetType]
+    val annotations = targetType.typeSymbol.annotations.map(_.asExpr).collect:
+      case '{ $annotation: AnnotationType } => annotation
     
     if annotations.isEmpty
-    then fail(s"the type ${tpe.show} did not have the annotation ${TypeRepr.of[A].show}")
-    else '{ Annotations[A, T](${Expr.ofList(annotations)}*) }
+    then
+      val typeName = TypeRepr.of[AnnotationType].show
+      fail(s"the type ${targetType.show} did not have the annotation $typeName")
+    else '{ Annotations[AnnotationType, TargetType](${Expr.ofList(annotations)}*) }
