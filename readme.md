@@ -6,10 +6,11 @@
 
 ____
 
-
+TBC
 
 ## Features
 
+TBC
 
 
 ## Availability
@@ -19,11 +20,12 @@ final release of Scala 3.3.
 
 ## Getting Started
 
+TBC
 
 
 ## Status
 
-Spectacular is classified as ____. For reference, Scala One projects are
+Spectacular is classified as __fledgling__. For reference, Scala One projects are
 categorized into one of the following five stability levels:
 
 - _embryonic_: for experimental or demonstrative purposes only, without any guarantees of longevity
@@ -67,7 +69,7 @@ Spectacular was designed and developed by Jon Pretty, and commercial support and
 
 ## Name
 
-
+Something _spectacular_ relates to a _spectacle_ or _show_; in this case, the `Show` typeclass.
 
 In general, Scala One project names are always chosen with some rationale, however it is usually
 frivolous. Each name is chosen for more for its _uniqueness_ and _intrigue_ than its concision or
