@@ -23,24 +23,29 @@ import scala.compiletime.*
 
 object CardinalityMacro:
   def apply
-      [D1 <: Double: Type, D2 <: Double: Type](digits: Expr[String])(using Quotes): Expr[D1 ~ D2] =
+      [LeftDoubleType <: Double: Type, RightDoubleType <: Double: Type]
+      (digits: Expr[String])
+      (using Quotes)
+      : Expr[LeftDoubleType ~ RightDoubleType] =
     import quotes.reflect.*
     
     digits.value match
-      case Some(str) =>
-        TypeRepr.of[D1].asMatchable match
-          case ConstantType(DoubleConstant(lb)) =>
-            TypeRepr.of[D2].asMatchable match
-              case ConstantType(DoubleConstant(ub)) =>
-                val value = str.toDouble
+      case Some(string) =>
+        TypeRepr.of[LeftDoubleType].asMatchable match
+          case ConstantType(DoubleConstant(lowerBound)) =>
+            TypeRepr.of[RightDoubleType].asMatchable match
+              case ConstantType(DoubleConstant(upperBound)) =>
+                val value = string.toDouble
             
-                if value < lb
-                then fail(s"the value $str is less than the lower bound for this value, $lb")
+                if value < lowerBound
+                then fail(s"""the value $string is less than the lower bound for this value,
+                    $lowerBound""".unwrap.s)
             
-                if value > ub
-                then fail(s"the value $str is greater than the upper bound for this value, $ub")
+                if value > upperBound
+                then fail(s"""the value $string is greater than the upper bound for this value,
+                    $upperBound""".unwrap.s)
   
-                '{${Expr(value)}.asInstanceOf[D1 ~ D2]}
+                '{${Expr(value)}.asInstanceOf[LeftDoubleType ~ RightDoubleType]}
           
               case _ =>
                 fail("upper bound must be a Double singleton literal types")
