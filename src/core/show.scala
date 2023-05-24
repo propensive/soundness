@@ -154,9 +154,9 @@ object TextConversion:
     .mkString
   
   private def arrayPrefix(str: String): String =
-    val dimension = str.count(_ == '[').min(9)
+    val brackets = str.count(_ == '[')
     
-    val arrayType = str(dimension) match
+    val arrayType = str(brackets) match
       case 'B' => "𝔹" // Byte
       case 'C' => "ℂ" // Char
       case 'D' => "𝔻" // Double
@@ -166,9 +166,11 @@ object TextConversion:
       case 'L' => "𝕃" // Object
       case 'S' => "𝕊" // Short
       case 'Z' => "ℤ" // Boolean
-      case _   => "" // Unknown
+      case _   => ""  // Unknown
     
-    arrayType+("⁰¹²³⁴⁵⁶⁷⁸⁹"(dimension))+"¦"+renderBraille(str.split("@").nn(1).nn)+"¦"
+    val dimension = Text(if brackets < 2 then "" else brackets.toString.map("⁰¹²³⁴⁵⁶⁷⁸⁹"(_)))
+    
+    arrayType+dimension+"¦"+renderBraille(str.split("@").nn(1).nn)+"¦"
 
   inline given [ValueType]: Debug[Option[ValueType]] =
     case None =>
