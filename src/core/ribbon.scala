@@ -30,11 +30,11 @@ case class Ribbon(colors: Bg*):
       val (background, text) = cursor
       
       val i = background.color
-      val foreground = Fg(if (i&255 + (i >> 8)&255 + (i >> 16)&255) > 383 then 0 else 16777215)
+      val fg = Fg(if ((i&255)*2 + ((i >> 8)&255)*5 + ((i >> 16)&255))*3 > 3839 then 0 else 16777215)
       
-      val arrow = postcursor.fm(out"$Reset${background.fg}()"): (color2, _) =>
-        out"$background($color2())"
+      val arrow = postcursor.fm(out"$Reset${background.fg}()"): (color, _) =>
+        out"${background.fg}($color())"
       
-      out"$background( $foreground($text) )$arrow"
+      out"$background( $fg($text) )$arrow"
     .join
     
