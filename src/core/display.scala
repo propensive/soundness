@@ -19,14 +19,14 @@ package escapade
 import rudiments.*
 import digression.*
 import gossamer.*
-import iridescence.*
 import lithography.*
 import spectacular.*
+import iridescence.*
 
 object Display:
   given Display[Output] = identity(_)
   given Display[Text] = text => Output(text)
-  given Display[Pid] = pid => out"${colors.FireBrick}(${pid.value.show})"
+  given Display[Pid] = pid => out"${pid.value.show}"
 
   given [T: Display]: Display[Option[T]] =
     case None    => Output("empty".show)
@@ -75,11 +75,11 @@ object Display:
     out"$cls$Gray(#)$method $file$Gray(:)$line"
 
   given (using decimalizer: Decimalizer): Display[Double] = double =>
-    Output.make(decimalizer.decimalize(double), _.copy(fg = colors.Gold))
+    Output.make(decimalizer.decimalize(double), _.copy(fg = colors.Gold.asInt))
 
   given Display[Throwable] = throwable =>
     Output.make[String](throwable.getClass.getName.nn.show.cut(t".").last.s,
-        _.copy(fg = colors.Crimson))
+        _.copy(fg = colors.Crimson.asInt))
 
 trait Display[-ValueType] extends Showable[ValueType]:
   def show(value: ValueType): Text = apply(value).plain

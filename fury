@@ -2,6 +2,7 @@
 # More information is available at: https://github.com/propensive/wrath/
 
 repo propensive/probably
+repo propensive/anticipation
 repo propensive/iridescence
 
 target escapade/test
@@ -10,7 +11,7 @@ project escapade
   module core
     compiler  scala
     sources   src/core
-    include   gossamer/core iridescence/core
+    include   gossamer/core anticipation/color iridescence/core
   
   module test
     compiler  scala

@@ -17,19 +17,24 @@
 package escapade
 
 import rudiments.*
-import iridescence.*
 import gossamer.*
+import anticipation.*
 
-case class Ribbon(colors: Color*):
+object Ribbon:
+  def apply[ColorType: RgbColor](colors: ColorType*): Ribbon = Ribbon(colors.map(Bg(_))*)
+
+case class Ribbon(colors: Bg*):
   def fill(parts: Output*): Output =
     import escapes.*
     IArray.from(colors.zip(parts)).curse:
       val (background, text) = cursor
-      val foreground = background.standardSrgb.highContrast
       
-      val arrow = postcursor.fm(out"$Reset$background()"): (col, _) =>
-        out"$background(${Bg(col)}())"
+      val i = background.color
+      val foreground = Fg(if (i&255 + (i >> 8)&255 + (i >> 16)&255) > 383 then 0 else 16777215)
       
-      out"${Bg(background)}( $foreground($text) )$arrow"
+      val arrow = postcursor.fm(out"$Reset${background.fg}()"): (color2, _) =>
+        out"$background($color2())"
+      
+      out"$background( $foreground($text) )$arrow"
     .join
     

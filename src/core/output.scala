@@ -18,8 +18,8 @@ package escapade
 
 import gossamer.*
 import rudiments.*
+import anticipation.*
 import digression.*
-import iridescence.*
 import contextual.*
 import spectacular.*
 
@@ -48,7 +48,7 @@ object TextStyle:
   val esc: Char = 27.toChar
 
 case class TextStyle
-    (fg: Maybe[Rgb24] = Unset, bg: Maybe[Rgb24] = Unset, italic: Boolean = false,
+    (fg: Maybe[Int] = Unset, bg: Maybe[Int] = Unset, italic: Boolean = false,
         bold: Boolean = false, reverse: Boolean = false, underline: Boolean = false,
         conceal: Boolean = false, strike: Boolean = false):
   import escapes.*
@@ -62,8 +62,8 @@ case class TextStyle
   private def strikeEsc: Text = if strike then styles.Strike.on else styles.Strike.off
   
   def addChanges(buf: StringBuilder, next: TextStyle): Unit =
-    if fg != next.fg then buf.add(next.fg.mm(_.ansiFg).or(t"$esc[39m"))
-    if bg != next.bg then buf.add(next.bg.mm(_.ansiBg).or(t"$esc[49m"))
+    if fg != next.fg then buf.add(next.fg.mm(Fg(_).ansi(24)).or(t"$esc[39m"))
+    if bg != next.bg then buf.add(next.bg.mm(Bg(_).ansi(24)).or(t"$esc[49m"))
     if italic != next.italic then buf.add(t"${esc}${next.italicEsc}")
     if bold != next.bold then buf.add(t"${esc}${next.boldEsc}")
     if reverse != next.reverse then buf.add(t"${esc}${next.reverseEsc}")
@@ -93,9 +93,12 @@ object Ansi extends Ansi2:
   def strip(txt: Text): Text = txt.sub(t"""\e\\[?.*?[\\@-~]""", t"")
 
   given Stylize[Escape] = identity(_)
-  given Stylize[Color] = color => Stylize(_.copy(fg = color.standardSrgb.rgb24))
-  given Stylize[Rgb24] = color => Stylize(_.copy(fg = color))
+  
+  given [ColorType](using RgbColor[ColorType]): Stylize[ColorType] =
+    color => Stylize(_.copy(fg = color.asRgb24Int))
+  
   given Stylize[Bg] = bgColor => Stylize(_.copy(bg = bgColor.color))
+  given Stylize[Fg] = fgColor => Stylize(_.copy(fg = fgColor.color))
 
   given Stylize[Bold.type] = _ => Stylize(_.copy(bold = true))
   given Stylize[Italic.type] = _ => Stylize(_.copy(italic = true))
@@ -328,8 +331,40 @@ object Reverse
 object Conceal
 
 object Bg:
-  def apply(color: Color): Bg = Bg(color.standardSrgb.rgb24)
+  def apply[ColorType: RgbColor](color: ColorType): Bg = Bg(color.asRgb24Int)
 
-case class Bg(color: Rgb24)
+case class Bg(color: Int):
+  def fg: Fg = Fg(color)
+  def ansi(bits: 8 | 24): Text =
+    val red = (color >> 16)&255
+    val green = (color >> 8)&255
+    val blue = color&255
+    
+    bits match
+      case 8 =>
+        val n = if red == green && green == blue then 232 + (red*23 + 0.99).toInt else 16 +
+          36*(red*5 + 0.99).toInt + 6*(green*5 + 0.99).toInt + (blue*5 + 0.99).toInt
+
+        t"\e[48;5;${n}m"
+
+      case 24 =>
+        t"\e[48;2;$red;$green;${blue}m"
+
+case class Fg(color: Int):
+  def bg: Bg = Bg(color)
+  def ansi(bits: 8 | 24): Text =
+    val red = (color >> 16)&255
+    val green = (color >> 8)&255
+    val blue = color&255
+    
+    bits match
+      case 8 =>
+        val n = if red == green && green == blue then 232 + (red*23 + 0.99).toInt else 16 +
+          36*(red*5 + 0.99).toInt + 6*(green*5 + 0.99).toInt + (blue*5 + 0.99).toInt
+
+        t"\e[38;5;${n}m"
+
+      case 24 =>
+        t"\e[38;2;$red;$green;${blue}m"
 
 type Stylize[T] = Substitution[Ansi.Input, T, "esc"]
