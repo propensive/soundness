@@ -1,5 +1,5 @@
 /*
-    Lithography, version [unreleased]. Copyright 2023 Jon Pretty, Propensive OÜ.
+    Hieroglyph, version [unreleased]. Copyright 2023 Jon Pretty, Propensive OÜ.
 
     The primary distribution site is: https://propensive.com/
 
@@ -14,7 +14,7 @@
     and limitations under the License.
 */
 
-package lithography
+package hieroglyph
 
 import probably.*
 import rudiments.*
@@ -23,7 +23,7 @@ import gossamer.{displayWidth as _, *}
 
 import textWidthCalculation.eastAsianScripts
 
-object Tests extends Suite(t"Lithography tests"):
+object Tests extends Suite(t"Hieroglyph tests"):
   def run(): Unit =
     test(t"Check narrow character width"):
       'a'.displayWidth

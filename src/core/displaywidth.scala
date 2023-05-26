@@ -1,5 +1,5 @@
 /*
-    Lithography, version [unreleased]. Copyright 2023 Jon Pretty, Propensive OÜ.
+    Hieroglyph, version [unreleased]. Copyright 2023 Jon Pretty, Propensive OÜ.
 
     The primary distribution site is: https://propensive.com/
 
@@ -14,7 +14,7 @@
     and limitations under the License.
 */
 
-package lithography
+package hieroglyph
 
 import rudiments.*
 import kaleidoscope.*
@@ -23,7 +23,7 @@ import java.io as ji
 
 import scala.collection.immutable.TreeMap
 
-object LithographyOpaques:
+object HieroglyphOpaques:
   opaque type CharRange = Long
   object CharRange:
     def apply(from: Int, to: Int): CharRange = (from.toLong << 32) + to.toLong
@@ -40,7 +40,7 @@ object LithographyOpaques:
     def contains(char: Char): Boolean = char.toInt >= from && char.toInt <= to
 
 object Unicode:
-  import LithographyOpaques.*
+  import HieroglyphOpaques.*
   
   object EaWidth:
     def unapply(code: Text): Option[EaWidth] = code.s.only:
@@ -87,8 +87,8 @@ object Unicode:
         case _ =>
           map
     
-    val in: ji.InputStream = Option(getClass.getResourceAsStream("/lithography/EastAsianWidth.txt")).map(_.nn).getOrElse:
-      throw Mistake("Could not find lithography/EastAsianWidth.txt on the classpath")
+    val in: ji.InputStream = Option(getClass.getResourceAsStream("/hieroglyph/EastAsianWidth.txt")).map(_.nn).getOrElse:
+      throw Mistake("Could not find hieroglyph/EastAsianWidth.txt on the classpath")
     
     val stream = scala.io.Source.fromInputStream(in).getLines.map(Text(_)).to(LazyList)
   
@@ -97,7 +97,7 @@ object Unicode:
 extension (char: Char)
   def displayWidth: Int = Unicode.eastAsianWidth(char).mm(_.width).or(1)
 
-@missingContext("a contextual TextWidthCalculator is required to work out the horizontal space a string of text takes when rendered in a monospaced font; for most purposes,\n\n    lithography.textWidthCalculation.uniform\n\nwill suffice, but if using East Asian scripts,\n\n    import lithography.textWidthCalculation.eastAsianScripts\n\nshould be used.")
+@missingContext("a contextual TextWidthCalculator is required to work out the horizontal space a string of text takes when rendered in a monospaced font; for most purposes,\n\n    hieroglyph.textWidthCalculation.uniform\n\nwill suffice, but if using East Asian scripts,\n\n    import hieroglyph.textWidthCalculation.eastAsianScripts\n\nshould be used.")
 trait TextWidthCalculator:
   def width(text: Text): Int
   def width(char: Char): Int

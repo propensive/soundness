@@ -1,12 +1,12 @@
-[<img alt="GitHub Workflow" src="https://img.shields.io/github/actions/workflow/status/propensive/lithography/main.yml?style=for-the-badge" height="24">](https://github.com/propensive/lithography/actions)
+[<img alt="GitHub Workflow" src="https://img.shields.io/github/actions/workflow/status/propensive/hieroglyph/main.yml?style=for-the-badge" height="24">](https://github.com/propensive/hieroglyph/actions)
 [<img src="https://img.shields.io/discord/633198088311537684?color=8899f7&label=DISCORD&style=for-the-badge" height="24">](https://discord.gg/7b6mpF6Qcf)
 <img src="/doc/images/github.png" valign="middle">
 
-# Lithography
+# Hieroglyph
 
 __Tools for working with characters in Scala__
 
-Lithography provides facilities for working with characters, in particular, by providing support for
+Hieroglyph provides facilities for working with characters, in particular, by providing support for
 different character encodings, and utilizing additional Unicode metadata.
 
 ## Features
@@ -17,14 +17,14 @@ different character encodings, and utilizing additional Unicode metadata.
 
 ## Availability
 
-Lithography has not yet been published as a binary. It is currently waiting for the
+Hieroglyph has not yet been published as a binary. It is currently waiting for the
 final release of Scala 3.3.
 
 ## Getting Started
 
 ### Character Display Width
 
-Lithography provides an extension method, `displayWidth`, on `Char` which will
+Hieroglyph provides an extension method, `displayWidth`, on `Char` which will
 return the amount of space the glyph for that character will take up, when
 rendered in a mono-spaced font.
 
@@ -57,7 +57,7 @@ value imported from the `textWidthCalculation` package.
 
 ## Status
 
-Lithography is classified as __fledgling__. For reference, Scala One projects are
+Hieroglyph is classified as __fledgling__. For reference, Scala One projects are
 categorized into one of the following five stability levels:
 
 - _embryonic_: for experimental or demonstrative purposes only, without any guarantees of longevity
@@ -70,22 +70,22 @@ Projects at any stability level, even _embryonic_ projects, are still ready to
 be used, but caution should be taken if there is a mismatch between the
 project's stability level and the importance of your own project.
 
-Lithography is designed to be _small_. Its entire source code currently consists
+Hieroglyph is designed to be _small_. Its entire source code currently consists
 of 243 lines of code.
 
 ## Building
 
-Lithography can be built on Linux or Mac OS with [Fury](/propensive/fury), however
+Hieroglyph can be built on Linux or Mac OS with [Fury](/propensive/fury), however
 the approach to building is currently in a state of flux, and is likely to
 change.
 
 ## Contributing
 
-Contributors to Lithography are welcome and encouraged. New contributors may like to look for issues marked
-<a href="https://github.com/propensive/lithography/labels/beginner">beginner</a>.
+Contributors to Hieroglyph are welcome and encouraged. New contributors may like to look for issues marked
+<a href="https://github.com/propensive/hieroglyph/labels/beginner">beginner</a>.
 
 We suggest that all contributors read the [Contributing Guide](/contributing.md) to make the process of
-contributing to Lithography easier.
+contributing to Hieroglyph easier.
 
 Please __do not__ contact project maintainers privately with questions unless
 there is a good reason to keep them private. While it can be tempting to
@@ -94,14 +94,14 @@ audience, and it can result in duplication of effort.
 
 ## Author
 
-Lithography was designed and developed by Jon Pretty, and commercial support and training is available from
+Hieroglyph was designed and developed by Jon Pretty, and commercial support and training is available from
 [Propensive O&Uuml;](https://propensive.com/).
 
 
 
 ## Name
 
-Lithography is a process used for printing ink on paper. This library provides information on
+Hieroglyph is a process used for printing ink on paper. This library provides information on
 how to print characters on screen.
 
 In general, Scala One project names are always chosen with some rationale, however it is usually
@@ -115,5 +115,5 @@ often arrived in English via a romance language.
 
 ## License
 
-Lithography is copyright &copy; 2023 Jon Pretty & Propensive O&Uuml;, and is made available under the
+Hieroglyph is copyright &copy; 2023 Jon Pretty & Propensive O&Uuml;, and is made available under the
 [Apache 2.0 License](/license.md).

@@ -5,9 +5,9 @@ repo propensive/kaleidoscope
 repo propensive/spectacular
 repo propensive/digression
 
-target lithography/test
+target hieroglyph/test
 
-project lithography
+project hieroglyph
   module core
     compiler  scala
     sources   src/core
@@ -16,6 +16,6 @@ project lithography
   module test
     compiler  scala
     sources   src/test
-    main      lithography.Tests
-    include   lithography/core probably/cli
-    coverage  lithography/core
+    main      hieroglyph.Tests
+    include   hieroglyph/core probably/cli
+    coverage  hieroglyph/core

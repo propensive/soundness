@@ -1,5 +1,5 @@
 /*
-    Lithography, version [unreleased]. Copyright 2023 Jon Pretty, Propensive OÜ.
+    Hieroglyph, version [unreleased]. Copyright 2023 Jon Pretty, Propensive OÜ.
 
     The primary distribution site is: https://propensive.com/
 
@@ -14,7 +14,7 @@
     and limitations under the License.
 */
 
-package lithography
+package hieroglyph
 
 import rudiments.*
 import digression.*
@@ -160,7 +160,7 @@ package badEncodingHandlers:
 case class BadEncodingError(pos: Int, bytes: Bytes)
 extends Error(err"The byte sequence $bytes at position $pos is not valid")
 
-// FIXME: This code was copied from Gossamer, which depends on Contextual, while Lithography does not.
+// FIXME: This code was copied from Gossamer, which depends on Contextual, while Hieroglyph does not.
 // extension (inline ctx: StringContext)
 //   transparent inline def enc(inline parts: Any*): Encoding = ${EncodingPrefix.expand('ctx, 'parts)
 

@@ -1,5 +1,5 @@
 /*
-    Lithography, version [unreleased]. Copyright 2023 Jon Pretty, Propensive OÜ.
+    Hieroglyph, version [unreleased]. Copyright 2023 Jon Pretty, Propensive OÜ.
 
     The primary distribution site is: https://propensive.com/
 
@@ -14,10 +14,9 @@
     and limitations under the License.
 */
 
-package lithography
+package hieroglyph
 
 import rudiments.*
-import lithography.*
 
 package textWidthCalculation:
   given eastAsianScripts: TextWidthCalculator with

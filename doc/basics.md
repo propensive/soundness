@@ -1,6 +1,6 @@
 ### Character Display Width
 
-Lithography provides an extension method, `displayWidth`, on `Char` which will
+Hieroglyph provides an extension method, `displayWidth`, on `Char` which will
 return the amount of space the glyph for that character will take up, when
 rendered in a mono-spaced font.
 

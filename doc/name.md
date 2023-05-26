@@ -1,2 +1,2 @@
-Lithography is a process used for printing ink on paper. This library provides information on
-how to print characters on screen.
+Hieroglyphics are elaborate characters, whose meaning requires interpretation, while _Hieroglyph_ is a library
+which provides encodings to translate between characters and their binary representations.
