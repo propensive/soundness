@@ -71,7 +71,7 @@ be used, but caution should be taken if there is a mismatch between the
 project's stability level and the importance of your own project.
 
 Hieroglyph is designed to be _small_. Its entire source code currently consists
-of 243 lines of code.
+of 242 lines of code.
 
 ## Building
 
@@ -101,8 +101,8 @@ Hieroglyph was designed and developed by Jon Pretty, and commercial support and 
 
 ## Name
 
-Hieroglyph is a process used for printing ink on paper. This library provides information on
-how to print characters on screen.
+Hieroglyphics are elaborate characters, whose meaning requires interpretation, while _Hieroglyph_ is a library
+which provides encodings to translate between characters and their binary representations.
 
 In general, Scala One project names are always chosen with some rationale, however it is usually
 frivolous. Each name is chosen for more for its _uniqueness_ and _intrigue_ than its concision or
