@@ -20,7 +20,7 @@ import rudiments.*
 import digression.*
 import anticipation.*
 import parasitism.*
-import lithography.*
+import hieroglyph.*
 
 import java.io as ji
 import java.nio as jn

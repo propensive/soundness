@@ -3,7 +3,7 @@
 
 repo propensive/parasitism
 repo propensive/diuretic
-repo propensive/lithography
+repo propensive/hieroglyph
 
 target turbulence/core
 
@@ -11,4 +11,4 @@ project turbulence
   module core
     compiler  scala
     sources   src/core
-    include   lithography/core parasitism/core diuretic/core
+    include   hieroglyph/core parasitism/core diuretic/core
