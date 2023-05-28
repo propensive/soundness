@@ -21,7 +21,7 @@ import gossamer.*
 import rudiments.*
 import digression.*
 import spectacular.*
-import lithography.*
+import hieroglyph.*
 
 import scala.collection.mutable as scm
 

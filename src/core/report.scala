@@ -26,7 +26,7 @@ import escapade.*
 import turbulence.*
 import iridescence.*
 import spectacular.*
-import lithography.*
+import hieroglyph.*
 
 given Decimalizer = Decimalizer(3)
 
@@ -76,7 +76,7 @@ enum DebugInfo:
   case Throws(stack: StackTrace)
   case CheckThrows(stack: StackTrace)
   case Captures(values: Map[Text, Text])
-  case Compare(expected: Text, found: Text, comparison: Comparison)
+  case Compare(expected: Text, found: Text, accordance: Accordance)
   case Message(message: Text)
 
 trait Inclusion[ReportType, DataType]:

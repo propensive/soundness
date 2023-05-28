@@ -50,12 +50,12 @@ object ProbablyMacros:
         val debug: Expr[Debug[t | T]] =
           Expr.summon[Debug[t | T]].getOrElse('{ TextConversion.any })
         
-        val comparable = Expr.summon[Comparable[t | T]].getOrElse('{Comparable.simplistic[t | T]})
-        '{ assertion[t | T, T, R, S]($runner, $test, $pred, $action, $comparable, Some($expr), $inc,
+        val contrast = Expr.summon[Contrast[t | T]].get
+        '{ assertion[t | T, T, R, S]($runner, $test, $pred, $action, $contrast, Some($expr), $inc,
             $inc2, $debug) }
       
       case _ =>
-        '{ assertion[T, T, R, S]($runner, $test, $pred, $action, Comparable.nothing[T], None, $inc,
+        '{ assertion[T, T, R, S]($runner, $test, $pred, $action, Contrast.nothing[T], None, $inc,
             $inc2, TextConversion.any) }
   
   def check
@@ -87,7 +87,7 @@ object ProbablyMacros:
   def assertion
       [T, T0 <: T, R, S]
       (runner: Runner[R], test: Test[T0], pred: T0 => Boolean, result: TestRun[T0] => S,
-          comparable: Comparable[T], exp: Option[T], inc: Inclusion[R, Outcome],
+          contrast: Contrast[T], exp: Option[T], inc: Inclusion[R, Outcome],
           inc2: Inclusion[R, DebugInfo], display: Debug[T]): S =
     runner.run(test).pipe: run =>
       val outcome = run match
@@ -102,9 +102,9 @@ object ProbablyMacros:
             exp match
               case Some(exp) =>
                 inc2.include(runner.report, test.id, DebugInfo.Compare(display(exp),
-                    display(value), comparable.compare(exp, value)))
+                    display(value), contrast(exp, value)))
               case None =>
-                //inc2.include(runner.report, test.id, DebugInfo.Compare(summon[Comparable[Any]].compare(value, 1)))
+                //inc2.include(runner.report, test.id, DebugInfo.Compare(summon[Contrast[Any]].compare(value, 1)))
             
             if !map.isEmpty then inc2.include(runner.report, test.id, DebugInfo.Captures(map))
             
