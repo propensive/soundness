@@ -19,7 +19,7 @@ package escapade
 import rudiments.*
 import digression.*
 import gossamer.*
-import lithography.*
+import hieroglyph.*
 import spectacular.*
 import iridescence.*
 
