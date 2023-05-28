@@ -24,7 +24,7 @@ import iridescence.*
 import dendrology.*
 import escritoire.*
 import spectacular.*
-import lithography.*
+import hieroglyph.*
 
 import scala.deriving.*
 import scala.compiletime.*
