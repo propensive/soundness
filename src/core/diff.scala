@@ -20,7 +20,6 @@ import gossamer.*
 import rudiments.*
 import eucalyptus.*
 import spectacular.*
-import annotation.*
 
 import language.experimental.captureChecking
 
@@ -174,93 +173,79 @@ case class Diff[ElemType](changes: SimpleChange[ElemType]*):
 
       case Nil =>
         throw Mistake("Should never have an empty list here")
-  
-object Diff:
-  object Point:
-    opaque type Point = Long
-    def apply(x: Int, y: Int): Point = (x.toLong << 32) + y
-    
-    given Debug[Point] = point => t"(${point.x},${point.y})"
-    extension (point: Point)
-      def x: Int = (point >> 32).toInt
-      def y: Int = point.toInt
-      def del: Point = Point(x + 1, y)
-      def ins: Point = Point(x, y + 1)
-      def keep: Point = Point(x + 1, y + 1)
-      def unkeep: Point = Point(x - 1, y - 1)
-      def text: Text = t"[$x,$y]"
 
-import Diff.Point, Point.*
 
 def diff
     [ElemType]
     (left: IndexedSeq[ElemType], right: IndexedSeq[ElemType],
-        cmp: (ElemType, ElemType) -> Boolean = { (a: ElemType, b: ElemType) => a == b })
+        compare: (ElemType, ElemType) -> Boolean = { (a: ElemType, b: ElemType) => a == b })
     : Diff[ElemType] =
-  val end = Point(left.size, right.size)
-  
+  println(s"\ndiff(${left.debug}, ${right.debug})")
+
+  val leftMax = left.length
+  val rightMax = right.length
+
   @tailrec
-  def distance
-      (last: IArray[Point] = IArray(count(Point(0, 0))), trace: List[IArray[Point]] = Nil)
+  def count(leftIndex: Int, rightIndex: Int, total: Int = 0): Int =
+    //println(s"count($leftIndex, $rightIndex, $total)")
+    if leftIndex < leftMax && rightIndex < rightMax && compare(left(leftIndex), right(rightIndex))
+    then count(leftIndex + 1, rightIndex + 1, total + 1)
+    else total
+
+  @tailrec
+  def trace
+      (dels: Int = 0, inss: Int = 0, rows: List[Array[Int]] = List(Array(0)))
       : Diff[ElemType] =
-    //println(s"distance(last=${last.debug}, trace=${trace.debug})")
-    if last.contains(end) then
-      val idx = last.indexOf(end)
-      if trace.isEmpty then countback(idx, end, Nil)
-      else
-        if trace.head.length > idx && count(trace.head(idx).ins) == end
-        then countback(idx, end, trace)
-        else countback(idx - 1, end, trace)
-    
-    else
-      val round = last.size
-      
-      val next = IArray.create[Point](round + 1): arr =>
-        arr(0) = last(0).ins
+    (rows: @unchecked) match
+      case head :: tail =>
+        val deletion = if dels == 0 then 0 else
+          val leftIndex = math.abs(tail.head(dels - 1)) + 1
+          val rightIndex = leftIndex - dels + inss
 
-        last.indices.foreach: i =>
-          arr(i + 1) = count(last(i).del)
-          count(last(i).ins).pipe { pt => if i == round || pt.x > arr(i).x then arr(i) = pt }
-      
-      println(next.debug)
-
-      distance(next, last :: trace)
+          leftIndex + count(leftIndex, rightIndex)
+        
+        val insertion = if inss == 0 then 0 else
+          val leftIndex = math.abs(tail.head(dels))
+          val rightIndex = leftIndex - dels + inss
+          
+          leftIndex + count(leftIndex, rightIndex)
+        
+        val best = if dels + inss == 0 then count(0, 0) else if deletion > insertion then deletion else insertion
+        
+        if best == leftMax && (best - dels + inss) == rightMax
+        then Diff(countback(leftMax, if deletion > insertion then -best else best, dels, tail, Nil)*)
+        else head(dels) = if deletion > insertion then -best else best
+  
+        if inss == 0 then trace(0, dels + 1, new Array[Int](dels + 2) :: rows)
+        else trace(dels + 1, inss - 1, rows)
 
   @tailrec
-  def count(pt: Point): Point =
-    if pt.x >= left.size || pt.y >= right.size || !cmp(left(pt.x), right(pt.y)) then pt
-    else count(pt.keep)
-
   def countback
-     (idx: Int, cur: Point, trace: List[IArray[Point]], result: List[SimpleChange[ElemType]] = Nil)
-     : Diff[ElemType] =
-    trace match
-      case head :: tail =>
-        val target = head(idx)
-        println("countback: "+cur.debug+" : "+result.debug)
-        if cur == Point(0, 0) then Diff(result*)
-        else if cur.x + target.y - cur.y - target.x < 0 then
-          println("ins target="+target.debug+" idx="+idx.debug)
-          val idx2 = (idx - 1).min(tail.length - 1).max(0)
-          val cb = countback(idx2, target, tail, Ins(target.y, right(target.y)) :: result)
-          println(cb.debug)
-          cb
-        else if cur.x + target.y - cur.y - target.x > 0 then
-          println("del target="+target.debug+" idx="+idx.debug)
-          val cb = countback(0.max(idx).min(tail.length - 1), target, tail, Del(cur.x - 1, left(cur.x - 1)) :: result)
-          println(cb.debug)
-          cb
-        else if cur.x > target.x && cur.y > target.y then
-          println("keep target="+target.debug+" idx="+idx.debug)
-          val cb = countback(idx, cur.unkeep, trace, Keep(cur.x - 1, cur.y - 1, left(cur.x - 1)) :: result)
-          println(cb.debug)
-          cb
-        else throw Mistake(s"Unexpected: idx=$idx cur=${cur.text} result=${result}")
+      (pos: Int, target: Int, dels: Int, rows: List[Array[Int]], changes: List[SimpleChange[ElemType]])
+      : List[SimpleChange[ElemType]] =
+    println("")
+    println(changes.debug)
+    println(rows.debug)
+    val k = rows.length
+    val inss = k - dels
+    
+    val leftIndex = pos
+    val rightIndex = leftIndex - dels + inss
+    println(s"($leftIndex,$rightIndex): pos=$pos, dels=$dels, inss=$inss, target=$target")
+    
+    if pos == 0 then changes
+    else if pos == math.abs(target) then
+      val next = if target > 0 then rows.head(dels) else rows.head(dels - 1)
+      if target > 0 then countback(pos, next, dels, rows.tail, Ins(rightIndex - 1, right(rightIndex - 1)) :: changes)
+      else countback(pos - 1, next, dels - 1, rows.tail, Del(leftIndex - 1, left(leftIndex - 1)) :: changes)
+    else if rightIndex == math.abs(target) then
+      val next = if target > 0 then rows.head(dels) else rows.head(dels - 1)
+      if target > 0 then countback(pos, next, dels, rows.tail, Ins(rightIndex - 1, right(rightIndex - 1)) :: changes)
+      else countback(pos - 1, next, dels - 1, rows.tail, Del(leftIndex - 1, left(leftIndex - 1)) :: changes)
+    else if pos > math.abs(target)
+    then countback(pos - 1, target, dels, rows, Keep(leftIndex - 1, rightIndex - 1, left(leftIndex - 1)) :: changes)
+    else ??? // countback(pos - 1, dels - 1, rows.tail, Del(leftIndex, left(leftIndex)) :: changes)
 
-      case Nil =>
-        if cur == Point(0, 0) then Diff(result*)
-        else countback(0, cur.unkeep, Nil, Keep(cur.x - 1, cur.y - 1, left(cur.x - 1)) :: result)
-
-  distance()
+  trace()
 
 given Realm = Realm(t"dissonance")

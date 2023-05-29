@@ -80,9 +80,15 @@ object Tests extends Suite(t"Dissonance tests"):
       //   diff(t"BCD".chars, t"ABC".chars)
       // .assert(_ == Diff(Ins(0, 'A'), Keep(0, 1, 'B'), Keep(1, 2, 'C'), Del(2, 'D')))
       
-      // test(t"Example from blog"):
-      //   diff(t"ABCABBA".chars, t"CBABAC".chars).changes.to(List)
-      // .assert(_ == List(Del(0, 'A'), Del(1, 'B'), Keep(2, 0, 'C'), Ins(1, 'B'), Keep(3, 2, 'A'), Keep(4, 3, 'B'), Del(5, 'B'), Keep(6, 4, 'A'), Ins(5, 'C')))
+      test(t"Example from blog"):
+        diff(t"ABCABBA".chars, t"CBABAC".chars).changes.to(List)
+      .assert(_ == List(Del(0, 'A'), Del(1, 'B'), Keep(2, 0, 'C'), Ins(1, 'B'), Keep(3, 2, 'A'),
+          Keep(4, 3, 'B'), Del(5, 'B'), Keep(6, 4, 'A'), Ins(5, 'C')))
+      
+      test(t"Example from blog"):
+        diff(t"CBABAC".chars, t"ABCABBA".chars).changes.to(List)
+      .assert(_ == List(Del(0, 'A'), Del(1, 'B'), Keep(2, 0, 'C'), Ins(1, 'B'), Keep(3, 2, 'A'),
+          Keep(4, 3, 'B'), Del(5, 'B'), Keep(6, 4, 'A'), Ins(5, 'C')))
       
       // test(t"Item swap"):
       //   diff(t"AB".chars, t"BA".chars)
@@ -104,11 +110,12 @@ object Tests extends Suite(t"Dissonance tests"):
       //   diff(t"AZB".chars, t"BZA".chars)
       // .assert(_ == Diff(Del(0, 'A'), Ins(0, 'B'), Keep(1, 1, 'Z'), Del(2, 'B'), Ins(2, 'A')))
       
-      test(t"real-world example 1"):
-        diff(IArray(t"A", t"B"), IArray(t"B", t"C", t"D"))
-      .assert(_ == Diff(Del(0, t"A"), Keep(1, 0, t"B"), Ins(1, t"C"), Ins(2, t"D")))
-      
-      // test(t"real-world example 2"):
+      // test(t"real-world example 1"):
       //   diff(IArray('a', 'b', 'c'), IArray('A', 'b', 'C')).changes.to(List)
       // .assert(_ == Diff(Del(0, 'a'), Ins(0, 'A'), Keep(1, 1, 'b'), Del(2, 'c'), Ins(2, 'C')).changes.to(List))
+      
+      // test(t"real-world example 2"):
+      //   diff(IArray(t"A", t"B"), IArray(t"B", t"C", t"D"))
+      // .assert(_ == Diff(Del(0, t"A"), Keep(1, 0, t"B"), Ins(1, t"C"), Ins(2, t"D")))
+      
       
