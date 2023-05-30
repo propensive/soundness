@@ -23,7 +23,7 @@ import rudiments.*
 import digression.*
 import gossamer.*
 import spectacular.*
-import lithography.*
+import hieroglyph.*
 
 import java.nio.*, charset.*
 
