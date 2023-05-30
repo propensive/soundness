@@ -23,7 +23,7 @@ import turbulence.*
 import gossamer.*
 import anticipation.*
 import merino.*
-import lithography.*
+import hieroglyph.*
 import spectacular.*
 
 import collection.Factory
