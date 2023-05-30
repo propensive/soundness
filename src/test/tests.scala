@@ -23,7 +23,7 @@ import gossamer.*
 import anticipation.* //, fileApi.galileiApi
 import eucalyptus.*
 import rudiments.*
-import lithography.*, characterEncodings.utf8, badEncodingHandlers.strict
+import hieroglyph.*, characterEncodings.utf8, badEncodingHandlers.strict
 import parasitism.*, monitors.global
 import turbulence.*, basicIo.jvm
 import ambience.*, environments.system
