@@ -4,6 +4,7 @@
 repo propensive/contextual
 repo propensive/larceny
 repo propensive/spectacular
+repo propensive/kaleidoscope
 
 target gossamer/test
 
@@ -11,7 +12,7 @@ project gossamer
   module core
     compiler  scala
     sources   src/core
-    include   lithography/core contextual/core spectacular/core
+    include   hieroglyph/core contextual/core spectacular/core kaleidoscope/core
 
   module test
     compiler  scala
