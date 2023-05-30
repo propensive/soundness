@@ -18,7 +18,7 @@ package escritoire
 
 import rudiments.*
 import gossamer.*
-import lithography.*
+import hieroglyph.*
 import digression.*
 import spectacular.*
 

@@ -19,7 +19,7 @@ package escritoire
 import probably.*
 import gossamer.*
 import rudiments.*
-import lithography.*
+import hieroglyph.*
 import eucalyptus.*, logging.stdout
 
 import textWidthCalculation.uniform
