@@ -19,7 +19,7 @@ package honeycomb
 import rudiments.*
 import gossamer.*
 import anticipation.*
-import lithography.*
+import hieroglyph.*
 import spectacular.*
 
 trait HtmlAttribute[Key <: Label, -Value, -T]:

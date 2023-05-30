@@ -20,7 +20,7 @@ import rudiments.*
 import gossamer.*
 import anticipation.*
 import spectacular.*
-import lithography.*
+import hieroglyph.*
 
 import scala.quoted.*
 
