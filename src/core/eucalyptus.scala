@@ -24,7 +24,7 @@ import parasitism.*
 import turbulence.*
 import iridescence.*
 import spectacular.*
-import lithography.*
+import hieroglyph.*
 
 import scala.quoted.*
 
