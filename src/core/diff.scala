@@ -199,13 +199,13 @@ def diff
     (rows: @unchecked) match
       case head :: tail =>
         val deletion = if dels == 0 then 0 else
-          val leftIndex = math.abs(tail.head(dels - 1)) + 1
+          val leftIndex = tail.head(dels - 1) + 1
           val rightIndex = leftIndex - dels + inss
 
           leftIndex + count(leftIndex, rightIndex)
         
         val insertion = if inss == 0 then 0 else
-          val leftIndex = math.abs(tail.head(dels))
+          val leftIndex = tail.head(dels)
           val rightIndex = leftIndex - dels + inss
           
           leftIndex + count(leftIndex, rightIndex)
@@ -213,39 +213,44 @@ def diff
         val best = if dels + inss == 0 then count(0, 0) else if deletion > insertion then deletion else insertion
         
         if best == leftMax && (best - dels + inss) == rightMax
-        then Diff(countback(leftMax, if deletion > insertion then -best else best, dels, tail, Nil)*)
-        else head(dels) = if deletion > insertion then -best else best
+        then
+          tail.map(_.debug).foreach(println)
+          head(dels) = best
+          println(s"dels=$dels inss=$inss pos=$leftMax rpos=$rightMax")
+          
+          val idx = if deletion > insertion then dels - 1 else dels
+          Diff(countback(leftMax, idx, tail, Nil)*)
+        else head(dels) = best
   
         if inss == 0 then trace(0, dels + 1, new Array[Int](dels + 2) :: rows)
         else trace(dels + 1, inss - 1, rows)
 
   @tailrec
   def countback
-      (pos: Int, target: Int, dels: Int, rows: List[Array[Int]], changes: List[SimpleChange[ElemType]])
+      (pos: Int, dels: Int, rows: List[Array[Int]], changes: List[SimpleChange[ElemType]])
       : List[SimpleChange[ElemType]] =
-    println("")
-    println(changes.debug)
-    println(rows.debug)
     val k = rows.length
     val inss = k - dels
-    
-    val leftIndex = pos
-    val rightIndex = leftIndex - dels + inss
-    println(s"($leftIndex,$rightIndex): pos=$pos, dels=$dels, inss=$inss, target=$target")
-    
-    if pos == 0 then changes
-    else if pos == math.abs(target) then
-      val next = if target > 0 then rows.head(dels) else rows.head(dels - 1)
-      if target > 0 then countback(pos, next, dels, rows.tail, Ins(rightIndex - 1, right(rightIndex - 1)) :: changes)
-      else countback(pos - 1, next, dels - 1, rows.tail, Del(leftIndex - 1, left(leftIndex - 1)) :: changes)
-    else if rightIndex == math.abs(target) then
-      val next = if target > 0 then rows.head(dels) else rows.head(dels - 1)
-      if target > 0 then countback(pos, next, dels, rows.tail, Ins(rightIndex - 1, right(rightIndex - 1)) :: changes)
-      else countback(pos - 1, next, dels - 1, rows.tail, Del(leftIndex - 1, left(leftIndex - 1)) :: changes)
-    else if pos > math.abs(target)
-    then countback(pos - 1, target, dels, rows, Keep(leftIndex - 1, rightIndex - 1, left(leftIndex - 1)) :: changes)
-    else ??? // countback(pos - 1, dels - 1, rows.tail, Del(leftIndex, left(leftIndex)) :: changes)
+    val rpos = pos + inss - dels
+    lazy val cur = rows.head
+    println(changes.toString)
+    println(s"k=$k dels=$dels inss=$inss pos=($pos,$rpos)")
 
+    if pos == 0 && rpos == 0 then changes
+    else if dels < cur.length && (dels == 0 || cur(dels) > cur(dels - 1))
+    then
+      val tgt = cur(dels)
+      val rtgt = tgt + inss - 1 - dels
+      println(s"  tgt=($tgt,$rtgt)")
+      if tgt == pos then countback(tgt, dels, rows.tail, Ins(rpos - 1, right(rpos - 1)) :: changes)
+      else countback(pos - 1, dels, rows, Keep(pos - 1, rpos - 1, left(pos - 1)) :: changes)
+    else
+      val tgt = cur(dels - 1)
+      val rtgt = tgt + inss - dels + 1
+      println(s"  tgt=($tgt,$rtgt)*")
+      if rpos == rtgt then countback(tgt, dels - 1, rows.tail, Del(pos - 1, left(pos - 1)) :: changes)
+      else countback(pos - 1, dels, rows, Keep(pos - 1, rpos - 1, left(pos - 1)) :: changes)
+    
   trace()
 
 given Realm = Realm(t"dissonance")

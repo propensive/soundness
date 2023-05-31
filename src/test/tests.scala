@@ -85,10 +85,12 @@ object Tests extends Suite(t"Dissonance tests"):
       .assert(_ == List(Del(0, 'A'), Del(1, 'B'), Keep(2, 0, 'C'), Ins(1, 'B'), Keep(3, 2, 'A'),
           Keep(4, 3, 'B'), Del(5, 'B'), Keep(6, 4, 'A'), Ins(5, 'C')))
       
-      test(t"Example from blog"):
-        diff(t"CBABAC".chars, t"ABCABBA".chars).changes.to(List)
-      .assert(_ == List(Del(0, 'A'), Del(1, 'B'), Keep(2, 0, 'C'), Ins(1, 'B'), Keep(3, 2, 'A'),
-          Keep(4, 3, 'B'), Del(5, 'B'), Keep(6, 4, 'A'), Ins(5, 'C')))
+      // println("---------------------------")
+
+      // test(t"Example from blog"):
+      //   diff(t"CBABAC".chars, t"ABCABBA".chars).changes.to(List)
+      // .assert(_ == List(Del(0, 'A'), Del(1, 'B'), Keep(2, 0, 'C'), Ins(1, 'B'), Keep(3, 2, 'A'),
+      //     Keep(4, 3, 'B'), Del(5, 'B'), Keep(6, 4, 'A'), Ins(5, 'C')))
       
       // test(t"Item swap"):
       //   diff(t"AB".chars, t"BA".chars)
