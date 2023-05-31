@@ -193,9 +193,8 @@ def diff
     else total
 
   @tailrec
-  def trace
-      (dels: Int = 0, inss: Int = 0, rows: List[Array[Int]] = List(Array(0)))
-      : Diff[ElemType] =
+  def trace(dels: Int = 0, inss: Int = 0, rows: List[Array[Int]] = List(Array(0))): Diff[ElemType] =
+    println(s"trace($dels, $inss, ${rows.debug})")
     (rows: @unchecked) match
       case head :: tail =>
         val deletion = if dels == 0 then 0 else
@@ -212,18 +211,18 @@ def diff
         
         val best = if dels + inss == 0 then count(0, 0) else if deletion > insertion then deletion else insertion
         
-        if best == leftMax && (best - dels + inss) == rightMax
+        if best >= leftMax && (best - dels + inss) >= rightMax
         then
           tail.map(_.debug).foreach(println)
-          head(dels) = best
           println(s"dels=$dels inss=$inss pos=$leftMax rpos=$rightMax")
           
-          val idx = if deletion > insertion then dels - 1 else dels
-          Diff(countback(leftMax, idx, tail, Nil)*)
-        else head(dels) = best
+          //val idx = if deletion > insertion then dels - 1 else dels
+          Diff(countback(leftMax, if deletion > insertion then dels - 1 else dels, tail, Nil)*)
+        else
+          head(dels) = best
   
-        if inss == 0 then trace(0, dels + 1, new Array[Int](dels + 2) :: rows)
-        else trace(dels + 1, inss - 1, rows)
+          if inss == 0 then trace(0, dels + 1, new Array[Int](dels + 2) :: rows)
+          else trace(dels + 1, inss - 1, rows)
 
   @tailrec
   def countback
@@ -237,7 +236,8 @@ def diff
     println(s"k=$k dels=$dels inss=$inss pos=($pos,$rpos)")
 
     if pos == 0 && rpos == 0 then changes
-    else if dels < cur.length && (dels == 0 || cur(dels) > cur(dels - 1))
+    else if rows.isEmpty then countback(pos - 1, dels, rows, Keep(pos - 1, rpos - 1, left(pos - 1)) :: changes)
+    else if dels < rows.length && (dels == 0 || cur(dels) > cur(dels - 1))
     then
       val tgt = cur(dels)
       val rtgt = tgt + inss - 1 - dels
