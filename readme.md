@@ -154,7 +154,7 @@ test(t"cannot sort data without an Ordering"):
 
 ## Status
 
-Larceny is classified as __fledgling__. For reference, Scala One projects are
+Larceny is classified as __maturescent__. For reference, Scala One projects are
 categorized into one of the following five stability levels:
 
 - _embryonic_: for experimental or demonstrative purposes only, without any guarantees of longevity
