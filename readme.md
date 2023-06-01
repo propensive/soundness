@@ -68,7 +68,7 @@ for paths (which may not relate to a file or directory) and files/directories.
 
 ## Status
 
-Diuretic is classified as __maturescent__. For reference, Scala One projects are
+Diuretic is classified as __embryotic__. For reference, Scala One projects are
 categorized into one of the following five stability levels:
 
 - _embryonic_: for experimental or demonstrative purposes only, without any guarantees of longevity
@@ -82,7 +82,7 @@ be used, but caution should be taken if there is a mismatch between the
 project's stability level and the importance of your own project.
 
 Diuretic is designed to be _small_. Its entire source code currently consists
-of 56 lines of code.
+of 74 lines of code.
 
 ## Building
 
