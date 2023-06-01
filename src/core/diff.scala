@@ -217,7 +217,7 @@ def diff
           println(s"dels=$dels inss=$inss pos=$leftMax rpos=$rightMax")
           
           //val idx = if deletion > insertion then dels - 1 else dels
-          Diff(countback(leftMax, if deletion > insertion then dels - 1 else dels, tail, Nil)*)
+          Diff(countback(leftMax, if deletion > insertion then dels else dels, tail, Nil)*)
         else
           head(dels) = best
   

@@ -28,9 +28,9 @@ object Tests extends Suite(t"Dissonance tests"):
 
   def run(): Unit =
     suite(t"Diff tests"):
-      // test(t"Empty lists"):
-      //   diff(IArray[Char](), IArray[Char]())
-      // .assert(_ == Diff())
+      test(t"Empty lists"):
+        diff(IArray[Char](), IArray[Char]())
+      .assert(_ == Diff())
       
       test(t"One element, equal"):
         diff(IArray('a'), IArray('a'))
@@ -69,8 +69,8 @@ object Tests extends Suite(t"Dissonance tests"):
       .assert(_ == Diff(Keep(0, 0, 'A'), Del(1, 'B'), Keep(2, 1, 'C')))
       
       test(t"Deletion from start of short list"):
-        diff(t"ABC".chars, t"BC".chars)
-      .assert(_ == Diff(Del(0, 'A'), Keep(1, 0, 'B'), Keep(2, 1, 'C')))
+        diff(t"ABC".chars, t"BC".chars).changes.to(List)
+      .assert(_ == List(Del(0, 'A'), Keep(1, 0, 'B'), Keep(2, 1, 'C')))
       
       test(t"Deletion from end of short list"):
         diff(t"ABC".chars, t"AB".chars)
@@ -87,10 +87,10 @@ object Tests extends Suite(t"Dissonance tests"):
       
       // println("---------------------------")
 
-      // test(t"Example from blog"):
-      //   diff(t"CBABAC".chars, t"ABCABBA".chars).changes.to(List)
-      // .assert(_ == List(Del(0, 'A'), Del(1, 'B'), Keep(2, 0, 'C'), Ins(1, 'B'), Keep(3, 2, 'A'),
-      //     Keep(4, 3, 'B'), Del(5, 'B'), Keep(6, 4, 'A'), Ins(5, 'C')))
+      test(t"Reversed example from blog"):
+        diff(t"CBABAC".chars, t"ABCABBA".chars).changes.to(List)
+      .assert(_ == List(Del(0, 'C'), Ins(0, 'A'), Keep(1, 1, 'B'), Ins(2, 'C'), Keep(2, 3, 'A'),
+          Keep(3, 4, 'B'), Ins(5, 'B'), Keep(4, 6, 'A'), Del(5, 'C')))
       
       test(t"Item swap"):
         diff(t"AB".chars, t"BA".chars)
