@@ -109,7 +109,7 @@ object Contrast extends FallbackContrast:
     if left == right then Accordance.Accord(leftDebug)
     else
       val comparison = IArray.from:
-        diff(left, right).rdiff2(summon[Assimilable[ValueType]].similar).changes.map:
+        diff(left, right).rdiff(summon[Assimilable[ValueType]].similar).changes.map:
           case Change.Keep(leftIndex, rightIndex, value) =>
             val label =
               if leftIndex == rightIndex then leftIndex.show
@@ -123,7 +123,7 @@ object Contrast extends FallbackContrast:
           case Change.Del(leftIndex, value) =>
             t"${leftIndex.show.superscript}⧸" -> Accordance.Discord(value.debug, t"—")
           
-          case Change.Replace(leftIndex, rightIndex, leftValue, rightValue) =>
+          case Change.Sub(leftIndex, rightIndex, leftValue, rightValue) =>
             val label = t"${leftIndex.show.superscript}⫽${rightIndex.show.subscript}"
             
             label -> leftValue.contrastWith(rightValue)
