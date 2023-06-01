@@ -30,7 +30,7 @@ sealed trait Tweak[+ElemType] extends Change[ElemType]:
 object Change:
   case class Ins[+ElemType](right: Int, value: ElemType) extends Tweak[ElemType]
   case class Del[+ElemType](left: Int, value: ElemType) extends Tweak[ElemType]
-  case class Keep[+ElemType](left: Int, right: Int, value: ElemType) extends Tweak[ElemType]
+  case class Par[+ElemType](left: Int, right: Int, value: ElemType) extends Tweak[ElemType]
   
   case class Sub[+ElemType](left: Int, right: Int, leftValue: ElemType, rightValue: ElemType)
   extends Change[ElemType]
@@ -39,18 +39,18 @@ import Change.*
 
 enum Region[ElemType]:
   case Changed(deletions: List[Del[ElemType]], insertions: List[Change.Ins[ElemType]])
-  case Unchanged(retentions: List[Keep[ElemType]])
+  case Unchanged(retentions: List[Par[ElemType]])
 
 enum Chunk[+ElemType]:
   case Ins(startRight: Int, values: List[ElemType])
   case Del(startLeft: Int, values: List[ElemType])
-  case Keep(startLeft: Int, startRight: Int, values: List[ElemType])
+  case Par(startLeft: Int, startRight: Int, values: List[ElemType])
   case Sub(startLeft: Int, startRight: Int, valuesLeft: List[ElemType], valuesRight: List[ElemType])
 
 case class RDiff[ElemType](changes: Change[ElemType]*):
   def flip: RDiff[ElemType] =
     val changes2 = changes.map:
-      case Keep(left, right, value)                => Keep(right, left, value)
+      case Par(left, right, value)                 => Par(right, left, value)
       case Del(left, value)                        => Ins(left, value)
       case Ins(right, value)                       => Del(right, value)
       case Sub(left, right, leftValue, rightValue) => Sub(right, left, rightValue, leftValue)
@@ -60,24 +60,24 @@ case class RDiff[ElemType](changes: Change[ElemType]*):
 case class Diff[ElemType](tweaks: Tweak[ElemType]*):
   def flip: Diff[ElemType] =
     val tweaks2 = tweaks.map:
-      case Keep(left, right, value) => Keep(right, left, value)
-      case Del(left, value)         => Ins(left, value)
-      case Ins(right, value)        => Del(right, value)
+      case Par(left, right, value) => Par(right, left, value)
+      case Del(left, value)        => Ins(left, value)
+      case Ins(right, value)       => Del(right, value)
     
     Diff[ElemType](tweaks2*)
   
   def apply(list: List[ElemType], update: (ElemType, ElemType) -> ElemType): LazyList[ElemType] =
     def recur(todo: List[Tweak[ElemType]], list: List[ElemType]): LazyList[ElemType] = todo match
-      case Ins(_, value) :: tail     => value #:: recur(tail, list)
-      case Del(_, _) :: tail         => recur(tail, list.tail)
-      case Keep(_, _, value) :: tail => update(value, list.head) #:: recur(tail, list.tail)
-      case Nil                       => LazyList()
+      case Ins(_, value) :: tail    => value #:: recur(tail, list)
+      case Del(_, _) :: tail        => recur(tail, list.tail)
+      case Par(_, _, value) :: tail => update(value, list.head) #:: recur(tail, list.tail)
+      case Nil                      => LazyList()
 
     recur(tweaks.to(List), list)
 
   def rdiff(similar: (ElemType, ElemType) -> Boolean, subSize: Int = 1): RDiff[ElemType] =
     val changes = collate.flatMap:
-      case Region.Unchanged(keeps)   => keeps
+      case Region.Unchanged(pars)    => pars
       case Region.Changed(dels, Nil) => dels
       case Region.Changed(Nil, inss) => inss
       
@@ -89,19 +89,19 @@ case class Diff[ElemType](tweaks: Tweak[ElemType]*):
           val inssSeq = inss.map(_.value).to(IndexedSeq)
           
           diff(delsSeq, inssSeq, similar).tweaks.map:
-            case Del(l, v)     => Del(dels(l).left, dels(l).value)
-            case Ins(r, v)     => Ins(inss(r).right, inss(r).value)
-            case Keep(l, r, _) => Sub(dels(l).left, inss(r).right, dels(l).value, inss(r).value)
+            case Del(l, v)    => Del(dels(l).left, dels(l).value)
+            case Ins(r, v)    => Ins(inss(r).right, inss(r).value)
+            case Par(l, r, _) => Sub(dels(l).left, inss(r).right, dels(l).value, inss(r).value)
     
     RDiff(changes*)
           
   def collate: List[Region[ElemType]] =
     tweaks.runs:
-      case Keep(_, _, _) => true
-      case _             => false
+      case Par(_, _, _) => true
+      case _            => false
     .map:
-      case xs@(Keep(_, _, _) :: _) => Region.Unchanged(xs.sift[Keep[ElemType]])
-      case xs                      => Region.Changed(xs.sift[Del[ElemType]], xs.sift[Ins[ElemType]])
+      case xs@(Par(_, _, _) :: _) => Region.Unchanged(xs.sift[Par[ElemType]])
+      case xs                     => Region.Changed(xs.sift[Del[ElemType]], xs.sift[Ins[ElemType]])
   
 def diff
     [ElemType]
@@ -136,14 +136,14 @@ def diff
     lazy val del = rows.head(deletes - 1)
     
     if pos == -1 && rpos == -1 then tweaks else if rows.isEmpty
-    then countback(pos - 1, deletes, rows, Keep(pos, rpos, left(pos)) :: tweaks)
+    then countback(pos - 1, deletes, rows, Par(pos, rpos, left(pos)) :: tweaks)
     else if deletes < rows.length && (deletes == 0 || ins >= del)
     then
       if pos == ins then countback(pos, deletes, rows.tail, Ins(rpos, right(rpos)) :: tweaks)
-      else countback(pos - 1, deletes, rows, Keep(pos, rpos, left(pos)) :: tweaks)
+      else countback(pos - 1, deletes, rows, Par(pos, rpos, left(pos)) :: tweaks)
     else
       if pos == del then countback(del - 1, deletes - 1, rows.tail, Del(pos, left(pos)) :: tweaks)
-      else countback(pos - 1, deletes, rows, Keep(pos, rpos, left(pos)) :: tweaks)
+      else countback(pos - 1, deletes, rows, Par(pos, rpos, left(pos)) :: tweaks)
     
   trace()
 
