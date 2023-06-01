@@ -75,14 +75,14 @@ case class Diff[ElemType](tweaks: Tweak[ElemType]*):
 
     recur(tweaks.to(List), list)
 
-  def rdiff2(similar: (ElemType, ElemType) -> Boolean, swapSize: Int = 1): RDiff[ElemType] =
-    val changes = collate2.flatMap:
+  def rdiff(similar: (ElemType, ElemType) -> Boolean, subSize: Int = 1): RDiff[ElemType] =
+    val changes = collate.flatMap:
       case Region.Unchanged(keeps)   => keeps
       case Region.Changed(dels, Nil) => dels
       case Region.Changed(Nil, inss) => inss
       
       case Region.Changed(dels, inss) =>
-        if inss.length == dels.length && inss.length <= swapSize
+        if inss.length == dels.length && inss.length <= subSize
         then dels.zip(inss).map { (del, ins) => Sub(del.left, ins.right, del.value, ins.value) }
         else
           val delsSeq = dels.map(_.value).to(IndexedSeq)
@@ -95,81 +95,14 @@ case class Diff[ElemType](tweaks: Tweak[ElemType]*):
     
     RDiff(changes*)
           
-  def rdiff(similar: (ElemType, ElemType) -> Boolean, bySize: Int = 1): RDiff[ElemType] =
-    val changes = collate(similar, bySize).flatMap:
-      case Chunk.Ins(rightIndex, values) =>
-        values.zipWithIndex.map: (value, offset) =>
-          Ins(rightIndex + offset, value)
-      
-      case Chunk.Del(leftIndex, values) =>
-        values.zipWithIndex.map: (value, offset) =>
-          Del(leftIndex + offset, value)
-      
-      case Chunk.Keep(leftIndex, rightIndex, values) =>
-        values.zipWithIndex.map: (value, offset) =>
-          Keep(leftIndex + offset, rightIndex + offset, value)
-      
-      case Chunk.Sub(leftIndex, rightIndex, leftValues, rightValues) =>
-        leftValues.zip(rightValues).zipWithIndex.map:
-          case ((leftValue, rightValue), offset) =>
-            Sub(leftIndex + offset, rightIndex + offset, leftValue, rightValue)
-    
-    RDiff(changes*)
-
-  def collate2: List[Region[ElemType]] =
+  def collate: List[Region[ElemType]] =
     tweaks.runs:
       case Keep(_, _, _) => true
       case _             => false
     .map:
-      case xs@(Keep(_, _, _) :: _) => val keeps = xs.collect { case keep@Keep(_, _, _) => keep }
-                                      Region.Unchanged(keeps)
-      case xs                      => val dels = xs.collect { case del@Del(_, _) => del }
-                                      val inss = xs.collect { case ins@Ins(_, _) => ins }
-                                      Region.Changed(dels, inss)
+      case xs@(Keep(_, _, _) :: _) => Region.Unchanged(xs.sift[Keep[ElemType]])
+      case xs                      => Region.Changed(xs.sift[Del[ElemType]], xs.sift[Ins[ElemType]])
   
-  def collate
-      (similar: (ElemType, ElemType) -> Boolean, bySize: Int = 1)
-      : List[Chunk[ElemType]] =
-    tweaks.runs:
-      case Keep(_, _, _) => true
-      case _             => false
-    .flatMap: xs =>
-      (xs: @unchecked) match
-        case xs@(Keep(left, right, _) :: _) => List(Chunk.Keep(left, right, xs.map(_.value)))
-        case xs@(Ins(idx, _) :: _)          => List(Chunk.Ins(idx, xs.map(_.value)))
-        
-        case xs@(Del(leftIdx, _) :: _) =>
-          val dels =
-            xs.takeWhile:
-              case Del(_, _) => true
-              case _         => false
-            .to(IndexedSeq)
-          
-          val delValues = dels.map(_.value).to(List)
-  
-          (xs.drop(dels.length): @unchecked) match
-            case Nil =>
-              List(Chunk.Del(leftIdx, xs.map(_.value)))
-            
-            case inss@(Ins(rightIdx, _) :: _) =>
-              val insValues = inss.map(_.value)
-    
-              if dels.length <= bySize && insValues.length <= bySize
-              then List(Chunk.Sub(leftIdx, rightIdx, delValues, insValues))
-              else
-                val delsSeq = delValues.to(IndexedSeq)
-                val inssSeq = insValues.to(IndexedSeq)
-                diff(delsSeq, inssSeq, similar).tweaks.runs(_.productPrefix).map: xs =>
-                  (xs: @unchecked) match
-                    case xs@(Ins(idx, _) :: _) => Chunk.Ins(leftIdx + idx, xs.map(_.value))
-                    case xs@(Del(idx, _) :: _) => Chunk.Del(leftIdx + idx, xs.map(_.value))
-                    
-                    case xs@(Keep(left, right, _) :: _) =>
-                      val valuesLeft = delValues.drop(left).take(xs.length)
-                      val valuesRight = insValues.drop(right).take(xs.length)
-                      Chunk.Sub(left + leftIdx, right + rightIdx, valuesLeft, valuesRight)
-
-
 def diff
     [ElemType]
     (left: IndexedSeq[ElemType], right: IndexedSeq[ElemType],
@@ -177,8 +110,9 @@ def diff
     : Diff[ElemType] =
   @tailrec
   def count(pos: Int, off: Int): Int =
-    if pos >= left.length || pos + off >= right.length || !compare(left(pos), right(pos + off)) then pos
-    else count(pos + 1, off)
+    if pos < left.length && pos + off < right.length && compare(left(pos), right(pos + off))
+    then count(pos + 1, off)
+    else pos
 
   @tailrec
   def trace
