@@ -79,7 +79,7 @@ be used, but caution should be taken if there is a mismatch between the
 project's stability level and the importance of your own project.
 
 Dissonance is designed to be _small_. Its entire source code currently consists
-of 260 lines of code.
+of 267 lines of code.
 
 ## Building
 
