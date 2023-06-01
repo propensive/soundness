@@ -9,7 +9,7 @@ __Myers' diff algorithm in Scala__
 Dissonance implements Eugene Myers' diff algorithm in Scala as a pure function
 on immutable data structures. Using it is as simple as calling
 `diff(left, right)`, where `left` and `right` are sequences of like-typed data
-to be comparied; the result is an instance of `Diff`, a sequence of additions,
+to be compared; the result is an instance of `Diff`, a sequence of additions,
 deletions and no-change nodes representing each item in the left and right
 sequence.
 
@@ -79,7 +79,7 @@ be used, but caution should be taken if there is a mismatch between the
 project's stability level and the importance of your own project.
 
 Dissonance is designed to be _small_. Its entire source code currently consists
-of 187 lines of code.
+of 185 lines of code.
 
 ## Building
 
