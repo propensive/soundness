@@ -128,7 +128,7 @@ case class Command(args: Text*) extends Executable:
     processBuilder.directory(dir)
     
     val t0 = System.currentTimeMillis
-    Log.info(out"Starting process ${this.ansi} in directory ${dir.getAbsolutePath.nn}")
+    Log.info(out"Starting process ${this.out} in directory ${dir.getAbsolutePath.nn}")
     new Process[T](processBuilder.start().nn)
 
 object Pipeline:
@@ -136,12 +136,12 @@ object Pipeline:
     def apply(pipeline: Pipeline): Text = pipeline.cmds.map(_.debug).join(t" | ")
   
   given Display[Pipeline] =
-    _.cmds.map(_.ansi).join(out" ${colors.PowderBlue}(|) ")
+    _.cmds.map(_.out).join(out" ${colors.PowderBlue}(|) ")
 
 case class Pipeline(cmds: Command*) extends Executable:
   def fork[T]()(using env: Environment)(using Log): Process[T] throws EnvError =
     val dir = env.pwd[ji.File]
-    Log.info(out"Starting pipelined processes ${this.ansi} in directory ${dir.getAbsolutePath.nn}")
+    Log.info(out"Starting pipelined processes ${this.out} in directory ${dir.getAbsolutePath.nn}")
 
     val processBuilders = cmds.map: cmd =>
       val pb = ProcessBuilder(cmd.args.ss*)
