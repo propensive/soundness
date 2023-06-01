@@ -98,7 +98,7 @@ used by developers who do not mind examining the source code to diagnose unexpec
 
 ## Status
 
-Acyclicity is classified as __embryonic__. For reference, Scala One projects are
+Acyclicity is classified as __fledgling__. For reference, Scala One projects are
 categorized into one of the following five stability levels:
 
 - _embryonic_: for experimental or demonstrative purposes only, without any guarantees of longevity
