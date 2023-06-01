@@ -69,7 +69,7 @@ object Tests extends Suite(t"Dissonance tests"):
       .assert(_ == Diff(Keep(0, 0, 'A'), Del(1, 'B'), Keep(2, 1, 'C')))
       
       test(t"Deletion from start of short list"):
-        diff(t"ABC".chars, t"BC".chars).changes.to(List)
+        diff(t"ABC".chars, t"BC".chars).tweaks.to(List)
       .assert(_ == List(Del(0, 'A'), Keep(1, 0, 'B'), Keep(2, 1, 'C')))
       
       test(t"Deletion from end of short list"):
@@ -81,14 +81,12 @@ object Tests extends Suite(t"Dissonance tests"):
       .assert(_ == Diff(Ins(0, 'A'), Keep(0, 1, 'B'), Keep(1, 2, 'C'), Del(2, 'D')))
       
       test(t"Example from blog"):
-        diff(t"ABCABBA".chars, t"CBABAC".chars).changes.to(List)
+        diff(t"ABCABBA".chars, t"CBABAC".chars).tweaks.to(List)
       .assert(_ == List(Del(0, 'A'), Del(1, 'B'), Keep(2, 0, 'C'), Ins(1, 'B'), Keep(3, 2, 'A'),
           Keep(4, 3, 'B'), Del(5, 'B'), Keep(6, 4, 'A'), Ins(5, 'C')))
       
-      // println("---------------------------")
-
       test(t"Reversed example from blog"):
-        diff(t"CBABAC".chars, t"ABCABBA".chars).changes.to(List)
+        diff(t"CBABAC".chars, t"ABCABBA".chars).tweaks.to(List)
       .assert(_ == List(Del(0, 'C'), Ins(0, 'A'), Keep(1, 1, 'B'), Ins(2, 'C'), Keep(2, 3, 'A'),
           Keep(3, 4, 'B'), Ins(5, 'B'), Keep(4, 6, 'A'), Del(5, 'C')))
       
@@ -113,8 +111,8 @@ object Tests extends Suite(t"Dissonance tests"):
       .assert(_ == Diff(Del(0, 'A'), Del(1, 'Z'), Keep(2, 0, 'B'), Ins(1, 'Z'), Ins(2, 'A')))
       
       test(t"real-world example 1"):
-        diff(IArray('a', 'b', 'c'), IArray('A', 'b', 'C')).changes.to(List)
-      .assert(_ == Diff(Del(0, 'a'), Ins(0, 'A'), Keep(1, 1, 'b'), Del(2, 'c'), Ins(2, 'C')).changes.to(List))
+        diff(IArray('a', 'b', 'c'), IArray('A', 'b', 'C')).tweaks.to(List)
+      .assert(_ == Diff(Del(0, 'a'), Ins(0, 'A'), Keep(1, 1, 'b'), Del(2, 'c'), Ins(2, 'C')).tweaks.to(List))
       
       test(t"real-world example 2"):
         diff(IArray(t"A", t"B"), IArray(t"B", t"C", t"D"))

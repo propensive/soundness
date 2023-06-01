@@ -19,63 +19,105 @@ package dissonance
 import gossamer.*
 import rudiments.*
 import eucalyptus.*
-import spectacular.*
 
 import language.experimental.captureChecking
 
 sealed trait Change[+ElemType] extends Product
 
-sealed trait SimpleChange[+ElemType] extends Change[ElemType]:
+sealed trait Tweak[+ElemType] extends Change[ElemType]:
   def value: ElemType
 
 object Change:
-  case class Ins[+ElemType](right: Int, value: ElemType) extends SimpleChange[ElemType]
-  case class Del[+ElemType](left: Int, value: ElemType) extends SimpleChange[ElemType]
-  case class Keep[+ElemType](left: Int, right: Int, value: ElemType) extends SimpleChange[ElemType]
-  case class Replace[+ElemType](left: Int, right: Int, leftValue: ElemType, rightValue: ElemType) extends Change[ElemType]
+  case class Ins[+ElemType](right: Int, value: ElemType) extends Tweak[ElemType]
+  case class Del[+ElemType](left: Int, value: ElemType) extends Tweak[ElemType]
+  case class Keep[+ElemType](left: Int, right: Int, value: ElemType) extends Tweak[ElemType]
+  
+  case class Sub[+ElemType](left: Int, right: Int, leftValue: ElemType, rightValue: ElemType)
+  extends Change[ElemType]
 
 import Change.*
 
 enum Region[ElemType]:
-  case Changed(deletions: List[Change.Del[ElemType]], insertions: List[Change.Ins[ElemType]])
-  case Unchanged(retentions: List[Change.Keep[ElemType]])
+  case Changed(deletions: List[Del[ElemType]], insertions: List[Change.Ins[ElemType]])
+  case Unchanged(retentions: List[Keep[ElemType]])
 
-enum ChangeBlock[+ElemType]:
+enum Chunk[+ElemType]:
   case Ins(startRight: Int, values: List[ElemType])
   case Del(startLeft: Int, values: List[ElemType])
   case Keep(startLeft: Int, startRight: Int, values: List[ElemType])
-  case Replace(startLeft: Int, startRight: Int, valuesLeft: List[ElemType], valuesRight: List[ElemType])
+  case Sub(startLeft: Int, startRight: Int, valuesLeft: List[ElemType], valuesRight: List[ElemType])
 
 case class RDiff[ElemType](changes: Change[ElemType]*):
   def flip: RDiff[ElemType] =
     val changes2 = changes.map:
-      case Keep(l, r, v)         => Keep(r, l, v)
-      case Del(l, v)             => Ins(l, v)
-      case Ins(r, v)             => Del(r, v)
-      case Replace(l, r, lv, rv) => Replace(r, l, rv, lv)
+      case Keep(left, right, value)                => Keep(right, left, value)
+      case Del(left, value)                        => Ins(left, value)
+      case Ins(right, value)                       => Del(right, value)
+      case Sub(left, right, leftValue, rightValue) => Sub(right, left, rightValue, leftValue)
     
     RDiff[ElemType](changes2*)
 
-case class Diff[ElemType](changes: SimpleChange[ElemType]*):
+case class Diff[ElemType](tweaks: Tweak[ElemType]*):
   def flip: Diff[ElemType] =
-    val changes2 = changes.map:
-      case Keep(l, r, v) => Keep(r, l, v)
-      case Del(l, v)     => Ins(l, v)
-      case Ins(r, v)     => Del(r, v)
+    val tweaks2 = tweaks.map:
+      case Keep(left, right, value) => Keep(right, left, value)
+      case Del(left, value)         => Ins(left, value)
+      case Ins(right, value)        => Del(right, value)
     
-    Diff[ElemType](changes2*)
+    Diff[ElemType](tweaks2*)
   
   def apply(list: List[ElemType], update: (ElemType, ElemType) -> ElemType): LazyList[ElemType] =
-    def recur(todo: List[SimpleChange[ElemType]], list: List[ElemType]): LazyList[ElemType] = todo match
+    def recur(todo: List[Tweak[ElemType]], list: List[ElemType]): LazyList[ElemType] = todo match
       case Ins(_, value) :: tail     => value #:: recur(tail, list)
       case Del(_, _) :: tail         => recur(tail, list.tail)
       case Keep(_, _, value) :: tail => update(value, list.head) #:: recur(tail, list.tail)
       case Nil                       => LazyList()
 
-    recur(changes.to(List), list)
+    recur(tweaks.to(List), list)
+
+  def rdiff2(similar: (ElemType, ElemType) -> Boolean, swapSize: Int = 1): RDiff[ElemType] =
+    val changes = collate2.flatMap:
+      case Region.Unchanged(keeps)   => keeps
+      case Region.Changed(dels, Nil) => dels
+      case Region.Changed(Nil, inss) => inss
+      
+      case Region.Changed(dels, inss) =>
+        if inss.length == dels.length && inss.length <= swapSize
+        then dels.zip(inss).map { (del, ins) => Sub(del.left, ins.right, del.value, ins.value) }
+        else
+          val delsSeq = dels.map(_.value).to(IndexedSeq)
+          val inssSeq = inss.map(_.value).to(IndexedSeq)
+          
+          diff(delsSeq, inssSeq, similar).tweaks.map:
+            case Del(l, v)     => Del(dels(l).left, dels(l).value)
+            case Ins(r, v)     => Ins(inss(r).right, inss(r).value)
+            case Keep(l, r, _) => Sub(dels(l).left, inss(r).right, dels(l).value, inss(r).value)
+    
+    RDiff(changes*)
+          
+  def rdiff(similar: (ElemType, ElemType) -> Boolean, bySize: Int = 1): RDiff[ElemType] =
+    val changes = collate(similar, bySize).flatMap:
+      case Chunk.Ins(rightIndex, values) =>
+        values.zipWithIndex.map: (value, offset) =>
+          Ins(rightIndex + offset, value)
+      
+      case Chunk.Del(leftIndex, values) =>
+        values.zipWithIndex.map: (value, offset) =>
+          Del(leftIndex + offset, value)
+      
+      case Chunk.Keep(leftIndex, rightIndex, values) =>
+        values.zipWithIndex.map: (value, offset) =>
+          Keep(leftIndex + offset, rightIndex + offset, value)
+      
+      case Chunk.Sub(leftIndex, rightIndex, leftValues, rightValues) =>
+        leftValues.zip(rightValues).zipWithIndex.map:
+          case ((leftValue, rightValue), offset) =>
+            Sub(leftIndex + offset, rightIndex + offset, leftValue, rightValue)
+    
+    RDiff(changes*)
 
   def collate2: List[Region[ElemType]] =
-    changes.runs:
+    tweaks.runs:
       case Keep(_, _, _) => true
       case _             => false
     .map:
@@ -85,94 +127,47 @@ case class Diff[ElemType](changes: SimpleChange[ElemType]*):
                                       val inss = xs.collect { case ins@Ins(_, _) => ins }
                                       Region.Changed(dels, inss)
   
-  def rdiff2(similar: (ElemType, ElemType) -> Boolean, swapSize: Int = 1): RDiff[ElemType] =
-    val changes = collate2.flatMap:
-      case Region.Unchanged(keeps)   => keeps
-      case Region.Changed(dels, Nil) => dels
-      case Region.Changed(Nil, inss) => inss
-      
-      case Region.Changed(dels, inss) =>
-        if inss.length == dels.length && inss.length <= swapSize
-        then dels.zip(inss).map: (del, ins) =>
-          Change.Replace[ElemType](del.left, ins.right, del.value, ins.value)
-        else
-          diff(dels.map(_.value).to(IndexedSeq), inss.map(_.value).to(IndexedSeq), similar).changes.map:
-            case Keep(l, r, _) =>
-              Change.Replace[ElemType](dels(l).left, inss(r).right, dels(l).value, inss(r).value)
-            
-            case Del(l, v) =>
-              Change.Del[ElemType](dels(l).left, dels(l).value)
-            
-            case Ins(r, v) =>
-              Change.Ins[ElemType](inss(r).right, inss(r).value)
-    
-    RDiff(changes*)
-          
-  def rdiff(similar: (ElemType, ElemType) -> Boolean, bySize: Int = 1): RDiff[ElemType] =
-    val changes = collate(similar, bySize).flatMap:
-      case ChangeBlock.Ins(rightIndex, values) =>
-        values.zipWithIndex.map: (value, offset) =>
-          Ins(rightIndex + offset, value)
-      
-      case ChangeBlock.Del(leftIndex, values) =>
-        values.zipWithIndex.map: (value, offset) =>
-          Del(leftIndex + offset, value)
-      
-      case ChangeBlock.Keep(leftIndex, rightIndex, values) =>
-        values.zipWithIndex.map: (value, offset) =>
-          Keep(leftIndex + offset, rightIndex + offset, value)
-      
-      case ChangeBlock.Replace(leftIndex, rightIndex, leftValues, rightValues) =>
-        leftValues.zip(rightValues).zipWithIndex.map:
-          case ((leftValue, rightValue), offset) =>
-            Replace(leftIndex + offset, rightIndex + offset, leftValue, rightValue)
-    
-    RDiff(changes*)
-
   def collate
       (similar: (ElemType, ElemType) -> Boolean, bySize: Int = 1)
-      : List[ChangeBlock[ElemType]] =
-    changes.runs:
+      : List[Chunk[ElemType]] =
+    tweaks.runs:
       case Keep(_, _, _) => true
       case _             => false
-    .flatMap:
-      case xs@(Keep(left, right, _) :: _) => List(ChangeBlock.Keep(left, right, xs.map(_.value)))
-      case xs@(Ins(idx, _) :: _)          => List(ChangeBlock.Ins(idx, xs.map(_.value)))
-      
-      case xs@(Del(leftIdx, _) :: _) =>
-        val dels =
-          xs.takeWhile:
-            case Del(_, _) => true
-            case _         => false
-          .to(IndexedSeq)
+    .flatMap: xs =>
+      (xs: @unchecked) match
+        case xs@(Keep(left, right, _) :: _) => List(Chunk.Keep(left, right, xs.map(_.value)))
+        case xs@(Ins(idx, _) :: _)          => List(Chunk.Ins(idx, xs.map(_.value)))
         
-        val delValues = dels.map(_.value).to(List)
-
-        xs.drop(dels.length) match
-          case Nil =>
-            List(ChangeBlock.Del(leftIdx, xs.map(_.value)))
+        case xs@(Del(leftIdx, _) :: _) =>
+          val dels =
+            xs.takeWhile:
+              case Del(_, _) => true
+              case _         => false
+            .to(IndexedSeq)
           
-          case inss@(Ins(rightIdx, _) :: _) =>
-            val insValues = inss.map(_.value)
+          val delValues = dels.map(_.value).to(List)
   
-            if dels.length <= bySize && insValues.length <= bySize
-            then List(ChangeBlock.Replace(leftIdx, rightIdx, delValues, insValues))
-            else diff(delValues.to(IndexedSeq), insValues.to(IndexedSeq),
-                similar).changes.runs(_.productPrefix).map:
-              case xs@(Ins(idx, _) :: _) => ChangeBlock.Ins(leftIdx + idx, xs.map(_.value))
-              case xs@(Del(idx, _) :: _) => ChangeBlock.Del(leftIdx + idx, xs.map(_.value))
-              
-              case xs@(Keep(left, right, _) :: _) =>
-                val valuesLeft = delValues.drop(left).take(xs.length)
-                val valuesRight = insValues.drop(right).take(xs.length)
-                ChangeBlock.Replace(left + leftIdx, right + rightIdx, valuesLeft, valuesRight)
-              case Nil =>
-                throw Mistake("Should never have an empty list here")
-          case _ =>
-            throw Mistake("Should never have an empty list here")
-
-      case Nil =>
-        throw Mistake("Should never have an empty list here")
+          (xs.drop(dels.length): @unchecked) match
+            case Nil =>
+              List(Chunk.Del(leftIdx, xs.map(_.value)))
+            
+            case inss@(Ins(rightIdx, _) :: _) =>
+              val insValues = inss.map(_.value)
+    
+              if dels.length <= bySize && insValues.length <= bySize
+              then List(Chunk.Sub(leftIdx, rightIdx, delValues, insValues))
+              else
+                val delsSeq = delValues.to(IndexedSeq)
+                val inssSeq = insValues.to(IndexedSeq)
+                diff(delsSeq, inssSeq, similar).tweaks.runs(_.productPrefix).map: xs =>
+                  (xs: @unchecked) match
+                    case xs@(Ins(idx, _) :: _) => Chunk.Ins(leftIdx + idx, xs.map(_.value))
+                    case xs@(Del(idx, _) :: _) => Chunk.Del(leftIdx + idx, xs.map(_.value))
+                    
+                    case xs@(Keep(left, right, _) :: _) =>
+                      val valuesLeft = delValues.drop(left).take(xs.length)
+                      val valuesRight = insValues.drop(right).take(xs.length)
+                      Chunk.Sub(left + leftIdx, right + rightIdx, valuesLeft, valuesRight)
 
 
 def diff
@@ -180,76 +175,41 @@ def diff
     (left: IndexedSeq[ElemType], right: IndexedSeq[ElemType],
         compare: (ElemType, ElemType) -> Boolean = { (a: ElemType, b: ElemType) => a == b })
     : Diff[ElemType] =
-  println(s"\ndiff(${left.debug}, ${right.debug})")
-
-  val leftMax = left.length
-  val rightMax = right.length
+  @tailrec
+  def count(pos: Int, off: Int): Int =
+    if pos >= left.length || pos + off >= right.length || !compare(left(pos), right(pos + off)) then pos
+    else count(pos + 1, off)
 
   @tailrec
-  def count(leftIndex: Int, rightIndex: Int, total: Int = 0): Int =
-    //println(s"count($leftIndex, $rightIndex, $total)")
-    if leftIndex < leftMax && rightIndex < rightMax && compare(left(leftIndex), right(rightIndex))
-    then count(leftIndex + 1, rightIndex + 1, total + 1)
-    else total
-
-  @tailrec
-  def trace(dels: Int = 0, inss: Int = 0, rows: List[Array[Int]] = List(Array(0))): Diff[ElemType] =
-    println(s"trace($dels, $inss, ${rows.debug})")
-    (rows: @unchecked) match
-      case head :: tail =>
-        val deletion = if dels == 0 then 0 else
-          val leftIndex = tail.head(dels - 1) + 1
-          val rightIndex = leftIndex - dels + inss
-
-          leftIndex + count(leftIndex, rightIndex)
-        
-        val insertion = if inss == 0 then 0 else
-          val leftIndex = tail.head(dels)
-          val rightIndex = leftIndex - dels + inss
-          
-          leftIndex + count(leftIndex, rightIndex)
-        
-        val best = if dels + inss == 0 then count(0, 0) else if deletion > insertion then deletion else insertion
-        
-        if best >= leftMax && (best - dels + inss) >= rightMax
-        then
-          tail.map(_.debug).foreach(println)
-          println(s"dels=$dels inss=$inss pos=$leftMax rpos=$rightMax")
-          
-          //val idx = if deletion > insertion then dels - 1 else dels
-          Diff(countback(leftMax, if deletion > insertion then dels else dels, tail, Nil)*)
-        else
-          head(dels) = best
-  
-          if inss == 0 then trace(0, dels + 1, new Array[Int](dels + 2) :: rows)
-          else trace(dels + 1, inss - 1, rows)
+  def trace
+      (deletes: Int = 0, inserts: Int = 0, current: List[Int] = Nil, rows: List[IArray[Int]] = Nil)
+      : Diff[ElemType] =
+    val delPos = if deletes == 0 then 0 else count(rows.head(deletes - 1) + 1, inserts - deletes)
+    val insPos = if inserts == 0 then 0 else count(rows.head(deletes), inserts - deletes)
+    val best = if deletes + inserts == 0 then count(0, 0) else delPos.max(insPos)
+    
+    if best == left.length && (best - deletes + inserts) == right.length
+    then Diff(countback(left.length - 1, deletes, rows, Nil)*)
+    else if inserts > 0 then trace(deletes + 1, inserts - 1, best :: current, rows)
+    else trace(0, deletes + 1, Nil, IArray.from((best :: current).reverse) :: rows)
 
   @tailrec
   def countback
-      (pos: Int, dels: Int, rows: List[Array[Int]], changes: List[SimpleChange[ElemType]])
-      : List[SimpleChange[ElemType]] =
-    val k = rows.length
-    val inss = k - dels
-    val rpos = pos + inss - dels
-    lazy val cur = rows.head
-    println(changes.toString)
-    println(s"k=$k dels=$dels inss=$inss pos=($pos,$rpos)")
-
-    if pos == 0 && rpos == 0 then changes
-    else if rows.isEmpty then countback(pos - 1, dels, rows, Keep(pos - 1, rpos - 1, left(pos - 1)) :: changes)
-    else if dels < rows.length && (dels == 0 || cur(dels) > cur(dels - 1))
+      (pos: Int, deletes: Int, rows: List[IArray[Int]], tweaks: List[Tweak[ElemType]])
+      : List[Tweak[ElemType]] =
+    val rpos = pos + rows.length - deletes*2
+    lazy val ins = rows.head(deletes) - 1
+    lazy val del = rows.head(deletes - 1)
+    
+    if pos == -1 && rpos == -1 then tweaks else if rows.isEmpty
+    then countback(pos - 1, deletes, rows, Keep(pos, rpos, left(pos)) :: tweaks)
+    else if deletes < rows.length && (deletes == 0 || ins >= del)
     then
-      val tgt = cur(dels)
-      val rtgt = tgt + inss - 1 - dels
-      println(s"  tgt=($tgt,$rtgt)")
-      if tgt == pos then countback(tgt, dels, rows.tail, Ins(rpos - 1, right(rpos - 1)) :: changes)
-      else countback(pos - 1, dels, rows, Keep(pos - 1, rpos - 1, left(pos - 1)) :: changes)
+      if pos == ins then countback(pos, deletes, rows.tail, Ins(rpos, right(rpos)) :: tweaks)
+      else countback(pos - 1, deletes, rows, Keep(pos, rpos, left(pos)) :: tweaks)
     else
-      val tgt = cur(dels - 1)
-      val rtgt = tgt + inss - dels + 1
-      println(s"  tgt=($tgt,$rtgt)*")
-      if rpos == rtgt then countback(tgt, dels - 1, rows.tail, Del(pos - 1, left(pos - 1)) :: changes)
-      else countback(pos - 1, dels, rows, Keep(pos - 1, rpos - 1, left(pos - 1)) :: changes)
+      if pos == del then countback(del - 1, deletes - 1, rows.tail, Del(pos, left(pos)) :: tweaks)
+      else countback(pos - 1, deletes, rows, Keep(pos, rpos, left(pos)) :: tweaks)
     
   trace()
 
