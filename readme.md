@@ -38,7 +38,7 @@ TBC
 
 ## Status
 
-Aviation is classified as __embryonic__. For reference, Scala One projects are
+Aviation is classified as __fledgling__. For reference, Scala One projects are
 categorized into one of the following five stability levels:
 
 - _embryonic_: for experimental or demonstrative purposes only, without any guarantees of longevity
