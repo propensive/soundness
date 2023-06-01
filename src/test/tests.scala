@@ -20,14 +20,10 @@ import probably.*
 import gossamer.*
 import rudiments.*
 import hieroglyph.*
-import eucalyptus.*, logging.stdout
 
 import textWidthCalculation.uniform
 
-import unsafeExceptions.canThrowAny
-
 object Tests extends Suite(t"Escritoire tests"):
-
   def run(): Unit =
     test(t"Constrain to full width plus one is single line"):
       Column.constrain(t"the quick brown fox", Breaks.Space, 20).left

@@ -22,6 +22,8 @@ import hieroglyph.*
 import digression.*
 import spectacular.*
 
+import language.experimental.captureChecking
+
 import Table.ShortPair
 
 enum Breaks:
@@ -37,12 +39,12 @@ object Column:
   def apply
       [RowType, CellType, TextType]
       (title: TextType, width: Maybe[Int] = Unset, align: Alignment = Alignment.Left,
-          breaks: Breaks = Breaks.Space, hide: Boolean = false)(get: RowType => CellType)
+          breaks: Breaks = Breaks.Space, hide: Boolean = false)(get: RowType -> CellType)
       (using textual: Textual[TextType])
       (using textual.ShowType[CellType])
       : Column[RowType, TextType] =
 
-    val contents = get.andThen { value => textual.show(value) }
+    def contents(row: RowType): TextType = textual.show(get(row))
     
     Column(title, contents, breaks, align, width, hide)
 
@@ -78,7 +80,7 @@ object Column:
 
 case class Column
     [RowType, TextType: Textual]
-    (title: TextType, get: RowType => TextType, breaks: Breaks, align: Alignment, width: Maybe[Int],
+    (title: TextType, get: RowType -> TextType, breaks: Breaks, align: Alignment, width: Maybe[Int],
         hide: Boolean)
 
 object Table:
