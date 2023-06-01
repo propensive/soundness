@@ -26,6 +26,7 @@ import spectacular.*
 import scala.io.*
 
 import language.dynamics
+import language.experimental.captureChecking
 
 object Media:
   object Group:

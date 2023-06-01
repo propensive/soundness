@@ -18,6 +18,8 @@ package gesticulate
 
 import rudiments.*
 
+import language.experimental.captureChecking
+
 object Extensions:
   def guess(ext: String): MediaType = mediaTypes.getOrElse(ext, mediaTypes("bin"))
 
