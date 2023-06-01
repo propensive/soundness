@@ -20,9 +20,14 @@ import scala.compiletime.*
 
 import language.experimental.captureChecking
 
+extension [ValueType <: Matchable](seq: Iterable[ValueType])
+  transparent inline def sift[FilterType <: ValueType]: Iterable[FilterType] =
+    seq.collect { case value: FilterType => value }
+
 extension [ValueType](seq: Iterable[ValueType])
   transparent inline def mtwin: Iterable[(ValueType, ValueType)] = seq.map { x => (x, x) }
   transparent inline def mtriple: Iterable[(ValueType, ValueType, ValueType)] = seq.map { x => (x, x, x) }
+  
 
   def indexBy[ValueType2](fn: ValueType -> ValueType2): Map[ValueType2, ValueType] throws DuplicateIndexError =
     val map = seq.map: value =>
