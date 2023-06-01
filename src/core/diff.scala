@@ -24,21 +24,18 @@ import language.experimental.captureChecking
 
 sealed trait Change[+ElemType] extends Product
 
-sealed trait Tweak[+ElemType] extends Change[ElemType]:
+sealed trait Edit[+ElemType] extends Change[ElemType]:
   def value: ElemType
 
-object Change:
-  case class Ins[+ElemType](right: Int, value: ElemType) extends Tweak[ElemType]
-  case class Del[+ElemType](left: Int, value: ElemType) extends Tweak[ElemType]
-  case class Par[+ElemType](left: Int, right: Int, value: ElemType) extends Tweak[ElemType]
-  
-  case class Sub[+ElemType](left: Int, right: Int, leftValue: ElemType, rightValue: ElemType)
-  extends Change[ElemType]
-
-import Change.*
+case class Ins[+ElemType](right: Int, value: ElemType) extends Edit[ElemType]
+case class Del[+ElemType](left: Int, value: ElemType) extends Edit[ElemType]
+case class Par[+ElemType](left: Int, right: Int, value: ElemType) extends Edit[ElemType]
+ 
+case class Sub[+ElemType](left: Int, right: Int, leftValue: ElemType, rightValue: ElemType)
+extends Change[ElemType]
 
 enum Region[ElemType]:
-  case Changed(deletions: List[Del[ElemType]], insertions: List[Change.Ins[ElemType]])
+  case Changed(deletions: List[Del[ElemType]], insertions: List[Ins[ElemType]])
   case Unchanged(retentions: List[Par[ElemType]])
 
 enum Chunk[+ElemType]:
@@ -57,23 +54,23 @@ case class RDiff[ElemType](changes: Change[ElemType]*):
     
     RDiff[ElemType](changes2*)
 
-case class Diff[ElemType](tweaks: Tweak[ElemType]*):
+case class Diff[ElemType](edits: Edit[ElemType]*):
   def flip: Diff[ElemType] =
-    val tweaks2 = tweaks.map:
+    val edits2 = edits.map:
       case Par(left, right, value) => Par(right, left, value)
       case Del(left, value)        => Ins(left, value)
       case Ins(right, value)       => Del(right, value)
     
-    Diff[ElemType](tweaks2*)
+    Diff[ElemType](edits2*)
   
   def apply(list: List[ElemType], update: (ElemType, ElemType) -> ElemType): LazyList[ElemType] =
-    def recur(todo: List[Tweak[ElemType]], list: List[ElemType]): LazyList[ElemType] = todo match
+    def recur(todo: List[Edit[ElemType]], list: List[ElemType]): LazyList[ElemType] = todo match
       case Ins(_, value) :: tail    => value #:: recur(tail, list)
       case Del(_, _) :: tail        => recur(tail, list.tail)
       case Par(_, _, value) :: tail => update(value, list.head) #:: recur(tail, list.tail)
       case Nil                      => LazyList()
 
-    recur(tweaks.to(List), list)
+    recur(edits.to(List), list)
 
   def rdiff(similar: (ElemType, ElemType) -> Boolean, subSize: Int = 1): RDiff[ElemType] =
     val changes = collate.flatMap:
@@ -88,7 +85,7 @@ case class Diff[ElemType](tweaks: Tweak[ElemType]*):
           val delsSeq = dels.map(_.value).to(IndexedSeq)
           val inssSeq = inss.map(_.value).to(IndexedSeq)
           
-          diff(delsSeq, inssSeq, similar).tweaks.map:
+          diff(delsSeq, inssSeq, similar).edits.map:
             case Del(l, v)    => Del(dels(l).left, dels(l).value)
             case Ins(r, v)    => Ins(inss(r).right, inss(r).value)
             case Par(l, r, _) => Sub(dels(l).left, inss(r).right, dels(l).value, inss(r).value)
@@ -96,7 +93,7 @@ case class Diff[ElemType](tweaks: Tweak[ElemType]*):
     RDiff(changes*)
           
   def collate: List[Region[ElemType]] =
-    tweaks.runs:
+    edits.runs:
       case Par(_, _, _) => true
       case _            => false
     .map:
@@ -123,27 +120,27 @@ def diff
     val best = if deletes + inserts == 0 then count(0, 0) else delPos.max(insPos)
     
     if best == left.length && (best - deletes + inserts) == right.length
-    then Diff(countback(left.length - 1, deletes, rows, Nil)*)
+    then Diff(backtrack(left.length - 1, deletes, rows, Nil)*)
     else if inserts > 0 then trace(deletes + 1, inserts - 1, best :: current, rows)
     else trace(0, deletes + 1, Nil, IArray.from((best :: current).reverse) :: rows)
 
   @tailrec
-  def countback
-      (pos: Int, deletes: Int, rows: List[IArray[Int]], tweaks: List[Tweak[ElemType]])
-      : List[Tweak[ElemType]] =
+  def backtrack
+      (pos: Int, deletes: Int, rows: List[IArray[Int]], edits: List[Edit[ElemType]])
+      : List[Edit[ElemType]] =
     val rpos = pos + rows.length - deletes*2
     lazy val ins = rows.head(deletes) - 1
     lazy val del = rows.head(deletes - 1)
     
-    if pos == -1 && rpos == -1 then tweaks else if rows.isEmpty
-    then countback(pos - 1, deletes, rows, Par(pos, rpos, left(pos)) :: tweaks)
+    if pos == -1 && rpos == -1 then edits else if rows.isEmpty
+    then backtrack(pos - 1, deletes, rows, Par(pos, rpos, left(pos)) :: edits)
     else if deletes < rows.length && (deletes == 0 || ins >= del)
     then
-      if pos == ins then countback(pos, deletes, rows.tail, Ins(rpos, right(rpos)) :: tweaks)
-      else countback(pos - 1, deletes, rows, Par(pos, rpos, left(pos)) :: tweaks)
+      if pos == ins then backtrack(pos, deletes, rows.tail, Ins(rpos, right(rpos)) :: edits)
+      else backtrack(pos - 1, deletes, rows, Par(pos, rpos, left(pos)) :: edits)
     else
-      if pos == del then countback(del - 1, deletes - 1, rows.tail, Del(pos, left(pos)) :: tweaks)
-      else countback(pos - 1, deletes, rows, Par(pos, rpos, left(pos)) :: tweaks)
+      if pos == del then backtrack(del - 1, deletes - 1, rows.tail, Del(pos, left(pos)) :: edits)
+      else backtrack(pos - 1, deletes, rows, Par(pos, rpos, left(pos)) :: edits)
     
   trace()
 
