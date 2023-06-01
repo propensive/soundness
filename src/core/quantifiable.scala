@@ -16,6 +16,8 @@
 
 package quantify
 
+import language.experimental.captureChecking
+
 trait Quantifiable[QuantityType, UnitsType <: Units[?, ?]]:
   def quantify(value: QuantityType): Quantity[UnitsType]
 

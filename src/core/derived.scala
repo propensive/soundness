@@ -16,6 +16,8 @@
 
 package quantify
 
+import language.experimental.captureChecking
+
 val Hertz = MetricUnit(1.0/Second)
 val Newton = MetricUnit(Metre*Kilo(Gram)/(Second*Second))
 val Pascal = MetricUnit(Newton/(Metre*Metre))

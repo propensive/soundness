@@ -16,6 +16,8 @@
 
 package quantify
 
+import language.experimental.captureChecking
+
 package constants:
   val SpeedOfLightInVacuum = 299792458*Metre/Second
   val MagneticConstant = 4*math.Pi*(10e-7)*Newton/(Ampere*Ampere)

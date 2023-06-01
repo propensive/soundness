@@ -21,6 +21,8 @@ import gossamer.*
 
 import scala.quoted.*
 
+import language.experimental.captureChecking
+
 object QuantifyMacros:
 
   private case class UnitPower(ref: UnitRef, power: Int)

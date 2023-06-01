@@ -24,6 +24,7 @@ import scala.quoted.*
 import scala.compiletime.*
 
 import language.implicitConversions
+import language.experimental.captureChecking
 
 trait Dimension
 

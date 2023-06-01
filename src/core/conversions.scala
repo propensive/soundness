@@ -20,6 +20,8 @@ import rudiments.*
 
 import scala.compiletime.*
 
+import language.experimental.captureChecking
+
 erased trait Ratio[UnitsType <: Measure, RatioType <: Double & Singleton]
 
 // Units of length

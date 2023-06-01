@@ -16,6 +16,8 @@
 
 package quantify
 
+import language.experimental.captureChecking
+
 val Galileo = MetricUnit(0.01*Metre/(Second*Second))
 val Poise = MetricUnit(0.1*Pascal)
 val Franklin = MetricUnit(3.34e-10*Coulomb)
