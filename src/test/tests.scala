@@ -141,3 +141,33 @@ object Tests extends Suite(t"Dissonance tests"):
         Diff.parse(reverseStream).applyTo(end)
       .assert(_ == start)
   
+    suite(t"Rdiff tests"):
+      val italian = Vector(t"zero", t"uno", t"due", t"tre", t"quattro", t"cinque", t"sei", t"sette")
+      val spanish = Vector(t"cero", t"uno", t"dos", t"tres", t"cuatro", t"cinco", t"seis", t"siete")
+
+      val italianToSpanish = test(t"Do a normal diff on Italian/Spanish numbers"):
+        diff(italian, spanish)
+      .check(_ == Diff(Del(0, t"zero"), Ins(0, t"cero"), Par(1,1, t"uno"), Del(2, t"due"),
+          Del(3, t"tre"), Del(4, t"quattro"), Del(5, t"cinque"), Del(6, t"sei"), Del(7, t"sette"),
+          Ins(2, t"dos"), Ins(3, t"tres"), Ins(4, t"cuatro"), Ins(5, t"cinco"), Ins(6, t"seis"),
+          Ins(7, t"siete")))
+      
+      test(t"Align on Levenshtein distance < 4"):
+        italianToSpanish.rdiff(_.lev(_) < 4)
+      .assert(_ == RDiff(Sub(0, 0, t"zero", t"cero"), Par(1, 1, t"uno"), Sub(2, 2, t"due", t"dos"),
+          Sub(3, 3, t"tre", t"tres"), Sub(4, 4, t"quattro", t"cuatro"),
+          Sub(5, 5, t"cinque", t"cinco"), Sub(6, 6, t"sei", t"seis"),
+          Sub(7, 7, t"sette", t"siete")))
+      
+      test(t"Align on Levenshtein distance < 3"):
+        italianToSpanish.rdiff(_.lev(_) < 3)
+      .assert(_ == RDiff(Sub(0, 0, t"zero", t"cero"), Par(1, 1, t"uno"), Sub(2, 2, t"due", t"dos"),
+          Sub(3, 3, t"tre", t"tres"), Sub(4, 4, t"quattro", t"cuatro"), Del(5, t"cinque"),
+          Ins(5, t"cinco"), Sub(6, 6, t"sei", t"seis"), Sub(7, 7, t"sette", t"siete")))
+      
+      test(t"Align on Levenshtein distance < 2"):
+        italianToSpanish.rdiff(_.lev(_) < 2)
+      .assert(_ == RDiff(Sub(0, 0, t"zero", t"cero"), Par(1, 1, t"uno"), Del(2, t"due"),
+          Ins(2, t"dos"), Sub(3, 3, t"tre", t"tres"), Del(4, t"quattro"), Del(5, t"cinque"),
+          Ins(4, t"cuatro"), Ins(5, t"cinco"), Sub(6, 6, t"sei", t"seis"),
+          Del(7, t"sette"), Ins(7, t"siete")))
