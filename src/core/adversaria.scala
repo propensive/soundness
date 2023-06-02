@@ -20,6 +20,8 @@ import rudiments.*
 
 import scala.quoted.*
 
+import language.experimental.captureChecking
+
 case class Annotations[AnnotationType <: StaticAnnotation, TargetType](annotations: AnnotationType*)
 
 object Annotations:
@@ -41,7 +43,7 @@ object Annotations:
 object CaseField:
   def apply
       [TargetType <: Product, AnnotationType <: StaticAnnotation, InitFieldType]
-      (name: Text, access: TargetType => InitFieldType, annotation: AnnotationType)
+      (name: Text, access: TargetType -> InitFieldType, annotation: AnnotationType)
       : CaseField[TargetType, AnnotationType] { type FieldType = InitFieldType } =
     
     inline def initAnnotation = annotation
