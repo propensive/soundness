@@ -18,6 +18,8 @@ package dendrology
 
 import rudiments.*
 
+import language.experimental.captureChecking
+
 package treeStyles:
   given default: TreeStyle = TreeStyle(Text("  "), Text("└─"), Text("├─"), Text("│ "))
   given rounded: TreeStyle = TreeStyle(Text("  "), Text("╰─"), Text("├─"), Text("│ "))
