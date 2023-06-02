@@ -17,6 +17,7 @@
 package dissonance
 
 import rudiments.*
+import digression.*
 
 import language.experimental.captureChecking
 
@@ -62,6 +63,35 @@ case class RDiff[ElemType](changes: Change[ElemType]*):
   def map[ElemType2](fn: ElemType => ElemType2): RDiff[ElemType2^{fn}] =
     RDiff(changes.map(_.map(fn))*)
 
+case class DiffParseError(lineNo: Int, line: Text)
+extends Error(err"could not read the diff at line $lineNo: $line")
+
+object Diff:
+  def parse(lines: LazyList[Text]): Diff[Text] throws DiffParseError =
+    def recur
+        (todo: LazyList[Text], line: Int, edits: List[Edit[Text]], pos: Int, rpos: Int, target: Int)
+        : Diff[Text] =
+      if pos < target
+      then recur(todo, line + 1, Par(pos, rpos, Unset) :: edits, pos + 1, rpos + 1, target)
+      else todo match
+        case head #:: tail =>
+          if head == Text("---") then recur(tail, line + 1, edits, pos, rpos, 0)
+          else if head.s.startsWith("< ")
+          then recur(tail, line + 1, Del(pos, Text(head.s.drop(2))) :: edits, pos + 1, rpos, 0)
+          else if head.s.startsWith("> ")
+          then recur(tail, line + 1, Ins(rpos, Text(head.s.drop(2))) :: edits, pos, rpos + 1, 0)
+          else
+            val target =
+              try head.s.takeWhile(_.isDigit).toInt
+              catch case err: NumberFormatException => throw DiffParseError(line, head)
+            recur(tail, line + 1, edits, pos, rpos, target)
+        
+        case _ =>
+          Diff(edits.reverse*)
+    
+    recur(lines, 1, Nil, 0, 0, 0)
+          
+          
 case class Diff[ElemType](edits: Edit[ElemType]*):
   def flip: Diff[Maybe[ElemType]] =
     val edits2: Seq[Edit[Maybe[ElemType]]] = edits.map:
