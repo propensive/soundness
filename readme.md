@@ -199,7 +199,7 @@ defined inside other test suites, making it possible to organise tests into a hi
 
 ## Status
 
-Probably is classified as __fledgling__. For reference, Scala One projects are
+Probably is classified as __maturescent__. For reference, Scala One projects are
 categorized into one of the following five stability levels:
 
 - _embryonic_: for experimental or demonstrative purposes only, without any guarantees of longevity
