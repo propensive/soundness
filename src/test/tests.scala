@@ -115,5 +115,29 @@ object Tests extends Suite(t"Dissonance tests"):
       test(t"real-world example 2"):
         diff(IArray(t"A", t"B"), IArray(t"B", t"C", t"D"))
       .assert(_ == Diff(Del(0, t"A"), Par(1, 0, t"B"), Ins(1, t"C"), Ins(2, t"D")))
+    
+    suite(t"Diff parsing tests"):
+      erased given CanThrow[DiffParseError] = unsafeExceptions.canThrowAny
+
+      val start = List(t"foo", t"bar", t"baz")
+      val end = List(t"foo", t"quux", t"bop", t"baz")
+
+      val diffStream = LazyList(t"2c2,3", t"< bar", t"---", t"> quux", t"> bop")
+      val reverseStream = LazyList(t"2,3c2", t"< quux", t"< bop", t"---", t"> bar")
       
+      test(t"Parse a simple diff file"):
+        Diff.parse(diffStream)
+      .assert(_ == Diff(Par(0, 0), Del(1, t"bar"), Ins(1, t"quux"), Ins(2, t"bop")))
+    
+      test(t"Apply parsed diff to source to get result"):
+        Diff.parse(diffStream).applyTo(start)
+      .assert(_ == end)
+      
+      test(t"Parse reverse diff file"):
+        Diff.parse(reverseStream)
+      .assert(_ == Diff(Par(0, 0), Del(1, t"quux"), Del(2, t"bop"), Ins(1, t"bar")))
+      
+      test(t"Apply parsed diff to source to get result"):
+        Diff.parse(reverseStream).applyTo(end)
+      .assert(_ == start)
   

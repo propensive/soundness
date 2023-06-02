@@ -38,8 +38,10 @@ sealed trait Edit[+ElemType] extends Change[ElemType]:
     case Ins(right, value)       => Ins(right, fn(value))
 
 case class Ins[+ElemType](right: Int, value: ElemType) extends Edit[ElemType]
-case class Del[+ElemType](left: Int, value: Maybe[ElemType]) extends Edit[ElemType]
-case class Par[+ElemType](left: Int, right: Int, value: Maybe[ElemType]) extends Edit[ElemType]
+case class Del[+ElemType](left: Int, value: Maybe[ElemType] = Unset) extends Edit[ElemType]
+
+case class Par[+ElemType](left: Int, right: Int, value: Maybe[ElemType] = Unset)
+extends Edit[ElemType]
  
 case class Sub
     [+ElemType]
@@ -67,6 +69,7 @@ case class DiffParseError(lineNo: Int, line: Text)
 extends Error(err"could not read the diff at line $lineNo: $line")
 
 object Diff:
+
   def parse(lines: LazyList[Text]): Diff[Text] throws DiffParseError =
     def recur
         (todo: LazyList[Text], line: Int, edits: List[Edit[Text]], pos: Int, rpos: Int, target: Int)
@@ -81,10 +84,19 @@ object Diff:
           else if head.s.startsWith("> ")
           then recur(tail, line + 1, Ins(rpos, Text(head.s.drop(2))) :: edits, pos, rpos + 1, 0)
           else
-            val target =
-              try head.s.takeWhile(_.isDigit).toInt
+            def unpair(string: String): (Int, Int) =
+              try string.split(",").nn.to(List) match
+                case List(start, end) => (start.nn.toInt - 1, end.nn.toInt)
+                case List(start)      => (start.nn.toInt - 1, start.nn.toInt)
+                case _                => throw DiffParseError(line, head)
               catch case err: NumberFormatException => throw DiffParseError(line, head)
-            recur(tail, line + 1, edits, pos, rpos, target)
+
+            val ((leftStart, leftEnd), (rightStart, rightEnd)) =
+              head.s.split("[acd]").nn.to(List) match
+                case List(left, right) => (unpair(left.nn), unpair(right.nn))
+                case _                 => throw DiffParseError(line, head)
+            
+            recur(tail, line + 1, edits, pos, rpos, leftStart)
         
         case _ =>
           Diff(edits.reverse*)
@@ -106,8 +118,9 @@ case class Diff[ElemType](edits: Edit[ElemType]*):
   def applyTo
       (list: List[ElemType], update: (ElemType, ElemType) -> ElemType = { (left, right) => left })
       : LazyList[ElemType] =
+    
     def recur(todo: List[Edit[ElemType]], list: List[ElemType]): LazyList[ElemType] = todo match
-      case Nil                   => LazyList()
+      case Nil                   => list.to(LazyList)
       case Ins(_, value) :: tail => value #:: recur(tail, list)
       case Del(_, _) :: tail     => recur(tail, list.tail)
       
