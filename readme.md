@@ -98,7 +98,7 @@ absent for each ancestor that is the last of its siblings.
 
 ## Status
 
-Dendrology is classified as __fledgling__. For reference, Scala One projects are
+Dendrology is classified as __maturescent__. For reference, Scala One projects are
 categorized into one of the following five stability levels:
 
 - _embryonic_: for experimental or demonstrative purposes only, without any guarantees of longevity
