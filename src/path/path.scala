@@ -18,6 +18,8 @@ package anticipation
 
 import java.nio.file as jnf
 
+import language.experimental.captureChecking
+
 trait GenericDirectoryMaker[+DirectoryType]:
   def makeDirectory(directory: String, readOnly: Boolean = false): Option[DirectoryType]
 

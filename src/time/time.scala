@@ -18,6 +18,8 @@ package anticipation
 
 import annotation.implicitNotFound
 
+import language.experimental.captureChecking
+
 @implicitNotFound("a contextual GenericInstant instance is required to work with instants in time, for example,\n"+
                   "    import timeApi.long        // Use Longs to represent instants\n"+
                   "    import timeApi.aviationApi // Use Aviation types for instants")

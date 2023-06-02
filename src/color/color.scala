@@ -16,6 +16,8 @@
 
 package anticipation
 
+import language.experimental.captureChecking
+
 trait RgbColor[ColorType]:
   def rgb(color: ColorType): Int
   def red(color: ColorType): Int = rgb(color)&255

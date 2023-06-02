@@ -16,6 +16,8 @@
 
 package anticipation
 
+import language.experimental.captureChecking
+
 trait GenericHttpResponseStream[ValueType]:
   def mediaType: String
   def content(value: ValueType): LazyList[IArray[Byte]]

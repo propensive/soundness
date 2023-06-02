@@ -16,6 +16,8 @@
 
 package anticipation
 
+import language.experimental.captureChecking
+
 trait GenericUrl[UrlType]:
   def readUrl(url: UrlType): String
   def makeUrl(string: String): UrlType
