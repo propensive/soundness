@@ -19,6 +19,8 @@ package digression
 import rudiments.*
 import spectacular.*
 
+import language.experimental.captureChecking
+
 case class AggregateError[ErrorType <: Error](errors: List[ErrorType])
 extends Error(err"aggregated errors:${Text(errors.map(_.message).mkString("\n", "\n", ""))}")
 
