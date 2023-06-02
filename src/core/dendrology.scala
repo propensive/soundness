@@ -31,17 +31,23 @@ enum TreeTile:
   case Space, Last, Branch, Extender
 
   def text(using style: TreeStyle): Text = this match
-    case TreeTile.Space    => style.space
-    case TreeTile.Last     => style.last
-    case TreeTile.Branch   => style.branch
-    case TreeTile.Extender => style.extender
+    case Space    => style.space
+    case Last     => style.last
+    case Branch   => style.branch
+    case Extender => style.extender
 
-def drawTree[NodeType, LineType](getChildren: NodeType => Seq[NodeType], mkLine: (List[TreeTile], NodeType) => LineType)(top: Seq[NodeType]): LazyList[LineType] =
+import TreeTile.*
+
+def drawTree
+    [NodeType, LineType]
+    (getChildren: NodeType => Seq[NodeType], line: (List[TreeTile], NodeType) => LineType)
+    (top: Seq[NodeType])
+    : LazyList[LineType] =
   def recur(level: List[TreeTile], input: Seq[NodeType]): LazyList[LineType] =
     val last = input.size - 1
     input.zipWithIndex.to(LazyList).flatMap: (item, idx) =>
-      val current = mkLine(((if idx == last then TreeTile.Last else TreeTile.Branch) :: level).reverse, item)
-      current #:: recur((if idx == last then TreeTile.Space else TreeTile.Extender) :: level, getChildren(item))
+      val current = line(((if idx == last then Last else Branch) :: level).reverse, item)
+      current #:: recur((if idx == last then Space else Extender) :: level, getChildren(item))
 
   recur(Nil, top)
 
