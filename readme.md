@@ -130,7 +130,7 @@ diff elements, or prefer one or the other.
 
 ## Status
 
-Dissonance is classified as __fledgling__. For reference, Scala One projects are
+Dissonance is classified as __maturescent__. For reference, Scala One projects are
 categorized into one of the following five stability levels:
 
 - _embryonic_: for experimental or demonstrative purposes only, without any guarantees of longevity
@@ -144,7 +144,7 @@ be used, but caution should be taken if there is a mismatch between the
 project's stability level and the importance of your own project.
 
 Dissonance is designed to be _small_. Its entire source code currently consists
-of 189 lines of code.
+of 214 lines of code.
 
 ## Building
 
