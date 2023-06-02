@@ -20,10 +20,18 @@ import rudiments.*
 
 import language.experimental.captureChecking
 
-sealed trait Change[+ElemType] extends Product
+sealed trait Change[+ElemType] extends Product:
+  def map[ElemType2](fn: ElemType => ElemType2): Change[ElemType2] = this match
+    case Sub(left, right, leftValue, rightValue) => Sub(left, right, fn(leftValue), fn(rightValue))
+    case edit: Edit[ElemType]                    => edit.map(fn)
 
 sealed trait Edit[+ElemType] extends Change[ElemType]:
   def value: ElemType
+
+  override def map[ElemType2](fn: ElemType => ElemType2): Edit[ElemType2] = this match
+    case Par(left, right, value)                 => Par(left, right, fn(value))
+    case Del(left, value)                        => Del(left, fn(value))
+    case Ins(right, value)                       => Ins(right, fn(value))
 
 case class Ins[+ElemType](right: Int, value: ElemType) extends Edit[ElemType]
 case class Del[+ElemType](left: Int, value: ElemType) extends Edit[ElemType]
@@ -54,7 +62,10 @@ case class Diff[ElemType](edits: Edit[ElemType]*):
       case Ins(right, value)       => Del(right, value)
     
     Diff(edits2*)
-  
+
+  def map[ElemType2](fn: ElemType => ElemType2): Diff[ElemType2] =
+    Diff(edits.map(_.map(fn))*)
+
   def applyTo
       (list: List[ElemType], update: (ElemType, ElemType) => ElemType = { (left, right) => left })
       : LazyList[ElemType] =
