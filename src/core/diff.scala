@@ -53,6 +53,8 @@ case class RDiff[ElemType](changes: Change[ElemType]*):
       case Sub(left, right, leftValue, rightValue) => Sub(right, left, rightValue, leftValue)
     
     RDiff(changes2*)
+  
+  def map[ElemType2](fn: ElemType => ElemType2): RDiff[ElemType2] = RDiff(changes.map(_.map(fn))*)
 
 case class Diff[ElemType](edits: Edit[ElemType]*):
   def flip: Diff[ElemType] =
@@ -63,8 +65,7 @@ case class Diff[ElemType](edits: Edit[ElemType]*):
     
     Diff(edits2*)
 
-  def map[ElemType2](fn: ElemType => ElemType2): Diff[ElemType2] =
-    Diff(edits.map(_.map(fn))*)
+  def map[ElemType2](fn: ElemType => ElemType2): Diff[ElemType2] = Diff(edits.map(_.map(fn))*)
 
   def applyTo
       (list: List[ElemType], update: (ElemType, ElemType) => ElemType = { (left, right) => left })
