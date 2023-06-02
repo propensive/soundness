@@ -21,7 +21,10 @@ import hieroglyph.*, textWidthCalculation.uniform
 import spectacular.*
 import rudiments.*
 
+import language.experimental.captureChecking
+
 open case class Currency(isoCode: Text, symbol: Text, name: Text, modulus: Int):
+  this: Currency =>
   def apply(value: Double): Money[this.type] =
     val integral = value.toLong
     val tweak = (if integral < 0 then -0.5 else 0.5)/modulus
@@ -64,7 +67,8 @@ object PlutocratOpaques:
       wholePart*currency.modulus + subunit
     
     given [CurrencyType <: Currency & Singleton]: Ordering[Money[CurrencyType]] =
-      (a, b) => if a < b then 1 else if b < a then -1 else 0
+      Ordering.Long match
+        case ordering: Ordering[Money[CurrencyType]] => ordering
 
     given [CurrencyType <: Currency & Singleton: ValueOf](using currencyStyle: CurrencyStyle): Show[Money[CurrencyType]] = money =>
       val currency = valueOf[CurrencyType]

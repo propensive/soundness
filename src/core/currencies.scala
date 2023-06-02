@@ -18,6 +18,8 @@ package plutocrat
 
 import gossamer.*
 
+import language.experimental.captureChecking
+
 object Eur extends Currency(t"EUR", t"€", t"Euro", 100)
 object Usd extends Currency(t"USD", t"$$", t"US Dollar", 100)
 object Jpy extends Currency(t"JPY", t"¥", t"Japanese Yen", 100)
