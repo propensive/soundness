@@ -21,23 +21,28 @@ import rudiments.*
 import language.experimental.captureChecking
 
 sealed trait Change[+ElemType] extends Product:
-  def map[ElemType2](fn: ElemType => ElemType2): Change[ElemType2] = this match
-    case Sub(left, right, leftValue, rightValue) => Sub(left, right, fn(leftValue), fn(rightValue))
-    case edit: Edit[ElemType]                    => edit.map(fn)
+  def map[ElemType2](fn: ElemType => ElemType2): Change[ElemType2^{fn}] = this match
+    case Sub(left, right, leftValue, rightValue) =>
+      Sub(left, right, leftValue.mm(fn), rightValue.mm(fn))
+    
+    case edit: Edit[ElemType] =>
+      edit.map(fn)
 
 sealed trait Edit[+ElemType] extends Change[ElemType]:
-  def value: ElemType
+  def value: Maybe[ElemType]
 
-  override def map[ElemType2](fn: ElemType => ElemType2): Edit[ElemType2] = this match
-    case Par(left, right, value)                 => Par(left, right, fn(value))
-    case Del(left, value)                        => Del(left, fn(value))
-    case Ins(right, value)                       => Ins(right, fn(value))
+  override def map[ElemType2](fn: ElemType => ElemType2): Edit[ElemType2^{fn}] = this match
+    case Par(left, right, value) => Par(left, right, value.mm(fn))
+    case Del(left, value)        => Del(left, value.mm(fn))
+    case Ins(right, value)       => Ins(right, fn(value))
 
 case class Ins[+ElemType](right: Int, value: ElemType) extends Edit[ElemType]
-case class Del[+ElemType](left: Int, value: ElemType) extends Edit[ElemType]
-case class Par[+ElemType](left: Int, right: Int, value: ElemType) extends Edit[ElemType]
+case class Del[+ElemType](left: Int, value: Maybe[ElemType]) extends Edit[ElemType]
+case class Par[+ElemType](left: Int, right: Int, value: Maybe[ElemType]) extends Edit[ElemType]
  
-case class Sub[+ElemType](left: Int, right: Int, leftValue: ElemType, rightValue: ElemType)
+case class Sub
+    [+ElemType]
+    (left: Int, right: Int, leftValue: Maybe[ElemType], rightValue: Maybe[ElemType])
 extends Change[ElemType]
 
 enum Region[ElemType]:
@@ -45,8 +50,8 @@ enum Region[ElemType]:
   case Unchanged(retentions: List[Par[ElemType]])
 
 case class RDiff[ElemType](changes: Change[ElemType]*):
-  def flip: RDiff[ElemType] =
-    val changes2 = changes.map:
+  def flip: RDiff[Maybe[ElemType]] =
+    val changes2: Seq[Change[Maybe[ElemType]]] = changes.map:
       case Par(left, right, value)                 => Par(right, left, value)
       case Del(left, value)                        => Ins(left, value)
       case Ins(right, value)                       => Del(right, value)
@@ -54,27 +59,30 @@ case class RDiff[ElemType](changes: Change[ElemType]*):
     
     RDiff(changes2*)
   
-  def map[ElemType2](fn: ElemType => ElemType2): RDiff[ElemType2] = RDiff(changes.map(_.map(fn))*)
+  def map[ElemType2](fn: ElemType => ElemType2): RDiff[ElemType2^{fn}] =
+    RDiff(changes.map(_.map(fn))*)
 
 case class Diff[ElemType](edits: Edit[ElemType]*):
-  def flip: Diff[ElemType] =
-    val edits2 = edits.map:
+  def flip: Diff[Maybe[ElemType]] =
+    val edits2: Seq[Edit[Maybe[ElemType]]] = edits.map:
       case Par(left, right, value) => Par(right, left, value)
       case Del(left, value)        => Ins(left, value)
       case Ins(right, value)       => Del(right, value)
     
     Diff(edits2*)
 
-  def map[ElemType2](fn: ElemType => ElemType2): Diff[ElemType2] = Diff(edits.map(_.map(fn))*)
+  def map[ElemType2](fn: ElemType => ElemType2): Diff[ElemType2^{fn}] = Diff(edits.map(_.map(fn))*)
 
   def applyTo
-      (list: List[ElemType], update: (ElemType, ElemType) => ElemType = { (left, right) => left })
+      (list: List[ElemType], update: (ElemType, ElemType) -> ElemType = { (left, right) => left })
       : LazyList[ElemType] =
     def recur(todo: List[Edit[ElemType]], list: List[ElemType]): LazyList[ElemType] = todo match
-      case Ins(_, value) :: tail    => value #:: recur(tail, list)
-      case Del(_, _) :: tail        => recur(tail, list.tail)
-      case Par(_, _, value) :: tail => update(value, list.head) #:: recur(tail, list.tail)
-      case Nil                      => LazyList()
+      case Nil                   => LazyList()
+      case Ins(_, value) :: tail => value #:: recur(tail, list)
+      case Del(_, _) :: tail     => recur(tail, list.tail)
+      
+      case Par(_, _, value) :: tail =>
+        value.mm(update(_, list.head)).or(list.head) #:: recur(tail, list.tail)
 
     recur(edits.to(List), list)
 
@@ -88,8 +96,8 @@ case class Diff[ElemType](edits: Edit[ElemType]*):
         if inss.length == dels.length && inss.length <= subSize
         then dels.zip(inss).map { (del, ins) => Sub(del.left, ins.right, del.value, ins.value) }
         else
-          val delsSeq = dels.map(_.value).to(IndexedSeq)
-          val inssSeq = inss.map(_.value).to(IndexedSeq)
+          val delsSeq = dels.map(_.value.avow).to(IndexedSeq)
+          val inssSeq = inss.map(_.value.avow).to(IndexedSeq)
           
           diff(delsSeq, inssSeq, similar).edits.map:
             case Del(index, _) => Del(dels(index).left, dels(index).value)
