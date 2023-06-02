@@ -16,9 +16,7 @@
 
 package dissonance
 
-import gossamer.*
 import rudiments.*
-import eucalyptus.*
 
 import language.experimental.captureChecking
 
@@ -38,12 +36,6 @@ enum Region[ElemType]:
   case Changed(deletions: List[Del[ElemType]], insertions: List[Ins[ElemType]])
   case Unchanged(retentions: List[Par[ElemType]])
 
-enum Chunk[+ElemType]:
-  case Ins(startRight: Int, values: List[ElemType])
-  case Del(startLeft: Int, values: List[ElemType])
-  case Par(startLeft: Int, startRight: Int, values: List[ElemType])
-  case Sub(startLeft: Int, startRight: Int, valuesLeft: List[ElemType], valuesRight: List[ElemType])
-
 case class RDiff[ElemType](changes: Change[ElemType]*):
   def flip: RDiff[ElemType] =
     val changes2 = changes.map:
@@ -52,7 +44,7 @@ case class RDiff[ElemType](changes: Change[ElemType]*):
       case Ins(right, value)                       => Del(right, value)
       case Sub(left, right, leftValue, rightValue) => Sub(right, left, rightValue, leftValue)
     
-    RDiff[ElemType](changes2*)
+    RDiff(changes2*)
 
 case class Diff[ElemType](edits: Edit[ElemType]*):
   def flip: Diff[ElemType] =
@@ -61,9 +53,11 @@ case class Diff[ElemType](edits: Edit[ElemType]*):
       case Del(left, value)        => Ins(left, value)
       case Ins(right, value)       => Del(right, value)
     
-    Diff[ElemType](edits2*)
+    Diff(edits2*)
   
-  def apply(list: List[ElemType], update: (ElemType, ElemType) -> ElemType): LazyList[ElemType] =
+  def applyTo
+      (list: List[ElemType], update: (ElemType, ElemType) => ElemType = { (left, right) => left })
+      : LazyList[ElemType] =
     def recur(todo: List[Edit[ElemType]], list: List[ElemType]): LazyList[ElemType] = todo match
       case Ins(_, value) :: tail    => value #:: recur(tail, list)
       case Del(_, _) :: tail        => recur(tail, list.tail)
@@ -86,9 +80,11 @@ case class Diff[ElemType](edits: Edit[ElemType]*):
           val inssSeq = inss.map(_.value).to(IndexedSeq)
           
           diff(delsSeq, inssSeq, similar).edits.map:
-            case Del(l, v)    => Del(dels(l).left, dels(l).value)
-            case Ins(r, v)    => Ins(inss(r).right, inss(r).value)
-            case Par(l, r, _) => Sub(dels(l).left, inss(r).right, dels(l).value, inss(r).value)
+            case Del(index, _) => Del(dels(index).left, dels(index).value)
+            case Ins(index, _) => Ins(inss(index).right, inss(index).value)
+            
+            case Par(left, right, _) =>
+              Sub(dels(left).left, inss(right).right, dels(left).value, inss(right).value)
     
     RDiff(changes*)
           
@@ -105,6 +101,9 @@ def diff
     (left: IndexedSeq[ElemType], right: IndexedSeq[ElemType],
         compare: (ElemType, ElemType) -> Boolean = { (a: ElemType, b: ElemType) => a == b })
     : Diff[ElemType] =
+
+  type Edits = List[Edit[ElemType]]
+
   @tailrec
   def count(pos: Int, off: Int): Int =
     if pos < left.length && pos + off < right.length && compare(left(pos), right(pos + off))
@@ -112,22 +111,18 @@ def diff
     else pos
 
   @tailrec
-  def trace
-      (deletes: Int = 0, inserts: Int = 0, current: List[Int] = Nil, rows: List[IArray[Int]] = Nil)
-      : Diff[ElemType] =
+  def trace(deletes: Int, inserts: Int, focus: List[Int], rows: List[IArray[Int]]): Diff[ElemType] =
     val delPos = if deletes == 0 then 0 else count(rows.head(deletes - 1) + 1, inserts - deletes)
     val insPos = if inserts == 0 then 0 else count(rows.head(deletes), inserts - deletes)
     val best = if deletes + inserts == 0 then count(0, 0) else delPos.max(insPos)
     
     if best == left.length && (best - deletes + inserts) == right.length
     then Diff(backtrack(left.length - 1, deletes, rows, Nil)*)
-    else if inserts > 0 then trace(deletes + 1, inserts - 1, best :: current, rows)
-    else trace(0, deletes + 1, Nil, IArray.from((best :: current).reverse) :: rows)
+    else if inserts > 0 then trace(deletes + 1, inserts - 1, best :: focus, rows)
+    else trace(0, deletes + 1, Nil, IArray.from((best :: focus).reverse) :: rows)
 
   @tailrec
-  def backtrack
-      (pos: Int, deletes: Int, rows: List[IArray[Int]], edits: List[Edit[ElemType]])
-      : List[Edit[ElemType]] =
+  def backtrack(pos: Int, deletes: Int, rows: List[IArray[Int]], edits: Edits): Edits =
     val rpos = pos + rows.length - deletes*2
     lazy val ins = rows.head(deletes) - 1
     lazy val del = rows.head(deletes - 1)
@@ -142,6 +137,4 @@ def diff
       if pos == del then backtrack(del - 1, deletes - 1, rows.tail, Del(pos, left(pos)) :: edits)
       else backtrack(pos - 1, deletes, rows, Par(pos, rpos, left(pos)) :: edits)
     
-  trace()
-
-given Realm = Realm(t"dissonance")
+  trace(0, 0, Nil, Nil)

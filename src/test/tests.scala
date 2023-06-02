@@ -21,8 +21,6 @@ import gossamer.*
 import rudiments.*
 import eucalyptus.*
 
-import Change.*
-
 object Tests extends Suite(t"Dissonance tests"):
   given Realm = Realm(t"tests")
 
@@ -69,7 +67,7 @@ object Tests extends Suite(t"Dissonance tests"):
       .assert(_ == Diff(Par(0, 0, 'A'), Del(1, 'B'), Par(2, 1, 'C')))
       
       test(t"Deletion from start of short list"):
-        diff(t"ABC".chars, t"BC".chars).tweaks.to(List)
+        diff(t"ABC".chars, t"BC".chars).edits.to(List)
       .assert(_ == List(Del(0, 'A'), Par(1, 0, 'B'), Par(2, 1, 'C')))
       
       test(t"Deletion from end of short list"):
@@ -81,12 +79,12 @@ object Tests extends Suite(t"Dissonance tests"):
       .assert(_ == Diff(Ins(0, 'A'), Par(0, 1, 'B'), Par(1, 2, 'C'), Del(2, 'D')))
       
       test(t"Example from blog"):
-        diff(t"ABCABBA".chars, t"CBABAC".chars).tweaks.to(List)
+        diff(t"ABCABBA".chars, t"CBABAC".chars).edits.to(List)
       .assert(_ == List(Del(0, 'A'), Del(1, 'B'), Par(2, 0, 'C'), Ins(1, 'B'), Par(3, 2, 'A'),
           Par(4, 3, 'B'), Del(5, 'B'), Par(6, 4, 'A'), Ins(5, 'C')))
       
       test(t"Reversed example from blog"):
-        diff(t"CBABAC".chars, t"ABCABBA".chars).tweaks.to(List)
+        diff(t"CBABAC".chars, t"ABCABBA".chars).edits.to(List)
       .assert(_ == List(Del(0, 'C'), Ins(0, 'A'), Par(1, 1, 'B'), Ins(2, 'C'), Par(2, 3, 'A'),
           Par(3, 4, 'B'), Ins(5, 'B'), Par(4, 6, 'A'), Del(5, 'C')))
       
@@ -111,16 +109,11 @@ object Tests extends Suite(t"Dissonance tests"):
       .assert(_ == Diff(Del(0, 'A'), Del(1, 'Z'), Par(2, 0, 'B'), Ins(1, 'Z'), Ins(2, 'A')))
       
       test(t"real-world example 1"):
-        diff(IArray('a', 'b', 'c'), IArray('A', 'b', 'C')).tweaks.to(List)
-      .assert(_ == Diff(Del(0, 'a'), Ins(0, 'A'), Par(1, 1, 'b'), Del(2, 'c'), Ins(2, 'C')).tweaks.to(List))
+        diff(IArray('a', 'b', 'c'), IArray('A', 'b', 'C')).edits.to(List)
+      .assert(_ == Diff(Del(0, 'a'), Ins(0, 'A'), Par(1, 1, 'b'), Del(2, 'c'), Ins(2, 'C')).edits.to(List))
       
       test(t"real-world example 2"):
         diff(IArray(t"A", t"B"), IArray(t"B", t"C", t"D"))
       .assert(_ == Diff(Del(0, t"A"), Par(1, 0, t"B"), Ins(1, t"C"), Ins(2, t"D")))
       
   
-    suite(t"Recursive diff tests"):
-      
-      test(t"rdiff example"):
-        
-      
