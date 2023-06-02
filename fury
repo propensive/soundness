@@ -6,6 +6,7 @@ repo propensive/escritoire
 repo propensive/chiaroscuro
 repo propensive/gossamer
 repo propensive/ambience
+repo propensive/eucalyptus
 
 target probably/cli
 
@@ -13,7 +14,7 @@ project probably
   module core
     compiler  scala
     sources   src/core
-    include   gossamer/core chiaroscuro/core ambience/core probably/coverage
+    include   gossamer/core chiaroscuro/core ambience/core probably/coverage turbulence/core eucalyptus/core
 
   module bench
     compiler  scala
