@@ -103,7 +103,6 @@ object Diff:
     
     recur(lines, 1, Nil, 0, 0, 0)
           
-          
 case class Diff[ElemType](edits: Edit[ElemType]*):
   def flip: Diff[Maybe[ElemType]] =
     val edits2: Seq[Edit[Maybe[ElemType]]] = edits.map:
@@ -116,18 +115,18 @@ case class Diff[ElemType](edits: Edit[ElemType]*):
   def map[ElemType2](fn: ElemType => ElemType2): Diff[ElemType2^{fn}] = Diff(edits.map(_.map(fn))*)
 
   def applyTo
-      (list: List[ElemType], update: (ElemType, ElemType) -> ElemType = { (left, right) => left })
+      (seq: Seq[ElemType], update: (ElemType, ElemType) -> ElemType = { (left, right) => left })
       : LazyList[ElemType] =
     
-    def recur(todo: List[Edit[ElemType]], list: List[ElemType]): LazyList[ElemType] = todo match
-      case Nil                   => list.to(LazyList)
-      case Ins(_, value) :: tail => value #:: recur(tail, list)
-      case Del(_, _) :: tail     => recur(tail, list.tail)
+    def recur(todo: List[Edit[ElemType]], seq: Seq[ElemType]): LazyList[ElemType] = todo match
+      case Nil                   => seq.to(LazyList)
+      case Ins(_, value) :: tail => value #:: recur(tail, seq)
+      case Del(_, _) :: tail     => recur(tail, seq.tail)
       
       case Par(_, _, value) :: tail =>
-        value.mm(update(_, list.head)).or(list.head) #:: recur(tail, list.tail)
+        value.mm(update(_, seq.head)).or(seq.head) #:: recur(tail, seq.tail)
 
-    recur(edits.to(List), list)
+    recur(edits.to(List), seq)
 
   def rdiff(similar: (ElemType, ElemType) -> Boolean, subSize: Int = 1): RDiff[ElemType] =
     val changes = collate.flatMap:
@@ -158,7 +157,29 @@ case class Diff[ElemType](edits: Edit[ElemType]*):
     .map:
       case xs@(Par(_, _, _) :: _) => Region.Unchanged(xs.sift[Par[ElemType]])
       case xs                     => Region.Changed(xs.sift[Del[ElemType]], xs.sift[Ins[ElemType]])
-  
+
+  def chunks: LazyList[Chunk[ElemType]] =
+    def recur(todo: List[Edit[ElemType]], pos: Int, rpos: Int): LazyList[Chunk[ElemType]] =
+      todo match
+        case Nil                         => LazyList()
+        case Par(pos2, rpos2, _) :: tail => recur(tail, pos2, rpos2)
+        
+        case _ =>
+          val dels = todo.takeWhile(_.is[Del[ElemType]]).collect:
+            case del: Del[ElemType] => del
+          
+          val inss = todo.drop(dels.length).takeWhile(_.is[Ins[ElemType]]).collect:
+            case ins: Ins[ElemType] => ins
+          
+          Chunk(pos + 1, rpos + 1, dels, inss) #:: recur(todo.drop(dels.size + inss.size), -1, -1)
+
+    recur(edits.to(List), 0, 0)
+    
+
+case class Chunk
+    [ElemType]
+    (pos: Int, rpos: Int, dels: List[Del[ElemType]], inss: List[Ins[ElemType]])
+
 def diff
     [ElemType]
     (left: IndexedSeq[ElemType], right: IndexedSeq[ElemType],
@@ -201,3 +222,16 @@ def diff
       else backtrack(pos - 1, deletes, rows, Par(pos, rpos, left(pos)) :: edits)
     
   trace(0, 0, Nil, Nil)
+
+extension (diff: Diff[Text])
+  def serialize: LazyList[Text] = diff.chunks.flatMap:
+    case Chunk(left, right, dels, inss) =>
+      val char = if dels.isEmpty then "a" else if inss.isEmpty then "d" else "c"
+      val off = s"${left + 1}${if dels.size == 1 then "" else s",${left + dels.size}"}"
+      val roff = s"${right + 1}${if inss.size == 1 then "" else s",${right + inss.size}"}"
+      val delSeq = dels.map { del => Text("< "+del.value) }
+      val sep = if char == "c" then List(Text("---")) else List()
+      val insSeq = inss.map { ins => Text("> "+ins.value) }
+      
+      Text(s"$off$char$roff") :: delSeq ::: sep ::: insSeq
+        

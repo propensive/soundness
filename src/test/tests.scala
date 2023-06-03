@@ -116,11 +116,11 @@ object Tests extends Suite(t"Dissonance tests"):
         diff(IArray(t"A", t"B"), IArray(t"B", t"C", t"D"))
       .assert(_ == Diff(Del(0, t"A"), Par(1, 0, t"B"), Ins(1, t"C"), Ins(2, t"D")))
     
+    val start = Vector(t"foo", t"bar", t"baz")
+    val end = Vector(t"foo", t"quux", t"bop", t"baz")
+    
     suite(t"Diff parsing tests"):
       erased given CanThrow[DiffParseError] = unsafeExceptions.canThrowAny
-
-      val start = List(t"foo", t"bar", t"baz")
-      val end = List(t"foo", t"quux", t"bop", t"baz")
 
       val diffStream = LazyList(t"2c2,3", t"< bar", t"---", t"> quux", t"> bop")
       val reverseStream = LazyList(t"2,3c2", t"< quux", t"< bop", t"---", t"> bar")
@@ -140,11 +140,31 @@ object Tests extends Suite(t"Dissonance tests"):
       test(t"Apply parsed diff to source to get result"):
         Diff.parse(reverseStream).applyTo(end)
       .assert(_ == start)
-  
-    suite(t"Rdiff tests"):
-      val italian = Vector(t"zero", t"uno", t"due", t"tre", t"quattro", t"cinque", t"sei", t"sette")
-      val spanish = Vector(t"cero", t"uno", t"dos", t"tres", t"cuatro", t"cinco", t"seis", t"siete")
+    
+    suite(t"Diff serialization tests"):
+      val changes = diff(start, end)
+      val reverseChanges = diff(end, start)
 
+      test(t"Serialize a trivial diff"):
+        diff(Vector(), Vector(t"a")).serialize.to(List)
+      .assert(_ == List(t"1a1", t"> a"))
+      
+      test(t"Serialize another trivial diff"):
+        diff(Vector(t"a"), Vector(t"")).serialize.to(List)
+      .assert(_ == List(t"1d1", t"< a"))
+
+      test(t"Serialize a simple diff"):
+        changes.serialize.to(List)
+      .assert(_ == List(t"2c2,3", t"< bar", t"---", t"> quux", t"> bop"))
+      
+      test(t"Serialize the reverse diff"):
+        reverseChanges.serialize.to(List)
+      .assert(_ == List(t"2,3c2", t"< quux", t"< bop", t"---", t"> bar"))
+  
+    val italian = Vector(t"zero", t"uno", t"due", t"tre", t"quattro", t"cinque", t"sei", t"sette")
+    val spanish = Vector(t"cero", t"uno", t"dos", t"tres", t"cuatro", t"cinco", t"seis", t"siete")
+    
+    suite(t"Rdiff tests"):
       val italianToSpanish = test(t"Do a normal diff on Italian/Spanish numbers"):
         diff(italian, spanish)
       .check(_ == Diff(Del(0, t"zero"), Ins(0, t"cero"), Par(1,1, t"uno"), Del(2, t"due"),
@@ -171,3 +191,4 @@ object Tests extends Suite(t"Dissonance tests"):
           Ins(2, t"dos"), Sub(3, 3, t"tre", t"tres"), Del(4, t"quattro"), Del(5, t"cinque"),
           Ins(4, t"cuatro"), Ins(5, t"cinco"), Sub(6, 6, t"sei", t"seis"),
           Del(7, t"sette"), Ins(7, t"siete")))
+      
