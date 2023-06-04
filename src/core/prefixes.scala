@@ -20,7 +20,7 @@ import language.experimental.captureChecking
 
 class SiPrefix(val name: String, val symbol: String, val exponent: Int, val base: 2 | 10):
   def apply[UnitsType <: Measure](unit: MetricUnit[UnitsType]): Quantity[UnitsType] =
-    unit*math.pow(base, exponent)
+    Quantity(unit*Quantity(math.pow(base, exponent)))
 
 object NoPrefix extends SiPrefix("", "", 0, 10)
 
