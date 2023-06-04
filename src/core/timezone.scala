@@ -23,6 +23,8 @@ import eucalyptus.*
 import rudiments.*
 import digression.*
 
+import scala.io.*
+
 object TzdbError:
   given Show[Issue] =
     case Issue.CouldNotParseTime(time) => t"could not parse time $time"
@@ -72,7 +74,7 @@ object Tzdb:
       val stream = safely(getClass.getResourceAsStream(s"/aviation/tzdb/$name").nn).or:
         throw TzdbError(TzdbError.Issue.ZoneFileMissing(name), 0)
 
-      scala.io.Source.fromInputStream(stream).getLines.map(Text(_)).map(_.cut(t"\t").head.lower).to(LazyList)
+      Source.fromInputStream(stream).getLines.map(Text(_)).map(_.cut(t"\t").head.lower).to(LazyList)
 
     parse(name, lines)
 
@@ -103,11 +105,13 @@ object Tzdb:
         else if str.drop(3).take(2) == t"<="
         then MonthDate.Before(month, Weekday.valueOf(str.take(3).s), str.drop(5).as[Int])
         else MonthDate.Exact(month, str.as[Int])
-      catch case err: IncompatibleTypeError => throw TzdbError(TzdbError.Issue.UnparsableDate, lineNo)
+      catch case err: IncompatibleTypeError =>
+        throw TzdbError(TzdbError.Issue.UnparsableDate, lineNo)
 
     def parseLeap(lineNo: Int, args: List[Text]): Tzdb.Entry.Leap = args match
       case As[Int](year) :: month :: As[Int](day) :: time :: add :: s :: Nil =>
         Tzdb.Entry.Leap(year, parseMonth(month), day, parseTime(lineNo, time), add == t"+")
+      
       case other =>
         throw TzdbError(TzdbError.Issue.UnexpectedRule, lineNo)
 
@@ -155,7 +159,9 @@ object Tzdb:
           val t = parseTime(lineNo, time)
           val s = parseDuration(lineNo, save)
           Tzdb.Entry.Rule(name, from.as[Int], end, d, t, s, parseLetters(letters))
-        catch case err: IncompatibleTypeError => throw TzdbError(TzdbError.Issue.UnexpectedRule, lineNo)
+        catch case err: IncompatibleTypeError =>
+          throw TzdbError(TzdbError.Issue.UnexpectedRule, lineNo)
+      
       case _ =>
         throw TzdbError(TzdbError.Issue.UnexpectedRule, lineNo)
 
@@ -167,7 +173,10 @@ object Tzdb:
       zone.copy(info = zone.info :+ parseZoneInfo(lineNo, args))
 
     @tailrec 
-    def recur(lineNo: Int, lines: LazyList[Text], entries: List[Tzdb.Entry], zone: Option[Tzdb.Entry.Zone]): List[Tzdb.Entry] =
+    def recur
+        (lineNo: Int, lines: LazyList[Text], entries: List[Tzdb.Entry] = Nil,
+            zone: Option[Tzdb.Entry.Zone] = None)
+        : List[Tzdb.Entry] =
       if lines.isEmpty then
         //Log.fine(t"Finished parsing $lineNo lines of $name, and got ${entries.size} entries")
         entries ++ zone
@@ -175,16 +184,16 @@ object Tzdb:
         val line: Text = lines.head.upto(_ == '#')
         line.cut(unsafely(r"\s+")).to(List) match
           case t"Rule" :: tail =>
-            recur(lineNo + 1, lines.tail, parseRule(lineNo, tail) :: (zone.to(List) ++ entries), None)
+            recur(lineNo + 1, lines.tail, parseRule(lineNo, tail) :: (zone.to(List) ++ entries))
           
           case t"Link" :: tail =>
-            recur(lineNo + 1, lines.tail, parseLink(lineNo, tail) :: (zone.to(List) ++ entries), None)
+            recur(lineNo + 1, lines.tail, parseLink(lineNo, tail) :: (zone.to(List) ++ entries))
           
           case t"Zone" :: tail =>
             recur(lineNo + 1, lines.tail, entries ++ zone.to(List), Some(parseZone(lineNo, tail)))
           
           case t"Leap" :: tail =>
-            recur(lineNo + 1, lines.tail, parseLeap(lineNo, tail) :: (zone.to(List) ++ entries), None)
+            recur(lineNo + 1, lines.tail, parseLeap(lineNo, tail) :: (zone.to(List) ++ entries))
           
           case t"" :: Nil =>
             recur(lineNo + 1, lines.tail, entries, zone)
@@ -196,6 +205,6 @@ object Tzdb:
           case other =>
             recur(lineNo + 1, lines.tail, entries, zone)
 
-    recur(1, lines, Nil, None)
+    recur(1, lines)
 
 given realm: Realm = Realm(t"aviation")

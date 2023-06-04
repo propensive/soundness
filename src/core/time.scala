@@ -60,7 +60,10 @@ object Dates:
   object Date:
     def of(day: Int): Date = day
     
-    def apply(using cal: Calendar)(year: cal.Y, month: cal.M, day: cal.D): Date throws InvalidDateError =
+    def apply
+        (using cal: Calendar)
+        (year: cal.Y, month: cal.M, day: cal.D)
+        : Date throws InvalidDateError =
       cal.julianDay(year, month, day)
 
     //given (using CanThrow[InvalidDateError]): Canonical[Date] = Canonical(parse(_), _.show)
@@ -155,14 +158,16 @@ abstract class RomanCalendar() extends Calendar:
     date.julianDay - zerothDayOfYear(year).julianDay - month.offset(leapYear(year))
   
   def julianDay(year: Int, month: MonthName, day: Int): Date throws InvalidDateError =
-    if day < 1 || day > daysInMonth(month, year) then throw InvalidDateError(t"$year-${month.numerical}-$day")
+    if day < 1 || day > daysInMonth(month, year)
+    then throw InvalidDateError(t"$year-${month.numerical}-$day")
+    
     zerothDayOfYear(year) + month.offset(leapYear(year)) + day
 
 class YearMonth[Y <: Nat, M <: MonthName & Singleton](year: Y, month: M):
   import compiletime.ops.int.*
   
-  type CommonDays = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19 | 20 |
-      21 | 22 | 23 | 24 | 25 | 26 | 27 | 28
+  type CommonDays = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 |
+      19 | 20 | 21 | 22 | 23 | 24 | 25 | 26 | 27 | 28
 
   type Days <: Nat = M match
     case Jan.type | Mar.type | May.type | Jul.type | Aug.type | Oct.type | Dec.type =>
@@ -182,10 +187,10 @@ class YearMonth[Y <: Nat, M <: MonthName & Singleton](year: Y, month: M):
   @targetName("of")
   inline def -(day: Days): Date = unsafely(calendars.gregorian.julianDay(year, month, day))
 
-
 extension (year: Nat)
   @targetName("of")
-  inline def -(month: MonthName & Singleton): YearMonth[year.type, month.type] = new YearMonth(year, month)
+  inline def -(month: MonthName & Singleton): YearMonth[year.type, month.type] =
+    new YearMonth(year, month)
 
 object Timing:
   opaque type Instant = Long
@@ -299,8 +304,9 @@ object Period:
     case StandardTime.Minute => Period(0, 0, 0, 0, n, 0)
     case StandardTime.Second => Period(0, 0, 0, 0, 0, n)
   
-  def fixed(denomination: (StandardTime.Second.type | StandardTime.Minute.type | StandardTime.Hour.type),
-                n: Int): Period & FixedDuration =
+  def fixed
+      (denomination: (StandardTime.Second.type | StandardTime.Minute.type | StandardTime.Hour.type),
+          n: Int): Period & FixedDuration =
     denomination match
       case StandardTime.Hour   => new Period(0, 0, 0, n, 0, 0) with FixedDuration
       case StandardTime.Minute => new Period(0, 0, 0, 0, n, 0) with FixedDuration
@@ -316,18 +322,19 @@ trait TemporalPeriod:
   def minutes: Int
   def seconds: Int
 
-case class Period(override val years: Int, override val months: Int, override val days: Int, hours: Int,
-                      minutes: Int, seconds: Int)
+case class Period
+    (override val years: Int, override val months: Int, override val days: Int, hours: Int,
+        minutes: Int, seconds: Int)
 extends DiurnalPeriod, TemporalPeriod:
   @targetName("plus")
   def +(p: Period)(using timeSys: TimeSystem[StandardTime]): Period =
-    Period(years + p.years, months + p.months, days + p.days, hours + p.hours, minutes + p.minutes, seconds +
-        p.seconds)
+    Period(years + p.years, months + p.months, days + p.days, hours + p.hours, minutes + p.minutes,
+        seconds + p.seconds)
   
   @targetName("minus")
   def -(p: Period)(using timeSys: TimeSystem[StandardTime]): Period =
-    Period(years - p.years, months - p.months, days - p.days, hours - p.hours, minutes - p.minutes, seconds -
-        p.seconds)
+    Period(years - p.years, months - p.months, days - p.days, hours - p.hours, minutes - p.minutes,
+        seconds - p.seconds)
   
   def simplify(using timeSys: TimeSystem[StandardTime]): Period = timeSys.simplify(this)
 
@@ -371,7 +378,8 @@ enum MonthName:
   case Jan, Feb, Mar, Apr, May, Jun, Jul, Aug, Sep, Oct, Nov, Dec
   
   def unapply(value: Text): Option[MonthName] =
-    try Some(MonthName.valueOf(value.lower.capitalize.s)) catch case err: IllegalArgumentException => None
+    try Some(MonthName.valueOf(value.lower.capitalize.s))
+    catch case err: IllegalArgumentException => None
   
   def numerical: Int = ordinal + 1
 
@@ -420,13 +428,13 @@ given sexagesimalClock: Clock with
     val hour: Base24 = (time.hour + (time.minute + (time.second + n)/60)/60)%%24
     Time(hour, minute, second)
 
-type Base60 = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19 | 20 |
-                  21 | 22 | 23 | 24 | 25 | 26 | 27 | 28 | 29 | 30 | 31 | 32 | 33 | 34 | 35 | 36 | 37 | 38 | 39 |
-                  40 | 41 | 42 | 43 | 44 | 45 | 46 | 47 | 48 | 49 | 50 | 51 | 52 | 53 | 54 | 55 | 56 | 57 | 58 |
-                  59
+type Base60 = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 |
+    19 | 20 | 21 | 22 | 23 | 24 | 25 | 26 | 27 | 28 | 29 | 30 | 31 | 32 | 33 | 34 | 35 | 36 | 37 |
+    38 | 39 | 40 | 41 | 42 | 43 | 44 | 45 | 46 | 47 | 48 | 49 | 50 | 51 | 52 | 53 | 54 | 55 | 56 |
+    57 | 58 | 59
 
-type Base24 = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19 | 20 |
-                  21 | 22 | 23
+type Base24 = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 |
+    19 | 20 | 21 | 22 | 23
 
 given (using Unapply[Text, Int]): Unapply[Text, Base60] =
   case As[Int](value: Base60) => Some(value)
