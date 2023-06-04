@@ -87,10 +87,10 @@ object Tzdb:
         throw TzdbError(TzdbError.Issue.CouldNotParseTime(other.show), lineNo)
 
     def parseTime(lineNo: Int, str: Text) = str.cut(t":").to(List) match
-      case As[Int](h) :: r"${As[Int](m)}@([0-9]*)s" :: Nil => Time(h, m, 0, 's')
-      case As[Int](h) :: r"${As[Int](m)}@([0-9]*)u" :: Nil => Time(h, m, 0, 'u')
-      case As[Int](h) :: As[Int](m) :: Nil                 => Time(h, m, 0, Unset)
-      case As[Int](h) :: As[Int](m) :: As[Int](s) :: Nil   => Time(h, m, s, Unset)
+      case As[Int](h) :: r"${As[Int](m)}([0-9]*)s" :: Nil => Time(h, m, 0, 's')
+      case As[Int](h) :: r"${As[Int](m)}([0-9]*)u" :: Nil => Time(h, m, 0, 'u')
+      case As[Int](h) :: As[Int](m) :: Nil                => Time(h, m, 0, Unset)
+      case As[Int](h) :: As[Int](m) :: As[Int](s) :: Nil  => Time(h, m, s, Unset)
       
       case other =>
         throw TzdbError(TzdbError.Issue.CouldNotParseTime(other.show), lineNo)
@@ -173,7 +173,7 @@ object Tzdb:
         entries ++ zone
       else
         val line: Text = lines.head.upto(_ == '#')
-        line.cut(r"\s+").to(List) match
+        line.cut(unsafely(r"\s+")).to(List) match
           case t"Rule" :: tail =>
             recur(lineNo + 1, lines.tail, parseRule(lineNo, tail) :: (zone.to(List) ++ entries), None)
           
