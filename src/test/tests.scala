@@ -17,13 +17,9 @@
 package iridescence
 
 import probably.*
-import eucalyptus.*
 import rudiments.*
 import gossamer.*
 
-import unsafeExceptions.canThrowAny
-
-import logging.stdout
 given ColorProfile = colorProfiles.daylight
 
 object Tests extends Suite(t"Iridescence tests"):
