@@ -24,6 +24,42 @@ import java.nio as jn, jn.charset as jnc
 
 import language.experimental.captureChecking
 
+
+object JavaDecoding:
+  def decode(stream: LazyList[Bytes], outSize: Int = 4096, inSize: Int = 65536): LazyList[Text] =
+    val charset = jnc.Charset.forName("UTF-8").nn
+    val decoder = charset.newDecoder().nn
+    val out = jn.CharBuffer.allocate(outSize).nn
+    val in = jn.ByteBuffer.allocate(inSize).nn
+
+    def recur(todo: LazyList[Bytes], offset: Int): LazyList[Text] = todo match
+      case head #:: tail =>
+        val maxSpace = in.remaining
+        val enoughSpace = in.remaining < head.length - offset
+
+        in.put(head.mutable(using Unsafe), offset, in.remaining.min(head.length - offset)).nn.flip()
+        
+        val status = decoder.decode(in, out, false).nn
+        out.flip()
+        val text = Text(out.toString)
+        in.compact()
+        if status.isOverflow then out.clear()
+        
+        if enoughSpace then text #:: recur(todo, offset + maxSpace) else text #:: recur(tail, 0)
+        
+      case _ =>
+        in.flip()
+        val status = decoder.decode(in, out, true).nn
+        out.flip()
+        val text = Text(out.toString)
+        if status.isOverflow then
+          out.clear()
+          in.compact()
+          text #:: recur(todo, 0)
+        else LazyList(text)
+    
+    recur(stream, 0)
+
 object Encoding:
   import scala.jdk.CollectionConverters.SetHasAsScala
   final val empty: Array[Byte] = Array.empty[Byte]
