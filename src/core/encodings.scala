@@ -29,36 +29,26 @@ object JavaDecoding:
   def decode(stream: LazyList[Bytes], outSize: Int = 4096, inSize: Int = 65536): LazyList[Text] =
     val charset = jnc.Charset.forName("UTF-8").nn
     val decoder = charset.newDecoder().nn
-    val out = jn.CharBuffer.allocate(outSize).nn
-    val in = jn.ByteBuffer.allocate(inSize).nn
+    val out = jn.CharBuffer.allocate(outSize.max(16)).nn
+    val in = jn.ByteBuffer.allocate(inSize.max(16)).nn
 
-    def recur(todo: LazyList[Bytes], offset: Int): LazyList[Text] = todo match
-      case head #:: tail =>
-        val maxSpace = in.remaining
-        val enoughSpace = in.remaining < head.length - offset
+    def recur(todo: LazyList[Array[Byte]], offset: Int = 0): LazyList[Text] =
+      val count = in.remaining
 
-        in.put(head.mutable(using Unsafe), offset, in.remaining.min(head.length - offset)).nn.flip()
-        
-        val status = decoder.decode(in, out, false).nn
-        out.flip()
-        val text = Text(out.toString)
-        in.compact()
-        if status.isOverflow then out.clear()
-        
-        if enoughSpace then text #:: recur(todo, offset + maxSpace) else text #:: recur(tail, 0)
-        
-      case _ =>
-        in.flip()
-        val status = decoder.decode(in, out, true).nn
-        out.flip()
-        val text = Text(out.toString)
-        if status.isOverflow then
-          out.clear()
-          in.compact()
-          text #:: recur(todo, 0)
-        else LazyList(text)
+      if !todo.isEmpty then in.put(todo.head, offset, in.remaining.min(todo.head.length - offset))
+      val status = decoder.decode(in.flip.nn, out, false).nn
+      val text = Text(out.flip().nn.toString)
+      in.compact()
+      out.clear()
+      
+      def continue =
+        if todo.isEmpty && !status.isOverflow then LazyList()
+        else if !todo.isEmpty && count >= todo.head.length - offset then recur(todo.tail)
+        else recur(todo, offset + count)
+      
+      if text.s.isEmpty then continue else text #:: continue
     
-    recur(stream, 0)
+    recur(stream.map(_.mutable(using Unsafe)))
 
 object Encoding:
   import scala.jdk.CollectionConverters.SetHasAsScala
