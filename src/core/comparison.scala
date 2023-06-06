@@ -34,9 +34,6 @@ enum Accordance:
   case Discord(left: Text, right: Text)
   case Collation(comparison: IArray[(Text, Accordance)], left: Text, right: Text)
 
-extension [T](value: T)
-  def contrastWith(other: T)(using contrast: Contrast[T]): Accordance = contrast(value, other)
-
 object Accordance:
   given (using calc: TextWidthCalculator): Display[Accordance] =
     case Accordance.Collation(cmp, l, r) =>
@@ -44,8 +41,8 @@ object Accordance:
       import treeStyles.default
       
       def children(comp: (Text, Accordance)): List[(Text, Accordance)] = comp(1) match
-        case Accord(value)                         => Nil
-        case Discord(left, right)              => Nil
+        case Accord(value)                      => Nil
+        case Discord(left, right)               => Nil
         case Collation(comparison, left, right) => comparison.to(List)
       
       case class Row(treeLine: Text, left: Output, right: Output)
@@ -86,6 +83,8 @@ trait Assimilable[-ValueType]:
 trait Contrast[-ValueType]:
   def apply(a: ValueType, b: ValueType): Accordance
 
+  extension (value: ValueType) def contrastWith(other: ValueType): Accordance = apply(value, other)
+
 trait FallbackContrast:
   given [ValueType]: Contrast[ValueType] = new Contrast[ValueType]:
     def apply(a: ValueType, b: ValueType): Accordance =
@@ -110,20 +109,20 @@ object Contrast extends FallbackContrast:
     else
       val comparison = IArray.from:
         diff(left, right).rdiff(summon[Assimilable[ValueType]].similar).changes.map:
-          case Change.Keep(leftIndex, rightIndex, value) =>
+          case Par(leftIndex, rightIndex, value) =>
             val label =
               if leftIndex == rightIndex then leftIndex.show
               else t"${leftIndex.show.superscript}⫽${rightIndex.show.subscript}"
             
             label -> Accordance.Accord(value.debug)
           
-          case Change.Ins(rightIndex, value) =>
+          case Ins(rightIndex, value) =>
             t" ⧸${rightIndex.show.subscript}" -> Accordance.Discord(t"—", value.debug)
           
-          case Change.Del(leftIndex, value) =>
+          case Del(leftIndex, value) =>
             t"${leftIndex.show.superscript}⧸" -> Accordance.Discord(value.debug, t"—")
           
-          case Change.Sub(leftIndex, rightIndex, leftValue, rightValue) =>
+          case Sub(leftIndex, rightIndex, leftValue, rightValue) =>
             val label = t"${leftIndex.show.superscript}⫽${rightIndex.show.subscript}"
             
             label -> leftValue.contrastWith(rightValue)
