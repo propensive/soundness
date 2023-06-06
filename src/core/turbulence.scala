@@ -227,9 +227,9 @@ object Stdout
 
 package basicIo:
   given jvm(using streamCut: CanThrow[StreamCutError]): Stdio = new Stdio:
-    val enc = Encoding.system.get
-    def putOutText(text: Text): Unit = putOutBytes(enc.getBytes(text))
-    def putErrText(text: Text): Unit = putErrBytes(enc.getBytes(text))
+    val encoder = CharEncoder.system
+    def putOutText(text: Text): Unit = putOutBytes(encoder.encode(text))
+    def putErrText(text: Text): Unit = putErrBytes(encoder.encode(text))
     
     def putOutBytes(bytes: Bytes): Unit =
       if System.out == null then throw StreamCutError(0.b)
@@ -310,9 +310,9 @@ object Writable:
     (outputStream, bytes) => outputStream.write(bytes.mutable(using Unsafe))
   
   given outputStreamText
-    (using streamCut: CanThrow[StreamCutError], enc: /*{*}*/ Encoding)
-    : (/*{streamCut, enc}*/ SimpleWritable[ji.OutputStream, Text]) =
-    (outputStream, text) => outputStream.write(text.s.getBytes(enc.name.s).nn)
+    (using streamCut: CanThrow[StreamCutError], encoder: /*{*}*/ CharEncoder)
+    : (/*{streamCut, encoder}*/ SimpleWritable[ji.OutputStream, Text]) =
+    (outputStream, text) => outputStream.write(encoder.encode(text).mutable(using Unsafe))
 
 trait SimpleWritable[-TargetType, -ChunkType] extends Writable[TargetType, ChunkType]:
   def write(target: TargetType, stream: LazyList[ChunkType]): Unit = stream match
@@ -347,20 +347,20 @@ object Appendable:
   given stdoutBytes(using io: Stdio): (/*{io}*/ SimpleAppendable[Stdout.type, Bytes]) =
     (stderr, bytes) => io.putOutBytes(bytes)
   
-  given stdoutText(using io: Stdio, enc: Encoding): (/*{io}*/ SimpleAppendable[Stdout.type, Text]) =
+  given stdoutText(using io: Stdio, enc: CharEncoder): (/*{io}*/ SimpleAppendable[Stdout.type, Text]) =
     (stderr, text) => io.putOutText(text)
 
   given stderrBytes(using io: Stdio): (/*{io}*/ SimpleAppendable[Stderr.type, Bytes]) =
     (stderr, bytes) => io.putErrBytes(bytes)
   
-  given stderrText(using io: Stdio, enc: Encoding): (/*{io}*/ SimpleAppendable[Stderr.type, Text]) =
+  given stderrText(using io: Stdio, enc: CharEncoder): (/*{io}*/ SimpleAppendable[Stderr.type, Text]) =
     (stderr, text) => io.putErrText(text)
 
   given outputStreamBytes(using streamCut: CanThrow[StreamCutError])
                          : (/*{streamCut}*/ SimpleAppendable[ji.OutputStream, Bytes]) =
     (outputStream, bytes) => outputStream.write(bytes.mutable(using Unsafe))
   
-  given outputStreamText(using streamCut: CanThrow[StreamCutError], enc: /*{*}*/ Encoding)
+  given outputStreamText(using streamCut: CanThrow[StreamCutError], enc: /*{*}*/ CharEncoder)
                         : (/*{streamCut, enc}*/ SimpleWritable[ji.OutputStream, Text]) =
     (outputStream, text) => outputStream.write(text.s.getBytes(enc.name.s).nn)
 
@@ -384,14 +384,14 @@ trait SimpleAppendable[-TargetType, -ChunkType] extends Appendable[TargetType, C
 object Readable:
   given bytes: Readable[Bytes, Bytes] = LazyList(_)
   given text: (/*{}*/ Readable[Text, Text]) = LazyList(_)
-  given textToBytes(using enc: /*{*}*/ Encoding): (/*{enc}*/ Readable[Text, Bytes]) =
+  given textToBytes(using enc: /*{*}*/ CharEncoder): (/*{enc}*/ Readable[Text, Bytes]) =
     text => LazyList(text.s.getBytes(enc.name.s).nn.immutable(using Unsafe))
 
   given bytesToText[SourceType]
-                   (using readable: /*{*}*/ Readable[SourceType, Bytes], enc: /*{*}*/ Encoding,
+                   (using readable: /*{*}*/ Readable[SourceType, Bytes], decoder: /*{*}*/ CharDecoder,
                         handler: /*{*}*/ BadEncodingHandler)
-                   : (/*{readable, enc, handler}*/ Readable[SourceType, Text]) =
-    value => enc.convertStream(readable.read(value))
+                   : (/*{readable, decoder, handler}*/ Readable[SourceType, Text]) =
+    value => decoder.decode(readable.read(value))
   
   given lazyList[ChunkType]: Readable[LazyList[ChunkType], ChunkType] = identity(_)
 
@@ -447,7 +447,7 @@ object Aggregable:
     
     recur(ji.ByteArrayOutputStream(), source)
   
-  given bytesText(using enc: Encoding): Aggregable[Bytes, Text] = bytesBytes.map(enc.readBytes)
+  given bytesText(using decoder: CharDecoder): Aggregable[Bytes, Text] = bytesBytes.map(decoder.decode)
 
   given functor[ChunkType]: Functor[[ValueType] =>> Aggregable[ChunkType, ValueType]] = new Functor:
     def map
