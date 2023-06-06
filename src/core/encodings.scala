@@ -20,17 +20,47 @@ import rudiments.*
 import digression.*
 
 import scala.collection.mutable as scm
+import scala.jdk.CollectionConverters.SetHasAsScala
+
 import java.nio as jn, jn.charset as jnc
 
 import language.experimental.captureChecking
 
 
-object JavaDecoding:
-  def decode(stream: LazyList[Bytes], outSize: Int = 4096, inSize: Int = 65536): LazyList[Text] =
-    val charset = jnc.Charset.forName("UTF-8").nn
+object CharDecoder:
+  val system: CharDecoder = unapply(Text(jnc.Charset.defaultCharset.nn.displayName.nn)).get
+
+  def unapply(name: Text): Option[CharDecoder] =
+    if !CharEncoder.all.contains(Text(name.s.toLowerCase.nn)) then None
+    else Some(CharDecoder(Text(jnc.Charset.forName(name.s).nn.displayName.nn)))
+
+object CharEncoder:
+  private[hieroglyph] val all: Set[Text] =
+    jnc.Charset.availableCharsets.nn.asScala.to(Map).values.to(Set).flatMap: cs =>
+      cs.aliases.nn.asScala.to(Set) + cs.displayName.nn
+    .map(_.toLowerCase.nn).map(Text(_))
+  
+  val system: CharEncoder = unapply(Text(jnc.Charset.defaultCharset.nn.displayName.nn)).get
+  
+  def unapply(name: Text): Option[CharEncoder] =
+    if !all.contains(Text(name.s.toLowerCase.nn)) then None
+    else Some(CharEncoder(Text(jnc.Charset.forName(name.s).nn.displayName.nn)))
+
+class CharEncoder(val name: Text):
+  def encode(text: Text): Bytes = text.s.getBytes(name.s).nn.immutable(using Unsafe)
+  def encode(stream: LazyList[Text]): LazyList[Bytes] = stream.map(encode)
+
+class CharDecoder(val name: Text):
+  def decode(bytes: Bytes): Text =
+    val buf: StringBuilder = StringBuilder()
+    decode(LazyList(bytes)).foreach { text => buf.append(text.s) }
+    Text(buf.toString)
+  
+  def decode(stream: LazyList[Bytes]): LazyList[Text] =
+    val charset = jnc.Charset.forName(name.s).nn
     val decoder = charset.newDecoder().nn
-    val out = jn.CharBuffer.allocate(outSize.max(16)).nn
-    val in = jn.ByteBuffer.allocate(inSize.max(16)).nn
+    val out = jn.CharBuffer.allocate(4096).nn
+    val in = jn.ByteBuffer.allocate(4096).nn
 
     def recur(todo: LazyList[Array[Byte]], offset: Int = 0): LazyList[Text] =
       val count = in.remaining
@@ -50,112 +80,15 @@ object JavaDecoding:
     
     recur(stream.map(_.mutable(using Unsafe)))
 
-object Encoding:
-  import scala.jdk.CollectionConverters.SetHasAsScala
-  final val empty: Array[Byte] = Array.empty[Byte]
+package charDecoders:
+  given utf8: CharDecoder = CharDecoder(Text("UTF-8"))
+  given ascii: CharDecoder = CharDecoder(Text("ASCII"))
+  given iso88591: CharDecoder = CharDecoder(Text("ISO-8859-1"))
 
-  val all: Set[Text] =
-    jnc.Charset.availableCharsets.nn.asScala.to(Map).values.to(Set).flatMap: cs =>
-      cs.aliases.nn.asScala.to(Set) + cs.displayName.nn
-    .map(_.toLowerCase.nn).map(Text(_))
-  
-  val system: Option[Encoding] = unapply(Text(jnc.Charset.defaultCharset.nn.displayName.nn))
-  
-  def unapply(name: Text): Option[Encoding] = if !all.contains(Text(name.s.toLowerCase.nn)) then None else Some:
-    val charset = jnc.Charset.forName(name.s).nn.displayName.nn
-    charset match
-      case "UTF-8"      => characterEncodings.utf8
-      case "US-ASCII"   => characterEncodings.ascii
-      case "ISO-8859-1" => characterEncodings.iso88591
-      case other        => JavaEncoding(Text(other))
-
-trait Encoding:
-  def name: Text
-  def trimLength(buf: Bytes): Int = 0
-  def runLength(byte: Byte): Int = 1
-  def convertStream(stream: LazyList[Bytes]^)(using handler: BadEncodingHandler^)
-                   : LazyList[Text]^{stream, handler}
-  
-  def readBytes(bytes: Bytes): Text = Text(String(bytes.mutable(using Unsafe), name.s))
-  def getBytes(text: Text): Bytes = text.s.getBytes(name.s).nn.immutable(using Unsafe)
-
-trait VariableLengthEncoding extends Encoding:
-  def convertStream(stream: LazyList[Bytes]^)(using handler: BadEncodingHandler^)
-                   : LazyList[Text]^{stream, handler} =
-    def read(stream: LazyList[Bytes], carried: Array[Byte] = Encoding.empty, skip: Int = 0): LazyList[Text] =
-      stream match
-        case head #:: tail =>
-          val array = head.mutable(using Unsafe)
-          if carried.length > 0 then
-            val need = runLength(carried(0))
-            val got = array.length + carried.length
-            if got < need then read(tail, carried ++ array)
-            else if got == need then Text(String(carried ++ array, name.s)) #:: read(tail, Encoding.empty)
-            else
-              Text(String(carried ++ array.take(need - carried.length), name.s)) #::
-                  read(stream, Encoding.empty, need - carried.length)
-          else
-            val carry = trimLength(array.immutable(using Unsafe))
-            Text(String(array, skip, array.length - carry - skip, name.s)) #::
-                read(tail, array.takeRight(carry))
-        
-        case _ =>
-          LazyList()
-      
-    read(stream)
-  
-package characterEncodings:
-  given utf8: Encoding = new VariableLengthEncoding:
-    def name: Text = Text("UTF-8")
-    
-    override def trimLength(arr: Bytes): Int =
-      val len = arr.length
-      def last = arr(len - 1)
-      def last2 = arr(len - 2)
-      def last3 = arr(len - 3)
-      
-      if len > 0 && ((last & -32) == -64 || (last & -16) == -32 || (last & -8) == -16) then 1
-      else if len > 1 && ((last2 & -16) == -32 || (last2 & -8) == -16) then 2
-      else if len > 2 && ((last3 & -8) == -16) then 3
-      else 0
-    
-    override def runLength(byte: Byte): Int =
-      if (byte & -32) == -64 then 2 else if (byte & -16) == -32 then 3 else if (byte & -8) == -16 then 4 else 1
-    
-  given ascii: Encoding with
-    def name: Text = Text("ASCII")
-    
-    def convertStream(stream: LazyList[Bytes]^)(using handler: BadEncodingHandler^)
-                     : LazyList[Text]^{stream, handler} =
-      val builder: StringBuilder = StringBuilder()
-      def recur(stream: LazyList[Bytes]^, count: Int): LazyList[Text]^{stream} = stream match
-        case head #:: tail =>
-          head.indices.foreach: index =>
-            val char: Int = head(index)
-            if char > 127
-            then handler.handle(count + index, IArray(head(index)), '?').mm(builder.append(_))
-            else builder.append(char.toChar)
-          
-          Text(builder.toString).tap(builder.clear().waive) #:: recur(tail, count + head.length)
-
-        case _=>
-          LazyList()
-          
-      recur(stream, 0)
-          
-  given iso88591: Encoding = JavaEncoding(Text("ISO-8859-1"))
-
-case class JavaEncoding(name: Text) extends Encoding:
-  private val javaCharset: jnc.Charset = jnc.Charset.forName(name.s).nn
-  def convertStream(stream: LazyList[Bytes]^)(using handler: BadEncodingHandler^)
-                   : LazyList[Text]^{stream, handler} =
-    def recur(stream: LazyList[Bytes]^, count: Int): LazyList[Text]^{stream} = stream match
-      case head #:: tail =>
-        val next = Text(javaCharset.decode(jn.ByteBuffer.wrap(head.mutable(using Unsafe))).toString)
-        next #:: recur(tail, count + head.length)
-      case _ => LazyList()
-        
-    recur(stream, 0)
+package charEncoders:
+  given utf8: CharEncoder = CharEncoder(Text("UTF-8"))
+  given ascii: CharEncoder = CharEncoder(Text("ASCII"))
+  given iso88591: CharEncoder = CharEncoder(Text("ISO-8859-1"))
 
 trait BadEncodingHandler:
   def handle(pos: Int, bytes: Bytes, suggestion: Maybe[Char]): Maybe[Char]
