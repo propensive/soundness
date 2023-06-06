@@ -5,6 +5,7 @@ repo propensive/dissonance
 repo propensive/dendrology
 repo propensive/wisteria
 repo propensive/escritoire
+repo propensive/escapade
 
 target chiaroscuro/test
 
@@ -12,7 +13,7 @@ project chiaroscuro
   module core
     compiler  scala
     sources   src/core
-    include   dissonance/core escritoire/core dendrology/core wisteria/core
+    include   gossamer/core dissonance/core escritoire/core dendrology/core wisteria/core escapade/core
 
   module test
     compiler  scala
