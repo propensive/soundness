@@ -99,37 +99,37 @@ object Tests extends Suite(Text("Quantify Tests")):
         val x = 2*Metre
         val y = 3*Foot
         x*y
-      .assert(_ == 1.828799941478402*Metre*Metre)
+      .assert(_ == 1.8288000000000002*Metre*Metre)
       
       test(Text("Conversions are applied automatically to LHS in multiplication")):
         val x = 2*Metre
         val y = 3*Foot
         y*x
-      .assert(_ == 1.828799941478402*Metre*Metre)
+      .assert(_ == 1.8288000000000002*Metre*Metre)
       
       test(Text("Conversions are applied automatically in division")):
         val x = 2*Metre*Metre
         val y = 3*Foot
         x/y
-      .assert(_ == 2.1872266666666667*Metre)
+      .assert(_ == 2.187226596675415*Metre)
       
       test(Text("Conversions are applied automatically to LHS in division")):
         val x = 2*Metre
         val y = 3*Foot*Foot
         y/x
-      .assert(_ == 0.1393545510813086*Metre)
+      .assert(_ == 0.13935456000000002*Metre)
     
       test(Text("Mixed units of the same dimension can be added")):
         2*Metre + 2*Foot
-      .assert(_ == 2.6095999804928005*Metre)
+      .assert(_ == 2.6096*Metre)
       
       test(Text("Mixed units of the same dimension can be subtracted")):
         2*Metre - 2*Foot
-      .assert(_ == 1.3904000195071995*Metre)
+      .assert(_ == 1.3904*Metre)
       
       test(Text("Mixed units of the same type can be added (reverse order)")):
         2*Foot + 2*Metre
-      .assert(_ == 2.6095999804928005*Metre)
+      .assert(_ == 2.6096*Metre)
     
   
     suite(t"Metric prefixes"):
@@ -168,15 +168,15 @@ object Tests extends Suite(Text("Quantify Tests")):
     suite(t"Explicit conversion tests"):
       test(Text("Convert feet to metres")):
         (3.0*Foot).in[Metres]
-      .assert(_ == 0.914399970739201*Metre)
+      .assert(_ == 0.9144000000000001*Metre)
       
       test(Text("Convert metres to feet")):
         (3.0*Metre).in[Feet]
-      .assert(_ == 9.84252*Foot)
+      .assert(_ == 9.842519685039369*Foot)
       
       test(Text("Convert m² to ft²")):
         (Metre*Metre).in[Feet]
-      .assert(_ == 10.7639111056*Foot*Foot)
+      .assert(_ == 10.763910416709722*Foot*Foot)
       
       test(Text("Conversion to seconds does nothing")):
         (3.0*Metre).in[Seconds]
@@ -272,3 +272,31 @@ object Tests extends Suite(Text("Quantify Tests")):
       test(t"quantify a length"):
         Pts(73).quantify > Inch
       .assert(_ == true)
+    
+    suite(t"Tally tests"):
+      test(t"Access seconds in an HMS time"):
+        val hmsTime = Tally[TimeSeconds](111753)
+        hmsTime[Seconds]
+      .assert(_ == 9)
+      
+      test(t"Access minutes in an HMS time"):
+        val hmsTime = Tally[TimeSeconds](111753)
+        hmsTime[Minutes]
+      .assert(_ == 18)
+      
+      test(t"Access hours in an HMS time"):
+        val hmsTime = Tally[TimeSeconds](111753)
+        hmsTime[Hours]
+      .assert(_ == 27)
+      
+      test(t"Access inches in an imperial distance"):
+        val imperialDistance = Tally[(Miles[1], Yards[1], Feet[1], Inches[1])](1234566)
+        imperialDistance[Feet]
+      .assert(_ == 1)
+      
+      test(t"Units of different dimensions cannot be mixed"):
+        captureCompileErrors:
+          val badTally = Tally[(Miles[1], Yards[1], Seconds[1], Inches[1])](1234566)
+          badTally[Feet]
+      .assert(_.length == 1)
+        

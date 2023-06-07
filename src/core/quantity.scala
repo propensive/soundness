@@ -37,12 +37,9 @@ object QuantifyMacros:
           case AndType(left, right) =>
             recur(left) ++ recur(right)
           
-          case AppliedType(unit, List(constantType)) => (constantType.asMatchable: @unchecked) match
-            case ConstantType(constant) => (constant: @unchecked) match
-              case IntConstant(power) => (unit.asMatchable: @unchecked) match
-                case unit@TypeRef(_, _) =>
-                  val unitTypeRef = UnitRef(unit.asType, unit.show)
-                  Map(unitTypeRef.dimensionRef -> UnitPower(unitTypeRef, power))
+          case AppliedType(_, List(_)) =>
+            val unitPower = readUnitPower(repr)
+            Map(unitPower.ref.dimensionRef -> unitPower)
           
           case other =>
             Map()
@@ -63,6 +60,15 @@ object QuantifyMacros:
             case '{$name: dimType} => (Type.of[dimType]: @unchecked) match
               case '[DimensionName[?, name]] => (TypeRepr.of[name].asMatchable: @unchecked) match
                 case ConstantType(StringConstant(name)) => name
+    
+  private def readUnitPower(using quotes: Quotes)(typeRepr: quotes.reflect.TypeRepr): UnitPower =
+    import quotes.reflect.*
+    (typeRepr.asMatchable: @unchecked) match
+      case AppliedType(unit, List(constantType)) => (constantType.asMatchable: @unchecked) match
+        case ConstantType(constant) => (constant: @unchecked) match
+          case IntConstant(power) => (unit.asMatchable: @unchecked) match
+            case unit@TypeRef(_, _) =>
+              UnitPower(UnitRef(unit.asType, unit.show), power)
 
   private case class UnitsMap(map: Map[DimensionRef, UnitPower]):
     def repr(using Quotes): Option[quotes.reflect.TypeRepr] = construct(map.values.to(List))
@@ -109,7 +115,6 @@ object QuantifyMacros:
     
     def unit(dimension: DimensionRef): Option[UnitRef] = map.get(dimension).map(_.ref)
     def unitPower(dimension: DimensionRef): Int = map.get(dimension).map(_.power).getOrElse(0)
-  
 
   private class UnitRef(val unitType: Type[?], val name: String):
     def ref(using Quotes): quotes.reflect.TypeRepr =
@@ -177,6 +182,8 @@ object QuantifyMacros:
     override def hashCode: Int = name.hashCode
     override def toString(): String = name
 
+
+
   private def ratio
       (using Quotes)
       (from: UnitRef, to: UnitRef, power: Int, retry: Boolean = true)
@@ -205,8 +212,7 @@ object QuantifyMacros:
         case Some('{$ratio: ratioType}) => (Type.of[ratioType]: @unchecked) match
           case '[Ratio[?, double]] => (TypeRepr.of[double].asMatchable: @unchecked) match
             case ConstantType(constant) => (constant: @unchecked) match
-              case DoubleConstant(double) =>
-                if power == 1 then Expr(double) else '{math.pow(${Expr(double)}, ${Expr(power)})}
+              case DoubleConstant(double) => Expr(math.pow(double, power))
 
   private def normalize
       (using Quotes)
@@ -342,3 +348,58 @@ object QuantifyMacros:
       case Some(name) => '{Text(${Expr(name)})}
       case None       => fail("there is no descriptive name for this physical quantity")
     
+  def get
+      [UnitsType <: Tuple: Type, UnitType <: Units[1, ? <: Dimension]: Type]
+      (value: Expr[Tally[UnitsType]])
+      (using Quotes)
+      : Expr[Int] =
+    import quotes.reflect.*
+  
+    def decompose[TupleElemType: Type](dimension: Maybe[DimensionRef] = Unset): List[UnitPower] =
+      Type.of[TupleElemType] match
+        case '[head *: tail] =>
+          val unitPower = readUnitPower(TypeRepr.of[head])
+          
+          dimension.mm: current =>
+            if unitPower.ref.dimensionRef != current
+            then fail(txt"""
+              the Tally type incorrectly mixes units of ${unitPower.ref.dimensionRef.name} and
+              ${current.name}
+            """.s)
+          
+          unitPower :: decompose[tail](unitPower.ref.dimensionRef)
+        
+        case _ =>
+          Nil
+
+    val cascade: List[UnitPower] = decompose[UnitsType](Unset)
+    val principalUnit = cascade.head.ref.dimensionRef.principal
+    
+    def recur(unitPowers: List[UnitPower], ratios: List[Double]): List[Double] =
+      unitPowers match
+        case Nil =>
+          ratios
+        
+        case head :: tail =>
+          recur(tail, ratio(head.ref, principalUnit, head.power).valueOrAbort :: ratios)
+    
+    val ratios = recur(cascade, Nil)
+
+    def relativeRatios(last: Double, ratios: List[Double]): List[Double] = ratios match
+      case head :: tail => head/last :: relativeRatios(head, tail)
+      case _            => Nil
+
+    val ratios2 = relativeRatios(1.0, ratios.tail.map(_/ratios.head)).reverse
+
+    def width(value: Double, n: Int = 1): Int = if (1 << n) >= value then n else width(value, n + 1)
+
+    val widths = ratios2.map(width(_))
+    
+    def ones(width: Int): Long = if width >= widths.length then -1L else (-1L) >>> (64 - widths(width))
+    def shift(n: Int): Int = widths.takeRight(n).sum
+
+    val lookupUnit = readUnitPower(TypeRepr.of[UnitType])
+    val elem: Int = cascade.reverse.indexOf(lookupUnit)
+
+    '{(($value.asInstanceOf[Long] >>> ${Expr(shift(elem))}) & ${Expr(ones(elem))}).toInt}
+  

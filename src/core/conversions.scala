@@ -28,19 +28,19 @@ erased trait Ratio[UnitsType <: Measure, RatioType <: Double & Singleton]
 
 trait Inches[Power <: Nat] extends Units[Power, Length]
 object Inches:
-  erased given inchesPerMetre: Ratio[Inches[1] & Metres[-1], 39.3701] = erasedValue
+  erased given inchesPerMetre: Ratio[Inches[-1] & Metres[1], 0.0254] = erasedValue
 
 trait Feet[Power <: Nat] extends Units[Power, Length]
 object Feet:
-  erased given feetPerMetre: Ratio[Feet[1] & Metres[-1], 3.28084] = erasedValue
+  erased given feetPerMetre: Ratio[Feet[-1] & Metres[1], 0.3048] = erasedValue
 
 trait Yards[Power <: Nat] extends Units[Power, Length]
 object Yards:
-  erased given yardsPerMetre: Ratio[Yards[1] & Metres[-1], 1.09361] = erasedValue
+  erased given yardsPerMetre: Ratio[Yards[-1] & Metres[1], 0.9144] = erasedValue
 
 trait Miles[Power <: Nat] extends Units[Power, Length]
 object Miles:
-  erased given milesPerMetre: Ratio[Miles[1] & Metres[-1], 0.000521371] = erasedValue
+  erased given milesPerMetre: Ratio[Miles[-1] & Metres[1], 1609.344] = erasedValue
 
 trait Lightyears[Power <: Nat] extends Units[Power, Length]
 object Lightyears:
