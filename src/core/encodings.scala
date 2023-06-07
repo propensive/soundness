@@ -50,10 +50,13 @@ object Encoding:
   def apply(name: Text, canEncode: Boolean): Encoding { type CanEncode = canEncode.type } =
     new Encoding(name) { type CanEncode = canEncode.type }
 
-class Encoding(val name: Text):
+class Encoding(initName: Text):
+  def name: Text = Text(charset.displayName.nn)
   type CanEncode <: Boolean
   def decoder(using BadEncodingHandler): CharDecoder = CharDecoder(this)
-  lazy val charset: jnc.Charset = jnc.Charset.forName(name.s).nn
+  lazy val charset: jnc.Charset = jnc.Charset.forName(initName.s).nn
+
+  override def toString: String = s"enc\"${charset.displayName}\""
 
 extension (encoding: Encoding { type CanEncode = true }) def encoder: CharEncoder =
   CharEncoder(encoding)
@@ -173,12 +176,19 @@ extension (inline context: StringContext)
 
 object HieroglyphMacros:
   def encoding(contextExpr: Expr[StringContext])(using Quotes): Expr[Encoding] =
+    import quotes.reflect.*
+
     val context: StringContext = contextExpr.valueOrAbort
     Encoding.unapply(Text(context.parts.head)) match
       case None =>
         fail(s"the encoding ${context.parts.head} was not available")
       
       case Some(encoding) =>
+        if !encoding.charset.isRegistered
+        then report.warning(
+          s"hieroglyph: the encoding ${encoding.charset.displayName} is not an IANA-registered "+
+              "encoding, and may not be universally available")
+        
         val name = context.parts.head.toLowerCase.nn
         if encoding.charset.canEncode then '{Encoding.codecs(Text(${Expr(name)}))}
         else '{Encoding.decodeOnly(Text(${Expr(name)}))}
