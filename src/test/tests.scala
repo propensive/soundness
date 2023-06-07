@@ -25,15 +25,52 @@ import textWidthCalculation.eastAsianScripts
 
 object Tests extends Suite(t"Hieroglyph tests"):
   def run(): Unit =
-    test(t"Check narrow character width"):
-      'a'.displayWidth
-    .assert(_ == 1)
+    val japanese = t"平ぱ記動テ使村方島おゃぎむ万離ワ学つス携"
+    val japaneseBytes = japanese.s.getBytes("UTF-8").nn.immutable(using Unsafe)
+    
+    suite(t"Character widths"):
+      test(t"Check narrow character width"):
+        'a'.displayWidth
+      .assert(_ == 1)
 
-    test(t"Check Japanese character width"):
-      '身'.displayWidth
-    .assert(_ == 2)
+      test(t"Check Japanese character width"):
+        '身'.displayWidth
+      .assert(_ == 2)
 
-    test(t"Check displayWidth of string of Japanese text: \"平ぱ記...つス携\""):
-      import gossamer.displayWidth
-      t"平ぱ記動テ使村方島おゃぎむ万離ワ学つス携".displayWidth
-    .assert(_ == 40)
+      test(t"Check displayWidth of string of Japanese text: \"平ぱ記...つス携\""):
+        import gossamer.displayWidth
+        japanese.displayWidth
+      .assert(_ == 40)
+
+    suite(t"Roundtrip decoding"):
+
+      test(t"Decode Japanese from UTF-8"):
+        import badEncodingHandlers.skip
+        charDecoders.utf8.decode(japaneseBytes)
+      .assert(_ == japanese)
+    
+      for chunk <- 1 to 25 do
+        test(t"Decode Japanese text in chunks of size $chunk"):
+          import badEncodingHandlers.skip
+          charDecoders.utf8.decode(japaneseBytes.grouped(chunk).to(LazyList)).join
+        .assert(_ == japanese)
+      
+      val badUtf8 = Bytes(45, -62, 49, 48)
+
+      test(t"Decode invalid UTF-8 sequence, skipping errors"):
+        import badEncodingHandlers.skip
+        charDecoders.utf8.decode(badUtf8)
+      .assert(_ == t"-10")
+      
+      test(t"Decode invalid UTF-8 sequence, substituting for a question mark"):
+        import badEncodingHandlers.substitute
+        charDecoders.utf8.decode(badUtf8)
+      .assert(_ == t"-?10")
+      
+      test(t"Decode invalid UTF-8 sequence, throwing exception"):
+        import unsafeExceptions.canThrowAny
+        import badEncodingHandlers.strict
+        capture[UndecodableCharError, Text](charDecoders.utf8.decode(badUtf8))
+      .assert(_ == UndecodableCharError(1))
+
+
