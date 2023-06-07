@@ -347,7 +347,10 @@ object QuantifyMacros:
     UnitsMap[UnitsType].dimensionality.quantityName match
       case Some(name) => '{Text(${Expr(name)})}
       case None       => fail("there is no descriptive name for this physical quantity")
-    
+
+  private case class BitSlice(unitPower: UnitPower, max: Double, width: Int, shift: Int):
+    def ones: Long = -1L >>> (64 - width)
+
   def get
       [UnitsType <: Tuple: Type, UnitType <: Units[1, ? <: Dimension]: Type]
       (value: Expr[Tally[UnitsType]])
@@ -355,7 +358,7 @@ object QuantifyMacros:
       : Expr[Int] =
     import quotes.reflect.*
   
-    def decompose[TupleElemType: Type](dimension: Maybe[DimensionRef] = Unset): List[UnitPower] =
+    def decompose[TupleElemType: Type](dimension: Maybe[DimensionRef] = Unset, result: List[UnitPower] = Nil): List[UnitPower] =
       Type.of[TupleElemType] match
         case '[head *: tail] =>
           val unitPower = readUnitPower(TypeRepr.of[head])
@@ -367,39 +370,30 @@ object QuantifyMacros:
               ${current.name}
             """.s)
           
-          unitPower :: decompose[tail](unitPower.ref.dimensionRef)
+          decompose[tail](unitPower.ref.dimensionRef, unitPower :: result)
         
         case _ =>
-          Nil
+          result
 
-    val cascade: List[UnitPower] = decompose[UnitsType](Unset)
+    val cascade: List[UnitPower] = decompose[UnitsType]()
     val principalUnit = cascade.head.ref.dimensionRef.principal
     
-    def recur(unitPowers: List[UnitPower], ratios: List[Double]): List[Double] =
+    def width(value: Double, n: Int = 1): Int = if (1 << n) >= value then n else width(value, n + 1)
+    
+    def recur(unitPowers: List[UnitPower], next: UnitPower, factor: Double = 1.0, shift: Int = -1): List[BitSlice] =
       unitPowers match
         case Nil =>
-          ratios
+          List(BitSlice(cascade.last, Double.MaxValue, 64 - shift, shift))
         
         case head :: tail =>
-          recur(tail, ratio(head.ref, principalUnit, head.power).valueOrAbort :: ratios)
+          val value = ratio(head.ref, principalUnit, head.power).valueOrAbort
+          val max = value/factor
+          BitSlice(next, max, width(max), shift) :: recur(tail, head, value, shift + width(max))
     
-    val ratios = recur(cascade, Nil)
-
-    def relativeRatios(last: Double, ratios: List[Double]): List[Double] = ratios match
-      case head :: tail => head/last :: relativeRatios(head, tail)
-      case _            => Nil
-
-    val ratios2 = relativeRatios(1.0, ratios.tail.map(_/ratios.head)).reverse
-
-    def width(value: Double, n: Int = 1): Int = if (1 << n) >= value then n else width(value, n + 1)
-
-    val widths = ratios2.map(width(_))
-    
-    def ones(width: Int): Long = if width >= widths.length then -1L else (-1L) >>> (64 - widths(width))
-    def shift(n: Int): Int = widths.takeRight(n).sum
+    val bitSlices = recur(cascade, cascade.head).tail
 
     val lookupUnit = readUnitPower(TypeRepr.of[UnitType])
-    val elem: Int = cascade.reverse.indexOf(lookupUnit)
+    val bitSlice: BitSlice = bitSlices.reverse.find(_.unitPower == lookupUnit).get
 
-    '{(($value.asInstanceOf[Long] >>> ${Expr(shift(elem))}) & ${Expr(ones(elem))}).toInt}
+    '{(($value.asInstanceOf[Long] >>> ${Expr(bitSlice.shift)}) & ${Expr(bitSlice.ones)}).toInt}
   
