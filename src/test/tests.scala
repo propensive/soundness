@@ -18,6 +18,7 @@ package hieroglyph
 
 import probably.*
 import rudiments.*
+import larceny.*
 // FIXME: resolution of overloaded `displayWidth` does not work
 import gossamer.{displayWidth as _, *}
 
@@ -71,6 +72,24 @@ object Tests extends Suite(t"Hieroglyph tests"):
         import unsafeExceptions.canThrowAny
         import badEncodingHandlers.strict
         capture[UndecodableCharError, Text](charDecoders.utf8.decode(badUtf8))
-      .assert(_ == UndecodableCharError(1))
+      .assert(_ == UndecodableCharError(1, enc"UTF-8"))
+    
+    suite(t"Compile-time tests"):
+      test(t"Check that an invalid encoding produces an error"):
+        captureCompileErrors(enc"ABCDEF").map(_.message)
+      .assert(_ == List(t"hieroglyph: the encoding ABCDEF was not available"))
+      
+      test(t"Check that a non-encoding encoding does have a `decoder` method"):
+        import badEncodingHandlers.skip
+        captureCompileErrors(enc"ISO-2022-CN".decoder)
+      .assert(_ == List())
+      
+      test(t"Check that a non-encoding encoding has no encoder method"):
+        captureCompileErrors(enc"ISO-2022-CN".encoder)
+      .assert(_.length == 1)
+      
+      test(t"Check that an encoding which can encode has an encoder method"):
+        captureCompileErrors(enc"ISO-8859-1".encoder)
+      .assert(_ == List())
 
 

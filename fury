@@ -4,6 +4,7 @@
 repo propensive/kaleidoscope
 repo propensive/spectacular
 repo propensive/digression
+repo propensive/larceny
 
 target hieroglyph/test
 
@@ -17,5 +18,5 @@ project hieroglyph
     compiler  scala
     sources   src/test
     main      hieroglyph.Tests
-    include   hieroglyph/core probably/cli
+    include   hieroglyph/core probably/cli larceny/plugin
     coverage  hieroglyph/core

@@ -21,53 +21,76 @@ import digression.*
 
 import scala.collection.mutable as scm
 import scala.jdk.CollectionConverters.SetHasAsScala
+import scala.quoted.*
 
 import java.nio as jn, jn.charset as jnc
 
 import language.experimental.captureChecking
 
+object Encoding:
+
+  private val allCharsets: Set[jnc.Charset] =
+    jnc.Charset.availableCharsets.nn.asScala.to(Map).values.to(Set)
+
+  private[hieroglyph] val codecs: Map[Text, Encoding { type CanEncode = true } ] =
+    allCharsets.filter(_.canEncode).flatMap: charset =>
+      (charset.aliases.nn.asScala.to(Set) + charset.displayName.nn).map: name =>
+        Text(name.toLowerCase.nn) -> Encoding(Text(name), true)
+    .to(Map)
+  
+  private[hieroglyph] val decodeOnly: Map[Text, Encoding { type CanEncode = false }] =
+    allCharsets.filter(!_.canEncode).flatMap: charset =>
+      (charset.aliases.nn.asScala.to(Set) + charset.displayName.nn).map: name =>
+        Text(name.toLowerCase.nn) -> Encoding(Text(name), false)
+    .to(Map)
+  
+  def unapply(name: Text): Option[Encoding] =
+    codecs.get(Text(name.s.toLowerCase.nn)).orElse(decodeOnly.get(Text(name.s.toLowerCase.nn)))
+
+  def apply(name: Text, canEncode: Boolean): Encoding { type CanEncode = canEncode.type } =
+    new Encoding(name) { type CanEncode = canEncode.type }
+
+class Encoding(val name: Text):
+  type CanEncode <: Boolean
+  def decoder(using BadEncodingHandler): CharDecoder = CharDecoder(this)
+  lazy val charset: jnc.Charset = jnc.Charset.forName(name.s).nn
+
+extension (encoding: Encoding { type CanEncode = true }) def encoder: CharEncoder =
+  CharEncoder(encoding)
 
 object CharDecoder:
   def system(using BadEncodingHandler): CharDecoder =
     unapply(Text(jnc.Charset.defaultCharset.nn.displayName.nn)).get
 
   def unapply(name: Text)(using BadEncodingHandler): Option[CharDecoder] =
-    if !CharEncoder.all.contains(Text(name.s.toLowerCase.nn)) then None
-    else Some(CharDecoder(Text(jnc.Charset.forName(name.s).nn.displayName.nn)))
+    Encoding.unapply(name).map(CharDecoder(_))
 
 object CharEncoder:
-  private[hieroglyph] val all: Set[Text] =
-    jnc.Charset.availableCharsets.nn.asScala.to(Map).values.to(Set).flatMap: cs =>
-      cs.aliases.nn.asScala.to(Set) + cs.displayName.nn
-    .map(_.toLowerCase.nn).map(Text(_))
-  
   def system: CharEncoder = unapply(Text(jnc.Charset.defaultCharset.nn.displayName.nn)).get
   
   def unapply(name: Text): Option[CharEncoder] =
-    if !all.contains(Text(name.s.toLowerCase.nn)) then None
-    else Some(CharEncoder(Text(jnc.Charset.forName(name.s).nn.displayName.nn)))
+    Encoding.codecs.get(Text(name.s.toLowerCase.nn)).map(CharEncoder(_))
 
-class CharEncoder(val name: Text):
-  def encode(text: Text): Bytes = text.s.getBytes(name.s).nn.immutable(using Unsafe)
+class CharEncoder(val encoding: Encoding { type CanEncode = true }):
+  def encode(text: Text): Bytes = text.s.getBytes(encoding.name.s).nn.immutable(using Unsafe)
   def encode(stream: LazyList[Text]): LazyList[Bytes] = stream.map(encode)
 
-class SafeCharDecoder(name: Text) extends CharDecoder(name)(using badEncodingHandlers.skip)
+class SafeCharDecoder(encoding: Encoding)
+extends CharDecoder(encoding)(using badEncodingHandlers.skip)
 
-class CharDecoder(val name: Text)(using handler: BadEncodingHandler):
+class CharDecoder(val encoding: Encoding)(using handler: BadEncodingHandler):
   def decode(bytes: Bytes): Text =
     val buf: StringBuilder = StringBuilder()
     decode(LazyList(bytes)).foreach { text => buf.append(text.s) }
     Text(buf.toString)
   
   def decode(stream: LazyList[Bytes]): LazyList[Text] =
-    val charset = jnc.Charset.forName(name.s).nn
-    val decoder = charset.newDecoder().nn
+    val decoder = encoding.charset.newDecoder().nn
     val out = jn.CharBuffer.allocate(4096).nn
     val in = jn.ByteBuffer.allocate(4096).nn
 
     def recur(todo: LazyList[Array[Byte]], offset: Int = 0, total: Int = 0): LazyList[Text] =
       val count = in.remaining
-      val start = in.position
 
       if !todo.isEmpty then in.put(todo.head, offset, in.remaining.min(todo.head.length - offset))
       in.flip()
@@ -76,7 +99,7 @@ class CharDecoder(val name: Text)(using handler: BadEncodingHandler):
         val result = decoder.decode(in, out, false).nn
         
         if !result.isMalformed then result else
-          handler.handle(total + in.position, Unset).mm(out.put(_))
+          handler.handle(total + in.position, encoding).mm(out.put(_))
           in.position(in.position + result.length)
           decode()
       
@@ -96,17 +119,23 @@ class CharDecoder(val name: Text)(using handler: BadEncodingHandler):
     recur(stream.map(_.mutable(using Unsafe)))
 
 package charDecoders:
-  given utf8(using BadEncodingHandler): CharDecoder = CharDecoder(Text("UTF-8"))
-  given ascii(using BadEncodingHandler): CharDecoder = CharDecoder(Text("ASCII"))
-  given iso88591: CharDecoder = SafeCharDecoder(Text("ISO-8859-1"))
+  given utf8(using BadEncodingHandler): CharDecoder = CharDecoder.unapply(Text("UTF-8")).get
+  given utf16(using BadEncodingHandler): CharDecoder = CharDecoder.unapply(Text("UTF-16")).get
+  given utf16Le(using BadEncodingHandler): CharDecoder = CharDecoder.unapply(Text("UTF-16LE")).get
+  given utf16Be(using BadEncodingHandler): CharDecoder = CharDecoder.unapply(Text("UTF-16BE")).get
+  given ascii(using BadEncodingHandler): CharDecoder = CharDecoder.unapply(Text("ASCII")).get
+  //given iso88591: CharDecoder = SafeCharDecoder(Encoding.all(Text("ISO-8859-1")).get
 
 package charEncoders:
-  given utf8: CharEncoder = CharEncoder(Text("UTF-8"))
-  given ascii: CharEncoder = CharEncoder(Text("ASCII"))
-  given iso88591: CharEncoder = CharEncoder(Text("ISO-8859-1"))
+  given utf8: CharEncoder = CharEncoder.unapply(Text("UTF-8")).get
+  given utf16: CharEncoder = CharEncoder.unapply(Text("UTF-16")).get
+  given utf16Le: CharEncoder = CharEncoder.unapply(Text("UTF-16LE")).get
+  given utf16Be: CharEncoder = CharEncoder.unapply(Text("UTF-16BE")).get
+  given ascii: CharEncoder = CharEncoder.unapply(Text("ASCII")).get
+  //given iso88591: CharEncoder = CharEncoder.unapply(Text("ISO-8859-1")).get
 
 trait BadEncodingHandler:
-  def handle(pos: Int, suggestion: Maybe[Char]): Maybe[Char]
+  def handle(pos: Int, encoding: Encoding): Maybe[Char]
   def complete(): Unit
 
 package badEncodingHandlers:
@@ -114,15 +143,15 @@ package badEncodingHandlers:
       (using badEncoding: CanThrow[UndecodableCharError])
       : BadEncodingHandler^{badEncoding} =
     new BadEncodingHandler:
-      def handle(pos: Int, suggestion: Maybe[Char]): Char = throw UndecodableCharError(pos)
+      def handle(pos: Int, encoding: Encoding): Char = throw UndecodableCharError(pos, encoding)
       def complete(): Unit = ()
   
   given skip: BadEncodingHandler with
-    def handle(pos: Int, suggestion: Maybe[Char]): Maybe[Char] = Unset
+    def handle(pos: Int, encoding: Encoding): Maybe[Char] = Unset
     def complete(): Unit = ()
   
   given substitute: BadEncodingHandler with
-    def handle(pos: Int, suggestion: Maybe[Char]): Maybe[Char] = '?'
+    def handle(pos: Int, encoding: Encoding): Maybe[Char] = '?'
     def complete(): Unit = ()
   
   given collect
@@ -130,17 +159,26 @@ package badEncodingHandlers:
       : BadEncodingHandler^{aggregate} =
     new BadEncodingHandler:
       private val mistakes: scm.ArrayBuffer[UndecodableCharError] = scm.ArrayBuffer()
-      def handle(pos: Int, suggestion: Maybe[Char]): Maybe[Char] = Unset
+      def handle(pos: Int, encoding: Encoding): Maybe[Char] = Unset
       def complete(): Unit = if !mistakes.isEmpty then throw AggregateError(mistakes.to(List))
 
-case class UndecodableCharError(pos: Int)
-extends Error(err"The byte sequence at position $pos could not be decoded")
+case class UndecodableCharError(pos: Int, encoding: Encoding)
+extends Error(err"The byte sequence at position $pos could not be decoded with the encoding $encoding")
 
-// FIXME: This code was copied from Gossamer, which depends on Contextual, while Hieroglyph does not.
-// extension (inline ctx: StringContext)
-//   transparent inline def enc(inline parts: Any*): Encoding = ${EncodingPrefix.expand('ctx, 'parts)
+case class UnencodableCharError(char: Char, encoding: Encoding)
+extends Error(err"The character '$char' cannot be encoded with the encoding $encoding")
 
-// object EncodingPrefix extends Verifier[Encoding]:
-//   def verify(enc: Text): Encoding = enc match
-//     case Encoding(enc) => enc
-//     case _             => throw InterpolationError(Text(s"$enc is not a valid character encoding"))
+extension (inline context: StringContext)
+  transparent inline def enc(): Encoding = ${HieroglyphMacros.encoding('context)}
+
+object HieroglyphMacros:
+  def encoding(contextExpr: Expr[StringContext])(using Quotes): Expr[Encoding] =
+    val context: StringContext = contextExpr.valueOrAbort
+    Encoding.unapply(Text(context.parts.head)) match
+      case None =>
+        fail(s"the encoding ${context.parts.head} was not available")
+      
+      case Some(encoding) =>
+        val name = context.parts.head.toLowerCase.nn
+        if encoding.charset.canEncode then '{Encoding.codecs(Text(${Expr(name)}))}
+        else '{Encoding.decodeOnly(Text(${Expr(name)}))}
