@@ -168,13 +168,49 @@ object DimensionName:
   type Frequency = Units[-1, Time]
   erased given frequency: DimensionName[Frequency, "frequency"] = erasedValue
   
-  // need to continue alphabetically
   erased given substance: DimensionName[Units[1, AmountOfSubstance], "amount of substance"] =
     erasedValue
   
   type Velocity = Units[1, Length] & Units[-1, Time]
   erased given velocity: DimensionName[Velocity, "velocity"] = erasedValue
-  
+
+  type Heat = Units[2, Length] & Units[1, Mass] & Units[-2, Time]
+  erased given heat: DimensionName[Heat, "heat"] = erasedValue
+
+  type HeatCapacity = Units[2, Length] & Units[1, Mass] & Units[-2, Time] & Units[-1, Temperature]
+  erased given heatCapacity: DimensionName[HeatCapacity, "heat capacity"] = erasedValue
+
+  type HeatFluxDensity = Units[1, Mass] & Units[-3, Time]
+  erased given heatFluxDensity: DimensionName[HeatFluxDensity, "heat flux density"] = erasedValue
+
+  type Illuminance = Units[-2, Length] & Units[1, Luminosity]
+  erased given illuminance: DimensionName[Illuminance, "illuminance"] = erasedValue
+
+  type Impedance = Units[2, Length] & Units[1, Mass] & Units[-3, Time] & Units[-2, Current]
+  erased given impedance: DimensionName[Impedance, "impedance"] = erasedValue
+
+  type Impulse = Units[1, Length] & Units[1, Mass] & Units[-1, Time]
+  erased given impulse: DimensionName[Impulse, "impulse"] = erasedValue
+
+  type Inductance = Units[2, Length] & Units[1, Mass] & Units[-2, Time] & Units[-2, Current]
+  erased given inductance: DimensionName[Inductance, "inductance"] = erasedValue
+
+  type Irradiance = Units[1, Mass] & Units[-3, Time]
+  erased given irradiance: DimensionName[Irradiance, "irradiance"] = erasedValue
+
+  type Intensity = Units[1, Mass] & Units[-3, Time]
+  erased given intensity: DimensionName[Intensity, "intensity"] = erasedValue
+
+  type Jerk = Units[1, Length] & Units[-3, Time]
+  erased given jerk: DimensionName[Jerk, "jerk"] = erasedValue
+
+  type Jounce = Units[1, Length] & Units[-4, Time]
+  erased given jounce: DimensionName[Jounce, "jounce"] = erasedValue
+
+  type LinearDensity = Units[-1, Length] & Units[1, Mass]
+  erased given linearDensity: DimensionName[LinearDensity, "linear density"] = erasedValue
+
+  // continue at Magnetic Field Strength
   
 
 sealed trait Measure
