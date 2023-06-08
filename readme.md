@@ -1,8 +1,8 @@
-[<img alt="GitHub Workflow" src="https://img.shields.io/github/actions/workflow/status/propensive/quantify/main.yml?style=for-the-badge" height="24">](https://github.com/propensive/quantify/actions)
+[<img alt="GitHub Workflow" src="https://img.shields.io/github/actions/workflow/status/propensive/quantitative/main.yml?style=for-the-badge" height="24">](https://github.com/propensive/quantitative/actions)
 [<img src="https://img.shields.io/discord/633198088311537684?color=8899f7&label=DISCORD&style=for-the-badge" height="24">](https://discord.gg/7b6mpF6Qcf)
 <img src="/doc/images/github.png" valign="middle">
 
-# Quantify
+# Quantitative
 
 ____
 
@@ -11,7 +11,7 @@ it can be easy to mix up quantities with different units, especially if we
 represent all quantities with `Double`sâ€”which is often necessary for
 performance.
 
-Quantify represents physical quantities with a generic `Quantity` type, an
+Quantitative represents physical quantities with a generic `Quantity` type, an
 opaque alias of `Double`, which statically encodes the value's units in its
 type parameter. This provides all the desirable homogeneity constraints when
 combining quantities, with the performance of `Double`s, and without
@@ -37,7 +37,7 @@ by the compiler, and checked for consistency in additions and subtractions.
 
 ## Availability
 
-Quantify has not yet been published as a binary. It is currently waiting for the
+Quantitative has not yet been published as a binary. It is currently waiting for the
 final release of Scala 3.3.
 
 ## Getting Started
@@ -64,7 +64,7 @@ We can compute an `area` value by squaring the distance,
 val area = distance*distance
 ```
 which should have units of square metres (`m
-²`). Quantify represents this as the type, `Quantity[Metres[2]]`; the
+²`). Quantitative represents this as the type, `Quantity[Metres[2]]`; the
 `2` singleton literal value represents the metres being squared. Likewise, a volume would have the parameter
 `Metres[3]`.
 
@@ -102,7 +102,7 @@ Metres, seconds and kilograms are all SI base units. Kilograms are a little diff
 kilogram is one thousand grams (while a gram is _not_ an SI base unit), and this has a small implication on
 the way we construct such units.
 
-Quantify provides general syntax for metric naming conventions, allowing prefixes such as `Nano` or `Mega`
+Quantitative provides general syntax for metric naming conventions, allowing prefixes such as `Nano` or `Mega`
 to be applied to existing unit values to specify the appropriate scale to the value. Hence, a kilogram value
 is written, `Kilo(Gram)`. But since the SI base unit is the kilogram, this and any other multiple of `Gram`,
 such as `Micro(Gram)`, will use the type `Kilogram`, or more precisely, `Kilogram[1]`.
@@ -135,7 +135,7 @@ their dimensionality will be checked at compiletime. For example, the equation, 
 ½at
 ²` for
 calculating a distance (`s`) from an initial velocity (`u`), acceleration (`a`) and time (`t`) can be
-implemented using Quantify `Quantity`s with:
+implemented using Quantitative `Quantity`s with:
 ```scala
 def s(u: Quantity[Metres[1] & Seconds[-2]], t: Quantity[Seconds[1]], a: Quantity[Metres[1] & Seconds[-2]])
     : Quantity[Metres[1]] =
@@ -171,7 +171,7 @@ It is possible to create new length or mass units, such as `Inch` or `Pound`, wh
 dimensions. This allows them to be considered equivalent in some calculations, if a conversion coefficient is
 available.
 
-Quantify defines a variety of imperial measurements, and will automatically convert units of the same
+Quantitative defines a variety of imperial measurements, and will automatically convert units of the same
 dimension to the same units in multiplications and divisions. For example,
 ```scala
 val width = 0.3*Metre
@@ -200,7 +200,7 @@ val nonsense = Litre - Second // will not compile
 ```
 
 For the addition and subtraction of values with mixed units, the question arises of which units the result
-should take. Quantify will use the _principal unit_ for the dimension, which is determined by the presence
+should take. Quantitative will use the _principal unit_ for the dimension, which is determined by the presence
 of a unique contextual `PrincipalUnit` instance, parameterized on `Dimension` and `Units` types.
 
 In general, if the units for the same dimension don't match between the operands, then the principal unit
@@ -234,7 +234,7 @@ import language.strictEquality
 
 This turns on Scala's strict-equality feature, which forbids comparisons between any two types unless
 a corresponding `CanEqual[LeftOperandType, RightOperandType]` exists in scope for the appropriate
-operand types. Quantify provides just such an instance for `Quantity` instances with the same units.
+operand types. Quantitative provides just such an instance for `Quantity` instances with the same units.
 
 The runtime equality check, however, is performed in exactly the same way: by comparing two `Double`s.
 That is absolutely fine if we know the units are identical, but it does not allow equality comparisons
@@ -246,7 +246,7 @@ For this, there are two possibilities:
 
 #### Conversion ratios
 
-In order to automatically convert between two units, Quantify needs to know the ratio between them.
+In order to automatically convert between two units, Quantitative needs to know the ratio between them.
 This is provided with a contextual `Ratio` value for the appropriate pair of units: one with the
 power `1` and the other with the power `-1`.
 
@@ -254,7 +254,7 @@ For example,
 ```scala
 given Ratio[Kilograms[1] & Tons[-1]](1016.0469088)
 ```
-which specifies that there are about 1016 kilograms in a ton, and will be used if Quantify ever needs
+which specifies that there are about 1016 kilograms in a ton, and will be used if Quantitative ever needs
 to convert between kilograms and tons.
 
 ### Explicit Conversions
@@ -278,7 +278,7 @@ val mph = speed.in[Miles].in[Hours]
 
 ### SI definitions
 
-There are seven SI base dimensions, with corresponding units, which are defined by Quantify:
+There are seven SI base dimensions, with corresponding units, which are defined by Quantitative:
  - `Length` with units type, `Metres`, and unit value, `Metre`
  - `Mass` with units, `Kilograms`, and unit value, `Kilogram`
  - `Time` with units, `Seconds`, and unit value, `Second`
@@ -309,7 +309,7 @@ As well as these, the following SI derived unit values are defined in terms of t
 
 ## Defining your own units
 
-Quantify provides implementations of a variety of useful (and some less useful) units from the
+Quantitative provides implementations of a variety of useful (and some less useful) units from the
 metric system, CGS and imperial. It's also very easy to define your own units.
 
 Imagine we wanted to implement the FLOPS unit, for measuring the floating-point performance of a
@@ -371,7 +371,7 @@ error messages when a mismatch occurs.
 ```
 scala> Metre/Second + Metre/(Second*Second)
 
-quantify: the left operand represents velocity, but the right operand represents acceleration;
+quantitative: the left operand represents velocity, but the right operand represents acceleration;
 these are incompatible physical quantities
 ```
 It is also possible to define your own, for example, here is the definition for "force":
@@ -393,8 +393,8 @@ exist simpler forms of their units. For example, the Joule, `J`, is equal to `kg
 ²`, and is
 much easier to write.
 
-By default, Quantify will use the latter form, but it is possible to define alternative
-representations of units where these exist, and Quantify will use these whenever a quantity is
+By default, Quantitative will use the latter form, but it is possible to define alternative
+representations of units where these exist, and Quantitative will use these whenever a quantity is
 displayed. A contextual value can be defined, such as the following,
 ```scala
 given SubstituteUnits[Kilograms[1] & Metres[2] & Seconds[-2]](t"J")
@@ -412,7 +412,7 @@ Note that this only applies if the quantity's units exactly match the type param
 
 ## Status
 
-Quantify is classified as __maturescent__. For reference, Scala One projects are
+Quantitative is classified as __maturescent__. For reference, Scala One projects are
 categorized into one of the following five stability levels:
 
 - _embryonic_: for experimental or demonstrative purposes only, without any guarantees of longevity
@@ -425,22 +425,22 @@ Projects at any stability level, even _embryonic_ projects, are still ready to
 be used, but caution should be taken if there is a mismatch between the
 project's stability level and the importance of your own project.
 
-Quantify is designed to be _small_. Its entire source code currently consists
+Quantitative is designed to be _small_. Its entire source code currently consists
 of 939 lines of code.
 
 ## Building
 
-Quantify can be built on Linux or Mac OS with [Fury](/propensive/fury), however
+Quantitative can be built on Linux or Mac OS with [Fury](/propensive/fury), however
 the approach to building is currently in a state of flux, and is likely to
 change.
 
 ## Contributing
 
-Contributors to Quantify are welcome and encouraged. New contributors may like to look for issues marked
-<a href="https://github.com/propensive/quantify/labels/beginner">beginner</a>.
+Contributors to Quantitative are welcome and encouraged. New contributors may like to look for issues marked
+<a href="https://github.com/propensive/quantitative/labels/beginner">beginner</a>.
 
 We suggest that all contributors read the [Contributing Guide](/contributing.md) to make the process of
-contributing to Quantify easier.
+contributing to Quantitative easier.
 
 Please __do not__ contact project maintainers privately with questions unless
 there is a good reason to keep them private. While it can be tempting to
@@ -449,14 +449,16 @@ audience, and it can result in duplication of effort.
 
 ## Author
 
-Quantify was designed and developed by Jon Pretty, and commercial support and training is available from
+Quantitative was designed and developed by Jon Pretty, and commercial support and training is available from
 [Propensive O&Uuml;](https://propensive.com/).
 
 
 
 ## Name
 
-To _quantify_ is "to qualify with respect to quantity". This is exactly Quantify's remit.
+Something which is _quantitative_ relates to measurements by quantity rather than quality, and is
+best known in the concept of "quantitative easing". _Easing the measurement of quantities_ is
+exactly Quantitative's remit.
 
 In general, Scala One project names are always chosen with some rationale, however it is usually
 frivolous. Each name is chosen for more for its _uniqueness_ and _intrigue_ than its concision or
@@ -469,5 +471,5 @@ often arrived in English via a romance language.
 
 ## License
 
-Quantify is copyright &copy; 2023 Jon Pretty & Propensive O&Uuml;, and is made available under the
+Quantitative is copyright &copy; 2023 Jon Pretty & Propensive O&Uuml;, and is made available under the
 [Apache 2.0 License](/license.md).

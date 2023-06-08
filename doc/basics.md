@@ -19,7 +19,7 @@ We can compute an `area` value by squaring the distance,
 ```scala
 val area = distance*distance
 ```
-which should have units of square metres (`m²`). Quantify represents this as the type, `Quantity[Metres[2]]`; the
+which should have units of square metres (`m²`). Quantitative represents this as the type, `Quantity[Metres[2]]`; the
 `2` singleton literal value represents the metres being squared. Likewise, a volume would have the parameter
 `Metres[3]`.
 
@@ -54,7 +54,7 @@ Metres, seconds and kilograms are all SI base units. Kilograms are a little diff
 kilogram is one thousand grams (while a gram is _not_ an SI base unit), and this has a small implication on
 the way we construct such units.
 
-Quantify provides general syntax for metric naming conventions, allowing prefixes such as `Nano` or `Mega`
+Quantitative provides general syntax for metric naming conventions, allowing prefixes such as `Nano` or `Mega`
 to be applied to existing unit values to specify the appropriate scale to the value. Hence, a kilogram value
 is written, `Kilo(Gram)`. But since the SI base unit is the kilogram, this and any other multiple of `Gram`,
 such as `Micro(Gram)`, will use the type `Kilogram`, or more precisely, `Kilogram[1]`.
@@ -79,7 +79,7 @@ If we had instead calculated `energy/area`, whose units do not include metres, t
 We can go further. For example, the "SUVAT" equations of motion can be safely implemented as methods, and
 their dimensionality will be checked at compiletime. For example, the equation, `s = ut + ½at²` for
 calculating a distance (`s`) from an initial velocity (`u`), acceleration (`a`) and time (`t`) can be
-implemented using Quantify `Quantity`s with:
+implemented using Quantitative `Quantity`s with:
 ```scala
 def s(u: Quantity[Metres[1] & Seconds[-2]], t: Quantity[Seconds[1]], a: Quantity[Metres[1] & Seconds[-2]])
     : Quantity[Metres[1]] =
@@ -115,7 +115,7 @@ It is possible to create new length or mass units, such as `Inch` or `Pound`, wh
 dimensions. This allows them to be considered equivalent in some calculations, if a conversion coefficient is
 available.
 
-Quantify defines a variety of imperial measurements, and will automatically convert units of the same
+Quantitative defines a variety of imperial measurements, and will automatically convert units of the same
 dimension to the same units in multiplications and divisions. For example,
 ```scala
 val width = 0.3*Metre
@@ -144,7 +144,7 @@ val nonsense = Litre - Second // will not compile
 ```
 
 For the addition and subtraction of values with mixed units, the question arises of which units the result
-should take. Quantify will use the _principal unit_ for the dimension, which is determined by the presence
+should take. Quantitative will use the _principal unit_ for the dimension, which is determined by the presence
 of a unique contextual `PrincipalUnit` instance, parameterized on `Dimension` and `Units` types.
 
 In general, if the units for the same dimension don't match between the operands, then the principal unit
@@ -178,7 +178,7 @@ import language.strictEquality
 
 This turns on Scala's strict-equality feature, which forbids comparisons between any two types unless
 a corresponding `CanEqual[LeftOperandType, RightOperandType]` exists in scope for the appropriate
-operand types. Quantify provides just such an instance for `Quantity` instances with the same units.
+operand types. Quantitative provides just such an instance for `Quantity` instances with the same units.
 
 The runtime equality check, however, is performed in exactly the same way: by comparing two `Double`s.
 That is absolutely fine if we know the units are identical, but it does not allow equality comparisons
@@ -190,7 +190,7 @@ For this, there are two possibilities:
 
 #### Conversion ratios
 
-In order to automatically convert between two units, Quantify needs to know the ratio between them.
+In order to automatically convert between two units, Quantitative needs to know the ratio between them.
 This is provided with a contextual `Ratio` value for the appropriate pair of units: one with the
 power `1` and the other with the power `-1`.
 
@@ -198,7 +198,7 @@ For example,
 ```scala
 given Ratio[Kilograms[1] & Tons[-1]](1016.0469088)
 ```
-which specifies that there are about 1016 kilograms in a ton, and will be used if Quantify ever needs
+which specifies that there are about 1016 kilograms in a ton, and will be used if Quantitative ever needs
 to convert between kilograms and tons.
 
 ### Explicit Conversions
@@ -222,7 +222,7 @@ val mph = speed.in[Miles].in[Hours]
 
 ### SI definitions
 
-There are seven SI base dimensions, with corresponding units, which are defined by Quantify:
+There are seven SI base dimensions, with corresponding units, which are defined by Quantitative:
  - `Length` with units type, `Metres`, and unit value, `Metre`
  - `Mass` with units, `Kilograms`, and unit value, `Kilogram`
  - `Time` with units, `Seconds`, and unit value, `Second`
@@ -253,7 +253,7 @@ As well as these, the following SI derived unit values are defined in terms of t
 
 ## Defining your own units
 
-Quantify provides implementations of a variety of useful (and some less useful) units from the
+Quantitative provides implementations of a variety of useful (and some less useful) units from the
 metric system, CGS and imperial. It's also very easy to define your own units.
 
 Imagine we wanted to implement the FLOPS unit, for measuring the floating-point performance of a
@@ -315,7 +315,7 @@ error messages when a mismatch occurs.
 ```
 scala> Metre/Second + Metre/(Second*Second)
 
-quantify: the left operand represents velocity, but the right operand represents acceleration;
+quantitative: the left operand represents velocity, but the right operand represents acceleration;
 these are incompatible physical quantities
 ```
 It is also possible to define your own, for example, here is the definition for "force":
@@ -332,8 +332,8 @@ While the SI base units can be used to describe the units of most physical quant
 exist simpler forms of their units. For example, the Joule, `J`, is equal to `kg⋅m²⋅s¯²`, and is
 much easier to write.
 
-By default, Quantify will use the latter form, but it is possible to define alternative
-representations of units where these exist, and Quantify will use these whenever a quantity is
+By default, Quantitative will use the latter form, but it is possible to define alternative
+representations of units where these exist, and Quantitative will use these whenever a quantity is
 displayed. A contextual value can be defined, such as the following,
 ```scala
 given SubstituteUnits[Kilograms[1] & Metres[2] & Seconds[-2]](t"J")

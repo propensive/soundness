@@ -1,1 +1,3 @@
-To _quantify_ is "to qualify with respect to quantity". This is exactly Quantify's remit.
+Something which is _quantitative_ relates to measurements by quantity rather than quality, and is
+best known in the concept of "quantitative easing". _Easing the measurement of quantities_ is
+exactly Quantitative's remit.

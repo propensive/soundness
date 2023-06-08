@@ -1,5 +1,5 @@
 /*
-    Quantify, version [unreleased]. Copyright 2023 Jon Pretty, Propensive OÜ.
+    Quantitative, version [unreleased]. Copyright 2023 Jon Pretty, Propensive OÜ.
 
     The primary distribution site is: https://propensive.com/
 
@@ -14,7 +14,7 @@
     and limitations under the License.
 */
 
-package quantify
+package quantitative
 
 import rudiments.*
 import gossamer.*
@@ -24,7 +24,7 @@ import scala.compiletime.*
 
 import language.experimental.captureChecking
 
-object QuantifyMacros:
+object QuantitativeMacros:
 
   private case class UnitPower(ref: UnitRef, power: Int)
   
@@ -419,6 +419,17 @@ object QuantifyMacros:
     
     '{Tally.fromLong[UnitsType](${recur(bitSlices[UnitsType].reverse, literals, '{0L})})}
 
+  def fromQuantity
+      [QuantityType <: Measure: Type, TallyUnitsType <: Tuple: Type]
+      (quantity: Expr[Quantity[QuantityType]])
+      (using Quotes): Expr[Tally[TallyUnitsType]] =
+    import quotes.reflect.*
+    
+    val slices = bitSlices[TallyUnitsType]
+    println(slices)
+    val first = slices.head.unitPower.ref
+    def recur(slices: List[BitSlice], expr: Expr[Long])
+
   def get
       [UnitsType <: Tuple: Type, UnitType <: Units[1, ? <: Dimension]: Type]
       (value: Expr[Tally[UnitsType]])
@@ -432,5 +443,5 @@ object QuantifyMacros:
     val bitSlice: BitSlice = slices.find(_.unitPower == lookupUnit).getOrElse:
       fail("the Tally does not include this unit")
 
-    '{(($value.asInstanceOf[Long] >>> ${Expr(bitSlice.shift)}) & ${Expr(bitSlice.ones)}).toInt}
+    '{(($value.longValue >>> ${Expr(bitSlice.shift)}) & ${Expr(bitSlice.ones)}).toInt}
   

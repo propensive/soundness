@@ -1,11 +1,11 @@
 # This is a Wrath buildfile. More information is available at: https://github.com/propensive/wrath/
 
-target quantify/test
+target quantitative/test
 
 repo propensive/probably
 repo propensive/larceny
 
-project quantify
+project quantitative
   module core
     compiler  scala
     sources   src/core
@@ -14,7 +14,7 @@ project quantify
   module test
     compiler  scala
     sources   src/test
-    include   probably/cli quantify/core larceny/plugin
-    main      quantify.Tests
+    include   probably/cli quantitative/core larceny/plugin
+    main      quantitative.Tests
 
 

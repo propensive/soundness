@@ -1,5 +1,5 @@
 /*
-    Quantify, version [unreleased]. Copyright 2023 Jon Pretty, Propensive OÜ.
+    Quantitative, version [unreleased]. Copyright 2023 Jon Pretty, Propensive OÜ.
 
     The primary distribution site is: https://propensive.com/
 
@@ -14,7 +14,7 @@
     and limitations under the License.
 */
 
-package quantify
+package quantitative
 
 import probably.*
 import rudiments.*
@@ -26,7 +26,7 @@ import language.strictEquality
 
 given decimalizer: Decimalizer = Decimalizer(3)
 
-object Tests extends Suite(Text("Quantify Tests")):
+object Tests extends Suite(Text("Quantitative Tests")):
   def run(): Unit =
     suite(Text("Arithmetic tests")):
       test(Text("Add two lengths")):
@@ -80,19 +80,19 @@ object Tests extends Suite(Text("Quantify Tests")):
         captureCompileErrors:
           2*Metre + 2*Joule
         .map(_.message)
-      .assert(_ == List("quantify: the left operand represents length, but the right operand represents energy; these are incompatible physical quantities"))
+      .assert(_ == List("quantitative: the left operand represents length, but the right operand represents energy; these are incompatible physical quantities"))
       
       test(Text("Different dimensions are incomparable")):
         captureCompileErrors:
           7*Metre >= 2*Kilo(Gram)
         .map(_.message)
-      .assert(_ == List("quantify: the left operand represents length, but the right operand represents mass; these are incompatible physical quantities"))
+      .assert(_ == List("quantitative: the left operand represents length, but the right operand represents mass; these are incompatible physical quantities"))
       
       test(Text("Different powers of the same dimension are incomparable")):
         captureCompileErrors:
           7*Metre >= 2*Metre*Metre
         .map(_.message)
-      .assert(_ == List("quantify: the left operand represents length, but the right operand represents area; these are incompatible physical quantities"))
+      .assert(_ == List("quantitative: the left operand represents length, but the right operand represents area; these are incompatible physical quantities"))
     
     suite(t"Automatic conversions"):
       test(Text("Conversions are applied automatically to RHS in multiplication")):

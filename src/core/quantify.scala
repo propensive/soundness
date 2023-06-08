@@ -1,5 +1,5 @@
 /*
-    Quantify, version [unreleased]. Copyright 2023 Jon Pretty, Propensive OÜ.
+    Quantitative, version [unreleased]. Copyright 2023 Jon Pretty, Propensive OÜ.
 
     The primary distribution site is: https://propensive.com/
 
@@ -14,7 +14,7 @@
     and limitations under the License.
 */
 
-package quantify
+package quantitative
 
 import gossamer.*
 import rudiments.*
@@ -222,7 +222,7 @@ object SubstituteUnits:
   given joules: SubstituteUnits[Kilograms[1] & Metres[2] & Seconds[-2]](t"J")
   given newtons: SubstituteUnits[Kilograms[1] & Metres[1] & Seconds[-2]](t"N")
 
-object QuantifyOpaques:
+object QuantitativeOpaques:
   opaque type Quantity[UnitsType <: Measure] = Double
   opaque type MetricUnit[UnitsType <: Measure] <: Quantity[UnitsType] = Double
 
@@ -277,7 +277,7 @@ object QuantifyOpaques:
           t"$unit$exponent"
       .join(t"·")
 
-export QuantifyOpaques.{Quantity, MetricUnit}
+export QuantitativeOpaques.{Quantity, MetricUnit}
 
 val Metre: MetricUnit[Metres[1]] = MetricUnit(1)
 val Gram: MetricUnit[Kilograms[1]] = MetricUnit(0.001)
@@ -290,47 +290,47 @@ val Second: MetricUnit[Seconds[1]] = MetricUnit(1)
 extension [UnitsType <: Measure](inline quantity: Quantity[UnitsType])
   @targetName("plus")
   transparent inline def +[UnitsType2 <: Measure](quantity2: Quantity[UnitsType2]): Any =
-    ${QuantifyMacros.add[UnitsType, UnitsType2]('quantity, 'quantity2, false)}
+    ${QuantitativeMacros.add[UnitsType, UnitsType2]('quantity, 'quantity2, false)}
   
   @targetName("minus")
   transparent inline def -[UnitsType2 <: Measure](quantity2: Quantity[UnitsType2]): Any =
-    ${QuantifyMacros.add[UnitsType, UnitsType2]('quantity, 'quantity2, true)}
+    ${QuantitativeMacros.add[UnitsType, UnitsType2]('quantity, 'quantity2, true)}
 
   transparent inline def invert: Any = Quantity[Measure](1.0)/quantity
 
   transparent inline def in[UnitsType2[power <: Nat] <: Units[power, ?]]: Any =
-    ${QuantifyMacros.norm[UnitsType, UnitsType2]('quantity)}
+    ${QuantitativeMacros.norm[UnitsType, UnitsType2]('quantity)}
   
   @targetName("times2")
   transparent inline def *
       [UnitsType2 <: Measure](@convertible inline quantity2: Quantity[UnitsType2]): Any =
-    ${QuantifyMacros.multiply[UnitsType, UnitsType2]('quantity, 'quantity2, false)}
+    ${QuantitativeMacros.multiply[UnitsType, UnitsType2]('quantity, 'quantity2, false)}
   
   @targetName("divide2")
   transparent inline def /
       [UnitsType2 <: Measure](@convertible inline quantity2: Quantity[UnitsType2]): Any =
-    ${QuantifyMacros.multiply[UnitsType, UnitsType2]('quantity, 'quantity2, true)}
+    ${QuantitativeMacros.multiply[UnitsType, UnitsType2]('quantity, 'quantity2, true)}
 
-  inline def units: Map[Text, Int] = ${QuantifyMacros.collectUnits[UnitsType]}
+  inline def units: Map[Text, Int] = ${QuantitativeMacros.collectUnits[UnitsType]}
   inline def render(using Decimalizer): Text = t"${quantity.value} ${Quantity.renderUnits(units)}"
 
-  inline def dimension: Text = ${QuantifyMacros.describe[UnitsType]}
+  inline def dimension: Text = ${QuantitativeMacros.describe[UnitsType]}
 
   @targetName("greaterThan")
   inline def >[UnitsType2 <: Measure](that: Quantity[UnitsType2]): Boolean =
-    ${QuantifyMacros.greaterThan[UnitsType, UnitsType2]('quantity, 'that, false)}
+    ${QuantitativeMacros.greaterThan[UnitsType, UnitsType2]('quantity, 'that, false)}
   
   @targetName("greaterThanOrEqualTo")
   inline def >=[UnitsType2 <: Measure](that: Quantity[UnitsType2]): Boolean =
-    ${QuantifyMacros.greaterThan[UnitsType, UnitsType2]('quantity, 'that, true)}
+    ${QuantitativeMacros.greaterThan[UnitsType, UnitsType2]('quantity, 'that, true)}
   
   @targetName("lessThanOrEqualTo")
   inline def <=[UnitsType2 <: Measure](that: Quantity[UnitsType2]): Boolean =
-    ${QuantifyMacros.greaterThan[UnitsType2, UnitsType]('that, 'quantity, true)}
+    ${QuantitativeMacros.greaterThan[UnitsType2, UnitsType]('that, 'quantity, true)}
   
   @targetName("lessThan")
   inline def <[UnitsType2 <: Measure](that: Quantity[UnitsType2]): Boolean =
-    ${QuantifyMacros.greaterThan[UnitsType2, UnitsType]('that, 'quantity, false)}
+    ${QuantitativeMacros.greaterThan[UnitsType2, UnitsType]('that, 'quantity, false)}
 
 extension (value: Double)
   @targetName("times")
