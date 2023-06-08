@@ -13,7 +13,8 @@ its value is a number of metres (raised to the power `1`).
 
 In general, types representing units are written in the plural (for example, `Metres`, `Feet`, `Candelas`), with
 a bias for distinction when the singular name is often used in the plural; for example, the type is `Kelvins`
-even though both "Kelvins" and "Kelvin" are both commonly used. Unit values are alwas named in the singular.
+even though "Kelvins" and "Kelvin" are both commonly used for plural values. Unit instances are always named in
+the singular.
 
 We can compute an `area` value by squaring the distance,
 ```scala
