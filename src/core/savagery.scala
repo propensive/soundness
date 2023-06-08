@@ -5,7 +5,7 @@ import gossamer.*, decimalFormats.exact
 import cardinality.*
 import cataclysm.{Float as _, Length as _, *}
 import turbulence.*
-import quantify.*
+import quantitative.*
 import xylophone.*
 import iridescence.*
 

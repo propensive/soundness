@@ -5,12 +5,12 @@ target savagery/core
 repo propensive/xylophone
 repo propensive/cataclysm
 repo propensive/iridescence
-repo propensive/quantify
+repo propensive/quantitative
 
 project savagery
   module core
     compiler  scala
-    include   cataclysm/core xylophone/core quantify/core
+    include   cataclysm/core xylophone/core quantitative/core
     sources   src/core
 
   module test
