@@ -410,6 +410,7 @@ Note that this only applies if the quantity's units exactly match the type param
 ¯
 ¹`.
 
+
 ## Status
 
 Quantitative is classified as __maturescent__. For reference, Scala One projects are
@@ -426,7 +427,7 @@ be used, but caution should be taken if there is a mismatch between the
 project's stability level and the importance of your own project.
 
 Quantitative is designed to be _small_. Its entire source code currently consists
-of 970 lines of code.
+of 979 lines of code.
 
 ## Building
 
