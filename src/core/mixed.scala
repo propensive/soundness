@@ -24,9 +24,14 @@ object TallyQuaques:
   opaque type Tally[UnitsType <: Tuple] = Long
 
   object Tally:
-    def apply[UnitsType <: Tuple](long: Long): Tally[UnitsType] = long
+    def fromLong[UnitsType <: Tuple](long: Long): Tally[UnitsType] = long
+    
+    inline def apply[UnitsType <: Tuple](inline values: Int*): Tally[UnitsType] =
+      ${QuantifyMacros.make[UnitsType]('values)}
 
   extension [UnitsType <: Tuple](tally: Tally[UnitsType])
+    def longValue: Long = tally
+    
     inline def apply[UnitType[PowerType <: Nat] <: Units[PowerType, ? <: Dimension]]: Int =
       ${QuantifyMacros.get[UnitsType, UnitType[1]]('tally)}
 

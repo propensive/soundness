@@ -274,29 +274,29 @@ object Tests extends Suite(Text("Quantify Tests")):
       .assert(_ == true)
     
     suite(t"Tally tests"):
+
       test(t"Access seconds in an HMS time"):
-        val hmsTime = Tally[TimeSeconds](111753)
+        val hmsTime = Tally[TimeSeconds](27, 18, 9)
         hmsTime[Seconds]
       .assert(_ == 9)
       
       test(t"Access minutes in an HMS time"):
-        val hmsTime = Tally[TimeSeconds](111753)
+        val hmsTime = Tally[TimeSeconds](27, 18, 9)
         hmsTime[Minutes]
       .assert(_ == 18)
       
       test(t"Access hours in an HMS time"):
-        val hmsTime = Tally[TimeSeconds](111753)
+        val hmsTime = Tally[TimeSeconds](27, 18, 9)
         hmsTime[Hours]
       .assert(_ == 27)
       
       test(t"Access inches in an imperial distance"):
-        val imperialDistance = Tally[(Miles[1], Yards[1], Feet[1], Inches[1])](1234566)
+        val imperialDistance = Tally[(Miles[1], Yards[1], Feet[1], Inches[1])](1800, 4, 2, 11)
         imperialDistance[Feet]
-      .assert(_ == 1)
+      .assert(_ == 2)
       
       test(t"Units of different dimensions cannot be mixed"):
         captureCompileErrors:
-          val badTally = Tally[(Miles[1], Yards[1], Seconds[1], Inches[1])](1234566)
-          badTally[Feet]
+          Tally[(Miles[1], Yards[1], Seconds[1], Inches[1])](1, 2, 3)
       .assert(_.length == 1)
         

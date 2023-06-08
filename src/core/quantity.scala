@@ -348,18 +348,17 @@ object QuantifyMacros:
       case Some(name) => '{Text(${Expr(name)})}
       case None       => fail("there is no descriptive name for this physical quantity")
 
-  private case class BitSlice(unitPower: UnitPower, max: Double, width: Int, shift: Int):
+  private case class BitSlice(unitPower: UnitPower, max: Int, width: Int, shift: Int):
     def ones: Long = -1L >>> (64 - width)
 
-  def get
-      [UnitsType <: Tuple: Type, UnitType <: Units[1, ? <: Dimension]: Type]
-      (value: Expr[Tally[UnitsType]])
-      (using Quotes)
-      : Expr[Int] =
+  private def bitSlices[UnitsType: Type](using Quotes): List[BitSlice] =
     import quotes.reflect.*
-  
-    def decompose[TupleElemType: Type](dimension: Maybe[DimensionRef] = Unset, result: List[UnitPower] = Nil): List[UnitPower] =
-      Type.of[TupleElemType] match
+    
+    def untuple
+        [TupleType: Type]
+        (dimension: Maybe[DimensionRef], result: List[UnitPower])
+        : List[UnitPower] =
+      Type.of[TupleType] match
         case '[head *: tail] =>
           val unitPower = readUnitPower(TypeRepr.of[head])
           
@@ -370,30 +369,68 @@ object QuantifyMacros:
               ${current.name}
             """.s)
           
-          decompose[tail](unitPower.ref.dimensionRef, unitPower :: result)
+          untuple[tail](unitPower.ref.dimensionRef, unitPower :: result)
         
         case _ =>
           result
 
-    val cascade: List[UnitPower] = decompose[UnitsType]()
+    val cascade: List[UnitPower] = untuple[UnitsType](Unset, Nil)
     val principalUnit = cascade.head.ref.dimensionRef.principal
     
     def width(value: Double, n: Int = 1): Int = if (1 << n) >= value then n else width(value, n + 1)
-    
-    def recur(unitPowers: List[UnitPower], next: UnitPower, factor: Double = 1.0, shift: Int = -1): List[BitSlice] =
-      unitPowers match
+
+    def recur(unit: List[UnitPower], next: UnitPower, factor: Double, shift: Int): List[BitSlice] =
+      unit match
         case Nil =>
-          List(BitSlice(cascade.last, Double.MaxValue, 64 - shift, shift))
+          List(BitSlice(cascade.last, Int.MaxValue, 64 - shift, shift))
         
         case head :: tail =>
           val value = ratio(head.ref, principalUnit, head.power).valueOrAbort
           val max = value/factor
-          BitSlice(next, max, width(max), shift) :: recur(tail, head, value, shift + width(max))
+          val bitSlice = BitSlice(next, (max + 0.5).toInt, width(max), shift)
+          
+          bitSlice :: recur(tail, head, value, shift + width(max))
     
-    val bitSlices = recur(cascade, cascade.head).tail
+    recur(cascade, cascade.head, 1.0, -1).tail.reverse
 
+  def make[UnitsType <: Tuple: Type](values: Expr[Seq[Int]])(using Quotes): Expr[Tally[UnitsType]] =
+    val literals: List[Int] = values.valueOrAbort.to(List).reverse
+    
+    def recur(slices: List[BitSlice], values: List[Int], expr: Expr[Long]): Expr[Long] =
+      values match
+        case Nil =>
+          expr
+        
+        case unitValue :: valuesTail => slices match
+          case BitSlice(unitPower, max, width, shift) :: tail =>
+            if unitValue < 0 then fail(txt"""
+              the value for the ${unitPower.ref.name} unit ($unitValue) cannot be a negative number
+            """.s)
+            else if unitValue >= max then fail(txt"""
+              the value for the ${unitPower.ref.name} unit ${unitValue} must be less than ${max}
+            """.s)
+            recur(tail, valuesTail, '{$expr + (${Expr(unitValue.toLong)} << ${Expr(shift)})})
+          
+          case Nil =>
+            fail(txt"""
+              ${literals.length} unit values were provided, but this Tally only has ${slices.length}
+              units
+            """.s)
+    
+    '{Tally.fromLong[UnitsType](${recur(bitSlices[UnitsType].reverse, literals, '{0L})})}
+
+  def get
+      [UnitsType <: Tuple: Type, UnitType <: Units[1, ? <: Dimension]: Type]
+      (value: Expr[Tally[UnitsType]])
+      (using Quotes)
+      : Expr[Int] =
+    import quotes.reflect.*
+  
+    val slices = bitSlices[UnitsType]
     val lookupUnit = readUnitPower(TypeRepr.of[UnitType])
-    val bitSlice: BitSlice = bitSlices.reverse.find(_.unitPower == lookupUnit).get
+    
+    val bitSlice: BitSlice = slices.find(_.unitPower == lookupUnit).getOrElse:
+      fail("the Tally does not include this unit")
 
     '{(($value.asInstanceOf[Long] >>> ${Expr(bitSlice.shift)}) & ${Expr(bitSlice.ones)}).toInt}
   
