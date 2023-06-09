@@ -193,14 +193,21 @@ For this, there are two possibilities:
 
 In order to automatically convert between two units, Quantitative needs to know the ratio between them.
 This is provided with a contextual `Ratio` value for the appropriate pair of units: one with the
-power `1` and the other with the power `-1`.
+power `1` and the other with the power `-1`. The rate of conversion should be specified as a singleton
+literal `Double` as the second parameter. The `given` may be `erased`, if using Scala's erased definitions.
 
 For example,
 ```scala
-given Ratio[Kilograms[1] & Tons[-1]](1016.0469088)
+erased given Ratio[Kilograms[1] & Tons[-1], 1016.0469088]
 ```
 which specifies that there are about 1016 kilograms in a ton, and will be used if Quantitative ever needs
 to convert between kilograms and tons.
+
+By making the conversion rate a _type_ (a singleton literal, specifically), its value is available at
+compiletime, even while the `given` is `erased`. This has the further advantage that any calculations on
+`Quantity`s which need to use the conversion ratio in a calculation involving other constants will use
+constant folding to automatically perform arithmetic operations on constants at compiletime, saving the
+performance cost of doing these at runtime.
 
 ### Explicit Conversions
 
@@ -270,16 +277,17 @@ a one-megaFLOP CPU.
 
 But this definition is just a value, not a unit. We can tweak the definition slightly to,
 ```scala
-val Flop = SiUnit(1.0/Second)
+val Flop = MetricUnit(1.0/Second)
 ```
-and it becomes possible to use SI prefixes on the value. So we could rewrite the above expression as,
-`Mega(Flop) * Minute`.
+and it becomes possible to use metric prefixes on the value. So we could rewrite the above expression
+as, `Mega(Flop) * Minute`.
 
 ### Introducing new dimensions
 
 The result is just a `Double`, though, which is a little unsatisfactory, since it represents
 something more specific: a number of instructions. To do better, we need to introduce a new
-`Dimension` representing the size of code,
+`Dimension`, distinct from length, mass and other dimensions, and representing a CPU's
+performance,
 ```scala
 trait CpuPerformance extends Dimension
 ```
@@ -287,7 +295,7 @@ and create a `Flops` type corresponding to this dimension:
 ```scala
 import rudiments.*
 trait Flops[PowerType <: Nat] extends Units[PowerType, CpuPerformance]
-val Flop: SiUnit[Flops[1]] = SiUnit(1)
+val Flop: MetricUnit[Flops[1]] = MetricUnit(1)
 ```
 
 The type parameter, `PowerType`, is a necessary part of this definition, and must be constrained on
