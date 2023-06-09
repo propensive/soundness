@@ -171,11 +171,8 @@ object DimensionName:
   erased given substance: DimensionName[Units[1, AmountOfSubstance], "amount of substance"] =
     erasedValue
   
-  type Velocity = Units[1, Length] & Units[-1, Time]
-  erased given velocity: DimensionName[Velocity, "velocity"] = erasedValue
-
-  type Heat = Units[2, Length] & Units[1, Mass] & Units[-2, Time]
-  erased given heat: DimensionName[Heat, "heat"] = erasedValue
+  // type Heat = Units[2, Length] & Units[1, Mass] & Units[-2, Time]
+  // erased given heat: DimensionName[Heat, "heat"] = erasedValue
 
   type HeatCapacity = Units[2, Length] & Units[1, Mass] & Units[-2, Time] & Units[-1, Temperature]
   erased given heatCapacity: DimensionName[HeatCapacity, "heat capacity"] = erasedValue
@@ -210,7 +207,142 @@ object DimensionName:
   type LinearDensity = Units[-1, Length] & Units[1, Mass]
   erased given linearDensity: DimensionName[LinearDensity, "linear density"] = erasedValue
 
-  // continue at Magnetic Field Strength
+  type MagneticFieldStrength = Units[-1, Length] & Units[1, Current]
+  erased given magneticFieldStrength
+      : DimensionName[MagneticFieldStrength, "magnetic field strength"] =
+    erasedValue
+  
+  type MagneticFlux = Units[2, Length] & Units[1, Mass] & Units[-2, Time] & Units[-1, Current]
+  erased given magneticFlux: DimensionName[MagneticFlux, "magnetic flux"] = erasedValue
+  
+  type MagneticFluxDensity = Units[1, Mass] & Units[-2, Time] & Units[-1, Current]
+  
+  erased given magneticFluxDensity: DimensionName[MagneticFluxDensity, "magnetic flux density"] =
+    erasedValue
+  
+  type MagneticMoment = Units[2, Length] & Units[1, Current]
+  erased given magneticMoment: DimensionName[MagneticMoment, "magnetic moment"] = erasedValue
+
+  type Magnetization = Units[-1, Length] & Units[1, Current]
+  erased given magnetization: DimensionName[Magnetization, "magnetization"] = erasedValue
+
+  type MassDensity = Units[-3, Length] & Units[1, Mass]
+  erased given massDensity: DimensionName[MassDensity, "mass density"] = erasedValue
+
+  type MolarConcentration = Units[-3, Length] & Units[1, AmountOfSubstance]
+  erased given molarConcentration: DimensionName[MolarConcentration, "molar concentration"] =
+    erasedValue
+
+  type MolarEnergy = Units[2, Length] & Units[1, Mass] & Units[-2, Time] &
+      Units[-1, AmountOfSubstance]
+  
+  erased given molarEnergy: DimensionName[MolarEnergy, "molar energy"] = erasedValue
+
+  type MolarEntropy = Units[2, Length] & Units[1, Mass] & Units[-2, Time] & Units[-1, Temperature] &
+      Units[-1, AmountOfSubstance]
+  
+  erased given molarEntropy: DimensionName[MolarEntropy, "molar entropy"] = erasedValue
+
+  type MomentOfInertia = Units[2, Length] & Units[1, Mass]
+  erased given momentOfInertia: DimensionName[MomentOfInertia, "moment of inertia"] = erasedValue
+
+  type Momentum = Units[1, Length] & Units[1, Mass] & Units[-1, Time]
+  erased given momentum: DimensionName[Momentum, "momentum"] = erasedValue
+
+  type OpticalPower = Units[-1, Length]
+  erased given opticalPower: DimensionName[OpticalPower, "optical power"] = erasedValue
+
+  type Permeability = Units[1, Length] & Units[1, Mass] & Units[-2, Time] & Units[-2, Current]
+  erased given permeability: DimensionName[Permeability, "permeability"] = erasedValue
+
+  type Permittivity = Units[-3, Length] & Units[-1, Mass] & Units[4, Time] & Units[2, Current]
+  erased given permittivity: DimensionName[Permittivity, "permittivity"] = erasedValue
+
+  type Power = Units[2, Length] & Units[1, Mass] & Units[-3, Time]
+  erased given power: DimensionName[Power, "power"] = erasedValue
+
+  type Pressure = Units[-1, Length] & Units[1, Mass] & Units[-2, Time]
+  erased given power: DimensionName[Pressure, "pressure"] = erasedValue
+
+  type Pop = Units[1, Length] & Units[-6, Time]
+  erased given pop: DimensionName[Pop, "pop"] = erasedValue
+
+  type Radiance = Units[1, Mass] & Units[-3, Time]
+  erased given radiance: DimensionName[Radiance, "radiance"] = erasedValue
+
+  type RadiantIntensity = Units[2, Length] & Units[1, Mass] & Units[-3, Time]
+  erased given radiantIntensity: DimensionName[RadiantIntensity, "radiant intensity"] = erasedValue
+   
+  type ReactionRate = Units[-3, Length] & Units[-1, Time] & Units[1, AmountOfSubstance]
+  erased given reactionRate: DimensionName[ReactionRate, "reaction rate"] = erasedValue
+
+  type Reluctance = Units[-2, Length] & Units[-1, Mass] & Units[2, Time] & Units[2, Current]
+  erased given reluctance: DimensionName[Reluctance, "reluctance"] = erasedValue
+
+  type SpecificEnergy = Units[2, Length] & Units[-2, Time]
+  erased given specificEnergy: DimensionName[SpecificEnergy, "specific energy"] = erasedValue
+
+  type SpecificHeatCapacity = Units[2, Length] & Units[-2, Time] & Units[-1, Temperature]
+  
+  erased given specificHeatCapacity: DimensionName[SpecificHeatCapacity, "specific heat capacity"] =
+    erasedValue
+  
+  type SpecificVolume = Units[3, Length] & Units[-1, Mass]
+  erased given specificVolume: DimensionName[SpecificVolume, "specific volume"] = erasedValue
+
+  type Spin = Units[2, Length] & Units[1, Mass] & Units[-1, Time]
+  erased given spin: DimensionName[Spin, "spin"] = erasedValue
+
+  type Stress = Units[-1, Length] & Units[1, Mass] & Units[-2, Time]
+  erased given stress: DimensionName[Stress, "stress"] = erasedValue
+
+  type SurfaceTension = Units[1, Mass] & Units[-2, Time]
+  erased given surfaceTension: DimensionName[SurfaceTension, "surface tension"] = erasedValue
+
+  type TempratureGradient = Units[-1, Length] & Units[1, Temperature]
+  
+  erased given temperatureGradient: DimensionName[TemperatureGradient, "temperature gradient"] =
+    erasedValue
+  
+  type ThermalConductance = Units[2, Length] & Units[1, Mass] & Units[-3, Time] &
+      Units[-1, Temperature]
+  
+  erased given thermalConductance: DimensionName[ThermalConductance, "thermal conductance"] =
+    erasedValue
+  
+  type ThermalConductivity = Units[1, Length] & Units[1, Mass] & Units[-3, Time] &
+      Units[-1, Temperature]
+  
+  erased given thermalConductivity: DimensionName[ThermalConductivity, "thermal conductivity"] =
+    erasedValue
+
+  type ThermalResistance = Units[-2, Length] & Units[-1, Mass] & Units[3, Time] &
+      Units[1, Temperature]
+  
+  erased given thermalResistance: DimensionName[ThermalResistance, "thermal resistance"] =
+    erasedValue
+  
+  type ThermalResistivity = Units[-1, Length] & Units[-1, Mass] & Units[3, Time] &
+      Units[1, Temperature]
+  
+  erased given thermalResistivity: DimensionName[ThermalResistivity, "thermal resistivity"] =
+    erasedValue
+  
+
+  type Torque = Units[2, Length] & Units[1, Mass] & Units[-2, Time]
+  erased given torque: DimensionName[Torque, "torque"] = erasedValue
+  
+  type Velocity = Units[1, Length] & Units[-1, Time]
+  erased given velocity: DimensionName[Velocity, "velocity"] = erasedValue
+
+  type Volume = Units[3, Length]
+  erased given volume: DimensionName[Volume, "volume"] = erasedValue
+
+  type VolumetricFlowRate = Units[3, Length] & Units[-1, Time]
+  
+  erased given volumetricFlowRate = DimensionName[VolumetricFlowRate, "volumetric flow rate"] =
+    erasedValue
+  
   
 
 sealed trait Measure
