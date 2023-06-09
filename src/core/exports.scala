@@ -35,3 +35,6 @@ export scala.jdk.CollectionConverters.{IteratorHasAsScala, ListHasAsScala, MapHa
 
 export scala.annotation.{tailrec, implicitNotFound as missingContext, targetName, switch, StaticAnnotation,
     capability, allowConversions as convertible}
+
+@targetName("erasedValue")
+erased def ###[ErasedType] : ErasedType = scala.compiletime.erasedValue
