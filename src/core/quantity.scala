@@ -55,10 +55,10 @@ object QuantitativeMacros:
           case ('[current], '[next]) => recur(tail, TypeRepr.of[current & next])
       
       (recur(map.to(List), TypeRepr.of[Units[?, ?]]).asType: @unchecked) match
-        case '[units] => Expr.summon[DimensionName[Units[?, ?] & units, ?]].map: value =>
+        case '[units] => Expr.summon[PhysicalQuantity[Units[?, ?] & units, ?]].map: value =>
           (value: @unchecked) match
             case '{$name: dimType} => (Type.of[dimType]: @unchecked) match
-              case '[DimensionName[?, name]] => (TypeRepr.of[name].asMatchable: @unchecked) match
+              case '[PhysicalQuantity[?, name]] => (TypeRepr.of[name].asMatchable: @unchecked) match
                 case ConstantType(StringConstant(name)) => name
     
   private def readUnitPower(using quotes: Quotes)(typeRepr: quotes.reflect.TypeRepr): UnitPower =
@@ -428,7 +428,30 @@ object QuantitativeMacros:
     val slices = bitSlices[TallyUnitsType]
     println(slices)
     val first = slices.head.unitPower.ref
-    def recur(slices: List[BitSlice], expr: Expr[Long])
+    
+    '{
+      var result: Long = 0L
+      var current: Double = $quantity.asInstanceOf[Double]
+      var q: Int = 0
+      ${
+        def recur(bitSlices: List[BitSlice], acc: Expr[Unit]): Expr[Unit] = bitSlices match
+          case Nil =>
+            acc
+          
+          case BitSlice(unit, max, width, shift) :: tail =>
+            val expr = '{
+              $acc
+              current = current
+              q = (current/${Expr(max)}).toInt
+              result = result + (q << ${Expr(shift)})
+              current = current - q*${Expr(max)}
+            }
+            recur(tail, expr)
+          
+        recur(slices.tail, '{})
+      }
+      Tally.fromLong[TallyUnitsType](result)
+    }
 
   def get
       [UnitsType <: Tuple: Type, UnitType <: Units[1, ? <: Dimension]: Type]
