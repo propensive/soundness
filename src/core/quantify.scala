@@ -21,7 +21,6 @@ import rudiments.*
 import spectacular.*
 
 import scala.quoted.*
-import scala.compiletime.*
 
 import language.implicitConversions
 import language.experimental.captureChecking
@@ -40,309 +39,235 @@ erased trait PhysicalQuantity[DimensionType <: Units[?, ?], LabelType <: Label](
 
 object PhysicalQuantity:
   // base units
-  erased given length: PhysicalQuantity[Units[1, Length], "length"] = erasedValue
-  erased given mass: PhysicalQuantity[Units[1, Mass], "mass"] = erasedValue
-  erased given time: PhysicalQuantity[Units[1, Time], "time"] = erasedValue
-  erased given current: PhysicalQuantity[Units[1, Current], "current"] = erasedValue
-  erased given temperature: PhysicalQuantity[Units[1, Temperature], "temperature"] = erasedValue
-  erased given luminosity: PhysicalQuantity[Units[1, Luminosity], "luminosity"] = erasedValue
+  erased given length: PhysicalQuantity[Units[1, Length], "length"] = ###
+  erased given mass: PhysicalQuantity[Units[1, Mass], "mass"] = ###
+  erased given time: PhysicalQuantity[Units[1, Time], "time"] = ###
+  erased given current: PhysicalQuantity[Units[1, Current], "current"] = ###
+  erased given temperature: PhysicalQuantity[Units[1, Temperature], "temperature"] = ###
+  erased given luminosity: PhysicalQuantity[Units[1, Luminosity], "luminosity"] = ###
   
   // derived units from https://en.wikipedia.org/wiki/List_of_physical_quantities
-  type Absement = Units[1, Mass] & Units[1, Time]
-  erased given absement: PhysicalQuantity[Absement, "absement"] = erasedValue
-
-  type AbsorbedDoseRate = Units[2, Length] & Units[-3, Time]
-  erased given absorbedDoseRate: PhysicalQuantity[AbsorbedDoseRate, "absorbed dose rate"] = erasedValue
-
-  type Acceleration = Units[1, Length] & Units[-2, Time]
-  erased given acceleration: PhysicalQuantity[Acceleration, "acceleration"] = erasedValue
-
-  type Action = Units[2, Length] & Units[-1, Time] & Units[1, Mass]
-  erased given action: PhysicalQuantity[Action, "action"] = erasedValue
-
-  type AngularMomentum = Units[1, Mass] & Units[2, Length] & Units[-1, Time]
-  erased given angularMomentum: PhysicalQuantity[AngularMomentum, "angular momentum"] = erasedValue
-
-  type Area = Units[2, Length]
-  erased given area: PhysicalQuantity[Area, "area"] = erasedValue
-
-  type AreaDensity = Units[-2, Length] & Units[1, Mass]
-  erased given areaDensity: PhysicalQuantity[AreaDensity, "area density"] = erasedValue
-
-  type Capacitance = Units[-2, Length] & Units[-1, Mass] & Units[4, Time] & Units[1, Current]
-  erased given capacitance: PhysicalQuantity[Capacitance, "capacitance"] = erasedValue
-
-  type CatalyticActivityConcentration = Units[-3, Length] & Units[-1, Time] & Units[1,
-      AmountOfSubstance]
   
-  erased given catalyticActivityConcentration: PhysicalQuantity[CatalyticActivityConcentration,
-     "catalytic activity concentration"] = erasedValue
-
-  type CentrifugalForce = Units[1, Mass] & Units[1, Length] & Units[-2, Time]
-  erased given centrifugalForce: PhysicalQuantity[CentrifugalForce, "centrifugal force"] = erasedValue
-  
-  type ChemicalPotential = Units[2, Length] & Units[1, Mass] & Units[-2, Time] & Units[-1,
-      AmountOfSubstance]
-  
-  erased given chemicalPotential: PhysicalQuantity[ChemicalPotential, "chemical potential"] =
-    erasedValue
-  
-  type Crackle = Units[1, Length] & Units[-5, Time]
-  erased given crackle: PhysicalQuantity[Crackle, "crackle"] = erasedValue
-  
-  type CurrentDensity = Units[-2, Length] & Units[1, Current]
-  erased given currentDensity: PhysicalQuantity[CurrentDensity, "current density"] = erasedValue
-  
-  type DoseEquivalent = Units[2, Length] & Units[-2, Time]
-  erased given doseEquivalent: PhysicalQuantity[DoseEquivalent, "dose equivalent"] = erasedValue
-  
-  type DynamicViscosity = Units[-1, Length] & Units[1, Mass] & Units[-1, Time]
-  erased given dynamicViscosity: PhysicalQuantity[DynamicViscosity, "dynamic viscosity"] = erasedValue
-  
-  type ElectricCharge = Units[1, Time] & Units[1, Current]
-  erased given electricCharge: PhysicalQuantity[ElectricCharge, "electric charge"] = erasedValue
-  
+  type ElectricalConductivity = Units[-3, Length] & Units[-1, Mass] & Units[3, Time] & Units[2, Current]
+  type Permittivity = Units[-3, Length] & Units[-1, Mass] & Units[4, Time] & Units[2, Current]
+  type ReactionRate = Units[-3, Length] & Units[-1, Time] & Units[1, AmountOfSubstance]
+  type MolarConcentration = Units[-3, Length] & Units[1, AmountOfSubstance]
   type ElectricChargeDensity = Units[-3, Length] & Units[1, Time] & Units[1, Current]
-  
-  erased given electricChargeDensity: PhysicalQuantity[ElectricChargeDensity,
-      "electric charge density"] = erasedValue
-  
-  type ElectricDipoleMoment = Units[1, Length] & Units[1, Time] & Units[1, Current]
-  
-  erased given electricDipoleMoment: PhysicalQuantity[ElectricDipoleMoment, "electric dipole moment"] =
-    erasedValue
-  
+  type MassDensity = Units[-3, Length] & Units[1, Mass]
+  type Reluctance = Units[-2, Length] & Units[-1, Mass] & Units[2, Time] & Units[2, Current]
+  type ElectricalConductance = Units[-2, Length] & Units[-1, Mass] & Units[3, Time] & Units[2, Current]
+  type ThermalResistance = Units[-2, Length] & Units[-1, Mass] & Units[3, Time] & Units[1, Temperature]
+  type Capacitance = Units[-2, Length] & Units[-1, Mass] & Units[4, Time] & Units[1, Current]
+  type CurrentDensity = Units[-2, Length] & Units[1, Current]
   type ElectricDisplacementField = Units[-2, Length] & Units[1, Time] & Units[1, Current]
+  type Illuminance = Units[-2, Length] & Units[1, Luminosity]
+  type AreaDensity = Units[-2, Length] & Units[1, Mass]
+  type ThermalResistivity = Units[-1, Length] & Units[-1, Mass] & Units[3, Time] & Units[1, Temperature]
+  type Magnetization = Units[-1, Length] & Units[1, Current]
+  type OpticalPower = Units[-1, Length]
+  type TempratureGradient = Units[-1, Length] & Units[1, Temperature]
+  type Pressure = Units[-1, Length] & Units[1, Mass] & Units[-2, Time]
+  type DynamicViscosity = Units[-1, Length] & Units[1, Mass] & Units[-1, Time]
+  type LinearDensity = Units[-1, Length] & Units[1, Mass]
+  type Frequency = Units[-1, Time]
+  type ElectricCharge = Units[1, Time] & Units[1, Current]
+  type Radiance = Units[1, Mass] & Units[-3, Time]
+  type MagneticFluxDensity = Units[1, Mass] & Units[-2, Time] & Units[-1, Current]
+  type SurfaceTension = Units[1, Mass] & Units[-2, Time]
+  type Absement = Units[1, Mass] & Units[1, Time]
+  type Pop = Units[1, Length] & Units[-6, Time]
+  type Crackle = Units[1, Length] & Units[-5, Time]
+  type Jounce = Units[1, Length] & Units[-4, Time]
+  type Jerk = Units[1, Length] & Units[-3, Time]
+  type Acceleration = Units[1, Length] & Units[-2, Time]
+  type Velocity = Units[1, Length] & Units[-1, Time]
+  type ElectricDipoleMoment = Units[1, Length] & Units[1, Time] & Units[1, Current]
+  type ElectricFieldStrength = Units[1, Length] & Units[1, Mass] & Units[-3, Time] & Units[-1, Current]
+  type ThermalConductivity = Units[1, Length] & Units[1, Mass] & Units[-3, Time] & Units[-1, Temperature]
+  type Permeability = Units[1, Length] & Units[1, Mass] & Units[-2, Time] & Units[-2, Current]
+  type Force = Units[1, Length] & Units[1, Mass] & Units[-2, Time]
+  type Momentum = Units[1, Length] & Units[1, Mass] & Units[-1, Time]
+  type AbsorbedDoseRate = Units[2, Length] & Units[-3, Time]
+  type SpecificHeatCapacity = Units[2, Length] & Units[-2, Time] & Units[-1, Temperature]
+  type SpecificEnergy = Units[2, Length] & Units[-2, Time]
+  type Area = Units[2, Length]
+  type MagneticMoment = Units[2, Length] & Units[1, Current]
+  type Impedance = Units[2, Length] & Units[1, Mass] & Units[-3, Time] & Units[-2, Current]
+  type ElectricalPotential = Units[2, Length] & Units[1, Mass] & Units[-3, Time] & Units[-1, Current]
+  type ThermalConductance = Units[2, Length] & Units[1, Mass] & Units[-3, Time] & Units[-1, Temperature]
+  type Power = Units[2, Length] & Units[1, Mass] & Units[-3, Time]
+  type Inductance = Units[2, Length] & Units[1, Mass] & Units[-2, Time] & Units[-2, Current]
+  type MagneticFlux = Units[2, Length] & Units[1, Mass] & Units[-2, Time] & Units[-1, Current]
+  type Entropy = Units[2, Length] & Units[1, Mass] & Units[-2, Time] & Units[-1, Temperature]
+  type MolarEntropy = Units[2, Length] & Units[1, Mass] & Units[-2, Time] & Units[-1, Temperature] & Units[-1, AmountOfSubstance]
+  type ChemicalPotential = Units[2, Length] & Units[1, Mass] & Units[-2, Time] & Units[-1, AmountOfSubstance]
+  type Energy = Units[2, Length] & Units[1, Mass] & Units[-2, Time]
+  type Spin = Units[2, Length] & Units[1, Mass] & Units[-1, Time]
+  type MomentOfInertia = Units[2, Length] & Units[1, Mass]
+  type SpecificVolume = Units[3, Length] & Units[-1, Mass]
+  type VolumetricFlowRate = Units[3, Length] & Units[-1, Time]
+  type Volume = Units[3, Length]
+  type ElectricalResistivity = Units[3, Length] & Units[1, Mass] & Units[-3, Time] & Units[-2, Current]
+  
+  // type L[-NatType <: Nat] = Units[Nat, Length]
+  // type M[-NatType <: Nat] = Units[Nat, Mass]
+  // type T[-NatType <: Nat] = Units[Nat, Time]
+  // type I[-NatType <: Nat] = Units[Nat, Current]
+  // type N[-NatType <: Nat] = Units[Nat, AmountOfSubstance]
+  // type H[-NatType <: Nat] = Units[Nat, Temperature]
+  // type J[-NatType <: Nat] = Units[Nat, Luminosity]
+
+  // type ElectricalConductivity    = L[-3] & M[-1] & T[ 3] & I[ 2]
+  // type Permittivity              = L[-3] & M[-1] & T[ 4] & I[ 2]
+  // type ReactionRate              = L[-3] &         T[-1] &                 N[ 1]
+  // type MolarConcentration        = L[-3] &                                 N[ 1]
+  // type ElectricChargeDensity     = L[-3] &         T[ 1] & I[ 1]
+  // type MassDensity               = L[-3] & M[ 1]
+  // type Reluctance                = L[-2] & M[-1] & T[ 2] & I[ 2]
+  // type ElectricalConductance     = L[-2] & M[-1] & T[ 3] & I[ 2]
+  // type ThermalResistance         = L[-2] & M[-1] & T[ 3] &         H[ 1]
+  // type Capacitance               = L[-2] & M[-1] & T[ 4] & I[ 1]
+  // type CurrentDensity            = L[-2] &                 I[ 1]
+  // type ElectricDisplacementField = L[-2] &         T[ 1] & I[ 1]
+  // type Illuminance               = L[-2] &                                         J[ 1]
+  // type AreaDensity               = L[-2] & M[ 1]
+  // type ThermalResistivity        = L[-1] & M[-1] & T[ 3] &         H[ 1]
+  // type Magnetization             = L[-1] &                 I[ 1]
+  // type OpticalPower              = L[-1]
+  // type TempratureGradient        = L[-1] &                         H[ 1]
+  // type Pressure                  = L[-1] & M[ 1] & T[-2]
+  // type DynamicViscosity          = L[-1] & M[ 1] & T[-1]
+  // type LinearDensity             = L[-1] & M[ 1]
+  // type Frequency                 =                 T[-1]
+  // type ElectricCharge            =                 T[ 1] & I[ 1]
+  // type Radiance                  =         M[ 1] & T[-3]
+  // type MagneticFluxDensity       =         M[ 1] & T[-2] & I[-1]
+  // type SurfaceTension            =         M[ 1] & T[-2]
+  // type Absement                  =         M[ 1] & T[ 1]
+  // type Pop                       = L[ 1] &         T[-6]
+  // type Crackle                   = L[ 1] &         T[-5]
+  // type Jounce                    = L[ 1] &         T[-4]
+  // type Jerk                      = L[ 1] &         T[-3]
+  // type Acceleration              = L[ 1] &         T[-2]
+  // type Velocity2                  = L[ 1] &         T[-1]
+  // type Velocity = Units[1, Length] & Units[-1, Time]
+  // type ElectricDipoleMoment      = L[ 1] &         T[ 1] & I[ 1]
+  // type ElectricFieldStrength     = L[ 1] & M[ 1] & T[-3] & I[-1]
+  // type ThermalConductivity       = L[ 1] & M[ 1] & T[-3] &         H[-1]
+  // type Permeability              = L[ 1] & M[ 1] & T[-2] & I[-2]
+  // type Force                     = L[ 1] & M[ 1] & T[-2]
+  // type Momentum                  = L[ 1] & M[ 1] & T[-1]
+  // type AbsorbedDoseRate          = L[ 2] &         T[-3]
+  // type SpecificHeatCapacity      = L[ 2] &         T[-2] &         H[-1]
+  // type SpecificEnergy            = L[ 2] &         T[-2]
+  // type Area                      = L[ 2]
+  // type MagneticMoment            = L[ 2] &                 I[ 1]
+  // type Impedance                 = L[ 2] & M[ 1] & T[-3] & I[-2]
+  // type ElectricalPotential       = L[ 2] & M[ 1] & T[-3] & I[-1]
+  // type ThermalConductance        = L[ 2] & M[ 1] & T[-3] &         H[-1]
+  // type Power                     = L[ 2] & M[ 1] & T[-3]
+  // type Inductance                = L[ 2] & M[ 1] & T[-2] & I[-2]
+  // type MagneticFlux              = L[ 2] & M[ 1] & T[-2] & I[-1]
+  // type Entropy                   = L[ 2] & M[ 1] & T[-2] &         H[-1]
+  // type MolarEntropy              = L[ 2] & M[ 1] & T[-2] &         H[-1] & N[-1]
+  // type ChemicalPotential         = L[ 2] & M[ 1] & T[-2] &                 N[-1]
+  // type Energy                    = L[ 2] & M[ 1] & T[-2]
+  // type Spin                      = L[ 2] & M[ 1] & T[-1]
+  // type MomentOfInertia           = L[ 2] & M[ 1]
+  // type SpecificVolume            = L[ 3] & M[-1]
+  // type VolumetricFlowRate        = L[ 3] &         T[-1]
+  // type Volume                    = L[ 3]
+  // type ElectricalResistivity     = L[ 3] & M[ 1] & T[-3] & I[-2]
+
+  // erased given heat: PhysicalQuantity[Heat, "heat"] = ###
+  erased given absement: PhysicalQuantity[Absement, "absement"] = ###
+  erased given absorbedDoseRate: PhysicalQuantity[AbsorbedDoseRate, "absorbed dose rate"] = ###
+  erased given acceleration: PhysicalQuantity[Acceleration, "acceleration"] = ###
+  erased given area: PhysicalQuantity[Area, "area"] = ###
+  erased given areaDensity: PhysicalQuantity[AreaDensity, "area density"] = ###
+  erased given capacitance: PhysicalQuantity[Capacitance, "capacitance"] = ###
+  erased given crackle: PhysicalQuantity[Crackle, "crackle"] = ###
+  erased given currentDensity: PhysicalQuantity[CurrentDensity, "current density"] = ###
+  erased given dynamicViscosity: PhysicalQuantity[DynamicViscosity, "dynamic viscosity"] = ###
+  erased given electricCharge: PhysicalQuantity[ElectricCharge, "electric charge"] = ###
+  erased given energy: PhysicalQuantity[Energy, "energy"] = ###
+  erased given entropy: PhysicalQuantity[Entropy, "entropy"] = ###
+  erased given force: PhysicalQuantity[Force, "force"] = ###
+  erased given frequency: PhysicalQuantity[Frequency, "frequency"] = ###
+  erased given substance: PhysicalQuantity[Units[1, AmountOfSubstance], "amount of substance"] = ###
+  erased given illuminance: PhysicalQuantity[Illuminance, "illuminance"] = ###
+  erased given impedance: PhysicalQuantity[Impedance, "impedance"] = ###
+  erased given inductance: PhysicalQuantity[Inductance, "inductance"] = ###
+  erased given jerk: PhysicalQuantity[Jerk, "jerk"] = ###
+  erased given jounce: PhysicalQuantity[Jounce, "jounce"] = ###
+  erased given linearDensity: PhysicalQuantity[LinearDensity, "linear density"] = ###
+  erased given magneticFlux: PhysicalQuantity[MagneticFlux, "magnetic flux"] = ###
+  erased given magneticMoment: PhysicalQuantity[MagneticMoment, "magnetic moment"] = ###
+  erased given magnetization: PhysicalQuantity[Magnetization, "magnetization"] = ###
+  erased given massDensity: PhysicalQuantity[MassDensity, "mass density"] = ###
+  erased given molarConcentration: PhysicalQuantity[MolarConcentration, "molar concentration"] = ###
+  erased given chemicalPotential: PhysicalQuantity[ChemicalPotential, "chemical potential"] = ###
+  erased given molarEntropy: PhysicalQuantity[MolarEntropy, "molar entropy"] = ###
+  erased given momentOfInertia: PhysicalQuantity[MomentOfInertia, "moment of inertia"] = ###
+  erased given momentum: PhysicalQuantity[Momentum, "momentum"] = ###
+  erased given opticalPower: PhysicalQuantity[OpticalPower, "optical power"] = ###
+  erased given permeability: PhysicalQuantity[Permeability, "permeability"] = ###
+  erased given permittivity: PhysicalQuantity[Permittivity, "permittivity"] = ###
+  erased given power: PhysicalQuantity[Power, "power"] = ###
+  erased given pressure: PhysicalQuantity[Pressure, "pressure"] = ###
+  erased given pop: PhysicalQuantity[Pop, "pop"] = ###
+  erased given radiance: PhysicalQuantity[Radiance, "radiance"] = ###
+  erased given reactionRate: PhysicalQuantity[ReactionRate, "reaction rate"] = ###
+  erased given reluctance: PhysicalQuantity[Reluctance, "reluctance"] = ###
+  erased given specificEnergy: PhysicalQuantity[SpecificEnergy, "specific energy"] = ###
+  erased given specificVolume: PhysicalQuantity[SpecificVolume, "specific volume"] = ###
+  erased given spin: PhysicalQuantity[Spin, "spin"] = ###
+  erased given surfaceTension: PhysicalQuantity[SurfaceTension, "surface tension"] = ###
+  erased given thermalConductance: PhysicalQuantity[ThermalConductance, "thermal conductance"] = ###
+  erased given thermalResistance: PhysicalQuantity[ThermalResistance, "thermal resistance"] = ###
+  erased given thermalResistivity: PhysicalQuantity[ThermalResistivity, "thermal resistivity"] = ###
+  erased given velocity: PhysicalQuantity[Velocity, "velocity"] = ###
+  erased given volume: PhysicalQuantity[Volume, "volume"] = ###
+
+  erased given electricChargeDensity: PhysicalQuantity[ElectricChargeDensity,
+      "electric charge density"] = ###
+  
+  erased given electricDipoleMoment
+      : PhysicalQuantity[ElectricDipoleMoment, "electric dipole moment"] =
+    ###
   
   erased given electricDisplacementField: PhysicalQuantity[ElectricDisplacementField,
-      "electric displacement field"] = erasedValue
-  
-  type ElectricFieldStrength = Units[1, Length] & Units[1, Mass] & Units[-3, Time] & Units[-1,
-      Current]
+      "electric displacement field"] = ###
   
   erased given electricFieldStrength: PhysicalQuantity[ElectricFieldStrength,
-      "electric field strength"] = erasedValue
+      "electric field strength"] = ###
   
-  type ElectricalConductance = Units[-2, Length] & Units[-1, Mass] & Units[3, Time] & Units[2,
-      Current]
-  
-  erased given electricalConductance: PhysicalQuantity[ElectricalConductance, "electric conductance"] =
-    erasedValue
-  
-  type ElectricalConductivity = Units[-3, Length] & Units[-1, Mass] & Units[3, Time] & Units[2,
-      Current]
+  erased given electricalConductance
+      : PhysicalQuantity[ElectricalConductance, "electric conductance"] =
+    ###
   
   erased given electricalConductivity: PhysicalQuantity[ElectricalConductivity,
-      "electric conductivity"] = erasedValue
-  
-  type ElectricalPotential = Units[2, Length] & Units[1, Mass] & Units[-3, Time] & Units[-1,
-      Current]
+      "electric conductivity"] = ###
   
   erased given electricalPotential: PhysicalQuantity[ElectricalPotential, "electric potential"] =
-    erasedValue
+    ###
   
-  type ElectricalResistance = Units[2, Length] & Units[1, Mass] & Units[-3, Time] & Units[-2,
-      Current]
-  
-  erased given electricalResistance: PhysicalQuantity[ElectricalResistance, "electric resistance"] =
-    erasedValue
-  
-  type ElectricalResistivity = Units[3, Length] & Units[1, Mass] & Units[-3, Time] & Units[-2,
-      Current]
-  
-  erased given electricalResistivity: PhysicalQuantity[ElectricalResistivity, "electric resistivity"] =
-    erasedValue
-  
-  type Energy = Units[2, Length] & Units[1, Mass] & Units[-2, Time]
-  erased given energy: PhysicalQuantity[Energy, "energy"] = erasedValue
-  
-  type EnergyDensity = Units[-1, Length] & Units[1, Mass] & Units[-2, Time]
-  erased given energyDensity: PhysicalQuantity[EnergyDensity, "energy density"] = erasedValue
-  
-  type Entropy = Units[2, Length] & Units[1, Mass] & Units[-2, Time] & Units[-1, Temperature]
-  erased given entropy: PhysicalQuantity[Entropy, "entropy"] = erasedValue
-  
-  type Force = Units[1, Mass] & Units[1, Length] & Units[-2, Time]
-  erased given force: PhysicalQuantity[Force, "force"] = erasedValue
-  
-  type Frequency = Units[-1, Time]
-  erased given frequency: PhysicalQuantity[Frequency, "frequency"] = erasedValue
-  
-  erased given substance: PhysicalQuantity[Units[1, AmountOfSubstance], "amount of substance"] =
-    erasedValue
-  
-  // type Heat = Units[2, Length] & Units[1, Mass] & Units[-2, Time]
-  // erased given heat: PhysicalQuantity[Heat, "heat"] = erasedValue
-
-  type HeatCapacity = Units[2, Length] & Units[1, Mass] & Units[-2, Time] & Units[-1, Temperature]
-  erased given heatCapacity: PhysicalQuantity[HeatCapacity, "heat capacity"] = erasedValue
-
-  type HeatFluxDensity = Units[1, Mass] & Units[-3, Time]
-  erased given heatFluxDensity: PhysicalQuantity[HeatFluxDensity, "heat flux density"] = erasedValue
-
-  type Illuminance = Units[-2, Length] & Units[1, Luminosity]
-  erased given illuminance: PhysicalQuantity[Illuminance, "illuminance"] = erasedValue
-
-  type Impedance = Units[2, Length] & Units[1, Mass] & Units[-3, Time] & Units[-2, Current]
-  erased given impedance: PhysicalQuantity[Impedance, "impedance"] = erasedValue
-
-  type Impulse = Units[1, Length] & Units[1, Mass] & Units[-1, Time]
-  erased given impulse: PhysicalQuantity[Impulse, "impulse"] = erasedValue
-
-  type Inductance = Units[2, Length] & Units[1, Mass] & Units[-2, Time] & Units[-2, Current]
-  erased given inductance: PhysicalQuantity[Inductance, "inductance"] = erasedValue
-
-  type Irradiance = Units[1, Mass] & Units[-3, Time]
-  erased given irradiance: PhysicalQuantity[Irradiance, "irradiance"] = erasedValue
-
-  type Intensity = Units[1, Mass] & Units[-3, Time]
-  erased given intensity: PhysicalQuantity[Intensity, "intensity"] = erasedValue
-
-  type Jerk = Units[1, Length] & Units[-3, Time]
-  erased given jerk: PhysicalQuantity[Jerk, "jerk"] = erasedValue
-
-  type Jounce = Units[1, Length] & Units[-4, Time]
-  erased given jounce: PhysicalQuantity[Jounce, "jounce"] = erasedValue
-
-  type LinearDensity = Units[-1, Length] & Units[1, Mass]
-  erased given linearDensity: PhysicalQuantity[LinearDensity, "linear density"] = erasedValue
-
-  type MagneticFieldStrength = Units[-1, Length] & Units[1, Current]
-  erased given magneticFieldStrength
-      : PhysicalQuantity[MagneticFieldStrength, "magnetic field strength"] =
-    erasedValue
-  
-  type MagneticFlux = Units[2, Length] & Units[1, Mass] & Units[-2, Time] & Units[-1, Current]
-  erased given magneticFlux: PhysicalQuantity[MagneticFlux, "magnetic flux"] = erasedValue
-  
-  type MagneticFluxDensity = Units[1, Mass] & Units[-2, Time] & Units[-1, Current]
+  erased given electricalResistivity
+      : PhysicalQuantity[ElectricalResistivity, "electric resistivity"] =
+    ###
   
   erased given magneticFluxDensity: PhysicalQuantity[MagneticFluxDensity, "magnetic flux density"] =
-    erasedValue
+    ###
   
-  type MagneticMoment = Units[2, Length] & Units[1, Current]
-  erased given magneticMoment: PhysicalQuantity[MagneticMoment, "magnetic moment"] = erasedValue
-
-  type Magnetization = Units[-1, Length] & Units[1, Current]
-  erased given magnetization: PhysicalQuantity[Magnetization, "magnetization"] = erasedValue
-
-  type MassDensity = Units[-3, Length] & Units[1, Mass]
-  erased given massDensity: PhysicalQuantity[MassDensity, "mass density"] = erasedValue
-
-  type MolarConcentration = Units[-3, Length] & Units[1, AmountOfSubstance]
-  erased given molarConcentration: PhysicalQuantity[MolarConcentration, "molar concentration"] =
-    erasedValue
-
-  type MolarEnergy = Units[2, Length] & Units[1, Mass] & Units[-2, Time] &
-      Units[-1, AmountOfSubstance]
-  
-  erased given molarEnergy: PhysicalQuantity[MolarEnergy, "molar energy"] = erasedValue
-
-  type MolarEntropy = Units[2, Length] & Units[1, Mass] & Units[-2, Time] & Units[-1, Temperature] &
-      Units[-1, AmountOfSubstance]
-  
-  erased given molarEntropy: PhysicalQuantity[MolarEntropy, "molar entropy"] = erasedValue
-
-  type MomentOfInertia = Units[2, Length] & Units[1, Mass]
-  erased given momentOfInertia: PhysicalQuantity[MomentOfInertia, "moment of inertia"] = erasedValue
-
-  type Momentum = Units[1, Length] & Units[1, Mass] & Units[-1, Time]
-  erased given momentum: PhysicalQuantity[Momentum, "momentum"] = erasedValue
-
-  type OpticalPower = Units[-1, Length]
-  erased given opticalPower: PhysicalQuantity[OpticalPower, "optical power"] = erasedValue
-
-  type Permeability = Units[1, Length] & Units[1, Mass] & Units[-2, Time] & Units[-2, Current]
-  erased given permeability: PhysicalQuantity[Permeability, "permeability"] = erasedValue
-
-  type Permittivity = Units[-3, Length] & Units[-1, Mass] & Units[4, Time] & Units[2, Current]
-  erased given permittivity: PhysicalQuantity[Permittivity, "permittivity"] = erasedValue
-
-  type Power = Units[2, Length] & Units[1, Mass] & Units[-3, Time]
-  erased given power: PhysicalQuantity[Power, "power"] = erasedValue
-
-  type Pressure = Units[-1, Length] & Units[1, Mass] & Units[-2, Time]
-  erased given power: PhysicalQuantity[Pressure, "pressure"] = erasedValue
-
-  type Pop = Units[1, Length] & Units[-6, Time]
-  erased given pop: PhysicalQuantity[Pop, "pop"] = erasedValue
-
-  type Radiance = Units[1, Mass] & Units[-3, Time]
-  erased given radiance: PhysicalQuantity[Radiance, "radiance"] = erasedValue
-
-  type RadiantIntensity = Units[2, Length] & Units[1, Mass] & Units[-3, Time]
-  erased given radiantIntensity: PhysicalQuantity[RadiantIntensity, "radiant intensity"] = erasedValue
-   
-  type ReactionRate = Units[-3, Length] & Units[-1, Time] & Units[1, AmountOfSubstance]
-  erased given reactionRate: PhysicalQuantity[ReactionRate, "reaction rate"] = erasedValue
-
-  type Reluctance = Units[-2, Length] & Units[-1, Mass] & Units[2, Time] & Units[2, Current]
-  erased given reluctance: PhysicalQuantity[Reluctance, "reluctance"] = erasedValue
-
-  type SpecificEnergy = Units[2, Length] & Units[-2, Time]
-  erased given specificEnergy: PhysicalQuantity[SpecificEnergy, "specific energy"] = erasedValue
-
-  type SpecificHeatCapacity = Units[2, Length] & Units[-2, Time] & Units[-1, Temperature]
-  
-  erased given specificHeatCapacity: PhysicalQuantity[SpecificHeatCapacity, "specific heat capacity"] =
-    erasedValue
-  
-  type SpecificVolume = Units[3, Length] & Units[-1, Mass]
-  erased given specificVolume: PhysicalQuantity[SpecificVolume, "specific volume"] = erasedValue
-
-  type Spin = Units[2, Length] & Units[1, Mass] & Units[-1, Time]
-  erased given spin: PhysicalQuantity[Spin, "spin"] = erasedValue
-
-  type Stress = Units[-1, Length] & Units[1, Mass] & Units[-2, Time]
-  erased given stress: PhysicalQuantity[Stress, "stress"] = erasedValue
-
-  type SurfaceTension = Units[1, Mass] & Units[-2, Time]
-  erased given surfaceTension: PhysicalQuantity[SurfaceTension, "surface tension"] = erasedValue
-
-  type TempratureGradient = Units[-1, Length] & Units[1, Temperature]
-  
-  erased given temperatureGradient: PhysicalQuantity[TemperatureGradient, "temperature gradient"] =
-    erasedValue
-  
-  type ThermalConductance = Units[2, Length] & Units[1, Mass] & Units[-3, Time] &
-      Units[-1, Temperature]
-  
-  erased given thermalConductance: PhysicalQuantity[ThermalConductance, "thermal conductance"] =
-    erasedValue
-  
-  type ThermalConductivity = Units[1, Length] & Units[1, Mass] & Units[-3, Time] &
-      Units[-1, Temperature]
+  erased given specificHeatCapacity
+      : PhysicalQuantity[SpecificHeatCapacity, "specific heat capacity"] =
+    ###
   
   erased given thermalConductivity: PhysicalQuantity[ThermalConductivity, "thermal conductivity"] =
-    erasedValue
-
-  type ThermalResistance = Units[-2, Length] & Units[-1, Mass] & Units[3, Time] &
-      Units[1, Temperature]
+    ###
   
-  erased given thermalResistance: PhysicalQuantity[ThermalResistance, "thermal resistance"] =
-    erasedValue
-  
-  type ThermalResistivity = Units[-1, Length] & Units[-1, Mass] & Units[3, Time] &
-      Units[1, Temperature]
-  
-  erased given thermalResistivity: PhysicalQuantity[ThermalResistivity, "thermal resistivity"] =
-    erasedValue
-  
-
-  type Torque = Units[2, Length] & Units[1, Mass] & Units[-2, Time]
-  erased given torque: PhysicalQuantity[Torque, "torque"] = erasedValue
-  
-  type Velocity = Units[1, Length] & Units[-1, Time]
-  erased given velocity: PhysicalQuantity[Velocity, "velocity"] = erasedValue
-
-  type Volume = Units[3, Length]
-  erased given volume: PhysicalQuantity[Volume, "volume"] = erasedValue
-
-  type VolumetricFlowRate = Units[3, Length] & Units[-1, Time]
-  
-  erased given volumetricFlowRate = PhysicalQuantity[VolumetricFlowRate, "volumetric flow rate"] =
-    erasedValue
-  
+  erased given volumetricFlowRate: PhysicalQuantity[VolumetricFlowRate, "volumetric flow rate"] =
+    ###
   
 
 sealed trait Measure
@@ -404,8 +329,7 @@ object QuantitativeOpaques:
     def apply[UnitsType <: Measure](value: Quantity[UnitsType]): MetricUnit[UnitsType] = value
 
   object Quantity:
-    erased given [UnitsType <: Measure]: CanEqual[Quantity[UnitsType], Quantity[UnitsType]] =
-      compiletime.erasedValue
+    erased given [UnitsType <: Measure]: CanEqual[Quantity[UnitsType], Quantity[UnitsType]] = ###
 
     def apply[UnitsType <: Measure](value: Double): Quantity[UnitsType] = value
     
