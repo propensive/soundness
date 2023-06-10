@@ -74,7 +74,7 @@ object Postable extends FallbackPostable:
   given Postable[DataStream] = Postable(media"application/octet-stream", identity(_))
   
   given dataStream[T](using response: GenericHttpResponseStream[T]): Postable[T] =
-    erased given CanThrow[InvalidMediaTypeError] = compiletime.erasedValue
+    erased given CanThrow[InvalidMediaTypeError] = ###
     Postable(Media.parse(response.mediaType.show), response.content(_).map(identity))
   
 class Postable[T](val contentType: MediaType,
@@ -89,9 +89,9 @@ class Postable[T](val contentType: MediaType,
 object HttpMethod:
   given formmethod: GenericHtmlAttribute["formmethod", HttpMethod] with
     def name: String = "formmethod"
-    def serialize(method: HttpMethod): String = summon[AnsiShow[HttpMethod]].ansiShow(method).plain.s
+    def serialize(method: HttpMethod): String = method.show.s
 
-  given AnsiShow[HttpMethod] = method => ansi"${colors.Crimson}[${Showable(method).show.upper}]"
+  given Display[HttpMethod] = method => out"${colors.Crimson}[${Showable(method).show.upper}]"
 
 enum HttpMethod:
   case Get, Head, Post, Put, Delete, Connect, Options, Trace, Patch
@@ -177,9 +177,9 @@ object Http:
                      (url: Url, content: T, method: HttpMethod,headers: Seq[RequestHeader.Value])
                      (using Internet, Log)
                      : HttpResponse throws StreamCutError =
-    Log.info(ansi"Sending HTTP $method request to $url")
+    Log.info(out"Sending HTTP $method request to $url")
     headers.foreach(Log.fine(_))
-    Log.fine(ansi"HTTP request body: ${summon[Postable[T]].preview(content)}")
+    Log.fine(out"HTTP request body: ${summon[Postable[T]].preview(content)}")
     
     URI(url.show.s).toURL.nn.openConnection.nn match
       case conn: HttpURLConnection =>
@@ -209,7 +209,7 @@ object Http:
             try read(conn.getErrorStream.nn) catch case _: Exception => HttpBody.Empty
         
         val HttpStatus(status) = conn.getResponseCode: @unchecked
-        Log.info(ansi"Received response with HTTP status ${status.show}")
+        Log.info(out"Received response with HTTP status ${status.show}")
 
         val responseHeaders =
           val scalaMap: Map[String | Null, ju.List[String]] = conn.getHeaderFields.nn.asScala.toMap

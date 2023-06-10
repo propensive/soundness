@@ -115,7 +115,7 @@ object Url:
     val rest = t"${url.query.fm(t"")(t"?"+_)}${url.fragment.fm(t"")(t"#"+_)}"
     t"${url.scheme}:$auth${url.pathText}$rest"
   
-  given ansiShow: AnsiShow[Url] = url => ansi"$Underline(${colors.DeepSkyBlue}(${show.show(url)}))"
+  given ansiShow: Display[Url] = url => out"$Underline(${colors.DeepSkyBlue}(${show.show(url)}))"
 
   given action: GenericHtmlAttribute["action", Url] with
     def name: String = "action"
