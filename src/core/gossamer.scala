@@ -17,6 +17,7 @@
 package gossamer
 
 import escapade.*
+import rudiments.*
 
 package defaultTextTypes:
-  given output: DefaultTextType { type TextType = Output } = compiletime.erasedValue
+  given output: DefaultTextType { type TextType = Output } = ###
