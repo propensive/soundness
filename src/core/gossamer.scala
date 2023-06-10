@@ -40,7 +40,7 @@ export Bidi.Ltr, Bidi.Rtl
 extension (value: Bytes)
   def uString: Text = Text(String(value.to(Array), "UTF-8"))
   def hex: Text = Text(value.map { b => String.format("\\u%04x", b.toInt).nn }.mkString)
-  def text[Enc <: Encoding](using enc: Enc): Text = Text(String(value.to(Array), enc.name.s))
+  def text(using decoder: CharDecoder): Text = decoder.decode(value)
 
 object Cuttable:
   given [TextType: Textual](using textual: Textual[TextType]): Cuttable[TextType, Text] =
@@ -265,11 +265,8 @@ extension (text: Text)
   inline def urlEncode: Text = Text(URLEncoder.encode(text.s, "UTF-8").nn)
   inline def urlDecode: Text = Text(URLDecoder.decode(text.s, "UTF-8").nn)
   inline def punycode: Text = Text(java.net.IDN.toASCII(text.s).nn)
-  
-  inline def bytes(using enc: Encoding): IArray[Byte] =
-    text.s.getBytes(enc.name.s).nn.immutable(using Unsafe)
-  
-  inline def sysBytes: IArray[Byte] = text.s.getBytes().nn.immutable(using Unsafe)
+  inline def bytes(using encoder: CharEncoder): IArray[Byte] = encoder.encode(text)
+  inline def sysBytes: IArray[Byte] = CharEncoder.system.encode(text)
   
   def lev(other: Text): Int =
     val m = text.s.length
@@ -437,7 +434,7 @@ extension (buf: StringBuilder)
 //   def print[T: Show](msg: T)(using stdout: Stdout): Unit = stdout.write(msg.show)
 //   def println[T: Show](msg: T)(using Stdout): Unit = print(Text(s"${msg.show}\n"))
 
-object EncodingPrefix extends Verifier[Encoding]:
-  def verify(value: Text): Encoding = value match
-    case Encoding(enc) => enc
-    case _             => throw InterpolationError(Text(s"$value is not a valid character encoding"))
+//object EncodingPrefix extends Verifier[Encoding]:
+  //def verify(value: Text): Encoding = value match
+    //case Encoding(enc) => enc
+    //case _             => throw InterpolationError(Text(s"$value is not a valid character encoding"))
