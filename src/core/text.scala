@@ -41,7 +41,7 @@ object Text:
 
   given stringText: Conversion[String, Text] = Text(_)
 
-  erased given CanEqual[Text, Text] = compiletime.erasedValue
+  erased given CanEqual[Text, Text] = ###
 
   given typeTest: Typeable[Text] with
     def unapply(value: Any): Option[value.type & Text] = value.matchable(using Unsafe) match
