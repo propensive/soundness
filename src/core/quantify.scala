@@ -288,7 +288,7 @@ erased trait Seconds[Power <: Nat] extends Units[Power, Time]
 erased trait Radians[Power <: Nat] extends Units[Power, Angle]
 
 trait UnitName[-ValueType]:
-  def siPrefix: SiPrefix = NoPrefix
+  def siPrefix: MetricPrefix = NoPrefix
   def name(): Text
   def text: Text = t"${siPrefix.symbol}${name()}"
 
@@ -303,7 +303,7 @@ object UnitName:
   given UnitName[Radians[1]] = () => t"rad"
 
   given UnitName[Kilograms[1]] with
-    override def siPrefix: SiPrefix = Kilo
+    override def siPrefix: MetricPrefix = Kilo
     def name(): Text = t"g"
 
 trait PrincipalUnit[DimensionType <: Dimension, UnitType[_ <: Nat] <: Measure]()
