@@ -321,6 +321,10 @@ object QuantitativeOpaques:
 
   extension [UnitsType <: Measure](quantity: Quantity[UnitsType])
     def value: Double = quantity
+  
+  extension [UnitsType <: Measure](inline quantity: Quantity[UnitsType])
+    inline def tally[TallyType <: Tuple]: Tally[TallyType] =
+      ${QuantitativeMacros.fromQuantity[UnitsType, TallyType]('quantity)}
 
   object MetricUnit:
     def apply[UnitsType <: Measure](value: Double): MetricUnit[UnitsType] = value

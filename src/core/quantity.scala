@@ -182,8 +182,6 @@ object QuantitativeMacros:
     override def hashCode: Int = name.hashCode
     override def toString(): String = name
 
-
-
   private def ratio
       (using Quotes)
       (from: UnitRef, to: UnitRef, power: Int, retry: Boolean = true)
@@ -426,30 +424,34 @@ object QuantitativeMacros:
     import quotes.reflect.*
     
     val slices = bitSlices[TallyUnitsType]
-    println(slices)
-    val first = slices.head.unitPower.ref
+    val quantityUnit = readUnitPower(TypeRepr.of[QuantityType])
+    val rounding = ratio(slices.last.unitPower.ref, quantityUnit.ref, slices.last.unitPower.power)
     
     '{
       var result: Long = 0L
-      var current: Double = $quantity.asInstanceOf[Double]
-      var q: Int = 0
+      var current: Double = $quantity.value + $rounding/2
+      var part: Int = 0
       ${
-        def recur(bitSlices: List[BitSlice], acc: Expr[Unit]): Expr[Unit] = bitSlices match
-          case Nil =>
-            acc
-          
-          case BitSlice(unit, max, width, shift) :: tail =>
-            val expr = '{
-              $acc
-              current = current
-              q = (current/${Expr(max)}).toInt
-              result = result + (q << ${Expr(shift)})
-              current = current - q*${Expr(max)}
-            }
-            recur(tail, expr)
-          
-        recur(slices.tail, '{})
+        def recur(bitSlices: List[BitSlice], statements: Expr[Unit]): Expr[Unit] =
+          bitSlices match
+            case Nil =>
+              statements
+            
+            case BitSlice(unitPower, max, width, shift) :: tail =>
+              val ratioExpr = ratio(unitPower.ref, quantityUnit.ref, unitPower.power)
+              
+              val expr = '{
+                $statements
+                part = (current/$ratioExpr).toInt
+                result = result + (part << ${Expr(shift)})
+                current = current - part*$ratioExpr
+              }
+              
+              recur(tail, expr)
+            
+        recur(slices, '{})
       }
+      
       Tally.fromLong[TallyUnitsType](result)
     }
 

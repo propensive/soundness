@@ -28,7 +28,7 @@ object TallyQuaques:
     
     inline def apply[UnitsType <: Tuple](inline values: Int*): Tally[UnitsType] =
       ${QuantitativeMacros.make[UnitsType]('values)}
-
+    
   extension [UnitsType <: Tuple](tally: Tally[UnitsType])
     def longValue: Long = tally
     

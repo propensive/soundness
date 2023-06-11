@@ -299,4 +299,12 @@ object Tests extends Suite(Text("Quantitative Tests")):
         captureCompileErrors:
           Tally[(Miles[1], Yards[1], Seconds[1], Inches[1])](1, 2, 3)
       .assert(_.length == 1)
+
+      test(t"Convert Quantity to Tally"):
+        val length: Quantity[Metres[1]] = (5*Foot + 10*Inch)
+        type Height = (Feet[1], Inches[1])
+        val t = length.tally[Height]
+        println(t)
+        (t[Feet], t[Inches])
+      .assert(_ == (5, 10))
         
