@@ -33,6 +33,10 @@ object TallyQuaques:
     def longValue: Long = tally
     
   extension [UnitsType <: Tuple](inline tally: Tally[UnitsType])
+    @targetName("add")
+    inline def +(right: Tally[UnitsType]): Tally[UnitsType] =
+      ${QuantitativeMacros.addTally[UnitsType]('tally, 'right)}
+
     inline def apply[UnitType[PowerType <: Nat] <: Units[PowerType, ? <: Dimension]]: Int =
       ${QuantitativeMacros.get[UnitsType, UnitType[1]]('tally)}
     

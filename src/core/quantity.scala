@@ -417,6 +417,44 @@ object QuantitativeMacros:
     
     '{Tally.fromLong[UnitsType](${recur(bitSlices[UnitsType].reverse, literals, '{0L})})}
 
+  def addTally
+      [TallyUnitsType <: Tuple: Type]
+      (left: Expr[Tally[TallyUnitsType]], right: Expr[Tally[TallyUnitsType]])
+      (using Quotes)
+      : Expr[Tally[TallyUnitsType]] =
+    import quotes.reflect.*
+
+    val slices = bitSlices[TallyUnitsType]
+
+    '{
+      var total: Long = 0
+      var part: Long = 0
+      
+      ${
+        def recur(slices: List[BitSlice], statements: Expr[Unit]): Expr[Unit] = slices match
+          case Nil =>
+            statements
+        
+          case (slice@BitSlice(unitPower, max, width, shift)) :: tail =>
+            recur(tail, '{
+              $statements
+              part += ($left.asInstanceOf[Long] >>> ${Expr(shift)}) & ${Expr(slice.ones)}
+              part += ($right.asInstanceOf[Long] >>> ${Expr(shift)}) & ${Expr(slice.ones)}
+              
+              if part < ${Expr(max)} then
+                total += part << ${Expr(shift)}
+                part = 0
+              else
+                total += (part - ${Expr(max)}) << ${Expr(shift)}
+                part = 1
+            })
+      
+        recur(slices.reverse, '{()})
+      }
+      
+      Tally.fromLong(total)
+    }
+
   def toQuantity
       [TallyUnitsType <: Tuple: Type]
       (tally: Expr[Tally[TallyUnitsType]])

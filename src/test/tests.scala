@@ -307,22 +307,57 @@ object Tests extends Suite(Text("Quantitative Tests")):
         (tally[Feet], tally[Inches])
       .assert(_ == (5, 10))
       
+      type Weight = (Stones[1], Pounds[1], Ounces[1])
+      
       test(t"Convert a mass Quantity to a Tally"):
-        type Weight = (Stones[1], Pounds[1], Ounces[1])
         val weight: Quantity[Kilograms[1]] = 20*Kilo(Gram)
         val tally = weight.tally[Weight]
         (tally[Stones], tally[Pounds], tally[Ounces])
       .assert(_ == (3, 2, 1))
       
       test(t"Convert a Tally to a Quantity"):
-        type Weight = (Stones[1], Pounds[1], Ounces[1])
         val weight: Tally[Weight] = Tally(5, 6)
         weight.quantity
       .assert(_ == 2.438057*Kilo(Gram))
       
       test(t"Convert a Tally to a Quantity in pounds"):
-        type Weight = (Stones[1], Pounds[1], Ounces[1])
         val weight: Tally[Weight] = Tally(5, 6)
         weight.quantity.in[Pounds]
       .assert(_ == 5.375*Pound)
+
+      test(t"Add two Tallys"):
+        val weight: Tally[Weight] = Tally(12, 9)
+        val sum: Tally[Weight] = weight + Tally[Weight](1)
+        (sum[Stones], sum[Pounds], sum[Ounces])
+      .assert(_ == (0, 12, 10))
+      
+      test(t"Add two Tallys 2"):
+        val weight: Tally[Weight] = Tally(12, 9)
+        val sum: Tally[Weight] = weight + Tally[Weight](2)
+        (sum[Stones], sum[Pounds], sum[Ounces])
+      .assert(_ == (0, 12, 11))
+      
+      test(t"Add two Tallys 3"):
+        val weight: Tally[Weight] = Tally(12, 9)
+        val sum: Tally[Weight] = weight + Tally[Weight](5)
+        (sum[Stones], sum[Pounds], sum[Ounces])
+      .assert(_ == (0, 12, 14))
+      
+      test(t"Add two Tallys 4"):
+        val weight: Tally[Weight] = Tally(12, 9)
+        val sum: Tally[Weight] = weight + Tally[Weight](7)
+        (sum[Stones], sum[Pounds], sum[Ounces])
+      .assert(_ == (0, 13, 0))
+      
+      test(t"Add two Tallys 5"):
+        val weight: Tally[Weight] = Tally(12, 9)
+        val sum: Tally[Weight] = weight + Tally[Weight](8)
+        (sum[Stones], sum[Pounds], sum[Ounces])
+      .assert(_ == (0, 13, 1))
+      
+      test(t"Adding with double carry"):
+        val weight: Tally[Weight] = Tally(100, 13, 15)
+        val sum: Tally[Weight] = weight + Tally[Weight](1)
+        (sum[Stones], sum[Pounds], sum[Ounces])
+      .assert(_ == (101, 0, 0))
         
