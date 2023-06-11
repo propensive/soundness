@@ -117,6 +117,11 @@ object QuantitativeMacros:
     def unitPower(dimension: DimensionRef): Int = map.get(dimension).map(_.power).getOrElse(0)
 
   private class UnitRef(val unitType: Type[?], val name: String):
+    def unitName(using Quotes): Expr[Text] = (power(1).asType: @unchecked) match
+      case '[unitType] => Expr.summon[UnitName[unitType]] match
+        case None       => '{Text(${Expr(name)})}
+        case Some(name) => '{$name.text}
+
     def ref(using Quotes): quotes.reflect.TypeRepr =
       (unitType: @unchecked) match { case '[ref] => quotes.reflect.TypeRepr.of[ref] }
     
@@ -133,7 +138,7 @@ object QuantitativeMacros:
     
     override def equals(that: Any): Boolean = that.asMatchable match
       case that: UnitRef => name == that.name
-      case _                 => false
+      case _             => false
     
     override def hashCode: Int = name.hashCode
     override def toString(): String = name
@@ -248,7 +253,7 @@ object QuantitativeMacros:
           expr
         
         case UnitPower(unit, power) :: todo2 =>
-          (AppliedType(unit.ref, List(ConstantType(IntConstant(1)))).asType: @unchecked) match
+          (unit.power(1).asType: @unchecked) match
             case '[refType] =>
               val unitName = Expr.summon[UnitName[refType]].get
               recur('{$expr.updated($unitName.text, ${Expr(power)})}, todo2)
@@ -454,6 +459,22 @@ object QuantitativeMacros:
       
       Tally.fromLong(total)
     }
+
+  def describeTally
+      [TallyUnits <: Tuple: Type]
+      (tally: Expr[Tally[TallyUnits]])
+      (using Quotes)
+      : Expr[ListMap[Text, Long]] =
+    def recur(slices: List[BitSlice], expr: Expr[ListMap[Text, Long]]): Expr[ListMap[Text, Long]] =
+      slices match
+        case Nil =>
+          expr
+        
+        case (slice@BitSlice(unitPower, max, width, shift)) :: tail =>
+          val value = '{($tally.asInstanceOf[Long] >>> ${Expr(shift)}) & ${Expr(slice.ones)}}
+          recur(tail, '{$expr.updated(${unitPower.ref.unitName}, $value)})
+
+    recur(bitSlices[TallyUnits], '{ListMap()})
 
   def toQuantity
       [TallyUnitsType <: Tuple: Type]

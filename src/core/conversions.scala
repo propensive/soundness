@@ -83,22 +83,37 @@ val Gallon = Milli(Litre)*4546.09
 
 trait Grains[Power <: Nat] extends Units[Power, Mass]
 object Grains:
-  erased given grainsPerGram: Ratio[Grains[-1] & Kilograms[1], 0.0000647989] = ###
+  given UnitName[Grains[1]] = () => Text("gr")
+  erased given kilogramsPerGrain: Ratio[Kilograms[1] & Grains[-1], 0.0000647989] = ###
+
+trait Drams[Power <: Nat] extends Units[Power, Mass]
+object Drams:
+  given UnitName[Drams[1]] = () => Text("dr")
+  erased given kilogramsPerDram: Ratio[Kilograms[1] & Drams[-1], 0.00177184375] = ###
 
 trait Ounces[Power <: Nat] extends Units[Power, Mass]
 object Ounces:
-  erased given ouncesPerGram: Ratio[Ounces[-1] & Kilograms[1], 0.0283495] = ###
+  given UnitName[Ounces[1]] = () => Text("oz")
+  erased given kilogramsPerOunce: Ratio[Kilograms[1] & Ounces[-1], 0.0283495] = ###
 
 trait Pounds[Power <: Nat] extends Units[Power, Mass]
 object Pounds:
-  erased given gramsPerPound: Ratio[Kilograms[1] & Pounds[-1], 0.453592] = ###
+  given UnitName[Pounds[1]] = () => Text("lb")
+  erased given kilogramsPerPound: Ratio[Kilograms[1] & Pounds[-1], 0.453592] = ###
 
 trait Stones[Power <: Nat] extends Units[Power, Mass]
 object Stones:
-  erased given gramsPerStone: Ratio[Kilograms[1] & Stones[-1], 6.35029318] = ###
+  given UnitName[Stones[1]] = () => Text("st")
+  erased given kilogramsPerStone: Ratio[Kilograms[1] & Stones[-1], 6.35029318] = ###
+
+trait Quarters[Power <: Nat] extends Units[Power, Mass]
+object Quarters:
+  given UnitName[Quarters[1]] = () => Text("qr")
+  erased given kilogramsPerQuarter: Ratio[Kilograms[1] & Quarters[-1], 12.700586360000001] = ###
 
 trait Hundredweights[Power <: Nat] extends Units[Power, Mass]
 object Hundredweights:
+  given UnitName[Hundredweights[1]] = () => Text("cwt")
   erased given gramsPerHundredweight: Ratio[Kilograms[1] & Hundredweights[-1], 50.80234544] = ###
 
 trait Tons[Power <: Nat] extends Units[Power, Mass]

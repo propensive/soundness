@@ -360,4 +360,17 @@ object Tests extends Suite(Text("Quantitative Tests")):
         val sum: Tally[Weight] = weight + Tally[Weight](1)
         (sum[Stones], sum[Pounds], sum[Ounces])
       .assert(_ == (101, 0, 0))
+
+      suite(t"Showing Tally values"):
+        test(t"Show a single-unit weight"):
+          Tally[Weight](2).show
+        .assert(_ == t"2oz")
+        
+        test(t"Show a more complex weight"):
+          Tally[Weight](3, 2).show
+        .assert(_ == t"3lb 2oz")
+        
+        test(t"Show a weight of three parts"):
+          Tally[Weight](1, 3, 2).show
+        .assert(_ == t"1st 3lb 2oz")
         

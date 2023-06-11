@@ -17,6 +17,7 @@
 package quantitative
 
 import rudiments.*
+import spectacular.*
 
 import scala.quoted.*
 
@@ -28,6 +29,12 @@ object TallyQuaques:
     
     inline def apply[UnitsType <: Tuple](inline values: Int*): Tally[UnitsType] =
       ${QuantitativeMacros.make[UnitsType]('values)}
+
+    inline given [UnitsType <: Tuple]: Show[Tally[UnitsType]] = tally =>
+      Text:
+        tally.components.filter(_(1) != 0).map: (unit, count) =>
+          Text(count.toString+unit)
+        .mkString(" ")
     
   extension [UnitsType <: Tuple](tally: Tally[UnitsType])
     def longValue: Long = tally
@@ -42,6 +49,9 @@ object TallyQuaques:
     
     transparent inline def quantity: Any =
       ${QuantitativeMacros.toQuantity[UnitsType]('tally)}
+    
+    inline def components: ListMap[Text, Long] =
+      ${QuantitativeMacros.describeTally[UnitsType]('tally)}
 
 export TallyQuaques.Tally
 
