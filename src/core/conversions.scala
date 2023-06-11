@@ -148,3 +148,20 @@ object Hours:
 trait Minutes[Power <: Nat] extends Units[Power, Time]
 object Minutes:
   erased given secondsPerMinute: Ratio[Seconds[1] & Minutes[-1], 60.0] = ###
+
+// Units of Angle
+
+trait Degrees[Power <: Nat] extends Units[Power, Angle]
+object Degrees:
+  given UnitName[Degrees[1]] = () => Text("°")
+  erased given degreesPerRadian: Ratio[Degrees[1] & Radians[-1], 57.2957795131] = ###
+
+trait ArcMinutes[Power <: Nat] extends Units[Power, Angle]
+object ArcMinutes:
+  given UnitName[ArcMinutes[1]] = () => Text("'")
+  erased given degreesPerRadian: Ratio[ArcMinutes[1] & Radians[-1], 3437.74677078] = ###
+
+trait ArcSeconds[Power <: Nat] extends Units[Power, Angle]
+object ArcSeconds:
+  given UnitName[ArcSeconds[1]] = () => Text("\"")
+  erased given degreesPerRadian: Ratio[ArcSeconds[1] & Radians[-1], 206264.806247] = ###

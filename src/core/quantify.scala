@@ -35,6 +35,8 @@ erased trait Luminosity extends Dimension
 erased trait Temperature extends Dimension
 erased trait AmountOfSubstance extends Dimension
 
+erased trait Angle extends Dimension
+
 erased trait PhysicalQuantity[DimensionType <: Units[?, ?], LabelType <: Label]()
 
 object PhysicalQuantity:
@@ -45,6 +47,8 @@ object PhysicalQuantity:
   erased given current: PhysicalQuantity[Units[1, Current], "current"] = ###
   erased given temperature: PhysicalQuantity[Units[1, Temperature], "temperature"] = ###
   erased given luminosity: PhysicalQuantity[Units[1, Luminosity], "luminosity"] = ###
+  
+  erased given angle: PhysicalQuantity[Units[1, Angle], "angle"] = ###
   
   // derived units from https://en.wikipedia.org/wiki/List_of_physical_quantities
   
@@ -281,6 +285,8 @@ erased trait Amperes[Power <: Nat] extends Units[Power, Current]
 erased trait Kelvins[Power <: Nat] extends Units[Power, Temperature]
 erased trait Seconds[Power <: Nat] extends Units[Power, Time]
 
+erased trait Radians[Power <: Nat] extends Units[Power, Angle]
+
 trait UnitName[-ValueType]:
   def siPrefix: SiPrefix = NoPrefix
   def name(): Text
@@ -293,6 +299,8 @@ object UnitName:
   given UnitName[Amperes[1]] = () => t"A"
   given UnitName[Kelvins[1]] = () => t"K"
   given UnitName[Seconds[1]] = () => t"s"
+  
+  given UnitName[Radians[1]] = () => t"rad"
 
   given UnitName[Kilograms[1]] with
     override def siPrefix: SiPrefix = Kilo
@@ -308,6 +316,8 @@ object PrincipalUnit:
   given luminosity: PrincipalUnit[Luminosity, Candelas]()
   given temperature: PrincipalUnit[Temperature, Kelvins]()
   given amountOfSubstance: PrincipalUnit[AmountOfSubstance, Moles]()
+
+  given angle: PrincipalUnit[Angle, Radians]()
 
 trait SubstituteUnits[UnitsType <: Measure](val name: Text)
 
@@ -382,6 +392,8 @@ val Mole: MetricUnit[Moles[1]] = MetricUnit(1)
 val Ampere: MetricUnit[Amperes[1]] = MetricUnit(1)
 val Kelvin: MetricUnit[Kelvins[1]] = MetricUnit(1)
 val Second: MetricUnit[Seconds[1]] = MetricUnit(1)
+
+val Radian: MetricUnit[Radians[1]] = MetricUnit(1)
 
 extension [UnitsType <: Measure](inline quantity: Quantity[UnitsType])
   @targetName("plus")

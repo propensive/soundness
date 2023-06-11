@@ -373,4 +373,4 @@ object Tests extends Suite(Text("Quantitative Tests")):
         test(t"Show a weight of three parts"):
           Tally[Weight](1, 3, 2).show
         .assert(_ == t"1st 3lb 2oz")
-        
+

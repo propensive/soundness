@@ -30,8 +30,8 @@ object TallyQuaques:
     inline def apply[UnitsType <: Tuple](inline values: Int*): Tally[UnitsType] =
       ${QuantitativeMacros.make[UnitsType]('values)}
 
-    inline given [UnitsType <: Tuple]: Show[Tally[UnitsType]] = tally =>
-      Text:
+    inline given [UnitsType <: Tuple]: Show[Tally[UnitsType]] = new Show[Tally[UnitsType]]:
+      def apply(tally: Tally[UnitsType]): Text = Text:
         tally.components.filter(_(1) != 0).map: (unit, count) =>
           Text(count.toString+unit)
         .mkString(" ")
