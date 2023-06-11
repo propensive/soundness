@@ -417,10 +417,34 @@ object QuantitativeMacros:
     
     '{Tally.fromLong[UnitsType](${recur(bitSlices[UnitsType].reverse, literals, '{0L})})}
 
+  def toQuantity
+      [TallyUnitsType <: Tuple: Type]
+      (tally: Expr[Tally[TallyUnitsType]])
+      (using Quotes)
+      : Expr[Any] =
+    import quotes.reflect.*
+    
+    val slices = bitSlices[TallyUnitsType]
+    val quantityUnit = slices.head.unitPower.ref.dimensionRef.principal
+
+    def recur(slices: List[BitSlice], expr: Expr[Double]): Expr[Double] = slices match
+      case Nil =>
+        expr
+      
+      case (slice@BitSlice(unitPower, max, width, shift)) :: tail =>
+        val factor = ratio(unitPower.ref, quantityUnit, unitPower.power)
+        recur(tail, '{$expr + $factor*(($tally.longValue >>> ${Expr(shift)}) &
+            ${Expr(slice.ones)})})
+    
+    (quantityUnit.power(1).asType: @unchecked) match
+      case '[quantityType] =>
+        '{Quantity[quantityType & Measure](${recur(slices, '{0.0})})}
+
   def fromQuantity
       [QuantityType <: Measure: Type, TallyUnitsType <: Tuple: Type]
       (quantity: Expr[Quantity[QuantityType]])
-      (using Quotes): Expr[Tally[TallyUnitsType]] =
+      (using Quotes)
+      : Expr[Tally[TallyUnitsType]] =
     import quotes.reflect.*
     
     val slices = bitSlices[TallyUnitsType]
@@ -437,7 +461,7 @@ object QuantitativeMacros:
             case Nil =>
               statements
             
-            case BitSlice(unitPower, max, width, shift) :: tail =>
+            case (bitSlice@BitSlice(unitPower, max, width, shift)) :: tail =>
               val ratioExpr = ratio(unitPower.ref, quantityUnit.ref, unitPower.power)
               
               val expr = '{

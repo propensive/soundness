@@ -300,11 +300,29 @@ object Tests extends Suite(Text("Quantitative Tests")):
           Tally[(Miles[1], Yards[1], Seconds[1], Inches[1])](1, 2, 3)
       .assert(_.length == 1)
 
-      test(t"Convert Quantity to Tally"):
-        val length: Quantity[Metres[1]] = (5*Foot + 10*Inch)
+      test(t"Convert a length to a Tally"):
         type Height = (Feet[1], Inches[1])
-        val t = length.tally[Height]
-        println(t)
-        (t[Feet], t[Inches])
+        val length: Quantity[Metres[1]] = (5*Foot + 10*Inch)
+        val tally = length.tally[Height]
+        (tally[Feet], tally[Inches])
       .assert(_ == (5, 10))
+      
+      test(t"Convert a mass Quantity to a Tally"):
+        type Weight = (Stones[1], Pounds[1], Ounces[1])
+        val weight: Quantity[Kilograms[1]] = 20*Kilo(Gram)
+        val tally = weight.tally[Weight]
+        (tally[Stones], tally[Pounds], tally[Ounces])
+      .assert(_ == (3, 2, 1))
+      
+      test(t"Convert a Tally to a Quantity"):
+        type Weight = (Stones[1], Pounds[1], Ounces[1])
+        val weight: Tally[Weight] = Tally(5, 6)
+        weight.quantity
+      .assert(_ == 2.438057*Kilo(Gram))
+      
+      test(t"Convert a Tally to a Quantity in pounds"):
+        type Weight = (Stones[1], Pounds[1], Ounces[1])
+        val weight: Tally[Weight] = Tally(5, 6)
+        weight.quantity.in[Pounds]
+      .assert(_ == 5.375*Pound)
         

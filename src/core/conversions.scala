@@ -83,15 +83,15 @@ val Gallon = Milli(Litre)*4546.09
 
 trait Grains[Power <: Nat] extends Units[Power, Mass]
 object Grains:
-  erased given grainsPerGram: Ratio[Grains[1] & Kilograms[-1], 0.0154324] = ###
+  erased given grainsPerGram: Ratio[Grains[-1] & Kilograms[1], 0.0000647989] = ###
 
 trait Ounces[Power <: Nat] extends Units[Power, Mass]
 object Ounces:
-  erased given ouncesPerGram: Ratio[Ounces[1] & Kilograms[-1], 0.000035274] = ###
+  erased given ouncesPerGram: Ratio[Ounces[-1] & Kilograms[1], 0.0283495] = ###
 
 trait Pounds[Power <: Nat] extends Units[Power, Mass]
 object Pounds:
-  erased given gramsPerPound: Ratio[Kilograms[1] & Pounds[-1], 0.45359237] = ###
+  erased given gramsPerPound: Ratio[Kilograms[1] & Pounds[-1], 0.453592] = ###
 
 trait Stones[Power <: Nat] extends Units[Power, Mass]
 object Stones:
