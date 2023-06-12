@@ -88,8 +88,7 @@ object ScalaSyntax:
         val content: LazyList[Token] =
           if start == end then LazyList()
           else
-            val code = text.slice(start, end)
-            code.cut(t"\n").to(LazyList).flatMap:
+            text.slice(start, end).cut(t"\n").to(LazyList).flatMap:
               line => LazyList(Token.Code(line, trees(start, end).getOrElse(accent(token))),
                   Token.Newline)
             .init
