@@ -18,6 +18,7 @@ package harlequin
 
 import rudiments.*
 import gossamer.*
+import spectacular.*
 import kaleidoscope.*
 
 import dotty.tools.dotc.*, core.*, parsing.*, util.*, reporting.*
@@ -28,7 +29,7 @@ enum Token:
   case Unparsed(text: Text)
   case Markup(text: Text)
   case Newline
-  case Code(text: Text, flair: Accent)
+  case Code(text: Text, accent: Accent)
 
   def length: Int = this match
     case Unparsed(text) => text.length
@@ -40,7 +41,7 @@ enum Accent:
   case Error, Number, String, Ident, Term, Type, Keyword, Symbol, Parens, Modifier
 
 object ScalaSyntax: 
-  def flair(token: Int): Accent =
+  def accent(token: Int): Accent =
     if token <= 2 then Accent.Error
     else if token == 3 || token == 10 || token == 13 then Accent.String
     else if token >= 4 && token <= 9 then Accent.Number
@@ -62,7 +63,7 @@ object ScalaSyntax:
     val scanner = Scanners.Scanner(source)(using ctx)
     
     def markup(text: Text): LazyList[Token] = text match
-      case r"$before@(.*)\/\*!$inside@([^*]*)\*\/$after@(.*)" =>
+      case r"$before(.*)\/\*!$inside([^*]*)\*\/$after(.*)" =>
         LazyList(Token.Unparsed(before.show), Token.Markup(inside.show)) #::: markup(after.show)
       
       case unparsed =>
@@ -76,8 +77,9 @@ object ScalaSyntax:
         val start = scanner.offset max lastEnd
         
         val unparsed: LazyList[Token] =
-          if lastEnd != start then
-            text.slice(lastEnd, start).cut(t"\n").to(LazyList).flatMap(markup(_).filter(_.length > 0)).init
+          if lastEnd != start
+          then text.slice(lastEnd, start).cut(t"\n").to(LazyList)
+              .flatMap(markup(_).filter(_.length > 0)).init
           else LazyList()
 
         scanner.nextToken()
@@ -88,7 +90,7 @@ object ScalaSyntax:
           else
             val code = text.slice(start, end)
             code.cut(t"\n").to(LazyList).flatMap:
-              line => LazyList(Token.Code(line, trees(start, end).getOrElse(flair(token))),
+              line => LazyList(Token.Code(line, trees(start, end).getOrElse(accent(token))),
                   Token.Newline)
             .init
         
