@@ -397,30 +397,37 @@ object QuantitativeMacros:
     recur(cascade, cascade.head, 1.0, -1).tail.reverse
 
   def make[UnitsType <: Tuple: Type](values: Expr[Seq[Int]])(using Quotes): Expr[Tally[UnitsType]] =
-    val literals: List[Int] = values.valueOrAbort.to(List).reverse
+    val inputs: List[Expr[Int]] = (values: @unchecked) match
+      case Varargs(values) => values.to(List).reverse
     
-    def recur(slices: List[BitSlice], values: List[Int], expr: Expr[Long]): Expr[Long] =
+    def recur(slices: List[BitSlice], values: List[Expr[Int]], expr: Expr[Long]): Expr[Long] =
       values match
         case Nil =>
           expr
         
         case unitValue :: valuesTail => slices match
           case BitSlice(unitPower, max, width, shift) :: tail =>
-            if unitValue < 0 then fail(txt"""
-              the value for the ${unitPower.ref.name} unit ($unitValue) cannot be a negative number
-            """.s)
-            else if unitValue >= max then fail(txt"""
-              the value for the ${unitPower.ref.name} unit ${unitValue} must be less than ${max}
-            """.s)
-            recur(tail, valuesTail, '{$expr + (${Expr(unitValue.toLong)} << ${Expr(shift)})})
+            unitValue.value match
+              case Some(unitValue) =>
+                if unitValue < 0 then fail(txt"""
+                  the value for the ${unitPower.ref.name} unit ($unitValue) cannot be a negative
+                  number
+                """.s)
+                else if unitValue >= max then fail(txt"""
+                  the value for the ${unitPower.ref.name} unit ${unitValue} must be less than ${max}
+                """.s)
+                recur(tail, valuesTail, '{$expr + (${Expr(unitValue.toLong)} << ${Expr(shift)})})
+              
+              case None =>
+                recur(tail, valuesTail, '{$expr + ($unitValue.toLong << ${Expr(shift)})})
           
           case Nil =>
             fail(txt"""
-              ${literals.length} unit values were provided, but this Tally only has ${slices.length}
+              ${inputs.length} unit values were provided, but this Tally only has ${slices.length}
               units
             """.s)
     
-    '{Tally.fromLong[UnitsType](${recur(bitSlices[UnitsType].reverse, literals, '{0L})})}
+    '{Tally.fromLong[UnitsType](${recur(bitSlices[UnitsType].reverse, inputs, '{0L})})}
 
   def addTally
       [TallyUnitsType <: Tuple: Type]
