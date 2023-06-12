@@ -275,6 +275,7 @@ object PhysicalQuantity:
   
 
 sealed trait Measure
+
 trait Units[PowerType <: Nat, DimensionType <: Dimension] extends Measure
 
 erased trait Metres[Power <: Nat] extends Units[Power, Length]
@@ -325,12 +326,18 @@ object SubstituteUnits:
   given joules: SubstituteUnits[Kilograms[1] & Metres[2] & Seconds[-2]](t"J")
   given newtons: SubstituteUnits[Kilograms[1] & Metres[1] & Seconds[-2]](t"N")
 
+trait UnitsOffset[UnitsType <: Measure]:
+  def value(): Double
+
 object QuantitativeOpaques:
   opaque type Quantity[UnitsType <: Measure] = Double
   opaque type MetricUnit[UnitsType <: Measure] <: Quantity[UnitsType] = Double
 
   extension [UnitsType <: Measure](quantity: Quantity[UnitsType])
-    def value: Double = quantity
+    def underlying: Double = quantity
+    inline def value: Double = compiletime.summonFrom:
+      case unitsOffset: UnitsOffset[UnitsType] => quantity - unitsOffset.value()
+      case _                                   => quantity
   
   extension [UnitsType <: Measure](inline quantity: Quantity[UnitsType])
     inline def tally[TallyType <: Tuple]: Tally[TallyType] =
@@ -345,7 +352,7 @@ object QuantitativeOpaques:
   object Quantity:
     erased given [UnitsType <: Measure]: CanEqual[Quantity[UnitsType], Quantity[UnitsType]] = ###
 
-    def apply[UnitsType <: Measure](value: Double): Quantity[UnitsType] = value
+    inline def apply[UnitsType <: Measure](value: Double): Quantity[UnitsType] = value
     
     given convertDouble[UnitsType <: Measure]: Conversion[Double, Quantity[UnitsType]] =
       Quantity(_)

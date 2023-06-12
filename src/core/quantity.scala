@@ -274,8 +274,8 @@ object QuantitativeMacros:
     val left: UnitsMap = UnitsMap[LeftType]
     val right: UnitsMap = UnitsMap[RightType]
     
-    val (left2, leftValue) = normalize(left, right, '{$leftExpr.value})
-    val (right2, rightValue) = normalize(right, left, '{$rightExpr.value})
+    val (left2, leftValue) = normalize(left, right, '{$leftExpr.underlying})
+    val (right2, rightValue) = normalize(right, left, '{$rightExpr.underlying})
 
     val resultUnits = if division then left2/right2 else left2*right2
     val resultValue = if division then '{$leftValue/$rightValue} else '{$leftValue*$rightValue}
@@ -305,8 +305,8 @@ object QuantitativeMacros:
     val left: UnitsMap = UnitsMap[LeftType]
     val right: UnitsMap = UnitsMap[RightType]
 
-    val (left2, leftValue) = normalize(left, right, '{$leftExpr.value})
-    val (right2, rightValue) = normalize(right, left, '{$rightExpr.value})
+    val (left2, leftValue) = normalize(left, right, '{$leftExpr.underlying})
+    val (right2, rightValue) = normalize(right, left, '{$rightExpr.underlying})
 
     if left2 != right2 then incompatibleTypes(left, right)
 
@@ -322,8 +322,8 @@ object QuantitativeMacros:
     val left: UnitsMap = UnitsMap[LeftType]
     val right: UnitsMap = UnitsMap[RightType]
 
-    val (left2, leftValue) = normalize(left, right, '{$leftExpr.value})
-    val (right2, rightValue) = normalize(right, left, '{$rightExpr.value})
+    val (left2, leftValue) = normalize(left, right, '{$leftExpr.underlying})
+    val (right2, rightValue) = normalize(right, left, '{$rightExpr.underlying})
 
     if left2 != right2 then incompatibleTypes(left, right)
     
@@ -340,7 +340,7 @@ object QuantitativeMacros:
     import quotes.reflect.*
     val units: UnitsMap = UnitsMap[UnitsType]
     val norm: UnitsMap = UnitsMap[NormType[1]]
-    val (units2, value) = normalize(units, norm, '{$expr.value}, true)
+    val (units2, value) = normalize(units, norm, '{$expr.underlying}, true)
 
     (units2.repr.map(_.asType): @unchecked) match
       case Some('[units]) => '{Quantity[units & Measure]($value)}
@@ -519,7 +519,7 @@ object QuantitativeMacros:
     
     '{
       var result: Long = 0L
-      var current: Double = $quantity.value + $rounding/2
+      var current: Double = $quantity.underlying + $rounding/2
       var part: Int = 0
       ${
         def recur(bitSlices: List[BitSlice], statements: Expr[Unit]): Expr[Unit] =

@@ -165,3 +165,24 @@ trait ArcSeconds[Power <: Nat] extends Units[Power, Angle]
 object ArcSeconds:
   given UnitName[ArcSeconds[1]] = () => Text("\"")
   erased given degreesPerRadian: Ratio[ArcSeconds[1] & Radians[-1], 206264.806247] = ###
+
+trait Celsius[Power <: Nat] extends Units[Power, Temperature]
+object Celsius:
+  private final val offset = 273.15
+  def apply(value: Double): Quantity[Celsius[1]] = Quantity[Celsius[1]](value + offset)
+  given UnitsOffset[Celsius[1]] = () => offset
+  given UnitName[Celsius[1]] = () => Text("°C")
+  erased given celsiusPerKelvin: Ratio[Celsius[1] & Kelvins[-1], 1.0] = ###
+
+trait Fahrenheit[Power <: Nat] extends Units[Power, Temperature]
+object Fahrenheit:
+  private final val offset = 459.67
+  def apply(value: Double): Quantity[Fahrenheit[1]] = Quantity[Fahrenheit[1]](value + offset)
+  given UnitsOffset[Fahrenheit[1]] = () => offset
+  given UnitName[Fahrenheit[1]] = () => Text("°F")
+  erased given fahrenheitPerKelvin: Ratio[Fahrenheit[1] & Kelvins[-1], 1.8] = ###
+
+trait Rankines[Power <: Nat] extends Units[Power, Temperature]
+object Rankines:
+  given UnitName[Rankines[1]] = () => Text("°R")
+  erased given rankinesPerKelvin: Ratio[Rankines[1] & Kelvins[-1], 1.8] = ###

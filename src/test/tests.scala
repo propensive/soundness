@@ -374,3 +374,36 @@ object Tests extends Suite(Text("Quantitative Tests")):
           Tally[Weight](1, 3, 2).show
         .assert(_ == t"1st 3lb 2oz")
 
+    suite(t"Offset quantities"):
+      test(t"Get Celsius value"):
+        (300*Kelvin).in[Celsius].show
+      .assert(_ == t"26.9 °C")
+      
+      test(t"Get Fahrenheit value"):
+        (300*Kelvin).in[Fahrenheit].show
+      .assert(_ == t"80.3 °F")
+
+      test(t"Create Celsius value"):
+        Celsius(30.0).show
+      .assert(_ == t"30.0 °C")
+      
+      test(t"Create Fahrenheit value"):
+        Fahrenheit(30.0).show
+      .assert(_ == t"30.0 °F")
+      
+      test(t"Check stored Celsius value"):
+        Celsius(30.0).toString.show
+      .assert(_ == t"303.15")
+      
+      test(t"Check stored Fahrenheit value"):
+        Fahrenheit(30.0).toString.show
+      .assert(_ == t"489.67")
+      
+      test(t"Convert Fahrenheit value to Kelvin"):
+        Fahrenheit(0.0).in[Kelvins].show
+      .assert(_ == t"255 K")
+      
+      test(t"Convert Fahrenheit value to Celsius via Kelvin"):
+        Fahrenheit(100.0).in[Kelvins].in[Celsius].show
+      .assert(_ == t"37.8 °C")
+      
