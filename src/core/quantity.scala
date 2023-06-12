@@ -189,15 +189,20 @@ object QuantitativeMacros:
 
   private def ratio
       (using Quotes)
-      (from: UnitRef, to: UnitRef, power: Int, retry: Boolean = true)
+      (from: UnitRef, to: UnitRef, power: Int, retry: Boolean = true, viaPrincipal: Boolean = true)
       : Expr[Double] =
     import quotes.reflect.*
 
+    val principalUnit = from.dimensionRef.principal
     if from == to then Expr(1.0)
     else ((from.power(-1).asType, to.power(1).asType): @unchecked) match
       case ('[from], '[to]) => (Expr.summon[Ratio[from & to & Measure, ?]]: @unchecked) match
         case None =>
           if retry then ratio(to, from, -power, false)
+          else if viaPrincipal && from != principalUnit && to != principalUnit then
+            val numerator = ratio(from, principalUnit, power, true, false)
+            val denominator = ratio(to, principalUnit, power, true, false)
+            '{$numerator/$denominator}
           else
             val quantityName = from.dimensionRef.dimensionality.quantityName
             
@@ -212,6 +217,7 @@ object QuantitativeMacros:
               the type, `Ratio[${from.name}[1] & ${to.name}[-1]]`, or `Ratio[${to.name}[1] &
               ${from.name}[-1]]`.
             """.s)
+
         case Some('{$ratio: ratioType}) => (Type.of[ratioType]: @unchecked) match
           case '[Ratio[?, double]] => (TypeRepr.of[double].asMatchable: @unchecked) match
             case ConstantType(constant) => (constant: @unchecked) match

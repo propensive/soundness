@@ -407,3 +407,7 @@ object Tests extends Suite(t"Quantitative Tests"):
         Fahrenheit(100.0).in[Kelvins].in[Celsius].show
       .assert(_ == t"37.8 °C")
       
+      test(t"Convert Fahrenheit directly to Celsius"):
+        Fahrenheit(100.0).in[Celsius].show
+      .assert(_ == t"37.8 °C")
+      
