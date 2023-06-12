@@ -31,9 +31,11 @@ by the compiler, and checked for consistency in additions and subtractions.
 - distinguishes between _dimensions_ (such as length or mass) and _units_ (such as metres or feet)
 - different units of the same dimension may be combined
 - convertions between different units of the same dimension
+- supports units which are offset from zero, such as degrees Celsius and Fahrenheit
 - requires no new or special syntax
 - fully extensible: new units, dimensions and conversions can be introduced
 - provides implementations of base and most derived SI units
+
 
 ## Availability
 
