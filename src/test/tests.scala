@@ -26,227 +26,227 @@ import language.strictEquality
 
 given decimalizer: Decimalizer = Decimalizer(3)
 
-object Tests extends Suite(Text("Quantitative Tests")):
+object Tests extends Suite(t"Quantitative Tests"):
   def run(): Unit =
-    suite(Text("Arithmetic tests")):
-      test(Text("Add two lengths")):
+    suite(t"Arithmetic tests"):
+      test(t"Add two lengths"):
         Metre + Metre*2
       .assert(_ == Metre*3)
     
-      test(Text("Multiply two different units")):
+      test(t"Multiply two different units"):
         2*Second * 3*Metre
       .assert(_ == 6*Metre*Second)
 
-      test(Text("Invert a quantity")):
+      test(t"Invert a quantity"):
         (2*Metre/Second).invert
       .assert(_ == 0.5*Second/Metre)
       
-      test(Text("Divide a double by a quantity")):
+      test(t"Divide a double by a quantity"):
         1.0/(2.0*Metre/Second)
       .assert(_ == 0.5*Second/Metre)
     
     suite(t"Compile errors"):
-      test(Text("Cannot add quantities of different units")):
+      test(t"Cannot add quantities of different units"):
         captureCompileErrors:
           Metre + 2*Second
         .map(_.errorId)
       .assert(_.contains(ErrorId.NoExplanationID))
     
-      test(Text("Cannot subtract quantities of different units")):
+      test(t"Cannot subtract quantities of different units"):
         captureCompileErrors:
           Metre - 2*Second
         .map(_.errorId)
       .assert(_.contains(ErrorId.NoExplanationID))
       
-      test(Text("Add two different units")):
+      test(t"Add two different units"):
         captureCompileErrors:
           Second*2 + Metre*3
         .map(_.errorId)
       .assert(_.contains(ErrorId.NoExplanationID))
 
-      test(Text("Units cancel out")):
+      test(t"Units cancel out"):
         captureCompileErrors:
           (20*Metre*Second)/(Metre*Second): Double
       .assert(_.isEmpty)
     
-      test(Text("Principal units are preferred")):
+      test(t"Principal units are preferred"):
         captureCompileErrors:
           val x = 2*Metre
           val y = 3*Foot
           val z: Quantity[Metres[2]] = x*y
       .assert(_.isEmpty)
     
-      test(Text("Units of different dimension cannot be added")):
+      test(t"Units of different dimension cannot be added"):
         captureCompileErrors:
           2*Metre + 2*Joule
         .map(_.message)
       .assert(_ == List("quantitative: the left operand represents length, but the right operand represents energy; these are incompatible physical quantities"))
       
-      test(Text("Different dimensions are incomparable")):
+      test(t"Different dimensions are incomparable"):
         captureCompileErrors:
           7*Metre >= 2*Kilo(Gram)
         .map(_.message)
       .assert(_ == List("quantitative: the left operand represents length, but the right operand represents mass; these are incompatible physical quantities"))
       
-      test(Text("Different powers of the same dimension are incomparable")):
+      test(t"Different powers of the same dimension are incomparable"):
         captureCompileErrors:
           7*Metre >= 2*Metre*Metre
         .map(_.message)
       .assert(_ == List("quantitative: the left operand represents length, but the right operand represents area; these are incompatible physical quantities"))
     
     suite(t"Automatic conversions"):
-      test(Text("Conversions are applied automatically to RHS in multiplication")):
+      test(t"Conversions are applied automatically to RHS in multiplication"):
         val x = 2*Metre
         val y = 3*Foot
         x*y
       .assert(_ == 1.8288000000000002*Metre*Metre)
       
-      test(Text("Conversions are applied automatically to LHS in multiplication")):
+      test(t"Conversions are applied automatically to LHS in multiplication"):
         val x = 2*Metre
         val y = 3*Foot
         y*x
       .assert(_ == 1.8288000000000002*Metre*Metre)
       
-      test(Text("Conversions are applied automatically in division")):
+      test(t"Conversions are applied automatically in division"):
         val x = 2*Metre*Metre
         val y = 3*Foot
         x/y
       .assert(_ == 2.187226596675415*Metre)
-      
-      test(Text("Conversions are applied automatically to LHS in division")):
+
+      test(t"Conversions are applied automatically to LHS in division"):
         val x = 2*Metre
         val y = 3*Foot*Foot
         y/x
       .assert(_ == 0.13935456000000002*Metre)
     
-      test(Text("Mixed units of the same dimension can be added")):
+      test(t"Mixed units of the same dimension can be added"):
         2*Metre + 2*Foot
       .assert(_ == 2.6096*Metre)
       
-      test(Text("Mixed units of the same dimension can be subtracted")):
+      test(t"Mixed units of the same dimension can be subtracted"):
         2*Metre - 2*Foot
       .assert(_ == 1.3904*Metre)
       
-      test(Text("Mixed units of the same type can be added (reverse order)")):
+      test(t"Mixed units of the same type can be added (reverse order)"):
         2*Foot + 2*Metre
       .assert(_ == 2.6096*Metre)
     
   
     suite(t"Metric prefixes"):
-      test(Text("Metric kilo prefix multiplies by 10^3")):
+      test(t"Metric kilo prefix multiplies by 10^3"):
         15.0*Kilo(Metre)
       .assert(_ == 15000.0*Metre)
       
-      test(Text("Metric mega prefix multiplies by 10^6")):
+      test(t"Metric mega prefix multiplies by 10^6"):
         15.0*Mega(Metre)
       .assert(_ == 15000000.0*Metre)
       
-      test(Text("Metric giga prefix multiplies by 10^9")):
+      test(t"Metric giga prefix multiplies by 10^9"):
         15.0*Giga(Metre)
       .assert(_ == 15000000000.0*Metre)
       
-      test(Text("Metric kibi prefix multiplies by 2^10")):
+      test(t"Metric kibi prefix multiplies by 2^10"):
         10*Kibi(Metre)
       .assert(_ == 10240*Metre)
       
-      test(Text("Metric mebi prefix multiplies by 2^20")):
+      test(t"Metric mebi prefix multiplies by 2^20"):
         10*Mebi(Metre)
       .assert(_ == (1024*1024*10)*Metre)
       
-      test(Text("Metric milli prefix multiplies by 10^-3")):
+      test(t"Metric milli prefix multiplies by 10^-3"):
         1.5*Milli(Metre)
       .assert(_ == 0.0015*Metre)
       
-      test(Text("Metric micro prefix multiplies by 10^-6")):
+      test(t"Metric micro prefix multiplies by 10^-6"):
         1.5*Micro(Metre)
       .assert(_ == 0.0000015*Metre)
       
-      test(Text("Metric nano prefix multiplies by 10^-9")):
+      test(t"Metric nano prefix multiplies by 10^-9"):
         2.5*Nano(Metre)
       .assert(_ == 0.0000000025*Metre)
 
     suite(t"Explicit conversion tests"):
-      test(Text("Convert feet to metres")):
+      test(t"Convert feet to metres"):
         (3.0*Foot).in[Metres]
       .assert(_ == 0.9144000000000001*Metre)
       
-      test(Text("Convert metres to feet")):
+      test(t"Convert metres to feet"):
         (3.0*Metre).in[Feet]
       .assert(_ == 9.842519685039369*Foot)
       
-      test(Text("Convert m² to ft²")):
+      test(t"Convert m² to ft²"):
         (Metre*Metre).in[Feet]
       .assert(_ == 10.763910416709722*Foot*Foot)
       
-      test(Text("Conversion to seconds does nothing")):
+      test(t"Conversion to seconds does nothing"):
         (3.0*Metre).in[Seconds]
       .assert(_ == 3.0*Metre)
     
     suite(t"Inequalities"):
-      test(Text("6ft < 2m")):
+      test(t"6ft < 2m"):
         6*Foot < 2*Metre
       .assert(_ == true)
       
-      test(Text("6ft <= 2m")):
+      test(t"6ft <= 2m"):
         6*Foot < 2*Metre
       .assert(_ == true)
       
-      test(Text("7ft > 2m")):
+      test(t"7ft > 2m"):
         7*Foot > 2*Metre
       .assert(_ == true)
       
-      test(Text("7ft >= 2m")):
+      test(t"7ft >= 2m"):
         7*Foot >= 2*Metre
       .assert(_ == true)
       
-      test(Text("9ft² < 1m²")):
+      test(t"9ft² < 1m²"):
         9*Foot*Foot < Metre*Metre
       .assert(_ == true)
       
-      test(Text("10ft² < 1m²")):
+      test(t"10ft² < 1m²"):
         10*Foot*Foot < Metre*Metre
       .assert(_ == true)
       
-      test(Text("11ft² > 1m²")):
+      test(t"11ft² > 1m²"):
         11*Foot*Foot > Metre*Metre
       .assert(_ == true)
     
-    suite(Text("Rendering tests")):
-      test(Text("Show a value in metres")):
+    suite(t"Rendering tests"):
+      test(t"Show a value in metres"):
         (7.567*Metre).show
-      .assert(_ == Text("7.57 m"))
+      .assert(_ == t"7.57 m")
       
-      test(Text("Show a value in square metres")):
+      test(t"Show a value in square metres"):
         (1.4*Metre*Metre).show
-      .assert(_ == Text("1.40 m²"))
+      .assert(_ == t"1.40 m²")
       
-      test(Text("Show a value in metres per second")):
+      test(t"Show a value in metres per second"):
         (8.54*Metre/Second).show
-      .assert(_ == Text("8.54 m·s¯¹"))
+      .assert(_ == t"8.54 m·s¯¹")
       
-      test(Text("Show a value in kilometres per second")):
+      test(t"Show a value in kilometres per second"):
         (8.54*Kilo(Metre)/Second).show
-      .assert(_ == Text("8.54×10³ m·s¯¹"))
+      .assert(_ == t"8.54×10³ m·s¯¹")
       
-      test(Text("Show a value in kilograms")):
+      test(t"Show a value in kilograms"):
         (10.4*Kilo(Gram)/Second).show
-      .assert(_ == Text("10.4 kg·s¯¹"))
+      .assert(_ == t"10.4 kg·s¯¹")
       
-      test(Text("Show the speed of light")):
+      test(t"Show the speed of light"):
         constants.SpeedOfLightInVacuum.show
-      .assert(_ == Text("3.00×10⁸ m·s¯¹"))
+      .assert(_ == t"3.00×10⁸ m·s¯¹")
       
-      test(Text("Show Planck's constant")):
+      test(t"Show Planck's constant"):
         constants.PlanckConstant.show
-      .assert(_ == Text("6.63×10¯³⁴ m²·kg·s¯¹"))
+      .assert(_ == t"6.63×10¯³⁴ m²·kg·s¯¹")
     
-      test(Text("Show an energy using custom units")):
+      test(t"Show an energy using custom units"):
         (45*Joule).show
-      .assert(_ == Text("45.0 J"))
+      .assert(_ == t"45.0 J")
       
-      test(Text("Show a force in Newtons")):
+      test(t"Show a force in Newtons"):
         (100*Newton).show
-      .assert(_ == Text("100 N"))
+      .assert(_ == t"100 N")
 
     suite(t"Quantity descriptions"):
       test(t"describe a base dimension"):
