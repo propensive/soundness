@@ -20,6 +20,7 @@ import rudiments.*
 import spectacular.*
 import digression.*
 import gossamer.*
+import contextual.*
 import anticipation.*
 
 import scala.quoted.*
@@ -363,7 +364,6 @@ enum WorldRegion:
   case Africa, Antarctica, Asia, Australasia, Etcetera, Europe, NorthAmerica, SouthAmerica
 
 case class Locale(worldRegion: WorldRegion)
-case class Timezone(name: Text, offset: Duration)
 case class Time(hour: Base24, minute: Base60, second: Base60 = 0)
 
 case class Timestamp(date: Date, time: Time)(using cal: Calendar):
@@ -485,3 +485,22 @@ object AviationMacros:
         '{Time(${Expr(h)}, ${Expr(m)}, 0)}
       case _ =>
         fail("expected a literal double value")
+
+case class Timezone(name: Text) 
+
+case class InvalidTimezoneError(name: Text)
+extends Error(err"the name $name does not refer to a known timezone")
+
+object Timezone:
+  private val ids: Set[Text] = ju.TimeZone.getAvailableIDs.nn.map(_.nn).map(Text(_)).to(Set)
+
+  def apply(name: Text): Timezone throws InvalidTimezoneError =
+    if ids.contains(name) then new Timezone(name) else throw InvalidTimezoneError(name)
+   
+  object Tz extends Verifier[Timezone]:
+    def verify(name: Text): Timezone =
+      try Timezone(name)
+      catch case err: InvalidTimezoneError => throw InterpolationError(err.message.text)
+
+extension (inline context: StringContext)
+  inline def tz(): Timezone = ${Timezone.Tz.expand('context)}
