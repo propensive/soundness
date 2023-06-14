@@ -9,7 +9,8 @@ target gastronomy/test
 project gastronomy
   module core
     sources src/core
-    include gossamer/core wisteria/core turbulence/core
+    include gossamer/core wisteria/core turbulence/core hieroglyph/core
+
   module test
     sources   src/test
     main      gastronomy.Tests

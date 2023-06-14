@@ -117,7 +117,7 @@ object Hashable extends Derivation[Hashable]:
         summon[Hashable[Int]].digest(acc, sealedTrait.subtypes.indexOf(subtype))
         subtype.typeclass.digest(acc, subtype.cast(value))
     
-  given[T: Hashable]: Hashable[Traversable[T]] =
+  given[T: Hashable]: Hashable[Iterable[T]] =
     (acc, xs) => xs.foreach(summon[Hashable[T]].digest(acc, _))
   
   given Hashable[Int] =
@@ -136,7 +136,7 @@ object Hashable extends Derivation[Hashable]:
   given Hashable[Byte] = (acc, n) => acc.append(IArray(n))
   given Hashable[Short] = (acc, n) => acc.append(IArray((n >> 8).toByte, n.toByte))
   given Hashable[Char] = (acc, n) => acc.append(IArray((n >> 8).toByte, n.toByte))
-  given Hashable[Text] = (acc, s) => acc.append(s.bytes(using characterEncodings.utf8))
+  given Hashable[Text] = (acc, s) => acc.append(s.bytes(using charEncoders.utf8))
   given Hashable[Bytes] = _.append(_)
   given Hashable[Iterable[Bytes]] = (acc, stream) => stream.foreach(acc.append(_))
   given Hashable[Digest[?]] = (acc, d) => acc.append(d.bytes)
@@ -173,7 +173,7 @@ trait Hex extends EncodingScheme
 trait Binary extends EncodingScheme
 
 object ByteEncoder:
-  private val HexLookup: Bytes = IArray.from(t"0123456789ABCDEF".bytes(using characterEncodings.ascii))
+  private val HexLookup: Bytes = IArray.from(t"0123456789ABCDEF".bytes(using charEncoders.ascii))
 
   given ByteEncoder[Hex] = bytes =>
     val array = new Array[Byte](bytes.length*2)

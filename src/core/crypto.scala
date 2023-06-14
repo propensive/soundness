@@ -110,7 +110,7 @@ object ByteCodec:
     def encode(value: Bytes): Bytes = value
     def decode(bytes: Bytes): Bytes throws DecodeError = bytes
    
-  given (using enc: Encoding): ByteCodec[Text] with
+  given (using CharDecoder, CharEncoder): ByteCodec[Text] with
     def encode(value: Text): Bytes = value.bytes
     def decode(bytes: Bytes): Text throws DecodeError =
       val buffer = ByteBuffer.wrap(bytes.mutable(using Unsafe))
