@@ -25,8 +25,7 @@ opportunities Scala offers to make these APIs as intuitive as possible.
 
 ## Availability
 
-Aviation has not yet been published as a binary. It is currently waiting for the
-final release of Scala 3.3.
+Aviation has not yet been published as a binary.
 
 ## Getting Started
 
@@ -52,7 +51,7 @@ be used, but caution should be taken if there is a mismatch between the
 project's stability level and the importance of your own project.
 
 Aviation is designed to be _small_. Its entire source code currently consists
-of 659 lines of code.
+of 657 lines of code.
 
 ## Building
 
