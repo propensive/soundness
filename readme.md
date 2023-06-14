@@ -67,7 +67,7 @@ column in which the error occurs, and an enumeration value (of type
 ## Status
 
 Merino
-jawn is classified as __fledgling__. For reference, Scala One projects are
+jawn is classified as __maturescent__. For reference, Scala One projects are
 categorized into one of the following five stability levels:
 
 - _embryonic_: for experimental or demonstrative purposes only, without any guarantees of longevity
