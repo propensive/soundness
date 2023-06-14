@@ -23,8 +23,7 @@ listing may be obtained with `sh"ls $path".exec[List[String]]()`.
 
 ## Availability
 
-Guillotine has not yet been published as a binary. It is currently waiting for the
-final release of Scala 3.3.
+Guillotine has not yet been published as a binary.
 
 ## Getting Started
 
