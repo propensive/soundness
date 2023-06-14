@@ -360,9 +360,9 @@ object Appendable:
                          : (/*{streamCut}*/ SimpleAppendable[ji.OutputStream, Bytes]) =
     (outputStream, bytes) => outputStream.write(bytes.mutable(using Unsafe))
   
-  given outputStreamText(using streamCut: CanThrow[StreamCutError], enc: /*{*}*/ CharEncoder)
-                        : (/*{streamCut, enc}*/ SimpleWritable[ji.OutputStream, Text]) =
-    (outputStream, text) => outputStream.write(text.s.getBytes(enc.name.s).nn)
+  given outputStreamText(using streamCut: CanThrow[StreamCutError], encoder: /*{*}*/ CharEncoder)
+                        : (/*{streamCut, encoder}*/ SimpleWritable[ji.OutputStream, Text]) =
+    (outputStream, text) => outputStream.write(encoder.encode(text).mutable(using Unsafe))
 
 trait Appendable[-TargetType, -ChunkType]:
   def append(target: TargetType, stream: LazyList[ChunkType]): Unit
@@ -384,8 +384,9 @@ trait SimpleAppendable[-TargetType, -ChunkType] extends Appendable[TargetType, C
 object Readable:
   given bytes: Readable[Bytes, Bytes] = LazyList(_)
   given text: (/*{}*/ Readable[Text, Text]) = LazyList(_)
-  given textToBytes(using enc: /*{*}*/ CharEncoder): (/*{enc}*/ Readable[Text, Bytes]) =
-    text => LazyList(text.s.getBytes(enc.name.s).nn.immutable(using Unsafe))
+  
+  given textToBytes(using encoder: /*{*}*/ CharEncoder): (/*{enc}*/ Readable[Text, Bytes]) =
+    text => LazyList(encoder.encode(text))
 
   given bytesToText[SourceType]
                    (using readable: /*{*}*/ Readable[SourceType, Bytes], decoder: /*{*}*/ CharDecoder,
