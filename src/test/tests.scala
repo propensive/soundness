@@ -234,6 +234,10 @@ object Tests extends Suite(t"Guillotine tests"):
         sh"sh -c '$cmd'".exec[Text]()
       .check(_ == t"Hello world")
 
+      test(t"implied return type"):
+        sh"echo 'Hello world'".exec()
+      .assert(_ == t"Hello world")
+
     // suite("Compilation tests"):
     //   given Compiler = Compiler.make(getClass.getClassLoader)
 
