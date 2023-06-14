@@ -22,6 +22,7 @@ import digression.*
 import gossamer.*
 import contextual.*
 import anticipation.*
+import quantitative.*
 
 import scala.quoted.*
 import java.util as ju
@@ -35,19 +36,19 @@ package calendars:
     def leapYear(year: Y): Boolean = year%4 == 0 && year%100 != 0 || year%400 == 0
     def leapYearsSinceEpoch(year: Int): Int = year/4 - year/100 + year/400 + 1
 
-def now()(using src: TimeSource): Instant = src()
+def now()(using src: Clock): Instant = src()
 
-abstract class TimeSource():
+abstract class Clock():
   def apply(): Instant
 
-object TimeSource:
-  given current: TimeSource with
+object Clock:
+  given current: Clock with
     def apply(): Instant = Instant.of(System.currentTimeMillis)
   
-  def fixed(instant: Instant): TimeSource = new TimeSource():
+  def fixed(instant: Instant): Clock = new Clock():
     def apply(): Instant = instant
 
-  def offset(diff: Duration): TimeSource = new TimeSource():
+  def offset(diff: Duration): Clock = new Clock():
     def apply(): Instant = Instant.of(System.currentTimeMillis) + diff
 
 enum Weekday:
@@ -360,10 +361,6 @@ extension (int: Int)
   def minutes: Timespan & FixedDuration = Period.fixed(StandardTime.Minute, int)
   def seconds: Timespan & FixedDuration = Period.fixed(StandardTime.Second, int)
 
-enum WorldRegion:
-  case Africa, Antarctica, Asia, Australasia, Etcetera, Europe, NorthAmerica, SouthAmerica
-
-case class Locale(worldRegion: WorldRegion)
 case class Time(hour: Base24, minute: Base60, second: Base60 = 0)
 
 case class Timestamp(date: Date, time: Time)(using cal: Calendar):
@@ -399,7 +396,7 @@ enum MonthName:
 
 export MonthName.{Jan, Feb, Mar, Apr, May, Jun, Jul, Aug, Sep, Oct, Nov, Dec}
 
-trait Clock:
+trait Chronology:
   type Primary
   type Secondary
   type Tertiary
@@ -409,7 +406,7 @@ trait Clock:
   def addSecondary(time: Time, n: Secondary): Time
   def addTertiary(time: Time, n: Tertiary): Time
 
-given sexagesimalClock: Clock with
+given sexagesimal: Chronology with
   type Primary = Base24
   type Secondary = Base60
   type Tertiary = Base60
