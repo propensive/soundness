@@ -2,11 +2,8 @@ name: Build
 on:
   push:
     branches: [ main ]
-    paths:
-      - src/*/*.scala
   pull_request:
     branches: [ main ]
-      - src/*/*.scala
 jobs:
   build:
     runs-on: ubuntu-latest
