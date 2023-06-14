@@ -63,12 +63,18 @@ object QuantitativeMacros:
     
   private def readUnitPower(using quotes: Quotes)(typeRepr: quotes.reflect.TypeRepr): UnitPower =
     import quotes.reflect.*
+    
     (typeRepr.asMatchable: @unchecked) match
       case AppliedType(unit, List(constantType)) => (constantType.asMatchable: @unchecked) match
         case ConstantType(constant) => (constant: @unchecked) match
           case IntConstant(power) => (unit.asMatchable: @unchecked) match
             case unit@TypeRef(_, _) =>
               UnitPower(UnitRef(unit.asType, unit.show), power)
+      
+      // FIXME: This is a special-case fix which arises in `multiplyTally`, but it would be better
+      // if the pattern matching were more resilient.
+      case AndType(appliedType@AppliedType(_, _), _) =>
+        readUnitPower(appliedType)
 
   private case class UnitsMap(map: Map[DimensionRef, UnitPower]):
     def repr(using Quotes): Option[quotes.reflect.TypeRepr] = construct(map.values.to(List))
@@ -489,6 +495,24 @@ object QuantitativeMacros:
 
     recur(bitSlices[TallyUnits], '{ListMap()})
 
+  def multiplyTally
+      [TallyUnitsType <: Tuple: Type]
+      (tally: Expr[Tally[TallyUnitsType]], multiplier: Expr[Double], division: Boolean)
+      (using Quotes)
+      : Expr[Any] =
+    import quotes.reflect.*
+    
+    val principal = bitSlices[TallyUnitsType].head.unitPower.ref.dimensionRef.principal
+    
+    (principal.power(1).asType: @unchecked) match
+      case '[unitType] =>
+        val quantityExpr = toQuantity[TallyUnitsType](tally).asExprOf[Quantity[unitType & Measure]]
+        val multiplier2 = if division then '{1.0/$multiplier} else multiplier
+        val multiplied = multiply('{Quantity($multiplier2)}, quantityExpr, false)
+        val quantity2 = multiplied.asExprOf[Quantity[unitType & Measure]]
+        
+        fromQuantity[unitType & Measure, TallyUnitsType](quantity2)
+
   def toQuantity
       [TallyUnitsType <: Tuple: Type]
       (tally: Expr[Tally[TallyUnitsType]])
@@ -520,7 +544,7 @@ object QuantitativeMacros:
     import quotes.reflect.*
     
     val slices = bitSlices[TallyUnitsType]
-    val quantityUnit = readUnitPower(TypeRepr.of[QuantityType])
+    val quantityUnit = readUnitPower(TypeRepr.of[QuantityType].dealias)
     val rounding = ratio(slices.last.unitPower.ref, quantityUnit.ref, slices.last.unitPower.power)
     
     '{

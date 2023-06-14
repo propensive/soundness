@@ -52,6 +52,14 @@ object TallyQuaques:
     
     inline def components: ListMap[Text, Long] =
       ${QuantitativeMacros.describeTally[UnitsType]('tally)}
+    
+    @targetName("multiply")
+    transparent inline def *(inline multiplier: Double): Any =
+      ${QuantitativeMacros.multiplyTally('tally, 'multiplier, false)}
+    
+    @targetName("divide")
+    transparent inline def /(inline multiplier: Double): Any =
+      ${QuantitativeMacros.multiplyTally('tally, 'multiplier, true)}
 
 export TallyQuaques.Tally
 
