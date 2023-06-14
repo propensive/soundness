@@ -4,11 +4,14 @@
 target caesura/core
 
 repo propensive/gossamer
+repo propensive/turbulence
+repo propensive/spectacular
+repo propensive/hieroglyph
 repo propensive/wisteria
 
 project caesura
   module core
     compiler  scala
     sources   src/core
-    include   gossamer/core wisteria/core
+    include   gossamer/core turbulence/core wisteria/core spectacular/core hieroglyph/core
 

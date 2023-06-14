@@ -20,6 +20,8 @@ import wisteria.*
 import rudiments.*
 import gossamer.*
 import turbulence.*
+import spectacular.*
+import hieroglyph.*
 import anticipation.*
 
 trait RowFormat:
@@ -84,7 +86,7 @@ object Csv extends RowFormat:
   def wrap(seq: List[Row]): Csv = Csv(seq)
   given Show[Csv] = _.rows.map(serialize).join(t"\n")
 
-  given (using Encoding): GenericHttpResponseStream[Csv] with
+  given (using CharEncoder): GenericHttpResponseStream[Csv] with
     def mediaType: String = "text/csv"
     def content(value: Csv): LazyList[IArray[Byte]] =
       LazyList(value.rows.map(Csv.serialize(_)).join(t"\n").bytes)
@@ -92,11 +94,11 @@ object Csv extends RowFormat:
   given Writer[String] = s => Row(Text(s))
   given Writer[Text] = s => Row(s)
   given Writer[Int] = i => Row(i.show)
-  given Writer[Boolean] = b => Row(b.show)
+  given (using BooleanStyle): Writer[Boolean] = b => Row(b.show)
   given Writer[Byte] = b => Row(b.show)
   given Writer[Short] = s => Row(s.show)
-  given Writer[Float] = f => Row(Showable(f).show)
-  given Writer[Double] = d => Row(Showable(d).show)
+  given Writer[Float] = f => Row(f.toString.show)
+  given Writer[Double] = d => Row(d.toString.show)
   given Writer[Char] = c => Row(c.show)
 
   object Writer extends ProductDerivation[Writer]:
@@ -130,7 +132,7 @@ object Tsv extends RowFormat:
   def escape(str: Text): Text = Text(str.s.replaceAll("\t", "        ").nn)
   given Show[Tsv] = _.rows.map(serialize).join(t"\n")
 
-  given (using enc: Encoding): GenericHttpResponseStream[Tsv] with
+  given (using CharEncoder): GenericHttpResponseStream[Tsv] with
     def mediaType: String = t"text/tab-separated-values".s
     
     def content(value: Tsv): LazyList[IArray[Byte]] =
