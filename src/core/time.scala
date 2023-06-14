@@ -26,6 +26,7 @@ import quantitative.*
 
 import scala.quoted.*
 import java.util as ju
+import java.time as jt
 
 package calendars:
   given julian: RomanCalendar() with
@@ -87,7 +88,6 @@ object Dates:
       
       case cnt =>
         throw InvalidDateError(value)
-
 
   extension (date: Date)
     def day(using cal: Calendar): cal.D = cal.getDay(date)
@@ -228,6 +228,17 @@ object Timing:
     
     @targetName("to")
     def ~(that: Instant): Interval = Interval(instant, that)
+
+    def in(using RomanCalendar)(timezone: Timezone): LocalTime =
+      val zonedTime = jt.Instant.ofEpochMilli(instant).nn.atZone(jt.ZoneId.of(timezone.name.s)).nn
+      
+      val date = (zonedTime.getMonthValue: @unchecked) match
+        case MonthName(month) => unsafely(Date(zonedTime.getYear, month, zonedTime.getDayOfMonth))
+      
+      val time = ((zonedTime.getHour, zonedTime.getMinute, zonedTime.getSecond): @unchecked) match
+        case (Base24(hour), Base60(minute), Base60(second)) => Time(hour, minute, second)
+
+      LocalTime(date, time, timezone)
 
   extension (duration: Duration)
     @targetName("divide")
@@ -371,12 +382,15 @@ case class Timestamp(date: Date, time: Time)(using cal: Calendar):
 object MonthName:
   def apply(i: Int): MonthName = MonthName.fromOrdinal(i - 1)
 
-enum MonthName:
-  case Jan, Feb, Mar, Apr, May, Jun, Jul, Aug, Sep, Oct, Nov, Dec
-  
   def unapply(value: Text): Option[MonthName] =
     try Some(MonthName.valueOf(value.lower.capitalize.s))
     catch case err: IllegalArgumentException => None
+  
+  def unapply(value: Int): Option[MonthName] =
+    if value < 1 || value > 12 then None else Some(fromOrdinal(value))
+  
+enum MonthName:
+  case Jan, Feb, Mar, Apr, May, Jun, Jul, Aug, Sep, Oct, Nov, Dec
   
   def numerical: Int = ordinal + 1
 
@@ -425,10 +439,18 @@ given sexagesimal: Chronology with
     val hour: Base24 = (time.hour + (time.minute + (time.second + n)/60)/60)%%24
     Time(hour, minute, second)
 
+object Base60:
+  def unapply(value: Int): Option[Base60] =
+    if value < 0 || value > 59 then None else Some(value.asInstanceOf[Base60])
+
 type Base60 = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 |
     19 | 20 | 21 | 22 | 23 | 24 | 25 | 26 | 27 | 28 | 29 | 30 | 31 | 32 | 33 | 34 | 35 | 36 | 37 |
     38 | 39 | 40 | 41 | 42 | 43 | 44 | 45 | 46 | 47 | 48 | 49 | 50 | 51 | 52 | 53 | 54 | 55 | 56 |
     57 | 58 | 59
+
+object Base24:
+  def unapply(value: Int): Option[Base24] =
+    if value < 0 || value > 23 then None else Some(value.asInstanceOf[Base24])
 
 type Base24 = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 |
     19 | 20 | 21 | 22 | 23
@@ -487,6 +509,13 @@ case class Timezone(name: Text)
 
 case class InvalidTimezoneError(name: Text)
 extends Error(err"the name $name does not refer to a known timezone")
+
+case class LocalTime(date: Date, time: Time, timezone: Timezone):
+  def instant(using RomanCalendar): Instant =
+    val ldt = jt.LocalDateTime.of(date.year, date.month.numerical, date.day, time.hour, time.minute,
+        time.second)
+    
+    Instant.of(ldt.nn.atZone(jt.ZoneId.of(timezone.name.s)).nn.toInstant.nn.toEpochMilli)
 
 object Timezone:
   private val ids: Set[Text] = ju.TimeZone.getAvailableIDs.nn.map(_.nn).map(Text(_)).to(Set)
