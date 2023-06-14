@@ -18,9 +18,11 @@ package cosmopolite
 
 import rudiments.*
 import gossamer.*
+import spectacular.*
 
 import scala.util.NotGiven
 import scala.quoted.*
+import scala.compiletime.*
 
 case class Language[+L <: String](value: String)
 
@@ -36,7 +38,7 @@ object Language:
   private def reifyToSetMacro[L <: String: Type](using Quotes): Expr[Set[String]] =
     import quotes.reflect.*
 
-    def langs(t: TypeRepr): Set[String] = t.dealias match
+    def langs(t: TypeRepr): Set[String] = t.dealias.asMatchable match
       case OrType(left, right)                => langs(left) ++ langs(right)
       case ConstantType(StringConstant(lang)) => Set(lang)
       case _                                  => fail("expected a union or constant type")
@@ -45,7 +47,7 @@ object Language:
 
 object Messages:
   def apply[L <: String: ValueOf](seq: Seq[Text], parts: Seq[Messages[? >: L]]): Messages[L] =
-    val string: Text = parts.zip(seq.tail.map(_.show)).map: (msg, s) =>
+    val string: Text = parts.zip(seq.tail).map: (msg, s) =>
       t"${msg(using summon[ValueOf[L]])}$s"
     .join(seq.head, t"", t"")
 
