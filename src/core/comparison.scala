@@ -83,7 +83,9 @@ trait Assimilable[-ValueType]:
 trait Contrast[-ValueType]:
   def apply(a: ValueType, b: ValueType): Accordance
 
-  extension (value: ValueType) def contrastWith(other: ValueType): Accordance = apply(value, other)
+extension [ValueType](left: ValueType)
+  def contrastWith(right: ValueType)(using contrast: Contrast[ValueType]): Accordance =
+    contrast(left, right)
 
 trait FallbackContrast:
   given [ValueType]: Contrast[ValueType] = new Contrast[ValueType]:
