@@ -73,11 +73,15 @@ class Environment(getEnv: Text -> Maybe[Text], getProperty: Text -> Maybe[Text])
   def userName: Text throws EnvError = property(Text("user.name"))
 
   def pwd[PathType](using GenericPathMaker[PathType]): PathType throws EnvError =
-    apply(Text("PWD")) match
-      case path: Text => makeGenericPath(path.s).getOrElse(throw EnvError(Text("user.dir"), true))
-      case _          => (try property(Text("user.dir")) catch case err: Exception => Unset) match
-        case path: Text => makeGenericPath(path.s).getOrElse(throw EnvError(Text("user.dir"), true))
+    val dirOption = getProperty(Text("user.dir")) match
+      case path: Text => makeGenericPath(path.s)
+      case _          => getEnv(Text("PWD")) match
+        case path: Text => makeGenericPath(path.s)
         case _          => throw EnvError(Text("user.dir"), true)
+    
+    dirOption match
+      case Some(dir) => dir
+      case None      => throw EnvError(Text("user.dir"), true)
 
 case class EnvError(variable: Text, property: Boolean)
 extends Error(ErrorMessage(
