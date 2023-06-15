@@ -52,7 +52,7 @@ trait Schema[InitEnumType <: reflect.Enum]:
   transparent inline def record(inline access: String => Any): Record
 
   def build(access: Expr[String => Any])(using Quotes, Type[EnumType], Type[Result]): Expr[Record] =
-    import quotes.*, quotes.reflect.*
+    import quotes.reflect.*
 
     val refinedType = types.foldLeft(TypeRepr.of[Record]):
       case (acc, (key, enumType)) =>
@@ -60,7 +60,7 @@ trait Schema[InitEnumType <: reflect.Enum]:
         val sym = companion.symbol.declaredField(enumType.toString)
         
         val returnType = (Singleton(companion.select(sym)).tpe.asType: @unchecked) match
-          case '[typ] => TypeRepr.of[Result[typ & EnumType]].simplified
+          case '[singletonType] => TypeRepr.of[Result[singletonType & EnumType]].simplified
 
         Refinement(acc, key, returnType)
     
