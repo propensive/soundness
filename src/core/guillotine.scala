@@ -35,38 +35,37 @@ import scala.compiletime.*
 import annotation.targetName
 import java.io as ji
 
-//import language.experimental.captureChecking
+import language.experimental.captureChecking
 
 enum Context:
   case Awaiting, Unquoted, Quotes2, Quotes1
 
 case class State(current: Context, esc: Boolean, args: List[Text])
 
-trait FallbackExecutor:
+erased trait CommandOutput[ExecType <: Label, ResultType]
 
-  given stream[ExecType <: Label]: Executor[ExecType, LazyList[Text]] = proc =>
+object Executor:
+  given stream: Executor[LazyList[Text]] = proc =>
     val reader = ji.BufferedReader(ji.InputStreamReader(proc.getInputStream))
     reader.lines().nn.toScala(LazyList).map(_.show)
   
-  given text[ExecType <: Label]: Executor[ExecType, Text] =
+  given text: Executor[Text] =
     stream.map(_.foldLeft(t"") { (acc, line) => t"$acc\n$line" }.trim)
 
-  given dataStream[ExecType <: Label](using streamCut: CanThrow[StreamCutError]): (/*{streamCut}*/ Executor[ExecType, LazyList[Bytes]]) =
+  given dataStream(using streamCut: CanThrow[StreamCutError]): Executor[LazyList[Bytes]] =
     proc => Readable.inputStream.read(proc.getInputStream.nn)
   
-  given exitStatus[ExecType <: Label]: Executor[ExecType, ExitStatus] = _.waitFor() match
+  given exitStatus: Executor[ExitStatus] = _.waitFor() match
     case 0     => ExitStatus.Ok
     case other => ExitStatus.Fail(other)
   
-  given unit[ExecType <: Label]: Executor[ExecType, Unit] = exitStatus.map(_ => ())
+  given unit: Executor[Unit] = exitStatus.map(_ => ())
 
-object Executor extends FallbackExecutor:
-  given Executor["echo", Text] = text
- 
-trait Executor[+ExecType <: Label, ResultType]:
+@capability 
+trait Executor[ResultType]:
   def interpret(process: java.lang.Process): ResultType
   
-  def map[ResultType2](fn: ResultType => ResultType2): /*{this, fn}*/ Executor[ExecType, ResultType2] =
+  def map[ResultType2](fn: ResultType => ResultType2): Executor[ResultType2] =
     process => fn(interpret(process))
 
 class Process[ExecType <: Label, ResultType](process: java.lang.Process):
@@ -79,11 +78,11 @@ class Process[ExecType <: Label, ResultType](process: java.lang.Process):
     Readable.inputStream.read(process.getErrorStream.nn)
   
   def stdin[ChunkType]
-           (stream: /*{*}*/ LazyList[ChunkType])(using writable: /*{*}*/ Writable[ji.OutputStream, ChunkType])
-           : /*{stream, writable}*/ Unit =
+           (stream: LazyList[ChunkType]^)(using writable: Writable[ji.OutputStream, ChunkType]^)
+           : Unit^{stream, writable} =
     writable.write(process.getOutputStream.nn, stream)
 
-  def await()(using executor: /*{*}*/ Executor[ExecType, ResultType]): /*{executor}*/ ResultType = executor.interpret(process)
+  def await()(using executor: Executor[ResultType]^): ResultType^{executor} = executor.interpret(process)
   
   def exitStatus(): ExitStatus = process.waitFor() match
     case 0     => ExitStatus.Ok
@@ -101,13 +100,9 @@ sealed trait Executable:
 
   type Exec <: Label
 
-  def fork[ResultType]()(using env: Environment)(using Log): Process[Exec, ResultType] throws EnvError
+  def fork[ResultType]()(using env: Environment)(using Log): Process[Exec, ResultType]
   
-  def exec
-      [ResultType]
-      ()
-      (using Environment, Executor[Exec, ResultType], Log)
-      : ResultType throws EnvError =
+  def exec[ResultType]()(using env: Environment, executor: Executor[ResultType]^, log: Log): ResultType^{executor} =
     fork[ResultType]().await()
   
   def apply(cmd: Executable): Pipeline = cmd match
@@ -141,7 +136,7 @@ object Command:
 
 case class Command(args: Text*) extends Executable:
 
-  def fork[ResultType]()(using env: Environment)(using Log): Process[Exec, ResultType] throws EnvError =
+  def fork[ResultType]()(using env: Environment)(using Log): Process[Exec, ResultType] =
     val processBuilder = ProcessBuilder(args.ss*)
     val dir = env.userHome[java.io.File]
     processBuilder.directory(dir)
@@ -158,7 +153,7 @@ object Pipeline:
     _.cmds.map(_.out).join(out" ${colors.PowderBlue}(|) ")
 
 case class Pipeline(cmds: Command*) extends Executable:
-  def fork[T]()(using env: Environment)(using Log): Process[Exec, T] throws EnvError =
+  def fork[T]()(using env: Environment)(using Log): Process[Exec, T] =
     val dir = env.pwd[ji.File]
     Log.info(out"Starting pipelined processes ${this.out} in directory ${dir.getAbsolutePath.nn}")
 

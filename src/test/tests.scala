@@ -237,18 +237,3 @@ object Tests extends Suite(t"Guillotine tests"):
       test(t"implied return type"):
         sh"echo 'Hello world'".exec()
       .assert(_ == t"Hello world")
-
-    // suite("Compilation tests"):
-    //   given Compiler = Compiler.make(getClass.getClassLoader)
-
-    //   test("Check final escape character is an error"):
-    //     try Check('{"""hello\"""}) catch error => error
-    //   .assert(_ == InterpolationError("an escape character is not permitted at the end"))
-      
-    //   test("unclosed single quotes"):
-    //     try Check('{"""hello ' world"""}) catch error => error
-    //   .assert(_ == InterpolationError("the single quotes have not been closed"))
-      
-    //   test("unclosed double quotes"):
-    //     try Check('{"""hello " world"""}) catch error => error
-    //   .assert(_ == InterpolationError("the double quotes have not been closed"))
