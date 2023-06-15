@@ -26,53 +26,77 @@ import language.experimental.captureChecking
   "environments.restricted" -> "access to system properties, but no environment variables",
   "environments.system"     -> "full access to the JVM's environment"
 ))
+
+trait Environment:
+  def apply(variable: Text): Maybe[Text]
+  def property(variable: Text): Text
+  def fileSeparator: ('/' | '\\')
+  def pathSeparator: (':' | ';')
+  def javaClassPath[PathType](using GenericPathMaker[PathType]): List[PathType]
+  def javaHome[PathType](using GenericPathMaker[PathType]): PathType
+  def javaVendor: Text
+  def javaVendorUrl: Text
+  def javaVersion: Text
+  def javaSpecificationVersion: Int
+  def lineSeparator: Text
+  def osArch: Text
+  def osVersion: Text
+  def userDir[PathType](using GenericPathMaker[PathType]): PathType
+  def userHome[PathType](using GenericPathMaker[PathType]): PathType
+  def userName: Text
+  def pwd[PathType](using GenericPathMaker[PathType]): PathType
+  
+
 @capability
-class Environment(getEnv: Text -> Maybe[Text], getProperty: Text -> Maybe[Text]):
+class StandardEnvironment
+    (getEnv: Text -> Maybe[Text], getProperty: Text -> Maybe[Text])
+    (using CanThrow[EnvironmentError])
+extends Environment:
   def apply(variable: Text): Maybe[Text] = getEnv(variable)
 
-  def property(variable: Text): Text throws EnvironmentError =
+  def property(variable: Text): Text =
     getProperty(variable).option.getOrElse(throw EnvironmentError(variable, true))
 
-  def fileSeparator: ('/' | '\\') throws EnvironmentError = property(Text("file.separator")).s match
+  def fileSeparator: ('/' | '\\') = property(Text("file.separator")).s match
     case "/"  => '/'
     case "\\" => '\\'
     case _    => throw EnvironmentError(Text("file.separator"), true)
 
-  def pathSeparator: (':' | ';') throws EnvironmentError = property(Text("path.separator")).s match
+  def pathSeparator: (':' | ';') = property(Text("path.separator")).s match
     case ";" => ';'
     case ":" => ':'
     case _    => throw EnvironmentError(Text("path.separator"), true)
 
-  def javaClassPath[PathType](using GenericPathMaker[PathType]): List[PathType] throws EnvironmentError =
+  def javaClassPath[PathType](using GenericPathMaker[PathType]): List[PathType] =
     property(Text("java.class.path")).s.split(pathSeparator).to(List).flatMap(makeGenericPath(_))
 
-  def javaHome[PathType](using GenericPathMaker[PathType]): PathType throws EnvironmentError =
+  def javaHome[PathType](using GenericPathMaker[PathType]): PathType =
     makeGenericPath(property(Text("java.home")).s).getOrElse:
       throw EnvironmentError(Text("java.home"), true)
 
-  def javaVendor: Text throws EnvironmentError = property(Text("java.vendor"))
-  def javaVendorUrl: Text throws EnvironmentError = property(Text("java.vendor.url"))
-  def javaVersion: Text throws EnvironmentError = property(Text("java.version"))
+  def javaVendor: Text = property(Text("java.vendor"))
+  def javaVendorUrl: Text = property(Text("java.vendor.url"))
+  def javaVersion: Text = property(Text("java.version"))
 
-  def javaSpecificationVersion: Int throws EnvironmentError =
+  def javaSpecificationVersion: Int =
     property(Text("java.specification.version")) match
       case As[Int](version) => version
       case other            => throw EnvironmentError(Text("java.specification.version"), true)
 
-  def lineSeparator: Text throws EnvironmentError = property(Text("line.separator"))
-  def osArch: Text throws EnvironmentError = property(Text("os.arch"))
-  def osVersion: Text throws EnvironmentError = property(Text("os.version"))
+  def lineSeparator: Text = property(Text("line.separator"))
+  def osArch: Text = property(Text("os.arch"))
+  def osVersion: Text = property(Text("os.version"))
 
-  def userDir[PathType](using GenericPathMaker[PathType]): PathType throws EnvironmentError =
+  def userDir[PathType](using GenericPathMaker[PathType]): PathType =
     makeGenericPath(property(Text("user.dir")).s).getOrElse(throw EnvironmentError(Text("user.dir"), true))
 
-  def userHome[PathType](using GenericPathMaker[PathType]): PathType throws EnvironmentError =
+  def userHome[PathType](using GenericPathMaker[PathType]): PathType =
     makeGenericPath(property(Text("user.home")).s).getOrElse:
       throw EnvironmentError(Text("user.home"), true)
 
-  def userName: Text throws EnvironmentError = property(Text("user.name"))
+  def userName: Text = property(Text("user.name"))
 
-  def pwd[PathType](using GenericPathMaker[PathType]): PathType throws EnvironmentError =
+  def pwd[PathType](using GenericPathMaker[PathType]): PathType =
     val dirOption = getProperty(Text("user.dir")) match
       case path: Text => makeGenericPath(path.s)
       case _          => getEnv(Text("PWD")) match
@@ -93,15 +117,16 @@ extends Error(ErrorMessage(
 ))
 
 package environments:
-  given system(using CanThrow[EnvironmentError]): Environment = Environment(
+  given system(using CanThrow[EnvironmentError]): Environment = StandardEnvironment(
     v => Option(System.getenv(v.s)).map(_.nn).map(Text(_)).maybe,
     v => Option(System.getProperty(v.s)).map(_.nn).map(Text(_)).maybe
   )
 
   given restricted(using CanThrow[EnvironmentError]): Environment =
-    Environment(v => Unset, v => Option(System.getProperty(v.s)).map(_.nn).map(Text(_)).maybe)
+    StandardEnvironment(v => Unset, v =>
+        Option(System.getProperty(v.s)).map(_.nn).map(Text(_)).maybe)
 
   given empty(using CanThrow[EnvironmentError]): Environment =
-    Environment(v => Unset, v => Unset)
+    StandardEnvironment(v => Unset, v => Unset)
 
 inline def env(using env: Environment): Environment = env
