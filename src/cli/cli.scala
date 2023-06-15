@@ -28,9 +28,11 @@ import language.adhocExtensions
 abstract class Suite(name: Text) extends TestSuite(name):
   val io = unsafely(basicIo.jvm)
   
-  given runner(using CanThrow[EnvironmentError]): Runner[TestReport] =
+  given runner: Runner[TestReport] =
     given Stdio = io
-    Runner()
+    try Runner() catch case err: EnvironmentError =>
+      println(StackTrace(err).out.render)
+      ???
 
   given TestSuite = this
   

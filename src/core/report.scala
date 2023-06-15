@@ -115,11 +115,13 @@ class TestReport(using env: Environment):
   
   class TestsMap():
     private var tests: ListMap[TestId, ReportLine] = ListMap()
-    def list: List[(TestId, ReportLine)] = tests.to(List)
-    def apply(testId: TestId): ReportLine = tests(testId)
-    def update(testId: TestId, reportLine: ReportLine) = tests = tests.updated(testId, reportLine)
+    def list: List[(TestId, ReportLine)] = synchronized(tests.to(List))
+    def apply(testId: TestId): ReportLine = synchronized(tests(testId))
     
-    def getOrElseUpdate(testId: TestId, reportLine: => ReportLine): ReportLine =
+    def update(testId: TestId, reportLine: ReportLine) = synchronized:
+      tests = tests.updated(testId, reportLine)
+    
+    def getOrElseUpdate(testId: TestId, reportLine: => ReportLine): ReportLine = synchronized:
       if !tests.contains(testId) then tests = tests.updated(testId, reportLine)
       tests(testId)
 
