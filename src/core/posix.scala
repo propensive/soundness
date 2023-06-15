@@ -2,7 +2,7 @@ package guillotine
 
 import rudiments.*
 
-trait PosixExecutors:
+trait PosixCommandOutputs:
   erased given alias: CommandOutput["alias", Text] = ###
   erased given ar: CommandOutput["ar", Text] = ###
   erased given at: CommandOutput["at", Text] = ###
@@ -10,7 +10,7 @@ trait PosixExecutors:
   erased given basename: CommandOutput["basename", Text] = ###
   erased given batch: CommandOutput["batch", Text] = ###
   erased given bc: CommandOutput["bc", Text] = ###
-  erased given cat: CommandOutput["cat", Text] = ###
+  erased given cat: CommandOutput["cat", LazyList[Text]] = ###
   erased given chgrp: CommandOutput["chgrp", Text] = ###
   erased given chmod: CommandOutput["chmod", Text] = ###
   erased given chown: CommandOutput["chown", Text] = ###
@@ -58,7 +58,7 @@ trait PosixExecutors:
   erased given mailx: CommandOutput["mailx", Text] = ###
   erased given man: CommandOutput["man", Text] = ###
   erased given mesg: CommandOutput["mesg", Text] = ###
-  erased given mkdir: CommandOutput["mkdir", Text] = ###
+  erased given mkdir: CommandOutput["mkdir", ExitStatus] = ###
   erased given mkfifo: CommandOutput["mkfifo", Text] = ###
   erased given mv: CommandOutput["mv", Text] = ###
   erased given newgrp: CommandOutput["newgrp", Text] = ###

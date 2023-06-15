@@ -42,15 +42,19 @@ enum Context:
 
 case class State(current: Context, esc: Boolean, args: List[Text])
 
-erased trait CommandOutput[ExecType <: Label, ResultType]
+object CommandOutput extends PosixCommandOutputs
+
+erased trait CommandOutput[+ExecType <: Label, +ResultType]
 
 object Executor:
   given stream: Executor[LazyList[Text]] = proc =>
     val reader = ji.BufferedReader(ji.InputStreamReader(proc.getInputStream))
     reader.lines().nn.toScala(LazyList).map(_.show)
   
-  given text: Executor[Text] =
-    stream.map(_.foldLeft(t"") { (acc, line) => t"$acc\n$line" }.trim)
+  given text: Executor[Text] = proc =>
+    val buf: StringBuilder = StringBuilder()
+    stream.interpret(proc).map(_.s).foreach(buf.append(_))
+    Text(buf.toString)
 
   given dataStream(using streamCut: CanThrow[StreamCutError]): Executor[LazyList[Bytes]] =
     proc => Readable.inputStream.read(proc.getInputStream.nn)
@@ -82,7 +86,8 @@ class Process[ExecType <: Label, ResultType](process: java.lang.Process):
            : Unit^{stream, writable} =
     writable.write(process.getOutputStream.nn, stream)
 
-  def await()(using executor: Executor[ResultType]^): ResultType^{executor} = executor.interpret(process)
+  def await()(using executor: Executor[ResultType]): ResultType^{executor} =
+    executor.interpret(process)
   
   def exitStatus(): ExitStatus = process.waitFor() match
     case 0     => ExitStatus.Ok
@@ -97,14 +102,24 @@ class Process[ExecType <: Label, ResultType](process: java.lang.Process):
     process.destroyForcibly()
 
 sealed trait Executable:
-
   type Exec <: Label
 
   def fork[ResultType]()(using env: Environment)(using Log): Process[Exec, ResultType]
   
-  def exec[ResultType]()(using env: Environment, executor: Executor[ResultType]^, log: Log): ResultType^{executor} =
+  def exec
+      [ResultType]
+      ()(using env: Environment, executor: Executor[ResultType], log: Log)
+      : ResultType^{executor} =
     fork[ResultType]().await()
-  
+
+  def apply
+      [ResultType]
+      ()
+      (using erased commandOutput: CommandOutput[Exec, ResultType])
+      (using executor: Executor[ResultType], env: Environment, log: Log)
+      : ResultType^{executor} =
+    fork[ResultType]().await()
+
   def apply(cmd: Executable): Pipeline = cmd match
     case Pipeline(cmds*) => this match
       case Pipeline(cmds2*) => Pipeline((cmds ++ cmds2)*)
@@ -135,7 +150,6 @@ object Command:
   given Display[Command] = cmd => out"${colors.LightSeaGreen}(${formattedArgs(cmd.args)})"
 
 case class Command(args: Text*) extends Executable:
-
   def fork[ResultType]()(using env: Environment)(using Log): Process[Exec, ResultType] =
     val processBuilder = ProcessBuilder(args.ss*)
     val dir = env.userHome[java.io.File]
@@ -149,8 +163,7 @@ object Pipeline:
   inline given Debug[Pipeline] = new Debug[Pipeline]:
     def apply(pipeline: Pipeline): Text = pipeline.cmds.map(_.debug).join(t" | ")
   
-  given Display[Pipeline] =
-    _.cmds.map(_.out).join(out" ${colors.PowderBlue}(|) ")
+  given Display[Pipeline] = _.cmds.map(_.out).join(out" ${colors.PowderBlue}(|) ")
 
 case class Pipeline(cmds: Command*) extends Executable:
   def fork[T]()(using env: Environment)(using Log): Process[Exec, T] =

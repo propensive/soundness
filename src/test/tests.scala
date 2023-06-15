@@ -235,5 +235,5 @@ object Tests extends Suite(t"Guillotine tests"):
       .check(_ == t"Hello world")
 
       test(t"implied return type"):
-        sh"echo 'Hello world'".exec()
+        sh"echo 'Hello world'"()
       .assert(_ == t"Hello world")
