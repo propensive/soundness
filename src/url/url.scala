@@ -24,6 +24,7 @@ import escapade.*
 import iridescence.*
 import anticipation.*
 import contextual.*
+import spectacular.*
 
 object Host:
   given Show[Host] = _.parts.join(t".")
@@ -66,7 +67,7 @@ object UrlInterpolator extends contextual.Interpolator[UrlInput, Text, Url]:
         if !state.ends(t":") then throw InterpolationError(t"a port number must be specified after a colon")
         
         try Url.parse(state+port.show)
-        catch case err: InvalidUrlError => throw InterpolationError(err.message)
+        catch case err: InvalidUrlError => throw InterpolationError(err.message.text)
         
         state+port.show
       
@@ -74,7 +75,7 @@ object UrlInterpolator extends contextual.Interpolator[UrlInput, Text, Url]:
         if !state.ends(t"/") then throw InterpolationError(t"a substitution may only be made after a slash")
         
         try Url.parse(state+txt.urlEncode)
-        catch case err: InvalidUrlError => throw InterpolationError(err.message)
+        catch case err: InvalidUrlError => throw InterpolationError(err.message.text)
         
         state+txt.urlEncode
       
@@ -82,7 +83,7 @@ object UrlInterpolator extends contextual.Interpolator[UrlInput, Text, Url]:
         if !state.ends(t"/") then throw InterpolationError(t"a substitution may only be made after a slash")
 
         try Url.parse(state+txt.urlEncode)
-        catch case err: InvalidUrlError => throw InterpolationError(err.message)
+        catch case err: InvalidUrlError => throw InterpolationError(err.message.text)
         
         state+txt
   
@@ -102,7 +103,7 @@ object Url:
     def readUrl(url: Url): String = url.show.s
     def makeUrl(value: String): Url = Url.parse(value.show)
 
-  given GenericHttpRequestParam["location", Url] = show.show(_).s
+  given GenericHttpRequestParam["location", Url] = show(_).s
 
   given (using CanThrow[InvalidUrlError]): Canonical[Url] = Canonical(parse(_), _.show)
 
@@ -115,7 +116,7 @@ object Url:
     val rest = t"${url.query.fm(t"")(t"?"+_)}${url.fragment.fm(t"")(t"#"+_)}"
     t"${url.scheme}:$auth${url.pathText}$rest"
   
-  given ansiShow: Display[Url] = url => out"$Underline(${colors.DeepSkyBlue}(${show.show(url)}))"
+  given ansiShow: Display[Url] = url => out"$Underline(${colors.DeepSkyBlue}(${show(url)}))"
 
   given action: GenericHtmlAttribute["action", Url] with
     def name: String = "action"

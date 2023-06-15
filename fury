@@ -11,7 +11,7 @@ target telekinesis/client
 project telekinesis
   module url
     sources  src/url
-    include  serpentine/core escapade/core
+    include  serpentine/core escapade/core anticipation/url
   module client
     sources  src/client
     include  gastronomy/core gesticulate/core telekinesis/url eucalyptus/core
