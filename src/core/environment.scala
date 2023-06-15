@@ -93,16 +93,15 @@ extends Error(ErrorMessage(
 ))
 
 package environments:
-  given system: Environment(
+  given system(using CanThrow[EnvironmentError]): Environment = Environment(
     v => Option(System.getenv(v.s)).map(_.nn).map(Text(_)).maybe,
     v => Option(System.getProperty(v.s)).map(_.nn).map(Text(_)).maybe
   )
 
-  given restricted: Environment(
-    v => Unset,
-    v => Option(System.getProperty(v.s)).map(_.nn).map(Text(_)).maybe
-  )
+  given restricted(using CanThrow[EnvironmentError]): Environment =
+    Environment(v => Unset, v => Option(System.getProperty(v.s)).map(_.nn).map(Text(_)).maybe)
 
-  given empty: Environment(v => Unset, v => Unset)
+  given empty(using CanThrow[EnvironmentError]): Environment =
+    Environment(v => Unset, v => Unset)
 
 inline def env(using env: Environment): Environment = env
