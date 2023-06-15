@@ -110,16 +110,27 @@ object TestReport:
   
   given Inclusion[TestReport, DebugInfo] = _.addDebugInfo(_, _)
 
+
 class TestReport(using env: Environment):
+  
+  class TestsMap():
+    private var tests: ListMap[TestId, ReportLine] = ListMap()
+    def list: List[(TestId, ReportLine)] = tests.to(List)
+    def apply(testId: TestId): ReportLine = tests(testId)
+    def update(testId: TestId, reportLine: ReportLine) = tests = tests.updated(testId, reportLine)
+    
+    def getOrElseUpdate(testId: TestId, reportLine: => ReportLine): ReportLine =
+      if !tests.contains(testId) then tests = tests.updated(testId, reportLine)
+      tests(testId)
 
   enum ReportLine:
-    case Suite(suite: Maybe[TestSuite], tests: scm.ListMap[TestId, ReportLine] = scm.ListMap())
+    case Suite(suite: Maybe[TestSuite], tests: TestsMap = TestsMap())
     case Test(test: TestId, outcomes: scm.ArrayBuffer[Outcome] = scm.ArrayBuffer())
     case Bench(test: TestId, benchmark: Benchmark)
 
     def summaries: List[Summary] = this match
       case Suite(suite, tests)  =>
-        val rest = tests.to(List).sortBy(_(0).timestamp).flatMap(_(1).summaries)
+        val rest = tests.list.sortBy(_(0).timestamp).flatMap(_(1).summaries)
         if suite.unset then rest else Summary(Status.Suite, suite.option.get.id, 0, 0, 0, 0) :: rest
       
       case Bench(testId, bench@Benchmark(_, _, _, _, _, _, _, _)) =>
@@ -154,7 +165,7 @@ class TestReport(using env: Environment):
     scm.TreeMap[TestId, scm.ArrayBuffer[DebugInfo]]().withDefault(_ => scm.ArrayBuffer[DebugInfo]())
 
   def declareSuite(suite: TestSuite): TestReport = this.tap: _ =>
-    resolve(suite.parent).tests(suite.id) = ReportLine.Suite(suite, scm.ListMap())
+    resolve(suite.parent).tests(suite.id) = ReportLine.Suite(suite)
 
   def addBenchmark(testId: TestId, benchmark: Benchmark): TestReport = this.tap: _ =>
     val benchmarks = resolve(testId.suite).tests
@@ -294,7 +305,7 @@ class TestReport(using env: Environment):
     def benches(line: ReportLine): Iterable[ReportLine.Bench] =
       line match
         case bench@ReportLine.Bench(_, _) => Iterable(bench)
-        case ReportLine.Suite(_, tests)   => tests.map(_(1)).flatMap(benches(_))
+        case ReportLine.Suite(_, tests)   => tests.list.map(_(1)).flatMap(benches(_))
         case _                            => Nil
     
     benches(lines).groupBy(_.test.suite).foreach: (suite, benchmarks) =>

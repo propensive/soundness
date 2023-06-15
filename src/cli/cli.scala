@@ -25,17 +25,22 @@ import hieroglyph.*, textWidthCalculation.uniform
 
 import language.adhocExtensions
 
-abstract class Suite(name: Text)
-extends TestSuite(name):
+abstract class Suite(name: Text) extends TestSuite(name):
   val io = unsafely(basicIo.jvm)
-  given runner: Runner[TestReport] =
+  
+  given runner(using CanThrow[EnvironmentError]): Runner[TestReport] =
     given Stdio = io
     Runner()
 
   given TestSuite = this
+  
   def run(): Unit
   
   final def main(args: IArray[Text]): Unit =
     try runner.suite(this, run())
-    catch case err: Throwable => println(StackTrace(err).out.render)
-    finally runner.complete()
+    catch
+      case err: EnvironmentError => println(StackTrace(err).out.render)
+      case err: Throwable => println(StackTrace(err).out.render)
+    finally
+      try runner.complete()
+      catch case err: EnvironmentError => println(StackTrace(err).out.render)
