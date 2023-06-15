@@ -16,7 +16,6 @@
 
 package gastronomy
 
-import wisteria.*
 import rudiments.*
 import gossamer.*
 import spectacular.*
@@ -24,6 +23,7 @@ import hieroglyph.*, textWidthCalculation.uniform
 
 import scala.collection.*
 import scala.compiletime.*, ops.int.*
+import scala.deriving.*
 
 import java.util as ju
 import ju.zip as juz
@@ -106,17 +106,42 @@ case class Digest[A <: HashScheme[?]](bytes: Bytes) extends Encodable, Shown[Dig
   
   override def hashCode: Int = bytes.hashCode
 
-object Hashable extends Derivation[Hashable]:
-  def join[T](caseClass: CaseClass[Hashable, T]): Hashable[T] =
-    (acc, value) => caseClass.params.foreach:
-      param => param.typeclass.digest(acc, param.deref(value))
+object Hashable:
 
-  def split[T](sealedTrait: SealedTrait[Hashable, T]): Hashable[T] =
-    (acc, value) => sealedTrait.choose(value):
-      subtype =>
-        summon[Hashable[Int]].digest(acc, sealedTrait.subtypes.indexOf(subtype))
-        subtype.typeclass.digest(acc, subtype.cast(value))
+
+
+
+  private transparent inline def deriveProduct(acc: DigestAccumulator, tuple: Tuple): Unit =
+    inline tuple match
+      case EmptyTuple => ()
+      case cons: (? *: ?) => cons match
+        case head *: tail =>
+          summonInline[Hashable[head.type]].digest(acc, head)
+          deriveProduct(acc, tail)
+
+  private transparent inline def deriveSum
+      [TupleType <: Tuple, DerivedType]
+      (ordinal: Int)
+      : Hashable[DerivedType] =
+    inline erasedValue[TupleType] match
+      case _: (head *: tail) =>
+        if ordinal == 0
+        then summonInline[Hashable[head]].asInstanceOf[Hashable[DerivedType]]
+        else deriveSum[tail, DerivedType](ordinal - 1)
+
+  inline given derived
+      [DerivationType]
+      (using mirror: Mirror.Of[DerivationType])
+      : Hashable[DerivationType] =
+    inline mirror match
+      case given Mirror.ProductOf[DerivationType & Product] =>
+        (acc: DigestAccumulator, value: DerivationType) => (value.asMatchable: @unchecked) match
+          case value: Product => deriveProduct(acc, Tuple.fromProductTyped(value))
     
+      case s: Mirror.SumOf[DerivationType] =>
+        (acc: DigestAccumulator, value: DerivationType) =>
+          deriveSum[s.MirroredElemTypes, DerivationType](s.ordinal(value)).digest(acc, value)
+
   given[T: Hashable]: Hashable[Iterable[T]] =
     (acc, xs) => xs.foreach(summon[Hashable[T]].digest(acc, _))
   
