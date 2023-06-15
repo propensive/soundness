@@ -7,6 +7,7 @@ repo propensive/chiaroscuro
 repo propensive/gossamer
 repo propensive/ambience
 repo propensive/eucalyptus
+repo propensive/wisteria
 
 target probably/cli
 
@@ -29,7 +30,7 @@ project probably
   module tolerance
     compiler  scala
     sources   src/tolerance
-    include   probably/core wisteria/core
+    include   probably/core wisteria/core gossamer/core
   
   module coverage
     compiler  scala
