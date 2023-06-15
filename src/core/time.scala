@@ -206,25 +206,22 @@ object Timing:
     
     given ordering: Ordering[Instant] = Ordering.Long
 
-  opaque type Duration = Long
+  type Duration = Quantity[Seconds[1]]
 
   object Duration:
 
-    def of(millis: Long): Duration = millis
+    def of(millis: Long): Duration = Quantity(millis/1000.0)
 
-    given generic: GenericDuration[Long] with
-      type Duration = Timing.Duration
-      def makeDuration(long: Long): Timing.Duration = long
-      def readDuration(duration: Timing.Duration): Long = duration
-    
-    given ordering: Ordering[Duration] = Ordering.Long
+    given generic: GenericDuration[Timing.Duration] with
+      def makeDuration(long: Long): Timing.Duration = Quantity(long)
+      def readDuration(duration: Timing.Duration): Long = (duration.value*1000).toLong
 
   extension (instant: Instant)
     @targetName("minus")
-    def -(that: Instant): Duration = instant - that
+    def -(that: Instant): Duration = Quantity((instant - that)/1000.0)
     
     @targetName("plus")
-    def +(that: Duration): Instant = instant + that
+    def +(that: Duration): Instant = instant + (that.value/1000.0).toLong
     
     @targetName("to")
     def ~(that: Instant): Interval = Interval(instant, that)
@@ -241,12 +238,6 @@ object Timing:
       LocalTime(date, time, timezone)
 
   extension (duration: Duration)
-    @targetName("divide")
-    def /(n: Int): Duration = duration/n
-    
-    @targetName("times")
-    def *(n: Int): Duration = duration*n
-    
     def from(instant: Instant): Interval = Interval(instant, instant + duration)
 
 export Timing.{Instant, Duration}
