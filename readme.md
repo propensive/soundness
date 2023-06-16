@@ -19,8 +19,7 @@ follow a hierarchical pattern.
 
 ## Availability
 
-Serpentine has not yet been published as a binary. It is currently waiting for the
-final release of Scala 3.3.
+Serpentine has not yet been published as a binary.
 
 ## Getting Started
 
@@ -99,7 +98,7 @@ be used, but caution should be taken if there is a mismatch between the
 project's stability level and the importance of your own project.
 
 Serpentine is designed to be _small_. Its entire source code currently consists
-of 503 lines of code.
+of 382 lines of code.
 
 ## Building
 
