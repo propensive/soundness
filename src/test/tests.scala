@@ -100,96 +100,36 @@ object Tests extends Suite(t"Serpentine Tests"):
         %.text
       .assert(_ == t"/")
     
-    // suite(t"Path tests"):
-    //   test(t"simple path from forbidden string does not compile"):
-    //     captureCompileErrors:
-    //       val elem: PathName["bad"] = p"bad"
-    //     .map(_.message)
-    //   .assert(_ == List(t"serpentine: a path element may not be 'bad'"))
+    suite(t"Path tests"):
+      test(t"simple path from forbidden string does not compile"):
+        captureCompileErrors:
+          val elem: PathName["bad"] = p"bad"
+        .map(_.message)
+      .assert(_ == List(t"serpentine: a path element may not be 'bad'"))
       
-    //   test(t"simple path from forbidden set of strings does not compile"):
-    //     captureCompileErrors:
-    //       val elem: PathName["bad" | "awful"] = p"bad"
-    //     .map(_.message)
-    //   .assert(_ == List(t"serpentine: a path element may not be 'bad'"))
+      test(t"simple path from forbidden set of strings does not compile"):
+        captureCompileErrors:
+          val elem: PathName["bad" | "awful"] = p"bad"
+        .map(_.message)
+      .assert(_ == List(t"serpentine: a path element may not be 'bad'"))
       
-    //   test(t"simple path not in forbidden set of strings does compile"):
-    //     captureCompileErrors:
-    //       val elem: PathName["bad" | "awful"] = p"safe"
-    //   .assert(_ == Nil)
+      test(t"simple path not in forbidden set of strings does compile"):
+        captureCompileErrors:
+          val elem: PathName["bad" | "awful"] = p"safe"
+      .assert(_ == Nil)
       
-    //   test(t"path with forbidden character does compile"):
-    //     captureCompileErrors:
-    //       val elem: PathName["bad" | ".*n.*"] = p"unsafe"
-    //     .map(_.message)
-    //   .assert(_ == List(t"serpentine: a path element may not contain the character 'n'"))
+      test(t"path with forbidden character does compile"):
+        captureCompileErrors:
+          val elem: PathName["bad" | ".*n.*"] = p"unsafe"
+        .map(_.message)
+      .assert(_ == List(t"serpentine: a path element may not contain the character 'n'"))
       
-    //   test(t"path with forbidden character does compile"):
-    //     captureCompileErrors:
-    //       val elem: PathName[".*a.*" | ".*e.*" | ".*i.*" | ".*o.*" | ".*u.*"] = p"unsafe"
-    //     .map(_.message)
-    //   .assert(_ == List(t"serpentine: a path element may not contain the character 'a'"))
+      test(t"path with forbidden character does compile"):
+        captureCompileErrors:
+          val elem: PathName[".*a.*" | ".*e.*" | ".*i.*" | ".*o.*" | ".*u.*"] = p"unsafe"
+        .map(_.message)
+      .assert(_ == List(t"serpentine: a path element may not contain the character 'a'"))
 
-    //   case class Address(elements: List[PathName[".*!.*" | ".*,.*" | ".*\\*.*" | ".*/.*" | ""]])
-
-    //   object Address extends Address(Nil)
-
-    //   given Hierarchy[Address] with
-    //     type ForbiddenType = ".*!.*" | ".*,.*" | ".*\\*.*" | ".*/.*" | ""
-    //     def separator(address: Address): Text = t"\n"
-    //     def prefix(root: Address): Text = t""
-    //     def elements(address: Address): List[PathName[ForbiddenType]] = address.elements
-    //     def root(address: Address): Address.type = Address
-    //     def child(base: Address, child: PathName[ForbiddenType]): Address = Address(child :: base.elements)
-    //     def parent(base: Address): Address = Address(base.elements.tail)
-      
-    //   test(t"Simple path is permitted"):
-    //     captureCompileErrors(Address / p"foo")
-    //   .assert(_ == Nil)
-      
-    //   test(t"Child path is permitted"):
-    //     captureCompileErrors(Address / p"foo" / p"baz")
-    //   .assert(_ == Nil)
-      
-    //   test(t"Bad child path is forbidden"):
-    //     captureCompileErrors(Address / p"foo" / p"ba*r").map(_.message)
-    //   .assert(_ == List(t"serpentine: a path element may not contain the character '*'"))
-      
-    //   test(t"Forbidden path elements are inferred"):
-    //     captureCompileErrors(Address / p"foo!").map(_.message)
-    //   .assert(_ == List(t"serpentine: a path element may not contain the character '!'"))
-
-    //   test(t"Relative path's parent is safe"):
-    //     val relative = Relative(3, List(t"some"))
-    //     relative.parent
-    //   .assert(_ == Relative(3, Nil))
-      
-    //   test(t"Non-relative parent is not safe"):
-    //     captureCompileErrors:
-    //       val absolute = Address / p"foo" / p"bar"
-    //       absolute.parent
-    //   .assert(_.length == 1)
-      
-    //   test(t"Non-relative parent is safe in try/catch"):
-    //     captureCompileErrors:
-    //       given CanThrow[PathError] = unsafeExceptions.canThrowAny
-    //       val absolute = Address / p"foo" / p"bar"
-    //       absolute.parent
-    //   .assert(_ == List())
-
-    //   test(t"Relative path with safe path elements"):
-    //     ? / p"foo" / p"bar"
-    //   .assert(_ == Relative(0, List(t"bar", t"foo")))
-      
-    //   test(t"Relative path cannot have '..' path"):
-    //     captureCompileErrors:
-    //       ? / p"foo" / p"bar" / p".." / p"baz"
-    //   .assert(_.length == 1)
-      
-    //   test(t"Relative path cannot have '/' in a path"):
-    //     captureCompileErrors(? / p"foo" / p"bar/baz").map(_.errorId)
-    //   .assert(_.length == 1)
-    
     suite(t"Relative path tests"):
       given Unix.type = Unix
       test(t"Relative path has correct parent"):
@@ -383,9 +323,33 @@ object Tests extends Suite(t"Serpentine Tests"):
         Unix.RelativePath(2, List(p"file", p"user")).text
       .assert(_ == t"../../user/file")
 
-
     suite(t"Invalid paths"):
       test(t"Path cannot contain /"):
         captureCompileErrors(Unix.AbsolutePath(Unix, List()) / p"a/b")
       .assert(_.length == 1)
+      
+      test(t"Windows Path cannot contain lpt1"):
+        captureCompileErrors(Drive('C') / p"lpt1")
+      .assert(_.length == 1)
+      
+      test(t"Windows Path cannot contain lpt1.txt"):
+        captureCompileErrors(Drive('C') / p"lpt1.txt")
+      .assert(_.length == 1)
+      
+      test(t"Linux can contain lpt1.txt"):
+        given Unix.type = Unix
+        (% / p"lpt1.txt").text
+      .assert(_ == t"/lpt1.txt")
+      
+      test(t"Windows Path cannot have a filename ending in space"):
+        captureCompileErrors(Drive('C') / p"abc.xyz ")
+      .assert(_.length == 1)
+      
+      test(t"Windows Path cannot have a filename ending in period"):
+        captureCompileErrors(Drive('C') / p"abc.")
+      .assert(_.length == 1)
+      
+      test(t"Windows Path can have an extensionless filename"):
+        captureCompileErrors(Drive('C') / p"abc")
+      .assert(_.length == 0)
 

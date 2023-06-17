@@ -25,6 +25,9 @@ object PathError:
 object SerpentineOpaques:
   opaque type PathName[ForbiddenType <: Label] = Text
 
+  object PathName:
+    def apply[ForbiddenType <: Label](text: Text): PathName[ForbiddenType] throws PathError = ???
+
   extension [ForbiddenType <: Label](pathName: PathName[ForbiddenType])
     def text: Text = pathName
 
@@ -71,6 +74,7 @@ case class System
 trait Hierarchy[RootType, NameType <: Label]:
   def parse(value: Text): Path = ???
   def rootText(root: RootType): Text
+  def parseRoot(text: Text): (RootType, Text) throws PathError
   
   val pathSeparator: Text
   val parentRef: Text
@@ -97,6 +101,11 @@ trait Hierarchy[RootType, NameType <: Label]:
       else t"${t"$parentRef$pathSeparator"*ascent}${elements.join(pathSeparator)}"
     
     def keep(n: Int): RelativePath = RelativePath(ascent, nameSeq.takeRight(n))
+
+  object AbsolutePath:
+    def parse(text: Text): AbsolutePath throws PathError =
+      val (root, rest) = parseRoot(text)
+      AbsolutePath(root, rest.cut(pathSeparator).map(PathName[NameType](_)))
 
   case class AbsolutePath(root: RootType, nameSeq: List[PathName[NameType]]) extends Path:
     @targetName("child")
@@ -134,9 +143,17 @@ trait Hierarchy[RootType, NameType <: Label]:
       else AbsolutePath(root, relative.nameSeq ::: ancestor(relative.ascent).avow.nameSeq)
 
 
+type UnixForbidden =
+  ".*<.*" | ".*>.*" | ".*:.*" | ".*\".*" | ".*\\\\.*" | ".*\\|.*" | ".*\\?.*" | ".*\\*.*" | ".*/.*"
 
+type WindowsForbidden =
+  "con(\\..*)?" | "prn(\\..*)?" | "aux(\\..*)?" | "nul(\\..*)?" | "com1(\\..*)?" | "com2(\\..*)?" |
+      "com3(\\..*)?" | "com4(\\..*)?" | "com5(\\..*)?" | "com6(\\..*)?" | "com7(\\..*)?" |
+      "com8(\\..*)?" | "com9(\\..*)?" | "lpt1(\\..*)?" | "lpt2(\\..*)?" | "lpt3(\\..*)?" |
+      "lpt4(\\..*)?" | "lpt5(\\..*)?" | "lpt6(\\..*)?" | "lpt7(\\..*)?" | "lpt8(\\..*)?" |
+      "lpt9(\\..*)?" | ".* " | ".*\\."
 
-object Unix extends Hierarchy[Unix.type, ".*\\/.*"]:
+object Unix extends Hierarchy[Unix.type, UnixForbidden]:
   def apply(): AbsolutePath = AbsolutePath(Unix, Nil)
 
   val pathSeparator: Text = t"/"
@@ -144,17 +161,27 @@ object Unix extends Hierarchy[Unix.type, ".*\\/.*"]:
   val selfRef: Text = t"."
 
   def rootText(root: Unix.type): Text = t"/"
+  def parseRoot(text: Text): (Unix.type, Text) throws PathError =
+    if text.starts(t"/") then (Unix, text.drop(1)) else throw PathError(PathError.Reason.NotRooted)
 
+export Windows.Drive
 
-object Windows extends Hierarchy[Windows.Drive, ".*\\\\.*"]:
+object Windows extends Hierarchy[Windows.Drive, WindowsForbidden]:
   val pathSeparator: Text = t"\\"
   val parentRef: Text = t".."
   val selfRef: Text = t"."
   
   def rootText(drive: Drive): Text = t"${drive.letter}:\\"
+  
+  def parseRoot(text: Text): (Drive, Text) throws PathError = text match
+    case r"$letter([A-Za-z]):\\.*" => (Drive(unsafely(letter(0))), text.drop(3))
+    case _                         => throw PathError(PathError.Reason.NotRooted)
 
   case class Drive(letter: Char):
     def apply(): AbsolutePath = AbsolutePath(this, Nil)
+
+    @targetName("child")
+    infix def /(name: PathName[WindowsForbidden]): AbsolutePath = AbsolutePath(this, List(name))
 
 object SerpentineMacros:
   def parse
