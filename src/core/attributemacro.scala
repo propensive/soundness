@@ -24,43 +24,42 @@ import spectacular.*
 import scala.quoted.*
 
 type Attributes = Map[String, Unset.type | Text]
-type Html[Children <: Label] = Node[Children] | Text | Int
+type Html[ChildType <: Label] = Node[ChildType] | Text | Int
 
 object Node:
-  given Show[Html[?]] =
+  given Show[Html[?]] = html => (html: @unchecked) match
     case text: Text    => text
     case int: Int      => int.show
-    case item: Node[?] => item.show
-    case _             => throw Mistake("this should never match")
+    case node: Node[?] => node.show
   
   given Show[Seq[Html[?]]] = _.map(_.show).join
   
   given Show[Node[?]] = item =>
-    val filling = item.attributes.map:
-      case (key, Unset)       => t" $key"
-      case (key, value: Text) => t""" $key="${value}""""
-      case _                  => throw Mistake("should never match")
+    val filling = item.attributes.map: keyValue =>
+      (keyValue: @unchecked) match
+        case (key, Unset)       => t" $key"
+        case (key, value: Text) => t""" $key="$value""""
     .join
     
     if item.children.isEmpty && !item.verbatim
     then t"<${item.label}$filling${if item.unclosed then t"" else t"/"}>"
     else t"<${item.label}$filling>${item.children.map(_.show).join}</${item.label}>"
 
-trait Node[+Name <: Label] extends Shown[Node[?]]:
+trait Node[+NameType <: Label] extends Shown[Node[?]]:
   node =>
-    def label: Text
-    def attributes: Attributes
-    def children: Seq[Html[?]]
-    def inline: Boolean
-    def unclosed: Boolean
-    def verbatim: Boolean
-  
-    inline def refine[N <: Label]: Option[Node[N]] = label.s match
-      case lbl: N => Some:
-        new Node[N]:
-          def label: Text = lbl.show
-          export node.{attributes, children, inline, unclosed, verbatim}
-      case _ => None
+  def label: Text
+  def attributes: Attributes
+  def children: Seq[Html[?]]
+  def inline: Boolean
+  def unclosed: Boolean
+  def verbatim: Boolean
+
+  inline def refine[NameType <: Label]: Option[Node[NameType]] = label.s match
+    case labelValue: NameType => Some:
+      new Node[NameType]:
+        def label: Text = labelValue.show
+        export node.{attributes, children, inline, unclosed, verbatim}
+    case _ => None
 
 object StartTag:
   given GenericCssSelection[StartTag[?, ?]] = elem =>
@@ -73,32 +72,32 @@ object StartTag:
     t"${elem.label}$tail".s
 
 
-case class StartTag[+Name <: Label, Children <: Label]
-                   (labelString: Name, unclosed: Boolean, inline: Boolean, verbatim: Boolean,
+case class StartTag[+NameType <: Label, ChildType <: Label]
+                   (labelString: NameType, unclosed: Boolean, inline: Boolean, verbatim: Boolean,
                         attributes: Attributes)
-extends Node[Name]:
+extends Node[NameType]:
   def children = Nil
   def label: Text = labelString.show
-  def apply(children: (Html[Children] | Seq[Html[Children]])*): Element[Name] =
+  def apply(children: (Html[ChildType] | Seq[Html[ChildType]])*): Element[NameType] =
     Element(labelString, unclosed, inline, verbatim, attributes, children)
 
 object HoneycombMacros:
-  def read[Name <: Label: Type, Children <: Label: Type, Return <: Label: Type]
-          (name: Expr[Name], unclosed: Expr[Boolean], inline: Expr[Boolean],
+  def read[NameType <: Label: Type, ChildType <: Label: Type, ReturnType <: Label: Type]
+          (name: Expr[NameType], unclosed: Expr[Boolean], inline: Expr[Boolean],
                verbatim: Expr[Boolean], attributes: Expr[Seq[(Label, Any)]])
           (using Quotes)
-          : Expr[StartTag[Name, Return]] =
+          : Expr[StartTag[NameType, ReturnType]] =
     import quotes.reflect.{Singleton as _, *}
 
     def recur(exprs: Seq[Expr[(Label, Any)]]): List[Expr[(String, Maybe[Text])]] = exprs match
-      case '{($key: k & Label, $value: v)} +: tail =>
+      case '{($key: keyType & Label, $value: valueType)} +: tail =>
         val att = key.value.get
-        val exp: Expr[HtmlAttribute[k & Label, v, Name]] =
-          Expr.summon[HtmlAttribute[k & Label, v, Name]].getOrElse:
-            val typeName = TypeRepr.of[v].show
+        val expr: Expr[HtmlAttribute[keyType & Label, valueType, NameType]] =
+          Expr.summon[HtmlAttribute[keyType & Label, valueType, NameType]].getOrElse:
+            val typeName = TypeRepr.of[valueType].show
             fail(t"""the attribute $att cannot take a value of type $typeName""".s)
         
-        '{($exp.rename.getOrElse(Text($key)).s, $exp.convert($value))} :: recur(tail)
+        '{($expr.rename.getOrElse(Text($key)).s, $expr.convert($value))} :: recur(tail)
       
       case _ =>
         Nil

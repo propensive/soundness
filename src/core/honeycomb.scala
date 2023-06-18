@@ -28,15 +28,21 @@ import language.dynamics
 
 object Element:
   @targetName("make")
-  def apply[T <: Label, C <: Label]
-           (labelString: String, unclosed: Boolean, inline: Boolean,
-                verbatim: Boolean, attributes: Attributes,
-                children: Seq[Html[C] | Seq[Html[C]]] = Nil): Element[T] =
+  def apply
+      [NodeType <: Label, ChildType <: Label]
+      (labelString: String, unclosed: Boolean, inline: Boolean, verbatim: Boolean,
+          attributes: Attributes, children: Seq[Html[ChildType] | Seq[Html[ChildType]]] = Nil)
+      : Element[NodeType] =
     new Element(labelString, unclosed, inline, verbatim, attributes, flatten(children))
 
-  private def flatten[C <: Label](nodes: Seq[Html[C] | Seq[Html[C]]]): Seq[Html[C]] = nodes.flatMap:
-    case seq: Seq[Html[C] @unchecked] => seq
-    case node: Html[C] @unchecked     => Seq(node)
+  private def flatten
+      [ChildType <: Label]
+      (nodes: Seq[Html[ChildType] | Seq[Html[ChildType]]])
+      : Seq[Html[ChildType]] =
+    
+    nodes.flatMap:
+      case seq: Seq[Html[ChildType] @unchecked] => seq
+      case node: Html[ChildType] @unchecked     => Seq(node)
 
 object Html extends Node["html"]:
   def label: Text = t"html"
@@ -74,16 +80,23 @@ extends Node[Name], Dynamic:
 object TransTagType:
   given GenericCssSelection[TransTagType[?, ?, ?]] = _.labelString
 
-case class TransTagType[+Name <: Label, Children <: Label, Atts <: Label]
-                   (labelString: Name, unclosed: Boolean = false, inline: Boolean = false,
-                        verbatim: Boolean = false)
+case class TransTagType
+    [+Name <: Label, Children <: Label, Atts <: Label]
+    (labelString: Name, unclosed: Boolean = false, inline: Boolean = false,
+        verbatim: Boolean = false)
 extends Node[Name], Dynamic:
+
   def attributes: Attributes = Map()
   def children: Seq[Html[?]] = Nil
   def label: Text = labelString.show
 
-  inline def applyDynamicNamed(method: "apply")(inline attributes: (Atts, Any)*): StartTag[Name, Children] =
-    ${HoneycombMacros.read[Name, Children, Children]('labelString, 'unclosed, 'inline, 'verbatim, 'attributes)}
+  inline def applyDynamicNamed
+      (method: "apply")
+      (inline attributes: (Atts, Any)*)
+      : StartTag[Name, Children] =
+    
+    ${HoneycombMacros.read[Name, Children, Children]('labelString, 'unclosed, 'inline, 'verbatim,
+        'attributes)}
 
   def applyDynamic[Return <: Label]
                   (method: "apply")
@@ -91,9 +104,10 @@ extends Node[Name], Dynamic:
                   : Element[Return] =
     Element(labelString, unclosed, inline, verbatim, Map(), children)
 
-case class Element[+Name <: Label](labelString: String, unclosed: Boolean, tagInline: Boolean,
-                                    verbatim: Boolean, attributes: Map[String, Maybe[Text]],
-                                    children: Seq[Html[?]]) extends Node[Name]:
+case class Element
+    [+Name <: Label]
+    (labelString: String, unclosed: Boolean, tagInline: Boolean, verbatim: Boolean,
+        attributes: Map[String, Maybe[Text]], children: Seq[Html[?]]) extends Node[Name]:
 
   def label: Text = labelString.show
 
@@ -106,17 +120,22 @@ case class Element[+Name <: Label](labelString: String, unclosed: Boolean, tagIn
 case class HtmlDoc(root: Node["html"])
 
 object HtmlDoc:
-  given generic(using enc: Encoding): GenericHttpResponseStream[HtmlDoc] =
+  given generic(using encoder: CharEncoder): GenericHttpResponseStream[HtmlDoc] =
     new GenericHttpResponseStream[HtmlDoc]:
-      def mediaType: String = t"text/html; charset=${enc.name}".s
-      def content(value: HtmlDoc): LazyList[IArray[Byte]] = LazyList(HtmlDoc.serialize(value).bytes)
+      def mediaType: String = t"text/html; charset=${encoder.encoding.name}".s
+      
+      def content(value: HtmlDoc): LazyList[IArray[Byte]] =
+        LazyList(HtmlDoc.serialize(value).bytes)
 
   def serialize[T](doc: HtmlDoc, maxWidth: Int = -1)(using HtmlSerializer[T]): T =
     summon[HtmlSerializer[T]].serialize(doc, maxWidth)
   
-  def simple[Stylesheet](title: Text, stylesheet: Stylesheet = false)
-                        (content: (Html[Flow] | Seq[Html[Flow]])*)
-                        (using att: HtmlAttribute["href", Stylesheet, ?]): HtmlDoc =
+  def simple
+      [Stylesheet]
+      (title: Text, stylesheet: Stylesheet = false)
+      (content: (Html[Flow] | Seq[Html[Flow]])*)
+      (using att: HtmlAttribute["href", Stylesheet, ?]): HtmlDoc =
+    
     val link = att.convert(stylesheet) match
       case Unset      => Nil
       case text: Text => Seq(Link(rel = Text("stylesheet"), href = text))

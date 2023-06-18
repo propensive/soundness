@@ -49,50 +49,50 @@ object HtmlSerializer:
       linebreak = false
       emptyLine = true
 
-    def next(node: Html[?], verbatim: Boolean): Unit = node match
-      case node: Node[?] => whitespace()
-                            append(t"<", node.label)
-                            
-                            for attribute <- node.attributes do attribute match
-                              case (key: Text, value: Text) => append(t" ", key, t"=\"", value, t"\"")
-                              case (key: Text, Unset)       => append(t" ", key)
-                              //case (key: Text, false)      => ()
-                              case (_, _)                 => throw Mistake("should never match")
-                            
-                            append(t">")
-                            if !node.inline then newline(1)
-                            
-                            for child <- node.children do
-                              val splitLine = child match
-                                case element: Element[?] => !element.inline
-                                case _                   => false
-                              if splitLine then newline()
-                              next(child, node.verbatim)
-                              if splitLine then newline()
-                            
-                            if !node.inline then newline(-1)
-                            
-                            if !node.unclosed then
-                              whitespace()
-                              append(t"</", node.label, t">")
-                              if !node.inline then newline(0)
+    def next(node: Html[?], verbatim: Boolean): Unit = (node: @unchecked) match
+      case node: Node[?] =>
+        whitespace()
+        append(t"<", node.label)
+        
+        for attribute <- node.attributes do (attribute: @unchecked) match
+          case (key: Text, value: Text) => append(t" ", key, t"=\"", value, t"\"")
+          case (key: Text, Unset)       => append(t" ", key)
+        
+        append(t">")
+        if !node.inline then newline(1)
+        
+        for child <- node.children do
+          val splitLine = child match
+            case element: Element[?] => !element.inline
+            case _                   => false
+          if splitLine then newline()
+          next(child, node.verbatim)
+          if splitLine then newline()
+        
+        if !node.inline then newline(-1)
+        
+        if !node.unclosed then
+          whitespace()
+          append(t"</", node.label, t">")
+          if !node.inline then newline(0)
 
-      case text: Text     => whitespace()
-                            if maxWidth == -1 then append(text) else
-                              if verbatim || pos + text.length <= maxWidth then append(text)
-                              else
-                                text.cut(t"\\s+").nn.foreach { word =>
-                                  if !(pos + 1 + word.nn.length < maxWidth || emptyLine) then
-                                    linebreak = true
-                                    whitespace()
-                                    append(t" ")
-                                  
-                                  append(if !emptyLine then t" " else t"", word.nn)
-                                }
-                                if text.chars.last.isWhitespace then append(t" ")
+      case text: Text =>
+        whitespace()
+        if maxWidth == -1 then append(text) else
+          if verbatim || pos + text.length <= maxWidth then append(text)
+          else
+            text.cut(t"\\s+").nn.foreach: word =>
+              if !(pos + 1 + word.nn.length < maxWidth || emptyLine) then
+                linebreak = true
+                whitespace()
+                append(t" ")
+              
+              append(if !emptyLine then t" " else t"", word.nn)
+            
+            if text.chars.last.isWhitespace then append(t" ")
       
-      case int: Int      => next(int.show, verbatim)
-      case _             => throw Mistake("should never match")
+      case int: Int =>
+        next(int.show, verbatim)
         
     
     append(t"<!DOCTYPE html>\n")

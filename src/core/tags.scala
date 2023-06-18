@@ -239,5 +239,5 @@ val Video = TagType["video", Label, Global | "src" | "crossorigin" | "poster" | 
 
 val Wbr = TagType["wbr", Nothing, Global]("wbr", inline = true)
 
-trait ToHtml[-T, +R <: Label]:
-  def convert(value: T): Seq[Html[R]]
+trait ToHtml[-SourceType, +NodeType <: Label]:
+  def convert(value: SourceType): Seq[Html[NodeType]]

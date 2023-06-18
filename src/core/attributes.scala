@@ -22,8 +22,8 @@ import anticipation.*
 import hieroglyph.*
 import spectacular.*
 
-trait HtmlAttribute[Key <: Label, -Value, -T]:
-  def convert(value: Value): Maybe[Text]
+trait HtmlAttribute[KeyType <: Label, -ValueType, -T]:
+  def convert(value: ValueType): Maybe[Text]
   def rename: Option[Text] = None
 
 object Rel:
