@@ -134,6 +134,7 @@ object Subcompiler:
           
           val ctx2 = ctx.setReporter(reporter)
               .setSetting(ctx.settings.classpath, classpath)
+              .setSetting(ctx.settings.YstopBefore, List("genSJSIR"))
               .setSetting(ctx.settings.color, "never")
           
           Scala3.newRun(using ctx2).tap: run =>
