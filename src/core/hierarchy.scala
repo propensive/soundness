@@ -22,27 +22,31 @@ import spectacular.*
 import gossamer.*
 import kaleidoscope.*
 
-import scala.compiletime.*
 import scala.quoted.*
 
 object PathError:
   enum Reason:
     case InvalidChar(char: Char)
+    case InvalidPrefix(prefix: Text)
+    case InvalidSuffix(suffix: Text)
     case InvalidName(name: Text)
     case ParentOfRoot
     case NotRooted
 
   given Show[Reason] =
-    case Reason.InvalidChar(char) => t"the character '$char' cannot appear in a path"
-    case Reason.InvalidName(name) => t"the name '$name' is reserved"
-    case Reason.ParentOfRoot      => t"the root has no parent"
-    case Reason.NotRooted         => t"the path is not rooted"
+    case Reason.InvalidChar(char)     => t"the character $char may not appear in a path name"
+    case Reason.InvalidPrefix(prefix) => t"the path name cannot begin with $prefix"
+    case Reason.InvalidSuffix(suffix) => t"the path name cannot end with $suffix"
+    case Reason.InvalidName(name)     => t"the name $name is not valid"
+    case Reason.ParentOfRoot          => t"the root has no parent"
+    case Reason.NotRooted             => t"the path is not rooted"
 
 object SerpentineOpaques:
   opaque type PathName[ForbiddenType <: Label] = Text
 
   object PathName:
-    def apply[ForbiddenType <: Label](text: Text): PathName[ForbiddenType] throws PathError = ???
+    inline def apply[ForbiddenType <: Label](text: Text): PathName[ForbiddenType] =
+      ${SerpentineMacros.runtimeParse('text)}
 
   extension [ForbiddenType <: Label](pathName: PathName[ForbiddenType])
     def text: Text = pathName
@@ -119,7 +123,7 @@ trait Hierarchy[RootType, NameType <: Label]:
     def keep(n: Int): RelativePath = RelativePath(ascent, nameSeq.takeRight(n))
 
   object AbsolutePath:
-    def parse(text: Text): AbsolutePath throws PathError =
+    inline def parse(text: Text): AbsolutePath throws PathError =
       val (root, rest) = parseRoot(text)
       AbsolutePath(root, rest.cut(pathSeparator).map(PathName[NameType](_)))
 
@@ -198,43 +202,6 @@ object Windows extends Hierarchy[Windows.Drive, WindowsForbidden]:
 
     @targetName("child")
     infix def /(name: PathName[WindowsForbidden]): AbsolutePath = AbsolutePath(this, List(name))
-
-object SerpentineMacros:
-  def parse
-      [ForbiddenType <: Label: Type](context: Expr[StringContext])(using Quotes)
-      : Expr[PathName[ForbiddenType]] =
-    import quotes.reflect.*
-    
-    val (element: String, pos: Position) = context match
-      case '{StringContext(${Varargs(Seq(str))}*)} => (str.value.get, str.asTerm.pos)
-      case _                                       => fail("A StringContext should contain literals")
-    
-    def checkType(repr: TypeRepr): Unit = repr.dealias.asMatchable match
-      case OrType(left, right) =>
-        checkType(left)
-        checkType(right)
-      
-      case ConstantType(StringConstant(pattern)) =>
-        if element.matches(pattern) then
-          Text(pattern) match
-            case r"\.\*\\?$char(.)\.\*" =>
-              fail(s"a path element may not contain the character '$char'", pos)
-            
-            case r"$start([a-zA-Z0-9]*)\.\*" =>
-              fail(s"a path element may not start with '$start'", pos)
-            
-            case r"[a-zA-Z0-9]*" =>
-              fail(s"a path element may not be '$pattern'", pos)
-            
-            case other =>
-              fail(s"a path element may not match the pattern '$other'")
-
-      case other =>
-        fail(s"Unexpectedly found type $other")
-    
-    checkType(TypeRepr.of[ForbiddenType])
-
-    '{${Expr(element)}.asInstanceOf[PathName[ForbiddenType]]}
 
 extension (inline context: StringContext)
   inline def p[ForbiddenType <: Label](): PathName[ForbiddenType] =
