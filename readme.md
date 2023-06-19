@@ -154,7 +154,7 @@ directly from an HTTP response.
 
 Any library which needs to work with time values, as instantaneous points in
 time or as time durations, should use `GenericInstant` or `GenericDuration`
-respectively.  [Parasitism](https://github.com/propensive/parasitism/) and
+respectively.  [Parasite](https://github.com/propensive/parasite/) and
 [Turbulence](https://github.com/propensive/turbulence/) use these typeclasses
 for generic time-related operations, and instances are provided for Java types
 in [Diuretic](https://github.com/propensive/diuretic/) and
