@@ -20,7 +20,7 @@ import gossamer.*
 import escapade.*
 import rudiments.*
 import digression.*
-import parasitism.*
+import parasite.*
 import turbulence.*
 import iridescence.*
 import spectacular.*
