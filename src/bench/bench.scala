@@ -24,7 +24,7 @@ import anticipation.* //, fileApi.galileiApi
 import eucalyptus.*
 import rudiments.*
 import hieroglyph.*, characterEncodings.utf8, badEncodingHandlers.strict
-import parasitism.*, monitors.global
+import parasite.*, monitors.global
 import turbulence.*, basicIo.jvm
 import unsafeExceptions.canThrowAny
 import ambience.*, environments.system
