@@ -22,7 +22,7 @@ import gossamer.*
 import ambience.*
 import rudiments.*
 import digression.*
-import parasitism.*
+import parasite.*
 import turbulence.*, lineSeparation.jvm
 import escapade.*
 import profanity.*
