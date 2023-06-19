@@ -221,7 +221,6 @@ object WindowsPath:
 case class WindowsPath(drive: WindowsDrive, ancestry: List[PathName[WindowsForbidden]])
 
 object RelativeUnixPath:
-  
   def parse(text: Text): RelativeUnixPath throws PathError = pathlike.parse(text)
   
   given pathlike: RelativePathlike[RelativeUnixPath, UnixForbidden] with
@@ -243,13 +242,6 @@ object RelativeUnixPath:
       if path.ancestry == Nil then RelativeUnixPath(path.ascent + 1, Nil)
       else RelativeUnixPath(path.ascent, path.ancestry.tail)
     
-    // FIXME
-    def ancestor(path: RelativeUnixPath, n: Int): RelativeUnixPath =
-      if path.ancestry.isEmpty then RelativeUnixPath(path.ascent + 1, Nil)
-      else RelativeUnixPath(path.ascent, path.ancestry.tail)
-
-
-
 object RelativeWindowsPath:
   def parse(text: Text): RelativeWindowsPath throws PathError = pathlike.parse(text)
   
@@ -272,11 +264,6 @@ object RelativeWindowsPath:
       if path.ancestry == Nil then RelativeWindowsPath(path.ascent + 1, Nil)
       else RelativeWindowsPath(path.ascent, path.ancestry.tail)
     
-    // FIXME
-    def ancestor(path: RelativeWindowsPath, n: Int): RelativeWindowsPath =
-      if path.ancestry.isEmpty then RelativeWindowsPath(path.ascent + 1, Nil)
-      else RelativeWindowsPath(path.ascent, path.ancestry.tail)
-
 case class RelativeUnixPath(ascent: Int, ancestry: List[PathName[UnixForbidden]])
 case class RelativeWindowsPath(ascent: Int, ancestry: List[PathName[WindowsForbidden]])
 
@@ -314,8 +301,12 @@ extends Pathlike[PathType, NameType]:
   def parentRef: Text
   def selfRef: Text
   def parent(path: PathType): PathType
-  def ancestor(path: PathType, n: Int): PathType
   def ascent(path: PathType): Int
+  
+  def ancestor(path: PathType, n: Int): PathType =
+    val depth = ancestry(path).length
+    val ancestry2 = ancestry(path).drop(n)
+    make(ascent(path) + (if n > depth then n - depth else 0), ancestry2)
 
   def make(ascent: Int, ancestry: List[PathName[NameType]]): PathType
   
@@ -346,8 +337,10 @@ extension
     [PathType <: Matchable, NameType <: Label]
     (path: PathType)
     (using pathlike: Pathlike[PathType, NameType])
+  
   @targetName("child")
   infix def /(name: PathName[NameType]): PathType = pathlike.child(path, name)
+  
   def ancestry: List[PathName[NameType]] = pathlike.ancestry(path)
   def depth: Int = ancestry.length
   def text: Text = pathlike.text(path)
@@ -375,7 +368,6 @@ package hierarchies:
     
     def absolutePath(root: hierarchies.unix.type, ancestry: List[PathName[UnixForbidden]]): UnixPath = UnixPath(ancestry)
 
-    
     def relativeAncestry(path: RelativeUnixPath): List[PathName[UnixForbidden]] = path.ancestry
     def absoluteAncestry(path: UnixPath): List[PathName[UnixForbidden]] = path.ancestry
     def root(path: UnixPath): hierarchies.unix.type = hierarchies.unix
