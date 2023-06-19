@@ -21,7 +21,7 @@ import turbulence.*
 import gossamer.*
 import rudiments.*
 import digression.*
-import parasitism.*
+import parasite.*
 import serpentine.*
 import anticipation.*
 
