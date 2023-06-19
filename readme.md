@@ -17,8 +17,7 @@ _Turbulence_ provides a few useful methods for working with `LazyList`s for stre
 
 ## Availability
 
-Turbulence has not yet been published as a binary. It is currently waiting for the
-final release of Scala 3.3.
+Turbulence has not yet been published as a binary.
 
 ## Getting Started
 
@@ -197,7 +196,7 @@ be used, but caution should be taken if there is a mismatch between the
 project's stability level and the importance of your own project.
 
 Turbulence is designed to be _small_. Its entire source code currently consists
-of 435 lines of code.
+of 438 lines of code.
 
 ## Building
 
