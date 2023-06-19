@@ -24,8 +24,7 @@ container, preferably on a Loom-based JVM.
 
 ## Availability
 
-Scintillate has not yet been published as a binary. It is currently waiting for the
-final release of Scala 3.3.
+Scintillate has not yet been published as a binary.
 
 ## Getting Started
 
