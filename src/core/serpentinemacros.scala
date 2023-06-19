@@ -14,36 +14,39 @@ object SerpentineMacros:
       : Expr[PathName[ForbiddenType]] =
     import quotes.reflect.*
 
-    val checks = patterns(TypeRepr.of[ForbiddenType])
+    val checks: List[String] = patterns(TypeRepr.of[ForbiddenType])
     
-    def recur
-        (patterns: List[Text], expr: Expr[PathName[ForbiddenType]])
-        : Expr[PathName[ForbiddenType]] =
-      patterns match
-        case pattern :: tail =>
-          import PathError.Reason.*
-          def reasonExpr: Expr[PathError.Reason] = pattern match
-            case r"\.\*\\?$char(.)\.\*"       => '{InvalidChar(${Expr(char.head)})}
-            case r"$prefix([a-zA-Z0-9]*)\.\*" => '{InvalidPrefix(${Expr(prefix)})}
-            case r"\.\*$suffix([a-zA-Z0-9]*)" => '{InvalidSuffix(${Expr(suffix)})}
-            case other                        => '{InvalidName(${Expr(pattern)})}
-          
-          recur(tail, '{
-            given CanThrow[PathError] = unsafeExceptions.canThrowAny
-            if $text.s.matches(${Expr(pattern)}.s) then throw PathError($reasonExpr) else $expr
-          })
+    def recur(patterns: List[String], statements: Expr[Unit]): Expr[Unit] = patterns match
+      case pattern :: tail =>
+        import PathError.Reason.*
         
-        case _ =>
-          expr
+        def reasonExpr: Expr[PathError.Reason] = pattern match
+          case r"\.\*\\?$char(.)\.\*"       => '{InvalidChar(${Expr(char.head)})}
+          case r"$prefix([a-zA-Z0-9]*)\.\*" => '{InvalidPrefix(Text(${Expr(prefix.toString)}))}
+          case r"\.\*$suffix([a-zA-Z0-9]*)" => '{InvalidSuffix(Text(${Expr(suffix.toString)}))}
+          case other                        => '{InvalidName(Text(${Expr(pattern)}))}
+        
+        recur(tail, '{
+          $statements
+          if $text.s.matches(${Expr(pattern)}) then
+            given CanThrow[PathError] = unsafeExceptions.canThrowAny
+            throw PathError($reasonExpr)
+        })
+      
+      case _ =>
+        statements
 
-    recur(checks, '{$text.asInstanceOf[PathName[ForbiddenType]]})
+    '{
+      ${recur(checks, '{()})}
+      $text.asInstanceOf[PathName[ForbiddenType]]
+    }
 
-  private def patterns(using quotes: Quotes)(repr: quotes.reflect.TypeRepr): List[Text] =
+  private def patterns(using quotes: Quotes)(repr: quotes.reflect.TypeRepr): List[String] =
     import quotes.reflect.*
     
     (repr.dealias.asMatchable: @unchecked) match
       case OrType(left, right)                   => patterns(left) ++ patterns(right)
-      case ConstantType(StringConstant(pattern)) => List(Text(pattern))
+      case ConstantType(StringConstant(pattern)) => List(pattern)
   
   def parse
       [ForbiddenType <: Label: Type](context: Expr[StringContext])(using Quotes)
@@ -55,7 +58,7 @@ object SerpentineMacros:
       case _                                       => fail("A StringContext should contain literals")
     
     patterns(TypeRepr.of[ForbiddenType]).foreach: pattern =>
-      if element.matches(pattern.s) then pattern match
+      if element.matches(pattern) then pattern match
         case r"\.\*\\?$char(.)\.\*" =>
           fail(s"a path element may not contain the character '$char'", pos)
 

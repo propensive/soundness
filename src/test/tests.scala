@@ -24,9 +24,27 @@ import larceny.*
 
 object Tests extends Suite(t"Serpentine Tests"):
   def run(): Unit =
+    suite(t"Absolute parsing"):
+      import Unix.*
+      test(t"parse simple absolute path"):
+        unsafely(AbsolutePath.parse(t"/home"))
+      .assert(_ == AbsolutePath(Unix, List(PathName(t"home"))))
+      
+      test(t"parse deeper absolute path"):
+        unsafely(AbsolutePath.parse(t"/home/work"))
+      .assert(_ == AbsolutePath(Unix, List(PathName(t"work"), PathName(t"home"))))
+      
+      test(t"parse even deeper absolute path"):
+        unsafely(AbsolutePath.parse(t"/home/work/data"))
+      .assert(_ == AbsolutePath(Unix, List(PathName(t"data"), PathName(t"work"), PathName(t"home"))))
+      
+      test(t"parse even absolute directory-style path"):
+        unsafely(AbsolutePath.parse(t"/home/work/"))
+      .assert(_ == AbsolutePath(Unix, List(PathName(t"work"), PathName(t"home"))))
+    
     // suite(t"Relative parsing"):
     //   test(t"parse simple relative path"):
-    //     unsafely(Relative.parse[GenericPath](t"peer"))
+    //     unsafely(RelativePath.parse(t"peer"))
     //   .assert(_ == Relative(0, List(PathName(t"peer"))))
 
     //   test(t"parse three-part relative subpath"):
@@ -129,6 +147,26 @@ object Tests extends Suite(t"Serpentine Tests"):
           val elem: PathName[".*a.*" | ".*e.*" | ".*i.*" | ".*o.*" | ".*u.*"] = p"unsafe"
         .map(_.message)
       .assert(_ == List(t"serpentine: a path element may not contain the character 'a'"))
+
+      test(t"Parse a path name with an invalid character"):
+        import unsafeExceptions.canThrowAny
+        capture[PathError, PathName[".*x.*"]](PathName[".*x.*"](t"excluded"))
+      .assert(_ == PathError(PathError.Reason.InvalidChar('x')))
+      
+      test(t"Parse a path name with an invalid suffix"):
+        import unsafeExceptions.canThrowAny
+        capture[PathError, PathName[".*txt"]](PathName[".*txt"](t"bad.txt"))
+      .assert(_ == PathError(PathError.Reason.InvalidSuffix(t"txt")))
+
+      test(t"Parse a path name with an invalid prefix"):
+        import unsafeExceptions.canThrowAny
+        capture[PathError, PathName["bad.*"]](PathName["bad.*"](t"bad.txt"))
+      .assert(_ == PathError(PathError.Reason.InvalidPrefix(t"bad")))
+      
+      test(t"Parse a path name with an invalid name"):
+        import unsafeExceptions.canThrowAny
+        capture[PathError, PathName["bad\\.txt"]](PathName["bad\\.txt"](t"bad.txt"))
+      .assert(_ == PathError(PathError.Reason.InvalidName(t"bad\\.txt")))
 
     suite(t"Relative path tests"):
       given Unix.type = Unix

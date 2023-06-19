@@ -42,19 +42,19 @@ object PathError:
     case Reason.NotRooted             => t"the path is not rooted"
 
 object SerpentineOpaques:
-  opaque type PathName[ForbiddenType <: Label] = Text
+  opaque type PathName[ForbiddenType <: Label] = String
 
   object PathName:
     inline def apply[ForbiddenType <: Label](text: Text): PathName[ForbiddenType] =
-      ${SerpentineMacros.runtimeParse('text)}
+      ${SerpentineMacros.runtimeParse[ForbiddenType]('text)}
 
   extension [ForbiddenType <: Label](pathName: PathName[ForbiddenType])
-    def text: Text = pathName
+    def text: Text = Text(pathName)
 
 export SerpentineOpaques.*
 
 case class PathError(reason: PathError.Reason)
-extends Error(err"the path is invalid because $reason")
+extends Error(err"the path is invalid because ${reason.show}")
 
 @targetName("unixRoot")
 def %(using Unix.type): Unix.AbsolutePath = Unix.AbsolutePath(Unix, Nil)
@@ -107,10 +107,17 @@ trait Hierarchy[RootType, NameType <: Label]:
 
     @targetName("child")
     infix def /(name: PathName[NameType]): Path
+    
+    @targetName("child2")
+    infix inline def /(text: Text): Path throws PathError
 
   case class RelativePath(ascent: Int, nameSeq: List[PathName[NameType]]) extends Path:
     @targetName("child")
     infix def /(name: PathName[NameType]): RelativePath = RelativePath(ascent, name :: nameSeq)
+    
+    @targetName("child2")
+    infix inline def /(text: Text): RelativePath throws PathError =
+      RelativePath(ascent, PathName[NameType](text) :: nameSeq)
     
     def parent: RelativePath =
       if nameSeq.isEmpty then RelativePath(ascent + 1, Nil) else RelativePath(ascent, nameSeq.tail)
@@ -125,11 +132,21 @@ trait Hierarchy[RootType, NameType <: Label]:
   object AbsolutePath:
     inline def parse(text: Text): AbsolutePath throws PathError =
       val (root, rest) = parseRoot(text)
-      AbsolutePath(root, rest.cut(pathSeparator).map(PathName[NameType](_)))
+      
+      val names = rest.cut(pathSeparator).reverse match
+        case t"" :: tail => tail
+        case names       => names
+
+      AbsolutePath(root, names.map(PathName(_)))
 
   case class AbsolutePath(root: RootType, nameSeq: List[PathName[NameType]]) extends Path:
     @targetName("child")
     infix def /(name: PathName[NameType]): AbsolutePath = AbsolutePath(root, name :: nameSeq)
+    
+    @targetName("child2")
+    infix inline def /(text: Text): AbsolutePath throws PathError =
+      AbsolutePath(root, PathName[NameType](text) :: nameSeq)
+    
     def text: Text = t"${rootText(root)}${elements.join(pathSeparator)}"
     
     def parent: Maybe[AbsolutePath] = ancestor(1)
