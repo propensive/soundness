@@ -56,75 +56,91 @@ export SerpentineOpaques.*
 case class PathError(reason: PathError.Reason)
 extends Error(err"the path is invalid because ${reason.show}")
 
-@targetName("unixRoot")
-def `%`: UnixPath = UnixPath(Nil)
+object UnixRoot:
+  @targetName("Root")
+  final val `%`: UnixPath = UnixPath(Nil)
+    
+    @targetName("child")
+    infix def /(name: PathName[UnixForbidden]): UnixPath = UnixPath(List(name))
+    
+    @targetName("child2")
+    infix def /(name: Text): UnixPath throws PathError = UnixPath(List(PathName(name)))
+
+export UnixRoot.%
 
 @targetName("relative")
 def ?
     [AbsolutePathType <: Matchable, RelativePathType <: Matchable, RootType, NameType <: Label]
     (using hierarchy: Hierarchy[AbsolutePathType, RelativePathType, RootType, NameType])
+    (using pathlike: RelativePathlike[RelativePathType, NameType])
     : RelativePathType =
-  hierarchy.relativePath(0, Nil)
+  pathlike.make(0, Nil)
 
 @targetName("relativeParent")
 def ?^
     [AbsolutePathType <: Matchable, RelativePathType <: Matchable, RootType, NameType <: Label]
     (using hierarchy: Hierarchy[AbsolutePathType, RelativePathType, RootType, NameType])
+    (using pathlike: RelativePathlike[RelativePathType, NameType])
     : RelativePathType =
-  hierarchy.relativePath(1, Nil)
+  pathlike.make(1, Nil)
 
 @targetName("relativeParent2")
 def ?^^
     [AbsolutePathType <: Matchable, RelativePathType <: Matchable, RootType, NameType <: Label]
     (using hierarchy: Hierarchy[AbsolutePathType, RelativePathType, RootType, NameType])
+    (using pathlike: RelativePathlike[RelativePathType, NameType])
     : RelativePathType =
-  hierarchy.relativePath(2, Nil)
+  pathlike.make(2, Nil)
 
 @targetName("relativeParent3")
 def ?^^^
     [AbsolutePathType <: Matchable, RelativePathType <: Matchable, RootType, NameType <: Label]
     (using hierarchy: Hierarchy[AbsolutePathType, RelativePathType, RootType, NameType])
+    (using pathlike: RelativePathlike[RelativePathType, NameType])
     : RelativePathType =
-  hierarchy.relativePath(3, Nil)
+  pathlike.make(3, Nil)
 
-// case class System
-//     [RootType, NameType <: Label]
-//     (hierarchies: Hierarchy[RootType, NameType]*)
-
-
-trait Hierarchy[AbsolutePathType <: Matchable, RelativePathType <: Matchable, RootType, NameType <: Label]:
-  def relativePath(ascent: Int, ancestry: List[PathName[NameType]]): RelativePathType
-  def absolutePath(root: RootType, ancestry: List[PathName[NameType]]): AbsolutePathType
-
-  def root(path: AbsolutePathType): RootType
-  def ascent(path: RelativePathType): Int
+erased trait Hierarchy
+    [AbsolutePathType <: Matchable, RelativePathType <: Matchable, RootType, NameType <: Label]
   
 extension
     [AbsolutePathType <: Matchable, RelativePathType <: Matchable, RootType, NameType <: Label]
     (left: RelativePathType)
     (using hierarchy: Hierarchy[AbsolutePathType, RelativePathType, RootType, NameType])
-  def ascent: Int = hierarchy.ascent(left)
+  
+  def ascent(using pathlike: RelativePathlike[RelativePathType, NameType]): Int =
+    pathlike.ascent(left)
 
   @targetName("relativeKeep")
-  def keep(n: Int)(using pathlike: Pathlike[RelativePathType, NameType]): RelativePathType =
-    hierarchy.relativePath(ascent, left.ancestry.takeRight(n))
+  def keep(n: Int)(using pathlike: RelativePathlike[RelativePathType, NameType]): RelativePathType =
+    pathlike.make(pathlike.ascent(left), left.ancestry.takeRight(n))
 
 extension
     [AbsolutePathType <: Matchable, RelativePathType <: Matchable, RootType, NameType <: Label]
     (left: AbsolutePathType)
     (using hierarchy: Hierarchy[AbsolutePathType, RelativePathType, RootType, NameType])
   
-  def root: RootType = hierarchy.root(left)
+  def root(using pathlike: AbsolutePathlike[AbsolutePathType, NameType, RootType]): RootType =
+    pathlike.root(left)
   
-  def relativeTo(right: AbsolutePathType)(using Pathlike[AbsolutePathType, NameType]): RelativePathType =
-    val common = left.conjunction(right).depth
-    hierarchy.relativePath(left.depth - common, right.ancestry.dropRight(common))
-  
-  @targetName("absoluteKeep")
-  def keep(n: Int)(using Pathlike[AbsolutePathType, NameType]): AbsolutePathType =
-    hierarchy.absolutePath(left.root, left.ancestry.takeRight(n))
+  def relativeTo
+      (right: AbsolutePathType)
+      (using pathlike: RelativePathlike[RelativePathType, NameType])
+      (using absolutePathlike: AbsolutePathlike[AbsolutePathType, NameType, ?])
+      : RelativePathType =
     
-  def conjunction(right: AbsolutePathType)(using Pathlike[AbsolutePathType, NameType]): AbsolutePathType =
+    val common = left.conjunction(right).depth
+    pathlike.make(left.depth - common, right.ancestry.dropRight(common))
+  
+  def keep
+      (n: Int)(using pathlike: AbsolutePathlike[AbsolutePathType, NameType, ?])
+      : AbsolutePathType =
+    pathlike.make(pathlike.root(left), left.ancestry.takeRight(n))
+    
+  def conjunction
+      (right: AbsolutePathType)(using pathlike: AbsolutePathlike[AbsolutePathType, NameType, ?])
+      : AbsolutePathType =
+    
     lazy val leftElements: IArray[Text] = IArray.from(left.ancestry.reverse.map(_.text))
     lazy val rightElements: IArray[Text] = IArray.from(right.ancestry.reverse.map(_.text))
     
@@ -134,10 +150,12 @@ extension
       then count(n + 1)
       else n
     
-    hierarchy.absolutePath(left.root, left.ancestry.takeRight(count(0)))
+    pathlike.make(pathlike.root(left), left.ancestry.takeRight(count(0)))
  
-  def precedes(path: AbsolutePathType)(using Pathlike[AbsolutePathType, NameType]): Boolean =
-    left.conjunction(path).ancestry == left.ancestry
+  def precedes
+      (path: AbsolutePathType)(using pathlike: AbsolutePathlike[AbsolutePathType, NameType, ?])
+      : Boolean =
+    left.conjunction(path).ancestry == left.ancestry && pathlike.root(path) == pathlike.root(left)
 
   @targetName("plus")
   def ++
@@ -146,11 +164,15 @@ extension
       (using relativePathlike: RelativePathlike[RelativePathType, NameType])
       : AbsolutePathType throws PathError =
 
-    if relative.ascent > left.depth then throw PathError(PathError.Reason.ParentOfRoot)
+    if relativePathlike.ascent(relative) > left.depth
+    then throw PathError(PathError.Reason.ParentOfRoot)
     else
-      val common: AbsolutePathType = absolutePathlike.ancestor(left, relative.ascent).avow
+      val common: AbsolutePathType =
+        absolutePathlike.ancestor(left, relativePathlike.ascent(relative)).avow
+      
       val ancestry = absolutePathlike.ancestry(common)
-      hierarchy.absolutePath(left.root, relative.ancestry ::: ancestry)
+      
+      absolutePathlike.make(absolutePathlike.root(left), relative.ancestry ::: ancestry)
 
 type UnixForbidden =
   ".*<.*" | ".*>.*" | ".*:.*" | ".*\".*" | ".*\\\\.*" | ".*\\|.*" | ".*\\?.*" | ".*\\*.*" | ".*/.*"
@@ -166,18 +188,18 @@ object UnixPath:
 
   def parse(text: Text): UnixPath throws PathError = pathlike.parse(text)
 
-  given pathlike: AbsolutePathlike[UnixPath, UnixForbidden, hierarchies.unix.type] with
+  given pathlike: AbsolutePathlike[UnixPath, UnixForbidden, %.type] with
     val pathSeparator: Text = t"/"
-    def root(path: UnixPath): hierarchies.unix.type = hierarchies.unix
-    def prefix(root: hierarchies.unix.type): Text = t"/"
+    def root(path: UnixPath): %.type = %
+    def prefix(root: %.type): Text = t"/"
     def child(path: UnixPath, name: PathName[UnixForbidden]): UnixPath =
       UnixPath(name :: path.ancestry)
     
-    def make(root: hierarchies.unix.type, ancestry: List[PathName[UnixForbidden]]): UnixPath =
+    def make(root: %.type, ancestry: List[PathName[UnixForbidden]]): UnixPath =
       UnixPath(ancestry)
 
-    def parseRoot(text: Text): (hierarchies.unix.type, Text) throws PathError =
-      if text.starts(t"/") then (hierarchies.unix, text.drop(1))
+    def parseRoot(text: Text): (%.type, Text) throws PathError =
+      if text.starts(t"/") then (%, text.drop(1))
       else throw PathError(PathError.Reason.NotRooted)
     
     def ancestry(path: UnixPath): List[PathName[UnixForbidden]] = path.ancestry
@@ -360,34 +382,11 @@ case class WindowsDrive(letter: Char):
   infix def /(name: PathName[WindowsForbidden]): WindowsPath = WindowsPath(this, List(name))
 
 package hierarchies:
-  given unix: Hierarchy[UnixPath, RelativeUnixPath, hierarchies.unix.type, UnixForbidden] with
-    def apply(): UnixPath = absolutePath(hierarchies.unix, Nil)
+  erased given unix: Hierarchy[UnixPath, RelativeUnixPath, %.type, UnixForbidden] = ###
 
-    def relativePath(ascent: Int, ancestry: List[PathName[UnixForbidden]]): RelativeUnixPath =
-      RelativeUnixPath(ascent, ancestry)
-    
-    def absolutePath(root: hierarchies.unix.type, ancestry: List[PathName[UnixForbidden]]): UnixPath = UnixPath(ancestry)
-
-    def relativeAncestry(path: RelativeUnixPath): List[PathName[UnixForbidden]] = path.ancestry
-    def absoluteAncestry(path: UnixPath): List[PathName[UnixForbidden]] = path.ancestry
-    def root(path: UnixPath): hierarchies.unix.type = hierarchies.unix
-    def ascent(path: RelativeUnixPath): Int = path.ascent
-
-  given windows: Hierarchy[WindowsPath, RelativeWindowsPath, WindowsDrive, WindowsForbidden] with
-    val pathSeparator: Text = t"\\"
-    val parentRef: Text = t".."
-    val selfRef: Text = t"."
-    
-    def relativePath(ascent: Int, ancestry: List[PathName[WindowsForbidden]]): RelativeWindowsPath =
-      RelativeWindowsPath(ascent, ancestry)
-    
-    def absolutePath(drive: WindowsDrive, ancestry: List[PathName[WindowsForbidden]]): WindowsPath =
-      WindowsPath(drive, ancestry)
-    
-    def relativeAncestry(path: RelativeWindowsPath): List[PathName[WindowsForbidden]] = path.ancestry
-    def absoluteAncestry(path: WindowsPath): List[PathName[WindowsForbidden]] = path.ancestry
-    def root(path: WindowsPath): WindowsDrive = path.drive
-    def ascent(path: RelativeWindowsPath): Int = path.ascent
+  erased given windows
+      : Hierarchy[WindowsPath, RelativeWindowsPath, WindowsDrive, WindowsForbidden] =
+    ###
 
 extension (inline context: StringContext)
   inline def p[ForbiddenType <: Label](): PathName[ForbiddenType] =

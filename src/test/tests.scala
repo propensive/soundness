@@ -228,19 +228,19 @@ object Tests extends Suite(t"Serpentine Tests"):
         val p1 = % / p"foo" / p"bar" / p"baz"
         val p2 = % / p"foo" / p"bar" / p"quux"
         p1.conjunction(p2)
-      .assert(_ == hierarchies.unix() / p"foo" / p"bar")
+      .assert(_ == % / p"foo" / p"bar")
       
       test(t"Find conjunction of paths with common last name"):
         val p1 = % / p"foo" / p"bar" / p"quux"
         val p2 = % / p"foo" / p"baz" / p"quux"
         p1.conjunction(p2)
-      .assert(_ == hierarchies.unix() / p"foo")
+      .assert(_ == % / p"foo")
       
       test(t"Find conjunction of paths with different length"):
         val p1 = % / p"foo" / p"bar"
         val p2 = % / p"foo" / p"baz" / p"quux"
         p1.conjunction(p2)
-      .assert(_ == hierarchies.unix() / p"foo")
+      .assert(_ == % / p"foo")
 
       test(t"Find relation between identical paths"):
         val p1 = % / p"foo" / p"bar"
