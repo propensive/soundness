@@ -19,75 +19,75 @@ package serpentine
 import probably.*
 import rudiments.*
 import digression.*
-import gossamer.*
+import gossamer.t
 import larceny.*
 
 object Tests extends Suite(t"Serpentine Tests"):
   def run(): Unit =
     suite(t"Absolute parsing"):
       test(t"parse simple absolute path"):
-        unsafely(Unix.AbsolutePath.parse(t"/home"))
-      .assert(_ == Unix.AbsolutePath(Unix, List(PathName(t"home"))))
+        unsafely(UnixPath.parse(t"/home"))
+      .assert(_ == UnixPath(List(PathName(t"home"))))
       
       test(t"parse deeper absolute path"):
-        unsafely(Unix.AbsolutePath.parse(t"/home/work"))
-      .assert(_ == Unix.AbsolutePath(Unix, List(PathName(t"work"), PathName(t"home"))))
+        unsafely(UnixPath.parse(t"/home/work"))
+      .assert(_ == UnixPath(List(PathName(t"work"), PathName(t"home"))))
       
       test(t"parse even deeper absolute path"):
-        unsafely(Unix.AbsolutePath.parse(t"/home/work/data"))
-      .assert(_ == Unix.AbsolutePath(Unix, List(PathName(t"data"), PathName(t"work"), PathName(t"home"))))
+        unsafely(UnixPath.parse(t"/home/work/data"))
+      .assert(_ == UnixPath(List(PathName(t"data"), PathName(t"work"), PathName(t"home"))))
       
       test(t"parse even absolute directory-style path"):
-        unsafely(Unix.AbsolutePath.parse(t"/home/work/"))
-      .assert(_ == Unix.AbsolutePath(Unix, List(PathName(t"work"), PathName(t"home"))))
+        unsafely(UnixPath.parse(t"/home/work/"))
+      .assert(_ == UnixPath(List(PathName(t"work"), PathName(t"home"))))
       
       test(t"parse simple Windows absolute path"):
-        unsafely(Windows.AbsolutePath.parse(t"C:\\Windows"))
-      .assert(_ == Windows.AbsolutePath(Drive('C'), List(PathName(t"Windows"))))
+        unsafely(WindowsPath.parse(t"C:\\Windows"))
+      .assert(_ == WindowsPath(WindowsDrive('C'), List(PathName(t"Windows"))))
       
       test(t"parse deeper Windows absolute path"):
-        unsafely(Windows.AbsolutePath.parse(t"D:\\Windows\\System"))
-      .assert(_ == Windows.AbsolutePath(Drive('D'), List(PathName(t"System"), PathName(t"Windows"))))
+        unsafely(WindowsPath.parse(t"D:\\Windows\\System"))
+      .assert(_ == WindowsPath(WindowsDrive('D'), List(PathName(t"System"), PathName(t"Windows"))))
       
       test(t"parse even deeper Windows absolute path"):
-        unsafely(Windows.AbsolutePath.parse(t"e:\\Windows\\System\\Data"))
-      .assert(_ == Windows.AbsolutePath(Drive('E'), List(PathName(t"Data"), PathName(t"System"), PathName(t"Windows"))))
+        unsafely(WindowsPath.parse(t"e:\\Windows\\System\\Data"))
+      .assert(_ == WindowsPath(WindowsDrive('E'), List(PathName(t"Data"), PathName(t"System"), PathName(t"Windows"))))
       
       test(t"parse even absolute Windows directory-style path"):
-        unsafely(Windows.AbsolutePath.parse(t"f:\\Windows\\System\\"))
-      .assert(_ == Windows.AbsolutePath(Drive('F'), List(PathName(t"System"), PathName(t"Windows"))))
+        unsafely(WindowsPath.parse(t"f:\\Windows\\System\\"))
+      .assert(_ == WindowsPath(WindowsDrive('F'), List(PathName(t"System"), PathName(t"Windows"))))
       
     suite(t"Relative parsing"):
       test(t"parse simple relative path"):
-        unsafely(Unix.RelativePath.parse(t"peer"))
-      .assert(_ == Unix.RelativePath(0, List(PathName(t"peer"))))
+        unsafely(RelativeUnixPath.parse(t"peer"))
+      .assert(_ == RelativeUnixPath(0, List(PathName(t"peer"))))
 
       test(t"parse three-part relative subpath"):
-        unsafely(Unix.RelativePath.parse(t"path/to/child"))
-      .assert(_ == Unix.RelativePath(0, List(t"child", t"to", t"path").map(PathName(_))))
+        unsafely(RelativeUnixPath.parse(t"path/to/child"))
+      .assert(_ == RelativeUnixPath(0, List(t"child", t"to", t"path").map(PathName(_))))
 
       test(t"parse parent relative path"):
-        unsafely(Unix.RelativePath.parse(t".."))
-      .assert(_ == Unix.RelativePath(1, List()))
+        unsafely(RelativeUnixPath.parse(t".."))
+      .assert(_ == RelativeUnixPath(1, List()))
 
       test(t"parse ancestor relative path"):
-        unsafely(Unix.RelativePath.parse(t"../../.."))
-      .assert(_ == Unix.RelativePath(3, List()))
+        unsafely(RelativeUnixPath.parse(t"../../.."))
+      .assert(_ == RelativeUnixPath(3, List()))
     
       test(t"parse relative link to current path"):
-        unsafely(Unix.RelativePath.parse(t"."))
-      .assert(_ == Unix.RelativePath(0, List()))
+        unsafely(RelativeUnixPath.parse(t"."))
+      .assert(_ == RelativeUnixPath(0, List()))
       
       test(t"parse relative link to uncle path"):
-        unsafely(Unix.RelativePath.parse(t"../path"))
-      .assert(_ == Unix.RelativePath(1, List(PathName(t"path"))))
+        unsafely(RelativeUnixPath.parse(t"../path"))
+      .assert(_ == RelativeUnixPath(1, List(PathName(t"path"))))
       
       test(t"parse relative link to cousin path"):
-        unsafely(Unix.RelativePath.parse(t"../path/child"))
-      .assert(_ == Unix.RelativePath(1, List(t"child", t"path").map(PathName(_))))
+        unsafely(RelativeUnixPath.parse(t"../path/child"))
+      .assert(_ == RelativeUnixPath(1, List(t"child", t"path").map(PathName(_))))
 
     suite(t"Show paths"):
-      given Unix.type = Unix
+      import hierarchies.unix
       
       test(t"show simple relative path"):
         (? / p"hello").text
@@ -184,7 +184,7 @@ object Tests extends Suite(t"Serpentine Tests"):
       .assert(_ == PathError(PathError.Reason.InvalidName(t"bad\\.txt")))
 
     suite(t"Relative path tests"):
-      given Unix.type = Unix
+      import hierarchies.unix
       test(t"Relative path has correct parent"):
         (? / p"foo" / p"bar").parent
       .assert(_ == (? / p"foo"))
@@ -195,11 +195,11 @@ object Tests extends Suite(t"Serpentine Tests"):
 
       test(t"Parent of Relative path root has correct parent"):
         ?^
-      .assert(_ == Unix.RelativePath(1, Nil))
+      .assert(_ == RelativeUnixPath(1, Nil))
       
       test(t"Parent of Relative path root has correct parent"):
         ?^^
-      .assert(_ == Unix.RelativePath(2, Nil))
+      .assert(_ == RelativeUnixPath(2, Nil))
       
       test(t"Parent of cousin keeps correct ascent"):
         (?^^ / p"foo" / p"bar").parent
@@ -210,7 +210,7 @@ object Tests extends Suite(t"Serpentine Tests"):
       .assert(_ == ?^^)
 
     suite(t"Relative path tests"):
-      given Unix.type = Unix
+      import hierarchies.unix
       
       test(t"Find conjunction of distinct paths"):
         val p1 = % / p"foo" / p"bar"
@@ -228,19 +228,19 @@ object Tests extends Suite(t"Serpentine Tests"):
         val p1 = % / p"foo" / p"bar" / p"baz"
         val p2 = % / p"foo" / p"bar" / p"quux"
         p1.conjunction(p2)
-      .assert(_ == Unix() / p"foo" / p"bar")
+      .assert(_ == hierarchies.unix() / p"foo" / p"bar")
       
       test(t"Find conjunction of paths with common last name"):
         val p1 = % / p"foo" / p"bar" / p"quux"
         val p2 = % / p"foo" / p"baz" / p"quux"
         p1.conjunction(p2)
-      .assert(_ == Unix() / p"foo")
+      .assert(_ == hierarchies.unix() / p"foo")
       
       test(t"Find conjunction of paths with different length"):
         val p1 = % / p"foo" / p"bar"
         val p2 = % / p"foo" / p"baz" / p"quux"
         p1.conjunction(p2)
-      .assert(_ == Unix() / p"foo")
+      .assert(_ == hierarchies.unix() / p"foo")
 
       test(t"Find relation between identical paths"):
         val p1 = % / p"foo" / p"bar"
@@ -309,100 +309,98 @@ object Tests extends Suite(t"Serpentine Tests"):
       test(t"add relative parent"):
         given CanThrow[PathError] = unsafeExceptions.canThrowAny
         val rel = ?^
-        (% / p"foo" / p"bar") + rel
+        (% / p"foo" / p"bar") ++ rel
       .assert(_ == % / p"foo")
       
       test(t"add relative grandparent"):
         given CanThrow[PathError] = unsafeExceptions.canThrowAny
         val rel = ?^^
-        (% / p"foo" / p"bar" / p"baz") + rel
+        (% / p"foo" / p"bar" / p"baz") ++ rel
       .assert(_ == % / p"foo")
       
       test(t"add relative uncle"):
         given CanThrow[PathError] = unsafeExceptions.canThrowAny
         val rel = ?^^ / p"quux"
-        (% / p"foo" / p"bar" / p"baz") + rel
+        (% / p"foo" / p"bar" / p"baz") ++ rel
       .assert(_ == % / p"foo" / p"quux")
       
       test(t"add relative cousin"):
         given CanThrow[PathError] = unsafeExceptions.canThrowAny
         val rel = ?^^ / p"quux" / p"bar"
-        (% / p"foo" / p"bar" / p"baz") + rel
+        (% / p"foo" / p"bar" / p"baz") ++ rel
       .assert(_ == % / p"foo" / p"quux" / p"bar")
 
 
 
     suite(t"Windows path tests"):
-      import Windows.{AbsolutePath, RelativePath, Drive}
-      
       test(t"Absolute path child"):
-        AbsolutePath(Drive('C'), List(p"Windows")) / p"System32"
-      .assert(_ == AbsolutePath(Drive('C'), List(p"System32", p"Windows")))
+        WindowsPath(WindowsDrive('C'), List(p"Windows")) / p"System32"
+      .assert(_ == WindowsPath(WindowsDrive('C'), List(p"System32", p"Windows")))
     
       test(t"Absolute path parent"):
-        AbsolutePath(Drive('C'), List(p"System32", p"Windows")).parent
-      .assert(_ == AbsolutePath(Drive('C'), List(p"Windows")))
+        WindowsPath(WindowsDrive('C'), List(p"System32", p"Windows")).parent
+      .assert(_ == WindowsPath(WindowsDrive('C'), List(p"Windows")))
       
       test(t"Absolute path root parent"):
-        AbsolutePath(Drive('C'), List()).parent
+        WindowsPath(WindowsDrive('C'), List()).parent
       .assert(_ == Unset)
   
       test(t"Relative path child"):
-        RelativePath(3, List(p"docs", p"work")) / p"images"
-      .assert(_ == RelativePath(3, List(p"images", p"docs", p"work")))
+        RelativeWindowsPath(3, List(p"docs", p"work")) / p"images"
+      .assert(_ == RelativeWindowsPath(3, List(p"images", p"docs", p"work")))
       
       test(t"Relative path parent"):
-        RelativePath(3, List(p"file", p"docs", p"work")).parent
-      .assert(_ == RelativePath(3, List(p"docs", p"work")))
+        RelativeWindowsPath(3, List(p"file", p"docs", p"work")).parent
+      .assert(_ == RelativeWindowsPath(3, List(p"docs", p"work")))
   
       test(t"Relative root parent"):
-        RelativePath(3, List()).parent
-      .assert(_ == RelativePath(4, List()))
+        RelativeWindowsPath(3, List()).parent
+      .assert(_ == RelativeWindowsPath(4, List()))
 
     suite(t"Path rendering"):
       test(t"Show a Windows absolute path"):
-        Windows.AbsolutePath(Windows.Drive('F'), List(p"System32", p"Windows")).text
+        WindowsPath(WindowsDrive('F'), List(p"System32", p"Windows")).text
       .assert(_ == t"F:\\Windows\\System32")
       
       test(t"Show a UNIX absolute path"):
-        Unix.AbsolutePath(Unix, List(p"user", p"home")).text
+        UnixPath(List(p"user", p"home")).text
       .assert(_ == t"/home/user")
       
       test(t"Show a Windows relative path"):
-        Windows.RelativePath(2, List(p"Data", p"Work")).text
+        RelativeWindowsPath(2, List(p"Data", p"Work")).text
       .assert(_ == t"..\\..\\Work\\Data")
       
       test(t"Show a UNIX relative path"):
-        Unix.RelativePath(2, List(p"file", p"user")).text
+        RelativeUnixPath(2, List(p"file", p"user")).text
       .assert(_ == t"../../user/file")
 
     suite(t"Invalid paths"):
       test(t"Path cannot contain /"):
-        captureCompileErrors(Unix.AbsolutePath(Unix, List()) / p"a/b")
+        captureCompileErrors(UnixPath(List()) / p"a/b")
       .assert(_.length == 1)
       
       test(t"Windows Path cannot contain lpt1"):
-        captureCompileErrors(Drive('C') / p"lpt1")
+        captureCompileErrors(WindowsDrive('C') / p"lpt1")
       .assert(_.length == 1)
       
       test(t"Windows Path cannot contain lpt1.txt"):
-        captureCompileErrors(Drive('C') / p"lpt1.txt")
+        captureCompileErrors(WindowsDrive('C') / p"lpt1.txt")
       .assert(_.length == 1)
       
       test(t"Linux can contain lpt1.txt"):
-        given Unix.type = Unix
+        //import hierarchies.windows
         (% / p"lpt1.txt").text
       .assert(_ == t"/lpt1.txt")
       
       test(t"Windows Path cannot have a filename ending in space"):
-        captureCompileErrors(Drive('C') / p"abc.xyz ")
+        captureCompileErrors(WindowsDrive('C') / p"abc.xyz ")
       .assert(_.length == 1)
       
       test(t"Windows Path cannot have a filename ending in period"):
-        captureCompileErrors(Drive('C') / p"abc.")
+        captureCompileErrors(WindowsDrive('C') / p"abc.")
       .assert(_.length == 1)
       
       test(t"Windows Path can have an extensionless filename"):
-        captureCompileErrors(Drive('C') / p"abc")
+        captureCompileErrors(WindowsDrive('C') / p"abc")
       .assert(_.length == 0)
 
