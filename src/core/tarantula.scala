@@ -28,7 +28,7 @@ import digression.*
 import rudiments.*
 import turbulence.*, characterEncodings.utf8
 import gesticulate.*
-import parasitism.*
+import parasite.*
 import anticipation.*, timeApi.long
 
 import unsafeExceptions.canThrowAny
