@@ -19,7 +19,7 @@ package turbulence
 import rudiments.*
 import digression.*
 import anticipation.*
-import parasitism.*
+import parasite.*
 import hieroglyph.*
 
 import java.io as ji
