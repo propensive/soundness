@@ -25,23 +25,38 @@ import larceny.*
 object Tests extends Suite(t"Serpentine Tests"):
   def run(): Unit =
     suite(t"Absolute parsing"):
-      import Unix.*
       test(t"parse simple absolute path"):
-        unsafely(AbsolutePath.parse(t"/home"))
-      .assert(_ == AbsolutePath(Unix, List(PathName(t"home"))))
+        unsafely(Unix.AbsolutePath.parse(t"/home"))
+      .assert(_ == Unix.AbsolutePath(Unix, List(PathName(t"home"))))
       
       test(t"parse deeper absolute path"):
-        unsafely(AbsolutePath.parse(t"/home/work"))
-      .assert(_ == AbsolutePath(Unix, List(PathName(t"work"), PathName(t"home"))))
+        unsafely(Unix.AbsolutePath.parse(t"/home/work"))
+      .assert(_ == Unix.AbsolutePath(Unix, List(PathName(t"work"), PathName(t"home"))))
       
       test(t"parse even deeper absolute path"):
-        unsafely(AbsolutePath.parse(t"/home/work/data"))
-      .assert(_ == AbsolutePath(Unix, List(PathName(t"data"), PathName(t"work"), PathName(t"home"))))
+        unsafely(Unix.AbsolutePath.parse(t"/home/work/data"))
+      .assert(_ == Unix.AbsolutePath(Unix, List(PathName(t"data"), PathName(t"work"), PathName(t"home"))))
       
       test(t"parse even absolute directory-style path"):
-        unsafely(AbsolutePath.parse(t"/home/work/"))
-      .assert(_ == AbsolutePath(Unix, List(PathName(t"work"), PathName(t"home"))))
-    
+        unsafely(Unix.AbsolutePath.parse(t"/home/work/"))
+      .assert(_ == Unix.AbsolutePath(Unix, List(PathName(t"work"), PathName(t"home"))))
+      
+      test(t"parse simple Windows absolute path"):
+        unsafely(Windows.AbsolutePath.parse(t"C:\\Windows"))
+      .assert(_ == Windows.AbsolutePath(Drive('C'), List(PathName(t"Windows"))))
+      
+      test(t"parse deeper Windows absolute path"):
+        unsafely(Windows.AbsolutePath.parse(t"D:\\Windows\\System"))
+      .assert(_ == Windows.AbsolutePath(Drive('D'), List(PathName(t"System"), PathName(t"Windows"))))
+      
+      test(t"parse even deeper Windows absolute path"):
+        unsafely(Windows.AbsolutePath.parse(t"e:\\Windows\\System\\Data"))
+      .assert(_ == Windows.AbsolutePath(Drive('E'), List(PathName(t"Data"), PathName(t"System"), PathName(t"Windows"))))
+      
+      test(t"parse even absolute Windows directory-style path"):
+        unsafely(Windows.AbsolutePath.parse(t"f:\\Windows\\System\\"))
+      .assert(_ == Windows.AbsolutePath(Drive('F'), List(PathName(t"System"), PathName(t"Windows"))))
+      
     // suite(t"Relative parsing"):
     //   test(t"parse simple relative path"):
     //     unsafely(RelativePath.parse(t"peer"))

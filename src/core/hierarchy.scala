@@ -211,7 +211,7 @@ object Windows extends Hierarchy[Windows.Drive, WindowsForbidden]:
   def rootText(drive: Drive): Text = t"${drive.letter}:\\"
   
   def parseRoot(text: Text): (Drive, Text) throws PathError = text match
-    case r"$letter([A-Za-z]):\\.*" => (Drive(unsafely(letter(0))), text.drop(3))
+    case r"$letter([A-Za-z]):\\.*" => (Drive(unsafely(letter(0).toUpper)), text.drop(3))
     case _                         => throw PathError(PathError.Reason.NotRooted)
 
   case class Drive(letter: Char):
