@@ -1,5 +1,5 @@
 /*
-    Parasitism, version [unreleased]. Copyright 2023 Jon Pretty, Propensive OÜ.
+    Parasite, version [unreleased]. Copyright 2023 Jon Pretty, Propensive OÜ.
 
     The primary distribution site is: https://propensive.com/
 
@@ -14,7 +14,7 @@
     and limitations under the License.
 */
 
-package parasitism
+package parasite
 
 import probably.*
 import rudiments.*
@@ -24,7 +24,7 @@ import anticipation.*, timeApi.long
 
 import unsafeExceptions.canThrowAny
 
-object Tests extends Suite(t"Parasitism tests"):
+object Tests extends Suite(t"Parasite tests"):
 
   def async(fn: => Unit): () => Unit =
     val thread = new Thread:

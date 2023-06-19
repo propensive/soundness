@@ -1,12 +1,12 @@
-[<img alt="GitHub Workflow" src="https://img.shields.io/github/actions/workflow/status/propensive/parasitism/main.yml?style=for-the-badge" height="24">](https://github.com/propensive/parasitism/actions)
+[<img alt="GitHub Workflow" src="https://img.shields.io/github/actions/workflow/status/propensive/parasite/main.yml?style=for-the-badge" height="24">](https://github.com/propensive/parasite/actions)
 [<img src="https://img.shields.io/discord/633198088311537684?color=8899f7&label=DISCORD&style=for-the-badge" height="24">](https://discord.gg/7b6mpF6Qcf)
 <img src="/doc/images/github.png" valign="middle">
 
-# Parasitism
+# Parasite
 
 __Structured asynchronous task management__
 
-_Parasitism_ provides an implementation of asynchronous tasks, built upon Java threads for use in high-availability applications running on a Loom JVM,
+_Parasite_ provides an implementation of asynchronous tasks, built upon Java threads for use in high-availability applications running on a Loom JVM,
 or smaller-scale applications on other JVMs. All tasks form a supervisor hierarchy, where each task is "owned" by a supervising parent task, and
 cancelation of tasks cascades through the hierarchy. This makes it easier to avoid thread leaks in complex systems. Scala 3's context functions are
 used to track tasks unintrusively, while documenting a thread's blocking nature in its signature.
@@ -21,12 +21,12 @@ used to track tasks unintrusively, while documenting a thread's blocking nature 
 
 ## Availability
 
-Parasitism has not yet been published as a binary. It is currently waiting for the
+Parasite has not yet been published as a binary. It is currently waiting for the
 final release of Scala 3.3.
 
 ## Getting Started
 
-A Parasitism task, an instance of `Task`, is similar to a Scala or Java
+A Parasite task, an instance of `Task`, is similar to a Scala or Java
 `Future`: it encapsulates a thunk of code which it starts executing
 immediately, and once evaluated, holds the result. There are, however, a few
 differences.
@@ -57,10 +57,10 @@ A `Task` instance has several useful methods:
 
 From JDK 20 and above, threads may be either _platform_ (corresponding to
 threads managed by the operating system) or _virtual_ (managed by the JVM).
-Prior to JDK 20, all threads are _platform threads_. Parasitism needs to know
+Prior to JDK 20, all threads are _platform threads_. Parasite needs to know
 which type of thread to use, and this requires one of two imports:
-- `parasitism.threading.virtual`
-- `parasitism.threading.platform`
+- `parasite.threading.virtual`
+- `parasite.threading.platform`
 
 Note that choosing `threading.virtual` will result an a runtime error on JDKs
 older than JDK 20.
@@ -83,7 +83,7 @@ execute to completion.
 
 ## Status
 
-Parasitism is classified as __fledgling__. For reference, Scala One projects are
+Parasite is classified as __fledgling__. For reference, Scala One projects are
 categorized into one of the following five stability levels:
 
 - _embryonic_: for experimental or demonstrative purposes only, without any guarantees of longevity
@@ -96,22 +96,22 @@ Projects at any stability level, even _embryonic_ projects, are still ready to
 be used, but caution should be taken if there is a mismatch between the
 project's stability level and the importance of your own project.
 
-Parasitism is designed to be _small_. Its entire source code currently consists
+Parasite is designed to be _small_. Its entire source code currently consists
 of 233 lines of code.
 
 ## Building
 
-Parasitism can be built on Linux or Mac OS with [Fury](/propensive/fury), however
+Parasite can be built on Linux or Mac OS with [Fury](/propensive/fury), however
 the approach to building is currently in a state of flux, and is likely to
 change.
 
 ## Contributing
 
-Contributors to Parasitism are welcome and encouraged. New contributors may like to look for issues marked
-<a href="https://github.com/propensive/parasitism/labels/beginner">beginner</a>.
+Contributors to Parasite are welcome and encouraged. New contributors may like to look for issues marked
+<a href="https://github.com/propensive/parasite/labels/beginner">beginner</a>.
 
 We suggest that all contributors read the [Contributing Guide](/contributing.md) to make the process of
-contributing to Parasitism easier.
+contributing to Parasite easier.
 
 Please __do not__ contact project maintainers privately with questions unless
 there is a good reason to keep them private. While it can be tempting to
@@ -120,7 +120,7 @@ audience, and it can result in duplication of effort.
 
 ## Author
 
-Parasitism was designed and developed by Jon Pretty, and commercial support and training is available from
+Parasite was designed and developed by Jon Pretty, and commercial support and training is available from
 [Propensive O&Uuml;](https://propensive.com/).
 
 
@@ -140,5 +140,5 @@ often arrived in English via a romance language.
 
 ## License
 
-Parasitism is copyright &copy; 2023 Jon Pretty & Propensive O&Uuml;, and is made available under the
+Parasite is copyright &copy; 2023 Jon Pretty & Propensive O&Uuml;, and is made available under the
 [Apache 2.0 License](/license.md).

@@ -1,5 +1,5 @@
 /*
-    Parasitism, version [unreleased]. Copyright 2023 Jon Pretty, Propensive OÜ.
+    Parasite, version [unreleased]. Copyright 2023 Jon Pretty, Propensive OÜ.
 
     The primary distribution site is: https://propensive.com/
 
@@ -14,7 +14,7 @@
     and limitations under the License.
 */
 
-package parasitism
+package parasite
 
 import rudiments.*
 import digression.*
@@ -52,7 +52,7 @@ case class TimeoutError() extends Error(err"the operation timed out")
 // def sleep(using t: GenericDuration)(time: t.Duration)(using Monitor): Unit =
 //   try Thread.sleep(readDuration(time)) catch case err: InterruptedException => unsafely(throw CancelError())
 
-// @implicitNotFound("""|parasitism: a contextual Monitor instance is required, for example:
+// @implicitNotFound("""|parasite: a contextual Monitor instance is required, for example:
 //                      |    import monitors.global  // a top-level supervisor for asynchronous tasks""".stripMargin)
 // @capability
 // trait Monitor:

@@ -1,5 +1,5 @@
 /*
-    Parasitism, version [unreleased]. Copyright 2023 Jon Pretty, Propensive OÜ.
+    Parasite, version [unreleased]. Copyright 2023 Jon Pretty, Propensive OÜ.
 
     The primary distribution site is: https://propensive.com/
 
@@ -14,14 +14,14 @@
     and limitations under the License.
 */
 
-package parasitism
+package parasite
 
 import anticipation.*
 import rudiments.*
 import digression.*
 
 @capability
-@missingContext(contextMessage(module = "parasitism", typeclass = "Monitor")())
+@missingContext(contextMessage(module = "parasite", typeclass = "Monitor")())
 sealed trait Monitor:
   def id: Text
   def virtualThreads: Boolean

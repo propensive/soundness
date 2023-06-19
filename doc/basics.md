@@ -1,4 +1,4 @@
-A Parasitism task, an instance of `Task`, is similar to a Scala or Java
+A Parasite task, an instance of `Task`, is similar to a Scala or Java
 `Future`: it encapsulates a thunk of code which it starts executing
 immediately, and once evaluated, holds the result. There are, however, a few
 differences.
@@ -29,10 +29,10 @@ A `Task` instance has several useful methods:
 
 From JDK 20 and above, threads may be either _platform_ (corresponding to
 threads managed by the operating system) or _virtual_ (managed by the JVM).
-Prior to JDK 20, all threads are _platform threads_. Parasitism needs to know
+Prior to JDK 20, all threads are _platform threads_. Parasite needs to know
 which type of thread to use, and this requires one of two imports:
-- `parasitism.threading.virtual`
-- `parasitism.threading.platform`
+- `parasite.threading.virtual`
+- `parasite.threading.platform`
 
 Note that choosing `threading.virtual` will result an a runtime error on JDKs
 older than JDK 20.
