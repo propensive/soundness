@@ -57,34 +57,34 @@ object Tests extends Suite(t"Serpentine Tests"):
         unsafely(Windows.AbsolutePath.parse(t"f:\\Windows\\System\\"))
       .assert(_ == Windows.AbsolutePath(Drive('F'), List(PathName(t"System"), PathName(t"Windows"))))
       
-    // suite(t"Relative parsing"):
-    //   test(t"parse simple relative path"):
-    //     unsafely(RelativePath.parse(t"peer"))
-    //   .assert(_ == Relative(0, List(PathName(t"peer"))))
+    suite(t"Relative parsing"):
+      test(t"parse simple relative path"):
+        unsafely(Unix.RelativePath.parse(t"peer"))
+      .assert(_ == Unix.RelativePath(0, List(PathName(t"peer"))))
 
-    //   test(t"parse three-part relative subpath"):
-    //     unsafely(Relative.parse[GenericPath](t"path/to/child"))
-    //   .assert(_ == Relative(0, List(t"child", t"to", t"path").map(PathName(_))))
+      test(t"parse three-part relative subpath"):
+        unsafely(Unix.RelativePath.parse(t"path/to/child"))
+      .assert(_ == Unix.RelativePath(0, List(t"child", t"to", t"path").map(PathName(_))))
 
-    //   test(t"parse parent relative path"):
-    //     unsafely(Relative.parse[GenericPath](t".."))
-    //   .assert(_ == Relative(1, List()))
+      test(t"parse parent relative path"):
+        unsafely(Unix.RelativePath.parse(t".."))
+      .assert(_ == Unix.RelativePath(1, List()))
 
-    //   test(t"parse ancestor relative path"):
-    //     unsafely(Relative.parse[GenericPath](t"../../.."))
-    //   .assert(_ == Relative(3, List()))
+      test(t"parse ancestor relative path"):
+        unsafely(Unix.RelativePath.parse(t"../../.."))
+      .assert(_ == Unix.RelativePath(3, List()))
     
-    //   test(t"parse relative link to current path"):
-    //     unsafely(Relative.parse[GenericPath](t"."))
-    //   .assert(_ == Relative(0, List()))
+      test(t"parse relative link to current path"):
+        unsafely(Unix.RelativePath.parse(t"."))
+      .assert(_ == Unix.RelativePath(0, List()))
       
-    //   test(t"parse relative link to uncle path"):
-    //     unsafely(Relative.parse[GenericPath](t"../path"))
-    //   .assert(_ == Relative(1, List(PathName(t"path"))))
+      test(t"parse relative link to uncle path"):
+        unsafely(Unix.RelativePath.parse(t"../path"))
+      .assert(_ == Unix.RelativePath(1, List(PathName(t"path"))))
       
-    //   test(t"parse relative link to cousin path"):
-    //     unsafely(Relative.parse[GenericPath](t"../path/child"))
-    //   .assert(_ == Relative(1, List(t"child", t"path").map(PathName(_))))
+      test(t"parse relative link to cousin path"):
+        unsafely(Unix.RelativePath.parse(t"../path/child"))
+      .assert(_ == Unix.RelativePath(1, List(t"child", t"path").map(PathName(_))))
 
     suite(t"Show paths"):
       given Unix.type = Unix

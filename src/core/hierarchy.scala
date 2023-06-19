@@ -92,7 +92,6 @@ case class System
     (hierarchies: Hierarchy[RootType, NameType]*)
 
 trait Hierarchy[RootType, NameType <: Label]:
-  def parse(value: Text): Path = ???
   def rootText(root: RootType): Text
   def parseRoot(text: Text): (RootType, Text) throws PathError
   
@@ -111,6 +110,22 @@ trait Hierarchy[RootType, NameType <: Label]:
     @targetName("child2")
     infix inline def /(text: Text): Path throws PathError
 
+  object RelativePath:
+    inline def parse(text: Text): RelativePath throws PathError =
+      val ascentPrefix: Text = parentRef+pathSeparator
+      
+      def recur(text: Text, ascent: Int = 0): RelativePath =
+        if text.starts(ascentPrefix) then recur(text.drop(ascentPrefix.length), ascent + 1)
+        else if text == parentRef then RelativePath(ascent + 1, Nil)
+        else
+          val names = text.cut(pathSeparator).reverse match
+            case t"" :: tail => tail
+            case names       => names
+          
+          RelativePath(ascent, names.map(PathName(_)))
+      
+      if text == selfRef then RelativePath(0, Nil) else recur(text)
+  
   case class RelativePath(ascent: Int, nameSeq: List[PathName[NameType]]) extends Path:
     @targetName("child")
     infix def /(name: PathName[NameType]): RelativePath = RelativePath(ascent, name :: nameSeq)
