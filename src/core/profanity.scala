@@ -21,7 +21,7 @@ import digression.*
 import gossamer.*
 import eucalyptus.*
 import escapade.*
-import parasitism.*
+import parasite.*
 import turbulence.*
 import anticipation.*, timeApi.long
 
