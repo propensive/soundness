@@ -337,6 +337,7 @@ trait SimpleWritable[-TargetType, -ChunkType] extends Writable[TargetType, Chunk
 //     import badEncodingHandlers.strict, or,
 //     import badEncodingHandlers.skip
 // """)
+@capability
 trait Writable[-TargetType, -ChunkType]:
   def write(target: TargetType, stream: LazyList[ChunkType]): Unit
 
@@ -433,6 +434,7 @@ object Readable:
         
       recur(0)
 
+@capability
 trait Readable[-SourceType, +ChunkType]:
   def read(value: SourceType): LazyList[ChunkType]
   
@@ -459,6 +461,7 @@ object Aggregable:
         def aggregate(value: LazyList[ChunkType]): ResultType2 = fn(aggregable.aggregate(value))
       
 
+@capability
 trait Aggregable[-ChunkType, +ResultType]:
   def aggregate(source: LazyList[ChunkType]): ResultType
 

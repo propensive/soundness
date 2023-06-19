@@ -1,7 +1,7 @@
 # This is a buildfile for Fury or Wrath.
 # More information is available at: https://github.com/propensive/wrath/
 
-repo propensive/parasitism
+repo propensive/parasite
 repo propensive/diuretic
 repo propensive/hieroglyph
 
@@ -11,4 +11,4 @@ project turbulence
   module core
     compiler  scala
     sources   src/core
-    include   hieroglyph/core parasitism/core diuretic/core
+    include   hieroglyph/core parasite/core diuretic/core
