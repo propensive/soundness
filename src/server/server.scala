@@ -18,7 +18,7 @@ package scintillate
 
 import rudiments.*
 import digression.*
-import parasitism.*
+import parasite.*
 import turbulence.*
 import gossamer.*
 import gastronomy.*
