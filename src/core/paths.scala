@@ -27,9 +27,7 @@ type WindowsForbidden =
       "lpt4(\\..*)?" | "lpt5(\\..*)?" | "lpt6(\\..*)?" | "lpt7(\\..*)?" | "lpt8(\\..*)?" |
       "lpt9(\\..*)?" | ".* " | ".*\\."
 
-
 object UnixPath:
-
   def parse(text: Text): UnixPath throws PathError = pathlike.parse(text)
 
   given pathlike: AbsolutePathlike[UnixPath, UnixForbidden, %.type](t"/") with
@@ -52,10 +50,8 @@ object UnixPath:
     
     def ancestor(path: UnixPath, n: Int): Maybe[UnixPath] =
       if path.ancestry.length < n then Unset else UnixPath(path.ancestry.drop(n))
-    
 
 case class UnixPath(ancestry: List[PathName[UnixForbidden]])
-
 
 object WindowsPath:
   def parse(text: Text): WindowsPath throws PathError = pathlike.parse(text)
