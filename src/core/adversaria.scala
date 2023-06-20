@@ -25,18 +25,21 @@ import language.experimental.captureChecking
 case class Annotations[AnnotationType <: StaticAnnotation, TargetType](annotations: AnnotationType*)
 
 object Annotations:
-  inline given [AnnotationType <: StaticAnnotation, TargetType]
+  inline given
+      [AnnotationType <: StaticAnnotation, TargetType]
       : Annotations[AnnotationType, TargetType] =
     ${AdversariaMacros.typeAnnotations[AnnotationType, TargetType]}
 
   transparent inline def field[TargetType](inline fn: TargetType => Any): List[StaticAnnotation] =
     ${AdversariaMacros.fieldAnnotations[TargetType]('fn)}
 
-  transparent inline def fields[TargetType <: Product, AnnotationType <: StaticAnnotation]
+  transparent inline def fields
+      [TargetType <: Product, AnnotationType <: StaticAnnotation]
       : List[CaseField[TargetType, AnnotationType]] =
     ${AdversariaMacros.fields[TargetType, AnnotationType]}
 
-  transparent inline def firstField[TargetType <: Product, AnnotationType <: StaticAnnotation]
+  transparent inline def firstField
+      [TargetType <: Product, AnnotationType <: StaticAnnotation]
       : CaseField[TargetType, AnnotationType] =
     ${AdversariaMacros.firstField[TargetType, AnnotationType]}
 
@@ -53,7 +56,8 @@ object CaseField:
       def apply(value: TargetType) = access(value)
       def annotation: AnnotationType = initAnnotation
 
-  transparent inline given [TargetType <: Product, AnnotationType <: StaticAnnotation]
+  transparent inline given
+      [TargetType <: Product, AnnotationType <: StaticAnnotation]
       : CaseField[TargetType, AnnotationType] =
     Annotations.firstField[TargetType, AnnotationType]
 
@@ -74,7 +78,7 @@ object AdversariaMacros:
     
     fields.flatMap: field =>
       field.annotations.map(_.asExpr).collect:
-        case '{ $annotation: AnnotationType } => annotation
+        case '{$annotation: AnnotationType} => annotation
       .map: annotation =>
         '{CaseField(Text(${Expr(field.name)}), (target: TargetType) =>
             ${'target.asTerm.select(field).asExpr}, $annotation)}
@@ -93,10 +97,10 @@ object AdversariaMacros:
     val elements: List[Expr[CaseField[TargetType, AnnotationType]]] = fields.flatMap: field =>
       val name = Expr(field.name)
       field.annotations.map(_.asExpr).collect:
-        case '{ $annotation: AnnotationType } => annotation
+        case '{$annotation: AnnotationType} => annotation
       .map: annotation =>
-        '{ CaseField(Text($name), (target: TargetType) =>
-            ${'target.asTerm.select(field).asExpr}, $annotation)}
+        '{CaseField(Text($name), (target: TargetType) => ${'target.asTerm.select(field).asExpr},
+            $annotation)}
       .reverse
 
     Expr.ofList(elements)
@@ -130,10 +134,10 @@ object AdversariaMacros:
 
     val targetType = TypeRepr.of[TargetType]
     val annotations = targetType.typeSymbol.annotations.map(_.asExpr).collect:
-      case '{ $annotation: AnnotationType } => annotation
+      case '{$annotation: AnnotationType} => annotation
     
     if annotations.isEmpty
     then
       val typeName = TypeRepr.of[AnnotationType].show
       fail(s"the type ${targetType.show} did not have the annotation $typeName")
-    else '{ Annotations[AnnotationType, TargetType](${Expr.ofList(annotations)}*) }
+    else '{Annotations[AnnotationType, TargetType](${Expr.ofList(annotations)}*)}
