@@ -188,8 +188,7 @@ object UnixPath:
 
   def parse(text: Text): UnixPath throws PathError = pathlike.parse(text)
 
-  given pathlike: AbsolutePathlike[UnixPath, UnixForbidden, %.type] with
-    val pathSeparator: Text = t"/"
+  given pathlike: AbsolutePathlike[UnixPath, UnixForbidden, %.type](t"/") with
     def root(path: UnixPath): %.type = %
     def prefix(root: %.type): Text = t"/"
     def child(path: UnixPath, name: PathName[UnixForbidden]): UnixPath =
@@ -216,8 +215,7 @@ case class UnixPath(ancestry: List[PathName[UnixForbidden]])
 object WindowsPath:
   def parse(text: Text): WindowsPath throws PathError = pathlike.parse(text)
   
-  given pathlike: AbsolutePathlike[WindowsPath, WindowsForbidden, WindowsDrive] with
-    val pathSeparator: Text = t"\\"
+  given pathlike: AbsolutePathlike[WindowsPath, WindowsForbidden, WindowsDrive](t"\\") with
     def root(path: WindowsPath): WindowsDrive = path.drive
     def prefix(drive: WindowsDrive): Text = t"${drive.letter}:\\"
     
@@ -245,11 +243,7 @@ case class WindowsPath(drive: WindowsDrive, ancestry: List[PathName[WindowsForbi
 object RelativeUnixPath:
   def parse(text: Text): RelativeUnixPath throws PathError = pathlike.parse(text)
   
-  given pathlike: RelativePathlike[RelativeUnixPath, UnixForbidden] with
-    val pathSeparator: Text = t"/"
-    val parentRef: Text = t".."
-    val selfRef: Text = t"."
-
+  given pathlike: RelativePathlike[RelativeUnixPath, UnixForbidden](t"/", t"..", t".") with
     def ascent(path: RelativeUnixPath): Int = path.ascent
 
     def make(ascent: Int, ancestry: List[PathName[UnixForbidden]]): RelativeUnixPath =
@@ -267,11 +261,7 @@ object RelativeUnixPath:
 object RelativeWindowsPath:
   def parse(text: Text): RelativeWindowsPath throws PathError = pathlike.parse(text)
   
-  given pathlike: RelativePathlike[RelativeWindowsPath, WindowsForbidden] with
-    val pathSeparator: Text = t"\\"
-    val parentRef: Text = t".."
-    val selfRef: Text = t"."
-    
+  given pathlike: RelativePathlike[RelativeWindowsPath, WindowsForbidden](t"\\", t"..", t".") with
     def ascent(path: RelativeWindowsPath): Int = path.ascent
     
     def make(ascent: Int, ancestry: List[PathName[WindowsForbidden]]): RelativeWindowsPath =
@@ -296,7 +286,7 @@ trait Pathlike[PathType <: Matchable, NameType <: Label]:
   def text(path: PathType): Text
   inline def parse(text: Text): PathType throws PathError
 
-trait AbsolutePathlike[PathType <: Matchable, NameType <: Label, RootType]
+trait AbsolutePathlike[PathType <: Matchable, NameType <: Label, RootType](val pathSeparator: Text)
 extends Pathlike[PathType, NameType]:
   def prefix(root: RootType): Text
   def root(path: PathType): RootType
@@ -318,10 +308,10 @@ extends Pathlike[PathType, NameType]:
     make(root, names.map(PathName(_)))
 
   
-trait RelativePathlike[PathType <: Matchable, NameType <: Label]
+trait RelativePathlike
+    [PathType <: Matchable, NameType <: Label]
+    (val pathSeparator: Text, val parentRef: Text, val selfRef: Text)
 extends Pathlike[PathType, NameType]:
-  def parentRef: Text
-  def selfRef: Text
   def parent(path: PathType): PathType
   def ascent(path: PathType): Int
   
