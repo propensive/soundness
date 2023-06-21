@@ -105,7 +105,19 @@ object Url:
 
   given GenericHttpRequestParam["location", Url] = show(_).s
 
-  given (using CanThrow[UrlError]): Canonical[Url] = Canonical(parse(_), _.show)
+  // given (using CanThrow[UrlError]): Canonical[Url] = Canonical(parse(_), _.show)
+
+  given AbsoluteReachable[Url, ""](t"/") with
+    type Root = (Scheme, Maybe[Authority])
+    
+    def make(root: (Scheme, Maybe[Authority]), descent: List[PathName[""]]): Url =
+      Url(root(0), root(1), descent.reverse.map(_.render).join(t"/"))
+    
+    def descent(url: Url): List[PathName[""]] = url.path
+    def root(url: Url): (Scheme, Maybe[Authority]) = (url.scheme, url.authority)
+    
+    def prefix(root: (Scheme, Maybe[Authority])): Text =
+      t"${root(0).name}:${root(1).mm(t"//"+_.show).or(t"")}"
 
   // There's not a convenient way to have this in scope if the HTTP client is defined separately from the URL
   // given (using Internet, Log, CanThrow[HttpError]): Streamable[Url] =
@@ -214,11 +226,19 @@ object Authority:
 
 case class Authority(host: Host, userInfo: Maybe[Text] = Unset, port: Maybe[Int] = Unset)
 
+object Link:
+  given RelativeReachable[Link, ""](t"/", t"..", t".") with
+    def make(ascent: Int, descent: List[PathName[""]]): Link = Link(ascent, descent)
+    def descent(link: Link): List[PathName[""]] = link.descent
+    def ascent(link: Link): Int = link.ascent
+
+case class Link(ascent: Int, descent: List[PathName[""]])
+
 case class Url(scheme: Scheme, authority: Maybe[Authority], pathText: Text, query: Maybe[Text] = Unset,
                    fragment: Maybe[Text] = Unset):
-  lazy val path: Relative throws PathError =
-    val rel = Relative.parse(pathText.drop(1))
-    rel.copy(elements = rel.elements.map(_.urlDecode))
+  
+  lazy val path: List[PathName[""]] =
+    pathText.drop(1).cut(t"/").reverse.map(_.urlDecode).map(PathName(_))
 
 object UrlError:
   enum Expectation:

@@ -18,7 +18,8 @@ package telekinesis
 
 import rudiments.*
 import probably.*
-import serpentine.*
+import serpentine.*, hierarchies.urls
+import spectacular.*
 import eucalyptus.*
 import gossamer.*
 import turbulence.*
@@ -102,9 +103,9 @@ object Tests extends Suite(t"Telekinesis tests"):
       test(t"Relative path is unescaped"):
         val message: Text = t"Hello world!"
         url"http://user:pw@example.com/$message/foo".path
-      .assert(_ == Relative(0, List(t"Hello world!", t"foo")))
+      .assert(_ == (? / p"Hello world!" / p"foo").descent)
       
       test(t"Relative path with raw substitution is unescaped"):
         val message: Raw = Raw(t"Hello+world%21")
         url"http://user:pw@example.com/$message/foo".path
-      .assert(_ == Relative(0, List(t"Hello world!", t"foo")))
+      .assert(_ == (? / p"Hello world!" / p"foo").descent)
