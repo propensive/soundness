@@ -27,11 +27,14 @@ import spectacular.*
 import ambience.*
 import digression.*
 
+import scala.collection.mutable as scm
+
 import java.io as ji
 import java.nio.file as jnf
 import java.util.zip as juz
 
 import scala.language.experimental.pureFunctions
+
 
 case class ZipError(filename: Text) extends Error(err"Could not create ZIP file ${filename}")
 
@@ -86,12 +89,20 @@ object ZipFile:
 
     ZipFile(pathname.show)
 
-case class ZipFile(private val filename: Text):
+  private val cache: scm.HashMap[Text, jnf.FileSystem] = scm.HashMap()
 
-  lazy val javaFs: jnf.FileSystem throws ZipError =
+case class ZipFile(private val filename: Text):
+  println("Creating ZipFile "+filename)
+  println(s"This is ${super[Object].toString}")
+
+  private def javaFs(): jnf.FileSystem throws ZipError =
     val uri: java.net.URI = java.net.URI.create(t"jar:file:$filename".s).nn
+    println(s"Creating new filessystem: '$uri'")
     try jnf.FileSystems.newFileSystem(uri, Map("zipinfo-time" -> "false").asJava).nn
     catch case exception: jnf.ProviderNotFoundException => throw ZipError(filename)
+  
+  def filesystem(): jnf.FileSystem throws ZipError =
+    ZipFile.cache.getOrElseUpdate(filename, synchronized(javaFs()))
 
   def append
       [InstantType]
@@ -106,11 +117,13 @@ case class ZipFile(private val filename: Text):
       case head #:: tail => recur(tail, if set.contains(head.ref) then set else set + head.ref)
       case _             => set
       
+    val fs: jnf.FileSystem = filesystem()
+    
     val dirs = recur(entries, Set()).flatMap(_.descent.tails.map(ZipRef(_)).to(Set)).to(List)
     val dirs2 = dirs.map(_.render+t"/").sorted
 
     dirs2.foreach: dir =>
-      val dirPath = javaFs.getPath(dir.s).nn
+      val dirPath = fs.getPath(dir.s).nn
       
       if jnf.Files.notExists(dirPath) then
         jnf.Files.createDirectory(dirPath)
@@ -119,14 +132,14 @@ case class ZipFile(private val filename: Text):
         jnf.Files.setAttribute(dirPath, "lastModifiedTime", writeTimestamp)
 
     entries.foreach: entry =>
-      val entryPath = javaFs.getPath(entry.ref.render.s).nn
+      val entryPath = fs.getPath(entry.ref.render.s).nn
       val in = entry.content().inputStream
       jnf.Files.copy(in, entryPath, jnf.StandardCopyOption.REPLACE_EXISTING)
       jnf.Files.setAttribute(entryPath, "creationTime", writeTimestamp)
       jnf.Files.setAttribute(entryPath, "lastAccessTime", writeTimestamp)
       jnf.Files.setAttribute(entryPath, "lastModifiedTime", writeTimestamp)
       
-    javaFs.close()
+    fs.close()
 
     //val fileOut = ji.BufferedOutputStream(ji.FileOutputStream(ji.File(filename.s)).nn)
     

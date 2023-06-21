@@ -46,7 +46,10 @@ object Tests extends Suite(t"Zeppelin tests"):
     val simpleFile: File = test(t"Create a simple ZIP file"):
       val path = File.createTempFile("tmp", ".zip").nn
       val entry = ZipEntry(ZipRef / p"hello.txt", t"Hello world")
+      println(s"path=$path")
+      println(s"entry=$entry")
       val zip = ZipFile.create(path)
+      println(s"zip=$zip")
       zip.append(LazyList(entry))
       path
     .check(_.length > 0)
