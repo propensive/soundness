@@ -19,6 +19,8 @@ package serpentine
 import rudiments.*
 import gossamer.*
 
+import language.experimental.captureChecking
+
 object Root
 
 object SimplePath:

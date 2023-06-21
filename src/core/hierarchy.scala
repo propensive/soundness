@@ -23,6 +23,8 @@ import gossamer.*
 
 import scala.quoted.*
 
+import language.experimental.captureChecking
+
 object PathError:
   enum Reason:
     case InvalidChar(char: Char)

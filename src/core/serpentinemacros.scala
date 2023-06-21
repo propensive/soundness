@@ -23,6 +23,8 @@ import kaleidoscope.*
 import scala.compiletime.*
 import scala.quoted.*
 
+import language.experimental.captureChecking
+
 object SerpentineMacros:
   def runtimeParse
       [ForbiddenType <: Label: Type]
