@@ -265,4 +265,5 @@ object GuillotineMacros:
     val bounds = TypeBounds(execType, execType)
 
     (Refinement(TypeRepr.of[Command], "Exec", bounds).asType: @unchecked) match
-      case '[commandType] => '{${Sh.Prefix.expand(context, parts)}.asInstanceOf[commandType & Command]}
+      case '[type commandType <: Command; commandType] =>
+        '{${Sh.Prefix.expand(context, parts)}.asInstanceOf[commandType]}
