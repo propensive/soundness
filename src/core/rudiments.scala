@@ -28,7 +28,7 @@ type Nat = Int & Singleton
 type Label = String & Singleton
 
 extension [ValueType](value: ValueType)
-  def only[ValueType2](fn: PartialFunction[ValueType, ValueType2]): ValueType2 =
+  def only[ValueType2](fn: PartialFunction[ValueType, ValueType2]): Maybe[ValueType2] =
     Some(value).collect(fn).getOrElse(Unset)
   
   def unit: Unit = ()
