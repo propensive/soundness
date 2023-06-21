@@ -56,7 +56,7 @@ enum UrlInput:
 
 object UrlInterpolator extends contextual.Interpolator[UrlInput, Text, Url]:
   def complete(value: Text): Url =
-    try Url.parse(value) catch case err: InvalidUrlError =>
+    try Url.parse(value) catch case err: UrlError =>
       throw InterpolationError(t"the URL ${err.text} is not valid: expected ${err.expected}", err.offset)
   
   def initial: Text = t""
@@ -67,7 +67,7 @@ object UrlInterpolator extends contextual.Interpolator[UrlInput, Text, Url]:
         if !state.ends(t":") then throw InterpolationError(t"a port number must be specified after a colon")
         
         try Url.parse(state+port.show)
-        catch case err: InvalidUrlError => throw InterpolationError(err.message.text)
+        catch case err: UrlError => throw InterpolationError(err.message.text)
         
         state+port.show
       
@@ -75,7 +75,7 @@ object UrlInterpolator extends contextual.Interpolator[UrlInput, Text, Url]:
         if !state.ends(t"/") then throw InterpolationError(t"a substitution may only be made after a slash")
         
         try Url.parse(state+txt.urlEncode)
-        catch case err: InvalidUrlError => throw InterpolationError(err.message.text)
+        catch case err: UrlError => throw InterpolationError(err.message.text)
         
         state+txt.urlEncode
       
@@ -83,7 +83,7 @@ object UrlInterpolator extends contextual.Interpolator[UrlInput, Text, Url]:
         if !state.ends(t"/") then throw InterpolationError(t"a substitution may only be made after a slash")
 
         try Url.parse(state+txt.urlEncode)
-        catch case err: InvalidUrlError => throw InterpolationError(err.message.text)
+        catch case err: UrlError => throw InterpolationError(err.message.text)
         
         state+txt
   
@@ -99,13 +99,13 @@ object UrlInterpolator extends contextual.Interpolator[UrlInput, Text, Url]:
   def skip(state: Text): Text = state+t"1"
 
 object Url:
-  given (using CanThrow[InvalidUrlError]): GenericUrl[Url] = new GenericUrl[Url]:
+  given (using CanThrow[UrlError]): GenericUrl[Url] = new GenericUrl[Url]:
     def readUrl(url: Url): String = url.show.s
     def makeUrl(value: String): Url = Url.parse(value.show)
 
   given GenericHttpRequestParam["location", Url] = show(_).s
 
-  given (using CanThrow[InvalidUrlError]): Canonical[Url] = Canonical(parse(_), _.show)
+  given (using CanThrow[UrlError]): Canonical[Url] = Canonical(parse(_), _.show)
 
   // There's not a convenient way to have this in scope if the HTTP client is defined separately from the URL
   // given (using Internet, Log, CanThrow[HttpError]): Streamable[Url] =
@@ -154,12 +154,12 @@ object Url:
     def name: String = "manifest"
     def serialize(url: Url): String = url.show.s
 
-  def parse(value: Text): Url throws InvalidUrlError =
-    import InvalidUrlError.Expectation.*
+  def parse(value: Text): Url throws UrlError =
+    import UrlError.Expectation.*
 
     safely(value.where(_ == ':')) match
       case Unset =>
-        throw InvalidUrlError(value, value.length, Colon)
+        throw UrlError(value, value.length, Colon)
       
       case colon: Int =>
         val scheme = Scheme(value.take(colon))
@@ -186,8 +186,8 @@ object Authority:
   given Show[Authority] = auth =>
     t"${auth.userInfo.fm(t"")(_+t"@")}${auth.host}${auth.port.mm(_.show).fm(t"")(t":"+_)}"
 
-  def parse(value: Text): Authority throws InvalidUrlError =
-    import InvalidUrlError.Expectation.*
+  def parse(value: Text): Authority throws UrlError =
+    import UrlError.Expectation.*
     
     safely(value.where(_ == '@')) match
       case Unset => safely(value.where(_ == ':')) match
@@ -197,8 +197,8 @@ object Authority:
         case colon: Int =>
           safely(value.drop(colon + 1).s.toInt).match
             case port: Int if port >= 0 && port <= 65535 => port
-            case port: Int                               => throw InvalidUrlError(value, colon + 1, PortRange)
-            case Unset                                   => throw InvalidUrlError(value, colon + 1, Number)
+            case port: Int                               => throw UrlError(value, colon + 1, PortRange)
+            case Unset                                   => throw UrlError(value, colon + 1, Number)
           .pipe(Authority(Host.parse(value.take(colon)), Unset, _))
       
       case arobase: Int => safely(value.where(_ == ':', arobase + 1)) match
@@ -208,8 +208,8 @@ object Authority:
         case colon: Int =>
           safely(value.drop(colon + 1).s.toInt).match
             case port: Int if port >= 0 && port <= 65535 => port
-            case port: Int                               => throw InvalidUrlError(value, colon + 1, PortRange)
-            case Unset                                   => throw InvalidUrlError(value, colon + 1, Number)
+            case port: Int                               => throw UrlError(value, colon + 1, PortRange)
+            case Unset                                   => throw UrlError(value, colon + 1, Number)
           .pipe(Authority(Host.parse(value.slice(arobase + 1, colon)), value.take(arobase), _))
 
 case class Authority(host: Host, userInfo: Maybe[Text] = Unset, port: Maybe[Int] = Unset)
@@ -220,9 +220,9 @@ case class Url(scheme: Scheme, authority: Maybe[Authority], pathText: Text, quer
     val rel = Relative.parse(pathText.drop(1))
     rel.copy(elements = rel.elements.map(_.urlDecode))
 
-object InvalidUrlError:
+object UrlError:
   enum Expectation:
     case Colon, More, LowerCaseLetter, PortRange, Number
 
-case class InvalidUrlError(text: Text, offset: Int, expected: InvalidUrlError.Expectation)
+case class UrlError(text: Text, offset: Int, expected: UrlError.Expectation)
 extends Error(err"the URL $text is not valid: expected $expected at $offset")

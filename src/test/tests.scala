@@ -58,18 +58,18 @@ object Tests extends Suite(t"Telekinesis tests"):
       test(t"Authority with invalid port fails"):
         capture(Authority.parse(t"username@example.com:no"))
       .matches:
-        case InvalidUrlError(_, 21, InvalidUrlError.Expectation.Number) =>
+        case UrlError(_, 21, UrlError.Expectation.Number) =>
       
-      test(t"Parse full URI"):
+      test(t"Parse full URL"):
         Url.parse(t"http://user:pw@example.com:8080/path/to/location?query=1#ref")
       .assert(_ == Url(Scheme.Http, Authority(Host(t"example", t"com"), t"user:pw", 8080),
           t"/path/to/location", t"query=1", t"ref"))
       
-      test(t"Parse simple URI"):
+      test(t"Parse simple URL"):
         Url.parse(t"https://example.com/foo")
       .assert(_ == Url(Scheme.Https, Authority(Host(t"example", t"com")), t"/foo"))
       
-      test(t"Show simple URI"):
+      test(t"Show simple URL"):
         Url.parse(t"http://example.com/foo").show
       .assert(_ == t"http://example.com/foo")
       
