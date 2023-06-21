@@ -19,8 +19,7 @@ support for different character encodings, and utilizing additional Unicode meta
 
 ## Availability
 
-Hieroglyph has not yet been published as a binary. It is currently waiting for the
-final release of Scala 3.3.
+Hieroglyph has not yet been published as a binary.
 
 ## Getting Started
 
@@ -73,7 +72,7 @@ be used, but caution should be taken if there is a mismatch between the
 project's stability level and the importance of your own project.
 
 Hieroglyph is designed to be _small_. Its entire source code currently consists
-of 302 lines of code.
+of 304 lines of code.
 
 ## Building
 
