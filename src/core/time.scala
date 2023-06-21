@@ -476,6 +476,7 @@ extension (inline double: Double)
 object AviationMacros:
   def validTime(time: Expr[Double], pm: Boolean)(using Quotes): Expr[Time] =
     import quotes.reflect.*
+    
     time.asTerm match
       case Inlined(None, Nil, lit@Literal(DoubleConstant(d))) =>
         val hour = d.toInt
@@ -493,6 +494,7 @@ object AviationMacros:
         
         val m: Base60 = minutes.asInstanceOf[Base60]
         '{Time(${Expr(h)}, ${Expr(m)}, 0)}
+      
       case _ =>
         fail("expected a literal double value")
 
