@@ -81,9 +81,11 @@ class Process[ExecType <: Label, ResultType](process: java.lang.Process):
   def stderr(): LazyList[Bytes] throws StreamCutError =
     Readable.inputStream.read(process.getErrorStream.nn)
   
-  def stdin[ChunkType]
-           (stream: LazyList[ChunkType]^)(using writable: Writable[ji.OutputStream, ChunkType]^)
-           : Unit^{stream, writable} =
+  def stdin
+      [ChunkType]
+      (stream: LazyList[ChunkType]^)
+      (using writable: Writable[ji.OutputStream, ChunkType])
+      : Unit^{stream, writable} =
     writable.write(process.getOutputStream.nn, stream)
 
   def await()(using executor: Executor[ResultType]): ResultType^{executor} =
