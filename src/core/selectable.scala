@@ -34,8 +34,8 @@ trait SimpleSchema[FieldType]:
     val refinedType = fields.foldLeft(simpleRecordType)(Refinement(_, _, TypeRepr.of[FieldType]))
     
     (refinedType.asType: @unchecked) match
-      case '[refinedType] =>
-        '{new SimpleRecord[FieldType]($access).asInstanceOf[refinedType & SimpleRecord[FieldType]]}
+      case '[type refinedType <: SimpleRecord[FieldType]; refinedType] =>
+        '{new SimpleRecord[FieldType]($access).asInstanceOf[refinedType]}
   
 class SimpleRecord[FieldType](access: String => FieldType) extends Selectable:
   def selectDynamic(name: String): FieldType = access(name)
@@ -60,9 +60,11 @@ trait Schema[InitEnumType <: reflect.Enum]:
         val sym = companion.symbol.declaredField(enumType.toString)
         
         val returnType = (Singleton(companion.select(sym)).tpe.asType: @unchecked) match
-          case '[singletonType] => TypeRepr.of[Result[singletonType & EnumType]].simplified
+          case '[type singletonType <: EnumType; singletonType] =>
+            TypeRepr.of[Result[singletonType]].simplified
 
         Refinement(acc, key, returnType)
     
     (refinedType.asType: @unchecked) match
-      case '[refinedType] => '{new Record($access(_)).asInstanceOf[refinedType & Record]}
+      case '[type refinedType <: Record; refinedType] =>
+        '{new Record($access(_)).asInstanceOf[refinedType]}
