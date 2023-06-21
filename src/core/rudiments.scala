@@ -28,7 +28,9 @@ type Nat = Int & Singleton
 type Label = String & Singleton
 
 extension [ValueType](value: ValueType)
-  def only[ValueType2](fn: PartialFunction[ValueType, ValueType2]): Option[ValueType2] = Some(value).collect(fn)
+  def only[ValueType2](fn: PartialFunction[ValueType, ValueType2]): ValueType2 =
+    Some(value).collect(fn).getOrElse(Unset)
+  
   def unit: Unit = ()
   def waive: Any => ValueType = _ => value
   def twin: (ValueType, ValueType) = (value, value)
