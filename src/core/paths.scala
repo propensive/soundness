@@ -26,15 +26,18 @@ object SimplePath:
 
   given mainRoot: MainRoot[SimplePath] = () => SimplePath(Nil)
 
-  given pathlike: AbsolutePathlike[SimplePath, ".*\\/.*", Root.type](t"/") with
-    def root(path: SimplePath): Root.type = Root
-    def prefix(root: Root.type): Text = t"/"
+  given pathlike: AbsolutePathlike[SimplePath, ".*\\/.*"](t"/") with
+
+    type Root = serpentine.Root.type
+
+    def root(path: SimplePath): Root = serpentine.Root
+    def prefix(root: Root): Text = t"/"
     
-    def make(root: Root.type, descent: List[PathName[".*\\/.*"]]): SimplePath =
+    def make(root: Root, descent: List[PathName[".*\\/.*"]]): SimplePath =
       SimplePath(descent)
 
-    def parseRoot(text: Text): Maybe[(Root.type, Text)] =
-      if text.starts(t"/") then (Root, text.drop(1)) else Unset
+    def parseRoot(text: Text): Maybe[(Root, Text)] =
+      if text.starts(t"/") then (serpentine.Root, text.drop(1)) else Unset
     
     def descent(path: SimplePath): List[PathName[".*\\/.*"]] = path.descent
     

@@ -32,8 +32,6 @@ object SerpentineMacros:
 
     val checks: List[String] = patterns(TypeRepr.of[ForbiddenType])
     
-    println(s"checks = ${checks} at position ${Position.ofMacroExpansion.startLine}")
-    
     def recur(patterns: List[String], statements: Expr[Unit]): Expr[Unit] = patterns match
       case pattern :: tail =>
         import PathError.Reason.*
@@ -71,9 +69,8 @@ object SerpentineMacros:
       : Expr[PathName[ForbiddenType]] =
     import quotes.reflect.*
     
-    val (element: String, pos: Position) = context match
+    val (element: String, pos: Position) = (context: @unchecked) match
       case '{StringContext(${Varargs(Seq(str))}*)} => (str.value.get, str.asTerm.pos)
-      case _                                       => fail("A StringContext should contain literals")
     
     patterns(TypeRepr.of[ForbiddenType]).foreach: pattern =>
       if element.matches(pattern) then pattern match
@@ -83,7 +80,7 @@ object SerpentineMacros:
         case r"$start([a-zA-Z0-9]*)\.\*" =>
           fail(s"a path element may not start with '$start'", pos)
 
-        case r"\.\*$end([.a-zA-Z0-9]*)" =>
+        case r"\.\*$end([a-zA-Z0-9]*)" =>
           fail(s"a path element may not end with '$end'", pos)
 
         case pattern@r"[a-zA-Z0-9]*" =>

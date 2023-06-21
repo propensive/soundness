@@ -25,18 +25,20 @@ import larceny.*
 
 object Example:
   
-  type Forbidden = ".*\\\\.*" | ".*/.*" | "lpt1.*" | ".* " | ".*\\."
+  type Forbidden = ".*\\\\.*" | ".*/.*" | "lpt1.*" | ".* " | ".*abc"
   
   object RootedPath:
-    def parse(text: Text): RootedPath throws PathError = pathlike.parse(text)
+    import unsafeExceptions.canThrowAny
+    def parse(text: Text): RootedPath = pathlike.parse(text)
 
-    given pathlike: AbsolutePathlike[RootedPath, Forbidden, Drive](t"\\") with
+    given pathlike: AbsolutePathlike[RootedPath, Forbidden](t"\\") with
+      type Root = Drive
       def root(path: RootedPath): Drive = path.root
-      def prefix(drive: Drive): Text = t"${drive.letter}:"
+      def prefix(drive: Drive): Text = t"${drive.letter}:\\"
       def descent(path: RootedPath): List[PathName[Forbidden]] = path.descent
       
       def parseRoot(text: Text): Maybe[(Drive, Text)] = text.only:
-        case r"$letter([a-zA-Z]):.*" => (Drive(unsafely(letter(0)).toUpper), text.drop(2))
+        case r"$letter([a-zA-Z]):\\.*" => (Drive(unsafely(letter(0)).toUpper), text.drop(3))
       
       def make(root: Drive, descent: List[PathName[Forbidden]]): RootedPath =
         RootedPath(root, descent)
@@ -44,7 +46,8 @@ object Example:
   case class RootedPath(root: Drive, descent: List[PathName[Forbidden]])
 
   object RootedLink:
-    def parse(text: Text): RootedLink throws PathError = pathlike.parse(text)
+    import unsafeExceptions.canThrowAny
+    def parse(text: Text): RootedLink = pathlike.parse(text)
     
     given pathlike: RelativePathlike[RootedLink, Forbidden](t"\\", t"..", t".") with
       def ascent(path: RootedLink): Int = path.ascent
@@ -56,9 +59,10 @@ object Example:
   case class RootedLink(ascent: Int, descent: List[PathName[Forbidden]])
 
   case class Drive(letter: Char):
+    @targetName("child")
     def /(name: PathName[Forbidden]): RootedPath = RootedPath(this, List(name))
 
-  erased given hierarchy: Hierarchy[RootedPath, RootedLink] = ###
+  given hierarchy: Hierarchy[RootedPath, RootedLink] = new Hierarchy[RootedPath, RootedLink] {}
 
 import Example.*
 
@@ -83,19 +87,19 @@ object Tests extends Suite(t"Serpentine Tests"):
       
     suite(t"Parsing absolute paths with root"):
       test(t"parse simple rooted absolute path"):
-        unsafely(RootedPath.parse(t"C:Windows"))
+        unsafely(RootedPath.parse(t"C:\\Windows"))
       .assert(_ == RootedPath(Drive('C'), List(PathName(t"Windows"))))
       
       test(t"parse deeper rooted absolute path"):
-        unsafely(RootedPath.parse(t"D:Windows\\System"))
+        unsafely(RootedPath.parse(t"D:\\Windows\\System"))
       .assert(_ == RootedPath(Drive('D'), List(PathName(t"System"), PathName(t"Windows"))))
       
       test(t"parse even deeper rooted absolute path"):
-        unsafely(RootedPath.parse(t"e:Windows\\System\\Data"))
+        unsafely(RootedPath.parse(t"e:\\Windows\\System\\Data"))
       .assert(_ == RootedPath(Drive('E'), List(PathName(t"Data"), PathName(t"System"), PathName(t"Windows"))))
       
       test(t"parse even absolute rooted directory-style path"):
-        unsafely(RootedPath.parse(t"f:Windows\\System\\"))
+        unsafely(RootedPath.parse(t"f:\\Windows\\System\\"))
       .assert(_ == RootedPath(Drive('F'), List(PathName(t"System"), PathName(t"Windows"))))
       
     suite(t"Relative parsing"):
@@ -204,23 +208,19 @@ object Tests extends Suite(t"Serpentine Tests"):
       .assert(_ == List(t"serpentine: a path element may not contain the character 'a'"))
 
       test(t"Parse a path name with an invalid character"):
-        import unsafeExceptions.canThrowAny
-        capture[PathError, PathName[".*x.*"]](PathName[".*x.*"](t"excluded"))
+        unsafely(capture[PathError, PathName[".*x.*"]](PathName[".*x.*"](t"excluded")))
       .assert(_ == PathError(PathError.Reason.InvalidChar('x')))
       
       test(t"Parse a path name with an invalid suffix"):
-        import unsafeExceptions.canThrowAny
-        capture[PathError, PathName[".*txt"]](PathName[".*txt"](t"bad.txt"))
+        unsafely(capture[PathError, PathName[".*txt"]](PathName[".*txt"](t"bad.txt")))
       .assert(_ == PathError(PathError.Reason.InvalidSuffix(t"txt")))
 
       test(t"Parse a path name with an invalid prefix"):
-        import unsafeExceptions.canThrowAny
-        capture[PathError, PathName["bad.*"]](PathName["bad.*"](t"bad.txt"))
+        unsafely(capture[PathError, PathName["bad.*"]](PathName["bad.*"](t"bad.txt")))
       .assert(_ == PathError(PathError.Reason.InvalidPrefix(t"bad")))
       
       test(t"Parse a path name with an invalid name"):
-        import unsafeExceptions.canThrowAny
-        capture[PathError, PathName["bad\\.txt"]](PathName["bad\\.txt"](t"bad.txt"))
+        unsafely(capture[PathError, PathName["bad\\.txt"]](PathName["bad\\.txt"](t"bad.txt")))
       .assert(_ == PathError(PathError.Reason.InvalidName(t"bad\\.txt")))
 
     suite(t"Relative path tests"):
@@ -348,27 +348,27 @@ object Tests extends Suite(t"Serpentine Tests"):
       .assert(_ == false)
       
       test(t"add relative parent"):
-        given CanThrow[PathError] = unsafeExceptions.canThrowAny
-        val rel = ?^
-        (% / p"foo" / p"bar") ++ rel
+        unsafely:
+          val rel = ?^
+          (% / p"foo" / p"bar") ++ rel
       .assert(_ == % / p"foo")
       
       test(t"add relative grandparent"):
-        given CanThrow[PathError] = unsafeExceptions.canThrowAny
-        val rel = ?^^
-        (% / p"foo" / p"bar" / p"baz") ++ rel
+        unsafely:
+          val rel = ?^^
+          (% / p"foo" / p"bar" / p"baz") ++ rel
       .assert(_ == % / p"foo")
       
       test(t"add relative uncle"):
-        given CanThrow[PathError] = unsafeExceptions.canThrowAny
-        val rel = ?^^ / p"quux"
-        (% / p"foo" / p"bar" / p"baz") ++ rel
+        unsafely:
+          val rel = ?^^ / p"quux"
+          (% / p"foo" / p"bar" / p"baz") ++ rel
       .assert(_ == % / p"foo" / p"quux")
       
       test(t"add relative cousin"):
-        given CanThrow[PathError] = unsafeExceptions.canThrowAny
-        val rel = ?^^ / p"quux" / p"bar"
-        (% / p"foo" / p"bar" / p"baz") ++ rel
+        unsafely:
+          val rel = ?^^ / p"quux" / p"bar"
+          (% / p"foo" / p"bar" / p"baz") ++ rel
       .assert(_ == % / p"foo" / p"quux" / p"bar")
 
 
@@ -401,7 +401,7 @@ object Tests extends Suite(t"Serpentine Tests"):
     suite(t"Path rendering"):
       test(t"Show a rooted absolute path"):
         RootedPath(Drive('F'), List(p"System32", p"Windows")).text
-      .assert(_ == t"F:Windows\\System32")
+      .assert(_ == t"F:\\Windows\\System32")
       
       test(t"Show a simple absolute path"):
         SimplePath(List(p"user", p"home")).text
@@ -416,10 +416,8 @@ object Tests extends Suite(t"Serpentine Tests"):
       .assert(_ == t"../../user/file")
 
     suite(t"Invalid paths"):
-
       given MainRoot[RootedPath] = () => RootedPath(Drive('C'), Nil)
-      import Example.hierarchy
-
+      
       test(t"Path cannot contain /"):
         captureCompileErrors:
           SimplePath(List()) / p"a/b"
@@ -432,26 +430,26 @@ object Tests extends Suite(t"Serpentine Tests"):
         .map(_.message)
       .assert(_ == List(t"serpentine: a path element may not start with 'lpt1'"))
       
-      test(t"Windows Path cannot contain lpt1.txt"):
+      test(t"Rooted Path cannot contain lpt1.txt"):
         captureCompileErrors:
           Drive('C') / p"lpt1.txt"
         .map(_.message)
       .assert(_ == List(t"serpentine: a path element may not start with 'lpt1'"))
       
-      test(t"Windows Path cannot have a filename ending in space"):
+      test(t"Rooted Path cannot have a filename ending in space"):
         captureCompileErrors:
           Drive('C') / p"abc.xyz "
         .map(_.message)
       .assert(_ == List(t"serpentine: a path element may not match the pattern '.* '"))
       
-      test(t"Windows Path cannot have a filename ending in period"):
+      test(t"Rooted Path cannot have a filename ending in period"):
         captureCompileErrors:
-          Drive('C') / p"abc."
+          Drive('C') / p"abc.abc"
         .map(_.message)
-      .assert(_ == List(t"serpentine: a path element may not end with '.'"))
+      .assert(_ == List(t"serpentine: a path element may not end with 'abc'"))
       
-      test(t"Windows Path can have an extensionless filename"):
+      test(t"Rooted Path can have an extensionless filename"):
         captureCompileErrors:
-          Drive('C') / p"abc"
+          Drive('C') / p"xyz"
       .assert(_ == Nil)
 
