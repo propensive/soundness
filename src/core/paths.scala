@@ -17,6 +17,7 @@
 package serpentine
 
 import rudiments.*
+import spectacular.*
 import gossamer.*
 
 import language.experimental.captureChecking
@@ -25,13 +26,11 @@ object Root
 
 object SimplePath:
   inline def parse(text: Text): SimplePath throws PathError = reachable.parse(text)
-
+  given show: Show[SimplePath] = _.render
   given mainRoot: MainRoot[SimplePath] = () => SimplePath(Nil)
 
-  given reachable: AbsoluteReachable[SimplePath, ".*\\/.*"](t"/") with
-
+  given reachable: ParsableAbsoluteReachable[SimplePath, ".*\\/.*"](t"/") with
     type Root = serpentine.Root.type
-
     def root(path: SimplePath): Root = serpentine.Root
     def prefix(root: Root): Text = t"/"
     
@@ -39,13 +38,14 @@ object SimplePath:
       SimplePath(descent)
 
     def parseRoot(text: Text): Maybe[(Root, Text)] =
-      if text.starts(t"/") then (serpentine.Root, text.drop(1)) else Unset
+      if text.starts(t"/") then (Root, text.drop(1)) else Unset
     
     def descent(path: SimplePath): List[PathName[".*\\/.*"]] = path.descent
     
 case class SimplePath(descent: List[PathName[".*\\/.*"]])
 
 object SimpleLink:
+  given show: Show[SimpleLink] = _.render
   inline def parse(text: Text): SimpleLink throws PathError = reachable.parse(text)
   
   given reachable: RelativeReachable[SimpleLink, ".*\\/.*"](t"/", t"..", t".") with

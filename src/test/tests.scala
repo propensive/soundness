@@ -20,7 +20,8 @@ import probably.*
 import rudiments.*
 import digression.*
 import kaleidoscope.*
-import gossamer.{text as _, *}
+import gossamer.*
+import spectacular.*
 import larceny.*
 
 object Example:
@@ -29,9 +30,11 @@ object Example:
   
   object RootedPath:
     import unsafeExceptions.canThrowAny
+
+    given Show[RootedPath] = _.render
     def parse(text: Text): RootedPath = reachable.parse(text)
 
-    given reachable: AbsoluteReachable[RootedPath, Forbidden](t"\\") with
+    given reachable: ParsableAbsoluteReachable[RootedPath, Forbidden](t"\\") with
       type Root = Drive
       def root(path: RootedPath): Drive = path.root
       def prefix(drive: Drive): Text = t"${drive.letter}:\\"
@@ -47,6 +50,8 @@ object Example:
 
   object RootedLink:
     import unsafeExceptions.canThrowAny
+    
+    given Show[RootedLink] = _.render
     def parse(text: Text): RootedLink = reachable.parse(text)
     
     given reachable: RelativeReachable[RootedLink, Forbidden](t"\\", t"..", t".") with
@@ -135,47 +140,47 @@ object Tests extends Suite(t"Serpentine Tests"):
       import hierarchies.simple
       
       test(t"show simple relative path"):
-        (? / p"hello").text
+        (? / p"hello").show
       .assert(_ == t"hello")
       
       test(t"show two-level relative path"):
-        (? / p"hello" / p"world").text
+        (? / p"hello" / p"world").show
       .assert(_ == t"hello/world")
       
       test(t"show self"):
-        ?.text
+        ?.show
       .assert(_ == t".")
       
       test(t"show self's parent"):
-        ?.parent.text
+        ?.parent.show
       .assert(_ == t"..")
       
       test(t"show self's grandparent"):
-        ?.parent.parent.text
+        ?.parent.parent.show
       .assert(_ == t"../..")
       
       test(t"show sister path"):
-        (?.parent / p"foo").text
+        (?.parent / p"foo").show
       .assert(_ == t"../foo")
       
       test(t"show uncle path"):
-        (?.parent.parent / p"foo").text
+        (?.parent.parent / p"foo").show
       .assert(_ == t"../../foo")
       
       test(t"show cousin path"):
-        (?.parent.parent / p"foo" / p"bar").text
+        (?.parent.parent / p"foo" / p"bar").show
       .assert(_ == t"../../foo/bar")
 
       test(t"show a simple generic path"):
-        (% / p"foo").text
+        (% / p"foo").show
       .assert(_ == t"/foo")
 
       test(t"show a deeper generic path"):
-        (% / p"foo" / p"bar").text
+        (% / p"foo" / p"bar").show
       .assert(_ == t"/foo/bar")
       
       test(t"show the root path"):
-        %.text
+        %.show
       .assert(_ == t"/")
     
     suite(t"Path tests"):
@@ -400,19 +405,19 @@ object Tests extends Suite(t"Serpentine Tests"):
 
     suite(t"Path rendering"):
       test(t"Show a rooted absolute path"):
-        RootedPath(Drive('F'), List(p"System32", p"Windows")).text
+        RootedPath(Drive('F'), List(p"System32", p"Windows")).show
       .assert(_ == t"F:\\Windows\\System32")
       
       test(t"Show a simple absolute path"):
-        SimplePath(List(p"user", p"home")).text
+        SimplePath(List(p"user", p"home")).show
       .assert(_ == t"/home/user")
       
       test(t"Show a rooted relative path"):
-        RootedLink(2, List(p"Data", p"Work")).text
+        RootedLink(2, List(p"Data", p"Work")).show
       .assert(_ == t"..\\..\\Work\\Data")
       
       test(t"Show a simple relative path"):
-        SimpleLink(2, List(p"file", p"user")).text
+        SimpleLink(2, List(p"file", p"user")).show
       .assert(_ == t"../../user/file")
 
     suite(t"Invalid paths"):
