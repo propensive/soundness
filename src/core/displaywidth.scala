@@ -43,13 +43,15 @@ object Unicode:
   import HieroglyphOpaques.*
   
   object EaWidth:
-    def unapply(code: Text): Option[EaWidth] = code.s.only:
-      case "N"  => Neutral
-      case "W"  => Wide
-      case "A"  => Ambiguous
-      case "H"  => HalfWidth
-      case "F"  => FullWidth
-      case "Na" => Narrow
+    def unapply(code: Text): Option[EaWidth] =
+      code.s.only:
+        case "N"  => Neutral
+        case "W"  => Wide
+        case "A"  => Ambiguous
+        case "H"  => HalfWidth
+        case "F"  => FullWidth
+        case "Na" => Narrow
+      .option
   
   enum EaWidth:
     case Neutral, Narrow, Wide, Ambiguous, FullWidth, HalfWidth
