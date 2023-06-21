@@ -355,6 +355,12 @@ object Tests extends Suite(t"Quantitative Tests"):
         (sum[Stones], sum[Pounds], sum[Ounces])
       .assert(_ == (0, 13, 1))
       
+      test(t"Multiply a tally by a double"):
+        val weight: Tally[Weight] = Tally(12, 9)
+        val result = weight*2.5
+        (result[Stones], result[Pounds], result[Ounces])
+      .assert(_ == (2, 3, 6))
+      
       test(t"Adding with double carry"):
         val weight: Tally[Weight] = Tally(100, 13, 15)
         val sum: Tally[Weight] = weight + Tally[Weight](1)

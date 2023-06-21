@@ -50,16 +50,21 @@ object QuantitativeMacros:
     def quantityName(using Quotes): Option[String] =
       import quotes.reflect.*
       def recur(todo: List[(DimensionRef, Int)], current: TypeRepr): TypeRepr = todo match
-        case Nil              => current
-        case (dim, n) :: tail => ((current.asType, dim.power(n).asType): @unchecked) match
-          case ('[current], '[next]) => recur(tail, TypeRepr.of[current & next])
+        case Nil =>
+          current
+        
+        case (dimension, n) :: tail =>
+          ((current.asType, dimension.power(n).asType): @unchecked) match
+            case ('[current], '[next]) => recur(tail, TypeRepr.of[current & next])
       
       (recur(map.to(List), TypeRepr.of[Units[?, ?]]).asType: @unchecked) match
-        case '[units] => Expr.summon[PhysicalQuantity[Units[?, ?] & units, ?]].map: value =>
-          (value: @unchecked) match
-            case '{$name: dimType} => (Type.of[dimType]: @unchecked) match
-              case '[PhysicalQuantity[?, name]] => (TypeRepr.of[name].asMatchable: @unchecked) match
-                case ConstantType(StringConstant(name)) => name
+        case '[type units <: Units[?, ?]; units] =>
+          Expr.summon[PhysicalQuantity[units, ?]].map: value =>
+            (value: @unchecked) match
+              case '{$name: dimensionType} => (Type.of[dimensionType]: @unchecked) match
+                case '[PhysicalQuantity[?, name]] =>
+                  (TypeRepr.of[name].asMatchable: @unchecked) match
+                    case ConstantType(StringConstant(name)) => name
     
   private def readUnitPower(using quotes: Quotes)(typeRepr: quotes.reflect.TypeRepr): UnitPower =
     import quotes.reflect.*
@@ -71,11 +76,6 @@ object QuantitativeMacros:
             case unit@TypeRef(_, _) =>
               UnitPower(UnitRef(unit.asType, unit.show), power)
       
-      // FIXME: This is a special-case fix which arises in `multiplyTally`, but it would be better
-      // if the pattern matching were more resilient.
-      case AndType(appliedType@AppliedType(_, _), _) =>
-        readUnitPower(appliedType)
-
   private case class UnitsMap(map: Map[DimensionRef, UnitPower]):
     def repr(using Quotes): Option[quotes.reflect.TypeRepr] = construct(map.values.to(List))
     
@@ -159,7 +159,8 @@ object QuantitativeMacros:
       import quotes.reflect.*
       
       ((ConstantType(IntConstant(n)).asType, ref.asType): @unchecked) match
-        case ('[power], '[dimension]) => TypeRepr.of[Units[power & Nat, dimension & Dimension]]
+        case ('[type power <: Nat; power], '[type dimension <: Dimension; dimension]) =>
+          TypeRepr.of[Units[power, dimension]]
     
     def principal(using Quotes): UnitRef =
       import quotes.reflect.*
@@ -505,13 +506,13 @@ object QuantitativeMacros:
     val principal = bitSlices[TallyUnitsType].head.unitPower.ref.dimensionRef.principal
     
     (principal.power(1).asType: @unchecked) match
-      case '[unitType] =>
+      case '[type unitType <: Measure; unitType] =>
         val quantityExpr = toQuantity[TallyUnitsType](tally).asExprOf[Quantity[unitType & Measure]]
         val multiplier2 = if division then '{1.0/$multiplier} else multiplier
         val multiplied = multiply('{Quantity($multiplier2)}, quantityExpr, false)
         val quantity2 = multiplied.asExprOf[Quantity[unitType & Measure]]
         
-        fromQuantity[unitType & Measure, TallyUnitsType](quantity2)
+        fromQuantity[unitType, TallyUnitsType](quantity2)
 
   def toQuantity
       [TallyUnitsType <: Tuple: Type]
