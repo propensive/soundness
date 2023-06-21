@@ -24,11 +24,11 @@ import language.experimental.captureChecking
 object Root
 
 object SimplePath:
-  def parse(text: Text): SimplePath throws PathError = pathlike.parse(text)
+  inline def parse(text: Text): SimplePath throws PathError = reachable.parse(text)
 
   given mainRoot: MainRoot[SimplePath] = () => SimplePath(Nil)
 
-  given pathlike: AbsolutePathlike[SimplePath, ".*\\/.*"](t"/") with
+  given reachable: AbsoluteReachable[SimplePath, ".*\\/.*"](t"/") with
 
     type Root = serpentine.Root.type
 
@@ -46,9 +46,9 @@ object SimplePath:
 case class SimplePath(descent: List[PathName[".*\\/.*"]])
 
 object SimpleLink:
-  def parse(text: Text): SimpleLink throws PathError = pathlike.parse(text)
+  inline def parse(text: Text): SimpleLink throws PathError = reachable.parse(text)
   
-  given pathlike: RelativePathlike[SimpleLink, ".*\\/.*"](t"/", t"..", t".") with
+  given reachable: RelativeReachable[SimpleLink, ".*\\/.*"](t"/", t"..", t".") with
     def ascent(path: SimpleLink): Int = path.ascent
 
     def make(ascent: Int, descent: List[PathName[".*\\/.*"]]): SimpleLink =

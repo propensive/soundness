@@ -69,33 +69,33 @@ def %
 def ?
     [AbsolutePathType <: Matchable, RelativePathType <: Matchable, NameType <: Label]
     (using hierarchy: Hierarchy[AbsolutePathType, RelativePathType])
-    (using pathlike: RelativePathlike[RelativePathType, NameType])
+    (using reachable: RelativeReachable[RelativePathType, NameType])
     : RelativePathType =
-  pathlike.make(0, Nil)
+  reachable.make(0, Nil)
 
 @targetName("relativeParent")
 def ?^
     [AbsolutePathType <: Matchable, RelativePathType <: Matchable, NameType <: Label]
     (using hierarchy: Hierarchy[AbsolutePathType, RelativePathType])
-    (using pathlike: RelativePathlike[RelativePathType, NameType])
+    (using reachable: RelativeReachable[RelativePathType, NameType])
     : RelativePathType =
-  pathlike.make(1, Nil)
+  reachable.make(1, Nil)
 
 @targetName("relativeParent2")
 def ?^^
     [AbsolutePathType <: Matchable, RelativePathType <: Matchable, NameType <: Label]
     (using hierarchy: Hierarchy[AbsolutePathType, RelativePathType])
-    (using pathlike: RelativePathlike[RelativePathType, NameType])
+    (using reachable: RelativeReachable[RelativePathType, NameType])
     : RelativePathType =
-  pathlike.make(2, Nil)
+  reachable.make(2, Nil)
 
 @targetName("relativeParent3")
 def ?^^^
     [AbsolutePathType <: Matchable, RelativePathType <: Matchable, NameType <: Label]
     (using hierarchy: Hierarchy[AbsolutePathType, RelativePathType])
-    (using pathlike: RelativePathlike[RelativePathType, NameType])
+    (using reachable: RelativeReachable[RelativePathType, NameType])
     : RelativePathType =
-  pathlike.make(3, Nil)
+  reachable.make(3, Nil)
 
 erased trait Hierarchy[AbsolutePathType <: Matchable, RelativePathType <: Matchable]
   
@@ -104,37 +104,37 @@ extension
     (left: RelativePathType)
     (using hierarchy: Hierarchy[AbsolutePathType, RelativePathType])
   
-  def ascent(using pathlike: RelativePathlike[RelativePathType, NameType]): Int =
-    pathlike.ascent(left)
+  def ascent(using reachable: RelativeReachable[RelativePathType, NameType]): Int =
+    reachable.ascent(left)
 
   @targetName("relativeKeep")
-  def keep(n: Int)(using pathlike: RelativePathlike[RelativePathType, NameType]): RelativePathType =
-    pathlike.make(pathlike.ascent(left), left.descent.takeRight(n))
+  def keep(n: Int)(using reachable: RelativeReachable[RelativePathType, NameType]): RelativePathType =
+    reachable.make(reachable.ascent(left), left.descent.takeRight(n))
 
 extension
     [AbsolutePathType <: Matchable, RelativePathType <: Matchable, NameType <: Label]
     (left: AbsolutePathType)
     (using hierarchy: Hierarchy[AbsolutePathType, RelativePathType])
   
-  def root(using pathlike: AbsolutePathlike[AbsolutePathType, NameType]): pathlike.Root =
-    pathlike.root(left)
+  def root(using reachable: AbsoluteReachable[AbsolutePathType, NameType]): reachable.Root =
+    reachable.root(left)
   
   def relativeTo
       (right: AbsolutePathType)
-      (using pathlike: RelativePathlike[RelativePathType, NameType])
-      (using absolutePathlike: AbsolutePathlike[AbsolutePathType, NameType])
+      (using reachable: RelativeReachable[RelativePathType, NameType])
+      (using absoluteReachable: AbsoluteReachable[AbsolutePathType, NameType])
       : RelativePathType =
     
     val common = left.conjunction(right).depth
-    pathlike.make(left.depth - common, right.descent.dropRight(common))
+    reachable.make(left.depth - common, right.descent.dropRight(common))
   
   def keep
-      (n: Int)(using pathlike: AbsolutePathlike[AbsolutePathType, NameType])
+      (n: Int)(using reachable: AbsoluteReachable[AbsolutePathType, NameType])
       : AbsolutePathType =
-    pathlike.make(pathlike.root(left), left.descent.takeRight(n))
+    reachable.make(reachable.root(left), left.descent.takeRight(n))
     
   def conjunction
-      (right: AbsolutePathType)(using pathlike: AbsolutePathlike[AbsolutePathType, NameType])
+      (right: AbsolutePathType)(using reachable: AbsoluteReachable[AbsolutePathType, NameType])
       : AbsolutePathType =
     
     lazy val leftElements: IArray[Text] = IArray.from(left.descent.reverse.map(_.text))
@@ -146,41 +146,41 @@ extension
       then count(n + 1)
       else n
     
-    pathlike.make(pathlike.root(left), left.descent.takeRight(count(0)))
+    reachable.make(reachable.root(left), left.descent.takeRight(count(0)))
  
   def precedes
-      (path: AbsolutePathType)(using pathlike: AbsolutePathlike[AbsolutePathType, NameType])
+      (path: AbsolutePathType)(using reachable: AbsoluteReachable[AbsolutePathType, NameType])
       : Boolean =
-    left.conjunction(path).descent == left.descent && pathlike.root(path) == pathlike.root(left)
+    left.conjunction(path).descent == left.descent && reachable.root(path) == reachable.root(left)
 
   @targetName("plus")
   def ++
       (relative: RelativePathType)
-      (using absolutePathlike: AbsolutePathlike[AbsolutePathType, NameType])
-      (using relativePathlike: RelativePathlike[RelativePathType, NameType])
+      (using absoluteReachable: AbsoluteReachable[AbsolutePathType, NameType])
+      (using relativeReachable: RelativeReachable[RelativePathType, NameType])
       : AbsolutePathType throws PathError =
-    if relativePathlike.ascent(relative) > left.depth
+    if relativeReachable.ascent(relative) > left.depth
     then throw PathError(PathError.Reason.ParentOfRoot)
     else
       val common: AbsolutePathType =
-        absolutePathlike.ancestor(left, relativePathlike.ascent(relative)).avow
+        absoluteReachable.ancestor(left, relativeReachable.ascent(relative)).avow
       
-      val descent = absolutePathlike.descent(common)
+      val descent = absoluteReachable.descent(common)
       
-      absolutePathlike.make(absolutePathlike.root(left), relative.descent ::: descent)
+      absoluteReachable.make(absoluteReachable.root(left), relative.descent ::: descent)
 
-trait Pathlike[PathType <: Matchable, NameType <: Label]:
+trait Reachable[PathType <: Matchable, NameType <: Label]:
   def pathSeparator: Text
   def child(path: PathType, name: PathName[NameType]): PathType
   def descent(path: PathType): List[PathName[NameType]]
   def text(path: PathType): Text
-  inline def parse(text: Text): PathType throws PathError
+  inline def parse(text: Text)(using path: CanThrow[PathError]): PathType^{path}
 
 trait MainRoot[PathType <: Matchable]:
   def empty(): PathType
 
-trait AbsolutePathlike[PathType <: Matchable, NameType <: Label](val pathSeparator: Text)
-extends Pathlike[PathType, NameType]:
+trait AbsoluteReachable[PathType <: Matchable, NameType <: Label](val pathSeparator: Text)
+extends Reachable[PathType, NameType]:
 
   type Root
 
@@ -200,7 +200,7 @@ extends Pathlike[PathType, NameType]:
   def text(path: PathType): Text =
     t"${prefix(root(path))}${descent(path).reverse.map(_.text).join(pathSeparator)}"
   
-  inline def parse(text: Text): PathType throws PathError =
+  inline def parse(text: Text)(using path: CanThrow[PathError]): PathType^{path} =
     val (root, rest) = parseRoot(text).or(throw PathError(PathError.Reason.NotRooted))
     
     val names = rest.cut(pathSeparator).reverse match
@@ -209,10 +209,10 @@ extends Pathlike[PathType, NameType]:
 
     make(root, names.map(PathName(_)))
   
-trait RelativePathlike
+trait RelativeReachable
     [PathType <: Matchable, NameType <: Label]
     (val pathSeparator: Text, val parentRef: Text, val selfRef: Text)
-extends Pathlike[PathType, NameType]:
+extends Reachable[PathType, NameType]:
   def ascent(path: PathType): Int
   def make(ascent: Int, descent: List[PathName[NameType]]): PathType
   
@@ -234,7 +234,7 @@ extends Pathlike[PathType, NameType]:
       else t"${t"$parentRef$pathSeparator"*(ascent(path) - 1)}$parentRef"
     else t"$prefix${descent(path).reverse.map(_.text).join(pathSeparator)}"
 
-  inline def parse(text: Text): PathType throws PathError =
+  inline def parse(text: Text)(using path: CanThrow[PathError]): PathType^{path} =
     val ascentPrefix: Text = t"$parentRef$pathSeparator"
     
     def recur(text: Text, ascent: Int = 0): PathType =
@@ -252,22 +252,22 @@ extends Pathlike[PathType, NameType]:
 extension
     [PathType <: Matchable, NameType <: Label]
     (path: PathType)
-    (using pathlike: Pathlike[PathType, NameType])
+    (using reachable: Reachable[PathType, NameType])
   
   @targetName("child")
-  infix def /(name: PathName[NameType]): PathType = pathlike.child(path, name)
+  infix def /(name: PathName[NameType]): PathType = reachable.child(path, name)
   
-  def descent: List[PathName[NameType]] = pathlike.descent(path)
+  def descent: List[PathName[NameType]] = reachable.descent(path)
   def depth: Int = descent.length
-  def text: Text = pathlike.text(path)
+  def text: Text = reachable.text(path)
 
   transparent inline def parent: Maybe[PathType] = compiletime.summonFrom:
-    case pathlike: AbsolutePathlike[PathType, NameType] => pathlike.parent(path)
-    case pathlike: RelativePathlike[PathType, NameType] => pathlike.parent(path)
+    case reachable: AbsoluteReachable[PathType, NameType] => reachable.parent(path)
+    case reachable: RelativeReachable[PathType, NameType] => reachable.parent(path)
   
   transparent inline def ancestor(n: Int): Maybe[PathType] = compiletime.summonFrom:
-    case pathlike: AbsolutePathlike[PathType, NameType] => pathlike.ancestor(path, n)
-    case pathlike: RelativePathlike[PathType, NameType] => pathlike.ancestor(path, n)
+    case reachable: AbsoluteReachable[PathType, NameType] => reachable.ancestor(path, n)
+    case reachable: RelativeReachable[PathType, NameType] => reachable.ancestor(path, n)
 
 extension (inline context: StringContext)
   inline def p[ForbiddenType <: Label](): PathName[ForbiddenType] =
