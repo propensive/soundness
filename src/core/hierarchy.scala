@@ -55,59 +55,69 @@ export SerpentineOpaques.*
 case class PathError(reason: PathError.Reason)
 extends Error(err"the path is invalid because ${reason.show}")
 
+@targetName("root")
+def %
+    [AbsolutePathType <: Matchable]
+    (using hierarchy: Hierarchy[AbsolutePathType, ?])
+    (using mainRoot: MainRoot[AbsolutePathType])
+    : AbsolutePathType =
+  mainRoot.empty()
+
 @targetName("relative")
 def ?
-    [AbsolutePathType <: Matchable, RelativePathType <: Matchable, RootType, NameType <: Label]
-    (using hierarchy: Hierarchy[AbsolutePathType, RelativePathType, RootType, NameType])
+    [AbsolutePathType <: Matchable, RelativePathType <: Matchable, NameType <: Label]
+    (using hierarchy: Hierarchy[AbsolutePathType, RelativePathType])
     (using pathlike: RelativePathlike[RelativePathType, NameType])
     : RelativePathType =
   pathlike.make(0, Nil)
 
 @targetName("relativeParent")
 def ?^
-    [AbsolutePathType <: Matchable, RelativePathType <: Matchable, RootType, NameType <: Label]
-    (using hierarchy: Hierarchy[AbsolutePathType, RelativePathType, RootType, NameType])
+    [AbsolutePathType <: Matchable, RelativePathType <: Matchable, NameType <: Label]
+    (using hierarchy: Hierarchy[AbsolutePathType, RelativePathType])
     (using pathlike: RelativePathlike[RelativePathType, NameType])
     : RelativePathType =
   pathlike.make(1, Nil)
 
 @targetName("relativeParent2")
 def ?^^
-    [AbsolutePathType <: Matchable, RelativePathType <: Matchable, RootType, NameType <: Label]
-    (using hierarchy: Hierarchy[AbsolutePathType, RelativePathType, RootType, NameType])
+    [AbsolutePathType <: Matchable, RelativePathType <: Matchable, NameType <: Label]
+    (using hierarchy: Hierarchy[AbsolutePathType, RelativePathType])
     (using pathlike: RelativePathlike[RelativePathType, NameType])
     : RelativePathType =
   pathlike.make(2, Nil)
 
 @targetName("relativeParent3")
 def ?^^^
-    [AbsolutePathType <: Matchable, RelativePathType <: Matchable, RootType, NameType <: Label]
-    (using hierarchy: Hierarchy[AbsolutePathType, RelativePathType, RootType, NameType])
+    [AbsolutePathType <: Matchable, RelativePathType <: Matchable, NameType <: Label]
+    (using hierarchy: Hierarchy[AbsolutePathType, RelativePathType])
     (using pathlike: RelativePathlike[RelativePathType, NameType])
     : RelativePathType =
   pathlike.make(3, Nil)
 
-erased trait Hierarchy
-    [AbsolutePathType <: Matchable, RelativePathType <: Matchable, RootType, NameType <: Label]
+erased trait Hierarchy[AbsolutePathType <: Matchable, RelativePathType <: Matchable]
   
 extension
-    [AbsolutePathType <: Matchable, RelativePathType <: Matchable, RootType, NameType <: Label]
+    [AbsolutePathType <: Matchable, RelativePathType <: Matchable, NameType <: Label]
     (left: RelativePathType)
-    (using hierarchy: Hierarchy[AbsolutePathType, RelativePathType, RootType, NameType])
+    (using hierarchy: Hierarchy[AbsolutePathType, RelativePathType])
   
   def ascent(using pathlike: RelativePathlike[RelativePathType, NameType]): Int =
     pathlike.ascent(left)
 
   @targetName("relativeKeep")
   def keep(n: Int)(using pathlike: RelativePathlike[RelativePathType, NameType]): RelativePathType =
-    pathlike.make(pathlike.ascent(left), left.ancestry.takeRight(n))
+    pathlike.make(pathlike.ascent(left), left.descent.takeRight(n))
 
 extension
-    [AbsolutePathType <: Matchable, RelativePathType <: Matchable, RootType, NameType <: Label]
+    [AbsolutePathType <: Matchable, RelativePathType <: Matchable, NameType <: Label]
     (left: AbsolutePathType)
-    (using hierarchy: Hierarchy[AbsolutePathType, RelativePathType, RootType, NameType])
+    (using hierarchy: Hierarchy[AbsolutePathType, RelativePathType])
   
-  def root(using pathlike: AbsolutePathlike[AbsolutePathType, NameType, RootType]): RootType =
+  def root
+      [RootType]
+      (using pathlike: AbsolutePathlike[AbsolutePathType, NameType, RootType])
+      : RootType =
     pathlike.root(left)
   
   def relativeTo
@@ -117,19 +127,19 @@ extension
       : RelativePathType =
     
     val common = left.conjunction(right).depth
-    pathlike.make(left.depth - common, right.ancestry.dropRight(common))
+    pathlike.make(left.depth - common, right.descent.dropRight(common))
   
   def keep
       (n: Int)(using pathlike: AbsolutePathlike[AbsolutePathType, NameType, ?])
       : AbsolutePathType =
-    pathlike.make(pathlike.root(left), left.ancestry.takeRight(n))
+    pathlike.make(pathlike.root(left), left.descent.takeRight(n))
     
   def conjunction
       (right: AbsolutePathType)(using pathlike: AbsolutePathlike[AbsolutePathType, NameType, ?])
       : AbsolutePathType =
     
-    lazy val leftElements: IArray[Text] = IArray.from(left.ancestry.reverse.map(_.text))
-    lazy val rightElements: IArray[Text] = IArray.from(right.ancestry.reverse.map(_.text))
+    lazy val leftElements: IArray[Text] = IArray.from(left.descent.reverse.map(_.text))
+    lazy val rightElements: IArray[Text] = IArray.from(right.descent.reverse.map(_.text))
     
     @tailrec
     def count(n: Int): Int =
@@ -137,12 +147,12 @@ extension
       then count(n + 1)
       else n
     
-    pathlike.make(pathlike.root(left), left.ancestry.takeRight(count(0)))
+    pathlike.make(pathlike.root(left), left.descent.takeRight(count(0)))
  
   def precedes
       (path: AbsolutePathType)(using pathlike: AbsolutePathlike[AbsolutePathType, NameType, ?])
       : Boolean =
-    left.conjunction(path).ancestry == left.ancestry && pathlike.root(path) == pathlike.root(left)
+    left.conjunction(path).descent == left.descent && pathlike.root(path) == pathlike.root(left)
 
   @targetName("plus")
   def ++
@@ -150,39 +160,47 @@ extension
       (using absolutePathlike: AbsolutePathlike[AbsolutePathType, NameType, ?])
       (using relativePathlike: RelativePathlike[RelativePathType, NameType])
       : AbsolutePathType throws PathError =
-
     if relativePathlike.ascent(relative) > left.depth
     then throw PathError(PathError.Reason.ParentOfRoot)
     else
       val common: AbsolutePathType =
         absolutePathlike.ancestor(left, relativePathlike.ascent(relative)).avow
       
-      val ancestry = absolutePathlike.ancestry(common)
+      val descent = absolutePathlike.descent(common)
       
-      absolutePathlike.make(absolutePathlike.root(left), relative.ancestry ::: ancestry)
+      absolutePathlike.make(absolutePathlike.root(left), relative.descent ::: descent)
 
 trait Pathlike[PathType <: Matchable, NameType <: Label]:
   def pathSeparator: Text
   def child(path: PathType, name: PathName[NameType]): PathType
-  def ancestry(path: PathType): List[PathName[NameType]]
+  def descent(path: PathType): List[PathName[NameType]]
   def text(path: PathType): Text
   inline def parse(text: Text): PathType throws PathError
+
+trait MainRoot[PathType <: Matchable]:
+  def empty(): PathType
 
 trait AbsolutePathlike[PathType <: Matchable, NameType <: Label, RootType](val pathSeparator: Text)
 extends Pathlike[PathType, NameType]:
 
   def prefix(root: RootType): Text
   def root(path: PathType): RootType
-  def parent(path: PathType): Maybe[PathType]
-  def ancestor(path: PathType, n: Int): Maybe[PathType]
-  def make(root: RootType, ancestry: List[PathName[NameType]]): PathType
-  def parseRoot(text: Text): (RootType, Text) throws PathError
+  def make(root: RootType, descent: List[PathName[NameType]]): PathType
+  def parseRoot(text: Text): Maybe[(RootType, Text)]
+  
+  def child(path: PathType, name: PathName[NameType]): PathType =
+    make(root(path), name :: descent(path))
+  
+  def ancestor(path: PathType, n: Int): Maybe[PathType] =
+    if descent(path).length < n then Unset else make(root(path), descent(path).drop(n))
+  
+  def parent(path: PathType): Maybe[PathType] = ancestor(path, 1)
   
   def text(path: PathType): Text =
-    t"${prefix(root(path))}${ancestry(path).reverse.map(_.text).join(pathSeparator)}"
+    t"${prefix(root(path))}${descent(path).reverse.map(_.text).join(pathSeparator)}"
   
   inline def parse(text: Text): PathType throws PathError =
-    val (root, rest) = parseRoot(text)
+    val (root, rest) = parseRoot(text).or(throw PathError(PathError.Reason.NotRooted))
     
     val names = rest.cut(pathSeparator).reverse match
       case t"" :: tail => tail
@@ -194,24 +212,26 @@ trait RelativePathlike
     [PathType <: Matchable, NameType <: Label]
     (val pathSeparator: Text, val parentRef: Text, val selfRef: Text)
 extends Pathlike[PathType, NameType]:
-
-  def parent(path: PathType): PathType
   def ascent(path: PathType): Int
+  def make(ascent: Int, descent: List[PathName[NameType]]): PathType
   
-  def ancestor(path: PathType, n: Int): PathType =
-    val depth = ancestry(path).length
-    val ancestry2 = ancestry(path).drop(n)
-    make(ascent(path) + (if n > depth then n - depth else 0), ancestry2)
+  def parent(path: PathType): PathType = ancestor(path, 1)
 
-  def make(ascent: Int, ancestry: List[PathName[NameType]]): PathType
+  def ancestor(path: PathType, n: Int): PathType =
+    val depth = descent(path).length
+    val descent2 = descent(path).drop(n)
+    make(ascent(path) + (if n > depth then n - depth else 0), descent2)
+  
+  def child(path: PathType, name: PathName[NameType]): PathType =
+    make(ascent(path), name :: descent(path))
   
   def text(path: PathType): Text =
-    if ancestry(path).isEmpty then
+    val prefix = t"${t"$parentRef$pathSeparator"*(ascent(path))}"
+    
+    if descent(path).isEmpty then
       if ascent(path) == 0 then selfRef
       else t"${t"$parentRef$pathSeparator"*(ascent(path) - 1)}$parentRef"
-    else
-      val elements: IArray[Text] = IArray.from(ancestry(path).reverse.map(_.text))
-      t"${t"$parentRef$pathSeparator"*ascent(path)}${elements.join(pathSeparator)}"
+    else t"$prefix${descent(path).reverse.map(_.text).join(pathSeparator)}"
 
   inline def parse(text: Text): PathType throws PathError =
     val ascentPrefix: Text = t"$parentRef$pathSeparator"
@@ -236,8 +256,8 @@ extension
   @targetName("child")
   infix def /(name: PathName[NameType]): PathType = pathlike.child(path, name)
   
-  def ancestry: List[PathName[NameType]] = pathlike.ancestry(path)
-  def depth: Int = ancestry.length
+  def descent: List[PathName[NameType]] = pathlike.descent(path)
+  def depth: Int = descent.length
   def text: Text = pathlike.text(path)
 
   transparent inline def parent: Maybe[PathType] = compiletime.summonFrom:

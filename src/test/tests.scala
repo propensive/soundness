@@ -19,75 +19,116 @@ package serpentine
 import probably.*
 import rudiments.*
 import digression.*
-import gossamer.t
+import kaleidoscope.*
+import gossamer.{text as _, *}
 import larceny.*
+
+object Example:
+  
+  type Forbidden = ".*\\\\.*" | ".*/.*" | "lpt1.*" | ".* " | ".*\\."
+  
+  object RootedPath:
+    def parse(text: Text): RootedPath throws PathError = pathlike.parse(text)
+
+    given pathlike: AbsolutePathlike[RootedPath, Forbidden, Drive](t"\\") with
+      def root(path: RootedPath): Drive = path.root
+      def prefix(drive: Drive): Text = t"${drive.letter}:"
+      def descent(path: RootedPath): List[PathName[Forbidden]] = path.descent
+      
+      def parseRoot(text: Text): Maybe[(Drive, Text)] = text.only:
+        case r"$letter([a-zA-Z]):.*" => (Drive(unsafely(letter(0)).toUpper), text.drop(2))
+      
+      def make(root: Drive, descent: List[PathName[Forbidden]]): RootedPath =
+        RootedPath(root, descent)
+  
+  case class RootedPath(root: Drive, descent: List[PathName[Forbidden]])
+
+  object RootedLink:
+    def parse(text: Text): RootedLink throws PathError = pathlike.parse(text)
+    
+    given pathlike: RelativePathlike[RootedLink, Forbidden](t"\\", t"..", t".") with
+      def ascent(path: RootedLink): Int = path.ascent
+      def descent(path: RootedLink): List[PathName[Forbidden]] = path.descent
+    
+      def make(ascent: Int, descent: List[PathName[Forbidden]]): RootedLink =
+        RootedLink(ascent, descent)
+  
+  case class RootedLink(ascent: Int, descent: List[PathName[Forbidden]])
+
+  case class Drive(letter: Char):
+    def /(name: PathName[Forbidden]): RootedPath = RootedPath(this, List(name))
+
+  erased given hierarchy: Hierarchy[RootedPath, RootedLink] = ###
+
+import Example.*
 
 object Tests extends Suite(t"Serpentine Tests"):
   def run(): Unit =
     suite(t"Absolute parsing"):
       test(t"parse simple absolute path"):
-        unsafely(UnixPath.parse(t"/home"))
-      .assert(_ == UnixPath(List(PathName(t"home"))))
+        unsafely(SimplePath.parse(t"/home"))
+      .assert(_ == SimplePath(List(PathName(t"home"))))
       
       test(t"parse deeper absolute path"):
-        unsafely(UnixPath.parse(t"/home/work"))
-      .assert(_ == UnixPath(List(PathName(t"work"), PathName(t"home"))))
+        unsafely(SimplePath.parse(t"/home/work"))
+      .assert(_ == SimplePath(List(PathName(t"work"), PathName(t"home"))))
       
       test(t"parse even deeper absolute path"):
-        unsafely(UnixPath.parse(t"/home/work/data"))
-      .assert(_ == UnixPath(List(PathName(t"data"), PathName(t"work"), PathName(t"home"))))
+        unsafely(SimplePath.parse(t"/home/work/data"))
+      .assert(_ == SimplePath(List(PathName(t"data"), PathName(t"work"), PathName(t"home"))))
       
       test(t"parse even absolute directory-style path"):
-        unsafely(UnixPath.parse(t"/home/work/"))
-      .assert(_ == UnixPath(List(PathName(t"work"), PathName(t"home"))))
+        unsafely(SimplePath.parse(t"/home/work/"))
+      .assert(_ == SimplePath(List(PathName(t"work"), PathName(t"home"))))
       
-      test(t"parse simple Windows absolute path"):
-        unsafely(WindowsPath.parse(t"C:\\Windows"))
-      .assert(_ == WindowsPath(WindowsDrive('C'), List(PathName(t"Windows"))))
+    suite(t"Parsing absolute paths with root"):
+      test(t"parse simple rooted absolute path"):
+        unsafely(RootedPath.parse(t"C:Windows"))
+      .assert(_ == RootedPath(Drive('C'), List(PathName(t"Windows"))))
       
-      test(t"parse deeper Windows absolute path"):
-        unsafely(WindowsPath.parse(t"D:\\Windows\\System"))
-      .assert(_ == WindowsPath(WindowsDrive('D'), List(PathName(t"System"), PathName(t"Windows"))))
+      test(t"parse deeper rooted absolute path"):
+        unsafely(RootedPath.parse(t"D:Windows\\System"))
+      .assert(_ == RootedPath(Drive('D'), List(PathName(t"System"), PathName(t"Windows"))))
       
-      test(t"parse even deeper Windows absolute path"):
-        unsafely(WindowsPath.parse(t"e:\\Windows\\System\\Data"))
-      .assert(_ == WindowsPath(WindowsDrive('E'), List(PathName(t"Data"), PathName(t"System"), PathName(t"Windows"))))
+      test(t"parse even deeper rooted absolute path"):
+        unsafely(RootedPath.parse(t"e:Windows\\System\\Data"))
+      .assert(_ == RootedPath(Drive('E'), List(PathName(t"Data"), PathName(t"System"), PathName(t"Windows"))))
       
-      test(t"parse even absolute Windows directory-style path"):
-        unsafely(WindowsPath.parse(t"f:\\Windows\\System\\"))
-      .assert(_ == WindowsPath(WindowsDrive('F'), List(PathName(t"System"), PathName(t"Windows"))))
+      test(t"parse even absolute rooted directory-style path"):
+        unsafely(RootedPath.parse(t"f:Windows\\System\\"))
+      .assert(_ == RootedPath(Drive('F'), List(PathName(t"System"), PathName(t"Windows"))))
       
     suite(t"Relative parsing"):
       test(t"parse simple relative path"):
-        unsafely(RelativeUnixPath.parse(t"peer"))
-      .assert(_ == RelativeUnixPath(0, List(PathName(t"peer"))))
+        unsafely(SimpleLink.parse(t"peer"))
+      .assert(_ == SimpleLink(0, List(PathName(t"peer"))))
 
       test(t"parse three-part relative subpath"):
-        unsafely(RelativeUnixPath.parse(t"path/to/child"))
-      .assert(_ == RelativeUnixPath(0, List(t"child", t"to", t"path").map(PathName(_))))
+        unsafely(SimpleLink.parse(t"path/to/child"))
+      .assert(_ == SimpleLink(0, List(t"child", t"to", t"path").map(PathName(_))))
 
       test(t"parse parent relative path"):
-        unsafely(RelativeUnixPath.parse(t".."))
-      .assert(_ == RelativeUnixPath(1, List()))
+        unsafely(SimpleLink.parse(t".."))
+      .assert(_ == SimpleLink(1, List()))
 
       test(t"parse ancestor relative path"):
-        unsafely(RelativeUnixPath.parse(t"../../.."))
-      .assert(_ == RelativeUnixPath(3, List()))
+        unsafely(SimpleLink.parse(t"../../.."))
+      .assert(_ == SimpleLink(3, List()))
     
       test(t"parse relative link to current path"):
-        unsafely(RelativeUnixPath.parse(t"."))
-      .assert(_ == RelativeUnixPath(0, List()))
+        unsafely(SimpleLink.parse(t"."))
+      .assert(_ == SimpleLink(0, List()))
       
       test(t"parse relative link to uncle path"):
-        unsafely(RelativeUnixPath.parse(t"../path"))
-      .assert(_ == RelativeUnixPath(1, List(PathName(t"path"))))
+        unsafely(SimpleLink.parse(t"../path"))
+      .assert(_ == SimpleLink(1, List(PathName(t"path"))))
       
       test(t"parse relative link to cousin path"):
-        unsafely(RelativeUnixPath.parse(t"../path/child"))
-      .assert(_ == RelativeUnixPath(1, List(t"child", t"path").map(PathName(_))))
+        unsafely(SimpleLink.parse(t"../path/child"))
+      .assert(_ == SimpleLink(1, List(t"child", t"path").map(PathName(_))))
 
     suite(t"Show paths"):
-      import hierarchies.unix
+      import hierarchies.simple
       
       test(t"show simple relative path"):
         (? / p"hello").text
@@ -147,17 +188,16 @@ object Tests extends Suite(t"Serpentine Tests"):
       .assert(_ == List(t"serpentine: a path element may not be 'bad'"))
       
       test(t"simple path not in forbidden set of strings does compile"):
-        captureCompileErrors:
-          val elem: PathName["bad" | "awful"] = p"safe"
-      .assert(_ == Nil)
+        val elem: PathName["bad" | "awful"] = p"safe"
+      .assert()
       
-      test(t"path with forbidden character does compile"):
+      test(t"path with forbidden character does not compile"):
         captureCompileErrors:
           val elem: PathName["bad" | ".*n.*"] = p"unsafe"
         .map(_.message)
       .assert(_ == List(t"serpentine: a path element may not contain the character 'n'"))
       
-      test(t"path with forbidden character does compile"):
+      test(t"path with forbidden character does not compile"):
         captureCompileErrors:
           val elem: PathName[".*a.*" | ".*e.*" | ".*i.*" | ".*o.*" | ".*u.*"] = p"unsafe"
         .map(_.message)
@@ -184,7 +224,8 @@ object Tests extends Suite(t"Serpentine Tests"):
       .assert(_ == PathError(PathError.Reason.InvalidName(t"bad\\.txt")))
 
     suite(t"Relative path tests"):
-      import hierarchies.unix
+      import hierarchies.simple
+      
       test(t"Relative path has correct parent"):
         (? / p"foo" / p"bar").parent
       .assert(_ == (? / p"foo"))
@@ -195,11 +236,11 @@ object Tests extends Suite(t"Serpentine Tests"):
 
       test(t"Parent of Relative path root has correct parent"):
         ?^
-      .assert(_ == RelativeUnixPath(1, Nil))
+      .assert(_ == SimpleLink(1, Nil))
       
       test(t"Parent of Relative path root has correct parent"):
         ?^^
-      .assert(_ == RelativeUnixPath(2, Nil))
+      .assert(_ == SimpleLink(2, Nil))
       
       test(t"Parent of cousin keeps correct ascent"):
         (?^^ / p"foo" / p"bar").parent
@@ -210,7 +251,7 @@ object Tests extends Suite(t"Serpentine Tests"):
       .assert(_ == ?^^)
 
     suite(t"Relative path tests"):
-      import hierarchies.unix
+      import hierarchies.simple
       
       test(t"Find conjunction of distinct paths"):
         val p1 = % / p"foo" / p"bar"
@@ -332,75 +373,85 @@ object Tests extends Suite(t"Serpentine Tests"):
 
 
 
-    suite(t"Windows path tests"):
+    suite(t"Rooted path tests"):
       test(t"Absolute path child"):
-        WindowsPath(WindowsDrive('C'), List(p"Windows")) / p"System32"
-      .assert(_ == WindowsPath(WindowsDrive('C'), List(p"System32", p"Windows")))
+        RootedPath(Drive('C'), List(p"Windows")) / p"System32"
+      .assert(_ == RootedPath(Drive('C'), List(p"System32", p"Windows")))
     
       test(t"Absolute path parent"):
-        WindowsPath(WindowsDrive('C'), List(p"System32", p"Windows")).parent
-      .assert(_ == WindowsPath(WindowsDrive('C'), List(p"Windows")))
+        RootedPath(Drive('C'), List(p"System32", p"Windows")).parent
+      .assert(_ == RootedPath(Drive('C'), List(p"Windows")))
       
       test(t"Absolute path root parent"):
-        WindowsPath(WindowsDrive('C'), List()).parent
+        RootedPath(Drive('C'), List()).parent
       .assert(_ == Unset)
   
       test(t"Relative path child"):
-        RelativeWindowsPath(3, List(p"docs", p"work")) / p"images"
-      .assert(_ == RelativeWindowsPath(3, List(p"images", p"docs", p"work")))
+        RootedLink(3, List(p"docs", p"work")) / p"images"
+      .assert(_ == RootedLink(3, List(p"images", p"docs", p"work")))
       
       test(t"Relative path parent"):
-        RelativeWindowsPath(3, List(p"file", p"docs", p"work")).parent
-      .assert(_ == RelativeWindowsPath(3, List(p"docs", p"work")))
+        RootedLink(3, List(p"file", p"docs", p"work")).parent
+      .assert(_ == RootedLink(3, List(p"docs", p"work")))
   
       test(t"Relative root parent"):
-        RelativeWindowsPath(3, List()).parent
-      .assert(_ == RelativeWindowsPath(4, List()))
+        RootedLink(3, List()).parent
+      .assert(_ == RootedLink(4, List()))
 
     suite(t"Path rendering"):
-      test(t"Show a Windows absolute path"):
-        WindowsPath(WindowsDrive('F'), List(p"System32", p"Windows")).text
-      .assert(_ == t"F:\\Windows\\System32")
+      test(t"Show a rooted absolute path"):
+        RootedPath(Drive('F'), List(p"System32", p"Windows")).text
+      .assert(_ == t"F:Windows\\System32")
       
-      test(t"Show a UNIX absolute path"):
-        UnixPath(List(p"user", p"home")).text
+      test(t"Show a simple absolute path"):
+        SimplePath(List(p"user", p"home")).text
       .assert(_ == t"/home/user")
       
-      test(t"Show a Windows relative path"):
-        RelativeWindowsPath(2, List(p"Data", p"Work")).text
+      test(t"Show a rooted relative path"):
+        RootedLink(2, List(p"Data", p"Work")).text
       .assert(_ == t"..\\..\\Work\\Data")
       
-      test(t"Show a UNIX relative path"):
-        RelativeUnixPath(2, List(p"file", p"user")).text
+      test(t"Show a simple relative path"):
+        SimpleLink(2, List(p"file", p"user")).text
       .assert(_ == t"../../user/file")
 
     suite(t"Invalid paths"):
+
+      given MainRoot[RootedPath] = () => RootedPath(Drive('C'), Nil)
+      import Example.hierarchy
+
       test(t"Path cannot contain /"):
-        captureCompileErrors(UnixPath(List()) / p"a/b")
-      .assert(_.length == 1)
+        captureCompileErrors:
+          SimplePath(List()) / p"a/b"
+        .map(_.message)
+      .assert(_ == List(t"serpentine: a path element may not contain the character '/'"))
       
-      test(t"Windows Path cannot contain lpt1"):
-        captureCompileErrors(WindowsDrive('C') / p"lpt1")
-      .assert(_.length == 1)
+      test(t"Rooted Path cannot contain lpt1"):
+        captureCompileErrors:
+          Drive('C') / p"lpt1"
+        .map(_.message)
+      .assert(_ == List(t"serpentine: a path element may not start with 'lpt1'"))
       
       test(t"Windows Path cannot contain lpt1.txt"):
-        captureCompileErrors(WindowsDrive('C') / p"lpt1.txt")
-      .assert(_.length == 1)
-      
-      test(t"Linux can contain lpt1.txt"):
-        //import hierarchies.windows
-        (% / p"lpt1.txt").text
-      .assert(_ == t"/lpt1.txt")
+        captureCompileErrors:
+          Drive('C') / p"lpt1.txt"
+        .map(_.message)
+      .assert(_ == List(t"serpentine: a path element may not start with 'lpt1'"))
       
       test(t"Windows Path cannot have a filename ending in space"):
-        captureCompileErrors(WindowsDrive('C') / p"abc.xyz ")
-      .assert(_.length == 1)
+        captureCompileErrors:
+          Drive('C') / p"abc.xyz "
+        .map(_.message)
+      .assert(_ == List(t"serpentine: a path element may not match the pattern '.* '"))
       
       test(t"Windows Path cannot have a filename ending in period"):
-        captureCompileErrors(WindowsDrive('C') / p"abc.")
-      .assert(_.length == 1)
+        captureCompileErrors:
+          Drive('C') / p"abc."
+        .map(_.message)
+      .assert(_ == List(t"serpentine: a path element may not end with '.'"))
       
       test(t"Windows Path can have an extensionless filename"):
-        captureCompileErrors(WindowsDrive('C') / p"abc")
-      .assert(_.length == 0)
+        captureCompileErrors:
+          Drive('C') / p"abc"
+      .assert(_ == Nil)
 
