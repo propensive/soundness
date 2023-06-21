@@ -66,7 +66,7 @@ object QuantitativeMacros:
                   (TypeRepr.of[name].asMatchable: @unchecked) match
                     case ConstantType(StringConstant(name)) => name
     
-  private def readUnitPower(using quotes: Quotes)(typeRepr: quotes.reflect.TypeRepr): UnitPower =
+  private def readUnitPower(using Quotes)(typeRepr: quotes.reflect.TypeRepr): UnitPower =
     import quotes.reflect.*
     
     (typeRepr.asMatchable: @unchecked) match
@@ -166,25 +166,28 @@ object QuantitativeMacros:
       import quotes.reflect.*
       
       (dimensionType: @unchecked) match
-        case '[dim] => (Expr.summon[PrincipalUnit[dim & Dimension, ?]]: @unchecked) match
-          case None =>
-            val dimensionName =
-              dimensionality.quantityName.map: name =>
-                "the physical quantity "+name
-              .getOrElse("the same quantity")
+        case '[type dimensionType <: Dimension; dimensionType] =>
+          (Expr.summon[PrincipalUnit[dimensionType, ?]]: @unchecked) match
+            case None =>
+              val dimensionName =
+                dimensionality.quantityName.map: name =>
+                  "the physical quantity "+name
+                .getOrElse("the same quantity")
+  
+              fail(txt"""
+                the operands both represent ${dimensionName}, but there is no principal unit
+                specified for this dimension
+              """.s)
 
-            fail(txt"""
-              the operands both represent ${dimensionName}, but there is no principal unit specified
-              for this dimension
-            """.s)
-          case Some('{$expr: principalUnit}) => (Type.of[principalUnit]: @unchecked) match
-            case '[PrincipalUnit[dim, units]] => (TypeRepr.of[units].asMatchable: @unchecked) match
-              case TypeLambda(_, _, appliedType) => (appliedType.asMatchable: @unchecked) match
-                case AppliedType(typeRef, _) => (typeRef.asMatchable: @unchecked) match
-                  case typeRef@TypeRef(_, _) => UnitRef(typeRef.asType, typeRef.show)
-              
-              case other =>
-                fail(s"principal units had an unexpected type: $other")
+            case Some('{$expr: principalUnit}) => (Type.of[principalUnit]: @unchecked) match
+              case '[PrincipalUnit[dimensionType, units]] =>
+                (TypeRepr.of[units].asMatchable: @unchecked) match
+                  case TypeLambda(_, _, appliedType) => (appliedType.asMatchable: @unchecked) match
+                    case AppliedType(typeRef, _) => (typeRef.asMatchable: @unchecked) match
+                      case typeRef@TypeRef(_, _) => UnitRef(typeRef.asType, typeRef.show)
+                  
+                  case other =>
+                    fail(s"principal units had an unexpected type: $other")
         
     
     override def equals(that: Any): Boolean = that.asMatchable match
@@ -203,32 +206,33 @@ object QuantitativeMacros:
     val principalUnit = from.dimensionRef.principal
     if from == to then Expr(1.0)
     else ((from.power(-1).asType, to.power(1).asType): @unchecked) match
-      case ('[from], '[to]) => (Expr.summon[Ratio[from & to & Measure, ?]]: @unchecked) match
-        case None =>
-          if retry then ratio(to, from, -power, false)
-          else if viaPrincipal && from != principalUnit && to != principalUnit then
-            val numerator = ratio(from, principalUnit, power, true, false)
-            val denominator = ratio(to, principalUnit, power, true, false)
-            '{$numerator/$denominator}
-          else
-            val quantityName = from.dimensionRef.dimensionality.quantityName
-            
-            val dimensionName = quantityName.map("the physical quantity "+_).getOrElse:
-                "the same physical quantity"
-            
-            fail(txt"""
-              both operands represent $dimensionName, but the coversion ratio between them is not
-              known
+      case ('[type fromType <: Measure; fromType], '[type toType <: Measure; toType]) =>
+        (Expr.summon[Ratio[fromType & toType, ?]]: @unchecked) match
+          case None =>
+            if retry then ratio(to, from, -power, false)
+            else if viaPrincipal && from != principalUnit && to != principalUnit then
+              val numerator = ratio(from, principalUnit, power, true, false)
+              val denominator = ratio(to, principalUnit, power, true, false)
+              '{$numerator/$denominator}
+            else
+              val quantityName = from.dimensionRef.dimensionality.quantityName
+              
+              val dimensionName = quantityName.map("the physical quantity "+_).getOrElse:
+                  "the same physical quantity"
+              
+              fail(txt"""
+                both operands represent $dimensionName, but the coversion ratio between them is not
+                known
+  
+                To provide the conversion ratio, please provide a contextual instance in scope, with
+                the type, `Ratio[${from.name}[1] & ${to.name}[-1]]`, or `Ratio[${to.name}[1] &
+                ${from.name}[-1]]`.
+              """.s)
 
-              To provide the conversion ratio, please provide a contextual instance in scope, with
-              the type, `Ratio[${from.name}[1] & ${to.name}[-1]]`, or `Ratio[${to.name}[1] &
-              ${from.name}[-1]]`.
-            """.s)
-
-        case Some('{$ratio: ratioType}) => (Type.of[ratioType]: @unchecked) match
-          case '[Ratio[?, double]] => (TypeRepr.of[double].asMatchable: @unchecked) match
-            case ConstantType(constant) => (constant: @unchecked) match
-              case DoubleConstant(double) => Expr(math.pow(double, power))
+          case Some('{$ratio: ratioType}) => (Type.of[ratioType]: @unchecked) match
+            case '[Ratio[?, double]] => (TypeRepr.of[double].asMatchable: @unchecked) match
+              case ConstantType(constant) => (constant: @unchecked) match
+                case DoubleConstant(double) => Expr(math.pow(double, power))
 
   private def normalize
       (using Quotes)
@@ -294,8 +298,11 @@ object QuantitativeMacros:
     val resultValue = if division then '{$leftValue/$rightValue} else '{$leftValue*$rightValue}
     
     (resultUnits.repr.map(_.asType): @unchecked) match
-      case Some('[units]) => '{Quantity[units & Measure]($resultValue)}
-      case None           => resultValue
+      case Some('[type units <: Measure; units]) =>
+        '{Quantity[units]($resultValue)}
+      
+      case _ =>
+        resultValue
 
   private def incompatibleTypes(left: UnitsMap, right: UnitsMap)(using Quotes): Nothing =
     (left.dimensionality.quantityName, right.dimensionality.quantityName) match
@@ -343,8 +350,11 @@ object QuantitativeMacros:
     val resultValue = if sub then '{$leftValue - $rightValue} else '{$leftValue + $rightValue}
     
     (left2.repr.map(_.asType): @unchecked) match
-      case Some('[units]) => '{Quantity[units & Measure]($resultValue)}
-      case None           => resultValue
+      case Some('[type unitsType <: Measure; unitsType]) =>
+        '{Quantity[unitsType]($resultValue)}
+      
+      case _ =>
+        resultValue
 
   def norm
       [UnitsType <: Measure: Type, NormType[power <: Nat] <: Units[power, ?]: Type]
@@ -356,8 +366,11 @@ object QuantitativeMacros:
     val (units2, value) = normalize(units, norm, '{$expr.underlying}, true)
 
     (units2.repr.map(_.asType): @unchecked) match
-      case Some('[units]) => '{Quantity[units & Measure]($value)}
-      case None           => value
+      case Some('[type unitsType <: Measure; unitsType]) =>
+        '{Quantity[unitsType]($value)}
+      
+      case None =>
+        value
   
   def describe[UnitsType <: Measure: Type](using Quotes): Expr[Text] =
     UnitsMap[UnitsType].dimensionality.quantityName match
@@ -507,10 +520,10 @@ object QuantitativeMacros:
     
     (principal.power(1).asType: @unchecked) match
       case '[type unitType <: Measure; unitType] =>
-        val quantityExpr = toQuantity[TallyUnitsType](tally).asExprOf[Quantity[unitType & Measure]]
+        val quantityExpr = toQuantity[TallyUnitsType](tally).asExprOf[Quantity[unitType]]
         val multiplier2 = if division then '{1.0/$multiplier} else multiplier
         val multiplied = multiply('{Quantity($multiplier2)}, quantityExpr, false)
-        val quantity2 = multiplied.asExprOf[Quantity[unitType & Measure]]
+        val quantity2 = multiplied.asExprOf[Quantity[unitType]]
         
         fromQuantity[unitType, TallyUnitsType](quantity2)
 
@@ -534,8 +547,8 @@ object QuantitativeMacros:
             ${Expr(slice.ones)})})
     
     (quantityUnit.power(1).asType: @unchecked) match
-      case '[quantityType] =>
-        '{Quantity[quantityType & Measure](${recur(slices, '{0.0})})}
+      case '[type quantityType <: Measure; quantityType] =>
+        '{Quantity[quantityType](${recur(slices, '{0.0})})}
 
   def fromQuantity
       [QuantityType <: Measure: Type, TallyUnitsType <: Tuple: Type]
