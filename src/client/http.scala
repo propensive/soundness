@@ -53,13 +53,13 @@ object QuerySerializer extends ProductDerivation[QuerySerializer]:
   given QuerySerializer[Params] = identity(_)
   given [M <: Map[Text, Text]]: QuerySerializer[M] = map => Params(map.to(List))
 
-trait QuerySerializer[T]:
-  def params(value: T): Params
+trait QuerySerializer[ValueType]:
+  def params(value: ValueType): Params
 
 trait FallbackPostable:
-  given [T](using serializer: QuerySerializer[T]): Postable[T] =
-    Postable(media"application/x-www-form-urlencoded", v =>
-        LazyList(serializer.params(v).queryString.bytes(using characterEncodings.utf8)))
+  given [QueryType](using serializer: QuerySerializer[QueryType]): Postable[QueryType] =
+    Postable(media"application/x-www-form-urlencoded", value =>
+        LazyList(serializer.params(value).queryString.bytes(using characterEncodings.utf8)))
 
 object Postable extends FallbackPostable:
   given (using enc: Encoding): Postable[Text] =
@@ -73,12 +73,18 @@ object Postable extends FallbackPostable:
   given Postable[LazyList[Bytes]] = Postable(media"application/octet-stream", _.map(identity(_)))
   given Postable[DataStream] = Postable(media"application/octet-stream", identity(_))
   
-  given dataStream[T](using response: GenericHttpResponseStream[T]): Postable[T] =
+  given dataStream
+      [ResponseType]
+      (using response: GenericHttpResponseStream[ResponseType])
+      : Postable[ResponseType] =
+    
     erased given CanThrow[InvalidMediaTypeError] = ###
     Postable(Media.parse(response.mediaType.show), response.content(_).map(identity))
   
-class Postable[T](val contentType: MediaType,
-                      val content: T => LazyList[Bytes throws StreamCutError]):
+class Postable
+    [PostType]
+    (val contentType: MediaType, val content: PostType => LazyList[Bytes throws StreamCutError]):
+  
   def preview(value: T): Text = content(value).headOption.fold(t""): bytes =>
     try
       val sample = bytes.take(256)
@@ -91,7 +97,7 @@ object HttpMethod:
     def name: String = "formmethod"
     def serialize(method: HttpMethod): String = method.show.s
 
-  given Display[HttpMethod] = method => out"${colors.Crimson}[${Showable(method).show.upper}]"
+  given Display[HttpMethod] = method => out"${colors.Crimson}[${method.toString.show.upper}]"
 
 enum HttpMethod:
   case Get, Head, Post, Put, Delete, Connect, Options, Trace, Patch
@@ -183,7 +189,7 @@ object Http:
     
     URI(url.show.s).toURL.nn.openConnection.nn match
       case conn: HttpURLConnection =>
-        conn.setRequestMethod(Showable(method).show.upper.s)
+        conn.setRequestMethod(method.toString.show.upper.s)
         conn.setRequestProperty(RequestHeader.ContentType.header.s, summon[Postable[T]].contentType.show.s)
         conn.setRequestProperty("User-Agent", "Telekinesis/1.0.0")
         

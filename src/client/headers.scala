@@ -22,14 +22,18 @@ import gossamer.*
 import turbulence.*, characterEncodings.utf8
 import gastronomy.*
 
-trait RequestHeader[L <: String]():
+trait RequestHeader[LabelType <: Label]():
   def header: Text
   
-  def apply[T](content: T)(using ghrp: GenericHttpRequestParam[L, T]): RequestHeader.Value =
+  def apply
+      [ValueType]
+      (content: ValueType)
+      (using param: GenericHttpRequestParam[LabelType, ValueType])
+      : RequestHeader.Value =
     RequestHeader.Value(this, Text(ghrp(content)))
 
-class SimpleRequestHeader[L <: String & Singleton: ValueOf]() extends RequestHeader[L]():
-  def header: Text = Text(summon[ValueOf[L]].value)
+class SimpleRequestHeader[LabelType <: Label: ValueOf]() extends RequestHeader[LabelType]():
+  def header: Text = Text(summon[ValueOf[LabelType]].value)
 
 object RequestHeader:
   lazy val standard: Map[Text, RequestHeader[?]] = Set(AIm, Accept, AcceptCh, AcceptDatetime,
@@ -68,8 +72,9 @@ object RequestHeader:
 
   given Show[RequestHeader[?]] = _.header
 
-  def apply[L <: String](paramName: L): RequestHeader[L] = new RequestHeader[L]():
-    def header: Text = Text(paramName)
+  def apply[LabelType <: Label](paramName: LabelType): RequestHeader[LabelType] =
+    new RequestHeader():
+      def header: Text = Text(paramName)
 
   case object AIm extends SimpleRequestHeader["a-im"]()
   case object Accept extends SimpleRequestHeader["accept"]()
