@@ -20,31 +20,36 @@ import serpentine.*
 import gossamer.*
 import probably.*
 import imperial.*
-import galilei.*, filesystems.unix
-import anticipation.*, fileApi.galileiApi
+import anticipation.*, fileApi.javaIo
 import ambience.*, environments.system
-import turbulence.*, characterEncodings.utf8
+import turbulence.*
 import rudiments.*
+import hieroglyph.*, charEncoders.utf8, charDecoders.utf8, badEncodingHandlers.skip
 
 import unsafeExceptions.canThrowAny
+
+import java.io.File
 
 object Tests extends Suite(t"Zeppelin tests"):
   def run(): Unit =
 
-    val root: Directory = Xdg.Var.Tmp().directory(Expect)
+    val root: File = Xdg.Var.Tmp()
+    root.mkdirs()
 
     test(t"Create an empty ZIP file"):
-      val zip = ZipFile.create(root / p"empty.zip")
-      zip.file
-    .assert(_.size() > 0.b)
+      val file = File(root, "empty.zip")
+      if file.exists() then file.delete()
+      ZipFile.create(file)
+      file
+    .assert(_.length > 0)
     
-    val simpleFile = test(t"Create a simple ZIP file"):
-      val path = root.tmpPath(t".zip")
-      val entry = ZipEntry(? / p"hello.txt", t"Hello world")
-      val zip = ZipFile(path.file(Create))
+    val simpleFile: File = test(t"Create a simple ZIP file"):
+      val path = File.createTempFile("tmp", ".zip").nn
+      val entry = ZipEntry(ZipRef / p"hello.txt", t"Hello world")
+      val zip = ZipFile.create(path)
       zip.append(LazyList(entry))
-      zip.file
-    .check(_.size() > 0.b)
+      path
+    .check(_.length > 0)
 
     test(t"Check zip file contains one entry"):
       ZipFile(simpleFile).entries()
@@ -54,13 +59,14 @@ object Tests extends Suite(t"Zeppelin tests"):
       ZipFile(simpleFile).entries().head.read[Text]
     .assert(_ == t"Hello world")
     
-    val twoEntryFile = test(t"Append a file to a ZIP archive"):
-      val entry = ZipEntry(? / p"fox.txt", t"The quick brown fox jumps over the lazy dog.")
-      val path = root.tmpPath(t".zip")
-      val zip = ZipFile(path.file(Create))
-      zip.append(LazyList(entry), base = simpleFile)
-      zip.file
-    .check(_.size() > 0.b)
+    val twoEntryFile: File = test(t"Append a file to a ZIP archive"):
+      val entry = ZipEntry(ZipRef / p"fox.txt", t"The quick brown fox jumps over the lazy dog.")
+      val newFile = File.createTempFile("tmp", ".zip").nn
+      java.nio.file.Files.copy(simpleFile.toPath, newFile.toPath)
+      val zip = ZipFile(newFile)
+      zip.append(LazyList(entry))
+      newFile
+    .check(_.length > 0)
 
     test(t"Check zip file based on another has two entries"):
       ZipFile(twoEntryFile).entries()
