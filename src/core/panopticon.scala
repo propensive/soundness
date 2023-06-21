@@ -68,7 +68,7 @@ object PanopticonMacros:
     import quotes.reflect.*
 
     Type.of[TupleType] match
-      case '[ head *: tail ] => TypeRepr.of[head] match
+      case '[head *: tail] => TypeRepr.of[head] match
         case ConstantType(StringConstant(str)) =>
           getPath[tail](str :: path)
       case _ => path
@@ -86,7 +86,8 @@ object PanopticonMacros:
     select(getPath[PathType](), value.asTerm).asExprOf[ToType]
 
   def set
-      [FromType: Type, PathType <: Tuple: Type, ToType: Type](value: Expr[FromType], newValue: Expr[ToType])
+      [FromType: Type, PathType <: Tuple: Type, ToType: Type]
+      (value: Expr[FromType], newValue: Expr[ToType])
       (using Quotes): Expr[FromType] =
     import quotes.reflect.*
 
@@ -94,7 +95,9 @@ object PanopticonMacros:
 
     def rewrite(path: List[String], term: Term): Term =
       path match
-        case Nil          => term
+        case Nil =>
+          term
+        
         case next :: tail =>
           val newParams = term.tpe.typeSymbol.caseFields.map: field =>
             if field.name == next then
