@@ -27,13 +27,13 @@ object Point:
     def point[ValueType](value: ValueType): Either[Nothing, ValueType] = Right(value)
 
   inline given [PointType[_]]: Point[PointType] =
-    ${MercatorMacros.point[PointType]}
+    ${Mercator.point[PointType]}
 
 trait Point[PointType[_]]:
   def point[ValueType](value: ValueType): PointType[ValueType]
 
 object Functor:
-  inline given [FunctorType[_]]: Functor[FunctorType] = ${MercatorMacros.functor[FunctorType]}
+  inline given [FunctorType[_]]: Functor[FunctorType] = ${Mercator.functor[FunctorType]}
 
 trait Functor[FunctorType[_]]:
   def point[ValueType](value: ValueType): FunctorType[ValueType]
@@ -45,7 +45,7 @@ trait Functor[FunctorType[_]]:
       : FunctorType[ValueType2]
 
 object Monad:
-  inline given [MonadType[_]]: Monad[MonadType] = ${MercatorMacros.monad[MonadType]}
+  inline given [MonadType[_]]: Monad[MonadType] = ${Mercator.monad[MonadType]}
 
 trait Monad[MonadType[_]] extends Functor[MonadType]:
   def flatMap
@@ -54,7 +54,7 @@ trait Monad[MonadType[_]] extends Functor[MonadType]:
       (fn: ValueType => MonadType[ValueType2])
       : MonadType[ValueType2]
 
-object MercatorMacros:
+object Mercator:
   def point[TypeConstructorType[_]: Type](using Quotes): Expr[Point[TypeConstructorType]] =
     import quotes.reflect.*
     val pointType = TypeRepr.of[TypeConstructorType].typeSymbol
