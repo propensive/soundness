@@ -23,12 +23,12 @@ import scala.quoted.*
 import language.experimental.captureChecking
 
 object Codepoint:
-  inline given Codepoint = ${DigressionMacros.location}
+  inline given Codepoint = ${Digression.location}
 
 case class Codepoint(source: Text, line: Int):
   def text: Text = Text(s"${source.s.split("/").nn.last.nn}:$line")
 
-object DigressionMacros:
+object Digression:
   def location(using Quotes): Expr[Codepoint] =
     import quotes.*, reflect.*
     val path = Expr(Position.ofMacroExpansion.sourceFile.path)
