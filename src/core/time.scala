@@ -213,7 +213,7 @@ object Timing:
     def of(millis: Long): Duration = Quantity(millis/1000.0)
 
     given generic: GenericDuration[Timing.Duration] with
-      def makeDuration(long: Long): Timing.Duration = Quantity(long)
+      def makeDuration(long: Long): Timing.Duration = Quantity(long.toDouble)
       def readDuration(duration: Timing.Duration): Long = (duration.value*1000).toLong
 
   extension (instant: Instant)
@@ -470,10 +470,10 @@ extension (i: Int)
       case _: Int    => throw Mistake("Modular arithmetic should produce value in range")
 
 extension (inline double: Double)
-  inline def am: Time = ${AviationMacros.validTime('double, false)}
-  inline def pm: Time = ${AviationMacros.validTime('double, true)}
+  inline def am: Time = ${Aviation.validTime('double, false)}
+  inline def pm: Time = ${Aviation.validTime('double, true)}
 
-object AviationMacros:
+object Aviation:
   def validTime(time: Expr[Double], pm: Boolean)(using Quotes): Expr[Time] =
     import quotes.reflect.*
     
