@@ -54,7 +54,7 @@ object Example:
     given Show[RootedLink] = _.render
     def parse(text: Text): RootedLink = reachable.parse(text)
     
-    given reachable: RelativeReachable[RootedLink, Forbidden, "\\"](t"..", t".") with
+    given reachable: RelativeReachable[RootedLink, Forbidden, "\\", "..", "."] with
       def ascent(path: RootedLink): Int = path.ascent
       def descent(path: RootedLink): List[PathName[Forbidden]] = path.descent
     

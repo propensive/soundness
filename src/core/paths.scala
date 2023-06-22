@@ -48,7 +48,7 @@ object SimpleLink:
   given show: Show[SimpleLink] = _.render
   inline def parse(text: Text): SimpleLink throws PathError = reachable.parse(text)
   
-  given reachable: RelativeReachable[SimpleLink, ".*\\/.*", "/"](t"..", t".") with
+  given reachable: RelativeReachable[SimpleLink, ".*\\/.*", "/", "..", "."] with
     def ascent(path: SimpleLink): Int = path.ascent
 
     def make(ascent: Int, descent: List[PathName[".*\\/.*"]]): SimpleLink =
