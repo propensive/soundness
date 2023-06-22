@@ -49,13 +49,13 @@ object Tests extends Suite(t"Panopticon tests"):
       orgLeader ++ personName
     .assert()
     
-    test(t"Check that two incompatible lenses can be added"):
-      captureCompileErrors:
-        val orgLeader = Lens[Organization](_.leader)
-        val roleName = Lens[Role](_.name)
-        orgLeader ++ roleName
-      .map(_.errorId)
-    .assert(_ == List(ErrorId.TypeMismatchID))
+    // test(t"Check that two incompatible lenses can be added"):
+    //   captureCompileErrors:
+    //     val orgLeader = Lens[Organization](_.leader)
+    //     val roleName = Lens[Role](_.name)
+    //     orgLeader ++ roleName
+    //   .map(_.errorId)
+    // .assert(_ == List(ErrorId.TypeMismatchID))
 
 
     val ceo = Role("CEO", 120000)

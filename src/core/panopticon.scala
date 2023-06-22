@@ -18,10 +18,36 @@ package panopticon
 
 import rudiments.*
 
-import language.dynamics
 import scala.quoted.*
+import scala.compiletime.*
 
-object opaques:
+import language.dynamics
+
+
+class Target[FromType, PathType <: Tuple]() extends Dynamic:
+  transparent inline def selectDynamic(member: String): Any =
+    ${Panopticon.resolve[FromType, PathType]('member)}
+
+export Panopticon.Lens
+
+extension [FromType, PathType <: Tuple, ToType](lens: Lens[FromType, PathType, ToType])
+  @targetName("append")
+  infix def ++
+      [ToType2, PathType2 <: Tuple]
+      (right: Lens[ToType, PathType2, ToType2])
+      : Lens[FromType, Tuple.Concat[PathType, PathType2], ToType2] =
+    Lens.make()
+  
+  inline def get(target: FromType): ToType =
+    ${Panopticon.get[FromType, PathType, ToType]('target)}
+  
+  inline def set(target: FromType, newValue: ToType): FromType =
+    ${Panopticon.set[FromType, PathType, ToType]('target, 'newValue)}
+
+trait MemberType[TargetType, LabelType <: String & Singleton]:
+  type ReturnType
+
+object Panopticon:
   opaque type Lens[FromType, PathType <: Tuple, ToType] = Int
   opaque type InitLens[FromType] = Int
 
@@ -36,42 +62,17 @@ object opaques:
       (fn: Target[FromType, EmptyTuple] => Target[ToType, PathType])
       : Lens[FromType, PathType, ToType] =
     0
-    
-
-class Target[FromType, PathType <: Tuple]() extends Dynamic:
-  transparent inline def selectDynamic(member: String): Any =
-    ${PanopticonMacros.resolve[FromType, PathType]('member)}
-
-export opaques.Lens
-
-extension [FromType, PathType <: Tuple, ToType](lens: Lens[FromType, PathType, ToType])
-  @targetName("append")
-  infix def ++
-      [ToType2, PathType2 <: Tuple]
-      (right: Lens[ToType, PathType2, ToType2])
-      : Lens[FromType, Tuple.Concat[PathType, PathType2], ToType2] =
-    Lens.make()
   
-  inline def get(target: FromType): ToType =
-    ${PanopticonMacros.get[FromType, PathType, ToType]('target)}
-  
-  inline def set(target: FromType, newValue: ToType): FromType =
-    ${PanopticonMacros.set[FromType, PathType, ToType]('target, 'newValue)}
-
-trait MemberType[TargetType, LabelType <: String & Singleton]:
-  type ReturnType
-
-object PanopticonMacros:
-
-  private def
-      getPath[TupleType: Type](path: List[String] = Nil)(using Quotes): List[String] =
+  private def getPath
+      [TupleType <: Tuple: Type]
+      (path: List[String] = Nil)(using Quotes)
+      : List[String] =
     import quotes.reflect.*
 
     Type.of[TupleType] match
-      case '[head *: tail] => TypeRepr.of[head] match
-        case ConstantType(StringConstant(str)) =>
-          getPath[tail](str :: path)
-      case _ => path
+      case '[type tail <: Tuple; head *: tail] => (TypeRepr.of[head].asMatchable: @unchecked) match
+        case ConstantType(StringConstant(str)) => getPath[tail](str :: path)
+      case _                                   => path
   
   def get
       [FromType: Type, PathType <: Tuple: Type, ToType: Type](value: Expr[FromType])
@@ -108,6 +109,7 @@ object PanopticonMacros:
             case Some(classSymbol) =>
               Apply(Select(New(TypeIdent(classSymbol)), term.tpe.typeSymbol.primaryConstructor),
                   newParams)
+            
             case None =>
               fail(s"the type ${fromTypeRepr.show} does not have a primary constructor")
         
@@ -124,7 +126,7 @@ object PanopticonMacros:
     targetType.typeSymbol.caseFields.find(_.name == fieldName) match
       case None =>
         fail(s"the field $fieldName is not a member of ${targetType.show}")
-      case Some(sym) => sym.info.asType match
-        case '[returnType] => fieldNameType match
-          case '[fieldName] =>
-            '{Target[returnType, fieldName *: TupleType]()}
+      
+      case Some(sym) => (sym.info.asType: @unchecked) match
+        case '[returnType] => (fieldNameType: @unchecked) match
+          case '[fieldName] => '{Target[returnType, fieldName *: TupleType]()}
