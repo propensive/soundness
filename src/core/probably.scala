@@ -28,7 +28,7 @@ import scala.collection.mutable as scm
 given realm: Realm = Realm(t"probably")
 
 extension [T](inline value: T)(using inline test: TestContext)
-  inline def inspect: T = ${ProbablyMacros.inspect('value, 'test)}
+  inline def inspect: T = ${Probably.inspect('value, 'test)}
 
 package testContexts:
   given threadLocal: TestContext = new TestContext():
@@ -136,33 +136,33 @@ extension [TestType](test: Test[TestType])
       (using runner: Runner[ReportType], inc: Inclusion[ReportType, Outcome],
           inc2: Inclusion[ReportType, DebugInfo])
       : Unit =
-    ${ProbablyMacros.aspire[TestType, ReportType]('test, 'runner, 'inc, 'inc2)}
+    ${Probably.aspire[TestType, ReportType]('test, 'runner, 'inc, 'inc2)}
   
   inline def assert[ReportType]
       (inline pred: TestType => Boolean)
       (using runner: Runner[ReportType], inc: Inclusion[ReportType, Outcome],
           inc2: Inclusion[ReportType, DebugInfo])
       : Unit =
-    ${ProbablyMacros.assert[TestType, ReportType]('test, 'pred, 'runner, 'inc, 'inc2)}
+    ${Probably.assert[TestType, ReportType]('test, 'pred, 'runner, 'inc, 'inc2)}
   
   inline def check[ReportType]
       (inline pred: TestType => Boolean)
       (using runner: Runner[ReportType], inc: Inclusion[ReportType, Outcome],
           inc2: Inclusion[ReportType, DebugInfo])
       : TestType =
-    ${ProbablyMacros.check[TestType, ReportType]('test, 'pred, 'runner, 'inc, 'inc2)}
+    ${Probably.check[TestType, ReportType]('test, 'pred, 'runner, 'inc, 'inc2)}
 
   inline def assert[ReportType]()
       (using runner: Runner[ReportType], inc: Inclusion[ReportType, Outcome],
           inc2: Inclusion[ReportType, DebugInfo])
       : Unit =
-    ${ProbablyMacros.assert[TestType, ReportType]('test, '{ProbablyMacros.succeed}, 'runner, 'inc, 'inc2)}
+    ${Probably.assert[TestType, ReportType]('test, '{Probably.succeed}, 'runner, 'inc, 'inc2)}
   
   inline def check[ReportType]()
       (using runner: Runner[ReportType], inc: Inclusion[ReportType, Outcome],
           inc2: Inclusion[ReportType, DebugInfo])
       : TestType =
-    ${ProbablyMacros.check[TestType, ReportType]('test, '{ProbablyMacros.succeed}, 'runner, 'inc, 'inc2)}
+    ${Probably.check[TestType, ReportType]('test, '{Probably.succeed}, 'runner, 'inc, 'inc2)}
   
   inline def matches[ReportType]
       (inline pf: PartialFunction[TestType, Any])

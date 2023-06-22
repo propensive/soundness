@@ -24,7 +24,7 @@ import spectacular.*
 import dotty.tools.dotc.util as dtdu
 import scala.quoted.*
 
-object ProbablyMacros:
+object Probably:
   protected def general
       [T: Type, R: Type, S: Type]
       (test: Expr[Test[T]], pred: Expr[T => Boolean], runner: Expr[Runner[R]],
