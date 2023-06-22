@@ -42,7 +42,7 @@ object PathError:
     case Reason.ParentOfRoot          => t"the root has no parent"
     case Reason.NotRooted             => t"the path is not rooted"
 
-object SerpentineOpaques:
+object Serpentine:
   opaque type PathName[NameType <: Label] = String
 
   object PathName:
@@ -54,7 +54,7 @@ object SerpentineOpaques:
   extension [NameType <: Label](pathName: PathName[NameType])
     def render: Text = Text(pathName)
 
-export SerpentineOpaques.*
+export Serpentine.*
 
 case class PathError(reason: PathError.Reason)
 extends Error(err"the path is invalid because ${reason.show}")
