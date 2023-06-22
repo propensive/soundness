@@ -34,7 +34,7 @@ object Example:
     given Show[RootedPath] = _.render
     def parse(text: Text): RootedPath = reachable.parse(text)
 
-    given reachable: ParsableAbsoluteReachable[RootedPath, Forbidden](t"\\") with
+    given reachable: ParsableAbsoluteReachable[RootedPath, Forbidden, "\\"] with
       type Root = Drive
       def root(path: RootedPath): Drive = path.root
       def prefix(drive: Drive): Text = t"${drive.letter}:\\"
@@ -54,7 +54,7 @@ object Example:
     given Show[RootedLink] = _.render
     def parse(text: Text): RootedLink = reachable.parse(text)
     
-    given reachable: RelativeReachable[RootedLink, Forbidden](t"\\", t"..", t".") with
+    given reachable: RelativeReachable[RootedLink, Forbidden, "\\"](t"..", t".") with
       def ascent(path: RootedLink): Int = path.ascent
       def descent(path: RootedLink): List[PathName[Forbidden]] = path.descent
     

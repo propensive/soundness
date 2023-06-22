@@ -71,7 +71,7 @@ def %
 def ?
     [AbsolutePathType <: Matchable, RelativePathType <: Matchable, NameType <: Label]
     (using hierarchy: Hierarchy[AbsolutePathType, RelativePathType])
-    (using reachable: RelativeReachable[RelativePathType, NameType])
+    (using reachable: RelativeReachable[RelativePathType, NameType, ?])
     : RelativePathType =
   reachable.make(0, Nil)
 
@@ -79,7 +79,7 @@ def ?
 def ?^
     [AbsolutePathType <: Matchable, RelativePathType <: Matchable, NameType <: Label]
     (using hierarchy: Hierarchy[AbsolutePathType, RelativePathType])
-    (using reachable: RelativeReachable[RelativePathType, NameType])
+    (using reachable: RelativeReachable[RelativePathType, NameType, ?])
     : RelativePathType =
   reachable.make(1, Nil)
 
@@ -87,7 +87,7 @@ def ?^
 def ?^^
     [AbsolutePathType <: Matchable, RelativePathType <: Matchable, NameType <: Label]
     (using hierarchy: Hierarchy[AbsolutePathType, RelativePathType])
-    (using reachable: RelativeReachable[RelativePathType, NameType])
+    (using reachable: RelativeReachable[RelativePathType, NameType, ?])
     : RelativePathType =
   reachable.make(2, Nil)
 
@@ -95,7 +95,7 @@ def ?^^
 def ?^^^
     [AbsolutePathType <: Matchable, RelativePathType <: Matchable, NameType <: Label]
     (using hierarchy: Hierarchy[AbsolutePathType, RelativePathType])
-    (using reachable: RelativeReachable[RelativePathType, NameType])
+    (using reachable: RelativeReachable[RelativePathType, NameType, ?])
     : RelativePathType =
   reachable.make(3, Nil)
 
@@ -106,11 +106,11 @@ extension
     (left: RelativePathType)
     (using hierarchy: Hierarchy[AbsolutePathType, RelativePathType])
   
-  def ascent(using reachable: RelativeReachable[RelativePathType, NameType]): Int =
+  def ascent(using reachable: RelativeReachable[RelativePathType, NameType, ?]): Int =
     reachable.ascent(left)
 
   @targetName("relativeKeep")
-  def keep(n: Int)(using reachable: RelativeReachable[RelativePathType, NameType]): RelativePathType =
+  def keep(n: Int)(using reachable: RelativeReachable[RelativePathType, NameType, ?]): RelativePathType =
     reachable.make(reachable.ascent(left), left.descent.takeRight(n))
 
 extension
@@ -118,25 +118,25 @@ extension
     (left: AbsolutePathType)
     (using hierarchy: Hierarchy[AbsolutePathType, RelativePathType])
   
-  def root(using reachable: AbsoluteReachable[AbsolutePathType, NameType]): reachable.Root =
+  def root(using reachable: AbsoluteReachable[AbsolutePathType, NameType, ?]): reachable.Root =
     reachable.root(left)
   
   def relativeTo
       (right: AbsolutePathType)
-      (using reachable: RelativeReachable[RelativePathType, NameType])
-      (using absoluteReachable: AbsoluteReachable[AbsolutePathType, NameType])
+      (using reachable: RelativeReachable[RelativePathType, NameType, ?])
+      (using absoluteReachable: AbsoluteReachable[AbsolutePathType, NameType, ?])
       : RelativePathType =
     
     val common = left.conjunction(right).depth
     reachable.make(left.depth - common, right.descent.dropRight(common))
   
   def keep
-      (n: Int)(using reachable: AbsoluteReachable[AbsolutePathType, NameType])
+      (n: Int)(using reachable: AbsoluteReachable[AbsolutePathType, NameType, ?])
       : AbsolutePathType =
     reachable.make(reachable.root(left), left.descent.takeRight(n))
     
   def conjunction
-      (right: AbsolutePathType)(using reachable: AbsoluteReachable[AbsolutePathType, NameType])
+      (right: AbsolutePathType)(using reachable: AbsoluteReachable[AbsolutePathType, NameType, ?])
       : AbsolutePathType =
     
     lazy val leftElements: IArray[Text] = IArray.from(left.descent.reverse.map(_.render))
@@ -151,15 +151,15 @@ extension
     reachable.make(reachable.root(left), left.descent.takeRight(count(0)))
  
   def precedes
-      (path: AbsolutePathType)(using reachable: AbsoluteReachable[AbsolutePathType, NameType])
+      (path: AbsolutePathType)(using reachable: AbsoluteReachable[AbsolutePathType, NameType, ?])
       : Boolean =
     left.conjunction(path).descent == left.descent && reachable.root(path) == reachable.root(left)
 
   @targetName("plus")
   def ++
       (relative: RelativePathType)
-      (using absoluteReachable: AbsoluteReachable[AbsolutePathType, NameType])
-      (using relativeReachable: RelativeReachable[RelativePathType, NameType])
+      (using absoluteReachable: AbsoluteReachable[AbsolutePathType, NameType, ?])
+      (using relativeReachable: RelativeReachable[RelativePathType, NameType, ?])
       : AbsolutePathType throws PathError =
     if relativeReachable.ascent(relative) > left.depth
     then throw PathError(PathError.Reason.ParentOfRoot)
@@ -171,8 +171,11 @@ extension
       
       absoluteReachable.make(absoluteReachable.root(left), relative.descent ::: descent)
 
-trait Reachable[PathType <: Matchable, NameType <: Label]:
-  def pathSeparator: Text
+trait Reachable
+    [PathType <: Matchable, NameType <: Label, SeparatorType <: Label]
+    (using separator: ValueOf[SeparatorType]):
+
+  val pathSeparator: Text = Text(separator.value)
   def child(path: PathType, name: PathName[NameType]): PathType
   def descent(path: PathType): List[PathName[NameType]]
   def render(path: PathType): Text
@@ -181,9 +184,9 @@ trait MainRoot[PathType <: Matchable]:
   def empty(): PathType
 
 abstract class ParsableAbsoluteReachable
-    [PathType <: Matchable, NameType <: Label]
-    (pathSeparator: Text)
-extends AbsoluteReachable[PathType, NameType](pathSeparator):
+    [PathType <: Matchable, NameType <: Label, SeparatorType <: Label]
+    (using ValueOf[SeparatorType])
+extends AbsoluteReachable[PathType, NameType, SeparatorType]:
   type Root
   def parseRoot(text: Text): Maybe[(Root, Text)]
   
@@ -196,8 +199,10 @@ extends AbsoluteReachable[PathType, NameType](pathSeparator):
 
     make(root, names.map(PathName(_)))
 
-trait AbsoluteReachable[PathType <: Matchable, NameType <: Label](val pathSeparator: Text)
-extends Reachable[PathType, NameType]:
+trait AbsoluteReachable
+    [PathType <: Matchable, NameType <: Label, SeparatorType <: Label]
+    (using separator: ValueOf[SeparatorType])
+extends Reachable[PathType, NameType, SeparatorType]:
   type Root
   def prefix(root: Root): Text
   def root(path: PathType): Root
@@ -215,9 +220,10 @@ extends Reachable[PathType, NameType]:
     t"${prefix(root(path))}${descent(path).reverse.map(_.render).join(pathSeparator)}"
   
 trait RelativeReachable
-    [PathType <: Matchable, NameType <: Label]
-    (val pathSeparator: Text, val parentRef: Text, val selfRef: Text)
-extends Reachable[PathType, NameType]:
+    [PathType <: Matchable, NameType <: Label, SeparatorType <: Label]
+    (val parentRef: Text, val selfRef: Text)
+    (using separator: ValueOf[SeparatorType])
+extends Reachable[PathType, NameType, SeparatorType]:
   def ascent(path: PathType): Int
   def make(ascent: Int, descent: List[PathName[NameType]]): PathType
   
@@ -257,7 +263,7 @@ extends Reachable[PathType, NameType]:
 extension
     [PathType <: Matchable, NameType <: Label]
     (path: PathType)
-    (using reachable: Reachable[PathType, NameType])
+    (using reachable: Reachable[PathType, NameType, ?])
   
   @targetName("child")
   infix def /(name: PathName[NameType]): PathType = reachable.child(path, name)
@@ -267,12 +273,12 @@ extension
   def render: Text = reachable.render(path)
 
   transparent inline def parent: Maybe[PathType] = compiletime.summonFrom:
-    case reachable: AbsoluteReachable[PathType, NameType] => reachable.parent(path)
-    case reachable: RelativeReachable[PathType, NameType]    => reachable.parent(path)
+    case reachable: AbsoluteReachable[PathType, NameType, ?] => reachable.parent(path)
+    case reachable: RelativeReachable[PathType, NameType, ?]    => reachable.parent(path)
   
   transparent inline def ancestor(n: Int): Maybe[PathType] = compiletime.summonFrom:
-    case reachable: AbsoluteReachable[PathType, NameType] => reachable.ancestor(path, n)
-    case reachable: RelativeReachable[PathType, NameType]    => reachable.ancestor(path, n)
+    case reachable: AbsoluteReachable[PathType, NameType, ?] => reachable.ancestor(path, n)
+    case reachable: RelativeReachable[PathType, NameType, ?]    => reachable.ancestor(path, n)
 
 extension (inline context: StringContext)
   inline def p[ForbiddenType <: Label](): PathName[ForbiddenType] =

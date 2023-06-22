@@ -29,7 +29,7 @@ object SimplePath:
   given show: Show[SimplePath] = _.render
   given mainRoot: MainRoot[SimplePath] = () => SimplePath(Nil)
 
-  given reachable: ParsableAbsoluteReachable[SimplePath, ".*\\/.*"](t"/") with
+  given reachable: ParsableAbsoluteReachable[SimplePath, ".*\\/.*", "/"] with
     type Root = serpentine.Root.type
     def root(path: SimplePath): Root = serpentine.Root
     def prefix(root: Root): Text = t"/"
@@ -48,7 +48,7 @@ object SimpleLink:
   given show: Show[SimpleLink] = _.render
   inline def parse(text: Text): SimpleLink throws PathError = reachable.parse(text)
   
-  given reachable: RelativeReachable[SimpleLink, ".*\\/.*"](t"/", t"..", t".") with
+  given reachable: RelativeReachable[SimpleLink, ".*\\/.*", "/"](t"..", t".") with
     def ascent(path: SimpleLink): Int = path.ascent
 
     def make(ascent: Int, descent: List[PathName[".*\\/.*"]]): SimpleLink =
