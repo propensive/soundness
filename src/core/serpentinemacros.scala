@@ -27,12 +27,12 @@ import language.experimental.captureChecking
 
 object SerpentineMacros:
   def runtimeParse
-      [ForbiddenType <: Label: Type]
+      [NameType <: Label: Type]
       (text: Expr[Text])(using Quotes)
-      : Expr[PathName[ForbiddenType]] =
+      : Expr[PathName[NameType]] =
     import quotes.reflect.*
 
-    val checks: List[String] = patterns(TypeRepr.of[ForbiddenType])
+    val checks: List[String] = patterns(TypeRepr.of[NameType])
     
     def recur(patterns: List[String], statements: Expr[Unit]): Expr[Unit] = patterns match
       case pattern :: tail =>
@@ -56,7 +56,7 @@ object SerpentineMacros:
 
     '{
       ${recur(checks, '{()})}
-      $text.asInstanceOf[PathName[ForbiddenType]]
+      $text.asInstanceOf[PathName[NameType]]
     }
 
   private def patterns(using quotes: Quotes)(repr: quotes.reflect.TypeRepr): List[String] =
@@ -67,14 +67,14 @@ object SerpentineMacros:
       case ConstantType(StringConstant(pattern)) => List(pattern)
   
   def parse
-      [ForbiddenType <: Label: Type](context: Expr[StringContext])(using Quotes)
-      : Expr[PathName[ForbiddenType]] =
+      [NameType <: Label: Type](context: Expr[StringContext])(using Quotes)
+      : Expr[PathName[NameType]] =
     import quotes.reflect.*
     
     val (element: String, pos: Position) = (context: @unchecked) match
       case '{StringContext(${Varargs(Seq(str))}*)} => (str.value.get, str.asTerm.pos)
     
-    patterns(TypeRepr.of[ForbiddenType]).foreach: pattern =>
+    patterns(TypeRepr.of[NameType]).foreach: pattern =>
       if element.matches(pattern) then pattern match
         case r"\.\*\\?$char(.)\.\*" =>
           fail(s"a path element may not contain the character '$char'", pos)
@@ -91,4 +91,4 @@ object SerpentineMacros:
         case other =>
           fail(s"a path element may not match the pattern '$other'")
 
-    '{${Expr(element)}.asInstanceOf[PathName[ForbiddenType]]}
+    '{${Expr(element)}.asInstanceOf[PathName[NameType]]}

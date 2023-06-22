@@ -32,9 +32,9 @@ object Example:
     import unsafeExceptions.canThrowAny
 
     given Show[RootedPath] = _.render
-    def parse(text: Text): RootedPath = reachable.parse(text)
+    def parse(text: Text): RootedPath = pathlike.parse(text)
 
-    given reachable: ParsableAbsoluteReachable[RootedPath, Forbidden, "\\"] with
+    given pathlike: ParsableReachable[RootedPath, Forbidden, "\\"] with
       type Root = Drive
       def root(path: RootedPath): Drive = path.root
       def prefix(drive: Drive): Text = t"${drive.letter}:\\"
@@ -52,9 +52,9 @@ object Example:
     import unsafeExceptions.canThrowAny
     
     given Show[RootedLink] = _.render
-    def parse(text: Text): RootedLink = reachable.parse(text)
+    def parse(text: Text): RootedLink = pathlike.parse(text)
     
-    given reachable: RelativeReachable[RootedLink, Forbidden, "\\", "..", "."] with
+    given pathlike: Followable[RootedLink, Forbidden, "\\", "..", "."] with
       def ascent(path: RootedLink): Int = path.ascent
       def descent(path: RootedLink): List[PathName[Forbidden]] = path.descent
     

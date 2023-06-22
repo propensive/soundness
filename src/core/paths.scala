@@ -25,11 +25,11 @@ import language.experimental.captureChecking
 object Root
 
 object SimplePath:
-  inline def parse(text: Text): SimplePath throws PathError = reachable.parse(text)
+  inline def parse(text: Text): SimplePath throws PathError = pathlike.parse(text)
   given show: Show[SimplePath] = _.render
   given mainRoot: MainRoot[SimplePath] = () => SimplePath(Nil)
 
-  given reachable: ParsableAbsoluteReachable[SimplePath, ".*\\/.*", "/"] with
+  given pathlike: ParsableReachable[SimplePath, ".*\\/.*", "/"] with
     type Root = serpentine.Root.type
     def root(path: SimplePath): Root = serpentine.Root
     def prefix(root: Root): Text = t"/"
@@ -46,9 +46,9 @@ case class SimplePath(descent: List[PathName[".*\\/.*"]])
 
 object SimpleLink:
   given show: Show[SimpleLink] = _.render
-  inline def parse(text: Text): SimpleLink throws PathError = reachable.parse(text)
+  inline def parse(text: Text): SimpleLink throws PathError = pathlike.parse(text)
   
-  given reachable: RelativeReachable[SimpleLink, ".*\\/.*", "/", "..", "."] with
+  given pathlike: Followable[SimpleLink, ".*\\/.*", "/", "..", "."] with
     def ascent(path: SimpleLink): Int = path.ascent
 
     def make(ascent: Int, descent: List[PathName[".*\\/.*"]]): SimpleLink =
