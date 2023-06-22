@@ -329,7 +329,7 @@ object SubstituteUnits:
 trait UnitsOffset[UnitsType <: Measure]:
   def value(): Double
 
-object QuantitativeOpaques:
+object Quantitative:
   opaque type Quantity[UnitsType <: Measure] = Double
   opaque type MetricUnit[UnitsType <: Measure] <: Quantity[UnitsType] = Double
 
@@ -390,7 +390,7 @@ object QuantitativeOpaques:
           t"$unit$exponent"
       .join(t"·")
 
-export QuantitativeOpaques.{Quantity, MetricUnit}
+export Quantitative.{Quantity, MetricUnit}
 
 val Metre: MetricUnit[Metres[1]] = MetricUnit(1)
 val Gram: MetricUnit[Kilograms[1]] = MetricUnit(0.001)
