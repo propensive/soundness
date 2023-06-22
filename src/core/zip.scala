@@ -54,7 +54,7 @@ object ZipRef:
   def apply(text: Text): ZipRef throws PathError = reachable.parse(text)
   def /(name: PathName[InvalidZipNames]): ZipRef = ZipRef(List(name))
   
-  given reachable: ParsableAbsoluteReachable[ZipRef, InvalidZipNames](t"/") with
+  given reachable: ParsableReachable[ZipRef, InvalidZipNames, "/"] with
     type Root = ZipRef.type
     def root(path: ZipRef): ZipRef.type = ZipRef
     def descent(path: ZipRef): List[PathName[InvalidZipNames]] = path.descent
@@ -92,12 +92,9 @@ object ZipFile:
   private val cache: scm.HashMap[Text, jnf.FileSystem] = scm.HashMap()
 
 case class ZipFile(private val filename: Text):
-  println("Creating ZipFile "+filename)
-  println(s"This is ${super[Object].toString}")
-
   private def javaFs(): jnf.FileSystem throws ZipError =
     val uri: java.net.URI = java.net.URI.create(t"jar:file:$filename".s).nn
-    println(s"Creating new filessystem: '$uri'")
+    
     try jnf.FileSystems.newFileSystem(uri, Map("zipinfo-time" -> "false").asJava).nn
     catch case exception: jnf.ProviderNotFoundException => throw ZipError(filename)
   
