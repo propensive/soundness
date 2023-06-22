@@ -257,10 +257,8 @@ trait CmdShow[-T]:
 
 given realm: Realm = Realm(t"guillotine")
 
-object GuillotineMacros:
-  def shExtension
-      (context: Expr[StringContext], parts: Expr[Seq[Any]])(using Quotes)
-      : Expr[Command] =
+object Guillotine:
+  def sh(context: Expr[StringContext], parts: Expr[Seq[Any]])(using Quotes): Expr[Command] =
     import quotes.reflect.*
     
     val execType = ConstantType(StringConstant(context.value.get.parts.head.split(" ").nn.head.nn))

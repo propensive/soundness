@@ -18,4 +18,4 @@ package guillotine
 
 extension (inline context: StringContext)
   transparent inline def sh(inline parts: Any*): Any =
-    ${GuillotineMacros.shExtension('context, 'parts)}
+    ${Guillotine.sh('context, 'parts)}
