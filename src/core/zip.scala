@@ -41,14 +41,22 @@ case class ZipError(filename: Text) extends Error(err"Could not create ZIP file 
 // FIXME: Check this
 type InvalidZipNames = ".*'.*" | ".*`.*" | ".*\\/.*" | ".*\\\\.*"
 
-// object ZipPath:
-//   given AbsoluteReachable[ZipPath, InvalidZipNames](t"/") with
-//     type Root = ZipFile
-//     def root(path: ZipPath): ZipFile = path.zipfile
-//     def descent(path: ZipPath): List[PathName[InvalidZipNames]] = path.descent
-//     def parseRoot(text: Text): Maybe[(ZipFile, Text)] = ???
+object ZipPath:
+  given AbsoluteReachable[ZipPath, InvalidZipNames, "/"] with
+    type Root = ZipFile
+    def root(path: ZipPath): ZipFile = path.zipFile
+    def descent(path: ZipPath): List[PathName[InvalidZipNames]] = path.descent
+    def parseRoot(text: Text): Maybe[(ZipFile, Text)] = ???
+    def prefix(path: ZipFile): Text = t"/"
+    
+    def make(root: ZipFile, descent: List[PathName[InvalidZipNames]]): ZipPath =
+      ZipPath(root, ZipRef(descent))
 
-// case class ZipPath(zipFile: ZipFile, descent: List[PathName[InvalidZipNames]])
+  given (using CanThrow[StreamCutError]): Readable[ZipPath, Bytes] =
+    Readable.lazyList[Bytes].contraMap(_.entry().content())
+
+case class ZipPath(zipFile: ZipFile, ref: ZipRef):
+  def entry(): ZipEntry throws StreamCutError = zipFile.entry(ref)
 
 object ZipRef:
   def apply(text: Text): ZipRef throws PathError = reachable.parse(text)
@@ -60,12 +68,24 @@ object ZipRef:
     def descent(path: ZipRef): List[PathName[InvalidZipNames]] = path.descent
     def parseRoot(text: Text): (ZipRef.type, Text) = (ZipRef, text.drop(1))
     def make(root: ZipRef.type, descent: List[PathName[InvalidZipNames]]) = ZipRef(descent)
-    def prefix(ref: ZipRef.type): Text = t"/"
+    def prefix(ref: ZipRef.type): Text = t""
 
 case class ZipRef(descent: List[PathName[InvalidZipNames]])
 
-case class ZipEntry(ref: ZipRef, content: () -> LazyList[Bytes])
+object ZipEntry:
+  def apply
+      [ResourceType]
+      (path: ZipRef, resource: ResourceType)
+      (using Readable[ResourceType, Bytes])
+      : ZipEntry =
+    new ZipEntry(path, () => resource.stream[Bytes])
 
+  given Readable[ZipEntry, Bytes] = Readable.lazyList[Bytes].contraMap(_.content())
+
+  // 00:00:00, 1 January 2000
+  val epoch: jnf.attribute.FileTime = jnf.attribute.FileTime.fromMillis(946684800000L).nn
+
+case class ZipEntry(ref: ZipRef, content: () => LazyList[Bytes])
 
 object ZipFile:
   def apply[FileType]
@@ -92,14 +112,21 @@ object ZipFile:
   private val cache: scm.HashMap[Text, jnf.FileSystem] = scm.HashMap()
 
 case class ZipFile(private val filename: Text):
+  private lazy val zipFile: juz.ZipFile = juz.ZipFile(ji.File(filename.s)).nn
+  
   private def javaFs(): jnf.FileSystem throws ZipError =
     val uri: java.net.URI = java.net.URI.create(t"jar:file:$filename".s).nn
     
     try jnf.FileSystems.newFileSystem(uri, Map("zipinfo-time" -> "false").asJava).nn
     catch case exception: jnf.ProviderNotFoundException => throw ZipError(filename)
   
+  def /(name: PathName[InvalidZipNames]): ZipPath = ZipPath(this, ZipRef(List(name)))
+
   def filesystem(): jnf.FileSystem throws ZipError =
     ZipFile.cache.getOrElseUpdate(filename, synchronized(javaFs()))
+
+  def entry(ref: ZipRef): ZipEntry throws StreamCutError =
+    ZipEntry(ref, zipFile.getInputStream(zipFile.getEntry(ref.render.s).nn).nn)
 
   def append
       [InstantType]
@@ -152,20 +179,5 @@ case class ZipFile(private val filename: Text):
     //java.nio.file.Files.delete(tmpFile.toPath.nn)
 
   def entries(): LazyList[ZipEntry] throws StreamCutError =
-    val zipFile = juz.ZipFile(ji.File(filename.s)).nn
-    
     zipFile.entries.nn.asScala.to(LazyList).filter(!_.getName.nn.endsWith("/")).map: entry =>
       ZipEntry(unsafely(ZipRef(entry.getName.nn.show)), zipFile.getInputStream(entry).nn)
-
-object ZipEntry:
-  def apply
-      [ResourceType]
-      (path: ZipRef, resource: ResourceType)
-      (using Readable[ResourceType, Bytes])
-      : ZipEntry =
-    new ZipEntry(path, () => resource.stream[Bytes])
-
-  given Readable[ZipEntry, Bytes] = Readable.lazyList[Bytes].contraMap(_.content())
-
-  // 00:00:00, 1 January 2000
-  val epoch: jnf.attribute.FileTime = jnf.attribute.FileTime.fromMillis(946684800000L).nn

@@ -81,5 +81,9 @@ object Tests extends Suite(t"Zeppelin tests"):
       ZipFile(twoEntryFile).entries().tail.head.read[Text]
     .assert(_ == t"The quick brown fox jumps over the lazy dog.")
     
+    test(t"Access ZIP file content by path"):
+      (ZipFile(twoEntryFile) / p"fox.txt").read[Text]
+    .assert(_ == t"The quick brown fox jumps over the lazy dog.")
+    
     simpleFile.delete()
     twoEntryFile.delete()
