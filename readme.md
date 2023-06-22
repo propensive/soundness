@@ -22,8 +22,7 @@ implementation of `Point` (providing the monadic "unit" operation) can be found.
 
 ## Availability
 
-Mercator has not yet been published as a binary. It is currently waiting for the
-final release of Scala 3.3.
+Mercator has not yet been published as a binary.
 
 ## Getting Started
 
