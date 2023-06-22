@@ -21,7 +21,7 @@ import rudiments.*
 import scala.deriving.Mirror
 import scala.compiletime.*
 import scala.reflect.*
-import WisteriaMacros.*
+import Wisteria.*
 
 trait CommonDerivation[TypeClass[_]]:
   type Typeclass[T] = TypeClass[T]
@@ -78,14 +78,12 @@ trait CommonDerivation[TypeClass[_]]:
             CallByNeed(None), IArray.from(annotations.getOrElse(label, List())),
             IArray.from(typeAnnotations.getOrElse(label, List()))) ::
             getParams[T, ltail, ptail](annotations, typeAnnotations, repeated, idx + 1)
-end CommonDerivation
 
 trait ProductDerivation[TypeClass[_]] extends CommonDerivation[TypeClass]:
   inline def derivedMirror[A](using mirror: Mirror.Of[A]): Typeclass[A] = inline mirror match
     case product: Mirror.ProductOf[A] => derivedMirrorProduct[A](product)
 
   inline given derived[A](using Mirror.Of[A]): Typeclass[A] = derivedMirror[A]
-end ProductDerivation
 
 trait Derivation[TypeClass[_]] extends CommonDerivation[TypeClass]:
   def split[T](ctx: SealedTrait[Typeclass, T]): Typeclass[T]
@@ -112,4 +110,3 @@ trait Derivation[TypeClass[_]] extends CommonDerivation[TypeClass]:
     case product: Mirror.ProductOf[A] => derivedMirrorProduct[A](product)
 
   inline given derived[A](using Mirror.Of[A]): Typeclass[A] = derivedMirror[A]
-end Derivation

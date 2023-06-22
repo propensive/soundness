@@ -17,8 +17,9 @@
 package wisteria
 
 import scala.quoted.*
+import scala.compiletime.*
 
-object WisteriaMacros:
+object Wisteria:
   inline def isObject[T]: Boolean = ${isObject[T]}
   inline def anns[T]: List[Matchable] = ${anns[T]}
   inline def typeAnns[T]: List[Any] = ${typeAnns[T]}
@@ -80,7 +81,7 @@ object WisteriaMacros:
   def typeAnns[T: Type](using Quotes): Expr[List[Any]] =
     import quotes.reflect.*
     
-    def getAnnotations(t: TypeRepr): List[Term] = t match
+    def getAnnotations(t: TypeRepr): List[Term] = t.asMatchable match
       case AnnotatedType(inner, ann) => ann :: getAnnotations(inner)
       case _                         => Nil
     
@@ -112,7 +113,7 @@ object WisteriaMacros:
   def paramTypeAnns[T: Type](using Quotes): Expr[List[(String, List[Any])]] =
     import quotes.reflect.*
 
-    def getAnnotations(t: TypeRepr): List[Term] = t match
+    def getAnnotations(t: TypeRepr): List[Term] = t.asMatchable match
       case AnnotatedType(inner, ann) => ann :: getAnnotations(inner)
       case _                         => Nil
 
@@ -168,7 +169,7 @@ object WisteriaMacros:
     def owner(tpe: TypeRepr): Expr[String] =
       Expr(ownerNameChain(tpe.typeSymbol.maybeOwner).mkString("."))
 
-    def typeInfo(tpe: TypeRepr): Expr[TypeInfo] = tpe match
+    def typeInfo(tpe: TypeRepr): Expr[TypeInfo] = tpe.asMatchable match
       case AppliedType(tpe, args) =>
         '{TypeInfo(${owner(tpe)}, ${name(tpe)}, ${Expr.ofList(args.map(typeInfo))})}
       case _ =>
