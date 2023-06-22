@@ -42,19 +42,7 @@ object PathError:
     case Reason.ParentOfRoot          => t"the root has no parent"
     case Reason.NotRooted             => t"the path is not rooted"
 
-object Serpentine:
-  opaque type PathName[NameType <: Label] = String
-
-  object PathName:
-    given [NameType <: Label]: Show[PathName[NameType]] = Text(_)
-
-    inline def apply[NameType <: Label](text: Text): PathName[NameType] =
-      ${SerpentineMacros.runtimeParse[NameType]('text)}
-
-  extension [NameType <: Label](pathName: PathName[NameType])
-    def render: Text = Text(pathName)
-
-export Serpentine.*
+export Serpentine.PathName
 
 case class PathError(reason: PathError.Reason)
 extends Error(err"the path is invalid because ${reason.show}")
@@ -286,4 +274,4 @@ extension
 
 extension (inline context: StringContext)
   inline def p[NameType <: Label](): PathName[NameType] =
-    ${SerpentineMacros.parse[NameType]('context)}
+    ${Serpentine.parse[NameType]('context)}

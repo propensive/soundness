@@ -17,6 +17,7 @@
 package serpentine
 
 import rudiments.*
+import spectacular.*
 import gossamer.*
 import kaleidoscope.*
 
@@ -25,7 +26,18 @@ import scala.quoted.*
 
 import language.experimental.captureChecking
 
-object SerpentineMacros:
+object Serpentine:
+  opaque type PathName[NameType <: Label] = String
+
+  object PathName:
+    given [NameType <: Label]: Show[PathName[NameType]] = Text(_)
+
+    inline def apply[NameType <: Label](text: Text): PathName[NameType] =
+      ${runtimeParse[NameType]('text)}
+
+  extension [NameType <: Label](pathName: PathName[NameType])
+    def render: Text = Text(pathName)
+  
   def runtimeParse
       [NameType <: Label: Type]
       (text: Expr[Text])(using Quotes)
