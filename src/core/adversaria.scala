@@ -28,20 +28,20 @@ object Annotations:
   inline given
       [AnnotationType <: StaticAnnotation, TargetType]
       : Annotations[AnnotationType, TargetType] =
-    ${AdversariaMacros.typeAnnotations[AnnotationType, TargetType]}
+    ${Adversaria.typeAnnotations[AnnotationType, TargetType]}
 
   transparent inline def field[TargetType](inline fn: TargetType => Any): List[StaticAnnotation] =
-    ${AdversariaMacros.fieldAnnotations[TargetType]('fn)}
+    ${Adversaria.fieldAnnotations[TargetType]('fn)}
 
   transparent inline def fields
       [TargetType <: Product, AnnotationType <: StaticAnnotation]
       : List[CaseField[TargetType, AnnotationType]] =
-    ${AdversariaMacros.fields[TargetType, AnnotationType]}
+    ${Adversaria.fields[TargetType, AnnotationType]}
 
   transparent inline def firstField
       [TargetType <: Product, AnnotationType <: StaticAnnotation]
       : CaseField[TargetType, AnnotationType] =
-    ${AdversariaMacros.firstField[TargetType, AnnotationType]}
+    ${Adversaria.firstField[TargetType, AnnotationType]}
 
 object CaseField:
   def apply
@@ -66,7 +66,7 @@ trait CaseField[TargetType <: Product, AnnotationType <: StaticAnnotation](val n
   def apply(value: TargetType): FieldType
   def annotation: AnnotationType
 
-object AdversariaMacros:
+object Adversaria:
   def firstField
       [TargetType <: Product: Type, AnnotationType <: StaticAnnotation: Type]
       (using Quotes)
