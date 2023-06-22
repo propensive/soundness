@@ -23,7 +23,7 @@ import java.io as ji
 
 import scala.collection.immutable.TreeMap
 
-object HieroglyphOpaques:
+object Hieroglyph:
   opaque type CharRange = Long
   object CharRange:
     def apply(from: Int, to: Int): CharRange = (from.toLong << 32) + to.toLong
@@ -40,7 +40,7 @@ object HieroglyphOpaques:
     def contains(char: Char): Boolean = char.toInt >= from && char.toInt <= to
 
 object Unicode:
-  import HieroglyphOpaques.*
+  import Hieroglyph.*
   
   object EaWidth:
     def unapply(code: Text): Option[EaWidth] =
