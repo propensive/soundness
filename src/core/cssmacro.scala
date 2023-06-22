@@ -18,9 +18,8 @@ package cataclysm
 
 import rudiments.*
 import gossamer.*
-import iridescence.*
 import anticipation.*
-import serpentine.*
+import spectacular.*
 
 import scala.quoted.*
 
@@ -29,9 +28,10 @@ import language.dynamics
 
 private[cataclysm] type Label = String & Singleton
 
-given Show[Double] = Showable(_).show
+// FIXME
+given Show[Double] = _.toString.show
 
-object CataclysmMacros:
+object Cataclysm:
   def rule(selector: Expr[Selector], props: Expr[Seq[(Label, Any)]])(using Quotes): Expr[CssRule] =
     '{CssRule($selector, ${read(props)})}
 
@@ -119,12 +119,11 @@ object PropertyDef:
   given backgroundAttachment: PropertyDef["backgroundAttachment", Text] = PropertyDef()
   given backgroundBlendMode: PropertyDef["backgroundBlendMode", Text] = PropertyDef()
   given backgroundClip: PropertyDef["backgroundClip", Text] = PropertyDef()
-  given backgroundColor1: PropertyDef["backgroundColor", Color] = PropertyDef()
+  given backgroundColor1[ColorType: RgbColor]: PropertyDef["backgroundColor", ColorType] = PropertyDef()
   given backgroundColor2: PropertyDef["backgroundColor", Transparent.type] = PropertyDef()
-  given backgroundColor3: PropertyDef["backgroundColor", Rgb24] = PropertyDef()
   given backgroundImage: PropertyDef["backgroundImage", Text] = PropertyDef()
-  given backgroundImage2: PropertyDef["backgroundImage", Relative] = PropertyDef()
-  given backgroundImage3: PropertyDef["backgroundImage", GenericPath] = PropertyDef()
+  //given backgroundImage2: PropertyDef["backgroundImage", Relative] = PropertyDef()
+  //given backgroundImage3: PropertyDef["backgroundImage", GenericPath] = PropertyDef()
   given backgroundOrigin: PropertyDef["backgroundOrigin", Text] = PropertyDef()
   given backgroundPosition: PropertyDef["backgroundPosition", Text] = PropertyDef()
   given backgroundPosition2: PropertyDef["backgroundPosition", Dimension] = PropertyDef()
@@ -137,49 +136,39 @@ object PropertyDef:
   
   given backgroundSize: PropertyDef["backgroundSize", Text] = PropertyDef()
   given backgroundSize2: PropertyDef["backgroundSize", Dimension] = PropertyDef()
-  given border: PropertyDef["border", (BorderStyle, Dimension, Color)] = PropertyDef()
-  given border2: PropertyDef["border", (BorderStyle, Dimension, Rgb24)] = PropertyDef()
-  given borderBottom: PropertyDef["borderBottom", (BorderStyle, Dimension, Color)] = PropertyDef()
-  given borderBottom2: PropertyDef["borderBottom", (BorderStyle, Dimension, Rgb24)] = PropertyDef()
-  given borderBottomColor1: PropertyDef["borderBottomColor", Color] = PropertyDef()
+  given border[ColorType: RgbColor]: PropertyDef["border", (BorderStyle, Dimension, ColorType)] = PropertyDef()
+  given borderBottom[ColorType: RgbColor]: PropertyDef["borderBottom", (BorderStyle, Dimension, ColorType)] = PropertyDef()
+  given borderBottomColor1[ColorType: RgbColor]: PropertyDef["borderBottomColor", ColorType] = PropertyDef()
   given borderBottomColor2: PropertyDef["borderBottomColor", Transparent.type] = PropertyDef()
-  given borderBottomColor3: PropertyDef["borderBottomColor", Rgb24] = PropertyDef()
   given borderBottomLeftRadius: PropertyDef["borderBottomLeftRadius", Dimension] = PropertyDef()
   given borderBottomRightRadius: PropertyDef["borderBottomRightRadius", Dimension] = PropertyDef()
   given borderBottomStyle: PropertyDef["borderBottomStyle", BorderStyle] = PropertyDef()
   given borderBottomWidth: PropertyDef["borderBottomWidth", Dimension] = PropertyDef()
   given borderCollapse: PropertyDef["borderCollapse", Text] = PropertyDef()
-  given borderColor1: PropertyDef["borderColor", Color] = PropertyDef()
+  given borderColor1[ColorType: RgbColor]: PropertyDef["borderColor", ColorType] = PropertyDef()
   given borderColor2: PropertyDef["borderColor", Transparent.type] = PropertyDef()
-  given borderColor3: PropertyDef["borderColor", Rgb24] = PropertyDef()
   given borderImage: PropertyDef["borderImage", Text] = PropertyDef()
   given borderImageOutset: PropertyDef["borderImageOutset", Text] = PropertyDef()
   given borderImageRepeat: PropertyDef["borderImageRepeat", Text] = PropertyDef()
   given borderImageSlice: PropertyDef["borderImageSlice", Text] = PropertyDef()
   given borderImageSource: PropertyDef["borderImageSource", Text] = PropertyDef()
   given borderImageWidth: PropertyDef["borderImageWidth", Dimension] = PropertyDef()
-  given borderLeft: PropertyDef["borderLeft", (BorderStyle, Dimension, Color)] = PropertyDef()
-  given borderLeft2: PropertyDef["borderLeft", (BorderStyle, Dimension, Rgb24)] = PropertyDef()
-  given borderLeftColor1: PropertyDef["borderLeftColor", Color] = PropertyDef()
+  given borderLeft[ColorType: RgbColor]: PropertyDef["borderLeft", (BorderStyle, Dimension, ColorType)] = PropertyDef()
+  given borderLeftColor1[ColorType: RgbColor]: PropertyDef["borderLeftColor", ColorType] = PropertyDef()
   given borderLeftColor2: PropertyDef["borderLeftColor", Transparent.type] = PropertyDef()
-  given borderLeftColor3: PropertyDef["borderLeftColor", Rgb24] = PropertyDef()
   given borderLeftStyle: PropertyDef["borderLeftStyle", BorderStyle] = PropertyDef()
   given borderLeftWidth: PropertyDef["borderLeftWidth", Dimension] = PropertyDef()
   given borderRadius: PropertyDef["borderRadius", Dimension] = PropertyDef()
-  given borderRight: PropertyDef["borderRight", (BorderStyle, Dimension, Color)] = PropertyDef()
-  given borderRight2: PropertyDef["borderRight", (BorderStyle, Dimension, Rgb24)] = PropertyDef()
-  given borderRightColor1: PropertyDef["borderRightColor", Color] = PropertyDef()
+  given borderRight[ColorType: RgbColor]: PropertyDef["borderRight", (BorderStyle, Dimension, ColorType)] = PropertyDef()
+  given borderRightColor1[ColorType: RgbColor]: PropertyDef["borderRightColor", ColorType] = PropertyDef()
   given borderRightColor2: PropertyDef["borderRightColor", Transparent.type] = PropertyDef()
-  given borderRightColor3: PropertyDef["borderRightColor", Rgb24] = PropertyDef()
   given borderRightStyle: PropertyDef["borderRightStyle", BorderStyle] = PropertyDef()
   given borderRightWidth: PropertyDef["borderRightWidth", Dimension] = PropertyDef()
   given borderSpacing: PropertyDef["borderSpacing", Dimension] = PropertyDef()
   given borderStyle: PropertyDef["borderStyle", BorderStyle] = PropertyDef()
-  given borderTop: PropertyDef["borderTop", (BorderStyle, Dimension, Color)] = PropertyDef()
-  given borderTop2: PropertyDef["borderTop", (BorderStyle, Dimension, Rgb24)] = PropertyDef()
-  given borderTopColor1: PropertyDef["borderTopColor", Color] = PropertyDef()
+  given borderTop[ColorType: RgbColor]: PropertyDef["borderTop", (BorderStyle, Dimension, ColorType)] = PropertyDef()
+  given borderTopColor1[ColorType: RgbColor]: PropertyDef["borderTopColor", ColorType] = PropertyDef()
   given borderTopColor2: PropertyDef["borderTopColor", Transparent.type] = PropertyDef()
-  given borderTopColor3: PropertyDef["borderTopColor", Rgb24] = PropertyDef()
   given borderTopLeftRadius: PropertyDef["borderTopLeftRadius", Dimension] = PropertyDef()
   given borderTopRightRadius: PropertyDef["borderTopRightRadius", Dimension] = PropertyDef()
   given borderTopStyle: PropertyDef["borderTopStyle", BorderStyle] = PropertyDef()
@@ -187,28 +176,24 @@ object PropertyDef:
   given borderWidth: PropertyDef["borderWidth", Dimension] = PropertyDef()
   given bottom: PropertyDef["bottom", Dimension] = PropertyDef()
   given boxDecorationBreak: PropertyDef["boxDecorationBreak", Text] = PropertyDef()
-  given boxShadow: PropertyDef["boxShadow", (Dimension, Dimension, Dimension, Color)] = PropertyDef()
-  given boxShadow2: PropertyDef["boxShadow", (Dimension, Dimension, Dimension, Rgb24)] = PropertyDef()
+  given boxShadow[ColorType: RgbColor]: PropertyDef["boxShadow", (Dimension, Dimension, Dimension, ColorType)] = PropertyDef()
   given boxSizing: PropertyDef["boxSizing", Text] = PropertyDef()
   given breakAfter: PropertyDef["breakAfter", Text] = PropertyDef()
   given breakBefore: PropertyDef["breakBefore", Text] = PropertyDef()
   given breakInside: PropertyDef["breakInside", Text] = PropertyDef()
   given captionSide: PropertyDef["captionSide", Text] = PropertyDef()
-  given caretColor1: PropertyDef["caretColor", Color] = PropertyDef()
+  given caretColor1[ColorType: RgbColor]: PropertyDef["caretColor", ColorType] = PropertyDef()
   given caretColor2: PropertyDef["caretColor", Transparent.type] = PropertyDef()
-  given caretColor3: PropertyDef["caretColor", Rgb24] = PropertyDef()
   given clear: PropertyDef["clear", Text] = PropertyDef()
   given clip: PropertyDef["clip", Text] = PropertyDef()
-  given color1: PropertyDef["color", Color] = PropertyDef()
+  given color1[ColorType: RgbColor]: PropertyDef["color", ColorType] = PropertyDef()
   given color2: PropertyDef["color", Transparent.type] = PropertyDef()
-  given color3: PropertyDef["color", Rgb24] = PropertyDef()
   given columnCount: PropertyDef["columnCount", Text] = PropertyDef()
   given columnFill: PropertyDef["columnFill", Text] = PropertyDef()
   given columnGap: PropertyDef["columnGap", Text] = PropertyDef()
   given columnRule: PropertyDef["columnRule", Text] = PropertyDef()
-  given columnRuleColor1: PropertyDef["columnRuleColor", Color] = PropertyDef()
+  given columnRuleColor1[ColorType: RgbColor]: PropertyDef["columnRuleColor", ColorType] = PropertyDef()
   given columnRuleColor2: PropertyDef["columnRuleColor", Transparent.type] = PropertyDef()
-  given columnRuleColor3: PropertyDef["columnRuleColor", Rgb24] = PropertyDef()
   given columnRuleStyle: PropertyDef["columnRuleStyle", Text] = PropertyDef()
   given columnRuleWidth: PropertyDef["columnRuleWidth", Text] = PropertyDef()
   given columnSpan: PropertyDef["columnSpan", Text] = PropertyDef()
@@ -303,9 +288,8 @@ object PropertyDef:
   given order: PropertyDef["order", Text] = PropertyDef()
   given orphans: PropertyDef["orphans", Text] = PropertyDef()
   given outline: PropertyDef["outline", Text] = PropertyDef()
-  given outlineColor1: PropertyDef["outlineColor", Color] = PropertyDef()
+  given outlineColor1[ColorType: RgbColor]: PropertyDef["outlineColor", ColorType] = PropertyDef()
   given outlineColor2: PropertyDef["outlineColor", Transparent.type] = PropertyDef()
-  given outlineColor3: PropertyDef["outlineColor", Rgb24] = PropertyDef()
   given outlineOffset: PropertyDef["outlineOffset", Text] = PropertyDef()
   given outlineStyle: PropertyDef["outlineStyle", Text] = PropertyDef()
   given outlineWidth: PropertyDef["outlineWidth", Text] = PropertyDef()
@@ -345,9 +329,8 @@ object PropertyDef:
   given textDecoration2: PropertyDef["textDecoration", (TextDecorationLine, Text, TextDecorationStyle)] =
     PropertyDef()
 
-  given textDecorationColor1: PropertyDef["textDecorationColor", Color] = PropertyDef()
+  given textDecorationColor1[ColorType: RgbColor]: PropertyDef["textDecorationColor", ColorType] = PropertyDef()
   given textDecorationColor2: PropertyDef["textDecorationColor", Transparent.type] = PropertyDef()
-  given textDecorationColor3: PropertyDef["textDecorationColor", Rgb24] = PropertyDef()
   given textDecorationLine: PropertyDef["textDecorationLine", TextDecorationLine] = PropertyDef()
   given textDecorationStyle: PropertyDef["textDecorationStyle", TextDecorationStyle] = PropertyDef()
   given textIndent: PropertyDef["textIndent", Dimension] = PropertyDef()
@@ -416,13 +399,12 @@ object ShowProperty:
 
   given ShowProperty[Text] = identity(_)
   given ShowProperty[Int] = _.show
-  given ShowProperty[Srgb] = _.css
-  given ShowProperty[Hsl] = _.css
-  given ShowProperty[Color] = _.standardSrgb.css
-  given ShowProperty[Rgb24] = _.srgb.css
-  given ShowProperty[Relative] = rel => t"url('$rel')"
-  given ShowProperty[GenericPath] = rel => t"url('$rel')"
-  given ShowProperty[Rgb12] = _.srgb.css
+  
+  given [ColorType](using rgbColor: RgbColor[ColorType]): ShowProperty[ColorType] = color =>
+    t"rgb(${rgbColor.red(color)},${rgbColor.green(color)},${rgbColor.blue(color)})"
+  
+  //given ShowProperty[Relative] = rel => t"url('$rel')"
+  //given ShowProperty[GenericPath] = rel => t"url('$rel')"
   given ShowProperty[PropertyValue] = _.show
   given ShowProperty[Inherit.type] = c => t"inherit"
   given ShowProperty[Transparent.type] = c => t"transparent"
@@ -432,7 +414,7 @@ trait ShowProperty[-T]:
   def show(value: T): Text
 
 object PropertyValue:
-  given Show[PropertyValue] = Showable(_).show.uncamel.kebab
+  given Show[PropertyValue] = _.toString.show.uncamel.kebab
 
 trait PropertyValue
 

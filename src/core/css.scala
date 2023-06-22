@@ -18,15 +18,17 @@ package cataclysm
 
 import rudiments.*
 import gossamer.*
-import turbulence.*
 import anticipation.*
+import hieroglyph.*
 
 import annotation.targetName
 import language.dynamics
 
 object CssStylesheet:
-  given (using enc: Encoding): GenericHttpResponseStream[CssStylesheet] with
-    def mediaType: String = t"text/css; charset=${enc.name}".s
+  given
+      (using encoding: Encoding, charEncoder: CharEncoder)
+      : GenericHttpResponseStream[CssStylesheet] with
+    def mediaType: String = t"text/css; charset=${encoding.name}".s
     
     def content(stylesheet: CssStylesheet): LazyList[IArray[Byte]] =
       LazyList(stylesheet.text.bytes)
@@ -48,11 +50,11 @@ case class Keyframe(ref: Text, style: CssStyle):
 
 object From extends Dynamic:
   inline def applyDynamicNamed(method: "apply")(inline properties: (Label, Any)*): Keyframe =
-    ${CataclysmMacros.keyframe('{"from"}, 'properties)}
+    ${Cataclysm.keyframe('{"from"}, 'properties)}
 
 object To extends Dynamic:
   inline def applyDynamicNamed(method: "apply")(inline properties: (Label, Any)*): Keyframe =
-    ${CataclysmMacros.keyframe('{"to"}, 'properties)}
+    ${Cataclysm.keyframe('{"to"}, 'properties)}
 
 case class FontFace
     (ascentOverride: Maybe[Text] = Unset, descentOverride: Maybe[Text] = Unset,
@@ -108,11 +110,11 @@ object Css extends Dynamic:
   def applyDynamic(method: "apply")(): CssStyle = CssStyle()
 
   inline def applyDynamicNamed(method: "apply")(inline properties: (Label, Any)*): CssStyle =
-    ${CataclysmMacros.read('properties)}
+    ${Cataclysm.read('properties)}
 
 sealed trait Selector(val value: Text):
   inline def applyDynamicNamed(method: "apply")(inline properties: (Label, Any)*): CssRule =
-    ${CataclysmMacros.rule('this, 'properties)}
+    ${Cataclysm.rule('this, 'properties)}
   
   def normalize: Selector
 
