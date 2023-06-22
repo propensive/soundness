@@ -73,28 +73,32 @@ opaque type Timestamp = Long
 object Log:
   inline def fine[T](inline value: T)
                     (using inline log: Log, inline display: Display[T], inline realm: Realm): Unit =
-    ${EucalyptusMacros.recordLog('{Level.Fine}, 'value, 'log, 'display, 'realm)}
+    ${Eucalyptus.recordLog('{Level.Fine}, 'value, 'log, 'display, 'realm)}
   
   inline def info[T](inline value: T)
                     (using inline log: Log, inline display: Display[T], inline realm: Realm): Unit =
-    ${EucalyptusMacros.recordLog('{Level.Info}, 'value, 'log, 'display, 'realm)}
+    ${Eucalyptus.recordLog('{Level.Info}, 'value, 'log, 'display, 'realm)}
   
   inline def warn[T](inline value: T)
                     (using inline log: Log, inline display: Display[T], inline realm: Realm): Unit =
-    ${EucalyptusMacros.recordLog('{Level.Warn}, 'value, 'log, 'display, 'realm)}
+    ${Eucalyptus.recordLog('{Level.Warn}, 'value, 'log, 'display, 'realm)}
   
   inline def fail[T](inline value: T)
                     (using inline log: Log, inline display: Display[T], inline realm: Realm): Unit =
-    ${EucalyptusMacros.recordLog('{Level.Fail}, 'value, 'log, 'display, 'realm)}
+    ${Eucalyptus.recordLog('{Level.Fail}, 'value, 'log, 'display, 'realm)}
 
-object EucalyptusMacros:
+object Eucalyptus:
   def recordLog
       [T: Type]
-      (level: Expr[Level], value: Expr[T], log: Expr[Log], display: Expr[Display[T]], realm: Expr[Realm])
+      (level: Expr[Level], value: Expr[T], log: Expr[Log], display: Expr[Display[T]],
+          realm: Expr[Realm])
       (using Quotes)
       : Expr[Unit] = '{
+    
     val time = Timestamp()
-    try $log.record(Entry($realm, $level, $display($value), time, $log.tags)) catch case e: Exception => ()
+    
+    try $log.record(Entry($realm, $level, $display($value), time, $log.tags))
+    catch case e: Exception => ()
   }
 
 @missingContext("""|eucalyptus: a contextual Log instance is needed, for example:
