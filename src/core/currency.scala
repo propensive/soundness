@@ -59,7 +59,7 @@ package currencyStyles:
   given local: CurrencyStyle = (currency, unit, subunit) => t"${currency.symbol}$unit.$subunit"
   given generic: CurrencyStyle = (currency, unit, subunit) => t"$unit.$subunit ${currency.isoCode}"
 
-object PlutocratOpaques:
+object Plutocrat:
   opaque type Money[+CurrencyType <: Currency & Singleton] = Long
 
   object Money:
@@ -125,7 +125,7 @@ object PlutocratOpaques:
         val remainder: Money[CurrencyType] = (left - share)
         remainder.split(right - 1, share :: result)
 
-export PlutocratOpaques.Money
+export Plutocrat.Money
 
 extension [CurrencyType <: Currency & Singleton: ValueOf](seq: Iterable[Money[CurrencyType]])
   def total: Money[CurrencyType] =
