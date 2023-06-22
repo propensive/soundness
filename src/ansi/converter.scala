@@ -144,7 +144,7 @@ open class TextConverter():
     case Markdown.Ast.Inline.Emphasis(children*)    => out"$Italic(${text(children)})"
     case Markdown.Ast.Inline.Strong(children*)      => out"$Bold(${text(children)})"
     case Markdown.Ast.Inline.SourceCode(code)       => out"${colors.YellowGreen}(${Bg(Srgb(0, 0.1, 0))}($code))"
-    case Markdown.Ast.Inline.Textual(text)          => out"$text"
+    case Markdown.Ast.Inline.Copy(text)          => out"$text"
     case Markdown.Ast.Block.BulletList(_, _, _, _*) => out""
     case Markdown.Ast.Block.Reference(_, _)         => out""
     case Markdown.Ast.Block.ThematicBreak()         => out""
@@ -162,5 +162,5 @@ open class TextConverter():
     case Markdown.Ast.Inline.Emphasis(children*)      => out"$Italic(${children.map(phrasing).join})"
     case Markdown.Ast.Inline.Strong(children*)        => out"$Bold(${children.map(phrasing).join})"
     case Markdown.Ast.Inline.SourceCode(code)         => out"${colors.YellowGreen}(${Bg(Srgb(0, 0.1, 0))}($code))"
-    case Markdown.Ast.Inline.Textual(str)             => out"${Showable(str.sub(t"\n", t" ")).show}"
+    case Markdown.Ast.Inline.Copy(str)             => out"${Showable(str.sub(t"\n", t" ")).show}"
     case _                                            => text(Seq(node))

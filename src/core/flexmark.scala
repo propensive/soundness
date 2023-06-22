@@ -19,6 +19,7 @@ package punctuation
 import rudiments.*
 import digression.*
 import gossamer.*
+import spectacular.*
 
 import com.vladsch.flexmark as cvf
 import cvf.ast as cvfa, cvf.parser.*, cvf.util.options.*, cvf.ext.tables,
@@ -47,7 +48,7 @@ type Md = Markdown[Markdown.Ast.Block]
 
 object Markdown:
 
-  given (using CanThrow[MarkdownError]): Canonical[InlineMd] = Canonical(parseInline(_), _.serialize)
+  //given (using CanThrow[MarkdownError]): Canonical[InlineMd] = Canonical(parseInline(_), _.serialize)
   given Show[InlineMd] = _.serialize
 
   object Ast:
@@ -80,8 +81,8 @@ object Markdown:
       case Image(alt: Text, src: Text)
       case SourceCode(value: Text)
       case Strong(children: Inline*)
-      case Textual(string: Text)
-      case Link(location: Text, children: Inline*)
+      case Copy(string: Text)
+      case Weblink(location: Text, children: Inline*)
 
       def serialize(buf: StringBuilder): Unit = this match
         case Break()                   => buf.add('\n')
@@ -90,8 +91,8 @@ object Markdown:
         case Image(alt, src)           => buf.add(t"!["); buf.add(alt); buf.add(t"]("); buf.add(src); buf.add(t")")
         case SourceCode(value)         => buf.add('`'); buf.add(value); buf.add('`')
         case Strong(children*)         => buf.add('*'); children.foreach(_.serialize(buf)); buf.add('*')
-        case Textual(text)             => buf.add(text)
-        case Link(location, children*) => buf.add('['); children.foreach(_.serialize(buf)); buf.add(t"]("); buf.add(location); buf.add(')')
+        case Copy(text)             => buf.add(text)
+        case Weblink(location, children*) => buf.add('['); children.foreach(_.serialize(buf)); buf.add(t"]("); buf.add(location); buf.add(')')
         
   private val options = MutableDataSet()
   //options.set[ju.Collection[com.vladsch.flexmark.util.misc.Extension]](Parser.EXTENSIONS,
@@ -112,11 +113,11 @@ object Markdown:
       case other                    => throw MarkdownError(t"markdown contains block-level elements")
   
   @tailrec
-  private def coalesce[M >: Textual <: Markdown.Ast.Inline](xs: List[M], done: List[M] = Nil): List[M] =
+  private def coalesce[M >: Copy <: Markdown.Ast.Inline](xs: List[M], done: List[M] = Nil): List[M] =
     xs match
       case Nil                                   => done.reverse
-      case Textual(str) :: Textual(str2) :: tail => coalesce(Textual(t"$str$str2") :: tail, done)
-      case Textual(str) :: tail                  => coalesce(tail, Textual(format(str)) :: done)
+      case Copy(str) :: Copy(str2) :: tail => coalesce(Copy(t"$str$str2") :: tail, done)
+      case Copy(str) :: tail                  => coalesce(tail, Copy(format(str)) :: done)
       case head :: tail                          => coalesce(tail, head :: done)
 
   def format(str: Text): Text = Text:
@@ -130,7 +131,7 @@ object Markdown:
   private def resolveReference(root: cvfua.Document, node: cvfa.ImageRef | cvfa.LinkRef)
       : Text throws MarkdownError =
     Option(node.getReferenceNode(root)).fold(throw MarkdownError(t"the image reference could not be resolved")):  node =>
-      Showable(node.nn.getUrl).show
+      node.nn.getUrl.toString.show
 
 
   type PhrasingInput = cvfa.Emphasis | cvfa.StrongEmphasis | cvfa.Code | cvfa.HardLineBreak |
@@ -153,19 +154,20 @@ object Markdown:
   def phrasing(root: cvfua.Document, node: PhrasingInput): Markdown.Ast.Inline throws MarkdownError =
     node match
       case node: cvfa.Emphasis       => Emphasis(phraseChildren(root, node)*)
-      case node: cvfa.SoftLineBreak  => Textual(t"\n")
+      case node: cvfa.SoftLineBreak  => Copy(t"\n")
       case node: cvfa.StrongEmphasis => Strong(phraseChildren(root, node)*)
-      case node: cvfa.Code           => SourceCode(Showable(node.getText).show)
+      case node: cvfa.Code           => SourceCode(node.getText.toString.show)
       case node: cvfa.HardLineBreak  => Break()
-      case node: cvfa.Image          => Image(Showable(node.getText).show, Showable(node.getUrl).show)
-      case node: cvfa.ImageRef       => Image(Showable(node.getText).show, resolveReference(root, node))
-      case node: cvfa.Link           => Link(Showable(node.getUrl).show, phraseChildren(root, node)*)
+      case node: cvfa.Image          => Image(node.getText.toString.show, node.getUrl.toString.show)
+      case node: cvfa.ImageRef       => Image(node.getText.toString.show, resolveReference(root, node))
+      case node: cvfa.Link           => Weblink(node.getUrl.toString.show, phraseChildren(root, node)*)
       
-      case node: cvfa.LinkRef        => Link(resolveReference(root, node),
+      case node: cvfa.LinkRef        => Weblink(resolveReference(root, node),
                                             phraseChildren(root, node)*)
       
-      case node: cvfa.MailLink       => Link(Showable(node.getText).show, Textual(t"mailto:${Showable(node.getText.nn).show}"))
-      case node: cvfa.Text           => Textual(format(Showable(node.getChars).show))
+      case node: cvfa.MailLink       => val address: Text = t"mailto:"+node.getText.nn.toString.show
+                                        Weblink(node.getText.toString.show, Copy(address))
+      case node: cvfa.Text           => Copy(format(node.getChars.toString.show))
 
   type FlowInput = cvfa.BlockQuote | cvfa.BulletList | cvfa.CodeBlock | cvfa.FencedCodeBlock |
       cvfa.ThematicBreak | cvfa.Paragraph | cvfa.IndentedCodeBlock | cvfa.Heading | cvfa.OrderedList
@@ -177,8 +179,8 @@ object Markdown:
       case node: cvfa.BulletList        => BulletList(numbered = None, loose = node.isLoose,
                                                listItems(root, node)*)
       
-      case node: cvfa.CodeBlock         => FencedCode(None, None, Showable(node.getContentChars).show)
-      case node: cvfa.IndentedCodeBlock => FencedCode(None, None, Showable(node.getContentChars).show)
+      case node: cvfa.CodeBlock         => FencedCode(None, None, node.getContentChars.toString.show)
+      case node: cvfa.IndentedCodeBlock => FencedCode(None, None, node.getContentChars.toString.show)
       case node: cvfa.Paragraph         => Paragraph(phraseChildren(root, node)*)
       
       case node: cvfa.OrderedList       => BulletList(numbered = Some(1), loose = node.isLoose,
@@ -186,9 +188,9 @@ object Markdown:
       
       case node: cvfa.ThematicBreak     => ThematicBreak()
       
-      case node: cvfa.FencedCodeBlock   => FencedCode(if Showable(node.getInfo).show == t"" then None
-                                               else Some(Showable(node.getInfo).show), None,
-                                               Showable(node.getContentChars).show)
+      case node: cvfa.FencedCodeBlock   => FencedCode(if node.getInfo.toString.show == t"" then None
+                                               else Some(node.getInfo.toString.show), None,
+                                               node.getContentChars.toString.show)
       
       case node: cvfa.Heading           => node.getLevel match
                                              case lvl@(1 | 2 | 3 | 4 | 5 | 6) =>
@@ -202,11 +204,11 @@ object Markdown:
     try Some:
       node match
         case node: cvfa.HardLineBreak => Break()
-        case node: cvfa.SoftLineBreak => Textual(t"\n")
-        case node: cvfa.Reference     => Reference(Showable(node.getReference).show, Showable(node.getUrl).show)
+        case node: cvfa.SoftLineBreak => Copy(t"\n")
+        case node: cvfa.Reference     => Reference(node.getReference.toString.show, node.getUrl.toString.show)
         
-        case node: cvfa.Text          => Textual(if noFormat then Showable(node.getChars).show else
-                                             format(Showable(node.getChars).show))
+        case node: cvfa.Text          => Copy(if noFormat then node.getChars.toString.show else
+                                             format(node.getChars.toString.show))
         
         case node: cvfa.ThematicBreak => ThematicBreak()
         case node: tables.TableBlock  => Table(table(root, node)*)
