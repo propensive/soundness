@@ -70,7 +70,7 @@ extends Node[Name], Dynamic:
 
   inline def applyDynamicNamed(method: "apply")
                               (inline attributes: (Atts, Any)*): StartTag[Name, Children] =
-    ${HoneycombMacros.read[Name, Children, Children]('labelString, 'unclosed, 'inline, 'verbatim,
+    ${Honeycomb.read[Name, Children, Children]('labelString, 'unclosed, 'inline, 'verbatim,
         'attributes)}
 
   def applyDynamic(method: "apply")
@@ -95,7 +95,7 @@ extends Node[Name], Dynamic:
       (inline attributes: (Atts, Any)*)
       : StartTag[Name, Children] =
     
-    ${HoneycombMacros.read[Name, Children, Children]('labelString, 'unclosed, 'inline, 'verbatim,
+    ${Honeycomb.read[Name, Children, Children]('labelString, 'unclosed, 'inline, 'verbatim,
         'attributes)}
 
   def applyDynamic[Return <: Label]
