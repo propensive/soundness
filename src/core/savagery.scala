@@ -40,7 +40,7 @@ object DxDy:
 object Xy:
   given show: Show[Xy] = value => t"${value.x.toString} ${value.y.toString}"
   
-object SavageryInternals:
+object Savagery:
   opaque type Degrees = Double
   opaque type SvgId = Text
 
@@ -62,7 +62,7 @@ object SavageryInternals:
     @targetName("plus2")
     def +(right: DxDy): DxDy = DxDy(vector.dx + right.dx, vector.dy + right.dy)
 
-export SavageryInternals.{Degrees, SvgId}
+export Savagery.{Degrees, SvgId}
 
 object Coords:
   given Show[Coords] =
