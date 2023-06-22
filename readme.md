@@ -19,8 +19,7 @@ _annotations_ in Scala, by making them available through _typeclass interfaces_.
 
 ## Availability
 
-Adversaria has not yet been published as a binary. It is currently waiting for the
-final release of Scala 3.3.
+Adversaria has not yet been published as a binary.
 
 ## Getting Started
 
@@ -109,7 +108,7 @@ be used, but caution should be taken if there is a mismatch between the
 project's stability level and the importance of your own project.
 
 Adversaria is designed to be _small_. Its entire source code currently consists
-of 149 lines of code.
+of 153 lines of code.
 
 ## Building
 
