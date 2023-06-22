@@ -18,26 +18,9 @@ package hieroglyph
 
 import rudiments.*
 import kaleidoscope.*
-import spectacular.*
 import java.io as ji
 
 import scala.collection.immutable.TreeMap
-
-object Hieroglyph:
-  opaque type CharRange = Long
-  object CharRange:
-    def apply(from: Int, to: Int): CharRange = (from.toLong << 32) + to.toLong
-    def apply(char: Char): CharRange = (char.toLong << 32) + char.toInt
-    def apply(char: Int): CharRange = (char.toLong << 32) + char
-
-    given show: Show[CharRange] = range => Text("${range.from}..${range.to}")
-
-  given Ordering[CharRange] = Ordering.Long
-
-  extension (range: CharRange)
-    def from: Int = (range >> 32).toInt
-    def to: Int = range.toInt
-    def contains(char: Char): Boolean = char.toInt >= from && char.toInt <= to
 
 object Unicode:
   import Hieroglyph.*

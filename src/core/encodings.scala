@@ -18,6 +18,7 @@ package hieroglyph
 
 import rudiments.*
 import digression.*
+import spectacular.*
 
 import scala.collection.mutable as scm
 import scala.jdk.CollectionConverters.SetHasAsScala
@@ -172,9 +173,26 @@ case class UnencodableCharError(char: Char, encoding: Encoding)
 extends Error(err"The character '$char' cannot be encoded with the encoding $encoding")
 
 extension (inline context: StringContext)
-  transparent inline def enc(): Encoding = ${HieroglyphMacros.encoding('context)}
+  transparent inline def enc(): Encoding = ${Hieroglyph.encoding('context)}
 
-object HieroglyphMacros:
+object Hieroglyph:
+  
+  opaque type CharRange = Long
+  
+  object CharRange:
+    def apply(from: Int, to: Int): CharRange = (from.toLong << 32) + to.toLong
+    def apply(char: Char): CharRange = (char.toLong << 32) + char.toInt
+    def apply(char: Int): CharRange = (char.toLong << 32) + char
+
+    given show: Show[CharRange] = range => Text("${range.from}..${range.to}")
+
+  given Ordering[CharRange] = Ordering.Long
+
+  extension (range: CharRange)
+    def from: Int = (range >> 32).toInt
+    def to: Int = range.toInt
+    def contains(char: Char): Boolean = char.toInt >= from && char.toInt <= to
+
   def encoding(contextExpr: Expr[StringContext])(using Quotes): Expr[Encoding] =
     import quotes.reflect.*
 
