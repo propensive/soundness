@@ -15,6 +15,7 @@ project quantitative
     compiler  scala
     sources   src/test
     include   probably/cli quantitative/core larceny/plugin
+    coverage  quantitative/core
     main      quantitative.Tests
 
 
