@@ -94,9 +94,12 @@ extension [T: JsonWriter](value: T)
   def json: Json = Json(summon[JsonWriter[T]].write(value))
 
 object Json extends Dynamic:
-  def parse[SourceType](value: SourceType)(using readable: Readable[SourceType, Bytes]): Json =
-    val parsed: JsonAst = JsonAst.parse(value)
-    Json(parsed, Nil)
+  def parse
+      [SourceType]
+      (value: SourceType)
+      (using readable: Readable[SourceType, Bytes], jsonParse: CanThrow[JsonParseError])
+      : Json^{readable, jsonParse} =
+    Json(JsonAst.parse(value), Nil)
 
   given (using JsonPrinter): Show[Json] = json =>
     try json.normalize.root.show catch case err: JsonAccessError => t"<${err.reason.show}>"
@@ -108,13 +111,14 @@ object Json extends Dynamic:
       def mediaType: String = t"application/json; charset=${encoder.encoding.name}".s
       def content(json: Json): LazyList[Bytes] = LazyList(json.show.bytes)
 
-  given (using jsonParse: CanThrow[JsonParseError]): GenericHttpReader[Json]^{jsonParse} =
-    new GenericHttpReader[Json]:
-      def read(string: String): Json =
-        import charEncoders.utf8
-        Json(JsonAst.parse(LazyList(Text(string).bytes)), Nil)
+  given (using jsonParse: CanThrow[JsonParseError], charEncoder: CharEncoder^): GenericHttpReader[Json]^{jsonParse, charEncoder} =
+    string => Json.parse(LazyList(Text(string).bytes))
 
-  given aggregable: Aggregable[Bytes, Json] = value => Json(JsonAst.parse(value), Nil)
+  given aggregable
+      [SourceType]
+      (using Readable[SourceType, Bytes], CanThrow[JsonParseError])
+      : Aggregable[Bytes, Json] =
+    Json.parse(_)
 
   def applyDynamicNamed[T <: String](methodName: "of")(elements: (String, Json)*): Json =
     val keys: IArray[String] = IArray.from(elements.map(_(0)))
@@ -231,7 +235,8 @@ trait JsonReader[T]:
   def read(json: JsonAst): T
   def map[S](fn: T => S): JsonReader[S]^{this, fn} = json => fn(reader.read(json))
 
-case class Json(root: JsonAst, path: List[Int | Text] = Nil) extends Dynamic derives CanEqual:
+class Json(rootValue: Any, val path: List[Int | Text] = Nil) extends Dynamic derives CanEqual:
+  def root: JsonAst = rootValue.asInstanceOf[JsonAst]
   def apply(idx: Int): Json = Json(root, idx :: path)
   def apply(field: Text): Json = Json(root, field :: path)
   def selectDynamic(field: String): Json = this(Text(field))
