@@ -25,12 +25,13 @@ trait Record extends Selectable:
   def access(name: String): Any
   def selectDynamic(name: String): Any = access(name)
 
-trait FieldTyper[RecordType, TypeNameType <: Label, ValueType]:
-  def read(value: Any): ValueType
+erased trait ValueCast[RecordType, TypeNameType <: Label, ValueType]
+erased trait RecordCast[RecordType, TypeNameType <: Label, TypeConstructorType[_]]
+
 
 enum RecordField:
   case Value(fieldType: String)
-  case Record(map: Map[String, RecordField])
+  case Record(fieldType: String, map: Map[String, RecordField])
 
 trait Schema[RecordType <: Record]:
   def fields: Map[String, RecordField]
@@ -51,31 +52,43 @@ trait Schema[RecordType <: Record]:
       case Nil =>
         refinedType
       
-      case (name, RecordField.Record(map)) :: tail =>
-        refine(tail, Refinement(refinedType, name, refine(map.to(List), TypeRepr.of[RecordType])))
+      case (name, RecordField.Record(typeName, map)) :: tail =>
+        (ConstantType(StringConstant(typeName)).asType: @unchecked) match
+          case '[type typeName <: Label; typeName] =>
+            (Expr.summon[RecordCast[RecordType, typeName, ?]]: @unchecked) match
+              case None =>
+                fail(s"it was not possible to find a RecordCast instance for the field $name with "+
+                    s"type $typeName")
+              case Some('{type typeConstructor[_]; $expr: RecordCast[a, b, typeConstructor]}) =>
+                val recordType =
+                  (refine(map.to(List), TypeRepr.of[RecordType]).asType: @unchecked) match
+                    case '[recordType] => TypeRepr.of[typeConstructor[recordType]]
+
+                refine(tail, Refinement(refinedType, name, recordType))
 
       case (name, RecordField.Value(typeName)) :: tail =>
         (ConstantType(StringConstant(typeName)).asType: @unchecked) match
           case '[type typeName <: Label; typeName] =>
-            (Expr.summon[FieldTyper[RecordType, typeName, ?]]: @unchecked) match
+            (Expr.summon[ValueCast[RecordType, typeName, ?]]: @unchecked) match
               case None =>
-                fail(s"""it was not possible to find a FieldTyper instance for $name""")
+                fail(s"it was not possible to find a ValueCast instance for the field $name with "+
+                    s"type $typeName")
             
-              case Some('{$expr: FieldTyper[a, b, valueType]}) =>
+              case Some('{$expr: ValueCast[a, b, valueType]}) =>
                 refine(tail, Refinement(refinedType, name, TypeRepr.of[valueType]))
 
     (refine(fields.to(List), TypeRepr.of[RecordType]).asType: @unchecked) match
       case '[type refinedType <: RecordType; refinedType] =>
         '{$target.make($value).asInstanceOf[refinedType]}
 
-
 object JsonRecord:
-  erased given FieldTyper[JsonRecord, "boolean", Boolean] = ###
-  erased given FieldTyper[JsonRecord, "string", String] = ###
-  erased given FieldTyper[JsonRecord, "integer", Int] = ###
-  erased given FieldTyper[JsonRecord, "number", Double] = ###
-  erased given FieldTyper[JsonRecord, "array", List[Any]] = ###
-  
+  erased given ValueCast[JsonRecord, "boolean", Boolean] = ###
+  erased given ValueCast[JsonRecord, "string", String] = ###
+  erased given ValueCast[JsonRecord, "integer", Int] = ###
+  erased given ValueCast[JsonRecord, "number", Double] = ###
+  erased given RecordCast[JsonRecord, "array", [T] =>> List[T]] = ###
+  erased given RecordCast[JsonRecord, "object", [T] =>> T] = ###
+
 class JsonRecord(value: Map[String, Any]) extends Record:
   def access(name: String): Any = value(name)
 
@@ -83,18 +96,24 @@ abstract class JsonSchema() extends Schema[JsonRecord]:
   def make(value: Any): JsonRecord = JsonRecord:
     value.asInstanceOf[Map[String, Any]].view.mapValues: value =>
       value.asMatchable match
-        case record: Map[?, ?] => make(record)
-        case other             => other
+        case array: List[Map[?, ?]] => array.map(make)
+        case record: Map[?, ?]      => make(record)
+        case other                  => other
     .to(Map)
 
 object ExampleSchema extends JsonSchema():
   import RecordField.*
-  
+
   val fields: Map[String, RecordField] = Map(
     "age"  -> Value("integer"),
     "name" -> Value("string"),
     "male" -> Value("boolean"),
-    "data" -> Record(Map(
+    "items" -> Record("array", Map(
+      "year" -> Value("integer"),
+      "month" -> Value("string"),
+      "day" -> Value("integer")
+    )),
+    "data" -> Record("object", Map(
       "color" -> Value("string"),
       "size"  -> Value("integer")
     ))
