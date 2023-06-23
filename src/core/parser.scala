@@ -131,9 +131,8 @@ object JsonAst:
   def parse
       [SourceType]
       (source: SourceType)
-      (using readable: Readable[SourceType, Bytes]^, jsonParse: CanThrow[JsonParseError],
-          streamCut: CanThrow[StreamCutError])
-      : JsonAst^{readable, jsonParse, streamCut} =
+      (using readable: Readable[SourceType, Bytes], jsonParse: CanThrow[JsonParseError])
+      : JsonAst^{readable, jsonParse} =
 
     val stream = readable.read(source)
     var line: Int = 0
