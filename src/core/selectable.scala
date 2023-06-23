@@ -19,52 +19,85 @@ package polyvinyl
 import rudiments.*
 
 import scala.quoted.*
+import scala.compiletime.*
 
-trait SimpleSchema[FieldType]:
-  def fields: List[String]
-  transparent inline def record(inline access: String => FieldType): SimpleRecord[FieldType]
-  
-  final def build
-      [FieldType: Type]
-      (access: Expr[String => FieldType])(using Quotes)
-      : Expr[SimpleRecord[FieldType]] =
-    import quotes.reflect.*
-    
-    val simpleRecordType = TypeRepr.of[SimpleRecord[FieldType]]
-    val refinedType = fields.foldLeft(simpleRecordType)(Refinement(_, _, TypeRepr.of[FieldType]))
-    
-    (refinedType.asType: @unchecked) match
-      case '[type refinedType <: SimpleRecord[FieldType]; refinedType] =>
-        '{new SimpleRecord[FieldType]($access).asInstanceOf[refinedType]}
-  
-class SimpleRecord[FieldType](access: String => FieldType) extends Selectable:
-  def selectDynamic(name: String): FieldType = access(name)
-
-class Record(access: String => Any) extends Selectable:
+trait Record extends Selectable:
+  def access(name: String): Any
   def selectDynamic(name: String): Any = access(name)
 
-trait Schema[InitEnumType <: reflect.Enum]:
-  type EnumType = InitEnumType
-  type Result[_ <: EnumType]
-  
-  def types: Map[String, EnumType]
-  
-  transparent inline def record(inline access: String => Any): Record
+trait FieldTyper[RecordType, TypeNameType <: Label, ValueType]:
+  def read(value: Any): ValueType
 
-  def build(access: Expr[String => Any])(using Quotes, Type[EnumType], Type[Result]): Expr[Record] =
+enum RecordField:
+  case Value(fieldType: String)
+  case Record(map: Map[String, RecordField])
+
+trait Schema[RecordType <: Record]:
+  def fields: Map[String, RecordField]
+  def make(value: Any): RecordType
+
+  def build
+      (value: Expr[Any])
+      (using Quotes, Type[RecordType])
+      (using thisType: Type[this.type])
+      : Expr[RecordType] =
     import quotes.reflect.*
 
-    val refinedType = types.foldLeft(TypeRepr.of[Record]):
-      case (acc, (key, enumType)) =>
-        val companion = Ref(TypeRepr.of[EnumType].typeSymbol.companionModule)
-        val sym = companion.symbol.declaredField(enumType.toString)
-        
-        val returnType = (Singleton(companion.select(sym)).tpe.asType: @unchecked) match
-          case '[type singletonType <: EnumType; singletonType] =>
-            TypeRepr.of[Result[singletonType]].simplified
+    val target = (thisType: @unchecked) match
+      case '[thisType] =>
+        Ref(TypeRepr.of[thisType].typeSymbol.companionModule).asExprOf[Schema[RecordType]]
 
-        Refinement(acc, key, returnType)
-    
-    (refinedType.asType: @unchecked) match
-      case '[type refinedType <: Record; refinedType] =>
-        '{new Record($access(_)).asInstanceOf[refinedType]}
+    def refine(fields: List[(String, RecordField)], refinedType: TypeRepr): TypeRepr = fields match
+      case Nil =>
+        refinedType
+      
+      case (name, RecordField.Record(map)) :: tail =>
+        refine(tail, Refinement(refinedType, name, refine(map.to(List), TypeRepr.of[RecordType])))
+
+      case (name, RecordField.Value(typeName)) :: tail =>
+        (ConstantType(StringConstant(typeName)).asType: @unchecked) match
+          case '[type typeName <: Label; typeName] =>
+            (Expr.summon[FieldTyper[RecordType, typeName, ?]]: @unchecked) match
+              case None =>
+                fail(s"""it was not possible to find a FieldTyper instance for $name""")
+            
+              case Some('{$expr: FieldTyper[a, b, valueType]}) =>
+                refine(tail, Refinement(refinedType, name, TypeRepr.of[valueType]))
+
+    (refine(fields.to(List), TypeRepr.of[RecordType]).asType: @unchecked) match
+      case '[type refinedType <: RecordType; refinedType] =>
+        '{$target.make($value).asInstanceOf[refinedType]}
+
+
+object JsonRecord:
+  erased given FieldTyper[JsonRecord, "boolean", Boolean] = ###
+  erased given FieldTyper[JsonRecord, "string", String] = ###
+  erased given FieldTyper[JsonRecord, "integer", Int] = ###
+  erased given FieldTyper[JsonRecord, "number", Double] = ###
+  erased given FieldTyper[JsonRecord, "array", List[Any]] = ###
+  
+class JsonRecord(value: Map[String, Any]) extends Record:
+  def access(name: String): Any = value(name)
+
+abstract class JsonSchema() extends Schema[JsonRecord]:
+  def make(value: Any): JsonRecord = JsonRecord:
+    value.asInstanceOf[Map[String, Any]].view.mapValues: value =>
+      value.asMatchable match
+        case record: Map[?, ?] => make(record)
+        case other             => other
+    .to(Map)
+
+object ExampleSchema extends JsonSchema():
+  import RecordField.*
+  
+  val fields: Map[String, RecordField] = Map(
+    "age"  -> Value("integer"),
+    "name" -> Value("string"),
+    "male" -> Value("boolean"),
+    "data" -> Record(Map(
+      "color" -> Value("string"),
+      "size"  -> Value("integer")
+    ))
+  )
+
+  transparent inline def record(inline value: Any): JsonRecord = ${build('value)}
