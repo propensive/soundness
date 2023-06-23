@@ -26,7 +26,8 @@ import merino.*
 import hieroglyph.*
 import spectacular.*
 
-import collection.Factory
+import scala.collection.Factory
+import scala.compiletime.*
 
 import language.dynamics
 import language.experimental.captureChecking
@@ -45,7 +46,7 @@ extension (json: JsonAst)
   inline def isString: Boolean = json.isInstanceOf[String]
   inline def isBoolean: Boolean = json.isInstanceOf[Boolean]
   
-  inline def isNull: Boolean = json match
+  inline def isNull: Boolean = json.asMatchable match
     case v: Null => v == null
     case _       => false
 
@@ -55,19 +56,19 @@ extension (json: JsonAst)
     if isArray then json.asInstanceOf[IArray[JsonAst]]
     else throw JsonAccessError(Issue.Type(JsonPrimitive.Array))
   
-  inline def double: Double throws JsonAccessError = json match
+  inline def double: Double throws JsonAccessError = json.asMatchable match
     case value: Double     => value
     case value: Long       => value.toDouble
     case value: BigDecimal => value.toDouble
     case _                 => throw JsonAccessError(Issue.Type(JsonPrimitive.Number))
   
-  inline def bigDecimal: BigDecimal = json match
+  inline def bigDecimal: BigDecimal = json.asMatchable match
     case value: BigDecimal => value
     case value: Long       => BigDecimal(value)
     case value: Double     => BigDecimal(value)
     case _                 => throw JsonAccessError(Issue.Type(JsonPrimitive.Number))
   
-  inline def long: Long throws JsonAccessError = json match
+  inline def long: Long throws JsonAccessError = json.asMatchable match
     case value: Long       => value
     case value: Double     => value.toLong
     case value: BigDecimal => value.toLong
@@ -93,22 +94,25 @@ extension [T: JsonWriter](value: T)
   def json: Json = Json(summon[JsonWriter[T]].write(value))
 
 object Json extends Dynamic:
-  def parse[SourceType](value: SourceType)(using readable: Readable[SourceType, Bytes]^): Json^{readable} =
-    Json(JsonAst.parse(value), Nil)
+  def parse[SourceType](value: SourceType)(using readable: Readable[SourceType, Bytes]): Json =
+    val parsed: JsonAst = JsonAst.parse(value)
+    Json(parsed, Nil)
 
   given (using JsonPrinter): Show[Json] = json =>
     try json.normalize.root.show catch case err: JsonAccessError => t"<${err.reason.show}>"
 
-  given (using enc: Encoding^, printer: JsonPrinter): GenericHttpResponseStream[Json]^{enc} =
+  given
+      (using encoder: CharEncoder^, printer: JsonPrinter)
+      : GenericHttpResponseStream[Json]^{encoder} =
     new GenericHttpResponseStream[Json]:
-      def mediaType: String = t"application/json; charset=${enc.name}".s
-      def content(json: Json): LazyList[Bytes] =
-        LazyList(json.show.s.getBytes(enc.name.s).asInstanceOf[Bytes])
+      def mediaType: String = t"application/json; charset=${encoder.encoding.name}".s
+      def content(json: Json): LazyList[Bytes] = LazyList(json.show.bytes)
 
   given (using jsonParse: CanThrow[JsonParseError]): GenericHttpReader[Json]^{jsonParse} =
     new GenericHttpReader[Json]:
       def read(string: String): Json =
-        Json(JsonAst.parse(LazyList(string.getBytes("UTF-8").nn.asInstanceOf[Bytes])), Nil)
+        import charEncoders.utf8
+        Json(JsonAst.parse(LazyList(Text(string).bytes)), Nil)
 
   given aggregable: Aggregable[Bytes, Json] = value => Json(JsonAst.parse(value), Nil)
 
@@ -126,13 +130,13 @@ object JsonWriter extends Derivation[JsonWriter]:
   given JsonWriter[Short] = v => JsonAst(v.toLong)
   given JsonWriter[Boolean] = JsonAst(_)
 
-  given [T](using canon: Canonical[T]): JsonWriter[T] = v => JsonAst(canon.serialize(v).s)
+  //given [T](using canon: Canonical[T]): JsonWriter[T] = v => JsonAst(canon.serialize(v).s)
   
   given (using jsonAccess: CanThrow[JsonAccessError]): JsonWriter[Json]^{jsonAccess} = _.normalize.root
   
   given JsonWriter[Nil.type] = value => JsonAst(IArray[JsonAst]())
 
-  given [Coll[T1] <: Traversable[T1], T: JsonWriter]: JsonWriter[Coll[T]] = values =>
+  given [Coll[T1] <: Iterable[T1], T: JsonWriter]: JsonWriter[Coll[T]] = values =>
     JsonAst(IArray.from(values.map(summon[JsonWriter[T]].write(_))))
 
   // given [T: JsonWriter]: JsonWriter[Map[String, T]] = values =>
@@ -182,13 +186,13 @@ object JsonReader extends Derivation[JsonReader]:
   given text: JsonReader[Text] = _.string
   given boolean: JsonReader[Boolean] = _.boolean
   
-  given [T](using canon: Canonical[T]): JsonReader[T] = v => canon.deserialize(v.string)
+  //given [T](using canon: Canonical[T]): JsonReader[T] = v => canon.deserialize(v.string)
 
   given opt[T](using reader: JsonReader[T]^): JsonReader[Option[T]]^{reader} = new JsonReader[Option[T]]:
     def read(value: JsonAst): Option[T] =
       Option(reader.read(value))
 
-  given array[Coll[T1] <: Traversable[T1], T]
+  given array[Coll[T1] <: Iterable[T1], T]
               (using reader: JsonReader[T], factory: Factory[T, Coll[T]]): JsonReader[Coll[T]] =
     new JsonReader[Coll[T]]:
       def read(value: JsonAst): Coll[T] =
@@ -255,34 +259,34 @@ case class Json(root: JsonAst, path: List[Int | Text] = Nil) extends Dynamic der
       val i = normalize
       val j = json.normalize
       
-      def recur(j: JsonAst, i: JsonAst): Boolean = j match
-        case j: Long     => i match
+      def recur(j: JsonAst, i: JsonAst): Boolean = j.asMatchable match
+        case j: Long     => i.asMatchable match
           case i: Long       => i == j
           case i: Double     => i == j
           case i: BigDecimal => i == BigDecimal(j)
           case _             => false
-        case j: Double => i match
+        case j: Double => i.asMatchable match
           case i: Long       => i == j
           case i: Double     => i == j
           case i: BigDecimal => i == BigDecimal(j)
           case _             => false
-        case j: BigDecimal => i match
+        case j: BigDecimal => i.asMatchable match
           case i: Long       => BigDecimal(i) == j
           case i: Double     => BigDecimal(i) == j
           case i: BigDecimal => i == j
           case _             => false
-        case j: String => i match
+        case j: String => i.asMatchable match
           case i: String => i == j
           case _         => false
-        case j: Boolean => i match
+        case j: Boolean => i.asMatchable match
           case i: Boolean => i == j
           case _         => false
-        case j: IArray[JsonAst] @unchecked => i match
+        case j: IArray[JsonAst] @unchecked => i.asMatchable match
           case i: IArray[JsonAst] @unchecked =>
             j.length == i.length && j.indices.forall { idx => recur(i(idx), j(idx)) }
           case _ =>
             false
-        case (jk: IArray[String] @unchecked, jv: IArray[JsonAst] @unchecked) => i match
+        case (jk: IArray[String] @unchecked, jv: IArray[JsonAst] @unchecked) => i.asMatchable match
           case (ik: IArray[String] @unchecked, iv: IArray[JsonAst] @unchecked) =>
             val im = ik.zip(iv).to(Map)
             val jm = jk.zip(jv).to(Map)
@@ -345,7 +349,7 @@ object MinimalSerializer extends JsonPrinter:
         case '\f' => sb.append("\\f")
         case ch   => sb.append(ch)
 
-    def recur(json: JsonAst): Unit = json match
+    def recur(json: JsonAst): Unit = json.asMatchable match
       case (keys: Array[String], values: Array[JsonAst] @unchecked) =>
         sb.append('{')
         val last = keys.length - 1
@@ -389,7 +393,7 @@ object HumanReadableSerializer extends JsonPrinter:
         case '\f' => sb.append("\\f")
         case ch   => sb.append(ch)
 
-    def recur(json: JsonAst, indent: Int): Unit = json match
+    def recur(json: JsonAst, indent: Int): Unit = json.asMatchable match
       case (keys: Array[String], values: Array[JsonAst] @unchecked) =>
         sb.append('{')
         val last = keys.length - 1
