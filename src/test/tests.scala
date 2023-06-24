@@ -19,7 +19,9 @@ package jacinta
 import gossamer.*
 import probably.*
 import rudiments.*
-import turbulence.*, characterEncodings.utf8
+import turbulence.*
+import spectacular.*
+import hieroglyph.*, charEncoders.utf8
 
 import unsafeExceptions.canThrowAny
 
@@ -39,7 +41,7 @@ object Tests extends Suite(t"Jacinta Tests"):
       test(t"Parse a string"):
         val s = Json.parse(t"\"string\"")
         s.as[Text]
-      .check(_ == t"string")
+      .assert(_ == t"string")
     
       test(t"Parse true"):
         Json.parse(t"true").as[Boolean]
@@ -60,19 +62,19 @@ object Tests extends Suite(t"Jacinta Tests"):
     suite(t"Serialization"):
       test(t"Serialize string"):
         t"foo".json.show
-      .check(_ == t""""foo"""")
+      .assert(_ == t""""foo"""")
 
       test(t"Serialize double"):
         3.14159.json.show
-      .check(_ == t"3.14159")
+      .assert(_ == t"3.14159")
       
       test(t"Serialize true"):
         true.json.show
-      .check(_ == t"true")
+      .assert(_ == t"true")
     
       test(t"Serialize false"):
         false.json.show
-      .check(_ == t"false")
+      .assert(_ == t"false")
     
     suite(t"Basic tests"):
       test(t"Serialize to Json"):
