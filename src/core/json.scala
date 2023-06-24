@@ -54,41 +54,41 @@ extension (json: JsonAst)
   
   inline def array: IArray[JsonAst] =
     if isArray then json.asInstanceOf[IArray[JsonAst]]
-    else throw JsonAccessError(Issue.Type(JsonPrimitive.Array))
+    else throw JsonAccessError(Issue.NotType(JsonPrimitive.Array))
   
   inline def double: Double throws JsonAccessError = json.asMatchable match
     case value: Double     => value
     case value: Long       => value.toDouble
     case value: BigDecimal => value.toDouble
-    case _                 => throw JsonAccessError(Issue.Type(JsonPrimitive.Number))
+    case _                 => throw JsonAccessError(Issue.NotType(JsonPrimitive.Number))
   
   inline def bigDecimal: BigDecimal = json.asMatchable match
     case value: BigDecimal => value
     case value: Long       => BigDecimal(value)
     case value: Double     => BigDecimal(value)
-    case _                 => throw JsonAccessError(Issue.Type(JsonPrimitive.Number))
+    case _                 => throw JsonAccessError(Issue.NotType(JsonPrimitive.Number))
   
   inline def long: Long throws JsonAccessError = json.asMatchable match
     case value: Long       => value
     case value: Double     => value.toLong
     case value: BigDecimal => value.toLong
-    case _                 => throw JsonAccessError(Issue.Type(JsonPrimitive.Number))
+    case _                 => throw JsonAccessError(Issue.NotType(JsonPrimitive.Number))
   
   inline def string: Text throws JsonAccessError =
     if isString then json.asInstanceOf[Text]
-    else throw JsonAccessError(Issue.Type(JsonPrimitive.String))
+    else throw JsonAccessError(Issue.NotType(JsonPrimitive.String))
   
   inline def boolean: Boolean throws JsonAccessError =
     if isBoolean then json.asInstanceOf[Boolean]
-    else throw JsonAccessError(Issue.Type(JsonPrimitive.Boolean))
+    else throw JsonAccessError(Issue.NotType(JsonPrimitive.Boolean))
   
   inline def obj: (IArray[String], IArray[JsonAst]) =
     if isObject then json.asInstanceOf[(IArray[String], IArray[JsonAst])]
-    else throw JsonAccessError(Issue.Type(JsonPrimitive.Object))
+    else throw JsonAccessError(Issue.NotType(JsonPrimitive.Object))
   
   inline def number: Long | Double | BigDecimal =
     if isLong then long else if isDouble then double else if isBigDecimal then bigDecimal
-    else throw JsonAccessError(Issue.Type(JsonPrimitive.Number))
+    else throw JsonAccessError(Issue.NotType(JsonPrimitive.Number))
   
 extension [T: JsonWriter](value: T)
   def json: Json = Json(summon[JsonWriter[T]].write(value))
@@ -99,10 +99,10 @@ object Json extends Dynamic:
       (value: SourceType)
       (using readable: Readable[SourceType, Bytes], jsonParse: CanThrow[JsonParseError])
       : Json^{readable, jsonParse} =
-    Json(JsonAst.parse(value), Nil)
+    Json(JsonAst.parse(value))
 
   given (using JsonPrinter): Show[Json] = json =>
-    try json.normalize.root.show catch case err: JsonAccessError => t"<${err.reason.show}>"
+    try json.root.show catch case err: JsonAccessError => t"<${err.reason.show}>"
 
   given
       (using encoder: CharEncoder^, printer: JsonPrinter)
@@ -122,8 +122,8 @@ object Json extends Dynamic:
 
   def applyDynamicNamed[T <: String](methodName: "of")(elements: (String, Json)*): Json =
     val keys: IArray[String] = IArray.from(elements.map(_(0)))
-    val values: IArray[JsonAst] = IArray.from(elements.map(_(1).normalize.root))
-    Json(JsonAst((keys, values)), Nil)
+    val values: IArray[JsonAst] = IArray.from(elements.map(_(1).root))
+    Json(JsonAst((keys, values)))
 
 object JsonWriter extends Derivation[JsonWriter]:
   given JsonWriter[Int] = v => JsonAst(v.toLong)
@@ -136,7 +136,7 @@ object JsonWriter extends Derivation[JsonWriter]:
 
   //given [T](using canon: Canonical[T]): JsonWriter[T] = v => JsonAst(canon.serialize(v).s)
   
-  given (using jsonAccess: CanThrow[JsonAccessError]): JsonWriter[Json]^{jsonAccess} = _.normalize.root
+  given (using jsonAccess: CanThrow[JsonAccessError]): JsonWriter[Json]^{jsonAccess} = _.root
   
   given JsonWriter[Nil.type] = value => JsonAst(IArray[JsonAst]())
 
@@ -192,7 +192,7 @@ object JsonReader extends Derivation[JsonReader]:
   
   //given [T](using canon: Canonical[T]): JsonReader[T] = v => canon.deserialize(v.string)
 
-  given opt[T](using reader: JsonReader[T]^): JsonReader[Option[T]]^{reader} = new JsonReader[Option[T]]:
+  given option[T](using reader: JsonReader[T]^): JsonReader[Option[T]]^{reader} = new JsonReader[Option[T]]:
     def read(value: JsonAst): Option[T] =
       Option(reader.read(value))
 
@@ -222,9 +222,9 @@ object JsonReader extends Derivation[JsonReader]:
 
   def split[T](sealedTrait: SealedTrait[JsonReader, T]): JsonReader[T] = new JsonReader[T]:
     def read(value: JsonAst) =
-      val _type = Json(value, Nil).selectDynamic("_type").as[Text]
+      val _type = Json(value).selectDynamic("_type").as[Text]
       val subtype = sealedTrait.subtypes.find { t => Text(t.typeInfo.short) == _type }
-        .getOrElse(throw JsonAccessError(Issue.Type(JsonPrimitive.Object))) // FIXME
+        .getOrElse(throw JsonAccessError(Issue.NotType(JsonPrimitive.Object))) // FIXME
       
       subtype.typeclass.read(value)
 
@@ -235,10 +235,15 @@ trait JsonReader[T]:
   def read(json: JsonAst): T
   def map[S](fn: T => S): JsonReader[S]^{this, fn} = json => fn(reader.read(json))
 
-class Json(rootValue: Any, val path: List[Int | Text] = Nil) extends Dynamic derives CanEqual:
+class Json(rootValue: Any) extends Dynamic derives CanEqual:
   def root: JsonAst = rootValue.asInstanceOf[JsonAst]
-  def apply(idx: Int): Json = Json(root, idx :: path)
-  def apply(field: Text): Json = Json(root, field :: path)
+  
+  def apply(idx: Int): Json throws JsonAccessError = Json(root.array(idx))
+  def apply(field: Text): Json throws JsonAccessError =
+    root.obj(0).indexWhere(_ == field.s) match
+      case -1    => throw JsonAccessError(Issue.Label(field))
+      case index => Json(root.obj(1)(index))
+  
   def selectDynamic(field: String): Json = this(Text(field))
   def applyDynamic(field: String)(idx: Int): Json = this(Text(field))(idx)
 
@@ -257,12 +262,12 @@ class Json(rootValue: Any, val path: List[Int | Text] = Nil) extends Dynamic der
         
         case _                             => 0
     
-    recur(normalize.root)
+    recur(root)
 
   override def equals(that: Any): Boolean = that match
     case json: Json =>
-      val i = normalize
-      val j = json.normalize
+      val i = this
+      val j = json
       
       def recur(j: JsonAst, i: JsonAst): Boolean = j.asMatchable match
         case j: Long     => i.asMatchable match
@@ -306,34 +311,7 @@ class Json(rootValue: Any, val path: List[Int | Text] = Nil) extends Dynamic der
     case _ =>
       false
 
-  def normalize(using jsonAccess: CanThrow[JsonAccessError]): Json^{jsonAccess} =
-    def deref(value: JsonAst, path: List[Int | Text]): JsonAst throws JsonAccessError = path match
-      case Nil =>
-        value
-      case (idx: Int) :: tail => value match
-        case vs: IArray[JsonAst] @unchecked =>
-          deref((vs.lift(idx) match
-            case None        => throw JsonAccessError(Issue.Index(idx))
-            case Some(value) => value
-          ), tail)
-        case _ =>
-          throw JsonAccessError(Issue.Type(JsonPrimitive.Array))
-      case (field: Text) :: tail => value match
-        case vs: (IArray[String] @unchecked, IArray[JsonAst] @unchecked) =>
-          val v = vs(0).indexOf(field.s) match
-            case -1  => throw JsonAccessError(Issue.Label(field))
-            case idx => vs(1)(idx)
-          deref(v, tail)
-        case _ =>
-          throw JsonAccessError(Issue.Type(JsonPrimitive.Object))
-      
-      case _ => throw Mistake("should never match")
-      
-    Json(deref(root, path.reverse), Nil)
-
-  def as[T](using reader: JsonReader[T]): T throws JsonAccessError =
-    val root = normalize.root
-    reader.read(root)
+  def as[T](using reader: JsonReader[T]): T throws JsonAccessError = reader.read(root)
 
 trait JsonPrinter:
   def serialize(json: JsonAst): Text
@@ -434,13 +412,13 @@ object JsonAccessError:
   enum Issue:
     case Index(value: Int)
     case Label(label: Text)
-    case Type(primitive: JsonPrimitive)
+    case NotType(primitive: JsonPrimitive)
   
   object Issue:
     given Show[Issue] =
-      case Index(value)    => t"index $value out of range"
-      case Label(label)    => t"the object does not contain the label $label"
-      case Type(primitive) => t"the value had the type $primitive"
+      case Index(value)       => t"the index $value out of range"
+      case Label(label)       => t"the JSON object does not contain the label $label"
+      case NotType(primitive) => t"the JSON value did not have the type $primitive"
 
 case class JsonAccessError(reason: JsonAccessError.Issue)
 extends Error(err"could not access the value because $reason")
