@@ -35,6 +35,11 @@ import language.experimental.captureChecking
 import unsafeExceptions.canThrowAny
 import JsonAccessError.Issue
 
+erased trait DynamicJsonAccess
+
+object jsonAccess:
+  erased given DynamicJsonAccess = ###
+
 given (using js: JsonPrinter): Show[JsonAst] = js.serialize(_)
 
 extension (json: JsonAst)
@@ -222,7 +227,7 @@ object JsonReader extends Derivation[JsonReader]:
 
   def split[T](sealedTrait: SealedTrait[JsonReader, T]): JsonReader[T] = new JsonReader[T]:
     def read(value: JsonAst) =
-      val _type = Json(value).selectDynamic("_type").as[Text]
+      val _type = Json(value)("_type").as[Text]
       val subtype = sealedTrait.subtypes.find { t => Text(t.typeInfo.short) == _type }
         .getOrElse(throw JsonAccessError(Issue.NotType(JsonPrimitive.Object))) // FIXME
       
@@ -237,15 +242,17 @@ trait JsonReader[T]:
 
 class Json(rootValue: Any) extends Dynamic derives CanEqual:
   def root: JsonAst = rootValue.asInstanceOf[JsonAst]
-  
   def apply(idx: Int): Json throws JsonAccessError = Json(root.array(idx))
+  def selectDynamic(field: String)(using erased DynamicJsonAccess): Json = apply(Text(field))
+
+  def applyDynamic(field: String)(idx: Int)(using erased DynamicJsonAccess): Json =
+    apply(Text(field))(idx)
+  
   def apply(field: Text): Json throws JsonAccessError =
     root.obj(0).indexWhere(_ == field.s) match
       case -1    => throw JsonAccessError(Issue.Label(field))
       case index => Json(root.obj(1)(index))
   
-  def selectDynamic(field: String): Json = this(Text(field))
-  def applyDynamic(field: String)(idx: Int): Json = this(Text(field))(idx)
 
   override def hashCode: Int =
     def recur(i: JsonAst): Int =
