@@ -184,61 +184,60 @@ trait JsonWriter[T]:
   def contraMap[S](fn: S => T): JsonWriter[S]^{this, fn} = (v: S) => fn.andThen(write)(v)
 
 object JsonReader extends Derivation[JsonReader]:
-  given jsonAst: JsonReader[JsonAst] = identity(_)
-  given json: JsonReader[Json] = Json(_)
-  given int: JsonReader[Int] = _.long.toInt
-  given byte: JsonReader[Byte] = _.long.toByte
-  given short: JsonReader[Short] = _.long.toShort
-  given float: JsonReader[Float] = _.double.toFloat
-  given double: JsonReader[Double] = _.double
-  given long: JsonReader[Long] = _.long
-  given text: JsonReader[Text] = _.string
-  given boolean: JsonReader[Boolean] = _.boolean
+  given jsonAst: JsonReader[JsonAst] = (value, missing) => value
+  given json: JsonReader[Json] = (value, missing) => Json(value)
+  given int: JsonReader[Int] = (value, missing) => value.long.toInt
+  given byte: JsonReader[Byte] = (value, missing) => value.long.toByte
+  given short: JsonReader[Short] = (value, missing) => value.long.toShort
+  given float: JsonReader[Float] = (value, missing) => value.double.toFloat
+  given double: JsonReader[Double] = (value, missing) => value.double
+  given long: JsonReader[Long] = (value, missing) => value.long
+  given text: JsonReader[Text] = (value, missing) => value.string
+  given boolean: JsonReader[Boolean] = (value, missing) => value.boolean
   
   //given [T](using canon: Canonical[T]): JsonReader[T] = v => canon.deserialize(v.string)
 
   given option[T](using reader: JsonReader[T]^): JsonReader[Option[T]]^{reader} = new JsonReader[Option[T]]:
-    def read(value: JsonAst): Option[T] =
-      Option(reader.read(value))
+    def read(value: JsonAst, missing: Boolean): Option[T] =
+      if missing then None else Some(reader.read(value, false))
 
   given array[Coll[T1] <: Iterable[T1], T]
               (using reader: JsonReader[T], factory: Factory[T, Coll[T]]): JsonReader[Coll[T]] =
     new JsonReader[Coll[T]]:
-      def read(value: JsonAst): Coll[T] =
+      def read(value: JsonAst, missing: Boolean): Coll[T] =
         val bld = factory.newBuilder
-        value.array.foreach(bld += reader.read(_))
+        value.array.foreach(bld += reader.read(_, false))
         bld.result()
 
   given map[T](using reader: JsonReader[T]): JsonReader[Map[String, T]] = new JsonReader[Map[String, T]]:
-    def read(value: JsonAst): Map[String, T] =
+    def read(value: JsonAst, missing: Boolean): Map[String, T] =
       val (keys, values) = value.obj
       
-      keys.indices.foldLeft(Map[String, T]()): (acc, i) =>
-        acc.updated(keys(i), reader.read(values(i)))
+      keys.indices.foldLeft(Map[String, T]()): (acc, index) =>
+        acc.updated(keys(index), reader.read(values(index), false))
 
   def join[T](caseClass: CaseClass[JsonReader, T]): JsonReader[T] = new JsonReader[T]:
-    def read(value: JsonAst): T =
+    def read(value: JsonAst, missing: Boolean): T =
       caseClass.construct: param =>
         val (keys, values) = value.obj
-          param.typeclass.read:
-            keys.indexOf(param.label) match
-              case -1  => throw JsonAccessError(Issue.Label(Text(param.label)))
-              case idx => values(idx)
+        keys.indexOf(param.label) match
+          case -1  => param.typeclass.read(0.asInstanceOf[JsonAst], true)
+          case idx => param.typeclass.read(values(idx), false)
 
   def split[T](sealedTrait: SealedTrait[JsonReader, T]): JsonReader[T] = new JsonReader[T]:
-    def read(value: JsonAst) =
+    def read(value: JsonAst, missing: Boolean) =
       val _type = Json(value)("_type").as[Text]
       val subtype = sealedTrait.subtypes.find { t => Text(t.typeInfo.short) == _type }
         .getOrElse(throw JsonAccessError(Issue.NotType(JsonPrimitive.Object))) // FIXME
       
-      subtype.typeclass.read(value)
+      subtype.typeclass.read(value, missing)
 
     
 trait JsonReader[T]:
   private inline def reader: this.type = this
   
-  def read(json: JsonAst): T
-  def map[S](fn: T => S): JsonReader[S]^{this, fn} = json => fn(reader.read(json))
+  def read(json: JsonAst, missing: Boolean): T
+  def map[S](fn: T => S): JsonReader[S]^{this, fn} = (json, missing) => fn(reader.read(json, missing))
 
 class Json(rootValue: Any) extends Dynamic derives CanEqual:
   def root: JsonAst = rootValue.asInstanceOf[JsonAst]
@@ -318,7 +317,7 @@ class Json(rootValue: Any) extends Dynamic derives CanEqual:
     case _ =>
       false
 
-  def as[T](using reader: JsonReader[T]): T throws JsonAccessError = reader.read(root)
+  def as[T](using reader: JsonReader[T]): T throws JsonAccessError = reader.read(root, false)
 
 trait JsonPrinter:
   def serialize(json: JsonAst): Text

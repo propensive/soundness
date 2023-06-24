@@ -76,7 +76,7 @@ object Tests extends Suite(t"Jacinta Tests"):
         false.json.show
       .assert(_ == t"false")
     
-    suite(t"Basic tests"):
+    suite(t"Misc tests"):
       test(t"Serialize to Json"):
         Foo(1, t"two").json
       .assert(_ == Json.of(x = 1.json, y = t"two".json))
