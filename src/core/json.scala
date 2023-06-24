@@ -16,7 +16,6 @@
 
 package jacinta
 
-import wisteria.*
 import rudiments.*
 import digression.*
 import turbulence.*
@@ -28,6 +27,7 @@ import spectacular.*
 
 import scala.collection.Factory
 import scala.compiletime.*
+import scala.deriving.*
 
 import language.dynamics
 import language.experimental.captureChecking
@@ -130,7 +130,7 @@ object Json extends Dynamic:
     val values: IArray[JsonAst] = IArray.from(elements.map(_(1).root))
     Json(JsonAst((keys, values)))
 
-object JsonWriter extends Derivation[JsonWriter]:
+object JsonWriter:
   given JsonWriter[Int] = v => JsonAst(v.toLong)
   given JsonWriter[Text] = v => JsonAst(v.s)
   given JsonWriter[Double] = JsonAst(_)
@@ -151,11 +151,11 @@ object JsonWriter extends Derivation[JsonWriter]:
   // given [T: JsonWriter]: JsonWriter[Map[String, T]] = values =>
   //   JObject(mutable.Map(values.view.mapValues(summon[JsonWriter[T]].write(_)).to(Seq)*))
 
-  given [T: JsonWriter]: JsonWriter[Maybe[T]] = new JsonWriter[Maybe[T]]:
-    override def omit(t: Maybe[T]): Boolean = t.unset
-    def write(value: Maybe[T]): JsonAst = value match
-      case Unset               => JsonAst(null)
-      case value: T @unchecked => summon[JsonWriter[T]].write(value)
+  // given [T: JsonWriter]: JsonWriter[Maybe[T]] = new JsonWriter[Maybe[T]]:
+  //   override def omit(t: Maybe[T]): Boolean = t.unset
+  //   def write(value: Maybe[T]): JsonAst = value match
+  //     case Unset               => JsonAst(null)
+  //     case value: T @unchecked => summon[JsonWriter[T]].write(value)
 
   given opt[T: JsonWriter]: JsonWriter[Option[T]] = new JsonWriter[Option[T]]:
     override def omit(t: Option[T]): Boolean = t.isEmpty
@@ -164,26 +164,67 @@ object JsonWriter extends Derivation[JsonWriter]:
       case None        => JsonAst(null)
       case Some(value) => summon[JsonWriter[T]].write(value)
 
-  def join[T](caseClass: CaseClass[JsonWriter, T]): JsonWriter[T] = value =>
-    val labels: IArray[String] = caseClass.params.collect:
-      case p if !p.typeclass.omit(p.deref(value)) => p.label
+  private transparent inline def deriveProduct
+      [LabelsType <: Tuple]
+      (tuple: Tuple, labels: Array[String], values: Array[JsonAst], index: Int)
+      : (Array[String], Array[JsonAst]) =
+    inline tuple match
+      case EmptyTuple => (labels, values)
+      case cons: (? *: ?) => cons match
+        case head *: tail => inline erasedValue[LabelsType] match
+          case _: (headLabel *: tailLabels) => inline valueOf[headLabel].asMatchable match
+            case label: String =>
+              labels(index) = label
+              values(index) = summonInline[JsonWriter[head.type]].write(head)
+              deriveProduct[tailLabels](tail, labels, values, index + 1)
 
-    val values: IArray[JsonAst] = caseClass.params.collect:
-      case p if !p.typeclass.omit(p.deref(value)) => p.typeclass.write(p.deref(value))
-    
-    JsonAst((labels, values))
-    
-  def split[T](sealedTrait: SealedTrait[JsonWriter, T]): JsonWriter[T] = value =>
-    sealedTrait.choose(value): subtype =>
-      val obj = subtype.typeclass.write(subtype.cast(value)).obj
-        JsonAst((obj(0) :+ "_type", obj(1) :+ subtype.typeInfo.short))
+  private transparent inline def deriveSum
+      [TupleType <: Tuple, DerivedType, LabelsType <: Tuple]
+      (ordinal: Int)
+      : JsonWriter[DerivedType] =
+    inline erasedValue[TupleType] match
+      case _: (head *: tail) => inline erasedValue[LabelsType] match
+        case _: (headLabel *: tailLabel) =>
+          if ordinal == 0 then inline valueOf[headLabel].asMatchable match
+            case label: String =>
+              summonInline[JsonWriter[head]].asInstanceOf[JsonWriter[DerivedType]]
+          else deriveSum[tail, DerivedType, tailLabel](ordinal - 1)
 
-trait JsonWriter[T]:
+  inline given derived
+      [DerivationType](using mirror: Mirror.Of[DerivationType])
+      : JsonWriter[DerivationType] =
+    inline mirror match
+      case given Mirror.ProductOf[DerivationType & Product] => (value: DerivationType) =>
+        (value.asMatchable: @unchecked) match
+          case value: Product =>
+            val labels: Array[String] = new Array(value.productArity)
+            val values: Array[JsonAst] = new Array(value.productArity)
+            deriveProduct[mirror.MirroredElemLabels](Tuple.fromProductTyped(value), labels, values, 0).asInstanceOf[JsonAst]
+    
+      case sumMirror: Mirror.SumOf[DerivationType] =>
+        (value: DerivationType) =>
+          deriveSum[sumMirror.MirroredElemTypes, DerivationType, sumMirror.MirroredElemLabels](sumMirror.ordinal(value)).write(value)
+
+  // def join[T](caseClass: CaseClass[JsonWriter, T]): JsonWriter[T] = value =>
+  //   val labels: IArray[String] = caseClass.params.collect:
+  //     case p if !p.typeclass.omit(p.deref(value)) => p.label
+
+  //   val values: IArray[JsonAst] = caseClass.params.collect:
+  //     case p if !p.typeclass.omit(p.deref(value)) => p.typeclass.write(p.deref(value))
+    
+  //   JsonAst((labels, values))
+    
+  // def split[T](sealedTrait: SealedTrait[JsonWriter, T]): JsonWriter[T] = value =>
+  //   sealedTrait.choose(value): subtype =>
+  //     val obj = subtype.typeclass.write(subtype.cast(value)).obj
+  //       JsonAst((obj(0) :+ "_type", obj(1) :+ subtype.typeInfo.short))
+
+trait JsonWriter[-T]:
   def omit(t: T): Boolean = false
   def write(t: T): JsonAst
   def contraMap[S](fn: S => T): JsonWriter[S]^{this, fn} = (v: S) => fn.andThen(write)(v)
 
-object JsonReader extends Derivation[JsonReader]:
+object JsonReader:
   given jsonAst: JsonReader[JsonAst] = (value, missing) => value
   given json: JsonReader[Json] = (value, missing) => Json(value)
   given int: JsonReader[Int] = (value, missing) => value.long.toInt
@@ -216,21 +257,21 @@ object JsonReader extends Derivation[JsonReader]:
       keys.indices.foldLeft(Map[String, T]()): (acc, index) =>
         acc.updated(keys(index), reader.read(values(index), false))
 
-  def join[T](caseClass: CaseClass[JsonReader, T]): JsonReader[T] = new JsonReader[T]:
-    def read(value: JsonAst, missing: Boolean): T =
-      caseClass.construct: param =>
-        val (keys, values) = value.obj
-        keys.indexOf(param.label) match
-          case -1  => param.typeclass.read(0.asInstanceOf[JsonAst], true)
-          case idx => param.typeclass.read(values(idx), false)
+  // def join[T](caseClass: CaseClass[JsonReader, T]): JsonReader[T] = new JsonReader[T]:
+  //   def read(value: JsonAst, missing: Boolean): T =
+  //     caseClass.construct: param =>
+  //       val (keys, values) = value.obj
+  //       keys.indexOf(param.label) match
+  //         case -1  => param.typeclass.read(0.asInstanceOf[JsonAst], true)
+  //         case idx => param.typeclass.read(values(idx), false)
 
-  def split[T](sealedTrait: SealedTrait[JsonReader, T]): JsonReader[T] = new JsonReader[T]:
-    def read(value: JsonAst, missing: Boolean) =
-      val _type = Json(value)("_type").as[Text]
-      val subtype = sealedTrait.subtypes.find { t => Text(t.typeInfo.short) == _type }
-        .getOrElse(throw JsonAccessError(Issue.NotType(JsonPrimitive.Object))) // FIXME
+  // def split[T](sealedTrait: SealedTrait[JsonReader, T]): JsonReader[T] = new JsonReader[T]:
+  //   def read(value: JsonAst, missing: Boolean) =
+  //     val _type = Json(value)("_type").as[Text]
+  //     val subtype = sealedTrait.subtypes.find { t => Text(t.typeInfo.short) == _type }
+  //       .getOrElse(throw JsonAccessError(Issue.NotType(JsonPrimitive.Object))) // FIXME
       
-      subtype.typeclass.read(value, missing)
+  //     subtype.typeclass.read(value, missing)
 
     
 trait JsonReader[T]:
@@ -254,65 +295,82 @@ class Json(rootValue: Any) extends Dynamic derives CanEqual:
   
 
   override def hashCode: Int =
-    def recur(i: JsonAst): Int =
-      i match
-        case i: Long                       => i.hashCode
-        case i: Double                     => i.hashCode
-        case i: BigDecimal                 => i.hashCode
-        case i: String                     => i.hashCode
-        case i: Boolean                    => i.hashCode
-        case i: IArray[JsonAst] @unchecked => i.foldLeft(i.length.hashCode)(_*31^recur(_))
+    def recur(value: JsonAst): Int =
+      value.asMatchable match
+        case value: Long                       => value.hashCode
+        case value: Double                     => value.hashCode
+        case value: BigDecimal                 => value.hashCode
+        case value: String                     => value.hashCode
+        case value: Boolean                    => value.hashCode
+        case value: IArray[JsonAst] @unchecked => value.foldLeft(value.length.hashCode)(_*31^recur(_))
         
-        case (ik: IArray[String] @unchecked, iv: IArray[JsonAst] @unchecked) =>
-          ik.zip(iv).to(Map).view.mapValues(recur(_)).hashCode
+        case (keys, values) => (keys.asMatchable: @unchecked) match
+          case keys: IArray[String] @unchecked => (values.asMatchable: @unchecked) match
+            case values: IArray[JsonAst] @unchecked =>
+              keys.zip(values).to(Map).view.mapValues(recur(_)).hashCode
         
         case _                             => 0
     
     recur(root)
 
-  override def equals(that: Any): Boolean = that match
-    case json: Json =>
-      val i = this
-      val j = json
+  override def equals(right: Any): Boolean = right.asMatchable match
+    case right: Json =>
       
-      def recur(j: JsonAst, i: JsonAst): Boolean = j.asMatchable match
-        case j: Long     => i.asMatchable match
-          case i: Long       => i == j
-          case i: Double     => i == j
-          case i: BigDecimal => i == BigDecimal(j)
+      def recur(left: JsonAst, right: JsonAst): Boolean = right.asMatchable match
+        case right: Long     => left.asMatchable match
+          case left: Long       => left == right
+          case left: Double     => left == right
+          case left: BigDecimal => left == BigDecimal(right)
           case _             => false
-        case j: Double => i.asMatchable match
-          case i: Long       => i == j
-          case i: Double     => i == j
-          case i: BigDecimal => i == BigDecimal(j)
+
+        case right: Double => left.asMatchable match
+          case left: Long       => left == right
+          case left: Double     => left == right
+          case left: BigDecimal => left == BigDecimal(right)
           case _             => false
-        case j: BigDecimal => i.asMatchable match
-          case i: Long       => BigDecimal(i) == j
-          case i: Double     => BigDecimal(i) == j
-          case i: BigDecimal => i == j
+        
+        case right: BigDecimal => left.asMatchable match
+          case left: Long       => BigDecimal(left) == right
+          case left: Double     => BigDecimal(left) == right
+          case left: BigDecimal => left == right
           case _             => false
-        case j: String => i.asMatchable match
-          case i: String => i == j
+        
+        case right: String => left.asMatchable match
+          case left: String => left == right
           case _         => false
-        case j: Boolean => i.asMatchable match
-          case i: Boolean => i == j
+        
+        case right: Boolean => left.asMatchable match
+          case left: Boolean => left == right
           case _         => false
-        case j: IArray[JsonAst] @unchecked => i.asMatchable match
-          case i: IArray[JsonAst] @unchecked =>
-            j.length == i.length && j.indices.forall { idx => recur(i(idx), j(idx)) }
+        
+        case right: IArray[JsonAst] @unchecked => left.asMatchable match
+          case left: IArray[JsonAst] @unchecked =>
+            right.length == left.length && right.indices.forall: index =>
+              recur(left(index), right(index))
+          
           case _ =>
             false
-        case (jk: IArray[String] @unchecked, jv: IArray[JsonAst] @unchecked) => i.asMatchable match
-          case (ik: IArray[String] @unchecked, iv: IArray[JsonAst] @unchecked) =>
-            val im = ik.zip(iv).to(Map)
-            val jm = jk.zip(jv).to(Map)
-            im.keySet == jm.keySet && im.keySet.forall { k => recur(im(k), jm(k)) }
-          case _                  => false
+        
+        case (rightKeys, rightValues) => (rightKeys.asMatchable: @unchecked) match
+          case rightKeys: IArray[String] => (rightValues.asMatchable: @unchecked) match
+            case rightValues: IArray[JsonAst] @unchecked => (left.asMatchable: @unchecked) match
+              case (leftKeys, leftValues) => (leftKeys.asMatchable: @unchecked) match
+                case leftKeys: IArray[String] @unchecked =>
+                  (leftValues.asMatchable: @unchecked) match
+                    case leftValues: IArray[JsonAst] @unchecked =>
+                      val leftMap = leftKeys.zip(leftValues).to(Map)
+                      val rightMap = rightKeys.zip(rightValues).to(Map)
+                    
+                      leftMap.keySet == rightMap.keySet && leftMap.keySet.forall: key =>
+                        recur(leftMap(key), rightMap(key))
+              
+              case _ =>
+                false
         
         case _ =>
           false
 
-      recur(root, json.root)
+      recur(root, right.root)
     
     case _ =>
       false
@@ -339,16 +397,18 @@ object MinimalSerializer extends JsonPrinter:
         case ch   => sb.append(ch)
 
     def recur(json: JsonAst): Unit = json.asMatchable match
-      case (keys: Array[String], values: Array[JsonAst] @unchecked) =>
-        sb.append('{')
-        val last = keys.length - 1
-        keys.indices.foreach: i =>
-          sb.append('"')
-          appendString(keys(i))
-          sb.append('"')
-          sb.append(':')
-          recur(values(i))
-          sb.append(if i == last then '}' else ',')
+      case (keys, values) => (keys.asMatchable: @unchecked) match
+        case keys: Array[String] @unchecked => (values.asMatchable: @unchecked) match
+          case values: Array[JsonAst] @unchecked =>
+            sb.append('{')
+            val last = keys.length - 1
+            keys.indices.foreach: i =>
+              sb.append('"')
+              appendString(keys(i))
+              sb.append('"')
+              sb.append(':')
+              recur(values(i))
+              sb.append(if i == last then '}' else ',')
       case array: Array[JsonAst] @unchecked =>
         sb.append('[')
         val last = array.length - 1
@@ -383,16 +443,18 @@ object HumanReadableSerializer extends JsonPrinter:
         case ch   => sb.append(ch)
 
     def recur(json: JsonAst, indent: Int): Unit = json.asMatchable match
-      case (keys: Array[String], values: Array[JsonAst] @unchecked) =>
-        sb.append('{')
-        val last = keys.length - 1
-        keys.indices.foreach: i =>
-          sb.append('"')
-          appendString(keys(i))
-          sb.append('"')
-          sb.append(':')
-          recur(values(i), indent)
-          sb.append(if i == last then '}' else ',')
+      case (keys, values) => (keys.asMatchable: @unchecked) match
+        case keys: Array[String] => (values.asMatchable: @unchecked) match
+          case values: Array[JsonAst] @unchecked =>
+            sb.append('{')
+            val last = keys.length - 1
+            keys.indices.foreach: i =>
+              sb.append('"')
+              appendString(keys(i))
+              sb.append('"')
+              sb.append(':')
+              recur(values(i), indent)
+              sb.append(if i == last then '}' else ',')
       case array: Array[JsonAst] @unchecked =>
         sb.append('[')
         val last = array.length - 1
