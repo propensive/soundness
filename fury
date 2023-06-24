@@ -7,7 +7,7 @@ target jacinta/test
 project jacinta
   module core
     sources  src/core
-    include  merino/core gossamer/core wisteria/core
+    include  merino/core gossamer/core
   module test
     sources  src/test
     include  jacinta/core probably/cli probably/bench

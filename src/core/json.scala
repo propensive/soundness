@@ -186,9 +186,10 @@ object JsonWriter:
       case _: (head *: tail) => inline erasedValue[LabelsType] match
         case _: (headLabel *: tailLabel) =>
           if ordinal == 0 then inline valueOf[headLabel].asMatchable match
-            case label: String =>
-              summonInline[JsonWriter[head]].asInstanceOf[JsonWriter[DerivedType]]
+            case label: String => summonInline[JsonWriter[head]].tag(label).asInstanceOf[JsonWriter[DerivedType]]
           else deriveSum[tail, DerivedType, tailLabel](ordinal - 1)
+      
+      case _ => ???
 
   inline given derived
       [DerivationType](using mirror: Mirror.Of[DerivationType])
@@ -219,10 +220,16 @@ object JsonWriter:
   //     val obj = subtype.typeclass.write(subtype.cast(value)).obj
   //       JsonAst((obj(0) :+ "_type", obj(1) :+ subtype.typeInfo.short))
 
-trait JsonWriter[-T]:
-  def omit(t: T): Boolean = false
-  def write(t: T): JsonAst
-  def contraMap[S](fn: S => T): JsonWriter[S]^{this, fn} = (v: S) => fn.andThen(write)(v)
+trait JsonWriter[-ValueType]:
+  def omit(value: ValueType): Boolean = false
+  def write(value: ValueType): JsonAst
+  
+  def contraMap[ValueType2](fn: ValueType2 => ValueType): JsonWriter[ValueType2]^{this, fn} =
+    (value: ValueType2) => fn.andThen(write)(value)
+
+  def tag(label: String): JsonWriter[ValueType] = (value: ValueType) =>
+    val (keys, values) = write(value).obj
+    (keys :+ "_type", values :+ label).asInstanceOf[JsonAst]
 
 object JsonReader:
   given jsonAst: JsonReader[JsonAst] = (value, missing) => value
@@ -272,6 +279,57 @@ object JsonReader:
   //       .getOrElse(throw JsonAccessError(Issue.NotType(JsonPrimitive.Object))) // FIXME
       
   //     subtype.typeclass.read(value, missing)
+
+
+  private transparent inline def deriveProduct
+      [LabelsType <: Tuple, ParamsType <: Tuple]
+      (values: Map[String, JsonAst])
+      : Tuple =
+    inline erasedValue[ParamsType] match
+      case _: (paramHead *: paramsTail) => inline erasedValue[LabelsType] match
+        case _: (labelHead *: labelsTail) => inline valueOf[labelHead].asMatchable match
+          case label: String =>
+            val missing = !values.contains(label)
+            val value = if missing then 0.asInstanceOf[JsonAst] else values(label)
+            val paramValue = summonInline[JsonReader[paramHead]].read(value, missing)
+            
+            paramValue *: deriveProduct[labelsTail, paramsTail](values)
+      
+      case _ =>
+        EmptyTuple
+      
+  inline given derived
+      [DerivationType](using mirror: Mirror.Of[DerivationType])
+      : JsonReader[DerivationType] =
+    inline mirror match
+      case mirror: Mirror.ProductOf[DerivationType & Product] => (value: JsonAst, missing: Boolean) =>
+        
+        val keyValues = value.obj
+        val values = keyValues(0).zip(keyValues(1)).to(Map)
+        
+        val product: Product = mirror.fromProduct(deriveProduct[mirror.MirroredElemLabels, mirror.MirroredElemTypes](values))
+        mirror.fromProduct(product)
+    
+      case mirror: Mirror.SumOf[DerivationType] => (value: JsonAst, missing: Boolean) =>
+        val values = value.obj
+        
+        values(0).indexOf("_type") match
+          case -1    => ???
+          case index => deriveSum[mirror.MirroredElemTypes, mirror.MirroredElemLabels, DerivationType](values(1)(index).string.s).read(value, missing)
+  
+  private transparent inline def deriveSum
+      [SubtypesType <: Tuple, LabelsType <: Tuple, DerivationType]
+      (subtype: String)
+      : JsonReader[DerivationType] =
+    inline erasedValue[SubtypesType] match
+      case _: (head *: tail) => inline erasedValue[LabelsType] match
+        case _: (headLabel *: tailLabels) => inline valueOf[headLabel].asMatchable match
+          case label: String =>
+            if label == subtype then summonInline[JsonReader[head]].asInstanceOf[JsonReader[DerivationType]]
+            else deriveSum[tail, tailLabels, DerivationType](subtype)
+      
+      case _ => ???
+        
 
     
 trait JsonReader[T]:
@@ -375,7 +433,8 @@ class Json(rootValue: Any) extends Dynamic derives CanEqual:
     case _ =>
       false
 
-  def as[T](using reader: JsonReader[T]): T throws JsonAccessError = reader.read(root, false)
+  def as[ValueType](using reader: JsonReader[ValueType]): ValueType throws JsonAccessError =
+    reader.read(root, false)
 
 trait JsonPrinter:
   def serialize(json: JsonAst): Text
