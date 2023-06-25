@@ -21,13 +21,14 @@ import rudiments.*
 import scala.quoted.*
 import scala.compiletime.*
 
-trait Record extends Selectable:
-  def access(name: String): Any
+trait Record(access: String => Any) extends Selectable:
   def selectDynamic(name: String): Any = access(name)
 
-erased trait ValueCast[RecordType, TypeNameType <: Label, ValueType]
-erased trait RecordCast[RecordType, TypeNameType <: Label, TypeConstructorType[_]]
+trait ValueAccessor[RecordType, LabelType <: Label, ValueType]:
+  def transform(value: Any): ValueType
 
+trait RecordAccessor[RecordType, LabelType <: Label, TypeConstructorType[_]]:
+  def transform(value: Any, make: Any => RecordType): TypeConstructorType[RecordType]
 
 enum RecordField:
   case Value(fieldType: String)
@@ -35,7 +36,8 @@ enum RecordField:
 
 trait Schema[RecordType <: Record]:
   def fields: Map[String, RecordField]
-  def make(value: Any): RecordType
+  def make(transform: String => Any): RecordType
+  def access(name: String, value: Any): Any
 
   def build
       (value: Expr[Any])
@@ -43,80 +45,64 @@ trait Schema[RecordType <: Record]:
       (using thisType: Type[this.type])
       : Expr[RecordType] =
     import quotes.reflect.*
-
+  
     val target = (thisType: @unchecked) match
       case '[thisType] =>
         Ref(TypeRepr.of[thisType].typeSymbol.companionModule).asExprOf[Schema[RecordType]]
 
-    def refine(fields: List[(String, RecordField)], refinedType: TypeRepr): TypeRepr = fields match
+    def refine
+        (value: Expr[Any], fields: List[(String, RecordField)], refinedType: TypeRepr, caseDefs: List[CaseDef])
+        : (TypeRepr, List[CaseDef]) = fields match
       case Nil =>
-        refinedType
-      
-      case (name, RecordField.Record(typeName, map)) :: tail =>
-        (ConstantType(StringConstant(typeName)).asType: @unchecked) match
-          case '[type typeName <: Label; typeName] =>
-            (Expr.summon[RecordCast[RecordType, typeName, ?]]: @unchecked) match
-              case None =>
-                fail(s"it was not possible to find a RecordCast instance for the field $name with "+
-                    s"type $typeName")
-              case Some('{type typeConstructor[_]; $expr: RecordCast[a, b, typeConstructor]}) =>
-                val recordType =
-                  (refine(map.to(List), TypeRepr.of[RecordType]).asType: @unchecked) match
-                    case '[recordType] => TypeRepr.of[typeConstructor[recordType]]
-
-                refine(tail, Refinement(refinedType, name, recordType))
+        (refinedType, caseDefs)
 
       case (name, RecordField.Value(typeName)) :: tail =>
         (ConstantType(StringConstant(typeName)).asType: @unchecked) match
           case '[type typeName <: Label; typeName] =>
-            (Expr.summon[ValueCast[RecordType, typeName, ?]]: @unchecked) match
+            (Expr.summon[ValueAccessor[RecordType, typeName, ?]]: @unchecked) match
               case None =>
-                fail(s"it was not possible to find a ValueCast instance for the field $name with "+
-                    s"type $typeName")
+                fail(s"it was not possible to find a ValueAccessor instance for the field $name with type $typeName")
             
-              case Some('{$expr: ValueCast[a, b, valueType]}) =>
-                refine(tail, Refinement(refinedType, name, TypeRepr.of[valueType]))
+              case Some('{$accessor: ValueAccessor[recordType, labelType, valueType]}) =>
+                val rhs = '{$accessor.transform($target.access(${Expr(name)}, $value))}
+                val caseDef = CaseDef(Literal(StringConstant(name)), None, rhs.asTerm)
+                refine(value, tail, Refinement(refinedType, name, TypeRepr.of[valueType]), caseDef :: caseDefs)
 
-    (refine(fields.to(List), TypeRepr.of[RecordType]).asType: @unchecked) match
+      case (name, RecordField.Record(typeName, map)) :: tail =>
+        (ConstantType(StringConstant(typeName)).asType: @unchecked) match
+          case '[type typeName <: Label; typeName] =>
+            (Expr.summon[RecordAccessor[RecordType, typeName, ?]]: @unchecked) match
+              case None =>
+                fail(s"it was not possible to find a RecordAccessor instance for the field $name with type $typeName")
+              
+              case Some('{
+                  type typeConstructor[_]
+                  $accessor: RecordAccessor[RecordType, labelType, typeConstructor]
+                  }) =>
+
+                val value2 = '{$target.access(${Expr(name)}, $value)}
+                
+                val (nestedType, nestedCases) =
+                  refine(value2, map.to(List), TypeRepr.of[RecordType], Nil)
+                  
+                val nestedRecordType = (nestedType.asType: @unchecked) match
+                  case '[recordType] => TypeRepr.of[typeConstructor[recordType]]
+                
+                val nestedMatchFn: Expr[Any => String => Any] =
+                  '{(value: Any) => (name: String) => ${Match('name.asTerm, nestedCases).asExpr}}
+                
+                println(nestedMatchFn.show)
+
+                val rhs = '{$accessor.transform($value2, name => $target.make($nestedMatchFn(name)))}
+                val caseDef = CaseDef(Literal(StringConstant(name)), None, rhs.asTerm)
+                
+                refine(value, tail, Refinement(refinedType, name, nestedRecordType), caseDef :: caseDefs)
+    
+    val (refinedType, caseDefs) = refine(value, fields.to(List), TypeRepr.of[RecordType], Nil)
+
+    val matchFn: Expr[Any => String => Any] =
+      '{ (value: Any) => (name: String) => ${Match('name.asTerm, caseDefs).asExpr} }
+    
+    (refinedType.asType: @unchecked) match
       case '[type refinedType <: RecordType; refinedType] =>
-        '{$target.make($value).asInstanceOf[refinedType]}
-
-object JsonRecord:
-  erased given ValueCast[JsonRecord, "boolean", Boolean] = ###
-  erased given ValueCast[JsonRecord, "string", String] = ###
-  erased given ValueCast[JsonRecord, "integer", Int] = ###
-  erased given ValueCast[JsonRecord, "number", Double] = ###
-  erased given RecordCast[JsonRecord, "array", [T] =>> List[T]] = ###
-  erased given RecordCast[JsonRecord, "object", [T] =>> T] = ###
-
-class JsonRecord(value: Map[String, Any]) extends Record:
-  def access(name: String): Any = value(name)
-
-abstract class JsonSchema() extends Schema[JsonRecord]:
-  def make(value: Any): JsonRecord = JsonRecord:
-    value.asInstanceOf[Map[String, Any]].view.mapValues: value =>
-      value.asMatchable match
-        case array: List[Map[?, ?]] => array.map(make)
-        case record: Map[?, ?]      => make(record)
-        case other                  => other
-    .to(Map)
-
-object ExampleSchema extends JsonSchema():
-  import RecordField.*
-
-  val fields: Map[String, RecordField] = Map(
-    "age"  -> Value("integer"),
-    "name" -> Value("string"),
-    "male" -> Value("boolean"),
-    "items" -> Record("array", Map(
-      "year" -> Value("integer"),
-      "month" -> Value("string"),
-      "day" -> Value("integer")
-    )),
-    "data" -> Record("object", Map(
-      "color" -> Value("string"),
-      "size"  -> Value("integer")
-    ))
-  )
-
-  transparent inline def record(inline value: Any): JsonRecord = ${build('value)}
+        '{$target.make($matchFn($value)).asInstanceOf[refinedType]}
