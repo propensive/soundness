@@ -241,6 +241,7 @@ object JsonReader:
   given double: JsonReader[Double] = (value, missing) => value.double
   given long: JsonReader[Long] = (value, missing) => value.long
   given text: JsonReader[Text] = (value, missing) => value.string
+  given string: JsonReader[String] = (value, missing) => value.string.s
   given boolean: JsonReader[Boolean] = (value, missing) => value.boolean
   
   //given [T](using canon: Canonical[T]): JsonReader[T] = v => canon.deserialize(v.string)
