@@ -20,8 +20,7 @@ import rudiments.*
 import gossamer.*
 import serpentine.*
 import diuretic.*
-import anticipation.*, fileApi.javaIo
-import imperial.*
+import anticipation.*
 import turbulence.*
 import spectacular.*
 import ambience.*
@@ -58,6 +57,8 @@ case class ZipPath(zipFile: ZipFile, ref: ZipRef):
 
 object ZipRef:
   def apply(text: Text): ZipRef throws PathError = reachable.parse(text)
+  
+  @targetName("child")
   def /(name: PathName[InvalidZipNames]): ZipRef = ZipRef(List(name))
   
   given reachable: ParsableReachable[ZipRef, InvalidZipNames, "/"] with
@@ -118,6 +119,7 @@ case class ZipFile(private val filename: Text):
     try jnf.FileSystems.newFileSystem(uri, Map("zipinfo-time" -> "false").asJava).nn
     catch case exception: jnf.ProviderNotFoundException => throw ZipError(filename)
   
+  @targetName("child")
   def /(name: PathName[InvalidZipNames]): ZipPath = ZipPath(this, ZipRef(List(name)))
 
   def filesystem(): jnf.FileSystem throws ZipError =
