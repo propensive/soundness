@@ -42,7 +42,7 @@ case class ZipError(filename: Text) extends Error(err"Could not create ZIP file 
 type InvalidZipNames = ".*'.*" | ".*`.*" | ".*\\/.*" | ".*\\\\.*"
 
 object ZipPath:
-  given AbsoluteReachable[ZipPath, InvalidZipNames, "/"] with
+  given Reachable[ZipPath, InvalidZipNames, "/"] with
     type Root = ZipFile
     def root(path: ZipPath): ZipFile = path.zipFile
     def descent(path: ZipPath): List[PathName[InvalidZipNames]] = path.descent
