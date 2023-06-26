@@ -8,7 +8,9 @@ project jacinta
   module core
     sources  src/core
     include  merino/core gossamer/core
+  
   module test
-    sources  src/test
-    include  jacinta/core probably/cli probably/bench
-    main     jacinta.Tests
+    sources   src/test
+    include   jacinta/core probably/cli probably/bench
+    main      jacinta.Tests
+    coverage  jacinta/core
