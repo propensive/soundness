@@ -45,7 +45,6 @@ object ZipPath:
     type Root = ZipFile
     def root(path: ZipPath): ZipFile = path.zipFile
     def descent(path: ZipPath): List[PathName[InvalidZipNames]] = path.descent
-    def parseRoot(text: Text): Maybe[(ZipFile, Text)] = ???
     def prefix(path: ZipFile): Text = t"/"
     
     def make(root: ZipFile, descent: List[PathName[InvalidZipNames]]): ZipPath =
