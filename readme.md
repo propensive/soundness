@@ -21,8 +21,7 @@ font, typically in a console, but potentially in any grid-based layout.
 
 ## Availability
 
-Dendrology has not yet been published as a binary. It is currently waiting for the
-final release of Scala 3.3.
+Dendrology has not yet been published as a binary.
 
 ## Getting Started
 
@@ -66,7 +65,7 @@ These are defined in the `TreeTile` enumeration, and have a corresponding
 should be used to render the tiles as text. Three implementations are provided
 in the `dendrology.treeStyles` package: `default`, `rounded` and `ascii`.
 
-Calling `drawText` with appropriate `getChildren` and this `mkLine`
+Calling `drawTree` with appropriate `getChildren` and this `mkLine`
 lambda will produce a `LazyList[Text]` instance which could, for example, be
 printed to standard output, like so:
 
@@ -77,7 +76,7 @@ import treeStyles.rounded
 def mkLine(tiles: List[TreeTile], node: Node): Text =
   t"${tiles.map(_.show).join}> ${node.title}"
 
-val lines = drawText(_.children, mkLine)(myNodes)
+val lines = drawTree(_.children, mkLine)(myNodes)
 lines.foreach(println(_))
 ```
 
