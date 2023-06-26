@@ -116,7 +116,9 @@ object Json extends Dynamic:
       def mediaType: String = t"application/json; charset=${encoder.encoding.name}".s
       def content(json: Json): LazyList[Bytes] = LazyList(json.show.bytes)
 
-  given (using jsonParse: CanThrow[JsonParseError], charEncoder: CharEncoder^): GenericHttpReader[Json]^{jsonParse, charEncoder} =
+  given
+      (using jsonParse: CanThrow[JsonParseError], charEncoder: CharEncoder^)
+      : GenericHttpReader[Json]^{jsonParse, charEncoder} =
     string => Json.parse(LazyList(Text(string).bytes))
 
   given aggregable
@@ -131,12 +133,13 @@ object Json extends Dynamic:
     Json(JsonAst((keys, values)))
 
 object JsonWriter:
-  given JsonWriter[Int] = v => JsonAst(v.toLong)
-  given JsonWriter[Text] = v => JsonAst(v.s)
+  given JsonWriter[Int] = int => JsonAst(int.toLong)
+  given JsonWriter[Text] = text => JsonAst(text.s)
+  given JsonWriter[String] = JsonAst(_)
   given JsonWriter[Double] = JsonAst(_)
   given JsonWriter[Long] = JsonAst(_)
-  given JsonWriter[Byte] = v => JsonAst(v.toLong)
-  given JsonWriter[Short] = v => JsonAst(v.toLong)
+  given JsonWriter[Byte] = byte => JsonAst(byte.toLong)
+  given JsonWriter[Short] = short => JsonAst(short.toLong)
   given JsonWriter[Boolean] = JsonAst(_)
 
   //given [T](using canon: Canonical[T]): JsonWriter[T] = v => JsonAst(canon.serialize(v).s)
@@ -157,12 +160,12 @@ object JsonWriter:
   //     case Unset               => JsonAst(null)
   //     case value: T @unchecked => summon[JsonWriter[T]].write(value)
 
-  given opt[T: JsonWriter]: JsonWriter[Option[T]] = new JsonWriter[Option[T]]:
-    override def omit(t: Option[T]): Boolean = t.isEmpty
+  given opt[ValueType: JsonWriter]: JsonWriter[Option[ValueType]] with
+    override def omit(value: Option[ValueType]): Boolean = value.isEmpty
     
-    def write(value: Option[T]): JsonAst = value match
+    def write(value: Option[ValueType]): JsonAst = value match
       case None        => JsonAst(null)
-      case Some(value) => summon[JsonWriter[T]].write(value)
+      case Some(value) => summon[JsonWriter[ValueType]].write(value)
 
   private transparent inline def deriveProduct
       [LabelsType <: Tuple]
@@ -189,7 +192,8 @@ object JsonWriter:
             case label: String => summonInline[JsonWriter[head]].tag(label).asInstanceOf[JsonWriter[DerivedType]]
           else deriveSum[tail, DerivedType, tailLabel](ordinal - 1)
       
-      case _ => ???
+      case _ =>
+        throw Mistake("could not match subtype in its apparent coproduct type")
 
   inline given derived
       [DerivationType](using mirror: Mirror.Of[DerivationType])
@@ -205,20 +209,6 @@ object JsonWriter:
       case sumMirror: Mirror.SumOf[DerivationType] =>
         (value: DerivationType) =>
           deriveSum[sumMirror.MirroredElemTypes, DerivationType, sumMirror.MirroredElemLabels](sumMirror.ordinal(value)).write(value)
-
-  // def join[T](caseClass: CaseClass[JsonWriter, T]): JsonWriter[T] = value =>
-  //   val labels: IArray[String] = caseClass.params.collect:
-  //     case p if !p.typeclass.omit(p.deref(value)) => p.label
-
-  //   val values: IArray[JsonAst] = caseClass.params.collect:
-  //     case p if !p.typeclass.omit(p.deref(value)) => p.typeclass.write(p.deref(value))
-    
-  //   JsonAst((labels, values))
-    
-  // def split[T](sealedTrait: SealedTrait[JsonWriter, T]): JsonWriter[T] = value =>
-  //   sealedTrait.choose(value): subtype =>
-  //     val obj = subtype.typeclass.write(subtype.cast(value)).obj
-  //       JsonAst((obj(0) :+ "_type", obj(1) :+ subtype.typeInfo.short))
 
 trait JsonWriter[-ValueType]:
   def omit(value: ValueType): Boolean = false
@@ -264,23 +254,6 @@ object JsonReader:
       
       keys.indices.foldLeft(Map[String, T]()): (acc, index) =>
         acc.updated(keys(index), reader.read(values(index), false))
-
-  // def join[T](caseClass: CaseClass[JsonReader, T]): JsonReader[T] = new JsonReader[T]:
-  //   def read(value: JsonAst, missing: Boolean): T =
-  //     caseClass.construct: param =>
-  //       val (keys, values) = value.obj
-  //       keys.indexOf(param.label) match
-  //         case -1  => param.typeclass.read(0.asInstanceOf[JsonAst], true)
-  //         case idx => param.typeclass.read(values(idx), false)
-
-  // def split[T](sealedTrait: SealedTrait[JsonReader, T]): JsonReader[T] = new JsonReader[T]:
-  //   def read(value: JsonAst, missing: Boolean) =
-  //     val _type = Json(value)("_type").as[Text]
-  //     val subtype = sealedTrait.subtypes.find { t => Text(t.typeInfo.short) == _type }
-  //       .getOrElse(throw JsonAccessError(Issue.NotType(JsonPrimitive.Object))) // FIXME
-      
-  //     subtype.typeclass.read(value, missing)
-
 
   private transparent inline def deriveProduct
       [LabelsType <: Tuple, ParamsType <: Tuple]
@@ -329,15 +302,15 @@ object JsonReader:
             if label == subtype then summonInline[JsonReader[head]].asInstanceOf[JsonReader[DerivationType]]
             else deriveSum[tail, tailLabels, DerivationType](subtype)
       
-      case _ => ???
+      case _ =>
+        throw Mistake("could not match subtype in its apparent coproduct type")
         
-
-    
-trait JsonReader[T]:
+trait JsonReader[ValueType]:
   private inline def reader: this.type = this
   
-  def read(json: JsonAst, missing: Boolean): T
-  def map[S](fn: T => S): JsonReader[S]^{this, fn} = (json, missing) => fn(reader.read(json, missing))
+  def read(json: JsonAst, missing: Boolean): ValueType
+  def map[ValueType2](fn: ValueType => ValueType2): JsonReader[ValueType2]^{this, fn} =
+    (json, missing) => fn(reader.read(json, missing))
 
 class Json(rootValue: Any) extends Dynamic derives CanEqual:
   def root: JsonAst = rootValue.asInstanceOf[JsonAst]
@@ -469,16 +442,20 @@ object MinimalSerializer extends JsonPrinter:
               sb.append(':')
               recur(values(i))
               sb.append(if i == last then '}' else ',')
+      
       case array: Array[JsonAst] @unchecked =>
         sb.append('[')
         val last = array.length - 1
         array.indices.foreach: i =>
           recur(array(i))
           sb.append(if i == last then ']' else ',')
+      
       case long: Long =>
        sb.append(long.toString)
+      
       case double: Double =>
         sb.append(double.toString)
+      
       case string: String =>
         sb.append('"')
         appendString(string)
@@ -515,20 +492,25 @@ object HumanReadableSerializer extends JsonPrinter:
               sb.append(':')
               recur(values(i), indent)
               sb.append(if i == last then '}' else ',')
+      
       case array: Array[JsonAst] @unchecked =>
         sb.append('[')
         val last = array.length - 1
         array.indices.foreach: i =>
           recur(array(i), indent)
           sb.append(if i == last then ']' else ',')
+      
       case long: Long =>
        sb.append(long.toString)
+      
       case double: Double =>
         sb.append(double.toString)
+      
       case string: String =>
         sb.append('"')
         appendString(string)
         sb.append('"')
+      
       case boolean: Boolean => sb.append(boolean.toString)
       case _ => sb.append("null")
 
