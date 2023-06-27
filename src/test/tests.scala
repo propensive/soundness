@@ -90,6 +90,16 @@ object Tests extends Suite(t"Serpentine Tests"):
         unsafely(SimplePath.parse(t"/home/work/"))
       .assert(_ == SimplePath(List(PathName(t"work"), PathName(t"home"))))
       
+      test(t"try to parse path without prefix"):
+        unsafely(capture(SimplePath.parse(t"home/work/")))
+      .assert(_ == PathError(PathError.Reason.NotRooted))
+
+      test(t"Show a simple path"):
+        val path: PathName[".*/.*"] = p"abc"
+        path.show
+      .assert(_ == t"abc")
+      
+      
     suite(t"Parsing absolute paths with root"):
       test(t"parse simple rooted absolute path"):
         unsafely(RootedPath.parse(t"C:\\Windows"))
@@ -254,6 +264,14 @@ object Tests extends Suite(t"Serpentine Tests"):
       test(t"Parent of cousin keeps correct ascent 2"):
         (?^^ / p"foo").parent
       .assert(_ == ?^^)
+      
+      test(t"Triple parent has correct ascent"):
+        ?^^^.ascent
+      .assert(_ == 3)
+      
+      test(t"Triple parent of child has correct ascent"):
+        (?^^^ / p"child").ascent
+      .assert(_ == 3)
 
     suite(t"Relative path tests"):
       import hierarchies.simple
@@ -358,11 +376,11 @@ object Tests extends Suite(t"Serpentine Tests"):
           (% / p"foo" / p"bar") ++ rel
       .assert(_ == % / p"foo")
       
-      test(t"add relative grandparent"):
+      test(t"Parent of root throws exception"):
         unsafely:
           val rel = ?^^
-          (% / p"foo" / p"bar" / p"baz") ++ rel
-      .assert(_ == % / p"foo")
+          capture((% / p"foo") ++ rel)
+      .assert(_ == PathError(PathError.Reason.ParentOfRoot))
       
       test(t"add relative uncle"):
         unsafely:
@@ -457,4 +475,3 @@ object Tests extends Suite(t"Serpentine Tests"):
         captureCompileErrors:
           Drive('C') / p"xyz"
       .assert(_ == Nil)
-

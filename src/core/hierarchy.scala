@@ -94,8 +94,8 @@ extension
     (left: LinkType)
     (using hierarchy: Hierarchy[PathType, LinkType])
   
-  def ascent(using pathlike: Followable[LinkType, NameType, ?, ?, ?]): Int =
-    pathlike.ascent(left)
+  def ascent(using followable: Followable[LinkType, NameType, ?, ?, ?]): Int =
+    followable.ascent(left)
 
   @targetName("relativeKeep")
   def keep
