@@ -32,7 +32,7 @@ import java.io as ji
 import java.nio.file as jnf
 import java.util.zip as juz
 
-import scala.language.experimental.pureFunctions
+import scala.language.experimental.captureChecking
 
 case class ZipError(filename: Text) extends Error(err"could not create ZIP file ${filename}")
 
@@ -53,21 +53,22 @@ object ZipPath:
     Readable.lazyList[Bytes].contraMap(_.entry().content())
 
 case class ZipPath(zipFile: ZipFile, ref: ZipRef):
-  def entry(): ZipEntry throws StreamCutError = zipFile.entry(ref)
+  def entry()(using streamCut: CanThrow[StreamCutError]): ZipEntry^ = zipFile.entry(ref)
 
 object ZipRef:
-  def apply(text: Text): ZipRef throws PathError = reachable.parse(text)
+  def apply(text: Text)(using pathError: CanThrow[PathError]): ZipRef^{pathError} = reachable.parse(text)
   
   @targetName("child")
   def /(name: PathName[InvalidZipNames]): ZipRef = ZipRef(List(name))
   
-  given reachable: ParsableReachable[ZipRef, InvalidZipNames, "/"] with
-    type Root = ZipRef.type
-    def root(path: ZipRef): ZipRef.type = ZipRef
-    def descent(path: ZipRef): List[PathName[InvalidZipNames]] = path.descent
-    def parseRoot(text: Text): (ZipRef.type, Text) = (ZipRef, text.drop(1))
-    def make(root: ZipRef.type, descent: List[PathName[InvalidZipNames]]) = ZipRef(descent)
-    def prefix(ref: ZipRef.type): Text = t""
+  given reachable: ParsableReachable[ZipRef, InvalidZipNames, "/"] =
+    new ParsableReachable[ZipRef, InvalidZipNames, "/"]:
+      type Root = ZipRef.type
+      def root(path: ZipRef): ZipRef.type = ZipRef
+      def descent(path: ZipRef): List[PathName[InvalidZipNames]] = path.descent
+      def parseRoot(text: Text): (ZipRef.type, Text) = (ZipRef, text.drop(1))
+      def make(root: ZipRef.type, descent: List[PathName[InvalidZipNames]]) = ZipRef(descent)
+      def prefix(ref: ZipRef.type): Text = t""
 
 case class ZipRef(descent: List[PathName[InvalidZipNames]])
 
@@ -75,8 +76,8 @@ object ZipEntry:
   def apply
       [ResourceType]
       (path: ZipRef, resource: ResourceType)
-      (using Readable[ResourceType, Bytes])
-      : ZipEntry =
+      (using readable: Readable[ResourceType, Bytes])
+      : ZipEntry^{readable} =
     new ZipEntry(path, () => resource.stream[Bytes])
 
   given Readable[ZipEntry, Bytes] = Readable.lazyList[Bytes].contraMap(_.content())
@@ -96,10 +97,10 @@ object ZipFile:
 
   def create[PathType]
       (path: PathType)
-      (using genericPathReader: /*{*}*/ GenericPathReader[PathType], streamCut: CanThrow[StreamCutError])
-      : /*{genericPathReader, streamCut}*/ ZipFile =
-    val pathname: String = genericPathReader.getPath(path)
-    val out: /*{genericPathReader}*/ juz.ZipOutputStream =
+      (using pathReader: GenericPathReader[PathType]^, streamCut: CanThrow[StreamCutError])
+      : ZipFile^{pathReader, streamCut} =
+    val pathname: String = pathReader.getPath(path)
+    val out: juz.ZipOutputStream^{pathReader} =
       juz.ZipOutputStream(ji.FileOutputStream(ji.File(pathname)))
     
     out.putNextEntry(juz.ZipEntry("/"))
@@ -125,7 +126,7 @@ case class ZipFile(private val filename: Text):
   def filesystem(): jnf.FileSystem throws ZipError =
     ZipFile.cache.getOrElseUpdate(filename, synchronized(javaFs()))
 
-  def entry(ref: ZipRef): ZipEntry throws StreamCutError =
+  def entry(ref: ZipRef)(using streamCut: CanThrow[StreamCutError]): ZipEntry^ =
     ZipEntry(ref, zipFile.getInputStream(zipFile.getEntry(ref.render.s).nn).nn)
 
   def append
