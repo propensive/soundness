@@ -23,7 +23,8 @@ import language.experimental.captureChecking
 extension (error: Error) def stackTrace: StackTrace = StackTrace(error)
 
 object StackTrace:
-  case class Frame(className: Text, method: Text, file: Text, line: Maybe[Int], native: Boolean)
+  case class Method(className: Text, method: Text)
+  case class Frame(method: Method, file: Text, line: Maybe[Int], native: Boolean)
   
   val legend: Map[Text, Text] = Map(
     Text("λₙ") -> Text("anonymous function"),
@@ -188,8 +189,10 @@ object StackTrace:
   def apply(exception: Throwable): StackTrace =
     val frames = List(exception.getStackTrace.nn.map(_.nn)*).map: frame =>
       StackTrace.Frame(
-        rewrite(frame.getClassName.nn),
-        rewrite(frame.getMethodName.nn, method = true),
+        StackTrace.Method(
+          rewrite(frame.getClassName.nn),
+          rewrite(frame.getMethodName.nn, method = true)
+        ),
         Text(Option(frame.getFileName).map(_.nn).getOrElse("[no file]")),
         if frame.getLineNumber < 0 then Unset else frame.getLineNumber,
         frame.isNativeMethod
@@ -212,7 +215,7 @@ case class StackTrace
     (component: Text, className: Text, message: Text, frames: List[StackTrace.Frame],
         cause: Maybe[StackTrace]):
   def crop(cutClassName: Text, cutMethod: Text): StackTrace =
-    val frames2 = frames.takeWhile { f => f.className != cutClassName || f.method != cutMethod }
+    val frames2 = frames.takeWhile { f => f.method.className != cutClassName || f.method.method != cutMethod }
     StackTrace(component, className, message, frames2, cause)
   
   def drop(n: Int): StackTrace =
