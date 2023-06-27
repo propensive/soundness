@@ -423,10 +423,10 @@ class TestReport(using env: Environment):
 
       coverageTable.tabulate(data, columns).foreach(Io.println)
 
-      def line(tiles: List[TreeTile], node: Surface): (Output, Juncture) =
+      def line(tiles: List[TreeTile], surface: Surface): (Output, Juncture) =
         import treeStyles.default
-        import node.juncture.*
-        out"${tiles.map(_.text).join}• $shortCode" -> node.juncture
+        import surface.juncture.*
+        out"${tiles.map(_.text).join}• $shortCode" -> surface.juncture
 
       def render(junctures: List[Surface]): LazyList[(Output, Juncture)] =
         drawTree[Surface, (Output, Juncture)](_.children, line)(junctures)
