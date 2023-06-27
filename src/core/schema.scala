@@ -39,8 +39,6 @@ object CodlSchema:
 
     override def toString(): String = t"$key${schema.arity.symbol}".s
 
-  given Comparable[CodlSchema] = Comparable.simplistic
-
   // FIXME
   object Free extends Struct(List(Entry(t"?", Field(Arity.Many))), Arity.Many):
     override def apply(key: Text): Maybe[CodlSchema] = Free
@@ -64,7 +62,7 @@ extends Dynamic:
   def parse[SourceType](source: SourceType)
            (using streamCut: CanThrow[StreamCutError], aggregate: CanThrow[AggregateError[CodlError]],
                 readable: Readable[SourceType, Text])
-           : {aggregate, streamCut} CodlDoc =
+           : CodlDoc^{aggregate, streamCut} =
     Codl.parse(source, this)
   
   def apply(key: Text): Maybe[CodlSchema] = dictionary.get(key).orElse(dictionary.get(Unset)).getOrElse(Unset)

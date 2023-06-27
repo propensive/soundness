@@ -19,6 +19,7 @@ package cellulose
 import rudiments.*
 import gossamer.*
 import kaleidoscope.*
+import spectacular.*
 import digression.*
 
 import language.experimental.captureChecking
@@ -34,8 +35,8 @@ object Character:
     def serialize(ch: Character): Text = if ch == End then t"[END]" else t"[${ch.char}:${ch.line}:${ch.column}]"
     
     def deserialize(txt: Text): Character = txt match
-      case r"[$ch@(.):${As[Int](l)}@([0-9]+):${As[Int](c)}@([0-9]+)]" => Character(unsafely(ch(0).toInt), l, c)
-      case _                                                          => End
+      case r"[$ch(.):${As[Int](l)}([0-9]+):${As[Int](c)}([0-9]+)]" => Character(unsafely(ch(0).toInt), l, c)
+      case _                                                       => End
 
   given Typeable[Character] with
     def unapply(value: Any): Option[value.type & Character] = value.matchable(using Unsafe) match

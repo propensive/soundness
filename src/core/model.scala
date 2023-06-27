@@ -20,6 +20,7 @@ import rudiments.*
 import digression.*
 import gossamer.*
 import contextual.*
+import spectacular.*
 import eucalyptus.*
 import dissonance.*
 import chiaroscuro.*
@@ -35,19 +36,19 @@ object CodlNode:
   val empty: CodlNode = CodlNode()
   def apply(key: Text)(child: CodlNode*): CodlNode = CodlNode(Data(key, IArray.from(child)))
   
-  given Comparable[CodlNode] = (left, right) =>
-    if left == right then Comparison.Same(left.debug) else
+  given Contrast[CodlNode] = (left, right) =>
+    if left == right then Accordance.Accord(left.debug) else
       val comparison = IArray.from:
         diff(left.children, right.children).rdiff(_.id == _.id).changes.map:
-          case Change.Keep(_, _, v) => v.key.or(t"—") -> Comparison.Same(v.debug)
-          case Change.Ins(_, v)     => v.key.or(t"—") -> Comparison.Different(t"—", v.debug)
-          case Change.Del(_, v)     => v.key.or(t"—") -> Comparison.Different(v.debug, t"—")
+          case Par(_, _, v) => v.mm(_.key).or(t"—") -> Accordance.Accord(v.debug)
+          case Ins(_, v)    => v.mm(_.key).or(t"—") -> Accordance.Discord(t"—", v.debug)
+          case Del(_, v)    => v.mm(_.key).or(t"—") -> Accordance.Discord(v.debug, t"—")
           
-          case Change.Replace(_, v, lv, rv) =>
-            if lv.key == rv.key then lv.key.or(t"—") -> summon[Comparable[CodlNode]].compare(lv, rv)
-            else t"[key]" -> Comparison.Different(lv.key.or(t"—"), rv.key.or(t"—"))
+          case Sub(_, v, lv, rv) =>
+            if lv.mm(_.key) == rv.mm(_.key) then lv.mm(_.key).or(t"—") -> lv.contrastWith(rv)
+            else t"[key]" -> Accordance.Discord(lv.mm(_.key).or(t"—"), rv.mm(_.key).or(t"—"))
 
-      Comparison.Structural(comparison, left.key.or(t"—"), right.key.or(t"—"))
+      Accordance.Collation(comparison, left.key.or(t"—"), right.key.or(t"—"))
   
 case class CodlNode(data: Maybe[Data] = Unset, meta: Maybe[Meta] = Unset) extends Dynamic:
   def key: Maybe[Text] = data.mm(_.key)
@@ -90,23 +91,23 @@ object CodlDoc:
 
   given Debug[CodlDoc] = _.serialize
   
-  given Similar[CodlDoc] = _.schema == _.schema
-  //given Comparable[CodlDoc] = Comparable.derived[CodlDoc]
+  given Assimilable[CodlDoc] = _.schema == _.schema
+  //given Contrast[CodlDoc] = Contrast.derived[CodlDoc]
 
-  given Comparable[CodlDoc] = (left, right) =>
-    if left == right then Comparison.Same(left.debug) else
+  given Contrast[CodlDoc] = (left, right) =>
+    if left == right then Accordance.Accord(left.debug) else
       val comparison = IArray.from:
-        (t"[schema]", summon[Comparable[CodlSchema]].compare(left.schema, right.schema)) +:
-        (t"[margin]", summon[Comparable[Int]].compare(left.margin, right.margin)) +:
+        (t"[schema]", left.schema.contrastWith(right.schema)) +:
+        (t"[margin]", left.margin.contrastWith(right.margin)) +:
         diff(left.children, right.children).rdiff(_.id == _.id).changes.map:
-          case Change.Keep(_, _, v)         => v.key.or(t"—") -> Comparison.Same(v.debug)
-          case Change.Ins(_, v)             => v.key.or(t"—") -> Comparison.Different(t"—", v.debug)
-          case Change.Del(_, v)             => v.key.or(t"—") -> Comparison.Different(v.debug, t"—")
-          case Change.Replace(_, v, lv, rv) =>
-            val key = if lv.key == rv.key then lv.key.or(t"—") else t"${lv.key.or(t"—")}/${rv.key.or(t"—")}"
-            key -> summon[Comparable[CodlNode]].compare(lv, rv)
+          case Par(_, _, v)      => v.mm(_.key).or(t"—") -> Accordance.Accord(v.debug)
+          case Ins(_, v)         => v.mm(_.key).or(t"—") -> Accordance.Discord(t"—", v.debug)
+          case Del(_, v)         => v.mm(_.key).or(t"—") -> Accordance.Discord(v.debug, t"—")
+          case Sub(_, v, lv, rv) =>
+            val key = if lv.mm(_.key) == rv.mm(_.key) then lv.mm(_.key).or(t"—") else t"${lv.mm(_.key).or(t"—")}/${rv.mm(_.key).or(t"—")}"
+            key -> lv.contrastWith(rv)
       
-      Comparison.Structural(comparison, t"", t"")
+      Accordance.Collation(comparison, t"", t"")
 
 case class CodlDoc(children: IArray[CodlNode], schema: CodlSchema, margin: Int, body: LazyList[Text] = LazyList())
 extends Indexed:
@@ -130,12 +131,12 @@ extends Indexed:
       else x.id == y.id
 
     def recur(original: IArray[CodlNode], updates: IArray[CodlNode]): IArray[CodlNode] =
-      val changes = diff[CodlNode](children, updates, cmp).changes
+      val changes = diff[CodlNode](children, updates, cmp).edits
       
       val nodes2 = changes.foldLeft(List[CodlNode]()):
-        case (nodes, Change.Del(left, value))         => nodes
-        case (nodes, Change.Ins(right, value))        => value :: nodes
-        case (nodes, Change.Keep(left, right, value)) =>
+        case (nodes, Del(left, value))         => nodes
+        case (nodes, Ins(right, value))        => value :: nodes
+        case (nodes, Par(left, right, value)) =>
           val orig: CodlNode = original(left)
           val origData: Data = orig.data.or(???)
           

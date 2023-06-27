@@ -16,9 +16,11 @@
 
 package cellulose
 
-import java.io as ji
 import rudiments.*
+import spectacular.*
 import gossamer.*
+
+import java.io as ji
 
 object Bin:
   private def write(out: ji.Writer, number: Int): Unit = out.write((number + 32).toChar)

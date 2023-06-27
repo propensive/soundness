@@ -19,6 +19,7 @@ package cellulose
 import gossamer.*
 import eucalyptus.*
 import rudiments.*
+import spectacular.*, booleanStyles.trueFalse
 import digression.*
 import contextual.*
 import turbulence.*
@@ -52,7 +53,7 @@ object CodlToken:
     case Comment(text, line, col)     => t"Comment($text, $line, $col)"
     case Error(error)                 => t"Error(${error.message})"
   
-  given Comparable[CodlToken] = Comparable.derived[CodlToken]
+  given Contrast[CodlToken] = Contrast.derived[CodlToken]
 
 object Codl:
   def read[T: Codec](source: Any)(using readable: Readable[source.type, Text])
@@ -62,8 +63,9 @@ object Codl:
   def parse[SourceType]
            (source: SourceType, schema: CodlSchema = CodlSchema.Free, subs: List[Data] = Nil,
                 fromStart: Boolean = false)
-           (using readable: {*} Readable[SourceType, Text])
-           : {readable} CodlDoc throws AggregateError[CodlError] | StreamCutError =
+           (using readable: Readable[SourceType, Text],
+               aggregate: CanThrow[AggregateError[CodlError]], streamCut: CanThrow[StreamCutError])
+           : CodlDoc^{readable, aggregate, streamCut} =
     val (margin, stream) = tokenize(readable.read(source), fromStart)
     val baseSchema: CodlSchema = schema
     
@@ -209,7 +211,7 @@ object Codl:
 
     if stream.isEmpty then CodlDoc() else recur(stream, Proto(), Nil, Nil, 0, subs.reverse, Nil, LazyList())
 
-  def tokenize(in: {*} LazyList[Text], fromStart: Boolean = false): (Int, {in} LazyList[CodlToken]) =
+  def tokenize(in: LazyList[Text]^, fromStart: Boolean = false): (Int, LazyList[CodlToken]^{in}) =
     val reader: PositionReader = new PositionReader(in.map(identity))
 
     enum State:
