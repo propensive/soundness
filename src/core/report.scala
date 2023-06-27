@@ -423,25 +423,25 @@ class TestReport(using env: Environment):
 
       coverageTable.tabulate(data, columns).foreach(Io.println)
 
-      def line(tiles: List[TreeTile], node: SurfaceTree): (Output, Surface) =
+      def line(tiles: List[TreeTile], node: Surface): (Output, Juncture) =
         import treeStyles.default
-        import node.surface.*
-        out"${tiles.map(_.text).join}• $shortCode" -> node.surface
+        import node.juncture.*
+        out"${tiles.map(_.text).join}• $shortCode" -> node.juncture
 
-      def render(surfaces: List[SurfaceTree]): LazyList[(Output, Surface)] =
-        drawTree[SurfaceTree, (Output, Surface)](_.children, line)(surfaces)
+      def render(junctures: List[Surface]): LazyList[(Output, Juncture)] =
+        drawTree[Surface, (Output, Juncture)](_.children, line)(junctures)
       
       import colors.*
       import tableStyles.horizontal
       
       val allHits = coverage.hits ++ coverage.oldHits
       
-      val surfaces2 = coverage.structure.values.flatten
+      val junctures2 = coverage.structure.values.flatten
           .to(List)
           .filter(!_.covered(allHits))
           .map(_.uncovered(allHits))
 
-      Table[(Output, Surface)](
+      Table[(Output, Juncture)](
         Column(out"") { row => if row(1).branch then out"⎇" else out"" },
         Column(out"") { row =>
           if coverage.hits.contains(row(1).id) then out"${Bg(ForestGreen)}(  )"
@@ -452,7 +452,7 @@ class TestReport(using env: Environment):
         Column(out"Method")(_(1).method.out),
         Column(out"Line") { row => out"$GreenYellow(${row(1).path})$Gray(:)$Gold(${row(1).lineNo})" },
         Column(out"Symbol")(_(1).symbolName)
-      ).tabulate(render(surfaces2), columns).foreach(Io.println)
+      ).tabulate(render(junctures2), columns).foreach(Io.println)
       
       Io.println(out"")
 

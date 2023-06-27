@@ -26,13 +26,13 @@ import scala.collection.mutable.BitSet
 
 import java.io.*
 
-object Surface:
-  given Ordering[Surface] = Ordering.by[Surface, Int](_.start).orElseBy(-_.end)
+object Juncture:
+  given Ordering[Juncture] = Ordering.by[Juncture, Int](_.start).orElseBy(-_.end)
 
-case class Surface
+case class Juncture
     (id: Int, path: Text, className: Text, methodName: Text, start: Int, end: Int, lineNo: Int,
         symbolName: Text, treeName: Text, branch: Boolean, ignored: Boolean, code: List[Text]):
-  def contains(right: Surface): Boolean =
+  def contains(right: Juncture): Boolean =
     right.start >= start && right.end <= end && !(right.start == start && right.end == end)
   
   def shortCode: Text =
@@ -44,26 +44,26 @@ case class Surface
     StackTrace.rewrite(methodName.s, method = true),
   )
 
-object SurfaceTree:
-  def collapse(todo: List[Surface], done: List[SurfaceTree]): List[SurfaceTree] = todo match
+object Surface:
+  def collapse(todo: List[Juncture], done: List[Surface]): List[Surface] = todo match
     case Nil =>
       done.reverse
     
     case head :: tail =>
       val todo2 = tail.takeWhile(head.contains(_))
-      collapse(tail.drop(todo2.length), SurfaceTree(head, collapse(todo2, Nil)) :: done)
+      collapse(tail.drop(todo2.length), Surface(head, collapse(todo2, Nil)) :: done)
 
-case class SurfaceTree(surface: Surface, children: List[SurfaceTree]):
+case class Surface(juncture: Juncture, children: List[Surface]):
   def covered(hits: Set[Int]): Boolean =
-    hits.contains(surface.id) && children.forall(_.covered(hits))
+    hits.contains(juncture.id) && children.forall(_.covered(hits))
   
-  def uncovered(hits: Set[Int]): SurfaceTree =
-    SurfaceTree(surface, children.filter(!_.covered(hits)).map(_.uncovered(hits)))
+  def uncovered(hits: Set[Int]): Surface =
+    Surface(juncture, children.filter(!_.covered(hits)).map(_.uncovered(hits)))
 
-case class CoverageResults(path: Text, spec: IArray[Surface], oldHits: Set[Int], hits: Set[Int]):
-  lazy val structure: Map[Text, List[SurfaceTree]] =
-    spec.drop(spec.lastIndexWhere(_.id == 0)).to(List).groupBy(_.path).map: (path, surfaces) =>
-      path -> SurfaceTree.collapse(surfaces.sortBy(-_.end).sortBy(_.start), Nil)
+case class CoverageResults(path: Text, spec: IArray[Juncture], oldHits: Set[Int], hits: Set[Int]):
+  lazy val structure: Map[Text, List[Surface]] =
+    spec.drop(spec.lastIndexWhere(_.id == 0)).to(List).groupBy(_.path).map: (path, junctures) =>
+      path -> Surface.collapse(junctures.sortBy(-_.end).sortBy(_.start), Nil)
     .to(Map)
 
 object Coverage:
@@ -85,23 +85,23 @@ object Coverage:
   private def currentDir: Option[Text] =
     Option(System.getProperty("scalac.coverage")).map(_.nn).map(Text(_))
 
-  private def spec(dir: Text): IArray[Surface] =
+  private def spec(dir: Text): IArray[Juncture] =
     val file = java.io.File(java.io.File(dir.s), "scoverage.coverage")
     val lines = Source.fromFile(file).getLines.to(LazyList).map(Text(_))
 
-    def recur(lines: LazyList[Text], surfaces: List[Surface] = Nil): List[Surface] =
+    def recur(lines: LazyList[Text], junctures: List[Juncture] = Nil): List[Juncture] =
       lines match
         case As[Int](id) #:: path #:: _ #:: _ #:: _ #:: className #:: methodName #::
             As[Int](start) #:: As[Int](end) #:: As[Int](lineNo) #:: symbolName #:: treeName #::
             As[Boolean](branch) #:: _ #:: As[Boolean](ignored) #:: tail =>
           
-          val surface = Surface(id, path, className, methodName, start, end, lineNo + 1,
+          val juncture = Juncture(id, path, className, methodName, start, end, lineNo + 1,
               symbolName, treeName, branch, ignored, tail.takeWhile(!_.starts(t"\f")).to(List))
           
-          recur(tail.dropWhile(!_.starts(t"\f")).tail, surface :: surfaces)
+          recur(tail.dropWhile(!_.starts(t"\f")).tail, juncture :: junctures)
         
         case _ =>
-          surfaces.reverse
+          junctures.reverse
       
     IArray.from(recur(lines.dropWhile(_.starts(t"#"))))
   
