@@ -36,7 +36,7 @@ object Example:
 
     given pathlike: ParsableReachable[RootedPath, Forbidden] with
       type Root = Drive
-      def separator: Text = t"\\"
+      def separator(path: RootedPath): Text = t"\\"
       def root(path: RootedPath): Drive = path.root
       def prefix(drive: Drive): Text = t"${drive.letter}:\\"
       def descent(path: RootedPath): List[PathName[Forbidden]] = path.descent
@@ -56,7 +56,8 @@ object Example:
     def parse(text: Text): RootedLink = pathlike.parse(text)
     
     given pathlike: Followable[RootedLink, Forbidden, "..", "."] with
-      def separator: Text = t"\\"
+      def separator(path: RootedLink): Text = t"\\"
+      val separators: Set[Char] = Set('/')
       def ascent(path: RootedLink): Int = path.ascent
       def descent(path: RootedLink): List[PathName[Forbidden]] = path.descent
     

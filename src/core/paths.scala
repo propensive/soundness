@@ -26,14 +26,14 @@ object Root
 
 object SimplePath:
   inline def parse(text: Text)(using path: CanThrow[PathError]): SimplePath^{path} =
-    pathlike.parse(text)
+    reachable.parse(text)
   
   given show: Show[SimplePath] = _.render
   given mainRoot: MainRoot[SimplePath] = () => SimplePath(Nil)
 
-  given pathlike: ParsableReachable[SimplePath, ".*\\/.*"] with
+  given reachable: ParsableReachable[SimplePath, ".*\\/.*"] with
     type Root = serpentine.Root.type
-    def separator: Text = t"/"
+    def separator(path: SimplePath): Text = t"/"
     def root(path: SimplePath): Root = serpentine.Root
     def prefix(root: Root): Text = t"/"
     
@@ -50,10 +50,11 @@ case class SimplePath(descent: List[PathName[".*\\/.*"]])
 object SimpleLink:
   given show: Show[SimpleLink] = _.render
   inline def parse(text: Text)(using path: CanThrow[PathError]): SimpleLink^{path} =
-    pathlike.parse(text)
+    followable.parse(text)
   
-  given pathlike: Followable[SimpleLink, ".*\\/.*", "..", "."] with
-    def separator: Text = t"/"
+  given followable: Followable[SimpleLink, ".*\\/.*", "..", "."] with
+    def separator(link: SimpleLink): Text = t"/"
+    val separators: Set[Char] = Set('/')
     def ascent(path: SimpleLink): Int = path.ascent
 
     def make(ascent: Int, descent: List[PathName[".*\\/.*"]]): SimpleLink =

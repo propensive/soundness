@@ -147,15 +147,13 @@ extension
     if followable.ascent(relative) > left.depth
     then throw PathError(PathError.Reason.ParentOfRoot)
     else
-      val common: PathType =
-        reachable.ancestor(left, followable.ascent(relative)).avow
-      
+      val common: PathType = reachable.ancestor(left, followable.ascent(relative)).avow
       val descent = reachable.descent(common)
       
       reachable.make(reachable.root(left), relative.descent ::: descent)
 
 trait Pathlike[DirectionType <: Matchable, NameType <: Label]:
-  def separator: Text
+  def separator(path: DirectionType): Text
   def child(path: DirectionType, name: PathName[NameType]): DirectionType
   def descent(path: DirectionType): List[PathName[NameType]]
   def render(path: DirectionType): Text
@@ -167,12 +165,12 @@ abstract class ParsableReachable[DirectionType <: Matchable, NameType <: Label]
 extends Reachable[DirectionType, NameType]:
   type Root
   def parseRoot(text: Text): Maybe[(Root, Text)]
-  def separator: Text
+  def separator(path: DirectionType): Text
   
   inline def parse(text: Text)(using path: CanThrow[PathError]): DirectionType^{path} =
     val (root, rest) = parseRoot(text).or(throw PathError(PathError.Reason.NotRooted))
     
-    val names = rest.cut(separator).reverse match
+    val names = rest.cut(separator(make(root, Nil))).reverse match
       case t"" :: tail => tail
       case names       => names
 
@@ -182,7 +180,7 @@ trait Reachable
     [DirectionType <: Matchable, NameType <: Label]
 extends Pathlike[DirectionType, NameType]:
   type Root
-  def separator: Text
+  def separator(path: DirectionType): Text
   def prefix(root: Root): Text
   def root(path: DirectionType): Root
   def make(root: Root, descent: List[PathName[NameType]]): DirectionType
@@ -196,7 +194,7 @@ extends Pathlike[DirectionType, NameType]:
   def parent(path: DirectionType): Maybe[DirectionType] = ancestor(path, 1)
   
   def render(path: DirectionType): Text =
-    t"${prefix(root(path))}${descent(path).reverse.map(_.render).join(separator)}"
+    t"${prefix(root(path))}${descent(path).reverse.map(_.render).join(separator(path))}"
   
 trait Followable
     [DirectionType <: Matchable, NameType <: Label, ParentRefType <: Label, SelfRefType <: Label]
@@ -204,6 +202,7 @@ trait Followable
 extends Pathlike[DirectionType, NameType]:
   val parentRef: Text = Text(summon[ValueOf[ParentRefType]].value)
   val selfRef: Text = Text(summon[ValueOf[SelfRefType]].value)
+  def separators: Set[Char]
   def ascent(path: DirectionType): Int
   def make(ascent: Int, descent: List[PathName[NameType]]): DirectionType
   def parent(path: DirectionType): DirectionType = ancestor(path, 1)
@@ -217,21 +216,22 @@ extends Pathlike[DirectionType, NameType]:
     make(ascent(path), name :: descent(path))
   
   def render(path: DirectionType): Text =
-    val prefix = t"${t"$parentRef$separator"*(ascent(path))}"
+    val prefix = t"${t"$parentRef${separator(path)}"*(ascent(path))}"
     
     if descent(path).isEmpty then
       if ascent(path) == 0 then selfRef
-      else t"${t"$parentRef$separator"*(ascent(path) - 1)}$parentRef"
-    else t"$prefix${descent(path).reverse.map(_.render).join(separator)}"
+      else t"${t"$parentRef${separator(path)}"*(ascent(path) - 1)}$parentRef"
+    else t"$prefix${descent(path).reverse.map(_.render).join(separator(path))}"
 
   inline def parse(text: Text)(using path: CanThrow[PathError]): DirectionType^{path} =
-    val ascentPrefix: Text = t"$parentRef$separator"
+    val foundSeparator: Char = unsafely(text.where(separators.contains(_)).mm(text(_))).or('/')
+    val ascentPrefix: Text = t"$parentRef$foundSeparator"
     
     def recur(text: Text, ascent: Int = 0): DirectionType =
       if text.starts(ascentPrefix) then recur(text.drop(ascentPrefix.length), ascent + 1)
       else if text == parentRef then make(ascent + 1, Nil)
       else
-        val names = text.cut(separator).reverse match
+        val names = text.cut(foundSeparator).reverse match
           case t"" :: tail => tail
           case names       => names
         
