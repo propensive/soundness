@@ -34,8 +34,9 @@ object Example:
     given Show[RootedPath] = _.render
     def parse(text: Text): RootedPath = pathlike.parse(text)
 
-    given pathlike: ParsableReachable[RootedPath, Forbidden, "\\"] with
+    given pathlike: ParsableReachable[RootedPath, Forbidden] with
       type Root = Drive
+      def separator: Text = t"\\"
       def root(path: RootedPath): Drive = path.root
       def prefix(drive: Drive): Text = t"${drive.letter}:\\"
       def descent(path: RootedPath): List[PathName[Forbidden]] = path.descent
@@ -54,7 +55,8 @@ object Example:
     given Show[RootedLink] = _.render
     def parse(text: Text): RootedLink = pathlike.parse(text)
     
-    given pathlike: Followable[RootedLink, Forbidden, "\\", "..", "."] with
+    given pathlike: Followable[RootedLink, Forbidden, "..", "."] with
+      def separator: Text = t"\\"
       def ascent(path: RootedLink): Int = path.ascent
       def descent(path: RootedLink): List[PathName[Forbidden]] = path.descent
     
@@ -393,8 +395,6 @@ object Tests extends Suite(t"Serpentine Tests"):
           val rel = ?^^ / p"quux" / p"bar"
           (% / p"foo" / p"bar" / p"baz") ++ rel
       .assert(_ == % / p"foo" / p"quux" / p"bar")
-
-
 
     suite(t"Rooted path tests"):
       test(t"Absolute path child"):
