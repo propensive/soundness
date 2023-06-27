@@ -35,5 +35,5 @@ project probably
   module coverage
     compiler  scala
     sources   src/coverage
-    include   gossamer/core
+    include   gossamer/core dendrology/core
 

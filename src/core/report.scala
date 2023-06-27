@@ -22,6 +22,7 @@ import gossamer.*, defaultTextTypes.output
 import chiaroscuro.*
 import ambience.*
 import escritoire.*
+import dendrology.*
 import escapade.*
 import turbulence.*
 import iridescence.*
@@ -252,8 +253,8 @@ class TestReport(using env: Environment):
       private val eastAsian = textWidthCalculation.eastAsianScripts
       def width(text: Text): Int = text.s.foldLeft(0)(_ + width(_))
       def width(char: Char): Int = char match
-        case '✓' | '✗' => 1
-        case _         => char.displayWidth
+        case '✓' | '✗' | '⎇' => 1
+        case _                => char.displayWidth
     
     val table =
       val showStats = !lines.summaries.forall(_.count < 2)
@@ -387,7 +388,7 @@ class TestReport(using env: Environment):
 
     coverage.foreach: coverage =>
       Io.println(out"$Bold($Underline(Test coverage))")
-      case class  CoverageData(path: Text, branches: Int, hits: Int, oldHits: Int):
+      case class CoverageData(path: Text, branches: Int, hits: Int, oldHits: Int):
         def hitsText: Output =
           val main = out"${if hits == 0 then colors.Gray else colors.ForestGreen}($hits)"
           if oldHits == 0 then main else out"${colors.Goldenrod}(${oldHits.show.subscript}) $main"
@@ -421,6 +422,39 @@ class TestReport(using env: Environment):
       )
 
       coverageTable.tabulate(data, columns).foreach(Io.println)
+
+      def line(tiles: List[TreeTile], node: SurfaceTree): (Output, Surface) =
+        import treeStyles.default
+        import node.surface.*
+        out"${tiles.map(_.text).join}• $shortCode" -> node.surface
+
+      def render(surfaces: List[SurfaceTree]): LazyList[(Output, Surface)] =
+        drawTree[SurfaceTree, (Output, Surface)](_.children, line)(surfaces)
+      
+      import colors.*
+      import tableStyles.horizontal
+      
+      val allHits = coverage.hits ++ coverage.oldHits
+      
+      val surfaces2 = coverage.structure.values.flatten
+          .to(List)
+          .filter(!_.covered(allHits))
+          .map(_.uncovered(allHits))
+
+      Table[(Output, Surface)](
+        Column(out"") { row => if row(1).branch then out"⎇" else out"" },
+        Column(out"") { row =>
+          if coverage.hits.contains(row(1).id) then out"${Bg(ForestGreen)}(  )"
+          else if coverage.oldHits.contains(row(1).id) then out"${Bg(Goldenrod)}(  )"
+          else out"${Bg(Brown)}(  )"
+        },
+        Column(out"Juncture")(_(0)),
+        Column(out"Method")(_(1).method.out),
+        Column(out"Line") { row => out"$GreenYellow(${row(1).path})$Gray(:)$Gold(${row(1).lineNo})" },
+        Column(out"Symbol")(_(1).symbolName)
+      ).tabulate(render(surfaces2), columns).foreach(Io.println)
+      
+      Io.println(out"")
 
     details.to(List).sortBy(_(0).timestamp).foreach: (id, info) =>
       val ribbon = Ribbon(colors.DarkRed.srgb, colors.FireBrick.srgb, colors.Tomato.srgb)
