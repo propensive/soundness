@@ -42,8 +42,8 @@ object Display:
     error.message.fold(out"")((msg, txt) => out"$msg$txt", (msg, sub) => out"$msg$Italic($sub)")
 
   given (using TextWidthCalculator): Display[StackTrace] = stack =>
-    val methodWidth = stack.frames.map(_.method.length).max
-    val classWidth = stack.frames.map(_.className.length).max
+    val methodWidth = stack.frames.map(_.method.method.length).max
+    val classWidth = stack.frames.map(_.method.className.length).max
     val fileWidth = stack.frames.map(_.file.length).max
     
     val fullClass = out"$Italic(${stack.component}.$Bold(${stack.className}))"
@@ -51,16 +51,16 @@ object Display:
     
     val root = stack.frames.foldLeft(init):
       case (msg, frame) =>
-        val obj = frame.className.ends(t"#")
+        val obj = frame.method.className.ends(t"#")
         import colors.*
         val drop = if obj then 1 else 0
         val file = out"$CadetBlue(${frame.file.fit(fileWidth, Rtl)})"
         val dot = if obj then t"." else t"#"
-        val cls = out"$MediumVioletRed(${frame.className.drop(drop, Rtl).fit(classWidth, Rtl)})"
-        val method = out"$PaleVioletRed(${frame.method.fit(methodWidth)})"
+        val className = out"$MediumVioletRed(${frame.method.className.drop(drop, Rtl).fit(classWidth, Rtl)})"
+        val method = out"$PaleVioletRed(${frame.method.method.fit(methodWidth)})"
         val line = out"$MediumTurquoise(${frame.line.mm(_.show).or(t"?")})"
         
-        out"$msg\n  $Gray(at) $cls$Gray($dot)$method $file$Gray(:)$line"
+        out"$msg\n  $Gray(at) $className$Gray($dot)$method $file$Gray(:)$line"
     
     stack.cause.option match
       case None        => root
@@ -68,12 +68,18 @@ object Display:
   
   given (using TextWidthCalculator): Display[StackTrace.Frame] = frame =>
     import colors.*
-    val cls = out"$MediumVioletRed(${frame.className.fit(40, Rtl)})"
-    val method = out"$PaleVioletRed(${frame.method.fit(40)})"
+    val className = out"$MediumVioletRed(${frame.method.className.fit(40, Rtl)})"
+    val method = out"$PaleVioletRed(${frame.method.method.fit(40)})"
     val file = out"$CadetBlue(${frame.file.fit(18, Rtl)})"
     val line = out"$MediumTurquoise(${frame.line.mm(_.show).or(t"?")})"
-    out"$cls$Gray(#)$method $file$Gray(:)$line"
+    out"$className$Gray(#)$method $file$Gray(:)$line"
 
+  given Display[StackTrace.Method] = method =>
+    import colors.*
+    val className = out"$MediumVioletRed(${method.className})"
+    val methodName = out"$PaleVioletRed(${method.method})"
+    out"$className$Gray(#)$methodName"
+  
   given (using decimalizer: Decimalizer): Display[Double] = double =>
     Output.make(decimalizer.decimalize(double), _.copy(fg = colors.Gold.asInt))
 
