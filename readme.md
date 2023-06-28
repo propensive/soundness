@@ -48,7 +48,7 @@ normally be rendered immediately after the tiles.
 
 For example, the lambda,
 ```scala
-(tiles, node) -> t"${tiles.map(_.show).join}> ${node.title}"
+(tiles, node) -> t"${tiles.map(_.text).join}> ${node.title}"
 ```
 could define a `mkLine` which returns a `Text` line by appending the `Node`'s
 `title` field to the tiles, serialized and joined as text.
@@ -74,7 +74,7 @@ import dendrology.*
 import treeStyles.rounded
 
 def mkLine(tiles: List[TreeTile], node: Node): Text =
-  t"${tiles.map(_.show).join}> ${node.title}"
+  t"${tiles.map(_.text).join}> ${node.title}"
 
 val lines = drawTree(_.children, mkLine)(myNodes)
 lines.foreach(println(_))
