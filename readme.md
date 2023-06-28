@@ -25,6 +25,25 @@ Dendrology has not yet been published as a binary.
 
 ## Getting Started
 
+Dendrology can render tree-like structures as text, such as the following:
+```
+├─● Plantae
+├─● Fungi
+│ ├─● Rozellomyceta
+│ ├─● Aphelidiomyceta
+│ └─● Eumycota
+├─● Protozoa
+├─● Bacteria
+└─● Animalia
+  └─● Chordata
+    └─● Mammalia
+      └─● Carnivora
+        ├─● Feliadae
+        ├─● Canidae
+        │ └─● Canis
+        └─● Ursidae
+```
+
 To convert some data in a tree-like structure into visual tree, we need a few
 things:
  - a type, `NodeType`, which represents each node in the tree,
