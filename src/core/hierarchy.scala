@@ -176,8 +176,7 @@ extends Reachable[DirectionType, NameType]:
 
     make(root, names.map(PathName(_)))
 
-trait Reachable
-    [DirectionType <: Matchable, NameType <: Label]
+trait Reachable[DirectionType <: Matchable, NameType <: Label]
 extends Pathlike[DirectionType, NameType]:
   type Root
   def separator(path: DirectionType): Text

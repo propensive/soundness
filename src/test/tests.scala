@@ -197,6 +197,20 @@ object Tests extends Suite(t"Serpentine Tests"):
       .assert(_ == t"/")
     
     suite(t"Path tests"):
+      import hierarchies.simple
+
+      test(t"Check keeping part of a path"):
+        (% / p"home" / p"user" / p"work" / p"data").keep(2)
+      .assert(_ == % / p"home" / p"user")
+      
+      test(t"Access the root of a path"):
+        (% / p"home" / p"user" / p"work").root
+      .assert(_ == Root)
+      
+      test(t"Access the ascent of a link"):
+        (?^^ / p"home" / p"user" / p"work").ascent
+      .assert(_ == 2)
+
       test(t"simple path from forbidden string does not compile"):
         captureCompileErrors:
           val elem: PathName["bad"] = p"bad"
