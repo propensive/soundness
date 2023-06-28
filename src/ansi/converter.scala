@@ -18,9 +18,11 @@ package punctuation
 
 import rudiments.*
 import gossamer.*
-import escapade.*, escapes.*
+import escapade.*, escapes.*, rendering.output
 import iridescence.*
 import harlequin.*
+import spectacular.*
+import hieroglyph.*, textWidthCalculation.eastAsianScripts
 
 case class BodyText(blocks: TextBlock*):
   def serialize(width: Int): Output = blocks.map(_.render(width)).join(out"\n\n")
@@ -55,7 +57,7 @@ open class TextConverter():
     )
 
   def blockify(nodes: Seq[Markdown.Ast.Node]): Seq[Markdown.Ast.Block] =
-    nodes.foldLeft((true, List[Markdown.Ast.Block]())) {
+    nodes.foldLeft((true, List[Markdown.Ast.Block]())):
       case ((fresh, acc), next) => next match
         case node: Markdown.Ast.Block  =>
           (true, node :: acc)
@@ -70,7 +72,7 @@ open class TextConverter():
               case _ =>
                 throw Mistake("unexpected non-paragraph node found while folding inline nodes")
             (false, content)
-    }(1).reverse
+    .apply(1).reverse
 
   def convert(nodes: Seq[Markdown.Ast.Node], indent: Int): BodyText =
     BodyText(blockify(nodes).foldLeft(List[TextBlock]()) {
@@ -112,7 +114,7 @@ open class TextConverter():
         
         case Markdown.Ast.Block.BulletList(num, loose, _, items*) =>
           acc :+ TextBlock(indent, items.zipWithIndex.map { case (item, idx) =>
-            out"${num.fold(t"  » ") { n => t"${(n + idx).show.fit(3)}. " }}${Showable(item).show}"
+            out"${num.fold(t"  » ") { n => t"${(n + idx).show.fit(3)}. " }}${item.toString.show}"
           }.join(out"\n"))
     
         case Markdown.Ast.Block.Table(parts*) =>
@@ -139,12 +141,12 @@ open class TextConverter():
 
   def text(node: Seq[Markdown.Ast.Node]): Output = node.map:
     case Markdown.Ast.Inline.Image(text, _)         => out"[ $text ]"
-    case Markdown.Ast.Inline.Link(s, desc)          => out"${colors.DeepSkyBlue}($Underline(${text(Seq(desc))})${colors.DarkGray}([)${colors.RoyalBlue}($Underline($s))${colors.DarkGray}(])) "
+    case Markdown.Ast.Inline.Weblink(s, desc)       => out"${colors.DeepSkyBlue}($Underline(${text(Seq(desc))})${colors.DarkGray}([)${colors.RoyalBlue}($Underline($s))${colors.DarkGray}(])) "
     case Markdown.Ast.Inline.Break()                => out""
     case Markdown.Ast.Inline.Emphasis(children*)    => out"$Italic(${text(children)})"
     case Markdown.Ast.Inline.Strong(children*)      => out"$Bold(${text(children)})"
     case Markdown.Ast.Inline.SourceCode(code)       => out"${colors.YellowGreen}(${Bg(Srgb(0, 0.1, 0))}($code))"
-    case Markdown.Ast.Inline.Copy(text)          => out"$text"
+    case Markdown.Ast.Inline.Copy(text)             => out"$text"
     case Markdown.Ast.Block.BulletList(_, _, _, _*) => out""
     case Markdown.Ast.Block.Reference(_, _)         => out""
     case Markdown.Ast.Block.ThematicBreak()         => out""
@@ -162,5 +164,5 @@ open class TextConverter():
     case Markdown.Ast.Inline.Emphasis(children*)      => out"$Italic(${children.map(phrasing).join})"
     case Markdown.Ast.Inline.Strong(children*)        => out"$Bold(${children.map(phrasing).join})"
     case Markdown.Ast.Inline.SourceCode(code)         => out"${colors.YellowGreen}(${Bg(Srgb(0, 0.1, 0))}($code))"
-    case Markdown.Ast.Inline.Copy(str)             => out"${Showable(str.sub(t"\n", t" ")).show}"
+    case Markdown.Ast.Inline.Copy(str)                => out"${str.sub(t"\n", t" ")}"
     case _                                            => text(Seq(node))
