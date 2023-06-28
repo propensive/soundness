@@ -26,9 +26,11 @@ import cvf.ast as cvfa, cvf.parser.*, cvf.util.options.*, cvf.ext.tables,
     cvf.util.ast as cvfua
 import annotation.tailrec
 
+import scala.quoted.*
+
 case class MarkdownError(detail: Text) extends Error(err"the markdown could not be read: $detail")
 
-case class Markdown[+M <: Markdown.Ast.Node](nodes: M*):
+case class Markdown[+MdType <: Markdown.Ast.Node](nodes: MdType*):
   def serialize: Text =
     val buf = StringBuilder()
     
@@ -85,14 +87,43 @@ object Markdown:
       case Weblink(location: Text, children: Inline*)
 
       def serialize(buf: StringBuilder): Unit = this match
-        case Break()                   => buf.add('\n')
-        case Emphasis(children*)       => buf.add('_'); children.foreach(_.serialize(buf)); buf.add('_')
-        case HtmlNode(value)           => buf.add(value)
-        case Image(alt, src)           => buf.add(t"!["); buf.add(alt); buf.add(t"]("); buf.add(src); buf.add(t")")
-        case SourceCode(value)         => buf.add('`'); buf.add(value); buf.add('`')
-        case Strong(children*)         => buf.add('*'); children.foreach(_.serialize(buf)); buf.add('*')
-        case Copy(text)             => buf.add(text)
-        case Weblink(location, children*) => buf.add('['); children.foreach(_.serialize(buf)); buf.add(t"]("); buf.add(location); buf.add(')')
+        case Break() =>
+          buf.add('\n')
+        
+        case Emphasis(children*) =>
+          buf.add('_')
+          children.foreach(_.serialize(buf))
+          buf.add('_')
+        
+        case HtmlNode(value) =>
+          buf.add(value)
+        
+        case Image(alt, src) =>
+          buf.add(t"![")
+          buf.add(alt)
+          buf.add(t"](")
+          buf.add(src)
+          buf.add(t")")
+        
+        case SourceCode(value) =>
+          buf.add('`')
+          buf.add(value)
+          buf.add('`')
+        
+        case Strong(children*) =>
+          buf.add('*')
+          children.foreach(_.serialize(buf))
+          buf.add('*')
+        
+        case Copy(text) =>
+          buf.add(text)
+        
+        case Weblink(location, children*) =>
+          buf.add('[')
+          children.foreach(_.serialize(buf))
+          buf.add(t"](")
+          buf.add(location)
+          buf.add(')')
         
   private val options = MutableDataSet()
   //options.set[ju.Collection[com.vladsch.flexmark.util.misc.Extension]](Parser.EXTENSIONS,
@@ -113,12 +144,15 @@ object Markdown:
       case other                    => throw MarkdownError(t"markdown contains block-level elements")
   
   @tailrec
-  private def coalesce[M >: Copy <: Markdown.Ast.Inline](xs: List[M], done: List[M] = Nil): List[M] =
+  private def coalesce
+      [MdType >: Copy <: Markdown.Ast.Inline]
+      (xs: List[MdType], done: List[MdType] = Nil)
+      : List[MdType] =
     xs match
-      case Nil                                   => done.reverse
+      case Nil                             => done.reverse
       case Copy(str) :: Copy(str2) :: tail => coalesce(Copy(t"$str$str2") :: tail, done)
-      case Copy(str) :: tail                  => coalesce(tail, Copy(format(str)) :: done)
-      case head :: tail                          => coalesce(tail, head :: done)
+      case Copy(str) :: tail               => coalesce(tail, Copy(format(str)) :: done)
+      case head :: tail                    => coalesce(tail, head :: done)
 
   def format(str: Text): Text = Text:
     str.s
@@ -233,3 +267,13 @@ object Markdown:
       
   def tableCell(root: cvfua.Document, node: tables.TableCell): Cell throws MarkdownError =
     Cell(phraseChildren(root, node)*)
+
+object Punctuation:
+  def md
+      (context: Expr[StringContext], parts: Expr[Seq[Any]])(using Quotes)
+      : Expr[Markdown[Markdown.Ast.Node]] =
+    import quotes.reflect.*
+
+    Md.Interpolator.expansion(context, parts) match
+      case (Md.Input.Inline(_), result) => '{$result.asInstanceOf[InlineMd]}
+      case (Md.Input.Block(_), result)  => '{$result.asInstanceOf[Md]}
