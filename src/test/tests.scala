@@ -18,8 +18,8 @@ package punctuation
 
 import probably.*
 import gossamer.*
+import spectacular.*
 import rudiments.*
-import eucalyptus.*, logging.stdout
 
 import unsafeExceptions.canThrowAny
 
@@ -99,7 +99,7 @@ object Tests extends Suite(t"Punctuation tests"):
     
     test(t"a link"):
       Markdown.parse(t"Take a look [here](http://example.com/)")
-    .assert(_ == Markdown(Paragraph(Copy(t"Take a look "), Link(t"http://example.com/",
+    .assert(_ == Markdown(Paragraph(Copy(t"Take a look "), Weblink(t"http://example.com/",
         Copy(t"here")))))
     
     test(t"an image"):
@@ -132,7 +132,7 @@ object Tests extends Suite(t"Punctuation tests"):
                        |
                        |[ref]: http://example.com/
                        |""".s.stripMargin.show)
-    .assert(_ == Markdown(Paragraph(Link(t"http://example.com/", Copy(t"link reference"))),
+    .assert(_ == Markdown(Paragraph(Weblink(t"http://example.com/", Copy(t"link reference"))),
         Reference(t"ref", t"http://example.com/")))
     
     test(t"thematic break"):
@@ -144,7 +144,7 @@ object Tests extends Suite(t"Punctuation tests"):
     
     test(t"email link"):
       Markdown.parse(t"Email me <nobody@example.com>!")
-    .assert(_ == Markdown(Paragraph(Copy(t"Email me "), Link(t"nobody@example.com",
+    .assert(_ == Markdown(Paragraph(Copy(t"Email me "), Weblink(t"nobody@example.com",
         Copy(t"mailto:nobody@example.com")), Copy(t"!"))))
     
     test(t"interpolator"):
