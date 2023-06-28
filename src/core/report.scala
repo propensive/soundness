@@ -21,7 +21,7 @@ import digression.*
 import gossamer.*, defaultTextTypes.output
 import chiaroscuro.*
 import ambience.*
-import escritoire.*
+import escritoire.*, tableStyles.rounded
 import dendrology.*
 import escapade.*
 import turbulence.*
@@ -280,19 +280,92 @@ class TestReport(using env: Environment):
           if s.count < 2 then out"" else s.maxTime
       )
       
-    import tableStyles.rounded
     val columns = env(t"COLUMNS") match
       case As[Int](cols) => cols
       case _             => 120
 
     val summaryLines = lines.summaries
 
-    if summaryLines.exists(_.count > 0)
-    then
+    coverage.foreach: coverage =>
+      Io.println(out"$Bold($Underline(Test coverage))")
+      case class CoverageData(path: Text, branches: Int, hits: Int, oldHits: Int):
+        def hitsText: Output =
+          val main = out"${if hits == 0 then colors.Gray else colors.ForestGreen}($hits)"
+          if oldHits == 0 then main else out"${colors.Goldenrod}(${oldHits.show.subscript}) $main"
+      
+      val data = coverage.spec.groupBy(_.path).to(List).map: (path, branches) =>
+        val hitCount = branches.map(_.id).map(coverage.hits.contains).count(identity(_))
+        val oldHitCount = branches.map(_.id).map(coverage.oldHits.contains).count(identity(_))
+        CoverageData(path, branches.size, hitCount, oldHitCount)
+
+      val maxHits = data.map(_.branches).maxOption
+
+      def line(tiles: List[TreeTile], surface: Surface): (Output, Juncture) =
+        import treeStyles.default
+        import surface.juncture.*
+        
+        val description: Output =
+          if surface.juncture.treeName == t"DefDef" then surface.juncture.method.out
+          else out"$shortCode"
+        
+        out"${tiles.map(_.text).join}• $description" -> surface.juncture
+
+      def render(junctures: List[Surface]): LazyList[(Output, Juncture)] =
+        drawTree[Surface, (Output, Juncture)](_.children, line)(junctures)
+      
+      import colors.*
+      
+      val allHits = coverage.hits ++ coverage.oldHits
+      
+      val junctures2 = coverage.structure.values.flatten
+          .to(List)
+          .filter(!_.covered(allHits))
+          .map(_.uncovered(allHits))
+
+      Table[(Output, Juncture)](
+        Column(out"") { row => if row(1).branch then out"⎇" else out"" },
+        Column(out"") { row =>
+          if coverage.hits.contains(row(1).id) then out"${Bg(ForestGreen)}(  )"
+          else if coverage.oldHits.contains(row(1).id) then out"${Bg(Goldenrod)}(  )"
+          else out"${Bg(Brown)}(  )"
+        },
+        Column(out"Juncture")(_(0)),
+        Column(out"Line") { row => out"$GreenYellow(${row(1).path})$Gray(:)$Gold(${row(1).lineNo})" },
+        Column(out"Symbol")(_(1).symbolName)
+      ).tabulate(render(junctures2), columns)(using tableStyles.horizontal).foreach(Io.println)
+      
+      Io.println(out"")
+    
+      Table[CoverageData](
+        Column(out"Source file", align = Alignment.Left): data =>
+          data.path,
+        Column(out"Hits", align = Alignment.Right)(_.hitsText),
+        Column(out"Size", align = Alignment.Right)(_.branches),
+        Column(out"Coverage", align = Alignment.Right): data =>
+          out"${(100*(data.hits + data.oldHits)/data.branches.toDouble)}%",
+        Column(out""): data =>
+          def width(n: Double): Text = if n == 0 then t"" else t"━"*(1 + (70*n).toInt)
+          val covered: Text = width(maxHits.map(data.hits.toDouble/_).getOrElse(0))
+          val oldCovered: Text = width(maxHits.map(data.oldHits.toDouble/_).getOrElse(0))
+          
+          val notCovered: Text = width(maxHits.map((data.branches.toDouble - data.hits -
+              data.oldHits)/_).getOrElse(0))
+          
+          val bars = List(colors.ForestGreen -> covered, colors.Goldenrod -> oldCovered,
+              colors.Brown -> notCovered)
+          
+          bars.filter(_(1).length > 0).map { (color, bar) => out"$color($bar)" }.join
+      ).tabulate(data, columns).foreach(Io.println(_))
+      
+      Io.println(out"")
+    
+    if summaryLines.exists(_.count > 0) then
       val totals = summaryLines.groupBy(_.status).view.mapValues(_.size).to(Map) - Status.Suite
       val passed: Int = totals.getOrElse(Status.Pass, 0) + totals.getOrElse(Status.Bench, 0)
       val total: Int = totals.values.sum
       val failed: Int = total - passed
+
+      Io.println(out"$Bold($Underline(Test results))")
 
       table.tabulate(summaryLines, columns, delimitRows = DelimitRows.SpaceIfMultiline).foreach(Io.println(_))
       given Decimalizer = Decimalizer(decimalPlaces = 1)
@@ -385,80 +458,6 @@ class TestReport(using env: Environment):
           out"$Bold(${colors.White}(${symbol.pad(3, Rtl)}))  ${description.pad(20)}"
         .grouped(3).to(List).map(_.to(List).join).join(out"${t"\n"}")
       Io.println(t"─"*74)
-
-    coverage.foreach: coverage =>
-      Io.println(out"$Bold($Underline(Test coverage))")
-      case class CoverageData(path: Text, branches: Int, hits: Int, oldHits: Int):
-        def hitsText: Output =
-          val main = out"${if hits == 0 then colors.Gray else colors.ForestGreen}($hits)"
-          if oldHits == 0 then main else out"${colors.Goldenrod}(${oldHits.show.subscript}) $main"
-      
-      val data = coverage.spec.groupBy(_.path).to(List).map: (path, branches) =>
-        val hitCount = branches.map(_.id).map(coverage.hits.contains).count(identity(_))
-        val oldHitCount = branches.map(_.id).map(coverage.oldHits.contains).count(identity(_))
-        CoverageData(path, branches.size, hitCount, oldHitCount)
-
-      val maxHits = data.map(_.branches).maxOption
-      
-      val coverageTable = Table[CoverageData](
-        Column(out"Source file", align = Alignment.Left): data =>
-          data.path,
-        Column(out"Hits", align = Alignment.Right)(_.hitsText),
-        Column(out"Size", align = Alignment.Right)(_.branches),
-        Column(out"Coverage", align = Alignment.Right): data =>
-          out"${(100*(data.hits + data.oldHits)/data.branches.toDouble)}%",
-        Column(out""): data =>
-          def width(n: Double): Text = if n == 0 then t"" else t"━"*(1 + (70*n).toInt)
-          val covered: Text = width(maxHits.map(data.hits.toDouble/_).getOrElse(0))
-          val oldCovered: Text = width(maxHits.map(data.oldHits.toDouble/_).getOrElse(0))
-          
-          val notCovered: Text = width(maxHits.map((data.branches.toDouble - data.hits -
-              data.oldHits)/_).getOrElse(0))
-          
-          val bars = List(colors.ForestGreen -> covered, colors.Goldenrod -> oldCovered,
-              colors.Brown -> notCovered)
-          
-          bars.filter(_(1).length > 0).map { (color, bar) => out"$color($bar)" }.join
-      )
-
-      coverageTable.tabulate(data, columns).foreach(Io.println)
-
-      def line(tiles: List[TreeTile], surface: Surface): (Output, Juncture) =
-        import treeStyles.default
-        import surface.juncture.*
-        
-        val description: Output =
-          if surface.juncture.treeName == t"DefDef" then surface.juncture.method.out
-          else out"$shortCode"
-        
-        out"${tiles.map(_.text).join}• $description" -> surface.juncture
-
-      def render(junctures: List[Surface]): LazyList[(Output, Juncture)] =
-        drawTree[Surface, (Output, Juncture)](_.children, line)(junctures)
-      
-      import colors.*
-      import tableStyles.horizontal
-      
-      val allHits = coverage.hits ++ coverage.oldHits
-      
-      val junctures2 = coverage.structure.values.flatten
-          .to(List)
-          .filter(!_.covered(allHits))
-          .map(_.uncovered(allHits))
-
-      Table[(Output, Juncture)](
-        Column(out"") { row => if row(1).branch then out"⎇" else out"" },
-        Column(out"") { row =>
-          if coverage.hits.contains(row(1).id) then out"${Bg(ForestGreen)}(  )"
-          else if coverage.oldHits.contains(row(1).id) then out"${Bg(Goldenrod)}(  )"
-          else out"${Bg(Brown)}(  )"
-        },
-        Column(out"Juncture")(_(0)),
-        Column(out"Line") { row => out"$GreenYellow(${row(1).path})$Gray(:)$Gold(${row(1).lineNo})" },
-        Column(out"Symbol")(_(1).symbolName)
-      ).tabulate(render(junctures2), columns).foreach(Io.println)
-      
-      Io.println(out"")
 
     details.to(List).sortBy(_(0).timestamp).foreach: (id, info) =>
       val ribbon = Ribbon(colors.DarkRed.srgb, colors.FireBrick.srgb, colors.Tomato.srgb)
