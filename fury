@@ -8,20 +8,21 @@ target punctuation/test
 
 project punctuation
   module test
-    compiler scala
-    sources  src/test
-    include  punctuation/core probably/cli punctuation/html
-    main     punctuation.Tests
+    compiler  scala
+    sources   src/test
+    include   punctuation/core probably/cli punctuation/html
+    main      punctuation.Tests
+    coverage  punctuation/core
 
   module html
-    compiler scala
-    sources  src/html
-    include  punctuation/core honeycomb/core
+    compiler  scala
+    sources   src/html
+    include   punctuation/core honeycomb/core
   
   module ansi
-    compiler scala
-    sources  src/ansi
-    include  punctuation/core honeycomb/core escapade/core harlequin/core
+    compiler  scala
+    sources   src/ansi
+    include   punctuation/core honeycomb/core escapade/core harlequin/core
 
   module core
     sources  src/core
