@@ -10,7 +10,7 @@ project punctuation
   module test
     compiler scala
     sources  src/test
-    include  punctuation/core probably/cli punctuation/html punctuation/ansi
+    include  punctuation/core probably/cli punctuation/html
     main     punctuation.Tests
 
   module html
