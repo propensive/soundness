@@ -260,5 +260,4 @@ extension
     case pathlike: Followable[DirectionType, NameType, ?, ?]    => pathlike.ancestor(path, n)
 
 extension (inline context: StringContext)
-  inline def p[NameType <: Label](): PathName[NameType] =
-    ${Serpentine.parse[NameType]('context)}
+  inline def p[NameType <: Label](): PathName[NameType] = ${Serpentine.parse[NameType]('context)}
