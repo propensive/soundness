@@ -18,7 +18,6 @@ package punctuation
 
 import honeycomb.*
 import rudiments.*
-import digression.*
 import gossamer.*
 
 open class HtmlConverter():
@@ -36,7 +35,7 @@ open class HtmlConverter():
           val string = text(children)
           List(t"${t" "*(2*level - 1)}- [$string](#${slug(string)})")
         
-        case Markdown.Ast.Inline.Textual(str) =>
+        case Markdown.Ast.Inline.Copy(str) =>
           List(str)
         
         case _ =>
@@ -103,7 +102,7 @@ open class HtmlConverter():
   def textNode(node: Markdown.Ast.Node): Text = node match
     case Markdown.Ast.Block.BulletList(_, _, _, _*) => t""
     case Markdown.Ast.Inline.Image(text, _)         => text
-    case Markdown.Ast.Inline.Link(text, _)          => text
+    case Markdown.Ast.Inline.Weblink(text, _)       => text
     case Markdown.Ast.Block.Reference(_, _)         => t""
     case Markdown.Ast.Inline.Break()                => t""
     case Markdown.Ast.Block.ThematicBreak()         => t""
@@ -114,7 +113,7 @@ open class HtmlConverter():
     case Markdown.Ast.Block.Heading(_, children*)   => text(children)
     case Markdown.Ast.Block.Blockquote(children*)   => text(children)
     case Markdown.Ast.Block.FencedCode(_, _, code)  => code
-    case Markdown.Ast.Inline.Textual(text)          => text
+    case Markdown.Ast.Inline.Copy(text)             => text
     case Markdown.Ast.Block.Cell(content*)          => text(content)
     case _                                          => t""
 
@@ -124,11 +123,11 @@ open class HtmlConverter():
     case Markdown.Ast.Inline.Emphasis(children*)      => List(Em(children.flatMap(phrasing)))
     case Markdown.Ast.Inline.Strong(children*)        => List(Strong(children.flatMap(phrasing)))
     case Markdown.Ast.Inline.SourceCode(code)         => List(honeycomb.Code(code))
-    case Markdown.Ast.Inline.Textual(str)             => List(escape(str))
+    case Markdown.Ast.Inline.Copy(str)                => List(escape(str))
     case _                                            => Nil
 
   def phrasing(node: Markdown.Ast.Inline): Seq[Html[Phrasing]] = node match
-    case Markdown.Ast.Inline.Link(location, content) =>
+    case Markdown.Ast.Inline.Weblink(location, content) =>
 
       def interactive(node: Html[Phrasing]): Option[Html[NonInteractive]] = node match
         case node: Node[?] => node.refine[NonInteractive]
