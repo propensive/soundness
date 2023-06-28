@@ -426,7 +426,12 @@ class TestReport(using env: Environment):
       def line(tiles: List[TreeTile], surface: Surface): (Output, Juncture) =
         import treeStyles.default
         import surface.juncture.*
-        out"${tiles.map(_.text).join}• $shortCode" -> surface.juncture
+        
+        val description: Output =
+          if surface.juncture.treeName == t"DefDef" then surface.juncture.method.out
+          else out"$shortCode"
+        
+        out"${tiles.map(_.text).join}• $description" -> surface.juncture
 
       def render(junctures: List[Surface]): LazyList[(Output, Juncture)] =
         drawTree[Surface, (Output, Juncture)](_.children, line)(junctures)
@@ -449,7 +454,6 @@ class TestReport(using env: Environment):
           else out"${Bg(Brown)}(  )"
         },
         Column(out"Juncture")(_(0)),
-        Column(out"Method")(_(1).method.out),
         Column(out"Line") { row => out"$GreenYellow(${row(1).path})$Gray(:)$Gold(${row(1).lineNo})" },
         Column(out"Symbol")(_(1).symbolName)
       ).tabulate(render(junctures2), columns).foreach(Io.println)
