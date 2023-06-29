@@ -27,11 +27,6 @@ project probably
     sources   src/cli
     include   probably/core escritoire/core
 
-  module tolerance
-    compiler  scala
-    sources   src/tolerance
-    include   probably/core wisteria/core gossamer/core
-  
   module coverage
     compiler  scala
     sources   src/coverage
