@@ -26,15 +26,15 @@ import scala.quoted.*
 
 object Probably:
   protected def general
-      [T: Type, R: Type, S: Type]
-      (test: Expr[Test[T]], pred: Expr[T => Boolean], runner: Expr[Runner[R]],
-          inc: Expr[Inclusion[R, Outcome]], inc2: Expr[Inclusion[R, DebugInfo]],
-          action: Expr[TestRun[T] => S])
+      [TestType: Type, ReportType: Type, ResultType: Type]
+      (test: Expr[Test[TestType]], predicate: Expr[TestType => Boolean], runner: Expr[Runner[ReportType]],
+          inc: Expr[Inclusion[ReportType, Outcome]], inc2: Expr[Inclusion[ReportType, DebugInfo]],
+          action: Expr[TestRun[TestType] => ResultType])
       (using Quotes)
-      : Expr[S] =
+      : Expr[ResultType] =
     import quotes.reflect.*
     
-    val exp: Option[Expr[Any]] = pred.asTerm match
+    val exp: Option[Expr[Any]] = predicate.asTerm match
       case Inlined(_, _, Block(List(DefDef(a1, _, _, Some(expression))), Closure(Ident(a2), _)))
           if a1 == a2 =>
         expression match
@@ -47,48 +47,48 @@ object Probably:
     
     exp match
       case Some('{ $expr: t }) =>
-        val debug: Expr[Debug[t | T]] =
-          Expr.summon[Debug[t | T]].getOrElse('{ TextConversion.any })
+        val debug: Expr[Debug[t | TestType]] =
+          Expr.summon[Debug[t | TestType]].getOrElse('{ TextConversion.any })
         
-        val contrast = Expr.summon[Contrast[t | T]].get
-        '{ assertion[t | T, T, R, S]($runner, $test, $pred, $action, $contrast, Some($expr), $inc,
+        val contrast = Expr.summon[Contrast[t | TestType]].get
+        '{ assertion[t | TestType, TestType, ReportType, ResultType]($runner, $test, $predicate, $action, $contrast, Some($expr), $inc,
             $inc2, $debug) }
       
       case _ =>
-        '{ assertion[T, T, R, S]($runner, $test, $pred, $action, Contrast.nothing[T], None, $inc,
+        '{ assertion[TestType, TestType, ReportType, ResultType]($runner, $test, $predicate, $action, Contrast.nothing[TestType], None, $inc,
             $inc2, TextConversion.any) }
   
   def check
-      [T: Type, R: Type]
-      (test: Expr[Test[T]], pred: Expr[T => Boolean], runner: Expr[Runner[R]],
-          inc: Expr[Inclusion[R, Outcome]], inc2: Expr[Inclusion[R, DebugInfo]])
+      [TestType: Type, ReportType: Type]
+      (test: Expr[Test[TestType]], predicate: Expr[TestType => Boolean], runner: Expr[Runner[ReportType]],
+          inc: Expr[Inclusion[ReportType, Outcome]], inc2: Expr[Inclusion[ReportType, DebugInfo]])
       (using Quotes)
-      : Expr[T] =
-    general[T, R, T](test, pred, runner, inc, inc2, '{ (t: TestRun[T]) => t.get })
+      : Expr[TestType] =
+    general[TestType, ReportType, TestType](test, predicate, runner, inc, inc2, '{ (t: TestRun[TestType]) => t.get })
     
   def assert
-      [T: Type, R: Type]
-      (test: Expr[Test[T]], pred: Expr[T => Boolean], runner: Expr[Runner[R]],
-          inc: Expr[Inclusion[R, Outcome]], inc2: Expr[Inclusion[R, DebugInfo]])
+      [TestType: Type, ReportType: Type]
+      (test: Expr[Test[TestType]], predicate: Expr[TestType => Boolean], runner: Expr[Runner[ReportType]],
+          inc: Expr[Inclusion[ReportType, Outcome]], inc2: Expr[Inclusion[ReportType, DebugInfo]])
       (using Quotes)
       : Expr[Unit] =
-    general[T, R, Unit](test, pred, runner, inc, inc2, '{ (t: TestRun[T]) => () })
+    general[TestType, ReportType, Unit](test, predicate, runner, inc, inc2, '{ (t: TestRun[TestType]) => () })
   
   def aspire
-      [T: Type, R: Type]
-      (test: Expr[Test[T]], runner: Expr[Runner[R]], inc: Expr[Inclusion[R, Outcome]],
-          inc2: Expr[Inclusion[R, DebugInfo]])
+      [TestType: Type, ReportType: Type]
+      (test: Expr[Test[TestType]], runner: Expr[Runner[ReportType]], inc: Expr[Inclusion[ReportType, Outcome]],
+          inc2: Expr[Inclusion[ReportType, DebugInfo]])
       (using Quotes)
       : Expr[Unit] =
-    general[T, R, Unit](test, '{ _ => true }, runner, inc, inc2, '{ (t: TestRun[T]) => () })
+    general[TestType, ReportType, Unit](test, '{ _ => true }, runner, inc, inc2, '{ (t: TestRun[TestType]) => () })
 
   def succeed: Any => Boolean = (value: Any) => true
   
   def assertion
-      [T, T0 <: T, R, S]
-      (runner: Runner[R], test: Test[T0], pred: T0 => Boolean, result: TestRun[T0] => S,
-          contrast: Contrast[T], exp: Option[T], inc: Inclusion[R, Outcome],
-          inc2: Inclusion[R, DebugInfo], display: Debug[T]): S =
+      [TestType, T0 <: TestType, ReportType, ResultType]
+      (runner: Runner[ReportType], test: Test[T0], predicate: T0 => Boolean, result: TestRun[T0] => ResultType,
+          contrast: Contrast[TestType], exp: Option[TestType], inc: Inclusion[ReportType, Outcome],
+          inc2: Inclusion[ReportType, DebugInfo], display: Debug[TestType]): ResultType =
     runner.run(test).pipe: run =>
       val outcome = run match
         case TestRun.Throws(err, duration, map) =>
@@ -98,7 +98,7 @@ object Probably:
           Outcome.Throws(exception, duration)
     
         case TestRun.Returns(value, duration, map) =>
-          try if pred(value) then Outcome.Pass(duration) else
+          try if predicate(value) then Outcome.Pass(duration) else
             exp match
               case Some(exp) =>
                 inc2.include(runner.report, test.id, DebugInfo.Compare(display(exp),
@@ -114,14 +114,14 @@ object Probably:
       inc.include(runner.report, test.id, outcome)
       result(run)
 
-  def inspect[T: Type](expr: Expr[T], test: Expr[TestContext])(using Quotes): Expr[T] =
+  def inspect[TestType: Type](expr: Expr[TestType], test: Expr[TestContext])(using Quotes): Expr[TestType] =
     import quotes.reflect.*
 
     val exprName: Text = expr.asTerm.pos match
       case pos: dtdu.SourcePosition => pos.lineContent.show.slice(pos.startColumn, pos.endColumn)
       case _                        => t"<unknown>"
     
-    val debug: Expr[Debug[T]] =
-      Expr.summon[Debug[T]].getOrElse('{ TextConversion.any })
+    val debug: Expr[Debug[TestType]] =
+      Expr.summon[Debug[TestType]].getOrElse('{ TextConversion.any })
     
     '{ $test.capture(Text(${Expr[String](exprName.s)}), $expr)(using $debug) }
