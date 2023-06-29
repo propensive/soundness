@@ -187,15 +187,19 @@ object TextConversion:
   given Show[None.type] = none => Text("none")
   given Debug[None.type] = none => Text("None")
   
-  private transparent inline def deriveProduct[Labels <: Tuple](tuple: Tuple): List[Text] =
+  private transparent inline def deriveProduct
+      [Labels <: Tuple]
+      (tuple: Tuple, isTuple: Boolean)
+      : List[Text] =
     inline tuple match
       case EmptyTuple => Nil
       case cons: (? *: ?) => cons match
         case head *: tail => inline erasedValue[Labels] match
           case _: (headLabel *: tailLabels) => inline valueOf[headLabel].asMatchable match
             case label: String =>
-              val value = head.debug
-              Text(label+"="+value) :: deriveProduct[tailLabels](tail)
+              val value = head.debug.s
+              Text(inline if isTuple then value else label+"="+value) ::
+                  deriveProduct[tailLabels](tail, isTuple)
 
   private transparent inline def deriveSum
       [TupleType <: Tuple, DerivedType]
@@ -212,11 +216,19 @@ object TextConversion:
       : Debug[DerivationType] =
     inline mirror match
       case given Mirror.ProductOf[DerivationType & Product] => (value: DerivationType) =>
+        inline val isTuple = inline erasedValue[DerivationType & Matchable] match
+          case tuple: Tuple => true
+          case _            => false
+        
         (value.asMatchable: @unchecked) match
           case value: Product =>
-            val elements = deriveProduct[mirror.MirroredElemLabels](Tuple.fromProductTyped(value))
+            val elements = deriveProduct[mirror.MirroredElemLabels](Tuple.fromProductTyped(value),
+                isTuple)
+            
             val typeName = Text(valueOf[mirror.MirroredLabel])
-            Text(typeName.s+elements.mkString("(", "·", ")"))
+            
+            inline if isTuple then Text(elements.mkString("(", "·", ")"))
+            else Text(elements.mkString(typeName.s+"(", "·", ")"))
     
       case s: Mirror.SumOf[DerivationType] =>
         (value: DerivationType) =>
