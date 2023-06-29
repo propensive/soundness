@@ -22,8 +22,7 @@ _Iridescence_ implements several algorithms for working with colors represented 
 
 ## Availability
 
-Iridescence has not yet been published as a binary. It is currently waiting for the
-final release of Scala 3.3.
+Iridescence has not yet been published as a binary.
 
 ## Getting Started
 
@@ -172,7 +171,7 @@ be used, but caution should be taken if there is a mismatch between the
 project's stability level and the importance of your own project.
 
 Iridescence is designed to be _small_. Its entire source code currently consists
-of 465 lines of code.
+of 444 lines of code.
 
 ## Building
 
