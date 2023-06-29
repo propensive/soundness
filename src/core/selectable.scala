@@ -21,7 +21,7 @@ import rudiments.*
 import scala.quoted.*
 import scala.compiletime.*
 
-trait Record(access: String => Any) extends Selectable:
+trait Record(data: Any, access: String => Any) extends Selectable:
   def selectDynamic(name: String): Any = access(name)
 
 trait ValueAccessor[RecordType, LabelType <: Label, ValueType]:
@@ -36,7 +36,7 @@ enum RecordField:
 
 trait Schema[RecordType <: Record]:
   def fields: Map[String, RecordField]
-  def make(transform: String => Any): RecordType
+  def make(data: Any, transform: String => Any): RecordType
   def access(name: String, value: Any): Any
 
   def build
@@ -93,7 +93,7 @@ trait Schema[RecordType <: Record]:
                 
                 println(nestedMatchFn.show)
 
-                val rhs = '{$accessor.transform($value2, name => $target.make($nestedMatchFn(name)))}
+                val rhs = '{$accessor.transform($value2, value => $target.make(value, $nestedMatchFn(value)))}
                 val caseDef = CaseDef(Literal(StringConstant(name)), None, rhs.asTerm)
                 
                 refine(value, tail, Refinement(refinedType, name, nestedRecordType), caseDef :: caseDefs)
@@ -105,4 +105,4 @@ trait Schema[RecordType <: Record]:
     
     (refinedType.asType: @unchecked) match
       case '[type refinedType <: RecordType; refinedType] =>
-        '{$target.make($matchFn($value)).asInstanceOf[refinedType]}
+        '{$target.make($value, $matchFn($value)).asInstanceOf[refinedType]}
