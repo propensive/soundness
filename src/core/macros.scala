@@ -85,8 +85,8 @@ object Probably:
   def succeed: Any => Boolean = (value: Any) => true
   
   def assertion
-      [TestType, T0 <: TestType, ReportType, ResultType]
-      (runner: Runner[ReportType], test: Test[T0], predicate: T0 => Boolean, result: TestRun[T0] => ResultType,
+      [TestType, TestType2 <: TestType, ReportType, ResultType]
+      (runner: Runner[ReportType], test: Test[TestType2], predicate: TestType2 => Boolean, result: TestRun[TestType2] => ResultType,
           contrast: Contrast[TestType], exp: Option[TestType], inc: Inclusion[ReportType, Outcome],
           inc2: Inclusion[ReportType, DebugInfo], display: Debug[TestType]): ResultType =
     runner.run(test).pipe: run =>
