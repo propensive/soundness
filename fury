@@ -5,6 +5,7 @@ target merino/test
 
 repo propensive/serpentine
 repo propensive/probably
+repo propensive/diuretic
 
 project merino
   module core
@@ -21,7 +22,7 @@ project merino
   module test
     compiler  scala
     sources   src/test
-    include   probably/cli merino/core jawn/core
+    include   probably/cli merino/core jawn/core diuretic/core
     main      merino.Tests
 
 project jawn

@@ -19,71 +19,68 @@ package merino
 
 import probably.*
 import gossamer.*
-//import galilei.*, filesystems.unix
-import anticipation.* //, fileApi.galileiApi
+import anticipation.*, fileApi.javaIo
 import eucalyptus.*
 import rudiments.*
-import hieroglyph.*, characterEncodings.utf8, badEncodingHandlers.strict
-import parasite.*, monitors.global
+import hieroglyph.*, charEncoders.utf8
 import turbulence.*, basicIo.jvm
 import ambience.*, environments.system
 
+import java.io as ji
+
 import unsafeExceptions.canThrowAny
 
-import LogFormat.standardAnsi
-
 val StdoutSink = Stdout.sink
-given Log({ case _ => StdoutSink })
 
 object Tests extends Suite(t"Merino tests"):
   def run(): Unit =
-    val tests = (env.pwd / p"tests" / p"test_parsing").directory(Expect)
-    val tests2 = (env.pwd / p"tests" / p"test_transform").directory(Expect)
+    val tests = ji.File(ji.File(env.pwd, "tests"), "test_parsing")
+    val tests2 = ji.File(ji.File(env.pwd, "tests"), "test_transform")
     
     suite(t"Positive tests"):
-      (tests.files.filter(_.name.starts(t"y_")) ++ tests2.files).foreach: file =>
-        test(file.name.drop(5, Rtl)):
-          JsonAst.parse(file)
-        .check(_ => true)
+      (tests.listFiles.nn.map(_.nn).to(List).filter(_.getName.nn.startsWith("y_")) ++ tests2.listFiles.nn.map(_.nn).to(List)).foreach: file =>
+        test(Text(file.getName.nn.dropRight(5))):
+          JsonAst.parse(ji.BufferedInputStream(ji.FileInputStream(file)))
+        .check()
     
     suite(t"Negative tests"):
-      tests.files.filter(_.name.starts(t"n_")).foreach: file =>
-        test(file.name.drop(5, Rtl)):
-          capture(JsonAst.parse(file))
+      tests.listFiles.nn.map(_.nn).filter(_.getName.nn.startsWith("n_")).foreach: file =>
+        test(Text(file.getName.nn.dropRight(5))):
+          capture(JsonAst.parse(ji.BufferedInputStream(ji.FileInputStream(file))))
         .matches:
           case JsonParseError(_, _, _) => true
           case _                       => false
 
     suite(t"Parse large files"):
       val file: Bytes = test(t"Read file"):
-        (env.pwd / p"huge.json").file(Expect).readAs[Bytes, Bytes]
-      .check(_ => true)
+        ji.BufferedInputStream(ji.FileInputStream(ji.File(env.pwd, "huge.json"))).read[Bytes]
+      .check()
       
       val file2: Bytes = test(t"Read file 2"):
-        (env.pwd / p"huge2.json").file(Expect).readAs[Bytes, Bytes]
-      .check(_ => true)
+        ji.BufferedInputStream(ji.FileInputStream(ji.File(env.pwd, "huge2.json"))).read[Bytes]
+      .check()
       
       for i <- 1 to 1 do
         test(t"Parse huge file with Jawn $i"):
           import org.typelevel.jawn.*, ast.*
           JParser.parseFromByteBuffer(java.nio.ByteBuffer.wrap(file.mutable(using Unsafe)).nn)
-        .assert(_ => true)
+        .assert()
         
       for i <- 1 to 1 do
         test(t"Parse huge file with Merino $i"):
           JsonAst.parse(file)
-        .assert(_ => true)
+        .assert()
         
       for i <- 1 to 1 do
         test(t"Parse big file with Jawn $i"):
           import org.typelevel.jawn.*, ast.*
           JParser.parseFromByteBuffer(java.nio.ByteBuffer.wrap(file2.mutable(using Unsafe)).nn)
-        .assert(_ => true)
+        .assert()
       
       for i <- 1 to 1 do
         test(t"Parse big file with Merino $i"):
           JsonAst.parse(file2)
-        .assert(_ => true)
+        .assert()
 
     suite(t"Number tests"):
       test(t"Parse 0e+1"):

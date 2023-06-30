@@ -97,24 +97,60 @@ object JsonParseError:
     case ExpectedDigit(found: Char)
   
   given Show[Issue] =
-    case Issue.EmptyInput              => t"the input was empty"
-    case Issue.UnexpectedChar(found)   => t"the character $found was not expected"
-    case Issue.ExpectedTrue            => t"true was expected"
-    case Issue.ExpectedFalse           => t"false was expected"
-    case Issue.ExpectedNull            => t"null was expected"
-    case Issue.ExpectedSomeValue(char) => t"a value was expected but instead found $char"
-    case Issue.ExpectedColon(found)    => t"a colon was expected but instead found $found"
-    case Issue.InvalidWhitespace       => t"invalid whitespace was found"
-    case Issue.ExpectedString(found)   => t"expected a string but instead found $found"
-    case Issue.ExpectedHexDigit(found) => t"expected a hexadecimal digit"
-    case Issue.PrematureEnd            => t"the stream was ended prematurely"
-    case Issue.NumberHasLeadingZero    => t"a number cannot start with a zero except when followed by a decimal point"
-    case Issue.SpuriousContent(found)  => t"$found was found after the full JSON value was read"
-    case Issue.LeadingDecimalPoint     => t"a number cannot start with a decimal point"
-    case Issue.NotEscaped(char)        => t"the character $char must be escaped with a backslash"
-    case Issue.IncorrectEscape(char)   => t"the character $char was escaped with a backslash unnecessarily"
-    case Issue.MultipleDecimalPoints   => t"the number cannot contain more than one decimal point"
-    case Issue.ExpectedDigit(found)    => t"expected a digit but instead found $found"
+    case Issue.EmptyInput =>
+      t"the input was empty"
+
+    case Issue.UnexpectedChar(found) =>
+      t"the character $found was not expected"
+
+    case Issue.ExpectedTrue =>
+      t"true was expected"
+
+    case Issue.ExpectedFalse =>
+      t"false was expected"
+
+    case Issue.ExpectedNull =>
+      t"null was expected"
+
+    case Issue.ExpectedSomeValue(char) =>
+      t"a value was expected but instead found $char"
+
+    case Issue.ExpectedColon(found) =>
+      t"a colon was expected but instead found $found"
+
+    case Issue.InvalidWhitespace =>
+      t"invalid whitespace was found"
+
+    case Issue.ExpectedString(found) =>
+      t"expected a string but instead found $found"
+
+    case Issue.ExpectedHexDigit(found) =>
+      t"expected a hexadecimal digit"
+
+    case Issue.PrematureEnd =>
+      t"the stream was ended prematurely"
+
+    case Issue.NumberHasLeadingZero =>
+      t"a number cannot start with a zero except when followed by a decimal point"
+
+    case Issue.SpuriousContent(found) =>
+      t"$found was found after the full JSON value was read"
+
+    case Issue.LeadingDecimalPoint =>
+      t"a number cannot start with a decimal point"
+
+    case Issue.NotEscaped(char) =>
+      t"the character $char must be escaped with a backslash"
+
+    case Issue.IncorrectEscape(char) =>
+      t"the character $char was escaped with a backslash unnecessarily"
+
+    case Issue.MultipleDecimalPoints =>
+      t"the number cannot contain more than one decimal point"
+
+    case Issue.ExpectedDigit(found) =>
+      t"expected a digit but instead found $found"
+
 
 import JsonParseError.Issue
 
@@ -124,9 +160,11 @@ extends Error(err"Could not parse JSON because $issue at ${line + 1}:${col + 1}"
 export JsonAst.RawJson as JsonAst
 
 object JsonAst:
-  opaque type RawJson = Long | Double | BigDecimal | String | (IArray[String], IArray[Any]) | IArray[Any] | Boolean | Null
+  opaque type RawJson = Long | Double | BigDecimal | String | (IArray[String], IArray[Any]) |
+      IArray[Any] | Boolean | Null
 
-  def apply(value: Long | Double | BigDecimal | String | (IArray[String], IArray[Any]) | IArray[Any] | Boolean | Null): JsonAst = value
+  def apply(value: Long | Double | BigDecimal | String | (IArray[String], IArray[Any]) |
+      IArray[Any] | Boolean | Null): JsonAst = value
 
   def parse
       [SourceType]
@@ -137,6 +175,7 @@ object JsonAst:
     val stream = readable.read(source)
     var line: Int = 0
     var colStart: Int = 0
+    
     try
       if stream.isEmpty then throw JsonParseError(0, 0, Issue.EmptyInput)
       val block: Bytes = stream.head
@@ -148,7 +187,9 @@ object JsonAst:
       var arrayBufferId: Int = -1
       var stringArrayBufferId: Int = -1
       val arrayBuffers: ArrayBuffer[ArrayBuffer[Any]] = ArrayBuffer.empty[ArrayBuffer[Any]]
-      val stringArrayBuffers: ArrayBuffer[ArrayBuffer[String]] = ArrayBuffer.empty[ArrayBuffer[String]]
+      
+      val stringArrayBuffers: ArrayBuffer[ArrayBuffer[String]] =
+        ArrayBuffer.empty[ArrayBuffer[String]]
       
       def getArrayBuffer(): ArrayBuffer[Any] =
         arrayBufferId += 1
@@ -266,7 +307,8 @@ object JsonAst:
               continue = false
             case ch => abort(Issue.ExpectedString(ch.toChar))
         
-        val result = (keys.toArray.asInstanceOf[IArray[String]], values.toArray.asInstanceOf[IArray[Any]])
+        val result = (keys.toArray, values.toArray).asInstanceOf[(IArray[String], IArray[Any])]
+        
         relinquishStringArrayBuffer()
         relinquishArrayBuffer()
         result
@@ -483,7 +525,9 @@ object JsonAst:
                   
                   case _ =>
                     ()
-                if ch <= Num9 && ch >= Num0 then exponent = (ch & 15) else abort(Issue.ExpectedDigit(ch.toChar))
+                if ch <= Num9 && ch >= Num0 then exponent = (ch & 15)
+                else abort(Issue.ExpectedDigit(ch.toChar))
+                
                 if minus then exponent *= -1
                 next()
                 while
@@ -504,7 +548,9 @@ object JsonAst:
                 
                 if negative then mantissa *= -1
                 val exp = exponent + scale
-                number = if exp == 0 then mantissa else mantissa*math.pow(10.0, exponent.toDouble + scale)
+                
+                number =
+                  if exp == 0 then mantissa else mantissa*math.pow(10.0, exponent.toDouble + scale)
 
                 continue = false
               
@@ -519,7 +565,8 @@ object JsonAst:
             if decimalPosition != 0 && scale == 0 then scale = decimalPosition - cur
             if current <= Num9 && current >= Num0 then
               next()
-              (if negative then -mantissa else mantissa).toDouble*math.pow(10.0, exponent.toDouble + scale)
+              val mantissa2 = if negative then -mantissa else mantissa
+              mantissa2.toDouble*math.pow(10.0, exponent.toDouble + scale)
             else abort(Issue.PrematureEnd)
       
       def parseLargeNumber(hasDecimalPoint: Boolean): Unit =
