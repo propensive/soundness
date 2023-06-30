@@ -60,27 +60,23 @@ object Tests extends Suite(t"Merino tests"):
         ji.BufferedInputStream(ji.FileInputStream(ji.File(env.pwd, "huge2.json"))).read[Bytes]
       .check()
       
-      for i <- 1 to 1 do
-        test(t"Parse huge file with Jawn $i"):
-          import org.typelevel.jawn.*, ast.*
-          JParser.parseFromByteBuffer(java.nio.ByteBuffer.wrap(file.mutable(using Unsafe)).nn)
-        .assert()
-        
-      for i <- 1 to 1 do
-        test(t"Parse huge file with Merino $i"):
-          JsonAst.parse(file)
-        .assert()
-        
-      for i <- 1 to 1 do
-        test(t"Parse big file with Jawn $i"):
-          import org.typelevel.jawn.*, ast.*
-          JParser.parseFromByteBuffer(java.nio.ByteBuffer.wrap(file2.mutable(using Unsafe)).nn)
-        .assert()
+      test(t"Parse huge file with Jawn"):
+        import org.typelevel.jawn.*, ast.*
+        JParser.parseFromByteBuffer(java.nio.ByteBuffer.wrap(file.mutable(using Unsafe)).nn)
+      .benchmark()
       
-      for i <- 1 to 1 do
-        test(t"Parse big file with Merino $i"):
-          JsonAst.parse(file2)
-        .assert()
+      test(t"Parse huge file with Merino"):
+        JsonAst.parse(file)
+      .benchmark()
+      
+      test(t"Parse big file with Jawn"):
+        import org.typelevel.jawn.*, ast.*
+        JParser.parseFromByteBuffer(java.nio.ByteBuffer.wrap(file2.mutable(using Unsafe)).nn)
+      .benchmark()
+    
+      test(t"Parse big file with Merino"):
+        JsonAst.parse(file2)
+      .benchmark()
 
     suite(t"Number tests"):
       test(t"Parse 0e+1"):

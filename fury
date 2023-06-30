@@ -22,7 +22,7 @@ project merino
   module test
     compiler  scala
     sources   src/test
-    include   probably/cli merino/core jawn/core diuretic/core
+    include   probably/cli merino/core jawn/core diuretic/core probably/bench
     main      merino.Tests
 
 project jawn
