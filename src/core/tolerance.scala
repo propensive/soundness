@@ -18,19 +18,12 @@ package probably
 
 import rudiments.*
 
-import scala.compiletime.*
-
-object Tolerance:
-  erased given CanEqual[Tolerance, Double] = ###
-  erased given CanEqual[Double, Tolerance] = ###
-
 case class Tolerance(value: Double, tolerance: Double):
-  override def equals(that: Any): Boolean = that.asMatchable match
-    case double: Double => value >= (double - tolerance) && value <= (double + tolerance)
-    case _              => false
-
-  override def hashCode: Int = value.hashCode
+  def covers(right: Double): Boolean =
+    value >= (value - tolerance) && value <= (value + tolerance)
 
 extension (value: Double)
   @targetName("plusOrMinus")
   def +/-(tolerance: Double): Tolerance = Tolerance(value, tolerance)
+
+  def meets(tolerance: Tolerance): Boolean = tolerance.covers(value)
