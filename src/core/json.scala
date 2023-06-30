@@ -189,7 +189,8 @@ object JsonWriter:
       case _: (head *: tail) => inline erasedValue[LabelsType] match
         case _: (headLabel *: tailLabel) =>
           if ordinal == 0 then inline valueOf[headLabel].asMatchable match
-            case label: String => summonInline[JsonWriter[head]].tag(label).asInstanceOf[JsonWriter[DerivedType]]
+            case label: String =>
+              summonInline[JsonWriter[head]].tag(label).asInstanceOf[JsonWriter[DerivedType]]
           else deriveSum[tail, DerivedType, tailLabel](ordinal - 1)
       
       case _ =>
@@ -204,11 +205,14 @@ object JsonWriter:
           case value: Product =>
             val labels: Array[String] = new Array(value.productArity)
             val values: Array[JsonAst] = new Array(value.productArity)
-            deriveProduct[mirror.MirroredElemLabels](Tuple.fromProductTyped(value), labels, values, 0).asInstanceOf[JsonAst]
+            
+            deriveProduct[mirror.MirroredElemLabels](Tuple.fromProductTyped(value), labels, values,
+                0).asInstanceOf[JsonAst]
     
       case sumMirror: Mirror.SumOf[DerivationType] =>
         (value: DerivationType) =>
-          deriveSum[sumMirror.MirroredElemTypes, DerivationType, sumMirror.MirroredElemLabels](sumMirror.ordinal(value)).write(value)
+          deriveSum[sumMirror.MirroredElemTypes, DerivationType,
+              sumMirror.MirroredElemLabels](sumMirror.ordinal(value)).write(value)
 
 trait JsonWriter[-ValueType]:
   def omit(value: ValueType): Boolean = false
@@ -236,9 +240,10 @@ object JsonReader:
   
   //given [T](using canon: Canonical[T]): JsonReader[T] = v => canon.deserialize(v.string)
 
-  given option[T](using reader: JsonReader[T]^): JsonReader[Option[T]]^{reader} = new JsonReader[Option[T]]:
-    def read(value: JsonAst, missing: Boolean): Option[T] =
-      if missing then None else Some(reader.read(value, false))
+  given option[T](using reader: JsonReader[T]^): JsonReader[Option[T]]^{reader} =
+    new JsonReader[Option[T]]:
+      def read(value: JsonAst, missing: Boolean): Option[T] =
+        if missing then None else Some(reader.read(value, false))
 
   given array[Coll[T1] <: Iterable[T1], T]
               (using reader: JsonReader[T], factory: Factory[T, Coll[T]]): JsonReader[Coll[T]] =
@@ -248,12 +253,13 @@ object JsonReader:
         value.array.foreach(bld += reader.read(_, false))
         bld.result()
 
-  given map[T](using reader: JsonReader[T]): JsonReader[Map[String, T]] = new JsonReader[Map[String, T]]:
-    def read(value: JsonAst, missing: Boolean): Map[String, T] =
-      val (keys, values) = value.obj
-      
-      keys.indices.foldLeft(Map[String, T]()): (acc, index) =>
-        acc.updated(keys(index), reader.read(values(index), false))
+  given map[T](using reader: JsonReader[T]): JsonReader[Map[String, T]] =
+    new JsonReader[Map[String, T]]:
+      def read(value: JsonAst, missing: Boolean): Map[String, T] =
+        val (keys, values) = value.obj
+        
+        keys.indices.foldLeft(Map[String, T]()): (acc, index) =>
+          acc.updated(keys(index), reader.read(values(index), false))
 
   private transparent inline def deriveProduct
       [LabelsType <: Tuple, ParamsType <: Tuple]
@@ -276,20 +282,25 @@ object JsonReader:
       [DerivationType](using mirror: Mirror.Of[DerivationType])
       : JsonReader[DerivationType] =
     inline mirror match
-      case mirror: Mirror.ProductOf[DerivationType & Product] => (value: JsonAst, missing: Boolean) =>
-        
+      case mirror: Mirror.ProductOf[DerivationType & Product] => (value, missing) =>
         val keyValues = value.obj
         val values = keyValues(0).zip(keyValues(1)).to(Map)
         
-        val product: Product = mirror.fromProduct(deriveProduct[mirror.MirroredElemLabels, mirror.MirroredElemTypes](values))
+        val product: Product = mirror.fromProduct(deriveProduct[mirror.MirroredElemLabels,
+            mirror.MirroredElemTypes](values))
+        
         mirror.fromProduct(product)
     
       case mirror: Mirror.SumOf[DerivationType] => (value: JsonAst, missing: Boolean) =>
         val values = value.obj
         
         values(0).indexOf("_type") match
-          case -1    => ???
-          case index => deriveSum[mirror.MirroredElemTypes, mirror.MirroredElemLabels, DerivationType](values(1)(index).string.s).read(value, missing)
+          case -1    =>
+            ???
+          
+          case index =>
+            deriveSum[mirror.MirroredElemTypes, mirror.MirroredElemLabels, DerivationType](values(1)
+                (index).string.s).read(value, missing)
   
   private transparent inline def deriveSum
       [SubtypesType <: Tuple, LabelsType <: Tuple, DerivationType]
@@ -299,7 +310,8 @@ object JsonReader:
       case _: (head *: tail) => inline erasedValue[LabelsType] match
         case _: (headLabel *: tailLabels) => inline valueOf[headLabel].asMatchable match
           case label: String =>
-            if label == subtype then summonInline[JsonReader[head]].asInstanceOf[JsonReader[DerivationType]]
+            if label == subtype
+            then summonInline[JsonReader[head]].asInstanceOf[JsonReader[DerivationType]]
             else deriveSum[tail, tailLabels, DerivationType](subtype)
       
       case _ =>
@@ -329,25 +341,27 @@ class Json(rootValue: Any) extends Dynamic derives CanEqual:
   override def hashCode: Int =
     def recur(value: JsonAst): Int =
       value.asMatchable match
-        case value: Long                       => value.hashCode
-        case value: Double                     => value.hashCode
-        case value: BigDecimal                 => value.hashCode
-        case value: String                     => value.hashCode
-        case value: Boolean                    => value.hashCode
-        case value: IArray[JsonAst] @unchecked => value.foldLeft(value.length.hashCode)(_*31^recur(_))
+        case value: Long       => value.hashCode
+        case value: Double     => value.hashCode
+        case value: BigDecimal => value.hashCode
+        case value: String     => value.hashCode
+        case value: Boolean    => value.hashCode
+        
+        case value: IArray[JsonAst] @unchecked =>
+          value.foldLeft(value.length.hashCode)(_*31^recur(_))
         
         case (keys, values) => (keys.asMatchable: @unchecked) match
           case keys: IArray[String] @unchecked => (values.asMatchable: @unchecked) match
             case values: IArray[JsonAst] @unchecked =>
               keys.zip(values).to(Map).view.mapValues(recur(_)).hashCode
         
-        case _                             => 0
+        case _ =>
+          0
     
     recur(root)
 
   override def equals(right: Any): Boolean = right.asMatchable match
     case right: Json =>
-      
       def recur(left: JsonAst, right: JsonAst): Boolean = right.asMatchable match
         case right: Long     => left.asMatchable match
           case left: Long       => left == right
