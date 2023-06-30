@@ -11,6 +11,11 @@ project jacinta
   
   module test
     sources   src/test
-    include   jacinta/core probably/cli probably/bench
+    include   jacinta/core probably/cli
     main      jacinta.Tests
     coverage  jacinta/core
+  
+  module bench
+    sources   src/bench
+    include   jacinta/core probably/cli probably/bench
+    main      jacinta.Bench
