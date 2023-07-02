@@ -26,23 +26,22 @@ object Root
 
 object SimplePath:
   inline def parse(text: Text)(using path: CanThrow[PathError]): SimplePath^{path} =
-    reachable.parse(text)
+    pathParser.parse(text)
   
   given show: Show[SimplePath] = _.render
   given mainRoot: MainRoot[SimplePath] = () => SimplePath(Nil)
 
-  given reachable: ParsableReachable[SimplePath, ".*\\/.*"] with
-    type Root = serpentine.Root.type
+  given pathParser: PathParser[SimplePath, ".*\\/.*", Root.type] with
     def separator(path: SimplePath): Text = t"/"
-    def root(path: SimplePath): Root = serpentine.Root
-    def prefix(root: Root): Text = t"/"
-    
-    def make(root: Root, descent: List[PathName[".*\\/.*"]]): SimplePath =
-      SimplePath(descent)
 
-    def parseRoot(text: Text): Maybe[(Root, Text)] =
+    def parseRoot(text: Text): Maybe[(Root.type, Text)] =
       if text.starts(t"/") then (Root, text.drop(1)) else Unset
     
+  given reachable: Reachable[SimplePath, ".*\\/.*", Root.type] with
+    def separator(path: SimplePath): Text = t"/"
+    def root(path: SimplePath): Root.type = serpentine.Root
+    def prefix(root: Root.type): Text = t"/"
+    def make(root: Root.type, descent: List[PathName[".*\\/.*"]]): SimplePath = SimplePath(descent)
     def descent(path: SimplePath): List[PathName[".*\\/.*"]] = path.descent
     
 case class SimplePath(descent: List[PathName[".*\\/.*"]])
