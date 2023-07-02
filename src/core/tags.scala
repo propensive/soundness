@@ -21,22 +21,19 @@ import rudiments.*
 import language.dynamics
 
 val A = ClearTagType["a", NonInteractive, Global | "href" | "target" | "download" | "ping" | "rel" |
-                         "hreflang" | "htype" | "referrerpolicy"]
-                    ("a", block = false)
+    "hreflang" | "htype" | "referrerpolicy"]("a", block = false)
 
 val Abbr = TagType["abbr", Phrasing, Global]("abbr", block = false)
 val Address = TagType["address", Flow | Palpable, Global]("address")
 
 val Area = TagType["area", Nothing, Global | "alt" | "coords" | "shape" | "href" | "target" |
-                       "download" | "ping" | "rel" | "referrerpolicy"]
-                  ("area", block = false)
+    "download" | "ping" | "rel" | "referrerpolicy"]("area", block = false)
 
 val Article = TagType["article", Flow, Global]("article") // further constraints on descendants
 val Aside = TagType["aside", Flow, Global]("aside")
 
 val Audio = TagType["audio", Label, Global | "src" | "crossorigin" | "preload" | "autoplay" |
-                        "loop" | "muted" | "controls"]
-                   ("audio", block = false)
+    "loop" | "muted" | "controls"]("audio", block = false)
 
 val B = TagType["b", Phrasing, Global]("b", block = false)
 val Base = TagType["base", Nothing, Global | "href" | "target"]("base", block = false)
@@ -45,20 +42,18 @@ val Bdo = TagType["bdo", Phrasing, Global]("bdo", block = false)
 val Blockquote = TagType["blockquote", Flow, Global | "cite"]("blockquote")
 
 val Body = TagType["body", Flow, Global | "onafterprint" | "onbeforeprint" | "onbeforeunload" |
-                       "onhashchange" | "onlanguagechange" | "onmessage" | "onmessageerror" |
-                       "onoffline" | "ononline" | "onpagehide" | "onpageshow" | "onpopstate" |
-                       "onrejectionhandled" | "onstorage" | "onunhandledrejection" | "onunload"]
-                  ("body")
+    "onhashchange" | "onlanguagechange" | "onmessage" | "onmessageerror" | "onoffline" |
+    "ononline" | "onpagehide" | "onpageshow" | "onpopstate" | "onrejectionhandled" | "onstorage" |
+    "onunhandledrejection" | "onunload"]("body")
 
 val Br = TagType["br", Nothing, Global]("br", block = false, unclosed = true)
 
 val Button = TagType["button", Phrasing, Global | "disabled" | "form" | "formaction" |
-                         "formenctype" | "formmethod" | "formnovalidate" | "formtarget" | "name" |
-                         "htype" | "value"]
-                    ("button", block = false)
+    "formenctype" | "formmethod" | "formnovalidate" | "formtarget" | "name" | "htype" | "value"]
+    ("button", block = false)
 
-val Canvas = ClearTagType["canvas", NonInteractive, Global | "width" | "height"]
-                     ("canvas", block = false) // complicated
+val Canvas = ClearTagType["canvas", NonInteractive, Global | "width" | "height"]("canvas", block =
+    false) // complicated
 
 val Caption = TagType["caption", Flow, Global]("caption") // no tables
 val Cite = TagType["cite", Phrasing, Global]("cite", block = false)
@@ -67,8 +62,8 @@ val Col = TagType["col", Nothing, Global | "span"]("col", block = false)
 val Colgroup = TagType["colgroup", "col" | "template", Global | "span"]("colgroup")
 val Data = TagType["data", Phrasing, Global | "value"]("data", block = false)
 
-val Datalist = TagType["datalist", Phrasing | "option" | ScriptSupporting, Global]
-                      ("datalist", block = false)
+val Datalist = TagType["datalist", Phrasing | "option" | ScriptSupporting, Global]("datalist",
+    block = false)
 
 val Dd = TagType["dd", Flow, Global]("dd")
 val Del = ClearTagType["del", Label, Global | "cite" | "datetime"]("del", block = false)
@@ -80,11 +75,11 @@ val Dl = TagType["dl", "dt" | "dl" | "div", Global]("dl")
 val Dt = TagType["dt", Flow, Global]("dt") // further constraints
 val Em = TagType["em", Phrasing, Global]("em", block = false)
 
-val Embed = TagType["embed", Nothing, Global | "src" | "htype" | "width" | "height"]
-                   ("embed", block = false)
+val Embed = TagType["embed", Nothing, Global | "src" | "htype" | "width" | "height"]("embed",
+    block = false)
 
 val Fieldset = TagType["fieldset", "legend" | Flow, Global | "disabled" | "form" | "name"]
-                      ("fieldset")
+    ("fieldset")
 
 val Figcaption = TagType["figcaption", Flow, Global]("figcaption")
 
@@ -94,7 +89,7 @@ val Figure = TagType["figure", "figcaption" | Flow, Global]("figure")
 val Footer = TagType["footer", Flow, Global]("footer")
 
 val Form = TagType["form", Flow, Global | "acceptCharset" | "action" | "autocomplete" | "enctype" |
-                       "method" | "name" | "novalidate" | "target" | "rel"]("form")
+    "method" | "name" | "novalidate" | "target" | "rel"]("form")
 
 val H1 = TagType["h1", Phrasing, Global]("h1")
 val H2 = TagType["h2", Phrasing, Global]("h2")
@@ -107,25 +102,21 @@ val Head = TagType["head", Metadata, Global]("head")
 val Header = TagType["header", Flow, Global]("header")
 val Hgroup = TagType["hgroup", "h1" | "h2" | "h3" | "h4" | "h5" | "h6", Global]("hgroup")
 val Hr = TagType["hr", Nothing, Global]("hr", block = false, unclosed = true)
-
 val I = TagType["i", Phrasing, Global]("i", block = false)
 
 val Iframe = TagType["iframe", Nothing, Global | "src" | "srcdoc" | "name" | "sandbox" | "allow" |
-                         "allowfullscreen" | "width" | "height" | "referrerpolicy" | "loading"]
-                    ("iframe", unclosed = false, block = false)
+    "allowfullscreen" | "width" | "height" | "referrerpolicy" | "loading"]("iframe", unclosed =
+     false, block = false)
 
 val Img = TagType["img", Nothing, Global | "alt" | "src" | "srcset" | "sizes" | "crossorigin" |
-                      "usemap" | "ismap" | "width" | "height" | "referrerpolicy" | "decoding" |
-                      "loading"]
-                 ("img", block = false, unclosed = true)
+    "usemap" | "ismap" | "width" | "height" | "referrerpolicy" | "decoding" | "loading"]("img",
+    block = false, unclosed = true)
 
 val Input = TagType["input", Nothing, Global | "accept" | "alt" | "autocomplete" | "checked" |
-                        "dirname" | "disabled" | "form" | "formaction" | "formenctype" |
-                        "formmethod" | "formnovalidate" | "formtarget" | "height" | "list" | "max" |
-                        "maxlength" | "min" | "minlength" | "multiple" | "name" | "pattern" |
-                        "placeholder" | "readonly" | "required" | "size" | "src" | "step" |
-                        "htype" | "value" | "width"]
-                   ("input", block = false, unclosed = true)
+    "dirname" | "disabled" | "form" | "formaction" | "formenctype" | "formmethod" |
+    "formnovalidate" | "formtarget" | "height" | "list" | "max" | "maxlength" | "min" |
+    "minlength" | "multiple" | "name" | "pattern" | "placeholder" | "readonly" | "required" |
+    "size" | "src" | "step" | "htype" | "value" | "width"]("input", block = false, unclosed = true)
 
 val Ins = ClearTagType["ins", Label, Global | "cite" | "datetime"]("ins", block = false)
 val Kbd = TagType["kbd", Phrasing, Global]("kbd", block = false)
@@ -134,43 +125,40 @@ val Legend = TagType["legend", Phrasing | Heading, Global]("legend")
 val Li = TagType["li", Flow, Global | "value"]("li")
 
 val Link = TagType["link", Nothing, Global | "href" | "crossorigin" | "rel" | "media" |
-                   "integrity" | "hreflang" | "htype" | "referrerpolicy" | "sizes" | "imagesrcset" |
-                   "imagesizes" | "as" | "color" | "disabled"]
-                  ("link", block = false, unclosed = true)
+    "integrity" | "hreflang" | "htype" | "referrerpolicy" | "sizes" | "imagesrcset" | "imagesizes" |
+    "as" | "color" | "disabled"]("link", block = false, unclosed = true)
 
 val Main = TagType["main", Flow, Global]("main")
 val Mark = TagType["mark", Phrasing, Global]("mark", block = false)
 val Menu = TagType["menu", Flow, Global]("menu")
 
-val Meta = TagType["meta", Nothing, Global | "name" | "httpEquiv" | "content" | "charset"]
-              ("meta", block = false, unclosed = true)
+val Meta = TagType["meta", Nothing, Global | "name" | "httpEquiv" | "content" | "charset"]("meta",
+    block = false, unclosed = true)
 
 val Meter = TagType["meter", Phrasing, Global | "value" | "min" | "max" | "low" | "high" |
-                        "optimum"]
-                   ("meter", block = false)
+    "optimum"]("meter", block = false)
 
 val Nav = TagType["nav", Flow, Global]("nav")
 
 val Noscript = TagType["noscript", Label, Global]("noscript", block = false)
 
 val HObject = TagType["object", Label, Global | "data" | "htype" | "name" | "form" | "width" |
-                          "height"]
-                     ("object", block = false)
+    "height"]("object", block = false)
 
 val Ol = TagType["ol", "li" | ScriptSupporting, Global | "reversed" | "start" | "htype"]("ol")
 
 val Optgroup = TagType["optgroup", "option" | ScriptSupporting, Global | "disabled" | "label"]
-                      ("optgroup")
+    ("optgroup")
 
 val Option = TagType["option", Nothing, Global | "disabled" | "label" | "selected" | "value"]
-                    ("option", unclosed = true)
+    ("option", unclosed = true)
 
 val Output = TagType["output", Phrasing, Global | "hfor" | "form" | "name"]("output", block = false)
 val P = TagType["p", Phrasing, Global]("p")
 val Param = TagType["param", Nothing, Global | "name" | "value"]("param", unclosed = true)
 
-val Picture = TagType["picture", "source" | "img" | ScriptSupporting, Global]
-                     ("picture", block = false)
+val Picture = TagType["picture", "source" | "img" | ScriptSupporting, Global]("picture", block =
+    false)
 
 val Pre = TagType["pre", Phrasing, Global]("pre", verbatim = true, block = false)
 val Progress = TagType["progress", Phrasing, Global | "value" | "max"]("progress", block = false)
@@ -183,21 +171,18 @@ val S = TagType["s", Phrasing, Global]("s", block = false)
 val Samp = TagType["samp", Phrasing, Global]("samp", block = false)
 
 val Script = TagType["script", Nothing, Global | "src" | "htype" | "nomodule" | "async" | "defer" |
-                         "crossorigin" | "integrity" | "referrerpolicy"]
-                    ("script", block = false, verbatim = true)
+    "crossorigin" | "integrity" | "referrerpolicy"]("script", block = false, verbatim = true)
 
 val Section = TagType["section", Flow, Global]("section")
 
 val Select = TagType["select", "option" | "optgroup" | ScriptSupporting, Global | "autocomplete" |
-                             "disabled" | "form" | "multiple" | "name" | "required" | "size"]
-                        ("select", block = false)
+    "disabled" | "form" | "multiple" | "name" | "required" | "size"]("select", block = false)
 
 val Slot = ClearTagType["slot", Label, Global | "name"]("slot", block = false)
 val Small = TagType["small", Phrasing, Global]("small", block = false)
 
 val Source = TagType["source", Nothing, Global | "htype" | "src" | "srcset" | "sizes" | "media" |
-                         "width" | "height"]
-                    ("source")
+    "width" | "height"]("source")
 
 val Span = TagType["span", Phrasing, Global]("span", block = false)
 val Strong = TagType["strong", Phrasing, Global | "media"]("strong", block = false)
@@ -207,17 +192,15 @@ val Summary = TagType["summary", Phrasing | Heading, Global]("summary")
 val Sup = TagType["sup", Phrasing, Global]("sup", block = false)
 
 val Table = TagType["table", "caption" | "colgroup" | "thead" | "tbody" | "tr" | "tfoot" |
-                        ScriptSupporting, Global]
-                   ("table")
+    ScriptSupporting, Global]("table")
 
 val Tbody = TagType["tbody", "tr" | ScriptSupporting, Global]("tbody")
 val Td = TagType["td", Flow, Global | "colspan" | "rowspan" | "headers"]("td")
 val Template = TagType["template", Nothing, Global]("template", unclosed = false, block = false)
 
 val Textarea = TagType["textarea", Nothing, Global | "autocomplete" | "cols" | "dirname" |
-                           "disabled" | "form" | "maxlength" | "minlength" | "name" | "readonly" |
-                           "placeholder" | "required" | "rows" | "wrap"]
-                      ("textarea", block = false, verbatim = true)
+    "disabled" | "form" | "maxlength" | "minlength" | "name" | "readonly" | "placeholder" |
+    "required" | "rows" | "wrap"]("textarea", block = false, verbatim = true)
 
 val Tfoot = TagType["tfoot", "tr" | ScriptSupporting, Global]("tfoot")
 val Th = TagType["th", Flow, Global | "colspan" | "rowspan" | "headers" | "scope" | "abbr"]("th")
@@ -227,15 +210,14 @@ val Title = TagType["title", Nothing, Global]("title")
 val Tr = TagType["tr", "td" | "th" | ScriptSupporting, Global]("tr")
 
 val Track = TagType["track", Nothing, Global | "kind" | "src" | "srclang" | "label" | "default"]
-                   ("track")
+    ("track")
 
 val U = TagType["u", Phrasing, Global]("u", block = false)
 val Ul = TagType["ul", "li" | ScriptSupporting, Global]("ul")
 val Var = TagType["var", Nothing, Global]("var", block = false)
 
 val Video = TagType["video", Label, Global | "src" | "crossorigin" | "poster" | "preload" | "loop" |
-                        "autoplay" | "playsinline" | "muted" | "controls" | "width" | "height"]
-                   ("video", block = false)
+    "autoplay" | "playsinline" | "muted" | "controls" | "width" | "height"]("video", block = false)
 
 val Wbr = TagType["wbr", Nothing, Global]("wbr", block = false)
 

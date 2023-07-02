@@ -72,9 +72,10 @@ object StartTag:
     t"${elem.label}$tail".s
 
 
-case class StartTag[+NameType <: Label, ChildType <: Label]
-                   (labelString: NameType, unclosed: Boolean, block: Boolean, verbatim: Boolean,
-                        attributes: Attributes)
+case class StartTag
+    [+NameType <: Label, ChildType <: Label]
+    (labelString: NameType, unclosed: Boolean, block: Boolean, verbatim: Boolean,
+        attributes: Attributes)
 extends Node[NameType]:
   def children = Nil
   def label: Text = labelString.show
@@ -82,18 +83,19 @@ extends Node[NameType]:
     Element(labelString, unclosed, block, verbatim, attributes, children)
 
 object Honeycomb:
-  def read[NameType <: Label: Type, ChildType <: Label: Type, ReturnType <: Label: Type]
-          (name: Expr[NameType], unclosed: Expr[Boolean], block: Expr[Boolean],
-               verbatim: Expr[Boolean], attributes: Expr[Seq[(Label, Any)]])
-          (using Quotes)
-          : Expr[StartTag[NameType, ReturnType]] =
-    import quotes.reflect.{Singleton as _, *}
+  def read
+      [NameType <: Label: Type, ChildType <: Label: Type, ReturnType <: Label: Type]
+      (name: Expr[NameType], unclosed: Expr[Boolean], block: Expr[Boolean], verbatim: Expr[Boolean],
+          attributes: Expr[Seq[(Label, Any)]])
+      (using Quotes)
+      : Expr[StartTag[NameType, ReturnType]] =
+    import quotes.reflect.*
 
     def recur(exprs: Seq[Expr[(Label, Any)]]): List[Expr[(String, Maybe[Text])]] = exprs match
-      case '{($key: keyType & Label, $value: valueType)} +: tail =>
+      case '{type keyType <: Label; ($key: keyType, $value: valueType)} +: tail =>
         val att = key.value.get
-        val expr: Expr[HtmlAttribute[keyType & Label, valueType, NameType]] =
-          Expr.summon[HtmlAttribute[keyType & Label, valueType, NameType]].getOrElse:
+        val expr: Expr[HtmlAttribute[keyType, valueType, NameType]] =
+          Expr.summon[HtmlAttribute[keyType, valueType, NameType]].getOrElse:
             val typeName = TypeRepr.of[valueType].show
             fail(t"""the attribute $att cannot take a value of type $typeName""".s)
         

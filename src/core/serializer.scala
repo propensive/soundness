@@ -20,8 +20,8 @@ import rudiments.*
 import gossamer.*
 import spectacular.*
 
-trait HtmlSerializer[T]:
-  def serialize(doc: HtmlDoc, maxWidth: Int = -1): T
+trait HtmlSerializer[ResultType]:
+  def serialize(doc: HtmlDoc, maxWidth: Int = -1): ResultType
 
 object HtmlSerializer:
   given HtmlSerializer[Text] = (doc, maxWidth) =>
