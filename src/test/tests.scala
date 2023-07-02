@@ -21,11 +21,8 @@ import languages.common.*
 import probably.*
 import rudiments.*
 import gossamer.*
-import eucalyptus.*
 
 import unsafeExceptions.canThrowAny
-
-given Log(Everything |-> Stdout)
 
 object Tests extends Suite(t"Cosmopolite Tests"):
   def run(): Unit =

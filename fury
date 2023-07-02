@@ -1,12 +1,18 @@
 # This is a buildfile for Fury or Wrath.
 # More information is available at: https://github.com/propensive/wrath/
 
-target cosmopolite/core
+target cosmopolite/test
 
-repo propensive/gossamer
+repo propensive/probably
 
 project cosmopolite
   module core
-    sources  src/core
-    include  gossamer/core
+    compiler  scala
+    sources   src/core
+    include   gossamer/core
 
+  module test
+    compiler  scala
+    sources   src/test
+    include   cosmopolite/core probably/cli
+    main      cosmopolite.Tests
