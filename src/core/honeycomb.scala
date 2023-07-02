@@ -77,10 +77,10 @@ extends Node[Name], Dynamic:
                   (children: (Html[Children] | Seq[Html[Children]])*): Element[Name] =
     Element(labelString, unclosed, block, verbatim, Map(), children)
 
-object TransTagType:
-  given GenericCssSelection[TransTagType[?, ?, ?]] = _.labelString
+object ClearTagType:
+  given GenericCssSelection[ClearTagType[?, ?, ?]] = _.labelString
 
-case class TransTagType
+case class ClearTagType
     [+Name <: Label, Children <: Label, Atts <: Label]
     (labelString: Name, unclosed: Boolean = false, block: Boolean = true,
         verbatim: Boolean = false)

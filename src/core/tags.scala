@@ -20,7 +20,7 @@ import rudiments.*
 
 import language.dynamics
 
-val A = TransTagType["a", NonInteractive, Global | "href" | "target" | "download" | "ping" | "rel" |
+val A = ClearTagType["a", NonInteractive, Global | "href" | "target" | "download" | "ping" | "rel" |
                          "hreflang" | "htype" | "referrerpolicy"]
                     ("a", block = false)
 
@@ -57,7 +57,7 @@ val Button = TagType["button", Phrasing, Global | "disabled" | "form" | "formact
                          "htype" | "value"]
                     ("button", block = false)
 
-val Canvas = TransTagType["canvas", NonInteractive, Global | "width" | "height"]
+val Canvas = ClearTagType["canvas", NonInteractive, Global | "width" | "height"]
                      ("canvas", block = false) // complicated
 
 val Caption = TagType["caption", Flow, Global]("caption") // no tables
@@ -71,7 +71,7 @@ val Datalist = TagType["datalist", Phrasing | "option" | ScriptSupporting, Globa
                       ("datalist", block = false)
 
 val Dd = TagType["dd", Flow, Global]("dd")
-val Del = TransTagType["del", Label, Global | "cite" | "datetime"]("del", block = false)
+val Del = ClearTagType["del", Label, Global | "cite" | "datetime"]("del", block = false)
 val Details = TagType["details", "summary" | Flow, Global | "open"]("details")
 val Dfn = TagType["dfn", Phrasing, Global]("dfn", block = false)
 val Dialog = TagType["dialog", Flow, Global | "open"]("dialog")
@@ -102,7 +102,7 @@ val H3 = TagType["h3", Phrasing, Global]("h3")
 val H4 = TagType["h4", Phrasing, Global]("h4")
 val H5 = TagType["h5", Phrasing, Global]("h5")
 val H6 = TagType["h6", Phrasing, Global]("h6")
-val HMap = TransTagType["map", Phrasing | Flow | Palpable, Global | "name"]("map", block = false)
+val HMap = ClearTagType["map", Phrasing | Flow | Palpable, Global | "name"]("map", block = false)
 val Head = TagType["head", Metadata, Global]("head")
 val Header = TagType["header", Flow, Global]("header")
 val Hgroup = TagType["hgroup", "h1" | "h2" | "h3" | "h4" | "h5" | "h6", Global]("hgroup")
@@ -127,7 +127,7 @@ val Input = TagType["input", Nothing, Global | "accept" | "alt" | "autocomplete"
                         "htype" | "value" | "width"]
                    ("input", block = false, unclosed = true)
 
-val Ins = TransTagType["ins", Label, Global | "cite" | "datetime"]("ins", block = false)
+val Ins = ClearTagType["ins", Label, Global | "cite" | "datetime"]("ins", block = false)
 val Kbd = TagType["kbd", Phrasing, Global]("kbd", block = false)
 val Label = TagType["label", Phrasing, Global | "hfor" | "for"]("label", block = false)
 val Legend = TagType["legend", Phrasing | Heading, Global]("legend")
@@ -192,7 +192,7 @@ val Select = TagType["select", "option" | "optgroup" | ScriptSupporting, Global 
                              "disabled" | "form" | "multiple" | "name" | "required" | "size"]
                         ("select", block = false)
 
-val Slot = TransTagType["slot", Label, Global | "name"]("slot", block = false)
+val Slot = ClearTagType["slot", Label, Global | "name"]("slot", block = false)
 val Small = TagType["small", Phrasing, Global]("small", block = false)
 
 val Source = TagType["source", Nothing, Global | "htype" | "src" | "srcset" | "sizes" | "media" |
