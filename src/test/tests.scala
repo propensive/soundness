@@ -32,14 +32,12 @@ object Example:
     import unsafeExceptions.canThrowAny
 
     given Show[RootedPath] = _.render
-    def parse(text: Text): RootedPath = pathParser.parse(text)
+    def parse(text: Text): RootedPath = text.parse[RootedPath]
 
     given pathCreator: PathCreator[RootedPath, Forbidden, Drive] = RootedPath(_, _)
 
-    given pathParser: PathParser[RootedPath, Forbidden, Drive] with
-      def separator(path: RootedPath): Text = t"\\"
-      
-      def parseRoot(text: Text): Maybe[(Drive, Text)] = text.only:
+    given rootParser: RootParser[Drive] with
+      def parse(text: Text): Maybe[(Drive, Text)] = text.only:
         case r"$letter([a-zA-Z]):\\.*" => (Drive(unsafely(letter(0)).toUpper), text.drop(3))
 
     given reachable: Reachable[RootedPath, Forbidden, Drive] with
@@ -59,7 +57,7 @@ object Example:
     given linkCreator: PathCreator[RootedLink, Forbidden, Int] = RootedLink(_, _)
     
     given Show[RootedLink] = _.render
-    def parse(text: Text): RootedLink = pathlike.parse(text)
+    def parse(text: Text): RootedLink = text.parse[RootedLink]
     
     given pathlike: Followable[RootedLink, Forbidden, "..", "."] with
       def separator(path: RootedLink): Text = t"\\"

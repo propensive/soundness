@@ -26,15 +26,13 @@ object Root
 
 object SimplePath:
   inline def parse(text: Text)(using path: CanThrow[PathError]): SimplePath^{path} =
-    pathParser.parse(text)
+    text.parse[SimplePath]
   
   given show: Show[SimplePath] = _.render
   given mainRoot: MainRoot[SimplePath] = () => SimplePath(Nil)
 
-  given pathParser: PathParser[SimplePath, ".*\\/.*", Root.type] with
-    def separator(path: SimplePath): Text = t"/"
-
-    def parseRoot(text: Text): Maybe[(Root.type, Text)] =
+  given rootParser: RootParser[Root.type] with
+    def parse(text: Text): Maybe[(Root.type, Text)] =
       if text.starts(t"/") then (Root, text.drop(1)) else Unset
     
   given reachable: Reachable[SimplePath, ".*\\/.*", Root.type] with
@@ -52,7 +50,7 @@ object SimpleLink:
   given show: Show[SimpleLink] = _.render
   
   inline def parse(text: Text)(using path: CanThrow[PathError]): SimpleLink^{path} =
-    followable.parse(text)
+    text.parse[SimpleLink]
 
   given pathCreator: PathCreator[SimpleLink, ".*\\/.*", Int] = SimpleLink(_, _)
 

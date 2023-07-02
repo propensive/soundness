@@ -190,22 +190,9 @@ trait Pathlike[-PathType <: Matchable, NameType <: Label, AscentType]:
 trait MainRoot[PathType <: Matchable]:
   def empty(): PathType
 
-abstract class PathParser[PathType <: Matchable, NameType <: Label, RootType]:
-  def parseRoot(text: Text): Maybe[(RootType, Text)]
-  def separator(path: PathType): Text
+trait RootParser[+RootType]:
+  def parse(text: Text): Maybe[(RootType, Text)]
   
-  inline def parse
-      (text: Text)
-      (using path: CanThrow[PathError], creator: PathCreator[PathType, NameType, RootType])
-      : PathType^{path, creator} =
-    val (root, rest) = parseRoot(text).or(throw PathError(PathError.Reason.NotRooted))
-    
-    val names = rest.cut(separator(creator.path(root, Nil))).reverse match
-      case t"" :: tail => tail
-      case names       => names
-
-    creator.path(root, names.map(PathName(_)))
-
 @capability
 trait PathCreator[+PathType <: Matchable, NameType <: Label, AscentType]:
   def path(ascent: AscentType, descent: List[PathName[NameType]]): PathType
@@ -231,7 +218,7 @@ extends Pathlike[PathType, NameType, RootType]:
   
 @capability  
 trait Followable
-    [LinkType <: Matchable, NameType <: Label, ParentRefType <: Label, SelfRefType <: Label]
+    [-LinkType <: Matchable, NameType <: Label, ParentRefType <: Label, SelfRefType <: Label]
     (using ValueOf[ParentRefType], ValueOf[SelfRefType])
 extends Pathlike[LinkType, NameType, Int]:
   val parentRef: Text = Text(summon[ValueOf[ParentRefType]].value)
@@ -263,21 +250,55 @@ extends Pathlike[LinkType, NameType, Int]:
       else t"${t"$parentRef${separator(path)}"*(ascent(path) - 1)}$parentRef"
     else t"$prefix${descent(path).reverse.map(_.render).join(separator(path))}"
 
-  inline def parse(text: Text)(using path: CanThrow[PathError], creator: PathCreator[LinkType, NameType, Int]): LinkType^{path} =
-    val foundSeparator: Char = unsafely(text.where(separators.contains(_)).mm(text(_))).or('/')
-    val ascentPrefix: Text = t"$parentRef$foundSeparator"
-    
-    def recur(text: Text, ascent: Int = 0): LinkType =
-      if text.starts(ascentPrefix) then recur(text.drop(ascentPrefix.length), ascent + 1)
-      else if text == parentRef then creator.path(ascent + 1, Nil)
-      else
-        val names = text.cut(foundSeparator).reverse match
+@capability
+trait Parser[+ResultType]:
+  def parse(value: Text): ResultType
+
+object Parser:
+  inline given
+      [PathType <: Matchable, NameType <: Label, RootType]
+      (using path: CanThrow[PathError],
+          reachable: Reachable[PathType, NameType, RootType],
+          rootParser: RootParser[RootType],
+          creator: PathCreator[PathType, NameType, RootType]): Parser[PathType] =
+    new Parser[PathType]:
+      def parse(text: Text): PathType =
+        val (root, rest) = rootParser.parse(text).or(throw PathError(PathError.Reason.NotRooted))
+        
+        val names = rest.cut(reachable.separator(creator.path(root, Nil))).reverse match
           case t"" :: tail => tail
           case names       => names
+
+        creator.path(root, names.map(PathName(_)))
+  
+  inline given
+      [LinkType <: Matchable, NameType <: Label, ParentRefType <: Label, SelfRefType <: Label]
+      (using path: CanThrow[PathError],
+          followable: Followable[LinkType, NameType, ParentRefType, SelfRefType],
+          creator: PathCreator[LinkType, NameType, Int]): Parser[LinkType] =
+    new Parser[LinkType]:
+      def parse(text: Text): LinkType =
+        import followable.*
         
-        creator.path(ascent, names.map(PathName(_)))
+        val foundSeparator: Char = unsafely(text.where(separators.contains(_)).mm(text(_))).or('/')
+        val ascentPrefix: Text = t"$parentRef$foundSeparator"
+        
+        def recur(text: Text, ascent: Int = 0): LinkType =
+          if text.starts(ascentPrefix) then recur(text.drop(ascentPrefix.length), ascent + 1)
+          else if text == parentRef then creator.path(ascent + 1, Nil)
+          else
+            val names = text.cut(foundSeparator).reverse match
+              case t"" :: tail => tail
+              case names       => names
+            
+            creator.path(ascent, names.map(PathName(_)))
+        
+        if text == selfRef then creator.path(0, Nil) else recur(text)
     
-    if text == selfRef then creator.path(0, Nil) else recur(text)
+
+extension (text: Text)
+  inline def parse[ResultType](using parser: Parser[ResultType]): ResultType^{parser} =
+    parser.parse(text)
 
 extension
     [PathType <: Matchable, NameType <: Label, AscentType]
