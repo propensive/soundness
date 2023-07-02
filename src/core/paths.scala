@@ -41,16 +41,21 @@ object SimplePath:
     def separator(path: SimplePath): Text = t"/"
     def root(path: SimplePath): Root.type = serpentine.Root
     def prefix(root: Root.type): Text = t"/"
-    def make(root: Root.type, descent: List[PathName[".*\\/.*"]]): SimplePath = SimplePath(descent)
     def descent(path: SimplePath): List[PathName[".*\\/.*"]] = path.descent
+  
+  given pathCreator: PathCreator[SimplePath, ".*\\/.*", Root.type] with
+    def path(root: Root.type, descent: List[PathName[".*\\/.*"]]): SimplePath = SimplePath(descent)
     
 case class SimplePath(descent: List[PathName[".*\\/.*"]])
 
 object SimpleLink:
   given show: Show[SimpleLink] = _.render
+  
   inline def parse(text: Text)(using path: CanThrow[PathError]): SimpleLink^{path} =
     followable.parse(text)
-  
+
+  given pathCreator: PathCreator[SimpleLink, ".*\\/.*", Int] = SimpleLink(_, _)
+
   given followable: Followable[SimpleLink, ".*\\/.*", "..", "."] with
     def separator(link: SimpleLink): Text = t"/"
     val separators: Set[Char] = Set('/')

@@ -34,6 +34,8 @@ object Example:
     given Show[RootedPath] = _.render
     def parse(text: Text): RootedPath = pathParser.parse(text)
 
+    given pathCreator: PathCreator[RootedPath, Forbidden, Drive] = RootedPath(_, _)
+
     given pathParser: PathParser[RootedPath, Forbidden, Drive] with
       def separator(path: RootedPath): Text = t"\\"
       
@@ -53,6 +55,8 @@ object Example:
 
   object RootedLink:
     import unsafeExceptions.canThrowAny
+    
+    given linkCreator: PathCreator[RootedLink, Forbidden, Int] = RootedLink(_, _)
     
     given Show[RootedLink] = _.render
     def parse(text: Text): RootedLink = pathlike.parse(text)
