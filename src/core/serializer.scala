@@ -59,22 +59,22 @@ object HtmlSerializer:
           case (key: Text, Unset)       => append(t" ", key)
         
         append(t">")
-        if !node.inline then newline(1)
+        if node.block then newline(1)
         
         for child <- node.children do
           val splitLine = child match
-            case element: Element[?] => !element.inline
+            case element: Element[?] => element.block
             case _                   => false
           if splitLine then newline()
           next(child, node.verbatim)
           if splitLine then newline()
         
-        if !node.inline then newline(-1)
+        if node.block then newline(-1)
         
         if !node.unclosed then
           whitespace()
           append(t"</", node.label, t">")
-          if !node.inline then newline(0)
+          if node.block then newline(0)
 
       case text: Text =>
         whitespace()

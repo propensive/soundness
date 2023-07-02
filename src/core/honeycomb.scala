@@ -30,10 +30,10 @@ object Element:
   @targetName("make")
   def apply
       [NodeType <: Label, ChildType <: Label]
-      (labelString: String, unclosed: Boolean, inline: Boolean, verbatim: Boolean,
+      (labelString: String, unclosed: Boolean, block: Boolean, verbatim: Boolean,
           attributes: Attributes, children: Seq[Html[ChildType] | Seq[Html[ChildType]]] = Nil)
       : Element[NodeType] =
-    new Element(labelString, unclosed, inline, verbatim, attributes, flatten(children))
+    new Element(labelString, unclosed, block, verbatim, attributes, flatten(children))
 
   private def flatten
       [ChildType <: Label]
@@ -48,18 +48,18 @@ object Html extends Node["html"]:
   def label: Text = t"html"
   def attributes: Attributes = Map()
   def children: Seq[Html[?]] = Nil
-  def inline: Boolean = false
+  def block: Boolean = true
   def unclosed: Boolean = false
   def verbatim: Boolean = false
 
   def apply(head: Node["head"], body: Node["body"]): Element["html"] =
-    Element(label.s, unclosed, inline, verbatim, Map(), Seq(head, body))
+    Element(label.s, unclosed, block, verbatim, Map(), Seq(head, body))
 
 object TagType:
   given GenericCssSelection[TagType[?, ?, ?]] = _.labelString
 
 case class TagType[+Name <: Label, Children <: Label, Atts <: Label]
-              (labelString: Name, unclosed: Boolean = false, inline: Boolean = false,
+              (labelString: Name, unclosed: Boolean = false, block: Boolean = true,
                    verbatim: Boolean = false)
 extends Node[Name], Dynamic:
   def attributes: Attributes = Map()
@@ -70,19 +70,19 @@ extends Node[Name], Dynamic:
 
   inline def applyDynamicNamed(method: "apply")
                               (inline attributes: (Atts, Any)*): StartTag[Name, Children] =
-    ${Honeycomb.read[Name, Children, Children]('labelString, 'unclosed, 'inline, 'verbatim,
+    ${Honeycomb.read[Name, Children, Children]('labelString, 'unclosed, 'block, 'verbatim,
         'attributes)}
 
   def applyDynamic(method: "apply")
                   (children: (Html[Children] | Seq[Html[Children]])*): Element[Name] =
-    Element(labelString, unclosed, inline, verbatim, Map(), children)
+    Element(labelString, unclosed, block, verbatim, Map(), children)
 
 object TransTagType:
   given GenericCssSelection[TransTagType[?, ?, ?]] = _.labelString
 
 case class TransTagType
     [+Name <: Label, Children <: Label, Atts <: Label]
-    (labelString: Name, unclosed: Boolean = false, inline: Boolean = false,
+    (labelString: Name, unclosed: Boolean = false, block: Boolean = true,
         verbatim: Boolean = false)
 extends Node[Name], Dynamic:
 
@@ -95,26 +95,26 @@ extends Node[Name], Dynamic:
       (inline attributes: (Atts, Any)*)
       : StartTag[Name, Children] =
     
-    ${Honeycomb.read[Name, Children, Children]('labelString, 'unclosed, 'inline, 'verbatim,
+    ${Honeycomb.read[Name, Children, Children]('labelString, 'unclosed, 'block, 'verbatim,
         'attributes)}
 
   def applyDynamic[Return <: Label]
                   (method: "apply")
                   (children: (Html[Return] | Seq[Html[Return]])*)
                   : Element[Return] =
-    Element(labelString, unclosed, inline, verbatim, Map(), children)
+    Element(labelString, unclosed, block, verbatim, Map(), children)
 
 case class Element
     [+Name <: Label]
-    (labelString: String, unclosed: Boolean, tagInline: Boolean, verbatim: Boolean,
+    (labelString: String, unclosed: Boolean, tagBlock: Boolean, verbatim: Boolean,
         attributes: Map[String, Maybe[Text]], children: Seq[Html[?]]) extends Node[Name]:
 
   def label: Text = labelString.show
 
-  lazy val inline: Boolean = tagInline && children.forall:
-    case item: Node[?] => item.inline
-    case _: Text       => true
-    case _: Int        => true
+  lazy val block: Boolean = tagBlock || children.exists:
+    case item: Node[?] => item.block
+    case _: Text       => false
+    case _: Int        => false
     case _             => throw Mistake("should never match")
 
 case class HtmlDoc(root: Node["html"])

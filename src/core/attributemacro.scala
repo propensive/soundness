@@ -50,7 +50,7 @@ trait Node[+NameType <: Label] extends Shown[Node[?]]:
   def label: Text
   def attributes: Attributes
   def children: Seq[Html[?]]
-  def inline: Boolean
+  def block: Boolean
   def unclosed: Boolean
   def verbatim: Boolean
 
@@ -58,7 +58,7 @@ trait Node[+NameType <: Label] extends Shown[Node[?]]:
     case labelValue: NameType => Some:
       new Node[NameType]:
         def label: Text = labelValue.show
-        export node.{attributes, children, inline, unclosed, verbatim}
+        export node.{attributes, children, block, unclosed, verbatim}
     case _ => None
 
 object StartTag:
@@ -73,17 +73,17 @@ object StartTag:
 
 
 case class StartTag[+NameType <: Label, ChildType <: Label]
-                   (labelString: NameType, unclosed: Boolean, inline: Boolean, verbatim: Boolean,
+                   (labelString: NameType, unclosed: Boolean, block: Boolean, verbatim: Boolean,
                         attributes: Attributes)
 extends Node[NameType]:
   def children = Nil
   def label: Text = labelString.show
   def apply(children: (Html[ChildType] | Seq[Html[ChildType]])*): Element[NameType] =
-    Element(labelString, unclosed, inline, verbatim, attributes, children)
+    Element(labelString, unclosed, block, verbatim, attributes, children)
 
 object Honeycomb:
   def read[NameType <: Label: Type, ChildType <: Label: Type, ReturnType <: Label: Type]
-          (name: Expr[NameType], unclosed: Expr[Boolean], inline: Expr[Boolean],
+          (name: Expr[NameType], unclosed: Expr[Boolean], block: Expr[Boolean],
                verbatim: Expr[Boolean], attributes: Expr[Seq[(Label, Any)]])
           (using Quotes)
           : Expr[StartTag[NameType, ReturnType]] =
@@ -104,7 +104,7 @@ object Honeycomb:
 
     attributes match
       case Varargs(exprs) =>
-        '{StartTag($name, $unclosed, $inline, $verbatim, ${Expr.ofSeq(recur(exprs))}.to(Map))}
+        '{StartTag($name, $unclosed, $block, $verbatim, ${Expr.ofSeq(recur(exprs))}.to(Map))}
       
       case _ =>
         throw Mistake("expected varargs")
