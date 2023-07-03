@@ -31,7 +31,7 @@ trait Encoder[-ValueType]:
 object Codec:
   given codec[ValueType]
       (using encoder: Encoder[ValueType], decoder: Decoder[ValueType])
-      : Codec[ValueType]^{decoder} =
+      : Codec[ValueType]^{decoder, encoder} =
     Codec(encoder, decoder)
 
 case class Codec[ValueType](encoder: Encoder[ValueType], decoder: Decoder[ValueType]):
