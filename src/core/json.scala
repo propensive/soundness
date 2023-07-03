@@ -28,6 +28,7 @@ import spectacular.*
 import scala.collection.Factory
 import scala.compiletime.*
 import scala.deriving.*
+import scala.util.*
 
 import language.dynamics
 import language.experimental.captureChecking
@@ -132,7 +133,14 @@ object Json extends Dynamic:
     val values: IArray[JsonAst] = IArray.from(elements.map(_(1).root))
     Json(JsonAst((keys, values)))
 
-object JsonWriter:
+trait FallbackJsonWriter:
+  given [T: JsonWriter]: JsonWriter[Maybe[T]] = new JsonWriter[Maybe[T]]:
+    override def omit(t: Maybe[T]): Boolean = t.unset
+    def write(value: Maybe[T]): JsonAst = value match
+      case Unset               => JsonAst(null)
+      case value: T @unchecked => summon[JsonWriter[T]].write(value)
+
+object JsonWriter extends FallbackJsonWriter:
   given JsonWriter[Int] = int => JsonAst(int.toLong)
   given JsonWriter[Text] = text => JsonAst(text.s)
   given JsonWriter[String] = JsonAst(_)
@@ -151,14 +159,8 @@ object JsonWriter:
   given [Coll[T1] <: Iterable[T1], T: JsonWriter]: JsonWriter[Coll[T]] = values =>
     JsonAst(IArray.from(values.map(summon[JsonWriter[T]].write(_))))
 
-  // given [T: JsonWriter]: JsonWriter[Map[String, T]] = values =>
-  //   JObject(mutable.Map(values.view.mapValues(summon[JsonWriter[T]].write(_)).to(Seq)*))
-
-  // given [T: JsonWriter]: JsonWriter[Maybe[T]] = new JsonWriter[Maybe[T]]:
-  //   override def omit(t: Maybe[T]): Boolean = t.unset
-  //   def write(value: Maybe[T]): JsonAst = value match
-  //     case Unset               => JsonAst(null)
-  //     case value: T @unchecked => summon[JsonWriter[T]].write(value)
+  //given [T: JsonWriter]: JsonWriter[Map[String, T]] = values =>
+  //  JObject(mutable.Map(values.view.mapValues(summon[JsonWriter[T]].write(_)).to(Seq)*))
 
   given opt[ValueType: JsonWriter]: JsonWriter[Option[ValueType]] with
     override def omit(value: Option[ValueType]): Boolean = value.isEmpty
@@ -225,7 +227,13 @@ trait JsonWriter[-ValueType]:
     val (keys, values) = write(value).obj
     (keys :+ "_type", values :+ label).asInstanceOf[JsonAst]
 
-object JsonReader:
+trait FallbackJsonReader:
+  given maybe[T](using reader: JsonReader[T]^): JsonReader[Maybe[T]]^{reader} =
+    new JsonReader[Maybe[T]]:
+      def read(value: JsonAst, missing: Boolean): Maybe[T] =
+        if missing then Unset else reader.read(value, false)
+
+object JsonReader extends FallbackJsonReader:
   given jsonAst: JsonReader[JsonAst] = (value, missing) => value
   given json: JsonReader[Json] = (value, missing) => Json(value)
   given int: JsonReader[Int] = (value, missing) => value.long.toInt
@@ -316,7 +324,7 @@ object JsonReader:
       
       case _ =>
         throw Mistake("could not match subtype in its apparent coproduct type")
-        
+
 trait JsonReader[ValueType]:
   private inline def reader: this.type = this
   

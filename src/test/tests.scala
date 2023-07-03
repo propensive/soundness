@@ -157,29 +157,3 @@ object Tests extends Suite(t"Jacinta Tests"):
       test(t"Deserialize a NewBand"):
         Json.parse(newBandText).as[NewBand]
       .assert(_ == newBand)
-
-
-    // suite(t"Basic tests"):
-    //   test(t"Parse a simple object with one string value"):
-    //     Json.parse(t"""{"foo": "bar"}""")
-    //   .benchmark(duration = 1000L, warmup = 1000L)
-      
-    //   test(t"Parse a simple object with one numerical value"):
-    //     Json.parse(t"""{"foo": 3.1415926 }""")
-    //   .benchmark(duration = 1000L, warmup = 1000L)
-      
-    //   test(t"Parse true value"):
-    //     Json.parse(t"""{"foo": true }""")
-    //   .benchmark(duration = 1000L, warmup = 1000L)
-      
-    //   test(t"Parse false value"):
-    //     Json.parse(t"""{"foo": false }""")
-    //   .benchmark(duration = 1000L, warmup = 1000L)
-      
-    //   test(t"Parse array of strings"):
-    //     Json.parse(t"""["foo", "bar", "baz", "quux", "abcd", "defg", "hijk"]""")
-    //   .benchmark(duration = 1000L, warmup = 1000L)
-      
-    //   test(t"Parse array of numbers"):
-    //     Json.parse(t"""[12345.6789, 98765.4321, 142536.475869]""")
-    //   .benchmark(duration = 1000L, warmup = 1000L)
