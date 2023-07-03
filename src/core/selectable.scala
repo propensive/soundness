@@ -24,13 +24,13 @@ trait Record[DataType](data: DataType, access: String => DataType => Any) extend
   def selectDynamic(name: String): Any = access(name)(data)
 
 trait ValueAccessor[RecordType <: Record[DataType], DataType, LabelType <: Label, ValueType]:
-  def transform(data: DataType): ValueType
+  def transform(data: DataType, params: String*): ValueType
 
 trait RecordAccessor[RecordType <: Record[DataType], DataType, LabelType <: Label, TypeConstructorType[_]]:
   def transform(data: DataType, make: DataType => RecordType): TypeConstructorType[RecordType]
 
 enum RecordField:
-  case Value(fieldType: String)
+  case Value(fieldType: String, params: String*)
   case Record(fieldType: String, map: Map[String, RecordField])
 
 trait Schema[DataType, RecordType <: Record[DataType]]:
@@ -56,7 +56,7 @@ trait Schema[DataType, RecordType <: Record[DataType]]:
       case Nil =>
         (refinedType, caseDefs)
 
-      case (name, RecordField.Value(typeName)) :: tail =>
+      case (name, RecordField.Value(typeName, params*)) :: tail =>
         (ConstantType(StringConstant(typeName)).asType: @unchecked) match
           case '[type typeName <: Label; typeName] =>
             (Expr.summon[ValueAccessor[RecordType, DataType, typeName, ?]]: @unchecked) match
@@ -66,7 +66,7 @@ trait Schema[DataType, RecordType <: Record[DataType]]:
               case Some('{$accessor: ValueAccessor[RecordType, DataType, typeName, valueType]}) =>
 
                 val rhs: Expr[DataType => Any] =
-                  '{ (data: DataType) => $accessor.transform($target.access(${Expr(name)}, data)) }
+                  '{ (data: DataType) => $accessor.transform($target.access(${Expr(name)}, data), ${Expr(params)}*) }
                 
                 val caseDefs2 = CaseDef(Literal(StringConstant(name)), None, rhs.asTerm) :: caseDefs
                 val refinement = Refinement(refinedType, name, TypeRepr.of[valueType])
