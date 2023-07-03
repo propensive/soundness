@@ -250,16 +250,18 @@ object JsonAst:
           if ch == Newline then
             colStart = cur
             line += 1
-          ch == Space || (ch & 8) == 8 && (ch == Newline || ch == Tab || ch == Return)
+          
+          ch == Space || (ch & bin"0000 1000") == bin"0000 1000" &&
+              (ch == Newline || ch == Tab || ch == Return)
         do next()
 
       def abort(issue: Issue): Nothing = throw JsonParseError(line, cur - colStart, issue)
 
       def parseValue(minus: Boolean = false): JsonAst =
         val ch = current
-        if (ch & -8.toByte) == Num0 || (ch & -2.toByte) == 56 then
+        if (ch & bin"1111 1000") == Num0 || (ch & bin"1111 1110") == bin"0011 1000" then
           next()
-          parseNumber(ch & 15, minus)
+          parseNumber(ch & bin"0000 1111", minus)
         else if minus then abort(Issue.ExpectedDigit(ch.toChar))
         else (current: @switch) match
           case Quote       => next(); parseString()
@@ -356,18 +358,19 @@ object JsonAst:
                 case LowerU =>
                   cur += 4
                   difference += 5
+
                 case ch =>
                   difference += 1
             
             case ch =>
               if (ch >> 5) > 5 then
-                if (ch & 224) == 192 then
+                if (ch & bin"0000 0000 1110 0000") == bin"0000 0000 1100 0000" then
                   difference += 1
                   next()
-                else if (ch & 240) == 224 then
+                else if (ch & bin"0000 0000 1111 0000") == bin"0000 0000 1110 0000" then
                   difference += 2
                   cur += 2
-                else if (ch & 248) == 240 then
+                else if (ch & bin"0000 0000 1111 1000") == bin"0000 0000 1110 0000" then
                   difference += 3
                   cur += 3
 
@@ -406,20 +409,20 @@ object JsonAst:
                 case 0 => abort(Issue.NotEscaped(ch.toChar))
                 case 1 | 2 | 3 | 4 | 5 => appendChar(ch.toChar)
                 case _ =>
-                  if (ch & 224) == 192 then
-                    var char: Int = ((ch & 31) << 6)
-                    char |= getNext() & 63
+                  if (ch & bin"1110 0000") == bin"1100 0000" then
+                    var char: Int = ((ch & bin"0001 1111") << 6)
+                    char |= getNext() & bin"0011 1111"
                     appendChar(char.toChar)
-                  else if (ch & 240) == 224 then
-                    var char: Int = ((ch & 31) << 12)
-                    char |= (getNext() & 63) << 6
-                    char |= getNext() & 63
+                  else if (ch & bin"1111 0000") == bin"1110 0000" then
+                    var char: Int = ((ch & bin"0001 1111") << 12)
+                    char |= (getNext() & bin"0011 1111") << 6
+                    char |= getNext() & bin"0011 1111"
                     appendChar(char.toChar)
-                  else if (ch & 248) == 240 then
-                    var char: Int = ((ch & 31) << 18)
-                    char |= (getNext() & 63) << 12
-                    char |= (getNext() & 63) << 6
-                    char |= getNext() & 63
+                  else if (ch & bin"1111 1000") == bin"1111 0000" then
+                    var char: Int = ((ch & bin"0001 1111") << 18)
+                    char |= (getNext() & bin"0011 1111") << 12
+                    char |= (getNext() & bin"0011 1111") << 6
+                    char |= getNext() & bin"0011 1111"
                     appendChar(char.toChar)
               
               next()
