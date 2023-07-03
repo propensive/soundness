@@ -37,3 +37,7 @@ object Codec:
 case class Codec[ValueType](encoder: Encoder[ValueType], decoder: Decoder[ValueType]):
   def decode(text: Text): ValueType = decoder.decode(text)
   def encode(value: ValueType): Text = encoder.encode(value)
+
+extension (text: Text)
+  def decodeAs[ValueType](using decoder: Decoder[ValueType]): ValueType^{decoder} =
+    decoder.decode(text)
