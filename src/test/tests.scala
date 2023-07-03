@@ -74,6 +74,13 @@ object Tests extends Suite(t"Hieroglyph tests"):
         capture[UndecodableCharError, Text](charDecoders.utf8.decode(badUtf8))
       .assert(_ == UndecodableCharError(1, enc"UTF-8"))
     
+      test(t"Ensure that decoding is finished"):
+        import unsafeExceptions.canThrowAny
+        import badEncodingHandlers.strict
+        given CharEncoder = enc"UTF-8".encoder
+        capture[UndecodableCharError, Text](charDecoders.utf8.decode(t"café".bytes.dropRight(1)))
+      .assert(_ == UndecodableCharError(4, enc"UTF-8"))
+    
     suite(t"Compile-time tests"):
       test(t"Check that an invalid encoding produces an error"):
         captureCompileErrors(enc"ABCDEF").map(_.message)

@@ -100,7 +100,7 @@ class CharDecoder(val encoding: Encoding)(using handler: BadEncodingHandler):
       in.flip()
       
       def decode(): jnc.CoderResult =
-        val result = decoder.decode(in, out, false).nn
+        val result = decoder.decode(in, out, todo.isEmpty).nn
         
         if !result.isMalformed then result else
           handler.handle(total + in.position, encoding).mm(out.put(_))
