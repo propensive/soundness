@@ -15,8 +15,7 @@ TBC
 
 ## Availability
 
-Spectacular has not yet been published as a binary. It is currently waiting for the
-final release of Scala 3.3.
+Spectacular has not yet been published as a binary.
 
 ## Getting Started
 
@@ -39,7 +38,7 @@ be used, but caution should be taken if there is a mismatch between the
 project's stability level and the importance of your own project.
 
 Spectacular is designed to be _small_. Its entire source code currently consists
-of 309 lines of code.
+of 363 lines of code.
 
 ## Building
 
