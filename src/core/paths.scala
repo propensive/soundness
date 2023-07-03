@@ -58,10 +58,6 @@ object SimpleLink:
     def separator(link: SimpleLink): Text = t"/"
     val separators: Set[Char] = Set('/')
     def ascent(path: SimpleLink): Int = path.ascent
-
-    def make(ascent: Int, descent: List[PathName[".*\\/.*"]]): SimpleLink =
-      SimpleLink(ascent, descent)
-
     def descent(path: SimpleLink): List[PathName[".*\\/.*"]] = path.descent
     
 case class SimpleLink(ascent: Int, descent: List[PathName[".*\\/.*"]])

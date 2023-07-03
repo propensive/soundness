@@ -26,7 +26,7 @@ import larceny.*
 
 object Example:
   
-  type Forbidden = ".*\\\\.*" | ".*/.*" | "lpt1.*" | ".* " | ".*abc"
+  type Forbidden = ".*abc" | ".*\\\\.*" | ".*/.*" | "lpt1.*" | ".* "
   
   object RootedPath:
     import unsafeExceptions.canThrowAny
@@ -45,9 +45,6 @@ object Example:
       def root(path: RootedPath): Drive = path.root
       def prefix(drive: Drive): Text = t"${drive.letter}:\\"
       def descent(path: RootedPath): List[PathName[Forbidden]] = path.descent
-      
-      def make(root: Drive, descent: List[PathName[Forbidden]]): RootedPath =
-        RootedPath(root, descent)
   
   case class RootedPath(root: Drive, descent: List[PathName[Forbidden]])
 
@@ -64,9 +61,6 @@ object Example:
       val separators: Set[Char] = Set('/')
       def ascent(path: RootedLink): Int = path.ascent
       def descent(path: RootedLink): List[PathName[Forbidden]] = path.descent
-    
-      def make(ascent: Int, descent: List[PathName[Forbidden]]): RootedLink =
-        RootedLink(ascent, descent)
   
   case class RootedLink(ascent: Int, descent: List[PathName[Forbidden]])
 
@@ -494,3 +488,4 @@ object Tests extends Suite(t"Serpentine Tests"):
         captureCompileErrors:
           Drive('C') / p"xyz"
       .assert(_ == Nil)
+
