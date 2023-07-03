@@ -25,8 +25,11 @@ import language.experimental.captureChecking
 object Root
 
 object SimplePath:
+  inline given decoder(using CanThrow[PathError]): Decoder[SimplePath] =
+    Reachable.decoder[SimplePath]
+  
   inline def parse(text: Text)(using path: CanThrow[PathError]): SimplePath^{path} =
-    text.parse[SimplePath]
+    text.decodeAs[SimplePath]
   
   given show: Show[SimplePath] = _.render
   given mainRoot: MainRoot[SimplePath] = () => SimplePath(Nil)
@@ -47,10 +50,13 @@ object SimplePath:
 case class SimplePath(descent: List[PathName[".*\\/.*"]])
 
 object SimpleLink:
+  inline given decoder(using CanThrow[PathError]): Decoder[SimpleLink] =
+    Followable.decoder[SimpleLink]
+  
   given show: Show[SimpleLink] = _.render
   
   inline def parse(text: Text)(using path: CanThrow[PathError]): SimpleLink^{path} =
-    text.parse[SimpleLink]
+    text.decodeAs[SimpleLink]
 
   given pathCreator: PathCreator[SimpleLink, ".*\\/.*", Int] = SimpleLink(_, _)
 

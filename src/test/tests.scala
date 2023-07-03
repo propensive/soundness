@@ -31,8 +31,9 @@ object Example:
   object RootedPath:
     import unsafeExceptions.canThrowAny
 
+    inline given Decoder[RootedPath] = Reachable.decoder[RootedPath]
     given Show[RootedPath] = _.render
-    def parse(text: Text): RootedPath = text.parse[RootedPath]
+    def parse(text: Text): RootedPath = text.decodeAs[RootedPath]
 
     given pathCreator: PathCreator[RootedPath, Forbidden, Drive] = RootedPath(_, _)
 
@@ -51,10 +52,11 @@ object Example:
   object RootedLink:
     import unsafeExceptions.canThrowAny
     
+    inline given Decoder[RootedLink] = Followable.decoder[RootedLink]
     given linkCreator: PathCreator[RootedLink, Forbidden, Int] = RootedLink(_, _)
     
     given Show[RootedLink] = _.render
-    def parse(text: Text): RootedLink = text.parse[RootedLink]
+    def parse(text: Text): RootedLink = text.decodeAs[RootedLink]
     
     given pathlike: Followable[RootedLink, Forbidden, "..", "."] with
       def separator(path: RootedLink): Text = t"\\"
