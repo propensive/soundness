@@ -24,6 +24,7 @@ import language.experimental.captureChecking
 trait Decoder[+ValueType]:
   def decode(text: Text): ValueType
 
+@capability
 trait Encoder[-ValueType]:
   def encode(text: ValueType): Text
 
