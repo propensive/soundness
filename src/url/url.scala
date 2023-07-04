@@ -107,17 +107,18 @@ object Url:
 
   // given (using CanThrow[UrlError]): Canonical[Url] = Canonical(parse(_), _.show)
 
-  given AbsoluteReachable[Url, ""](t"/") with
-    type Root = (Scheme, Maybe[Authority])
-    
-    def make(root: (Scheme, Maybe[Authority]), descent: List[PathName[""]]): Url =
-      Url(root(0), root(1), descent.reverse.map(_.render).join(t"/"))
-    
+  given Reachable[Url, "", (Scheme, Maybe[Authority])] with
+    def separator(url: Url): Text = t"/"
     def descent(url: Url): List[PathName[""]] = url.path
     def root(url: Url): (Scheme, Maybe[Authority]) = (url.scheme, url.authority)
     
     def prefix(root: (Scheme, Maybe[Authority])): Text =
       t"${root(0).name}:${root(1).mm(t"//"+_.show).or(t"")}"
+    
+  given PathCreator[Url, "", (Scheme, Maybe[Authority])] with
+    def path(ascent: (Scheme, Maybe[Authority]), descent: List[PathName[""]]): Url =
+      Url(ascent(0), ascent(1), descent.reverse.map(_.render).join(t"/"))
+    
 
   // There's not a convenient way to have this in scope if the HTTP client is defined separately from the URL
   // given (using Internet, Log, CanThrow[HttpError]): Streamable[Url] =
@@ -227,10 +228,14 @@ object Authority:
 case class Authority(host: Host, userInfo: Maybe[Text] = Unset, port: Maybe[Int] = Unset)
 
 object Link:
-  given RelativeReachable[Link, ""](t"/", t"..", t".") with
-    def make(ascent: Int, descent: List[PathName[""]]): Link = Link(ascent, descent)
+  given Followable[Link, "", "..", "."] with
+    def separators: Set[Char] = Set('/')
     def descent(link: Link): List[PathName[""]] = link.descent
+    def separator(link: Link): Text = t"/"
     def ascent(link: Link): Int = link.ascent
+    
+  given PathCreator[Link, "", Int] with
+    def path(ascent: Int, descent: List[PathName[""]]): Link = Link(ascent, descent)
 
 case class Link(ascent: Int, descent: List[PathName[""]])
 
