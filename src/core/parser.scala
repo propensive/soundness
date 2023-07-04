@@ -155,7 +155,7 @@ object JsonParseError:
 import JsonParseError.Issue
 
 case class JsonParseError(line: Int, col: Int, issue: Issue)
-extends Error(err"Could not parse JSON because $issue at ${line + 1}:${col + 1}")
+extends Error(msg"Could not parse JSON because $issue at ${line + 1}:${col + 1}")
 
 export JsonAst.RawJson as JsonAst
 
