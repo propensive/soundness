@@ -58,9 +58,6 @@ object Mistake:
 
 case class Mistake(message: String) extends java.lang.Error(message)
 
-case class StreamCutError(total: ByteSize)
-extends Error(Message(List(Text("the stream was cut prematurely after "), Text("")), List(Message(total.text))))
-
 object AsMessage:
   given AsMessage[Text] = Message(_)
   given AsMessage[Int] = int => Message(Text(int.toString))

@@ -40,6 +40,7 @@ object ByteSize:
   def apply(long: Long): ByteSize = long
   given GenericHttpRequestParam["content-length", ByteSize] = _.long.toString
   given Ordering[ByteSize] = Ordering.Long.on(_.long)
+  given AsMessage[ByteSize] = byteSize => Message(byteSize.text)
 
   extension (bs: ByteSize)
     def long: Long = bs
