@@ -19,8 +19,7 @@ converting STDIN into an event stream of keypresses.
 
 ## Availability
 
-Profanity has not yet been published as a binary. It is currently waiting for the
-final release of Scala 3.3.
+Profanity has not yet been published as a binary.
 
 ## Getting Started
 
