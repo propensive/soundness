@@ -27,10 +27,10 @@ import language.experimental.captureChecking
 // package monitors:
 //   given global: Monitor = Supervisor(daemon = true)
 
-case class CancelError() extends Error(err"the operation was cancelled")
-case class IncompleteError() extends Error(err"the task was not completed")
-case class AlreadyCompleteError() extends Error(err"the promise was already completed")
-case class TimeoutError() extends Error(err"the operation timed out")
+case class CancelError() extends Error(msg"the operation was cancelled")
+case class IncompleteError() extends Error(msg"the task was not completed")
+case class AlreadyCompleteError() extends Error(msg"the promise was already completed")
+case class TimeoutError() extends Error(msg"the operation timed out")
 
 // case class Supervisor(baseId: Text = Text("main"), daemon: Boolean = false, virtualThreads: Boolean = false)
 // extends Monitor:
