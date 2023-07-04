@@ -34,7 +34,7 @@ object Tests extends Suite(t"Rudiments Tests"):
     .assert()
     
     test(t"Check remote call is not callable without `Internet`"):
-      captureCompileErrors:
+      demilitarize:
         remoteCall()
       .map(_.errorId)
     .assert(_ == List(ErrorId.MissingImplicitArgumentID))
