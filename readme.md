@@ -19,8 +19,7 @@ of the need for cumbersome dependencies between unrelated projects.
 
 ## Availability
 
-Anticipation has not yet been published as a binary. It is currently waiting for the
-final release of Scala 3.3.
+Anticipation has not yet been published as a binary.
 
 ## Getting Started
 
