@@ -19,6 +19,7 @@ package telekinesis
 import gossamer.*
 import rudiments.*
 import digression.*
+import hieroglyph.*
 import turbulence.*
 import gesticulate.*
 import wisteria.*
@@ -59,7 +60,7 @@ trait QuerySerializer[ValueType]:
 trait FallbackPostable:
   given [QueryType](using serializer: QuerySerializer[QueryType]): Postable[QueryType] =
     Postable(media"application/x-www-form-urlencoded", value =>
-        LazyList(serializer.params(value).queryString.bytes(using characterEncodings.utf8)))
+        LazyList(serializer.params(value).queryString.bytes(using charEncoders.utf8)))
 
 object Postable extends FallbackPostable:
   given (using enc: Encoding): Postable[Text] =

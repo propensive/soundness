@@ -20,5 +20,5 @@ project telekinesis
 
   module client
     sources  src/client
-    include  gastronomy/core gesticulate/core telekinesis/url eucalyptus/core
+    include  gastronomy/core gesticulate/core telekinesis/url eucalyptus/core hieroglyph/core
 

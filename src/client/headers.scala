@@ -19,7 +19,8 @@ package telekinesis
 import rudiments.*
 import anticipation.*
 import gossamer.*
-import turbulence.*, characterEncodings.utf8
+import turbulence.*
+import hieroglyph.*, charEncoders.utf8
 import gastronomy.*
 
 trait RequestHeader[LabelType <: Label]():
