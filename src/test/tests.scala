@@ -56,7 +56,7 @@ object Tests extends Suite(t"Plutocrat tests"):
       .assert(_ == Eur(3.01))
 
       test(t"Different currencies cannot be combined"):
-        captureCompileErrors:
+        demilitarize:
           Eur(1.00) + Gbp(1.00)
         .map(_.errorId)
       .assert(_ == List(ErrorId.MissingImplicitArgumentID))
@@ -87,7 +87,7 @@ object Tests extends Suite(t"Plutocrat tests"):
       .assert(_ == Price(Gbp(2.94), Gbp(0.59)))
 
       test(t"Prices in different currencies cannot be combined"):
-        captureCompileErrors:
+        demilitarize:
           Eur(1.00).tax(0.175) + Gbp(1.00).tax(0.2)
         .map(_.errorId)
       .assert(_ == List(ErrorId.TypeMismatchID))
