@@ -33,11 +33,11 @@ object Tests extends Suite(t"Rudiments Tests"):
         remoteCall()
     .assert()
     
-    /*test(t"Check remote call is not callable without `Internet`"):
+    test(t"Check remote call is not callable without `Internet`"):
       demilitarize:
         remoteCall()
       .map(_.errorId)
-    .assert(_ == List(ErrorId.MissingImplicitArgumentID))*/
+    .assert(_ == List(ErrorId.MissingImplicitArgumentID))
 
     test(t"Display a PID"):
       Pid(2999).toString
