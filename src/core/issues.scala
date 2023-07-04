@@ -26,36 +26,37 @@ export CodlError.Issue.*
 import language.experimental.captureChecking
 
 object CodlError:
-  given Show[Issue] =
-    case UnexpectedCarriageReturn =>
-      t"a carriage return character ('\\r') was followed by a character other than a newline ('\\n')"
-    case CarriageReturnMismatch(true) =>
-      txt"""a newline character ('\\n') was found without a preceding carriage return ('\\r'), which does not
-            match the document's prior newline convention"""
-    case CarriageReturnMismatch(false) =>
-      t"a carriage return ('\\r') was encountered, which does not match the document's prior newline convention"
-    case UnevenIndent(initial, indent) =>
-      t"the indentation level of ${indent - initial} (with a margin of $initial) is not an exact multiple of 2"
-    case IndentAfterComment =>
-      t"indentation was given after a comment; the comment should be aligned with its next key"
-    case BadSubstitution =>
-      t"a substitution cannot be made at this point"
-    case BadTermination =>
-      t"two # symbols terminates the document and must appear alone on a line"
-    case SurplusIndent =>
-      t"too much indentation was given"
-    case InsufficientIndent =>
-      t"insufficient indentation was specified"
-    case MissingKey(point, key) =>
-      t"the value $key was missing at $point"
-    case DuplicateKey(point, key) =>
-      t"the unique key $key has already been used at $point"
-    case SurplusParams(point, key) =>
-      t"too many parameters were given to the key $key at $point"
-    case InvalidKey(point, key) =>
-      t"the key $key was invalid at $point"
-    case DuplicateId(point, line, col) =>
-      t"the unique ID has been used before at $line:$col, $point"
+  given AsMessage[Issue] = issue => Message:
+    issue match
+      case UnexpectedCarriageReturn =>
+        t"a carriage return character ('\\r') was followed by a character other than a newline ('\\n')"
+      case CarriageReturnMismatch(true) =>
+        txt"""a newline character ('\\n') was found without a preceding carriage return ('\\r'), which does not
+              match the document's prior newline convention"""
+      case CarriageReturnMismatch(false) =>
+        t"a carriage return ('\\r') was encountered, which does not match the document's prior newline convention"
+      case UnevenIndent(initial, indent) =>
+        t"the indentation level of ${indent - initial} (with a margin of $initial) is not an exact multiple of 2"
+      case IndentAfterComment =>
+        t"indentation was given after a comment; the comment should be aligned with its next key"
+      case BadSubstitution =>
+        t"a substitution cannot be made at this point"
+      case BadTermination =>
+        t"two # symbols terminates the document and must appear alone on a line"
+      case SurplusIndent =>
+        t"too much indentation was given"
+      case InsufficientIndent =>
+        t"insufficient indentation was specified"
+      case MissingKey(point, key) =>
+        t"the value $key was missing at $point"
+      case DuplicateKey(point, key) =>
+        t"the unique key $key has already been used at $point"
+      case SurplusParams(point, key) =>
+        t"too many parameters were given to the key $key at $point"
+      case InvalidKey(point, key) =>
+        t"the key $key was invalid at $point"
+      case DuplicateId(point, line, col) =>
+        t"the unique ID has been used before at $line:$col, $point"
   
   enum Issue:
     case UnexpectedCarriageReturn
@@ -72,7 +73,7 @@ object CodlError:
     case DuplicateId(point: Text, line: Int, col: Int)
 
 case class CodlError(line: Int, col: Int, length: Int, issue: CodlError.Issue)
-extends Error(err"could not read the CoDL document at $line:$col: ${issue.show}")
+extends Error(msg"could not read the CoDL document at $line:$col: ${issue.show}")
 
 case class BinaryError(expectation: Text, pos: Int)
 extends Exception(s"expected $expectation at position $pos")
@@ -81,7 +82,7 @@ case class MultipleIdentifiersError(key: Text)
 extends Exception(s"multiple parameters of $key have been marked as identifiers")
 
 case class MissingValueError(key: Text)
-extends Error(err"the key $key does not exist in the CoDL document")
+extends Error(msg"the key $key does not exist in the CoDL document")
 
 case class MissingIndexValueError(index: Int)
-extends Error(err"the index $index does not exist in the CoDL document")
+extends Error(msg"the index $index does not exist in the CoDL document")

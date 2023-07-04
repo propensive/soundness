@@ -28,7 +28,7 @@ import language.experimental.pureFunctions
 
 case class codlLabel(label: String) extends StaticAnnotation
 
-case class CodlReadError() extends Error(err"the CoDL value is not of the right format")
+case class CodlReadError() extends Error(msg"the CoDL value is not of the right format")
 
 trait Codec[T]:
   def serialize(value: T): List[IArray[CodlNode]]
