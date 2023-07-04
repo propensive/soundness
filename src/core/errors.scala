@@ -17,17 +17,8 @@
 package digression
 
 import rudiments.*
-import spectacular.*
 
 import language.experimental.captureChecking
 
 case class AggregateError[ErrorType <: Error](errors: List[ErrorType])
-extends Error(err"aggregated errors:${Text(errors.map(_.message).mkString("\n", "\n", ""))}")
-
-extension (ctx: StringContext)
-  transparent inline def err(subs: Any*): ErrorMessage =
-    def recur(subs: Seq[Any]): List[Text] =
-      if subs.isEmpty then Nil else subs.head.debug :: recur(subs.tail)
-    
-    ErrorMessage(ctx.parts.to(List).map(Text(_)), recur(subs))
-  
+extends Error(msg"aggregated errors:${Text(errors.map(_.message).mkString("\n", "\n", ""))}")
