@@ -29,8 +29,6 @@ import scala.reflect.*
 import java.util.regex.*
 import java.net.{URLEncoder, URLDecoder}
 
-type TextStream = LazyList[Text throws StreamCutError]
-
 enum Bidi:
   case Ltr, Rtl
 
