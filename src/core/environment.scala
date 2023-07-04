@@ -108,13 +108,7 @@ extends Environment:
       case None      => throw EnvironmentError(Text("user.dir"), true)
 
 case class EnvironmentError(variable: Text, property: Boolean)
-extends Error(ErrorMessage(
-  List(
-    Text(if property then "the system property " else "the environment variable "),
-    Text(" was not found")
-  ),
-  List(variable)
-))
+extends Error(msg"the ${Text(if property then "system property" else "environment variable")} $variable was not found")
 
 package environments:
   given system(using CanThrow[EnvironmentError]): Environment = StandardEnvironment(
