@@ -28,7 +28,7 @@ import annotation.tailrec
 
 import scala.quoted.*
 
-case class MarkdownError(detail: Text) extends Error(err"the markdown could not be read: $detail")
+case class MarkdownError(detail: Text) extends Error(msg"the markdown could not be read: $detail")
 
 case class Markdown[+MdType <: Markdown.Ast.Node](nodes: MdType*):
   def serialize: Text =
