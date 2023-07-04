@@ -38,6 +38,7 @@ object Serpentine:
   extension [NameType <: Label](pathName: PathName[NameType])
     def render: Text = Text(pathName)
     def widen[NameType2 <: NameType]: PathName[NameType2] = pathName
+    inline def narrow[NameType2 >: NameType <: Label]: PathName[NameType2] = PathName(render)
   
   def runtimeParse
       [NameType <: Label: Type]

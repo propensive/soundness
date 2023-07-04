@@ -45,7 +45,7 @@ object PathError:
 export Serpentine.PathName
 
 case class PathError(reason: PathError.Reason)
-extends Error(err"the path is invalid because ${reason.show}")
+extends Error(msg"the path is invalid because ${reason.show}")
 
 @targetName("root")
 def %
