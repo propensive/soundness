@@ -17,7 +17,6 @@
 package gossamer
 
 import rudiments.*
-import digression.*
 import hieroglyph.*
 import spectacular.*
 import kaleidoscope.*
@@ -320,7 +319,7 @@ extension [TextType](values: Iterable[TextType])(using joinable: Joinable[TextTy
     Iterable(left, join(separator, penultimate), right).join
 
 case class OutOfRangeError(index: Int, from: Int, to: Int)
-extends Error(err"the index $index is outside the range $from-$to")
+extends Error(msg"the index $index is outside the range $from-$to")
 
 trait Shown[+T](using Show[T]):
   this: T =>
