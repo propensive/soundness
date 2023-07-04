@@ -47,49 +47,49 @@ object Tests extends Suite(t"Quantitative Tests"):
     
     suite(t"Compile errors"):
       test(t"Cannot add quantities of different units"):
-        captureCompileErrors:
+        demilitarize:
           Metre + 2*Second
         .map(_.errorId)
       .assert(_.contains(ErrorId.NoExplanationID))
     
       test(t"Cannot subtract quantities of different units"):
-        captureCompileErrors:
+        demilitarize:
           Metre - 2*Second
         .map(_.errorId)
       .assert(_.contains(ErrorId.NoExplanationID))
       
       test(t"Add two different units"):
-        captureCompileErrors:
+        demilitarize:
           Second*2 + Metre*3
         .map(_.errorId)
       .assert(_.contains(ErrorId.NoExplanationID))
 
       test(t"Units cancel out"):
-        captureCompileErrors:
+        demilitarize:
           (20*Metre*Second)/(Metre*Second): Double
       .assert(_.isEmpty)
     
       test(t"Principal units are preferred"):
-        captureCompileErrors:
+        demilitarize:
           val x = 2*Metre
           val y = 3*Foot
           val z: Quantity[Metres[2]] = x*y
       .assert(_.isEmpty)
     
       test(t"Units of different dimension cannot be added"):
-        captureCompileErrors:
+        demilitarize:
           2*Metre + 2*Joule
         .map(_.message)
       .assert(_ == List("quantitative: the left operand represents length, but the right operand represents energy; these are incompatible physical quantities"))
       
       test(t"Different dimensions are incomparable"):
-        captureCompileErrors:
+        demilitarize:
           7*Metre >= 2*Kilo(Gram)
         .map(_.message)
       .assert(_ == List("quantitative: the left operand represents length, but the right operand represents mass; these are incompatible physical quantities"))
       
       test(t"Different powers of the same dimension are incomparable"):
-        captureCompileErrors:
+        demilitarize:
           7*Metre >= 2*Metre*Metre
         .map(_.message)
       .assert(_ == List("quantitative: the left operand represents length, but the right operand represents area; these are incompatible physical quantities"))
@@ -296,7 +296,7 @@ object Tests extends Suite(t"Quantitative Tests"):
       .assert(_ == 2)
       
       test(t"Units of different dimensions cannot be mixed"):
-        captureCompileErrors:
+        demilitarize:
           Tally[(Miles[1], Yards[1], Seconds[1], Inches[1])](1, 2, 3)
       .assert(_.length == 1)
 
