@@ -23,8 +23,7 @@ to make these mundane tasks easier.
 
 ## Availability
 
-Plutocrat has not yet been published as a binary. It is currently waiting for the
-final release of Scala 3.3.
+Plutocrat has not yet been published as a binary.
 
 ## Getting Started
 
