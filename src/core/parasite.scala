@@ -17,7 +17,6 @@
 package parasite
 
 import rudiments.*
-import digression.*
 //import anticipation.*
 
 //import scala.util.*
