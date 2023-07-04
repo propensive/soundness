@@ -232,7 +232,7 @@ object Http:
         throw Mistake("URL connection is not HTTP")
             
 case class HttpError(status: HttpStatus & FailureCase, body: HttpBody)
-extends Error(err"HTTP error $status"):
+extends Error(msg"HTTP error $status"):
   def as[T](using readable: HttpReadable[T]): T throws StreamCutError = readable.read(status, body)
 
 trait FailureCase
