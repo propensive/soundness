@@ -32,13 +32,13 @@ object Tests extends Suite(t"Panopticon tests"):
     .assert()
 
     test(t"Check that non-existant fields are inaccessible"):
-      captureCompileErrors:
+      demilitarize:
         Lens[Organization](_.age)
       .map(_.message)
     .assert(_ == List("panopticon: the field age is not a member of panopticon.Organization"))
     
     test(t"Check that indirect non-existant fields are inaccessible"):
-      captureCompileErrors:
+      demilitarize:
         Lens[Organization](_.leader.size)
       .map(_.message)
     .assert(_ == List("panopticon: the field size is not a member of panopticon.Person"))
@@ -50,7 +50,7 @@ object Tests extends Suite(t"Panopticon tests"):
     .assert()
     
     // test(t"Check that two incompatible lenses can be added"):
-    //   captureCompileErrors:
+    //   demilitarize:
     //     val orgLeader = Lens[Organization](_.leader)
     //     val roleName = Lens[Role](_.name)
     //     orgLeader ++ roleName
