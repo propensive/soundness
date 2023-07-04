@@ -66,7 +66,7 @@ case class RDiff[ElemType](changes: Change[ElemType]*):
     RDiff(changes.map(_.map(fn))*)
 
 case class DiffParseError(lineNo: Int, line: Text)
-extends Error(err"could not read the diff at line $lineNo: $line")
+extends Error(msg"could not read the diff at line $lineNo: $line")
 
 object Diff:
 
