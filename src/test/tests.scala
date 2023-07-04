@@ -20,6 +20,7 @@ import probably.*
 import rudiments.*
 import gossamer.*
 import spectacular.*
+import larceny.*
 
 import unsafeExceptions.canThrowAny
 
@@ -86,3 +87,40 @@ object Tests extends Suite(t"Nettlesome tests"):
       test(t"Parse an IPv6 containing capital letters"):
         Ipv6.parse(t"2001:DB8::1:1:1:1:1")
       .assert(_ == Ipv6(0x2001, 0xdb8, 0, 0x1, 0x1, 0x1, 0x1, 0x1))
+    
+      test(t"Invalid IP address is compile error"):
+        demilitarize(ip"192.168.0.0.0.1").map(_.message)
+      .assert(_ == List(t"nettlesome: the IP address is not valid because the address contains 6 numbers instead of 4"))
+    
+      test(t"IP address byte out of range"):
+        capture(Ipv4.parse(t"100.300.200.0"))
+      .assert(_ == IpAddressError(IpAddressError.Issue.Ipv4ByteOutOfRange(300)))
+      
+      test(t"IPv4 address wrong number of bytes"):
+        capture(Ipv4.parse(t"10.3.20.0.8"))
+      .assert(_ == IpAddressError(IpAddressError.Issue.Ipv4WrongNumberOfBytes(5)))
+      
+      test(t"IPv6 address non-hex value"):
+        capture(Ipv6.parse(t"::8:abcg:abc:1234"))
+      .assert(_ == IpAddressError(IpAddressError.Issue.Ipv6GroupNotHex(t"abcg")))
+      
+      test(t"IPv6 address too many groups"):
+        capture(Ipv6.parse(t"1:2:3:4::5:6:7:8"))
+      .assert(_ == IpAddressError(IpAddressError.Issue.Ipv6TooManyGroups(8)))
+      
+      test(t"IPv6 address wrong number of groups"):
+        capture(Ipv6.parse(t"1:2:3:4:5:6:7:8:9"))
+      .assert(_ == IpAddressError(IpAddressError.Issue.Ipv6WrongNumberOfGroups(9)))
+      
+      test(t"IPv6 address wrong number of groups"):
+        capture(Ipv6.parse(t"1:2:3:4:5:6:7:8:9"))
+      .assert(_ == IpAddressError(IpAddressError.Issue.Ipv6WrongNumberOfGroups(9)))
+      
+      test(t"IPv6 duplicate double-colon"):
+        capture(Ipv6.parse(t"1::3:7::9"))
+      .assert(_ == IpAddressError(IpAddressError.Issue.Ipv6MultipleDoubleColons))
+      
+      test(t"IPv6 address wrong-length group"):
+        capture(Ipv6.parse(t"::8:abcde:abc:1234"))
+      .assert(_ == IpAddressError(IpAddressError.Issue.Ipv6GroupWrongLength(t"abcde")))
+      

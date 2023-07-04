@@ -34,19 +34,21 @@ object IpAddressError:
     case Ipv6MultipleDoubleColons
   
   object Issue:
-    given Show[Issue] =
-      case Ipv4ByteOutOfRange(byte)       => t"the number $byte is not in the range 0-255"
-      case Ipv4WrongNumberOfBytes(count)  => t"the address contains $count numbers instead of 4"
-      case Ipv6GroupWrongLength(group)    => t"the group is more than 4 hexadecimal characters long"
-      case Ipv6GroupNotHex(group)         => t"the group '$group' is not a hexadecimal number"
-      case Ipv6TooManyGroups(count)       => t"the address has too many non-zero groups ($count)"
-      case Ipv6WrongNumberOfGroups(count) => t"the address has $count groups, but should have 8"
-      case Ipv6MultipleDoubleColons       => t":: appears more than once"
+    given AsMessage[Issue] =
+      case Ipv4ByteOutOfRange(byte)       => msg"the number $byte is not in the range 0-255"
+      case Ipv4WrongNumberOfBytes(count)  => msg"the address contains $count numbers instead of 4"
+      case Ipv6GroupNotHex(group)         => msg"the group '$group' is not a hexadecimal number"
+      case Ipv6TooManyGroups(count)       => msg"the address has too many non-zero groups ($count)"
+      case Ipv6WrongNumberOfGroups(count) => msg"the address has $count groups, but should have 8"
+      case Ipv6MultipleDoubleColons       => msg":: appears more than once"
+      
+      case Ipv6GroupWrongLength(group) =>
+        msg"the group is more than 4 hexadecimal characters long"
 
 import IpAddressError.Issue, Issue.*
 
 case class IpAddressError(issue: Issue)
-extends Error(err"the IP address is not valid because $issue")
+extends Error(msg"the IP address is not valid because $issue")
 
 object Nettlesome:
   object Opaques:
@@ -88,7 +90,7 @@ object Nettlesome:
       else
         val ipv6 = Ipv6.parse(text)
         '{Ipv6(${Expr(ipv6.highBits)}, ${Expr(ipv6.lowBits)})}
-    catch case err: IpAddressError => fail(err.message.show.s)
+    catch case err: IpAddressError => fail(err.message.text.s)
 
   object Ipv6:
     given show: Show[Ipv6] = ip =>
