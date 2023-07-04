@@ -426,7 +426,7 @@ object Tests extends Suite(t"Gossamer Tests"):
 
     suite(t"Compile errors"):
       test(t"Check that Text and String are incompatible"):
-        captureCompileErrors:
+        demilitarize:
           val x: String = Text("text")
       .assert(_.head.errorId == ErrorId.TypeMismatchID)
 
