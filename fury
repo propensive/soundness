@@ -1,13 +1,14 @@
 
 repo propensive/probably
 repo propensive/merino
+repo propensive/contextual
 
 target jacinta/test
 
 project jacinta
   module core
     sources  src/core
-    include  merino/core gossamer/core
+    include  merino/core gossamer/core contextual/core
   
   module test
     sources   src/test
