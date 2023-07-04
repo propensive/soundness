@@ -89,7 +89,7 @@ Since the `demilitarize` blocks should contain compile errors, this
 child compilation is expected to fail, but its compilation errors will be
 captured. Each compilation error which is positioned within a
 `demilitarize` block will be converted to static code which constructs
-a new `CompileError` instance, and inserted into the `demilitarize`
+a new `CompileError` instance, and inserts it into the `demilitarize`
 block, in place of entire erroneous contents.
 
 If there are multiple `demilitarize` blocks in the same source file,
