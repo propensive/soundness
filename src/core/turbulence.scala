@@ -41,7 +41,7 @@ extension (value: DataStream)
     
     bld.result().immutable(using Unsafe)
 
-case class StreamUnavailableError() extends Error(err"the stream is unavailable")
+case class StreamUnavailableError() extends Error(msg"the stream is unavailable")
 
 extension (obj: LazyList.type)
   def multiplex
