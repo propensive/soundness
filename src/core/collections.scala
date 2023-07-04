@@ -35,6 +35,16 @@ extension [ValueType](seq: Iterable[ValueType])
     
     if seq.size != map.size then throw DuplicateIndexError() else map.to(Map)
 
+  def longestTrain(predicate: ValueType -> Boolean): (Int, Int) =
+    def recur(index: Int, iterable: Iterable[ValueType], bestStart: Int, bestLength: Int, length: Int): (Int, Int) =
+      if iterable.isEmpty then (bestStart, bestLength) else
+        if predicate(iterable.head) then
+          if length >= bestLength then recur(index + 1, iterable.tail, index - length, length + 1, length + 1)
+          else recur(index + 1, iterable.tail, bestStart, bestLength, length + 1)
+        else recur(index + 1, iterable.tail, bestStart, bestLength, 0)
+
+    recur(0, seq, 0, 0, 0)
+
 case class KeyNotFoundError(name: Text)
 extends Error(ErrorMessage(List(Text("key "), Text(" not found")), List(name)))
 

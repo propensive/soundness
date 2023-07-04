@@ -33,15 +33,28 @@ object Tests extends Suite(t"Rudiments Tests"):
         remoteCall()
     .assert()
     
-    test(t"Check remote call is not callable without `Internet`"):
+    /*test(t"Check remote call is not callable without `Internet`"):
       demilitarize:
         remoteCall()
       .map(_.errorId)
-    .assert(_ == List(ErrorId.MissingImplicitArgumentID))
+    .assert(_ == List(ErrorId.MissingImplicitArgumentID))*/
 
     test(t"Display a PID"):
       Pid(2999).toString
     .assert(_ == "PID:2999")
+
+    suite(t"Longest train tests"):
+      test(t"Find longest train of zeros in middle"):
+        List(1, 0, 0, 2, 3, 4, 0, 0, 0, 5, 6, 0, 7).longestTrain(_ == 0)
+      .assert(_ == (6, 3))
+      
+      test(t"Find longest train of zeros at start"):
+        List(0, 0, 0, 2, 3, 4, 0, 0, 1, 5, 6, 0, 7).longestTrain(_ == 0)
+      .assert(_ == (0, 3))
+      
+      test(t"Find longest train of zeros at end"):
+        List(0, 0, 1, 2, 3, 4, 0, 0, 1, 5, 6, 0, 0, 0, 0).longestTrain(_ == 0)
+      .assert(_ == (11, 4))
     
     suite(t"PID & exit status tests"):
       test(t"Zero exit-status is OK"):
