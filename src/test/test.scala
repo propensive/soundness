@@ -20,7 +20,7 @@ import probably.*
 import gossamer.*
 import larceny.*
 
-import scala.util.{Try, Success, Failure}
+import scala.util.{Try, Success}
 
 object Tests extends Suite(t"Mercator tests"):
   def run(): Unit =

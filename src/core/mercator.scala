@@ -19,8 +19,8 @@ package mercator
 import rudiments.*
 
 import scala.quoted.*
+import scala.compiletime.*
 import scala.collection.BuildFrom
-import language.dynamics
 
 object Point:
   given Point[[T] =>> Either[?, T]] with
@@ -60,11 +60,11 @@ object Mercator:
     val pointType = TypeRepr.of[TypeConstructorType].typeSymbol
     val companion = Ref(pointType.companionModule)
     
-    val applyMethods = companion.symbol.typeRef.typeSymbol.memberMethods.filter: method =>
+    val applyMethods = companion.symbol.typeRef.typeSymbol.methodMembers.filter: method =>
       method.tree match
         case DefDef("apply", List(TypeParamClause(List(tpe)), terms), _, _) =>
           terms match
-            case TermParamClause(List(ValDef(_, tRef, _))) => tRef.tpe match
+            case TermParamClause(List(ValDef(_, tRef, _))) => tRef.tpe.asMatchable match
               case AppliedType(ap, List(tRef)) =>
                 ap.typeSymbol == defn.RepeatedParamClass && tRef.typeSymbol == tpe.symbol
               
@@ -94,7 +94,7 @@ object Mercator:
     import quotes.reflect.*
     val functorType = TypeRepr.of[FunctorType].typeSymbol
     
-    val mapMethods = functorType.memberMethods.filter: method =>
+    val mapMethods = functorType.methodMembers.filter: method =>
       method.tree match
         case DefDef("map", _, _, _) => true
         case _                      => false
@@ -121,7 +121,7 @@ object Mercator:
     import quotes.reflect.*
     val monadType = TypeRepr.of[MonadType].typeSymbol
     
-    val flatMapMethods = monadType.memberMethods.filter: method =>
+    val flatMapMethods = monadType.methodMembers.filter: method =>
       method.tree match
         case DefDef("flatMap", _, _, _) => true
         case _                      => false
@@ -163,7 +163,7 @@ extension [ValueType, MonadType[_]]
   def flatMap[ValueType2](fn: ValueType => MonadType[ValueType2]): MonadType[ValueType2] =
     monad.flatMap(value)(fn)
 
-extension [MonadType[_], CollectionType[ElemType] <: Traversable[ElemType], ElemType]
+extension [MonadType[_], CollectionType[ElemType] <: Iterable[ElemType], ElemType]
     (elems: CollectionType[MonadType[ElemType]])
     (using monad: Monad[MonadType])
 
@@ -178,7 +178,7 @@ extension [MonadType[_], CollectionType[ElemType] <: Traversable[ElemType], Elem
         
     recur(elems, monad.point(List())).map(_.reverse.to(buildFrom.toFactory(Nil)))
     
-extension [CollectionType[ElemType] <: Traversable[ElemType], ElemType]
+extension [CollectionType[ElemType] <: Iterable[ElemType], ElemType]
     (elems: CollectionType[ElemType])
 
   def traverse[ElemType2, MonadType[_]](fn: ElemType => MonadType[ElemType2])
