@@ -17,7 +17,6 @@
 package punctuation
 
 import rudiments.*
-import digression.*
 import gossamer.*
 import spectacular.*
 
