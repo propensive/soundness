@@ -18,6 +18,7 @@ package xylophone
 
 import rudiments.*
 import gossamer.*
+import spectacular.*
 
 object Ast:
   given Show[Ast] =

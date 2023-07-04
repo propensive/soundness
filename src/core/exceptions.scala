@@ -21,9 +21,9 @@ import digression.*
 import gossamer.*
 
 case class XmlParseError(line: Int, column: Int)
-extends Error(err"the XML source could not be parsed at line $line, column $column")
+extends Error(msg"the XML source could not be parsed at line $line, column $column")
 
-case class XmlReadError() extends Error(err"could not read value")
+case class XmlReadError() extends Error(msg"could not read value")
 
 case class XmlAccessError(index: Int, path: XmlPath)
-extends Error(err"could not access ${if index == 0 then t"any nodes" else t"node $index"} at path ${Xml.pathString(path)}")
+extends Error(msg"could not access ${if index == 0 then t"any nodes" else t"node $index"} at path ${Xml.pathString(path)}")

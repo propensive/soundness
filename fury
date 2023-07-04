@@ -3,6 +3,7 @@
 
 repo propensive/wisteria
 repo propensive/gossamer
+repo propensive/turbulence
 repo propensive/probably
 
 target xylophone/test
@@ -10,7 +11,7 @@ target xylophone/test
 project xylophone
   module core
     sources  src/core
-    include  wisteria/core gossamer/core
+    include  wisteria/core gossamer/core turbulence/core
 
   module test
     sources  src/test
