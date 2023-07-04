@@ -19,6 +19,7 @@ package profanity
 import rudiments.*
 import digression.*
 import gossamer.*
+import spectacular.*
 import eucalyptus.*
 import escapade.*
 import parasite.*
@@ -40,7 +41,7 @@ enum Keypress:
 trait Keyboard[+KeyType]:
   def interpret(bytes: List[Byte]): LazyList[KeyType]
 
-case class TtyError(ttyMsg: Text) extends Error(err"STDIN is not attached to a TTY: $ttyMsg")
+case class TtyError(ttyMsg: Text) extends Error(msg"STDIN is not attached to a TTY: $ttyMsg")
 
 case class Tty(out: ji.PrintStream, in: LazyList[Bytes])
 
