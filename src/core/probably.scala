@@ -172,7 +172,7 @@ extension [TestType](test: Test[TestType])
     assert[ReportType](pf.isDefinedAt(_))
   
 case class UnexpectedSuccessError(value: Text)
-extends Error(err"the expression was expected to throw an exception, but instead returned $value")
+extends Error(msg"the expression was expected to throw an exception, but instead returned $value")
 
 transparent inline def capture
     [ExceptionType <: Exception, ResultType]
