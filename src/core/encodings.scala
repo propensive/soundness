@@ -30,6 +30,9 @@ import language.experimental.captureChecking
 
 object Encoding:
 
+  given Show[Encoding] = _.name
+  given AsMessage[Encoding] = encoding => Message(encoding.name)
+
   private val allCharsets: Set[jnc.Charset] =
     jnc.Charset.availableCharsets.nn.asScala.to(Map).values.to(Set)
 
@@ -167,10 +170,10 @@ package badEncodingHandlers:
       def complete(): Unit = if !mistakes.isEmpty then throw AggregateError(mistakes.to(List))
 
 case class UndecodableCharError(pos: Int, encoding: Encoding)
-extends Error(err"The byte sequence at position $pos could not be decoded with the encoding $encoding")
+extends Error(msg"The byte sequence at position $pos could not be decoded with the encoding $encoding")
 
 case class UnencodableCharError(char: Char, encoding: Encoding)
-extends Error(err"The character '$char' cannot be encoded with the encoding $encoding")
+extends Error(msg"The character '$char' cannot be encoded with the encoding $encoding")
 
 extension (inline context: StringContext)
   transparent inline def enc(): Encoding = ${Hieroglyph.encoding('context)}
