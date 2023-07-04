@@ -82,7 +82,7 @@ object Tests extends Suite(t"Adversaria tests"):
     .assert(_ == t"email")
     
     /*test(t"check that given for missing annotation is not resolved"):
-      captureCompileErrors:
+      demilitarize:
         summon[CaseField[Company, id]]
       .map(_.errorId)
     .assert(_ == List(ErrorId.MissingImplicitArgumentID))*/
