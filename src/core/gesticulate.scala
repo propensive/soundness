@@ -166,7 +166,7 @@ object InvalidMediaTypeError:
       case InvalidSuffix(s) => txt"the suffix '$s' is not recognized"
 
 case class InvalidMediaTypeError(value: Text, nature: InvalidMediaTypeError.Nature)
-extends Error(err"the value $value is not a valid media type; ${nature.message}")
+extends Error(msg"the value $value is not a valid media type; ${nature.message}")
 
 case class MediaType(group: Media.Group, subtype: Media.Subtype, suffixes: List[Media.Suffix] = Nil,
                         parameters: List[(Text, Text)] = Nil) extends Dynamic:
