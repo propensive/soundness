@@ -33,9 +33,10 @@ case class Markdown[+MdType <: Markdown.Ast.Node](nodes: MdType*):
   def serialize: Text =
     val buf = StringBuilder()
     
-    nodes.foreach:
-      case node: Markdown.Ast.Inline => node.serialize(buf)
-      case node: Markdown.Ast.Block  => node.serialize(buf)
+    nodes.foreach: value =>
+      (value: @unchecked) match
+        case node: Markdown.Ast.Inline => node.serialize(buf)
+        case node: Markdown.Ast.Block  => node.serialize(buf)
     
     buf.text
 
