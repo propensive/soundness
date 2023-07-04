@@ -30,20 +30,15 @@ project anticipation
     compiler  scala
     sources   src/path
 
-  module show
-    compiler  scala
-    sources   src/show
-
   module time
     compiler  scala
     sources   src/time
 
   module all
-    include anticipation/color
     include anticipation/css
     include anticipation/html
     include anticipation/http
     include anticipation/path
-    include anticipation/show
     include anticipation/time
     include anticipation/url
+    include anticipation/color
