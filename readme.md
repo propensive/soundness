@@ -20,8 +20,7 @@ is specified in their type.
 
 ## Availability
 
-Cardinality has not yet been published as a binary. It is currently waiting for the
-final release of Scala 3.3.
+Cardinality has not yet been published as a binary.
 
 ## Getting Started
 
