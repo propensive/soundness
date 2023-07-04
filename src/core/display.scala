@@ -39,7 +39,11 @@ object Display:
     summon[Display[StackTrace]](StackTrace.apply(e))
 
   given Display[Error] = error =>
-    error.message.fold(out"")((msg, txt) => out"$msg$txt", (msg, sub) => out"$msg$Italic($sub)")
+    error.message.fold[Output](out""): (acc, next, level) =>
+      level match
+        case 0 => out"$acc$next"
+        case 1 => out"$acc$Underline($next)"
+        case _ => out"$acc$Underline($Bold($next))"
 
   given (using TextWidthCalculator): Display[StackTrace] = stack =>
     val methodWidth = stack.frames.map(_.method.method.length).max
