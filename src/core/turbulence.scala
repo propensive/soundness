@@ -487,3 +487,4 @@ extension [ValueType](value: ValueType)
 
 case class Line(content: Text)
 
+case class StreamCutError(total: ByteSize) extends Error(msg"the stream was cut prematurely after $total bytes")
