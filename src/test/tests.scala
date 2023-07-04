@@ -83,20 +83,20 @@ object Tests extends Suite(t"Hieroglyph tests"):
     
     suite(t"Compile-time tests"):
       test(t"Check that an invalid encoding produces an error"):
-        captureCompileErrors(enc"ABCDEF").map(_.message)
+        demilitarize(enc"ABCDEF").map(_.message)
       .assert(_ == List(t"hieroglyph: the encoding ABCDEF was not available"))
       
       test(t"Check that a non-encoding encoding does have a `decoder` method"):
         import badEncodingHandlers.skip
-        captureCompileErrors(enc"ISO-2022-CN".decoder)
+        demilitarize(enc"ISO-2022-CN".decoder)
       .assert(_ == List())
       
       test(t"Check that a non-encoding encoding has no encoder method"):
-        captureCompileErrors(enc"ISO-2022-CN".encoder)
+        demilitarize(enc"ISO-2022-CN".encoder)
       .assert(_.length == 1)
       
       test(t"Check that an encoding which can encode has an encoder method"):
-        captureCompileErrors(enc"ISO-8859-1".encoder)
+        demilitarize(enc"ISO-8859-1".encoder)
       .assert(_ == List())
 
 
