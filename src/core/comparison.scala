@@ -153,8 +153,9 @@ object Contrast extends FallbackContrast:
       : Contrast[DerivedType] =
     inline erasedValue[TupleType] match
       case _: (head *: tail) =>
-        if ordinal == 0 then summonInline[Contrast[head]].asInstanceOf[Contrast[DerivedType]]
+        inline if ordinal == 0 then summonInline[Contrast[head]].asInstanceOf[Contrast[DerivedType]]
         else deriveSum[tail, DerivedType](ordinal - 1)
+      case _ => ???
 
   private transparent inline def deriveProduct
       [Labels <: Tuple]
