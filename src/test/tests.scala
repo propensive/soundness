@@ -18,7 +18,7 @@ package gossamer
 
 import probably.*
 import rudiments.*
-import hieroglyph.*, characterEncodings.utf8, textWidthCalculation.uniform
+import hieroglyph.*, charEncoders.utf8, textWidthCalculation.uniform
 import spectacular.*
 import larceny.*
 
