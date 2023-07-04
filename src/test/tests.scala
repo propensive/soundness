@@ -20,15 +20,9 @@ import rudiments.*
 import probably.*
 import serpentine.*, hierarchies.urls
 import spectacular.*
-import eucalyptus.*
 import gossamer.*
-import turbulence.*
-import rudiments.*
-
-import scala.collection.immutable.ListMap
 
 import unsafeExceptions.canThrowAny
-
 
 case class Address(house: Int, street: Text, city: Text, country: Text)
 case class Person(name: Text, address: Address)
