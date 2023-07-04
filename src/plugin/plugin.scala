@@ -44,7 +44,7 @@ class LarcenyTransformer() extends PluginPhase:
       val regions: scm.ListBuffer[(Int, Int)] = scm.ListBuffer()
       
       override def transform(tree: Tree)(using Context): Tree = tree match
-        case Apply(Ident(name), List(body)) if name.toString == "captureCompileErrors" =>
+        case Apply(Ident(name), List(body)) if name.toString == "demilitarize" =>
           try regions += (body.span.start -> body.span.end) catch case err: AssertionError => ()
           tree
         
@@ -72,7 +72,7 @@ class LarcenyTransformer() extends PluginPhase:
             Literal(Constant(source2))
           ))
 
-        case Apply(Ident(name), List(content)) if name.toString == "captureCompileErrors" =>
+        case Apply(Ident(name), List(content)) if name.toString == "demilitarize" =>
           
           val captured = errors.filter: error =>
             try error.point >= content.span.start && error.point <= content.span.end

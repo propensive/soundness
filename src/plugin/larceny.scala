@@ -18,7 +18,7 @@ package larceny
 
 import dotty.tools.dotc.reporting as dtdr
 
-def captureCompileErrors(code: Matchable): List[CompileError] = code match
+def demilitarize(code: Matchable): List[CompileError] = code match
   case xs: List[CompileError] @unchecked => xs
   case _ => Nil
 
