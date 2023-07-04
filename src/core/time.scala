@@ -55,7 +55,7 @@ object Clock:
 enum Weekday:
   case Mon, Tue, Wed, Thu, Fri, Sat, Sun
 
-case class InvalidDateError(text: Text) extends Error(err"the value $text is not a valid date")
+case class InvalidDateError(text: Text) extends Error(msg"the value $text is not a valid date")
 
 object Dates:
   opaque type Date = Int
@@ -501,7 +501,7 @@ object Aviation:
 case class Timezone(name: Text) 
 
 case class InvalidTimezoneError(name: Text)
-extends Error(err"the name $name does not refer to a known timezone")
+extends Error(msg"the name $name does not refer to a known timezone")
 
 case class LocalTime(date: Date, time: Time, timezone: Timezone):
   def instant(using RomanCalendar): Instant =

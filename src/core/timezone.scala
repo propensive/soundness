@@ -47,7 +47,7 @@ object TzdbError:
     case ZoneFileMissing(name: Text)
 
 case class TzdbError(issue: TzdbError.Issue, line: Int)
-extends Error(err"the timezone could not be parsed at line $line: ${issue.show}")
+extends Error(msg"the timezone could not be parsed at line $line: ${issue.show}")
 
 object Tzdb:
   case class Time(hours: Int, minutes: Int, seconds: Int, suffix: Maybe[Char])
