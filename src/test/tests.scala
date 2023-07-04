@@ -212,13 +212,13 @@ object Tests extends Suite(t"Serpentine Tests"):
       .assert(_ == 2)
 
       test(t"simple path from forbidden string does not compile"):
-        captureCompileErrors:
+        demilitarize:
           val elem: PathName["bad"] = p"bad"
         .map(_.message)
       .assert(_ == List(t"serpentine: a path element may not be 'bad'"))
       
       test(t"simple path from forbidden set of strings does not compile"):
-        captureCompileErrors:
+        demilitarize:
           val elem: PathName["bad" | "awful"] = p"bad"
         .map(_.message)
       .assert(_ == List(t"serpentine: a path element may not be 'bad'"))
@@ -228,13 +228,13 @@ object Tests extends Suite(t"Serpentine Tests"):
       .assert()
       
       test(t"path with forbidden character does not compile"):
-        captureCompileErrors:
+        demilitarize:
           val elem: PathName["bad" | ".*n.*"] = p"unsafe"
         .map(_.message)
       .assert(_ == List(t"serpentine: a path element may not contain the character 'n'"))
       
       test(t"path with forbidden character does not compile"):
-        captureCompileErrors:
+        demilitarize:
           val elem: PathName[".*a.*" | ".*e.*" | ".*i.*" | ".*o.*" | ".*u.*"] = p"unsafe"
         .map(_.message)
       .assert(_ == List(t"serpentine: a path element may not contain the character 'a'"))
@@ -457,37 +457,37 @@ object Tests extends Suite(t"Serpentine Tests"):
       given MainRoot[RootedPath] = () => RootedPath(Drive('C'), Nil)
       
       test(t"Path cannot contain /"):
-        captureCompileErrors:
+        demilitarize:
           SimplePath(List()) / p"a/b"
         .map(_.message)
       .assert(_ == List(t"serpentine: a path element may not contain the character '/'"))
       
       test(t"Rooted Path cannot contain lpt1"):
-        captureCompileErrors:
+        demilitarize:
           Drive('C') / p"lpt1"
         .map(_.message)
       .assert(_ == List(t"serpentine: a path element may not start with 'lpt1'"))
       
       test(t"Rooted Path cannot contain lpt1.txt"):
-        captureCompileErrors:
+        demilitarize:
           Drive('C') / p"lpt1.txt"
         .map(_.message)
       .assert(_ == List(t"serpentine: a path element may not start with 'lpt1'"))
       
       test(t"Rooted Path cannot have a filename ending in space"):
-        captureCompileErrors:
+        demilitarize:
           Drive('C') / p"abc.xyz "
         .map(_.message)
       .assert(_ == List(t"serpentine: a path element may not match the pattern '.* '"))
       
       test(t"Rooted Path cannot have a filename ending in period"):
-        captureCompileErrors:
+        demilitarize:
           Drive('C') / p"abc.abc"
         .map(_.message)
       .assert(_ == List(t"serpentine: a path element may not end with 'abc'"))
       
       test(t"Rooted Path can have an extensionless filename"):
-        captureCompileErrors:
+        demilitarize:
           Drive('C') / p"xyz"
       .assert(_ == Nil)
 
