@@ -79,7 +79,15 @@ extension (json: JsonAst)
     case value: Double     => value.toLong
     case value: BigDecimal => value.toLong
     case _                 => throw JsonAccessError(Issue.NotType(JsonPrimitive.Number))
-  
+ 
+  def primitive: JsonPrimitive =
+    if isNumber then JsonPrimitive.Number
+    else if isBoolean then JsonPrimitive.Boolean
+    else if isString then JsonPrimitive.String
+    else if isObject then JsonPrimitive.Object
+    else if isArray then JsonPrimitive.Array
+    else JsonPrimitive.Null
+
   inline def string: Text throws JsonAccessError =
     if isString then json.asInstanceOf[Text]
     else throw JsonAccessError(Issue.NotType(JsonPrimitive.String))
