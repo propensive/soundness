@@ -23,7 +23,7 @@ import ambience.*
 
 import java.io.*
 
-case class InstallError() extends Error(err"installation failed")
+case class InstallError() extends Error(msg"installation failed")
 
 object Generate extends Application:
   def main(using CliShell): Exit =
