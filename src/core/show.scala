@@ -59,6 +59,7 @@ object TextConversion:
   given Debug[String] = string => Text(summon[Debug[Text]](Text(string)).s.substring(1).nn)
   given Debug[Byte] = byte => Text(byte.toString+".toByte")
   given Debug[Short] = short => Text(short.toString+".toShort")
+  given Debug[Message] = derived[Message]
   
   given Debug[Text] = text =>
     val builder: StringBuilder = new StringBuilder()
@@ -73,6 +74,7 @@ object TextConversion:
   given Show[Int] = int => Text(int.toString)
   given Show[Short] = short => Text(short.toString)
   given Show[Byte] = byte => Text(byte.toString)
+  given Show[Message] = _.text
   given (using decimalizer: DecimalConverter): Show[Double] = decimalizer.decimalize(_)
   
   given Debug[Float] =
