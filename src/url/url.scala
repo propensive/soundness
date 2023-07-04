@@ -245,4 +245,4 @@ object UrlError:
     case Colon, More, LowerCaseLetter, PortRange, Number
 
 case class UrlError(text: Text, offset: Int, expected: UrlError.Expectation)
-extends Error(err"the URL $text is not valid: expected $expected at $offset")
+extends Error(msg"the URL $text is not valid: expected $expected at $offset")
