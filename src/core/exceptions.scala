@@ -18,21 +18,28 @@ package rudiments
 
 import language.experimental.captureChecking
 
-case class ErrorMessage(textParts: List[Text], subs: List[Text]):
-  def fold
-      [ResultType]
-      (initial: ResultType)
-      (textFn: (ResultType, Text) -> ResultType, subFn: (ResultType, Text) -> ResultType)
-      : ResultType =
-    def recur(textParts: List[Text], subs: List[Text], current: ResultType): ResultType = subs match
-      case Nil         => textFn(current, textParts.head)
-      case sub :: subs => recur(textParts.tail, subs, subFn(textFn(current, textParts.head), sub))
+object Message:
+  def apply(value: Text): Message = Message(List(value))
 
-    recur(textParts, subs, initial)
-  
-  def text: Text = Text(fold("")(_+_, _+_))
+  transparent inline def makeMessages(inline subs: Tuple, done: List[Message]): List[Message] =
+    inline subs match
+      case message *: tail =>
+        makeMessages(tail, compiletime.summonInline[AsMessage[message.type]].message(message) :: done)
+      case _ =>
+        done.reverse
 
-transparent abstract class Error(val message: ErrorMessage, val cause: Maybe[Error] = Unset)
+case class Message(textParts: List[Text], subs: List[Message] = Nil):
+  def fold[RenderType](initial: RenderType)(append: (RenderType, Text, Int) -> RenderType): RenderType =
+    def recur(done: RenderType, textTodo: List[Text], subsTodo: List[Message], level: Int): RenderType =
+      subsTodo match
+        case Nil => append(done, textTodo.head, level)
+        case sub :: subs => recur(recur(append(done, textTodo.head, level), sub.textParts, sub.subs, level + 1), textTodo.tail, subs, level)
+
+    recur(initial, textParts, subs, 0)
+
+  def text: Text = Text(fold[String]("") { (acc, next, level) => acc+next })
+
+transparent abstract class Error(val message: Message, val cause: Maybe[Error] = Unset)
 extends Exception():
   this: Error =>
   def fullClass: List[Text] = List(getClass.nn.getName.nn.split("\\.").nn.map(_.nn).map(Text(_))*)
@@ -52,5 +59,21 @@ object Mistake:
 case class Mistake(message: String) extends java.lang.Error(message)
 
 case class StreamCutError(total: ByteSize)
-extends Error(ErrorMessage(List(Text("the stream was cut prematurely after "), Text("")),
-    List(total.text)))
+extends Error(Message(List(Text("the stream was cut prematurely after "), Text("")), List(Message(total.text))))
+
+object AsMessage:
+  given AsMessage[Text] = Message(_)
+  given AsMessage[Int] = int => Message(Text(int.toString))
+  given AsMessage[Message] = identity(_)
+
+trait AsMessage[-ValueType]:
+  def message(value: ValueType): Message
+
+extension (inline context: StringContext)
+  transparent inline def msg[ParamType <: Matchable](inline subs: ParamType = EmptyTuple): Message =
+    inline subs match
+      case tuple: Tuple =>
+        Message(context.parts.map(Text(_)).to(List), Message.makeMessages(tuple, Nil))
+      
+      case other =>
+        Message(context.parts.map(Text(_)).to(List), List(compiletime.summonInline[AsMessage[other.type]].message(other)))

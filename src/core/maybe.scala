@@ -23,7 +23,7 @@ object Unset:
 
 type Maybe[ValueType] = Unset.type | ValueType
 
-case class UnsetValueError() extends Error(ErrorMessage(List(Text("the value was not set")), Nil))
+case class UnsetValueError() extends Error(Message(Text("the value was not set")))
 
 extension [ValueType](opt: Maybe[ValueType])
   def unset: Boolean = opt == Unset

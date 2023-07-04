@@ -46,10 +46,10 @@ extension [ValueType](seq: Iterable[ValueType])
     recur(0, seq, 0, 0, 0)
 
 case class KeyNotFoundError(name: Text)
-extends Error(ErrorMessage(List(Text("key "), Text(" not found")), List(name)))
+extends Error(Message(List(Text("key "), Text(" not found")), List(Message(name))))
 
 case class DuplicateIndexError()
-extends Error(ErrorMessage(List(Text(
+extends Error(Message(List(Text(
     "the sequence contained more than one element that mapped to the same index")), Nil))
 
 extension [ElemType](value: IArray[ElemType])
