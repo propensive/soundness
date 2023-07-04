@@ -555,16 +555,16 @@ object JsonAccessError:
     case NotType(primitive: JsonPrimitive)
   
   object Issue:
-    given Show[Issue] =
-      case Index(value)       => t"the index $value out of range"
-      case Label(label)       => t"the JSON object does not contain the label $label"
-      case NotType(primitive) => t"the JSON value did not have the type $primitive"
+    given AsMessage[Issue] =
+      case Index(value)       => msg"the index $value out of range"
+      case Label(label)       => msg"the JSON object does not contain the label $label"
+      case NotType(primitive) => msg"the JSON value did not have the type $primitive"
 
 case class JsonAccessError(reason: JsonAccessError.Issue)
-extends Error(err"could not access the value because $reason")
+extends Error(msg"could not access the value because $reason")
 
 object JsonPrimitive:
-  given Show[JsonPrimitive] = _.toString.show
+  given AsMessage[JsonPrimitive] = primitive => Message(primitive.show)
 
 enum JsonPrimitive:
   case Array, Object, Number, Null, Boolean, String
