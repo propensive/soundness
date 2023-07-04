@@ -18,7 +18,7 @@ package rudiments
 
 import language.experimental.captureChecking
 
-case class IncompatibleTypeError() extends Error(Message(Text("the value is not compatible")))
+case class IncompatibleTypeError() extends Error(msg"the value is not compatible")
 
 trait DecimalConverter:
   def decimalize(value: Double): Text

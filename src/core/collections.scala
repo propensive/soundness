@@ -45,12 +45,10 @@ extension [ValueType](seq: Iterable[ValueType])
 
     recur(0, seq, 0, 0, 0)
 
-case class KeyNotFoundError(name: Text)
-extends Error(Message(List(Text("key "), Text(" not found")), List(Message(name))))
+case class KeyNotFoundError(name: Text) extends Error(msg"the key $name was not found")
 
 case class DuplicateIndexError()
-extends Error(Message(List(Text(
-    "the sequence contained more than one element that mapped to the same index")), Nil))
+extends Error(msg"the sequence contained more than one element that mapped to the same index")
 
 extension [ElemType](value: IArray[ElemType])
   inline def mutable(using erased Unsafe.type): Array[ElemType] = (value.asMatchable: @unchecked) match
