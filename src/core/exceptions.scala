@@ -16,6 +16,8 @@
 
 package rudiments
 
+import scala.compiletime.*
+
 import language.experimental.captureChecking
 
 object Message:
@@ -67,8 +69,8 @@ trait AsMessage[-ValueType]:
   def message(value: ValueType): Message
 
 extension (inline context: StringContext)
-  transparent inline def msg[ParamType <: Matchable](inline subs: ParamType = EmptyTuple): Message =
-    inline subs match
+  transparent inline def msg[ParamType](inline subs: ParamType = EmptyTuple): Message =
+    inline subs.asMatchable match
       case tuple: Tuple =>
         Message(context.parts.map(Text(_)).to(List), Message.makeMessages(tuple, Nil))
       
