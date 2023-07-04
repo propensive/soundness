@@ -5,7 +5,7 @@ scalac -d bin -Xplugin:larceny.jar -classpath larceny.jar *.scala`
 ```
 
 The compiler plugin identifies code blocks whose compilation errors should be
-suppressed, which are inside a `captureCompileErrors` block (using any
+suppressed, which are inside a `demilitarize` block (using any
 valid Scala block syntax), for example:
 ```scala
 package com.example
@@ -13,28 +13,28 @@ package com.example
 import larceny.*
 
 @main def run(): Unit =
-  captureCompileErrors("Hello world".substring("5"))
+  demilitarize("Hello world".substring("5"))
 
-  captureCompileErrors:
+  demilitarize:
     val x = 8
     println(x.missingMethod)
 ```
 
-Here, the code inside each `captureCompileErrors` block will never compile:
+Here, the code inside each `demilitarize` block will never compile:
 the first, because `substring` takes an `Int` as a parameter, and the second
 because `missingMethod` is not a member of `Int`.
 
 But despite this, if the Larceny plugin is enabled, then the code will compile.
 
-And any invalid code that is _not_ within a `captureCompileErrors` block will
+And any invalid code that is _not_ within a `demilitarize` block will
 still result in the expected compilation errors.
 
-The compilation error from each `captureCompileErrors` block will be
+The compilation error from each `demilitarize` block will be
 returned (in a `List`) from each block. We could adjust the code to see them,
 like so:
 ```scala
 @main def run(): Unit =
-  val errors = captureCompileErrors:
+  val errors = demilitarize:
     "Hello world".substring("5")
 
   errors.foreach:
@@ -53,7 +53,7 @@ The four parameters of `CompileError` need some explanation:
 
 Taking the second example above,
 ```scala
-captureCompileErrors:
+demilitarize:
   val x = 8
   println(x.missingMethod)
 ```
@@ -73,7 +73,7 @@ enumeration of values. For convenience, these values are exported into the
 
 `ErrorId` is also an extractor on `CompileError`, so it's possible to write:
 ```scala
-captureCompileErrors(summon[Ordering[Exception]]) match
+demilitarize(summon[Ordering[Exception]]) match
   case ErrorId(ErrorId.MissingImplicitArgumentID) => "expected"
   case _                                          => "unexpected"
 ```
@@ -81,18 +81,18 @@ captureCompileErrors(summon[Ordering[Exception]]) match
 ### Implementation
 
 Larceny runs on each source file before typechecking, but after parsing. Any
-blocks named `captureCompileErrors` found in the the untyped AST will trigger
+blocks named `demilitarize` found in the the untyped AST will trigger
 a new and independent compilation of the same source file (with the same
 classpath, but without the Larceny plugin) from _within_ the main compilation.
 
-Since the `captureCompileErrors` blocks should contain compile errors, this
+Since the `demilitarize` blocks should contain compile errors, this
 child compilation is expected to fail, but its compilation errors will be
 captured. Each compilation error which is positioned within a
-`captureCompileErrors` block will be converted to static code which constructs
-a new `CompileError` instance, and inserted into the `captureCompileErrors`
+`demilitarize` block will be converted to static code which constructs
+a new `CompileError` instance, and inserted into the `demilitarize`
 block, in place of entire erroneous contents.
 
-If there are multiple `captureCompileErrors` blocks in the same source file,
+If there are multiple `demilitarize` blocks in the same source file,
 some errors which occur in earlier phases of compilation may prevent later
 phases from running, and the errors from those later phases will not be
 captured during the first compilation. Larceny will rerun the compiler as
@@ -101,8 +101,8 @@ removing more code which would have precluded these later phases.
 
 The main compilation is then allowed to continue to typechecking, which will
 only see the `CompileError` constructions, not the original code. As long as
-there are no compilation errors _outside_ of a `captureCompileErrors` block,
-compilation should succeed. When the code is run, each `captureCompileErrors`
+there are no compilation errors _outside_ of a `demilitarize` block,
+compilation should succeed. When the code is run, each `demilitarize`
 block will simply return a list of `CompileError`s.
 
 ### Probably
@@ -112,7 +112,7 @@ Larceny works well with [Probably](https://github.com/propensive/probably/).
 For example, we could write a compile error test with,
 ```scala
 test(t"cannot sort data without an Ordering"):
-  captureCompileErrors(data.sorted).head.message
+  demilitarize(data.sorted).head.message
 .assert(_.startsWith("No implicit Ordering"))
 ```
 
