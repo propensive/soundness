@@ -122,7 +122,7 @@ object Tests extends Suite(t"Mercator tests"):
     // .assert(_ == Right(2))
 
     test(t"Point for Ordering does not exist"):
-      captureCompileErrors:
+      demilitarize:
         summon[Point[Ordering]].point(1)
       .map(_.message)
     .assert(_ == List("mercator: the companion object Ordering has no candidate apply methods"))
