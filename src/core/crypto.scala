@@ -42,10 +42,10 @@ trait Signing:
 
 trait Symmetric
 
-object Message:
-  given Show[Message[?]] = msg => t"Message(${msg.bytes.encode[Base64]})"
+object MessageData:
+  given Show[MessageData[?]] = msg => t"MessageData(${msg.bytes.encode[Base64]})"
 
-case class Message[+A <: CryptoAlgorithm[?]](bytes: Bytes) extends Encodable, Shown[Message[?]]
+case class MessageData[+A <: CryptoAlgorithm[?]](bytes: Bytes) extends Encodable, Shown[MessageData[?]]
 
 object Signature:
   given Show[Signature[?]] = sig => t"Signature(${sig.bytes.encode[Base64]})"
@@ -58,8 +58,8 @@ object PublicKey:
   given Show[PublicKey[?]] = key => t"PublicKey(${key.bytes.encode[Hex]})"
 
 case class PublicKey[A <: CryptoAlgorithm[?]](bytes: Bytes) extends Shown[PublicKey[?]]:
-  def encrypt[T: ByteCodec](value: T)(using A & Encryption): Message[A] =
-    Message(summon[A].encrypt(summon[ByteCodec[T]].encode(value), bytes))
+  def encrypt[T: ByteCodec](value: T)(using A & Encryption): MessageData[A] =
+    MessageData(summon[A].encrypt(summon[ByteCodec[T]].encode(value), bytes))
   
   def verify[T: ByteCodec](value: T, signature: Signature[A])(using A & Signing): Boolean =
     summon[A].verify(summon[ByteCodec[T]].encode(value), signature.bytes, bytes)
@@ -77,7 +77,7 @@ case class PrivateKey[A <: CryptoAlgorithm[?]](private[gastronomy] val privateBy
 extends Shown[PrivateKey[?]]:
   def public(using A): PublicKey[A] = PublicKey(summon[A].privateToPublic(privateBytes))
   
-  inline def decrypt[T: ByteCodec](message: Message[A])(using A & Encryption): T throws DecodeError =
+  inline def decrypt[T: ByteCodec](message: MessageData[A])(using A & Encryption): T throws DecodeError =
     decrypt(message.bytes)
   
   inline def decrypt[T: ByteCodec](bytes: Bytes)(using A & Encryption): T throws DecodeError =
@@ -94,12 +94,12 @@ object SymmetricKey:
 
 class SymmetricKey[A <: CryptoAlgorithm[?]](private[gastronomy] val bytes: Bytes)
 extends PrivateKey[A](bytes):
-  def encrypt[T: ByteCodec](value: T)(using A & Encryption): Message[A] = public.encrypt(value)
+  def encrypt[T: ByteCodec](value: T)(using A & Encryption): MessageData[A] = public.encrypt(value)
   
   def verify[T: ByteCodec](value: T, signature: Signature[A])(using A & Signing): Boolean =
     public.verify(value, signature)
 
-case class DecodeError(detail: Text) extends Error(err"could not decode the encrypted data: $detail")
+case class DecodeError(detail: Text) extends Error(msg"could not decode the encrypted data: $detail")
 
 trait ByteCodec[T]:
   def encode(value: T): Bytes
@@ -239,4 +239,4 @@ class Dsa[KS <: 512 | 1024 | 2048 | 3072: ValueOf]() extends CryptoAlgorithm[KS]
   private def keyFactory(): js.KeyFactory = js.KeyFactory.getInstance("DSA").nn
 end Dsa
 
-case class PemParseError(detail: Text) extends Error(err"could not parse PEM-encoded content: $detail")
+case class PemParseError(detail: Text) extends Error(msg"could not parse PEM-encoded content: $detail")

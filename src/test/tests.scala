@@ -89,7 +89,7 @@ object Tests extends Suite(t"Gastronomy tests"):
 
     test(t"RSA roundtrip"):
       val privateKey: PrivateKey[Rsa[1024]] = PrivateKey.generate[Rsa[1024]]()
-      val message: Message[Rsa[1024]] = privateKey.public.encrypt(t"Hello world")
+      val message: MessageData[Rsa[1024]] = privateKey.public.encrypt(t"Hello world")
       privateKey.decrypt[Text](message.bytes)
     .assert(_ == t"Hello world")
     
