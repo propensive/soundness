@@ -135,6 +135,8 @@ sealed trait Executable:
 
 object Command:
 
+  given AsMessage[Command] = command => Message(formattedArgs(command.args))
+
   private def formattedArgs(args: Seq[Text]): Text =
     args.map: arg =>
       if arg.contains(t"\"") && !arg.contains(t"'") then t"""'$arg'"""
@@ -180,7 +182,7 @@ case class Pipeline(cmds: Command*) extends Executable:
     new Process[Exec, T](ProcessBuilder.startPipeline(processBuilders.asJava).nn.asScala.to(List).last)
 
 case class ExecError(command: Command, stdout: DataStream, stderr: DataStream)
-extends Error(err"execution of the command $command failed")
+extends Error(msg"execution of the command $command failed")
 
 object Sh:
   case class Params(params: Text*)
