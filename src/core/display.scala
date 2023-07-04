@@ -24,26 +24,27 @@ import spectacular.*
 import iridescence.*
 
 object Display:
-  given Display[Output] = identity(_)
-  given Display[Text] = text => Output(text)
-  given Display[Pid] = pid => out"${pid.value.show}"
+  given output: Display[Output] = identity(_)
+  given text: Display[Text] = text => Output(text)
+  given pid: Display[Pid] = pid => out"${pid.value.show}"
 
-  given [T: Display]: Display[Option[T]] =
+  given message: Display[Message] = _.fold[Output](out""): (acc, next, level) =>
+    level match
+      case 0 => out"$acc${colors.Khaki}($next)"
+      case 1 => out"$acc$Italic(${colors.Gold}($next))"
+      case _ => out"$acc$Italic($Bold(${colors.Yellow}($next)))"
+
+  given option[T: Display]: Display[Option[T]] =
     case None    => Output("empty".show)
     case Some(v) => summon[Display[T]](v)
   
-  given [ValueType](using show: Show[ValueType]): Display[ValueType] = value =>
+  given show[ValueType](using show: Show[ValueType]): Display[ValueType] = value =>
     Output(show(value))
 
-  given (using TextWidthCalculator): Display[Exception] = e =>
+  given exception(using TextWidthCalculator): Display[Exception] = e =>
     summon[Display[StackTrace]](StackTrace.apply(e))
 
-  given Display[Error] = error =>
-    error.message.fold[Output](out""): (acc, next, level) =>
-      level match
-        case 0 => out"$acc$next"
-        case 1 => out"$acc$Underline($next)"
-        case _ => out"$acc$Underline($Bold($next))"
+  given error: Display[Error] = _.message.out
 
   given (using TextWidthCalculator): Display[StackTrace] = stack =>
     val methodWidth = stack.frames.map(_.method.method.length).max
