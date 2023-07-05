@@ -28,7 +28,7 @@ object IpAddressError:
     case Ipv4WrongNumberOfBytes(count: Int)
     case Ipv6GroupWrongLength(group: Text)
     case Ipv6GroupNotHex(group: Text)
-    case Ipv6TooManyGroups(count: Int)
+    case Ipv6TooManyNonzeroGroups(count: Int)
     case Ipv6WrongNumberOfGroups(count: Int)
     case Ipv6MultipleDoubleColons
   
@@ -37,9 +37,11 @@ object IpAddressError:
       case Ipv4ByteOutOfRange(byte)       => msg"the number $byte is not in the range 0-255"
       case Ipv4WrongNumberOfBytes(count)  => msg"the address contains $count numbers instead of 4"
       case Ipv6GroupNotHex(group)         => msg"the group '$group' is not a hexadecimal number"
-      case Ipv6TooManyGroups(count)       => msg"the address has too many non-zero groups ($count)"
       case Ipv6WrongNumberOfGroups(count) => msg"the address has $count groups, but should have 8"
       case Ipv6MultipleDoubleColons       => msg":: appears more than once"
+      
+      case Ipv6TooManyNonzeroGroups(count) =>
+        msg"the address has $count non-zero groups, which is more than is permitted"
       
       case Ipv6GroupWrongLength(group) =>
         msg"the group is more than 4 hexadecimal characters long"
@@ -89,7 +91,7 @@ object Nettlesome:
       else
         val ipv6 = Ipv6.parse(text)
         '{Ipv6(${Expr(ipv6.highBits)}, ${Expr(ipv6.lowBits)})}
-    catch case err: IpAddressError => fail(err.message.text.s)
+    catch case error: IpAddressError => fail(error.message)
 
   object Ipv6:
     given show: Show[Ipv6] = ip =>
@@ -130,7 +132,8 @@ object Nettlesome:
           val rightGroups = right.cut(t":").filter(_ != t"")
           
           if leftGroups.length + rightGroups.length > 7
-          then throw IpAddressError(Ipv6TooManyGroups(leftGroups.length + rightGroups.length))
+          then throw IpAddressError(Ipv6TooManyNonzeroGroups(leftGroups.length +
+              rightGroups.length))
           
           leftGroups ++ List.fill((8 - leftGroups.length - rightGroups.length))(t"0") ++ rightGroups
 
