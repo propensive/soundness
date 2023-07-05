@@ -62,8 +62,8 @@ trait Schema[DataType, RecordType <: Record[DataType]]:
           case '[type typeName <: Label; typeName] =>
             (Expr.summon[ValueAccessor[RecordType, DataType, typeName, ?]]: @unchecked) match
               case None =>
-                fail(s"could not find a ValueAccessor instance for the field $name with type "+
-                    s"$typeName")
+                fail(msg"""could not find a ValueAccessor instance for the field $name with type
+                    $typeName""")
             
               case Some('{$accessor: ValueAccessor[RecordType, DataType, typeName, valueType]}) =>
 
@@ -81,8 +81,8 @@ trait Schema[DataType, RecordType <: Record[DataType]]:
           case '[type typeName <: Label; typeName] =>
             (Expr.summon[RecordAccessor[RecordType, DataType, typeName, ?]]: @unchecked) match
               case None =>
-                fail(s"could not find a RecordAccessor instance for the field $name with type "+
-                    s"$typeName")
+                fail(msg"""could not find a RecordAccessor instance for the field $name with type
+                    $typeName""")
               
               case Some('{
                   type typeConstructor[_]
