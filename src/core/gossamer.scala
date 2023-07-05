@@ -344,13 +344,12 @@ object Interpolation:
       case 'e' if esc   => ('\u001b', cur + 1, false)
       case '"' if esc   => ('"', cur + 1, false)
       case '\'' if esc  => ('\'', cur + 1, false)
-      case ch if esc    => throw InterpolationError(
-                                rudiments.Text(s"the character '$ch' should not be escaped"))
+      case ch if esc    => throw InterpolationError(msg"the character $ch should not be escaped")
       case ch           => (ch, cur + 1, false)
 
   private def parseUnicode(chars: Text): Char throws InterpolationError =
     if chars.length < 4
-    then throw InterpolationError(rudiments.Text("the unicode escape is incomplete"))
+    then throw InterpolationError(msg"the unicode escape is incomplete")
     else Integer.parseInt(chars.s, 16).toChar
 
   def escape(text: Text): Text throws InterpolationError =
@@ -363,8 +362,7 @@ object Interpolation:
         val (char, idx, escape) = standardEscape(text, cur, esc)
         char.mm(buf.add(_))
         recur(idx, escape)
-      else if esc then throw InterpolationError(
-          rudiments.Text("the final character cannot be an escape"))
+      else if esc then throw InterpolationError(msg"the final character cannot be an escape")
     
     recur(0, false)
     
