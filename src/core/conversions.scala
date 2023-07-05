@@ -65,11 +65,11 @@ object RgbHex extends Interpolator[Nothing, Option[Rgb24], Rgb24]:
 
       Some(Rgb24(red, green, blue))
     
-    else throw InterpolationError(s"""the color must be in the form rgb"#<r><g><b>" or
-        rgb"<r><g><b>" where <r>, <g> and <b> are 2-digit hex values""".unwrap, 0)
+    else throw InterpolationError(msg"""the color must be in the form ${Text("rgb\"#rrggbb\"")} or
+        rgb"rrggbb" where rr, gg and bb are 2-digit hex values""", 0)
   
   def insert(state: Option[Rgb24], value: Nothing): Option[Rgb24] =
-    throw InterpolationError(Text("""substitutions into an rgb"" interpolator are not supported"""))
+    throw InterpolationError(msg"substitutions into an ${Text("rgb\"\"")} interpolator are not supported")
   
   def skip(state: Option[Rgb24]): Option[Rgb24] = state
   def complete(color: Option[Rgb24]): Rgb24 = color.get
