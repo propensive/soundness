@@ -23,6 +23,8 @@ object Rudiments:
       (expr: Expr[Boolean], bound: Expr[Int | Double | Char], strict: Boolean)
       (using Quotes)
       : Expr[Boolean] =
+    val errorMessage = msg"this cannot be written as a range expression"
+    
     val value = expr match
       case '{($bound: Int) < ($middle: Int)}        => middle
       case '{($bound: Int) <= ($middle: Int)}       => middle
@@ -38,29 +40,25 @@ object Rudiments:
       case '{($bound: Char) <= ($middle: Int)}      => middle
       case '{($bound: Char) < ($middle: Char)}      => middle
       case '{($bound: Char) <= ($middle: Char)}     => middle
-      
-      case _ =>
-        fail(s"this cannot be written as a range expression")
+      case _                                        => fail(errorMessage)
     
     val expr2: Expr[Boolean] = value match
       case '{$value: Int}    => bound match
         case '{$bound: Int}    => if strict then '{$value < $bound} else '{$value <= $bound}
         case '{$bound: Double} => if strict then '{$value < $bound} else '{$value <= $bound}
         case '{$bound: Char}   => if strict then '{$value < $bound} else '{$value <= $bound}
-        case _                 => fail(s"this cannot be written as a range expression")
+        case _                 => fail(errorMessage)
       case '{$value: Double} => bound match
         case '{$bound: Int}    => if strict then '{$value < $bound} else '{$value <= $bound}
         case '{$bound: Double} => if strict then '{$value < $bound} else '{$value <= $bound}
         case '{$bound: Char}   => if strict then '{$value < $bound} else '{$value <= $bound}
-        case _                 => fail(s"this cannot be written as a range expression")
+        case _                 => fail(errorMessage)
       case '{$value: Char}   => bound match
         case '{$bound: Int}    => if strict then '{$value < $bound} else '{$value <= $bound}
         case '{$bound: Double} => if strict then '{$value < $bound} else '{$value <= $bound}
         case '{$bound: Char}   => if strict then '{$value < $bound} else '{$value <= $bound}
-        case _                 => fail(s"this cannot be written as a range expression")
-      
-      case _ =>
-        fail(s"this cannot be written as a range expression")
+        case _                 => fail(errorMessage)
+      case _                 => fail(errorMessage)
       
     '{$expr && $expr2}
       
@@ -75,7 +73,7 @@ object Rudiments:
       case idx =>
         val startPos = expr.asTerm.pos
         val pos = Position(startPos.sourceFile, startPos.start + idx, startPos.start + idx + 1)
-        fail(s"a binary value can only contain characters '0' or '1'", pos)
+        fail(msg"a binary value can only contain characters '0' or '1'", pos)
     
     val bits2 = bits.filter(_ != ' ')
 
@@ -87,7 +85,7 @@ object Rudiments:
       case 16 => Expr[Short](long.toShort)
       case 32 => Expr[Int](long.toInt)
       case 64 => Expr[Long](long)
-      case _  => fail(s"a binary literal must be 8, 16, 32 or 64 bits long")
+      case _  => fail(msg"a binary literal must be 8, 16, 32 or 64 bits long")
 
   def hex(expr: Expr[StringContext])(using Quotes): Expr[IArray[Byte]] =
     import quotes.reflect.*
@@ -103,12 +101,12 @@ object Rudiments:
       
       case idx =>
         val pos = Position(startPos.sourceFile, startPos.start + idx, startPos.start + idx + 1)
-        fail(s"'${nibbles(idx)}' is not a valid hexadecimal character")
+        fail(msg"${nibbles(idx)} is not a valid hexadecimal character")
 
     val nibbles3 = nibbles2.filterNot { ch => ch == ' ' || ch == '\n' }
 
     if nibbles3.length%2 != 0
-    then fail("a hexadecimal value must have an even number of digits", Position.ofMacroExpansion)
+    then fail(msg"a hexadecimal value must have an even number of digits", Position.ofMacroExpansion)
 
     val bytes = nibbles3.grouped(2).map(Integer.parseInt(_, 16).toByte).to(List)
 
