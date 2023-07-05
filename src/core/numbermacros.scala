@@ -38,18 +38,18 @@ object CardinalityMacro:
                 val value = string.toDouble
             
                 if value < lowerBound
-                then fail(s"""the value $string is less than the lower bound for this value,
-                    $lowerBound""".unwrap.s)
+                then fail(msg"""the value $string is less than the lower bound for this value,
+                    $lowerBound""")
             
                 if value > upperBound
-                then fail(s"""the value $string is greater than the upper bound for this value,
-                    $upperBound""".unwrap.s)
+                then fail(msg"""the value $string is greater than the upper bound for this value,
+                    $upperBound""")
   
                 '{${Expr(value)}.asInstanceOf[LeftDoubleType ~ RightDoubleType]}
           
               case _ =>
-                fail("upper bound must be a Double singleton literal types")
+                fail(msg"the upper bound must be a Double singleton literal types")
           case _ =>
-            fail("lower bound must be a Double singleton literal types")
+            fail(msg"the lower bound must be a Double singleton literal types")
       case None =>
         '{NumericRange($digits.toDouble)}
