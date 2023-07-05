@@ -24,6 +24,7 @@ object Rudiments:
           strict: Expr[Boolean])
       (using Quotes)
       : Expr[Boolean] =
+    
     val errorMessage = msg"this cannot be written as a range expression"
     
     val value = expr match
@@ -54,7 +55,6 @@ object Rudiments:
       case _                                      => fail(errorMessage)
 
     '{$expr && ${if strict.valueOrAbort then lessStrict else less}}
-      
   
   def bin(expr: Expr[StringContext])(using Quotes): Expr[AnyVal] =
     import quotes.reflect.*

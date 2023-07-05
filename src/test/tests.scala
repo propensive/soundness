@@ -136,6 +136,22 @@ object Tests extends Suite(t"Rudiments Tests"):
       .assert(_.length == 16)
 
     suite(t"Inequality tests"):
+      test(t"1.2 < x < 1.4"):
+        List(1.1, 1.2, 1.3, 1.4, 1.5).filter(1.2 < _ < 1.4)
+      .assert(_ == List(1.3))
+      
+      test(t"1.2 < x <= 1.4"):
+        List(1.1, 1.2, 1.3, 1.4, 1.5).filter(1.2 < _ <= 1.4)
+      .assert(_ == List(1.3, 1.4))
+      
+      test(t"1.2 <= x < 1.4"):
+        List(1.1, 1.2, 1.3, 1.4, 1.5).filter(1.2 <= _ < 1.4)
+      .assert(_ == List(1.2, 1.3))
+      
+      test(t"1.2 <= x <= 1.4"):
+        List(1.1, 1.2, 1.3, 1.4, 1.5).filter(1.2 <= _ <= 1.4)
+      .assert(_ == List(1.2, 1.3, 1.4))
+      
       test(t"2 < x < 4"):
         List(1, 2, 3, 4, 5).filter(2 < _ < 4)
       .assert(_ == List(3))
@@ -151,3 +167,67 @@ object Tests extends Suite(t"Rudiments Tests"):
       test(t"2 <= x <= 4"):
         List(1, 2, 3, 4, 5).filter(2 <= _ <= 4)
       .assert(_ == List(2, 3, 4))
+      
+      test(t"2L < x < 4L"):
+        List(1L, 2L, 3L, 4L, 5L).filter(2L < _ < 4L)
+      .assert(_ == List(3L))
+      
+      test(t"2L < x <= 4L"):
+        List(1L, 2L, 3L, 4L, 5L).filter(2L < _ <= 4L)
+      .assert(_ == List(3L, 4L))
+      
+      test(t"2L <= x < 4L"):
+        List(1L, 2L, 3L, 4L, 5L).filter(2L <= _ < 4L)
+      .assert(_ == List(2L, 3L))
+      
+      test(t"2L <= x <= 4L"):
+        List(1L, 2L, 3L, 4L, 5L).filter(2L <= _ <= 4L)
+      .assert(_ == List(2L, 3L, 4L))
+      
+      test(t"2F < x < 4F"):
+        List(1F, 2F, 3F, 4F, 5F).filter(2F < _ < 4F)
+      .assert(_ == List(3F))
+      
+      test(t"2F < x <= 4F"):
+        List(1F, 2F, 3F, 4F, 5F).filter(2F < _ <= 4F)
+      .assert(_ == List(3F, 4F))
+      
+      test(t"2F <= x < 4F"):
+        List(1F, 2F, 3F, 4F, 5F).filter(2F <= _ < 4F)
+      .assert(_ == List(2F, 3F))
+      
+      test(t"2F <= x <= 4F"):
+        List(1F, 2F, 3F, 4F, 5F).filter(2F <= _ <= 4F)
+      .assert(_ == List(2F, 3F, 4F))
+      
+      test(t"'2' < x < '4'"):
+        List('1', '2', '3', '4', '5').filter('2' < _ < '4')
+      .assert(_ == List('3'))
+      
+      test(t"'2' < x <= '4'"):
+        List('1', '2', '3', '4', '5').filter('2' < _ <= '4')
+      .assert(_ == List('3', '4'))
+      
+      test(t"'2' <= x < '4'"):
+        List('1', '2', '3', '4', '5').filter('2' <= _ < '4')
+      .assert(_ == List('2', '3'))
+      
+      test(t"'2' <= x <= '4'"):
+        List('1', '2', '3', '4', '5').filter('2' <= _ <= '4')
+      .assert(_ == List('2', '3', '4'))
+      
+      test(t"2.toByte < x < 4.toByte"):
+        List(1.toByte, 2.toByte, 3.toByte, 4.toByte, 5.toByte).filter(2.toByte < _ < 4.toByte)
+      .assert(_ == List(3.toByte))
+      
+      test(t"2.toByte < x <= 4.toByte"):
+        List(1.toByte, 2.toByte, 3.toByte, 4.toByte, 5.toByte).filter(2.toByte < _ <= 4.toByte)
+      .assert(_ == List(3.toByte, 4.toByte))
+      
+      test(t"2.toByte <= x < 4.toByte"):
+        List(1.toByte, 2.toByte, 3.toByte, 4.toByte, 5.toByte).filter(2.toByte <= _ < 4.toByte)
+      .assert(_ == List(2.toByte, 3.toByte))
+      
+      test(t"2.toByte <= x <= 4.toByte"):
+        List(1.toByte, 2.toByte, 3.toByte, 4.toByte, 5.toByte).filter(2.toByte <= _ <= 4.toByte)
+      .assert(_ == List(2.toByte, 3.toByte, 4.toByte))
