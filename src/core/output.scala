@@ -177,7 +177,8 @@ object Ansi extends Ansi2:
     def skip(state: State): State = insert(state, Input.TextInput(Output.empty))
     
     def complete(state: State): Output =
-      if !state.stack.isEmpty then throw InterpolationError(t"mismatched closing brace")
+      if !state.stack.isEmpty
+      then throw InterpolationError(msg"the closing brace does not match an opening brace")
 
       Output(state.text, state.spans, state.insertions)
 
