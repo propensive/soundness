@@ -135,3 +135,19 @@ object Tests extends Suite(t"Rudiments Tests"):
         Uuid().bytes
       .assert(_.length == 16)
 
+    suite(t"Inequality tests"):
+      test(t"2 < x < 4"):
+        List(1, 2, 3, 4, 5).filter(2 < _ < 4)
+      .assert(_ == List(3))
+      
+      test(t"2 < x <= 4"):
+        List(1, 2, 3, 4, 5).filter(2 < _ <= 4)
+      .assert(_ == List(3, 4))
+      
+      test(t"2 <= x < 4"):
+        List(1, 2, 3, 4, 5).filter(2 <= _ < 4)
+      .assert(_ == List(2, 3))
+      
+      test(t"2 <= x <= 4"):
+        List(1, 2, 3, 4, 5).filter(2 <= _ <= 4)
+      .assert(_ == List(2, 3, 4))

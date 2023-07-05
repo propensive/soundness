@@ -19,48 +19,41 @@ package rudiments
 import scala.quoted.*
 
 object Rudiments:
-  def upperBound
-      (expr: Expr[Boolean], bound: Expr[Int | Double | Char], strict: Boolean)
+  def inequality
+      (expr: Expr[Boolean], bound: Expr[Int | Double | Char | Byte | Short | Long | Float],
+          strict: Expr[Boolean])
       (using Quotes)
       : Expr[Boolean] =
     val errorMessage = msg"this cannot be written as a range expression"
     
     val value = expr match
-      case '{($bound: Int) < ($middle: Int)}        => middle
-      case '{($bound: Int) <= ($middle: Int)}       => middle
-      case '{($bound: Int) < ($middle: Double)}     => middle
-      case '{($bound: Int) <= ($middle: Double)}    => middle
-      case '{($bound: Int) < ($middle: Char)}       => middle
-      case '{($bound: Int) <= ($middle: Char)}      => middle
-      case '{($bound: Double) < ($middle: Int)}     => middle
-      case '{($bound: Double) <= ($middle: Int)}    => middle
-      case '{($bound: Double) < ($middle: Double)}  => middle
-      case '{($bound: Double) <= ($middle: Double)} => middle
-      case '{($bound: Char) < ($middle: Int)}       => middle
-      case '{($bound: Char) <= ($middle: Int)}      => middle
-      case '{($bound: Char) < ($middle: Char)}      => middle
-      case '{($bound: Char) <= ($middle: Char)}     => middle
-      case _                                        => fail(errorMessage)
+      case '{($bound: Int) < ($value: Int)}        => value
+      case '{($bound: Int) <= ($value: Int)}       => value
+      case '{($bound: Double) < ($value: Double)}  => value
+      case '{($bound: Double) <= ($value: Double)} => value
+      case '{($bound: Char) < ($value: Char)}      => value
+      case '{($bound: Char) <= ($value: Char)}     => value
+      case '{($bound: Byte) < ($value: Byte)}      => value
+      case '{($bound: Byte) <= ($value: Byte)}     => value
+      case '{($bound: Short) < ($value: Short)}    => value
+      case '{($bound: Short) <= ($value: Short)}   => value
+      case '{($bound: Long) < ($value: Long)}      => value
+      case '{($bound: Long) <= ($value: Long)}     => value
+      case '{($bound: Float) < ($value: Float)}    => value
+      case '{($bound: Float) <= ($value: Float)}   => value
+      case _                                       => fail(errorMessage)
     
-    val expr2: Expr[Boolean] = value match
-      case '{$value: Int}    => bound match
-        case '{$bound: Int}    => if strict then '{$value < $bound} else '{$value <= $bound}
-        case '{$bound: Double} => if strict then '{$value < $bound} else '{$value <= $bound}
-        case '{$bound: Char}   => if strict then '{$value < $bound} else '{$value <= $bound}
-        case _                 => fail(errorMessage)
-      case '{$value: Double} => bound match
-        case '{$bound: Int}    => if strict then '{$value < $bound} else '{$value <= $bound}
-        case '{$bound: Double} => if strict then '{$value < $bound} else '{$value <= $bound}
-        case '{$bound: Char}   => if strict then '{$value < $bound} else '{$value <= $bound}
-        case _                 => fail(errorMessage)
-      case '{$value: Char}   => bound match
-        case '{$bound: Int}    => if strict then '{$value < $bound} else '{$value <= $bound}
-        case '{$bound: Double} => if strict then '{$value < $bound} else '{$value <= $bound}
-        case '{$bound: Char}   => if strict then '{$value < $bound} else '{$value <= $bound}
-        case _                 => fail(errorMessage)
-      case _                 => fail(errorMessage)
-      
-    '{$expr && $expr2}
+    val (lessStrict, less) = (value, bound) match
+      case ('{$value: Int}, '{$bound: Int})       => ('{$value < $bound}, '{$value <= $bound})
+      case ('{$value: Float}, '{$bound: Float})   => ('{$value < $bound}, '{$value <= $bound})
+      case ('{$value: Double}, '{$bound: Double}) => ('{$value < $bound}, '{$value <= $bound})
+      case ('{$value: Long}, '{$bound: Long})     => ('{$value < $bound}, '{$value <= $bound})
+      case ('{$value: Char}, '{$bound: Char})     => ('{$value < $bound}, '{$value <= $bound})
+      case ('{$value: Byte}, '{$bound: Byte})     => ('{$value < $bound}, '{$value <= $bound})
+      case ('{$value: Short}, '{$bound: Short})   => ('{$value < $bound}, '{$value <= $bound})
+      case _                                      => fail(errorMessage)
+
+    '{$expr && ${if strict.valueOrAbort then lessStrict else less}}
       
   
   def bin(expr: Expr[StringContext])(using Quotes): Expr[AnyVal] =
@@ -115,12 +108,3 @@ object Rudiments:
 extension (inline context: StringContext)
   transparent inline def bin(): AnyVal = ${Rudiments.bin('context)}
   transparent inline def hex(): IArray[Byte] = ${Rudiments.hex('context)}
-
-extension (inline expr: Boolean)
-  @targetName("lt")
-  inline def <(upperBound: Int | Char | Double): Boolean =
-    ${Rudiments.upperBound('expr, 'upperBound, true)}
-  
-  @targetName("lte")
-  inline def <=(upperBound: Int | Char | Double): Boolean =
-    ${Rudiments.upperBound('expr, 'upperBound, false)}
