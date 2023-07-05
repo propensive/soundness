@@ -91,18 +91,18 @@ object Serpentine:
     patterns(TypeRepr.of[NameType]).foreach: pattern =>
       if element.matches(pattern) then pattern match
         case r"\.\*\\?$char(.)\.\*" =>
-          fail(s"a path element may not contain the character '$char'", pos)
+          fail(msg"a path element may not contain the character $char", pos)
 
         case r"$start([a-zA-Z0-9]*)\.\*" =>
-          fail(s"a path element may not start with '$start'", pos)
+          fail(msg"a path element may not start with $start", pos)
 
         case r"\.\*$end([a-zA-Z0-9]*)" =>
-          fail(s"a path element may not end with '$end'", pos)
+          fail(msg"a path element may not end with $end", pos)
 
         case pattern@r"[a-zA-Z0-9]*" =>
-          fail(s"a path element may not be '$pattern'", pos)
+          fail(msg"a path element may not be $pattern", pos)
 
         case other =>
-          fail(s"a path element may not match the pattern '$other'")
+          fail(msg"a path element may not match the pattern $other")
 
     '{${Expr(element)}.asInstanceOf[PathName[NameType]]}
