@@ -202,7 +202,7 @@ object Hieroglyph:
     val context: StringContext = contextExpr.valueOrAbort
     Encoding.unapply(Text(context.parts.head)) match
       case None =>
-        fail(s"the encoding ${context.parts.head} was not available")
+        fail(msg"the encoding ${Text(context.parts.head)} was not available")
       
       case Some(encoding) =>
         if !encoding.charset.isRegistered
