@@ -23,10 +23,11 @@ import language.experimental.captureChecking
 object Message:
   def apply(value: Text): Message = Message(List(value))
 
-  transparent inline def makeMessages(inline subs: Tuple, done: List[Message]): List[Message] =
-    inline subs match
-      case message *: tail =>
-        makeMessages(tail, compiletime.summonInline[AsMessage[message.type]].message(message) :: done)
+  transparent inline def makeMessages[TupleType <: Tuple](inline subs: TupleType, done: List[Message]): List[Message] =
+    inline erasedValue[TupleType] match
+      case _: (messageType *: tailType) => subs match
+        case message *: tail =>
+          makeMessages[tailType](tail.asInstanceOf[tailType], compiletime.summonInline[AsMessage[messageType]].message(message.asInstanceOf[messageType]) :: done)
       case _ =>
         done.reverse
 
@@ -46,7 +47,7 @@ case class Message(textParts: List[Text], subs: List[Message] = Nil):
     
     def recur(lines: List[String], break: Boolean): Text = lines match
       case Nil =>
-        Text(buf.toString)
+        Text(buf.toString.trim.nn)
       
       case line :: tail =>
         if line.forall(_.isWhitespace) then recur(tail, true) else
@@ -89,7 +90,7 @@ extension (inline context: StringContext)
   transparent inline def msg[ParamType](inline subs: ParamType = EmptyTuple): Message =
     inline subs.asMatchable match
       case tuple: Tuple =>
-        Message(context.parts.map(Text(_)).to(List), Message.makeMessages(tuple, Nil))
+        Message(context.parts.map(Text(_)).to(List), Message.makeMessages[tuple.type](tuple, Nil))
       
       case other =>
         Message(context.parts.map(Text(_)).to(List), List(compiletime.summonInline[AsMessage[other.type]].message(other)))
