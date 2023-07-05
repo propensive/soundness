@@ -63,10 +63,10 @@ trait Node[+NameType <: Label] extends Shown[Node[?]]:
 
 object StartTag:
   given GenericCssSelection[StartTag[?, ?]] = elem =>
-    val tail = elem.attributes.map:
-      case (key, value: Text) => t"[$key=$value]"
-      case (key, Unset)       => t"[$key]"
-      case _                  => throw Mistake("should never match")
+    val tail = elem.attributes.map: (key, value) =>
+      ((key, value): @unchecked) match
+        case (key, value: Text) => t"[$key=$value]"
+        case (key, Unset)       => t"[$key]"
     .join
     
     t"${elem.label}$tail".s
@@ -104,9 +104,6 @@ object Honeycomb:
       case _ =>
         Nil
 
-    attributes match
+    (attributes: @unchecked) match
       case Varargs(exprs) =>
         '{StartTag($name, $unclosed, $block, $verbatim, ${Expr.ofSeq(recur(exprs))}.to(Map))}
-      
-      case _ =>
-        throw Mistake("expected varargs")
