@@ -156,7 +156,7 @@ extension
     if followable.ascent(relative) > reachable.depth(left)
     then throw PathError(PathError.Reason.ParentOfRoot)
     else
-      val common: PathType = reachable.ancestor(left, followable.ascent(relative)).avow
+      val common: PathType = reachable.ancestor(left, followable.ascent(relative)).avow(using Unsafe)
       val descent = reachable.descent(common)
       
       creator.path(reachable.root(left), followable.descent(relative) ::: descent)
