@@ -60,12 +60,12 @@ object Xml:
 
   def print(xml: Xml)(using XmlPrinter[Text]): Text = summon[XmlPrinter[Text]].print(xml)
 
-  def pathString(path: XmlPath): Text = if path.isEmpty then t"/" else path.map {
-    case idx: Int   => t"[$idx]"
-    case label: Text => t"/$label"
-    case unit: Unit => t"/*"
-    case _          => throw Mistake("should never match")
-  }.join
+  def pathString(path: XmlPath): Text = if path.isEmpty then t"/" else path.map: value =>
+    (value: @unchecked) match
+      case idx: Int    => t"[$idx]"
+      case label: Text => t"/$label"
+      case unit: Unit  => t"/*"
+  .join
 
   def parse(content: Text): XmlDoc throws XmlParseError =
     import org.w3c.dom as owd, owd.Node.*
@@ -124,12 +124,11 @@ object Xml:
       case id =>
         Ast.Comment(t"unrecognized node $id")
 
-    readNode(root.getDocumentElement.nn) match
+    (readNode(root.getDocumentElement.nn): @unchecked) match
       case elem@Ast.Element(_, _, _, _) => XmlDoc(Ast.Root(elem))
-      case _                            => throw Mistake("xylophone: malformed XML")
 
   def normalize(xml: Xml): Seq[Ast] throws XmlAccessError =
-    def recur(path: XmlPath, current: Seq[Ast]): Seq[Ast] = path match
+    def recur(path: XmlPath, current: Seq[Ast]): Seq[Ast] = (path: @unchecked) match
       case Nil =>
         current
 
@@ -151,9 +150,6 @@ object Xml:
           .flatten.collect { case e: Ast.Element if e.name.name == label => e }
 
         recur(tail, next)
-      
-      case _ :: tail =>
-        throw Mistake("should never match")
 
     try recur(xml.pointer, xml.root.content)
     catch case err: XmlAccessError =>
