@@ -77,6 +77,7 @@ case class Mistake(message: String) extends java.lang.Error(message)
 
 object AsMessage:
   given AsMessage[Text] = Message(_)
+  given AsMessage[String] = string => Message(Text(string))
   given AsMessage[Char] = char => Message(Text(char.toString)) // Escape this
   given AsMessage[Int] = int => Message(Text(int.toString))
   given AsMessage[Message] = identity(_)
