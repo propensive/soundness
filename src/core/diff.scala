@@ -17,7 +17,6 @@
 package dissonance
 
 import rudiments.*
-import digression.*
 
 import language.experimental.captureChecking
 
@@ -138,8 +137,8 @@ case class Diff[ElemType](edits: Edit[ElemType]*):
         if inss.length == dels.length && inss.length <= subSize
         then dels.zip(inss).map { (del, ins) => Sub(del.left, ins.right, del.value, ins.value) }
         else
-          val delsSeq = dels.map(_.value.avow).to(IndexedSeq)
-          val inssSeq = inss.map(_.value.avow).to(IndexedSeq)
+          val delsSeq = dels.map(_.value.avow(using Unsafe)).to(IndexedSeq)
+          val inssSeq = inss.map(_.value.avow(using Unsafe)).to(IndexedSeq)
           
           diff(delsSeq, inssSeq, similar).edits.map:
             case Del(index, _) => Del(dels(index).left, dels(index).value)
