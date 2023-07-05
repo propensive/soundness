@@ -18,7 +18,6 @@ package guillotine
 
 import contextual.*
 import rudiments.*
-import digression.*
 import turbulence.*
 import gossamer.*
 import spectacular.*
