@@ -18,7 +18,6 @@ package nettlesome
 
 import rudiments.*
 import spectacular.*
-import digression.*
 import gossamer.*
 
 import scala.quoted.*
@@ -64,7 +63,7 @@ object Nettlesome:
       def parse(text: Text): Ipv4 throws IpAddressError = text.cut(t".") match
         case List(As[Int](byte0), As[Int](byte1), As[Int](byte2), As[Int](byte3)) =>
           for byte <- List(byte0, byte1, byte2, byte3)
-          do if byte < 0 | byte > 255 then throw IpAddressError(Ipv4ByteOutOfRange(byte))
+          do if !(0 <= byte <= 255) then throw IpAddressError(Ipv4ByteOutOfRange(byte))
 
           Ipv4(byte0.toByte, byte1.toByte, byte2.toByte, byte3.toByte)
         
@@ -115,7 +114,7 @@ object Nettlesome:
       if text.length > 4 then throw IpAddressError(Ipv6GroupWrongLength(text))
       
       text.lower.s.foreach: char =>
-        if !(char >= '0' && char <= '9' || char >= 'a' && char <= 'f')
+        if !('0' <= char <= '9' || 'a' <= char <= 'f')
         then throw IpAddressError(Ipv6GroupNotHex(text))
       
       Integer.parseInt(text.s, 16)
