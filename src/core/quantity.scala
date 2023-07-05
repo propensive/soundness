@@ -302,10 +302,6 @@ object QuantitativeMacros:
   private def incompatibleTypes(left: UnitsMap, right: UnitsMap)(using Quotes): Nothing =
     (left.dimensionality.quantityName, right.dimensionality.quantityName) match
       case (Some(leftName), Some(rightName)) =>
-        println(msg"""
-          the left operand represents $leftName, but the right operand represents $rightName; these
-          are incompatible physical quantities
-        """)
         fail(msg"""
           the left operand represents $leftName, but the right operand represents $rightName; these
           are incompatible physical quantities
