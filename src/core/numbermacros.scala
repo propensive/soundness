@@ -39,11 +39,11 @@ object CardinalityMacro:
             
                 if value < lowerBound
                 then fail(msg"""the value $string is less than the lower bound for this value,
-                    $lowerBound""")
+                    ${lowerBound.toString}""")
             
                 if value > upperBound
                 then fail(msg"""the value $string is greater than the upper bound for this value,
-                    $upperBound""")
+                    ${upperBound.toString}""")
   
                 '{${Expr(value)}.asInstanceOf[LeftDoubleType ~ RightDoubleType]}
           
