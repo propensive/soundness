@@ -87,8 +87,8 @@ object Mercator:
           }
     }
     else if applyMethods.length == 0
-    then fail(s"the companion object ${pointType.name} has no candidate apply methods")
-    else fail(s"the companion object ${pointType.name} has more than one candidate apply method")
+    then fail(msg"the companion object ${pointType.name} has no candidate apply methods")
+    else fail(msg"the companion object ${pointType.name} has more than one candidate apply method")
 
   def functor[FunctorType[_]](using Type[FunctorType], Quotes): Expr[Functor[FunctorType]] =
     import quotes.reflect.*
@@ -100,7 +100,7 @@ object Mercator:
         case _                      => false
     
     val pointExpr: Expr[Point[FunctorType]] = Expr.summon[Point[FunctorType]].getOrElse:
-      fail(s"could not find Point value for ${functorType.name}")
+      fail(msg"could not find Point value for ${functorType.name}")
 
     lazy val makeFunctor = '{
       new Functor[FunctorType]:
@@ -114,8 +114,8 @@ object Mercator:
     }
 
     if mapMethods.length == 1 then makeFunctor else if mapMethods.length == 0 then
-      fail(s"the type ${functorType.name} has no map methods")
-    else fail(s"the type ${functorType.name} has more than one possible map method")
+      fail(msg"the type ${functorType.name} has no map methods")
+    else fail(msg"the type ${functorType.name} has more than one possible map method")
     
   def monad[MonadType[_]](using Type[MonadType], Quotes): Expr[Monad[MonadType]] =
     import quotes.reflect.*
@@ -127,7 +127,7 @@ object Mercator:
         case _                      => false
     
     val functorExpr: Expr[Functor[MonadType]] = Expr.summon[Functor[MonadType]].getOrElse:
-      fail(s"could not find Functor value for ${monadType.name}")
+      fail(msg"could not find Functor value for ${monadType.name}")
 
     lazy val makeMonad = '{
       new Monad[MonadType]:
@@ -151,8 +151,8 @@ object Mercator:
 
     if flatMapMethods.length == 1 then makeMonad
     else if flatMapMethods.length == 0
-    then fail(s"the type ${monadType.name} has no flatMap methods")
-    else fail(s"the type ${monadType.name} has more than one possible flatMap method")
+    then fail(msg"the type ${monadType.name} has no flatMap methods")
+    else fail(msg"the type ${monadType.name} has more than one possible flatMap method")
 
 extension [ValueType, FunctorType[_]]
     (using functor: Functor[FunctorType])(value: FunctorType[ValueType])
