@@ -458,16 +458,14 @@ extension (i: Int)
   @targetName("mod24")
   def %%(j: 24): Base24 =
     val x: Int = i%j.pipe { v => if v < 0 then v + 24 else v }
-    x match
+    (x: @unchecked) match
     case v: Base24 => v
-    case _: Int    => throw Mistake("Modular arithmetic should produce value in range")
   
   @targetName("mod60")
   def %%(j: 60): Base60 =
     val x: Int = i%j.pipe { v => if v < 0 then v + 60 else v }
-    x match
+    (x: @unchecked) match
       case v: Base60 => v
-      case _: Int    => throw Mistake("Modular arithmetic should produce value in range")
 
 extension (inline double: Double)
   inline def am: Time = ${Aviation.validTime('double, false)}
