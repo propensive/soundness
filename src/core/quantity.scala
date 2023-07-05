@@ -17,7 +17,6 @@
 package quantitative
 
 import rudiments.*
-import gossamer.*
 
 import scala.quoted.*
 import scala.compiletime.*
@@ -174,10 +173,10 @@ object QuantitativeMacros:
                   "the physical quantity "+name
                 .getOrElse("the same quantity")
   
-              fail(txt"""
+              fail(msg"""
                 the operands both represent ${dimensionName}, but there is no principal unit
                 specified for this dimension
-              """.s)
+              """)
 
             case Some('{$expr: principalUnit}) => (Type.of[principalUnit]: @unchecked) match
               case '[PrincipalUnit[dimensionType, units]] =>
@@ -187,7 +186,7 @@ object QuantitativeMacros:
                       case typeRef@TypeRef(_, _) => UnitRef(typeRef.asType, typeRef.show)
                   
                   case other =>
-                    fail(s"principal units had an unexpected type: $other")
+                    fail(msg"principal units had an unexpected type: ${other.show}")
         
     
     override def equals(that: Any): Boolean = that.asMatchable match
@@ -220,14 +219,14 @@ object QuantitativeMacros:
               val dimensionName = quantityName.map("the physical quantity "+_).getOrElse:
                   "the same physical quantity"
               
-              fail(txt"""
+              fail(msg"""
                 both operands represent $dimensionName, but the coversion ratio between them is not
                 known
   
                 To provide the conversion ratio, please provide a contextual instance in scope, with
                 the type, `Ratio[${from.name}[1] & ${to.name}[-1]]`, or `Ratio[${to.name}[1] &
                 ${from.name}[-1]]`.
-              """.s)
+              """)
 
           case Some('{$ratio: ratioType}) => (Type.of[ratioType]: @unchecked) match
             case '[Ratio[?, double]] => (TypeRepr.of[double].asMatchable: @unchecked) match
@@ -262,8 +261,6 @@ object QuantitativeMacros:
     recur(units.dimensions, units, init)
   
   def collectUnits[UnitsType <: Measure: Type](using Quotes): Expr[Map[Text, Int]] =
-    import quotes.reflect.*
-    
     def recur(expr: Expr[Map[Text, Int]], todo: List[UnitPower]): Expr[Map[Text, Int]] =
       todo match
         case Nil =>
@@ -286,8 +283,6 @@ object QuantitativeMacros:
       (leftExpr: Expr[Quantity[LeftType]], rightExpr: Expr[Quantity[RightType]], division: Boolean)
       (using Quotes)
       : Expr[Any] =
-    import quotes.reflect.*
-
     val left: UnitsMap = UnitsMap[LeftType]
     val right: UnitsMap = UnitsMap[RightType]
     
@@ -307,30 +302,38 @@ object QuantitativeMacros:
   private def incompatibleTypes(left: UnitsMap, right: UnitsMap)(using Quotes): Nothing =
     (left.dimensionality.quantityName, right.dimensionality.quantityName) match
       case (Some(leftName), Some(rightName)) =>
-        fail(txt"""
+        println(msg"""
           the left operand represents $leftName, but the right operand represents $rightName; these
           are incompatible physical quantities
-        """.s)
+        """)
+        fail(msg"""
+          the left operand represents $leftName, but the right operand represents $rightName; these
+          are incompatible physical quantities
+        """)
       
       case _ =>
-        fail("the operands represent different physical quantities")
+        fail(msg"the operands represent different physical quantities")
 
   def greaterThan
       [LeftType <: Measure: Type, RightType <: Measure: Type]
-      (leftExpr: Expr[Quantity[LeftType]], rightExpr: Expr[Quantity[RightType]], closed: Boolean)
+      (leftExpr: Expr[Quantity[LeftType]], rightExpr: Expr[Quantity[RightType]],
+          strict: Expr[Boolean], invert: Expr[Boolean])
       (using Quotes)
       : Expr[Boolean] =
     import quotes.reflect.*
 
     val left: UnitsMap = UnitsMap[LeftType]
     val right: UnitsMap = UnitsMap[RightType]
+    val closed = !strict.valueOrAbort
 
     val (left2, leftValue) = normalize(left, right, '{$leftExpr.underlying})
     val (right2, rightValue) = normalize(right, left, '{$rightExpr.underlying})
 
     if left2 != right2 then incompatibleTypes(left, right)
 
-    if closed then '{$leftValue >= $rightValue} else '{$leftValue > $rightValue}
+    if !invert.valueOrAbort then
+      if closed then '{$leftValue <= $rightValue} else '{$leftValue < $rightValue}
+    else if closed then '{$leftValue >= $rightValue} else '{$leftValue > $rightValue}
 
   def add
       [LeftType <: Measure: Type, RightType <: Measure: Type]
@@ -360,7 +363,6 @@ object QuantitativeMacros:
       [UnitsType <: Measure: Type, NormType[power <: Nat] <: Units[power, ?]: Type]
       (expr: Expr[Quantity[UnitsType]])(using Quotes)
       : Expr[Any] =
-    import quotes.reflect.*
     val units: UnitsMap = UnitsMap[UnitsType]
     val norm: UnitsMap = UnitsMap[NormType[1]]
     val (units2, value) = normalize(units, norm, '{$expr.underlying}, true)
@@ -375,7 +377,7 @@ object QuantitativeMacros:
   def describe[UnitsType <: Measure: Type](using Quotes): Expr[Text] =
     UnitsMap[UnitsType].dimensionality.quantityName match
       case Some(name) => '{Text(${Expr(name)})}
-      case None       => fail("there is no descriptive name for this physical quantity")
+      case None       => fail(msg"there is no descriptive name for this physical quantity")
 
   private case class BitSlice(unitPower: UnitPower, max: Int, width: Int, shift: Int):
     def ones: Long = -1L >>> (64 - width)
@@ -393,10 +395,10 @@ object QuantitativeMacros:
           
           dimension.mm: current =>
             if unitPower.ref.dimensionRef != current
-            then fail(txt"""
+            then fail(msg"""
               the Tally type incorrectly mixes units of ${unitPower.ref.dimensionRef.name} and
               ${current.name}
-            """.s)
+            """)
           
           untuple[tail](unitPower.ref.dimensionRef, unitPower :: result)
         
@@ -435,23 +437,23 @@ object QuantitativeMacros:
           case BitSlice(unitPower, max, width, shift) :: tail =>
             unitValue.value match
               case Some(unitValue) =>
-                if unitValue < 0 then fail(txt"""
+                if unitValue < 0 then fail(msg"""
                   the value for the ${unitPower.ref.name} unit ($unitValue) cannot be a negative
                   number
-                """.s)
-                else if unitValue >= max then fail(txt"""
+                """)
+                else if unitValue >= max then fail(msg"""
                   the value for the ${unitPower.ref.name} unit ${unitValue} must be less than ${max}
-                """.s)
+                """)
                 recur(tail, valuesTail, '{$expr + (${Expr(unitValue.toLong)} << ${Expr(shift)})})
               
               case None =>
                 recur(tail, valuesTail, '{$expr + ($unitValue.toLong << ${Expr(shift)})})
           
           case Nil =>
-            fail(txt"""
+            fail(msg"""
               ${inputs.length} unit values were provided, but this Tally only has ${slices.length}
               units
-            """.s)
+            """)
     
     '{Tally.fromLong[UnitsType](${recur(bitSlices[UnitsType].reverse, inputs, '{0L})})}
 
@@ -514,8 +516,6 @@ object QuantitativeMacros:
       (tally: Expr[Tally[TallyUnitsType]], multiplier: Expr[Double], division: Boolean)
       (using Quotes)
       : Expr[Any] =
-    import quotes.reflect.*
-    
     val principal = bitSlices[TallyUnitsType].head.unitPower.ref.dimensionRef.principal
     
     (principal.power(1).asType: @unchecked) match
@@ -532,8 +532,6 @@ object QuantitativeMacros:
       (tally: Expr[Tally[TallyUnitsType]])
       (using Quotes)
       : Expr[Any] =
-    import quotes.reflect.*
-    
     val slices = bitSlices[TallyUnitsType]
     val quantityUnit = slices.head.unitPower.ref.dimensionRef.principal
 
@@ -600,7 +598,7 @@ object QuantitativeMacros:
     val lookupUnit = readUnitPower(TypeRepr.of[UnitType])
     
     val bitSlice: BitSlice = slices.find(_.unitPower == lookupUnit).getOrElse:
-      fail("the Tally does not include this unit")
+      fail(msg"the Tally does not include this unit")
 
     '{(($value.longValue >>> ${Expr(bitSlice.shift)}) & ${Expr(bitSlice.ones)}).toInt}
   

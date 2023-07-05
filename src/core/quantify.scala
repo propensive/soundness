@@ -273,7 +273,6 @@ object PhysicalQuantity:
   erased given volumetricFlowRate: PhysicalQuantity[VolumetricFlowRate, "volumetric flow rate"] =
     ###
   
-
 sealed trait Measure
 
 trait Units[PowerType <: Nat, DimensionType <: Dimension] extends Measure
@@ -360,6 +359,17 @@ object Quantitative:
     given convertInt[UnitsType <: Measure]: Conversion[Int, Quantity[UnitsType]] = int =>
       Quantity(int.toDouble)
 
+    given inequality
+        [UnitsType <: Measure, UnitsType2 <: Measure]
+        : Inequality[Quantity[UnitsType], Quantity[UnitsType2]] with
+      inline def compare
+          (inline left: Quantity[UnitsType], inline right: Quantity[UnitsType2],
+              inline strict: Boolean, inline greaterThan: Boolean)
+          : Boolean =
+        ${QuantitativeMacros.greaterThan[UnitsType, UnitsType2]('left, 'right, 'strict,
+            'greaterThan)}
+      
+
     inline given [UnitsType <: Measure](using Decimalizer): Show[Quantity[UnitsType]] =
       new Show[Quantity[UnitsType]]:
         def apply(value: Quantity[UnitsType]): Text = value.render
@@ -430,22 +440,6 @@ extension [UnitsType <: Measure](inline quantity: Quantity[UnitsType])
   inline def render(using Decimalizer): Text = t"${quantity.value} ${Quantity.renderUnits(units)}"
 
   inline def dimension: Text = ${QuantitativeMacros.describe[UnitsType]}
-
-  @targetName("greaterThan")
-  inline def >[UnitsType2 <: Measure](that: Quantity[UnitsType2]): Boolean =
-    ${QuantitativeMacros.greaterThan[UnitsType, UnitsType2]('quantity, 'that, false)}
-  
-  @targetName("greaterThanOrEqualTo")
-  inline def >=[UnitsType2 <: Measure](that: Quantity[UnitsType2]): Boolean =
-    ${QuantitativeMacros.greaterThan[UnitsType, UnitsType2]('quantity, 'that, true)}
-  
-  @targetName("lessThanOrEqualTo")
-  inline def <=[UnitsType2 <: Measure](that: Quantity[UnitsType2]): Boolean =
-    ${QuantitativeMacros.greaterThan[UnitsType2, UnitsType]('that, 'quantity, true)}
-  
-  @targetName("lessThan")
-  inline def <[UnitsType2 <: Measure](that: Quantity[UnitsType2]): Boolean =
-    ${QuantitativeMacros.greaterThan[UnitsType2, UnitsType]('that, 'quantity, false)}
 
 extension (value: Double)
   @targetName("times")
