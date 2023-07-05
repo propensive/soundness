@@ -117,10 +117,10 @@ object Adversaria:
     val field = fn.asTerm match
       case Inlined(_, _, Block(List(DefDef(_, _, _, Some(Select(_, term)))), _)) =>
         targetType.typeSymbol.caseFields.find(_.name == term).getOrElse:
-          fail(s"the member $term is not a case class field")
+          fail(msg"the member $term is not a case class field")
       
       case _ =>
-        fail("the lambda must be a simple reference to a case class field")
+        fail(msg"the lambda must be a simple reference to a case class field")
 
     Expr.ofList:
       field.annotations.map(_.asExpr).collect:
@@ -139,5 +139,5 @@ object Adversaria:
     if annotations.isEmpty
     then
       val typeName = TypeRepr.of[AnnotationType].show
-      fail(s"the type ${targetType.show} did not have the annotation $typeName")
+      fail(msg"the type ${targetType.show} did not have the annotation $typeName")
     else '{Annotations[AnnotationType, TargetType](${Expr.ofList(annotations)}*)}
