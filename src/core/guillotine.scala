@@ -227,21 +227,21 @@ object Sh:
         case _ =>
           state
           
-    def parse(state: State, next: Text): State = next.chars.foldLeft(state):
-      case (State(Awaiting, esc, args), ' ')          => State(Awaiting, false, args)
-      case (State(Quotes1, false, rest :+ cur), '\\') => State(Quotes1, false, rest :+ t"$cur\\")
-      case (State(ctx, false, args), '\\')            => State(ctx, true, args)
-      case (State(Unquoted, esc, args), ' ')          => State(Awaiting, false, args)
-      case (State(Quotes1, esc, args), '\'')          => State(Unquoted, false, args)
-      case (State(Quotes2, false, args), '"')         => State(Unquoted, false, args)
-      case (State(Unquoted, false, args), '"')        => State(Quotes2, false, args)
-      case (State(Unquoted, false, args), '\'')       => State(Quotes1, false, args)
-      case (State(Awaiting, false, args), '"')        => State(Quotes2, false, args :+ t"")
-      case (State(Awaiting, false, args), '\'')       => State(Quotes1, false, args :+ t"")
-      case (State(Awaiting, esc, args), char)         => State(Unquoted, false, args :+ t"$char")
-      case (State(ctx, esc, Nil), char)               => State(ctx, false, List(t"$char"))
-      case (State(ctx, esc, rest :+ cur), char)       => State(ctx, false, rest :+ t"$cur$char")
-      case _                                          => throw Mistake("impossible parser state")
+    def parse(state: State, next: Text): State = next.chars.foldLeft(state): (state, next) =>
+      ((state, next): @unchecked) match
+        case (State(Awaiting, esc, args), ' ')          => State(Awaiting, false, args)
+        case (State(Quotes1, false, rest :+ cur), '\\') => State(Quotes1, false, rest :+ t"$cur\\")
+        case (State(ctx, false, args), '\\')            => State(ctx, true, args)
+        case (State(Unquoted, esc, args), ' ')          => State(Awaiting, false, args)
+        case (State(Quotes1, esc, args), '\'')          => State(Unquoted, false, args)
+        case (State(Quotes2, false, args), '"')         => State(Unquoted, false, args)
+        case (State(Unquoted, false, args), '"')        => State(Quotes2, false, args)
+        case (State(Unquoted, false, args), '\'')       => State(Quotes1, false, args)
+        case (State(Awaiting, false, args), '"')        => State(Quotes2, false, args :+ t"")
+        case (State(Awaiting, false, args), '\'')       => State(Quotes1, false, args :+ t"")
+        case (State(Awaiting, esc, args), char)         => State(Unquoted, false, args :+ t"$char")
+        case (State(ctx, esc, Nil), char)               => State(ctx, false, List(t"$char"))
+        case (State(ctx, esc, rest :+ cur), char)       => State(ctx, false, rest :+ t"$cur$char")
 
   given Insertion[Params, Text] = value => Params(value)
   given Insertion[Params, List[Text]] = xs => Params(xs*)
