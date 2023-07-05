@@ -39,7 +39,22 @@ case class Message(textParts: List[Text], subs: List[Message] = Nil):
 
     recur(initial, textParts, subs, 0)
 
-  def text: Text = Text(fold[String]("") { (acc, next, level) => acc+next })
+  def text: Text = unwrap(fold[String]("") { (acc, next, level) => acc+next })
+  
+  def unwrap(string: String): Text =
+    val buf: StringBuilder = StringBuilder()
+    
+    def recur(lines: List[String], break: Boolean): Text = lines match
+      case Nil =>
+        Text(buf.toString)
+      
+      case line :: tail =>
+        if line.forall(_.isWhitespace) then recur(tail, true) else
+          buf.append(if !break then " " else "\n")
+          buf.append(line.trim.nn.replaceAll("\\s+", " "))
+          recur(tail, false)
+    
+    recur(string.split("\n").nn.map(_.nn).to(List), false)
 
 transparent abstract class Error(val message: Message, val cause: Maybe[Error] = Unset)
 extends Exception():
