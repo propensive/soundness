@@ -26,15 +26,15 @@ import digression.*
 import scala.io.*
 
 object TzdbError:
-  given Show[Issue] =
-    case Issue.CouldNotParseTime(time) => t"could not parse time $time"
-    case Issue.UnexpectedRule          => t"unexpected rule"
-    case Issue.UnexpectedLink          => t"unexpected link"
-    case Issue.UnexpectedZoneInfo      => t"unexpected zone info"
-    case Issue.BadZoneInfo(line)       => t"bad zone information: ${line.join(t"[", t"   ", t"]")}"
-    case Issue.BadName(name)           => t"the name $name is not valid"
-    case Issue.UnparsableDate          => t"the date could not be parsed"
-    case Issue.ZoneFileMissing(name)   => t"the zone file $name could not be found on the classpath"
+  given AsMessage[Issue] =
+    case Issue.CouldNotParseTime(time) => msg"could not parse time $time"
+    case Issue.UnexpectedRule          => msg"unexpected rule"
+    case Issue.UnexpectedLink          => msg"unexpected link"
+    case Issue.UnexpectedZoneInfo      => msg"unexpected zone info"
+    case Issue.BadZoneInfo(line)       => msg"bad zone information: ${line.join(t"[", t"   ", t"]")}"
+    case Issue.BadName(name)           => msg"the name $name is not valid"
+    case Issue.UnparsableDate          => msg"the date could not be parsed"
+    case Issue.ZoneFileMissing(name)   => msg"the zone file $name could not be found on the classpath"
 
   enum Issue:
     case CouldNotParseTime(time: Text)
