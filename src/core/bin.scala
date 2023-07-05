@@ -19,6 +19,52 @@ package rudiments
 import scala.quoted.*
 
 object Rudiments:
+  def upperBound
+      (expr: Expr[Boolean], bound: Expr[Int | Double | Char], strict: Boolean)
+      (using Quotes)
+      : Expr[Boolean] =
+    val value = expr match
+      case '{($bound: Int) < ($middle: Int)}        => middle
+      case '{($bound: Int) <= ($middle: Int)}       => middle
+      case '{($bound: Int) < ($middle: Double)}     => middle
+      case '{($bound: Int) <= ($middle: Double)}    => middle
+      case '{($bound: Int) < ($middle: Char)}       => middle
+      case '{($bound: Int) <= ($middle: Char)}      => middle
+      case '{($bound: Double) < ($middle: Int)}     => middle
+      case '{($bound: Double) <= ($middle: Int)}    => middle
+      case '{($bound: Double) < ($middle: Double)}  => middle
+      case '{($bound: Double) <= ($middle: Double)} => middle
+      case '{($bound: Char) < ($middle: Int)}       => middle
+      case '{($bound: Char) <= ($middle: Int)}      => middle
+      case '{($bound: Char) < ($middle: Char)}      => middle
+      case '{($bound: Char) <= ($middle: Char)}     => middle
+      
+      case _ =>
+        fail(s"this cannot be written as a range expression")
+    
+    val expr2: Expr[Boolean] = value match
+      case '{$value: Int}    => bound match
+        case '{$bound: Int}    => if strict then '{$value < $bound} else '{$value <= $bound}
+        case '{$bound: Double} => if strict then '{$value < $bound} else '{$value <= $bound}
+        case '{$bound: Char}   => if strict then '{$value < $bound} else '{$value <= $bound}
+        case _                 => fail(s"this cannot be written as a range expression")
+      case '{$value: Double} => bound match
+        case '{$bound: Int}    => if strict then '{$value < $bound} else '{$value <= $bound}
+        case '{$bound: Double} => if strict then '{$value < $bound} else '{$value <= $bound}
+        case '{$bound: Char}   => if strict then '{$value < $bound} else '{$value <= $bound}
+        case _                 => fail(s"this cannot be written as a range expression")
+      case '{$value: Char}   => bound match
+        case '{$bound: Int}    => if strict then '{$value < $bound} else '{$value <= $bound}
+        case '{$bound: Double} => if strict then '{$value < $bound} else '{$value <= $bound}
+        case '{$bound: Char}   => if strict then '{$value < $bound} else '{$value <= $bound}
+        case _                 => fail(s"this cannot be written as a range expression")
+      
+      case _ =>
+        fail(s"this cannot be written as a range expression")
+      
+    '{$expr && $expr2}
+      
+  
   def bin(expr: Expr[StringContext])(using Quotes): Expr[AnyVal] =
     import quotes.reflect.*
     val bits = expr.valueOrAbort.parts.head
@@ -71,3 +117,12 @@ object Rudiments:
 extension (inline context: StringContext)
   transparent inline def bin(): AnyVal = ${Rudiments.bin('context)}
   transparent inline def hex(): IArray[Byte] = ${Rudiments.hex('context)}
+
+extension (inline expr: Boolean)
+  @targetName("lt")
+  inline def <(upperBound: Int | Char | Double): Boolean =
+    ${Rudiments.upperBound('expr, 'upperBound, true)}
+  
+  @targetName("lte")
+  inline def <=(upperBound: Int | Char | Double): Boolean =
+    ${Rudiments.upperBound('expr, 'upperBound, false)}
