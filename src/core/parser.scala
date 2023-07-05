@@ -95,60 +95,60 @@ object JsonParseError:
     case MultipleDecimalPoints
     case ExpectedDigit(found: Char)
   
-  given Show[Issue] =
+  given AsMessage[Issue] =
     case Issue.EmptyInput =>
-      t"the input was empty"
+      msg"the input was empty"
 
     case Issue.UnexpectedChar(found) =>
-      t"the character $found was not expected"
+      msg"the character $found was not expected"
 
     case Issue.ExpectedTrue =>
-      t"true was expected"
+      msg"true was expected"
 
     case Issue.ExpectedFalse =>
-      t"false was expected"
+      msg"false was expected"
 
     case Issue.ExpectedNull =>
-      t"null was expected"
+      msg"null was expected"
 
     case Issue.ExpectedSomeValue(char) =>
-      t"a value was expected but instead found $char"
+      msg"a value was expected but instead found $char"
 
     case Issue.ExpectedColon(found) =>
-      t"a colon was expected but instead found $found"
+      msg"a colon was expected but instead found $found"
 
     case Issue.InvalidWhitespace =>
-      t"invalid whitespace was found"
+      msg"invalid whitespace was found"
 
     case Issue.ExpectedString(found) =>
-      t"expected a string but instead found $found"
+      msg"expected a string but instead found $found"
 
     case Issue.ExpectedHexDigit(found) =>
-      t"expected a hexadecimal digit"
+      msg"expected a hexadecimal digit"
 
     case Issue.PrematureEnd =>
-      t"the stream was ended prematurely"
+      msg"the stream was ended prematurely"
 
     case Issue.NumberHasLeadingZero =>
-      t"a number cannot start with a zero except when followed by a decimal point"
+      msg"a number cannot start with a zero except when followed by a decimal point"
 
     case Issue.SpuriousContent(found) =>
-      t"$found was found after the full JSON value was read"
+      msg"$found was found after the full JSON value was read"
 
     case Issue.LeadingDecimalPoint =>
-      t"a number cannot start with a decimal point"
+      msg"a number cannot start with a decimal point"
 
     case Issue.NotEscaped(char) =>
-      t"the character $char must be escaped with a backslash"
+      msg"the character $char must be escaped with a backslash"
 
     case Issue.IncorrectEscape(char) =>
-      t"the character $char was escaped with a backslash unnecessarily"
+      msg"the character $char was escaped with a backslash unnecessarily"
 
     case Issue.MultipleDecimalPoints =>
-      t"the number cannot contain more than one decimal point"
+      msg"the number cannot contain more than one decimal point"
 
     case Issue.ExpectedDigit(found) =>
-      t"expected a digit but instead found $found"
+      msg"expected a digit but instead found $found"
 
 
 import JsonParseError.Issue
