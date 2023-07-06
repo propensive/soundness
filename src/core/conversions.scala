@@ -111,4 +111,5 @@ trait Irrefutable[-ValueType, +ResultType]:
   def unapply(value: ValueType): ResultType
 
 object As:
-  def unapply[T](v: Any)(using ext: Unapply[v.type, T]): Option[T] = ext.unapply(v)
+  def unapply[MatchType](scrutinee: Any)(using Unapply[scrutinee.type, MatchType]): Option[MatchType] =
+    summon[Unapply[scrutinee.type, MatchType]].unapply(scrutinee)
