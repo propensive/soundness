@@ -18,30 +18,28 @@ package imperial
 
 import probably.*
 import gossamer.*
-import turbulence.*
+import ambience.*
 import rudiments.*
-import stdouts.stdout
-import anticipation.integration.javaIo
-import eucalyptus.*
+import anticipation.*, fileApi.javaIo
 
-given Log(_ => SystemOut.sink)
+import unsafeExceptions.canThrowAny
 
-given Environment({
-  case t"HOME" => Some(t"/home/work")
-  case _       => None
-})
+given Environment = StandardEnvironment({
+  case t"HOME" => t"/home/work"
+  case _       => Unset
+}, { case _ => Unset })
 
 object Tests extends Suite(t"Imperial tests"):
   def run(): Unit =
-    println("Hello")
+    
     test(t"Home directory"):
-      Home().getAbsolutePath
+      Text(Home().getAbsolutePath.nn)
     .assert(_ == t"/home/work")
 
     test(t"Cache directory"):
-      Home.Cache().getAbsolutePath
+      Text(Home.Cache().getAbsolutePath.nn)
     .assert(_ == t"/home/work/.cache")
     
     test(t"~/.local/bin path"):
-      Home.Local.Bin().getAbsolutePath
+      Text(Home.Local.Bin().getAbsolutePath.nn)
     .assert(_ == t"/home/work/.local/bin")
