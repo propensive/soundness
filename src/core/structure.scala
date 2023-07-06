@@ -46,13 +46,11 @@ case class BaseLayout
       case None         => absolutePath
       case Some(envVar) => summon[Environment](Text(envVar)).fm(absolutePath)(_.s)
 
-    summon[GenericPathMaker[T]].makePath(path, readOnly = readOnly) match
-      case None      => throw RuntimeException("failed to parse: '"+path+"'")
-      case Some(dir) => dir
+    makeGenericPath(path, readOnly = readOnly)
 
 object Xdg extends BaseLayout(Unset)(using BaseLayout.Dir(false, Nil)):
   override def apply[T]()(using GenericPathMaker[T], Environment): T =
-    summon[GenericPathMaker[T]].makePath("/", readOnly = true).get
+    makeGenericPath("/", readOnly = true)
 
   object Boot extends BaseLayout("boot", readOnly = true)
   object Efi extends BaseLayout("efi", readOnly = true)

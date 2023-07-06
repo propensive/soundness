@@ -29,7 +29,7 @@ given Environment = StandardEnvironment({
   case _       => Unset
 }, { case _ => Unset })
 
-given GenericPathMaker[Text] = (string, readOnly) => Some(Text(string))
+given GenericPathMaker[Text] = (string, readOnly) => Text(string)
 
 object Tests extends Suite(t"Imperial tests"):
   def run(): Unit =
