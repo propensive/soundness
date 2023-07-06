@@ -5,13 +5,12 @@ target imperial/test
 
 repo propensive/digression
 repo propensive/ambience
-repo propensive/diuretic
 
 project imperial
   module core
     compiler  scala
     sources   src/core
-    include   anticipation/path digression/core ambience/core diuretic/core
+    include   anticipation/path digression/core ambience/core
 
   module test
     compiler  scala

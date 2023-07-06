@@ -17,23 +17,29 @@
 package imperial
 
 import rudiments.*
-import digression.*
 import ambience.*
 import anticipation.*
 
 object BaseLayout:
-  case class Dir(home: Boolean, path: String)
+  case class Dir(home: Boolean, path: List[String]):
+    @targetName("child")
+    def /(name: String): Dir = Dir(home, name :: path)
+    
+    def render(homeDir: String): String =
+      val slash = if path.isEmpty then "" else "/"
+      s"${if home then homeDir else ""}$slash${path.reverse.mkString("/")}"
 
-case class BaseLayout(private val part: String, private val envVar: Maybe[String] = Unset,
-                          readOnly: Boolean = false)
-                     (using baseDir: BaseLayout.Dir):
+case class BaseLayout
+    (private val part: Maybe[String], private val envVar: Maybe[String] = Unset,
+        readOnly: Boolean = false)
+    (using baseDir: BaseLayout.Dir):
+  
   def absolutePath(using env: Environment): String =
-    if baseDir.home then
-      val home: Text = unsafely(env(Text("HOME")).or(env.property(Text("user.home"))))
-      val slash = if home.s.endsWith("/") then "" else "/"
-      s"$home$slash${baseDir.path}/$part" else s"${baseDir.path}/$part"
+    val home: String = env(Text("HOME")).or(env.property(Text("user.home"))).s
+    val home2: String = if home.endsWith("/") then home.dropRight(1) else home
+    part.mm(baseDir / _).or(baseDir).render(home2)
 
-  given newBaseDir: BaseLayout.Dir = BaseLayout.Dir(baseDir.home, s"${baseDir.path}/$part")
+  given newBaseDir: BaseLayout.Dir = BaseLayout.Dir(baseDir.home, part.mm(_ :: baseDir.path).or(baseDir.path))
 
   def apply[T]()(using GenericPathMaker[T], Environment): T =
     val path: String = envVar.option match
@@ -44,7 +50,7 @@ case class BaseLayout(private val part: String, private val envVar: Maybe[String
       case None      => throw RuntimeException("failed to parse: '"+path+"'")
       case Some(dir) => dir
 
-object Xdg extends BaseLayout("")(using BaseLayout.Dir(false, "")):
+object Xdg extends BaseLayout(Unset)(using BaseLayout.Dir(false, Nil)):
   override def apply[T]()(using GenericPathMaker[T], Environment): T =
     summon[GenericPathMaker[T]].makePath("/", readOnly = true).get
 
@@ -84,7 +90,7 @@ object Xdg extends BaseLayout("")(using BaseLayout.Dir(false, "")):
     object Sys extends BaseLayout("sys", readOnly = true)
   object Sys extends BaseLayout("sys", readOnly = true)
 
-object Home extends BaseLayout("")(using BaseLayout.Dir(true, "")):
+object Home extends BaseLayout(Unset)(using BaseLayout.Dir(true, Nil)):
   object Cache extends BaseLayout(".cache", "XDG_CACHE_HOME")
   object Config extends BaseLayout(".config", "XDG_CONFIG_HOME")
   object Local extends BaseLayout(".local"):
