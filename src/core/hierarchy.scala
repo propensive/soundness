@@ -190,7 +190,7 @@ trait Pathlike[-PathType <: Matchable, NameType <: Label, AscentType]:
 trait MainRoot[PathType <: Matchable]:
   def empty(): PathType
 
-trait RootParser[+RootType]:
+trait RootParser[PathType <: Matchable, +RootType]:
   def parse(text: Text): Maybe[(RootType, Text)]
   
 @capability
@@ -203,7 +203,7 @@ object Reachable:
       (using path: CanThrow[PathError])
       [NameType <: Label, RootType]
       (using reachable: Reachable[PathType, NameType, RootType],
-          rootParser: RootParser[RootType],
+          rootParser: RootParser[PathType, RootType],
           creator: PathCreator[PathType, NameType, RootType]): Decoder[PathType] =
     new Decoder[PathType]:
       def decode(text: Text): PathType =

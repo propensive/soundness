@@ -37,7 +37,7 @@ object Example:
 
     given pathCreator: PathCreator[RootedPath, Forbidden, Drive] = RootedPath(_, _)
 
-    given rootParser: RootParser[Drive] with
+    given rootParser: RootParser[RootedPath, Drive] with
       def parse(text: Text): Maybe[(Drive, Text)] = text.only:
         case r"$letter([a-zA-Z]):\\.*" => (Drive(unsafely(letter(0)).toUpper), text.drop(3))
 
