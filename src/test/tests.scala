@@ -240,19 +240,19 @@ object Tests extends Suite(t"Serpentine Tests"):
       .assert(_ == List(t"serpentine: a path element may not contain the character 'a'"))
 
       test(t"Parse a path name with an invalid character"):
-        unsafely(capture[PathError, PathName[".*x.*"]](PathName[".*x.*"](t"excluded")))
+        unsafely(capture[PathError](PathName[".*x.*"](t"excluded")))
       .assert(_ == PathError(PathError.Reason.InvalidChar('x')))
       
       test(t"Parse a path name with an invalid suffix"):
-        unsafely(capture[PathError, PathName[".*txt"]](PathName[".*txt"](t"bad.txt")))
+        unsafely(capture[PathError](PathName[".*txt"](t"bad.txt")))
       .assert(_ == PathError(PathError.Reason.InvalidSuffix(t"txt")))
 
       test(t"Parse a path name with an invalid prefix"):
-        unsafely(capture[PathError, PathName["bad.*"]](PathName["bad.*"](t"bad.txt")))
+        unsafely(capture[PathError](PathName["bad.*"](t"bad.txt")))
       .assert(_ == PathError(PathError.Reason.InvalidPrefix(t"bad")))
       
       test(t"Parse a path name with an invalid name"):
-        unsafely(capture[PathError, PathName["bad\\.txt"]](PathName["bad\\.txt"](t"bad.txt")))
+        unsafely(capture[PathError](PathName["bad\\.txt"](t"bad.txt")))
       .assert(_ == PathError(PathError.Reason.InvalidName(t"bad\\.txt")))
 
     suite(t"Relative path tests"):
