@@ -22,6 +22,7 @@ import gossamer.*
 import rudiments.*
 import digression.*
 import parasite.*
+import spectacular.*
 import serpentine.*
 import anticipation.*
 
@@ -31,7 +32,7 @@ import java.nio.file as jnf
 import jnf.StandardWatchEventKinds.*
 
 case class InotifyError()
-extends Error(err"the limit on the number of paths that can be watched has been exceeded")
+extends Error(msg"the limit on the number of paths that can be watched has been exceeded")
 
 extension [Dir: GenericDirectoryMaker: GenericDirectoryReader](dirs: Seq[Dir])(using Monitor)
   def watch()(using Log, GenericWatchService[Dir]): Watcher[Dir] throws InotifyError = Watcher[Dir](dirs*)
@@ -57,7 +58,7 @@ case class Watcher[Dir](private val svc: jnf.WatchService)
   private val dirs: HashMap[jnf.Path, jnf.WatchKey] = HashMap()
   
   private def dirPath(dir: Dir): jnf.Path = jnf.Paths.get(fromDir.directoryPath(dir).show.s).nn
-  private def toDir(path: jnf.Path): Dir = mkdir.makeDirectory(Showable(path).show.s).get
+  private def toDir(path: jnf.Path): Dir = mkdir.makeDirectory(path.toString.show.s)
 
   private val funnel = Funnel[Maybe[WatchEvent]]
   private val pumpTask = Task(t"watcher")(pump())
@@ -85,20 +86,20 @@ case class Watcher[Dir](private val svc: jnf.WatchService)
       case _              => throw Mistake("Should never match")
     
     val relative = eventCtx match
-      case path: jnf.Path => Relative.parse(Showable(path).show)
+      case path: jnf.Path => path.toString.show
       case _              => throw Mistake("Should never match")
     
     try event.kind match
       case ENTRY_CREATE =>
         if absolute.toFile.nn.isDirectory
-        then List(WatchEvent.NewDirectory(Showable(base).show, relative))
-        else List(WatchEvent.NewFile(Showable(base).show, relative))
+        then List(WatchEvent.NewDirectory(base.toString.show, relative))
+        else List(WatchEvent.NewFile(base.toString.show, relative))
       
       case ENTRY_MODIFY =>
-        List(WatchEvent.Modify(Showable(base).show, relative))
+        List(WatchEvent.Modify(base.toString.show, relative))
       
       case ENTRY_DELETE =>
-        List(WatchEvent.Delete(Showable(base).show, relative))
+        List(WatchEvent.Delete(base.toString.show, relative))
       
       case _ =>
         Nil
@@ -110,7 +111,7 @@ case class Watcher[Dir](private val svc: jnf.WatchService)
     val watchKey = path.register(svc, ENTRY_CREATE, ENTRY_MODIFY, ENTRY_DELETE).nn
     watches(watchKey) = path
     dirs(path) = watchKey
-    Log.info(t"Started watching ${Showable(path).show}")
+    Log.info(t"Started watching ${path.toString.show}")
   
   def remove(dir: Dir)(using Log): Unit = synchronized:
     val path = dirPath(dir)
@@ -118,16 +119,16 @@ case class Watcher[Dir](private val svc: jnf.WatchService)
     watchKey.cancel()
     dirs.remove(path)
     watches.remove(watchKey)
-    Log.info(t"Stopped watching ${Showable(path).show}")
+    Log.info(t"Stopped watching ${path.toString.show}")
     if dirs.isEmpty then funnel.put(Unset)
   
   def directories: Set[Dir] = dirs.keySet.to(Set).map(toDir(_))
 
 enum WatchEvent:
-  case NewFile(dir: Text, file: Relative)
-  case NewDirectory(dir: Text, directory: Relative)
-  case Modify(dir: Text, file: Relative)
-  case Delete(dir: Text, file: Relative)
+  case NewFile(dir: Text, file: Text)
+  case NewDirectory(dir: Text, directory: Text)
+  case Modify(dir: Text, file: Text)
+  case Delete(dir: Text, file: Text)
 
   def dir: Text
 
@@ -138,7 +139,7 @@ enum WatchEvent:
       case Modify(_, file)       => file
       case Delete(_, path)       => path
 
-      mkdir.makePath(Showable(jnf.Paths.get(dir.s, relPath.show.s).nn.normalize.nn).show.s).get
+      mkdir.makePath(jnf.Paths.get(dir.s, relPath.show.s).nn.normalize.nn.toString.show.s)
 
 export WatchEvent.{NewFile, NewDirectory, Modify, Delete}
 
