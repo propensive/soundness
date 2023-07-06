@@ -20,8 +20,7 @@ Directory](https://specifications.freedesktop.org/basedir-spec/basedir-spec-late
 
 ## Availability
 
-Imperial has not yet been published as a binary. It is currently waiting for the
-final release of Scala 3.3.
+Imperial has not yet been published as a binary.
 
 ## Getting Started
 
@@ -88,7 +87,7 @@ be used, but caution should be taken if there is a mismatch between the
 project's stability level and the importance of your own project.
 
 Imperial is designed to be _small_. Its entire source code currently consists
-of 92 lines of code.
+of 136 lines of code.
 
 ## Building
 
