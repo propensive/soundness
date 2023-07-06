@@ -57,33 +57,33 @@ enum UrlInput:
 object UrlInterpolator extends contextual.Interpolator[UrlInput, Text, Url]:
   def complete(value: Text): Url =
     try Url.parse(value) catch case err: UrlError =>
-      throw InterpolationError(t"the URL ${err.text} is not valid: expected ${err.expected}", err.offset)
+      throw InterpolationError(msg"the URL ${err.text} is not valid: expected ${err.expected}", err.offset)
   
   def initial: Text = t""
   
   def insert(state: Text, value: UrlInput): Text =
     value match
       case UrlInput.Integral(port) =>
-        if !state.ends(t":") then throw InterpolationError(t"a port number must be specified after a colon")
+        if !state.ends(t":") then throw InterpolationError(msg"a port number must be specified after a colon")
         
         try Url.parse(state+port.show)
-        catch case err: UrlError => throw InterpolationError(err.message.text)
+        catch case err: UrlError => throw InterpolationError(Message(err.message.text))
         
         state+port.show
       
       case UrlInput.Textual(txt) =>
-        if !state.ends(t"/") then throw InterpolationError(t"a substitution may only be made after a slash")
+        if !state.ends(t"/") then throw InterpolationError(msg"a substitution may only be made after a slash")
         
         try Url.parse(state+txt.urlEncode)
-        catch case err: UrlError => throw InterpolationError(err.message.text)
+        catch case err: UrlError => throw InterpolationError(Message(err.message.text))
         
         state+txt.urlEncode
       
       case UrlInput.RawTextual(txt) =>
-        if !state.ends(t"/") then throw InterpolationError(t"a substitution may only be made after a slash")
+        if !state.ends(t"/") then throw InterpolationError(msg"a substitution may only be made after a slash")
 
         try Url.parse(state+txt.urlEncode)
-        catch case err: UrlError => throw InterpolationError(err.message.text)
+        catch case err: UrlError => throw InterpolationError(Message(err.message.text))
         
         state+txt
   
@@ -92,7 +92,7 @@ object UrlInterpolator extends contextual.Interpolator[UrlInput, Text, Url]:
   def parse(state: Text, next: Text): Text =
     // FIXME: Should use `.empty` instead of `.s.isEmpty`
     if !state.s.isEmpty && !(next.starts(t"/") || next.s.isEmpty)
-    then throw InterpolationError(t"a substitution must be followed by a slash")
+    then throw InterpolationError(msg"a substitution must be followed by a slash")
     
     state+next
   
@@ -248,6 +248,14 @@ case class Url(scheme: Scheme, authority: Maybe[Authority], pathText: Text, quer
 object UrlError:
   enum Expectation:
     case Colon, More, LowerCaseLetter, PortRange, Number
+
+  object Expectation:
+    given AsMessage[Expectation] =
+      case Colon           => msg"a colon"
+      case More            => msg"more characters"
+      case LowerCaseLetter => msg"a lowercase letter"
+      case PortRange       => msg"a port range"
+      case Number          => msg"a number"
 
 case class UrlError(text: Text, offset: Int, expected: UrlError.Expectation)
 extends Error(msg"the URL $text is not valid: expected $expected at $offset")
