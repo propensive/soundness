@@ -23,11 +23,17 @@ import language.experimental.captureChecking
 object Message:
   def apply(value: Text): Message = Message(List(value))
 
-  transparent inline def makeMessages[TupleType <: Tuple](inline subs: TupleType, done: List[Message]): List[Message] =
+  transparent inline def makeMessages
+      [TupleType <: Tuple]
+      (inline subs: TupleType, done: List[Message])
+      : List[Message] =
     inline erasedValue[TupleType] match
-      case _: (messageType *: tailType) => subs match
+      case _: (messageType *: tailType) => (subs: @unchecked) match
         case message *: tail =>
-          makeMessages[tailType](tail.asInstanceOf[tailType], compiletime.summonInline[AsMessage[messageType]].message(message.asInstanceOf[messageType]) :: done)
+          val message2 = message.asInstanceOf[messageType]
+          val asMessage = summonInline[AsMessage[messageType]]
+          makeMessages[tailType](tail.asInstanceOf[tailType], asMessage.message(message2) :: done)
+
       case _ =>
         done.reverse
 
@@ -35,8 +41,12 @@ case class Message(textParts: List[Text], subs: List[Message] = Nil):
   def fold[RenderType](initial: RenderType)(append: (RenderType, Text, Int) -> RenderType): RenderType =
     def recur(done: RenderType, textTodo: List[Text], subsTodo: List[Message], level: Int): RenderType =
       subsTodo match
-        case Nil => append(done, textTodo.head, level)
-        case sub :: subs => recur(recur(append(done, textTodo.head, level), sub.textParts, sub.subs, level + 1), textTodo.tail, subs, level)
+        case Nil =>
+          append(done, textTodo.head, level)
+        
+        case sub :: subs =>
+          val prefix = recur(append(done, textTodo.head, level), sub.textParts, sub.subs, level + 1)
+          recur(prefix, textTodo.tail, subs, level)
 
     recur(initial, textParts, subs, 0)
 
@@ -100,4 +110,4 @@ extension (inline context: StringContext)
         Message(context.parts.map(Text(_)).to(List), Message.makeMessages[tuple.type](tuple, Nil))
       
       case other =>
-        Message(context.parts.map(Text(_)).to(List), List(compiletime.summonInline[AsMessage[other.type]].message(other)))
+        Message(context.parts.map(Text(_)).to(List), List(summonInline[AsMessage[other.type]].message(other)))
