@@ -95,7 +95,7 @@ object Tests extends Suite(t"Serpentine Tests"):
       
       test(t"try to parse path without prefix"):
         unsafely(capture(SimplePath.parse(t"home/work/")))
-      .assert(_ == PathError(PathError.Reason.NotRooted))
+      .assert(_ == PathError(PathError.Reason.NotRooted(t"home/work/")))
 
       test(t"Show a simple path"):
         val path: PathName[".*/.*"] = p"abc"

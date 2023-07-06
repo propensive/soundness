@@ -32,7 +32,7 @@ object PathError:
     case InvalidSuffix(suffix: Text)
     case InvalidName(name: Text)
     case ParentOfRoot
-    case NotRooted
+    case NotRooted(path: Text)
 
   given Show[Reason] =
     case Reason.InvalidChar(char)     => t"the character $char may not appear in a path name"
@@ -40,7 +40,7 @@ object PathError:
     case Reason.InvalidSuffix(suffix) => t"the path name cannot end with $suffix"
     case Reason.InvalidName(name)     => t"the name $name is not valid"
     case Reason.ParentOfRoot          => t"the root has no parent"
-    case Reason.NotRooted             => t"the path is not rooted"
+    case Reason.NotRooted(path)       => t"${path} is not rooted"
 
 export Serpentine.PathName
 
@@ -207,7 +207,7 @@ object Reachable:
           creator: PathCreator[PathType, NameType, RootType]): Decoder[PathType] =
     new Decoder[PathType]:
       def decode(text: Text): PathType =
-        val (root, rest) = rootParser.parse(text).or(throw PathError(PathError.Reason.NotRooted))
+        val (root, rest) = rootParser.parse(text).or(throw PathError(PathError.Reason.NotRooted(text)))
         
         val names = rest.cut(reachable.separator(creator.path(root, Nil))).reverse match
           case t"" :: tail => tail
