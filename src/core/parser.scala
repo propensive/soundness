@@ -18,10 +18,8 @@ jawn, version [unreleased]. Copyright 2023 Jon Pretty, Propensive OÜ.
 package merino
 
 import annotation.*
-import gossamer.*
 import rudiments.*
 import turbulence.*
-import spectacular.*
 import scala.collection.mutable.ArrayBuffer
 
 import language.experimental.captureChecking
