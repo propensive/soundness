@@ -23,7 +23,16 @@ def fail
     (message: Message, pos: Maybe[quotes.reflect.Position] = Unset)
     : Nothing =
   import quotes.reflect.*
+  import dotty.tools.dotc.config.Settings.Setting.value
   
-  val text = message.richText
+  val useColor: Boolean = quotes match
+    case quotes: runtime.impl.QuotesImpl => value(quotes.ctx.settings.color)(using quotes.ctx) != "never"
+    case _                               => false
+
   val pkg = Thread.currentThread.nn.getStackTrace.nn(2).nn.getClassName.nn.split("\\.").nn(0).nn
-  pos.mm(report.errorAndAbort(pkg+": "+text, _)).or(report.errorAndAbort(pkg+": "+text))
+  
+  val text =
+    if useColor then s"${27.toChar}[38;2;0;190;255m${27.toChar}[1m$pkg${27.toChar}[0m ${message.richText}"
+    else s"$pkg: ${message.text}" 
+  
+  pos.mm(report.errorAndAbort(text, _)).or(report.errorAndAbort(text))
