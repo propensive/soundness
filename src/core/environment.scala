@@ -68,11 +68,10 @@ extends Environment:
     case _    => throw EnvironmentError(Text("path.separator"), true)
 
   def javaClassPath[PathType](using GenericPathMaker[PathType]): List[PathType] =
-    property(Text("java.class.path")).s.split(pathSeparator).to(List).flatMap(makeGenericPath(_))
+    property(Text("java.class.path")).s.split(pathSeparator).to(List).map(makeGenericPath(_))
 
   def javaHome[PathType](using GenericPathMaker[PathType]): PathType =
-    makeGenericPath(property(Text("java.home")).s).getOrElse:
-      throw EnvironmentError(Text("java.home"), true)
+    makeGenericPath(property(Text("java.home")).s)
 
   def javaVendor: Text = property(Text("java.vendor"))
   def javaVendorUrl: Text = property(Text("java.vendor.url"))
@@ -88,24 +87,19 @@ extends Environment:
   def osVersion: Text = property(Text("os.version"))
 
   def userDir[PathType](using GenericPathMaker[PathType]): PathType =
-    makeGenericPath(property(Text("user.dir")).s).getOrElse(throw EnvironmentError(Text("user.dir"), true))
+    makeGenericPath(property(Text("user.dir")).s)
 
   def userHome[PathType](using GenericPathMaker[PathType]): PathType =
-    makeGenericPath(property(Text("user.home")).s).getOrElse:
-      throw EnvironmentError(Text("user.home"), true)
+    makeGenericPath(property(Text("user.home")).s)
 
   def userName: Text = property(Text("user.name"))
 
   def pwd[PathType](using GenericPathMaker[PathType]): PathType =
-    val dirOption = getProperty(Text("user.dir")) match
+    getProperty(Text("user.dir")) match
       case path: Text => makeGenericPath(path.s)
       case _          => getEnv(Text("PWD")) match
         case path: Text => makeGenericPath(path.s)
         case _          => throw EnvironmentError(Text("user.dir"), true)
-    
-    dirOption match
-      case Some(dir) => dir
-      case None      => throw EnvironmentError(Text("user.dir"), true)
 
 case class EnvironmentError(variable: Text, property: Boolean)
 extends Error(msg"the ${Text(if property then "system property" else "environment variable")} $variable was not found")
