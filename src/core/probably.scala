@@ -175,8 +175,8 @@ case class UnexpectedSuccessError(value: Text)
 extends Error(msg"the expression was expected to throw an exception, but instead returned $value")
 
 transparent inline def capture
-    [ExceptionType <: Exception, ResultType]
-    (inline fn: => CanThrow[ExceptionType] ?=> ResultType)
+    [ExceptionType <: Exception]
+    (inline fn: => CanThrow[ExceptionType] ?=> Any)
     : ExceptionType throws UnexpectedSuccessError =
   try
     val result = fn(using unsafeExceptions.canThrowAny)
