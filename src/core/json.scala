@@ -17,7 +17,6 @@
 package jacinta
 
 import rudiments.*
-import digression.*
 import turbulence.*
 import gossamer.*
 import anticipation.*
@@ -28,7 +27,6 @@ import spectacular.*
 import scala.collection.Factory
 import scala.compiletime.*
 import scala.deriving.*
-import scala.util.*
 
 import language.dynamics
 import language.experimental.captureChecking
@@ -142,11 +140,9 @@ object Json extends Dynamic:
     Json(JsonAst((keys, values)))
 
 trait FallbackJsonWriter:
-  given [T: JsonWriter]: JsonWriter[Maybe[T]] = new JsonWriter[Maybe[T]]:
+  given [T](using writer: JsonWriter[T]): JsonWriter[Maybe[T]] = new JsonWriter[Maybe[T]]:
     override def omit(t: Maybe[T]): Boolean = t.unset
-    def write(value: Maybe[T]): JsonAst = value match
-      case Unset               => JsonAst(null)
-      case value: T @unchecked => summon[JsonWriter[T]].write(value)
+    def write(value: Maybe[T]): JsonAst = value.mm(writer.write(_)).or(JsonAst(null))
 
 object JsonWriter extends FallbackJsonWriter:
   given JsonWriter[Int] = int => JsonAst(int.toLong)
