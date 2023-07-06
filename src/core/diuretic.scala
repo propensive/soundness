@@ -46,11 +46,10 @@ object JavaNioFile extends GenericFileMaker[jnf.Path], GenericDirectoryMaker[jnf
     GenericDirectoryReader[jnf.Path], GenericFileReader[jnf.Path], GenericPathMaker[jnf.Path],
     GenericPathReader[jnf.Path]:
 
-  def makePath(path: String, readOnly: Boolean = false): Option[jnf.Path] =
-    try Some(jnf.Paths.get(path).nn) catch case err: jnf.InvalidPathException => None
+  def makePath(path: String, readOnly: Boolean = false): jnf.Path = jnf.Paths.get(path).nn
 
-  def makeFile(path: String, readOnly: Boolean = false): Option[jnf.Path] = makePath(path, readOnly)
-  def makeDirectory(path: String, readOnly: Boolean = false): Option[jnf.Path] = makePath(path, readOnly)
+  def makeFile(path: String, readOnly: Boolean = false): jnf.Path = makePath(path, readOnly)
+  def makeDirectory(path: String, readOnly: Boolean = false): jnf.Path = makePath(path, readOnly)
 
   def getPath(value: jnf.Path): String = value.toAbsolutePath.nn.toString
   def filePath(value: jnf.Path): String = getPath(value)
@@ -60,11 +59,10 @@ object JavaIoFile extends GenericFileMaker[ji.File], GenericDirectoryMaker[ji.Fi
     GenericDirectoryReader[ji.File], GenericFileReader[ji.File], GenericPathMaker[ji.File],
     GenericPathReader[ji.File]:
 
-  def makePath(path: String, readOnly: Boolean = false): Option[ji.File] =
-    try Some(ji.File(path).nn) catch case err: jnf.InvalidPathException => None
+  def makePath(path: String, readOnly: Boolean = false): ji.File = ji.File(path).nn
 
-  def makeFile(path: String, readOnly: Boolean = false): Option[ji.File] = makePath(path, readOnly)
-  def makeDirectory(path: String, readOnly: Boolean = false): Option[ji.File] = makePath(path, readOnly)
+  def makeFile(path: String, readOnly: Boolean = false): ji.File = makePath(path, readOnly)
+  def makeDirectory(path: String, readOnly: Boolean = false): ji.File = makePath(path, readOnly)
 
   def getPath(value: ji.File): String = value.getAbsolutePath.nn.toString
   def filePath(value: ji.File): String = getPath(value)
