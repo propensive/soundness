@@ -24,6 +24,6 @@ def fail
     : Nothing =
   import quotes.reflect.*
   
-  val text = message.text
+  val text = message.richText
   val pkg = Thread.currentThread.nn.getStackTrace.nn(2).nn.getClassName.nn.split("\\.").nn(0).nn
   pos.mm(report.errorAndAbort(pkg+": "+text, _)).or(report.errorAndAbort(pkg+": "+text))

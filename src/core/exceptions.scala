@@ -42,6 +42,13 @@ case class Message(textParts: List[Text], subs: List[Message] = Nil):
 
   def text: Text = unwrap(fold[String]("") { (acc, next, level) => acc+next })
   
+  def richText: Text = unwrap:
+    fold[String](""): (acc, next, level) =>
+      level match
+        case 0 => acc+next
+        case 1 => acc+s"${27.toChar}[3m"+next+s"${27.toChar}[0m"
+        case _ => acc+s"${27.toChar}[3m${27.toChar}[1m"+next+s"${27.toChar}[0m"
+  
   def unwrap(string: String): Text =
     val buf: StringBuilder = StringBuilder()
     
