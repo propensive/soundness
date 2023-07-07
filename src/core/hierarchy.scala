@@ -198,22 +198,22 @@ trait PathCreator[+PathType <: Matchable, NameType <: Label, AscentType]:
   def path(ascent: AscentType, descent: List[PathName[NameType]]): PathType
 
 object Reachable:
-  inline def decoder
+  inline def decode
       [PathType <: Matchable]
+      (text: Text)
       (using path: CanThrow[PathError])
       [NameType <: Label, RootType]
       (using reachable: Reachable[PathType, NameType, RootType],
           rootParser: RootParser[PathType, RootType],
-          creator: PathCreator[PathType, NameType, RootType]): Decoder[PathType] =
-    new Decoder[PathType]:
-      def decode(text: Text): PathType =
-        val (root, rest) = rootParser.parse(text).or(throw PathError(PathError.Reason.NotRooted(text)))
-        
-        val names = rest.cut(reachable.separator(creator.path(root, Nil))).reverse match
-          case t"" :: tail => tail
-          case names       => names
+          creator: PathCreator[PathType, NameType, RootType])
+      : PathType =
+    val (root, rest) = rootParser.parse(text).or(throw PathError(PathError.Reason.NotRooted(text)))
+    
+    val names = rest.cut(reachable.separator(creator.path(root, Nil))).reverse match
+      case t"" :: tail => tail
+      case names       => names
 
-        creator.path(root, names.map(PathName(_)))
+    creator.path(root, names.map(PathName(_)))
   
 
 @capability

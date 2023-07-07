@@ -25,8 +25,8 @@ import language.experimental.captureChecking
 object Root
 
 object SimplePath:
-  inline given decoder(using CanThrow[PathError]): Decoder[SimplePath] =
-    Reachable.decoder[SimplePath]
+  inline given decoder(using CanThrow[PathError]): Decoder[SimplePath] = new Decoder[SimplePath]:
+    def decode(text: Text): SimplePath = Reachable.decode[SimplePath](text)
   
   inline def parse(text: Text)(using path: CanThrow[PathError]): SimplePath^{path} =
     text.decodeAs[SimplePath]

@@ -31,7 +31,7 @@ object Example:
   object RootedPath:
     import unsafeExceptions.canThrowAny
 
-    inline given Decoder[RootedPath] = Reachable.decoder[RootedPath]
+    inline given Decoder[RootedPath] = Reachable.decode[RootedPath](_)
     given Show[RootedPath] = _.render
     def parse(text: Text): RootedPath = text.decodeAs[RootedPath]
 
