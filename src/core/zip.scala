@@ -34,20 +34,18 @@ import java.util.zip as juz
 
 import scala.language.experimental.captureChecking
 
-case class ZipError(filename: Text) extends Error(err"could not create ZIP file ${filename}")
+case class ZipError(filename: Text) extends Error(msg"could not create ZIP file ${filename}")
 
 // FIXME: Check this
 type InvalidZipNames = ".*'.*" | ".*`.*" | ".*\\/.*" | ".*\\\\.*"
 
 object ZipPath:
-  given Reachable[ZipPath, InvalidZipNames, "/"] with
-    type Root = ZipFile
+  given Reachable[ZipPath, InvalidZipNames, ZipFile] with
     def root(path: ZipPath): ZipFile = path.zipFile
     def descent(path: ZipPath): List[PathName[InvalidZipNames]] = path.descent
     def prefix(path: ZipFile): Text = t"/"
     
-    def make(root: ZipFile, descent: List[PathName[InvalidZipNames]]): ZipPath =
-      ZipPath(root, ZipRef(descent))
+  given PathCreator[ZipPath, InvalidZipNames, ZipFile] = (root, descent) => ZipPath(root, ZipRef(descent))
 
   given (using CanThrow[StreamCutError]): Readable[ZipPath, Bytes] =
     Readable.lazyList[Bytes].contraMap(_.entry().content())
@@ -56,19 +54,25 @@ case class ZipPath(zipFile: ZipFile, ref: ZipRef):
   def entry()(using streamCut: CanThrow[StreamCutError]): ZipEntry^ = zipFile.entry(ref)
 
 object ZipRef:
-  def apply(text: Text)(using pathError: CanThrow[PathError]): ZipRef^{pathError} = reachable.parse(text)
+  def apply
+      (text: Text)
+      (using pathError: CanThrow[PathError], reachable: Reachable[ZipRef, InvalidZipNames, Unset.type])
+      : ZipRef^{pathError, reachable} =
+    reachable.parse(text)
   
   @targetName("child")
   def /(name: PathName[InvalidZipNames]): ZipRef = ZipRef(List(name))
   
-  given reachable: ParsableReachable[ZipRef, InvalidZipNames, "/"] =
-    new ParsableReachable[ZipRef, InvalidZipNames, "/"]:
-      type Root = ZipRef.type
-      def root(path: ZipRef): ZipRef.type = ZipRef
+  given reachable: Reachable[ZipRef, InvalidZipNames, Unset.type] =
+    new Reachable[ZipRef, InvalidZipNames, Unset.type]:
+      def root(path: ZipRef): Unset.type = Unset
       def descent(path: ZipRef): List[PathName[InvalidZipNames]] = path.descent
-      def parseRoot(text: Text): (ZipRef.type, Text) = (ZipRef, text.drop(1))
-      def make(root: ZipRef.type, descent: List[PathName[InvalidZipNames]]) = ZipRef(descent)
-      def prefix(ref: ZipRef.type): Text = t""
+      def prefix(ref: Unset.type): Text = t""
+
+  given RootParser[ZipRef, Unset.type] with
+    def parse(text: Text): (Unset.type, Text) = (ZipRef, text.drop(1))
+
+  given PathCreator[ZipRef, InvalidZipNames, "/"] = (root, descent) => ZipRef(descent)
 
 case class ZipRef(descent: List[PathName[InvalidZipNames]])
 
