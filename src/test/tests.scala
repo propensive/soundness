@@ -18,10 +18,70 @@ package galilei
 
 import probably.*
 import gossamer.*
+import imperial.*
+import serpentine.*
+import spectacular.*
+import hieroglyph.*, charEncoders.utf8, charDecoders.utf8
+import anticipation.*, fileApi.galileiApi
+import ambience.*, environments.system
 
 import unsafeExceptions.canThrowAny
 
-import encodings.Utf8
-
 object Tests extends Suite(t"Galilei tests"):
-  def run(): Unit = ()
+  def run(): Unit =
+    
+    suite(t"Flexible hierarchy tests"):
+      import hierarchies.flexible
+      
+      val tmpPath = test(t"Get /var/tmp"):
+        Xdg.Var.Tmp()
+      .check(_.fullname == t"/var/tmp")
+
+      val galileiTmpPath = test(t"Get /var/tmp/galilei"):
+        tmpPath / p"galilei"
+      .check(_.fullname == t"/var/tmp/galilei")
+
+      test(t"Check descent of path"):
+        galileiTmpPath.descent.map(_.show)
+      .assert(_ == List(t"galilei", t"tmp", t"var"))
+
+    suite(t"Unix hierarchy tests"):
+      import hierarchies.unix
+      
+      val tmpPath = test(t"Get /var/tmp"):
+        Xdg.Var.Tmp()
+      .check(_.fullname == t"/var/tmp")
+
+      val galileiTmpPath = test(t"Get /var/tmp/galilei"):
+        tmpPath / p"galilei"
+      .check(_.fullname == t"/var/tmp/galilei")
+      
+      test(t"Check descent of path"):
+        galileiTmpPath.descent.map(_.show)
+      .assert(_ == List(t"galilei", t"tmp", t"var"))
+    
+    suite(t"Windows hierarchy tests"):
+      import hierarchies.windows
+      
+      val windowsSystem = test(t"Get C:\\Windows\\System"):
+        Windows.Drive('C') / p"Windows" / p"System"
+      .check(_.fullname == t"C:\\Windows\\System")
+      
+      test(t"Check descent of path"):
+        windowsSystem.descent.map(_.show)
+      .assert(_ == List(t"System", t"Windows"))
+      
+      test(t"Get root"):
+        windowsSystem.root
+      .assert(_ == Windows.Drive('C'))
+      
+    // val tmpDir = galileiTmpPath.directory()
+
+    // suite(t"File and directory creation"):
+    //   test(t"Create a new file"):
+    //     (tmpDir / p"file.txt").newFile()
+    //   .assert(_.exists())
+
+    //   test(t"Delete a file"):
+    //     (tmpDir / p"file.txt").delete()
+    //   .assert(!_.exists())
