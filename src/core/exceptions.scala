@@ -54,7 +54,7 @@ case class Message(textParts: List[Text], subs: List[Message] = Nil):
   
   def richText: Text = unwrap:
     fold[String](""): (acc, next, level) =>
-      level match
+      if next.s.isEmpty then acc else level match
         case 0 => acc+next
         case 1 => acc+s"${27.toChar}[3m"+next+s"${27.toChar}[0m"
         case _ => acc+s"${27.toChar}[3m${27.toChar}[1m"+next+s"${27.toChar}[0m"
