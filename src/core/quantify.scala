@@ -18,6 +18,7 @@ package quantitative
 
 import gossamer.*
 import rudiments.*
+import anticipation.*
 import spectacular.*
 
 import scala.quoted.*
@@ -351,6 +352,14 @@ object Quantitative:
   object Quantity:
     erased given [UnitsType <: Measure]: CanEqual[Quantity[UnitsType], Quantity[UnitsType]] = ###
 
+    transparent inline given add[LeftType <: Measure, RightType <: Measure]
+        : Add[Quantity[LeftType], Quantity[RightType]] =
+      ${QuantitativeMacros.addTypeclass[LeftType, RightType]}
+
+    transparent inline given multiply[LeftType <: Measure, RightType <: Measure]
+        : Multiply[Quantity[LeftType], Quantity[RightType]] =
+      ${QuantitativeMacros.multiplyTypeclass[LeftType, RightType]}
+
     inline def apply[UnitsType <: Measure](value: Double): Quantity[UnitsType] = value
     
     given convertDouble[UnitsType <: Measure]: Conversion[Double, Quantity[UnitsType]] =
@@ -415,11 +424,11 @@ val Radian: MetricUnit[Radians[1]] = MetricUnit(1)
 extension [UnitsType <: Measure](inline quantity: Quantity[UnitsType])
   @targetName("plus")
   transparent inline def +[UnitsType2 <: Measure](quantity2: Quantity[UnitsType2]): Any =
-    ${QuantitativeMacros.add[UnitsType, UnitsType2]('quantity, 'quantity2, false)}
+    ${QuantitativeMacros.add[UnitsType, UnitsType2]('quantity, 'quantity2, '{false})}
   
   @targetName("minus")
   transparent inline def -[UnitsType2 <: Measure](quantity2: Quantity[UnitsType2]): Any =
-    ${QuantitativeMacros.add[UnitsType, UnitsType2]('quantity, 'quantity2, true)}
+    ${QuantitativeMacros.add[UnitsType, UnitsType2]('quantity, 'quantity2, '{true})}
 
   transparent inline def invert: Any = Quantity[Measure](1.0)/quantity
 

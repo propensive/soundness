@@ -17,6 +17,7 @@
 package quantitative
 
 import rudiments.*
+import anticipation.*
 
 import scala.quoted.*
 import scala.compiletime.*
@@ -310,6 +311,26 @@ object QuantitativeMacros:
       case _ =>
         fail(msg"the operands represent different physical quantities")
 
+  def multiplyTypeclass
+      [LeftType <: Measure: Type, RightType <: Measure: Type]
+      (using Quotes)
+      : Expr[Multiply[Quantity[LeftType], Quantity[RightType]]] =
+    val left = UnitsMap[LeftType]
+    val right = UnitsMap[RightType]
+
+    val (leftNorm, _) = normalize(left, right, '{1.0})
+    val (rightNorm, _) = normalize(right, left, '{1.0})
+
+    ((leftNorm*rightNorm).repr.map(_.asType): @unchecked) match
+      case Some('[type resultType <: Measure; resultType]) =>
+        '{
+          new Multiply[Quantity[LeftType], Quantity[RightType]]:
+            type Result = Quantity[resultType]
+            def apply(left: Quantity[LeftType], right: Quantity[RightType]): Quantity[resultType] =
+              ${QuantitativeMacros.multiply[LeftType, RightType]('left, 'right, false)}
+                .asInstanceOf[Quantity[resultType]]
+        }
+
   def greaterThan
       [LeftType <: Measure: Type, RightType <: Measure: Type]
       (leftExpr: Expr[Quantity[LeftType]], rightExpr: Expr[Quantity[RightType]],
@@ -333,7 +354,7 @@ object QuantitativeMacros:
 
   def add
       [LeftType <: Measure: Type, RightType <: Measure: Type]
-      (leftExpr: Expr[Quantity[LeftType]], rightExpr: Expr[Quantity[RightType]], sub: Boolean)
+      (leftExpr: Expr[Quantity[LeftType]], rightExpr: Expr[Quantity[RightType]], sub: Expr[Boolean])
       (using Quotes)
       : Expr[Any] =
     import quotes.reflect.*
@@ -346,7 +367,9 @@ object QuantitativeMacros:
 
     if left2 != right2 then incompatibleTypes(left, right)
     
-    val resultValue = if sub then '{$leftValue - $rightValue} else '{$leftValue + $rightValue}
+    val resultValue = sub.value match
+      case Some(sub) => if sub then '{$leftValue - $rightValue} else '{$leftValue + $rightValue}
+      case None      => '{if $sub then $leftValue - $rightValue else $leftValue + $rightValue}
     
     (left2.repr.map(_.asType): @unchecked) match
       case Some('[type unitsType <: Measure; unitsType]) =>
@@ -354,6 +377,24 @@ object QuantitativeMacros:
       
       case _ =>
         resultValue
+
+  def addTypeclass
+      [LeftType <: Measure: Type, RightType <: Measure: Type]
+      (using Quotes)
+      : Expr[Add[Quantity[LeftType], Quantity[RightType]]] =
+    val (units, _) = normalize(UnitsMap[LeftType], UnitsMap[RightType], '{0.0})
+
+    (units.repr.map(_.asType): @unchecked) match
+      case Some('[type resultType <: Measure; resultType]) =>
+        '{
+          new Add[Quantity[LeftType], Quantity[RightType]]:
+            type Result = Quantity[resultType]
+            def apply
+                (left: Quantity[LeftType], right: Quantity[RightType], subtract: Boolean)
+                : Quantity[resultType] =
+              ${QuantitativeMacros.add[LeftType, RightType]('left, 'right, 'subtract)}
+                  .asInstanceOf[Quantity[resultType]]
+        }
 
   def norm
       [UnitsType <: Measure: Type, NormType[power <: Nat] <: Units[power, ?]: Type]
