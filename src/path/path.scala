@@ -21,20 +21,20 @@ import java.nio.file as jnf
 import language.experimental.captureChecking
 
 trait GenericDirectoryMaker[+DirectoryType]:
-  def makeDirectory(directory: String, readOnly: Boolean = false): Option[DirectoryType]
+  def makeDirectory(directory: String, readOnly: Boolean = false): DirectoryType
 
 
 trait GenericDirectoryReader[-DirectoryType]:
   def directoryPath(directory: DirectoryType): String
 
 trait GenericFileMaker[+FileType]:
-  def makeFile(file: String, readOnly: Boolean = false): Option[FileType]
+  def makeFile(file: String, readOnly: Boolean = false): FileType
 
 trait GenericFileReader[-FileType]:
   def filePath(file: FileType): String
 
 trait GenericPathMaker[+PathType]:
-  def makePath(path: String, readOnly: Boolean = false): Option[PathType]
+  def makePath(path: String, readOnly: Boolean = false): PathType
 
 trait GenericPathReader[-PathType]:
   def getPath(path: PathType): String
@@ -43,20 +43,20 @@ trait GenericWatchService[+T]:
   def apply(): jnf.WatchService
 
 trait AbstractPathMaker[+PathType]:
-  def makePath(path: String): Option[PathType]
+  def makePath(path: String): PathType
 
 trait AbstractPathReader[-PathType]:
   def getPath(path: PathType): String
 
 def makeGenericPath[PathType](path: String, readOnly: Boolean = false)(using maker: GenericPathMaker[PathType])
-                   : Option[PathType] =
+                   : PathType =
   maker.makePath(path, readOnly)
 
 def readGenericPath[PathType](path: PathType)(using reader: GenericPathReader[PathType]): String =
   reader.getPath(path)
 
 def makeGenericFile[FileType](file: String, readOnly: Boolean = false)(using maker: GenericFileMaker[FileType])
-                   : Option[FileType] =
+                   : FileType =
   maker.makeFile(file, readOnly)
 
 def readGenericFile[FileType](file: FileType)(using reader: GenericFileReader[FileType]): String =
@@ -64,7 +64,7 @@ def readGenericFile[FileType](file: FileType)(using reader: GenericFileReader[Fi
 
 def makeGenericDirectory[DirectoryType](directory: String, readOnly: Boolean = false)
                         (using maker: GenericDirectoryMaker[DirectoryType])
-                        : Option[DirectoryType] =
+                        : DirectoryType =
   maker.makeDirectory(directory, readOnly)
 
 def readGenericDirectory[DirectoryType](directory: DirectoryType)
@@ -73,7 +73,7 @@ def readGenericDirectory[DirectoryType](directory: DirectoryType)
   reader.directoryPath(directory)
 
 def makeAbstractPath
-    [PathType](path: String)(using maker: AbstractPathMaker[PathType]): Option[PathType] =
+    [PathType](path: String)(using maker: AbstractPathMaker[PathType]): PathType =
   maker.makePath(path)
 
 def readAbstractPath
