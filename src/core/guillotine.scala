@@ -191,9 +191,9 @@ object Sh:
   
     def complete(state: State): Command =
       val args = state.current match
-        case Quotes2        => throw InterpolationError(t"the double quotes have not been closed")
-        case Quotes1        => throw InterpolationError(t"the single quotes have not been closed")
-        case _ if state.esc => throw InterpolationError(t"cannot terminate with an escape character")
+        case Quotes2        => throw InterpolationError(msg"the double quotes have not been closed")
+        case Quotes1        => throw InterpolationError(msg"the single quotes have not been closed")
+        case _ if state.esc => throw InterpolationError(msg"cannot terminate with an escape character")
         case _              => state.args
       
       Command(args*)
@@ -205,8 +205,9 @@ object Sh:
     def insert(state: State, value: Params): State =
       value.params.to(List) match
         case h :: t =>
-          if state.esc then throw InterpolationError(txt"""escaping with '\\' is not allowed immediately before
-              a substitution""")
+          if state.esc then throw InterpolationError(msg"""
+            escaping with '\\' is not allowed immediately before a substitution
+          """)
           
           state match
             case State(Awaiting, false, args) =>
