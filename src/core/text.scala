@@ -48,6 +48,8 @@ object Text:
       case str: String => Some(str.asInstanceOf[value.type & Text])
       case _           => None
 
-extension (xs: Iterable[Text])
-  transparent inline def ss: Iterable[String] = xs
+extension (texts: Iterable[Text])
+  transparent inline def ss: Iterable[String] = texts
 
+extension (string: String) def tt: Text = Text(string)
+extension (strings: Iterable[String]) transparent inline def tt: Iterable[Text] = strings.map(Text(_))
