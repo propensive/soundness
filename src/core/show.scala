@@ -36,100 +36,100 @@ object Show:
   given showable[ValueType](using showable: Showable[ValueType]): Show[ValueType] = showable.show(_)
 
 object TextConversion:
-  val any: Debug[Any] = value => Text(value.toString)
+  val any: Debug[Any] = value => value.toString.tt
 
   def escape(char: Char, eEscape: Boolean = false): Text = char match
-    case '\n' => Text("\\n")
-    case '\t' => Text("\\t")
-    case '\r' => Text("\\r")
-    case '\\' => Text("\\\\")
-    case '\"' => Text("\\\"")
-    case '\'' => Text("\\\'")
-    case '\b' => Text("\\b")
-    case '\f' => Text("\\f")
+    case '\n' => "\\n".tt
+    case '\t' => "\\t".tt
+    case '\r' => "\\r".tt
+    case '\\' => "\\\\".tt
+    case '\"' => "\\\"".tt
+    case '\'' => "\\\'".tt
+    case '\b' => "\\b".tt
+    case '\f' => "\\f".tt
     
     case '\u001b' if eEscape =>
-      Text("\\e")
+      "\\e".tt
     
     case ch =>
-      Text(if ch < 128 && ch >= 32 then ch.toString else String.format("\\u%04x", ch.toInt).nn)
+      if ch < 128 && ch >= 32 then ch.toString.tt else String.format("\\u%04x", ch.toInt).nn.tt
 
-  given Debug[Char] = char => Text("'"+escape(char).s+"'")
-  given Debug[Long] = long => Text(long.toString+"L")
-  given Debug[String] = string => Text(summon[Debug[Text]](Text(string)).s.substring(1).nn)
-  given Debug[Byte] = byte => Text(byte.toString+".toByte")
-  given Debug[Short] = short => Text(short.toString+".toShort")
+  given Debug[Char] = char => ("'"+escape(char).s+"'").tt
+  given Debug[Long] = long => (long.toString+"L").tt
+  given Debug[String] = string => summon[Debug[Text]](string.tt).s.substring(1).nn.tt
+  given Debug[Byte] = byte => (byte.toString+".toByte").tt
+  given Debug[Short] = short => (short.toString+".toShort").tt
   given Debug[Message] = derived[Message]
   
   given Debug[Text] = text =>
     val builder: StringBuilder = new StringBuilder()
     text.s.foreach { char => builder.append(escape(char, true)) }
     
-    Text("t\""+builder.toString+"\"")
+    ("t\""+builder.toString+"\"").tt
 
   given Show[Text] = identity(_)
-  given Show[String] = Text(_)
-  given Show[Char] = char => Text(char.toString)
-  given Show[Long] = long => Text(long.toString)
-  given Show[Int] = int => Text(int.toString)
-  given Show[Short] = short => Text(short.toString)
-  given Show[Byte] = byte => Text(byte.toString)
+  given Show[String] = _.tt
+  given Show[Char] = char => char.toString.tt
+  given Show[Long] = long => long.toString.tt
+  given Show[Int] = int => int.toString.tt
+  given Show[Short] = short => short.toString.tt
+  given Show[Byte] = byte => byte.toString.tt
   given Show[Message] = _.text
   given (using decimalizer: DecimalConverter): Show[Double] = decimalizer.decimalize(_)
   
   given Debug[Float] =
-    case Float.PositiveInfinity => Text("Float.PositiveInfinity")
-    case Float.NegativeInfinity => Text("Float.NegativeInfinity")
-    case float if float.isNaN   => Text("Float.NaN")
-    case float                  => Text(float.toString+"F")
+    case Float.PositiveInfinity => "Float.PositiveInfinity".tt
+    case Float.NegativeInfinity => "Float.NegativeInfinity".tt
+    case float if float.isNaN   => "Float.NaN".tt
+    case float                  => (float.toString+"F").tt
   
   given Debug[Double] = 
-    case Double.PositiveInfinity => Text("Double.PositiveInfinity")
-    case Double.NegativeInfinity => Text("Double.NegativeInfinity")
-    case double if double.isNaN  => Text("Double.NaN")
-    case double                  => Text(double.toString)
+    case Double.PositiveInfinity => "Double.PositiveInfinity".tt
+    case Double.NegativeInfinity => "Double.NegativeInfinity".tt
+    case double if double.isNaN  => "Double.NaN".tt
+    case double                  => double.toString.tt
 
   given (using booleanStyle: BooleanStyle): Show[Boolean] = booleanStyle(_)
-  given Debug[Boolean] = boolean => Text(if boolean then "true" else "false")
+  given Debug[Boolean] = boolean => if boolean then "true".tt else "false".tt
 
   given [ValueType](using show: Show[ValueType]): Show[Option[ValueType]] =
     case Some(value) => show(value)
-    case None        => Text("none")
+    case None        => "none".tt
   
   given Show[Uuid] = _.text
   given Show[ByteSize] = _.text
   given Show[reflect.Enum] = _.toString.show
   given Debug[reflect.Enum] = _.toString.show
-  given Debug[Pid] = pid => Text("[PID:"+pid.value+"]")
+  given Debug[Pid] = pid => s"[PID:${pid.value}]".tt
 
   given set[ElemType](using Show[ElemType]): Show[Set[ElemType]] = set =>
-    Text(set.map(_.show).mkString("{", ", ", "}"))
+    set.map(_.show).mkString("{", ", ", "}").tt
   
   given list[ElemType](using Show[ElemType]): Show[List[ElemType]] = list =>
-    Text(list.map(_.show).mkString("[", ", ", "]"))
+    list.map(_.show).mkString("[", ", ", "]").tt
   
   given vector[ElemType](using Show[ElemType]): Show[Vector[ElemType]] =
-    vector => Text(vector.map(_.show).mkString("[ ", " ", " ]"))
+    vector => vector.map(_.show).mkString("[ ", " ", " ]").tt
   
   inline given set2[ElemType]: Debug[Set[ElemType]] =
     new Debug[Set[ElemType]]:
-      def apply(set: Set[ElemType]): Text = Text(set.map(_.debug).mkString("{", ", ", "}"))
+      def apply(set: Set[ElemType]): Text = set.map(_.debug).mkString("{", ", ", "}").tt
   
   inline given list2[ElemType]: Debug[List[ElemType]] =
     new Debug[List[ElemType]]:
-      def apply(list: List[ElemType]): Text = Text(list.map(_.debug).mkString("[", ", ", "]"))
+      def apply(list: List[ElemType]): Text = list.map(_.debug).mkString("[", ", ", "]").tt
   
   inline given vector2[ElemType]: Debug[Vector[ElemType]] =
     new Debug[Vector[ElemType]]:
       def apply(vector: Vector[ElemType]): Text =
-        Text(vector.map(_.debug).mkString("⟨ ", " ", " ⟩"))
+        vector.map(_.debug).mkString("⟨ ", " ", " ⟩").tt
   
   inline given array[ElemType]: Debug[Array[ElemType]] =
     new Debug[Array[ElemType]]:
       def apply(array: Array[ElemType]): Text = Text:
         array.zipWithIndex.map: (value, index) =>
           val subscript = index.toString.map { digit => (digit + 8272).toChar }.mkString
-          Text(subscript+value.debug.s)
+          (subscript+value.debug.s).tt
         .mkString("⦋"+arrayPrefix(array.toString), "∣", "⦌")
 
   inline given lazyList[ElemType]: Debug[LazyList[ElemType]] =
@@ -137,17 +137,17 @@ object TextConversion:
       def apply(value: LazyList[ElemType]): Text = recur(value, 3)
       
       private def recur(lazyList: LazyList[ElemType], todo: Int): Text =
-        if todo <= 0 then Text("..?")
-        else if lazyList.toString == "LazyList(<not computed>)" then Text("〜")
-        else if lazyList.isEmpty then Text("¶")
-        else Text(lazyList.head.debug.s+"⌗"+recur(lazyList.tail, todo - 1))
+        if todo <= 0 then "..?".tt
+        else if lazyList.toString == "LazyList(<not computed>)" then "〜".tt
+        else if lazyList.isEmpty then "¶".tt
+        else (lazyList.head.debug.s+"⌗"+recur(lazyList.tail, todo - 1)).tt
 
   inline given iarray[ElemType]: Debug[IArray[ElemType]] =
     new Debug[IArray[ElemType]]:
       def apply(iarray: IArray[ElemType]): Text = Text:
         iarray.zipWithIndex.map: (value, index) =>
           val subscript = index.toString.map { digit => (digit + 8272).toChar }.mkString
-          Text(subscript+value.debug.s)
+          subscript+value.debug.s.tt
         .mkString("⁅"+arrayPrefix(iarray.toString), "∣", "⁆")
   
   private def renderBraille(str: String): String =
@@ -170,24 +170,24 @@ object TextConversion:
       case 'Z' => "ℤ" // Boolean
       case _   => ""  // Unknown
     
-    val dimension = Text(if brackets < 2 then "" else brackets.toString.map("⁰¹²³⁴⁵⁶⁷⁸⁹"(_)))
+    val dimension = if brackets < 2 then "".tt else brackets.toString.map("⁰¹²³⁴⁵⁶⁷⁸⁹"(_)).tt
     
     arrayType+dimension+"¦"+renderBraille(str.split("@").nn(1).nn)+"¦"
 
   inline given [ValueType]: Debug[Option[ValueType]] =
     case None =>
-      Text("None")
+      "None".tt
     
     case Some(value) =>
       val valueText = compiletime.summonFrom:
         case display: Debug[ValueType] => display(value)
         case display: Show[ValueType]  => display(value)
-        case _                         => Text(value.toString)
+        case _                         => value.toString.tt
       
-      Text("Some("+valueText+")")
+      s"Some($valueText)".tt
   
-  given Show[None.type] = none => Text("none")
-  given Debug[None.type] = none => Text("None")
+  given Show[None.type] = none => "none".tt
+  given Debug[None.type] = none => "None".tt
   
   private transparent inline def deriveProduct
       [Labels <: Tuple]
@@ -200,7 +200,7 @@ object TextConversion:
           case _: (headLabel *: tailLabels) => inline valueOf[headLabel].asMatchable match
             case label: String =>
               val value = head.debug.s
-              Text(inline if isTuple then value else label+"="+value) ::
+              (inline if isTuple then value else (label+"="+value)).tt ::
                   deriveProduct[tailLabels](tail, isTuple)
 
   private transparent inline def deriveSum
@@ -227,10 +227,10 @@ object TextConversion:
             val elements = deriveProduct[mirror.MirroredElemLabels](Tuple.fromProductTyped(value),
                 isTuple)
             
-            val typeName = Text(valueOf[mirror.MirroredLabel])
+            val typeName = valueOf[mirror.MirroredLabel]
             
-            inline if isTuple then Text(elements.mkString("(", "·", ")"))
-            else Text(elements.mkString(typeName.s+"(", "·", ")"))
+            inline if isTuple then elements.mkString("(", "·", ")").tt
+            else elements.mkString(typeName+"(", "·", ")").tt
     
       case s: Mirror.SumOf[DerivationType] =>
         (value: DerivationType) =>
@@ -242,13 +242,13 @@ extension [ValueType](value: ValueType)
   inline def debug: Text = compiletime.summonFrom:
     case display: Debug[ValueType] => display(value)
     case display: Show[ValueType]  => display(value)
-    case _                         => Text(value.toString)
+    case _                         => value.toString.tt
 
 case class BooleanStyle(yes: Text, no: Text):
   def apply(boolean: Boolean): Text = if boolean then yes else no
 
 package booleanStyles:
-  given yesNo: BooleanStyle = BooleanStyle(Text("yes"), Text("no"))
-  given onOff: BooleanStyle = BooleanStyle(Text("on"), Text("off"))
-  given trueFalse: BooleanStyle = BooleanStyle(Text("true"), Text("false"))
-  given oneZero: BooleanStyle = BooleanStyle(Text("1"), Text("0"))
+  given yesNo: BooleanStyle = BooleanStyle("yes".tt, "no".tt)
+  given onOff: BooleanStyle = BooleanStyle("on".tt, "off".tt)
+  given trueFalse: BooleanStyle = BooleanStyle("true".tt, "false".tt)
+  given oneZero: BooleanStyle = BooleanStyle("1".tt, "0".tt)
