@@ -3,6 +3,8 @@ package mosquito
 import gossamer.*
 import rudiments.*
 import probably.*
+import spectacular.*
+import hieroglyph.*, textWidthCalculation.uniform
 import larceny.*
 
 object Tests extends Suite(t"Mosquito tests"):
@@ -44,4 +46,8 @@ object Tests extends Suite(t"Mosquito tests"):
     test(t"Calculate Double cross-product"):
       Euclidean(1.4, 2.4, 3.8).cross(Euclidean(4.9, 3.6, 0.7))
     .assert(_ == Euclidean(-12.0, 17.64, -6.72))
+    
+    test(t"Show Euclidean 3-vector"):
+      Euclidean(1, 3, 6).show
+    .assert(_ == t"\u239b 1 \u239e\n\u239c 3 \u239f\n\u239d 6 \u23a0")
     
