@@ -69,7 +69,9 @@ object Accordance:
       table.tabulate(drawTree(children, mkLine)(cmp), maxWidth = 200).join(out"\n")
     
     case Discord(left, right) =>
-      out"The result ${colors.Crimson}($right) did not equal ${colors.YellowGreen}($left)"
+      val whitespace = if right.contains('\n') then out"\n" else out" "
+      val whitespace2 = if left.contains('\n') then out"\n" else out" "
+      out"The result$whitespace${colors.Crimson}($right)${whitespace}did not equal$whitespace${colors.YellowGreen}($left)"
     
     case Accord(value) =>
       out"The value ${colors.Gray}($value) was expected"
