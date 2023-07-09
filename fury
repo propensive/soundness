@@ -1,0 +1,21 @@
+# This is a Wrath buildfile. More information is available at: https://github.com/propensive/wrath/
+
+target mosquito/test
+
+repo propensive/probably
+repo propensive/larceny
+repo propensive/quantitative
+
+project mosquito
+  module core
+    compiler  scala
+    sources   src/core
+    include   rudiments/core anticipation/math spectacular/core gossamer/core
+
+  module test
+    compiler  scala
+    sources   src/test
+    include   probably/cli quantitative/core mosquito/core larceny/plugin
+    main      mosquito.Tests
+
+
