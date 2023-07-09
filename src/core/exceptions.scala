@@ -64,7 +64,7 @@ case class Message(textParts: List[Text], subs: List[Message] = Nil):
     
     def recur(lines: List[String], break: Boolean): Text = lines match
       case Nil =>
-        Text(buf.toString.trim.nn)
+        buf.toString.trim.nn.tt
       
       case line :: tail =>
         if line.forall(_.isWhitespace) then recur(tail, true) else
@@ -95,9 +95,9 @@ case class Mistake(message: String) extends java.lang.Error(message)
 
 object AsMessage:
   given AsMessage[Text] = Message(_)
-  given AsMessage[String] = string => Message(Text(string))
-  given AsMessage[Char] = char => Message(Text(char.toString)) // Escape this
-  given AsMessage[Int] = int => Message(Text(int.toString))
+  given AsMessage[String] = string => Message(string.tt)
+  given AsMessage[Char] = char => Message(char.toString.tt) // Escape this
+  given AsMessage[Int] = int => Message(int.toString.tt)
   given AsMessage[Message] = identity(_)
 
 trait AsMessage[-ValueType]:

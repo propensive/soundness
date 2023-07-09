@@ -44,7 +44,7 @@ object ByteSize:
 
   extension (bs: ByteSize)
     def long: Long = bs
-    def text: Text = Text(bs.toString+" bytes")
+    def text: Text = (bs.toString+" bytes").tt
 
     @targetName("plus")
     infix def +(that: ByteSize): ByteSize = bs + that

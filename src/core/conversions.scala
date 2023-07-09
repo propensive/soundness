@@ -32,10 +32,10 @@ extension (value: Any)
     summon[Irrefutable[value.type, ResultType]].unapply(value)
 
 object Irrefutable:
-  given stringText: Irrefutable[String, Text] = Text(_)
+  given stringText: Irrefutable[String, Text] = _.tt
   
   given [ResultType](using ext: Irrefutable[Text, ResultType]): Irrefutable[String, ResultType] = v =>
-    ext.unapply(Text(v))
+    ext.unapply(v.tt)
 
   given textString: Irrefutable[Text, String] = _.s
   given ident[ResultType]: Irrefutable[ResultType, ResultType] = identity(_)
@@ -61,7 +61,7 @@ object Unapply:
     value => if value.unset then None else ext.unapply(value.asInstanceOf[MatchType])
 
   given [ResultType](using ext: Irrefutable[Text, ResultType]): Irrefutable[String, ResultType] = v =>
-    ext.unapply(Text(v))
+    ext.unapply(v.tt)
   
   given textChar: Unapply[Text, Char] = v => if v.s.length == 1 then Some(v.s.head) else None
   given textByte: Unapply[Text, Byte] = v => try Some(v.s.toByte) catch case e: NumberFormatException => None

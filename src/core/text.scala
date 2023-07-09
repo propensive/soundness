@@ -34,12 +34,12 @@ object Text:
   given genericHttpRequestParam: GenericHttpRequestParam[String, Text] = _.s
 
   given fromExpr(using fromExpr: FromExpr[String]): FromExpr[Text] with
-    def unapply(expr: Expr[Text])(using Quotes): Option[Text] = fromExpr.unapply(expr).map(Text(_))
+    def unapply(expr: Expr[Text])(using Quotes): Option[Text] = fromExpr.unapply(expr).map(_.tt)
   
   given toExpr(using toExpr: ToExpr[String]): ToExpr[Text] with
     def apply(text: Text)(using Quotes): Expr[Text] = toExpr(text.s)
 
-  given stringText: Conversion[String, Text] = Text(_)
+  given stringText: Conversion[String, Text] = _.tt
 
   erased given CanEqual[Text, Text] = ###
 
@@ -52,4 +52,3 @@ extension (texts: Iterable[Text])
   transparent inline def ss: Iterable[String] = texts
 
 extension (string: String) def tt: Text = Text(string)
-extension (strings: Iterable[String]) transparent inline def tt: Iterable[Text] = strings.map(Text(_))

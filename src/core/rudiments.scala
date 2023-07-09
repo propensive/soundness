@@ -43,14 +43,14 @@ extension [ValueType](value: ValueType)
 
 case class Property(name: Text) extends Dynamic:
   def apply(): Text throws KeyNotFoundError =
-    Text(Option(System.getProperty(name.s)).getOrElse(throw KeyNotFoundError(name)).nn)
+    Option(System.getProperty(name.s)).getOrElse(throw KeyNotFoundError(name)).nn.tt
 
   def update(value: Text): Unit = System.setProperty(name.s, value.s)
-  def selectDynamic(key: String): Property = Property(Text(s"$name.$key"))
+  def selectDynamic(key: String): Property = Property(s"$name.$key".tt)
   def applyDynamic(key: String)(): Text throws KeyNotFoundError = selectDynamic(key).apply()
 
 object Sys extends Dynamic:
-  def selectDynamic(key: String): Property = Property(Text(key))
+  def selectDynamic(key: String): Property = Property(key.tt)
   def applyDynamic(key: String)(): Text throws KeyNotFoundError = selectDynamic(key).apply()
   def bigEndian: Boolean = java.nio.ByteOrder.nativeOrder == java.nio.ByteOrder.BIG_ENDIAN
 
@@ -76,7 +76,7 @@ object Unsafe
 object Default:
   given Default[Int](0)
   given Default[Long](0L)
-  given Default[Text](Text(""))
+  given Default[Text]("".tt)
   given Default[String]("")
   given [ElemType]: Default[List[ElemType]](Nil)
   given [ElemType]: Default[Set[ElemType]](Set())
