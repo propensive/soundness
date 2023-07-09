@@ -26,4 +26,4 @@ extension (value: Double)
   @targetName("plusOrMinus")
   def +/-(tolerance: Double): Tolerance = Tolerance(value, tolerance)
 
-  def meets(tolerance: Tolerance): Boolean = tolerance.covers(value)
+  infix def meets(tolerance: Tolerance): Boolean = tolerance.covers(value)
