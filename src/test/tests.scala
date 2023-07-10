@@ -645,7 +645,7 @@ object Tests extends Suite(t"CoDL tests"):
       
       test(t"Root node has correct schema"):
         topSchema.parse(t"root").schema
-      .assert(_ == rootSchema)
+      .assert(_ == topSchema)
       
       test(t"First child of root param is validated"):
         topSchema.parse(t"root\n  child").root()(0).schema
