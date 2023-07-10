@@ -40,9 +40,8 @@ object Mosquito:
         (using multiply: Multiply[LeftType, RightType])
         (using add: Add[multiply.Result, multiply.Result])
         : Euclidean[add.Result, 3] =
-      add(multiply(left(1), right(2)), multiply(left(2), right(1)), true) *:
-          add(multiply(left(2), right(0)), multiply(left(0), right(2)), true) *:
-          add(multiply(left(0), right(1)), multiply(left(1), right(0)), true) *: EmptyTuple
+      (left(1)*right(2) - left(2)*right(1)) *: (left(2)*right(0) - left(0)*right(2)) *:
+          (left(0)*right(1) - left(1)*right(0)) *: EmptyTuple
       
 
   extension [SizeType <: Int, LeftType](left: Euclidean[LeftType, SizeType])
@@ -59,9 +58,9 @@ object Mosquito:
         : multiply.Result =
       
       def recur(index: Int, sum: multiply.Result): multiply.Result =
-        if index < 0 then sum else recur(index - 1, add(sum, multiply(left(index), right(index)), false))
+        if index < 0 then sum else recur(index - 1, sum + left(index)*right(index))
 
       val start = size.value - 1
-      recur(start - 1, multiply(left(start), right(start)))
+      recur(start - 1, left(start)*right(start))
 
 export Mosquito.Euclidean
