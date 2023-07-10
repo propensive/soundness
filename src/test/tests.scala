@@ -902,7 +902,7 @@ object Tests extends Suite(t"CoDL tests"):
       test(t"Cannot have duplicate IDs of the same type"):
         capture[AggregateError[CodlError]](repetitionSchema.parse(t"ABC first One\nABC second Two\nABC first Primary")) match
           case AggregateError[CodlError](errors) => errors.head
-      .assert(_ == CodlError(0, 0, 5, CodlError.Issue.DuplicateId(t"first", 1, 2)))
+      .assert(_ == CodlError(2, 4, 5, CodlError.Issue.DuplicateId(t"first", 0, 4)))
     
     suite(t"Binary tests"):
 

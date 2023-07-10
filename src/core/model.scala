@@ -184,6 +184,7 @@ extends Indexed:
 
   def uniqueId: Maybe[Text] = schema.subschemas.find(_.schema.arity == Arity.Unique) match
     case Some(CodlSchema.Entry(name: Text, schema)) =>
+      println(paramIndex.get(name).map(children(_).debug))
       paramIndex.get(name).map(children(_).fieldValue).getOrElse(Unset)
     case _ => Unset
 
