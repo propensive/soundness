@@ -72,17 +72,17 @@ object Codl:
     
     case class Proto(key: Maybe[Text] = Unset, line: Int = 0, col: Int = 0, children: List[CodlNode] = Nil,
                         meta: Maybe[Meta] = Unset, schema: CodlSchema = CodlSchema.Free, params: Int = 0,
-                        multiline: Boolean = false, ids: Map[Text, (Int, Int)] = Map()):
+                        multiline: Boolean = false, uniqueId: Maybe[Text] = Unset):
       
       def commit(child: Proto): (Proto, List[CodlError]) =
-        val (closed, errors2) = child.close
-        (copy(children = closed :: children, params = params + 1), errors2)
+        val (uniqueId, closed, errors2) = child.close
+        (copy(children = closed :: children, params = params + 1, uniqueId = uniqueId), errors2)
 
       def substitute(data: Data): Proto = copy(children = CodlNode(data) :: children, params = params + 1)
       def setMeta(meta: Maybe[Meta]): Proto = copy(meta = meta)
 
-      def close: (CodlNode, List[CodlError]) =
-        key.fm((CodlNode(Unset, meta), Nil)):
+      def close: (Maybe[Text], CodlNode, List[CodlError]) =
+        key.fm((Unset, CodlNode(Unset, meta), Nil)):
           case key: Text =>
             val meta2 = meta.mm { m => m.copy(comments = m.comments.reverse) }
             val data = Data(key, IArray.from(children.reverse), Layout(params, multiline), schema)
@@ -93,20 +93,20 @@ object Codl:
               then List(CodlError(line, col, node.key.or(t"?").length, MissingKey(node.key.or(t"?"), key)))
               else Nil
 
-            (node, errors)
+            (if schema.arity == Arity.Unique then key else Unset, node, errors)
 
     @tailrec
     def recur(tokens: LazyList[CodlToken], focus: Proto, peers: List[CodlNode], stack: List[(Proto, List[CodlNode])],
-                  lines: Int, subs: List[Data], errors: List[CodlError], body: LazyList[Text])
+                  lines: Int, subs: List[Data], errors: List[CodlError], body: LazyList[Text], ids: Set[Text])
              : CodlDoc =
       
       def schema: CodlSchema = stack.headOption.fold(baseSchema)(_.head.schema.option.get)
       
       inline def go(tokens: LazyList[CodlToken] = tokens.tail, focus: Proto = focus, peers: List[CodlNode] = peers,
                         stack: List[(Proto, List[CodlNode])] = stack, lines: Int = lines, subs: List[Data] = subs,
-                        errors: List[CodlError] = errors, body: LazyList[Text] = LazyList())
+                        errors: List[CodlError] = errors, body: LazyList[Text] = LazyList(), ids: Set[Text] = ids)
                    : CodlDoc =
-        recur(tokens, focus, peers, stack, lines, subs, errors, body)
+        recur(tokens, focus, peers, stack, lines, subs, errors, body, ids)
       
       tokens match
         case token #:: tail => token match
@@ -115,7 +115,7 @@ object Codl:
           case CodlToken.Error(err) => go(errors = err :: errors)
           case CodlToken.Peer => focus.key match
             case key: Text =>
-              val (closed, errors2) = focus.close
+              val (uniqueId, closed, errors2) = focus.close
               go(focus = Proto(), peers = closed :: peers, errors = errors2 ::: errors)
           
             case _ =>
@@ -131,10 +131,13 @@ object Codl:
             
             case (proto, rest) :: stack2 =>
               val next = if n == 1 then CodlToken.Peer else CodlToken.Outdent(n - 1)
-              val (closed, errors2) = focus.close
-              val focus2 = proto.copy(children = closed :: peers ::: proto.children)
+              val (uniqueId, closed, errors2) = focus.close
+              
+              val focus2 = proto.copy(children = closed :: peers ::: proto.children, uniqueId =
+                  uniqueId)
 
-              go(next #:: tail, focus = focus2, peers = rest, stack = stack2, errors = errors2 ::: errors)
+              go(next #:: tail, focus = focus2, peers = rest, stack = stack2, errors = errors2 :::
+                  errors)
           
           case CodlToken.Tab(n) =>
             go()
@@ -143,43 +146,51 @@ object Codl:
             case Unset            =>
               go(lines = lines + 1)
             case Meta(l, _, _, _) =>
-              val (closed, errors2) = focus.close
-              go(focus = Proto(), peers = closed :: peers, lines = lines + 1, errors = errors2 ::: errors)
+              val (uniqueId, closed, errors2) = focus.close
+              
+              go(focus = Proto(), peers = closed :: peers, lines = lines + 1, errors = errors2 :::
+                  errors)
           
           case CodlToken.Argument =>
             go(focus = focus.substitute(subs.head), subs = subs.tail)
 
           case CodlToken.Item(word, line, col, block) =>
-            val meta2: Maybe[Meta] = focus.meta.or(if lines == 0 then Unset else Meta(blank = lines))
+            val meta2: Maybe[Meta] = focus.meta.or(if lines == 0 then Unset else Meta(blank =
+                lines))
             
             focus.key match
               case key: Text => focus.schema match
-                case field@Field(_, _)            => val (focus2, errors2) = focus.commit(Proto(word, line, col))
-                                                     go(focus = focus2, lines = 0, errors = errors2 ::: errors)
+                case field@Field(_, _) =>
+                  val (focus2, errors2) = focus.commit(Proto(word, line, col))
+                  go(focus = focus2, lines = 0, errors = errors2 ::: errors)
                 
-                case CodlSchema.Free              => val (focus2, errors2) = focus.commit(Proto(word, line, col))
-                                                     go(focus = focus2, lines = 0, errors = errors2 ::: errors)
+                case CodlSchema.Free =>
+                  val (focus2, errors2) = focus.commit(Proto(word, line, col))
+                  go(focus = focus2, lines = 0, errors = errors2 ::: errors)
                 
-                case struct@Struct(_, _)          => struct.param(focus.children.length) match
-                  case Unset                         => val error = CodlError(line, col, word.length, SurplusParams(word, key))
-                                                        go(errors = error :: errors)
+                case struct@Struct(_, _) => struct.param(focus.children.length) match
+                  case Unset =>
+                    val error = CodlError(line, col, word.length, SurplusParams(word, key))
+                    go(errors = error :: errors)
                   
-                  case entry: CodlSchema.Entry    => val peer = Proto(word, line, col, schema = entry.schema)
-                                                     val (focus2, errors2) = focus.commit(peer)
-                                                     go(focus = focus2, lines = 0, errors = errors2 ::: errors)
+                  case entry: CodlSchema.Entry =>
+                    val peer = Proto(word, line, col, schema = entry.schema)
+                    val (focus2, errors2) = focus.commit(peer)
+                    go(focus = focus2, lines = 0, errors = errors2 ::: errors)
               
               case _ =>
                 val (fschema: CodlSchema, errors2: List[CodlError]) =
                   if schema == CodlSchema.Free then (schema, errors)
                   else schema(word).mm((_, errors)).or:
-                    (CodlSchema.Free, List(CodlError(line, col, word.length, InvalidKey(word, word))))
+                    (CodlSchema.Free, List(CodlError(line, col, word.length, InvalidKey(word,
+                        word))))
 
                 val errors3 =
                   if fschema.unique && peers.exists(_.data.mm(_.key) == word)
                   then CodlError(line, col, word.length, DuplicateKey(word, word)) :: errors2
                   else errors2
                 
-                go(focus = Proto(word, line, col, meta = meta2, schema = fschema, ids = focus.ids), lines = 0,
+                go(focus = Proto(word, line, col, meta = meta2, schema = fschema), lines = 0,
                     errors = errors3)
           
           case CodlToken.Comment(txt, line, col) => focus.key match
@@ -188,13 +199,20 @@ object Codl:
             
             case _ =>
               val meta = focus.meta.or(Meta())
-              go(focus = Proto(line = line, col = col, meta = meta.copy(blank = lines, comments = txt :: meta.comments)))
+              
+              go(focus = Proto(line = line, col = col, meta = meta.copy(blank = lines, comments =
+                  txt :: meta.comments)))
             
         case _ => stack match
           case Nil =>
-            val (closed, errors2) = focus.close
-            val allErrors: List[CodlError] = errors2 ::: errors
+            val (uniqueId, closed, errors2) = focus.close
             val children = if closed.blank then peers.reverse else (closed :: peers).reverse
+            
+            val duplicateIds: Iterable[CodlError] = children.filter(!_.uniqueId.unset).groupBy(_.uniqueId).filter(_(1).length > 1).map:
+              case (id: Text, nodes) => CodlError(0, 0, id.length, DuplicateId(id, 0, 0))
+              
+            val allErrors: List[CodlError] = errors2 ::: errors ::: duplicateIds.to(List)
+            
             if allErrors.isEmpty then CodlDoc(IArray.from(children), baseSchema, margin, body)
             else throw AggregateError(allErrors.reverse)
           
@@ -203,7 +221,7 @@ object Codl:
     
 
 
-    if stream.isEmpty then CodlDoc() else recur(stream, Proto(), Nil, Nil, 0, subs.reverse, Nil, LazyList())
+    if stream.isEmpty then CodlDoc() else recur(stream, Proto(), Nil, Nil, 0, subs.reverse, Nil, LazyList(), Set())
 
   def tokenize(in: LazyList[Text]^, fromStart: Boolean = false): (Int, LazyList[CodlToken]^{in}) =
     val reader: PositionReader = new PositionReader(in.map(identity))
