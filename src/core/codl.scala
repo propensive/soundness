@@ -57,7 +57,8 @@ object Codl:
   def read
       [ValueType: Codec]
       (source: Any)
-      (using readable: Readable[source.type, Text], aggregate: CanThrow[AggregateError[CodlError]], streamCut: CanThrow[StreamCutError], codlRead: CanThrow[CodlReadError])
+      (using readable: Readable[source.type, Text], aggregate: CanThrow[AggregateError[CodlError]],
+          codlRead: CanThrow[CodlReadError])
       : ValueType^{readable, aggregate} =
     summon[Codec[ValueType]].schema.parse(readable.read(source)).as[ValueType]
   
@@ -79,7 +80,6 @@ object Codl:
         (copy(children = closed :: children, params = params + 1), errors2)
 
       def substitute(data: Data): Proto = copy(children = CodlNode(data) :: children, params = params + 1)
-      
       def setMeta(meta: Maybe[Meta]): Proto = copy(meta = meta)
 
       def close: (CodlNode, List[CodlError]) =
