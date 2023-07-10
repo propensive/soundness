@@ -28,19 +28,9 @@ trait Decoder[+ValueType]:
 trait Encoder[-ValueType]:
   def encode(text: ValueType): Text
 
-object Codec:
-  given codec[ValueType]
-      (using encoder: Encoder[ValueType], decoder: Decoder[ValueType])
-      : Codec[ValueType]^{decoder, encoder} =
-    Codec(encoder, decoder)
-
-case class Codec[ValueType](encoder: Encoder[ValueType], decoder: Decoder[ValueType]):
-  def decode(text: Text): ValueType = decoder.decode(text)
-  def encode(value: ValueType): Text = encoder.encode(value)
-
 extension (text: Text)
   def decodeAs[ValueType](using decoder: Decoder[ValueType]): ValueType^{decoder} =
     decoder.decode(text)
 
 extension [ValueType](value: ValueType)
-  def encode(using encoder: Encoder[ValueType]): Text = encoder.encode(value)
+  def encode(using encoder: Encoder[ValueType]): Text^{encoder} = encoder.encode(value)
