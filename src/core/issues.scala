@@ -17,9 +17,6 @@
 package cellulose
 
 import rudiments.*
-import digression.*
-import spectacular.*
-import gossamer.*
 
 export CodlError.Issue.*
 
@@ -85,7 +82,7 @@ object CodlError:
     case DuplicateId(point: Text, line: Int, col: Int)
 
 case class CodlError(line: Int, col: Int, length: Int, issue: CodlError.Issue)
-extends Error(msg"could not read the CoDL document at $line:$col: ${issue.show}")
+extends Error(msg"could not read the CoDL document at $line:$col: ${issue}")
 
 case class BinaryError(expectation: Text, pos: Int)
 extends Exception(s"expected $expectation at position $pos")

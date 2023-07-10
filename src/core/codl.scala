@@ -23,7 +23,6 @@ import spectacular.*, booleanStyles.trueFalse
 import digression.*
 import contextual.*
 import turbulence.*
-import chiaroscuro.*
 
 import language.experimental.captureChecking
 

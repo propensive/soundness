@@ -20,7 +20,6 @@ import rudiments.*
 import digression.*
 import gossamer.*
 import turbulence.*
-import chiaroscuro.*
 
 import language.experimental.captureChecking
 import language.dynamics
