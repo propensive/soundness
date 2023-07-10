@@ -16,6 +16,8 @@
 
 package anticipation
 
+import scala.annotation.*
+
 object Add:
   given Add[Int, Int] with
     type Result = Int
@@ -79,3 +81,26 @@ object Multiply:
 trait Multiply[-LeftType, -RightType]:
   type Result
   def apply(left: LeftType, right: RightType): Result
+
+extension [LeftType](inline left: LeftType)
+  @targetName("add")
+  transparent inline infix def +
+      [RightType]
+      (inline right: RightType)
+      (using inline add: Add[LeftType, RightType])
+      : Any =
+    add(left, right, false)
+  
+  @targetName("subtract")
+  transparent inline infix def -
+      [RightType]
+      (inline right: RightType)(using inline add: Add[LeftType, RightType])
+      : Any =
+    add(left, right, true)
+  
+  @targetName("multiply")
+  transparent inline infix def *
+      [RightType]
+      (inline right: RightType)(using inline multiply: Multiply[LeftType, RightType])
+      : Any =
+    multiply(left, right)
