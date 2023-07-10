@@ -119,11 +119,8 @@ object Codl:
               val (closed, errors2) = focus.close
               go(focus = Proto(), peers = closed :: peers, errors = errors2 ::: errors)
           
-            case Unset =>
-              go(focus = Proto(Unset, meta = focus.meta.or(if lines == 0 then Unset else Meta(lines))))
-            
             case _ =>
-              throw Mistake("Should never match")
+              go(focus = Proto(Unset, meta = focus.meta.or(if lines == 0 then Unset else Meta(lines))))
             
           case CodlToken.Indent =>
             val errors2 = if focus.key.unset then CodlError(focus.line, focus.col, 1, IndentAfterComment) :: errors else errors
@@ -157,20 +154,6 @@ object Codl:
             val meta2: Maybe[Meta] = focus.meta.or(if lines == 0 then Unset else Meta(blank = lines))
             
             focus.key match
-              case Unset =>
-                val (fschema: CodlSchema, errors2: List[CodlError]) =
-                  if schema == CodlSchema.Free then (schema, errors)
-                  else schema(word).mm((_, errors)).or:
-                    (CodlSchema.Free, List(CodlError(line, col, word.length, InvalidKey(word, word))))
-
-                val errors3 =
-                  if fschema.unique && peers.exists(_.data.mm(_.key) == word)
-                  then CodlError(line, col, word.length, DuplicateKey(word, word)) :: errors2
-                  else errors2
-                
-                go(focus = Proto(word, line, col, meta = meta2, schema = fschema, ids = focus.ids), lines = 0,
-                    errors = errors3)
-              
               case key: Text => focus.schema match
                 case field@Field(_, _)            => val (focus2, errors2) = focus.commit(Proto(word, line, col))
                                                      go(focus = focus2, lines = 0, errors = errors2 ::: errors)
@@ -187,16 +170,27 @@ object Codl:
                                                      go(focus = focus2, lines = 0, errors = errors2 ::: errors)
               
               case _ =>
-                throw Mistake("Should never match")
+                val (fschema: CodlSchema, errors2: List[CodlError]) =
+                  if schema == CodlSchema.Free then (schema, errors)
+                  else schema(word).mm((_, errors)).or:
+                    (CodlSchema.Free, List(CodlError(line, col, word.length, InvalidKey(word, word))))
+
+                val errors3 =
+                  if fschema.unique && peers.exists(_.data.mm(_.key) == word)
+                  then CodlError(line, col, word.length, DuplicateKey(word, word)) :: errors2
+                  else errors2
+                
+                go(focus = Proto(word, line, col, meta = meta2, schema = fschema, ids = focus.ids), lines = 0,
+                    errors = errors3)
           
           case CodlToken.Comment(txt, line, col) => focus.key match
-            case Unset => val meta = focus.meta.or(Meta())
-                          go(focus = Proto(line = line, col = col, meta = meta.copy(blank = lines, comments = txt :: meta.comments)))
+            case key: Text =>
+              go(focus = focus.setMeta(focus.meta.or(Meta()).copy(remark = txt, blank = lines)))
             
-            case key: Text => go(focus = focus.setMeta(focus.meta.or(Meta()).copy(remark = txt, blank = lines)))
-          
-            case _ => throw Mistake("Should never match")
-        
+            case _ =>
+              val meta = focus.meta.or(Meta())
+              go(focus = Proto(line = line, col = col, meta = meta.copy(blank = lines, comments = txt :: meta.comments)))
+            
         case _ => stack match
           case Nil =>
             val (closed, errors2) = focus.close
