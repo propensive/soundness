@@ -21,8 +21,8 @@ import spectacular.*
 import digression.*
 import gossamer.*
 import contextual.*
-import anticipation.*
 import quantitative.*
+import anticipation.{GenericInstant, GenericDuration}
 
 import scala.quoted.*
 import java.util as ju
