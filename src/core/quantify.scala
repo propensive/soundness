@@ -340,8 +340,8 @@ object Quantitative:
       case _                                   => quantity
   
   extension [UnitsType <: Measure](inline quantity: Quantity[UnitsType])
-    inline def tally[TallyType <: Tuple]: Tally[TallyType] =
-      ${QuantitativeMacros.fromQuantity[UnitsType, TallyType]('quantity)}
+    inline def count[CountType <: Tuple]: Count[CountType] =
+      ${QuantitativeMacros.fromQuantity[UnitsType, CountType]('quantity)}
 
   object MetricUnit:
     def apply[UnitsType <: Measure](value: Double): MetricUnit[UnitsType] = value

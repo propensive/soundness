@@ -21,47 +21,47 @@ import spectacular.*
 
 import scala.quoted.*
 
-object TallyQuaques:
-  opaque type Tally[UnitsType <: Tuple] = Long
+object CountQuaques:
+  opaque type Count[UnitsType <: Tuple] = Long
 
-  object Tally:
-    def fromLong[UnitsType <: Tuple](long: Long): Tally[UnitsType] = long
+  object Count:
+    def fromLong[UnitsType <: Tuple](long: Long): Count[UnitsType] = long
     
-    inline def apply[UnitsType <: Tuple](inline values: Int*): Tally[UnitsType] =
+    inline def apply[UnitsType <: Tuple](inline values: Int*): Count[UnitsType] =
       ${QuantitativeMacros.make[UnitsType]('values)}
 
-    inline given [UnitsType <: Tuple]: Show[Tally[UnitsType]] = new Show[Tally[UnitsType]]:
-      def apply(tally: Tally[UnitsType]): Text = Text:
-        tally.components.filter(_(1) != 0).map: (unit, count) =>
+    inline given [UnitsType <: Tuple]: Show[Count[UnitsType]] = new Show[Count[UnitsType]]:
+      def apply(count: Count[UnitsType]): Text = Text:
+        count.components.filter(_(1) != 0).map: (unit, count) =>
           Text(count.toString+unit)
         .mkString(" ")
     
-  extension [UnitsType <: Tuple](tally: Tally[UnitsType])
-    def longValue: Long = tally
+  extension [UnitsType <: Tuple](count: Count[UnitsType])
+    def longValue: Long = count
     
-  extension [UnitsType <: Tuple](inline tally: Tally[UnitsType])
+  extension [UnitsType <: Tuple](inline count: Count[UnitsType])
     @targetName("add")
-    inline def +(right: Tally[UnitsType]): Tally[UnitsType] =
-      ${QuantitativeMacros.addTally[UnitsType]('tally, 'right)}
+    inline def +(right: Count[UnitsType]): Count[UnitsType] =
+      ${QuantitativeMacros.addCount[UnitsType]('count, 'right)}
 
     inline def apply[UnitType[PowerType <: Nat] <: Units[PowerType, ? <: Dimension]]: Int =
-      ${QuantitativeMacros.get[UnitsType, UnitType[1]]('tally)}
+      ${QuantitativeMacros.get[UnitsType, UnitType[1]]('count)}
     
     transparent inline def quantity: Any =
-      ${QuantitativeMacros.toQuantity[UnitsType]('tally)}
+      ${QuantitativeMacros.toQuantity[UnitsType]('count)}
     
     inline def components: ListMap[Text, Long] =
-      ${QuantitativeMacros.describeTally[UnitsType]('tally)}
+      ${QuantitativeMacros.describeCount[UnitsType]('count)}
     
     @targetName("multiply")
     transparent inline def *(inline multiplier: Double): Any =
-      ${QuantitativeMacros.multiplyTally('tally, 'multiplier, false)}
+      ${QuantitativeMacros.multiplyCount('count, 'multiplier, false)}
     
     @targetName("divide")
     transparent inline def /(inline multiplier: Double): Any =
-      ${QuantitativeMacros.multiplyTally('tally, 'multiplier, true)}
+      ${QuantitativeMacros.multiplyCount('count, 'multiplier, true)}
 
-export TallyQuaques.Tally
+export CountQuaques.Count
 
 type TimeMinutes = (Hours[1], Minutes[1])
 type TimeSeconds = (Hours[1], Minutes[1], Seconds[1])

@@ -273,111 +273,111 @@ object Tests extends Suite(t"Quantitative Tests"):
         Pts(73).quantify > Inch
       .assert(_ == true)
     
-    suite(t"Tally tests"):
+    suite(t"Count tests"):
 
       test(t"Access seconds in an HMS time"):
-        val hmsTime = Tally[TimeSeconds](27, 18, 9)
+        val hmsTime = Count[TimeSeconds](27, 18, 9)
         hmsTime[Seconds]
       .assert(_ == 9)
       
       test(t"Access minutes in an HMS time"):
-        val hmsTime = Tally[TimeSeconds](27, 18, 9)
+        val hmsTime = Count[TimeSeconds](27, 18, 9)
         hmsTime[Minutes]
       .assert(_ == 18)
       
       test(t"Access hours in an HMS time"):
-        val hmsTime = Tally[TimeSeconds](27, 18, 9)
+        val hmsTime = Count[TimeSeconds](27, 18, 9)
         hmsTime[Hours]
       .assert(_ == 27)
       
       test(t"Access inches in an imperial distance"):
-        val imperialDistance = Tally[(Miles[1], Yards[1], Feet[1], Inches[1])](1800, 4, 2, 11)
+        val imperialDistance = Count[(Miles[1], Yards[1], Feet[1], Inches[1])](1800, 4, 2, 11)
         imperialDistance[Feet]
       .assert(_ == 2)
       
       test(t"Units of different dimensions cannot be mixed"):
         demilitarize:
-          Tally[(Miles[1], Yards[1], Seconds[1], Inches[1])](1, 2, 3)
+          Count[(Miles[1], Yards[1], Seconds[1], Inches[1])](1, 2, 3)
       .assert(_.length == 1)
 
-      test(t"Convert a length to a Tally"):
+      test(t"Convert a length to a Count"):
         type Height = (Feet[1], Inches[1])
         val length: Quantity[Metres[1]] = (5*Foot + 10*Inch)
-        val tally = length.tally[Height]
-        (tally[Feet], tally[Inches])
+        val count = length.count[Height]
+        (count[Feet], count[Inches])
       .assert(_ == (5, 10))
       
       type Weight = (Stones[1], Pounds[1], Ounces[1])
       
-      test(t"Convert a mass Quantity to a Tally"):
+      test(t"Convert a mass Quantity to a Count"):
         val weight: Quantity[Kilograms[1]] = 20*Kilo(Gram)
-        val tally = weight.tally[Weight]
-        (tally[Stones], tally[Pounds], tally[Ounces])
+        val count = weight.count[Weight]
+        (count[Stones], count[Pounds], count[Ounces])
       .assert(_ == (3, 2, 1))
       
-      test(t"Convert a Tally to a Quantity"):
-        val weight: Tally[Weight] = Tally(5, 6)
+      test(t"Convert a Count to a Quantity"):
+        val weight: Count[Weight] = Count(5, 6)
         weight.quantity
       .assert(_ == 2.438057*Kilo(Gram))
       
-      test(t"Convert a Tally to a Quantity in pounds"):
-        val weight: Tally[Weight] = Tally(5, 6)
+      test(t"Convert a Count to a Quantity in pounds"):
+        val weight: Count[Weight] = Count(5, 6)
         weight.quantity.in[Pounds]
       .assert(_ == 5.375*Pound)
 
-      test(t"Add two Tallys"):
-        val weight: Tally[Weight] = Tally(12, 9)
-        val sum: Tally[Weight] = weight + Tally[Weight](1)
+      test(t"Add two Counts"):
+        val weight: Count[Weight] = Count(12, 9)
+        val sum: Count[Weight] = weight + Count[Weight](1)
         (sum[Stones], sum[Pounds], sum[Ounces])
       .assert(_ == (0, 12, 10))
       
-      test(t"Add two Tallys 2"):
-        val weight: Tally[Weight] = Tally(12, 9)
-        val sum: Tally[Weight] = weight + Tally[Weight](2)
+      test(t"Add two Counts 2"):
+        val weight: Count[Weight] = Count(12, 9)
+        val sum: Count[Weight] = weight + Count[Weight](2)
         (sum[Stones], sum[Pounds], sum[Ounces])
       .assert(_ == (0, 12, 11))
       
-      test(t"Add two Tallys 3"):
-        val weight: Tally[Weight] = Tally(12, 9)
-        val sum: Tally[Weight] = weight + Tally[Weight](5)
+      test(t"Add two Counts 3"):
+        val weight: Count[Weight] = Count(12, 9)
+        val sum: Count[Weight] = weight + Count[Weight](5)
         (sum[Stones], sum[Pounds], sum[Ounces])
       .assert(_ == (0, 12, 14))
       
-      test(t"Add two Tallys 4"):
-        val weight: Tally[Weight] = Tally(12, 9)
-        val sum: Tally[Weight] = weight + Tally[Weight](7)
+      test(t"Add two Counts 4"):
+        val weight: Count[Weight] = Count(12, 9)
+        val sum: Count[Weight] = weight + Count[Weight](7)
         (sum[Stones], sum[Pounds], sum[Ounces])
       .assert(_ == (0, 13, 0))
       
-      test(t"Add two Tallys 5"):
-        val weight: Tally[Weight] = Tally(12, 9)
-        val sum: Tally[Weight] = weight + Tally[Weight](8)
+      test(t"Add two Counts 5"):
+        val weight: Count[Weight] = Count(12, 9)
+        val sum: Count[Weight] = weight + Count[Weight](8)
         (sum[Stones], sum[Pounds], sum[Ounces])
       .assert(_ == (0, 13, 1))
       
-      test(t"Multiply a tally by a double"):
-        val weight: Tally[Weight] = Tally(12, 9)
+      test(t"Multiply a count by a double"):
+        val weight: Count[Weight] = Count(12, 9)
         val result = weight*2.5
         (result[Stones], result[Pounds], result[Ounces])
       .assert(_ == (2, 3, 6))
       
       test(t"Adding with double carry"):
-        val weight: Tally[Weight] = Tally(100, 13, 15)
-        val sum: Tally[Weight] = weight + Tally[Weight](1)
+        val weight: Count[Weight] = Count(100, 13, 15)
+        val sum: Count[Weight] = weight + Count[Weight](1)
         (sum[Stones], sum[Pounds], sum[Ounces])
       .assert(_ == (101, 0, 0))
 
-      suite(t"Showing Tally values"):
+      suite(t"Showing Count values"):
         test(t"Show a single-unit weight"):
-          Tally[Weight](2).show
+          Count[Weight](2).show
         .assert(_ == t"2oz")
         
         test(t"Show a more complex weight"):
-          Tally[Weight](3, 2).show
+          Count[Weight](3, 2).show
         .assert(_ == t"3lb 2oz")
         
         test(t"Show a weight of three parts"):
-          Tally[Weight](1, 3, 2).show
+          Count[Weight](1, 3, 2).show
         .assert(_ == t"1st 3lb 2oz")
 
     suite(t"Offset quantities"):

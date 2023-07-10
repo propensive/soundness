@@ -433,7 +433,7 @@ object QuantitativeMacros:
           dimension.mm: current =>
             if unitPower.ref.dimensionRef != current
             then fail(msg"""
-              the Tally type incorrectly mixes units of ${unitPower.ref.dimensionRef.name} and
+              the Count type incorrectly mixes units of ${unitPower.ref.dimensionRef.name} and
               ${current.name}
             """)
           
@@ -461,7 +461,7 @@ object QuantitativeMacros:
     
     recur(cascade, cascade.head, 1.0, -1).tail.reverse
 
-  def make[UnitsType <: Tuple: Type](values: Expr[Seq[Int]])(using Quotes): Expr[Tally[UnitsType]] =
+  def make[UnitsType <: Tuple: Type](values: Expr[Seq[Int]])(using Quotes): Expr[Count[UnitsType]] =
     val inputs: List[Expr[Int]] = (values: @unchecked) match
       case Varargs(values) => values.to(List).reverse
     
@@ -488,20 +488,20 @@ object QuantitativeMacros:
           
           case Nil =>
             fail(msg"""
-              ${inputs.length} unit values were provided, but this Tally only has ${slices.length}
+              ${inputs.length} unit values were provided, but this Count only has ${slices.length}
               units
             """)
     
-    '{Tally.fromLong[UnitsType](${recur(bitSlices[UnitsType].reverse, inputs, '{0L})})}
+    '{Count.fromLong[UnitsType](${recur(bitSlices[UnitsType].reverse, inputs, '{0L})})}
 
-  def addTally
-      [TallyUnitsType <: Tuple: Type]
-      (left: Expr[Tally[TallyUnitsType]], right: Expr[Tally[TallyUnitsType]])
+  def addCount
+      [CountUnitsType <: Tuple: Type]
+      (left: Expr[Count[CountUnitsType]], right: Expr[Count[CountUnitsType]])
       (using Quotes)
-      : Expr[Tally[TallyUnitsType]] =
+      : Expr[Count[CountUnitsType]] =
     import quotes.reflect.*
 
-    val slices = bitSlices[TallyUnitsType]
+    val slices = bitSlices[CountUnitsType]
 
     '{
       var total: Long = 0
@@ -529,12 +529,12 @@ object QuantitativeMacros:
         recur(slices.reverse, '{()})
       }
       
-      Tally.fromLong(total)
+      Count.fromLong(total)
     }
 
-  def describeTally
-      [TallyUnits <: Tuple: Type]
-      (tally: Expr[Tally[TallyUnits]])
+  def describeCount
+      [CountUnits <: Tuple: Type]
+      (count: Expr[Count[CountUnits]])
       (using Quotes)
       : Expr[ListMap[Text, Long]] =
     def recur(slices: List[BitSlice], expr: Expr[ListMap[Text, Long]]): Expr[ListMap[Text, Long]] =
@@ -543,33 +543,33 @@ object QuantitativeMacros:
           expr
         
         case (slice@BitSlice(unitPower, max, width, shift)) :: tail =>
-          val value = '{($tally.asInstanceOf[Long] >>> ${Expr(shift)}) & ${Expr(slice.ones)}}
+          val value = '{($count.asInstanceOf[Long] >>> ${Expr(shift)}) & ${Expr(slice.ones)}}
           recur(tail, '{$expr.updated(${unitPower.ref.unitName}, $value)})
 
-    recur(bitSlices[TallyUnits], '{ListMap()})
+    recur(bitSlices[CountUnits], '{ListMap()})
 
-  def multiplyTally
-      [TallyUnitsType <: Tuple: Type]
-      (tally: Expr[Tally[TallyUnitsType]], multiplier: Expr[Double], division: Boolean)
+  def multiplyCount
+      [CountUnitsType <: Tuple: Type]
+      (count: Expr[Count[CountUnitsType]], multiplier: Expr[Double], division: Boolean)
       (using Quotes)
       : Expr[Any] =
-    val principal = bitSlices[TallyUnitsType].head.unitPower.ref.dimensionRef.principal
+    val principal = bitSlices[CountUnitsType].head.unitPower.ref.dimensionRef.principal
     
     (principal.power(1).asType: @unchecked) match
       case '[type unitType <: Measure; unitType] =>
-        val quantityExpr = toQuantity[TallyUnitsType](tally).asExprOf[Quantity[unitType]]
+        val quantityExpr = toQuantity[CountUnitsType](count).asExprOf[Quantity[unitType]]
         val multiplier2 = if division then '{1.0/$multiplier} else multiplier
         val multiplied = multiply('{Quantity($multiplier2)}, quantityExpr, false)
         val quantity2 = multiplied.asExprOf[Quantity[unitType]]
         
-        fromQuantity[unitType, TallyUnitsType](quantity2)
+        fromQuantity[unitType, CountUnitsType](quantity2)
 
   def toQuantity
-      [TallyUnitsType <: Tuple: Type]
-      (tally: Expr[Tally[TallyUnitsType]])
+      [CountUnitsType <: Tuple: Type]
+      (count: Expr[Count[CountUnitsType]])
       (using Quotes)
       : Expr[Any] =
-    val slices = bitSlices[TallyUnitsType]
+    val slices = bitSlices[CountUnitsType]
     val quantityUnit = slices.head.unitPower.ref.dimensionRef.principal
 
     def recur(slices: List[BitSlice], expr: Expr[Double]): Expr[Double] = slices match
@@ -578,7 +578,7 @@ object QuantitativeMacros:
       
       case (slice@BitSlice(unitPower, max, width, shift)) :: tail =>
         val factor = ratio(unitPower.ref, quantityUnit, unitPower.power)
-        recur(tail, '{$expr + $factor*(($tally.longValue >>> ${Expr(shift)}) &
+        recur(tail, '{$expr + $factor*(($count.longValue >>> ${Expr(shift)}) &
             ${Expr(slice.ones)})})
     
     (quantityUnit.power(1).asType: @unchecked) match
@@ -586,13 +586,13 @@ object QuantitativeMacros:
         '{Quantity[quantityType](${recur(slices, '{0.0})})}
 
   def fromQuantity
-      [QuantityType <: Measure: Type, TallyUnitsType <: Tuple: Type]
+      [QuantityType <: Measure: Type, CountUnitsType <: Tuple: Type]
       (quantity: Expr[Quantity[QuantityType]])
       (using Quotes)
-      : Expr[Tally[TallyUnitsType]] =
+      : Expr[Count[CountUnitsType]] =
     import quotes.reflect.*
     
-    val slices = bitSlices[TallyUnitsType]
+    val slices = bitSlices[CountUnitsType]
     val quantityUnit = readUnitPower(TypeRepr.of[QuantityType].dealias)
     val rounding = ratio(slices.last.unitPower.ref, quantityUnit.ref, slices.last.unitPower.power)
     
@@ -621,12 +621,12 @@ object QuantitativeMacros:
         recur(slices, '{})
       }
       
-      Tally.fromLong[TallyUnitsType](result)
+      Count.fromLong[CountUnitsType](result)
     }
 
   def get
       [UnitsType <: Tuple: Type, UnitType <: Units[1, ? <: Dimension]: Type]
-      (value: Expr[Tally[UnitsType]])
+      (value: Expr[Count[UnitsType]])
       (using Quotes)
       : Expr[Int] =
     import quotes.reflect.*
@@ -635,7 +635,7 @@ object QuantitativeMacros:
     val lookupUnit = readUnitPower(TypeRepr.of[UnitType])
     
     val bitSlice: BitSlice = slices.find(_.unitPower == lookupUnit).getOrElse:
-      fail(msg"the Tally does not include this unit")
+      fail(msg"the Count does not include this unit")
 
     '{(($value.longValue >>> ${Expr(bitSlice.shift)}) & ${Expr(bitSlice.ones)}).toInt}
   

@@ -388,27 +388,27 @@ provided that,
 and furthermore, for most useful operations, that contextual `Ratio` instances exist between each unit and
 the principal unit for their common dimension.
 
-With a valid definition, such as one of the above, we can represent values in its units, called a `Tally`
-(because it's a tally, or count, of integer multiples of each of the units).
+With a valid definition, such as one of the above, we can represent values in its units, called a `Count`
+(because it's a count of integer multiples of each of the units).
 
-To construct a new `Tally`, simply call its factory method with the appropriate tuple type, and as many
+To construct a new `Count`, simply call its factory method with the appropriate tuple type, and as many
 integer arguments as necessary. The rightmost `Int` argument will be interpreted as the multiple of the
 rightmost unit in the tuple, and additional arguments will represent (right-to-left) multiples of units of
-increasing magnitude. For example, `Tally[ImperialDistance](180, 24)` represents, "180 yards and 24 inches",
-while, `Tally[ImperialDistance](1, 180, 24)` represents, "1 mile, 180 yards and 24 inches".
+increasing magnitude. For example, `Count[ImperialDistance](180, 24)` represents, "180 yards and 24 inches",
+while, `Count[ImperialDistance](1, 180, 24)` represents, "1 mile, 180 yards and 24 inches".
 
-Individual units from a `Tally` may be extracted.
+Individual units from a `Count` may be extracted.
 
-`Tally`s of identical units may be added and subtracted, and multiplied and divided by numbers (but not
+`Count`s of identical units may be added and subtracted, and multiplied and divided by numbers (but not
 other quantities). They may be converted to `Quantity`s with the `in` method, much as a `Quantity` can
 be converted, or constructed from a `Quantity` by applying in to the factory method, e.g.
 ```scala
-Tally[Avoirdupois](18*Kilo(Gram))
+Count[Avoirdupois](18*Kilo(Gram))
 ```
 
 ### Representation
 
-A `Tally` is an opaque type alias for a `Long`, meaning that operations involving `Tally`s do not involve
+A `Count` is an opaque type alias for a `Long`, meaning that operations involving `Count`s do not involve
 any heap objects. The bits of the `Long` are organized so that a fixed range of the 64 bits available in
 a `Long` will exclusively represent any possible value for that unit. Since the number of different integer
 values that can be represent by such a bit-range will always be a power of two, there may be some unused
