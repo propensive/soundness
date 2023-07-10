@@ -41,3 +41,6 @@ case class Codec[ValueType](encoder: Encoder[ValueType], decoder: Decoder[ValueT
 extension (text: Text)
   def decodeAs[ValueType](using decoder: Decoder[ValueType]): ValueType^{decoder} =
     decoder.decode(text)
+
+extension [ValueType](value: ValueType)
+  def encode(using encoder: Encoder[ValueType]): Text = encoder.encode(value)
