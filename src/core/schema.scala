@@ -59,10 +59,12 @@ extends Dynamic:
   def optional: CodlSchema
   def entry(n: Int): Entry = subschemas(n)
 
-  def parse[SourceType](source: SourceType)
-           (using streamCut: CanThrow[StreamCutError], aggregate: CanThrow[AggregateError[CodlError]],
-                readable: Readable[SourceType, Text])
-           : CodlDoc^{aggregate, streamCut} =
+  def parse
+      [SourceType]
+      (source: SourceType)
+      (using streamCut: CanThrow[StreamCutError], aggregate: CanThrow[AggregateError[CodlError]],
+          readable: Readable[SourceType, Text])
+      : CodlDoc^{aggregate, streamCut, readable} =
     Codl.parse(source, this)
   
   def apply(key: Text): Maybe[CodlSchema] = dictionary.get(key).orElse(dictionary.get(Unset)).getOrElse(Unset)

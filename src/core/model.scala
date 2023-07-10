@@ -94,20 +94,21 @@ object CodlDoc:
   given Assimilable[CodlDoc] = _.schema == _.schema
   //given Contrast[CodlDoc] = Contrast.derived[CodlDoc]
 
-  given Contrast[CodlDoc] = (left, right) =>
-    if left == right then Accordance.Accord(left.debug) else
-      val comparison = IArray.from:
-        (t"[schema]", left.schema.contrastWith(right.schema)) +:
-        (t"[margin]", left.margin.contrastWith(right.margin)) +:
-        diff(left.children, right.children).rdiff(_.id == _.id).changes.map:
-          case Par(_, _, v)      => v.mm(_.key).or(t"—") -> Accordance.Accord(v.debug)
-          case Ins(_, v)         => v.mm(_.key).or(t"—") -> Accordance.Discord(t"—", v.debug)
-          case Del(_, v)         => v.mm(_.key).or(t"—") -> Accordance.Discord(v.debug, t"—")
-          case Sub(_, v, lv, rv) =>
-            val key = if lv.mm(_.key) == rv.mm(_.key) then lv.mm(_.key).or(t"—") else t"${lv.mm(_.key).or(t"—")}/${rv.mm(_.key).or(t"—")}"
-            key -> lv.contrastWith(rv)
-      
-      Accordance.Collation(comparison, t"", t"")
+  inline given Contrast[CodlDoc] = new Contrast[CodlDoc]:
+    def apply(left: CodlDoc, right: CodlDoc) =
+      inline if left == right then Accordance.Accord(left.debug) else
+        val comparison = IArray.from:
+          (t"[schema]", left.schema.contrastWith(right.schema)) +:
+          (t"[margin]", left.margin.contrastWith(right.margin)) +:
+          diff(left.children, right.children).rdiff(_.id == _.id).changes.map:
+            case Par(_, _, v)      => v.mm(_.key).or(t"—") -> Accordance.Accord(v.debug)
+            case Ins(_, v)         => v.mm(_.key).or(t"—") -> Accordance.Discord(t"—", v.debug)
+            case Del(_, v)         => v.mm(_.key).or(t"—") -> Accordance.Discord(v.debug, t"—")
+            case Sub(_, v, lv, rv) =>
+              val key = if lv.mm(_.key) == rv.mm(_.key) then lv.mm(_.key).or(t"—") else t"${lv.mm(_.key).or(t"—")}/${rv.mm(_.key).or(t"—")}"
+              key -> lv.contrastWith(rv)
+        
+        Accordance.Collation(comparison, t"", t"")
 
 case class CodlDoc(children: IArray[CodlNode], schema: CodlSchema, margin: Int, body: LazyList[Text] = LazyList())
 extends Indexed:

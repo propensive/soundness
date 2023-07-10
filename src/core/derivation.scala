@@ -76,7 +76,7 @@ object Codec extends ProductDerivation[Codec]:
       val label = param.annotations.collectFirst { case `codlLabel`(name) => name }.getOrElse(param.label)
       param.typeclass.deserialize(value.head.get(label.show))
 
-  given [T](using canon: Canonical[T]): Codec[T] = FieldCodec(canon.serialize, canon.deserialize)
+  given [T](using encoder: Encoder[T], decoder: Decoder[T]): Codec[T] = FieldCodec(encoder.encode(_), decoder.decode(_))
   given (using CanThrow[IncompatibleTypeError]): Codec[Char] = FieldCodec(_.show, _.as[Char])
   given Codec[Text] = FieldCodec(_.show, identity(_))
   

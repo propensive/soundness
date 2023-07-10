@@ -53,19 +53,20 @@ object CodlToken:
     case Comment(text, line, col)     => t"Comment($text, $line, $col)"
     case Error(error)                 => t"Error(${error.message})"
   
-  given Contrast[CodlToken] = Contrast.derived[CodlToken]
-
 object Codl:
-  def read[T: Codec](source: Any)(using readable: Readable[source.type, Text])
-          : T throws AggregateError[CodlError] | CodlReadError | StreamCutError = // FIXME: Should only be aggregate error
-    summon[Codec[T]].schema.parse(readable.read(source)).as[T]
+  def read
+      [ValueType: Codec]
+      (source: Any)
+      (using readable: Readable[source.type, Text], aggregate: CanThrow[AggregateError[CodlError]], streamCut: CanThrow[StreamCutError], codlRead: CanThrow[CodlReadError])
+      : ValueType^{readable, aggregate} =
+    summon[Codec[ValueType]].schema.parse(readable.read(source)).as[ValueType]
   
-  def parse[SourceType]
-           (source: SourceType, schema: CodlSchema = CodlSchema.Free, subs: List[Data] = Nil,
-                fromStart: Boolean = false)
-           (using readable: Readable[SourceType, Text],
-               aggregate: CanThrow[AggregateError[CodlError]], streamCut: CanThrow[StreamCutError])
-           : CodlDoc^{readable, aggregate, streamCut} =
+  def parse
+      [SourceType]
+      (source: SourceType, schema: CodlSchema = CodlSchema.Free, subs: List[Data] = Nil,
+          fromStart: Boolean = false)
+      (using readable: Readable[SourceType, Text], aggregate: CanThrow[AggregateError[CodlError]])
+      : CodlDoc^{readable, aggregate} =
     val (margin, stream) = tokenize(readable.read(source), fromStart)
     val baseSchema: CodlSchema = schema
     
@@ -333,12 +334,9 @@ object Codl:
     def content: Text = parts.reverse.join(t"\u0000")
 
   object Prefix extends Interpolator[List[Data], State, CodlDoc]:
-    protected def complete(state: State): CodlDoc =
-      try Codl.parse(state.content, CodlSchema.Free, state.subs.reverse, fromStart = true)
-      catch
-        case err: StreamCutError => throw Mistake("Should be impossible")
-        case err: AggregateError[CodlError] => err.errors.head match
-          case CodlError(_, off, _, issue)  => throw InterpolationError(t"read error: $issue", off)
+    protected def complete(state: State): CodlDoc = ???
+      // try Codl.parse(state.content, CodlSchema.Free, state.subs.reverse, fromStart = true)
+      // catch case error: AggregateError[CodlError] => ???
     
     def initial: State = State(Nil, Nil)
     def skip(state: State): State = insert(state, List(Data(t"_")))

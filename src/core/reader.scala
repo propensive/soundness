@@ -31,12 +31,17 @@ object Character:
   def apply(int: Int, line: Int, col: Int): Character =
     int.toLong | ((line.toLong&0xffffff) << 48) | ((col.toLong&0xffffff) << 24)
 
-  given Canonical[Character] with
-    def serialize(ch: Character): Text = if ch == End then t"[END]" else t"[${ch.char}:${ch.line}:${ch.column}]"
+  given Encoder[Character] with
+    def encode(char: Character): Text =
+      if char == End then t"[END]" else t"[${char.char}:${char.line}:${char.column}]"
     
-    def deserialize(txt: Text): Character = txt match
-      case r"[$ch(.):${As[Int](l)}([0-9]+):${As[Int](c)}([0-9]+)]" => Character(unsafely(ch(0).toInt), l, c)
-      case _                                                       => End
+  given Decoder[Character] with
+    def decode(txt: Text): Character = txt match
+      case r"[$ch(.):${As[Int](l)}([0-9]+):${As[Int](c)}([0-9]+)]" =>
+        Character(unsafely(ch(0).toInt), l, c)
+      
+      case _ =>
+        End
 
   given Typeable[Character] with
     def unapply(value: Any): Option[value.type & Character] = value.matchable(using Unsafe) match

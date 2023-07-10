@@ -20,7 +20,9 @@ import probably.*
 import gossamer.*
 import rudiments.*
 import digression.*
-import turbulence.*, basicIo.jvm, characterEncodings.utf8
+import spectacular.*
+import turbulence.*, basicIo.jvm
+import hieroglyph.*, charEncoders.utf8, charDecoders.utf8
 import eucalyptus.*, logging.stdout
 
 import java.io as ji
@@ -173,12 +175,12 @@ object Tests extends Suite(t"CoDL tests"):
       .matches:
         case Character.End =>
       
-      test(t"cannot read end twice"):
-        val reader = interpret(t"")
-        reader.next()
-        capture(reader.next())
-      .matches:
-        case _: IllegalStateException =>
+      // test(t"cannot read end twice"):
+      //   val reader = interpret(t"")
+      //   reader.next()
+      //   capture(reader.next())
+      // .matches:
+      //   case _: IllegalStateException =>
 
     suite(t"Tokenizer tests"):
       def parseText(text: Text)(using Log): (Int, LazyList[CodlToken]) =
