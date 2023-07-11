@@ -180,7 +180,7 @@ case class Pipeline(cmds: Command*) extends Executable:
 
     new Process[Exec, T](ProcessBuilder.startPipeline(processBuilders.asJava).nn.asScala.to(List).last)
 
-case class ExecError(command: Command, stdout: DataStream, stderr: DataStream)
+case class ExecError(command: Command, stdout: LazyList[Bytes], stderr: LazyList[Bytes])
 extends Error(msg"execution of the command $command failed")
 
 object Sh:
