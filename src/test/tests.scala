@@ -1114,6 +1114,40 @@ object Tests extends Suite(t"CoDL tests"):
       test(t"Serialize a node and a child with a remark"):
         CodlDoc(CodlNode(Data(t"root", IArray(CodlNode(Data(t"child"), Meta(remark = t"some remark")))))).serialize
       .assert(_ == t"root\n  child # some remark\n")
+    
+    suite(t"Double-spacing tests"):
+      test(t"Single-space-separated"):
+        read(t"root one two\n").wiped
+      .assert(_ == CodlDoc(CodlNode(t"root")(CodlNode(t"one")(), CodlNode(t"two")())))
+      
+      test(t"Double-space-separated"):
+        read(t"root  one  two\n").wiped
+      .assert(_ == CodlDoc(CodlNode(t"root")(CodlNode(t"one")(), CodlNode(t"two")())))
+      
+      test(t"Short/long spacing"):
+        read(t"root one  two\n").wiped
+      .assert(_ == CodlDoc(CodlNode(t"root")(CodlNode(t"one")(), CodlNode(t"two")())))
+      
+      test(t"Long/short spacing"):
+        read(t"root  one two\n").wiped
+      .assert(_ == CodlDoc(CodlNode(t"root")(CodlNode(t"one two")())))
+      
+      test(t"Long/short/long spacing"):
+        read(t"root  one two  three\n").wiped
+      .assert(_ == CodlDoc(CodlNode(t"root")(CodlNode(t"one two")(), CodlNode(t"three")())))
+      
+      test(t"Short/short/long spacing"):
+        read(t"root one two  three\n").wiped
+      .assert(_ == CodlDoc(CodlNode(t"root")(CodlNode(t"one")(), CodlNode(t"two")(), CodlNode(t"three")())))
+      
+      test(t"Short/Long/short spacing"):
+        read(t"root one  two three\n").wiped
+      .assert(_ == CodlDoc(CodlNode(t"root")(CodlNode(t"one")(), CodlNode(t"two three")())))
+      
+      test(t"Short/Long/short/Long/short spacing"):
+        read(t"root one  two three  four five\n").wiped
+      .assert(_ == CodlDoc(CodlNode(t"root")(CodlNode(t"one")(), CodlNode(t"two three")(), CodlNode(t"four five")())))
+      
 
     // suite(t"Interpolation suite"):
 

@@ -264,7 +264,8 @@ object Codl:
     val reader: PositionReader = new PositionReader(in.map(identity))
 
     enum State:
-      case Word, Hash, Comment, Indent, Space, Tab, Margin, Line
+      case Word, Hash, Comment, Indent, Space, Margin, Line
+      case Pending(ch: Character)
     
     import State.*
 
@@ -276,52 +277,58 @@ object Codl:
     val (first: Character, start: Int) = try cue(0) catch case err: CodlError => ???
     val margin: Int = first.column
 
-    def istream(char: Character, state: State = Indent, indent: Int = margin, count: Int): LazyList[CodlToken] =
-      stream(char, state, indent, count)
+    def istream(char: Character, state: State = Indent, indent: Int = margin, count: Int, padding: Boolean): LazyList[CodlToken] =
+      stream(char, state, indent, count, padding)
     
     @tailrec
-    def stream(char: Character, state: State = Indent, indent: Int = margin, count: Int = start)
+    def stream(char: Character, state: State = Indent, indent: Int = margin, count: Int = start, padding: Boolean)
               : LazyList[CodlToken] =
       inline def next(): Character =
         try reader.next() catch case err: CodlError => Character('\n', err.line, err.col)
       
-      inline def recur(state: State, indent: Int = indent, count: Int = count + 1): LazyList[CodlToken] =
-        stream(next(), state, indent, count)
+      inline def recur(state: State, indent: Int = indent, count: Int = count + 1, padding: Boolean = padding): LazyList[CodlToken] =
+        stream(next(), state, indent, count, padding)
       
       inline def line(): LazyList[CodlToken] =
         reader.get()
         val char = next()
         if char.char != '\n' && char != Character.End then ???
-        else if char == Character.End then
-          LazyList()
-        else stream(next(), Line, indent, count + 1)
+        else
+          if char == Character.End
+          then LazyList()
+          else stream(next(), Line, indent, count + 1, padding)
       
-      inline def irecur(state: State, indent: Int = indent, count: Int = count + 1): LazyList[CodlToken] =
-        istream(next(), state, indent, count)
+      inline def irecur(state: State, indent: Int = indent, count: Int = count + 1, padding: Boolean = padding): LazyList[CodlToken] =
+        istream(next(), state, indent, count, padding)
       
       inline def diff: Int = char.column - indent
       inline def col(char: Character): Int = if fromStart then count else char.column
       
-      def put(next: State, stop: Boolean = false): LazyList[CodlToken] = token() #:: irecur(next)
+      def put(next: State, stop: Boolean = false, padding: Boolean = padding): LazyList[CodlToken] =
+        token() #:: irecur(next, padding = padding)
 
-      def token(): CodlToken = state match
-        case Comment => CodlToken.Comment(reader.get(), reader.start()(0), reader.start()(1) - 1)
-        case Margin  => val text = reader.get()
-                        val trimmed = if text.last == '\n' then text.drop(1, Rtl) else text
-                        CodlToken.Item(trimmed, reader.start()(0), reader.start()(1), true)
-        case Word    => val word = reader.get()
-                        if word == t"\u0000" then CodlToken.Argument
-                        else CodlToken.Item(word, reader.start()(0), reader.start()(1), false)
-        case _       => ???
+      def token(): CodlToken = (state: @unchecked) match
+        case Comment =>
+          CodlToken.Comment(reader.get(), reader.start()(0), reader.start()(1) - 1)
+        
+        case Margin =>
+          val text = reader.get()
+          val trimmed = if text.last == '\n' then text.drop(1, Rtl) else text
+          CodlToken.Item(trimmed, reader.start()(0), reader.start()(1), true)
+        
+        case Word | Pending(_) =>
+          val word = reader.get()
+          if word == t"\u0000" then CodlToken.Argument
+          else CodlToken.Item(word, reader.start()(0), reader.start()(1), false)
 
-      inline def consume(next: State): LazyList[CodlToken] =
+      inline def consume(next: State, padding: Boolean = padding): LazyList[CodlToken] =
         reader.put(char)
-        recur(next)
+        recur(next, padding = padding)
 
       inline def block(): LazyList[CodlToken] =
-        if diff >= 4 || char.char == '\n' then consume(Margin)
-        else if char.char == ' ' then recur(Margin)
-        else token() #:: istream(char, count = count + 1, indent = indent)
+        if diff >= 4 || char.char == '\n' then consume(Margin, padding = false)
+        else if char.char == ' ' then recur(Margin, padding = false)
+        else token() #:: istream(char, count = count + 1, indent = indent, false)
 
       inline def fail(next: State, error: CodlError, adjust: Maybe[Int] = Unset): LazyList[CodlToken] =
         CodlToken.Error(error) #:: irecur(next, indent = adjust.or(char.column))
@@ -337,45 +344,47 @@ object Codl:
 
       char.char match
         case _ if char == Character.End => state match
-          case Indent | Space | Tab | Hash => LazyList()
-          case Comment | Word | Margin     => LazyList(token())
-          case Line                        => LazyList(CodlToken.Line(reader.get()))
+          case Indent | Space | Hash | Pending(_) => LazyList()
+          case Comment | Word | Margin            => LazyList(token())
+          case Line                               => LazyList(CodlToken.Line(reader.get()))
         
         case '\n' => state match
-          case Word | Comment       => put(Indent)
-          case Margin               => block()
-          case Indent | Space | Tab => CodlToken.Blank #:: irecur(Indent)
-          case Line                 => CodlToken.Line(reader.get()) #:: irecur(Line)
-          case _                    => recur(Indent)
+          case Word | Comment | Pending(_) => put(Indent, padding = false)
+          case Margin                      => block()
+          case Indent | Space              => CodlToken.Blank #:: irecur(Indent, padding = false)
+          case Line                        => CodlToken.Line(reader.get()) #:: irecur(Line, padding = false)
+          case _                           => recur(Indent, padding = false)
         
         case ' ' => state match
-          case Space | Tab    => recur(Tab)
-          case Indent         => recur(Indent)
-          case Word           => put(Space)
-          case Comment | Line => consume(state)
-          case Margin         => block()
-          case Hash           => reader.get(); recur(Comment)
+          case Space              => recur(Space, padding = true)
+          case Pending(_)         => put(Space)
+          case Indent             => recur(Indent)
+          case Word               => if padding then recur(Pending(char)) else put(Space)
+          case Comment | Line     => consume(state)
+          case Margin             => block()
+          case Hash               => reader.get(); recur(Comment)
         
         case '#' => state match
-          case Space | Tab    => consume(Hash)
-          case Line           => consume(Line)
-          case Comment        => line()
-          case Word           => consume(Word)
-          case Indent         => if diff == 4 then recur(Margin) else newline(Comment)
-          case Margin         => block()
-          case Hash           => consume(Word)
+          case Pending(_) | Space => consume(Hash)
+          case Line               => consume(Line)
+          case Comment            => line()
+          case Word               => consume(Word)
+          case Indent             => if diff == 4 then recur(Margin) else newline(Comment)
+          case Margin             => block()
+          case Hash               => consume(Word)
         
         case ch => state match
-          case Space | Tab | Word => consume(Word)
-          case Line | Comment     => consume(state)
-          case Indent             => reader.put(char); if diff == 4 then recur(Margin) else newline(Word)
-          case Margin             => block()
+          case Pending(ch)    => reader.put(ch); consume(Word)
+          case Space | Word   => consume(Word)
+          case Line | Comment => consume(state)
+          case Indent         => reader.put(char); if diff == 4 then recur(Margin) else newline(Word)
+          case Margin         => block()
           
           case Hash => char.char match
             case '!' if first.line == 0 && first.column == 1 => consume(Comment)
             case ch                                          => consume(Word)
 
-    (first.column, stream(first).drop(1))
+    (first.column, stream(first, padding = false).drop(1))
 
   case class State(parts: List[Text], subs: List[Data]):
     def content: Text = parts.reverse.join(t"\u0000")
