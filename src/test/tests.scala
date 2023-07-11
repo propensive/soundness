@@ -106,7 +106,7 @@ object Tests extends Suite(t"Nettlesome tests"):
       
       test(t"IPv6 address too many groups"):
         capture(Ipv6.parse(t"1:2:3:4::5:6:7:8"))
-      .assert(_ == IpAddressError(IpAddressError.Issue.Ipv6TooManyGroups(8)))
+      .assert(_ == IpAddressError(IpAddressError.Issue.Ipv6TooManyNonzeroGroups(8)))
       
       test(t"IPv6 address wrong number of groups"):
         capture(Ipv6.parse(t"1:2:3:4:5:6:7:8:9"))

@@ -77,7 +77,14 @@ object Nettlesome:
       def byte1: Int = (ip >>> 16) & 255
       def byte2: Int = (ip >>> 8) & 255
       def byte3: Int = ip & 255
+    
+      def /(size: Int): Ipv4Subnet = Ipv4Subnet(ip & (-1 << (32 - size)), size)
 
+  object Ipv4Subnet:
+    given Show[Ipv4Subnet] = subnet => t"${subnet.ipv4}/${subnet.size}"
+
+  case class Ipv4Subnet(ipv4: Ipv4, size: Int)
+  
   case class Ipv6(highBits: Long, lowBits: Long)
 
   def ip(context: Expr[StringContext])(using Quotes): Expr[Ipv4 | Ipv6] =
