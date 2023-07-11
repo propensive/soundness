@@ -19,6 +19,7 @@ package xylophone
 import wisteria.*
 import rudiments.*
 import gossamer.*
+import spectacular.*
 
 trait XmlReader[T]:
   def read(xml: Seq[Ast]): Option[T]
@@ -28,8 +29,8 @@ object XmlReader extends Derivation[XmlReader]:
   given txt: XmlReader[Text] =
     childElements(_).collect { case Ast.Textual(txt) => txt }.headOption
   
-  // given [T](using canon: Canonical[T]): XmlReader[T] =
-  //   case Ast.Element(_, Ast.Textual(text) +: _, _, _) +: _ => Some(canon.deserialize(text))
+  given [T](using decoder: Decoder[T]): XmlReader[T] =
+    case Ast.Element(_, Ast.Textual(text) +: _, _, _) +: _ => Some(text.decodeAs[T])
   
   def join[T](caseClass: CaseClass[XmlReader, T]): XmlReader[T] = seq =>
     val elems = childElements(seq)

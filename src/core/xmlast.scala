@@ -35,8 +35,9 @@ object Ast:
       t"<${name.show}${attributeString}>$inside</${name.show}>"
 
 enum Ast:
-  case Element(name: XmlName, children: Seq[Ast], attributes: Map[XmlName, Text] = Map(),
-                   namespaces: List[Namespace] = Nil)
+  case Element
+      (name: XmlName, children: Seq[Ast], attributes: Map[XmlName, Text] = Map(),
+          namespaces: List[Namespace] = Nil)
   case Comment(content: Text)
   case ProcessingInstruction(target: Text, content: Text)
   case Textual(content: Text)
