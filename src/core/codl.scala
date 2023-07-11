@@ -207,9 +207,6 @@ object Codl:
                     val peer = Proto(word, line, col, schema = entry.schema)
                     val (uniqueId, focus2, errors2) = focus.commit(peer)
                     
-                    uniqueId.mm: uniqueId =>
-                      if peerIds.contains(uniqueId(0)) then println("CLASH: "+uniqueId)
-                    
                     val errors3 =
                       uniqueId.mm: uniqueId =>
                         if peerIds.contains(uniqueId(0))
