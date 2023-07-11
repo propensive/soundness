@@ -68,7 +68,7 @@ object Media:
   lazy val systemMediaTypes: Set[Text] =
     try
       val stream = Option(getClass.getResourceAsStream("/gesticulate/media.types")).getOrElse:
-        throw InterpolationError(t"could not find 'gesticulate/media.types' on the classpath")
+        throw InterpolationError(msg"could not find 'gesticulate/media.types' on the classpath")
       .nn
 
       val lines: Iterator[Text] =
@@ -81,7 +81,7 @@ object Media:
     def parse(state: Text, next: Text): Text = next
     
     def insert(state: Text, value: Unit): Text =
-      throw InterpolationError(t"a media type literal cannot have substitutions")
+      throw InterpolationError(msg"a media type literal cannot have substitutions")
 
     def skip(value: Text): Text = value
     def initial: Text = t""
@@ -89,16 +89,17 @@ object Media:
     def complete(value: Text): MediaType =
       val parsed = try Media.parse(value) catch
         case err: InvalidMediaTypeError =>
-          throw InterpolationError(t"'${err.value}' is not a valid media type; ${err.nature.message}")
+          throw InterpolationError(msg"${err.value} is not a valid media type; ${err.nature.message}")
 
       parsed.subtype match
         case Subtype.Standard(_) =>
           if !systemMediaTypes.contains(parsed.basic)
           then
             val suggestion = systemMediaTypes.minBy(_.lev(parsed.basic))
-            throw InterpolationError(txt"""${parsed.basic} is not a registered media type; did you
-                                           mean $suggestion or
-                                           ${parsed.basic.sub(t"/", t"/x-")}?""")
+            throw InterpolationError(msg"""
+              ${parsed.basic} is not a registered media type; did you mean $suggestion or
+              ${parsed.basic.sub(t"/", t"/x-")}?
+            """)
         case _ =>
           ()
       
