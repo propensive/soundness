@@ -5,6 +5,7 @@ repo propensive/gesticulate
 repo propensive/eucalyptus
 repo propensive/serpentine
 repo propensive/escapade
+repo propensive/wisteria
 
 target telekinesis/test
 
@@ -13,12 +14,12 @@ project telekinesis
     sources  src/url
     include  serpentine/core escapade/core anticipation/url
 
-  module test
-    sources  src/test
-    include  telekinesis/url probably/cli
-    main     telekinesis.Tests
-
   module client
     sources  src/client
-    include  gastronomy/core gesticulate/core telekinesis/url eucalyptus/core hieroglyph/core
+    include  gastronomy/core gesticulate/core telekinesis/url eucalyptus/core hieroglyph/core wisteria/core
+
+  module test
+    sources  src/test
+    include  telekinesis/client probably/cli
+    main     telekinesis.Tests
 

@@ -64,7 +64,8 @@ object UrlInterpolator extends contextual.Interpolator[UrlInput, Text, Url]:
   def insert(state: Text, value: UrlInput): Text =
     value match
       case UrlInput.Integral(port) =>
-        if !state.ends(t":") then throw InterpolationError(msg"a port number must be specified after a colon")
+        if !state.ends(t":")
+        then throw InterpolationError(msg"a port number must be specified after a colon")
         
         try Url.parse(state+port.show)
         catch case err: UrlError => throw InterpolationError(Message(err.message.text))
@@ -72,7 +73,8 @@ object UrlInterpolator extends contextual.Interpolator[UrlInput, Text, Url]:
         state+port.show
       
       case UrlInput.Textual(txt) =>
-        if !state.ends(t"/") then throw InterpolationError(msg"a substitution may only be made after a slash")
+        if !state.ends(t"/")
+        then throw InterpolationError(msg"a substitution may only be made after a slash")
         
         try Url.parse(state+txt.urlEncode)
         catch case err: UrlError => throw InterpolationError(Message(err.message.text))
@@ -80,7 +82,8 @@ object UrlInterpolator extends contextual.Interpolator[UrlInput, Text, Url]:
         state+txt.urlEncode
       
       case UrlInput.RawTextual(txt) =>
-        if !state.ends(t"/") then throw InterpolationError(msg"a substitution may only be made after a slash")
+        if !state.ends(t"/")
+        then throw InterpolationError(msg"a substitution may only be made after a slash")
 
         try Url.parse(state+txt.urlEncode)
         catch case err: UrlError => throw InterpolationError(Message(err.message.text))
@@ -90,8 +93,7 @@ object UrlInterpolator extends contextual.Interpolator[UrlInput, Text, Url]:
   override def substitute(state: Text, sub: Text): Text = state+sub
 
   def parse(state: Text, next: Text): Text =
-    // FIXME: Should use `.empty` instead of `.s.isEmpty`
-    if !state.s.isEmpty && !(next.starts(t"/") || next.s.isEmpty)
+    if !state.empty && !(next.starts(t"/") || next.empty)
     then throw InterpolationError(msg"a substitution must be followed by a slash")
     
     state+next
@@ -105,7 +107,8 @@ object Url:
 
   given GenericHttpRequestParam["location", Url] = show(_).s
 
-  // given (using CanThrow[UrlError]): Canonical[Url] = Canonical(parse(_), _.show)
+  given (using CanThrow[UrlError]): Decoder[Url] = parse(_)
+  given Encoder[Url] = _.show
 
   given Reachable[Url, "", (Scheme, Maybe[Authority])] with
     def separator(url: Url): Text = t"/"

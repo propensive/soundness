@@ -19,9 +19,9 @@ package telekinesis
 import rudiments.*
 import anticipation.*
 import gossamer.*
-import turbulence.*
 import hieroglyph.*, charEncoders.utf8
 import gastronomy.*
+import spectacular.*
 
 trait RequestHeader[LabelType <: Label]():
   def header: Text
@@ -29,7 +29,7 @@ trait RequestHeader[LabelType <: Label]():
   def apply
       [ValueType]
       (content: ValueType)
-      (using param: GenericHttpRequestParam[LabelType, ValueType])
+      (using ghrp: GenericHttpRequestParam[LabelType, ValueType])
       : RequestHeader.Value =
     RequestHeader.Value(this, Text(ghrp(content)))
 
@@ -73,8 +73,8 @@ object RequestHeader:
 
   given Show[RequestHeader[?]] = _.header
 
-  def apply[LabelType <: Label](paramName: LabelType): RequestHeader[LabelType] =
-    new RequestHeader():
+  def apply(paramName: String): RequestHeader[paramName.type] =
+    new RequestHeader[paramName.type]():
       def header: Text = Text(paramName)
 
   case object AIm extends SimpleRequestHeader["a-im"]()
@@ -188,7 +188,7 @@ enum ResponseHeader(val header: Text):
 
 object Auth:
   given Show[Auth] =
-    case Basic(username, password) => t"Basic ${t"$username:$password".bytes.encode[Base64]}"
+    case Basic(username, password) => t"Basic ${t"$username:$password".bytes.encodeAs[Base64]}"
     case Bearer(token)             => t"Bearer $token"
     case Digest(digest)            => t"Digest $digest"
     case Hoba(text)                => t"HOBA $text"
