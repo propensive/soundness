@@ -84,6 +84,10 @@ object Tests extends Suite(t"Nettlesome tests"):
         ip"2001:db8::1:1:1:1"
       .assert(_ == Ipv6(0x2001, 0xdb8, 0, 0, 0x1, 0x1, 0x1, 0x1))
       
+      test(t"Create and show a subnet"):
+        (ip"255.123.143.0"/12).show
+      .assert(_ == t"255.112.0.0/12")
+      
       test(t"Parse an IPv6 containing capital letters"):
         Ipv6.parse(t"2001:DB8::1:1:1:1:1")
       .assert(_ == Ipv6(0x2001, 0xdb8, 0, 0x1, 0x1, 0x1, 0x1, 0x1))
