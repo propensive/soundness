@@ -43,19 +43,19 @@ trait Signing:
 trait Symmetric
 
 object MessageData:
-  given Show[MessageData[?]] = msg => t"MessageData(${msg.bytes.encode[Base64]})"
+  given Show[MessageData[?]] = msg => t"MessageData(${msg.bytes.encodeAs[Base64]})"
 
 case class MessageData[+A <: CryptoAlgorithm[?]](bytes: Bytes) extends Encodable, Shown[MessageData[?]]
 
 object Signature:
-  given Show[Signature[?]] = sig => t"Signature(${sig.bytes.encode[Base64]})"
+  given Show[Signature[?]] = sig => t"Signature(${sig.bytes.encodeAs[Base64]})"
 
 case class Signature[+A <: CryptoAlgorithm[?]](bytes: Bytes) extends Encodable, Shown[Signature[?]]
 
 object ExposeSecretKey
 
 object PublicKey:
-  given Show[PublicKey[?]] = key => t"PublicKey(${key.bytes.encode[Hex]})"
+  given Show[PublicKey[?]] = key => t"PublicKey(${key.bytes.encodeAs[Hex]})"
 
 case class PublicKey[A <: CryptoAlgorithm[?]](bytes: Bytes) extends Shown[PublicKey[?]]:
   def encrypt[T: ByteCodec](value: T)(using A & Encryption): MessageData[A] =
@@ -71,7 +71,7 @@ object PrivateKey:
     PrivateKey(summon[A].genKey())
 
   given Show[PrivateKey[?]] =
-    key => t"PrivateKey(${key.privateBytes.digest[Sha2[256]].encode[Base64]})"
+    key => t"PrivateKey(${key.privateBytes.digest[Sha2[256]].encodeAs[Base64]})"
 
 case class PrivateKey[A <: CryptoAlgorithm[?]](private[gastronomy] val privateBytes: Bytes)
 extends Shown[PrivateKey[?]]:

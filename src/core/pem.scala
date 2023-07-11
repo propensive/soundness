@@ -23,7 +23,7 @@ import spectacular.*
 case class Pem(kind: Text, data: Bytes):
   def serialize: Text = Seq(
     Seq(t"-----BEGIN $kind-----"),
-    data.grouped(48).to(Seq).map(_.encode[Base64]),
+    data.grouped(48).to(Seq).map(_.encodeAs[Base64]),
     Seq(t"-----END $kind-----")
   ).flatten.join(t"\n")
 

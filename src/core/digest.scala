@@ -64,10 +64,10 @@ object Sha2:
 
 trait Encodable:
   val bytes: Bytes
-  def encode[ES <: EncodingScheme: ByteEncoder]: Text = bytes.encode[ES]
+  def encodeAs[ES <: EncodingScheme: ByteEncoder]: Text = bytes.encodeAs[ES]
 
 object Hmac:
-  given Show[Hmac[?]] = hmac => t"Hmac(${hmac.bytes.encode[Base64]})"
+  given Show[Hmac[?]] = hmac => t"Hmac(${hmac.bytes.encodeAs[Base64]})"
 
 case class Hmac[A <: HashScheme[?]](bytes: Bytes) extends Encodable, Shown[Hmac[?]]
 
@@ -95,7 +95,7 @@ case object Crc32HashFunction extends HashFunction[Crc32]:
     
 
 object Digest:
-  given Show[Digest[?]] = digest => t"Digest(${digest.bytes.encode[Base64]})"
+  given Show[Digest[?]] = digest => t"Digest(${digest.bytes.encodeAs[Base64]})"
 
 case class Digest[A <: HashScheme[?]](bytes: Bytes) extends Encodable, Shown[Digest[?]]:
   override def equals(that: Any) = that.asMatchable match
@@ -257,4 +257,4 @@ extension [T](value: T)
     Hmac(mac.doFinal(summon[ByteCodec[T]].encode(value).mutable(using Unsafe)).nn.immutable(using Unsafe))
 
 extension (bytes: Bytes)
-  def encode[E <: EncodingScheme: ByteEncoder]: Text = summon[ByteEncoder[E]].encode(bytes)
+  def encodeAs[E <: EncodingScheme: ByteEncoder]: Text = summon[ByteEncoder[E]].encode(bytes)
