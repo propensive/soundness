@@ -78,6 +78,7 @@ object Nettlesome:
       def byte2: Int = (ip >>> 8) & 255
       def byte3: Int = ip & 255
     
+      @targetName("subnet")
       def /(size: Int): Ipv4Subnet = Ipv4Subnet(ip & (-1 << (32 - size)), size)
 
   object Ipv4Subnet:
