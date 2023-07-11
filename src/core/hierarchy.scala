@@ -306,8 +306,9 @@ extension
   infix def /[PathType2 <: PathType](name: PathName[NameType]): PathType =
     pathlike.child(path, name)
 
+  // FIXME: This should be called `/`, but it causes a spurious compiler error. 
   @targetName("child2")
-  inline infix def /[PathType2 <: PathType](name: Text): PathType throws PathError =
+  inline infix def /-[PathType2 <: PathType](name: Text): PathType throws PathError =
     pathlike.child(path, PathName(name))
   
   def render: Text = pathlike.render(path)
