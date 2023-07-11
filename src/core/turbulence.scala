@@ -82,7 +82,7 @@ case class Multiplexer[KeyType, ElemType]()(using monitor: Monitor):
       queue.put(Some(stream.head))
       pump(key, stream.tail)
 
-  def add(key: KeyType, stream: LazyList[ElemType]): Unit = tasks(key) = Task(Text("pump"))(pump(key, stream))
+  def add(key: KeyType, stream: LazyList[ElemType]): Unit = tasks(key) = Task("pump".tt)(pump(key, stream))
  
   private def remove(key: KeyType): Unit = synchronized:
     tasks -= key
@@ -111,7 +111,7 @@ extension [ElemType](stream: LazyList[ElemType])
       case _ =>
         LazyList()
 
-    Task(Text("ratelimiter"))(recur(stream, System.currentTimeMillis)).await()
+    Task("ratelimiter".tt)(recur(stream, System.currentTimeMillis)).await()
 
   def multiplexWith(that: LazyList[ElemType])(using Monitor): LazyList[ElemType] =
     unsafely(LazyList.multiplex(stream, that))
@@ -159,7 +159,7 @@ extension [ElemType](stream: LazyList[ElemType])
         val newExpiry: Long = maxDelay.option.map(readDuration).fold(Long.MaxValue)(_ + System.currentTimeMillis)
         if stream.isEmpty then LazyList() else recur(stream.tail, List(stream.head), newExpiry)
       else
-        val hasMore: Task[Boolean] = Task(Text("cluster"))(!stream.isEmpty)
+        val hasMore: Task[Boolean] = Task("cluster".tt)(!stream.isEmpty)
 
         val recurse: Option[Boolean] = try
           val deadline: Long = readDuration(interval).min(expiry - System.currentTimeMillis).max(0)
@@ -176,9 +176,9 @@ extension [ElemType](stream: LazyList[ElemType])
   def parallelMap
       [ElemType2](fn: ElemType => ElemType2)(using monitor: Monitor): /*{monitor, fn}*/ LazyList[ElemType2] =
     val out: Funnel[ElemType2] = Funnel()
-    Task(Text("parallelMap")):
+    Task("parallelMap".tt):
       stream.map: elem =>
-        Task(Text("elem")):
+        Task("elem".tt):
           out.put(fn(elem))
     
     out.stream
@@ -202,16 +202,16 @@ object Io:
       [TextType](text: TextType)(using io: Stdio, printable: Printable[TextType])
       : /*{io, printable, lines}*/ Unit =
     io.putOutText(printable.print(text))
-    io.putOutText(Text("\n"))
+    io.putOutText("\n".tt)
 
-  def println()(using io: Stdio): Unit = io.putOutText(Text("\n"))
-  def printlnErr()(using io: Stdio): Unit = io.putErrText(Text("\n"))
+  def println()(using io: Stdio): Unit = io.putOutText("\n".tt)
+  def printlnErr()(using io: Stdio): Unit = io.putErrText("\n".tt)
   
   def printlnErr
       [TextType](text: TextType)(using io: Stdio, printable: Printable[TextType])
       : /*{io, printable, lines}*/ Unit =
     io.putErrText(printable.print(text))
-    io.putErrText(Text("\n"))
+    io.putErrText("\n".tt)
   
 @capability
 trait Stdio:
