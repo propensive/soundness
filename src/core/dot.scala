@@ -178,7 +178,7 @@ object NodeParser extends Interpolator[Unit, Option[Dot.Ref], Dot.Ref]:
             Some(Dot.CompassPoint.valueOf(point.capitalize.s)))))
       
       case _ =>
-        throw InterpolationError(t"not a valid node ID")
+        throw InterpolationError(msg"not a valid node ID")
     }
   
   def initial: Option[Dot.Ref] = None
