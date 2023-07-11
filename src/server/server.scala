@@ -27,21 +27,23 @@ import gesticulate.*
 import telekinesis.*
 import anticipation.*
 import serpentine.*
+import spectacular.*, booleanStyles.trueFalse
+import hieroglyph.*
 
 import java.net.InetSocketAddress
 import java.text as jt
 import com.sun.net.httpserver.{HttpServer as JavaHttpServer, *}
 
-case class MissingParamError(key: Text) extends Error(err"the parameter $key was not sent in the request")
+case class MissingParamError(key: Text) extends Error(msg"the parameter $key was not sent in the request")
 
 trait Responder:
   def sendBody(status: Int, body: HttpBody): Unit
   def addHeader(key: Text, value: Text): Unit
 
 trait FallbackHandler:
-  given [T: Show](using enc: Encoding): SimpleHandler[T] =
-    SimpleHandler(media"text/plain"(charset = enc.name), v =>
-        HttpBody.Chunked(LazyList(summon[Show[T]].show(v).bytes)))
+  given [T: Show](using encoder: CharEncoder): SimpleHandler[T] =
+    SimpleHandler(media"text/plain"(charset = encoder.encoding.name), v =>
+        HttpBody.Chunked(LazyList(v.show.bytes)))
 
 object Handler extends FallbackHandler:
   given iarrayByteHandler[T](using hr: GenericHttpResponseStream[T], ct: CanThrow[InvalidMediaTypeError])
@@ -145,7 +147,7 @@ object Request:
       t"ssl"      -> request.ssl.show,
       t"hostname" -> request.hostname.show,
       t"port"     -> request.port.show,
-      t"path"     -> request.path.show,
+      t"path"     -> request.pathText,
       t"body"     -> bodySample,
       t"headers"  -> headers,
       t"params"   -> params
@@ -156,7 +158,7 @@ case class Request(method: HttpMethod, body: HttpBody.Chunked, query: Text, ssl:
                        rawHeaders: Map[Text, List[Text]],
                        queryParams: Map[Text, List[Text]]):
 
-  lazy val path: GenericPath = safely(Root.parse(pathText)).or(unsafely(^ / pathText))
+  lazy val path: SimplePath throws PathError = pathText.decodeAs[SimplePath]
 
   // FIXME: The exception in here needs to be handled elsewhere
   val params: Map[Text, Text] =
@@ -208,7 +210,7 @@ object ParamReader:
   given ParamReader[Text] = Some(_)
 
 object UrlPath:
-  def unapply(request: Request): Some[Text] = Some(request.path.show)
+  def unapply(request: Request): Some[Text] = Some(request.pathText)
 
 trait ParamReader[T]:
   def read(value: Text): Option[T]
@@ -265,7 +267,7 @@ case class HttpServer(port: Int) extends RequestHandler:
     val in = exchange.getRequestBody.nn
     val buffer = new Array[Byte](65536)
     
-    def recur(): DataStream =
+    def recur(): LazyList[Bytes] =
       val len = in.read(buffer)
       if len > 0 then buffer.slice(0, len).snapshot #:: recur() else LazyList.empty
     
@@ -330,7 +332,7 @@ case class Svg(content: Text)
 object Svg:
   // FIXME: The character encoding depends on the XML header, which should be parsed
   given SimpleHandler[Svg] =
-    SimpleHandler(media"image/svg+xml", svg => HttpBody.Data(svg.content.bytes(using characterEncodings.utf8)))
+    SimpleHandler(media"image/svg+xml", svg => HttpBody.Data(svg.content.bytes(using charEncoders.utf8)))
 
 case class Jpeg(content: IArray[Byte])
 
