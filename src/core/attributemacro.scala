@@ -93,11 +93,11 @@ object Honeycomb:
 
     def recur(exprs: Seq[Expr[(Label, Any)]]): List[Expr[(String, Maybe[Text])]] = exprs match
       case '{type keyType <: Label; ($key: keyType, $value: valueType)} +: tail =>
-        val att = key.value.get
+        val att: String = key.value.get
         val expr: Expr[HtmlAttribute[keyType, valueType, NameType]] =
           Expr.summon[HtmlAttribute[keyType, valueType, NameType]].getOrElse:
             val typeName = TypeRepr.of[valueType].show
-            fail(t"""the attribute $att cannot take a value of type $typeName""".s)
+            fail(msg"""the attribute $att cannot take a value of type $typeName""")
         
         '{($expr.rename.getOrElse(Text($key)).s, $expr.convert($value))} :: recur(tail)
       
