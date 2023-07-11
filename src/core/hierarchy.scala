@@ -303,11 +303,12 @@ extension
     (using creator: PathCreator[PathType, NameType, AscentType])
   
   @targetName("child")
-  infix def /
-      [PathType2 <: PathType]
-      (name: PathName[NameType])
-      : PathType =
+  infix def /[PathType2 <: PathType](name: PathName[NameType]): PathType =
     pathlike.child(path, name)
+
+  @targetName("child2")
+  inline infix def /[PathType2 <: PathType](name: Text): PathType throws PathError =
+    pathlike.child(path, PathName(name))
   
   def render: Text = pathlike.render(path)
   def descent: List[PathName[NameType]] = pathlike.descent(path)
