@@ -32,10 +32,8 @@ import language.dynamics
 
 import java.util.concurrent as juc
 
-type DataStream = LazyList[IArray[Byte] throws StreamCutError]
-
-extension (value: DataStream)
-  def slurp(): Bytes throws StreamCutError =
+extension (value: LazyList[Bytes])
+  def slurp(): Bytes =
     val bld: scm.ArrayBuilder[Byte] = scm.ArrayBuilder.ofByte()
     value.foreach { bs => bld.addAll(bs.mutable(using Unsafe)) }
     
