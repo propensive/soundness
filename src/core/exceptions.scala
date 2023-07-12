@@ -88,10 +88,12 @@ extends Exception():
 
 object Mistake:
   def apply(error: Exception): Mistake =
-    Mistake(s"rudiments: an ${error.getClass.getName} exception was thrown when this was not "+
-        s"believed to be possible; the error was '${error.getMessage}'")
+    Mistake(msg"""
+      an ${error.getClass.getName.nn.tt} exception was unexpectedly thrown;
+      the error was: ${Option(error.getMessage).getOrElse("[null]").nn.tt}
+    """)
 
-case class Mistake(message: String) extends java.lang.Error(message)
+case class Mistake(message: Message) extends java.lang.Error(message.text.s)
 
 object AsMessage:
   given AsMessage[Text] = Message(_)
