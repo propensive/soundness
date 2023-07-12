@@ -209,7 +209,7 @@ object Sh:
             escaping with '\\' is not allowed immediately before a substitution
           """)
           
-          state match
+          (state: @unchecked) match
             case State(Awaiting, false, args) =>
               State(Unquoted, false, args ++ (h :: t))
 
@@ -222,8 +222,6 @@ object Sh:
             case State(Quotes2, false, args :+ last) =>
               State(Quotes2, false, args :+ (t"$last$h" :: t).join(t" "))
             
-            case _ =>
-              throw Mistake("impossible parser state")
         case _ =>
           state
           
