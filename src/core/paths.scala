@@ -7,7 +7,11 @@ import spectacular.*
 import kaleidoscope.*
 import gossamer.*
 
+import scala.compiletime.*
+
 import java.io as ji
+import java.nio as jn
+import java.nio.file as jnf
 
 import language.experimental.captureChecking
 
@@ -140,36 +144,90 @@ object Unix:
 sealed trait Inode:
   def path: Path
   def fullname: Text = path.fullname
+  
+  def delete(): Path throws IoError =
+    jnf.Files.delete(jnf.Path.of(path.render.s))
+    path
+  
+  inline def moveTo
+      (destination: Path)
+      (using overwritePreexisting: OverwritePreexisting, moveAtomically: MoveAtomically,
+          dereferenceSymlinks: DereferenceSymlinks,
+          createNonexistentParents: CreateNonexistentParents)
+      (using io: CanThrow[IoError])
+      : Unit^{io, overwritePreexisting, moveAtomically, dereferenceSymlinks} =
 
+    inline if erasedValue[createNonexistentParents.Flag] then
+      path.parent.directory()
+
+    val options: Seq[jnf.CopyOption] = Iterable(
+      inline if erasedValue[overwritePreexisting.Flag] then jnf.StandardCopyOption.REPLACE_EXISTING
+      else Unset,
+      inline if erasedValue[moveAtomically.Flag] then jnf.StandardCopyOption.ATOMIC_MOVE
+      else Unset,
+      inline if !erasedValue[dereferenceSymlinks.Flag] then jnf.LinkOption.NOFOLLOW_LINKS
+      else Unset
+    ).sift[jnf.StandardCopyOption].to(Seq)
+    
+    println("options = "+options)
+    try jnf.Files.move(jnf.Path.of(path.render.s), jnf.Path.of(destination.render.s), options*)
+    catch
+      case error: UnsupportedOperationException   => throw IoError()
+      case error: jnf.FileAlreadyExistsException      => throw IoError()
+      case error: jnf.DirectoryNotEmptyException      => throw IoError()
+      case error: jnf.AtomicMoveNotSupportedException => throw IoError()
+      case error: ji.IOException                      => throw IoError()
+      case error: SecurityException               => throw IoError()
+  
 trait Path:
   this: Path =>
   def fullname: Text
   def name: Text
-  
-  def directory(creation: Creation = Ensure): Directory = Directory(this)
-  def file(creation: Creation = Ensure): File = File(this)
+  def exists(): Boolean = jnf.Files.exists(jnf.Path.of(fullname.s))
 
-// enum InodeType:
-//   case Directory, File, Socket, Fifo, Symlink, BlockDevice, CharDevice
+  inline def nodeType()(using dereferenceSymlinks: DereferenceSymlinks): NodeType =
+    val options =
+      inline if erasedValue[dereferenceSymlinks.Flag] then Seq()
+      else Seq(jnf.LinkOption.NOFOLLOW_LINKS)
+    
+    try (Files.getAttribute(Path.of(fullname), "unix:mode", options*) & 61440) match
+      case 40960 => NodeType.Symlink
+      case 32768 => NodeType.File
+      case 16384 => NodeType.Directory
+      case  8192 => NodeType.CharDevice
+      case  4096 => NodeType.Fifo
+      case 24576 => NodeType.BlockDevice
+      case 49152 => NodeType.Socket
+      case _     => throw IoError()
+
+
+  def as[InodeType <: Inode](using resolver: PathResolver[InodeType, this.type]): InodeType =
+    resolver(this)
+  
+  def make[InodeType <: Inode](using maker: PathMaker[InodeType, this.type]): InodeType =
+    maker(this)
+  
+  def directory(): Directory = Directory(this)
+  def file(): File =
+    if exists() && nodeType() == NodeType.File then File(this)
+  def symlinkTo(destination: Path): Symlink = Symlink(this)
+  def fifo(): Fifo = Fifo(this)
+  def socket(): Socket = Socket(this)
+  def blockDevice(): BlockDevice = BlockDevice(this)
+  def charDevice(): CharDevice = CharDevice(this)
+
+object PathResolver:
+  given directory
+      (using createNonexistent: CreateNonexistent)
+      : PathResolver[Directory, Path] = path => Directory(path)
+    
+trait PathResolver[+InodeType <: Inode, -PathType <: Path]:
+  def apply(value: PathType): InodeType
+
+trait PathMaker[+InodeType <: Inode, -PathType <: Path]:
+  def apply(value: PathType): InodeType
 
 case class Directory(path: Path) extends Unix.Inode, Windows.Inode
-
-// object File:
-//   given [FileType <: File & Singleton](using handle: FileHandle[FileType]): Readable[FileType, Bytes] =
-    
-
-// trait HandleMaker[ItemType]:
-//   type Value
-//   def make(file: File): FileHandle[file.type]
-
-// object HandleMaker:
-//   given HandleMaker[Byte] with
-//     type Handle = BufferedInputStream
-    
-//     def make[FileType <: File](file: FileType) =
-//       FileHandle[file.type](ji.BufferedInputStream(ji.FileInputStream(ji.File(file.fullname.s))))
-    
-//     def close(value: Value): Unit
 
 case class File(path: Path) extends Unix.Inode, Windows.Inode
   // def open[ResultType]()(action: FileHandle[this.type] ?-> ResultType): ResultType =
@@ -182,18 +240,91 @@ case class Symlink(path: Unix.Path) extends Unix.Inode
 case class BlockDevice(path: Unix.Path) extends Unix.Inode
 case class CharDevice(path: Unix.Path) extends Unix.Inode
 
-// abstract class FileHandle[FileType <: File & Singleton]:
-//   type Handle
-//   val handle: Handle
-//   def close(): Unit
+enum InodeType:
+  case Fifo, CharDevice, Directory, BlockDevice, File, Symlink, Socket
 
-enum Creation:
-  case Expect, Ensure, Create
+@capability
+erased trait DereferenceSymlinks:
+  type Flag <: Boolean & Singleton
 
-export Creation.{Expect, Ensure, Create}
+@capability
+erased trait MoveAtomically:
+  type Flag <: Boolean & Singleton
 
-// object AccessScheduler:
-//   private val waiting: HashMap[Text, List[() -> Any]] = HashMap()
-//   private val active: HashSet[Text] = HashSet()
+@capability
+erased trait CopyAttributes:
+  type Flag <: Boolean & Singleton
 
-//   def process[FileType <: File & Singleton](key: Text)(action: FileHandle[FileType] ?-> ResultType)
+@capability
+erased trait RecursiveDeletion:
+  type Flag <: Boolean & Singleton
+
+@capability
+erased trait OverwritePreexisting:
+  type Flag <: Boolean & Singleton
+
+@capability
+erased trait CreateNonexistentParents:
+  type Flag <: Boolean & Singleton
+
+@capability
+erased trait CreateNonexistent:
+  type Flag <: Boolean & Singleton
+
+@capability
+erased trait SynchronousWrites:
+  type Flag <: Boolean & Singleton
+
+package filesystemOptions:
+  object dereferenceSymlinks:
+    erased given yes: DereferenceSymlinks { type Flag = true } = ###
+    erased given no: DereferenceSymlinks { type Flag = false } = ###
+  
+  object moveAtomically:
+    erased given yes: MoveAtomically { type Flag = true } = ###
+    erased given no: MoveAtomically { type Flag = false } = ###
+
+  object copyAttributes:
+    erased given yes: CopyAttributes { type Flag = true } = ###
+    erased given no: CopyAttributes { type Flag = false } = ###
+  
+  object recursiveDeletion:
+    erased given yes: RecursiveDeletion { type Flag = true } = ###
+    erased given no: RecursiveDeletion { type Flag = false } = ###
+  
+  object overwriteExisting:
+    erased given yes: OverwritePreexisting { type Flag = true } = ###
+    erased given no: OverwritePreexisting { type Flag = false } = ###
+  
+  object createNonexistentParents:
+    erased given yes: CreateNonexistentParents { type Flag = true } = ###
+    erased given no: CreateNonexistentParents { type Flag = false } = ###
+  
+  object createNonexistent:
+    erased given yes: CreateNonexistent { type Flag = true } = ###
+    erased given no: CreateNonexistent { type Flag = false } = ###
+  
+  object synchronousWrites:
+    erased given yes: SynchronousWrites { type Flag = true } = ###
+    erased given no: SynchronousWrites { type Flag = false } = ###
+
+
+case class IoError() extends Error(msg"an I/O error occurred")
+
+case class PathConflictError(path: Path)
+extends Error(msg"cannot overwrite a pre-existing filesystem node")
+
+case class NotFoundError(path: Path)
+extends Error(msg"no filesystem node was found at the path $path")
+
+case class OverwriteError(path: Path)
+extends Error(msg"cannot overwrite a pre-existing directory")
+
+case class ForbiddenOperationError(path: Path)
+extends Error(msg"insufficient access rights for this operation")
+
+case class SymlinkError(path: Path)
+extends Error(msg"the symlink at $path did not link to a valid filesystem node")
+
+case class NodeTypeError(path: Path)
+extends Error(msg"the filesystem node at $path was expected to be a different type")

@@ -31,30 +31,30 @@ import java.nio.file as jnf
 import jnf.{Files, Paths, StandardCopyOption, DirectoryNotEmptyException}, jnf.StandardCopyOption.*
 import ji.{File as JavaFile}
 
-object IoError:
-  object Reason:
-    given AsMessage[Reason] =
-      case NotFile              => msg"the path does not refer to a file"
-      case NotDirectory         => msg"the path does not refer to a directory"
-      case NotSymlink           => msg"the path does not refer to a symbolic link"
-      case DoesNotExist         => msg"no node exists at this path"
-      case AlreadyExists        => msg"a node already exists at this path"
-      case AccessDenied         => msg"the operation is not permitted on this path"
-      case DifferentFilesystems => msg"the source and destination are on different filesystems"
-      case NotSupported         => msg"the filesystem does not support it"
+// object IoError:
+//   object Reason:
+//     given AsMessage[Reason] =
+//       case NotFile              => msg"the path does not refer to a file"
+//       case NotDirectory         => msg"the path does not refer to a directory"
+//       case NotSymlink           => msg"the path does not refer to a symbolic link"
+//       case DoesNotExist         => msg"no node exists at this path"
+//       case AlreadyExists        => msg"a node already exists at this path"
+//       case AccessDenied         => msg"the operation is not permitted on this path"
+//       case DifferentFilesystems => msg"the source and destination are on different filesystems"
+//       case NotSupported         => msg"the filesystem does not support it"
 
-  enum Reason:
-    case NotFile, NotDirectory, NotSymlink, DoesNotExist, AlreadyExists, AccessDenied, DifferentFilesystems,
-        NotSupported
+//   enum Reason:
+//     case NotFile, NotDirectory, NotSymlink, DoesNotExist, AlreadyExists, AccessDenied, DifferentFilesystems,
+//         NotSupported
 
-  object Op:
-    given AsMessage[Op] = op => Message(op.toString.show.lower)
+//   object Op:
+//     given AsMessage[Op] = op => Message(op.toString.show.lower)
 
-  enum Op:
-    case Read, Write, Access, Permissions, Create, Delete
+//   enum Op:
+//     case Read, Write, Access, Permissions, Create, Delete
 
-case class IoError(operation: IoError.Op, reason: IoError.Reason, path: Path)
-extends Error(msg"the $operation operation at $path failed because $reason")
+// case class IoError(operation: IoError.Op, reason: IoError.Reason, path: Path)
+// extends Error(msg"the $operation operation at $path failed because $reason")
 
 // extension (inodes: Seq[Inode])
 //   transparent inline def files: Seq[File] = inodes.collect:

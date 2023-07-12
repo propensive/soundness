@@ -45,6 +45,19 @@ object Tests extends Suite(t"Galilei tests"):
         galileiTmpPath.descent.map(_.show)
       .assert(_ == List(t"galilei", t"tmp", t"var"))
 
+      val tmpDir = galileiTmpPath.directory()
+
+      suite(t"File and directory creation"):
+        test(t"Create a new file"):
+          val path = (tmpDir.path / p"file.txt")
+          path.file()
+          path
+        .assert(_.exists())
+
+        test(t"Delete a file"):
+          (tmpDir.path / p"file.txt").file().delete()
+        .assert(!_.exists())
+    
     suite(t"Unix hierarchy tests"):
       import hierarchies.unix
       
@@ -75,13 +88,3 @@ object Tests extends Suite(t"Galilei tests"):
         windowsSystem.root
       .assert(_ == Windows.Drive('C'))
       
-    // val tmpDir = galileiTmpPath.directory()
-
-    // suite(t"File and directory creation"):
-    //   test(t"Create a new file"):
-    //     (tmpDir / p"file.txt").newFile()
-    //   .assert(_.exists())
-
-    //   test(t"Delete a file"):
-    //     (tmpDir / p"file.txt").delete()
-    //   .assert(!_.exists())
