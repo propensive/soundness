@@ -173,8 +173,8 @@ sealed trait Inode:
       (using io: CanThrow[IoError])
       : Unit^{io, overwritePreexisting, moveAtomically, dereferenceSymlinks} =
 
-    inline if erasedValue[createNonexistentParents.Flag] then
-      path.parent.directory()
+    // inline if erasedValue[createNonexistentParents.Flag] then
+    //   path.parent.directory()
 
     val options: Seq[jnf.CopyOption] = Iterable(
       inline if erasedValue[overwritePreexisting.Flag] then jnf.StandardCopyOption.REPLACE_EXISTING
@@ -185,15 +185,14 @@ sealed trait Inode:
       else Unset
     ).sift[jnf.StandardCopyOption].to(Seq)
     
-    println("options = "+options)
-    try jnf.Files.move(jnf.Path.of(path.render.s), jnf.Path.of(destination.render.s), options*)
+    try jnf.Files.move(jnf.Path.of(fullname.s), jnf.Path.of(destination.render.s), options*)
     catch
-      case error: UnsupportedOperationException   => throw IoError()
-      case error: jnf.FileAlreadyExistsException      => throw IoError()
-      case error: jnf.DirectoryNotEmptyException      => throw IoError()
-      case error: jnf.AtomicMoveNotSupportedException => throw IoError()
-      case error: ji.IOException                      => throw IoError()
-      case error: SecurityException               => throw IoError()
+      case error: UnsupportedOperationException   => throw IoError(path)
+      case error: jnf.FileAlreadyExistsException      => throw IoError(path)
+      case error: jnf.DirectoryNotEmptyException      => throw IoError(path)
+      case error: jnf.AtomicMoveNotSupportedException => throw IoError(path)
+      case error: ji.IOException                      => throw IoError(path)
+      case error: SecurityException               => throw IoError(path)
   
 trait Path:
   this: Path =>
@@ -201,20 +200,41 @@ trait Path:
   def name: Text
   def exists(): Boolean = jnf.Files.exists(jnf.Path.of(fullname.s))
 
-  inline def nodeType()(using dereferenceSymlinks: DereferenceSymlinks): NodeType =
+  inline def inodeType
+      ()
+      (using dereferenceSymlinks: DereferenceSymlinks)
+      (using io: CanThrow[IoError], notFound: CanThrow[NotFoundError])
+      : InodeType^{dereferenceSymlinks, io, notFound} =
     val options =
       inline if erasedValue[dereferenceSymlinks.Flag] then Seq()
       else Seq(jnf.LinkOption.NOFOLLOW_LINKS)
     
-    try (Files.getAttribute(Path.of(fullname), "unix:mode", options*) & 61440) match
-      case 40960 => NodeType.Symlink
-      case 32768 => NodeType.File
-      case 16384 => NodeType.Directory
-      case  8192 => NodeType.CharDevice
-      case  4096 => NodeType.Fifo
-      case 24576 => NodeType.BlockDevice
-      case 49152 => NodeType.Socket
-      case _     => throw IoError()
+    try jnf.Files.getAttribute(jnf.Path.of(fullname.s), "unix:mode", options*) match
+      case mode: Int => (mode & 61440) match
+        case 40960 => InodeType.Symlink
+        case 32768 => InodeType.File
+        case 16384 => InodeType.Directory
+        case  8192 => InodeType.CharDevice
+        case  4096 => InodeType.Fifo
+        case 24576 => InodeType.BlockDevice
+        case 49152 => InodeType.Socket
+        case _     => throw IoError(this)
+    
+    catch
+      case error: UnsupportedOperationException =>
+        throw Mistake(msg"the file attribute unix:mode could not be obtained")
+      
+      case error: IllegalArgumentException =>
+        throw Mistake(msg"the file attribute unix:mode could not be obtained")
+      
+      case error: SecurityException =>
+        throw Mistake(msg"a security exception occurred")
+      
+      case error: ji.FileNotFoundException =>
+        throw NotFoundError(this)
+      
+      case error: ji.IOException =>
+        throw IoError(this)
 
 
   def as[InodeType <: Inode](using resolver: PathResolver[InodeType, this.type]): InodeType =
@@ -224,13 +244,17 @@ trait Path:
     maker(this)
   
   def directory(): Directory = Directory(this)
-  def file(): File =
-    if exists() && nodeType() == NodeType.File then File(this)
-  def symlinkTo(destination: Path): Symlink = Symlink(this)
-  def fifo(): Fifo = Fifo(this)
-  def socket(): Socket = Socket(this)
-  def blockDevice(): BlockDevice = BlockDevice(this)
-  def charDevice(): CharDevice = CharDevice(this)
+  
+  inline def file
+      ()
+      (using inline dereferenceSymlinks: DereferenceSymlinks)
+      (using CanThrow[IoError], CanThrow[NotFoundError], CanThrow[InodeTypeError])
+      : File =
+    
+    if !exists() then throw NotFoundError(this)
+    if inodeType() != InodeType.File then throw InodeTypeError(this)
+    
+    File(this)
 
 object PathResolver:
   given directory
@@ -325,7 +349,7 @@ package filesystemOptions:
     erased given no: SynchronousWrites { type Flag = false } = ###
 
 
-case class IoError() extends Error(msg"an I/O error occurred")
+case class IoError(path: Path) extends Error(msg"an I/O error occurred")
 
 case class PathConflictError(path: Path)
 extends Error(msg"cannot overwrite a pre-existing filesystem node")
@@ -342,5 +366,5 @@ extends Error(msg"insufficient access rights for this operation")
 case class SymlinkError(path: Path)
 extends Error(msg"the symlink at $path did not link to a valid filesystem node")
 
-case class NodeTypeError(path: Path)
+case class InodeTypeError(path: Path)
 extends Error(msg"the filesystem node at $path was expected to be a different type")
