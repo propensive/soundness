@@ -157,9 +157,8 @@ class TestReport(using env: Environment):
   
   def resolve(suite: Maybe[TestSuite]): ReportLine.Suite =
     suite.option.map: suite =>
-      resolve(suite.parent).tests(suite.id) match
+      (resolve(suite.parent).tests(suite.id): @unchecked) match
         case suite@ReportLine.Suite(_, _) => suite
-        case _                            => throw Mistake("should never occur")
     .getOrElse(lines)
 
   private var coverage: Option[CoverageResults] = None
@@ -177,9 +176,8 @@ class TestReport(using env: Environment):
   def addOutcome(testId: TestId, outcome: Outcome): TestReport = this.tap: _ =>
     val tests = resolve(testId.suite).tests
     
-    tests.getOrElseUpdate(testId, ReportLine.Test(testId, scm.ArrayBuffer[Outcome]())) match
+    (tests.getOrElseUpdate(testId, ReportLine.Test(testId, scm.ArrayBuffer[Outcome]())): @unchecked) match
       case ReportLine.Test(_, buf) => buf.append(outcome)
-      case _                       => throw Mistake("should never match")
   
   def addDebugInfo(testId: TestId, info: DebugInfo): TestReport =
     this.tap: _ =>
