@@ -200,7 +200,7 @@ object JsonWriter extends FallbackJsonWriter:
           else deriveSum[tail, DerivedType, tailLabel](ordinal - 1)
       
       case _ =>
-        throw Mistake("could not match subtype in its apparent coproduct type")
+        throw Mistake(msg"could not match subtype in its apparent coproduct type")
 
   inline given derived
       [DerivationType](using mirror: Mirror.Of[DerivationType])
@@ -327,7 +327,7 @@ object JsonReader extends FallbackJsonReader:
             else deriveSum[tail, tailLabels, DerivationType](subtype)
       
       case _ =>
-        throw Mistake("could not match subtype in its apparent coproduct type")
+        throw Mistake(msg"could not match subtype in its apparent coproduct type")
 
 trait JsonReader[ValueType]:
   private inline def reader: this.type = this
