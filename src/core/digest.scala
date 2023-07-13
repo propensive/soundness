@@ -238,7 +238,7 @@ object ByteDecoder:
     
     (0 until value.length by 2).foreach:
       i =>
-        try data(i/2) = unsafely(((digit(value(i), 16) << 4) + digit(value(i + 1), 16)).toByte)
+        try data(i/2) = ((digit(value(i), 16) << 4) + digit(value(i + 1), 16)).toByte
         catch case e: OutOfRangeError => throw Mistake(msg"every accessed element should be within range")
 
     data.immutable(using Unsafe)
