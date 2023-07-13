@@ -22,8 +22,7 @@ out-of-the-box, and incurs no significant time-penalty during compilation.
 
 ## Availability
 
-Wisteria has not yet been published as a binary. It is currently waiting for the
-final release of Scala 3.3.
+Wisteria has not yet been published as a binary.
 
 ## Getting Started
 
@@ -89,7 +88,7 @@ be used, but caution should be taken if there is a mismatch between the
 project's stability level and the importance of your own project.
 
 Wisteria is designed to be _small_. Its entire source code currently consists
-of 858 lines of code.
+of 856 lines of code.
 
 ## Building
 
