@@ -266,7 +266,7 @@ object Codl:
     enum State:
       case Word, Hash, Comment, Indent, Space, Margin, Line
       case Pending(ch: Character)
-    
+
     import State.*
 
     @tailrec

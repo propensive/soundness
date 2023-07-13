@@ -43,23 +43,23 @@ object Printer:
             
             schema match
               case Field(_, _) =>
-                children.foreach:
-                  case CodlNode(Data(key, _, _, _), _) =>
-                    out.write(' ')
-                    out.write(key.s)
-                  case _ => throw Mistake("Should never match")
+                children.foreach: child =>
+                  (child: @unchecked) match
+                    case CodlNode(Data(key, _, _, _), _) =>
+                      out.write(' ')
+                      out.write(key.s)
                 out.write('\n')
               case Struct(_, _) =>
                 val ps = children.take(if layout.multiline then layout.params - 1 else layout.params)
-                ps.foreach:
-                  case CodlNode(Data(key, IArray(CodlNode(Data(value, _, _, _), _)), _, _), _) =>
-                    out.write(' ')
-                    out.write(value.s)
-                  case CodlNode(Data(key, IArray(), _, _), _) =>
-                    out.write(' ')
-                    out.write(key.s)
-                  case matched =>
-                    throw Mistake("Should never match")
+                ps.foreach: param =>
+                  (param: @unchecked) match
+                    case CodlNode(Data(key, IArray(CodlNode(Data(value, _, _, _), _)), _, _), _) =>
+                      out.write(' ')
+                      out.write(value.s)
+                    
+                    case CodlNode(Data(key, IArray(), _, _), _) =>
+                      out.write(' ')
+                      out.write(key.s)
                 
                 meta.mm(_.remark).mm: remark =>
                   out.write(" # ")
@@ -67,13 +67,13 @@ object Printer:
                 
                 if layout.multiline then
                   out.write('\n')
-                  if children.length >= layout.params then children(layout.params - 1) match
+                  
+                  if children.length >= layout.params then (children(layout.params - 1): @unchecked) match
                     case CodlNode(Data(key, _, _, _), _) =>
                       for i <- 0 until (indent + 4) do out.write(' ')
                       for ch <- key.chars do
                         out.write(ch)
                         if ch == '\n' then for i <- 0 until (indent + 4) do out.write(' ')
-                    case _ => throw Mistake("Should never match")
   
                 out.write('\n')
                 children.drop(layout.params).foreach(recur(_, indent + 2))
