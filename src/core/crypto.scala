@@ -162,7 +162,7 @@ class Rsa[KS <: 1024 | 2048: ValueOf]() extends CryptoAlgorithm[KS], Encryption:
       case key: js.interfaces.RSAPrivateCrtKey =>
         key
       case key: js.PrivateKey =>
-        throw Mistake("public key did not have the correct type")
+        throw Mistake(msg"public key did not have the correct type")
 
     val spec = RSAPublicKeySpec(privateKey.getModulus, privateKey.getPublicExponent)
     keyFactory().generatePublic(spec).nn.getEncoded.nn.immutable(using Unsafe)
@@ -203,7 +203,7 @@ class Dsa[KS <: 512 | 1024 | 2048 | 3072: ValueOf]() extends CryptoAlgorithm[KS]
         key
       
       case key: js.PublicKey =>
-        throw Mistake("public key did not have the correct type")
+        throw Mistake(msg"public key did not have the correct type")
     
     keyPair.getPrivate.nn.getEncoded.nn.immutable(using Unsafe)
 
@@ -227,7 +227,7 @@ class Dsa[KS <: 512 | 1024 | 2048 | 3072: ValueOf]() extends CryptoAlgorithm[KS]
         key
       
       case key: js.PrivateKey =>
-        throw Mistake("private key did not have the correct type")
+        throw Mistake(msg"private key did not have the correct type")
 
     val params = key.getParams.nn
     val y = params.getG.nn.modPow(key.getX, params.getP.nn)
