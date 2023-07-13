@@ -16,6 +16,8 @@
 
 package wisteria
 
+import rudiments.{is as _, *}
+
 import scala.quoted.*
 import scala.compiletime.*
 
@@ -122,7 +124,7 @@ object Wisteria:
         val tpeRepr = field.tree match
           case v: ValDef => v.tpt.tpe
           case d: DefDef => d.returnTpt.tpe
-          case other     => throw rudiments.Mistake("field is not of the expected AST type")
+          case other     => throw Mistake(msg"field is not of the expected AST type")
         
         Expr(field.name) -> getAnnotations(tpeRepr).filter { a =>
           a.tpe.typeSymbol.maybeOwner.isNoSymbol ||
