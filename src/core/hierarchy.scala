@@ -47,13 +47,42 @@ export Serpentine.PathName
 case class PathError(reason: PathError.Reason)
 extends Error(msg"the path is invalid because ${reason.show}")
 
-@targetName("root")
-def %
-    [PathType <: Matchable]
-    (using hierarchy: Hierarchy[PathType, ?])
-    (using mainRoot: MainRoot[PathType])
-    : PathType =
-  mainRoot.empty()
+object `%`:
+
+  erased given
+      [PathType <: Matchable, LinkType <: Matchable]
+      (using erased hierarchy: Hierarchy[PathType, LinkType])
+      : Hierarchy[%.type, LinkType] = ###
+  
+  given
+      [PathType <: Matchable, LinkType <: Matchable, NameType <: Label, RootType]
+      (using erased hierarchy: Hierarchy[PathType, LinkType])
+      (using reachable: Reachable[PathType, NameType, RootType])
+      (using mainRoot: MainRoot[PathType])
+      : Reachable[%.type, NameType, RootType] =
+    new Reachable[%.type, NameType, RootType]:
+      def separator(path: %.type): Text = reachable.separator(mainRoot.empty())
+      def prefix(root: RootType): Text = reachable.prefix(reachable.root(mainRoot.empty()))
+      def root(path: %.type): RootType = reachable.root(mainRoot.empty())
+      def descent(path: %.type): List[PathName[NameType]] = Nil
+  
+  given
+      [PathType <: Matchable]
+      (using hierarchy: Hierarchy[PathType, ?])
+      (using mainRoot: MainRoot[PathType], show: Show[PathType]): Show[%.type] = root =>
+    mainRoot.empty().show
+    
+
+  @targetName("child")
+  def /
+      [PathType <: Matchable, NameType <: Label, AscentType]
+      (using hierarchy: Hierarchy[PathType, ?])
+      (using mainRoot: MainRoot[PathType])
+      (using pathlike: Pathlike[PathType, NameType, AscentType])
+      (name: PathName[NameType])
+      (using creator: PathCreator[PathType, NameType, AscentType])
+      : PathType =
+    mainRoot.empty() / name
 
 @targetName("relative")
 def ?
