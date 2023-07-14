@@ -111,11 +111,11 @@ case class Element
 
   def label: Text = labelString.show
 
-  lazy val block: Boolean = tagBlock || children.exists:
-    case item: Node[?] => item.block
-    case _: Text       => false
-    case _: Int        => false
-    case _             => throw Mistake("should never match")
+  lazy val block: Boolean = tagBlock || children.exists: child =>
+    (child: @unchecked) match
+      case node: Node[?] => node.block
+      case _: Text       => false
+      case _: Int        => false
 
 case class HtmlDoc(root: Node["html"])
 
@@ -136,9 +136,8 @@ object HtmlDoc:
       (content: (Html[Flow] | Seq[Html[Flow]])*)
       (using att: HtmlAttribute["href", Stylesheet, ?]): HtmlDoc =
     
-    val link = att.convert(stylesheet) match
+    val link = (att.convert(stylesheet): @unchecked) match
       case Unset      => Nil
       case text: Text => Seq(Link(rel = Text("stylesheet"), href = text))
-      case _          => throw Mistake("should never match")
 
     HtmlDoc(Html(Head(Title(title), link), Body(content*)))
