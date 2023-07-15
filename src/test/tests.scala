@@ -26,12 +26,14 @@ import anticipation.*, fileApi.galileiApi
 import ambience.*, environments.system
 
 import unsafeExceptions.canThrowAny
+import filesystemOptions.createNonexistentParents.yes
 
 object Tests extends Suite(t"Galilei tests"):
   def run(): Unit =
     
     suite(t"Flexible hierarchy tests"):
       import hierarchies.flexible
+      import filesystemOptions.dereferenceSymlinks.yes
       
       val tmpPath = test(t"Get /var/tmp"):
         Xdg.Var.Tmp()
@@ -45,12 +47,12 @@ object Tests extends Suite(t"Galilei tests"):
         galileiTmpPath.descent.map(_.show)
       .assert(_ == List(t"galilei", t"tmp", t"var"))
 
-      val tmpDir = galileiTmpPath.directory()
+      val tmpDir = galileiTmpPath.make[Directory]()
 
       suite(t"File and directory creation"):
         test(t"Create a new file"):
           val path = (tmpDir.path / p"file.txt")
-          path.file()
+          path.make[File]()
           path
         .assert(_.exists())
 

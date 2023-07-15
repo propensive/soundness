@@ -240,7 +240,7 @@ trait Path:
   def as[InodeType <: Inode](using resolver: PathResolver[InodeType, this.type]): InodeType =
     resolver(this)
   
-  def make[InodeType <: Inode](using maker: PathMaker[InodeType, this.type]): InodeType =
+  def make[InodeType <: Inode]()(using maker: InodeMaker[InodeType, this.type]): InodeType =
     maker(this)
   
   def directory(): Directory = Directory(this)
@@ -264,7 +264,38 @@ object PathResolver:
 trait PathResolver[+InodeType <: Inode, -PathType <: Path]:
   def apply(value: PathType): InodeType
 
-trait PathMaker[+InodeType <: Inode, -PathType <: Path]:
+object InodeMaker:
+  given
+      (using createNonexistentParents: CreateNonexistentParents)
+      (using notFound: CanThrow[NotFoundError], overwrite: CanThrow[OverwriteError])
+      : InodeMaker[Directory, Path]^{notFound, overwrite} = path =>
+    try
+      jnf.Files.createDirectory(jnf.Path.of(path.render.s).nn)
+      Directory(path)
+    catch
+      case error: jnf.FileAlreadyExistsException =>
+        throw OverwriteError(path)
+      case error: ji.FileNotFoundException =>
+        throw NotFoundError(path)
+      case error: SecurityException => 
+        throw Mistake(msg"a security exception occurred")
+
+  given
+      (using createNonexistentParents: CreateNonexistentParents)
+      (using notFound: CanThrow[NotFoundError], overwrite: CanThrow[OverwriteError])
+      : InodeMaker[File, Path]^{notFound, overwrite} = path =>
+    try
+      jnf.Files.createFile(jnf.Path.of(path.render.s).nn)
+      File(path)
+    catch
+      case error: jnf.FileAlreadyExistsException =>
+        throw OverwriteError(path)
+      case error: ji.FileNotFoundException =>
+        throw NotFoundError(path)
+      case error: SecurityException => 
+        throw Mistake(msg"a security exception occurred")
+
+trait InodeMaker[+InodeType <: Inode, -PathType <: Path]:
   def apply(value: PathType): InodeType
 
 case class Directory(path: Path) extends Unix.Inode, Windows.Inode
@@ -351,17 +382,15 @@ package filesystemOptions:
 
 case class IoError(path: Path) extends Error(msg"an I/O error occurred")
 
-case class PathConflictError(path: Path)
-extends Error(msg"cannot overwrite a pre-existing filesystem node")
 
 case class NotFoundError(path: Path)
 extends Error(msg"no filesystem node was found at the path $path")
 
 case class OverwriteError(path: Path)
-extends Error(msg"cannot overwrite a pre-existing directory")
+extends Error(msg"cannot overwrite a pre-existing filesystem node $path")
 
 case class ForbiddenOperationError(path: Path)
-extends Error(msg"insufficient access rights for this operation")
+extends Error(msg"insufficient access rights to modify $path")
 
 case class SymlinkError(path: Path)
 extends Error(msg"the symlink at $path did not link to a valid filesystem node")
