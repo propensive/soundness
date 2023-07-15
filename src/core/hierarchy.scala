@@ -53,7 +53,14 @@ object `%`:
       [PathType <: Matchable, LinkType <: Matchable]
       (using erased hierarchy: Hierarchy[PathType, LinkType])
       : Hierarchy[%.type, LinkType] = ###
-  
+
+  def precedes
+      [PathType <: Matchable]
+      (using erased hierarchy: Hierarchy[PathType, ?])
+      (path: PathType)
+      : Boolean =
+    true
+
   given
       [PathType <: Matchable, LinkType <: Matchable, NameType <: Label, RootType]
       (using erased hierarchy: Hierarchy[PathType, LinkType])
@@ -166,7 +173,9 @@ extension
       else n
     
     creator.path(reachable.root(left), reachable.descent(left).takeRight(count(0)))
- 
+
+  def precedes(path: %.type): Boolean = false
+  
   def precedes
       (path: PathType)
       (using reachable: Reachable[PathType, NameType, RootType],
