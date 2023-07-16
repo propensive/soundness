@@ -193,7 +193,7 @@ object Tests extends Suite(t"Serpentine Tests"):
       .assert(_ == t"/foo/bar")
       
       test(t"show the root path"):
-        %.show
+        summon[Show[%.type]](%)
       .assert(_ == t"/")
     
     suite(t"Path tests"):

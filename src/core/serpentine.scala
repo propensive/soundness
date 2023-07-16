@@ -106,3 +106,60 @@ object Serpentine:
           fail(msg"a path element may not match the pattern $other")
 
     '{${Expr(element)}.asInstanceOf[PathName[NameType]]}
+
+  @targetName("Root")
+  object `%`:
+
+    erased given hierarchy
+        [PathType <: Matchable, LinkType <: Matchable]
+        (using erased hierarchy: Hierarchy[PathType, LinkType])
+        : Hierarchy[%.type, LinkType] = ###
+
+    override def equals(other: Any): Boolean = other.asMatchable match
+      case anyRef: AnyRef         => (anyRef eq %) || {
+        anyRef match
+          case other: PathEquality[?] => other.equals(this)
+          case other                  => false
+      }
+      case _                      => false
+    
+    override def hashCode: Int = 0
+
+    def precedes
+        [PathType <: Matchable]
+        (using erased hierarchy: Hierarchy[PathType, ?])
+        (path: PathType)
+        : Boolean =
+      true
+
+    given reachable
+        [PathType <: Matchable, LinkType <: Matchable, NameType <: Label, RootType]
+        (using erased hierarchy: Hierarchy[PathType, LinkType])
+        (using reachable: Reachable[PathType, NameType, RootType])
+        (using mainRoot: MainRoot[PathType])
+        : Reachable[%.type, NameType, RootType] =
+      new Reachable[%.type, NameType, RootType]:
+        def separator(path: %.type): Text = reachable.separator(mainRoot.empty())
+        def prefix(root: RootType): Text = reachable.prefix(reachable.root(mainRoot.empty()))
+        def root(path: %.type): RootType = reachable.root(mainRoot.empty())
+        def descent(path: %.type): List[PathName[NameType]] = Nil
+    
+    given show
+        [PathType <: Matchable]
+        (using hierarchy: Hierarchy[PathType, ?])
+        (using mainRoot: MainRoot[PathType], show: Show[PathType]): Show[%.type] = root =>
+      mainRoot.empty().show
+      
+
+    @targetName("child")
+    def /
+        [PathType <: Matchable, NameType <: Label, AscentType]
+        (using hierarchy: Hierarchy[PathType, ?])
+        (using mainRoot: MainRoot[PathType])
+        (using pathlike: Pathlike[PathType, NameType, AscentType])
+        (name: PathName[NameType])
+        (using creator: PathCreator[PathType, NameType, AscentType])
+        : PathType =
+      mainRoot.empty() / name
+
+export Serpentine.%

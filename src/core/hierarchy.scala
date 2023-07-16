@@ -22,6 +22,8 @@ import spectacular.*
 import gossamer.*
 
 import scala.quoted.*
+import scala.compiletime.*
+import scala.reflect.*
 
 import language.experimental.captureChecking
 
@@ -46,50 +48,6 @@ export Serpentine.PathName
 
 case class PathError(reason: PathError.Reason)
 extends Error(msg"the path is invalid because ${reason.show}")
-
-object `%`:
-
-  erased given
-      [PathType <: Matchable, LinkType <: Matchable]
-      (using erased hierarchy: Hierarchy[PathType, LinkType])
-      : Hierarchy[%.type, LinkType] = ###
-
-  def precedes
-      [PathType <: Matchable]
-      (using erased hierarchy: Hierarchy[PathType, ?])
-      (path: PathType)
-      : Boolean =
-    true
-
-  given
-      [PathType <: Matchable, LinkType <: Matchable, NameType <: Label, RootType]
-      (using erased hierarchy: Hierarchy[PathType, LinkType])
-      (using reachable: Reachable[PathType, NameType, RootType])
-      (using mainRoot: MainRoot[PathType])
-      : Reachable[%.type, NameType, RootType] =
-    new Reachable[%.type, NameType, RootType]:
-      def separator(path: %.type): Text = reachable.separator(mainRoot.empty())
-      def prefix(root: RootType): Text = reachable.prefix(reachable.root(mainRoot.empty()))
-      def root(path: %.type): RootType = reachable.root(mainRoot.empty())
-      def descent(path: %.type): List[PathName[NameType]] = Nil
-  
-  given
-      [PathType <: Matchable]
-      (using hierarchy: Hierarchy[PathType, ?])
-      (using mainRoot: MainRoot[PathType], show: Show[PathType]): Show[%.type] = root =>
-    mainRoot.empty().show
-    
-
-  @targetName("child")
-  def /
-      [PathType <: Matchable, NameType <: Label, AscentType]
-      (using hierarchy: Hierarchy[PathType, ?])
-      (using mainRoot: MainRoot[PathType])
-      (using pathlike: Pathlike[PathType, NameType, AscentType])
-      (name: PathName[NameType])
-      (using creator: PathCreator[PathType, NameType, AscentType])
-      : PathType =
-    mainRoot.empty() / name
 
 @targetName("relative")
 def ?
@@ -358,3 +316,21 @@ extension
 
 extension (inline context: StringContext)
   inline def p[NameType <: Label](): PathName[NameType] = ${Serpentine.parse[NameType]('context)}
+
+trait PathEquality
+    [PathType <: Matchable]
+    (using pathlike: Pathlike[PathType, ?, ?])
+    (using TypeTest[Any, PathType]):
+  this: PathType & Matchable =>
+  
+  override def equals(other: Any): Boolean = other.asMatchable match
+    case `%` =>
+      pathlike.descent(this) == Nil
+    
+    case other: PathType =>
+      pathlike.descent(other) == pathlike.descent(this) && pathlike.ascent(other) == pathlike.ascent(this)
+    
+    case other =>
+      false
+  
+  override def hashCode: Int = if pathlike.descent(this) == Nil then 0 else super.hashCode

@@ -48,6 +48,7 @@ object SimplePath:
     def path(root: Root.type, descent: List[PathName[".*\\/.*"]]): SimplePath = SimplePath(descent)
     
 case class SimplePath(descent: List[PathName[".*\\/.*"]])
+extends PathEquality(using SimplePath.reachable)
 
 object SimpleLink:
   inline given decoder(using CanThrow[PathError]): Decoder[SimpleLink] =
