@@ -362,7 +362,7 @@ class TestReport(using env: Environment):
       val passed: Int = totals.getOrElse(Status.Pass, 0) + totals.getOrElse(Status.Bench, 0)
       val total: Int = totals.values.sum
       val failed: Int = total - passed
-
+      Io.println(out"${escapes.Reset}")
       Io.println(out"$Bold($Underline(Test results))")
 
       table.tabulate(summaryLines, columns, delimitRows = DelimitRows.SpaceIfMultiline).foreach(Io.println(_))
