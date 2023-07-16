@@ -157,81 +157,80 @@ object Unix:
       
   sealed trait Inode extends galilei.Inode
 
+case class Volume(name: Text, volumeType: Text)
+
 sealed trait Inode:
   def path: Path
   def fullname: Text = path.fullname
+  def stillExists(): Boolean = path.exists()
+  
+  def volume: Volume =
+    val fileStore = jnf.Files.getFileStore(jnf.Path.of(path.render.s)).nn
+    Volume(fileStore.name.nn.tt, fileStore.`type`.nn.tt)
   
   def delete(): Path throws IoError =
-    jnf.Files.delete(jnf.Path.of(path.render.s))
-    path
+    try
+      jnf.Files.delete(jnf.Path.of(path.render.s))
+      path
+    
+    catch
+      case error: jnf.NoSuchFileException        => throw IoError(path)
+      case error: jnf.DirectoryNotEmptyException => throw IoError(path)
+      case error: ji.FileNotFoundException       => throw IoError(path)
+      case error: ji.IOException                 => throw IoError(path)
+      case error: SecurityException              => throw IoError(path)
   
-  inline def moveTo
+  def moveTo
       (destination: Path)
       (using overwritePreexisting: OverwritePreexisting, moveAtomically: MoveAtomically,
           dereferenceSymlinks: DereferenceSymlinks,
           createNonexistentParents: CreateNonexistentParents)
       (using io: CanThrow[IoError])
-      : Unit^{io, overwritePreexisting, moveAtomically, dereferenceSymlinks} =
+      : Path^{io, overwritePreexisting, moveAtomically, dereferenceSymlinks} =
 
-    // inline if erasedValue[createNonexistentParents.Flag] then
-    //   path.parent.directory()
+    val javaPath = jnf.Path.of(destination.render.s).nn
+    val options: Seq[jnf.CopyOption] = dereferenceSymlinks() ++ moveAtomically()
 
-    val options: Seq[jnf.CopyOption] = Iterable(
-      inline if erasedValue[overwritePreexisting.Flag] then jnf.StandardCopyOption.REPLACE_EXISTING
-      else Unset,
-      inline if erasedValue[moveAtomically.Flag] then jnf.StandardCopyOption.ATOMIC_MOVE
-      else Unset,
-      inline if !erasedValue[dereferenceSymlinks.Flag] then jnf.LinkOption.NOFOLLOW_LINKS
-      else Unset
-    ).sift[jnf.StandardCopyOption].to(Seq)
+    if overwritePreexisting() then jnf.Files.deleteIfExists(javaPath)
     
-    try jnf.Files.move(jnf.Path.of(fullname.s), jnf.Path.of(destination.render.s), options*)
-    catch
-      case error: UnsupportedOperationException   => throw IoError(path)
-      case error: jnf.FileAlreadyExistsException      => throw IoError(path)
-      case error: jnf.DirectoryNotEmptyException      => throw IoError(path)
-      case error: jnf.AtomicMoveNotSupportedException => throw IoError(path)
-      case error: ji.IOException                      => throw IoError(path)
-      case error: SecurityException               => throw IoError(path)
-  
+    def op() = jnf.Files.move(jnf.Path.of(fullname.s), javaPath, options*)
+
+    overwritePreexisting(op(), destination)
+    destination
+      
 trait Path:
   this: Path =>
   def fullname: Text
   def name: Text
   def exists(): Boolean = jnf.Files.exists(jnf.Path.of(fullname.s))
+  
+  def wipe
+      ()
+      (using dereferenceSymlinks: DereferenceSymlinks, deleteRecursively: DeleteRecursively)
+      (using io: CanThrow[IoError]): Path =
+    ???
+    
 
   inline def inodeType
-      ()
-      (using dereferenceSymlinks: DereferenceSymlinks)
-      (using io: CanThrow[IoError], notFound: CanThrow[NotFoundError])
-      : InodeType^{dereferenceSymlinks, io, notFound} =
-    val options =
-      inline if erasedValue[dereferenceSymlinks.Flag] then Seq()
-      else Seq(jnf.LinkOption.NOFOLLOW_LINKS)
+      ()(using dereferenceSymlinks: DereferenceSymlinks)(using io: CanThrow[IoError])
+      : InodeType^{io} =
+    
+    val options = dereferenceSymlinks()
     
     try jnf.Files.getAttribute(jnf.Path.of(fullname.s), "unix:mode", options*) match
       case mode: Int => (mode & 61440) match
-        case 40960 => InodeType.Symlink
-        case 32768 => InodeType.File
-        case 16384 => InodeType.Directory
-        case  8192 => InodeType.CharDevice
         case  4096 => InodeType.Fifo
+        case  8192 => InodeType.CharDevice
+        case 16384 => InodeType.Directory
         case 24576 => InodeType.BlockDevice
+        case 32768 => InodeType.File
+        case 40960 => InodeType.Symlink
         case 49152 => InodeType.Socket
         case _     => throw IoError(this)
     
     catch
       case error: UnsupportedOperationException =>
         throw Mistake(msg"the file attribute unix:mode could not be obtained")
-      
-      case error: IllegalArgumentException =>
-        throw Mistake(msg"the file attribute unix:mode could not be obtained")
-      
-      case error: SecurityException =>
-        throw Mistake(msg"a security exception occurred")
-      
-      case error: ji.FileNotFoundException =>
-        throw NotFoundError(this)
       
       case error: ji.IOException =>
         throw IoError(this)
@@ -265,45 +264,41 @@ trait PathResolver[+InodeType <: Inode, -PathType <: Path]:
   def apply(value: PathType): InodeType
 
 object InodeMaker:
-  given
-      (using createNonexistentParents: CreateNonexistentParents)
-      (using notFound: CanThrow[NotFoundError], overwrite: CanThrow[OverwriteError])
-      : InodeMaker[Directory, Path]^{notFound, overwrite} = path =>
-    try
-      jnf.Files.createDirectory(jnf.Path.of(path.render.s).nn)
-      Directory(path)
-    catch
-      case error: jnf.FileAlreadyExistsException =>
-        throw OverwriteError(path)
-      case error: ji.FileNotFoundException =>
-        throw NotFoundError(path)
-      case error: SecurityException => 
-        throw Mistake(msg"a security exception occurred")
+  given makeDirectory
+      (using createNonexistentParents: CreateNonexistentParents,
+          overwritePreexisting: OverwritePreexisting)
+      : InodeMaker[Directory, Path]^{createNonexistentParents, overwritePreexisting} = path =>
+    
+    val javaPath = jnf.Path.of(path.render.s).nn
 
-  given
-      (using createNonexistentParents: CreateNonexistentParents)
-      (using notFound: CanThrow[NotFoundError], overwrite: CanThrow[OverwriteError])
-      : InodeMaker[File, Path]^{notFound, overwrite} = path =>
-    try
-      jnf.Files.createFile(jnf.Path.of(path.render.s).nn)
-      File(path)
-    catch
-      case error: jnf.FileAlreadyExistsException =>
-        throw OverwriteError(path)
-      case error: ji.FileNotFoundException =>
-        throw NotFoundError(path)
-      case error: SecurityException => 
-        throw Mistake(msg"a security exception occurred")
+    def op() =
+      if createNonexistentParents()
+      then path.parent.mm { path => jnf.Files.createDirectories(jnf.Path.of(path.render.s).nn) }
 
+      if overwritePreexisting() then jnf.Files.deleteIfExists(javaPath)
+      
+      jnf.Files.createDirectory(javaPath)
+    
+    createNonexistentParents(overwritePreexisting(op(), path), path)
+    
+    Directory(path)
+  
+  given makeFile
+      (using createNonexistentParents: CreateNonexistentParents,
+          overwritePreexisting: OverwritePreexisting)
+      : InodeMaker[File, Path]^{createNonexistentParents, overwritePreexisting} = path =>
+    def op() = jnf.Files.createFile(jnf.Path.of(path.render.s).nn)
+    
+    createNonexistentParents(overwritePreexisting(op(), path), path)
+    File(path)
+      
 trait InodeMaker[+InodeType <: Inode, -PathType <: Path]:
   def apply(value: PathType): InodeType
 
 case class Directory(path: Path) extends Unix.Inode, Windows.Inode
 
-case class File(path: Path) extends Unix.Inode, Windows.Inode
-  // def open[ResultType]()(action: FileHandle[this.type] ?-> ResultType): ResultType =
-  //   val handle = new FileHandle[ji.BufferedInputStream, this.type](
-  //   try action(using handle) finally handle.close()
+case class File(path: Path) extends Unix.Inode, Windows.Inode:
+  def size(): ByteSize = jnf.Files.size(jnf.Path.of(path.render.s)).b
 
 case class Socket(path: Unix.Path) extends Unix.Inode
 case class Fifo(path: Unix.Path) extends Unix.Inode
@@ -315,73 +310,99 @@ enum InodeType:
   case Fifo, CharDevice, Directory, BlockDevice, File, Symlink, Socket
 
 @capability
-erased trait DereferenceSymlinks:
-  type Flag <: Boolean & Singleton
+trait DereferenceSymlinks:
+  def apply(): List[jnf.LinkOption]
 
 @capability
-erased trait MoveAtomically:
-  type Flag <: Boolean & Singleton
+trait MoveAtomically:
+  def apply(): List[jnf.CopyOption]
 
 @capability
-erased trait CopyAttributes:
-  type Flag <: Boolean & Singleton
+trait CopyAttributes:
+  def apply(): List[jnf.CopyOption]
 
 @capability
-erased trait RecursiveDeletion:
-  type Flag <: Boolean & Singleton
+trait DeleteRecursively
 
 @capability
-erased trait OverwritePreexisting:
-  type Flag <: Boolean & Singleton
+trait OverwritePreexisting:
+  def apply(op: => Unit, path: Path): Unit
+  def apply(): Boolean
 
 @capability
-erased trait CreateNonexistentParents:
-  type Flag <: Boolean & Singleton
+trait CreateNonexistentParents:
+  def apply(value: => Unit, path: Path): Unit
+  def apply(): Boolean
 
 @capability
-erased trait CreateNonexistent:
-  type Flag <: Boolean & Singleton
+trait CreateNonexistent
 
 @capability
-erased trait SynchronousWrites:
-  type Flag <: Boolean & Singleton
+trait WriteSynchronously
 
 package filesystemOptions:
-  object dereferenceSymlinks:
-    erased given yes: DereferenceSymlinks { type Flag = true } = ###
-    erased given no: DereferenceSymlinks { type Flag = false } = ###
+  given dereferenceSymlinks: DereferenceSymlinks = new DereferenceSymlinks:
+    def apply(): List[jnf.LinkOption] = Nil
   
-  object moveAtomically:
-    erased given yes: MoveAtomically { type Flag = true } = ###
-    erased given no: MoveAtomically { type Flag = false } = ###
+  given doNotDereferenceSymlinks: DereferenceSymlinks = new DereferenceSymlinks:
+    def apply(): List[jnf.LinkOption] = List(jnf.LinkOption.NOFOLLOW_LINKS)
+  
+  given moveAtomically: MoveAtomically with
+    def apply(): List[jnf.CopyOption] = List(jnf.StandardCopyOption.ATOMIC_MOVE)
+  
+  given doNotMoveAtomically: MoveAtomically with
+    def apply(): List[jnf.CopyOption] = Nil
+  
+  given copyAttributes: CopyAttributes with
+    def apply(): List[jnf.CopyOption] = List(jnf.StandardCopyOption.COPY_ATTRIBUTES)
 
-  object copyAttributes:
-    erased given yes: CopyAttributes { type Flag = true } = ###
-    erased given no: CopyAttributes { type Flag = false } = ###
-  
-  object recursiveDeletion:
-    erased given yes: RecursiveDeletion { type Flag = true } = ###
-    erased given no: RecursiveDeletion { type Flag = false } = ###
-  
-  object overwriteExisting:
-    erased given yes: OverwritePreexisting { type Flag = true } = ###
-    erased given no: OverwritePreexisting { type Flag = false } = ###
-  
-  object createNonexistentParents:
-    erased given yes: CreateNonexistentParents { type Flag = true } = ###
-    erased given no: CreateNonexistentParents { type Flag = false } = ###
-  
-  object createNonexistent:
-    erased given yes: CreateNonexistent { type Flag = true } = ###
-    erased given no: CreateNonexistent { type Flag = false } = ###
-  
-  object synchronousWrites:
-    erased given yes: SynchronousWrites { type Flag = true } = ###
-    erased given no: SynchronousWrites { type Flag = false } = ###
+  given doNotCopyAttributes: CopyAttributes with
+    def apply(): List[jnf.CopyOption] = Nil
+
+  given deleteRecursively: DeleteRecursively with
+    ()
+
+  given doNotDeleteRecursively: DeleteRecursively with
+    ()
+
+  given overwritePreexisting: OverwritePreexisting with
+    def apply(op: => Unit, path: Path): Unit = op
+    def apply(): Boolean = true
+
+  given doNotOverwritePreexisting(using overwrite: CanThrow[OverwriteError]): OverwritePreexisting =
+    new OverwritePreexisting:
+      def apply(op: => Unit, path: Path): Unit =
+        try op catch case error: jnf.FileAlreadyExistsException => throw OverwriteError(path)
+
+      def apply(): Boolean = false
+
+  given createNonexistentParents: CreateNonexistentParents with
+    def apply(op: => Unit, path: Path): Unit = op
+    def apply(): Boolean = true
+
+  given doNotCreateNonexistentParents
+      (using notFound: CanThrow[NotFoundError])
+      : CreateNonexistentParents =
+    new CreateNonexistentParents:
+      def apply(): Boolean = false
+      
+      def apply(op: => Unit, path: Path): Unit =
+        try op catch case error: ji.FileNotFoundException => throw NotFoundError(path)
+
+  given createNonexistent: CreateNonexistent with
+    ()
+
+  given doNotCreateNonexistent: CreateNonexistent with
+    ()
+
+  given writeSynchronously: WriteSynchronously with
+    ()
+
+  given doNotWriteSynchronously: WriteSynchronously with
+    ()
 
 
 case class IoError(path: Path) extends Error(msg"an I/O error occurred")
-
 
 case class NotFoundError(path: Path)
 extends Error(msg"no filesystem node was found at the path $path")
@@ -390,10 +411,7 @@ case class OverwriteError(path: Path)
 extends Error(msg"cannot overwrite a pre-existing filesystem node $path")
 
 case class ForbiddenOperationError(path: Path)
-extends Error(msg"insufficient access rights to modify $path")
-
-case class SymlinkError(path: Path)
-extends Error(msg"the symlink at $path did not link to a valid filesystem node")
+extends Error(msg"insufficient permissions to modify $path")
 
 case class InodeTypeError(path: Path)
 extends Error(msg"the filesystem node at $path was expected to be a different type")

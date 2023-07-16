@@ -26,14 +26,15 @@ import anticipation.*, fileApi.galileiApi
 import ambience.*, environments.system
 
 import unsafeExceptions.canThrowAny
-import filesystemOptions.createNonexistentParents.yes
+import filesystemOptions.createNonexistentParents
+import filesystemOptions.overwritePreexisting
 
 object Tests extends Suite(t"Galilei tests"):
   def run(): Unit =
     
     suite(t"Flexible hierarchy tests"):
       import hierarchies.flexible
-      import filesystemOptions.dereferenceSymlinks.yes
+      import filesystemOptions.dereferenceSymlinks
       
       val tmpPath = test(t"Get /var/tmp"):
         Xdg.Var.Tmp()
@@ -53,8 +54,7 @@ object Tests extends Suite(t"Galilei tests"):
         test(t"Create a new file"):
           val path = (tmpDir.path / p"file.txt")
           path.make[File]()
-          path
-        .assert(_.exists())
+        .assert(_.stillExists())
 
         test(t"Delete a file"):
           (tmpDir.path / p"file.txt").file().delete()
