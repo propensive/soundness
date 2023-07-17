@@ -73,43 +73,17 @@ object Serpentine:
       $text.asInstanceOf[PathName[NameType]]
     }
 
-  private def patterns(using quotes: Quotes)(repr: quotes.reflect.TypeRepr): List[String] =
+  private[serpentine] def patterns
+      (using quotes: Quotes)(repr: quotes.reflect.TypeRepr)
+      : List[String] =
     import quotes.reflect.*
     
     (repr.dealias.asMatchable: @unchecked) match
       case OrType(left, right)                   => patterns(left) ++ patterns(right)
       case ConstantType(StringConstant(pattern)) => List(pattern)
-  
-  def parse
-      [NameType <: Label: Type](context: Expr[StringContext])(using Quotes)
-      : Expr[PathName[NameType]] =
-    import quotes.reflect.*
-    
-    val (element: String, pos: Position) = (context: @unchecked) match
-      case '{StringContext(${Varargs(Seq(str))}*)} => (str.value.get, str.asTerm.pos)
-    
-    patterns(TypeRepr.of[NameType]).foreach: pattern =>
-      if element.matches(pattern) then pattern match
-        case r"\.\*\\?$char(.)\.\*" =>
-          fail(msg"a path element may not contain the character $char", pos)
-
-        case r"$start([a-zA-Z0-9]*)\.\*" =>
-          fail(msg"a path element may not start with $start", pos)
-
-        case r"\.\*$end([a-zA-Z0-9]*)" =>
-          fail(msg"a path element may not end with $end", pos)
-
-        case pattern@r"[a-zA-Z0-9]*" =>
-          fail(msg"a path element may not be $pattern", pos)
-
-        case other =>
-          fail(msg"a path element may not match the pattern $other")
-
-    '{${Expr(element)}.asInstanceOf[PathName[NameType]]}
 
   @targetName("Root")
   object `%`:
-
     erased given hierarchy
         [PathType <: Matchable, LinkType <: Matchable]
         (using erased hierarchy: Hierarchy[PathType, LinkType])
@@ -163,3 +137,35 @@ object Serpentine:
       mainRoot.empty() / name
 
 export Serpentine.%
+
+object SerpentineMacro:
+  def parse
+      [NameType <: Label: Type](context: Expr[StringContext])(using Quotes)
+      : Expr[PExtractor[NameType]] =
+    import quotes.reflect.*
+    
+    val (element: String, pos: Position) = (context: @unchecked) match
+      case '{StringContext(${Varargs(Seq(str))}*)} => (str.value.get, str.asTerm.pos)
+    
+    Serpentine.patterns(TypeRepr.of[NameType]).foreach: pattern =>
+      if element.matches(pattern) then pattern match
+        case r"\.\*\\?$char(.)\.\*" =>
+          fail(msg"a path element may not contain the character $char", pos)
+
+        case r"$start([a-zA-Z0-9]*)\.\*" =>
+          fail(msg"a path element may not start with $start", pos)
+
+        case r"\.\*$end([a-zA-Z0-9]*)" =>
+          fail(msg"a path element may not end with $end", pos)
+
+        case pattern@r"[a-zA-Z0-9]*" =>
+          fail(msg"a path element may not be $pattern", pos)
+
+        case other =>
+          fail(msg"a path element may not match the pattern $other")
+
+    '{
+      new PExtractor[NameType]():
+        def apply(): PathName[NameType] = ${Expr(element)}.asInstanceOf[PathName[NameType]]
+        def unapply(name: PathName[NameType]): Boolean = name.render.s == ${Expr(element)}
+    }

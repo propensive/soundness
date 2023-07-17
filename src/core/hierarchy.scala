@@ -314,9 +314,14 @@ extension
   transparent inline def parent: Maybe[PathType] = pathlike.parent(path)
   transparent inline def ancestor(n: Int): Maybe[PathType] = pathlike.ancestor(path, n)
 
-extension (inline context: StringContext)
-  inline def p[NameType <: Label](): PathName[NameType] = ${Serpentine.parse[NameType]('context)}
+trait PExtractor[NameType <: Label]():
+  def apply(): PathName[NameType]
+  def unapply(name: PathName[NameType]): Boolean
 
+extension (inline context: StringContext)
+  inline def p[NameType <: Label]: PExtractor[NameType] =
+    ${SerpentineMacro.parse[NameType]('context)}
+  
 trait PathEquality
     [PathType <: Matchable]
     (using pathlike: Pathlike[PathType, ?, ?])
@@ -334,3 +339,18 @@ trait PathEquality
       false
   
   override def hashCode: Int = if pathlike.descent(this) == Nil then 0 else super.hashCode
+
+object `\\`:
+  def unapply
+      [PathType <: Matchable, NameType <: Label, RootType]
+      (using hierarchy: Hierarchy[PathType, ?])
+      (using reachable: Reachable[PathType, NameType, RootType])
+      (using creator: PathCreator[PathType, NameType, RootType])
+      (path: PathType)
+      : Option[(PathType | RootType, PathName[NameType])] =
+    reachable.descent(path) match
+      case Nil          => None
+      case head :: Nil  => Some((reachable.root(path), head))
+      case head :: tail => Some((creator.path(reachable.root(path), tail), head))
+    
+
