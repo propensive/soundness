@@ -1,4 +1,6 @@
-__Galilei__ is a simple library for performing disk I/O with Scala. It provides access to most filesystem
-operations through the `Path` type—an abstract representation of a file or a directory—plus typeclass-based
-`read` and `write` methods which can use ad-hoc types, including streaming types like `LazyList`. Galilei is
-designed to take advantage of Scala 3's safer exceptions.
+__Galilei__ is a library for performing safe disk I/O with Scala. It uses dependent types to provide
+precise static representations of paths, files, directories and other filesystem objects, enforcing
+filesystem-aware constraints on filenames and metadata. Galilei has a particular focus on precise error
+handling and, when enabled, each filesystem operation which might fail must be handled for each possible
+failure type; but its innovation is in minimizing that to a set of failure types which depends not
+just on the operation, but also the filesystem and in-scope options.
