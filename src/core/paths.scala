@@ -113,13 +113,20 @@ object Windows:
   sealed trait Inode extends galilei.Inode
 
 object Unix:
+  
   type Forbidden = ".*\\/.*" | ".*[\\cA-\\cZ].*" | "\\.\\." | "\\."
+  
+  def /(name: PathName[Forbidden]): Path = Path(List(name))
 
   object Path:
+    given mainRoot: MainRoot[Path] = () => Path(Nil)
+    
     inline given decoder(using CanThrow[PathError]): Decoder[Path] = new Decoder[Path]:
       def decode(text: Text): Path = Reachable.decode(text)
     
-    given rootParser: RootParser[Path, Unset.type] = text => (Unset, text.drop(1))
+    given rootParser: RootParser[Path, Unset.type] = text =>
+      if text.starts(t"/") then (Unset, text.drop(1)) else Unset
+    
     given creator: PathCreator[Path, Forbidden, Unset.type] = (root, descent) => Path(descent)
 
     given reachable: Reachable[Path, Forbidden, Unset.type] with
@@ -210,7 +217,6 @@ trait Path:
       (using io: CanThrow[IoError]): Path =
     ???
     
-
   inline def inodeType
       ()(using dereferenceSymlinks: DereferenceSymlinks)(using io: CanThrow[IoError])
       : InodeType^{io} =
@@ -226,11 +232,11 @@ trait Path:
         case 32768 => InodeType.File
         case 40960 => InodeType.Symlink
         case 49152 => InodeType.Socket
-        case _     => throw IoError(this)
+        case _     => throw Mistake(msg"an unexpected POSIX mode value was returned")
     
     catch
       case error: UnsupportedOperationException =>
-        throw Mistake(msg"the file attribute unix:mode could not be obtained")
+        throw Mistake(msg"the file attribute unix:mode could not be accessed")
       
       case error: ji.IOException =>
         throw IoError(this)

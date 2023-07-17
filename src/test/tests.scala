@@ -31,9 +31,43 @@ import filesystemOptions.overwritePreexisting
 
 object Tests extends Suite(t"Galilei tests"):
   def run(): Unit =
+
+    suite(t"Path tests"):
+      suite(t"UNIX tests"):
+        import hierarchies.unix
+
+        test(t"Parse /home/work/file.txt"):
+          t"/home/work/file.txt".decodeAs[Unix.Path]
+        .assert(_ == % / p"home" / p"work" / p"file.txt")
+
+        test(t"Parsing C:\\Windows\\System32 should fail"):
+          capture[PathError](t"C:\\Windows\\System32".decodeAs[Unix.Path])
+        .assert(_ == PathError(PathError.Reason.NotRooted(t"C:\\Windows\\System32")))
+      
+      suite(t"Windows tests"):
+        import hierarchies.windows
+
+        test(t"Parsing /home/work/file.txt should fail"):
+          capture[PathError](t"/home/work/file.txt".decodeAs[Windows.Path])
+        .assert(_ == PathError(PathError.Reason.NotRooted(t"/home/work/file.txt")))
+
+        test(t"Parse C:\\Windows\\System32"):
+          t"C:\\Windows\\System32".decodeAs[Windows.Path]
+        .assert(_ == Windows.Drive('C') / p"Windows" / p"System32")
+      
+      suite(t"Adaptive tests"):
+        import hierarchies.unixOrWindows
+
+        test(t"Parsing /home/work/file.txt should fail"):
+          t"/home/work/file.txt".decodeAs[Path]
+        .assert(_ == Unix / p"home" / p"work" / p"file.txt")
+
+        test(t"Parse C:\\Windows\\System32"):
+          t"C:\\Windows\\System32".decodeAs[Windows.Path]
+        .assert(_ == Windows.Drive('C') / p"Windows" / p"System32")
     
-    suite(t"Flexible hierarchy tests"):
-      import hierarchies.flexible
+    suite(t"Adaptive hierarchy tests"):
+      import hierarchies.unixOrWindows
       import filesystemOptions.dereferenceSymlinks
       
       val tmpPath = test(t"Get /var/tmp"):
