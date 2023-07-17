@@ -4,20 +4,20 @@
 
 # Galilei
 
-__To make I/O in Scala elegant and typesafe__
+__Making I/O in Scala elegant and typesafe__
 
-__Galilei__ is a simple library for performing disk I/O with Scala. It provides access to most filesystem
-operations through the `Path` type—an abstract representation of a file or a directory—plus typeclass-based
-`read` and `write` methods which can use ad-hoc types, including streaming types like `LazyList`. Galilei is
-designed to take advantage of Scala 3's safer exceptions.
+__Galilei__ is a library for performing safe disk I/O with Scala. It uses dependent types to provide
+precise static representations of paths, files, directories and other filesystem objects, enforcing
+filesystem-aware constraints on filenames and metadata. Galilei has a particular focus on precise error
+handling and, when enabled, each filesystem operation which might fail must be handled for each possible
+failure type; but its innovation is in minimizing that to a set of failure types which depends not
+just on the operation, but also the filesystem and in-scope options.
 
 ## Features
 
-- simple API for most common filesystem operations
+- intuitive and instructive API for most common filesystem operations
+- safe and precise error handling, without unnecessary handling
 - read from and write to files on disk with a variety of different types
-- simple streaming to and from disk with `LazyList`s
-- employs `IArray[Byte]` for fast, random-access, immutable chunking of byte data
-- encoding-aware operations involving `String`s
 
 
 ## Availability
@@ -26,76 +26,52 @@ Galilei has not yet been published as a binary.
 
 ## Getting Started
 
-Unlike many filesystem APIs, __Galilei__ provides different types for `Path`s, `File`s, `Directory`s
-and `Symlink`s. While a `Path` (which is defined in [Serpentine](https://github.com/propensive/serpentine/))
-represents some location within a filesystem—which may or may not exist and may be either a file,
-directory or symlink—instances of `File`, `Directory` and `Symlink` should only exist when the
-corresponding file, directory or symlink exists on disk.
+### Example
 
-While there is always the possibility that the existence or nature of a `File`, `Directory` or
-`Symlink` could change between the instance being created—after all, we are using _immutable_ heap
-objects to represent _mutable_ disk objects which could be changed by other operating system
-processes—this is a race condition (and would be with other designs, too), and is _recoverable_
-through exception handling.
+For example, moving a file from `/home/work/file` to `/home/work/copy` should work fine
+if there is no pre-existing file at `/home/work/copy`. We can move it with,
+`file.moveTo(destination)`. But if `/home/work/copy` already
+exists, then we may or may not care about what happens if we try to overwrite it.
 
-### Filesystems
-
-`Path`s may be relative or absolute, and must be rooted against a particular filesystem. On Linux
-Mac OS X, and other UNIX-like systems, there is a single root (with the type `Filesystem`, called
-`Unix`, whereas Windows provides multiple roots, indicated by a single alphabetic drive letter, such
-as `windows.DriveC`, which corresponds to the drive, `C:\`.
-
-The `/` operator (regardless of the operating system's standard path separator) may be used on
-`Filesystem` and `Path` objects to navigate the directory sturcture. For example,
+The behavior can be specified with a contextual value in scope. Either,
 ```scala
-val filesPath = Unix / "usr" / "share" / "files"
+import filesystemOptions.overwritePreexisting
 ```
 or,
 ```scala
-val programsPath = windows.DriveC / "Program Files"
+import filesystemOptions.doNotOverwritePreexisting
 ```
 
-### Path-dependent Types
+The `moveTo` operation does not assume one option or the other as a default, and Galilei's
+philosophy is that it would be wrong to do so. Instead, invoking `moveTo` _without_ exactly
+one of the two contextal values in scope is a compile error, and the user is forced to
+decide on the correct behavior. This is both unpresumptuous and instructive, since the
+user may not have even considered the decision had to be made.
 
-The types `Path`, `File`, `Directory` and `Symlink` are all path-dependent types, defined within
-a particular `Filesystem` object, and the type system will not allow them to be mixed arbitrarily
-between different filesystems.
+As a contextual value, the choice of behavior can be limited to a narrow scope, or
+imported globally, as needed.
 
-For example, a `Unix.Path` instance may produce a `Unix.File` value, whose `hardLinkTo` method
-can accept a `Unix.Path`, but not a `windows.DriveD.Path`.
+If Scala 3's "safer exceptions" are turned on, then the choice of behavior also affects
+which exceptions must be handled when calling `moveTo`. The method invocation may throw
+an `IoError` under any circumstances, so that must always be handled, but with
+`doNotOverwritePreexisting` in scope, if there _is_ a pre-existing file at the destination,
+then an `OverwriteError` will be thrown, which must be handled.
 
-However, we could still put a `Unix.Path` in the same `List` as a `windows.DriveC.Path`. That `List`
-would have the type `List[Filesystem#Path]`, and many of its members' methods, such as `parent` or
-`uriString`, could still be used.
+But since it cannot be thrown with `overwritePreexisting` in scope, the obligation to handle it
+is also removed.
 
-For example, the expression,
-```scala
-List(Unix / "home" / "work", windows.DriveC / "Documents").map(_.directory.parent)
-```
-has the type `List[Filesystem#Directory]`
+### Types
 
-### Reading
+Unlike many disk I/O libraries, __Galilei__ provides different types for `Path`s, `File`s, `Directory`s
+and other types of node, like `Symlink`s. A `Path` represents the abstract notion of a location within
+a filesystem, which may or may not exist and may be a file, a directory or (on Linux, at least) one of
+several other filesystem node types. Types such as `File` and `Directory` should only exist to
+correspond to a real file or directory on disk.
 
-`File`s can be read with the `File#read` method, which takes, as a parameter, the type it should
-return, for example, `path.read[String]()` or `path.read[LazyList[String]]()`. If used in a position
-with an expected type, this type parameter may be omitted, for example:
-```scala
-def contents: String = path.read()
-```
-
-The `read` method takes an optional `limit` value parameter which specifies a limit on the number of
-bytes that may be read. This defaults to the conservative figure of `65536`. If this is exceeded, a
-`TooMuchData` exception is thrown.
-
-### Writing
-
-It's possible to write to a file using the `File#write` and `File#append` methods. These each take a
-single `content` parameter, which can be one of a variety of types. As standard, these include,
-- `IArray[Byte]`
-- `LazyList[IArray[Byte]]`
-- `String`
-- `LazyList[String]`
-which together support complete and streamed byte and character data.
+Of course, the contents of a filesystem can change independently of the JVM, so the existence of
+an immutable `File` or `Directory` instance does not guarantee its eternal existence on disk, but
+we do, at least, guarantee that the filesystem node existed and had the correct type at the time
+of the object's creation.
 
 
 
@@ -145,7 +121,7 @@ Galilei was designed and developed by Jon Pretty, and commercial support and tra
 
 ## Name
 
-Galilei's primary focus is handling Input and Output, or _I/O_, and is a pun based on the name of the moon _Io_, one of the four moons of Jupiter discovered by Galileo Galilei.
+Galilei's primary focus is handling Input and Output, or _I/O_, and is a pun on the name of the moon _Io_, one of the four moons of Jupiter discovered by Galileo Galilei.
 
 In general, Scala One project names are always chosen with some rationale, however it is usually
 frivolous. Each name is chosen for more for its _uniqueness_ and _intrigue_ than its concision or
