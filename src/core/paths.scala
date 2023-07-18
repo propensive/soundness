@@ -143,11 +143,6 @@ object Unix:
     def fullname: Text =
       t"${Path.reachable.prefix(Unset)}${descent.reverse.map(_.render).join(t"/")}"
   
-    def socket(): Socket = Socket(this)
-    def symlink(): Symlink = Symlink(this)
-    def fifo(): Fifo = Fifo(this)
-    def blockDevice(): BlockDevice = BlockDevice(this)
-    def charDevice(): CharDevice = CharDevice(this)
 
   class SafePath(val safeDescent: List[PathName[galilei.Path.Forbidden]])
   extends Path(safeDescent.map(_.widen[Forbidden]))
@@ -272,25 +267,35 @@ trait Path:
   def make[InodeType <: Inode]()(using maker: InodeMaker[InodeType, this.type]): InodeType =
     maker(this)
   
-  def directory(): Directory = Directory(this)
-  
-  inline def file
-      ()
-      (using inline dereferenceSymlinks: DereferenceSymlinks)
-      (using CanThrow[IoError], CanThrow[NotFoundError], CanThrow[InodeTypeError])
-      : File =
-    
-    if !exists() then throw NotFoundError(this)
-    if inodeType() != InodeType.File then throw InodeTypeError(this)
-    
-    File(this)
-
 object PathResolver:
   given directory
-      (using createNonexistent: CreateNonexistent)
-      : PathResolver[Directory, Path] = path => Directory(path)
+      (using createNonexistent: CreateNonexistent, dereferenceSymlinks: DereferenceSymlinks)
+      (using CanThrow[IoError], CanThrow[NotFoundError])
+      : PathResolver[Directory, Path] = path =>
+    Directory(path)
+
+  given inode
+      (using dereferenceSymlinks: DereferenceSymlinks)
+      (using io: CanThrow[IoError], notFound: CanThrow[NotFoundError])
+      : PathResolver[Inode, Path]^{dereferenceSymlinks, io, notFound} =
+    new PathResolver[Inode, Path]:
+      def apply(path: Path): Inode =
+        if path.exists() then path.inodeType() match
+          case InodeType.Directory => Directory(path)
+          case _                   => File(path)
+        else throw NotFoundError(path)
+
+  given file
+      (using createNonexistent: CreateNonexistent, dereferenceSymlinks: DereferenceSymlinks)
+      (using io: CanThrow[IoError], notFound: CanThrow[NotFoundError])
+      : PathResolver[File, Path]^{createNonexistent, dereferenceSymlinks, io, notFound} = path =>
+    if path.exists() && path.inodeType() == InodeType.File then File(path)
+    else createNonexistent(path):
+      jnf.Files.createFile(path.java)
     
-trait PathResolver[+InodeType <: Inode, -PathType <: Path]:
+    File(path)
+
+trait PathResolver[InodeType <: Inode, -PathType <: Path]:
   def apply(value: PathType): InodeType
 
 object InodeMaker:
@@ -364,7 +369,9 @@ trait CreateNonexistentParents:
   def apply(): Boolean
 
 @capability
-trait CreateNonexistent
+trait CreateNonexistent:
+  def apply(path: Path)(operation: => Unit): Unit
+  def apply(): Boolean
 
 @capability
 trait WriteSynchronously
@@ -450,11 +457,19 @@ package filesystemOptions:
       def apply(path: Path)(operation: => Unit): Unit =
         try operation catch case error: ji.FileNotFoundException => throw NotFoundError(path)
 
-  given createNonexistent: CreateNonexistent with
-    ()
+  given createNonexistent
+      (using createNonexistentParents: CreateNonexistentParents)
+      : CreateNonexistent =
+    new CreateNonexistent:
+      def apply(): Boolean = true
+      
+      def apply(path: Path)(operation: => Unit): Unit =
+        if !path.exists() then createNonexistentParents(path)(operation)
 
-  given doNotCreateNonexistent: CreateNonexistent with
-    ()
+  given doNotCreateNonexistent: CreateNonexistent =
+    new CreateNonexistent:
+      def apply(): Boolean = false
+      def apply(path: Path)(operation: => Unit): Unit = ()
 
   given writeSynchronously: WriteSynchronously with
     ()

@@ -103,8 +103,8 @@ object Tests extends Suite(t"Galilei tests"):
         .assert(_.stillExists())
 
         test(t"Delete a file"):
-          import filesystemOptions.{doNotDeleteRecursively}
-          (tmpDir.path / p"file.txt").file().delete()
+          import filesystemOptions.{doNotDeleteRecursively, createNonexistent, createNonexistentParents}
+          (tmpDir.path / p"file.txt").as[File].delete()
         .assert(!_.exists())
     
     suite(t"Unix hierarchy tests"):
@@ -121,6 +121,12 @@ object Tests extends Suite(t"Galilei tests"):
       test(t"Check descent of path"):
         galileiTmpPath.descent.map(_.show)
       .assert(_ == List(t"galilei", t"tmp", t"var"))
+    
+      test(t"Get volume"):
+        import filesystemOptions.{doNotCreateNonexistent, dereferenceSymlinks}
+        (tmpPath / p"galilei").as[Directory].volume
+      .matches:
+        case Volume(_, _) =>
     
     suite(t"Windows hierarchy tests"):
       import hierarchies.windows
