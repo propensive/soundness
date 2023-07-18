@@ -24,6 +24,7 @@ import kaleidoscope.*
 import gossamer.*
 
 import scala.compiletime.*
+import scala.jdk.StreamConverters.*
 
 import java.io as ji
 import java.nio as jn
@@ -172,12 +173,17 @@ sealed trait Inode:
   def stillExists(): Boolean = path.exists()
   
   def volume: Volume =
-    val fileStore = jnf.Files.getFileStore(jnf.Path.of(path.render.s)).nn
+    val fileStore = jnf.Files.getFileStore(path.java).nn
     Volume(fileStore.name.nn.tt, fileStore.`type`.nn.tt)
   
-  def delete(): Path throws IoError =
+  def delete
+      ()(using deleteRecursively: DeleteRecursively, io: CanThrow[IoError])
+      : Path^{deleteRecursively, io}  =
     try
-      jnf.Files.delete(jnf.Path.of(path.render.s))
+      if deleteRecursively() then
+        println("FIXME do recursive deletion")
+      
+      jnf.Files.delete(path.java)
       path
     
     catch
@@ -195,35 +201,37 @@ sealed trait Inode:
       (using io: CanThrow[IoError])
       : Path^{io, overwritePreexisting, moveAtomically, dereferenceSymlinks} =
 
-    val javaPath = jnf.Path.of(destination.render.s).nn
     val options: Seq[jnf.CopyOption] = dereferenceSymlinks() ++ moveAtomically()
 
-    if overwritePreexisting() then jnf.Files.deleteIfExists(javaPath)
-    
-    def op() = jnf.Files.move(jnf.Path.of(fullname.s), javaPath, options*)
+    createNonexistentParents(destination):
+      overwritePreexisting(destination):
+        jnf.Files.move(path.java, destination.java, options*)
 
-    overwritePreexisting(op(), destination)
     destination
       
 trait Path:
   this: Path =>
+  
   def fullname: Text
   def name: Text
-  def exists(): Boolean = jnf.Files.exists(jnf.Path.of(fullname.s))
+  def java: jnf.Path = jnf.Path.of(fullname.s).nn
   
-  def wipe
-      ()
-      (using dereferenceSymlinks: DereferenceSymlinks, deleteRecursively: DeleteRecursively)
-      (using io: CanThrow[IoError]): Path =
-    ???
+  def exists(): Boolean = jnf.Files.exists(java)
+  
+  def wipe()(using deleteRecursively: DeleteRecursively)(using io: CanThrow[IoError]): Path =
+    deleteRecursively(this):
+      jnf.Files.deleteIfExists(java)
+    this
     
-  inline def inodeType
-      ()(using dereferenceSymlinks: DereferenceSymlinks)(using io: CanThrow[IoError])
-      : InodeType^{io} =
+  def inodeType
+      ()
+      (using dereferenceSymlinks: DereferenceSymlinks)
+      (using io: CanThrow[IoError], notFound: CanThrow[NotFoundError])
+      : InodeType =
     
     val options = dereferenceSymlinks()
     
-    try jnf.Files.getAttribute(jnf.Path.of(fullname.s), "unix:mode", options*) match
+    try jnf.Files.getAttribute(java, "unix:mode", options*) match
       case mode: Int => (mode & 61440) match
         case  4096 => InodeType.Fifo
         case  8192 => InodeType.CharDevice
@@ -238,12 +246,28 @@ trait Path:
       case error: UnsupportedOperationException =>
         throw Mistake(msg"the file attribute unix:mode could not be accessed")
       
+      case error: ji.FileNotFoundException =>
+        throw NotFoundError(this)
+      
       case error: ji.IOException =>
         throw IoError(this)
 
 
   def as[InodeType <: Inode](using resolver: PathResolver[InodeType, this.type]): InodeType =
     resolver(this)
+  
+  inline def is
+      [InodeType <: Inode]
+      (using DereferenceSymlinks, CanThrow[IoError], CanThrow[NotFoundError])
+      : Boolean =
+    inline erasedValue[InodeType] match
+      case _: Directory   => inodeType() == InodeType.Directory
+      case _: File        => inodeType() == InodeType.File
+      case _: Symlink     => inodeType() == InodeType.Symlink
+      case _: Socket      => inodeType() == InodeType.Socket
+      case _: Fifo        => inodeType() == InodeType.Fifo
+      case _: BlockDevice => inodeType() == InodeType.BlockDevice
+      case _: CharDevice  => inodeType() == InodeType.CharDevice
   
   def make[InodeType <: Inode]()(using maker: InodeMaker[InodeType, this.type]): InodeType =
     maker(this)
@@ -273,19 +297,13 @@ object InodeMaker:
   given makeDirectory
       (using createNonexistentParents: CreateNonexistentParents,
           overwritePreexisting: OverwritePreexisting)
-      : InodeMaker[Directory, Path]^{createNonexistentParents, overwritePreexisting} = path =>
+      (using io: CanThrow[IoError])
+      : InodeMaker[Directory, Path]^
+          {createNonexistentParents, overwritePreexisting, io} = path =>
     
-    val javaPath = jnf.Path.of(path.render.s).nn
-
-    def op() =
-      if createNonexistentParents()
-      then path.parent.mm { path => jnf.Files.createDirectories(jnf.Path.of(path.render.s).nn) }
-
-      if overwritePreexisting() then jnf.Files.deleteIfExists(javaPath)
-      
-      jnf.Files.createDirectory(javaPath)
-    
-    createNonexistentParents(overwritePreexisting(op(), path), path)
+    createNonexistentParents(path):
+      overwritePreexisting(path):
+        jnf.Files.createDirectory(path.java)
     
     Directory(path)
   
@@ -293,18 +311,21 @@ object InodeMaker:
       (using createNonexistentParents: CreateNonexistentParents,
           overwritePreexisting: OverwritePreexisting)
       : InodeMaker[File, Path]^{createNonexistentParents, overwritePreexisting} = path =>
-    def op() = jnf.Files.createFile(jnf.Path.of(path.render.s).nn)
+    createNonexistentParents(path):
+      overwritePreexisting(path):
+        jnf.Files.createFile(path.java)
     
-    createNonexistentParents(overwritePreexisting(op(), path), path)
     File(path)
       
 trait InodeMaker[+InodeType <: Inode, -PathType <: Path]:
   def apply(value: PathType): InodeType
 
-case class Directory(path: Path) extends Unix.Inode, Windows.Inode
+case class Directory(path: Path) extends Unix.Inode, Windows.Inode:
+  def children: LazyList[Path] = jnf.Files.list(path.java).nn.toScala(LazyList).map: child =>
+    path / PathName.unsafe(child.getFileName.nn.toString.nn.tt)
 
 case class File(path: Path) extends Unix.Inode, Windows.Inode:
-  def size(): ByteSize = jnf.Files.size(jnf.Path.of(path.render.s)).b
+  def size(): ByteSize = jnf.Files.size(path.java).b
 
 case class Socket(path: Unix.Path) extends Unix.Inode
 case class Fifo(path: Unix.Path) extends Unix.Inode
@@ -328,16 +349,18 @@ trait CopyAttributes:
   def apply(): List[jnf.CopyOption]
 
 @capability
-trait DeleteRecursively
+trait DeleteRecursively:
+  def apply(path: Path)(operation: => Unit): Unit
+  def apply(): Boolean
 
 @capability
 trait OverwritePreexisting:
-  def apply(op: => Unit, path: Path): Unit
+  def apply(path: Path)(operation: => Unit): Unit
   def apply(): Boolean
 
 @capability
 trait CreateNonexistentParents:
-  def apply(value: => Unit, path: Path): Unit
+  def apply(path: Path)(operation: => Unit): Unit
   def apply(): Boolean
 
 @capability
@@ -365,26 +388,58 @@ package filesystemOptions:
   given doNotCopyAttributes: CopyAttributes with
     def apply(): List[jnf.CopyOption] = Nil
 
-  given deleteRecursively: DeleteRecursively with
-    ()
+  given deleteRecursively
+      (using io: CanThrow[IoError], notFound: CanThrow[NotFoundError])
+      : DeleteRecursively =
+    new DeleteRecursively:
+      def apply(path: Path)(operation: => Unit): Unit =
+        given DereferenceSymlinks = doNotDereferenceSymlinks
+        given CreateNonexistent = doNotCreateNonexistent
+        
+        if path.is[Directory] then path.as[Directory].children.foreach(apply(_)(()))
+        jnf.Files.delete(path.java)
+        operation
+          
+      def apply(): Boolean = true
 
-  given doNotDeleteRecursively: DeleteRecursively with
-    ()
+  given doNotDeleteRecursively
+      (using unemptyDirectory: CanThrow[UnemptyDirectoryError])
+      : DeleteRecursively =
+    new DeleteRecursively:
+      def apply(path: Path)(operation: => Unit): Unit =
+        try operation catch case error: jnf.DirectoryNotEmptyException => throw UnemptyDirectoryError(path)
+      
+      def apply(): Boolean = false
+      
 
-  given overwritePreexisting: OverwritePreexisting with
-    def apply(op: => Unit, path: Path): Unit = op
-    def apply(): Boolean = true
+  given overwritePreexisting(using deleteRecursively: DeleteRecursively): OverwritePreexisting =
+    new OverwritePreexisting:
+      def apply(path: Path)(operation: => Unit): Unit =
+        deleteRecursively(path):
+          operation
+      def apply(): Boolean = true
 
   given doNotOverwritePreexisting(using overwrite: CanThrow[OverwriteError]): OverwritePreexisting =
     new OverwritePreexisting:
-      def apply(op: => Unit, path: Path): Unit =
-        try op catch case error: jnf.FileAlreadyExistsException => throw OverwriteError(path)
-
+      def apply(path: Path)(operation: => Unit): Unit =
+        try operation catch case error: jnf.FileAlreadyExistsException => throw OverwriteError(path)
+      
       def apply(): Boolean = false
 
-  given createNonexistentParents: CreateNonexistentParents with
-    def apply(op: => Unit, path: Path): Unit = op
-    def apply(): Boolean = true
+  given createNonexistentParents
+      (using CanThrow[IoError], CanThrow[NotFoundError])
+      : CreateNonexistentParents =
+    new CreateNonexistentParents:
+      def apply(path: Path)(operation: => Unit): Unit =
+        path.parent.mm: parent =>
+          given DereferenceSymlinks = filesystemOptions.doNotDereferenceSymlinks
+         
+          if !parent.exists() || !parent.is[Directory]
+          then jnf.Files.createDirectories(parent.java)
+      
+        operation
+    
+      def apply(): Boolean = true
 
   given doNotCreateNonexistentParents
       (using notFound: CanThrow[NotFoundError])
@@ -392,8 +447,8 @@ package filesystemOptions:
     new CreateNonexistentParents:
       def apply(): Boolean = false
       
-      def apply(op: => Unit, path: Path): Unit =
-        try op catch case error: ji.FileNotFoundException => throw NotFoundError(path)
+      def apply(path: Path)(operation: => Unit): Unit =
+        try operation catch case error: ji.FileNotFoundException => throw NotFoundError(path)
 
   given createNonexistent: CreateNonexistent with
     ()
@@ -415,6 +470,9 @@ extends Error(msg"no filesystem node was found at the path $path")
 
 case class OverwriteError(path: Path)
 extends Error(msg"cannot overwrite a pre-existing filesystem node $path")
+
+case class UnemptyDirectoryError(path: Path)
+extends Error(msg"the directory is not empty")
 
 case class ForbiddenOperationError(path: Path)
 extends Error(msg"insufficient permissions to modify $path")

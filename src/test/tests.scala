@@ -26,8 +26,9 @@ import anticipation.*, fileApi.galileiApi
 import ambience.*, environments.system
 
 import unsafeExceptions.canThrowAny
-import filesystemOptions.createNonexistentParents
-import filesystemOptions.overwritePreexisting
+// import filesystemOptions.createNonexistentParents
+// import filesystemOptions.overwritePreexisting
+// import filesystemOptions.doNotDeleteRecursively
 
 object Tests extends Suite(t"Galilei tests"):
   def run(): Unit =
@@ -43,7 +44,7 @@ object Tests extends Suite(t"Galilei tests"):
         test(t"Parsing C:\\Windows\\System32 should fail"):
           capture[PathError](t"C:\\Windows\\System32".decodeAs[Unix.Path])
         .assert(_ == PathError(PathError.Reason.NotRooted(t"C:\\Windows\\System32")))
-      
+        
       suite(t"Windows tests"):
         import hierarchies.windows
 
@@ -54,7 +55,7 @@ object Tests extends Suite(t"Galilei tests"):
         test(t"Parse C:\\Windows\\System32"):
           t"C:\\Windows\\System32".decodeAs[Windows.Path]
         .assert(_ == Windows.Drive('C') / p"Windows" / p"System32")
-      
+        
       suite(t"Adaptive tests"):
         import hierarchies.unixOrWindows
 
@@ -82,15 +83,27 @@ object Tests extends Suite(t"Galilei tests"):
         galileiTmpPath.descent.map(_.show)
       .assert(_ == List(t"galilei", t"tmp", t"var"))
 
-      val tmpDir = galileiTmpPath.make[Directory]()
+      val tmpDir =
+        test(t"Create a directory which may or may not exist"):
+          import filesystemOptions.{overwritePreexisting, deleteRecursively, createNonexistentParents}
+          galileiTmpPath.make[Directory]()
+        .check(_.stillExists())
+      
+      val tmpDir2 =
+        test(t"Try creating a directory which already exists"):
+          import filesystemOptions.{doNotOverwritePreexisting, createNonexistentParents}
+          capture[OverwriteError](galileiTmpPath.make[Directory]())
+        .check(_ ==  OverwriteError(galileiTmpPath))
 
       suite(t"File and directory creation"):
         test(t"Create a new file"):
+          import filesystemOptions.{doNotOverwritePreexisting, createNonexistentParents}
           val path = (tmpDir.path / p"file.txt")
           path.make[File]()
         .assert(_.stillExists())
 
         test(t"Delete a file"):
+          import filesystemOptions.{doNotDeleteRecursively}
           (tmpDir.path / p"file.txt").file().delete()
         .assert(!_.exists())
     
