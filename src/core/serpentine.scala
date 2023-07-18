@@ -29,11 +29,28 @@ import language.experimental.captureChecking
 object Serpentine:
   opaque type PathName[NameType <: Label] = String
 
+  @targetName("Slash")
+  object `/`:
+    def unapply
+        [PathType <: Matchable, NameType <: Label, RootType]
+        (using hierarchy: Hierarchy[PathType, ?])
+        (using reachable: Reachable[PathType, NameType, RootType])
+        (using creator: PathCreator[PathType, NameType, RootType])
+        (path: PathType)
+        : Option[(PathType | RootType, PathName[NameType])] =
+      reachable.descent(path) match
+        case Nil          => None
+        case head :: Nil  => Some((reachable.root(path), head))
+        case head :: tail => Some((creator.path(reachable.root(path), tail), head))
+    
+
   object PathName:
     given [NameType <: Label]: Show[PathName[NameType]] = Text(_)
 
     inline def apply[NameType <: Label](text: Text): PathName[NameType] =
       ${runtimeParse[NameType]('text)}
+    
+    def unsafe[NameType <: Label](text: Text): PathName[NameType] = text.s
 
   extension [NameType <: Label](pathName: PathName[NameType])
     def render: Text = Text(pathName)

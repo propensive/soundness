@@ -263,45 +263,45 @@ object Tests extends Suite(t"Serpentine Tests"):
       
       test(t"Pattern match on short path"):
         path match
-          case _ \ p"home" => true
+          case _ / p"home" => true
           case _           => false
       .assert(identity(_))
       
       test(t"Error on invalid path match"):
         demilitarize:
           path match
-            case _ \ p"ho/me" => true
+            case _ / p"ho/me" => true
             case _            => false
         .map(_.message)
       .assert(_ == List("serpentine: a path element may not contain the character /"))
       
       test(t"Pattern match on longer path"):
         path2 match
-          case _ \ p"home" \ p"work" => true
+          case _ / p"home" / p"work" => true
           case _                     => false
       .assert(identity(_))
       
       test(t"Does not match incorrect path"):
         path2 match
-          case _ \ p"work" \ p"home" => false
+          case _ / p"work" / p"home" => false
           case _                     => true
       .assert(identity(_))
       
       test(t"Pattern match on longer path with root"):
         path2 match
-          case Root \ p"home" \ p"work" => true
+          case Root / p"home" / p"work" => true
           case _                        => false
       .assert(identity(_))
       
       test(t"Extract path element"):
         path2 match
-          case Root \ top \ secondary => top.render
+          case Root / top / secondary => top.render
           case _                      => t""
       .assert(_ == t"home")
       
       test(t"Extract final path element"):
         path2 match
-          case Root \ top \ secondary => secondary.render
+          case Root / top / secondary => secondary.render
           case _                      => t""
       .assert(_ == t"work")
 

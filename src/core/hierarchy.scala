@@ -292,15 +292,25 @@ extends Pathlike[LinkType, NameType, Int]:
       else t"${t"$parentRef${separator(path)}"*(ascent(path) - 1)}$parentRef"
     else t"$prefix${descent(path).reverse.map(_.render).join(separator(path))}"
 
+implicit class Slash[PathType <: Matchable](path: PathType):
+  @targetName("child")
+  infix def /
+      [NameType <: Label, AscentType]
+      (using pathlike: Pathlike[PathType, NameType, AscentType])
+      (name: PathName[NameType])
+      (using creator: PathCreator[PathType, NameType, AscentType])
+      : PathType =
+    pathlike.child(path, name)
+
 extension
     [PathType <: Matchable, NameType <: Label, AscentType]
     (path: PathType)
     (using pathlike: Pathlike[PathType, NameType, AscentType])
     (using creator: PathCreator[PathType, NameType, AscentType])
   
-  @targetName("child")
-  infix def /[PathType2 <: PathType](name: PathName[NameType]): PathType =
-    pathlike.child(path, name)
+  // @targetName("child")
+  // infix def /[PathType2 <: PathType](name: PathName[NameType]): PathType =
+  //   pathlike.child(path, name)
 
   // FIXME: This should be called `/`, but it causes a spurious compiler error. 
   @targetName("child2")
@@ -340,17 +350,4 @@ trait PathEquality
   
   override def hashCode: Int = if pathlike.descent(this) == Nil then 0 else super.hashCode
 
-object `\\`:
-  def unapply
-      [PathType <: Matchable, NameType <: Label, RootType]
-      (using hierarchy: Hierarchy[PathType, ?])
-      (using reachable: Reachable[PathType, NameType, RootType])
-      (using creator: PathCreator[PathType, NameType, RootType])
-      (path: PathType)
-      : Option[(PathType | RootType, PathName[NameType])] =
-    reachable.descent(path) match
-      case Nil          => None
-      case head :: Nil  => Some((reachable.root(path), head))
-      case head :: tail => Some((creator.path(reachable.root(path), tail), head))
-    
-
+export Serpentine.`/`
