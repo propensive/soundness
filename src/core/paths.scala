@@ -173,20 +173,16 @@ sealed trait Inode:
 
   def delete
       ()(using deleteRecursively: DeleteRecursively, io: CanThrow[IoError])
-      : Path^{deleteRecursively, io}  =
-    try
-      if deleteRecursively() then
-        println("FIXME do recursive deletion")
-      
-      jnf.Files.delete(path.java)
-      path
+      : Path^{deleteRecursively, io} =
     
+    try deleteRecursively.conditionally(path)(jnf.Files.delete(path.java))
     catch
       case error: jnf.NoSuchFileException        => throw IoError(path)
-      case error: jnf.DirectoryNotEmptyException => throw IoError(path)
       case error: ji.FileNotFoundException       => throw IoError(path)
       case error: ji.IOException                 => throw IoError(path)
       case error: SecurityException              => throw IoError(path)
+    
+    path
   
   def symlinkTo
       (destination: Path)
@@ -197,7 +193,7 @@ sealed trait Inode:
     
     createNonexistentParents(destination):
       overwritePreexisting(destination):
-        jnf.Files.createSymbolicLink(path.java, destination.java)
+        jnf.Files.createSymbolicLink(destination.java, path.java)
 
     destination
   
@@ -223,7 +219,7 @@ sealed trait Inode:
       : Path^{io, overwritePreexisting, createNonexistentParents, moveAtomically,
           dereferenceSymlinks} =
 
-    val options: Seq[jnf.CopyOption] = dereferenceSymlinks() ++ moveAtomically()
+    val options: Seq[jnf.CopyOption] = dereferenceSymlinks.options() ++ moveAtomically.options()
 
     createNonexistentParents(destination):
       overwritePreexisting(destination):
@@ -241,7 +237,7 @@ trait Path:
   def exists(): Boolean = jnf.Files.exists(java)
   
   def wipe()(using deleteRecursively: DeleteRecursively)(using io: CanThrow[IoError]): Path =
-    deleteRecursively(this):
+    deleteRecursively.conditionally(this):
       jnf.Files.deleteIfExists(java)
     this
     
@@ -251,9 +247,7 @@ trait Path:
       (using io: CanThrow[IoError], notFound: CanThrow[NotFoundError])
       : InodeType =
     
-    val options = dereferenceSymlinks()
-    
-    try jnf.Files.getAttribute(java, "unix:mode", options*) match
+    try jnf.Files.getAttribute(java, "unix:mode", dereferenceSymlinks.options()*) match
       case mode: Int => (mode & 61440) match
         case  4096 => InodeType.Fifo
         case  8192 => InodeType.CharDevice
@@ -336,10 +330,8 @@ object InodeMaker:
       (using createNonexistentParents: CreateNonexistentParents,
           overwritePreexisting: OverwritePreexisting)
       (using io: CanThrow[IoError])
-      : InodeMaker[Directory, Path]^
-          {createNonexistentParents, overwritePreexisting, io} = path =>
-    
-    createNonexistentParents(path):
+      : InodeMaker[Directory, Path] =
+    path => createNonexistentParents(path):
       overwritePreexisting(path):
         jnf.Files.createDirectory(path.java)
     
@@ -348,13 +340,14 @@ object InodeMaker:
   given makeFile
       (using createNonexistentParents: CreateNonexistentParents,
           overwritePreexisting: OverwritePreexisting)
-      : InodeMaker[File, Path]^{createNonexistentParents, overwritePreexisting} = path =>
-    createNonexistentParents(path):
+      : InodeMaker[File, Path] =
+    path => createNonexistentParents(path):
       overwritePreexisting(path):
         jnf.Files.createFile(path.java)
     
     File(path)
-      
+
+@capability
 trait InodeMaker[+InodeType <: Inode, -PathType <: Path]:
   def apply(value: PathType): InodeType
 
@@ -376,96 +369,84 @@ enum InodeType:
 
 @capability
 trait DereferenceSymlinks:
-  def apply(): List[jnf.LinkOption]
+  def options(): List[jnf.LinkOption]
 
 @capability
 trait MoveAtomically:
-  def apply(): List[jnf.CopyOption]
+  def options(): List[jnf.CopyOption]
 
 @capability
 trait CopyAttributes:
-  def apply(): List[jnf.CopyOption]
+  def options(): List[jnf.CopyOption]
 
 @capability
 trait DeleteRecursively:
-  def apply(path: Path)(operation: => Unit): Unit
-  def apply(): Boolean
+  def conditionally(path: Path)(operation: => Unit): Unit
 
 @capability
 trait OverwritePreexisting:
   def apply(path: Path)(operation: => Unit): Unit
-  def apply(): Boolean
 
 @capability
 trait CreateNonexistentParents:
   def apply(path: Path)(operation: => Unit): Unit
-  def apply(): Boolean
 
 @capability
 trait CreateNonexistent:
   def apply(path: Path)(operation: => Unit): Unit
-  def apply(): Boolean
 
 @capability
 trait WriteSynchronously
 
 package filesystemOptions:
   given dereferenceSymlinks: DereferenceSymlinks = new DereferenceSymlinks:
-    def apply(): List[jnf.LinkOption] = Nil
+    def options(): List[jnf.LinkOption] = Nil
   
   given doNotDereferenceSymlinks: DereferenceSymlinks = new DereferenceSymlinks:
-    def apply(): List[jnf.LinkOption] = List(jnf.LinkOption.NOFOLLOW_LINKS)
+    def options(): List[jnf.LinkOption] = List(jnf.LinkOption.NOFOLLOW_LINKS)
   
   given moveAtomically: MoveAtomically with
-    def apply(): List[jnf.CopyOption] = List(jnf.StandardCopyOption.ATOMIC_MOVE)
+    def options(): List[jnf.CopyOption] = List(jnf.StandardCopyOption.ATOMIC_MOVE)
   
   given doNotMoveAtomically: MoveAtomically with
-    def apply(): List[jnf.CopyOption] = Nil
+    def options(): List[jnf.CopyOption] = Nil
   
   given copyAttributes: CopyAttributes with
-    def apply(): List[jnf.CopyOption] = List(jnf.StandardCopyOption.COPY_ATTRIBUTES)
+    def options(): List[jnf.CopyOption] = List(jnf.StandardCopyOption.COPY_ATTRIBUTES)
 
   given doNotCopyAttributes: CopyAttributes with
-    def apply(): List[jnf.CopyOption] = Nil
+    def options(): List[jnf.CopyOption] = Nil
 
   given deleteRecursively
       (using io: CanThrow[IoError], notFound: CanThrow[NotFoundError])
       : DeleteRecursively =
     new DeleteRecursively:
-      def apply(path: Path)(operation: => Unit): Unit =
+      def conditionally(path: Path)(operation: => Unit): Unit =
         given symlinks: DereferenceSymlinks = doNotDereferenceSymlinks
         given creation: CreateNonexistent = doNotCreateNonexistent
         
-        if path.is[Directory] then path.as[Directory].children.foreach(apply(_)(()))
+        if path.is[Directory] then path.as[Directory].children.foreach(conditionally(_)(()))
         jnf.Files.delete(path.java)
         operation
           
-      def apply(): Boolean = true
-
   given doNotDeleteRecursively
       (using unemptyDirectory: CanThrow[UnemptyDirectoryError])
       : DeleteRecursively =
     new DeleteRecursively:
-      def apply(path: Path)(operation: => Unit): Unit =
-        try operation catch case error: jnf.DirectoryNotEmptyException => throw UnemptyDirectoryError(path)
+      def conditionally(path: Path)(operation: => Unit): Unit =
+        try operation
+        catch case error: jnf.DirectoryNotEmptyException => throw UnemptyDirectoryError(path)
       
-      def apply(): Boolean = false
-      
-
   given overwritePreexisting(using deleteRecursively: DeleteRecursively): OverwritePreexisting =
     new OverwritePreexisting:
       def apply(path: Path)(operation: => Unit): Unit =
-        deleteRecursively(path):
-          operation
-      def apply(): Boolean = true
-
+        deleteRecursively.conditionally(path)(operation)
+      
   given doNotOverwritePreexisting(using overwrite: CanThrow[OverwriteError]): OverwritePreexisting =
     new OverwritePreexisting:
       def apply(path: Path)(operation: => Unit): Unit =
         try operation catch case error: jnf.FileAlreadyExistsException => throw OverwriteError(path)
       
-      def apply(): Boolean = false
-
   given createNonexistentParents
       (using CanThrow[IoError], CanThrow[NotFoundError])
       : CreateNonexistentParents =
@@ -478,15 +459,11 @@ package filesystemOptions:
           then jnf.Files.createDirectories(parent.java)
       
         operation
-    
-      def apply(): Boolean = true
 
   given doNotCreateNonexistentParents
       (using notFound: CanThrow[NotFoundError])
       : CreateNonexistentParents =
     new CreateNonexistentParents:
-      def apply(): Boolean = false
-      
       def apply(path: Path)(operation: => Unit): Unit =
         try operation catch case error: ji.FileNotFoundException => throw NotFoundError(path)
 
@@ -494,14 +471,11 @@ package filesystemOptions:
       (using createNonexistentParents: CreateNonexistentParents)
       : CreateNonexistent =
     new CreateNonexistent:
-      def apply(): Boolean = true
-      
       def apply(path: Path)(operation: => Unit): Unit =
         if !path.exists() then createNonexistentParents(path)(operation)
 
   given doNotCreateNonexistent: CreateNonexistent =
     new CreateNonexistent:
-      def apply(): Boolean = false
       def apply(path: Path)(operation: => Unit): Unit = ()
 
   given writeSynchronously: WriteSynchronously with

@@ -36,6 +36,12 @@ object Tests extends Suite(t"Galilei tests"):
     suite(t"Path tests"):
       suite(t"UNIX tests"):
         import hierarchies.unix
+      
+        test(t"Get volume in UNIX"):
+          import filesystemOptions.{doNotCreateNonexistent, dereferenceSymlinks}
+          (Xdg.Var.Tmp() / p"galilei").as[Directory].volume
+        .matches:
+          case Volume(_, _) =>
 
         test(t"Parse /home/work/file.txt"):
           t"/home/work/file.txt".decodeAs[Unix.Path]
@@ -102,11 +108,20 @@ object Tests extends Suite(t"Galilei tests"):
           path.make[File]()
         .assert(_.stillExists())
 
+        test(t"Create a symlink to a file"):
+          import filesystemOptions.{doNotOverwritePreexisting, doNotCreateNonexistent, doNotCreateNonexistentParents, doNotDereferenceSymlinks}
+          val link = (tmpDir.path / p"linked.txt")
+          (tmpDir.path / p"file.txt").as[File].symlinkTo(link)
+          link.inodeType()
+        .assert(_ == InodeType.Symlink)
+
         test(t"Delete a file"):
           import filesystemOptions.{doNotDeleteRecursively, createNonexistent, createNonexistentParents}
           (tmpDir.path / p"file.txt").as[File].delete()
+          
+          tmpDir.path / p"file.txt"
         .assert(!_.exists())
-    
+      
     suite(t"Unix hierarchy tests"):
       import hierarchies.unix
       
