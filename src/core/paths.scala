@@ -170,7 +170,7 @@ sealed trait Inode:
   def volume: Volume =
     val fileStore = jnf.Files.getFileStore(path.java).nn
     Volume(fileStore.name.nn.tt, fileStore.`type`.nn.tt)
-  
+
   def delete
       ()(using deleteRecursively: DeleteRecursively, io: CanThrow[IoError])
       : Path^{deleteRecursively, io}  =
@@ -188,13 +188,40 @@ sealed trait Inode:
       case error: ji.IOException                 => throw IoError(path)
       case error: SecurityException              => throw IoError(path)
   
+  def symlinkTo
+      (destination: Path)
+      (using overwritePreexisting: OverwritePreexisting,
+          createNonexistentParents: CreateNonexistentParents)
+      (using io: CanThrow[IoError])
+      : Path^{io, overwritePreexisting, createNonexistentParents} =
+    
+    createNonexistentParents(destination):
+      overwritePreexisting(destination):
+        jnf.Files.createSymbolicLink(path.java, destination.java)
+
+    destination
+  
+  def hardLinkTo
+      (destination: Path)
+      (using overwritePreexisting: OverwritePreexisting,
+          createNonexistentParents: CreateNonexistentParents)
+      (using io: CanThrow[IoError])
+      : Path^{io, overwritePreexisting, createNonexistentParents} =
+    
+    createNonexistentParents(destination):
+      overwritePreexisting(destination):
+        jnf.Files.createLink(path.java, destination.java)
+
+    destination
+  
   def moveTo
       (destination: Path)
       (using overwritePreexisting: OverwritePreexisting, moveAtomically: MoveAtomically,
           dereferenceSymlinks: DereferenceSymlinks,
           createNonexistentParents: CreateNonexistentParents)
       (using io: CanThrow[IoError])
-      : Path^{io, overwritePreexisting, moveAtomically, dereferenceSymlinks} =
+      : Path^{io, overwritePreexisting, createNonexistentParents, moveAtomically,
+          dereferenceSymlinks} =
 
     val options: Seq[jnf.CopyOption] = dereferenceSymlinks() ++ moveAtomically()
 
@@ -268,16 +295,10 @@ trait Path:
     maker(this)
   
 object PathResolver:
-  given directory
-      (using createNonexistent: CreateNonexistent, dereferenceSymlinks: DereferenceSymlinks)
-      (using CanThrow[IoError], CanThrow[NotFoundError])
-      : PathResolver[Directory, Path] = path =>
-    Directory(path)
-
   given inode
-      (using dereferenceSymlinks: DereferenceSymlinks)
-      (using io: CanThrow[IoError], notFound: CanThrow[NotFoundError])
-      : PathResolver[Inode, Path]^{dereferenceSymlinks, io, notFound} =
+      (using dereferenceSymlinks: DereferenceSymlinks, io: CanThrow[IoError],
+          notFound: CanThrow[NotFoundError])
+      : PathResolver[Inode, Path] =
     new PathResolver[Inode, Path]:
       def apply(path: Path): Inode =
         if path.exists() then path.inodeType() match
@@ -286,15 +307,27 @@ object PathResolver:
         else throw NotFoundError(path)
 
   given file
-      (using createNonexistent: CreateNonexistent, dereferenceSymlinks: DereferenceSymlinks)
-      (using io: CanThrow[IoError], notFound: CanThrow[NotFoundError])
-      : PathResolver[File, Path]^{createNonexistent, dereferenceSymlinks, io, notFound} = path =>
+      (using createNonexistent: CreateNonexistent, dereferenceSymlinks: DereferenceSymlinks,
+          io: CanThrow[IoError], notFound: CanThrow[NotFoundError])
+      : PathResolver[File, Path] = path =>
     if path.exists() && path.inodeType() == InodeType.File then File(path)
     else createNonexistent(path):
       jnf.Files.createFile(path.java)
     
     File(path)
+  
+  given directory
+      (using createNonexistent: CreateNonexistent, dereferenceSymlinks: DereferenceSymlinks,
+          io: CanThrow[IoError], notFound: CanThrow[NotFoundError])
+      : PathResolver[Directory, Path] =
+    path =>
+      if path.exists() && path.inodeType() == InodeType.Directory then Directory(path)
+      else createNonexistent(path):
+        jnf.Files.createDirectory(path.java)
+      
+      Directory(path)
 
+@capability
 trait PathResolver[InodeType <: Inode, -PathType <: Path]:
   def apply(value: PathType): InodeType
 
@@ -400,8 +433,8 @@ package filesystemOptions:
       : DeleteRecursively =
     new DeleteRecursively:
       def apply(path: Path)(operation: => Unit): Unit =
-        given DereferenceSymlinks = doNotDereferenceSymlinks
-        given CreateNonexistent = doNotCreateNonexistent
+        given symlinks: DereferenceSymlinks = doNotDereferenceSymlinks
+        given creation: CreateNonexistent = doNotCreateNonexistent
         
         if path.is[Directory] then path.as[Directory].children.foreach(apply(_)(()))
         jnf.Files.delete(path.java)
