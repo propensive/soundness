@@ -31,30 +31,9 @@ import java.nio.file as jnf
 import jnf.{Files, Paths, StandardCopyOption, DirectoryNotEmptyException}, jnf.StandardCopyOption.*
 import ji.{File as JavaFile}
 
-// extension (inodes: Seq[Inode])
-//   transparent inline def files: Seq[File] = inodes.collect:
-//     case file: File => file
-  
-//   transparent inline def directories: Seq[Directory] = inodes.collect:
-//     case dir: Directory => dir
-
 // sealed trait Inode(val path: DiskPath):
-//   lazy val javaFile: ji.File = ji.File(fullname.s)
-//   lazy val javaPath: jnf.Path = javaFile.toPath.nn
-
-//   def name: Text = path.parts.lastOption.getOrElse(path.root.prefix)
-//   def fullname: Text = path.javaFile.getAbsolutePath.nn.show
 //   def uriString: Text = Showable(javaFile.toURI).show
   
-//   def directory: Maybe[Directory]
-//   def file: Maybe[File]
-//   def symlink: Maybe[Symlink]
-//   def modified[InstantType: GenericInstant]: InstantType = makeInstant(javaFile.lastModified)
-//   def exists(): Boolean = javaFile.exists()
-//   def delete(): Unit throws IoError
-
-//   def readable: Boolean = Files.isReadable(javaPath)
-//   def writable: Boolean = Files.isWritable(javaPath)
 //   def setPermissions(readable: Maybe[Boolean] = Unset, writable: Maybe[Boolean] = Unset,
 //                          executable: Maybe[Boolean]): Unit throws IoError =
 //     if !readable.option.fold(true)(javaFile.setReadable(_)) |
@@ -108,17 +87,7 @@ import ji.{File as JavaFile}
 //       if !file.javaFile.canRead() then throw IoError(IoError.Op.Read, IoError.Reason.AccessDenied, file.path)
 //       else ji.BufferedReader(ji.FileReader(file.javaFile))
     
-// case class File(filePath: DiskPath) extends Inode(filePath), Shown[File]:
-//   def hardLinkCount(): Int throws IoError =
-//     try Files.getAttribute(javaPath, "unix:nlink") match
-//       case i: Int => i
-//       case _      => throw Mistake("Should never match")
-//     catch e => throw IoError(IoError.Op.Read, IoError.Reason.NotSupported, path)
-  
-
 // object Fifo:
-//   given Show[Fifo] = t"ˢ｢"+_.path.fullname+t"｣"
-  
 //   given appendable[ChunkType](using io: CanThrow[IoError],
 //                                   appendable: /*{*}*/ Appendable[ji.OutputStream, ChunkType])
 //         : (/*{io, appendable}*/ Appendable[Fifo, ChunkType]) =
@@ -135,19 +104,7 @@ import ji.{File as JavaFile}
 //       else fifo.in
   
     
-// case class Fifo(path: DiskPath) extends Shown[Fifo]:
-//   def writable(): Boolean = path.javaFile.canWrite()
-//   def readable(): Boolean = path.javaFile.canRead()
-//   lazy val out = ji.FileOutputStream(path.javaFile, false)
-//   lazy val in = ji.FileInputStream(path.javaFile)
-//   def close(): Unit = out.close()
-
-// object Symlink:
-//   given Show[Symlink] = t"ˢʸᵐ｢"+_.path.fullname+t"｣"
-
 // object Directory:
-//   given GenericWatchService[Directory] = () => Unix.javaFilesystem.newWatchService().nn
-
 //   given provider(using fs: Filesystem)
 //                 : (GenericDirectoryMaker[Directory] & GenericDirectoryReader[Directory]) =
 //     new GenericDirectoryMaker[Directory] with GenericDirectoryReader[Directory]:
@@ -167,10 +124,6 @@ import ji.{File as JavaFile}
 
 // case class Directory(directoryPath: DiskPath)
 // extends Inode(directoryPath), Shown[Directory]:
-//   def directory: Directory = this
-//   def file: Unset.type = Unset
-//   def symlink: Unset.type = Unset
-  
 //   def tmpPath(suffix: Maybe[Text] = Unset): DiskPath =
 //     val part = unsafely(PathElement(t"${Uuid().show}${suffix.or(t"")}"))
 //     path.root.make(path.parts :+ part.value)
@@ -190,11 +143,6 @@ import ji.{File as JavaFile}
 
 // case class DiskPath(filesystem: Filesystem, elements: List[Text])
 // extends Absolute(elements), Shown[DiskPath]:
-//   type RootType = Filesystem
-//   val root: Filesystem = filesystem
-//   lazy val javaFile: ji.File = ji.File(fullname.s)
-//   lazy val javaPath: jnf.Path = javaFile.toPath.nn
-  
 //   def rename(fn: Text => Text): DiskPath = DiskPath(root, elements.init :+ fn(name))
 
 // object Filesystem:

@@ -27,6 +27,7 @@ import spectacular.*
 import contextual.*
 import kaleidoscope.*
 import gossamer.*
+import anticipation.*
 
 import scala.compiletime.*
 import scala.jdk.StreamConverters.*
@@ -34,6 +35,7 @@ import scala.jdk.StreamConverters.*
 import java.io as ji
 import java.nio as jn
 import java.nio.file as jnf
+import java.nio.channels as jnc
 
 import language.experimental.captureChecking
 
@@ -333,13 +335,12 @@ object PathResolver:
   given directory
       (using createNonexistent: CreateNonexistent, dereferenceSymlinks: DereferenceSymlinks,
           io: CanThrow[IoError], notFound: CanThrow[NotFoundError])
-      : PathResolver[Directory, Path] =
-    path =>
-      if path.exists() && path.inodeType() == InodeType.Directory then Directory(path)
-      else createNonexistent(path):
-        jnf.Files.createDirectory(path.java)
-      
-      Directory(path)
+      : PathResolver[Directory, Path] = path =>
+    if path.exists() && path.inodeType() == InodeType.Directory then Directory(path)
+    else createNonexistent(path):
+      jnf.Files.createDirectory(path.java)
+    
+    Directory(path)
 
 @capability
 trait PathResolver[InodeType <: Inode, -PathType <: Path]:
@@ -350,12 +351,24 @@ object InodeMaker:
       (using createNonexistentParents: CreateNonexistentParents,
           overwritePreexisting: OverwritePreexisting)
       (using io: CanThrow[IoError])
-      : InodeMaker[Directory, Path] =
-    path => createNonexistentParents(path):
+      : InodeMaker[Directory, Path] = path =>
+    createNonexistentParents(path):
       overwritePreexisting(path):
         jnf.Files.createDirectory(path.java)
     
     Directory(path)
+  
+  given socket
+      (using createNonexistentParents: CreateNonexistentParents,
+          overwritePreexisting: OverwritePreexisting)
+      (using io: CanThrow[IoError])
+      : InodeMaker[Socket, Unix.Path] = path =>
+    createNonexistentParents(path):
+      overwritePreexisting(path):
+        val address = java.net.UnixDomainSocketAddress.of(path.java).nn
+        val channel = jnc.ServerSocketChannel.open(java.net.StandardProtocolFamily.UNIX).nn
+        channel.bind(address)
+        Socket(path, channel)
   
   given file
       (using createNonexistentParents: CreateNonexistentParents,
@@ -376,19 +389,25 @@ object InodeMaker:
         sh"mkfifo $path".exec[Unit]()
     
     Fifo(path)
-
+  
 @capability
 trait InodeMaker[+InodeType <: Inode, -PathType <: Path]:
   def apply(value: PathType): InodeType
 
+object Directory:
+  given GenericWatchService[Directory] = () =>
+    jnf.Path.of("/").nn.getFileSystem.nn.newWatchService().nn
+
 case class Directory(path: Path) extends Unix.Inode, Windows.Inode:
   def children: LazyList[Path] = jnf.Files.list(path.java).nn.toScala(LazyList).map: child =>
     path / PathName.unsafe(child.getFileName.nn.toString.nn.tt)
+    
+  def /(name: PathName[Path.Forbidden]): Path = path / name
   
 case class File(path: Path) extends Unix.Inode, Windows.Inode:
   def size(): ByteSize = jnf.Files.size(path.java).b
 
-case class Socket(path: Unix.Path) extends Unix.Inode
+case class Socket(path: Unix.Path, channel: jnc.ServerSocketChannel) extends Unix.Inode
 case class Fifo(path: Unix.Path) extends Unix.Inode
 case class Symlink(path: Unix.Path) extends Unix.Inode
 case class BlockDevice(path: Unix.Path) extends Unix.Inode
@@ -411,15 +430,15 @@ trait CopyAttributes:
 
 @capability
 trait DeleteRecursively:
-  def conditionally(path: Path)(operation: => Unit): Unit
+  def conditionally[ResultType](path: Path)(operation: => ResultType): ResultType
 
 @capability
 trait OverwritePreexisting:
-  def apply(path: Path)(operation: => Unit): Unit
+  def apply[ResultType](path: Path)(operation: => ResultType): ResultType
 
 @capability
 trait CreateNonexistentParents:
-  def apply(path: Path)(operation: => Unit): Unit
+  def apply[ResultType](path: Path)(operation: => ResultType): ResultType
 
 @capability
 trait CreateNonexistent:
@@ -451,7 +470,7 @@ package filesystemOptions:
       (using io: CanThrow[IoError], notFound: CanThrow[NotFoundError])
       : DeleteRecursively =
     new DeleteRecursively:
-      def conditionally(path: Path)(operation: => Unit): Unit =
+      def conditionally[ResultType](path: Path)(operation: => ResultType): ResultType =
         given symlinks: DereferenceSymlinks = doNotDereferenceSymlinks
         given creation: CreateNonexistent = doNotCreateNonexistent
         
@@ -463,25 +482,25 @@ package filesystemOptions:
       (using unemptyDirectory: CanThrow[UnemptyDirectoryError])
       : DeleteRecursively =
     new DeleteRecursively:
-      def conditionally(path: Path)(operation: => Unit): Unit =
+      def conditionally[ResultType](path: Path)(operation: => ResultType): ResultType =
         try operation
         catch case error: jnf.DirectoryNotEmptyException => throw UnemptyDirectoryError(path)
       
   given overwritePreexisting(using deleteRecursively: DeleteRecursively): OverwritePreexisting =
     new OverwritePreexisting:
-      def apply(path: Path)(operation: => Unit): Unit =
+      def apply[ResultType](path: Path)(operation: => ResultType): ResultType =
         deleteRecursively.conditionally(path)(operation)
       
   given doNotOverwritePreexisting(using overwrite: CanThrow[OverwriteError]): OverwritePreexisting =
     new OverwritePreexisting:
-      def apply(path: Path)(operation: => Unit): Unit =
+      def apply[ResultType](path: Path)(operation: => ResultType): ResultType =
         try operation catch case error: jnf.FileAlreadyExistsException => throw OverwriteError(path)
       
   given createNonexistentParents
       (using CanThrow[IoError], CanThrow[NotFoundError])
       : CreateNonexistentParents =
     new CreateNonexistentParents:
-      def apply(path: Path)(operation: => Unit): Unit =
+      def apply[ResultType](path: Path)(operation: => ResultType): ResultType =
         path.parent.mm: parent =>
           given DereferenceSymlinks = filesystemOptions.doNotDereferenceSymlinks
          
@@ -494,7 +513,7 @@ package filesystemOptions:
       (using notFound: CanThrow[NotFoundError])
       : CreateNonexistentParents =
     new CreateNonexistentParents:
-      def apply(path: Path)(operation: => Unit): Unit =
+      def apply[ResultType](path: Path)(operation: => ResultType): ResultType =
         try operation catch case error: ji.FileNotFoundException => throw NotFoundError(path)
 
   given createNonexistent
