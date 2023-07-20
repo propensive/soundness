@@ -19,6 +19,7 @@ package scintillate
 import rudiments.*
 import digression.*
 import turbulence.*
+import spectacular.*
 import gossamer.*
 import telekinesis.*
 
@@ -39,19 +40,15 @@ trait Servlet(handle: Request ?=> Response[?]) extends HttpServlet:
         case HttpBody.Chunked(body) => addHeader(ResponseHeader.TransferEncoding.header, t"chunked")
                                        unsafely(body.map(_.mutable(using Unsafe)).foreach(out.write(_)))
 
-  protected def streamBody(request: HttpServletRequest): HttpBody.Chunked =
+  protected def streamBody
+      (request: HttpServletRequest)(using CanThrow[StreamCutError])
+      : HttpBody.Chunked =
     val in = request.getInputStream
     val buffer = new Array[Byte](4096)
+
+    HttpBody.Chunked(Readable.inputStream.read(request.getInputStream.nn))
     
-    def recur(total: Long): DataStream =
-      try
-        val len: Int = in.nn.read(buffer)
-        if len > 0 then buffer.slice(0, len).snapshot #:: recur(total + len) else LazyList.empty
-      catch case _: Exception => LazyList(throw StreamCutError(total.b))
-    
-    HttpBody.Chunked(recur(0))
-    
-  protected def makeRequest(request: HttpServletRequest): Request =
+  protected def makeRequest(request: HttpServletRequest): Request throws StreamCutError =
     val query = Option(request.getQueryString)
     
     val params: Map[Text, List[Text]] = query.fold(Map()): query =>
@@ -63,24 +60,27 @@ trait Servlet(handle: Request ?=> Response[?]) extends HttpServlet:
           case Seq(key: Text)              => map.updated(key, t"" :: map.getOrElse(key, Nil))
           case _                           => map
     
-    val headers = request.getHeaderNames.nn.asScala.to(List).map: k =>
-      Text(k).lower -> request.getHeaders(k).nn.asScala.to(List).map(Text(_))
+    val headers = request.getHeaderNames.nn.asScala.to(List).map: key =>
+      Text(key).lower -> request.getHeaders(key).nn.asScala.to(List).map(Text(_))
     .to(Map)
 
     Request(
       method = HttpMethod.valueOf(request.getMethod.nn.show.lower.capitalize.s),
       body = streamBody(request),
-      query = Text(query.getOrElse("").nn),
+      query = query.getOrElse("").nn.tt,
       ssl = false,
-      Text(request.getServerName.nn),
+      request.getServerName.nn.tt,
       request.getServerPort,
-      Text(request.getRequestURI.nn),
+      request.getRequestURI.nn.tt,
       headers,
       params
     )
 
   def handle(servletRequest: HttpServletRequest, servletResponse: HttpServletResponse): Unit =
-    handle(using makeRequest(servletRequest)).respond(ServletResponseWriter(servletResponse))
+    try handle(using makeRequest(servletRequest)).respond(ServletResponseWriter(servletResponse))
+    catch case error: StreamCutError =>
+      () // FIXME
+
 
   override def service(request: HttpServletRequest, response: HttpServletResponse): Unit =
     handle(request, response)

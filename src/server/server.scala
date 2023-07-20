@@ -153,10 +153,10 @@ object Request:
       t"params"   -> params
     ).map { case (k, v) => t"$k = $v" }.join(t", ")
 
-case class Request(method: HttpMethod, body: HttpBody.Chunked, query: Text, ssl: Boolean,
-                       hostname: Text, port: Int, pathText: Text,
-                       rawHeaders: Map[Text, List[Text]],
-                       queryParams: Map[Text, List[Text]]):
+case class Request
+    (method: HttpMethod, body: HttpBody.Chunked, query: Text, ssl: Boolean, hostname: Text,
+        port: Int, pathText: Text, rawHeaders: Map[Text, List[Text]],
+        queryParams: Map[Text, List[Text]]):
 
   lazy val path: SimplePath throws PathError = pathText.decodeAs[SimplePath]
 
