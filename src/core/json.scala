@@ -37,7 +37,7 @@ import JsonAccessError.Issue
 erased trait DynamicJsonAccess
 
 object jsonAccess:
-  erased given DynamicJsonAccess = ###
+  erased given enabled: DynamicJsonAccess = ###
 
 given (using js: JsonPrinter): Show[JsonAst] = js.serialize(_)
 
