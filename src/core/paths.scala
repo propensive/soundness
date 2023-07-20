@@ -174,7 +174,13 @@ sealed trait Inode:
   def path: Path
   def fullname: Text = path.fullname
   def stillExists(): Boolean = path.exists()
-  
+
+  def hardLinks()(using dereferenceSymlinks: DereferenceSymlinks, io: CanThrow[IoError]): Int =
+    try jnf.Files.getAttribute(path.java, "unix:nlink", dereferenceSymlinks.options()*) match
+      case count: Int => count
+      case _          => throw IoError(path)
+    catch case error: IllegalArgumentException => throw IoError(path)
+
   def volume: Volume =
     val fileStore = jnf.Files.getFileStore(path.java).nn
     Volume(fileStore.name.nn.tt, fileStore.`type`.nn.tt)
