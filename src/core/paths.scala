@@ -18,8 +18,13 @@ package galilei
 
 import rudiments.*
 import digression.*
+import eucalyptus.*
+import galilei.*
 import serpentine.*
+import guillotine.*
+import ambience.*
 import spectacular.*
+import contextual.*
 import kaleidoscope.*
 import gossamer.*
 
@@ -33,6 +38,9 @@ import java.nio.file as jnf
 import language.experimental.captureChecking
 
 object Path:
+  
+  given Insertion[Sh.Params, Path] = path => Sh.Params(path.fullname)
+  
   type Forbidden = Windows.Forbidden | Unix.Forbidden
   
   given reachable: Reachable[Path, Forbidden, Maybe[Windows.Drive]] with
@@ -326,7 +334,7 @@ trait PathResolver[InodeType <: Inode, -PathType <: Path]:
   def apply(value: PathType): InodeType
 
 object InodeMaker:
-  given makeDirectory
+  given directory
       (using createNonexistentParents: CreateNonexistentParents,
           overwritePreexisting: OverwritePreexisting)
       (using io: CanThrow[IoError])
@@ -337,7 +345,7 @@ object InodeMaker:
     
     Directory(path)
   
-  given makeFile
+  given file
       (using createNonexistentParents: CreateNonexistentParents,
           overwritePreexisting: OverwritePreexisting)
       : InodeMaker[File, Path] =
@@ -346,6 +354,16 @@ object InodeMaker:
         jnf.Files.createFile(path.java)
     
     File(path)
+  
+  given fifo
+      (using createNonexistentParents: CreateNonexistentParents,
+          overwritePreexisting: OverwritePreexisting, environment: Environment, log: Log)
+      : InodeMaker[Fifo, Unix.Path] =
+    path => createNonexistentParents(path):
+      overwritePreexisting(path):
+        sh"mkfifo $path".exec[Unit]()
+    
+    Fifo(path)
 
 @capability
 trait InodeMaker[+InodeType <: Inode, -PathType <: Path]:
@@ -354,7 +372,7 @@ trait InodeMaker[+InodeType <: Inode, -PathType <: Path]:
 case class Directory(path: Path) extends Unix.Inode, Windows.Inode:
   def children: LazyList[Path] = jnf.Files.list(path.java).nn.toScala(LazyList).map: child =>
     path / PathName.unsafe(child.getFileName.nn.toString.nn.tt)
-
+  
 case class File(path: Path) extends Unix.Inode, Windows.Inode:
   def size(): ByteSize = jnf.Files.size(path.java).b
 

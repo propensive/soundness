@@ -19,6 +19,7 @@ package galilei
 import probably.*
 import gossamer.*
 import imperial.*
+import eucalyptus.*
 import serpentine.*
 import spectacular.*
 import hieroglyph.*, charEncoders.utf8, charDecoders.utf8
@@ -142,7 +143,18 @@ object Tests extends Suite(t"Galilei tests"):
         (tmpPath / p"galilei").as[Directory].volume
       .matches:
         case Volume(_, _) =>
-    
+      
+      
+      test(t"Make a FIFO"):
+        import filesystemOptions.{doNotCreateNonexistentParents, overwritePreexisting, doNotDeleteRecursively, dereferenceSymlinks}
+        import environments.system
+        given Log = logging.silent
+        
+        val fifoPath = tmpPath / p"galilei" / p"fifo1"
+        
+        fifoPath.make[Fifo]().path.inodeType()
+      .assert(_ == InodeType.Fifo)
+
     suite(t"Windows hierarchy tests"):
       import hierarchies.windows
       
