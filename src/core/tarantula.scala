@@ -18,15 +18,16 @@ package tarantula
 
 import guillotine.*
 import gossamer.*
-import jacinta.*, jsonPrinters.minimal
+import jacinta.*, jsonPrinters.minimal, dynamicJsonAccess.enabled
 import telekinesis.*
 import ambience.*
 import cataclysm.*
 import honeycomb.*
 import eucalyptus.*
-import digression.*
+import spectacular.*
 import rudiments.*
-import turbulence.*, characterEncodings.utf8
+import turbulence.*
+import hieroglyph.*, charEncoders.utf8
 import gesticulate.*
 import parasite.*
 import anticipation.*, timeApi.long
@@ -37,7 +38,7 @@ import annotation.targetName
 trait Browser(name: Text):
   transparent inline def browser = this
   
-  case class Server(port: Int, value: Process[Text]):
+  case class Server(port: Int, value: Process[Label, Text]):
     def stop()(using Log): Unit = browser.stop(this)
 
   def launch(port: Int)(using Environment, Log, Monitor): Server
@@ -49,7 +50,7 @@ trait Browser(name: Text):
 
 object Firefox extends Browser(t"firefox"):
   def launch(port: Int)(using Environment, Log, Monitor): Server =
-    val server: Process[Text] = sh"geckodriver --port $port".fork()
+    val server: Process["geckodriver", Text] = sh"geckodriver --port $port".fork()
     sleep(100L)
     Server(port, server)
 
@@ -57,7 +58,7 @@ object Firefox extends Browser(t"firefox"):
 
 object Chrome extends Browser(t"chrome"):
   def launch(port: Int)(using Environment, Log, Monitor): Server =
-    val server: Process[Text] = sh"chromedriver --port=$port".fork()
+    val server: Process["chromedriver", Text] = sh"chromedriver --port=$port".fork()
     sleep(100L)
     Server(port, server)
 
