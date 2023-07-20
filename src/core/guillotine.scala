@@ -71,7 +71,7 @@ trait Executor[ResultType]:
   def map[ResultType2](fn: ResultType => ResultType2): Executor[ResultType2] =
     process => fn(interpret(process))
 
-class Process[ExecType <: Label, ResultType](process: java.lang.Process):
+class Process[+ExecType <: Label, ResultType](process: java.lang.Process):
   def pid: Pid = Pid(process.pid)
   
   def stdout(): LazyList[Bytes] throws StreamCutError =
