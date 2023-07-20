@@ -174,6 +174,12 @@ sealed trait Inode:
   def path: Path
   def fullname: Text = path.fullname
   def stillExists(): Boolean = path.exists()
+  def hidden(): Boolean throws IoError =
+    try jnf.Files.isHidden(path.java) catch case error: ji.IOException => throw IoError(path)
+  
+  def readable(): Boolean = jnf.Files.isReadable(path.java)
+  def writable(): Boolean = jnf.Files.isWritable(path.java)
+  def executable(): Boolean = jnf.Files.isExecutable(path.java)
 
   def hardLinks()(using dereferenceSymlinks: DereferenceSymlinks, io: CanThrow[IoError]): Int =
     try jnf.Files.getAttribute(path.java, "unix:nlink", dereferenceSymlinks.options()*) match
