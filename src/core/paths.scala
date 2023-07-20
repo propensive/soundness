@@ -118,7 +118,12 @@ object Windows:
 
   case class Drive(letter: Char):
     def name: Text = t"$letter:"
+    
+    @targetName("child")
     def /(name: PathName[Forbidden]): Path = Path(this, List(name))
+    
+    @targetName("child2")
+    inline def /(name: Text): Path throws PathError = Path(this, List(PathName(name)))
   
   case class Link(ascent: Int, descent: List[PathName[Forbidden]]) extends galilei.Link
 
@@ -128,7 +133,11 @@ object Unix:
   
   type Forbidden = ".*\\/.*" | ".*[\\cA-\\cZ].*" | "\\.\\." | "\\."
   
+  @targetName("child")
   def /(name: PathName[Forbidden]): Path = Path(List(name))
+
+  @targetName("child2")
+  inline def /(name: Text): Path throws PathError = Path(List(PathName(name)))
 
   object Path:
     given mainRoot: MainRoot[Path] = () => Path(Nil)
@@ -401,7 +410,11 @@ case class Directory(path: Path) extends Unix.Inode, Windows.Inode:
   def children: LazyList[Path] = jnf.Files.list(path.java).nn.toScala(LazyList).map: child =>
     path / PathName.unsafe(child.getFileName.nn.toString.nn.tt)
     
+  @targetName("child")
   def /(name: PathName[Path.Forbidden]): Path = path / name
+  
+  @targetName("child2")
+  inline def /(name: Text): Path throws PathError = path / PathName(name)
 
 object File:
   given readableBytes(using streamCut: CanThrow[StreamCutError], io: CanThrow[IoError]): Readable[File, Bytes] =
