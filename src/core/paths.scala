@@ -19,6 +19,7 @@ package galilei
 import rudiments.*
 import digression.*
 import eucalyptus.*
+import turbulence.*
 import galilei.*
 import serpentine.*
 import guillotine.*
@@ -264,9 +265,7 @@ trait Path:
     this
     
   def inodeType
-      ()
-      (using dereferenceSymlinks: DereferenceSymlinks)
-      (using io: CanThrow[IoError], notFound: CanThrow[NotFoundError])
+      ()(using dereferenceSymlinks: DereferenceSymlinks)(using io: CanThrow[IoError])
       : InodeType =
     
     try jnf.Files.getAttribute(java, "unix:mode", dereferenceSymlinks.options()*) match
@@ -285,7 +284,7 @@ trait Path:
         throw Mistake(msg"the file attribute unix:mode could not be accessed")
       
       case error: ji.FileNotFoundException =>
-        throw NotFoundError(this)
+        throw IoError(this)
       
       case error: ji.IOException =>
         throw IoError(this)
@@ -296,7 +295,7 @@ trait Path:
   
   inline def is
       [InodeType <: Inode]
-      (using DereferenceSymlinks, CanThrow[IoError], CanThrow[NotFoundError])
+      (using DereferenceSymlinks, CanThrow[IoError])
       : Boolean =
     inline erasedValue[InodeType] match
       case _: Directory   => inodeType() == InodeType.Directory
@@ -324,7 +323,7 @@ object PathResolver:
 
   given file
       (using createNonexistent: CreateNonexistent, dereferenceSymlinks: DereferenceSymlinks,
-          io: CanThrow[IoError], notFound: CanThrow[NotFoundError])
+          io: CanThrow[IoError])
       : PathResolver[File, Path] = path =>
     if path.exists() && path.inodeType() == InodeType.File then File(path)
     else createNonexistent(path):
@@ -334,7 +333,7 @@ object PathResolver:
   
   given directory
       (using createNonexistent: CreateNonexistent, dereferenceSymlinks: DereferenceSymlinks,
-          io: CanThrow[IoError], notFound: CanThrow[NotFoundError])
+          io: CanThrow[IoError])
       : PathResolver[Directory, Path] = path =>
     if path.exists() && path.inodeType() == InodeType.Directory then Directory(path)
     else createNonexistent(path):
@@ -403,6 +402,11 @@ case class Directory(path: Path) extends Unix.Inode, Windows.Inode:
     path / PathName.unsafe(child.getFileName.nn.toString.nn.tt)
     
   def /(name: PathName[Path.Forbidden]): Path = path / name
+
+object File:
+  given readableBytes(using streamCut: CanThrow[StreamCutError], io: CanThrow[IoError]): Readable[File, Bytes] =
+    Readable.inputStream.contraMap: file =>
+      ji.BufferedInputStream(jnf.Files.newInputStream(file.path.java))
   
 case class File(path: Path) extends Unix.Inode, Windows.Inode:
   def size(): ByteSize = jnf.Files.size(path.java).b
@@ -496,9 +500,7 @@ package filesystemOptions:
       def apply[ResultType](path: Path)(operation: => ResultType): ResultType =
         try operation catch case error: jnf.FileAlreadyExistsException => throw OverwriteError(path)
       
-  given createNonexistentParents
-      (using CanThrow[IoError], CanThrow[NotFoundError])
-      : CreateNonexistentParents =
+  given createNonexistentParents(using CanThrow[IoError]): CreateNonexistentParents =
     new CreateNonexistentParents:
       def apply[ResultType](path: Path)(operation: => ResultType): ResultType =
         path.parent.mm: parent =>
