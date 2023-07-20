@@ -55,12 +55,9 @@ open class HtmlConverter():
         case node: Markdown.Ast.Inline =>
           if fresh then (false, Markdown.Ast.Block.Paragraph(node) :: acc)
           else
-            val content = acc.head match
+            val content = (acc.head: @unchecked) match
               case Markdown.Ast.Block.Paragraph(nodes*) =>
                 Markdown.Ast.Block.Paragraph((nodes :+ node)*) :: acc.tail
-              
-              case _ =>
-                throw Mistake("unexpected non-paragraph node found while folding inline nodes")
 
             (false, content)
     
@@ -129,11 +126,10 @@ open class HtmlConverter():
   def phrasing(node: Markdown.Ast.Inline): Seq[Html[Phrasing]] = node match
     case Markdown.Ast.Inline.Weblink(location, content) =>
 
-      def interactive(node: Html[Phrasing]): Option[Html[NonInteractive]] = node match
+      def interactive(node: Html[Phrasing]): Option[Html[NonInteractive]] = (node: @unchecked) match
         case node: Node[?] => node.refine[NonInteractive]
         case text: Text    => Some(text)
         case int: Int      => Some(int)
-        case _             => throw Mistake("there should be no other cases")
 
       val children: Seq[Html[NonInteractive]] = nonInteractive(content).flatMap(interactive(_))
 
