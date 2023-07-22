@@ -17,104 +17,176 @@
 package symbolism
 
 import scala.annotation.*
-import scala.compiletime.*
 
-object Add:
-  given ClosedAdd[Int] with
+object Plus:
+  given Plus[Int, Int] with
+    type Result = Int
     inline def apply(inline left: Int, inline right: Int): Int = left + right
   
-  given ClosedAdd[Byte] with
-    inline def apply(inline left: Byte, inline right: Byte): Byte = (left + right).toByte
+  given Plus[Byte, Byte] with
+    type Result = Int
+    inline def apply(inline left: Byte, inline right: Byte): Int = left + right
   
-  given ClosedAdd[Double] with
+  given Plus[Double, Double] with
+    type Result = Double
     inline def apply(inline left: Double, inline right: Double): Double = left + right
   
-  given ClosedAdd[Float] with
+  given Plus[Float, Float] with
+    type Result = Float
     inline def apply(inline left: Float, inline right: Float): Float = left + right
   
-  given ClosedAdd[Short] with
-    inline def apply(inline left: Short, inline right: Short): Short = (left + right).toShort
+  given Plus[Short, Short] with
+    type Result = Int
+    inline def apply(inline left: Short, inline right: Short): Int = left + right
   
-  given ClosedAdd[Long] with
+  given Plus[Long, Long] with
+    type Result = Long
     inline def apply(inline left: Long, inline right: Long): Long = left + right
 
-trait Add[-LeftType, -RightType]:
+trait Plus[-LeftType, -RightType]:
   type Result
   inline def apply(inline left: LeftType, inline right: RightType): Result
 
-trait ClosedAdd[Type] extends Add[Type, Type]:
-  type Result = Type
+object Minus:
+  given Minus[Int, Int] with
+    type Result = Int
+    inline def apply(inline left: Int, inline right: Int): Int = left - right
+  
+  given Minus[Byte, Byte] with
+    type Result = Int
+    inline def apply(inline left: Byte, inline right: Byte): Int = left - right
+  
+  given Minus[Double, Double] with
+    type Result = Double
+    inline def apply(inline left: Double, inline right: Double): Double = left - right
+  
+  given Minus[Float, Float] with
+    type Result = Float
+    inline def apply(inline left: Float, inline right: Float): Float = left - right
+  
+  given Minus[Short, Short] with
+    type Result = Int
+    inline def apply(inline left: Short, inline right: Short): Int = left - right
+  
+  given Minus[Long, Long] with
+    type Result = Long
+    inline def apply(inline left: Long, inline right: Long): Long = left - right
 
-object Negate:
-  given Negate[Int] with
+trait Minus[-LeftType, -RightType]:
+  type Result
+  inline def apply(inline left: LeftType, inline right: RightType): Result
+
+object UnaryMinus:
+  given UnaryMinus[Int] with
     type Result = Int
     inline def apply(value: Int): Int = -value
 
-  given Negate[Long] with
+  given UnaryMinus[Long] with
     type Result = Long
     inline def apply(value: Long): Long = -value
 
-  given Negate[Double] with
+  given UnaryMinus[Double] with
     type Result = Double
     inline def apply(value: Double): Double = -value
 
-  given Negate[Float] with
+  given UnaryMinus[Float] with
     type Result = Float
     inline def apply(value: Float): Float = -value
 
-trait Negate[ValueType]:
+trait UnaryMinus[ValueType]:
   type Result
   inline def apply(value: ValueType): Result
 
-object Multiply:
-  given ClosedMultiply[Int] with
+object Star:
+  given Star[Int, Int] with
+    type Result = Int
     inline def apply(inline left: Int, inline right: Int): Int = left*right
   
-  given ClosedMultiply[Byte] with
-    inline def apply(inline left: Byte, inline right: Byte): Byte = (left*right).toByte
+  given Star[Byte, Byte] with
+    type Result = Int
+    inline def apply(inline left: Byte, inline right: Byte): Int = left*right
   
-  given ClosedMultiply[Double] with
+  given Star[Double, Double] with
+    type Result = Double
     inline def apply(inline left: Double, inline right: Double): Double = left*right
   
-  given ClosedMultiply[Float] with
+  given Star[Float, Float] with
+    type Result = Float
     inline def apply(inline left: Float, inline right: Float): Float = left*right
   
-  given ClosedMultiply[Short] with
-    inline def apply(inline left: Short, inline right: Short): Short = (left*right).toShort
+  given Star[Short, Short] with
+    type Result = Int
+    inline def apply(inline left: Short, inline right: Short): Int = left*right
   
-  given ClosedMultiply[Long] with
+  given Star[Long, Long] with
+    type Result = Long
     inline def apply(inline left: Long, inline right: Long): Long = left*right
 
-trait Multiply[-LeftType, -RightType]:
+trait Star[-LeftType, -RightType]:
   type Result
   inline def apply(inline left: LeftType, inline right: RightType): Result
 
-trait ClosedMultiply[Type] extends Multiply[Type, Type]:
-  type Result = Type
+object Slash:
+  given Slash[Int, Int] with
+    type Result = Int
+    inline def apply(inline left: Int, inline right: Int): Int = left/right
+  
+  given Slash[Byte, Byte] with
+    type Result = Int
+    inline def apply(inline left: Byte, inline right: Byte): Int = left/right
+  
+  given Slash[Double, Double] with
+    type Result = Double
+    inline def apply(inline left: Double, inline right: Double): Double = left/right
+  
+  given Slash[Float, Float] with
+    type Result = Float
+    inline def apply(inline left: Float, inline right: Float): Float = left/right
+  
+  given Slash[Short, Short] with
+    type Result = Int
+    inline def apply(inline left: Short, inline right: Short): Int = left/right
+  
+  given Slash[Long, Long] with
+    type Result = Long
+    inline def apply(inline left: Long, inline right: Long): Long = left/right
+
+trait Slash[-LeftType, -RightType]:
+  type Result
+  inline def apply(inline left: LeftType, inline right: RightType): Result
 
 extension [LeftType](inline left: LeftType)
-  @targetName("add")
+  @targetName("plus")
   transparent inline infix def +
       [RightType]
       (inline right: RightType)
-      (using inline add: Add[LeftType, RightType])
+      (using inline plus: Plus[LeftType, RightType])
       : Any =
-    add(left, right)
+    plus(left, right)
   
-  @targetName("subtract")
-  transparent inline infix def -
+  @targetName("minus")
+  transparent inline infix def +
       [RightType]
-      (inline right: RightType)(using inline negate: Negate[RightType])
+      (inline right: RightType)
+      (using inline minus: Minus[LeftType, RightType])
       : Any =
-    val negation = negate(right)
-    summonInline[Add[LeftType, negation.type]](left, negation)
+    minus(left, right)
   
-  @targetName("multiply")
+  
+  @targetName("star")
   transparent inline infix def *
       [RightType]
-      (inline right: RightType)(using inline multiply: Multiply[LeftType, RightType])
+      (inline right: RightType)(using inline star: Star[LeftType, RightType])
       : Any =
-    multiply(left, right)
+    star(left, right)
+  
+  @targetName("slash")
+  transparent inline infix def /
+      [RightType]
+      (inline right: RightType)(using inline slash: Slash[LeftType, RightType])
+      : Any =
+    slash(left, right)
 
-  @targetName("negate")
-  transparent inline def unary_-(using inline negate: Negate[LeftType]): Any = negate(left)
+  @targetName("unaryMinus")
+  transparent inline def unary_-(using inline unaryMinus: UnaryMinus[LeftType]): Any =
+    unaryMinus(left)
