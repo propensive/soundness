@@ -34,16 +34,17 @@ project anticipation
     compiler  scala
     sources   src/time
 
-  module math
+  module text
     compiler  scala
-    sources   src/math
+    include   anticipation/http
+    sources   src/text
 
   module all
     include anticipation/css
     include anticipation/html
+    include anticipation/text
     include anticipation/http
     include anticipation/path
     include anticipation/time
     include anticipation/url
     include anticipation/color
-    include anticipation/math
