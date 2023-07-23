@@ -18,175 +18,107 @@ package symbolism
 
 import scala.annotation.*
 
-object Plus:
-  given Plus[Int, Int] with
-    type Result = Int
-    inline def apply(inline left: Int, inline right: Int): Int = left + right
-  
-  given Plus[Byte, Byte] with
-    type Result = Int
-    inline def apply(inline left: Byte, inline right: Byte): Int = left + right
-  
-  given Plus[Double, Double] with
-    type Result = Double
-    inline def apply(inline left: Double, inline right: Double): Double = left + right
-  
-  given Plus[Float, Float] with
-    type Result = Float
-    inline def apply(inline left: Float, inline right: Float): Float = left + right
-  
-  given Plus[Short, Short] with
-    type Result = Int
-    inline def apply(inline left: Short, inline right: Short): Int = left + right
-  
-  given Plus[Long, Long] with
-    type Result = Long
-    inline def apply(inline left: Long, inline right: Long): Long = left + right
-
-trait Plus[-LeftType, -RightType]:
+trait Operator[OperatorType <: String & Singleton, -LeftType, -RightType]:
   type Result
   inline def apply(inline left: LeftType, inline right: RightType): Result
 
-object Minus:
-  given Minus[Int, Int] with
-    type Result = Int
-    inline def apply(inline left: Int, inline right: Int): Int = left - right
-  
-  given Minus[Byte, Byte] with
-    type Result = Int
-    inline def apply(inline left: Byte, inline right: Byte): Int = left - right
-  
-  given Minus[Double, Double] with
-    type Result = Double
-    inline def apply(inline left: Double, inline right: Double): Double = left - right
-  
-  given Minus[Float, Float] with
-    type Result = Float
-    inline def apply(inline left: Float, inline right: Float): Float = left - right
-  
-  given Minus[Short, Short] with
-    type Result = Int
-    inline def apply(inline left: Short, inline right: Short): Int = left - right
-  
-  given Minus[Long, Long] with
-    type Result = Long
-    inline def apply(inline left: Long, inline right: Long): Long = left - right
+trait ClosedOperator[OperatorType <: String & Singleton, Type]
+extends Operator[OperatorType, Type, Type]:
+  type Result = Type
+  def op(left: Type, right: Type): Type
+  inline def apply(inline left: Type, inline right: Type): Type = op(left, right)
 
-trait Minus[-LeftType, -RightType]:
+trait UnaryOperator[OperatorType <: String & Singleton, Type]:
   type Result
-  inline def apply(inline left: LeftType, inline right: RightType): Result
+  inline def apply(inline value: Type): Result
 
-object UnaryMinus:
-  given UnaryMinus[Int] with
-    type Result = Int
-    inline def apply(value: Int): Int = -value
+trait ClosedUnaryOperator[OperatorType <: String & Singleton, Type]:
+  type Result = Type
+  def op(value: Type): Type
+  inline def apply(inline value: Type): Type = op(value)
 
-  given UnaryMinus[Long] with
-    type Result = Long
-    inline def apply(value: Long): Long = -value
+object Operator:  
+  given plusByte: ClosedOperator["+", Byte] = (left, right) => (left + right).toByte
+  given plusShort: ClosedOperator["+", Short] = (left, right) => (left + right).toShort
+  given plusInt: ClosedOperator["+", Int] = _ + _
+  given plusLong: ClosedOperator["+", Long] = _ + _
+  given plusFloat: ClosedOperator["+", Float] = _ + _
+  given plusDouble: ClosedOperator["+", Double] = _ + _
 
-  given UnaryMinus[Double] with
-    type Result = Double
-    inline def apply(value: Double): Double = -value
+  given minusByte: ClosedOperator["-", Byte] = (left, right) => (left - right).toByte
+  given minusShort: ClosedOperator["-", Short] = (left, right) => (left - right).toShort
+  given minusInt: ClosedOperator["-", Int] = _ - _
+  given minusLong: ClosedOperator["-", Long] = _ - _
+  given minusFloat: ClosedOperator["-", Float] = _ - _
+  given minusDouble: ClosedOperator["-", Double] = _ - _
 
-  given UnaryMinus[Float] with
-    type Result = Float
-    inline def apply(value: Float): Float = -value
+  given starByte: ClosedOperator["*", Byte] = (left, right) => (left*right).toByte
+  given starShort: ClosedOperator["*", Short] = (left, right) => (left*right).toShort
+  given starInt: ClosedOperator["*", Int] = _*_
+  given starLong: ClosedOperator["*", Long] = _*_
+  given starFloat: ClosedOperator["*", Float] = _*_
+  given starDouble: ClosedOperator["*", Double] = _*_
 
-trait UnaryMinus[ValueType]:
-  type Result
-  inline def apply(value: ValueType): Result
-
-object Star:
-  given Star[Int, Int] with
-    type Result = Int
-    inline def apply(inline left: Int, inline right: Int): Int = left*right
-  
-  given Star[Byte, Byte] with
-    type Result = Int
-    inline def apply(inline left: Byte, inline right: Byte): Int = left*right
-  
-  given Star[Double, Double] with
-    type Result = Double
-    inline def apply(inline left: Double, inline right: Double): Double = left*right
-  
-  given Star[Float, Float] with
-    type Result = Float
-    inline def apply(inline left: Float, inline right: Float): Float = left*right
-  
-  given Star[Short, Short] with
-    type Result = Int
-    inline def apply(inline left: Short, inline right: Short): Int = left*right
-  
-  given Star[Long, Long] with
-    type Result = Long
-    inline def apply(inline left: Long, inline right: Long): Long = left*right
-
-trait Star[-LeftType, -RightType]:
-  type Result
-  inline def apply(inline left: LeftType, inline right: RightType): Result
-
-object Slash:
-  given Slash[Int, Int] with
-    type Result = Int
-    inline def apply(inline left: Int, inline right: Int): Int = left/right
-  
-  given Slash[Byte, Byte] with
-    type Result = Int
-    inline def apply(inline left: Byte, inline right: Byte): Int = left/right
-  
-  given Slash[Double, Double] with
-    type Result = Double
-    inline def apply(inline left: Double, inline right: Double): Double = left/right
-  
-  given Slash[Float, Float] with
-    type Result = Float
-    inline def apply(inline left: Float, inline right: Float): Float = left/right
-  
-  given Slash[Short, Short] with
-    type Result = Int
-    inline def apply(inline left: Short, inline right: Short): Int = left/right
-  
-  given Slash[Long, Long] with
-    type Result = Long
-    inline def apply(inline left: Long, inline right: Long): Long = left/right
-
-trait Slash[-LeftType, -RightType]:
-  type Result
-  inline def apply(inline left: LeftType, inline right: RightType): Result
+  given slashByte: ClosedOperator["/", Byte] = (left, right) => (left/right).toByte
+  given slashShort: ClosedOperator["/", Short] = (left, right) => (left/right).toShort
+  given slashInt: ClosedOperator["/", Int] = _/_
+  given slashLong: ClosedOperator["/", Long] = _/_
+  given slashFloat: ClosedOperator["/", Float] = _/_
+  given slashDouble: ClosedOperator["/", Double] = _/_
 
 extension [LeftType](inline left: LeftType)
   @targetName("plus")
   transparent inline infix def +
       [RightType]
       (inline right: RightType)
-      (using inline plus: Plus[LeftType, RightType])
+      (using inline operator: Operator["+", LeftType, RightType])
       : Any =
-    plus(left, right)
+    operator(left, right)
   
   @targetName("minus")
-  transparent inline infix def +
+  transparent inline infix def -
       [RightType]
       (inline right: RightType)
-      (using inline minus: Minus[LeftType, RightType])
+      (using inline operator: Operator["-", LeftType, RightType])
       : Any =
-    minus(left, right)
-  
+    operator(left, right)
   
   @targetName("star")
   transparent inline infix def *
       [RightType]
-      (inline right: RightType)(using inline star: Star[LeftType, RightType])
+      (inline right: RightType)
+      (using inline operator: Operator["*", LeftType, RightType])
       : Any =
-    star(left, right)
+    operator(left, right)
   
   @targetName("slash")
   transparent inline infix def /
       [RightType]
-      (inline right: RightType)(using inline slash: Slash[LeftType, RightType])
+      (inline right: RightType)
+      (using inline operator: Operator["/", LeftType, RightType])
       : Any =
-    slash(left, right)
-
+    operator(left, right)
+  
   @targetName("unaryMinus")
-  transparent inline def unary_-(using inline unaryMinus: UnaryMinus[LeftType]): Any =
-    unaryMinus(left)
+  transparent inline def unary_-(using inline operator: UnaryOperator["-", LeftType]): Any =
+    operator(left)
+  
+  @targetName("unaryPlus")
+  transparent inline def unary_+(using inline operator: UnaryOperator["+", LeftType]): Any =
+    operator(left)
+
+  @targetName("unaryExclamationMark")
+  transparent inline def unary_!(using inline operator: UnaryOperator["!", LeftType]): Any =
+    operator(left)
+  
+  @targetName("unaryExclamationMark")
+  transparent inline def unary_~(using inline operator: UnaryOperator["~", LeftType]): Any =
+    operator(left)
+
+object UnaryOperator:
+  given ClosedUnaryOperator["-", Byte] = byte => (-byte).toByte
+  given ClosedUnaryOperator["-", Short] = short => (-short).toShort
+  given ClosedUnaryOperator["-", Int] = -_
+  given ClosedUnaryOperator["-", Long] = -_
+  given ClosedUnaryOperator["-", Float] = -_
+  given ClosedUnaryOperator["-", Double] = -_
