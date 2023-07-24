@@ -17,7 +17,9 @@
 package punctuation
 
 import rudiments.*
+import anticipation.*
 import gossamer.*
+import symbolism.*
 import spectacular.*
 
 import com.vladsch.flexmark as cvf

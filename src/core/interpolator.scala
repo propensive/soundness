@@ -19,6 +19,7 @@ package punctuation
 import rudiments.*
 import contextual.*
 import gossamer.*
+import anticipation.*
 
 import scala.compiletime.*
 
