@@ -2,8 +2,9 @@
 # More information is available at: https://github.com/propensive/wrath/
 
 repo propensive/spectacular
+repo propensive/probably
 
-target dendrology/core
+target dendrology/test
 
 project dendrology
   module core
@@ -11,3 +12,8 @@ project dendrology
     sources   src/core
     include   spectacular/core
 
+  module test
+    compiler  scala
+    sources   src/test
+    include   dendrology/core probably/cli
+    main      dendrology.Tests
