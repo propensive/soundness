@@ -17,6 +17,7 @@
 package serpentine
 
 import rudiments.*
+import anticipation.*
 import spectacular.*
 import gossamer.*
 

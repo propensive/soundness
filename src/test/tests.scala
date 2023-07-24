@@ -19,6 +19,7 @@ package serpentine
 import probably.*
 import rudiments.*
 import digression.*
+import anticipation.*
 import kaleidoscope.*
 import gossamer.*
 import spectacular.*
@@ -440,25 +441,25 @@ object Tests extends Suite(t"Serpentine Tests"):
       test(t"add relative parent"):
         unsafely:
           val rel = ?^
-          (% / p"foo" / p"bar") ++ rel
+          (% / p"foo" / p"bar") + rel
       .assert(_ == % / p"foo")
       
       test(t"Parent of root throws exception"):
         unsafely:
           val rel = ?^^
-          capture((% / p"foo") ++ rel)
+          capture((% / p"foo") + rel)
       .assert(_ == PathError(PathError.Reason.ParentOfRoot))
       
       test(t"add relative uncle"):
         unsafely:
           val rel = ?^^ / p"quux"
-          (% / p"foo" / p"bar" / p"baz") ++ rel
+          (% / p"foo" / p"bar" / p"baz") + rel
       .assert(_ == % / p"foo" / p"quux")
       
       test(t"add relative cousin"):
         unsafely:
           val rel = ?^^ / p"quux" / p"bar"
-          (% / p"foo" / p"bar" / p"baz") ++ rel
+          (% / p"foo" / p"bar" / p"baz") + rel
       .assert(_ == % / p"foo" / p"quux" / p"bar")
 
     suite(t"Rooted path tests"):
