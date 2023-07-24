@@ -17,6 +17,7 @@
 package guillotine
 
 import rudiments.*
+import anticipation.*
 
 trait PosixCommandOutputs:
   erased given alias: CommandOutput["alias", Text] = ###
