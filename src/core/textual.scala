@@ -18,6 +18,8 @@ package gossamer
 
 import rudiments.*
 import spectacular.*
+import anticipation.*
+import symbolism.*
 
 import language.experimental.captureChecking
 
@@ -39,6 +41,17 @@ trait Textual[TextType]:
   def unsafeChar(text: TextType, index: Int): Char
   def indexOf(text: TextType, sub: Text): Int
   def show[ValueType](value: ValueType)(using ShowType[ValueType]): TextType
+
+  given times: Operator["*", TextType, Int] with
+    type Result = TextType
+    
+    private def recur(text: TextType, n: Int, acc: TextType): TextType =
+      if n == 0 then acc else recur(text, n - 1, concat(acc, text))
+
+    inline def apply(inline left: TextType, inline right: Int): TextType =
+      recur(left, right.max(0), empty)
+  
+  given add: ClosedOperator["+", TextType] = concat(_, _)
 
 object Textual:
   given Textual[Text] with

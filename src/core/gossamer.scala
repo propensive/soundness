@@ -17,8 +17,10 @@
 package gossamer
 
 import rudiments.*
+import anticipation.*
 import hieroglyph.*
 import spectacular.*
+import symbolism.*
 import kaleidoscope.*
 import contextual.*
 
@@ -141,16 +143,6 @@ extension [TextType](using textual: Textual[TextType])(text: TextType)
   def contains(substring: Text): Boolean = textual.indexOf(text, substring) != -1
   def contains(char: Char): Boolean = textual.indexOf(text, char.show) != -1
 
-  @targetName("add")
-  infix def +(other: TextType): TextType = textual.concat(text, other)
-
-  @targetName("times")
-  infix def *(count: Int): TextType =
-    def recur(n: Int, acc: TextType): TextType =
-      if n == 0 then acc else recur(n - 1, textual.concat(acc, text))
-    
-    recur(count.max(0), textual.empty)
-  
   def apply(index: Int): Char throws OutOfRangeError =
     if index >= 0 && index < text.length then textual.unsafeChar(text, index)
     else throw OutOfRangeError(index, 0, text.length)
@@ -202,7 +194,11 @@ extension [TextType](using textual: Textual[TextType])(text: TextType)
   
   def displayWidth(using calc: TextWidthCalculator) = calc.width(Text(textual.string(text)))
   
-  def pad(length: Int, bidi: Bidi = Ltr, char: Char = ' ')(using TextWidthCalculator): TextType =
+  def pad
+      (length: Int, bidi: Bidi = Ltr, char: Char = ' ')
+      (using TextWidthCalculator)
+      : TextType =
+    import textual.times
     val padding = textual.make(char.toString)*(length - text.displayWidth)
     
     bidi match
@@ -286,7 +282,7 @@ extension (text: Text)
 
 case class Numerous(word: Text, pluralEnd: Text = Text("s"), singularEnd: Text = Text("")):
   def apply(elements: Iterable[?]): Text = apply(elements.size)
-  def apply(value: Int): Text = word+(if value == 1 then singularEnd else pluralEnd)
+  def apply(value: Int): Text = Text(word.s+(if value == 1 then singularEnd.s else pluralEnd.s))
 
 object Joinable:
   given [TextType](using textual: Textual[TextType]): Joinable[TextType] = elements =>
@@ -369,67 +365,23 @@ object Interpolation:
     buf.text
       
   object T extends Interpolator[Input, Text, Text]:
-    def initial: Text = rudiments.Text("")
-    def parse(state: Text, next: Text): Text = state+escape(next)
+    def initial: Text = anticipation.Text("")
+    def parse(state: Text, next: Text): Text = anticipation.Text(state.s+escape(next).s)
     def skip(state: Text): Text = state
-    def insert(state: Text, input: Input): Text = state+input.txt
+    def insert(state: Text, input: Input): Text = anticipation.Text(state.s+input.txt.s)
     def complete(state: Text): Text = state
   
   object Text extends Interpolator[Input, Text, Text]:
-    def initial: Text = rudiments.Text("")
-    def parse(state: Text, next: Text): Text = state+escape(next)
+    def initial: Text = anticipation.Text("")
+    def parse(state: Text, next: Text): Text = anticipation.Text(state.s+escape(next).s)
     def skip(state: Text): Text = state
-    def insert(state: Text, input: Input): Text = state+input.txt
+    def insert(state: Text, input: Input): Text = anticipation.Text(state.s+input.txt.s)
 
     def complete(state: Text): Text =
       val array = state.s.split("\\n\\s*\\n").nn.map(_.nn.replaceAll("\\s\\s*", " ").nn.trim.nn)
-      rudiments.Text(String.join("\n", array*).nn)
+      anticipation.Text(String.join("\n", array*).nn)
 
 extension (buf: StringBuilder)
   def add(text: Text): Unit = buf.append(text.s)
   def add(char: Char): Unit = buf.append(char)
   def text: Text = Text(buf.toString)
-
-// object Line:
-//   given lineReader(using enc: Encoding): Readable[LazyList[Line]] with
-//     def read(stream: DataStream): LazyList[Line] throws StreamCutError =
-//       def recur(stream: LazyList[Text], carry: Text = Text("")): LazyList[Line] =
-//         if stream.isEmpty then
-//           if carry.empty then LazyList() else LazyList(Line(carry))
-//         else
-//           val parts = stream.head.s.split("\\r?\\n", Int.MaxValue).nn.map(_.nn)
-//           if parts.length == 1 then recur(stream.tail, carry + parts.head.show)
-//           else if parts.length == 2
-//           then Line(carry + parts.head.show) #:: recur(stream.tail, parts.last.show)
-//           else
-//             Line(carry + parts.head.show) #::
-//                 LazyList(parts.tail.init.map(str => Line(str.show))*) #:::
-//                 recur(stream.tail, parts.last.show)
-      
-//       recur(summon[Readable[LazyList[Text]]].read(stream))
-      
-// package stdouts:
-//   given stdout: Stdout = txt =>
-//     try summon[Appendable[SystemOut.type]].write(SystemOut, LazyList(txt.sysBytes))
-//     catch case err: Exception => ()
-  
-//   given drain: Stdout = txt => ()
-
-// object Stdout:
-//   def apply[T](value: T)(using writable: Writable[T]): Stdout = txt =>
-//     try writable.write(value, LazyList(txt.sysBytes)) catch case err: Exception => ()
-
-// trait Stderr:
-//   def write(msg: Text): Unit
-
-// trait Stdout:
-//   def write(msg: Text): Unit
-
-// object Out:
-//   def print[T: Show](msg: T)(using stdout: Stdout): Unit = stdout.write(msg.show)
-//   def println[T: Show](msg: T)(using Stdout): Unit = print(Text(s"${msg.show}\n"))
-
-//object EncodingPrefix extends Verifier[Encoding]:
-  //def verify(value: Text): Encoding = value match
-    //case Encoding(enc) => enc
-    //case _             => throw InterpolationError(Text(s"$value is not a valid character encoding"))

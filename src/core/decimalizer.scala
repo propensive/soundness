@@ -17,6 +17,7 @@
 package gossamer
 
 import rudiments.*
+import anticipation.*
 
 case class Decimalizer
     (significantFigures: Maybe[Int] = Unset, decimalPlaces: Maybe[Int] = Unset,
