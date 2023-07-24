@@ -19,6 +19,8 @@ package escritoire
 import rudiments.*
 import gossamer.*
 import hieroglyph.*
+import anticipation.*
+import symbolism.*
 import digression.*
 import spectacular.*
 
@@ -114,6 +116,7 @@ case class Table
       (data: Seq[RowType], maxWidth: Int, delimitRows: DelimitRows = DelimitRows.RuleIfMultiline)
       (using style: TableStyle, calc: TextWidthCalculator)
       : LazyList[TextType] =
+    import textual.times
 
     val cols: IArray[Column[RowType, TextType]] = IArray.from(initCols.filterNot(_.hide))
     val titles: IArray[TextType] = IArray.from(cols.map(_.title))
