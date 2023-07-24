@@ -24,54 +24,56 @@ import kaleidoscope.*
 import gossamer.*
 import spectacular.*
 import larceny.*
+import symbolism.*
 
 object Example:
   
   type Forbidden = ".*abc" | ".*\\\\.*" | ".*/.*" | "lpt1.*" | ".* "
   
-  object RootedPath:
+  object TestPath:
     import unsafeExceptions.canThrowAny
 
-    inline given Decoder[RootedPath] = Reachable.decode[RootedPath](_)
-    given Show[RootedPath] = _.render
-    def parse(text: Text): RootedPath = text.decodeAs[RootedPath]
+    inline given Decoder[TestPath] = Reachable.decode[TestPath](_)
+    given pathCreator: PathCreator[TestPath, Forbidden, Drive] = TestPath(_, _)
+    //inline given add: Operator["+", TestPath, TestLink] = Followable.add2[TestPath, TestLink, Forbidden, Drive]
+    given Show[TestPath] = _.render
+    def parse(text: Text): TestPath = text.decodeAs[TestPath]
 
-    given pathCreator: PathCreator[RootedPath, Forbidden, Drive] = RootedPath(_, _)
-
-    given rootParser: RootParser[RootedPath, Drive] with
+    given rootParser: RootParser[TestPath, Drive] with
       def parse(text: Text): Maybe[(Drive, Text)] = text.only:
         case r"$letter([a-zA-Z]):\\.*" => (Drive(unsafely(letter(0)).toUpper), text.drop(3))
 
-    given reachable: Reachable[RootedPath, Forbidden, Drive] with
-      def separator(path: RootedPath): Text = t"\\"
-      def root(path: RootedPath): Drive = path.root
+    given reachable: Reachable[TestPath, Forbidden, Drive] with
+      def separator(path: TestPath): Text = t"\\"
+      def root(path: TestPath): Drive = path.root
       def prefix(drive: Drive): Text = t"${drive.letter}:\\"
-      def descent(path: RootedPath): List[PathName[Forbidden]] = path.descent
+      def descent(path: TestPath): List[PathName[Forbidden]] = path.descent
   
-  case class RootedPath(root: Drive, descent: List[PathName[Forbidden]])
+  case class TestPath(root: Drive, descent: List[PathName[Forbidden]])
 
-  object RootedLink:
+  object TestLink:
     import unsafeExceptions.canThrowAny
-    
-    inline given Decoder[RootedLink] = Followable.decoder[RootedLink]
-    given linkCreator: PathCreator[RootedLink, Forbidden, Int] = RootedLink(_, _)
-    
-    given Show[RootedLink] = _.render
-    def parse(text: Text): RootedLink = text.decodeAs[RootedLink]
-    
-    given pathlike: Followable[RootedLink, Forbidden, "..", "."] with
-      def separator(path: RootedLink): Text = t"\\"
+
+    inline given Decoder[TestLink] = Followable.decoder[TestLink]
+    given linkCreator: PathCreator[TestLink, Forbidden, Int] = TestLink(_, _)
+    inline given add: Operator["+", TestLink, TestLink] = Followable.add[TestLink, Forbidden]
+
+    given Show[TestLink] = _.render
+    def parse(text: Text): TestLink = text.decodeAs[TestLink]
+
+    given pathlike: Followable[TestLink, Forbidden, "..", "."] with
+      def separator(path: TestLink): Text = t"\\"
       val separators: Set[Char] = Set('/')
-      def ascent(path: RootedLink): Int = path.ascent
-      def descent(path: RootedLink): List[PathName[Forbidden]] = path.descent
-  
-  case class RootedLink(ascent: Int, descent: List[PathName[Forbidden]])
+      def ascent(path: TestLink): Int = path.ascent
+      def descent(path: TestLink): List[PathName[Forbidden]] = path.descent
+
+  case class TestLink(ascent: Int, descent: List[PathName[Forbidden]])
 
   case class Drive(letter: Char):
     @targetName("child")
-    def /(name: PathName[Forbidden]): RootedPath = RootedPath(this, List(name))
+    def /(name: PathName[Forbidden]): TestPath = TestPath(this, List(name))
 
-  given hierarchy: Hierarchy[RootedPath, RootedLink] = new Hierarchy[RootedPath, RootedLink] {}
+  given hierarchy: Hierarchy[TestPath, TestLink] = new Hierarchy[TestPath, TestLink] {}
 
 import Example.*
 
@@ -106,20 +108,20 @@ object Tests extends Suite(t"Serpentine Tests"):
       
     suite(t"Parsing absolute paths with root"):
       test(t"parse simple rooted absolute path"):
-        unsafely(RootedPath.parse(t"C:\\Windows"))
-      .assert(_ == RootedPath(Drive('C'), List(PathName(t"Windows"))))
+        unsafely(TestPath.parse(t"C:\\Windows"))
+      .assert(_ == TestPath(Drive('C'), List(PathName(t"Windows"))))
       
       test(t"parse deeper rooted absolute path"):
-        unsafely(RootedPath.parse(t"D:\\Windows\\System"))
-      .assert(_ == RootedPath(Drive('D'), List(PathName(t"System"), PathName(t"Windows"))))
+        unsafely(TestPath.parse(t"D:\\Windows\\System"))
+      .assert(_ == TestPath(Drive('D'), List(PathName(t"System"), PathName(t"Windows"))))
       
       test(t"parse even deeper rooted absolute path"):
-        unsafely(RootedPath.parse(t"e:\\Windows\\System\\Data"))
-      .assert(_ == RootedPath(Drive('E'), List(PathName(t"Data"), PathName(t"System"), PathName(t"Windows"))))
+        unsafely(TestPath.parse(t"e:\\Windows\\System\\Data"))
+      .assert(_ == TestPath(Drive('E'), List(PathName(t"Data"), PathName(t"System"), PathName(t"Windows"))))
       
       test(t"parse even absolute rooted directory-style path"):
-        unsafely(RootedPath.parse(t"f:\\Windows\\System\\"))
-      .assert(_ == RootedPath(Drive('F'), List(PathName(t"System"), PathName(t"Windows"))))
+        unsafely(TestPath.parse(t"f:\\Windows\\System\\"))
+      .assert(_ == TestPath(Drive('F'), List(PathName(t"System"), PathName(t"Windows"))))
       
     suite(t"Relative parsing"):
       test(t"parse simple relative path"):
@@ -462,34 +464,34 @@ object Tests extends Suite(t"Serpentine Tests"):
           (% / p"foo" / p"bar" / p"baz") + rel
       .assert(_ == % / p"foo" / p"quux" / p"bar")
 
-    suite(t"Rooted path tests"):
+    suite(t"Test path tests"):
       test(t"Absolute path child"):
-        RootedPath(Drive('C'), List(p"Windows")) / p"System32"
-      .assert(_ == RootedPath(Drive('C'), List(p"System32", p"Windows")))
+        TestPath(Drive('C'), List(p"Windows")) / p"System32"
+      .assert(_ == TestPath(Drive('C'), List(p"System32", p"Windows")))
     
       test(t"Absolute path parent"):
-        RootedPath(Drive('C'), List(p"System32", p"Windows")).parent
-      .assert(_ == RootedPath(Drive('C'), List(p"Windows")))
+        TestPath(Drive('C'), List(p"System32", p"Windows")).parent
+      .assert(_ == TestPath(Drive('C'), List(p"Windows")))
       
       test(t"Absolute path root parent"):
-        RootedPath(Drive('C'), List()).parent
+        TestPath(Drive('C'), List()).parent
       .assert(_ == Unset)
   
       test(t"Relative path child"):
-        RootedLink(3, List(p"docs", p"work")) / p"images"
-      .assert(_ == RootedLink(3, List(p"images", p"docs", p"work")))
+        TestLink(3, List(p"docs", p"work")) / p"images"
+      .assert(_ == TestLink(3, List(p"images", p"docs", p"work")))
       
       test(t"Relative path parent"):
-        RootedLink(3, List(p"file", p"docs", p"work")).parent
-      .assert(_ == RootedLink(3, List(p"docs", p"work")))
+        TestLink(3, List(p"file", p"docs", p"work")).parent
+      .assert(_ == TestLink(3, List(p"docs", p"work")))
   
       test(t"Relative root parent"):
-        RootedLink(3, List()).parent
-      .assert(_ == RootedLink(4, List()))
+        TestLink(3, List()).parent
+      .assert(_ == TestLink(4, List()))
 
     suite(t"Path rendering"):
       test(t"Show a rooted absolute path"):
-        RootedPath(Drive('F'), List(p"System32", p"Windows")).show
+        TestPath(Drive('F'), List(p"System32", p"Windows")).show
       .assert(_ == t"F:\\Windows\\System32")
       
       test(t"Show a simple absolute path"):
@@ -497,7 +499,7 @@ object Tests extends Suite(t"Serpentine Tests"):
       .assert(_ == t"/home/user")
       
       test(t"Show a rooted relative path"):
-        RootedLink(2, List(p"Data", p"Work")).show
+        TestLink(2, List(p"Data", p"Work")).show
       .assert(_ == t"..\\..\\Work\\Data")
       
       test(t"Show a simple relative path"):
@@ -505,7 +507,7 @@ object Tests extends Suite(t"Serpentine Tests"):
       .assert(_ == t"../../user/file")
 
     suite(t"Invalid paths"):
-      given MainRoot[RootedPath] = () => RootedPath(Drive('C'), Nil)
+      given MainRoot[TestPath] = () => TestPath(Drive('C'), Nil)
       
       test(t"Path cannot contain /"):
         demilitarize:
@@ -513,31 +515,31 @@ object Tests extends Suite(t"Serpentine Tests"):
         .map(_.message)
       .assert(_ == List(t"serpentine: a path element may not contain the character /"))
       
-      test(t"Rooted Path cannot contain lpt1"):
+      test(t"Test Path cannot contain lpt1"):
         demilitarize:
           Drive('C') / p"lpt1"
         .map(_.message)
       .assert(_ == List(t"serpentine: a path element may not start with lpt1"))
       
-      test(t"Rooted Path cannot contain lpt1.txt"):
+      test(t"Test Path cannot contain lpt1.txt"):
         demilitarize:
           Drive('C') / p"lpt1.txt"
         .map(_.message)
       .assert(_ == List(t"serpentine: a path element may not start with lpt1"))
       
-      test(t"Rooted Path cannot have a filename ending in space"):
+      test(t"Test Path cannot have a filename ending in space"):
         demilitarize:
           Drive('C') / p"abc.xyz "
         .map(_.message)
       .assert(_ == List(t"serpentine: a path element may not match the pattern .*"))
       
-      test(t"Rooted Path cannot have a filename ending in period"):
+      test(t"Test Path cannot have a filename ending in period"):
         demilitarize:
           Drive('C') / p"abc.abc"
         .map(_.message)
       .assert(_ == List(t"serpentine: a path element may not end with abc"))
       
-      test(t"Rooted Path can have an extensionless filename"):
+      test(t"Test Path can have an extensionless filename"):
         demilitarize:
           Drive('C') / p"xyz"
       .assert(_ == Nil)

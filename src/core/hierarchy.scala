@@ -147,20 +147,6 @@ extension
     reachable.descent(left.conjunction(path)) == reachable.descent(left) &&
       reachable.root(path) == reachable.root(left)
 
-  /*def ++
-      (relative: LinkType)
-      (using reachable: Reachable[PathType, NameType, RootType], path: CanThrow[PathError])
-      (using followable: Followable[LinkType, NameType, ?, ?],
-          creator: PathCreator[PathType, NameType, RootType])
-      : PathType^{reachable, followable, creator, path} =
-    if followable.ascent(relative) > reachable.depth(left)
-    then throw PathError(PathError.Reason.ParentOfRoot)
-    else
-      val common: PathType = reachable.ancestor(left, followable.ascent(relative)).avow(using Unsafe)
-      val descent = reachable.descent(common)
-      
-      creator.path(reachable.root(left), followable.descent(relative) ::: descent)*/
-
 trait Pathlike[-PathType <: Matchable, NameType <: Label, AscentType]:
   def separator(path: PathType): Text
   def descent(path: PathType): List[PathName[NameType]]
@@ -236,7 +222,7 @@ extends Pathlike[PathType, NameType, RootType]:
     if descent(path).length < n then Unset else creator.path(root(path), descent(path).drop(n))
 
 object Followable:
-  given add
+  def add
       [LinkType <: Matchable, NameType <: Label]
       (using creator: PathCreator[LinkType, NameType, Int],
           followable: Followable[LinkType, NameType, ?, ?])
@@ -244,7 +230,7 @@ object Followable:
     new Operator["+", LinkType, LinkType]:
       type Result = LinkType
 
-      inline def apply(inline left: LinkType, inline right: LinkType): LinkType =
+      inline def apply(left: LinkType, right: LinkType): LinkType =
         val ascent2 =
           if followable.descent(left).length < followable.ascent(right)
           then followable.ascent(left) + followable.ascent(right) - followable.descent(left).length
@@ -346,6 +332,20 @@ extension
 
   transparent inline def parent: Maybe[PathType] = pathlike.parent(path)
   transparent inline def ancestor(n: Int): Maybe[PathType] = pathlike.ancestor(path, n)
+  
+  inline def append
+      [LinkType <: Matchable]
+      (inline link: LinkType)
+      (using followable: Followable[LinkType, NameType, ?, ?])
+      (using pathError: CanThrow[PathError])
+      : PathType =
+    if followable.ascent(link) > pathlike.descent(path).length
+    then throw PathError(PathError.Reason.ParentOfRoot)
+    else
+      val common: PathType = pathlike.ancestor(path, followable.ascent(link)).avow(using Unsafe)
+      val descent = pathlike.descent(common)
+  
+      creator.path(pathlike.ascent(path), followable.descent(link) ::: descent)
 
 trait PExtractor[NameType <: Label]():
   def apply(): PathName[NameType]
