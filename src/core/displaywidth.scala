@@ -18,9 +18,11 @@ package hieroglyph
 
 import rudiments.*
 import kaleidoscope.*
-import java.io as ji
+import anticipation.*
 
 import scala.collection.immutable.TreeMap
+
+import java.io as ji
 
 object Unicode:
   import Hieroglyph.*

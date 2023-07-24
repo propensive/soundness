@@ -16,7 +16,7 @@
 
 package hieroglyph
 
-import rudiments.*
+import anticipation.*
 
 package textWidthCalculation:
   given eastAsianScripts: TextWidthCalculator with

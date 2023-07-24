@@ -17,6 +17,7 @@
 package hieroglyph
 
 import rudiments.*
+import anticipation.*
 import digression.*
 import spectacular.*
 
