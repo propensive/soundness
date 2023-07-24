@@ -18,6 +18,7 @@ package xylophone
 
 import wisteria.*
 import rudiments.*
+import anticipation.*
 import gossamer.*
 import spectacular.*
 
@@ -29,7 +30,7 @@ object XmlReader extends Derivation[XmlReader]:
   given txt: XmlReader[Text] =
     childElements(_).collect { case Ast.Textual(txt) => txt }.headOption
   
-  given [T](using decoder: Decoder[T]): XmlReader[T] =
+  given [T](using decoder: Decoder[T]): XmlReader[T] = value => (value: @unchecked) match
     case Ast.Element(_, Ast.Textual(text) +: _, _, _) +: _ => Some(text.decodeAs[T])
   
   def join[T](caseClass: CaseClass[XmlReader, T]): XmlReader[T] = seq =>

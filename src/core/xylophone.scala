@@ -19,7 +19,6 @@ package xylophone
 import rudiments.*
 import gossamer.*
 import hieroglyph.*
-import turbulence.*
 import spectacular.*
 import anticipation.*
 
