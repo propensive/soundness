@@ -20,8 +20,7 @@ stylesheets.
 
 ## Availability
 
-Cataclysm has not yet been published as a binary. It is currently waiting for the
-final release of Scala 3.3.
+Cataclysm has not yet been published as a binary.
 
 ## Getting Started
 
@@ -205,7 +204,7 @@ be used, but caution should be taken if there is a mismatch between the
 project's stability level and the importance of your own project.
 
 Cataclysm is designed to be _small_. Its entire source code currently consists
-of 704 lines of code.
+of 681 lines of code.
 
 ## Building
 
