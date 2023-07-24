@@ -22,6 +22,7 @@ import java.security as js, js.spec.*
 import rudiments.*
 import gossamer.*
 import spectacular.*
+import anticipation.*
 import hieroglyph.*
 
 import java.nio.*, charset.*
