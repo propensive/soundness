@@ -17,6 +17,7 @@
 package digression
 
 import rudiments.*
+import anticipation.*
 
 import language.experimental.captureChecking
 
@@ -207,12 +208,14 @@ object StackTrace:
       val length = fullClassName.s.length - className.s.length - 1
       Text(fullClassName.s.substring(0, 0.max(length)).nn)
     
-    val message = Text(Option(exception.getMessage).map(_.nn).getOrElse(""))
+    val message: Message = exception match
+      case error: Error => error.message
+      case other        => Message(Text(Option(exception.getMessage).map(_.nn).getOrElse("")))
     
     StackTrace(component, className, message, frames, cause.map(_.nn).map(StackTrace(_)).maybe)
 
 case class StackTrace
-    (component: Text, className: Text, message: Text, frames: List[StackTrace.Frame],
+    (component: Text, className: Text, message: Message, frames: List[StackTrace.Frame],
         cause: Maybe[StackTrace]):
   def crop(cutClassName: Text, cutMethod: Text): StackTrace =
     val frames2 = frames.takeWhile { f => f.method.className != cutClassName || f.method.method != cutMethod }

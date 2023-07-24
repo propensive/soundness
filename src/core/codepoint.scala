@@ -17,6 +17,7 @@
 package digression
 
 import rudiments.*
+import anticipation.*
 
 import scala.quoted.*
 
