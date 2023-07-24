@@ -16,6 +16,8 @@
 
 package rudiments
 
+import anticipation.*
+
 object Printable:
   given text: Printable[Text] = identity(_)
 

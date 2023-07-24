@@ -16,9 +16,51 @@
 
 package rudiments
 
+import symbolism.*
+import anticipation.*
+
 import scala.quoted.*
 
 object Rudiments:
+  opaque type ByteSize = Long
+
+  @annotation.targetName("And")
+  object `&`:
+    def unapply[ValueType](value: ValueType): Some[(ValueType, ValueType)] = Some((value, value))
+
+  object ByteSize:
+    def apply(long: Long): ByteSize = long
+    given GenericHttpRequestParam["content-length", ByteSize] = _.long.toString
+    given Ordering[ByteSize] = Ordering.Long.on(_.long)
+    given AsMessage[ByteSize] = byteSize => Message(byteSize.text)
+
+    given add: ClosedOperator["+", ByteSize] = _ + _
+    given subtract: ClosedOperator["-", ByteSize] = _ - _
+    
+    given multiply: Operator["*", ByteSize, Int] with
+      type Result = ByteSize
+      inline def apply(inline left: ByteSize, inline right: Int): ByteSize = left*right
+
+    given divide: Operator["/", ByteSize, Int] with
+      type Result = ByteSize
+      inline def apply(inline left: ByteSize, inline right: Int): ByteSize = left/right
+
+    extension (bs: ByteSize)
+      def long: Long = bs
+      def text: Text = (bs.toString+" bytes").tt
+
+      @targetName("gt")
+      infix def >(that: ByteSize): Boolean = bs > that
+
+      @targetName("lt")
+      infix def <(that: ByteSize): Boolean = bs < that
+
+      @targetName("lte")
+      infix def <=(that: ByteSize): Boolean = bs <= that
+
+      @targetName("gte")
+      infix def >=(that: ByteSize): Boolean = bs >= that
+
   def inequality
       (expr: Expr[Boolean], bound: Expr[Int | Double | Char | Byte | Short | Long | Float],
           strict: Expr[Boolean], greaterThan: Expr[Boolean])
@@ -122,6 +164,8 @@ object Rudiments:
     val bytes = nibbles3.grouped(2).map(Integer.parseInt(_, 16).toByte).to(List)
 
     '{IArray.from(${Expr(bytes)})}
+
+export Rudiments.ByteSize
 
 extension (inline context: StringContext)
   transparent inline def bin(): AnyVal = ${Rudiments.bin('context)}

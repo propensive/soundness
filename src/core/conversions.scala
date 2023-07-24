@@ -16,6 +16,8 @@
 
 package rudiments
 
+import anticipation.*
+
 import language.experimental.captureChecking
 
 case class IncompatibleTypeError() extends Error(msg"the value is not compatible")

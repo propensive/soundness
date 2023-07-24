@@ -16,6 +16,8 @@
 
 package rudiments
 
+import anticipation.*
+
 import scala.compiletime.*
 
 import language.experimental.captureChecking

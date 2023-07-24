@@ -16,12 +16,13 @@
 
 package rudiments
 
-import language.dynamics
+import anticipation.*
 
 import scala.deriving.*
 
 import java.util.concurrent.atomic as juca
 
+import language.dynamics
 import language.experimental.captureChecking
 
 type Nat = Int & Singleton
@@ -58,12 +59,7 @@ case class Counter(first: Int = 0):
   private val atomicInt: juca.AtomicInteger = juca.AtomicInteger(first)
   def apply(): Int = atomicInt.incrementAndGet()
 
-object AndExtractor:
-  @annotation.targetName("And")
-  object `&`:
-    def unapply[ValueType](value: ValueType): Some[(ValueType, ValueType)] = Some((value, value))
-
-export AndExtractor.&
+export Rudiments.&
 
 extension [ProductType <: Product](product: ProductType)(using mirror: Mirror.ProductOf[ProductType])
   def tuple: mirror.MirroredElemTypes = Tuple.fromProductTyped(product)

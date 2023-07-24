@@ -16,6 +16,8 @@
 
 package rudiments
 
+import anticipation.*
+
 import java.util as ju
 
 import language.experimental.captureChecking
