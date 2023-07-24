@@ -28,6 +28,7 @@ import spectacular.*
 import contextual.*
 import kaleidoscope.*
 import gossamer.*
+import symbolism.*
 import anticipation.*
 
 import scala.compiletime.*
@@ -41,6 +42,10 @@ import java.nio.channels as jnc
 import language.experimental.captureChecking
 
 object Path:
+  
+  inline given add(using path: CanThrow[PathError], followable: Followable[Link, Forbidden, ?, ?]): Operator["+", Path, Link] with
+    type Result = Path
+    def apply(left: Path, right: Link): Path = left.append(right)
   
   given Insertion[Sh.Params, Path] = path => Sh.Params(path.fullname)
   
@@ -75,7 +80,19 @@ object Path:
   inline given decoder(using CanThrow[PathError]): Decoder[Path] = new Decoder[Path]:
     def decode(text: Text): Path = Reachable.decode(text)
 
-trait Link
+object Link:
+  given followable(using creator: PathCreator[Link, Path.Forbidden, Int]) : Followable[Link, Path.Forbidden, "..", "."] =
+    new Followable[Link, Path.Forbidden, "..", "."]:
+      val separators: Set[Char] = Set('\\')
+      def separator(path: Link): Text = t"\\"
+      def ascent(path: Link): Int = path.ascent
+      def descent(path: Link): List[PathName[Path.Forbidden]] = path.descent
+      def make(ascent: Int, descent: List[PathName[Path.Forbidden]]): Link = creator.path(ascent, descent)
+
+  given creator: PathCreator[Link, Path.Forbidden, Int] with
+    def path(ascent: Int, descent: List[PathName[Path.Forbidden]]): Link = Unix.SafeLink(ascent, descent)
+
+sealed trait Link
 
 object Windows:
   type Forbidden = ".*[\\cA-\\cZ].*" | "(CON|PRN|AUX|NUL|COM[1-9]|LPT[1-9])(\\.*)?" |
@@ -126,6 +143,9 @@ object Windows:
     inline def /(name: Text): Path throws PathError = Path(this, List(PathName(name)))
   
   case class Link(ascent: Int, descent: List[PathName[Forbidden]]) extends galilei.Link
+  
+  class SafeLink(val safeAscent: Int, val safeDescent: List[PathName[galilei.Path.Forbidden]])
+  extends Link(safeAscent, safeDescent.map(_.widen[Forbidden]))
 
   sealed trait Inode extends galilei.Inode
 
@@ -177,6 +197,9 @@ object Unix:
       def descent(path: Link): List[PathName[Forbidden]] = path.descent
   
   case class Link(ascent: Int, descent: List[PathName[Forbidden]]) extends galilei.Link
+  
+  class SafeLink(val safeAscent: Int, val safeDescent: List[PathName[galilei.Path.Forbidden]])
+  extends Link(safeAscent, safeDescent.map(_.widen[Forbidden]))
       
   sealed trait Inode extends galilei.Inode
 
@@ -271,6 +294,7 @@ trait Path:
   def wipe()(using deleteRecursively: DeleteRecursively)(using io: CanThrow[IoError]): Path =
     deleteRecursively.conditionally(this):
       jnf.Files.deleteIfExists(java)
+    
     this
     
   def inodeType
