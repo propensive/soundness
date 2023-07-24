@@ -17,6 +17,7 @@
 package acyclicity
 
 import rudiments.*
+import anticipation.*
 
 object Dag:
   @targetName("build")
