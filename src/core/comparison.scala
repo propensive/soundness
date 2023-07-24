@@ -25,6 +25,7 @@ import dendrology.*
 import escritoire.*
 import spectacular.*
 import hieroglyph.*
+import anticipation.*
 
 import scala.deriving.*
 import scala.compiletime.*
