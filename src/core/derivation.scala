@@ -18,6 +18,7 @@ package cellulose
 
 import rudiments.*
 import spectacular.*
+import anticipation.*
 import gossamer.*
 import wisteria.*
 

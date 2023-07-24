@@ -19,6 +19,7 @@ package cellulose
 import rudiments.*
 import digression.*
 import gossamer.*
+import anticipation.*
 import turbulence.*
 
 import language.experimental.captureChecking

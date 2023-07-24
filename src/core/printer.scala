@@ -17,6 +17,7 @@
 package cellulose
 
 import rudiments.*
+import anticipation.*
 import gossamer.*
 
 import java.io as ji

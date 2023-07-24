@@ -19,6 +19,7 @@ package cellulose
 import gossamer.*
 import eucalyptus.*
 import rudiments.*
+import anticipation.*
 import spectacular.*, booleanStyles.trueFalse
 import digression.*
 import contextual.*

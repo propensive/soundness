@@ -18,6 +18,7 @@ package cellulose
 
 import rudiments.*
 import gossamer.*
+import anticipation.*
 import kaleidoscope.*
 import spectacular.*
 import digression.*
