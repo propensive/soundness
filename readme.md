@@ -23,8 +23,7 @@ make logs easier to read.
 
 ## Availability
 
-Eucalyptus has not yet been published as a binary. It is currently waiting for the
-final release of Scala 3.3.
+Eucalyptus has not yet been published as a binary.
 
 ## Getting Started
 
