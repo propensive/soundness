@@ -18,6 +18,8 @@ package probably
 
 import rudiments.*
 import digression.*
+import symbolism.*
+import anticipation.*
 import gossamer.*, defaultTextTypes.output
 import chiaroscuro.*
 import ambience.*

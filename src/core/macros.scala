@@ -17,6 +17,7 @@
 package probably
 
 import gossamer.*
+import anticipation.*
 import rudiments.*
 import chiaroscuro.*
 import spectacular.*

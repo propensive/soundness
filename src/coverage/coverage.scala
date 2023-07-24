@@ -18,6 +18,7 @@ package probably
 
 import rudiments.*
 import gossamer.*
+import anticipation.*
 import digression.*
 
 import scala.runtime.coverage.*

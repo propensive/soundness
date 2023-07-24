@@ -16,10 +16,10 @@
 
 package probably
 
-import rudiments.*
 import digression.*
 import escapade.*
 import turbulence.*
+import anticipation.*
 import ambience.*, environments.system
 import hieroglyph.*, textWidthCalculation.uniform
 

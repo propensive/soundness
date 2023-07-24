@@ -18,6 +18,7 @@ package probably
 
 import eucalyptus.*
 import gossamer.*
+import anticipation.*
 import rudiments.*
 import digression.*
 import spectacular.*
