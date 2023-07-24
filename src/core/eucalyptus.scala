@@ -19,6 +19,7 @@ package eucalyptus
 import gossamer.*
 import escapade.*
 import rudiments.*
+import anticipation.*
 import digression.*
 import parasite.*
 import turbulence.*
