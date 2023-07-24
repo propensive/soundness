@@ -23,8 +23,7 @@ plus the means to generate DOT for input to GraphViz.
 
 ## Availability
 
-Acyclicity has not yet been published as a binary. It is currently waiting for the
-final release of Scala 3.3.
+Acyclicity has not yet been published as a binary.
 
 ## Getting Started
 
