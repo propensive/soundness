@@ -19,6 +19,7 @@ package aviation
 import rudiments.*
 import spectacular.*
 import digression.*
+import anticipation.*
 import gossamer.*
 import contextual.*
 import quantitative.*
