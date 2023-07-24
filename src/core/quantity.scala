@@ -17,6 +17,7 @@
 package quantitative
 
 import rudiments.*
+import symbolism.*
 import anticipation.*
 
 import scala.quoted.*
@@ -314,7 +315,7 @@ object QuantitativeMacros:
   def multiplyTypeclass
       [LeftType <: Measure: Type, RightType <: Measure: Type]
       (using Quotes)
-      : Expr[Multiply[Quantity[LeftType], Quantity[RightType]]] =
+      : Expr[Operator["*", Quantity[LeftType], Quantity[RightType]]] =
     val left = UnitsMap[LeftType]
     val right = UnitsMap[RightType]
 
@@ -324,7 +325,7 @@ object QuantitativeMacros:
     ((leftNorm*rightNorm).repr.map(_.asType): @unchecked) match
       case Some('[type resultType <: Measure; resultType]) =>
         '{
-          new Multiply[Quantity[LeftType], Quantity[RightType]]:
+          new Operator["*", Quantity[LeftType], Quantity[RightType]]:
             type Result = Quantity[resultType]
             def apply(left: Quantity[LeftType], right: Quantity[RightType]): Quantity[resultType] =
               ${QuantitativeMacros.multiply[LeftType, RightType]('left, 'right, false)}
@@ -381,13 +382,13 @@ object QuantitativeMacros:
   def addTypeclass
       [LeftType <: Measure: Type, RightType <: Measure: Type]
       (using Quotes)
-      : Expr[Add[Quantity[LeftType], Quantity[RightType]]] =
+      : Expr[Operator["+", Quantity[LeftType], Quantity[RightType]]] =
     val (units, _) = normalize(UnitsMap[LeftType], UnitsMap[RightType], '{0.0})
 
     (units.repr.map(_.asType): @unchecked) match
       case Some('[type resultType <: Measure; resultType]) =>
         '{
-          new Add[Quantity[LeftType], Quantity[RightType]]:
+          new Operator["+", Quantity[LeftType], Quantity[RightType]]:
             type Result = Quantity[resultType]
             def apply
                 (left: Quantity[LeftType], right: Quantity[RightType], subtract: Boolean)

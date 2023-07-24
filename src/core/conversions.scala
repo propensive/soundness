@@ -17,6 +17,7 @@
 package quantitative
 
 import rudiments.*
+import anticipation.*
 
 import language.experimental.captureChecking
 

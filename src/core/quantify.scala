@@ -19,6 +19,7 @@ package quantitative
 import gossamer.*
 import rudiments.*
 import anticipation.*
+import symbolism.*
 import spectacular.*
 
 import scala.quoted.*
@@ -353,11 +354,11 @@ object Quantitative:
     erased given [UnitsType <: Measure]: CanEqual[Quantity[UnitsType], Quantity[UnitsType]] = ###
 
     transparent inline given add[LeftType <: Measure, RightType <: Measure]
-        : Add[Quantity[LeftType], Quantity[RightType]] =
+        : Operator["+", Quantity[LeftType], Quantity[RightType]] =
       ${QuantitativeMacros.addTypeclass[LeftType, RightType]}
 
     transparent inline given multiply[LeftType <: Measure, RightType <: Measure]
-        : Multiply[Quantity[LeftType], Quantity[RightType]] =
+        : Operator["*", Quantity[LeftType], Quantity[RightType]] =
       ${QuantitativeMacros.multiplyTypeclass[LeftType, RightType]}
 
     inline def apply[UnitsType <: Measure](value: Double): Quantity[UnitsType] = value

@@ -17,6 +17,7 @@
 package quantitative
 
 import rudiments.*
+import anticipation.*
 import spectacular.*
 
 import scala.quoted.*
