@@ -379,6 +379,24 @@ object QuantitativeMacros:
       case _ =>
         resultValue
 
+  def subtractTypeclass
+      [LeftType <: Measure: Type, RightType <: Measure: Type]
+      (using Quotes)
+      : Expr[Operator["-", Quantity[LeftType], Quantity[RightType]]] =
+    val (units, _) = normalize(UnitsMap[LeftType], UnitsMap[RightType], '{0.0})
+
+    (units.repr.map(_.asType): @unchecked) match
+      case Some('[type resultType <: Measure; resultType]) =>
+        '{
+          new Operator["-", Quantity[LeftType], Quantity[RightType]]:
+            type Result = Quantity[resultType]
+            def apply
+                (left: Quantity[LeftType], right: Quantity[RightType])
+                : Quantity[resultType] =
+              ${QuantitativeMacros.add[LeftType, RightType]('left, 'right, '{true})}
+                  .asInstanceOf[Quantity[resultType]]
+        }
+
   def addTypeclass
       [LeftType <: Measure: Type, RightType <: Measure: Type]
       (using Quotes)
@@ -391,9 +409,9 @@ object QuantitativeMacros:
           new Operator["+", Quantity[LeftType], Quantity[RightType]]:
             type Result = Quantity[resultType]
             def apply
-                (left: Quantity[LeftType], right: Quantity[RightType], subtract: Boolean)
+                (left: Quantity[LeftType], right: Quantity[RightType])
                 : Quantity[resultType] =
-              ${QuantitativeMacros.add[LeftType, RightType]('left, 'right, 'subtract)}
+              ${QuantitativeMacros.add[LeftType, RightType]('left, 'right, '{false})}
                   .asInstanceOf[Quantity[resultType]]
         }
 

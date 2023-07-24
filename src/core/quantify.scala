@@ -356,6 +356,10 @@ object Quantitative:
     transparent inline given add[LeftType <: Measure, RightType <: Measure]
         : Operator["+", Quantity[LeftType], Quantity[RightType]] =
       ${QuantitativeMacros.addTypeclass[LeftType, RightType]}
+    
+    transparent inline given subtract[LeftType <: Measure, RightType <: Measure]
+        : Operator["-", Quantity[LeftType], Quantity[RightType]] =
+      ${QuantitativeMacros.subtractTypeclass[LeftType, RightType]}
 
     transparent inline given multiply[LeftType <: Measure, RightType <: Measure]
         : Operator["*", Quantity[LeftType], Quantity[RightType]] =
