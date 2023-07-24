@@ -20,13 +20,13 @@ import scala.annotation.*
 
 trait Operator[OperatorType <: String & Singleton, -LeftType, -RightType]:
   type Result
-  inline def apply(inline left: LeftType, inline right: RightType): Result
+  def apply(left: LeftType, right: RightType): Result
 
 trait ClosedOperator[OperatorType <: String & Singleton, Type]
 extends Operator[OperatorType, Type, Type]:
   type Result = Type
   def op(left: Type, right: Type): Type
-  inline def apply(inline left: Type, inline right: Type): Type = op(left, right)
+  def apply(left: Type, right: Type): Type = op(left, right)
 
 trait UnaryOperator[OperatorType <: String & Singleton, Type]:
   type Result
