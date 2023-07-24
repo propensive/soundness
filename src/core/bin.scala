@@ -39,11 +39,11 @@ object Rudiments:
     
     given multiply: Operator["*", ByteSize, Int] with
       type Result = ByteSize
-      inline def apply(inline left: ByteSize, inline right: Int): ByteSize = left*right
+      inline def apply(left: ByteSize, right: Int): ByteSize = left*right
 
     given divide: Operator["/", ByteSize, Int] with
       type Result = ByteSize
-      inline def apply(inline left: ByteSize, inline right: Int): ByteSize = left/right
+      inline def apply(left: ByteSize, right: Int): ByteSize = left/right
 
     extension (bs: ByteSize)
       def long: Long = bs
