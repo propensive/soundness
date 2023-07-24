@@ -17,6 +17,7 @@
 package dendrology
 
 import rudiments.*
+import anticipation.*
 
 import language.experimental.captureChecking
 
