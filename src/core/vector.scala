@@ -5,9 +5,7 @@ import anticipation.*
 import spectacular.*
 import gossamer.*
 import hieroglyph.*
-
-import scala.quoted.*
-import scala.reflect.*
+import symbolism.*
 
 object Mosquito:
   opaque type Euclidean[+ValueType, SizeType <: Int] = Tuple
@@ -37,8 +35,9 @@ object Mosquito:
     def cross
         [RightType]
         (right: Euclidean[RightType, 3])
-        (using multiply: Multiply[LeftType, RightType])
-        (using add: Add[multiply.Result, multiply.Result])
+        (using multiply: Operator["*", LeftType, RightType])
+        (using add: Operator["+", multiply.Result, multiply.Result],
+            subtract: Operator["-", multiply.Result, multiply.Result])
         : Euclidean[add.Result, 3] =
       (left(1)*right(2) - left(2)*right(1)) *: (left(2)*right(0) - left(0)*right(2)) *:
           (left(0)*right(1) - left(1)*right(0)) *: EmptyTuple
@@ -51,9 +50,9 @@ object Mosquito:
     def dot
         [RightType]
         (right: Euclidean[RightType, SizeType])
-        (using multiply: Multiply[LeftType, RightType])
+        (using multiply: Operator["*", LeftType, RightType])
         (using size: ValueOf[SizeType])
-        (using add: Add[multiply.Result, multiply.Result])
+        (using add: Operator["+", multiply.Result, multiply.Result])
         (using add.Result =:= multiply.Result)
         : multiply.Result =
       
