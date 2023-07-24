@@ -4,6 +4,7 @@
 target anticipation/all
 
 repo propensive/probably
+repo propensive/symbolism
 
 project anticipation
   module css
@@ -36,7 +37,7 @@ project anticipation
 
   module text
     compiler  scala
-    include   anticipation/http
+    include   anticipation/http symbolism/core
     sources   src/text
 
   module all
