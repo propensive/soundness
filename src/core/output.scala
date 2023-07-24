@@ -20,6 +20,7 @@ import gossamer.*
 import rudiments.*
 import anticipation.*
 import digression.*
+import symbolism.*
 import contextual.*
 import spectacular.*
 
@@ -183,6 +184,7 @@ object Ansi extends Ansi2:
       Output(state.text, state.spans, state.insertions)
 
 object Output:
+  given add: ClosedOperator["+", Output] = _.append(_)
 
   given textual: Textual[Output] with
     type ShowType[-ValueType] = Display[ValueType]
@@ -197,7 +199,7 @@ object Output:
       text.dropChars(start).takeChars(end - start)
     
     def empty: Output = Output.empty
-    def concat(left: Output, right: Output): Output = left+right
+    def concat(left: Output, right: Output): Output = left.append(right)
     def unsafeChar(text: Output, index: Int): Char = text.plain.s.charAt(index)
     def indexOf(text: Output, sub: Text): Int = text.plain.s.indexOf(sub.s)
     
@@ -237,15 +239,17 @@ object Output:
     val text: Text = value.show
     Output(text, TreeMap(CharSpan(0, text.s.length) -> transform))
 
-case class Output(plain: Text, spans: TreeMap[CharSpan, Ansi.Transform] = TreeMap(),
-                        insertions: TreeMap[Int, Text] = TreeMap()):
+case class Output
+    (plain: Text, spans: TreeMap[CharSpan, Ansi.Transform] = TreeMap(),
+        insertions: TreeMap[Int, Text] = TreeMap()):
+  
   def explicit: Text = render.flatMap { ch => if ch.toInt == 27 then t"\\e" else ch.show }
 
   @targetName("add")
-  infix def +(text: Text): Output = Output(t"$plain$text", spans)
+  infix def append(text: Text): Output = Output(t"$plain$text", spans)
 
   @targetName("add2")
-  infix def +(text: Output): Output =
+  infix def append(text: Output): Output =
     val newSpans: TreeMap[CharSpan, Ansi.Transform] = text.spans.map:
       case (span, transform) => (span.shift(plain.length): CharSpan) -> transform
     

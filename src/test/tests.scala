@@ -17,7 +17,6 @@
 package escapade
 
 import probably.*
-import rudiments.*
 import gossamer.*
 
 import escapes.*

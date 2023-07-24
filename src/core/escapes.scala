@@ -17,6 +17,7 @@
 package escapade
 
 import rudiments.*
+import anticipation.*
 import gossamer.*
 
 type Escape = Ansi.Input.Escape
