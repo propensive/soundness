@@ -45,16 +45,15 @@ object Cataclysm:
       case '{($key: k & Label, $value: v)} +: tail =>
         val exp: Expr[PropertyDef[k & Label, v]] = Expr.summon[PropertyDef[k & Label, v]].getOrElse:
           val typeName = TypeRepr.of[v].show
-          fail(s"no valid CSS element ${key.valueOrAbort} taking values of type $typeName exists")
+          fail(msg"no valid CSS element ${key.valueOrAbort} taking values of type $typeName exists")
         
         '{CssProperty(Text($key).uncamel.kebab, $exp.show($value))} :: recur(tail)
       
       case _ =>
         Nil
     
-    properties match
+    (properties: @unchecked) match
       case Varargs(exprs) => '{CssStyle(${Expr.ofSeq(recur(exprs))}*)}
-      case _              => fail("expected varargs")
 
 case class PropertyDef[Name <: Label, -T: ShowProperty]():
   def show(value: T): Text = summon[ShowProperty[T]].show(value)
