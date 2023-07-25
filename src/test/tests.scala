@@ -163,7 +163,7 @@ object Tests extends Suite(t"Dissonance tests"):
   
     val italian = Vector(t"zero", t"uno", t"due", t"tre", t"quattro", t"cinque", t"sei", t"sette")
     val spanish = Vector(t"cero", t"uno", t"dos", t"tres", t"cuatro", t"cinco", t"seis", t"siete")
-    
+
     suite(t"Rdiff tests"):
       val italianToSpanish = test(t"Do a normal diff on Italian/Spanish numbers"):
         diff(italian, spanish)
@@ -192,3 +192,28 @@ object Tests extends Suite(t"Dissonance tests"):
           Ins(4, t"cuatro"), Ins(5, t"cinco"), Sub(6, 6, t"sei", t"seis"),
           Del(7, t"sette"), Ins(7, t"siete")))
       
+    suite(t"Casual diff tests"):
+      test(t"Parse a simple casual diff"):
+        import unsafeExceptions.canThrowAny
+        CasualDiff.parse(t"- remove\n+ insert".cut(t"\n").to(LazyList))
+      .assert(_ == CasualDiff(List(Replace(List(t"remove"), List(t"insert")))))
+
+      test(t"Parse a slightly longer casual diff"):
+        import unsafeExceptions.canThrowAny
+        CasualDiff.parse(t"- remove\n+ insert\n- removal".cut(t"\n").to(LazyList))
+      .assert(_ == CasualDiff(List(Replace(List(t"remove"), List(t"insert")), Replace(List(t"removal"), Nil))))
+      
+      test(t"Parse a longer casual diff"):
+        import unsafeExceptions.canThrowAny
+        CasualDiff.parse(t"- remove 1\n- remove 2\n+ insert 1\n+ insert 2\n- removal".cut(t"\n").to(LazyList))
+      .assert(_ == CasualDiff(List(Replace(List(t"remove 1", t"remove 2"), List(t"insert 1", t"insert 2")), Replace(List(t"removal"), Nil))))
+
+      test(t"Fail to parse a problematic casual diff"):
+        import unsafeExceptions.canThrowAny
+        capture[CasualDiffError](CasualDiff.parse(t"- remove 1\n- remove 2\n insert 1\n+ insert 2\n- removal".cut(t"\n").to(LazyList)))
+      .assert(_ == CasualDiffError(CasualDiffError.Issue.BadLineStart(t" insert 1"), 3))
+      
+      test(t"Fail to parse another problematic casual diff"):
+        import unsafeExceptions.canThrowAny
+        capture[CasualDiffError](CasualDiff.parse(t"+ unsafe start\n- remove 2\n+ insert 1\n+ insert 2\n- removal".cut(t"\n").to(LazyList)))
+      .assert(_ == CasualDiffError(CasualDiffError.Issue.InsertionWithoutDeletion, 1))

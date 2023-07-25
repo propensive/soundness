@@ -175,7 +175,6 @@ case class Diff[ElemType](edits: Edit[ElemType]*):
 
     recur(edits.to(List), 0, 0)
     
-
 case class Chunk
     [ElemType]
     (pos: Int, rpos: Int, dels: List[Del[ElemType]], inss: List[Ins[ElemType]])
@@ -234,4 +233,3 @@ extension (diff: Diff[Text])
       val insSeq = inss.map { ins => Text("> "+ins.value) }
       
       Text(s"$off$char$roff") :: delSeq ::: sep ::: insSeq
-        
