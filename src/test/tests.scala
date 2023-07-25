@@ -19,7 +19,9 @@ package spectacular
 import probably.*
 import rudiments.*
 import gossamer.*
+import anticipation.*
 import spectacular.*
+import symbolism.*
 
 case class Person(name: Text, age: Int)
 
