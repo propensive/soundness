@@ -26,6 +26,7 @@ object Decoder:
   given Decoder[Byte] = text => Integer.parseInt(text.s).toByte
   given Decoder[Short] = text => Integer.parseInt(text.s).toShort
   given Decoder[Long] = text => java.lang.Long.parseLong(text.s)
+  given Decoder[Text] = identity(_)
 
 @capability
 trait Decoder[+ValueType]:
@@ -39,6 +40,7 @@ object Encoder:
   given Encoder[Short] = _.toString.tt
   given Encoder[Long] = _.toString.tt
   given Encoder[Float] = _.toString.tt
+  given Encoder[Text] = identity(_)
 
 @capability
 trait Encoder[-ValueType]:

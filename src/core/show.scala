@@ -215,7 +215,8 @@ object TextConversion:
         else deriveSum[tail, DerivedType](ordinal - 1)
 
   inline given derived
-      [DerivationType](using mirror: Mirror.Of[DerivationType])
+      [DerivationType]
+      (using mirror: Mirror.Of[DerivationType])
       : Debug[DerivationType] =
     inline mirror match
       case given Mirror.ProductOf[DerivationType & Product] => (value: DerivationType) =>
