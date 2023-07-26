@@ -69,7 +69,6 @@ case class DiffParseError(lineNo: Int, line: Text)
 extends Error(msg"could not read the diff at line $lineNo: $line")
 
 object Diff:
-
   def parse(lines: LazyList[Text]): Diff[Text] throws DiffParseError =
     def recur
         (todo: LazyList[Text], line: Int, edits: List[Edit[Text]], pos: Int, rpos: Int, target: Int)
@@ -175,7 +174,7 @@ case class Diff[ElemType](edits: Edit[ElemType]*):
               recur(todo.drop(dels.size + inss.size), pos + dels.length, pos + inss.length)
 
     recur(edits.to(List), 0, 0)
-    
+
 case class Chunk
     [ElemType]
     (pos: Int, rpos: Int, dels: List[Del[ElemType]], inss: List[Ins[ElemType]])
@@ -238,3 +237,30 @@ extension (diff: Diff[Text])
       val insSeq = inss.map { ins => Text("> "+ins.value) }
       
       command :: delSeq ::: sep ::: insSeq
+
+  def casual: CasualDiff =
+    def recur(todo: List[Region[Text]], acc: List[Replace], last: List[Text]): CasualDiff =
+      todo match
+        case Nil                            => CasualDiff(acc.reverse)
+        case Region.Unchanged(pars) :: tail => recur(tail, acc, pars.map(_.value).sift[Text])
+        
+        case Region.Changed(deletions, insertions) :: tail =>
+          val deletions2 = deletions.map(_.value).sift[Text]
+          val prelude = IArray.from(last ++ deletions2)
+          
+          def replace(deletions: List[Text], target: Int): Replace =
+            val index = prelude.indexOfSlice(deletions)
+            if index == target
+            then Replace(deletions, deletions.dropRight(deletions2.length) ++
+                insertions.map(_.value))
+            else
+              def countback(n: Int): Int =
+                if index - n > 0 && prelude(target - n) == prelude(index - n) then countback(n + 1)
+                else n
+              
+              val n = countback(1)
+              replace(prelude.slice(target - n, target).to(List) ++ deletions, target - n)
+
+          recur(tail, replace(deletions2, last.length) :: acc, Nil)
+
+    recur(diff.collate, Nil, Nil)

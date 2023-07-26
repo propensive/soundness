@@ -228,8 +228,3 @@ object Tests extends Suite(t"Dissonance tests"):
         import unsafeExceptions.canThrowAny
         capture[CasualDiffError](CasualDiff.parse(t"- remove 1\n- remove 2\n insert 1\n+ insert 2\n- removal".cut(t"\n").to(LazyList)))
       .assert(_ == CasualDiffError(CasualDiffError.Issue.BadLineStart(t" insert 1"), 3))
-      
-      test(t"Fail to parse another problematic casual diff"):
-        import unsafeExceptions.canThrowAny
-        capture[CasualDiffError](CasualDiff.parse(t"+ unsafe start\n- remove 2\n+ insert 1\n+ insert 2\n- removal".cut(t"\n").to(LazyList)))
-      .assert(_ == CasualDiffError(CasualDiffError.Issue.InsertionWithoutDeletion, 1))

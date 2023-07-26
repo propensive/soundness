@@ -24,14 +24,10 @@ extends Error(msg"the diff could not be read because $issue at line $line")
 
 object CasualDiffError:
   enum Issue:
-    case InsertionWithoutDeletion
     case BadLineStart(content: Text)
     case DoesNotMatch(content: Text)
   
   given AsMessage[Issue] =
-    case Issue.InsertionWithoutDeletion =>
-      msg"an insertion was made without a corresponding deletion"
-    
     case Issue.BadLineStart(content) =>
       msg"the line $content did not begin with either ${"+".tt} or ${"-".tt} and a space"
     
@@ -48,9 +44,7 @@ object CasualDiff:
         : List[Replace] = stream match
       case head #:: tail =>
         if head.s.startsWith("+ ") then
-          if original.isEmpty
-          then throw CasualDiffError(CasualDiffError.Issue.InsertionWithoutDeletion, line)
-          else recur(tail, original, head.s.drop(2).tt :: replacement, done, line + 1)
+          recur(tail, original, head.s.drop(2).tt :: replacement, done, line + 1)
         else if head.s.startsWith("- ") then
           if !replacement.isEmpty
           then
