@@ -24,6 +24,7 @@ import language.experimental.captureChecking
 object Decoder:
   given Decoder[Int] = text => Integer.parseInt(text.s)
   given Decoder[Byte] = text => Integer.parseInt(text.s).toByte
+  given Decoder[Char] = _.s(0)
   given Decoder[Short] = text => Integer.parseInt(text.s).toShort
   given Decoder[Long] = text => java.lang.Long.parseLong(text.s)
   given Decoder[Text] = identity(_)
@@ -35,12 +36,12 @@ trait Decoder[+ValueType]:
 object Encoder:
   given Encoder[Int] = _.toString.tt
   given Encoder[Double] = _.toString.tt
-  given Encoder[Char] = _.toString.tt
   given Encoder[Byte] = _.toString.tt
   given Encoder[Short] = _.toString.tt
   given Encoder[Long] = _.toString.tt
   given Encoder[Float] = _.toString.tt
   given Encoder[Text] = identity(_)
+  given Encoder[Char] = _.toString.tt
 
 @capability
 trait Encoder[-ValueType]:
