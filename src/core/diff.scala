@@ -162,7 +162,7 @@ case class Diff[ElemType](edits: Edit[ElemType]*):
     def recur(todo: List[Edit[ElemType]], pos: Int, rpos: Int): LazyList[Chunk[ElemType]] =
       todo match
         case Nil                         => LazyList()
-        case Par(pos2, rpos2, _) :: tail => recur(tail, pos2, rpos2)
+        case Par(pos2, rpos2, _) :: tail => recur(tail, pos2 + 1, rpos2 + 1)
         
         case _ =>
           val dels = todo.takeWhile(_.is[Del[ElemType]]).collect:
@@ -171,7 +171,8 @@ case class Diff[ElemType](edits: Edit[ElemType]*):
           val inss = todo.drop(dels.length).takeWhile(_.is[Ins[ElemType]]).collect:
             case ins: Ins[ElemType] => ins
           
-          Chunk(pos + 1, rpos + 1, dels, inss) #:: recur(todo.drop(dels.size + inss.size), -1, -1)
+          Chunk(pos, rpos, dels, inss) #::
+              recur(todo.drop(dels.size + inss.size), pos + dels.length, pos + inss.length)
 
     recur(edits.to(List), 0, 0)
     
@@ -225,11 +226,15 @@ def diff
 extension (diff: Diff[Text])
   def serialize: LazyList[Text] = diff.chunks.flatMap:
     case Chunk(left, right, dels, inss) =>
-      val char = if dels.isEmpty then "a" else if inss.isEmpty then "d" else "c"
-      val off = s"${left + 1}${if dels.size == 1 then "" else s",${left + dels.size}"}"
-      val roff = s"${right + 1}${if inss.size == 1 then "" else s",${right + inss.size}"}"
+      def range(start: Int, end: Int): Text = s"$start${if start == end then "" else s",$end"}".tt
+      
+      val command: Text =
+        if dels.isEmpty then s"${left}a${range(right + 1, right + inss.size)}".tt
+        else if inss.isEmpty then s"${range(left + 1, left + dels.size)}d${right}".tt
+        else s"${range(left + 1, left + dels.size)}c${range(right + 1, right + inss.size)}".tt
+
       val delSeq = dels.map { del => Text("< "+del.value) }
-      val sep = if char == "c" then List(Text("---")) else List()
+      val sep = if inss.size > 0 && dels.size > 0 then List(Text("---")) else List()
       val insSeq = inss.map { ins => Text("> "+ins.value) }
       
-      Text(s"$off$char$roff") :: delSeq ::: sep ::: insSeq
+      command :: delSeq ::: sep ::: insSeq

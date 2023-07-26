@@ -147,11 +147,15 @@ object Tests extends Suite(t"Dissonance tests"):
 
       test(t"Serialize a trivial diff"):
         diff(Vector(), Vector(t"a")).serialize.to(List)
-      .assert(_ == List(t"1a1", t"> a"))
+      .assert(_ == List(t"0a1", t"> a"))
+      
+      test(t"Serialize a trivial deletion diff"):
+        diff(Vector(t"a", t"b", t"c", t"d"), Vector(t"a", t"d")).serialize.to(List)
+      .assert(_ == List(t"2,3d1", t"< b", t"< c"))
       
       test(t"Serialize another trivial diff"):
-        diff(Vector(t"a"), Vector(t"")).serialize.to(List)
-      .assert(_ == List(t"1d1", t"< a"))
+        diff(Vector(t"a"), Vector()).serialize.to(List)
+      .assert(_ == List(t"1d0", t"< a"))
 
       test(t"Serialize a simple diff"):
         changes.serialize.to(List)
@@ -160,6 +164,18 @@ object Tests extends Suite(t"Dissonance tests"):
       test(t"Serialize the reverse diff"):
         reverseChanges.serialize.to(List)
       .assert(_ == List(t"2,3c2", t"< quux", t"< bop", t"---", t"> bar"))
+      
+      test(t"Experimental diff"):
+        diff(Vector(t"one"), Vector(t"two")).serialize.to(List)
+      .assert(_ == List(t"1c1", t"< one", t"---", t"> two"))
+      
+      test(t"Experimental diff 2"):
+        diff(Vector(t"zero", t"one"), Vector(t"two")).serialize.to(List)
+      .assert(_ == List(t"1,2c1", t"< zero", t"< one", t"---", t"> two"))
+  
+      test(t"Experimental diff 3"):
+        diff(Vector(t"zero", t"one"), Vector(t"zero", t"two")).serialize.to(List)
+      .assert(_ == List(t"2c2", t"< one", t"---", t"> two"))
   
     val italian = Vector(t"zero", t"uno", t"due", t"tre", t"quattro", t"cinque", t"sei", t"sette")
     val spanish = Vector(t"cero", t"uno", t"dos", t"tres", t"cuatro", t"cinco", t"seis", t"siete")
