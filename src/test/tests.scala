@@ -19,6 +19,7 @@ package dissonance
 import probably.*
 import gossamer.*
 import rudiments.*
+import anticipation.*
 import eucalyptus.*
 
 object Tests extends Suite(t"Dissonance tests"):
@@ -212,19 +213,38 @@ object Tests extends Suite(t"Dissonance tests"):
       test(t"Parse a simple casual diff"):
         import unsafeExceptions.canThrowAny
         CasualDiff.parse(t"- remove\n+ insert".cut(t"\n").to(LazyList))
-      .assert(_ == CasualDiff(List(Replace(List(t"remove"), List(t"insert")))))
+      .assert(_ == CasualDiff(List(Replace(Nil, List(t"remove"), List(t"insert")))))
 
       test(t"Parse a slightly longer casual diff"):
         import unsafeExceptions.canThrowAny
         CasualDiff.parse(t"- remove\n+ insert\n- removal".cut(t"\n").to(LazyList))
-      .assert(_ == CasualDiff(List(Replace(List(t"remove"), List(t"insert")), Replace(List(t"removal"), Nil))))
+      .assert(_ == CasualDiff(List(Replace(Nil, List(t"remove"), List(t"insert")), Replace(Nil, List(t"removal"), Nil))))
       
       test(t"Parse a longer casual diff"):
         import unsafeExceptions.canThrowAny
         CasualDiff.parse(t"- remove 1\n- remove 2\n+ insert 1\n+ insert 2\n- removal".cut(t"\n").to(LazyList))
-      .assert(_ == CasualDiff(List(Replace(List(t"remove 1", t"remove 2"), List(t"insert 1", t"insert 2")), Replace(List(t"removal"), Nil))))
+      .assert(_ == CasualDiff(List(Replace(Nil, List(t"remove 1", t"remove 2"), List(t"insert 1", t"insert 2")), Replace(Nil, List(t"removal"), Nil))))
 
       test(t"Fail to parse a problematic casual diff"):
         import unsafeExceptions.canThrowAny
         capture[CasualDiffError](CasualDiff.parse(t"- remove 1\n- remove 2\n insert 1\n+ insert 2\n- removal".cut(t"\n").to(LazyList)))
       .assert(_ == CasualDiffError(CasualDiffError.Issue.BadLineStart(t" insert 1"), 3))
+    
+    suite(t"Invariance tests"):
+      val values = List(t"alpha", t"beta", t"gamma")
+      
+      def permutations(n: Int): List[List[Text]] =
+        if n == 0 then List(Nil) else
+          val last = permutations(n - 1)
+          for value <- values; perm <- last yield value :: perm
+      
+      def allPermutations(n: Int): List[List[Text]] =
+        if n == 0 then Nil else permutations(n) ++ allPermutations(n - 1)
+      
+      allPermutations(3).map(_.to(Vector)).foreach: perm1 =>
+        allPermutations(3).map(_.to(Vector)).foreach: perm2 =>
+          import unsafeExceptions.canThrowAny
+          val d = diff(perm1, perm2).casual
+          test(t"Check differences"):
+            d.applyTo(perm1).to(Vector)
+          .assert(_ == perm2)

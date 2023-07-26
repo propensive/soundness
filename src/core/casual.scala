@@ -29,37 +29,45 @@ object CasualDiffError:
   
   given AsMessage[Issue] =
     case Issue.BadLineStart(content) =>
-      msg"the line $content did not begin with either ${"+".tt} or ${"-".tt} and a space"
+      msg"the line $content did not begin with either ${"'+ '".tt}, ${"'- '".tt} or ${"'  '".tt}"
     
     case Issue.DoesNotMatch(content) =>
       msg"the line $content could not be found in the document"
 
-case class Replace(original: List[Text], replacement: List[Text])
+case class Replace(context: List[Text], original: List[Text], replacement: List[Text])
 
 object CasualDiff:
   def parse(stream: LazyList[Text]): CasualDiff throws CasualDiffError =
     def recur
-        (stream: LazyList[Text], original: List[Text], replacement: List[Text], done: List[Replace],
-            line: Int)
-        : List[Replace] = stream match
-      case head #:: tail =>
-        if head.s.startsWith("+ ") then
-          recur(tail, original, head.s.drop(2).tt :: replacement, done, line + 1)
-        else if head.s.startsWith("- ") then
-          if !replacement.isEmpty
-          then
-            val replace = Replace(original.reverse, replacement.reverse)
-            recur(tail, List(head.s.drop(2).tt), Nil, replace :: done, line + 1)
-          else recur(tail, head.s.drop(2).tt :: original, Nil, done, line + 1)
-        else throw CasualDiffError(CasualDiffError.Issue.BadLineStart(head), line)
+        (stream: LazyList[Text], context: List[Text], original: List[Text], replacement: List[Text],
+            done: List[Replace], lineNo: Int)
+        : List[Replace] =
       
-      case _ =>
-        (Replace(original.reverse, replacement.reverse) :: done).reverse
+      stream match
+        case head #:: tail =>
+          if head.s.startsWith("  ") then
+            if !original.isEmpty || !replacement.isEmpty
+            then
+              val replace = Replace(context.reverse, original.reverse, replacement.reverse)
+              recur(tail, List(head.s.drop(2).tt), Nil, Nil, replace :: done, lineNo + 1)
+            else recur(tail, head.s.drop(2).tt :: context, Nil, Nil, done, lineNo + 1)
+          else if head.s.startsWith("+ ") then
+            recur(tail, context, original, head.s.drop(2).tt :: replacement, done, lineNo + 1)
+          else if head.s.startsWith("- ") then
+            if !replacement.isEmpty
+            then
+              val replace = Replace(context.reverse, original.reverse, replacement.reverse)
+              recur(tail, Nil, List(head.s.drop(2).tt), Nil, replace :: done, lineNo + 1)
+            else recur(tail, Nil, head.s.drop(2).tt :: original, Nil, done, lineNo + 1)
+          else throw CasualDiffError(CasualDiffError.Issue.BadLineStart(head), lineNo)
+        
+        case _ =>
+          (Replace(context.reverse, original.reverse, replacement.reverse) :: done).reverse
 
-    CasualDiff(recur(stream, Nil, Nil, Nil, 1))
+    CasualDiff(recur(stream, Nil, Nil, Nil, Nil, 1))
 
 case class CasualDiff(replacements: List[Replace]):
-  def apply(original: LazyList[Text]): LazyList[Text] throws CasualDiffError =
+  def applyTo(original: Iterable[Text]): LazyList[Text] throws CasualDiffError =
     def recur
         (stream: LazyList[Text], focus: List[Text], todo: List[Replace], lineNo: Int)
         : LazyList[Text] =
@@ -67,9 +75,9 @@ case class CasualDiff(replacements: List[Replace]):
         case Nil =>
           LazyList()
           
-        case Replace(original, replacement) :: tail => focus match
+        case Replace(Nil, original, replacement) :: tail => focus match
           case Nil => tail match
-            case Replace(next, _) :: tail =>
+            case Replace(context, next, _) :: tail =>
               val lineNo2 = lineNo + original.length + replacement.length
               replacement.to(LazyList) #::: recur(stream, next, todo.tail, lineNo2)
             
@@ -85,6 +93,18 @@ case class CasualDiff(replacements: List[Replace]):
             case _ =>
               val lineNo2 = lineNo + original.length - focus.length
               throw CasualDiffError(CasualDiffError.Issue.DoesNotMatch(line), lineNo2)
+        
+        case Replace(line :: rest, original, replacement) :: todoTail => stream match
+          case head #:: tail =>
+            head #:: {
+              if head != line then recur(tail, focus, todo, lineNo + 1)
+              else recur(tail, focus, Replace(rest, original, replacement) :: todoTail, lineNo + 1)
+            }
     
-    if replacements.isEmpty then original
-    else recur(original, replacements.head.original, replacements, 1)
+    if replacements.isEmpty then original.to(LazyList)
+    else recur(original.to(LazyList), replacements.head.original, replacements, 1)
+  
+  def serialize: LazyList[Text] = replacements.to(LazyList).flatMap:
+    case Replace(context, original, replacement) =>
+      (context.to(LazyList).map("  "+_) #::: original.to(LazyList).map("- "+_) #:::
+          replacement.to(LazyList).map("+ "+_)).map(_.tt)
