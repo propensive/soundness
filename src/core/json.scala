@@ -34,10 +34,10 @@ import language.experimental.captureChecking
 import unsafeExceptions.canThrowAny
 import JsonAccessError.Issue
 
-erased trait DynamicJsonAccess
+erased trait DynamicJsonEnabler
 
 object dynamicJsonAccess:
-  erased given enabled: DynamicJsonAccess = ###
+  erased given enabled: DynamicJsonEnabler = ###
 
 given (using js: JsonPrinter): Show[JsonAst] = js.serialize(_)
 
@@ -339,9 +339,9 @@ trait JsonReader[ValueType]:
 class Json(rootValue: Any) extends Dynamic derives CanEqual:
   def root: JsonAst = rootValue.asInstanceOf[JsonAst]
   def apply(idx: Int): Json throws JsonAccessError = Json(root.array(idx))
-  def selectDynamic(field: String)(using erased DynamicJsonAccess): Json = apply(Text(field))
+  def selectDynamic(field: String)(using erased DynamicJsonEnabler): Json = apply(Text(field))
 
-  def applyDynamic(field: String)(idx: Int)(using erased DynamicJsonAccess): Json =
+  def applyDynamic(field: String)(idx: Int)(using erased DynamicJsonEnabler): Json =
     apply(Text(field))(idx)
   
   def apply(field: Text): Json throws JsonAccessError =
