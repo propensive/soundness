@@ -153,7 +153,7 @@ extends Indexed:
     copy(children = recur(children, input.children))
 
 
-  def as[T](using codec: Codec[T]): T throws CodlReadError = codec.deserialize(List(this))
+  def as[T](using deserializer: CodlDeserializer[T]): T throws CodlReadError = deserializer.deserialize(List(this))
   def uncommented: CodlDoc = CodlDoc(children.map(_.uncommented), schema, margin, body)
   def untyped: CodlDoc = CodlDoc(children.map(_.untyped), CodlSchema.Free, margin, body)
   def wiped = uncommented.untyped
@@ -169,8 +169,8 @@ extends Indexed:
     writer.toString().show
 
 object Data:
-  given [T: Codec]: Insertion[List[Data], T] =
-    value => summon[Codec[T]].serialize(value).head.to(List).map(_.data).collect { case data: Data => data }
+  given [T: CodlSerializer]: Insertion[List[Data], T] =
+    value => summon[CodlSerializer[T]].serialize(value).head.to(List).map(_.data).collect { case data: Data => data }
 
   given debug: Debug[Data] = data => t"Data(${data.key}, ${data.children.length})"
 

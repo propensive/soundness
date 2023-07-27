@@ -55,12 +55,12 @@ object CodlToken:
   
 object Codl:
   def read
-      [ValueType: Codec]
+      [ValueType: CodlDeserializer]
       (source: Any)
       (using readable: Readable[source.type, Text], aggregate: CanThrow[AggregateError[CodlError]],
           codlRead: CanThrow[CodlReadError])
       : ValueType^{readable, aggregate} =
-    summon[Codec[ValueType]].schema.parse(readable.read(source)).as[ValueType]
+    summon[CodlDeserializer[ValueType]].schema.parse(readable.read(source)).as[ValueType]
   
   def parse
       [SourceType]

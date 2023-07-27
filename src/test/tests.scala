@@ -21,6 +21,7 @@ import gossamer.*
 import rudiments.*
 import digression.*
 import spectacular.*
+import anticipation.*
 import turbulence.*, basicIo.jvm
 import hieroglyph.*, charEncoders.utf8
 import eucalyptus.*, logging.stdout
@@ -942,8 +943,83 @@ object Tests extends Suite(t"CoDL tests"):
         roundtrip(doc5)
       .assert(_ == doc5.uncommented)
 
+    suite(t"Serialization tests"):
+
+      test(t"Serialize a node"):
+        CodlDoc(CodlNode(Data(t"root"))).serialize
+      .assert(_ == t"root\n")
+
+      test(t"Serialize a node and a child"):
+        CodlDoc(CodlNode(Data(t"root", IArray(CodlNode(Data(t"child")))))).serialize
+      .assert(_ == t"root\n  child\n")
+      
+      test(t"Serialize a node and a child with params layout"):
+        CodlDoc(CodlNode(Data(t"root", IArray(CodlNode(Data(t"child"))), Layout(1, false)))).serialize
+      .assert(_ == t"root child\n")
+      
+      test(t"Serialize a node and a child with block param"):
+        CodlDoc(CodlNode(Data(t"root", IArray(CodlNode(Data(t"child")), CodlNode(Data(t"Hello World"))), Layout(2, true)))).serialize
+      .assert(_ == t"root child\n    Hello World\n")
+      
+      test(t"Serialize a node and a child with multiline block param"):
+        CodlDoc(CodlNode(Data(t"root", IArray(CodlNode(Data(t"child")), CodlNode(Data(t"Hello\nWorld"))), Layout(2, true)))).serialize
+      .assert(_ == t"root child\n    Hello\n    World\n")
+      
+      test(t"Serialize a node and a child with comment"):
+        CodlDoc(CodlNode(Data(t"root", IArray(CodlNode(Data(t"child"), Meta(comments = List(t" comment"))))))).serialize
+      .assert(_ == t"root\n  # comment\n  child\n")
+      
+      test(t"Serialize a node and a child with multiline comment"):
+        CodlDoc(CodlNode(Data(t"root", IArray(CodlNode(Data(t"child"), Meta(comments = List(t" line 1", t" line 2"))))))).serialize
+      .assert(_ == t"root\n  # line 1\n  # line 2\n  child\n")
+      
+      test(t"Serialize a node and a child with multiline comment and blank lines"):
+        CodlDoc(CodlNode(Data(t"root", IArray(CodlNode(Data(t"child"), Meta(blank = 2, comments = List(t" line 1", t" line 2"))))))).serialize
+      .assert(_ == t"root\n\n\n  # line 1\n  # line 2\n  child\n")
+      
+      test(t"Serialize a node and a child with blank lines"):
+        CodlDoc(CodlNode(Data(t"root", IArray(CodlNode(Data(t"child"), Meta(blank = 2)))))).serialize
+      .assert(_ == t"root\n\n\n  child\n")
+      
+      test(t"Serialize a node and a child with a remark"):
+        CodlDoc(CodlNode(Data(t"root", IArray(CodlNode(Data(t"child"), Meta(remark = t"some remark")))))).serialize
+      .assert(_ == t"root\n  child # some remark\n")
     
-    def roundtrip[T: Codec](value: T): T = value.codl.as[T]
+    suite(t"Double-spacing tests"):
+      test(t"Single-space-separated"):
+        read(t"root one two\n").wiped
+      .assert(_ == CodlDoc(CodlNode(t"root")(CodlNode(t"one")(), CodlNode(t"two")())))
+      
+      test(t"Double-space-separated"):
+        read(t"root  one  two\n").wiped
+      .assert(_ == CodlDoc(CodlNode(t"root")(CodlNode(t"one")(), CodlNode(t"two")())))
+      
+      test(t"Short/long spacing"):
+        read(t"root one  two\n").wiped
+      .assert(_ == CodlDoc(CodlNode(t"root")(CodlNode(t"one")(), CodlNode(t"two")())))
+      
+      test(t"Long/short spacing"):
+        read(t"root  one two\n").wiped
+      .assert(_ == CodlDoc(CodlNode(t"root")(CodlNode(t"one two")())))
+      
+      test(t"Long/short/long spacing"):
+        read(t"root  one two  three\n").wiped
+      .assert(_ == CodlDoc(CodlNode(t"root")(CodlNode(t"one two")(), CodlNode(t"three")())))
+      
+      test(t"Short/short/long spacing"):
+        read(t"root one two  three\n").wiped
+      .assert(_ == CodlDoc(CodlNode(t"root")(CodlNode(t"one")(), CodlNode(t"two")(), CodlNode(t"three")())))
+      
+      test(t"Short/Long/short spacing"):
+        read(t"root one  two three\n").wiped
+      .assert(_ == CodlDoc(CodlNode(t"root")(CodlNode(t"one")(), CodlNode(t"two three")())))
+      
+      test(t"Short/Long/short/Long/short spacing"):
+        read(t"root one  two three  four five\n").wiped
+      .assert(_ == CodlDoc(CodlNode(t"root")(CodlNode(t"one")(), CodlNode(t"two three")(), CodlNode(t"four five")())))
+      
+    
+    def roundtrip[T: CodlSerializer: CodlDeserializer](value: T): T = value.codl.as[T]
 
     suite(t"Generic Derivation tests"):
 
@@ -1025,10 +1101,12 @@ object Tests extends Suite(t"CoDL tests"):
       val complex = Bar(List(Baz(t"a", 2, Unset), Baz(t"c", 6, 'e')), Quux(t"e", List(1, 2, 4)))
       
       test(t"roundtrip a complex case class"):
+        summon[CodlDeserializer[Baz]]
+        summon[CodlDeserializer[List[Baz]]]
         roundtrip(complex)
       .assert(_ == complex)
 
-      def print[T: Codec](value: T): Text =
+      def print[T: CodlDeserializer: CodlSerializer](value: T): Text =
         val writer = new ji.StringWriter()
         Printer.print(writer, value.codl)
         writer.toString().show
@@ -1072,82 +1150,6 @@ object Tests extends Suite(t"CoDL tests"):
     // //   test(t"Test multiple return value"):
     // //     record.kappa
     // //   .assert(_ == List(t"nine", t"ten", t"eleven"))
-
-    suite(t"Serialization tests"):
-
-      test(t"Serialize a node"):
-        CodlDoc(CodlNode(Data(t"root"))).serialize
-      .assert(_ == t"root\n")
-
-      test(t"Serialize a node and a child"):
-        CodlDoc(CodlNode(Data(t"root", IArray(CodlNode(Data(t"child")))))).serialize
-      .assert(_ == t"root\n  child\n")
-      
-      test(t"Serialize a node and a child with params layout"):
-        CodlDoc(CodlNode(Data(t"root", IArray(CodlNode(Data(t"child"))), Layout(1, false)))).serialize
-      .assert(_ == t"root child\n")
-      
-      test(t"Serialize a node and a child with block param"):
-        CodlDoc(CodlNode(Data(t"root", IArray(CodlNode(Data(t"child")), CodlNode(Data(t"Hello World"))), Layout(2, true)))).serialize
-      .assert(_ == t"root child\n    Hello World\n")
-      
-      test(t"Serialize a node and a child with multiline block param"):
-        CodlDoc(CodlNode(Data(t"root", IArray(CodlNode(Data(t"child")), CodlNode(Data(t"Hello\nWorld"))), Layout(2, true)))).serialize
-      .assert(_ == t"root child\n    Hello\n    World\n")
-      
-      test(t"Serialize a node and a child with comment"):
-        CodlDoc(CodlNode(Data(t"root", IArray(CodlNode(Data(t"child"), Meta(comments = List(t" comment"))))))).serialize
-      .assert(_ == t"root\n  # comment\n  child\n")
-      
-      test(t"Serialize a node and a child with multiline comment"):
-        CodlDoc(CodlNode(Data(t"root", IArray(CodlNode(Data(t"child"), Meta(comments = List(t" line 1", t" line 2"))))))).serialize
-      .assert(_ == t"root\n  # line 1\n  # line 2\n  child\n")
-      
-      test(t"Serialize a node and a child with multiline comment and blank lines"):
-        CodlDoc(CodlNode(Data(t"root", IArray(CodlNode(Data(t"child"), Meta(blank = 2, comments = List(t" line 1", t" line 2"))))))).serialize
-      .assert(_ == t"root\n\n\n  # line 1\n  # line 2\n  child\n")
-      
-      test(t"Serialize a node and a child with blank lines"):
-        CodlDoc(CodlNode(Data(t"root", IArray(CodlNode(Data(t"child"), Meta(blank = 2)))))).serialize
-      .assert(_ == t"root\n\n\n  child\n")
-      
-      test(t"Serialize a node and a child with a remark"):
-        CodlDoc(CodlNode(Data(t"root", IArray(CodlNode(Data(t"child"), Meta(remark = t"some remark")))))).serialize
-      .assert(_ == t"root\n  child # some remark\n")
-    
-    suite(t"Double-spacing tests"):
-      test(t"Single-space-separated"):
-        read(t"root one two\n").wiped
-      .assert(_ == CodlDoc(CodlNode(t"root")(CodlNode(t"one")(), CodlNode(t"two")())))
-      
-      test(t"Double-space-separated"):
-        read(t"root  one  two\n").wiped
-      .assert(_ == CodlDoc(CodlNode(t"root")(CodlNode(t"one")(), CodlNode(t"two")())))
-      
-      test(t"Short/long spacing"):
-        read(t"root one  two\n").wiped
-      .assert(_ == CodlDoc(CodlNode(t"root")(CodlNode(t"one")(), CodlNode(t"two")())))
-      
-      test(t"Long/short spacing"):
-        read(t"root  one two\n").wiped
-      .assert(_ == CodlDoc(CodlNode(t"root")(CodlNode(t"one two")())))
-      
-      test(t"Long/short/long spacing"):
-        read(t"root  one two  three\n").wiped
-      .assert(_ == CodlDoc(CodlNode(t"root")(CodlNode(t"one two")(), CodlNode(t"three")())))
-      
-      test(t"Short/short/long spacing"):
-        read(t"root one two  three\n").wiped
-      .assert(_ == CodlDoc(CodlNode(t"root")(CodlNode(t"one")(), CodlNode(t"two")(), CodlNode(t"three")())))
-      
-      test(t"Short/Long/short spacing"):
-        read(t"root one  two three\n").wiped
-      .assert(_ == CodlDoc(CodlNode(t"root")(CodlNode(t"one")(), CodlNode(t"two three")())))
-      
-      test(t"Short/Long/short/Long/short spacing"):
-        read(t"root one  two three  four five\n").wiped
-      .assert(_ == CodlDoc(CodlNode(t"root")(CodlNode(t"one")(), CodlNode(t"two three")(), CodlNode(t"four five")())))
-      
 
     // suite(t"Interpolation suite"):
 
