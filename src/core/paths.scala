@@ -91,6 +91,8 @@ object Link:
 
   given creator: PathCreator[Link, Path.Forbidden, Int] with
     def path(ascent: Int, descent: List[PathName[Path.Forbidden]]): Link = Unix.SafeLink(ascent, descent)
+  
+  inline given decoder(using CanThrow[PathError]): Decoder[Link] = Followable.decoder[Link]
 
 sealed trait Link
 
@@ -143,6 +145,10 @@ object Windows:
     inline def /(name: Text): Path throws PathError = Path(this, List(PathName(name)))
   
   case class Link(ascent: Int, descent: List[PathName[Forbidden]]) extends galilei.Link
+  
+  object SafeLink:
+    inline given decoder(using PathCreator[SafeLink, Forbidden, Int], CanThrow[PathError]): Decoder[SafeLink] =
+      Followable.decoder[SafeLink]
   
   class SafeLink(val safeAscent: Int, val safeDescent: List[PathName[galilei.Path.Forbidden]])
   extends Link(safeAscent, safeDescent.map(_.widen[Forbidden]))
@@ -198,6 +204,10 @@ object Unix:
   
   case class Link(ascent: Int, descent: List[PathName[Forbidden]]) extends galilei.Link
   
+  object SafeLink:
+    inline given decoder(using PathCreator[SafeLink, Forbidden, Int], CanThrow[PathError]): Decoder[SafeLink] =
+      Followable.decoder[SafeLink]
+
   class SafeLink(val safeAscent: Int, val safeDescent: List[PathName[galilei.Path.Forbidden]])
   extends Link(safeAscent, safeDescent.map(_.widen[Forbidden]))
       
