@@ -70,9 +70,10 @@ object Dates:
         : Date throws InvalidDateError =
       cal.julianDay(year, month, day)
 
-    //given (using CanThrow[InvalidDateError]): Canonical[Date] = Canonical(parse(_), _.show)
+    given decoder(using CanThrow[InvalidDateError]): Decoder[Date] = parse(_)
+    given encoder: Encoder[Date] = _.show
   
-    given Ordering[Date] = Ordering.Int
+    given ordering: Ordering[Date] = Ordering.Int
     
     given Show[Date] = d =>
       given RomanCalendar = calendars.gregorian
