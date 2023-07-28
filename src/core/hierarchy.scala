@@ -85,11 +85,7 @@ extension
     [PathType <: Matchable, LinkType <: Matchable, NameType <: Label]
     (left: LinkType)
     (using followable: Followable[LinkType, NameType, ?, ?])
-  
-  def ascent: Int =
-    followable.ascent(left)
-  
-
+  def ascent: Int = followable.ascent(left)
 
 extension
     [PathType <: Matchable, LinkType <: Matchable, NameType <: Label, RootType]
@@ -245,8 +241,8 @@ object Followable:
       [LinkType <: Matchable]
       (using path: CanThrow[PathError])
       [NameType <: Label, ParentRefType <: Label, SelfRefType <: Label]
-      (using followable: Followable[LinkType, NameType, ParentRefType, SelfRefType],
-          creator: PathCreator[LinkType, NameType, Int]): Decoder[LinkType] =
+      (using followable: Followable[LinkType, NameType, ParentRefType, SelfRefType])
+      (using creator: PathCreator[LinkType, NameType, Int]): Decoder[LinkType] =
     new Decoder[LinkType]:
       def decode(text: Text): LinkType =
         import followable.*
@@ -265,7 +261,6 @@ object Followable:
             creator.path(ascent, names.map(PathName(_)))
         
         if text == selfRef then creator.path(0, Nil) else recur(text)
-    
 
 @capability  
 trait Followable

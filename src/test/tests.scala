@@ -33,7 +33,7 @@ object Example:
   object TestPath:
     import unsafeExceptions.canThrowAny
 
-    inline given Decoder[TestPath] = Reachable.decode[TestPath](_)
+    given Decoder[TestPath] = Reachable.decode[TestPath](_)
     given pathCreator: PathCreator[TestPath, Forbidden, Drive] = TestPath(_, _)
     //inline given add: Operator["+", TestPath, TestLink] = Followable.add2[TestPath, TestLink, Forbidden, Drive]
     given Show[TestPath] = _.render
