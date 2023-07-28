@@ -52,7 +52,8 @@ type Md = Markdown[Markdown.Ast.Block]
 
 object Markdown:
 
-  //given (using CanThrow[MarkdownError]): Canonical[InlineMd] = Canonical(parseInline(_), _.serialize)
+  given (using CanThrow[MarkdownError]): Decoder[InlineMd] = parseInline(_)
+  given Encoder[InlineMd] = _.serialize
   given Show[InlineMd] = _.serialize
 
   object Ast:
