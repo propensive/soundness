@@ -38,7 +38,7 @@ object Anticipation:
       private def recur(text: Text, n: Int, acc: Text): Text =
         if n == 0 then acc else recur(text, n - 1, acc+text)
       
-      inline def apply(inline left: Text, inline right: Int): Text =
+      inline def apply(left: Text, right: Int): Text =
         recur(left, right.max(0), "")
 
     given ordering: Ordering[Text] = Ordering.String.on[Text](identity)
