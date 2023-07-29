@@ -53,7 +53,7 @@ case class Message(textParts: List[Text], subs: List[Message] = Nil):
     recur(initial, textParts, subs, 0)
 
   def text: Text = unwrap(fold[String]("") { (acc, next, level) => acc+next })
-  
+
   def richText: Text = unwrap:
     fold[String](""): (acc, next, level) =>
       if next.s.isEmpty then acc else level match
@@ -98,11 +98,14 @@ object Mistake:
 case class Mistake(message: Message) extends java.lang.Error(message.text.s)
 
 object AsMessage:
-  given AsMessage[Text] = Message(_)
-  given AsMessage[String] = string => Message(string.tt)
-  given AsMessage[Char] = char => Message(char.toString.tt) // Escape this
-  given AsMessage[Int] = int => Message(int.toString.tt)
-  given AsMessage[Message] = identity(_)
+  given text: AsMessage[Text] = Message(_)
+  given string: AsMessage[String] = string => Message(string.tt)
+  given char: AsMessage[Char] = char => Message(char.toString.tt) // Escape this
+  given int: AsMessage[Int] = int => Message(int.toString.tt)
+  given message: AsMessage[Message] = identity(_)
+
+  given listMessage: AsMessage[List[Message]] = messages =>
+    Message(List.fill(messages.size)("\n - ".tt) ::: List("".tt), messages)
 
 trait AsMessage[-ValueType]:
   def message(value: ValueType): Message
