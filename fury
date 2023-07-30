@@ -4,6 +4,8 @@ target nettlesome/test
 
 repo propensive/probably
 repo propensive/larceny
+repo propensive/escapade
+repo propensive/serpentine
 
 project nettlesome
   module core
@@ -11,10 +13,15 @@ project nettlesome
     sources   src/core
     include   contextual/core gossamer/core
 
+  module url
+    compiler  scala
+    sources   src/url
+    include   contextual/core gossamer/core escapade/core anticipation/http serpentine/core anticipation/url
+
   module test
     compiler  scala
     sources   src/test
-    include   nettlesome/core probably/cli larceny/plugin
+    include   nettlesome/core probably/cli larceny/plugin nettlesome/url
     main      nettlesome.Tests
     coverage  nettlesome/core
 
