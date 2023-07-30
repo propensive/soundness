@@ -20,6 +20,7 @@ import rudiments.*
 import gossamer.*
 import anticipation.*
 import hieroglyph.*
+import symbolism.*
 
 import annotation.targetName
 import language.dynamics
