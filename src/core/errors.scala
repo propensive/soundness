@@ -17,9 +17,8 @@
 package digression
 
 import rudiments.*
-import anticipation.*
 
 import language.experimental.captureChecking
 
 case class AggregateError[ErrorType <: Error](errors: List[ErrorType])
-extends Error(msg"aggregated errors:${Text(errors.map(_.message).mkString("\n", "\n", ""))}")
+extends Error(AsMessage.listMessage.message(errors.map(_.message)))
