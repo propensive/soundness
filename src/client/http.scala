@@ -27,6 +27,7 @@ import eucalyptus.*
 import iridescence.*
 import escapade.*
 import anticipation.*
+import nettlesome.*
 
 import java.net.*
 import java.io.*

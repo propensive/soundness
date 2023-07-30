@@ -18,6 +18,8 @@ package telekinesis
 
 import rudiments.*
 import probably.*
+import anticipation.*
+import nettlesome.*
 import serpentine.*, hierarchies.urls
 import spectacular.*
 import gossamer.*

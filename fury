@@ -4,19 +4,15 @@ repo propensive/gastronomy
 repo propensive/gesticulate
 repo propensive/eucalyptus
 repo propensive/serpentine
-repo propensive/escapade
 repo propensive/wisteria
+repo propensive/nettlesome
 
 target telekinesis/test
 
 project telekinesis
-  module url
-    sources  src/url
-    include  serpentine/core escapade/core anticipation/url
-
   module client
     sources  src/client
-    include  gastronomy/core gesticulate/core telekinesis/url eucalyptus/core hieroglyph/core wisteria/core
+    include  gastronomy/core gesticulate/core eucalyptus/core hieroglyph/core wisteria/core nettlesome/url
 
   module test
     sources  src/test
