@@ -20,6 +20,7 @@ import rudiments.*
 import digression.*
 import gossamer.*
 import spectacular.*
+import symbolism.*
 import eucalyptus.*
 import escapade.*
 import parasite.*
