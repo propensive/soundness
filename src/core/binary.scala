@@ -23,6 +23,8 @@ import anticipation.*
 
 import java.io as ji
 
+import language.experimental.captureChecking
+
 object Bin:
   private def write(out: ji.Writer, number: Int): Unit = out.write((number + 32).toChar)
 

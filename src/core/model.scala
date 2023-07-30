@@ -29,6 +29,7 @@ import chiaroscuro.*
 import java.io as ji
 
 import language.dynamics
+import language.experimental.captureChecking
 
 object CodlNode:
   given Debug[CodlNode] = _.data.option.fold(t"!"): data =>
@@ -243,11 +244,14 @@ trait Indexed extends Dynamic:
   def apply(key: Text): List[CodlNode] = index.get(key).getOrElse(Nil).map(children(_))
 
   def get(key: Text): List[Indexed] = paramIndex.lift(key) match
-    case None      => index.lift(key) match
-      case None       => Nil
-      case Some(idxs) => unsafely(idxs.map(children(_).data.assume))
-    case Some(idx) => List.range(idx, layout.params).map: idx =>
-                        Data(key, IArray(unsafely(children(idx))), Layout.empty, CodlSchema.Free)
+    case None =>
+      index.lift(key) match
+        case None       => Nil
+        case Some(idxs) => idxs.map(children(_).data.avow(using Unsafe))
+    
+    case Some(idx) =>
+      List.range(idx, layout.params).map: idx =>
+        Data(key, IArray(unsafely(children(idx))), Layout.empty, CodlSchema.Free)
 
   def selectDynamic(key: String): List[Data] throws MissingValueError =
     index(key.show).map(children(_).data).collect:

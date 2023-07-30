@@ -16,6 +16,8 @@
 
 package cellulose
 
+import language.experimental.captureChecking
+
 extension (inline ctx: StringContext)
   transparent inline def codl(inline parts: Any*): CodlDoc = ${Codl.Prefix.expand('ctx, 'parts)}
 

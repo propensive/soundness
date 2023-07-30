@@ -30,6 +30,9 @@ import java.io as ji
 
 import unsafeExceptions.canThrowAny
 
+case class User(id: Int, email: Text, privilege: List[Privilege])
+case class Privilege(name: Text, grant: Boolean)
+
 object Tests extends Suite(t"CoDL tests"):
 
   given Realm = Realm(t"tests")
@@ -1080,11 +1083,6 @@ object Tests extends Suite(t"CoDL tests"):
         roundtrip[List[Text]](List(t"hello", t"world"))
       .assert(_ == List(t"hello", t"world"))
       
-      // Not sure how possible it is to make this work
-      // test(t"roundtrip a list of case classes"):
-      //   roundtrip[List[Person]](List(Person(t"Jack", 12), Person(t"Bill", 32)))
-      // .assert(_ == List(Person(t"Jack", 12), Person(t"Bill", 32)))
-      
       case class Foo(alpha: Text, beta: Maybe[Text])
       test(t"roundtrip a case class with an optional parameter"):
         roundtrip(Foo(t"one", t"two"))
@@ -1122,6 +1120,10 @@ object Tests extends Suite(t"CoDL tests"):
       test(t"roundtrip a complex case class "):
         read(print(complex)).as[Bar]
       .assert(_ == complex)
+
+      test(t"Print a case class using positional parameters"):
+        print(User(12, t"user@example.com", List(Privilege(t"read", true), Privilege(t"write", false))))
+      .assert(_ == t"")
       
     // // suite(t"Record tests"):
 
