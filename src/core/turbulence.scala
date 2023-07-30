@@ -18,6 +18,7 @@ package turbulence
 
 import rudiments.*
 import digression.*
+import symbolism.*
 import anticipation.*
 import parasite.*
 import hieroglyph.*
