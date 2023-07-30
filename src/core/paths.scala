@@ -41,17 +41,16 @@ import java.nio.channels as jnc
 
 import language.experimental.captureChecking
 
+type GeneralForbidden = Windows.Forbidden | Unix.Forbidden
+
 object Path:
-  
-  inline given add(using path: CanThrow[PathError], followable: Followable[Link, Forbidden, ?, ?]): Operator["+", Path, Link] with
+  inline given add(using path: CanThrow[PathError], followable: Followable[Link, GeneralForbidden, ?, ?]): Operator["+", Path, Link] with
     type Result = Path
     def apply(left: Path, right: Link): Path = left.append(right)
   
   given Insertion[Sh.Params, Path] = path => Sh.Params(path.fullname)
   
-  type Forbidden = Windows.Forbidden | Unix.Forbidden
-  
-  given reachable: Reachable[Path, Forbidden, Maybe[Windows.Drive]] with
+  given reachable: Reachable[Path, GeneralForbidden, Maybe[Windows.Drive]] with
     def root(path: Path): Maybe[Windows.Drive] = path match
       case path: Unix.SafePath    => Unset
       case path: Windows.SafePath => path.drive
@@ -59,7 +58,7 @@ object Path:
     def prefix(root: Maybe[Windows.Drive]): Text =
       root.mm(Windows.Path.reachable.prefix(_)).or(Unix.Path.reachable.prefix(Unset))
     
-    def descent(path: Path): List[PathName[Forbidden]] = (path: @unchecked) match
+    def descent(path: Path): List[PathName[GeneralForbidden]] = (path: @unchecked) match
       case path: Unix.SafePath    => path.safeDescent
       case path: Windows.SafePath => path.safeDescent
     
@@ -70,8 +69,8 @@ object Path:
   given rootParser: RootParser[Path, Maybe[Windows.Drive]] = text =>
     Windows.Path.rootParser.parse(text).or(Unix.Path.rootParser.parse(text))
   
-  given PathCreator[Path, Forbidden, Maybe[Windows.Drive]] with
-    def path(root: Maybe[Windows.Drive], descent: List[PathName[Forbidden]]) = root match
+  given PathCreator[Path, GeneralForbidden, Maybe[Windows.Drive]] with
+    def path(root: Maybe[Windows.Drive], descent: List[PathName[GeneralForbidden]]) = root match
       case drive@Windows.Drive(_) => Windows.SafePath(drive, descent)
       case _                      => Unix.SafePath(descent)
 
@@ -80,19 +79,73 @@ object Path:
   inline given decoder(using CanThrow[PathError]): Decoder[Path] = new Decoder[Path]:
     def decode(text: Text): Path = Reachable.decode(text)
 
-object Link:
-  given followable(using creator: PathCreator[Link, Path.Forbidden, Int]) : Followable[Link, Path.Forbidden, "..", "."] =
-    new Followable[Link, Path.Forbidden, "..", "."]:
-      val separators: Set[Char] = Set('\\')
-      def separator(path: Link): Text = t"\\"
-      def ascent(path: Link): Int = path.ascent
-      def descent(path: Link): List[PathName[Path.Forbidden]] = path.descent
-      def make(ascent: Int, descent: List[PathName[Path.Forbidden]]): Link = creator.path(ascent, descent)
-
-  given creator: PathCreator[Link, Path.Forbidden, Int] with
-    def path(ascent: Int, descent: List[PathName[Path.Forbidden]]): Link = Unix.SafeLink(ascent, descent)
+trait Path:
+  this: Path =>
   
-  inline given decoder(using CanThrow[PathError]): Decoder[Link] = Followable.decoder[Link]
+  def fullname: Text
+  def name: Text
+  def java: jnf.Path = jnf.Path.of(fullname.s).nn
+  
+  def exists(): Boolean = jnf.Files.exists(java)
+  
+  def wipe()(using deleteRecursively: DeleteRecursively)(using io: CanThrow[IoError]): Path =
+    deleteRecursively.conditionally(this):
+      jnf.Files.deleteIfExists(java)
+    
+    this
+    
+  def inodeType
+      ()(using dereferenceSymlinks: DereferenceSymlinks)(using io: CanThrow[IoError])
+      : InodeType =
+    
+    try jnf.Files.getAttribute(java, "unix:mode", dereferenceSymlinks.options()*) match
+      case mode: Int => (mode & 61440) match
+        case  4096 => InodeType.Fifo
+        case  8192 => InodeType.CharDevice
+        case 16384 => InodeType.Directory
+        case 24576 => InodeType.BlockDevice
+        case 32768 => InodeType.File
+        case 40960 => InodeType.Symlink
+        case 49152 => InodeType.Socket
+        case _     => throw Mistake(msg"an unexpected POSIX mode value was returned")
+    
+    catch
+      case error: UnsupportedOperationException =>
+        throw Mistake(msg"the file attribute unix:mode could not be accessed")
+      
+      case error: ji.FileNotFoundException =>
+        throw IoError(this)
+      
+      case error: ji.IOException =>
+        throw IoError(this)
+
+
+  def as[InodeType <: Inode](using resolver: PathResolver[InodeType, this.type]): InodeType =
+    resolver(this)
+  
+  inline def is
+      [InodeType <: Inode]
+      (using DereferenceSymlinks, CanThrow[IoError])
+      : Boolean =
+    inline erasedValue[InodeType] match
+      case _: Directory   => inodeType() == InodeType.Directory
+      case _: File        => inodeType() == InodeType.File
+      case _: Symlink     => inodeType() == InodeType.Symlink
+      case _: Socket      => inodeType() == InodeType.Socket
+      case _: Fifo        => inodeType() == InodeType.Fifo
+      case _: BlockDevice => inodeType() == InodeType.BlockDevice
+      case _: CharDevice  => inodeType() == InodeType.CharDevice
+  
+  def make[InodeType <: Inode]()(using maker: InodeMaker[InodeType, this.type]): InodeType =
+    maker(this)
+
+object Link:
+  given creator: PathCreator[Link, GeneralForbidden, Int] with
+    def path(ascent: Int, descent: List[PathName[GeneralForbidden]]): SafeLink =
+      SafeLink(ascent, descent)
+  
+  inline given decoder(using CanThrow[PathError]): Decoder[Link] = text =>
+    if text.contains(t"\\") then text.decodeAs[Windows.Link] else text.decodeAs[Unix.Link]
 
 sealed trait Link
 
@@ -122,7 +175,7 @@ object Windows:
     def fullname: Text =
       t"${Path.reachable.prefix(drive)}${descent.reverse.map(_.render).join(t"\\")}"
 
-  class SafePath(drive: Drive, val safeDescent: List[PathName[galilei.Path.Forbidden]])
+  class SafePath(drive: Drive, val safeDescent: List[PathName[GeneralForbidden]])
   extends Path(drive, safeDescent.map(_.widen[Forbidden]))
   
   object Link: 
@@ -133,7 +186,8 @@ object Windows:
       def separator(path: Link): Text = t"\\"
       def ascent(path: Link): Int = path.ascent
       def descent(path: Link): List[PathName[Forbidden]] = path.descent
-      def make(ascent: Int, descent: List[PathName[Forbidden]]): Link = Link(ascent, descent)
+  
+    inline given decoder(using CanThrow[PathError]): Decoder[Link] = Followable.decoder[Link]
 
   case class Drive(letter: Char):
     def name: Text = t"$letter:"
@@ -146,13 +200,6 @@ object Windows:
   
   case class Link(ascent: Int, descent: List[PathName[Forbidden]]) extends galilei.Link
   
-  object SafeLink:
-    inline given decoder(using PathCreator[SafeLink, Forbidden, Int], CanThrow[PathError]): Decoder[SafeLink] =
-      Followable.decoder[SafeLink]
-  
-  class SafeLink(val safeAscent: Int, val safeDescent: List[PathName[galilei.Path.Forbidden]])
-  extends Link(safeAscent, safeDescent.map(_.widen[Forbidden]))
-
   sealed trait Inode extends galilei.Inode
 
 object Unix:
@@ -190,7 +237,7 @@ object Unix:
       t"${Path.reachable.prefix(Unset)}${descent.reverse.map(_.render).join(t"/")}"
   
 
-  class SafePath(val safeDescent: List[PathName[galilei.Path.Forbidden]])
+  class SafePath(val safeDescent: List[PathName[GeneralForbidden]])
   extends Path(safeDescent.map(_.widen[Forbidden]))
 
   object Link:
@@ -201,16 +248,11 @@ object Unix:
       def separator(path: Link): Text = t"/"
       def ascent(path: Link): Int = path.ascent
       def descent(path: Link): List[PathName[Forbidden]] = path.descent
+    
+    inline given decoder(using CanThrow[PathError]): Decoder[Link] = Followable.decoder[Link]
   
   case class Link(ascent: Int, descent: List[PathName[Forbidden]]) extends galilei.Link
   
-  object SafeLink:
-    inline given decoder(using PathCreator[SafeLink, Forbidden, Int], CanThrow[PathError]): Decoder[SafeLink] =
-      Followable.decoder[SafeLink]
-
-  class SafeLink(val safeAscent: Int, val safeDescent: List[PathName[galilei.Path.Forbidden]])
-  extends Link(safeAscent, safeDescent.map(_.widen[Forbidden]))
-      
   sealed trait Inode extends galilei.Inode
 
 case class Volume(name: Text, volumeType: Text)
@@ -292,66 +334,6 @@ sealed trait Inode:
 
     destination
       
-trait Path:
-  this: Path =>
-  
-  def fullname: Text
-  def name: Text
-  def java: jnf.Path = jnf.Path.of(fullname.s).nn
-  
-  def exists(): Boolean = jnf.Files.exists(java)
-  
-  def wipe()(using deleteRecursively: DeleteRecursively)(using io: CanThrow[IoError]): Path =
-    deleteRecursively.conditionally(this):
-      jnf.Files.deleteIfExists(java)
-    
-    this
-    
-  def inodeType
-      ()(using dereferenceSymlinks: DereferenceSymlinks)(using io: CanThrow[IoError])
-      : InodeType =
-    
-    try jnf.Files.getAttribute(java, "unix:mode", dereferenceSymlinks.options()*) match
-      case mode: Int => (mode & 61440) match
-        case  4096 => InodeType.Fifo
-        case  8192 => InodeType.CharDevice
-        case 16384 => InodeType.Directory
-        case 24576 => InodeType.BlockDevice
-        case 32768 => InodeType.File
-        case 40960 => InodeType.Symlink
-        case 49152 => InodeType.Socket
-        case _     => throw Mistake(msg"an unexpected POSIX mode value was returned")
-    
-    catch
-      case error: UnsupportedOperationException =>
-        throw Mistake(msg"the file attribute unix:mode could not be accessed")
-      
-      case error: ji.FileNotFoundException =>
-        throw IoError(this)
-      
-      case error: ji.IOException =>
-        throw IoError(this)
-
-
-  def as[InodeType <: Inode](using resolver: PathResolver[InodeType, this.type]): InodeType =
-    resolver(this)
-  
-  inline def is
-      [InodeType <: Inode]
-      (using DereferenceSymlinks, CanThrow[IoError])
-      : Boolean =
-    inline erasedValue[InodeType] match
-      case _: Directory   => inodeType() == InodeType.Directory
-      case _: File        => inodeType() == InodeType.File
-      case _: Symlink     => inodeType() == InodeType.Symlink
-      case _: Socket      => inodeType() == InodeType.Socket
-      case _: Fifo        => inodeType() == InodeType.Fifo
-      case _: BlockDevice => inodeType() == InodeType.BlockDevice
-      case _: CharDevice  => inodeType() == InodeType.CharDevice
-  
-  def make[InodeType <: Inode]()(using maker: InodeMaker[InodeType, this.type]): InodeType =
-    maker(this)
-  
 object PathResolver:
   given inode
       (using dereferenceSymlinks: DereferenceSymlinks, io: CanThrow[IoError],
@@ -445,7 +427,7 @@ case class Directory(path: Path) extends Unix.Inode, Windows.Inode:
     path / PathName.unsafe(child.getFileName.nn.toString.nn.tt)
     
   @targetName("child")
-  def /(name: PathName[Path.Forbidden]): Path = path / name
+  def /(name: PathName[GeneralForbidden]): Path = path / name
   
   @targetName("child2")
   inline def /(name: Text): Path throws PathError = path / PathName(name)
@@ -496,7 +478,8 @@ trait CreateNonexistent:
   def apply(path: Path)(operation: => Unit): Unit
 
 @capability
-trait WriteSynchronously
+trait WriteSynchronously:
+  def options(): List[jnf.StandardOpenOption]
 
 package filesystemOptions:
   given dereferenceSymlinks: DereferenceSymlinks = new DereferenceSymlinks:
@@ -577,10 +560,10 @@ package filesystemOptions:
       def apply(path: Path)(operation: => Unit): Unit = ()
 
   given writeSynchronously: WriteSynchronously with
-    ()
+    def options(): List[jnf.StandardOpenOption] = List(jnf.StandardOpenOption.SYNC)
 
   given doNotWriteSynchronously: WriteSynchronously with
-    ()
+    def options(): List[jnf.StandardOpenOption] = Nil
 
 
 case class IoError(path: Path) extends Error(msg"an I/O error occurred")
@@ -599,3 +582,17 @@ extends Error(msg"insufficient permissions to modify $path")
 
 case class InodeTypeError(path: Path)
 extends Error(msg"the filesystem node at $path was expected to be a different type")
+
+case class SafeLink(ascent: Int, descent: List[PathName[GeneralForbidden]]) extends Link
+
+object SafeLink:
+  given creator: PathCreator[SafeLink, GeneralForbidden, Int] = SafeLink(_, _)
+  
+  given followable
+      (using creator: PathCreator[SafeLink, GeneralForbidden, Int])
+      : Followable[SafeLink, GeneralForbidden, "..", "."] =
+    new Followable[SafeLink, GeneralForbidden, "..", "."]:
+      val separators: Set[Char] = Set('\\')
+      def separator(link: SafeLink): Text = t"\\"
+      def ascent(link: SafeLink): Int = link.ascent
+      def descent(link: SafeLink): List[PathName[GeneralForbidden]] = link.descent

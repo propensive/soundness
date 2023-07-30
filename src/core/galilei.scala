@@ -16,21 +16,6 @@
 
 package galilei
 
-import rudiments.*
-import digression.*
-import gossamer.*
-import turbulence.*
-import serpentine.*
-import spectacular.*
-import eucalyptus.*
-import anticipation.*
-
-import java.io as ji
-import java.nio.file as jnf
-
-import jnf.{Files, Paths, StandardCopyOption, DirectoryNotEmptyException}, jnf.StandardCopyOption.*
-import ji.{File as JavaFile}
-
 // sealed trait Inode(val path: DiskPath):
 //   def uriString: Text = Showable(javaFile.toURI).show
   

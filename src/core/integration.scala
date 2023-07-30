@@ -16,8 +16,6 @@
 
 package anticipation
 
-import rudiments.*
-import digression.*
 import serpentine.*
 import spectacular.*
 import galilei.*

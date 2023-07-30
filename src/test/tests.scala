@@ -22,18 +22,29 @@ import imperial.*
 import eucalyptus.*
 import serpentine.*
 import spectacular.*
-import hieroglyph.*, charEncoders.utf8, charDecoders.utf8
+import hieroglyph.*
 import anticipation.*, fileApi.galileiApi
 import ambience.*, environments.system
 
 import unsafeExceptions.canThrowAny
-// import filesystemOptions.createNonexistentParents
-// import filesystemOptions.overwritePreexisting
-// import filesystemOptions.doNotDeleteRecursively
 
 object Tests extends Suite(t"Galilei tests"):
   def run(): Unit =
+    suite(t"Link tests"):
+      suite(t"UNIX tests"):
+        import hierarchies.unix
 
+        test(t"Parse a relative Unix link"):
+          t"../docs/data.txt".decodeAs[Unix.Link]
+        .assert(_ == ?^ / p"docs" / p"data.txt")
+      
+      suite(t"Windows tests"):
+        import hierarchies.windows
+
+        test(t"Parse a relative Unix link"):
+          t"..\\Docs\\Data.txt".decodeAs[Windows.Link]
+        .assert(_ == ?^ / p"Docs" / p"Data.txt")
+      
     suite(t"Path tests"):
       suite(t"UNIX tests"):
         import hierarchies.unix
@@ -53,8 +64,6 @@ object Tests extends Suite(t"Galilei tests"):
         .assert(_ == PathError(PathError.Reason.NotRooted(t"C:\\Windows\\System32")))
         
       suite(t"Windows tests"):
-        import hierarchies.windows
-
         test(t"Parsing /home/work/file.txt should fail"):
           capture[PathError](t"/home/work/file.txt".decodeAs[Windows.Path])
         .assert(_ == PathError(PathError.Reason.NotRooted(t"/home/work/file.txt")))
@@ -64,8 +73,6 @@ object Tests extends Suite(t"Galilei tests"):
         .assert(_ == Windows.Drive('C') / p"Windows" / p"System32")
         
       suite(t"Adaptive tests"):
-        import hierarchies.unixOrWindows
-
         test(t"Parsing /home/work/file.txt should fail"):
           t"/home/work/file.txt".decodeAs[Path]
         .assert(_ == Unix / p"home" / p"work" / p"file.txt")
@@ -156,7 +163,6 @@ object Tests extends Suite(t"Galilei tests"):
       .assert(_ == InodeType.Fifo)
 
     suite(t"Windows hierarchy tests"):
-      import hierarchies.windows
       
       val windowsSystem = test(t"Get C:\\Windows\\System"):
         Windows.Drive('C') / p"Windows" / p"System"
