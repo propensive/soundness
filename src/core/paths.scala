@@ -317,6 +317,36 @@ sealed trait Inode:
 
     destination
   
+  def copyInto
+      (destination: Directory)
+      (using overwritePreexisting: OverwritePreexisting, dereferenceSymlinks: DereferenceSymlinks)
+      (using io: CanThrow[IoError])
+      : Path^{io, overwritePreexisting, dereferenceSymlinks} =
+    given CreateNonexistentParents = filesystemOptions.createNonexistentParents
+    copyTo(destination / path.descent.head)
+
+  def copyTo
+      (destination: Path)
+      (using overwritePreexisting: OverwritePreexisting, dereferenceSymlinks: DereferenceSymlinks,
+          createNonexistentParents: CreateNonexistentParents)
+      (using io: CanThrow[IoError])
+      : Path^{io, overwritePreexisting, createNonexistentParents, dereferenceSymlinks} =
+
+    createNonexistentParents(destination):
+      overwritePreexisting(destination):
+        jnf.Files.copy(path.java, destination.java, dereferenceSymlinks.options()*)
+
+    destination
+      
+  def moveInto
+      (destination: Directory)
+      (using overwritePreexisting: OverwritePreexisting, moveAtomically: MoveAtomically,
+          dereferenceSymlinks: DereferenceSymlinks)
+      (using io: CanThrow[IoError])
+      : Path^{io, overwritePreexisting, moveAtomically, dereferenceSymlinks} =
+    given CreateNonexistentParents = filesystemOptions.createNonexistentParents
+    moveTo(destination / path.descent.head)
+
   def moveTo
       (destination: Path)
       (using overwritePreexisting: OverwritePreexisting, moveAtomically: MoveAtomically,
