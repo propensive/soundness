@@ -21,13 +21,35 @@ import anticipation.*
 
 import language.experimental.captureChecking
 
+case class NumberError(text: Text, specializable: Specializable)
+extends Error(msg"$text is not a valid ${specializable.getClass.nn.getName.nn.toLowerCase.nn.tt}")
+
 object Decoder:
-  given Decoder[Int] = text => Integer.parseInt(text.s)
-  given Decoder[Byte] = text => Integer.parseInt(text.s).toByte
+  given (using number: CanThrow[NumberError]): Decoder[Int] = text =>
+    try Integer.parseInt(text.s) catch case _: NumberFormatException =>
+      throw NumberError(text, Int)
+
+  given (using number: CanThrow[NumberError]): Decoder[Byte] = text =>
+    val int = try Integer.parseInt(text.s) catch case _: NumberFormatException =>
+      throw NumberError(text, Byte)
+    
+    if int < Byte.MinValue || int > Byte.MaxValue then throw NumberError(text, Byte)
+    else int.toByte
+  
+  given (using number: CanThrow[NumberError]): Decoder[Short] = text =>
+    val int = try Integer.parseInt(text.s) catch case _: NumberFormatException =>
+      throw NumberError(text, Short)
+    
+    if int < Short.MinValue || int > Short.MaxValue then throw NumberError(text, Short)
+    else int.toShort
+  
+  given (using number: CanThrow[NumberError]): Decoder[Long] = text =>
+    try java.lang.Long.parseLong(text.s) catch case _: NumberFormatException =>
+      throw NumberError(text, Long)
+
   given Decoder[Char] = _.s(0)
-  given Decoder[Short] = text => Integer.parseInt(text.s).toShort
-  given Decoder[Long] = text => java.lang.Long.parseLong(text.s)
   given Decoder[Text] = identity(_)
+  given Decoder[String] = _.s
 
 @capability
 trait Decoder[+ValueType]:
