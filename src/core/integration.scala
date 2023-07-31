@@ -31,7 +31,6 @@ package fileApi:
       def makePath(string: String, readOnly: Boolean): PathType =
         string.show.decodeAs[PathType]
       
-
 //   given galileiApi
 //       : (GenericPathMaker[Path] & GenericDirectoryMaker[Directory] &
 //           GenericFileMaker[File] & GenericPathReader[Path] & GenericFileReader[File] &

@@ -44,9 +44,15 @@ import language.experimental.captureChecking
 type GeneralForbidden = Windows.Forbidden | Unix.Forbidden
 
 object Path:
-  inline given add(using path: CanThrow[PathError], followable: Followable[Link, GeneralForbidden, ?, ?]): Operator["+", Path, Link] with
+  inline given add
+      (using path: CanThrow[PathError], followable: Followable[Link, GeneralForbidden, ?, ?]): Operator["+", Path, Link] with
     type Result = Path
     def apply(left: Path, right: Link): Path = left.append(right)
+  
+  inline given add2
+      (using path: CanThrow[PathError], followable: Followable[SafeLink, GeneralForbidden, ?, ?]): Operator["+", Path, SafeLink] with
+    type Result = Path
+    def apply(left: Path, right: SafeLink): Path = left.append(right)
   
   given Insertion[Sh.Params, Path] = path => Sh.Params(path.fullname)
   
@@ -118,7 +124,6 @@ trait Path:
       
       case error: ji.IOException =>
         throw IoError(this)
-
 
   def as[InodeType <: Inode](using resolver: PathResolver[InodeType, this.type]): InodeType =
     resolver(this)
@@ -622,7 +627,10 @@ object SafeLink:
       (using creator: PathCreator[SafeLink, GeneralForbidden, Int])
       : Followable[SafeLink, GeneralForbidden, "..", "."] =
     new Followable[SafeLink, GeneralForbidden, "..", "."]:
-      val separators: Set[Char] = Set('\\')
-      def separator(link: SafeLink): Text = t"\\"
+      val separators: Set[Char] = Set('/', '\\')
+      def separator(link: SafeLink): Text = t"/"
       def ascent(link: SafeLink): Int = link.ascent
       def descent(link: SafeLink): List[PathName[GeneralForbidden]] = link.descent
+
+  inline given decoder(using CanThrow[PathError]): Decoder[SafeLink] =
+    Followable.decoder[SafeLink]
