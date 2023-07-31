@@ -35,13 +35,13 @@ sealed trait Monitor:
     if virtualThreads then throw Mistake(msg"not yet supported") //Thread.ofVirtual.nn.name(id.s).nn.start(runnable).nn
     else Thread(runnable, id.s).nn.tap(_.setDaemon(daemon)).tap(_.start())
   
-  def child(childId: Text): TaskMonitor = TaskMonitor(Text(id.s+"/"+childId.s), this)
+  def child(childId: Text): TaskMonitor = TaskMonitor((id.s+"/"+childId.s).tt, this)
 
   def cancel(): Unit = () // FIXME
 
 package monitors:
   given global: Monitor = new Monitor:
-    def id: Text = Text("")
+    def id: Text = "".tt
     def virtualThreads: Boolean = false
     def daemon: Boolean = true
 
@@ -86,12 +86,12 @@ class Task
     promise.await(duration).tap(thread.join().waive)
 
   def map[ResultType2](fn: ResultType => ResultType2)(using Monitor, CanThrow[CancelError]): Task[ResultType2] =
-    Task(Text(id.s+".map"))(fn(await()))
+    Task((id.s+".map").tt)(fn(await()))
   
   def flatMap
       [ResultType2](fn: ResultType => Task[ResultType2])(using Monitor, CanThrow[CancelError])
       : Task[ResultType2] =
-    Task(Text(id.s+".flatMap"))(fn(await()).await())
+    Task((id.s+".flatMap").tt)(fn(await()).await())
 
 def sleep[DurationType](using GenericDuration[DurationType])(time: DurationType)(using Monitor): Unit =
   try Thread.sleep(readDuration(time)) catch case err: InterruptedException => unsafely(throw CancelError())
@@ -107,4 +107,4 @@ def supervise
 
 extension [ResultType](xs: Iterable[Task[ResultType]])
   transparent inline def sequence(using monitor: Monitor): Task[Iterable[ResultType]] throws CancelError =
-    Task(Text("sequence"))(xs.map(_.await()))
+    Task("sequence".tt)(xs.map(_.await()))
