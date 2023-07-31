@@ -20,6 +20,8 @@ import probably.*
 import rudiments.*
 import hieroglyph.*, charEncoders.utf8, textWidthCalculation.uniform
 import spectacular.*
+import anticipation.*
+import symbolism.*
 import larceny.*
 
 import unsafeExceptions.canThrowAny
