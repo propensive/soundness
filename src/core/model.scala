@@ -94,7 +94,6 @@ object CodlDoc:
   given Debug[CodlDoc] = _.serialize
   
   given Assimilable[CodlDoc] = _.schema == _.schema
-  //given Contrast[CodlDoc] = Contrast.derived[CodlDoc]
 
   inline given Contrast[CodlDoc] = new Contrast[CodlDoc]:
     def apply(left: CodlDoc, right: CodlDoc) =
@@ -186,7 +185,6 @@ extends Indexed:
 
   def uniqueId: Maybe[Text] = schema.subschemas.find(_.schema.arity == Arity.Unique) match
     case Some(CodlSchema.Entry(name: Text, schema)) =>
-      println(paramIndex.get(name).map(children(_).debug))
       paramIndex.get(name).map(children(_).fieldValue).getOrElse(Unset)
     case _ => Unset
 
@@ -208,12 +206,11 @@ extends Indexed:
   override def hashCode: Int = key.hashCode ^ children.toSeq.hashCode ^ layout.hashCode ^ schema.hashCode
 
 
-case class Meta(blank: Int = 0, comments: List[Text] = Nil, remark: Maybe[Text] = Unset, tabs: Tabs = Tabs())
+case class Meta(blank: Int = 0, comments: List[Text] = Nil, remark: Maybe[Text] = Unset)
 object Layout:
-  final val empty = Layout(0, false)
+  final val empty = Layout(0, false, 0)
 
-case class Layout(params: Int, multiline: Boolean)
-case class Tabs(stops: TreeSet[Int] = TreeSet())
+case class Layout(params: Int, multiline: Boolean, col: Int)
 
 trait Indexed extends Dynamic:
   def children: IArray[CodlNode]
@@ -229,7 +226,7 @@ trait Indexed extends Dynamic:
         else acc.upsert(data.key, _.fm(List(idx))(idx :: _))
       case (acc, _) => acc
     .view.mapValues(_.reverse).to(Map)
-
+    
   protected lazy val idIndex: Map[Text, Int] =
     def recur(idx: Int, map: Map[Text, Int] = Map()): Map[Text, Int] =
       if idx < 0 then map else recur(idx - 1, children(idx).id.fm(map)(map.updated(_, idx)))
@@ -241,17 +238,18 @@ trait Indexed extends Dynamic:
   def apply(idx: Int = 0): CodlNode throws MissingIndexValueError =
     children.lift(idx).getOrElse(throw MissingIndexValueError(idx))
   
-  def apply(key: Text): List[CodlNode] = index.get(key).getOrElse(Nil).map(children(_))
+  def apply(key: Text): List[CodlNode] =
+    index.get(key).getOrElse(Nil).map(children(_))
 
-  def get(key: Text): List[Indexed] = paramIndex.lift(key) match
-    case None =>
-      index.lift(key) match
+  def get(key: Text): List[Indexed] =
+    paramIndex.lift(key) match
+      case None => index.lift(key) match
         case None       => Nil
         case Some(idxs) => idxs.map(children(_).data.avow(using Unsafe))
-    
-    case Some(idx) =>
-      List.range(idx, layout.params).map: idx =>
-        Data(key, IArray(unsafely(children(idx))), Layout.empty, CodlSchema.Free)
+      
+      case Some(idx) =>
+        List.range(idx, layout.params).map: idx =>
+          Data(key, IArray(unsafely(children(idx))), Layout.empty, CodlSchema.Free)
 
   def selectDynamic(key: String): List[Data] throws MissingValueError =
     index(key.show).map(children(_).data).collect:

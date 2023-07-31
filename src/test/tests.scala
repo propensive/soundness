@@ -768,7 +768,7 @@ object Tests extends Suite(t"CoDL tests"):
       
       test(t"Access parameters by name"):
         childWithTwoParams(One, One).parse(t"root\n  child first second").root().child().beta()
-      .assert(_ == Data(t"second", IArray(), schema = Field(One)))
+      .assert(_ == Data(t"second", IArray(), schema = Field(One), layout = Layout(0, false, 14)))
 
       test(t"Surplus parameters"):
         capture[AggregateError[CodlError]](childWithTwoParams(One, One).parse(t"root\n  child one two three")) match
@@ -957,15 +957,15 @@ object Tests extends Suite(t"CoDL tests"):
       .assert(_ == t"root\n  child\n")
       
       test(t"Serialize a node and a child with params layout"):
-        CodlDoc(CodlNode(Data(t"root", IArray(CodlNode(Data(t"child"))), Layout(1, false)))).serialize
+        CodlDoc(CodlNode(Data(t"root", IArray(CodlNode(Data(t"child"))), Layout(1, false, 0)))).serialize
       .assert(_ == t"root child\n")
       
       test(t"Serialize a node and a child with block param"):
-        CodlDoc(CodlNode(Data(t"root", IArray(CodlNode(Data(t"child")), CodlNode(Data(t"Hello World"))), Layout(2, true)))).serialize
+        CodlDoc(CodlNode(Data(t"root", IArray(CodlNode(Data(t"child")), CodlNode(Data(t"Hello World"))), Layout(2, true, 0)))).serialize
       .assert(_ == t"root child\n    Hello World\n")
       
       test(t"Serialize a node and a child with multiline block param"):
-        CodlDoc(CodlNode(Data(t"root", IArray(CodlNode(Data(t"child")), CodlNode(Data(t"Hello\nWorld"))), Layout(2, true)))).serialize
+        CodlDoc(CodlNode(Data(t"root", IArray(CodlNode(Data(t"child")), CodlNode(Data(t"Hello\nWorld"))), Layout(2, true, 0)))).serialize
       .assert(_ == t"root child\n    Hello\n    World\n")
       
       test(t"Serialize a node and a child with comment"):
@@ -1124,7 +1124,14 @@ object Tests extends Suite(t"CoDL tests"):
       test(t"Print a case class using positional parameters"):
         print(User(12, t"user@example.com", List(Privilege(t"read", true), Privilege(t"write", false))))
       .assert(_ == t"")
-      
+
+    println("-----")
+    
+    suite(t"Meta tests"):
+      test(t"Tabs are recorded"):
+        read(t"# some comment\nroot   param1    param2\n  child1 param3")().meta
+      .assert(_ == Meta())
+
     // // suite(t"Record tests"):
 
     // //   val record = GreekRecords(example1)

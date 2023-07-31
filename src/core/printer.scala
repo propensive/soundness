@@ -26,7 +26,6 @@ import language.experimental.captureChecking
 
 object Printer:
   def print(out: ji.Writer, doc: CodlDoc): Unit =
-    
     def recur(node: CodlNode, indent: Int): Unit = node match
       case CodlNode(data, meta) =>
         meta.mm: meta =>
@@ -46,21 +45,30 @@ object Printer:
               case Field(_, _) =>
                 children.foreach: child =>
                   (child: @unchecked) match
-                    case CodlNode(Data(key, _, _, _), _) =>
+                    case CodlNode(Data(key, _, layout, _), _) =>
                       out.write(' ')
                       out.write(key.s)
                 out.write('\n')
+
               case Struct(_, _) =>
                 val ps = children.take(if layout.multiline then layout.params - 1 else layout.params)
+                var col = indent - doc.margin + key.or(t"").length
                 ps.foreach: param =>
                   (param: @unchecked) match
-                    case CodlNode(Data(key, IArray(CodlNode(Data(value, _, _, _), _)), _, _), _) =>
-                      out.write(' ')
+                    case CodlNode(Data(key, IArray(CodlNode(Data(value, _, layout, _), _)), _, _), _) =>
+                      val spaces = layout.col - col
+                      for i <- 0 until spaces do out.write(' ')
+                      col += spaces
                       out.write(value.s)
+                      col += value.length
                     
-                    case CodlNode(Data(key, IArray(), _, _), _) =>
-                      out.write(' ')
+                    case CodlNode(Data(key, IArray(), layout, _), _) =>
+                      if layout.multiline then println("MULTILINE "+key)
+                      val spaces = layout.col - col
+                      for i <- 0 until spaces do out.write(' ')
+                      col += spaces
                       out.write(key.s)
+                      col += key.length
                 
                 meta.mm(_.remark).mm: remark =>
                   out.write(" # ")

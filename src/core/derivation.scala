@@ -50,8 +50,10 @@ extends CodlDeserializer[ValueType]:
 
   def deserialize(nodes: List[Indexed])(using codlError: CanThrow[CodlReadError]): ValueType =
     nodes.headOption.getOrElse(throw CodlReadError()).children match
-      case IArray(CodlNode(Data(value, _, _, _), _)) => deserializer(value)
-      case _                                       => throw CodlReadError()
+      case IArray(CodlNode(Data(value, _, _, _), _)) =>
+        deserializer(value)
+      case _ =>
+        throw CodlReadError()
 
 trait CodlSerializer2:
   given maybe
@@ -115,26 +117,32 @@ object CodlSerializer extends CodlSerializer2:
     inline mirror match
       case given Mirror.ProductOf[DerivationType & Product] => new CodlSerializer[DerivationType]:
         def schema: CodlSchema =
-          Struct(CodlDeserializer.deriveSchema[mirror.MirroredElemTypes, mirror.MirroredElemLabels].reverse, Arity.One)
+          Struct(CodlDeserializer.deriveSchema[DerivationType, mirror.MirroredElemTypes,
+              mirror.MirroredElemLabels], Arity.One)
         
         def serialize(value: DerivationType): List[IArray[CodlNode]] =
           (value.asMatchable: @unchecked) match
             case value: Product =>
-              val entries = deriveProduct[mirror.MirroredElemLabels](Tuple.fromProductTyped(value))
+              val entries = deriveProduct[DerivationType, mirror.MirroredElemLabels](Tuple.fromProductTyped(value))
               
               List(IArray.from(entries))
       
       case _ => compiletime.error("cannot derive a CodlSerializer sum type")
 
-  private transparent inline def deriveProduct[Labels <: Tuple](tuple: Tuple): List[CodlNode] =
+  private transparent inline def deriveProduct
+      [DerivationType, Labels <: Tuple]
+      (tuple: Tuple)
+      : List[CodlNode] =
     inline tuple match
       case cons: (? *: ?) => cons match
         case head *: tail => inline erasedValue[Labels] match
           case _: (headLabel *: tailLabels) =>
-            val label = valueOf[headLabel]
-            // summonFrom:
-            //   case label: CodlLabel[head.type, `headLabel`] => label.label
-            //   case _                                        => valueOf[headLabel]
+            val label: String = summonFrom:
+              case label: CodlLabel[DerivationType, `headLabel` & Label] =>
+                label.label
+              
+              case _ => (valueOf[headLabel].asMatchable: @unchecked) match
+                case label: String => label
             
             (label.asMatchable: @unchecked) match
               case label: String =>
@@ -145,7 +153,7 @@ object CodlSerializer extends CodlSerializer2:
                     CodlNode(Data(label.tt, value, Layout.empty, serializer.schema))
                   .filter(!_.empty)
                 
-                serialization ::: deriveProduct[tailLabels](tail)
+                serialization ::: deriveProduct[DerivationType, tailLabels](tail)
         
       case _ => Nil
 
@@ -160,16 +168,16 @@ trait CodlDeserializer2:
           def deserialize
               (value: List[Indexed])(using codlRead: CanThrow[CodlReadError])
               : DerivationType =
-            mirror.fromProduct(deriveProduct[mirror.MirroredElemTypes,
+            mirror.fromProduct(deriveProduct[DerivationType, mirror.MirroredElemTypes,
                 mirror.MirroredElemLabels](value))
         
-          def schema: CodlSchema = Struct(deriveSchema[mirror.MirroredElemTypes,
-              mirror.MirroredElemLabels].reverse, Arity.One)
+          def schema: CodlSchema = Struct(deriveSchema[DerivationType, mirror.MirroredElemTypes,
+              mirror.MirroredElemLabels], Arity.One)
       
       case _ => compiletime.error("cannot derive a CodlDeserializer sum type")
     
   transparent inline def deriveSchema
-      [ElementTypes <: Tuple, Labels <: Tuple]
+      [DerivationType, ElementTypes <: Tuple, Labels <: Tuple]
       : List[CodlSchema.Entry] =
     inline erasedValue[ElementTypes] match
       case EmptyTuple =>
@@ -177,18 +185,20 @@ trait CodlDeserializer2:
       
       case cons: (headType *: tailType) => inline erasedValue[Labels] match
         case _: (headLabel *: tailLabels) =>
-          val label = valueOf[headLabel]
-          // summonFrom:
-          //   case label: CodlLabel[`headType`, `headLabel`] => label.label
-          //   case _                                         => valueOf[headLabel]
+          val label: String = summonFrom:
+            case label: CodlLabel[DerivationType, `headLabel` & Label] =>
+              label.label
+            
+            case _ => (valueOf[headLabel].asMatchable: @unchecked) match
+              case label: String => label
           
           (label.asMatchable: @unchecked) match
             case label: String =>
               CodlSchema.Entry(label.tt, summonInline[CodlDeserializer[headType]].schema) ::
-                  deriveSchema[tailType, tailLabels]
+                  deriveSchema[DerivationType, tailType, tailLabels]
 
   private transparent inline def deriveProduct
-      [ElementTypes <: Tuple, Labels <: Tuple]
+      [DerivationType, ElementTypes <: Tuple, Labels <: Tuple]
       (value: List[Indexed])
       (using codlRead: CanThrow[CodlReadError])
       : Tuple =
@@ -198,15 +208,17 @@ trait CodlDeserializer2:
       
       case cons: (headType *: tailType) => inline erasedValue[Labels] match
         case _: (headLabel *: tailLabels) =>
-          val label = valueOf[headLabel]
-          // summonFrom:
-          //   case label: CodlLabel[`headType`, `headLabel`] => label.label
-          //   case _                                         => valueOf[headLabel]
+          val label: String = summonFrom:
+            case label: CodlLabel[DerivationType, `headLabel` & Label] =>
+              label.label
+            
+            case _ => (valueOf[headLabel].asMatchable: @unchecked) match
+              case label: String => label
           
           (label.asMatchable: @unchecked) match
             case label: String =>
               summonInline[CodlDeserializer[headType]].deserialize(value.head.get(label.tt)) *:
-                  deriveProduct[tailType, tailLabels](value)
+                  deriveProduct[DerivationType, tailType, tailLabels](value)
         
 object CodlDeserializer extends CodlDeserializer2:
   given maybe

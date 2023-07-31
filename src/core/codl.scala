@@ -83,14 +83,16 @@ object Codl:
         
         (uniqueId2, copy(children = closed :: children, params = params + 1), errors2)
 
-      def substitute(data: Data): Proto = copy(children = CodlNode(data) :: children, params = params + 1)
+      def substitute(data: Data): Proto =
+        copy(children = CodlNode(data) :: children, params = params + 1)
+      
       def setMeta(meta: Maybe[Meta]): Proto = copy(meta = meta)
 
       def close: (CodlNode, List[CodlError]) =
         key.fm((CodlNode(Unset, meta), Nil)):
           case key: Text =>
             val meta2 = meta.mm { m => m.copy(comments = m.comments.reverse) }
-            val data = Data(key, IArray.from(children.reverse), Layout(params, multiline), schema)
+            val data = Data(key, IArray.from(children.reverse), Layout(params, multiline, col - margin), schema)
             val node = CodlNode(data, meta2)
             
             val errors = schema.requiredKeys.to(List).flatMap: key =>
@@ -104,7 +106,8 @@ object Codl:
     def recur
         (tokens: LazyList[CodlToken], focus: Proto, peers: List[CodlNode],
             peerIds: Map[Text, (Int, Int)], stack: List[(Proto, List[CodlNode])],
-            lines: Int, subs: List[Data], errors: List[CodlError], body: LazyList[Text])
+            lines: Int, subs: List[Data], errors: List[CodlError], body: LazyList[Text],
+            tabs: List[Int])
         : CodlDoc =
       
       def schema: CodlSchema = stack.headOption.fold(baseSchema)(_.head.schema.option.get)
@@ -114,9 +117,9 @@ object Codl:
               peers: List[CodlNode] = peers, peerIds: Map[Text, (Int, Int)] = peerIds,
               stack: List[(Proto, List[CodlNode])] = stack, lines: Int = lines,
               subs: List[Data] = subs, errors: List[CodlError] = errors,
-              body: LazyList[Text] = LazyList())
+              body: LazyList[Text] = LazyList(), tabs: List[Int] = Nil)
           : CodlDoc =
-        recur(tokens, focus, peers, peerIds, stack, lines, subs, errors, body)
+        recur(tokens, focus, peers, peerIds, stack, lines, subs, errors, body, tabs)
       
       tokens match
         case token #:: tail => token match
@@ -154,7 +157,7 @@ object Codl:
           case CodlToken.Blank => focus.meta match
             case Unset            =>
               go(lines = lines + 1)
-            case Meta(l, _, _, _) =>
+            case Meta(l, _, _) =>
               val (closed, errors2) = focus.close
               
               go(focus = Proto(), peers = closed :: peers, lines = lines + 1, errors = errors2 :::
@@ -259,7 +262,7 @@ object Codl:
     
 
 
-    if stream.isEmpty then CodlDoc() else recur(stream, Proto(), Nil, Map(), Nil, 0, subs.reverse, Nil, LazyList())
+    if stream.isEmpty then CodlDoc() else recur(stream, Proto(), Nil, Map(), Nil, 0, subs.reverse, Nil, LazyList(), Nil)
 
   def tokenize(in: LazyList[Text]^, fromStart: Boolean = false): (Int, LazyList[CodlToken]^{in}) =
     val reader: PositionReader = new PositionReader(in.map(identity))
