@@ -24,12 +24,12 @@ import symbolism.*
 import kaleidoscope.*
 import contextual.*
 
-import language.experimental.captureChecking
-
 import scala.reflect.*
 
 import java.util.regex.*
 import java.net.{URLEncoder, URLDecoder}
+
+import language.experimental.captureChecking
 
 enum Bidi:
   case Ltr, Rtl

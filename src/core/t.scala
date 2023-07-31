@@ -19,7 +19,7 @@ package gossamer
 import anticipation.*
 import spectacular.*
 
-import language.experimental.pureFunctions
+import language.experimental.captureChecking
 
 case class SimpleTExtractor(text: Text):
   def unapply(scrutinee: Text): Boolean = text == scrutinee
