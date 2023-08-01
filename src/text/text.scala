@@ -43,7 +43,6 @@ object Anticipation:
 
     given ordering: Ordering[Text] = Ordering.String.on[Text](identity)
     given fromString: CommandLineParser.FromString[Text] = identity(_)
-    given genericHttpRequestParam: GenericHttpRequestParam[String, Text] = identity(_)
     
     given fromExpr(using fromExpr: FromExpr[String]): FromExpr[Text] with
       def unapply(expr: Expr[Text])(using Quotes): Option[Text] = fromExpr.unapply(expr)

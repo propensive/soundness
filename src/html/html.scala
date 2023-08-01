@@ -19,5 +19,5 @@ package anticipation
 import language.experimental.captureChecking
 
 trait GenericHtmlAttribute[-LabelType <: String & Singleton, -ValueType]:
-  def name: String
-  def serialize(value: ValueType): String
+  def name: Text
+  def serialize(value: ValueType): Text

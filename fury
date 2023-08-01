@@ -7,20 +7,29 @@ repo propensive/probably
 repo propensive/symbolism
 
 project anticipation
+  module text
+    compiler  scala
+    include   symbolism/core
+    sources   src/text
+
   module css
     compiler  scala
+    include   anticipation/text
     sources   src/css
 
   module url
     compiler  scala
+    include   anticipation/text
     sources   src/url
 
   module html
     compiler  scala
+    include   anticipation/text
     sources   src/html
 
   module http
     compiler  scala
+    include   anticipation/text
     sources   src/http
   
   module color
@@ -29,16 +38,12 @@ project anticipation
 
   module path
     compiler  scala
+    include   anticipation/text
     sources   src/path
 
   module time
     compiler  scala
     sources   src/time
-
-  module text
-    compiler  scala
-    include   anticipation/http symbolism/core
-    sources   src/text
 
   module all
     include anticipation/css
