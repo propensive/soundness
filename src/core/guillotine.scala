@@ -165,8 +165,8 @@ case class Command(args: Text*) extends Executable:
       (using properties: SystemProperties, systemProperty: CanThrow[SystemPropertyError], log: Log)
       : Process[Exec, ResultType] =
     val processBuilder = ProcessBuilder(args.ss*)
-    val dir = Option(System.getProperty("user.dir")).map(ji.File(_)).getOrElse:
-      throw SystemPropertyError(t"user.dir")
+    import fileApi.javaIo
+    val dir = Properties.user.dir[ji.File]()
     
     processBuilder.directory(dir)
     
@@ -186,8 +186,8 @@ case class Pipeline(cmds: Command*) extends Executable:
       ()
       (using properties: SystemProperties, systemProperty: CanThrow[SystemPropertyError], log: Log)
       : Process[Exec, ResultType] =
-    val dir = Option(System.getProperty("user.dir")).map(ji.File(_)).getOrElse:
-      throw SystemPropertyError(t"user.dir")
+    import fileApi.javaIo
+    val dir = Properties.user.dir[ji.File]()
     
     Log.info(out"Starting pipelined processes ${this.out} in directory ${dir.getAbsolutePath.nn}")
 
