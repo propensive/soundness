@@ -30,7 +30,7 @@ object Rudiments:
 
   object ByteSize:
     def apply(long: Long): ByteSize = long
-    given GenericHttpRequestParam["content-length", ByteSize] = _.long.toString
+    given GenericHttpRequestParam["content-length", ByteSize] = _.long.toString.tt
     given Ordering[ByteSize] = Ordering.Long.on(_.long)
     given AsMessage[ByteSize] = byteSize => Message(byteSize.text)
 
