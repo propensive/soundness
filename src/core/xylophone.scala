@@ -53,7 +53,7 @@ object Xml:
     catch case error: XmlAccessError => t"undefined"
 
   given (using enc: Encoding, printer: XmlPrinter[Text]): GenericHttpResponseStream[Xml] with
-    def mediaType: String = t"application/xml; charset=${enc.name}".s
+    def mediaType: Text = t"application/xml; charset=${enc.name}"
     def content(xml: Xml): LazyList[IArray[Byte]] =
       LazyList(summon[XmlPrinter[Text]].print(xml).bytes(using charEncoders.utf8))
 
