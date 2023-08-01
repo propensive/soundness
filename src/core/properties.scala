@@ -39,7 +39,7 @@ object Properties extends Dynamic:
       : PropertyType^{properties, reader, systemProperty} =
     properties(property).mm(reader.read).or(throw SystemPropertyError(property))
     
-  def selectDynamic(key: String): SystemProperty[key.type] = SystemProperty[key.type]()
+  def selectDynamic(key: String): SystemProperty[key.type] = SystemProperty[key.type](key)
 
 @capability
 trait SystemPropertyReader[NameType <: String, PropertyType]:
@@ -95,19 +95,19 @@ object SystemPropertyReader:
       : SystemPropertyReader[UnknownType, PropertyType] =
     decoder.decode(_)
 
-case class SystemProperty[NameType <: String]() extends Dynamic:
+case class SystemProperty[NameType <: String](property: String) extends Dynamic:
   def selectDynamic(key: String): SystemProperty[NameType+"."+key.type] =
-    SystemProperty[NameType+"."+key.type]()
+    SystemProperty[NameType+"."+key.type](property+"."+key)
   
-  inline def applyDynamic
+  def applyDynamic
       [PropertyType]
       (key: String)()
       (using properties: SystemProperties,
           reader: SystemPropertyReader[NameType+"."+key.type, PropertyType],
           systemProperty: CanThrow[SystemPropertyError])
       : PropertyType^{properties, reader, systemProperty} =
-    properties((valueOf[NameType]+"."+valueOf[key.type]).tt).mm(reader.read(_)).or:
-      throw SystemPropertyError(valueOf[NameType].tt)
+    properties((property+"."+key).tt).mm(reader.read(_)).or:
+      throw SystemPropertyError((property+"."+key).tt)
   
   inline def apply
       [PropertyType]
