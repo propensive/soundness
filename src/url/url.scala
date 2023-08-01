@@ -103,10 +103,10 @@ object UrlInterpolator extends contextual.Interpolator[UrlInput, Text, Url]:
 
 object Url:
   given (using CanThrow[UrlError]): GenericUrl[Url] = new GenericUrl[Url]:
-    def readUrl(url: Url): String = url.show.s
-    def makeUrl(value: String): Url = Url.parse(value.show)
+    def readUrl(url: Url): Text = url.show
+    def makeUrl(value: Text): Url = Url.parse(value)
 
-  given GenericHttpRequestParam["location", Url] = show(_).s
+  given GenericHttpRequestParam["location", Url] = show(_)
 
   given (using CanThrow[UrlError]): Decoder[Url] = parse(_)
   given Encoder[Url] = _.show
@@ -136,40 +136,40 @@ object Url:
   given ansiShow: Display[Url] = url => out"$Underline(${colors.DeepSkyBlue}(${show(url)}))"
 
   given action: GenericHtmlAttribute["action", Url] with
-    def name: String = "action"
-    def serialize(url: Url): String = url.show.s
+    def name: Text = t"action"
+    def serialize(url: Url): Text = url.show
   
   given codebase: GenericHtmlAttribute["codebase", Url] with
-    def name: String = "codebase"
-    def serialize(url: Url): String = url.show.s
+    def name: Text = t"codebase"
+    def serialize(url: Url): Text = url.show
   
   given cite: GenericHtmlAttribute["cite", Url] with
-    def name: String = "cite"
-    def serialize(url: Url): String = url.show.s
+    def name: Text = t"cite"
+    def serialize(url: Url): Text = url.show
   
   given data: GenericHtmlAttribute["data", Url] with
-    def name: String = "data"
-    def serialize(url: Url): String = url.show.s
+    def name: Text = t"data"
+    def serialize(url: Url): Text = url.show
 
   given formaction: GenericHtmlAttribute["formaction", Url] with
-    def name: String = "formaction"
-    def serialize(url: Url): String = url.show.s
+    def name: Text = t"formaction"
+    def serialize(url: Url): Text = url.show
  
   given poster: GenericHtmlAttribute["poster", Url] with
-    def name: String = "poster"
-    def serialize(url: Url): String = url.show.s
+    def name: Text = t"poster"
+    def serialize(url: Url): Text = url.show
 
   given src: GenericHtmlAttribute["src", Url] with
-    def name: String = "src"
-    def serialize(url: Url): String = url.show.s
+    def name: Text = t"src"
+    def serialize(url: Url): Text = url.show
   
   given href: GenericHtmlAttribute["href", Url] with
-    def name: String = "href"
-    def serialize(url: Url): String = url.show.s
+    def name: Text = t"href"
+    def serialize(url: Url): Text = url.show
   
   given manifest: GenericHtmlAttribute["manifest", Url] with
-    def name: String = "manifest"
-    def serialize(url: Url): String = url.show.s
+    def name: Text = t"manifest"
+    def serialize(url: Url): Text = url.show
 
   def parse(value: Text): Url throws UrlError =
     import UrlError.Expectation.*
