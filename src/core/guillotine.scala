@@ -108,12 +108,12 @@ sealed trait Executable:
   def fork
       [ResultType]
       ()
-      (using environment: Environment, environmentError: CanThrow[EnvironmentError], log: Log)
+      (using properties: SystemProperties, systemProperty: CanThrow[SystemPropertyError], log: Log)
       : Process[Exec, ResultType]
   
   def exec
       [ResultType]
-      ()(using environment: Environment, environmentError: CanThrow[EnvironmentError], log: Log)
+      ()(using properties: SystemProperties, systemProperty: CanThrow[SystemPropertyError], log: Log)
       (using executor: Executor[ResultType])
       : ResultType^{executor} =
     fork[ResultType]().await()
@@ -122,7 +122,7 @@ sealed trait Executable:
       [ResultType]
       ()
       (using erased commandOutput: CommandOutput[Exec, ResultType])
-      (using environment: Environment, environmentError: CanThrow[EnvironmentError], log: Log)
+      (using properties: SystemProperties, systemProperty: CanThrow[SystemPropertyError], log: Log)
       (using executor: Executor[ResultType])
       : ResultType^{executor} =
     fork[ResultType]().await()
@@ -162,11 +162,11 @@ case class Command(args: Text*) extends Executable:
   def fork
       [ResultType]
       ()
-      (using env: Environment, environmentError: CanThrow[EnvironmentError], log: Log)
+      (using properties: SystemProperties, systemProperty: CanThrow[SystemPropertyError], log: Log)
       : Process[Exec, ResultType] =
     val processBuilder = ProcessBuilder(args.ss*)
-    val dir = Option(System.getenv("PWD")).map(_.nn).orElse(Option(System.getProperty("user.dir"))).map(ji.File(_)).getOrElse:
-      throw EnvironmentError(t"PWD")
+    val dir = Option(System.getProperty("user.dir")).map(ji.File(_)).getOrElse:
+      throw SystemPropertyError(t"user.dir")
     
     processBuilder.directory(dir)
     
@@ -184,10 +184,10 @@ case class Pipeline(cmds: Command*) extends Executable:
   def fork
       [ResultType]
       ()
-      (using env: Environment, environmentError: CanThrow[EnvironmentError], log: Log)
+      (using properties: SystemProperties, systemProperty: CanThrow[SystemPropertyError], log: Log)
       : Process[Exec, ResultType] =
-    val dir = Option(System.getenv("PWD")).map(_.nn).orElse(Option(System.getProperty("user.dir"))).map(ji.File(_)).getOrElse:
-      throw EnvironmentError(t"PWD")
+    val dir = Option(System.getProperty("user.dir")).map(ji.File(_)).getOrElse:
+      throw SystemPropertyError(t"user.dir")
     
     Log.info(out"Starting pipelined processes ${this.out} in directory ${dir.getAbsolutePath.nn}")
 

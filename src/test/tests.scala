@@ -19,8 +19,9 @@ package guillotine
 import contextual.*
 import rudiments.*
 import gossamer.*
+import anticipation.*
 import turbulence.*
-import ambience.*, environments.system
+import ambience.*, environments.jvm, systemProperties.jvm
 import spectacular.*
 import probably.*
 import eucalyptus.*, logging.silent
@@ -165,7 +166,7 @@ object Tests extends Suite(t"Guillotine tests"):
 
     suite(t"Execution tests"):
 
-      given Environment = environments.system
+      given Environment = environments.jvm
 
       test(t"Echo string"):
         sh"echo hello".exec[Text]()
