@@ -60,3 +60,8 @@ object Anticipation:
         case _           => None
 
 export Anticipation.Text
+
+extension (texts: Iterable[Text])
+  transparent inline def ss: Iterable[String] = texts.map(_.s)
+
+extension (string: String) def tt: Text = Text(string)
