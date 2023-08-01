@@ -441,11 +441,13 @@ object InodeMaker:
   
   given fifo
       (using createNonexistentParents: CreateNonexistentParents,
-          overwritePreexisting: OverwritePreexisting, environment: Environment, log: Log)
+          overwritePreexisting: OverwritePreexisting, environment: Environment, environmentError: CanThrow[EnvironmentError], log: Log, io: CanThrow[IoError])
       : InodeMaker[Fifo, Unix.Path] =
     path => createNonexistentParents(path):
       overwritePreexisting(path):
-        sh"mkfifo $path".exec[Unit]()
+        sh"mkfifo $path".exec[ExitStatus]() match
+          case ExitStatus.Ok => ()
+          case _             => throw IoError(path)
     
     Fifo(path)
   

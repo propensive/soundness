@@ -28,8 +28,8 @@ package fileApi:
       (using hierarchy: Hierarchy[PathType, ?])(using decoder: Decoder[PathType])
       : GenericPathMaker[PathType] =
     new GenericPathMaker[PathType]:
-      def makePath(string: String, readOnly: Boolean): PathType =
-        string.show.decodeAs[PathType]
+      def makePath(text: Text, readOnly: Boolean): PathType =
+        text.decodeAs[PathType]
       
 //   given galileiApi
 //       : (GenericPathMaker[Path] & GenericDirectoryMaker[Directory] &
