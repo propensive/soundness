@@ -22,7 +22,15 @@ import java.util as ju
 
 import language.experimental.captureChecking
 
+case class UuidError(badUuid: Text) extends Error(msg"$badUuid is not a valid UUID")
+
 object Uuid:
+  def parse(text: Text): Uuid throws UuidError =
+    val uuid =
+      try ju.UUID.fromString(text.s).nn catch case _: Exception => throw UuidError(text)
+    
+    Uuid(uuid.getMostSignificantBits, uuid.getLeastSignificantBits)
+
   def unapply(text: Text): Option[Uuid] =
     try Some:
       val uuid = ju.UUID.fromString(text.s).nn
@@ -34,6 +42,6 @@ object Uuid:
     Uuid(uuid.getMostSignificantBits, uuid.getLeastSignificantBits)
 
 case class Uuid(msb: Long, lsb: Long):
-  def javaUuid: ju.UUID = ju.UUID(msb, lsb)
+  def java: ju.UUID = ju.UUID(msb, lsb)
   def bytes: Bytes = Bytes(msb) ++ Bytes(lsb)
-  def text: Text = javaUuid.toString.tt
+  def text: Text = this.java.toString.tt

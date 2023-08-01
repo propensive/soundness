@@ -159,8 +159,15 @@ object Rudiments:
 
     '{IArray.from(${Expr(bytes)})}
 
+  def uuid(expr: Expr[StringContext])(using Quotes): Expr[Uuid] =
+    val text = expr.valueOrAbort.parts.head.tt
+    val uuid = try Uuid.parse(text) catch case error: UuidError => fail(error.message)
+    '{Uuid(${Expr(uuid.msb)}, ${Expr(uuid.lsb)})}
+    
+
 export Rudiments.ByteSize
 
 extension (inline context: StringContext)
   transparent inline def bin(): AnyVal = ${Rudiments.bin('context)}
   transparent inline def hex(): IArray[Byte] = ${Rudiments.hex('context)}
+  inline def uuid(): Uuid = ${Rudiments.uuid('context)}
