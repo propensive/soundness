@@ -29,7 +29,7 @@ object CssStylesheet:
   given
       (using encoding: Encoding, charEncoder: CharEncoder)
       : GenericHttpResponseStream[CssStylesheet] with
-    def mediaType: String = t"text/css; charset=${encoding.name}".s
+    def mediaType: Text = t"text/css; charset=${encoding.name}"
     
     def content(stylesheet: CssStylesheet): LazyList[IArray[Byte]] =
       LazyList(stylesheet.text.bytes)
@@ -90,8 +90,8 @@ case class Import(url: Text) extends CssStylesheet.Item:
 
 object CssStyle:
   given GenericHtmlAttribute["style", CssStyle] with
-    def serialize(value: CssStyle): String = value.properties.map(_.text).join(t";").s
-    def name: String = "style"
+    def serialize(value: CssStyle): Text = value.properties.map(_.text).join(t";")
+    def name: Text = t"style"
 
 case class CssStyle(properties: CssProperty*):
   def text: Text = properties.map(_.text).join(t"\n")

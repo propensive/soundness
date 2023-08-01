@@ -61,10 +61,11 @@ case class PropertyDef[Name <: Label, -T: ShowProperty]():
 object Selectable:
   given ident: Selectable[Selector] = identity(_)
 
-  given [T](using sel: GenericCssSelection[T]): Selectable[T] = sel.selection(_) match
-    case s".$cls" => Selector.Class(Text(cls))
-    case s"#$id"  => Selector.Id(Text(id))
-    case elem     => Selector.Element(Text(elem))
+  given [SelectableType](using sel: GenericCssSelection[SelectableType]): Selectable[SelectableType] =
+    sel.selection(_).s match
+      case s".$cls" => Selector.Class(cls.tt)
+      case s"#$id"  => Selector.Id(id.tt)
+      case elem     => Selector.Element(elem.tt)
 
 trait Selectable[-T]:
   def selector(value: T): Selector
