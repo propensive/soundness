@@ -19,6 +19,7 @@ package ambience
 import anticipation.*
 import spectacular.*
 import rudiments.*
+import gossamer.*
 
 import scala.compiletime.ops.string.*
 
@@ -49,21 +50,19 @@ object SystemPropertyReader:
     identity(_)
   
   given javaHome[PathType: GenericPathMaker]: SystemPropertyReader["java.home", PathType] =
-    text => makeGenericPath(text.s)
+    makeGenericPath(_)
   
   given javaLibraryPath
       [PathType: GenericPathMaker]
       (using systemProperties: SystemProperties, systemProperty: CanThrow[SystemPropertyError])
       : SystemPropertyReader["java.library.path", List[PathType]] =
-    text => text.s.split(systemProperties("path.separator".tt).or(":".tt).s).nn.to(List).map(_.nn).map: path =>
-      makeGenericPath(path)
+    _.cut(systemProperties(t"path.separator").or(t":")).map(makeGenericPath(_))
 
   given javaClassPath
       [PathType: GenericPathMaker]
       (using systemProperties: SystemProperties, systemProperty: CanThrow[SystemPropertyError])
       : SystemPropertyReader["java.class.path", List[PathType]] =
-    text => text.s.split(systemProperties("path.separator".tt).or(":".tt).s).nn.to(List).map(_.nn).map: path =>
-      makeGenericPath(path)
+    _.cut(systemProperties(t"path.separator").or(t":")).map(makeGenericPath(_))
 
   given javaVersion: SystemPropertyReader["java.version", Text] = identity(_)
   given javaRuntimeVersion: SystemPropertyReader["java.runtime.version", Text] = identity(_)
@@ -72,8 +71,7 @@ object SystemPropertyReader:
       [PathType: GenericPathMaker]
       (using systemProperties: SystemProperties, systemProperty: CanThrow[SystemPropertyError])
       : SystemPropertyReader["java.ext.dirs", List[PathType]] =
-    text => text.s.split(systemProperties("path.separator".tt).or(":".tt).s).nn.to(List).map(_.nn).map: path =>
-      makeGenericPath(path)
+    _.cut(systemProperties(t"path.separator").or(t":")).map(makeGenericPath(_))
 
   given fileSeparator: SystemPropertyReader["file.separator", Char] = _.decodeAs[Char]
   given pathSeparator: SystemPropertyReader["path.separator", Char] = _.decodeAs[Char]
@@ -82,10 +80,10 @@ object SystemPropertyReader:
   given userName: SystemPropertyReader["user.name", Text] = identity(_)
   
   given userHome[PathType: GenericPathMaker]: SystemPropertyReader["user.home", PathType] =
-    text => makeGenericPath(text.s)
+    makeGenericPath(_)
   
   given userDir[PathType: GenericPathMaker]: SystemPropertyReader["user.dir", PathType] =
-    text => makeGenericPath(text.s)
+    makeGenericPath(_)
 
   given osName: SystemPropertyReader["os.name", Text] = identity(_)
   given osVersion: SystemPropertyReader["os.version", Text] = identity(_)

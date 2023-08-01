@@ -44,15 +44,16 @@ object Environment extends Dynamic:
           reader: EnvironmentVariable[key.type, VariableType],
           environmentError: CanThrow[EnvironmentError])
       : VariableType^{environment, reader, environmentError} =
-    environment(reader.name).mm(reader.read(_)).or:
-      throw EnvironmentError(reader.name)
+    environment(reader.defaultName).mm(reader.read(_)).or:
+      throw EnvironmentError(reader.defaultName)
   
 @capability
 trait EnvironmentVariable[AliasType <: Label, VariableType]:
-  inline def name: Text = valueOf[AliasType].tt.uncamel.snake.upper
+  inline def defaultName: Text = name.or(valueOf[AliasType].tt.uncamel.snake.upper)
+  def name: Maybe[Text] = Unset
   def read(value: Text): VariableType
 
-object EnvironmentVariable:
+trait EnvironmentVariable2:
   given generic[UnknownType <: Label]: EnvironmentVariable[UnknownType, Text] =
     identity(_)
   
@@ -61,6 +62,75 @@ object EnvironmentVariable:
       (using decoder: Decoder[VariableType])
       : EnvironmentVariable[UnknownType, VariableType] =
     decoder.decode(_)
+
+object EnvironmentVariable extends EnvironmentVariable2:
+  given path
+      [PathType: GenericPathMaker]
+      (using systemProperties: SystemProperties, systemProperty: CanThrow[SystemPropertyError])
+      : EnvironmentVariable["path", List[PathType]] =
+    _.cut(systemProperties(t"path.separator").or(t":")).map(makeGenericPath(_))
+  
+  given xdgDataDirs
+      [PathType: GenericPathMaker]
+      (using systemProperties: SystemProperties, systemProperty: CanThrow[SystemPropertyError])
+      : EnvironmentVariable["xdgDataDirs", List[PathType]] =
+    _.cut(systemProperties(t"path.separator").or(t":")).map(makeGenericPath(_))
+  
+  given xdgConfigDirs
+      [PathType: GenericPathMaker]
+      (using systemProperties: SystemProperties, systemProperty: CanThrow[SystemPropertyError])
+      : EnvironmentVariable["xdgConfigDirs", List[PathType]] =
+    _.cut(systemProperties(t"path.separator").or(t":")).map(makeGenericPath(_))
+
+  given xdgDataHome[PathType: GenericPathMaker]: EnvironmentVariable["xdgDataHome", PathType] =
+    makeGenericPath(_)
+
+  given xdgConfigHome[PathType: GenericPathMaker]: EnvironmentVariable["xdgConfigHome", PathType] =
+    makeGenericPath(_)
+  
+  given xdgStateHome[PathType: GenericPathMaker]: EnvironmentVariable["xdgStateHome", PathType] =
+    makeGenericPath(_)
+  
+  given xdgCacheHome[PathType: GenericPathMaker]: EnvironmentVariable["xdgCacheHome", PathType] =
+    makeGenericPath(_)
+  
+  given xdgRuntimeDir[PathType: GenericPathMaker]: EnvironmentVariable["xdgRuntimeDir", PathType] =
+    makeGenericPath(_)
+  
+  given home[PathType: GenericPathMaker]: EnvironmentVariable["home", PathType] = makeGenericPath(_)
+  given mail[PathType: GenericPathMaker]: EnvironmentVariable["mail", PathType] = makeGenericPath(_)
+  
+  given shell[PathType: GenericPathMaker]: EnvironmentVariable["shell", PathType] =
+    makeGenericPath(_)
+  
+  given oldPwd[PathType: GenericPathMaker]: EnvironmentVariable["oldPwd", PathType] with
+    def read(variable: Text): PathType = makeGenericPath(variable)
+    override def name: Text = t"OLDPWD"
+
+  given windowId[PathType: GenericPathMaker]: EnvironmentVariable["windowId", PathType] with
+    def read(variable: Text): PathType = makeGenericPath(variable)
+    override def name: Text = t"WINDOWID"
+
+  given editor[PathType: GenericPathMaker]: EnvironmentVariable["editor", PathType] =
+    makeGenericPath(_)
+  
+  given pager[PathType: GenericPathMaker]: EnvironmentVariable["pager", PathType] =
+    makeGenericPath(_)
+  
+  given sshAgentPid(using CanThrow[NumberError]): EnvironmentVariable["sshAgentPid", Pid] = text =>
+    Pid(text.decodeAs[Int])
+
+  given sshAuthSock[PathType: GenericPathMaker]: EnvironmentVariable["sshAuthSock", PathType] =
+    makeGenericPath(_)
+  
+  given manpager[PathType: GenericPathMaker]: EnvironmentVariable["manpager", PathType] =
+    makeGenericPath(_)
+  
+  given columns(using Decoder[Int]): EnvironmentVariable["columns", Int] = _.decodeAs[Int]
+  given lang: EnvironmentVariable["lang", Text] = identity(_)
+  
+  given display: EnvironmentVariable["display", Text] = identity(_)
+  given term: EnvironmentVariable["term", Text] = identity(_)
 
 case class EnvironmentError(variable: Text)
 extends Error(msg"the environment variable ${variable} was not defined")
