@@ -120,13 +120,13 @@ object Json extends Dynamic:
       (using encoder: CharEncoder^, printer: JsonPrinter)
       : GenericHttpResponseStream[Json]^{encoder} =
     new GenericHttpResponseStream[Json]:
-      def mediaType: String = t"application/json; charset=${encoder.encoding.name}".s
+      def mediaType: Text = t"application/json; charset=${encoder.encoding.name}"
       def content(json: Json): LazyList[Bytes] = LazyList(json.show.bytes)
 
   given
       (using jsonParse: CanThrow[JsonParseError], charEncoder: CharEncoder^)
       : GenericHttpReader[Json]^{jsonParse, charEncoder} =
-    string => Json.parse(LazyList(Text(string).bytes))
+    text => Json.parse(LazyList(text.bytes))
 
   given aggregable
       [SourceType]
