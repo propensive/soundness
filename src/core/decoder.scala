@@ -22,12 +22,14 @@ import anticipation.*
 import language.experimental.captureChecking
 
 case class NumberError(text: Text, specializable: Specializable)
-extends Error(msg"$text is not a valid ${specializable.getClass.nn.getName.nn.toLowerCase.nn.tt}")
+extends Error(msg"$text is not a valid ${specializable.show}")
 
 object Decoder:
   given (using number: CanThrow[NumberError]): Decoder[Int] = text =>
     try Integer.parseInt(text.s) catch case _: NumberFormatException =>
       throw NumberError(text, Int)
+
+  given (using uuid: CanThrow[UuidError]): Decoder[Uuid] = Uuid.parse(_)
 
   given (using number: CanThrow[NumberError]): Decoder[Byte] = text =>
     val int = try Integer.parseInt(text.s) catch case _: NumberFormatException =>
@@ -64,6 +66,7 @@ object Encoder:
   given Encoder[Float] = _.toString.tt
   given Encoder[Text] = identity(_)
   given Encoder[Char] = _.toString.tt
+  given Encoder[Uuid] = _.text
 
 @capability
 trait Encoder[-ValueType]:

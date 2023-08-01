@@ -35,6 +35,9 @@ trait Showable[-ValueType]:
 
 object Show:
   given showable[ValueType](using showable: Showable[ValueType]): Show[ValueType] = showable.show(_)
+  
+  given specializable: Show[Specializable] = value =>
+    value.getClass.nn.getName.nn.split("\\.").nn.last.nn.dropRight(1).toLowerCase.nn.tt
 
 object TextConversion:
   val any: Debug[Any] = value => value.toString.tt
