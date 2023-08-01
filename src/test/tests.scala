@@ -16,10 +16,12 @@
 
 package rudiments
 
-import probably.*
-import rudiments.*
+import anticipation.*
 import gossamer.*
 import larceny.*
+import probably.*
+import rudiments.*
+import symbolism.*
 
 case class Person(name: Text, age: Int)
 

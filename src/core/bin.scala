@@ -36,6 +36,12 @@ object Rudiments:
 
     given add: ClosedOperator["+", ByteSize] = _ + _
     given subtract: ClosedOperator["-", ByteSize] = _ - _
+
+    given inequality: Inequality[ByteSize, ByteSize] with
+      inline def compare
+          (inline left: ByteSize, inline right: ByteSize, inline strict: Boolean, inline greaterThan: Boolean)
+          : Boolean =
+        !strict && left.long == right.long || (left.long < right.long) ^ greaterThan
     
     given multiply: Operator["*", ByteSize, Int] with
       type Result = ByteSize
@@ -48,18 +54,6 @@ object Rudiments:
     extension (bs: ByteSize)
       def long: Long = bs
       def text: Text = (bs.toString+" bytes").tt
-
-      @targetName("gt")
-      infix def >(that: ByteSize): Boolean = bs > that
-
-      @targetName("lt")
-      infix def <(that: ByteSize): Boolean = bs < that
-
-      @targetName("lte")
-      infix def <=(that: ByteSize): Boolean = bs <= that
-
-      @targetName("gte")
-      infix def >=(that: ByteSize): Boolean = bs >= that
 
   def inequality
       (expr: Expr[Boolean], bound: Expr[Int | Double | Char | Byte | Short | Long | Float],
