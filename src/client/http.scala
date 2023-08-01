@@ -95,8 +95,8 @@ class Postable
 
 object HttpMethod:
   given formmethod: GenericHtmlAttribute["formmethod", HttpMethod] with
-    def name: String = "formmethod"
-    def serialize(method: HttpMethod): String = method.show.s
+    def name: Text = t"formmethod"
+    def serialize(method: HttpMethod): Text = method.show
 
   given Display[HttpMethod] = method => out"${colors.Crimson}[${method.toString.show.upper}]"
 
@@ -118,9 +118,9 @@ object HttpReadable:
 
   given [T](using reader: GenericHttpReader[T]): HttpReadable[T] with
     def read(status: HttpStatus, body: HttpBody): T = body match
-      case HttpBody.Empty         => reader.read("")
-      case HttpBody.Data(data)    => reader.read(data.uString.s)
-      case HttpBody.Chunked(data) => reader.read(data.slurp().uString.s)
+      case HttpBody.Empty         => reader.read(t"")
+      case HttpBody.Data(data)    => reader.read(data.uString)
+      case HttpBody.Chunked(data) => reader.read(data.slurp().uString)
 
   given HttpReadable[HttpStatus] with
     def read(status: HttpStatus, body: HttpBody) = status

@@ -31,7 +31,7 @@ trait RequestHeader[LabelType <: Label]():
       (content: ValueType)
       (using ghrp: GenericHttpRequestParam[LabelType, ValueType])
       : RequestHeader.Value =
-    RequestHeader.Value(this, Text(ghrp(content)))
+    RequestHeader.Value(this, ghrp(content))
 
 class SimpleRequestHeader[LabelType <: Label: ValueOf]() extends RequestHeader[LabelType]():
   def header: Text = Text(summon[ValueOf[LabelType]].value)
