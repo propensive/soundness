@@ -17,6 +17,7 @@
 package baroque
 
 import probably.*
+import symbolism.*
 import gossamer.*
 import spectacular.*
 import quantitative.*
