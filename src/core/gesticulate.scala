@@ -35,7 +35,7 @@ object Media:
   enum Group:
     case Application, Audio, Image, Message, Multipart, Text, Video, Font, Example, Model
 
-    def name: Text = this.toString.show.lower
+    def name: Text = this.toString.tt.lower
 
   object Subtype:
     given Show[Subtype] = _.name
@@ -53,7 +53,7 @@ object Media:
       case X(value)        => t"x-$value"
 
   object Suffix:
-    given Show[Suffix] = _.toString.show.lower
+    given Show[Suffix] = _.toString.tt.lower
 
   enum Suffix:
     case Xml, Json, Ber, Cbor, Der, FastInfoset, Wbxml, Zip, Tlv, JsonSeq, Sqlite3, Jwt, Gzip,
@@ -62,7 +62,7 @@ object Media:
     def name: Text = this match
       case JsonSeq => t"json-seq"
       case CborSeq => t"cbor-seq"
-      case other   => other.toString.show.uncamel.kebab
+      case other   => other.toString.tt.uncamel.kebab
 
   lazy val systemMediaTypes: Set[Text] =
     try
@@ -178,26 +178,26 @@ case class MediaType(group: Media.Group, subtype: Media.Subtype, suffixes: List[
 
 object MediaType:
   given Debug[MediaType] = mt => t"""media"${mt}""""
-  given GenericHttpRequestParam["content-type", MediaType] = show(_).s
+  given GenericHttpRequestParam["content-type", MediaType] = show(_)
 
   given show: Show[MediaType] =
     mt => t"${mt.basic}${mt.parameters.map { p => t"; ${p(0)}=${p(1)}" }.join}"
   
   given formenctype: GenericHtmlAttribute["formenctype", MediaType] with
-    def name: String = "formenctype"
-    def serialize(mediaType: MediaType): String = mediaType.show.s
+    def name: Text = t"formenctype"
+    def serialize(mediaType: MediaType): Text = mediaType.show
   
   given media: GenericHtmlAttribute["media", MediaType] with
-    def name: String = "media"
-    def serialize(mediaType: MediaType): String = mediaType.show.s
+    def name: Text = t"media"
+    def serialize(mediaType: MediaType): Text = mediaType.show
   
   given enctype: GenericHtmlAttribute["enctype", MediaType] with
-    def name: String = "enctype"
-    def serialize(mediaType: MediaType): String = mediaType.show.s
+    def name: Text = t"enctype"
+    def serialize(mediaType: MediaType): Text = mediaType.show
   
   given htype: GenericHtmlAttribute["htype", MediaType] with
-    def name: String = "type"
-    def serialize(mediaType: MediaType): String = mediaType.show.s
+    def name: Text = t"type"
+    def serialize(mediaType: MediaType): Text = mediaType.show
 
   def unapply(value: Text): Option[MediaType] =
     try Some(Media.parse(value)) catch case err: InvalidMediaTypeError => None
