@@ -29,8 +29,7 @@ IO and NIO types like `File` and `Path`
 
 ## Availability
 
-Diuretic has not yet been published as a binary. It is currently waiting for the
-final release of Scala 3.3.
+Diuretic has not yet been published as a binary.
 
 ## Getting Started
 
@@ -82,7 +81,7 @@ be used, but caution should be taken if there is a mismatch between the
 project's stability level and the importance of your own project.
 
 Diuretic is designed to be _small_. Its entire source code currently consists
-of 74 lines of code.
+of 72 lines of code.
 
 ## Building
 
