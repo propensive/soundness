@@ -19,80 +19,84 @@ package imperial
 import rudiments.*
 import ambience.*
 import anticipation.*
+import gossamer.*
 
 object BaseLayout:
-  case class Dir(home: Boolean, path: List[String]):
+  case class Dir(home: Boolean, path: List[Text]):
     @targetName("child")
-    def /(name: String): Dir = Dir(home, name :: path)
+    def /(name: Text): Dir = Dir(home, name :: path)
     
-    def render(homeDir: String): String =
-      val slash = if path.isEmpty then "" else "/"
-      s"${if home then homeDir else ""}$slash${path.reverse.mkString("/")}"
+    def render(homeDir: Text): Text =
+      val slash = if path.isEmpty then t"" else t"/"
+      t"${if home then homeDir else t""}$slash${path.reverse.join(t"/")}"
 
 case class BaseLayout
-    (private val part: Maybe[String], private val envVar: Maybe[String] = Unset,
+    (private val part: Maybe[Text], private val envVar: Maybe[Text] = Unset,
         readOnly: Boolean = false)
     (using baseDir: BaseLayout.Dir):
   
-  def absolutePath(using env: Environment): String =
-    val home: String = env(Text("HOME")).or(env.property(Text("user.home"))).s
-    val home2: String = if home.endsWith("/") then home.dropRight(1) else home
+  def absolutePath
+      (using Environment, CanThrow[EnvironmentError], SystemProperties,
+          CanThrow[SystemPropertyError])
+      : Text =
+    val home: Text = Environment.home[Text].or(Properties.user.home[Text]())
+    val home2: Text = if home.ends(t"/") then home.drop(1, Rtl) else home
     part.mm(baseDir / _).or(baseDir).render(home2)
 
   given newBaseDir: BaseLayout.Dir = BaseLayout.Dir(baseDir.home, part.mm(_ :: baseDir.path).or(baseDir.path))
 
-  def apply[T]()(using GenericPathMaker[T], Environment): T =
-    val path: String = envVar.option match
+  def apply[T]()(using GenericPathMaker[T], SystemProperties, CanThrow[SystemPropertyError], Environment, CanThrow[EnvironmentError]): T =
+    val path: Text = envVar.option match
       case None         => absolutePath
-      case Some(envVar) => summon[Environment](Text(envVar)).fm(absolutePath)(_.s)
+      case Some(envVar) => Environment(envVar).or(absolutePath)
 
     makeGenericPath(path, readOnly = readOnly)
 
 object Xdg extends BaseLayout(Unset)(using BaseLayout.Dir(false, Nil)):
-  override def apply[T]()(using GenericPathMaker[T], Environment): T =
-    makeGenericPath("/", readOnly = true)
+  override def apply[T]()(using GenericPathMaker[T], SystemProperties, CanThrow[SystemPropertyError], Environment, CanThrow[EnvironmentError]): T =
+    makeGenericPath(t"/", readOnly = true)
 
-  object Boot extends BaseLayout("boot", readOnly = true)
-  object Efi extends BaseLayout("efi", readOnly = true)
-  object Etc extends BaseLayout("etc")
-  object Home extends BaseLayout("home")
-  object Root extends BaseLayout("root")
-  object Srv extends BaseLayout("srv")
-  object Tmp extends BaseLayout("tmp")
-  object Run extends BaseLayout("run"):
-    object Log extends BaseLayout("log")
+  object Boot extends BaseLayout(t"boot", readOnly = true)
+  object Efi extends BaseLayout(t"efi", readOnly = true)
+  object Etc extends BaseLayout(t"etc")
+  object Home extends BaseLayout(t"home")
+  object Root extends BaseLayout(t"root")
+  object Srv extends BaseLayout(t"srv")
+  object Tmp extends BaseLayout(t"tmp")
+  object Run extends BaseLayout(t"run"):
+    object Log extends BaseLayout(t"log")
     
-    object User extends BaseLayout("user"):
-      def apply(uid: Long): BaseLayout = BaseLayout(uid.toString)
+    object User extends BaseLayout(t"user"):
+      def apply(uid: Long): BaseLayout = BaseLayout(uid.toString.tt)
       def current: BaseLayout = apply(com.sun.security.auth.module.UnixSystem().getUid())
   
-  object Usr extends BaseLayout("usr", readOnly = true):
-    object Bin extends BaseLayout("bin", readOnly = true)
-    object Include extends BaseLayout("include", readOnly = true)
-    object Lib extends BaseLayout("lib", readOnly = true)
-    object Share extends BaseLayout("share", readOnly = true):
-      object Doc extends BaseLayout("doc", readOnly = true)
-      object Factory extends BaseLayout("factory", readOnly = true):
-        object Etc extends BaseLayout("etc", readOnly = true)
-        object Var extends BaseLayout("var", readOnly = true)
-  object Var extends BaseLayout("var"):
-    object Cache extends BaseLayout("cache")
-    object Lib extends BaseLayout("lib")
-    object Log extends BaseLayout("log")
-    object Spool extends BaseLayout("spool")
-    object Tmp extends BaseLayout("tmp", "TMPDIR")
-  object Dev extends BaseLayout("dev"):
-    object Shm extends BaseLayout("shm")
-  object Proc extends BaseLayout("proc"):
-    def apply(pid: Pid): BaseLayout = BaseLayout(pid.value.toString, readOnly = true)
-    object Sys extends BaseLayout("sys", readOnly = true)
-  object Sys extends BaseLayout("sys", readOnly = true)
+  object Usr extends BaseLayout(t"usr", readOnly = true):
+    object Bin extends BaseLayout(t"bin", readOnly = true)
+    object Include extends BaseLayout(t"include", readOnly = true)
+    object Lib extends BaseLayout(t"lib", readOnly = true)
+    object Share extends BaseLayout(t"share", readOnly = true):
+      object Doc extends BaseLayout(t"doc", readOnly = true)
+      object Factory extends BaseLayout(t"factory", readOnly = true):
+        object Etc extends BaseLayout(t"etc", readOnly = true)
+        object Var extends BaseLayout(t"var", readOnly = true)
+  object Var extends BaseLayout(t"var"):
+    object Cache extends BaseLayout(t"cache")
+    object Lib extends BaseLayout(t"lib")
+    object Log extends BaseLayout(t"log")
+    object Spool extends BaseLayout(t"spool")
+    object Tmp extends BaseLayout(t"tmp", t"TMPDIR")
+  object Dev extends BaseLayout(t"dev"):
+    object Shm extends BaseLayout(t"shm")
+  object Proc extends BaseLayout(t"proc"):
+    def apply(pid: Pid): BaseLayout = BaseLayout(pid.value.toString.tt, readOnly = true)
+    object Sys extends BaseLayout(t"sys", readOnly = true)
+  object Sys extends BaseLayout(t"sys", readOnly = true)
 
 object Home extends BaseLayout(Unset)(using BaseLayout.Dir(true, Nil)):
-  object Cache extends BaseLayout(".cache", "XDG_CACHE_HOME")
-  object Config extends BaseLayout(".config", "XDG_CONFIG_HOME")
-  object Local extends BaseLayout(".local"):
-    object Bin extends BaseLayout("bin")
-    object Lib extends BaseLayout("lib")
-    object Share extends BaseLayout("share", "XDG_DATA_HOME")
-    object State extends BaseLayout("state", "XDG_STATE_HOME")
+  object Cache extends BaseLayout(t".cache", t"XDG_CACHE_HOME")
+  object Config extends BaseLayout(t".config", t"XDG_CONFIG_HOME")
+  object Local extends BaseLayout(t".local"):
+    object Bin extends BaseLayout(t"bin")
+    object Lib extends BaseLayout(t"lib")
+    object Share extends BaseLayout(t"share", t"XDG_DATA_HOME")
+    object State extends BaseLayout(t"state", t"XDG_STATE_HOME")
