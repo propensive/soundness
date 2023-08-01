@@ -46,31 +46,31 @@ object JavaNioFile extends GenericFileMaker[jnf.Path], GenericDirectoryMaker[jnf
     GenericDirectoryReader[jnf.Path], GenericFileReader[jnf.Path], GenericPathMaker[jnf.Path],
     GenericPathReader[jnf.Path]:
 
-  def makePath(path: String, readOnly: Boolean = false): jnf.Path = jnf.Paths.get(path).nn
+  def makePath(path: Text, readOnly: Boolean = false): jnf.Path = jnf.Paths.get(path.s).nn
 
-  def makeFile(path: String, readOnly: Boolean = false): jnf.Path = makePath(path, readOnly)
-  def makeDirectory(path: String, readOnly: Boolean = false): jnf.Path = makePath(path, readOnly)
+  def makeFile(path: Text, readOnly: Boolean = false): jnf.Path = makePath(path, readOnly)
+  def makeDirectory(path: Text, readOnly: Boolean = false): jnf.Path = makePath(path, readOnly)
 
-  def getPath(value: jnf.Path): String = value.toAbsolutePath.nn.toString
-  def filePath(value: jnf.Path): String = getPath(value)
-  def directoryPath(value: jnf.Path): String = getPath(value)
+  def getPath(value: jnf.Path): Text = Text(value.toAbsolutePath.nn.toString)
+  def filePath(value: jnf.Path): Text = getPath(value)
+  def directoryPath(value: jnf.Path): Text = getPath(value)
 
 object JavaIoFile extends GenericFileMaker[ji.File], GenericDirectoryMaker[ji.File],
     GenericDirectoryReader[ji.File], GenericFileReader[ji.File], GenericPathMaker[ji.File],
     GenericPathReader[ji.File]:
 
-  def makePath(path: String, readOnly: Boolean = false): ji.File = ji.File(path).nn
+  def makePath(path: Text, readOnly: Boolean = false): ji.File = ji.File(path.s).nn
 
-  def makeFile(path: String, readOnly: Boolean = false): ji.File = makePath(path, readOnly)
-  def makeDirectory(path: String, readOnly: Boolean = false): ji.File = makePath(path, readOnly)
+  def makeFile(path: Text, readOnly: Boolean = false): ji.File = makePath(path, readOnly)
+  def makeDirectory(path: Text, readOnly: Boolean = false): ji.File = makePath(path, readOnly)
 
-  def getPath(value: ji.File): String = value.getAbsolutePath.nn.toString
-  def filePath(value: ji.File): String = getPath(value)
-  def directoryPath(value: ji.File): String = getPath(value)
+  def getPath(value: ji.File): Text = Text(value.getAbsolutePath.nn.toString)
+  def filePath(value: ji.File): Text = getPath(value)
+  def directoryPath(value: ji.File): Text = getPath(value)
 
 object JavaNetUrl extends GenericUrl[jn.URL]:
-  def readUrl(value: jn.URL): String = value.toString
-  def makeUrl(string: String): jn.URL = jn.URI(string).nn.toURL().nn
+  def readUrl(value: jn.URL): Text = Text(value.toString)
+  def makeUrl(text: Text): jn.URL = jn.URI(text.s).nn.toURL().nn
 
 extension (stream: LazyList[IArray[Byte]])
   def inputStream: ji.InputStream = new ji.InputStream:
