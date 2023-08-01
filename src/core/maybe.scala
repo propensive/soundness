@@ -16,6 +16,8 @@
 
 package rudiments
 
+import anticipation.*
+
 import language.experimental.captureChecking
 
 object Unset:
