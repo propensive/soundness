@@ -27,6 +27,7 @@ import eucalyptus.*
 import spectacular.*
 import rudiments.*
 import turbulence.*
+import nettlesome.*
 import hieroglyph.*, charEncoders.utf8
 import gesticulate.*
 import parasite.*
@@ -124,7 +125,7 @@ case class WebDriver(server: Browser#Server):
     private def get(address: Text)(using Log): Json = safe:
       internet:
         url"http://localhost:${server.port}/session/$sessionId/$address"
-          .get(RequestHeader.ContentType(t"application/json")).as[Json]
+          .get(RequestHeader.ContentType(media"application/json")).as[Json]
   
     private def post(address: Text, content: Json)(using Log): Json = safe:
       internet:
