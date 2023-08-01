@@ -56,7 +56,7 @@ object Html extends Node["html"]:
     Element(label.s, unclosed, block, verbatim, Map(), Seq(head, body))
 
 object TagType:
-  given GenericCssSelection[TagType[?, ?, ?]] = _.labelString
+  given GenericCssSelection[TagType[?, ?, ?]] = _.labelString.tt
 
 case class TagType[+NameType <: Label, ChildType <: Label, AttributeType <: Label]
               (labelString: NameType, unclosed: Boolean = false, block: Boolean = true,
@@ -78,7 +78,7 @@ extends Node[NameType], Dynamic:
     Element(labelString, unclosed, block, verbatim, Map(), children)
 
 object ClearTagType:
-  given GenericCssSelection[ClearTagType[?, ?, ?]] = _.labelString
+  given GenericCssSelection[ClearTagType[?, ?, ?]] = _.labelString.tt
 
 case class ClearTagType
     [+NameType <: Label, ChildType <: Label, AttributeType <: Label]
@@ -122,7 +122,7 @@ case class HtmlDoc(root: Node["html"])
 object HtmlDoc:
   given generic(using encoder: CharEncoder): GenericHttpResponseStream[HtmlDoc] =
     new GenericHttpResponseStream[HtmlDoc]:
-      def mediaType: String = t"text/html; charset=${encoder.encoding.name}".s
+      def mediaType: Text = t"text/html; charset=${encoder.encoding.name}"
       
       def content(value: HtmlDoc): LazyList[IArray[Byte]] =
         LazyList(HtmlDoc.serialize(value).bytes)

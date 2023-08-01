@@ -69,7 +69,7 @@ object StartTag:
         case (key, Unset)       => t"[$key]"
     .join
     
-    t"${elem.label}$tail".s
+    t"${elem.label}$tail"
 
 
 case class StartTag
