@@ -42,19 +42,6 @@ extension [ValueType](value: ValueType)
   transparent inline def matchable(using erased Unsafe.type): ValueType & Matchable =
     value.asInstanceOf[ValueType & Matchable]
 
-case class Property(name: Text) extends Dynamic:
-  def apply(): Text throws KeyNotFoundError =
-    Option(System.getProperty(name.s)).getOrElse(throw KeyNotFoundError(name)).nn.tt
-
-  def update(value: Text): Unit = System.setProperty(name.s, value.s)
-  def selectDynamic(key: String): Property = Property(s"$name.$key".tt)
-  def applyDynamic(key: String)(): Text throws KeyNotFoundError = selectDynamic(key).apply()
-
-object Sys extends Dynamic:
-  def selectDynamic(key: String): Property = Property(key.tt)
-  def applyDynamic(key: String)(): Text throws KeyNotFoundError = selectDynamic(key).apply()
-  def bigEndian: Boolean = java.nio.ByteOrder.nativeOrder == java.nio.ByteOrder.BIG_ENDIAN
-
 case class Counter(first: Int = 0):
   private val atomicInt: juca.AtomicInteger = juca.AtomicInteger(first)
   def apply(): Int = atomicInt.incrementAndGet()
