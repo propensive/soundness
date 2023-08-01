@@ -20,7 +20,7 @@ import digression.*
 import escapade.*
 import turbulence.*
 import anticipation.*
-import ambience.*, environments.system
+import ambience.*, environments.jvm
 import hieroglyph.*, textWidthCalculation.uniform
 
 import language.adhocExtensions
