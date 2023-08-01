@@ -25,7 +25,7 @@ import eucalyptus.*
 import escapade.*
 import iridescence.*
 import ambience.*
-import anticipation.*, fileApi.javaIo
+import anticipation.*
 
 import scala.jdk.StreamConverters.StreamHasToScala
 import scala.quoted.*
@@ -105,11 +105,16 @@ class Process[+ExecType <: Label, ResultType](process: java.lang.Process):
 sealed trait Executable:
   type Exec <: Label
 
-  def fork[ResultType]()(using env: Environment)(using Log): Process[Exec, ResultType]
+  def fork
+      [ResultType]
+      ()
+      (using environment: Environment, environmentError: CanThrow[EnvironmentError], log: Log)
+      : Process[Exec, ResultType]
   
   def exec
       [ResultType]
-      ()(using env: Environment, executor: Executor[ResultType], log: Log)
+      ()(using environment: Environment, environmentError: CanThrow[EnvironmentError], log: Log)
+      (using executor: Executor[ResultType])
       : ResultType^{executor} =
     fork[ResultType]().await()
 
@@ -117,7 +122,8 @@ sealed trait Executable:
       [ResultType]
       ()
       (using erased commandOutput: CommandOutput[Exec, ResultType])
-      (using executor: Executor[ResultType], env: Environment, log: Log)
+      (using environment: Environment, environmentError: CanThrow[EnvironmentError], log: Log)
+      (using executor: Executor[ResultType])
       : ResultType^{executor} =
     fork[ResultType]().await()
 
@@ -153,9 +159,15 @@ object Command:
   given Display[Command] = cmd => out"${colors.LightSeaGreen}(${formattedArgs(cmd.args)})"
 
 case class Command(args: Text*) extends Executable:
-  def fork[ResultType]()(using env: Environment)(using Log): Process[Exec, ResultType] =
+  def fork
+      [ResultType]
+      ()
+      (using env: Environment, environmentError: CanThrow[EnvironmentError], log: Log)
+      : Process[Exec, ResultType] =
     val processBuilder = ProcessBuilder(args.ss*)
-    val dir = env.userHome[java.io.File]
+    val dir = Option(System.getenv("PWD")).map(_.nn).orElse(Option(System.getProperty("user.dir"))).map(ji.File(_)).getOrElse:
+      throw EnvironmentError(t"PWD")
+    
     processBuilder.directory(dir)
     
     val t0 = System.currentTimeMillis
@@ -169,8 +181,14 @@ object Pipeline:
   given Display[Pipeline] = _.cmds.map(_.out).join(out" ${colors.PowderBlue}(|) ")
 
 case class Pipeline(cmds: Command*) extends Executable:
-  def fork[T]()(using env: Environment)(using Log): Process[Exec, T] =
-    val dir = env.pwd[ji.File]
+  def fork
+      [ResultType]
+      ()
+      (using env: Environment, environmentError: CanThrow[EnvironmentError], log: Log)
+      : Process[Exec, ResultType] =
+    val dir = Option(System.getenv("PWD")).map(_.nn).orElse(Option(System.getProperty("user.dir"))).map(ji.File(_)).getOrElse:
+      throw EnvironmentError(t"PWD")
+    
     Log.info(out"Starting pipelined processes ${this.out} in directory ${dir.getAbsolutePath.nn}")
 
     val processBuilders = cmds.map: cmd =>
@@ -178,7 +196,7 @@ case class Pipeline(cmds: Command*) extends Executable:
       pb.directory(dir)
       pb.nn
 
-    new Process[Exec, T](ProcessBuilder.startPipeline(processBuilders.asJava).nn.asScala.to(List).last)
+    new Process[Exec, ResultType](ProcessBuilder.startPipeline(processBuilders.asJava).nn.asScala.to(List).last)
 
 case class ExecError(command: Command, stdout: LazyList[Bytes], stderr: LazyList[Bytes])
 extends Error(msg"execution of the command $command failed")
