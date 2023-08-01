@@ -68,6 +68,17 @@ object Tests extends Suite(t"Inimitable Tests"):
         capture[UuidError](Uuid.parse(t"not-a-uuid"))
       .assert(_ == UuidError(t"not-a-uuid"))
       
+      val uuid1 = Uuid()
+      val uuid2 = Uuid()
+      
+      test(t"XOR two UUIDs"):
+        uuid1 ^ uuid2
+      .assert { uuid => uuid != uuid1 && uuid != uuid2 }
+      
+      test(t"Invert a UUID"):
+        ~uuid1
+      .assert(_ != uuid1)
+      
       test(t"Parse a bad UUID at compiletime"):
         demilitarize:
           uuid"not-a-uuid"

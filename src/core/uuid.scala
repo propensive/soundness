@@ -48,6 +48,12 @@ case class Uuid(msb: Long, lsb: Long):
   def java: ju.UUID = ju.UUID(msb, lsb)
   def bytes: Bytes = Bytes(msb) ++ Bytes(lsb)
   def text: Text = this.java.toString.tt
+  
+  @targetName("invert")
+  def unary_~ = Uuid(~msb, ~lsb)
+  
+  @targetName("xor")
+  def ^(right: Uuid): Uuid = Uuid(msb ^ right.msb, lsb ^ right.lsb)
 
 object Inimitable:
   def uuid(expr: Expr[StringContext])(using Quotes): Expr[Uuid] =
