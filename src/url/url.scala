@@ -103,7 +103,7 @@ object UrlInterpolator extends contextual.Interpolator[UrlInput, Text, Url]:
 
 object Url:
   given (using CanThrow[UrlError]): GenericUrl[Url] = new GenericUrl[Url]:
-    def readUrl(url: Url): Text = url.show
+    def urlText(url: Url): Text = url.show
     def makeUrl(value: Text): Url = Url.parse(value)
 
   given GenericHttpRequestParam["location", Url] = show(_)
@@ -244,8 +244,9 @@ object Weblink:
 
 case class Weblink(ascent: Int, descent: List[PathName[""]])
 
-case class Url(scheme: Scheme, authority: Maybe[Authority], pathText: Text, query: Maybe[Text] = Unset,
-                   fragment: Maybe[Text] = Unset):
+case class Url
+    (scheme: Scheme, authority: Maybe[Authority], pathText: Text, query: Maybe[Text] = Unset,
+        fragment: Maybe[Text] = Unset):
   
   lazy val path: List[PathName[""]] =
     pathText.drop(1).cut(t"/").reverse.map(_.urlDecode).map(PathName(_))
