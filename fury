@@ -1,7 +1,6 @@
 # This is a buildfile for Fury or Wrath.
 # More information is available at: https://github.com/propensive/wrath/
 
-repo propensive/serpentine
 repo propensive/eucalyptus
 
 target surveillance/core
@@ -10,5 +9,5 @@ project surveillance
   module core
     compiler  scala
     sources   src/core
-    include   anticipation/path eucalyptus/core serpentine/core
+    include   anticipation/path eucalyptus/core
 

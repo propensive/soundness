@@ -23,7 +23,6 @@ import rudiments.*
 import digression.*
 import parasite.*
 import spectacular.*
-import serpentine.*
 import anticipation.*
 
 import scala.collection.mutable.HashMap
@@ -58,7 +57,7 @@ case class Watcher[Dir](private val svc: jnf.WatchService)
   private val dirs: HashMap[jnf.Path, jnf.WatchKey] = HashMap()
   
   private def dirPath(dir: Dir): jnf.Path = jnf.Paths.get(fromDir.directoryPath(dir).show.s).nn
-  private def toDir(path: jnf.Path): Dir = mkdir.makeDirectory(path.toString.show.s)
+  private def toDir(path: jnf.Path): Dir = mkdir.makeDirectory(path.toString.show)
 
   private val funnel = Funnel[Maybe[WatchEvent]]
   private val pumpTask = Task(t"watcher")(pump())
@@ -81,13 +80,11 @@ case class Watcher[Dir](private val svc: jnf.WatchService)
     val base = watches(key)
     val eventCtx = event.context.nn
 
-    val absolute = eventCtx match
+    val absolute = (eventCtx: @unchecked) match
       case path: jnf.Path => base.resolve(path).nn
-      case _              => throw Mistake("Should never match")
     
-    val relative = eventCtx match
+    val relative = (eventCtx: @unchecked) match
       case path: jnf.Path => path.toString.show
-      case _              => throw Mistake("Should never match")
     
     try event.kind match
       case ENTRY_CREATE =>
@@ -139,7 +136,7 @@ enum WatchEvent:
       case Modify(_, file)       => file
       case Delete(_, path)       => path
 
-      mkdir.makePath(jnf.Paths.get(dir.s, relPath.show.s).nn.normalize.nn.toString.show.s)
+      mkdir.makePath(jnf.Paths.get(dir.s, relPath.show.s).nn.normalize.nn.toString.show)
 
 export WatchEvent.{NewFile, NewDirectory, Modify, Delete}
 
