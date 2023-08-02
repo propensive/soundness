@@ -185,9 +185,10 @@ object TextConversion:
     
     case Some(value) =>
       val valueText = compiletime.summonFrom:
-        case display: Debug[ValueType] => display(value)
-        case display: Show[ValueType]  => display(value)
-        case _                         => value.toString.tt
+        case debug: Debug[ValueType]     => debug(value)
+        case encoder: Encoder[ValueType] => encoder.encode(value)
+        case show: Show[ValueType]       => show(value)
+        case _                           => value.toString.tt
       
       s"Some($valueText)".tt
   
