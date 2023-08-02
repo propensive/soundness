@@ -267,6 +267,10 @@ object Sh:
 object AsParams:
   given [PathType: GenericPathReader]: AsParams[PathType] = _.fullPath
   given AsParams[Int] = _.show
+  
+  given [ValueType](using encoder: Encoder[ValueType]): AsParams[ValueType]^{encoder} =
+    new AsParams[ValueType]:
+      def show(value: ValueType): Text = encoder.encode(value)
 
 trait AsParams[-T]:
   def show(value: T): Text
