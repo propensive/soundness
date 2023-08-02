@@ -262,15 +262,13 @@ object Sh:
   given Insertion[Params, Text] = value => Params(value)
   given Insertion[Params, List[Text]] = xs => Params(xs*)
   given Insertion[Params, Command] = cmd => Params(cmd.args*)
-  given [T: CmdShow]: Insertion[Params, T] = value => Params(summon[CmdShow[T]].show(value))
+  given [ValueType: AsParams]: Insertion[Params, ValueType] = value => Params(summon[AsParams[ValueType]].show(value))
 
-object CmdShow:
-  given [P](using pi: GenericPathReader[P]): CmdShow[P] = pi.getPath(_).show
-  given [F](using fi: GenericFileReader[F]): CmdShow[F] = fi.filePath(_).show
-  given [D](using di: GenericDirectoryReader[D]): CmdShow[D] = di.directoryPath(_).show
-  given CmdShow[Int] = _.show
+object AsParams:
+  given [PathType: GenericPathReader]: AsParams[PathType] = _.fullPath
+  given AsParams[Int] = _.show
 
-trait CmdShow[-T]:
+trait AsParams[-T]:
   def show(value: T): Text
 
 given realm: Realm = Realm(t"guillotine")
