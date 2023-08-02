@@ -50,11 +50,11 @@ case class BaseLayout
       case None         => absolutePath
       case Some(envVar) => Environment(envVar).or(absolutePath)
 
-    makeGenericPath(path, readOnly = readOnly)
+    GenericPath(path)
 
 object Xdg extends BaseLayout(Unset)(using BaseLayout.Dir(false, Nil)):
   override def apply[T]()(using GenericPathMaker[T], SystemProperties, CanThrow[SystemPropertyError], Environment, CanThrow[EnvironmentError]): T =
-    makeGenericPath(t"/", readOnly = true)
+    GenericPath(t"/")
 
   object Boot extends BaseLayout(t"boot", readOnly = true)
   object Efi extends BaseLayout(t"efi", readOnly = true)
