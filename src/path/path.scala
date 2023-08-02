@@ -30,13 +30,22 @@ trait GenericFileMaker[+FileType]:
   def makeFile(path: Text): FileType
 
 trait GenericPathReader[-PathType]:
-  def getPath(path: PathType): Text
+  def fromPath(path: PathType): Text
+
+trait GenericDirectoryReader[-DirectoryType]:
+  def fromDirectory(path: DirectoryType): Text
+
+trait GenericFileReader[-FileType]:
+  def fromFile(path: FileType): Text
 
 trait GenericWatchService[+T]:
   def apply(): jnf.WatchService
 
-extension [PathType: GenericPathReader](path: PathType)
-  def fullPath: Text = summon[GenericPathReader[PathType]].getPath(path)
+extension [PathType](path: PathType)
+  inline def fullPath: Text = compiletime.summonFrom:
+    case reader: GenericPathReader[PathType]      => reader.fromPath(path)
+    case reader: GenericFileReader[PathType]      => reader.fromFile(path)
+    case reader: GenericDirectoryReader[PathType] => reader.fromDirectory(path)
 
 object GenericPath:
   def apply[PathType](name: Text)(using maker: GenericPathMaker[PathType]): PathType =
