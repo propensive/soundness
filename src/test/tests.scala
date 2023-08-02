@@ -51,7 +51,7 @@ object Tests extends Suite(t"Galilei tests"):
       
         test(t"Get volume in UNIX"):
           import filesystemOptions.{doNotCreateNonexistent, dereferenceSymlinks}
-          (imperial.Xdg.Var.Tmp() / p"galilei").as[Directory].volume
+          (Base.Var.Tmp() / p"galilei").as[Directory].volume
         .matches:
           case Volume(_, _) =>
 
@@ -87,7 +87,7 @@ object Tests extends Suite(t"Galilei tests"):
       import filesystemOptions.doNotCreateNonexistent
       
       val tmpPath = test(t"Get /var/tmp"):
-        imperial.Xdg.Var.Tmp()
+        Base.Var.Tmp()
       .check(_.fullname == t"/var/tmp")
 
       val galileiTmpPath = test(t"Get /var/tmp/galilei"):
@@ -136,7 +136,7 @@ object Tests extends Suite(t"Galilei tests"):
       import filesystemOptions.{doNotCreateNonexistent, dereferenceSymlinks}
       
       val tmpPath = test(t"Get /var/tmp"):
-        imperial.Xdg.Var.Tmp()
+        Base.Var.Tmp()
       .check(_.fullname == t"/var/tmp")
 
       val galileiTmpPath = test(t"Get /var/tmp/galilei"):
