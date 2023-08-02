@@ -273,10 +273,7 @@ object HtmlAttribute:
   given span[T]: HtmlAttribute["span", Int, T] = _.show
   given spellcheck[T]: HtmlAttribute["spellcheck", Boolean, T] = if _ then t"true" else t"false"
   given src[T]: HtmlAttribute["src", Text, T] = identity(_)
-  
-  given src2[T, PathType: AbstractPathReader]: HtmlAttribute["src", PathType, T] =
-    readAbstractPath(_).show
-  
+  given src2[T, PathType: GenericPathReader]: HtmlAttribute["src", PathType, T] = _.fullPath
   given srcdoc[T]: HtmlAttribute["srcdoc", Html[?], T] = _.show
   given srclang[T]: HtmlAttribute["srclang", Text, T] = identity(_)
   given srcset[T]: HtmlAttribute["srcset", Text, T] = identity(_) // This should be provided by Cataclysm
