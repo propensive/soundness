@@ -85,6 +85,10 @@ object Path:
   inline given decoder(using CanThrow[PathError]): Decoder[Path] = new Decoder[Path]:
     def decode(text: Text): Path = Reachable.decode(text)
 
+  given show: Show[Path] = _.render
+  given encoder: Encoder[Path] = _.render
+  given debug: Debug[Path] = _.render
+
 trait Path:
   this: Path =>
   
@@ -158,6 +162,7 @@ object Link:
     case link: SafeLink     => link.render
   
   given encoder: Encoder[Link] = show(_)
+  given debug: Debug[Link] = show(_)
 
 sealed trait Link
 
@@ -179,6 +184,10 @@ object Windows:
     
     given rootParser: RootParser[Path, Drive] = text => text.only:
       case r"$letter([a-zA-Z]):\\.*" => (Drive(unsafely(letter(0)).toUpper), text.drop(3))
+
+    given show: Show[Path] = _.render
+    given encoder: Encoder[Path] = _.render
+    given debug: Debug[Path] = _.render
 
   case class Path(drive: Drive, descent: List[PathName[Forbidden]]) extends galilei.Path:
     def root: Drive = drive
@@ -202,6 +211,7 @@ object Windows:
     inline given decoder(using CanThrow[PathError]): Decoder[Link] = Followable.decoder[Link]
     given show: Show[Link] = _.render
     given encoder: Encoder[Link] = _.render
+    given debug: Debug[Link] = _.render
 
   case class Drive(letter: Char):
     def name: Text = t"$letter:"
@@ -243,6 +253,10 @@ object Unix:
       def prefix(root: Unset.type): Text = t"/"
       def descent(path: Path): List[PathName[Forbidden]] = path.descent
     
+    given show: Show[Path] = _.render
+    given encoder: Encoder[Path] = _.render
+    given debug: Debug[Path] = _.render
+  
   case class Path(descent: List[PathName[Forbidden]]) extends galilei.Path:
     def root: Unset.type = Unset
     def name: Text = if descent.isEmpty then Path.reachable.prefix(Unset) else descent.head.show
@@ -266,6 +280,7 @@ object Unix:
     inline given decoder(using CanThrow[PathError]): Decoder[Link] = Followable.decoder[Link]
     given show: Show[Link] = _.render
     given encoder: Encoder[Link] = _.render
+    given debug: Debug[Link] = _.render
   
   case class Link(ascent: Int, descent: List[PathName[Forbidden]]) extends galilei.Link
   
@@ -637,6 +652,7 @@ object SafeLink:
   given creator: PathCreator[SafeLink, GeneralForbidden, Int] = SafeLink(_, _)
   given show: Show[SafeLink] = _.render
   given encoder: Encoder[SafeLink] = _.render
+  given debug: Debug[SafeLink] = _.render
   
   given followable
       (using creator: PathCreator[SafeLink, GeneralForbidden, Int])
