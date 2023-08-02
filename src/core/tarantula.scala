@@ -42,15 +42,15 @@ trait Browser(name: Text):
   case class Server(port: Int, value: Process[Label, Text]):
     def stop()(using Log): Unit = browser.stop(this)
 
-  def launch(port: Int)(using Environment, Log, Monitor): Server
+  def launch(port: Int)(using SystemProperties, Log, Monitor): Server
   def stop(server: Server)(using Log): Unit
 
-  def session[T](port: Int = 4444)(fn: WebDriver#Session ?=> T)(using Environment, Log, Monitor): T =
+  def session[T](port: Int = 4444)(fn: WebDriver#Session ?=> T)(using SystemProperties, Log, Monitor): T =
     val server = launch(port)
     try fn(using WebDriver(server).startSession()) finally server.stop()
 
 object Firefox extends Browser(t"firefox"):
-  def launch(port: Int)(using Environment, Log, Monitor): Server =
+  def launch(port: Int)(using SystemProperties, Log, Monitor): Server =
     val server: Process["geckodriver", Text] = sh"geckodriver --port $port".fork()
     sleep(100L)
     Server(port, server)
@@ -58,7 +58,7 @@ object Firefox extends Browser(t"firefox"):
   def stop(server: Server)(using Log): Unit = server.value.abort()
 
 object Chrome extends Browser(t"chrome"):
-  def launch(port: Int)(using Environment, Log, Monitor): Server =
+  def launch(port: Int)(using SystemProperties, Log, Monitor): Server =
     val server: Process["chromedriver", Text] = sh"chromedriver --port=$port".fork()
     sleep(100L)
     Server(port, server)
@@ -133,7 +133,7 @@ case class WebDriver(server: Browser#Server):
     
     def navigateTo[U: GenericUrl](url: U)(using Log): Json =
       case class Data(url: Text)
-      post(t"url", Data(readUrl(url).show).json)
+      post(t"url", Data(url.urlText).json)
     
     def refresh()(using Log): Unit = post(t"refresh", Json.parse(t"{}")).as[Json]
     def forward()(using Log): Unit = post(t"forward", Json.parse(t"{}")).as[Json]
