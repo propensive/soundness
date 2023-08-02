@@ -24,7 +24,7 @@ import serpentine.*
 import spectacular.*
 import hieroglyph.*
 import anticipation.*, fileApi.galileiApi
-import ambience.*, environments.system
+import ambience.*, environments.jvm, systemProperties.jvm
 
 import unsafeExceptions.canThrowAny
 
@@ -51,7 +51,7 @@ object Tests extends Suite(t"Galilei tests"):
       
         test(t"Get volume in UNIX"):
           import filesystemOptions.{doNotCreateNonexistent, dereferenceSymlinks}
-          (Xdg.Var.Tmp() / p"galilei").as[Directory].volume
+          (imperial.Xdg.Var.Tmp() / p"galilei").as[Directory].volume
         .matches:
           case Volume(_, _) =>
 
@@ -86,7 +86,7 @@ object Tests extends Suite(t"Galilei tests"):
       import filesystemOptions.dereferenceSymlinks
       
       val tmpPath = test(t"Get /var/tmp"):
-        Xdg.Var.Tmp()
+        imperial.Xdg.Var.Tmp()
       .check(_.fullname == t"/var/tmp")
 
       val galileiTmpPath = test(t"Get /var/tmp/galilei"):
@@ -134,7 +134,7 @@ object Tests extends Suite(t"Galilei tests"):
       import hierarchies.unix
       
       val tmpPath = test(t"Get /var/tmp"):
-        Xdg.Var.Tmp()
+        imperial.Xdg.Var.Tmp()
       .check(_.fullname == t"/var/tmp")
 
       val galileiTmpPath = test(t"Get /var/tmp/galilei"):
@@ -154,7 +154,6 @@ object Tests extends Suite(t"Galilei tests"):
       
       test(t"Make a FIFO"):
         import filesystemOptions.{doNotCreateNonexistentParents, overwritePreexisting, doNotDeleteRecursively, dereferenceSymlinks}
-        import environments.system
         given Log = logging.silent
         
         val fifoPath = tmpPath / p"galilei" / p"fifo1"
