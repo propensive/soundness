@@ -25,11 +25,16 @@ import galilei.*
 package fileApi:
   given galileiApi
       [PathType <: Path]
-      (using hierarchy: Hierarchy[PathType, ?])(using decoder: Decoder[PathType])
-      : GenericPathMaker[PathType] =
-    new GenericPathMaker[PathType]:
-      def makePath(text: Text, readOnly: Boolean): PathType =
-        text.decodeAs[PathType]
+      (using hierarchy: Hierarchy[PathType, ?])
+      (using Decoder[PathType], PathResolver[File, PathType], PathResolver[Directory, PathType])
+      : (GenericPathMaker[PathType] & GenericFileMaker[File] & GenericDirectoryMaker[Directory] &
+          GenericPathReader[PathType]) =
+    new GenericPathMaker[PathType] with GenericFileMaker[File]
+        with GenericDirectoryMaker[Directory] with GenericPathReader[PathType]:
+      def makePath(name: Text): PathType = name.decodeAs[PathType]
+      def makeFile(name: Text): File = makePath(name).as[File]
+      def makeDirectory(name: Text): Directory = makePath(name).as[Directory]
+      def getPath(path: PathType): Text = path.fullname
       
 //   given galileiApi
 //       : (GenericPathMaker[Path] & GenericDirectoryMaker[Directory] &

@@ -58,8 +58,9 @@ object Path:
   
   given reachable: Reachable[Path, GeneralForbidden, Maybe[Windows.Drive]] with
     def root(path: Path): Maybe[Windows.Drive] = path match
-      case path: Unix.SafePath    => Unset
       case path: Windows.SafePath => path.drive
+      case path: Windows.Path     => path.drive
+      case _                      => Unset
     
     def prefix(root: Maybe[Windows.Drive]): Text =
       root.mm(Windows.Path.reachable.prefix(_)).or(Unix.Path.reachable.prefix(Unset))
@@ -70,7 +71,9 @@ object Path:
     
     def separator(path: Path): Text = path match
       case path: Unix.SafePath    => t"/"
+      case path: Unix.Path        => t"/"
       case path: Windows.SafePath => t"\\"
+      case path: Windows.Path     => t"\\"
   
   given rootParser: RootParser[Path, Maybe[Windows.Drive]] = text =>
     Windows.Path.rootParser.parse(text).or(Unix.Path.rootParser.parse(text))
@@ -89,7 +92,7 @@ object Path:
   given encoder: Encoder[Path] = _.render
   given debug: Debug[Path] = _.render
 
-trait Path:
+sealed trait Path:
   this: Path =>
   
   def fullname: Text
