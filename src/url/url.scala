@@ -19,10 +19,12 @@ package anticipation
 import language.experimental.captureChecking
 
 trait GenericUrl[UrlType]:
-  def readUrl(url: UrlType): Text
-  def makeUrl(string: Text): UrlType
+  def urlText(url: UrlType): Text
+  def makeUrl(text: Text): UrlType
 
-def readUrl[UrlType](url: UrlType)(using GenericUrl[UrlType]): Text = summon[GenericUrl[UrlType]].readUrl(url)
-def makeUrl[UrlType](url: Text)(using GenericUrl[UrlType]): UrlType = summon[GenericUrl[UrlType]].makeUrl(url)
+extension [UrlType](url: UrlType)(using genericUrl: GenericUrl[UrlType])
+  def urlText: Text = genericUrl.urlText(url)
 
-package urlApi {}
+object GenericUrl:
+  def apply[UrlType](urlText: Text)(using genericUrl: GenericUrl[UrlType]): UrlType =
+    genericUrl.makeUrl(urlText)
