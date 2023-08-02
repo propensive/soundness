@@ -18,6 +18,7 @@ package spectacular
 
 import rudiments.*
 import anticipation.*
+import inimitable.*
 
 import language.experimental.captureChecking
 

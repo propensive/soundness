@@ -17,6 +17,7 @@
 package spectacular
 
 import rudiments.*
+import inimitable.*
 import anticipation.*
 
 import scala.deriving.*
