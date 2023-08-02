@@ -65,7 +65,7 @@ extends GenericFileMaker[ji.File], GenericDirectoryMaker[ji.File], GenericPathMa
   def getPath(value: ji.File): Text = value.getAbsolutePath.nn.toString.tt
 
 object JavaNetUrl extends GenericUrl[jn.URL]:
-  def readUrl(value: jn.URL): Text = value.toString.tt
+  def urlText(value: jn.URL): Text = value.toString.tt
   def makeUrl(text: Text): jn.URL = jn.URI(text.s).nn.toURL().nn
 
 extension (stream: LazyList[IArray[Byte]])
