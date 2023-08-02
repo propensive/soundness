@@ -18,7 +18,6 @@ package escritoire
 
 import probably.*
 import gossamer.*
-import rudiments.*
 import hieroglyph.*
 
 import textWidthCalculation.uniform
