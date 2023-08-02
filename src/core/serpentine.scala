@@ -36,7 +36,7 @@ object Serpentine:
         (using reachable: Reachable[PathType, NameType, RootType])
         (using creator: PathCreator[PathType, NameType, RootType])
         (path: PathType)
-        : Option[(PathType | RootType, PathName[NameType])] =
+        : Option[(PathType | RootType | %.type, PathName[NameType])] =
       reachable.descent(path) match
         case Nil          => None
         case head :: Nil  => Some((reachable.root(path), head))
