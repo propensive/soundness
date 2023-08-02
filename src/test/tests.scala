@@ -84,6 +84,7 @@ object Tests extends Suite(t"Galilei tests"):
     suite(t"Adaptive hierarchy tests"):
       import hierarchies.unixOrWindows
       import filesystemOptions.dereferenceSymlinks
+      import filesystemOptions.doNotCreateNonexistent
       
       val tmpPath = test(t"Get /var/tmp"):
         imperial.Xdg.Var.Tmp()
@@ -132,6 +133,7 @@ object Tests extends Suite(t"Galilei tests"):
       
     suite(t"Unix hierarchy tests"):
       import hierarchies.unix
+      import filesystemOptions.{doNotCreateNonexistent, dereferenceSymlinks}
       
       val tmpPath = test(t"Get /var/tmp"):
         imperial.Xdg.Var.Tmp()
@@ -146,7 +148,6 @@ object Tests extends Suite(t"Galilei tests"):
       .assert(_ == List(t"galilei", t"tmp", t"var"))
     
       test(t"Get volume"):
-        import filesystemOptions.{doNotCreateNonexistent, dereferenceSymlinks}
         (tmpPath / p"galilei").as[Directory].volume
       .matches:
         case Volume(_, _) =>

@@ -28,33 +28,17 @@ package fileApi:
       (using hierarchy: Hierarchy[PathType, ?])
       (using Decoder[PathType], PathResolver[File, PathType], PathResolver[Directory, PathType])
       : (GenericPathMaker[PathType] & GenericFileMaker[File] & GenericDirectoryMaker[Directory] &
-          GenericPathReader[PathType]) =
+          GenericPathReader[PathType] & GenericFileReader[File] &
+          GenericDirectoryReader[Directory]) =
+    
     new GenericPathMaker[PathType] with GenericFileMaker[File]
-        with GenericDirectoryMaker[Directory] with GenericPathReader[PathType]:
+        with GenericDirectoryMaker[Directory] with GenericPathReader[PathType]
+        with GenericFileReader[File] with GenericDirectoryReader[Directory]:
+
       def makePath(name: Text): PathType = name.decodeAs[PathType]
       def makeFile(name: Text): File = makePath(name).as[File]
       def makeDirectory(name: Text): Directory = makePath(name).as[Directory]
-      def getPath(path: PathType): Text = path.fullname
+      def fromPath(path: PathType): Text = path.fullname
+      def fromFile(file: File): Text = file.path.fullname
+      def fromDirectory(directory: Directory): Text = directory.path.fullname
       
-//   given galileiApi
-//       : (GenericPathMaker[Path] & GenericDirectoryMaker[Directory] &
-//           GenericFileMaker[File] & GenericPathReader[Path] & GenericFileReader[File] &
-//           GenericDirectoryReader[Directory]) = ???
-//     new GenericPathMaker[Path]
-//         with GenericDirectoryMaker[Directory]
-//         with GenericFileMaker[File]
-//         with GenericPathReader[Path]
-//         with GenericFileReader[File]
-//         with GenericDirectoryReader[Directory]:
-//       def makePath(str: String, readOnly: Boolean = false): Option[Path] =
-//         safely(fs.parse(Text(str))).option
-      
-//       def makeDirectory(str: String, readOnly: Boolean = false): Option[Directory] =
-//         safely(fs.parse(Text(str)).directory(Expect)).option
-      
-//       def makeFile(str: String, readOnly: Boolean = false): Option[File] =
-//         safely(fs.parse(Text(str)).file(Expect)).option
-  
-//       def getPath(value: Path): String = value.fullname.s
-//       def directoryPath(value: Directory): String = value.path.fullname.s
-//       def filePath(value: File): String = value.path.fullname.s
