@@ -31,8 +31,7 @@ object BaseLayout:
       t"${if home then homeDir else t""}$slash${path.reverse.join(t"/")}"
 
 case class BaseLayout
-    (private val part: Maybe[Text], private val envVar: Maybe[Text] = Unset,
-        readOnly: Boolean = false)
+    (private val part: Maybe[Text], readOnly: Boolean = false)
     (using baseDir: BaseLayout.Dir):
   
   def absolutePath
@@ -45,15 +44,13 @@ case class BaseLayout
 
   given newBaseDir: BaseLayout.Dir = BaseLayout.Dir(baseDir.home, part.mm(_ :: baseDir.path).or(baseDir.path))
 
-  def apply[T]()(using GenericPathMaker[T], SystemProperties, CanThrow[SystemPropertyError], Environment, CanThrow[EnvironmentError]): T =
-    val path: Text = envVar.option match
-      case None         => absolutePath
-      case Some(envVar) => Environment(envVar).or(absolutePath)
+  def apply[PathType]()(using GenericPathMaker[PathType], SystemProperties, CanThrow[SystemPropertyError], Environment, CanThrow[EnvironmentError]): PathType =
+    val path: Text = absolutePath
 
     GenericPath(path)
 
-object Xdg extends BaseLayout(Unset)(using BaseLayout.Dir(false, Nil)):
-  override def apply[T]()(using GenericPathMaker[T], SystemProperties, CanThrow[SystemPropertyError], Environment, CanThrow[EnvironmentError]): T =
+object Base extends BaseLayout(Unset)(using BaseLayout.Dir(false, Nil)):
+  override def apply[PathType: GenericPathMaker]()(using SystemProperties, CanThrow[SystemPropertyError], Environment, CanThrow[EnvironmentError]): PathType =
     GenericPath(t"/")
 
   object Boot extends BaseLayout(t"boot", readOnly = true)
@@ -76,27 +73,33 @@ object Xdg extends BaseLayout(Unset)(using BaseLayout.Dir(false, Nil)):
     object Lib extends BaseLayout(t"lib", readOnly = true)
     object Share extends BaseLayout(t"share", readOnly = true):
       object Doc extends BaseLayout(t"doc", readOnly = true)
+      
       object Factory extends BaseLayout(t"factory", readOnly = true):
         object Etc extends BaseLayout(t"etc", readOnly = true)
         object Var extends BaseLayout(t"var", readOnly = true)
+  
   object Var extends BaseLayout(t"var"):
     object Cache extends BaseLayout(t"cache")
     object Lib extends BaseLayout(t"lib")
     object Log extends BaseLayout(t"log")
     object Spool extends BaseLayout(t"spool")
-    object Tmp extends BaseLayout(t"tmp", t"TMPDIR")
+    object Tmp extends BaseLayout(t"tmp")
+  
   object Dev extends BaseLayout(t"dev"):
     object Shm extends BaseLayout(t"shm")
+  
   object Proc extends BaseLayout(t"proc"):
     def apply(pid: Pid): BaseLayout = BaseLayout(pid.value.toString.tt, readOnly = true)
     object Sys extends BaseLayout(t"sys", readOnly = true)
+  
   object Sys extends BaseLayout(t"sys", readOnly = true)
 
 object Home extends BaseLayout(Unset)(using BaseLayout.Dir(true, Nil)):
-  object Cache extends BaseLayout(t".cache", t"XDG_CACHE_HOME")
-  object Config extends BaseLayout(t".config", t"XDG_CONFIG_HOME")
+  object Cache extends BaseLayout(t".cache")
+  object Config extends BaseLayout(t".config")
+  
   object Local extends BaseLayout(t".local"):
     object Bin extends BaseLayout(t"bin")
     object Lib extends BaseLayout(t"lib")
-    object Share extends BaseLayout(t"share", t"XDG_DATA_HOME")
-    object State extends BaseLayout(t"state", t"XDG_STATE_HOME")
+    object Share extends BaseLayout(t"share")
+    object State extends BaseLayout(t"state")

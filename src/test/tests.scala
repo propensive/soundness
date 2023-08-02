@@ -24,12 +24,15 @@ import anticipation.*
 
 import unsafeExceptions.canThrowAny
 
-given Environment = StandardEnvironment({
+given Environment =
   case t"HOME" => t"/home/work"
   case _       => Unset
-}, { case _ => Unset })
 
-given GenericPathMaker[Text] = (string, readOnly) => Text(string)
+given SystemProperties =
+  case t"user.home" => t"/home/work"
+  case _            => t""
+
+given GenericPathMaker[Text] = identity(_)
 
 object Tests extends Suite(t"Imperial tests"):
   def run(): Unit =
@@ -47,57 +50,57 @@ object Tests extends Suite(t"Imperial tests"):
     .assert(_ == t"/home/work/.local/bin")
     
     test(t"/ path"):
-      Xdg()
+      Base()
     .assert(_ == t"/")
 
     test(t"/boot path"):
-      Xdg.Boot()
+      Base.Boot()
     .assert(_ == t"/boot")
     
     test(t"/efi path"):
-      Xdg.Efi()
+      Base.Efi()
     .assert(_ == t"/efi")
     
     test(t"/etc path"):
-      Xdg.Etc()
+      Base.Etc()
     .assert(_ == t"/etc")
     
     test(t"/home path"):
-      Xdg.Home()
+      Base.Home()
     .assert(_ == t"/home")
     
     test(t"/root path"):
-      Xdg.Root()
+      Base.Root()
     .assert(_ == t"/root")
     
     test(t"/srv path"):
-      Xdg.Srv()
+      Base.Srv()
     .assert(_ == t"/srv")
     
     test(t"/tmp path"):
-      Xdg.Tmp()
+      Base.Tmp()
     .assert(_ == t"/tmp")
     
     test(t"/usr path"):
-      Xdg.Usr()
+      Base.Usr()
     .assert(_ == t"/usr")
     
     test(t"/usr/share path"):
-      Xdg.Usr.Share()
+      Base.Usr.Share()
     .assert(_ == t"/usr/share")
     
     test(t"/usr/bin path"):
-      Xdg.Usr.Bin()
+      Base.Usr.Bin()
     .assert(_ == t"/usr/bin")
     
     test(t"/usr/share/doc path"):
-      Xdg.Usr.Share.Doc()
+      Base.Usr.Share.Doc()
     .assert(_ == t"/usr/share/doc")
     
     test(t"/usr/share/factory/etc path"):
-      Xdg.Usr.Share.Factory.Etc()
+      Base.Usr.Share.Factory.Etc()
     .assert(_ == t"/usr/share/factory/etc")
     
     test(t"/proc PID path"):
-      Xdg.Proc(Pid(2000))()
+      Base.Proc(Pid(2000))()
     .assert(_ == t"/proc/2000")
