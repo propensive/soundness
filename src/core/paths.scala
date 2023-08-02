@@ -151,6 +151,13 @@ object Link:
   
   inline given decoder(using CanThrow[PathError]): Decoder[Link] = text =>
     if text.contains(t"\\") then text.decodeAs[Windows.Link] else text.decodeAs[Unix.Link]
+  
+  given show: Show[Link] =
+    case link: Unix.Link    => link.render
+    case link: Windows.Link => link.render
+    case link: SafeLink     => link.render
+  
+  given encoder: Encoder[Link] = show(_)
 
 sealed trait Link
 
@@ -193,6 +200,8 @@ object Windows:
       def descent(path: Link): List[PathName[Forbidden]] = path.descent
   
     inline given decoder(using CanThrow[PathError]): Decoder[Link] = Followable.decoder[Link]
+    given show: Show[Link] = _.render
+    given encoder: Encoder[Link] = _.render
 
   case class Drive(letter: Char):
     def name: Text = t"$letter:"
@@ -255,6 +264,8 @@ object Unix:
       def descent(path: Link): List[PathName[Forbidden]] = path.descent
     
     inline given decoder(using CanThrow[PathError]): Decoder[Link] = Followable.decoder[Link]
+    given show: Show[Link] = _.render
+    given encoder: Encoder[Link] = _.render
   
   case class Link(ascent: Int, descent: List[PathName[Forbidden]]) extends galilei.Link
   
@@ -624,6 +635,8 @@ case class SafeLink(ascent: Int, descent: List[PathName[GeneralForbidden]]) exte
 
 object SafeLink:
   given creator: PathCreator[SafeLink, GeneralForbidden, Int] = SafeLink(_, _)
+  given show: Show[SafeLink] = _.render
+  given encoder: Encoder[SafeLink] = _.render
   
   given followable
       (using creator: PathCreator[SafeLink, GeneralForbidden, Int])
