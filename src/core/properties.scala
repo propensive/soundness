@@ -50,19 +50,19 @@ object SystemPropertyReader:
     identity(_)
   
   given javaHome[PathType: GenericPathMaker]: SystemPropertyReader["java.home", PathType] =
-    makeGenericPath(_)
+    GenericPath(_)
   
   given javaLibraryPath
       [PathType: GenericPathMaker]
       (using systemProperties: SystemProperties, systemProperty: CanThrow[SystemPropertyError])
       : SystemPropertyReader["java.library.path", List[PathType]] =
-    _.cut(systemProperties(t"path.separator").or(t":")).map(makeGenericPath(_))
+    _.cut(systemProperties(t"path.separator").or(t":")).map(GenericPath(_))
 
   given javaClassPath
       [PathType: GenericPathMaker]
       (using systemProperties: SystemProperties, systemProperty: CanThrow[SystemPropertyError])
       : SystemPropertyReader["java.class.path", List[PathType]] =
-    _.cut(systemProperties(t"path.separator").or(t":")).map(makeGenericPath(_))
+    _.cut(systemProperties(t"path.separator").or(t":")).map(GenericPath(_))
 
   given javaVersion: SystemPropertyReader["java.version", Text] = identity(_)
   given javaRuntimeVersion: SystemPropertyReader["java.runtime.version", Text] = identity(_)
@@ -71,7 +71,7 @@ object SystemPropertyReader:
       [PathType: GenericPathMaker]
       (using systemProperties: SystemProperties, systemProperty: CanThrow[SystemPropertyError])
       : SystemPropertyReader["java.ext.dirs", List[PathType]] =
-    _.cut(systemProperties(t"path.separator").or(t":")).map(makeGenericPath(_))
+    _.cut(systemProperties(t"path.separator").or(t":")).map(GenericPath(_))
 
   given fileSeparator: SystemPropertyReader["file.separator", Char] = _.decodeAs[Char]
   given pathSeparator: SystemPropertyReader["path.separator", Char] = _.decodeAs[Char]
@@ -80,10 +80,10 @@ object SystemPropertyReader:
   given userName: SystemPropertyReader["user.name", Text] = identity(_)
   
   given userHome[PathType: GenericPathMaker]: SystemPropertyReader["user.home", PathType] =
-    makeGenericPath(_)
+    GenericPath(_)
   
   given userDir[PathType: GenericPathMaker]: SystemPropertyReader["user.dir", PathType] =
-    makeGenericPath(_)
+    GenericPath(_)
 
   given osName: SystemPropertyReader["os.name", Text] = identity(_)
   given osVersion: SystemPropertyReader["os.version", Text] = identity(_)
