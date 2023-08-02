@@ -18,6 +18,7 @@ package gastronomy
 
 import probably.*
 import rudiments.*
+import anticipation.*
 import gossamer.*
 import spectacular.*
 import hieroglyph.*, charDecoders.utf8, charEncoders.utf8, badEncodingHandlers.skip
