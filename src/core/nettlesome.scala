@@ -59,7 +59,9 @@ object Nettlesome:
     object Ipv4:
       def apply(byte0: Int, byte1: Int, byte2: Int, byte3: Int): Ipv4 =
         ((byte0 & 255) << 24) + ((byte1 & 255) << 16) + ((byte2 & 255) << 8) + (byte3 & 255)
-
+      
+      given debug: Debug[Ipv4] = _.show
+      
       given show: Show[Ipv4] = ip =>
         t"${ip.byte0.toString}.${ip.byte1.toString}.${ip.byte2.toString}.${ip.byte3.toString}"
       
@@ -103,6 +105,8 @@ object Nettlesome:
     catch case error: IpAddressError => fail(error.message)
 
   object Ipv6:
+    given debug: Debug[Ipv6] = _.show
+    
     given show: Show[Ipv6] = ip =>
       def unpack(long: Long, groups: List[Int] = Nil): List[Int] =
         if groups.length == 4 then groups else unpack(long >>> 16, (long & 65535).toInt :: groups)

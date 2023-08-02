@@ -110,6 +110,7 @@ object Url:
 
   given (using CanThrow[UrlError]): Decoder[Url] = parse(_)
   given Encoder[Url] = _.show
+  given Debug[Url] = _.show
 
   given Reachable[Url, "", (Scheme, Maybe[Authority])] with
     def separator(url: Url): Text = t"/"
