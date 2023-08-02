@@ -38,13 +38,13 @@ object PathError:
     case ParentOfRoot
     case NotRooted(path: Text)
 
-  given Show[Reason] =
-    case Reason.InvalidChar(char)     => t"the character $char may not appear in a path name"
-    case Reason.InvalidPrefix(prefix) => t"the path name cannot begin with $prefix"
-    case Reason.InvalidSuffix(suffix) => t"the path name cannot end with $suffix"
-    case Reason.InvalidName(name)     => t"the name $name is not valid"
-    case Reason.ParentOfRoot          => t"the root has no parent"
-    case Reason.NotRooted(path)       => t"${path} is not rooted"
+  given AsMessage[Reason] =
+    case Reason.InvalidChar(char)     => msg"the character $char may not appear in a path name"
+    case Reason.InvalidPrefix(prefix) => msg"the path name cannot begin with $prefix"
+    case Reason.InvalidSuffix(suffix) => msg"the path name cannot end with $suffix"
+    case Reason.InvalidName(name)     => msg"the name $name is not valid"
+    case Reason.ParentOfRoot          => msg"the root has no parent"
+    case Reason.NotRooted(path)       => msg"$path is not rooted"
 
 export Serpentine.PathName
 
