@@ -21,20 +21,13 @@ import java.nio.file as jnf
 import language.experimental.captureChecking
 
 trait GenericDirectoryMaker[+DirectoryType]:
-  def makeDirectory(directory: Text, readOnly: Boolean = false): DirectoryType
-
-
-trait GenericDirectoryReader[-DirectoryType]:
-  def directoryPath(directory: DirectoryType): Text
-
-trait GenericFileMaker[+FileType]:
-  def makeFile(file: Text, readOnly: Boolean = false): FileType
-
-trait GenericFileReader[-FileType]:
-  def filePath(file: FileType): Text
+  def makeDirectory(directory: Text): DirectoryType
 
 trait GenericPathMaker[+PathType]:
-  def makePath(path: Text, readOnly: Boolean = false): PathType
+  def makePath(path: Text): PathType
+
+trait GenericFileMaker[+FileType]:
+  def makeFile(path: Text): FileType
 
 trait GenericPathReader[-PathType]:
   def getPath(path: PathType): Text
@@ -42,40 +35,17 @@ trait GenericPathReader[-PathType]:
 trait GenericWatchService[+T]:
   def apply(): jnf.WatchService
 
-trait AbstractPathMaker[+PathType]:
-  def makePath(path: Text): PathType
+extension [PathType: GenericPathReader](path: PathType)
+  def fullPath: Text = summon[GenericPathReader[PathType]].getPath(path)
 
-trait AbstractPathReader[-PathType]:
-  def getPath(path: PathType): Text
+object GenericPath:
+  def apply[PathType](name: Text)(using maker: GenericPathMaker[PathType]): PathType =
+    maker.makePath(name)
 
-def makeGenericPath[PathType](path: Text, readOnly: Boolean = false)(using maker: GenericPathMaker[PathType])
-                   : PathType =
-  maker.makePath(path, readOnly)
+object GenericFile:
+  def apply[FileType](name: Text)(using maker: GenericFileMaker[FileType]): FileType =
+    maker.makeFile(name)
 
-def readGenericPath[PathType](path: PathType)(using reader: GenericPathReader[PathType]): Text =
-  reader.getPath(path)
-
-def makeGenericFile[FileType](file: Text, readOnly: Boolean = false)(using maker: GenericFileMaker[FileType])
-                   : FileType =
-  maker.makeFile(file, readOnly)
-
-def readGenericFile[FileType](file: FileType)(using reader: GenericFileReader[FileType]): Text =
-  reader.filePath(file)
-
-def makeGenericDirectory[DirectoryType](directory: Text, readOnly: Boolean = false)
-                        (using maker: GenericDirectoryMaker[DirectoryType])
-                        : DirectoryType =
-  maker.makeDirectory(directory, readOnly)
-
-def readGenericDirectory[DirectoryType](directory: DirectoryType)
-                        (using reader: GenericDirectoryReader[DirectoryType])
-                        : Text =
-  reader.directoryPath(directory)
-
-def makeAbstractPath
-    [PathType](path: Text)(using maker: AbstractPathMaker[PathType]): PathType =
-  maker.makePath(path)
-
-def readAbstractPath
-    [PathType](path: PathType)(using reader: AbstractPathReader[PathType]): Text =
-  reader.getPath(path)
+object GenericDirectory:
+  def apply[DirectoryType](name: Text)(using maker: GenericDirectoryMaker[DirectoryType]): DirectoryType =
+    maker.makeDirectory(name)
