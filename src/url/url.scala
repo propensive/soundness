@@ -124,14 +124,9 @@ object Url:
     def path(ascent: (Scheme, Maybe[Authority]), descent: List[PathName[""]]): Url =
       Url(ascent(0), ascent(1), descent.reverse.map(_.render).join(t"/"))
     
-
-  // There's not a convenient way to have this in scope if the HTTP client is defined separately from the URL
-  // given (using Internet, Log, CanThrow[HttpError]): Streamable[Url] =
-  //   url => LazyList(url.get().as[Bytes])
-  
   given show: Show[Url] = url =>
     val auth = url.authority.fm(t"")(t"//"+_.show)
-    val rest = t"${url.query.fm(t"")(t"?"+_)}${url.fragment.fm(t"")(t"#"+_)}"
+    val rest = t"/${url.query.fm(t"")(t"?"+_)}${url.fragment.fm(t"")(t"#"+_)}"
     t"${url.scheme}:$auth${url.pathText}$rest"
   
   given ansiShow: Display[Url] = url => out"$Underline(${colors.DeepSkyBlue}(${show(url)}))"
