@@ -18,6 +18,7 @@ package scintillate
 
 import rudiments.*
 import digression.*
+import anticipation.*
 import turbulence.*
 import spectacular.*
 import gossamer.*

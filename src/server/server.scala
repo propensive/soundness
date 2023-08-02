@@ -21,6 +21,7 @@ import digression.*
 import parasite.*
 import turbulence.*
 import gossamer.*
+import nettlesome.*
 import gastronomy.*
 import eucalyptus.*
 import gesticulate.*
@@ -94,8 +95,8 @@ case class NotFound[T: SimpleHandler](content: T)
 case class ServerError[T: SimpleHandler](content: T)
 
 object Cookie:
-  given genericHttpRequestParam: GenericHttpRequestParam["set-cookie", Cookie] = _.serialize.s
-  given genericHttpRequestParam2: GenericHttpRequestParam["cookie", Cookie] = _.serialize.s
+  given genericHttpRequestParam: GenericHttpRequestParam["set-cookie", Cookie] = _.serialize
+  given genericHttpRequestParam2: GenericHttpRequestParam["cookie", Cookie] = _.serialize
 
   val dateFormat: jt.SimpleDateFormat = jt.SimpleDateFormat("dd MMM yyyy HH:mm:ss")
 
@@ -217,8 +218,8 @@ trait ParamReader[T]:
 
 object RequestParam:
   given GenericHtmlAttribute["name", RequestParam[?]] with
-    def name: String = "name"
-    def serialize(value: RequestParam[?]): String = value.key.s
+    def name: Text = t"name"
+    def serialize(value: RequestParam[?]): Text = value.key
 
 case class RequestParam[T](key: Text)(using ParamReader[T]):
   def opt(using Request): Option[T] =
