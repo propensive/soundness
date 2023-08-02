@@ -156,8 +156,9 @@ object Link:
     def path(ascent: Int, descent: List[PathName[GeneralForbidden]]): SafeLink =
       SafeLink(ascent, descent)
   
-  inline given decoder(using CanThrow[PathError]): Decoder[Link] = text =>
-    if text.contains(t"\\") then text.decodeAs[Windows.Link] else text.decodeAs[Unix.Link]
+  inline given decoder(using CanThrow[PathError]): Decoder[Link] = new Decoder[Link]:
+    def decode(text: Text): Link =
+      if text.contains(t"\\") then text.decodeAs[Windows.Link] else text.decodeAs[Unix.Link]
   
   given show: Show[Link] =
     case link: Unix.Link    => link.render
