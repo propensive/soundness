@@ -20,6 +20,7 @@ import rudiments.*
 import gossamer.*
 import anticipation.*
 import spectacular.*
+import kaleidoscope.*
 
 case class Pem(kind: Text, data: Bytes):
   def serialize: Text = Seq(
@@ -33,11 +34,11 @@ object Pem:
     val lines = string.trim.nn.cut(t"\n")
     
     val label = lines.head match
-      case s"-----BEGIN $label-----" => label.show
+      case r"-----* *BEGIN $label([A-Z]+) *-----*" => label.show
       case _                         => throw PemError(t"the BEGIN line could not be found")
     
     lines.tail.indexWhere:
-      case s"-----END $label-----" => true
+      case r"-----* *END $label([A-Z]+) *-----*" => true
       case _                       => false
     match
       case -1  =>
