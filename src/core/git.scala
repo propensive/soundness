@@ -6,8 +6,7 @@ import galilei.*, filesystemOptions.{doNotCreateNonexistent, dereferenceSymlinks
 import gossamer.*
 import guillotine.*
 import kaleidoscope.*
-import ambience.*
-import rudiments.*, workingDirectory.jvm
+import rudiments.*
 import serpentine.*, hierarchies.unix
 import spectacular.*
 import turbulence.*
@@ -59,25 +58,80 @@ case class GitRepo(gitDir: Directory, workTree: Maybe[Directory] = Unset):
       case failure       => throw GitError(GitError.Detail.CannotSwitchBranch)
   
   def pull()(using GitCommand, Log, Internet, WorkingDirectory, CanThrow[GitError]): Unit =
-    sh"$git $repo".exec[ExitStatus]() match
+    sh"$git $repo pull".exec[ExitStatus]() match
       case ExitStatus.Ok => ()
       case failure       => throw GitError(GitError.Detail.PullFailed)
   
   def commit(message: Text)(using GitCommand, Log, WorkingDirectory, CanThrow[GitError]): Unit =
-    sh"$git $repo -m $message".exec[ExitStatus]() match
+    sh"$git $repo commit -m $message".exec[ExitStatus]() match
       case ExitStatus.Ok => ()
       case failure       => throw GitError(GitError.Detail.CommitFailed)
   
   def branches()(using GitCommand, WorkingDirectory, Log): List[Branch] =
-    sh"$git $repo".exec[LazyList[Text]]().map(_.drop(2)).to(List).map(Branch(_))
-
+    sh"$git $repo branch".exec[LazyList[Text]]().map(_.drop(2)).to(List).map(Branch(_))
+  
   def add(): Unit = ()
   def reset(): Unit = ()
   def fetch(): Unit = ()
-  def rm(): Unit = ()
   def mv(): Unit = ()
-  def tag(): Unit = ()
-  def log(): Unit = ()
+  def tags()(using GitCommand, WorkingDirectory, Log): List[Tag] =
+    sh"$git $repo tag".exec[LazyList[Text]]().to(List).map(Tag(_))
+
+  def log()(using GitCommand, WorkingDirectory, Log): LazyList[Commit] =
+    def recur
+        (stream: LazyList[Text], hash: Maybe[CommitHash] = Unset, tree: Maybe[CommitHash] = Unset,
+            parents: List[CommitHash] = Nil, author: Maybe[Text] = Unset,
+            committer: Maybe[Text] = Unset, signature: List[Text] = Nil, lines: List[Text] = Nil)
+        : LazyList[Commit] =
+      
+      def commit(): LazyList[Commit] =
+        if hash.unset || tree.unset || author.unset || committer.unset then LazyList()
+        else
+          given Unsafe.type = Unsafe
+          LazyList(Commit(hash.avow, tree.avow, parents.reverse, author.avow, committer.avow,
+            signature, lines.reverse))
+      
+      def read(stream: LazyList[Text], lines: List[Text]): (List[Text], LazyList[Text]) =
+        stream match
+          case r" $line(.*)" #:: tail => read(tail, line :: lines)
+          case _                      => (lines.reverse, stream)
+      
+      stream match
+        case head #:: tail => head match
+          case t"" =>
+            recur(tail, hash, tree, parents, author, committer, signature, lines)
+          
+          case r"commit $hash(.{40})" =>
+            commit() #::: recur(tail, CommitHash(hash), Unset, Nil, Unset, Unset, Nil, Nil)
+          
+          case r"tree $tree(.{40})" =>
+            recur(tail, hash, CommitHash(tree), parents, author, committer, signature, lines)
+          
+          case r"parent $parent(.{40})" =>
+            recur(tail, hash, tree, CommitHash(parent) :: parents, author, committer, signature, lines)
+
+          case r"author $author(.*) $timestamp([0-9]+) $time(.....)" =>
+            recur(tail, hash, tree, parents, author, committer, signature, lines)
+          
+          case r"committer $committer(.*) $timestamp([0-9]+) $time(.....)" =>
+            recur(tail, hash, tree, parents, author, committer, signature, lines)
+          
+          case r"gpgsig $start(.*)" =>
+            val (signature, rest) = read(tail, Nil)
+            recur(rest, hash, tree, parents, author, committer, start :: signature, lines)
+          
+          case r"    $line(.*)" =>
+            recur(tail, hash, tree, parents, author, committer, signature, line :: lines)
+
+          case other =>
+            println("ignoring "+other)
+            recur(tail, hash, tree, parents, author, committer, signature, lines)
+        
+        case _ =>
+          commit()
+    
+    recur(sh"$git $repo log --format=raw --color=never".exec[LazyList[Text]]())
+
   def reflog(): Unit = ()
   def status(): Unit = ()
     
@@ -155,7 +209,7 @@ case class GitCommand(file: File)
 
 case class Commit
     (commit: CommitHash, tree: CommitHash, parent: List[CommitHash], author: Text, committer: Text,
-        gpgsig: Text, message: List[Text])
+        signature: List[Text], message: List[Text])
 
 package gitCommands:
   given environmentDefault(using WorkingDirectory, CanThrow[PathError], Log, CanThrow[IoError]): GitCommand =
