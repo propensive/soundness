@@ -17,6 +17,7 @@
 package gesticulate
 
 import rudiments.*
+import fulminate.*
 import gossamer.*
 import contextual.*
 import anticipation.*
