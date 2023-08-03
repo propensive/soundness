@@ -18,6 +18,7 @@ package rudiments
 
 import symbolism.*
 import anticipation.*
+import fulminate.*
 
 import scala.quoted.*
 

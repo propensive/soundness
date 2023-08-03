@@ -17,6 +17,7 @@
 package rudiments
 
 import anticipation.*
+import fulminate.*
 
 import scala.compiletime.*
 

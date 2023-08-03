@@ -4,13 +4,14 @@ target rudiments/test
 
 repo propensive/probably
 repo propensive/larceny
+repo propensive/fulminate
 repo propensive/symbolism
 
 project rudiments
   module core
     compiler  scala
     sources   src/core
-    include   anticipation/css anticipation/http symbolism/core anticipation/text anticipation/http
+    include   anticipation/css anticipation/http symbolism/core anticipation/text anticipation/http fulminate/core
 
   module test
     compiler  scala
