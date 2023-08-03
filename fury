@@ -1,6 +1,7 @@
 # This is a Wrath buildfile. More information is available at: https://github.com/propensive/wrath/
 
 repo propensive/probably
+repo propensive/galilei
 target guillotine/test
 
 project guillotine
@@ -10,6 +11,6 @@ project guillotine
 
   module test
     sources  src/test
-    include  probably/cli guillotine/core
+    include  probably/cli guillotine/core galilei/core
     main     guillotine.Tests
     coverage guillotine/core

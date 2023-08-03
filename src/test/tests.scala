@@ -19,6 +19,8 @@ package guillotine
 import contextual.*
 import rudiments.*
 import gossamer.*
+import galilei.*, filesystemOptions.{doNotCreateNonexistent, dereferenceSymlinks}
+import serpentine.*, hierarchies.unix
 import anticipation.*
 import turbulence.*
 import ambience.*
@@ -240,3 +242,9 @@ object Tests extends Suite(t"Guillotine tests"):
       test(t"implied return type"):
         sh"echo 'Hello world'"()
       .assert(_ == t"Hello world")
+      
+      test(t"implied return type for `which`"):
+        import fileApi.galileiApi
+        sh"which cat"()
+      .assert(_ == Unix / p"bin" / p"cat")
+

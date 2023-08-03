@@ -60,6 +60,9 @@ object Executor:
     case other => ExitStatus.Fail(other)
   
   given unit: Executor[Unit] = exitStatus.map(_ => ())
+  
+  given path[PathType](using GenericPathMaker[PathType]): Executor[PathType] =
+    proc => GenericPath(text.interpret(proc))
 
 @capability 
 trait Executor[ResultType]:
