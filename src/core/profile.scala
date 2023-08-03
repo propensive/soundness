@@ -16,8 +16,6 @@
 
 package iridescence
 
-import rudiments.*
-
 import language.experimental.captureChecking
 
 object colorProfiles:
@@ -64,7 +62,4 @@ object colorProfiles:
   given philipsTl83: ColorProfile = ColorProfile(108.046, 100, 39.228, 111.428, 100, 40.353)
   given ultralume30: ColorProfile = philipsTl83
 
-@missingContext(contextMessage(module = "iridescence", typeclass = "ColorProfile")(
-  "colorProfiles.daylight" -> "standard daylight color profile"
-))
 case class ColorProfile(x2: Double, y2: Double, z2: Double, x10: Double, y10: Double, z10: Double)

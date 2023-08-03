@@ -16,11 +16,12 @@
 
 package iridescence
 
-import rudiments.*
+import fulminate.*
 import contextual.*
 import anticipation.*
 
 import language.experimental.captureChecking
+import scala.util.chaining.*
 
 private[iridescence] inline def unitary(d: Double): Double =
   d - d.toInt + (if d < 0 then 1 else 0)
