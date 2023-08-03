@@ -108,7 +108,7 @@ be used, but caution should be taken if there is a mismatch between the
 project's stability level and the importance of your own project.
 
 Adversaria is designed to be _small_. Its entire source code currently consists
-of 153 lines of code.
+of 156 lines of code.
 
 ## Building
 
