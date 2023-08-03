@@ -19,6 +19,7 @@ package merino
 
 import annotation.*
 import rudiments.*
+import fulminate.*
 import turbulence.*
 import scala.collection.mutable.ArrayBuffer
 
