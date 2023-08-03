@@ -18,6 +18,7 @@ package adversaria
 
 import probably.*
 import rudiments.*
+import anticipation.*
 import larceny.*
 import gossamer.*
 import annotation.StaticAnnotation

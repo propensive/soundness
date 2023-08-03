@@ -17,6 +17,8 @@
 package adversaria
 
 import rudiments.*
+import fulminate.*
+import anticipation.*
 
 import scala.quoted.*
 
