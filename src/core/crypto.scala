@@ -239,4 +239,4 @@ class Dsa[KS <: 512 | 1024 | 2048 | 3072: ValueOf]() extends CryptoAlgorithm[KS]
   private def keyFactory(): js.KeyFactory = js.KeyFactory.getInstance("DSA").nn
 end Dsa
 
-case class PemParseError(detail: Text) extends Error(msg"could not parse PEM-encoded content: $detail")
+case class PemError(detail: Text) extends Error(msg"could not parse PEM-encoded content: $detail")
