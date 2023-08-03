@@ -18,6 +18,7 @@ package guillotine
 
 import contextual.*
 import rudiments.*
+import fulminate.*
 import turbulence.*
 import gossamer.*
 import spectacular.*
@@ -100,11 +101,11 @@ class Process[+ExecType <: Label, ResultType](process: java.lang.Process):
     case other => ExitStatus.Fail(other)
   
   def abort()(using Log): Unit =
-    Log.info(msg"The process with PID $pid was aborted")
+    Log.info(msg"The process with PID ${pid.value} was aborted")
     process.destroy()
   
   def kill()(using Log): Unit =
-    Log.warn(msg"The process with PID $pid was killed")
+    Log.warn(msg"The process with PID ${pid.value} was killed")
     process.destroyForcibly()
 
 sealed trait Executable:
