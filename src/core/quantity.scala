@@ -17,6 +17,7 @@
 package quantitative
 
 import rudiments.*
+import fulminate.*
 import symbolism.*
 import anticipation.*
 
