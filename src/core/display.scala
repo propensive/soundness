@@ -17,6 +17,7 @@
 package escapade
 
 import rudiments.*
+import fulminate.*
 import anticipation.*
 import digression.*
 import gossamer.*
