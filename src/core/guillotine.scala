@@ -22,9 +22,6 @@ import turbulence.*
 import gossamer.*
 import spectacular.*
 import eucalyptus.*
-import escapade.*
-import iridescence.*
-import ambience.*
 import anticipation.*
 
 import scala.jdk.StreamConverters.StreamHasToScala
@@ -95,11 +92,11 @@ class Process[+ExecType <: Label, ResultType](process: java.lang.Process):
     case other => ExitStatus.Fail(other)
   
   def abort()(using Log): Unit =
-    Log.info(out"The process with PID $pid was aborted")
+    Log.info(msg"The process with PID $pid was aborted")
     process.destroy()
   
   def kill()(using Log): Unit =
-    Log.warn(out"The process with PID $pid was killed")
+    Log.warn(msg"The process with PID $pid was killed")
     process.destroyForcibly()
 
 sealed trait Executable:
@@ -107,39 +104,38 @@ sealed trait Executable:
 
   def fork
       [ResultType]
-      ()
-      (using properties: SystemProperties, systemProperty: CanThrow[SystemPropertyError], log: Log)
-      : Process[Exec, ResultType]
+      ()(using working: WorkingDirectory, log: Log)
+      : Process[Exec, ResultType]^{working}
   
   def exec
       [ResultType]
-      ()(using properties: SystemProperties, systemProperty: CanThrow[SystemPropertyError], log: Log)
-      (using executor: Executor[ResultType])
-      : ResultType^{executor} =
+      ()(using working: WorkingDirectory, log: Log, executor: Executor[ResultType])
+      : ResultType^{executor, working} =
+    
     fork[ResultType]().await()
 
   def apply
       [ResultType]
       ()
       (using erased commandOutput: CommandOutput[Exec, ResultType])
-      (using properties: SystemProperties, systemProperty: CanThrow[SystemPropertyError], log: Log)
-      (using executor: Executor[ResultType])
-      : ResultType^{executor} =
+      (using working: WorkingDirectory, log: Log, executor: Executor[ResultType])
+      : ResultType^{executor, working} =
+    
     fork[ResultType]().await()
 
-  def apply(cmd: Executable): Pipeline = cmd match
-    case Pipeline(cmds*) => this match
-      case Pipeline(cmds2*) => Pipeline((cmds ++ cmds2)*)
-      case cmd: Command     => Pipeline((cmds :+ cmd)*)
-    case cmd: Command    => this match
-      case Pipeline(cmds2*) => Pipeline((cmd +: cmds2)*)
-      case cmd2: Command    => Pipeline(cmd, cmd2)
+  def apply(command: Executable): Pipeline = command match
+    case Pipeline(commands*) => this match
+      case Pipeline(commands2*) => Pipeline((commands ++ commands2)*)
+      case command: Command => Pipeline((commands :+ command)*)
+    
+    case command: Command    => this match
+      case Pipeline(commands2*) => Pipeline((command +: commands2)*)
+      case command2: Command    => Pipeline(command, command2)
   
   @targetName("pipeTo")
-  infix def |(cmd: Executable): Pipeline = cmd(this)
+  infix def |(command: Executable): Pipeline = command(this)
 
 object Command:
-
   given AsMessage[Command] = command => Message(formattedArgs(command.args))
 
   private def formattedArgs(args: Seq[Text]): Text =
@@ -152,49 +148,39 @@ object Command:
       else arg
     .join(t" ")
 
-  given Debug[Command] = cmd =>
-    val cmdString: Text = formattedArgs(cmd.args)
-    if cmdString.contains(t"\"") then t"sh\"\"\"$cmdString\"\"\"" else t"sh\"$cmdString\""
-
-  given Display[Command] = cmd => out"${colors.LightSeaGreen}(${formattedArgs(cmd.args)})"
-
+  given Debug[Command] = command =>
+    val commandText: Text = formattedArgs(command.args)
+    if commandText.contains(t"\"") then t"sh\"\"\"$commandText\"\"\"" else t"sh\"$commandText\""
+  
+  given Show[Command] = command => formattedArgs(command.args)
+  
 case class Command(args: Text*) extends Executable:
-  def fork
-      [ResultType]
-      ()
-      (using properties: SystemProperties, systemProperty: CanThrow[SystemPropertyError], log: Log)
-      : Process[Exec, ResultType] =
+  def fork[ResultType]()(using working: WorkingDirectory, log: Log): Process[Exec, ResultType] =
     val processBuilder = ProcessBuilder(args.ss*)
-    import fileApi.javaIo
-    val dir = Properties.user.dir[ji.File]()
     
-    processBuilder.directory(dir)
+    working.path.mm: directory =>
+      processBuilder.directory(ji.File(directory.s))
     
     val t0 = System.currentTimeMillis
-    Log.info(out"Starting process ${this.out} in directory ${dir.getAbsolutePath.nn}")
+    Log.info(msg"Starting process ${this}")
     new Process(processBuilder.start().nn)
 
 object Pipeline:
-  inline given Debug[Pipeline] = new Debug[Pipeline]:
-    def apply(pipeline: Pipeline): Text = pipeline.cmds.map(_.debug).join(t" | ")
+  given AsMessage[Pipeline] = pipeline => msg"${pipeline.commands.map(_.show).join(t" | ")}"
+  given Debug[Pipeline] = _.commands.map(_.debug).join(t" | ")
+  given Show[Pipeline] = _.commands.map(_.show).join(t" | ")
   
-  given Display[Pipeline] = _.cmds.map(_.out).join(out" ${colors.PowderBlue}(|) ")
-
-case class Pipeline(cmds: Command*) extends Executable:
-  def fork
-      [ResultType]
-      ()
-      (using properties: SystemProperties, systemProperty: CanThrow[SystemPropertyError], log: Log)
-      : Process[Exec, ResultType] =
-    import fileApi.javaIo
-    val dir = Properties.user.dir[ji.File]()
+case class Pipeline(commands: Command*) extends Executable:
+  def fork[ResultType]()(using working: WorkingDirectory, log: Log): Process[Exec, ResultType] =
+    val processBuilders = commands.map: command =>
+      val processBuilder = ProcessBuilder(command.args.ss*)
+      
+      working.path.mm: directory =>
+        processBuilder.directory(ji.File(directory.s))
     
-    Log.info(out"Starting pipelined processes ${this.out} in directory ${dir.getAbsolutePath.nn}")
-
-    val processBuilders = cmds.map: cmd =>
-      val pb = ProcessBuilder(cmd.args.ss*)
-      pb.directory(dir)
-      pb.nn
+      processBuilder.nn
+    
+    Log.info(msg"Starting pipelined processes ${this}")
 
     new Process[Exec, ResultType](ProcessBuilder.startPipeline(processBuilders.asJava).nn.asScala.to(List).last)
 
@@ -261,7 +247,7 @@ object Sh:
 
   given Insertion[Params, Text] = value => Params(value)
   given Insertion[Params, List[Text]] = xs => Params(xs*)
-  given Insertion[Params, Command] = cmd => Params(cmd.args*)
+  given Insertion[Params, Command] = command => Params(command.args*)
   given [ValueType: AsParams]: Insertion[Params, ValueType] = value => Params(summon[AsParams[ValueType]].show(value))
 
 object AsParams:
@@ -272,8 +258,8 @@ object AsParams:
     new AsParams[ValueType]:
       def show(value: ValueType): Text = encoder.encode(value)
 
-trait AsParams[-T]:
-  def show(value: T): Text
+trait AsParams[-ValueType]:
+  def show(value: ValueType): Text
 
 given realm: Realm = Realm(t"guillotine")
 

@@ -1,13 +1,12 @@
 # This is a Wrath buildfile. More information is available at: https://github.com/propensive/wrath/
 
 repo propensive/probably
-repo propensive/ambience
 target guillotine/test
 
 project guillotine
   module core
     sources  src/core
-    include  eucalyptus/core ambience/core
+    include  eucalyptus/core
 
   module test
     sources  src/test

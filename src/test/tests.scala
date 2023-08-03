@@ -21,12 +21,14 @@ import rudiments.*
 import gossamer.*
 import anticipation.*
 import turbulence.*
-import ambience.*, environments.jvm, systemProperties.jvm
+import ambience.*
 import spectacular.*
 import probably.*
 import eucalyptus.*, logging.silent
 
 import unsafeExceptions.canThrowAny
+
+given WorkingDirectory = WorkingDirectory(Unset)
 
 object Tests extends Suite(t"Guillotine tests"):
   def run(): Unit =
