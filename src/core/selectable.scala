@@ -17,6 +17,7 @@
 package polyvinyl
 
 import rudiments.*
+import fulminate.*
 
 import scala.quoted.*
 
