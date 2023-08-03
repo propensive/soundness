@@ -20,6 +20,7 @@ import probably.*
 import gossamer.*
 import spectacular.*
 import rudiments.*
+import anticipation.*
 
 import unsafeExceptions.canThrowAny
 

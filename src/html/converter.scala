@@ -18,6 +18,8 @@ package punctuation
 
 import honeycomb.*
 import rudiments.*
+import symbolism.*
+import anticipation.*
 import gossamer.*
 
 open class HtmlConverter():

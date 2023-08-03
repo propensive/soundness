@@ -17,6 +17,7 @@
 package punctuation
 
 import rudiments.*
+import fulminate.*
 import contextual.*
 import gossamer.*
 import anticipation.*
