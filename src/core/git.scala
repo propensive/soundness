@@ -6,7 +6,9 @@ import galilei.*, filesystemOptions.{doNotCreateNonexistent, dereferenceSymlinks
 import gossamer.*
 import guillotine.*
 import kaleidoscope.*
+import gastronomy.*
 import rudiments.*
+import digression.*
 import serpentine.*, hierarchies.unix
 import spectacular.*
 import turbulence.*
@@ -77,6 +79,8 @@ case class GitRepo(gitDir: Directory, workTree: Maybe[Directory] = Unset):
   def tags()(using GitCommand, WorkingDirectory, Log): List[Tag] =
     sh"$git $repo tag".exec[LazyList[Text]]().to(List).map(Tag(_))
 
+  private def parsePem(text: Text): Maybe[Pem] = safely(Pem.parse(text))
+
   def log()(using GitCommand, WorkingDirectory, Log): LazyList[Commit] =
     def recur
         (stream: LazyList[Text], hash: Maybe[CommitHash] = Unset, tree: Maybe[CommitHash] = Unset,
@@ -88,8 +92,10 @@ case class GitRepo(gitDir: Directory, workTree: Maybe[Directory] = Unset):
         if hash.unset || tree.unset || author.unset || committer.unset then LazyList()
         else
           given Unsafe.type = Unsafe
-          LazyList(Commit(hash.avow, tree.avow, parents.reverse, author.avow, committer.avow,
-            signature, lines.reverse))
+          val pem = parsePem(signature.join(t"\n"))
+          
+          LazyList(Commit(hash.avow, tree.avow, parents.reverse, author.avow, committer.avow, pem,
+            lines.reverse))
       
       def read(stream: LazyList[Text], lines: List[Text]): (List[Text], LazyList[Text]) =
         stream match
@@ -144,7 +150,6 @@ enum Progress:
 private[nonagenarian] inline def git(using command: GitCommand): GitCommand = command
 
 object Git:
-
   def progress(process: Process[?, ?]): LazyList[Progress] =
     try process.stderr().map(_.uString).map(_.trim).collect:
       case r"Receiving objects: *${As[Int](pc)}([0-9]*)\%.*" => Progress.Receiving(pc/100.0)
@@ -209,7 +214,7 @@ case class GitCommand(file: File)
 
 case class Commit
     (commit: CommitHash, tree: CommitHash, parent: List[CommitHash], author: Text, committer: Text,
-        signature: List[Text], message: List[Text])
+        signature: Maybe[Pem], message: List[Text])
 
 package gitCommands:
   given environmentDefault(using WorkingDirectory, CanThrow[PathError], Log, CanThrow[IoError]): GitCommand =
