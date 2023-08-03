@@ -17,6 +17,7 @@
 package galilei
 
 import rudiments.*
+import fulminate.*
 import digression.*
 import eucalyptus.*
 import turbulence.*
@@ -64,9 +65,11 @@ object Path:
     def prefix(root: Maybe[Windows.Drive]): Text =
       root.mm(Windows.Path.reachable.prefix(_)).or(Unix.Path.reachable.prefix(Unset))
     
-    def descent(path: Path): List[PathName[GeneralForbidden]] = (path: @unchecked) match
+    def descent(path: Path): List[PathName[GeneralForbidden]] = path match
       case path: Unix.SafePath    => path.safeDescent
       case path: Windows.SafePath => path.safeDescent
+      case path: Unix.Path        => path.descent.map(_.narrow[GeneralForbidden])
+      case path: Windows.Path     => path.descent.map(_.narrow[GeneralForbidden])
     
     def separator(path: Path): Text = path match
       case path: Unix.SafePath    => t"/"
