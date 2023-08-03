@@ -17,6 +17,7 @@
 package hieroglyph
 
 import rudiments.*
+import fulminate.*
 import kaleidoscope.*
 import anticipation.*
 
