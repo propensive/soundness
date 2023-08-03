@@ -50,7 +50,12 @@ object Executor:
   given text: Executor[Text] = proc =>
     val buf: StringBuilder = StringBuilder()
     stream.interpret(proc).map(_.s).foreach(buf.append(_))
-    Text(buf.toString)
+    buf.toString.tt
+
+  given string: Executor[String] = proc =>
+    val buf: StringBuilder = StringBuilder()
+    stream.interpret(proc).map(_.s).foreach(buf.append(_))
+    buf.toString
 
   given dataStream(using streamCut: CanThrow[StreamCutError]): Executor[LazyList[Bytes]] =
     proc => Readable.inputStream.read(proc.getInputStream.nn)
