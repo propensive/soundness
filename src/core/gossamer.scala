@@ -17,6 +17,7 @@
 package gossamer
 
 import rudiments.*
+import fulminate.*
 import anticipation.*
 import hieroglyph.*
 import spectacular.*
