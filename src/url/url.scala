@@ -132,6 +132,8 @@ object Url:
   
   given ansiShow: Display[Url] = url => out"$Underline(${colors.DeepSkyBlue}(${show(url)}))"
 
+  given asMessage: AsMessage[Url] = url => Message(show(url))
+
   given action: GenericHtmlAttribute["action", Url] with
     def name: Text = t"action"
     def serialize(url: Url): Text = url.show
