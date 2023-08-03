@@ -23,6 +23,7 @@ import symbolism.*
 import spectacular.*
 import eucalyptus.*
 import rudiments.*
+import fulminate.*
 import digression.*
 
 import scala.io.*

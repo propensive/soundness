@@ -17,6 +17,7 @@
 package aviation
 
 import rudiments.*
+import fulminate.*
 import spectacular.*
 import digression.*
 import anticipation.*
