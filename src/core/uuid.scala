@@ -18,6 +18,7 @@ package inimitable
 
 import anticipation.*
 import rudiments.*
+import fulminate.*
 
 import scala.quoted.*
 
