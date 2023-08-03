@@ -17,8 +17,6 @@
 package galilei
 
 // sealed trait Inode(val path: DiskPath):
-//   def uriString: Text = Showable(javaFile.toURI).show
-  
 //   def setPermissions(readable: Maybe[Boolean] = Unset, writable: Maybe[Boolean] = Unset,
 //                          executable: Maybe[Boolean]): Unit throws IoError =
 //     if !readable.option.fold(true)(javaFile.setReadable(_)) |
@@ -32,81 +30,8 @@ package galilei
 //       else javaFile.setLastModified(System.currentTimeMillis())
 //     catch case e => throw IoError(IoError.Op.Write, IoError.Reason.NotSupported, path)
 
-// object File:
-//   given provider(using fs: Filesystem): (GenericFileMaker[File] & GenericFileReader[File]) =
-//     new GenericFileMaker[File] with GenericFileReader[File]:
-//       def makeFile(str: String, readOnly: Boolean = false): Option[File] =
-//         safely(fs.parse(Text(str)).file(Expect)).option
-      
-//       def filePath(file: File): String = file.path.fullname.toString
-
-//   given writable
-//       (using io: CanThrow[IoError], streamCut: CanThrow[StreamCutError])
-//       : (/*{io, streamCut}*/ Writable[File, Bytes]) =
-//     Appendable.outputStreamBytes.asWritable.contraMap: file =>
-//       if !file.javaFile.canWrite()
-//       then throw IoError(IoError.Op.Write, IoError.Reason.AccessDenied, file.path)
-      
-//       ji.BufferedOutputStream(ji.FileOutputStream(file.javaFile, false))
-
-//   given appendable
-//       (using io: CanThrow[IoError], streamCut: CanThrow[StreamCutError])
-//       : (/*{io, streamCut}*/ Appendable[File, Bytes]) =
-//     Appendable.outputStreamBytes.contraMap: file =>
-//       if !file.javaFile.canWrite()
-//       then throw IoError(IoError.Op.Write, IoError.Reason.AccessDenied, file.path)
-      
-//       ji.BufferedOutputStream(ji.FileOutputStream(file.javaFile, true))
-
-//   given readableBytes
-//       (using io: CanThrow[IoError], streamCut: CanThrow[StreamCutError])
-//       : (/*{io, streamCut}*/ Readable[File, Bytes]) =
-//     Readable.inputStream.contraMap: file =>
-//       if !file.javaFile.canRead() then throw IoError(IoError.Op.Read, IoError.Reason.AccessDenied, file.path)
-//       else ji.BufferedInputStream(ji.FileInputStream(file.javaFile))
-  
-//   given readableLine
-//       (using io: CanThrow[IoError], streamCut: CanThrow[StreamCutError])
-//       : (/*{io, streamCut}*/ Readable[File, Line]) =
-//     Readable.bufferedReader.contraMap: file =>
-//       if !file.javaFile.canRead() then throw IoError(IoError.Op.Read, IoError.Reason.AccessDenied, file.path)
-//       else ji.BufferedReader(ji.FileReader(file.javaFile))
-    
-// object Fifo:
-//   given appendable[ChunkType](using io: CanThrow[IoError],
-//                                   appendable: /*{*}*/ Appendable[ji.OutputStream, ChunkType])
-//         : (/*{io, appendable}*/ Appendable[Fifo, ChunkType]) =
-//     appendable.contraMap: fifo =>
-//       if !fifo.writable()
-//       then throw IoError(IoError.Op.Write, IoError.Reason.AccessDenied, fifo.path)
-      
-//       fifo.out
-
-//   given readable[ChunkType](using io: CanThrow[IoError], readable: /*{*}*/ Readable[ji.InputStream, ChunkType])
-//                      : (/*{io, readable}*/ Readable[Fifo, ChunkType]) =
-//     readable.contraMap: fifo =>
-//       if !fifo.readable() then throw IoError(IoError.Op.Read, IoError.Reason.AccessDenied, fifo.path)
-//       else fifo.in
-  
     
 // object Directory:
-//   given provider(using fs: Filesystem)
-//                 : (GenericDirectoryMaker[Directory] & GenericDirectoryReader[Directory]) =
-//     new GenericDirectoryMaker[Directory] with GenericDirectoryReader[Directory]:
-//       def makeDirectory(str: String, readOnly: Boolean = false): Option[Directory] =
-//         safely(fs.parse(Text(str)).directory(Expect)).option
-      
-//       def directoryPath(dir: Directory): String = dir.path.fullname.s
-  
-//   given pathReader(using fs: Filesystem): GenericPathReader[Directory] =
-//     new GenericPathReader[Directory]:
-//       def getPath(dir: Directory): String = dir.path.fullname.s
-  
-//   given pathMaker(using fs: Filesystem): GenericPathMaker[Directory] =
-//     new GenericPathMaker[Directory]:
-//       def makePath(str: String, readOnly: Boolean = false): Option[Directory] =
-//         safely(fs.parse(Text(str)).directory(Expect)).option
-
 // case class Directory(directoryPath: DiskPath)
 // extends Inode(directoryPath), Shown[Directory]:
 //   def tmpPath(suffix: Maybe[Text] = Unset): DiskPath =
@@ -131,8 +56,6 @@ package galilei
 //   def rename(fn: Text => Text): DiskPath = DiskPath(root, elements.init :+ fn(name))
 
 // object Filesystem:
-
-//   given Show[Filesystem] = fs => t"ᶠˢ｢${fs.name}:${fs.prefix}...${fs.separator}｣"
 
 //   lazy val roots: Set[Filesystem] =
 //     Option(ji.File.listRoots).fold(Set())(_.nn.immutable(using Unsafe).to(Set)).map(_.nn.getAbsolutePath.nn)
