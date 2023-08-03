@@ -17,6 +17,7 @@
 package gastronomy
 
 import rudiments.*
+import fulminate.*
 import gossamer.*
 import anticipation.*
 import spectacular.*
