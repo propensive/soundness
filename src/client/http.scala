@@ -25,8 +25,6 @@ import gesticulate.*
 import wisteria.*
 import spectacular.*
 import eucalyptus.*
-import iridescence.*
-import escapade.*
 import anticipation.*
 import nettlesome.*
 
@@ -99,7 +97,7 @@ object HttpMethod:
     def name: Text = t"formmethod"
     def serialize(method: HttpMethod): Text = method.show
 
-  given Display[HttpMethod] = method => out"${colors.Crimson}[${method.toString.show.upper}]"
+  given AsMessage[HttpMethod] = method => Message(method.show.upper)
 
 enum HttpMethod:
   case Get, Head, Post, Put, Delete, Connect, Options, Trace, Patch
@@ -202,9 +200,11 @@ object Http:
       (url: Url, content: PostType, method: HttpMethod,headers: Seq[RequestHeader.Value])
       (using Internet, Log)
       : HttpResponse =
-    Log.info(out"Sending HTTP $method request to $url")
-    headers.foreach(Log.fine(_))
-    Log.fine(out"HTTP request body: ${summon[Postable[PostType]].preview(content)}")
+    Log.info(msg"Sending HTTP $method request to $url")
+    headers.foreach: header =>
+      Log.fine(Message(header.show))
+    
+    Log.fine(msg"HTTP request body: ${summon[Postable[PostType]].preview(content)}")
     
     (URI(url.show.s).toURL.nn.openConnection.nn: @unchecked) match
       case conn: HttpURLConnection =>
@@ -234,7 +234,7 @@ object Http:
             try read(conn.getErrorStream.nn) catch case _: Exception => HttpBody.Empty
         
         val HttpStatus(status) = conn.getResponseCode: @unchecked
-        Log.info(out"Received response with HTTP status ${status.show}")
+        Log.info(msg"Received response with HTTP status ${status.show}")
 
         val responseHeaders =
           val scalaMap: Map[String | Null, ju.List[String]] = conn.getHeaderFields.nn.asScala.toMap
