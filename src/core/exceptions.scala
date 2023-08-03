@@ -102,6 +102,7 @@ object AsMessage:
   given string: AsMessage[String] = string => Message(string.tt)
   given char: AsMessage[Char] = char => Message(char.toString.tt) // Escape this
   given int: AsMessage[Int] = int => Message(int.toString.tt)
+  given pid: AsMessage[Pid] = pid => msg"PID ${pid.value.toString.tt}"
   given message: AsMessage[Message] = identity(_)
 
   given listMessage: AsMessage[List[Message]] = messages =>
