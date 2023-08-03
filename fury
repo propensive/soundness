@@ -6,12 +6,13 @@ repo propensive/probably
 repo propensive/larceny
 repo propensive/guillotine
 repo propensive/galilei
+repo propensive/ambience
 
 project nonagenarian
   module core
     compiler  scala
     sources   src/core
-    include   guillotine/core rudiments/core galilei/core
+    include   guillotine/core rudiments/core galilei/core ambience/core
 
   module test
     compiler  scala
