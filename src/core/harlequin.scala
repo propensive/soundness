@@ -17,6 +17,7 @@
 package harlequin
 
 import rudiments.*
+import anticipation.*
 import gossamer.*
 import spectacular.*
 import kaleidoscope.*
