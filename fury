@@ -8,7 +8,7 @@ target mercator/test
 project mercator
   module core
     sources  src/core
-    include  rudiments/core
+    include  fulminate/core
 
   module test
     sources   src/test
