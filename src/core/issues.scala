@@ -17,6 +17,7 @@
 package cellulose
 
 import rudiments.*
+import fulminate.*
 import anticipation.*
 
 export CodlError.Issue.*

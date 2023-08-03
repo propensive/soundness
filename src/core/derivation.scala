@@ -17,6 +17,7 @@
 package cellulose
 
 import rudiments.*
+import fulminate.*
 import spectacular.*
 import anticipation.*
 import gossamer.*
