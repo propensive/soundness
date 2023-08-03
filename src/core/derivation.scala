@@ -17,6 +17,7 @@
 package wisteria
 
 import rudiments.{is as _, *}
+import fulminate.*
 
 import scala.quoted.*
 import scala.compiletime.*
