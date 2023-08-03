@@ -17,6 +17,7 @@
 package spectacular
 
 import rudiments.*
+import fulminate.*
 import anticipation.*
 import inimitable.*
 

@@ -19,6 +19,7 @@ package spectacular
 import rudiments.*
 import inimitable.*
 import anticipation.*
+import fulminate.*
 
 import scala.deriving.*
 import scala.compiletime.*
