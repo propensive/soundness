@@ -17,6 +17,7 @@
 package xylophone
 
 import rudiments.*
+import fulminate.*
 import gossamer.*
 
 case class XmlParseError(line: Int, column: Int)

@@ -18,6 +18,7 @@ package xylophone
 
 import probably.*
 import rudiments.*
+import anticipation.*
 import gossamer.*
 import printers.compact
 
