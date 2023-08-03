@@ -28,7 +28,7 @@ object GitError:
 case class GitError(detail: GitError.Detail)
 extends Error(msg"the Git operation could not be completed because $detail")
 
-case class CloneProcess(complete: () => CanThrow[GitError] ?=> GitRepo, progress: LazyList[Progress])
+case class CloneProcess(complete: () => GitRepo, progress: LazyList[Progress])
 
 case class GitRepo(directory: Directory, workTree: Maybe[Directory]):
   def checkout(ref: Text)(using Log): Unit throws GitError =
@@ -67,8 +67,8 @@ object Git:
   def init
       [PathType: GenericPathReader]
       (targetPath: PathType, bare: Boolean = false)
-      (using Log)
-      : GitRepo throws GitError =
+      (using log: Log, git: CanThrow[GitError], decoder: Decoder[Path])
+      : GitRepo =
     try
       val bareOpt = if bare then sh"--bare" else sh""
       val target: Path = targetPath.fullPath.decodeAs[Path]
@@ -84,8 +84,8 @@ object Git:
   def clone
       [PathType: GenericPathReader]
       (source: Text, targetPath: PathType)
-      (using Internet, Log)
-      : CloneProcess throws GitError =
+      (using Internet, Log, Decoder[Path], CanThrow[GitError])
+      : CloneProcess =
     
     try
       val target: Path = targetPath.fullPath.decodeAs[Path]
