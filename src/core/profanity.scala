@@ -17,12 +17,12 @@
 package profanity
 
 import rudiments.*
+import fulminate.*
 import digression.*
 import gossamer.*
 import spectacular.*
 import symbolism.*
 import eucalyptus.*
-import escapade.*
 import parasite.*
 import turbulence.*
 import anticipation.*, timeApi.long
@@ -56,7 +56,7 @@ object Tty:
 
   def reportSize()(using Tty, Log): Unit =
     val esc = 27.toChar
-    Log.fine(out"Sent ANSI escape codes to TTY to attempt to get console dimensions")
+    Log.fine(msg"Sent ANSI escape codes to TTY to attempt to get console dimensions")
     Tty.print(t"${esc}[s${esc}[4095C${esc}[4095B${esc}[6n${esc}[u")
 
   def stream[K](using Tty, Log, Keyboard[K], Monitor): LazyList[K] =
