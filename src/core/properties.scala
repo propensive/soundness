@@ -19,6 +19,7 @@ package ambience
 import anticipation.*
 import spectacular.*
 import rudiments.*
+import fulminate.*
 import gossamer.*
 
 import scala.compiletime.ops.string.*
