@@ -17,7 +17,7 @@ import language.experimental.captureChecking
 object GitError:
   enum Detail:
     case CannotExecuteGit, CloneFailed, InvalidRepoPath, RepoDoesNotExist, BranchDoesNotExist,
-        CommitDoesNotExist
+        CommitDoesNotExist, CommitFailed, CannotSwitchBranch, PullFailed
   
   given AsMessage[Detail] =
     case Detail.CannotExecuteGit   => msg"the `git` command could not be executed"
@@ -26,6 +26,9 @@ object GitError:
     case Detail.RepoDoesNotExist   => msg"the repository does not exist"
     case Detail.BranchDoesNotExist => msg"the branch does not exist"
     case Detail.CommitDoesNotExist => msg"the commit does not exist"
+    case Detail.CommitFailed       => msg"the commit could not be created"
+    case Detail.PullFailed         => msg"the pull operation did not complete"
+    case Detail.CannotSwitchBranch => msg"the branch could not be changed"
 
 case class GitError(detail: GitError.Detail)
 extends Error(msg"the Git operation could not be completed because $detail")
@@ -40,28 +43,39 @@ object GitRepo:
 
 case class GitRepo(gitDir: Directory, workTree: Maybe[Directory] = Unset):
 
-  val targetParams = workTree match
+  val repo = workTree match
     case Unset               => sh"--git-dir=${gitDir.path}"
     case workTree: Directory => sh"--git-dir=${gitDir.path} --work-tree=${workTree.path}"
 
   def checkout(ref: Text)(using Log, GitCommand, WorkingDirectory): Unit =
-    sh"$git $targetParams checkout $ref".exec[ExitStatus]()
+    sh"$git $repo checkout $ref".exec[ExitStatus]()
   
-  def push()(using Log, WorkingDirectory, Internet, CanThrow[GitError], GitCommand): Unit =
-    sh"$git $targetParams push"
+  def push()(using Log, Internet, CanThrow[GitError], GitCommand, WorkingDirectory): Unit =
+    sh"$git $repo push".exec[ExitStatus]()
 
-  def switch(branch: Branch)(using GitCommand, Log, WorkingDirectory): Unit =
-    sh"$git $targetParams switch $branch"
+  def switch(branch: Branch)(using GitCommand, Log, WorkingDirectory, CanThrow[GitError]): Unit =
+    sh"$git $repo switch $branch".exec[ExitStatus]() match
+      case ExitStatus.Ok => ()
+      case failure       => throw GitError(GitError.Detail.CannotSwitchBranch)
   
-  def pull(): Unit = ()
-  def commit(): Unit = ()
+  def pull()(using GitCommand, Log, Internet, WorkingDirectory, CanThrow[GitError]): Unit =
+    sh"$git $repo".exec[ExitStatus]() match
+      case ExitStatus.Ok => ()
+      case failure       => throw GitError(GitError.Detail.PullFailed)
+  
+  def commit(message: Text)(using GitCommand, Log, WorkingDirectory, CanThrow[GitError]): Unit =
+    sh"$git $repo -m $message".exec[ExitStatus]() match
+      case ExitStatus.Ok => ()
+      case failure       => throw GitError(GitError.Detail.CommitFailed)
+  
+  def branches()(using GitCommand, WorkingDirectory, Log): List[Branch] =
+    sh"$git $repo".exec[LazyList[Text]]().map(_.drop(2)).to(List).map(Branch(_))
+
   def add(): Unit = ()
-  def branch(): Unit = ()
   def reset(): Unit = ()
   def fetch(): Unit = ()
   def rm(): Unit = ()
   def mv(): Unit = ()
-  def switch(): Unit = ()
   def tag(): Unit = ()
   def log(): Unit = ()
   def reflog(): Unit = ()
@@ -76,6 +90,13 @@ enum Progress:
 private[nonagenarian] inline def git(using command: GitCommand): GitCommand = command
 
 object Git:
+
+  def progress(process: Process[?, ?]): LazyList[Progress] =
+    try process.stderr().map(_.uString).map(_.trim).collect:
+      case r"Receiving objects: *${As[Int](pc)}([0-9]*)\%.*" => Progress.Receiving(pc/100.0)
+      case r"Resolving deltas: *${As[Int](pc)}([0-9]+)\%.*"  => Progress.Resolving(pc/100.0)
+    catch case error: StreamCutError => LazyList()
+
   def init
       [PathType: GenericPathReader]
       (targetPath: PathType, bare: Boolean = false)
@@ -103,12 +124,6 @@ object Git:
       val target: Path = targetPath.fullPath.decodeAs[Path]
       val process = sh"$git clone --progress $source $target".fork[ExitStatus]()
       
-      val progress =
-        try process.stderr().map(_.uString).map(_.trim).collect:
-          case r"Receiving objects: *${As[Int](pc)}([0-9]*)\%.*" => Progress.Receiving(pc/100.0)
-          case r"Resolving deltas: *${As[Int](pc)}([0-9]+)\%.*"  => Progress.Resolving(pc/100.0)
-        catch case error: StreamCutError => LazyList()
-  
       def complete(): GitRepo = process.await() match
         case ExitStatus.Ok =>
           try GitRepo((target / p".git").as[Directory], target.as[Directory])
@@ -117,7 +132,7 @@ object Git:
         case _ =>
           throw GitError(GitError.Detail.CloneFailed)
   
-      CloneProcess(() => complete(), progress)
+      CloneProcess(() => complete(), progress(process))
 
     catch
       case error: PathError           => throw GitError(GitError.Detail.InvalidRepoPath)
@@ -143,7 +158,7 @@ case class Commit
         gpgsig: Text, message: List[Text])
 
 package gitCommands:
-  given environmentDefault(using working: WorkingDirectory, path: CanThrow[PathError], log: Log, io: CanThrow[IoError]): GitCommand^{working, path, log, io} =
+  given environmentDefault(using WorkingDirectory, CanThrow[PathError], Log, CanThrow[IoError]): GitCommand =
     val path: Path = sh"which git"()
 
     GitCommand(path.as[File])
