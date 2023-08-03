@@ -18,6 +18,7 @@ package parasite
 
 import anticipation.*
 import rudiments.*
+import fulminate.*
 import digression.*
 
 @capability

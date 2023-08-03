@@ -17,6 +17,7 @@
 package parasite
 
 import rudiments.*
+import fulminate.*
 //import anticipation.*
 
 //import scala.util.*
