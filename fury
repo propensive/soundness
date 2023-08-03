@@ -10,7 +10,7 @@ project cardinality
   module core
     compiler  scala
     sources   src/core
-    include   rudiments/core
+    include   fulminate/core
   
   module test
     compiler  scala

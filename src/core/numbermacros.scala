@@ -16,7 +16,7 @@
 
 package cardinality
 
-import rudiments.*
+import fulminate.*
 
 import scala.quoted.*
 import scala.compiletime.*
