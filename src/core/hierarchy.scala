@@ -183,13 +183,17 @@ object Reachable:
   inline def decode
       [PathType <: Matchable]
       (text: Text)
-      (using path: CanThrow[PathError])
       [NameType <: Label, RootType]
       (using reachable: Reachable[PathType, NameType, RootType],
           rootParser: RootParser[PathType, RootType],
           creator: PathCreator[PathType, NameType, RootType])
+      (using path: CanThrow[PathError])
       : PathType =
-    val (root, rest) = rootParser.parse(text).or(throw PathError(PathError.Reason.NotRooted(text)))
+    val rootRest: Maybe[(RootType, Text)] = rootParser.parse(text)
+    if rootRest.unset then throw PathError(PathError.Reason.NotRooted(text))
+    
+    val root: RootType = rootRest.avow(using Unsafe)(0)
+    val rest: Text = rootRest.avow(using Unsafe)(1)
     
     val names = rest.cut(reachable.separator(creator.path(root, Nil))).reverse match
       case t"" :: tail => tail
