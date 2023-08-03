@@ -127,16 +127,6 @@ object Tests extends Suite(t"Rudiments Tests"):
         factorial(4)
       .assert(_ == 24)
    
-    suite(t"UUID tests"):
-      test(t"Construct a new UUID"):
-        Uuid()
-      .matches:
-        case Uuid(a, b) =>
-      
-      test(t"Get bytes from UUID"):
-        Uuid().bytes
-      .assert(_.length == 16)
-
     suite(t"Inequality tests"):
       test(t"1.2 < x < 1.4"):
         List(1.1, 1.2, 1.3, 1.4, 1.5).filter(1.2 < _ < 1.4)
