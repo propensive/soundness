@@ -16,9 +16,6 @@
 
 package jacinta
 
-import rudiments.*
-import contextual.*
-
 /*object Jacinta:
   object J extends Interpolator
 
