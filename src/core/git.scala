@@ -18,7 +18,7 @@ import language.experimental.captureChecking
 object GitError:
   enum Detail:
     case CannotExecuteGit, CloneFailed, InvalidRepoPath, RepoDoesNotExist, BranchDoesNotExist,
-        CommitDoesNotExist, CommitFailed, CannotSwitchBranch, PullFailed
+        CommitDoesNotExist, CommitFailed, CannotSwitchBranch, PullFailed, BranchFailed, TagFailed
   
   given AsMessage[Detail] =
     case Detail.CannotExecuteGit   => msg"the `git` command could not be executed"
@@ -29,12 +29,15 @@ object GitError:
     case Detail.CommitDoesNotExist => msg"the commit does not exist"
     case Detail.CommitFailed       => msg"the commit could not be created"
     case Detail.PullFailed         => msg"the pull operation did not complete"
+    case Detail.BranchFailed       => msg"the new branch could not be created"
+    case Detail.TagFailed          => msg"the new tag could not be created"
     case Detail.CannotSwitchBranch => msg"the branch could not be changed"
 
 case class GitError(detail: GitError.Detail)
 extends Error(msg"the Git operation could not be completed because $detail")
 
 case class CloneProcess(complete: () => GitRepo, progress: LazyList[Progress])
+case class FetchProcess(complete: () => Unit, progress: LazyList[Progress])
 
 object GitRepo:
   def apply(path: Path): GitRepo throws IoError | GitError =
@@ -48,19 +51,28 @@ case class GitRepo(gitDir: Directory, workTree: Maybe[Directory] = Unset):
     case Unset               => sh"--git-dir=${gitDir.path}"
     case workTree: Directory => sh"--git-dir=${gitDir.path} --work-tree=${workTree.path}"
 
-  def checkout(ref: Text)(using Log, GitCommand, WorkingDirectory): Unit =
+  def checkout(ref: GitRef)(using Log, GitCommand, WorkingDirectory): Unit =
     sh"$git $repo checkout $ref".exec[ExitStatus]()
   
-  def push()(using Log, Internet, CanThrow[GitError], GitCommand, WorkingDirectory): Unit =
-    sh"$git $repo push".exec[ExitStatus]()
+  def pushTags()(using Log, Internet, CanThrow[GitError], GitCommand, WorkingDirectory): Unit =
+    sh"$git $repo push --tags".exec[ExitStatus]()
 
   def switch(branch: Branch)(using GitCommand, Log, WorkingDirectory, CanThrow[GitError]): Unit =
     sh"$git $repo switch $branch".exec[ExitStatus]() match
       case ExitStatus.Ok => ()
       case failure       => throw GitError(GitError.Detail.CannotSwitchBranch)
   
-  def pull()(using GitCommand, Log, Internet, WorkingDirectory, CanThrow[GitError]): Unit =
-    sh"$git $repo pull".exec[ExitStatus]() match
+  def pull()(using GitCommand, Log, Internet, WorkingDirectory, CanThrow[GitError]): FetchProcess =
+    val process = sh"$git $repo pull --progress".fork[ExitStatus]()
+
+    def complete(): Unit = process.await() match
+      case ExitStatus.Ok => ()
+      case failure       => throw GitError(GitError.Detail.PullFailed)
+    
+    FetchProcess(() => complete(), Git.progress(process))
+  
+  def fetch()(using GitCommand, Log, Internet, WorkingDirectory, CanThrow[GitError]): Unit =
+    sh"$git $repo fetch".exec[ExitStatus]() match
       case ExitStatus.Ok => ()
       case failure       => throw GitError(GitError.Detail.PullFailed)
   
@@ -72,13 +84,32 @@ case class GitRepo(gitDir: Directory, workTree: Maybe[Directory] = Unset):
   def branches()(using GitCommand, WorkingDirectory, Log): List[Branch] =
     sh"$git $repo branch".exec[LazyList[Text]]().map(_.drop(2)).to(List).map(Branch(_))
   
+  // FIXME: this uses an `Executor[String]` instead of an `Executor[Text]` because, for some
+  // reason, the latter captures the `WorkingDirectory` parameter
+  def branch()(using GitCommand, WorkingDirectory, Log): Branch =
+    Branch(sh"$git $repo branch --show-current".exec[String]().tt)
+  
+  def makeBranch
+      (branch: Branch)
+      (using GitCommand, WorkingDirectory, Log, CanThrow[GitError])
+      : Unit =
+
+    sh"$git $repo checkout -b $branch".exec[ExitStatus]() match
+      case ExitStatus.Ok => ()
+      case failure       => throw GitError(GitError.Detail.BranchFailed)
+  
   def add(): Unit = ()
   def reset(): Unit = ()
-  def fetch(): Unit = ()
   def mv(): Unit = ()
+  
   def tags()(using GitCommand, WorkingDirectory, Log): List[Tag] =
     sh"$git $repo tag".exec[LazyList[Text]]().to(List).map(Tag(_))
 
+  def tag(name: Tag)(using GitCommand, WorkingDirectory, Log, CanThrow[GitError]): Tag =
+    sh"$git $repo tag $name".exec[ExitStatus]() match
+      case ExitStatus.Ok => name
+      case failure       => throw GitError(GitError.Detail.TagFailed)
+  
   private def parsePem(text: Text): Maybe[Pem] = safely(Pem.parse(text))
 
   def log()(using GitCommand, WorkingDirectory, Log): LazyList[Commit] =
@@ -175,13 +206,18 @@ object Git:
   
   def clone
       [PathType: GenericPathReader]
-      (source: Text, targetPath: PathType)
+      (source: Text, targetPath: PathType, bare: Boolean = false, branch: Maybe[Branch] = Unset,
+          recursive: Boolean = false)
       (using Internet, WorkingDirectory, Log, Decoder[Path], CanThrow[GitError], GitCommand)
       : CloneProcess =
     
     try
       val target: Path = targetPath.fullPath.decodeAs[Path]
-      val process = sh"$git clone --progress $source $target".fork[ExitStatus]()
+      val bareOption = if bare then sh"--bare" else sh""
+      val branchOption = branch.fm(sh"") { branch => sh"--branch=$branch" }
+      val recursiveOption = if recursive then sh"--recursive" else sh""
+      
+      val process = sh"$git clone --progress $bareOption $branchOption $recursiveOption $source $target".fork[ExitStatus]()
       
       def complete(): GitRepo = process.await() match
         case ExitStatus.Ok =>
