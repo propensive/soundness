@@ -18,6 +18,7 @@ package acyclicity
 
 import contextual.*
 import rudiments.*
+import fulminate.*
 import anticipation.*
 import symbolism.*
 import spectacular.*
