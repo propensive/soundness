@@ -17,6 +17,7 @@
 package dissonance
 
 import rudiments.*
+import fulminate.*
 import anticipation.*
 
 import language.experimental.captureChecking

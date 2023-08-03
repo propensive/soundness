@@ -17,6 +17,7 @@
 package dissonance
 
 import rudiments.*
+import fulminate.*
 import anticipation.*
 
 case class CasualDiffError(issue: CasualDiffError.Issue, line: Int)
