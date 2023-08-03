@@ -17,6 +17,7 @@
 package turbulence
 
 import rudiments.*
+import fulminate.*
 import digression.*
 import symbolism.*
 import anticipation.*
