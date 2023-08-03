@@ -18,6 +18,7 @@ package eucalyptus
 
 import gossamer.*
 import rudiments.*
+import fulminate.*
 import anticipation.*
 import digression.*
 import parasite.*
@@ -103,6 +104,7 @@ object Eucalyptus:
 @missingContext("""|eucalyptus: a contextual Log instance is needed, for example:
                      |    import logging.stdout  // Log everything to standard output
                      |    import logging.silent  // Do not log anything""".stripMargin)
+@capability
 class Log(actions: PartialFunction[Entry, LogSink & Singleton]*)(using Monitor):
   transparent inline def thisLog = this
   def tags: ListMap[Text, Text] = ListMap()
