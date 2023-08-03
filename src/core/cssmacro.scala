@@ -17,6 +17,7 @@
 package cataclysm
 
 import rudiments.*
+import fulminate.*
 import gossamer.*
 import anticipation.*
 import spectacular.*
