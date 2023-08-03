@@ -23,7 +23,6 @@ import turbulence.*
 import galilei.*
 import serpentine.*
 import guillotine.*
-import ambience.*
 import spectacular.*
 import contextual.*
 import kaleidoscope.*
@@ -471,7 +470,7 @@ object InodeMaker:
   
   given fifo
       (using createNonexistentParents: CreateNonexistentParents,
-          overwritePreexisting: OverwritePreexisting, properties: SystemProperties, systemProperty: CanThrow[SystemPropertyError], log: Log, io: CanThrow[IoError])
+          overwritePreexisting: OverwritePreexisting, working: WorkingDirectory, log: Log, io: CanThrow[IoError])
       : InodeMaker[Fifo, Unix.Path] =
     path => createNonexistentParents(path):
       overwritePreexisting(path):

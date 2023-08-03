@@ -20,6 +20,7 @@ import probably.*
 import gossamer.*
 import imperial.*
 import eucalyptus.*
+import rudiments.*
 import serpentine.*
 import spectacular.*
 import hieroglyph.*
@@ -27,6 +28,8 @@ import anticipation.*, fileApi.galileiApi
 import ambience.*, environments.jvm, systemProperties.jvm
 
 import unsafeExceptions.canThrowAny
+
+given WorkingDirectory = WorkingDirectory(Unset)
 
 object Tests extends Suite(t"Galilei tests"):
   def run(): Unit =
