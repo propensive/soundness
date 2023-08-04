@@ -56,7 +56,7 @@ extends CodlDeserializer[ValueType]:
       case _ =>
         throw CodlReadError()
 
-trait CodlSerializer2:
+trait CodlSerializer3:
   given maybe
       [ValueType]
       (using serializer: CodlSerializer[ValueType])
@@ -65,52 +65,8 @@ trait CodlSerializer2:
       def schema: CodlSchema = serializer.schema.optional
       def serialize(value: Maybe[ValueType]): List[IArray[CodlNode]] =
         value.mm(serializer.serialize(_)).or(List())
-  
-object CodlSerializer extends CodlSerializer2:
-  given field[ValueType](using encoder: Encoder[ValueType]): CodlSerializer[ValueType]^{encoder} =
-    new CodlSerializer[ValueType]:
-      def schema: CodlSchema = Field(Arity.One)
-      
-      def serialize(value: ValueType): List[IArray[CodlNode]] =
-        List(IArray(CodlNode(Data(encoder.encode(value)))))
 
-  given boolean: CodlFieldSerializer[Boolean] = if _ then t"yes" else t"no"
-  given text: CodlFieldSerializer[Text] = _.show
-  
-  given option
-      [ValueType]
-      (using serializer: CodlSerializer[ValueType])
-      : CodlSerializer[Option[ValueType]] =
-    new CodlSerializer[Option[ValueType]]:
-      def schema: CodlSchema = serializer.schema.optional
-      def serialize(value: Option[ValueType]): List[IArray[CodlNode]] = value match
-        case None        => List()
-        case Some(value) => serializer.serialize(value)
-  
-  given list
-      [ElementType]
-      (using serializer: CodlSerializer[ElementType])
-      : CodlSerializer[List[ElementType]] =
-    new CodlSerializer[List[ElementType]]:
-      def schema: CodlSchema = serializer.schema match
-        case Field(_, validator) => Field(Arity.Many, validator)
-        case struct: Struct      => struct.copy(structArity = Arity.Many)
-      
-      def serialize(value: List[ElementType]): List[IArray[CodlNode]] =
-        value.map { (value: ElementType) => serializer.serialize(value).head }
-  
-  given set
-      [ElementType]
-      (using serializer: CodlSerializer[ElementType])
-      : CodlSerializer[Set[ElementType]] =
-    new CodlSerializer[Set[ElementType]]:
-      def schema: CodlSchema = serializer.schema match
-        case Field(_, validator) => Field(Arity.Many, validator)
-        case struct: Struct      => struct.copy(structArity = Arity.Many)
-      
-      def serialize(value: Set[ElementType]): List[IArray[CodlNode]] =
-        value.map { (value: ElementType) => serializer.serialize(value).head }.to(List)
-  
+trait CodlSerializer2 extends CodlSerializer3:
   inline given derived
       [DerivationType]
       (using mirror: Mirror.Of[DerivationType])
@@ -157,7 +113,52 @@ object CodlSerializer extends CodlSerializer2:
                 serialization ::: deriveProduct[DerivationType, tailLabels](tail)
         
       case _ => Nil
+  
+object CodlSerializer extends CodlSerializer2:
+  given field[ValueType](using encoder: Encoder[ValueType]): CodlSerializer[ValueType]^{encoder} =
+    new CodlSerializer[ValueType]:
+      def schema: CodlSchema = Field(Arity.One)
+      
+      def serialize(value: ValueType): List[IArray[CodlNode]] =
+        List(IArray(CodlNode(Data(encoder.encode(value)))))
 
+  given boolean: CodlFieldSerializer[Boolean] = if _ then t"yes" else t"no"
+  given text: CodlFieldSerializer[Text] = _.show
+  
+  given option
+      [ValueType]
+      (using serializer: CodlSerializer[ValueType])
+      : CodlSerializer[Option[ValueType]] =
+    new CodlSerializer[Option[ValueType]]:
+      def schema: CodlSchema = serializer.schema.optional
+      def serialize(value: Option[ValueType]): List[IArray[CodlNode]] = value match
+        case None        => List()
+        case Some(value) => serializer.serialize(value)
+  
+  given list
+      [ElementType]
+      (using serializer: CodlSerializer[ElementType])
+      : CodlSerializer[List[ElementType]] =
+    new CodlSerializer[List[ElementType]]:
+      def schema: CodlSchema = serializer.schema match
+        case Field(_, validator) => Field(Arity.Many, validator)
+        case struct: Struct      => struct.copy(structArity = Arity.Many)
+      
+      def serialize(value: List[ElementType]): List[IArray[CodlNode]] =
+        value.map { (value: ElementType) => serializer.serialize(value).head }
+  
+  given set
+      [ElementType]
+      (using serializer: CodlSerializer[ElementType])
+      : CodlSerializer[Set[ElementType]] =
+    new CodlSerializer[Set[ElementType]]:
+      def schema: CodlSchema = serializer.schema match
+        case Field(_, validator) => Field(Arity.Many, validator)
+        case struct: Struct      => struct.copy(structArity = Arity.Many)
+      
+      def serialize(value: Set[ElementType]): List[IArray[CodlNode]] =
+        value.map { (value: ElementType) => serializer.serialize(value).head }.to(List)
+  
 trait CodlDeserializer2:
   inline given derived
       [DerivationType]
