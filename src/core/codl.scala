@@ -135,7 +135,9 @@ object Codl:
               go(focus = Proto(Unset, meta = focus.meta.or(if lines == 0 then Unset else Meta(lines))))
             
           case CodlToken.Indent =>
-            val errors2 = if focus.key.unset then CodlError(focus.line, focus.col, 1, IndentAfterComment) :: errors else errors
+            val errors2 = if focus.key.unset then CodlError(focus.line, focus.col, 1, IndentAfterComment) ::
+                errors else errors
+            
             go(focus = Proto(), peers = Nil, stack = (focus -> peers) :: stack, errors = errors2)
           
           case CodlToken.Outdent(n) => stack match
@@ -148,8 +150,7 @@ object Codl:
               
               val focus2 = proto.copy(children = closed :: peers ::: proto.children)
 
-              go(next #:: tail, focus = focus2, peers = rest, stack = stack2, errors = errors2 :::
-                  errors)
+              go(next #:: tail, focus = focus2, peers = rest, stack = stack2, errors = errors2 ::: errors)
           
           case CodlToken.Blank => focus.meta match
             case Unset            =>
@@ -157,15 +158,13 @@ object Codl:
             case Meta(l, _, _) =>
               val (closed, errors2) = focus.close
               
-              go(focus = Proto(), peers = closed :: peers, lines = lines + 1, errors = errors2 :::
-                  errors)
+              go(focus = Proto(), peers = closed :: peers, lines = lines + 1, errors = errors2 ::: errors)
           
           case CodlToken.Argument =>
             go(focus = focus.substitute(subs.head), subs = subs.tail)
 
           case CodlToken.Item(word, line, col, block) =>
-            val meta2: Maybe[Meta] = focus.meta.or(if lines == 0 then Unset else Meta(blank =
-                lines))
+            val meta2: Maybe[Meta] = focus.meta.or(if lines == 0 then Unset else Meta(blank = lines))
             
             focus.key match
               case key: Text => focus.schema match
@@ -177,7 +176,8 @@ object Codl:
                       if peerIds.contains(uniqueId(0))
                       then
                         val first = peerIds(uniqueId(0))
-                        List(CodlError(line, col, uniqueId(0).length, DuplicateId(uniqueId(0), first(0), first(1))))
+                        val duplicate = DuplicateId(uniqueId(0), first(0), first(1))
+                        List(CodlError(line, col, uniqueId(0).length, duplicate))
                       else Nil
                     .or(Nil)
                   
@@ -192,7 +192,8 @@ object Codl:
                       if peerIds.contains(uniqueId(0))
                       then
                         val first = peerIds(uniqueId(0))
-                        List(CodlError(line, col, uniqueId(0).length, DuplicateId(uniqueId(0), first(0), first(1))))
+                        val duplicate = DuplicateId(uniqueId(0), first(0), first(1))
+                        List(CodlError(line, col, uniqueId(0).length, duplicate))
                       else Nil
                     .or(Nil)
                   
@@ -213,7 +214,8 @@ object Codl:
                         if peerIds.contains(uniqueId(0))
                         then
                           val first = peerIds(uniqueId(0))
-                          List(CodlError(line, col, uniqueId(0).length, DuplicateId(uniqueId(0), first(0), first(1))))
+                          val duplicate = DuplicateId(uniqueId(0), first(0), first(1))
+                          List(CodlError(line, col, uniqueId(0).length, duplicate))
                         else Nil
                       .or(Nil)
                     
@@ -224,8 +226,7 @@ object Codl:
                 val (fschema: CodlSchema, errors2: List[CodlError]) =
                   if schema == CodlSchema.Free then (schema, errors)
                   else schema(word).mm((_, errors)).or:
-                    (CodlSchema.Free, List(CodlError(line, col, word.length, InvalidKey(word,
-                        word))))
+                    (CodlSchema.Free, List(CodlError(line, col, word.length, InvalidKey(word, word))))
 
                 val errors3 =
                   if fschema.unique && peers.exists(_.data.mm(_.key) == word)
@@ -257,9 +258,8 @@ object Codl:
           case _ =>
             go(LazyList(CodlToken.Outdent(stack.length + 1)))
     
-
-
-    if stream.isEmpty then CodlDoc() else recur(stream, Proto(), Nil, Map(), Nil, 0, subs.reverse, Nil, LazyList(), Nil)
+    if stream.isEmpty
+    then CodlDoc() else recur(stream, Proto(), Nil, Map(), Nil, 0, subs.reverse, Nil, LazyList(), Nil)
 
   def tokenize(in: LazyList[Text]^, fromStart: Boolean = false): (Int, LazyList[CodlToken]^{in}) =
     val reader: PositionReader = new PositionReader(in.map(identity))
