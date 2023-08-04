@@ -1125,8 +1125,6 @@ object Tests extends Suite(t"CoDL tests"):
         print(User(12, t"user@example.com", List(Privilege(t"read", true), Privilege(t"write", false))))
       .assert(_ == t"")
 
-    println("-----")
-    
     suite(t"Meta tests"):
       test(t"Tabs are recorded"):
         read(t"# some comment\nroot   param1    param2\n  child1 param3")().meta

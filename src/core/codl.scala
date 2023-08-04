@@ -33,7 +33,6 @@ enum CodlToken:
   case Indent, Peer, Blank, Argument
   case Line(text: Text)
   case Outdent(n: Int)
-  case Tab(n: Int)
   case Item(text: Text, line: Int, col: Int, block: Boolean = false)
   case Comment(text: Text, line: Int, col: Int)
   case Error(error: CodlError)
@@ -48,7 +47,6 @@ object CodlToken:
     case Argument                     => t"Argument"
     case Line(text)                   => t"Line($text)"
     case Outdent(n)                   => t"Outdent($n)"
-    case Tab(n)                       => t"Tab($n)"
     case Item(text, line, col, block) => t"Item($text, $line, $col, $block)"
     case Comment(text, line, col)     => t"Comment($text, $line, $col)"
     case Error(error)                 => t"Error(${error.message})"
@@ -60,6 +58,7 @@ object Codl:
       (using readable: Readable[source.type, Text], aggregate: CanThrow[AggregateError[CodlError]],
           codlRead: CanThrow[CodlReadError])
       : ValueType^{readable, aggregate} =
+    
     summon[CodlDeserializer[ValueType]].schema.parse(readable.read(source)).as[ValueType]
   
   def parse
@@ -68,6 +67,7 @@ object Codl:
           fromStart: Boolean = false)
       (using readable: Readable[SourceType, Text], aggregate: CanThrow[AggregateError[CodlError]])
       : CodlDoc^{readable, aggregate} =
+    
     val (margin, stream) = tokenize(readable.read(source), fromStart)
     val baseSchema: CodlSchema = schema
     
@@ -150,9 +150,6 @@ object Codl:
 
               go(next #:: tail, focus = focus2, peers = rest, stack = stack2, errors = errors2 :::
                   errors)
-          
-          case CodlToken.Tab(n) =>
-            go()
           
           case CodlToken.Blank => focus.meta match
             case Unset            =>
