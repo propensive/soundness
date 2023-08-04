@@ -17,14 +17,15 @@
 package nonagenarian
 
 import anticipation.*, fileApi.galileiApi
+import digression.*
 import eucalyptus.*
+import fulminate.*
 import galilei.*, filesystemOptions.{doNotCreateNonexistent, dereferenceSymlinks}
+import gastronomy.*
 import gossamer.*
 import guillotine.*
 import kaleidoscope.*
-import gastronomy.*
 import rudiments.*
-import digression.*
 import serpentine.*, hierarchies.unix
 import spectacular.*
 import turbulence.*
