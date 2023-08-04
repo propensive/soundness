@@ -57,15 +57,14 @@ object Printer:
                   (param: @unchecked) match
                     case CodlNode(Data(key, IArray(CodlNode(Data(value, _, layout, _), _)), _, _), _) =>
                       val spaces = layout.col - col
-                      for i <- 0 until spaces do out.write(' ')
+                      for i <- 0 until spaces.max(1) do out.write(' ')
                       col += spaces
                       out.write(value.s)
                       col += value.length
                     
                     case CodlNode(Data(key, IArray(), layout, _), _) =>
-                      if layout.multiline then println("MULTILINE "+key)
                       val spaces = layout.col - col
-                      for i <- 0 until spaces do out.write(' ')
+                      for i <- 0 until spaces.max(1) do out.write(' ')
                       col += spaces
                       out.write(key.s)
                       col += key.length
