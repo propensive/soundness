@@ -53,8 +53,18 @@ object GitError:
 case class GitError(detail: GitError.Detail)
 extends Error(msg"the Git operation could not be completed because $detail")
 
-case class CloneProcess(complete: () => GitRepo, progress: LazyList[Progress])
-case class FetchProcess(complete: () => Unit, progress: LazyList[Progress])
+object GitProcess:
+  def apply
+      [ResultType]
+      (progress: LazyList[Progress])
+      (fn: CanThrow[GitError] ?-> ResultType)
+      : GitProcess[ResultType] =
+    
+    GitProcess(() => fn, progress)
+
+case class GitProcess[+ResultType](complete: () -> (CanThrow[GitError]) ?-> ResultType, progress: LazyList[Progress]):
+  def map[ResultType2](fn: (CanThrow[GitError]) ?-> ResultType -> ResultType2): GitProcess[ResultType2] =
+    GitProcess[ResultType2](progress)(fn(complete()))
 
 object GitRepo:
   def apply(path: Path): GitRepo throws IoError | GitError =
@@ -68,8 +78,8 @@ case class GitRepo(gitDir: Directory, workTree: Maybe[Directory] = Unset):
     case Unset               => sh"--git-dir=${gitDir.path}"
     case workTree: Directory => sh"--git-dir=${gitDir.path} --work-tree=${workTree.path}"
 
-  def checkout(ref: GitRef)(using Log, GitCommand, WorkingDirectory): Unit =
-    sh"$git $repo checkout $ref".exec[ExitStatus]()
+  def checkout(refspec: RefSpec)(using Log, GitCommand, WorkingDirectory): Unit =
+    sh"$git $repo checkout $refspec".exec[ExitStatus]()
   
   def pushTags()(using Log, Internet, CanThrow[GitError], GitCommand, WorkingDirectory): Unit =
     sh"$git $repo push --tags".exec[ExitStatus]()
@@ -79,19 +89,26 @@ case class GitRepo(gitDir: Directory, workTree: Maybe[Directory] = Unset):
       case ExitStatus.Ok => ()
       case failure       => throw GitError(GitError.Detail.CannotSwitchBranch)
   
-  def pull()(using GitCommand, Log, Internet, WorkingDirectory, CanThrow[GitError]): FetchProcess =
+  def pull()(using git: GitCommand, log: Log, internet: Internet, working: WorkingDirectory, gitError: CanThrow[GitError]): GitProcess[Unit] =
     val process = sh"$git $repo pull --progress".fork[ExitStatus]()
 
-    def complete(): Unit = process.await() match
-      case ExitStatus.Ok => ()
-      case failure       => throw GitError(GitError.Detail.PullFailed)
-    
-    FetchProcess(() => complete(), Git.progress(process))
+    GitProcess[Unit](Git.progress(process)):
+      process.await() match
+        case ExitStatus.Ok => ()
+        case failure       => throw GitError(GitError.Detail.PullFailed)
   
-  def fetch()(using GitCommand, Log, Internet, WorkingDirectory, CanThrow[GitError]): Unit =
-    sh"$git $repo fetch".exec[ExitStatus]() match
-      case ExitStatus.Ok => ()
-      case failure       => throw GitError(GitError.Detail.PullFailed)
+  def fetch
+      (depth: Maybe[Int] = Unset, repo: Text, refspec: RefSpec)
+      (using GitCommand, Log, Internet, WorkingDirectory, CanThrow[GitError])
+      : GitProcess[Unit] =
+    
+    val depthOption = depth.fm(sh"") { depth => sh"depth=$depth" }
+    val process = sh"$git $repo fetch $depthOption --progress".fork[ExitStatus]()
+
+    GitProcess[Unit](Git.progress(process)):
+      process.await() match
+        case ExitStatus.Ok => ()
+        case failure       => throw GitError(GitError.Detail.PullFailed)
   
   def commit(message: Text)(using GitCommand, Log, WorkingDirectory, CanThrow[GitError]): Unit =
     sh"$git $repo commit -m $message".exec[ExitStatus]() match
@@ -218,15 +235,24 @@ object Git:
       if bare then GitRepo(target.as[Directory], Unset)
       else GitRepo((target / p".git").as[Directory], target.as[Directory])
     catch
-      case error: PathError           => throw GitError(GitError.Detail.InvalidRepoPath)
-      case error: IoError             => throw GitError(GitError.Detail.InvalidRepoPath)
+      case error: PathError => throw GitError(GitError.Detail.InvalidRepoPath)
+      case error: IoError   => throw GitError(GitError.Detail.InvalidRepoPath)
   
+  def cloneCommit
+      [PathType: GenericPathReader]
+      (repo: Text, targetPath: PathType, commit: CommitHash)
+      (using Internet, WorkingDirectory, Log, Decoder[Path], CanThrow[GitError], GitCommand)
+      : GitProcess[GitRepo] =
+    
+    val gitRepo = init(targetPath, true)
+    gitRepo.fetch(1, repo, commit).map { _ => gitRepo }
+
   def clone
       [PathType: GenericPathReader]
       (source: Text, targetPath: PathType, bare: Boolean = false, branch: Maybe[Branch] = Unset,
           recursive: Boolean = false)
       (using Internet, WorkingDirectory, Log, Decoder[Path], CanThrow[GitError], GitCommand)
-      : CloneProcess =
+      : GitProcess[GitRepo] =
     
     try
       val target: Path = targetPath.fullPath.decodeAs[Path]
@@ -236,7 +262,7 @@ object Git:
       
       val process = sh"$git clone --progress $bareOption $branchOption $recursiveOption $source $target".fork[ExitStatus]()
       
-      def complete(): GitRepo = process.await() match
+      def complete()(using CanThrow[GitError]): GitRepo = process.await() match
         case ExitStatus.Ok =>
           try GitRepo((target / p".git").as[Directory], target.as[Directory])
           catch case error: IoError => throw GitError(GitError.Detail.CloneFailed)
@@ -244,21 +270,21 @@ object Git:
         case _ =>
           throw GitError(GitError.Detail.CloneFailed)
   
-      CloneProcess(() => complete(), progress(process))
+      GitProcess[GitRepo](() => complete(), progress(process))
 
     catch
       case error: PathError           => throw GitError(GitError.Detail.InvalidRepoPath)
       case error: IoError             => throw GitError(GitError.Detail.InvalidRepoPath)
 
-object GitRef:
-  given Encoder[GitRef] = _.name
+object RefSpec:
+  given Encoder[RefSpec] = _.name
 
-trait GitRef:
+trait RefSpec:
   def name: Text
 
-case class Tag(name: Text) extends GitRef
-case class Branch(name: Text) extends GitRef
-case class CommitHash(name: Text) extends GitRef
+case class Tag(name: Text) extends RefSpec
+case class Branch(name: Text) extends RefSpec
+case class CommitHash(name: Text) extends RefSpec
 
 object GitCommand:
   given AsParams[GitCommand] = _.file.path.fullname
