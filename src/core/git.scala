@@ -32,23 +32,26 @@ import turbulence.*
 
 import language.experimental.captureChecking
 
+import GitError.Detail.*
+
 object GitError:
   enum Detail:
     case CannotExecuteGit, CloneFailed, InvalidRepoPath, RepoDoesNotExist, BranchDoesNotExist,
         CommitDoesNotExist, CommitFailed, CannotSwitchBranch, PullFailed, BranchFailed, TagFailed
   
   given AsMessage[Detail] =
-    case Detail.CannotExecuteGit   => msg"the `git` command could not be executed"
-    case Detail.CloneFailed        => msg"the repository could not be cloned"
-    case Detail.InvalidRepoPath    => msg"the repository path was not valid"
-    case Detail.RepoDoesNotExist   => msg"the repository does not exist"
-    case Detail.BranchDoesNotExist => msg"the branch does not exist"
-    case Detail.CommitDoesNotExist => msg"the commit does not exist"
-    case Detail.CommitFailed       => msg"the commit could not be created"
-    case Detail.PullFailed         => msg"the pull operation did not complete"
-    case Detail.BranchFailed       => msg"the new branch could not be created"
-    case Detail.TagFailed          => msg"the new tag could not be created"
-    case Detail.CannotSwitchBranch => msg"the branch could not be changed"
+    case CannotExecuteGit   => msg"the `git` command could not be executed"
+    case CloneFailed        => msg"the repository could not be cloned"
+    case InvalidRepoPath    => msg"the repository path was not valid"
+    case RepoDoesNotExist   => msg"the repository does not exist"
+    case BranchDoesNotExist => msg"the branch does not exist"
+    case CommitDoesNotExist => msg"the commit does not exist"
+    case CommitFailed       => msg"the commit could not be created"
+    case PullFailed         => msg"the pull operation did not complete"
+    case BranchFailed       => msg"the new branch could not be created"
+    case TagFailed          => msg"the new tag could not be created"
+    case CannotSwitchBranch => msg"the branch could not be changed"
+
 
 case class GitError(detail: GitError.Detail)
 extends Error(msg"the Git operation could not be completed because $detail")
@@ -63,86 +66,87 @@ object GitProcess:
     GitProcess(() => fn, progress)
 
 case class GitProcess[+ResultType](complete: () -> (CanThrow[GitError]) ?-> ResultType, progress: LazyList[Progress]):
-  def map[ResultType2](fn: (CanThrow[GitError]) ?-> ResultType -> ResultType2): GitProcess[ResultType2] =
+  def map[ResultType2](fn: (CanThrow[GitError]) ?-> ResultType => ResultType2): GitProcess[ResultType2] =
     GitProcess[ResultType2](progress)(fn(complete()))
 
 object GitRepo:
   def apply(path: Path): GitRepo throws IoError | GitError =
-    if !path.exists() then throw GitError(GitError.Detail.RepoDoesNotExist)
+    if !path.exists() then throw GitError(RepoDoesNotExist)
     if (path / p".git").exists() then GitRepo((path / p".git").as[Directory], path.as[Directory])
     else GitRepo(path.as[Directory])
 
 case class GitRepo(gitDir: Directory, workTree: Maybe[Directory] = Unset):
 
-  val repo = workTree match
+  val repoOptions = workTree match
     case Unset               => sh"--git-dir=${gitDir.path}"
     case workTree: Directory => sh"--git-dir=${gitDir.path} --work-tree=${workTree.path}"
 
   def checkout(refspec: RefSpec)(using Log, GitCommand, WorkingDirectory): Unit =
-    sh"$git $repo checkout $refspec".exec[ExitStatus]()
+    sh"$git $repoOptions checkout $refspec".exec[ExitStatus]()
   
   def pushTags()(using Log, Internet, CanThrow[GitError], GitCommand, WorkingDirectory): Unit =
-    sh"$git $repo push --tags".exec[ExitStatus]()
+    sh"$git $repoOptions push --tags".exec[ExitStatus]()
 
   def switch(branch: Branch)(using GitCommand, Log, WorkingDirectory, CanThrow[GitError]): Unit =
-    sh"$git $repo switch $branch".exec[ExitStatus]() match
+    sh"$git $repoOptions switch $branch".exec[ExitStatus]() match
       case ExitStatus.Ok => ()
-      case failure       => throw GitError(GitError.Detail.CannotSwitchBranch)
+      case failure       => throw GitError(CannotSwitchBranch)
   
   def pull()(using git: GitCommand, log: Log, internet: Internet, working: WorkingDirectory, gitError: CanThrow[GitError]): GitProcess[Unit] =
-    val process = sh"$git $repo pull --progress".fork[ExitStatus]()
+    val process = sh"$git $repoOptions pull --progress".fork[ExitStatus]()
 
     GitProcess[Unit](Git.progress(process)):
       process.await() match
         case ExitStatus.Ok => ()
-        case failure       => throw GitError(GitError.Detail.PullFailed)
+        case failure       => throw GitError(PullFailed)
   
   def fetch
       (depth: Maybe[Int] = Unset, repo: Text, refspec: RefSpec)
       (using GitCommand, Log, Internet, WorkingDirectory, CanThrow[GitError])
       : GitProcess[Unit] =
     
-    val depthOption = depth.fm(sh"") { depth => sh"depth=$depth" }
-    val process = sh"$git $repo fetch $depthOption --progress".fork[ExitStatus]()
+    val depthOption = depth.fm(sh"") { depth => sh"--depth=$depth" }
+    val command = sh"$git $repoOptions fetch $depthOption --progress $repo $refspec"
+    val process = command.fork[ExitStatus]()
 
     GitProcess[Unit](Git.progress(process)):
       process.await() match
         case ExitStatus.Ok => ()
-        case failure       => throw GitError(GitError.Detail.PullFailed)
+        case failure       => throw GitError(PullFailed)
   
   def commit(message: Text)(using GitCommand, Log, WorkingDirectory, CanThrow[GitError]): Unit =
-    sh"$git $repo commit -m $message".exec[ExitStatus]() match
+    sh"$git $repoOptions commit -m $message".exec[ExitStatus]() match
       case ExitStatus.Ok => ()
-      case failure       => throw GitError(GitError.Detail.CommitFailed)
+      case failure       => throw GitError(CommitFailed)
   
   def branches()(using GitCommand, WorkingDirectory, Log): List[Branch] =
-    sh"$git $repo branch".exec[LazyList[Text]]().map(_.drop(2)).to(List).map(Branch(_))
+    sh"$git $repoOptions branch".exec[LazyList[Text]]().map(_.drop(2)).to(List).map(Branch(_))
   
   // FIXME: this uses an `Executor[String]` instead of an `Executor[Text]` because, for some
   // reason, the latter captures the `WorkingDirectory` parameter
   def branch()(using GitCommand, WorkingDirectory, Log): Branch =
-    Branch(sh"$git $repo branch --show-current".exec[String]().tt)
+    Branch(sh"$git $repoOptions branch --show-current".exec[String]().tt)
   
   def makeBranch
       (branch: Branch)
       (using GitCommand, WorkingDirectory, Log, CanThrow[GitError])
       : Unit =
 
-    sh"$git $repo checkout -b $branch".exec[ExitStatus]() match
+    sh"$git $repoOptions checkout -b $branch".exec[ExitStatus]() match
       case ExitStatus.Ok => ()
-      case failure       => throw GitError(GitError.Detail.BranchFailed)
+      case failure       => throw GitError(BranchFailed)
   
   def add(): Unit = ()
   def reset(): Unit = ()
   def mv(): Unit = ()
   
   def tags()(using GitCommand, WorkingDirectory, Log): List[Tag] =
-    sh"$git $repo tag".exec[LazyList[Text]]().to(List).map(Tag(_))
+    sh"$git $repoOptions tag".exec[LazyList[Text]]().to(List).map(Tag(_))
 
   def tag(name: Tag)(using GitCommand, WorkingDirectory, Log, CanThrow[GitError]): Tag =
-    sh"$git $repo tag $name".exec[ExitStatus]() match
+    sh"$git $repoOptions tag $name".exec[ExitStatus]() match
       case ExitStatus.Ok => name
-      case failure       => throw GitError(GitError.Detail.TagFailed)
+      case failure       => throw GitError(TagFailed)
   
   private def parsePem(text: Text): Maybe[Pem] = safely(Pem.parse(text))
 
@@ -201,7 +205,7 @@ case class GitRepo(gitDir: Directory, workTree: Maybe[Directory] = Unset):
         case _ =>
           commit()
     
-    recur(sh"$git $repo log --format=raw --color=never".exec[LazyList[Text]]())
+    recur(sh"$git $repoOptions log --format=raw --color=never".exec[LazyList[Text]]())
 
   def reflog(): Unit = ()
   def status(): Unit = ()
@@ -235,8 +239,8 @@ object Git:
       if bare then GitRepo(target.as[Directory], Unset)
       else GitRepo((target / p".git").as[Directory], target.as[Directory])
     catch
-      case error: PathError => throw GitError(GitError.Detail.InvalidRepoPath)
-      case error: IoError   => throw GitError(GitError.Detail.InvalidRepoPath)
+      case error: PathError => throw GitError(InvalidRepoPath)
+      case error: IoError   => throw GitError(InvalidRepoPath)
   
   def cloneCommit
       [PathType: GenericPathReader]
@@ -244,8 +248,11 @@ object Git:
       (using Internet, WorkingDirectory, Log, Decoder[Path], CanThrow[GitError], GitCommand)
       : GitProcess[GitRepo] =
     
-    val gitRepo = init(targetPath, true)
-    gitRepo.fetch(1, repo, commit).map { _ => gitRepo }
+    val gitRepo = init(targetPath)
+    
+    gitRepo.fetch(1, repo, commit).map: _ =>
+      gitRepo.checkout(commit)
+      gitRepo
 
   def clone
       [PathType: GenericPathReader]
@@ -265,16 +272,16 @@ object Git:
       def complete()(using CanThrow[GitError]): GitRepo = process.await() match
         case ExitStatus.Ok =>
           try GitRepo((target / p".git").as[Directory], target.as[Directory])
-          catch case error: IoError => throw GitError(GitError.Detail.CloneFailed)
+          catch case error: IoError => throw GitError(CloneFailed)
         
         case _ =>
-          throw GitError(GitError.Detail.CloneFailed)
+          throw GitError(CloneFailed)
   
       GitProcess[GitRepo](() => complete(), progress(process))
 
     catch
-      case error: PathError           => throw GitError(GitError.Detail.InvalidRepoPath)
-      case error: IoError             => throw GitError(GitError.Detail.InvalidRepoPath)
+      case error: PathError => throw GitError(InvalidRepoPath)
+      case error: IoError   => throw GitError(InvalidRepoPath)
 
 object RefSpec:
   given Encoder[RefSpec] = _.name
