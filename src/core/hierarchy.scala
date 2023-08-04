@@ -108,6 +108,7 @@ extension
     val common = reachable.depth(left.conjunction(right))
     linkCreator.path(reachable.depth(left) - common, reachable.descent(right).dropRight(common))
   
+extension[PathType <: Matchable, NameType <: Label, RootType](left: PathType)
   def keep
       (n: Int)
       (using reachable: Reachable[PathType, NameType, RootType],
