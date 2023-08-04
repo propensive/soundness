@@ -25,7 +25,25 @@ import java.io as ji
 import language.experimental.captureChecking
 
 object Printer:
+
   def print(out: ji.Writer, doc: CodlDoc): Unit =
+
+    @tailrec
+    def printBlock(indent: Int, text: Text, start: Int = 0): Unit =
+      if start < (text.s.length - 1) then
+        for i <- 0 until indent do out.write(' ')
+        
+        text.s.indexOf('\n', start) match
+          case -1 =>
+            out.write(text.s.substring(start))
+            out.write('\n')
+          
+          case end =>
+            out.write(text.s.substring(start, end))
+            out.write('\n')
+            printBlock(indent, text, end + 1)
+      
+
     def recur(node: CodlNode, indent: Int): Unit = node match
       case CodlNode(data, meta) =>
         meta.mm: meta =>
@@ -56,18 +74,26 @@ object Printer:
                 ps.foreach: param =>
                   (param: @unchecked) match
                     case CodlNode(Data(key, IArray(CodlNode(Data(value, _, layout, _), _)), _, _), _) =>
-                      val spaces = layout.col - col
-                      for i <- 0 until spaces.max(1) do out.write(' ')
-                      col += spaces
-                      out.write(value.s)
-                      col += value.length
+                      if layout.multiline then
+                        out.write('\n')
+                        printBlock(indent + 4, key)
+                      else
+                        val spaces = layout.col - col
+                        for i <- 0 until spaces.max(1) do out.write(' ')
+                        col += spaces
+                        out.write(value.s)
+                        col += value.length
                     
                     case CodlNode(Data(key, IArray(), layout, _), _) =>
-                      val spaces = layout.col - col
-                      for i <- 0 until spaces.max(1) do out.write(' ')
-                      col += spaces
-                      out.write(key.s)
-                      col += key.length
+                      if layout.multiline then
+                        out.write('\n')
+                        printBlock(indent + 4, key)
+                      else
+                        val spaces = layout.col - col
+                        for i <- 0 until spaces.max(1) do out.write(' ')
+                        col += spaces
+                        out.write(key.s)
+                        col += key.length
                 
                 meta.mm(_.remark).mm: remark =>
                   out.write(" # ")

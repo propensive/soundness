@@ -77,6 +77,7 @@ object Codl:
       
       def commit(child: Proto): (Maybe[(Text, (Int, Int))], Proto, List[CodlError]) =
         val (closed, errors2) = child.close
+        
         val uniqueId2 =
           if child.schema.arity == Arity.Unique
           then (child.key.avow(using Unsafe), (child.line, child.col)) else Unset
@@ -169,7 +170,7 @@ object Codl:
             focus.key match
               case key: Text => focus.schema match
                 case field@Field(_, _) =>
-                  val (uniqueId, focus2, errors2) = focus.commit(Proto(word, line, col))
+                  val (uniqueId, focus2, errors2) = focus.commit(Proto(word, line, col, multiline = block))
                   
                   val errors3 =
                     uniqueId.mm: uniqueId =>
@@ -185,7 +186,7 @@ object Codl:
                   go(focus = focus2, peerIds = peerIds2, lines = 0, errors = errors3 ::: errors2 ::: errors)
                 
                 case CodlSchema.Free =>
-                  val (uniqueId, focus2, errors2) = focus.commit(Proto(word, line, col))
+                  val (uniqueId, focus2, errors2) = focus.commit(Proto(word, line, col, multiline = block))
                   
                   val errors3 =
                     uniqueId.mm: uniqueId =>
@@ -206,7 +207,7 @@ object Codl:
                     go(errors = error :: errors)
                   
                   case entry: CodlSchema.Entry =>
-                    val peer = Proto(word, line, col, schema = entry.schema)
+                    val peer = Proto(word, line, col, schema = entry.schema, multiline = block)
                     val (uniqueId, focus2, errors2) = focus.commit(peer)
                     
                     val errors3 =
@@ -233,7 +234,7 @@ object Codl:
                   then CodlError(line, col, word.length, DuplicateKey(word, word)) :: errors2
                   else errors2
                 
-                go(focus = Proto(word, line, col, meta = meta2, schema = fschema), lines = 0,
+                go(focus = Proto(word, line, col, meta = meta2, schema = fschema, multiline = block), lines = 0,
                     errors = errors3)
           
           case CodlToken.Comment(txt, line, col) => focus.key match
@@ -278,16 +279,23 @@ object Codl:
     val (first: Character, start: Int) = try cue(0) catch case err: CodlError => ???
     val margin: Int = first.column
 
-    def istream(char: Character, state: State = Indent, indent: Int = margin, count: Int, padding: Boolean): LazyList[CodlToken] =
+    def istream
+        (char: Character, state: State = Indent, indent: Int = margin, count: Int, padding: Boolean)
+        : LazyList[CodlToken] =
       stream(char, state, indent, count, padding)
     
     @tailrec
-    def stream(char: Character, state: State = Indent, indent: Int = margin, count: Int = start, padding: Boolean)
-              : LazyList[CodlToken] =
+    def stream
+        (char: Character, state: State = Indent, indent: Int = margin, count: Int = start, padding: Boolean)
+        : LazyList[CodlToken] =
+      
       inline def next(): Character =
         try reader.next() catch case err: CodlError => Character('\n', err.line, err.col)
       
-      inline def recur(state: State, indent: Int = indent, count: Int = count + 1, padding: Boolean = padding): LazyList[CodlToken] =
+      inline def recur
+          (state: State, indent: Int = indent, count: Int = count + 1, padding: Boolean = padding)
+          : LazyList[CodlToken] =
+        
         stream(next(), state, indent, count, padding)
       
       inline def line(): LazyList[CodlToken] =
@@ -299,7 +307,9 @@ object Codl:
           then LazyList()
           else stream(next(), Line, indent, count + 1, padding)
       
-      inline def irecur(state: State, indent: Int = indent, count: Int = count + 1, padding: Boolean = padding): LazyList[CodlToken] =
+      inline def irecur
+          (state: State, indent: Int = indent, count: Int = count + 1, padding: Boolean = padding)
+          : LazyList[CodlToken] =
         istream(next(), state, indent, count, padding)
       
       inline def diff: Int = char.column - indent
