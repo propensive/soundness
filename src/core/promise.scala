@@ -17,31 +17,47 @@
 package parasite
 
 import anticipation.*
+import rudiments.*
+
+import language.experimental.captureChecking
+
+object Promise:
+  object Cancelled
 
 case class Promise[ValueType]():
   @volatile
-  private var value: Option[ValueType throws CancelError] = None
+  private var value: Maybe[ValueType] | Promise.Cancelled.type = Unset
 
-  def ready: Boolean = !value.isEmpty
+  def ready: Boolean = !value.unset
 
-  def supply(suppliedValue: => ValueType): Unit throws AlreadyCompleteError = synchronized:
-    if value.isEmpty then
-      value = Some(suppliedValue)
-      notifyAll()
-    else throw AlreadyCompleteError()
+  private def get(): ValueType throws CancelError = value match
+    case Promise.Cancelled => throw CancelError()
+    case Unset             => ???
+    case value: ValueType  => value
+
+  def supply
+      (supplied: -> ValueType)
+      (using alreadyComplete: CanThrow[AlreadyCompleteError])
+      : Unit^{alreadyComplete} =
+    
+    synchronized:
+      if value.unset then
+        value = supplied
+        notifyAll()
+      else throw AlreadyCompleteError()
 
   def await(): ValueType throws CancelError = synchronized:
-    while value.isEmpty do wait()
-    value.get
+    while value.unset do wait()
+    get()
 
   def cancel(): Unit = synchronized:
-    value = Some(throw CancelError())
+    value = Promise.Cancelled
     notifyAll()
 
   def await
         [DurationType](duration: DurationType)(using GenericDuration[DurationType])
         : ValueType throws CancelError | TimeoutError =
     synchronized:
-      if ready then value.get else
+      if ready then get() else
         wait(readDuration(duration))
-        if !ready then throw TimeoutError() else value.get
+        if !ready then throw TimeoutError() else get()
