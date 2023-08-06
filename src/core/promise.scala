@@ -19,6 +19,10 @@ package parasite
 import anticipation.*
 import rudiments.*
 
+import scala.compiletime.*
+import scala.annotation.*
+import scala.collection.mutable as scm
+
 import language.experimental.captureChecking
 
 object Promise:
@@ -30,15 +34,12 @@ case class Promise[ValueType]():
 
   def ready: Boolean = !value.unset
 
-  private def get(): ValueType throws CancelError = value match
-    case Promise.Cancelled => throw CancelError()
+  private def get()(using boundary.Label[Unit]): ValueType = value.asMatchable match
+    case Promise.Cancelled => boundary.break()
     case Unset             => ???
     case value: ValueType  => value
 
-  def supply
-      (supplied: -> ValueType)
-      (using alreadyComplete: CanThrow[AlreadyCompleteError])
-      : Unit^{alreadyComplete} =
+  def fulfill(supplied: -> ValueType)(using complete: CanThrow[AlreadyCompleteError]): Unit^{complete} =
     
     synchronized:
       if value.unset then
@@ -46,7 +47,7 @@ case class Promise[ValueType]():
         notifyAll()
       else throw AlreadyCompleteError()
 
-  def await(): ValueType throws CancelError = synchronized:
+  def await()(using boundary.Label[Unit]): ValueType = synchronized:
     while value.unset do wait()
     get()
 
@@ -55,9 +56,79 @@ case class Promise[ValueType]():
     notifyAll()
 
   def await
-        [DurationType](duration: DurationType)(using GenericDuration[DurationType])
+        [DurationType](duration: DurationType)(using GenericDuration[DurationType], boundary.Label[Unit])
         : ValueType throws CancelError | TimeoutError =
     synchronized:
       if ready then get() else
         wait(readDuration(duration))
         if !ready then throw TimeoutError() else get()
+
+
+@capability
+sealed trait Monitor(id: Text):
+  private val children: scm.HashMap[Text, AnyRef] = scm.HashMap()
+
+  override def toString(): String = s"/$id"
+
+object Supervisor extends Monitor(Text(""))
+
+extension (monitor: Monitor)
+  def childMonitor(id: Text)(using label: boundary.Label[Unit]): TaskMonitor = TaskMonitor(id, monitor)
+
+def supervise[ResultType](fn: Monitor ?-> ResultType) = fn(using Supervisor)
+
+@capability
+class TaskMonitor(id: Text, parent: Monitor)(using label: boundary.Label[Unit]) extends Monitor(id):
+  def boundaryLabel: boundary.Label[Unit] = label
+  private var cancelled: Boolean = false
+  
+  def cancel(): Unit = synchronized:
+    cancelled = true
+  
+  def acquiesce(): Unit = if cancelled then boundary.break()
+  
+  override def toString(): String = s"${parent}/$id"
+
+object Task:
+  transparent inline def apply[ResultType](id: Text)(inline eval: TaskMonitor ?=> ResultType)(using monitor: Monitor)
+      : Task[ResultType]^ =
+    new Task(id, monitor, eval(using _))
+
+class Task[ResultType](id: Text, monitor: Monitor, eval: TaskMonitor => ResultType):
+  private final val promise: Promise[ResultType] = Promise()
+
+  private final def runnable(): Runnable = new Runnable():
+    def run(): Unit =
+      erased given CanThrow[AlreadyCompleteError] = ###
+      
+      boundary: bnd ?=>
+        val child = monitor.childMonitor(id)(using bnd)
+        println(s"start ${child}")
+        val result = eval(child).tap(println(s"stop  ${child}").waive)
+        promise.fulfill(result)
+
+  private final val thread: Thread = Thread(runnable()).nn.tap(_.start())
+  
+  def await()(using monitor: TaskMonitor): ResultType = promise.await()(using monitor.boundaryLabel)
+
+@main
+def run(): Unit =
+  supervise:
+    example()
+
+def example()(using Monitor): Int =
+  Task(Text("hello")):
+    Task(Text("child")):
+      Thread.sleep(500)
+      acquiesce()
+      println("child")
+      "hello"
+    .await()
+
+    Thread.sleep(300)
+    println("hello world")
+    Thread.sleep(500)
+    
+  7
+
+def acquiesce()(using monitor: TaskMonitor): Unit = monitor.acquiesce()

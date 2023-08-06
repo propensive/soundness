@@ -13,13 +13,15 @@
     either express or implied. See the License for the specific language governing permissions
     and limitations under the License.
 */
-
-package parasite
+/*
+package parasite0
 
 import anticipation.*
 import rudiments.*
 import fulminate.*
 import digression.*
+
+import parasite.*
 
 @capability
 @missingContext(contextMessage(module = "parasite", typeclass = "Monitor")())
@@ -78,7 +80,7 @@ class Task
     promise.await().tap(thread.join().waive)
   
   def cancel(): Unit = thread.interrupt().tap:
-    (try promise.cancel() catch case err: CancelError => ()).waive
+    (try () catch case err: CancelError => ()).waive
   
   def await
       [DurationType](duration: DurationType)(using GenericDuration[DurationType], Monitor)
@@ -109,3 +111,4 @@ def supervise
 extension [ResultType](xs: Iterable[Task[ResultType]])
   transparent inline def sequence(using monitor: Monitor): Task[Iterable[ResultType]] throws CancelError =
     Task("sequence".tt)(xs.map(_.await()))
+*/
