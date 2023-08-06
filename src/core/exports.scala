@@ -30,6 +30,8 @@ export Predef.{nn, genericArrayOps, identity, summon, charWrapper, $conforms, Ar
 
 export scala.util.control.NonFatal
 
+export scala.util.boundary, boundary.break
+
 export scala.jdk.CollectionConverters.{IteratorHasAsScala, ListHasAsScala, MapHasAsScala, SeqHasAsJava,
     MapHasAsJava, EnumerationHasAsScala}
 
