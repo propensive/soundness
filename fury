@@ -1,0 +1,18 @@
+# This is a buildfile for Fury or Wrath.
+# More information is available at: https://github.com/propensive/wrath/
+target perforate/test
+
+repo propensive/probably
+
+project perforate
+  module core
+    compiler  scala
+    include   digression/core
+    sources   src/core
+    main      perforate.run
+  
+  module test
+    compiler  scala
+    include   probably/cli perforate/core
+    sources   src/test
+    main      perforate.Tests
