@@ -111,24 +111,15 @@ class Task[ResultType](id: Text, monitor: Monitor, eval: TaskMonitor => ResultTy
   
   def await()(using monitor: TaskMonitor): ResultType = promise.await()(using monitor.boundaryLabel)
 
-@main
-def run(): Unit =
-  supervise:
-    example()
-
-def example()(using Monitor): Int =
-  Task(Text("hello")):
-    Task(Text("child")):
-      Thread.sleep(500)
-      acquiesce()
-      println("child")
-      "hello"
-    .await()
-
-    Thread.sleep(300)
-    println("hello world")
-    Thread.sleep(500)
-    
-  7
-
 def acquiesce()(using monitor: TaskMonitor): Unit = monitor.acquiesce()
+@main
+
+def run(): Unit =
+  val task: Int =
+    supervise:
+      example().await()
+
+def example()(using monitor: Monitor): Task[Int]^{monitor} =
+  Task(Text("hello")):
+    println("hello world")
+    7
