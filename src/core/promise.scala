@@ -24,34 +24,38 @@ import scala.compiletime.*
 import scala.annotation.*
 import scala.collection.mutable as scm
 
+import java.util.concurrent.atomic as juca
+
 import language.experimental.captureChecking
 
 object Promise:
   object Cancelled
 
 case class Promise[ValueType]():
-  private var value: Maybe[ValueType] = Unset
-  private var cancelled: Boolean = false
+  private val value: juca.AtomicReference[Maybe[ValueType]] = juca.AtomicReference(Unset)
+  private val cancelled: juca.AtomicBoolean = juca.AtomicBoolean(false)
 
-  def ready: Boolean = !value.unset && !cancelled
+  def ready: Boolean = !value.get.unset || cancelled.get()
 
   private def get()(using CanThrow[CancelError]): ValueType =
-    if cancelled then throw CancelError()
-    else value.or(throw Mistake(msg"the promise was expected to be completed"))
+    if cancelled.get() then throw CancelError()
+    else value.get.or(throw Mistake(msg"the promise was expected to be completed")).nn
 
   def fulfill(supplied: -> ValueType)(using complete: CanThrow[AlreadyCompleteError]): Unit^{complete} =
     synchronized:
-      if value.unset then
-        value = supplied
-        notifyAll()
-      else throw AlreadyCompleteError()
+      if !value.compareAndSet(Unset, supplied) then throw AlreadyCompleteError()
+      notifyAll()
 
   def await()(using CanThrow[CancelError]): ValueType = synchronized:
-    while value.unset do wait()
+    println("Waiting for promise")
+    while !ready do wait()
+    println("Stopped waiting")
     get()
 
   def cancel(): Unit = synchronized:
-    cancelled = true
+    println("cancelled.set(true)")
+    cancelled.set(true)
+
     notifyAll()
 
   def await
@@ -64,51 +68,75 @@ case class Promise[ValueType]():
 
 
 @capability
-sealed trait Monitor(id: Text):
-  private val children: scm.HashMap[Text, AnyRef] = scm.HashMap()
+sealed trait Monitor(id: Text, promise: Promise[?]):
+  private val children: scm.HashMap[Text, juca.AtomicBoolean] = scm.HashMap()
+  val cancelled: juca.AtomicBoolean = juca.AtomicBoolean(false)
 
   override def toString(): String = s"/$id"
   
-  def child(id: Text)(using label: boundary.Label[Unit]): TaskMonitor = TaskMonitor(id, this)
+  def cancel(): Unit =
+    println("Cancelling "+id)
+    erased given CanThrow[AlreadyCompleteError] = ###
+    println(cancelled)
+    promise.cancel()
+    if cancelled.getAndSet(true) then println("Cancelling twice")
 
-object Supervisor extends Monitor(Text(""))
+  def child(id: Text, promise: Promise[?])(using label: boundary.Label[Unit]): TaskMonitor =
+    val monitor = TaskMonitor(id, this, promise)
+    
+    synchronized:
+      children(id) = cancelled
+    
+    monitor
+
+
+object Supervisor extends Monitor(Text(""), Promise[Unit]())
 
 def supervise(id: Text)[ResultType](fn: Monitor ?=> ResultType)(using cancel: CanThrow[CancelError]): ResultType =
   fn(using Supervisor)
 
 @capability
-class TaskMonitor(id: Text, parent: Monitor)(using label: boundary.Label[Unit]) extends Monitor(id):
-  private var cancelled: Boolean = false
-  
-  def cancel(): Unit = synchronized:
-    cancelled = true
-  
-  def acquiesce(): Unit = if cancelled then boundary.break()(using label)
+class TaskMonitor(id: Text, parent: Monitor, promise: Promise[?])(using label: boundary.Label[Unit]) extends Monitor(id, promise):
+  def acquiesce(): Unit =
+    if cancelled.get() then
+      println("Acquiescing "+id)
+      boundary.break()
   
   override def toString(): String = s"${parent}/$id"
 
 @capability
 class Task[ResultType](id: Text)(evaluate: TaskMonitor ?=> ResultType)(using monitor: Monitor):
-
+  
+  def cancel(): Unit = monitor.cancel()
+  
   private final val promise: Promise[ResultType] = Promise()
   private val eval = (monitor: TaskMonitor) => evaluate(using monitor)
-  private def child(using monitor: Monitor, label: boundary.Label[Unit]): TaskMonitor = monitor.child(id)
-  
+
   private val thread: Thread =
     def runnable: Runnable^{monitor} = () =>
       boundary[Unit]:
-        println(s"starting $id")
-        val result = eval(child)
         erased given CanThrow[AlreadyCompleteError] = ###
+        val ch = monitor.child(id, promise)
+        println(s"starting $id")
+        val result = eval(ch)
         println(s"finishing $id")
         promise.fulfill(result)
         boundary.break()
-    
+      
+      println("done "+id)
+      
     Thread(runnable).tap(_.start())
   
-  def await()(using cancel: CanThrow[CancelError], monitor: Monitor): ResultType = promise.await()
+  def await()(using cancel: CanThrow[CancelError]): ResultType =
+    println("Awaiting "+id)
+    val result = promise.await()
+    println(s"Joining $id...")
+    thread.join()
+    println(s"Completed $id...")
+    result
 
 def acquiesce()(using monitor: TaskMonitor): Unit = monitor.acquiesce()
+def cancel()(using monitor: TaskMonitor): Unit = monitor.cancel()
 
 @main
 def run(): Unit =
@@ -118,27 +146,29 @@ def run(): Unit =
 
     Task(Text("hello")):
       val left = Task(Text("left")):
-        Thread.sleep(2000)
+        for i <- 1 to 20 do
+          Thread.sleep(100)
+          acquiesce()
+        
         println("calculated left")
         3
 
       val right = Task(Text("right")):
-        Thread.sleep(1000)
+        for i <- 1 to 10 do
+          Thread.sleep(100)
+          if i == 10 then cancel()
+          acquiesce()
+        
         println("calculated right")
         5
-      
-      left.await() + right.await()
+
+      println("LEFT:") 
+      println(left.await())
+      println("RIGHT:") 
+      try println(right.await())
+      catch case error: CancelError => println("no")
+
+      try println(left.await() + right.await())
+      catch case error: CancelError => println("Cancelled")
     .await()
   
-
-
-// @main
-// def run(): Unit =
-//   val task: Int =
-//     supervise:
-//       example().await()
-
-// def example[T]()(using monitor: Monitor): (Monitor, Int) =
-//   Task(Text("hello")): monitor =>
-//     println("hello world")
-//     7
