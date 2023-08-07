@@ -22,6 +22,7 @@ import fulminate.*
 
 import scala.compiletime.*
 import scala.annotation.*
+import scala.util.{Try, Success, Failure}
 import scala.collection.mutable as scm
 
 import java.util.concurrent.atomic as juca
@@ -109,18 +110,24 @@ class Task[ResultType](id: Text)(evaluate: TaskMonitor ?=> ResultType)(using mon
   
   def cancel(): Unit = monitor.cancel()
   
-  private final val promise: Promise[ResultType] = Promise()
+  private final val promise: Promise[Try[ResultType]] = Promise()
   private val eval = (monitor: TaskMonitor) => evaluate(using monitor)
 
   private val thread: Thread =
     def runnable: Runnable^{monitor} = () =>
       boundary[Unit]:
         erased given CanThrow[AlreadyCompleteError] = ###
-        val ch = monitor.child(id, promise)
         println(s"starting $id")
-        val result = eval(ch)
-        println(s"finishing $id")
-        promise.fulfill(result)
+        
+        try
+          val result = eval(monitor.child(id, promise))
+          println(s"success for $id")
+          promise.fulfill(Success(result))
+        
+        catch case NonFatal(error) =>
+          println(s"failure for $id")
+          promise.fulfill(Failure(error))
+        
         boundary.break()
       
       println("done "+id)
@@ -129,11 +136,16 @@ class Task[ResultType](id: Text)(evaluate: TaskMonitor ?=> ResultType)(using mon
   
   def await()(using cancel: CanThrow[CancelError]): ResultType =
     println("Awaiting "+id)
+    
     val result = promise.await()
+    
     println(s"Joining $id...")
     thread.join()
     println(s"Completed $id...")
-    result
+    
+    result match
+      case Success(result) => result
+      case Failure(error)  => throw error
 
 def acquiesce()(using monitor: TaskMonitor): Unit = monitor.acquiesce()
 def cancel()(using monitor: TaskMonitor): Unit = monitor.cancel()
@@ -165,10 +177,7 @@ def run(): Unit =
       println("LEFT:") 
       println(left.await())
       println("RIGHT:") 
-      try println(right.await())
-      catch case error: CancelError => println("no")
-
-      try println(left.await() + right.await())
-      catch case error: CancelError => println("Cancelled")
+      
+      println(left.await() + right.await())
     .await()
   
