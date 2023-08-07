@@ -97,11 +97,16 @@ class TaskMonitor(id: Text, parent: Monitor, promise: Promise[?])(using label: b
 
 @capability
 class Task[ResultType](id: Text)(evaluate: TaskMonitor ?=> ResultType)(using monitor: Monitor):
-  
   def await()(using cancel: CanThrow[CancelError]): ResultType =
     promise.await().tap(thread.join().waive) match
       case Success(result) => result
       case Failure(error)  => throw error
+  
+  def map[ResultType2](fn: ResultType => ResultType2)(using CanThrow[CancelError]): Task[ResultType2] =
+    Task(Text(s"$id.map"))(fn(await()))
+  
+  def flatMap[ResultType2](fn: ResultType => Task[ResultType2])(using CanThrow[CancelError]): Task[ResultType2] =
+    Task(Text(s"$id.flatMap"))(fn(await()).await())
   
   def cancel(): Unit = monitor.cancel()
 
