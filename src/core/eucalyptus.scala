@@ -131,17 +131,16 @@ trait LogTag[-TagType]:
   def tag(value: TagType): Text
 
 package logging:
-  import monitors.global
-  given silent: Log = Log()
-  
-  given stdout(using Stdio, CanThrow[StreamCutError], CharEncoder): Log =
-    import monitors.global
+  given stdout(using Stdio, CanThrow[StreamCutError], CharEncoder, Monitor): Log =
     val sink = Stdout.sink
-    
+  
     Log:
       case _ => sink
 
 object LogSink:
+  val drain = new LogSink:
+    def write(stream: LazyList[Entry]): Unit = ()
+
   def apply[S](sink: S, appendable: Appendable[S, Text], format: LogFormat[S]): LogSink = new LogSink:
     type Sink = S
     def write(stream: LazyList[Entry]): Unit = unsafely(appendable.append(sink, stream.map(format(_))))
