@@ -35,7 +35,7 @@ object Tests extends Suite(t"Parasite tests"):
     () => thread.join()
 
   def run(): Unit =
-    supervise(t"runner"):
+    supervise:
       suite(t"Promises"):
         test(t"New promise is incomplete"):
           val promise = Promise[Int]()
@@ -44,30 +44,24 @@ object Tests extends Suite(t"Parasite tests"):
 
         test(t"Completed promise is ready"):
           val promise = Promise[Int]()
-          promise.supply(42)
+          promise.fulfill(42)
           promise.ready
         .assert(_ == true)
         
         test(t"Completed promise has correct value"):
           val promise = Promise[Int]()
-          promise.supply(42)
+          promise.fulfill(42)
           promise.await()
         .assert(_ == 42)
 
         test(t"Promise result can be awaited"):
           val promise = Promise[Int]()
           async:
-            sleep(100)
-            promise.supply(42)
+            sleep(100L)
+            promise.fulfill(42)
           promise.await()
         .assert(_ == 42)
 
-        // There is no longer any way to get a promise without awaiting it
-        // test(t"Incomplete promise contains exception"):
-        //   val promise = Promise[Int]()
-        //   capture(promise.await())
-        // .assert(_ == IncompleteError())
-        
         test(t"Canceled promise contains exception"):
           val promise = Promise[Int]()
           promise.cancel()
@@ -95,7 +89,7 @@ object Tests extends Suite(t"Parasite tests"):
         test(t"Task name"):
           val task = Task(t"simple")(100)
           task.id
-        .assert(_ == t"task://runner/simple")
+        .assert(_ == t"/simple")
         
         test(t"Subtask name"):
           var name: Option[Text] = None
@@ -106,7 +100,7 @@ object Tests extends Suite(t"Parasite tests"):
             200
           task.await()
           name
-        .assert(_ == Some(t"task://runner/simple/inner"))
+        .assert(_ == Some(t"/simple/inner"))
       
         test(t"Task creates one new thread"):
           val threads = Thread.activeCount
@@ -120,7 +114,7 @@ object Tests extends Suite(t"Parasite tests"):
         test(t"Threads do not persist"):
           val threads = Thread.activeCount
           val task = Task(t"simple"):
-            sleep(10)
+            sleep(10L)
           task.await()
           threads - Thread.activeCount
         .assert(_ == 0)
@@ -131,9 +125,9 @@ object Tests extends Suite(t"Parasite tests"):
 
         test(t"Sequencing tasks run in parallel"):
           var acc: List[Int] = Nil
-          val t1 = Task(t"a")(sleep(40).tap((acc ::= 2).waive))
-          val t2 = Task(t"b")(sleep(60).tap((acc ::= 3).waive))
-          val t3 = Task(t"c")(sleep(20).tap((acc ::= 1).waive))
+          val t1 = Task(t"a")(sleep(40L).tap((acc ::= 2).waive))
+          val t2 = Task(t"b")(sleep(60L).tap((acc ::= 3).waive))
+          val t3 = Task(t"c")(sleep(20L).tap((acc ::= 1).waive))
           List(t1, t2, t3).sequence.await()
           acc
         .assert(_ == List(3, 2, 1))
@@ -142,7 +136,7 @@ object Tests extends Suite(t"Parasite tests"):
           var value: Boolean = false
           
           val task = Task(t"long"):
-            sleep(10)
+            sleep(10L)
             value = true
           
           task.cancel()
@@ -171,11 +165,11 @@ object Tests extends Suite(t"Parasite tests"):
           val task = Task(t"outer"):
             value = 2
             val task2 = Task(t"inner"):
-              sleep(100)
+              sleep(100L)
               value = 3
             task2.await()
           
-          sleep(20)
+          sleep(20L)
           task.cancel()
           safely(task.await())
           value
@@ -185,11 +179,11 @@ object Tests extends Suite(t"Parasite tests"):
           var count = 0
           val ll = LazyList.continually:
             count += 1
-            sleep(10)
+            sleep(10L)
           .take(10)
 
           val task = Task(t"iterate")(ll.to(List))
-          sleep(15)
+          sleep(15L)
           task.cancel()
           count
         .assert(_ == 2)
