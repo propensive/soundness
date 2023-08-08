@@ -57,7 +57,7 @@ object GenericInstant:
     generic.makeInstant(long)
 
 extension [DurationType](value: DurationType)(using generic: GenericDuration[DurationType])
-  def long: Long = generic.readDuration(value)
+  def milliseconds: Long = generic.readDuration(value)
 
 extension [InstantType](value: InstantType)(using generic: GenericInstant[InstantType])
-  def long: Long = generic.readInstant(value)
+  def millisecondsSinceEpoch: Long = generic.readInstant(value)
