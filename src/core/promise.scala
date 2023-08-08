@@ -18,6 +18,7 @@ package parasite
 
 import anticipation.*
 import rudiments.*
+import digression.*
 import fulminate.*
 
 import scala.compiletime.*
@@ -31,14 +32,14 @@ import language.experimental.captureChecking
 object Promise:
   object Cancelled
 
-enum TaskState[+ValueType]:
+enum AsyncState[+ValueType]:
   case Active
   case Suspended(count: Int)
   case Completed(value: ValueType)
   case Failed(error: Throwable)
   case Cancelled
 
-import TaskState.*
+import AsyncState.*
 
 case class Promise[ValueType]():
   private val value: juca.AtomicReference[Maybe[ValueType]] = juca.AtomicReference(Unset)
@@ -89,7 +90,7 @@ case class Trigger():
 @capability
 sealed trait Monitor(val name: List[Text], trigger: Trigger):
   private val children: scm.HashMap[Text, AnyRef] = scm.HashMap()
-  def id: Text = Text(name.reverse.map(_.s).mkString("/"))
+  def id: Text = Text(name.reverse.map(_.s).mkString(" / "))
 
   def cancel(): Unit =
     children.foreach: (id, child) =>
@@ -108,7 +109,7 @@ sealed trait Monitor(val name: List[Text], trigger: Trigger):
 
   def child
       [ResultType2]
-      (id: Text, state: juca.AtomicReference[TaskState[ResultType2]], trigger: Trigger)
+      (id: Text, state: juca.AtomicReference[AsyncState[ResultType2]], trigger: Trigger)
       (using label: boundary.Label[Unit])
       : Submonitor[ResultType2] =
     
@@ -119,7 +120,7 @@ sealed trait Monitor(val name: List[Text], trigger: Trigger):
     
     monitor
 
-case object Supervisor extends Monitor(List(Text("")), Trigger())
+case object Supervisor extends Monitor(Nil, Trigger())
 
 def supervise
     [ResultType]
@@ -130,11 +131,11 @@ def supervise
 @capability
 case class Submonitor
     [ResultType]
-    (initId: Text, parent: Monitor, stateRef: juca.AtomicReference[TaskState[ResultType]], trigger: Trigger)
+    (identifier: Text, parent: Monitor, stateRef: juca.AtomicReference[AsyncState[ResultType]], trigger: Trigger)
     (using label: boundary.Label[Unit])
-extends Monitor(initId :: parent.name, trigger):
+extends Monitor(identifier :: parent.name, trigger):
 
-  def state(): TaskState[ResultType] = stateRef.get().nn
+  def state(): AsyncState[ResultType] = stateRef.get().nn
   
   def complete(value: ResultType): Nothing =
     stateRef.set(Completed(value))
@@ -151,13 +152,13 @@ extends Monitor(initId :: parent.name, trigger):
     
     if trigger.cancelled then boundary.break()
   
-object Task:
+object Async:
   def race
-      [TaskType]
-      (tasks: Vector[Task[TaskType]])(using cancel: CanThrow[CancelError], monitor: Monitor)
-      : Task[TaskType] =
+      [AsyncType]
+      (tasks: Vector[Async[AsyncType]])(using cancel: CanThrow[CancelError], monitor: Monitor)
+      : Async[AsyncType] =
     
-    val race = Task[Int](Text("race")):
+    val race = Async[Int]:
       tasks.zipWithIndex.foreach: (task, index) =>
         task.foreach: result =>
           complete(index)
@@ -166,10 +167,15 @@ object Task:
     tasks(race.await())
 
 @capability
-class Task[+ResultType](initId: Text)(evaluate: Submonitor[ResultType] ?=> ResultType)(using monitor: Monitor):
+class Async
+    [+ResultType]
+    (evaluate: Submonitor[ResultType] ?=> ResultType)
+    (using monitor: Monitor, codepoint: Codepoint):
+
+  private val identifier = Text(s"${codepoint.text}")
   private val eval = (monitor: Submonitor[ResultType]) => evaluate(using monitor)
   private final val trigger: Trigger = Trigger()
-  private val stateRef: juca.AtomicReference[TaskState[ResultType]] = juca.AtomicReference(Active)
+  private val stateRef: juca.AtomicReference[AsyncState[ResultType]] = juca.AtomicReference(Active)
 
   private val thread: Thread =
     def runnable: Runnable^{monitor} = () =>
@@ -177,7 +183,7 @@ class Task[+ResultType](initId: Text)(evaluate: Submonitor[ResultType] ?=> Resul
         erased given CanThrow[AlreadyCompleteError] = ###
         
         try
-          val result = eval(monitor.child[ResultType](initId, stateRef, trigger))
+          val result = eval(monitor.child[ResultType](identifier, stateRef, trigger))
           stateRef.set(Completed(result))
         catch case NonFatal(error) => stateRef.set(Failed(error))
         
@@ -186,8 +192,8 @@ class Task[+ResultType](initId: Text)(evaluate: Submonitor[ResultType] ?=> Resul
         boundary.break()
       
     Thread(runnable).tap(_.start())
-  def id: Text = Text((initId :: monitor.name).reverse.map(_.s).mkString("/"))
-  def state(): TaskState[ResultType] = stateRef.get().nn
+  def id: Text = Text((identifier :: monitor.name).reverse.map(_.s).mkString("// ", " / ", ""))
+  def state(): AsyncState[ResultType] = stateRef.get().nn
   
   def await
       [DurationType: GenericDuration]
@@ -223,17 +229,17 @@ class Task[+ResultType](initId: Text)(evaluate: Submonitor[ResultType] ?=> Resul
     stateRef.updateAndGet:
       case other                => other
 
-  def map[ResultType2](fn: ResultType => ResultType2)(using CanThrow[CancelError]): Task[ResultType2] =
-    Task(Text(s"$initId.map"))(fn(await()))
+  def map[ResultType2](fn: ResultType => ResultType2)(using CanThrow[CancelError]): Async[ResultType2] =
+    Async(fn(await()))
   
   def foreach[ResultType2](fn: ResultType => ResultType2)(using CanThrow[CancelError]): Unit =
-    Task(Text(s"$initId.map"))(fn(await()))
+    Async(fn(await()))
   
   def flatMap
       [ResultType2]
-      (fn: ResultType => Task[ResultType2])(using CanThrow[CancelError])
-      : Task[ResultType2] =
-    Task(Text(s"$initId.flatMap"))(fn(await()).await())
+      (fn: ResultType => Async[ResultType2])(using CanThrow[CancelError])
+      : Async[ResultType2] =
+    Async(fn(await()).await())
   
   def cancel(): Unit = monitor.cancel()
 
@@ -247,7 +253,7 @@ def complete[ResultType](value: ResultType)(using monitor: Submonitor[ResultType
 def sleep[DurationType: GenericDuration, ResultType](duration: DurationType)(using monitor: Monitor): Unit =
   monitor.sleep(duration.milliseconds)
 
-extension [ResultType](tasks: Seq[Task[ResultType]]^)
-  def sequence(using cancel: CanThrow[CancelError], mon: Monitor): Task[Seq[ResultType^{}]] =
-    Task(Text("sequence")):
+extension [ResultType](tasks: Seq[Async[ResultType]]^)
+  def sequence(using cancel: CanThrow[CancelError], mon: Monitor): Async[Seq[ResultType^{}]] =
+    Async:
       tasks.map(_.await())

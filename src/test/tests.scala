@@ -20,6 +20,7 @@ import probably.*
 import rudiments.*
 import digression.*
 import gossamer.*
+import turbulence.*
 import anticipation.*, timeApi.long
 
 import unsafeExceptions.canThrowAny
@@ -36,6 +37,58 @@ object Tests extends Suite(t"Parasite tests"):
 
   def run(): Unit =
     supervise:
+
+    
+      suite(t"Clocked tests"):
+        case class Bus():
+          val funnel: Funnel[Text] = Funnel()
+          val stream = funnel.stream
+          def put(message: Text): Unit =
+            println("Put: "+message)
+            funnel.put(message)
+          
+          def waitFor(value: Text): Unit =
+            println(s"Waiting for $value")
+            stream.find(_ == value)
+
+        
+        test(t"Ordered messages"):
+          val bus = Bus()
+          
+          val alpha = Async:
+            bus.waitFor(t"alpha")
+            bus.put(t"delta")
+            bus.waitFor(t"alpha2")
+            bus.put(t"beta")
+            bus.waitFor(t"alpha3")
+            bus.put(t"final")
+            bus.waitFor(t"final")
+            t"ALPHA"
+          
+          val beta = Async:
+            bus.waitFor(t"beta")
+            bus.put(t"gamma")
+            bus.waitFor(t"final")
+            t"BETA"
+          
+          val gamma = Async:
+            bus.waitFor(t"gamma")
+            bus.put(t"alpha3")
+            bus.waitFor(t"final")
+            t"GAMMA"
+          
+          val delta = Async:
+            bus.waitFor(t"delta")
+            bus.put(t"alpha2")
+            bus.waitFor(t"final")
+            t"DELTA"
+          
+          bus.put(t"alpha")
+          println("done")
+          Set(alpha.await(), beta.await(), gamma.await(), delta.await())
+        .assert(_ == Set(t"ALPHA", t"BETA", t"GAMMA", t"DELTA"))
+
+
       suite(t"Promises"):
         test(t"New promise is incomplete"):
           val promise = Promise[Int]()
@@ -68,44 +121,44 @@ object Tests extends Suite(t"Parasite tests"):
           capture(promise.await())
         .assert(_ == CancelError())
     
-      suite(t"Tasks"):
+      suite(t"Asyncs"):
         test(t"Simple task produces a result"):
-          val task = Task(t"simple")(100)
+          val task = Async(100)
           task.await()
         .assert(_ == 100)
         
         test(t"Mapped task"):
-          val task = Task(t"simple")(100)
+          val task = Async(100)
           task.map(_ + 1).await()
         .assert(_ == 101)
         
         test(t"FlatMapped task"):
-          val task = Task(t"simple")(100)
+          val task = Async(100)
           task.flatMap: x =>
-            Task(t"next")(x + 1)
+            Async(x + 1)
           .await()
         .assert(_ == 101)
         
-        test(t"Task name"):
-          val task = Task(t"simple")(100)
-          task.id
-        .assert(_ == t"/simple")
+        // test(t"Async name"):
+        //   val task = Async(100)
+        //   task.id
+        // .assert(_ == t"/simple")
         
-        test(t"Subtask name"):
-          var name: Option[Text] = None
-          val task = Task(t"simple"):
-            val inner = Task(t"inner")(100)
-            name = Some(inner.id)
-            inner.await()
-            200
-          task.await()
-          name
-        .assert(_ == Some(t"/simple/inner"))
+        // test(t"Subtask name"):
+        //   var name: Option[Text] = None
+        //   val task = Async:
+        //     val inner = Async(100)
+        //     name = Some(inner.id)
+        //     inner.await()
+        //     200
+        //   task.await()
+        //   name
+        // .assert(_ == Some(t"/simple/inner"))
       
-        test(t"Task creates one new thread"):
+        test(t"Async creates one new thread"):
           val threads = Thread.activeCount
           var insideThreads = 0
-          val task = Task(t"simple"):
+          val task = Async:
             insideThreads = Thread.activeCount
           task.await()
           insideThreads - threads
@@ -113,29 +166,29 @@ object Tests extends Suite(t"Parasite tests"):
         
         test(t"Threads do not persist"):
           val threads = Thread.activeCount
-          val task = Task(t"simple"):
+          val task = Async:
             sleep(10L)
           task.await()
           threads - Thread.activeCount
         .assert(_ == 0)
 
         test(t"Sequencing tasks"):
-          Seq(Task(t"a")(3), Task(t"b")(5), Task(t"c")(7)).sequence.await()
+          Seq(Async(3), Async(5), Async(7)).sequence.await()
         .assert(_ == Seq(3, 5, 7))
 
         test(t"Sequencing tasks run in parallel"):
           var acc: List[Int] = Nil
-          val t1 = Task(t"a")(sleep(40L).tap((acc ::= 2).waive))
-          val t2 = Task(t"b")(sleep(60L).tap((acc ::= 3).waive))
-          val t3 = Task(t"c")(sleep(20L).tap((acc ::= 1).waive))
+          val t1 = Async(sleep(40L).tap((acc ::= 2).waive))
+          val t2 = Async(sleep(60L).tap((acc ::= 3).waive))
+          val t3 = Async(sleep(20L).tap((acc ::= 1).waive))
           List(t1, t2, t3).sequence.await()
           acc
         .assert(_ == List(3, 2, 1))
 
-        test(t"Task can be canceled"):
+        test(t"Async can be canceled"):
           var value: Boolean = false
           
-          val task = Task(t"long"):
+          val task = Async:
             sleep(10L)
             value = true
           
@@ -149,22 +202,22 @@ object Tests extends Suite(t"Parasite tests"):
         //   if a < 2 then 1 else fibonacci(a - 1) + fibonacci(a - 2)
         
         // test(t"Affirmed calculation without interruption does not cancel it"):
-        //   val task = Task(t"fibonacci")(fibonacci(30))
+        //   val task = Async(fibonacci(30))
         //   //task.cancel()
         //   try task.await() catch case e: CancelError => -1
         // .assert(_ == 1346269)
         
         // test(t"Affirmed calculation with interruption cancels it"):
-        //   val task = Task(t"fibonacci")(fibonacci(40))
+        //   val task = Async(fibonacci(40))
         //   task.cancel()
         //   capture(task.await())
         // .assert(_ == CancelError())
 
         test(t"Canceled task cancels child"):
           var value = 1
-          val task = Task(t"outer"):
+          val task = Async:
             value = 2
-            val task2 = Task(t"inner"):
+            val task2 = Async:
               sleep(100L)
               value = 3
             task2.await()
@@ -182,7 +235,7 @@ object Tests extends Suite(t"Parasite tests"):
             sleep(10L)
           .take(10)
 
-          val task = Task(t"iterate")(ll.to(List))
+          val task = Async(ll.to(List))
           sleep(15L)
           task.cancel()
           count
