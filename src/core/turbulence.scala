@@ -54,37 +54,38 @@ extension (obj: LazyList.type)
     streams.zipWithIndex.map(_.swap).foreach(multiplexer.add)
     multiplexer
   
-  def pulsar[DurationType: GenericDuration](interval: DurationType)(using Monitor): LazyList[Unit] =
+  def pulsar[DurationType: GenericDuration](duration: DurationType)(using Monitor): LazyList[Unit] =
     try
-      sleep(interval)
-      () #:: pulsar(interval)
+      sleep(duration)
+      () #:: pulsar(duration)
     catch case err: CancelError => LazyList()
 
-class Pulsar[DurationType: GenericDuration](interval: DurationType):
+class Pulsar[DurationType: GenericDuration](duration: DurationType):
   private var continue: Boolean = true
   def stop(): Unit = continue = false
 
   def stream(using Monitor): LazyList[Unit] =
     if !continue then LazyList() else try
-      sleep(interval)
+      sleep(duration)
       () #:: stream
     catch case err: CancelError => LazyList()
 
-case class Multiplexer[KeyType, ElemType]()(using monitor: Monitor):
+case class Multiplexer[KeyType, ElemType]()(using Monitor):
   private val tasks: TrieMap[KeyType, /*{monitor}*/ Task[Unit]] = TrieMap()
   private val queue: juc.LinkedBlockingQueue[Option[ElemType]] = juc.LinkedBlockingQueue()
 
   def close(): Unit = tasks.keys.foreach(remove(_))
 
   @tailrec
-  private def pump(key: KeyType, stream: LazyList[ElemType]): Unit =
+  private def pump(key: KeyType, stream: LazyList[ElemType])(using Submonitor[Unit]): Unit =
     if stream.isEmpty then remove(key) else
       //ctx.terminate(())
-      relinquish()
+      acquiesce()
       queue.put(Some(stream.head))
       pump(key, stream.tail)
 
-  def add(key: KeyType, stream: LazyList[ElemType]): Unit = tasks(key) = Task("pump".tt)(pump(key, stream))
+  def add(key: KeyType, stream: LazyList[ElemType]): Unit = tasks(key) =
+    Task("pump".tt)(pump(key, stream))
  
   private def remove(key: KeyType): Unit = synchronized:
     tasks -= key
@@ -102,12 +103,12 @@ case class Multiplexer[KeyType, ElemType]()(using monitor: Monitor):
 
 extension [ElemType](stream: LazyList[ElemType])
   def rate
-      [DurationType: GenericDuration](interval: DurationType)
+      [DurationType: GenericDuration](duration: DurationType)
       (using monitor: Monitor, cancel: CanThrow[CancelError])
       : /*{monitor, cancel}*/ LazyList[ElemType] =
     def recur(stream: LazyList[ElemType], last: Long): LazyList[ElemType] = stream match
       case head #:: tail =>
-        val delay = makeDuration(readDuration(interval) - (System.currentTimeMillis - last))
+        val delay = makeDuration(readDuration(duration) - (System.currentTimeMillis - last))
         if readDuration(delay) > 0 then sleep(delay)
         stream
       case _ =>
@@ -148,7 +149,7 @@ extension [ElemType](stream: LazyList[ElemType])
 
   def cluster
       [DurationType: GenericDuration]
-      (interval: DurationType, maxSize: Maybe[Int] = Unset, maxDelay: Maybe[DurationType] = Unset)
+      (duration: DurationType, maxSize: Maybe[Int] = Unset, maxDelay: Maybe[DurationType] = Unset)
       (using Monitor)
       : LazyList[List[ElemType]] =
     
@@ -158,14 +159,14 @@ extension [ElemType](stream: LazyList[ElemType])
     @tailrec
     def recur(stream: LazyList[ElemType], list: List[ElemType], expiry: Long): LazyList[List[ElemType]] =
       if list.isEmpty then
-        val newExpiry: Long = maxDelay.option.map(readDuration).fold(Long.MaxValue)(_ + System.currentTimeMillis)
+        val newExpiry: Long = maxDelay.option.map(_.milliseconds).fold(Long.MaxValue)(_ + System.currentTimeMillis)
         if stream.isEmpty then LazyList() else recur(stream.tail, List(stream.head), newExpiry)
       else
         val hasMore: Task[Boolean] = Task("cluster".tt)(!stream.isEmpty)
 
         val recurse: Option[Boolean] = try
-          val deadline: Long = readDuration(interval).min(expiry - System.currentTimeMillis).max(0)
-          if hasMore.await(deadline)(using timeApi.long) then Some(true) else None
+          val deadline: Long = duration.milliseconds.min(expiry - System.currentTimeMillis).max(0)
+          if hasMore.await(GenericDuration(deadline)) then Some(true) else None
         catch case err: (TimeoutError | CancelError) => Some(false)
 
         // The try/catch above seems to fool tail-call identification
