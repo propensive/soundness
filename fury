@@ -1,6 +1,6 @@
 # This is a buildfile for Fury or Wrath.
 # More information is available at: https://github.com/propensive/wrath/
-target parasite/core
+target parasite/test
 
 repo propensive/digression
 repo propensive/anticipation
@@ -11,7 +11,6 @@ project parasite
     include   digression/core anticipation/time
     include   gossamer/core
     sources   src/core
-    main      parasite.run
   
   module test
     compiler  scala

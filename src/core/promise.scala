@@ -67,6 +67,7 @@ case class Promise[ValueType]():
 @capability
 sealed trait Monitor(id: Text, promise: Promise[?]):
   private val children: scm.HashMap[Text, AnyRef] = scm.HashMap()
+  private val sleeping: juca.AtomicBoolean = juca.AtomicBoolean(false)
 
   override def toString(): String = s"/$id"
   
@@ -76,6 +77,10 @@ sealed trait Monitor(id: Text, promise: Promise[?]):
 
     erased given CanThrow[AlreadyCompleteError] = ###
     promise.cancel()
+  
+  def sleep(duration: Long): Unit =
+    if !sleeping.getAndSet(true) then Thread.sleep(duration)
+    sleeping.set(false)
 
   def child(id: Text, promise: Promise[?])(using label: boundary.Label[Unit]): TaskMonitor =
     val monitor = TaskMonitor(id, this, promise)
@@ -130,3 +135,6 @@ class Task[ResultType](id: Text)(evaluate: TaskMonitor ?=> ResultType)(using mon
   
 def acquiesce()(using monitor: TaskMonitor): Unit = monitor.acquiesce()
 def cancel()(using monitor: TaskMonitor): Unit = monitor.cancel()
+
+def sleep[DurationType: GenericDuration](duration: DurationType)(using monitor: TaskMonitor): Unit =
+  monitor.sleep(duration.milliseconds)
