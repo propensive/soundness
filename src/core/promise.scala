@@ -98,7 +98,6 @@ sealed trait Monitor(val name: List[Text], trigger: Trigger):
         case child: Monitor => child.cancel()
         case _              => ()
 
-    erased given CanThrow[AlreadyCompleteError] = ###
     trigger.cancel()
 
   def terminate(): Unit = this match
@@ -185,8 +184,6 @@ class Async
   private val thread: Thread =
     def runnable: Runnable^{monitor} = () =>
       boundary[Unit]:
-        erased given CanThrow[AlreadyCompleteError] = ###
-        
         val child = monitor.child[ResultType](identifier, stateRef, trigger)
         try
           val result = eval(child)
