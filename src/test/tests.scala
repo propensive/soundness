@@ -39,18 +39,12 @@ object Tests extends Suite(t"Parasite tests"):
     supervise:
 
     
-      suite(t"Clocked tests"):
+      suite(t"Convoluted test tests"):
         case class Bus():
           val funnel: Funnel[Text] = Funnel()
           val stream = funnel.stream
-          def put(message: Text): Unit =
-            println("Put: "+message)
-            funnel.put(message)
-          
-          def waitFor(value: Text): Unit =
-            println(s"Waiting for $value")
-            stream.find(_ == value)
-
+          def put(message: Text): Unit = funnel.put(message)
+          def waitFor(value: Text): Unit = stream.find(_ == value)
         
         test(t"Ordered messages"):
           val bus = Bus()
@@ -84,9 +78,27 @@ object Tests extends Suite(t"Parasite tests"):
             t"DELTA"
           
           bus.put(t"alpha")
-          println("done")
           Set(alpha.await(), beta.await(), gamma.await(), delta.await())
         .assert(_ == Set(t"ALPHA", t"BETA", t"GAMMA", t"DELTA"))
+      
+        for i <- 1 to 1000 do test(t"Race test"):
+          val bus = Bus()
+          val task1 = Async:
+            bus.waitFor(t"task1")
+            t"TASK1"
+          
+          val task2 = Async:
+            bus.waitFor(t"task2")
+            t"TASK2"
+          
+          val task3 = Async.race(Vector(task1, task2))
+          bus.put(t"task2")
+          sleep(15L)
+          bus.put(t"task1")
+          task3.await()
+        .assert(_ == t"TASK2")
+
+          
 
 
       suite(t"Promises"):

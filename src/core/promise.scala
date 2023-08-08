@@ -158,19 +158,24 @@ object Async:
       (tasks: Vector[Async[AsyncType]])(using cancel: CanThrow[CancelError], monitor: Monitor)
       : Async[AsyncType] =
     
-    val race = Async[Int]:
+    Async[Int]:
+      val promise: Promise[Int] = Promise()
+      
       tasks.zipWithIndex.foreach: (task, index) =>
         task.foreach: result =>
-          complete(index)
-      -1 
-    
-    tasks(race.await())
+          promise.offer(index)
+      
+      promise.await()
+    .flatMap:
+      case -1 => throw CancelError()
+      case n  => tasks(n)
 
 @capability
 class Async
     [+ResultType]
     (evaluate: Submonitor[ResultType] ?=> ResultType)
     (using monitor: Monitor, codepoint: Codepoint):
+  async =>
 
   private val identifier = Text(s"${codepoint.text}")
   private val eval = (monitor: Submonitor[ResultType]) => evaluate(using monitor)
@@ -182,8 +187,9 @@ class Async
       boundary[Unit]:
         erased given CanThrow[AlreadyCompleteError] = ###
         
+        val child = monitor.child[ResultType](identifier, stateRef, trigger)
         try
-          val result = eval(monitor.child[ResultType](identifier, stateRef, trigger))
+          val result = eval(child)
           stateRef.set(Completed(result))
         catch case NonFatal(error) => stateRef.set(Failed(error))
         
@@ -206,11 +212,12 @@ class Async
     trigger.await().tap(thread.join().waive)
     result()
   
-  private def result()(using cancel: CanThrow[CancelError]): ResultType = state() match
-    case Completed(result) => result
-    case Failed(error)     => throw error
-    case Cancelled         => throw CancelError()
-    case other             => throw CancelError()
+  private def result()(using cancel: CanThrow[CancelError]): ResultType =
+    state() match
+      case Completed(result) => result
+      case Failed(error)     => throw error
+      case Cancelled         => throw CancelError()
+      case other             => throw CancelError()
   
   def suspend(): Unit =
     stateRef.updateAndGet:
@@ -230,10 +237,10 @@ class Async
       case other                => other
 
   def map[ResultType2](fn: ResultType => ResultType2)(using CanThrow[CancelError]): Async[ResultType2] =
-    Async(fn(await()))
+    Async(fn(async.await()))
   
   def foreach[ResultType2](fn: ResultType => ResultType2)(using CanThrow[CancelError]): Unit =
-    Async(fn(await()))
+    Async(fn(async.await()))
   
   def flatMap
       [ResultType2]
