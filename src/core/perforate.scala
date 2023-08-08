@@ -42,7 +42,7 @@ class Thrower[ErrorType <: Error: CanThrow](flow: ControlFlow) extends ErrorHand
 trait Recovery[-ErrorType <: Error, +ResultType]:
   def recover(error: ErrorType): ResultType
 
-object Benign:
+object Perforate:
   opaque type ControlFlow = boundary.Label[?]
 
   object ControlFlow:
@@ -50,7 +50,7 @@ object Benign:
   
   extension (flow: ControlFlow) def label: boundary.Label[?] = flow
 
-export Benign.ControlFlow
+export Perforate.ControlFlow
 
 def raise
     [ResultType, ErrorType <: Error]
