@@ -30,6 +30,8 @@ import scala.quoted.*
 import java.util as ju
 import java.time as jt
 
+import language.experimental.captureChecking
+
 package calendars:
   given julian: RomanCalendar() with
     def leapYear(year: Y): Boolean = year%4 == 0

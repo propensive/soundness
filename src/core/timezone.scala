@@ -28,6 +28,8 @@ import digression.*
 
 import scala.io.*
 
+import language.experimental.captureChecking
+
 object TzdbError:
   given AsMessage[Issue] =
     case Issue.CouldNotParseTime(time) => msg"could not parse time $time"

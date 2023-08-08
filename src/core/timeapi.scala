@@ -18,6 +18,8 @@ package anticipation
 
 import aviation.*
 
+import language.experimental.captureChecking
+
 package timeApi:
   given aviationApi: (GenericInstant[Timing.Instant] & GenericDuration[Timing.Duration]) =
     new GenericInstant[Timing.Instant] with GenericDuration[Timing.Duration]:
