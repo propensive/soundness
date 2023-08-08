@@ -85,7 +85,7 @@ case class Multiplexer[KeyType, ElemType]()(using Monitor):
       pump(key, stream.tail)
 
   def add(key: KeyType, stream: LazyList[ElemType]): Unit = tasks(key) =
-    Task("pump".tt)(pump(key, stream))
+    Task(pump(key, stream))
  
   private def remove(key: KeyType): Unit = synchronized:
     tasks -= key
@@ -114,7 +114,7 @@ extension [ElemType](stream: LazyList[ElemType])
       case _ =>
         LazyList()
 
-    Task("ratelimiter".tt)(recur(stream, System.currentTimeMillis)).await()
+    Task(recur(stream, System.currentTimeMillis)).await()
 
   def multiplexWith(that: LazyList[ElemType])(using Monitor): LazyList[ElemType] =
     unsafely(LazyList.multiplex(stream, that))
@@ -162,12 +162,13 @@ extension [ElemType](stream: LazyList[ElemType])
         val newExpiry: Long = maxDelay.option.map(_.milliseconds).fold(Long.MaxValue)(_ + System.currentTimeMillis)
         if stream.isEmpty then LazyList() else recur(stream.tail, List(stream.head), newExpiry)
       else
-        val hasMore: Task[Boolean] = Task("cluster".tt)(!stream.isEmpty)
+        val hasMore: Task[Boolean] = Task(!stream.isEmpty)
 
-        val recurse: Option[Boolean] = try
-          val deadline: Long = duration.milliseconds.min(expiry - System.currentTimeMillis).max(0)
-          if hasMore.await(GenericDuration(deadline)) then Some(true) else None
-        catch case err: (TimeoutError | CancelError) => Some(false)
+        val recurse: Option[Boolean] =
+          try
+            val deadline: Long = duration.milliseconds.min(expiry - System.currentTimeMillis).max(0)
+            if hasMore.await(GenericDuration(deadline)) then Some(true) else None
+          catch case err: (TimeoutError | CancelError) => Some(false)
 
         // The try/catch above seems to fool tail-call identification
         if recurse.isEmpty then LazyList(list)
@@ -178,10 +179,12 @@ extension [ElemType](stream: LazyList[ElemType])
 
   def parallelMap
       [ElemType2](fn: ElemType => ElemType2)(using monitor: Monitor): /*{monitor, fn}*/ LazyList[ElemType2] =
+    
     val out: Funnel[ElemType2] = Funnel()
-    Task("parallelMap".tt):
+    
+    Task:
       stream.map: elem =>
-        Task("elem".tt):
+        Task:
           out.put(fn(elem))
     
     out.stream
