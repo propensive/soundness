@@ -113,7 +113,7 @@ sealed trait Path:
       ()(using dereferenceSymlinks: DereferenceSymlinks)(using io: CanThrow[IoError])
       : InodeType =
     
-    try jnf.Files.getAttribute(java, "unix:mode", dereferenceSymlinks.options()*) match
+    try (jnf.Files.getAttribute(java, "unix:mode", dereferenceSymlinks.options()*): @unchecked) match
       case mode: Int => (mode & 61440) match
         case  4096 => InodeType.Fifo
         case  8192 => InodeType.CharDevice
