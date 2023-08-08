@@ -47,3 +47,17 @@ def makeDuration[DurationType](duration: Long)(using generic: GenericDuration[Du
 
 def readDuration[DurationType](using generic: GenericDuration[DurationType])(duration: DurationType): Long =
   generic.readDuration(duration)
+
+object GenericDuration:
+  def apply[DurationType](long: Long)(using generic: GenericDuration[DurationType]): DurationType =
+    generic.makeDuration(long)
+
+object GenericInstant:
+  def apply[InstantType](long: Long)(using generic: GenericInstant[InstantType]): InstantType =
+    generic.makeInstant(long)
+
+extension [DurationType](value: DurationType)(using generic: GenericDuration[DurationType])
+  def long: Long = generic.readDuration(value)
+
+extension [InstantType](value: InstantType)(using generic: GenericInstant[InstantType])
+  def long: Long = generic.readInstant(value)
