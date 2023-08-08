@@ -111,7 +111,7 @@ class Log(actions: PartialFunction[Entry, LogSink & Singleton]*)(using Monitor):
   
   class Streamer(target: LogSink):
     lazy val funnel: Funnel[Entry] = Funnel()
-    lazy val task: Task[Unit] = Task(t"logger")(target.write(unsafely(funnel.stream)))
+    lazy val task: Async[Unit] = Async(target.write(unsafely(funnel.stream)))
 
   private val streamers: TrieMap[LogSink, Streamer] = TrieMap()
   
