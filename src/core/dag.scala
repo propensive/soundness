@@ -19,6 +19,8 @@ package acyclicity
 import rudiments.*
 import anticipation.*
 
+import language.experimental.captureChecking
+
 object Dag:
   @targetName("build")
   def apply[T](keys: Set[T])(dependencies: T => Set[T]): Dag[T] =
@@ -51,7 +53,7 @@ case class Dag[T] private(edgeMap: Map[T, Set[T]] = Map()):
   def remove(key: T, value: T): Dag[T] =
     Dag(edgeMap.updated(key, edgeMap.get(key).fold(Set())(_ - value)))
 
-  def traversal[S](fn: (Set[S], T) => S): Map[T, S] =
+  def traversal[S](fn: (Set[S], T) -> S): Map[T, S] =
     sorted.foldLeft(Map[T, S]()):
       (map, next) => map.updated(next, fn(apply(next).map(map), next))
 

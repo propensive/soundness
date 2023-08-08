@@ -18,6 +18,8 @@ package acyclicity
 
 import spectacular.*
 
+import language.experimental.captureChecking
+
 extension (inline stringContext: StringContext)
   transparent inline def ref(inline parts: Any*): Dot.Ref =
     ${NodeParser.expand('stringContext, 'parts)}

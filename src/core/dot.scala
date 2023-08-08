@@ -25,6 +25,7 @@ import spectacular.*
 import gossamer.*
 
 import language.dynamics
+import language.experimental.captureChecking
 
 enum Dot:
   case Graph(id: Option[Dot.Id], strict: Boolean, statements: Dot.Statement*)
