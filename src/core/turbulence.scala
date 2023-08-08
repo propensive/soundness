@@ -71,7 +71,7 @@ class Pulsar[DurationType: GenericDuration](duration: DurationType):
     catch case err: CancelError => LazyList()
 
 case class Multiplexer[KeyType, ElemType]()(using Monitor):
-  private val tasks: TrieMap[KeyType, /*{monitor}*/ Task[Unit]] = TrieMap()
+  private val tasks: TrieMap[KeyType, /*{monitor}*/ Async[Unit]] = TrieMap()
   private val queue: juc.LinkedBlockingQueue[Option[ElemType]] = juc.LinkedBlockingQueue()
 
   def close(): Unit = tasks.keys.foreach(remove(_))
@@ -85,7 +85,7 @@ case class Multiplexer[KeyType, ElemType]()(using Monitor):
       pump(key, stream.tail)
 
   def add(key: KeyType, stream: LazyList[ElemType]): Unit = tasks(key) =
-    Task(pump(key, stream))
+    Async(pump(key, stream))
  
   private def remove(key: KeyType): Unit = synchronized:
     tasks -= key
@@ -114,7 +114,7 @@ extension [ElemType](stream: LazyList[ElemType])
       case _ =>
         LazyList()
 
-    Task(recur(stream, System.currentTimeMillis)).await()
+    Async(recur(stream, System.currentTimeMillis)).await()
 
   def multiplexWith(that: LazyList[ElemType])(using Monitor): LazyList[ElemType] =
     unsafely(LazyList.multiplex(stream, that))
@@ -162,7 +162,7 @@ extension [ElemType](stream: LazyList[ElemType])
         val newExpiry: Long = maxDelay.option.map(_.milliseconds).fold(Long.MaxValue)(_ + System.currentTimeMillis)
         if stream.isEmpty then LazyList() else recur(stream.tail, List(stream.head), newExpiry)
       else
-        val hasMore: Task[Boolean] = Task(!stream.isEmpty)
+        val hasMore: Async[Boolean] = Async(!stream.isEmpty)
 
         val recurse: Option[Boolean] =
           try
@@ -182,9 +182,9 @@ extension [ElemType](stream: LazyList[ElemType])
     
     val out: Funnel[ElemType2] = Funnel()
     
-    Task:
+    Async:
       stream.map: elem =>
-        Task:
+        Async:
           out.put(fn(elem))
     
     out.stream
