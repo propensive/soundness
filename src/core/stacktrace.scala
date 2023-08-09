@@ -183,7 +183,7 @@ object StackTrace:
             else types2.init.mkString("((", ", ", s") => ${types2.last})")
     
     else if rewritten.s.startsWith("scala.runtime.function.JProcedure") then Text:
-      val n = safely(rewritten.s.drop(33).toInt).or(0)
+      val n = try rewritten.s.drop(33).toInt catch case error: Exception => 0
       "("+(if n < 2 then s"Any" else List.fill(n)("Any").mkString("(", ", ", ")"))+" => Unit)"
     
     else rewritten
