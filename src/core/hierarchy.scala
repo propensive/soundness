@@ -22,6 +22,7 @@ import digression.*
 import spectacular.*
 import anticipation.*
 import gossamer.*
+import perforate.*
 import symbolism.*
 
 import scala.quoted.*
@@ -50,7 +51,7 @@ object PathError:
 export Serpentine.PathName
 
 case class PathError(reason: PathError.Reason)
-extends Error(msg"the path is invalid because ${reason.show}")
+extends Error(msg"the path is invalid because $reason")
 
 @targetName("relative")
 def ?
@@ -189,19 +190,21 @@ object Reachable:
       (using reachable: Reachable[PathType, NameType, RootType],
           rootParser: RootParser[PathType, RootType],
           creator: PathCreator[PathType, NameType, RootType])
-      (using path: CanThrow[PathError])
+      (using path: ErrorHandler[PathError])
       : PathType =
     val rootRest: Maybe[(RootType, Text)] = rootParser.parse(text)
-    if rootRest.unset then throw PathError(PathError.Reason.NotRooted(text))
-    
-    val root: RootType = rootRest.avow(using Unsafe)(0)
-    val rest: Text = rootRest.avow(using Unsafe)(1)
-    
-    val names = rest.cut(reachable.separator(creator.path(root, Nil))).reverse match
-      case t"" :: tail => tail
-      case names       => names
-
-    creator.path(root, names.map(PathName(_)))
+    if rootRest.unset
+    then raise(PathError(PathError.Reason.NotRooted(text))):
+      creator.path(summonInline[Default[RootType]](), Nil)
+    else
+      val root: RootType = rootRest.avow(using Unsafe)(0)
+      val rest: Text = rootRest.avow(using Unsafe)(1)
+      
+      val names = rest.cut(reachable.separator(creator.path(root, Nil))).reverse match
+        case t"" :: tail => tail
+        case names       => names
+  
+      creator.path(root, names.map(PathName(_)))
   
 
 @capability
@@ -245,7 +248,7 @@ object Followable:
 
   inline def decoder
       [LinkType <: Matchable]
-      (using path: CanThrow[PathError])
+      (using path: ErrorHandler[PathError])
       [NameType <: Label, ParentRefType <: Label, SelfRefType <: Label]
       (using followable: Followable[LinkType, NameType, ParentRefType, SelfRefType])
       (using creator: PathCreator[LinkType, NameType, Int]): Decoder[LinkType] =
@@ -324,7 +327,7 @@ extension
 
   // FIXME: This should be called `/`, but it causes a spurious compiler error. 
   @targetName("child2")
-  inline infix def /-[PathType2 <: PathType](name: Text): PathType throws PathError =
+  inline infix def /-[PathType2 <: PathType](name: Text)(using pathError: ErrorHandler[PathError]): PathType =
     pathlike.child(path, PathName(name))
   
   def render: Text = pathlike.render(path)
@@ -338,10 +341,10 @@ extension
       [LinkType <: Matchable]
       (inline link: LinkType)
       (using followable: Followable[LinkType, NameType, ?, ?])
-      (using pathError: CanThrow[PathError])
+      (using pathHandler: ErrorHandler[PathError])
       : PathType =
     if followable.ascent(link) > pathlike.descent(path).length
-    then throw PathError(PathError.Reason.ParentOfRoot)
+    then raise(PathError(PathError.Reason.ParentOfRoot))(path)
     else
       val common: PathType = pathlike.ancestor(path, followable.ascent(link)).avow(using Unsafe)
       val descent = pathlike.descent(common)

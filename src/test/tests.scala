@@ -21,23 +21,20 @@ import rudiments.*
 import digression.*
 import anticipation.*
 import kaleidoscope.*
+import perforate.*
 import gossamer.*
 import spectacular.*
 import larceny.*
 import symbolism.*
 
 object Example:
-  
   type Forbidden = ".*abc" | ".*\\\\.*" | ".*/.*" | "lpt1.*" | ".* "
   
   object TestPath:
-    import unsafeExceptions.canThrowAny
-
-    given Decoder[TestPath] = Reachable.decode[TestPath](_)
+    given (using ErrorHandler[PathError]): Decoder[TestPath] = Reachable.decode[TestPath](_)
     given pathCreator: PathCreator[TestPath, Forbidden, Drive] = TestPath(_, _)
-    //inline given add: Operator["+", TestPath, TestLink] = Followable.add2[TestPath, TestLink, Forbidden, Drive]
     given Show[TestPath] = _.render
-    def parse(text: Text): TestPath = text.decodeAs[TestPath]
+    def parse(text: Text)(using ErrorHandler[PathError]): TestPath = text.decodeAs[TestPath]
 
     given rootParser: RootParser[TestPath, Drive] with
       def parse(text: Text): Maybe[(Drive, Text)] = text.only:
@@ -52,14 +49,12 @@ object Example:
   case class TestPath(root: Drive, descent: List[PathName[Forbidden]])
 
   object TestLink:
-    import unsafeExceptions.canThrowAny
-
-    inline given Decoder[TestLink] = Followable.decoder[TestLink]
+    inline given (using ErrorHandler[PathError]): Decoder[TestLink] = Followable.decoder[TestLink]
     given linkCreator: PathCreator[TestLink, Forbidden, Int] = TestLink(_, _)
     inline given add: Operator["+", TestLink, TestLink] = Followable.add[TestLink, Forbidden]
 
     given Show[TestLink] = _.render
-    def parse(text: Text): TestLink = text.decodeAs[TestLink]
+    def parse(text: Text)(using ErrorHandler[PathError]): TestLink = text.decodeAs[TestLink]
 
     given pathlike: Followable[TestLink, Forbidden, "..", "."] with
       def separator(path: TestLink): Text = t"\\"
@@ -68,6 +63,9 @@ object Example:
       def descent(path: TestLink): List[PathName[Forbidden]] = path.descent
 
   case class TestLink(ascent: Int, descent: List[PathName[Forbidden]])
+
+  object Drive:
+    given Default[Drive](Drive('C'))
 
   case class Drive(letter: Char):
     @targetName("child")
@@ -78,6 +76,10 @@ object Example:
 import Example.*
 
 object Tests extends Suite(t"Serpentine Tests"):
+  given CanThrow[PathError] = unsafeExceptions.canThrowAny
+  given Default[Root.type](Root)
+  import errorHandlers.throwAnything
+
   def run(): Unit =
     suite(t"Absolute parsing"):
       test(t"parse simple absolute path"):
@@ -97,7 +99,7 @@ object Tests extends Suite(t"Serpentine Tests"):
       .assert(_ == SimplePath(List(PathName(t"work"), PathName(t"home"))))
       
       test(t"try to parse path without prefix"):
-        unsafely(capture(SimplePath.parse(t"home/work/")))
+        unsafely(capture[PathError](SimplePath.parse(t"home/work/")))
       .assert(_ == PathError(PathError.Reason.NotRooted(t"home/work/")))
 
       test(t"Show a simple path"):
@@ -449,7 +451,7 @@ object Tests extends Suite(t"Serpentine Tests"):
       test(t"Parent of root throws exception"):
         unsafely:
           val rel = ?^^
-          capture((% / p"foo") + rel)
+          capture[PathError]((% / p"foo") + rel)
       .assert(_ == PathError(PathError.Reason.ParentOfRoot))
       
       test(t"add relative uncle"):

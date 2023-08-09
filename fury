@@ -5,12 +5,13 @@ target serpentine/test
 
 repo propensive/probably
 repo propensive/kaleidoscope
+repo propensive/perforate
 
 project serpentine
   module core
     compiler  scala
     sources   src/core
-    include   anticipation/html gossamer/core kaleidoscope/core spectacular/core anticipation/math
+    include   anticipation/html gossamer/core kaleidoscope/core spectacular/core anticipation/math perforate/core
 
   module test
     compiler  scala

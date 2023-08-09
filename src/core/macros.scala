@@ -19,6 +19,7 @@ package serpentine
 import rudiments.*
 import fulminate.*
 import kaleidoscope.*
+import perforate.*
 import anticipation.*
 import gossamer.*
 
@@ -68,7 +69,7 @@ object SerpentineMacro:
 
   def runtimeParse
       [NameType <: Label: Type]
-      (text: Expr[Text])(using Quotes)
+      (text: Expr[Text], errorHandler: Expr[ErrorHandler[PathError]])(using Quotes)
       : Expr[PathName[NameType]] =
     import quotes.reflect.*
 
@@ -86,9 +87,9 @@ object SerpentineMacro:
         
         recur(tail, '{
           $statements
-          if $text.s.matches(${Expr(pattern)}) then
-            given CanThrow[PathError] = unsafeExceptions.canThrowAny
-            throw PathError($reasonExpr)
+
+          if $text.s.matches(${Expr(pattern)})
+          then raise(using $errorHandler)(PathError($reasonExpr))($text.asInstanceOf[PathName[NameType]])
         })
       
       case _ =>

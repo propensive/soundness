@@ -19,6 +19,7 @@ package serpentine
 import rudiments.*
 import spectacular.*
 import anticipation.*
+import perforate.*
 
 import scala.compiletime.*
 import scala.quoted.*
@@ -46,15 +47,15 @@ object Serpentine:
   object PathName:
     given [NameType <: Label]: Show[PathName[NameType]] = Text(_)
 
-    inline def apply[NameType <: Label](text: Text): PathName[NameType] =
-      ${SerpentineMacro.runtimeParse[NameType]('text)}
+    inline def apply[NameType <: Label](text: Text)(using errorHandler: ErrorHandler[PathError]): PathName[NameType] =
+      ${SerpentineMacro.runtimeParse[NameType]('text, 'errorHandler)}
     
     def unsafe[NameType <: Label](text: Text): PathName[NameType] = text.s: PathName[NameType]
 
   extension [NameType <: Label](pathName: PathName[NameType])
     def render: Text = Text(pathName)
     def widen[NameType2 <: NameType]: PathName[NameType2] = pathName
-    inline def narrow[NameType2 >: NameType <: Label]: PathName[NameType2] = PathName(render)
+    inline def narrow[NameType2 >: NameType <: Label](using ErrorHandler[PathError]): PathName[NameType2] = PathName(render)
   
   @targetName("Root")
   object `%`:
@@ -117,7 +118,8 @@ object Serpentine:
         (using pathlike: Pathlike[PathType, NameType, AscentType])
         (name: Text)
         (using creator: PathCreator[PathType, NameType, AscentType])
-        : PathType throws PathError =
+        (using path: ErrorHandler[PathError])
+        : PathType =
       mainRoot.empty() / PathName(name)
 
 export Serpentine.%
