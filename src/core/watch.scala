@@ -22,6 +22,7 @@ import gossamer.*
 import rudiments.*
 import digression.*
 import parasite.*
+import fulminate.*
 import spectacular.*
 import anticipation.*
 
@@ -61,7 +62,7 @@ case class Watcher
   private def toDirectory(path: jnf.Path): DirectoryType = GenericDirectory(path.toString.tt)
 
   private val funnel = Funnel[Maybe[WatchEvent]]
-  private val pumpTask = Task(t"watcher")(pump())
+  private val pumpAsync = Async(pump())
   
   def stream: LazyList[WatchEvent] = funnel.stream.takeWhile(_ != Unset).collect { case event: WatchEvent => event }
   
