@@ -58,6 +58,7 @@ object Unsafe
 
 object Default:
   given Default[Int](0)
+  given [ValueType: ValueOf]: Default[ValueType](valueOf[ValueType])
   given Default[Long](0L)
   given Default[Text]("".tt)
   given Default[String]("")

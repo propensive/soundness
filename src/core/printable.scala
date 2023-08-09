@@ -17,9 +17,11 @@
 package rudiments
 
 import anticipation.*
+import fulminate.*
 
 object Printable:
   given text: Printable[Text] = identity(_)
+  given message: Printable[Message] = _.text
 
 @capability
 trait Printable[-TextType]:
