@@ -21,6 +21,7 @@ import fulminate.*
 import digression.*
 import eucalyptus.*
 import turbulence.*
+import perforate.*
 import galilei.*
 import serpentine.*
 import guillotine.*
@@ -45,12 +46,12 @@ type GeneralForbidden = Windows.Forbidden | Unix.Forbidden
 
 object Path:
   inline given add
-      (using path: CanThrow[PathError], followable: Followable[Link, GeneralForbidden, ?, ?]): Operator["+", Path, Link] with
+      (using path: ErrorHandler[PathError], followable: Followable[Link, GeneralForbidden, ?, ?]): Operator["+", Path, Link] with
     type Result = Path
     def apply(left: Path, right: Link): Path = left.append(right)
   
   inline given add2
-      (using path: CanThrow[PathError], followable: Followable[SafeLink, GeneralForbidden, ?, ?]): Operator["+", Path, SafeLink] with
+      (using path: ErrorHandler[PathError], followable: Followable[SafeLink, GeneralForbidden, ?, ?]): Operator["+", Path, SafeLink] with
     type Result = Path
     def apply(left: Path, right: SafeLink): Path = left.append(right)
   
@@ -65,11 +66,14 @@ object Path:
     def prefix(root: Maybe[Windows.Drive]): Text =
       root.mm(Windows.Path.reachable.prefix(_)).or(Unix.Path.reachable.prefix(Unset))
     
-    def descent(path: Path): List[PathName[GeneralForbidden]] = path match
-      case path: Unix.SafePath    => path.safeDescent
-      case path: Windows.SafePath => path.safeDescent
-      case path: Unix.Path        => path.descent.map(_.narrow[GeneralForbidden])
-      case path: Windows.Path     => path.descent.map(_.narrow[GeneralForbidden])
+    def descent(path: Path): List[PathName[GeneralForbidden]] =
+      // FIXME: This is a bit of a hack
+      import errorHandlers.throwAnything
+      path match
+        case path: Unix.SafePath    => path.safeDescent
+        case path: Windows.SafePath => path.safeDescent
+        case path: Unix.Path        => path.descent.map(_.narrow[GeneralForbidden])
+        case path: Windows.Path     => path.descent.map(_.narrow[GeneralForbidden])
     
     def separator(path: Path): Text = path match
       case path: Unix.SafePath    => t"/"
@@ -87,7 +91,7 @@ object Path:
 
   given AsMessage[Path] = path => Message(path.render)
 
-  inline given decoder(using CanThrow[PathError]): Decoder[Path] = new Decoder[Path]:
+  inline given decoder(using ErrorHandler[PathError]): Decoder[Path] = new Decoder[Path]:
     def decode(text: Text): Path = Reachable.decode(text)
 
   given show: Show[Path] = _.render
@@ -158,7 +162,7 @@ object Link:
     def path(ascent: Int, descent: List[PathName[GeneralForbidden]]): SafeLink =
       SafeLink(ascent, descent)
   
-  inline given decoder(using CanThrow[PathError]): Decoder[Link] = new Decoder[Link]:
+  inline given decoder(using ErrorHandler[PathError]): Decoder[Link] = new Decoder[Link]:
     def decode(text: Text): Link =
       if text.contains(t"\\") then text.decodeAs[Windows.Link] else text.decodeAs[Unix.Link]
   
@@ -177,7 +181,7 @@ object Windows:
       "\\.\\." | "\\." | ".*[:<>/\\\\|?\"*].*"
 
   object Path:
-    inline given decoder(using CanThrow[PathError]): Decoder[Path] = new Decoder[Path]:
+    inline given decoder(using ErrorHandler[PathError]): Decoder[Path] = new Decoder[Path]:
       def decode(text: Text): Path = Reachable.decode(text)
     
     given reachable: Reachable[Path, Forbidden, Drive] with
@@ -214,10 +218,13 @@ object Windows:
       def ascent(path: Link): Int = path.ascent
       def descent(path: Link): List[PathName[Forbidden]] = path.descent
   
-    inline given decoder(using CanThrow[PathError]): Decoder[Link] = Followable.decoder[Link]
+    inline given decoder(using ErrorHandler[PathError]): Decoder[Link] = Followable.decoder[Link]
     given show: Show[Link] = _.render
     given encoder: Encoder[Link] = _.render
     given debug: Debug[Link] = _.render
+
+  object Drive:
+    given Default[Drive](Drive('C'))
 
   case class Drive(letter: Char):
     def name: Text = t"$letter:"
@@ -226,7 +233,7 @@ object Windows:
     def /(name: PathName[Forbidden]): Path = Path(this, List(name))
     
     @targetName("child2")
-    inline def /(name: Text): Path throws PathError = Path(this, List(PathName(name)))
+    inline def /(name: Text)(using ErrorHandler[PathError]): Path = Path(this, List(PathName(name)))
   
   case class Link(ascent: Int, descent: List[PathName[Forbidden]]) extends galilei.Link
   
@@ -240,12 +247,12 @@ object Unix:
   def /(name: PathName[Forbidden]): Path = Path(List(name))
 
   @targetName("child2")
-  inline def /(name: Text): Path throws PathError = Path(List(PathName(name)))
+  inline def /(name: Text)(using ErrorHandler[PathError]): Path = Path(List(PathName(name)))
 
   object Path:
     given mainRoot: MainRoot[Path] = () => Path(Nil)
     
-    inline given decoder(using CanThrow[PathError]): Decoder[Path] = new Decoder[Path]:
+    inline given decoder(using ErrorHandler[PathError]): Decoder[Path] = new Decoder[Path]:
       def decode(text: Text): Path = Reachable.decode(text)
     
     given rootParser: RootParser[Path, Unset.type] = text =>
@@ -283,7 +290,7 @@ object Unix:
       def ascent(path: Link): Int = path.ascent
       def descent(path: Link): List[PathName[Forbidden]] = path.descent
     
-    inline given decoder(using CanThrow[PathError]): Decoder[Link] = Followable.decoder[Link]
+    inline given decoder(using ErrorHandler[PathError]): Decoder[Link] = Followable.decoder[Link]
     given show: Show[Link] = _.render
     given encoder: Encoder[Link] = _.render
     given debug: Debug[Link] = _.render
@@ -499,7 +506,7 @@ case class Directory(path: Path) extends Unix.Inode, Windows.Inode:
   def /(name: PathName[GeneralForbidden]): Path = path / name
   
   @targetName("child2")
-  inline def /(name: Text): Path throws PathError = path / PathName(name)
+  inline def /(name: Text)(using ErrorHandler[PathError]): Path = path / PathName(name)
 
 object File:
   given readableBytes(using streamCut: CanThrow[StreamCutError], io: CanThrow[IoError]): Readable[File, Bytes] =
@@ -669,5 +676,5 @@ object SafeLink:
       def ascent(link: SafeLink): Int = link.ascent
       def descent(link: SafeLink): List[PathName[GeneralForbidden]] = link.descent
 
-  inline given decoder(using CanThrow[PathError]): Decoder[SafeLink] =
+  inline given decoder(using ErrorHandler[PathError]): Decoder[SafeLink] =
     Followable.decoder[SafeLink]

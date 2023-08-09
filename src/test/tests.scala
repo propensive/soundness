@@ -19,17 +19,22 @@ package galilei
 import probably.*
 import gossamer.*
 import imperial.*
+import turbulence.*, basicIo.jvm
 import eucalyptus.*
+import parasite.*
 import rudiments.*
 import serpentine.*
 import spectacular.*
-import hieroglyph.*
+import hieroglyph.*, charEncoders.utf8
+import perforate.*
 import anticipation.*, fileApi.galileiApi
 import ambience.*, environments.jvm, systemProperties.jvm
 
 import unsafeExceptions.canThrowAny
 
 given WorkingDirectory = WorkingDirectory(Unset)
+
+import errorHandlers.throwAnything
 
 object Tests extends Suite(t"Galilei tests"):
   def run(): Unit =
@@ -158,11 +163,11 @@ object Tests extends Suite(t"Galilei tests"):
       
       test(t"Make a FIFO"):
         import filesystemOptions.{doNotCreateNonexistentParents, overwritePreexisting, doNotDeleteRecursively, dereferenceSymlinks}
-        given Log = logging.silent
         
-        val fifoPath = tmpPath / p"galilei" / p"fifo1"
-        
-        fifoPath.make[Fifo]().path.inodeType()
+        supervise:
+          import logging.stdout
+          val fifoPath = tmpPath / p"galilei" / p"fifo1"
+          fifoPath.make[Fifo]().path.inodeType()
       .assert(_ == InodeType.Fifo)
 
     suite(t"Windows hierarchy tests"):
