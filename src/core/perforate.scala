@@ -23,43 +23,60 @@ import fulminate.*
 import language.experimental.captureChecking
 
 @capability
-trait ErrorHandler[ErrorType <: Error](val flow: ControlFlow):
+trait ErrorHandler[-ErrorType <: Error]:
   def record(error: ErrorType): Unit
   def apply(): Unit
 
 @capability
-class Aggregator[ErrorType <: Error](flow: ControlFlow)(using CanThrow[AggregateError[ErrorType]])
-extends ErrorHandler[ErrorType](flow):
+class Aggregator[ErrorType <: Error](flow: ControlFlow[ErrorType])(using CanThrow[AggregateError[ErrorType]])
+extends ErrorHandler[ErrorType]:
   private var collected: List[ErrorType] = Nil
   def record(error: ErrorType): Unit = collected ::= error
   def apply(): Unit = if !collected.isEmpty then throw AggregateError[ErrorType](collected.reverse)
 
 @capability
-class Thrower[ErrorType <: Error: CanThrow](flow: ControlFlow) extends ErrorHandler[ErrorType](flow):
+class Thrower[ErrorType <: Error: CanThrow](flow: ControlFlow[ErrorType]) extends ErrorHandler[ErrorType]:
   def record(error: ErrorType): Unit = throw error
   def apply(): Unit = ()
+
+case class UnexpectedSuccessError()
+extends Error(msg"the expression was expected to fail, but succeeded")
+
+@capability
+class Capturer[ErrorType <: Error](flow: ControlFlow[ErrorType])(using CanThrow[UnexpectedSuccessError])
+extends ErrorHandler[ErrorType]:
+  def record(error: ErrorType): Unit =
+    boundary.break(error)(using flow.label.or(throw Mistake(msg"expected control flow value")))
+  def apply(): Unit = throw UnexpectedSuccessError()
 
 trait Recovery[-ErrorType <: Error, +ResultType]:
   def recover(error: ErrorType): ResultType
 
 object Perforate:
-  opaque type ControlFlow = boundary.Label[?]
+  opaque type ControlFlow[BreakType] = Maybe[boundary.Label[BreakType]]
 
   object ControlFlow:
-    def apply(label: boundary.Label[?]): ControlFlow = label
+    def apply[BreakType](label: Maybe[boundary.Label[BreakType]]): ControlFlow[BreakType] = label
   
-  extension (flow: ControlFlow) def label: boundary.Label[?] = flow
+  extension [BreakType](flow: ControlFlow[BreakType]) def label: Maybe[boundary.Label[BreakType]] = flow
 
 export Perforate.ControlFlow
 
 def raise
     [ResultType, ErrorType <: Error]
-    (using handler: ErrorHandler[ErrorType])
     (error: ErrorType)
-    (using recovery: Recovery[error.type, ResultType])
+    (using handler: ErrorHandler[ErrorType], recovery: Recovery[error.type, ResultType])
     : ResultType =
   handler.record(error)
   recovery.recover(error)
+
+def raise
+    [ResultType, ErrorType <: Error]
+    (error: ErrorType)(ersatz: => ResultType)
+    (using handler: ErrorHandler[ErrorType])
+    : ResultType =
+  handler.record(error)
+  ersatz
 
 def validate
     [ErrorType <: Error]
@@ -68,8 +85,8 @@ def validate
     (fn: ErrorHandler[ErrorType] ?=> ResultType)
     : ResultType =
   
-  boundary: label ?=>
-    val aggregator = Aggregator[ErrorType](ControlFlow(label))
+  boundary:
+    val aggregator = Aggregator[ErrorType](ControlFlow(Unset))
     fn(using aggregator).tap(aggregator().waive)
 
 def attempt
@@ -80,7 +97,20 @@ def attempt
     : ResultType =
   
   boundary: label ?=>
-    val thrower = Thrower[ErrorType](ControlFlow(label))
+    val thrower = Thrower[ErrorType](ControlFlow(Unset))
     fn(using thrower).tap(thrower().waive)
 
-inline def controlFlow(using inline flow: ControlFlow): ControlFlow = flow
+def capture
+    [ErrorType <: Error]
+    (using error: CanThrow[UnexpectedSuccessError])
+    [ResultType]
+    (fn: ErrorHandler[ErrorType] ?=> ResultType)
+    : ErrorType =
+  
+  boundary: label ?=>
+    val capturer = Capturer[ErrorType](ControlFlow(label))
+    fn(using capturer)
+    throw UnexpectedSuccessError()
+
+package errorHandlers:
+  given throwAnything: ErrorHandler[Error] = Thrower[Error](ControlFlow(Unset))(using unsafeExceptions.canThrowAny)
