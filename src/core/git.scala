@@ -56,7 +56,7 @@ object GitError:
 case class GitError(detail: GitError.Detail)
 extends Error(msg"the Git operation could not be completed because $detail")
 
-class GitProcess[+ResultType](progress: LazyList[Progress])(closure: => ResultType^):
+class GitProcess[+ResultType](val progress: LazyList[Progress])(closure: => ResultType^):
   lazy val result: ResultType^{this} = closure
   def complete(): ResultType^{this} = result
 
@@ -240,14 +240,17 @@ object Git:
   def cloneCommit
       [PathType: GenericPathReader]
       (repo: Text, targetPath: PathType, commit: CommitHash)
-      (using Internet, WorkingDirectory, Log, Decoder[Path], Raises[GitError], GitCommand)
-      : GitRepo =
+      (using Internet, Decoder[Path], GitCommand)(using gitError: Raises[GitError], log: Log, workingDirectory: WorkingDirectory)
+      : GitProcess[GitRepo]^{gitError, log, workingDirectory} =
     
     val gitRepo = init(targetPath)
     
-    gitRepo.fetch(1, repo, commit).complete()
-    gitRepo.checkout(commit)
-    gitRepo
+    val fetch = gitRepo.fetch(1, repo, commit)
+    
+    GitProcess(fetch.progress):
+      fetch.complete()
+      gitRepo.checkout(commit)
+      gitRepo
 
   def clone
       [PathType: GenericPathReader]
