@@ -19,7 +19,7 @@ package aviation
 import rudiments.*
 import fulminate.*
 import spectacular.*
-import digression.*
+import perforate.*
 import anticipation.*
 import gossamer.*
 import contextual.*
@@ -30,7 +30,7 @@ import scala.quoted.*
 import java.util as ju
 import java.time as jt
 
-import language.experimental.captureChecking
+//import language.experimental.captureChecking
 
 package calendars:
   given julian: RomanCalendar() with
@@ -83,10 +83,10 @@ object Dates:
       t"${d.day.toString.show}-${d.month.show}-${d.year.toString.show}"
     
     def parse(value: Text): Date throws InvalidDateError = value.cut(t"-") match
-      case y :: m :: d :: Nil =>
+      case As[Int](year) :: As[Int](month) :: As[Int](day) :: Nil =>
         try
           import calendars.gregorian
-          Date(y.s.toInt, MonthName(m.s.toInt), d.s.toInt)
+          Date(year, MonthName(month), day)
         catch
           case err: NumberFormatException     => throw InvalidDateError(value)
           case err: ju.NoSuchElementException => throw InvalidDateError(value)
