@@ -11,7 +11,7 @@ project spectacular
   module core
     sources   src/core
     compiler  scala
-    include   rudiments/core inimitable/core
+    include   rudiments/core inimitable/core perforate/core
 
   module test
     sources   src/test

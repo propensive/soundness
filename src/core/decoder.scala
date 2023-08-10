@@ -18,6 +18,7 @@ package spectacular
 
 import rudiments.*
 import fulminate.*
+import perforate.*
 import anticipation.*
 import inimitable.*
 
@@ -27,29 +28,29 @@ case class NumberError(text: Text, specializable: Specializable)
 extends Error(msg"$text is not a valid ${specializable.show}")
 
 object Decoder:
-  given (using number: CanThrow[NumberError]): Decoder[Int] = text =>
+  given (using number: Raises[NumberError]): Decoder[Int] = text =>
     try Integer.parseInt(text.s) catch case _: NumberFormatException =>
-      throw NumberError(text, Int)
+      raise(NumberError(text, Int))(0)
 
-  given (using uuid: CanThrow[UuidError]): Decoder[Uuid] = Uuid.parse(_)
+  given (using uuid: Raises[UuidError]): Decoder[Uuid] = Uuid.parse(_)
 
-  given (using number: CanThrow[NumberError]): Decoder[Byte] = text =>
+  given (using number: Raises[NumberError]): Decoder[Byte] = text =>
     val int = try Integer.parseInt(text.s) catch case _: NumberFormatException =>
-      throw NumberError(text, Byte)
+      raise(NumberError(text, Byte))(0)
     
-    if int < Byte.MinValue || int > Byte.MaxValue then throw NumberError(text, Byte)
+    if int < Byte.MinValue || int > Byte.MaxValue then raise(NumberError(text, Byte))(0.toByte)
     else int.toByte
   
-  given (using number: CanThrow[NumberError]): Decoder[Short] = text =>
+  given (using number: Raises[NumberError]): Decoder[Short] = text =>
     val int = try Integer.parseInt(text.s) catch case _: NumberFormatException =>
-      throw NumberError(text, Short)
+      raise(NumberError(text, Short))(0)
     
-    if int < Short.MinValue || int > Short.MaxValue then throw NumberError(text, Short)
+    if int < Short.MinValue || int > Short.MaxValue then raise(NumberError(text, Short))(0.toShort)
     else int.toShort
   
-  given (using number: CanThrow[NumberError]): Decoder[Long] = text =>
+  given (using number: Raises[NumberError]): Decoder[Long] = text =>
     try java.lang.Long.parseLong(text.s) catch case _: NumberFormatException =>
-      throw NumberError(text, Long)
+      raise(NumberError(text, Long))(0L)
 
   given Decoder[Char] = _.s(0)
   given Decoder[Text] = identity(_)
