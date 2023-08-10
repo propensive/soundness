@@ -594,7 +594,7 @@ package filesystemOptions:
     new DeleteRecursively:
       def conditionally[ResultType](path: Path)(operation: => ResultType): ResultType =
         try operation
-        catch case error: jnf.DirectoryNotEmptyException => raise(UnemptyDirectoryError(path))(???)
+        catch case error: jnf.DirectoryNotEmptyException => abort(UnemptyDirectoryError(path))
       
   given overwritePreexisting(using deleteRecursively: DeleteRecursively): OverwritePreexisting =
     new OverwritePreexisting:
@@ -604,7 +604,7 @@ package filesystemOptions:
   given doNotOverwritePreexisting(using overwrite: ErrorHandler[OverwriteError]): OverwritePreexisting =
     new OverwritePreexisting:
       def apply[ResultType](path: Path)(operation: => ResultType): ResultType =
-        try operation catch case error: jnf.FileAlreadyExistsException => raise(OverwriteError(path))(???)
+        try operation catch case error: jnf.FileAlreadyExistsException => abort(OverwriteError(path))
       
   given createNonexistentParents(using ErrorHandler[IoError]): CreateNonexistentParents =
     new CreateNonexistentParents:
@@ -622,7 +622,7 @@ package filesystemOptions:
       : CreateNonexistentParents =
     new CreateNonexistentParents:
       def apply[ResultType](path: Path)(operation: => ResultType): ResultType =
-        try operation catch case error: ji.FileNotFoundException => raise(NotFoundError(path))(???)
+        try operation catch case error: ji.FileNotFoundException => abort(NotFoundError(path))
 
   given createNonexistent
       (using createNonexistentParents: CreateNonexistentParents)
