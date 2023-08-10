@@ -30,11 +30,10 @@ import perforate.*
 import anticipation.*, fileApi.galileiApi
 import ambience.*, environments.jvm, systemProperties.jvm
 
+import errorHandlers.throwUnsafely
 import unsafeExceptions.canThrowAny
 
 given WorkingDirectory = WorkingDirectory(Unset)
-
-import errorHandlers.throwAnything
 
 object Tests extends Suite(t"Galilei tests"):
   def run(): Unit =
