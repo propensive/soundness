@@ -18,7 +18,6 @@ package serpentine
 
 import rudiments.*
 import fulminate.*
-import digression.*
 import spectacular.*
 import anticipation.*
 import gossamer.*
