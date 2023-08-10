@@ -18,6 +18,7 @@ package imperial
 
 import rudiments.*
 import ambience.*
+import perforate.*
 import anticipation.*
 import gossamer.*
 
@@ -35,8 +36,8 @@ case class BaseLayout
     (using baseDir: BaseLayout.Dir):
   
   def absolutePath
-      (using Environment, CanThrow[EnvironmentError], SystemProperties,
-          CanThrow[SystemPropertyError])
+      (using Environment, Raises[EnvironmentError], SystemProperties,
+          Raises[SystemPropertyError])
       : Text =
     val home: Text = Environment.home[Text].or(Properties.user.home[Text]())
     val home2: Text = if home.ends(t"/") then home.drop(1, Rtl) else home
@@ -44,13 +45,13 @@ case class BaseLayout
 
   given newBaseDir: BaseLayout.Dir = BaseLayout.Dir(baseDir.home, part.mm(_ :: baseDir.path).or(baseDir.path))
 
-  def apply[PathType]()(using GenericPathMaker[PathType], SystemProperties, CanThrow[SystemPropertyError], Environment, CanThrow[EnvironmentError]): PathType =
+  def apply[PathType]()(using GenericPathMaker[PathType], SystemProperties, Raises[SystemPropertyError], Environment, Raises[EnvironmentError]): PathType =
     val path: Text = absolutePath
 
     GenericPath(path)
 
 object Base extends BaseLayout(Unset)(using BaseLayout.Dir(false, Nil)):
-  override def apply[PathType: GenericPathMaker]()(using SystemProperties, CanThrow[SystemPropertyError], Environment, CanThrow[EnvironmentError]): PathType =
+  override def apply[PathType: GenericPathMaker]()(using SystemProperties, Raises[SystemPropertyError], Environment, Raises[EnvironmentError]): PathType =
     GenericPath(t"/")
 
   object Boot extends BaseLayout(t"boot", readOnly = true)
