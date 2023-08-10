@@ -119,7 +119,7 @@ object EnvironmentVariable extends EnvironmentVariable2:
   given pager[PathType: GenericPathMaker]: EnvironmentVariable["pager", PathType] =
     GenericPath(_)
   
-  given sshAgentPid(using CanThrow[NumberError]): EnvironmentVariable["sshAgentPid", Pid] = text =>
+  given sshAgentPid(using Raises[NumberError]): EnvironmentVariable["sshAgentPid", Pid] = text =>
     Pid(text.decodeAs[Int])
 
   given sshAuthSock[PathType: GenericPathMaker]: EnvironmentVariable["sshAuthSock", PathType] =
