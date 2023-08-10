@@ -19,8 +19,8 @@ package cellulose
 import probably.*
 import gossamer.*
 import rudiments.*
-import digression.*
 import spectacular.*
+import perforate.*
 import anticipation.*
 import turbulence.*, basicIo.jvm
 import hieroglyph.*, charEncoders.utf8
@@ -29,6 +29,7 @@ import eucalyptus.*, logging.stdout
 import java.io as ji
 
 import unsafeExceptions.canThrowAny
+import errorHandlers.throwUnsafely
 
 case class User(id: Int, email: Text, privilege: List[Privilege])
 case class Privilege(name: Text, grant: Boolean)
