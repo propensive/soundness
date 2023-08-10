@@ -116,7 +116,7 @@ extends ErrorHandler[SuccessType]:
     case Left(error)  => error
     case Right(value) => abort(UnexpectedSuccessError(value))
 
-class SafeHandler[ErrorType <: Error, SuccessType]() extends ErrorHandler[SuccessType]:
+class Safely[ErrorType <: Error, SuccessType]() extends ErrorHandler[SuccessType]:
   type Result = Maybe[SuccessType]
   type Return = Maybe[SuccessType]
   type Raiser = RaisesMaybe[ErrorType, SuccessType]
@@ -151,10 +151,11 @@ def safely
     [ErrorType <: Error]
     (using DummyImplicit)
     [SuccessType]
-    (block: RaisesMaybe[ErrorType, SuccessType] ?=> SuccessType)
+    (block: CanThrow[Exception] ?=> RaisesMaybe[ErrorType, SuccessType] ?=> SuccessType)
     : Maybe[SuccessType] =
   
-  handle(SafeHandler[ErrorType, SuccessType])(block)
+  try handle(Safely[ErrorType, SuccessType])(block(using unsafeExceptions.canThrowAny))
+  catch case error: Exception => Unset
 
 def throwErrors
     [ErrorType <: Error]
@@ -194,8 +195,15 @@ def handle
     boundary: label ?=>
       handler.wrap(block(using handler.raiser(label)))
 
+def unsafely[ResultType](block: CanThrow[Exception] ?=> ResultType): ResultType =
+  block(using unsafeExceptions.canThrowAny)
+
 case class AggregateError[+ErrorType <: Error](errors: List[ErrorType])
 extends Error(AsMessage.listMessage.message(errors.map(_.message)))
 
 case class UnexpectedSuccessError[ResultType](result: ResultType)
 extends Error(msg"the expression was expected to fail, but succeeded")
+
+package errorHandlers:
+  given throwUnsafely[SuccessType]: RaisesThrow[Error, SuccessType] =
+    RaisesThrow()(using unsafeExceptions.canThrowAny)
