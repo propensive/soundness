@@ -19,6 +19,7 @@ package dissonance
 import rudiments.*
 import fulminate.*
 import anticipation.*
+import perforate.*
 
 case class CasualDiffError(issue: CasualDiffError.Issue, line: Int)
 extends Error(msg"the diff could not be read because $issue at line $line")
@@ -38,7 +39,7 @@ object CasualDiffError:
 case class Replace(context: List[Text], original: List[Text], replacement: List[Text])
 
 object CasualDiff:
-  def parse(stream: LazyList[Text]): CasualDiff throws CasualDiffError =
+  def parse(stream: LazyList[Text])(using Raises[CasualDiffError]): CasualDiff =
     def recur
         (stream: LazyList[Text], context: List[Text], original: List[Text], replacement: List[Text],
             done: List[Replace], lineNo: Int)
@@ -60,7 +61,8 @@ object CasualDiff:
               val replace = Replace(context.reverse, original.reverse, replacement.reverse)
               recur(tail, Nil, List(head.s.drop(2).tt), Nil, replace :: done, lineNo + 1)
             else recur(tail, Nil, head.s.drop(2).tt :: original, Nil, done, lineNo + 1)
-          else throw CasualDiffError(CasualDiffError.Issue.BadLineStart(head), lineNo)
+          else raise(CasualDiffError(CasualDiffError.Issue.BadLineStart(head), lineNo)):
+            recur(tail, context, original, replacement, done, lineNo + 1)
         
         case _ =>
           (Replace(context.reverse, original.reverse, replacement.reverse) :: done).reverse

@@ -21,6 +21,9 @@ import gossamer.*
 import rudiments.*
 import anticipation.*
 import eucalyptus.*
+import perforate.*
+
+import errorHandlers.throwUnsafely
 
 object Tests extends Suite(t"Dissonance tests"):
   given Realm = Realm(t"tests")

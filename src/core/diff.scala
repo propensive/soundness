@@ -18,6 +18,7 @@ package dissonance
 
 import rudiments.*
 import fulminate.*
+import perforate.*
 import anticipation.*
 
 import language.experimental.captureChecking
@@ -70,7 +71,7 @@ case class DiffParseError(lineNo: Int, line: Text)
 extends Error(msg"could not read the diff at line $lineNo: $line")
 
 object Diff:
-  def parse(lines: LazyList[Text]): Diff[Text] throws DiffParseError =
+  def parse(lines: LazyList[Text])(using Raises[DiffParseError]): Diff[Text] =
     def recur
         (todo: LazyList[Text], line: Int, edits: List[Edit[Text]], pos: Int, rpos: Int, target: Int)
         : Diff[Text] =
@@ -88,15 +89,20 @@ object Diff:
               try string.split(",").nn.to(List) match
                 case List(start, end) => (start.nn.toInt - 1, end.nn.toInt)
                 case List(start)      => (start.nn.toInt - 1, start.nn.toInt)
-                case _                => throw DiffParseError(line, head)
-              catch case err: NumberFormatException => throw DiffParseError(line, head)
+                case _                => raise(DiffParseError(line, head))((0, 0))
+              catch case err: NumberFormatException => raise(DiffParseError(line, head))((0, 0))
 
-            val ((leftStart, leftEnd), (rightStart, rightEnd)) =
+            val pairs =
               head.s.split("[acd]").nn.to(List) match
-                case List(left, right) => (unpair(left.nn), unpair(right.nn))
-                case _                 => throw DiffParseError(line, head)
+                case List(left, right) => Some((unpair(left.nn), unpair(right.nn)))
+                case _                 => None
             
-            recur(tail, line + 1, edits, pos, rpos, leftStart)
+            pairs match
+              case Some(((leftStart, leftEnd), (rightStart, rightEnd))) =>
+                recur(tail, line + 1, edits, pos, rpos, leftStart)
+              
+              case None =>
+                raise(DiffParseError(line, head))(recur(tail, line + 1, edits, pos, rpos, 0))
         
         case _ =>
           Diff(edits.reverse*)
