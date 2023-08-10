@@ -53,7 +53,6 @@ class RaisesCompileFailure[ErrorType <: Error, SuccessType]()(using Quotes) exte
 class RaisesAggregate
     [ErrorType <: Error, SuccessType]
     (label: boundary.Label[Either[AggregateError[ErrorType], SuccessType]])
-    (using recovery: Recovery[AggregateError[ErrorType], SuccessType])
 extends Raises[ErrorType]:
 
   private val collected: juca.AtomicReference[List[ErrorType]] = juca.AtomicReference(Nil)
@@ -108,7 +107,7 @@ class FailCompilation[ErrorType <: Error, SuccessType]()(using Quotes) extends E
 
 class Validate
     [ErrorType <: Error, SuccessType]
-    (using Raises[AggregateError[ErrorType]], Recovery[AggregateError[ErrorType], SuccessType])
+    (using Raises[AggregateError[ErrorType]])
 extends ErrorHandler[SuccessType]:
   type Result = Either[AggregateError[ErrorType], SuccessType]
   type Return = SuccessType
@@ -118,7 +117,7 @@ extends ErrorHandler[SuccessType]:
   def wrap(fn: SuccessType): Either[AggregateError[ErrorType], SuccessType] = Right(fn)
   
   def finish(value: Result): Return = value match
-    case Left(error)  => raise[SuccessType, AggregateError[ErrorType]](error)
+    case Left(error)  => abort[SuccessType, AggregateError[ErrorType]](error)
     case Right(value) => value
 
 class Capture
@@ -191,7 +190,6 @@ def validate
     (using raise: Raises[AggregateError[ErrorType]])
     [SuccessType]
     (block: RaisesAggregate[ErrorType, SuccessType] ?=> SuccessType)
-    (using recovery: Recovery[AggregateError[ErrorType], SuccessType])
     : SuccessType =
 
   handle(Validate[ErrorType, SuccessType]())(block)
