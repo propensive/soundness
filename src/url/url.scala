@@ -21,7 +21,7 @@ import gossamer.*
 import rudiments.*
 import fulminate.*
 import symbolism.*
-import digression.*
+import perforate.*
 import escapade.*
 import iridescence.*
 import anticipation.*
@@ -58,7 +58,7 @@ enum UrlInput:
 
 object UrlInterpolator extends contextual.Interpolator[UrlInput, Text, Url]:
   def complete(value: Text): Url =
-    try Url.parse(value) catch case err: UrlError =>
+    try throwErrors(Url.parse(value)) catch case err: UrlError =>
       throw InterpolationError(msg"the URL ${err.text} is not valid: expected ${err.expected}", err.offset)
   
   def initial: Text = t""
@@ -69,7 +69,7 @@ object UrlInterpolator extends contextual.Interpolator[UrlInput, Text, Url]:
         if !state.ends(t":")
         then throw InterpolationError(msg"a port number must be specified after a colon")
         
-        try Url.parse(state+port.show)
+        try throwErrors(Url.parse(state+port.show))
         catch case err: UrlError => throw InterpolationError(Message(err.message.text))
         
         state+port.show
@@ -78,7 +78,7 @@ object UrlInterpolator extends contextual.Interpolator[UrlInput, Text, Url]:
         if !state.ends(t"/")
         then throw InterpolationError(msg"a substitution may only be made after a slash")
         
-        try Url.parse(state+txt.urlEncode)
+        try throwErrors(Url.parse(state+txt.urlEncode))
         catch case err: UrlError => throw InterpolationError(Message(err.message.text))
         
         state+txt.urlEncode
@@ -87,7 +87,7 @@ object UrlInterpolator extends contextual.Interpolator[UrlInput, Text, Url]:
         if !state.ends(t"/")
         then throw InterpolationError(msg"a substitution may only be made after a slash")
 
-        try Url.parse(state+txt.urlEncode)
+        try throwErrors(Url.parse(state+txt.urlEncode))
         catch case err: UrlError => throw InterpolationError(Message(err.message.text))
         
         state+txt
@@ -103,13 +103,13 @@ object UrlInterpolator extends contextual.Interpolator[UrlInput, Text, Url]:
   def skip(state: Text): Text = state+t"1"
 
 object Url:
-  given (using CanThrow[UrlError]): GenericUrl[Url] = new GenericUrl[Url]:
+  given (using Raises[UrlError]): GenericUrl[Url] = new GenericUrl[Url]:
     def urlText(url: Url): Text = url.show
     def makeUrl(value: Text): Url = Url.parse(value)
 
   given GenericHttpRequestParam["location", Url] = show(_)
 
-  given (using CanThrow[UrlError]): Decoder[Url] = parse(_)
+  given (using Raises[UrlError]): Decoder[Url] = parse(_)
   given Encoder[Url] = _.show
   given Debug[Url] = _.show
 
@@ -170,12 +170,12 @@ object Url:
     def name: Text = t"manifest"
     def serialize(url: Url): Text = url.show
 
-  def parse(value: Text): Url throws UrlError =
+  def parse(value: Text)(using Raises[UrlError]): Url =
     import UrlError.Expectation.*
 
     safely(value.where(_ == ':')) match
       case Unset =>
-        throw UrlError(value, value.length, Colon)
+        raise(UrlError(value, value.length, Colon))(Url(Scheme.Https, Unset, t""))
       
       case colon: Int =>
         val scheme = Scheme(value.take(colon))
@@ -202,7 +202,7 @@ object Authority:
   given Show[Authority] = auth =>
     t"${auth.userInfo.fm(t"")(_+t"@")}${auth.host}${auth.port.mm(_.show).fm(t"")(t":"+_)}"
 
-  def parse(value: Text): Authority throws UrlError =
+  def parse(value: Text)(using Raises[UrlError]): Authority =
     import UrlError.Expectation.*
     
     safely(value.where(_ == '@')) match
@@ -213,8 +213,8 @@ object Authority:
         case colon: Int =>
           safely(value.drop(colon + 1).s.toInt).match
             case port: Int if port >= 0 && port <= 65535 => port
-            case port: Int                               => throw UrlError(value, colon + 1, PortRange)
-            case Unset                                   => throw UrlError(value, colon + 1, Number)
+            case port: Int                               => raise(UrlError(value, colon + 1, PortRange))(0)
+            case Unset                                   => raise(UrlError(value, colon + 1, Number))(0)
           .pipe(Authority(Host.parse(value.take(colon)), Unset, _))
       
       case arobase: Int => safely(value.where(_ == ':', arobase + 1)) match
@@ -224,8 +224,8 @@ object Authority:
         case colon: Int =>
           safely(value.drop(colon + 1).s.toInt).match
             case port: Int if port >= 0 && port <= 65535 => port
-            case port: Int                               => throw UrlError(value, colon + 1, PortRange)
-            case Unset                                   => throw UrlError(value, colon + 1, Number)
+            case port: Int                               => raise(UrlError(value, colon + 1, PortRange))(0)
+            case Unset                                   => raise(UrlError(value, colon + 1, Number))(0)
           .pipe(Authority(Host.parse(value.slice(arobase + 1, colon)), value.take(arobase), _))
 
 case class Authority(host: Host, userInfo: Maybe[Text] = Unset, port: Maybe[Int] = Unset)
@@ -247,6 +247,8 @@ case class Url
         fragment: Maybe[Text] = Unset):
   
   lazy val path: List[PathName[""]] =
+    // FIXME: This needs to be handled better
+    import errorHandlers.throwUnsafely
     pathText.drop(1).cut(t"/").reverse.map(_.urlDecode).map(PathName(_))
 
 object UrlError:

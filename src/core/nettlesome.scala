@@ -19,6 +19,7 @@ package nettlesome
 import rudiments.*
 import spectacular.*
 import gossamer.*
+import fulminate.*
 import anticipation.*
 
 import scala.quoted.*
