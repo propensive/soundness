@@ -84,15 +84,16 @@ object Dates:
       t"${d.day.toString.show}-${d.month.show}-${d.year.toString.show}"
     
     def parse(value: Text)(using Raises[InvalidDateError]): Date = value.cut(t"-") match
-      case As[Int](year) :: As[Int](month) :: As[Int](day) :: Nil =>
+      //case As[Int](year) :: As[Int](month) :: As[Int](day) :: Nil =>
+      case y :: m :: d :: Nil =>
         try
           import calendars.gregorian
-          Date(year, MonthName(month), day)
+          Date(y.s.toInt, MonthName(m.s.toInt), d.s.toInt)
         catch
-          case err: NumberFormatException     =>
+          case error: NumberFormatException =>
             raise(InvalidDateError(value))(Date(using calendars.gregorian)(2000, MonthName(1), 1))
           
-          case err: ju.NoSuchElementException =>
+          case error: ju.NoSuchElementException =>
             raise(InvalidDateError(value))(Date(using calendars.gregorian)(2000, MonthName(1), 1))
       
       case cnt =>
