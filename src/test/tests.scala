@@ -19,9 +19,10 @@ package aviation
 import probably.*
 import rudiments.*
 import gossamer.*
+import perforate.*
 import spectacular.*
 
-import unsafeExceptions.canThrowAny
+import errorHandlers.throwUnsafely
 
 object Tests extends Suite(t"Aviation Tests"):
   def run(): Unit =

@@ -70,10 +70,11 @@ object Dates:
     def apply
         (using cal: Calendar)
         (year: cal.Y, month: cal.M, day: cal.D)
-        : Date throws InvalidDateError =
+        (using Raises[InvalidDateError])
+        : Date =
       cal.julianDay(year, month, day)
 
-    given decoder(using CanThrow[InvalidDateError]): Decoder[Date] = parse(_)
+    given decoder(using Raises[InvalidDateError]): Decoder[Date] = parse(_)
     given encoder: Encoder[Date] = _.show
   
     given ordering: Ordering[Date] = Ordering.Int
@@ -82,17 +83,20 @@ object Dates:
       given RomanCalendar = calendars.gregorian
       t"${d.day.toString.show}-${d.month.show}-${d.year.toString.show}"
     
-    def parse(value: Text): Date throws InvalidDateError = value.cut(t"-") match
+    def parse(value: Text)(using Raises[InvalidDateError]): Date = value.cut(t"-") match
       case As[Int](year) :: As[Int](month) :: As[Int](day) :: Nil =>
         try
           import calendars.gregorian
           Date(year, MonthName(month), day)
         catch
-          case err: NumberFormatException     => throw InvalidDateError(value)
-          case err: ju.NoSuchElementException => throw InvalidDateError(value)
+          case err: NumberFormatException     =>
+            raise(InvalidDateError(value))(Date(using calendars.gregorian)(2000, MonthName(1), 1))
+          
+          case err: ju.NoSuchElementException =>
+            raise(InvalidDateError(value))(Date(using calendars.gregorian)(2000, MonthName(1), 1))
       
       case cnt =>
-        throw InvalidDateError(value)
+        raise(InvalidDateError(value))(Date(using calendars.gregorian)(2000, MonthName(1), 1))
 
   extension (date: Date)
     def day(using cal: Calendar): cal.D = cal.getDay(date)
@@ -111,6 +115,7 @@ object Dates:
 
 export Dates.Date
 
+@capability
 trait Calendar:
   type D
   type M
@@ -122,9 +127,10 @@ trait Calendar:
   def getMonth(date: Date): M
   def getDay(date: Date): D
   def zerothDayOfYear(year: Y): Date
-  def julianDay(year: Y, month: M, day: D): Date throws InvalidDateError
+  def julianDay(year: Y, month: M, day: D)(using Raises[InvalidDateError]): Date
   def add(date: Date, period: Timespan): Date
 
+@capability
 abstract class RomanCalendar() extends Calendar:
   type Y = Int
   type M = MonthName
@@ -141,7 +147,8 @@ abstract class RomanCalendar() extends Calendar:
     val monthTotal = getMonth(date).ordinal + period.months
     val month2 = MonthName.fromOrdinal(monthTotal%12)
     val year2 = getYear(date) + period.years + monthTotal/12
-    unsafely(julianDay(year2, month2, getDay(date)) + period.days)
+    
+    safely(julianDay(year2, month2, getDay(date)) + period.days).avow(using Unsafe)
   
   def leapYearsSinceEpoch(year: Int): Int
   def daysInYear(year: Y): Int = if leapYear(year) then 366 else 365
@@ -164,17 +171,18 @@ abstract class RomanCalendar() extends Calendar:
     val month = getMonth(date)
     date.julianDay - zerothDayOfYear(year).julianDay - month.offset(leapYear(year))
   
-  def julianDay(year: Int, month: MonthName, day: Int): Date throws InvalidDateError =
+  def julianDay(year: Int, month: MonthName, day: Int)(using Raises[InvalidDateError]): Date =
     if day < 1 || day > daysInMonth(month, year)
-    then throw InvalidDateError(t"$year-${month.numerical}-$day")
+    then raise(InvalidDateError(t"$year-${month.numerical}-$day")):
+      Date(using calendars.julian)(2000, MonthName(1), 1)
     
     zerothDayOfYear(year) + month.offset(leapYear(year)) + day
 
 class YearMonth[Y <: Nat, M <: MonthName & Singleton](year: Y, month: M):
   import compiletime.ops.int.*
   
-  type CommonDays = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 |
-      19 | 20 | 21 | 22 | 23 | 24 | 25 | 26 | 27 | 28
+  type CommonDays = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19 | 20 |
+      21 | 22 | 23 | 24 | 25 | 26 | 27 | 28
 
   type Days <: Nat = M match
     case Jan.type | Mar.type | May.type | Jul.type | Aug.type | Oct.type | Dec.type =>
@@ -192,7 +200,7 @@ class YearMonth[Y <: Nat, M <: MonthName & Singleton](year: Y, month: M):
       case _ => CommonDays
 
   @targetName("of")
-  inline def -(day: Days): Date = unsafely(calendars.gregorian.julianDay(year, month, day))
+  inline def -(day: Days): Date = safely(calendars.gregorian.julianDay(year, month, day)).avow(using Unsafe)
 
 extension (year: Nat)
   @targetName("of")
@@ -231,11 +239,11 @@ object Timing:
     @targetName("to")
     def ~(that: Instant): Interval = Interval(instant, that)
 
-    def in(using RomanCalendar)(timezone: Timezone): LocalTime =
+    def in(using RomanCalendar)(timezone: Timezone)(using Raises[InvalidDateError]): LocalTime =
       val zonedTime = jt.Instant.ofEpochMilli(instant).nn.atZone(jt.ZoneId.of(timezone.name.s)).nn
       
       val date = (zonedTime.getMonthValue: @unchecked) match
-        case MonthName(month) => unsafely(Date(zonedTime.getYear, month, zonedTime.getDayOfMonth))
+        case MonthName(month) => unsafely(throwErrors(Date(zonedTime.getYear, month, zonedTime.getDayOfMonth)))
       
       val time = ((zonedTime.getHour, zonedTime.getMinute, zonedTime.getSecond): @unchecked) match
         case (Base24(hour), Base60(minute), Base60(second)) => Time(hour, minute, second)
@@ -439,17 +447,16 @@ object Base60:
   def unapply(value: Int): Option[Base60] =
     if value < 0 || value > 59 then None else Some(value.asInstanceOf[Base60])
 
-type Base60 = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 |
-    19 | 20 | 21 | 22 | 23 | 24 | 25 | 26 | 27 | 28 | 29 | 30 | 31 | 32 | 33 | 34 | 35 | 36 | 37 |
-    38 | 39 | 40 | 41 | 42 | 43 | 44 | 45 | 46 | 47 | 48 | 49 | 50 | 51 | 52 | 53 | 54 | 55 | 56 |
-    57 | 58 | 59
+type Base60 = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19 | 20 |
+    21 | 22 | 23 | 24 | 25 | 26 | 27 | 28 | 29 | 30 | 31 | 32 | 33 | 34 | 35 | 36 | 37 | 38 | 39 | 40 | 41 |
+    42 | 43 | 44 | 45 | 46 | 47 | 48 | 49 | 50 | 51 | 52 | 53 | 54 | 55 | 56 | 57 | 58 | 59
 
 object Base24:
   def unapply(value: Int): Option[Base24] =
     if value < 0 || value > 23 then None else Some(value.asInstanceOf[Base24])
 
-type Base24 = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 |
-    19 | 20 | 21 | 22 | 23
+type Base24 = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19 | 20 |
+    21 | 22 | 23
 
 given (using Unapply[Text, Int]): Unapply[Text, Base60] =
   case As[Int](value: Base60) => Some(value)
@@ -501,6 +508,7 @@ object Aviation:
       case _ =>
         fail(msg"expected a literal double value")
 
+@capability
 case class Timezone(name: Text) 
 
 case class InvalidTimezoneError(name: Text)
@@ -516,12 +524,12 @@ case class LocalTime(date: Date, time: Time, timezone: Timezone):
 object Timezone:
   private val ids: Set[Text] = ju.TimeZone.getAvailableIDs.nn.map(_.nn).map(Text(_)).to(Set)
 
-  def apply(name: Text): Timezone throws InvalidTimezoneError =
-    if ids.contains(name) then new Timezone(name) else throw InvalidTimezoneError(name)
+  def apply(name: Text)(using Raises[InvalidTimezoneError]): Timezone =
+    if ids.contains(name) then new Timezone(name) else raise(InvalidTimezoneError(name))(new Timezone(ids.head))
    
   object Tz extends Verifier[Timezone]:
     def verify(name: Text): Timezone =
-      try Timezone(name)
+      try throwErrors(new Timezone(name))
       catch case err: InvalidTimezoneError => throw InterpolationError(err.message)
 
 extension (inline context: StringContext)
