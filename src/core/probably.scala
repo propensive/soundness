@@ -171,17 +171,3 @@ extension [TestType](test: Test[TestType])
           inc2: Inclusion[ReportType, DebugInfo])
       : Unit =
     assert[ReportType](pf.isDefinedAt(_))
-  
-/*case class UnexpectedSuccessError(value: Text)
-extends Error(msg"the expression was expected to throw an exception, but instead returned $value")
-
-transparent inline def capture
-    [ExceptionType <: Exception]
-    (inline fn: => CanThrow[ExceptionType] ?=> Any)
-    : ExceptionType throws UnexpectedSuccessError =
-  try
-    val result = fn(using unsafeExceptions.canThrowAny)
-    throw UnexpectedSuccessError(result.debug)
-  catch
-    case error: ExceptionType          => error
-    case error: UnexpectedSuccessError => throw error*/
