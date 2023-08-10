@@ -17,13 +17,15 @@
 package jacinta
 
 import gossamer.*
+import anticipation.*
+import perforate.*
 import probably.*
 import rudiments.*
 import turbulence.*
 import spectacular.*
 import hieroglyph.*, charEncoders.utf8
 
-import unsafeExceptions.canThrowAny
+import errorHandlers.throwUnsafely
 
 import jsonPrinters.minimal
 
