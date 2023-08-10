@@ -18,8 +18,8 @@ package hieroglyph
 
 import rudiments.*
 import fulminate.*
+import perforate.*
 import anticipation.*
-import digression.*
 import spectacular.*
 
 import scala.collection.mutable as scm
