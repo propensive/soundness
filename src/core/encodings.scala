@@ -149,10 +149,10 @@ trait BadEncodingHandler:
 
 package badEncodingHandlers:
   given strict
-      (using badEncoding: CanThrow[UndecodableCharError])
+      (using badEncoding: Raises[UndecodableCharError])
       : BadEncodingHandler^{badEncoding} =
     new BadEncodingHandler:
-      def handle(pos: Int, encoding: Encoding): Char = throw UndecodableCharError(pos, encoding)
+      def handle(pos: Int, encoding: Encoding): Char = raise(UndecodableCharError(pos, encoding))('?')
       def complete(): Unit = ()
   
   given skip: BadEncodingHandler with
@@ -164,12 +164,12 @@ package badEncodingHandlers:
     def complete(): Unit = ()
   
   given collect
-      (using aggregate: CanThrow[AggregateError[UndecodableCharError]])
+      (using aggregate: Raises[AggregateError[UndecodableCharError]])
       : BadEncodingHandler^{aggregate} =
     new BadEncodingHandler:
       private val mistakes: scm.ArrayBuffer[UndecodableCharError] = scm.ArrayBuffer()
       def handle(pos: Int, encoding: Encoding): Maybe[Char] = Unset
-      def complete(): Unit = if !mistakes.isEmpty then throw AggregateError(mistakes.to(List))
+      def complete(): Unit = if !mistakes.isEmpty then raise(AggregateError(mistakes.to(List)))(())
 
 case class UndecodableCharError(pos: Int, encoding: Encoding)
 extends Error(msg"The byte sequence at position $pos could not be decoded with the encoding $encoding")
