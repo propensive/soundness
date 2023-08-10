@@ -18,6 +18,7 @@ package inimitable
 
 import anticipation.*
 import rudiments.*
+import perforate.*
 import fulminate.*
 
 import scala.quoted.*
@@ -29,11 +30,11 @@ import language.experimental.captureChecking
 case class UuidError(badUuid: Text) extends Error(msg"$badUuid is not a valid UUID")
 
 object Uuid:
-  def parse(text: Text): Uuid throws UuidError =
-    val uuid =
-      try ju.UUID.fromString(text.s).nn catch case _: Exception => throw UuidError(text)
-    
-    Uuid(uuid.getMostSignificantBits, uuid.getLeastSignificantBits)
+  def parse(text: Text)(using Raises[UuidError]): Uuid =
+    try
+      val uuid = ju.UUID.fromString(text.s).nn
+      Uuid(uuid.getMostSignificantBits, uuid.getLeastSignificantBits)
+    catch case _: Exception => raise(UuidError(text))(Uuid(0L, 0L))
 
   def unapply(text: Text): Option[Uuid] =
     try Some:
@@ -59,7 +60,8 @@ case class Uuid(msb: Long, lsb: Long):
 object Inimitable:
   def uuid(expr: Expr[StringContext])(using Quotes): Expr[Uuid] =
     val text = expr.valueOrAbort.parts.head.tt
-    val uuid = try Uuid.parse(text) catch case error: UuidError => fail(error.message)
+    val uuid = failCompilation(Uuid.parse(text))
+    
     '{Uuid(${Expr(uuid.msb)}, ${Expr(uuid.lsb)})}
     
 extension (inline context: StringContext)
