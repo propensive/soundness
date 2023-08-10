@@ -20,7 +20,7 @@ import gossamer.*
 import rudiments.*
 import fulminate.*
 import anticipation.*
-import digression.*
+import perforate.*
 import symbolism.*
 import contextual.*
 import spectacular.*

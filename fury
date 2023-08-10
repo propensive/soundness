@@ -11,7 +11,7 @@ project escapade
   module core
     compiler  scala
     sources   src/core
-    include   gossamer/core anticipation/color iridescence/core
+    include   gossamer/core anticipation/color iridescence/core perforate/core
   
   module test
     compiler  scala
