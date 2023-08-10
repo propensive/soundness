@@ -21,8 +21,8 @@ import gossamer.*
 import hieroglyph.*
 import anticipation.*
 import symbolism.*
-import digression.*
 import spectacular.*
+import perforate.*
 
 import language.experimental.captureChecking
 

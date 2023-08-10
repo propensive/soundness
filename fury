@@ -8,7 +8,7 @@ target escritoire/test
 project escritoire
   module core
     compiler  scala
-    include   gossamer/core
+    include   gossamer/core perforate/core
     sources   src/core
   
   module test
