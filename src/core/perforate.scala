@@ -19,9 +19,11 @@ package perforate
 import fulminate.*
 import rudiments.*
 
-import language.experimental.captureChecking
+import scala.quoted.*
 
 import java.util.concurrent.atomic as juca
+
+import language.experimental.captureChecking
 
 @capability
 trait Raises[-ErrorType <: Error]:
@@ -41,6 +43,11 @@ trait ErrorHandler[SuccessType]:
 class RaisesThrow[ErrorType <: Error, SuccessType]()(using CanThrow[ErrorType]) extends Raises[ErrorType]:
   def record(error: ErrorType): Unit = throw error
   def abort(error: ErrorType): Nothing = throw error
+
+@capability
+class RaisesCompileFailure[ErrorType <: Error, SuccessType]()(using Quotes) extends Raises[ErrorType]:
+  def record(error: ErrorType): Unit = fail(error.message)
+  def abort(error: ErrorType): Nothing = fail(error.message)
 
 @capability
 class RaisesAggregate
@@ -84,6 +91,19 @@ extends ErrorHandler[SuccessType]:
   
   def finish(value: Result): Return = value match
     case Left(error)  => throw error
+    case Right(value) => value
+
+class FailCompilation[ErrorType <: Error, SuccessType]()(using Quotes) extends ErrorHandler[SuccessType]:
+  
+  type Result = Either[ErrorType, SuccessType]
+  type Return = SuccessType
+  type Raiser = RaisesCompileFailure[ErrorType, SuccessType]
+ 
+  def raiser(label: boundary.Label[Result]): Raiser = RaisesCompileFailure()
+  def wrap(block: SuccessType): Result = Right(block)
+  
+  def finish(value: Result): Return = value match
+    case Left(error)  => fail(error.message)
     case Right(value) => value
 
 class Validate
@@ -185,6 +205,15 @@ def capture
     : ErrorType =
   
   handle(Capture[ErrorType, SuccessType])(block)
+
+def failCompilation
+    [ErrorType <: Error]
+    (using Quotes)
+    [SuccessType]
+    (block: RaisesCompileFailure[ErrorType, SuccessType] ?=> SuccessType)
+    : SuccessType =
+
+  handle(FailCompilation[ErrorType, SuccessType])(block)
 
 def handle
     [SuccessType, HandlerType <: ErrorHandler[SuccessType]]
