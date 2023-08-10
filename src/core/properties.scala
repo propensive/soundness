@@ -18,6 +18,7 @@ package ambience
 
 import anticipation.*
 import spectacular.*
+import perforate.*
 import rudiments.*
 import fulminate.*
 import gossamer.*
@@ -36,9 +37,9 @@ object Properties extends Dynamic:
       [PropertyType]
       (property: Text)
       (using properties: SystemProperties, reader: SystemPropertyReader[String, PropertyType],
-          systemProperty: CanThrow[SystemPropertyError])
+          systemProperty: Raises[SystemPropertyError])
       : PropertyType^{properties, reader, systemProperty} =
-    properties(property).mm(reader.read).or(throw SystemPropertyError(property))
+    properties(property).mm(reader.read).or(abort(SystemPropertyError(property)))
     
   def selectDynamic(key: String): SystemProperty[key.type] = SystemProperty[key.type](key)
 
@@ -55,13 +56,13 @@ object SystemPropertyReader:
   
   given javaLibraryPath
       [PathType: GenericPathMaker]
-      (using systemProperties: SystemProperties, systemProperty: CanThrow[SystemPropertyError])
+      (using systemProperties: SystemProperties, systemProperty: Raises[SystemPropertyError])
       : SystemPropertyReader["java.library.path", List[PathType]] =
     _.cut(systemProperties(t"path.separator").or(t":")).map(GenericPath(_))
 
   given javaClassPath
       [PathType: GenericPathMaker]
-      (using systemProperties: SystemProperties, systemProperty: CanThrow[SystemPropertyError])
+      (using systemProperties: SystemProperties, systemProperty: Raises[SystemPropertyError])
       : SystemPropertyReader["java.class.path", List[PathType]] =
     _.cut(systemProperties(t"path.separator").or(t":")).map(GenericPath(_))
 
@@ -70,7 +71,7 @@ object SystemPropertyReader:
   
   given javaExtDirs
       [PathType: GenericPathMaker]
-      (using systemProperties: SystemProperties, systemProperty: CanThrow[SystemPropertyError])
+      (using systemProperties: SystemProperties, systemProperty: Raises[SystemPropertyError])
       : SystemPropertyReader["java.ext.dirs", List[PathType]] =
     _.cut(systemProperties(t"path.separator").or(t":")).map(GenericPath(_))
 
@@ -105,18 +106,18 @@ case class SystemProperty[NameType <: String](property: String) extends Dynamic:
       (key: String)()
       (using properties: SystemProperties,
           reader: SystemPropertyReader[NameType+"."+key.type, PropertyType],
-          systemProperty: CanThrow[SystemPropertyError])
+          systemProperty: Raises[SystemPropertyError])
       : PropertyType^{properties, reader, systemProperty} =
     properties((property+"."+key).tt).mm(reader.read(_)).or:
-      throw SystemPropertyError((property+"."+key).tt)
+      abort(SystemPropertyError((property+"."+key).tt))
   
   inline def apply
       [PropertyType]
       ()(using properties: SystemProperties, reader: SystemPropertyReader[NameType, PropertyType],
-          systemProperty: CanThrow[SystemPropertyError])
+          systemProperty: Raises[SystemPropertyError])
       : PropertyType^{properties, reader, systemProperty} =
     properties(valueOf[NameType].tt).mm(reader.read(_)).or:
-      throw SystemPropertyError(valueOf[NameType].tt)
+      abort(SystemPropertyError(valueOf[NameType].tt))
 
 case class SystemPropertyError(property: Text)
 extends Error(msg"the system property $property was not defined")

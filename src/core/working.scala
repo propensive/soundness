@@ -18,7 +18,8 @@ package rudiments
 
 import ambience.*
 import anticipation.*
+import perforate.*
 
 package workingDirectory:
-  given jvm(using CanThrow[SystemPropertyError], SystemProperties): WorkingDirectory =
+  given jvm(using Raises[SystemPropertyError], SystemProperties): WorkingDirectory =
     WorkingDirectory(Properties.user.dir[Text]())

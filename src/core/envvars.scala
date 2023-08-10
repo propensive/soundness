@@ -19,6 +19,7 @@ package ambience
 import anticipation.*
 import spectacular.*
 import rudiments.*
+import perforate.*
 import fulminate.*
 import gossamer.*
 
@@ -34,19 +35,19 @@ object Environment extends Dynamic:
       [VariableType]
       (variable: Text)
       (using environment: Environment, reader: EnvironmentVariable[Label, VariableType],
-          environmentError: CanThrow[EnvironmentError])
+          environmentError: Raises[EnvironmentError])
       : VariableType^{environment, reader, environmentError} =
-    environment(variable).mm(reader.read).or(throw EnvironmentError(variable))
+    environment(variable).mm(reader.read).or(raise(EnvironmentError(variable))(reader.read(Text(""))))
     
   inline def selectDynamic
       [VariableType]
       (key: String)
       (using environment: Environment,
           reader: EnvironmentVariable[key.type, VariableType],
-          environmentError: CanThrow[EnvironmentError])
+          environmentError: Raises[EnvironmentError])
       : VariableType^{environment, reader, environmentError} =
     environment(reader.defaultName).mm(reader.read(_)).or:
-      throw EnvironmentError(reader.defaultName)
+      raise(EnvironmentError(reader.defaultName))(reader.read(Text("")))
   
 @capability
 trait EnvironmentVariable[AliasType <: Label, VariableType]:
