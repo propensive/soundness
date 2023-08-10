@@ -19,6 +19,7 @@ package merino
 
 import annotation.*
 import rudiments.*
+import perforate.*
 import fulminate.*
 import turbulence.*
 import scala.collection.mutable.ArrayBuffer
@@ -167,7 +168,7 @@ object JsonAst:
   def parse
       [SourceType]
       (source: SourceType)
-      (using readable: Readable[SourceType, Bytes], jsonParse: CanThrow[JsonParseError])
+      (using readable: Readable[SourceType, Bytes], jsonParse: Raises[JsonParseError])
       : JsonAst^{readable, jsonParse} =
 
     val stream = readable.read(source)
@@ -175,7 +176,7 @@ object JsonAst:
     var colStart: Int = 0
     
     try
-      if stream.isEmpty then throw JsonParseError(0, 0, Issue.EmptyInput)
+      if stream.isEmpty then abort(JsonParseError(0, 0, Issue.EmptyInput))
       val block: Bytes = stream.head
       val penultimate = block.length - 1
       var cur: Int = 0
@@ -253,14 +254,14 @@ object JsonAst:
               (ch == Newline || ch == Tab || ch == Return)
         do next()
 
-      def abort(issue: Issue): Nothing = throw JsonParseError(line, cur - colStart, issue)
+      def error(issue: Issue): Nothing = abort(JsonParseError(line, cur - colStart, issue))
 
       def parseValue(minus: Boolean = false): JsonAst =
         val ch = current
         if (ch & bin"1111 1000") == Num0 || (ch & bin"1111 1110") == bin"0011 1000" then
           next()
           parseNumber(ch & bin"0000 1111", minus)
-        else if minus then abort(Issue.ExpectedDigit(ch.toChar))
+        else if minus then error(Issue.ExpectedDigit(ch.toChar))
         else (current: @switch) match
           case Quote       => next(); parseString()
           case Minus       => next(); parseValue(true)
@@ -269,7 +270,7 @@ object JsonAst:
           case LowerN      => next(); parseNull()
           case LowerT      => next(); parseTrue()
           case OpenBrace   => next(); parseObject()
-          case ch          => abort(Issue.ExpectedSomeValue(ch.toChar))
+          case ch          => error(Issue.ExpectedSomeValue(ch.toChar))
 
       def parseObject(): (IArray[String], IArray[Any]) =
         val keys: ArrayBuffer[String] = getStringArrayBuffer()
@@ -299,13 +300,13 @@ object JsonAst:
                       keys += str
                       values += value
                       continue = false
-                    case ch  => abort(Issue.UnexpectedChar(ch.toChar))
-                case ch => abort(Issue.ExpectedColon(ch.toChar))
+                    case ch  => error(Issue.UnexpectedChar(ch.toChar))
+                case ch => error(Issue.ExpectedColon(ch.toChar))
             case CloseBrace =>
-              if !keys.isEmpty then abort(Issue.ExpectedSomeValue('}'))
+              if !keys.isEmpty then error(Issue.ExpectedSomeValue('}'))
               next()
               continue = false
-            case ch => abort(Issue.ExpectedString(ch.toChar))
+            case ch => error(Issue.ExpectedString(ch.toChar))
         
         val result = (keys.toArray, values.toArray).asInstanceOf[(IArray[String], IArray[Any])]
         
@@ -320,7 +321,7 @@ object JsonAst:
           skip()
           current match
             case CloseBracket =>
-              if !arrayItems.isEmpty then abort(Issue.ExpectedSomeValue(']'))
+              if !arrayItems.isEmpty then error(Issue.ExpectedSomeValue(']'))
               continue = false
             case ch =>
               val value = parseValue()
@@ -328,7 +329,7 @@ object JsonAst:
               current match
                 case Comma        => arrayItems += value
                 case CloseBracket => arrayItems += value; continue = false
-                case ch           => abort(Issue.ExpectedSomeValue(ch.toChar))
+                case ch           => error(Issue.ExpectedSomeValue(ch.toChar))
           
           next()
         
@@ -349,7 +350,7 @@ object JsonAst:
               size = cur - start - difference
             
             case Tab | Newline | Return =>
-              abort(Issue.InvalidWhitespace)
+              error(Issue.InvalidWhitespace)
 
             case Backslash =>
               getNext() match
@@ -399,12 +400,12 @@ object JsonAst:
                 case LowerR    => appendChar('\r')
                 case LowerT    => appendChar('\t')
                 case LowerU    => appendChar(parseUnicode())
-                case ch        => abort(Issue.IncorrectEscape(ch.toChar))
+                case ch        => error(Issue.IncorrectEscape(ch.toChar))
               next()
 
             case ch =>
               ((ch >> 5): @switch) match
-                case 0 => abort(Issue.NotEscaped(ch.toChar))
+                case 0 => error(Issue.NotEscaped(ch.toChar))
                 case 1 | 2 | 3 | 4 | 5 => appendChar(ch.toChar)
                 case _ =>
                   if (ch & bin"1110 0000") == bin"1100 0000" then
@@ -432,7 +433,7 @@ object JsonAst:
         if ch <= Num9 && ch >= Num0 then ch - Num0
         else if ch <= UpperF && ch >= UpperA then ch - UpperA
         else if ch <= LowerF && ch >= LowerA then ch - LowerA
-        else abort(Issue.ExpectedHexDigit(ch.toChar))
+        else error(Issue.ExpectedHexDigit(ch.toChar))
 
       def parseFalse(): false =
         var x: Long = current << 8
@@ -441,7 +442,7 @@ object JsonAst:
         x |= getNext()
         x <<= 8
         x |= getNext()
-        if x != 1634497381L then abort(Issue.ExpectedFalse)
+        if x != 1634497381L then error(Issue.ExpectedFalse)
         next()
         false
       
@@ -450,7 +451,7 @@ object JsonAst:
         x |= getNext()
         x <<= 8
         x |= getNext()
-        if x != 7501157L then abort(Issue.ExpectedTrue)
+        if x != 7501157L then error(Issue.ExpectedTrue)
         next()
         true
       
@@ -459,7 +460,7 @@ object JsonAst:
         x |= getNext()
         x <<= 8
         x |= getNext()
-        if x != 7695468L then abort(Issue.ExpectedNull)
+        if x != 7695468L then error(Issue.ExpectedNull)
         next()
         null
 
@@ -493,12 +494,12 @@ object JsonAst:
             if ch <= Num9 && ch >= Num0 then digit(decimalPosition != 0, ch)
             else (ch: @switch) match
               case Period =>
-                if decimalPosition != 0 then abort(Issue.MultipleDecimalPoints)
+                if decimalPosition != 0 then error(Issue.MultipleDecimalPoints)
                 decimalPosition = cur
                 next()
                 ch = current
                 if ch <= Num9 && ch >= Num0 then digit(decimalPosition != 0, ch)
-                else abort(Issue.ExpectedDigit(ch.toChar))
+                else error(Issue.ExpectedDigit(ch.toChar))
                 
                 while
                   ch = current
@@ -527,7 +528,7 @@ object JsonAst:
                   case _ =>
                     ()
                 if ch <= Num9 && ch >= Num0 then exponent = (ch & 15)
-                else abort(Issue.ExpectedDigit(ch.toChar))
+                else error(Issue.ExpectedDigit(ch.toChar))
                 
                 if minus then exponent *= -1
                 next()
@@ -545,7 +546,7 @@ object JsonAst:
                   colStart = cur
                   line += 1
                 if decimalPosition != 0 && scale == 0 then scale = decimalPosition - cur + 1
-                else if leadingZero && mantissa != 0 then abort(Issue.NumberHasLeadingZero)
+                else if leadingZero && mantissa != 0 then error(Issue.NumberHasLeadingZero)
                 
                 if negative then mantissa *= -1
                 val exp = exponent + scale
@@ -556,7 +557,7 @@ object JsonAst:
                 continue = false
               
               case ch =>
-                abort(Issue.UnexpectedChar(ch.toChar))
+                error(Issue.UnexpectedChar(ch.toChar))
             end if
           end while
           number
@@ -568,7 +569,7 @@ object JsonAst:
               next()
               val mantissa2 = if negative then -mantissa else mantissa
               mantissa2.toDouble*math.pow(10.0, exponent.toDouble + scale)
-            else abort(Issue.PrematureEnd)
+            else error(Issue.PrematureEnd)
       
       def parseLargeNumber(hasDecimalPoint: Boolean): Unit =
         var decimalPoint: Boolean = hasDecimalPoint
@@ -583,7 +584,7 @@ object JsonAst:
             next()
           else (ch: @switch) match
             case Period =>
-              if decimalPoint then abort(Issue.MultipleDecimalPoints)
+              if decimalPoint then error(Issue.MultipleDecimalPoints)
               numberText.append('.')
               decimalPoint = true
               next()
@@ -618,7 +619,7 @@ object JsonAst:
               continue = false
             
             case ch =>
-              abort(Issue.UnexpectedChar(ch.toChar))
+              error(Issue.UnexpectedChar(ch.toChar))
       
       skip()
       val result = parseValue()
@@ -629,7 +630,7 @@ object JsonAst:
             colStart = cur
             line += 1
           case Tab | Return | Space => ()
-          case other                => abort(Issue.SpuriousContent(other.toChar))
+          case other                => error(Issue.SpuriousContent(other.toChar))
         
         next()
 
@@ -637,4 +638,4 @@ object JsonAst:
 
     catch
       case err: ArrayIndexOutOfBoundsException =>
-        throw JsonParseError(line, stream.head.length, Issue.PrematureEnd)
+        abort(JsonParseError(line, stream.head.length, Issue.PrematureEnd))
