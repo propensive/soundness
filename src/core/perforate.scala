@@ -29,11 +29,12 @@ import language.experimental.captureChecking
 trait Raises[-ErrorType <: Error]:
   def record(error: ErrorType): Unit
   def abort(error: ErrorType): Nothing
+  private[perforate] def finish(): Unit = ()
 
 trait ErrorHandler[SuccessType]:
   type Result
   type Return
-  type Raiser
+  type Raiser <: Raises[?]
 
   def raiser(label: boundary.Label[Result]): Raiser
   def wrap(value: SuccessType): Result
@@ -58,7 +59,12 @@ extends Raises[ErrorType]:
   private val collected: juca.AtomicReference[List[ErrorType]] = juca.AtomicReference(Nil)
   
   def record(error: ErrorType): Unit = collected.getAndUpdate(error :: _.nn)
-  def abort(error: ErrorType): Nothing = boundary.break(Left(AggregateError(error :: collected.get().nn)))(using label)
+  
+  def abort(error: ErrorType): Nothing =
+    boundary.break(Left(AggregateError(error :: collected.get().nn)))(using label)
+  
+  private[perforate] override def finish(): Unit =
+    if !collected.get().nn.isEmpty then boundary.break(Left(AggregateError(collected.get().nn)))(using label)
 
 @capability
 class RaisesErrorResult
@@ -220,7 +226,8 @@ def handle
     : handler.Return =
   handler.finish:
     boundary: label ?=>
-      handler.wrap(block(using handler.raiser(label)))
+      val raiser = handler.raiser(label)
+      handler.wrap(block(using raiser)).tap(raiser.finish().waive)
 
 def unsafely[ResultType](block: CanThrow[Exception] ?=> ResultType): ResultType =
   block(using unsafeExceptions.canThrowAny)
