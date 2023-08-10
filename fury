@@ -11,4 +11,4 @@ project turbulence
   module core
     compiler  scala
     sources   src/core
-    include   hieroglyph/core parasite/core diuretic/core
+    include   hieroglyph/core parasite/core diuretic/core perforate/core
