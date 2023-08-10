@@ -190,7 +190,7 @@ object Reachable:
       (using reachable: Reachable[PathType, NameType, RootType],
           rootParser: RootParser[PathType, RootType],
           creator: PathCreator[PathType, NameType, RootType])
-      (using path: ErrorHandler[PathError])
+      (using path: Raises[PathError])
       : PathType =
     val rootRest: Maybe[(RootType, Text)] = rootParser.parse(text)
     if rootRest.unset
@@ -248,7 +248,7 @@ object Followable:
 
   inline def decoder
       [LinkType <: Matchable]
-      (using path: ErrorHandler[PathError])
+      (using path: Raises[PathError])
       [NameType <: Label, ParentRefType <: Label, SelfRefType <: Label]
       (using followable: Followable[LinkType, NameType, ParentRefType, SelfRefType])
       (using creator: PathCreator[LinkType, NameType, Int]): Decoder[LinkType] =
@@ -327,7 +327,7 @@ extension
 
   // FIXME: This should be called `/`, but it causes a spurious compiler error. 
   @targetName("child2")
-  inline infix def /-[PathType2 <: PathType](name: Text)(using pathError: ErrorHandler[PathError]): PathType =
+  inline infix def /-[PathType2 <: PathType](name: Text)(using pathError: Raises[PathError]): PathType =
     pathlike.child(path, PathName(name))
   
   def render: Text = pathlike.render(path)
@@ -341,7 +341,7 @@ extension
       [LinkType <: Matchable]
       (inline link: LinkType)
       (using followable: Followable[LinkType, NameType, ?, ?])
-      (using pathHandler: ErrorHandler[PathError])
+      (using pathHandler: Raises[PathError])
       : PathType =
     if followable.ascent(link) > pathlike.descent(path).length
     then raise(PathError(PathError.Reason.ParentOfRoot))(path)

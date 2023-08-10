@@ -47,7 +47,7 @@ object Serpentine:
   object PathName:
     given [NameType <: Label]: Show[PathName[NameType]] = Text(_)
 
-    inline def apply[NameType <: Label](text: Text)(using errorHandler: ErrorHandler[PathError]): PathName[NameType] =
+    inline def apply[NameType <: Label](text: Text)(using errorHandler: Raises[PathError]): PathName[NameType] =
       ${SerpentineMacro.runtimeParse[NameType]('text, 'errorHandler)}
     
     def unsafe[NameType <: Label](text: Text): PathName[NameType] = text.s: PathName[NameType]
@@ -55,7 +55,7 @@ object Serpentine:
   extension [NameType <: Label](pathName: PathName[NameType])
     def render: Text = Text(pathName)
     def widen[NameType2 <: NameType]: PathName[NameType2] = pathName
-    inline def narrow[NameType2 >: NameType <: Label](using ErrorHandler[PathError]): PathName[NameType2] = PathName(render)
+    inline def narrow[NameType2 >: NameType <: Label](using Raises[PathError]): PathName[NameType2] = PathName(render)
   
   @targetName("Root")
   object `%`:
@@ -118,7 +118,7 @@ object Serpentine:
         (using pathlike: Pathlike[PathType, NameType, AscentType])
         (name: Text)
         (using creator: PathCreator[PathType, NameType, AscentType])
-        (using path: ErrorHandler[PathError])
+        (using path: Raises[PathError])
         : PathType =
       mainRoot.empty() / PathName(name)
 

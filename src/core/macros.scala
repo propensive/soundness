@@ -69,7 +69,7 @@ object SerpentineMacro:
 
   def runtimeParse
       [NameType <: Label: Type]
-      (text: Expr[Text], errorHandler: Expr[ErrorHandler[PathError]])(using Quotes)
+      (text: Expr[Text], errorHandler: Expr[Raises[PathError]])(using Quotes)
       : Expr[PathName[NameType]] =
     import quotes.reflect.*
 

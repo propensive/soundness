@@ -28,14 +28,14 @@ import language.experimental.captureChecking
 object Root
 
 object SimplePath:
-  inline given decoder(using ErrorHandler[PathError]): Decoder[SimplePath] = new Decoder[SimplePath]:
+  inline given decoder(using Raises[PathError]): Decoder[SimplePath] = new Decoder[SimplePath]:
     def decode(text: Text): SimplePath = Reachable.decode[SimplePath](text)
 
-  inline given add(using path: ErrorHandler[PathError]): Operator["+", SimplePath, SimpleLink] with
+  inline given add(using path: Raises[PathError]): Operator["+", SimplePath, SimpleLink] with
     type Result = SimplePath
     def apply(left: SimplePath, right: SimpleLink): SimplePath = left.append(right)
   
-  inline def parse(text: Text)(using path: ErrorHandler[PathError]): SimplePath^{path} =
+  inline def parse(text: Text)(using path: Raises[PathError]): SimplePath^{path} =
     text.decodeAs[SimplePath]
   
   given show: Show[SimplePath] = _.render
@@ -58,12 +58,12 @@ case class SimplePath(descent: List[PathName[".*\\/.*"]])
 extends PathEquality(using SimplePath.reachable)
 
 object SimpleLink:
-  inline given decoder(using ErrorHandler[PathError]): Decoder[SimpleLink] =
+  inline given decoder(using Raises[PathError]): Decoder[SimpleLink] =
     Followable.decoder[SimpleLink]
   
   given show: Show[SimpleLink] = _.render
   
-  inline def parse(text: Text)(using path: ErrorHandler[PathError]): SimpleLink^{path} =
+  inline def parse(text: Text)(using path: Raises[PathError]): SimpleLink^{path} =
     text.decodeAs[SimpleLink]
 
   given pathCreator: PathCreator[SimpleLink, ".*\\/.*", Int] = SimpleLink(_, _)
