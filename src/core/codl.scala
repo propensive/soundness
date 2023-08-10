@@ -21,7 +21,7 @@ import eucalyptus.*
 import rudiments.*
 import anticipation.*
 import spectacular.*, booleanStyles.trueFalse
-import digression.*
+import perforate.*
 import contextual.*
 import turbulence.*
 

@@ -21,7 +21,7 @@ import gossamer.*
 import anticipation.*
 import kaleidoscope.*
 import spectacular.*
-import digression.*
+import perforate.*
 
 import language.experimental.captureChecking
 

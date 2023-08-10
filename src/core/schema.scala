@@ -17,7 +17,7 @@
 package cellulose
 
 import rudiments.*
-import digression.*
+import perforate.*
 import gossamer.*
 import anticipation.*
 import turbulence.*
