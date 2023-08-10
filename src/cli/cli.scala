@@ -19,6 +19,7 @@ package probably
 import digression.*
 import escapade.*
 import turbulence.*
+import perforate.*
 import anticipation.*
 import ambience.*, environments.jvm
 import hieroglyph.*, textWidthCalculation.uniform

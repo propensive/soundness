@@ -20,7 +20,6 @@ import eucalyptus.*
 import gossamer.*
 import anticipation.*
 import rudiments.*
-import fulminate.*
 import digression.*
 import spectacular.*
 import hieroglyph.*
@@ -173,7 +172,7 @@ extension [TestType](test: Test[TestType])
       : Unit =
     assert[ReportType](pf.isDefinedAt(_))
   
-case class UnexpectedSuccessError(value: Text)
+/*case class UnexpectedSuccessError(value: Text)
 extends Error(msg"the expression was expected to throw an exception, but instead returned $value")
 
 transparent inline def capture
@@ -185,4 +184,4 @@ transparent inline def capture
     throw UnexpectedSuccessError(result.debug)
   catch
     case error: ExceptionType          => error
-    case error: UnexpectedSuccessError => throw error
+    case error: UnexpectedSuccessError => throw error*/
