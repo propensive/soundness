@@ -182,7 +182,7 @@ def throwErrors
     (using CanThrow[ErrorType])
     [SuccessType]
     (block: RaisesThrow[ErrorType, SuccessType] ?=> SuccessType)
-    : Maybe[SuccessType] =
+    : SuccessType =
   
   handle(ThrowErrors[ErrorType, SuccessType])(block)
 
