@@ -241,7 +241,7 @@ case class RequestParam[T](key: Text)(using ParamReader[T]):
 // object Split:
 //   def unapply(req: Request): (Request, Request) = (req, req)
 
-case class ActiveServer(port: Int, task: Task[Unit], cancel: () => Unit)
+case class ActiveServer(port: Int, async: Async[Unit], cancel: () => Unit)
 
 case class HttpServer(port: Int) extends RequestHandler:
   def listen(handler: Request ?=> Response[?])(using Log, Monitor): ActiveServer =
@@ -259,12 +259,12 @@ case class HttpServer(port: Int) extends RequestHandler:
     
     val cancel: Promise[Unit] = Promise[Unit]()
     
-    val task = Task(t"scintillate"):
+    val async = Async:
       val server = startServer()
-      try cancel.await() catch case err: CancelError => ()
+      try throwErrors(cancel.await()) catch case err: CancelError => ()
       server.stop(1)
     
-    ActiveServer(port, task, () => safely(cancel.supply(())))
+    ActiveServer(port, async, () => safely(cancel.fulfill(())))
     
   
   private def streamBody(exchange: HttpExchange): HttpBody.Chunked =
