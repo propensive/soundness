@@ -214,10 +214,11 @@ private[nonagenarian] inline def git(using command: GitCommand): GitCommand = co
 
 object Git:
   def progress(process: Process[?, ?]): LazyList[Progress] =
-    try process.stderr().map(_.uString).map(_.trim).collect:
-      case r"Receiving objects: *${As[Int](pc)}([0-9]*)\%.*" => Progress.Receiving(pc/100.0)
-      case r"Resolving deltas: *${As[Int](pc)}([0-9]+)\%.*"  => Progress.Resolving(pc/100.0)
-    catch case error: StreamCutError => LazyList()
+    safely[StreamCutError]:
+      process.stderr().map(_.uString).map(_.trim).collect:
+        case r"Receiving objects: *${As[Int](pc)}([0-9]*)\%.*" => Progress.Receiving(pc/100.0)
+        case r"Resolving deltas: *${As[Int](pc)}([0-9]+)\%.*"  => Progress.Resolving(pc/100.0)
+    .or(LazyList())
 
   def init
       [PathType: GenericPathReader]
