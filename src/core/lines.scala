@@ -35,6 +35,8 @@ package lineSeparation:
     case _: String => adaptiveLinefeed
   
 object LineSeparation:
+  given default(using Quickstart): LineSeparation = lineSeparation.adaptiveLinefeed
+
   inline def readByte(inline read: => Byte, next: => Unit, inline mkNewline: => Unit, inline put: Byte => Unit)
                      (lineSeparators: LineSeparation): Unit =
     val action: Action = read match

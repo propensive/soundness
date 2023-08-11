@@ -218,7 +218,10 @@ object Io:
       : /*{io, printable, lines}*/ Unit =
     io.putErrText(printable.print(text))
     io.putErrText("\n".tt)
-  
+
+object Stdio:
+  given default(using Quickstart)(using CanThrow[StreamCutError]): Stdio = basicIo.jvm
+
 @capability
 trait Stdio:
   def putErrBytes(bytes: Bytes): Unit
