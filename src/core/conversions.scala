@@ -17,20 +17,13 @@
 package rudiments
 
 import anticipation.*
-import fulminate.*
 
 import language.experimental.captureChecking
-
-case class IncompatibleTypeError() extends Error(msg"the value is not compatible")
 
 trait DecimalConverter:
   def decimalize(value: Double): Text
 
 extension (value: Any)
-  def as[ResultType](using Unapply[value.type, ResultType])
-                           : ResultType throws IncompatibleTypeError =
-    summon[Unapply[value.type, ResultType]].unapply(value).getOrElse(throw IncompatibleTypeError())
-  
   def as[ResultType](using Irrefutable[value.type, ResultType]): ResultType =
     summon[Irrefutable[value.type, ResultType]].unapply(value)
 
