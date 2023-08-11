@@ -89,7 +89,7 @@ object Media:
 
     def complete(value: Text): MediaType =
       val parsed = try throwErrors(Media.parse(value)) catch
-        case err: InvalidMediaTypeError =>
+        case err: MediaTypeError =>
           throw InterpolationError(msg"${err.value} is not a valid media type; ${err.nature.message}")
 
       parsed.subtype match
@@ -106,15 +106,15 @@ object Media:
       
       parsed
 
-  def parse(string: Text)(using Raises[InvalidMediaTypeError]): MediaType =
+  def parse(string: Text)(using Raises[MediaTypeError]): MediaType =
     def parseParams(ps: List[Text]): List[(Text, Text)] =
       if ps == List("")
-      then raise(InvalidMediaTypeError(string, InvalidMediaTypeError.Nature.MissingParam))(())
+      then raise(MediaTypeError(string, MediaTypeError.Nature.MissingParam))(())
       ps.map(_.cut(t"=", 2).to(List)).map { p => p(0).show -> p(1).show }
     
     def parseSuffixes(suffixes: List[Text]): List[Suffix] = suffixes.map(_.lower.capitalize).flatMap: suffix =>
       try List(Suffix.valueOf(suffix.s)) catch IllegalArgumentException =>
-        raise(InvalidMediaTypeError(string, InvalidMediaTypeError.Nature.InvalidSuffix(suffix)))(Nil)
+        raise(MediaTypeError(string, MediaTypeError.Nature.InvalidSuffix(suffix)))(Nil)
 
     def parseInit(str: Text): (Subtype, List[Suffix]) =
       val xs: List[Text] = str.cut(t"+")
@@ -126,18 +126,18 @@ object Media:
       case List(group, subtype) => parseGroup(group) *: parseInit(subtype)
       
       case _ =>
-        raise(InvalidMediaTypeError(string, InvalidMediaTypeError.Nature.NotOneSlash)):
+        raise(MediaTypeError(string, MediaTypeError.Nature.NotOneSlash)):
           Group.Text *: parseInit(string)
 
     def parseGroup(str: Text): Group =
       try Group.valueOf(str.lower.capitalize.s)
       catch IllegalArgumentException =>
-        raise(InvalidMediaTypeError(string, InvalidMediaTypeError.Nature.InvalidGroup))(Group.Text)
+        raise(MediaTypeError(string, MediaTypeError.Nature.InvalidGroup))(Group.Text)
 
     def parseSubtype(str: Text): Subtype =
       def notAllowed(char: Char): Boolean = char.isWhitespace || char.isControl || specials.contains(char)
       str.chars.find(notAllowed(_)).map: char =>
-        raise(InvalidMediaTypeError(string, InvalidMediaTypeError.Nature.InvalidChar(char))):
+        raise(MediaTypeError(string, MediaTypeError.Nature.InvalidChar(char))):
           Subtype.X(str.chars.filter(!notAllowed(_)).text)
       .getOrElse:
         if str.starts(t"vnd.") then Subtype.Vendor(str.drop(4))
@@ -155,7 +155,7 @@ object Media:
   final private val specials: Set[Char] =
     Set('(', ')', '<', '>', '@', ',', ';', ':', '\\', '"', '/', '[', ']', '?', '=', '+')
 
-object InvalidMediaTypeError:
+object MediaTypeError:
   enum Nature:
     case NotOneSlash, MissingParam, InvalidGroup
     case InvalidChar(char: Char)
@@ -169,7 +169,7 @@ object InvalidMediaTypeError:
       case InvalidChar(c)   => txt"the character '$c' is not allowed"
       case InvalidSuffix(s) => txt"the suffix '$s' is not recognized"
 
-case class InvalidMediaTypeError(value: Text, nature: InvalidMediaTypeError.Nature)
+case class MediaTypeError(value: Text, nature: MediaTypeError.Nature)
 extends Error(msg"the value $value is not a valid media type; ${nature.message}")
 
 case class MediaType(group: Media.Group, subtype: Media.Subtype, suffixes: List[Media.Suffix] = Nil,
