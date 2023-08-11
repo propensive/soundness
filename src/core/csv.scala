@@ -19,6 +19,7 @@ package caesura
 import wisteria.*
 import rudiments.*
 import gossamer.*
+import fulminate.*
 import turbulence.*
 import spectacular.*
 import hieroglyph.*
@@ -77,9 +78,7 @@ object Row:
   given Show[Row] = _.elems.join(t",")
 
 case class Row(elems: Text*):
-  def as[T: ColumnParser]: T throws IncompatibleTypeError =
-    summon[ColumnParser[T]].decode(this).getOrElse:
-      throw IncompatibleTypeError()
+  def as[T: ColumnParser]: T = summon[ColumnParser[T]].decode(this)
 
 object Csv extends RowFormat:
   type Type = Csv
@@ -87,7 +86,7 @@ object Csv extends RowFormat:
   given Show[Csv] = _.rows.map(serialize).join(t"\n")
 
   given (using CharEncoder): GenericHttpResponseStream[Csv] with
-    def mediaType: String = "text/csv"
+    def mediaType: Text = "text/csv".tt
     def content(value: Csv): LazyList[IArray[Byte]] =
       LazyList(value.rows.map(Csv.serialize(_)).join(t"\n").bytes)
 
@@ -97,8 +96,8 @@ object Csv extends RowFormat:
   given (using BooleanStyle): Writer[Boolean] = b => Row(b.show)
   given Writer[Byte] = b => Row(b.show)
   given Writer[Short] = s => Row(s.show)
-  given Writer[Float] = f => Row(f.toString.show)
-  given Writer[Double] = d => Row(d.toString.show)
+  given Writer[Float] = f => Row(f.toString.tt)
+  given Writer[Double] = d => Row(d.toString.tt)
   given Writer[Char] = c => Row(c.show)
 
   object Writer extends ProductDerivation[Writer]:
@@ -120,10 +119,10 @@ extension [T](value: Seq[T])
   def tsv(using Csv.Writer[T]): Tsv = Tsv(value.to(List).map(summon[Csv.Writer[T]].write(_)))
 
 case class Csv(rows: List[Row]):
-  def as[T: ColumnParser]: List[T] throws IncompatibleTypeError = rows.map(_.as[T])
+  def as[T: ColumnParser]: List[T] = rows.map(_.as[T])
 
 case class Tsv(rows: List[Row]):
-  def as[T: ColumnParser]: List[T] throws IncompatibleTypeError = rows.map(_.as[T])
+  def as[T: ColumnParser]: List[T] = rows.map(_.as[T])
 
 object Tsv extends RowFormat:
   type Type = Tsv
@@ -133,22 +132,21 @@ object Tsv extends RowFormat:
   given Show[Tsv] = _.rows.map(serialize).join(t"\n")
 
   given (using CharEncoder): GenericHttpResponseStream[Tsv] with
-    def mediaType: String = t"text/tab-separated-values".s
+    def mediaType: Text = "text/tab-separated-values".tt
     
     def content(value: Tsv): LazyList[IArray[Byte]] =
       LazyList(value.rows.map(Tsv.serialize(_)).join(t"\n").bytes)
 
 
 object ColumnParser extends ProductDerivation[ColumnParser]:
-  given [T](using ext: Irrefutable[Text, T]): ColumnParser[T] = v => Some(ext.unapply(v.elems.head))
-  given [T](using ext: Unapply[Text, T]): ColumnParser[T] = v => ext.unapply(v.elems.head)
+  given [T: Decoder]: ColumnParser[T] = _.elems.head.decodeAs[T]
   
   def join[T](caseClass: CaseClass[ColumnParser, T]): ColumnParser[T] = ColumnParser[T](
     fn = { row =>
       
       @annotation.tailrec
-      def parseParams(row: Row, typeclasses: Seq[ColumnParser[?]], params: Vector[Any]): Option[T] =
-        if typeclasses.isEmpty then Some(caseClass.rawConstruct(params))
+      def parseParams(row: Row, typeclasses: Seq[ColumnParser[?]], params: Vector[Any]): T =
+        if typeclasses.isEmpty then caseClass.rawConstruct(params)
         else
           val typeclass = typeclasses.head
           val appended = params :+ typeclass.decode(Row(row.elems.take(typeclass.width)*))
@@ -160,12 +158,13 @@ object ColumnParser extends ProductDerivation[ColumnParser]:
     width = caseClass.params.map(_.typeclass.width).sum
   )
 
-  def apply[T](fn: Row => Option[T], width: Int = 1): ColumnParser[T] =
+  def apply[T](fn: Row => T, width: Int = 1): ColumnParser[T] =
     val colWidth = width
+    
     new ColumnParser[T]:
-      def decode(elems: Row): Option[T] = fn(elems)
+      def decode(row: Row): T = fn(row)
       override def width: Int = colWidth
 
 trait ColumnParser[T]:
-  def decode(elems: Row): Option[T]
+  def decode(elems: Row): T
   def width: Int = 1
