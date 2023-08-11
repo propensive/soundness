@@ -21,6 +21,7 @@ import fulminate.*
 import digression.*
 import parasite.*
 import turbulence.*
+import perforate.*
 import gossamer.*
 import nettlesome.*
 import gastronomy.*
@@ -48,7 +49,7 @@ trait FallbackHandler:
         HttpBody.Chunked(LazyList(v.show.bytes)))
 
 object Handler extends FallbackHandler:
-  given iarrayByteHandler[T](using hr: GenericHttpResponseStream[T], ct: CanThrow[InvalidMediaTypeError])
+  given iarrayByteHandler[T](using hr: GenericHttpResponseStream[T], ct: Raises[InvalidMediaTypeError])
                          : SimpleHandler[T] =
     SimpleHandler(Media.parse(hr.mediaType.show), value => HttpBody.Chunked(hr.content(value).map(identity)))
 
@@ -160,7 +161,7 @@ case class Request
         port: Int, pathText: Text, rawHeaders: Map[Text, List[Text]],
         queryParams: Map[Text, List[Text]]):
 
-  lazy val path: SimplePath throws PathError = pathText.decodeAs[SimplePath]
+  lazy val path: SimplePath raises PathError = pathText.decodeAs[SimplePath]
 
   // FIXME: The exception in here needs to be handled elsewhere
   val params: Map[Text, Text] =
@@ -184,10 +185,11 @@ case class Request
   lazy val headers: Map[RequestHeader[?], List[Text]] = rawHeaders.map:
     case (RequestHeader(header), values) => header -> values
 
-  lazy val length: Int throws StreamCutError =
-    try headers.get(RequestHeader.ContentLength).map(_.head).map(_.as[Int]).getOrElse:
-      body.stream.map(_.length).sum
-    catch case err: IncompatibleTypeError => throw StreamCutError(0.b)
+  lazy val length: Int raises StreamCutError =
+    try throwErrors:
+      headers.get(RequestHeader.ContentLength).map(_.head).map(_.decodeAs[Int]).getOrElse:
+        body.stream.map(_.length).sum
+    catch case err: NumberError => abort(StreamCutError(0.b))
   
   lazy val contentType: Option[MediaType] =
     headers.get(RequestHeader.ContentType).flatMap(_.headOption).flatMap(MediaType.unapply(_))
@@ -200,9 +202,9 @@ extension (value: Http.type)
     summon[RequestHandler].listen(handler)
 
 def request(using Request): Request = summon[Request]
-inline def param(using Request)(key: Text): Text throws MissingParamError =
+inline def param(using Request)(key: Text): Text raises MissingParamError =
   summon[Request].params.get(key).getOrElse:
-    throw MissingParamError(key)
+    abort(MissingParamError(key))
 
 def header(using Request)(header: RequestHeader[?]): Maybe[List[Text]] =
   summon[Request].headers.get(header).getOrElse(Unset)
@@ -227,7 +229,7 @@ case class RequestParam[T](key: Text)(using ParamReader[T]):
     summon[Request].params.get(key).flatMap(summon[ParamReader[T]].read(_))
 
   def unapply(req: Request): Option[T] = opt(using req)
-  def apply()(using Request): T throws MissingParamError = opt.getOrElse(throw MissingParamError(key))
+  def apply()(using Request): T raises MissingParamError = opt.getOrElse(abort(MissingParamError(key)))
 
 // trait HttpService:
 //   def stop(): Unit
