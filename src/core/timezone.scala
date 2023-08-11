@@ -103,14 +103,14 @@ object Tzdb:
         abort(TzdbError(TzdbError.Issue.CouldNotParseTime(other.show), lineNo))
 
     def parseDay(lineNo: Int, month: MonthName, str: Text): MonthDate =
-      try
+      try throwErrors:
         if str.starts(t"last") then MonthDate.Last(month, Weekday.valueOf(str.drop(4).s))
         else if str.drop(3).take(2) == t">="
-        then MonthDate.After(month, Weekday.valueOf(str.take(3).s), str.drop(5).as[Int])
+        then MonthDate.After(month, Weekday.valueOf(str.take(3).s), str.drop(5).decodeAs[Int])
         else if str.drop(3).take(2) == t"<="
-        then MonthDate.Before(month, Weekday.valueOf(str.take(3).s), str.drop(5).as[Int])
-        else MonthDate.Exact(month, str.as[Int])
-      catch case err: IncompatibleTypeError =>
+        then MonthDate.Before(month, Weekday.valueOf(str.take(3).s), str.drop(5).decodeAs[Int])
+        else MonthDate.Exact(month, str.decodeAs[Int])
+      catch case err: NumberError =>
         abort(TzdbError(TzdbError.Issue.UnparsableDate, lineNo))
 
     def parseLeap(lineNo: Int, args: List[Text]): Tzdb.Entry.Leap = args match
@@ -153,17 +153,17 @@ object Tzdb:
 
     def parseRule(lineNo: Int, args: List[Text]): Tzdb.Entry.Rule = args match
       case name :: from :: to :: _ :: month :: day :: time :: save :: letters :: _ =>
-        try
+        try throwErrors:
           val end = to match
             case t"max"  => Int.MaxValue
-            case t"only" => from.as[Int]
-            case other   => to.as[Int]
+            case t"only" => from.decodeAs[Int]
+            case other   => to.decodeAs[Int]
           
           val d = parseDay(lineNo, parseMonth(month), day)
           val t = parseTime(lineNo, time)
           val s = parseDuration(lineNo, save)
-          Tzdb.Entry.Rule(name, from.as[Int], end, d, t, s, parseLetters(letters))
-        catch case err: IncompatibleTypeError =>
+          Tzdb.Entry.Rule(name, from.decodeAs[Int], end, d, t, s, parseLetters(letters))
+        catch case err: NumberError =>
           abort(TzdbError(TzdbError.Issue.UnexpectedRule, lineNo))
       
       case _ =>
