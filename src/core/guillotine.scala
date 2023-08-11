@@ -18,6 +18,7 @@ package guillotine
 
 import contextual.*
 import rudiments.*
+import perforate.*
 import fulminate.*
 import turbulence.*
 import gossamer.*
@@ -58,7 +59,7 @@ object Executor:
     stream.interpret(proc).map(_.s).foreach(buf.append(_))
     buf.toString
 
-  given dataStream(using streamCut: CanThrow[StreamCutError]): Executor[LazyList[Bytes]] =
+  given dataStream(using streamCut: Raises[StreamCutError]): Executor[LazyList[Bytes]] =
     proc => Readable.inputStream.read(proc.getInputStream.nn)
   
   given exitStatus: Executor[ExitStatus] = _.waitFor() match
@@ -80,10 +81,10 @@ trait Executor[ResultType]:
 class Process[+ExecType <: Label, ResultType](process: java.lang.Process):
   def pid: Pid = Pid(process.pid)
   
-  def stdout(): LazyList[Bytes] throws StreamCutError =
+  def stdout()(using Raises[StreamCutError]): LazyList[Bytes] =
     Readable.inputStream.read(process.getInputStream.nn)
   
-  def stderr(): LazyList[Bytes] throws StreamCutError =
+  def stderr()(using Raises[StreamCutError]): LazyList[Bytes] =
     Readable.inputStream.read(process.getErrorStream.nn)
   
   def stdin
