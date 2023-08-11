@@ -17,7 +17,7 @@
 package scintillate
 
 import rudiments.*
-import digression.*
+import perforate.*
 import anticipation.*
 import turbulence.*
 import spectacular.*
@@ -42,14 +42,14 @@ trait Servlet(handle: Request ?=> Response[?]) extends HttpServlet:
                                        unsafely(body.map(_.mutable(using Unsafe)).foreach(out.write(_)))
 
   protected def streamBody
-      (request: HttpServletRequest)(using CanThrow[StreamCutError])
+      (request: HttpServletRequest)(using Raises[StreamCutError])
       : HttpBody.Chunked =
     val in = request.getInputStream
     val buffer = new Array[Byte](4096)
 
     HttpBody.Chunked(Readable.inputStream.read(request.getInputStream.nn))
     
-  protected def makeRequest(request: HttpServletRequest): Request throws StreamCutError =
+  protected def makeRequest(request: HttpServletRequest): Request raises StreamCutError =
     val query = Option(request.getQueryString)
     
     val params: Map[Text, List[Text]] = query.fold(Map()): query =>
@@ -78,7 +78,7 @@ trait Servlet(handle: Request ?=> Response[?]) extends HttpServlet:
     )
 
   def handle(servletRequest: HttpServletRequest, servletResponse: HttpServletResponse): Unit =
-    try handle(using makeRequest(servletRequest)).respond(ServletResponseWriter(servletResponse))
+    try throwErrors(handle(using makeRequest(servletRequest)).respond(ServletResponseWriter(servletResponse)))
     catch case error: StreamCutError =>
       () // FIXME
 
