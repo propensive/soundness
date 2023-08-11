@@ -20,3 +20,6 @@ import anticipation.*
 
 @capability
 case class WorkingDirectory(path: Maybe[Text])
+
+@capability
+case class HomeDirectory(path: Maybe[Text])
