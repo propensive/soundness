@@ -19,10 +19,12 @@ package punctuation
 import probably.*
 import gossamer.*
 import spectacular.*
+import perforate.*
+import symbolism.*
 import rudiments.*
 import anticipation.*
 
-import unsafeExceptions.canThrowAny
+import errorHandlers.throwUnsafely
 
 
 case class Example(str: Text, int: Int)
