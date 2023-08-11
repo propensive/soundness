@@ -167,7 +167,7 @@ case class Command(args: Text*) extends Executable:
   def fork[ResultType]()(using working: WorkingDirectory, log: Log): Process[Exec, ResultType] =
     val processBuilder = ProcessBuilder(args.ss*)
     
-    working.path.mm: directory =>
+    working.text.mm: directory =>
       processBuilder.directory(ji.File(directory.s))
     
     val t0 = System.currentTimeMillis
@@ -184,7 +184,7 @@ case class Pipeline(commands: Command*) extends Executable:
     val processBuilders = commands.map: command =>
       val processBuilder = ProcessBuilder(command.args.ss*)
       
-      working.path.mm: directory =>
+      working.text.mm: directory =>
         processBuilder.directory(ji.File(directory.s))
     
       processBuilder.nn
