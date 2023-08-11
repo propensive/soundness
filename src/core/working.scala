@@ -19,7 +19,9 @@ package rudiments
 import anticipation.*
 
 @capability
-case class WorkingDirectory(path: Maybe[Text])
+case class WorkingDirectory(text: Maybe[Text]):
+  def path[PathType: GenericPathMaker]: Maybe[PathType] = text.mm(GenericPath(_))
 
 @capability
-case class HomeDirectory(path: Maybe[Text])
+case class HomeDirectory(text: Text):
+  def path[PathType: GenericPathMaker]: PathType = GenericPath(text)
