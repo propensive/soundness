@@ -20,6 +20,7 @@ import gossamer.*
 import rudiments.*
 import fulminate.*
 import hieroglyph.*
+import perforate.*
 import turbulence.*
 import gesticulate.*
 import wisteria.*
@@ -75,7 +76,7 @@ object Postable extends FallbackPostable:
   
   given dataStream
       [ResponseType]
-      (using CanThrow[InvalidMediaTypeError])
+      (using Raises[InvalidMediaTypeError])
       (using response: GenericHttpResponseStream[ResponseType])
       : Postable[ResponseType] =
     Postable(Media.parse(response.mediaType.show), response.content(_).map(identity))
@@ -130,8 +131,8 @@ trait HttpReadable[+BodyType]:
 case class HttpResponse
     (status: HttpStatus, headers: Map[ResponseHeader, List[String]], body: HttpBody):
 
-  def as[BodyType](using readable: HttpReadable[BodyType]): BodyType throws HttpError = status match
-    case status: FailureCase => throw HttpError(status, body)
+  def as[BodyType](using readable: HttpReadable[BodyType]): BodyType raises HttpError = status match
+    case status: FailureCase => abort(HttpError(status, body))
     case status              => readable.read(status, body)
 
 object Locatable:
