@@ -23,3 +23,7 @@ import perforate.*
 package workingDirectory:
   given jvm(using Raises[SystemPropertyError], SystemProperties): WorkingDirectory =
     WorkingDirectory(Properties.user.dir[Text]())
+
+package homeDirectory:
+  given jvm(using Raises[SystemPropertyError], SystemProperties): HomeDirectory =
+    HomeDirectory(Properties.user.home[Text]())

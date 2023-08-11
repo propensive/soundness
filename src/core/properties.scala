@@ -33,6 +33,8 @@ trait SystemProperties:
   def apply(name: Text): Maybe[Text]
 
 object Properties extends Dynamic:
+  given default(using Quickstart): SystemProperties = systemProperties.jvm
+  
   def apply
       [PropertyType]
       (property: Text)

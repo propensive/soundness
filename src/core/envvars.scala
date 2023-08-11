@@ -31,6 +31,8 @@ trait Environment:
   def apply(name: Text): Maybe[Text]
 
 object Environment extends Dynamic:
+  given default(using Quickstart): Environment = environments.jvm
+
   def apply
       [VariableType]
       (variable: Text)
