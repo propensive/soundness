@@ -20,9 +20,10 @@ import probably.*
 import rudiments.*
 import gossamer.*
 import spectacular.*
+import perforate.*
 import larceny.*
 
-import unsafeExceptions.canThrowAny
+import errorHandlers.throwUnsafely
 
 object Tests extends Suite(t"Nettlesome tests"):
   def run(): Unit =

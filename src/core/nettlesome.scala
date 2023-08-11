@@ -19,6 +19,7 @@ package nettlesome
 import rudiments.*
 import spectacular.*
 import gossamer.*
+import perforate.*
 import fulminate.*
 import anticipation.*
 
@@ -66,15 +67,15 @@ object Nettlesome:
       given show: Show[Ipv4] = ip =>
         t"${ip.byte0.toString}.${ip.byte1.toString}.${ip.byte2.toString}.${ip.byte3.toString}"
       
-      def parse(text: Text): Ipv4 throws IpAddressError = text.cut(t".") match
+      def parse(text: Text)(using Raises[IpAddressError]): Ipv4 = text.cut(t".") match
         case List(As[Int](byte0), As[Int](byte1), As[Int](byte2), As[Int](byte3)) =>
           for byte <- List(byte0, byte1, byte2, byte3)
-          do if !(0 <= byte <= 255) then throw IpAddressError(Ipv4ByteOutOfRange(byte))
+          do if !(0 <= byte <= 255) then raise(IpAddressError(Ipv4ByteOutOfRange(byte)))(0.toByte)
 
           Ipv4(byte0.toByte, byte1.toByte, byte2.toByte, byte3.toByte)
         
         case list =>
-          throw IpAddressError(Ipv4WrongNumberOfBytes(list.length))
+          raise(IpAddressError(Ipv4WrongNumberOfBytes(list.length)))(Ipv4(0, 0, 0, 0))
   
     extension (ip: Ipv4)
       def byte0: Int = ip >>> 24
@@ -95,15 +96,13 @@ object Nettlesome:
   def ip(context: Expr[StringContext])(using Quotes): Expr[Ipv4 | Ipv6] =
     val text = Text(context.valueOrAbort.parts.head)
     
-    try
-      if text.contains(t".")
-      then
+    failCompilation:
+      if text.contains(t".") then
         val ipv4 = Ipv4.parse(text)
         '{Ipv4(${Expr(ipv4.byte0)}, ${Expr(ipv4.byte1)}, ${Expr(ipv4.byte2)}, ${Expr(ipv4.byte3)})}
       else
         val ipv6 = Ipv6.parse(text)
         '{Ipv6(${Expr(ipv6.highBits)}, ${Expr(ipv6.lowBits)})}
-    catch case error: IpAddressError => fail(error.message)
 
   object Ipv6:
     given debug: Debug[Ipv6] = _.show
@@ -126,12 +125,12 @@ object Nettlesome:
             group7: Int): Ipv6 =
       Ipv6(pack(List(group0, group1, group2, group3)), pack(List(group4, group5, group6, group7)))
     
-    def parseGroup(text: Text): Int throws IpAddressError =
-      if text.length > 4 then throw IpAddressError(Ipv6GroupWrongLength(text))
+    def parseGroup(text: Text)(using Raises[IpAddressError]): Int =
+      if text.length > 4 then raise(IpAddressError(Ipv6GroupWrongLength(text)))(())
       
       text.lower.s.foreach: char =>
         if !('0' <= char <= '9' || 'a' <= char <= 'f')
-        then throw IpAddressError(Ipv6GroupNotHex(text))
+        then raise(IpAddressError(Ipv6GroupNotHex(text)))(())
       
       Integer.parseInt(text.s, 16)
     
@@ -139,25 +138,24 @@ object Nettlesome:
       case Nil          => accumulator
       case head :: tail => pack(tail, (accumulator << 16) + (head & 65535))
     
-    def parse(text: Text): Ipv6 throws IpAddressError =
+    def parse(text: Text)(using Raises[IpAddressError]): Ipv6 =
       val groups: List[Text] = text.cut(t"::") match
         case List(left, right) =>
           val leftGroups = left.cut(t":").filter(_ != t"")
           val rightGroups = right.cut(t":").filter(_ != t"")
           
           if leftGroups.length + rightGroups.length > 7
-          then throw IpAddressError(Ipv6TooManyNonzeroGroups(leftGroups.length +
-              rightGroups.length))
+          then raise(IpAddressError(Ipv6TooManyNonzeroGroups(leftGroups.length + rightGroups.length)))(())
           
           leftGroups ++ List.fill((8 - leftGroups.length - rightGroups.length))(t"0") ++ rightGroups
 
         case List(whole) =>
           val groups = whole.cut(t":")
           if groups.length != 8
-          then throw IpAddressError(Ipv6WrongNumberOfGroups(groups.length)) else groups
+          then raise(IpAddressError(Ipv6WrongNumberOfGroups(groups.length)))(List.fill(8)(t"0")) else groups
         
         case _ =>
-          throw IpAddressError(Ipv6MultipleDoubleColons)
+          raise(IpAddressError(Ipv6MultipleDoubleColons))(List.fill(8)(t"0"))
       
       Ipv6(pack(groups.take(4).map(parseGroup)), pack(groups.drop(4).map(parseGroup)))
 
