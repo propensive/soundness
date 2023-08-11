@@ -131,7 +131,7 @@ trait LogTag[-TagType]:
   def tag(value: TagType): Text
 
 package logging:
-  given stdout(using Stdio, CanThrow[StreamCutError], CharEncoder, Monitor): Log =
+  given stdout(using Stdio, Raises[StreamCutError], CharEncoder, Monitor): Log =
     val sink = Stdout.sink
   
     Log:
