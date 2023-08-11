@@ -20,9 +20,12 @@ import probably.*
 import rudiments.*
 import anticipation.*
 import gossamer.*
+import spectacular.*
+import perforate.*
 import printers.compact
 
 import unsafeExceptions.canThrowAny
+import errorHandlers.throwUnsafely
 
 case class Worker(name: Text, age: Int)
 case class Firm(name: Text, ceo: Worker)
@@ -175,7 +178,7 @@ object Tests extends Suite(t"Xylophone tests"):
     test(t"read error: not an integer"):
       val xml = Xml.parse(t"""<foo>not an integer</foo>""")
       capture(xml.as[Int])
-    .assert(IncompatibleTypeError() == _)
+    .assert(NumberError(t"not an integer", Int) == _)
 
     test(t"access error; proactively resolving head nodes"):
       val xml = Xml.parse(t"""<root><company><staff><ceo><name>Xyz</name></ceo></staff></company></root>""")
