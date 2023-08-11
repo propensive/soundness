@@ -31,7 +31,6 @@ import java.nio as jn, jn.charset as jnc
 import language.experimental.captureChecking
 
 object Encoding:
-
   given Show[Encoding] = _.name
   given AsMessage[Encoding] = encoding => Message(encoding.name)
 
@@ -68,6 +67,8 @@ extension (encoding: Encoding { type CanEncode = true }) def encoder: CharEncode
   CharEncoder(encoding)
 
 object CharDecoder:
+  given default(using Quickstart): CharDecoder = charDecoders.utf8
+
   def system(using BadEncodingHandler): CharDecoder =
     unapply(Text(jnc.Charset.defaultCharset.nn.displayName.nn)).get
 
@@ -75,6 +76,9 @@ object CharDecoder:
     Encoding.unapply(name).map(CharDecoder(_))
 
 object CharEncoder:
+  
+  given default(using Quickstart): CharEncoder = charEncoders.utf8
+  
   def system: CharEncoder = unapply(Text(jnc.Charset.defaultCharset.nn.displayName.nn)).get
   
   def unapply(name: Text): Option[CharEncoder] =
@@ -142,6 +146,9 @@ package charEncoders:
   given utf16Be: CharEncoder = CharEncoder.unapply(Text("UTF-16BE")).get
   given ascii: CharEncoder = CharEncoder.unapply(Text("ASCII")).get
   //given iso88591: CharEncoder = CharEncoder.unapply(Text("ISO-8859-1")).get
+
+object BadEncodingHandler:
+  given default(using Quickstart): BadEncodingHandler = badEncodingHandlers.substitute
 
 trait BadEncodingHandler:
   def handle(pos: Int, encoding: Encoding): Maybe[Char]
