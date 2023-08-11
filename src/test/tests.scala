@@ -19,8 +19,9 @@ package gesticulate
 import gossamer.*
 import probably.*
 import rudiments.*
+import perforate.*
 
-import unsafeExceptions.canThrowAny
+import errorHandlers.throwUnsafely
 
 object Tests extends Suite(t"Gesticulate tests"):
   def run(): Unit =

@@ -20,6 +20,7 @@ import rudiments.*
 import fulminate.*
 import gossamer.*
 import contextual.*
+import perforate.*
 import anticipation.*
 import spectacular.*
 
@@ -87,7 +88,7 @@ object Media:
     def initial: Text = t""
 
     def complete(value: Text): MediaType =
-      val parsed = try Media.parse(value) catch
+      val parsed = try throwErrors(Media.parse(value)) catch
         case err: InvalidMediaTypeError =>
           throw InterpolationError(msg"${err.value} is not a valid media type; ${err.nature.message}")
 
@@ -105,16 +106,15 @@ object Media:
       
       parsed
 
-  def parse(string: Text): MediaType throws InvalidMediaTypeError =
+  def parse(string: Text)(using Raises[InvalidMediaTypeError]): MediaType =
     def parseParams(ps: List[Text]): List[(Text, Text)] =
       if ps == List("")
-      then throw InvalidMediaTypeError(string, InvalidMediaTypeError.Nature.MissingParam)
+      then raise(InvalidMediaTypeError(string, InvalidMediaTypeError.Nature.MissingParam))(())
       ps.map(_.cut(t"=", 2).to(List)).map { p => p(0).show -> p(1).show }
     
-    def parseSuffixes(ss: List[Text]): List[Suffix] = ss.map(_.lower.capitalize).map:
-      s =>
-        try Suffix.valueOf(s.s) catch IllegalArgumentException =>
-          throw InvalidMediaTypeError(string, InvalidMediaTypeError.Nature.InvalidSuffix(s))
+    def parseSuffixes(suffixes: List[Text]): List[Suffix] = suffixes.map(_.lower.capitalize).flatMap: suffix =>
+      try List(Suffix.valueOf(suffix.s)) catch IllegalArgumentException =>
+        raise(InvalidMediaTypeError(string, InvalidMediaTypeError.Nature.InvalidSuffix(suffix)))(Nil)
 
     def parseInit(str: Text): (Subtype, List[Suffix]) =
       val xs: List[Text] = str.cut(t"+")
@@ -126,16 +126,19 @@ object Media:
       case List(group, subtype) => parseGroup(group) *: parseInit(subtype)
       
       case _ =>
-        throw InvalidMediaTypeError(string, InvalidMediaTypeError.Nature.NotOneSlash)
+        raise(InvalidMediaTypeError(string, InvalidMediaTypeError.Nature.NotOneSlash)):
+          Group.Text *: parseInit(string)
 
     def parseGroup(str: Text): Group =
       try Group.valueOf(str.lower.capitalize.s)
       catch IllegalArgumentException =>
-        throw InvalidMediaTypeError(string, InvalidMediaTypeError.Nature.InvalidGroup)
+        raise(InvalidMediaTypeError(string, InvalidMediaTypeError.Nature.InvalidGroup))(Group.Text)
 
     def parseSubtype(str: Text): Subtype =
-      str.chars.find { ch => ch.isWhitespace || ch.isControl || specials.contains(ch) }.map: char =>
-        throw InvalidMediaTypeError(string, InvalidMediaTypeError.Nature.InvalidChar(char))
+      def notAllowed(char: Char): Boolean = char.isWhitespace || char.isControl || specials.contains(char)
+      str.chars.find(notAllowed(_)).map: char =>
+        raise(InvalidMediaTypeError(string, InvalidMediaTypeError.Nature.InvalidChar(char))):
+          Subtype.X(str.chars.filter(!notAllowed(_)).text)
       .getOrElse:
         if str.starts(t"vnd.") then Subtype.Vendor(str.drop(4))
         else if str.starts(t"prs.") then Subtype.Personal(str.drop(4))
@@ -200,6 +203,5 @@ object MediaType:
     def name: Text = t"type"
     def serialize(mediaType: MediaType): Text = mediaType.show
 
-  def unapply(value: Text): Option[MediaType] =
-    try Some(Media.parse(value)) catch case err: InvalidMediaTypeError => None
+  def unapply(value: Text): Option[MediaType] = safely(Some(Media.parse(value))).or(None)
   
