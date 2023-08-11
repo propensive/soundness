@@ -55,8 +55,8 @@ object Codl:
   def read
       [ValueType: CodlDeserializer]
       (source: Any)
-      (using readable: Readable[source.type, Text], aggregate: CanThrow[AggregateError[CodlError]],
-          codlRead: CanThrow[CodlReadError])
+      (using readable: Readable[source.type, Text], aggregate: Raises[AggregateError[CodlError]],
+          codlRead: Raises[CodlReadError])
       : ValueType^{readable, aggregate} =
     
     summon[CodlDeserializer[ValueType]].schema.parse(readable.read(source)).as[ValueType]
@@ -65,7 +65,7 @@ object Codl:
       [SourceType]
       (source: SourceType, schema: CodlSchema = CodlSchema.Free, subs: List[Data] = Nil,
           fromStart: Boolean = false)
-      (using readable: Readable[SourceType, Text], aggregate: CanThrow[AggregateError[CodlError]])
+      (using readable: Readable[SourceType, Text], aggregate: Raises[AggregateError[CodlError]])
       : CodlDoc^{readable, aggregate} =
     
     val (margin, stream) = tokenize(readable.read(source), fromStart)
@@ -254,7 +254,7 @@ object Codl:
             val allErrors: List[CodlError] = errors2 ::: errors
             
             if allErrors.isEmpty then CodlDoc(IArray.from(children), baseSchema, margin, body)
-            else throw AggregateError(allErrors.reverse)
+            else abort(AggregateError(allErrors.reverse))
           
           case _ =>
             go(LazyList(CodlToken.Outdent(stack.length + 1)))
@@ -272,11 +272,11 @@ object Codl:
     import State.*
 
     @tailrec
-    def cue(count: Int = 0)(using CanThrow[CodlError]): (Character, Int) =
+    def cue(count: Int = 0)(using Raises[CodlError]): (Character, Int) =
       val ch = reader.next()
       if ch.char == '\n' || ch.char == ' ' then cue(count + 1) else (ch, count)
     
-    val (first: Character, start: Int) = try cue(0) catch case err: CodlError => ???
+    val (first: Character, start: Int) = try throwErrors(cue(0)) catch case err: CodlError => ???
     val margin: Int = first.column
 
     def istream
@@ -290,7 +290,7 @@ object Codl:
         : LazyList[CodlToken] =
       
       inline def next(): Character =
-        try reader.next() catch case err: CodlError => Character('\n', err.line, err.col)
+        try throwErrors(reader.next()) catch case err: CodlError => Character('\n', err.line, err.col)
       
       inline def recur
           (state: State, indent: Int = indent, count: Int = count + 1, padding: Boolean = padding)

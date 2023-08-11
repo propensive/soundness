@@ -19,6 +19,7 @@ package cellulose
 import rudiments.*
 import spectacular.*
 import gossamer.*
+import perforate.*
 import anticipation.*
 
 import java.io as ji
@@ -52,9 +53,9 @@ object Bin:
             write(out, idx)
             write(out, schema.entry(idx - 1).schema, children)
       
-  def read(schema: CodlSchema, reader: ji.Reader)(using binary: CanThrow[BinaryError]): CodlDoc =
+  def read(schema: CodlSchema, reader: ji.Reader)(using binary: Raises[BinaryError]): CodlDoc =
     if reader.read() != '\u00b1' || reader.read() != '\u00c0' || reader.read() != '\u00d1'
-    then throw BinaryError(t"header 0xb1c0d1", 0)
+    then abort(BinaryError(t"header 0xb1c0d1", 0))
     
     def recur(schema: CodlSchema): List[CodlNode] =
       List.range(0, readNumber(reader)).map: _ =>
@@ -68,7 +69,7 @@ object Bin:
               case 0  => (Unset, CodlSchema.Free)
               case idx => schema.entry(idx - 1).tuple
 
-            val key = subschema(0).option.getOrElse(throw BinaryError(t"unexpected key", 0))
+            val key = subschema(0).option.getOrElse(abort(BinaryError(t"unexpected key", 0)))
 
             val children = IArray.from(recur(subschema(1)))
             

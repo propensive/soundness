@@ -19,6 +19,7 @@ package cellulose
 import rudiments.*
 import fulminate.*
 import spectacular.*
+import perforate.*
 import anticipation.*
 import gossamer.*
 
@@ -36,7 +37,7 @@ trait CodlSerializer[-ValueType]:
   def schema: CodlSchema
 
 trait CodlDeserializer[ValueType]:
-  def deserialize(value: List[Indexed])(using codlRead: CanThrow[CodlReadError]): ValueType
+  def deserialize(value: List[Indexed])(using codlRead: Raises[CodlReadError]): ValueType
   def schema: CodlSchema
 
 trait CodlFieldSerializer[-ValueType] extends CodlSerializer[ValueType]:
@@ -49,12 +50,12 @@ class CodlFieldDeserializer[ValueType](deserializer: Text => ValueType)
 extends CodlDeserializer[ValueType]:
   val schema: CodlSchema = Field(Arity.One)
 
-  def deserialize(nodes: List[Indexed])(using codlError: CanThrow[CodlReadError]): ValueType =
-    nodes.headOption.getOrElse(throw CodlReadError()).children match
+  def deserialize(nodes: List[Indexed])(using codlError: Raises[CodlReadError]): ValueType =
+    nodes.headOption.getOrElse(abort(CodlReadError())).children match
       case IArray(CodlNode(Data(value, _, _, _), _)) =>
         deserializer(value)
       case _ =>
-        throw CodlReadError()
+        abort(CodlReadError())
 
 trait CodlSerializer3:
   given maybe
@@ -168,7 +169,7 @@ trait CodlDeserializer2:
       case mirror: Mirror.ProductOf[DerivationType & Product] =>
         new CodlDeserializer[DerivationType]:
           def deserialize
-              (value: List[Indexed])(using codlRead: CanThrow[CodlReadError])
+              (value: List[Indexed])(using codlRead: Raises[CodlReadError])
               : DerivationType =
             mirror.fromProduct(deriveProduct[DerivationType, mirror.MirroredElemTypes,
                 mirror.MirroredElemLabels](value))
@@ -202,7 +203,7 @@ trait CodlDeserializer2:
   private transparent inline def deriveProduct
       [DerivationType, ElementTypes <: Tuple, Labels <: Tuple]
       (value: List[Indexed])
-      (using codlRead: CanThrow[CodlReadError])
+      (using codlRead: Raises[CodlReadError])
       : Tuple =
     inline erasedValue[ElementTypes] match
       case EmptyTuple =>
@@ -231,7 +232,7 @@ object CodlDeserializer extends CodlDeserializer2:
       def schema: CodlSchema = deserializer.schema.optional
       
       def deserialize
-          (value: List[Indexed])(using codlRead: CanThrow[CodlReadError])
+          (value: List[Indexed])(using codlRead: Raises[CodlReadError])
           : Maybe[ValueType] =
         if value.isEmpty then Unset else deserializer.deserialize(value)
  
@@ -248,7 +249,7 @@ object CodlDeserializer extends CodlDeserializer2:
     new CodlDeserializer[Option[ValueType]]:
       def schema: CodlSchema = deserializer.schema.optional
       def deserialize
-          (value: List[Indexed])(using codlRead: CanThrow[CodlReadError])
+          (value: List[Indexed])(using codlRead: Raises[CodlReadError])
           : Option[ValueType] =
         if value.isEmpty then None else Some(deserializer.deserialize(value))
  
@@ -262,7 +263,7 @@ object CodlDeserializer extends CodlDeserializer2:
         case struct: Struct      => struct.copy(structArity = Arity.Many)
       
       def deserialize
-          (value: List[Indexed])(using codlRead: CanThrow[CodlReadError])
+          (value: List[Indexed])(using codlRead: Raises[CodlReadError])
           : List[ElementType] =
         deserializer.schema match
           case Field(_, validator) => value.flatMap(_.children).map: node =>
@@ -281,7 +282,7 @@ object CodlDeserializer extends CodlDeserializer2:
         case struct: Struct      => struct.copy(structArity = Arity.Many)
       
       def deserialize
-          (value: List[Indexed])(using coldRead: CanThrow[CodlReadError])
+          (value: List[Indexed])(using coldRead: Raises[CodlReadError])
           : Set[ElementType] =
         deserializer.schema match
           case Field(_, validator) =>

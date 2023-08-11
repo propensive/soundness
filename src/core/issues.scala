@@ -87,10 +87,10 @@ case class CodlError(line: Int, col: Int, length: Int, issue: CodlError.Issue)
 extends Error(msg"could not read the CoDL document at $line:$col: ${issue}")
 
 case class BinaryError(expectation: Text, pos: Int)
-extends Exception(s"expected $expectation at position $pos")
+extends Error(msg"expected $expectation at position $pos")
 
 case class MultipleIdentifiersError(key: Text)
-extends Exception(s"multiple parameters of $key have been marked as identifiers")
+extends Error(msg"multiple parameters of $key have been marked as identifiers")
 
 case class MissingValueError(key: Text)
 extends Error(msg"the key $key does not exist in the CoDL document")

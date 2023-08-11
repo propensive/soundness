@@ -20,6 +20,7 @@ import probably.*
 import gossamer.*
 import rudiments.*
 import spectacular.*
+import parasite.*
 import perforate.*
 import anticipation.*
 import turbulence.*, basicIo.jvm
@@ -38,7 +39,7 @@ object Tests extends Suite(t"CoDL tests"):
 
   given Realm = Realm(t"tests")
 
-  def run(): Unit =
+  def run(): Unit = supervise:
     import CodlToken.*
     import Arity.*
 
