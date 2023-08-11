@@ -22,24 +22,25 @@ import anticipation.*
 import rudiments.*
 import ambience.*
 
-case class Xdg(home: Text):
+case class Xdg()(using home: HomeDirectory):
+
   def dataHome[PathType: GenericPathMaker](using Environment): PathType =
-    safely(Environment.xdgDataHome[PathType]).or(GenericPath(t"$home/.local/share"))
+    safely(Environment.xdgDataHome[PathType]).or(GenericPath(t"${home.text}/.local/share"))
   
   def configHome[PathType: GenericPathMaker](using Environment): PathType =
-    safely(Environment.xdgConfigHome[PathType]).or(GenericPath(t"$home/.config"))
+    safely(Environment.xdgConfigHome[PathType]).or(GenericPath(t"${home.text}/.config"))
   
   def cacheHome[PathType: GenericPathMaker](using Environment): PathType =
-    safely(Environment.xdgCacheHome[PathType]).or(GenericPath(t"$home/.cache"))
+    safely(Environment.xdgCacheHome[PathType]).or(GenericPath(t"${home.text}/.cache"))
   
   def stateHome[PathType: GenericPathMaker](using Environment): PathType =
-    safely(Environment.xdgStateHome[PathType]).or(GenericPath(t"$home/.local/state"))
+    safely(Environment.xdgStateHome[PathType]).or(GenericPath(t"${home.text}/.local/state"))
   
   def runtimeDir[PathType: GenericPathMaker](using Environment): Maybe[PathType] =
     safely(Environment.xdgRuntimeDir[PathType])
   
   def bin[PathType: GenericPathMaker](using Environment): PathType =
-    safely(Environment.xdgConfigHome[PathType]).or(GenericPath(t"$home/.local/bin"))
+    safely(Environment.xdgConfigHome[PathType]).or(GenericPath(t"${home.text}/.local/bin"))
   
   def dataDirs[PathType: GenericPathMaker](using Environment, SystemProperties): List[PathType] =
     safely(Environment.xdgDataDirs[List[PathType]]).or:
