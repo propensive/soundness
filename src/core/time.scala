@@ -59,7 +59,7 @@ object Clock:
 enum Weekday:
   case Mon, Tue, Wed, Thu, Fri, Sat, Sun
 
-case class InvalidDateError(text: Text) extends Error(msg"the value $text is not a valid date")
+case class DateError(text: Text) extends Error(msg"the value $text is not a valid date")
 
 object Dates:
   opaque type Date = Int
@@ -70,11 +70,11 @@ object Dates:
     def apply
         (using cal: Calendar)
         (year: cal.Y, month: cal.M, day: cal.D)
-        (using Raises[InvalidDateError])
+        (using Raises[DateError])
         : Date =
       cal.julianDay(year, month, day)
 
-    given decoder(using Raises[InvalidDateError]): Decoder[Date] = parse(_)
+    given decoder(using Raises[DateError]): Decoder[Date] = parse(_)
     given encoder: Encoder[Date] = _.show
   
     given ordering: Ordering[Date] = Ordering.Int
@@ -83,7 +83,7 @@ object Dates:
       given RomanCalendar = calendars.gregorian
       t"${d.day.toString.show}-${d.month.show}-${d.year.toString.show}"
     
-    def parse(value: Text)(using Raises[InvalidDateError]): Date = value.cut(t"-") match
+    def parse(value: Text)(using Raises[DateError]): Date = value.cut(t"-") match
       //case As[Int](year) :: As[Int](month) :: As[Int](day) :: Nil =>
       case y :: m :: d :: Nil =>
         try
@@ -91,13 +91,13 @@ object Dates:
           Date(y.s.toInt, MonthName(m.s.toInt), d.s.toInt)
         catch
           case error: NumberFormatException =>
-            raise(InvalidDateError(value))(Date(using calendars.gregorian)(2000, MonthName(1), 1))
+            raise(DateError(value))(Date(using calendars.gregorian)(2000, MonthName(1), 1))
           
           case error: ju.NoSuchElementException =>
-            raise(InvalidDateError(value))(Date(using calendars.gregorian)(2000, MonthName(1), 1))
+            raise(DateError(value))(Date(using calendars.gregorian)(2000, MonthName(1), 1))
       
       case cnt =>
-        raise(InvalidDateError(value))(Date(using calendars.gregorian)(2000, MonthName(1), 1))
+        raise(DateError(value))(Date(using calendars.gregorian)(2000, MonthName(1), 1))
 
   extension (date: Date)
     def day(using cal: Calendar): cal.D = cal.getDay(date)
@@ -128,7 +128,7 @@ trait Calendar:
   def getMonth(date: Date): M
   def getDay(date: Date): D
   def zerothDayOfYear(year: Y): Date
-  def julianDay(year: Y, month: M, day: D)(using Raises[InvalidDateError]): Date
+  def julianDay(year: Y, month: M, day: D)(using Raises[DateError]): Date
   def add(date: Date, period: Timespan): Date
 
 @capability
@@ -172,9 +172,9 @@ abstract class RomanCalendar() extends Calendar:
     val month = getMonth(date)
     date.julianDay - zerothDayOfYear(year).julianDay - month.offset(leapYear(year))
   
-  def julianDay(year: Int, month: MonthName, day: Int)(using Raises[InvalidDateError]): Date =
+  def julianDay(year: Int, month: MonthName, day: Int)(using Raises[DateError]): Date =
     if day < 1 || day > daysInMonth(month, year)
-    then raise(InvalidDateError(t"$year-${month.numerical}-$day")):
+    then raise(DateError(t"$year-${month.numerical}-$day")):
       Date(using calendars.julian)(2000, MonthName(1), 1)
     
     zerothDayOfYear(year) + month.offset(leapYear(year)) + day
@@ -240,7 +240,7 @@ object Timing:
     @targetName("to")
     def ~(that: Instant): Interval = Interval(instant, that)
 
-    def in(using RomanCalendar)(timezone: Timezone)(using Raises[InvalidDateError]): LocalTime =
+    def in(using RomanCalendar)(timezone: Timezone)(using Raises[DateError]): LocalTime =
       val zonedTime = jt.Instant.ofEpochMilli(instant).nn.atZone(jt.ZoneId.of(timezone.name.s)).nn
       
       val date = (zonedTime.getMonthValue: @unchecked) match
@@ -512,7 +512,7 @@ object Aviation:
 @capability
 case class Timezone(name: Text) 
 
-case class InvalidTimezoneError(name: Text)
+case class TimezoneError(name: Text)
 extends Error(msg"the name $name does not refer to a known timezone")
 
 case class LocalTime(date: Date, time: Time, timezone: Timezone):
@@ -525,13 +525,13 @@ case class LocalTime(date: Date, time: Time, timezone: Timezone):
 object Timezone:
   private val ids: Set[Text] = ju.TimeZone.getAvailableIDs.nn.map(_.nn).map(Text(_)).to(Set)
 
-  def apply(name: Text)(using Raises[InvalidTimezoneError]): Timezone =
-    if ids.contains(name) then new Timezone(name) else raise(InvalidTimezoneError(name))(new Timezone(ids.head))
+  def apply(name: Text)(using Raises[TimezoneError]): Timezone =
+    if ids.contains(name) then new Timezone(name) else raise(TimezoneError(name))(new Timezone(ids.head))
    
   object Tz extends Verifier[Timezone]:
     def verify(name: Text): Timezone =
       try throwErrors(new Timezone(name))
-      catch case err: InvalidTimezoneError => throw InterpolationError(err.message)
+      catch case err: TimezoneError => throw InterpolationError(err.message)
 
 extension (inline context: StringContext)
   inline def tz(): Timezone = ${Timezone.Tz.expand('context)}
