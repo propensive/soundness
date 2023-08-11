@@ -21,9 +21,10 @@ import rudiments.*
 import digression.*
 import gossamer.*
 import turbulence.*
+import perforate.*
 import anticipation.*, timeApi.long
 
-import unsafeExceptions.canThrowAny
+import errorHandlers.throwUnsafely
 
 object Tests extends Suite(t"Parasite tests"):
 

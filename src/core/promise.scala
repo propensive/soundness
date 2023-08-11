@@ -20,6 +20,7 @@ import anticipation.*
 import rudiments.*
 import digression.*
 import fulminate.*
+import perforate.*
 
 import scala.compiletime.*
 import scala.annotation.*
@@ -48,19 +49,19 @@ case class Promise[ValueType]():
   def cancelled: Boolean = cancelValue.get()
   def ready: Boolean = !value.get.unset || cancelled
 
-  private def get()(using CanThrow[CancelError]): ValueType =
-    if cancelled then throw CancelError()
+  private def get()(using Raises[CancelError]): ValueType =
+    if cancelled then abort(CancelError())
     else value.get.or(throw Mistake(msg"the promise was expected to be completed")).nn
 
-  def fulfill(supplied: -> ValueType)(using complete: CanThrow[AlreadyCompleteError]): Unit^{complete} =
+  def fulfill(supplied: -> ValueType)(using complete: Raises[AlreadyCompleteError]): Unit^{complete} =
     synchronized:
-      if !value.compareAndSet(Unset, supplied) then throw AlreadyCompleteError()
+      if !value.compareAndSet(Unset, supplied) then raise(AlreadyCompleteError())(())
       notifyAll()
   
   def offer(supplied: -> ValueType): Unit = synchronized:
     if value.compareAndSet(Unset, supplied) then notifyAll()
 
-  def await()(using CanThrow[CancelError]): ValueType = synchronized:
+  def await()(using Raises[CancelError]): ValueType = synchronized:
     while !ready do wait()
     get()
 
@@ -69,22 +70,24 @@ case class Promise[ValueType]():
     notifyAll()
 
   def await
-        [DurationType: GenericDuration](duration: DurationType)
-        : ValueType throws CancelError | TimeoutError =
+      [DurationType: GenericDuration]
+      (duration: DurationType)(using Raises[CancelError], Raises[TimeoutError])
+      : ValueType =
+    
     synchronized:
       if ready then get() else
         wait(duration.milliseconds)
-        if !ready then throw TimeoutError() else get()
+        if !ready then abort(TimeoutError()) else get()
 
 case class Trigger():
   private val promise: Promise[Unit] = Promise()
   def apply(): Unit = promise.offer(())
-  def pull(): Unit throws AlreadyCompleteError = promise.fulfill(())
-  def await()(using CanThrow[CancelError]): Unit = promise.await()
+  def pull()(using Raises[AlreadyCompleteError]): Unit = promise.fulfill(())
+  def await()(using Raises[CancelError]): Unit = promise.await()
   def cancel(): Unit = promise.cancel()
   def cancelled: Boolean = promise.cancelled
   
-  def await[DurationType: GenericDuration](duration: DurationType): Unit throws CancelError | TimeoutError =
+  def await[DurationType: GenericDuration](duration: DurationType)(using Raises[CancelError], Raises[TimeoutError]): Unit =
     promise.await(duration)
 
 @capability
@@ -123,7 +126,7 @@ case object Supervisor extends Monitor(Nil, Trigger())
 
 def supervise
     [ResultType]
-    (fn: Monitor ?=> ResultType)(using cancel: CanThrow[CancelError])
+    (fn: Monitor ?=> ResultType)(using cancel: Raises[CancelError])
     : ResultType =
   fn(using Supervisor)
 
@@ -154,7 +157,7 @@ extends Monitor(identifier :: parent.name, trigger):
 object Async:
   def race
       [AsyncType]
-      (tasks: Vector[Async[AsyncType]])(using cancel: CanThrow[CancelError], monitor: Monitor)
+      (tasks: Vector[Async[AsyncType]])(using cancel: Raises[CancelError], monitor: Monitor)
       : Async[AsyncType] =
     
     Async[Int]:
@@ -166,7 +169,7 @@ object Async:
       
       promise.await()
     .flatMap:
-      case -1 => throw CancelError()
+      case -1 => abort(CancelError())
       case n  => tasks(n)
 
 @capability
@@ -200,21 +203,21 @@ class Async
   
   def await
       [DurationType: GenericDuration]
-      (duration: DurationType)
-      : ResultType throws CancelError | TimeoutError =
+      (duration: DurationType)(using Raises[CancelError], Raises[TimeoutError])
+      : ResultType =
     trigger.await(duration).tap(thread.join().waive)
     result()
   
-  def await()(using cancel: CanThrow[CancelError]): ResultType =
+  def await()(using cancel: Raises[CancelError]): ResultType =
     trigger.await().tap(thread.join().waive)
     result()
   
-  private def result()(using cancel: CanThrow[CancelError]): ResultType =
+  private def result()(using cancel: Raises[CancelError]): ResultType =
     state() match
       case Completed(result) => result
       case Failed(error)     => throw error
-      case Cancelled         => throw CancelError()
-      case other             => throw CancelError()
+      case Cancelled         => abort(CancelError())
+      case other             => abort(CancelError())
   
   def suspend(): Unit =
     stateRef.updateAndGet:
@@ -233,15 +236,15 @@ class Async
     stateRef.updateAndGet:
       case other                => other
 
-  def map[ResultType2](fn: ResultType => ResultType2)(using CanThrow[CancelError]): Async[ResultType2] =
+  def map[ResultType2](fn: ResultType => ResultType2)(using Raises[CancelError]): Async[ResultType2] =
     Async(fn(async.await()))
   
-  def foreach[ResultType2](fn: ResultType => ResultType2)(using CanThrow[CancelError]): Unit =
+  def foreach[ResultType2](fn: ResultType => ResultType2)(using Raises[CancelError]): Unit =
     Async(fn(async.await()))
   
   def flatMap
       [ResultType2]
-      (fn: ResultType => Async[ResultType2])(using CanThrow[CancelError])
+      (fn: ResultType => Async[ResultType2])(using Raises[CancelError])
       : Async[ResultType2] =
     Async(fn(await()).await())
   
@@ -258,6 +261,6 @@ def sleep[DurationType: GenericDuration, ResultType](duration: DurationType)(usi
   monitor.sleep(duration.milliseconds)
 
 extension [ResultType](tasks: Seq[Async[ResultType]]^)
-  def sequence(using cancel: CanThrow[CancelError], mon: Monitor): Async[Seq[ResultType^{}]] =
+  def sequence(using cancel: Raises[CancelError], mon: Monitor): Async[Seq[ResultType^{}]] =
     Async:
       tasks.map(_.await())
