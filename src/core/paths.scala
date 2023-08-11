@@ -524,33 +524,61 @@ case class CharDevice(path: Unix.Path) extends Unix.Inode
 enum InodeType:
   case Fifo, CharDevice, Directory, BlockDevice, File, Symlink, Socket
 
+object DereferenceSymlinks:
+  given default(using Quickstart): DereferenceSymlinks = filesystemOptions.dereferenceSymlinks
+
 @capability
 trait DereferenceSymlinks:
   def options(): List[jnf.LinkOption]
+
+object MoveAtomically:
+  given default(using Quickstart): MoveAtomically = filesystemOptions.doNotMoveAtomically
 
 @capability
 trait MoveAtomically:
   def options(): List[jnf.CopyOption]
 
+object CopyAttributes:
+  given default(using Quickstart): CopyAttributes = filesystemOptions.doNotCopyAttributes
+
 @capability
 trait CopyAttributes:
   def options(): List[jnf.CopyOption]
+
+object DeleteRecursively:
+  given default(using Quickstart, Raises[UnemptyDirectoryError]): DeleteRecursively =
+    filesystemOptions.doNotDeleteRecursively
 
 @capability
 trait DeleteRecursively:
   def conditionally[ResultType](path: Path)(operation: => ResultType): ResultType
 
+object OverwritePreexisting:
+  given default(using Quickstart, Raises[OverwriteError]): OverwritePreexisting =
+    filesystemOptions.doNotOverwritePreexisting
+
 @capability
 trait OverwritePreexisting:
   def apply[ResultType](path: Path)(operation: => ResultType): ResultType
+
+object CreateNonexistentParents:
+  given default(using Quickstart, Raises[IoError]): CreateNonexistentParents =
+    filesystemOptions.createNonexistentParents
 
 @capability
 trait CreateNonexistentParents:
   def apply[ResultType](path: Path)(operation: => ResultType): ResultType
 
+object CreateNonexistent:
+  given default(using Quickstart, Raises[IoError]): CreateNonexistent =
+    filesystemOptions.createNonexistent(using filesystemOptions.createNonexistentParents)
+
 @capability
 trait CreateNonexistent:
   def apply(path: Path)(operation: => Unit): Unit
+
+object WriteSynchronously:
+  given default(using Quickstart): WriteSynchronously = filesystemOptions.writeSynchronously
 
 @capability
 trait WriteSynchronously:
