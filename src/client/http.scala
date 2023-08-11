@@ -76,7 +76,7 @@ object Postable extends FallbackPostable:
   
   given dataStream
       [ResponseType]
-      (using Raises[InvalidMediaTypeError])
+      (using Raises[MediaTypeError])
       (using response: GenericHttpResponseStream[ResponseType])
       : Postable[ResponseType] =
     Postable(Media.parse(response.mediaType.show), response.content(_).map(identity))
