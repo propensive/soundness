@@ -241,3 +241,5 @@ extends Error(msg"the expression was expected to fail, but succeeded")
 package errorHandlers:
   given throwUnsafely[SuccessType]: RaisesThrow[Error, SuccessType] =
     RaisesThrow()(using unsafeExceptions.canThrowAny)
+
+infix type raises[SuccessType, ErrorType <: Error] = Raises[ErrorType] ?=> SuccessType
