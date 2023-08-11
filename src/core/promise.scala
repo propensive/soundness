@@ -157,20 +157,20 @@ extends Monitor(identifier :: parent.name, trigger):
 object Async:
   def race
       [AsyncType]
-      (tasks: Vector[Async[AsyncType]])(using cancel: Raises[CancelError], monitor: Monitor)
+      (asyncs: Vector[Async[AsyncType]])(using cancel: Raises[CancelError], monitor: Monitor)
       : Async[AsyncType] =
     
     Async[Int]:
       val promise: Promise[Int] = Promise()
       
-      tasks.zipWithIndex.foreach: (task, index) =>
-        task.foreach: result =>
+      asyncs.zipWithIndex.foreach: (async, index) =>
+        async.foreach: result =>
           promise.offer(index)
       
       promise.await()
     .flatMap:
       case -1 => abort(CancelError())
-      case n  => tasks(n)
+      case n  => asyncs(n)
 
 @capability
 class Async
@@ -260,7 +260,7 @@ def complete[ResultType](value: ResultType)(using monitor: Submonitor[ResultType
 def sleep[DurationType: GenericDuration, ResultType](duration: DurationType)(using monitor: Monitor): Unit =
   monitor.sleep(duration.milliseconds)
 
-extension [ResultType](tasks: Seq[Async[ResultType]]^)
+extension [ResultType](asyncs: Seq[Async[ResultType]]^)
   def sequence(using cancel: Raises[CancelError], mon: Monitor): Async[Seq[ResultType^{}]] =
     Async:
-      tasks.map(_.await())
+      asyncs.map(_.await())
