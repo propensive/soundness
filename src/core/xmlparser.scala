@@ -20,6 +20,7 @@ import contextual.*
 import rudiments.*
 import fulminate.*
 import anticipation.*
+import perforate.*
 import gossamer.*
 import spectacular.*
 
@@ -113,8 +114,9 @@ object XmlInterpolation:
       if state.stack.nonEmpty then throw InterpolationError(msg"""
           expected closing tag: ${state.stack.head.name}
       """)
-      try Xml.parse(state.source)
-      catch case e: XmlParseError => throw InterpolationError(msg"the XML could not be parsed")
+      
+      safely(Xml.parse(state.source)).or:
+        throw InterpolationError(msg"the XML could not be parsed")
 
     def parse(state: ParseState, string: Text): ParseState = string.chars.foldLeft(state.copy(offset = 0)):
       case (state@ParseState(_, _, _, _, _, _), char) => state.context match

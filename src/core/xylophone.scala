@@ -19,6 +19,7 @@ package xylophone
 import rudiments.*
 import gossamer.*
 import hieroglyph.*
+import perforate.*
 import spectacular.*
 import anticipation.*
 
@@ -40,17 +41,16 @@ sealed trait Xml:
   def root: Ast.Root
   
   @targetName("add")
-  infix def +(other: Xml): XmlDoc throws XmlAccessError
+  infix def +(other: Xml): XmlDoc raises XmlAccessError
 
-  def string(using XmlPrinter[Text]): Text throws XmlAccessError =
+  def string(using XmlPrinter[Text]): Text raises XmlAccessError =
     summon[XmlPrinter[Text]].print(XmlDoc(Ast.Root(Xml.normalize(this)*)))
 
 type XmlPath = List[Text | Int | Unit]
 
 object Xml:
   given Show[Xml] = xml =>
-    try printers.compact.print(XmlDoc(Ast.Root(Xml.normalize(xml)*)))
-    catch case error: XmlAccessError => t"undefined"
+    safely(printers.compact.print(XmlDoc(Ast.Root(Xml.normalize(xml)*)))).or(t"undefined")
 
   given (using enc: Encoding, printer: XmlPrinter[Text]): GenericHttpResponseStream[Xml] with
     def mediaType: Text = t"application/xml; charset=${enc.name}"
@@ -66,7 +66,7 @@ object Xml:
       case unit: Unit  => t"/*"
   .join
 
-  def parse(content: Text): XmlDoc throws XmlParseError =
+  def parse(content: Text): XmlDoc raises XmlParseError =
     import org.w3c.dom as owd, owd.Node.*
     import org.xml.sax as oxs
     import javax.xml.parsers.*
@@ -81,7 +81,7 @@ object Xml:
         val array = content.bytes(using charEncoders.utf8).mutable(using Unsafe)
         builder.parse(ByteArrayInputStream(array)).nn
       catch case e: oxs.SAXParseException =>
-        throw XmlParseError(e.getLineNumber - 1, e.getColumnNumber - 1)
+        abort(XmlParseError(e.getLineNumber - 1, e.getColumnNumber - 1))
 
     def getNamespace(node: owd.Node): Maybe[Namespace] =
       Option(node.getPrefix) match
@@ -126,13 +126,13 @@ object Xml:
     (readNode(root.getDocumentElement.nn): @unchecked) match
       case elem@Ast.Element(_, _, _, _) => XmlDoc(Ast.Root(elem))
 
-  def normalize(xml: Xml): Seq[Ast] throws XmlAccessError =
+  def normalize(xml: Xml): Seq[Ast] raises XmlAccessError =
     def recur(path: XmlPath, current: Seq[Ast]): Seq[Ast] = (path: @unchecked) match
       case Nil =>
         current
 
       case (idx: Int) :: tail =>
-        if current.length <= idx then throw XmlAccessError(idx, path)
+        if current.length <= idx then abort(XmlAccessError(idx, path))
         recur(tail, Seq(current(idx)))
 
       case (unit: Unit) :: tail =>
@@ -152,7 +152,7 @@ object Xml:
 
     try recur(xml.pointer, xml.root.content)
     catch case err: XmlAccessError =>
-      throw XmlAccessError(err.index, xml.pointer.dropRight(err.path.length))
+      abort(XmlAccessError(err.index, xml.pointer.dropRight(err.path.length)))
 
 
 case class Fragment(head: Text | Unit, path: XmlPath, root: Ast.Root)
@@ -167,10 +167,10 @@ extends Xml, Dynamic:
   def * : Fragment = Fragment((), head :: path, root)
   
   @targetName("add")
-  infix def +(other: Xml): XmlDoc throws XmlAccessError =
+  infix def +(other: Xml): XmlDoc raises XmlAccessError =
     XmlDoc(Ast.Root(Xml.normalize(this) ++ Xml.normalize(other)*))
   
-  def as[T](using reader: XmlReader[T]): T throws XmlAccessError | XmlReadError = apply().as[T]
+  def as[T](using reader: XmlReader[T]): T raises XmlAccessError | XmlReadError = apply().as[T]
 
 case class XmlNode(head: Int, path: XmlPath, root: Ast.Root) extends Xml, Dynamic:
   def selectDynamic(tagName: String): Fragment = Fragment(Text(tagName), head :: path, root)
@@ -182,11 +182,11 @@ case class XmlNode(head: Int, path: XmlPath, root: Ast.Root) extends Xml, Dynami
   def * : Fragment = Fragment((), head :: path, root)
   
   @targetName("add")
-  infix def +(other: Xml): XmlDoc throws XmlAccessError =
+  infix def +(other: Xml): XmlDoc raises XmlAccessError =
     XmlDoc(Ast.Root(Xml.normalize(this) ++ Xml.normalize(other)*))
 
-  def as[T: XmlReader]: T throws XmlReadError | XmlAccessError =
-    summon[XmlReader[T]].read(Xml.normalize(this)).getOrElse(throw XmlReadError())
+  def as[T: XmlReader](using Raises[XmlReadError], Raises[XmlAccessError]): T =
+    summon[XmlReader[T]].read(Xml.normalize(this)).getOrElse(abort(XmlReadError()))
 
 case class XmlDoc(root: Ast.Root) extends Xml, Dynamic:
   def pointer: XmlPath = Nil
@@ -197,21 +197,21 @@ case class XmlDoc(root: Ast.Root) extends Xml, Dynamic:
   def `*`: Fragment = Fragment((), Nil, root)
   
   @targetName("add")
-  infix def +(other: Xml): XmlDoc throws XmlAccessError =
+  infix def +(other: Xml): XmlDoc raises XmlAccessError =
     XmlDoc(Ast.Root(Xml.normalize(this) ++ Xml.normalize(other)*))
 
-  def as[T: XmlReader]: T throws XmlAccessError | XmlReadError =
-    summon[XmlReader[T]].read(Xml.normalize(this)).getOrElse(throw XmlReadError())
+  def as[T: XmlReader](using Raises[XmlAccessError], Raises[XmlReadError]): T =
+    summon[XmlReader[T]].read(Xml.normalize(this)).getOrElse(abort(XmlReadError()))
 
 case class Attribute(node: XmlNode, attribute: Text):
-  def as[T: XmlReader]: T throws XmlReadError | XmlAccessError =
+  def as[T: XmlReader](using Raises[XmlReadError], Raises[XmlAccessError]): T =
     val attributes = Xml.normalize(node).headOption match
       case Some(Ast.Element(_, _, attributes, _)) => attributes
-      case _                                      => throw XmlReadError()
+      case _                                      => abort(XmlReadError())
 
     summon[XmlReader[T]]
       .read(Seq(Ast.Element(XmlName(t"empty"), Seq(Ast.Textual(attributes(XmlName(attribute)))))))
-      .getOrElse(throw XmlReadError())
+      .getOrElse(abort(XmlReadError()))
 
 case class xmlAttribute() extends StaticAnnotation
 case class xmlLabel(name: String) extends StaticAnnotation
