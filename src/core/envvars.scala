@@ -70,19 +70,19 @@ trait EnvironmentVariable2:
 object EnvironmentVariable extends EnvironmentVariable2:
   given path
       [PathType: GenericPathMaker]
-      (using systemProperties: SystemProperties, systemProperty: CanThrow[SystemPropertyError])
+      (using systemProperties: SystemProperties)
       : EnvironmentVariable["path", List[PathType]] =
     _.cut(systemProperties(t"path.separator").or(t":")).map(GenericPath(_))
   
   given xdgDataDirs
       [PathType: GenericPathMaker]
-      (using systemProperties: SystemProperties, systemProperty: CanThrow[SystemPropertyError])
+      (using systemProperties: SystemProperties)
       : EnvironmentVariable["xdgDataDirs", List[PathType]] =
     _.cut(systemProperties(t"path.separator").or(t":")).map(GenericPath(_))
   
   given xdgConfigDirs
       [PathType: GenericPathMaker]
-      (using systemProperties: SystemProperties, systemProperty: CanThrow[SystemPropertyError])
+      (using systemProperties: SystemProperties)
       : EnvironmentVariable["xdgConfigDirs", List[PathType]] =
     _.cut(systemProperties(t"path.separator").or(t":")).map(GenericPath(_))
 
