@@ -19,6 +19,7 @@ package punctuation
 import rudiments.*
 import fulminate.*
 import contextual.*
+import perforate.*
 import gossamer.*
 import anticipation.*
 
@@ -36,13 +37,12 @@ object Md:
     
     def complete(state: Input): Markdown[Markdown.Ast.Node] = state match
       case Input.Inline(state) =>
-        try Markdown.parseInline(state) catch case e: MarkdownError =>
+        safely(Markdown.parseInline(state)).or:
           throw InterpolationError(msg"the markdown could not be parsed")
       
       case Input.Block(state)  =>
-        try Markdown.parse(state) catch case e: MarkdownError => e match
-          case MarkdownError(msg) =>
-            throw InterpolationError(msg"the markdown could not be parsed; $msg")
+        safely(Markdown.parse(state)).or:
+          throw InterpolationError(msg"the markdown could not be parsed")
   
     def initial: Input = Input.Inline(t"")
     def skip(state: Input): Input = state
@@ -57,21 +57,19 @@ object Md:
      
     def parse(state: Input, next: Text): Input = state match
       case Input.Inline(state) =>
-        try
+        safely:
           Markdown.parseInline(t"$state$next")
           Input.Inline(t"$state$next")
-        catch
-          case e: MarkdownError =>
-            try
-              Markdown.parse(t"$state$next")
-              Input.Block(t"$state$next")
-            catch
-              case e: MarkdownError =>
-                throw InterpolationError(msg"the markdown could not be parsed")
+        .or:
+          safely:
+            Markdown.parse(t"$state$next")
+            Input.Block(t"$state$next")
+          .or
+            throw InterpolationError(msg"the markdown could not be parsed")
 
       case Input.Block(state) =>
-        try
+        safely:
           Markdown.parse(t"$state$next")
           Input.Block(t"$state$next")
-        catch case e: MarkdownError =>
+        .or:
           throw InterpolationError(msg"the markdown could not be parsed")
