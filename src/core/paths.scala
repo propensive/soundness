@@ -508,7 +508,7 @@ case class Directory(path: Path) extends Unix.Inode, Windows.Inode:
   inline def /(name: Text)(using Raises[PathError]): Path = path / PathName(name)
 
 object File:
-  given readableBytes(using streamCut: CanThrow[StreamCutError], io: Raises[IoError]): Readable[File, Bytes] =
+  given readableBytes(using streamCut: Raises[StreamCutError], io: Raises[IoError]): Readable[File, Bytes] =
     Readable.inputStream.contraMap: file =>
       ji.BufferedInputStream(jnf.Files.newInputStream(file.path.java))
   
