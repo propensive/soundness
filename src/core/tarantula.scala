@@ -22,6 +22,7 @@ import jacinta.*, jsonPrinters.minimal, dynamicJsonAccess.enabled
 import telekinesis.*
 import cataclysm.*
 import honeycomb.*
+import perforate.*
 import eucalyptus.*
 import spectacular.*
 import rudiments.*
@@ -34,6 +35,7 @@ import parasite.*
 import anticipation.*, timeApi.long
 
 import unsafeExceptions.canThrowAny
+import errorHandlers.throwUnsafely
 import annotation.targetName
 
 trait Browser(name: Text):
