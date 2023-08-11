@@ -20,10 +20,11 @@ import probably.*
 import rudiments.*
 import anticipation.*
 import gossamer.*
+import perforate.*
 import spectacular.*
 import hieroglyph.*, charDecoders.utf8, charEncoders.utf8, badEncodingHandlers.skip
 
-import unsafeExceptions.canThrowAny
+import errorHandlers.throwUnsafely
 
 object Tests extends Suite(t"Gastronomy tests"):
  

@@ -22,6 +22,7 @@ import java.security as js, js.spec.*
 import rudiments.*
 import fulminate.*
 import gossamer.*
+import perforate.*
 import spectacular.*
 import anticipation.*
 import hieroglyph.*
@@ -78,10 +79,10 @@ case class PrivateKey[A <: CryptoAlgorithm[?]](private[gastronomy] val privateBy
 extends Shown[PrivateKey[?]]:
   def public(using A): PublicKey[A] = PublicKey(summon[A].privateToPublic(privateBytes))
   
-  inline def decrypt[T: ByteCodec](message: MessageData[A])(using A & Encryption): T throws DecodeError =
+  inline def decrypt[T: ByteCodec](message: MessageData[A])(using A & Encryption, Raises[DecodeError]): T =
     decrypt(message.bytes)
   
-  inline def decrypt[T: ByteCodec](bytes: Bytes)(using A & Encryption): T throws DecodeError =
+  inline def decrypt[T: ByteCodec](bytes: Bytes)(using A & Encryption, Raises[DecodeError]): T =
     summon[ByteCodec[T]].decode(summon[A].decrypt(bytes, privateBytes))
   
   inline def sign[T: ByteCodec](value: T)(using A & Signing): Signature[A] =
@@ -90,8 +91,8 @@ extends Shown[PrivateKey[?]]:
   def pem(reveal: ExposeSecretKey.type): Pem = Pem(t"PRIVATE KEY", privateBytes)
 
 object SymmetricKey:
-  def generate[A <: CryptoAlgorithm[?] & Symmetric]()(using A): SymmetricKey[A] =
-    SymmetricKey(summon[A].genKey())
+  def generate[AlgorithmType <: CryptoAlgorithm[?] & Symmetric]()(using AlgorithmType): SymmetricKey[AlgorithmType] =
+    SymmetricKey(summon[AlgorithmType].genKey())
 
 class SymmetricKey[A <: CryptoAlgorithm[?]](private[gastronomy] val bytes: Bytes)
 extends PrivateKey[A](bytes):
@@ -104,21 +105,21 @@ case class DecodeError(detail: Text) extends Error(msg"could not decode the encr
 
 trait ByteCodec[T]:
   def encode(value: T): Bytes
-  def decode(bytes: Bytes): T throws DecodeError
+  def decode(bytes: Bytes)(using Raises[DecodeError]): T
 
 object ByteCodec:
   given ByteCodec[Bytes] with
     def encode(value: Bytes): Bytes = value
-    def decode(bytes: Bytes): Bytes throws DecodeError = bytes
+    def decode(bytes: Bytes)(using Raises[DecodeError]): Bytes = bytes
    
   given (using CharDecoder, CharEncoder): ByteCodec[Text] with
     def encode(value: Text): Bytes = value.bytes
-    def decode(bytes: Bytes): Text throws DecodeError =
+    def decode(bytes: Bytes)(using Raises[DecodeError]): Text =
       val buffer = ByteBuffer.wrap(bytes.mutable(using Unsafe))
       
       try Charset.forName("UTF-8").nn.newDecoder().nn.decode(buffer).toString.show
       catch CharacterCodingException =>
-        throw DecodeError(t"the message did not contain a valid UTF-8 string")
+        abort(DecodeError(t"the message did not contain a valid UTF-8 string"))
 
 object Aes:
   given aes[I <: 128 | 192 | 256: ValueOf]: Aes[I] = Aes()

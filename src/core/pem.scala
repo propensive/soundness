@@ -19,6 +19,7 @@ package gastronomy
 import rudiments.*
 import gossamer.*
 import anticipation.*
+import perforate.*
 import spectacular.*
 import kaleidoscope.*
 
@@ -30,20 +31,20 @@ case class Pem(kind: Text, data: Bytes):
   ).flatten.join(t"\n")
 
 object Pem:
-  def parse(string: Text): Pem throws PemError =
+  def parse(string: Text)(using Raises[PemError]): Pem =
     val lines = string.trim.nn.cut(t"\n")
     
     val label = lines.head match
       case r"-----* *BEGIN $label([A-Z]+) *-----*" => label.show
-      case _                         => throw PemError(t"the BEGIN line could not be found")
+      case _                         => abort(PemError(t"the BEGIN line could not be found"))
     
     lines.tail.indexWhere:
       case r"-----* *END $label([A-Z]+) *-----*" => true
-      case _                       => false
+      case _                                     => false
     match
       case -1  =>
-        throw PemError(t"the message's END line could not be found")
+        abort(PemError(t"the message's END line could not be found"))
       case idx =>
         val joined: Text = lines.tail.take(idx).join
         try Pem(label, joined.decode[Base64])
-        catch Exception => throw PemError(t"could not parse Base64 PEM message")
+        catch Exception => abort(PemError(t"could not parse Base64 PEM message"))
