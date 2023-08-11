@@ -104,7 +104,7 @@ case class Multiplexer[KeyType, ElemType]()(using Monitor):
 extension [ElemType](stream: LazyList[ElemType])
   def rate
       [DurationType: GenericDuration](duration: DurationType)
-      (using monitor: Monitor, cancel: CanThrow[CancelError])
+      (using monitor: Monitor, cancel: Raises[CancelError])
       : LazyList[ElemType] =
     def recur(stream: LazyList[ElemType], last: Long): LazyList[ElemType] = stream match
       case head #:: tail =>
@@ -165,7 +165,7 @@ extension [ElemType](stream: LazyList[ElemType])
         val hasMore: Async[Boolean] = Async(!stream.isEmpty)
 
         val recurse: Option[Boolean] =
-          try
+          try throwErrors:
             val deadline: Long = duration.milliseconds.min(expiry - System.currentTimeMillis).max(0)
             if hasMore.await(GenericDuration(deadline)) then Some(true) else None
           catch case err: (TimeoutError | CancelError) => Some(false)
