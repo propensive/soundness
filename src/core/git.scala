@@ -315,14 +315,16 @@ object Nonagenarian:
   object Tag:
     def unsafe(text: Text): Tag = text
     def apply(text: Text)(using Raises[GitRefError]): Tag = Refspec.parse(text)
-    given Encoder[Tag] = identity(_)
-    given Show[Tag] = identity(_)
+    given encoder: Encoder[Tag] = identity(_)
+    given decoder(using Raises[GitRefError]): Decoder[Tag] = apply(_)
+    given show: Show[Tag] = identity(_)
 
   object Branch:
     def unsafe(text: Text): Branch = text
     def apply(text: Text)(using Raises[GitRefError]): Branch = Refspec.parse(text)
-    given Encoder[Branch] = identity(_)
-    given Show[Branch] = identity(_)
+    given encoder: Encoder[Branch] = identity(_)
+    given decoder(using Raises[GitRefError]): Decoder[Branch] = apply(_)
+    given show: Show[Branch] = identity(_)
 
   object CommitHash:
     def apply(text: Text)(using Raises[GitRefError]): CommitHash = text match
@@ -331,8 +333,9 @@ object Nonagenarian:
     
     def unsafe(text: Text): CommitHash = text
     
-    given Encoder[CommitHash] = identity(_)
-    given Show[CommitHash] = identity(_)
+    given encoder: Encoder[CommitHash] = identity(_)
+    given decoder(using Raises[GitRefError]): Decoder[CommitHash] = apply(_)
+    given show: Show[CommitHash] = identity(_)
 
 export Nonagenarian.{Tag, Branch, CommitHash, Refspec}
 
