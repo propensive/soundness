@@ -235,7 +235,7 @@ object Git:
         case r"Unpacking objects: *${pc}([0-9]+)\%.*"            => Progress.Unpacking(pc.s.toInt/100.0)
         case r"remote: *Compressing objects: *${pc}([0-9]+)\%.*"  => Progress.RemoteCompressing(pc.s.toInt/100.0)
         case r"remote: *Counting objects: *${pc}([0-9]+)\%.*"     => Progress.RemoteCounting(pc.s.toInt/100.0)
-    .or(LazyList())
+    .or(LazyList()).deduplicate
 
   def init
       [PathType: GenericPath]
