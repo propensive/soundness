@@ -16,48 +16,32 @@
 
 package anticipation
 
-import annotation.implicitNotFound
-
 import language.experimental.captureChecking
 
-@implicitNotFound("a contextual GenericInstant instance is required to work with instants in time, for example,\n"+
-                  "    import timeApi.long        // Use Longs to represent instants\n"+
-                  "    import timeApi.aviationApi // Use Aviation types for instants")
-trait GenericInstant[InstantType]:
-  def makeInstant(long: Long): InstantType
-  def readInstant(value: InstantType): Long
+trait SpecificInstant[InstantType]:
+  def instant(millisecondsSinceEpoch: Long): InstantType
 
-@implicitNotFound("a contextual GenericDuration instance is required to work with durations of time, for example,\n"+
-                  "    import timeApi.long         // Use Longs for time durations\n"+
-                  "    import timeApi.aviationApi // Use Aviation types for time durations")
+trait GenericInstant[InstantType]:
+  def millisecondsSinceEpoch(instant: InstantType): Long
+
+trait SpecificDuration[DurationType]:
+  def duration(milliseconds: Long): DurationType
+
 trait GenericDuration[DurationType]:
-  def makeDuration(long: Long): DurationType
-  def readDuration(value: DurationType): Long
+  def milliseconds(duration: DurationType): Long
 
 package timeApi {}
 
-def makeInstant[InstantType](instant: Long)(using generic: GenericInstant[InstantType]): InstantType =
-  generic.makeInstant(instant)
+extension [InstantType](instant: InstantType)(using generic: GenericInstant[InstantType])
+  def millisecondsSinceEpoch: Long = generic.millisecondsSinceEpoch(instant)
 
-def readInstant[InstantType](using generic: GenericInstant[InstantType])(instant: InstantType): Long =
-  generic.readInstant(instant)
+object SpecificInstant:
+  def apply[InstantType](using specific: SpecificInstant[InstantType])(millisecondsSinceEpoch: Long): InstantType =
+    specific.instant(millisecondsSinceEpoch)
 
-def makeDuration[DurationType](duration: Long)(using generic: GenericDuration[DurationType]): DurationType =
-  generic.makeDuration(duration)
+extension [DurationType](duration: DurationType)(using generic: GenericDuration[DurationType])
+  def milliseconds: Long = generic.milliseconds(duration)
 
-def readDuration[DurationType](using generic: GenericDuration[DurationType])(duration: DurationType): Long =
-  generic.readDuration(duration)
-
-object GenericDuration:
-  def apply[DurationType](long: Long)(using generic: GenericDuration[DurationType]): DurationType =
-    generic.makeDuration(long)
-
-object GenericInstant:
-  def apply[InstantType](long: Long)(using generic: GenericInstant[InstantType]): InstantType =
-    generic.makeInstant(long)
-
-extension [DurationType](value: DurationType)(using generic: GenericDuration[DurationType])
-  def milliseconds: Long = generic.readDuration(value)
-
-extension [InstantType](value: InstantType)(using generic: GenericInstant[InstantType])
-  def millisecondsSinceEpoch: Long = generic.readInstant(value)
+object SpecificDuration:
+  def apply[DurationType](using specific: SpecificDuration[DurationType])(milliseconds: Long): DurationType =
+    specific.duration(milliseconds)
