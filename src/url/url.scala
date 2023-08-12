@@ -19,12 +19,13 @@ package anticipation
 import language.experimental.captureChecking
 
 trait GenericUrl[UrlType]:
-  def urlText(url: UrlType): Text
-  def makeUrl(text: Text): UrlType
+  def text(url: UrlType): Text
 
-extension [UrlType](url: UrlType)(using genericUrl: GenericUrl[UrlType])
-  def urlText: Text = genericUrl.urlText(url)
+trait SpecificUrl[UrlType]:
+  def url(text: Text): UrlType
 
-object GenericUrl:
-  def apply[UrlType](urlText: Text)(using genericUrl: GenericUrl[UrlType]): UrlType =
-    genericUrl.makeUrl(urlText)
+extension [UrlType](url: UrlType)(using generic: GenericUrl[UrlType])
+  def text: Text = generic.text(url)
+
+object SpecificUrl:
+  def url[UrlType](text: Text)(using specific: SpecificUrl[UrlType]): UrlType = specific.url(text)
