@@ -68,8 +68,8 @@ object Executor:
   
   given unit: Executor[Unit] = exitStatus.map(_ => ())
   
-  given path[PathType](using GenericPathMaker[PathType]): Executor[PathType] =
-    proc => GenericPath(text.interpret(proc))
+  given path[PathType](using SpecificPath[PathType]): Executor[PathType] =
+    proc => SpecificPath(text.interpret(proc))
 
 @capability 
 trait Executor[ResultType]:
@@ -261,7 +261,7 @@ object Sh:
   given [ValueType: AsParams]: Insertion[Params, ValueType] = value => Params(summon[AsParams[ValueType]].show(value))
 
 object AsParams:
-  given [PathType: GenericPathReader]: AsParams[PathType] = _.fullPath
+  given [PathType: GenericPath]: AsParams[PathType] = _.pathText
   given AsParams[Int] = _.show
   
   given [ValueType](using encoder: Encoder[ValueType]): AsParams[ValueType]^{encoder} =
