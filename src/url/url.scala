@@ -28,4 +28,4 @@ extension [UrlType](url: UrlType)(using generic: GenericUrl[UrlType])
   def text: Text = generic.text(url)
 
 object SpecificUrl:
-  def url[UrlType](text: Text)(using specific: SpecificUrl[UrlType]): UrlType = specific.url(text)
+  def apply[UrlType](text: Text)(using specific: SpecificUrl[UrlType]): UrlType = specific.url(text)
