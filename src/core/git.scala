@@ -220,15 +220,21 @@ case class GitRepo(gitDir: Directory, workTree: Maybe[Directory] = Unset):
 enum Progress:
   case Receiving(complete: Double)
   case Resolving(complete: Double)
+  case Unpacking(complete: Double)
+  case RemoteCounting(complete: Double)
+  case RemoteCompressing(complete: Double)
 
 private[nonagenarian] inline def git(using command: GitCommand): GitCommand = command
 
 object Git:
   def progress(process: Process[?, ?]): LazyList[Progress] =
     safely[StreamCutError]:
-      process.stderr().map(_.uString).map(_.trim).collect:
-        case r"Receiving objects: *${As[Int](pc)}([0-9]*)\%.*" => Progress.Receiving(pc/100.0)
-        case r"Resolving deltas: *${As[Int](pc)}([0-9]+)\%.*"  => Progress.Resolving(pc/100.0)
+      process.stderr().map(_.uString).map(_.trim).flatMap(_.cut(r"[\n\r]")).collect:
+        case r"Receiving objects: *${pc}([0-9]*)\%.*"            => Progress.Receiving(pc.s.toInt/100.0)
+        case r"Resolving deltas: *${pc}([0-9]+)\%.*"             => Progress.Resolving(pc.s.toInt/100.0)
+        case r"Unpacking objects: *${pc}([0-9]+)\%.*"            => Progress.Unpacking(pc.s.toInt/100.0)
+        case r"remote: *Compressing objects: *${pc}([0-9]+)\%.*"  => Progress.RemoteCompressing(pc.s.toInt/100.0)
+        case r"remote: *Counting objects: *${pc}([0-9]+)\%.*"     => Progress.RemoteCounting(pc.s.toInt/100.0)
     .or(LazyList())
 
   def init
