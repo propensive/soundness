@@ -56,6 +56,8 @@ object GitError:
 case class GitError(detail: GitError.Detail)
 extends Error(msg"the Git operation could not be completed because $detail")
 
+case class GitRefError(value: Text) extends Error(msg"$value is not a valid Git reference")
+
 class GitProcess[+ResultType](val progress: LazyList[Progress])(closure: => ResultType^):
   lazy val result: ResultType^{this} = closure
   def complete(): ResultType^{this} = result
@@ -72,8 +74,17 @@ case class GitRepo(gitDir: Directory, workTree: Maybe[Directory] = Unset):
     case Unset               => sh"--git-dir=${gitDir.path}"
     case workTree: Directory => sh"--git-dir=${gitDir.path} --work-tree=${workTree.path}"
 
-  def checkout(refspec: RefSpec)(using Log, GitCommand, WorkingDirectory): Unit =
-    sh"$git $repoOptions checkout $refspec".exec[ExitStatus]()
+  @targetName("checkoutTag")
+  def checkout(tag: Tag)(using Log, GitCommand, WorkingDirectory): Unit =
+      sh"$git $repoOptions checkout $tag".exec[ExitStatus]()
+  
+  @targetName("checkoutBranch")
+  def checkout(branch: Branch)(using Log, GitCommand, WorkingDirectory): Unit =
+      sh"$git $repoOptions checkout $branch".exec[ExitStatus]()
+  
+  @targetName("checkoutCommitHash")
+  def checkout(commit: CommitHash)(using Log, GitCommand, WorkingDirectory): Unit =
+      sh"$git $repoOptions checkout $commit".exec[ExitStatus]()
   
   def pushTags()(using Log, Internet, Raises[GitError], GitCommand, WorkingDirectory): Unit =
     sh"$git $repoOptions push --tags".exec[ExitStatus]()
@@ -95,7 +106,7 @@ case class GitRepo(gitDir: Directory, workTree: Maybe[Directory] = Unset):
         case failure       => abort(GitError(PullFailed))
   
   def fetch
-      (depth: Maybe[Int] = Unset, repo: Text, refspec: RefSpec)
+      (depth: Maybe[Int] = Unset, repo: Text, refspec: Refspec)
       (using GitCommand, Log, Internet, WorkingDirectory)(using gitError: Raises[GitError])
       : GitProcess[Unit]^{gitError} =
     
@@ -114,12 +125,12 @@ case class GitRepo(gitDir: Directory, workTree: Maybe[Directory] = Unset):
       case failure       => abort(GitError(CommitFailed))
   
   def branches()(using GitCommand, WorkingDirectory, Log): List[Branch] =
-    sh"$git $repoOptions branch".exec[LazyList[Text]]().map(_.drop(2)).to(List).map(Branch(_))
+    sh"$git $repoOptions branch".exec[LazyList[Text]]().map(_.drop(2)).to(List).map(Branch.unsafe(_))
   
   // FIXME: this uses an `Executor[String]` instead of an `Executor[Text]` because, for some
   // reason, the latter captures the `WorkingDirectory` parameter
   def branch()(using GitCommand, WorkingDirectory, Log): Branch =
-    Branch(sh"$git $repoOptions branch --show-current".exec[String]().tt)
+    Branch.unsafe(sh"$git $repoOptions branch --show-current".exec[String]().tt)
   
   def makeBranch
       (branch: Branch)
@@ -135,7 +146,7 @@ case class GitRepo(gitDir: Directory, workTree: Maybe[Directory] = Unset):
   def mv(): Unit = ()
   
   def tags()(using GitCommand, WorkingDirectory, Log): List[Tag] =
-    sh"$git $repoOptions tag".exec[LazyList[Text]]().to(List).map(Tag(_))
+    sh"$git $repoOptions tag".exec[LazyList[Text]]().to(List).map(Tag.unsafe(_))
 
   def tag(name: Tag)(using GitCommand, WorkingDirectory, Log, Raises[GitError]): Tag =
     sh"$git $repoOptions tag $name".exec[ExitStatus]() match
@@ -171,13 +182,13 @@ case class GitRepo(gitDir: Directory, workTree: Maybe[Directory] = Unset):
             recur(tail, hash, tree, parents, author, committer, signature, lines)
           
           case r"commit $hash(.{40})" =>
-            commit() #::: recur(tail, CommitHash(hash), Unset, Nil, Unset, Unset, Nil, Nil)
+            commit() #::: recur(tail, CommitHash.unsafe(hash), Unset, Nil, Unset, Unset, Nil, Nil)
           
           case r"tree $tree(.{40})" =>
-            recur(tail, hash, CommitHash(tree), parents, author, committer, signature, lines)
+            recur(tail, hash, CommitHash.unsafe(tree), parents, author, committer, signature, lines)
           
           case r"parent $parent(.{40})" =>
-            recur(tail, hash, tree, CommitHash(parent) :: parents, author, committer, signature, lines)
+            recur(tail, hash, tree, CommitHash.unsafe(parent) :: parents, author, committer, signature, lines)
 
           case r"author $author(.*) $timestamp([0-9]+) $time(.....)" =>
             recur(tail, hash, tree, parents, author, committer, signature, lines)
@@ -278,15 +289,52 @@ object Git:
           abort(GitError(CloneFailed))
 
 
-object RefSpec:
-  given Encoder[RefSpec] = _.name
+object Nonagenarian:
+  opaque type Refspec = Text
+  opaque type Tag <: Refspec = Text
+  opaque type Branch <: Refspec = Text
+  opaque type CommitHash <: Refspec = Text
 
-trait RefSpec:
-  def name: Text
+  object Refspec:
+    def parse(text: Text)(using Raises[GitRefError]): Text =
+      text.cut(t"/").foreach: part =>
+        if part.starts(t".") || part.ends(t".") then raise(GitRefError(text))(text)
+        if part.ends(t".lock") then raise(GitRefError(text))(text)
+        if part.contains(t"@{") then raise(GitRefError(text))(text)
+        if part.contains(t"..") then raise(GitRefError(text))(text)
+        if part.length == 0 then raise(GitRefError(text))(text)
 
-case class Tag(name: Text) extends RefSpec
-case class Branch(name: Text) extends RefSpec
-case class CommitHash(name: Text) extends RefSpec
+        for ch <- List('*', '[', '\\', ' ', '^', '~', ':', '?')
+        do if part.contains(ch) then raise(GitRefError(text))(text)
+
+      text
+    
+    given Encoder[Refspec] = identity(_)
+    given Show[Refspec] = identity(_)
+
+  object Tag:
+    def unsafe(text: Text): Tag = text
+    def apply(text: Text)(using Raises[GitRefError]): Tag = Refspec.parse(text)
+    given Encoder[Tag] = identity(_)
+    given Show[Tag] = identity(_)
+
+  object Branch:
+    def unsafe(text: Text): Branch = text
+    def apply(text: Text)(using Raises[GitRefError]): Branch = Refspec.parse(text)
+    given Encoder[Branch] = identity(_)
+    given Show[Branch] = identity(_)
+
+  object CommitHash:
+    def apply(text: Text)(using Raises[GitRefError]): CommitHash = text match
+      case r"[a-f0-9]{40}" => text
+      case _               => raise(GitRefError(text))(text)
+    
+    def unsafe(text: Text): CommitHash = text
+    
+    given Encoder[CommitHash] = identity(_)
+    given Show[CommitHash] = identity(_)
+
+export Nonagenarian.{Tag, Branch, CommitHash, Refspec}
 
 object GitCommand:
   given AsParams[GitCommand] = _.file.path.fullname
