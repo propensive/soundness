@@ -232,14 +232,14 @@ object Git:
     .or(LazyList())
 
   def init
-      [PathType: GenericPathReader]
+      [PathType: GenericPath]
       (targetPath: PathType, bare: Boolean = false)
       (using Log, WorkingDirectory, Raises[GitError], Decoder[Path])(using command: GitCommand)
       : GitRepo =
     try
       throwErrors[PathError | IoError]:
         val bareOpt = if bare then sh"--bare" else sh""
-        val target: Path = targetPath.fullPath.decodeAs[Path]
+        val target: Path = targetPath.pathText.decodeAs[Path]
         sh"$command init $bareOpt $target".exec[ExitStatus]()
         
         if bare then GitRepo(target.as[Directory], Unset)
@@ -250,7 +250,7 @@ object Git:
       case error: IoError   => abort(GitError(InvalidRepoPath))
   
   def cloneCommit
-      [PathType: GenericPathReader]
+      [PathType: GenericPath]
       (repo: Text, targetPath: PathType, commit: CommitHash)
       (using Internet, Decoder[Path], GitCommand)(using gitError: Raises[GitError], log: Log, workingDirectory: WorkingDirectory)
       : GitProcess[GitRepo]^{gitError, log, workingDirectory} =
@@ -265,13 +265,13 @@ object Git:
       gitRepo
 
   def clone
-      [PathType: GenericPathReader]
+      [PathType: GenericPath]
       (source: Text, targetPath: PathType, bare: Boolean = false, branch: Maybe[Branch] = Unset,
           recursive: Boolean = false)
       (using Internet, WorkingDirectory, Log, Decoder[Path], GitCommand)(using gitError: Raises[GitError])
       : GitProcess[GitRepo]^{gitError} =
     
-    val target: Path = try targetPath.fullPath.decodeAs[Path] catch case error: PathError => abort(GitError(InvalidRepoPath))
+    val target: Path = try targetPath.pathText.decodeAs[Path] catch case error: PathError => abort(GitError(InvalidRepoPath))
     
     val bareOption = if bare then sh"--bare" else sh""
     val branchOption = branch.fm(sh"") { branch => sh"--branch=$branch" }
