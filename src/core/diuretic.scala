@@ -24,23 +24,28 @@ import java.nio.file as jnf
 import java.net as jn
 import java.util as ju
 
-object JavaTime extends GenericInstant[jt.Instant], GenericDuration[Long]:
-  def readInstant(value: jt.Instant): Long = value.toEpochMilli
-  def makeInstant(long: Long): jt.Instant = jt.Instant.ofEpochMilli(long).nn
-  def readDuration(long: Long): Long = long
-  def makeDuration(value: Long): Long = value
+object JavaTime
+extends GenericInstant[jt.Instant], GenericDuration[Long], SpecificInstant[jt.Instant], SpecificDuration[Long]:
+  
+  def millisecondsSinceEpoch(value: jt.Instant): Long = value.toEpochMilli
+  def instant(long: Long): jt.Instant = jt.Instant.ofEpochMilli(long).nn
+  def milliseconds(long: Long): Long = long
+  def duration(value: Long): Long = value
 
-object JavaLongTime extends GenericInstant[Long], GenericDuration[Long]:
-  def readInstant(long: Long): Long = long
-  def makeInstant(value: Long): Long = value
-  def readDuration(long: Long): Long = long
-  def makeDuration(value: Long): Long = value
+object JavaLongTime
+extends GenericInstant[Long], GenericDuration[Long], SpecificInstant[Long], SpecificDuration[Long]:
+  
+  def millisecondsSinceEpoch(long: Long): Long = long
+  def instant(value: Long): Long = value
+  def milliseconds(long: Long): Long = long
+  def duration(value: Long): Long = value
 
-object JavaUtilTime extends GenericInstant[ju.Date], GenericDuration[Long]:
-  def makeInstant(long: Long): ju.Date = ju.Date(long)
-  def readInstant(value: ju.Date): Long = value.getTime
-  def readDuration(long: Long): Long = long
-  def makeDuration(value: Long): Long = value
+object JavaUtilTime
+extends GenericInstant[ju.Date], GenericDuration[Long], SpecificInstant[ju.Date], SpecificDuration[Long]:
+  def instant(long: Long): ju.Date = ju.Date(long)
+  def millisecondsSinceEpoch(value: ju.Date): Long = value.getTime
+  def milliseconds(long: Long): Long = long
+  def duration(value: Long): Long = value
 
 object JavaNioFile
 extends GenericFileMaker[jnf.Path], GenericDirectoryMaker[jnf.Path], GenericPathMaker[jnf.Path],
