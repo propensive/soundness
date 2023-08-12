@@ -75,7 +75,11 @@ object Dates:
 
     given decoder(using Raises[DateError]): Decoder[Date] = parse(_)
     given encoder: Encoder[Date] = _.show
-  
+    
+    inline given inequality: Inequality[Date, Date] with
+      inline def compare(inline left: Date, inline right: Date, inline strict: Boolean, inline greaterThan: Boolean): Boolean =
+        if left == right then !strict else (left < right)^greaterThan
+    
     given ordering: Ordering[Date] = Ordering.Int
     
     given Show[Date] = d =>
@@ -197,6 +201,10 @@ object Timing:
     given generic: GenericInstant[Timing.Instant] with
       def instant(millisecondsSinceEpoch: Long): Timing.Instant = millisecondsSinceEpoch
       def millisecondsSinceEpoch(instant: Timing.Instant): Long = instant
+    
+    inline given inequality: Inequality[Instant, Instant] with
+      inline def compare(inline left: Instant, inline right: Instant, inline strict: Boolean, inline greaterThan: Boolean): Boolean =
+        if left == right then !strict else (left < right)^greaterThan
     
     given ordering: Ordering[Instant] = Ordering.Long
 
