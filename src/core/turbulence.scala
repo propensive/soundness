@@ -102,6 +102,17 @@ case class Multiplexer[KeyType, ElemType]()(using Monitor):
 
 
 extension [ElemType](stream: LazyList[ElemType])
+
+  def deduplicate: LazyList[ElemType] =
+    def recur(last: ElemType, stream: LazyList[ElemType]): LazyList[ElemType] =
+      stream match
+        case head #:: tail => if last == head then recur(last, tail) else head #:: recur(head, tail)
+        case _             => LazyList()
+
+    stream match
+      case head #:: tail => head #:: recur(head, tail)
+      case _             => LazyList()
+
   def rate
       [DurationType: GenericDuration: SpecificDuration](duration: DurationType)
       (using monitor: Monitor, cancel: Raises[CancelError])
