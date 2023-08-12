@@ -69,66 +69,66 @@ trait EnvironmentVariable2:
 
 object EnvironmentVariable extends EnvironmentVariable2:
   given path
-      [PathType: GenericPathMaker]
+      [PathType: SpecificPath]
       (using systemProperties: SystemProperties)
       : EnvironmentVariable["path", List[PathType]] =
-    _.cut(systemProperties(t"path.separator").or(t":")).map(GenericPath(_))
+    _.cut(systemProperties(t"path.separator").or(t":")).map(SpecificPath(_))
   
   given xdgDataDirs
-      [PathType: GenericPathMaker]
+      [PathType: SpecificPath]
       (using systemProperties: SystemProperties)
       : EnvironmentVariable["xdgDataDirs", List[PathType]] =
-    _.cut(systemProperties(t"path.separator").or(t":")).map(GenericPath(_))
+    _.cut(systemProperties(t"path.separator").or(t":")).map(SpecificPath(_))
   
   given xdgConfigDirs
-      [PathType: GenericPathMaker]
+      [PathType: SpecificPath]
       (using systemProperties: SystemProperties)
       : EnvironmentVariable["xdgConfigDirs", List[PathType]] =
-    _.cut(systemProperties(t"path.separator").or(t":")).map(GenericPath(_))
+    _.cut(systemProperties(t"path.separator").or(t":")).map(SpecificPath(_))
 
-  given xdgDataHome[PathType: GenericPathMaker]: EnvironmentVariable["xdgDataHome", PathType] =
-    GenericPath(_)
+  given xdgDataHome[PathType: SpecificPath]: EnvironmentVariable["xdgDataHome", PathType] =
+    SpecificPath(_)
 
-  given xdgConfigHome[PathType: GenericPathMaker]: EnvironmentVariable["xdgConfigHome", PathType] =
-    GenericPath(_)
+  given xdgConfigHome[PathType: SpecificPath]: EnvironmentVariable["xdgConfigHome", PathType] =
+    SpecificPath(_)
   
-  given xdgStateHome[PathType: GenericPathMaker]: EnvironmentVariable["xdgStateHome", PathType] =
-    GenericPath(_)
+  given xdgStateHome[PathType: SpecificPath]: EnvironmentVariable["xdgStateHome", PathType] =
+    SpecificPath(_)
   
-  given xdgCacheHome[PathType: GenericPathMaker]: EnvironmentVariable["xdgCacheHome", PathType] =
-    GenericPath(_)
+  given xdgCacheHome[PathType: SpecificPath]: EnvironmentVariable["xdgCacheHome", PathType] =
+    SpecificPath(_)
   
-  given xdgRuntimeDir[PathType: GenericPathMaker]: EnvironmentVariable["xdgRuntimeDir", PathType] =
-    GenericPath(_)
+  given xdgRuntimeDir[PathType: SpecificPath]: EnvironmentVariable["xdgRuntimeDir", PathType] =
+    SpecificPath(_)
   
-  given home[PathType: GenericPathMaker]: EnvironmentVariable["home", PathType] = GenericPath(_)
-  given mail[PathType: GenericPathMaker]: EnvironmentVariable["mail", PathType] = GenericPath(_)
+  given home[PathType: SpecificPath]: EnvironmentVariable["home", PathType] = SpecificPath(_)
+  given mail[PathType: SpecificPath]: EnvironmentVariable["mail", PathType] = SpecificPath(_)
   
-  given shell[PathType: GenericPathMaker]: EnvironmentVariable["shell", PathType] =
-    GenericPath(_)
+  given shell[PathType: SpecificPath]: EnvironmentVariable["shell", PathType] =
+    SpecificPath(_)
   
-  given oldPwd[PathType: GenericPathMaker]: EnvironmentVariable["oldPwd", PathType] with
-    def read(variable: Text): PathType = GenericPath(variable)
+  given oldPwd[PathType: SpecificPath]: EnvironmentVariable["oldPwd", PathType] with
+    def read(variable: Text): PathType = SpecificPath(variable)
     override def name: Text = t"OLDPWD"
 
-  given windowId[PathType: GenericPathMaker]: EnvironmentVariable["windowId", PathType] with
-    def read(variable: Text): PathType = GenericPath(variable)
+  given windowId[PathType: SpecificPath]: EnvironmentVariable["windowId", PathType] with
+    def read(variable: Text): PathType = SpecificPath(variable)
     override def name: Text = t"WINDOWID"
 
-  given editor[PathType: GenericPathMaker]: EnvironmentVariable["editor", PathType] =
-    GenericPath(_)
+  given editor[PathType: SpecificPath]: EnvironmentVariable["editor", PathType] =
+    SpecificPath(_)
   
-  given pager[PathType: GenericPathMaker]: EnvironmentVariable["pager", PathType] =
-    GenericPath(_)
+  given pager[PathType: SpecificPath]: EnvironmentVariable["pager", PathType] =
+    SpecificPath(_)
   
   given sshAgentPid(using Raises[NumberError]): EnvironmentVariable["sshAgentPid", Pid] = text =>
     Pid(text.decodeAs[Int])
 
-  given sshAuthSock[PathType: GenericPathMaker]: EnvironmentVariable["sshAuthSock", PathType] =
-    GenericPath(_)
+  given sshAuthSock[PathType: SpecificPath]: EnvironmentVariable["sshAuthSock", PathType] =
+    SpecificPath(_)
   
-  given manpager[PathType: GenericPathMaker]: EnvironmentVariable["manpager", PathType] =
-    GenericPath(_)
+  given manpager[PathType: SpecificPath]: EnvironmentVariable["manpager", PathType] =
+    SpecificPath(_)
   
   given columns(using Decoder[Int]): EnvironmentVariable["columns", Int] = _.decodeAs[Int]
   given lang: EnvironmentVariable["lang", Text] = identity(_)

@@ -24,28 +24,28 @@ import ambience.*
 
 case class Xdg()(using home: HomeDirectory):
 
-  def dataHome[PathType: GenericPathMaker](using Environment): PathType =
-    safely(Environment.xdgDataHome[PathType]).or(GenericPath(t"${home.text}/.local/share"))
+  def dataHome[PathType: SpecificPath](using Environment): PathType =
+    safely(Environment.xdgDataHome[PathType]).or(SpecificPath(t"${home.text}/.local/share"))
   
-  def configHome[PathType: GenericPathMaker](using Environment): PathType =
-    safely(Environment.xdgConfigHome[PathType]).or(GenericPath(t"${home.text}/.config"))
+  def configHome[PathType: SpecificPath](using Environment): PathType =
+    safely(Environment.xdgConfigHome[PathType]).or(SpecificPath(t"${home.text}/.config"))
   
-  def cacheHome[PathType: GenericPathMaker](using Environment): PathType =
-    safely(Environment.xdgCacheHome[PathType]).or(GenericPath(t"${home.text}/.cache"))
+  def cacheHome[PathType: SpecificPath](using Environment): PathType =
+    safely(Environment.xdgCacheHome[PathType]).or(SpecificPath(t"${home.text}/.cache"))
   
-  def stateHome[PathType: GenericPathMaker](using Environment): PathType =
-    safely(Environment.xdgStateHome[PathType]).or(GenericPath(t"${home.text}/.local/state"))
+  def stateHome[PathType: SpecificPath](using Environment): PathType =
+    safely(Environment.xdgStateHome[PathType]).or(SpecificPath(t"${home.text}/.local/state"))
   
-  def runtimeDir[PathType: GenericPathMaker](using Environment): Maybe[PathType] =
+  def runtimeDir[PathType: SpecificPath](using Environment): Maybe[PathType] =
     safely(Environment.xdgRuntimeDir[PathType])
   
-  def bin[PathType: GenericPathMaker](using Environment): PathType =
-    safely(Environment.xdgConfigHome[PathType]).or(GenericPath(t"${home.text}/.local/bin"))
+  def bin[PathType: SpecificPath](using Environment): PathType =
+    safely(Environment.xdgConfigHome[PathType]).or(SpecificPath(t"${home.text}/.local/bin"))
   
-  def dataDirs[PathType: GenericPathMaker](using Environment, SystemProperties): List[PathType] =
+  def dataDirs[PathType: SpecificPath](using Environment, SystemProperties): List[PathType] =
     safely(Environment.xdgDataDirs[List[PathType]]).or:
-      List(t"/usr/local/share", t"/usr/share").map(GenericPath(_))
+      List(t"/usr/local/share", t"/usr/share").map(SpecificPath(_))
   
-  def configDirs[PathType: GenericPathMaker](using Environment, SystemProperties): List[PathType] =
+  def configDirs[PathType: SpecificPath](using Environment, SystemProperties): List[PathType] =
     safely(Environment.xdgConfigDirs[List[PathType]]).or:
-      List(t"/etc/xdg").map(GenericPath(_))
+      List(t"/etc/xdg").map(SpecificPath(_))
