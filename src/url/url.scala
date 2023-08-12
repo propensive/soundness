@@ -103,12 +103,9 @@ object UrlInterpolator extends contextual.Interpolator[UrlInput, Text, Url]:
   def skip(state: Text): Text = state+t"1"
 
 object Url:
-  given (using Raises[UrlError]): GenericUrl[Url] = new GenericUrl[Url]:
-    def urlText(url: Url): Text = url.show
-    def makeUrl(value: Text): Url = Url.parse(value)
-
+  given GenericUrl[Url] = _.show
+  given (using Raises[UrlError]): SpecificUrl[Url] = Url.parse(_)
   given GenericHttpRequestParam["location", Url] = show(_)
-
   given (using Raises[UrlError]): Decoder[Url] = parse(_)
   given Encoder[Url] = _.show
   given Debug[Url] = _.show
