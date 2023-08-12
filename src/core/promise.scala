@@ -19,10 +19,8 @@ package parasite
 import anticipation.*
 import rudiments.*
 import digression.*
-import fulminate.*
 import perforate.*
 
-import scala.compiletime.*
 import scala.annotation.*
 import scala.collection.mutable as scm
 
@@ -32,6 +30,7 @@ import language.experimental.captureChecking
 
 object Promise:
   object Cancelled
+  object Incomplete
 
 enum AsyncState[+ValueType]:
   case Active
@@ -43,31 +42,35 @@ enum AsyncState[+ValueType]:
 import AsyncState.*
 
 case class Promise[ValueType]():
-  private val value: juca.AtomicReference[Maybe[ValueType]] = juca.AtomicReference(Unset)
-  private val cancelValue: juca.AtomicBoolean = juca.AtomicBoolean(false)
+  private var value: ValueType | Promise.Cancelled.type | Promise.Incomplete.type = Promise.Incomplete
 
-  def cancelled: Boolean = cancelValue.get()
-  def ready: Boolean = !value.get.unset || cancelled
+  inline def cancelled: Boolean = value == Promise.Cancelled
+  inline def incomplete: Boolean = value == Promise.Incomplete
+  inline def ready: Boolean = !incomplete
 
   private def get()(using Raises[CancelError]): ValueType =
-    if cancelled then abort(CancelError())
-    else value.get.or(throw Mistake(msg"the promise was expected to be completed")).nn
+    if cancelled then abort(CancelError()) else value.asInstanceOf[ValueType]
 
   def fulfill(supplied: -> ValueType)(using complete: Raises[AlreadyCompleteError]): Unit^{complete} =
     synchronized:
-      if !value.compareAndSet(Unset, supplied) then raise(AlreadyCompleteError())(())
+      if !incomplete then raise(AlreadyCompleteError())(()) else value = supplied
       notifyAll()
   
-  def offer(supplied: -> ValueType): Unit = synchronized:
-    if value.compareAndSet(Unset, supplied) then notifyAll()
+  def offer(supplied: -> ValueType): Unit =
+    synchronized:
+      if incomplete then
+        value = supplied
+        notifyAll()
 
-  def await()(using Raises[CancelError]): ValueType = synchronized:
-    while !ready do wait()
-    get()
+  def await()(using Raises[CancelError]): ValueType =
+    synchronized:
+      while !ready do wait()
+      get()
 
-  def cancel(): Unit = synchronized:
-    cancelValue.set(true)
-    notifyAll()
+  def cancel(): Unit =
+    synchronized:
+      value = Promise.Cancelled
+      notifyAll()
 
   def await
       [DurationType: GenericDuration]
