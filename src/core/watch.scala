@@ -34,14 +34,14 @@ import jnf.StandardWatchEventKinds.*
 case class InotifyError()
 extends Error(msg"the limit on the number of paths that can be watched has been exceeded")
 
-extension [DirectoryType: GenericDirectoryMaker: GenericDirectoryReader](dirs: Seq[DirectoryType])(using Monitor)
+extension [DirectoryType: SpecificDirectory: GenericDirectory](dirs: Seq[DirectoryType])(using Monitor)
   def watch()(using Log, GenericWatchService[DirectoryType]): Watcher[DirectoryType] throws InotifyError = Watcher[DirectoryType](dirs*)
 
-extension [DirectoryType: GenericDirectoryMaker: GenericDirectoryReader](dir: DirectoryType)(using Monitor)
+extension [DirectoryType: SpecificDirectory: GenericDirectory](dir: DirectoryType)(using Monitor)
   def watch()(using Log, GenericWatchService[DirectoryType]): Watcher[DirectoryType] throws InotifyError = Watcher[DirectoryType](dir)
 
 object Watcher:
-  def apply[DirectoryType: GenericWatchService: GenericDirectoryMaker: GenericDirectoryReader]
+  def apply[DirectoryType: GenericWatchService: SpecificDirectory: GenericDirectory]
            (dirs: DirectoryType*)(using Log, Monitor)
            : Watcher[DirectoryType] =
     val svc: jnf.WatchService = summon[GenericWatchService[DirectoryType]]()
@@ -51,15 +51,15 @@ object Watcher:
     watcher
 
 case class Watcher
-    [DirectoryType]
+    [DirectoryType: GenericDirectory: SpecificDirectory]
     (private val svc: jnf.WatchService)
-    (using GenericDirectoryReader[DirectoryType], GenericDirectoryMaker[DirectoryType], Monitor):
+    (using Monitor):
   
   private val watches: HashMap[jnf.WatchKey, jnf.Path] = HashMap()
   private val dirs: HashMap[jnf.Path, jnf.WatchKey] = HashMap()
   
   private def dirPath(directory: DirectoryType): jnf.Path = jnf.Paths.get(directory.fullPath.s).nn
-  private def toDirectory(path: jnf.Path): DirectoryType = GenericDirectory(path.toString.tt)
+  private def toDirectory(path: jnf.Path): DirectoryType = SpecificDirectory(path.toString.tt)
 
   private val funnel = Funnel[Maybe[WatchEvent]]
   private val pumpAsync = Async(pump())
@@ -131,14 +131,14 @@ enum WatchEvent:
 
   def dir: Text
 
-  def path[DirectoryType](using mkdir: GenericPathMaker[DirectoryType]): DirectoryType = unsafely:
+  def path[DirectoryType: SpecificPath]: DirectoryType = unsafely:
     val relPath = this match
       case NewFile(_, file)      => file
       case NewDirectory(_, path) => path
       case Modify(_, file)       => file
       case Delete(_, path)       => path
 
-      mkdir.makePath(jnf.Paths.get(dir.s, relPath.show.s).nn.normalize.nn.toString.show)
+      SpecificPath(jnf.Paths.get(dir.s, relPath.show.s).nn.normalize.nn.toString.show)
 
 export WatchEvent.{NewFile, NewDirectory, Modify, Delete}
 
