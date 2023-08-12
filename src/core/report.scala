@@ -18,7 +18,6 @@ package probably
 
 import rudiments.*
 import digression.*
-import perforate.*
 import symbolism.*
 import anticipation.*
 import gossamer.*, defaultTextTypes.output
@@ -420,7 +419,7 @@ class TestReport(using env: Environment):
         ) ::: (
           comparisons.map: c =>
             import Baseline.*
-            val baseline = unsafely(c.benchmark.baseline.assume)
+            val baseline = c.benchmark.baseline.avow(using Unsafe)
             Column(out"$Bold(${colors.CadetBlue}(${c.test.id}))", align = Alignment.Right): (bench: ReportLine.Bench) =>
               def op(left: Double, right: Double): Double = baseline.calc match
                 case Difference => left - right
