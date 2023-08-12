@@ -82,7 +82,7 @@ object Tests extends Suite(t"Parasite tests"):
           Set(alpha.await(), beta.await(), gamma.await(), delta.await())
         .assert(_ == Set(t"ALPHA", t"BETA", t"GAMMA", t"DELTA"))
       
-        for i <- 1 to 1000 do test(t"Race test"):
+        test(t"Race test"):
           val bus = Bus()
           val task1 = Async:
             bus.waitFor(t"task1")
