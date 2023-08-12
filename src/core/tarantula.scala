@@ -133,15 +133,15 @@ case class WebDriver(server: Browser#Server):
       internet:
         url"http://localhost:${server.port}/session/$sessionId/$address".post(content).as[Json]
     
-    def navigateTo[U: GenericUrl](url: U)(using Log): Json =
+    def navigateTo[UrlType: GenericUrl](url: UrlType)(using Log): Json =
       case class Data(url: Text)
-      post(t"url", Data(url.urlText).json)
+      post(t"url", Data(url.text).json)
     
     def refresh()(using Log): Unit = post(t"refresh", Json.parse(t"{}")).as[Json]
     def forward()(using Log): Unit = post(t"forward", Json.parse(t"{}")).as[Json]
     def back()(using Log): Unit = post(t"back", Json.parse(t"{}")).as[Json]
     def title()(using Log): Text = get(t"title").as[Json].value.as[Text]
-    def url()(using Log): Text = get(t"url").url.as[Text]
+    def url[UrlType: SpecificUrl]()(using Log): UrlType = SpecificUrl(get(t"url").url.as[Text])
 
     @targetName("at")
     def /[T](value: T)(using el: ElementLocator[T], log: Log): List[Element] =
