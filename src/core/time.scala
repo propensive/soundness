@@ -24,13 +24,10 @@ import anticipation.*
 import gossamer.*
 import contextual.*
 import quantitative.*
-import anticipation.{GenericInstant, GenericDuration}
 
 import scala.quoted.*
 import java.util as ju
 import java.time as jt
-
-//import language.experimental.captureChecking
 
 package calendars:
   given julian: RomanCalendar() with
@@ -215,8 +212,8 @@ object Timing:
     def of(millis: Long): Instant = millis
     
     given generic: GenericInstant[Timing.Instant] with
-      def makeInstant(long: Long): Timing.Instant = long
-      def readInstant(instant: Timing.Instant): Long = instant
+      def instant(millisecondsSinceEpoch: Long): Timing.Instant = millisecondsSinceEpoch
+      def millisecondsSinceEpoch(instant: Timing.Instant): Long = instant
     
     given ordering: Ordering[Instant] = Ordering.Long
 
@@ -226,9 +223,9 @@ object Timing:
 
     def of(millis: Long): Duration = Quantity(millis/1000.0)
 
-    given generic: GenericDuration[Timing.Duration] with
-      def makeDuration(long: Long): Timing.Duration = Quantity(long.toDouble)
-      def readDuration(duration: Timing.Duration): Long = (duration.value*1000).toLong
+    given generic: GenericDuration[Timing.Duration] with SpecificDuration[Timing.Duration] with
+      def duration(milliseconds: Long): Timing.Duration = Quantity(milliseconds.toDouble)
+      def milliseconds(duration: Timing.Duration): Long = (duration.value*1000).toLong
 
   extension (instant: Instant)
     @targetName("minus")
@@ -303,15 +300,15 @@ trait FixedDuration:
   this: Period =>
 
 object Period:
-  given genericDuration: GenericDuration[Period & FixedDuration] with
-    def makeDuration(long: Long): Period & FixedDuration =
-      val hours: Int = (long/3600000L).toInt
-      val minutes: Int = ((long%3600000L)/60000L).toInt
-      val seconds: Int = ((long%60000L)/1000L).toInt
+  given genericDuration: GenericDuration[Period & FixedDuration] with SpecificDuration[Period & FixedDuration] with
+    def duration(milliseconds: Long): Period & FixedDuration =
+      val hours: Int = (milliseconds/3600000L).toInt
+      val minutes: Int = ((milliseconds%3600000L)/60000L).toInt
+      val seconds: Int = ((milliseconds%60000L)/1000L).toInt
       
       new Period(0, 0, 0, hours, minutes, seconds) with FixedDuration
     
-    def readDuration(period: Period & FixedDuration): Long =
+    def milliseconds(period: Period & FixedDuration): Long =
       period.hours*3600000L + period.minutes*60000L + period.seconds*1000L
   
   def apply(denomination: StandardTime, n: Int): Period = (denomination: @unchecked) match
