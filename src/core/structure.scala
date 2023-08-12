@@ -45,14 +45,14 @@ case class BaseLayout
 
   given newBaseDir: BaseLayout.Dir = BaseLayout.Dir(baseDir.home, part.mm(_ :: baseDir.path).or(baseDir.path))
 
-  def apply[PathType]()(using GenericPathMaker[PathType], SystemProperties, Raises[SystemPropertyError], Environment, Raises[EnvironmentError]): PathType =
+  def apply[PathType]()(using SpecificPath[PathType], SystemProperties, Raises[SystemPropertyError], Environment, Raises[EnvironmentError]): PathType =
     val path: Text = absolutePath
 
-    GenericPath(path)
+    SpecificPath(path)
 
 object Base extends BaseLayout(Unset)(using BaseLayout.Dir(false, Nil)):
-  override def apply[PathType: GenericPathMaker]()(using SystemProperties, Raises[SystemPropertyError], Environment, Raises[EnvironmentError]): PathType =
-    GenericPath(t"/")
+  override def apply[PathType: SpecificPath]()(using SystemProperties, Raises[SystemPropertyError], Environment, Raises[EnvironmentError]): PathType =
+    SpecificPath(t"/")
 
   object Boot extends BaseLayout(t"boot", readOnly = true)
   object Efi extends BaseLayout(t"efi", readOnly = true)
