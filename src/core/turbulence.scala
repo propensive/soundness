@@ -103,13 +103,13 @@ case class Multiplexer[KeyType, ElemType]()(using Monitor):
 
 extension [ElemType](stream: LazyList[ElemType])
   def rate
-      [DurationType: GenericDuration](duration: DurationType)
+      [DurationType: GenericDuration: SpecificDuration](duration: DurationType)
       (using monitor: Monitor, cancel: Raises[CancelError])
       : LazyList[ElemType] =
     def recur(stream: LazyList[ElemType], last: Long): LazyList[ElemType] = stream match
       case head #:: tail =>
-        val delay = makeDuration(readDuration(duration) - (System.currentTimeMillis - last))
-        if readDuration(delay) > 0 then sleep(delay)
+        val delay = SpecificDuration(duration.milliseconds - (System.currentTimeMillis - last))
+        if delay.milliseconds > 0 then sleep(delay)
         stream
       case _ =>
         LazyList()
@@ -148,7 +148,7 @@ extension [ElemType](stream: LazyList[ElemType])
     LazyList() #::: recur(true, stream.map(Some(_)).multiplexWith(tap.stream), Nil)
 
   def cluster
-      [DurationType: GenericDuration]
+      [DurationType: SpecificDuration: GenericDuration]
       (duration: DurationType, maxSize: Maybe[Int] = Unset, maxDelay: Maybe[DurationType] = Unset)
       (using Monitor)
       : LazyList[List[ElemType]] =
@@ -167,7 +167,7 @@ extension [ElemType](stream: LazyList[ElemType])
         val recurse: Option[Boolean] =
           try throwErrors:
             val deadline: Long = duration.milliseconds.min(expiry - System.currentTimeMillis).max(0)
-            if hasMore.await(GenericDuration(deadline)) then Some(true) else None
+            if hasMore.await(SpecificDuration(deadline)) then Some(true) else None
           catch case err: (TimeoutError | CancelError) => Some(false)
 
         // The try/catch above seems to fool tail-call identification
