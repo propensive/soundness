@@ -18,6 +18,7 @@ package aviation
 
 import probably.*
 import rudiments.*
+import symbolism.*
 import gossamer.*
 import perforate.*
 import spectacular.*

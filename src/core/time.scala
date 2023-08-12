@@ -19,6 +19,7 @@ package aviation
 import rudiments.*
 import fulminate.*
 import spectacular.*
+import symbolism.*
 import perforate.*
 import anticipation.*
 import gossamer.*
@@ -79,8 +80,13 @@ object Dates:
     given Show[Date] = d =>
       given RomanCalendar = calendars.gregorian
       t"${d.day.toString.show}-${d.month.show}-${d.year.toString.show}"
+
+    given plus(using calendar: Calendar): Operator["+", Date, Period] with
+      type Result = Date
+      def apply(date: Date, period: Period): Date = calendar.add(date, period)
     
     def parse(value: Text)(using Raises[DateError]): Date = value.cut(t"-") match
+      // FIXME: This compiles successfully, but never seems to match
       //case As[Int](year) :: As[Int](month) :: As[Int](day) :: Nil =>
       case y :: m :: d :: Nil =>
         try
@@ -102,15 +108,10 @@ object Dates:
     def year(using cal: Calendar): cal.Y = cal.getYear(date)
     def yearDay(using cal: Calendar): Int = date - cal.zerothDayOfYear(cal.getYear(date))
     def julianDay: Int = date
+    def addDays(count: Int): Date = date + count
     
     infix def at(time: Time)(using Calendar): Timestamp = Timestamp(date, time)
     
-    @targetName("plus")
-    def +(period: Timespan)(using cal: Calendar): Date = cal.add(date, period)
-
-    @targetName("addDays")
-    def +(days: Int): Date = date + days
-
 export Dates.Date
 
 @capability
@@ -120,7 +121,6 @@ trait Calendar:
   type Y
 
   def daysInYear(year: Y): Int
-
   def getYear(date: Date): Y
   def getMonth(date: Date): M
   def getDay(date: Date): D
@@ -146,7 +146,7 @@ abstract class RomanCalendar() extends Calendar:
     val month2 = MonthName.fromOrdinal(monthTotal%12)
     val year2 = getYear(date) + period.years + monthTotal/12
     
-    safely(julianDay(year2, month2, getDay(date)) + period.days).avow(using Unsafe)
+    safely(julianDay(year2, month2, getDay(date)).addDays(period.days)).avow(using Unsafe)
   
   def leapYearsSinceEpoch(year: Int): Int
   def daysInYear(year: Y): Int = if leapYear(year) then 366 else 365
@@ -174,36 +174,18 @@ abstract class RomanCalendar() extends Calendar:
     then raise(DateError(t"$year-${month.numerical}-$day")):
       Date(using calendars.julian)(2000, MonthName(1), 1)
     
-    zerothDayOfYear(year) + month.offset(leapYear(year)) + day
+    zerothDayOfYear(year).addDays(month.offset(leapYear(year)) + day)
 
-class YearMonth[Y <: Nat, M <: MonthName & Singleton](year: Y, month: M):
+case class YearMonth(year: Int, month: MonthName):
   import compiletime.ops.int.*
-  
-  type CommonDays = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19 | 20 |
-      21 | 22 | 23 | 24 | 25 | 26 | 27 | 28
 
-  type Days <: Nat = M match
-    case Jan.type | Mar.type | May.type | Jul.type | Aug.type | Oct.type | Dec.type =>
-      CommonDays | 29 | 30 | 31
+object YearMonth:
+  given dayOfMonth: Operator["-", YearMonth, Int] with
+    type Result = Date
     
-    case Apr.type | Jun.type | Sep.type | Nov.type =>
-      CommonDays | 29 | 30
-    
-    case Feb.type => Y%4 match
-      case 0 => Y%100 match
-        case 0 => Y%400 match
-          case 0 => CommonDays | 29
-          case _ => CommonDays
-        case _ => CommonDays | 29
-      case _ => CommonDays
+    def apply(yearMonth: YearMonth, day: Int): Date =
+      safely(calendars.gregorian.julianDay(yearMonth.year, yearMonth.month, day)).avow(using Unsafe)
 
-  @targetName("of")
-  inline def -(day: Days): Date = safely(calendars.gregorian.julianDay(year, month, day)).avow(using Unsafe)
-
-extension (year: Nat)
-  @targetName("of")
-  inline def -(month: MonthName & Singleton): YearMonth[year.type, month.type] =
-    new YearMonth(year, month)
 
 object Timing:
   opaque type Instant = Long
@@ -217,6 +199,14 @@ object Timing:
     
     given ordering: Ordering[Instant] = Ordering.Long
 
+    given plus: Operator["+", Instant, Duration] with
+      type Result = Instant
+      def apply(instant: Instant, duration: Duration): Instant = instant + (duration.value/1000.0).toLong
+
+    given minus: Operator["-", Instant, Instant] with
+      type Result = Duration
+      def apply(left: Instant, right: Instant): Duration = Quantity((left - right)/1000.0)
+    
   type Duration = Quantity[Seconds[1]]
 
   object Duration:
@@ -228,12 +218,6 @@ object Timing:
       def milliseconds(duration: Timing.Duration): Long = (duration.value*1000).toLong
 
   extension (instant: Instant)
-    @targetName("minus")
-    def -(that: Instant): Duration = Quantity((instant - that)/1000.0)
-    
-    @targetName("plus")
-    def +(that: Duration): Instant = instant + (that.value/1000.0).toLong
-    
     @targetName("to")
     def ~(that: Instant): Interval = Interval(instant, that)
 
@@ -249,7 +233,7 @@ object Timing:
       LocalTime(date, time, timezone)
 
   extension (duration: Duration)
-    def from(instant: Instant): Interval = Interval(instant, instant + duration)
+    def from(instant: Instant): Interval = Interval(instant, Instant.plus(instant, duration))
 
 export Timing.{Instant, Duration}
 
@@ -326,6 +310,19 @@ object Period:
       case StandardTime.Hour   => new Period(0, 0, 0, n, 0, 0) with FixedDuration
       case StandardTime.Minute => new Period(0, 0, 0, 0, n, 0) with FixedDuration
       case StandardTime.Second => new Period(0, 0, 0, 0, 0, n) with FixedDuration
+  
+  given plus(using TimeSystem[StandardTime]): Operator["+", Period, Period] with
+    type Result = Period
+    def apply(left: Period, right: Period): Period =
+      Period(left.years + right.years, left.months + right.months, left.days + right.days, left.hours +
+          right.hours, left.minutes + right.minutes, left.seconds + right.seconds)
+  
+  given minus(using TimeSystem[StandardTime]): Operator["-", Period, Period] with
+    type Result = Period
+    
+    def apply(left: Period, right: Period): Period =
+      Period(left.years - right.years, left.months - right.months, left.days - right.days, left.hours -
+          right.hours, left.minutes - right.minutes, left.seconds - right.seconds)
 
 trait DiurnalPeriod:
   def years: Int
@@ -341,16 +338,6 @@ case class Period
     (override val years: Int, override val months: Int, override val days: Int, hours: Int,
         minutes: Int, seconds: Int)
 extends DiurnalPeriod, TemporalPeriod:
-  @targetName("plus")
-  def +(p: Period)(using timeSys: TimeSystem[StandardTime]): Period =
-    Period(years + p.years, months + p.months, days + p.days, hours + p.hours, minutes + p.minutes,
-        seconds + p.seconds)
-  
-  @targetName("minus")
-  def -(p: Period)(using timeSys: TimeSystem[StandardTime]): Period =
-    Period(years - p.years, months - p.months, days - p.days, hours - p.hours, minutes - p.minutes,
-        seconds - p.seconds)
-  
   def simplify(using timeSys: TimeSystem[StandardTime]): Period = timeSys.simplify(this)
 
   @targetName("times")
@@ -376,10 +363,12 @@ extension (int: Int)
 
 case class Time(hour: Base24, minute: Base60, second: Base60 = 0)
 
-case class Timestamp(date: Date, time: Time)(using cal: Calendar):
-  @targetName("plus")
-  def +(period: Timespan): Timestamp =
-    Timestamp(date, time)
+object Timestamp:
+  given plus: Operator["+", Timestamp, Timespan] with
+    type Result = Timestamp
+    def apply(left: Timestamp, right: Timespan): Timestamp = ???
+
+case class Timestamp(date: Date, time: Time)(using cal: Calendar)
 
 object MonthName:
   def apply(i: Int): MonthName = MonthName.fromOrdinal(i - 1)
@@ -390,7 +379,11 @@ object MonthName:
   
   def unapply(value: Int): Option[MonthName] =
     if value < 1 || value > 12 then None else Some(fromOrdinal(value))
-  
+ 
+  given monthOfYear: Operator["-", Int, MonthName] with
+    type Result = YearMonth
+    def apply(year: Int, month: MonthName) = new YearMonth(year, month)
+
 enum MonthName:
   case Jan, Feb, Mar, Apr, May, Jun, Jul, Aug, Sep, Oct, Nov, Dec
   
@@ -482,6 +475,7 @@ extension (inline double: Double)
   inline def pm: Time = ${Aviation.validTime('double, true)}
 
 object Aviation:
+
   def validTime(time: Expr[Double], pm: Boolean)(using Quotes): Expr[Time] =
     import quotes.reflect.*
     
