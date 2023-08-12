@@ -39,7 +39,8 @@ package calendars:
     def leapYear(year: Y): Boolean = year%4 == 0 && year%100 != 0 || year%400 == 0
     def leapYearsSinceEpoch(year: Int): Int = year/4 - year/100 + year/400 + 1
 
-def now()(using src: Clock): Instant = src()
+def now()(using clock: Clock): Instant = clock()
+def today()(using clock: Clock, calendar: RomanCalendar, timezone: Timezone): Date = (now() in timezone).date
 
 abstract class Clock():
   def apply(): Instant
@@ -221,7 +222,7 @@ object Timing:
     @targetName("to")
     def ~(that: Instant): Interval = Interval(instant, that)
 
-    def in(using RomanCalendar)(timezone: Timezone)(using Raises[DateError]): LocalTime =
+    infix def in(using RomanCalendar)(timezone: Timezone): LocalTime =
       val zonedTime = jt.Instant.ofEpochMilli(instant).nn.atZone(jt.ZoneId.of(timezone.name.s)).nn
       
       val date = (zonedTime.getMonthValue: @unchecked) match
