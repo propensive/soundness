@@ -34,28 +34,28 @@ extension [LeftType](inline left: LeftType)
   @targetName("lt")
   inline def <
       [RightType]
-      (right: RightType)(using inline inequality: Inequality[LeftType, RightType])
+      (inline right: RightType)(using inline inequality: Inequality[LeftType, RightType])
       : Boolean =
     inequality.compare(left, right, true, false)
   
   @targetName("lte")
   inline def <=
       [RightType]
-      (right: RightType)(using inline inequality: Inequality[LeftType, RightType])
+      (inline right: RightType)(using inline inequality: Inequality[LeftType, RightType])
       : Boolean =
     inequality.compare(left, right, false, false)
   
   @targetName("gt")
   inline def >
       [RightType]
-      (right: RightType)(using inline inequality: Inequality[LeftType, RightType])
+      (inline right: RightType)(using inline inequality: Inequality[LeftType, RightType])
       : Boolean =
     inequality.compare(left, right, true, true)
   
   @targetName("gte")
   inline def >=
       [RightType]
-      (right: RightType)(using inline inequality: Inequality[LeftType, RightType])
+      (inline right: RightType)(using inline inequality: Inequality[LeftType, RightType])
       : Boolean =
     inequality.compare(left, right, false, true)
   
