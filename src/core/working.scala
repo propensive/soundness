@@ -24,11 +24,11 @@ object WorkingDirectory:
 
 @capability
 case class WorkingDirectory(text: Maybe[Text]):
-  def path[PathType: GenericPathMaker]: Maybe[PathType] = text.mm(GenericPath(_))
+  def path[PathType: SpecificPath]: Maybe[PathType] = text.mm(SpecificPath(_))
 
 object HomeDirectory:
   given default(using Quickstart): HomeDirectory = HomeDirectory(System.getProperty("user.home").nn.tt)
 
 @capability
 case class HomeDirectory(text: Text):
-  def path[PathType: GenericPathMaker]: PathType = GenericPath(text)
+  def path[PathType: SpecificPath]: PathType = SpecificPath(text)
