@@ -48,30 +48,28 @@ extends GenericInstant[ju.Date], GenericDuration[Long], SpecificInstant[ju.Date]
   def duration(value: Long): Long = value
 
 object JavaNioFile
-extends GenericFileMaker[jnf.Path], GenericDirectoryMaker[jnf.Path], GenericPathMaker[jnf.Path],
-    GenericPathReader[jnf.Path], GenericDirectoryReader[jnf.Path], GenericFileReader[jnf.Path]:
+extends SpecificFile[jnf.Path], SpecificDirectory[jnf.Path], SpecificPath[jnf.Path],
+    GenericPath[jnf.Path], GenericDirectory[jnf.Path], GenericFile[jnf.Path]:
 
-  def makePath(path: Text): jnf.Path = jnf.Paths.get(path.s).nn
+  def path(path: Text): jnf.Path = jnf.Paths.get(path.s).nn
+  def file(file: Text): jnf.Path = path(file)
+  def directory(directory: Text): jnf.Path = path(directory)
 
-  def makeFile(path: Text): jnf.Path = makePath(path)
-  def makeDirectory(path: Text): jnf.Path = makePath(path)
-
-  def fromPath(value: jnf.Path): Text = value.toAbsolutePath.nn.toString.tt
-  def fromFile(value: jnf.Path): Text = fromPath(value)
-  def fromDirectory(value: jnf.Path): Text = fromPath(value)
+  def pathText(value: jnf.Path): Text = value.toAbsolutePath.nn.toString.tt
+  def fileText(value: jnf.Path): Text = pathText(value)
+  def directoryText(value: jnf.Path): Text = pathText(value)
 
 object JavaIoFile
-extends GenericFileMaker[ji.File], GenericDirectoryMaker[ji.File], GenericPathMaker[ji.File],
-    GenericPathReader[ji.File], GenericDirectoryReader[ji.File], GenericFileReader[ji.File]:
+extends SpecificFile[ji.File], SpecificDirectory[ji.File], SpecificPath[ji.File],
+    GenericPath[ji.File], GenericDirectory[ji.File], GenericFile[ji.File]:
 
-  def makePath(path: Text): ji.File = ji.File(path.s).nn
+  def path(path: Text): ji.File = ji.File(path.s).nn
+  def file(file: Text): ji.File = path(file)
+  def directory(directory: Text): ji.File = path(directory)
 
-  def makeFile(path: Text): ji.File = makePath(path)
-  def makeDirectory(path: Text): ji.File = makePath(path)
-
-  def fromPath(value: ji.File): Text = value.getAbsolutePath.nn.toString.tt
-  def fromFile(value: ji.File): Text = fromPath(value)
-  def fromDirectory(value: ji.File): Text = fromPath(value)
+  def pathText(value: ji.File): Text = value.getAbsolutePath.nn.toString.tt
+  def fileText(value: ji.File): Text = pathText(value)
+  def directoryText(value: ji.File): Text = pathText(value)
 
 object JavaNetUrl extends GenericUrl[jn.URL], SpecificUrl[jn.URL]:
   def text(value: jn.URL): Text = value.toString.tt
