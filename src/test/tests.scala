@@ -197,7 +197,10 @@ object Tests extends Suite(t"CoDL tests"):
       test(t"Parse two words with single space"):
         parseText(t"alpha beta")
       .assert(_ == (0, LazyList(Item(t"alpha", 0, 0), Item(t"beta", 0, 6))))
-      
+
+      test(t"Parse a completely empty document"):
+        parseText(t"")
+      .assert(_ == (0, LazyList()))
 
       test(t"Parse two words with trailing spaces"):
         parseText(t"alpha beta   ")

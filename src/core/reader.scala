@@ -55,7 +55,7 @@ object Character:
   extension (char: Character)
     def char: Char = if char == -1 then '\u0000' else char.toChar
     def line: Int = ((char >> 48) & 0xffffff).toInt
-    def column: Int = ((char >> 24) & 0xffffff).toInt
+    def column: Int = if char == End then 0 else ((char >> 24) & 0xffffff).toInt
 
 import Character.*
 
