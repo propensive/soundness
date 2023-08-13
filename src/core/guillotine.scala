@@ -114,12 +114,12 @@ sealed trait Executable:
 
   def fork
       [ResultType]
-      ()(using working: WorkingDirectory, log: Log)
+      ()(using working: WorkingDirectory, log: Log, exec: Raises[ExecError])
       : Process[Exec, ResultType]^{working}
   
   def exec
       [ResultType]
-      ()(using working: WorkingDirectory, log: Log, executor: Executor[ResultType])
+      ()(using working: WorkingDirectory, log: Log, executor: Executor[ResultType], exec: Raises[ExecError])
       : ResultType^{executor, working} =
     
     fork[ResultType]().await()
@@ -128,7 +128,7 @@ sealed trait Executable:
       [ResultType]
       ()
       (using erased commandOutput: CommandOutput[Exec, ResultType])
-      (using working: WorkingDirectory, log: Log, executor: Executor[ResultType])
+      (using working: WorkingDirectory, log: Log, executor: Executor[ResultType], exec: Raises[ExecError])
       : ResultType^{executor, working} =
     
     fork[ResultType]().await()
@@ -165,15 +165,16 @@ object Command:
   given Show[Command] = command => formattedArgs(command.args)
   
 case class Command(args: Text*) extends Executable:
-  def fork[ResultType]()(using working: WorkingDirectory, log: Log): Process[Exec, ResultType] =
+  def fork[ResultType]()(using working: WorkingDirectory, log: Log, exec: Raises[ExecError]): Process[Exec, ResultType] =
     val processBuilder = ProcessBuilder(args.ss*)
     
     working.text.mm: directory =>
       processBuilder.directory(ji.File(directory.s))
     
-    val t0 = System.currentTimeMillis
     Log.info(msg"Starting process ${this}")
-    new Process(processBuilder.start().nn)
+
+    try new Process(processBuilder.start().nn)
+    catch case errror: ji.IOException => abort(ExecError(this, LazyList(), LazyList()))
 
 object Pipeline:
   given AsMessage[Pipeline] = pipeline => msg"${pipeline.commands.map(_.show).join(t" | ")}"
@@ -181,7 +182,7 @@ object Pipeline:
   given Show[Pipeline] = _.commands.map(_.show).join(t" | ")
   
 case class Pipeline(commands: Command*) extends Executable:
-  def fork[ResultType]()(using working: WorkingDirectory, log: Log): Process[Exec, ResultType] =
+  def fork[ResultType]()(using working: WorkingDirectory, log: Log, exec: Raises[ExecError]): Process[Exec, ResultType] =
     val processBuilders = commands.map: command =>
       val processBuilder = ProcessBuilder(command.args.ss*)
       
