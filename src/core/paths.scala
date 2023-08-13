@@ -356,7 +356,7 @@ sealed trait Inode:
     
     createNonexistentParents(destination):
       overwritePreexisting(destination):
-        jnf.Files.createLink(path.java, destination.java)
+        jnf.Files.createLink(destination.java, path.java)
 
     destination
   
