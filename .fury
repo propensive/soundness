@@ -1,0 +1,59 @@
+#!/usr/bin/env bash
+    
+ecosystem vent 2 https://github.com/propensive/vent 191d64e599f246813910978251e1d7f5cb52b95d
+
+command build anticipation/core
+
+project anticipation
+  name         Anticipation
+  website      https://github.com/propensive/anticipation
+  description  Minimalistic typeclass interfaces foreseen for downstream needs
+
+  module text
+    compiler  scala
+    include   symbolism/core
+    sources   src/text
+
+  module css
+    compiler  scala
+    include   anticipation/text
+    sources   src/css
+
+  module url
+    compiler  scala
+    include   anticipation/text
+    sources   src/url
+
+  module html
+    compiler  scala
+    include   anticipation/text
+    sources   src/html
+
+  module http
+    compiler  scala
+    include   anticipation/text
+    sources   src/http
+  
+  module color
+    compiler  scala
+    sources   src/color
+
+  module path
+    compiler  scala
+    include   anticipation/text
+    sources   src/path
+
+  module time
+    compiler  scala
+    sources   src/time
+
+  module all
+    include anticipation/css
+    include anticipation/html
+    include anticipation/text
+    include anticipation/http
+    include anticipation/path
+    include anticipation/time
+    include anticipation/url
+    include anticipation/color
+
