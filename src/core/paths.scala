@@ -466,7 +466,7 @@ object InodeMaker:
   
   given fifo
       (using createNonexistentParents: CreateNonexistentParents,
-          overwritePreexisting: OverwritePreexisting, working: WorkingDirectory, log: Log, io: Raises[IoError])
+          overwritePreexisting: OverwritePreexisting, working: WorkingDirectory, log: Log, io: Raises[IoError], exec: Raises[ExecError])
       : InodeMaker[Fifo, Unix.Path] =
     path => createNonexistentParents(path):
       overwritePreexisting(path):
