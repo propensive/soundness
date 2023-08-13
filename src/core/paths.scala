@@ -611,8 +611,10 @@ package filesystemOptions:
         given symlinks: DereferenceSymlinks = doNotDereferenceSymlinks
         given creation: CreateNonexistent = doNotCreateNonexistent
         
-        if path.is[Directory] then path.as[Directory].children.foreach(conditionally(_)(()))
-        jnf.Files.delete(path.java)
+        if path.exists() then
+          if path.is[Directory] then path.as[Directory].children.foreach(conditionally(_)(()))
+          jnf.Files.delete(path.java)
+        
         operation
           
   given doNotDeleteRecursively
