@@ -510,7 +510,7 @@ object Aviation:
         fail(msg"expected a literal double value")
 
 @capability
-case class Timezone(name: Text) 
+case class Timezone private(name: Text) 
 
 case class TimezoneError(name: Text)
 extends Error(msg"the name $name does not refer to a known timezone")
@@ -525,12 +525,14 @@ case class LocalTime(date: Date, time: Time, timezone: Timezone):
 object Timezone:
   private val ids: Set[Text] = ju.TimeZone.getAvailableIDs.nn.map(_.nn).map(Text(_)).to(Set)
 
-  def apply(name: Text)(using Raises[TimezoneError]): Timezone =
+  def apply(name: Text)(using Raises[TimezoneError]): Timezone = parse(name)
+
+  def parse(name: Text)(using Raises[TimezoneError]): Timezone =
     if ids.contains(name) then new Timezone(name) else raise(TimezoneError(name))(new Timezone(ids.head))
    
   object Tz extends Verifier[Timezone]:
     def verify(name: Text): Timezone =
-      try throwErrors(new Timezone(name))
+      try throwErrors(Timezone.parse(name))
       catch case err: TimezoneError => throw InterpolationError(err.message)
 
 extension (inline context: StringContext)
