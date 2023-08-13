@@ -347,19 +347,6 @@ sealed trait Inode:
 
     destination
   
-  def hardLinkTo
-      (destination: Path)
-      (using overwritePreexisting: OverwritePreexisting,
-          createNonexistentParents: CreateNonexistentParents)
-      (using io: Raises[IoError])
-      : Path^{io, overwritePreexisting, createNonexistentParents} =
-    
-    createNonexistentParents(destination):
-      overwritePreexisting(destination):
-        jnf.Files.createLink(destination.java, path.java)
-
-    destination
-  
   def copyInto
       (destination: Directory)
       (using overwritePreexisting: OverwritePreexisting, dereferenceSymlinks: DereferenceSymlinks)
@@ -514,6 +501,19 @@ object File:
   
 case class File(path: Path) extends Unix.Inode, Windows.Inode:
   def size(): ByteSize = jnf.Files.size(path.java).b
+  
+  def hardLinkTo
+      (destination: Path)
+      (using overwritePreexisting: OverwritePreexisting,
+          createNonexistentParents: CreateNonexistentParents)
+      (using io: Raises[IoError])
+      : Path^{io, overwritePreexisting, createNonexistentParents} =
+    
+    createNonexistentParents(destination):
+      overwritePreexisting(destination):
+        jnf.Files.createLink(destination.java, path.java)
+
+    destination
 
 case class Socket(path: Unix.Path, channel: jnc.ServerSocketChannel) extends Unix.Inode
 case class Fifo(path: Unix.Path) extends Unix.Inode
