@@ -20,11 +20,13 @@ import probably.*
 import rudiments.*
 import hieroglyph.*, charEncoders.utf8, textWidthCalculation.uniform
 import spectacular.*
+import perforate.*
 import anticipation.*
 import symbolism.*
 import larceny.*
 
 import unsafeExceptions.canThrowAny
+import errorHandlers.throwUnsafely
 
 case class Person(name: Text, age: Int)
 
@@ -351,7 +353,7 @@ object Tests extends Suite(t"Gossamer Tests"):
       .assert(_ == '1')
 
       test(t"Random access of out-of-range character"):
-        capture(t"123"(5))
+        capture[OutOfRangeError](t"123"(5))
       .assert(_ == OutOfRangeError(5, 0, 3))
 
       test(t"Pad-right with space"):
