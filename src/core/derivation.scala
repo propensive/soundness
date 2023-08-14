@@ -220,7 +220,7 @@ trait CodlDeserializer2:
           
           (label.asMatchable: @unchecked) match
             case label: String =>
-              summonInline[CodlDeserializer[headType]].deserialize(value.head.get(label.tt)) *:
+              summonInline[CodlDeserializer[headType]].deserialize(value.headOption.getOrElse(abort(CodlReadError())).get(label.tt)) *:
                   deriveProduct[DerivationType, tailType, tailLabels](value)
         
 object CodlDeserializer extends CodlDeserializer2:
