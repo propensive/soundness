@@ -76,8 +76,9 @@ case class Message(textParts: List[Text], subs: List[Message] = Nil):
     
     recur(string.split("\n").nn.map(_.nn).to(List), false)
 
-transparent abstract class Error(val message: Message, private val cause: Error | Null = null)
-extends Exception():
+transparent abstract class Error
+    (val message: Message, private val cause: Error | Null = null, hideStack: Boolean = false)
+extends Exception(message.text.s, cause, false, !hideStack):
   this: Error =>
   def fullClass: List[Text] = List(getClass.nn.getName.nn.split("\\.").nn.map(_.nn).map(Text(_))*)
   def className: Text = fullClass.last
