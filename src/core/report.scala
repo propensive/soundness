@@ -20,7 +20,7 @@ import rudiments.*
 import digression.*
 import symbolism.*
 import anticipation.*
-import gossamer.*, defaultTextTypes.output
+import gossamer.*
 import chiaroscuro.*
 import ambience.*
 import escritoire.*, tableStyles.rounded
