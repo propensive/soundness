@@ -100,12 +100,12 @@ object Table:
 
   @targetName("make")
   def apply
-      [RowType: ClassTag]
-      (using defaultTextType: DefaultTextType)
-      (initCols: Column[RowType, defaultTextType.TextType]*)
-      (using classTag: ClassTag[defaultTextType.TextType],
-          textual: Textual[defaultTextType.TextType]) =
-    new Table[RowType, defaultTextType.TextType](initCols*)
+      [RowType]
+      (using ClassTag[RowType])
+      [TextType]
+      (initCols: Column[RowType, TextType]*)
+      (using textTypeClassTag: ClassTag[TextType], textual: Textual[TextType]) =
+    new Table[RowType, TextType](initCols*)
 
 case class Table
     [RowType: ClassTag, TextType]
