@@ -17,7 +17,7 @@
 package chiaroscuro
 
 import rudiments.*
-import gossamer.*, defaultTextTypes.output
+import gossamer.*
 import dissonance.*
 import escapade.*
 import iridescence.*

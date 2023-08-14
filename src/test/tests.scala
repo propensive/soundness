@@ -20,8 +20,11 @@ import probably.*
 import gossamer.*
 import dissonance.*
 import rudiments.*
+import anticipation.*
+import perforate.*
 
 import unsafeExceptions.canThrowAny
+import errorHandlers.throwUnsafely
 
 case class Person(name: Text, age: Int)
 case class Organization(name: Text, ceo: Person, staff: List[Person])
