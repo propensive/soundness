@@ -178,7 +178,7 @@ case class Table
           
           case ch =>
             if count >= width then
-              if space > 0 then ShortPair(space, space + 1) else ShortPair(pos, pos + 1)
+              if space > 0 then ShortPair(space, space + 1) else ShortPair(pos, pos)
             else search(pos + 1, space, count + 1)
       
       search(start)
