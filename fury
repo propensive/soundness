@@ -11,7 +11,7 @@ target xylophone/test
 project xylophone
   module core
     sources  src/core
-    include  wisteria/core gossamer/core turbulence/core
+    include  wisteria/core gossamer/core turbulence/core anticipation/transport
 
   module test
     sources  src/test

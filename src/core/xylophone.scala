@@ -49,7 +49,15 @@ sealed trait Xml:
 type XmlPath = List[Text | Int | Unit]
 
 object Xml:
-  given Show[Xml] = xml =>
+
+  given transport: Transport[Xml] with
+    type Serializer[-DataType] = XmlSerializer[DataType]
+    type Deserializer[DataType] = XmlDeserializer[DataType]
+
+    def serialize[DataType: Serializer](value: DataType): LazyList[Bytes] = LazyList()
+    def deserialize[DataType: Deserializer](stream: LazyList[Bytes]): DataType = ???
+
+  given show: Show[Xml] = xml =>
     safely(printers.compact.print(XmlDoc(Ast.Root(Xml.normalize(xml)*)))).or(t"undefined")
 
   given (using enc: Encoding, printer: XmlPrinter[Text]): GenericHttpResponseStream[Xml] with
@@ -170,7 +178,7 @@ extends Xml, Dynamic:
   infix def +(other: Xml): XmlDoc raises XmlAccessError =
     XmlDoc(Ast.Root(Xml.normalize(this) ++ Xml.normalize(other)*))
   
-  def as[T](using reader: XmlReader[T]): T raises XmlAccessError | XmlReadError = apply().as[T]
+  def as[T](using reader: XmlDeserializer[T]): T raises XmlAccessError | XmlReadError = apply().as[T]
 
 case class XmlNode(head: Int, path: XmlPath, root: Ast.Root) extends Xml, Dynamic:
   def selectDynamic(tagName: String): Fragment = Fragment(Text(tagName), head :: path, root)
@@ -185,8 +193,8 @@ case class XmlNode(head: Int, path: XmlPath, root: Ast.Root) extends Xml, Dynami
   infix def +(other: Xml): XmlDoc raises XmlAccessError =
     XmlDoc(Ast.Root(Xml.normalize(this) ++ Xml.normalize(other)*))
 
-  def as[T: XmlReader](using Raises[XmlReadError], Raises[XmlAccessError]): T =
-    summon[XmlReader[T]].read(Xml.normalize(this)).getOrElse(abort(XmlReadError()))
+  def as[T: XmlDeserializer](using Raises[XmlReadError], Raises[XmlAccessError]): T =
+    summon[XmlDeserializer[T]].read(Xml.normalize(this)).getOrElse(abort(XmlReadError()))
 
 case class XmlDoc(root: Ast.Root) extends Xml, Dynamic:
   def pointer: XmlPath = Nil
@@ -200,16 +208,16 @@ case class XmlDoc(root: Ast.Root) extends Xml, Dynamic:
   infix def +(other: Xml): XmlDoc raises XmlAccessError =
     XmlDoc(Ast.Root(Xml.normalize(this) ++ Xml.normalize(other)*))
 
-  def as[T: XmlReader](using Raises[XmlAccessError], Raises[XmlReadError]): T =
-    summon[XmlReader[T]].read(Xml.normalize(this)).getOrElse(abort(XmlReadError()))
+  def as[T: XmlDeserializer](using Raises[XmlAccessError], Raises[XmlReadError]): T =
+    summon[XmlDeserializer[T]].read(Xml.normalize(this)).getOrElse(abort(XmlReadError()))
 
 case class Attribute(node: XmlNode, attribute: Text):
-  def as[T: XmlReader](using Raises[XmlReadError], Raises[XmlAccessError]): T =
+  def as[T: XmlDeserializer](using Raises[XmlReadError], Raises[XmlAccessError]): T =
     val attributes = Xml.normalize(node).headOption match
       case Some(Ast.Element(_, _, attributes, _)) => attributes
       case _                                      => abort(XmlReadError())
 
-    summon[XmlReader[T]]
+    summon[XmlDeserializer[T]]
       .read(Seq(Ast.Element(XmlName(t"empty"), Seq(Ast.Textual(attributes(XmlName(attribute)))))))
       .getOrElse(abort(XmlReadError()))
 
@@ -217,4 +225,4 @@ case class xmlAttribute() extends StaticAnnotation
 case class xmlLabel(name: String) extends StaticAnnotation
 
 extension [T](value: T)(using NotGiven[T =:= StringContext])
-  def xml(using writer: XmlWriter[T]): XmlDoc = XmlDoc(Ast.Root(writer.write(value)))
+  def xml(using writer: XmlSerializer[T]): XmlDoc = XmlDoc(Ast.Root(writer.write(value)))
