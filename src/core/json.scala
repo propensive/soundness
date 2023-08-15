@@ -103,10 +103,15 @@ extension (json: JsonAst)
     if isLong then long else if isDouble then double else if isBigDecimal then bigDecimal
     else raise(JsonAccessError(Issue.NotType(JsonPrimitive.Number)))(0L)
   
-extension [T: JsonWriter](value: T)
-  def json: Json = Json(summon[JsonWriter[T]].write(value))
+extension [T](value: T)(using writer: JsonSerializer[T])
+  def json: Json = Json(writer.write(value))
 
 object Json extends Dynamic:
+  
+  given transport: Transport[Json] with
+    type Serializer[-DataType] = JsonSerializer[DataType]
+    type Deserializer[DataType] = JsonDeserializer[DataType]
+
   def parse
       [SourceType]
       (value: SourceType)
@@ -140,39 +145,39 @@ object Json extends Dynamic:
     val values: IArray[JsonAst] = IArray.from(elements.map(_(1).root))
     Json(JsonAst((keys, values)))
 
-trait FallbackJsonWriter:
-  given [T](using writer: JsonWriter[T]): JsonWriter[Maybe[T]] = new JsonWriter[Maybe[T]]:
+trait FallbackJsonSerializer:
+  given [T](using writer: JsonSerializer[T]): JsonSerializer[Maybe[T]] = new JsonSerializer[Maybe[T]]:
     override def omit(t: Maybe[T]): Boolean = t.unset
     def write(value: Maybe[T]): JsonAst = value.mm(writer.write(_)).or(JsonAst(null))
 
-object JsonWriter extends FallbackJsonWriter:
-  given JsonWriter[Int] = int => JsonAst(int.toLong)
-  given JsonWriter[Text] = text => JsonAst(text.s)
-  given JsonWriter[String] = JsonAst(_)
-  given JsonWriter[Double] = JsonAst(_)
-  given JsonWriter[Long] = JsonAst(_)
-  given JsonWriter[Byte] = byte => JsonAst(byte.toLong)
-  given JsonWriter[Short] = short => JsonAst(short.toLong)
-  given JsonWriter[Boolean] = JsonAst(_)
+object JsonSerializer extends FallbackJsonSerializer:
+  given JsonSerializer[Int] = int => JsonAst(int.toLong)
+  given JsonSerializer[Text] = text => JsonAst(text.s)
+  given JsonSerializer[String] = JsonAst(_)
+  given JsonSerializer[Double] = JsonAst(_)
+  given JsonSerializer[Long] = JsonAst(_)
+  given JsonSerializer[Byte] = byte => JsonAst(byte.toLong)
+  given JsonSerializer[Short] = short => JsonAst(short.toLong)
+  given JsonSerializer[Boolean] = JsonAst(_)
 
-  //given [T](using canon: Canonical[T]): JsonWriter[T] = v => JsonAst(canon.serialize(v).s)
+  //given [T](using canon: Canonical[T]): JsonSerializer[T] = v => JsonAst(canon.serialize(v).s)
   
-  given (using jsonAccess: Raises[JsonAccessError]): JsonWriter[Json]^{jsonAccess} = _.root
+  given (using jsonAccess: Raises[JsonAccessError]): JsonSerializer[Json]^{jsonAccess} = _.root
   
-  given JsonWriter[Nil.type] = value => JsonAst(IArray[JsonAst]())
+  given JsonSerializer[Nil.type] = value => JsonAst(IArray[JsonAst]())
 
-  given [Coll[T1] <: Iterable[T1], T: JsonWriter]: JsonWriter[Coll[T]] = values =>
-    JsonAst(IArray.from(values.map(summon[JsonWriter[T]].write(_))))
+  given [Coll[T1] <: Iterable[T1], T: JsonSerializer]: JsonSerializer[Coll[T]] = values =>
+    JsonAst(IArray.from(values.map(summon[JsonSerializer[T]].write(_))))
 
-  //given [T: JsonWriter]: JsonWriter[Map[String, T]] = values =>
-  //  JObject(mutable.Map(values.view.mapValues(summon[JsonWriter[T]].write(_)).to(Seq)*))
+  //given [T: JsonSerializer]: JsonSerializer[Map[String, T]] = values =>
+  //  JObject(mutable.Map(values.view.mapValues(summon[JsonSerializer[T]].write(_)).to(Seq)*))
 
-  given opt[ValueType: JsonWriter]: JsonWriter[Option[ValueType]] with
+  given opt[ValueType: JsonSerializer]: JsonSerializer[Option[ValueType]] with
     override def omit(value: Option[ValueType]): Boolean = value.isEmpty
     
     def write(value: Option[ValueType]): JsonAst = value match
       case None        => JsonAst(null)
-      case Some(value) => summon[JsonWriter[ValueType]].write(value)
+      case Some(value) => summon[JsonSerializer[ValueType]].write(value)
 
   private transparent inline def deriveProduct
       [LabelsType <: Tuple]
@@ -185,19 +190,19 @@ object JsonWriter extends FallbackJsonWriter:
           case _: (headLabel *: tailLabels) => inline valueOf[headLabel].asMatchable match
             case label: String =>
               labels(index) = label
-              values(index) = summonInline[JsonWriter[head.type]].write(head)
+              values(index) = summonInline[JsonSerializer[head.type]].write(head)
               deriveProduct[tailLabels](tail, labels, values, index + 1)
 
   private transparent inline def deriveSum
       [TupleType <: Tuple, DerivedType, LabelsType <: Tuple]
       (ordinal: Int)(using Raises[JsonAccessError])
-      : JsonWriter[DerivedType] =
+      : JsonSerializer[DerivedType] =
     inline erasedValue[TupleType] match
       case _: (head *: tail) => inline erasedValue[LabelsType] match
         case _: (headLabel *: tailLabel) =>
           if ordinal == 0 then inline valueOf[headLabel].asMatchable match
             case label: String =>
-              summonInline[JsonWriter[head]].tag(label).asInstanceOf[JsonWriter[DerivedType]]
+              summonInline[JsonSerializer[head]].tag(label).asInstanceOf[JsonSerializer[DerivedType]]
           else deriveSum[tail, DerivedType, tailLabel](ordinal - 1)
       
       case _ =>
@@ -205,7 +210,7 @@ object JsonWriter extends FallbackJsonWriter:
 
   inline given derived
       [DerivationType](using mirror: Mirror.Of[DerivationType])(using Raises[JsonAccessError])
-      : JsonWriter[DerivationType] =
+      : JsonSerializer[DerivationType] =
     inline mirror match
       case given Mirror.ProductOf[DerivationType & Product] => (value: DerivationType) =>
         (value.asMatchable: @unchecked) match
@@ -221,53 +226,53 @@ object JsonWriter extends FallbackJsonWriter:
           deriveSum[sumMirror.MirroredElemTypes, DerivationType,
               sumMirror.MirroredElemLabels](sumMirror.ordinal(value)).write(value)
 
-trait JsonWriter[-ValueType]:
+trait JsonSerializer[-ValueType]:
   def omit(value: ValueType): Boolean = false
   def write(value: ValueType): JsonAst
   
-  def contraMap[ValueType2](fn: ValueType2 => ValueType): JsonWriter[ValueType2]^{this, fn} =
+  def contraMap[ValueType2](fn: ValueType2 => ValueType): JsonSerializer[ValueType2]^{this, fn} =
     (value: ValueType2) => fn.andThen(write)(value)
 
-  def tag(label: String)(using jsonAccess: Raises[JsonAccessError]): JsonWriter[ValueType]^{jsonAccess} = (value: ValueType) =>
+  def tag(label: String)(using jsonAccess: Raises[JsonAccessError]): JsonSerializer[ValueType]^{jsonAccess} = (value: ValueType) =>
     val (keys, values) = write(value).obj
     (keys :+ "_type", values :+ label).asInstanceOf[JsonAst]
 
-trait FallbackJsonReader:
-  given maybe[T](using reader: JsonReader[T]^): JsonReader[Maybe[T]]^{reader} =
-    new JsonReader[Maybe[T]]:
+trait FallbackJsonDeserializer:
+  given maybe[T](using reader: JsonDeserializer[T]^): JsonDeserializer[Maybe[T]]^{reader} =
+    new JsonDeserializer[Maybe[T]]:
       def read(value: JsonAst, missing: Boolean): Maybe[T] =
         if missing then Unset else reader.read(value, false)
 
-object JsonReader extends FallbackJsonReader:
-  given jsonAst(using jsonAccess: Raises[JsonAccessError]): JsonReader[JsonAst]^{jsonAccess} = (value, missing) => value
-  given json(using jsonAccess: Raises[JsonAccessError]): JsonReader[Json]^{jsonAccess} = (value, missing) => Json(value)
-  given int(using jsonAccess: Raises[JsonAccessError]): JsonReader[Int]^{jsonAccess} = (value, missing) => value.long.toInt
-  given byte(using jsonAccess: Raises[JsonAccessError]): JsonReader[Byte]^{jsonAccess} = (value, missing) => value.long.toByte
-  given short(using jsonAccess: Raises[JsonAccessError]): JsonReader[Short]^{jsonAccess} = (value, missing) => value.long.toShort
-  given float(using jsonAccess: Raises[JsonAccessError]): JsonReader[Float]^{jsonAccess} = (value, missing) => value.double.toFloat
-  given double(using jsonAccess: Raises[JsonAccessError]): JsonReader[Double]^{jsonAccess} = (value, missing) => value.double
-  given long(using jsonAccess: Raises[JsonAccessError]): JsonReader[Long]^{jsonAccess} = (value, missing) => value.long
-  given text(using jsonAccess: Raises[JsonAccessError]): JsonReader[Text]^{jsonAccess} = (value, missing) => value.string
-  given string(using jsonAccess: Raises[JsonAccessError]): JsonReader[String]^{jsonAccess} = (value, missing) => value.string.s
-  given boolean(using jsonAccess: Raises[JsonAccessError]): JsonReader[Boolean]^{jsonAccess} = (value, missing) => value.boolean
+object JsonDeserializer extends FallbackJsonDeserializer:
+  given jsonAst(using jsonAccess: Raises[JsonAccessError]): JsonDeserializer[JsonAst]^{jsonAccess} = (value, missing) => value
+  given json(using jsonAccess: Raises[JsonAccessError]): JsonDeserializer[Json]^{jsonAccess} = (value, missing) => Json(value)
+  given int(using jsonAccess: Raises[JsonAccessError]): JsonDeserializer[Int]^{jsonAccess} = (value, missing) => value.long.toInt
+  given byte(using jsonAccess: Raises[JsonAccessError]): JsonDeserializer[Byte]^{jsonAccess} = (value, missing) => value.long.toByte
+  given short(using jsonAccess: Raises[JsonAccessError]): JsonDeserializer[Short]^{jsonAccess} = (value, missing) => value.long.toShort
+  given float(using jsonAccess: Raises[JsonAccessError]): JsonDeserializer[Float]^{jsonAccess} = (value, missing) => value.double.toFloat
+  given double(using jsonAccess: Raises[JsonAccessError]): JsonDeserializer[Double]^{jsonAccess} = (value, missing) => value.double
+  given long(using jsonAccess: Raises[JsonAccessError]): JsonDeserializer[Long]^{jsonAccess} = (value, missing) => value.long
+  given text(using jsonAccess: Raises[JsonAccessError]): JsonDeserializer[Text]^{jsonAccess} = (value, missing) => value.string
+  given string(using jsonAccess: Raises[JsonAccessError]): JsonDeserializer[String]^{jsonAccess} = (value, missing) => value.string.s
+  given boolean(using jsonAccess: Raises[JsonAccessError]): JsonDeserializer[Boolean]^{jsonAccess} = (value, missing) => value.boolean
   
-  //given [T](using canon: Canonical[T]): JsonReader[T] = v => canon.deserialize(v.string)
+  //given [T](using canon: Canonical[T]): JsonDeserializer[T] = v => canon.deserialize(v.string)
 
-  given option[T](using reader: JsonReader[T]^)(using Raises[JsonAccessError]): JsonReader[Option[T]]^{reader} =
-    new JsonReader[Option[T]]:
+  given option[T](using reader: JsonDeserializer[T]^)(using Raises[JsonAccessError]): JsonDeserializer[Option[T]]^{reader} =
+    new JsonDeserializer[Option[T]]:
       def read(value: JsonAst, missing: Boolean): Option[T] =
         if missing then None else Some(reader.read(value, false))
 
   given array[Coll[T1] <: Iterable[T1], T]
-              (using reader: JsonReader[T], jsonAccess: Raises[JsonAccessError], factory: Factory[T, Coll[T]]): JsonReader[Coll[T]]^{jsonAccess} =
-    new JsonReader[Coll[T]]:
+              (using reader: JsonDeserializer[T], jsonAccess: Raises[JsonAccessError], factory: Factory[T, Coll[T]]): JsonDeserializer[Coll[T]]^{jsonAccess} =
+    new JsonDeserializer[Coll[T]]:
       def read(value: JsonAst, missing: Boolean): Coll[T] =
         val bld = factory.newBuilder
         value.array.foreach(bld += reader.read(_, false))
         bld.result()
 
-  given map[T](using reader: JsonReader[T])(using jsonAccess: Raises[JsonAccessError]): JsonReader[Map[String, T]]^{jsonAccess} =
-    new JsonReader[Map[String, T]]:
+  given map[T](using reader: JsonDeserializer[T])(using jsonAccess: Raises[JsonAccessError]): JsonDeserializer[Map[String, T]]^{jsonAccess} =
+    new JsonDeserializer[Map[String, T]]:
       def read(value: JsonAst, missing: Boolean): Map[String, T] =
         val (keys, values) = value.obj
         
@@ -284,7 +289,7 @@ object JsonReader extends FallbackJsonReader:
           case label: String =>
             val missing = !values.contains(label)
             val value = if missing then 0.asInstanceOf[JsonAst] else values(label)
-            val paramValue = summonInline[JsonReader[paramHead]].read(value, missing)
+            val paramValue = summonInline[JsonDeserializer[paramHead]].read(value, missing)
             
             paramValue *: deriveProduct[labelsTail, paramsTail](values)
       
@@ -293,7 +298,7 @@ object JsonReader extends FallbackJsonReader:
       
   inline given derived
       [DerivationType](using mirror: Mirror.Of[DerivationType])(using Raises[JsonAccessError])
-      : JsonReader[DerivationType] =
+      : JsonDeserializer[DerivationType] =
     inline mirror match
       case mirror: Mirror.ProductOf[DerivationType & Product] => (value, missing) =>
         val keyValues = value.obj
@@ -318,23 +323,23 @@ object JsonReader extends FallbackJsonReader:
   private transparent inline def deriveSum
       [SubtypesType <: Tuple, LabelsType <: Tuple, DerivationType]
       (subtype: String)
-      : JsonReader[DerivationType] =
+      : JsonDeserializer[DerivationType] =
     inline erasedValue[SubtypesType] match
       case _: (head *: tail) => inline erasedValue[LabelsType] match
         case _: (headLabel *: tailLabels) => inline valueOf[headLabel].asMatchable match
           case label: String =>
             if label == subtype
-            then summonInline[JsonReader[head]].asInstanceOf[JsonReader[DerivationType]]
+            then summonInline[JsonDeserializer[head]].asInstanceOf[JsonDeserializer[DerivationType]]
             else deriveSum[tail, tailLabels, DerivationType](subtype)
       
       case _ =>
         throw Mistake(msg"could not match subtype in its apparent coproduct type")
 
-trait JsonReader[ValueType]:
+trait JsonDeserializer[ValueType]:
   private inline def reader: this.type = this
   
   def read(json: JsonAst, missing: Boolean): ValueType
-  def map[ValueType2](fn: ValueType => ValueType2): JsonReader[ValueType2]^{this, fn} =
+  def map[ValueType2](fn: ValueType => ValueType2): JsonDeserializer[ValueType2]^{this, fn} =
     (json, missing) => fn(reader.read(json, missing))
 
 class Json(rootValue: Any) extends Dynamic derives CanEqual:
@@ -434,7 +439,7 @@ class Json(rootValue: Any) extends Dynamic derives CanEqual:
     case _ =>
       false
 
-  def as[ValueType](using reader: JsonReader[ValueType], jsonAccess: Raises[JsonAccessError]): ValueType =
+  def as[ValueType](using reader: JsonDeserializer[ValueType], jsonAccess: Raises[JsonAccessError]): ValueType =
     reader.read(root, false)
 
 trait JsonPrinter:

@@ -8,7 +8,7 @@ target jacinta/test
 project jacinta
   module core
     sources  src/core
-    include  merino/core gossamer/core contextual/core
+    include  merino/core gossamer/core contextual/core anticipation/transport
   
   module test
     sources   src/test
