@@ -37,7 +37,7 @@ trait ErrorHandler[SuccessType]:
   type Raiser <: Raises[?]
 
   def raiser(label: boundary.Label[Result]): Raiser
-  def wrap(value: SuccessType): Result
+  def wrap(value: => SuccessType): Result
   def finish(value: Result): Return
 
 @capability
@@ -92,7 +92,7 @@ extends ErrorHandler[SuccessType]:
   type Raiser = RaisesThrow[ErrorType, SuccessType]
  
   def raiser(label: boundary.Label[Result]): Raiser = RaisesThrow()
-  def wrap(block: SuccessType): Result = Right(block)
+  def wrap(block: => SuccessType): Result = Right(block)
   
   def finish(value: Result): Return = value match
     case Left(error)  => throw error
@@ -105,7 +105,7 @@ class FailCompilation[ErrorType <: Error, SuccessType]()(using Quotes) extends E
   type Raiser = RaisesCompileFailure[ErrorType, SuccessType]
  
   def raiser(label: boundary.Label[Result]): Raiser = RaisesCompileFailure()
-  def wrap(block: SuccessType): Result = Right(block)
+  def wrap(block: => SuccessType): Result = Right(block)
   
   def finish(value: Result): Return = value match
     case Left(error)  => fail(error.message)
@@ -120,7 +120,7 @@ extends ErrorHandler[SuccessType]:
   type Raiser = RaisesAggregate[ErrorType, SuccessType]
   
   def raiser(label: boundary.Label[Result]): Raiser = RaisesAggregate(label)
-  def wrap(fn: SuccessType): Either[AggregateError[ErrorType], SuccessType] = Right(fn)
+  def wrap(block: => SuccessType): Either[AggregateError[ErrorType], SuccessType] = Right(block)
   
   def finish(value: Result): Return = value match
     case Left(error)  => abort[SuccessType, AggregateError[ErrorType]](error)
@@ -135,7 +135,7 @@ extends ErrorHandler[SuccessType]:
   type Raiser = RaisesErrorResult[ErrorType, SuccessType]
   
   def raiser(label: boundary.Label[Result]): Raiser = RaisesErrorResult(label)
-  def wrap(block: SuccessType): Either[ErrorType, SuccessType] = Right(block)
+  def wrap(block: => SuccessType): Either[ErrorType, SuccessType] = Right(block)
   
   def finish(value: Either[ErrorType, SuccessType]): ErrorType = value match
     case Left(error)  => error
@@ -147,7 +147,7 @@ class Safely[ErrorType <: Error, SuccessType]() extends ErrorHandler[SuccessType
   type Raiser = RaisesMaybe[ErrorType, SuccessType]
   
   def raiser(label: boundary.Label[Result]): RaisesMaybe[ErrorType, SuccessType] = RaisesMaybe(label)
-  def wrap(block: SuccessType): Maybe[SuccessType] = block
+  def wrap(block: => SuccessType): Maybe[SuccessType] = block
   def finish(value: Maybe[SuccessType]): Maybe[SuccessType] = value
 
 trait Recovery[-ErrorType <: Error, +SuccessType]:
