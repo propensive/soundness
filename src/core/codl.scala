@@ -50,16 +50,26 @@ object CodlToken:
     case Item(text, line, col, block) => t"Item($text, $line, $col, $block)"
     case Comment(text, line, col)     => t"Comment($text, $line, $col)"
     case Error(error)                 => t"Error(${error.message})"
-  
+
+erased trait Codl
+
 object Codl:
+
+  given transport: Transport[Codl] with
+    type Writer[-DataType] = CodlWriter[DataType]
+    type Reader[DataType] = CodlReader[DataType]
+
+    def write[DataType: Writer](value: DataType): LazyList[Bytes] = ???
+    def read[DataType: Reader](value: LazyList[Bytes]): DataType = ???
+
   def read
-      [ValueType: CodlDeserializer]
+      [ValueType: CodlReader]
       (source: Any)
       (using readable: Readable[source.type, Text], aggregate: Raises[AggregateError[CodlError]],
           codlRead: Raises[CodlReadError])
       : ValueType^{readable, aggregate} =
     
-    summon[CodlDeserializer[ValueType]].schema.parse(readable.read(source)).as[ValueType]
+    summon[CodlReader[ValueType]].schema.parse(readable.read(source)).as[ValueType]
   
   def parse
       [SourceType]

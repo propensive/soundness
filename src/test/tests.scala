@@ -954,43 +954,43 @@ object Tests extends Suite(t"CoDL tests"):
     suite(t"Serialization tests"):
 
       test(t"Serialize a node"):
-        CodlDoc(CodlNode(Data(t"root"))).serialize
+        CodlDoc(CodlNode(Data(t"root"))).write
       .assert(_ == t"root\n")
 
       test(t"Serialize a node and a child"):
-        CodlDoc(CodlNode(Data(t"root", IArray(CodlNode(Data(t"child")))))).serialize
+        CodlDoc(CodlNode(Data(t"root", IArray(CodlNode(Data(t"child")))))).write
       .assert(_ == t"root\n  child\n")
       
       test(t"Serialize a node and a child with params layout"):
-        CodlDoc(CodlNode(Data(t"root", IArray(CodlNode(Data(t"child"))), Layout(1, false, 0)))).serialize
+        CodlDoc(CodlNode(Data(t"root", IArray(CodlNode(Data(t"child"))), Layout(1, false, 0)))).write
       .assert(_ == t"root child\n")
       
       test(t"Serialize a node and a child with block param"):
-        CodlDoc(CodlNode(Data(t"root", IArray(CodlNode(Data(t"child")), CodlNode(Data(t"Hello World"))), Layout(2, true, 0)))).serialize
+        CodlDoc(CodlNode(Data(t"root", IArray(CodlNode(Data(t"child")), CodlNode(Data(t"Hello World"))), Layout(2, true, 0)))).write
       .assert(_ == t"root child\n    Hello World\n")
       
       test(t"Serialize a node and a child with multiline block param"):
-        CodlDoc(CodlNode(Data(t"root", IArray(CodlNode(Data(t"child")), CodlNode(Data(t"Hello\nWorld"))), Layout(2, true, 0)))).serialize
+        CodlDoc(CodlNode(Data(t"root", IArray(CodlNode(Data(t"child")), CodlNode(Data(t"Hello\nWorld"))), Layout(2, true, 0)))).write
       .assert(_ == t"root child\n    Hello\n    World\n")
       
       test(t"Serialize a node and a child with comment"):
-        CodlDoc(CodlNode(Data(t"root", IArray(CodlNode(Data(t"child"), Meta(comments = List(t" comment"))))))).serialize
+        CodlDoc(CodlNode(Data(t"root", IArray(CodlNode(Data(t"child"), Meta(comments = List(t" comment"))))))).write
       .assert(_ == t"root\n  # comment\n  child\n")
       
       test(t"Serialize a node and a child with multiline comment"):
-        CodlDoc(CodlNode(Data(t"root", IArray(CodlNode(Data(t"child"), Meta(comments = List(t" line 1", t" line 2"))))))).serialize
+        CodlDoc(CodlNode(Data(t"root", IArray(CodlNode(Data(t"child"), Meta(comments = List(t" line 1", t" line 2"))))))).write
       .assert(_ == t"root\n  # line 1\n  # line 2\n  child\n")
       
       test(t"Serialize a node and a child with multiline comment and blank lines"):
-        CodlDoc(CodlNode(Data(t"root", IArray(CodlNode(Data(t"child"), Meta(blank = 2, comments = List(t" line 1", t" line 2"))))))).serialize
+        CodlDoc(CodlNode(Data(t"root", IArray(CodlNode(Data(t"child"), Meta(blank = 2, comments = List(t" line 1", t" line 2"))))))).write
       .assert(_ == t"root\n\n\n  # line 1\n  # line 2\n  child\n")
       
       test(t"Serialize a node and a child with blank lines"):
-        CodlDoc(CodlNode(Data(t"root", IArray(CodlNode(Data(t"child"), Meta(blank = 2)))))).serialize
+        CodlDoc(CodlNode(Data(t"root", IArray(CodlNode(Data(t"child"), Meta(blank = 2)))))).write
       .assert(_ == t"root\n\n\n  child\n")
       
       test(t"Serialize a node and a child with a remark"):
-        CodlDoc(CodlNode(Data(t"root", IArray(CodlNode(Data(t"child"), Meta(remark = t"some remark")))))).serialize
+        CodlDoc(CodlNode(Data(t"root", IArray(CodlNode(Data(t"child"), Meta(remark = t"some remark")))))).write
       .assert(_ == t"root\n  child # some remark\n")
     
     suite(t"Double-spacing tests"):
@@ -1027,7 +1027,7 @@ object Tests extends Suite(t"CoDL tests"):
       .assert(_ == CodlDoc(CodlNode(t"root")(CodlNode(t"one")(), CodlNode(t"two three")(), CodlNode(t"four five")())))
       
     
-    def roundtrip[T: CodlSerializer: CodlDeserializer](value: T): T = value.codl.as[T]
+    def roundtrip[T: CodlWriter: CodlReader](value: T): T = value.codl.as[T]
 
     suite(t"Generic Derivation tests"):
 
@@ -1104,12 +1104,12 @@ object Tests extends Suite(t"CoDL tests"):
       val complex = Bar(List(Baz(t"a", 2, Unset), Baz(t"c", 6, 'e')), Quux(t"e", List(1, 2, 4)))
       
       test(t"roundtrip a complex case class"):
-        summon[CodlDeserializer[Baz]]
-        summon[CodlDeserializer[List[Baz]]]
+        summon[CodlReader[Baz]]
+        summon[CodlReader[List[Baz]]]
         roundtrip(complex)
       .assert(_ == complex)
 
-      def print[T: CodlDeserializer: CodlSerializer](value: T): Text =
+      def print[T: CodlReader: CodlWriter](value: T): Text =
         val writer = new ji.StringWriter()
         Printer.print(writer, value.codl)
         writer.toString().show

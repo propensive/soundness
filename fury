@@ -9,7 +9,7 @@ target cellulose/test
 project cellulose
   module core
     sources  src/core
-    include  eucalyptus/core chiaroscuro/core kaleidoscope/core polyvinyl/core
+    include  eucalyptus/core chiaroscuro/core kaleidoscope/core polyvinyl/core anticipation/transport
   
   module test
     sources  src/test

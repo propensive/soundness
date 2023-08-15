@@ -32,60 +32,60 @@ case class CodlLabel[+TargetType, +FieldNameType <: Label](label: String)
 
 case class CodlReadError() extends Error(msg"the CoDL value is not of the right format")
 
-trait CodlSerializer[-ValueType]:
-  def serialize(value: ValueType): List[IArray[CodlNode]]
+trait CodlWriter[-ValueType]:
+  def write(value: ValueType): List[IArray[CodlNode]]
   def schema: CodlSchema
 
-trait CodlDeserializer[ValueType]:
-  def deserialize(value: List[Indexed])(using codlRead: Raises[CodlReadError]): ValueType
+trait CodlReader[ValueType]:
+  def read(value: List[Indexed])(using codlRead: Raises[CodlReadError]): ValueType
   def schema: CodlSchema
 
-trait CodlFieldSerializer[-ValueType] extends CodlSerializer[ValueType]:
+trait CodlFieldWriter[-ValueType] extends CodlWriter[ValueType]:
   def schema: CodlSchema = Field(Arity.One)
-  def serializeField(value: ValueType): Text
-  def serialize(value: ValueType): List[IArray[CodlNode]] =
-    List(IArray(CodlNode(Data(serializeField(value)))))
+  def writeField(value: ValueType): Text
+  def write(value: ValueType): List[IArray[CodlNode]] =
+    List(IArray(CodlNode(Data(writeField(value)))))
 
-class CodlFieldDeserializer[ValueType](deserializer: Text => ValueType)
-extends CodlDeserializer[ValueType]:
+class CodlFieldReader[ValueType](reader: Text => ValueType)
+extends CodlReader[ValueType]:
   val schema: CodlSchema = Field(Arity.One)
 
-  def deserialize(nodes: List[Indexed])(using codlError: Raises[CodlReadError]): ValueType =
+  def read(nodes: List[Indexed])(using codlError: Raises[CodlReadError]): ValueType =
     nodes.headOption.getOrElse(abort(CodlReadError())).children match
       case IArray(CodlNode(Data(value, _, _, _), _)) =>
-        deserializer(value)
+        reader(value)
       case _ =>
         abort(CodlReadError())
 
-trait CodlSerializer3:
+trait CodlWriter3:
   given maybe
       [ValueType]
-      (using serializer: CodlSerializer[ValueType])
-      : CodlSerializer[ValueType | Unset.type] =
-    new CodlSerializer[Maybe[ValueType]]:
-      def schema: CodlSchema = serializer.schema.optional
-      def serialize(value: Maybe[ValueType]): List[IArray[CodlNode]] =
-        value.mm(serializer.serialize(_)).or(List())
+      (using writer: CodlWriter[ValueType])
+      : CodlWriter[ValueType | Unset.type] =
+    new CodlWriter[Maybe[ValueType]]:
+      def schema: CodlSchema = writer.schema.optional
+      def write(value: Maybe[ValueType]): List[IArray[CodlNode]] =
+        value.mm(writer.write(_)).or(List())
 
-trait CodlSerializer2 extends CodlSerializer3:
+trait CodlWriter2 extends CodlWriter3:
   inline given derived
       [DerivationType]
       (using mirror: Mirror.Of[DerivationType])
-      : CodlSerializer[DerivationType] =
+      : CodlWriter[DerivationType] =
     inline mirror match
-      case given Mirror.ProductOf[DerivationType & Product] => new CodlSerializer[DerivationType]:
+      case given Mirror.ProductOf[DerivationType & Product] => new CodlWriter[DerivationType]:
         def schema: CodlSchema =
-          Struct(CodlDeserializer.deriveSchema[DerivationType, mirror.MirroredElemTypes,
+          Struct(CodlReader.deriveSchema[DerivationType, mirror.MirroredElemTypes,
               mirror.MirroredElemLabels], Arity.One)
         
-        def serialize(value: DerivationType): List[IArray[CodlNode]] =
+        def write(value: DerivationType): List[IArray[CodlNode]] =
           (value.asMatchable: @unchecked) match
             case value: Product =>
               val entries = deriveProduct[DerivationType, mirror.MirroredElemLabels](Tuple.fromProductTyped(value))
               
               List(IArray.from(entries))
       
-      case _ => compiletime.error("cannot derive a CodlSerializer sum type")
+      case _ => compiletime.error("cannot derive a CodlWriter sum type")
 
   private transparent inline def deriveProduct
       [DerivationType, Labels <: Tuple]
@@ -104,71 +104,71 @@ trait CodlSerializer2 extends CodlSerializer3:
             
             (label.asMatchable: @unchecked) match
               case label: String =>
-                val serializer = summonInline[CodlSerializer[head.type]]
+                val writer = summonInline[CodlWriter[head.type]]
                 
                 val serialization =
-                  serializer.serialize(head).map: value =>
-                    CodlNode(Data(label.tt, value, Layout.empty, serializer.schema))
+                  writer.write(head).map: value =>
+                    CodlNode(Data(label.tt, value, Layout.empty, writer.schema))
                   .filter(!_.empty)
                 
                 serialization ::: deriveProduct[DerivationType, tailLabels](tail)
         
       case _ => Nil
   
-object CodlSerializer extends CodlSerializer2:
-  given field[ValueType](using encoder: Encoder[ValueType]): CodlSerializer[ValueType]^{encoder} =
-    new CodlSerializer[ValueType]:
+object CodlWriter extends CodlWriter2:
+  given field[ValueType](using encoder: Encoder[ValueType]): CodlWriter[ValueType]^{encoder} =
+    new CodlWriter[ValueType]:
       def schema: CodlSchema = Field(Arity.One)
       
-      def serialize(value: ValueType): List[IArray[CodlNode]] =
+      def write(value: ValueType): List[IArray[CodlNode]] =
         List(IArray(CodlNode(Data(encoder.encode(value)))))
 
-  given boolean: CodlFieldSerializer[Boolean] = if _ then t"yes" else t"no"
-  given text: CodlFieldSerializer[Text] = _.show
+  given boolean: CodlFieldWriter[Boolean] = if _ then t"yes" else t"no"
+  given text: CodlFieldWriter[Text] = _.show
   
   given option
       [ValueType]
-      (using serializer: CodlSerializer[ValueType])
-      : CodlSerializer[Option[ValueType]] =
-    new CodlSerializer[Option[ValueType]]:
-      def schema: CodlSchema = serializer.schema.optional
-      def serialize(value: Option[ValueType]): List[IArray[CodlNode]] = value match
+      (using writer: CodlWriter[ValueType])
+      : CodlWriter[Option[ValueType]] =
+    new CodlWriter[Option[ValueType]]:
+      def schema: CodlSchema = writer.schema.optional
+      def write(value: Option[ValueType]): List[IArray[CodlNode]] = value match
         case None        => List()
-        case Some(value) => serializer.serialize(value)
+        case Some(value) => writer.write(value)
   
   given list
       [ElementType]
-      (using serializer: CodlSerializer[ElementType])
-      : CodlSerializer[List[ElementType]] =
-    new CodlSerializer[List[ElementType]]:
-      def schema: CodlSchema = serializer.schema match
+      (using writer: CodlWriter[ElementType])
+      : CodlWriter[List[ElementType]] =
+    new CodlWriter[List[ElementType]]:
+      def schema: CodlSchema = writer.schema match
         case Field(_, validator) => Field(Arity.Many, validator)
         case struct: Struct      => struct.copy(structArity = Arity.Many)
       
-      def serialize(value: List[ElementType]): List[IArray[CodlNode]] =
-        value.map { (value: ElementType) => serializer.serialize(value).head }
+      def write(value: List[ElementType]): List[IArray[CodlNode]] =
+        value.map { (value: ElementType) => writer.write(value).head }
   
   given set
       [ElementType]
-      (using serializer: CodlSerializer[ElementType])
-      : CodlSerializer[Set[ElementType]] =
-    new CodlSerializer[Set[ElementType]]:
-      def schema: CodlSchema = serializer.schema match
+      (using writer: CodlWriter[ElementType])
+      : CodlWriter[Set[ElementType]] =
+    new CodlWriter[Set[ElementType]]:
+      def schema: CodlSchema = writer.schema match
         case Field(_, validator) => Field(Arity.Many, validator)
         case struct: Struct      => struct.copy(structArity = Arity.Many)
       
-      def serialize(value: Set[ElementType]): List[IArray[CodlNode]] =
-        value.map { (value: ElementType) => serializer.serialize(value).head }.to(List)
+      def write(value: Set[ElementType]): List[IArray[CodlNode]] =
+        value.map { (value: ElementType) => writer.write(value).head }.to(List)
   
-trait CodlDeserializer2:
+trait CodlReader2:
   inline given derived
       [DerivationType]
       (using mirror: Mirror.Of[DerivationType])
-      : CodlDeserializer[DerivationType] =
+      : CodlReader[DerivationType] =
     inline mirror match
       case mirror: Mirror.ProductOf[DerivationType & Product] =>
-        new CodlDeserializer[DerivationType]:
-          def deserialize
+        new CodlReader[DerivationType]:
+          def read
               (value: List[Indexed])(using codlRead: Raises[CodlReadError])
               : DerivationType =
             mirror.fromProduct(deriveProduct[DerivationType, mirror.MirroredElemTypes,
@@ -177,7 +177,7 @@ trait CodlDeserializer2:
           def schema: CodlSchema = Struct(deriveSchema[DerivationType, mirror.MirroredElemTypes,
               mirror.MirroredElemLabels], Arity.One)
       
-      case _ => compiletime.error("cannot derive a CodlDeserializer sum type")
+      case _ => compiletime.error("cannot derive a CodlReader sum type")
     
   transparent inline def deriveSchema
       [DerivationType, ElementTypes <: Tuple, Labels <: Tuple]
@@ -197,7 +197,7 @@ trait CodlDeserializer2:
           
           (label.asMatchable: @unchecked) match
             case label: String =>
-              CodlSchema.Entry(label.tt, summonInline[CodlDeserializer[headType]].schema) ::
+              CodlSchema.Entry(label.tt, summonInline[CodlReader[headType]].schema) ::
                   deriveSchema[DerivationType, tailType, tailLabels]
 
   private transparent inline def deriveProduct
@@ -220,75 +220,75 @@ trait CodlDeserializer2:
           
           (label.asMatchable: @unchecked) match
             case label: String =>
-              summonInline[CodlDeserializer[headType]].deserialize(value.headOption.getOrElse(abort(CodlReadError())).get(label.tt)) *:
+              summonInline[CodlReader[headType]].read(value.headOption.getOrElse(abort(CodlReadError())).get(label.tt)) *:
                   deriveProduct[DerivationType, tailType, tailLabels](value)
         
-object CodlDeserializer extends CodlDeserializer2:
+object CodlReader extends CodlReader2:
   given maybe
       [ValueType]
-      (using deserializer: CodlDeserializer[ValueType])
-      : CodlDeserializer[Maybe[ValueType]] =
-    new CodlDeserializer[Maybe[ValueType]]:
-      def schema: CodlSchema = deserializer.schema.optional
+      (using reader: CodlReader[ValueType])
+      : CodlReader[Maybe[ValueType]] =
+    new CodlReader[Maybe[ValueType]]:
+      def schema: CodlSchema = reader.schema.optional
       
-      def deserialize
+      def read
           (value: List[Indexed])(using codlRead: Raises[CodlReadError])
           : Maybe[ValueType] =
-        if value.isEmpty then Unset else deserializer.deserialize(value)
+        if value.isEmpty then Unset else reader.read(value)
  
-  given field[ValueType](using decoder: Decoder[ValueType]): CodlDeserializer[ValueType]^{decoder} =
-    CodlFieldDeserializer(decoder.decode(_))
+  given field[ValueType](using decoder: Decoder[ValueType]): CodlReader[ValueType]^{decoder} =
+    CodlFieldReader(decoder.decode(_))
   
-  given boolean: CodlDeserializer[Boolean] = CodlFieldDeserializer(_ == t"yes")
-  given text: CodlDeserializer[Text] = CodlFieldDeserializer(identity(_))
+  given boolean: CodlReader[Boolean] = CodlFieldReader(_ == t"yes")
+  given text: CodlReader[Text] = CodlFieldReader(identity(_))
 
   given option
       [ValueType]
-      (using deserializer: CodlDeserializer[ValueType])
-      : CodlDeserializer[Option[ValueType]] =
-    new CodlDeserializer[Option[ValueType]]:
-      def schema: CodlSchema = deserializer.schema.optional
-      def deserialize
+      (using reader: CodlReader[ValueType])
+      : CodlReader[Option[ValueType]] =
+    new CodlReader[Option[ValueType]]:
+      def schema: CodlSchema = reader.schema.optional
+      def read
           (value: List[Indexed])(using codlRead: Raises[CodlReadError])
           : Option[ValueType] =
-        if value.isEmpty then None else Some(deserializer.deserialize(value))
+        if value.isEmpty then None else Some(reader.read(value))
  
   given list
       [ElementType]
-      (using deserializer: CodlDeserializer[ElementType])
-      : CodlDeserializer[List[ElementType]] =
-    new CodlDeserializer[List[ElementType]]:
-      def schema: CodlSchema = deserializer.schema match
+      (using reader: CodlReader[ElementType])
+      : CodlReader[List[ElementType]] =
+    new CodlReader[List[ElementType]]:
+      def schema: CodlSchema = reader.schema match
         case Field(_, validator) => Field(Arity.Many, validator)
         case struct: Struct      => struct.copy(structArity = Arity.Many)
       
-      def deserialize
+      def read
           (value: List[Indexed])(using codlRead: Raises[CodlReadError])
           : List[ElementType] =
-        deserializer.schema match
+        reader.schema match
           case Field(_, validator) => value.flatMap(_.children).map: node =>
-            deserializer.deserialize(List(CodlDoc(node)))
+            reader.read(List(CodlDoc(node)))
         
           case struct: Struct =>
-            value.map { v => deserializer.deserialize(List(v)) }
+            value.map { v => reader.read(List(v)) }
   
   given set
       [ElementType]
-      (using deserializer: CodlDeserializer[ElementType])
-      : CodlDeserializer[Set[ElementType]] =
-    new CodlDeserializer[Set[ElementType]]:
-      def schema: CodlSchema = deserializer.schema match
+      (using reader: CodlReader[ElementType])
+      : CodlReader[Set[ElementType]] =
+    new CodlReader[Set[ElementType]]:
+      def schema: CodlSchema = reader.schema match
         case Field(_, validator) => Field(Arity.Many, validator)
         case struct: Struct      => struct.copy(structArity = Arity.Many)
       
-      def deserialize
+      def read
           (value: List[Indexed])(using coldRead: Raises[CodlReadError])
           : Set[ElementType] =
-        deserializer.schema match
+        reader.schema match
           case Field(_, validator) =>
             value.flatMap(_.children).map: node =>
-              deserializer.deserialize(List(CodlDoc(node)))
+              reader.read(List(CodlDoc(node)))
             .to(Set)
           
           case struct: Struct =>
-            value.map { v => deserializer.deserialize(List(v)) }.to(Set)
+            value.map { v => reader.read(List(v)) }.to(Set)

@@ -21,5 +21,5 @@ import language.experimental.captureChecking
 extension (inline ctx: StringContext)
   transparent inline def codl(inline parts: Any*): CodlDoc = ${Codl.Prefix.expand('ctx, 'parts)}
 
-extension [T](value: T)(using serializer: CodlSerializer[T], deserializer: CodlDeserializer[T])
-  def codl: CodlDoc = CodlDoc(IArray.from(serializer.serialize(value).flatten), deserializer.schema, 0)
+extension [T](value: T)(using writer: CodlWriter[T], reader: CodlReader[T])
+  def codl: CodlDoc = CodlDoc(IArray.from(writer.write(value).flatten), reader.schema, 0)
