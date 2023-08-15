@@ -32,6 +32,10 @@ project anticipation
     include   anticipation/text
     sources   src/http
   
+  module transport
+    compiler  scala
+    sources   src/transport
+  
   module color
     compiler  scala
     sources   src/color
@@ -54,3 +58,4 @@ project anticipation
     include anticipation/time
     include anticipation/url
     include anticipation/color
+    include anticipation/transport
