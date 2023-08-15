@@ -109,8 +109,12 @@ extension [T](value: T)(using writer: JsonSerializer[T])
 object Json extends Dynamic:
   
   given transport: Transport[Json] with
-    type Serializer[-DataType] = JsonSerializer[DataType]
-    type Deserializer[DataType] = JsonDeserializer[DataType]
+    type Writer[-DataType] = JsonSerializer[DataType]
+    type Reader[DataType] = JsonDeserializer[DataType]
+
+    def write[DataType: Writer](value: DataType): LazyList[Bytes] = ???
+    def read[DataType: Reader](value: LazyList[Bytes]): DataType = ???
+
 
   def parse
       [SourceType]
