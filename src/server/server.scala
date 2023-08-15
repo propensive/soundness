@@ -49,7 +49,7 @@ trait FallbackHandler:
         HttpBody.Chunked(LazyList(v.show.bytes)))
 
 object Handler extends FallbackHandler:
-  given iarrayByteHandler[T](using hr: GenericHttpResponseStream[T], ct: Raises[InvalidMediaTypeError])
+  given iarrayByteHandler[T](using hr: GenericHttpResponseStream[T], ct: Raises[MediaTypeError])
                          : SimpleHandler[T] =
     SimpleHandler(Media.parse(hr.mediaType.show), value => HttpBody.Chunked(hr.content(value).map(identity)))
 
