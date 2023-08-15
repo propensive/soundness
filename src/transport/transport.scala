@@ -18,4 +18,7 @@ package anticipation
 
 trait Transport[TransportType]:
   type Serializer[-DataType]
-  type Deserializer[+DataType]
+  type Deserializer[DataType]
+  
+  def serialize[DataType: Serializer](value: DataType): LazyList[IArray[Byte]]
+  def deserialize[DataType: Deserializer](value: LazyList[IArray[Byte]]): DataType
