@@ -108,33 +108,29 @@ case class Digest[A <: HashScheme[?]](bytes: Bytes) extends Encodable, Shown[Dig
   
   override def hashCode: Int = bytes.hashCode
 
-object Hashable:
-
-
-
-
+object Digestible:
   private transparent inline def deriveProduct(acc: DigestAccumulator, tuple: Tuple): Unit =
     inline tuple match
       case EmptyTuple => ()
       case cons: (? *: ?) => cons match
         case head *: tail =>
-          summonInline[Hashable[head.type]].digest(acc, head)
+          summonInline[Digestible[head.type]].digest(acc, head)
           deriveProduct(acc, tail)
 
   private transparent inline def deriveSum
       [TupleType <: Tuple, DerivedType]
       (ordinal: Int)
-      : Hashable[DerivedType] =
+      : Digestible[DerivedType] =
     inline erasedValue[TupleType] match
       case _: (head *: tail) =>
         if ordinal == 0
-        then summonInline[Hashable[head]].asInstanceOf[Hashable[DerivedType]]
+        then summonInline[Digestible[head]].asInstanceOf[Digestible[DerivedType]]
         else deriveSum[tail, DerivedType](ordinal - 1)
 
   inline given derived
       [DerivationType]
       (using mirror: Mirror.Of[DerivationType])
-      : Hashable[DerivationType] =
+      : Digestible[DerivationType] =
     inline mirror match
       case given Mirror.ProductOf[DerivationType & Product] =>
         (acc: DigestAccumulator, value: DerivationType) => (value.asMatchable: @unchecked) match
@@ -144,31 +140,31 @@ object Hashable:
         (acc: DigestAccumulator, value: DerivationType) =>
           deriveSum[s.MirroredElemTypes, DerivationType](s.ordinal(value)).digest(acc, value)
 
-  given[T: Hashable]: Hashable[Iterable[T]] =
-    (acc, xs) => xs.foreach(summon[Hashable[T]].digest(acc, _))
+  given[T: Digestible]: Digestible[Iterable[T]] =
+    (acc, xs) => xs.foreach(summon[Digestible[T]].digest(acc, _))
   
-  given Hashable[Int] =
+  given Digestible[Int] =
     (acc, n) => acc.append((24 to 0 by -8).map(n >> _).map(_.toByte).toArray.immutable(using Unsafe))
   
-  given Hashable[Long] =
+  given Digestible[Long] =
     (acc, n) => acc.append((52 to 0 by -8).map(n >> _).map(_.toByte).toArray.immutable(using Unsafe))
   
-  given Hashable[Double] =
-    (acc, n) => summon[Hashable[Long]].digest(acc, jl.Double.doubleToRawLongBits(n))
+  given Digestible[Double] =
+    (acc, n) => summon[Digestible[Long]].digest(acc, jl.Double.doubleToRawLongBits(n))
   
-  given Hashable[Float] =
-    (acc, n) => summon[Hashable[Int]].digest(acc, jl.Float.floatToRawIntBits(n))
+  given Digestible[Float] =
+    (acc, n) => summon[Digestible[Int]].digest(acc, jl.Float.floatToRawIntBits(n))
   
-  given Hashable[Boolean] = (acc, n) => acc.append(IArray(if n then 1.toByte else 0.toByte))
-  given Hashable[Byte] = (acc, n) => acc.append(IArray(n))
-  given Hashable[Short] = (acc, n) => acc.append(IArray((n >> 8).toByte, n.toByte))
-  given Hashable[Char] = (acc, n) => acc.append(IArray((n >> 8).toByte, n.toByte))
-  given Hashable[Text] = (acc, s) => acc.append(s.bytes(using charEncoders.utf8))
-  given Hashable[Bytes] = _.append(_)
-  given Hashable[Iterable[Bytes]] = (acc, stream) => stream.foreach(acc.append(_))
-  given Hashable[Digest[?]] = (acc, d) => acc.append(d.bytes)
+  given Digestible[Boolean] = (acc, n) => acc.append(IArray(if n then 1.toByte else 0.toByte))
+  given Digestible[Byte] = (acc, n) => acc.append(IArray(n))
+  given Digestible[Short] = (acc, n) => acc.append(IArray((n >> 8).toByte, n.toByte))
+  given Digestible[Char] = (acc, n) => acc.append(IArray((n >> 8).toByte, n.toByte))
+  given Digestible[Text] = (acc, s) => acc.append(s.bytes(using charEncoders.utf8))
+  given Digestible[Bytes] = _.append(_)
+  given Digestible[Iterable[Bytes]] = (acc, stream) => stream.foreach(acc.append(_))
+  given Digestible[Digest[?]] = (acc, d) => acc.append(d.bytes)
 
-trait Hashable[-T]:
+trait Digestible[-T]:
   def digest(acc: DigestAccumulator, value: T): Unit
 
 case class Digester(run: DigestAccumulator => Unit):
@@ -177,11 +173,11 @@ case class Digester(run: DigestAccumulator => Unit):
     run(acc)
     Digest(acc.digest())
   
-  def digest[T: Hashable](value: T): Digester =
+  def digest[T: Digestible](value: T): Digester =
     Digester:
       acc =>
         run(acc)
-        summon[Hashable[T]].digest(acc, value)
+        summon[Digestible[T]].digest(acc, value)
 
 trait DigestAccumulator:
   def append(bytes: Bytes): Unit
@@ -249,8 +245,8 @@ extension (value: Text)
   def decode[T <: EncodingScheme: ByteDecoder]: Bytes = summon[ByteDecoder[T]].decode(value)
 
 extension [T](value: T)
-  def digest[A <: HashScheme[?]: HashFunction](using Hashable[T]): Digest[A] =
-    val digester = Digester(summon[Hashable[T]].digest(_, value))
+  def digest[A <: HashScheme[?]: HashFunction](using Digestible[T]): Digest[A] =
+    val digester = Digester(summon[Digestible[T]].digest(_, value))
     digester.apply
 
   def hmac[A <: HashScheme[?]: HashFunction](key: Bytes)(using ByteCodec[T]): Hmac[A] =
