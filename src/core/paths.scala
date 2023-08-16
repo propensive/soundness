@@ -487,6 +487,9 @@ object Directory:
 case class Directory(path: Path) extends Unix.Inode, Windows.Inode:
   def children: LazyList[Path] = jnf.Files.list(path.java).nn.toScala(LazyList).map: child =>
     path / PathName.unsafe(child.getFileName.nn.toString.nn.tt)
+
+  def descendants(using DereferenceSymlinks, Raises[IoError], PathResolver[Directory, Path]): LazyList[Path] =
+    children #::: children.filter(_.is[Directory]).map(_.as[Directory]).flatMap(_.descendants)
     
   @targetName("child")
   def /(name: PathName[GeneralForbidden]): Path = path / name
