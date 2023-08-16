@@ -108,7 +108,11 @@ case class Digest[A <: HashScheme[?]](bytes: Bytes) extends Encodable, Shown[Dig
   
   override def hashCode: Int = bytes.hashCode
 
-object Digestible:
+trait Digestible2:
+  given [T](using digestible: Digestible[T]): Digestible[Maybe[T]] = (acc, value) =>
+    value.mm(digestible.digest(acc, _))
+
+object Digestible extends Digestible2:
   private transparent inline def deriveProduct(acc: DigestAccumulator, tuple: Tuple): Unit =
     inline tuple match
       case EmptyTuple => ()
@@ -142,7 +146,7 @@ object Digestible:
 
   given[T: Digestible]: Digestible[Iterable[T]] =
     (acc, xs) => xs.foreach(summon[Digestible[T]].digest(acc, _))
-  
+
   given Digestible[Int] =
     (acc, n) => acc.append((24 to 0 by -8).map(n >> _).map(_.toByte).toArray.immutable(using Unsafe))
   
