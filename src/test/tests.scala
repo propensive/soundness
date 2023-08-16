@@ -20,11 +20,11 @@ import probably.*
 import rudiments.*
 import anticipation.*
 import gossamer.*
-import perforate.*
+import perforate.*, errorHandlers.throwUnsafely
 import spectacular.*
 import hieroglyph.*, charDecoders.utf8, charEncoders.utf8, badEncodingHandlers.skip
 
-import errorHandlers.throwUnsafely
+import alphabets.hex.upperCase
 
 object Tests extends Suite(t"Gastronomy tests"):
  
