@@ -34,6 +34,9 @@ import javax.crypto.Mac, javax.crypto.spec.SecretKeySpec
 import ju.Base64.{getEncoder as Base64Encoder, getDecoder as Base64Decoder}
 import java.lang as jl
 
+case class Base32Alphabet(chars: IArray[Char], padding: Char)
+//trait Base64Alphabet(val chars: IArray[Char], val padding: Char)
+
 sealed trait HashScheme[Size <: Nat]
 
 sealed trait Md5 extends HashScheme[16]
@@ -199,6 +202,13 @@ trait Base32 extends EncodingScheme
 trait Hex extends EncodingScheme
 trait Binary extends EncodingScheme
 
+package alphabets:
+  package base32:
+    given default: Base32Alphabet = Base32Alphabet(t"ABCDEFGHIJKLMNOPQRSTUVWXYZ234567".chars, '=')
+    given zBase32: Base32Alphabet = Base32Alphabet(t"ybndrfg8ejkmcpqxot1uwisza345h769".chars, '=')
+
+  //package base64:
+
 object ByteEncoder:
   private val HexLookup: Bytes = IArray.from(t"0123456789ABCDEF".bytes(using charEncoders.ascii))
 
@@ -211,19 +221,18 @@ object ByteEncoder:
     
     Text(String(array, "UTF-8"))
 
-  private val Base32Alphabet: IArray[Char] = t"ABCDEFGHIJKLMNOPQRSTUVWXYZ234567".chars
-  private val ZBase32Alphabet: IArray[Char] = t"ybndrfg8ejkmcpqxot1uwisza345h769".chars
 
-  given ByteEncoder[Base32] = bytes =>
+  given (using alphabet: Base32Alphabet): ByteEncoder[Base32] = bytes =>
     val buf: StringBuilder = StringBuilder()
     
+    @tailrec
     def recur(acc: Int, index: Int, unused: Int): Text =
-      buf.append(Base32Alphabet((acc >> 11) & 31))
+      buf.append(alphabet.chars((acc >> 11) & 31))
       
       if index >= bytes.length then
-        buf.append(Base32Alphabet((acc >> 6) & 31))
-        if unused == 5 then buf.append(Base32Alphabet((acc >> 1) & 31))
-        if buf.length%8 != 0 then for i <- 0 until (8 - buf.length%8) do buf.append("=")
+        buf.append(alphabet.chars((acc >> 6) & 31))
+        if unused == 5 then buf.append(alphabet.chars((acc >> 1) & 31))
+        if buf.length%8 != 0 then for i <- 0 until (8 - buf.length%8) do buf.append(alphabet.padding)
         buf.toString.tt
       else
         if unused >= 8 then recur((acc << 5) + (bytes(index) << (unused - 3)), index + 1, unused - 3)
