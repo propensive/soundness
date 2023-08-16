@@ -211,6 +211,26 @@ object ByteEncoder:
     
     Text(String(array, "UTF-8"))
 
+  private val Base32Alphabet: IArray[Char] = t"ABCDEFGHIJKLMNOPQRSTUVWXYZ234567".chars
+  private val ZBase32Alphabet: IArray[Char] = t"ybndrfg8ejkmcpqxot1uwisza345h769".chars
+
+  given ByteEncoder[Base32] = bytes =>
+    val buf: StringBuilder = StringBuilder()
+    
+    def recur(acc: Int, index: Int, unused: Int): Text =
+      buf.append(Base32Alphabet((acc >> 11) & 31))
+      
+      if index >= bytes.length then
+        buf.append(Base32Alphabet((acc >> 6) & 31))
+        if unused == 5 then buf.append(Base32Alphabet((acc >> 1) & 31))
+        if buf.length%8 != 0 then for i <- 0 until (8 - buf.length%8) do buf.append("=")
+        buf.toString.tt
+      else
+        if unused >= 8 then recur((acc << 5) + (bytes(index) << (unused - 3)), index + 1, unused - 3)
+        else recur(acc << 5, index, unused + 5)
+
+    if bytes.isEmpty then t"" else recur(bytes.head.toInt << 8, 1, 8)
+
   given ByteEncoder[Base64] = bytes => Text(Base64Encoder.nn.encodeToString(bytes.to(Array)).nn)
   
   given ByteEncoder[Binary] = bytes =>
