@@ -51,6 +51,9 @@ extension [ValueType](opt: Maybe[ValueType])
   def mm[ValueType2](fn: ValueType => ValueType2): Maybe[ValueType2]^{fn} =
     if unset then Unset else fn(cast(using Unsafe))
 
+object Maybe:
+  def apply[ValueType](value: ValueType | Null): Maybe[ValueType] = if value == null then Unset else value
+
 extension [ValueType](opt: Option[ValueType])
   def maybe: Unset.type | ValueType = opt.getOrElse(Unset)
   def presume(using default: Default[ValueType]) = opt.getOrElse(default())
