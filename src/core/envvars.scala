@@ -144,4 +144,4 @@ package environments:
     def apply(name: Text): Unset.type = Unset
 
   given jvm: Environment with
-    def apply(name: Text): Maybe[Text] = Option(System.getenv(name.s)).map(_.nn.tt).getOrElse(Unset)
+    def apply(name: Text): Maybe[Text] = Maybe(System.getenv(name.s)).mm(_.tt)

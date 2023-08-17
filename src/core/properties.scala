@@ -129,5 +129,4 @@ package systemProperties:
     def apply(name: Text): Unset.type = Unset
 
   given jvm: SystemProperties with
-    def apply(name: Text): Maybe[Text] =
-      Option(System.getProperty(name.s)).map(_.nn.tt).getOrElse(Unset)
+    def apply(name: Text): Maybe[Text] = Maybe(System.getProperty(name.s)).mm(_.tt)
