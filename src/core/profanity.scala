@@ -18,11 +18,11 @@ package profanity
 
 import rudiments.*
 import fulminate.*
-import digression.*
 import gossamer.*
 import spectacular.*
 import symbolism.*
 import eucalyptus.*
+import perforate.*
 import parasite.*
 import turbulence.*
 import anticipation.*, timeApi.long
