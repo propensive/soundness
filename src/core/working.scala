@@ -35,3 +35,7 @@ case class HomeDirectory(text: Text):
 package workingDirectories:
   given default: WorkingDirectory =
     WorkingDirectory(Maybe(System.getProperty("user.dir")).mm(_.tt))
+
+package homeDirectories:
+  given default: HomeDirectory =
+    HomeDirectory(System.getProperty("user.home").nn.tt)
