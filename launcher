@@ -1,0 +1,45 @@
+#!/bin/bash
+
+pid="$$"
+port="$(cat "$XDG_RUNTIME_DIR"/fury.port)"
+args=("$@")
+
+if [ -t 0 ]
+then stty intr undef -icanon min 1 raw time 0 >/dev/null 2>&1
+fi
+
+signal() {
+  printf "signal %s signal %s\n" "$pid" "$1" | nc localhost "$port"
+}
+
+register() {
+  for signal in "$@"
+  do trap "signal $signal" "$signal"
+  done
+}
+
+init() {
+  printf "process %s\n" "$pid"
+  
+  for arg in "${args[@]}"
+  do printf "arg %s" "$arg\n"
+  done
+  
+  printf "env %s\n" "$(env -0)"
+  
+  if [ -t 0 ]
+  then printf "input term\n"
+  else printf "input pipe\n"
+  fi
+  
+  printf "##\n"
+  cat
+}
+
+(init | nc localhost "$port") <&0 &
+
+register INT WINCH
+
+while true
+do wait
+done

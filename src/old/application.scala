@@ -17,6 +17,7 @@
 package exoskeleton
 
 import rudiments.*
+import anticipation.*
 
 def arguments(using CliShell): List[Text] = summon[CliShell].args
 
@@ -32,7 +33,7 @@ trait Application:
 //     val shell = CliShell(args, env, props)
     
 //     args match
-//       case t"{exoskeleton}" :: ShellType(shell) :: Int(current) :: t"--" :: args =>
+//       case t"{exoskeleton}" :: Shell(shell) :: Int(current) :: t"--" :: args =>
 //         val cli = Cli(args.head, args.tail, env, props, current - 1)
 //         val completions: Completions = try complete(cli) catch Throwable => Completions(Nil)
 //         shell.serialize(cli, completions).foreach(Out.println)
