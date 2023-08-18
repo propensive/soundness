@@ -20,6 +20,7 @@ import fulminate.*
 import rudiments.*
 
 import scala.quoted.*
+import scala.compiletime.*
 
 import java.util.concurrent.atomic as juca
 
@@ -85,6 +86,17 @@ extends Raises[ErrorType]:
   def record(error: ErrorType): Unit = boundary.break(Unset)(using label)
   def abort(error: ErrorType): Nothing = boundary.break(Unset)(using label)
 
+@capability
+class ReturnMitigation
+    [ErrorType <: Error, SuccessType]
+    (label: boundary.Label[Mitigation[SuccessType, ErrorType]])
+extends Raises[ErrorType]:
+  type Result = Mitigation[SuccessType, ErrorType]
+  type Return = Mitigation[SuccessType, ErrorType]
+  
+  def record(error: ErrorType): Unit = boundary.break(Mitigation.Failure(error))(using label)
+  def abort(error: ErrorType): Nothing = boundary.break(Mitigation.Failure(error))(using label)
+
 class ThrowErrors[ErrorType <: Error, SuccessType]()(using CanThrow[ErrorType])
 extends ErrorHandler[SuccessType]:
   type Result = Either[ErrorType, SuccessType]
@@ -141,6 +153,16 @@ extends ErrorHandler[SuccessType]:
     case Left(error)  => error
     case Right(value) => abort(UnexpectedSuccessError(value))
 
+class Mitigate[ErrorType <: Error, SuccessType]
+extends ErrorHandler[SuccessType]:
+  type Result = Mitigation[SuccessType, ErrorType]
+  type Return = Mitigation[SuccessType, ErrorType]
+  type Raiser = ReturnMitigation[ErrorType, SuccessType]
+  
+  def raiser(label: boundary.Label[Result]): Raiser = ReturnMitigation(label)
+  def wrap(block: => SuccessType): Mitigation[SuccessType, ErrorType] = Mitigation.Success(block)
+  def finish(value: Mitigation[SuccessType, ErrorType]): Mitigation[SuccessType, ErrorType] = value
+
 class Safely[ErrorType <: Error, SuccessType]() extends ErrorHandler[SuccessType]:
   type Result = Maybe[SuccessType]
   type Return = Maybe[SuccessType]
@@ -179,7 +201,7 @@ def safely
     (block: CanThrow[Exception] ?=> RaisesMaybe[ErrorType, SuccessType] ?=> SuccessType)
     : Maybe[SuccessType] =
   
-  try handle(Safely[ErrorType, SuccessType])(block(using unsafeExceptions.canThrowAny))
+  try genericHandle(Safely[ErrorType, SuccessType])(block(using unsafeExceptions.canThrowAny))
   catch case error: Exception => Unset
 
 def throwErrors
@@ -189,7 +211,7 @@ def throwErrors
     (block: RaisesThrow[ErrorType, SuccessType] ?=> SuccessType)
     : SuccessType =
   
-  handle(ThrowErrors[ErrorType, SuccessType])(block)
+  genericHandle(ThrowErrors[ErrorType, SuccessType])(block)
 
 def validate
     [ErrorType <: Error]
@@ -198,7 +220,7 @@ def validate
     (block: RaisesAggregate[ErrorType, SuccessType] ?=> SuccessType)
     : SuccessType =
 
-  handle(Validate[ErrorType, SuccessType]())(block)
+  genericHandle(Validate[ErrorType, SuccessType]())(block)
 
 def capture
     [ErrorType <: Error]
@@ -208,7 +230,16 @@ def capture
     (using raise: Raises[UnexpectedSuccessError[SuccessType]])
     : ErrorType =
   
-  handle(Capture[ErrorType, SuccessType])(block)
+  genericHandle(Capture[ErrorType, SuccessType])(block)
+
+def handle
+    [ErrorType <: Error]
+    (using DummyImplicit)
+    [SuccessType]
+    (block: ReturnMitigation[ErrorType, SuccessType] ?=> SuccessType)
+    : Mitigation[SuccessType, ErrorType] =
+  
+  genericHandle(Mitigate[ErrorType, SuccessType]())(block)
 
 def failCompilation
     [ErrorType <: Error]
@@ -217,9 +248,9 @@ def failCompilation
     (block: RaisesCompileFailure[ErrorType, SuccessType] ?=> SuccessType)
     : SuccessType =
 
-  handle(FailCompilation[ErrorType, SuccessType])(block)
+  genericHandle(FailCompilation[ErrorType, SuccessType])(block)
 
-def handle
+def genericHandle
     [SuccessType, HandlerType <: ErrorHandler[SuccessType]]
     (handler: HandlerType^)
     (block: handler.Raiser ?=> SuccessType)
@@ -243,3 +274,16 @@ package errorHandlers:
     RaisesThrow()(using unsafeExceptions.canThrowAny)
 
 infix type raises[SuccessType, ErrorType <: Error] = Raises[ErrorType] ?=> SuccessType
+
+enum Mitigation[+SuccessType, +ErrorType <: Error]:
+  case Success(value: SuccessType)
+  case Failure(value: ErrorType)
+
+  def handle(block: PartialFunction[ErrorType, Error]): Mitigation[SuccessType, Error] = this match
+    case Success(value) => Success(value)
+    case Failure(value) => Failure(if block.isDefinedAt(value) then block(value) else value)
+
+  transparent inline def mitigate
+      (inline handler: PartialFunction[ErrorType, Error])
+      : Mitigation[SuccessType, Error] =
+    ${Perforate.mitigate[ErrorType, SuccessType]('this, 'handler)}
