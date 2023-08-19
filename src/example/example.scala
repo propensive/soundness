@@ -29,7 +29,7 @@ case class FooError() extends Error(msg"foo")
 case class BarError() extends Error(msg"bar")
 
 @main def run(): Unit =
-  val result = handle:
+  val result = over:
     unsafe()
     Regex.parse(List(")".tt))
   
@@ -37,5 +37,4 @@ case class BarError() extends Error(msg"bar")
     case _: UnsetValueError                          => BarError()
     case RegexError(RegexError.Reason.UnclosedGroup) => FooError()
     case RegexError(x)                               => FooError()
-  
-  println(result)
+  .get

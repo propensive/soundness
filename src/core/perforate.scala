@@ -232,7 +232,7 @@ def capture
   
   genericHandle(Capture[ErrorType, SuccessType])(block)
 
-def handle
+def over
     [ErrorType <: Error]
     (using DummyImplicit)
     [SuccessType]
@@ -285,5 +285,9 @@ enum Mitigation[+SuccessType, +ErrorType <: Error]:
 
   transparent inline def mitigate
       (inline handler: PartialFunction[ErrorType, Error])
-      : Mitigation[SuccessType, Error] =
+      : Any =
     ${Perforate.mitigate[ErrorType, SuccessType]('this, 'handler)}
+  
+  transparent inline def get: SuccessType raises ErrorType = this match
+    case Success(value) => value
+    case Failure(error) => abort(error)

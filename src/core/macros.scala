@@ -22,16 +22,18 @@ import scala.quoted.*
 import scala.compiletime.*
 
 object Perforate:
+  def union(using quotes: Quotes)(repr: quotes.reflect.TypeRepr): Set[quotes.reflect.TypeRepr] =
+    import quotes.reflect.*
+    repr.dealias.asMatchable match
+      case OrType(left, right) => union(left) ++ union(right)
+      case other               => Set(other)
+
   def mitigate
       [ErrorType <: Error: Type, SuccessType: Type]
       (mitigation: Expr[Mitigation[SuccessType, ErrorType]], handler: Expr[PartialFunction[ErrorType, Error]])
       (using Quotes)
-      : Expr[Mitigation[SuccessType, Error]] =
+      : Expr[Any] =
     import quotes.reflect.*
-
-    def union(repr: TypeRepr): Set[TypeRepr] = repr.dealias.asMatchable match
-      case OrType(left, right) => union(left) ++ union(right)
-      case other               => Set(other)
 
     val resultTypes = handler.asTerm match
       case Inlined(_, _, Block(List(DefDef(_, _, _, Some(Match(matchId, caseDefs)))), term)) =>
@@ -67,3 +69,4 @@ object Perforate:
     .asType match
       case '[type errorType <: Error; errorType] =>
         '{$mitigation.handle($handler).asInstanceOf[Mitigation[SuccessType, errorType]]}
+  
