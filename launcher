@@ -3,6 +3,7 @@
 pid="$$"
 port="$(cat "$XDG_RUNTIME_DIR"/fury.port)"
 args=("$@")
+signals=(INT WINCH)
 
 if [ -t 0 ]
 then stty intr undef -icanon min 1 raw time 0 >/dev/null 2>&1
@@ -12,8 +13,8 @@ signal() {
   printf "signal %s signal %s\n" "$pid" "$1" | nc localhost "$port"
 }
 
-register() {
-  for signal in "$@"
+registerTraps() {
+  for signal in "${signals[@]}"
   do trap "signal $signal" "$signal"
   done
 }
@@ -38,7 +39,7 @@ init() {
 
 (init | nc localhost "$port") <&0 &
 
-register INT WINCH
+registerTraps
 
 while true
 do wait
