@@ -95,6 +95,7 @@ object Nettlesome:
           raise(IpAddressError(Ipv4WrongNumberOfBytes(list.length)))(Ipv4(0, 0, 0, 0))
 
     object MacAddress:
+      def apply(value: Long): MacAddress = value
       def parse(text: Text): MacAddress raises MacAddressError =
         val groups = text.cut(t":")
         if groups.length != 6 then raise(MacAddressError(MacAddressError.Issue.WrongGroupCount(groups.length)))(())
@@ -131,6 +132,8 @@ object Nettlesome:
 
       def text: Text =
         List(byte0, byte1, byte2, byte3, byte4, byte5).map(_.toHexString.tt.pad(2, Rtl, '0')).join(t":")
+
+      def long: Long = macAddress
   
     extension (ip: Ipv4)
       def byte0: Int = ip >>> 24
@@ -158,6 +161,10 @@ object Nettlesome:
       else
         val ipv6 = Ipv6.parse(text)
         '{Ipv6(${Expr(ipv6.highBits)}, ${Expr(ipv6.lowBits)})}
+
+  def mac(context: Expr[StringContext])(using Quotes): Expr[MacAddress] = failCompilation:
+    val macAddress = MacAddress.parse(context.valueOrAbort.parts.head.tt)
+    '{MacAddress(${Expr(macAddress.long)})}
 
   object Ipv6:
     given debug: Debug[Ipv6] = _.show
@@ -218,5 +225,6 @@ export Nettlesome.Ipv6
 export Nettlesome.Opaques.Ipv4
 export Nettlesome.Opaques.MacAddress
 
-extension (inline context: StringContext) transparent inline def ip(): Ipv4 | Ipv6 =
-  ${Nettlesome.ip('context)}
+extension (inline context: StringContext)
+  transparent inline def ip(): Ipv4 | Ipv6 = ${Nettlesome.ip('context)}
+  inline def mac(): MacAddress = ${Nettlesome.mac('context)}
