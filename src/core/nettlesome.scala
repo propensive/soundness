@@ -22,6 +22,7 @@ import gossamer.*
 import perforate.*
 import fulminate.*
 import anticipation.*
+import hieroglyph.*, textWidthCalculation.uniform
 
 import scala.quoted.*
 
@@ -49,6 +50,21 @@ object IpAddressError:
       case Ipv6GroupWrongLength(group) =>
         msg"the group is more than 4 hexadecimal characters long"
 
+object MacAddressError:
+  enum Issue:
+    case WrongGroupCount(count: Int)
+    case WrongGroupLength(group: Int, length: Int)
+    case NotHex(group: Int, content: Text)
+
+  object Issue:
+    given AsMessage[Issue] =
+      case WrongGroupCount(count)          => msg"there should be six colon-separated groups, but there were $count"
+      case WrongGroupLength(group, length) => msg"group $group should be two hex digits, but its length is $length"
+      case NotHex(group, content)          => msg"group $group should be a two-digit hex number, but it is $content"
+
+case class MacAddressError(issue: MacAddressError.Issue)
+extends Error(msg"the MAC address is not valid because $issue")
+
 import IpAddressError.Issue, Issue.*
 
 case class IpAddressError(issue: Issue)
@@ -57,6 +73,7 @@ extends Error(msg"the IP address is not valid because $issue")
 object Nettlesome:
   object Opaques:
     opaque type Ipv4 = Int
+    opaque type MacAddress = Long
 
     object Ipv4:
       def apply(byte0: Int, byte1: Int, byte2: Int, byte3: Int): Ipv4 =
@@ -76,6 +93,44 @@ object Nettlesome:
         
         case list =>
           raise(IpAddressError(Ipv4WrongNumberOfBytes(list.length)))(Ipv4(0, 0, 0, 0))
+
+    object MacAddress:
+      def parse(text: Text): MacAddress raises MacAddressError =
+        val groups = text.cut(t":")
+        if groups.length != 6 then raise(MacAddressError(MacAddressError.Issue.WrongGroupCount(groups.length)))(())
+
+        @tailrec
+        def recur(todo: List[Text], index: Int = 0, acc: Long = 0L): Long = todo match
+          case Nil =>
+            acc
+
+          case head :: tail =>
+            if head.length != 2 then raise(MacAddressError(MacAddressError.Issue.WrongGroupLength(index, head.length)))(())
+            
+            val value = try Integer.parseInt(head.s, 16) catch case error: NumberFormatException =>
+              raise(MacAddressError(MacAddressError.Issue.NotHex(index, head)))(0)
+            
+            recur(tail, index + 1, (acc << 8) + value)
+
+        recur(groups)
+
+      def apply(byte0: Byte, byte1: Byte, byte2: Byte, byte3: Byte, byte4: Byte, byte5: Byte): MacAddress =
+        def recur(todo: List[Byte], done: Long): Long = todo match
+          case head :: tail => recur(tail, (done << 8) + head)
+          case Nil          => done
+
+        recur(List(byte0, byte1, byte2, byte3, byte4, byte5), 0L)
+
+    extension (macAddress: MacAddress)
+      def byte0: Int = (macAddress >>> 40).toInt
+      def byte1: Int = (macAddress >>> 32).toInt & 255
+      def byte2: Int = (macAddress >>> 24).toInt & 255
+      def byte3: Int = (macAddress >>> 16).toInt & 255
+      def byte4: Int = (macAddress >>> 8).toInt & 255
+      def byte5: Int = macAddress.toInt & 255
+
+      def text: Text =
+        List(byte0, byte1, byte2, byte3, byte4, byte5).map(_.toHexString.tt.pad(2, Rtl, '0')).join(t":")
   
     extension (ip: Ipv4)
       def byte0: Int = ip >>> 24
@@ -161,6 +216,7 @@ object Nettlesome:
 
 export Nettlesome.Ipv6
 export Nettlesome.Opaques.Ipv4
+export Nettlesome.Opaques.MacAddress
 
 extension (inline context: StringContext) transparent inline def ip(): Ipv4 | Ipv6 =
   ${Nettlesome.ip('context)}
