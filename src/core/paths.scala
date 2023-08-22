@@ -502,6 +502,20 @@ object File:
     Readable.inputStream.contraMap: file =>
       ji.BufferedInputStream(jnf.Files.newInputStream(file.path.java))
   
+  given writableBytes
+      (using io: Raises[IoError], streamCut: Raises[StreamCutError])
+      : Writable[File, Bytes] =
+    Appendable.outputStreamBytes.asWritable.contraMap: file =>
+      if !file.writable() then abort(IoError(file.path))
+      ji.BufferedOutputStream(ji.FileOutputStream(file.path.java.toFile, false))
+
+  given appendableBytes
+      (using io: Raises[IoError], streamCut: Raises[StreamCutError])
+      : Appendable[File, Bytes] =
+    Appendable.outputStreamBytes.contraMap: file =>
+      if !file.writable() then abort(IoError(file.path))
+      ji.BufferedOutputStream(ji.FileOutputStream(file.path.java.toFile, true))
+
 case class File(path: Path) extends Unix.Inode, Windows.Inode:
   def size(): ByteSize = jnf.Files.size(path.java).b
   
