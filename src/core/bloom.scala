@@ -1,4 +1,4 @@
-package florescent
+package fluorescent
 
 import gastronomy.*
 import cardinality.*

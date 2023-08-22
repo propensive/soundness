@@ -3,9 +3,9 @@
 repo propensive/gastronomy
 repo propensive/cardinality
 
-target florescent/core
+target fluorescent/core
 
-project florescent
+project fluorescent
   module core
     compiler  scala
     sources   src/core
@@ -13,6 +13,6 @@ project florescent
 
   module test
     sources   src/test
-    main      florescent.Tests
-    include   florescent/core probably/cli
-    coverage  florescent/core
+    main      fluorescent.Tests
+    include   fluorescent/core probably/cli
+    coverage  fluorescent/core
