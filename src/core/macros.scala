@@ -30,7 +30,7 @@ object Perforate:
 
   def mitigate
       [ErrorType <: Error: Type, SuccessType: Type]
-      (mitigation: Expr[Mitigation[SuccessType, ErrorType]], handler: Expr[PartialFunction[ErrorType, Error]])
+      (mitigation: Expr[Mitigated[SuccessType, ErrorType]], handler: Expr[PartialFunction[ErrorType, Error]])
       (using Quotes)
       : Expr[Any] =
     import quotes.reflect.*
@@ -68,5 +68,5 @@ object Perforate:
           case '[type next <: Error; next] => TypeRepr.of[acc | next]
     .asType match
       case '[type errorType <: Error; errorType] =>
-        '{$mitigation.handle($handler).asInstanceOf[Mitigation[SuccessType, errorType]]}
+        '{$mitigation.handle($handler).asInstanceOf[Mitigated[SuccessType, errorType]]}
   

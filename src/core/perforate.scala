@@ -87,15 +87,15 @@ extends Raises[ErrorType]:
   def abort(error: ErrorType): Nothing = boundary.break(Unset)(using label)
 
 @capability
-class ReturnMitigation
+class ReturnMitigated
     [ErrorType <: Error, SuccessType]
-    (label: boundary.Label[Mitigation[SuccessType, ErrorType]])
+    (label: boundary.Label[Mitigated[SuccessType, ErrorType]])
 extends Raises[ErrorType]:
-  type Result = Mitigation[SuccessType, ErrorType]
-  type Return = Mitigation[SuccessType, ErrorType]
+  type Result = Mitigated[SuccessType, ErrorType]
+  type Return = Mitigated[SuccessType, ErrorType]
   
-  def record(error: ErrorType): Unit = boundary.break(Mitigation.Failure(error))(using label)
-  def abort(error: ErrorType): Nothing = boundary.break(Mitigation.Failure(error))(using label)
+  def record(error: ErrorType): Unit = boundary.break(Mitigated.Failure(error))(using label)
+  def abort(error: ErrorType): Nothing = boundary.break(Mitigated.Failure(error))(using label)
 
 class ThrowErrors[ErrorType <: Error, SuccessType]()(using CanThrow[ErrorType])
 extends ErrorHandler[SuccessType]:
@@ -155,13 +155,13 @@ extends ErrorHandler[SuccessType]:
 
 class Mitigate[ErrorType <: Error, SuccessType]
 extends ErrorHandler[SuccessType]:
-  type Result = Mitigation[SuccessType, ErrorType]
-  type Return = Mitigation[SuccessType, ErrorType]
-  type Raiser = ReturnMitigation[ErrorType, SuccessType]
+  type Result = Mitigated[SuccessType, ErrorType]
+  type Return = Mitigated[SuccessType, ErrorType]
+  type Raiser = ReturnMitigated[ErrorType, SuccessType]
   
-  def raiser(label: boundary.Label[Result]): Raiser = ReturnMitigation(label)
-  def wrap(block: => SuccessType): Mitigation[SuccessType, ErrorType] = Mitigation.Success(block)
-  def finish(value: Mitigation[SuccessType, ErrorType]): Mitigation[SuccessType, ErrorType] = value
+  def raiser(label: boundary.Label[Result]): Raiser = ReturnMitigated(label)
+  def wrap(block: => SuccessType): Mitigated[SuccessType, ErrorType] = Mitigated.Success(block)
+  def finish(value: Mitigated[SuccessType, ErrorType]): Mitigated[SuccessType, ErrorType] = value
 
 class Safely[ErrorType <: Error, SuccessType]() extends ErrorHandler[SuccessType]:
   type Result = Maybe[SuccessType]
@@ -236,8 +236,8 @@ def over
     [ErrorType <: Error]
     (using DummyImplicit)
     [SuccessType]
-    (block: ReturnMitigation[ErrorType, SuccessType] ?=> SuccessType)
-    : Mitigation[SuccessType, ErrorType] =
+    (block: ReturnMitigated[ErrorType, SuccessType] ?=> SuccessType)
+    : Mitigated[SuccessType, ErrorType] =
   
   genericHandle(Mitigate[ErrorType, SuccessType]())(block)
 
@@ -275,11 +275,11 @@ package errorHandlers:
 
 infix type raises[SuccessType, ErrorType <: Error] = Raises[ErrorType] ?=> SuccessType
 
-enum Mitigation[+SuccessType, +ErrorType <: Error]:
+enum Mitigated[+SuccessType, +ErrorType <: Error]:
   case Success(value: SuccessType)
   case Failure(value: ErrorType)
 
-  def handle(block: PartialFunction[ErrorType, Error]): Mitigation[SuccessType, Error] = this match
+  def handle(block: PartialFunction[ErrorType, Error]): Mitigated[SuccessType, Error] = this match
     case Success(value) => Success(value)
     case Failure(value) => Failure(if block.isDefinedAt(value) then block(value) else value)
 
