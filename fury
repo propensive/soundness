@@ -1,0 +1,18 @@
+# This is a Wrath buildfile. More information is available at: https://github.com/propensive/wrath/
+
+repo propensive/gastronomy
+repo propensive/cardinality
+
+target florescent/core
+
+project florescent
+  module core
+    compiler  scala
+    sources   src/core
+    include   gastronomy/core  cardinality/core
+
+  module test
+    sources   src/test
+    main      florescent.Tests
+    include   florescent/core probably/cli
+    coverage  florescent/core
