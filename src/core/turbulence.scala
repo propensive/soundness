@@ -323,8 +323,8 @@ object Writable:
     (outputStream, bytes) => outputStream.write(bytes.mutable(using Unsafe))
   
   given outputStreamText
-    (using streamCut: Raises[StreamCutError], encoder: CharEncoder)
-    : SimpleWritable[ji.OutputStream, Text] =
+      (using streamCut: Raises[StreamCutError], encoder: CharEncoder)
+      : SimpleWritable[ji.OutputStream, Text] =
     (outputStream, text) => outputStream.write(encoder.encode(text).mutable(using Unsafe))
 
 trait SimpleWritable[-TargetType, -ChunkType] extends Writable[TargetType, ChunkType]:
