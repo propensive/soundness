@@ -3,7 +3,7 @@
 repo propensive/gastronomy
 repo propensive/cardinality
 
-target fluorescent/core
+target fluorescent/test
 
 project fluorescent
   module core
