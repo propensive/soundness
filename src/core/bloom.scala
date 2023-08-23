@@ -18,7 +18,7 @@ object BloomFilter:
 
 case class BloomFilter
     [ElementType: Digestible, HashType <: HashScheme[?]: HashFunction]
-    (bitSize: Int, hashCount: Int, bits: sci.BitSet = sci.BitSet()):
+    (bitSize: Int, hashCount: Int, bits: sci.BitSet):
   private val requiredEntropyBits = math.log(math.pow(bitSize, hashCount)).toInt + 1
   
   private def hash(value: ElementType): BigInt =
