@@ -55,16 +55,16 @@ sealed trait Sha384 extends HashScheme[48]
 sealed trait Sha512 extends HashScheme[64]
 
 object Crc32:
-  given HashFunction[Crc32] = Crc32HashFunction
+  given hashFunction: HashFunction[Crc32] = Crc32HashFunction
 
 object Md5:
-  given HashFunction[Md5] = MdHashFunction(t"MD5", t"HmacMD5")
+  given hashFunction: HashFunction[Md5] = MdHashFunction(t"MD5", t"HmacMD5")
 
 object Sha1:
-  given HashFunction[Sha1] = MdHashFunction(t"SHA1", t"HmacSHA1")
+  given hashFunction: HashFunction[Sha1] = MdHashFunction(t"SHA1", t"HmacSHA1")
 
 object Sha2:
-  given sha2[BitsType <: 224 | 256 | 384 | 512: ValueOf]: HashFunction[Sha2[BitsType]] =
+  given hashFunction[BitsType <: 224 | 256 | 384 | 512: ValueOf]: HashFunction[Sha2[BitsType]] =
     MdHashFunction(t"SHA-${valueOf[BitsType]}", t"HmacSHA${valueOf[BitsType]}")
 
 trait Encodable:
@@ -201,6 +201,12 @@ trait Base64Url extends EncodingScheme
 trait Base32 extends EncodingScheme
 trait Hex extends EncodingScheme
 trait Binary extends EncodingScheme
+
+package hashFunctions:
+  given crc32: HashFunction[Crc32] = Crc32.hashFunction
+  given md5: HashFunction[Md5] = Md5.hashFunction
+  given sha1: HashFunction[Sha1] = Sha1.hashFunction
+  given sha2[BitsType <: 224 | 256 | 384 | 512: ValueOf]: HashFunction[Sha2[BitsType]] = Sha2.hashFunction[BitsType]
 
 package alphabets:
   package base32:
