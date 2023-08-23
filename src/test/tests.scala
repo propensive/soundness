@@ -1,4 +1,4 @@
-package fluorescent
+package ulysses
 
 import probably.*
 import gossamer.*
@@ -7,7 +7,7 @@ import anticipation.*
 
 import language.experimental.genericNumberLiterals
 
-object Tests extends Suite(t"Fluorescent tests"):
+object Tests extends Suite(t"Ulysses tests"):
   def run(): Unit =
     test(t"Check how many bits are required for a bloom filter"):
       val bloom = BloomFilter[Text](100, 0.01)

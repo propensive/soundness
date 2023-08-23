@@ -3,9 +3,9 @@
 repo propensive/gastronomy
 repo propensive/cardinality
 
-target fluorescent/test
+target ulysses/test
 
-project fluorescent
+project ulysses
   module core
     compiler  scala
     sources   src/core
@@ -13,6 +13,6 @@ project fluorescent
 
   module test
     sources   src/test
-    main      fluorescent.Tests
-    include   fluorescent/core probably/cli
-    coverage  fluorescent/core
+    main      ulysses.Tests
+    include   ulysses/core probably/cli
+    coverage  ulysses/core
