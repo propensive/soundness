@@ -31,7 +31,6 @@ import anticipation.*, fileApi.galileiApi
 import ambience.*, environments.jvm, systemProperties.jvm
 
 import errorHandlers.throwUnsafely
-import unsafeExceptions.canThrowAny
 
 given WorkingDirectory = WorkingDirectory(Unset)
 
@@ -128,8 +127,8 @@ object Tests extends Suite(t"Galilei tests"):
           import filesystemOptions.{doNotOverwritePreexisting, doNotCreateNonexistent, doNotCreateNonexistentParents, doNotDereferenceSymlinks}
           val link = (tmpDir.path / p"linked.txt")
           (tmpDir.path / p"file.txt").as[File].symlinkTo(link)
-          link.inodeType()
-        .assert(_ == InodeType.Symlink)
+          link.entryType()
+        .assert(_ == EntryType.Symlink)
 
         test(t"Delete a file"):
           import filesystemOptions.{doNotDeleteRecursively, createNonexistent, createNonexistentParents}
@@ -166,8 +165,8 @@ object Tests extends Suite(t"Galilei tests"):
         supervise:
           import logging.stdout
           val fifoPath = tmpPath / p"galilei" / p"fifo1"
-          fifoPath.make[Fifo]().path.inodeType()
-      .assert(_ == InodeType.Fifo)
+          fifoPath.make[Fifo]().path.entryType()
+      .assert(_ == EntryType.Fifo)
 
     suite(t"Windows hierarchy tests"):
       

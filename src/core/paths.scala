@@ -112,19 +112,19 @@ sealed trait Path:
     
     this
     
-  def inodeType
+  def entryType
       ()(using dereferenceSymlinks: DereferenceSymlinks)(using io: Raises[IoError])
-      : InodeType =
+      : EntryType =
     
     try (jnf.Files.getAttribute(java, "unix:mode", dereferenceSymlinks.options()*): @unchecked) match
       case mode: Int => (mode & 61440) match
-        case  4096 => InodeType.Fifo
-        case  8192 => InodeType.CharDevice
-        case 16384 => InodeType.Directory
-        case 24576 => InodeType.BlockDevice
-        case 32768 => InodeType.File
-        case 40960 => InodeType.Symlink
-        case 49152 => InodeType.Socket
+        case  4096 => EntryType.Fifo
+        case  8192 => EntryType.CharDevice
+        case 16384 => EntryType.Directory
+        case 24576 => EntryType.BlockDevice
+        case 32768 => EntryType.File
+        case 40960 => EntryType.Symlink
+        case 49152 => EntryType.Socket
         case _     => throw Mistake(msg"an unexpected POSIX mode value was returned")
     
     catch
@@ -132,28 +132,28 @@ sealed trait Path:
         throw Mistake(msg"the file attribute unix:mode could not be accessed")
       
       case error: ji.FileNotFoundException =>
-        raise(IoError(this))(InodeType.File)
+        raise(IoError(this))(EntryType.File)
       
       case error: ji.IOException =>
-        raise(IoError(this))(InodeType.File)
+        raise(IoError(this))(EntryType.File)
 
-  def as[InodeType <: Inode](using resolver: PathResolver[InodeType, this.type]): InodeType =
+  def as[EntryType <: Entry](using resolver: PathResolver[EntryType, this.type]): EntryType =
     resolver(this)
   
   inline def is
-      [InodeType <: Inode]
+      [EntryType <: Entry]
       (using DereferenceSymlinks, Raises[IoError])
       : Boolean =
-    inline erasedValue[InodeType] match
-      case _: Directory   => inodeType() == InodeType.Directory
-      case _: File        => inodeType() == InodeType.File
-      case _: Symlink     => inodeType() == InodeType.Symlink
-      case _: Socket      => inodeType() == InodeType.Socket
-      case _: Fifo        => inodeType() == InodeType.Fifo
-      case _: BlockDevice => inodeType() == InodeType.BlockDevice
-      case _: CharDevice  => inodeType() == InodeType.CharDevice
+    inline erasedValue[EntryType] match
+      case _: Directory   => entryType() == EntryType.Directory
+      case _: File        => entryType() == EntryType.File
+      case _: Symlink     => entryType() == EntryType.Symlink
+      case _: Socket      => entryType() == EntryType.Socket
+      case _: Fifo        => entryType() == EntryType.Fifo
+      case _: BlockDevice => entryType() == EntryType.BlockDevice
+      case _: CharDevice  => entryType() == EntryType.CharDevice
   
-  def make[InodeType <: Inode]()(using maker: InodeMaker[InodeType, this.type]): InodeType =
+  def make[EntryType <: Entry]()(using maker: EntryMaker[EntryType, this.type]): EntryType =
     maker(this)
 
 object Link:
@@ -236,7 +236,7 @@ object Windows:
   
   case class Link(ascent: Int, descent: List[PathName[Forbidden]]) extends galilei.Link
   
-  sealed trait Inode extends galilei.Inode
+  sealed trait Entry extends galilei.Entry
 
 object Unix:
   
@@ -296,11 +296,11 @@ object Unix:
   
   case class Link(ascent: Int, descent: List[PathName[Forbidden]]) extends galilei.Link
   
-  sealed trait Inode extends galilei.Inode
+  sealed trait Entry extends galilei.Entry
 
 case class Volume(name: Text, volumeType: Text)
 
-sealed trait Inode:
+sealed trait Entry:
   def path: Path
   def fullname: Text = path.fullname
   def stillExists(): Boolean = path.exists()
@@ -395,14 +395,14 @@ sealed trait Inode:
     destination
       
 object PathResolver:
-  given inode
+  given entry
       (using dereferenceSymlinks: DereferenceSymlinks, io: Raises[IoError],
           notFound: Raises[NotFoundError])
-      : PathResolver[Inode, Path] =
-    new PathResolver[Inode, Path]:
-      def apply(path: Path): Inode =
-        if path.exists() then path.inodeType() match
-          case InodeType.Directory => Directory(path)
+      : PathResolver[Entry, Path] =
+    new PathResolver[Entry, Path]:
+      def apply(path: Path): Entry =
+        if path.exists() then path.entryType() match
+          case EntryType.Directory => Directory(path)
           case _                   => File(path)
         else raise(NotFoundError(path))(Directory(path))
 
@@ -410,7 +410,7 @@ object PathResolver:
       (using createNonexistent: CreateNonexistent, dereferenceSymlinks: DereferenceSymlinks,
           io: Raises[IoError])
       : PathResolver[File, Path] = path =>
-    if path.exists() && path.inodeType() == InodeType.File then File(path)
+    if path.exists() && path.entryType() == EntryType.File then File(path)
     else createNonexistent(path):
       jnf.Files.createFile(path.java)
     
@@ -420,22 +420,22 @@ object PathResolver:
       (using createNonexistent: CreateNonexistent, dereferenceSymlinks: DereferenceSymlinks,
           io: Raises[IoError])
       : PathResolver[Directory, Path] = path =>
-    if path.exists() && path.inodeType() == InodeType.Directory then Directory(path)
+    if path.exists() && path.entryType() == EntryType.Directory then Directory(path)
     else createNonexistent(path):
       jnf.Files.createDirectory(path.java)
     
     Directory(path)
 
 @capability
-trait PathResolver[InodeType <: Inode, -PathType <: Path]:
-  def apply(value: PathType): InodeType
+trait PathResolver[EntryType <: Entry, -PathType <: Path]:
+  def apply(value: PathType): EntryType
 
-object InodeMaker:
+object EntryMaker:
   given directory
       (using createNonexistentParents: CreateNonexistentParents,
           overwritePreexisting: OverwritePreexisting)
       (using io: Raises[IoError])
-      : InodeMaker[Directory, Path] = path =>
+      : EntryMaker[Directory, Path] = path =>
     createNonexistentParents(path):
       overwritePreexisting(path):
         jnf.Files.createDirectory(path.java)
@@ -446,7 +446,7 @@ object InodeMaker:
       (using createNonexistentParents: CreateNonexistentParents,
           overwritePreexisting: OverwritePreexisting)
       (using io: Raises[IoError])
-      : InodeMaker[Socket, Unix.Path] = path =>
+      : EntryMaker[Socket, Unix.Path] = path =>
     createNonexistentParents(path):
       overwritePreexisting(path):
         val address = java.net.UnixDomainSocketAddress.of(path.java).nn
@@ -457,7 +457,7 @@ object InodeMaker:
   given file
       (using createNonexistentParents: CreateNonexistentParents,
           overwritePreexisting: OverwritePreexisting)
-      : InodeMaker[File, Path] =
+      : EntryMaker[File, Path] =
     path => createNonexistentParents(path):
       overwritePreexisting(path):
         jnf.Files.createFile(path.java)
@@ -467,7 +467,7 @@ object InodeMaker:
   given fifo
       (using createNonexistentParents: CreateNonexistentParents,
           overwritePreexisting: OverwritePreexisting, working: WorkingDirectory, log: Log, io: Raises[IoError], exec: Raises[ExecError])
-      : InodeMaker[Fifo, Unix.Path] =
+      : EntryMaker[Fifo, Unix.Path] =
     path => createNonexistentParents(path):
       overwritePreexisting(path):
         sh"mkfifo $path"() match
@@ -477,14 +477,14 @@ object InodeMaker:
     Fifo(path)
   
 @capability
-trait InodeMaker[+InodeType <: Inode, -PathType <: Path]:
-  def apply(value: PathType): InodeType
+trait EntryMaker[+EntryType <: Entry, -PathType <: Path]:
+  def apply(value: PathType): EntryType
 
 object Directory:
   given GenericWatchService[Directory] = () =>
     jnf.Path.of("/").nn.getFileSystem.nn.newWatchService().nn
 
-case class Directory(path: Path) extends Unix.Inode, Windows.Inode:
+case class Directory(path: Path) extends Unix.Entry, Windows.Entry:
   def children: LazyList[Path] = jnf.Files.list(path.java).nn.toScala(LazyList).map: child =>
     path / PathName.unsafe(child.getFileName.nn.toString.nn.tt)
 
@@ -516,7 +516,7 @@ object File:
       if !file.writable() then abort(IoError(file.path))
       ji.BufferedOutputStream(ji.FileOutputStream(file.path.java.toFile, true))
 
-case class File(path: Path) extends Unix.Inode, Windows.Inode:
+case class File(path: Path) extends Unix.Entry, Windows.Entry:
   def size(): ByteSize = jnf.Files.size(path.java).b
   
   def hardLinkTo
@@ -532,13 +532,13 @@ case class File(path: Path) extends Unix.Inode, Windows.Inode:
 
     destination
 
-case class Socket(path: Unix.Path, channel: jnc.ServerSocketChannel) extends Unix.Inode
-case class Fifo(path: Unix.Path) extends Unix.Inode
-case class Symlink(path: Unix.Path) extends Unix.Inode
-case class BlockDevice(path: Unix.Path) extends Unix.Inode
-case class CharDevice(path: Unix.Path) extends Unix.Inode
+case class Socket(path: Unix.Path, channel: jnc.ServerSocketChannel) extends Unix.Entry
+case class Fifo(path: Unix.Path) extends Unix.Entry
+case class Symlink(path: Unix.Path) extends Unix.Entry
+case class BlockDevice(path: Unix.Path) extends Unix.Entry
+case class CharDevice(path: Unix.Path) extends Unix.Entry
 
-enum InodeType:
+enum EntryType:
   case Fifo, CharDevice, Directory, BlockDevice, File, Symlink, Socket
 
 object DereferenceSymlinks:
@@ -702,7 +702,7 @@ extends Error(msg"the directory is not empty")
 case class ForbiddenOperationError(path: Path)
 extends Error(msg"insufficient permissions to modify $path")
 
-case class InodeTypeError(path: Path)
+case class EntryTypeError(path: Path)
 extends Error(msg"the filesystem node at $path was expected to be a different type")
 
 case class SafeLink(ascent: Int, descent: List[PathName[GeneralForbidden]]) extends Link
