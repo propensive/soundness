@@ -1,0 +1,4 @@
+- Provides a generic, immutable implementation of a Bloom filter
+- Can be configured to use a variety of different hash functions
+- Automatically determines Bloom filter parameters for target number of elements and error rate
+- Uses Gastronomy to derive hashes for primitive, product and sum types
