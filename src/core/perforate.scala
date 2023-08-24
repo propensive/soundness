@@ -275,6 +275,12 @@ package errorHandlers:
 
 infix type raises[SuccessType, ErrorType <: Error] = Raises[ErrorType] ?=> SuccessType
 
+trait Mitigation[-InputErrorTypes <: Error]:
+  def handle[SuccessType](mitigated: Mitigated[SuccessType, InputErrorTypes]): SuccessType
+
+transparent inline def mitigate(inline handler: PartialFunction[Error, Error]): Mitigation[Nothing] =
+  ${Perforate.mitigate('handler)}
+
 enum Mitigated[+SuccessType, +ErrorType <: Error]:
   case Success(value: SuccessType)
   case Failure(value: ErrorType)
@@ -283,11 +289,6 @@ enum Mitigated[+SuccessType, +ErrorType <: Error]:
     case Success(value) => Success(value)
     case Failure(value) => Failure(if block.isDefinedAt(value) then block(value) else value)
 
-  transparent inline def mitigate
-      (inline handler: PartialFunction[ErrorType, Error])
-      : Any =
-    ${Perforate.mitigate[ErrorType, SuccessType]('this, 'handler)}
-  
   transparent inline def get: SuccessType raises ErrorType = this match
     case Success(value) => value
     case Failure(error) => abort(error)

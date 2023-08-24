@@ -17,18 +17,100 @@
 package perforate
 
 import fulminate.*
+import rudiments.*
 
 import scala.quoted.*
 import scala.compiletime.*
 
 object Perforate:
-  def union(using quotes: Quotes)(repr: quotes.reflect.TypeRepr): Set[quotes.reflect.TypeRepr] =
+  def readUnion(using quotes: Quotes)(repr: quotes.reflect.TypeRepr): Set[quotes.reflect.TypeRepr] =
     import quotes.reflect.*
     repr.dealias.asMatchable match
-      case OrType(left, right) => union(left) ++ union(right)
+      case OrType(left, right) => readUnion(left) ++ readUnion(right)
       case other               => Set(other)
 
+  def makeUnion(using quotes: Quotes)(symbols: List[Type[?]]): Type[?] = symbols match
+    case Nil => Type.of[Nothing]
+    case head :: tail => (makeUnion(tail): @unchecked) match
+      case '[type unionType <: Error; unionType] => (head: @unchecked) match
+        case '[type headType <: Error; headType] => Type.of[headType | unionType]
+
   def mitigate
+      (handler: Expr[PartialFunction[Error, Error]])
+      (using Quotes)
+      : Expr[Mitigation[Nothing]] =
+    import quotes.reflect.*
+    
+    val types: List[Type[?]] = rhsTypes(handler)
+    val inputTypes: List[Type[?]] = patternTypes(handler)
+    
+    makeUnion(inputTypes) match
+      case '[type inputErrorType <: Error; inputErrorType] =>
+        '{
+          new Mitigation[inputErrorType]:
+            def handle[SuccessType](mitigated: Mitigated[SuccessType, inputErrorType]): SuccessType = mitigated match
+              case Mitigated.Success(value) =>
+                value
+              
+              case Mitigated.Failure(error) =>
+                ${
+                  def recur(scrutinee: Expr[Error], types: List[Type[?]], result: Expr[Nothing]): Expr[Nothing] = types match
+                    case Nil =>
+                      result
+                      
+                    case rhsType :: types =>
+                      rhsType match
+                        case '[type errorType <: Error; errorType] =>
+                          Expr.summon[Raises[errorType]] match
+                            case None =>
+                              fail(msg"cannot raise ${TypeRepr.of[errorType].show}")
+                              
+                            case Some(raises) =>
+                              recur(scrutinee, types, '{ if $scrutinee.isInstanceOf[errorType] then abort($scrutinee.asInstanceOf[errorType])(using $raises) else $result })
+
+                  recur('{$handler(error)}, types, '{???})
+                }
+        }
+
+  def rhsTypes(using quotes: Quotes)(handler: Expr[PartialFunction[Error, Error]]): List[Type[?]] =
+    import quotes.reflect.*
+
+    handler.asTerm match
+      case Inlined(_, _, Block(List(DefDef(_, _, _, Some(Match(matchId, caseDefs)))), term)) =>
+        def recur(types: List[Type[?]], todo: List[CaseDef]): List[Type[?]] = todo match
+          case Nil =>
+            types
+          
+          case caseDef :: rest => caseDef match
+            case CaseDef(pattern, None, rhs) => rhs.asExpr match
+              case '{type rhsType <: Error; $expr: rhsType} =>
+                recur(TypeRepr.of[rhsType].asType :: types, rest)
+              
+        recur(Nil, caseDefs)
+
+  def patternTypes(using quotes: Quotes)(handler: Expr[PartialFunction[Error, Error]]): List[Type[?]] =
+    import quotes.reflect.*
+    
+    handler.asTerm match
+      case Inlined(_, _, Block(List(DefDef(_, _, _, Some(Match(matchId, caseDefs)))), term)) =>
+        def recur(types: List[Type[?]], todo: List[CaseDef]): List[Type[?]] = todo match
+          case Nil =>
+            types
+          
+          case caseDef :: todo => caseDef match
+            case CaseDef(pattern, None, _) => pattern match
+              case Unapply(x, y, z) => fail(msg"Unapply(${x.toString}, ${y.toString}, ${z.toString})")
+              case Unapply(Select(ident, "unapply"), _, _) => recur(ident.symbol.companionClass.typeRef.asType :: types, todo)
+              case Bind(_, ident)                          => recur(ident.symbol.typeRef.asType :: types, todo)
+              case Typed(ident, _)                         => recur(ident.symbol.typeRef.asType :: types, todo)
+              case TypedOrTest(Unapply(x, y, z), ident)                       =>
+                println(s"typed: $ident, $x, $y, $z")
+                recur(ident.symbol.typeRef.asType :: types, todo)
+              case other                                   => recur(types, todo)
+          
+        recur(Nil, caseDefs)
+/*
+  def mitigateOld
       [ErrorType <: Error: Type, SuccessType: Type]
       (mitigation: Expr[Mitigated[SuccessType, ErrorType]], handler: Expr[PartialFunction[ErrorType, Error]])
       (using Quotes)
@@ -60,7 +142,7 @@ object Perforate:
                   case _ =>
                     recur(done + TypeRepr.of[rhsType], original, todo)
               
-        recur(Set(), union(TypeRepr.of[ErrorType]), caseDefs)
+        recur(Set(), readUnion(TypeRepr.of[ErrorType]), caseDefs)
 
     resultTypes.foldLeft(TypeRepr.of[Nothing]): (acc, next) =>
       acc.asType match
@@ -68,5 +150,5 @@ object Perforate:
           case '[type next <: Error; next] => TypeRepr.of[acc | next]
     .asType match
       case '[type errorType <: Error; errorType] =>
-        '{$mitigation.handle($handler).asInstanceOf[Mitigated[SuccessType, errorType]]}
+        '{$mitigation.handle($handler).asInstanceOf[Mitigated[SuccessType, errorType]]}*/
   
