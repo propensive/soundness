@@ -1,4 +1,6 @@
-We often need to work with 32-bit IPv4, and increasingly, 128-bit IPv6 addresses. While
-IPv4 addresses have a relatively simple form, IPv6 addresses are more complex, and parsing
-and serializing them is more complex. Nettlesome provides both facilities, as well as
-lifting parsing of statically-known IP addresses to compiletime.
+We need to work with a variety of different types of entity when working with
+networking technologies. These include URLs, IP addresses, email address and
+MAC addresses. Parsing and serializing these entities without loss of
+generality is typically nontrivial, and it is for this reason that _Nettlesome_
+exists.
+
