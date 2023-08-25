@@ -33,18 +33,18 @@ import scala.compiletime.*
 enum Semblance:
   case Identical(value: Text)
   case Different(left: Text, right: Text)
-  case Similar(comparison: IArray[(Text, Semblance)], left: Text, right: Text)
+  case Breakdown(comparison: IArray[(Text, Semblance)], left: Text, right: Text)
 
 object Semblance:
   given (using calc: TextWidthCalculator): Display[Semblance] =
-    case Semblance.Similar(cmp, l, r) =>
+    case Semblance.Breakdown(cmp, l, r) =>
       import tableStyles.horizontalGaps
       import treeStyles.default
       
       def children(comp: (Text, Semblance)): List[(Text, Semblance)] = comp(1) match
         case Identical(value)                 => Nil
         case Different(left, right)           => Nil
-        case Similar(comparison, left, right) => comparison.to(List)
+        case Breakdown(comparison, left, right) => comparison.to(List)
       
       case class Row(treeLine: Text, left: Output, right: Output)
 
@@ -58,7 +58,7 @@ object Semblance:
           case Different(left, right) =>
             Row(line(t"▪"), out"${colors.YellowGreen}($left)", out"${colors.Crimson}($right)")
           
-          case Similar(cmp, left, right) =>
+          case Breakdown(cmp, left, right) =>
             Row(line(t"■"), out"$left", out"$right")
       
       val table = Table[Row](
@@ -132,7 +132,7 @@ object Contrast extends FallbackContrast:
             
             label -> leftValue.contrastWith(rightValue)
       
-      Semblance.Similar(comparison, leftDebug, rightDebug)
+      Semblance.Breakdown(comparison, leftDebug, rightDebug)
     
 
   inline given iarray[ValueType: Contrast: Similarity]: Contrast[IArray[ValueType]] =
@@ -188,7 +188,7 @@ object Contrast extends FallbackContrast:
               val leftTuple = Tuple.fromProductTyped(leftProduct)
               val rightTuple = Tuple.fromProductTyped(rightProduct)
               val product = deriveProduct[mirror.MirroredElemLabels](leftTuple, rightTuple)
-              Semblance.Similar(IArray.from(product), left.debug, right.debug)
+              Semblance.Breakdown(IArray.from(product), left.debug, right.debug)
      
       case mirror: Mirror.SumOf[DerivationType] => (left: DerivationType, right: DerivationType) =>
         if mirror.ordinal(left) == mirror.ordinal(right)
