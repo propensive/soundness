@@ -16,9 +16,35 @@ case class instances, sum types, like enums or sealed traits, and sequence
 types, like `List` or `IArray` can result in semblances which are neither
 `Identical` nor `Different` but `Similar`.
 
-The three cases of `Semblance` are defined (recursively) as follows:
+The three cases of `Semblance` are defined as follows:
 - `Identical(value: Text)`
 - `Different(left: Text, right: Text)`
 - `Similar(comparison: IArray[(Text, Semblance)], left: Text, right: Text)
 
+`Identical` includes just a textual representation of the two identical values.
+`Different` includes textual representations of _both_ values, since they will
+not be the same. `Similar` also includes textual representations of the left
+and right values, but additionally includes a sequence (an `IArray`) of
+labelled `Semblance`s, each of which may be `Identical`, `Different` or another
+`Similar`. This sequence represents a breakdown of the different components of
+the two objects, comparing like-for-like, however the breakdown depends on the
+type of objects being contrasted.
+
+Typically, for product types such as case classes, the comparison sequence will
+contain an entry for each parameter of the case class, showing whether that
+parameter is the same or differs between the two values. In the case where it
+differs, and the parameter is another product type, a nested `Similar` instance
+may recursively show 
+
+For sequence types, such as `List`, a diff between the elements of the left
+sequence and the elements of the right sequence will yield a comparison
+sequence, labeled for the index of the left and/or right sequence, where each
+entry represents a one-to-one comparison between two elements, an addition (to
+the right side) or a deletion (from the left side). Each one-to-one comparison
+may be `Identical`, `Different` or a recursive `Similar` value.
+
+This format provides a convenient and concise way of describing the structural
+differences between two values. A contrast between two deep structures with few
+differences will yield a tree structure where identical branches are pruned,
+and only differing branches are expanded.
 
