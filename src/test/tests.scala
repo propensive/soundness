@@ -33,14 +33,14 @@ case class IdName(id: Text, name: Text)
 
 given Similarity[IdName] = _.id == _.id
 
-import Accordance.*
+import Semblance.*
 
 object Tests extends Suite(t"Chiaroscuro tests"):
   def run(): Unit =
     suite(t"RDiff tests"):
       test(t"Two identical, short Vectors"):
         Vector(1, 2, 3).contrastWith(Vector(1, 2, 3))
-      .assert(_ == Accord(t"⟨ 1 2 3 ⟩"))
+      .assert(_ == Identical(t"⟨ 1 2 3 ⟩"))
 
       test(t"compare two two-parameter case class instances"):
         Person(t"Jack", 12)
@@ -79,5 +79,5 @@ object Tests extends Suite(t"Chiaroscuro tests"):
         Io.println(result.out)
 
         result
-      .assert(_ == Accord(t""))
+      .assert(_ == Identical(t""))
 

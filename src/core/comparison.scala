@@ -30,25 +30,25 @@ import anticipation.*
 import scala.deriving.*
 import scala.compiletime.*
 
-enum Accordance:
+enum Semblance:
   case Identical(value: Text)
   case Different(left: Text, right: Text)
-  case Similar(comparison: IArray[(Text, Accordance)], left: Text, right: Text)
+  case Similar(comparison: IArray[(Text, Semblance)], left: Text, right: Text)
 
-object Accordance:
-  given (using calc: TextWidthCalculator): Display[Accordance] =
-    case Accordance.Similar(cmp, l, r) =>
+object Semblance:
+  given (using calc: TextWidthCalculator): Display[Semblance] =
+    case Semblance.Similar(cmp, l, r) =>
       import tableStyles.horizontalGaps
       import treeStyles.default
       
-      def children(comp: (Text, Accordance)): List[(Text, Accordance)] = comp(1) match
+      def children(comp: (Text, Semblance)): List[(Text, Semblance)] = comp(1) match
         case Identical(value)                 => Nil
         case Different(left, right)           => Nil
         case Similar(comparison, left, right) => comparison.to(List)
       
       case class Row(treeLine: Text, left: Output, right: Output)
 
-      def mkLine(tiles: List[TreeTile], data: (Text, Accordance)): Row =
+      def mkLine(tiles: List[TreeTile], data: (Text, Semblance)): Row =
         def line(bullet: Text) = t"${tiles.map(_.text).join}$bullet ${data(0)}"
         
         data(1) match
@@ -84,33 +84,33 @@ trait Similarity[-ValueType]:
   def similar(a: ValueType, b: ValueType): Boolean
 
 trait Contrast[-ValueType]:
-  def apply(a: ValueType, b: ValueType): Accordance
+  def apply(a: ValueType, b: ValueType): Semblance
 
 extension [ValueType](left: ValueType)
-  def contrastWith(right: ValueType)(using contrast: Contrast[ValueType]): Accordance =
+  def contrastWith(right: ValueType)(using contrast: Contrast[ValueType]): Semblance =
     contrast(left, right)
 
 trait FallbackContrast:
   given [ValueType]: Contrast[ValueType] = new Contrast[ValueType]:
-    def apply(a: ValueType, b: ValueType): Accordance =
-      if a == b then Accordance.Identical(a.debug)
-      else Accordance.Different(a.debug, b.debug)
+    def apply(a: ValueType, b: ValueType): Semblance =
+      if a == b then Semblance.Identical(a.debug)
+      else Semblance.Different(a.debug, b.debug)
 
 object Contrast extends FallbackContrast:
-  def nothing[ValueType]: Contrast[ValueType] = (a, b) => Accordance.Identical(a.debug)
+  def nothing[ValueType]: Contrast[ValueType] = (a, b) => Semblance.Identical(a.debug)
   
   inline given Contrast[Exception] = new Contrast[Exception]:
-    def apply(left: Exception, right: Exception): Accordance =
+    def apply(left: Exception, right: Exception): Semblance =
       val leftMsg = Option(left.getMessage).fold(t"null")(_.nn.debug)
       val rightMsg = Option(right.getMessage).fold(t"null")(_.nn.debug)
-      if left.getClass == right.getClass && leftMsg == rightMsg then Accordance.Identical(leftMsg)
-      else Accordance.Different(leftMsg, rightMsg)
+      if left.getClass == right.getClass && leftMsg == rightMsg then Semblance.Identical(leftMsg)
+      else Semblance.Different(leftMsg, rightMsg)
 
   inline def compareSeq
       [ValueType: Contrast: Similarity]
       (left: IndexedSeq[ValueType], right: IndexedSeq[ValueType], leftDebug: Text, rightDebug: Text)
-      : Accordance =
-    if left == right then Accordance.Identical(leftDebug)
+      : Semblance =
+    if left == right then Semblance.Identical(leftDebug)
     else
       val comparison = IArray.from:
         diff(left, right).rdiff(summon[Similarity[ValueType]].similar).changes.map:
@@ -119,35 +119,35 @@ object Contrast extends FallbackContrast:
               if leftIndex == rightIndex then leftIndex.show
               else t"${leftIndex.show.superscript}⫽${rightIndex.show.subscript}"
             
-            label -> Accordance.Identical(value.debug)
+            label -> Semblance.Identical(value.debug)
           
           case Ins(rightIndex, value) =>
-            t" ⧸${rightIndex.show.subscript}" -> Accordance.Different(t"—", value.debug)
+            t" ⧸${rightIndex.show.subscript}" -> Semblance.Different(t"—", value.debug)
           
           case Del(leftIndex, value) =>
-            t"${leftIndex.show.superscript}⧸" -> Accordance.Different(value.debug, t"—")
+            t"${leftIndex.show.superscript}⧸" -> Semblance.Different(value.debug, t"—")
           
           case Sub(leftIndex, rightIndex, leftValue, rightValue) =>
             val label = t"${leftIndex.show.superscript}⫽${rightIndex.show.subscript}"
             
             label -> leftValue.contrastWith(rightValue)
       
-      Accordance.Similar(comparison, leftDebug, rightDebug)
+      Semblance.Similar(comparison, leftDebug, rightDebug)
     
 
   inline given iarray[ValueType: Contrast: Similarity]: Contrast[IArray[ValueType]] =
     new Contrast[IArray[ValueType]]:
-      def apply(left: IArray[ValueType], right: IArray[ValueType]): Accordance =
+      def apply(left: IArray[ValueType], right: IArray[ValueType]): Semblance =
         compareSeq[ValueType](left.to(IndexedSeq), right.to(IndexedSeq), left.debug, right.debug)
   
   inline given list[ValueType: Contrast: Similarity]: Contrast[List[ValueType]] =
     new Contrast[List[ValueType]]:
-      def apply(left: List[ValueType], right: List[ValueType]): Accordance =
+      def apply(left: List[ValueType], right: List[ValueType]): Semblance =
         compareSeq[ValueType](left.to(IndexedSeq), right.to(IndexedSeq), left.debug, right.debug)
   
   inline given vector[ValueType: Contrast: Similarity]: Contrast[Vector[ValueType]] =
     new Contrast[Vector[ValueType]]:
-      def apply(left: Vector[ValueType], right: Vector[ValueType]): Accordance =
+      def apply(left: Vector[ValueType], right: Vector[ValueType]): Semblance =
         compareSeq[ValueType](left.to(IndexedSeq), right.to(IndexedSeq), left.debug, right.debug)
   
   private transparent inline def deriveSum
@@ -163,7 +163,7 @@ object Contrast extends FallbackContrast:
   private transparent inline def deriveProduct
       [Labels <: Tuple]
       (left: Tuple, right: Tuple)
-      : List[(Text, Accordance)] =
+      : List[(Text, Semblance)] =
     inline left match
       case EmptyTuple => Nil
       case leftCons: (? *: ?) => leftCons match
@@ -173,7 +173,7 @@ object Contrast extends FallbackContrast:
               case _: (headLabel *: tailLabels) => inline valueOf[headLabel].asMatchable match
                 case label: String =>
                   val item =
-                    if leftHead == rightHead then Accordance.Identical(leftHead.debug)
+                    if leftHead == rightHead then Semblance.Identical(leftHead.debug)
                     else summonInline[Contrast[leftHead.type | rightHead.type]](leftHead, rightHead)
                   
                   (Text(label), item) :: deriveProduct[tailLabels](leftTail, rightTail)
@@ -188,9 +188,9 @@ object Contrast extends FallbackContrast:
               val leftTuple = Tuple.fromProductTyped(leftProduct)
               val rightTuple = Tuple.fromProductTyped(rightProduct)
               val product = deriveProduct[mirror.MirroredElemLabels](leftTuple, rightTuple)
-              Accordance.Similar(IArray.from(product), left.debug, right.debug)
+              Semblance.Similar(IArray.from(product), left.debug, right.debug)
      
       case mirror: Mirror.SumOf[DerivationType] => (left: DerivationType, right: DerivationType) =>
         if mirror.ordinal(left) == mirror.ordinal(right)
         then deriveSum[mirror.MirroredElemTypes, DerivationType](mirror.ordinal(left))(left, right)
-        else Accordance.Different(left.debug, right.debug)
+        else Semblance.Different(left.debug, right.debug)
