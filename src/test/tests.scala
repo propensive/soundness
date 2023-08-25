@@ -31,7 +31,7 @@ case class Organization(name: Text, ceo: Person, staff: List[Person])
 
 case class IdName(id: Text, name: Text)
 
-given Assimilable[IdName] = _.id == _.id
+given Similarity[IdName] = _.id == _.id
 
 import Accordance.*
 

@@ -77,10 +77,10 @@ object Accordance:
     case Accord(value) =>
       out"The value ${colors.Gray}($value) was expected"
 
-object Assimilable:
-  given [ValueType]: Assimilable[ValueType] = (a, b) => a == b
+object Similarity:
+  given [ValueType]: Similarity[ValueType] = (a, b) => a == b
 
-trait Assimilable[-ValueType]:
+trait Similarity[-ValueType]:
   def similar(a: ValueType, b: ValueType): Boolean
 
 trait Contrast[-ValueType]:
@@ -107,13 +107,13 @@ object Contrast extends FallbackContrast:
       else Accordance.Discord(leftMsg, rightMsg)
 
   inline def compareSeq
-      [ValueType: Contrast: Assimilable]
+      [ValueType: Contrast: Similarity]
       (left: IndexedSeq[ValueType], right: IndexedSeq[ValueType], leftDebug: Text, rightDebug: Text)
       : Accordance =
     if left == right then Accordance.Accord(leftDebug)
     else
       val comparison = IArray.from:
-        diff(left, right).rdiff(summon[Assimilable[ValueType]].similar).changes.map:
+        diff(left, right).rdiff(summon[Similarity[ValueType]].similar).changes.map:
           case Par(leftIndex, rightIndex, value) =>
             val label =
               if leftIndex == rightIndex then leftIndex.show
@@ -135,17 +135,17 @@ object Contrast extends FallbackContrast:
       Accordance.Collation(comparison, leftDebug, rightDebug)
     
 
-  inline given iarray[ValueType: Contrast: Assimilable]: Contrast[IArray[ValueType]] =
+  inline given iarray[ValueType: Contrast: Similarity]: Contrast[IArray[ValueType]] =
     new Contrast[IArray[ValueType]]:
       def apply(left: IArray[ValueType], right: IArray[ValueType]): Accordance =
         compareSeq[ValueType](left.to(IndexedSeq), right.to(IndexedSeq), left.debug, right.debug)
   
-  inline given list[ValueType: Contrast: Assimilable]: Contrast[List[ValueType]] =
+  inline given list[ValueType: Contrast: Similarity]: Contrast[List[ValueType]] =
     new Contrast[List[ValueType]]:
       def apply(left: List[ValueType], right: List[ValueType]): Accordance =
         compareSeq[ValueType](left.to(IndexedSeq), right.to(IndexedSeq), left.debug, right.debug)
   
-  inline given vector[ValueType: Contrast: Assimilable]: Contrast[Vector[ValueType]] =
+  inline given vector[ValueType: Contrast: Similarity]: Contrast[Vector[ValueType]] =
     new Contrast[Vector[ValueType]]:
       def apply(left: Vector[ValueType], right: Vector[ValueType]): Accordance =
         compareSeq[ValueType](left.to(IndexedSeq), right.to(IndexedSeq), left.debug, right.debug)
