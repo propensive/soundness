@@ -123,6 +123,10 @@ Galilei was designed and developed by Jon Pretty, and commercial support and tra
 
 Galilei's primary focus is handling Input and Output, or _I/O_, and is a pun on the name of the moon _Io_, one of the four moons of Jupiter discovered by Galileo Galilei.
 
+### Pronunciation
+
+`/ˌɡælɪˈleɪ/`
+
 In general, Scala One project names are always chosen with some rationale, however it is usually
 frivolous. Each name is chosen for more for its _uniqueness_ and _intrigue_ than its concision or
 catchiness, and there is no bias towards names with positive or "nice" meanings—since many of the
