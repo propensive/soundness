@@ -31,20 +31,20 @@ import scala.deriving.*
 import scala.compiletime.*
 
 enum Accordance:
-  case Accord(value: Text)
-  case Discord(left: Text, right: Text)
-  case Collation(comparison: IArray[(Text, Accordance)], left: Text, right: Text)
+  case Identical(value: Text)
+  case Different(left: Text, right: Text)
+  case Similar(comparison: IArray[(Text, Accordance)], left: Text, right: Text)
 
 object Accordance:
   given (using calc: TextWidthCalculator): Display[Accordance] =
-    case Accordance.Collation(cmp, l, r) =>
+    case Accordance.Similar(cmp, l, r) =>
       import tableStyles.horizontalGaps
       import treeStyles.default
       
       def children(comp: (Text, Accordance)): List[(Text, Accordance)] = comp(1) match
-        case Accord(value)                      => Nil
-        case Discord(left, right)               => Nil
-        case Collation(comparison, left, right) => comparison.to(List)
+        case Identical(value)                 => Nil
+        case Different(left, right)           => Nil
+        case Similar(comparison, left, right) => comparison.to(List)
       
       case class Row(treeLine: Text, left: Output, right: Output)
 
@@ -52,13 +52,13 @@ object Accordance:
         def line(bullet: Text) = t"${tiles.map(_.text).join}$bullet ${data(0)}"
         
         data(1) match
-          case Accord(v) =>
+          case Identical(v) =>
             Row(line(t"▪"), out"${rgb"#667799"}($v)", out"${rgb"#667799"}($v)")
           
-          case Discord(left, right) =>
+          case Different(left, right) =>
             Row(line(t"▪"), out"${colors.YellowGreen}($left)", out"${colors.Crimson}($right)")
           
-          case Collation(cmp, left, right) =>
+          case Similar(cmp, left, right) =>
             Row(line(t"■"), out"$left", out"$right")
       
       val table = Table[Row](
@@ -69,12 +69,12 @@ object Accordance:
 
       table.tabulate(drawTree(children, mkLine)(cmp), maxWidth = 200).join(out"\n")
     
-    case Discord(left, right) =>
+    case Different(left, right) =>
       val whitespace = if right.contains('\n') then out"\n" else out" "
       val whitespace2 = if left.contains('\n') then out"\n" else out" "
       out"The result$whitespace${colors.Crimson}($right)${whitespace}did not equal$whitespace${colors.YellowGreen}($left)"
     
-    case Accord(value) =>
+    case Identical(value) =>
       out"The value ${colors.Gray}($value) was expected"
 
 object Similarity:
@@ -93,24 +93,24 @@ extension [ValueType](left: ValueType)
 trait FallbackContrast:
   given [ValueType]: Contrast[ValueType] = new Contrast[ValueType]:
     def apply(a: ValueType, b: ValueType): Accordance =
-      if a == b then Accordance.Accord(a.debug)
-      else Accordance.Discord(a.debug, b.debug)
+      if a == b then Accordance.Identical(a.debug)
+      else Accordance.Different(a.debug, b.debug)
 
 object Contrast extends FallbackContrast:
-  def nothing[ValueType]: Contrast[ValueType] = (a, b) => Accordance.Accord(a.debug)
+  def nothing[ValueType]: Contrast[ValueType] = (a, b) => Accordance.Identical(a.debug)
   
   inline given Contrast[Exception] = new Contrast[Exception]:
     def apply(left: Exception, right: Exception): Accordance =
       val leftMsg = Option(left.getMessage).fold(t"null")(_.nn.debug)
       val rightMsg = Option(right.getMessage).fold(t"null")(_.nn.debug)
-      if left.getClass == right.getClass && leftMsg == rightMsg then Accordance.Accord(leftMsg)
-      else Accordance.Discord(leftMsg, rightMsg)
+      if left.getClass == right.getClass && leftMsg == rightMsg then Accordance.Identical(leftMsg)
+      else Accordance.Different(leftMsg, rightMsg)
 
   inline def compareSeq
       [ValueType: Contrast: Similarity]
       (left: IndexedSeq[ValueType], right: IndexedSeq[ValueType], leftDebug: Text, rightDebug: Text)
       : Accordance =
-    if left == right then Accordance.Accord(leftDebug)
+    if left == right then Accordance.Identical(leftDebug)
     else
       val comparison = IArray.from:
         diff(left, right).rdiff(summon[Similarity[ValueType]].similar).changes.map:
@@ -119,20 +119,20 @@ object Contrast extends FallbackContrast:
               if leftIndex == rightIndex then leftIndex.show
               else t"${leftIndex.show.superscript}⫽${rightIndex.show.subscript}"
             
-            label -> Accordance.Accord(value.debug)
+            label -> Accordance.Identical(value.debug)
           
           case Ins(rightIndex, value) =>
-            t" ⧸${rightIndex.show.subscript}" -> Accordance.Discord(t"—", value.debug)
+            t" ⧸${rightIndex.show.subscript}" -> Accordance.Different(t"—", value.debug)
           
           case Del(leftIndex, value) =>
-            t"${leftIndex.show.superscript}⧸" -> Accordance.Discord(value.debug, t"—")
+            t"${leftIndex.show.superscript}⧸" -> Accordance.Different(value.debug, t"—")
           
           case Sub(leftIndex, rightIndex, leftValue, rightValue) =>
             val label = t"${leftIndex.show.superscript}⫽${rightIndex.show.subscript}"
             
             label -> leftValue.contrastWith(rightValue)
       
-      Accordance.Collation(comparison, leftDebug, rightDebug)
+      Accordance.Similar(comparison, leftDebug, rightDebug)
     
 
   inline given iarray[ValueType: Contrast: Similarity]: Contrast[IArray[ValueType]] =
@@ -173,7 +173,7 @@ object Contrast extends FallbackContrast:
               case _: (headLabel *: tailLabels) => inline valueOf[headLabel].asMatchable match
                 case label: String =>
                   val item =
-                    if leftHead == rightHead then Accordance.Accord(leftHead.debug)
+                    if leftHead == rightHead then Accordance.Identical(leftHead.debug)
                     else summonInline[Contrast[leftHead.type | rightHead.type]](leftHead, rightHead)
                   
                   (Text(label), item) :: deriveProduct[tailLabels](leftTail, rightTail)
@@ -188,9 +188,9 @@ object Contrast extends FallbackContrast:
               val leftTuple = Tuple.fromProductTyped(leftProduct)
               val rightTuple = Tuple.fromProductTyped(rightProduct)
               val product = deriveProduct[mirror.MirroredElemLabels](leftTuple, rightTuple)
-              Accordance.Collation(IArray.from(product), left.debug, right.debug)
+              Accordance.Similar(IArray.from(product), left.debug, right.debug)
      
       case mirror: Mirror.SumOf[DerivationType] => (left: DerivationType, right: DerivationType) =>
         if mirror.ordinal(left) == mirror.ordinal(right)
         then deriveSum[mirror.MirroredElemTypes, DerivationType](mirror.ordinal(left))(left, right)
-        else Accordance.Discord(left.debug, right.debug)
+        else Accordance.Different(left.debug, right.debug)
