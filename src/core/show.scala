@@ -248,9 +248,10 @@ extension [ValueType](value: ValueType)
   inline def show(using display: Show[ValueType]): Text = display(value)
   
   inline def debug: Text = compiletime.summonFrom:
-    case display: Debug[ValueType] => display(value)
-    case display: Show[ValueType]  => display(value)
-    case _                         => value.toString.tt
+    case display: Debug[ValueType]   => display(value)
+    case encoder: Encoder[ValueType] => encoder.encode(value)
+    case display: Show[ValueType]    => display(value)
+    case _                           => value.toString.tt
 
 case class BooleanStyle(yes: Text, no: Text):
   def apply(boolean: Boolean): Text = if boolean then yes else no
