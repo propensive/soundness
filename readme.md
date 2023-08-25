@@ -72,6 +72,7 @@ Chiaroscuro was designed and developed by Jon Pretty, and commercial support and
 _Chiaroscuro_ is a Renaissance painting technique of expressing strong contrasts between light and dark, while Chiaroscuro provides the means to highlight the contrasts between two values.
 
 ### Pronunciation
+
 `/kɪˌɑːɹəˈskʊəɹəʊ/`
 
 In general, Scala One project names are always chosen with some rationale, however it is usually
