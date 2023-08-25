@@ -4,9 +4,12 @@
 
 # Chiaroscuro
 
-____
+__Compare and contrast similar objects and highlight their differences__
 
-TBC
+A simple equality test can determine whether two values are identical or not,
+but it offers no explanation for _how_ two unequal values are different.
+_Chiaroscuro_ provides a means to compare two objects and see their structural
+differences.
 
 ## Features
 
@@ -25,7 +28,7 @@ TBC
 
 ## Status
 
-Chiaroscuro is classified as __fledgling__. For reference, Scala One projects are
+Chiaroscuro is classified as __maturescent__. For reference, Scala One projects are
 categorized into one of the following five stability levels:
 
 - _embryonic_: for experimental or demonstrative purposes only, without any guarantees of longevity
