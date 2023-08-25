@@ -28,14 +28,14 @@ import anticipation.*
 import contextual.*
 import spectacular.*
 
-object Host:
-  given Show[Host] = _.parts.join(t".")
+object Hostname:
+  given Show[Hostname] = _.parts.join(t".")
   
-  def parse(str: Text): Host =
+  def parse(str: Text): Hostname =
     val parts: List[Text] = str.cut(t".").map(_.punycode)
-    Host(parts*)
+    Hostname(parts*)
 
-case class Host(parts: Text*) extends Shown[Host]
+case class Hostname(parts: Text*) extends Shown[Hostname]
 
 object Scheme:
   given Show[Scheme] = _.name
@@ -205,27 +205,27 @@ object Authority:
     safely(value.where(_ == '@')) match
       case Unset => safely(value.where(_ == ':')) match
         case Unset =>
-          Authority(Host.parse(value))
+          Authority(Hostname.parse(value))
         
         case colon: Int =>
           safely(value.drop(colon + 1).s.toInt).match
             case port: Int if port >= 0 && port <= 65535 => port
             case port: Int                               => raise(UrlError(value, colon + 1, PortRange))(0)
             case Unset                                   => raise(UrlError(value, colon + 1, Number))(0)
-          .pipe(Authority(Host.parse(value.take(colon)), Unset, _))
+          .pipe(Authority(Hostname.parse(value.take(colon)), Unset, _))
       
       case arobase: Int => safely(value.where(_ == ':', arobase + 1)) match
         case Unset =>
-          Authority(Host.parse(value.drop(arobase + 1)), value.take(arobase))
+          Authority(Hostname.parse(value.drop(arobase + 1)), value.take(arobase))
 
         case colon: Int =>
           safely(value.drop(colon + 1).s.toInt).match
             case port: Int if port >= 0 && port <= 65535 => port
             case port: Int                               => raise(UrlError(value, colon + 1, PortRange))(0)
             case Unset                                   => raise(UrlError(value, colon + 1, Number))(0)
-          .pipe(Authority(Host.parse(value.slice(arobase + 1, colon)), value.take(arobase), _))
+          .pipe(Authority(Hostname.parse(value.slice(arobase + 1, colon)), value.take(arobase), _))
 
-case class Authority(host: Host, userInfo: Maybe[Text] = Unset, port: Maybe[Int] = Unset)
+case class Authority(host: Hostname, userInfo: Maybe[Text] = Unset, port: Maybe[Int] = Unset)
 
 object Weblink:
   given Followable[Weblink, "", "..", "."] with
