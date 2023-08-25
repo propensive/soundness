@@ -38,76 +38,76 @@ object Properties extends Dynamic:
   def apply
       [PropertyType]
       (property: Text)
-      (using properties: SystemProperties, reader: SystemPropertyReader[String, PropertyType],
+      (using properties: SystemProperties, reader: SystemProperty[String, PropertyType],
           systemProperty: Raises[SystemPropertyError])
       : PropertyType^{properties, reader, systemProperty} =
     properties(property).mm(reader.read).or(abort(SystemPropertyError(property)))
     
-  def selectDynamic(key: String): SystemProperty[key.type] = SystemProperty[key.type](key)
+  def selectDynamic(key: String): PropertyAccess[key.type] = PropertyAccess[key.type](key)
 
 @capability
-trait SystemPropertyReader[NameType <: String, PropertyType]:
+trait SystemProperty[NameType <: String, PropertyType]:
   def read(value: Text): PropertyType
 
-object SystemPropertyReader:
-  given generic[UnknownType <: String & Singleton]: SystemPropertyReader[UnknownType, Text] =
+object SystemProperty:
+  given generic[UnknownType <: String & Singleton]: SystemProperty[UnknownType, Text] =
     identity(_)
   
-  given javaHome[PathType: SpecificPath]: SystemPropertyReader["java.home", PathType] =
+  given javaHome[PathType: SpecificPath]: SystemProperty["java.home", PathType] =
     SpecificPath(_)
   
   given javaLibraryPath
       [PathType: SpecificPath]
       (using systemProperties: SystemProperties, systemProperty: Raises[SystemPropertyError])
-      : SystemPropertyReader["java.library.path", List[PathType]] =
+      : SystemProperty["java.library.path", List[PathType]] =
     _.cut(systemProperties(t"path.separator").or(t":")).map(SpecificPath(_))
 
   given javaClassPath
       [PathType: SpecificPath]
       (using systemProperties: SystemProperties, systemProperty: Raises[SystemPropertyError])
-      : SystemPropertyReader["java.class.path", List[PathType]] =
+      : SystemProperty["java.class.path", List[PathType]] =
     _.cut(systemProperties(t"path.separator").or(t":")).map(SpecificPath(_))
 
-  given javaVersion: SystemPropertyReader["java.version", Text] = identity(_)
-  given javaRuntimeVersion: SystemPropertyReader["java.runtime.version", Text] = identity(_)
+  given javaVersion: SystemProperty["java.version", Text] = identity(_)
+  given javaRuntimeVersion: SystemProperty["java.runtime.version", Text] = identity(_)
   
   given javaExtDirs
       [PathType: SpecificPath]
       (using systemProperties: SystemProperties, systemProperty: Raises[SystemPropertyError])
-      : SystemPropertyReader["java.ext.dirs", List[PathType]] =
+      : SystemProperty["java.ext.dirs", List[PathType]] =
     _.cut(systemProperties(t"path.separator").or(t":")).map(SpecificPath(_))
 
-  given fileSeparator: SystemPropertyReader["file.separator", Char] = _.decodeAs[Char]
-  given pathSeparator: SystemPropertyReader["path.separator", Char] = _.decodeAs[Char]
-  given lineSeparator: SystemPropertyReader["line.separator", Text] = identity(_)
+  given fileSeparator: SystemProperty["file.separator", Char] = _.decodeAs[Char]
+  given pathSeparator: SystemProperty["path.separator", Char] = _.decodeAs[Char]
+  given lineSeparator: SystemProperty["line.separator", Text] = identity(_)
 
-  given userName: SystemPropertyReader["user.name", Text] = identity(_)
+  given userName: SystemProperty["user.name", Text] = identity(_)
   
-  given userHome[PathType: SpecificPath]: SystemPropertyReader["user.home", PathType] =
+  given userHome[PathType: SpecificPath]: SystemProperty["user.home", PathType] =
     SpecificPath(_)
   
-  given userDir[PathType: SpecificPath]: SystemPropertyReader["user.dir", PathType] =
+  given userDir[PathType: SpecificPath]: SystemProperty["user.dir", PathType] =
     SpecificPath(_)
 
-  given osName: SystemPropertyReader["os.name", Text] = identity(_)
-  given osVersion: SystemPropertyReader["os.version", Text] = identity(_)
-  given osArch: SystemPropertyReader["os.arch", Text] = identity(_)
+  given osName: SystemProperty["os.name", Text] = identity(_)
+  given osVersion: SystemProperty["os.version", Text] = identity(_)
+  given osArch: SystemProperty["os.arch", Text] = identity(_)
 
   given decoder
       [UnknownType <: String & Singleton, PropertyType]
       (using decoder: Decoder[PropertyType])
-      : SystemPropertyReader[UnknownType, PropertyType] =
+      : SystemProperty[UnknownType, PropertyType] =
     decoder.decode(_)
 
-case class SystemProperty[NameType <: String](property: String) extends Dynamic:
-  def selectDynamic(key: String): SystemProperty[NameType+"."+key.type] =
-    SystemProperty[NameType+"."+key.type](property+"."+key)
+case class PropertyAccess[NameType <: String](property: String) extends Dynamic:
+  def selectDynamic(key: String): PropertyAccess[NameType+"."+key.type] =
+    PropertyAccess[NameType+"."+key.type](property+"."+key)
   
   def applyDynamic
       [PropertyType]
       (key: String)()
       (using properties: SystemProperties,
-          reader: SystemPropertyReader[NameType+"."+key.type, PropertyType],
+          reader: SystemProperty[NameType+"."+key.type, PropertyType],
           systemProperty: Raises[SystemPropertyError])
       : PropertyType^{properties, reader, systemProperty} =
     properties((property+"."+key).tt).mm(reader.read(_)).or:
@@ -115,7 +115,7 @@ case class SystemProperty[NameType <: String](property: String) extends Dynamic:
   
   inline def apply
       [PropertyType]
-      ()(using properties: SystemProperties, reader: SystemPropertyReader[NameType, PropertyType],
+      ()(using properties: SystemProperties, reader: SystemProperty[NameType, PropertyType],
           systemProperty: Raises[SystemPropertyError])
       : PropertyType^{properties, reader, systemProperty} =
     properties(valueOf[NameType].tt).mm(reader.read(_)).or:
