@@ -10,6 +10,9 @@ __Rich and composable error messages__
 
 ## Features
 
+- rich representation of user-facing messages, particularly for errors
+- demarcation of fixed and variable parts of a message
+- provides a general-purpose `Error` type for immutable exception objects
 
 
 ## Availability
@@ -22,7 +25,7 @@ Fulminate has not yet been published as a binary.
 
 ## Status
 
-Fulminate is classified as ____. For reference, Scala One projects are
+Fulminate is classified as __maturescent__. For reference, Scala One projects are
 categorized into one of the following five stability levels:
 
 - _embryonic_: for experimental or demonstrative purposes only, without any guarantees of longevity
@@ -66,7 +69,7 @@ Fulminate was designed and developed by Jon Pretty, and commercial support and t
 
 ## Name
 
-
+To _fulminate_ is to express vehement protest, while _Fulminate_ provides the means to express protestations at errors.
 
 In general, Scala One project names are always chosen with some rationale, however it is usually
 frivolous. Each name is chosen for more for its _uniqueness_ and _intrigue_ than its concision or
