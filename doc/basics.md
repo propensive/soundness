@@ -48,3 +48,24 @@ extends Error(msg"expected a size $expected, but the actual size was $actual")
 This would require an appropriate `AsMessage[Size]` (or a `Show[Size]`)
 instance in scope for the substitution to be acceptable.
 
+### `fail`
+
+When writing macros, with a `Quotes` instance in scope, the `fail` method takes
+a `Message` and will produce a compile error showing that message.
+
+If the compiler is running in a terminal with color capability, then color will
+be used to highlight embeddings in the failure message, by including ANSI
+escape codes in the output message.
+
+### `Mistake`
+
+Sometimes we need to raise exceptions which are not intended to be handled, and
+not even intended to be thrown, for example when a code branch is run which
+should be impossible to reach. The `Mistake` class provides a standard way of
+handling such situation, and takes a `Message` parameter which should briefly
+explain the reason why the situation was believed to be impossible.
+
+Should a `Mistake` be thrown, it should represent a programming mistake: the
+manifestation of a misconception of impossibility on the part of the
+programmer.
+
