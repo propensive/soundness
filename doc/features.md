@@ -1,4 +1,4 @@
 - simple interface for creating and running tasks
-- optimized for Loom JVMs
-- organizes tasks into a hierarchy
-- avoids thread leakage
+- ideally suited for use on Java 20+
+- asynchronous tasks form an intuitive hierarchy
+- capture checking avoids thread leakage

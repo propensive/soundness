@@ -1,1 +1,1 @@
-Structured asynchronous task management
+Safe, structured asynchronous tasks
