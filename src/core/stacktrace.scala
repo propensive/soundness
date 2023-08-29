@@ -36,7 +36,7 @@ object StackTrace:
   )
 
   def rewrite(name: String, method: Boolean = false): Text =
-    val sb: StringBuilder = StringBuilder()
+    val buffer: StringBuilder = StringBuilder()
     
     inline def char(idx: Int): Maybe[Char] = if idx < 0 || idx >= name.length then Unset else name.charAt(idx)
 
@@ -45,15 +45,15 @@ object StackTrace:
       inline def token(idx: Int, str: String, text: String, digits: Boolean = false): Text =
         if (0 until str.length).forall { i => char(idx + i) == str(i) }
         then
-          sb.append(text)
+          buffer.append(text)
           recur(idx + str.length, digits)
         else
-          sb.append('#')
+          buffer.append('#')
           recur(idx + 1, digits)
       
       inline def skip(): Text = token(idx, "$", if method then "()." else "#")
 
-      if idx >= name.length then Text(sb.toString+(if method then "()" else ""))
+      if idx >= name.length then Text(buffer.toString+(if method then "()" else ""))
       else if digits then char(idx) match
         case '0' => token(idx, "0", "₀", true)
         case '1' => token(idx, "1", "₁", true)
@@ -70,18 +70,18 @@ object StackTrace:
         case 'i' =>
           if (0 until 8).forall { i => char(idx + i) == "initial$"(i) }
           then
-            sb.append("ι")
+            buffer.append("ι")
             recur(idx + 8)
           else
-            sb.append("i")
+            buffer.append("i")
             recur(idx + 1)
         case 's' =>
           if (0 until 6).forall { i => char(idx + i) == "super$"(i) }
           then
-            sb.append("ς")
+            buffer.append("ς")
             recur(idx + 6)
           else
-            sb.append("s")
+            buffer.append("s")
             recur(idx + 1)
         case '$' => char(idx + 1) match
           case '_' => token(idx,           "$_avoid_name_clash_$", "′")
@@ -131,7 +131,7 @@ object StackTrace:
           case '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' => recur(idx + 1, true)
           case _   => skip()
         case ch  =>
-          sb.append(ch.toString)
+          buffer.append(ch.toString)
           recur(idx + 1)
     
     val rewritten = recur(0)
