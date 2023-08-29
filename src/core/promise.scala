@@ -47,19 +47,19 @@ case class Promise[ValueType]():
       if !incomplete then raise(AlreadyCompleteError())(()) else value = supplied
       notifyAll()
   
-  def offer(supplied: -> ValueType): Unit =
-    synchronized:
-      if incomplete then
-        value = supplied
-        notifyAll()
+  def offer(supplied: -> ValueType): Unit = synchronized:
+    if incomplete then
+      value = supplied
+      notifyAll()
 
   def await()(using Raises[CancelError]): ValueType = synchronized:
     while !ready do wait()
     get()
 
   def cancel(): Unit = synchronized:
-    value = Promise.Cancelled
-    notifyAll()
+    if incomplete then
+      value = Promise.Cancelled
+      notifyAll()
 
   def await
       [DurationType: GenericDuration]
