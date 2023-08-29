@@ -4,12 +4,13 @@
 
 # Perforate
 
-____
+__Versatile error handling for every scenario.__
 
-
+TBC
 
 ## Features
 
+TBC
 
 
 ## Availability
@@ -18,6 +19,7 @@ Perforate has not yet been published as a binary.
 
 ## Getting Started
 
+TBC
 
 
 ## Status
