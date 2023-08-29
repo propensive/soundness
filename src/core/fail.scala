@@ -36,7 +36,7 @@ def fail
   
   val text =
     if useColor
-    then s"${27.toChar}[38;2;0;190;255m${27.toChar}[1m$pkg${27.toChar}[0m ${message.richText}"
+    then s"${27.toChar}[38;2;0;190;255m${27.toChar}[1m$pkg${27.toChar}[0m ${message.colorText}"
     else s"$pkg: ${message.text}" 
   
   if pos == null then report.errorAndAbort(text) else report.errorAndAbort(text, pos)
