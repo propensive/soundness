@@ -25,7 +25,7 @@ import language.experimental.captureChecking
 object Message:
   def apply(value: Text): Message = Message(List(value))
 
-  transparent inline def makeMessages
+  transparent inline def make
       [TupleType <: Tuple]
       (inline subs: TupleType, done: List[Message])
       : List[Message] =
@@ -34,7 +34,7 @@ object Message:
         case message *: tail =>
           val message2 = message.asInstanceOf[messageType]
           val asMessage = summonInline[AsMessage[messageType]]
-          makeMessages[tailType](tail.asInstanceOf[tailType], asMessage.message(message2) :: done)
+          make[tailType](tail.asInstanceOf[tailType], asMessage.message(message2) :: done)
 
       case _ =>
         done.reverse
@@ -114,7 +114,7 @@ extension (inline context: StringContext)
   transparent inline def msg[ParamType](inline subs: ParamType = EmptyTuple): Message =
     inline subs.asMatchable match
       case tuple: Tuple =>
-        Message(context.parts.map(Text(_)).to(List), Message.makeMessages[tuple.type](tuple, Nil))
+        Message(context.parts.map(Text(_)).to(List), Message.make[tuple.type](tuple, Nil))
       
       case other =>
         Message(context.parts.map(Text(_)).to(List), List(summonInline[AsMessage[other.type]].message(other)))
