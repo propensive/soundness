@@ -17,8 +17,8 @@ object Message:
       case _: (messageType *: tailType) => (subs: @unchecked) match
         case message *: tail =>
           val message2 = message.asInstanceOf[messageType]
-          val asMessage = summonInline[AsMessage[messageType]]
-          make[tailType](tail.asInstanceOf[tailType], asMessage.message(message2) :: done)
+          val show = summonInline[MessageShow[messageType]]
+          make[tailType](tail.asInstanceOf[tailType], show.message(message2) :: done)
 
       case _ =>
         done.reverse
@@ -61,18 +61,18 @@ case class Message(textParts: List[Text], subs: List[Message] = Nil):
     
     recur(string.split("\n").nn.map(_.nn).to(List), false)
 
-object AsMessage:
-  given text: AsMessage[Text] = Message(_)
-  given string: AsMessage[String] = string => Message(string.tt)
-  given char: AsMessage[Char] = char => Message(char.toString.tt) // Escape this
-  given int: AsMessage[Int] = int => Message(int.toString.tt)
-  given long: AsMessage[Long] = long => Message(long.toString.tt)
-  given message: AsMessage[Message] = identity(_)
+object MessageShow:
+  given text: MessageShow[Text] = Message(_)
+  given string: MessageShow[String] = string => Message(string.tt)
+  given char: MessageShow[Char] = char => Message(char.toString.tt) // Escape this
+  given int: MessageShow[Int] = int => Message(int.toString.tt)
+  given long: MessageShow[Long] = long => Message(long.toString.tt)
+  given message: MessageShow[Message] = identity(_)
 
-  given listMessage: AsMessage[List[Message]] = messages =>
+  given listMessage: MessageShow[List[Message]] = messages =>
     Message(List.fill(messages.size)("\n - ".tt) ::: List("".tt), messages)
 
-trait AsMessage[-ValueType]:
+trait MessageShow[-ValueType]:
   def message(value: ValueType): Message
 
 extension (inline context: StringContext)
@@ -82,4 +82,4 @@ extension (inline context: StringContext)
         Message(context.parts.map(Text(_)).to(List), Message.make[tuple.type](tuple, Nil))
       
       case other =>
-        Message(context.parts.map(Text(_)).to(List), List(summonInline[AsMessage[other.type]].message(other)))
+        Message(context.parts.map(Text(_)).to(List), List(summonInline[MessageShow[other.type]].message(other)))
