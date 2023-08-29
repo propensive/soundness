@@ -43,7 +43,8 @@ class Async
     (using monitor: Monitor, codepoint: Codepoint):
   async =>
 
-  private val identifier = Text(s"${codepoint.text}")
+  // FIXME: Maybe these should be defs
+  private val identifier: Text = Text(s"${codepoint.text}")
   private val eval = (monitor: Submonitor[ResultType]) => evaluate(using monitor)
   private final val trigger: Trigger = Trigger()
   private val stateRef: juca.AtomicReference[AsyncState[ResultType]] = juca.AtomicReference(Active)
@@ -56,10 +57,10 @@ class Async
           val result = eval(child)
           stateRef.set(Completed(result))
         catch case NonFatal(error) => stateRef.set(Failed(error))
-        
-        trigger()
-        
-        boundary.break()
+        finally
+          trigger()
+          monitor.cancel() // FIXME: Check if this is the right thing to do
+          boundary.break()
       
     Thread(runnable).tap(_.start())
   
