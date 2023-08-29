@@ -1,5 +1,5 @@
 /*
-    Parasitism, version [unreleased]. Copyright 2023 Jon Pretty, Propensive OÜ.
+    Parasite, version [unreleased]. Copyright 2023 Jon Pretty, Propensive OÜ.
 
     The primary distribution site is: https://propensive.com/
 
@@ -14,34 +14,256 @@
     and limitations under the License.
 */
 
-package parasitism
+package parasite
 
 import anticipation.*
+import rudiments.*
+import digression.*
+import perforate.*
+
+import scala.annotation.*
+import scala.collection.mutable as scm
+
+import java.util.concurrent.atomic as juca
+
+import language.experimental.captureChecking
+
+object Promise:
+  object Cancelled
+  object Incomplete
+
+enum AsyncState[+ValueType]:
+  case Active
+  case Suspended(count: Int)
+  case Completed(value: ValueType)
+  case Failed(error: Throwable)
+  case Cancelled
+
+import AsyncState.*
 
 case class Promise[ValueType]():
-  @volatile
-  private var value: Option[ValueType throws CancelError] = None
+  private var value: ValueType | Promise.Cancelled.type | Promise.Incomplete.type = Promise.Incomplete
 
-  def ready: Boolean = !value.isEmpty
+  inline def cancelled: Boolean = value == Promise.Cancelled
+  inline def incomplete: Boolean = value == Promise.Incomplete
+  inline def ready: Boolean = !incomplete
 
-  def supply(suppliedValue: => ValueType): Unit throws AlreadyCompleteError = synchronized:
-    if value.isEmpty then
-      value = Some(suppliedValue)
+  private def get()(using Raises[CancelError]): ValueType =
+    if cancelled then abort(CancelError()) else value.asInstanceOf[ValueType]
+
+  def fulfill(supplied: -> ValueType)(using complete: Raises[AlreadyCompleteError]): Unit^{complete} =
+    synchronized:
+      if !incomplete then raise(AlreadyCompleteError())(()) else value = supplied
       notifyAll()
-    else throw AlreadyCompleteError()
+  
+  def offer(supplied: -> ValueType): Unit =
+    synchronized:
+      if incomplete then
+        value = supplied
+        notifyAll()
 
-  def await(): ValueType throws CancelError = synchronized:
-    while value.isEmpty do wait()
-    value.get
+  def await()(using Raises[CancelError]): ValueType =
+    synchronized:
+      while !ready do wait()
+      get()
 
-  def cancel(): Unit = synchronized:
-    value = Some(throw CancelError())
-    notifyAll()
+  def cancel(): Unit =
+    synchronized:
+      value = Promise.Cancelled
+      notifyAll()
 
   def await
-        [DurationType](duration: DurationType)(using GenericDuration[DurationType])
-        : ValueType throws CancelError | TimeoutError =
+      [DurationType: GenericDuration]
+      (duration: DurationType)(using Raises[CancelError], Raises[TimeoutError])
+      : ValueType =
+    
     synchronized:
-      if ready then value.get else
-        wait(readDuration(duration))
-        if !ready then throw TimeoutError() else value.get
+      if ready then get() else
+        wait(duration.milliseconds)
+        if !ready then abort(TimeoutError()) else get()
+
+case class Trigger():
+  private val promise: Promise[Unit] = Promise()
+  def apply(): Unit = promise.offer(())
+  def pull()(using Raises[AlreadyCompleteError]): Unit = promise.fulfill(())
+  def await()(using Raises[CancelError]): Unit = promise.await()
+  def cancel(): Unit = promise.cancel()
+  def cancelled: Boolean = promise.cancelled
+  
+  def await[DurationType: GenericDuration](duration: DurationType)(using Raises[CancelError], Raises[TimeoutError]): Unit =
+    promise.await(duration)
+
+@capability
+sealed trait Monitor(val name: List[Text], trigger: Trigger):
+  private val children: scm.HashMap[Text, AnyRef] = scm.HashMap()
+  def id: Text = Text(name.reverse.map(_.s).mkString(" / "))
+
+  def cancel(): Unit =
+    children.foreach: (id, child) =>
+      child match
+        case child: Monitor => child.cancel()
+        case _              => ()
+
+    trigger.cancel()
+
+  def terminate(): Unit = this match
+    case Supervisor                                     => Supervisor.cancel()
+    case monitor@Submonitor(id, parent, state, promise) => monitor.terminate()
+
+  def sleep(duration: Long): Unit = Thread.sleep(duration)
+
+  def child
+      [ResultType2]
+      (id: Text, state: juca.AtomicReference[AsyncState[ResultType2]], trigger: Trigger)
+      (using label: boundary.Label[Unit])
+      : Submonitor[ResultType2] =
+    
+    val monitor = Submonitor[ResultType2](id, this, state, trigger)
+    
+    synchronized:
+      children(id) = monitor
+    
+    monitor
+
+case object Supervisor extends Monitor(Nil, Trigger())
+
+def supervise
+    [ResultType]
+    (fn: Monitor ?=> ResultType)(using cancel: Raises[CancelError])
+    : ResultType =
+  fn(using Supervisor)
+
+@capability
+case class Submonitor
+    [ResultType]
+    (identifier: Text, parent: Monitor, stateRef: juca.AtomicReference[AsyncState[ResultType]], trigger: Trigger)
+    (using label: boundary.Label[Unit])
+extends Monitor(identifier :: parent.name, trigger):
+
+  def state(): AsyncState[ResultType] = stateRef.get().nn
+  
+  def complete(value: ResultType): Nothing =
+    stateRef.set(Completed(value))
+    trigger()
+    boundary.break()
+  
+  def acquiesce(): Unit = synchronized:
+    stateRef.get().nn match
+      case Active            => ()
+      case Suspended(_)      => wait()
+      case Completed(value)  => trigger()
+      case Cancelled         => trigger()
+      case Failed(error)     => trigger()
+    
+    if trigger.cancelled then boundary.break()
+  
+object Async:
+  def race
+      [AsyncType]
+      (asyncs: Vector[Async[AsyncType]])(using cancel: Raises[CancelError], monitor: Monitor)
+      : Async[AsyncType] =
+    
+    Async[Int]:
+      val promise: Promise[Int] = Promise()
+      
+      asyncs.zipWithIndex.foreach: (async, index) =>
+        async.foreach: result =>
+          promise.offer(index)
+      
+      promise.await()
+    .flatMap:
+      case -1 => abort(CancelError())
+      case n  => asyncs(n)
+
+@capability
+class Async
+    [+ResultType]
+    (evaluate: Submonitor[ResultType] ?=> ResultType)
+    (using monitor: Monitor, codepoint: Codepoint):
+  async =>
+
+  private val identifier = Text(s"${codepoint.text}")
+  private val eval = (monitor: Submonitor[ResultType]) => evaluate(using monitor)
+  private final val trigger: Trigger = Trigger()
+  private val stateRef: juca.AtomicReference[AsyncState[ResultType]] = juca.AtomicReference(Active)
+
+  private val thread: Thread =
+    def runnable: Runnable^{monitor} = () =>
+      boundary[Unit]:
+        val child = monitor.child[ResultType](identifier, stateRef, trigger)
+        try
+          val result = eval(child)
+          stateRef.set(Completed(result))
+        catch case NonFatal(error) => stateRef.set(Failed(error))
+        
+        trigger()
+        
+        boundary.break()
+      
+    Thread(runnable).tap(_.start())
+  def id: Text = Text((identifier :: monitor.name).reverse.map(_.s).mkString("// ", " / ", ""))
+  def state(): AsyncState[ResultType] = stateRef.get().nn
+  
+  def await
+      [DurationType: GenericDuration]
+      (duration: DurationType)(using Raises[CancelError], Raises[TimeoutError])
+      : ResultType =
+    trigger.await(duration).tap(thread.join().waive)
+    result()
+  
+  def await()(using cancel: Raises[CancelError]): ResultType =
+    trigger.await().tap(thread.join().waive)
+    result()
+  
+  private def result()(using cancel: Raises[CancelError]): ResultType =
+    state() match
+      case Completed(result) => result
+      case Failed(error)     => throw error
+      case Cancelled         => abort(CancelError())
+      case other             => abort(CancelError())
+  
+  def suspend(): Unit =
+    stateRef.updateAndGet:
+      case Active               => Suspended(1)
+      case Suspended(n)         => Suspended(n + 1)
+      case other                => other
+
+  def resume(force: Boolean = false): Unit =
+    stateRef.updateAndGet:
+      case Suspended(1)         => monitor.synchronized(monitor.notifyAll())
+                                   Active
+      case Suspended(n)         => if force then Active else Suspended(n - 1)
+      case other                => other
+
+  def wake(): Unit =
+    stateRef.updateAndGet:
+      case other                => other
+
+  def map[ResultType2](fn: ResultType => ResultType2)(using Raises[CancelError]): Async[ResultType2] =
+    Async(fn(async.await()))
+  
+  def foreach[ResultType2](fn: ResultType => ResultType2)(using Raises[CancelError]): Unit =
+    Async(fn(async.await()))
+  
+  def flatMap
+      [ResultType2]
+      (fn: ResultType => Async[ResultType2])(using Raises[CancelError])
+      : Async[ResultType2] =
+    Async(fn(await()).await())
+  
+  def cancel(): Unit = monitor.cancel()
+
+def acquiesce[ResultType]()(using monitor: Submonitor[ResultType]): Unit = monitor.acquiesce()
+def cancel[ResultType]()(using monitor: Submonitor[ResultType]): Unit = monitor.cancel()
+def terminate()(using monitor: Monitor): Unit = monitor.terminate()
+
+def complete[ResultType](value: ResultType)(using monitor: Submonitor[ResultType]): Nothing =
+  monitor.complete(value)
+
+def sleep[DurationType: GenericDuration, ResultType](duration: DurationType)(using monitor: Monitor): Unit =
+  monitor.sleep(duration.milliseconds)
+
+extension [ResultType](asyncs: Seq[Async[ResultType]]^)
+  def sequence(using cancel: Raises[CancelError], mon: Monitor): Async[Seq[ResultType^{}]] =
+    Async:
+      asyncs.map(_.await())
