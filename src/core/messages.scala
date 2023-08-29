@@ -61,20 +61,6 @@ case class Message(textParts: List[Text], subs: List[Message] = Nil):
     
     recur(string.split("\n").nn.map(_.nn).to(List), false)
 
-object MessageShow:
-  given text: MessageShow[Text] = Message(_)
-  given string: MessageShow[String] = string => Message(string.tt)
-  given char: MessageShow[Char] = char => Message(char.toString.tt) // Escape this
-  given int: MessageShow[Int] = int => Message(int.toString.tt)
-  given long: MessageShow[Long] = long => Message(long.toString.tt)
-  given message: MessageShow[Message] = identity(_)
-
-  given listMessage: MessageShow[List[Message]] = messages =>
-    Message(List.fill(messages.size)("\n - ".tt) ::: List("".tt), messages)
-
-trait MessageShow[-ValueType]:
-  def message(value: ValueType): Message
-
 extension (inline context: StringContext)
   transparent inline def msg[ParamType](inline subs: ParamType = EmptyTuple): Message =
     inline subs.asMatchable match
