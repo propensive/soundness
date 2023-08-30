@@ -48,6 +48,7 @@ object Async:
           promise.offer(index)
       
       promise.await()
+    
     .flatMap:
       case -1 => abort(CancelError())
       case n  => asyncs(n)
@@ -58,14 +59,11 @@ class Async
     (evaluate: Submonitor[ResultType] ?=> ResultType)
     (using monitor: Monitor, codepoint: Codepoint):
   async =>
-
-  // FIXME: Maybe these should be defs
-  private val identifier: Text = Text(s"${codepoint.text}")
-  private def eval(monitor: Submonitor[ResultType]): ResultType = evaluate(using monitor)
+  
   private final val trigger: Trigger = Trigger()
-  private val stateRef: juca.AtomicReference[AsyncState[ResultType]] = juca.AtomicReference(Active)
+  private final val stateRef: juca.AtomicReference[AsyncState[ResultType]] = juca.AtomicReference(Active)
 
-  private val thread: Thread =
+  private final val thread: Thread =
     def runnable: Runnable^{async} = () =>
       boundary[Unit]:
         val child = monitor.child[ResultType](identifier, stateRef, trigger)
@@ -75,11 +73,14 @@ class Async
         catch case NonFatal(error) => stateRef.set(Failed(error))
         finally
           trigger()
-          monitor.cancel() // FIXME: Check if this is the right thing to do
+          child.cancel()
           boundary.break()
       
     Thread(runnable).tap(_.start())
   
+  private def identifier: Text = Text(s"${codepoint.text}")
+  private def eval(monitor: Submonitor[ResultType]): ResultType = evaluate(using monitor)
+
   def id: Text = Text((identifier :: monitor.name).reverse.map(_.s).mkString("// ", " / ", ""))
   def state(): AsyncState[ResultType] = stateRef.get().nn
   
@@ -126,7 +127,8 @@ class Async
   
   def flatMap
       [ResultType2]
-      (fn: ResultType => Async[ResultType2])(using Raises[CancelError])
+      (fn: ResultType => Async[ResultType2])
+      (using Raises[CancelError])
       : Async[ResultType2] =
     Async(fn(await()).await())
   
