@@ -132,7 +132,12 @@ class Async
       : Async[ResultType2] =
     Async(fn(await()).await())
   
-  def cancel(): Unit = monitor.cancel()
+  def cancel(): Unit =
+    stateRef.updateAndGet:
+      case Active | Suspended(_) => Cancelled
+      case other                 => other
+    
+    monitor.cancel()
 
 def acquiesce[ResultType]()(using monitor: Submonitor[ResultType]): Unit = monitor.acquiesce()
 def cancel[ResultType]()(using monitor: Submonitor[ResultType]): Unit = monitor.cancel()

@@ -89,12 +89,11 @@ sealed trait Monitor(val name: List[Text], trigger: Trigger):
   def id: Text = Text(name.reverse.map(_.s).mkString(" / "))
 
   def cancel(): Unit =
+    trigger.cancel()
     children.foreach: (id, child) =>
       child match
         case child: Monitor => child.cancel()
         case _              => ()
-
-    trigger.cancel()
 
   def terminate(): Unit = this match
     case Supervisor                                     => Supervisor.cancel()
@@ -142,8 +141,8 @@ extends Monitor(identifier :: parent.name, trigger):
       case Active            => ()
       case Suspended(_)      => wait()
       case Completed(value)  => trigger()
+                                boundary.break()
       case Cancelled         => trigger()
+                                boundary.break()
       case Failed(error)     => trigger()
-    
-    if trigger.cancelled then boundary.break()
-  
+                                boundary.break()
