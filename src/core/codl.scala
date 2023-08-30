@@ -349,7 +349,7 @@ object Codl:
       inline def block(): LazyList[CodlToken] =
         if diff >= 4 || char.char == '\n' then consume(Margin, padding = false)
         else if char.char == ' ' then recur(Margin, padding = false)
-        else token() #:: istream(char, count = count + 1, indent = indent, false)
+        else token() #:: istream(char, count = count + 1, indent = indent, padding = false)
 
       inline def fail(next: State, error: CodlError, adjust: Maybe[Int] = Unset): LazyList[CodlToken] =
         CodlToken.Error(error) #:: irecur(next, indent = adjust.or(char.column))
