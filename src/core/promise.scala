@@ -24,11 +24,12 @@ import language.experimental.captureChecking
 import AsyncState.*
 
 object Promise:
-  object Cancelled
-  object Incomplete
+  sealed trait Special
+  case object Cancelled extends Special
+  case object Incomplete extends Special
 
 case class Promise[ValueType]():
-  private var value: ValueType | Promise.Cancelled.type | Promise.Incomplete.type = Promise.Incomplete
+  private var value: ValueType | Promise.Special = Promise.Incomplete
 
   inline def cancelled: Boolean = value == Promise.Cancelled
   inline def incomplete: Boolean = value == Promise.Incomplete
