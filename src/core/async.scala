@@ -30,7 +30,6 @@ enum AsyncState[+ValueType]:
   case Suspended(count: Int)
   case Completed(value: ValueType)
   case Failed(error: Throwable)
-  case Cancelled
 
 import AsyncState.*
 
@@ -99,7 +98,7 @@ class Async
     state() match
       case Completed(result) => result
       case Failed(error)     => throw error
-      case Cancelled         => abort(CancelError())
+      case Active            => abort(CancelError())
       case other             => abort(CancelError())
   
   def suspend(): Unit =
@@ -129,10 +128,7 @@ class Async
     Async(fn(await()).await())
   
   def cancel(): Unit =
-    stateRef.updateAndGet:
-      case Active | Suspended(_) => Cancelled
-      case other                 => other
-    
+    thread.interrupt()
     monitor.cancel()
 
 def acquiesce[ResultType]()(using monitor: Submonitor[ResultType]): Unit = monitor.acquiesce()

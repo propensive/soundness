@@ -3,6 +3,7 @@ package parasite
 import anticipation.*
 import rudiments.*
 import perforate.*
+import fulminate.*
 
 import scala.annotation.*
 import scala.collection.mutable as scm
@@ -70,9 +71,5 @@ extends Monitor(identifier :: parent.name, trigger):
     stateRef.get().nn match
       case Active            => ()
       case Suspended(_)      => wait()
-      case Completed(value)  => trigger()
-                                boundary.break()
-      case Cancelled         => trigger()
-                                boundary.break()
-      case Failed(error)     => trigger()
-                                boundary.break()
+      case Completed(value)  => throw Mistake(msg"should not be acquiescing after completion")
+      case Failed(error)     => throw Mistake(msg"should not be acquiescing after failure")
