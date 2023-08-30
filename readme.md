@@ -35,7 +35,8 @@ Async:
   // code to run
 ```
 
-This creates a new `Async[ResultType]` where `ResultType` is the return type of the task's body.
+This creates a new `Async[ResultType]` where `ResultType` is the return type of
+the task's body.
 
 Asynchronous tasks form a hierarchy, and a task spawned within the body of
 another task will use the latter's context to determine its owner, effectively
@@ -47,7 +48,8 @@ also be canceled.
 
 An `Async` instance has several useful methods:
 - `await()`, which blocks the current thread until the `Async` produces a value
-- `await(timeout)`, which takes a `timeout`, after which a `TimeoutError` will be thrown if no value has been produced
+- `await(timeout)`, which takes a `timeout`, after which a `TimeoutError` will
+  be thrown if no value has been produced
 - `map` and `flatMap`, providing standard monadic operations on the `Async`
 - `name`, which returns the full name (a path) of the `Async`
 - `cancel()`, which will stop the task running
@@ -73,10 +75,9 @@ as long as the task is running normally, `acquiesce()` will do nothing. But if a
 task is cancelled, the task will stop immediately, without a value being
 produced. Any `await()` calls on the task will throw a `CancelError`.
 
-However, this happens _only_ when `acquiesce()` is called, so if no such calls are
-run as the task is executing, that task cannot be cancelled, and it must
+However, this happens _only_ when `acquiesce()` is called, so if no such calls
+are run as the task is executing, that task cannot be cancelled, and it must
 execute to completion.
-
 
 
 
@@ -96,7 +97,7 @@ be used, but caution should be taken if there is a mismatch between the
 project's stability level and the importance of your own project.
 
 Parasite is designed to be _small_. Its entire source code currently consists
-of 370 lines of code.
+of 373 lines of code.
 
 ## Building
 
