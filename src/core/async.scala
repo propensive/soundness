@@ -115,10 +115,6 @@ class Async
       case Suspended(n)         => if force then Active else Suspended(n - 1)
       case other                => other
 
-  def wake(): Unit =
-    stateRef.updateAndGet:
-      case other                => other
-
   def map[ResultType2](fn: ResultType => ResultType2)(using Raises[CancelError]): Async[ResultType2] =
     Async(fn(async.await()))
   
