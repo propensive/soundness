@@ -59,19 +59,24 @@ class Async
     (using monitor: Monitor, codepoint: Codepoint):
   async =>
   
-  private final val trigger: Trigger = Trigger()
+  private final val promise: Promise[ResultType | Promise.Special] = Promise()
   private final val stateRef: juca.AtomicReference[AsyncState[ResultType]] = juca.AtomicReference(Active)
 
   private final val thread: Thread =
     def runnable: Runnable^{async} = () =>
       boundary[Unit]:
-        val child = monitor.child[ResultType](identifier, stateRef, trigger)
+        val child = monitor.child[ResultType](identifier, stateRef, promise)
         try
           val result = eval(child)
           stateRef.set(Completed(result))
         catch case NonFatal(error) => stateRef.set(Failed(error))
         finally
-          trigger()
+          stateRef.get().nn match
+            case Completed(value) => promise.offer(value)
+            case Active           => promise.offer(Promise.Cancelled)
+            case Suspended(_)     => promise.offer(Promise.Cancelled)
+            case Failed(_)        => promise.offer(Promise.Incomplete)
+
           child.cancel()
           boundary.break()
       
@@ -87,11 +92,11 @@ class Async
       [DurationType: GenericDuration]
       (duration: DurationType)(using Raises[CancelError], Raises[TimeoutError])
       : ResultType =
-    trigger.await(duration).tap(thread.join().waive)
+    promise.await(duration).tap(thread.join().waive)
     result()
   
   def await()(using cancel: Raises[CancelError]): ResultType =
-    trigger.await().tap(thread.join().waive)
+    promise.await().tap(thread.join().waive)
     result()
   
   private def result()(using cancel: Raises[CancelError]): ResultType =

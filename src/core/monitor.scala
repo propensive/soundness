@@ -31,12 +31,12 @@ import language.experimental.captureChecking
 import AsyncState.*
 
 @capability
-sealed trait Monitor(val name: List[Text], trigger: Trigger):
+sealed trait Monitor(val name: List[Text], promise: Promise[?]):
   private val children: scm.HashMap[Text, AnyRef] = scm.HashMap()
   def id: Text = Text(name.reverse.map(_.s).mkString(" / "))
 
   def cancel(): Unit =
-    trigger.cancel()
+    promise.cancel()
     children.foreach: (id, child) =>
       child match
         case child: Monitor => child.cancel()
@@ -50,18 +50,18 @@ sealed trait Monitor(val name: List[Text], trigger: Trigger):
 
   def child
       [ResultType2]
-      (id: Text, state: juca.AtomicReference[AsyncState[ResultType2]], trigger: Trigger)
+      (id: Text, state: juca.AtomicReference[AsyncState[ResultType2]], promise: Promise[ResultType2 | Promise.Special])
       (using label: boundary.Label[Unit])
       : Submonitor[ResultType2] =
     
-    val monitor = Submonitor[ResultType2](id, this, state, trigger)
+    val monitor = Submonitor[ResultType2](id, this, state, promise)
     
     synchronized:
       children(id) = monitor
     
     monitor
 
-case object Supervisor extends Monitor(Nil, Trigger())
+case object Supervisor extends Monitor(Nil, Promise())
 
 def supervise
     [ResultType]
@@ -72,15 +72,15 @@ def supervise
 @capability
 case class Submonitor
     [ResultType]
-    (identifier: Text, parent: Monitor, stateRef: juca.AtomicReference[AsyncState[ResultType]], trigger: Trigger)
+    (identifier: Text, parent: Monitor, stateRef: juca.AtomicReference[AsyncState[ResultType]], promise: Promise[ResultType | Promise.Special])
     (using label: boundary.Label[Unit])
-extends Monitor(identifier :: parent.name, trigger):
+extends Monitor(identifier :: parent.name, promise):
 
   def state(): AsyncState[ResultType] = stateRef.get().nn
   
   def complete(value: ResultType): Nothing =
     stateRef.set(Completed(value))
-    trigger()
+    promise.offer(value)
     boundary.break()
   
   def acquiesce(): Unit = synchronized:
