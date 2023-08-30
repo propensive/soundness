@@ -61,12 +61,12 @@ class Async
 
   // FIXME: Maybe these should be defs
   private val identifier: Text = Text(s"${codepoint.text}")
-  private val eval = (monitor: Submonitor[ResultType]) => evaluate(using monitor)
+  private def eval(monitor: Submonitor[ResultType]): ResultType = evaluate(using monitor)
   private final val trigger: Trigger = Trigger()
   private val stateRef: juca.AtomicReference[AsyncState[ResultType]] = juca.AtomicReference(Active)
 
   private val thread: Thread =
-    def runnable: Runnable^{monitor} = () =>
+    def runnable: Runnable^{async} = () =>
       boundary[Unit]:
         val child = monitor.child[ResultType](identifier, stateRef, trigger)
         try
