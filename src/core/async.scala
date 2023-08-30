@@ -59,7 +59,8 @@ class Async
     (using monitor: Monitor, codepoint: Codepoint):
   async =>
   
-  private final val promise: Promise[ResultType | Promise.Special] = Promise()
+  final val promise: Promise[ResultType | Promise.Special] = Promise()
+
   private final val stateRef: juca.AtomicReference[AsyncState[ResultType]] = juca.AtomicReference(Active)
 
   private final val thread: Thread =
