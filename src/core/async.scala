@@ -21,6 +21,8 @@ import rudiments.*
 import perforate.*
 import digression.*
 
+import java.util.concurrent.atomic as juca
+
 import language.experimental.captureChecking
 
 enum AsyncState[+ValueType]:
@@ -35,22 +37,20 @@ import AsyncState.*
 object Async:
   def race
       [AsyncType]
-      (asyncs: Iterable[Async[AsyncType]])(using cancel: Raises[CancelError], monitor: Monitor)
+      (asyncs: Vector[Async[AsyncType]])(using cancel: Raises[CancelError], monitor: Monitor)
       : Async[AsyncType] =
 
-    val asyncsArray: IArray[Async[AsyncType]] = IArray.from(asyncs)
-    
     Async[Int]:
       val promise: Promise[Int] = Promise()
       
-      asyncsArray.zipWithIndex.foreach: (async, index) =>
+      asyncs.zipWithIndex.foreach: (async, index) =>
         async.foreach: result =>
           promise.offer(index)
       
       promise.await()
     .flatMap:
       case -1 => abort(CancelError())
-      case n  => asyncsArray(n)
+      case n  => asyncs(n)
 
 @capability
 class Async

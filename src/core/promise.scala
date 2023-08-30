@@ -18,7 +18,6 @@ package parasite
 
 import anticipation.*
 import rudiments.*
-import digression.*
 import perforate.*
 
 import scala.annotation.*
@@ -27,6 +26,8 @@ import scala.collection.mutable as scm
 import java.util.concurrent.atomic as juca
 
 import language.experimental.captureChecking
+
+import AsyncState.*
 
 object Promise:
   object Cancelled
