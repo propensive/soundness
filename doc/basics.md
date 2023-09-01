@@ -3,13 +3,26 @@ A Parasite task, an instance of `Async`, is similar to a Scala or Java
 immediately, and once evaluated, holds the result. There are, however, a few
 differences.
 
+We can create one inside a `supervise` block with:
 ```scala
-Async:
-  // code to run
+import parasite.*
+
+supervise:
+  val async = Async:
+    someSlowTask()
 ```
 
 This creates a new `Async[ResultType]` where `ResultType` is the return type of
-the task's body.
+`someSlowTask()`.
+
+This will create *and start* the new task in a thread forked from the current
+thread. Execution of `someSlowTask()` will proceed in a forked thread until it
+completes.
+
+We can call `async.await()` in the current thread to wait until the forked
+thread finishes, and return the value which results from its execution.
+
+
 
 Asynchronous tasks form a hierarchy, and a task spawned within the body of
 another task will use the latter's context to determine its owner, effectively
@@ -24,7 +37,6 @@ An `Async` instance has several useful methods:
 - `await(timeout)`, which takes a `timeout`, after which a `TimeoutError` will
   be thrown if no value has been produced
 - `map` and `flatMap`, providing standard monadic operations on the `Async`
-- `name`, which returns the full name (a path) of the `Async`
 - `cancel()`, which will stop the task running
 
 ### Platform or Virtual threading
