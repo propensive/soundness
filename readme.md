@@ -53,12 +53,12 @@ richer presentations of text, such as Markdown, HTML and console output, and in
 doing so, can highlight those parts of the `Message` which were embedded.
 
 The `msg""` interpolator also allows other types to be embedded, provided an
-`AsMessage` typeclass instance exists for that type. By default, that includes
+`MessageShow` typeclass instance exists for that type. By default, that includes
 primitive types, `Text` strings and any type for which a `Show` typeclass
 instance exists, all of which will be automatically converted to `Message`s
 when they are substituted into the interpolator. While the `Message` that gets
-provided by an `AsMessage` instance may be essentially the same as the `Text`
-that is provided by a `Show` instance in most cases, `AsMessage` can provide
+provided by an `MessageShow` instance may be essentially the same as the `Text`
+that is provided by a `Show` instance in most cases, `MessageShow` can provide
 additional structure to the text content, that becomes apparent when rendered
 as Markdown, HTML or console text.
 
@@ -74,7 +74,7 @@ case class SizeError(expected: Size, actual: Size)
 extends Error(msg"expected a size $expected, but the actual size was $actual")
 ```
 
-This would require an appropriate `AsMessage[Size]` (or a `Show[Size]`)
+This would require an appropriate `MessageShow[Size]` (or a `Show[Size]`)
 instance in scope for the substitution to be acceptable.
 
 ### `fail`
