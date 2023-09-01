@@ -202,7 +202,8 @@ object Tests extends Suite(t"Parasite tests"):
           var value: Boolean = false
           
           val task = Async:
-            sleep(10L)
+            sleep(50L)
+            acquiesce()
             value = true
           
           task.cancel()

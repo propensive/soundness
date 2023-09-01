@@ -17,23 +17,31 @@
 package parasite
 
 import anticipation.*
-import rudiments.*
-import digression.*
 import perforate.*
-
-import scala.annotation.*
-import scala.collection.mutable as scm
-
-import java.util.concurrent.atomic as juca
 
 import language.experimental.captureChecking
 
-object Promise:
-  object Cancelled
-  object Incomplete
+import AsyncState.*
 
-case class Promise[ValueType]():
-  private var value: ValueType | Promise.Cancelled.type | Promise.Incomplete.type = Promise.Incomplete
+object Promise:
+  sealed trait Special
+  case object Cancelled extends Special
+  case object Incomplete extends Special
+
+trait Covenant[+ValueType]:
+  inline def cancelled: Boolean
+  inline def incomplete: Boolean
+  inline def ready: Boolean
+
+  def await()(using Raises[CancelError]): ValueType
+
+  def await
+      [DurationType: GenericDuration]
+      (duration: DurationType)(using Raises[CancelError], Raises[TimeoutError])
+      : ValueType
+
+case class Promise[ValueType]() extends Covenant[ValueType]:
+  private var value: ValueType | Promise.Special = Promise.Incomplete
 
   inline def cancelled: Boolean = value == Promise.Cancelled
   inline def incomplete: Boolean = value == Promise.Incomplete
@@ -82,67 +90,3 @@ case class Trigger():
   def await[DurationType: GenericDuration](duration: DurationType)(using Raises[CancelError], Raises[TimeoutError]): Unit =
     promise.await(duration)
 
-@capability
-sealed trait Monitor(val name: List[Text], trigger: Trigger):
-  private val children: scm.HashMap[Text, AnyRef] = scm.HashMap()
-  def id: Text = Text(name.reverse.map(_.s).mkString(" / "))
-
-  def cancel(): Unit =
-    children.foreach: (id, child) =>
-      child match
-        case child: Monitor => child.cancel()
-        case _              => ()
-
-    trigger.cancel()
-
-  def terminate(): Unit = this match
-    case Supervisor                                     => Supervisor.cancel()
-    case monitor@Submonitor(id, parent, state, promise) => monitor.terminate()
-
-  def sleep(duration: Long): Unit = Thread.sleep(duration)
-
-  def child
-      [ResultType2]
-      (id: Text, state: juca.AtomicReference[AsyncState[ResultType2]], trigger: Trigger)
-      (using label: boundary.Label[Unit])
-      : Submonitor[ResultType2] =
-    
-    val monitor = Submonitor[ResultType2](id, this, state, trigger)
-    
-    synchronized:
-      children(id) = monitor
-    
-    monitor
-
-case object Supervisor extends Monitor(Nil, Trigger())
-
-def supervise
-    [ResultType]
-    (fn: Monitor ?=> ResultType)(using cancel: Raises[CancelError])
-    : ResultType =
-  fn(using Supervisor)
-
-@capability
-case class Submonitor
-    [ResultType]
-    (identifier: Text, parent: Monitor, stateRef: juca.AtomicReference[AsyncState[ResultType]], trigger: Trigger)
-    (using label: boundary.Label[Unit])
-extends Monitor(identifier :: parent.name, trigger):
-
-  def state(): AsyncState[ResultType] = stateRef.get().nn
-  
-  def complete(value: ResultType): Nothing =
-    stateRef.set(Completed(value))
-    trigger()
-    boundary.break()
-  
-  def acquiesce(): Unit = synchronized:
-    stateRef.get().nn match
-      case Active            => ()
-      case Suspended(_)      => wait()
-      case Completed(value)  => trigger()
-      case Cancelled         => trigger()
-      case Failed(error)     => trigger()
-    
-    if trigger.cancelled then boundary.break()
-  
