@@ -267,6 +267,8 @@ enum LocalPart:
   case Quoted(text: Text)
   case Unquoted(text: Text)
 
+case class EmailAddressError() extends Error(msg"the email address was not valid")
+
 object EmailAddress:
   def parse(text: Text): EmailAddress =
     val buffer: StringBuilder = StringBuilder()
