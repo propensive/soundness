@@ -39,7 +39,7 @@ object PathError:
     case ParentOfRoot
     case NotRooted(path: Text)
 
-  given AsMessage[Reason] =
+  given MessageShow[Reason] =
     case Reason.InvalidChar(char)     => msg"the character $char may not appear in a path name"
     case Reason.InvalidPrefix(prefix) => msg"the path name cannot begin with $prefix"
     case Reason.InvalidSuffix(suffix) => msg"the path name cannot end with $suffix"
