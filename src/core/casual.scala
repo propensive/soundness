@@ -29,7 +29,7 @@ object CasualDiffError:
     case BadLineStart(content: Text)
     case DoesNotMatch(content: Text)
   
-  given AsMessage[Issue] =
+  given MessageShow[Issue] =
     case Issue.BadLineStart(content) =>
       msg"the line $content did not begin with either ${"'+ '".tt}, ${"'- '".tt} or ${"'  '".tt}"
     
