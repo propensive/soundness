@@ -44,7 +44,7 @@ case class Realm(name: Text):
 
 object Level:
   given Ordering[Level] = Ordering[Int].on[Level](_.ordinal)
-  given AsMessage[Level] = level => msg"$level"
+  given MessageShow[Level] = level => msg"$level"
 
   // given Display[Level] = level =>
   //   val color = level match
@@ -64,7 +64,7 @@ case class Entry(realm: Realm, level: Level, message: Message, timestamp: Timest
 object Timestamp:
   def apply(): Timestamp = System.currentTimeMillis
   given show: Show[Timestamp] = ts => dateFormat.format(ju.Date(ts)).nn.show
-  given AsMessage[Timestamp] = timestamp => msg"${timestamp}"
+  given MessageShow[Timestamp] = timestamp => msg"${timestamp}"
 
   private val dateFormat = jt.SimpleDateFormat(t"yyyy-MMM-dd HH:mm:ss.SSS".s)
 
@@ -72,26 +72,26 @@ opaque type Timestamp = Long
 
 object Log:
   inline def fine[T](inline value: T)
-                    (using inline log: Log, inline asMessage: AsMessage[T], inline realm: Realm): Unit =
+                    (using inline log: Log, inline asMessage: MessageShow[T], inline realm: Realm): Unit =
     ${Eucalyptus.recordLog('{Level.Fine}, 'value, 'log, 'asMessage, 'realm)}
   
   inline def info[T](inline value: T)
-                    (using inline log: Log, inline asMessage: AsMessage[T], inline realm: Realm): Unit =
+                    (using inline log: Log, inline asMessage: MessageShow[T], inline realm: Realm): Unit =
     ${Eucalyptus.recordLog('{Level.Info}, 'value, 'log, 'asMessage, 'realm)}
   
   inline def warn[T](inline value: T)
-                    (using inline log: Log, inline asMessage: AsMessage[T], inline realm: Realm): Unit =
+                    (using inline log: Log, inline asMessage: MessageShow[T], inline realm: Realm): Unit =
     ${Eucalyptus.recordLog('{Level.Warn}, 'value, 'log, 'asMessage, 'realm)}
   
   inline def fail[T](inline value: T)
-                    (using inline log: Log, inline asMessage: AsMessage[T], inline realm: Realm): Unit =
+                    (using inline log: Log, inline asMessage: MessageShow[T], inline realm: Realm): Unit =
     ${Eucalyptus.recordLog('{Level.Fail}, 'value, 'log, 'asMessage, 'realm)}
 
 object Eucalyptus:
   def recordLog
       [MessageType: Type]
       (level: Expr[Level], message: Expr[MessageType], log: Expr[Log],
-          asMessage: Expr[AsMessage[MessageType]], realm: Expr[Realm])
+          asMessage: Expr[MessageShow[MessageType]], realm: Expr[Realm])
       (using Quotes)
       : Expr[Unit] = '{
     
