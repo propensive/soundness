@@ -79,7 +79,7 @@ enum DebugInfo:
   case Throws(stack: StackTrace)
   case CheckThrows(stack: StackTrace)
   case Captures(values: Map[Text, Text])
-  case Compare(expected: Text, found: Text, accordance: Accordance)
+  case Compare(expected: Text, found: Text, semblance: Semblance)
   case Message(message: Text)
 
 trait Inclusion[ReportType, DataType]:
