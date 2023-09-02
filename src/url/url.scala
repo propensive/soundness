@@ -129,7 +129,7 @@ object Url:
   
   given ansiShow: Display[Url] = url => out"$Underline(${colors.DeepSkyBlue}(${show(url)}))"
 
-  given asMessage: AsMessage[Url] = url => Message(show(url))
+  given asMessage: MessageShow[Url] = url => Message(show(url))
 
   given action: GenericHtmlAttribute["action", Url] with
     def name: Text = t"action"
@@ -253,7 +253,7 @@ object UrlError:
     case Colon, More, LowerCaseLetter, PortRange, Number
 
   object Expectation:
-    given AsMessage[Expectation] =
+    given MessageShow[Expectation] =
       case Colon           => msg"a colon"
       case More            => msg"more characters"
       case LowerCaseLetter => msg"a lowercase letter"

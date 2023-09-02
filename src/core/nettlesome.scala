@@ -37,7 +37,7 @@ object IpAddressError:
     case Ipv6MultipleDoubleColons
   
   object Issue:
-    given AsMessage[Issue] =
+    given MessageShow[Issue] =
       case Ipv4ByteOutOfRange(byte)       => msg"the number $byte is not in the range 0-255"
       case Ipv4WrongNumberOfBytes(count)  => msg"the address contains $count numbers instead of 4"
       case Ipv6GroupNotHex(group)         => msg"the group '$group' is not a hexadecimal number"
@@ -57,7 +57,7 @@ object MacAddressError:
     case NotHex(group: Int, content: Text)
 
   object Issue:
-    given AsMessage[Issue] =
+    given MessageShow[Issue] =
       case WrongGroupCount(count)          => msg"there should be six colon-separated groups, but there were $count"
       case WrongGroupLength(group, length) => msg"group $group should be two hex digits, but its length is $length"
       case NotHex(group, content)          => msg"group $group should be a two-digit hex number, but it is $content"
