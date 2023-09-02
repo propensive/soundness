@@ -32,7 +32,7 @@ import language.experimental.captureChecking
 
 object Encoding:
   given Show[Encoding] = _.name
-  given AsMessage[Encoding] = encoding => Message(encoding.name)
+  given MessageShow[Encoding] = encoding => Message(encoding.name)
 
   private val allCharsets: Set[jnc.Charset] =
     jnc.Charset.availableCharsets.nn.asScala.to(Map).values.to(Set)
