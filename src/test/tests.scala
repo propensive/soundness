@@ -313,6 +313,37 @@ object Tests extends Suite(t"Nettlesome tests"):
         val message: Raw = Raw(t"Hello+world%21")
         url"http://user:pw@example.com/$message/foo".path
       .assert(_ == (? / p"Hello world!" / p"foo").descent)
+    
+    suite(t"MAC Address tests"):
+      import MacAddressError.Issue.*
+
+      test(t"Test simple MAC address"):
+        MacAddress.parse(t"01:23:45:ab:cd:ef")
+      .assert(_ == MacAddress(1251004370415L))
+
+      test(t"Check MAC address with too few groups"):
+        capture[MacAddressError](MacAddress.parse(t"01:23:ab:cd:ef"))
+      .assert(_ == MacAddressError(WrongGroupCount(5)))
+      
+      test(t"Check MAC address with too few groups"):
+        capture[MacAddressError](MacAddress.parse(t"01:23:45:67:ab:cd:ef"))
+      .assert(_ == MacAddressError(WrongGroupCount(7)))
+      
+      test(t"Check MAC address with short group"):
+        capture[MacAddressError](MacAddress.parse(t"01:23:45:6:ab:cd"))
+      .assert(_ == MacAddressError(WrongGroupLength(3, 1)))
+      
+      test(t"Check MAC address with long group"):
+        capture[MacAddressError](MacAddress.parse(t"01:23:45:67:ab:cde"))
+      .assert(_ == MacAddressError(WrongGroupLength(5, 3)))
+      
+      test(t"Check MAC address with empty group"):
+        capture[MacAddressError](MacAddress.parse(t"01:23:45::ab:cd"))
+      .assert(_ == MacAddressError(WrongGroupLength(3, 0)))
+      
+      test(t"Check MAC address with non-hex character"):
+        capture[MacAddressError](MacAddress.parse(t"01:23:45:6g:ab:cd"))
+      .assert(_ == MacAddressError(NotHex(3, t"6g")))
 
 object example:
   val com = Hostname(DnsLabel(t"example"), DnsLabel(t"com"))
