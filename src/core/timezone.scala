@@ -31,17 +31,17 @@ import scala.io.*
 //import language.experimental.captureChecking
 
 object TzdbError:
-  given AsMessage[Issue] =
-    case Issue.CouldNotParseTime(time) => msg"could not parse time $time"
-    case Issue.UnexpectedRule          => msg"unexpected rule"
-    case Issue.UnexpectedLink          => msg"unexpected link"
-    case Issue.UnexpectedZoneInfo      => msg"unexpected zone info"
-    case Issue.BadZoneInfo(line)       => msg"bad zone information: ${line.join(t"[", t"   ", t"]")}"
-    case Issue.BadName(name)           => msg"the name $name is not valid"
-    case Issue.UnparsableDate          => msg"the date could not be parsed"
-    case Issue.ZoneFileMissing(name)   => msg"the zone file $name could not be found on the classpath"
+  given AsMessage[Reason] =
+    case Reason.CouldNotParseTime(time) => msg"could not parse time $time"
+    case Reason.UnexpectedRule          => msg"unexpected rule"
+    case Reason.UnexpectedLink          => msg"unexpected link"
+    case Reason.UnexpectedZoneInfo      => msg"unexpected zone info"
+    case Reason.BadZoneInfo(line)       => msg"bad zone information: ${line.join(t"[", t"   ", t"]")}"
+    case Reason.BadName(name)           => msg"the name $name is not valid"
+    case Reason.UnparsableDate          => msg"the date could not be parsed"
+    case Reason.ZoneFileMissing(name)   => msg"the zone file $name could not be found on the classpath"
 
-  enum Issue:
+  enum Reason:
     case CouldNotParseTime(time: Text)
     case UnexpectedRule
     case UnexpectedLink
@@ -51,8 +51,8 @@ object TzdbError:
     case BadName(name: Text)
     case ZoneFileMissing(name: Text)
 
-case class TzdbError(issue: TzdbError.Issue, line: Int)
-extends Error(msg"the timezone could not be parsed at line $line: ${issue.show}")
+case class TzdbError(reason: TzdbError.Reason, line: Int)
+extends Error(msg"the timezone could not be parsed at line $line: $reason")
 
 object Tzdb:
   case class Time(hours: Int, minutes: Int, seconds: Int, suffix: Maybe[Char])
@@ -77,7 +77,7 @@ object Tzdb:
   def parseFile(name: Text)(using Log, Raises[TzdbError]): List[Tzdb.Entry] =
     val lines: LazyList[Text] =
       val stream = safely(getClass.getResourceAsStream(s"/aviation/tzdb/$name").nn).or:
-        abort(TzdbError(TzdbError.Issue.ZoneFileMissing(name), 0))
+        abort(TzdbError(TzdbError.Reason.ZoneFileMissing(name), 0))
 
       Source.fromInputStream(stream).getLines.map(Text(_)).map(_.cut(t"\t").head.lower).to(LazyList)
 
@@ -91,7 +91,7 @@ object Tzdb:
       case As[Int](h) :: As[Int](m) :: As[Int](s) :: Nil => Duration(h, m, s)
       
       case other =>
-        abort(TzdbError(TzdbError.Issue.CouldNotParseTime(other.show), lineNo))
+        abort(TzdbError(TzdbError.Reason.CouldNotParseTime(other.show), lineNo))
 
     def parseTime(lineNo: Int, str: Text) = str.cut(t":").to(List) match
       case As[Int](h) :: r"${As[Int](m)}([0-9]*)s" :: Nil => Time(h, m, 0, 's')
@@ -100,7 +100,7 @@ object Tzdb:
       case As[Int](h) :: As[Int](m) :: As[Int](s) :: Nil  => Time(h, m, s, Unset)
       
       case other =>
-        abort(TzdbError(TzdbError.Issue.CouldNotParseTime(other.show), lineNo))
+        abort(TzdbError(TzdbError.Reason.CouldNotParseTime(other.show), lineNo))
 
     def parseDay(lineNo: Int, month: MonthName, str: Text): MonthDate =
       try throwErrors:
@@ -111,14 +111,14 @@ object Tzdb:
         then MonthDate.Before(month, Weekday.valueOf(str.take(3).s), str.drop(5).decodeAs[Int])
         else MonthDate.Exact(month, str.decodeAs[Int])
       catch case err: NumberError =>
-        abort(TzdbError(TzdbError.Issue.UnparsableDate, lineNo))
+        abort(TzdbError(TzdbError.Reason.UnparsableDate, lineNo))
 
     def parseLeap(lineNo: Int, args: List[Text]): Tzdb.Entry.Leap = args match
       case As[Int](year) :: month :: As[Int](day) :: time :: add :: s :: Nil =>
         Tzdb.Entry.Leap(year, parseMonth(month), day, parseTime(lineNo, time), add == t"+")
       
       case other =>
-        abort(TzdbError(TzdbError.Issue.UnexpectedRule, lineNo))
+        abort(TzdbError(TzdbError.Reason.UnexpectedRule, lineNo))
 
     def parseMonth(str: Text) = MonthName.valueOf(str.s)
 
@@ -132,9 +132,9 @@ object Tzdb:
             Tzdb.Entry.Zone(simple, None, Vector(parseZoneInfo(lineNo, rest)))
           
           case _ =>
-            abort(TzdbError(TzdbError.Issue.BadName(name), lineNo))
+            abort(TzdbError(TzdbError.Reason.BadName(name), lineNo))
       case _ =>
-        abort(TzdbError(TzdbError.Issue.UnexpectedRule, lineNo))
+        abort(TzdbError(TzdbError.Reason.UnexpectedRule, lineNo))
 
     def parseZoneInfo(lineNo: Int, args: List[Text]): Tzdb.ZoneInfo = args match
       case stdoff :: rules :: format :: until =>
@@ -147,7 +147,7 @@ object Tzdb:
         ZoneInfo(s, rules, f, if until.isEmpty then None else Some(until.join(t" ")))
       
       case other =>
-        abort(TzdbError(TzdbError.Issue.BadZoneInfo(other), lineNo))
+        abort(TzdbError(TzdbError.Reason.BadZoneInfo(other), lineNo))
 
     def parseLetters(str: Text): Option[Text] = if str == t"-" then None else Some(str)
 
@@ -164,14 +164,14 @@ object Tzdb:
           val s = parseDuration(lineNo, save)
           Tzdb.Entry.Rule(name, from.decodeAs[Int], end, d, t, s, parseLetters(letters))
         catch case err: NumberError =>
-          abort(TzdbError(TzdbError.Issue.UnexpectedRule, lineNo))
+          abort(TzdbError(TzdbError.Reason.UnexpectedRule, lineNo))
       
       case _ =>
-        abort(TzdbError(TzdbError.Issue.UnexpectedRule, lineNo))
+        abort(TzdbError(TzdbError.Reason.UnexpectedRule, lineNo))
 
     def parseLink(lineNo: Int, args: List[Text]): Tzdb.Entry.Link = args match
       case from :: to :: Nil => Tzdb.Entry.Link(from, to)
-      case _                 => abort(TzdbError(TzdbError.Issue.UnexpectedLink, lineNo))
+      case _                 => abort(TzdbError(TzdbError.Reason.UnexpectedLink, lineNo))
 
     def addToZone(lineNo: Int, args: List[Text], zone: Tzdb.Entry.Zone): Tzdb.Entry.Zone =
       zone.copy(info = zone.info :+ parseZoneInfo(lineNo, args))
@@ -204,7 +204,7 @@ object Tzdb:
           
           case t"" :: tail =>
             recur(lineNo + 1, lines.tail, entries, Some(addToZone(lineNo, tail, zone.getOrElse:
-              abort(TzdbError(TzdbError.Issue.UnexpectedZoneInfo, lineNo)))))
+              abort(TzdbError(TzdbError.Reason.UnexpectedZoneInfo, lineNo)))))
           
           case other =>
             recur(lineNo + 1, lines.tail, entries, zone)
