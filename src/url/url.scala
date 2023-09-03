@@ -49,8 +49,6 @@ import HostnameError.Reason.*
 case class HostnameError(reason: HostnameError.Reason)
 extends Error(msg"the hostname is not valid because $reason")
 
-case class EmailAddressError() extends Error(msg"the email address was not valid")
-
 case class UrlError(text: Text, offset: Int, expected: UrlError.Expectation)
 extends Error(msg"the URL $text is not valid: expected $expected at $offset")
 
@@ -315,77 +313,4 @@ object UrlError:
       case LowerCaseLetter => msg"a lowercase letter"
       case PortRange       => msg"a port range"
       case Number          => msg"a number"
-
-enum LocalPart:
-  case Quoted(text: Text)
-  case Unquoted(text: Text)
-
-object EmailAddress:
-  def parse(text: Text): EmailAddress raises EmailAddressError =
-    val buffer: StringBuilder = StringBuilder()
-    if text.empty then abort(EmailAddressError())
-    
-    def quoted(index: Int, escape: Boolean): (LocalPart, Int) =
-      safely(text(index)) match
-        case '\"' =>
-          if escape then
-            buffer.append('\"')
-            quoted(index + 1, false)
-          else
-            if safely(text(index + 1)) == '@'
-            then (LocalPart.Quoted(buffer.toString.tt), index + 2)
-            else abort(EmailAddressError())
-        
-        case '\\' =>
-          if escape then buffer.append('\\')
-          quoted(index + 1, !escape)
-        
-        case char: Char =>
-          buffer.append(char)
-          quoted(index + 1, false)
-
-        case Unset =>
-          raise(EmailAddressError())((LocalPart.Quoted(buffer.toString.tt), index))
-    
-    def unquoted(index: Int, dot: Boolean): (LocalPart, Int) =
-      safely(text(index)) match
-        case '@' =>
-          if dot then raise(EmailAddressError())(())
-          if buffer.length > 64 then raise(EmailAddressError())(())
-          (LocalPart.Unquoted(buffer.toString.tt), index + 1)
-
-        case '.'  =>
-          if dot then raise(EmailAddressError())(())
-          if index == 0 then raise(EmailAddressError())(())
-          buffer.append('.')
-          unquoted(index + 1, true)
-
-        case char: Char =>
-          if 'A' <= char <= 'Z' || 'a' <= char <= 'z' || char.isDigit || t"!#$$%&'*+-/=?^_`{|}~".contains(char)
-          then buffer.append(char)
-          else raise(EmailAddressError())(())
-          unquoted(index + 1, false)
-
-        case Unset =>
-          raise(EmailAddressError())((LocalPart.Unquoted(buffer.toString.tt), index))
-    
-    val (localPart, index) =
-      if text.starts(t"\"") then quoted(1, false) else unquoted(0, false)
-
-    val domain =
-      if text.length < index + 1 then abort(EmailAddressError())
-      else if safely(text(index)) == '[' then
-        try
-          import errorHandlers.throwUnsafely
-          if text.last != ']' then abort(EmailAddressError())
-          val ipAddress = text.slice(index + 1, text.length - 1)
-          if ipAddress.starts(t"IPv6:") then Ipv6.parse(ipAddress.drop(5)) else Ipv4.parse(ipAddress)
-        catch case error: IpAddressError =>
-          abort(EmailAddressError())
-      else safely(Hostname.parse(text.drop(index))).or(abort(EmailAddressError()))
-
-    EmailAddress(Unset, localPart, domain)
-
-case class EmailAddress(displayName: Maybe[Text], localPart: LocalPart, domain: Hostname | Ipv4 | Ipv6)
-
 

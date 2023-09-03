@@ -132,6 +132,8 @@ object Tests extends Suite(t"Nettlesome tests"):
       .assert(_ == IpAddressError(IpAddressError.Issue.Ipv6GroupWrongLength(t"abcde")))
 
     suite(t"Email address tests"):
+      import EmailAddressError.Reason.*
+
       test(t"simple@example.com"):
         EmailAddress.parse(t"simple@example.com")
       .assert()
@@ -196,41 +198,46 @@ object Tests extends Suite(t"Nettlesome tests"):
         EmailAddress.parse(t"postmaster@[IPv6:2001:0db8:85a3:0000:0000:8a2e:0370:7334]")
       .assert()
 
+      test(t"Empty email address"):
+        capture(EmailAddress.parse(t""))
+      .assert(_ == EmailAddressError(Empty))
+      
       test(t"abc.example.com"):
         capture(EmailAddress.parse(t"abc.example.com"))
-      .assert(_ == EmailAddressError())
+      .assert(_ == EmailAddressError(MissingAtSymbol))
      
       test(t"a@b@c@example.com"):
         capture(EmailAddress.parse(t"a@b@c@example.com"))
-      .assert(_ == EmailAddressError())
+      .assert(_ == EmailAddressError(InvalidDomain(HostnameError(HostnameError.Reason.InvalidChar('@')))))
      
       test(t"a\\\"b(c)d,e:f;g<h>i[j\\k]l@example.com"):
         capture(EmailAddress.parse(t"a\\\"b(c)d,e:f;g<h>i[j\\k]l@example.com"))
-      .assert(_ == EmailAddressError())
+      .assert(_ == EmailAddressError(InvalidChar('\\')))
      
       test(t"just\"not\"right@example.com"):
         capture(EmailAddress.parse(t"just\"not\"right@example.com"))
-      .assert(_ == EmailAddressError())
+      .assert(_ == EmailAddressError(InvalidChar('\"')))
      
       test(t"this is\\\"not\\allowed@example.com"):
         capture(EmailAddress.parse(t"this is\\\"not\\allowed@example.com"))
-      .assert(_ == EmailAddressError())
+      .assert(_ == EmailAddressError(InvalidChar(' ')))
      
       test(t"this\\ still\\\"not\\\\allowed@example.com"):
         capture(EmailAddress.parse(t"this\\ still\\\"not\\\\allowed@example.com"))
-      .assert(_ == EmailAddressError())
+      .assert(_ == EmailAddressError(InvalidChar('\\')))
      
       test(t"1234567890123456789012345678901234567890123456789012345678901234+x@example.com"):
         capture(EmailAddress.parse(t"1234567890123456789012345678901234567890123456789012345678901234+x@example.com"))
-      .assert(_ == EmailAddressError())
+      .assert(_ == EmailAddressError(LongLocalPart))
      
       test(t"i.like.underscores@but_they_are_not_allowed_in_this_part"):
         capture(EmailAddress.parse(t"i.like.underscores@but_they_are_not_allowed_in_this_part"))
-      .assert(_ == EmailAddressError())
+      .assert(_ == EmailAddressError(InvalidDomain(HostnameError(HostnameError.Reason.InvalidChar('_')))))
       
       test(t"I❤️CHOCOLATE🍫@example.com"):
         capture(EmailAddress.parse(t"I❤️CHOCOLATE🍫@example.com"))
-      .assert(_ == EmailAddressError())
+      .matches:
+        case EmailAddressError(InvalidChar(_)) =>
     
     suite(t"URL tests"):
       test(t"parse Authority with username and password"):
