@@ -134,7 +134,10 @@ Telekinesis was designed and developed by Jon Pretty, and commercial support and
 
 ## Name
 
-The library provides a representation of URIs. The most famous Uri was famed for his ability to perform __Telekinesis__.
+The library provides a way of handling URIs, performing "action at a distance",
+or _telekinesis_; specifically the processing of a request on a remote server.
+A man called Uri was also famed for his ability to perform telekinesis with
+spoons.
 
 In general, Scala One project names are always chosen with some rationale, however it is usually
 frivolous. Each name is chosen for more for its _uniqueness_ and _intrigue_ than its concision or
