@@ -16,7 +16,7 @@ project nettlesome
   module url
     compiler  scala
     sources   src/url
-    include   contextual/core gossamer/core escapade/core anticipation/http serpentine/core anticipation/url
+    include   contextual/core gossamer/core escapade/core anticipation/http serpentine/core anticipation/url nettlesome/core
 
   module test
     compiler  scala
