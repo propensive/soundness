@@ -27,7 +27,7 @@ import hieroglyph.*, textWidthCalculation.uniform
 import scala.quoted.*
 
 object IpAddressError:
-  enum Issue:
+  enum Reason:
     case Ipv4ByteOutOfRange(byte: Int)
     case Ipv4WrongNumberOfBytes(count: Int)
     case Ipv6GroupWrongLength(group: Text)
@@ -36,8 +36,8 @@ object IpAddressError:
     case Ipv6WrongNumberOfGroups(count: Int)
     case Ipv6MultipleDoubleColons
   
-  object Issue:
-    given MessageShow[Issue] =
+  object Reason:
+    given MessageShow[Reason] =
       case Ipv4ByteOutOfRange(byte)       => msg"the number $byte is not in the range 0-255"
       case Ipv4WrongNumberOfBytes(count)  => msg"the address contains $count numbers instead of 4"
       case Ipv6GroupNotHex(group)         => msg"the group '$group' is not a hexadecimal number"
@@ -51,24 +51,24 @@ object IpAddressError:
         msg"the group is more than 4 hexadecimal characters long"
 
 object MacAddressError:
-  enum Issue:
+  enum Reason:
     case WrongGroupCount(count: Int)
     case WrongGroupLength(group: Int, length: Int)
     case NotHex(group: Int, content: Text)
 
-  object Issue:
-    given MessageShow[Issue] =
+  object Reason:
+    given MessageShow[Reason] =
       case WrongGroupCount(count)          => msg"there should be six colon-separated groups, but there were $count"
       case WrongGroupLength(group, length) => msg"group $group should be two hex digits, but its length is $length"
       case NotHex(group, content)          => msg"group $group should be a two-digit hex number, but it is $content"
 
-case class MacAddressError(issue: MacAddressError.Issue)
-extends Error(msg"the MAC address is not valid because $issue")
+case class MacAddressError(reason: MacAddressError.Reason)
+extends Error(msg"the MAC address is not valid because $reason")
 
-import IpAddressError.Issue, Issue.*
+import IpAddressError.Reason, Reason.*
 
-case class IpAddressError(issue: Issue)
-extends Error(msg"the IP address is not valid because $issue")
+case class IpAddressError(reason: Reason)
+extends Error(msg"the IP address is not valid because $reason")
 
 object Nettlesome:
   object Opaques:
@@ -98,7 +98,7 @@ object Nettlesome:
       def apply(value: Long): MacAddress = value
       def parse(text: Text): MacAddress raises MacAddressError =
         val groups = text.cut(t":")
-        if groups.length != 6 then raise(MacAddressError(MacAddressError.Issue.WrongGroupCount(groups.length)))(())
+        if groups.length != 6 then raise(MacAddressError(MacAddressError.Reason.WrongGroupCount(groups.length)))(())
 
         @tailrec
         def recur(todo: List[Text], index: Int = 0, acc: Long = 0L): Long = todo match
@@ -106,10 +106,10 @@ object Nettlesome:
             acc
 
           case head :: tail =>
-            if head.length != 2 then raise(MacAddressError(MacAddressError.Issue.WrongGroupLength(index, head.length)))(())
+            if head.length != 2 then raise(MacAddressError(MacAddressError.Reason.WrongGroupLength(index, head.length)))(())
             
             val value = try Integer.parseInt(head.s, 16) catch case error: NumberFormatException =>
-              raise(MacAddressError(MacAddressError.Issue.NotHex(index, head)))(0)
+              raise(MacAddressError(MacAddressError.Reason.NotHex(index, head)))(0)
             
             recur(tail, index + 1, (acc << 8) + value)
 

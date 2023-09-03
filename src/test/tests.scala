@@ -101,35 +101,35 @@ object Tests extends Suite(t"Nettlesome tests"):
     
       test(t"IP address byte out of range"):
         capture(Ipv4.parse(t"100.300.200.0"))
-      .assert(_ == IpAddressError(IpAddressError.Issue.Ipv4ByteOutOfRange(300)))
+      .assert(_ == IpAddressError(IpAddressError.Reason.Ipv4ByteOutOfRange(300)))
       
       test(t"IPv4 address wrong number of bytes"):
         capture(Ipv4.parse(t"10.3.20.0.8"))
-      .assert(_ == IpAddressError(IpAddressError.Issue.Ipv4WrongNumberOfBytes(5)))
+      .assert(_ == IpAddressError(IpAddressError.Reason.Ipv4WrongNumberOfBytes(5)))
       
       test(t"IPv6 address non-hex value"):
         capture(Ipv6.parse(t"::8:abcg:abc:1234"))
-      .assert(_ == IpAddressError(IpAddressError.Issue.Ipv6GroupNotHex(t"abcg")))
+      .assert(_ == IpAddressError(IpAddressError.Reason.Ipv6GroupNotHex(t"abcg")))
       
       test(t"IPv6 address too many groups"):
         capture(Ipv6.parse(t"1:2:3:4::5:6:7:8"))
-      .assert(_ == IpAddressError(IpAddressError.Issue.Ipv6TooManyNonzeroGroups(8)))
+      .assert(_ == IpAddressError(IpAddressError.Reason.Ipv6TooManyNonzeroGroups(8)))
       
       test(t"IPv6 address wrong number of groups"):
         capture(Ipv6.parse(t"1:2:3:4:5:6:7:8:9"))
-      .assert(_ == IpAddressError(IpAddressError.Issue.Ipv6WrongNumberOfGroups(9)))
+      .assert(_ == IpAddressError(IpAddressError.Reason.Ipv6WrongNumberOfGroups(9)))
       
       test(t"IPv6 address wrong number of groups"):
         capture(Ipv6.parse(t"1:2:3:4:5:6:7:8:9"))
-      .assert(_ == IpAddressError(IpAddressError.Issue.Ipv6WrongNumberOfGroups(9)))
+      .assert(_ == IpAddressError(IpAddressError.Reason.Ipv6WrongNumberOfGroups(9)))
       
       test(t"IPv6 duplicate double-colon"):
         capture(Ipv6.parse(t"1::3:7::9"))
-      .assert(_ == IpAddressError(IpAddressError.Issue.Ipv6MultipleDoubleColons))
+      .assert(_ == IpAddressError(IpAddressError.Reason.Ipv6MultipleDoubleColons))
       
       test(t"IPv6 address wrong-length group"):
         capture(Ipv6.parse(t"::8:abcde:abc:1234"))
-      .assert(_ == IpAddressError(IpAddressError.Issue.Ipv6GroupWrongLength(t"abcde")))
+      .assert(_ == IpAddressError(IpAddressError.Reason.Ipv6GroupWrongLength(t"abcde")))
 
     suite(t"Email address tests"):
       import EmailAddressError.Reason.*
@@ -315,7 +315,7 @@ object Tests extends Suite(t"Nettlesome tests"):
       .assert(_ == (? / p"Hello world!" / p"foo").descent)
     
     suite(t"MAC Address tests"):
-      import MacAddressError.Issue.*
+      import MacAddressError.Reason.*
 
       test(t"Test simple MAC address"):
         MacAddress.parse(t"01:23:45:ab:cd:ef")
