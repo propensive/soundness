@@ -231,7 +231,7 @@ object Tests extends Suite(t"Dissonance tests"):
       test(t"Fail to parse a problematic casual diff"):
         import unsafeExceptions.canThrowAny
         capture[CasualDiffError](CasualDiff.parse(t"- remove 1\n- remove 2\n insert 1\n+ insert 2\n- removal".cut(t"\n").to(LazyList)))
-      .assert(_ == CasualDiffError(CasualDiffError.Issue.BadLineStart(t" insert 1"), 3))
+      .assert(_ == CasualDiffError(CasualDiffError.Reason.BadLineStart(t" insert 1"), 3))
     
     suite(t"Invariance tests"):
       val values = List(t"alpha", t"beta", t"gamma")

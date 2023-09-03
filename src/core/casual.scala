@@ -21,19 +21,19 @@ import fulminate.*
 import anticipation.*
 import perforate.*
 
-case class CasualDiffError(issue: CasualDiffError.Issue, line: Int)
-extends Error(msg"the diff could not be read because $issue at line $line")
+case class CasualDiffError(reason: CasualDiffError.Reason, line: Int)
+extends Error(msg"the diff could not be read because $reason at line $line")
 
 object CasualDiffError:
-  enum Issue:
+  enum Reason:
     case BadLineStart(content: Text)
     case DoesNotMatch(content: Text)
   
-  given MessageShow[Issue] =
-    case Issue.BadLineStart(content) =>
+  given MessageShow[Reason] =
+    case Reason.BadLineStart(content) =>
       msg"the line $content did not begin with either ${"'+ '".tt}, ${"'- '".tt} or ${"'  '".tt}"
     
-    case Issue.DoesNotMatch(content) =>
+    case Reason.DoesNotMatch(content) =>
       msg"the line $content could not be found in the document"
 
 case class Replace(context: List[Text], original: List[Text], replacement: List[Text])
@@ -61,7 +61,7 @@ object CasualDiff:
               val replace = Replace(context.reverse, original.reverse, replacement.reverse)
               recur(tail, Nil, List(head.s.drop(2).tt), Nil, replace :: done, lineNo + 1)
             else recur(tail, Nil, head.s.drop(2).tt :: original, Nil, done, lineNo + 1)
-          else raise(CasualDiffError(CasualDiffError.Issue.BadLineStart(head), lineNo)):
+          else raise(CasualDiffError(CasualDiffError.Reason.BadLineStart(head), lineNo)):
             recur(tail, context, original, replacement, done, lineNo + 1)
         
         case _ =>
@@ -95,7 +95,7 @@ case class CasualDiff(replacements: List[Replace]):
             
             case _ =>
               val lineNo2 = lineNo + original.length - focus.length
-              abort(CasualDiffError(CasualDiffError.Issue.DoesNotMatch(line), lineNo2))
+              abort(CasualDiffError(CasualDiffError.Reason.DoesNotMatch(line), lineNo2))
         
         case Replace(line :: rest, original, replacement) :: todoTail => stream match
           case head #:: tail =>
