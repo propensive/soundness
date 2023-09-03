@@ -28,14 +28,40 @@ import anticipation.*
 import contextual.*
 import spectacular.*
 
-object Hostname:
-  given Show[Hostname] = _.parts.join(t".")
-  
-  def parse(str: Text): Hostname =
-    val parts: List[Text] = str.cut(t".").map(_.punycode)
-    Hostname(parts*)
+case class HostnameError() extends Error(msg"the hostname is not valid")
 
-case class Hostname(parts: Text*) extends Shown[Hostname]
+case class EmailAddressError() extends Error(msg"the email address was not valid")
+
+case class UrlError(text: Text, offset: Int, expected: UrlError.Expectation)
+extends Error(msg"the URL $text is not valid: expected $expected at $offset")
+
+object DnsLabel:
+  given show: Show[DnsLabel] = _.text
+
+case class DnsLabel(text: Text)
+
+object Hostname:
+  given Show[Hostname] = _.parts.map(_.show).join(t".")
+  
+  def parse(text: Text): Hostname raises HostnameError =
+    val buffer: StringBuilder = StringBuilder()
+
+    def recur(index: Int, parts: List[DnsLabel]): Hostname = safely(text(index)) match
+      case '.' | Unset =>
+        if buffer.isEmpty then raise(HostnameError())(())
+        val parts2 = DnsLabel(buffer.toString.tt) :: parts
+        buffer.clear()
+        if index < text.length then recur(index + 1, parts2) else Hostname(parts2.reverse*)
+      
+      case char: Char =>
+        if char == '-' || ('A' <= char <= 'Z') || ('a' <= char <= 'z') || char.isDigit
+        then buffer.append(char)
+        else raise(HostnameError())(())
+        recur(index + 1, parts)
+
+    recur(0, Nil)
+
+case class Hostname(parts: DnsLabel*) extends Shown[Hostname]
 
 object Scheme:
   given Show[Scheme] = _.name
@@ -58,8 +84,9 @@ enum UrlInput:
 
 object UrlInterpolator extends contextual.Interpolator[UrlInput, Text, Url]:
   def complete(value: Text): Url =
-    try throwErrors(Url.parse(value)) catch case err: UrlError =>
-      throw InterpolationError(msg"the URL ${err.text} is not valid: expected ${err.expected}", err.offset)
+    try throwErrors(Url.parse(value)) catch
+      case err: UrlError      => throw InterpolationError(Message(err.message.text))
+      case err: HostnameError => throw InterpolationError(Message(err.message.text))
   
   def initial: Text = t""
   
@@ -70,7 +97,9 @@ object UrlInterpolator extends contextual.Interpolator[UrlInput, Text, Url]:
         then throw InterpolationError(msg"a port number must be specified after a colon")
         
         try throwErrors(Url.parse(state+port.show))
-        catch case err: UrlError => throw InterpolationError(Message(err.message.text))
+        catch
+          case err: UrlError      => throw InterpolationError(Message(err.message.text))
+          case err: HostnameError => throw InterpolationError(Message(err.message.text))
         
         state+port.show
       
@@ -79,7 +108,9 @@ object UrlInterpolator extends contextual.Interpolator[UrlInput, Text, Url]:
         then throw InterpolationError(msg"a substitution may only be made after a slash")
         
         try throwErrors(Url.parse(state+txt.urlEncode))
-        catch case err: UrlError => throw InterpolationError(Message(err.message.text))
+        catch
+          case err: UrlError      => throw InterpolationError(Message(err.message.text))
+          case err: HostnameError => throw InterpolationError(Message(err.message.text))
         
         state+txt.urlEncode
       
@@ -88,7 +119,9 @@ object UrlInterpolator extends contextual.Interpolator[UrlInput, Text, Url]:
         then throw InterpolationError(msg"a substitution may only be made after a slash")
 
         try throwErrors(Url.parse(state+txt.urlEncode))
-        catch case err: UrlError => throw InterpolationError(Message(err.message.text))
+        catch
+          case err: UrlError      => throw InterpolationError(Message(err.message.text))
+          case err: HostnameError => throw InterpolationError(Message(err.message.text))
         
         state+txt
   
@@ -104,9 +137,9 @@ object UrlInterpolator extends contextual.Interpolator[UrlInput, Text, Url]:
 
 object Url:
   given GenericUrl[Url] = _.show
-  given (using Raises[UrlError]): SpecificUrl[Url] = Url.parse(_)
+  given (using Raises[UrlError], Raises[HostnameError]): SpecificUrl[Url] = Url.parse(_)
   given GenericHttpRequestParam["location", Url] = show(_)
-  given (using Raises[UrlError]): Decoder[Url] = parse(_)
+  given (using Raises[UrlError], Raises[HostnameError]): Decoder[Url] = parse(_)
   given Encoder[Url] = _.show
   given Debug[Url] = _.show
 
@@ -167,7 +200,7 @@ object Url:
     def name: Text = t"manifest"
     def serialize(url: Url): Text = url.show
 
-  def parse(value: Text)(using Raises[UrlError]): Url =
+  def parse(value: Text)(using Raises[UrlError], Raises[HostnameError]): Url =
     import UrlError.Expectation.*
 
     safely(value.where(_ == ':')) match
@@ -199,7 +232,7 @@ object Authority:
   given Show[Authority] = auth =>
     t"${auth.userInfo.fm(t"")(_+t"@")}${auth.host}${auth.port.mm(_.show).fm(t"")(t":"+_)}"
 
-  def parse(value: Text)(using Raises[UrlError]): Authority =
+  def parse(value: Text)(using Raises[UrlError]): Authority raises HostnameError =
     import UrlError.Expectation.*
     
     safely(value.where(_ == '@')) match
@@ -260,14 +293,9 @@ object UrlError:
       case PortRange       => msg"a port range"
       case Number          => msg"a number"
 
-case class UrlError(text: Text, offset: Int, expected: UrlError.Expectation)
-extends Error(msg"the URL $text is not valid: expected $expected at $offset")
-
 enum LocalPart:
   case Quoted(text: Text)
   case Unquoted(text: Text)
-
-case class EmailAddressError() extends Error(msg"the email address was not valid")
 
 object EmailAddress:
   def parse(text: Text): EmailAddress raises EmailAddressError =
@@ -331,7 +359,7 @@ object EmailAddress:
           if ipAddress.starts(t"IPv6:") then Ipv6.parse(ipAddress.drop(5)) else Ipv4.parse(ipAddress)
         catch case error: IpAddressError =>
           abort(EmailAddressError())
-      else Hostname.parse(text.drop(index))
+      else safely(Hostname.parse(text.drop(index))).or(abort(EmailAddressError()))
 
     EmailAddress(Unset, localPart, domain)
 
