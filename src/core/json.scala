@@ -33,7 +33,7 @@ import scala.deriving.*
 import language.dynamics
 import language.experimental.captureChecking
 
-import JsonAccessError.Issue
+import JsonAccessError.Reason
 
 erased trait DynamicJsonEnabler
 
@@ -59,25 +59,25 @@ extension (json: JsonAst)
   
   inline def array(using Raises[JsonAccessError]): IArray[JsonAst] =
     if isArray then json.asInstanceOf[IArray[JsonAst]]
-    else raise(JsonAccessError(Issue.NotType(JsonPrimitive.Array)))(IArray[JsonAst]())
+    else raise(JsonAccessError(Reason.NotType(JsonPrimitive.Array)))(IArray[JsonAst]())
   
   inline def double(using Raises[JsonAccessError]): Double = json.asMatchable match
     case value: Double     => value
     case value: Long       => value.toDouble
     case value: BigDecimal => value.toDouble
-    case _                 => raise(JsonAccessError(Issue.NotType(JsonPrimitive.Number)))(0.0)
+    case _                 => raise(JsonAccessError(Reason.NotType(JsonPrimitive.Number)))(0.0)
   
   inline def bigDecimal(using Raises[JsonAccessError]): BigDecimal = json.asMatchable match
     case value: BigDecimal => value
     case value: Long       => BigDecimal(value)
     case value: Double     => BigDecimal(value)
-    case _                 => raise(JsonAccessError(Issue.NotType(JsonPrimitive.Number)))(BigDecimal(0))
+    case _                 => raise(JsonAccessError(Reason.NotType(JsonPrimitive.Number)))(BigDecimal(0))
   
   inline def long(using Raises[JsonAccessError]): Long = json.asMatchable match
     case value: Long       => value
     case value: Double     => value.toLong
     case value: BigDecimal => value.toLong
-    case _                 => raise(JsonAccessError(Issue.NotType(JsonPrimitive.Number)))(0L)
+    case _                 => raise(JsonAccessError(Reason.NotType(JsonPrimitive.Number)))(0L)
  
   def primitive: JsonPrimitive =
     if isNumber then JsonPrimitive.Number
@@ -89,19 +89,19 @@ extension (json: JsonAst)
 
   inline def string(using Raises[JsonAccessError]): Text =
     if isString then json.asInstanceOf[Text]
-    else raise(JsonAccessError(Issue.NotType(JsonPrimitive.String)))("".tt)
+    else raise(JsonAccessError(Reason.NotType(JsonPrimitive.String)))("".tt)
   
   inline def boolean(using Raises[JsonAccessError]): Boolean =
     if isBoolean then json.asInstanceOf[Boolean]
-    else raise(JsonAccessError(Issue.NotType(JsonPrimitive.Boolean)))(false)
+    else raise(JsonAccessError(Reason.NotType(JsonPrimitive.Boolean)))(false)
   
   inline def obj(using Raises[JsonAccessError]): (IArray[String], IArray[JsonAst]) =
     if isObject then json.asInstanceOf[(IArray[String], IArray[JsonAst])]
-    else raise(JsonAccessError(Issue.NotType(JsonPrimitive.Object)))(IArray[String]() -> IArray[JsonAst]())
+    else raise(JsonAccessError(Reason.NotType(JsonPrimitive.Object)))(IArray[String]() -> IArray[JsonAst]())
   
   inline def number(using Raises[JsonAccessError]): Long | Double | BigDecimal =
     if isLong then long else if isDouble then double else if isBigDecimal then bigDecimal
-    else raise(JsonAccessError(Issue.NotType(JsonPrimitive.Number)))(0L)
+    else raise(JsonAccessError(Reason.NotType(JsonPrimitive.Number)))(0L)
   
 extension [T](value: T)(using writer: JsonSerializer[T])
   def json: Json = Json(writer.write(value))
@@ -356,7 +356,7 @@ class Json(rootValue: Any) extends Dynamic derives CanEqual:
   
   def apply(field: Text)(using Raises[JsonAccessError]): Json =
     root.obj(0).indexWhere(_ == field.s) match
-      case -1    => raise(JsonAccessError(Issue.Label(field)))(this)
+      case -1    => raise(JsonAccessError(Reason.Label(field)))(this)
       case index => Json(root.obj(1)(index))
   
 
@@ -555,18 +555,18 @@ object HumanReadableSerializer extends JsonPrinter:
 
 
 object JsonAccessError:
-  enum Issue:
+  enum Reason:
     case Index(value: Int)
     case Label(label: Text)
     case NotType(primitive: JsonPrimitive)
   
-  object Issue:
-    given AsMessage[Issue] =
+  object Reason:
+    given AsMessage[Reason] =
       case Index(value)       => msg"the index $value out of range"
       case Label(label)       => msg"the JSON object does not contain the label $label"
       case NotType(primitive) => msg"the JSON value did not have the type $primitive"
 
-case class JsonAccessError(reason: JsonAccessError.Issue)
+case class JsonAccessError(reason: JsonAccessError.Reason)
 extends Error(msg"could not access the value because $reason")
 
 object JsonPrimitive:
