@@ -24,6 +24,8 @@ import anticipation.*
 import contextual.*
 import spectacular.*
 
+import scala.quoted.*
+
 object HostnameError:
   enum Reason:
     case LongDnsLabel(label: Text)
@@ -51,28 +53,41 @@ object DnsLabel:
 case class DnsLabel(text: Text)
 
 object Hostname:
-  given Show[Hostname] = _.parts.map(_.show).join(t".")
+  given Show[Hostname] = _.dnsLabels.map(_.show).join(t".")
   
+  def expand(context: Expr[StringContext])(using Quotes): Expr[Hostname] = failCompilation:
+    Expr(Hostname.parse(context.valueOrAbort.parts.head.tt))
+
+  given toExpr: ToExpr[Hostname] with
+    def apply(hostname: Hostname)(using Quotes): Expr[Hostname] =
+      val labels = Varargs:
+        hostname.dnsLabels.map: label =>
+          '{DnsLabel(${Expr(label.text)})}
+      
+      '{Hostname($labels*)}
+
   def parse(text: Text): Hostname raises HostnameError =
     val buffer: StringBuilder = StringBuilder()
 
-    def recur(index: Int, parts: List[DnsLabel]): Hostname = safely(text(index)) match
+    def recur(index: Int, dnsLabels: List[DnsLabel]): Hostname = safely(text(index)) match
       case '.' | Unset =>
         val label = buffer.toString.tt
-        if label.empty then raise(HostnameError(EmptyDnsLabel(parts.length)))(())
+        if label.empty then raise(HostnameError(EmptyDnsLabel(dnsLabels.length)))(())
         if label.length > 63 then raise(HostnameError(LongDnsLabel(label)))(())
         if label.starts(t"-") then raise(HostnameError(InitialDash(label)))(())
-        val parts2 = DnsLabel(label) :: parts
+        val dnsLabels2 = DnsLabel(label) :: dnsLabels
         buffer.clear()
-        if index < text.length then recur(index + 1, parts2) else
-          if parts2.map(_.text.length + 1).sum > 254 then raise(HostnameError(LongHostname))(())
-          Hostname(parts2.reverse*)
+        
+        if index < text.length then recur(index + 1, dnsLabels2) else
+          if dnsLabels2.map(_.text.length + 1).sum > 254 then raise(HostnameError(LongHostname))(())
+          Hostname(dnsLabels2.reverse*)
       
       case char: Char =>
         if char == '-' || ('A' <= char <= 'Z') || ('a' <= char <= 'z') || char.isDigit
         then buffer.append(char)
         else raise(HostnameError(InvalidChar(char)))(())
-        recur(index + 1, parts)
+        recur(index + 1, dnsLabels)
+    
     recur(0, Nil)
 
-case class Hostname(parts: DnsLabel*) extends Shown[Hostname]
+case class Hostname(dnsLabels: DnsLabel*) extends Shown[Hostname]

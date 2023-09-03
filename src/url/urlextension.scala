@@ -18,3 +18,5 @@ package nettlesome
 
 extension (inline ctx: StringContext)
   transparent inline def url(inline parts: Any*): Url = ${UrlInterpolator.expand('ctx, 'parts)}
+  transparent inline def email(): EmailAddress = ${EmailAddress.expand('ctx)}
+  transparent inline def host(): Hostname = ${Hostname.expand('ctx)}

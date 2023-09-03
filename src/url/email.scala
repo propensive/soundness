@@ -23,6 +23,8 @@ import perforate.*
 import anticipation.*
 import contextual.*
 
+import scala.quoted.*
+
 case class EmailAddressError(reason: EmailAddressError.Reason)
 extends Error(msg"the email address is not valid because $reason")
 
@@ -60,6 +62,20 @@ object EmailAddressError:
 import EmailAddressError.Reason.*
 
 object EmailAddress:
+  
+  def expand(context: Expr[StringContext])(using Quotes): Expr[EmailAddress] = failCompilation:
+    val text: Text = context.valueOrAbort.parts.head.tt
+    val address = EmailAddress.parse(text)
+    
+    val localPart: Expr[LocalPart] = address.localPart match
+      case LocalPart.Quoted(text)   => '{LocalPart.Quoted(${Expr(text)})}
+      case LocalPart.Unquoted(text) => '{LocalPart.Unquoted(${Expr(text)})}
+    
+    address.domain match
+      case ipv4: Int          => '{EmailAddress(Unset, $localPart, Ipv4(${Expr(ipv4)}))}
+      case ipv6: Ipv6         => '{EmailAddress(Unset, $localPart, ${Expr(ipv6)})}
+      case hostname: Hostname => '{EmailAddress(Unset, $localPart, ${Expr(hostname)})}
+
   def parse(text: Text): EmailAddress raises EmailAddressError =
     val buffer: StringBuilder = StringBuilder()
     if text.empty then abort(EmailAddressError(Empty))

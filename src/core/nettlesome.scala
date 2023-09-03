@@ -76,10 +76,15 @@ object Nettlesome:
     opaque type MacAddress = Long
 
     object Ipv4:
+      def apply(int: Int): Ipv4 = int
+      
       def apply(byte0: Int, byte1: Int, byte2: Int, byte3: Int): Ipv4 =
         ((byte0 & 255) << 24) + ((byte1 & 255) << 16) + ((byte2 & 255) << 8) + (byte3 & 255)
       
       given debug: Debug[Ipv4] = _.show
+
+      given toExpr: ToExpr[Ipv4] with
+        def apply(ipv4: Ipv4)(using Quotes): Expr[Ipv4] = '{Ipv4(${Expr(ipv4)(using ToExpr.IntToExpr)})}
       
       given show: Show[Ipv4] = ip =>
         t"${ip.byte0.toString}.${ip.byte1.toString}.${ip.byte2.toString}.${ip.byte3.toString}"
@@ -96,6 +101,7 @@ object Nettlesome:
 
     object MacAddress:
       def apply(value: Long): MacAddress = value
+      
       def parse(text: Text): MacAddress raises MacAddressError =
         val groups = text.cut(t":")
         if groups.length != 6 then raise(MacAddressError(MacAddressError.Reason.WrongGroupCount(groups.length)))(())
@@ -144,6 +150,8 @@ object Nettlesome:
       @targetName("subnet")
       def /(size: Int): Ipv4Subnet = Ipv4Subnet(ip & (-1 << (32 - size)), size)
 
+      def int: Int = ip
+
   object Ipv4Subnet:
     given Show[Ipv4Subnet] = subnet => t"${subnet.ipv4}/${subnet.size}"
 
@@ -168,6 +176,9 @@ object Nettlesome:
 
   object Ipv6:
     given debug: Debug[Ipv6] = _.show
+
+    given toExpr: ToExpr[Ipv6] with
+      def apply(ipv6: Ipv6)(using Quotes): Expr[Ipv6] = '{Ipv6(${Expr(ipv6.highBits)}, ${Expr(ipv6.lowBits)})}
     
     given show: Show[Ipv6] = ip =>
       def unpack(long: Long, groups: List[Int] = Nil): List[Int] =
