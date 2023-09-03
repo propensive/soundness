@@ -41,6 +41,22 @@ object EmailAddressError:
     case UnclosedIpAddress
     case InvalidChar(char: Char)
 
+  object Reason:
+    given MessageShow[Reason] =
+      case Empty                                => msg"it is empty"
+      case InvalidDomain(error: IpAddressError) => msg"the domain is not a valid IP address: ${error.message}"
+      case InvalidDomain(error: HostnameError)  => msg"the domain is not a valid hostname: ${error.message}"
+      case LongLocalPart                        => msg"the local part is more than 64 characters long"
+      case TerminalPeriod                       => msg"the local part ends in a period, which is not allowed"
+      case SuccessivePeriods                    => msg"the local part contains two adjacent periods"
+      case InitialPeriod                        => msg"the local part starts with a period, which is not allowed"
+      case UnescapedQuote                       => msg"the local part contains a quote character which is not escaped"
+      case UnclosedQuote                        => msg"the quoted local part has no closing quote"
+      case MissingDomain                        => msg"the domain is missing"
+      case MissingAtSymbol                      => msg"the at-symbol is missing"
+      case UnclosedIpAddress                    => msg"the domain begins with ${'['} but does not end with ${']'}"
+      case InvalidChar(char)                    => msg"the local part contains the character $char which is not allowed"
+
 import EmailAddressError.Reason.*
 
 object EmailAddress:
