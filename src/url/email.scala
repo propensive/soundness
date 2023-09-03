@@ -24,7 +24,7 @@ import anticipation.*
 import contextual.*
 
 case class EmailAddressError(reason: EmailAddressError.Reason)
-extends Error(msg"the email address was not valid")
+extends Error(msg"the email address is not valid because $reason")
 
 object EmailAddressError:
   enum Reason:
