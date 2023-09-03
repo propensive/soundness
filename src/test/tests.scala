@@ -95,7 +95,7 @@ object Tests extends Suite(t"Nettlesome tests"):
     
       test(t"Invalid IP address is compile error"):
         demilitarize(ip"192.168.0.0.0.1").map(_.message)
-      .assert(_ == List(t"nettlesome: the IP address is not valid because the address contains 6 numbers instead of 4"))
+      .assert(_ == List(t"perforate: the IP address is not valid because the address contains 6 numbers instead of 4"))
     
       test(t"IP address byte out of range"):
         capture(Ipv4.parse(t"100.300.200.0"))
@@ -130,102 +130,102 @@ object Tests extends Suite(t"Nettlesome tests"):
       .assert(_ == IpAddressError(IpAddressError.Issue.Ipv6GroupWrongLength(t"abcde")))
 
     suite(t"Email address tests"):
-      test(t"simple@example.com")
+      test(t"simple@example.com"):
         EmailAddress.parse(t"simple@example.com")
       .assert()
 
-      test(t"very.common@example.com")
+      test(t"very.common@example.com"):
         EmailAddress.parse(t"very.common@example.com")
       .assert()
       
-      test(t"x@example.com")
+      test(t"x@example.com"):
         EmailAddress.parse(t"x@example.com")
       .assert()
      
-      test(t"long.email-address-with-hyphens@and.subdomains.example.com")
+      test(t"long.email-address-with-hyphens@and.subdomains.example.com"):
         EmailAddress.parse(t"long.email-address-with-hyphens@and.subdomains.example.com")
       .assert()
      
-      test(t"user.name+tag+sorting@example.com")
+      test(t"user.name+tag+sorting@example.com"):
         EmailAddress.parse(t"user.name+tag+sorting@example.com")
       .assert()
      
-      test(t"name/surname@example.com")
+      test(t"name/surname@example.com"):
         EmailAddress.parse(t"name/surname@example.com")
       .assert()
      
-      test(t"admin@example")
+      test(t"admin@example"):
         EmailAddress.parse(t"admin@example")
       .assert()
      
-      test(t"example@s.example")
+      test(t"example@s.example"):
         EmailAddress.parse(t"example@s.example")
       .assert()
      
-      test(t"\" \"@example.org")
+      test(t"\" \"@example.org"):
         EmailAddress.parse(t"\" \"@example.org")
       .assert()
      
-      test(t"\"john..doe\"@example.org")
+      test(t"\"john..doe\"@example.org"):
         EmailAddress.parse(t"\"john..doe\"@example.org")
       .assert()
      
-      test(t"mailhost!username@example.org")
+      test(t"mailhost!username@example.org"):
         EmailAddress.parse(t"mailhost!username@example.org")
       .assert()
      
-      test(t"\"very.(),:;<>[]\\\".VERY.\\\"very@\\\\ \\\"very\\\".unusual\"@strange.example.com")
+      test(t"\"very.(),:;<>[]\\\".VERY.\\\"very@\\\\ \\\"very\\\".unusual\"@strange.example.com"):
         EmailAddress.parse(t"\"very.(),:;<>[]\\\".VERY.\\\"very@\\\\ \\\"very\\\".unusual\"@strange.example.com")
       .assert()
      
-      test(t"user%example.com@example.org")
+      test(t"user%example.com@example.org"):
         EmailAddress.parse(t"user%example.com@example.org")
       .assert()
      
-      test(t"user-@example.org")
+      test(t"user-@example.org"):
         EmailAddress.parse(t"user-@example.org")
       .assert()
      
-      test(t"postmaster@[123.123.123.123]")
+      test(t"postmaster@[123.123.123.123]"):
         EmailAddress.parse(t"postmaster@[123.123.123.123]")
       .assert()
      
-      test(t"postmaster@[IPv6:2001:0db8:85a3:0000:0000:8a2e:0370:7334]")
+      test(t"postmaster@[IPv6:2001:0db8:85a3:0000:0000:8a2e:0370:7334]"):
         EmailAddress.parse(t"postmaster@[IPv6:2001:0db8:85a3:0000:0000:8a2e:0370:7334]")
       .assert()
 
-      test(t"abc.example.com")
+      test(t"abc.example.com"):
         capture(EmailAddress.parse(t"abc.example.com"))
       .assert(_ == EmailAddressError())
      
-      test(t"a@b@c@example.com")
+      test(t"a@b@c@example.com"):
         capture(EmailAddress.parse(t"a@b@c@example.com"))
       .assert(_ == EmailAddressError())
      
-      test(t"a\"b(c)d,e:f;g<h>i[j\k]l@example.com")
-        capture(EmailAddress.parse(t"a\"b(c)d,e:f;g<h>i[j\k]l@example.com"))
+      test(t"a\\\"b(c)d,e:f;g<h>i[j\\k]l@example.com"):
+        capture(EmailAddress.parse(t"a\\\"b(c)d,e:f;g<h>i[j\\k]l@example.com"))
       .assert(_ == EmailAddressError())
      
-      test(t"just\"not\"right@example.com")
+      test(t"just\"not\"right@example.com"):
         capture(EmailAddress.parse(t"just\"not\"right@example.com"))
       .assert(_ == EmailAddressError())
      
-      test(t"this is\"not\allowed@example.com")
-        capture(EmailAddress.parse(t"this is\"not\allowed@example.com"))
+      test(t"this is\\\"not\\allowed@example.com"):
+        capture(EmailAddress.parse(t"this is\\\"not\\allowed@example.com"))
       .assert(_ == EmailAddressError())
      
-      test(t"this\ still\"not\\allowed@example.com")
-        capture(EmailAddress.parse(t"this\ still\"not\\allowed@example.com"))
+      test(t"this\\ still\\\"not\\\\allowed@example.com"):
+        capture(EmailAddress.parse(t"this\\ still\\\"not\\\\allowed@example.com"))
       .assert(_ == EmailAddressError())
      
-      test(t"1234567890123456789012345678901234567890123456789012345678901234+x@example.com")
+      test(t"1234567890123456789012345678901234567890123456789012345678901234+x@example.com"):
         capture(EmailAddress.parse(t"1234567890123456789012345678901234567890123456789012345678901234+x@example.com"))
       .assert(_ == EmailAddressError())
      
-      test(t"i.like.underscores@but_they_are_not_allowed_in_this_part")
+      test(t"i.like.underscores@but_they_are_not_allowed_in_this_part"):
         capture(EmailAddress.parse(t"i.like.underscores@but_they_are_not_allowed_in_this_part"))
       .assert(_ == EmailAddressError())
       
-      test(t"I❤️CHOCOLATE🍫@example.com")
+      test(t"I❤️CHOCOLATE🍫@example.com"):
         capture(EmailAddress.parse(t"I❤️CHOCOLATE🍫@example.com"))
       .assert(_ == EmailAddressError())
