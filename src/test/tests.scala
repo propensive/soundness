@@ -136,7 +136,7 @@ object Tests extends Suite(t"CoDL tests"):
         for i <- 0 until 4 do reader.next()
         capture[CodlError](reader.next().char)
       .matches:
-        case CodlError(_, _, _, CodlError.Issue.CarriageReturnMismatch(false)) =>
+        case CodlError(_, _, _, CodlError.Reason.CarriageReturnMismatch(false)) =>
       
       test(t"after CR/LF next CR/LF does not fail"):
         val reader = interpret(t"a\r\nbc\r\n")
@@ -149,7 +149,7 @@ object Tests extends Suite(t"CoDL tests"):
         for i <- 0 until 4 do reader.next()
         capture[CodlError](reader.next().char)
       .matches:
-        case CodlError(_, _, _, CodlError.Issue.CarriageReturnMismatch(true)) =>
+        case CodlError(_, _, _, CodlError.Reason.CarriageReturnMismatch(true)) =>
       
       test(t"can capture start of text"):
         val reader = interpret(t"abcdef")
@@ -435,32 +435,32 @@ object Tests extends Suite(t"CoDL tests"):
         parseText(t"""|root
                       |     surplus-indented
                       |""".s.stripMargin.show)(1)
-      .assert(_ contains CodlToken.Error(CodlError(1, 5, 1, CodlError.Issue.SurplusIndent)))
+      .assert(_ contains CodlToken.Error(CodlError(1, 5, 1, CodlError.Reason.SurplusIndent)))
       
       test(t"Uneven indentation"):
         parseText(t"""|root
                       | uneven indented
                       |""".s.stripMargin.show)(1)
-      .assert(_ contains CodlToken.Error(CodlError(1, 1, 1, CodlError.Issue.UnevenIndent(0, 1))))
+      .assert(_ contains CodlToken.Error(CodlError(1, 1, 1, CodlError.Reason.UnevenIndent(0, 1))))
 
       test(t"Uneven indentation 2"):
         parseText(t"""|root
                       |   uneven indented
                       |""".s.stripMargin.show)(1)
-      .assert(_ contains CodlToken.Error(CodlError(1, 3, 1, CodlError.Issue.UnevenIndent(0, 3))))
+      .assert(_ contains CodlToken.Error(CodlError(1, 3, 1, CodlError.Reason.UnevenIndent(0, 3))))
       
       test(t"Insufficient indentation"):
         parseText(t"""|     root
                       |    uneven indented
                       |""".s.stripMargin.show)(1)
-      .assert(_ contains CodlToken.Error(CodlError(1, 4, 1, CodlError.Issue.InsufficientIndent)))
+      .assert(_ contains CodlToken.Error(CodlError(1, 4, 1, CodlError.Reason.InsufficientIndent)))
       
       test(t"Uneven de-indentation"):
         parseText(t"""|root
                       |  child
                       | deindentation
                       |""".s.stripMargin.show)(1)
-      .assert(_ contains CodlToken.Error(CodlError(2, 1, 1, CodlError.Issue.UnevenIndent(0, 1))))
+      .assert(_ contains CodlToken.Error(CodlError(2, 1, 1, CodlError.Reason.UnevenIndent(0, 1))))
 
     suite(t"Access tests"):
       val doc = CodlDoc(
@@ -690,7 +690,7 @@ object Tests extends Suite(t"CoDL tests"):
       test(t"Indent after comment forbidden"):
         capture[AggregateError[CodlError]](Codl.parse(t"root\n  # comment\n    child")) match
           case AggregateError[CodlError](errors) => errors.head
-      .assert(_ == CodlError(1, 2, 1, CodlError.Issue.IndentAfterComment))
+      .assert(_ == CodlError(1, 2, 1, CodlError.Reason.IndentAfterComment))
       
       test(t"Validate second top-level node"):
         rootSchema.parse(t"child\nsecond").second().schema
@@ -911,7 +911,7 @@ object Tests extends Suite(t"CoDL tests"):
       test(t"Cannot have duplicate IDs of the same type"):
         capture[AggregateError[CodlError]](repetitionSchema.parse(t"ABC first One\nABC second Two\nABC first Primary")) match
           case AggregateError[CodlError](errors) => errors.head
-      .assert(_ == CodlError(2, 4, 5, CodlError.Issue.DuplicateId(t"first", 0, 4)))
+      .assert(_ == CodlError(2, 4, 5, CodlError.Reason.DuplicateId(t"first", 0, 4)))
     
     suite(t"Binary tests"):
 

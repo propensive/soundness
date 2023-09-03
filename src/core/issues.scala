@@ -20,12 +20,12 @@ import rudiments.*
 import fulminate.*
 import anticipation.*
 
-export CodlError.Issue.*
+export CodlError.Reason.*
 
 import language.experimental.captureChecking
 
 object CodlError:
-  given AsMessage[Issue] =
+  given AsMessage[Reason] =
     case UnexpectedCarriageReturn =>
       msg"a carriage return character ('\\r') was followed by a character other than a newline ('\\n')"
       
@@ -69,7 +69,7 @@ object CodlError:
     case DuplicateId(point, line, col) =>
       msg"the unique ID has been used before at $line:$col, $point"
   
-  enum Issue:
+  enum Reason:
     case UnexpectedCarriageReturn
     case BadSubstitution
     case BadTermination
@@ -83,8 +83,8 @@ object CodlError:
     case InvalidKey(point: Text, key: Text)
     case DuplicateId(point: Text, line: Int, col: Int)
 
-case class CodlError(line: Int, col: Int, length: Int, issue: CodlError.Issue)
-extends Error(msg"could not read the CoDL document at $line:$col: ${issue}")
+case class CodlError(line: Int, col: Int, length: Int, reason: CodlError.Reason)
+extends Error(msg"could not read the CoDL document at $line:$col: $reason")
 
 case class BinaryError(expectation: Text, pos: Int)
 extends Error(msg"expected $expectation at position $pos")
