@@ -51,7 +51,9 @@ object Hostname:
         if buffer.isEmpty then raise(HostnameError())(())
         val parts2 = DnsLabel(buffer.toString.tt) :: parts
         buffer.clear()
-        if index < text.length then recur(index + 1, parts2) else Hostname(parts2.reverse*)
+        if index < text.length then recur(index + 1, parts2) else
+          if parts2.map(_.text.length + 1).sum > 254 then raise(HostnameError())(())
+          Hostname(parts2.reverse*)
       
       case char: Char =>
         if char == '-' || ('A' <= char <= 'Z') || ('a' <= char <= 'z') || char.isDigit
@@ -157,7 +159,7 @@ object Url:
     
   given show: Show[Url] = url =>
     val auth = url.authority.fm(t"")(t"//"+_.show)
-    val rest = t"/${url.query.fm(t"")(t"?"+_)}${url.fragment.fm(t"")(t"#"+_)}"
+    val rest = t"${url.query.fm(t"")(t"?"+_)}${url.fragment.fm(t"")(t"#"+_)}"
     t"${url.scheme}:$auth${url.pathText}$rest"
   
   given ansiShow: Display[Url] = url => out"$Underline(${colors.DeepSkyBlue}(${show(url)}))"

@@ -19,6 +19,8 @@ package nettlesome
 import probably.*
 import rudiments.*
 import gossamer.*
+import anticipation.*
+import serpentine.*, hierarchies.urls
 import spectacular.*
 import perforate.*
 import larceny.*
@@ -229,3 +231,81 @@ object Tests extends Suite(t"Nettlesome tests"):
       test(t"I❤️CHOCOLATE🍫@example.com"):
         capture(EmailAddress.parse(t"I❤️CHOCOLATE🍫@example.com"))
       .assert(_ == EmailAddressError())
+    
+    suite(t"URL tests"):
+      test(t"parse Authority with username and password"):
+        Authority.parse(t"username:password@example.com")
+      .assert(_ == Authority(example.com, t"username:password"))
+      
+      test(t"parse Authority with username but not password"):
+        Authority.parse(t"username@example.com")
+      .assert(_ == Authority(example.com, t"username"))
+      
+      test(t"parse Authority with username, password and port"):
+        Authority.parse(t"username:password@example.com:8080")
+      .assert(_ == Authority(example.com, t"username:password", 8080))
+      
+      test(t"parse Authority with username and port"):
+        Authority.parse(t"username@example.com:8080")
+      .assert(_ == Authority(example.com, t"username", 8080))
+      
+      test(t"parse Authority with username, numerical password and port"):
+        Authority.parse(t"username:1234@example.com:8080")
+      .assert(_ == Authority(example.com, t"username:1234", 8080))
+
+      test(t"Authority with invalid port fails"):
+        capture(Authority.parse(t"username@example.com:no"))
+      .matches:
+        case UrlError(_, 21, UrlError.Expectation.Number) =>
+      
+      test(t"Parse full URL"):
+        Url.parse(t"http://user:pw@example.com:8080/path/to/location?query=1#ref")
+      .assert(_ == Url(Scheme.Http, Authority(example.com, t"user:pw", 8080),
+          t"/path/to/location", t"query=1", t"ref"))
+      
+      test(t"Parse simple URL"):
+        Url.parse(t"https://example.com/foo")
+      .assert(_ == Url(Scheme.Https, Authority(example.com), t"/foo"))
+      
+      test(t"Show simple URL"):
+        Url.parse(t"http://example.com/foo").show
+      .assert(_ == t"http://example.com/foo")
+      
+      test(t"Parse full URL at compiletime"):
+        url"http://user:pw@example.com:8080/path/to/location?query=1#ref"
+      .assert(_ == Url(Scheme.Http, Authority(example.com, t"user:pw", 8080),
+          t"/path/to/location", t"query=1", t"ref"))
+      
+      test(t"Parse FTP URL at compiletime"):
+        url"ftp://user:pw@example.com:8080/path/to/location"
+      .assert(_ == Url(Scheme(t"ftp"), Authority(example.com, t"user:pw", 8080),
+          t"/path/to/location"))
+      
+      test(t"Parse URL at compiletime with substitution"):
+        val port = 1234
+        url"http://user:pw@example.com:$port/path/to/location"
+      .assert(_ == Url(Scheme(t"http"), Authority(example.com, t"user:pw", 1234),
+          t"/path/to/location"))
+      
+      test(t"Parse URL at compiletime with escaped substitution"):
+        val message: Text = t"Hello world!"
+        url"http://user:pw@example.com/$message"
+      .assert(_ == Url(Scheme(t"http"), Authority(example.com, t"user:pw"), t"/Hello+world%21"))
+      
+      test(t"Parse URL at compiletime with unescaped substitution"):
+        val message = Raw(t"Hello world!")
+        url"http://user:pw@example.com/$message"
+      .assert(_ == Url(Scheme(t"http"), Authority(example.com, t"user:pw"), t"/Hello world!"))
+      
+      test(t"Relative path is unescaped"):
+        val message: Text = t"Hello world!"
+        url"http://user:pw@example.com/$message/foo".path
+      .assert(_ == (? / p"Hello world!" / p"foo").descent)
+      
+      test(t"Relative path with raw substitution is unescaped"):
+        val message: Raw = Raw(t"Hello+world%21")
+        url"http://user:pw@example.com/$message/foo".path
+      .assert(_ == (? / p"Hello world!" / p"foo").descent)
+
+object example:
+  val com = Hostname(DnsLabel(t"example"), DnsLabel(t"com"))
