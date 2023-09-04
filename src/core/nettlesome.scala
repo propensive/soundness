@@ -109,6 +109,8 @@ object Nettlesome:
           raise(IpAddressError(Ipv4WrongNumberOfBytes(list.length)))(Ipv4(0, 0, 0, 0))
 
     object MacAddress:
+      given show: Show[MacAddress] = _.text
+
       def apply(value: Long): MacAddress = value
       
       def parse(text: Text): MacAddress raises MacAddressError =
@@ -249,3 +251,4 @@ export Nettlesome.Opaques.DnsLabel
 extension (inline context: StringContext)
   transparent inline def ip(): Ipv4 | Ipv6 = ${Nettlesome.ip('context)}
   inline def mac(): MacAddress = ${Nettlesome.mac('context)}
+

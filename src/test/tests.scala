@@ -345,5 +345,9 @@ object Tests extends Suite(t"Nettlesome tests"):
         capture[MacAddressError](MacAddress.parse(t"01:23:45:6g:ab:cd"))
       .assert(_ == MacAddressError(NotHex(3, t"6g")))
 
+      test(t"Show a MAC address"):
+        MacAddress.parse(t"01:23:45:ab:cd:ef").show
+      .assert(_ == t"01:23:45:ab:cd:ef")
+
 object example:
   val com = Hostname(DnsLabel(t"example"), DnsLabel(t"com"))
