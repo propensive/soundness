@@ -171,3 +171,9 @@ extension (long: Long)
 
 extension (int: Int)
   def hex: Text = Integer.toHexString(int).nn.tt
+
+extension (short: Short)
+  def hex: Text = Integer.toHexString(short).nn.tt
+
+extension (byte: Byte)
+  def hex: Text = Integer.toHexString(byte).nn.tt
