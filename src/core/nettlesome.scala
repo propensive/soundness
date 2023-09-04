@@ -90,8 +90,6 @@ object Nettlesome:
       def apply(byte0: Int, byte1: Int, byte2: Int, byte3: Int): Ipv4 =
         ((byte0 & 255) << 24) + ((byte1 & 255) << 16) + ((byte2 & 255) << 8) + (byte3 & 255)
       
-      given debug: Debug[Ipv4] = _.show
-
       given toExpr: ToExpr[Ipv4] with
         def apply(ipv4: Ipv4)(using Quotes): Expr[Ipv4] = '{Ipv4(${Expr(ipv4)(using ToExpr.IntToExpr)})}
       

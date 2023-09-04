@@ -238,6 +238,18 @@ object Tests extends Suite(t"Nettlesome tests"):
         capture(EmailAddress.parse(t"I❤️CHOCOLATE🍫@example.com"))
       .matches:
         case EmailAddressError(InvalidChar(_)) =>
+
+      test(t"Create an email address at compiletime"):
+        email"test@example.com"
+      .assert(_ == EmailAddress.parse(t"test@example.com"))
+
+      test(t"Create an IPv4 email address at compiletime"):
+        email"test@[192.168.0.1]"
+      .assert(_ == EmailAddress.parse(t"test@[192.168.0.1]"))
+
+      test(t"Create an IPv6 email address at compiletime"):
+        email"test@[IPv6:1234::6789]"
+      .assert(_ == EmailAddress.parse(t"test@[IPv6:1234::6789]"))
     
     suite(t"URL tests"):
       test(t"parse Authority with username and password"):
