@@ -47,11 +47,6 @@ import HostnameError.Reason.*
 case class HostnameError(reason: HostnameError.Reason)
 extends Error(msg"the hostname is not valid because $reason")
 
-object DnsLabel:
-  given show: Show[DnsLabel] = _.text
-
-case class DnsLabel(text: Text)
-
 object Hostname:
   given Show[Hostname] = _.dnsLabels.map(_.show).join(t".")
   

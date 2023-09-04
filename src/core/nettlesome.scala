@@ -74,6 +74,15 @@ object Nettlesome:
   object Opaques:
     opaque type Ipv4 = Int
     opaque type MacAddress = Long
+    opaque type DnsLabel = Text
+
+    object DnsLabel:
+      given show: Show[DnsLabel] = identity(_)
+
+      def apply(text: Text): DnsLabel = text
+
+    extension (label: DnsLabel)
+      def text: Text = label
 
     object Ipv4:
       def apply(int: Int): Ipv4 = int
@@ -235,6 +244,7 @@ object Nettlesome:
 export Nettlesome.Ipv6
 export Nettlesome.Opaques.Ipv4
 export Nettlesome.Opaques.MacAddress
+export Nettlesome.Opaques.DnsLabel
 
 extension (inline context: StringContext)
   transparent inline def ip(): Ipv4 | Ipv6 = ${Nettlesome.ip('context)}
