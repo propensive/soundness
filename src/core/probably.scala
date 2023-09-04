@@ -52,7 +52,7 @@ object TestId:
 case class TestId(name: Text, suite: Maybe[TestSuite], codepoint: Codepoint):
   val timestamp: Long = System.currentTimeMillis
   import textWidthCalculation.uniform
-  lazy val id: Text = Integer.toHexString(suite.hashCode ^ name.hashCode).nn.show.pad(6, Rtl, '0').take(6, Rtl)
+  lazy val id: Text = (suite.hashCode ^ name.hashCode).hex.pad(6, Rtl, '0').take(6, Rtl)
   lazy val ids: List[Text] =  id :: suite.mm(_.id.ids).or(Nil)
   def apply[T](ctx: TestContext ?=> T): Test[T] = Test[T](this, ctx(using _))
   def depth: Int = suite.mm(_.id.depth).or(0) + 1
