@@ -90,9 +90,6 @@ object Nettlesome:
       def apply(byte0: Int, byte1: Int, byte2: Int, byte3: Int): Ipv4 =
         ((byte0 & 255) << 24) + ((byte1 & 255) << 16) + ((byte2 & 255) << 8) + (byte3 & 255)
       
-      given toExpr: ToExpr[Ipv4] with
-        def apply(ipv4: Ipv4)(using Quotes): Expr[Ipv4] = '{Ipv4(${Expr(ipv4)(using ToExpr.IntToExpr)})}
-      
       given show: Show[Ipv4] = ip =>
         t"${ip.byte0.toString}.${ip.byte1.toString}.${ip.byte2.toString}.${ip.byte3.toString}"
       
@@ -104,7 +101,7 @@ object Nettlesome:
           Ipv4(byte0.toByte, byte1.toByte, byte2.toByte, byte3.toByte)
         
         case list =>
-          raise(IpAddressError(Ipv4WrongNumberOfBytes(list.length)))(Ipv4(0, 0, 0, 0))
+          raise(IpAddressError(Ipv4WrongNumberOfBytes(list.length)))(0)
 
     object MacAddress:
       given show: Show[MacAddress] = _.text
@@ -146,7 +143,7 @@ object Nettlesome:
       def byte5: Int = macAddress.toInt & 255
 
       def text: Text =
-        List(byte0, byte1, byte2, byte3, byte4, byte5).map(_.toHexString.tt.pad(2, Rtl, '0')).join(t":")
+        List(byte0, byte1, byte2, byte3, byte4, byte5).map(_.hex.pad(2, Rtl, '0')).join(t":")
 
       def long: Long = macAddress
   
@@ -184,8 +181,6 @@ object Nettlesome:
     '{MacAddress(${Expr(macAddress.long)})}
 
   object Ipv6:
-    given debug: Debug[Ipv6] = _.show
-
     given toExpr: ToExpr[Ipv6] with
       def apply(ipv6: Ipv6)(using Quotes): Expr[Ipv6] = '{Ipv6(${Expr(ipv6.highBits)}, ${Expr(ipv6.lowBits)})}
     
@@ -194,7 +189,7 @@ object Nettlesome:
         if groups.length == 4 then groups else unpack(long >>> 16, (long & 65535).toInt :: groups)
       
       def hex(values: List[Int]): Text =
-        values.map(Integer.toHexString(_).nn).map(Text(_)).join(t":")
+        values.map(_.hex).join(t":")
 
       val groups = unpack(ip.highBits) ++ unpack(ip.lowBits)
       val (middleIndex, middleLength) = groups.longestTrain(_ == 0)
@@ -219,7 +214,9 @@ object Nettlesome:
     def pack(groups: List[Int], accumulator: Long = 0L): Long = groups match
       case Nil          => accumulator
       case head :: tail => pack(tail, (accumulator << 16) + (head & 65535))
-    
+   
+    private val zeroes: List[Text] = List.fill(8)(t"0")
+
     def parse(text: Text)(using Raises[IpAddressError]): Ipv6 =
       val groups: List[Text] = text.cut(t"::") match
         case List(left, right) =>
@@ -234,10 +231,10 @@ object Nettlesome:
         case List(whole) =>
           val groups = whole.cut(t":")
           if groups.length != 8
-          then raise(IpAddressError(Ipv6WrongNumberOfGroups(groups.length)))(List.fill(8)(t"0")) else groups
+          then raise(IpAddressError(Ipv6WrongNumberOfGroups(groups.length)))(zeroes) else groups
         
         case _ =>
-          raise(IpAddressError(Ipv6MultipleDoubleColons))(List.fill(8)(t"0"))
+          raise(IpAddressError(Ipv6MultipleDoubleColons))(zeroes)
       
       Ipv6(pack(groups.take(4).map(parseGroup)), pack(groups.drop(4).map(parseGroup)))
 

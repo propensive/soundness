@@ -45,6 +45,10 @@ object Tests extends Suite(t"Nettlesome tests"):
       test(t"Show a 'maximum' Ipv4 address"):
         Ipv4(255, 255, 255, 255).show
       .assert(_ == t"255.255.255.255")
+
+      test(t"Get an IP address as an integer"):
+        Ipv4(192, 168, 0, 1).int
+      .assert(_ == bin"11000000 10101000 00000000 00000001")
     
     suite(t"IPv6 tests"):
       test(t"Parse an IPv6 address"):
