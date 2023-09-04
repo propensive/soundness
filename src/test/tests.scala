@@ -349,5 +349,13 @@ object Tests extends Suite(t"Nettlesome tests"):
         MacAddress.parse(t"01:23:45:ab:cd:ef").show
       .assert(_ == t"01:23:45:ab:cd:ef")
 
+      test(t"Create a MAC address statically (and show it)"):
+        mac"01:23:45:ab:cd:ef".show
+      .assert(_ == t"01:23:45:ab:cd:ef")
+
+      test(t"Check that a bad MAC address fails at compiletime"):
+        demilitarize(mac"01:23:45:ab:cd:e").map(_.message)
+      .assert(_ == List(t"perforate: the MAC address is not valid because group 5 should be two hex digits, but its length is 1"))
+
 object example:
   val com = Hostname(DnsLabel(t"example"), DnsLabel(t"com"))
