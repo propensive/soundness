@@ -94,7 +94,7 @@ object Rgb24Opaque:
   
     def hex: Text = Text:
       IArray(red, green, blue).foldLeft("#"): (acc, c) =>
-        acc+(Integer.toHexString(c).nn.pipe { s => if s.length < 2 then "0"+s else s })
+        acc+(c.hex.pipe { s => if s.s.length < 2 then "0"+s else s })
 
 object Rgb32Opaque:
   opaque type Rgb32 = Int
@@ -124,7 +124,7 @@ object Rgb12Opaque:
     def red: Int = (color >> 8)&15
     def green: Int = (color >> 4)&15
     def blue: Int = color&15
-    def hex: Text = Text("#"+IArray(red, green, blue).map(Integer.toHexString(_).nn).mkString)
+    def hex: Text = Text("#"+IArray(red, green, blue).map(_.hex).mkString)
     def srgb: Srgb = Srgb(red/15.0, green/15.0, blue/15.0)
 
 export Rgb12Opaque.Rgb12
