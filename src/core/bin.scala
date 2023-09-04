@@ -165,3 +165,9 @@ export Rudiments.ByteSize
 extension (inline context: StringContext)
   transparent inline def bin(): AnyVal = ${Rudiments.bin('context)}
   transparent inline def hex(): IArray[Byte] = ${Rudiments.hex('context)}
+
+extension (long: Long)
+  def hex: Text = java.lang.Long.toHexString(long).nn.tt
+
+extension (int: Int)
+  def hex: Text = Integer.toHexString(int).nn.tt
