@@ -47,8 +47,11 @@ object Anticipation:
     given fromExpr(using fromExpr: FromExpr[String]): FromExpr[Text] with
       def unapply(expr: Expr[Text])(using Quotes): Option[Text] = fromExpr.unapply(expr)
 
-    given toExpr(using toExpr: ToExpr[String]): ToExpr[Text] with
-      def apply(text: Text)(using Quotes): Expr[Text] = toExpr(text)
+    given toExpr: ToExpr[Text] with
+      def apply(text: Text)(using Quotes) =
+        import quotes.reflect.*
+        val expr = Literal(StringConstant(text)).asExprOf[String]
+        '{Text($expr)}
 
     given stringText: Conversion[String, Text] = identity(_)
 
