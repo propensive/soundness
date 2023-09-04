@@ -357,5 +357,9 @@ object Tests extends Suite(t"Nettlesome tests"):
         demilitarize(mac"01:23:45:ab:cd:e").map(_.message)
       .assert(_ == List(t"perforate: the MAC address is not valid because group 5 should be two hex digits, but its length is 1"))
 
+      test(t"Create a MAC address from bytes"):
+        MacAddress(1, 2, 3, 4, 5, 6).show
+      .assert(_ == t"01:02:03:04:05:06")
+
 object example:
   val com = Hostname(DnsLabel(t"example"), DnsLabel(t"com"))
