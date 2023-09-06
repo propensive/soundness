@@ -329,6 +329,59 @@ object Tests extends Suite(t"Nettlesome tests"):
         val message: Raw = Raw(t"Hello+world%21")
         url"http://user:pw@example.com/$message/foo".path
       .assert(_ == (? / p"Hello world!" / p"foo").descent)
+   
+    suite(t"Hostname tests"):
+      test(t"Parse a simple hostname"):
+        Hostname.parse(t"www.example.com")
+      .assert(_ == Hostname(DnsLabel(t"www"), DnsLabel(t"example"), DnsLabel(t"com")))
+
+      test(t"A hostname cannot end in a period"):
+        capture[HostnameError](Hostname.parse(t"www.example."))
+      .assert(_ == HostnameError(HostnameError.Reason.EmptyDnsLabel(2)))
+      
+      test(t"A hostname cannot start with a period"):
+        capture[HostnameError](Hostname.parse(t".example.com"))
+      .assert(_ == HostnameError(HostnameError.Reason.EmptyDnsLabel(0)))
+      
+      test(t"A hostname cannot have adjacent periods"):
+        capture[HostnameError](Hostname.parse(t"www..com"))
+      .assert(_ == HostnameError(HostnameError.Reason.EmptyDnsLabel(1)))
+
+      test(t"A hostname cannot contain symbols"):
+        capture[HostnameError](Hostname.parse(t"www.maybe?.com"))
+      .assert(_ == HostnameError(HostnameError.Reason.InvalidChar('?')))
+      
+      test(t"A DNS Label cannot begin with a dash"):
+        capture[HostnameError](Hostname.parse(t"www.-maybe.com"))
+      .assert(_ == HostnameError(HostnameError.Reason.InitialDash(t"-maybe")))
+      
+      test(t"A hostname can contain two consecutive dashes"):
+        Hostname.parse(t"www.exam--ple.com")
+      .assert(_ == Hostname(DnsLabel(t"www"), DnsLabel(t"exam--ple"), DnsLabel(t"com")))
+      
+      test(t"A DNS label cannot be longer than 63 characters"):
+        capture[HostnameError](Hostname.parse(t"www.abcdefghijklmnopqrstuvwxyz-abcdefghijklmnopqrstuvwxyz-abcdefghij.com"))
+      .assert(_ == HostnameError(HostnameError.Reason.LongDnsLabel(t"abcdefghijklmnopqrstuvwxyz-abcdefghijklmnopqrstuvwxyz-abcdefghij")))
+      
+      test(t"A DNS label may be 63 characters long"):
+        Hostname.parse(t"www.abcdefghijklmnopqrstuvwxyz-abcdefghijklmnopqrstuvwxyz-abcdefghi.com")
+      .assert(_ == Hostname(DnsLabel(t"www"), DnsLabel(t"abcdefghijklmnopqrstuvwxyz-abcdefghijklmnopqrstuvwxyz-abcdefghi"), DnsLabel(t"com")))
+      
+      test(t"A DNS label may be 253 characters long"):
+        Hostname.parse(t"www.xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx.xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx.xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx.xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx.xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx.com")
+      .assert()
+      
+      test(t"A DNS label may not be longer than 253 characters"):
+        capture[HostnameError](Hostname.parse(t"www.xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx.xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx.xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx.xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx.xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxy.com"))
+      .assert(_ == HostnameError(HostnameError.Reason.LongHostname))
+
+      test(t"Parse hostname at compiletime"):
+        host"www.altavista.com"
+      .assert()
+      
+      test(t"Parse bad hostname at compiletime"):
+        demilitarize(host"www..com").map(_.message)
+      .assert(_ == List(t"perforate: the hostname is not valid because a DNS label cannot be empty"))
     
     suite(t"MAC Address tests"):
       import MacAddressError.Reason.*
