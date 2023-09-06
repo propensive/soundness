@@ -101,7 +101,7 @@ object Tests extends Suite(t"Nettlesome tests"):
     
       test(t"Invalid IP address is compile error"):
         demilitarize(ip"192.168.0.0.0.1").map(_.message)
-      .assert(_ == List(t"perforate: the IP address is not valid because the address contains 6 numbers instead of 4"))
+      .assert(_ == List(t"perforate: the IP address is not valid because the address contains 6 period-separated groups instead of 4"))
     
       test(t"IP address byte out of range"):
         capture(Ipv4.parse(t"100.300.200.0"))
@@ -109,7 +109,7 @@ object Tests extends Suite(t"Nettlesome tests"):
       
       test(t"IPv4 address wrong number of bytes"):
         capture(Ipv4.parse(t"10.3.20.0.8"))
-      .assert(_ == IpAddressError(IpAddressError.Reason.Ipv4WrongNumberOfBytes(5)))
+      .assert(_ == IpAddressError(IpAddressError.Reason.Ipv4WrongNumberOfGroups(5)))
       
       test(t"IPv6 address non-hex value"):
         capture(Ipv6.parse(t"::8:abcg:abc:1234"))
@@ -233,6 +233,10 @@ object Tests extends Suite(t"Nettlesome tests"):
       test(t"1234567890123456789012345678901234567890123456789012345678901234+x@example.com"):
         capture(EmailAddress.parse(t"1234567890123456789012345678901234567890123456789012345678901234+x@example.com"))
       .assert(_ == EmailAddressError(LongLocalPart))
+     
+      test(t"user@[not-an-ip]"):
+        capture(EmailAddress.parse(t"user@[not-an-ip]"))
+      .assert(_ == EmailAddressError(InvalidDomain(IpAddressError(IpAddressError.Reason.Ipv4WrongNumberOfGroups(1)))))
      
       test(t"i.like.underscores@but_they_are_not_allowed_in_this_part"):
         capture(EmailAddress.parse(t"i.like.underscores@but_they_are_not_allowed_in_this_part"))

@@ -29,7 +29,7 @@ import scala.quoted.*
 object IpAddressError:
   enum Reason:
     case Ipv4ByteOutOfRange(byte: Int)
-    case Ipv4WrongNumberOfBytes(count: Int)
+    case Ipv4WrongNumberOfGroups(count: Int)
     case Ipv6GroupWrongLength(group: Text)
     case Ipv6GroupNotHex(group: Text)
     case Ipv6TooManyNonzeroGroups(count: Int)
@@ -39,7 +39,7 @@ object IpAddressError:
   object Reason:
     given MessageShow[Reason] =
       case Ipv4ByteOutOfRange(byte)       => msg"the number $byte is not in the range 0-255"
-      case Ipv4WrongNumberOfBytes(count)  => msg"the address contains $count numbers instead of 4"
+      case Ipv4WrongNumberOfGroups(count) => msg"the address contains $count period-separated groups instead of 4"
       case Ipv6GroupNotHex(group)         => msg"the group '$group' is not a hexadecimal number"
       case Ipv6WrongNumberOfGroups(count) => msg"the address has $count groups, but should have 8"
       case Ipv6MultipleDoubleColons       => msg":: appears more than once"
@@ -101,7 +101,7 @@ object Nettlesome:
           Ipv4(byte0.toByte, byte1.toByte, byte2.toByte, byte3.toByte)
         
         case list =>
-          raise(IpAddressError(Ipv4WrongNumberOfBytes(list.length)))(0)
+          raise(IpAddressError(Ipv4WrongNumberOfGroups(list.length)))(0)
 
     object MacAddress:
       given show: Show[MacAddress] = _.text
