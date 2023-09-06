@@ -320,7 +320,7 @@ class TestReport(using env: Environment):
       val junctures2 = coverage.structure.values.flatten
           .to(List)
           .filter(!_.covered(allHits))
-          .map(_.uncovered(allHits))
+          .map(_.copy(children = Nil))
 
       Table[(Output, Juncture)](
         Column(out"") { row => if row(1).branch then out"⎇" else out"" },
