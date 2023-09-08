@@ -16,12 +16,12 @@ project nettlesome
   module url
     compiler  scala
     sources   src/url
-    include   contextual/core gossamer/core escapade/core anticipation/http serpentine/core anticipation/url nettlesome/core
+    include   escapade/core anticipation/http serpentine/core anticipation/url nettlesome/core
 
   module test
     compiler  scala
     sources   src/test
-    include   nettlesome/core probably/cli larceny/plugin nettlesome/url
+    include   nettlesome/core probably/cli larceny/plugin nettlesome/url nettlesome/email
     main      nettlesome.Tests
     coverage  nettlesome/core
 
