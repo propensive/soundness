@@ -144,7 +144,8 @@ object PeriodicTable:
   def apply(symbol: Text): Maybe[ChemicalElement] = symbols.getOrElse(symbol, Unset)
 
 case class ChemicalElement(number: Int, symbol: Text, name: Text):
-  def *(count: Int): Molecule = Molecule(Map(this -> count))
+  @targetName("sub")
+  def *(count: Int): Molecule = Molecule(1, Map(this -> count))
 
 object Molecule:
   given Show[Molecule] = molecule =>
@@ -166,12 +167,22 @@ object Molecule:
     orderedElements.map: (element, count) =>
       val number = if count == 1 then t"" else count.show.chars.map(_.subscript).sift[Char].map(_.show).join
       t"${element.symbol}$number"
-    .join
+    .join(if molecule.count == 1 then t"" else molecule.count.show, t"", t"")
 
-case class Molecule(elements: Map[ChemicalElement, Int]):
-  def +(other: Molecule): Molecule = Molecule:
-    other.elements.foldLeft(elements): (acc, next) =>
+case class Molecule(count: Int, elements: Map[ChemicalElement, Int]):
+  @targetName("and")
+  def &(other: Molecule): Molecule =
+    val elements2 = other.elements.foldLeft(elements): (acc, next) =>
       acc.updated(next(0), elements.getOrElse(next(0), 0) + next(1))
+    
+    Molecule(count, elements2)
+
+  @targetName("and2")
+  def &(element: ChemicalElement): Molecule =
+    this & Molecule(1, Map(element -> 1))
+  
+  @targetName("times")
+  def *(count2: Int): Molecule = Molecule(count*count2, elements)
 
 object Charisma:
   def element(context: Expr[StringContext])(using Quotes): Expr[ChemicalElement] =
