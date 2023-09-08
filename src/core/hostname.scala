@@ -66,7 +66,7 @@ object Hostname:
 
     def recur(index: Int, dnsLabels: List[DnsLabel]): Hostname = safely(text(index)) match
       case '.' | Unset =>
-        val label = buffer.toString.tt
+        val label = buffer.text
         if label.empty then raise(HostnameError(EmptyDnsLabel(dnsLabels.length)))(())
         if label.length > 63 then raise(HostnameError(LongDnsLabel(label)))(())
         if label.starts(t"-") then raise(HostnameError(InitialDash(label)))(())

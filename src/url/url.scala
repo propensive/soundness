@@ -32,11 +32,11 @@ case class UrlError(text: Text, offset: Int, expected: UrlError.Expectation)
 extends Error(msg"the URL $text is not valid: expected $expected at $offset")
 
 object Scheme:
-  given Show[Scheme] = _.name
-  object Http extends Scheme(t"http")
-  object Https extends Scheme(t"https")
+  given Show[Scheme[Label]] = _.name
+  object Http extends Scheme["http"](t"http")
+  object Https extends Scheme["https"](t"https")
 
-case class Scheme(name: Text)
+case class Scheme[+SchemeType <: Label](name: Text)
 
 case class Raw(text: Text)
 
@@ -50,8 +50,8 @@ enum UrlInput:
   case Textual(value: Text)
   case RawTextual(value: Text)
 
-object UrlInterpolator extends contextual.Interpolator[UrlInput, Text, Url]:
-  def complete(value: Text): Url =
+object UrlInterpolator extends contextual.Interpolator[UrlInput, Text, Url[Label]]:
+  def complete(value: Text): Url[Label] =
     try throwErrors(Url.parse(value)) catch
       case err: UrlError      => throw InterpolationError(Message(err.message.text))
       case err: HostnameError => throw InterpolationError(Message(err.message.text))
@@ -104,79 +104,79 @@ object UrlInterpolator extends contextual.Interpolator[UrlInput, Text, Url]:
   def skip(state: Text): Text = state+t"1"
 
 object Url:
-  given GenericUrl[Url] = _.show
-  given (using Raises[UrlError], Raises[HostnameError]): SpecificUrl[Url] = Url.parse(_)
-  given GenericHttpRequestParam["location", Url] = show(_)
-  given (using Raises[UrlError], Raises[HostnameError]): Decoder[Url] = parse(_)
-  given Encoder[Url] = _.show
-  given Debug[Url] = _.show
+  given GenericUrl[Url["http" | "https"]] = _.show
+  given (using Raises[UrlError], Raises[HostnameError]): SpecificUrl[Url["http" | "https"]] = Url.parse(_)
+  given [SchemeType <: Label]: GenericHttpRequestParam["location", Url[SchemeType]] = show(_)
+  given [SchemeType <: Label](using Raises[UrlError], Raises[HostnameError]): Decoder[Url[SchemeType]] = parse(_)
+  given [SchemeType <: Label]: Encoder[Url[SchemeType]] = _.show
 
-  given Reachable[Url, "", (Scheme, Maybe[Authority])] with
-    def separator(url: Url): Text = t"/"
-    def descent(url: Url): List[PathName[""]] = url.path
-    def root(url: Url): (Scheme, Maybe[Authority]) = (url.scheme, url.authority)
+  given [SchemeType <: Label]: Reachable[Url[SchemeType], "", (Scheme[SchemeType], Maybe[Authority])] with
+    def separator(url: Url[SchemeType]): Text = t"/"
+    def descent(url: Url[SchemeType]): List[PathName[""]] = url.path
+    def root(url: Url[SchemeType]): (Scheme[SchemeType], Maybe[Authority]) = (url.scheme, url.authority)
     
-    def prefix(root: (Scheme, Maybe[Authority])): Text =
+    def prefix(root: (Scheme[SchemeType], Maybe[Authority])): Text =
       t"${root(0).name}:${root(1).mm(t"//"+_.show).or(t"")}"
     
-  given PathCreator[Url, "", (Scheme, Maybe[Authority])] with
-    def path(ascent: (Scheme, Maybe[Authority]), descent: List[PathName[""]]): Url =
+  given [SchemeType <: Label]: PathCreator[Url[SchemeType], "", (Scheme[SchemeType], Maybe[Authority])] with
+    def path(ascent: (Scheme[SchemeType], Maybe[Authority]), descent: List[PathName[""]]): Url[SchemeType] =
       Url(ascent(0), ascent(1), descent.reverse.map(_.render).join(t"/"))
     
-  given show: Show[Url] = url =>
+  given show[SchemeType <: Label]: Show[Url[SchemeType]] = url =>
     val auth = url.authority.fm(t"")(t"//"+_.show)
     val rest = t"${url.query.fm(t"")(t"?"+_)}${url.fragment.fm(t"")(t"#"+_)}"
     t"${url.scheme}:$auth${url.pathText}$rest"
   
-  given ansiShow: Display[Url] = url => out"$Underline(${colors.DeepSkyBlue}(${show(url)}))"
+  given ansiShow[SchemeType <: Label]: Display[Url[SchemeType]] = url => out"$Underline(${colors.DeepSkyBlue}(${show(url)}))"
 
-  given asMessage: MessageShow[Url] = url => Message(show(url))
+  given asMessage[SchemeType <: Label]: MessageShow[Url[SchemeType]] = url => Message(show(url))
 
-  given action: GenericHtmlAttribute["action", Url] with
+  given action[SchemeType <: Label]: GenericHtmlAttribute["action", Url[SchemeType]] with
     def name: Text = t"action"
-    def serialize(url: Url): Text = url.show
+    def serialize(url: Url[SchemeType]): Text = url.show
   
-  given codebase: GenericHtmlAttribute["codebase", Url] with
+  given codebase[SchemeType <: Label]: GenericHtmlAttribute["codebase", Url[SchemeType]] with
     def name: Text = t"codebase"
-    def serialize(url: Url): Text = url.show
+    def serialize(url: Url[SchemeType]): Text = url.show
   
-  given cite: GenericHtmlAttribute["cite", Url] with
+  given cite[SchemeType <: Label]: GenericHtmlAttribute["cite", Url[SchemeType]] with
     def name: Text = t"cite"
-    def serialize(url: Url): Text = url.show
+    def serialize(url: Url[SchemeType]): Text = url.show
   
-  given data: GenericHtmlAttribute["data", Url] with
+  given data[SchemeType <: Label]: GenericHtmlAttribute["data", Url[SchemeType]] with
     def name: Text = t"data"
-    def serialize(url: Url): Text = url.show
+    def serialize(url: Url[SchemeType]): Text = url.show
 
-  given formaction: GenericHtmlAttribute["formaction", Url] with
+  given formaction[SchemeType <: Label]: GenericHtmlAttribute["formaction", Url[SchemeType]] with
     def name: Text = t"formaction"
-    def serialize(url: Url): Text = url.show
+    def serialize(url: Url[SchemeType]): Text = url.show
  
-  given poster: GenericHtmlAttribute["poster", Url] with
+  given poster[SchemeType <: Label]: GenericHtmlAttribute["poster", Url[SchemeType]] with
     def name: Text = t"poster"
-    def serialize(url: Url): Text = url.show
+    def serialize(url: Url[SchemeType]): Text = url.show
 
-  given src: GenericHtmlAttribute["src", Url] with
+  given src[SchemeType <: Label]: GenericHtmlAttribute["src", Url[SchemeType]] with
     def name: Text = t"src"
-    def serialize(url: Url): Text = url.show
+    def serialize(url: Url[SchemeType]): Text = url.show
   
-  given href: GenericHtmlAttribute["href", Url] with
+  given href[SchemeType <: Label]: GenericHtmlAttribute["href", Url[SchemeType]] with
     def name: Text = t"href"
-    def serialize(url: Url): Text = url.show
+    def serialize(url: Url[SchemeType]): Text = url.show
   
-  given manifest: GenericHtmlAttribute["manifest", Url] with
+  given manifest[SchemeType <: Label]: GenericHtmlAttribute["manifest", Url[SchemeType]] with
     def name: Text = t"manifest"
-    def serialize(url: Url): Text = url.show
+    def serialize(url: Url[SchemeType]): Text = url.show
 
-  def parse(value: Text)(using Raises[UrlError], Raises[HostnameError]): Url =
+  def parse[SchemeType <: Label](value: Text)(using Raises[UrlError], Raises[HostnameError]): Url[SchemeType] =
     import UrlError.Expectation.*
 
     safely(value.where(_ == ':')) match
       case Unset =>
-        raise(UrlError(value, value.length, Colon))(Url(Scheme.Https, Unset, t""))
+        abort(UrlError(value, value.length, Colon))
       
       case colon: Int =>
-        val scheme = Scheme(value.take(colon))
+        val text = value.take(colon)
+        val scheme = Scheme(text)
         
         val (pathStart, auth) =
           if value.slice(colon + 1, colon + 3) == t"//" then
@@ -241,7 +241,8 @@ object Weblink:
 case class Weblink(ascent: Int, descent: List[PathName[""]])
 
 case class Url
-    (scheme: Scheme, authority: Maybe[Authority], pathText: Text, query: Maybe[Text] = Unset,
+    [+SchemeType <: Label]
+    (scheme: Scheme[SchemeType], authority: Maybe[Authority], pathText: Text, query: Maybe[Text] = Unset,
         fragment: Maybe[Text] = Unset):
   
   lazy val path: List[PathName[""]] =

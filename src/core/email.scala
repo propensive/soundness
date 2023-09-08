@@ -88,7 +88,7 @@ object EmailAddress:
             quoted(index + 1, false)
           else
             if safely(text(index + 1)) == '@'
-            then (LocalPart.Quoted(buffer.toString.tt), index + 2)
+            then (LocalPart.Quoted(buffer.text), index + 2)
             else abort(EmailAddressError(UnescapedQuote))
         
         case '\\' =>
@@ -100,14 +100,14 @@ object EmailAddress:
           quoted(index + 1, false)
 
         case Unset =>
-          raise(EmailAddressError(UnclosedQuote))((LocalPart.Quoted(buffer.toString.tt), index))
+          raise(EmailAddressError(UnclosedQuote))((LocalPart.Quoted(buffer.text), index))
     
     def unquoted(index: Int, dot: Boolean): (LocalPart, Int) =
       safely(text(index)) match
         case '@' =>
           if dot then raise(EmailAddressError(TerminalPeriod))(())
           if buffer.length > 64 then raise(EmailAddressError(LongLocalPart))(())
-          (LocalPart.Unquoted(buffer.toString.tt), index + 1)
+          (LocalPart.Unquoted(buffer.text), index + 1)
 
         case '.'  =>
           if dot then raise(EmailAddressError(SuccessivePeriods))(())
@@ -122,7 +122,7 @@ object EmailAddress:
           unquoted(index + 1, false)
 
         case Unset =>
-          raise(EmailAddressError(MissingAtSymbol))((LocalPart.Unquoted(buffer.toString.tt), index))
+          raise(EmailAddressError(MissingAtSymbol))((LocalPart.Unquoted(buffer.text), index))
     
     val (localPart, index) =
       if text.starts(t"\"") then quoted(1, false) else unquoted(0, false)
@@ -131,8 +131,8 @@ object EmailAddress:
       if text.length < index + 1 then abort(EmailAddressError(MissingDomain))
       else if safely(text(index)) == '[' then
         try
-          import errorHandlers.throwUnsafely
           if text.last != ']' then abort(EmailAddressError(UnclosedIpAddress))
+          import errorHandlers.throwUnsafely
           val ipAddress = text.slice(index + 1, text.length - 1)
           if ipAddress.starts(t"IPv6:") then Ipv6.parse(ipAddress.drop(5)) else Ipv4.parse(ipAddress)
         catch case error: IpAddressError =>

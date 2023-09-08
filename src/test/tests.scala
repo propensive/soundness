@@ -258,7 +258,39 @@ object Tests extends Suite(t"Nettlesome tests"):
       test(t"Create an IPv6 email address at compiletime"):
         email"test@[IPv6:1234::6789]"
       .assert(_ == EmailAddress.parse(t"test@[IPv6:1234::6789]"))
+      
+      test(t"Create a quoted email address at compiletime"):
+        email""""test user"@example.com"""
+      .assert(_ == EmailAddress.parse(t""""test user"@example.com"""))
     
+      test(t"forbidden.@example.com"):
+        capture(EmailAddress.parse(t"forbidden.@example.com"))
+      .assert(_ == EmailAddressError(TerminalPeriod))
+      
+      test(t".forbidden@example.com"):
+        capture(EmailAddress.parse(t".forbidden@example.com"))
+      .assert(_ == EmailAddressError(InitialPeriod))
+      
+      test(t"not..allowed@example.com"):
+        capture(EmailAddress.parse(t"not..allowed@example.com"))
+      .assert(_ == EmailAddressError(SuccessivePeriods))
+      
+      test(t""""unescaped quote " is forbidden"@example.com"""):
+        capture(EmailAddress.parse(t""""unescaped quote " is forbidden"@example.com"""))
+      .assert(_ == EmailAddressError(UnescapedQuote))
+      
+      test(t""""unclosed.quote@example.com"""):
+        capture(EmailAddress.parse(t""""unclosed.quote@example.com"""))
+      .assert(_ == EmailAddressError(UnclosedQuote))
+      
+      test(t"""missing.domain@"""):
+        capture(EmailAddress.parse(t"""missing.domain@"""))
+      .assert(_ == EmailAddressError(MissingDomain))
+      
+      test(t"""unclosed IP address domain"""):
+        capture(EmailAddress.parse(t"""user@[192.168.0.1"""))
+      .assert(_ == EmailAddressError(UnclosedIpAddress))
+      
     suite(t"URL tests"):
       test(t"parse Authority with username and password"):
         Authority.parse(t"username:password@example.com")
