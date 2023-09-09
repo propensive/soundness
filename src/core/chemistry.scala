@@ -2,13 +2,10 @@ package charisma
 
 import gossamer.*
 import rudiments.*
-import fulminate.*
 import anticipation.*
 import perforate.*
 import hieroglyph.*
 import spectacular.*
-
-import scala.quoted.*
 
 object PeriodicTable:
   val H = ChemicalElement(1,   t"H",  t"Hydrogen")
@@ -144,8 +141,18 @@ object PeriodicTable:
   def apply(symbol: Text): Maybe[ChemicalElement] = symbols.getOrElse(symbol, Unset)
 
 case class ChemicalElement(number: Int, symbol: Text, name: Text):
-  @targetName("sub")
-  def *(count: Int): Molecule = Molecule(1, Map(this -> count))
+  def apply[CountType <: Nat: ValueOf]: Molecule = Molecule(1, Map(this -> valueOf[CountType]))
+  def molecule: Molecule = apply[1]
+  def formula: ChemicalFormula = ChemicalFormula(apply[1])
+
+  @targetName("plus")
+  def +(element: ChemicalElement): ChemicalFormula = this + element.formula
+  
+  @targetName("plus2")
+  def +(molecule: Molecule): ChemicalFormula = this + molecule.formula
+  
+  @targetName("plus3")
+  def +(formula: ChemicalFormula): ChemicalFormula = ChemicalFormula((formula.molecules :+ molecule)*)
 
 object Molecule:
   given Show[Molecule] = molecule =>
@@ -169,29 +176,49 @@ object Molecule:
       t"${element.symbol}$number"
     .join(if molecule.count == 1 then t"" else molecule.count.show, t"", t"")
 
+  def apply(element: ChemicalElement): Molecule = element.molecule
+
 case class Molecule(count: Int, elements: Map[ChemicalElement, Int]):
-  @targetName("and")
-  def &(other: Molecule): Molecule =
+  @targetName("with")
+  def *(other: Molecule): Molecule =
     val elements2 = other.elements.foldLeft(elements): (acc, next) =>
       acc.updated(next(0), elements.getOrElse(next(0), 0) + next(1))
     
     Molecule(count, elements2)
 
-  @targetName("and2")
-  def &(element: ChemicalElement): Molecule =
-    this & Molecule(1, Map(element -> 1))
-  
+  @targetName("with2")
+  def *(element: ChemicalElement): Molecule = this*Molecule(element)
+
   @targetName("times")
-  def *(count2: Int): Molecule = Molecule(count*count2, elements)
+  def *(multiplier: Int): Molecule = Molecule(count*multiplier, elements)
+  
+  @targetName("plus")
+  def +(element: ChemicalElement): ChemicalFormula = this + element.formula
+  
+  @targetName("plus2")
+  def +(molecule: Molecule): ChemicalFormula = this + molecule.formula
+  
+  @targetName("plus3")
+  def +(formula: ChemicalFormula): ChemicalFormula = ChemicalFormula((formula.molecules :+ this)*)
 
-object Charisma:
-  def element(context: Expr[StringContext])(using Quotes): Expr[ChemicalElement] =
-    import quotes.reflect.*
-    val symbol = context.valueOrAbort.parts.head.tt
-    
-    if !PeriodicTable.symbols.contains(symbol)
-    then fail(msg"there is no known chemical element with the symbol ${symbol}")
-    else '{PeriodicTable(${Expr(symbol)}).avow(using Unsafe)}
+  def formula: ChemicalFormula = ChemicalFormula(this)
 
-extension (inline context: StringContext)
-  inline def e(): ChemicalElement = ${Charisma.element('context)}
+object ChemicalFormula:
+  given show: Show[ChemicalFormula] = formula =>
+    formula.molecules.reverse.map(_.show).join(t" + ")
+
+case class ChemicalFormula(molecules: Molecule*):
+  @targetName("plus")
+  def +(element: ChemicalElement): ChemicalFormula = ChemicalFormula((Molecule(element) +: molecules)*)
+  
+  @targetName("plus2")
+  def +(molecule: Molecule): ChemicalFormula = ChemicalFormula((molecule +: molecules)*)
+  
+  @targetName("plus3")
+  def +(formula: ChemicalFormula): ChemicalFormula = ChemicalFormula((formula.molecules ++ molecules)*)
+
+object ChemicalEquation:
+  given show: Show[ChemicalEquation] = equation =>
+    t"${equation.lhs} → ${equation.rhs}"
+
+case class ChemicalEquation(lhs: ChemicalFormula, rhs: ChemicalFormula)
