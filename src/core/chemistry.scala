@@ -156,19 +156,9 @@ object PeriodicTable:
   def apply(number: Int): Maybe[ChemicalElement] = if 1 <= number <= 118 then elements(number - 1) else Unset
   def apply(symbol: Text): Maybe[ChemicalElement] = symbols.getOrElse(symbol, Unset)
 
-case class ChemicalElement(number: Int, symbol: Text, name: Text):
+case class ChemicalElement(number: Int, symbol: Text, name: Text) extends Moleculable:
   def apply[CountType <: Nat: ValueOf]: Molecule = Molecule(1, Map(this -> valueOf[CountType]))
   def molecule: Molecule = apply[1]
-  def formula: ChemicalFormula = ChemicalFormula(apply[1])
-
-  @targetName("plus")
-  def +(element: ChemicalElement): ChemicalFormula = this + element.formula
-  
-  @targetName("plus2")
-  def +(molecule: Molecule): ChemicalFormula = this + molecule.formula
-  
-  @targetName("plus3")
-  def +(formula: ChemicalFormula): ChemicalFormula = ChemicalFormula((formula.molecules :+ molecule)*)
 
 object Molecule:
   given Show[Molecule] = molecule =>
@@ -194,47 +184,56 @@ object Molecule:
 
   def apply(element: ChemicalElement): Molecule = element.molecule
 
-case class Molecule(count: Int, elements: Map[ChemicalElement, Int]):
+trait Moleculable extends Formulable:
+  def molecule: Molecule
+  def formula: ChemicalFormula = ChemicalFormula(molecule)
+  
   @targetName("with")
-  def *(other: Molecule): Molecule =
-    val elements2 = other.elements.foldLeft(elements): (acc, next) =>
-      acc.updated(next(0), elements.getOrElse(next(0), 0) + next(1))
+  def *(moleculable: Moleculable): Molecule =
+    val elements2 = moleculable.molecule.elements.foldLeft(molecule.elements): (acc, next) =>
+      acc.updated(next(0), molecule.elements.getOrElse(next(0), 0) + next(1))
     
-    Molecule(count, elements2)
-
-  @targetName("with2")
-  def *(element: ChemicalElement): Molecule = this*Molecule(element)
-
+    Molecule(molecule.count*moleculable.molecule.count, elements2)
+  
   @targetName("times")
-  def *(multiplier: Int): Molecule = Molecule(count*multiplier, elements)
+  def *(multiplier: Int): Molecule = Molecule(molecule.count*multiplier, molecule.elements)
+
+trait Formulable:
+  def formula: ChemicalFormula
   
   @targetName("plus")
-  def +(element: ChemicalElement): ChemicalFormula = this + element.formula
+  def +(formulable: Formulable): ChemicalFormula =
+    ChemicalFormula((formula.molecules ++ formulable.formula.molecules)*)
   
-  @targetName("plus2")
-  def +(molecule: Molecule): ChemicalFormula = this + molecule.formula
-  
-  @targetName("plus3")
-  def +(formula: ChemicalFormula): ChemicalFormula = ChemicalFormula((formula.molecules :+ this)*)
+  def -->(rhs: Formulable): ChemicalEquation = ChemicalEquation(formula, Reaction.NetForward,     rhs.formula)
+  def <->(rhs: Formulable): ChemicalEquation = ChemicalEquation(formula, Reaction.Resonance,      rhs.formula)
+  def <=>(rhs: Formulable): ChemicalEquation = ChemicalEquation(formula, Reaction.BothDirections, rhs.formula)
+  def <~>(rhs: Formulable): ChemicalEquation = ChemicalEquation(formula, Reaction.Equilibrium,    rhs.formula)
+  def ===(rhs: Formulable): ChemicalEquation = ChemicalEquation(formula, Reaction.Stoichiometric, rhs.formula)
 
-  def formula: ChemicalFormula = ChemicalFormula(this)
+case class Molecule(count: Int, elements: Map[ChemicalElement, Int]) extends Moleculable:
+  def molecule: Molecule = this
 
 object ChemicalFormula:
   given show: Show[ChemicalFormula] = formula =>
     formula.molecules.reverse.map(_.show).join(t" + ")
 
-case class ChemicalFormula(molecules: Molecule*):
-  @targetName("plus")
-  def +(element: ChemicalElement): ChemicalFormula = ChemicalFormula((Molecule(element) +: molecules)*)
-  
-  @targetName("plus2")
-  def +(molecule: Molecule): ChemicalFormula = ChemicalFormula((molecule +: molecules)*)
-  
-  @targetName("plus3")
-  def +(formula: ChemicalFormula): ChemicalFormula = ChemicalFormula((formula.molecules ++ molecules)*)
+case class ChemicalFormula(molecules: Molecule*) extends Formulable:
+  def formula: ChemicalFormula = this
 
 object ChemicalEquation:
   given show: Show[ChemicalEquation] = equation =>
-    t"${equation.lhs} → ${equation.rhs}"
+    t"${equation.lhs} ${equation.reaction} ${equation.rhs}"
 
-case class ChemicalEquation(lhs: ChemicalFormula, rhs: ChemicalFormula)
+enum Reaction:
+  case NetForward, BothDirections, Equilibrium, Stoichiometric, Resonance
+
+object Reaction:
+  given show: Show[Reaction] =
+    case NetForward     => t"→"
+    case BothDirections => t"⇄"
+    case Equilibrium    => t"⇋"
+    case Stoichiometric => t"↔"
+    case Resonance      => t"="
+
+case class ChemicalEquation(lhs: ChemicalFormula, reaction: Reaction, rhs: ChemicalFormula)
