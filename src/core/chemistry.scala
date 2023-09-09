@@ -159,12 +159,15 @@ object PeriodicTable:
   def apply(number: Int): Maybe[ChemicalElement] = if 1 <= number <= 118 then elements(number - 1) else Unset
   def apply(symbol: Text): Maybe[ChemicalElement] = symbols.getOrElse(symbol, Unset)
 
+object ChemicalElement:
+  given show: Show[ChemicalElement] = _.symbol
+
 case class ChemicalElement(number: Int, symbol: Text, name: Text):
   @targetName("sub")
   def *(count: Int): Molecule = Molecule(1, Map(this -> count))
 
 object Molecule:
-  given Show[Molecule] = molecule =>
+  given show: Show[Molecule] = molecule =>
     val orderedElements =
       if !molecule.elements.contains(PeriodicTable.C)
       then molecule.elements.to(List).sortBy(_(0).symbol)
