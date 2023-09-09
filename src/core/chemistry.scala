@@ -205,10 +205,19 @@ trait Formulable:
   def +(formulable: Formulable): ChemicalFormula =
     ChemicalFormula((formula.molecules ++ formulable.formula.molecules)*)
   
+  @targetName("netForward")
   def -->(rhs: Formulable): ChemicalEquation = ChemicalEquation(formula, Reaction.NetForward,     rhs.formula)
+  
+  @targetName("resonance")
   def <->(rhs: Formulable): ChemicalEquation = ChemicalEquation(formula, Reaction.Resonance,      rhs.formula)
+  
+  @targetName("bothDirections")
   def <=>(rhs: Formulable): ChemicalEquation = ChemicalEquation(formula, Reaction.BothDirections, rhs.formula)
+  
+  @targetName("equilibrium")
   def <~>(rhs: Formulable): ChemicalEquation = ChemicalEquation(formula, Reaction.Equilibrium,    rhs.formula)
+  
+  @targetName("stoichiometric")
   def ===(rhs: Formulable): ChemicalEquation = ChemicalEquation(formula, Reaction.Stoichiometric, rhs.formula)
 
 case class Molecule(count: Int, elements: Map[ChemicalElement, Int]) extends Moleculable:
