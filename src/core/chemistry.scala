@@ -18,13 +18,10 @@ package charisma
 
 import gossamer.*
 import rudiments.*
-import fulminate.*
 import anticipation.*
 import perforate.*
 import hieroglyph.*
 import spectacular.*
-
-import scala.quoted.*
 
 object PeriodicTable:
   val H = ChemicalElement(1,   t"H",  t"Hydrogen")
@@ -188,29 +185,67 @@ object Molecule:
       t"${element.symbol}$number"
     .join(if molecule.count == 1 then t"" else molecule.count.show, t"", t"")
 
-case class Molecule(count: Int, elements: Map[ChemicalElement, Int]):
-  @targetName("and")
-  def &(other: Molecule): Molecule =
-    val elements2 = other.elements.foldLeft(elements): (acc, next) =>
-      acc.updated(next(0), elements.getOrElse(next(0), 0) + next(1))
-    
-    Molecule(count, elements2)
+  def apply(element: ChemicalElement): Molecule = element.molecule
 
-  @targetName("and2")
-  def &(element: ChemicalElement): Molecule =
-    this & Molecule(1, Map(element -> 1))
+trait Moleculable extends Formulable:
+  def molecule: Molecule
+  def formula: ChemicalFormula = ChemicalFormula(molecule)
+  
+  @targetName("with")
+  def *(moleculable: Moleculable): Molecule =
+    val elements2 = moleculable.molecule.elements.foldLeft(molecule.elements): (acc, next) =>
+      acc.updated(next(0), molecule.elements.getOrElse(next(0), 0) + next(1))
+    
+    Molecule(molecule.count*moleculable.molecule.count, elements2)
   
   @targetName("times")
-  def *(count2: Int): Molecule = Molecule(count*count2, elements)
+  def *(multiplier: Int): Molecule = Molecule(molecule.count*multiplier, molecule.elements)
 
-object Charisma:
-  def element(context: Expr[StringContext])(using Quotes): Expr[ChemicalElement] =
-    import quotes.reflect.*
-    val symbol = context.valueOrAbort.parts.head.tt
-    
-    if !PeriodicTable.symbols.contains(symbol)
-    then fail(msg"there is no known chemical element with the symbol ${symbol}")
-    else '{PeriodicTable(${Expr(symbol)}).avow(using Unsafe)}
+trait Formulable:
+  def formula: ChemicalFormula
+  
+  @targetName("plus")
+  def +(formulable: Formulable): ChemicalFormula =
+    ChemicalFormula((formula.molecules ++ formulable.formula.molecules)*)
+  
+  @targetName("netForward")
+  def -->(rhs: Formulable): ChemicalEquation = ChemicalEquation(formula, Reaction.NetForward,     rhs.formula)
+  
+  @targetName("resonance")
+  def <->(rhs: Formulable): ChemicalEquation = ChemicalEquation(formula, Reaction.Resonance,      rhs.formula)
+  
+  @targetName("bothDirections")
+  def <=>(rhs: Formulable): ChemicalEquation = ChemicalEquation(formula, Reaction.BothDirections, rhs.formula)
+  
+  @targetName("equilibrium")
+  def <~>(rhs: Formulable): ChemicalEquation = ChemicalEquation(formula, Reaction.Equilibrium,    rhs.formula)
+  
+  @targetName("stoichiometric")
+  def ===(rhs: Formulable): ChemicalEquation = ChemicalEquation(formula, Reaction.Stoichiometric, rhs.formula)
 
-extension (inline context: StringContext)
-  inline def e(): ChemicalElement = ${Charisma.element('context)}
+case class Molecule(count: Int, elements: Map[ChemicalElement, Int]) extends Moleculable:
+  def molecule: Molecule = this
+
+object ChemicalFormula:
+  given show: Show[ChemicalFormula] = formula =>
+    formula.molecules.reverse.map(_.show).join(t" + ")
+
+case class ChemicalFormula(molecules: Molecule*) extends Formulable:
+  def formula: ChemicalFormula = this
+
+object ChemicalEquation:
+  given show: Show[ChemicalEquation] = equation =>
+    t"${equation.lhs} ${equation.reaction} ${equation.rhs}"
+
+enum Reaction:
+  case NetForward, BothDirections, Equilibrium, Stoichiometric, Resonance
+
+object Reaction:
+  given show: Show[Reaction] =
+    case NetForward     => t"→"
+    case BothDirections => t"⇄"
+    case Equilibrium    => t"⇋"
+    case Stoichiometric => t"↔"
+    case Resonance      => t"="
+
+case class ChemicalEquation(lhs: ChemicalFormula, reaction: Reaction, rhs: ChemicalFormula)
