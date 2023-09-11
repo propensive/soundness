@@ -180,18 +180,18 @@ object Molecule:
         
         carbon :: hydrogen ::: rest
 
-    val charge =
+    val suffix =
       val polarity = if molecule.charge == 0 then t"" else if molecule.charge < 0 then t"⁻" else t"⁺"
       
       val magnitude = if math.abs(molecule.charge) < 2 then t"" else
         t"${math.abs(molecule.charge).show.chars.map(_.superscript).sift[Char].map(_.show).join}"
 
-      t"$magnitude$polarity"
+      t"$magnitude$polarity${molecule.state.mm(_.show).or(t"")}"
     
     orderedElements.map: (element, count) =>
       val number = if count == 1 then t"" else count.show.chars.map(_.subscript).sift[Char].map(_.show).join
       t"${element.symbol}$number"
-    .join(if molecule.count == 1 then t"" else molecule.count.show, t"", charge)
+    .join(if molecule.count == 1 then t"" else molecule.count.show, t"", suffix)
 
   def apply(element: ChemicalElement): Molecule = element.molecule
 
@@ -217,6 +217,7 @@ trait Molecular extends Formulable:
   def `unary_+`: Molecule = molecule.copy(charge = molecule.charge + 1)
   
   def ion(charge: Int): Molecule = molecule.copy(charge = charge)
+  def as(state: Maybe[PhysicalState]): Molecule = molecule.copy(state = state)
 
 trait Formulable:
   def formula: ChemicalFormula
@@ -240,7 +241,9 @@ trait Formulable:
   @targetName("stoichiometric")
   def ===(rhs: Formulable): ChemicalEquation = ChemicalEquation(formula, Reaction.Stoichiometric, rhs.formula)
 
-case class Molecule(count: Int, elements: Map[ChemicalElement, Int], charge: Int) extends Molecular:
+case class Molecule
+    (count: Int, elements: Map[ChemicalElement, Int], charge: Int, state: Maybe[PhysicalState] = Unset)
+extends Molecular:
   def molecule: Molecule = this
 
 object ChemicalFormula:
@@ -253,6 +256,16 @@ case class ChemicalFormula(molecules: Molecule*) extends Formulable:
 object ChemicalEquation:
   given show: Show[ChemicalEquation] = equation =>
     t"${equation.lhs} ${equation.reaction} ${equation.rhs}"
+
+enum PhysicalState:
+  case Solid, Liquid, Gas, Aqueous
+
+object PhysicalState:
+  given show: Show[PhysicalState] =
+    case Solid   => t"(s)"
+    case Liquid  => t"(l)"
+    case Gas     => t"(g)"
+    case Aqueous => t"(aq)"
 
 enum Reaction:
   case NetForward, BothDirections, Equilibrium, Stoichiometric, Resonance
