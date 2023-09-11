@@ -66,13 +66,30 @@ Generally, it is better to program to the `Molecular` and `Forbulable`
 interfaces, rather than `Molecule` or `ChemicalFormula`, for the greatest
 flexibility.
 
-### Other properties
+### Molecular properties
 
 Molecular values may be ionized with a positive or negative integer charge. For
 unit charges, a unary `+` or `-` may prefix a `Molecular` value, e.g. `+Na` or
 `-C[2]*H[3]*O[2]` (acetate). The charges of ions or ionic compounds will be
 added when combined, so `+Na*(-Cl)` (salt) will produce the chargeless
 compound, NaCl.
+
+A non-unit charge may be specified for any molecule with its `ion` method,
+specifying its integral charge value.
+
+Molecules in a chemical equation can also be identified as having a particular
+physical state, namely solid, liquid, gas or aqueous. These four states are
+represented by the enumeration, `PhysicalState` as `Solid`, `Liquid`, `Gas` and
+`Aqueous`, and can be specified for any `Molecular` value with its `as` method.
+For example, `(Na*Cl).as(Aqueous)` represents an aqueous salt solution.
+
+By default, a molecule's state is unspecified, represented by the `Unset`
+value, and any combination of molecules with physical states set (other than
+integer multiplication) will unset their physical states, since the resultant
+state cannot be easily and reliably predicted. Therefore, in the earlier
+example, `(Na*Cl).as(Aqueous)`, the parentheses are important as the aqueous
+state would otherwise be specified for Chlorine, but unset immediately upon
+combining with Sodium.
 
 ### Rendering
 
