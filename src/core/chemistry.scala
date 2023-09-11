@@ -156,6 +156,9 @@ object PeriodicTable:
   def apply(number: Int): Maybe[ChemicalElement] = if 1 <= number <= 118 then elements(number - 1) else Unset
   def apply(symbol: Text): Maybe[ChemicalElement] = symbols.getOrElse(symbol, Unset)
 
+object ChemicalElement:
+  given show: Show[ChemicalElement] = _.symbol
+
 case class ChemicalElement(number: Int, symbol: Text, name: Text) extends Molecular:
   def apply[CountType <: Nat: ValueOf]: Molecule = Molecule(1, Map(this -> valueOf[CountType]), 0)
   def molecule: Molecule = apply[1]
@@ -206,8 +209,12 @@ trait Molecular extends Formulable:
   @targetName("times")
   def *(multiplier: Int): Molecule = Molecule(molecule.count*multiplier, molecule.elements, molecule.charge)
   
+  @targetName("cation")
   def `unary_-`: Molecule = molecule.copy(charge = molecule.charge - 1)
+  
+  @targetName("anion")
   def `unary_+`: Molecule = molecule.copy(charge = molecule.charge + 1)
+  
   def ion(charge: Int): Molecule = molecule.copy(charge = charge)
 
 trait Formulable:

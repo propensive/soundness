@@ -4,12 +4,15 @@
 
 # Charisma
 
-____
+__Representations of chemicals__
 
-
+__Charisma__ provides a simple representation of chemical elements and formulas in Scala.
 
 ## Features
 
+- provides representations (with names) of the 118 chemical elements known since 2015
+- lightweight syntax for constructing molecules from multiples of elements
+- serialization to Unicode strings
 
 
 ## Availability
@@ -18,11 +21,90 @@ Charisma has not yet been published as a binary.
 
 ## Getting Started
 
+### Chemical Entities
+
+_Charisma_ provides representations of several increasingly-complex entities from chemistry,
+- chemical elements
+- molecules
+- chemical formulas
+- chemical equations
+which can be constructed, usually by composing other entities.
+
+#### Chemical Elements
+
+The 118 chemical elements known, and assigned names since 2015 are all
+represented in the `PeriodicTable` object, as members named after their
+chemical symbol. For example, Hydrogen is `PeriodicTable.H` and Chlorine is
+`PeriodicTable.Cl`. Each element is an instance of `ChemicalElement`, which
+defines its atomic number, name in English (noting that "Sulphur" and
+"Aluminium" are preferred over "Sulfur" and "Aluminum") and chemical symbol.
+
+#### Molecules
+
+Elements can be combined to produce molecules, instances of `Molecule`. To
+combine multiple atoms of the same element into a molecule, we apply an integer
+type parameter to that element, for example `PeriodicTable.O[2]` is `O₂` and
+`PeriodicTable.C[60]` would be `C₆₀`.
+
+Different elements can be combined using the `*` operator. So salt, `NaCl`,
+would be `Na*Cl`. Or sulphuric acid, `H₂O₄S`, could be constructed as,
+`H[2]*S*O[4]*S`.
+
+#### Chemical Formulas
+
+A `ChemicalFormula` is the addition of several molucules, combined in integer
+multiples using the `*` operator, and with other molecules with the `+`
+operator. For example, the products of photosynthesis, `C₆H₁₂O₆ + 6O₂` (sugar
+and oxygen), could be written, `C[6]*H[12]*O[6] + O[2]*6`.
+
+#### Chemical equation
+
+A `ChemicalEquation` describes a relationship between two `ChemicalFormula`s,
+and can be constructed using one the arrow operators between two chemical
+formulas. These arrow operators represent different relationsips between the
+sides of the equation, and are as follows:
+- `-->`: net forwards
+- `<->`: resonance
+- `<=>`: both directions
+- `<~>`: equilibrium
+- `===`: stoichiometric
+
+These different relationships are reprensented by the enumeration, `Reaction`.
+
+No checking is currently done to ensure that the left and right sides of the
+equation balance, but this may be added as a later feature.
+
+### Generality
+
+A `ChemicalElement` principally represents the _type_ of an atom and is not, in
+general, interchangeable with a `Molecule`. But in many circumstances, it can
+also serve to conveniently represent an atom of that element itself. So while a
+`ChemicalElement` is _not_ a `Molecule`, both have the supertype, `Molecular`.
+
+Likewise, `ChemicalElement`, `Molecule` and `ChemicalFormula` (as well as
+`Molecular`) are all subtypes of a further generalization, `Formulable` for
+types that can represent a chemical formula.
+
+Generally, it is better to program to the `Molecular` and `Forbulable`
+interfaces, rather than `Molecule` or `ChemicalFormula`, for the greatest
+flexibility.
+
+### Rendering
+
+`ChemicalElement`s, `Molecule`s, `ChemicalFormula`s and `ChemicalEquation`s all
+have `Show` instances which will render the types as text, using appropriate
+Unicode characters for subscripts.
+
+Since the different elements in a molecule could be written in any order with
+the same meaning, they are canonically written using the [Hill
+System](https://en.wikipedia.org/wiki/Chemical_formula#Hill_system).
+
+
 
 
 ## Status
 
-Charisma is classified as ____. For reference, Scala One projects are
+Charisma is classified as __embryotic__. For reference, Scala One projects are
 categorized into one of the following five stability levels:
 
 - _embryonic_: for experimental or demonstrative purposes only, without any guarantees of longevity
@@ -36,7 +118,7 @@ be used, but caution should be taken if there is a mismatch between the
 project's stability level and the importance of your own project.
 
 Charisma is designed to be _small_. Its entire source code currently consists
-of 197 lines of code.
+of 204 lines of code.
 
 ## Building
 
@@ -66,7 +148,11 @@ Charisma was designed and developed by Jon Pretty, and commercial support and tr
 
 ## Name
 
+One person's charisma may lead to figurative _chemistry_ with another.
 
+### Pronunciation
+
+`/kəˈɹɪzmə/`
 
 In general, Scala One project names are always chosen with some rationale, however it is usually
 frivolous. Each name is chosen for more for its _uniqueness_ and _intrigue_ than its concision or
