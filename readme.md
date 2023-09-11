@@ -89,6 +89,14 @@ Generally, it is better to program to the `Molecular` and `Forbulable`
 interfaces, rather than `Molecule` or `ChemicalFormula`, for the greatest
 flexibility.
 
+### Other properties
+
+Molecular values may be ionized with a positive or negative integer charge. For
+unit charges, a unary `+` or `-` may prefix a `Molecular` value, e.g. `+Na` or
+`-C[2]*H[3]*O[2]` (acetate). The charges of ions or ionic compounds will be
+added when combined, so `+Na*(-Cl)` (salt) will produce the chargeless
+compound, NaCl.
+
 ### Rendering
 
 `ChemicalElement`s, `Molecule`s, `ChemicalFormula`s and `ChemicalEquation`s all
