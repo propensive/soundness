@@ -156,12 +156,12 @@ object PeriodicTable:
   def apply(number: Int): Maybe[ChemicalElement] = if 1 <= number <= 118 then elements(number - 1) else Unset
   def apply(symbol: Text): Maybe[ChemicalElement] = symbols.getOrElse(symbol, Unset)
 
-case class ChemicalElement(number: Int, symbol: Text, name: Text) extends Moleculable:
-  def apply[CountType <: Nat: ValueOf]: Molecule = Molecule(1, Map(this -> valueOf[CountType]))
+case class ChemicalElement(number: Int, symbol: Text, name: Text) extends Molecular:
+  def apply[CountType <: Nat: ValueOf]: Molecule = Molecule(1, Map(this -> valueOf[CountType]), 0)
   def molecule: Molecule = apply[1]
 
 object Molecule:
-  given Show[Molecule] = molecule =>
+  given show: Show[Molecule] = molecule =>
     val orderedElements =
       if !molecule.elements.contains(PeriodicTable.C)
       then molecule.elements.to(List).sortBy(_(0).symbol)
@@ -176,27 +176,39 @@ object Molecule:
           (molecule.elements - PeriodicTable.C - PeriodicTable.H).to(List).sortBy(_(0).symbol)
         
         carbon :: hydrogen ::: rest
+
+    val charge =
+      val polarity = if molecule.charge == 0 then t"" else if molecule.charge < 0 then t"⁻" else t"⁺"
+      
+      val magnitude = if math.abs(molecule.charge) < 2 then t"" else
+        t"${math.abs(molecule.charge).show.chars.map(_.superscript).sift[Char].map(_.show).join}"
+
+      t"$magnitude$polarity"
     
     orderedElements.map: (element, count) =>
       val number = if count == 1 then t"" else count.show.chars.map(_.subscript).sift[Char].map(_.show).join
       t"${element.symbol}$number"
-    .join(if molecule.count == 1 then t"" else molecule.count.show, t"", t"")
+    .join(if molecule.count == 1 then t"" else molecule.count.show, t"", charge)
 
   def apply(element: ChemicalElement): Molecule = element.molecule
 
-trait Moleculable extends Formulable:
+trait Molecular extends Formulable:
   def molecule: Molecule
   def formula: ChemicalFormula = ChemicalFormula(molecule)
   
   @targetName("with")
-  def *(moleculable: Moleculable): Molecule =
+  def *(moleculable: Molecular): Molecule =
     val elements2 = moleculable.molecule.elements.foldLeft(molecule.elements): (acc, next) =>
       acc.updated(next(0), molecule.elements.getOrElse(next(0), 0) + next(1))
     
-    Molecule(molecule.count*moleculable.molecule.count, elements2)
+    Molecule(molecule.count*moleculable.molecule.count, elements2, molecule.charge)
   
   @targetName("times")
-  def *(multiplier: Int): Molecule = Molecule(molecule.count*multiplier, molecule.elements)
+  def *(multiplier: Int): Molecule = Molecule(molecule.count*multiplier, molecule.elements, molecule.charge)
+  
+  def `unary_-`: Molecule = molecule.copy(charge = molecule.charge - 1)
+  def `unary_+`: Molecule = molecule.copy(charge = molecule.charge + 1)
+  def ion(charge: Int): Molecule = molecule.copy(charge = charge)
 
 trait Formulable:
   def formula: ChemicalFormula
@@ -220,7 +232,7 @@ trait Formulable:
   @targetName("stoichiometric")
   def ===(rhs: Formulable): ChemicalEquation = ChemicalEquation(formula, Reaction.Stoichiometric, rhs.formula)
 
-case class Molecule(count: Int, elements: Map[ChemicalElement, Int]) extends Moleculable:
+case class Molecule(count: Int, elements: Map[ChemicalElement, Int], charge: Int) extends Molecular:
   def molecule: Molecule = this
 
 object ChemicalFormula:
