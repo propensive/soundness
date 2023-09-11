@@ -204,7 +204,8 @@ trait Molecular extends Formulable:
     val elements2 = moleculable.molecule.elements.foldLeft(molecule.elements): (acc, next) =>
       acc.updated(next(0), molecule.elements.getOrElse(next(0), 0) + next(1))
     
-    Molecule(molecule.count*moleculable.molecule.count, elements2, molecule.charge)
+    Molecule(molecule.count*moleculable.molecule.count, elements2,
+        molecule.charge + moleculable.molecule.charge)
   
   @targetName("times")
   def *(multiplier: Int): Molecule = Molecule(molecule.count*multiplier, molecule.elements, molecule.charge)
