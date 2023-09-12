@@ -22,6 +22,7 @@ import anticipation.*
 import perforate.*
 import hieroglyph.*
 import spectacular.*
+import symbolism.*
 
 object PeriodicTable:
   val H = ChemicalElement(1,   t"H",  t"Hydrogen")
@@ -160,7 +161,7 @@ object ChemicalElement:
   given show: Show[ChemicalElement] = _.symbol
 
 case class ChemicalElement(number: Int, symbol: Text, name: Text) extends Molecular:
-  def apply[CountType <: Nat: ValueOf]: Molecule = Molecule(1, Map(this -> valueOf[CountType]), 0)
+  def apply[CountType <: Nat: ValueOf]: Molecule = Molecule(Map(this -> valueOf[CountType]), 0)
   def molecule: Molecule = apply[1]
 
 object Molecule:
@@ -191,7 +192,7 @@ object Molecule:
     orderedElements.map: (element, count) =>
       val number = if count == 1 then t"" else count.show.chars.map(_.subscript).sift[Char].map(_.show).join
       t"${element.symbol}$number"
-    .join(if molecule.count == 1 then t"" else molecule.count.show, t"", suffix)
+    .join+suffix
 
   def apply(element: ChemicalElement): Molecule = element.molecule
 
@@ -204,11 +205,10 @@ trait Molecular extends Formulable:
     val elements2 = moleculable.molecule.elements.foldLeft(molecule.elements): (acc, next) =>
       acc.updated(next(0), molecule.elements.getOrElse(next(0), 0) + next(1))
     
-    Molecule(molecule.count*moleculable.molecule.count, elements2,
-        molecule.charge + moleculable.molecule.charge)
+    Molecule(elements2, molecule.charge + moleculable.molecule.charge)
   
   @targetName("times")
-  def *(multiplier: Int): Molecule = Molecule(molecule.count*multiplier, molecule.elements, molecule.charge)
+  def *(multiplier: Int): ChemicalFormula = ChemicalFormula(ListMap(molecule -> multiplier))
   
   @targetName("cation")
   def `unary_-`: Molecule = molecule.copy(charge = molecule.charge - 1)
@@ -223,34 +223,37 @@ trait Formulable:
   def formula: ChemicalFormula
   
   @targetName("plus")
-  def +(formulable: Formulable): ChemicalFormula =
-    ChemicalFormula((formula.molecules ++ formulable.formula.molecules)*)
+  def +(formulable: Formulable): ChemicalFormula = ChemicalFormula:
+    formulable.formula.molecules.foldLeft(formula.molecules): (acc, next) =>
+      acc.updated(next(0), formula.molecules.getOrElse(next(0), 0) + next(1))
   
   @targetName("netForward")
-  def -->(rhs: Formulable): ChemicalEquation = ChemicalEquation(formula, Reaction.NetForward,     rhs.formula)
+  def -->(rhs: Formulable): ChemicalEquation = ChemicalEquation(formula, Reaction.NetForward, rhs.formula)
   
   @targetName("resonance")
-  def <->(rhs: Formulable): ChemicalEquation = ChemicalEquation(formula, Reaction.Resonance,      rhs.formula)
+  def <->(rhs: Formulable): ChemicalEquation = ChemicalEquation(formula, Reaction.Resonance, rhs.formula)
   
   @targetName("bothDirections")
   def <=>(rhs: Formulable): ChemicalEquation = ChemicalEquation(formula, Reaction.BothDirections, rhs.formula)
   
   @targetName("equilibrium")
-  def <~>(rhs: Formulable): ChemicalEquation = ChemicalEquation(formula, Reaction.Equilibrium,    rhs.formula)
+  def <~>(rhs: Formulable): ChemicalEquation = ChemicalEquation(formula, Reaction.Equilibrium, rhs.formula)
   
   @targetName("stoichiometric")
   def ===(rhs: Formulable): ChemicalEquation = ChemicalEquation(formula, Reaction.Stoichiometric, rhs.formula)
 
-case class Molecule
-    (count: Int, elements: Map[ChemicalElement, Int], charge: Int, state: Maybe[PhysicalState] = Unset)
+case class Molecule(elements: Map[ChemicalElement, Int], charge: Int, state: Maybe[PhysicalState] = Unset)
 extends Molecular:
   def molecule: Molecule = this
 
 object ChemicalFormula:
+  def apply(molecule: Molecule): ChemicalFormula = ChemicalFormula(ListMap(molecule -> 1))
   given show: Show[ChemicalFormula] = formula =>
-    formula.molecules.reverse.map(_.show).join(t" + ")
+    formula.molecules.to(List).map: (molecule, count) =>
+      (if count == 1 then t"" else count.show)+molecule.show
+    .join(t" + ")
 
-case class ChemicalFormula(molecules: Molecule*) extends Formulable:
+case class ChemicalFormula(molecules: ListMap[Molecule, Int]) extends Formulable:
   def formula: ChemicalFormula = this
 
 object ChemicalEquation:
