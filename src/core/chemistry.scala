@@ -165,6 +165,8 @@ case class ChemicalElement(number: Int, symbol: Text, name: Text) extends Molecu
   def molecule: Molecule = apply[1]
 
 object Molecule:
+  def empty: Molecule = Molecule(Map(), 0)
+
   given show: Show[Molecule] = molecule =>
     val orderedElements =
       if !molecule.elements.contains(PeriodicTable.C)
@@ -209,6 +211,10 @@ trait Molecular extends Formulable:
   
   @targetName("times")
   def *(multiplier: Int): ChemicalFormula = ChemicalFormula(ListMap(molecule -> multiplier))
+  
+  @targetName("times2")
+  def **(multiplier: Int): Molecule =
+    Molecule(molecule.elements.mapValues(_*multiplier).to(Map), molecule.charge*multiplier, Unset)
   
   @targetName("cation")
   def `unary_-`: Molecule = molecule.copy(charge = molecule.charge - 1)
@@ -255,10 +261,11 @@ object ChemicalFormula:
 
 case class ChemicalFormula(molecules: ListMap[Molecule, Int]) extends Formulable:
   def formula: ChemicalFormula = this
-
-object ChemicalEquation:
-  given show: Show[ChemicalEquation] = equation =>
-    t"${equation.lhs} ${equation.reaction} ${equation.rhs}"
+  
+  def atoms: Map[ChemicalElement, Int] =
+    molecules.foldLeft(Molecule.empty):
+      case (acc, (molecule, count)) => acc*(molecule**count)
+    .elements
 
 enum PhysicalState:
   case Solid, Liquid, Gas, Aqueous
@@ -281,4 +288,9 @@ object Reaction:
     case Stoichiometric => t"↔"
     case Resonance      => t"="
 
-case class ChemicalEquation(lhs: ChemicalFormula, reaction: Reaction, rhs: ChemicalFormula)
+object ChemicalEquation:
+  given show: Show[ChemicalEquation] = equation =>
+    t"${equation.lhs} ${equation.reaction} ${equation.rhs}"
+
+case class ChemicalEquation(lhs: ChemicalFormula, reaction: Reaction, rhs: ChemicalFormula):
+  def balanced: Boolean = lhs.atoms == rhs.atoms
