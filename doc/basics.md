@@ -48,8 +48,9 @@ sides of the equation, and are as follows:
 
 These different relationships are reprensented by the enumeration, `Reaction`.
 
-No checking is currently done to ensure that the left and right sides of the
-equation balance, but this may be added as a later feature.
+The `ChemicalEquation#balance` method will determine if the equation is
+balanced, that is, the number of atoms of each element is the same on the left
+and right sides of the equation.
 
 ### Generality
 
