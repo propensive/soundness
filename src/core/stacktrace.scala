@@ -17,28 +17,34 @@
 package digression
 
 import rudiments.*
+import fulminate.*
+import anticipation.*
 
 import language.experimental.captureChecking
 
-extension [TupleType <: Tuple](error: Error[TupleType]) def stackTrace: StackTrace = StackTrace(error)
+extension (error: Error) def stackTrace: StackTrace = StackTrace(error)
 
 object StackTrace:
-  case class Frame(className: Text, method: Text, file: Text, line: Maybe[Int], native: Boolean)
+  case class Method(className: Text, method: Text)
+  case class Frame(method: Method, file: Text, line: Maybe[Int], native: Boolean)
   
   val legend: Map[Text, Text] = Map(
     Text("λₙ") -> Text("anonymous function"),
     Text("αₙ") -> Text("anonymous class"),
     Text("ι")  -> Text("initialization"),
     Text("ς")  -> Text("super reference"),
-    Text("ε")  -> Text("extension method"),
+    Text("⋮ε") -> Text("extension method"),
     Text("ϕ")  -> Text("direct"),
-    Text("π")  -> Text("package file")
+    Text("⋮π") -> Text("package file"),
+    Text("ⲛ")  -> Text("class initializer"),
+    Text("ℓ")  -> Text("lazy initializer")
   )
 
   def rewrite(name: String, method: Boolean = false): Text =
     val buffer: StringBuilder = StringBuilder()
     
-    inline def char(idx: Int): Maybe[Char] = if idx < 0 || idx >= name.length then Unset else name.charAt(idx)
+    inline def char(idx: Int): Maybe[Char] =
+      if idx < 0 || idx >= name.length then Unset else name.charAt(idx)
 
     @tailrec
     def recur(idx: Int, digits: Boolean = false): Text =
@@ -67,6 +73,14 @@ object StackTrace:
         case '9' => token(idx, "9", "₉", true)
         case _   => recur(idx, false)
       else char(idx) match
+        case '<' =>
+          if (0 until 6).forall { i => char(idx + i) == "<init>"(i) }
+          then
+            sb.append("ⲛ")
+            recur(idx + 6)
+          else
+            sb.append("<")
+            recur(idx + 1)
         case 'i' =>
           if (0 until 8).forall { i => char(idx + i) == "initial$"(i) }
           then
@@ -74,6 +88,14 @@ object StackTrace:
             recur(idx + 8)
           else
             buffer.append("i")
+            recur(idx + 1)
+        case 'l' =>
+          if (0 until 7).forall { i => char(idx + i) == "lzyINIT"(i) }
+          then
+            sb.append("ℓ")
+            recur(idx + 7, true)
+          else
+            sb.append("l")
             recur(idx + 1)
         case 's' =>
           if (0 until 6).forall { i => char(idx + i) == "super$"(i) }
@@ -161,7 +183,7 @@ object StackTrace:
             else types2.init.mkString("((", ", ", s") => ${types2.last})")
     
     else if rewritten.s.startsWith("scala.runtime.function.JProcedure") then Text:
-      val n = safely(rewritten.s.drop(33).toInt).or(0)
+      val n = try rewritten.s.drop(33).toInt catch case error: Exception => 0
       "("+(if n < 2 then s"Any" else List.fill(n)("Any").mkString("(", ", ", ")"))+" => Unit)"
     
     else rewritten
@@ -169,8 +191,10 @@ object StackTrace:
   def apply(exception: Throwable): StackTrace =
     val frames = List(exception.getStackTrace.nn.map(_.nn)*).map: frame =>
       StackTrace.Frame(
-        rewrite(frame.getClassName.nn),
-        rewrite(frame.getMethodName.nn, method = true),
+        StackTrace.Method(
+          rewrite(frame.getClassName.nn),
+          rewrite(frame.getMethodName.nn, method = true)
+        ),
         Text(Option(frame.getFileName).map(_.nn).getOrElse("[no file]")),
         if frame.getLineNumber < 0 then Unset else frame.getLineNumber,
         frame.isNativeMethod
@@ -180,15 +204,22 @@ object StackTrace:
     val fullClassName: Text = rewrite(exception.getClass.nn.getName.nn)
     val fullClass: List[Text] = List(fullClassName.s.split("\\.").nn.map(_.nn).map(Text(_))*)
     val className: Text = fullClass.last
-    val component: Text = Text(fullClassName.s.substring(0, 0 max (fullClassName.s.length - className.s.length - 1)).nn)
-    val message = Text(Option(exception.getMessage).map(_.nn).getOrElse(""))
+    
+    val component: Text =
+      val length = fullClassName.s.length - className.s.length - 1
+      Text(fullClassName.s.substring(0, 0.max(length)).nn)
+    
+    val message: Message = exception match
+      case error: Error => error.message
+      case other        => Message(Text(Option(exception.getMessage).map(_.nn).getOrElse("")))
     
     StackTrace(component, className, message, frames, cause.map(_.nn).map(StackTrace(_)).maybe)
 
-case class StackTrace(component: Text, className: Text, message: Text, frames: List[StackTrace.Frame],
-                          cause: Maybe[StackTrace]):
+case class StackTrace
+    (component: Text, className: Text, message: Message, frames: List[StackTrace.Frame],
+        cause: Maybe[StackTrace]):
   def crop(cutClassName: Text, cutMethod: Text): StackTrace =
-    val frames2 = frames.takeWhile { f => f.className != cutClassName || f.method != cutMethod }
+    val frames2 = frames.takeWhile { f => f.method.className != cutClassName || f.method.method != cutMethod }
     StackTrace(component, className, message, frames2, cause)
   
   def drop(n: Int): StackTrace =
