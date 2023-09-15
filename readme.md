@@ -4,17 +4,24 @@
 
 # Digression
 
-__Utilities for working with exceptions in Scala__
+__Make Scala stack traces more understandable__
 
-_Digression_ makes Java exceptions a little more pleasant to work with in Scala,
-particularly when checked exceptions are enabled.
+Stack traces correspond to the classes, interfaces and methods as they exist on
+the running JVM. The Scala definitions from which they originate may have
+undergone various name changes during compilation, and features of Scala which
+do not exist in Java may have been encoded in method and class names, such that
+the original Scala names and features are harder to discern. _Digression_
+believes that a Scala developer (particularly a beginner, who will still be
+exposed to stack traces) should not have to understand how Scala is encoded in
+order to work with the language.
 
 ## Features
 
-- provides quick `safely` and `unsafely` wrapper methods for muting checked exceptions
-- provides an `err""` constructor for typed exception messages
+- decodes Scala encodings in stack traces
+- disambiguates between objects and types in stack frames
+- syntax highlights stack traces
+- tabulates stack traces to make them easier to read
 - introduces a `Codepoint` contextual value containing the sourcefile and line
-- stack trace rewriting, for much more readable Scala stack traces
 
 
 ## Availability
@@ -196,7 +203,7 @@ Digression was designed and developed by Jon Pretty, and commercial support and 
 
 ## Name
 
-A digression is a departure from the main path. _Digression_ helps to handle such runtime digressions in the form of exceptions.
+A _digression_ is a deviation from the main subject, much like an exception departs from the main path.
 
 In general, Scala One project names are always chosen with some rationale, however it is usually
 frivolous. Each name is chosen for more for its _uniqueness_ and _intrigue_ than its concision or
