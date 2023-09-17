@@ -76,10 +76,10 @@ object StackTrace:
         case '<' =>
           if (0 until 6).forall { i => char(idx + i) == "<init>"(i) }
           then
-            sb.append("ⲛ")
+            buffer.append("ⲛ")
             recur(idx + 6)
           else
-            sb.append("<")
+            buffer.append("<")
             recur(idx + 1)
         case 'i' =>
           if (0 until 8).forall { i => char(idx + i) == "initial$"(i) }
@@ -92,10 +92,10 @@ object StackTrace:
         case 'l' =>
           if (0 until 7).forall { i => char(idx + i) == "lzyINIT"(i) }
           then
-            sb.append("ℓ")
+            buffer.append("ℓ")
             recur(idx + 7, true)
           else
-            sb.append("l")
+            buffer.append("l")
             recur(idx + 1)
         case 's' =>
           if (0 until 6).forall { i => char(idx + i) == "super$"(i) }
