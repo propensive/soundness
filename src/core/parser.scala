@@ -95,7 +95,7 @@ object JsonParseError:
     case MultipleDecimalPoints
     case ExpectedDigit(found: Char)
   
-  given AsMessage[Reason] =
+  given MessageShow[Reason] =
     case Reason.EmptyInput =>
       msg"the input was empty"
 
