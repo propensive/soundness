@@ -28,10 +28,11 @@ extension [TestType](test: Test[TestType])
           duration: Maybe[DurationType] = Unset, warmup: Maybe[DurationType] = Unset,
           baseline: Maybe[Baseline] = Unset)
       (using runner: Runner[ReportType], inc: Inclusion[ReportType, Benchmark],
+          specificDuration: SpecificDuration[DurationType] = timeApi.long,
           genericDuration: GenericDuration[DurationType] = timeApi.long)
       : Unit =
     val action = test.action
-    var end = System.currentTimeMillis + readDuration(warmup.or(makeDuration(10000L)))
+    var end = System.currentTimeMillis + warmup.or(SpecificDuration(10000L)).milliseconds
     val times: scm.ArrayBuffer[Long] = scm.ArrayBuffer()
     times.sizeHint(4096)
     val ctx = new TestContext()
@@ -44,7 +45,7 @@ extension [TestType](test: Test[TestType])
     
     times.clear()
     
-    end = System.currentTimeMillis + readDuration(duration.or(makeDuration(10000L)))
+    end = System.currentTimeMillis + duration.or(SpecificDuration(10000L)).milliseconds
     
     while System.currentTimeMillis < end do
       val t0 = System.nanoTime
