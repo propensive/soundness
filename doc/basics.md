@@ -1,4 +1,37 @@
-_Aviation_ provides a variety of types representing different time-related concepts.
+_Aviation_ provides a variety of types representing and working with different time-related concepts.
 
-TBC
+### On Time
+
+_Time_ is a complicated concept in several ways. On a physical abstraction, we
+can pinpoint an instant in time and order it as happening _before_ or _after_
+another instant, provided they happen in the same place. We can consider the
+difference between two instants, and measure it by comparison to reference
+events that occur with a known regularly. We can relate _time_ to _distance_
+using the speed of light, to [partially
+order](https://en.wikipedia.org/wiki/Special_relativity) events in different
+locations.
+
+In a geological and heliocentric context, we talk about instants and durations
+with reference to the rotation of the Earth around the sun, the rotation of
+Earth on its axis, and the phase of the moon, as well as with arbitrary
+subdivisions based on historical convention and [highly composite
+numbers](https://en.wikipedia.org/wiki/Highly_composite_number), and sometimes
+religious convention.
+
+The measurements we use may have different meanings in different locations on
+Earth (or conversely, the same measurement may be represented differently in
+different locations), and different systems for representing the measurements
+have been in use at different times in different places. The relationships
+between different units of measurement are [not usually
+decimal](https://en.wikipedia.org/wiki/12-hour_clock), [not always
+constant](https://en.wikipedia.org/wiki/Thirty_Days_Hath_September), not always
+exact subdivisions, and [may not even be known in
+advance](https://en.wikipedia.org/wiki/Leap_second). The same representation
+may refer to distinct events in the same place, and some representations may
+not represent valid events on a handful of occasions. The system of
+representation may depend on the prevailing political authority at the time,
+which can depend on war.
+
+_Aviation_ makes a bold effort to rationalize, systematize and encode this
+complexity.
 
