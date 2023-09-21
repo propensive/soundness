@@ -88,7 +88,7 @@ object Path:
       case drive@Windows.Drive(_) => Windows.SafePath(drive, descent)
       case _                      => Unix.SafePath(descent)
 
-  given AsMessage[Path] = path => Message(path.render)
+  given MessageShow[Path] = path => Message(path.render)
 
   inline given decoder(using Raises[PathError]): Decoder[Path] = new Decoder[Path]:
     def decode(text: Text): Path = Reachable.decode(text)
