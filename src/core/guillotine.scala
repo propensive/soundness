@@ -146,7 +146,7 @@ sealed trait Executable:
   infix def |(command: Executable): Pipeline = command(this)
 
 object Command:
-  given AsMessage[Command] = command => Message(formattedArgs(command.args))
+  given MessageShow[Command] = command => Message(formattedArgs(command.args))
 
   private def formattedArgs(args: Seq[Text]): Text =
     args.map: arg =>
@@ -177,7 +177,7 @@ case class Command(args: Text*) extends Executable:
     catch case errror: ji.IOException => abort(ExecError(this, LazyList(), LazyList()))
 
 object Pipeline:
-  given AsMessage[Pipeline] = pipeline => msg"${pipeline.commands.map(_.show).join(t" | ")}"
+  given MessageShow[Pipeline] = pipeline => msg"${pipeline.commands.map(_.show).join(t" | ")}"
   given Debug[Pipeline] = _.commands.map(_.debug).join(t" | ")
   given Show[Pipeline] = _.commands.map(_.show).join(t" | ")
   
