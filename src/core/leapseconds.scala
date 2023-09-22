@@ -13,13 +13,30 @@ object LeapSeconds:
   def addLeapSecond(year: Int, midYear: Boolean): Unit =
     if midYear then june |= (Long.MinValue >> (year - 1972)) else december |= (Long.MinValue >> (year - 1972))
 
-  def before(year: Int, midYear: Boolean): Int =
-    inline def ones(long: Long): Int = java.lang.Long.bitCount(long)
-    val offset = 2036 - year
-    val base = ones(december >>> offset) + 10
-    
-    if midYear then
-      if year < 1972 then 10 else if year == 1972 then 11 else base + ones(june >>> (offset - 1))
-    else
-      if year <= 1972 then 10 else base + ones(june >>> offset)
+  def before(year: Int, plusSixMonths: Boolean): Int =
+    before((year - 1972)*2 + (if plusSixMonths then 1 else 0))
 
+  private def before(n: Int): Int =
+    inline def ones(long: Long): Int = java.lang.Long.bitCount(long)
+    val decemberShift = n.min(127)/2
+    val juneShift = decemberShift + n%2
+    
+    10 + (if juneShift > 0 then ones(june >>> (64 - juneShift)) else 0) +
+        (if decemberShift > 0 then ones(december >>> (64 - decemberShift)) else 0)
+
+  private inline val juneToDecember = 15897600000L
+  private inline val firstLeapSecond = 94694400000L
+  private inline val dayLength = 86400000L
+  private inline val yearLength = 31536000000L
+  private inline val halfYear = 15778800000L 
+  private inline val firstOffset = 7*halfYear/2
+
+  private def leapSecond(n: Int): Long =
+    val year = (n + 1)/2
+    val dec31 = firstLeapSecond + year*yearLength + (year/4)*dayLength
+    if n%2 == 0 then dec31 else dec31 - juneToDecember
+
+  def convert(unixTime: Long): Long =
+    val n = ((unixTime - firstOffset)/halfYear).toInt
+    unixTime + before(if unixTime > leapSecond(n) then n else n - 1)*1000L
+    
