@@ -196,8 +196,6 @@ object Timing:
   opaque type TaiInstant = Long
 
   object TaiInstant:
-    def of(millisecondsSinceEpoch: Long): TaiInstant = millisecondsSinceEpoch
-
     given generic: GenericInstant[Timing.TaiInstant] with
       def instant(millisecondsSinceEpoch: Long): Timing.TaiInstant = millisecondsSinceEpoch
       def millisecondsSinceEpoch(instant: Timing.TaiInstant): Long = instant
@@ -237,6 +235,8 @@ object Timing:
   extension (instant: Instant)
     @targetName("to")
     def ~(that: Instant): Interval = Interval(instant, that)
+    
+    def tai: TaiInstant = LeapSeconds.tai(instant)
 
     infix def in(using RomanCalendar)(timezone: Timezone): LocalTime =
       val zonedTime = jt.Instant.ofEpochMilli(instant).nn.atZone(jt.ZoneId.of(timezone.name.s)).nn
@@ -385,7 +385,8 @@ object Timestamp:
     type Result = Timestamp
     def apply(left: Timestamp, right: Timespan): Timestamp = ???
 
-case class Timestamp(date: Date, time: Time)(using cal: Calendar)
+case class Timestamp(date: Date, time: Time)(using cal: Calendar):
+  def in(timezone: Timezone): LocalTime = LocalTime(date, time, timezone)
 
 object MonthName:
   def apply(i: Int): MonthName = MonthName.fromOrdinal(i - 1)

@@ -36,7 +36,7 @@ object LeapSeconds:
     val dec31 = firstLeapSecond + year*yearLength + (year/4)*dayLength
     if n%2 == 0 then dec31 else dec31 - juneToDecember
 
-  def convert(unixTime: Long): Long =
+  def tai(unixTime: Long): Long =
     val n = ((unixTime - firstOffset)/halfYear).toInt
     unixTime + before(if unixTime > leapSecond(n) then n else n - 1)*1000L
     
