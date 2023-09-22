@@ -57,6 +57,59 @@ object Tests extends Suite(t"Aviation Tests"):
       .assert(_ == DateError(t"59-11-31"))
 
 
+    suite(t""):
+      test(t"There are 10 leap seconds for any year before 1972"):
+        LeapSeconds.before(1900, false)
+      .assert(_ == 10)
+      
+      test(t"There are 10 leap seconds before 1972"):
+        LeapSeconds.before(1972, false)
+      .assert(_ == 10)
+      
+      test(t"There are 11 leap seconds before mid-1972"):
+        LeapSeconds.before(1972, true)
+      .assert(_ == 11)
+      
+      test(t"There are 12 leap seconds before 1973"):
+        LeapSeconds.before(1973, false)
+      .assert(_ == 12)
+      
+      test(t"There are 12 leap seconds before mid-1973"):
+        LeapSeconds.before(1973, true)
+      .assert(_ == 12)
+      
+      test(t"There are 13 leap seconds before 1974"):
+        LeapSeconds.before(1974, false)
+      .assert(_ == 13)
+
+      test(t"There are 13 leap seconds before mid-1974"):
+        LeapSeconds.before(1974, true)
+      .assert(_ == 13)
+      
+      test(t"There are 19 leap seconds before 1981"):
+        LeapSeconds.before(1981, false)
+      .assert(_ == 19)
+      
+      test(t"There are 20 leap seconds before mid-1981"):
+        LeapSeconds.before(1981, true)
+      .assert(_ == 20)
+      
+      test(t"There are 20 leap seconds before 1982"):
+        LeapSeconds.before(1982, false)
+      .assert(_ == 20)
+      
+      test(t"There are 20 leap seconds before mid-1982"):
+        LeapSeconds.before(1982, true)
+      .assert(_ == 21)
+
+      test(t"There are 37 leap seconds before 2017"):
+        LeapSeconds.before(2017, false)
+      .assert(_ == 37)
+      
+      test(t"There are 37 leap seconds before 2100"):
+        LeapSeconds.before(2100, false)
+      .assert(_ == 37)
+      
     suite(t"Gregorian Calendar Tests"):
       test(t"2000 is a leap year"):
         calendars.gregorian.leapYear(2000)

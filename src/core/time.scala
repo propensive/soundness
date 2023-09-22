@@ -191,9 +191,17 @@ object YearMonth:
     def apply(yearMonth: YearMonth, day: Int): Date =
       safely(calendars.gregorian.julianDay(yearMonth.year, yearMonth.month, day)).avow(using Unsafe)
 
-
 object Timing:
   opaque type Instant = Long
+  opaque type TaiInstant = Long
+
+  object TaiInstant:
+    def of(millisecondsSinceEpoch: Long): TaiInstant = millisecondsSinceEpoch
+
+    given generic: GenericInstant[Timing.TaiInstant] with
+      def instant(millisecondsSinceEpoch: Long): Timing.TaiInstant = millisecondsSinceEpoch
+      def millisecondsSinceEpoch(instant: Timing.TaiInstant): Long = instant
+
 
   object Instant:
     def of(millis: Long): Instant = millis
