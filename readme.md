@@ -63,8 +63,24 @@ not represent valid events on a handful of occasions. The system of
 representation may depend on the prevailing political authority at the time,
 which can depend on war.
 
-_Aviation_ makes a bold effort to rationalize, systematize and encode this
-complexity.
+_Aviation_ makes an ambitious effort to rationalize, systematize and encode
+as much of this complexity as possible.
+
+### Instants and Durations
+
+We can represent a moment in time, without reference to any other macroscopic
+entity (such as the Earth, and units derived from it), as an `Instant`. An
+`Instant` is represented, internally, as a 64-bit integer corresponding to the
+number of non-leap milliseconds since the UNIX epoch.
+
+The difference between two `Instant`s is represented as a `Duration`, and
+represented internally as a 64-bit integral number of milliseconds.
+
+#### International Atomic Time (TAI)
+
+In addition to `Instant`s (which do not distinguish leap seconds from the
+second immediately preceding it), `TaiInstant` implements an instant in
+International Atomic Time (TAI) which has no discontinuity at each leap second.
 
 
 
