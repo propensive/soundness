@@ -195,13 +195,12 @@ case class Request
     headers.get(RequestHeader.ContentType).flatMap(_.headOption).flatMap(MediaType.unapply(_))
   
 trait RequestHandler:
-  def listen(handler: Request ?=> Response[?])(using Log, Monitor): ActiveServer
+  def listen(handler: (request: Request) ?=> Response[?])(using Log, Monitor): ActiveServer
 
 extension (value: Http.type)
-  def listen(handler: Request ?=> Response[?])(using RequestHandler, Log, Monitor): ActiveServer =
+  def listen(handler: (request: Request) ?=> Response[?])(using RequestHandler, Log, Monitor): ActiveServer =
     summon[RequestHandler].listen(handler)
 
-def request(using Request): Request = summon[Request]
 inline def param(using Request)(key: Text): Text raises MissingParamError =
   summon[Request].params.get(key).getOrElse:
     abort(MissingParamError(key))
@@ -244,7 +243,7 @@ case class RequestParam[T](key: Text)(using ParamReader[T]):
 case class ActiveServer(port: Int, async: Async[Unit], cancel: () => Unit)
 
 case class HttpServer(port: Int) extends RequestHandler:
-  def listen(handler: Request ?=> Response[?])(using Log, Monitor): ActiveServer =
+  def listen(handler: (request: Request) ?=> Response[?])(using Log, Monitor): ActiveServer =
     def handle(exchange: HttpExchange | Null) =
       try handler(using makeRequest(exchange.nn)).respond(SimpleResponder(exchange.nn))
       catch case NonFatal(exception) => exception.printStackTrace()
