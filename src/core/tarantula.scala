@@ -47,7 +47,7 @@ trait Browser(name: Text):
   def launch(port: Int)(using WorkingDirectory, Log, Monitor): Server
   def stop(server: Server)(using Log): Unit
 
-  def session[T](port: Int = 4444)(fn: WebDriver#Session ?=> T)(using WorkingDirectory, Log, Monitor): T =
+  def session[T](port: Int = 4444)(fn: (session: WebDriver#Session) ?=> T)(using WorkingDirectory, Log, Monitor): T =
     val server = launch(port)
     try fn(using WebDriver(server).startSession()) finally server.stop()
 
