@@ -49,7 +49,7 @@ case class Tty(out: ji.PrintStream, in: LazyList[Bytes])
 object Tty:
   final val noopOut: ji.PrintStream = ji.PrintStream((_ => ()): ji.OutputStream)
 
-  def capture[T](fn: Tty ?=> T)(using Log, InputSource): T throws TtyError =
+  def capture[T](fn: (tty: Tty) ?=> T)(using Log, InputSource): T throws TtyError =
     val tty = summon[InputSource].init()
     Signal.handle(Signal("WINCH"), sig => reportSize()(using tty))
     try Console.withOut(noopOut)(fn(using tty)) finally summon[InputSource].cleanup(tty)
