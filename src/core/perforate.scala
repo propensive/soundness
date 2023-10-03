@@ -150,21 +150,6 @@ def throwErrors
     : SuccessType =
   block(using RaisesThrow())
 
-class Validate
-    [ErrorType <: Error, SuccessType]
-    (using Raises[AggregateError[ErrorType]])
-extends ErrorHandler[SuccessType]:
-  type Result = Either[AggregateError[ErrorType], SuccessType]
-  type Return = SuccessType
-  type Raiser = RaisesAggregate[ErrorType, SuccessType]
-  
-  def raiser(label: boundary.Label[Result]): Raiser = RaisesAggregate(label)
-  def wrap(block: => SuccessType): Either[AggregateError[ErrorType], SuccessType] = Right(block)
-  
-  def finish(value: Result): Return = value match
-    case Left(error)  => abort[SuccessType, AggregateError[ErrorType]](error)
-    case Right(value) => value
-
 def validate
     [ErrorType <: Error]
     (using raise: Raises[AggregateError[ErrorType]])
