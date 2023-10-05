@@ -129,7 +129,7 @@ object Url:
   
   given ansiShow[SchemeType <: Label]: Display[Url[SchemeType]] = url => out"$Underline(${colors.DeepSkyBlue}(${show(url)}))"
 
-  given asMessage[SchemeType <: Label]: Communicable[Url[SchemeType]] = url => Message(show(url))
+  given communicable[SchemeType <: Label]: Communicable[Url[SchemeType]] = url => Message(show(url))
 
   given action[SchemeType <: Label]: GenericHtmlAttribute["action", Url[SchemeType]] with
     def name: Text = t"action"
