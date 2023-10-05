@@ -72,32 +72,32 @@ opaque type Timestamp = Long
 
 object Log:
   inline def fine[T](inline value: T)
-                    (using inline log: Log, inline asMessage: Communicable[T], inline realm: Realm): Unit =
-    ${Eucalyptus.recordLog('{Level.Fine}, 'value, 'log, 'asMessage, 'realm)}
+                    (using inline log: Log, inline communicable: Communicable[T], inline realm: Realm): Unit =
+    ${Eucalyptus.recordLog('{Level.Fine}, 'value, 'log, 'communicable, 'realm)}
   
   inline def info[T](inline value: T)
-                    (using inline log: Log, inline asMessage: Communicable[T], inline realm: Realm): Unit =
-    ${Eucalyptus.recordLog('{Level.Info}, 'value, 'log, 'asMessage, 'realm)}
+                    (using inline log: Log, inline communicable: Communicable[T], inline realm: Realm): Unit =
+    ${Eucalyptus.recordLog('{Level.Info}, 'value, 'log, 'communicable, 'realm)}
   
   inline def warn[T](inline value: T)
-                    (using inline log: Log, inline asMessage: Communicable[T], inline realm: Realm): Unit =
-    ${Eucalyptus.recordLog('{Level.Warn}, 'value, 'log, 'asMessage, 'realm)}
+                    (using inline log: Log, inline communicable: Communicable[T], inline realm: Realm): Unit =
+    ${Eucalyptus.recordLog('{Level.Warn}, 'value, 'log, 'communicable, 'realm)}
   
   inline def fail[T](inline value: T)
-                    (using inline log: Log, inline asMessage: Communicable[T], inline realm: Realm): Unit =
-    ${Eucalyptus.recordLog('{Level.Fail}, 'value, 'log, 'asMessage, 'realm)}
+                    (using inline log: Log, inline communicable: Communicable[T], inline realm: Realm): Unit =
+    ${Eucalyptus.recordLog('{Level.Fail}, 'value, 'log, 'communicable, 'realm)}
 
 object Eucalyptus:
   def recordLog
       [MessageType: Type]
       (level: Expr[Level], message: Expr[MessageType], log: Expr[Log],
-          asMessage: Expr[Communicable[MessageType]], realm: Expr[Realm])
+          communicable: Expr[Communicable[MessageType]], realm: Expr[Realm])
       (using Quotes)
       : Expr[Unit] = '{
     
     val time = Timestamp()
     
-    try $log.record(Entry($realm, $level, $asMessage.message($message), time, $log.tags))
+    try $log.record(Entry($realm, $level, $communicable.message($message), time, $log.tags))
     catch case e: Exception => ()
   }
 
