@@ -39,18 +39,18 @@ object CodlNode:
   def apply(key: Text)(child: CodlNode*): CodlNode = CodlNode(Data(key, IArray.from(child)))
   
   given Contrast[CodlNode] = (left, right) =>
-    if left == right then Accordance.Accord(left.debug) else
+    if left == right then Semblance.Identical(left.debug) else
       val comparison = IArray.from:
         diff(left.children, right.children).rdiff(_.id == _.id).changes.map:
-          case Par(_, _, v) => v.mm(_.key).or(t"—") -> Accordance.Accord(v.debug)
-          case Ins(_, v)    => v.mm(_.key).or(t"—") -> Accordance.Discord(t"—", v.debug)
-          case Del(_, v)    => v.mm(_.key).or(t"—") -> Accordance.Discord(v.debug, t"—")
+          case Par(_, _, v) => v.mm(_.key).or(t"—") -> Semblance.Identical(v.debug)
+          case Ins(_, v)    => v.mm(_.key).or(t"—") -> Semblance.Different(t"—", v.debug)
+          case Del(_, v)    => v.mm(_.key).or(t"—") -> Semblance.Different(v.debug, t"—")
           
           case Sub(_, v, lv, rv) =>
             if lv.mm(_.key) == rv.mm(_.key) then lv.mm(_.key).or(t"—") -> lv.contrastWith(rv)
-            else t"[key]" -> Accordance.Discord(lv.mm(_.key).or(t"—"), rv.mm(_.key).or(t"—"))
+            else t"[key]" -> Semblance.Different(lv.mm(_.key).or(t"—"), rv.mm(_.key).or(t"—"))
 
-      Accordance.Collation(comparison, left.key.or(t"—"), right.key.or(t"—"))
+      Semblance.Breakdown(comparison, left.key.or(t"—"), right.key.or(t"—"))
   
 case class CodlNode(data: Maybe[Data] = Unset, meta: Maybe[Meta] = Unset) extends Dynamic:
   def key: Maybe[Text] = data.mm(_.key)
@@ -93,23 +93,23 @@ object CodlDoc:
 
   given Debug[CodlDoc] = _.write
   
-  given Assimilable[CodlDoc] = _.schema == _.schema
+  given Similarity[CodlDoc] = _.schema == _.schema
 
   inline given Contrast[CodlDoc] = new Contrast[CodlDoc]:
     def apply(left: CodlDoc, right: CodlDoc) =
-      inline if left == right then Accordance.Accord(left.debug) else
+      inline if left == right then Semblance.Identical(left.debug) else
         val comparison = IArray.from:
           (t"[schema]", left.schema.contrastWith(right.schema)) +:
           (t"[margin]", left.margin.contrastWith(right.margin)) +:
           diff(left.children, right.children).rdiff(_.id == _.id).changes.map:
-            case Par(_, _, v)      => v.mm(_.key).or(t"—") -> Accordance.Accord(v.debug)
-            case Ins(_, v)         => v.mm(_.key).or(t"—") -> Accordance.Discord(t"—", v.debug)
-            case Del(_, v)         => v.mm(_.key).or(t"—") -> Accordance.Discord(v.debug, t"—")
+            case Par(_, _, v)      => v.mm(_.key).or(t"—") -> Semblance.Identical(v.debug)
+            case Ins(_, v)         => v.mm(_.key).or(t"—") -> Semblance.Different(t"—", v.debug)
+            case Del(_, v)         => v.mm(_.key).or(t"—") -> Semblance.Different(v.debug, t"—")
             case Sub(_, v, lv, rv) =>
               val key = if lv.mm(_.key) == rv.mm(_.key) then lv.mm(_.key).or(t"—") else t"${lv.mm(_.key).or(t"—")}/${rv.mm(_.key).or(t"—")}"
               key -> lv.contrastWith(rv)
         
-        Accordance.Collation(comparison, t"", t"")
+        Semblance.Breakdown(comparison, t"", t"")
 
 case class CodlDoc(children: IArray[CodlNode], schema: CodlSchema, margin: Int, body: LazyList[Text] = LazyList())
 extends Indexed:
