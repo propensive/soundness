@@ -240,6 +240,8 @@ object Weblink:
 
 case class Weblink(ascent: Int, descent: List[PathName[""]])
 
+type HttpUrl = Url["https" | "http"]
+
 case class Url
     [+SchemeType <: Label]
     (scheme: Scheme[SchemeType], authority: Maybe[Authority], pathText: Text, query: Maybe[Text] = Unset,
