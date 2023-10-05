@@ -25,7 +25,7 @@ export CodlError.Reason.*
 import language.experimental.captureChecking
 
 object CodlError:
-  given MessageShow[Reason] =
+  given Communicable[Reason] =
     case UnexpectedCarriageReturn =>
       msg"a carriage return character ('\\r') was followed by a character other than a newline ('\\n')"
       
