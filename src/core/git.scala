@@ -39,7 +39,7 @@ object GitError:
     case CannotExecuteGit, CloneFailed, InvalidRepoPath, RepoDoesNotExist, BranchDoesNotExist,
         CommitDoesNotExist, CommitFailed, CannotSwitchBranch, PullFailed, BranchFailed, TagFailed
   
-  given MessageShow[Detail] =
+  given Communicable[Detail] =
     case CannotExecuteGit   => msg"the `git` command could not be executed"
     case CloneFailed        => msg"the repository could not be cloned"
     case InvalidRepoPath    => msg"the repository path was not valid"
