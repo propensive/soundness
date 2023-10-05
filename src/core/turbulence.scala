@@ -314,8 +314,6 @@ class Tap(initial: Boolean = true):
   def state(): Boolean = flowing.get
   def stream: LazyList[Tap.Regulation] = funnel.stream
 
-case class IoFailure() extends Exception("I/O Failure")
-
 object Writable:
   given outputStreamBytes
       (using streamCut: Raises[StreamCutError])
