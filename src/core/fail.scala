@@ -32,7 +32,7 @@ def fail
     case _ =>
       false
 
-  val pkg = Thread.currentThread.nn.getStackTrace.nn(2).nn.getClassName.nn.split("\\.").nn(0).nn
+  val pkg = Symbol.spliceOwner.owner.fullName.split("\\.").nn.map(_.nn).to(List).takeWhile(_.head.isLower).mkString(".")
   
   val text =
     if useColor
