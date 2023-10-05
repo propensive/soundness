@@ -82,6 +82,18 @@ In addition to `Instant`s (which do not distinguish leap seconds from the
 second immediately preceding it), `TaiInstant` implements an instant in
 International Atomic Time (TAI) which has no discontinuity at each leap second.
 
+Although the concept of an "instant" and, in particular, the "duration" between
+any two instants _ought_ to be unambiguous, it is not. This is due to the
+existence of leap seconds, each of which increments the difference between the
+numbers we use to represent the time in UNIX time (or UTC) and TAI. Since 1972
+(when UTC and UNIX time already differed from TAI by ten seconds), twenty-seven
+leap seconds have been added, either at the end or the middle of the year.
+These were corrections, based on precise observations of the tiny deviations in
+the Earth's movement which change its rate of rotation over the previous
+months, to try to maintain the invariant that the sun's maximum elevation above
+the Greenwich Meridian (Solar Noon) should be within one second of Clock Noon
+(i.e. the time at which the clock digits read 12:00:00).
+
 
 
 ## Status
