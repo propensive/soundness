@@ -136,10 +136,10 @@ case class HttpResponse
     case status              => readable.read(status, body)
 
 object Locatable:
-  given Locatable[Url] = identity(_)
+  given httpsUrl: Locatable[HttpUrl] = identity(_)
 
 trait Locatable[-UrlType]:
-  def location(value: UrlType): Url
+  def location(value: UrlType): HttpUrl
 
 object Http:
   def post
@@ -198,7 +198,7 @@ object Http:
 
   private def request
       [PostType: Postable]
-      (url: Url, content: PostType, method: HttpMethod,headers: Seq[RequestHeader.Value])
+      (url: HttpUrl, content: PostType, method: HttpMethod,headers: Seq[RequestHeader.Value])
       (using Internet, Log)
       : HttpResponse =
     Log.info(msg"Sending HTTP $method request to $url")
@@ -327,7 +327,7 @@ case class Params(values: List[(Text, Text)]):
   .join(t"&")
 
 
-extension (url: Url)(using Internet, Log)
+extension (url: HttpUrl)(using Internet, Log)
   def post[T: Postable](headers: RequestHeader.Value*)(body: T): HttpResponse =
     Http.post(url, body, headers*)
   
