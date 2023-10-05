@@ -30,16 +30,6 @@ import language.experimental.captureChecking
 trait Raises[-ErrorType <: Error]:
   def record(error: ErrorType): Unit
   def abort(error: ErrorType): Nothing
-  private[perforate] def finish(): Unit = ()
-
-trait ErrorHandler[SuccessType]:
-  type Result
-  type Return
-  type Raiser <: Raises[?]
-
-  def raiser(label: boundary.Label[Result]): Raiser
-  def wrap(value: => SuccessType): Result
-  def finish(value: Result): Return
 
 @capability
 class RaisesThrow[ErrorType <: Error, SuccessType]()(using CanThrow[ErrorType]) extends Raises[ErrorType]:
@@ -64,7 +54,7 @@ extends Raises[ErrorType]:
   def abort(error: ErrorType): Nothing =
     boundary.break(Left(AggregateError(error :: collected.get().nn)))(using label)
   
-  private[perforate] override def finish(): Unit =
+  def finish(): Unit =
     if !collected.get().nn.isEmpty then boundary.break(Left(AggregateError(collected.get().nn)))(using label)
 
 @capability
@@ -97,16 +87,6 @@ extends Raises[ErrorType]:
   def record(error: ErrorType): Unit = boundary.break(Mitigated.Failure(error))(using label)
   def abort(error: ErrorType): Nothing = boundary.break(Mitigated.Failure(error))(using label)
 
-class Mitigate[ErrorType <: Error, SuccessType]
-extends ErrorHandler[SuccessType]:
-  type Result = Mitigated[SuccessType, ErrorType]
-  type Return = Mitigated[SuccessType, ErrorType]
-  type Raiser = ReturnMitigated[ErrorType, SuccessType]
-  
-  def raiser(label: boundary.Label[Result]): Raiser = ReturnMitigated(label)
-  def wrap(block: => SuccessType): Mitigated[SuccessType, ErrorType] = Mitigated.Success(block)
-  def finish(value: Mitigated[SuccessType, ErrorType]): Mitigated[SuccessType, ErrorType] = value
-
 trait Recovery[-ErrorType <: Error, +SuccessType]:
   def recover(error: ErrorType): SuccessType
 
@@ -135,12 +115,9 @@ def safely
     [SuccessType]
     (block: CanThrow[Exception] ?=> RaisesMaybe[ErrorType, SuccessType] ?=> SuccessType)
     : Maybe[SuccessType] =
-  
-  try
-    boundary: label ?=>
-      block(using unsafeExceptions.canThrowAny)(using RaisesMaybe(label))
-  catch
-    case error: Exception => Unset
+  try boundary: label ?=>
+    block(using unsafeExceptions.canThrowAny)(using RaisesMaybe(label))
+  catch case error: Exception => Unset
 
 def throwErrors
     [ErrorType <: Error]
@@ -179,32 +156,23 @@ def capture
     case Left(error)  => error
     case Right(value) => abort(UnexpectedSuccessError(value))
 
-// def over
-//     [ErrorType <: Error]
-//     (using DummyImplicit)
-//     [SuccessType]
-//     (block: ReturnMitigated[ErrorType, SuccessType] ?=> SuccessType)
-//     : Mitigated[SuccessType, ErrorType] =
-  
-//   genericHandle(Mitigate[ErrorType, SuccessType]())(block)
+def over
+    [ErrorType <: Error]
+    (using DummyImplicit)
+    [SuccessType]
+    (block: ReturnMitigated[ErrorType, SuccessType] ?=> SuccessType)
+    : Mitigated[SuccessType, ErrorType] =
+  boundary: label ?=>
+    Mitigated.Success(block(using ReturnMitigated[ErrorType, SuccessType](label)))
 
 def failCompilation
     [ErrorType <: Error]
     (using Quotes)
     [SuccessType]
-    (block: RaisesCompileFailure[ErrorType, SuccessType] ?=> SuccessType)
+    (block: /*caps.Cap ?-> */RaisesCompileFailure[ErrorType, SuccessType] ?=> SuccessType)
     : SuccessType =
-  block(using RaisesCompileFailure())
-
-inline def genericHandle
-    [SuccessType, HandlerType <: ErrorHandler[SuccessType]]
-    (handler: HandlerType)
-    (inline block: handler.Raiser^ ?=> SuccessType)
-    : handler.Return =
-  handler.finish:
-    boundary: label ?=>
-      val raiser = handler.raiser(label)
-      handler.wrap(block(using raiser)).tap(raiser.finish().waive)
+  given RaisesCompileFailure[ErrorType, SuccessType]()
+  block
 
 def unsafely[ResultType](block: CanThrow[Exception] ?=> ResultType): ResultType =
   block(using unsafeExceptions.canThrowAny)
