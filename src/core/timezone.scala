@@ -31,7 +31,7 @@ import scala.io.*
 //import language.experimental.captureChecking
 
 object TzdbError:
-  given MessageShow[Reason] =
+  given Communicable[Reason] =
     case Reason.CouldNotParseTime(time) => msg"could not parse time $time"
     case Reason.UnexpectedRule          => msg"unexpected rule"
     case Reason.UnexpectedLink          => msg"unexpected link"
