@@ -178,7 +178,7 @@ def unsafely[ResultType](block: CanThrow[Exception] ?=> ResultType): ResultType 
   block(using unsafeExceptions.canThrowAny)
 
 case class AggregateError[+ErrorType <: Error](errors: List[ErrorType])
-extends Error(MessageShow.listMessage.message(errors.map(_.message)))
+extends Error(Communicable.listMessage.message(errors.map(_.message)))
 
 case class UnexpectedSuccessError[ResultType](result: ResultType)
 extends Error(msg"the expression was expected to fail, but succeeded")
