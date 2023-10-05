@@ -35,7 +35,7 @@ object HostnameError:
     case InitialDash(label: Text)
 
   object Reason:
-    given MessageShow[Reason] =
+    given Communicable[Reason] =
       case LongDnsLabel(label) => msg"the DNS label $label is longer than 63 characters"
       case LongHostname        => msg"the hostname is longer than 253 characters"
       case InvalidChar(char)   => msg"the character $char is not allowed in a hostname"

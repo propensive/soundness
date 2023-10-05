@@ -44,7 +44,7 @@ object EmailAddressError:
     case InvalidChar(char: Char)
 
   object Reason:
-    given MessageShow[Reason] =
+    given Communicable[Reason] =
       case Empty                                => msg"it is empty"
       case InvalidDomain(error: IpAddressError) => msg"the domain is not a valid IP address: ${error.message}"
       case InvalidDomain(error: HostnameError)  => msg"the domain is not a valid hostname: ${error.message}"

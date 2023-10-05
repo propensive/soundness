@@ -37,7 +37,7 @@ object IpAddressError:
     case Ipv6MultipleDoubleColons
   
   object Reason:
-    given MessageShow[Reason] =
+    given Communicable[Reason] =
       case Ipv4ByteOutOfRange(byte)       => msg"the number $byte is not in the range 0-255"
       case Ipv4WrongNumberOfGroups(count) => msg"the address contains $count period-separated groups instead of 4"
       case Ipv6GroupNotHex(group)         => msg"the group '$group' is not a hexadecimal number"
@@ -57,7 +57,7 @@ object MacAddressError:
     case NotHex(group: Int, content: Text)
 
   object Reason:
-    given MessageShow[Reason] =
+    given Communicable[Reason] =
       case WrongGroupCount(count)          => msg"there should be six colon-separated groups, but there were $count"
       case WrongGroupLength(group, length) => msg"group $group should be two hex digits, but its length is $length"
       case NotHex(group, content)          => msg"group $group should be a two-digit hex number, but it is $content"
