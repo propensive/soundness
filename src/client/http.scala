@@ -98,7 +98,7 @@ object HttpMethod:
     def name: Text = t"formmethod"
     def serialize(method: HttpMethod): Text = method.show
 
-  given AsMessage[HttpMethod] = method => Message(method.show.upper)
+  given MessageShow[HttpMethod] = method => Message(method.show.upper)
 
 enum HttpMethod:
   case Get, Head, Post, Put, Delete, Connect, Options, Trace, Patch
@@ -258,7 +258,7 @@ object HttpStatus:
   private lazy val all: Map[Int, HttpStatus] = values.immutable(using Unsafe).mtwin.map(_.code -> _).to(Map)
   def unapply(code: Int): Option[HttpStatus] = all.get(code)
 
-  given AsMessage[HttpStatus] = status => msg"${status.code} (${status.description})"
+  given MessageShow[HttpStatus] = status => msg"${status.code} (${status.description})"
 
 enum HttpStatus(val code: Int, val description: Text):
   case Continue extends HttpStatus(100, t"Continue"), FailureCase
