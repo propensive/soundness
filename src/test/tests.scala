@@ -54,9 +54,50 @@ object Tests extends Suite(t"Turbulence tests"):
         test(t"roundtrip tests"):
           val stream = string.bytes.grouped(bs).to(LazyList)
           val result = stream.readAs[Text]
-          // if result.join != string
-          // then t"${result.join(t"[", t",", t"]")} bs=$bs exp=${string.bytes.toList.map(_.show).join(t"[", t",", t"]")} got=${result.map(_.s.toList.map(_.toInt.toString).mkString(",").show).join(t" :# ")}"
-          // else result.join
 
           result
         .assert(_ == string)
+
+    val qbf = t"The quick brown fox\njumps over the lazy dog"
+    val qbfBytes = qbf.bytes
+    
+    suite(t"Reading tests"):
+      test(t"Read Text as Text"):
+        qbf.readAs[Text]
+      .assert(_ == qbf)
+      
+      test(t"Read Text as LazyList[Text]"):
+        qbf.readAs[LazyList[Text]].join
+      .assert(_ == qbf)
+      
+      test(t"Read Text as Bytes"):
+        qbf.readAs[Bytes]
+      .assert(_.to(List) == qbfBytes.to(List))
+      
+      test(t"Read Text as LazyList[Bytes]"):
+        qbf.readAs[LazyList[Bytes]]
+      .assert(_.reduce(_ ++ _).to(List) == qbfBytes.to(List))
+      
+      test(t"Read Bytes as Text"):
+        qbfBytes.readAs[Text]
+      .assert(_ == qbf)
+      
+      test(t"Read Bytes as LazyList[Text]"):
+        qbfBytes.readAs[LazyList[Text]].join
+      .assert(_ == qbf)
+      
+      test(t"Read Bytes as Bytes"):
+        qbfBytes.readAs[Bytes]
+      .assert(_.to(List) == qbfBytes.to(List))
+      
+      test(t"Read Bytes as LazyList[Bytes]"):
+        qbfBytes.readAs[LazyList[Bytes]]
+      .assert(_.reduce(_ ++ _).to(List) == qbfBytes.to(List))
+      
+      // test(t"Read Text as Lines"):
+      //   qbf.readAs[LazyList[Line]]
+      // .assert(_ == LazyList(Line(t"The quick brown fox"), Line(t"jumps over the lazy dog")))
+      
+      // test(t"Read Bytes as Lines"):
+      //   qbfBytes.readAs[LazyList[Line]]
+      // .assert(_ == LazyList(Line(t"The quick brown fox"), Line(t"jumps over the lazy dog")))

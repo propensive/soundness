@@ -444,6 +444,11 @@ object Aggregable:
   
   given bytesText(using decoder: CharDecoder): Aggregable[Bytes, Text] = bytesBytes.map(decoder.decode)
 
+  given lazyList
+      [ChunkType, ChunkType2]
+      (using aggregable: Aggregable[ChunkType, ChunkType2])
+      : Aggregable[ChunkType, LazyList[ChunkType2]] = chunk => LazyList(aggregable.aggregate(chunk))
+
   given functor[ChunkType]: Functor[[ValueType] =>> Aggregable[ChunkType, ValueType]] = new Functor:
     def map
         [ResultType, ResultType2]
