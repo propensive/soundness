@@ -20,10 +20,11 @@ import probably.*
 import eucalyptus.*, logging.stdout
 import gossamer.*
 import rudiments.*
-
-import unsafeExceptions.canThrowAny
-
-given Encoding = characterEncodings.utf8
+import spectacular.*
+import anticipation.*
+import symbolism.*
+import hieroglyph.*, charEncoders.utf8, charDecoders.utf8, badEncodingHandlers.strict
+import perforate.*, errorHandlers.throwUnsafely
 
 object Tests extends Suite(t"Turbulence tests"):
   def run(): Unit =
@@ -45,14 +46,17 @@ object Tests extends Suite(t"Turbulence tests"):
         bs     <- 1 to 8
       do
         test(t"length tests"):
-          val stream: DataStream = string.bytes.grouped(bs).to(LazyList).map(identity(_))
-          val result = stream.read[LazyList[Text]]()
-          result.join.bytes.length
+          val stream = string.bytes.grouped(bs).to(LazyList)
+          val result = stream.readAs[Text]
+          result.bytes.length
         .assert(_ == string.bytes.length)
 
         test(t"roundtrip tests"):
-          val stream: DataStream = string.bytes.grouped(bs).to(LazyList).map(identity(_))
-          val result = stream.read[LazyList[Text]]()
-          if result.join != string then t"${result.join(t"[", t",", t"]")} bs=$bs exp=${string.bytes.toList.map(_.show).join(t"[", t",", t"]")} got=${result.map(_.s.toList.map(_.toInt.toString).mkString(",").show).join(t" :# ")}"
-          else result.join
+          val stream = string.bytes.grouped(bs).to(LazyList)
+          val result = stream.readAs[Text]
+          // if result.join != string
+          // then t"${result.join(t"[", t",", t"]")} bs=$bs exp=${string.bytes.toList.map(_.show).join(t"[", t",", t"]")} got=${result.map(_.s.toList.map(_.toInt.toString).mkString(",").show).join(t" :# ")}"
+          // else result.join
+
+          result
         .assert(_ == string)

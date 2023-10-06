@@ -375,7 +375,6 @@ trait SimpleAppendable[-TargetType, -ChunkType] extends Appendable[TargetType, C
 
   def appendChunk(target: TargetType, chunk: ChunkType): Unit
 
-
 object Readable:
   given bytes: Readable[Bytes, Bytes] = LazyList(_)
   given text: Readable[Text, Text] = LazyList(_)
@@ -453,7 +452,6 @@ object Aggregable:
       new Aggregable:
         def aggregate(value: LazyList[ChunkType]): ResultType2 = fn(aggregable.aggregate(value))
       
-
 @capability
 trait Aggregable[-ChunkType, +ResultType]:
   def aggregate(source: LazyList[ChunkType]): ResultType
@@ -462,20 +460,26 @@ extension [ValueType](value: ValueType)
   def stream[ChunkType](using readable: Readable[ValueType, ChunkType]): LazyList[ChunkType] =
     readable.read(value)
   
-  def read[ResultType]
-          (using readable: Readable[ValueType, Bytes], aggregable: Aggregable[Bytes, ResultType])
-            : ResultType =
+  def readAs
+      [ResultType]
+      (using readable: Readable[ValueType, Bytes], aggregable: Aggregable[Bytes, ResultType])
+      : ResultType =
     aggregable.aggregate(readable.read(value))
   
-  def writeTo[TargetType, ChunkType](target: TargetType)
-             (using readable: Readable[ValueType, ChunkType], writable: Writable[TargetType, ChunkType])
-             : Unit =
+  def writeTo
+      [TargetType]
+      (target: TargetType)
+      [ChunkType]
+      (using readable: Readable[ValueType, ChunkType], writable: Writable[TargetType, ChunkType])
+      : Unit =
     writable.write(target, readable.read(value))
   
-  def appendTo[TargetType, ChunkType](target: TargetType)
-              (using readable: Readable[ValueType, ChunkType],
-                    appendable: Appendable[TargetType, ChunkType])
-              : Unit =
+  def appendTo
+      [TargetType]
+      (target: TargetType)
+      [ChunkType]
+      (using readable: Readable[ValueType, ChunkType], appendable: Appendable[TargetType, ChunkType])
+      : Unit =
     appendable.append(target, readable.read(value))
 
 case class Line(content: Text)
