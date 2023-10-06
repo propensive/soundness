@@ -91,15 +91,11 @@ case class Multiplexer[KeyType, ElemType]()(using Monitor):
     tasks -= key
     if tasks.isEmpty then queue.put(None)
   
-  def stream: LazyList[ElemType] =
-    def recur(): LazyList[ElemType] = queue.take() match
-      case null | None => LazyList()
-      case Some(item)  => item #:: recur()
-    
-    // FIXME: This should be identical to recur(), but recur is not tail-recursive so
-    // it can lead to stack overflow. It may still be a memory leak, though.
-    LazyList() #::: recur()
-
+  def stream: LazyList[ElemType] = LazyList.continually(queue.take()).takeWhile:
+    case null | None    => false
+    case Some(element)  => true
+  .collect:
+    case Some(element) => element
 
 extension [ElemType](stream: LazyList[ElemType])
 
