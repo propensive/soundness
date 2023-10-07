@@ -60,11 +60,29 @@ object Tests extends Suite(t"Turbulence tests"):
 
     val qbf = t"The quick brown fox\njumps over the lazy dog"
     val qbfBytes = qbf.bytes
-    
+
+    object Ref:
+      given Readable[Ref, Text] = ref => LazyList(t"abc", t"def")
+      given Readable[Ref, Bytes] = ref => LazyList(t"abc".bytes, t"def".bytes)
+
+    case class Ref()
+
     suite(t"Reading tests"):
+      test(t"Stream Text"):
+        qbf.stream[Text].join
+      .assert(_ == qbf)
+      
+      test(t"Stream Bytes"):
+        qbf.stream[Bytes].reduce(_ ++ _).to(List)
+      .assert(_ == qbfBytes.to(List))
+      
       test(t"Read Text as Text"):
         qbf.readAs[Text]
       .assert(_ == qbf)
+      
+      test(t"Read some type with unambiguous Readable instance"):
+        Ref().readAs[Text]
+      .assert(_ == t"abcdef")
       
       test(t"Read Text as LazyList[Text]"):
         qbf.readAs[LazyList[Text]].join
