@@ -19,7 +19,6 @@ package turbulence
 import rudiments.*
 import fulminate.*
 import perforate.*
-import symbolism.*
 import anticipation.*
 import parasite.*
 import hieroglyph.*
