@@ -20,7 +20,6 @@ import rudiments.*
 import gossamer.*
 import hieroglyph.*
 import anticipation.*
-import symbolism.*
 import spectacular.*
 import perforate.*
 
