@@ -21,7 +21,6 @@ import fulminate.*
 import anticipation.*
 import hieroglyph.*
 import spectacular.*
-import symbolism.*
 import kaleidoscope.*
 import contextual.*
 
@@ -199,7 +198,6 @@ extension [TextType](using textual: Textual[TextType])(text: TextType)
       (length: Int, bidi: Bidi = Ltr, char: Char = ' ')
       (using TextWidthCalculator)
       : TextType =
-    import textual.times
     val padding = textual.make(char.toString)*(length - text.displayWidth)
     
     bidi match

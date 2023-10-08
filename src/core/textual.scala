@@ -53,8 +53,15 @@ trait Textual[TextType]:
   
   given add: ClosedOperator["+", TextType] = concat(_, _)
 
+extension [TextType](left: TextType)(using textual: Textual[TextType])
+  @targetName("times")
+  def *(right: Int): TextType = textual.times(left, right)
+  
+  @targetName("plus")
+  def +(right: TextType): TextType = textual.concat(left, right)
+
 object Textual:
-  given Textual[Text] with
+  given text: Textual[Text] with
     type ShowType[-ValueType] = Show[ValueType]
     def string(text: Text): String = text.s
     def length(text: Text): Int = text.s.length
@@ -68,7 +75,7 @@ object Textual:
     
     def show[ValueType](value: ValueType)(using show: Show[ValueType]): Text = show(value)
     
-  // given Textual[String] with
+  // given string: Textual[String] with
   //   def string(string: String): String = string
   //   def length(string: String): Int = string.length
   //   def make(string: String): String = string
