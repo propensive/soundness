@@ -19,7 +19,6 @@ package aviation
 import gossamer.*
 import kaleidoscope.*
 import anticipation.*
-import symbolism.*
 import spectacular.*
 import eucalyptus.*
 import rudiments.*

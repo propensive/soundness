@@ -116,6 +116,9 @@ object Dates:
     def addDays(count: Int): Date = date + count
     
     infix def at(time: Time)(using Calendar): Timestamp = Timestamp(date, time)
+
+    @targetName("plus")
+    def +(period: Period)(using Calendar): Date = Date.plus(date, period)
     
 export Dates.Date
 
@@ -238,6 +241,12 @@ object Timing:
     
     def tai: TaiInstant = LeapSeconds.tai(instant)
 
+    @targetName("plus")
+    def +(duration: Duration): Instant = Instant.plus(instant, duration)
+    
+    @targetName("minus")
+    def -(duration: Instant): Duration = Instant.minus(instant, duration)
+
     infix def in(using RomanCalendar)(timezone: Timezone): LocalTime =
       val zonedTime = jt.Instant.ofEpochMilli(instant).nn.atZone(jt.ZoneId.of(timezone.name.s)).nn
       
@@ -359,6 +368,12 @@ extends DiurnalPeriod, TemporalPeriod:
 
   @targetName("times")
   def *(n: Int): Period = Period(years*n, months*n, days*n, hours*n, minutes*n, seconds*n)
+
+  @targetName("plus")
+  def +(right: Period): Period = Period.plus(this, right)
+  
+  @targetName("minus")
+  def -(right: Period): Period = Period.minus(this, right)
 
 extension (one: 1)
   def year: Timespan = Period(StandardTime.Year, 1)
