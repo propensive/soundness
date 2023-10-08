@@ -20,7 +20,6 @@ import rudiments.*
 import fulminate.*
 import gossamer.*
 import spectacular.*
-import symbolism.*
 import eucalyptus.*
 import perforate.*
 import parasite.*
