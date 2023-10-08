@@ -20,7 +20,6 @@ import serpentine.*
 import gossamer.*
 import rudiments.*
 import fulminate.*
-import symbolism.*
 import perforate.*
 import escapade.*
 import iridescence.*
