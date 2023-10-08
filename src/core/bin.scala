@@ -52,9 +52,18 @@ object Rudiments:
       type Result = ByteSize
       inline def apply(left: ByteSize, right: Int): ByteSize = left/right
 
-    extension (bs: ByteSize)
-      def long: Long = bs
-      def text: Text = (bs.toString+" bytes").tt
+    extension (left: ByteSize)
+      def long: Long = left
+      def text: Text = (left.toString+" bytes").tt
+
+      @targetName("plus")
+      def +(right: ByteSize): ByteSize = left + right
+      
+      @targetName("times")
+      def *(right: Int): ByteSize = left*right
+      
+      @targetName("times2")
+      def *(right: Long): ByteSize = left*right
 
   def inequality
       (expr: Expr[Boolean], bound: Expr[Int | Double | Char | Byte | Short | Long | Float],
