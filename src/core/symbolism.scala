@@ -66,7 +66,9 @@ object Operator:
   given slashFloat: ClosedOperator["/", Float] = _/_
   given slashDouble: ClosedOperator["/", Double] = _/_
 
-extension [LeftType](inline left: LeftType)
+
+/*
+ * extension [LeftType](inline left: LeftType)
   @targetName("plus")
   transparent inline infix def +
       [RightType]
@@ -106,7 +108,7 @@ extension [LeftType](inline left: LeftType)
   @targetName("unaryExclamationMark")
   transparent inline def unary_~(using inline operator: UnaryOperator["~", LeftType]): Any =
     operator(left)
-
+*/
 object UnaryOperator:
   given ClosedUnaryOperator["-", Byte] = byte => (-byte).toByte
   given ClosedUnaryOperator["-", Short] = short => (-short).toShort
