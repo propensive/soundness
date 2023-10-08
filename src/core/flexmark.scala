@@ -21,7 +21,6 @@ import fulminate.*
 import anticipation.*
 import gossamer.*
 import perforate.*
-import symbolism.*
 import spectacular.*
 
 import com.vladsch.flexmark as cvf
