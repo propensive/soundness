@@ -97,7 +97,7 @@ case class CasualDiff(replacements: List[Replace]):
               val lineNo2 = lineNo + original.length - focus.length
               abort(CasualDiffError(CasualDiffError.Reason.DoesNotMatch(line), lineNo2))
         
-        case Replace(line :: rest, original, replacement) :: todoTail => stream match
+        case Replace(line :: rest, original, replacement) :: todoTail => (stream: @unchecked) match
           case head #:: tail =>
             head #:: {
               if head != line then recur(tail, focus, todo, lineNo + 1)
