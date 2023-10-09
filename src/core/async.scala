@@ -145,8 +145,11 @@ def terminate()(using monitor: Monitor): Unit = monitor.terminate()
 def complete[ResultType](value: ResultType)(using monitor: Submonitor[ResultType]): Nothing =
   monitor.complete(value)
 
-def sleep[DurationType: GenericDuration, ResultType](duration: DurationType)(using monitor: Monitor): Unit =
+def sleep[DurationType: GenericDuration](duration: DurationType)(using monitor: Monitor): Unit =
   monitor.sleep(duration.milliseconds)
+
+def sleepUntil[InstantType: GenericInstant](instant: InstantType)(using monitor: Monitor): Unit =
+  monitor.sleep(instant.millisecondsSinceEpoch - System.currentTimeMillis)
 
 extension [ResultType](asyncs: Seq[Async[ResultType]]^)
   def sequence(using cancel: Raises[CancelError], mon: Monitor): Async[Seq[ResultType^{}]] = Async:
