@@ -266,14 +266,14 @@ class StreamBuffer[ElemType]():
   
   def stream: LazyList[ElemType] =
     def recur(): LazyList[ElemType] =
-      if buffer then primary.take() match
-        case null | None =>
+      if buffer then primary.take().nn match
+        case None =>
           buffer = false
           if closed then LazyList() else recur()
         case Some(value) =>
           value #:: recur()
-      else secondary.take() match
-        case null | None =>
+      else secondary.take().nn match
+        case None =>
           buffer = true
           if closed then LazyList() else recur()
         case Some(value) =>
@@ -281,16 +281,15 @@ class StreamBuffer[ElemType]():
     
     recur()
 
+object Funnel:
+  private object Termination
 
 class Funnel[ItemType]():
-  private val queue: juc.LinkedBlockingQueue[Option[ItemType]] = juc.LinkedBlockingQueue()
+  private val queue: juc.LinkedBlockingQueue[ItemType | Funnel.Termination.type] = juc.LinkedBlockingQueue()
   
-  def put(item: ItemType): Unit = queue.put(Some(item))
-  def stop(): Unit = queue.put(None)
-  
-  def stream: LazyList[ItemType] =
-    LazyList.continually(queue.take()).takeWhile(_ != None).collect:
-      case Some(item) => item
+  def put(item: ItemType): Unit = queue.put(item)
+  def stop(): Unit = queue.put(Funnel.Termination)
+  def stream: LazyList[ItemType] = LazyList.continually(queue.take().nn).takeWhile(_ != Funnel.Termination)
 
 class Gun() extends Funnel[Unit]():
   def fire(): Unit = put(())
