@@ -35,40 +35,6 @@ class Pulsar[DurationType: GenericDuration](duration: DurationType):
       () #:: stream
     catch case err: CancelError => LazyList()
 
-class StreamBuffer[ElemType]():
-  private val primary: juc.LinkedBlockingQueue[Option[ElemType]] = juc.LinkedBlockingQueue()
-  private val secondary: juc.LinkedBlockingQueue[Option[ElemType]] = juc.LinkedBlockingQueue()
-  private var buffer: Boolean = true
-  private var closed: Boolean = false
-
-  def useSecondary() = primary.put(None)
-  def usePrimary() = secondary.put(None)
-
-  def close(): Unit =
-    closed = true
-    primary.put(None)
-    secondary.put(None)
-
-  def put(value: ElemType): Unit = primary.put(Some(value))
-  def putSecondary(value: ElemType): Unit = secondary.put(Some(value))
-  
-  def stream: LazyList[ElemType] =
-    def recur(): LazyList[ElemType] =
-      if buffer then primary.take().nn match
-        case None =>
-          buffer = false
-          if closed then LazyList() else recur()
-        case Some(value) =>
-          value #:: recur()
-      else secondary.take().nn match
-        case None =>
-          buffer = true
-          if closed then LazyList() else recur()
-        case Some(value) =>
-          value #:: recur()
-    
-    recur()
-
 object Tap:
   enum Regulation:
     case Start, Stop
@@ -77,7 +43,7 @@ class Tap(initial: Boolean = true):
   private val flowing: juca.AtomicBoolean = juca.AtomicBoolean(initial)
   private val funnel: Funnel[Tap.Regulation] = Funnel()
   
-  def open(): Unit = if !flowing.getAndSet(true) then funnel.put(Tap.Regulation.Start)
+  def resume(): Unit = if !flowing.getAndSet(true) then funnel.put(Tap.Regulation.Start)
   def pause(): Unit = if flowing.getAndSet(false) then funnel.put(Tap.Regulation.Stop)
   def stop(): Unit = funnel.stop()
   def state(): Boolean = flowing.get

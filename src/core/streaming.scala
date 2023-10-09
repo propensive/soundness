@@ -21,8 +21,7 @@ object Writable:
 
 trait SimpleWritable[-TargetType, -ChunkType] extends Writable[TargetType, ChunkType]:
   def write(target: TargetType, stream: LazyList[ChunkType]): Unit = stream match
-    case head #:: tail => writeChunk(target, head)
-                          write(target, tail)
+    case head #:: tail => writeChunk(target, head); write(target, tail)
     case _             => ()
 
   def writeChunk(target: TargetType, chunk: ChunkType): Unit
