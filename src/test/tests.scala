@@ -17,12 +17,10 @@
 package turbulence
 
 import probably.*
-import eucalyptus.*, logging.stdout
 import gossamer.*
 import rudiments.*
 import spectacular.*
 import anticipation.*
-import symbolism.*
 import hieroglyph.*, charEncoders.utf8, charDecoders.utf8, badEncodingHandlers.strict
 import perforate.*, errorHandlers.throwUnsafely
 
