@@ -43,21 +43,24 @@ extension (value: LazyList[Bytes])
 case class StreamUnavailableError() extends Error(msg"the stream is unavailable")
 
 extension (obj: LazyList.type)
-  def multiplex
-      [ElemType](streams: LazyList[ElemType]*)(using Monitor): LazyList[ElemType] =
+  def multiplex[ElemType](streams: LazyList[ElemType]*)(using Monitor): LazyList[ElemType] =
     multiplexer(streams*).stream
   
-  def multiplexer
-      [ElemType](streams: LazyList[ElemType]*)(using Monitor): Multiplexer[Any, ElemType] =
+  def multiplexer[ElemType](streams: LazyList[ElemType]*)(using Monitor): Multiplexer[Any, ElemType] =
     val multiplexer = Multiplexer[Any, ElemType]()
     streams.zipWithIndex.map(_.swap).foreach(multiplexer.add)
     multiplexer
   
   def pulsar[DurationType: GenericDuration](duration: DurationType)(using Monitor): LazyList[Unit] =
-    try
-      sleep(duration)
-      () #:: pulsar(duration)
-    catch case err: CancelError => LazyList()
+    val startTime: Long = System.currentTimeMillis
+    
+    def recur(iteration: Int): LazyList[Unit] =
+      try
+        sleepUntil(startTime + duration.milliseconds*iteration)
+        () #:: pulsar(duration)
+      catch case err: CancelError => LazyList()
+    
+    recur(0)
 
 class Pulsar[DurationType: GenericDuration](duration: DurationType):
   private var continue: Boolean = true
@@ -127,17 +130,15 @@ extension [ElemType](stream: LazyList[ElemType])
 
   def regulate(tap: Tap)(using Monitor): LazyList[ElemType] =
     def defer
-        (active: Boolean, stream: LazyList[Some[ElemType] | Tap.Regulation],
-            buffer: List[ElemType])
+        (active: Boolean, stream: LazyList[Some[ElemType] | Tap.Regulation], buffer: List[ElemType])
         : LazyList[ElemType] =
       recur(active, stream, buffer)
 
     @tailrec
     def recur
-        (active: Boolean, stream: LazyList[Some[ElemType] | Tap.Regulation],
-            buffer: List[ElemType])
-
+        (active: Boolean, stream: LazyList[Some[ElemType] | Tap.Regulation], buffer: List[ElemType])
         : LazyList[ElemType] =
+      
       if active && buffer.nonEmpty then buffer.head #:: defer(true, stream, buffer.tail)
       else if stream.isEmpty then LazyList()
       else stream.head match
@@ -165,8 +166,11 @@ extension [ElemType](stream: LazyList[ElemType])
     @tailrec
     def recur(stream: LazyList[ElemType], list: List[ElemType], expiry: Long): LazyList[List[ElemType]] =
       if list.isEmpty then
-        val newExpiry: Long = maxDelay.option.map(_.milliseconds).fold(Long.MaxValue)(_ + System.currentTimeMillis)
-        if stream.isEmpty then LazyList() else recur(stream.tail, List(stream.head), newExpiry)
+        val expiry2: Long =
+          maxDelay.option.map(_.milliseconds).fold(Long.MaxValue)(_ + System.currentTimeMillis)
+        
+        if stream.isEmpty then LazyList() else recur(stream.tail, List(stream.head), expiry2)
+      
       else
         val hasMore: Async[Boolean] = Async(!stream.isEmpty)
 
@@ -205,18 +209,14 @@ object Io:
   def printErr[TextType](text: TextType)(using io: Stdio)(using printable: Printable[TextType]): Unit =
     io.putErrText(printable.print(text))
   
-  def println
-      [TextType](text: TextType)(using io: Stdio, printable: Printable[TextType])
-      : Unit =
+  def println[TextType](text: TextType)(using io: Stdio, printable: Printable[TextType]): Unit =
     io.putOutText(printable.print(text))
     io.putOutText("\n".tt)
 
   def println()(using io: Stdio): Unit = io.putOutText("\n".tt)
   def printlnErr()(using io: Stdio): Unit = io.putErrText("\n".tt)
   
-  def printlnErr
-      [TextType](text: TextType)(using io: Stdio, printable: Printable[TextType])
-      : Unit =
+  def printlnErr[TextType](text: TextType)(using io: Stdio, printable: Printable[TextType]): Unit =
     io.putErrText(printable.print(text))
     io.putErrText("\n".tt)
 
