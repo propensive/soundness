@@ -38,6 +38,8 @@ extension [InstantType](instant: InstantType)(using generic: GenericInstant[Inst
 object SpecificInstant:
   def apply[InstantType](using specific: SpecificInstant[InstantType])(millisecondsSinceEpoch: Long): InstantType =
     specific.instant(millisecondsSinceEpoch)
+  
+  given long: SpecificInstant[Long] = identity(_)
 
 extension [DurationType](duration: DurationType)(using generic: GenericDuration[DurationType])
   def milliseconds: Long = generic.milliseconds(duration)
@@ -45,3 +47,11 @@ extension [DurationType](duration: DurationType)(using generic: GenericDuration[
 object SpecificDuration:
   def apply[DurationType](using specific: SpecificDuration[DurationType])(milliseconds: Long): DurationType =
     specific.duration(milliseconds)
+
+  given long: SpecificDuration[Long] = identity(_)
+
+object GenericInstant:
+  given long: GenericInstant[Long] = identity(_)
+
+object GenericDuration:
+  given long: GenericDuration[Long] = identity(_)
