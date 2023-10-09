@@ -18,7 +18,6 @@ package probably
 
 import rudiments.*
 import digression.*
-import symbolism.*
 import anticipation.*
 import gossamer.*
 import chiaroscuro.*
