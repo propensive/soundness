@@ -70,18 +70,22 @@ class Pulsar[DurationType: GenericDuration](duration: DurationType):
       () #:: stream
     catch case err: CancelError => LazyList()
 
+object Multiplexer:
+  private object Termination
+
 case class Multiplexer[KeyType, ElemType]()(using Monitor):
   private val tasks: TrieMap[KeyType, Async[Unit]] = TrieMap()
-  private val queue: juc.LinkedBlockingQueue[Option[ElemType]] = juc.LinkedBlockingQueue()
+  
+  private val queue: juc.LinkedBlockingQueue[ElemType | Multiplexer.Termination.type] =
+    juc.LinkedBlockingQueue()
 
   def close(): Unit = tasks.keys.foreach(remove(_))
 
   @tailrec
   private def pump(key: KeyType, stream: LazyList[ElemType])(using Submonitor[Unit]): Unit =
     if stream.isEmpty then remove(key) else
-      //ctx.terminate(())
       acquiesce()
-      queue.put(Some(stream.head))
+      queue.put(stream.head)
       pump(key, stream.tail)
 
   def add(key: KeyType, stream: LazyList[ElemType]): Unit = tasks(key) =
@@ -89,13 +93,9 @@ case class Multiplexer[KeyType, ElemType]()(using Monitor):
  
   private def remove(key: KeyType): Unit = synchronized:
     tasks -= key
-    if tasks.isEmpty then queue.put(None)
+    if tasks.isEmpty then queue.put(Multiplexer.Termination)
   
-  def stream: LazyList[ElemType] = LazyList.continually(queue.take()).takeWhile:
-    case null | None    => false
-    case Some(element)  => true
-  .collect:
-    case Some(element) => element
+  def stream: LazyList[ElemType] = LazyList.continually(queue.take().nn).takeWhile(_ != Multiplexer.Termination)
 
 extension [ElemType](stream: LazyList[ElemType])
 
@@ -113,11 +113,13 @@ extension [ElemType](stream: LazyList[ElemType])
       [DurationType: GenericDuration: SpecificDuration](duration: DurationType)
       (using monitor: Monitor, cancel: Raises[CancelError])
       : LazyList[ElemType] =
+    
     def recur(stream: LazyList[ElemType], last: Long): LazyList[ElemType] = stream match
       case head #:: tail =>
         val delay = SpecificDuration(duration.milliseconds - (System.currentTimeMillis - last))
         if delay.milliseconds > 0 then sleep(delay)
         stream
+      
       case _ =>
         LazyList()
 
@@ -185,66 +187,16 @@ extension [ElemType](stream: LazyList[ElemType])
     
     LazyList() #::: recur(stream, Nil, Long.MaxValue)
 
-  def parallelMap
-      [ElemType2](fn: ElemType => ElemType2)(using monitor: Monitor): LazyList[ElemType2] =
+  def parallelMap[ElemType2](fn: ElemType => ElemType2)(using monitor: Monitor): LazyList[ElemType2] =
     
     val out: Funnel[ElemType2] = Funnel()
     
     Async:
       stream.map: elem =>
-        Async:
-          out.put(fn(elem))
+        Async(out.put(fn(elem)))
     
     out.stream
 
-object Io:
-  def put(bytes: Bytes)(using io: Stdio): Unit =
-    io.putOutBytes(bytes)
-
-  def print[TextType](text: TextType)(using io: Stdio)(using printable: Printable[TextType]): Unit =
-    io.putOutText(printable.print(text))
-  
-  def printErr[TextType](text: TextType)(using io: Stdio)(using printable: Printable[TextType]): Unit =
-    io.putErrText(printable.print(text))
-  
-  def println[TextType](text: TextType)(using io: Stdio, printable: Printable[TextType]): Unit =
-    io.putOutText(printable.print(text))
-    io.putOutText("\n".tt)
-
-  def println()(using io: Stdio): Unit = io.putOutText("\n".tt)
-  def printlnErr()(using io: Stdio): Unit = io.putErrText("\n".tt)
-  
-  def printlnErr[TextType](text: TextType)(using io: Stdio, printable: Printable[TextType]): Unit =
-    io.putErrText(printable.print(text))
-    io.putErrText("\n".tt)
-
-object Stdio:
-  given default(using Quickstart)(using Raises[StreamCutError]): Stdio = basicIo.jvm
-
-@capability
-trait Stdio:
-  def putErrBytes(bytes: Bytes): Unit
-  def putErrText(text: Text): Unit
-  def putOutBytes(bytes: Bytes): Unit
-  def putOutText(text: Text): Unit
-
-object Stderr
-object Stdout
-
-package basicIo:
-  given jvm(using streamCut: Raises[StreamCutError]): Stdio = new Stdio:
-    val encoder = CharEncoder.system
-    def putOutText(text: Text): Unit = putOutBytes(encoder.encode(text))
-    def putErrText(text: Text): Unit = putErrBytes(encoder.encode(text))
-    
-    def putOutBytes(bytes: Bytes): Unit =
-      if System.out == null then raise(StreamCutError(0.b))(())
-      else System.out.nn.writeBytes(bytes.mutable(using Unsafe))
-    
-    def putErrBytes(bytes: Bytes): Unit =
-      if System.out == null then raise(StreamCutError(0.b))(())
-      else System.out.nn.writeBytes(bytes.mutable(using Unsafe))
-    
 class StreamBuffer[ElemType]():
   private val primary: juc.LinkedBlockingQueue[Option[ElemType]] = juc.LinkedBlockingQueue()
   private val secondary: juc.LinkedBlockingQueue[Option[ElemType]] = juc.LinkedBlockingQueue()
