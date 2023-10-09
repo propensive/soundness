@@ -40,8 +40,6 @@ extension (value: LazyList[Bytes])
     
     bld.result().immutable(using Unsafe)
 
-case class StreamUnavailableError() extends Error(msg"the stream is unavailable")
-
 extension (obj: LazyList.type)
   def multiplex[ElemType](streams: LazyList[ElemType]*)(using Monitor): LazyList[ElemType] =
     multiplexer(streams*).stream
