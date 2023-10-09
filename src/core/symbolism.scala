@@ -16,8 +16,6 @@
 
 package symbolism
 
-import scala.annotation.*
-
 trait Operator[OperatorType <: String & Singleton, -LeftType, -RightType]:
   type Result
   def apply(left: LeftType, right: RightType): Result
