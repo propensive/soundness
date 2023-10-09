@@ -66,49 +66,6 @@ object Operator:
   given slashFloat: ClosedOperator["/", Float] = _/_
   given slashDouble: ClosedOperator["/", Double] = _/_
 
-
-/*
- * extension [LeftType](inline left: LeftType)
-  @targetName("plus")
-  transparent inline infix def +
-      [RightType]
-      (inline right: RightType)
-      (using inline operator: Operator["+", LeftType, RightType])
-      : Any =
-    operator(left, right)
-  
-  @targetName("minus")
-  transparent inline infix def -
-      [RightType]
-      (inline right: RightType)
-      (using inline operator: Operator["-", LeftType, RightType])
-      : Any =
-    operator(left, right)
-  
-  @targetName("star")
-  transparent inline infix def *
-      [RightType]
-      (inline right: RightType)
-      (using inline operator: Operator["*", LeftType, RightType])
-      : Any =
-    operator(left, right)
-  
-  @targetName("unaryMinus")
-  transparent inline def unary_-(using inline operator: UnaryOperator["-", LeftType]): Any =
-    operator(left)
-  
-  @targetName("unaryPlus")
-  transparent inline def unary_+(using inline operator: UnaryOperator["+", LeftType]): Any =
-    operator(left)
-
-  @targetName("unaryExclamationMark")
-  transparent inline def unary_!(using inline operator: UnaryOperator["!", LeftType]): Any =
-    operator(left)
-  
-  @targetName("unaryExclamationMark")
-  transparent inline def unary_~(using inline operator: UnaryOperator["~", LeftType]): Any =
-    operator(left)
-*/
 object UnaryOperator:
   given ClosedUnaryOperator["-", Byte] = byte => (-byte).toByte
   given ClosedUnaryOperator["-", Short] = short => (-short).toShort
