@@ -64,6 +64,16 @@ object Tests extends Suite(t"Turbulence tests"):
       given Readable[Ref, Bytes] = ref => LazyList(t"abc".bytes, t"def".bytes)
 
     case class Ref()
+    
+    object Ref2:
+      given Readable[Ref2, Text] = ref => LazyList(t"abc", t"def")
+
+    case class Ref2()
+
+    object Ref3:
+      given Readable[Ref3, Bytes] = ref => LazyList(t"abc".bytes, t"def".bytes)
+
+    case class Ref3()
 
     suite(t"Reading tests"):
       test(t"Stream Text"):
@@ -78,9 +88,29 @@ object Tests extends Suite(t"Turbulence tests"):
         qbf.readAs[Text]
       .assert(_ == qbf)
       
-      test(t"Read some type with unambiguous Readable instance"):
+      test(t"Read some type as Text with Text and Byte Readable instance"):
         Ref().readAs[Text]
       .assert(_ == t"abcdef")
+      
+      test(t"Read some type as Bytes with Text and Byte Readable instance"):
+        Ref().readAs[Bytes].to(List)
+      .assert(_ == t"abcdef".bytes.to(List))
+      
+      test(t"Read some type as Text with only Text Readable instance"):
+        Ref2().readAs[Text]
+      .assert(_ == t"abcdef")
+      
+      test(t"Read some type as Bytes with only Text Readable instance"):
+        Ref2().readAs[Bytes].to(List)
+      .assert(_ == t"abcdef".bytes.to(List))
+      
+      test(t"Read some type as Text with only Bytes Readable instance"):
+        Ref3().readAs[Text]
+      .assert(_ == t"abcdef")
+      
+      test(t"Read some type as Bytes with only Bytes Readable instance"):
+        Ref3().readAs[Bytes].to(List)
+      .assert(_ == t"abcdef".bytes.to(List))
       
       test(t"Read Text as LazyList[Text]"):
         qbf.readAs[LazyList[Text]].join

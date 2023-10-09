@@ -90,16 +90,18 @@ object Readable:
   given bytes: Readable[Bytes, Bytes] = LazyList(_)
   given text: Readable[Text, Text] = LazyList(_)
   
-  given textToBytes(using encoder: CharEncoder): Readable[Text, Bytes] =
-    text => LazyList(encoder.encode(text))
-
-  given bytesToText
+  given encodingAdapter
       [SourceType]
-      (using readable: Readable[SourceType, Bytes], decoder: CharDecoder, handler: BadEncodingHandler)
-      : Readable[SourceType, Text] = value =>
-
-    decoder.decode(readable.read(value))
+      (using readable: Readable[SourceType, Text], encoder: CharEncoder)
+      : Readable[SourceType, Bytes] = source =>
+    encoder.encode(readable.read(source))
   
+  given decodingAdapter
+      [SourceType]
+      (using readable: Readable[SourceType, Bytes], decoder: CharDecoder)
+      : Readable[SourceType, Text] = source =>
+    decoder.decode(readable.read(source))
+
   given lazyList[ChunkType]: Readable[LazyList[ChunkType], ChunkType] = identity(_)
 
   given bufferedReader(using streamCut: Raises[StreamCutError]): Readable[ji.BufferedReader, Line] = reader =>
