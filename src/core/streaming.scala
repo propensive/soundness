@@ -35,6 +35,18 @@ object Writable:
       : SimpleWritable[ji.OutputStream, Text] =
     (outputStream, text) => outputStream.write(encoder.encode(text).mutable(using Unsafe))
 
+  given decodingAdapter
+      [TargetType]
+      (using writable: Writable[TargetType, Text], decoder: CharDecoder)
+      : Writable[TargetType, Bytes] =
+    (target, stream) => writable.write(target, decoder.decode(stream))
+  
+  given encodingAdapter
+      [TargetType]
+      (using writable: Writable[TargetType, Bytes], encoder: CharEncoder)
+      : Writable[TargetType, Text] =
+    (target, stream) => writable.write(target, encoder.encode(stream))
+
 @missingContext(contextMessage(module = "turbulence", typeclass = "Writable", param = "${TargetType}")())
 @capability
 trait Writable[-TargetType, -ChunkType]:
@@ -66,10 +78,17 @@ object Appendable:
   given outputStreamBytes(using streamCut: Raises[StreamCutError]): SimpleAppendable[ji.OutputStream, Bytes] =
     (outputStream, bytes) => outputStream.write(bytes.mutable(using Unsafe))
   
-  given outputStreamText
-      (using streamCut: Raises[StreamCutError], encoder: CharEncoder)
-      : SimpleWritable[ji.OutputStream, Text] =
-    (outputStream, text) => outputStream.write(encoder.encode(text).mutable(using Unsafe))
+  given decodingAdapter
+      [TargetType]
+      (using appendable: Appendable[TargetType, Text], decoder: CharDecoder)
+      : Appendable[TargetType, Bytes] =
+    (target, stream) => appendable.append(target, decoder.decode(stream))
+  
+  given encodingAdapter
+      [TargetType]
+      (using appendable: Appendable[TargetType, Bytes], encoder: CharEncoder)
+      : Appendable[TargetType, Text] =
+    (target, stream) => appendable.append(target, encoder.encode(stream))
 
 trait Appendable[-TargetType, -ChunkType]:
   def append(target: TargetType, stream: LazyList[ChunkType]): Unit

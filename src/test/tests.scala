@@ -24,6 +24,8 @@ import anticipation.*
 import hieroglyph.*, charEncoders.utf8, charDecoders.utf8, badEncodingHandlers.strict
 import perforate.*, errorHandlers.throwUnsafely
 
+import scala.collection.mutable as scm
+
 object Tests extends Suite(t"Turbulence tests"):
   def run(): Unit =
     suite(t"Streaming Unicode tests"):
@@ -147,3 +149,211 @@ object Tests extends Suite(t"Turbulence tests"):
       // test(t"Read Bytes as Lines"):
       //   qbfBytes.readAs[LazyList[Line]]
       // .assert(_ == LazyList(Line(t"The quick brown fox"), Line(t"jumps over the lazy dog")))
+    
+    suite(t"Writing tests"):
+
+      class GeneralStore():
+        val arrayBuffer: scm.ArrayBuffer[Byte] = scm.ArrayBuffer()
+        def apply(): Text = String(arrayBuffer.toArray, "UTF-8").tt
+
+      object GeneralStore:
+        given Writable[GeneralStore, Bytes] = (store, stream) => stream.foreach: bytes =>
+          bytes.foreach: byte =>
+            store.arrayBuffer.append(byte)
+        
+        given Writable[GeneralStore, Text] = (store, texts) => texts.foreach: text =>
+          text.bytes.foreach: byte =>
+            store.arrayBuffer.append(byte)
+      
+      class ByteStore():
+        val arrayBuffer: scm.ArrayBuffer[Byte] = scm.ArrayBuffer()
+        def apply(): Text = String(arrayBuffer.toArray, "UTF-8").tt
+
+      object ByteStore:
+        given Writable[ByteStore, Bytes] = (store, stream) => stream.foreach: bytes =>
+          bytes.foreach: byte =>
+            store.arrayBuffer.append(byte)
+      
+      class TextStore():
+        var text: Text = t""
+        def apply(): Text = text
+      
+      object TextStore:
+        given Writable[TextStore, Text] = (store, texts) => texts.foreach: text =>
+          store.text = store.text + text
+
+      test(t"Write Text to some reference with Text and Bytes instances"):
+        val store = GeneralStore()
+        qbf.writeTo(store)
+        store()
+      .assert(_ == qbf)
+      
+      test(t"Write Bytes to some reference with Text and Bytes instances"):
+        val store = GeneralStore()
+        qbfBytes.writeTo(store)
+        store()
+      .assert(_ == qbf)
+      
+      test(t"Write LazyList[Text] to some reference with Text and Bytes instances"):
+        val store = GeneralStore()
+        LazyList(qbf).writeTo(store)
+        store()
+      .assert(_ == qbf)
+      
+      test(t"Write LazyList[Bytes] to some reference with Text and Bytes instances"):
+        val store = GeneralStore()
+        LazyList(qbfBytes).writeTo(store)
+        store()
+      .assert(_ == qbf)
+      
+      test(t"Write Text to some reference with only a Bytes instance"):
+        val store = ByteStore()
+        qbf.writeTo(store)
+        store()
+      .assert(_ == qbf)
+      
+      test(t"Write Bytes to some reference with only a Bytes instance"):
+        val store = ByteStore()
+        qbfBytes.writeTo(store)
+        store()
+      .assert(_ == qbf)
+      
+      test(t"Write LazyList[Text] to some reference with only a Bytes instance"):
+        val store = ByteStore()
+        LazyList(qbf).writeTo(store)
+        store()
+      .assert(_ == qbf)
+      
+      test(t"Write LazyList[Bytes] to some reference with only a Bytes instance"):
+        val store = ByteStore()
+        LazyList(qbfBytes).writeTo(store)
+        store()
+      .assert(_ == qbf)
+      
+      test(t"Write Text to some reference with only a Text instance"):
+        val store = TextStore()
+        qbf.writeTo(store)
+        store()
+      .assert(_ == qbf)
+      
+      test(t"Write Bytes to some reference with only a Text instance"):
+        val store = TextStore()
+        qbfBytes.writeTo(store)
+        store()
+      .assert(_ == qbf)
+      
+      test(t"Write LazyList[Text] to some reference with only a Text instance"):
+        val store = TextStore()
+        LazyList(qbf).writeTo(store)
+        store()
+      .assert(_ == qbf)
+      
+      test(t"Write LazyList[Bytes] to some reference with only a Text instance"):
+        val store = TextStore()
+        LazyList(qbfBytes).writeTo(store)
+        store()
+      .assert(_ == qbf)
+    
+    suite(t"Appending tests"):
+
+      class GeneralStore():
+        val arrayBuffer: scm.ArrayBuffer[Byte] = scm.ArrayBuffer()
+        def apply(): Text = String(arrayBuffer.toArray, "UTF-8").tt
+
+      object GeneralStore:
+        given Appendable[GeneralStore, Bytes] = (store, stream) => stream.foreach: bytes =>
+          bytes.foreach: byte =>
+            store.arrayBuffer.append(byte)
+        
+        given Appendable[GeneralStore, Text] = (store, texts) => texts.foreach: text =>
+          text.bytes.foreach: byte =>
+            store.arrayBuffer.append(byte)
+      
+      class ByteStore():
+        val arrayBuffer: scm.ArrayBuffer[Byte] = scm.ArrayBuffer()
+        def apply(): Text = String(arrayBuffer.toArray, "UTF-8").tt
+
+      object ByteStore:
+        given Appendable[ByteStore, Bytes] = (store, stream) => stream.foreach: bytes =>
+          bytes.foreach: byte =>
+            store.arrayBuffer.append(byte)
+      
+      class TextStore():
+        var text: Text = t""
+        def apply(): Text = text
+      
+      object TextStore:
+        given Appendable[TextStore, Text] = (store, texts) => texts.foreach: text =>
+          store.text = store.text + text
+
+      test(t"Append Text to some reference with Text and Bytes instances"):
+        val store = GeneralStore()
+        qbf.appendTo(store)
+        store()
+      .assert(_ == qbf)
+      
+      test(t"Append Bytes to some reference with Text and Bytes instances"):
+        val store = GeneralStore()
+        qbfBytes.appendTo(store)
+        store()
+      .assert(_ == qbf)
+      
+      test(t"Append LazyList[Text] to some reference with Text and Bytes instances"):
+        val store = GeneralStore()
+        LazyList(qbf).appendTo(store)
+        store()
+      .assert(_ == qbf)
+      
+      test(t"Append LazyList[Bytes] to some reference with Text and Bytes instances"):
+        val store = GeneralStore()
+        LazyList(qbfBytes).appendTo(store)
+        store()
+      .assert(_ == qbf)
+      
+      test(t"Append Text to some reference with only a Bytes instance"):
+        val store = ByteStore()
+        qbf.appendTo(store)
+        store()
+      .assert(_ == qbf)
+      
+      test(t"Append Bytes to some reference with only a Bytes instance"):
+        val store = ByteStore()
+        qbfBytes.appendTo(store)
+        store()
+      .assert(_ == qbf)
+      
+      test(t"Append LazyList[Text] to some reference with only a Bytes instance"):
+        val store = ByteStore()
+        LazyList(qbf).appendTo(store)
+        store()
+      .assert(_ == qbf)
+      
+      test(t"Append LazyList[Bytes] to some reference with only a Bytes instance"):
+        val store = ByteStore()
+        LazyList(qbfBytes).appendTo(store)
+        store()
+      .assert(_ == qbf)
+      
+      test(t"Append Text to some reference with only a Text instance"):
+        val store = TextStore()
+        qbf.appendTo(store)
+        store()
+      .assert(_ == qbf)
+      
+      test(t"Append Bytes to some reference with only a Text instance"):
+        val store = TextStore()
+        qbfBytes.appendTo(store)
+        store()
+      .assert(_ == qbf)
+      
+      test(t"Append LazyList[Text] to some reference with only a Text instance"):
+        val store = TextStore()
+        LazyList(qbf).appendTo(store)
+        store()
+      .assert(_ == qbf)
+      
+      test(t"Append LazyList[Bytes] to some reference with only a Text instance"):
+        val store = TextStore()
+        LazyList(qbfBytes).appendTo(store)
+        store()
+      .assert(_ == qbf)
