@@ -16,11 +16,15 @@
 
 package exoskeleton
 
-import anticipation.*, fileApi.galileiApi
 import serpentine.*, hierarchies.unix
-import galilei.*
-import rudiments.*
+
+import galilei.*, filesystemOptions.{dereferenceSymlinks, createNonexistent, createNonexistentParents,
+    overwritePreexisting, deleteRecursively}
+
+import anticipation.*, fileApi.galileiApi
+import rudiments.*, homeDirectories.default
 import perforate.*
+import hieroglyph.*, charEncoders.utf8, charDecoders.utf8
 import parasite.*
 import turbulence.*
 import ambience.*
@@ -35,6 +39,7 @@ case class Client(pid: Pid, async: Async[Unit])
 class Daemon(port: Int) extends Application:
   private val clients: scm.HashMap[Pid, Client] = scm.HashMap()
   private var continue: Boolean = true
+  val xdg = Xdg()
 
   def client(socket: jn.Socket)(using Monitor, Raises[StreamCutError]): Unit =
     val input = Readable.inputStream.read(socket.getInputStream.nn)
@@ -46,12 +51,20 @@ class Daemon(port: Int) extends Application:
     clients(Pid(99)) = Client(Pid(99), async)
 
   def invoke(using Invocation): Execution =
+    erased given Raises[PathError] = ###
+    erased given Raises[StreamCutError] = ###
+    erased given Raises[CancelError] = ###
+    erased given Raises[IoError] = ###
+
+    val portFile: Path = xdg.runtimeDir.or(xdg.stateHome) / p"fury.port"
+
+    summon[Writable[Path, Text]]
+
     execute:
       supervise:
-        import homeDirectories.default
         val socket: jn.ServerSocket = jn.ServerSocket(0)
-        val port = socket.getLocalPort
-        port.show.writeTo(Xdg().runtimeDir / p"fury.port")
+        val port: Int = socket.getLocalPort
+        port.show.writeTo(portFile)
         while continue do safely(client(socket.accept().nn))
 
       ExitStatus.Ok

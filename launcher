@@ -23,7 +23,7 @@ init() {
   printf "process %s\n" "$pid"
   
   for arg in "${args[@]}"
-  do printf "arg %s" "$arg\n"
+  do printf "arg %s\n" "$arg"
   done
   
   printf "env %s\n" "$(env -0)"
