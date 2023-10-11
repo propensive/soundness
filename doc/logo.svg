@@ -2,287 +2,140 @@
 <!-- Created with Inkscape (http://www.inkscape.org/) -->
 
 <svg
-   width="120mm"
+   width="119.99999mm"
    height="120mm"
-   viewBox="0 0 120 120"
+   viewBox="0 0 119.99999 120"
    version="1.1"
    id="svg5"
-   inkscape:version="1.2.1 (9c6d41e410, 2022-07-14)"
-   sodipodi:docname="logo.svg"
-   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
-   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
    xmlns:xlink="http://www.w3.org/1999/xlink"
    xmlns="http://www.w3.org/2000/svg"
    xmlns:svg="http://www.w3.org/2000/svg">
-  <sodipodi:namedview
-     id="namedview7"
-     pagecolor="#ffffff"
-     bordercolor="#111111"
-     borderopacity="1"
-     inkscape:showpageshadow="0"
-     inkscape:pageopacity="0"
-     inkscape:pagecheckerboard="1"
-     inkscape:deskcolor="#d1d1d1"
-     inkscape:document-units="mm"
-     showgrid="false"
-     inkscape:zoom="2.3786088"
-     inkscape:cx="294.92029"
-     inkscape:cy="302.69795"
-     inkscape:window-width="4498"
-     inkscape:window-height="2978"
-     inkscape:window-x="0"
-     inkscape:window-y="20"
-     inkscape:window-maximized="1"
-     inkscape:current-layer="layer1">
-    <inkscape:grid
-       type="xygrid"
-       id="grid686"
-       dotted="true"
-       originx="-30"
-       originy="-40" />
-  </sodipodi:namedview>
   <defs
      id="defs2">
     <linearGradient
-       inkscape:collect="always"
-       id="linearGradient1260">
+       id="linearGradient1547">
       <stop
-         style="stop-color:#04004c;stop-opacity:1;"
+         style="stop-color:#004262;stop-opacity:1;"
          offset="0"
-         id="stop1256" />
+         id="stop1543" />
       <stop
-         style="stop-color:#003140;stop-opacity:1;"
+         style="stop-color:#004262;stop-opacity:0;"
          offset="1"
-         id="stop1258" />
+         id="stop1545" />
     </linearGradient>
     <linearGradient
-       inkscape:collect="always"
-       xlink:href="#linearGradient1260"
-       id="linearGradient1351"
-       x1="40"
-       y1="50"
-       x2="140"
-       y2="150"
-       gradientUnits="userSpaceOnUse" />
-    <clipPath
-       clipPathUnits="userSpaceOnUse"
-       id="clipPath1413">
-      <g
-         id="g1417">
-        <circle
-           style="fill:none;fill-opacity:1;stroke:#000000;stroke-width:0.0649999;stroke-opacity:1;stop-color:#000000"
-           id="circle1415"
-           cx="90"
-           cy="100"
-           r="60" />
-      </g>
-    </clipPath>
-    <clipPath
-       clipPathUnits="userSpaceOnUse"
-       id="clipPath1419">
-      <g
-         id="g1423">
-        <circle
-           style="fill:none;fill-opacity:1;stroke:#000000;stroke-width:0.0649999;stroke-opacity:1;stop-color:#000000"
-           id="circle1421"
-           cx="90"
-           cy="100"
-           r="60" />
-      </g>
-    </clipPath>
-    <clipPath
-       clipPathUnits="userSpaceOnUse"
-       id="clipPath1425">
-      <g
-         id="g1429">
-        <circle
-           style="fill:none;fill-opacity:1;stroke:#000000;stroke-width:0.0649999;stroke-opacity:1;stop-color:#000000"
-           id="circle1427"
-           cx="90"
-           cy="100"
-           r="60" />
-      </g>
-    </clipPath>
-    <clipPath
-       clipPathUnits="userSpaceOnUse"
-       id="clipPath1431">
-      <g
-         id="g1435">
-        <circle
-           style="fill:none;fill-opacity:1;stroke:#000000;stroke-width:0.0649999;stroke-opacity:1;stop-color:#000000"
-           id="circle1433"
-           cx="90"
-           cy="100"
-           r="60" />
-      </g>
-    </clipPath>
-    <clipPath
-       clipPathUnits="userSpaceOnUse"
-       id="clipPath1437">
-      <g
-         id="g1441">
-        <circle
-           style="fill:none;fill-opacity:1;stroke:#000000;stroke-width:0.0649999;stroke-opacity:1;stop-color:#000000"
-           id="circle1439"
-           cx="90"
-           cy="100"
-           r="60" />
-      </g>
-    </clipPath>
-    <clipPath
-       clipPathUnits="userSpaceOnUse"
-       id="clipPath1443">
-      <g
-         id="g1447">
-        <circle
-           style="fill:none;fill-opacity:1;stroke:#000000;stroke-width:0.0649999;stroke-opacity:1;stop-color:#000000"
-           id="circle1445"
-           cx="90"
-           cy="100"
-           r="60" />
-      </g>
-    </clipPath>
-    <clipPath
-       clipPathUnits="userSpaceOnUse"
-       id="clipPath1449">
-      <g
-         id="g1453">
-        <circle
-           style="fill:none;fill-opacity:1;stroke:#000000;stroke-width:0.0649999;stroke-opacity:1;stop-color:#000000"
-           id="circle1451"
-           cx="90"
-           cy="100"
-           r="60" />
-      </g>
-    </clipPath>
-    <clipPath
-       clipPathUnits="userSpaceOnUse"
-       id="clipPath1449-9">
-      <g
-         id="g1453-1">
-        <circle
-           style="fill:none;fill-opacity:1;stroke:#000000;stroke-width:0.0649999;stroke-opacity:1;stop-color:#000000"
-           id="circle1451-2"
-           cx="90"
-           cy="100"
-           r="60" />
-      </g>
-    </clipPath>
-    <clipPath
-       clipPathUnits="userSpaceOnUse"
-       id="clipPath1449-9-0">
-      <g
-         id="g1453-1-9">
-        <circle
-           style="fill:none;fill-opacity:1;stroke:#000000;stroke-width:0.0649999;stroke-opacity:1;stop-color:#000000"
-           id="circle1451-2-3"
-           cx="90"
-           cy="100"
-           r="60" />
-      </g>
-    </clipPath>
-    <clipPath
-       clipPathUnits="userSpaceOnUse"
-       id="clipPath1449-2">
-      <g
-         id="g1453-6">
-        <circle
-           style="fill:none;fill-opacity:1;stroke:#000000;stroke-width:0.0649999;stroke-opacity:1;stop-color:#000000"
-           id="circle1451-1"
-           cx="90"
-           cy="100"
-           r="60" />
-      </g>
-    </clipPath>
-    <clipPath
-       clipPathUnits="userSpaceOnUse"
-       id="clipPath1449-2-7">
-      <g
-         id="g1453-6-9">
-        <circle
-           style="fill:none;fill-opacity:1;stroke:#000000;stroke-width:0.0649999;stroke-opacity:1;stop-color:#000000"
-           id="circle1451-1-2"
-           cx="90"
-           cy="100"
-           r="60" />
-      </g>
-    </clipPath>
-    <clipPath
-       clipPathUnits="userSpaceOnUse"
-       id="clipPath1756">
-      <circle
-         style="fill:none;fill-opacity:1;stroke:#000000;stroke-width:0.0649999;stroke-opacity:1;stop-color:#000000"
-         id="circle1758"
-         cx="90"
-         cy="100"
-         r="60"
-         clip-path="url(#clipPath1449-2-7)" />
-    </clipPath>
+       id="linearGradient1232">
+      <stop
+         style="stop-color:#ffa442;stop-opacity:1;"
+         offset="0"
+         id="stop1228" />
+      <stop
+         style="stop-color:#ff6464;stop-opacity:1;"
+         offset="1"
+         id="stop1230" />
+    </linearGradient>
+    <linearGradient
+       xlink:href="#linearGradient1232"
+       id="linearGradient1234"
+       x1="50"
+       y1="120"
+       x2="115.39094"
+       y2="217.36761"
+       gradientUnits="userSpaceOnUse"
+       gradientTransform="matrix(0.98769244,0,0,0.9986017,-197.50985,-301.37576)" />
+    <linearGradient
+       xlink:href="#linearGradient1547"
+       id="linearGradient1549"
+       x1="30"
+       y1="200"
+       x2="170"
+       y2="90"
+       gradientUnits="userSpaceOnUse"
+       gradientTransform="matrix(0.99588799,0.0252416,-0.02115717,1.1881458,4.0335835,-37.56442)" />
+    <linearGradient
+       xlink:href="#linearGradient1547"
+       id="linearGradient1551"
+       x1="30"
+       y1="200"
+       x2="170"
+       y2="90"
+       gradientUnits="userSpaceOnUse"
+       gradientTransform="matrix(0.98664113,0.0252416,-0.02096073,1.1881458,5.1323803,-37.56442)" />
+    <linearGradient
+       xlink:href="#linearGradient1547"
+       id="linearGradient1553"
+       x1="30"
+       y1="200"
+       x2="170"
+       y2="90"
+       gradientUnits="userSpaceOnUse"
+       gradientTransform="matrix(0.96639452,0.0252416,-0.0205306,1.1881458,7.538272,-37.56442)" />
+    <linearGradient
+       xlink:href="#linearGradient1547"
+       id="linearGradient1555"
+       x1="30"
+       y1="200"
+       x2="170"
+       y2="90"
+       gradientUnits="userSpaceOnUse"
+       gradientTransform="matrix(0.90204674,0.0252416,-0.01916356,1.1881458,15.184657,-37.56442)" />
+    <linearGradient
+       xlink:href="#linearGradient1547"
+       id="linearGradient1557"
+       x1="30"
+       y1="200"
+       x2="170"
+       y2="90"
+       gradientUnits="userSpaceOnUse"
+       gradientTransform="matrix(0.8910201,0.0252416,-0.0189293,1.1881458,16.494955,-37.56442)" />
+    <linearGradient
+       xlink:href="#linearGradient1547"
+       id="linearGradient1559"
+       x1="30"
+       y1="200"
+       x2="170"
+       y2="90"
+       gradientUnits="userSpaceOnUse"
+       gradientTransform="matrix(0.85610394,0.0252416,-0.01818753,1.1881458,20.644011,-37.56442)" />
   </defs>
   <g
-     inkscape:label="Layer 1"
-     inkscape:groupmode="layer"
      id="layer1"
-     transform="translate(-30,-40)">
+     transform="translate(-14.31383,-107.36759)">
     <g
-       id="g1732"
-       clip-path="url(#clipPath1756)">
-      <circle
-         style="fill:url(#linearGradient1351);fill-opacity:1;stroke-width:0.0649999;stop-color:#000000"
-         id="path790"
-         cx="90"
-         cy="100"
-         r="60"
-         clip-path="url(#clipPath1449)" />
+       id="g1584"
+       transform="matrix(1.216697,0,0,1.2,-16.103588,-33.473522)">
+      <ellipse
+         style="fill:url(#linearGradient1234);fill-opacity:1;stroke:none;stroke-width:0.0645535;stop-color:#000000"
+         id="path1109"
+         cx="-123.43291"
+         cy="-134.24216"
+         transform="matrix(-0.94599418,-0.32418362,0.31624179,-0.94867862,0,0)"
+         rx="49.384624"
+         ry="49.930084" />
       <path
-         style="opacity:0.691458;fill:#f39b00;fill-opacity:1;stroke:none;stroke-width:0.264583px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
-         d="M 89.999999,30 79.999998,39.999999 89.999999,50 100,39.999999 89.999999,30"
-         id="path945"
-         clip-path="url(#clipPath1443)" />
+         style="fill:url(#linearGradient1549);fill-opacity:1;stroke:none;stroke-width:0.426777px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+         d="M 36.950657,200 122.37415,156.33861 C 105.86844,132.55558 105.45793,155.60891 36.950657,200"
+         id="path794" />
       <path
-         style="opacity:0.691458;fill:#f39b00;fill-opacity:1;stroke:none;stroke-width:0.264583px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
-         d="M 150,89.999999 140,100 l 10,10 10,-10 z"
-         id="path947"
-         clip-path="url(#clipPath1437)" />
+         style="fill:url(#linearGradient1551);fill-opacity:1;stroke:none;stroke-width:0.398894px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+         d="m 68.808661,117.68013 c 0.901985,1.89008 19.243007,28.26971 53.565489,38.65848 -34.894252,21.87008 -41.252362,-13.0086 -53.565489,-38.65848"
+         id="path794-3" />
       <path
-         style="opacity:0.691458;fill:#f39b00;fill-opacity:1;stroke:none;stroke-width:0.264583px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
-         d="M 79.999998,160 89.999999,150 100,160 89.999999,170 Z"
-         id="path949"
-         clip-path="url(#clipPath1431)" />
+         style="fill:url(#linearGradient1553);fill-opacity:1;stroke:none;stroke-width:0.39478px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+         d="m 40.676149,130.80532 c 0,0 39.800814,21.77853 81.698001,25.53329 -34.178195,21.87008 -62.790615,-1.9757 -81.698001,-25.53329"
+         id="path794-3-7" />
       <path
-         style="opacity:0.691458;fill:#f39b00;fill-opacity:1;stroke:none;stroke-width:0.264583px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
-         d="M 30,89.999999 20,100 l 10,10 9.999999,-10 z"
-         id="path951"
-         clip-path="url(#clipPath1425)" />
-      <circle
-         style="opacity:0.0888092;fill:#ffb58d;fill-opacity:1;stroke:none;stroke-width:0.0649999;stroke-opacity:1;stop-color:#000000"
-         id="path1507"
-         cx="44.619392"
-         cy="59.298519"
-         r="75.109306" />
-      <rect
-         style="opacity:0.682067;fill:#7f003e;fill-opacity:1;stroke:none;stroke-width:0.0649999;stop-color:#000000"
-         id="rect1113"
-         width="20"
-         height="60"
-         x="80"
-         y="80"
-         clip-path="url(#clipPath1419)" />
-      <rect
-         style="opacity:0.682067;fill:#7f003e;fill-opacity:1;stroke:none;stroke-width:0.0649999;stop-color:#000000"
-         id="rect1167"
-         width="50"
-         height="20"
-         x="60"
-         y="90"
-         clip-path="url(#clipPath1413)" />
-      <circle
-         style="fill:none;fill-opacity:1;stroke:#000000;stroke-width:0.0649999;stroke-opacity:1;stop-color:#000000"
-         id="path790-7"
-         cx="90"
-         cy="100"
-         r="60"
-         clip-path="url(#clipPath1449-9-0)" />
+         style="opacity:0.212275;fill:url(#linearGradient1555);fill-opacity:1;stroke:none;stroke-width:0.406173px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+         d="m 45,200 77.37415,-43.66139 C 107.42375,132.55558 107.05193,155.60891 45,200"
+         id="path794-0" />
+      <path
+         style="opacity:0.212275;fill:url(#linearGradient1557);fill-opacity:1;stroke:none;stroke-width:0.379072px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+         d="m 74,117.68013 c 0.814569,1.89008 17.378057,28.26971 48.37415,38.65848 C 90.861701,178.20869 85.119792,143.33001 74,117.68013"
+         id="path794-3-6" />
+      <path
+         style="opacity:0.212275;fill:url(#linearGradient1559);fill-opacity:1;stroke:none;stroke-width:0.37157px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+         d="m 50,130.80532 c 0,0 35.258513,21.77853 72.37415,25.53329 C 92.096569,178.20869 66.749565,154.36291 50,130.80532"
+         id="path794-3-7-2" />
     </g>
   </g>
 </svg>
