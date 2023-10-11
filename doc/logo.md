@@ -1,1 +1,1 @@
-The logo shows a clock face, alluding to the various representations of time.
+The logo shows a bird, the archetype of _aviation_, ascending in front of a setting sun.
