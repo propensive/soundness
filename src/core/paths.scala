@@ -56,6 +56,13 @@ object Path:
   
   given Insertion[Sh.Params, Path] = path => Sh.Params(path.fullname)
   
+  given writableBytes
+      (using io: Raises[IoError], streamCut: Raises[StreamCutError])
+      : Writable[Path, Bytes] =
+    Writable.outputStreamBytes.contraMap: path =>
+      if !path.java.toFile.nn.canWrite then abort(IoError(path))
+      ji.BufferedOutputStream(ji.FileOutputStream(path.java.toFile, false))
+
   given reachable: Reachable[Path, GeneralForbidden, Maybe[Windows.Drive]] with
     def root(path: Path): Maybe[Windows.Drive] = path match
       case path: Windows.SafePath => path.drive
