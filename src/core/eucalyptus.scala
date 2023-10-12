@@ -148,6 +148,10 @@ package logging:
     Log:
       case _ => sink
 
+  given silent: Log =
+    given Monitor = null.asInstanceOf[Monitor]
+    Log { case _ => LogSink.drain }
+
 object LogSink:
   val drain = new LogSink:
     def write(stream: LazyList[Entry]): Unit = ()
