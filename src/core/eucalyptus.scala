@@ -71,20 +71,32 @@ object Timestamp:
 opaque type Timestamp = Long
 
 object Log:
-  inline def fine[T](inline value: T)
-                    (using inline log: Log, inline communicable: Communicable[T], inline realm: Realm): Unit =
+  inline def fine
+      [ValueType]
+      (inline value: ValueType)
+      (using inline log: Log, inline communicable: Communicable[ValueType], inline realm: Realm)
+      : Unit =
     ${Eucalyptus.recordLog('{Level.Fine}, 'value, 'log, 'communicable, 'realm)}
   
-  inline def info[T](inline value: T)
-                    (using inline log: Log, inline communicable: Communicable[T], inline realm: Realm): Unit =
+  inline def info
+      [ValueType]
+      (inline value: ValueType)
+      (using inline log: Log, inline communicable: Communicable[ValueType], inline realm: Realm)
+      : Unit =
     ${Eucalyptus.recordLog('{Level.Info}, 'value, 'log, 'communicable, 'realm)}
   
-  inline def warn[T](inline value: T)
-                    (using inline log: Log, inline communicable: Communicable[T], inline realm: Realm): Unit =
+  inline def warn
+      [ValueType]
+      (inline value: ValueType)
+      (using inline log: Log, inline communicable: Communicable[ValueType], inline realm: Realm)
+      : Unit =
     ${Eucalyptus.recordLog('{Level.Warn}, 'value, 'log, 'communicable, 'realm)}
   
-  inline def fail[T](inline value: T)
-                    (using inline log: Log, inline communicable: Communicable[T], inline realm: Realm): Unit =
+  inline def fail
+      [ValueType]
+      (inline value: ValueType)
+      (using inline log: Log, inline communicable: Communicable[ValueType], inline realm: Realm)
+      : Unit =
     ${Eucalyptus.recordLog('{Level.Fail}, 'value, 'log, 'communicable, 'realm)}
 
 object Eucalyptus:
@@ -94,7 +106,6 @@ object Eucalyptus:
           communicable: Expr[Communicable[MessageType]], realm: Expr[Realm])
       (using Quotes)
       : Expr[Unit] = '{
-    
     val time = Timestamp()
     
     try $log.record(Entry($realm, $level, $communicable.message($message), time, $log.tags))
@@ -123,7 +134,7 @@ class Log(actions: PartialFunction[Entry, LogSink & Singleton]*)(using Monitor):
   
   def record(entry: Entry): Unit = actions.flatMap(_.lift(entry)).foreach(thisLog.put(_, entry))
 
-  def tag[T](value: T)(using lt: LogTag[T]): Log = new Log(actions*):
+  def tag[ValueType](value: ValueType)(using lt: LogTag[ValueType]): Log = new Log(actions*):
     override def tags: ListMap[Text, Text] = thisLog.tags.updated(lt.tagName, lt.tag(value))
 
 trait LogTag[-TagType]:
@@ -141,8 +152,8 @@ object LogSink:
   val drain = new LogSink:
     def write(stream: LazyList[Entry]): Unit = ()
 
-  def apply[S](sink: S, appendable: Appendable[S, Text], format: LogFormat[S]): LogSink = new LogSink:
-    type Sink = S
+  def apply[SinkType](sink: SinkType, appendable: Appendable[SinkType, Text], format: LogFormat[SinkType]): LogSink = new LogSink:
+    type Sink = SinkType
     def write(stream: LazyList[Entry]): Unit = unsafely(appendable.append(sink, stream.map(format(_))))
 
 trait LogSink:
@@ -150,14 +161,14 @@ trait LogSink:
   def write(stream: LazyList[Entry]): Unit 
 
 object LogFormat:
-  given standardAnsi[T]: LogFormat[T] = entry =>
+  given standardAnsi[SinkType]: LogFormat[SinkType] = entry =>
     import textWidthCalculation.uniform
     val realm: Message = msg"${entry.realm.show.fit(8)}"
     msg"${entry.timestamp} ${entry.level} $realm ${entry.message}".text
   
-trait LogFormat[S]:
+trait LogFormat[SinkType]:
   def apply(entry: Entry): Text
 
-extension [S: LogFormat](value: S)
-  def sink(using appendable: Appendable[S, Text]): LogSink =
-    LogSink(value, appendable, summon[LogFormat[S]])
+extension [SinkType: LogFormat](value: SinkType)
+  def sink(using appendable: Appendable[SinkType, Text]): LogSink =
+    LogSink(value, appendable, summon[LogFormat[SinkType]])
