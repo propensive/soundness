@@ -149,8 +149,9 @@ package logging:
       case _ => sink
 
   given silent: Log =
-    given Monitor = null.asInstanceOf[Monitor]
-    Log { case _ => LogSink.drain }
+    import errorHandlers.throwUnsafely
+    supervise:
+      Log { case _ => LogSink.drain }
 
 object LogSink:
   val drain = new LogSink:
