@@ -33,13 +33,14 @@ import java.util as ju
 
 object Realm:
   given Show[Realm] = _.name
+  def make(name: Text)(using Unsafe.type): Realm = Realm(name)
 
 @missingContext("""|A contextual Realm is needed in scope. This is required for logging commands like `Log.info` and `Log.warn`, in order to tag them in log output. A realm can be specified with,
                      |    given Realm(t"project")
                      |typically at the top-level in a package called `project`. It is often useful to name the realm so that it can be referenced externally, for example when pattern matching on log messages, so,
                      |    given realm: Realm = Realm(t"project")
                      |may be more appropriate.""".stripMargin)
-case class Realm(name: Text):
+case class Realm private(name: Text):
   def unapply(entry: Entry): Boolean = entry.realm == this
 
 object Level:
@@ -112,6 +113,12 @@ object Eucalyptus:
     catch case e: Exception => ()
   }
 
+  def realm(context: Expr[StringContext])(using Quotes): Expr[Realm] =
+    import quotes.reflect.*
+    val name: String = context.valueOrAbort.parts.head
+    if !name.matches("[a-z]+") then fail(msg"the realm name should comprise only of lowercase letters")
+    else '{Realm.make(${Expr(name)}.tt)(using Unsafe)}
+
 @missingContext("""|eucalyptus: a contextual Log instance is needed, for example:
                      |    import logging.stdout  // Log everything to standard output
                      |    import logging.silent  // Do not log anything""".stripMargin)
@@ -177,3 +184,6 @@ trait LogFormat[SinkType]:
 extension [SinkType: LogFormat](value: SinkType)
   def sink(using appendable: Appendable[SinkType, Text]): LogSink =
     LogSink(value, appendable, summon[LogFormat[SinkType]])
+
+extension (inline context: StringContext)
+  inline def realm(): Realm = ${Eucalyptus.realm('context)}
