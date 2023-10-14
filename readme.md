@@ -128,6 +128,10 @@ Names should be English words, though many are obscure or archaic, and it should
 willingly English adopts foreign words. Names are generally of Greek or Latin origin, and have
 often arrived in English via a romance language.
 
+## Logo
+
+
+
 ## License
 
 Merino
