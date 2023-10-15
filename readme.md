@@ -178,7 +178,7 @@ expected to be introduced in Scala 3 soon to provide better safety.
 [![Gossamer](https://github.com/propensive/gossamer/raw/main/doc/images/128x128.png)](https://github.com/propensive/gossamer/)&nbsp;
 [![Guillotine](https://github.com/propensive/guillotine/raw/main/doc/images/128x128.png)](https://github.com/propensive/guillotine/)&nbsp;
 [![Harlequin](https://github.com/propensive/harlequin/raw/main/doc/images/128x128.png)](https://github.com/propensive/harlequin/)&nbsp;
-[![Hieronymus](https://github.com/propensive/hieronymus/raw/main/doc/images/128x128.png)](https://github.com/propensive/hieronymus/)&nbsp;
+[![Hieroglyph](https://github.com/propensive/hieroglyph/raw/main/doc/images/128x128.png)](https://github.com/propensive/hieroglyph/)&nbsp;
 [![Honeycomb](https://github.com/propensive/honeycomb/raw/main/doc/images/128x128.png)](https://github.com/propensive/honeycomb/)&nbsp;
 [![Hyperbole](https://github.com/propensive/hyperbole/raw/main/doc/images/128x128.png)](https://github.com/propensive/hyperbole/)&nbsp;
 [![Imperial](https://github.com/propensive/imperial/raw/main/doc/images/128x128.png)](https://github.com/propensive/imperial/)&nbsp;
