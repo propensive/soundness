@@ -164,6 +164,7 @@ expected to be introduced in Scala 3 soon to provide better safety.
 [![Contextual](https://github.com/propensive/contextual/raw/main/doc/images/128x128.png)](https://github.com/propensive/contextual/)&nbsp;
 [![Cosmopolite](https://github.com/propensive/cosmopolite/raw/main/doc/images/128x128.png)](https://github.com/propensive/cosmopolite/)&nbsp;
 [![Dendrology](https://github.com/propensive/dendrology/raw/main/doc/images/128x128.png)](https://github.com/propensive/dendrology/)&nbsp;
+[![Digression](https://github.com/propensive/digression/raw/main/doc/images/128x128.png)](https://github.com/propensive/digression/)&nbsp;
 [![Dissonance](https://github.com/propensive/dissonance/raw/main/doc/images/128x128.png)](https://github.com/propensive/dissonance/)&nbsp;
 [![Diuretic](https://github.com/propensive/diuretic/raw/main/doc/images/128x128.png)](https://github.com/propensive/diuretic/)&nbsp;
 [![Escapade](https://github.com/propensive/escapade/raw/main/doc/images/128x128.png)](https://github.com/propensive/escapade/)&nbsp;
