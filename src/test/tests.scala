@@ -26,7 +26,8 @@ import turbulence.*
 import ambience.*
 import spectacular.*
 import probably.*
-import eucalyptus.*, logging.silent
+import eucalyptus.*
+import perforate.*, errorHandlers.throwUnsafely
 
 import unsafeExceptions.canThrowAny
 

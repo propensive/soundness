@@ -272,7 +272,7 @@ object AsParams:
 trait AsParams[-ValueType]:
   def show(value: ValueType): Text
 
-given realm: Realm = Realm(t"guillotine")
+given realm: Realm = realm"guillotine"
 
 object Guillotine:
   def sh(context: Expr[StringContext], parts: Expr[Seq[Any]])(using Quotes): Expr[Command] =
