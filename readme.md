@@ -171,6 +171,7 @@ expected to be introduced in Scala 3 soon to provide better safety.
 [![Escritoire](https://github.com/propensive/escritoire/raw/main/doc/images/128x128.png)](https://github.com/propensive/escritoire/)&nbsp;
 [![Eucalyptus](https://github.com/propensive/eucalyptus/raw/main/doc/images/128x128.png)](https://github.com/propensive/eucalyptus/)&nbsp;
 [![Exoskeleton](https://github.com/propensive/exoskeleton/raw/main/doc/images/128x128.png)](https://github.com/propensive/exoskeleton/)&nbsp;
+[![Fulminate](https://github.com/propensive/fulminate/raw/main/doc/images/128x128.png)](https://github.com/propensive/fulminate/)&nbsp;
 [![Galilei](https://github.com/propensive/galilei/raw/main/doc/images/128x128.png)](https://github.com/propensive/galilei/)&nbsp;
 [![Gastronomy](https://github.com/propensive/gastronomy/raw/main/doc/images/128x128.png)](https://github.com/propensive/gastronomy/)&nbsp;
 [![Gesticulate](https://github.com/propensive/gesticulate/raw/main/doc/images/128x128.png)](https://github.com/propensive/gesticulate/)&nbsp;
