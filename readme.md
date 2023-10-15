@@ -205,9 +205,15 @@ expected to be introduced in Scala 3 soon to provide better safety.
 [![Savagery](https://github.com/propensive/savagery/raw/main/doc/images/128x128.png)](https://github.com/propensive/savagery/)&nbsp;
 [![Scintillate](https://github.com/propensive/scintillate/raw/main/doc/images/128x128.png)](https://github.com/propensive/scintillate/)&nbsp;
 [![Serpentine](https://github.com/propensive/serpentine/raw/main/doc/images/128x128.png)](https://github.com/propensive/serpentine/)&nbsp;
+[![Spectacular](https://github.com/propensive/spectacular/raw/main/doc/images/128x128.png)](https://github.com/propensive/spectacular/)&nbsp;
 [![Surveillance](https://github.com/propensive/surveillance/raw/main/doc/images/128x128.png)](https://github.com/propensive/surveillance/)&nbsp;
+[![Symbolism](https://github.com/propensive/symbolism/raw/main/doc/images/128x128.png)](https://github.com/propensive/symbolism/)&nbsp;
 [![Tarantula](https://github.com/propensive/tarantula/raw/main/doc/images/128x128.png)](https://github.com/propensive/tarantula/)&nbsp;
 [![Telekinesis](https://github.com/propensive/telekinesis/raw/main/doc/images/128x128.png)](https://github.com/propensive/telekinesis/)&nbsp;
 [![Turbulence](https://github.com/propensive/turbulence/raw/main/doc/images/128x128.png)](https://github.com/propensive/turbulence/)&nbsp;
+[![Ulysses](https://github.com/propensive/ulysses/raw/main/doc/images/128x128.png)](https://github.com/propensive/ulysses/)&nbsp;
+[![Umbrageous](https://github.com/propensive/umbrageous/raw/main/doc/images/128x128.png)](https://github.com/propensive/umbrageous/)&nbsp;
+[![Villainy](https://github.com/propensive/villainy/raw/main/doc/images/128x128.png)](https://github.com/propensive/villainy/)&nbsp;
 [![Wisteria](https://github.com/propensive/wisteria/raw/main/doc/images/128x128.png)](https://github.com/propensive/wisteria/)&nbsp;
 [![Xylophone](https://github.com/propensive/xylophone/raw/main/doc/images/128x128.png)](https://github.com/propensive/xylophone/)
+[![Zeppelin](https://github.com/propensive/zeppelin/raw/main/doc/images/128x128.png)](https://github.com/propensive/zeppelin/)
