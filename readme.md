@@ -159,6 +159,7 @@ expected to be introduced in Scala 3 soon to provide better safety.
 [![Cardinality](https://github.com/propensive/cardinality/raw/main/doc/images/128x128.png)](https://github.com/propensive/cardinality/)&nbsp;
 [![Cataclysm](https://github.com/propensive/cataclysm/raw/main/doc/images/128x128.png)](https://github.com/propensive/cataclysm/)&nbsp;
 [![Cellulose](https://github.com/propensive/cellulose/raw/main/doc/images/128x128.png)](https://github.com/propensive/cellulose/)&nbsp;
+[![Charisma](https://github.com/propensive/charisma/raw/main/doc/images/128x128.png)](https://github.com/propensive/charisma/)&nbsp;
 [![Chiaroscuro](https://github.com/propensive/chiaroscuro/raw/main/doc/images/128x128.png)](https://github.com/propensive/chiaroscuro/)&nbsp;
 [![Contextual](https://github.com/propensive/contextual/raw/main/doc/images/128x128.png)](https://github.com/propensive/contextual/)&nbsp;
 [![Cosmopolite](https://github.com/propensive/cosmopolite/raw/main/doc/images/128x128.png)](https://github.com/propensive/cosmopolite/)&nbsp;
