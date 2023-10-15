@@ -186,6 +186,7 @@ expected to be introduced in Scala 3 soon to provide better safety.
 [![Iridescence](https://github.com/propensive/iridescence/raw/main/doc/images/128x128.png)](https://github.com/propensive/iridescence/)&nbsp;
 [![Jacinta](https://github.com/propensive/jacinta/raw/main/doc/images/128x128.png)](https://github.com/propensive/jacinta/)&nbsp;
 [![Kaleidoscope](https://github.com/propensive/kaleidoscope/raw/main/doc/images/128x128.png)](https://github.com/propensive/kaleidoscope/)&nbsp;
+[![Larceny](https://github.com/propensive/larceny/raw/main/doc/images/128x128.png)](https://github.com/propensive/larceny/)&nbsp;
 [![Merino](https://github.com/propensive/merino/raw/main/doc/images/128x128.png)](https://github.com/propensive/merino/)&nbsp;
 [![Oubliette](https://github.com/propensive/oubliette/raw/main/doc/images/128x128.png)](https://github.com/propensive/oubliette/)&nbsp;
 [![Parasitism](https://github.com/propensive/parasitism/raw/main/doc/images/128x128.png)](https://github.com/propensive/parasitism/)&nbsp;
