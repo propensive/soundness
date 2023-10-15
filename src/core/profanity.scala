@@ -225,7 +225,7 @@ case class SelectMenu[T](options: List[T], current: T):
              : Option[(T, LazyList[Keypress])] =
     renderer(Tty.stream[Keypress], this)(_(_))
 
-given realm: Realm = Realm(t"profanity")
+given realm: Realm = realm"profanity"
 
 trait InputSource:
   def init()(using Log): Tty throws TtyError
