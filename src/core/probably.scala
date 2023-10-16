@@ -26,7 +26,7 @@ import hieroglyph.*
 
 import scala.collection.mutable as scm
 
-given realm: Realm = Realm(t"probably")
+given realm: Realm = realm"probably"
 
 extension [T](inline value: T)(using inline test: TestContext)
   inline def inspect: T = ${Probably.inspect('value, 'test)}
