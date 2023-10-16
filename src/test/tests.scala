@@ -20,6 +20,7 @@ import probably.*
 import gossamer.*
 import rudiments.*
 import spectacular.*
+import parasite.*
 import anticipation.*
 import hieroglyph.*, charEncoders.utf8, charDecoders.utf8, badEncodingHandlers.strict
 import perforate.*, errorHandlers.throwUnsafely
@@ -357,3 +358,19 @@ object Tests extends Suite(t"Turbulence tests"):
         LazyList(qbfBytes).appendTo(store)
         store()
       .assert(_ == qbf)
+    
+    suite(t"Multiplexer tests"):
+      val l1 = LazyList(2, 4, 6, 8, 10)
+      val l2 = LazyList(1, 3, 5, 7, 9)
+      
+      test(t"Check that two multiplexed streams contain all elements"):
+        supervise(l1.multiplexWith(l2).to(Set))
+      .assert(_ == Set.range(1, 11))
+      
+      test(t"Check that two multiplexed streams contain elements from the first stream in order"):
+        supervise(l1.multiplexWith(l2).filter(_%2 == 0))
+      .assert(_ == l1)
+      
+      test(t"Check that two multiplexed streams contain elements from the second stream in order"):
+        supervise(l1.multiplexWith(l2).filter(_%2 == 1))
+      .assert(_ == l2)
