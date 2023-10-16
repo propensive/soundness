@@ -27,7 +27,7 @@ import turbulence.*
 
 import language.experimental.captureChecking
 
-given Realm = Realm(t"codl")
+given Realm = realm"cellulose"
 
 enum CodlToken:
   case Indent, Peer, Blank, Argument
