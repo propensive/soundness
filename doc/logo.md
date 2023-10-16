@@ -1,1 +1,1 @@
-The logo shows the plan-view of a typical panopticon, as envisaged by Jeremy Bentham.
+The logo shows an optical lens.
