@@ -239,7 +239,7 @@ often arrived in English via a romance language.
 
 ## Logo
 
-
+The logo shows a turbulent (and colorful) vortex.
 
 ## License
 
