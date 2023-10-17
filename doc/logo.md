@@ -1,1 +1,1 @@
-The logo shows the relative sizes of objects on the surface of a sphere when projected onto a flat map with the Mercator projection.
+The logo shows the lines of latitude of an [Oblique Mercator Projection](https://en.wikipedia.org/wiki/Oblique_Mercator_projection).
