@@ -2,9 +2,9 @@
 <!-- Created with Inkscape (http://www.inkscape.org/) -->
 
 <svg
-   width="210mm"
-   height="297mm"
-   viewBox="0 0 210 297"
+   width="120mm"
+   height="120mm"
+   viewBox="0 0 120 120"
    version="1.1"
    id="svg1893"
    inkscape:version="1.2.2 (b0a8486541, 2022-12-01)"
@@ -26,11 +26,11 @@
      inkscape:document-units="mm"
      showgrid="false"
      inkscape:zoom="1.4753278"
-     inkscape:cx="395.84423"
-     inkscape:cy="433.8019"
+     inkscape:cx="282.64905"
+     inkscape:cy="70.831716"
      inkscape:window-width="2248"
-     inkscape:window-height="2978"
-     inkscape:window-x="0"
+     inkscape:window-height="991"
+     inkscape:window-x="2250"
      inkscape:window-y="20"
      inkscape:window-maximized="1"
      inkscape:current-layer="layer1" />
@@ -73,10 +73,12 @@
   <g
      inkscape:label="Layer 1"
      inkscape:groupmode="layer"
-     id="layer1">
+     id="layer1"
+     transform="translate(-29.954271,-96.163486)">
     <g
        id="g2675"
-       clip-path="url(#clipPath2690)">
+       clip-path="url(#clipPath2690)"
+       transform="matrix(1.1361281,0,0,1.1361281,-12.245302,-21.258234)">
       <circle
          style="fill:url(#linearGradient2186);fill-opacity:1;stroke:none;stroke-width:0.1;stop-color:#000000"
          id="path1949"
@@ -113,11 +115,11 @@
          transform="matrix(1,0,-0.40487261,0.9143731,0,0)" />
       <path
          id="rect2003-1-1"
-         style="mix-blend-mode:normal;fill:#ff3772;fill-opacity:0.46899378;stroke:none;stroke-width:0.1;stop-color:#000000"
+         style="mix-blend-mode:normal;fill:#ff3772;fill-opacity:0.468994;stroke:none;stroke-width:0.1;stop-color:#000000"
          d="m 59.405162,137.03342 -1.82366,4.11914 c -1.34579,3.03937 0.24684,5.48597 3.57084,5.48597 h 3.87315 l 1.82366,-4.11861 c 1.3458,-3.03938 -0.24684,-5.4865 -3.57084,-5.4865 z" />
       <path
          id="rect2003-1-1-4"
-         style="mix-blend-mode:normal;fill:#ff3772;fill-opacity:0.46899378;stroke:none;stroke-width:0.1;stop-color:#000000"
+         style="mix-blend-mode:normal;fill:#ff3772;fill-opacity:0.468994;stroke:none;stroke-width:0.1;stop-color:#000000"
          d="m 57.288494,158.2001 -1.82366,4.11914 c -1.34579,3.03937 0.24684,5.48597 3.57084,5.48597 h 3.87315 l 1.82366,-4.11861 c 1.3458,-3.03938 -0.24684,-5.4865 -3.57084,-5.4865 z" />
       <rect
          style="mix-blend-mode:normal;fill:#0bdf75;fill-opacity:0.207797;stroke:none;stroke-width:0.104578;stop-color:#000000"
@@ -130,11 +132,11 @@
          transform="matrix(1,0,-0.40487261,0.9143731,0,0)" />
       <path
          id="rect2003-1-1-6"
-         style="mix-blend-mode:normal;fill:#ff3772;fill-opacity:0.22292866;stroke:none;stroke-width:0.1;stop-color:#000000"
+         style="mix-blend-mode:normal;fill:#ff3772;fill-opacity:0.222929;stroke:none;stroke-width:0.1;stop-color:#000000"
          d="m 62.050997,141.26678 -1.82366,4.11914 c -1.34579,3.03937 0.24684,5.48597 3.57084,5.48597 h 3.87315 l 1.82366,-4.11861 c 1.3458,-3.03938 -0.24684,-5.4865 -3.57084,-5.4865 z" />
       <path
          id="rect2003-1-1-4-3"
-         style="mix-blend-mode:normal;fill:#ff3772;fill-opacity:0.22292866;stroke:none;stroke-width:0.1;stop-color:#000000"
+         style="mix-blend-mode:normal;fill:#ff3772;fill-opacity:0.222929;stroke:none;stroke-width:0.1;stop-color:#000000"
          d="m 59.934329,162.43346 -1.82366,4.11914 c -1.34579,3.03937 0.24684,5.48597 3.57084,5.48597 h 3.87315 l 1.82366,-4.11861 c 1.3458,-3.03938 -0.24684,-5.4865 -3.57084,-5.4865 z" />
     </g>
   </g>
