@@ -138,7 +138,7 @@ often arrived in English via a romance language.
 
 ## Logo
 
-
+The logo represents the eight legs of a tarantula.
 
 ## License
 
