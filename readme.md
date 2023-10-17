@@ -4,7 +4,7 @@
 
 # Nettlesome
 
-__Typesafe IP address representations for Scala__
+__Typesafe representations of network concepts__
 
 We need to work with a variety of different types of entity when working with
 networking technologies. These include URLs, IP addresses, email address and
