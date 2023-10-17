@@ -155,6 +155,7 @@ expected to be introduced in Scala 3 soon to provide better safety.
 [![Ambience](https://github.com/propensive/ambience/raw/main/doc/images/128x128.png)](https://github.com/propensive/ambience/)&nbsp;
 [![Anticipation](https://github.com/propensive/anticipation/raw/main/doc/images/128x128.png)](https://github.com/propensive/anticipation/)&nbsp;
 [![Aviation](https://github.com/propensive/aviation/raw/main/doc/images/128x128.png)](https://github.com/propensive/aviation/)&nbsp;
+[![Baroque](https://github.com/propensive/baroque/raw/main/doc/images/128x128.png)](https://github.com/propensive/baroque/)&nbsp;
 [![Caesura](https://github.com/propensive/caesura/raw/main/doc/images/128x128.png)](https://github.com/propensive/caesura/)&nbsp;
 [![Cardinality](https://github.com/propensive/cardinality/raw/main/doc/images/128x128.png)](https://github.com/propensive/cardinality/)&nbsp;
 [![Cataclysm](https://github.com/propensive/cataclysm/raw/main/doc/images/128x128.png)](https://github.com/propensive/cataclysm/)&nbsp;
@@ -189,6 +190,7 @@ expected to be introduced in Scala 3 soon to provide better safety.
 [![Larceny](https://github.com/propensive/larceny/raw/main/doc/images/128x128.png)](https://github.com/propensive/larceny/)&nbsp;
 [![Mercator](https://github.com/propensive/mercator/raw/main/doc/images/128x128.png)](https://github.com/propensive/mercator/)&nbsp;
 [![Merino](https://github.com/propensive/merino/raw/main/doc/images/128x128.png)](https://github.com/propensive/merino/)&nbsp;
+[![Mosquito](https://github.com/propensive/mosquito/raw/main/doc/images/128x128.png)](https://github.com/propensive/mosquito/)&nbsp;
 [![Nectary](https://github.com/propensive/nectary/raw/main/doc/images/128x128.png)](https://github.com/propensive/nectary/)&nbsp;
 [![Nettlesome](https://github.com/propensive/nettlesome/raw/main/doc/images/128x128.png)](https://github.com/propensive/nettlesome/)&nbsp;
 [![Nonagenarian](https://github.com/propensive/nonagenarian/raw/main/doc/images/128x128.png)](https://github.com/propensive/nonagenarian/)&nbsp;
