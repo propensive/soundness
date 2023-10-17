@@ -1,1 +1,1 @@
-Typesafe IP address representations for Scala
+Typesafe representations of network concepts
