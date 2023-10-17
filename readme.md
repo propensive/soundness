@@ -150,7 +150,7 @@ often arrived in English via a romance language.
 
 ## Logo
 
-
+The logo shows the characters `://`, which form part of every URL.
 
 ## License
 
