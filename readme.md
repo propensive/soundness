@@ -217,7 +217,7 @@ often arrived in English via a romance language.
 
 ## Logo
 
-
+The logo is a film reel, the medium for distributing a _show_.
 
 ## License
 
