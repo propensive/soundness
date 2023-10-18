@@ -84,10 +84,6 @@ case class CodlNode(data: Maybe[Data] = Unset, meta: Maybe[Meta] = Unset) extend
 
   def wiped: CodlNode = untyped.uncommented
   
-  // override def toString(): String =
-  //   if !children.isEmpty then s"$key[${children.mkString(" ")}]" else key.mm(_.s).or:
-  //     meta.toString
-
 object CodlDoc:
   def apply(nodes: CodlNode*): CodlDoc = CodlDoc(IArray.from(nodes), CodlSchema.Free, 0)
 
@@ -113,8 +109,6 @@ object CodlDoc:
 
 case class CodlDoc(children: IArray[CodlNode], schema: CodlSchema, margin: Int, body: LazyList[Text] = LazyList())
 extends Indexed:
-  //override def toString(): String = s"[[${children.mkString(" ")}]]"
-  
   override def equals(that: Any) = that.matchable(using Unsafe) match
     case that: CodlDoc => schema == that.schema && margin == that.margin && children.sameElements(that.children)
     case _         => false
@@ -196,7 +190,6 @@ extends Indexed:
   def promote(n: Int): Data = copy(layout = layout.copy(params = n))
 
   def has(key: Text): Boolean = index.contains(key) || paramIndex.contains(key)
-  //override def toString(): String = s"[${children.mkString(" ")}]"
   
   override def equals(that: Any) = that.matchable(using Unsafe) match
     case that: Data => key == that.key && children.sameElements(that.children) && layout == that.layout &&
