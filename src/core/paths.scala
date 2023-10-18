@@ -113,6 +113,8 @@ sealed trait Path:
   
   def exists(): Boolean = jnf.Files.exists(java)
   
+  def touch()(using Raises[IoError]): Unit = jnf.Files.write(java, Array[Byte]())
+  
   def wipe()(using deleteRecursively: DeleteRecursively)(using io: Raises[IoError]): Path =
     deleteRecursively.conditionally(this):
       jnf.Files.deleteIfExists(java)
