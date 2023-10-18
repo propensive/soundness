@@ -210,4 +210,4 @@ object Tzdb:
 
     recur(1, lines)
 
-given realm: Realm = Realm(t"aviation")
+given realm: Realm = realm"aviation"
