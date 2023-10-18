@@ -32,6 +32,7 @@ given Realm = realm"cellulose"
 enum CodlToken:
   case Indent, Peer, Blank, Argument
   case Line(text: Text)
+  case Raw(char: Char)
   case Outdent(n: Int)
   case Item(text: Text, line: Int, col: Int, block: Boolean = false)
   case Comment(text: Text, line: Int, col: Int)
@@ -46,6 +47,7 @@ object CodlToken:
     case Blank                        => t"Blank"
     case Argument                     => t"Argument"
     case Line(text)                   => t"Line($text)"
+    case Raw(char)                    => t"Raw($char)"
     case Outdent(n)                   => t"Outdent($n)"
     case Item(text, line, col, block) => t"Item($text, $line, $col, $block)"
     case Comment(text, line, col)     => t"Comment($text, $line, $col)"
@@ -54,7 +56,6 @@ object CodlToken:
 erased trait Codl
 
 object Codl:
-
   given transport: Transport[Codl] with
     type Writer[-DataType] = CodlWriter[DataType]
     type Reader[DataType] = CodlReader[DataType]
@@ -117,7 +118,7 @@ object Codl:
     def recur
         (tokens: LazyList[CodlToken], focus: Proto, peers: List[CodlNode],
             peerIds: Map[Text, (Int, Int)], stack: List[(Proto, List[CodlNode])],
-            lines: Int, subs: List[Data], errors: List[CodlError], body: LazyList[Text],
+            lines: Int, subs: List[Data], errors: List[CodlError], body: LazyList[Text] | LazyList[Char],
             tabs: List[Int])
         : CodlDoc =
       
@@ -128,15 +129,21 @@ object Codl:
               peers: List[CodlNode] = peers, peerIds: Map[Text, (Int, Int)] = peerIds,
               stack: List[(Proto, List[CodlNode])] = stack, lines: Int = lines,
               subs: List[Data] = subs, errors: List[CodlError] = errors,
-              body: LazyList[Text] = LazyList(), tabs: List[Int] = Nil)
+              body: LazyList[Text] | LazyList[Char] = LazyList(), tabs: List[Int] = Nil)
           : CodlDoc =
         recur(tokens, focus, peers, peerIds, stack, lines, subs, errors, body, tabs)
       
       tokens match
         case token #:: tail => token match
+          case CodlToken.Raw(_) =>
+            go(tokens = LazyList(), body = tokens.collect { case CodlToken.Raw(char) => char })
+          
           case CodlToken.Line(_) =>
             go(tokens = LazyList(), body = tokens.collect { case CodlToken.Line(txt) => txt })
-          case CodlToken.Error(err) => go(errors = err :: errors)
+          
+          case CodlToken.Error(err) =>
+            go(errors = err :: errors)
+          
           case CodlToken.Peer => focus.key match
             case key: Text =>
               val (closed, errors2) = focus.close
@@ -367,13 +374,15 @@ object Codl:
         case _ if char == Character.End => state match
           case Indent | Space | Hash | Pending(_) => LazyList()
           case Comment | Word | Margin            => LazyList(token())
-          case Line                               => LazyList(CodlToken.Line(reader.get()))
+          case Line                               => LazyList()
+          //case Line                               => LazyList(CodlToken.Line(reader.get()))
         
         case '\n' => state match
           case Word | Comment | Pending(_) => put(Indent, padding = false)
           case Margin                      => block()
           case Indent | Space              => CodlToken.Blank #:: irecur(Indent, padding = false)
-          case Line                        => CodlToken.Line(reader.get()) #:: irecur(Line, padding = false)
+          case Line                        => CodlToken.Raw('\n') #:: irecur(Line, padding = false)
+          //case Line                        => CodlToken.Line(reader.get()) #:: irecur(Line, padding = false)
           case _                           => recur(Indent, padding = false)
         
         case ' ' => state match
@@ -381,13 +390,15 @@ object Codl:
           case Pending(_)         => put(Space)
           case Indent             => recur(Indent)
           case Word               => if padding then recur(Pending(char)) else put(Space)
-          case Comment | Line     => consume(state)
+          case Line               => CodlToken.Raw(' ') #:: irecur(Line)
+          case Comment            => consume(state)
           case Margin             => block()
           case Hash               => reader.get(); recur(Comment)
         
         case '#' => state match
           case Pending(_) | Space => consume(Hash)
-          case Line               => consume(Line)
+          case Line               => CodlToken.Raw('#') #:: irecur(Line)
+          //case Line               => consume(Line)
           case Comment            => line()
           case Word               => consume(Word)
           case Indent             => if diff == 4 then recur(Margin) else newline(Comment)
@@ -397,7 +408,8 @@ object Codl:
         case ch => state match
           case Pending(ch)    => reader.put(ch); consume(Word)
           case Space | Word   => consume(Word)
-          case Line | Comment => consume(state)
+          case Line           => CodlToken.Raw(ch) #:: irecur(Line)
+          case Comment        => consume(state)
           case Indent         => reader.put(char); if diff == 4 then recur(Margin) else newline(Word)
           case Margin         => block()
           
