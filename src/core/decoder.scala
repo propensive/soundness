@@ -28,33 +28,33 @@ case class NumberError(text: Text, specializable: Specializable)
 extends Error(msg"$text is not a valid ${specializable.show}")
 
 object Decoder:
-  given (using number: Raises[NumberError]): Decoder[Int] = text =>
+  given int(using number: Raises[NumberError]): Decoder[Int] = text =>
     try Integer.parseInt(text.s) catch case _: NumberFormatException =>
       raise(NumberError(text, Int))(0)
 
-  given (using uuid: Raises[UuidError]): Decoder[Uuid] = Uuid.parse(_)
+  given uuid(using uuid: Raises[UuidError]): Decoder[Uuid] = Uuid.parse(_)
 
-  given (using number: Raises[NumberError]): Decoder[Byte] = text =>
+  given byte(using number: Raises[NumberError]): Decoder[Byte] = text =>
     val int = try Integer.parseInt(text.s) catch case _: NumberFormatException =>
       raise(NumberError(text, Byte))(0)
     
     if int < Byte.MinValue || int > Byte.MaxValue then raise(NumberError(text, Byte))(0.toByte)
     else int.toByte
   
-  given (using number: Raises[NumberError]): Decoder[Short] = text =>
+  given short(using number: Raises[NumberError]): Decoder[Short] = text =>
     val int = try Integer.parseInt(text.s) catch case _: NumberFormatException =>
       raise(NumberError(text, Short))(0)
     
     if int < Short.MinValue || int > Short.MaxValue then raise(NumberError(text, Short))(0.toShort)
     else int.toShort
   
-  given (using number: Raises[NumberError]): Decoder[Long] = text =>
+  given long(using number: Raises[NumberError]): Decoder[Long] = text =>
     try java.lang.Long.parseLong(text.s) catch case _: NumberFormatException =>
       raise(NumberError(text, Long))(0L)
 
-  given Decoder[Char] = _.s(0)
-  given Decoder[Text] = identity(_)
-  given Decoder[String] = _.s
+  given char: Decoder[Char] = _.s(0)
+  given text: Decoder[Text] = identity(_)
+  given string: Decoder[String] = _.s
 
 @capability
 trait Decoder[+ValueType]:
@@ -62,15 +62,15 @@ trait Decoder[+ValueType]:
   def map[ValueType2](fn: ValueType => ValueType2): Decoder[ValueType2] = text => fn(decode(text))
 
 object Encoder:
-  given Encoder[Int] = _.toString.tt
-  given Encoder[Double] = _.toString.tt
-  given Encoder[Byte] = _.toString.tt
-  given Encoder[Short] = _.toString.tt
-  given Encoder[Long] = _.toString.tt
-  given Encoder[Float] = _.toString.tt
-  given Encoder[Text] = identity(_)
-  given Encoder[Char] = _.toString.tt
-  given Encoder[Uuid] = _.text
+  given int: Encoder[Int] = _.toString.tt
+  given double: Encoder[Double] = _.toString.tt
+  given byte: Encoder[Byte] = _.toString.tt
+  given short: Encoder[Short] = _.toString.tt
+  given long: Encoder[Long] = _.toString.tt
+  given float: Encoder[Float] = _.toString.tt
+  given text: Encoder[Text] = identity(_)
+  given char: Encoder[Char] = _.toString.tt
+  given uuid: Encoder[Uuid] = _.text
 
 @capability
 trait Encoder[-ValueType]:
