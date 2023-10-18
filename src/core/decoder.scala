@@ -55,6 +55,7 @@ object Decoder:
   given char: Decoder[Char] = _.s(0)
   given text: Decoder[Text] = identity(_)
   given string: Decoder[String] = _.s
+  given pid(using number: Raises[NumberError]): Decoder[Pid] = long.map(Pid(_))
 
 @capability
 trait Decoder[+ValueType]:
@@ -71,6 +72,7 @@ object Encoder:
   given text: Encoder[Text] = identity(_)
   given char: Encoder[Char] = _.toString.tt
   given uuid: Encoder[Uuid] = _.text
+  given pid: Encoder[Pid] = long.contraMap(_.value)
 
 @capability
 trait Encoder[-ValueType]:
