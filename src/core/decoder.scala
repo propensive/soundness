@@ -59,6 +59,7 @@ object Decoder:
 @capability
 trait Decoder[+ValueType]:
   def decode(text: Text): ValueType
+  def map[ValueType2](fn: ValueType => ValueType2): Decoder[ValueType2] = text => fn(decode(text))
 
 object Encoder:
   given Encoder[Int] = _.toString.tt
@@ -73,7 +74,8 @@ object Encoder:
 
 @capability
 trait Encoder[-ValueType]:
-  def encode(text: ValueType): Text
+  def encode(value: ValueType): Text
+  def contraMap[ValueType2](fn: ValueType2 => ValueType): Encoder[ValueType2] = value => encode(fn(value))
 
 extension (text: Text)
   def decodeAs[ValueType](using decoder: Decoder[ValueType]): ValueType^{decoder} =
