@@ -37,7 +37,7 @@ case class Privilege(name: Text, grant: Boolean)
 
 object Tests extends Suite(t"CoDL tests"):
 
-  given Realm = Realm(t"tests")
+  given Realm = realm"tests"
 
   def run(): Unit = supervise:
     import CodlToken.*
