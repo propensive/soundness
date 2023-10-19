@@ -1,16 +1,44 @@
 #!/bin/bash
 
-pid="$$"
-port="$(cat "$XDG_RUNTIME_DIR"/fury.port)"
+declare portFile startupFile ttystate
+declare -i pid port catPid continue
+declare -a args signals
+
+continue=1
+
+# The name of the file which will contain the port number
+portFile="$XDG_RUNTIME_DIR/fury.port"
+startupFile="$XDG_RUNTIME_DIR/fury.start"
+
+# The set of signals which should be captured and forwarded to the JVM process
+signals=(INT WINCH TERM)
+
+pid=$$
 args=("$@")
-signals=(INT WINCH)
 
 if [ -t 0 ]
-then stty intr undef -icanon min 1 raw time 0 >/dev/null 2>&1
+then ttystate="$(stty -g)"
 fi
 
+launch() {
+  mkfifo "$startupFile" 2>/dev/null && nohup wrath -x > /home/propensive/work/exoskeleton/out.log 2>&1 &
+  timeout 10 cat "$startupFile"
+  daemon
+}
+
+daemon() {
+  flock -n "$portFile" rm "$portFile"
+  if [ ! -f "$portFile" ]
+  then launch
+  fi
+  port=$(cat "$portFile")
+}
+
 signal() {
-  printf "signal %s signal %s\n" "$pid" "$1" | nc localhost "$port"
+  if [ "$1" = "TERM" ]
+  then continue=0
+  fi
+  printf "signal %s\nprocess %s\n" "$1" "$pid" | nc -q 1 localhost $port
 }
 
 registerTraps() {
@@ -21,26 +49,44 @@ registerTraps() {
 
 init() {
   printf "process %s\n" "$pid"
-  
+
   for arg in "${args[@]}"
   do printf "arg %s\n" "$arg"
   done
-  
-  printf "env %s\n" "$(env -0)"
-  
+
+  while IFS= read -r -d $'\0' variable
+  do printf "env\n    %s\n" "$variable"
+  done < <(env -0)
+
   if [ -t 0 ]
   then printf "input term\n"
   else printf "input pipe\n"
   fi
-  
-  printf "##\n"
-  cat
+
+  printf "##\n\n"
+  exec cat
 }
 
-(init | nc localhost "$port") <&0 &
+if [ -t 0 ]
+then stty intr undef -echo -icanon min 1 raw time 0 >/dev/null 2>&1
+fi
+
+daemon
+
+tmppipe="$(mktemp -u)"
+mkfifo -m 600 "$tmppipe"
+exec 3<> "$tmppipe"
+rm "$tmppipe"
+init <&0 >&3 &
+catPid=$!
+nc localhost $port <&3 &
 
 registerTraps
 
-while true
+while [ $continue = 1 ]
 do wait
 done
+
+kill $catPid
+
+stty "$ttystate"

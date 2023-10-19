@@ -24,47 +24,81 @@ import galilei.*, filesystemOptions.{dereferenceSymlinks, createNonexistent, cre
 import anticipation.*, fileApi.galileiApi
 import rudiments.*, homeDirectories.default
 import perforate.*
-import hieroglyph.*, charEncoders.utf8, charDecoders.utf8
+import hieroglyph.*, charEncoders.utf8, charDecoders.utf8, badEncodingHandlers.strict
 import parasite.*
+import gossamer.*
 import turbulence.*
+import guillotine.*
+import eucalyptus.*, logging.silent
 import ambience.*
 import spectacular.*
+import cellulose.*
 
 import scala.collection.mutable as scm
 
 import java.net as jn
 
-case class Client(pid: Pid, async: Async[Unit])
+case class CliSession(pid: Pid, async: Async[Unit]):
+  val signals: Funnel[Signal] = Funnel()
 
-class Daemon(port: Int) extends Application:
-  private val clients: scm.HashMap[Pid, Client] = scm.HashMap()
+class Daemon() extends Application:
+  println("Starting daemon")
+  private val clients: scm.HashMap[Pid, CliSession] = scm.HashMap()
   private var continue: Boolean = true
   val xdg = Xdg()
 
-  def client(socket: jn.Socket)(using Monitor, Raises[StreamCutError]): Unit =
+  def client(socket: jn.Socket)(using Monitor, Raises[StreamCutError], Raises[UndecodableCharError], Raises[AggregateError[CodlError]], Raises[CodlReadError], Raises[NumberError]): Unit =
     val input = Readable.inputStream.read(socket.getInputStream.nn)
+    val codl = Codl.parse(input)
+    println(codl.debug)
     
-    val async: Async[Unit] = Async:
-      input.map(_.debug).foreach(println)
-      clients -= Pid(99)
-    
-    clients(Pid(99)) = Client(Pid(99), async)
+    safely(codl.as[InitSession]).or(codl.as[SendSignal]) match
+      case SendSignal(process, signal) =>
+        println(clients(process))
+        println("SIGNAL "+signal)
 
-  def invoke(using Invocation): Execution =
-    erased given Raises[PathError] = ###
-    erased given Raises[StreamCutError] = ###
-    erased given Raises[CancelError] = ###
-    erased given Raises[IoError] = ###
+      case InitSession(process, inputType, args, env) =>
+        println("forking "+process)
+        val pr = java.io.PrintWriter(socket.getOutputStream, true)
+        
+        val async: Async[Unit] = Async:
+          println("Async")
+          codl.body.foreach:
+            case char: Char =>
+              print(char)
+          
+          println("Closing")
+          clients -= process
+        
+        clients(process) = CliSession(process, async)
 
-    val portFile: Path = xdg.runtimeDir.or(xdg.stateHome) / p"fury.port"
+  def invoke(using context: CliContext): Execution = context match
+    case given Invocation =>
+      println("Invoking")
+      import errorHandlers.throwUnsafely
+      val portFile: Path = xdg.runtimeDir.or(xdg.stateHome) / p"fury.port"
+      val startupFile: Path = xdg.runtimeDir.or(xdg.stateHome) / p"fury.start"
+      println(portFile)
 
-    summon[Writable[Path, Text]]
+      execute:
+        supervise:
+          val lockProcess = sh"flock -u -x -n $portFile cat".fork[Unit]()
+          val socket: jn.ServerSocket = jn.ServerSocket(0)
+          val port: Int = socket.getLocalPort
+          println(port.show)
+          port.show.writeTo(portFile)
+          startupFile.touch()
+          startupFile.wipe()
+          
+          while continue do
+            
+            safely(client(socket.accept().nn))
 
-    execute:
-      supervise:
-        val socket: jn.ServerSocket = jn.ServerSocket(0)
-        val port: Int = socket.getLocalPort
-        port.show.writeTo(portFile)
-        while continue do safely(client(socket.accept().nn))
+        ExitStatus.Ok
 
-      ExitStatus.Ok
+    case _                      => println("Not an invacation"); ???
+
+object Testing extends Daemon()
+
+case class InitSession(process: Pid, input: Text, arg: List[Text], env: List[Text])
+case class SendSignal(process: Pid, signal: Text)
