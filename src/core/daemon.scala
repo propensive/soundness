@@ -62,7 +62,7 @@ class Daemon() extends Application:
         println("SIGNAL "+signal)
 
       case Initialize(process, script, inputType, args, env) =>
-        println("forking $process for $script")
+        println(s"forking $process for $script")
         val pr = java.io.PrintWriter(socket.getOutputStream, true)
         
         val promise: Promise[Unit] = Promise()
@@ -73,7 +73,7 @@ class Daemon() extends Application:
                 pr.print(char)
                 pr.flush()
 
-              if char == 'x' then promise.offer(())
+              if char.toInt == 3 then promise.offer(())
           
           clients -= process
         
