@@ -28,8 +28,7 @@ modifying its source code.
 
 ## Availability
 
-Umbrageous has not yet been published as a binary. It is currently waiting for the
-final release of Scala 3.3.
+Umbrageous has not yet been published as a binary.
 
 ## Getting Started
 
@@ -143,6 +142,10 @@ libraries perform some quite unpleasant tasks.
 Names should be English words, though many are obscure or archaic, and it should be noted how
 willingly English adopts foreign words. Names are generally of Greek or Latin origin, and have
 often arrived in English via a romance language.
+
+## Logo
+
+
 
 ## License
 
