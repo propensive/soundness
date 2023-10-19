@@ -38,11 +38,15 @@ import scala.collection.mutable as scm
 
 import java.net as jn
 
-case class CliSession(pid: Pid, async: Async[Unit]):
+case class CliSession(pid: Pid, async: Async[Unit], terminate: Promise[Unit], close: () => Unit)(using Monitor):
   val signals: Funnel[Signal] = Funnel()
+  
+  val terminator: Async[Unit] = Async:
+    safely(terminate.await())
+    signals.stop()
+    close()
 
 class Daemon() extends Application:
-  println("Starting daemon")
   private val clients: scm.HashMap[Pid, CliSession] = scm.HashMap()
   private var continue: Boolean = true
   val xdg = Xdg()
@@ -52,40 +56,44 @@ class Daemon() extends Application:
     val codl = Codl.parse(input)
     println(codl.debug)
     
-    safely(codl.as[InitSession]).or(codl.as[SendSignal]) match
-      case SendSignal(process, signal) =>
+    safely(codl.as[Initialize]).or(codl.as[Interrupt]) match
+      case Interrupt(process, signal) =>
         println(clients(process))
         println("SIGNAL "+signal)
 
-      case InitSession(process, inputType, args, env) =>
-        println("forking "+process)
+      case Initialize(process, script, inputType, args, env) =>
+        println("forking $process for $script")
         val pr = java.io.PrintWriter(socket.getOutputStream, true)
         
+        val promise: Promise[Unit] = Promise()
         val async: Async[Unit] = Async:
-          println("Async")
           codl.body.foreach:
             case char: Char =>
-              print(char)
+              if char.toInt >= 32 then
+                pr.print(char)
+                pr.flush()
+
+              if char == 'x' then promise.offer(())
           
-          println("Closing")
           clients -= process
         
-        clients(process) = CliSession(process, async)
+        clients(process) = CliSession(process, async, promise, { () =>
+          socket.shutdownInput()
+          socket.shutdownOutput()
+          socket.close()
+        })
 
   def invoke(using context: CliContext): Execution = context match
     case given Invocation =>
-      println("Invoking")
       import errorHandlers.throwUnsafely
       val portFile: Path = xdg.runtimeDir.or(xdg.stateHome) / p"fury.port"
       val startupFile: Path = xdg.runtimeDir.or(xdg.stateHome) / p"fury.start"
-      println(portFile)
 
       execute:
         supervise:
           val lockProcess = sh"flock -u -x -n $portFile cat".fork[Unit]()
           val socket: jn.ServerSocket = jn.ServerSocket(0)
           val port: Int = socket.getLocalPort
-          println(port.show)
           port.show.writeTo(portFile)
           startupFile.touch()
           startupFile.wipe()
@@ -100,5 +108,5 @@ class Daemon() extends Application:
 
 object Testing extends Daemon()
 
-case class InitSession(process: Pid, input: Text, arg: List[Text], env: List[Text])
-case class SendSignal(process: Pid, signal: Text)
+case class Initialize(process: Pid, script: Text, input: Text, arg: List[Text], env: List[Text])
+case class Interrupt(process: Pid, signal: Signal)

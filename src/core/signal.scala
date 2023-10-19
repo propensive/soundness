@@ -20,6 +20,10 @@ import anticipation.*
 import gossamer.*
 import spectacular.*
 
+object Signal:
+  given decoder: Decoder[Signal] = text => Signal.valueOf(text.lower.capitalize.s)
+  given encoder: Encoder[Signal] = _.shortName
+
 enum Signal:
   case Hup, Int, Quit, Ill, Trap, Abrt, Bus, Fpe, Kill, Usr1, Segv, Usr2, Pipe, Alrm, Term, Chld, Cont, Stop,
       Tstp, Ttin, Ttou, Urg, Xcpu, Xfsz, Vtalrm, Prof, Winch, Io, Pwr, Sys
