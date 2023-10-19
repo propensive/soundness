@@ -102,5 +102,8 @@ do
   fi
 done
 
-kill $streamPid
-stty "$ttystate"
+if [ -t 0 ]
+then
+  kill $streamPid
+  stty "$ttystate"
+fi
