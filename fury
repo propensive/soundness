@@ -1,6 +1,7 @@
 # This is a Wrath buildfile. More information is available at: https://github.com/propensive/wrath/
 
 target exoskeleton/core
+repo propensive/cellulose
 repo propensive/galilei
 repo propensive/ambience
 repo propensive/profanity
@@ -8,5 +9,5 @@ repo propensive/profanity
 project exoskeleton
   module core
     sources  src/core
-    include  galilei/core ambience/core profanity/core
-
+    include  galilei/core ambience/core profanity/core cellulose/core
+    main     exoskeleton.Testing
