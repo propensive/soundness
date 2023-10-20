@@ -36,15 +36,19 @@ case class InotifyError()
 extends Error(msg"the limit on the number of paths that can be watched has been exceeded")
 
 extension [DirectoryType: SpecificDirectory: GenericDirectory](dirs: Seq[DirectoryType])(using Monitor)
-  def watch()(using Log, GenericWatchService[DirectoryType]): Watcher[DirectoryType] throws InotifyError = Watcher[DirectoryType](dirs*)
+  def watch()(using Log, GenericWatchService[DirectoryType], Raises[InotifyError]): Watcher[DirectoryType] =
+    Watcher[DirectoryType](dirs*)
 
 extension [DirectoryType: SpecificDirectory: GenericDirectory](dir: DirectoryType)(using Monitor)
-  def watch()(using Log, GenericWatchService[DirectoryType]): Watcher[DirectoryType] throws InotifyError = Watcher[DirectoryType](dir)
+  def watch()(using Log, GenericWatchService[DirectoryType], Raises[InotifyError]): Watcher[DirectoryType] =
+    Watcher[DirectoryType](dir)
 
 object Watcher:
-  def apply[DirectoryType: GenericWatchService: SpecificDirectory: GenericDirectory]
-           (dirs: DirectoryType*)(using Log, Monitor)
-           : Watcher[DirectoryType] =
+  def apply
+      [DirectoryType: GenericWatchService: SpecificDirectory: GenericDirectory]
+      (dirs: DirectoryType*)(using Log, Monitor)
+      : Watcher[DirectoryType] =
+
     val svc: jnf.WatchService = summon[GenericWatchService[DirectoryType]]()
     val watcher = Watcher[DirectoryType](svc)
     dirs.foreach(watcher.add(_))
@@ -65,7 +69,8 @@ case class Watcher
   private val funnel = Funnel[Maybe[WatchEvent]]
   private val pumpAsync = Async(pump())
   
-  def stream: LazyList[WatchEvent] = funnel.stream.takeWhile(_ != Unset).collect { case event: WatchEvent => event }
+  def stream: LazyList[WatchEvent] = funnel.stream.takeWhile(_ != Unset).collect:
+    case event: WatchEvent => event
   
   def removeAll()(using Log): Unit = watches.values.map(toDirectory(_)).foreach(remove(_))
 
@@ -143,4 +148,4 @@ enum WatchEvent:
 
 export WatchEvent.{NewFile, NewDirectory, Modify, Delete}
 
-given Realm = Realm(t"surveillance")
+given Realm = realm"surveillance"
