@@ -33,11 +33,16 @@ enum AsyncState[+ValueType]:
 
 import AsyncState.*
 
+class Hook(private val thread: Thread):
+  def cancel(): Unit = Runtime.getRuntime.nn.removeShutdownHook(thread)
+
 object Async:
 
-  def onShutdown(fn: => Unit): Unit =
+  def onShutdown(fn: => Unit): Hook =
     val runnable: Runnable^{fn} = () => fn
-    Runtime.getRuntime.nn.addShutdownHook(Thread(runnable))
+    val thread: Thread = Thread(runnable)
+    Runtime.getRuntime.nn.addShutdownHook(thread)
+    Hook(thread)
 
   def race
       [AsyncType]
