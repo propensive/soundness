@@ -78,8 +78,28 @@ trait Executor[ResultType]:
   def map[ResultType2](fn: ResultType => ResultType2): Executor[ResultType2] =
     process => fn(interpret(process))
 
-class Process[+ExecType <: Label, ResultType](process: java.lang.Process):
+trait ProcessRef:
+  def pid: Pid
+  def kill()(using Log): Unit
+  def abort()(using Log): Unit
+  def alive: Boolean
+  def attend(): Unit
+
+object OsProcess:
+  def apply(pid: Pid)(using pidError: Raises[PidError]): OsProcess =
+    val handle = ProcessHandle.of(pid.value).nn
+    if handle.isPresent then new OsProcess(pid, handle.get.nn) else abort(PidError(pid))
+
+class OsProcess private (val pid: Pid, java: ProcessHandle) extends ProcessRef:
+  def kill()(using Log): Unit = java.destroy()
+  def abort()(using Log): Unit = java.destroyForcibly()
+  def alive: Boolean = java.isAlive
+  def attend(): Unit = java.onExit.nn.get()
+
+class Process[+ExecType <: Label, ResultType](process: java.lang.Process) extends ProcessRef:
   def pid: Pid = Pid(process.pid)
+  def alive: Boolean = process.isAlive
+  def attend(): Unit = process.waitFor()
   
   def stdout()(using Raises[StreamCutError]): LazyList[Bytes] =
     Readable.inputStream.read(process.getInputStream.nn)
@@ -197,6 +217,8 @@ case class Pipeline(commands: Command*) extends Executable:
 
 case class ExecError(command: Command, stdout: LazyList[Bytes], stderr: LazyList[Bytes])
 extends Error(msg"execution of the command $command failed")
+
+case class PidError(pid: Pid) extends Error(msg"the process with PID ${pid.value} is not running")
 
 object Sh:
   case class Params(params: Text*)
