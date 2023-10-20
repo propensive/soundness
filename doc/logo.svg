@@ -7,11 +7,56 @@
    viewBox="0 0 120 120"
    version="1.1"
    id="svg5"
+   sodipodi:docname="logo.svg"
+   inkscape:version="1.2.2 (b0a8486541, 2022-12-01)"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
    xmlns:xlink="http://www.w3.org/1999/xlink"
    xmlns="http://www.w3.org/2000/svg"
    xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview77"
+     pagecolor="#ffffff"
+     bordercolor="#111111"
+     borderopacity="1"
+     inkscape:showpageshadow="0"
+     inkscape:pageopacity="0"
+     inkscape:pagecheckerboard="1"
+     inkscape:deskcolor="#d1d1d1"
+     inkscape:document-units="mm"
+     showgrid="false"
+     inkscape:zoom="1.4717642"
+     inkscape:cx="228.9769"
+     inkscape:cy="103.27741"
+     inkscape:window-width="2248"
+     inkscape:window-height="2978"
+     inkscape:window-x="0"
+     inkscape:window-y="20"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="svg5" />
   <defs
      id="defs2">
+    <linearGradient
+       inkscape:collect="always"
+       id="linearGradient2123">
+      <stop
+         style="stop-color:#00034d;stop-opacity:1;"
+         offset="0"
+         id="stop2119" />
+      <stop
+         style="stop-color:#008eb5;stop-opacity:1;"
+         offset="1"
+         id="stop2121" />
+    </linearGradient>
+    <inkscape:path-effect
+       effect="powerclip"
+       id="path-effect2053"
+       is_visible="true"
+       lpeversion="1"
+       inverse="true"
+       flatten="false"
+       hide_clip="false"
+       message="Use fill-rule evenodd on &lt;b&gt;fill and stroke&lt;/b&gt; dialog if no flatten result after convert clip to paths." />
     <linearGradient
        id="linearGradient3525">
       <stop
@@ -249,135 +294,985 @@
         </g>
       </g>
     </clipPath>
-  </defs>
-  <g
-     id="layer1"
-     transform="translate(-33.387589,-88.500002)">
-    <g
-       id="g3875">
+    <clipPath
+       clipPathUnits="userSpaceOnUse"
+       id="clipPath3742-3">
       <g
-         id="g3857"
-         transform="rotate(45,93.387589,148.5)">
+         id="g3746-6">
         <circle
-           style="fill:#67a400;fill-opacity:1;stroke:none;stroke-width:0.103083;stop-color:#000000"
-           id="path788"
+           style="fill:none;fill-opacity:1;stroke:#000000;stroke-width:0.103083;stroke-opacity:1;stop-color:#000000"
+           id="circle3744-7"
            cx="93.387589"
            cy="148.5"
-           r="60"
-           clip-path="url(#clipPath3742)" />
-        <circle
-           style="fill:#fffa95;fill-opacity:0.226243;stroke:none;stroke-width:0.106232;stop-color:#000000"
-           id="path1778-3"
-           cx="80.986488"
-           cy="136.09889"
-           r="49.484867"
-           clip-path="url(#clipPath3736)" />
-        <circle
-           style="fill:#fffa95;fill-opacity:0.226243;stroke:none;stroke-width:0.106232;stop-color:#000000"
-           id="path1778-5"
-           cx="104.21709"
-           cy="160.90112"
-           r="49.484867"
-           clip-path="url(#clipPath3730)" />
-        <circle
-           style="fill:#fffa95;fill-opacity:0.226243;stroke:none;stroke-width:0.106232;stop-color:#000000"
-           id="path1778-35"
-           cx="80.986488"
-           cy="160.90112"
-           r="49.484867"
-           clip-path="url(#clipPath3724)" />
-        <circle
-           style="fill:#fffa95;fill-opacity:0.226243;stroke:none;stroke-width:0.106232;stop-color:#000000"
-           id="path1778-62"
-           cx="105.7887"
-           cy="136.09889"
-           r="49.484867"
-           clip-path="url(#clipPath3718)" />
-        <circle
-           style="fill:#fffa7a;fill-opacity:0.226243;stroke:none;stroke-width:0.106232;stop-color:#000000"
-           id="path1778-3-0"
-           cx="-51.371468"
-           cy="158.63925"
-           r="49.484867"
-           transform="rotate(-45)"
-           clip-path="url(#clipPath3712)" />
-        <circle
-           style="fill:#fffa61;fill-opacity:0.226243;stroke:none;stroke-width:0.106232;stop-color:#000000"
-           id="path1778-5-9"
-           cx="-28.140852"
-           cy="183.44148"
-           r="49.484867"
-           transform="rotate(-45)"
-           clip-path="url(#clipPath3706)" />
-        <circle
-           style="fill:#fffa7a;fill-opacity:0.226243;stroke:none;stroke-width:0.106232;stop-color:#000000"
-           id="path1778-35-3"
-           cx="-51.371468"
-           cy="183.44148"
-           r="49.484867"
-           transform="rotate(-45)"
-           clip-path="url(#clipPath3700)" />
-        <circle
-           style="fill:#fffa2e;fill-opacity:0.226243;stroke:none;stroke-width:0.106232;stop-color:#000000"
-           id="path1778-62-6"
-           cx="-26.569254"
-           cy="158.63925"
-           r="49.484867"
-           transform="rotate(-45)"
-           clip-path="url(#clipPath3694)" />
-        <ellipse
-           style="fill:#f9c400;fill-opacity:0.383347;stroke:none;stroke-width:0.124615;stop-color:#000000"
-           id="path2101-0"
-           cx="99.398697"
-           cy="145.46562"
-           rx="26.043644"
-           ry="24.374186"
-           clip-path="url(#clipPath3834)"
-           transform="translate(1.5875,-0.52916667)" />
-        <ellipse
-           style="fill:#f9c400;fill-opacity:0.383347;stroke:none;stroke-width:0.124615;stop-color:#000000"
-           id="path2101-0-6"
-           cx="88.155861"
-           cy="145.46562"
-           rx="26.043644"
-           ry="24.374186"
-           clip-path="url(#clipPath3826)"
-           transform="translate(-1.0583333,-0.52916667)" />
-        <ellipse
-           style="fill:#f9c400;fill-opacity:0.383347;stroke:none;stroke-width:0.124615;stop-color:#000000"
-           id="path2101-0-6-1"
-           cx="93.777275"
-           cy="153.89772"
-           rx="26.043644"
-           ry="24.374186"
-           clip-path="url(#clipPath3818)"
-           transform="translate(0,1.0583333)" />
-        <ellipse
-           style="fill:#d66000;fill-opacity:0.555348;stroke:none;stroke-width:0.124615;stop-color:#000000"
-           id="path2101"
-           cx="92.592224"
-           cy="145.46562"
-           rx="26.043644"
-           ry="24.374186"
-           clip-path="url(#clipPath3810)" />
-        <ellipse
-           style="fill:url(#linearGradient3527);fill-opacity:1;stroke:none;stroke-width:0.124615;stop-color:#000000"
-           id="path2101-2"
-           cx="92.592224"
-           cy="149.99828"
-           rx="26.043644"
-           ry="24.374186"
-           clip-path="url(#clipPath3802)" />
-        <ellipse
-           style="fill:#af7000;fill-opacity:0.555348;stroke:none;stroke-width:0.124615;stop-color:#000000"
-           id="path2101-6"
-           cx="97.264465"
-           cy="148.1564"
-           rx="26.043644"
-           ry="24.374186"
-           clip-path="url(#clipPath3794)"
-           transform="translate(1.0583333,-0.52916667)" />
+           r="60" />
       </g>
+    </clipPath>
+    <clipPath
+       clipPathUnits="userSpaceOnUse"
+       id="clipPath3742-5">
+      <g
+         id="g3746-3">
+        <circle
+           style="fill:none;fill-opacity:1;stroke:#000000;stroke-width:0.103083;stroke-opacity:1;stop-color:#000000"
+           id="circle3744-5"
+           cx="93.387589"
+           cy="148.5"
+           r="60" />
+      </g>
+    </clipPath>
+    <clipPath
+       clipPathUnits="userSpaceOnUse"
+       id="clipPath3742-5-2">
+      <g
+         id="g3746-3-9">
+        <circle
+           style="fill:none;fill-opacity:1;stroke:#000000;stroke-width:0.103083;stroke-opacity:1;stop-color:#000000"
+           id="circle3744-5-1"
+           cx="93.387589"
+           cy="148.5"
+           r="60" />
+      </g>
+    </clipPath>
+    <clipPath
+       clipPathUnits="userSpaceOnUse"
+       id="clipPath3742-5-7">
+      <g
+         id="g3746-3-0">
+        <circle
+           style="fill:none;fill-opacity:1;stroke:#000000;stroke-width:0.103083;stroke-opacity:1;stop-color:#000000"
+           id="circle3744-5-9"
+           cx="93.387589"
+           cy="148.5"
+           r="60" />
+      </g>
+    </clipPath>
+    <clipPath
+       clipPathUnits="userSpaceOnUse"
+       id="clipPath3742-5-7-6">
+      <g
+         id="g3746-3-0-0">
+        <circle
+           style="fill:none;fill-opacity:1;stroke:#000000;stroke-width:0.103083;stroke-opacity:1;stop-color:#000000"
+           id="circle3744-5-9-6"
+           cx="93.387589"
+           cy="148.5"
+           r="60" />
+      </g>
+    </clipPath>
+    <clipPath
+       clipPathUnits="userSpaceOnUse"
+       id="clipPath3742-5-7-61">
+      <g
+         id="g3746-3-0-8">
+        <circle
+           style="fill:none;fill-opacity:1;stroke:#000000;stroke-width:0.103083;stroke-opacity:1;stop-color:#000000"
+           id="circle3744-5-9-7"
+           cx="93.387589"
+           cy="148.5"
+           r="60" />
+      </g>
+    </clipPath>
+    <clipPath
+       clipPathUnits="userSpaceOnUse"
+       id="clipPath3742-5-7-61-2">
+      <g
+         id="g3746-3-0-8-0">
+        <circle
+           style="fill:none;fill-opacity:1;stroke:#000000;stroke-width:0.103083;stroke-opacity:1;stop-color:#000000"
+           id="circle3744-5-9-7-2"
+           cx="93.387589"
+           cy="148.5"
+           r="60" />
+      </g>
+    </clipPath>
+    <clipPath
+       clipPathUnits="userSpaceOnUse"
+       id="clipPath3742-5-75">
+      <g
+         id="g3746-3-92">
+        <circle
+           style="fill:none;fill-opacity:1;stroke:#000000;stroke-width:0.103083;stroke-opacity:1;stop-color:#000000"
+           id="circle3744-5-2"
+           cx="93.387589"
+           cy="148.5"
+           r="60" />
+      </g>
+    </clipPath>
+    <clipPath
+       clipPathUnits="userSpaceOnUse"
+       id="clipPath3742-5-7-8">
+      <g
+         id="g3746-3-0-9">
+        <circle
+           style="fill:none;fill-opacity:1;stroke:#000000;stroke-width:0.103083;stroke-opacity:1;stop-color:#000000"
+           id="circle3744-5-9-73"
+           cx="93.387589"
+           cy="148.5"
+           r="60" />
+      </g>
+    </clipPath>
+    <clipPath
+       clipPathUnits="userSpaceOnUse"
+       id="clipPath3742-5-7-61-6">
+      <g
+         id="g3746-3-0-8-1">
+        <circle
+           style="fill:none;fill-opacity:1;stroke:#000000;stroke-width:0.103083;stroke-opacity:1;stop-color:#000000"
+           id="circle3744-5-9-7-29"
+           cx="93.387589"
+           cy="148.5"
+           r="60" />
+      </g>
+    </clipPath>
+    <clipPath
+       clipPathUnits="userSpaceOnUse"
+       id="clipPath3742-5-7-6-3">
+      <g
+         id="g3746-3-0-0-1">
+        <circle
+           style="fill:none;fill-opacity:1;stroke:#000000;stroke-width:0.103083;stroke-opacity:1;stop-color:#000000"
+           id="circle3744-5-9-6-9"
+           cx="93.387589"
+           cy="148.5"
+           r="60" />
+      </g>
+    </clipPath>
+    <clipPath
+       clipPathUnits="userSpaceOnUse"
+       id="clipPath3742-5-8">
+      <g
+         id="g3746-3-8">
+        <circle
+           style="fill:none;fill-opacity:1;stroke:#000000;stroke-width:0.103083;stroke-opacity:1;stop-color:#000000"
+           id="circle3744-5-4"
+           cx="93.387589"
+           cy="148.5"
+           r="60" />
+      </g>
+    </clipPath>
+    <clipPath
+       clipPathUnits="userSpaceOnUse"
+       id="clipPath3742-5-7-3">
+      <g
+         id="g3746-3-0-1">
+        <circle
+           style="fill:none;fill-opacity:1;stroke:#000000;stroke-width:0.103083;stroke-opacity:1;stop-color:#000000"
+           id="circle3744-5-9-4"
+           cx="93.387589"
+           cy="148.5"
+           r="60" />
+      </g>
+    </clipPath>
+    <clipPath
+       clipPathUnits="userSpaceOnUse"
+       id="clipPath3742-5-7-61-9">
+      <g
+         id="g3746-3-0-8-2">
+        <circle
+           style="fill:none;fill-opacity:1;stroke:#000000;stroke-width:0.103083;stroke-opacity:1;stop-color:#000000"
+           id="circle3744-5-9-7-0"
+           cx="93.387589"
+           cy="148.5"
+           r="60" />
+      </g>
+    </clipPath>
+    <clipPath
+       clipPathUnits="userSpaceOnUse"
+       id="clipPath3742-5-7-6-6">
+      <g
+         id="g3746-3-0-0-8">
+        <circle
+           style="fill:none;fill-opacity:1;stroke:#000000;stroke-width:0.103083;stroke-opacity:1;stop-color:#000000"
+           id="circle3744-5-9-6-92"
+           cx="93.387589"
+           cy="148.5"
+           r="60" />
+      </g>
+    </clipPath>
+    <clipPath
+       clipPathUnits="userSpaceOnUse"
+       id="clipPath3742-5-75-6">
+      <g
+         id="g3746-3-92-6">
+        <circle
+           style="fill:none;fill-opacity:1;stroke:#000000;stroke-width:0.103083;stroke-opacity:1;stop-color:#000000"
+           id="circle3744-5-2-4"
+           cx="93.387589"
+           cy="148.5"
+           r="60" />
+      </g>
+    </clipPath>
+    <clipPath
+       clipPathUnits="userSpaceOnUse"
+       id="clipPath3742-5-7-8-9">
+      <g
+         id="g3746-3-0-9-5">
+        <circle
+           style="fill:none;fill-opacity:1;stroke:#000000;stroke-width:0.103083;stroke-opacity:1;stop-color:#000000"
+           id="circle3744-5-9-73-0"
+           cx="93.387589"
+           cy="148.5"
+           r="60" />
+      </g>
+    </clipPath>
+    <clipPath
+       clipPathUnits="userSpaceOnUse"
+       id="clipPath3742-5-7-61-6-4">
+      <g
+         id="g3746-3-0-8-1-8">
+        <circle
+           style="fill:none;fill-opacity:1;stroke:#000000;stroke-width:0.103083;stroke-opacity:1;stop-color:#000000"
+           id="circle3744-5-9-7-29-7"
+           cx="93.387589"
+           cy="148.5"
+           r="60" />
+      </g>
+    </clipPath>
+    <clipPath
+       clipPathUnits="userSpaceOnUse"
+       id="clipPath3742-5-7-6-3-1">
+      <g
+         id="g3746-3-0-0-1-7">
+        <circle
+           style="fill:none;fill-opacity:1;stroke:#000000;stroke-width:0.103083;stroke-opacity:1;stop-color:#000000"
+           id="circle3744-5-9-6-9-2"
+           cx="93.387589"
+           cy="148.5"
+           r="60" />
+      </g>
+    </clipPath>
+    <clipPath
+       clipPathUnits="userSpaceOnUse"
+       id="clipPath3742-5-9">
+      <g
+         id="g3746-3-4">
+        <circle
+           style="fill:none;fill-opacity:1;stroke:#000000;stroke-width:0.103083;stroke-opacity:1;stop-color:#000000"
+           id="circle3744-5-90"
+           cx="93.387589"
+           cy="148.5"
+           r="60" />
+      </g>
+    </clipPath>
+    <clipPath
+       clipPathUnits="userSpaceOnUse"
+       id="clipPath3742-5-7-9">
+      <g
+         id="g3746-3-0-17">
+        <circle
+           style="fill:none;fill-opacity:1;stroke:#000000;stroke-width:0.103083;stroke-opacity:1;stop-color:#000000"
+           id="circle3744-5-9-71"
+           cx="93.387589"
+           cy="148.5"
+           r="60" />
+      </g>
+    </clipPath>
+    <clipPath
+       clipPathUnits="userSpaceOnUse"
+       id="clipPath3742-5-7-61-1">
+      <g
+         id="g3746-3-0-8-5">
+        <circle
+           style="fill:none;fill-opacity:1;stroke:#000000;stroke-width:0.103083;stroke-opacity:1;stop-color:#000000"
+           id="circle3744-5-9-7-9"
+           cx="93.387589"
+           cy="148.5"
+           r="60" />
+      </g>
+    </clipPath>
+    <clipPath
+       clipPathUnits="userSpaceOnUse"
+       id="clipPath3742-5-7-6-7">
+      <g
+         id="g3746-3-0-0-7">
+        <circle
+           style="fill:none;fill-opacity:1;stroke:#000000;stroke-width:0.103083;stroke-opacity:1;stop-color:#000000"
+           id="circle3744-5-9-6-6"
+           cx="93.387589"
+           cy="148.5"
+           r="60" />
+      </g>
+    </clipPath>
+    <clipPath
+       clipPathUnits="userSpaceOnUse"
+       id="clipPath3742-5-75-7">
+      <g
+         id="g3746-3-92-3">
+        <circle
+           style="fill:none;fill-opacity:1;stroke:#000000;stroke-width:0.103083;stroke-opacity:1;stop-color:#000000"
+           id="circle3744-5-2-6"
+           cx="93.387589"
+           cy="148.5"
+           r="60" />
+      </g>
+    </clipPath>
+    <clipPath
+       clipPathUnits="userSpaceOnUse"
+       id="clipPath3742-5-7-8-5">
+      <g
+         id="g3746-3-0-9-6">
+        <circle
+           style="fill:none;fill-opacity:1;stroke:#000000;stroke-width:0.103083;stroke-opacity:1;stop-color:#000000"
+           id="circle3744-5-9-73-3"
+           cx="93.387589"
+           cy="148.5"
+           r="60" />
+      </g>
+    </clipPath>
+    <clipPath
+       clipPathUnits="userSpaceOnUse"
+       id="clipPath3742-5-7-61-6-9">
+      <g
+         id="g3746-3-0-8-1-4">
+        <circle
+           style="fill:none;fill-opacity:1;stroke:#000000;stroke-width:0.103083;stroke-opacity:1;stop-color:#000000"
+           id="circle3744-5-9-7-29-8"
+           cx="93.387589"
+           cy="148.5"
+           r="60" />
+      </g>
+    </clipPath>
+    <clipPath
+       clipPathUnits="userSpaceOnUse"
+       id="clipPath3742-5-7-6-3-12">
+      <g
+         id="g3746-3-0-0-1-9">
+        <circle
+           style="fill:none;fill-opacity:1;stroke:#000000;stroke-width:0.103083;stroke-opacity:1;stop-color:#000000"
+           id="circle3744-5-9-6-9-3"
+           cx="93.387589"
+           cy="148.5"
+           r="60" />
+      </g>
+    </clipPath>
+    <clipPath
+       clipPathUnits="userSpaceOnUse"
+       id="clipPath2049">
+      <circle
+         style="display:none;opacity:1;fill:none;fill-opacity:0.16744;stroke:#000000;stroke-width:0.015;stroke-opacity:1;stop-color:#000000"
+         id="circle2051"
+         cx="4.1651402"
+         cy="3.1178222"
+         r="98.132927" />
+      <path
+         id="lpe_path-effect2053"
+         style="opacity:1;fill:none;fill-opacity:0.16744;stroke:#000000;stroke-width:0.015;stroke-opacity:1;stop-color:#000000"
+         class="powerclip"
+         d="M -4.9999994,-5.000006 H 125 V 125 H -4.9999994 Z M 102.29807,3.1178222 A 98.132927,98.132927 0 0 0 4.1651402,-95.015105 98.132927,98.132927 0 0 0 -93.967787,3.1178222 98.132927,98.132927 0 0 0 4.1651402,101.25075 98.132927,98.132927 0 0 0 102.29807,3.1178222 Z" />
+    </clipPath>
+    <linearGradient
+       inkscape:collect="always"
+       xlink:href="#linearGradient2123"
+       id="linearGradient2125"
+       x1="2.6711144"
+       y1="89.418083"
+       x2="109.48487"
+       y2="11.372246"
+       gradientUnits="userSpaceOnUse" />
+    <clipPath
+       clipPathUnits="userSpaceOnUse"
+       id="clipPath2049-1">
+      <circle
+         style="display:none;opacity:1;fill:none;fill-opacity:0.16744;stroke:#000000;stroke-width:0.015;stroke-opacity:1;stop-color:#000000"
+         id="circle2051-1"
+         cx="4.1651402"
+         cy="3.1178222"
+         r="98.132927" />
+      <path
+         id="lpe_path-effect2053-5"
+         style="opacity:1;fill:none;fill-opacity:0.16744;stroke:#000000;stroke-width:0.015;stroke-opacity:1;stop-color:#000000"
+         class="powerclip"
+         d="M -4.9999994,-5.000006 H 125 V 125 H -4.9999994 Z M 102.29807,3.1178222 A 98.132927,98.132927 0 0 0 4.1651402,-95.015105 98.132927,98.132927 0 0 0 -93.967787,3.1178222 98.132927,98.132927 0 0 0 4.1651402,101.25075 98.132927,98.132927 0 0 0 102.29807,3.1178222 Z" />
+    </clipPath>
+    <inkscape:path-effect
+       effect="powerclip"
+       id="path-effect2053-9"
+       is_visible="true"
+       lpeversion="1"
+       inverse="true"
+       flatten="false"
+       hide_clip="false"
+       message="Use fill-rule evenodd on &lt;b&gt;fill and stroke&lt;/b&gt; dialog if no flatten result after convert clip to paths." />
+    <clipPath
+       clipPathUnits="userSpaceOnUse"
+       id="clipPath3742-3-8">
+      <g
+         id="g3746-6-4">
+        <circle
+           style="fill:none;fill-opacity:1;stroke:#000000;stroke-width:0.103083;stroke-opacity:1;stop-color:#000000"
+           id="circle3744-7-8"
+           cx="93.387589"
+           cy="148.5"
+           r="60" />
+      </g>
+    </clipPath>
+    <clipPath
+       clipPathUnits="userSpaceOnUse"
+       id="clipPath3736-1">
+      <g
+         id="g3740-0">
+        <circle
+           style="fill:none;fill-opacity:1;stroke:#000000;stroke-width:0.103083;stroke-opacity:1;stop-color:#000000"
+           id="circle3738-3"
+           cx="93.387589"
+           cy="148.5"
+           r="60" />
+      </g>
+    </clipPath>
+    <clipPath
+       clipPathUnits="userSpaceOnUse"
+       id="clipPath3730-0">
+      <g
+         id="g3734-4">
+        <circle
+           style="fill:none;fill-opacity:1;stroke:#000000;stroke-width:0.103083;stroke-opacity:1;stop-color:#000000"
+           id="circle3732-4"
+           cx="93.387589"
+           cy="148.5"
+           r="60" />
+      </g>
+    </clipPath>
+    <clipPath
+       clipPathUnits="userSpaceOnUse"
+       id="clipPath3724-4">
+      <g
+         id="g3728-4">
+        <circle
+           style="fill:none;fill-opacity:1;stroke:#000000;stroke-width:0.103083;stroke-opacity:1;stop-color:#000000"
+           id="circle3726-7"
+           cx="93.387589"
+           cy="148.5"
+           r="60" />
+      </g>
+    </clipPath>
+    <clipPath
+       clipPathUnits="userSpaceOnUse"
+       id="clipPath3718-6">
+      <g
+         id="g3722-3">
+        <circle
+           style="fill:none;fill-opacity:1;stroke:#000000;stroke-width:0.103083;stroke-opacity:1;stop-color:#000000"
+           id="circle3720-1"
+           cx="93.387589"
+           cy="148.5"
+           r="60" />
+      </g>
+    </clipPath>
+    <clipPath
+       clipPathUnits="userSpaceOnUse"
+       id="clipPath3712-7">
+      <g
+         id="g3716-5"
+         transform="rotate(45,7.4193117e-7,1.3385154e-6)">
+        <circle
+           style="fill:none;fill-opacity:1;stroke:#000000;stroke-width:0.103083;stroke-opacity:1;stop-color:#000000"
+           id="circle3714-9"
+           cx="93.387589"
+           cy="148.5"
+           r="60" />
+      </g>
+    </clipPath>
+    <clipPath
+       clipPathUnits="userSpaceOnUse"
+       id="clipPath3700-6">
+      <g
+         id="g3704-2"
+         transform="rotate(45,7.4193117e-7,1.3385154e-6)">
+        <circle
+           style="fill:none;fill-opacity:1;stroke:#000000;stroke-width:0.103083;stroke-opacity:1;stop-color:#000000"
+           id="circle3702-1"
+           cx="93.387589"
+           cy="148.5"
+           r="60" />
+      </g>
+    </clipPath>
+    <clipPath
+       clipPathUnits="userSpaceOnUse"
+       id="clipPath3694-7">
+      <g
+         id="g3698-8"
+         transform="rotate(45,7.4193117e-7,1.3385154e-6)">
+        <circle
+           style="fill:none;fill-opacity:1;stroke:#000000;stroke-width:0.103083;stroke-opacity:1;stop-color:#000000"
+           id="circle3696-5"
+           cx="93.387589"
+           cy="148.5"
+           r="60" />
+      </g>
+    </clipPath>
+    <clipPath
+       clipPathUnits="userSpaceOnUse"
+       id="clipPath3706-7">
+      <g
+         id="g3710-4"
+         transform="rotate(45,7.4193117e-7,1.3385154e-6)">
+        <circle
+           style="fill:none;fill-opacity:1;stroke:#000000;stroke-width:0.103083;stroke-opacity:1;stop-color:#000000"
+           id="circle3708-1"
+           cx="93.387589"
+           cy="148.5"
+           r="60" />
+      </g>
+    </clipPath>
+    <clipPath
+       clipPathUnits="userSpaceOnUse"
+       id="clipath_lpe_path-effect2053-9">
+      <circle
+         style="display:none;opacity:1;fill:none;fill-opacity:0.16744;stroke:#000000;stroke-width:0.015;stroke-opacity:1;stop-color:#000000"
+         id="circle2308"
+         cx="4.1651402"
+         cy="3.1178222"
+         r="98.132927" />
+      <path
+         id="lpe_path-effect2053-9"
+         style="opacity:1;fill:none;fill-opacity:0.16744;stroke:#000000;stroke-width:0.015;stroke-opacity:1;stop-color:#000000"
+         class="powerclip"
+         d="M -4.9999994,-5.000006 H 125 V 125 H -4.9999994 Z M 102.29807,3.1178222 A 98.132927,98.132927 0 0 0 4.1651402,-95.015105 98.132927,98.132927 0 0 0 -93.967787,3.1178222 98.132927,98.132927 0 0 0 4.1651402,101.25075 98.132927,98.132927 0 0 0 102.29807,3.1178222 Z" />
+    </clipPath>
+    <clipPath
+       clipPathUnits="userSpaceOnUse"
+       id="clipath_lpe_path-effect2053-9-8">
+      <circle
+         style="display:none;opacity:1;fill:none;fill-opacity:0.16744;stroke:#000000;stroke-width:0.015;stroke-opacity:1;stop-color:#000000"
+         id="circle2308-9"
+         cx="4.1651402"
+         cy="3.1178222"
+         r="98.132927" />
+      <path
+         id="lpe_path-effect2053-9-6"
+         style="opacity:1;fill:none;fill-opacity:0.16744;stroke:#000000;stroke-width:0.015;stroke-opacity:1;stop-color:#000000"
+         class="powerclip"
+         d="M -4.9999994,-5.000006 H 125 V 125 H -4.9999994 Z M 102.29807,3.1178222 A 98.132927,98.132927 0 0 0 4.1651402,-95.015105 98.132927,98.132927 0 0 0 -93.967787,3.1178222 98.132927,98.132927 0 0 0 4.1651402,101.25075 98.132927,98.132927 0 0 0 102.29807,3.1178222 Z" />
+    </clipPath>
+    <inkscape:path-effect
+       effect="powerclip"
+       id="path-effect2053-9-4"
+       is_visible="true"
+       lpeversion="1"
+       inverse="true"
+       flatten="false"
+       hide_clip="false"
+       message="Use fill-rule evenodd on &lt;b&gt;fill and stroke&lt;/b&gt; dialog if no flatten result after convert clip to paths." />
+    <clipPath
+       clipPathUnits="userSpaceOnUse"
+       id="clipPath3742-3-8-3">
+      <g
+         id="g3746-6-4-3">
+        <circle
+           style="fill:none;fill-opacity:1;stroke:#000000;stroke-width:0.103083;stroke-opacity:1;stop-color:#000000"
+           id="circle3744-7-8-3"
+           cx="93.387589"
+           cy="148.5"
+           r="60" />
+      </g>
+    </clipPath>
+    <clipPath
+       clipPathUnits="userSpaceOnUse"
+       id="clipPath3736-1-8">
+      <g
+         id="g3740-0-6">
+        <circle
+           style="fill:none;fill-opacity:1;stroke:#000000;stroke-width:0.103083;stroke-opacity:1;stop-color:#000000"
+           id="circle3738-3-0"
+           cx="93.387589"
+           cy="148.5"
+           r="60" />
+      </g>
+    </clipPath>
+    <clipPath
+       clipPathUnits="userSpaceOnUse"
+       id="clipPath3730-0-4">
+      <g
+         id="g3734-4-8">
+        <circle
+           style="fill:none;fill-opacity:1;stroke:#000000;stroke-width:0.103083;stroke-opacity:1;stop-color:#000000"
+           id="circle3732-4-8"
+           cx="93.387589"
+           cy="148.5"
+           r="60" />
+      </g>
+    </clipPath>
+    <clipPath
+       clipPathUnits="userSpaceOnUse"
+       id="clipPath3724-4-8">
+      <g
+         id="g3728-4-9">
+        <circle
+           style="fill:none;fill-opacity:1;stroke:#000000;stroke-width:0.103083;stroke-opacity:1;stop-color:#000000"
+           id="circle3726-7-7"
+           cx="93.387589"
+           cy="148.5"
+           r="60" />
+      </g>
+    </clipPath>
+    <clipPath
+       clipPathUnits="userSpaceOnUse"
+       id="clipPath3718-6-7">
+      <g
+         id="g3722-3-6">
+        <circle
+           style="fill:none;fill-opacity:1;stroke:#000000;stroke-width:0.103083;stroke-opacity:1;stop-color:#000000"
+           id="circle3720-1-4"
+           cx="93.387589"
+           cy="148.5"
+           r="60" />
+      </g>
+    </clipPath>
+    <clipPath
+       clipPathUnits="userSpaceOnUse"
+       id="clipPath3712-7-3">
+      <g
+         id="g3716-5-0"
+         transform="rotate(45,7.4193117e-7,1.3385154e-6)">
+        <circle
+           style="fill:none;fill-opacity:1;stroke:#000000;stroke-width:0.103083;stroke-opacity:1;stop-color:#000000"
+           id="circle3714-9-3"
+           cx="93.387589"
+           cy="148.5"
+           r="60" />
+      </g>
+    </clipPath>
+    <clipPath
+       clipPathUnits="userSpaceOnUse"
+       id="clipPath3700-6-0">
+      <g
+         id="g3704-2-9"
+         transform="rotate(45,7.4193117e-7,1.3385154e-6)">
+        <circle
+           style="fill:none;fill-opacity:1;stroke:#000000;stroke-width:0.103083;stroke-opacity:1;stop-color:#000000"
+           id="circle3702-1-2"
+           cx="93.387589"
+           cy="148.5"
+           r="60" />
+      </g>
+    </clipPath>
+    <clipPath
+       clipPathUnits="userSpaceOnUse"
+       id="clipPath3694-7-5">
+      <g
+         id="g3698-8-4"
+         transform="rotate(45,7.4193117e-7,1.3385154e-6)">
+        <circle
+           style="fill:none;fill-opacity:1;stroke:#000000;stroke-width:0.103083;stroke-opacity:1;stop-color:#000000"
+           id="circle3696-5-0"
+           cx="93.387589"
+           cy="148.5"
+           r="60" />
+      </g>
+    </clipPath>
+    <clipPath
+       clipPathUnits="userSpaceOnUse"
+       id="clipPath3706-7-5">
+      <g
+         id="g3710-4-9"
+         transform="rotate(45,7.4193117e-7,1.3385154e-6)">
+        <circle
+           style="fill:none;fill-opacity:1;stroke:#000000;stroke-width:0.103083;stroke-opacity:1;stop-color:#000000"
+           id="circle3708-1-4"
+           cx="93.387589"
+           cy="148.5"
+           r="60" />
+      </g>
+    </clipPath>
+    <clipPath
+       clipPathUnits="userSpaceOnUse"
+       id="clipath_lpe_path-effect2053-9-4">
+      <circle
+         style="display:none;opacity:1;fill:none;fill-opacity:0.16744;stroke:#000000;stroke-width:0.015;stroke-opacity:1;stop-color:#000000"
+         id="circle2504"
+         cx="4.1651402"
+         cy="3.1178222"
+         r="98.132927" />
+      <path
+         id="lpe_path-effect2053-9-4"
+         style="opacity:1;fill:none;fill-opacity:0.16744;stroke:#000000;stroke-width:0.015;stroke-opacity:1;stop-color:#000000"
+         class="powerclip"
+         d="M -4.9999994,-5.000006 H 125 V 125 H -4.9999994 Z M 102.29807,3.1178222 A 98.132927,98.132927 0 0 0 4.1651402,-95.015105 98.132927,98.132927 0 0 0 -93.967787,3.1178222 98.132927,98.132927 0 0 0 4.1651402,101.25075 98.132927,98.132927 0 0 0 102.29807,3.1178222 Z" />
+    </clipPath>
+    <clipPath
+       clipPathUnits="userSpaceOnUse"
+       id="clipPath2742">
+      <g
+         id="g2746">
+        <circle
+           style="fill:none;fill-opacity:1;stroke:#000000;stroke-width:0.015;stroke-opacity:1;stop-color:#000000"
+           id="circle2744"
+           cx="60"
+           cy="60"
+           r="60" />
+      </g>
+    </clipPath>
+  </defs>
+  <g
+     id="g2723"
+     clip-path="url(#clipPath2742)">
+    <circle
+       style="fill:url(#linearGradient2125);fill-opacity:1;stroke:none;stroke-width:0.015;stroke-opacity:1;stop-color:#000000"
+       id="path2057"
+       cx="59.999996"
+       cy="60"
+       r="60" />
+    <g
+       id="g1649-8"
+       clip-path="url(#clipath_lpe_path-effect2053-9)"
+       inkscape:path-effect="#path-effect2053-9"
+       transform="translate(-6.6666665e-8,-15.875)"
+       style="opacity:0.477779">
+      <circle
+         style="mix-blend-mode:hard-light;fill:#009c32;fill-opacity:1;stroke:none;stroke-width:0.103083;stop-color:#000000"
+         id="path788-5"
+         cx="93.387589"
+         cy="148.5"
+         r="60"
+         clip-path="url(#clipPath3742-3-8)"
+         transform="rotate(45,183.52275,63.947614)"
+         d="m 153.38759,148.5 a 60,60 0 0 1 -60.000001,60 60,60 0 0 1 -60,-60 60,60 0 0 1 60,-60 60,60 0 0 1 60.000001,60 z" />
+      <circle
+         style="mix-blend-mode:hard-light;fill:#ffdb2d;fill-opacity:0.226243;stroke:none;stroke-width:0.106232;stop-color:#000000"
+         id="path1778-3-9"
+         cx="80.986488"
+         cy="136.09889"
+         r="49.484867"
+         clip-path="url(#clipPath3736-1)"
+         transform="rotate(45,183.52275,63.947614)"
+         d="M 130.47136,136.09889 A 49.484867,49.484867 0 0 1 80.986488,185.58376 49.484867,49.484867 0 0 1 31.501621,136.09889 49.484867,49.484867 0 0 1 80.986488,86.614025 49.484867,49.484867 0 0 1 130.47136,136.09889 Z" />
+      <circle
+         style="mix-blend-mode:hard-light;fill:#ffdb2d;fill-opacity:0.226243;stroke:none;stroke-width:0.106232;stop-color:#000000"
+         id="path1778-5-7"
+         cx="104.21709"
+         cy="160.90112"
+         r="49.484867"
+         clip-path="url(#clipPath3730-0)"
+         transform="rotate(45,183.52275,63.947614)"
+         d="m 153.70195,160.90112 a 49.484867,49.484867 0 0 1 -49.48486,49.48487 49.484867,49.484867 0 0 1 -49.48487,-49.48487 49.484867,49.484867 0 0 1 49.48487,-49.48486 49.484867,49.484867 0 0 1 49.48486,49.48486 z" />
+      <circle
+         style="mix-blend-mode:hard-light;fill:#ffdb2d;fill-opacity:0.226243;stroke:none;stroke-width:0.106232;stop-color:#000000"
+         id="path1778-35-5"
+         cx="80.986488"
+         cy="160.90112"
+         r="49.484867"
+         clip-path="url(#clipPath3724-4)"
+         transform="rotate(45,183.52275,63.947614)"
+         d="M 130.47136,160.90112 A 49.484867,49.484867 0 0 1 80.986488,210.38599 49.484867,49.484867 0 0 1 31.501621,160.90112 49.484867,49.484867 0 0 1 80.986488,111.41626 49.484867,49.484867 0 0 1 130.47136,160.90112 Z" />
+      <circle
+         style="mix-blend-mode:hard-light;fill:#ffdb2d;fill-opacity:0.226243;stroke:none;stroke-width:0.106232;stop-color:#000000"
+         id="path1778-62-3"
+         cx="105.7887"
+         cy="136.09889"
+         r="49.484867"
+         clip-path="url(#clipPath3718-6)"
+         transform="rotate(45,183.52275,63.947614)"
+         d="M 155.27356,136.09889 A 49.484867,49.484867 0 0 1 105.7887,185.58376 49.484867,49.484867 0 0 1 56.303829,136.09889 49.484867,49.484867 0 0 1 105.7887,86.614025 49.484867,49.484867 0 0 1 155.27356,136.09889 Z" />
+      <circle
+         style="mix-blend-mode:hard-light;fill:#ffdb2d;fill-opacity:0.226243;stroke:none;stroke-width:0.106232;stop-color:#000000"
+         id="path1778-3-0-8"
+         cx="-51.371468"
+         cy="158.63925"
+         r="49.484867"
+         transform="translate(98.97036,-111.04036)"
+         clip-path="url(#clipPath3712-7)"
+         d="m -1.8866005,158.63925 a 49.484867,49.484867 0 0 1 -49.4848675,49.48487 49.484867,49.484867 0 0 1 -49.484862,-49.48487 49.484867,49.484867 0 0 1 49.484862,-49.48487 49.484867,49.484867 0 0 1 49.4848675,49.48487 z" />
+      <circle
+         style="mix-blend-mode:hard-light;fill:#ffdb2d;fill-opacity:0.226243;stroke:none;stroke-width:0.106232;stop-color:#000000"
+         id="path1778-35-3-8"
+         cx="-51.371468"
+         cy="183.44148"
+         r="49.484867"
+         transform="translate(98.97036,-111.04036)"
+         clip-path="url(#clipPath3700-6)"
+         d="m -1.8866005,183.44148 a 49.484867,49.484867 0 0 1 -49.4848675,49.48487 49.484867,49.484867 0 0 1 -49.484862,-49.48487 49.484867,49.484867 0 0 1 49.484862,-49.48486 49.484867,49.484867 0 0 1 49.4848675,49.48486 z" />
+      <circle
+         style="mix-blend-mode:hard-light;fill:#ffdb2d;fill-opacity:0.226243;stroke:none;stroke-width:0.106232;stop-color:#000000"
+         id="path1778-62-6-3"
+         cx="-26.569254"
+         cy="158.63925"
+         r="49.484867"
+         transform="translate(98.97036,-111.04036)"
+         clip-path="url(#clipPath3694-7)"
+         d="m 22.915613,158.63925 a 49.484867,49.484867 0 0 1 -49.484867,49.48487 49.484867,49.484867 0 0 1 -49.484867,-49.48487 49.484867,49.484867 0 0 1 49.484867,-49.48487 49.484867,49.484867 0 0 1 49.484867,49.48487 z" />
+      <circle
+         style="mix-blend-mode:hard-light;fill:#ffdb2d;fill-opacity:0.226243;stroke:none;stroke-width:0.106232;stop-color:#000000"
+         id="path1778-5-9-1"
+         cx="-28.140852"
+         cy="183.44148"
+         r="49.484867"
+         transform="translate(98.97036,-111.04036)"
+         clip-path="url(#clipPath3706-7)"
+         d="m 21.344015,183.44148 a 49.484867,49.484867 0 0 1 -49.484867,49.48487 49.484867,49.484867 0 0 1 -49.484867,-49.48487 49.484867,49.484867 0 0 1 49.484867,-49.48486 49.484867,49.484867 0 0 1 49.484867,49.48486 z" />
+    </g>
+    <g
+       id="g1649-8-6"
+       clip-path="url(#clipath_lpe_path-effect2053-9-4)"
+       inkscape:path-effect="#path-effect2053-9-4"
+       style="opacity:0.239182"
+       transform="translate(3.3333333e-7,-31.750001)">
+      <circle
+         style="mix-blend-mode:hard-light;fill:#009c32;fill-opacity:1;stroke:none;stroke-width:0.103083;stop-color:#000000"
+         id="path788-5-9"
+         cx="93.387589"
+         cy="148.5"
+         r="60"
+         clip-path="url(#clipPath3742-3-8-3)"
+         transform="rotate(45,183.52275,63.947614)"
+         d="m 153.38759,148.5 a 60,60 0 0 1 -60.000001,60 60,60 0 0 1 -60,-60 60,60 0 0 1 60,-60 60,60 0 0 1 60.000001,60 z" />
+      <circle
+         style="mix-blend-mode:hard-light;fill:#ffdb2d;fill-opacity:0.226243;stroke:none;stroke-width:0.106232;stop-color:#000000"
+         id="path1778-3-9-2"
+         cx="80.986488"
+         cy="136.09889"
+         r="49.484867"
+         clip-path="url(#clipPath3736-1-8)"
+         transform="rotate(45,183.52275,63.947614)"
+         d="M 130.47136,136.09889 A 49.484867,49.484867 0 0 1 80.986488,185.58376 49.484867,49.484867 0 0 1 31.501621,136.09889 49.484867,49.484867 0 0 1 80.986488,86.614025 49.484867,49.484867 0 0 1 130.47136,136.09889 Z" />
+      <circle
+         style="mix-blend-mode:hard-light;fill:#ffdb2d;fill-opacity:0.226243;stroke:none;stroke-width:0.106232;stop-color:#000000"
+         id="path1778-5-7-2"
+         cx="104.21709"
+         cy="160.90112"
+         r="49.484867"
+         clip-path="url(#clipPath3730-0-4)"
+         transform="rotate(45,183.52275,63.947614)"
+         d="m 153.70195,160.90112 a 49.484867,49.484867 0 0 1 -49.48486,49.48487 49.484867,49.484867 0 0 1 -49.48487,-49.48487 49.484867,49.484867 0 0 1 49.48487,-49.48486 49.484867,49.484867 0 0 1 49.48486,49.48486 z" />
+      <circle
+         style="mix-blend-mode:hard-light;fill:#ffdb2d;fill-opacity:0.226243;stroke:none;stroke-width:0.106232;stop-color:#000000"
+         id="path1778-35-5-4"
+         cx="80.986488"
+         cy="160.90112"
+         r="49.484867"
+         clip-path="url(#clipPath3724-4-8)"
+         transform="rotate(45,183.52275,63.947614)"
+         d="M 130.47136,160.90112 A 49.484867,49.484867 0 0 1 80.986488,210.38599 49.484867,49.484867 0 0 1 31.501621,160.90112 49.484867,49.484867 0 0 1 80.986488,111.41626 49.484867,49.484867 0 0 1 130.47136,160.90112 Z" />
+      <circle
+         style="mix-blend-mode:hard-light;fill:#ffdb2d;fill-opacity:0.226243;stroke:none;stroke-width:0.106232;stop-color:#000000"
+         id="path1778-62-3-7"
+         cx="105.7887"
+         cy="136.09889"
+         r="49.484867"
+         clip-path="url(#clipPath3718-6-7)"
+         transform="rotate(45,183.52275,63.947614)"
+         d="M 155.27356,136.09889 A 49.484867,49.484867 0 0 1 105.7887,185.58376 49.484867,49.484867 0 0 1 56.303829,136.09889 49.484867,49.484867 0 0 1 105.7887,86.614025 49.484867,49.484867 0 0 1 155.27356,136.09889 Z" />
+      <circle
+         style="mix-blend-mode:hard-light;fill:#ffdb2d;fill-opacity:0.226243;stroke:none;stroke-width:0.106232;stop-color:#000000"
+         id="path1778-3-0-8-7"
+         cx="-51.371468"
+         cy="158.63925"
+         r="49.484867"
+         transform="translate(98.97036,-111.04036)"
+         clip-path="url(#clipPath3712-7-3)"
+         d="m -1.8866005,158.63925 a 49.484867,49.484867 0 0 1 -49.4848675,49.48487 49.484867,49.484867 0 0 1 -49.484862,-49.48487 49.484867,49.484867 0 0 1 49.484862,-49.48487 49.484867,49.484867 0 0 1 49.4848675,49.48487 z" />
+      <circle
+         style="mix-blend-mode:hard-light;fill:#ffdb2d;fill-opacity:0.226243;stroke:none;stroke-width:0.106232;stop-color:#000000"
+         id="path1778-35-3-8-5"
+         cx="-51.371468"
+         cy="183.44148"
+         r="49.484867"
+         transform="translate(98.97036,-111.04036)"
+         clip-path="url(#clipPath3700-6-0)"
+         d="m -1.8866005,183.44148 a 49.484867,49.484867 0 0 1 -49.4848675,49.48487 49.484867,49.484867 0 0 1 -49.484862,-49.48487 49.484867,49.484867 0 0 1 49.484862,-49.48486 49.484867,49.484867 0 0 1 49.4848675,49.48486 z" />
+      <circle
+         style="mix-blend-mode:hard-light;fill:#ffdb2d;fill-opacity:0.226243;stroke:none;stroke-width:0.106232;stop-color:#000000"
+         id="path1778-62-6-3-4"
+         cx="-26.569254"
+         cy="158.63925"
+         r="49.484867"
+         transform="translate(98.97036,-111.04036)"
+         clip-path="url(#clipPath3694-7-5)"
+         d="m 22.915613,158.63925 a 49.484867,49.484867 0 0 1 -49.484867,49.48487 49.484867,49.484867 0 0 1 -49.484867,-49.48487 49.484867,49.484867 0 0 1 49.484867,-49.48487 49.484867,49.484867 0 0 1 49.484867,49.48487 z" />
+      <circle
+         style="mix-blend-mode:hard-light;fill:#ffdb2d;fill-opacity:0.226243;stroke:none;stroke-width:0.106232;stop-color:#000000"
+         id="path1778-5-9-1-8"
+         cx="-28.140852"
+         cy="183.44148"
+         r="49.484867"
+         transform="translate(98.97036,-111.04036)"
+         clip-path="url(#clipPath3706-7-5)"
+         d="m 21.344015,183.44148 a 49.484867,49.484867 0 0 1 -49.484867,49.48487 49.484867,49.484867 0 0 1 -49.484867,-49.48487 49.484867,49.484867 0 0 1 49.484867,-49.48486 49.484867,49.484867 0 0 1 49.484867,49.48486 z" />
+    </g>
+    <g
+       id="g1649"
+       clip-path="url(#clipPath2049)"
+       inkscape:path-effect="#path-effect2053">
+      <circle
+         style="mix-blend-mode:hard-light;fill:#009c32;fill-opacity:1;stroke:none;stroke-width:0.103083;stop-color:#000000"
+         id="path788"
+         cx="93.387589"
+         cy="148.5"
+         r="60"
+         clip-path="url(#clipPath3742-3)"
+         transform="rotate(45,183.52275,63.947614)"
+         d="m 153.38759,148.5 a 60,60 0 0 1 -60.000001,60 60,60 0 0 1 -60,-60 60,60 0 0 1 60,-60 60,60 0 0 1 60.000001,60 z" />
+      <circle
+         style="mix-blend-mode:hard-light;fill:#ffdb2d;fill-opacity:0.226243;stroke:none;stroke-width:0.106232;stop-color:#000000"
+         id="path1778-3"
+         cx="80.986488"
+         cy="136.09889"
+         r="49.484867"
+         clip-path="url(#clipPath3736)"
+         transform="rotate(45,183.52275,63.947614)"
+         d="M 130.47136,136.09889 A 49.484867,49.484867 0 0 1 80.986488,185.58376 49.484867,49.484867 0 0 1 31.501621,136.09889 49.484867,49.484867 0 0 1 80.986488,86.614025 49.484867,49.484867 0 0 1 130.47136,136.09889 Z" />
+      <circle
+         style="mix-blend-mode:hard-light;fill:#ffdb2d;fill-opacity:0.226243;stroke:none;stroke-width:0.106232;stop-color:#000000"
+         id="path1778-5"
+         cx="104.21709"
+         cy="160.90112"
+         r="49.484867"
+         clip-path="url(#clipPath3730)"
+         transform="rotate(45,183.52275,63.947614)"
+         d="m 153.70195,160.90112 a 49.484867,49.484867 0 0 1 -49.48486,49.48487 49.484867,49.484867 0 0 1 -49.48487,-49.48487 49.484867,49.484867 0 0 1 49.48487,-49.48486 49.484867,49.484867 0 0 1 49.48486,49.48486 z" />
+      <circle
+         style="mix-blend-mode:hard-light;fill:#ffdb2d;fill-opacity:0.226243;stroke:none;stroke-width:0.106232;stop-color:#000000"
+         id="path1778-35"
+         cx="80.986488"
+         cy="160.90112"
+         r="49.484867"
+         clip-path="url(#clipPath3724)"
+         transform="rotate(45,183.52275,63.947614)"
+         d="M 130.47136,160.90112 A 49.484867,49.484867 0 0 1 80.986488,210.38599 49.484867,49.484867 0 0 1 31.501621,160.90112 49.484867,49.484867 0 0 1 80.986488,111.41626 49.484867,49.484867 0 0 1 130.47136,160.90112 Z" />
+      <circle
+         style="mix-blend-mode:hard-light;fill:#ffdb2d;fill-opacity:0.226243;stroke:none;stroke-width:0.106232;stop-color:#000000"
+         id="path1778-62"
+         cx="105.7887"
+         cy="136.09889"
+         r="49.484867"
+         clip-path="url(#clipPath3718)"
+         transform="rotate(45,183.52275,63.947614)"
+         d="M 155.27356,136.09889 A 49.484867,49.484867 0 0 1 105.7887,185.58376 49.484867,49.484867 0 0 1 56.303829,136.09889 49.484867,49.484867 0 0 1 105.7887,86.614025 49.484867,49.484867 0 0 1 155.27356,136.09889 Z" />
+      <circle
+         style="mix-blend-mode:hard-light;fill:#ffdb2d;fill-opacity:0.226243;stroke:none;stroke-width:0.106232;stop-color:#000000"
+         id="path1778-3-0"
+         cx="-51.371468"
+         cy="158.63925"
+         r="49.484867"
+         transform="translate(98.97036,-111.04036)"
+         clip-path="url(#clipPath3712)"
+         d="m -1.8866005,158.63925 a 49.484867,49.484867 0 0 1 -49.4848675,49.48487 49.484867,49.484867 0 0 1 -49.484862,-49.48487 49.484867,49.484867 0 0 1 49.484862,-49.48487 49.484867,49.484867 0 0 1 49.4848675,49.48487 z" />
+      <circle
+         style="mix-blend-mode:hard-light;fill:#ffdb2d;fill-opacity:0.226243;stroke:none;stroke-width:0.106232;stop-color:#000000"
+         id="path1778-35-3"
+         cx="-51.371468"
+         cy="183.44148"
+         r="49.484867"
+         transform="translate(98.97036,-111.04036)"
+         clip-path="url(#clipPath3700)"
+         d="m -1.8866005,183.44148 a 49.484867,49.484867 0 0 1 -49.4848675,49.48487 49.484867,49.484867 0 0 1 -49.484862,-49.48487 49.484867,49.484867 0 0 1 49.484862,-49.48486 49.484867,49.484867 0 0 1 49.4848675,49.48486 z" />
+      <circle
+         style="mix-blend-mode:hard-light;fill:#ffdb2d;fill-opacity:0.226243;stroke:none;stroke-width:0.106232;stop-color:#000000"
+         id="path1778-62-6"
+         cx="-26.569254"
+         cy="158.63925"
+         r="49.484867"
+         transform="translate(98.97036,-111.04036)"
+         clip-path="url(#clipPath3694)"
+         d="m 22.915613,158.63925 a 49.484867,49.484867 0 0 1 -49.484867,49.48487 49.484867,49.484867 0 0 1 -49.484867,-49.48487 49.484867,49.484867 0 0 1 49.484867,-49.48487 49.484867,49.484867 0 0 1 49.484867,49.48487 z" />
+      <circle
+         style="mix-blend-mode:hard-light;fill:#ffdb2d;fill-opacity:0.226243;stroke:none;stroke-width:0.106232;stop-color:#000000"
+         id="path1778-5-9"
+         cx="-28.140852"
+         cy="183.44148"
+         r="49.484867"
+         transform="translate(98.97036,-111.04036)"
+         clip-path="url(#clipPath3706)"
+         d="m 21.344015,183.44148 a 49.484867,49.484867 0 0 1 -49.484867,49.48487 49.484867,49.484867 0 0 1 -49.484867,-49.48487 49.484867,49.484867 0 0 1 49.484867,-49.48486 49.484867,49.484867 0 0 1 49.484867,49.48486 z" />
     </g>
   </g>
 </svg>
