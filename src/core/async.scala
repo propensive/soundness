@@ -34,6 +34,11 @@ enum AsyncState[+ValueType]:
 import AsyncState.*
 
 object Async:
+
+  def onShutdown(fn: => Unit): Unit =
+    val runnable: Runnable^{fn} = () => fn
+    Runtime.getRuntime.nn.addShutdownHook(Thread(runnable))
+
   def race
       [AsyncType]
       (asyncs: Vector[Async[AsyncType]])(using cancel: Raises[CancelError], monitor: Monitor)
