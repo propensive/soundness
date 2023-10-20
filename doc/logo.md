@@ -1,1 +1,1 @@
-The logo shows a cross-section of an avocado, a gastronomic delight.
+The logo shows a slice of avocado, a gastronomic delight.
