@@ -5,9 +5,10 @@ repo propensive/cellulose
 repo propensive/galilei
 repo propensive/ambience
 repo propensive/profanity
+repo propensive/surveillance
 
 project exoskeleton
   module core
     sources  src/core
-    include  galilei/core ambience/core profanity/core cellulose/core
+    include  galilei/core ambience/core profanity/core cellulose/core surveillance/core
     main     exoskeleton.Testing

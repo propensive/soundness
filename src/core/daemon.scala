@@ -29,6 +29,7 @@ import parasite.*
 import gossamer.*
 import turbulence.*
 import guillotine.*
+import surveillance.*
 import eucalyptus.*, logging.silent
 import ambience.*
 import spectacular.*
@@ -77,30 +78,40 @@ class Daemon() extends Application:
           
           clients -= process
         
-        clients(process) = CliSession(process, async, promise, { () =>
-          socket.shutdownInput()
-          socket.shutdownOutput()
-          socket.close()
-        })
+        clients(process) = CliSession(process, async, promise, () => socket.close())
 
   def invoke(using context: CliContext): Execution = context match
     case given Invocation =>
       import errorHandlers.throwUnsafely
-      val portFile: Path = xdg.runtimeDir.or(xdg.stateHome) / p"fury.port"
-      val startupFile: Path = xdg.runtimeDir.or(xdg.stateHome) / p"fury.start"
+      val furyDir: Directory = (xdg.runtimeDir.or(xdg.stateHome) / p"fury").as[Directory]
+      val portFile: Path = furyDir / p"port"
+      val initFile: Path = furyDir / p"init"
+      
+      def shutdown(): Unit =
+        println("Shutdown daemon")
+        portFile.wipe()
+        System.exit(0)
 
       execute:
         supervise:
-          val lockProcess = sh"flock -u -x -n $portFile cat".fork[Unit]()
+          Async:
+            sh"flock -u -x -n $portFile cat".exec[Unit]()
+            println("Lock process died")
+            shutdown()
+
+          Async:
+            safely(furyDir.watch()).mm: watcher =>
+              watcher.stream.foreach:
+                case Delete(_, t"port") => shutdown()
+                case _ => ()
+              
           val socket: jn.ServerSocket = jn.ServerSocket(0)
           val port: Int = socket.getLocalPort
           port.show.writeTo(portFile)
-          startupFile.touch()
-          startupFile.wipe()
+          initFile.touch()
+          initFile.wipe()
           
-          while continue do
-            
-            safely(client(socket.accept().nn))
+          while continue do safely(client(socket.accept().nn))
 
         ExitStatus.Ok
 

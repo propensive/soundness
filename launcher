@@ -1,14 +1,15 @@
 #!/bin/bash
 
-declare portFile startupFile ttystate script
+declare portFile initFile ttystate script
 declare -i pid port streamPid continue pipePid
 declare -a args signals
 
 continue=1
 
 # The name of the file which will contain the port number
-portFile="$XDG_RUNTIME_DIR/fury.port"
-startupFile="$XDG_RUNTIME_DIR/fury.start"
+furyDir="$XDG_RUNTIME_DIR/fury"
+portFile="$furyDir/port"
+initFile="$furyDir/init"
 script="$0"
 
 # The set of signals which should be captured and forwarded to the JVM process
@@ -22,12 +23,13 @@ then ttystate="$(stty -g)"
 fi
 
 launch() {
-  mkfifo "$startupFile" 2>/dev/null && nohup wrath -x > /home/propensive/work/exoskeleton/out.log 2>&1 &
-  timeout 10 cat "$startupFile" # || terminate "Failed to start server"
+  mkfifo "$initFile" 2>/dev/null && nohup wrath -x > /home/propensive/work/exoskeleton/out.log 2>&1 &
+  timeout 10 cat "$initFile" # || terminate "Failed to start server"
   daemon
 }
 
 daemon() {
+  mkdir -p "$furyDir"
   flock -n "$portFile" rm "$portFile"
   if [ ! -f "$portFile" ]
   then launch
