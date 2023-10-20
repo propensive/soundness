@@ -84,17 +84,40 @@ trait ProcessRef:
   def abort()(using Log): Unit
   def alive: Boolean
   def attend(): Unit
+  def startTime[InstantType: SpecificInstant]: Maybe[InstantType]
+  def cpuUsage[DurationType: SpecificDuration]: Maybe[DurationType]
 
 object OsProcess:
+  private def allHandles = ProcessHandle.allProcesses.nn.iterator.nn.asScala.to(List)
+  
   def apply(pid: Pid)(using pidError: Raises[PidError]): OsProcess =
     val handle = ProcessHandle.of(pid.value).nn
-    if handle.isPresent then new OsProcess(pid, handle.get.nn) else abort(PidError(pid))
+    if handle.isPresent then new OsProcess(handle.get.nn) else abort(PidError(pid))
 
-class OsProcess private (val pid: Pid, java: ProcessHandle) extends ProcessRef:
+  def all: List[OsProcess] = allHandles.map(new OsProcess(_))
+  def roots: List[OsProcess] = allHandles.filter(!_.parent.nn.isPresent).map(new OsProcess(_))
+  def apply(): OsProcess = new OsProcess(ProcessHandle.current.nn)
+
+class OsProcess private (java: ProcessHandle) extends ProcessRef:
+  def pid: Pid = Pid(java.pid)
   def kill()(using Log): Unit = java.destroy()
   def abort()(using Log): Unit = java.destroyForcibly()
   def alive: Boolean = java.isAlive
   def attend(): Unit = java.onExit.nn.get()
+  
+  def parent: Maybe[OsProcess] = 
+    val parent = java.parent.nn
+    if parent.isPresent then new OsProcess(parent.get.nn) else Unset
+  
+  def children: List[OsProcess] = java.children.nn.iterator.nn.asScala.map(new OsProcess(_)).to(List)
+  
+  def startTime[InstantType: SpecificInstant]: Maybe[InstantType] =
+    val instant = java.info.nn.startInstant.nn
+    if instant.isPresent then SpecificInstant(instant.get.nn.toEpochMilli) else Unset
+  
+  def cpuUsage[DurationType: SpecificDuration]: Maybe[DurationType] =
+    val duration = java.info.nn.totalCpuDuration.nn
+    if duration.isPresent then SpecificDuration(duration.get.nn.toMillis) else Unset
 
 class Process[+ExecType <: Label, ResultType](process: java.lang.Process) extends ProcessRef:
   def pid: Pid = Pid(process.pid)
@@ -128,6 +151,14 @@ class Process[+ExecType <: Label, ResultType](process: java.lang.Process) extend
   def kill()(using Log): Unit =
     Log.warn(msg"The process with PID ${pid.value} was killed")
     process.destroyForcibly()
+
+  def osProcess(using Raises[PidError]) = OsProcess(pid)
+  
+  def startTime[InstantType: SpecificInstant]: Maybe[InstantType] =
+    safely(osProcess).mm(_.startTime[InstantType])
+  
+  def cpuUsage[DurationType: SpecificDuration]: Maybe[DurationType] =
+    safely(osProcess).mm(_.cpuUsage[DurationType])
 
 sealed trait Executable:
   type Exec <: Label
