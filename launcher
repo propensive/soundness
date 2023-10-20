@@ -1,7 +1,7 @@
 #!/bin/bash
 
 declare portFile initFile ttystate script
-declare -i pid port streamPid continue pipePid
+declare -i pid port streamPid continue pipePid daemonPid
 declare -a args signals
 
 continue=1
@@ -10,6 +10,7 @@ continue=1
 furyDir="$XDG_RUNTIME_DIR/fury"
 portFile="$furyDir/port"
 initFile="$furyDir/init"
+failFile="$furyDir/fail"
 script="$0"
 
 # The set of signals which should be captured and forwarded to the JVM process
@@ -22,13 +23,38 @@ if [ -t 0 ]
 then ttystate="$(stty -g)"
 fi
 
+recovery() {
+  restoreTty
+  printf "The daemon process failed to start within 10 seconds.\n"
+  printf "Remove the file %s before trying again.\n" "$failFile"
+  exit 1
+}
+
+restoreTty() {
+  if [ -t 0 ]
+  then stty "$ttystate"
+  fi
+}
+
 launch() {
-  mkfifo "$initFile" 2>/dev/null && nohup wrath -x > /home/propensive/work/exoskeleton/out.log 2>&1 &
-  timeout 10 cat "$initFile" # || terminate "Failed to start server"
+  if [ -p "$initFile" ]
+  then
+    printf "Waiting...\n"
+    sleep 10
+    if [ -p "$initFile" ]
+    then rm -f "$initFile"
+    fi
+  fi
+  mkfifo "$initFile" 2>/dev/null && exec nohup wrath -x > /home/propensive/work/exoskeleton/out.log 2>&1 &
+  timeout 10 cat "$initFile" || (touch "$failFile" && rm -f "$initFile")
   daemon
 }
 
 daemon() {
+  if [ -f "$failFile" ]
+  then recovery
+  fi
+
   mkdir -p "$furyDir"
   flock -n "$portFile" rm "$portFile"
   if [ ! -f "$portFile" ]
@@ -104,8 +130,5 @@ do
   fi
 done
 
-if [ -t 0 ]
-then
-  kill $streamPid
-  stty "$ttystate"
-fi
+kill $streamPid
+restoreTty

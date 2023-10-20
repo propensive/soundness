@@ -86,6 +86,10 @@ class Daemon() extends Application:
       val furyDir: Directory = (xdg.runtimeDir.or(xdg.stateHome) / p"fury").as[Directory]
       val portFile: Path = furyDir / p"port"
       val initFile: Path = furyDir / p"init"
+          
+      Async.onShutdown:
+        initFile.wipe()
+        portFile.wipe()
       
       def shutdown(): Unit =
         println("Shutdown daemon")
