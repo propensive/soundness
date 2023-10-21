@@ -18,16 +18,20 @@ package exoskeleton
 
 import anticipation.*
 import rudiments.*
-import gossamer.*
 import perforate.*
 import turbulence.*
+import spectacular.*
+import gossamer.*
 import ambience.*
 
 import sun.misc as sm
 
+object Stdin:
+  given decoder: Decoder[Stdin] = text => valueOf(text.lower.capitalize.s)
+  given encoder: Encoder[Stdin] = _.toString.tt.lower
+
 enum Stdin:
-  case Terminal(input: LazyList[Bytes])
-  case Pipe(input: LazyList[Bytes])
+  case Term, Pipe
 
 sealed trait CliContext:
   def args: IArray[Text]
@@ -40,7 +44,7 @@ case class CommandLine
 extends CliContext
 
 case class Invocation
-    (args: IArray[Text], environment: Environment, workingDirectory: WorkingDirectory, stdin: () => Stdin,
+    (args: IArray[Text], environment: Environment, workingDirectory: WorkingDirectory, stdin: LazyList[Bytes],
         stdout: LazyList[Bytes] => Unit, stderr: LazyList[Bytes] => Unit)
 extends CliContext:
   def signals(signals: Signal*): LazyList[Signal] = 
@@ -64,12 +68,7 @@ abstract class Application:
   def invoke(using CliContext): Execution
 
   def main(args: IArray[Text]): Unit =
-    import systemProperties.jvm
     def in: LazyList[Bytes] = safely(System.in.nn.stream[Bytes]).or(LazyList())
-    
-    def stdin(): Stdin = safely(Properties.exoskeleton.stdin[Text]()) match
-      case t"term" => Stdin.Terminal(in)
-      case _       => Stdin.Pipe(in)
     
     def stdout(stream: LazyList[Bytes]): Unit = stream.foreach: bytes =>
       System.out.nn.write(bytes.mutable(using Unsafe))
@@ -77,7 +76,7 @@ abstract class Application:
     def stderr(stream: LazyList[Bytes]): Unit = stream.foreach: bytes =>
       System.err.nn.write(bytes.mutable(using Unsafe))
 
-    val invocation = Invocation(args, environments.jvm, workingDirectories.default, () => stdin(), stdout(_),
+    val invocation = Invocation(args, environments.jvm, workingDirectories.default, in, stdout(_),
         stderr(_))
     
     invoke(using invocation).execute(invocation) match

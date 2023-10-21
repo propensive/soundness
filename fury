@@ -11,4 +11,4 @@ project exoskeleton
   module core
     sources  src/core
     include  galilei/core ambience/core profanity/core cellulose/core surveillance/core
-    main     exoskeleton.Testing
+    main     exoskeleton.fury

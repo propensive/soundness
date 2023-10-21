@@ -19,7 +19,7 @@ package exoskeleton
 import serpentine.*, hierarchies.unix
 
 import galilei.*, filesystemOptions.{dereferenceSymlinks, createNonexistent, createNonexistentParents,
-    overwritePreexisting, deleteRecursively}
+    deleteRecursively}
 
 import anticipation.*, fileApi.galileiApi
 import rudiments.*, homeDirectories.default
@@ -38,19 +38,33 @@ import cellulose.*
 import scala.collection.mutable as scm
 
 import java.net as jn
+import java.io as ji
 
 case class CliSession(pid: Pid, async: Async[Unit], terminate: Promise[Unit], close: () => Unit)(using Monitor):
   val signals: Funnel[Signal] = Funnel()
   
-  val terminator: Async[Unit] = Async:
-    safely(terminate.await())
-    signals.stop()
-    close()
+object Daemon:
+  def listen(block: ShellSession ?=> ExitStatus): Unit =
+    given context: Invocation = Invocation(IArray(), environments.jvm, workingDirectories.default, LazyList(), _ => (), _ => ())
+    Daemon(session => block(using session)).invoke.execute(context)
 
-class Daemon() extends Application:
+class Daemon(block: ShellSession => ExitStatus) extends Application:
+  import environments.jvm
+  import errorHandlers.throwUnsafely
+
+  private val xdg = Xdg()
+  private val furyDir: Directory = (xdg.runtimeDir.or(xdg.stateHome) / p"fury").as[Directory]
+  private val portFile: Path = furyDir / p"port"
+  private val initFile: Path = furyDir / p"init"
   private val clients: scm.HashMap[Pid, CliSession] = scm.HashMap()
   private var continue: Boolean = true
-  val xdg = Xdg()
+
+  lazy val termination: Unit =
+    println("Shutdown daemon")
+    portFile.wipe()
+    System.exit(0)
+  
+  def shutdown(): Unit = termination
 
   def client(socket: jn.Socket)(using Monitor, Raises[StreamCutError], Raises[UndecodableCharError], Raises[AggregateError[CodlError]], Raises[CodlReadError], Raises[NumberError]): Unit =
     val input = Readable.inputStream.read(socket.getInputStream.nn)
@@ -59,48 +73,38 @@ class Daemon() extends Application:
     
     safely(codl.as[Initialize]).or(codl.as[Interrupt]) match
       case Interrupt(process, signal) =>
-        println(clients(process))
-        println("SIGNAL "+signal)
+        val client = clients(process)
+        client.signals.put(signal)
 
-      case Initialize(process, script, inputType, args, env) =>
-        println(s"forking $process for $script")
-        val pr = java.io.PrintWriter(socket.getOutputStream, true)
-        
+      case Initialize(process, workDir, scriptName, inputType, args, env) =>
         val promise: Promise[Unit] = Promise()
+        val signalFunnel: Funnel[Signal] = Funnel()
+        
+        val session = new ShellSession(socket.getOutputStream.nn) with WorkingDirectory(workDir):
+          def script: Text = scriptName
+          def arguments: IArray[Text] = IArray.from(args)
+          def signals: LazyList[Signal] = signalFunnel.stream
+          def input = codl.body
+          def stdin: Stdin = inputType
+        
         val async: Async[Unit] = Async:
-          codl.body.foreach:
-            case char: Char =>
-              if char.toInt >= 32 then
-                pr.print(char)
-                pr.flush()
-
-              if char.toInt == 3 then promise.offer(())
-          
-          clients -= process
+          try block(session)
+          finally
+            clients -= process
+            socket.close()
         
         clients(process) = CliSession(process, async, promise, () => socket.close())
 
   def invoke(using context: CliContext): Execution = context match
     case given Invocation =>
-      import errorHandlers.throwUnsafely
-      val furyDir: Directory = (xdg.runtimeDir.or(xdg.stateHome) / p"fury").as[Directory]
-      val portFile: Path = furyDir / p"port"
-      val initFile: Path = furyDir / p"init"
-          
       Async.onShutdown:
         initFile.wipe()
         portFile.wipe()
       
-      def shutdown(): Unit =
-        println("Shutdown daemon")
-        portFile.wipe()
-        System.exit(0)
-
       execute:
         supervise:
           Async:
             sh"flock -u -x -n $portFile cat".exec[Unit]()
-            println("Lock process died")
             shutdown()
 
           Async:
@@ -114,14 +118,42 @@ class Daemon() extends Application:
           port.show.writeTo(portFile)
           initFile.touch()
           initFile.wipe()
-          
           while continue do safely(client(socket.accept().nn))
 
         ExitStatus.Ok
 
     case _                      => println("Not an invacation"); ???
 
-object Testing extends Daemon()
-
-case class Initialize(process: Pid, script: Text, input: Text, arg: List[Text], env: List[Text])
+case class Initialize(process: Pid, work: Text, script: Text, input: Stdin, arg: List[Text], env: List[Text])
 case class Interrupt(process: Pid, signal: Signal)
+
+@main
+def fury(): Unit = Daemon.listen:
+  Io.println(t"Hello world")
+  Io.println(arguments.debug)
+  Io.println(shell.script)
+  Io.println(shell.stdin.debug)
+  Io.println(shell.directory.or(t"unknown"))
+  ExitStatus.Ok
+
+trait ShellSession(out: ji.OutputStream) extends Stdio, WorkingDirectory:
+  def arguments: IArray[Text]
+  def signals: LazyList[Signal]
+  def input: LazyList[Char] | LazyList[Text]
+  def stdin: Stdin
+  def script: Text
+
+  def putErrBytes(bytes: Bytes): Unit = putOutBytes(bytes)
+  def putErrText(text: Text): Unit = putOutText(text)
+  
+  def putOutBytes(bytes: Bytes): Unit =
+    out.write(bytes.mutable(using Unsafe))
+    out.flush()
+  
+  def putOutText(text: Text): Unit =
+    out.write(text.bytes.mutable(using Unsafe))
+    out.flush()
+
+inline def arguments(using session: ShellSession): IArray[Text] = session.arguments
+inline def shell(using shell: ShellSession): ShellSession = shell
+//inline def stdin(using shell: ShellSession): LazyList[Bytes] = 

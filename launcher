@@ -1,20 +1,22 @@
 #!/bin/bash
 
 declare portFile initFile ttystate script
-declare -i pid port streamPid continue pipePid daemonPid
+declare -i pid port streamPid continue pipePid exitStatus
 declare -a args signals
 
 continue=1
 
 # The name of the file which will contain the port number
-furyDir="$XDG_RUNTIME_DIR/fury"
-portFile="$furyDir/port"
-initFile="$furyDir/init"
-failFile="$furyDir/fail"
+name="fury"
+baseDir="$XDG_RUNTIME_DIR/$name"
+portFile="$baseDir/port"
+initFile="$baseDir/init"
+failFile="$baseDir/fail"
 script="$0"
+exitStatus=0
 
 # The set of signals which should be captured and forwarded to the JVM process
-signals=(INT WINCH TERM)
+signals=(INT WINCH TERM USR1 USR2)
 
 pid=$$
 args=("$@")
@@ -37,14 +39,6 @@ restoreTty() {
 }
 
 launch() {
-  if [ -p "$initFile" ]
-  then
-    printf "Waiting...\n"
-    sleep 10
-    if [ -p "$initFile" ]
-    then rm -f "$initFile"
-    fi
-  fi
   mkfifo "$initFile" 2>/dev/null && exec nohup wrath -x > /home/propensive/work/exoskeleton/out.log 2>&1 &
   timeout 10 cat "$initFile" || (touch "$failFile" && rm -f "$initFile")
   daemon
@@ -55,7 +49,7 @@ daemon() {
   then recovery
   fi
 
-  mkdir -p "$furyDir"
+  mkdir -p "$baseDir"
   flock -n "$portFile" rm "$portFile"
   if [ ! -f "$portFile" ]
   then launch
@@ -69,22 +63,25 @@ terminate() {
   kill -TERM -$pid
 }
 
-signal() {
-  if [ "$1" = "TERM" ]
-  then continue=0
-  fi
+handle() {
+  case "$1" in
+    TERM) continue=0 ;;
+    USR1) exitStatus=1 ;;
+    USR2) exitStatus=2 ;;
+  esac
   printf "signal %s\nprocess %s\n" "$1" "$pid" | nc -q 1 localhost $port || terminate "Lost server connection"
 }
 
 registerTraps() {
   for signal in "${signals[@]}"
-  do trap "signal $signal" "$signal"
+  do trap "handle $signal" "$signal"
   done
 }
 
 stream() {
   printf "process %s\n" "$pid"
   printf "script %s\n" "$script"
+  printf "work %s\n" "$(pwd)"
 
   for arg in "${args[@]}"
   do printf "arg %s\n" "$arg"
@@ -116,10 +113,11 @@ pipe() {
 }
 
 if [ -t 0 ]
-then stty intr undef -echo -icanon min 1 raw time 0 >/dev/null 2>&1
+then stty intr undef -echo -icanon raw opost > /dev/null 2>&1
 fi
 
-daemon && pipe
+daemon
+pipe
 registerTraps
 
 while [ $continue = 1 ]
@@ -130,5 +128,10 @@ do
   fi
 done
 
-kill $streamPid
-restoreTty
+if [ -t 0 ]
+then
+  kill $streamPid
+  restoreTty
+fi
+
+exit 0
