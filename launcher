@@ -84,7 +84,7 @@ stream() {
   printf "work %s\n" "$(pwd)"
 
   for arg in "${args[@]}"
-  do printf "arg %s\n" "$arg"
+  do printf "arg\n    %s\n" "$arg"
   done
 
   while IFS= read -r -d $'\0' variable
