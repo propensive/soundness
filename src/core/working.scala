@@ -19,11 +19,12 @@ package rudiments
 import anticipation.*
 
 object WorkingDirectory:
+  def apply(text: Maybe[Text] = Unset): WorkingDirectory = new WorkingDirectory(text) {}
   given default(using Quickstart): WorkingDirectory = workingDirectories.default
 
 @capability
-case class WorkingDirectory(text: Maybe[Text]):
-  def path[PathType: SpecificPath]: Maybe[PathType] = text.mm(SpecificPath(_))
+trait WorkingDirectory(val directory: Maybe[Text]):
+  def path[PathType: SpecificPath]: Maybe[PathType] = directory.mm(SpecificPath(_))
 
 object HomeDirectory:
   given default(using Quickstart): HomeDirectory = HomeDirectory(System.getProperty("user.home").nn.tt)
