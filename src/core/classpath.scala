@@ -33,7 +33,7 @@ object ClasspathEntry:
     
     case t"http" | t"https" =>
       ClasspathEntry.Url(url.toString.tt)
-
+    
 object Classloader:
   inline def apply[ClassType <: AnyKind]: Classloader = ClassRef[ClassType].classloader
   
@@ -42,7 +42,10 @@ class Classloader(val java: ClassLoader):
     case java: jn.URLClassLoader => java
     case _                       => Unset
   
-  def classpath: List[ClasspathEntry] =
+  def classpath: Maybe[Classpath] = urlClassloader.mm(Classpath(_))
+
+class Classpath(urlClassloader: jn.URLClassLoader):
+  def entries: List[ClasspathEntry] =
     urlClassloader.mm(_.getURLs.nn.to(List)).or(Nil).map(_.nn).map(ClasspathEntry(_))
 
 object Hellenism extends Hellenism2:
