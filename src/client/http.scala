@@ -35,7 +35,7 @@ import java.util as ju
 
 import language.dynamics
 
-given Realm = Realm(t"telekinesis")
+given Realm = realm"telekinesis"
 
 enum HttpBody:
   case Empty
