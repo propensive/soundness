@@ -372,4 +372,4 @@ def basicAuth(validate: (Text, Text) => Boolean, realm: Text)(response: => Respo
       val auth = t"""Basic realm="$realm", charset="UTF-8""""
       Response(Bytes(), HttpStatus.Unauthorized, Map(ResponseHeader.WwwAuthenticate -> auth))
 
-given realm: Realm = Realm(t"scintillate")
+given realm: Realm = realm"scintillate"
