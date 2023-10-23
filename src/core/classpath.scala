@@ -2,7 +2,9 @@ package hellenism
 
 import rudiments.*
 import serpentine.*
+import spectacular.*
 import gossamer.*
+import perforate.*
 import anticipation.*
 
 import scala.quoted.*
@@ -35,18 +37,48 @@ object ClasspathEntry:
       ClasspathEntry.Url(url.toString.tt)
     
 object Classloader:
+  def threadContext: Classloader = new Classloader(Thread.currentThread.nn.getContextClassLoader.nn)
   inline def apply[ClassType <: AnyKind]: Classloader = ClassRef[ClassType].classloader
   
 class Classloader(val java: ClassLoader):
+
+  def parent: Maybe[Classloader] = Maybe(java.getParent).mm(new Classloader(_))
+
   protected def urlClassloader: Maybe[jn.URLClassLoader] = java match
     case java: jn.URLClassLoader => java
-    case _                       => Unset
+    case _                       => parent.mm(_.urlClassloader)
   
   def classpath: Maybe[Classpath] = urlClassloader.mm(Classpath(_))
 
+object Classpath:
+  @targetName("child")
+  def /(child: PathName[ClasspathRef.Forbidden]): ClasspathRef = ClasspathRef(List(child))
+ 
 class Classpath(urlClassloader: jn.URLClassLoader):
   def entries: List[ClasspathEntry] =
     urlClassloader.mm(_.getURLs.nn.to(List)).or(Nil).map(_.nn).map(ClasspathEntry(_))
+  
+
+object ClasspathRef:
+  type Forbidden = "" | ".*\\/.*"
+
+  inline given decoder(using Raises[PathError]): Decoder[ClasspathRef] = new Decoder[ClasspathRef]:
+    def decode(text: Text): ClasspathRef = Reachable.decode[ClasspathRef](text)
+
+  given reachable: Reachable[ClasspathRef, Forbidden, Classpath.type] with
+    def root(ref: ClasspathRef): Classpath.type = Classpath
+    def prefix(classpathCompanion: Classpath.type): Text = t""
+    def descent(ref: ClasspathRef): List[PathName[Forbidden]] = ref.descent
+    def separator(ref: ClasspathRef): Text = t"/"
+  
+  given creator: PathCreator[ClasspathRef, Forbidden, Classpath.type] = (_, descent) => ClasspathRef(descent)
+
+  given rootParser: RootParser[ClasspathRef, Classpath.type] = (Classpath, _)
+
+  given show: Show[ClasspathRef] = _.text
+
+case class ClasspathRef(descent: List[PathName[ClasspathRef.Forbidden]]):
+  def text: Text = descent.reverse.map(_.render).join(t"/")
 
 object Hellenism extends Hellenism2:
 
