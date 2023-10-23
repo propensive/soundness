@@ -82,7 +82,7 @@ object Redirect:
   def apply[T: Locatable](location: T): Redirect =
     new Redirect(summon[Locatable[T]].location(location))
 
-case class Redirect(location: Url)
+case class Redirect(location: Url["http" | "https"])
 
 trait Handler[T]:
   def process(content: T, status: Int, headers: Map[Text, Text], responder: Responder): Unit
@@ -200,6 +200,8 @@ trait RequestHandler:
 extension (value: Http.type)
   def listen(handler: (request: Request) ?=> Response[?])(using RequestHandler, Log, Monitor): ActiveServer =
     summon[RequestHandler].listen(handler)
+
+inline def request(using inline request: Request): Request = request
 
 inline def param(using Request)(key: Text): Text raises MissingParamError =
   summon[Request].params.get(key).getOrElse:
