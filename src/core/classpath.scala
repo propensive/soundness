@@ -18,28 +18,32 @@ object ClasspathEntry:
   case class Jarfile(path: Text) extends ClasspathEntry:
     def apply[FileType: SpecificFile](): FileType = SpecificFile(path)
 
-  case class Other(path: Text) extends ClasspathEntry
+  case class Url(url: Text) extends ClasspathEntry:
+    def apply[UrlType: SpecificUrl](): UrlType = SpecificUrl(url)
+
   case object JavaRuntime extends ClasspathEntry
+
+  def apply(url: jn.URL): ClasspathEntry = url.getProtocol.nn.tt match
+    case t"jrt" =>
+      ClasspathEntry.JavaRuntime
+    
+    case t"file" =>
+      val path: Text = url.nn.getPath.nn.tt
+      if path.ends(t"/") then ClasspathEntry.Directory(path) else ClasspathEntry.Jarfile(path)
+    
+    case t"http" | t"https" =>
+      ClasspathEntry.Url(url.toString.tt)
 
 object Classloader:
   inline def apply[ClassType <: AnyKind]: Classloader = ClassRef[ClassType].classloader
-
+  
 class Classloader(val java: ClassLoader):
   protected def urlClassloader: Maybe[jn.URLClassLoader] = java match
     case java: jn.URLClassLoader => java
     case _                       => Unset
   
   def classpath: List[ClasspathEntry] =
-    urlClassloader.mm(_.getURLs.nn.to(List)).or(Nil).map: url =>
-      url.nn.getProtocol.nn.tt match
-        case t"jrt" =>
-          ClasspathEntry.JavaRuntime
-        
-        case t"file" =>
-          val path: Text = url.nn.getPath.nn.tt
-          if path.ends(t"/") then ClasspathEntry.Directory(path) else ClasspathEntry.Jarfile(path)
-        
-        case _ => ClasspathEntry.Other(url.toString.tt)
+    urlClassloader.mm(_.getURLs.nn.to(List)).or(Nil).map(_.nn).map(ClasspathEntry(_))
 
 object Hellenism extends Hellenism2:
 
@@ -51,6 +55,9 @@ object Hellenism extends Hellenism2:
 
   extension (classRef: ClassRef)
     def classloader: Classloader = new Classloader(classRef.getClassLoader().nn)
+    
+    def classpathEntry: ClasspathEntry =
+      ClasspathEntry(classRef.getProtectionDomain.nn.getCodeSource.nn.getLocation.nn)
 
 export Hellenism.ClassRef
 

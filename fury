@@ -4,6 +4,7 @@
 repo propensive/digression
 repo propensive/serpentine
 repo propensive/probably
+repo propensive/anticipation
 
 target hellenism/test
 
@@ -11,7 +12,7 @@ project hellenism
   module core
     compiler  scala
     sources   src/core
-    include   digression/core serpentine/core
+    include   digression/core serpentine/core anticipation/url
 
   module test
     compiler  scala
