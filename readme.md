@@ -204,7 +204,7 @@ often arrived in English via a romance language.
 
 ## Logo
 
-
+The logo shows the glowing tip of a gossamer-thin fibreoptic cable.
 
 ## License
 
