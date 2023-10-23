@@ -27,13 +27,21 @@ import java.nio as jn
 object Writable:
   given outputStreamBytes
       (using streamCut: Raises[StreamCutError])
-      : SimpleWritable[ji.OutputStream, Bytes] =
-    (outputStream, bytes) => outputStream.write(bytes.mutable(using Unsafe))
+      : Writable[ji.OutputStream, Bytes] =
+    (outputStream, stream) =>
+      stream.foreach: bytes =>
+        outputStream.write(bytes.mutable(using Unsafe))
+        outputStream.flush()
+      outputStream.close()
   
   given outputStreamText
       (using streamCut: Raises[StreamCutError], encoder: CharEncoder)
-      : SimpleWritable[ji.OutputStream, Text] =
-    (outputStream, text) => outputStream.write(encoder.encode(text).mutable(using Unsafe))
+      : Writable[ji.OutputStream, Text] =
+    (outputStream, stream) =>
+      stream.foreach: text =>
+        outputStream.write(encoder.encode(text).mutable(using Unsafe))
+        outputStream.flush()
+      outputStream.close()
 
   given decodingAdapter
       [TargetType]
@@ -58,7 +66,7 @@ trait Writable[-TargetType, -ChunkType]:
 trait SimpleWritable[-TargetType, -ChunkType] extends Writable[TargetType, ChunkType]:
   def write(target: TargetType, stream: LazyList[ChunkType]): Unit = stream match
     case head #:: tail => writeChunk(target, head); write(target, tail)
-    case _             => ()
+    case _             => 
 
   def writeChunk(target: TargetType, chunk: ChunkType): Unit
 
