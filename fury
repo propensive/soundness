@@ -1,0 +1,21 @@
+# This is a buildfile for Fury or Wrath.
+# More information is available at: https://github.com/propensive/wrath/
+
+repo propensive/digression
+repo propensive/serpentine
+repo propensive/probably
+
+target hellenism/test
+
+project hellenism
+  module core
+    compiler  scala
+    sources   src/core
+    include   digression/core serpentine/core
+
+  module test
+    compiler  scala
+    sources   src/test
+    include   hellenism/core probably/cli imperial/core
+    coverage  hellenism/core
+    main      hellenism.Tests
