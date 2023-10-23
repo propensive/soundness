@@ -4,12 +4,13 @@
 
 # Hellenism
 
-____
+__Classpath management facilities for Scala__
 
-
+TBC
 
 ## Features
 
+TBC
 
 
 ## Availability
@@ -18,11 +19,12 @@ Hellenism has not yet been published as a binary.
 
 ## Getting Started
 
+TBC
 
 
 ## Status
 
-Hellenism is classified as ____. For reference, Scala One projects are
+Hellenism is classified as __embryotic__. For reference, Scala One projects are
 categorized into one of the following five stability levels:
 
 - _embryonic_: for experimental or demonstrative purposes only, without any guarantees of longevity
@@ -66,7 +68,7 @@ Hellenism was designed and developed by Jon Pretty, and commercial support and t
 
 ## Name
 
-
+The term _classical_ could equally be a reference to "classes" (in the Java sense) or the antiquity of Ancient Greece (and Rome); _Hellenism_, however, refers less ambiguously to the latter.
 
 In general, Scala One project names are always chosen with some rationale, however it is usually
 frivolous. Each name is chosen for more for its _uniqueness_ and _intrigue_ than its concision or
@@ -79,7 +81,7 @@ often arrived in English via a romance language.
 
 ## Logo
 
-
+TBC
 
 ## License
 
