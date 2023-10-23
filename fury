@@ -12,7 +12,7 @@ project hellenism
   module core
     compiler  scala
     sources   src/core
-    include   digression/core serpentine/core anticipation/url
+    include   digression/core serpentine/core anticipation/url turbulence/core
 
   module test
     compiler  scala

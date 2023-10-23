@@ -2,14 +2,17 @@ package hellenism
 
 import rudiments.*
 import serpentine.*
+import fulminate.*
 import spectacular.*
 import gossamer.*
 import perforate.*
 import anticipation.*
+import turbulence.*
 
 import scala.quoted.*
 
 import java.net as jn
+import java.io as ji
 
 sealed trait ClasspathEntry
 
@@ -49,6 +52,8 @@ class Classloader(val java: ClassLoader):
     case _                       => parent.mm(_.urlClassloader)
   
   def classpath: Maybe[Classpath] = urlClassloader.mm(Classpath(_))
+  private[hellenism] def inputStream(path: Text)(using notFound: Raises[ClasspathError]): ji.InputStream =
+    Maybe(java.getResourceAsStream(path.s)).or(abort(ClasspathError(path)))
 
 object Classpath:
   @targetName("child")
@@ -80,6 +85,15 @@ object ClasspathRef:
 case class ClasspathRef(descent: List[PathName[ClasspathRef.Forbidden]]):
   def text: Text = descent.reverse.map(_.render).join(t"/")
 
+  def apply()(using classloader: Classloader): Resource = Resource(classloader, this)
+
+object Resource:
+  given readableBytes(using Raises[ClasspathError]): Readable[Resource, Bytes] =
+    Readable.reliableInputStream.contraMap: resource =>
+      resource.classloader.inputStream(resource.ref.text)
+
+case class Resource(classloader: Classloader, ref: ClasspathRef)
+
 object Hellenism extends Hellenism2:
 
   opaque type ClassRef = Class[?]
@@ -100,3 +114,6 @@ trait Hellenism2:
   def makeClass[ClassType <: AnyKind: Type](using Quotes): Expr[ClassRef] =
     import quotes.reflect.*
     '{ClassRef(Class.forName(${Expr(TypeRepr.of[ClassType].classSymbol.get.fullName)}).nn)}
+
+case class ClasspathError(resource: Text)
+extends Error(msg"the resource $resource was not on the classpath")
