@@ -141,7 +141,29 @@ object Readable:
     
     recur(0L.b)
 
-  given inputStream(using streamCut: Raises[StreamCutError]): (Readable[ji.InputStream, Bytes]) = in =>
+  given reliableInputStream: Readable[ji.InputStream, Bytes] = in =>
+    val channel: jn.channels.ReadableByteChannel = jn.channels.Channels.newChannel(in).nn
+    val buf: jn.ByteBuffer = jn.ByteBuffer.wrap(new Array[Byte](65536)).nn
+
+    def recur(): LazyList[Bytes] =
+      try channel.read(buf) match
+        case -1 => LazyList().tap(_ => try channel.close() catch case err: Exception => ())
+        case 0  => recur()
+        
+        case count =>
+          buf.flip()
+          val size: Int = count.min(65536)
+          val array: Array[Byte] = new Array[Byte](size)
+          buf.get(array)
+          buf.clear()
+
+          array.immutable(using Unsafe) #:: recur()
+          
+      catch case e: Exception => LazyList()
+      
+    recur()
+
+  given inputStream(using streamCut: Raises[StreamCutError]): Readable[ji.InputStream, Bytes] = in =>
     val channel: jn.channels.ReadableByteChannel = jn.channels.Channels.newChannel(in).nn
     val buf: jn.ByteBuffer = jn.ByteBuffer.wrap(new Array[Byte](65536)).nn
 
