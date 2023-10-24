@@ -1,1 +1,4 @@
-TBC
+- navigate the classpath like a filesystem in [Galilei](https://github.com/propensive/galilei)
+- read classpath resources like files with [Turbulence](https://github.com/propensive/turbulence) typeclasses
+- access the underlying classpath from a classloader
+- use polykinded types to get `ClassRef`s, for slightly more concise code
