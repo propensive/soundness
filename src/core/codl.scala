@@ -30,13 +30,14 @@ import language.experimental.captureChecking
 given Realm = realm"cellulose"
 
 enum CodlToken:
-  case Indent, Peer, Blank, Argument, Terminate
+  case Indent, Peer, Blank, Argument
   case Line(text: Text)
   case Raw(char: Char)
   case Outdent(n: Int)
   case Item(text: Text, line: Int, col: Int, block: Boolean = false)
   case Comment(text: Text, line: Int, col: Int)
   case Error(error: CodlError)
+  case Body(stream: LazyList[Char])
 
 object CodlToken:
   //given Similar[CodlToken] = _.productPrefix == _.productPrefix
@@ -48,6 +49,7 @@ object CodlToken:
     case Argument                     => t"Argument"
     case Line(text)                   => t"Line($text)"
     case Raw(char)                    => t"Raw($char)"
+    case Body(_)                      => t"Body(...)"
     case Outdent(n)                   => t"Outdent($n)"
     case Item(text, line, col, block) => t"Item($text, $line, $col, $block)"
     case Comment(text, line, col)     => t"Comment($text, $line, $col)"
@@ -118,7 +120,7 @@ object Codl:
     def recur
         (tokens: LazyList[CodlToken], focus: Proto, peers: List[CodlNode],
             peerIds: Map[Text, (Int, Int)], stack: List[(Proto, List[CodlNode])],
-            lines: Int, subs: List[Data], errors: List[CodlError], body: LazyList[Text] | LazyList[Char],
+            lines: Int, subs: List[Data], errors: List[CodlError], body: LazyList[Char],
             tabs: List[Int])
         : CodlDoc =
       
@@ -129,20 +131,14 @@ object Codl:
               peers: List[CodlNode] = peers, peerIds: Map[Text, (Int, Int)] = peerIds,
               stack: List[(Proto, List[CodlNode])] = stack, lines: Int = lines,
               subs: List[Data] = subs, errors: List[CodlError] = errors,
-              body: LazyList[Text] | LazyList[Char] = LazyList(), tabs: List[Int] = Nil)
+              body: LazyList[Char] = LazyList(), tabs: List[Int] = Nil)
           : CodlDoc =
         recur(tokens, focus, peers, peerIds, stack, lines, subs, errors, body, tabs)
       
       tokens match
         case token #:: tail => token match
-          case CodlToken.Terminate =>
-            go(tokens = LazyList(), body = tokens.collect { case CodlToken.Raw(char) => char })
-          
-          case CodlToken.Raw(_) =>
-            go(tokens = LazyList(), body = tokens.collect { case CodlToken.Raw(char) => char })
-          
-          case CodlToken.Line(_) =>
-            go(tokens = LazyList(), body = tokens.collect { case CodlToken.Line(txt) => txt })
+          case CodlToken.Body(stream) =>
+            go(tokens = LazyList(), body = stream)
           
           case CodlToken.Error(err) =>
             go(errors = err :: errors)
@@ -323,8 +319,7 @@ object Codl:
         val char = next()
         if char.char != '\n' && char != Character.End then ???
         else
-          if char == Character.End then LazyList()
-          else CodlToken.Terminate #:: istream(next(), Line, indent, count + 1, padding)
+          if char == Character.End then LazyList() else LazyList(CodlToken.Body(reader.charStream()))
       
       inline def irecur
           (state: State, indent: Int = indent, count: Int = count + 1, padding: Boolean = padding)

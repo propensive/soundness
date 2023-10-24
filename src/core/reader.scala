@@ -69,6 +69,8 @@ class PositionReader(private var in: LazyList[Text]):
   private val buf: StringBuilder = StringBuilder()
   
   private var current: Int = -1
+
+  def charStream(): LazyList[Char] = LazyList.continually(read()).takeWhile(_ != -1).map(_.toChar)
   
   private var text: Text =
     if in.isEmpty then t""
