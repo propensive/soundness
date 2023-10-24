@@ -31,8 +31,6 @@ given Realm = realm"cellulose"
 
 enum CodlToken:
   case Indent, Peer, Blank, Argument
-  case Line(text: Text)
-  case Raw(char: Char)
   case Outdent(n: Int)
   case Item(text: Text, line: Int, col: Int, block: Boolean = false)
   case Comment(text: Text, line: Int, col: Int)
@@ -47,8 +45,6 @@ object CodlToken:
     case Peer                         => t"Peer"
     case Blank                        => t"Blank"
     case Argument                     => t"Argument"
-    case Line(text)                   => t"Line($text)"
-    case Raw(char)                    => t"Raw($char)"
     case Body(_)                      => t"Body(...)"
     case Outdent(n)                   => t"Outdent($n)"
     case Item(text, line, col, block) => t"Item($text, $line, $col, $block)"
@@ -282,7 +278,7 @@ object Codl:
     val reader: PositionReader = new PositionReader(in.map(identity))
 
     enum State:
-      case Word, Hash, Comment, Indent, Space, Margin, Line
+      case Word, Hash, Comment, Indent, Space, Margin
       case Pending(ch: Character)
 
     import State.*
@@ -371,13 +367,11 @@ object Codl:
         case _ if char == Character.End => state match
           case Indent | Space | Hash | Pending(_) => LazyList()
           case Comment | Word | Margin            => LazyList(token())
-          case Line                               => LazyList()
         
         case '\n' => state match
           case Word | Comment | Pending(_) => put(Indent, padding = false)
           case Margin                      => block()
           case Indent | Space              => CodlToken.Blank #:: irecur(Indent, padding = false)
-          case Line                        => CodlToken.Raw('\n') #:: irecur(Line, padding = false)
           case _                           => recur(Indent, padding = false)
         
         case ' ' => state match
@@ -385,14 +379,12 @@ object Codl:
           case Pending(_)         => put(Space)
           case Indent             => recur(Indent)
           case Word               => if padding then recur(Pending(char)) else put(Space)
-          case Line               => CodlToken.Raw(' ') #:: irecur(Line)
           case Comment            => consume(state)
           case Margin             => block()
           case Hash               => reader.get(); recur(Comment)
         
         case '#' => state match
           case Pending(_) | Space => consume(Hash)
-          case Line               => CodlToken.Raw('#') #:: irecur(Line)
           case Comment            => line()
           case Word               => consume(Word)
           case Indent             => if diff == 4 then recur(Margin) else newline(Comment)
@@ -402,7 +394,6 @@ object Codl:
         case ch => state match
           case Pending(ch)    => reader.put(ch); consume(Word)
           case Space | Word   => consume(Word)
-          case Line           => CodlToken.Raw(ch) #:: irecur(Line)
           case Comment        => consume(state)
           case Indent         => reader.put(char); if diff == 4 then recur(Margin) else newline(Word)
           case Margin         => block()
