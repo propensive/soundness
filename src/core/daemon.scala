@@ -26,6 +26,7 @@ import rudiments.*, homeDirectories.default
 import perforate.*
 import hieroglyph.*, charEncoders.utf8, charDecoders.utf8, badEncodingHandlers.strict
 import parasite.*
+import profanity.*
 import gossamer.*
 import turbulence.*
 import guillotine.*
@@ -69,7 +70,6 @@ class Daemon(block: Monitor => ShellSession => ExitStatus) extends Application:
 
   def client(socket: jn.Socket)(using Monitor, Raises[StreamCutError], Raises[UndecodableCharError], Raises[AggregateError[CodlError]], Raises[CodlReadError], Raises[NumberError]): Unit =
     val input = Readable.inputStream.read(socket.getInputStream.nn)
-    println("about to parse codl")
     val codl = Codl.parse(input)
     println(codl.debug)
     
@@ -138,12 +138,11 @@ def fury(): Unit = Daemon.listen:
   Io.println(shell.stdin.debug)
   Io.println(shell.directory.or(t"unknown"))
   
-  shell.input.multiplexWith(shell.signals).takeWhile(_ != 'q').foreach: datum =>
+  StdKeyboard.process(shell.input).multiplexWith(shell.signals).takeWhile(_ != Keypress.Printable('q')).foreach: datum =>
     datum match
-      case 'Q' => shell.shutdown()
-      case sig: Signal => Io.println(t"sig: ${sig}")
-      case char: Char  => Io.println(t"key: ${char.toInt}")
-      case text: Text  => Io.println(t"text: $text")
+      case Keypress.Printable('Q') => shell.shutdown()
+      case Signal.Winch            => Io.print(t"\e[s\e[4095C\e[4095B\e[6n\e[u")
+      case other                   => Io.println(other.toString.tt)
 
   Io.println(t"Done")
   ExitStatus.Ok
@@ -152,7 +151,7 @@ trait ShellSession(out: ji.OutputStream) extends Stdio, WorkingDirectory:
   def shutdown(): Unit
   def arguments: IArray[Text]
   def signals: LazyList[Signal]
-  def input: LazyList[Char] | LazyList[Text]
+  def input: LazyList[Char]
   def stdin: Stdin
   def script: Text
 
