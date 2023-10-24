@@ -1,10 +1,9 @@
 #!/bin/bash
 
-declare portFile initFile ttystate script waitFile
-declare -i pid port streamPid continue pipePid exitStatus
+declare portFile initFile ttystate script waitFile tmpPipe
+declare -i pid port streamPid continue pipePid timeout
 declare -a args signals
 
-continue=1
 
 # The name of the file which will contain the port number
 name="fury"
@@ -14,17 +13,14 @@ initFile="$baseDir/init"
 waitFile="$baseDir/wait"
 failFile="$baseDir/fail"
 script="$0"
-exitStatus=0
+continue=1
+timeout=30
 
 # The set of signals which should be captured and forwarded to the JVM process
 signals=(INT WINCH TERM USR1 USR2)
 
 pid=$$
 args=("$@")
-
-if [ -t 0 ]
-then ttystate="$(stty -g)"
-fi
 
 recovery() {
   restoreTty
@@ -34,46 +30,28 @@ recovery() {
 }
 
 restoreTty() {
-  if [ -t 0 ]
-  then stty "$ttystate"
-  fi
+  test -t 0 && stty "$ttystate"
 }
 
 launch() {
   mkfifo "$waitFile" 2> /dev/null && exec nohup wrath -x > /home/propensive/work/exoskeleton/out.log 2>&1 &
-  flock "$initFile" sh -c "test -f \"$portFile\" || cat \"$waitFile\""
+  flock -w $timeout "$initFile" sh -c "test -f \"$portFile\" || cat \"$waitFile\"" || terminate
   rm -f "$initFile"
 }
 
-daemon() {
-  if [ -f "$failFile" ]
-  then recovery
-  fi
-
-  mkdir -p "$baseDir"
-  flock -n "$portFile" rm "$portFile"
-  if [ ! -f "$portFile" ]
-  then launch
-  fi
-  port=$(cat "$portFile")
+terminate() {
+  printf "Daemon did not start within $timeout seconds"
+  touch "$failFile"
 }
 
 handle() {
   case "$1" in
     TERM) continue=0 ;;
-    USR1) exitStatus=1 ;;
-    USR2) exitStatus=2 ;;
   esac
-  printf "signal %s\nprocess %s\n" "$1" "$pid" | nc -q 1 localhost $port || terminate "Lost server connection"
+  printf "signal %s\nprocess %s\n" "$1" "$pid" | nc -q 1 localhost $port
 }
 
-registerTraps() {
-  for signal in "${signals[@]}"
-  do trap "handle $signal" "$signal"
-  done
-}
-
-stream() {
+connect() {
   printf "process %s\n" "$pid"
   printf "script %s\n" "$script"
   printf "work %s\n" "$(pwd)"
@@ -86,47 +64,39 @@ stream() {
   do printf "env\n    %s\n" "$variable"
   done < <(env -0)
 
-  if [ -t 0 ]
-  then printf "input term\n"
-  else printf "input pipe\n"
-  fi
-
+  test -t 0 && printf "input term\n" || printf "input pipe\n"
   printf "##\n"
   exec cat
 }
 
-pipe() {
-  local tmpPipe
-  tmpPipe="$(mktemp -u)"
-  mkfifo -m 600 "$tmpPipe"
-  exec 3<> "$tmpPipe"
-  rm "$tmpPipe"
-  stream <&0 >&3 &
-  streamPid=$!
-  nc -q 1 localhost $port <&3 &
-  pipePid=$!
-}
+test -t 0 && ttystate="$(stty -g)"
+mkdir -p "$baseDir"
+test -t 0 && stty intr undef -echo -icanon raw opost > /dev/null 2>&1
+test -f "$failFile" && recovery
+flock -n "$portFile" rm "$portFile"
+test -f "$portFile" || launch
+port=$(cat "$portFile")
+tmpPipe="$(mktemp -u)"
+mkfifo -m 600 "$tmpPipe"
+exec 3<> "$tmpPipe"
+rm "$tmpPipe"
 
-if [ -t 0 ]
-then stty intr undef -echo -icanon raw opost > /dev/null 2>&1
-fi
+connect <&0 >&3 &
+streamPid=$!
+nc -q 1 localhost $port <&3 &
+pipePid=$!
 
-daemon
-pipe
-registerTraps
+for signal in "${signals[@]}"
+do trap "handle $signal" "$signal"
+done
 
 while [ $continue = 1 ]
 do
   wait $pipePid
-  if ! ps $pipePid >/dev/null
-  then continue=0
-  fi
+  ps $pipePid > /dev/null || continue=0
 done
 
-if [ -t 0 ]
-then
-  kill $streamPid
-  restoreTty
-fi
+test -t 0 && kill $streamPid
+restoreTty
 
 exit 0
