@@ -40,22 +40,21 @@ import scala.collection.mutable as scm
 import java.net as jn
 import java.io as ji
 
-case class CliSession(pid: Pid, async: Async[Unit], terminate: Promise[Unit], close: () => Unit)(using Monitor):
-  val signals: Funnel[Signal] = Funnel()
+case class CliSession(pid: Pid, async: Async[Unit], signals: Funnel[Signal], terminate: Promise[Unit], close: () => Unit)(using Monitor)
   
 object Daemon:
-  def listen(block: ShellSession ?=> ExitStatus): Unit =
+  def listen(block: Monitor ?=> ShellSession ?=> ExitStatus): Unit =
     given context: Invocation = Invocation(IArray(), environments.jvm, workingDirectories.default, LazyList(), _ => (), _ => ())
-    Daemon(session => block(using session)).invoke.execute(context)
+    Daemon(monitor => session => block(using monitor)(using session)).invoke.execute(context)
 
-class Daemon(block: ShellSession => ExitStatus) extends Application:
+class Daemon(block: Monitor => ShellSession => ExitStatus) extends Application:
   import environments.jvm
   import errorHandlers.throwUnsafely
 
   private val xdg = Xdg()
   private val furyDir: Directory = (xdg.runtimeDir.or(xdg.stateHome) / p"fury").as[Directory]
   private val portFile: Path = furyDir / p"port"
-  private val initFile: Path = furyDir / p"init"
+  private val waitFile: Path = furyDir / p"wait"
   private val clients: scm.HashMap[Pid, CliSession] = scm.HashMap()
   private var continue: Boolean = true
 
@@ -88,17 +87,17 @@ class Daemon(block: ShellSession => ExitStatus) extends Application:
           def stdin: Stdin = inputType
         
         val async: Async[Unit] = Async:
-          try block(session)
+          try block(summon[Monitor])(session)
           finally
             clients -= process
             socket.close()
         
-        clients(process) = CliSession(process, async, promise, () => socket.close())
+        clients(process) = CliSession(process, async, signalFunnel, promise, () => socket.close())
 
   def invoke(using context: CliContext): Execution = context match
     case given Invocation =>
       Async.onShutdown:
-        initFile.wipe()
+        waitFile.wipe()
         portFile.wipe()
       
       execute:
@@ -116,8 +115,8 @@ class Daemon(block: ShellSession => ExitStatus) extends Application:
           val socket: jn.ServerSocket = jn.ServerSocket(0)
           val port: Int = socket.getLocalPort
           port.show.writeTo(portFile)
-          initFile.touch()
-          initFile.wipe()
+          waitFile.touch()
+          waitFile.wipe()
           while continue do safely(client(socket.accept().nn))
 
         ExitStatus.Ok
@@ -134,6 +133,12 @@ def fury(): Unit = Daemon.listen:
   Io.println(shell.script)
   Io.println(shell.stdin.debug)
   Io.println(shell.directory.or(t"unknown"))
+  shell.input.multiplexWith(shell.signals).takeWhile(_ != 'Q').foreach: datum =>
+    datum match
+      case sig: Signal => Io.println(t"sig: ${sig}")
+      case char: Char  => Io.println(t"key: ${char.toInt}")
+      case text: Text  => Io.println(t"text: $text")
+  Io.println(t"Done")
   ExitStatus.Ok
 
 trait ShellSession(out: ji.OutputStream) extends Stdio, WorkingDirectory:

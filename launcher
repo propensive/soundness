@@ -1,6 +1,6 @@
 #!/bin/bash
 
-declare portFile initFile ttystate script
+declare portFile initFile ttystate script waitFile
 declare -i pid port streamPid continue pipePid exitStatus
 declare -a args signals
 
@@ -11,6 +11,7 @@ name="fury"
 baseDir="$XDG_RUNTIME_DIR/$name"
 portFile="$baseDir/port"
 initFile="$baseDir/init"
+waitFile="$baseDir/wait"
 failFile="$baseDir/fail"
 script="$0"
 exitStatus=0
@@ -39,9 +40,9 @@ restoreTty() {
 }
 
 launch() {
-  mkfifo "$initFile" 2>/dev/null && exec nohup wrath -x > /home/propensive/work/exoskeleton/out.log 2>&1 &
-  timeout 10 cat "$initFile" || (touch "$failFile" && rm -f "$initFile")
-  daemon
+  mkfifo "$waitFile" 2> /dev/null && exec nohup wrath -x > /home/propensive/work/exoskeleton/out.log 2>&1 &
+  flock "$initFile" sh -c "test -f \"$portFile\" || cat \"$waitFile\""
+  rm -f "$initFile"
 }
 
 daemon() {
@@ -55,6 +56,7 @@ daemon() {
   then launch
   fi
   port=$(cat "$portFile")
+  echo "port=$port"
 }
 
 terminate() {
