@@ -24,6 +24,7 @@ import anticipation.*
 import contextual.*
 
 import scala.quoted.*
+import scala.compiletime.*
 
 case class EmailAddressError(reason: EmailAddressError.Reason)
 extends Error(msg"the email address is not valid because $reason")
@@ -71,7 +72,7 @@ object EmailAddress:
       case LocalPart.Quoted(text)   => '{LocalPart.Quoted(${Expr(text)})}
       case LocalPart.Unquoted(text) => '{LocalPart.Unquoted(${Expr(text)})}
     
-    address.domain match
+    address.domain.asMatchable match
       case ipv4: Int          => '{EmailAddress(Unset, $localPart, Ipv4(${Expr(ipv4)}))}
       case ipv6: Ipv6         => '{EmailAddress(Unset, $localPart, ${Expr(ipv6)})}
       case hostname: Hostname => '{EmailAddress(Unset, $localPart, ${Expr(hostname)})}
