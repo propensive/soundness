@@ -56,13 +56,6 @@ daemon() {
   then launch
   fi
   port=$(cat "$portFile")
-  echo "port=$port"
-}
-
-terminate() {
-  continue=0
-  printf '\n%s\n' "$1"
-  kill -TERM -$pid
 }
 
 handle() {
@@ -98,7 +91,7 @@ stream() {
   else printf "input pipe\n"
   fi
 
-  printf "##\n\n"
+  printf "##\n"
   exec cat
 }
 
