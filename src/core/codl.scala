@@ -30,7 +30,7 @@ import language.experimental.captureChecking
 given Realm = realm"cellulose"
 
 enum CodlToken:
-  case Indent, Peer, Blank, Argument
+  case Indent, Peer, Blank, Argument, Terminate
   case Line(text: Text)
   case Raw(char: Char)
   case Outdent(n: Int)
@@ -135,6 +135,9 @@ object Codl:
       
       tokens match
         case token #:: tail => token match
+          case CodlToken.Terminate =>
+            go(tokens = LazyList(), body = tokens.collect { case CodlToken.Raw(char) => char })
+          
           case CodlToken.Raw(_) =>
             go(tokens = LazyList(), body = tokens.collect { case CodlToken.Raw(char) => char })
           
@@ -320,9 +323,8 @@ object Codl:
         val char = next()
         if char.char != '\n' && char != Character.End then ???
         else
-          if char == Character.End
-          then LazyList()
-          else stream(next(), Line, indent, count + 1, padding)
+          if char == Character.End then LazyList()
+          else CodlToken.Terminate #:: istream(next(), Line, indent, count + 1, padding)
       
       inline def irecur
           (state: State, indent: Int = indent, count: Int = count + 1, padding: Boolean = padding)
