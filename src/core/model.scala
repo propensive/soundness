@@ -22,7 +22,6 @@ import gossamer.*
 import anticipation.*
 import contextual.*
 import spectacular.*
-import eucalyptus.*
 import dissonance.*
 import chiaroscuro.*
 
@@ -152,15 +151,15 @@ extends Indexed:
   def untyped: CodlDoc = CodlDoc(children.map(_.untyped), CodlSchema.Free, margin, body)
   def wiped = uncommented.untyped
 
-  def bcodl(using Log): Text =
+  def bcodl: Text =
     val writer: ji.Writer = ji.StringWriter()
     Bcodl.write(writer, this)
-    writer.toString().show
+    writer.toString().tt
 
   def write: Text =
     val writer: ji.Writer = ji.StringWriter()
     Printer.print(writer, this)
-    writer.toString().show
+    writer.toString().tt
 
 object Data:
   given [T: CodlWriter]: Insertion[List[Data], T] =
