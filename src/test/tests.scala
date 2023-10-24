@@ -623,6 +623,10 @@ object Tests extends Suite(t"CoDL tests"):
         read(t"root\n    one two\n##\nunparsed\n").body
       .assert(_ == LazyList('u', 'n', 'p', 'a', 'r', 's', 'e', 'd', '\n'))
       
+      test(t"Teminator without newline and spurious content"):
+        capture(read(t"root\n    one two\n##spurious"))
+      .assert(_ == CodlError(2, 2, 1, BadTermination))
+      
       
     suite(t"Schema tests"):
       val childSchema = Struct(Optional,

@@ -310,12 +310,13 @@ object Codl:
         
         stream(next(), state, indent, count, padding)
       
-      inline def line(): LazyList[CodlToken] =
+      inline def body(): LazyList[CodlToken] =
         reader.get()
         val char = next()
-        if char.char != '\n' && char != Character.End then ???
-        else
-          if char == Character.End then LazyList() else LazyList(CodlToken.Body(reader.charStream()))
+        
+        if char.char != '\n' && char != Character.End
+        then fail(Comment, CodlError(char.line, col(char), 1, BadTermination))
+        else if char == Character.End then LazyList() else LazyList(CodlToken.Body(reader.charStream()))
       
       inline def irecur
           (state: State, indent: Int = indent, count: Int = count + 1, padding: Boolean = padding)
@@ -385,7 +386,7 @@ object Codl:
         
         case '#' => state match
           case Pending(_) | Space => consume(Hash)
-          case Comment            => line()
+          case Comment            => body()
           case Word               => consume(Word)
           case Indent             => if diff == 4 then recur(Margin) else newline(Comment)
           case Margin             => block()
