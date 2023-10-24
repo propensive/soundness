@@ -21,6 +21,7 @@ import fulminate.*
 
 object Printable:
   given text: Printable[Text] = identity(_)
+  given char: Printable[Char] = _.toString.tt
   given message: Printable[Message] = _.text
 
 @capability
