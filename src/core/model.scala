@@ -107,7 +107,7 @@ object CodlDoc:
         
         Semblance.Breakdown(comparison, t"", t"")
 
-case class CodlDoc(children: IArray[CodlNode], schema: CodlSchema, margin: Int, body: LazyList[Text] | LazyList[Char] = LazyList())
+case class CodlDoc(children: IArray[CodlNode], schema: CodlSchema, margin: Int, body: LazyList[Char] = LazyList())
 extends Indexed:
   override def equals(that: Any) = that.matchable(using Unsafe) match
     case that: CodlDoc => schema == that.schema && margin == that.margin && children.sameElements(that.children)
