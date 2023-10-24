@@ -23,14 +23,10 @@ pid=$$
 args=("$@")
 
 recovery() {
-  restoreTty
+  test -t 0 && stty "$ttystate"
   printf "The daemon process failed to start within 10 seconds.\n"
   printf "Remove the file %s before trying again.\n" "$failFile"
   exit 1
-}
-
-restoreTty() {
-  test -t 0 && stty "$ttystate"
 }
 
 launch() {
@@ -76,11 +72,11 @@ test -f "$failFile" && recovery
 flock -n "$portFile" rm "$portFile"
 test -f "$portFile" || launch
 port=$(cat "$portFile")
+
 tmpPipe="$(mktemp -u)"
 mkfifo -m 600 "$tmpPipe"
 exec 3<> "$tmpPipe"
 rm "$tmpPipe"
-
 connect <&0 >&3 &
 streamPid=$!
 nc -q 1 localhost $port <&3 &
@@ -96,7 +92,6 @@ do
   ps $pipePid > /dev/null || continue=0
 done
 
-test -t 0 && kill $streamPid
-restoreTty
+test -t 0 && stty "$ttystate" && kill $streamPid
 
 exit 0
