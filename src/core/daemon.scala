@@ -48,6 +48,8 @@ object Daemon:
     Daemon(monitor => session => block(using monitor)(using session)).invoke.execute(context)
 
 class Daemon(block: Monitor => ShellSession => ExitStatus) extends Application:
+  daemon =>
+  
   import environments.jvm
   import errorHandlers.throwUnsafely
 
@@ -67,6 +69,7 @@ class Daemon(block: Monitor => ShellSession => ExitStatus) extends Application:
 
   def client(socket: jn.Socket)(using Monitor, Raises[StreamCutError], Raises[UndecodableCharError], Raises[AggregateError[CodlError]], Raises[CodlReadError], Raises[NumberError]): Unit =
     val input = Readable.inputStream.read(socket.getInputStream.nn)
+    println("about to parse codl")
     val codl = Codl.parse(input)
     println(codl.debug)
     
@@ -80,6 +83,7 @@ class Daemon(block: Monitor => ShellSession => ExitStatus) extends Application:
         val signalFunnel: Funnel[Signal] = Funnel()
         
         val session = new ShellSession(socket.getOutputStream.nn) with WorkingDirectory(workDir):
+          def shutdown(): Unit = daemon.shutdown()
           def script: Text = scriptName
           def arguments: IArray[Text] = IArray.from(args)
           def signals: LazyList[Signal] = signalFunnel.stream
@@ -133,15 +137,19 @@ def fury(): Unit = Daemon.listen:
   Io.println(shell.script)
   Io.println(shell.stdin.debug)
   Io.println(shell.directory.or(t"unknown"))
-  shell.input.multiplexWith(shell.signals).takeWhile(_ != 'Q').foreach: datum =>
+  
+  shell.input.multiplexWith(shell.signals).takeWhile(_ != 'q').foreach: datum =>
     datum match
+      case 'Q' => shell.shutdown()
       case sig: Signal => Io.println(t"sig: ${sig}")
       case char: Char  => Io.println(t"key: ${char.toInt}")
       case text: Text  => Io.println(t"text: $text")
+
   Io.println(t"Done")
   ExitStatus.Ok
 
 trait ShellSession(out: ji.OutputStream) extends Stdio, WorkingDirectory:
+  def shutdown(): Unit
   def arguments: IArray[Text]
   def signals: LazyList[Signal]
   def input: LazyList[Char] | LazyList[Text]
