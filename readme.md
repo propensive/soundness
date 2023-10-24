@@ -10,7 +10,10 @@ TBC
 
 ## Features
 
-TBC
+- navigate the classpath like a filesystem in [Galilei](https://github.com/propensive/galilei)
+- read classpath resources like files with [Turbulence](https://github.com/propensive/turbulence) typeclasses
+- access the underlying classpath from a classloader
+- use polykinded types to get `ClassRef`s, for slightly more concise code
 
 
 ## Availability
@@ -24,7 +27,7 @@ TBC
 
 ## Status
 
-Hellenism is classified as __embryotic__. For reference, Scala One projects are
+Hellenism is classified as __fledgling__. For reference, Scala One projects are
 categorized into one of the following five stability levels:
 
 - _embryonic_: for experimental or demonstrative purposes only, without any guarantees of longevity
