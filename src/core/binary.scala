@@ -26,7 +26,7 @@ import java.io as ji
 
 import language.experimental.captureChecking
 
-object Bin:
+object Bcodl:
   private def write(out: ji.Writer, number: Int): Unit = out.write((number + 32).toChar)
 
   private def write(out: ji.Writer, text: Text): Unit =
@@ -48,14 +48,15 @@ object Bin:
         schema match
           case Field(_, _) =>
             write(out, key)
+          
           case _ =>
             val idx: Int = schema.keyMap.get(key).fold(0)(_ + 1)
             write(out, idx)
             write(out, schema.entry(idx - 1).schema, children)
       
-  def read(schema: CodlSchema, reader: ji.Reader)(using binary: Raises[BinaryError]): CodlDoc =
+  def read(schema: CodlSchema, reader: ji.Reader)(using binary: Raises[BcodlError]): CodlDoc =
     if reader.read() != '\u00b1' || reader.read() != '\u00c0' || reader.read() != '\u00d1'
-    then abort(BinaryError(t"header 0xb1c0d1", 0))
+    then abort(BcodlError(t"header 0xb1c0d1", 0))
     
     def recur(schema: CodlSchema): List[CodlNode] =
       List.range(0, readNumber(reader)).map: _ =>
@@ -69,7 +70,7 @@ object Bin:
               case 0  => (Unset, CodlSchema.Free)
               case idx => schema.entry(idx - 1).tuple
 
-            val key = subschema(0).option.getOrElse(abort(BinaryError(t"unexpected key", 0)))
+            val key = subschema(0).option.getOrElse(abort(BcodlError(t"unexpected key", 0)))
 
             val children = IArray.from(recur(subschema(1)))
             

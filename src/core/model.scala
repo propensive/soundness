@@ -152,9 +152,9 @@ extends Indexed:
   def untyped: CodlDoc = CodlDoc(children.map(_.untyped), CodlSchema.Free, margin, body)
   def wiped = uncommented.untyped
 
-  def binary(using Log): Text =
+  def bcodl(using Log): Text =
     val writer: ji.Writer = ji.StringWriter()
-    Bin.write(writer, this)
+    Bcodl.write(writer, this)
     writer.toString().show
 
   def write: Text =

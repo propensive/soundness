@@ -29,7 +29,6 @@ import eucalyptus.*, logging.stdout
 
 import java.io as ji
 
-import unsafeExceptions.canThrowAny
 import errorHandlers.throwUnsafely
 
 case class User(id: Int, email: Text, privilege: List[Privilege])
@@ -927,7 +926,7 @@ object Tests extends Suite(t"CoDL tests"):
         t"field3" -> Field(Optional)
       )
       
-      def roundtrip(doc: CodlDoc)(using Log): CodlDoc = Bin.read(doc.schema, ji.StringReader(doc.binary.s).nn)
+      def roundtrip(doc: CodlDoc)(using Log): CodlDoc = Bcodl.read(doc.schema, ji.StringReader(doc.bcodl.s).nn)
 
       val doc = schema.parse(t"field")
       

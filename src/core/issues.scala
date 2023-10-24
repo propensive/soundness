@@ -86,7 +86,7 @@ object CodlError:
 case class CodlError(line: Int, col: Int, length: Int, reason: CodlError.Reason)
 extends Error(msg"could not read the CoDL document at $line:$col: $reason")
 
-case class BinaryError(expectation: Text, pos: Int)
+case class BcodlError(expectation: Text, pos: Int)
 extends Error(msg"expected $expectation at position $pos")
 
 case class MultipleIdentifiersError(key: Text)
