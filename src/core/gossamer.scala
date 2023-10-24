@@ -76,14 +76,18 @@ object Cuttable:
   given Cuttable[Text, Regex] = (text, regex, limit) =>
     text.s.split(regex.pattern.s, limit).nn.map(_.nn).map(Text(_)).to(List)
 
-  given [T](using cuttable: Cuttable[T, Text]): Cuttable[T, Char] = (text, delimiter, limit) =>
+  given [TextType](using cuttable: Cuttable[TextType, Text]): Cuttable[TextType, Char] = (text, delimiter, limit) =>
     cuttable.cut(text, delimiter.show, limit)
 
-trait Cuttable[V, D]:
-  def cut(value: V, delimiter: D, limit: Int): List[V]
+trait Cuttable[TextType, DelimiterType]:
+  def cut(value: TextType, delimiter: DelimiterType, limit: Int): List[TextType]
 
-extension [V](value: V)
-  def cut[D](delimiter: D, limit: Int = Int.MaxValue)(using cuttable: Cuttable[V, D]): List[V] =
+extension [TextType](value: TextType)
+  def cut
+      [DelimiterType]
+      (delimiter: DelimiterType, limit: Int = Int.MaxValue)
+      (using cuttable: Cuttable[TextType, DelimiterType])
+      : List[TextType] =
     cuttable.cut(value, delimiter, limit)
 
 extension (words: Iterable[Text])
