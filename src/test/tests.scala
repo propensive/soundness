@@ -366,38 +366,38 @@ object Tests extends Suite(t"CoDL tests"):
         parseText(t"""|root child
                       |##
                       |""".s.stripMargin.show)(1)
-      .assert(_ == LazyList(Item(t"root", 0, 0), Item(t"child", 0, 5), Peer, Line(t"")))
+      .assert(_ == LazyList(Item(t"root", 0, 0), Item(t"child", 0, 5), Peer, Body(LazyList())))
       
       test(t"Terminated content 2"):
         parseText(t"root\n  one two\n##\n")(1)
-      .assert(_ == LazyList(Item(t"root", 0, 0), Indent, Item(t"one", 1, 2), Item(t"two", 1, 6), Outdent(1), Line(t"")))
+      .assert(_ == LazyList(Item(t"root", 0, 0), Indent, Item(t"one", 1, 2), Item(t"two", 1, 6), Outdent(1), Body(LazyList())))
       
       test(t"Terminated content after child"):
         parseText(t"""|root
                       |  child
                       |##
                       |""".s.stripMargin.show)(1)
-      .assert(_ == LazyList(Item(t"root", 0, 0), Indent, Item(t"child", 1, 2), Outdent(1), Line(t"")))
+      .assert(_ == LazyList(Item(t"root", 0, 0), Indent, Item(t"child", 1, 2), Outdent(1), Body(LazyList())))
       
       test(t"Terminated content after long parameter"):
         parseText(t"""|root
                       |    child
                       |##
                       |""".s.stripMargin.show)(1).to(List)
-      .assert(_ == LazyList(Item(t"root", 0, 0), Item(t"child", 1, 4, true), Peer, Line(t"")).to(List))
+      .assert(_ == LazyList(Item(t"root", 0, 0), Item(t"child", 1, 4, true), Peer, Body(LazyList())).to(List))
       
       test(t"Terminated content with body"):
         parseText(t"""|root
                       |##
-                      | follow-on content""".s.stripMargin.show)(1)
-      .assert(_ == LazyList(Item(t"root", 0, 0), Peer, Line(t" follow-on content")))
+                      | follow""".s.stripMargin.show)(1)
+      .assert(_ == LazyList(Item(t"root", 0, 0), Peer, Body(LazyList(' ', 'f', 'o', 'l', 'l', 'o', 'w'))))
       
       test(t"Terminated content with body and newline"):
         parseText(t"""|root
                       |##
-                      | follow-on content
+                      | follow
                       |""".s.stripMargin.show)(1)
-      .assert(_ == LazyList(Item(t"root", 0, 0), Peer, Line(t" follow-on content"), Line(t"")))
+      .assert(_ == LazyList(Item(t"root", 0, 0), Peer, Body(LazyList(' ', 'f', 'o', 'l', 'l', 'o', 'w', '\n'))))
       
       test(t"Parse multiline content then indent"):
         parseText(t"""|root
@@ -612,16 +612,16 @@ object Tests extends Suite(t"CoDL tests"):
       .assert(_ == CodlDoc(CodlNode(t"root")(CodlNode(t"one two")())))
       
       test(t"Terminated content with body"):
-        read(t"root\n    one two\n##\nunparsed content").body
-      .assert(_ == LazyList(t"unparsed content"))
+        read(t"root\n    one two\n##\nunparsed").body
+      .assert(_ == LazyList('u', 'n', 'p', 'a', 'r', 's', 'e', 'd'))
       
       test(t"Terminated content with newline before body"):
-        read(t"root\n    one two\n##\n\nunparsed content").body
-      .assert(_ == LazyList(t"", t"unparsed content"))
+        read(t"root\n    one two\n##\n\nunparsed").body
+      .assert(_ == LazyList('\n', 'u', 'n', 'p', 'a', 'r', 's', 'e', 'd'))
       
       test(t"Terminated content with newline after body"):
-        read(t"root\n    one two\n##\nunparsed content\n").body
-      .assert(_ == LazyList(t"unparsed content", t""))
+        read(t"root\n    one two\n##\nunparsed\n").body
+      .assert(_ == LazyList('u', 'n', 'p', 'a', 'r', 's', 'e', 'd', '\n'))
       
       
     suite(t"Schema tests"):
