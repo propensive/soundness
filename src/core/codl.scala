@@ -375,14 +375,12 @@ object Codl:
           case Indent | Space | Hash | Pending(_) => LazyList()
           case Comment | Word | Margin            => LazyList(token())
           case Line                               => LazyList()
-          //case Line                               => LazyList(CodlToken.Line(reader.get()))
         
         case '\n' => state match
           case Word | Comment | Pending(_) => put(Indent, padding = false)
           case Margin                      => block()
           case Indent | Space              => CodlToken.Blank #:: irecur(Indent, padding = false)
           case Line                        => CodlToken.Raw('\n') #:: irecur(Line, padding = false)
-          //case Line                        => CodlToken.Line(reader.get()) #:: irecur(Line, padding = false)
           case _                           => recur(Indent, padding = false)
         
         case ' ' => state match
@@ -398,7 +396,6 @@ object Codl:
         case '#' => state match
           case Pending(_) | Space => consume(Hash)
           case Line               => CodlToken.Raw('#') #:: irecur(Line)
-          //case Line               => consume(Line)
           case Comment            => line()
           case Word               => consume(Word)
           case Indent             => if diff == 4 then recur(Margin) else newline(Comment)
