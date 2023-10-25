@@ -1,20 +1,24 @@
 #!/bin/bash
 
 declare portFile initFile ttystate script waitFile tmpPipe
-declare -i pid port streamPid continue pipePid timeout
-declare -a args signals
+declare -i pid port streamPid continue pipePid
+declare -a args signals sttyOptions
 
 
 # The name of the file which will contain the port number
 name="fury"
-baseDir="$XDG_RUNTIME_DIR/$name"
+
+# The TTY settings to use for terminal input
+sttyOptions=(intr undef -echo icanon raw opost)
+
+
+baseDir="${XDG_RUNTIME_DIR:-$HOME/.local/state}/$name"
 portFile="$baseDir/port"
 initFile="$baseDir/init"
 waitFile="$baseDir/wait"
 failFile="$baseDir/fail"
 script="$0"
 continue=1
-timeout=30
 
 # The set of signals which should be captured and forwarded to the JVM process
 signals=(INT WINCH TERM USR1 USR2)
@@ -24,20 +28,21 @@ args=("$@")
 
 recovery() {
   test -t 0 && stty "$ttystate"
-  printf "The daemon process failed to start within 10 seconds.\n"
-  printf "Remove the file %s before trying again.\n" "$failFile"
+  printf "The daemon process failed to start.\n" >&2
+  printf "Remove the file %s before trying again.\n" "$failFile" >&2
   exit 1
 }
 
-launch() {
-  mkfifo "$waitFile" 2> /dev/null && exec nohup wrath -x > /home/propensive/work/exoskeleton/out.log 2>&1 &
-  flock -w $timeout "$initFile" sh -c "test -f \"$portFile\" || cat \"$waitFile\"" || terminate
-  rm -f "$initFile"
+abort() {
+  touch "$failFile"
+  printf '' > "$waitFile"
+  rm -f "$waitFile" "$initFile"
 }
 
-terminate() {
-  printf "Daemon did not start within $timeout seconds"
-  touch "$failFile"
+launch() {
+  mkfifo "$waitFile" 2> /dev/null && (nohup wrath -x > /home/propensive/work/exoskeleton/out.log 2>&1 || abort) &
+  flock "$initFile" sh -c "test -f \"$portFile\" || cat \"$waitFile\"" > /dev/null 2>&1 || abort
+  rm -f "$initFile"
 }
 
 handle() {
@@ -67,10 +72,11 @@ connect() {
 
 test -t 0 && ttystate="$(stty -g)"
 mkdir -p "$baseDir"
-test -t 0 && stty intr undef -echo -icanon raw opost > /dev/null 2>&1
+test -t 0 && stty "${sttyOptions[@]}" > /dev/null 2>&1
 test -f "$failFile" && recovery
 flock -n "$portFile" rm "$portFile"
 test -f "$portFile" || launch
+test -f "$failFile" && recovery
 port=$(cat "$portFile")
 
 tmpPipe="$(mktemp -u)"
