@@ -30,6 +30,8 @@ sealed trait TtyEvent
 enum TerminalInfo extends TtyEvent:
   case WindowSize(rows: Int, columns: Int)
   case BgColor(red: Int, green: Int, blue: Int)
+  case LoseFocus
+  case GainFocus
 
 enum Signal extends TtyEvent:
   case Hup, Int, Quit, Ill, Trap, Abrt, Bus, Fpe, Kill, Usr1, Segv, Usr2, Pipe, Alrm, Term, Chld, Cont, Stop,

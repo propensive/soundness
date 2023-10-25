@@ -60,9 +60,11 @@ class StandardKeyboard()(using Monitor) extends Keyboard:
               def continue = process(rest.tail)
 
               rest.head match
-                case 'R'  => sequence.map(_.show).join.cut(';') match
+                case 'R' => sequence.map(_.show).join.cut(';') match
                   case List(As[Int](rows), As[Int](cols)) => TerminalInfo.WindowSize(rows, cols) #:: continue
                   case _                                  => TerminalInfo.WindowSize(20, 30) #:: continue
+                case 'O' => TerminalInfo.LoseFocus #:: continue
+                case 'I' => TerminalInfo.GainFocus #:: continue
                 case char => Keypress.EscapeSeq(char, sequence*) #:: continue
 
           case ']' #:: '1' #:: '1' #:: ';' #:: 'r' #:: 'g' #:: 'b' #:: ':' #:: rest =>
@@ -90,6 +92,7 @@ case class TerminalError(ttyMsg: Text) extends Error(msg"STDIN is not attached t
 object Terminal:
   def reportBackground: Text = t"\e]11;?\e\\"
   def reportSize: Text = t"\e[s\e[4095C\e[4095B\e[6n\e[u"
+  def detectFocus: Text = t"\e[?1004h"
 
 package keyboards:
   given raw: Keyboard with
@@ -140,6 +143,7 @@ def terminal
 
   val term = Terminal(input, signals)
   Io.print(Terminal.reportBackground)
+  Io.print(Terminal.detectFocus)
   Io.print(Terminal.reportSize)
   block(using term)
 
