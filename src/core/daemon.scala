@@ -44,6 +44,16 @@ import java.io as ji
 
 case class CliSession(pid: Pid, async: Async[Unit], signals: Funnel[Signal], terminate: Promise[Unit], close: () => Unit)(using Monitor)
   
+
+class LazyEnvironment(vars: List[Text]) extends Environment:
+  private lazy val map: Map[Text, Text] =
+    vars.map: element =>
+      element.cut(t"=", 2) match
+        case List(key, value) => (key, value)
+    .to(Map)
+  
+  def apply(key: Text): Maybe[Text] = map.get(key).getOrElse(Unset)
+
 object Daemon:
   def listen(block: ShellSession ?=> ExitStatus): Unit =
     given context: Invocation = Invocation(IArray(), environments.jvm, workingDirectories.default, LazyList(), _ => (), _ => ())
@@ -91,7 +101,8 @@ class Daemon(block: ShellSession => ExitStatus) extends Application:
           getInput = () => codl.body,
           stdin = inputType,
           script = scriptName.decodeAs[Unix.Path],
-          workDir = directory
+          workDir = directory,
+          environment = LazyEnvironment(env)
         )
 
         val async: Async[Unit] = Async:
@@ -157,7 +168,8 @@ def fury(): Unit =
 
 case class ShellSession
     (out: ji.OutputStream, shutdown: () => Unit, arguments: IArray[Text], getSignals: () => LazyList[Signal],
-        getInput: () => LazyList[Char], stdin: Stdin, script: Unix.Path, workDir: Text)
+        getInput: () => LazyList[Char], stdin: Stdin, script: Unix.Path, workDir: Text,
+        environment: Environment)
     (using Monitor)
 extends Stdio, WorkingDirectory(workDir):
   def signals: LazyList[Signal] = getSignals()
