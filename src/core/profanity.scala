@@ -31,7 +31,7 @@ trait Keyboard:
 
 class StandardKeyboard()(using Monitor) extends Keyboard:
   type Keypress = profanity.Keypress
-  
+
   def process(stream: LazyList[Char]): LazyList[Keypress] = stream match
     case '\u001b' #:: rest                    =>
       safely(Async(rest.head).await(30L)) match
@@ -58,12 +58,22 @@ class StandardKeyboard()(using Monitor) extends Keyboard:
               val sequence = other.takeWhile(!_.isLetter)
               val rest = other.drop(sequence.length)
               def continue = process(rest.tail)
-              
+
               rest.head match
                 case 'R'  => sequence.map(_.show).join.cut(';') match
                   case List(As[Int](rows), As[Int](cols)) => Keypress.Resize(rows, cols) #:: continue
                   case _                                  => Keypress.Resize(20, 30) #:: continue
                 case char => Keypress.EscapeSeq(char, sequence*) #:: continue
+
+          case ']' #:: '1' #:: '1' #:: ';' #:: 'r' #:: 'g' #:: 'b' #:: ':' #:: rest =>
+            val content = rest.takeWhile(_ != '\u001b').mkString.tt
+            val continuation = rest.drop(content.length + 2)
+
+            content.cut(t"/") match
+              case List(Hex(red), Hex(green), Hex(blue)) =>
+                Keypress.BgColor(red, green, blue) #:: process(continuation)
+              case _ =>
+                process(continuation)
 
           case rest =>
             process(rest)
@@ -85,7 +95,7 @@ object Keyboard:
   given raw: Keyboard with
     type Keypress = Char
      def process(stream: LazyList[Char]): LazyList[Keypress] = stream
-  
+
   given numeric: Keyboard with
     type Keypress = Int
      def process(stream: LazyList[Char]): LazyList[Int] = stream.map(_.toInt)
@@ -110,13 +120,13 @@ extends Stdio:
     signals.foreach:
       case Signal.Winch => Io.print(Terminal.reportSize)
       case _            => ()
-      
+
   def in: LazyList[TtyEvent] = keyboard.process(input).multiplexWith(signals).map:
     case resize@Keypress.Resize(rows2, columns2) =>
       rows = rows2
       columns = columns2
       resize
-    
+
     case other =>
       other
 
@@ -128,6 +138,7 @@ def terminal
     : ResultType =
 
   val term = Terminal(input, signals)
+  Io.print(Terminal.reportBackground)
   Io.print(Terminal.reportSize)
   block(using term)
 

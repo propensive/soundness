@@ -44,5 +44,6 @@ enum Keypress extends TtyEvent:
   case Ctrl(char: Char)
   case EscapeSeq(id: Char, content: Char*)
   case Resize(rows: Int, columns: Int)
+  case BgColor(red: Int, green: Int, blue: Int)
   case Enter, Escape, Tab, Backspace, Delete, PageUp, PageDown, LeftArrow, RightArrow, UpArrow,
       DownArrow, CtrlLeftArrow, CtrlRightArrow, CtrlUpArrow, CtrlDownArrow, End, Home, Insert
