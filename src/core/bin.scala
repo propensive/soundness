@@ -186,3 +186,7 @@ extension (short: Short)
 
 extension (byte: Byte)
   def hex: Text = Integer.toHexString(byte).nn.tt
+
+object Hex:
+  def unapply(text: Text): Option[Int] =
+    try Some(Integer.parseInt(text.s, 16)) catch case err: NumberFormatException => None
