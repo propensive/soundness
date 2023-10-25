@@ -29,6 +29,7 @@ import language.dynamics
 @capability
 trait Environment:
   def apply(name: Text): Maybe[Text]
+  def knownKeys: Set[Text] = Set()
 
 object Environment extends Dynamic:
   given default(using Quickstart): Environment = environments.jvm
