@@ -30,7 +30,7 @@ trait Keyboard:
   def process(stream: LazyList[Char]): LazyList[Keypress]
 
 class StandardKeyboard()(using Monitor) extends Keyboard:
-  type Keypress = profanity.Keypress
+  type Keypress = profanity.Keypress | TerminalInfo
 
   def process(stream: LazyList[Char]): LazyList[Keypress] = stream match
     case '\u001b' #:: rest                    =>
@@ -61,8 +61,8 @@ class StandardKeyboard()(using Monitor) extends Keyboard:
 
               rest.head match
                 case 'R'  => sequence.map(_.show).join.cut(';') match
-                  case List(As[Int](rows), As[Int](cols)) => Keypress.Resize(rows, cols) #:: continue
-                  case _                                  => Keypress.Resize(20, 30) #:: continue
+                  case List(As[Int](rows), As[Int](cols)) => TerminalInfo.WindowSize(rows, cols) #:: continue
+                  case _                                  => TerminalInfo.WindowSize(20, 30) #:: continue
                 case char => Keypress.EscapeSeq(char, sequence*) #:: continue
 
           case ']' #:: '1' #:: '1' #:: ';' #:: 'r' #:: 'g' #:: 'b' #:: ':' #:: rest =>
@@ -71,7 +71,7 @@ class StandardKeyboard()(using Monitor) extends Keyboard:
 
             content.cut(t"/") match
               case List(Hex(red), Hex(green), Hex(blue)) =>
-                Keypress.BgColor(red, green, blue) #:: process(continuation)
+                TerminalInfo.BgColor(red, green, blue) #:: process(continuation)
               case _ =>
                 process(continuation)
 
@@ -91,7 +91,7 @@ object Terminal:
   def reportBackground: Text = t"\e]11;?\e\\"
   def reportSize: Text = t"\e[s\e[4095C\e[4095B\e[6n\e[u"
 
-object Keyboard:
+package keyboards:
   given raw: Keyboard with
     type Keypress = Char
      def process(stream: LazyList[Char]): LazyList[Keypress] = stream
@@ -100,7 +100,8 @@ object Keyboard:
     type Keypress = Int
      def process(stream: LazyList[Char]): LazyList[Int] = stream.map(_.toInt)
 
-  given standard(using Monitor): Keyboard { type Keypress = profanity.Keypress } = StandardKeyboard()
+  given standard(using Monitor): Keyboard { type Keypress = profanity.Keypress | TerminalInfo } =
+    StandardKeyboard()
 
 enum TerminalMode:
   case Dark, Light
@@ -122,7 +123,7 @@ extends Stdio:
       case _            => ()
 
   def events: LazyList[TtyEvent] = keyboard.process(input).multiplexWith(signals).map:
-    case resize@Keypress.Resize(rows2, columns2) =>
+    case resize@TerminalInfo.WindowSize(rows2, columns2) =>
       rows = rows2
       columns = columns2
       resize

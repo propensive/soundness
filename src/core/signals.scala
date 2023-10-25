@@ -27,6 +27,10 @@ object Signal:
 
 sealed trait TtyEvent
 
+enum TerminalInfo extends TtyEvent:
+  case WindowSize(rows: Int, columns: Int)
+  case BgColor(red: Int, green: Int, blue: Int)
+
 enum Signal extends TtyEvent:
   case Hup, Int, Quit, Ill, Trap, Abrt, Bus, Fpe, Kill, Usr1, Segv, Usr2, Pipe, Alrm, Term, Chld, Cont, Stop,
       Tstp, Ttin, Ttou, Urg, Xcpu, Xfsz, Vtalrm, Prof, Winch, Io, Pwr, Sys
@@ -43,7 +47,5 @@ enum Keypress extends TtyEvent:
   case Function(number: Int)
   case Ctrl(char: Char)
   case EscapeSeq(id: Char, content: Char*)
-  case Resize(rows: Int, columns: Int)
-  case BgColor(red: Int, green: Int, blue: Int)
   case Enter, Escape, Tab, Backspace, Delete, PageUp, PageDown, LeftArrow, RightArrow, UpArrow,
       DownArrow, CtrlLeftArrow, CtrlRightArrow, CtrlUpArrow, CtrlDownArrow, End, Home, Insert
