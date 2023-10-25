@@ -37,6 +37,7 @@ import spectacular.*
 import cellulose.*
 
 import scala.collection.mutable as scm
+import scala.compiletime.*
 
 import java.net as jn
 import java.io as ji
@@ -44,11 +45,11 @@ import java.io as ji
 case class CliSession(pid: Pid, async: Async[Unit], signals: Funnel[Signal], terminate: Promise[Unit], close: () => Unit)(using Monitor)
   
 object Daemon:
-  def listen(block: Monitor ?=> ShellSession ?=> ExitStatus): Unit =
+  def listen(block: ShellSession ?=> ExitStatus): Unit =
     given context: Invocation = Invocation(IArray(), environments.jvm, workingDirectories.default, LazyList(), _ => (), _ => ())
-    Daemon(monitor => session => block(using monitor)(using session)).invoke.execute(context)
+    Daemon(session => block(using session)).invoke.execute(context)
 
-class Daemon(block: Monitor => ShellSession => ExitStatus) extends Application:
+class Daemon(block: ShellSession => ExitStatus) extends Application:
   daemon =>
   
   import environments.jvm
@@ -83,6 +84,7 @@ class Daemon(block: Monitor => ShellSession => ExitStatus) extends Application:
         val signalFunnel: Funnel[Signal] = Funnel()
         
         val session = new ShellSession(socket.getOutputStream.nn) with WorkingDirectory(workDir):
+          def monitor: Monitor = summon[Monitor]
           def shutdown(): Unit = daemon.shutdown()
           def script: Text = scriptName
           def arguments: IArray[Text] = IArray.from(args)
@@ -91,8 +93,7 @@ class Daemon(block: Monitor => ShellSession => ExitStatus) extends Application:
           def stdin: Stdin = inputType
         
         val async: Async[Unit] = Async:
-          try block(summon[Monitor])(session)
-          finally
+          try block(session) finally
             clients -= process
             socket.close()
         
@@ -131,23 +132,31 @@ case class Initialize(process: Pid, work: Text, script: Text, input: Stdin, arg:
 case class Interrupt(process: Pid, signal: Signal)
 
 @main
-def fury(): Unit = Daemon.listen:
-  Io.println(t"Hello world")
-  Io.println(arguments.debug)
-  Io.println(shell.script)
-  Io.println(shell.stdin.debug)
-  Io.println(shell.directory.or(t"unknown"))
+def fury(): Unit =
+  import errorHandlers.throwUnsafely
+  import unsafeExceptions.canThrowAny
   
-  StdKeyboard.process(shell.input).multiplexWith(shell.signals).takeWhile(_ != Keypress.Printable('q')).foreach: datum =>
-    datum match
-      case Keypress.Printable('Q') => shell.shutdown()
-      case Signal.Winch            => Io.print(t"\e[s\e[4095C\e[4095B\e[6n\e[u")
-      case other                   => Io.println(other.toString.tt)
+  Daemon.listen:
+    supervise:
+      terminal(shell.input, shell.signals):
+        Io.println(t"Hello world")
+        Io.println(arguments.debug)
+        Io.println(shell.script)
+        Io.println(shell.stdin.debug)
+        Io.println(shell.directory.or(t"unknown"))
+    
+        tty.in.takeWhile(_ != Keypress.Printable('Q')).foreach:
+          case Keypress.Printable(ch) => Io.print(ch)
+          case other                  => println(other)
 
-  Io.println(t"Done")
-  ExitStatus.Ok
+        Io.println(t"Rows: ${tty.rows}")
+        Io.println(t"Cols: ${tty.columns}")
+        Io.println(t"Done")
+
+    ExitStatus.Ok
 
 trait ShellSession(out: ji.OutputStream) extends Stdio, WorkingDirectory:
+  def monitor: Monitor
   def shutdown(): Unit
   def arguments: IArray[Text]
   def signals: LazyList[Signal]
@@ -166,6 +175,6 @@ trait ShellSession(out: ji.OutputStream) extends Stdio, WorkingDirectory:
     out.write(text.bytes.mutable(using Unsafe))
     out.flush()
 
-inline def arguments(using session: ShellSession): IArray[Text] = session.arguments
-inline def shell(using shell: ShellSession): ShellSession = shell
+inline def arguments: IArray[Text] = shell.arguments
+inline def shell: ShellSession = summonInline[ShellSession]
 //inline def stdin(using shell: ShellSession): LazyList[Bytes] = 
