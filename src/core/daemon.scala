@@ -79,19 +79,21 @@ class Daemon(block: ShellSession => ExitStatus) extends Application:
         Io.println(t"Received signal $signal")
         clients(process).signals.put(signal)
 
-      case Initialize(process, workDir, scriptName, inputType, args, env) =>
+      case Initialize(process, directory, scriptName, inputType, args, env) =>
         val promise: Promise[Unit] = Promise()
         val signalFunnel: Funnel[Signal] = Funnel()
         
-        val session = new ShellSession(socket.getOutputStream.nn) with WorkingDirectory(workDir):
-          def monitor: Monitor = summon[Monitor]
-          def shutdown(): Unit = daemon.shutdown()
-          def script: Text = scriptName
-          def arguments: IArray[Text] = IArray.from(args)
-          def signals: LazyList[Signal] = signalFunnel.stream
-          def input = codl.body
-          def stdin: Stdin = inputType
-        
+        val session = ShellSession(
+          out = socket.getOutputStream.nn, 
+          shutdown = () => daemon.shutdown(),
+          arguments = IArray.from(args),
+          getSignals = () => signalFunnel.stream,
+          getInput = () => codl.body,
+          stdin = inputType,
+          script = scriptName.decodeAs[Unix.Path],
+          workDir = directory
+        )
+
         val async: Async[Unit] = Async:
           try block(session) finally
             clients -= process
@@ -139,7 +141,7 @@ def fury(): Unit =
       terminal(shell.input, shell.signals):
         Io.println(t"Hello world")
         Io.println(arguments.debug)
-        Io.println(shell.script)
+        Io.println(shell.script.debug)
         Io.println(shell.stdin.debug)
         Io.println(shell.directory.or(t"unknown"))
     
@@ -153,15 +155,13 @@ def fury(): Unit =
 
     ExitStatus.Ok
 
-trait ShellSession(out: ji.OutputStream) extends Stdio, WorkingDirectory:
-  def monitor: Monitor
-  def shutdown(): Unit
-  def arguments: IArray[Text]
-  def signals: LazyList[Signal]
-  def input: LazyList[Char]
-  def stdin: Stdin
-  def script: Text
-
+case class ShellSession
+    (out: ji.OutputStream, shutdown: () => Unit, arguments: IArray[Text], getSignals: () => LazyList[Signal],
+        getInput: () => LazyList[Char], stdin: Stdin, script: Unix.Path, workDir: Text)
+    (using Monitor)
+extends Stdio, WorkingDirectory(workDir):
+  def signals: LazyList[Signal] = getSignals()
+  def input: LazyList[Char] = getInput()
   def putErrBytes(bytes: Bytes): Unit = putOutBytes(bytes)
   def putErrText(text: Text): Unit = putOutText(text)
   
@@ -173,5 +173,5 @@ trait ShellSession(out: ji.OutputStream) extends Stdio, WorkingDirectory:
     out.write(text.bytes.mutable(using Unsafe))
     out.flush()
 
-inline def arguments: IArray[Text] = shell.arguments
-inline def shell: ShellSession = summonInline[ShellSession]
+def arguments(using session: ShellSession): IArray[Text] = session.arguments
+def shell(using session: ShellSession): ShellSession = session
