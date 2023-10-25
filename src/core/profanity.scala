@@ -33,7 +33,7 @@ enum Keypress:
   case Printable(char: Char)
   case Function(number: Int)
   case Ctrl(char: Char)
-  case EscapeSeq(chars: Char*)
+  case EscapeSeq(id: Char, content: Char*)
   case Resize(rows: Int, columns: Int)
   case Enter, Escape, Tab, Backspace, Delete, PageUp, PageDown, LeftArrow, RightArrow, UpArrow,
       DownArrow, CtrlLeftArrow, CtrlRightArrow, CtrlUpArrow, CtrlDownArrow, End, Home, Insert
@@ -43,36 +43,40 @@ trait Keyboard[+KeyType]:
 
 object StdKeyboard:
   def process(stream: LazyList[Char]): LazyList[Keypress] = stream match
-    case '\u001b' #:: rest                    => rest match
-      case 'O' #:: fn #:: rest                  => Keypress.Function(fn.toInt - 79) #:: process(rest)
-      case '[' #:: rest                         => rest match
-        case '3' #:: '~' #:: rest                 => Keypress.Delete #:: process(rest)
-        case '2' #:: '~' #:: rest                 => Keypress.Insert #:: process(rest)
-        case 'F' #:: rest                         => Keypress.End #:: process(rest)
-        case 'H' #:: rest                         => Keypress.Home #:: process(rest)
-        case '5' #:: '~' #:: rest                 => Keypress.PageUp #:: process(rest)
-        case '6' #:: '~' #:: rest                 => Keypress.PageDown #:: process(rest)
-        case 'A' #:: rest                         => Keypress.UpArrow #:: process(rest)
-        case '1' #:: ';' #:: '5' #:: 'A' #:: rest => Keypress.CtrlUpArrow #:: process(rest)
-        case 'B' #:: rest                         => Keypress.DownArrow #:: process(rest)
-        case '1' #:: ';' #:: '5' #:: 'B' #:: rest => Keypress.CtrlDownArrow #:: process(rest)
-        case 'C' #:: rest                         => Keypress.RightArrow #:: process(rest)
-        case '1' #:: ';' #:: '5' #:: 'C' #:: rest => Keypress.CtrlRightArrow #:: process(rest)
-        case 'D' #:: rest                         => Keypress.LeftArrow #:: process(rest)
-        case '1' #:: ';' #:: '5' #:: 'D' #:: rest => Keypress.CtrlLeftArrow #:: process(rest)
-        case other =>
-          val sequence = other.takeWhile(!_.isLetter)
-          val rest = other.drop(sequence.length)
-          def continue = process(rest.tail)
-          
-          if rest.head != 'R' then Keypress.EscapeSeq(sequence*) #:: continue
-          else sequence.map(_.show).join.cut(';') match
-            case List(As[Int](rows), As[Int](cols)) => Keypress.Resize(rows, cols) #:: continue
-            case _                                  => Keypress.Resize(20, 30) #:: continue
-      case rest => process(rest)
-    case ('\b' | '\u0008') #:: rest           => Keypress.Backspace #:: process(rest)
+    case '\u001b' #:: rest                    =>
+      safely(supervise(Async(rest.head).await(10L))) match
+        case Unset => Keypress.Escape #:: process(rest)
+        case _ => rest match
+          case 'O' #:: fn #:: rest                  => Keypress.Function(fn.toInt - 79) #:: process(rest)
+          case '[' #:: rest                         => rest match
+            case '3' #:: '~' #:: rest                 => Keypress.Delete #:: process(rest)
+            case '2' #:: '~' #:: rest                 => Keypress.Insert #:: process(rest)
+            case 'F' #:: rest                         => Keypress.End #:: process(rest)
+            case 'H' #:: rest                         => Keypress.Home #:: process(rest)
+            case '5' #:: '~' #:: rest                 => Keypress.PageUp #:: process(rest)
+            case '6' #:: '~' #:: rest                 => Keypress.PageDown #:: process(rest)
+            case 'A' #:: rest                         => Keypress.UpArrow #:: process(rest)
+            case '1' #:: ';' #:: '5' #:: 'A' #:: rest => Keypress.CtrlUpArrow #:: process(rest)
+            case 'B' #:: rest                         => Keypress.DownArrow #:: process(rest)
+            case '1' #:: ';' #:: '5' #:: 'B' #:: rest => Keypress.CtrlDownArrow #:: process(rest)
+            case 'C' #:: rest                         => Keypress.RightArrow #:: process(rest)
+            case '1' #:: ';' #:: '5' #:: 'C' #:: rest => Keypress.CtrlRightArrow #:: process(rest)
+            case 'D' #:: rest                         => Keypress.LeftArrow #:: process(rest)
+            case '1' #:: ';' #:: '5' #:: 'D' #:: rest => Keypress.CtrlLeftArrow #:: process(rest)
+            case other =>
+              val sequence = other.takeWhile(!_.isLetter)
+              val rest = other.drop(sequence.length)
+              def continue = process(rest.tail)
+              
+              rest.head match
+                case 'R'  => sequence.map(_.show).join.cut(';') match
+                  case List(As[Int](rows), As[Int](cols)) => Keypress.Resize(rows, cols) #:: continue
+                  case _                                  => Keypress.Resize(20, 30) #:: continue
+                case char => Keypress.EscapeSeq(char, sequence*) #:: continue
+          case rest => process(rest)
+    case ('\b' | '\u007f') #:: rest           => Keypress.Backspace #:: process(rest)
     case '\u0009' #:: rest                    => Keypress.Tab #:: process(rest)
-    case '\u000a' #:: rest                    => Keypress.Enter #:: process(rest)
+    case ('\u000a' | '\u000d') #:: rest       => Keypress.Enter #:: process(rest)
     case char #:: rest if char < 32           => Keypress.Ctrl(char) #:: process(rest)
     case other #:: rest                       => Keypress.Printable(other) #:: process(rest)
     case _                                    => LazyList()
@@ -149,7 +153,7 @@ object Keyboard:
       case List(66)             => Keypress.DownArrow
       case List(49, 59, 53, 66) => Keypress.CtrlDownArrow
       case ks if ks.last == 82  => readResize(ks)
-      case other                => Keypress.EscapeSeq(other.map(_.toChar)*)
+      case other                => Keypress.EscapeSeq(other.last.toChar, other.init.map(_.toChar)*)
 
 def esc(code: Text): Text = t"${27.toChar}[${code}"
 
