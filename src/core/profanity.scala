@@ -25,15 +25,6 @@ import parasite.*
 import turbulence.*
 import anticipation.*, timeApi.long
 
-enum Keypress:
-  case Printable(char: Char)
-  case Function(number: Int)
-  case Ctrl(char: Char)
-  case EscapeSeq(id: Char, content: Char*)
-  case Resize(rows: Int, columns: Int)
-  case Enter, Escape, Tab, Backspace, Delete, PageUp, PageDown, LeftArrow, RightArrow, UpArrow,
-      DownArrow, CtrlLeftArrow, CtrlRightArrow, CtrlUpArrow, CtrlDownArrow, End, Home, Insert
-
 trait Keyboard:
   type Keypress
   def process(stream: LazyList[Char]): LazyList[Keypress]
@@ -120,7 +111,7 @@ extends Stdio:
       case Signal.Winch => Io.print(Terminal.reportSize)
       case _            => ()
       
-  def in: LazyList[Keypress | Signal] = keyboard.process(input).multiplexWith(signals).map:
+  def in: LazyList[TtyEvent] = keyboard.process(input).multiplexWith(signals).map:
     case resize@Keypress.Resize(rows2, columns2) =>
       rows = rows2
       columns = columns2

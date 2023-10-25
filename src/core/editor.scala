@@ -14,7 +14,7 @@ object LineEditor:
   def ask(initial: Text = t"", render: Text => Text = identity(_))(using Terminal, Monitor): Text =
     Io.print(render(initial))
     
-    def finished(key: Keypress | Signal) =
+    def finished(key: TtyEvent) =
       key == Keypress.Enter || key == Keypress.Ctrl('D') || key == Keypress.Ctrl('C')
     
     summon[Terminal].in.takeWhile(!finished(_)).foldLeft(LineEditor(initial, initial.length)):
@@ -32,7 +32,7 @@ object LineEditor:
 case class LineEditor(content: Text = t"", pos: Int = 0):
   import Keypress.*
 
-  def apply(keypress: Keypress | Signal): LineEditor = try keypress match
+  def apply(keypress: TtyEvent): LineEditor = try keypress match
     case Printable(ch)  => copy(t"${content.take(pos)}$ch${content.drop(pos)}", pos + 1)
     case Ctrl('U')      => copy(content.drop(pos), 0)
     
@@ -53,9 +53,9 @@ case class LineEditor(content: Text = t"", pos: Int = 0):
     case _              => this
   catch case e: OutOfRangeError => this
 
-  def unapply(stream: LazyList[Keypress | Signal])(using interaction: Interaction[LineEditor, Text])
+  def unapply(stream: LazyList[TtyEvent])(using interaction: Interaction[LineEditor, Text])
              (using Monitor, Terminal)
-             : Option[(Text, LazyList[Keypress | Signal])] =
+             : Option[(Text, LazyList[TtyEvent])] =
     interaction(summon[Terminal].in, this)(_(_))
 
 trait Interaction[StateType, ResultType]:
@@ -65,9 +65,9 @@ trait Interaction[StateType, ResultType]:
   def result(state: StateType): ResultType
 
   @tailrec
-  final def recur(stream: LazyList[Keypress | Signal], state: StateType, oldState: Maybe[StateType])
-                 (key: (StateType, Keypress | Signal) => StateType)
-                 : Option[(ResultType, LazyList[Keypress | Signal])] =
+  final def recur(stream: LazyList[TtyEvent], state: StateType, oldState: Maybe[StateType])
+                 (key: (StateType, TtyEvent) => StateType)
+                 : Option[(ResultType, LazyList[TtyEvent])] =
     render(oldState, state)
     
     stream match
@@ -76,8 +76,8 @@ trait Interaction[StateType, ResultType]:
       case other #:: tail                    => recur(tail, key(state, other), state)(key)
       case _                                 => None
 
-  def apply(stream: LazyList[Keypress | Signal], state: StateType)(key: (StateType, Keypress | Signal) => StateType)
-           : Option[(ResultType, LazyList[Keypress | Signal])] =
+  def apply(stream: LazyList[TtyEvent], state: StateType)(key: (StateType, TtyEvent) => StateType)
+           : Option[(ResultType, LazyList[TtyEvent])] =
     before()
     recur(stream, state, Unset)(key).tap(after().waive)
 
@@ -107,17 +107,17 @@ object Interaction:
 
 case class SelectMenu[ItemType](options: List[ItemType], current: ItemType):
   import Keypress.*
-  def apply(keypress: Keypress | Signal): SelectMenu[ItemType] = try keypress match
+  def apply(keypress: TtyEvent): SelectMenu[ItemType] = try keypress match
     case UpArrow   => copy(current = options(0 max options.indexOf(current) - 1))
     case DownArrow => copy(current = options(options.size - 1 min options.indexOf(current) + 1))
     case _         => this
   catch case e: OutOfRangeError => this
 
   def unapply
-      (stream: LazyList[Keypress | Signal])
+      (stream: LazyList[TtyEvent])
       (using terminal: Terminal, interaction: Interaction[SelectMenu[ItemType], ItemType])
       (using Monitor)
-      : Option[(ItemType, LazyList[Keypress | Signal])] =
+      : Option[(ItemType, LazyList[TtyEvent])] =
     
     interaction(summon[Terminal].in, this)(_(_))
 

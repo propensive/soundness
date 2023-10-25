@@ -25,7 +25,9 @@ object Signal:
   given decoder: Decoder[Signal] = text => Signal.valueOf(text.lower.capitalize.s)
   given encoder: Encoder[Signal] = _.shortName
 
-enum Signal:
+sealed trait TtyEvent
+
+enum Signal extends TtyEvent:
   case Hup, Int, Quit, Ill, Trap, Abrt, Bus, Fpe, Kill, Usr1, Segv, Usr2, Pipe, Alrm, Term, Chld, Cont, Stop,
       Tstp, Ttin, Ttou, Urg, Xcpu, Xfsz, Vtalrm, Prof, Winch, Io, Pwr, Sys
   
@@ -35,3 +37,12 @@ enum Signal:
 
   // def sendTo(process: OsProcess)(using WorkingDirectory, Raises[ExecError]): Unit =
   //   sh"kill -${shortName} ${process.pid.value}"()
+
+enum Keypress extends TtyEvent:
+  case Printable(char: Char)
+  case Function(number: Int)
+  case Ctrl(char: Char)
+  case EscapeSeq(id: Char, content: Char*)
+  case Resize(rows: Int, columns: Int)
+  case Enter, Escape, Tab, Backspace, Delete, PageUp, PageDown, LeftArrow, RightArrow, UpArrow,
+      DownArrow, CtrlLeftArrow, CtrlRightArrow, CtrlUpArrow, CtrlDownArrow, End, Home, Insert
