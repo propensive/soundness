@@ -29,10 +29,10 @@ object LineEditor:
 
   def ask(initial: Text = t"", render: Text => Text = identity(_))(using Terminal, Monitor): Text =
     Io.print(render(initial))
-    
+
     def finished(key: TtyEvent) =
       key == Keypress.Enter || key == Keypress.Ctrl('D') || key == Keypress.Ctrl('C')
-    
+
     summon[Terminal].events.takeWhile(!finished(_)).foldLeft(LineEditor(initial, initial.length)):
       case (editor, next) =>
         if editor.pos > 0 then Io.print(t"\e${editor.pos}D")
@@ -51,17 +51,17 @@ case class LineEditor(content: Text = t"", pos: Int = 0):
   def apply(keypress: TtyEvent): LineEditor = try keypress match
     case Printable(ch)  => copy(t"${content.take(pos)}$ch${content.drop(pos)}", pos + 1)
     case Ctrl('U')      => copy(content.drop(pos), 0)
-    
+
     case Ctrl('W')      => val prefix = content.take(0 max (pos - 1)).reverse.dropWhile(_ != ' ').reverse
                            copy(t"$prefix${content.drop(pos)}", prefix.length)
-    
+
     case Delete         => copy(t"${content.take(pos)}${content.drop(pos + 1)}")
     case Backspace      => copy(t"${content.take(pos - 1)}${content.drop(pos)}", (pos - 1) max 0)
     case Home           => copy(pos = 0)
     case End            => copy(pos = content.length)
     case LeftArrow      => copy(pos = (pos - 1) max 0)
     case CtrlLeftArrow  => copy(pos = (pos - 2 max 0 to 0 by -1).find(content(_) == ' ').fold(0)(_ + 1))
-    
+
     case CtrlRightArrow => val range = ((pos + 1) min (content.length - 1)) to (content.length - 1)
                            val newPos = range.find(content(_) == ' ').fold(content.length)(_ + 1)
                            copy(pos = newPos min content.length)
@@ -85,7 +85,7 @@ trait Interaction[StateType, ResultType]:
                  (key: (StateType, TtyEvent) => StateType)
                  : Option[(ResultType, LazyList[TtyEvent])] =
     render(oldState, state)
-    
+
     stream match
       case Keypress.Enter #:: tail           => Some((result(state), tail))
       case Keypress.Ctrl('C' | 'D') #:: tail => None
@@ -101,14 +101,14 @@ object Interaction:
   given [ItemType: Show](using Terminal): Interaction[SelectMenu[ItemType], ItemType] with
     override def before(): Unit = Io.print(t"\e?25l")
     override def after(): Unit = Io.print(t"\eJ\e?25h")
-    
+
     def render(old: Maybe[SelectMenu[ItemType]], menu: SelectMenu[ItemType]) =
       menu.options.foreach: opt =>
         Io.print((if opt == menu.current then t" > $opt" else t"   $opt")+t"\eK\n")
       Io.print(t"\e${menu.options.length}A")
-    
+
     def result(state: SelectMenu[ItemType]): ItemType = state.current
-  
+
   given (using Terminal): Interaction[LineEditor, Text] with
     def render(editor: Maybe[LineEditor], editor2: LineEditor): Unit =
       val prior = editor.or(editor2)
@@ -134,7 +134,7 @@ case class SelectMenu[ItemType](options: List[ItemType], current: ItemType):
       (using terminal: Terminal, interaction: Interaction[SelectMenu[ItemType], ItemType])
       (using Monitor)
       : Option[(ItemType, LazyList[TtyEvent])] =
-    
+
     interaction(summon[Terminal].events, this)(_(_))
 
 given realm: Realm = realm"profanity"

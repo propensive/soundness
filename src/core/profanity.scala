@@ -54,18 +54,25 @@ class StandardKeyboard()(using Monitor) extends Keyboard:
             case 'D' #:: rest                         => Keypress.LeftArrow #:: process(rest)
             case '1' #:: ';' #:: '5' #:: 'D' #:: rest => Keypress.CtrlLeftArrow #:: process(rest)
 
+            case '2' #:: '0' #:: '0' #:: '~' #:: tail =>
+              val size = tail.indexOfSlice(List('\u001b', '[', '2', '0', '1', '~'))
+              val content = tail.take(size).map(_.show).join
+              TerminalInfo.Paste(content) #:: process(tail.drop(size + 6))
+
             case other =>
               val sequence = other.takeWhile(!_.isLetter)
-              val rest = other.drop(sequence.length)
-              def continue = process(rest.tail)
 
-              rest.head match
-                case 'R' => sequence.map(_.show).join.cut(';') match
-                  case List(As[Int](rows), As[Int](cols)) => TerminalInfo.WindowSize(rows, cols) #:: continue
-                  case _                                  => TerminalInfo.WindowSize(20, 30) #:: continue
-                case 'O' => TerminalInfo.LoseFocus #:: continue
-                case 'I' => TerminalInfo.GainFocus #:: continue
-                case char => Keypress.EscapeSeq(char, sequence*) #:: continue
+              other.drop(sequence.length) match
+                case 'R' #:: tail => sequence.map(_.show).join.cut(';') match
+                  case List(As[Int](rows), As[Int](cols)) => TerminalInfo.WindowSize(rows, cols) #:: process(tail)
+                  case _                                  => TerminalInfo.WindowSize(20, 30) #:: process(tail)
+
+                case 'O' #:: tail => TerminalInfo.LoseFocus #:: process(tail)
+                case 'I' #:: tail => TerminalInfo.GainFocus #:: process(tail)
+
+
+                case char #:: tail =>
+                  Keypress.EscapeSeq(char, sequence*) #:: process(tail)
 
           case ']' #:: '1' #:: '1' #:: ';' #:: 'r' #:: 'g' #:: 'b' #:: ':' #:: rest =>
             val content = rest.takeWhile(_ != '\u001b').mkString.tt
@@ -93,6 +100,7 @@ object Terminal:
   def reportBackground: Text = t"\e]11;?\e\\"
   def reportSize: Text = t"\e[s\e[4095C\e[4095B\e[6n\e[u"
   def detectFocus: Text = t"\e[?1004h"
+  def enablePaste: Text = t"\e[?2004h"
 
 package keyboards:
   given raw: Keyboard with
@@ -144,6 +152,7 @@ def terminal
   val term = Terminal(input, signals)
   Io.print(Terminal.reportBackground)
   Io.print(Terminal.detectFocus)
+  Io.print(Terminal.enablePaste)
   Io.print(Terminal.reportSize)
   block(using term)
 

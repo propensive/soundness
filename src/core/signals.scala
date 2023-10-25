@@ -32,6 +32,7 @@ enum TerminalInfo extends TtyEvent:
   case BgColor(red: Int, green: Int, blue: Int)
   case LoseFocus
   case GainFocus
+  case Paste(text: Text)
 
 enum Signal extends TtyEvent:
   case Hup, Int, Quit, Ill, Trap, Abrt, Bus, Fpe, Kill, Usr1, Segv, Usr2, Pipe, Alrm, Term, Chld, Cont, Stop,
