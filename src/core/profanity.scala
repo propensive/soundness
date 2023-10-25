@@ -44,7 +44,7 @@ trait Keyboard[+KeyType]:
 object StdKeyboard:
   def process(stream: LazyList[Char]): LazyList[Keypress] = stream match
     case '\u001b' #:: rest                    =>
-      safely(supervise(Async(rest.head).await(10L))) match
+      safely(supervise(Async(rest.head).await(30L))) match
         case Unset => Keypress.Escape #:: process(rest)
         case _ => rest match
           case 'O' #:: fn #:: rest                  => Keypress.Function(fn.toInt - 79) #:: process(rest)
