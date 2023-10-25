@@ -121,7 +121,7 @@ extends Stdio:
       case Signal.Winch => Io.print(Terminal.reportSize)
       case _            => ()
 
-  def in: LazyList[TtyEvent] = keyboard.process(input).multiplexWith(signals).map:
+  def events: LazyList[TtyEvent] = keyboard.process(input).multiplexWith(signals).map:
     case resize@Keypress.Resize(rows2, columns2) =>
       rows = rows2
       columns = columns2

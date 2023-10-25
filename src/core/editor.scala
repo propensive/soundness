@@ -33,7 +33,7 @@ object LineEditor:
     def finished(key: TtyEvent) =
       key == Keypress.Enter || key == Keypress.Ctrl('D') || key == Keypress.Ctrl('C')
     
-    summon[Terminal].in.takeWhile(!finished(_)).foldLeft(LineEditor(initial, initial.length)):
+    summon[Terminal].events.takeWhile(!finished(_)).foldLeft(LineEditor(initial, initial.length)):
       case (editor, next) =>
         if editor.pos > 0 then Io.print(t"\e${editor.pos}D")
         val editor2 = editor(next)
@@ -72,7 +72,7 @@ case class LineEditor(content: Text = t"", pos: Int = 0):
   def unapply(stream: LazyList[TtyEvent])(using interaction: Interaction[LineEditor, Text])
              (using Monitor, Terminal)
              : Option[(Text, LazyList[TtyEvent])] =
-    interaction(summon[Terminal].in, this)(_(_))
+    interaction(summon[Terminal].events, this)(_(_))
 
 trait Interaction[StateType, ResultType]:
   def before(): Unit = ()
@@ -135,6 +135,6 @@ case class SelectMenu[ItemType](options: List[ItemType], current: ItemType):
       (using Monitor)
       : Option[(ItemType, LazyList[TtyEvent])] =
     
-    interaction(summon[Terminal].in, this)(_(_))
+    interaction(summon[Terminal].events, this)(_(_))
 
 given realm: Realm = realm"profanity"
