@@ -16,7 +16,7 @@ portFile="$baseDir/port"
 initFile="$baseDir/init"
 waitFile="$baseDir/wait"
 failFile="$baseDir/fail"
-script="$0"
+script="$(realpath "$0")"
 continue=1
 
 # The set of signals which should be captured and forwarded to the JVM process
