@@ -46,10 +46,6 @@ object Unicode:
       case Wide | FullWidth => 2
       case _                => 1
 
-  object Hex:
-    def unapply(text: Text): Option[Int] =
-      try Some(Integer.parseInt(text.s, 16)) catch case err: NumberFormatException => None
-
   def eastAsianWidth(char: Char): Maybe[EaWidth] =
     eastAsianWidths.minAfter(CharRange(char.toInt, char.toInt)).maybe.mm(_(1))
 
