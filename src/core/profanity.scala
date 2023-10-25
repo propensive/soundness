@@ -83,7 +83,7 @@ class StandardKeyboard()(using Monitor) extends Keyboard:
     case ('\b' | '\u007f') #:: rest           => Keypress.Backspace #:: process(rest)
     case '\u0009' #:: rest                    => Keypress.Tab #:: process(rest)
     case ('\u000a' | '\u000d') #:: rest       => Keypress.Enter #:: process(rest)
-    case char #:: rest if char < 32           => Keypress.Ctrl(char) #:: process(rest)
+    case char #:: rest if char < 32           => Keypress.Ctrl((char + 64).toChar) #:: process(rest)
     case other #:: rest                       => Keypress.Printable(other) #:: process(rest)
     case _                                    => LazyList()
 
