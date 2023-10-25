@@ -18,11 +18,8 @@ package profanity
 
 import anticipation.*
 import gossamer.*
-import guillotine.*
 import spectacular.*
-import perforate.*
 import rudiments.*
-import eucalyptus.*, logging.silent
 
 object Signal:
   given decoder: Decoder[Signal] = text => Signal.valueOf(text.lower.capitalize.s)
@@ -36,5 +33,5 @@ enum Signal:
   def name: Text = t"SIG${this.toString.show.upper}"
   def id: Int = if ordinal < 15 then ordinal - 1 else ordinal
 
-  def sendTo(process: OsProcess)(using WorkingDirectory, Raises[ExecError]): Unit =
-    sh"kill -${shortName} ${process.pid.value}"()
+  // def sendTo(process: OsProcess)(using WorkingDirectory, Raises[ExecError]): Unit =
+  //   sh"kill -${shortName} ${process.pid.value}"()
