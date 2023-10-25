@@ -63,21 +63,21 @@ class Daemon(block: ShellSession => ExitStatus) extends Application:
   private var continue: Boolean = true
 
   lazy val termination: Unit =
-    println("Shutdown daemon")
     portFile.wipe()
     System.exit(0)
   
-  def shutdown(): Unit = termination
+  def shutdown()(using Stdio): Unit =
+    Io.println(t"Shutdown daemon")
+    termination
 
-  def client(socket: jn.Socket)(using Monitor, Raises[StreamCutError], Raises[UndecodableCharError], Raises[AggregateError[CodlError]], Raises[CodlReadError], Raises[NumberError]): Unit =
+  def client(socket: jn.Socket)(using Monitor, Stdio, Raises[StreamCutError], Raises[UndecodableCharError], Raises[AggregateError[CodlError]], Raises[CodlReadError], Raises[NumberError]): Unit =
     val input = Readable.inputStream.read(socket.getInputStream.nn)
     val codl = Codl.parse(input)
-    println(codl.debug)
     
     safely(codl.as[Initialize]).or(codl.as[Interrupt]) match
       case Interrupt(process, signal) =>
-        val client = clients(process)
-        client.signals.put(signal)
+        Io.println(t"Received signal $signal")
+        clients(process).signals.put(signal)
 
       case Initialize(process, workDir, scriptName, inputType, args, env) =>
         val promise: Promise[Unit] = Promise()
@@ -96,6 +96,7 @@ class Daemon(block: ShellSession => ExitStatus) extends Application:
           try block(session) finally
             clients -= process
             socket.close()
+            Io.println(t"Closed connection to PID ${process.value}")
         
         clients(process) = CliSession(process, async, signalFunnel, promise, () => socket.close())
 
@@ -126,15 +127,12 @@ class Daemon(block: ShellSession => ExitStatus) extends Application:
 
         ExitStatus.Ok
 
-    case _                      => println("Not an invacation"); ???
-
 case class Initialize(process: Pid, work: Text, script: Text, input: Stdin, arg: List[Text], env: List[Text])
 case class Interrupt(process: Pid, signal: Signal)
 
 @main
 def fury(): Unit =
   import errorHandlers.throwUnsafely
-  import unsafeExceptions.canThrowAny
   
   Daemon.listen:
     supervise:
@@ -145,8 +143,8 @@ def fury(): Unit =
         Io.println(shell.stdin.debug)
         Io.println(shell.directory.or(t"unknown"))
     
-        tty.in.takeWhile(_ != Keypress.Printable('Q')).foreach:
-          case Keypress.Printable(ch) => Io.print(ch)
+        tty.events.takeWhile(_ != Keypress.Printable('Q')).foreach:
+          //case Keypress.Printable(ch) => Io.print(ch)
           case other                  => println(other)
 
         Io.println(t"Rows: ${tty.rows}")
@@ -177,4 +175,3 @@ trait ShellSession(out: ji.OutputStream) extends Stdio, WorkingDirectory:
 
 inline def arguments: IArray[Text] = shell.arguments
 inline def shell: ShellSession = summonInline[ShellSession]
-//inline def stdin(using shell: ShellSession): LazyList[Bytes] = 
