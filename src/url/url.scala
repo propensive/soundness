@@ -103,8 +103,8 @@ object UrlInterpolator extends contextual.Interpolator[UrlInput, Text, Url[Label
   def skip(state: Text): Text = state+t"1"
 
 object Url:
-  given GenericUrl[Url["http" | "https"]] = _.show
-  given (using Raises[UrlError], Raises[HostnameError]): SpecificUrl[Url["http" | "https"]] = Url.parse(_)
+  given GenericUrl[HttpUrl] = _.show
+  given (using Raises[UrlError], Raises[HostnameError]): SpecificUrl[HttpUrl] = Url.parse(_)
   given [SchemeType <: Label]: GenericHttpRequestParam["location", Url[SchemeType]] = show(_)
   given [SchemeType <: Label](using Raises[UrlError], Raises[HostnameError]): Decoder[Url[SchemeType]] = parse(_)
   given [SchemeType <: Label]: Encoder[Url[SchemeType]] = _.show
