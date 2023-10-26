@@ -105,7 +105,7 @@ extension [ElemType](stream: LazyList[ElemType])
           if active then other.nn #:: defer(true, stream.tail, Nil)
           else recur(false, stream.tail, other.nn :: buffer)
 
-    LazyList() #::: recur(true, stream.map(Some(_)).multiplexWith(tap.stream), Nil)
+    LazyList.defer(recur(true, stream.map(Some(_)).multiplexWith(tap.stream), Nil))
 
   def cluster
       [DurationType: SpecificDuration: GenericDuration]
@@ -138,7 +138,7 @@ extension [ElemType](stream: LazyList[ElemType])
         else if recurse.get then recur(stream.tail, stream.head :: list, expiry)
         else list.reverse #:: defer(stream, Nil, Long.MaxValue)
     
-    LazyList() #::: recur(stream, Nil, Long.MaxValue)
+    LazyList.defer(recur(stream, Nil, Long.MaxValue))
 
   def parallelMap[ElemType2](fn: ElemType => ElemType2)(using monitor: Monitor): LazyList[ElemType2] =
     
