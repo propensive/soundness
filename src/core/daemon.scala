@@ -34,7 +34,6 @@ import surveillance.*
 import eucalyptus.*, logging.silent
 import ambience.*
 import spectacular.*
-import cellulose.*
 
 import scala.collection.mutable as scm
 import scala.compiletime.*
@@ -56,7 +55,7 @@ class LazyEnvironment(vars: List[Text]) extends Environment:
 
 object Daemon:
   def listen(block: ShellSession ?=> ExitStatus): Unit =
-    given context: Invocation = Invocation(IArray(), environments.jvm, workingDirectories.default, LazyList(), _ => (), _ => ())
+    given context: Invocation = Invocation(IArray(), environments.jvm, workingDirectories.default, LazyList(), System.out.nn, System.err.nn)
     Daemon(session => block(using session)).invoke.execute(context)
 
 class Daemon(block: ShellSession => ExitStatus) extends Application:
@@ -80,16 +79,54 @@ class Daemon(block: ShellSession => ExitStatus) extends Application:
     Io.println(t"Shutdown daemon")
     termination
 
-  def client(socket: jn.Socket)(using Monitor, Stdio, Raises[StreamCutError], Raises[UndecodableCharError], Raises[AggregateError[CodlError]], Raises[CodlReadError], Raises[NumberError]): Unit =
-    val input = Readable.inputStream.read(socket.getInputStream.nn)
-    val codl = Codl.parse(input)
+  def client(socket: jn.Socket)(using Monitor, Stdio, Raises[StreamCutError], Raises[UndecodableCharError], Raises[NumberError]): Unit =
+    val in = socket.getInputStream.nn
+    val reader = ji.BufferedReader(ji.InputStreamReader(in, "UTF-8"))
+
+    def line(): Text = reader.readLine().nn.tt
     
-    safely(codl.as[Initialize]).or(codl.as[Interrupt]) match
+    def chunk(): Text =
+      var buffer: Text = t""
+      var current: Text = t""
+      
+      // FIXME: Newlines will be lost
+      while
+        current = line()
+        current != t"##"
+      do buffer += current
+      
+      buffer
+
+    val message = line() match
+      case t"s" =>
+        val pid: Pid = line().decodeAs[Pid]
+        val signal: Signal = line().decodeAs[Signal]
+        Interrupt(pid, signal)
+      case t"i" =>
+        val stdin: Stdin = if line() == t"p" then Stdin.Pipe else Stdin.Term
+        val pid: Pid = Pid(line().decodeAs[Int])
+        val script: Text = line()
+        val pwd: Text = line()
+        val args: List[Text] = chunk().cut(t"\u0000").init
+        val env: List[Text] = chunk().cut(t"\u0000").init
+
+        println("pipe = "+stdin)
+        println("pid = "+pid)
+        println("script = "+script)
+        println("pwd = "+pwd)
+        println("args = "+args)
+        println("env = "+env)
+
+        Initialize(pid, pwd, script, stdin, args, env)
+    
+    message match
       case Interrupt(process, signal) =>
         Io.println(t"Received signal $signal")
         clients(process).signals.put(signal)
+        socket.close()
 
       case Initialize(process, directory, scriptName, inputType, args, env) =>
+        Io.println(t"Received init $process")
         val promise: Promise[Unit] = Promise()
         val signalFunnel: Funnel[Signal] = Funnel()
         
@@ -97,8 +134,8 @@ class Daemon(block: ShellSession => ExitStatus) extends Application:
           out = socket.getOutputStream.nn, 
           shutdown = () => daemon.shutdown(),
           arguments = IArray.from(args),
-          getSignals = () => signalFunnel.stream,
-          getInput = () => codl.body,
+          signals = signalFunnel.stream,
+          input = reader.stream[Char],
           stdin = inputType,
           script = scriptName.decodeAs[Unix.Path],
           workDir = directory,
@@ -148,32 +185,32 @@ def fury(): Unit =
   import errorHandlers.throwUnsafely
   
   Daemon.listen:
+    Io.println(t"Hello world")
     supervise:
+      Io.println(t"BAR")
       terminal:
-        Io.println(t"Hello world")
-        Io.println(arguments.debug)
-        Io.println(shell.script.debug)
-        Io.println(shell.stdin.debug)
-        Io.println(shell.directory.or(t"unknown"))
+        println("FOO")
+        Io.println(t"Hello world 2")
+        println(arguments.debug)
+        println(shell.script.debug)
+        println(shell.stdin.debug)
+        println(shell.directory.or(t"unknown"))
     
         tty.events.takeWhile(_ != Keypress.Printable('Q')).foreach:
           //case Keypress.Printable(ch) => Io.print(ch)
           case other                  => println(other)
 
-        Io.println(t"Rows: ${tty.rows}")
-        Io.println(t"Cols: ${tty.columns}")
-        Io.println(t"Done")
-
-    ExitStatus.Ok
+        println(t"Rows: ${tty.rows}")
+        println(t"Cols: ${tty.columns}")
+        println(t"Done")
+        ExitStatus.Ok
 
 case class ShellSession
-    (out: ji.OutputStream, shutdown: () => Unit, arguments: IArray[Text], getSignals: () => LazyList[Signal],
-        getInput: () => LazyList[Char], stdin: Stdin, script: Unix.Path, workDir: Text,
+    (out: ji.OutputStream, shutdown: () => Unit, arguments: IArray[Text], signals: LazyList[Signal],
+        input: LazyList[Char], stdin: Stdin, script: Unix.Path, workDir: Text,
         environment: Environment)
     (using Monitor)
-extends Stdio, WorkingDirectory(workDir), ProcessContext:
-  def signals: LazyList[Signal] = getSignals()
-  def input: LazyList[Char] = getInput()
+extends WorkingDirectory(workDir), ProcessContext:
   def putErrBytes(bytes: Bytes): Unit = putOutBytes(bytes)
   def putErrText(text: Text): Unit = putOutText(text)
   

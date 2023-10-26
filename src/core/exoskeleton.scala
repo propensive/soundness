@@ -24,6 +24,7 @@ import spectacular.*
 import gossamer.*
 import ambience.*
 
+import java.io as ji
 import sun.misc as sm
 
 object Stdin:
@@ -45,8 +46,10 @@ extends CliContext
 
 case class Invocation
     (args: IArray[Text], environment: Environment, workingDirectory: WorkingDirectory, stdin: LazyList[Bytes],
-        stdout: LazyList[Bytes] => Unit, stderr: LazyList[Bytes] => Unit)
-extends CliContext:
+        stdout: ji.PrintStream, stderr: ji.PrintStream)
+extends CliContext, Stdio:
+  
+
   def signals(signals: Signal*): LazyList[Signal] = 
     val funnel: Funnel[Signal] = Funnel()
     
@@ -54,30 +57,23 @@ extends CliContext:
       sm.Signal.handle(sm.Signal(signal.shortName.s), event => funnel.put(signal))
     
     funnel.stream
+  
+  def putErrBytes(bytes: Bytes): Unit = stderr.write(bytes.mutable(using Unsafe))
+  def putOutBytes(bytes: Bytes): Unit = stdout.write(bytes.mutable(using Unsafe))
+  def putErrText(text: Text): Unit = stderr.print(text.s)
+  def putOutText(text: Text): Unit = stdout.print(text.s)
+  
 
 abstract class Application:
   protected given environment(using invocation: Invocation): Environment = invocation.environment
   protected given workingDirectory(using invocation: Invocation): WorkingDirectory = invocation.workingDirectory
-  
-  protected given stdio(using invocation: Invocation): Stdio with
-    def putErrBytes(bytes: Bytes): Unit = System.err.nn.write(bytes.mutable(using Unsafe))
-    def putOutBytes(bytes: Bytes): Unit = System.out.nn.write(bytes.mutable(using Unsafe))
-    def putErrText(text: Text): Unit = System.err.nn.print(text.s)
-    def putOutText(text: Text): Unit = System.out.nn.print(text.s)
   
   def invoke(using CliContext): Execution
 
   def main(args: IArray[Text]): Unit =
     def in: LazyList[Bytes] = safely(System.in.nn.stream[Bytes]).or(LazyList())
     
-    def stdout(stream: LazyList[Bytes]): Unit = stream.foreach: bytes =>
-      System.out.nn.write(bytes.mutable(using Unsafe))
-    
-    def stderr(stream: LazyList[Bytes]): Unit = stream.foreach: bytes =>
-      System.err.nn.write(bytes.mutable(using Unsafe))
-
-    val invocation = Invocation(args, environments.jvm, workingDirectories.default, in, stdout(_),
-        stderr(_))
+    val invocation = Invocation(args, environments.jvm, workingDirectories.default, in, System.out.nn, System.err.nn)
     
     invoke(using invocation).execute(invocation) match
       case ExitStatus.Ok           => System.exit(0)

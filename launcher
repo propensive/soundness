@@ -51,24 +51,22 @@ handle() {
   case "$1" in
     TERM) continue=0 ;;
   esac
-  printf "signal %s\nprocess %s\n" "$1" "$pid" | nc -q 1 localhost $port
+  echo "launcher script got signal"
+  printf "s\n%s\n%s\n" "$pid" "$1" | nc -q 1 localhost $port
 }
 
 connect() {
-  printf "process %s\n" "$pid"
-  printf "script %s\n" "$script"
-  printf "work %s\n" "$(pwd)"
-
-  for arg in "${args[@]}"
-  do printf "arg\n    %s\n" "$arg"
-  done
-
-  while IFS= read -r -d $'\0' variable
-  do printf "env\n    %s\n" "$variable"
-  done < <(env -0)
-
-  test -t 0 && printf "input term\n" || printf "input pipe\n"
-  printf "##\n"
+  echo "i"
+  test -t 0 && echo "t" || echo "p"
+  echo "$pid"
+  echo "$script"
+  pwd
+  printf '%s\0' "${args[@]}"
+  echo ""
+  echo "##"
+  env -0
+  echo ""
+  echo "##"
   exec cat
 }
 
@@ -79,7 +77,7 @@ backOut
 flock -n "$portFile" rm "$portFile"
 test -f "$portFile" || launch
 backOut
-port=$(cat "$portFile")
+port=$(<"$portFile")
 
 tmpPipe="$(mktemp -u)"
 mkfifo -m 600 "$tmpPipe"
