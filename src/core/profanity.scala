@@ -121,11 +121,9 @@ enum TerminalMode:
 
 case class Terminal(input: LazyList[Char], signals: LazyList[Signal])(using stdio: Stdio, monitor: Monitor)
 extends Stdio:
-
   export stdio.{putErrBytes, putErrText, putOutBytes, putOutText}
 
   val keyboard = StandardKeyboard()
-
   var mode: Maybe[TerminalMode] = Unset
   var rows: Int = 0
   var columns: Int = 0
@@ -140,21 +138,24 @@ extends Stdio:
       rows = rows2
       columns = columns2
       resize
+    
+    case bgColor@TerminalInfo.BgColor(red, green, blue) =>
+      mode = if (0.299*red + 0.587*green + 0.114*blue) > 32768 then TerminalMode.Light else TerminalMode.Dark
+      bgColor
 
     case other =>
       other
 
 
-trait ProcessContext:
+trait ProcessContext extends Stdio:
   def input: LazyList[Char]
   def signals: LazyList[Signal]
 
 def terminal
     [ResultType]
     (block: Terminal ?=> ResultType)
-    (using context: ProcessContext, stdio: Stdio, monitor: Monitor)
+    (using context: ProcessContext, monitor: Monitor)
     : ResultType =
-
   val term = Terminal(context.input, context.signals)
   Io.print(Terminal.reportBackground)
   Io.print(Terminal.detectFocus)
