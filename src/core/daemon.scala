@@ -149,7 +149,7 @@ def fury(): Unit =
   
   Daemon.listen:
     supervise:
-      terminal(shell.input, shell.signals):
+      terminal:
         Io.println(t"Hello world")
         Io.println(arguments.debug)
         Io.println(shell.script.debug)
@@ -171,7 +171,7 @@ case class ShellSession
         getInput: () => LazyList[Char], stdin: Stdin, script: Unix.Path, workDir: Text,
         environment: Environment)
     (using Monitor)
-extends Stdio, WorkingDirectory(workDir):
+extends Stdio, WorkingDirectory(workDir), ProcessContext:
   def signals: LazyList[Signal] = getSignals()
   def input: LazyList[Char] = getInput()
   def putErrBytes(bytes: Bytes): Unit = putOutBytes(bytes)
