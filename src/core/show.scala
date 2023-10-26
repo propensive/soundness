@@ -82,6 +82,7 @@ object TextConversion:
   given Show[Byte] = byte => byte.toString.tt
   given Show[Message] = _.text
   given (using decimalizer: DecimalConverter): Show[Double] = decimalizer.decimalize(_)
+  given Show[Pid] = _.value.show
   
   given Debug[Float] =
     case Float.PositiveInfinity => "Float.PositiveInfinity".tt
