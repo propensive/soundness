@@ -136,8 +136,9 @@ object Readable:
       try reader.read() match
         case -1  => LazyList()
         case int => int.toChar #:: recur(count + 1.b)
-      catch case err: ji.IOException => raise(StreamCutError(count))(LazyList())
-      finally reader.close()
+      catch case err: ji.IOException =>
+        reader.close()
+        raise(StreamCutError(count))(LazyList())
     
     recur(0L.b)
 
@@ -146,8 +147,9 @@ object Readable:
       try reader.readLine match
         case null         => LazyList()
         case line: String => Line(Text(line)) #:: recur(count + line.length.b + 1.b)
-      catch case err: ji.IOException => raise(StreamCutError(count))(LazyList())
-      finally reader.close()
+      catch case err: ji.IOException =>
+        reader.close()
+        raise(StreamCutError(count))(LazyList())
     
     recur(0L.b)
 
