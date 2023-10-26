@@ -86,9 +86,7 @@ backOut
 port=$(<"$portFile")
 
 tmpPipe="$(mktemp -u)"
-mkfifo -m 600 "$tmpPipe"
-exec 3<> "$tmpPipe"
-rm "$tmpPipe"
+mkfifo -m 600 "$tmpPipe" && exec 3<> "$tmpPipe" && rm "$tmpPipe"
 connect <&0 >&3 &
 streamPid=$!
 nc -q 1 localhost $port <&3 &
@@ -104,7 +102,6 @@ do
   ps $pipePid > /dev/null || continue=0
 done
 
-test -t 0 && stty "$ttystate" && echo -en "\033[?1004l\033[?2004h" && kill $streamPid
-
+test -t 0 && stty "$ttystate" && kill $streamPid
 terminate
 exit 1
