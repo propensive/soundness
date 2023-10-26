@@ -37,7 +37,10 @@ extension (obj: LazyList.type)
     val multiplexer = Multiplexer[Any, ElemType]()
     streams.zipWithIndex.map(_.swap).foreach(multiplexer.add)
     multiplexer
-  
+ 
+  def defer[ElemType](lazyList: => LazyList[ElemType]): LazyList[ElemType] =
+    (null.asInstanceOf[ElemType] #:: lazyList).tail
+
   def pulsar[DurationType: GenericDuration](duration: DurationType)(using Monitor): LazyList[Unit] =
     val startTime: Long = System.currentTimeMillis
     

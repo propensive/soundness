@@ -140,7 +140,7 @@ object Readable:
         reader.close()
         raise(StreamCutError(count))(LazyList())
     
-    recur(0L.b)
+    LazyList.defer(recur(0L.b))
 
   given bufferedReader(using streamCut: Raises[StreamCutError]): Readable[ji.BufferedReader, Line] = reader =>
     def recur(count: ByteSize): LazyList[Line] =
@@ -151,7 +151,7 @@ object Readable:
         reader.close()
         raise(StreamCutError(count))(LazyList())
     
-    recur(0L.b)
+    LazyList.defer(recur(0L.b))
 
   given reliableInputStream: Readable[ji.InputStream, Bytes] = in =>
     val channel: jn.channels.ReadableByteChannel = jn.channels.Channels.newChannel(in).nn
@@ -173,7 +173,7 @@ object Readable:
           
       catch case e: Exception => LazyList()
       
-    recur()
+    LazyList.defer(recur())
 
   given inputStream(using streamCut: Raises[StreamCutError]): Readable[ji.InputStream, Bytes] = in =>
     val channel: jn.channels.ReadableByteChannel = jn.channels.Channels.newChannel(in).nn
@@ -195,7 +195,7 @@ object Readable:
           
       catch case e: Exception => LazyList(raise(StreamCutError(total.b))(Bytes()))
       
-    recur(0)
+    LazyList.defer(recur(0))
 
 @capability
 trait Readable[-SourceType, +ChunkType]:
