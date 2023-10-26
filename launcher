@@ -55,8 +55,7 @@ handle() {
   printf "s\n%s\n%s\n" "$pid" "$1" | nc -q 1 localhost $port
 }
 
-exitCode() {
-  #printf "x\n%s\n" "$pid" | nc -q 1 localhost $port
+terminate() {
   exit "$(printf "x\n%s\n" "$pid" | nc -q 1 localhost $port)"
 }
 
@@ -66,6 +65,7 @@ connect() {
   echo "$pid"
   echo "$script"
   pwd
+  echo "${#args}"
   printf '%s\0' "${args[@]}"
   echo ""
   echo "##"
@@ -105,5 +105,5 @@ done
 
 test -t 0 && stty "$ttystate" && echo -en "\033[?1004l\033[?2004h" && kill $streamPid
 
-exitCode
+terminate
 exit 1

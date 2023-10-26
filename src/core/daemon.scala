@@ -103,7 +103,6 @@ class Daemon(block: ShellSession => ExitStatus) extends Application:
         Interrupt(pid, signal)
       
       case t"x" =>
-        println("Got an x")
         GetExitCode(line().decodeAs[Pid])
       
       case t"i" =>
@@ -111,7 +110,8 @@ class Daemon(block: ShellSession => ExitStatus) extends Application:
         val pid: Pid = Pid(line().decodeAs[Int])
         val script: Text = line()
         val pwd: Text = line()
-        val args: List[Text] = chunk().cut(t"\u0000").init
+        val argCount: Int = line().decodeAs[Int]
+        val args: List[Text] = chunk().cut(t"\u0000").take(argCount)
         val env: List[Text] = chunk().cut(t"\u0000").init
 
         Initialize(pid, pwd, script, stdin, args, env)
@@ -123,13 +123,10 @@ class Daemon(block: ShellSession => ExitStatus) extends Application:
         socket.close()
       
       case GetExitCode(process) =>
-        println("Getting exit code")
-        val code = clients(process).exit.await() match
-          case ExitStatus.Ok      => t"0"
-          case ExitStatus.Fail(n) => n.show
-        println(code)
-        socket.getOutputStream.nn.write(code.bytes.mutable(using Unsafe))
-        println("done")
+        Io.println(t"Received exit status request from $process")
+        val exitStatus: ExitStatus = clients(process).exit.await()
+        
+        socket.getOutputStream.nn.write(exitStatus().show.bytes.mutable(using Unsafe))
         socket.close()
         clients -= process
 
@@ -198,22 +195,22 @@ def fury(): Unit =
   import errorHandlers.throwUnsafely
   
   Daemon.listen:
-    supervise:
-      terminal:
+    //supervise:
+      //terminal:
         Io.println(t"Hello world 2")
-        Io.println(tty.mode.debug)
+        //Io.println(tty.mode.debug)
         println(arguments.debug)
         println(shell.script.debug)
         println(shell.stdin.debug)
         println(shell.directory.or(t"unknown"))
     
-        tty.events.takeWhile(_ != Keypress.Printable('Q')).foreach:
-          //case Keypress.Printable(ch) => Io.print(ch)
-          case other                  => println(other)
+        // tty.events.takeWhile(_ != Keypress.Printable('Q')).foreach:
+        //   //case Keypress.Printable(ch) => Io.print(ch)
+        //   case other                  => println(other)
 
-        Io.println(tty.mode.debug)
-        println(t"Rows: ${tty.rows}")
-        println(t"Cols: ${tty.columns}")
+        //Io.println(tty.mode.debug)
+        //println(t"Rows: ${tty.rows}")
+        //println(t"Cols: ${tty.columns}")
         println(t"Done")
         ExitStatus.Fail(32)
 
