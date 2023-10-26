@@ -62,7 +62,6 @@ extends CliContext, Stdio:
   def putOutBytes(bytes: Bytes): Unit = stdout.write(bytes.mutable(using Unsafe))
   def putErrText(text: Text): Unit = stderr.print(text.s)
   def putOutText(text: Text): Unit = stdout.print(text.s)
-  
 
 abstract class Application:
   protected given environment(using invocation: Invocation): Environment = invocation.environment
