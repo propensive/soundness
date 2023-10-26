@@ -53,11 +53,11 @@ class LazyEnvironment(vars: List[Text]) extends Environment:
   def apply(key: Text): Maybe[Text] = map.get(key).getOrElse(Unset)
 
 object Daemon:
-  def listen(block: ShellSession ?=> ExitStatus): Unit =
+  def listen(block: Environment ?=> ShellSession ?=> ExitStatus): Unit =
     given context: Invocation = Invocation(IArray(), environments.jvm, workingDirectories.default, LazyList(), System.out.nn, System.err.nn)
-    Daemon(session => block(using session)).invoke.execute(context)
+    Daemon(environment => session => block(using environment)(using session)).invoke.execute(context)
 
-class Daemon(block: ShellSession => ExitStatus) extends Application:
+class Daemon(block: Environment => ShellSession => ExitStatus) extends Application:
   daemon =>
   
   import environments.jvm
@@ -85,14 +85,13 @@ class Daemon(block: ShellSession => ExitStatus) extends Application:
     def line(): Text = reader.readLine().nn.tt
     
     def chunk(): Text =
-      var buffer: Text = t""
+      var buffer: Text = line()
       var current: Text = t""
       
-      // FIXME: Newlines will be lost
       while
         current = line()
         current != t"##"
-      do buffer += current
+      do buffer += t"\n$current"
       
       buffer
 
@@ -146,12 +145,11 @@ class Daemon(block: ShellSession => ExitStatus) extends Application:
           input = reader.stream[Char],
           stdin = inputType,
           script = scriptName.decodeAs[Unix.Path],
-          workDir = directory,
-          environment = LazyEnvironment(env)
+          workDir = directory
         )
 
         val async: Async[Unit] = Async:
-          try exit.fulfill(block(session))
+          try exit.fulfill(block(LazyEnvironment(env))(session))
           catch case error: Exception => exit.fulfill(ExitStatus.Fail(1))
           finally
             socket.close()
@@ -195,14 +193,15 @@ def fury(): Unit =
   import errorHandlers.throwUnsafely
   
   Daemon.listen:
-    //supervise:
-      //terminal:
+    Io.println(t"Hello world 1")
+    supervise:
+      terminal:
         Io.println(t"Hello world 2")
         //Io.println(tty.mode.debug)
-        println(arguments.debug)
-        println(shell.script.debug)
-        println(shell.stdin.debug)
-        println(shell.directory.or(t"unknown"))
+        Io.println(arguments.debug)
+        Io.println(shell.script.debug)
+        Io.println(shell.stdin.debug)
+        Io.println(shell.directory.or(t"unknown"))
     
         // tty.events.takeWhile(_ != Keypress.Printable('Q')).foreach:
         //   //case Keypress.Printable(ch) => Io.print(ch)
@@ -211,13 +210,13 @@ def fury(): Unit =
         //Io.println(tty.mode.debug)
         //println(t"Rows: ${tty.rows}")
         //println(t"Cols: ${tty.columns}")
-        println(t"Done")
+        Io.println(Environment.foo[Text])
+        Io.println(t"Done")
         ExitStatus.Fail(32)
 
 case class ShellSession
     (out: ji.OutputStream, shutdown: () => Unit, arguments: IArray[Argument], signals: LazyList[Signal],
-        input: LazyList[Char], stdin: Stdin, script: Unix.Path, workDir: Text,
-        environment: Environment)
+        input: LazyList[Char], stdin: Stdin, script: Unix.Path, workDir: Text)
     (using Monitor)
 extends WorkingDirectory(workDir), ProcessContext:
   def putErrBytes(bytes: Bytes): Unit = putOutBytes(bytes)
