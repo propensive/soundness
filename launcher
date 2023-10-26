@@ -25,11 +25,14 @@ signals=(INT WINCH TERM USR1 USR2)
 pid=$$
 args=("$@")
 
-recovery() {
-  test -t 0 && stty "$ttystate" && echo -en "\033[?1004l\033[?2004h"
-  printf "The daemon process failed to start.\n" >&2
-  printf "Remove the file %s before trying again.\n" "$failFile" >&2
-  exit 1
+backOut() {
+  if [ -f "$failFile" ]
+  then
+    test -t 0 && stty "$ttystate" && echo -en "\033[?1004l\033[?2004h"
+    printf "The daemon process failed to start.\n" >&2
+    printf "Remove the file %s before trying again.\n" "$failFile" >&2
+    exit 1
+  fi
 }
 
 abort() {
@@ -72,10 +75,10 @@ connect() {
 test -t 0 && ttystate="$(stty -g)"
 mkdir -p "$baseDir"
 test -t 0 && stty "${sttyOptions[@]}" > /dev/null 2>&1
-test -f "$failFile" && recovery
+backOut
 flock -n "$portFile" rm "$portFile"
 test -f "$portFile" || launch
-test -f "$failFile" && recovery
+backOut
 port=$(cat "$portFile")
 
 tmpPipe="$(mktemp -u)"
