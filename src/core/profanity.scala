@@ -147,20 +147,52 @@ extends Stdio:
       other
 
 
+package terminalOptions:
+  given bracketedPasteMode: BracketedPasteMode = () => true
+  given backgroundColorDetection: BackgroundColorDetection = () => true
+  given terminalFocusDetection: TerminalFocusDetection = () => true
+  given terminalSizeDetection: TerminalSizeDetection = () => true
+
 trait ProcessContext extends Stdio:
   def input: LazyList[Char]
   def signals: LazyList[Signal]
+
+object BracketedPasteMode:
+  given default: BracketedPasteMode = () => false
+
+trait BracketedPasteMode:
+  def apply(): Boolean
+
+object BackgroundColorDetection:
+  given default: BackgroundColorDetection = () => false
+
+trait BackgroundColorDetection:
+  def apply(): Boolean
+
+object TerminalFocusDetection:
+  given default: TerminalFocusDetection = () => false
+
+trait TerminalFocusDetection:
+  def apply(): Boolean
+
+object TerminalSizeDetection:
+  given default: TerminalSizeDetection = () => false
+
+trait TerminalSizeDetection:
+  def apply(): Boolean
 
 def terminal
     [ResultType]
     (block: Terminal ?=> ResultType)
     (using context: ProcessContext, monitor: Monitor)
+    (using BracketedPasteMode, BackgroundColorDetection, TerminalFocusDetection, TerminalSizeDetection)
     : ResultType =
   val term = Terminal(context.input, context.signals)
-  Io.print(Terminal.reportBackground)
-  Io.print(Terminal.detectFocus)
-  Io.print(Terminal.enablePaste)
-  Io.print(Terminal.reportSize)
+  if summon[BackgroundColorDetection]() then Io.print(Terminal.reportBackground)
+  if summon[TerminalFocusDetection]() then Io.print(Terminal.detectFocus)
+  if summon[BracketedPasteMode]() then Io.print(Terminal.enablePaste)
+  if summon[TerminalSizeDetection]() then Io.print(Terminal.reportSize)
+  
   block(using term)
 
 inline def tty(using inline tty: Terminal): Terminal = tty
