@@ -70,9 +70,11 @@ class StandardKeyboard()(using Monitor) extends Keyboard:
                 case 'O' #:: tail => TerminalInfo.LoseFocus #:: process(tail)
                 case 'I' #:: tail => TerminalInfo.GainFocus #:: process(tail)
 
-
                 case char #:: tail =>
                   Keypress.EscapeSeq(char, sequence*) #:: process(tail)
+                
+                case _ =>
+                  LazyList()
 
           case ']' #:: '1' #:: '1' #:: ';' #:: 'r' #:: 'g' #:: 'b' #:: ':' #:: rest =>
             val content = rest.takeWhile(_ != '\u001b').mkString.tt
@@ -142,14 +144,18 @@ extends Stdio:
     case other =>
       other
 
+
+trait ProcessContext:
+  def input: LazyList[Char]
+  def signals: LazyList[Signal]
+
 def terminal
     [ResultType]
-    (input: LazyList[Char], signals: LazyList[Signal] = LazyList())
     (block: Terminal ?=> ResultType)
-    (using Stdio, Monitor)
+    (using context: ProcessContext, stdio: Stdio, monitor: Monitor)
     : ResultType =
 
-  val term = Terminal(input, signals)
+  val term = Terminal(context.input, context.signals)
   Io.print(Terminal.reportBackground)
   Io.print(Terminal.detectFocus)
   Io.print(Terminal.enablePaste)
