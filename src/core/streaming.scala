@@ -131,6 +131,16 @@ object Readable:
 
   given lazyList[ChunkType]: Readable[LazyList[ChunkType], ChunkType] = identity(_)
 
+  given reader(using streamCut: Raises[StreamCutError]): Readable[ji.Reader, Char] = reader =>
+    def recur(count: ByteSize): LazyList[Char] =
+      try reader.read() match
+        case -1  => LazyList()
+        case int => int.toChar #:: recur(count + 1.b)
+      catch case err: ji.IOException => raise(StreamCutError(count))(LazyList())
+      finally reader.close()
+    
+    recur(0L.b)
+
   given bufferedReader(using streamCut: Raises[StreamCutError]): Readable[ji.BufferedReader, Line] = reader =>
     def recur(count: ByteSize): LazyList[Line] =
       try reader.readLine match
