@@ -131,6 +131,22 @@ object Readable:
 
   given lazyList[ChunkType]: Readable[LazyList[ChunkType], ChunkType] = identity(_)
 
+  given inCharReader(using stdio: Stdio): Readable[In.type, Char] = in =>
+    def recur(count: ByteSize): LazyList[Char] =
+      stdio.reader.read() match
+        case -1  => LazyList()
+        case int => int.toChar #:: recur(count + 1.b)
+    
+    LazyList.defer(recur(0L.b))
+
+  given inByteReader(using stdio: Stdio): Readable[In.type, Byte] = in =>
+    def recur(count: ByteSize): LazyList[Byte] =
+      stdio.in.read() match
+        case -1  => LazyList()
+        case int => int.toByte #:: recur(count + 1.b)
+    
+    LazyList.defer(recur(0L.b))
+
   given reader(using streamCut: Raises[StreamCutError]): Readable[ji.Reader, Char] = reader =>
     def recur(count: ByteSize): LazyList[Char] =
       try reader.read() match

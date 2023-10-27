@@ -52,6 +52,9 @@ object Out:
     print(text)
     println()
 
+object In:
+  def read(bytes: Array[Byte])(using stdio: Stdio): Int = stdio.read(bytes)
+
 object Stdio:
   def apply(initOut: ji.PrintStream | Null, initErr: ji.PrintStream | Null, initIn: ji.InputStream | Null): Stdio =
     val safeOut: ji.PrintStream = if initOut == null then MutePrintStream else initOut
@@ -84,7 +87,7 @@ trait Stdio extends Io:
   def err: ji.PrintStream
   def in: ji.InputStream
 
-  private lazy val reader: ji.Reader = ji.InputStreamReader(in, "UTF-8")
+  protected[turbulence] lazy val reader: ji.Reader = ji.InputStreamReader(in, "UTF-8")
   
   def write(bytes: Bytes): Unit = out.write(bytes.mutable(using Unsafe), 0, bytes.length)
   def print(text: Text): Unit = out.print(text.s)
