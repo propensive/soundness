@@ -76,7 +76,7 @@ object Tests extends Suite(t"Chiaroscuro tests"):
         import escapade.*
         import turbulence.*
         import basicIo.jvm
-        Io.println(result.out)
+        Out.println(result.out)
 
         result
       .assert(_ == Identical(t""))
