@@ -130,7 +130,7 @@ often arrived in English via a romance language.
 
 ## Logo
 
-
+The logo represents a ball of wool, potentially merino wool.
 
 ## License
 
