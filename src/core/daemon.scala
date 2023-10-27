@@ -53,11 +53,11 @@ class LazyEnvironment(vars: List[Text]) extends Environment:
   def apply(key: Text): Maybe[Text] = map.get(key).getOrElse(Unset)
 
 object Daemon:
-  def listen(block: Environment ?=> ShellSession ?=> ExitStatus): Unit =
-    given context: Invocation = Invocation(IArray(), environments.jvm, workingDirectories.default, LazyList(), System.out.nn, System.err.nn)
-    Daemon(environment => session => block(using environment)(using session)).invoke.execute(context)
+  def listen(block: Environment ?=> ShellSession ?=> Execution): Unit =
+    given invocation: Invocation = Invocation(IArray(), environments.jvm, workingDirectories.default, ProcessContext(stdioSources.jvm))
+    Daemon(environment => session => block(using environment)(using session)).invoke.execute(invocation)
 
-class Daemon(block: Environment => ShellSession => ExitStatus) extends Application:
+class Daemon(block: Environment => ShellSession => Execution) extends Application:
   daemon =>
   
   import environments.jvm
@@ -75,7 +75,7 @@ class Daemon(block: Environment => ShellSession => ExitStatus) extends Applicati
     System.exit(0)
   
   def shutdown()(using Stdio): Unit =
-    Io.println(t"Shutdown daemon")
+    Out.println(t"Shutdown daemon")
     termination
 
   def client(socket: jn.Socket)(using Monitor, Stdio, Raises[StreamCutError], Raises[UndecodableCharError], Raises[NumberError]): Unit =
@@ -105,7 +105,7 @@ class Daemon(block: Environment => ShellSession => ExitStatus) extends Applicati
         GetExitCode(line().decodeAs[Pid])
       
       case t"i" =>
-        val stdin: Stdin = if line() == t"p" then Stdin.Pipe else Stdin.Term
+        val stdin: ShellInput = if line() == t"p" then ShellInput.Pipe else ShellInput.Terminal
         val pid: Pid = Pid(line().decodeAs[Int])
         val script: Text = line()
         val pwd: Text = line()
@@ -117,47 +117,42 @@ class Daemon(block: Environment => ShellSession => ExitStatus) extends Applicati
     
     message match
       case Interrupt(process, signal) =>
-        Io.println(t"Received signal $signal")
+        Out.println(t"Received signal $signal")
         clients(process).signals.put(signal)
         socket.close()
       
       case GetExitCode(process) =>
-        Io.println(t"Received exit status request from $process")
+        Out.println(t"Received exit status request from $process")
         val exitStatus: ExitStatus = clients(process).exit.await()
         
         socket.getOutputStream.nn.write(exitStatus().show.bytes.mutable(using Unsafe))
         socket.close()
         clients -= process
 
-      case Initialize(process, directory, scriptName, inputType, args, env) =>
-        Io.println(t"Received init $process")
+      case Initialize(process, directory, scriptName, shellInput, args, env) =>
+        Out.println(t"Received init $process")
         val promise: Promise[Unit] = Promise()
         val exit: Promise[ExitStatus] = Promise()
         val signalFunnel: Funnel[Signal] = Funnel()
-        
-        val session = ShellSession(
-          out = socket.getOutputStream.nn, 
-          shutdown = () => daemon.shutdown(),
-          arguments = IArray.from:
-            args.zipWithIndex.map: (arg, index) =>
-              Argument(index + 1, arg, Unset),
-          signals = signalFunnel.stream,
-          input = reader.stream[Char],
-          stdin = inputType,
-          script = scriptName.decodeAs[Unix.Path],
-          workDir = directory
-        )
 
+        val clientStdio: Stdio =
+          Stdio(ji.PrintStream(socket.getOutputStream.nn), ji.PrintStream(socket.getOutputStream.nn), in)
+        
+        val session = ShellSession(Argument.from(args), clientStdio, () => daemon.shutdown(),
+            signalFunnel.stream, shellInput, scriptName.decodeAs[Unix.Path], directory)
+
+        val environment = LazyEnvironment(env)
         val async: Async[Unit] = Async:
-          try exit.fulfill(block(LazyEnvironment(env))(session))
+          val invocation: Invocation = Invocation(session.arguments, environment, WorkingDirectory(directory), session)
+          try exit.fulfill(block(environment)(session).execute(invocation))
           catch case error: Exception => exit.fulfill(ExitStatus.Fail(1))
           finally
             socket.close()
-            Io.println(t"Closed connection to ${process.value}")
+            Out.println(t"Closed connection to ${process.value}")
         
         clients(process) = CliSession(process, async, signalFunnel, promise, () => socket.close(), exit)
 
-  def invoke(using context: CliContext): Execution = context match
+  def invoke(using commandLine: CommandLine): Execution = commandLine match
     case given Invocation =>
       Async.onShutdown:
         waitFile.wipe()
@@ -184,53 +179,46 @@ class Daemon(block: Environment => ShellSession => ExitStatus) extends Applicati
 
         ExitStatus.Ok
 
-case class Initialize(process: Pid, work: Text, script: Text, input: Stdin, arg: List[Text], env: List[Text])
+case class ShellSession
+    (arguments: IArray[Argument], stdio: Stdio, shutdown: () => Unit, signals: LazyList[Signal],
+        shellInput: ShellInput, script: Unix.Path, workDir: Text)
+    (using Monitor)
+extends WorkingDirectory(workDir), ProcessContext, Stdio:
+  export stdio.{out, err, in}
+
+case class Initialize(process: Pid, work: Text, script: Text, input: ShellInput, arguments: List[Text], environment: List[Text])
 case class Interrupt(process: Pid, signal: Signal)
 case class GetExitCode(process: Pid)
 
 @main
 def fury(): Unit =
   import errorHandlers.throwUnsafely
-  
   Daemon.listen:
-    Io.println(t"Hello world 1")
-    supervise:
-      terminal:
-        Io.println(t"Hello world 2")
-        //Io.println(tty.mode.debug)
-        Io.println(arguments.debug)
-        Io.println(shell.script.debug)
-        Io.println(shell.stdin.debug)
-        Io.println(shell.directory.or(t"unknown"))
-    
-        // tty.events.takeWhile(_ != Keypress.Printable('Q')).foreach:
-        //   //case Keypress.Printable(ch) => Io.print(ch)
-        //   case other                  => println(other)
+    execute:
+      Out.println(t"Hello world 1")
+      supervise:
+        terminal:
+          Out.println(t"Hello world 2")
+          Out.println(arguments.debug)
+          Out.println(shell.script.debug)
+          Out.println(shell.directory.or(t"unknown"))
+      
+          tty.events.takeWhile(_ != Keypress.Printable('Q')).foreach:
+            case Keypress.Printable(ch) => Out.print(ch)
+            case other                  => println(other)
 
-        //Io.println(tty.mode.debug)
-        //println(t"Rows: ${tty.rows}")
-        //println(t"Cols: ${tty.columns}")
-        Io.println(Environment.foo[Text])
-        Io.println(t"Done")
-        ExitStatus.Fail(32)
-
-case class ShellSession
-    (out: ji.OutputStream, shutdown: () => Unit, arguments: IArray[Argument], signals: LazyList[Signal],
-        input: LazyList[Char], stdin: Stdin, script: Unix.Path, workDir: Text)
-    (using Monitor)
-extends WorkingDirectory(workDir), ProcessContext:
-  def putErrBytes(bytes: Bytes): Unit = putOutBytes(bytes)
-  def putErrText(text: Text): Unit = putOutText(text)
-  
-  def putOutBytes(bytes: Bytes): Unit =
-    out.write(bytes.mutable(using Unsafe))
-    out.flush()
-  
-  def putOutText(text: Text): Unit =
-    out.write(text.bytes.mutable(using Unsafe))
-    out.flush()
+          //Out.println(tty.mode.debug)
+          //println(t"Rows: ${tty.rows}")
+          //println(t"Cols: ${tty.columns}")
+          Out.println(t"Done")
+          ExitStatus.Fail(32)
 
 def arguments(using session: ShellSession): IArray[Argument] = session.arguments
 def shell(using session: ShellSession): ShellSession = session
+
+object Argument:
+  def from(args: Iterable[Text]): IArray[Argument] = IArray.from:
+    args.zipWithIndex.map: (arg, index) =>
+      Argument(index + 1, arg, Unset)
 
 case class Argument(position: Int, value: Text, cursor: Maybe[Int])

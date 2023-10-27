@@ -20,6 +20,7 @@ import anticipation.*
 import rudiments.*
 import perforate.*
 import turbulence.*
+import profanity.*
 import spectacular.*
 import gossamer.*
 import ambience.*
@@ -27,28 +28,23 @@ import ambience.*
 import java.io as ji
 import sun.misc as sm
 
-object Stdin:
-  given decoder: Decoder[Stdin] = text => valueOf(text.lower.capitalize.s)
-  given encoder: Encoder[Stdin] = _.toString.tt.lower
+object ShellInput:
+  given decoder: Decoder[ShellInput] = text => valueOf(text.lower.capitalize.s)
+  given encoder: Encoder[ShellInput] = _.toString.tt.lower
 
-enum Stdin:
-  case Term, Pipe
+enum ShellInput:
+  case Terminal, Pipe
 
-sealed trait CliContext:
-  def args: IArray[Text]
+sealed trait CommandLine:
+  def arguments: IArray[Argument]
   def environment: Environment
   def workingDirectory: WorkingDirectory
 
-case class CommandLine
-    (args: IArray[Text], currentArg: Int, argPosition: Int, environment: Environment,
-        workingDirectory: WorkingDirectory)
-extends CliContext
-
 case class Invocation
-    (args: IArray[Text], environment: Environment, workingDirectory: WorkingDirectory, stdin: LazyList[Bytes],
-        stdout: ji.PrintStream, stderr: ji.PrintStream)
-extends CliContext, Stdio:
-  
+    (arguments: IArray[Argument], environment: Environment, workingDirectory: WorkingDirectory,
+        context: ProcessContext)
+extends CommandLine, Stdio:
+  export context.stdio.{out, err, in}
 
   def signals(signals: Signal*): LazyList[Signal] = 
     val funnel: Funnel[Signal] = Funnel()
@@ -57,22 +53,16 @@ extends CliContext, Stdio:
       sm.Signal.handle(sm.Signal(signal.shortName.s), event => funnel.put(signal))
     
     funnel.stream
-  
-  def putErrBytes(bytes: Bytes): Unit = stderr.write(bytes.mutable(using Unsafe))
-  def putOutBytes(bytes: Bytes): Unit = stdout.write(bytes.mutable(using Unsafe))
-  def putErrText(text: Text): Unit = stderr.print(text.s)
-  def putOutText(text: Text): Unit = stdout.print(text.s)
 
 abstract class Application:
   protected given environment(using invocation: Invocation): Environment = invocation.environment
   protected given workingDirectory(using invocation: Invocation): WorkingDirectory = invocation.workingDirectory
   
-  def invoke(using CliContext): Execution
+  def invoke(using CommandLine): Execution
 
-  def main(args: IArray[Text]): Unit =
-    def in: LazyList[Bytes] = safely(System.in.nn.stream[Bytes]).or(LazyList())
-    
-    val invocation = Invocation(args, environments.jvm, workingDirectories.default, in, System.out.nn, System.err.nn)
+  def main(arguments: IArray[Text]): Unit =
+    val context: ProcessContext = ProcessContext(Stdio(System.out, System.err, System.in))
+    val invocation = Invocation(Argument.from(arguments), environments.jvm, unsafely(workingDirectories.default), context)
     
     invoke(using invocation).execute(invocation) match
       case ExitStatus.Ok           => System.exit(0)

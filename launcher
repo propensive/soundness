@@ -97,8 +97,8 @@ stdoutPid=$!
 nc -q 1 localhost $port <&3 &
 pipePid=$!
 
-connectStderr | nc -q 1 localhost $port &
-stderrPid=$!
+#connectStderr | nc -q 1 localhost $port &
+#stderrPid=$!
 
 for signal in "${signals[@]}"
 do trap "handle $signal" "$signal"
