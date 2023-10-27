@@ -21,8 +21,8 @@ import anticipation.*
 import perforate.*
 import hieroglyph.*
 
-package basicIo:
-  given jvm(using streamCut: Raises[StreamCutError]): Stdio = new Stdio:
+package io:
+  given jvm(using streamCut: Raises[StreamCutError]): Io = new Io:
     val encoder = CharEncoder.system
     def putOutText(text: Text): Unit = putOutBytes(encoder.encode(text))
     def putErrText(text: Text): Unit = putErrBytes(encoder.encode(text))
@@ -36,7 +36,7 @@ package basicIo:
       else System.out.nn.writeBytes(bytes.mutable(using Unsafe))
 
 @capability
-trait Stdio:
+trait Io:
   def putErrBytes(bytes: Bytes): Unit
   def putErrText(text: Text): Unit
   def putOutBytes(bytes: Bytes): Unit
@@ -46,25 +46,24 @@ object Err
 object Out
 
 object Io:
-  def put(bytes: Bytes)(using io: Stdio): Unit =
+  def put(bytes: Bytes)(using io: Io): Unit =
     io.putOutBytes(bytes)
 
-  def print[TextType](text: TextType)(using io: Stdio)(using printable: Printable[TextType]): Unit =
+  def print[TextType](text: TextType)(using io: Io)(using printable: Printable[TextType]): Unit =
     io.putOutText(printable.print(text))
   
-  def printErr[TextType](text: TextType)(using io: Stdio)(using printable: Printable[TextType]): Unit =
+  def printErr[TextType](text: TextType)(using io: Io)(using printable: Printable[TextType]): Unit =
     io.putErrText(printable.print(text))
   
-  def println[TextType](text: TextType)(using io: Stdio, printable: Printable[TextType]): Unit =
+  def println[TextType](text: TextType)(using io: Io, printable: Printable[TextType]): Unit =
     io.putOutText(printable.print(text))
     io.putOutText("\n".tt)
 
-  def println()(using io: Stdio): Unit = io.putOutText("\n".tt)
-  def printlnErr()(using io: Stdio): Unit = io.putErrText("\n".tt)
+  def println()(using io: Io): Unit = io.putOutText("\n".tt)
+  def printlnErr()(using io: Io): Unit = io.putErrText("\n".tt)
   
-  def printlnErr[TextType](text: TextType)(using io: Stdio, printable: Printable[TextType]): Unit =
+  def printlnErr[TextType](text: TextType)(using io: Io, printable: Printable[TextType]): Unit =
     io.putErrText(printable.print(text))
     io.putErrText("\n".tt)
 
-object Stdio:
-  given default(using Quickstart)(using Raises[StreamCutError]): Stdio = basicIo.jvm
+//  given default(using Quickstart)(using Raises[StreamCutError]): Io = io.jvm
