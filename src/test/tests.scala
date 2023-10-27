@@ -54,4 +54,4 @@ object Tests extends Suite(t"Dendrology tests"):
   def run(): Unit =
     import treeStyles.default
     def line(tiles: List[TreeTile], tree: Tree): Text = t"${tiles.map(_.text).join}● ${tree.value}"
-    drawTree[Tree, Text](_.children, line)(life).foreach(Io.println(_))
+    drawTree[Tree, Text](_.children, line)(life).foreach(Out.println(_))
