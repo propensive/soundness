@@ -34,7 +34,7 @@ package basicIo:
     def putErrBytes(bytes: Bytes): Unit =
       if System.out == null then raise(StreamCutError(0.b))(())
       else System.out.nn.writeBytes(bytes.mutable(using Unsafe))
-    
+
 @capability
 trait Stdio:
   def putErrBytes(bytes: Bytes): Unit
@@ -42,8 +42,8 @@ trait Stdio:
   def putOutBytes(bytes: Bytes): Unit
   def putOutText(text: Text): Unit
 
-object Stderr
-object Stdout
+object Err
+object Out
 
 object Io:
   def put(bytes: Bytes)(using io: Stdio): Unit =

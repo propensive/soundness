@@ -71,16 +71,16 @@ trait SimpleWritable[-TargetType, -ChunkType] extends Writable[TargetType, Chunk
   def writeChunk(target: TargetType, chunk: ChunkType): Unit
 
 object Appendable:
-  given stdoutBytes(using io: Stdio): SimpleAppendable[Stdout.type, Bytes] =
+  given stdoutBytes(using io: Stdio): SimpleAppendable[Out.type, Bytes] =
     (stderr, bytes) => io.putOutBytes(bytes)
   
-  given stdoutText(using io: Stdio, enc: CharEncoder): SimpleAppendable[Stdout.type, Text] =
+  given stdoutText(using io: Stdio, enc: CharEncoder): SimpleAppendable[Out.type, Text] =
     (stderr, text) => io.putOutText(text)
 
-  given stderrBytes(using io: Stdio): SimpleAppendable[Stderr.type, Bytes] =
+  given stderrBytes(using io: Stdio): SimpleAppendable[Err.type, Bytes] =
     (stderr, bytes) => io.putErrBytes(bytes)
   
-  given stderrText(using io: Stdio, enc: CharEncoder): SimpleAppendable[Stderr.type, Text] =
+  given stderrText(using io: Stdio, enc: CharEncoder): SimpleAppendable[Err.type, Text] =
     (stderr, text) => io.putErrText(text)
 
   given outputStreamBytes(using streamCut: Raises[StreamCutError]): SimpleAppendable[ji.OutputStream, Bytes] =
