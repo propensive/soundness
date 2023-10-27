@@ -28,20 +28,20 @@ object LineEditor:
   def concealed(str: Text): Text = str.mapChars { _ => '*' }
 
   def ask(initial: Text = t"", render: Text => Text = identity(_))(using Terminal, Monitor): Text =
-    Io.print(render(initial))
+    Out.print(render(initial))
 
     def finished(key: TtyEvent) =
       key == Keypress.Enter || key == Keypress.Ctrl('D') || key == Keypress.Ctrl('C')
 
     summon[Terminal].events.takeWhile(!finished(_)).foldLeft(LineEditor(initial, initial.length)):
       case (editor, next) =>
-        if editor.pos > 0 then Io.print(t"\e${editor.pos}D")
+        if editor.pos > 0 then Out.print(t"\e${editor.pos}D")
         val editor2 = editor(next)
         val line = t"${editor2.content}${t" "*(editor.content.length - editor2.content.length)}"
-        Io.print(t"\e0K")
-        Io.print(render(line))
-        if line.length > 0 then Io.print(t"\e${line.length}D")
-        if editor2.pos > 0 then Io.print(t"\e${editor2.pos}C")
+        Out.print(t"\e0K")
+        Out.print(render(line))
+        if line.length > 0 then Out.print(t"\e${line.length}D")
+        if editor2.pos > 0 then Out.print(t"\e${editor2.pos}C")
         editor2
     .content
 
@@ -99,25 +99,25 @@ trait Interaction[StateType, ResultType]:
 
 object Interaction:
   given [ItemType: Show](using Terminal): Interaction[SelectMenu[ItemType], ItemType] with
-    override def before(): Unit = Io.print(t"\e?25l")
-    override def after(): Unit = Io.print(t"\eJ\e?25h")
+    override def before(): Unit = Out.print(t"\e?25l")
+    override def after(): Unit = Out.print(t"\eJ\e?25h")
 
     def render(old: Maybe[SelectMenu[ItemType]], menu: SelectMenu[ItemType]) =
       menu.options.foreach: opt =>
-        Io.print((if opt == menu.current then t" > $opt" else t"   $opt")+t"\eK\n")
-      Io.print(t"\e${menu.options.length}A")
+        Out.print((if opt == menu.current then t" > $opt" else t"   $opt")+t"\eK\n")
+      Out.print(t"\e${menu.options.length}A")
 
     def result(state: SelectMenu[ItemType]): ItemType = state.current
 
   given (using Terminal): Interaction[LineEditor, Text] with
     def render(editor: Maybe[LineEditor], editor2: LineEditor): Unit =
       val prior = editor.or(editor2)
-      if prior.pos > 0 then Io.print(t"\e${prior.pos}D")
+      if prior.pos > 0 then Out.print(t"\e${prior.pos}D")
       val line = t"${editor2.content}${t" "*(prior.content.length - editor2.content.length)}"
-      Io.print(t"\e0K")
-      Io.print(line)
-      if line.length > 0 then Io.print(t"\e${line.length}D")
-      if editor2.pos > 0 then Io.print(t"\e${editor2.pos}C")
+      Out.print(t"\e0K")
+      Out.print(line)
+      if line.length > 0 then Out.print(t"\e${line.length}D")
+      if editor2.pos > 0 then Out.print(t"\e${editor2.pos}C")
 
     def result(editor: LineEditor): Text = editor.content
 

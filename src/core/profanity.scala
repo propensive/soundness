@@ -119,12 +119,10 @@ package keyboards:
 enum TerminalMode:
   case Dark, Light
 
-case class Terminal
-    (input: LazyList[Char], signals: LazyList[Signal])
-    (using context: ProcessContext, monitor: Monitor)
-extends Io:
-  given Io = context.io
-  export context.io.{putErrBytes, putErrText, putOutBytes, putOutText}
+case class Terminal(signals: LazyList[Signal])(using context: ProcessContext, monitor: Monitor)
+extends Stdio:
+  export context.stdio.{in, out, err}
+  given stdio: Stdio = context.stdio
 
   val keyboard = StandardKeyboard()
   var mode: Maybe[TerminalMode] = Unset
@@ -133,10 +131,10 @@ extends Io:
 
   val signalHandler = Async:
     signals.foreach:
-      case Signal.Winch => Io.print(Terminal.reportSize)
+      case Signal.Winch => print(Terminal.reportSize)
       case _            => ()
 
-  def events: LazyList[TtyEvent] = keyboard.process(input).multiplexWith(signals).map:
+  def events: LazyList[TtyEvent] = keyboard.process(In.stream[Char]).multiplexWith(signals).map:
     case resize@TerminalInfo.WindowSize(rows2, columns2) =>
       rows = rows2
       columns = columns2
@@ -149,7 +147,6 @@ extends Io:
     case other =>
       other
 
-
 package terminalOptions:
   given bracketedPasteMode: BracketedPasteMode = () => true
   given backgroundColorDetection: BackgroundColorDetection = () => true
@@ -157,8 +154,7 @@ package terminalOptions:
   given terminalSizeDetection: TerminalSizeDetection = () => true
 
 trait ProcessContext:
-  val io: Io
-  def input: LazyList[Char]
+  val stdio: Stdio
   def signals: LazyList[Signal]
 
 object BracketedPasteMode:
@@ -191,11 +187,11 @@ def terminal
     (using context: ProcessContext, monitor: Monitor)
     (using BracketedPasteMode, BackgroundColorDetection, TerminalFocusDetection, TerminalSizeDetection)
     : ResultType =
-  given term: Terminal = Terminal(context.input, context.signals)
-  if summon[BackgroundColorDetection]() then Io.print(Terminal.reportBackground)
-  if summon[TerminalFocusDetection]() then Io.print(Terminal.detectFocus)
-  if summon[BracketedPasteMode]() then Io.print(Terminal.enablePaste)
-  if summon[TerminalSizeDetection]() then Io.print(Terminal.reportSize)
+  given term: Terminal = Terminal(context.signals)
+  if summon[BackgroundColorDetection]() then Out.print(Terminal.reportBackground)
+  if summon[TerminalFocusDetection]() then Out.print(Terminal.detectFocus)
+  if summon[BracketedPasteMode]() then Out.print(Terminal.enablePaste)
+  if summon[TerminalSizeDetection]() then Out.print(Terminal.reportSize)
   
   block(using term)
 
