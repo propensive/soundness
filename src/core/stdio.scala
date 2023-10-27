@@ -18,12 +18,11 @@ package turbulence
 
 import rudiments.*
 import anticipation.*
-import perforate.*
 
 import java.io as ji
 
 package stdioSources:
-  given jvm(using streamCut: Raises[StreamCutError]): Stdio = Stdio(System.out.nn, System.err.nn, System.in.nn)
+  given jvm: Stdio = Stdio(System.out.nn, System.err.nn, System.in.nn)
 
 @capability
 trait Io:
