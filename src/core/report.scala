@@ -90,7 +90,7 @@ trait TestReporter[ReportType]:
   def complete(report: ReportType): Unit
 
 object TestReporter:
-  given (using Io, Environment): TestReporter[TestReport] with
+  given (using Stdio, Environment): TestReporter[TestReport] with
     def make(): TestReport = TestReport()
     def declareSuite(report: TestReport, suite: TestSuite): Unit = report.declareSuite(suite)
     def complete(report: TestReport): Unit =
@@ -247,7 +247,7 @@ class TestReport(using env: Environment):
 
   
 
-  def complete(coverage: Option[CoverageResults])(using Io): Unit =
+  def complete(coverage: Option[CoverageResults])(using Stdio): Unit =
     given TextWidthCalculator with
       private val eastAsian = textWidthCalculation.eastAsianScripts
       def width(text: Text): Int = text.s.foldLeft(0)(_ + width(_))
@@ -286,7 +286,7 @@ class TestReport(using env: Environment):
     val summaryLines = lines.summaries
 
     coverage.foreach: coverage =>
-      Io.println(out"$Bold($Underline(Test coverage))")
+      Out.println(out"$Bold($Underline(Test coverage))")
       case class CoverageData(path: Text, branches: Int, hits: Int, oldHits: Int):
         def hitsText: Output =
           val main = out"${if hits == 0 then colors.Gray else colors.ForestGreen}($hits)"
@@ -331,9 +331,9 @@ class TestReport(using env: Environment):
         Column(out"Juncture")(_(0)),
         Column(out"Line") { row => out"$GreenYellow(${row(1).path})$Gray(:)$Gold(${row(1).lineNo})" },
         Column(out"Symbol")(_(1).symbolName)
-      ).tabulate(render(junctures2), columns)(using tableStyles.horizontal).foreach(Io.println)
+      ).tabulate(render(junctures2), columns)(using tableStyles.horizontal).foreach(Out.println)
       
-      Io.println(out"")
+      Out.println(out"")
     
       Table[CoverageData](
         Column(out"Source file", align = Alignment.Left): data =>
@@ -354,28 +354,28 @@ class TestReport(using env: Environment):
               colors.Brown -> notCovered)
           
           bars.filter(_(1).length > 0).map { (color, bar) => out"$color($bar)" }.join
-      ).tabulate(data, columns).foreach(Io.println(_))
+      ).tabulate(data, columns).foreach(Out.println(_))
       
-      Io.println(out"")
+      Out.println(out"")
     
     if summaryLines.exists(_.count > 0) then
       val totals = summaryLines.groupBy(_.status).view.mapValues(_.size).to(Map) - Status.Suite
       val passed: Int = totals.getOrElse(Status.Pass, 0) + totals.getOrElse(Status.Bench, 0)
       val total: Int = totals.values.sum
       val failed: Int = total - passed
-      Io.println(out"${escapes.Reset}")
-      Io.println(out"$Bold($Underline(Test results))")
+      Out.println(out"${escapes.Reset}")
+      Out.println(out"$Bold($Underline(Test results))")
 
-      table.tabulate(summaryLines, columns, delimitRows = DelimitRows.SpaceIfMultiline).foreach(Io.println(_))
+      table.tabulate(summaryLines, columns, delimitRows = DelimitRows.SpaceIfMultiline).foreach(Out.println(_))
       given Decimalizer = Decimalizer(decimalPlaces = 1)
-      Io.println(out" $Bold(${colors.White}($passed)) passed (${100.0*passed/total}%), $Bold(${colors.White}($failed)) failed (${100.0*failed/total}%), $Bold(${colors.White}(${passed + failed})) total")
-      Io.println(t"─"*72)
+      Out.println(out" $Bold(${colors.White}($passed)) passed (${100.0*passed/total}%), $Bold(${colors.White}($failed)) failed (${100.0*failed/total}%), $Bold(${colors.White}(${passed + failed})) total")
+      Out.println(t"─"*72)
       List(Status.Pass, Status.Bench, Status.Throws, Status.Fail, Status.Mixed, Status.CheckThrows).grouped(3).foreach: statuses =>
-        Io.println:
+        Out.println:
           statuses.map[Output]: status =>
             gossamer.pad[Output](out"  ${status.symbol} ${status.describe}")(20)
           .join(out" ")
-      Io.println(t"─"*72)
+      Out.println(t"─"*72)
 
     def benches(line: ReportLine): Iterable[ReportLine.Bench] =
       line match
@@ -385,7 +385,7 @@ class TestReport(using env: Environment):
     
     benches(lines).groupBy(_.test.suite).foreach: (suite, benchmarks) =>
       val ribbon = Ribbon(colors.DarkGreen.srgb, colors.MediumSeaGreen.srgb, colors.PaleGreen.srgb)
-      Io.println(ribbon.fill(out"${suite.mm(_.id.id).or(t"")}", out"Benchmarks", out"${suite.mm(_.name).or(t"")}"))
+      Out.println(ribbon.fill(out"${suite.mm(_.id.id).or(t"")}", out"Benchmarks", out"${suite.mm(_.name).or(t"")}"))
       
       val comparisons: List[ReportLine.Bench] =
         benchmarks.filter(!_.benchmark.baseline.unset).to(List)
@@ -448,33 +448,33 @@ class TestReport(using env: Environment):
         ))*
       )
 
-      bench.tabulate(benchmarks.to(List).sortBy(-_.benchmark.throughput), columns).foreach(Io.println(_))
+      bench.tabulate(benchmarks.to(List).sortBy(-_.benchmark.throughput), columns).foreach(Out.println(_))
 
     def showLegend(): Unit =
-      Io.println(t"─"*74)
-      Io.println:
+      Out.println(t"─"*74)
+      Out.println:
         StackTrace.legend.to(List).map: (symbol, description) =>
           out"$Bold(${colors.White}(${symbol.pad(3, Rtl)}))  ${description.pad(20)}"
         .grouped(3).to(List).map(_.to(List).join).join(out"${t"\n"}")
-      Io.println(t"─"*74)
+      Out.println(t"─"*74)
 
     details.to(List).sortBy(_(0).timestamp).foreach: (id, info) =>
       val ribbon = Ribbon(colors.DarkRed.srgb, colors.FireBrick.srgb, colors.Tomato.srgb)
-      Io.println(ribbon.fill(out"$Bold(${id.id})", id.codepoint.text.out, id.name.out))
+      Out.println(ribbon.fill(out"$Bold(${id.id})", id.codepoint.text.out, id.name.out))
       
       info.foreach: debugInfo =>
-        Io.println(t"")
+        Out.println(t"")
         debugInfo match
           case DebugInfo.Throws(err) =>
             val name = out"$Italic(${colors.White}(${err.component}.${err.className}))"
-            Io.println(out"${colors.Silver}(An exception was thrown while running test:)")
-            Io.println(err.crop(t"probably.Runner", t"run()").out)
+            Out.println(out"${colors.Silver}(An exception was thrown while running test:)")
+            Out.println(err.crop(t"probably.Runner", t"run()").out)
             showLegend()
           
           case DebugInfo.CheckThrows(err) =>
             val name = out"$Italic(${colors.White}(${err.component}.${err.className}))"
-            Io.println(out"${colors.Silver}(An exception was thrown while checking the test predicate:)")
-            Io.println(err.crop(t"probably.Outcome#", t"apply()").dropRight(1).out)
+            Out.println(out"${colors.Silver}(An exception was thrown while checking the test predicate:)")
+            Out.println(err.crop(t"probably.Outcome#", t"apply()").dropRight(1).out)
             showLegend()
           
           case DebugInfo.Compare(expected, found, cmp) =>
@@ -482,16 +482,16 @@ class TestReport(using env: Environment):
             val found2: Output = out"$Italic(${colors.White}($found))"
             val nl = if expected.contains(t"\n") || found.contains(t"\n") then '\n' else ' '
             val instead = out"but instead it returned$nl$found2$nl"
-            Io.println(out"${colors.Silver}(The test was expected to return$nl$expected2$nl$instead)")
-            Io.println(cmp.out)
+            Out.println(out"${colors.Silver}(The test was expected to return$nl$expected2$nl$instead)")
+            Out.println(cmp.out)
           
           case DebugInfo.Captures(map) =>
             Table[(Text, Text), Output](
               Column(out"Expression", align = Alignment.Right)(_(0)),
               Column(out"Value")(_(1)),
-            ).tabulate(map.to(List), 140).foreach(Io.println(_))
+            ).tabulate(map.to(List), 140).foreach(Out.println(_))
           
           case DebugInfo.Message(text) =>
-            Io.println(text)
+            Out.println(text)
       
-      Io.println()
+      Out.println()
