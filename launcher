@@ -1,7 +1,7 @@
 #!/bin/bash
 
 declare portFile initFile ttystate script waitFile tmpPipe
-declare -i pid port streamPid continue pipePid argCount
+declare -i pid port stdoutPid stderrPid continue pipePid argCount
 declare -a args signals sttyOptions
 
 
@@ -76,6 +76,11 @@ connect() {
   exec cat
 }
 
+connectStderr() {
+  echo "e"
+  echo "$pid"
+}
+
 test -t 0 && ttystate="$(stty -g)"
 mkdir -p "$baseDir"
 test -t 0 && stty "${sttyOptions[@]}" > /dev/null 2>&1
@@ -88,9 +93,12 @@ port=$(<"$portFile")
 tmpPipe="$(mktemp -u)"
 mkfifo -m 600 "$tmpPipe" && exec 3<> "$tmpPipe" && rm "$tmpPipe"
 connect <&0 >&3 &
-streamPid=$!
+stdoutPid=$!
 nc -q 1 localhost $port <&3 &
 pipePid=$!
+
+connectStderr | nc -q 1 localhost $port &
+stderrPid=$!
 
 for signal in "${signals[@]}"
 do trap "handle $signal" "$signal"
@@ -102,6 +110,6 @@ do
   ps $pipePid > /dev/null || continue=0
 done
 
-test -t 0 && stty "$ttystate" && kill $streamPid
+test -t 0 && stty "$ttystate" && kill $stdoutPid $stderrPid
 terminate
 exit 1
