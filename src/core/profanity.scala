@@ -153,6 +153,16 @@ package terminalOptions:
   given terminalFocusDetection: TerminalFocusDetection = () => true
   given terminalSizeDetection: TerminalSizeDetection = () => true
 
+object ProcessContext:
+  def apply(stdio: Stdio, signals: LazyList[Signal] = LazyList()): ProcessContext =
+    inline def initStdio: Stdio = stdio
+    inline def initSignals: LazyList[Signal] = signals
+    
+    new ProcessContext:
+      val stdio: Stdio = initStdio
+      def signals: LazyList[Signal] = initSignals
+
+
 trait ProcessContext:
   val stdio: Stdio
   def signals: LazyList[Signal]
