@@ -90,7 +90,7 @@ trait TestReporter[ReportType]:
   def complete(report: ReportType): Unit
 
 object TestReporter:
-  given (using Stdio, Environment): TestReporter[TestReport] with
+  given (using Io, Environment): TestReporter[TestReport] with
     def make(): TestReport = TestReport()
     def declareSuite(report: TestReport, suite: TestSuite): Unit = report.declareSuite(suite)
     def complete(report: TestReport): Unit =
@@ -247,7 +247,7 @@ class TestReport(using env: Environment):
 
   
 
-  def complete(coverage: Option[CoverageResults])(using Stdio): Unit =
+  def complete(coverage: Option[CoverageResults])(using Io): Unit =
     given TextWidthCalculator with
       private val eastAsian = textWidthCalculation.eastAsianScripts
       def width(text: Text): Int = text.s.foldLeft(0)(_ + width(_))

@@ -27,14 +27,14 @@ import hieroglyph.*, textWidthCalculation.uniform
 import language.adhocExtensions
 
 abstract class Suite(name: Text) extends TestSuite(name):
-  val io = safely(basicIo.jvm).avow(using Unsafe)
+  val suiteIo = safely(io.jvm).avow(using Unsafe)
 
   // FIXME: This seems to introduce a ghost ambiguity on the previous line
   // It should be moved back to the top-level as soon as it works
   import digression.*
 
   given runner: Runner[TestReport] =
-    given Stdio = io
+    given Io = suiteIo
     try Runner() catch case err: EnvironmentError =>
       println(StackTrace(err).out.render)
       ???
