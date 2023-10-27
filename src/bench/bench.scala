@@ -31,8 +31,8 @@ import ambience.*, environments.system
 
 import LogFormat.standardAnsi
 
-val StdoutSink = Stdout.sink
-given Log({ case _ => StdoutSink })
+val OutSink = Out.sink
+given Log({ case _ => OutSink })
 
 object Benchmarks extends Suite(t"Merino tests"):
   def run(): Unit =
