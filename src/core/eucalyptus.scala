@@ -150,7 +150,7 @@ trait LogTag[-TagType]:
 
 package logging:
   given stdout(using Stdio, Raises[StreamCutError], CharEncoder, Monitor): Log =
-    val sink = Stdout.sink
+    val sink = Out.sink
   
     Log:
       case _ => sink
