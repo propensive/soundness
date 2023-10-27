@@ -83,7 +83,6 @@ connectStderr() {
 
 test -t 0 && ttystate="$(stty -g)"
 mkdir -p "$baseDir"
-test -t 0 && stty "${sttyOptions[@]}" > /dev/null 2>&1
 backOut
 flock -n "$portFile" rm "$portFile"
 test -f "$portFile" || launch
@@ -92,6 +91,7 @@ port=$(<"$portFile")
 
 tmpPipe="$(mktemp -u)"
 mkfifo -m 600 "$tmpPipe" && exec 3<> "$tmpPipe" && rm "$tmpPipe"
+test -t 0 && stty "${sttyOptions[@]}" > /dev/null 2>&1
 connect <&0 >&3 &
 stdoutPid=$!
 nc -q 1 localhost $port <&3 &
