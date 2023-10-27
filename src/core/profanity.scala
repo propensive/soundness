@@ -119,9 +119,12 @@ package keyboards:
 enum TerminalMode:
   case Dark, Light
 
-case class Terminal(input: LazyList[Char], signals: LazyList[Signal])(using stdio: Stdio, monitor: Monitor)
-extends Stdio:
-  export stdio.{putErrBytes, putErrText, putOutBytes, putOutText}
+case class Terminal
+    (input: LazyList[Char], signals: LazyList[Signal])
+    (using context: ProcessContext, monitor: Monitor)
+extends Io:
+  given Io = context.io
+  export context.io.{putErrBytes, putErrText, putOutBytes, putOutText}
 
   val keyboard = StandardKeyboard()
   var mode: Maybe[TerminalMode] = Unset
@@ -153,7 +156,8 @@ package terminalOptions:
   given terminalFocusDetection: TerminalFocusDetection = () => true
   given terminalSizeDetection: TerminalSizeDetection = () => true
 
-trait ProcessContext extends Stdio:
+trait ProcessContext:
+  val io: Io
   def input: LazyList[Char]
   def signals: LazyList[Signal]
 
@@ -187,7 +191,7 @@ def terminal
     (using context: ProcessContext, monitor: Monitor)
     (using BracketedPasteMode, BackgroundColorDetection, TerminalFocusDetection, TerminalSizeDetection)
     : ResultType =
-  val term = Terminal(context.input, context.signals)
+  given term: Terminal = Terminal(context.input, context.signals)
   if summon[BackgroundColorDetection]() then Io.print(Terminal.reportBackground)
   if summon[TerminalFocusDetection]() then Io.print(Terminal.detectFocus)
   if summon[BracketedPasteMode]() then Io.print(Terminal.enablePaste)
