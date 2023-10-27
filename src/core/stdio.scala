@@ -19,51 +19,47 @@ package turbulence
 import rudiments.*
 import anticipation.*
 import perforate.*
-import hieroglyph.*
 
-package io:
-  given jvm(using streamCut: Raises[StreamCutError]): Io = new Io:
-    val encoder = CharEncoder.system
-    def putOutText(text: Text): Unit = putOutBytes(encoder.encode(text))
-    def putErrText(text: Text): Unit = putErrBytes(encoder.encode(text))
-    
-    def putOutBytes(bytes: Bytes): Unit =
-      if System.out == null then raise(StreamCutError(0.b))(())
-      else System.out.nn.writeBytes(bytes.mutable(using Unsafe))
-    
-    def putErrBytes(bytes: Bytes): Unit =
-      if System.out == null then raise(StreamCutError(0.b))(())
-      else System.out.nn.writeBytes(bytes.mutable(using Unsafe))
+import java.io as ji
+
+package stdioSources:
+  given jvm(using streamCut: Raises[StreamCutError]): Stdio = Stdio(System.out.nn, System.err.nn, System.in.nn)
 
 @capability
 trait Io:
-  def putErrBytes(bytes: Bytes): Unit
-  def putErrText(text: Text): Unit
-  def putOutBytes(bytes: Bytes): Unit
-  def putOutText(text: Text): Unit
+  def write(bytes: Bytes): Unit
+  def print(text: Text): Unit
 
-object Err
-object Out
-
-object Io:
-  def put(bytes: Bytes)(using io: Io): Unit =
-    io.putOutBytes(bytes)
-
-  def print[TextType](text: TextType)(using io: Io)(using printable: Printable[TextType]): Unit =
-    io.putOutText(printable.print(text))
+object Err:
+  def write(bytes: Bytes)(using stdio: Stdio): Unit = stdio.writeErr(bytes)
+  def print[TextType](text: TextType)(using stdio: Stdio)(using printable: Printable[TextType]): Unit =
+    stdio.printErr(printable.print(text))
   
-  def printErr[TextType](text: TextType)(using io: Io)(using printable: Printable[TextType]): Unit =
-    io.putErrText(printable.print(text))
+  def println[TextType](text: TextType)(using Stdio, Printable[TextType]): Unit =
+    print(text)
+    println()
   
-  def println[TextType](text: TextType)(using io: Io, printable: Printable[TextType]): Unit =
-    io.putOutText(printable.print(text))
-    io.putOutText("\n".tt)
+  def println()(using Stdio): Unit = print("\n".tt)
 
-  def println()(using io: Io): Unit = io.putOutText("\n".tt)
-  def printlnErr()(using io: Io): Unit = io.putErrText("\n".tt)
+object Out:
+  def write(bytes: Bytes)(using stdio: Stdio): Unit = stdio.write(bytes)
+  def print[TextType](text: TextType)(using stdio: Stdio)(using printable: Printable[TextType]): Unit =
+    stdio.print(printable.print(text))
   
-  def printlnErr[TextType](text: TextType)(using io: Io, printable: Printable[TextType]): Unit =
-    io.putErrText(printable.print(text))
-    io.putErrText("\n".tt)
+  def println()(using Stdio): Unit = print("\n".tt)
+  
+  def println[TextType](text: TextType)(using Stdio, Printable[TextType]): Unit =
+    print(text)
+    println()
+  
+class Stdio(out: ji.PrintStream, err: ji.PrintStream, in: ji.InputStream) extends Io:
+  private lazy val reader: ji.Reader = ji.InputStreamReader(in, "UTF-8")
+  
+  def write(bytes: Bytes): Unit = out.write(bytes.mutable(using Unsafe), 0, bytes.length)
+  def print(text: Text): Unit = out.print(text.s)
+  
+  def writeErr(bytes: Bytes): Unit = err.write(bytes.mutable(using Unsafe), 0, bytes.length)
+  def printErr(text: Text): Unit = err.print(text.s)
 
-//  given default(using Quickstart)(using Raises[StreamCutError]): Io = io.jvm
+  def read(array: Array[Byte]): Int = in.read(array, 0, array.length)
+  def read(array: Array[Char]): Int = reader.read(array, 0, array.length)

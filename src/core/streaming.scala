@@ -71,17 +71,17 @@ trait SimpleWritable[-TargetType, -ChunkType] extends Writable[TargetType, Chunk
   def writeChunk(target: TargetType, chunk: ChunkType): Unit
 
 object Appendable:
-  given stdoutBytes(using io: Io): SimpleAppendable[Out.type, Bytes] =
-    (stderr, bytes) => io.putOutBytes(bytes)
+  given stdoutBytes(using stdio: Stdio): SimpleAppendable[Out.type, Bytes] =
+    (stderr, bytes) => stdio.write(bytes)
   
-  given stdoutText(using io: Io, enc: CharEncoder): SimpleAppendable[Out.type, Text] =
-    (stderr, text) => io.putOutText(text)
+  given stdoutText(using stdio: Stdio, enc: CharEncoder): SimpleAppendable[Out.type, Text] =
+    (stderr, text) => stdio.print(text)
 
-  given stderrBytes(using io: Io): SimpleAppendable[Err.type, Bytes] =
-    (stderr, bytes) => io.putErrBytes(bytes)
+  given stderrBytes(using stdio: Stdio): SimpleAppendable[Err.type, Bytes] =
+    (stderr, bytes) => stdio.writeErr(bytes)
   
-  given stderrText(using io: Io, enc: CharEncoder): SimpleAppendable[Err.type, Text] =
-    (stderr, text) => io.putErrText(text)
+  given stderrText(using stdio: Stdio, enc: CharEncoder): SimpleAppendable[Err.type, Text] =
+    (stderr, text) => stdio.print(text)
 
   given outputStreamBytes(using streamCut: Raises[StreamCutError]): SimpleAppendable[ji.OutputStream, Bytes] =
     (outputStream, bytes) => outputStream.write(bytes.mutable(using Unsafe))
