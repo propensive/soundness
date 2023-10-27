@@ -53,15 +53,36 @@ object Out:
     println()
 
 object Stdio:
-  def apply(initOut: ji.PrintStream, initErr: ji.PrintStream, initIn: ji.InputStream): Stdio = new Stdio:
-    val out: ji.PrintStream = initOut
-    val err: ji.PrintStream = initErr
-    val in: ji.InputStream = initIn
+  def apply(initOut: ji.PrintStream | Null, initErr: ji.PrintStream | Null, initIn: ji.InputStream | Null): Stdio =
+    val safeOut: ji.PrintStream = if initOut == null then MutePrintStream else initOut
+    val safeErr: ji.PrintStream = if initErr == null then MutePrintStream else initErr
+    val safeIn: ji.InputStream = if initIn == null then MuteInputStream else initIn
+  
+    new Stdio:
+      def out: ji.PrintStream = safeOut
+      def err: ji.PrintStream = safeErr
+      def in: ji.InputStream = safeIn
+
+  object MuteOutputStream extends ji.OutputStream:
+    def write(byte: Int): Unit = ()
+    override def write(array: Array[Byte]): Unit = ()
+    override def write(array: Array[Byte], offset: Int, length: Int): Unit = ()
+    override def close(): Unit = ()
+
+  lazy val MutePrintStream = ji.PrintStream(MuteOutputStream)
+
+  object MuteInputStream extends ji.InputStream:
+    def read(): Int = -1
+    override def read(array: Array[Byte]): Int = 0
+    override def read(array: Array[Byte], offset: Int, length: Int): Int = 0
+    override def reset(): Unit = ()
+    override def close(): Unit = ()
+    override def available(): Int = 0
 
 trait Stdio extends Io:
-  val out: ji.PrintStream
-  val err: ji.PrintStream
-  val in: ji.InputStream
+  def out: ji.PrintStream
+  def err: ji.PrintStream
+  def in: ji.InputStream
 
   private lazy val reader: ji.Reader = ji.InputStreamReader(in, "UTF-8")
   
