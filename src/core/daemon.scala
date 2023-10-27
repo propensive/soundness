@@ -183,8 +183,7 @@ case class ShellSession
     (arguments: IArray[Argument], stdio: Stdio, shutdown: () => Unit, signals: LazyList[Signal],
         shellInput: ShellInput, script: Unix.Path, workDir: Text)
     (using Monitor)
-extends WorkingDirectory(workDir), ProcessContext, Stdio:
-  export stdio.{out, err, in}
+extends WorkingDirectory(workDir), ProcessContext
 
 case class Initialize(process: Pid, work: Text, script: Text, input: ShellInput, arguments: List[Text], environment: List[Text])
 case class Interrupt(process: Pid, signal: Signal)
