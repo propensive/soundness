@@ -51,8 +51,18 @@ object Out:
   def println[TextType](text: TextType)(using Stdio, Printable[TextType]): Unit =
     print(text)
     println()
-  
-class Stdio(out: ji.PrintStream, err: ji.PrintStream, in: ji.InputStream) extends Io:
+
+object Stdio:
+  def apply(initOut: ji.PrintStream, initErr: ji.PrintStream, initIn: ji.InputStream): Stdio = new Stdio:
+    val out: ji.PrintStream = initOut
+    val err: ji.PrintStream = initErr
+    val in: ji.InputStream = initIn
+
+trait Stdio extends Io:
+  val out: ji.PrintStream
+  val err: ji.PrintStream
+  val in: ji.InputStream
+
   private lazy val reader: ji.Reader = ji.InputStreamReader(in, "UTF-8")
   
   def write(bytes: Bytes): Unit = out.write(bytes.mutable(using Unsafe), 0, bytes.length)
