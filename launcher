@@ -29,7 +29,7 @@ argCount=$#
 backOut() {
   if [ -f "$failFile" ]
   then
-    test -t 0 && stty "$ttystate" && echo -en "\033[?1004l\033[?2004h"
+    test -t 0 && stty "$ttystate"
     printf "The daemon process failed to start.\n" >&2
     printf "Remove the file %s before trying again.\n" "$failFile" >&2
     exit 1
