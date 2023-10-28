@@ -24,9 +24,9 @@ import galilei.*, filesystemOptions.{dereferenceSymlinks, createNonexistent, cre
 import anticipation.*, fileApi.galileiApi
 import rudiments.*, homeDirectories.default
 import perforate.*
-import hieroglyph.*, charEncoders.utf8, charDecoders.utf8, badEncodingHandlers.strict
+import hieroglyph.*, charEncoders.utf8
 import parasite.*
-import profanity.*
+import profanity.*, terminalOptions.backgroundColorDetection
 import gossamer.*
 import turbulence.*
 import guillotine.*
@@ -45,9 +45,8 @@ case class CliSession(pid: Pid, async: Async[Unit], signals: Funnel[Signal], ter
 
 class LazyEnvironment(vars: List[Text]) extends Environment:
   private lazy val map: Map[Text, Text] =
-    vars.map: element =>
-      element.cut(t"=", 2) match
-        case List(key, value) => (key, value)
+    vars.map(_.cut(t"=", 2)).collect:
+      case List(key, value) => (key, value)
     .to(Map)
   
   def apply(key: Text): Maybe[Text] = map.get(key).getOrElse(Unset)
@@ -95,14 +94,14 @@ class Daemon(block: Environment => ShellSession => Execution) extends Applicatio
       
       buffer
 
-    val message = line() match
+    val message: Maybe[ShellMessage] = line() match
       case t"s" =>
         val pid: Pid = line().decodeAs[Pid]
         val signal: Signal = line().decodeAs[Signal]
-        Interrupt(pid, signal)
+        ShellMessage.Trap(pid, signal)
       
       case t"x" =>
-        GetExitCode(line().decodeAs[Pid])
+        ShellMessage.Exit(line().decodeAs[Pid])
       
       case t"i" =>
         val stdin: ShellInput = if line() == t"p" then ShellInput.Pipe else ShellInput.Terminal
@@ -113,15 +112,22 @@ class Daemon(block: Environment => ShellSession => Execution) extends Applicatio
         val args: List[Text] = chunk().cut(t"\u0000").take(argCount)
         val env: List[Text] = chunk().cut(t"\u0000").init
 
-        Initialize(pid, pwd, script, stdin, args, env)
+        ShellMessage.Init(pid, pwd, script, stdin, args, env)
+      
+      case _ =>
+        Unset
     
     message match
-      case Interrupt(process, signal) =>
+      case Unset =>
+        Out.println(t"Received unrecognized message")
+        socket.close()
+
+      case ShellMessage.Trap(process, signal) =>
         Out.println(t"Received signal $signal")
         clients(process).signals.put(signal)
         socket.close()
       
-      case GetExitCode(process) =>
+      case ShellMessage.Exit(process) =>
         Out.println(t"Received exit status request from $process")
         val exitStatus: ExitStatus = clients(process).exit.await()
         
@@ -129,7 +135,7 @@ class Daemon(block: Environment => ShellSession => Execution) extends Applicatio
         socket.close()
         clients -= process
 
-      case Initialize(process, directory, scriptName, shellInput, args, env) =>
+      case ShellMessage.Init(process, directory, scriptName, shellInput, args, env) =>
         Out.println(t"Received init $process")
         val promise: Promise[Unit] = Promise()
         val exit: Promise[ExitStatus] = Promise()
@@ -185,9 +191,10 @@ case class ShellSession
     (using Monitor)
 extends WorkingDirectory(workDir), ProcessContext
 
-case class Initialize(process: Pid, work: Text, script: Text, input: ShellInput, arguments: List[Text], environment: List[Text])
-case class Interrupt(process: Pid, signal: Signal)
-case class GetExitCode(process: Pid)
+enum ShellMessage:
+  case Init(process: Pid, work: Text, script: Text, input: ShellInput, arguments: List[Text], environment: List[Text])
+  case Trap(process: Pid, signal: Signal)
+  case Exit(process: Pid)
 
 @main
 def fury(): Unit =
@@ -200,15 +207,15 @@ def fury(): Unit =
           Out.println(t"Hello world 2")
           Out.println(arguments.debug)
           Out.println(shell.script.debug)
+          Err.println(t"Hello stderr")
           Out.println(shell.directory.or(t"unknown"))
       
           tty.events.takeWhile(_ != Keypress.Printable('Q')).foreach:
             case Keypress.Printable(ch) => Out.print(ch)
+            case Keypress.Enter         => Out.print(t"\r\n")
             case other                  => println(other)
 
-          //Out.println(tty.mode.debug)
-          //println(t"Rows: ${tty.rows}")
-          //println(t"Cols: ${tty.columns}")
+          Out.println(tty.mode.debug)
           Out.println(t"Done")
           ExitStatus.Fail(32)
 

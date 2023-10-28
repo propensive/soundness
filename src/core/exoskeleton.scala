@@ -25,7 +25,6 @@ import spectacular.*
 import gossamer.*
 import ambience.*
 
-import java.io as ji
 import sun.misc as sm
 
 object ShellInput:
