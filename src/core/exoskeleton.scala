@@ -69,5 +69,6 @@ abstract class Application:
 
 case class Execution(execute: Invocation => ExitStatus)
 
-def execute(block: Invocation ?=> ExitStatus): Execution = Execution(block(using _))
+def execute(block: Effectful ?=> Invocation ?=> ExitStatus): Execution = Execution(block(using ###)(using _))
 
+erased trait Effectful
