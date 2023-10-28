@@ -58,7 +58,8 @@ object Decoder:
   given pid(using number: Raises[NumberError]): Decoder[Pid] = long.map(Pid(_))
 
 @capability
-trait Decoder[+ValueType]:
+trait Decoder[+ValueType] extends Unapply[Text, ValueType]:
+  def unapply(text: Text): Option[ValueType] = try Some(decode(text)) catch case error: Exception => None
   def decode(text: Text): ValueType
   def map[ValueType2](fn: ValueType => ValueType2): Decoder[ValueType2] = text => fn(decode(text))
 
@@ -75,7 +76,8 @@ object Encoder:
   given pid: Encoder[Pid] = long.contraMap(_.value)
 
 @capability
-trait Encoder[-ValueType]:
+trait Encoder[-ValueType] extends Irrefutable[ValueType, Text]:
+  def unapply(value: ValueType): Text = encode(value)
   def encode(value: ValueType): Text
   def contraMap[ValueType2](fn: ValueType2 => ValueType): Encoder[ValueType2] = value => encode(fn(value))
 
