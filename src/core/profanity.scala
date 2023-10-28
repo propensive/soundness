@@ -101,8 +101,10 @@ case class TerminalError(ttyMsg: Text) extends Error(msg"STDIN is not attached t
 object Terminal:
   def reportBackground: Text = t"\e]11;?\e\\"
   def reportSize: Text = t"\e[s\e[4095C\e[4095B\e[6n\e[u"
-  def detectFocus: Text = t"\e[?1004h"
+  def enableFocus: Text = t"\e[?1004h"
+  def disableFocus: Text = t"\e[?1004l"
   def enablePaste: Text = t"\e[?2004h"
+  def disablePaste: Text = t"\e[?2004l"
 
 package keyboards:
   given raw: Keyboard with
@@ -199,10 +201,13 @@ def terminal
     : ResultType =
   given term: Terminal = Terminal(context.signals)
   if summon[BackgroundColorDetection]() then Out.print(Terminal.reportBackground)
-  if summon[TerminalFocusDetection]() then Out.print(Terminal.detectFocus)
+  if summon[TerminalFocusDetection]() then Out.print(Terminal.enableFocus)
   if summon[BracketedPasteMode]() then Out.print(Terminal.enablePaste)
   if summon[TerminalSizeDetection]() then Out.print(Terminal.reportSize)
   
-  block(using term)
+  try block(using term) finally
+    if summon[BracketedPasteMode]() then Out.print(Terminal.disablePaste)
+    if summon[TerminalFocusDetection]() then Out.print(Terminal.disableFocus)
+
 
 inline def tty(using inline tty: Terminal): Terminal = tty
