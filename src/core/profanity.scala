@@ -126,8 +126,8 @@ extends Stdio:
 
   val keyboard = StandardKeyboard()
   var mode: Maybe[TerminalMode] = Unset
-  var rows: Int = 0
-  var columns: Int = 0
+  var rows: Maybe[Int] = Unset
+  var columns: Maybe[Int] = Unset
 
   val signalHandler = Async:
     signals.foreach:
