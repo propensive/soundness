@@ -26,7 +26,7 @@ import rudiments.*, homeDirectories.default
 import perforate.*
 import hieroglyph.*, charEncoders.utf8
 import parasite.*
-import profanity.*, terminalOptions.backgroundColorDetection
+import profanity.*
 import gossamer.*
 import turbulence.*
 import guillotine.*
@@ -53,7 +53,7 @@ class LazyEnvironment(vars: List[Text]) extends Environment:
 
 object Daemon:
   def listen(block: Environment ?=> ShellSession ?=> Execution): Unit =
-    given invocation: Invocation = Invocation(IArray(), environments.jvm, workingDirectories.default, ProcessContext(stdioSources.jvm))
+    given invocation: Invocation = Invocation(Nil, environments.jvm, workingDirectories.default, ProcessContext(stdioSources.jvm))
     Daemon(environment => session => block(using environment)(using session)).invoke.execute(invocation)
 
 class Daemon(block: Environment => ShellSession => Execution) extends Application:
@@ -149,9 +149,25 @@ class Daemon(block: Environment => ShellSession => Execution) extends Applicatio
 
         val environment = LazyEnvironment(env)
         val async: Async[Unit] = Async:
-          val invocation: Invocation = Invocation(session.arguments, environment, WorkingDirectory(directory), session)
-          try exit.fulfill(block(environment)(session).execute(invocation))
-          catch case error: Exception => exit.fulfill(ExitStatus.Fail(1))
+          try
+            CommandLine(args, environment, WorkingDirectory(directory), session) match
+              case invocation: Invocation =>
+                println("INVOCATION")
+                exit.fulfill(block(environment)(session).execute(invocation))
+              case completion: Completion =>
+                println("COMPLETION")
+                println(directory.debug)
+                exit.fulfill:
+                  block(environment)(session)
+                  Out.println(t"ein")(using completion.context.stdio)
+                  Out.println(t"zwei")(using completion.context.stdio)
+                  Out.println(t"drei")(using completion.context.stdio)
+                  Out.println(t"vier")(using completion.context.stdio)
+                  ExitStatus.Ok
+              case other =>
+                println("OTHER")
+
+          catch case error: Exception => exit.offer(ExitStatus.Fail(1))
           finally
             socket.close()
             Out.println(t"Closed connection to ${process.value}")
@@ -161,6 +177,8 @@ class Daemon(block: Environment => ShellSession => Execution) extends Applicatio
   def invoke(using commandLine: CommandLine): Execution = commandLine match
     case given Invocation =>
       Async.onShutdown:
+        println("waitfile = "+waitFile)
+        println("portfile = "+portFile)
         waitFile.wipe()
         portFile.wipe()
       
@@ -200,24 +218,12 @@ enum ShellMessage:
 def fury(): Unit =
   import errorHandlers.throwUnsafely
   Daemon.listen:
+    println(arguments.debug)
     execute:
-      Out.println(t"Hello world 1")
       supervise:
         terminal:
-          Out.println(t"Hello world 2")
-          Out.println(arguments.debug)
-          Out.println(shell.script.debug)
-          Err.println(t"Hello stderr")
-          Out.println(shell.directory.or(t"unknown"))
-      
-          tty.events.takeWhile(_ != Keypress.Printable('Q')).foreach:
-            case Keypress.Printable(ch) => Out.print(ch)
-            case Keypress.Enter         => Out.print(t"\r\n")
-            case other                  => println(other)
-
-          Out.println(tty.mode.debug)
-          Out.println(t"Done")
-          ExitStatus.Fail(32)
+          println(tty.mode.debug)
+          ExitStatus.Ok
 
 def arguments(using session: ShellSession): IArray[Argument] = session.arguments
 def shell(using session: ShellSession): ShellSession = session
@@ -227,4 +233,5 @@ object Argument:
     args.zipWithIndex.map: (arg, index) =>
       Argument(index + 1, arg, Unset)
 
-case class Argument(position: Int, value: Text, cursor: Maybe[Int])
+case class Argument(position: Int, value: Text, cursor: Maybe[Int]):
+  def apply(): Text = value

@@ -40,18 +40,18 @@ object Generate extends Application:
       Exit(1)
 
   def install()(using CliShell): Set[Text] throws InstallError | EnvError = arguments.to(List) match
-    case cmd :: ShellType(shell) :: Nil =>
+    case cmd :: Shell(shell) :: Nil =>
       Set(shell.install(cmd, summon[CliShell].environment))
     
     case cmd :: Nil =>
-      ShellType.all.map(_.install(cmd, summon[CliShell].environment)).to(Set)
+      Shell.all.map(_.install(cmd, summon[CliShell].environment)).to(Set)
     
     case _ =>
       Set()
 
   def complete(cli: Cli): Completions = cli.index match
     case 1 => Completions(Nil, t"Please specify the command to complete")
-    case 2 => Completions(ShellType.all.map { shell =>
+    case 2 => Completions(Shell.all.map { shell =>
                 Choice(shell.shell, shell.description, false, false)
               })
     case 3 => Completions(Nil, t"Please specify the directory in which to install the file")
@@ -73,11 +73,11 @@ case class Completions(defs: List[Choice], title: Maybe[Text] = Unset)
 case class Choice(word: Text, description: Maybe[Text] = Unset, hidden: Boolean = false,
                       incomplete: Boolean = false)
 
-object ShellType:
-  val all: List[ShellType] = List(Zsh, Bash, Fish)
-  def unapply(string: Text): Option[ShellType] = all.find(_.shell == string)
+object Shell:
+  val all: List[Shell] = List(Zsh, Bash, Fish)
+  def unapply(string: Text): Option[Shell] = all.find(_.shell == string)
 
-abstract class ShellType(val shell: Text):
+abstract class Shell(val shell: Text):
   def serialize(cli: Cli, completions: Completions): LazyList[Text]
   def script(cmd: Text): Text
   def filename(cmd: Text): Text
@@ -98,7 +98,7 @@ abstract class ShellType(val shell: Text):
     out.close()
     Text(file.getAbsolutePath.nn)
 
-object Zsh extends ShellType(t"zsh"):
+object Zsh extends Shell(t"zsh"):
   def description: Text = t"ZSH shell"
   def destination(env: Map[Text, Text]): File = File(File(xdgConfig(env), t"exoskeleton".s), shell.s)
   
@@ -136,7 +136,7 @@ return 0
   private def describe(width: Int, word: Text, desc: Option[Text]): Text =
     desc.fold(word) { desc => t"${word.fit(width)}  -- $desc" }
 
-object Bash extends ShellType(t"bash"):
+object Bash extends Shell(t"bash"):
   def description = t"The Bourne Again SHell"
 
   def destination(env: Map[Text, Text]): File = File(s"${env(t"HOME")}/.bash_completion")
@@ -160,7 +160,7 @@ complete -F _${cmd}_complete $cmd
 
   def filename(cmd: Text): Text = t"_$cmd"
   
-object Fish extends ShellType(t"fish"):
+object Fish extends Shell(t"fish"):
   def description: Text = t"The Fish Shell"
   
   def destination(env: Map[Text, Text]): File =

@@ -34,18 +34,51 @@ object ShellInput:
 enum ShellInput:
   case Terminal, Pipe
 
+object Shell:
+  given decoder: Decoder[Shell] = text => valueOf(text.lower.capitalize.s)
+  given encoder: Encoder[Shell] = _.toString.tt.lower
+
+enum Shell:
+  case Zsh, Bash, Fish
+
+object CommandLine:
+  def apply(arguments: Iterable[Text], environment: Environment, workingDirectory: WorkingDirectory,
+      context: ProcessContext): CommandLine =
+    if arguments.headOption == Some(t"{completions}")
+    then Completion(arguments, environment, workingDirectory, context)
+    else Invocation(arguments, environment, workingDirectory, context)
+
 sealed trait CommandLine:
   def arguments: IArray[Argument]
   def environment: Environment
   def workingDirectory: WorkingDirectory
 
+case class CompletionContext(shell: Shell, arguments: IArray[Argument], focus: Int)
+
+case class Completion
+    (fullArguments: Iterable[Text], environment: Environment, workingDirectory: WorkingDirectory,
+        context: ProcessContext)
+extends CommandLine:
+  println("TESTING")
+  val completion = fullArguments.to(List) match
+    case t"{completions}" :: shell :: focus :: t"--" :: rest =>
+      println("YES")
+      CompletionContext(shell.decodeAs[Shell], Argument.from(rest), focus.s.toInt)
+    case _ =>
+      println("No way")
+      ???
+  
+  def arguments: IArray[Argument] = completion.arguments
+
 case class Invocation
-    (arguments: IArray[Argument], environment: Environment, workingDirectory: WorkingDirectory,
+    (fullArguments: Iterable[Text], environment: Environment, workingDirectory: WorkingDirectory,
         context: ProcessContext)
 extends CommandLine, Stdio:
   export context.stdio.{out, err, in}
 
-  def signals(signals: Signal*): LazyList[Signal] = 
+  lazy val arguments: IArray[Argument] = Argument.from(fullArguments)
+
+  def listenForSignals(signals: Signal*): LazyList[Signal] = 
     val funnel: Funnel[Signal] = Funnel()
     
     signals.foreach: signal =>
@@ -61,7 +94,7 @@ abstract class Application:
 
   def main(arguments: IArray[Text]): Unit =
     val context: ProcessContext = ProcessContext(Stdio(System.out, System.err, System.in))
-    val invocation = Invocation(Argument.from(arguments), environments.jvm, unsafely(workingDirectories.default), context)
+    val invocation = Invocation(arguments, environments.jvm, unsafely(workingDirectories.default), context)
     
     invoke(using invocation).execute(invocation) match
       case ExitStatus.Ok           => System.exit(0)

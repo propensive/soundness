@@ -1,7 +1,7 @@
 #!/bin/bash
 
 declare portFile initFile ttystate script waitFile tmpPipe
-declare -i pid port stdoutPid stderrPid continue pipePid argCount
+declare -i pid port stdoutPid continue pipePid argCount launchPid
 declare -a args signals sttyOptions
 
 
@@ -44,6 +44,7 @@ abort() {
 
 launch() {
   mkfifo "$waitFile" 2> /dev/null && (exec nohup wrath -x > /home/propensive/work/exoskeleton/out.log 2>&1 || abort) &
+  launchPid=$!
   flock "$initFile" sh -c "test -f \"$portFile\" || cat \"$waitFile\"" > /dev/null 2>&1 || abort
   rm -f "$initFile"
 }
@@ -97,9 +98,6 @@ stdoutPid=$!
 nc -q 1 localhost $port <&3 &
 pipePid=$!
 
-#connectStderr | nc -q 1 localhost $port &
-#stderrPid=$!
-
 for signal in "${signals[@]}"
 do trap "handle $signal" "$signal"
 done
@@ -110,6 +108,7 @@ do
   ps $pipePid > /dev/null || continue=0
 done
 
-test -t 0 && stty "$ttystate" && kill $stdoutPid $stderrPid
+test -t 0 && stty "$ttystate"
+kill $stdoutPid $launchPid >/dev/null 2>&1
 terminate
 exit 1
