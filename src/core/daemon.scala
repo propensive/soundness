@@ -41,7 +41,7 @@ import scala.compiletime.*
 import java.net as jn
 import java.io as ji
 
-case class CliSession(pid: Pid, async: Async[Unit], signals: Funnel[Signal], terminate: Promise[Unit], close: () => Unit, exit: Promise[ExitStatus])(using Monitor)
+case class ClientConnection(pid: Pid, async: Async[Unit], signals: Funnel[Signal], terminate: Promise[Unit], close: () => Unit, exit: Promise[ExitStatus])(using Monitor)
 
 class LazyEnvironment(vars: List[Text]) extends Environment:
   private lazy val map: Map[Text, Text] =
@@ -52,11 +52,11 @@ class LazyEnvironment(vars: List[Text]) extends Environment:
   def apply(key: Text): Maybe[Text] = map.get(key).getOrElse(Unset)
 
 object Daemon:
-  def listen(block: Environment ?=> ShellSession ?=> Execution): Unit =
+  def listen(block: CommandLine ?=> Environment ?=> ShellSession ?=> Execution): Unit =
     given invocation: Invocation = Invocation(Nil, environments.jvm, workingDirectories.default, ProcessContext(stdioSources.jvm))
-    Daemon(environment => session => block(using environment)(using session)).invoke.execute(invocation)
+    Daemon(commandLine => environment => session => block(using commandLine)(using environment)(using session)).invoke.execute(invocation)
 
-class Daemon(block: Environment => ShellSession => Execution) extends Application:
+class Daemon(block: CommandLine => Environment => ShellSession => Execution) extends Application:
   daemon =>
   
   import environments.jvm
@@ -66,7 +66,7 @@ class Daemon(block: Environment => ShellSession => Execution) extends Applicatio
   private val furyDir: Directory = (xdg.runtimeDir.or(xdg.stateHome) / p"fury").as[Directory]
   private val portFile: Path = furyDir / p"port"
   private val waitFile: Path = furyDir / p"wait"
-  private val clients: scm.HashMap[Pid, CliSession] = scm.HashMap()
+  private val clients: scm.HashMap[Pid, ClientConnection] = scm.HashMap()
   private var continue: Boolean = true
 
   lazy val termination: Unit =
@@ -144,8 +144,8 @@ class Daemon(block: Environment => ShellSession => Execution) extends Applicatio
         val clientStdio: Stdio =
           Stdio(ji.PrintStream(socket.getOutputStream.nn), ji.PrintStream(socket.getOutputStream.nn), in)
         
-        val session = ShellSession(textArguments, clientStdio, () => daemon.shutdown(),
-            signalFunnel.stream, shellInput, scriptName.decodeAs[Unix.Path], directory)
+        val session = ShellSession(clientStdio, () => daemon.shutdown(), signalFunnel.stream, shellInput,
+            scriptName.decodeAs[Unix.Path], directory)
 
         val environment = LazyEnvironment(env)
         
@@ -153,32 +153,30 @@ class Daemon(block: Environment => ShellSession => Execution) extends Applicatio
           try
             CommandLine(textArguments, environment, WorkingDirectory(directory), session) match
               case invocation: Invocation =>
-                println("INVOCATION")
-                exit.fulfill(block(environment)(session).execute(invocation))
+                exit.fulfill(block(invocation)(environment)(session).execute(invocation))
               
               case completion: Completion =>
-                println("COMPLETION")
-                println(directory.debug)
                 exit.fulfill:
-                  block(environment)(session)
-                  Out.println(t"ein     -- One\t-l\tein")(using completion.context.stdio)
-                  Out.println(t"zwei    -- Two\t-l\tzwei")(using completion.context.stdio)
-                  Out.println(t"drei    -- Three\t-l\tdrei")(using completion.context.stdio)
-                  Out.println(t"vier    -- Four\t-l\tvier")(using completion.context.stdio)
-                  Out.println(t"fünf    -- Five\t-l\tfünf")(using completion.context.stdio)
-                  Out.println(t"sechs   -- Three \e[38;5;214mtimes\e[0m two\t-l\tsechs")(using completion.context.stdio)
-                  Out.println(t"sieben  -- Seven\t-l\t-X\tBe \e[38;5;43mcareful\e[0m about this one\tsieben")(using completion.context.stdio)
+                  block(completion)(environment)(session)
+                  println(t"args=${completion.arguments.length}")
+                  println(t"focus=${completion.focus}")
+                  println(t"focusPosition${completion.focusPosition}")
+                  completion.serialize.foreach(Out.println(_)(using completion.context.stdio))
+                  // Out.println(t"ein     -- One\t-l\tein")(using completion.context.stdio)
+                  // Out.println(t"zwei    -- Two\t-l\tzwei")(using completion.context.stdio)
+                  // Out.println(t"drei    -- Three\t-l\tdrei")(using completion.context.stdio)
+                  // Out.println(t"vier    -- Four\t-l\tvier")(using completion.context.stdio)
+                  // Out.println(t"fünf    -- Five\t-l\tfünf")(using completion.context.stdio)
+                  // Out.println(t"sechs   -- Three \e[38;5;214mtimes\e[0m two\t-l\tsechs")(using completion.context.stdio)
+                  // Out.println(t"sieben  -- Seven\t-l\t-X\tBe \e[38;5;43mcareful\e[0m about this one\tsieben")(using completion.context.stdio)
                   ExitStatus.Ok
               
-              case other =>
-                println("OTHER")
-
           catch case error: Exception => exit.offer(ExitStatus.Fail(1))
           finally
             socket.close()
             Out.println(t"Closed connection to ${process.value}")
         
-        clients(process) = CliSession(process, async, signalFunnel, promise, () => socket.close(), exit)
+        clients(process) = ClientConnection(process, async, signalFunnel, promise, () => socket.close(), exit)
 
   def invoke(using commandLine: CommandLine): Execution = commandLine match
     case given Invocation =>
@@ -208,31 +206,22 @@ class Daemon(block: Environment => ShellSession => Execution) extends Applicatio
         ExitStatus.Ok
 
 case class ShellSession
-    (textArguments: List[Text], stdio: Stdio, shutdown: () => Unit, signals: LazyList[Signal],
-        shellInput: ShellInput, script: Unix.Path, workDir: Text)
+    (stdio: Stdio, shutdown: () => Unit, signals: LazyList[Signal], shellInput: ShellInput, script: Unix.Path,
+        workDir: Text)
     (using Monitor)
-extends WorkingDirectory(workDir), ProcessContext:
-
-  def arguments(using CompletionContext): List[Argument] = SimpleParameterParser(textArguments)
-  
-  def parameters
-      [ParametersType]
-      (using parser: ArgumentsParser[ParametersType], context: CompletionContext)
-      : ParametersType =
-    
-    parser(textArguments)
+extends WorkingDirectory(workDir), ProcessContext
 
 enum ShellMessage:
   case Init(process: Pid, work: Text, script: Text, input: ShellInput, arguments: List[Text], environment: List[Text])
   case Trap(process: Pid, signal: Signal)
   case Exit(process: Pid)
 
-def arguments(using session: ShellSession): List[Text] = session.textArguments
+def arguments(using commandLine: CommandLine): List[Argument] = commandLine.arguments
 
 def parameters
     [ParametersType]
-    (using session: ShellSession, parser: ArgumentsParser[ParametersType], context: CompletionContext)
+    (using parser: ArgumentsParser[ParametersType], commandLine: CommandLine)
     : ParametersType =
-  session.parameters
+  parser(arguments)
 
 def shell(using session: ShellSession): ShellSession = session

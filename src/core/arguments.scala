@@ -22,24 +22,19 @@ import spectacular.*
 import anticipation.*
 
 trait ArgumentsParser[ParametersType]:
-  def apply(textArguments: Iterable[Text])(using CompletionContext): ParametersType
+  def apply(arguments: List[Argument])(using CommandLine): ParametersType
 
 object Parameters:
-  def apply
-      [ParametersType]
-      (textArguments: Iterable[Text])(using parser: ArgumentsParser[ParametersType], context: CompletionContext)
-      : ParametersType =
-    
-    parser(textArguments)
+  def apply[ParametersType: ArgumentsParser](arguments: List[Argument])(using CommandLine): ParametersType =
+    summon[ArgumentsParser[ParametersType]](arguments)
 
 case class Argument(position: Int, value: Text, cursor: Maybe[Int]):
   def apply(): Text = value
-
-  def suggest(fn: => List[Suggestion])(using context: CompletionContext): Unit = context.suggest(position, fn)
-  def map(fn: Suggestion => Suggestion)(using context: CompletionContext): Unit = context.map(position, fn)
+  def suggest(fn: => List[Suggestion])(using commandLine: CommandLine): Unit = commandLine.suggest(position, fn)
+  def map(fn: Suggestion => Suggestion)(using commandLine: CommandLine): Unit = commandLine.map(position, fn)
   
-  def restrict(predicate: Suggestion => Boolean)(using context: CompletionContext): Unit =
-    context.restrict(position, predicate)
+  def restrict(predicate: Suggestion => Boolean)(using commandLine: CommandLine): Unit =
+    commandLine.restrict(position, predicate)
 
 case class PosixParameters
     (positional: List[Argument] = Nil, parameters: Map[Argument, List[Argument]] = Map(),
@@ -53,16 +48,25 @@ object ParamDecoder:
 trait ParamDecoder[ValueType]:
   def decode(arguments: List[Argument]): Maybe[ValueType]
 
-class Suggestion
-    (text: Text, description: Maybe[Text] = Unset, hidden: Boolean = false, incomplete: Boolean = false)
+object Suggestion:
+  
+  def apply
+      [TextType: Printable]
+      (text: Text, description: Maybe[TextType], hidden: Boolean = false, incomplete: Boolean = false) =
+    
+    val descriptionText = description.mm { description => summon[Printable[TextType]].print(description) }
+    
+    new Suggestion(text, descriptionText, hidden, incomplete)
+
+case class Suggestion(text: Text, description: Maybe[Text], hidden: Boolean, incomplete: Boolean)
 
 case class Param[ValueType: ParamDecoder](aliases: List[Char | Text], description: Text)
 
 object SimpleParameterParser extends ArgumentsParser[List[Argument]]:
-  def apply(textArguments: Iterable[Text])(using context: CompletionContext): List[Argument] = context.arguments
+  def apply(arguments: List[Argument])(using commandLine: CommandLine): List[Argument] = arguments
 
 object PosixArgumentsParser extends ArgumentsParser[PosixParameters]:
-  def apply(textArguments: Iterable[Text])(using context: CompletionContext): PosixParameters =
+  def apply(arguments: List[Argument])(using completion: CommandLine): PosixParameters =
 
     def recur
         (todo: List[Argument], arguments: List[Argument], current: Maybe[Argument],
@@ -85,7 +89,7 @@ object PosixArgumentsParser extends ArgumentsParser[PosixParameters]:
         case Nil =>
           push()
     
-    recur(SimpleParameterParser(textArguments).to(List), Nil, Unset, PosixParameters())
+    recur(arguments, Nil, Unset, PosixParameters())
 
 package parameterInterpretation:
   given simple: SimpleParameterParser.type = SimpleParameterParser

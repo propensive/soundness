@@ -37,52 +37,83 @@ enum ShellInput:
   case Terminal, Pipe
 
 object CommandLine:
-  def apply(arguments: List[Text], environment: Environment, workingDirectory: WorkingDirectory,
+  def apply(fullArguments: List[Text], environment: Environment, workingDirectory: WorkingDirectory,
       context: ProcessContext): CommandLine =
-    if arguments.headOption == Some(t"{completions}")
-    then Completion(arguments, environment, workingDirectory, context)
-    else Invocation(arguments, environment, workingDirectory, context)
+    fullArguments match
+      case t"{completions}" :: shellName :: As[Int](focus) :: As[Int](position) :: t"--" :: rest =>
+        val shell = shellName match
+          case t"zsh"  => Shell.Zsh
+          case t"bash" => Shell.Bash
+          case t"fish" => Shell.Fish
+        
+        val arguments = rest.drop(1).padTo(focus, t"").zipWithIndex.map: (text, index) =>
+          Argument(index, text, if focus == index then position else Unset)
+
+        Completion(fullArguments, arguments, environment, workingDirectory, context, shell, focus - 1, position).tap(println(_))
+      
+      case other =>
+        val arguments = fullArguments.zipWithIndex.map: (text, index) =>
+          Argument(index, text, Unset)
+        
+        Invocation(arguments, environment, workingDirectory, context)
 
 sealed trait CommandLine:
   def arguments: List[Argument]
   def environment: Environment
   def workingDirectory: WorkingDirectory
 
-case class CompletionContext(shell: Shell, textArguments: List[Text], focus: Int, focusPosition: Int):
+  def suggest(position: Int, fn: => List[Suggestion]): Unit = ()
+  def restrict(position: Int, fn: Suggestion => Boolean): Unit = ()
+  def explanation: Maybe[Text] = Unset
+  def suggestions(position: Int): List[Suggestion] = Nil
+  def explain[TextType](explanation: Maybe[TextType])(using Printable[TextType]): Unit = ()
+  def map(position: Int, fn: Suggestion => Suggestion): Unit = ()
+
+case class Completion
+    (fullArguments: List[Text], arguments: List[Argument], environment: Environment,
+        workingDirectory: WorkingDirectory, context: ProcessContext, shell: Shell, focus: Int,
+        focusPosition: Int)
+extends CommandLine:
   private val suggestionsMap: scm.Map[Int, () => List[Suggestion]] = scm.HashMap()
   private var explanationValue: Maybe[Text] = Unset
 
-  lazy val arguments: List[Argument] = textArguments.zipWithIndex.map: (text, index) =>
-    Argument(index, text, if focus == index then focusPosition else Unset)
-
-  def suggest(position: Int, fn: => List[Suggestion]): Unit = suggestionsMap(position) = () => fn
-  
-  def restrict(position: Int, predicate: Suggestion => Boolean): Unit =
+  override def restrict(position: Int, predicate: Suggestion => Boolean): Unit =
     suggestionsMap(position) = () => suggestionsMap(position)().filter(predicate)
   
-  def map(position: Int, fn: Suggestion => Suggestion): Unit =
+  override def map(position: Int, fn: Suggestion => Suggestion): Unit =
     suggestionsMap(position) = () => suggestionsMap(position)().map(fn)
 
-  inline def explain[TextType](explanation: Maybe[TextType])(using printable: Printable[TextType]): Unit =
+  override def explain[TextType](explanation: Maybe[TextType])(using printable: Printable[TextType]): Unit =
     explanationValue = explanation.mm: explanation =>
       printable.print(explanation)
   
-  def explanation: Maybe[Text] = explanationValue
-  def suggestions(position: Int): List[Suggestion] = suggestionsMap.getOrElse(position, () => Nil)()
+  override def suggest(position: Int, fn: => List[Suggestion]): Unit = suggestionsMap(position) = () => fn
+  override def explanation: Maybe[Text] = explanationValue
+  override def suggestions(position: Int): List[Suggestion] = suggestionsMap.getOrElse(position, () => Nil)()
 
-case class Completion
-    (textArguments: List[Text], environment: Environment, workingDirectory: WorkingDirectory,
-        context: ProcessContext)
-extends CommandLine:
-  
-  val completion: CompletionContext = textArguments.to(List) match
-    case t"{completions}" :: shell :: focus :: position :: t"--" :: rest =>
-      CompletionContext(shell.decodeAs[Shell], rest, focus.s.toInt, position.s.toInt)
+  def serialize: List[Text] = shell match
+    case Shell.Zsh =>
+      val explanationLine = explanation.mm { explanation => List(t"\t-X\t$explanation") }.or(Nil)
+      
+      val suggestionLines = suggestions(focus).map:
+        case Suggestion(text, description, hidden, incomplete) =>
+          val hiddenParam = if hidden then t"-n\t" else t""
+          
+          description match
+            case Unset             => t"\t$hiddenParam$text"
+            case description: Text => t"$text -- $description\t$hiddenParam$text"
+      
+      explanationLine ++ suggestionLines
+          
+    case Shell.Bash =>
+      Nil
     
-  def arguments: List[Argument] = completion.arguments
+    case Shell.Fish =>
+      Nil
+    
 
 case class Invocation
-    (textArguments: List[Text], environment: Environment, workingDirectory: WorkingDirectory,
+    (arguments: List[Argument], environment: Environment, workingDirectory: WorkingDirectory,
         context: ProcessContext)
 extends CommandLine, Stdio:
   export context.stdio.{out, err, in}
@@ -95,19 +126,20 @@ extends CommandLine, Stdio:
     
     funnel.stream
   
-  lazy val arguments: List[Argument] = textArguments.zipWithIndex.map: (text, index) =>
-    Argument(index, text, Unset)
-
 abstract class Application:
   protected given environment(using invocation: Invocation): Environment = invocation.environment
   protected given workingDirectory(using invocation: Invocation): WorkingDirectory = invocation.workingDirectory
   
   def invoke(using CommandLine): Execution
 
-  def main(arguments: IArray[Text]): Unit =
+  def main(textArguments: IArray[Text]): Unit =
     val context: ProcessContext = ProcessContext(Stdio(System.out, System.err, System.in))
     val workingDirectory = unsafely(workingDirectories.default)
-    val invocation = Invocation(arguments.to(List), environments.jvm, workingDirectory, context)
+    
+    val arguments = textArguments.to(List).zipWithIndex.map: (text, index) =>
+      Argument(index, text, Unset)
+
+    val invocation = Invocation(arguments, environments.jvm, workingDirectory, context)
     
     invoke(using invocation).execute(invocation) match
       case ExitStatus.Ok           => System.exit(0)

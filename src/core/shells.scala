@@ -3,6 +3,7 @@ package exoskeleton
 import spectacular.*
 import gossamer.*
 import anticipation.*
+import rudiments.*
 
 object Shell:
   given decoder: Decoder[Shell] = text => valueOf(text.lower.capitalize.s)
