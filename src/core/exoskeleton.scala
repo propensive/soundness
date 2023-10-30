@@ -25,6 +25,8 @@ import spectacular.*
 import gossamer.*
 import ambience.*
 
+import scala.collection.mutable as scm
+
 import sun.misc as sm
 
 object ShellInput:
@@ -42,41 +44,54 @@ enum Shell:
   case Zsh, Bash, Fish
 
 object CommandLine:
-  def apply(arguments: Iterable[Text], environment: Environment, workingDirectory: WorkingDirectory,
+  def apply(arguments: List[Text], environment: Environment, workingDirectory: WorkingDirectory,
       context: ProcessContext): CommandLine =
     if arguments.headOption == Some(t"{completions}")
     then Completion(arguments, environment, workingDirectory, context)
     else Invocation(arguments, environment, workingDirectory, context)
 
 sealed trait CommandLine:
-  def arguments: IArray[Argument]
+  def arguments: List[Argument]
   def environment: Environment
   def workingDirectory: WorkingDirectory
 
-case class CompletionContext(shell: Shell, arguments: IArray[Argument], focus: Int)
+case class CompletionContext(shell: Shell, textArguments: List[Text], focus: Int, focusPosition: Int):
+  private val suggestionsMap: scm.Map[Int, () => List[Suggestion]] = scm.HashMap()
+  private var explanationValue: Maybe[Text] = Unset
+
+  lazy val arguments: List[Argument] = textArguments.zipWithIndex.map: (text, index) =>
+    Argument(index, text, if focus == index then focusPosition else Unset)
+
+  def suggest(position: Int, fn: => List[Suggestion]): Unit = suggestionsMap(position) = () => fn
+  
+  def restrict(position: Int, predicate: Suggestion => Boolean): Unit =
+    suggestionsMap(position) = () => suggestionsMap(position)().filter(predicate)
+  
+  def map(position: Int, fn: Suggestion => Suggestion): Unit =
+    suggestionsMap(position) = () => suggestionsMap(position)().map(fn)
+
+  def explain(explanation: Maybe[Text]): Unit =
+    explanationValue = explanation
+  
+  def explanation: Maybe[Text] = explanationValue
+  def suggestions(position: Int): List[Suggestion] = suggestionsMap.getOrElse(position, () => Nil)()
 
 case class Completion
-    (fullArguments: Iterable[Text], environment: Environment, workingDirectory: WorkingDirectory,
+    (textArguments: List[Text], environment: Environment, workingDirectory: WorkingDirectory,
         context: ProcessContext)
 extends CommandLine:
-  println("TESTING")
-  val completion = fullArguments.to(List) match
-    case t"{completions}" :: shell :: focus :: position :: t"--" :: rest =>
-      println("YES")
-      CompletionContext(shell.decodeAs[Shell], Argument.from(rest), focus.s.toInt)
-    case _ =>
-      println("No way")
-      ???
   
-  def arguments: IArray[Argument] = completion.arguments
+  val completion: CompletionContext = textArguments.to(List) match
+    case t"{completions}" :: shell :: focus :: position :: t"--" :: rest =>
+      CompletionContext(shell.decodeAs[Shell], rest, focus.s.toInt, position.s.toInt)
+    
+  def arguments: List[Argument] = completion.arguments
 
 case class Invocation
-    (fullArguments: Iterable[Text], environment: Environment, workingDirectory: WorkingDirectory,
+    (textArguments: List[Text], environment: Environment, workingDirectory: WorkingDirectory,
         context: ProcessContext)
 extends CommandLine, Stdio:
   export context.stdio.{out, err, in}
-
-  lazy val arguments: IArray[Argument] = Argument.from(fullArguments)
 
   def listenForSignals(signals: Signal*): LazyList[Signal] = 
     val funnel: Funnel[Signal] = Funnel()
@@ -85,6 +100,9 @@ extends CommandLine, Stdio:
       sm.Signal.handle(sm.Signal(signal.shortName.s), event => funnel.put(signal))
     
     funnel.stream
+  
+  lazy val arguments: List[Argument] = textArguments.zipWithIndex.map: (text, index) =>
+    Argument(index, text, Unset)
 
 abstract class Application:
   protected given environment(using invocation: Invocation): Environment = invocation.environment
@@ -94,7 +112,8 @@ abstract class Application:
 
   def main(arguments: IArray[Text]): Unit =
     val context: ProcessContext = ProcessContext(Stdio(System.out, System.err, System.in))
-    val invocation = Invocation(arguments, environments.jvm, unsafely(workingDirectories.default), context)
+    val workingDirectory = unsafely(workingDirectories.default)
+    val invocation = Invocation(arguments.to(List), environments.jvm, workingDirectory, context)
     
     invoke(using invocation).execute(invocation) match
       case ExitStatus.Ok           => System.exit(0)
