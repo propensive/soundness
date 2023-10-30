@@ -36,13 +36,6 @@ object ShellInput:
 enum ShellInput:
   case Terminal, Pipe
 
-object Shell:
-  given decoder: Decoder[Shell] = text => valueOf(text.lower.capitalize.s)
-  given encoder: Encoder[Shell] = _.toString.tt.lower
-
-enum Shell:
-  case Zsh, Bash, Fish
-
 object CommandLine:
   def apply(arguments: List[Text], environment: Environment, workingDirectory: WorkingDirectory,
       context: ProcessContext): CommandLine =
@@ -70,8 +63,9 @@ case class CompletionContext(shell: Shell, textArguments: List[Text], focus: Int
   def map(position: Int, fn: Suggestion => Suggestion): Unit =
     suggestionsMap(position) = () => suggestionsMap(position)().map(fn)
 
-  def explain(explanation: Maybe[Text]): Unit =
-    explanationValue = explanation
+  inline def explain[TextType](explanation: Maybe[TextType])(using printable: Printable[TextType]): Unit =
+    explanationValue = explanation.mm: explanation =>
+      printable.print(explanation)
   
   def explanation: Maybe[Text] = explanationValue
   def suggestions(position: Int): List[Suggestion] = suggestionsMap.getOrElse(position, () => Nil)()

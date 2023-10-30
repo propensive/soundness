@@ -227,17 +227,6 @@ enum ShellMessage:
   case Trap(process: Pid, signal: Signal)
   case Exit(process: Pid)
 
-@main
-def fury(): Unit =
-  import errorHandlers.throwUnsafely
-  Daemon.listen:
-    println(arguments.debug)
-    execute:
-      supervise:
-        terminal:
-          println(tty.mode.debug)
-          ExitStatus.Ok
-
 def arguments(using session: ShellSession): List[Text] = session.textArguments
 
 def parameters
