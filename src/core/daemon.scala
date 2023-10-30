@@ -159,10 +159,13 @@ class Daemon(block: Environment => ShellSession => Execution) extends Applicatio
                 println(directory.debug)
                 exit.fulfill:
                   block(environment)(session)
-                  Out.println(t"ein")(using completion.context.stdio)
-                  Out.println(t"zwei")(using completion.context.stdio)
-                  Out.println(t"drei")(using completion.context.stdio)
-                  Out.println(t"vier")(using completion.context.stdio)
+                  Out.println(t"ein     -- One\tein\t-l")(using completion.context.stdio)
+                  Out.println(t"zwei    -- Two\tzwei")(using completion.context.stdio)
+                  Out.println(t"drei    -- Three\tdrei")(using completion.context.stdio)
+                  Out.println(t"vier    -- Four\tvier")(using completion.context.stdio)
+                  Out.println(t"fünf    -- Five\tfünf")(using completion.context.stdio)
+                  Out.println(t"sechs   -- Six\tsechs")(using completion.context.stdio)
+                  Out.println(t"sieben  -- Seven\tsieben")(using completion.context.stdio)
                   ExitStatus.Ok
               case other =>
                 println("OTHER")
@@ -177,8 +180,6 @@ class Daemon(block: Environment => ShellSession => Execution) extends Applicatio
   def invoke(using commandLine: CommandLine): Execution = commandLine match
     case given Invocation =>
       Async.onShutdown:
-        println("waitfile = "+waitFile)
-        println("portfile = "+portFile)
         waitFile.wipe()
         portFile.wipe()
       

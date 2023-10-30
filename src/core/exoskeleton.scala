@@ -61,7 +61,7 @@ case class Completion
 extends CommandLine:
   println("TESTING")
   val completion = fullArguments.to(List) match
-    case t"{completions}" :: shell :: focus :: t"--" :: rest =>
+    case t"{completions}" :: shell :: focus :: position :: t"--" :: rest =>
       println("YES")
       CompletionContext(shell.decodeAs[Shell], Argument.from(rest), focus.s.toInt)
     case _ =>
