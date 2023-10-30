@@ -53,7 +53,6 @@ handle() {
   case "$1" in
     TERM) continue=0 ;;
   esac
-  echo "launcher script got signal"
   printf "s\n%s\n%s\n" "$pid" "$1" | nc -q 1 localhost $port
 }
 
@@ -62,24 +61,19 @@ terminate() {
 }
 
 connect() {
-  echo "i"
-  test -t 0 && echo "t" || echo "p"
-  echo "$pid"
-  echo "$script"
+  test -t 0 && printf "i\nt\n" || printf "i\np\n"
+  printf "%s\n%s\n" "$pid" "$script"
   pwd
-  echo "$argCount"
+  printf "%s\n" "$argCount"
   printf '%s\0' "${args[@]}"
-  echo ""
-  echo "##"
+  printf "\n##\n"
   env -0
-  echo ""
-  echo "##"
+  printf "\n##\n"
   exec cat
 }
 
 connectStderr() {
-  echo "e"
-  echo "$pid"
+  printf "e\n%s" "$pid"
 }
 
 test -t 0 && ttystate="$(stty -g)"
