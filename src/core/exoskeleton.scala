@@ -50,7 +50,7 @@ object CommandLine:
         val arguments = rest.drop(1).padTo(focus, t"").zipWithIndex.map: (text, index) =>
           Argument(index, text, if focus == index then position else Unset)
 
-        Completion(fullArguments, arguments, environment, workingDirectory, context, shell, focus - 1, position).tap(println(_))
+        Completion(fullArguments, arguments, environment, workingDirectory, context, shell, focus - 1, position)
       
       case other =>
         val arguments = fullArguments.zipWithIndex.map: (text, index) =>

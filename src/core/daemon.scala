@@ -210,8 +210,8 @@ def arguments(using commandLine: CommandLine): List[Argument] = commandLine.argu
 
 def parameters
     [ParametersType]
-    (using parser: ArgumentsParser[ParametersType], commandLine: CommandLine)
+    (using reader: CommandLineReader[ParametersType], commandLine: CommandLine)
     : ParametersType =
-  parser(arguments)
+  reader(arguments)
 
 def shell(using session: ShellSession): ShellSession = session

@@ -19,34 +19,39 @@ package exoskeleton
 import rudiments.*
 import gossamer.*
 import spectacular.*
+import perforate.*
 import anticipation.*
 
-trait ArgumentsParser[ParametersType]:
+trait CommandLineReader[ParametersType]:
   def apply(arguments: List[Argument]): ParametersType
 
 object Parameters:
-  def apply[ParametersType: ArgumentsParser](arguments: List[Argument]): ParametersType =
-    summon[ArgumentsParser[ParametersType]](arguments)
+  def apply[ParametersType: CommandLineReader](arguments: List[Argument]): ParametersType =
+    summon[CommandLineReader[ParametersType]](arguments)
 
 case class Argument(position: Int, value: Text, cursor: Maybe[Int]):
   def apply(): Text = value
-  //def suggest(fn: => List[Suggestion])(using commandLine: CommandLine): Unit = commandLine.suggest(position, fn)
-  //def map(fn: Suggestion => Suggestion)(using commandLine: CommandLine): Unit = commandLine.map(position, fn)
-  
-  //def restrict(predicate: Suggestion => Boolean)(using commandLine: CommandLine): Unit =
-  //  commandLine.restrict(position, predicate)
 
 case class PosixParameters
     (positional: List[Argument] = Nil, parameters: Map[Argument, List[Argument]] = Map(),
-        postpositional: List[Argument] = Nil)
-
-object ParamDecoder:
-  given [ValueType: Decoder]: ParamDecoder[ValueType] =
-    case head :: Nil => head().decodeAs[ValueType]
-    case _           => Unset
-
-trait ParamDecoder[ValueType]:
-  def decode(arguments: List[Argument]): Maybe[ValueType]
+        postpositional: List[Argument] = Nil):
+  
+  // def apply[SubcommandType](subcommand: Subcommand[SubcommandType]): Maybe[Argument] =
+  //   positional.lift(subcommand.position).getOrElse(Unset)
+  
+  def apply
+      [OperandType]
+      (flag: Flag[OperandType])
+      (using CommandLine)
+      (using reader: FlagReader[OperandType], suggestions: Suggestions[OperandType] = Suggestions.noSuggestions)
+      : Maybe[OperandType] =
+    parameters.find: (key, value) =>
+      flag.matches(key)
+    .map: (_, operands) =>
+      operands.head.suggest(suggestions.suggest().to(List))
+      try reader.read(operands) catch case err: Exception => Unset
+    .getOrElse(Unset)
+    
 
 object Suggestion:
   
@@ -60,12 +65,16 @@ object Suggestion:
 
 case class Suggestion(text: Text, description: Maybe[Text], hidden: Boolean, incomplete: Boolean)
 
-case class Param[ValueType: ParamDecoder](aliases: List[Char | Text], description: Text)
+object Suggestions:
+  def noSuggestions[OperandType]: Suggestions[OperandType] = () => Nil
 
-object SimpleParameterParser extends ArgumentsParser[List[Argument]]:
+trait Suggestions[OperandType]:
+  def suggest(): Iterable[Suggestion]
+
+object SimpleParameterParser extends CommandLineReader[List[Argument]]:
   def apply(arguments: List[Argument]): List[Argument] = arguments
 
-object PosixArgumentsParser extends ArgumentsParser[PosixParameters]:
+object PosixCommandLineReader extends CommandLineReader[PosixParameters]:
   def apply(arguments: List[Argument]): PosixParameters =
 
     def recur
@@ -93,16 +102,24 @@ object PosixArgumentsParser extends ArgumentsParser[PosixParameters]:
 
 package parameterInterpretation:
   given simple: SimpleParameterParser.type = SimpleParameterParser
+  given posixParameters: PosixCommandLineReader.type = PosixCommandLineReader
 
 object FlagReader:
-  given decoder[OperandType: Decoder]: FlagReader[OperandType] =
+  given decoder[OperandType: Decoder]: FlagReader[OperandType] = _.take(1) match
     case List(value) => value().decodeAs[OperandType]
 
 trait FlagReader[OperandType]:
-  def arguments: Int = 1
+  def operands: Int = 1
   def read(arguments: List[Argument]): OperandType
 
 case class Flag
     [OperandType]
-    (name: Text | Char, repeatable: Boolean, aliases: (Text | Char)*)
-    (using FlagReader[OperandType])
+    (name: Text | Char, repeatable: Boolean, aliases: List[Text | Char])
+    (using FlagReader[OperandType]):
+  
+  def matches(key: Argument): Boolean =
+    val flagId = if key().starts(t"--") then key().drop(2) else if key().starts(t"-") then safely(key()(1)) else Unset
+    
+    flagId == name || aliases.contains(flagId)
+
+case class Subcommand[SubcommandType](position: Int)
