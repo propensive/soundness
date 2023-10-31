@@ -7,7 +7,11 @@ repo propensive/profanity
 repo propensive/surveillance
 
 project exoskeleton
+  module args
+    sources  src/args
+    include  spectacular/core gossamer/core
+
   module core
     sources  src/core
-    include  galilei/core ambience/core profanity/core surveillance/core
+    include  galilei/core ambience/core profanity/core surveillance/core exoskeleton/args
     main     exoskeleton.fury

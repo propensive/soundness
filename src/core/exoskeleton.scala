@@ -157,3 +157,8 @@ case class Execution(execute: Invocation => ExitStatus)
 def execute(block: Effectful ?=> Invocation ?=> ExitStatus): Execution = Execution(block(using ###)(using _))
 
 erased trait Effectful
+
+extension (argument: Argument)(using commandLine: CommandLine)
+  def suggest(fn: => List[Suggestion]): Unit = commandLine.suggest(argument.position, fn)
+  def map(fn: Suggestion => Suggestion): Unit = commandLine.map(argument.position, fn)
+  def restrict(predicate: Suggestion => Boolean): Unit = commandLine.restrict(argument.position, predicate)

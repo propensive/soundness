@@ -22,19 +22,19 @@ import spectacular.*
 import anticipation.*
 
 trait ArgumentsParser[ParametersType]:
-  def apply(arguments: List[Argument])(using CommandLine): ParametersType
+  def apply(arguments: List[Argument]): ParametersType
 
 object Parameters:
-  def apply[ParametersType: ArgumentsParser](arguments: List[Argument])(using CommandLine): ParametersType =
+  def apply[ParametersType: ArgumentsParser](arguments: List[Argument]): ParametersType =
     summon[ArgumentsParser[ParametersType]](arguments)
 
 case class Argument(position: Int, value: Text, cursor: Maybe[Int]):
   def apply(): Text = value
-  def suggest(fn: => List[Suggestion])(using commandLine: CommandLine): Unit = commandLine.suggest(position, fn)
-  def map(fn: Suggestion => Suggestion)(using commandLine: CommandLine): Unit = commandLine.map(position, fn)
+  //def suggest(fn: => List[Suggestion])(using commandLine: CommandLine): Unit = commandLine.suggest(position, fn)
+  //def map(fn: Suggestion => Suggestion)(using commandLine: CommandLine): Unit = commandLine.map(position, fn)
   
-  def restrict(predicate: Suggestion => Boolean)(using commandLine: CommandLine): Unit =
-    commandLine.restrict(position, predicate)
+  //def restrict(predicate: Suggestion => Boolean)(using commandLine: CommandLine): Unit =
+  //  commandLine.restrict(position, predicate)
 
 case class PosixParameters
     (positional: List[Argument] = Nil, parameters: Map[Argument, List[Argument]] = Map(),
@@ -63,10 +63,10 @@ case class Suggestion(text: Text, description: Maybe[Text], hidden: Boolean, inc
 case class Param[ValueType: ParamDecoder](aliases: List[Char | Text], description: Text)
 
 object SimpleParameterParser extends ArgumentsParser[List[Argument]]:
-  def apply(arguments: List[Argument])(using commandLine: CommandLine): List[Argument] = arguments
+  def apply(arguments: List[Argument]): List[Argument] = arguments
 
 object PosixArgumentsParser extends ArgumentsParser[PosixParameters]:
-  def apply(arguments: List[Argument])(using completion: CommandLine): PosixParameters =
+  def apply(arguments: List[Argument]): PosixParameters =
 
     def recur
         (todo: List[Argument], arguments: List[Argument], current: Maybe[Argument],
@@ -93,3 +93,16 @@ object PosixArgumentsParser extends ArgumentsParser[PosixParameters]:
 
 package parameterInterpretation:
   given simple: SimpleParameterParser.type = SimpleParameterParser
+
+object FlagReader:
+  given decoder[OperandType: Decoder]: FlagReader[OperandType] =
+    case List(value) => value().decodeAs[OperandType]
+
+trait FlagReader[OperandType]:
+  def arguments: Int = 1
+  def read(arguments: List[Argument]): OperandType
+
+case class Flag
+    [OperandType]
+    (name: Text | Char, repeatable: Boolean, aliases: (Text | Char)*)
+    (using FlagReader[OperandType])
