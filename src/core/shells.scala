@@ -36,7 +36,8 @@ enum Shell:
   case Zsh, Bash, Fish
 
   def install
-      (command: Text, global: Boolean)(using Raises[PathError], Raises[IoError], Raises[OverwriteError], Raises[StreamCutError])
+      (command: Text, global: Boolean)
+      (using Raises[PathError], Raises[IoError], Raises[OverwriteError], Raises[StreamCutError])
       : List[Message] =
     val path: Path = scriptPath(command, global)
     
@@ -91,16 +92,16 @@ enum Shell:
     
     case Fish =>
       t"""|function completions
-          |  ${command} '{completions}' fish (count (commandline --tokenize --cut-at-cursor)) \\
-          |    (commandline -C -t) -- (commandline -o)
+          |  set position (count (commandline --tokenize --cut-at-cursor))
+          |  ${command} '{completions}' fish $$position (commandline -C -t) -- (commandline -o)
           |end
           |complete -f -c $command -a '(completions)'
           |""".s.stripMargin.tt
 
     case Bash =>
       t"""|_${command}_complete() {
-          |  COMPREPLY=($$(compgen -W "$$(${command} '{completions}' bash $$COMP_CWORD 0 -- $$COMP_LINE)" -- \\
-          |    "$${COMP_WORDS[$$COMP_CWORD]}"))
+          |  output="$$(${command} '{completions}' bash $$COMP_CWORD 0 -- $$COMP_LINE)"
+          |  COMPREPLY=($$(compgen -W $$output -- "$${COMP_WORDS[$$COMP_CWORD]}"))
           |}
           |complete -F _${command}_complete $command
           |""".s.stripMargin.tt
