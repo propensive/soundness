@@ -18,8 +18,15 @@ package exoskeleton
 
 import spectacular.*
 import gossamer.*
-import anticipation.*
-import rudiments.*
+import anticipation.*, fileApi.galileiApi
+import rudiments.*, homeDirectories.default
+import serpentine.*, hierarchies.unix
+import perforate.*
+import fulminate.*
+import turbulence.*
+import ambience.*, environments.jvm, systemProperties.jvm
+import galilei.*, filesystemOptions.{dereferenceSymlinks, createNonexistent, createNonexistentParents,
+    doNotOverwritePreexisting}
 
 object Shell:
   given decoder: Decoder[Shell] = text => valueOf(text.lower.capitalize.s)
@@ -27,6 +34,43 @@ object Shell:
 
 enum Shell:
   case Zsh, Bash, Fish
+
+  def install
+      (command: Text, global: Boolean)(using Raises[PathError], Raises[IoError], Raises[OverwriteError], Raises[StreamCutError])
+      : List[Message] =
+    val path: Path = scriptPath(command, global)
+    
+    script(command).sysBytes.writeTo(path.make[File]())
+    
+    List(msg"Completion script for ${this.toString.tt.lower} installed to ${path}.") ++ messages(global)
+
+  def scriptPath(command: Text, global: Boolean)(using Raises[PathError], Raises[IoError]): Path =
+    val xdg = Xdg()
+    val home = summon[HomeDirectory].path
+    
+    if global then this match
+      case Bash => xdg.dataDirs.last / p"bash-completion" / p"completions" / PathName(command)
+      case Fish => xdg.dataDirs.last / p"fish" / p"vendor_completions.d" / PathName(t"$command.fish")
+      case Zsh  => xdg.dataDirs.last / p"zsh" / p"site-functions" / PathName(t"_$command")
+    else this match
+      case Bash => xdg.dataHome / p"bash-completion" / p"completions" / PathName(command)
+      case Fish => xdg.configHome / p"fish" / p"completions" / PathName(t"$command.fish")
+      
+      case Zsh =>
+        val ohMyZsh = home / p".oh-my-zsh"
+        
+        if ohMyZsh.exists() then ohMyZsh / p"completions" / PathName(t"_$command")
+        else home / p".zsh" / p"completion" / PathName(t"_$command")
+
+  def messages(global: Boolean): List[Message] =
+    if this == Zsh && !global
+    then List(msg"""Make sure that your ${t"~/.zshrc"} file contains the following lines:
+
+      fpath=(~/.zsh/completion $$fpath)
+      autoload -U compinit
+      compinit
+    """)
+    else Nil
 
   def script(command: Text): Text = this match
     case Zsh =>
@@ -47,14 +91,16 @@ enum Shell:
     
     case Fish =>
       t"""|function completions
-          |  $command '{completions}' fish (count (commandline --tokenize --cut-at-cursor)) (commandline -C -t) -- (commandline -o)
+          |  ${command} '{completions}' fish (count (commandline --tokenize --cut-at-cursor)) \\
+          |    (commandline -C -t) -- (commandline -o)
           |end
           |complete -f -c $command -a '(completions)'
           |""".s.stripMargin.tt
 
     case Bash =>
       t"""|_${command}_complete() {
-          |  COMPREPLY=($$(compgen -W "$$($command '{completions}' bash $$COMP_CWORD 0 -- $$COMP_LINE)" -- "$${COMP_WORDS[$$COMP_CWORD]}"))
+          |  COMPREPLY=($$(compgen -W "$$(${command} '{completions}' bash $$COMP_CWORD 0 -- $$COMP_LINE)" -- \\
+          |    "$${COMP_WORDS[$$COMP_CWORD]}"))
           |}
           |complete -F _${command}_complete $command
           |""".s.stripMargin.tt
