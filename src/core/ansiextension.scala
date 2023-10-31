@@ -17,8 +17,8 @@
 package escapade
 
 extension (inline ctx: StringContext)
-  transparent inline def out(inline parts: Any*): Output =
+  transparent inline def e(inline parts: Any*): Output =
     ${Ansi.Interpolator.expand('ctx, 'parts)}
 
 extension [T](value: T)
-  def out(using Display[T]): Output = summon[Display[T]](value)
+  def display(using Display[T]): Output = summon[Display[T]](value)

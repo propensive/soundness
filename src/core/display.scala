@@ -28,13 +28,13 @@ import iridescence.*
 object Display:
   given output: Display[Output] = identity(_)
   given text: Display[Text] = text => Output(text)
-  given pid: Display[Pid] = pid => out"${pid.value.show}"
+  given pid: Display[Pid] = pid => e"${pid.value.show}"
 
-  given message: Display[Message] = _.fold[Output](out""): (acc, next, level) =>
+  given message: Display[Message] = _.fold[Output](e""): (acc, next, level) =>
     level match
-      case 0 => out"$acc${colors.Khaki}($next)"
-      case 1 => out"$acc$Italic(${colors.Gold}($next))"
-      case _ => out"$acc$Italic($Bold(${colors.Yellow}($next)))"
+      case 0 => e"$acc${colors.Khaki}($next)"
+      case 1 => e"$acc$Italic(${colors.Gold}($next))"
+      case _ => e"$acc$Italic($Bold(${colors.Yellow}($next)))"
 
   given option[T: Display]: Display[Option[T]] =
     case None    => Output("empty".show)
@@ -46,46 +46,46 @@ object Display:
   given exception(using TextWidthCalculator): Display[Exception] = e =>
     summon[Display[StackTrace]](StackTrace.apply(e))
 
-  given error: Display[Error] = _.message.out
+  given error: Display[Error] = _.message.display
 
   given (using TextWidthCalculator): Display[StackTrace] = stack =>
     val methodWidth = stack.frames.map(_.method.method.length).max
     val classWidth = stack.frames.map(_.method.className.length).max
     val fileWidth = stack.frames.map(_.file.length).max
     
-    val fullClass = out"$Italic(${stack.component}.$Bold(${stack.className}))"
-    val init = out"${colors.White}($fullClass): ${stack.message}"
+    val fullClass = e"$Italic(${stack.component}.$Bold(${stack.className}))"
+    val init = e"${colors.White}($fullClass): ${stack.message}"
     
     val root = stack.frames.foldLeft(init):
       case (msg, frame) =>
         val obj = frame.method.className.ends(t"#")
         import colors.*
         val drop = if obj then 1 else 0
-        val file = out"$CadetBlue(${frame.file.fit(fileWidth, Rtl)})"
+        val file = e"$CadetBlue(${frame.file.fit(fileWidth, Rtl)})"
         val dot = if obj then t"." else t"#"
-        val className = out"$MediumVioletRed(${frame.method.className.drop(drop, Rtl).fit(classWidth, Rtl)})"
-        val method = out"$PaleVioletRed(${frame.method.method.fit(methodWidth)})"
-        val line = out"$MediumTurquoise(${frame.line.mm(_.show).or(t"?")})"
+        val className = e"$MediumVioletRed(${frame.method.className.drop(drop, Rtl).fit(classWidth, Rtl)})"
+        val method = e"$PaleVioletRed(${frame.method.method.fit(methodWidth)})"
+        val line = e"$MediumTurquoise(${frame.line.mm(_.show).or(t"?")})"
         
-        out"$msg\n  $Gray(at) $className$Gray($dot)$method $file$Gray(:)$line"
+        e"$msg\n  $Gray(at) $className$Gray($dot)$method $file$Gray(:)$line"
     
     stack.cause.option match
       case None        => root
-      case Some(cause) => out"$root\n${colors.White}(caused by:)\n$cause"
+      case Some(cause) => e"$root\n${colors.White}(caused by:)\n$cause"
   
   given (using TextWidthCalculator): Display[StackTrace.Frame] = frame =>
     import colors.*
-    val className = out"$MediumVioletRed(${frame.method.className.fit(40, Rtl)})"
-    val method = out"$PaleVioletRed(${frame.method.method.fit(40)})"
-    val file = out"$CadetBlue(${frame.file.fit(18, Rtl)})"
-    val line = out"$MediumTurquoise(${frame.line.mm(_.show).or(t"?")})"
-    out"$className$Gray(#)$method $file$Gray(:)$line"
+    val className = e"$MediumVioletRed(${frame.method.className.fit(40, Rtl)})"
+    val method = e"$PaleVioletRed(${frame.method.method.fit(40)})"
+    val file = e"$CadetBlue(${frame.file.fit(18, Rtl)})"
+    val line = e"$MediumTurquoise(${frame.line.mm(_.show).or(t"?")})"
+    e"$className$Gray(#)$method $file$Gray(:)$line"
 
   given Display[StackTrace.Method] = method =>
     import colors.*
-    val className = out"$MediumVioletRed(${method.className})"
-    val methodName = out"$PaleVioletRed(${method.method})"
-    out"$className$Gray(#)$methodName"
+    val className = e"$MediumVioletRed(${method.className})"
+    val methodName = e"$PaleVioletRed(${method.method})"
+    e"$className$Gray(#)$methodName"
   
   given (using decimalizer: Decimalizer): Display[Double] = double =>
     Output.make(decimalizer.decimalize(double), _.copy(fg = colors.Gold.asInt))
