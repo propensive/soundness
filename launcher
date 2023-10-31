@@ -57,7 +57,7 @@ handle() {
 }
 
 terminate() {
-  exit "$(printf "x\n%s\n" "$pid" | nc -q 1 localhost $port)"
+  exit "$(printf "x\n%s\n" "$pid" | nc -q 1 localhost $port)" >/dev/null 2>&1
 }
 
 connect() {
