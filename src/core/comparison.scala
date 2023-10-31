@@ -53,29 +53,29 @@ object Semblance:
         
         data(1) match
           case Identical(v) =>
-            Row(line(t"▪"), out"${rgb"#667799"}($v)", out"${rgb"#667799"}($v)")
+            Row(line(t"▪"), e"${rgb"#667799"}($v)", e"${rgb"#667799"}($v)")
           
           case Different(left, right) =>
-            Row(line(t"▪"), out"${colors.YellowGreen}($left)", out"${colors.Crimson}($right)")
+            Row(line(t"▪"), e"${colors.YellowGreen}($left)", e"${colors.Crimson}($right)")
           
           case Breakdown(cmp, left, right) =>
-            Row(line(t"■"), out"$left", out"$right")
+            Row(line(t"■"), e"$left", e"$right")
       
       val table = Table[Row](
-        Column(out"")(_.treeLine),
-        Column(out"Expected", align = Alignment.Right)(_.left),
-        Column(out"Found")(_.right)
+        Column(e"")(_.treeLine),
+        Column(e"Expected", align = Alignment.Right)(_.left),
+        Column(e"Found")(_.right)
       )
 
-      table.tabulate(drawTree(children, mkLine)(cmp), maxWidth = 200).join(out"\n")
+      table.tabulate(drawTree(children, mkLine)(cmp), maxWidth = 200).join(e"\n")
     
     case Different(left, right) =>
-      val whitespace = if right.contains('\n') then out"\n" else out" "
-      val whitespace2 = if left.contains('\n') then out"\n" else out" "
-      out"The result$whitespace${colors.Crimson}($right)${whitespace}did not equal$whitespace${colors.YellowGreen}($left)"
+      val whitespace = if right.contains('\n') then e"\n" else e" "
+      val whitespace2 = if left.contains('\n') then e"\n" else e" "
+      e"The result$whitespace${colors.Crimson}($right)${whitespace}did not equal$whitespace${colors.YellowGreen}($left)"
     
     case Identical(value) =>
-      out"The value ${colors.Gray}($value) was expected"
+      e"The value ${colors.Gray}($value) was expected"
 
 object Similarity:
   given [ValueType]: Similarity[ValueType] = (a, b) => a == b
