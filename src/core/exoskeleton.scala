@@ -24,6 +24,7 @@ import profanity.*
 import spectacular.*
 import gossamer.*
 import ambience.*
+import hieroglyph.*, textWidthCalculation.uniform
 
 import scala.collection.mutable as scm
 
@@ -93,17 +94,19 @@ extends CommandLine:
 
   def serialize: List[Text] = shell match
     case Shell.Zsh =>
-      val explanationLine = explanation.mm { explanation => List(t"\t-X\t$explanation") }.or(Nil)
+      val title = explanation.mm { explanation => List(t"\t-X\t$explanation") }.or(Nil)
       
-      val suggestionLines = suggestions(focus).map:
+      val items = suggestions(focus)
+      val width = items.map(_.text.length).max
+      val itemLines = items.map:
         case Suggestion(text, description, hidden, incomplete) =>
           val hiddenParam = if hidden then t"-n\t" else t""
           
           description match
             case Unset             => t"\t$hiddenParam$text"
-            case description: Text => t"$text -- $description\t$hiddenParam$text"
+            case description: Text => t"${text.fit(width)} -- $description\t-l\t$hiddenParam$text"
       
-      explanationLine ++ suggestionLines
+      title ++ itemLines
           
     case Shell.Bash =>
       Nil
