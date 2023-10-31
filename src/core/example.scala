@@ -20,7 +20,6 @@ import perforate.*
 import spectacular.*
 import parasite.*
 import gossamer.*
-import escapade.*
 import profanity.*
 import rudiments.*
 import turbulence.*
@@ -31,11 +30,33 @@ def fury(): Unit =
   import errorHandlers.throwUnsafely
   Daemon.listen:
     parameters.headOption.foreach: arg =>
-      arg.suggest(List(Suggestion(t"yes", out"Definitely so"), Suggestion(t"no", out"By $Bold(no) means")))
+      arg.suggest(List(
+        Suggestion(t"one", t"The first number"),
+        Suggestion(t"two", t"The smallest prime"),
+        Suggestion(t"three", t"The second prime"),
+        Suggestion(t"four", t"Two squared"),
+        Suggestion(t"five", t"Half of ten"),
+        Suggestion(t"six", t"Three times two"),
+        Suggestion(t"seven", t"The fourth prime number"),
+        Suggestion(t"eight", t"Two to the power of three"),
+        Suggestion(t"nine", t"Three squared"),
+        Suggestion(t"ten", t"Five times two"),
+      ))
     
     parameters.lift(1).foreach: arg =>
-      arg.suggest(List(Suggestion(t"1", t"one"), Suggestion(t"2", t"two"), Suggestion(t"3", t"three")))
-
+      arg.suggest(List(
+        Suggestion(t"un", t"The first number"),
+        Suggestion(t"deux", t"The smallest prime"),
+        Suggestion(t"trois", t"The second prime"),
+        Suggestion(t"quatre", t"Two squared"),
+        Suggestion(t"cinq", t"Half of ten"),
+        Suggestion(t"six", t"Three times two"),
+        Suggestion(t"sept", t"The fourth prime number"),
+        Suggestion(t"huit", t"Two to the power of three"),
+        Suggestion(t"neuf", t"Three squared"),
+        Suggestion(t"dix", t"Five times two"),
+      ))
+    
     execute:
       Out.println(arguments.debug)
       supervise:

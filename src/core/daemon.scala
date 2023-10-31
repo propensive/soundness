@@ -158,17 +158,7 @@ class Daemon(block: CommandLine => Environment => ShellSession => Execution) ext
               case completion: Completion =>
                 exit.fulfill:
                   block(completion)(environment)(session)
-                  println(t"args=${completion.arguments.length}")
-                  println(t"focus=${completion.focus}")
-                  println(t"focusPosition${completion.focusPosition}")
                   completion.serialize.foreach(Out.println(_)(using completion.context.stdio))
-                  // Out.println(t"ein     -- One\t-l\tein")(using completion.context.stdio)
-                  // Out.println(t"zwei    -- Two\t-l\tzwei")(using completion.context.stdio)
-                  // Out.println(t"drei    -- Three\t-l\tdrei")(using completion.context.stdio)
-                  // Out.println(t"vier    -- Four\t-l\tvier")(using completion.context.stdio)
-                  // Out.println(t"fünf    -- Five\t-l\tfünf")(using completion.context.stdio)
-                  // Out.println(t"sechs   -- Three \e[38;5;214mtimes\e[0m two\t-l\tsechs")(using completion.context.stdio)
-                  // Out.println(t"sieben  -- Seven\t-l\t-X\tBe \e[38;5;43mcareful\e[0m about this one\tsieben")(using completion.context.stdio)
                   ExitStatus.Ok
               
           catch case error: Exception => exit.offer(ExitStatus.Fail(1))

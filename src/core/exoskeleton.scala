@@ -112,7 +112,12 @@ extends CommandLine:
       Nil
     
     case Shell.Fish =>
-      Nil
+      suggestions(focus).map:
+        case Suggestion(text, description, hidden, incomplete) =>
+          description match
+            case Unset             => t"$text"
+            case description: Text => t"$text\t$description"
+      
     
 
 case class Invocation
