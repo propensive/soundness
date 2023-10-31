@@ -119,8 +119,6 @@ extends CommandLine:
             case Unset             => t"$text"
             case description: Text => t"$text\t$description"
       
-    
-
 case class Invocation
     (arguments: List[Argument], environment: Environment, workingDirectory: WorkingDirectory,
         context: ProcessContext)
