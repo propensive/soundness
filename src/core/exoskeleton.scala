@@ -109,7 +109,8 @@ extends CommandLine:
       title ++ itemLines
           
     case Shell.Bash =>
-      Nil
+      suggestions(focus).filter(!_.hidden).map:
+        case Suggestion(text, _, _, _) => text
     
     case Shell.Fish =>
       suggestions(focus).map:
