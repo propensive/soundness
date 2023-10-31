@@ -36,7 +36,7 @@ enum Semblance:
   case Breakdown(comparison: IArray[(Text, Semblance)], left: Text, right: Text)
 
 object Semblance:
-  given (using calc: TextWidthCalculator): Display[Semblance] =
+  given (using calc: TextWidthCalculator): Displayable[Semblance] =
     case Semblance.Breakdown(cmp, l, r) =>
       import tableStyles.horizontalGaps
       import treeStyles.default
