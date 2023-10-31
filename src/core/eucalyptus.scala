@@ -54,7 +54,7 @@ object Level:
   //     case Warn => solarized.Yellow
   //     case Fail => solarized.Red
 
-  //   out"${Bg(color)}[${colors.Black}($Bold( ${level.show.upper} ))]"
+  //   e"${Bg(color)}[${colors.Black}($Bold( ${level.show.upper} ))]"
 
 enum Level:
   case Fine, Info, Warn, Fail
