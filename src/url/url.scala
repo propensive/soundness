@@ -126,7 +126,7 @@ object Url:
     val rest = t"${url.query.fm(t"")(t"?"+_)}${url.fragment.fm(t"")(t"#"+_)}"
     t"${url.scheme}:$auth${url.pathText}$rest"
   
-  given display[SchemeType <: Label]: Display[Url[SchemeType]] = url => e"$Underline(${colors.DeepSkyBlue}(${show(url)}))"
+  given display[SchemeType <: Label]: Displayable[Url[SchemeType]] = url => e"$Underline(${colors.DeepSkyBlue}(${show(url)}))"
 
   given communicable[SchemeType <: Label]: Communicable[Url[SchemeType]] = url => Message(show(url))
 
