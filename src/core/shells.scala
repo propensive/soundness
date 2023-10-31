@@ -27,3 +27,34 @@ object Shell:
 
 enum Shell:
   case Zsh, Bash, Fish
+
+  def script(command: Text): Text = this match
+    case Zsh =>
+      t"""|#compdef $command
+          |local -a ln
+          |_$command() {
+          |  oldIfs=$$IFS IFS=$$'\t'
+          |  $command '{completions}' zsh "$$((CURRENT-1))" "$${#PREFIX}" -- $$words | while read -r -A ln
+          |  do
+          |    desc=($${ln[1]})
+          |    compadd -d desc -Q $${ln:1}
+          |  done
+          |  IFS=$$oldIfs
+          |}
+          |_$command
+          |return 0
+          |""".s.stripMargin.tt
+    
+    case Fish =>
+      t"""|function completions
+          |  $command '{completions}' fish (count (commandline --tokenize --cut-at-cursor)) (commandline -C -t) -- (commandline -o)
+          |end
+          |complete -f -c $command -a '(completions)'
+          |""".s.stripMargin.tt
+
+    case Bash =>
+      t"""|_${command}_complete() {
+          |  COMPREPLY=($$(compgen -W "$$($command '{completions}' bash $$COMP_CWORD 0 -- $$COMP_LINE)" -- "$${COMP_WORDS[$$COMP_CWORD]}"))
+          |}
+          |complete -F _${command}_complete $command
+          |""".s.stripMargin.tt
