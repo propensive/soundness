@@ -11,7 +11,7 @@ project serpentine
   module core
     compiler  scala
     sources   src/core
-    include   anticipation/html gossamer/core kaleidoscope/core spectacular/core anticipation/math perforate/core
+    include   anticipation/html gossamer/core kaleidoscope/core spectacular/core perforate/core
 
   module test
     compiler  scala
