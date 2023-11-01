@@ -191,7 +191,7 @@ often arrived in English via a romance language.
 
 ## Logo
 
-The logo shows the [Bohr model](https://en.wikipedia.org/wiki/Bohr_model) of an atom, showing four complete shells.
+The logo shows a deuterium atom, according to the [Bohr model](https://en.wikipedia.org/wiki/Bohr_model).
 
 ## License
 
