@@ -204,3 +204,4 @@ extension (argument: Argument)(using commandLine: CommandLine)
   def restrict(predicate: Suggestion => Boolean): Unit = commandLine.restrict(argument.position, predicate)
   def suggestFlags(longOnly: Boolean): Unit =
     commandLine.suggest(argument.position, commandLine.flagSuggestions(longOnly))
+
