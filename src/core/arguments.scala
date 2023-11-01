@@ -116,7 +116,8 @@ trait FlagInterpreter[OperandType]:
 
 case class Flag
     [OperandType]
-    (name: Text | Char, repeatable: Boolean = false, aliases: List[Text | Char] = Nil, description: Maybe[Text] = Unset)
+    (name: Text | Char, repeatable: Boolean = false, aliases: List[Text | Char] = Nil,
+        description: Maybe[Text] = Unset, secret: Boolean = false)
     (using FlagInterpreter[OperandType]):
   
   def matches(key: Argument): Boolean =

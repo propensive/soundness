@@ -97,8 +97,7 @@ extends CommandLine:
     explanationValue = explanation.mm: explanation =>
       printable.print(explanation)
   
-  override def suggest(flag: Flag[?]): Unit =
-    flagSet += flag
+  override def suggest(flag: Flag[?]): Unit = if !flag.secret then flagSet += flag
   
   override def suggest(position: Int, fn: => List[Suggestion]): Unit =
     suggestionsMap(position) = () => fn
