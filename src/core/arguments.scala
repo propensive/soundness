@@ -67,7 +67,7 @@ case class Suggestion(text: Text, description: Maybe[Text], hidden: Boolean, inc
 object Suggestions:
   def noSuggestions[OperandType]: Suggestions[OperandType] = () => Nil
 
-trait Suggestions[OperandType]:
+trait Suggestions[-OperandType]:
   def suggest(): Iterable[Suggestion]
 
 object SimpleParameterParser extends CommandLineInterpreter[List[Argument]]:
