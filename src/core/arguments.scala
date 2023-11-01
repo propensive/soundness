@@ -50,7 +50,7 @@ case class PosixParameters
 
     parameters.find { (key, value) => flag.matches(key) }.map: (_, operands) =>
       operands.head.suggest(suggestions.suggest().to(List))
-      try interpreter.interpret(operands) catch case err: Exception => Unset
+      safely(interpreter.interpret(operands))
     .getOrElse(Unset)
     
 object Suggestion:
