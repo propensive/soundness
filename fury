@@ -1,8 +1,10 @@
 # This is a Wrath buildfile. More information is available at: https://github.com/propensive/wrath/
 
-target exoskeleton/core
+target exoskeleton/example
+
 repo propensive/galilei
 repo propensive/ambience
+repo propensive/escapade
 repo propensive/profanity
 repo propensive/surveillance
 
@@ -14,4 +16,8 @@ project exoskeleton
   module core
     sources  src/core
     include  galilei/core ambience/core profanity/core surveillance/core exoskeleton/args
+  
+  module example
+    sources  src/example
+    include  exoskeleton/core escapade/core
     main     exoskeleton.fury

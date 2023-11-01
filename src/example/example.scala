@@ -32,7 +32,7 @@ def fury(): Unit =
   import errorHandlers.throwUnsafely
   Daemon.listen:
 
-    val Lang = Flag[Language](t"lang", false, List('l'))
+    val Lang = Flag[Language](t"speech", false, List('s'), t"the two-letter code of the language")
 
     val language = parameters(Lang)
     

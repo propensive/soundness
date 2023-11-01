@@ -63,9 +63,11 @@ sealed trait CommandLine:
   def environment: Environment
   def workingDirectory: WorkingDirectory
 
+  def flagSuggestions: List[Suggestion] = Nil
   def suggest(position: Int, fn: => List[Suggestion]): Unit = ()
   def restrict(position: Int, fn: Suggestion => Boolean): Unit = ()
   def explanation: Maybe[Text] = Unset
+  def suggest(flag: Flag[?]): Unit = ()
   def suggestions(position: Int): List[Suggestion] = Nil
   def explain[TextType](explanation: Maybe[TextType])(using Printable[TextType]): Unit = ()
   def map(position: Int, fn: Suggestion => Suggestion): Unit = ()
@@ -76,7 +78,14 @@ case class Completion
         focusPosition: Int)
 extends CommandLine:
   private val suggestionsMap: scm.Map[Int, () => List[Suggestion]] = scm.HashMap()
+  private var flagSet: Set[Flag[?]] = Set()
   private var explanationValue: Maybe[Text] = Unset
+
+  override def flagSuggestions: List[Suggestion] =
+    flagSet.to(List).flatMap: flag =>
+      (flag.name :: flag.aliases).map:
+        case char: Char => Suggestion(t"-$char", flag.description)
+        case text: Text => Suggestion(t"--$text", flag.description)
 
   override def restrict(position: Int, predicate: Suggestion => Boolean): Unit =
     suggestionsMap(position) = () => suggestionsMap(position)().filter(predicate)
@@ -88,14 +97,18 @@ extends CommandLine:
     explanationValue = explanation.mm: explanation =>
       printable.print(explanation)
   
-  override def suggest(position: Int, fn: => List[Suggestion]): Unit = suggestionsMap(position) = () => fn
+  override def suggest(flag: Flag[?]): Unit =
+    flagSet += flag
+  
+  override def suggest(position: Int, fn: => List[Suggestion]): Unit =
+    suggestionsMap(position) = () => fn
+  
   override def explanation: Maybe[Text] = explanationValue
   override def suggestions(position: Int): List[Suggestion] = suggestionsMap.getOrElse(position, () => Nil)()
 
   def serialize: List[Text] = shell match
     case Shell.Zsh =>
       val title = explanation.mm { explanation => List(t"\t-X\t$explanation") }.or(Nil)
-      
       val items = suggestions(focus)
       val width = items.map(_.text.length).max
       val itemLines = items.map:
@@ -103,8 +116,8 @@ extends CommandLine:
           val hiddenParam = if hidden then t"-n\t" else t""
           
           description match
-            case Unset             => t"\t$hiddenParam$text"
-            case description: Text => t"${text.fit(width)} -- $description\t-l\t$hiddenParam$text"
+            case Unset             => t"\t$hiddenParam--\t$text"
+            case description: Text => t"${text.fit(width)} -- $description\t-l\t$hiddenParam--\t$text"
       
       title ++ itemLines
           
@@ -162,3 +175,4 @@ extension (argument: Argument)(using commandLine: CommandLine)
   def suggest(fn: => List[Suggestion]): Unit = commandLine.suggest(argument.position, fn)
   def map(fn: Suggestion => Suggestion): Unit = commandLine.map(argument.position, fn)
   def restrict(predicate: Suggestion => Boolean): Unit = commandLine.restrict(argument.position, predicate)
+  def suggestFlags(): Unit = commandLine.suggest(argument.position, commandLine.flagSuggestions)

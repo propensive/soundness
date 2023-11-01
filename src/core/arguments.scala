@@ -22,12 +22,12 @@ import spectacular.*
 import perforate.*
 import anticipation.*
 
-trait CommandLineReader[ParametersType]:
-  def apply(arguments: List[Argument]): ParametersType
+trait CommandLineInterpreter[ParametersType]:
+  def apply(arguments: List[Argument])(using CommandLine): ParametersType
 
 object Parameters:
-  def apply[ParametersType: CommandLineReader](arguments: List[Argument]): ParametersType =
-    summon[CommandLineReader[ParametersType]](arguments)
+  def apply[ParametersType: CommandLineInterpreter](arguments: List[Argument])(using CommandLine): ParametersType =
+    summon[CommandLineInterpreter[ParametersType]](arguments)
 
 case class Argument(position: Int, value: Text, cursor: Maybe[Int]):
   def apply(): Text = value
@@ -36,25 +36,24 @@ case class PosixParameters
     (positional: List[Argument] = Nil, parameters: Map[Argument, List[Argument]] = Map(),
         postpositional: List[Argument] = Nil):
   
-  // def apply[SubcommandType](subcommand: Subcommand[SubcommandType]): Maybe[Argument] =
-  //   positional.lift(subcommand.position).getOrElse(Unset)
+  def apply[SubcommandType](subcommand: Subcommand[SubcommandType]): Maybe[Argument] =
+    positional.lift(subcommand.position).getOrElse(Unset)
   
   def apply
       [OperandType]
       (flag: Flag[OperandType])
-      (using CommandLine)
-      (using reader: FlagReader[OperandType], suggestions: Suggestions[OperandType] = Suggestions.noSuggestions)
+      (using commandLine: CommandLine)
+      (using interpreter: FlagInterpreter[OperandType], suggestions: Suggestions[OperandType] = Suggestions.noSuggestions)
       : Maybe[OperandType] =
-    parameters.find: (key, value) =>
-      flag.matches(key)
-    .map: (_, operands) =>
+    
+    commandLine.suggest(flag)
+
+    parameters.find { (key, value) => flag.matches(key) }.map: (_, operands) =>
       operands.head.suggest(suggestions.suggest().to(List))
-      try reader.read(operands) catch case err: Exception => Unset
+      try interpreter.interpret(operands) catch case err: Exception => Unset
     .getOrElse(Unset)
     
-
 object Suggestion:
-  
   def apply
       [TextType: Printable]
       (text: Text, description: Maybe[TextType], hidden: Boolean = false, incomplete: Boolean = false) =
@@ -71,12 +70,11 @@ object Suggestions:
 trait Suggestions[OperandType]:
   def suggest(): Iterable[Suggestion]
 
-object SimpleParameterParser extends CommandLineReader[List[Argument]]:
-  def apply(arguments: List[Argument]): List[Argument] = arguments
+object SimpleParameterParser extends CommandLineInterpreter[List[Argument]]:
+  def apply(arguments: List[Argument])(using CommandLine): List[Argument] = arguments
 
-object PosixCommandLineReader extends CommandLineReader[PosixParameters]:
-  def apply(arguments: List[Argument]): PosixParameters =
-
+object PosixCommandLineInterpreter extends CommandLineInterpreter[PosixParameters]:
+  def apply(arguments: List[Argument])(using CommandLine): PosixParameters =
     def recur
         (todo: List[Argument], arguments: List[Argument], current: Maybe[Argument],
             posixParameters: PosixParameters)
@@ -91,8 +89,12 @@ object PosixCommandLineReader extends CommandLineReader[PosixParameters]:
       
       todo match
         case head :: tail =>
-          if head() == t"--" then push().copy(postpositional = tail)
-          else if head().starts(t"-") then recur(tail, Nil, head, push())
+          if head() == t"--" then
+            head.suggestFlags()
+            push().copy(postpositional = tail)
+          else if head().starts(t"-") then
+            head.suggestFlags()
+            recur(tail, Nil, head, push())
           else recur(tail, head :: arguments, current, posixParameters)
         
         case Nil =>
@@ -102,20 +104,20 @@ object PosixCommandLineReader extends CommandLineReader[PosixParameters]:
 
 package parameterInterpretation:
   given simple: SimpleParameterParser.type = SimpleParameterParser
-  given posixParameters: PosixCommandLineReader.type = PosixCommandLineReader
+  given posixParameters: PosixCommandLineInterpreter.type = PosixCommandLineInterpreter
 
-object FlagReader:
-  given decoder[OperandType: Decoder]: FlagReader[OperandType] = _.take(1) match
+object FlagInterpreter:
+  given decoder[OperandType: Decoder]: FlagInterpreter[OperandType] = _.take(1) match
     case List(value) => value().decodeAs[OperandType]
 
-trait FlagReader[OperandType]:
+trait FlagInterpreter[OperandType]:
   def operands: Int = 1
-  def read(arguments: List[Argument]): OperandType
+  def interpret(arguments: List[Argument]): OperandType
 
 case class Flag
     [OperandType]
-    (name: Text | Char, repeatable: Boolean, aliases: List[Text | Char])
-    (using FlagReader[OperandType]):
+    (name: Text | Char, repeatable: Boolean = false, aliases: List[Text | Char] = Nil, description: Maybe[Text] = Unset)
+    (using FlagInterpreter[OperandType]):
   
   def matches(key: Argument): Boolean =
     val flagId = if key().starts(t"--") then key().drop(2) else if key().starts(t"-") then safely(key()(1)) else Unset

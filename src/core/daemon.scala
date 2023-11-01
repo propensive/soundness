@@ -158,6 +158,7 @@ class Daemon(block: CommandLine => Environment => ShellSession => Execution) ext
               case completion: Completion =>
                 exit.fulfill:
                   block(completion)(environment)(session)
+                  println("flag suggestions are "+completion.flagSuggestions)
                   completion.serialize.foreach(Out.println(_)(using completion.context.stdio))
                   ExitStatus.Ok
               
@@ -210,7 +211,7 @@ def arguments(using commandLine: CommandLine): List[Argument] = commandLine.argu
 
 def parameters
     [ParametersType]
-    (using reader: CommandLineReader[ParametersType], commandLine: CommandLine)
+    (using reader: CommandLineInterpreter[ParametersType], commandLine: CommandLine)
     : ParametersType =
   reader(arguments)
 
