@@ -56,13 +56,16 @@ case class PosixParameters
 object Suggestion:
   def apply
       [TextType: Printable]
-      (text: Text, description: Maybe[TextType], hidden: Boolean = false, incomplete: Boolean = false) =
+      (text: Text, description: Maybe[TextType], hidden: Boolean = false, incomplete: Boolean = false,
+          aliases: List[Text] = Nil)
+      : Suggestion =
     
     val descriptionText = description.mm { description => summon[Printable[TextType]].print(description) }
     
-    new Suggestion(text, descriptionText, hidden, incomplete)
+    new Suggestion(text, descriptionText, hidden, incomplete, aliases)
 
-case class Suggestion(text: Text, description: Maybe[Text], hidden: Boolean, incomplete: Boolean)
+case class Suggestion
+    (text: Text, description: Maybe[Text], hidden: Boolean, incomplete: Boolean, aliases: List[Text])
 
 object Suggestions:
   def noSuggestions[OperandType]: Suggestions[OperandType] = () => Nil
@@ -114,6 +117,11 @@ trait FlagInterpreter[OperandType]:
   def operands: Int = 1
   def interpret(arguments: List[Argument]): OperandType
 
+object Flag:
+  def serialize(name: Text | Char): Text = name match
+    case char: Char => t"-$char"
+    case text: Text => t"--$text"
+
 case class Flag
     [OperandType]
     (name: Text | Char, repeatable: Boolean = false, aliases: List[Text | Char] = Nil,
@@ -124,5 +132,5 @@ case class Flag
     val flagId = if key().starts(t"--") then key().drop(2) else if key().starts(t"-") then safely(key()(1)) else Unset
     
     flagId == name || aliases.contains(flagId)
-
+  
 case class Subcommand[SubcommandType](position: Int)

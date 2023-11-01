@@ -158,7 +158,6 @@ class Daemon(block: CommandLine => Environment => ShellSession => Execution) ext
               case completion: Completion =>
                 exit.fulfill:
                   block(completion)(environment)(session)
-                  println("flag suggestions are "+completion.flagSuggestions)
                   completion.serialize.foreach(Out.println(_)(using completion.context.stdio))
                   ExitStatus.Ok
               

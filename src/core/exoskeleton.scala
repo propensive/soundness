@@ -82,10 +82,8 @@ extends CommandLine:
   private var explanationValue: Maybe[Text] = Unset
 
   override def flagSuggestions: List[Suggestion] =
-    flagSet.to(List).flatMap: flag =>
-      (flag.name :: flag.aliases).map:
-        case char: Char => Suggestion(t"-$char", flag.description)
-        case text: Text => Suggestion(t"--$text", flag.description)
+    flagSet.to(List).map: flag =>
+      Suggestion(Flag.serialize(flag.name), flag.description, aliases = flag.aliases.map(Flag.serialize(_)))
 
   override def restrict(position: Int, predicate: Suggestion => Boolean): Unit =
     suggestionsMap(position) = () => suggestionsMap(position)().filter(predicate)
@@ -110,23 +108,33 @@ extends CommandLine:
       val title = explanation.mm { explanation => List(t"\t-X\t$explanation") }.or(Nil)
       val items = suggestions(focus)
       val width = items.map(_.text.length).max
-      val itemLines = items.map:
-        case Suggestion(text, description, hidden, incomplete) =>
+      val aliasesWidth = items.map(_.aliases.join(t" ").length).max
+      
+      val itemLines = items.flatMap:
+        case Suggestion(text, description, hidden, incomplete, aliases) =>
           val hiddenParam = if hidden then t"-n\t" else t""
+          val aliasText = aliases.join(t" ").fit(aliasesWidth)
           
-          description match
+          val mainLine = description match
             case Unset             => t"\t$hiddenParam--\t$text"
-            case description: Text => t"${text.fit(width)} -- $description\t-l\t$hiddenParam--\t$text"
+            case description: Text => t"${text.fit(width)} $aliasText -- $description\t-l\t$hiddenParam--\t$text"
+          
+          val aliasLines = aliases.map: text =>
+            description match
+              case Unset             => t"\t-n\t--\t$text"
+              case description: Text => t"${text.fit(width)} $aliasText -- $description\t-l\t-n\t--\t$text"
+          
+          mainLine :: aliasLines
       
       title ++ itemLines
           
     case Shell.Bash =>
       suggestions(focus).filter(!_.hidden).map:
-        case Suggestion(text, _, _, _) => text
+        case Suggestion(text, _, _, _, _) => text
     
     case Shell.Fish =>
       suggestions(focus).map:
-        case Suggestion(text, description, hidden, incomplete) =>
+        case Suggestion(text, description, hidden, incomplete, aliases) =>
           description match
             case Unset             => t"$text"
             case description: Text => t"$text\t$description"

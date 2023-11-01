@@ -33,10 +33,18 @@ def fury(): Unit =
   Daemon.listen:
 
     val Lang = Flag[Language](t"speech", false, List('s'), t"the two-letter code of the language")
+    val Size = Flag[Text](t"size", false, List('S'), t"big, medium or small")
+    val Age = Flag[Int](t"age", false, List('a'), t"the number of years")
 
-    val language = parameters(Lang)
-    
+    val language: Maybe[Language] = parameters(Lang)
+    val size: Maybe[Text] = parameters(Size)
+    val age: Maybe[Int] = parameters(Age)
+
+
     execute:
+      Out.println(t"language = ${language.debug}")
+      Out.println(t"size = ${size.debug}")
+      Out.println(t"age = ${age.debug}")
       Out.println(arguments.debug)
       supervise:
         terminal:
