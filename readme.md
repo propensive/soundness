@@ -79,7 +79,7 @@ often arrived in English via a romance language.
 
 ## Logo
 
-
+The logo represents a column vector of abstract dots.
 
 ## License
 
