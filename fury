@@ -9,7 +9,7 @@ project charisma
   module core
     compiler  scala
     sources   src/core
-    include   gossamer/core anticipation/math hieroglyph/core
+    include   gossamer/core hieroglyph/core
 
   module test
     compiler  scala
