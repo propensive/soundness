@@ -18,6 +18,7 @@ project exoskeleton
     include  galilei/core ambience/core profanity/core surveillance/core exoskeleton/args
   
   module example
-    sources  src/example
-    include  exoskeleton/core escapade/core
-    main     exoskeleton.fury
+    sources   src/example
+    include   exoskeleton/core escapade/core
+    main      exoskeleton.fury
+    artifact  rage
