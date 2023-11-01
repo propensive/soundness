@@ -30,24 +30,31 @@ import turbulence.*
 def fury(): Unit =
   import parameterInterpretation.posixParameters
   import errorHandlers.throwUnsafely
+  
   Daemon.listen:
-
     val Lang = Flag[Language](t"speech", false, List('s'), t"the two-letter code of the language")
     val Size = Flag[Text](t"size", false, List('S'), t"big, medium or small")
     val Age = Flag[Int](t"age", false, List('a'), t"the number of years")
     val Color = Flag[Text]('c', false, List(), t"the color")
-
-    val language: Maybe[Language] = parameters(Lang)
-    val size: Maybe[Text] = parameters(Size)
-    val age: Maybe[Int] = parameters(Age)
-    val color: Maybe[Text] = parameters(Color)
-
+    val SubcommandAction = Subcommand[Action](0)
+    
+    SubcommandAction() match
+      case Unset => ()
+      case Action.Run   =>
+        Lang()
+        Size()
+      case Action.Build =>
+        Size()
+        Color()
+      case _ =>
+        Age()
+        
 
     execute:
-      Out.println(t"language = ${language.debug}")
-      Out.println(t"size = ${size.debug}")
-      Out.println(t"age = ${age.debug}")
-      Out.println(arguments.debug)
+      Out.println(t"language = ${Lang().debug}")
+      Out.println(t"size = ${Size().debug}")
+      Out.println(t"age = ${Age().debug}")
+      
       supervise:
         terminal:
           Out.println(language.debug)
@@ -61,3 +68,12 @@ object Language:
 
 enum Language:
   case En, Fr, De, Es
+
+object Action:
+  given Suggestions[Action] = () => Action.values.map: action =>
+    Suggestion(action.toString.tt.lower, t"Do the ${action.toString.tt} action")
+  
+  given Decoder[Action] = text => valueOf(text.lower.capitalize.s)
+
+enum Action:
+  case Run, Build, Fire, Cheat

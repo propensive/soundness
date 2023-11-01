@@ -68,6 +68,7 @@ sealed trait CommandLine:
   def restrict(position: Int, fn: Suggestion => Boolean): Unit = ()
   def explanation: Maybe[Text] = Unset
   def suggest(flag: Flag[?]): Unit = ()
+  def suggest[OperandType](subcommand: Subcommand[OperandType])(using Suggestions[OperandType]): Unit = ()
   def acknowledge(flag: Flag[?]): Unit = ()
   def suggestions(position: Int): List[Suggestion] = Nil
   def explain[TextType](explanation: Maybe[TextType])(using Printable[TextType]): Unit = ()
@@ -105,6 +106,14 @@ extends CommandLine:
       printable.print(explanation)
   
   override def suggest(flag: Flag[?]): Unit = if !flag.secret then checkedFlags += flag
+  
+  override def suggest
+      [OperandType]
+      (subcommand: Subcommand[OperandType])
+      (using suggestions: Suggestions[OperandType])
+      : Unit =
+    suggestionsMap(subcommand.position) = () => suggestions.suggest().to(List)
+  
   override def acknowledge(flag: Flag[?]): Unit = if !flag.repeatable then seenFlags += flag
   
   override def suggest(position: Int, fn: => List[Suggestion]): Unit =
@@ -139,9 +148,8 @@ extends CommandLine:
       title ++ itemLines
           
     case Shell.Bash =>
-      suggestions(focus).filter(!_.hidden).flatMap:
-        (text :: aliases).map: text =>
-          case Suggestion(text, _, _, _, _) => text
+      suggestions(focus).filter(!_.hidden).flatMap: suggestion =>
+        suggestion.text :: suggestion.aliases
     
     case Shell.Fish =>
       suggestions(focus).flatMap:

@@ -36,8 +36,11 @@ case class PosixParameters
     (positional: List[Argument] = Nil, parameters: Map[Argument, List[Argument]] = Map(),
         postpositional: List[Argument] = Nil):
   
-  def apply[SubcommandType](subcommand: Subcommand[SubcommandType]): Maybe[Argument] =
-    positional.lift(subcommand.position).getOrElse(Unset)
+  def apply[OperandType](subcommand: Subcommand[OperandType])(using commandLine: CommandLine, suggestions: Suggestions[OperandType], flagInterpreter: FlagInterpreter[OperandType]): Maybe[OperandType] =
+    positional.lift(subcommand.position).map: argument =>
+      commandLine.suggest(subcommand)
+      safely(flagInterpreter.interpret(List(argument)))
+    .getOrElse(Unset)
   
   def apply
       [OperandType]
@@ -133,5 +136,16 @@ case class Flag
     val flagId = if key().starts(t"--") then key().drop(2) else if key().starts(t"-") then safely(key()(1)) else Unset
     
     flagId == name || aliases.contains(flagId)
-  
-case class Subcommand[SubcommandType](position: Int)
+
+  def apply()
+      (using commandLine: CommandLine, interpreter: CommandLineInterpreter[PosixParameters],
+          flagInterpreter: FlagInterpreter[OperandType])
+      : Maybe[OperandType] =
+    interpreter(commandLine.arguments)(this)
+
+case class Subcommand[OperandType](position: Int):
+  def apply()
+      (using commandLine: CommandLine, interpreter: CommandLineInterpreter[PosixParameters],
+          flagInterpreter: FlagInterpreter[OperandType], suggestions: Suggestions[OperandType])
+      : Maybe[OperandType] =
+    interpreter(commandLine.arguments)(this)
