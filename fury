@@ -10,7 +10,7 @@ project mosquito
   module core
     compiler  scala
     sources   src/core
-    include   rudiments/core anticipation/math spectacular/core gossamer/core
+    include   rudiments/core spectacular/core gossamer/core
 
   module test
     compiler  scala
