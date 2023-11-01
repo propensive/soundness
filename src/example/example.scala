@@ -31,7 +31,7 @@ def fury(): Unit =
   import parameterInterpretation.posixParameters
   import errorHandlers.throwUnsafely
   
-  Daemon.listen:
+  daemon:
     val Lang = Flag[Language](t"speech", false, List('s'), t"the two-letter code of the language")
     val Size = Flag[Text](t"size", false, List('S'), t"big, medium or small")
     val Age = Flag[Int](t"age", false, List('a'), t"the number of years")
@@ -77,3 +77,4 @@ object Action:
 
 enum Action:
   case Run, Build, Fire, Cheat
+

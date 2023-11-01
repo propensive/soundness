@@ -51,10 +51,9 @@ class LazyEnvironment(vars: List[Text]) extends Environment:
   
   def apply(key: Text): Maybe[Text] = map.get(key).getOrElse(Unset)
 
-object Daemon:
-  def listen(block: CommandLine ?=> Environment ?=> ShellSession ?=> Execution): Unit =
-    given invocation: Invocation = Invocation(Nil, environments.jvm, workingDirectories.default, ProcessContext(stdioSources.jvm))
-    Daemon(commandLine => environment => session => block(using commandLine)(using environment)(using session)).invoke.execute(invocation)
+def daemon(block: CommandLine ?=> Environment ?=> ShellSession ?=> Execution): Unit =
+  given invocation: Invocation = Invocation(Nil, environments.jvm, workingDirectories.default, ProcessContext(stdioSources.jvm))
+  Daemon(commandLine => environment => session => block(using commandLine)(using environment)(using session)).invoke.execute(invocation)
 
 class Daemon(block: CommandLine => Environment => ShellSession => Execution) extends Application:
   daemon =>
