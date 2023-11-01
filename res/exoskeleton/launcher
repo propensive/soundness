@@ -43,7 +43,7 @@ abort() {
 }
 
 launch() {
-  mkfifo "$waitFile" 2> /dev/null && (exec nohup java -jar > /dev/null) "$script" || abort) &
+  mkfifo "$waitFile" 2> /dev/null && (exec nohup java -jar "$script" > /dev/null 2>&1 || abort) &
   launchPid=$!
   flock "$initFile" sh -c "test -f \"$portFile\" || cat \"$waitFile\"" > /dev/null 2>&1 || abort
   rm -f "$initFile"
