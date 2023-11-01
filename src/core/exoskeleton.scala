@@ -68,6 +68,7 @@ sealed trait CommandLine:
   def restrict(position: Int, fn: Suggestion => Boolean): Unit = ()
   def explanation: Maybe[Text] = Unset
   def suggest(flag: Flag[?]): Unit = ()
+  def acknowledge(flag: Flag[?]): Unit = ()
   def suggestions(position: Int): List[Suggestion] = Nil
   def explain[TextType](explanation: Maybe[TextType])(using Printable[TextType]): Unit = ()
   def map(position: Int, fn: Suggestion => Suggestion): Unit = ()
@@ -78,11 +79,12 @@ case class Completion
         focusPosition: Int)
 extends CommandLine:
   private val suggestionsMap: scm.Map[Int, () => List[Suggestion]] = scm.HashMap()
-  private var flagSet: Set[Flag[?]] = Set()
+  private var checkedFlags: Set[Flag[?]] = Set()
+  private var seenFlags: Set[Flag[?]] = Set()
   private var explanationValue: Maybe[Text] = Unset
 
   override def flagSuggestions: List[Suggestion] =
-    flagSet.to(List).map: flag =>
+    (checkedFlags -- seenFlags).to(List).map: flag =>
       Suggestion(Flag.serialize(flag.name), flag.description, aliases = flag.aliases.map(Flag.serialize(_)))
 
   override def restrict(position: Int, predicate: Suggestion => Boolean): Unit =
@@ -95,7 +97,8 @@ extends CommandLine:
     explanationValue = explanation.mm: explanation =>
       printable.print(explanation)
   
-  override def suggest(flag: Flag[?]): Unit = if !flag.secret then flagSet += flag
+  override def suggest(flag: Flag[?]): Unit = if !flag.secret then checkedFlags += flag
+  override def acknowledge(flag: Flag[?]): Unit = if !flag.repeatable then seenFlags += flag
   
   override def suggest(position: Int, fn: => List[Suggestion]): Unit =
     suggestionsMap(position) = () => fn

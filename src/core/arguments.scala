@@ -49,6 +49,7 @@ case class PosixParameters
     commandLine.suggest(flag)
 
     parameters.find { (key, value) => flag.matches(key) }.map: (_, operands) =>
+      commandLine.acknowledge(flag)
       operands.head.suggest(suggestions.suggest().to(List))
       safely(interpreter.interpret(operands))
     .getOrElse(Unset)
