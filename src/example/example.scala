@@ -35,10 +35,12 @@ def fury(): Unit =
     val Lang = Flag[Language](t"speech", false, List('s'), t"the two-letter code of the language")
     val Size = Flag[Text](t"size", false, List('S'), t"big, medium or small")
     val Age = Flag[Int](t"age", false, List('a'), t"the number of years")
+    val Color = Flag[Text]('c', false, List(), t"the color")
 
     val language: Maybe[Language] = parameters(Lang)
     val size: Maybe[Text] = parameters(Size)
     val age: Maybe[Int] = parameters(Age)
+    val color: Maybe[Text] = parameters(Color)
 
 
     execute:

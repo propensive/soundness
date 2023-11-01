@@ -63,7 +63,7 @@ sealed trait CommandLine:
   def environment: Environment
   def workingDirectory: WorkingDirectory
 
-  def flagSuggestions: List[Suggestion] = Nil
+  def flagSuggestions(longOnly: Boolean) : List[Suggestion] = Nil
   def suggest(position: Int, fn: => List[Suggestion]): Unit = ()
   def restrict(position: Int, fn: Suggestion => Boolean): Unit = ()
   def explanation: Maybe[Text] = Unset
@@ -83,9 +83,16 @@ extends CommandLine:
   private var seenFlags: Set[Flag[?]] = Set()
   private var explanationValue: Maybe[Text] = Unset
 
-  override def flagSuggestions: List[Suggestion] =
-    (checkedFlags -- seenFlags).to(List).map: flag =>
-      Suggestion(Flag.serialize(flag.name), flag.description, aliases = flag.aliases.map(Flag.serialize(_)))
+  override def flagSuggestions(longOnly: Boolean): List[Suggestion] =
+    (checkedFlags -- seenFlags).to(List).flatMap: flag =>
+      val allFlags = (flag.name :: flag.aliases)
+      if longOnly then
+        allFlags.collect { case text: Text => text }.match
+          case main :: aliases =>
+            List(Suggestion(Flag.serialize(main), flag.description, aliases = aliases.map(Flag.serialize(_))))
+          case Nil => Nil
+      
+      else List(Suggestion(Flag.serialize(flag.name), flag.description, aliases = flag.aliases.map(Flag.serialize(_))))
 
   override def restrict(position: Int, predicate: Suggestion => Boolean): Unit =
     suggestionsMap(position) = () => suggestionsMap(position)().filter(predicate)
@@ -132,15 +139,17 @@ extends CommandLine:
       title ++ itemLines
           
     case Shell.Bash =>
-      suggestions(focus).filter(!_.hidden).map:
-        case Suggestion(text, _, _, _, _) => text
+      suggestions(focus).filter(!_.hidden).flatMap:
+        (text :: aliases).map: text =>
+          case Suggestion(text, _, _, _, _) => text
     
     case Shell.Fish =>
-      suggestions(focus).map:
+      suggestions(focus).flatMap:
         case Suggestion(text, description, hidden, incomplete, aliases) =>
-          description match
-            case Unset             => t"$text"
-            case description: Text => t"$text\t$description"
+          (text :: aliases).map: text =>
+            description match
+              case Unset             => t"$text"
+              case description: Text => t"$text\t$description"
       
 case class Invocation
     (arguments: List[Argument], environment: Environment, workingDirectory: WorkingDirectory,
@@ -185,4 +194,5 @@ extension (argument: Argument)(using commandLine: CommandLine)
   def suggest(fn: => List[Suggestion]): Unit = commandLine.suggest(argument.position, fn)
   def map(fn: Suggestion => Suggestion): Unit = commandLine.map(argument.position, fn)
   def restrict(predicate: Suggestion => Boolean): Unit = commandLine.restrict(argument.position, predicate)
-  def suggestFlags(): Unit = commandLine.suggest(argument.position, commandLine.flagSuggestions)
+  def suggestFlags(longOnly: Boolean): Unit =
+    commandLine.suggest(argument.position, commandLine.flagSuggestions(longOnly))

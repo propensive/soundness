@@ -94,10 +94,10 @@ object PosixCommandLineInterpreter extends CommandLineInterpreter[PosixParameter
       todo match
         case head :: tail =>
           if head() == t"--" then
-            head.suggestFlags()
+            head.suggestFlags(true)
             push().copy(postpositional = tail)
           else if head().starts(t"-") then
-            head.suggestFlags()
+            head.suggestFlags(false)
             recur(tail, Nil, head, push())
           else recur(tail, head :: arguments, current, posixParameters)
         
