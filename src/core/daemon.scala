@@ -51,11 +51,11 @@ class LazyEnvironment(vars: List[Text]) extends Environment:
   
   def apply(key: Text): Maybe[Text] = map.get(key).getOrElse(Unset)
 
-def daemon(block: Cli ?=> Environment ?=> ShellSession ?=> Execution): Unit =
+def daemon(block: Cli ?=> ShellSession ?=> Execution): Unit =
   given invocation: CliInvocation = CliInvocation(Nil, environments.jvm, workingDirectories.default, ProcessContext(stdioSources.jvm))
-  Daemon(cli => environment => session => block(using cli)(using environment)(using session)).invoke.execute(invocation)
+  Daemon(cli => session => block(using cli)(using session)).invoke.execute(invocation)
 
-class Daemon(block: Cli => Environment => ShellSession => Execution) extends Application:
+class Daemon(block: Cli => ShellSession => Execution) extends Application:
   daemon =>
   
   import environments.jvm
@@ -152,11 +152,11 @@ class Daemon(block: Cli => Environment => ShellSession => Execution) extends App
           try
             makeCli(textArguments, environment, WorkingDirectory(directory), session) match
               case invocation: CliInvocation =>
-                exit.fulfill(block(invocation)(environment)(session).execute(invocation))
+                exit.fulfill(block(invocation)(session).execute(invocation))
               
               case completion: CliCompletion =>
                 exit.fulfill:
-                  block(completion)(environment)(session)
+                  block(completion)(session)
                   completion.serialize.foreach(Out.println(_)(using completion.context.stdio))
                   ExitStatus.Ok
               
