@@ -28,8 +28,8 @@ import language.dynamics
 
 @capability
 trait Environment:
-  def apply(name: Text): Maybe[Text]
-  def knownKeys: Set[Text] = Set()
+  def variable(name: Text): Maybe[Text]
+  def knownVariables: Set[Text] = Set()
 
 object Environment extends Dynamic:
   given default(using Quickstart): Environment = environments.jvm
@@ -40,7 +40,7 @@ object Environment extends Dynamic:
       (using environment: Environment, reader: EnvironmentVariable[Label, VariableType],
           environmentError: Raises[EnvironmentError])
       : VariableType^{environment, reader, environmentError} =
-    environment(variable).mm(reader.read).or(raise(EnvironmentError(variable))(reader.read(Text(""))))
+    environment.variable(variable).mm(reader.read).or(raise(EnvironmentError(variable))(reader.read(Text(""))))
     
   inline def selectDynamic
       [VariableType]
@@ -49,7 +49,7 @@ object Environment extends Dynamic:
           reader: EnvironmentVariable[key.type, VariableType],
           environmentError: Raises[EnvironmentError])
       : VariableType^{environment, reader, environmentError} =
-    environment(reader.defaultName).mm(reader.read(_)).or:
+    environment.variable(reader.defaultName).mm(reader.read(_)).or:
       raise(EnvironmentError(reader.defaultName))(reader.read(Text("")))
   
 @capability
@@ -142,7 +142,7 @@ extends Error(msg"the environment variable ${variable} was not defined")
 
 package environments:
   given empty: Environment with
-    def apply(name: Text): Unset.type = Unset
+    def variable(name: Text): Unset.type = Unset
 
   given jvm: Environment with
-    def apply(name: Text): Maybe[Text] = Maybe(System.getenv(name.s)).mm(_.tt)
+    def variable(name: Text): Maybe[Text] = Maybe(System.getenv(name.s)).mm(_.tt)
