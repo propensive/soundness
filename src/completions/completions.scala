@@ -98,12 +98,12 @@ extends Cli:
           val hiddenParam = if hidden then t"-n\t" else t""
           val aliasText = aliases.join(t" ").fit(aliasesWidth)
           
-          val mainLine = description match
+          val mainLine = (description: @unchecked) match
             case Unset             => t"\t$hiddenParam--\t$text"
             case description: Text => t"${text.fit(width)} $aliasText -- $description\t-l\t$hiddenParam--\t$text"
           
           val aliasLines = aliases.map: text =>
-            description match
+            (description: @unchecked) match
               case Unset             => t"\t-n\t--\t$text"
               case description: Text => t"${text.fit(width)} $aliasText -- $description\t-l\t-n\t--\t$text"
           
@@ -119,7 +119,7 @@ extends Cli:
       suggestions(focus).flatMap:
         case Suggestion(text, description, hidden, incomplete, aliases) =>
           (text :: aliases).map: text =>
-            description match
+            (description: @unchecked) match
               case Unset             => t"$text"
               case description: Text => t"$text\t$description"
       
@@ -148,8 +148,8 @@ package executives:
           
           val shell = shellName match
             case t"zsh"  => Shell.Zsh
-            case t"bash" => Shell.Bash
             case t"fish" => Shell.Fish
+            case _       => Shell.Bash
           
           CliCompletion(Cli.arguments(arguments, focus, position), Cli.arguments(rest), environment,
               workingDirectory, shell, focus - 1, position, stdio, signals)
@@ -157,10 +157,11 @@ package executives:
         case other =>
           CliInvocation(Cli.arguments(arguments), environment, workingDirectory, stdio, signals)
       
-    def process(cli: Cli, execution: Execution): ExitStatus = cli match
-      case invocation: CliInvocation =>
-        execution.execute(invocation)
-      
+    def process(cli: Cli, execution: Execution): ExitStatus = (cli: @unchecked) match
       case completion: CliCompletion =>
         completion.serialize.foreach(Out.println(_)(using completion.stdio))
         ExitStatus.Ok
+
+      case invocation: CliInvocation =>
+        execution.execute(invocation)
+      
