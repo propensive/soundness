@@ -5,6 +5,9 @@ import rudiments.*
 import ambience.*
 import anticipation.*
 import turbulence.*
+import perforate.*
+
+import sun.misc as sm
 
 trait Executive[ReturnType, CliType <: Cli]:
   def cli
@@ -33,3 +36,20 @@ def application
     : Unit =
 
   block(using CliInvocation(Cli.arguments(arguments), environments.jvm, workingDirectories.default, ProcessContext(stdioSources.jvm)))
+
+case class CliInvocation
+    (arguments: List[Argument], environment: Environment, workingDirectory: WorkingDirectory,
+        context: ProcessContext)
+extends Cli, Stdio:
+  export context.stdio.{out, err, in}
+  
+  type State = Unit
+  def initialState: Unit = ()
+
+  def listenForSignals(signals: Signal*): LazyList[Signal] = 
+    val funnel: Funnel[Signal] = Funnel()
+    
+    signals.foreach: signal =>
+      sm.Signal.handle(sm.Signal(signal.shortName.s), event => funnel.put(signal))
+    
+    funnel.stream

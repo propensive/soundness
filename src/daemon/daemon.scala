@@ -41,6 +41,13 @@ import scala.compiletime.*
 import java.net as jn
 import java.io as ji
 
+object CliInput:
+  given decoder: Decoder[CliInput] = text => valueOf(text.lower.capitalize.s)
+  given encoder: Encoder[CliInput] = _.toString.tt.lower
+
+enum CliInput:
+  case Terminal, Pipe
+
 case class ClientConnection
     (pid: Pid, async: Async[Unit], signals: Funnel[Signal], terminate: Promise[Unit], close: () => Unit,
         exitPromise: Promise[ExitStatus])(using Monitor)
@@ -52,33 +59,6 @@ class LazyEnvironment(vars: List[Text]) extends Environment:
     .to(Map)
   
   def apply(key: Text): Maybe[Text] = map.get(key).getOrElse(Unset)
-
-package executives:
-  given completions: Executive[Execution, Cli] with
-    def cli
-        (arguments: Iterable[Text], environment: Environment, workingDirectory: WorkingDirectory,
-            context: ProcessContext): Cli =
-      arguments match
-        case t"{completions}" :: shellName :: As[Int](focus) :: As[Int](position) :: t"--" :: command :: rest =>
-          
-          val shell = shellName match
-            case t"zsh"  => Shell.Zsh
-            case t"bash" => Shell.Bash
-            case t"fish" => Shell.Fish
-          
-          CliCompletion(Cli.arguments(arguments, focus, position), Cli.arguments(rest), environment,
-              workingDirectory, context, shell, focus - 1, position)
-          
-        case other =>
-          CliInvocation(Cli.arguments(arguments), environment, workingDirectory, context)
-      
-    def process(cli: Cli, execution: Execution): ExitStatus = cli match
-      case invocation: CliInvocation =>
-        execution.execute(invocation)
-      
-      case completion: CliCompletion =>
-        completion.serialize.foreach(Out.println(_)(using completion.context.stdio))
-        ExitStatus.Ok
 
 def daemon
     [ExecutionType, CliType <: Cli]

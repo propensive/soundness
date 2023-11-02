@@ -25,6 +25,8 @@ import profanity.*
 import rudiments.*
 import turbulence.*
 
+import executives.completions
+
 @main
 def fury(): Unit =
   import parameterInterpretation.posixParameters
@@ -53,11 +55,13 @@ def fury(): Unit =
       Out.println(t"language = ${Lang().debug}")
       Out.println(t"size = ${Size().debug}")
       Out.println(t"age = ${Age().debug}")
-      
-      supervise:
-        terminal:
-          Out.println(language.debug)
-          ExitStatus.Ok
+      ExitStatus.Ok
+    
+    // supervise:
+      // terminal:
+        // Out.println(language.debug)
+        // ExitStatus.Ok
+    
 
 object Language:
   given Suggestions[Language] = () => Language.values.map: language =>

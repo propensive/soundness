@@ -26,35 +26,6 @@ import gossamer.*
 import ambience.*
 import hieroglyph.*, textWidthCalculation.uniform
 
-import sun.misc as sm
-
-// def makeCli(fullArguments: List[Text], environment: Environment, workingDirectory: WorkingDirectory,
-//     context: ProcessContext): Cli =
-//   fullArguments match
-//     case t"{completions}" :: shellName :: As[Int](focus) :: As[Int](position) :: t"--" :: rest =>
-//       val shell = shellName match
-//         case t"zsh"  => Shell.Zsh
-//         case t"bash" => Shell.Bash
-//         case t"fish" => Shell.Fish
-      
-//       val arguments = rest.drop(1).padTo(focus, t"").zipWithIndex.map: (text, index) =>
-//         Argument(index, text, if focus == index then position else Unset)
-
-//       CliCompletion(arguments, arguments, environment, workingDirectory, context, shell, focus - 1, position)
-    
-//     case other =>
-//       val arguments = fullArguments.zipWithIndex.map: (text, index) =>
-//         Argument(index, text, Unset)
-      
-//       CliInvocation(arguments, environment, workingDirectory, context)
-
-object CliInput:
-  given decoder: Decoder[CliInput] = text => valueOf(text.lower.capitalize.s)
-  given encoder: Encoder[CliInput] = _.toString.tt.lower
-
-enum CliInput:
-  case Terminal, Pipe
-
 case class SuggestionsState
     (suggestions: Map[Argument, () => List[Suggestion]], explanation: Maybe[Text], checkedFlags: Set[Flag[?]],
         seenFlags: Set[Flag[?]])
@@ -153,42 +124,6 @@ extends Cli:
               case Unset             => t"$text"
               case description: Text => t"$text\t$description"
       
-case class CliInvocation
-    (arguments: List[Argument], environment: Environment, workingDirectory: WorkingDirectory,
-        context: ProcessContext)
-extends Cli, Stdio:
-  export context.stdio.{out, err, in}
-  
-  type State = Unit
-  def initialState: Unit = ()
-
-  def listenForSignals(signals: Signal*): LazyList[Signal] = 
-    val funnel: Funnel[Signal] = Funnel()
-    
-    signals.foreach: signal =>
-      sm.Signal.handle(sm.Signal(signal.shortName.s), event => funnel.put(signal))
-    
-    funnel.stream
-  
-abstract class Application:
-  protected given environment(using invocation: CliInvocation): Environment = invocation.environment
-  protected given workingDirectory(using invocation: CliInvocation): WorkingDirectory = invocation.workingDirectory
-  
-  def invoke(using Cli): Execution
-
-  def main(textArguments: IArray[Text]): Unit =
-    val context: ProcessContext = ProcessContext(Stdio(System.out, System.err, System.in))
-    val workingDirectory = unsafely(workingDirectories.default)
-    
-    val arguments = textArguments.to(List).zipWithIndex.map: (text, index) =>
-      Argument(index, text, Unset)
-
-    val invocation = CliInvocation(arguments, environments.jvm, workingDirectory, context)
-    
-    invoke(using invocation).execute(invocation) match
-      case ExitStatus.Ok           => System.exit(0)
-      case ExitStatus.Fail(status) => System.exit(1)
-
 case class Execution(execute: CliInvocation => ExitStatus)
 
 def execute(block: Effectful ?=> CliInvocation ?=> ExitStatus): Execution = Execution(block(using ###)(using _))
@@ -203,3 +138,30 @@ extension (argument: Argument)(using cli: Cli)
 def explain(explanation: (previous: Maybe[Text]) ?=> Maybe[Text])(using cli: Cli): Unit = cli match
   case cli: CliCompletion => cli.updateExplanation(explanation(using _))
   case _                  => ()
+
+package executives:
+  given completions: Executive[Execution, Cli] with
+    def cli
+        (arguments: Iterable[Text], environment: Environment, workingDirectory: WorkingDirectory,
+            context: ProcessContext): Cli =
+      arguments match
+        case t"{completions}" :: shellName :: As[Int](focus) :: As[Int](position) :: t"--" :: command :: rest =>
+          
+          val shell = shellName match
+            case t"zsh"  => Shell.Zsh
+            case t"bash" => Shell.Bash
+            case t"fish" => Shell.Fish
+          
+          CliCompletion(Cli.arguments(arguments, focus, position), Cli.arguments(rest), environment,
+              workingDirectory, context, shell, focus - 1, position)
+          
+        case other =>
+          CliInvocation(Cli.arguments(arguments), environment, workingDirectory, context)
+      
+    def process(cli: Cli, execution: Execution): ExitStatus = cli match
+      case invocation: CliInvocation =>
+        execution.execute(invocation)
+      
+      case completion: CliCompletion =>
+        completion.serialize.foreach(Out.println(_)(using completion.context.stdio))
+        ExitStatus.Ok
