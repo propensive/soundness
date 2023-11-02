@@ -21,7 +21,6 @@ import rudiments.*
 import ambience.*
 import anticipation.*
 import turbulence.*
-import perforate.*
 
 import sun.misc as sm
 

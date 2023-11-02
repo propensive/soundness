@@ -16,12 +16,8 @@
 
 package exoskeleton
 
-import ambience.*
 import anticipation.*
 import rudiments.*
-import profanity.*
-import turbulence.*
-import perforate.*
 
 abstract class Application:
   import executives.direct
