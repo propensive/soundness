@@ -58,7 +58,7 @@ class LazyEnvironment(vars: List[Text]) extends Environment:
       case List(key, value) => (key, value)
     .to(Map)
   
-  def apply(key: Text): Maybe[Text] = map.get(key).getOrElse(Unset)
+  def variable(key: Text): Maybe[Text] = map.get(key).getOrElse(Unset)
 
 def daemon
     [ExecutionType, CliType <: Cli]
@@ -121,9 +121,9 @@ def daemon
         val pwd: Text = line()
         val argCount: Int = line().decodeAs[Int]
         val textArguments: List[Text] = chunk().cut(t"\u0000").take(argCount)
-        val env: List[Text] = chunk().cut(t"\u0000").init
+        val environment: List[Text] = chunk().cut(t"\u0000").init
 
-        DaemonEvent.Init(pid, pwd, script, cliInput, textArguments, env)
+        DaemonEvent.Init(pid, pwd, script, cliInput, textArguments, environment)
       
       case _ =>
         Unset
