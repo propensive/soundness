@@ -196,8 +196,10 @@ def execute(block: Effectful ?=> CliInvocation ?=> ExitStatus): Execution = Exec
 erased trait Effectful
 
 extension (argument: Argument)(using cli: Cli)
-  def suggest(suggestions: List[Suggestion] ?=> List[Suggestion]): Unit =
-    cli match
-      case cli: CliCompletion => cli.updateSuggestions(argument, suggestions(using _))
-      case _                  => ()
-
+  def suggest(suggestions: (previous: List[Suggestion]) ?=> List[Suggestion]): Unit = cli match
+    case cli: CliCompletion => cli.updateSuggestions(argument, suggestions(using _))
+    case _                  => ()
+  
+def explain(explanation: (previous: Maybe[Text]) ?=> Maybe[Text])(using cli: Cli): Unit = cli match
+  case cli: CliCompletion => cli.updateExplanation(explanation(using _))
+  case _                  => ()
