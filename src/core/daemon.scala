@@ -51,11 +51,17 @@ class LazyEnvironment(vars: List[Text]) extends Environment:
   
   def apply(key: Text): Maybe[Text] = map.get(key).getOrElse(Unset)
 
-def daemon(block: Cli ?=> ShellSession ?=> Execution): Unit =
+def application(arguments: Iterable[Text])(block: Cli ?=> Execution): Unit =
+  val arguments2 = arguments.to(List).zipWithIndex.map: (text, index) =>
+    Argument(index, text, Unset)
+
+  block(using CliInvocation(arguments2, environments.jvm, workingDirectories.default, ProcessContext(stdioSources.jvm)))
+
+def daemon(block: Cli ?=> DaemonClient ?=> Execution): Unit =
   given invocation: CliInvocation = CliInvocation(Nil, environments.jvm, workingDirectories.default, ProcessContext(stdioSources.jvm))
   Daemon(cli => session => block(using cli)(using session)).invoke.execute(invocation)
 
-class Daemon(block: Cli => ShellSession => Execution) extends Application:
+class Daemon(block: Cli => DaemonClient => Execution) extends Application:
   daemon =>
   
   import environments.jvm
@@ -93,14 +99,14 @@ class Daemon(block: Cli => ShellSession => Execution) extends Application:
       
       buffer
 
-    val message: Maybe[ShellMessage] = line() match
+    val message: Maybe[LauncherEvent] = line() match
       case t"s" =>
         val pid: Pid = line().decodeAs[Pid]
         val signal: Signal = line().decodeAs[Signal]
-        ShellMessage.Trap(pid, signal)
+        LauncherEvent.Trap(pid, signal)
       
       case t"x" =>
-        ShellMessage.Exit(line().decodeAs[Pid])
+        LauncherEvent.Exit(line().decodeAs[Pid])
       
       case t"i" =>
         val stdin: ShellInput = if line() == t"p" then ShellInput.Pipe else ShellInput.Terminal
@@ -111,7 +117,7 @@ class Daemon(block: Cli => ShellSession => Execution) extends Application:
         val textArguments: List[Text] = chunk().cut(t"\u0000").take(argCount)
         val env: List[Text] = chunk().cut(t"\u0000").init
 
-        ShellMessage.Init(pid, pwd, script, stdin, textArguments, env)
+        LauncherEvent.Init(pid, pwd, script, stdin, textArguments, env)
       
       case _ =>
         Unset
@@ -121,12 +127,12 @@ class Daemon(block: Cli => ShellSession => Execution) extends Application:
         Out.println(t"Received unrecognized message")
         socket.close()
 
-      case ShellMessage.Trap(process, signal) =>
+      case LauncherEvent.Trap(process, signal) =>
         Out.println(t"Received signal $signal")
         clients(process).signals.put(signal)
         socket.close()
       
-      case ShellMessage.Exit(process) =>
+      case LauncherEvent.Exit(process) =>
         Out.println(t"Received exit status request from $process")
         val exitStatus: ExitStatus = clients(process).exit.await()
         
@@ -134,7 +140,7 @@ class Daemon(block: Cli => ShellSession => Execution) extends Application:
         socket.close()
         clients -= process
 
-      case ShellMessage.Init(process, directory, scriptName, shellInput, textArguments, env) =>
+      case LauncherEvent.Init(process, directory, scriptName, shellInput, textArguments, env) =>
         Out.println(t"Received init $process")
         val promise: Promise[Unit] = Promise()
         val exit: Promise[ExitStatus] = Promise()
@@ -143,7 +149,7 @@ class Daemon(block: Cli => ShellSession => Execution) extends Application:
         val clientStdio: Stdio =
           Stdio(ji.PrintStream(socket.getOutputStream.nn), ji.PrintStream(socket.getOutputStream.nn), in)
         
-        val session = ShellSession(clientStdio, () => daemon.shutdown(), signalFunnel.stream, shellInput,
+        val session = DaemonClient(clientStdio, () => daemon.shutdown(), signalFunnel.stream, shellInput,
             scriptName.decodeAs[Unix.Path], directory)
 
         val environment = LazyEnvironment(env)
@@ -194,13 +200,13 @@ class Daemon(block: Cli => ShellSession => Execution) extends Application:
 
         ExitStatus.Ok
 
-case class ShellSession
+case class DaemonClient
     (stdio: Stdio, shutdown: () => Unit, signals: LazyList[Signal], shellInput: ShellInput, script: Unix.Path,
         workDir: Text)
     (using Monitor)
 extends WorkingDirectory(workDir), ProcessContext
 
-enum ShellMessage:
+enum LauncherEvent:
   case Init(process: Pid, work: Text, script: Text, input: ShellInput, arguments: List[Text], environment: List[Text])
   case Trap(process: Pid, signal: Signal)
   case Exit(process: Pid)
@@ -213,4 +219,4 @@ def parameters
     : ParametersType =
   interpreter(arguments)
 
-def shell(using session: ShellSession): ShellSession = session
+def shell(using session: DaemonClient): DaemonClient = session
