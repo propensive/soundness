@@ -62,11 +62,11 @@ def fury(): Unit =
     
       supervise:
         terminal:
-          Out.println(language.debug)
+          tty.events.foreach:
+            case Keypress.Printable('Q') => summon[DaemonClient].shutdown()
+            case other                   => Out.println(other.debug)
+
           ExitStatus.Ok
-      
-      ExitStatus.Ok
-    
 
 object Language:
   given Suggestions[Language] = () => Language.values.map: language =>

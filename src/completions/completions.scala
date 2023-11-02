@@ -26,8 +26,8 @@ import ambience.*
 import hieroglyph.*, textWidthCalculation.uniform
 
 case class SuggestionsState
-    (suggestions: Map[Argument, () => List[Suggestion]], explanation: Maybe[Text], checkedFlags: Set[Flag[?]],
-        seenFlags: Set[Flag[?]])
+    (suggestions: Map[Argument, () => List[Suggestion]], explanation: Maybe[Text], known: Set[Flag[?]],
+        present: Set[Flag[?]])
 
 case class CliCompletion
     (fullArguments: List[Argument], arguments: List[Argument], environment: Environment,
@@ -53,38 +53,26 @@ extends Cli:
   
   def explanation: Maybe[Text] = apply().explanation
   
+  override def register(flag: Flag[?]): Unit =
+    if !flag.secret then this() = apply().copy(known = apply().known + flag)
   
-  // override def flagSuggestions(longOnly: Boolean): List[Suggestion] =
-  //   (state.checkedFlags -- seenFlags).to(List).flatMap: flag =>
-  //     val allFlags = (flag.name :: flag.aliases)
-  //     if longOnly then
-  //       allFlags.collect { case text: Text => text }.match
-  //         case main :: aliases =>
-  //           List(Suggestion(Flag.serialize(main), flag.description, aliases = aliases.map(Flag.serialize(_))))
-  //         case Nil => Nil
+  override def present(flag: Flag[?]): Unit =
+    if !flag.repeatable then this() = apply().copy(present = apply().present + flag)
+  
+  override def unknown(argument: Argument): Unit =
+    updateSuggestions(argument, _ => flagSuggestions(argument().starts(t"--")))
+  
+  def flagSuggestions(longOnly: Boolean): List[Suggestion] =
+    (this().known -- this().present).to(List).flatMap: flag =>
+      val allFlags = (flag.name :: flag.aliases)
       
-  //     else List(Suggestion(Flag.serialize(flag.name), flag.description, aliases = flag.aliases.map(Flag.serialize(_))))
-
-  // override def explain[TextType](explanation: Maybe[TextType])(using printable: Printable[TextType]): Unit =
-  //   explanationValue = explanation.mm: explanation =>
-  //     printable.print(explanation)
-  
-  //override def suggest(flag: Flag[?]): Unit = if !flag.secret then checkedFlags += flag
-  
-  // override def suggest
-  //     [OperandType]
-  //     (subcommand: Subcommand[OperandType])
-  //     (using suggestions: Suggestions[OperandType])
-  //     : Unit =
-  //   suggestionsMap(subcommand.position) = () => suggestions.suggest().to(List)
-  
-  //override def acknowledge(flag: Flag[?]): Unit = if !flag.repeatable then seenFlags += flag
-  
-  // override def suggest(argument: Argument, update: (previous: List[Suggestion]) ?=> List[Suggestion]): Unit =
-  //   updateSuggestions(argument, update(using _))
-  
-  //override def explanation: Maybe[Text] = explanationValue
-  //override def suggestions(argument: Argument): List[Suggestion] = suggestionsArray(argument.position)()
+      if longOnly then
+        allFlags.collect { case text: Text => text }.match
+          case main :: aliases =>
+            List(Suggestion(Flag.serialize(main), flag.description, aliases = aliases.map(Flag.serialize(_))))
+          case Nil => Nil
+      
+      else List(Suggestion(Flag.serialize(flag.name), flag.description, aliases = flag.aliases.map(Flag.serialize(_))))
 
   def serialize: List[Text] = shell match
     case Shell.Zsh =>
@@ -130,7 +118,8 @@ def execute(block: Effectful ?=> CliInvocation ?=> ExitStatus): Execution = Exec
 erased trait Effectful
 
 extension (argument: Argument)(using cli: Cli)
-  def suggest(suggestions: (previous: List[Suggestion]) ?=> List[Suggestion]): Unit = cli match
+  def suggest(suggestions: (previous: List[Suggestion]) ?=> List[Suggestion]): Unit =
+  cli match
     case cli: CliCompletion => cli.updateSuggestions(argument, suggestions(using _))
     case _                  => ()
   

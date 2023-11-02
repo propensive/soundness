@@ -56,15 +56,9 @@ trait Cli extends ProcessContext:
   def environment: Environment
   def workingDirectory: WorkingDirectory
 
-  //def flagSuggestions(longOnly: Boolean) : List[Suggestion] = Nil
-  
-  //def explanation: Maybe[Text] = Unset
-  //def suggest(flag: Flag[?]): Unit = ()
-  //def suggest[OperandType](subcommand: Subcommand[OperandType])(using Suggestions[OperandType]): Unit = ()
-  // def acknowledge(flag: Flag[?]): Unit = ()
-  // def suggestions(position: Int): List[Suggestion] = Nil
-  // def explain[TextType](explanation: Maybe[TextType])(using Printable[TextType]): Unit = ()
-  // def suggest(argument: Argument, fn: (previous: List[Suggestion]) ?=> List[Suggestion]): Unit = ()
+  def register(flag: Flag[?]): Unit = ()
+  def present(flag: Flag[?]): Unit = ()
+  def unknown(argument: Argument): Unit = ()
 
 trait CliInterpreter[ParametersType]:
   def apply(arguments: List[Argument])(using Cli): ParametersType
