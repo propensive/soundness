@@ -51,11 +51,11 @@ class LazyEnvironment(vars: List[Text]) extends Environment:
   
   def apply(key: Text): Maybe[Text] = map.get(key).getOrElse(Unset)
 
-def daemon(block: CommandLine ?=> Environment ?=> ShellSession ?=> Execution): Unit =
-  given invocation: Invocation = Invocation(Nil, environments.jvm, workingDirectories.default, ProcessContext(stdioSources.jvm))
-  Daemon(commandLine => environment => session => block(using commandLine)(using environment)(using session)).invoke.execute(invocation)
+def daemon(block: Cli ?=> Environment ?=> ShellSession ?=> Execution): Unit =
+  given invocation: CliInvocation = CliInvocation(Nil, environments.jvm, workingDirectories.default, ProcessContext(stdioSources.jvm))
+  Daemon(cli => environment => session => block(using cli)(using environment)(using session)).invoke.execute(invocation)
 
-class Daemon(block: CommandLine => Environment => ShellSession => Execution) extends Application:
+class Daemon(block: Cli => Environment => ShellSession => Execution) extends Application:
   daemon =>
   
   import environments.jvm
@@ -150,11 +150,11 @@ class Daemon(block: CommandLine => Environment => ShellSession => Execution) ext
         
         val async: Async[Unit] = Async:
           try
-            CommandLine(textArguments, environment, WorkingDirectory(directory), session) match
-              case invocation: Invocation =>
+            makeCli(textArguments, environment, WorkingDirectory(directory), session) match
+              case invocation: CliInvocation =>
                 exit.fulfill(block(invocation)(environment)(session).execute(invocation))
               
-              case completion: Completion =>
+              case completion: CliCompletion =>
                 exit.fulfill:
                   block(completion)(environment)(session)
                   completion.serialize.foreach(Out.println(_)(using completion.context.stdio))
@@ -167,8 +167,8 @@ class Daemon(block: CommandLine => Environment => ShellSession => Execution) ext
         
         clients(process) = ClientConnection(process, async, signalFunnel, promise, () => socket.close(), exit)
 
-  def invoke(using commandLine: CommandLine): Execution = commandLine match
-    case given Invocation =>
+  def invoke(using cli: Cli): Execution = cli match
+    case given CliInvocation =>
       Async.onShutdown:
         waitFile.wipe()
         portFile.wipe()
@@ -205,11 +205,11 @@ enum ShellMessage:
   case Trap(process: Pid, signal: Signal)
   case Exit(process: Pid)
 
-def arguments(using commandLine: CommandLine): List[Argument] = commandLine.arguments
+def arguments(using cli: Cli): List[Argument] = cli.arguments
 
 def parameters
     [ParametersType]
-    (using interpreter: CommandLineInterpreter[ParametersType], commandLine: CommandLine)
+    (using interpreter: CliInterpreter[ParametersType], cli: Cli)
     : ParametersType =
   interpreter(arguments)
 

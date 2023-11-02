@@ -26,9 +26,27 @@ import gossamer.*
 import ambience.*
 import hieroglyph.*, textWidthCalculation.uniform
 
-import scala.collection.mutable as scm
-
 import sun.misc as sm
+
+def makeCli(fullArguments: List[Text], environment: Environment, workingDirectory: WorkingDirectory,
+    context: ProcessContext): Cli =
+  fullArguments match
+    case t"{completions}" :: shellName :: As[Int](focus) :: As[Int](position) :: t"--" :: rest =>
+      val shell = shellName match
+        case t"zsh"  => Shell.Zsh
+        case t"bash" => Shell.Bash
+        case t"fish" => Shell.Fish
+      
+      val arguments = rest.drop(1).padTo(focus, t"").zipWithIndex.map: (text, index) =>
+        Argument(index, text, if focus == index then position else Unset)
+
+      CliCompletion(fullArguments, arguments, environment, workingDirectory, context, shell, focus - 1, position)
+    
+    case other =>
+      val arguments = fullArguments.zipWithIndex.map: (text, index) =>
+        Argument(index, text, Unset)
+      
+      CliInvocation(arguments, environment, workingDirectory, context)
 
 object ShellInput:
   given decoder: Decoder[ShellInput] = text => valueOf(text.lower.capitalize.s)
@@ -37,90 +55,66 @@ object ShellInput:
 enum ShellInput:
   case Terminal, Pipe
 
-object CommandLine:
-  def apply(fullArguments: List[Text], environment: Environment, workingDirectory: WorkingDirectory,
-      context: ProcessContext): CommandLine =
-    fullArguments match
-      case t"{completions}" :: shellName :: As[Int](focus) :: As[Int](position) :: t"--" :: rest =>
-        val shell = shellName match
-          case t"zsh"  => Shell.Zsh
-          case t"bash" => Shell.Bash
-          case t"fish" => Shell.Fish
-        
-        val arguments = rest.drop(1).padTo(focus, t"").zipWithIndex.map: (text, index) =>
-          Argument(index, text, if focus == index then position else Unset)
+case class SuggestionsState
+    (suggestions: Map[Argument, () => List[Suggestion]], explanation: Maybe[Text], checkedFlags: Set[Flag[?]],
+        seenFlags: Set[Flag[?]])
 
-        Completion(fullArguments, arguments, environment, workingDirectory, context, shell, focus - 1, position)
-      
-      case other =>
-        val arguments = fullArguments.zipWithIndex.map: (text, index) =>
-          Argument(index, text, Unset)
-        
-        Invocation(arguments, environment, workingDirectory, context)
-
-sealed trait CommandLine:
-  def arguments: List[Argument]
-  def environment: Environment
-  def workingDirectory: WorkingDirectory
-
-  def flagSuggestions(longOnly: Boolean) : List[Suggestion] = Nil
-  def suggest(position: Int, fn: => List[Suggestion]): Unit = ()
-  def restrict(position: Int, fn: Suggestion => Boolean): Unit = ()
-  def explanation: Maybe[Text] = Unset
-  def suggest(flag: Flag[?]): Unit = ()
-  def suggest[OperandType](subcommand: Subcommand[OperandType])(using Suggestions[OperandType]): Unit = ()
-  def acknowledge(flag: Flag[?]): Unit = ()
-  def suggestions(position: Int): List[Suggestion] = Nil
-  def explain[TextType](explanation: Maybe[TextType])(using Printable[TextType]): Unit = ()
-  def map(position: Int, fn: Suggestion => Suggestion): Unit = ()
-
-case class Completion
+case class CliCompletion
     (fullArguments: List[Text], arguments: List[Argument], environment: Environment,
-        workingDirectory: WorkingDirectory, context: ProcessContext, shell: Shell, focus: Int,
+        workingDirectory: WorkingDirectory, context: ProcessContext, shell: Shell, currentArgument: Int,
         focusPosition: Int)
-extends CommandLine:
-  private val suggestionsMap: scm.Map[Int, () => List[Suggestion]] = scm.HashMap()
-  private var checkedFlags: Set[Flag[?]] = Set()
-  private var seenFlags: Set[Flag[?]] = Set()
-  private var explanationValue: Maybe[Text] = Unset
+extends Cli:
+  type State = SuggestionsState
+  protected def initialState: SuggestionsState = SuggestionsState(Map(), Unset, Set(), Set())
 
-  override def flagSuggestions(longOnly: Boolean): List[Suggestion] =
-    (checkedFlags -- seenFlags).to(List).flatMap: flag =>
-      val allFlags = (flag.name :: flag.aliases)
-      if longOnly then
-        allFlags.collect { case text: Text => text }.match
-          case main :: aliases =>
-            List(Suggestion(Flag.serialize(main), flag.description, aliases = aliases.map(Flag.serialize(_))))
-          case Nil => Nil
+  private[exoskeleton] def updateSuggestions
+      (argument: Argument, transform: List[Suggestion] => List[Suggestion]): Unit =
+    
+    this() = apply().copy(suggestions = apply().suggestions.updated(argument, () =>
+        transform(apply().suggestions.getOrElse(argument, () => Nil)())))
+  
+  private[exoskeleton] def updateExplanation(transform: Maybe[Text] => Maybe[Text]): Unit =
+    this() = apply().copy(explanation = transform(apply().explanation))
+
+  def focus: Argument = arguments(currentArgument)
+
+  def suggestions(argument: Argument = focus): List[Suggestion] =
+    apply().suggestions.get(argument).map(_()).getOrElse(Nil)
+  
+  def explanation: Maybe[Text] = apply().explanation
+  
+  
+  // override def flagSuggestions(longOnly: Boolean): List[Suggestion] =
+  //   (state.checkedFlags -- seenFlags).to(List).flatMap: flag =>
+  //     val allFlags = (flag.name :: flag.aliases)
+  //     if longOnly then
+  //       allFlags.collect { case text: Text => text }.match
+  //         case main :: aliases =>
+  //           List(Suggestion(Flag.serialize(main), flag.description, aliases = aliases.map(Flag.serialize(_))))
+  //         case Nil => Nil
       
-      else List(Suggestion(Flag.serialize(flag.name), flag.description, aliases = flag.aliases.map(Flag.serialize(_))))
+  //     else List(Suggestion(Flag.serialize(flag.name), flag.description, aliases = flag.aliases.map(Flag.serialize(_))))
 
-  override def restrict(position: Int, predicate: Suggestion => Boolean): Unit =
-    suggestionsMap(position) = () => suggestionsMap(position)().filter(predicate)
+  // override def explain[TextType](explanation: Maybe[TextType])(using printable: Printable[TextType]): Unit =
+  //   explanationValue = explanation.mm: explanation =>
+  //     printable.print(explanation)
   
-  override def map(position: Int, fn: Suggestion => Suggestion): Unit =
-    suggestionsMap(position) = () => suggestionsMap(position)().map(fn)
-
-  override def explain[TextType](explanation: Maybe[TextType])(using printable: Printable[TextType]): Unit =
-    explanationValue = explanation.mm: explanation =>
-      printable.print(explanation)
+  //override def suggest(flag: Flag[?]): Unit = if !flag.secret then checkedFlags += flag
   
-  override def suggest(flag: Flag[?]): Unit = if !flag.secret then checkedFlags += flag
+  // override def suggest
+  //     [OperandType]
+  //     (subcommand: Subcommand[OperandType])
+  //     (using suggestions: Suggestions[OperandType])
+  //     : Unit =
+  //   suggestionsMap(subcommand.position) = () => suggestions.suggest().to(List)
   
-  override def suggest
-      [OperandType]
-      (subcommand: Subcommand[OperandType])
-      (using suggestions: Suggestions[OperandType])
-      : Unit =
-    suggestionsMap(subcommand.position) = () => suggestions.suggest().to(List)
+  //override def acknowledge(flag: Flag[?]): Unit = if !flag.repeatable then seenFlags += flag
   
-  override def acknowledge(flag: Flag[?]): Unit = if !flag.repeatable then seenFlags += flag
+  // override def suggest(argument: Argument, update: (previous: List[Suggestion]) ?=> List[Suggestion]): Unit =
+  //   updateSuggestions(argument, update(using _))
   
-  override def suggest(position: Int, fn: => List[Suggestion]): Unit =
-    suggestionsMap(position) = () => fn
-  
-  override def explanation: Maybe[Text] = explanationValue
-  override def suggestions(position: Int): List[Suggestion] = suggestionsMap.getOrElse(position, () => Nil)()
+  //override def explanation: Maybe[Text] = explanationValue
+  //override def suggestions(argument: Argument): List[Suggestion] = suggestionsArray(argument.position)()
 
   def serialize: List[Text] = shell match
     case Shell.Zsh =>
@@ -159,11 +153,14 @@ extends CommandLine:
               case Unset             => t"$text"
               case description: Text => t"$text\t$description"
       
-case class Invocation
+case class CliInvocation
     (arguments: List[Argument], environment: Environment, workingDirectory: WorkingDirectory,
         context: ProcessContext)
-extends CommandLine, Stdio:
+extends Cli, Stdio:
   export context.stdio.{out, err, in}
+  
+  type State = Unit
+  def initialState: Unit = ()
 
   def listenForSignals(signals: Signal*): LazyList[Signal] = 
     val funnel: Funnel[Signal] = Funnel()
@@ -174,10 +171,10 @@ extends CommandLine, Stdio:
     funnel.stream
   
 abstract class Application:
-  protected given environment(using invocation: Invocation): Environment = invocation.environment
-  protected given workingDirectory(using invocation: Invocation): WorkingDirectory = invocation.workingDirectory
+  protected given environment(using invocation: CliInvocation): Environment = invocation.environment
+  protected given workingDirectory(using invocation: CliInvocation): WorkingDirectory = invocation.workingDirectory
   
-  def invoke(using CommandLine): Execution
+  def invoke(using Cli): Execution
 
   def main(textArguments: IArray[Text]): Unit =
     val context: ProcessContext = ProcessContext(Stdio(System.out, System.err, System.in))
@@ -186,22 +183,21 @@ abstract class Application:
     val arguments = textArguments.to(List).zipWithIndex.map: (text, index) =>
       Argument(index, text, Unset)
 
-    val invocation = Invocation(arguments, environments.jvm, workingDirectory, context)
+    val invocation = CliInvocation(arguments, environments.jvm, workingDirectory, context)
     
     invoke(using invocation).execute(invocation) match
       case ExitStatus.Ok           => System.exit(0)
       case ExitStatus.Fail(status) => System.exit(1)
 
-case class Execution(execute: Invocation => ExitStatus)
+case class Execution(execute: CliInvocation => ExitStatus)
 
-def execute(block: Effectful ?=> Invocation ?=> ExitStatus): Execution = Execution(block(using ###)(using _))
+def execute(block: Effectful ?=> CliInvocation ?=> ExitStatus): Execution = Execution(block(using ###)(using _))
 
 erased trait Effectful
 
-extension (argument: Argument)(using commandLine: CommandLine)
-  def suggest(fn: => List[Suggestion]): Unit = commandLine.suggest(argument.position, fn)
-  def map(fn: Suggestion => Suggestion): Unit = commandLine.map(argument.position, fn)
-  def restrict(predicate: Suggestion => Boolean): Unit = commandLine.restrict(argument.position, predicate)
-  def suggestFlags(longOnly: Boolean): Unit =
-    commandLine.suggest(argument.position, commandLine.flagSuggestions(longOnly))
+extension (argument: Argument)(using cli: Cli)
+  def suggest(suggestions: List[Suggestion] ?=> List[Suggestion]): Unit =
+    cli match
+      case cli: CliCompletion => cli.updateSuggestions(argument, suggestions(using _))
+      case _                  => ()
 

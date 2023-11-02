@@ -11,11 +11,11 @@ repo propensive/surveillance
 project exoskeleton
   module args
     sources  src/args
-    include  spectacular/core gossamer/core
+    include  spectacular/core gossamer/core ambience/core profanity/core
 
   module core
     sources  src/core
-    include  galilei/core ambience/core profanity/core surveillance/core exoskeleton/args
+    include  exoskeleton/args galilei/core surveillance/core
   
   module example
     sources   src/example

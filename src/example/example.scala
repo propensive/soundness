@@ -20,7 +20,6 @@ import perforate.*
 import spectacular.*
 import parasite.*
 import gossamer.*
-import escapade.*
 import anticipation.*
 import profanity.*
 import rudiments.*
