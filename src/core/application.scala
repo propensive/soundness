@@ -8,20 +8,6 @@ import turbulence.*
 import perforate.*
 
 abstract class Application:
-  protected given environment(using invocation: CliInvocation): Environment = invocation.environment
-  protected given workingDirectory(using invocation: CliInvocation): WorkingDirectory = invocation.workingDirectory
-  
+  import executives.direct
   def invoke(using Cli): ExitStatus
-
-  def main(textArguments: IArray[Text]): Unit =
-    val context: ProcessContext = ProcessContext(Stdio(System.out, System.err, System.in))
-    val workingDirectory = unsafely(workingDirectories.default)
-    
-    val arguments = textArguments.to(List).zipWithIndex.map: (text, index) =>
-      Argument(index, text, Unset)
-
-    val invocation = CliInvocation(arguments, environments.jvm, workingDirectory, context)
-    
-    invoke(using invocation) match
-      case ExitStatus.Ok           => System.exit(0)
-      case ExitStatus.Fail(status) => System.exit(1)
+  def main(textArguments: IArray[Text]): Unit = application(textArguments)(invoke)

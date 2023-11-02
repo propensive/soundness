@@ -63,7 +63,7 @@ class LazyEnvironment(vars: List[Text]) extends Environment:
 def daemon
     [ExecutionType, CliType <: Cli]
     (using executive: Executive[ExecutionType, CliType])
-    (block: CliType ?=> ExecutionType)
+    (block: DaemonClient ?=> CliType ?=> ExecutionType)
     : Unit =
   
   import environments.jvm
@@ -152,19 +152,19 @@ def daemon
         val exitPromise: Promise[ExitStatus] = Promise()
         val signalFunnel: Funnel[Signal] = Funnel()
 
-        val clientStdio: Stdio =
+        val stdio: Stdio =
           Stdio(ji.PrintStream(socket.getOutputStream.nn), ji.PrintStream(socket.getOutputStream.nn), in)
         
-        val session = DaemonClient(clientStdio, () => shutdown(), signalFunnel.stream, shellInput,
-            scriptName.decodeAs[Unix.Path], directory)
-
+        val client = DaemonClient(() => shutdown(), shellInput, scriptName.decodeAs[Unix.Path])
         val environment = LazyEnvironment(env)
         val workingDirectory = WorkingDirectory(directory)
         
         val async: Async[Unit] = Async:
           try
-            val cli: CliType = executive.cli(textArguments, environment, workingDirectory, session)
-            val exitStatus = executive.process(cli, block(using cli))
+            val cli: CliType = executive.cli(textArguments, environment, workingDirectory, stdio,
+                signalFunnel.stream)
+            
+            val exitStatus = executive.process(cli, block(using client)(using cli))
             exitPromise.fulfill(exitStatus)
           catch case error: Exception => exitPromise.fulfill(ExitStatus.Fail(1))
           finally
@@ -201,11 +201,7 @@ def daemon
 
     ExitStatus.Ok
   
-case class DaemonClient
-    (stdio: Stdio, shutdown: () => Unit, signals: LazyList[Signal], cliInput: CliInput, script: Unix.Path,
-        workDir: Text)
-    (using Monitor)
-extends WorkingDirectory(workDir), ProcessContext
+case class DaemonClient(shutdown: () => Unit, cliInput: CliInput, script: Unix.Path)(using Monitor)
 
 enum DaemonEvent:
   case Init(process: Pid, work: Text, script: Text, cliInput: CliInput, arguments: List[Text], environment: List[Text])

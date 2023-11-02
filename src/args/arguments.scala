@@ -21,6 +21,7 @@ import ambience.*
 import anticipation.*
 import spectacular.*
 import gossamer.*
+import profanity.*
 
 object Shell:
   given decoder: Decoder[Shell] = text => valueOf(text.lower.capitalize.s)
@@ -40,7 +41,7 @@ object Cli:
     textArguments.to(List).zipWithIndex.map: (text, index) =>
       Argument(index, text, if focus == index then position else Unset)
 
-trait Cli:
+trait Cli extends ProcessContext:
   type State
   
   private var currentState: State = initialState

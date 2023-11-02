@@ -32,8 +32,8 @@ case class SuggestionsState
 
 case class CliCompletion
     (fullArguments: List[Argument], arguments: List[Argument], environment: Environment,
-        workingDirectory: WorkingDirectory, context: ProcessContext, shell: Shell, currentArgument: Int,
-        focusPosition: Int)
+        workingDirectory: WorkingDirectory, shell: Shell, currentArgument: Int, focusPosition: Int,
+        stdio: Stdio, signals: LazyList[Signal])
 extends Cli:
   type State = SuggestionsState
   protected def initialState: SuggestionsState = SuggestionsState(Map(), Unset, Set(), Set())
@@ -143,7 +143,7 @@ package executives:
   given completions: Executive[Execution, Cli] with
     def cli
         (arguments: Iterable[Text], environment: Environment, workingDirectory: WorkingDirectory,
-            context: ProcessContext): Cli =
+            stdio: Stdio, signals: LazyList[Signal]): Cli =
       arguments match
         case t"{completions}" :: shellName :: As[Int](focus) :: As[Int](position) :: t"--" :: command :: rest =>
           
@@ -153,15 +153,15 @@ package executives:
             case t"fish" => Shell.Fish
           
           CliCompletion(Cli.arguments(arguments, focus, position), Cli.arguments(rest), environment,
-              workingDirectory, context, shell, focus - 1, position)
+              workingDirectory, shell, focus - 1, position, stdio, signals)
           
         case other =>
-          CliInvocation(Cli.arguments(arguments), environment, workingDirectory, context)
+          CliInvocation(Cli.arguments(arguments), environment, workingDirectory, stdio, signals)
       
     def process(cli: Cli, execution: Execution): ExitStatus = cli match
       case invocation: CliInvocation =>
         execution.execute(invocation)
       
       case completion: CliCompletion =>
-        completion.serialize.foreach(Out.println(_)(using completion.context.stdio))
+        completion.serialize.foreach(Out.println(_)(using completion.stdio))
         ExitStatus.Ok

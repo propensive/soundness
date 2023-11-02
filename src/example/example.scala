@@ -40,13 +40,17 @@ def fury(): Unit =
     val SubcommandAction = Subcommand[Action](0)
     
     SubcommandAction() match
-      case Unset => ()
+      case Unset =>
+        Lang()
+      
       case Action.Run   =>
         Lang()
         Size()
+      
       case Action.Build =>
         Size()
         Color()
+      
       case _ =>
         Age()
         
@@ -55,12 +59,13 @@ def fury(): Unit =
       Out.println(t"language = ${Lang().debug}")
       Out.println(t"size = ${Size().debug}")
       Out.println(t"age = ${Age().debug}")
-      ExitStatus.Ok
     
-    // supervise:
-      // terminal:
-        // Out.println(language.debug)
-        // ExitStatus.Ok
+      supervise:
+        terminal:
+          Out.println(language.debug)
+          ExitStatus.Ok
+      
+      ExitStatus.Ok
     
 
 object Language:
