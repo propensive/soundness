@@ -50,7 +50,7 @@ enum CliInput:
 
 case class ClientConnection
     (pid: Pid, async: Async[Unit], signals: Funnel[Signal], terminate: Promise[Unit], close: () => Unit,
-        exitPromise: Promise[ExitStatus])(using Monitor)
+        exitPromise: Promise[ExitStatus])
 
 class LazyEnvironment(vars: List[Text]) extends Environment:
   private lazy val map: Map[Text, Text] =
@@ -201,7 +201,7 @@ def daemon
 
     ExitStatus.Ok
   
-case class DaemonClient(shutdown: () => Unit, cliInput: CliInput, script: Unix.Path)(using Monitor)
+case class DaemonClient(shutdown: () => Unit, cliInput: CliInput, script: Unix.Path)
 
 enum DaemonEvent:
   case Init(process: Pid, work: Text, script: Text, cliInput: CliInput, arguments: List[Text], environment: List[Text])
