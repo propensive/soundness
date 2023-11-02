@@ -20,9 +20,13 @@ project exoskeleton
   module daemon
     sources  src/daemon
     include  exoskeleton/core surveillance/core
+
+  module completions
+    sources src/completions
+    include exoskeleton/core
   
   module example
     sources   src/example
-    include   exoskeleton/daemon escapade/core
+    include   exoskeleton/daemon escapade/core exoskeleton/completions
     main      exoskeleton.fury
     artifact  rage
