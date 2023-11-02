@@ -214,4 +214,3 @@ def parameters
   interpreter(arguments)
 
 def shell(using session: ShellSession): ShellSession = session
-
