@@ -41,7 +41,9 @@ import scala.compiletime.*
 import java.net as jn
 import java.io as ji
 
-case class ClientConnection(pid: Pid, async: Async[Unit], signals: Funnel[Signal], terminate: Promise[Unit], close: () => Unit, exit: Promise[ExitStatus])(using Monitor)
+case class ClientConnection
+    (pid: Pid, async: Async[Unit], signals: Funnel[Signal], terminate: Promise[Unit], close: () => Unit,
+        exitPromise: Promise[ExitStatus])(using Monitor)
 
 class LazyEnvironment(vars: List[Text]) extends Environment:
   private lazy val map: Map[Text, Text] =
@@ -51,29 +53,49 @@ class LazyEnvironment(vars: List[Text]) extends Environment:
   
   def apply(key: Text): Maybe[Text] = map.get(key).getOrElse(Unset)
 
-def application(arguments: Iterable[Text])(block: Cli ?=> Execution): Unit =
-  val arguments2 = arguments.to(List).zipWithIndex.map: (text, index) =>
-    Argument(index, text, Unset)
+package executives:
+  given completions: Executive[Execution, Cli] with
+    def cli
+        (arguments: Iterable[Text], environment: Environment, workingDirectory: WorkingDirectory,
+            context: ProcessContext): Cli =
+      arguments match
+        case t"{completions}" :: shellName :: As[Int](focus) :: As[Int](position) :: t"--" :: command :: rest =>
+          
+          val shell = shellName match
+            case t"zsh"  => Shell.Zsh
+            case t"bash" => Shell.Bash
+            case t"fish" => Shell.Fish
+          
+          CliCompletion(Cli.arguments(arguments, focus, position), Cli.arguments(rest), environment,
+              workingDirectory, context, shell, focus - 1, position)
+          
+        case other =>
+          CliInvocation(Cli.arguments(arguments), environment, workingDirectory, context)
+      
+    def process(cli: Cli, execution: Execution): ExitStatus = cli match
+      case invocation: CliInvocation =>
+        execution.execute(invocation)
+      
+      case completion: CliCompletion =>
+        completion.serialize.foreach(Out.println(_)(using completion.context.stdio))
+        ExitStatus.Ok
 
-  block(using CliInvocation(arguments2, environments.jvm, workingDirectories.default, ProcessContext(stdioSources.jvm)))
-
-def daemon(block: Cli ?=> DaemonClient ?=> Execution): Unit =
-  given invocation: CliInvocation = CliInvocation(Nil, environments.jvm, workingDirectories.default, ProcessContext(stdioSources.jvm))
-  Daemon(cli => session => block(using cli)(using session)).invoke.execute(invocation)
-
-class Daemon(block: Cli => DaemonClient => Execution) extends Application:
-  daemon =>
+def daemon
+    [ExecutionType, CliType <: Cli]
+    (using executive: Executive[ExecutionType, CliType])
+    (block: CliType ?=> ExecutionType)
+    : Unit =
   
   import environments.jvm
   import errorHandlers.throwUnsafely
-
-  private val xdg = Xdg()
-  private val furyDir: Directory = (xdg.runtimeDir.or(xdg.stateHome) / p"fury").as[Directory]
-  private val portFile: Path = furyDir / p"port"
-  private val waitFile: Path = furyDir / p"wait"
-  private val clients: scm.HashMap[Pid, ClientConnection] = scm.HashMap()
-  private var continue: Boolean = true
-
+  
+  val xdg = Xdg()
+  val furyDir: Directory = (xdg.runtimeDir.or(xdg.stateHome) / p"fury").as[Directory]
+  val portFile: Path = furyDir / p"port"
+  val waitFile: Path = furyDir / p"wait"
+  val clients: scm.HashMap[Pid, ClientConnection] = scm.HashMap()
+  var continue: Boolean = true
+  
   lazy val termination: Unit =
     portFile.wipe()
     System.exit(0)
@@ -82,7 +104,11 @@ class Daemon(block: Cli => DaemonClient => Execution) extends Application:
     Out.println(t"Shutdown daemon")
     termination
 
-  def client(socket: jn.Socket)(using Monitor, Stdio, Raises[StreamCutError], Raises[UndecodableCharError], Raises[NumberError]): Unit =
+  def client
+      (socket: jn.Socket)
+      (using Monitor, Stdio, Raises[StreamCutError], Raises[UndecodableCharError], Raises[NumberError])
+      : Unit =
+
     val in = socket.getInputStream.nn
     val reader = ji.BufferedReader(ji.InputStreamReader(in, "UTF-8"))
 
@@ -99,17 +125,17 @@ class Daemon(block: Cli => DaemonClient => Execution) extends Application:
       
       buffer
 
-    val message: Maybe[LauncherEvent] = line() match
+    val message: Maybe[DaemonEvent] = line() match
       case t"s" =>
         val pid: Pid = line().decodeAs[Pid]
         val signal: Signal = line().decodeAs[Signal]
-        LauncherEvent.Trap(pid, signal)
+        DaemonEvent.Trap(pid, signal)
       
       case t"x" =>
-        LauncherEvent.Exit(line().decodeAs[Pid])
+        DaemonEvent.Exit(line().decodeAs[Pid])
       
       case t"i" =>
-        val stdin: ShellInput = if line() == t"p" then ShellInput.Pipe else ShellInput.Terminal
+        val cliInput: CliInput = if line() == t"p" then CliInput.Pipe else CliInput.Terminal
         val pid: Pid = Pid(line().decodeAs[Int])
         val script: Text = line()
         val pwd: Text = line()
@@ -117,7 +143,7 @@ class Daemon(block: Cli => DaemonClient => Execution) extends Application:
         val textArguments: List[Text] = chunk().cut(t"\u0000").take(argCount)
         val env: List[Text] = chunk().cut(t"\u0000").init
 
-        LauncherEvent.Init(pid, pwd, script, stdin, textArguments, env)
+        DaemonEvent.Init(pid, pwd, script, cliInput, textArguments, env)
       
       case _ =>
         Unset
@@ -127,87 +153,82 @@ class Daemon(block: Cli => DaemonClient => Execution) extends Application:
         Out.println(t"Received unrecognized message")
         socket.close()
 
-      case LauncherEvent.Trap(process, signal) =>
+      case DaemonEvent.Trap(process, signal) =>
         Out.println(t"Received signal $signal")
         clients(process).signals.put(signal)
         socket.close()
       
-      case LauncherEvent.Exit(process) =>
+      case DaemonEvent.Exit(process) =>
         Out.println(t"Received exit status request from $process")
-        val exitStatus: ExitStatus = clients(process).exit.await()
+        val exitStatus: ExitStatus = clients(process).exitPromise.await()
         
         socket.getOutputStream.nn.write(exitStatus().show.bytes.mutable(using Unsafe))
         socket.close()
         clients -= process
 
-      case LauncherEvent.Init(process, directory, scriptName, shellInput, textArguments, env) =>
+      case DaemonEvent.Init(process, directory, scriptName, shellInput, textArguments, env) =>
         Out.println(t"Received init $process")
         val promise: Promise[Unit] = Promise()
-        val exit: Promise[ExitStatus] = Promise()
+        val exitPromise: Promise[ExitStatus] = Promise()
         val signalFunnel: Funnel[Signal] = Funnel()
 
         val clientStdio: Stdio =
           Stdio(ji.PrintStream(socket.getOutputStream.nn), ji.PrintStream(socket.getOutputStream.nn), in)
         
-        val session = DaemonClient(clientStdio, () => daemon.shutdown(), signalFunnel.stream, shellInput,
+        val session = DaemonClient(clientStdio, () => shutdown(), signalFunnel.stream, shellInput,
             scriptName.decodeAs[Unix.Path], directory)
 
         val environment = LazyEnvironment(env)
+        val workingDirectory = WorkingDirectory(directory)
         
         val async: Async[Unit] = Async:
           try
-            makeCli(textArguments, environment, WorkingDirectory(directory), session) match
-              case invocation: CliInvocation =>
-                exit.fulfill(block(invocation)(session).execute(invocation))
-              
-              case completion: CliCompletion =>
-                exit.fulfill:
-                  block(completion)(session)
-                  completion.serialize.foreach(Out.println(_)(using completion.context.stdio))
-                  ExitStatus.Ok
-              
-          catch case error: Exception => exit.offer(ExitStatus.Fail(1))
+            val cli: CliType = executive.cli(textArguments, environment, workingDirectory, session)
+            val exitStatus = executive.process(cli, block(using cli))
+            exitPromise.fulfill(exitStatus)
+          catch case error: Exception => exitPromise.fulfill(ExitStatus.Fail(1))
           finally
             socket.close()
             Out.println(t"Closed connection to ${process.value}")
         
-        clients(process) = ClientConnection(process, async, signalFunnel, promise, () => socket.close(), exit)
+        clients(process) = ClientConnection(process, async, signalFunnel, promise, () => socket.close(), exitPromise)
 
-  def invoke(using cli: Cli): Execution = cli match
-    case given CliInvocation =>
-      Async.onShutdown:
-        waitFile.wipe()
-        portFile.wipe()
+  application(using executives.direct)(Nil):
+    import stdioSources.jvm
+    import workingDirectories.default
+
+    Async.onShutdown:
+      waitFile.wipe()
+      portFile.wipe()
       
-      execute:
-        supervise:
-          Async:
-            sh"flock -u -x -n $portFile cat".exec[Unit]()
-            shutdown()
+    supervise:
+      Async:
+        sh"flock -u -x -n $portFile cat".exec[Unit]()
+        shutdown()
 
-          Async:
-            safely(furyDir.watch()).mm: watcher =>
-              watcher.stream.foreach:
-                case Delete(_, t"port") => shutdown()
-                case _ => ()
-              
-          val socket: jn.ServerSocket = jn.ServerSocket(0)
-          val port: Int = socket.getLocalPort
-          port.show.writeTo(portFile)
-          waitFile.touch()
-          waitFile.wipe()
-          while continue do safely(client(socket.accept().nn))
+      Async:
+        safely(furyDir.watch()).mm: watcher =>
+          watcher.stream.foreach:
+            case Delete(_, t"port") => shutdown()
+            case _ => ()
+          
+      val socket: jn.ServerSocket = jn.ServerSocket(0)
+      val port: Int = socket.getLocalPort
+      port.show.writeTo(portFile)
+      waitFile.touch()
+      waitFile.wipe()
+      while continue do safely(client(socket.accept().nn))
 
-        ExitStatus.Ok
-
+    ExitStatus.Ok
+  
 case class DaemonClient
-    (stdio: Stdio, shutdown: () => Unit, signals: LazyList[Signal], shellInput: ShellInput, script: Unix.Path,
+    (stdio: Stdio, shutdown: () => Unit, signals: LazyList[Signal], cliInput: CliInput, script: Unix.Path,
         workDir: Text)
     (using Monitor)
 extends WorkingDirectory(workDir), ProcessContext
 
-enum LauncherEvent:
-  case Init(process: Pid, work: Text, script: Text, input: ShellInput, arguments: List[Text], environment: List[Text])
+enum DaemonEvent:
+  case Init(process: Pid, work: Text, script: Text, cliInput: CliInput, arguments: List[Text], environment: List[Text])
   case Trap(process: Pid, signal: Signal)
   case Exit(process: Pid)
 

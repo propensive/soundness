@@ -28,31 +28,31 @@ import hieroglyph.*, textWidthCalculation.uniform
 
 import sun.misc as sm
 
-def makeCli(fullArguments: List[Text], environment: Environment, workingDirectory: WorkingDirectory,
-    context: ProcessContext): Cli =
-  fullArguments match
-    case t"{completions}" :: shellName :: As[Int](focus) :: As[Int](position) :: t"--" :: rest =>
-      val shell = shellName match
-        case t"zsh"  => Shell.Zsh
-        case t"bash" => Shell.Bash
-        case t"fish" => Shell.Fish
+// def makeCli(fullArguments: List[Text], environment: Environment, workingDirectory: WorkingDirectory,
+//     context: ProcessContext): Cli =
+//   fullArguments match
+//     case t"{completions}" :: shellName :: As[Int](focus) :: As[Int](position) :: t"--" :: rest =>
+//       val shell = shellName match
+//         case t"zsh"  => Shell.Zsh
+//         case t"bash" => Shell.Bash
+//         case t"fish" => Shell.Fish
       
-      val arguments = rest.drop(1).padTo(focus, t"").zipWithIndex.map: (text, index) =>
-        Argument(index, text, if focus == index then position else Unset)
+//       val arguments = rest.drop(1).padTo(focus, t"").zipWithIndex.map: (text, index) =>
+//         Argument(index, text, if focus == index then position else Unset)
 
-      CliCompletion(fullArguments, arguments, environment, workingDirectory, context, shell, focus - 1, position)
+//       CliCompletion(arguments, arguments, environment, workingDirectory, context, shell, focus - 1, position)
     
-    case other =>
-      val arguments = fullArguments.zipWithIndex.map: (text, index) =>
-        Argument(index, text, Unset)
+//     case other =>
+//       val arguments = fullArguments.zipWithIndex.map: (text, index) =>
+//         Argument(index, text, Unset)
       
-      CliInvocation(arguments, environment, workingDirectory, context)
+//       CliInvocation(arguments, environment, workingDirectory, context)
 
-object ShellInput:
-  given decoder: Decoder[ShellInput] = text => valueOf(text.lower.capitalize.s)
-  given encoder: Encoder[ShellInput] = _.toString.tt.lower
+object CliInput:
+  given decoder: Decoder[CliInput] = text => valueOf(text.lower.capitalize.s)
+  given encoder: Encoder[CliInput] = _.toString.tt.lower
 
-enum ShellInput:
+enum CliInput:
   case Terminal, Pipe
 
 case class SuggestionsState
@@ -60,7 +60,7 @@ case class SuggestionsState
         seenFlags: Set[Flag[?]])
 
 case class CliCompletion
-    (fullArguments: List[Text], arguments: List[Argument], environment: Environment,
+    (fullArguments: List[Argument], arguments: List[Argument], environment: Environment,
         workingDirectory: WorkingDirectory, context: ProcessContext, shell: Shell, currentArgument: Int,
         focusPosition: Int)
 extends Cli:

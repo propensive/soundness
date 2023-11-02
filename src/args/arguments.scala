@@ -32,6 +32,14 @@ enum Shell:
 object SimpleParameterInterpreter extends CliInterpreter[List[Argument]]:
   def apply(arguments: List[Argument])(using Cli): List[Argument] = arguments
 
+object Cli:
+  def arguments
+     (textArguments: Iterable[Text], focus: Maybe[Int] = Unset, position: Maybe[Int] = Unset)
+     : List[Argument] =
+
+    textArguments.to(List).zipWithIndex.map: (text, index) =>
+      Argument(index, text, if focus == index then position else Unset)
+
 trait Cli:
   type State
   
@@ -66,6 +74,8 @@ object Parameters:
 
 case class Argument(position: Int, value: Text, cursor: Maybe[Int]):
   def apply(): Text = value
+  def prefix: Maybe[Text] = cursor.mm(value.take(_))
+  def suffix: Maybe[Text] = cursor.mm(value.drop(_))
 
 package parameterInterpretation:
   given simple: SimpleParameterInterpreter.type = SimpleParameterInterpreter

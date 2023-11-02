@@ -15,10 +15,14 @@ project exoskeleton
 
   module core
     sources  src/core
-    include  exoskeleton/args galilei/core surveillance/core
+    include  exoskeleton/args galilei/core
+  
+  module daemon
+    sources  src/daemon
+    include  exoskeleton/core surveillance/core
   
   module example
     sources   src/example
-    include   exoskeleton/core escapade/core
+    include   exoskeleton/daemon escapade/core
     main      exoskeleton.fury
     artifact  rage
