@@ -54,17 +54,11 @@ trait Envelope[-EnvelopeType]:
   def id: Text
   def envelop(value: EnvelopeType): Text
 
-// package logging:
-//   given stdout(using Stdio, CharEncoder, Monitor): Log =
-//     val sink = Out.sink
+package logging:
+  given stdout(using Stdio, Monitor): Log = Log:
+    case _ => Out
   
-//     Log.route2:
-//       case _ => sink
-
-//   given silent: Log =
-//     import errorHandlers.throwUnsafely
-//     supervise:
-//       Log { case _ => Logger.drain }
+  given silent: Log = entry => ()
 
 object Logger:
   val drain: Logger = stream => ()
