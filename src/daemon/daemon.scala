@@ -61,9 +61,8 @@ class LazyEnvironment(vars: List[Text]) extends Environment:
   def variable(key: Text): Maybe[Text] = map.get(key).getOrElse(Unset)
 
 def daemon
-    [ExecutionType, CliType <: Cli]
-    (using executive: Executive[ExecutionType, CliType])
-    (block: DaemonClient ?=> CliType ?=> ExecutionType)
+    (using executive: Executive)
+    (block: DaemonClient ?=> executive.CliType ?=> executive.Return)
     : Unit =
   
   import environments.jvm
@@ -161,7 +160,7 @@ def daemon
         
         val async: Async[Unit] = Async:
           try
-            val cli: CliType = executive.cli(textArguments, environment, workingDirectory, stdio,
+            val cli: executive.CliType = executive.cli(textArguments, environment, workingDirectory, stdio,
                 signalFunnel.stream)
             
             val exitStatus = executive.process(cli, block(using client)(using cli))

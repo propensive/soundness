@@ -24,16 +24,21 @@ import turbulence.*
 
 import sun.misc as sm
 
-trait Executive[ReturnType, CliType <: Cli]:
+trait Executive:
+  type Return
+  type CliType <: Cli
+
   def cli
       (fullArguments: Iterable[Text], environment: Environment, workingDirectory: WorkingDirectory,
           stdio: Stdio, signals: LazyList[Signal])
       : CliType
   
-  def process(cli: CliType, result: ReturnType): ExitStatus 
+  def process(cli: CliType, result: Return): ExitStatus 
 
 package executives:
-  given direct: Executive[ExitStatus, CliInvocation] with
+  given direct: Executive with
+    type Return = ExitStatus
+    type CliType = CliInvocation
     
     def cli
         (arguments: Iterable[Text], environment: Environment, workingDirectory: WorkingDirectory, stdio: Stdio,
@@ -45,10 +50,9 @@ package executives:
     def process(cli: CliInvocation, exitStatus: ExitStatus): ExitStatus = exitStatus
 
 def application
-    [ReturnType, CliType <: Cli]
-    (using executive: Executive[ReturnType, CliType])
+    (using executive: Executive)
     (arguments: Iterable[Text], signals: List[Signal] = Nil)
-    (block: Cli ?=> ReturnType)
+    (block: Cli ?=> executive.Return)
     : Unit =
   
   def listen: LazyList[Signal] = 

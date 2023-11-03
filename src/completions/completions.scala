@@ -128,7 +128,10 @@ def explain(explanation: (previous: Maybe[Text]) ?=> Maybe[Text])(using cli: Cli
   case _                  => ()
 
 package executives:
-  given completions: Executive[Execution, Cli] with
+  given completions: Executive with
+    type CliType = Cli
+    type Return = Execution
+
     def cli
         (arguments: Iterable[Text], environment: Environment, workingDirectory: WorkingDirectory,
             stdio: Stdio, signals: LazyList[Signal]): Cli =
@@ -153,4 +156,3 @@ package executives:
 
       case invocation: CliInvocation =>
         execution.execute(invocation)
-      
