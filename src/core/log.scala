@@ -60,25 +60,16 @@ object Log:
       : Unit =
     ${Eucalyptus.recordLog('{Level.Fail}, 'value, 'log, 'communicable, 'realm)}
 
+  inline def apply(inline routes: PartialFunction[Entry, Any])(using monitor: Monitor): Log =
+    ${Eucalyptus.route('routes, 'monitor)}
+
 @capability
-class Log(actions: PartialFunction[Entry, Logger])(using Monitor):
-  transparent inline def thisLog = this
+abstract class Log():
+  println("Instantiating Log")
   def envelopes: ListMap[Text, Text] = ListMap()
   
-  class Streamer(target: Logger):
-    lazy val funnel: Funnel[Entry] = Funnel()
-    lazy val async: Async[Unit] = Async(target.write(unsafely(funnel.stream)))
+  def record(entry: Entry): Unit
 
-  private val streamers: TrieMap[Logger, Streamer] = TrieMap()
-  
-  private def put(target: Logger, entry: Entry): Unit =
-    streamers.putIfAbsent(target, Streamer(target))
-    val streamer = streamers(target)
-    streamer.funnel.put(entry)
-    streamer.async
-  
-  def record(entry: Entry): Unit = actions.lift(entry).foreach(thisLog.put(_, entry))
-
-  def tag[ValueType](value: ValueType)(using envelope: Envelope[ValueType]): Log = new Log(actions):
-    override def envelopes: ListMap[Text, Text] =
-      thisLog.envelopes.updated(envelope.id, envelope.envelop(value))
+  // def tag[ValueType](value: ValueType)(using envelope: Envelope[ValueType]): Log = new Log(actions):
+  //   override def envelopes: ListMap[Text, Text] =
+  //     thisLog.envelopes.updated(envelope.id, envelope.envelop(value))

@@ -16,39 +16,15 @@
 
 package eucalyptus
 
-import gossamer.*
 import rudiments.*
 import fulminate.*
-import anticipation.*
-import perforate.*
-import parasite.*
 import turbulence.*
-import spectacular.*
-import hieroglyph.*
+import anticipation.*
+import parasite.*
+import hieroglyph.*, charDecoders.utf8, charEncoders.utf8
 
 import scala.quoted.*
-
-object Realm:
-  given Show[Realm] = _.name
-  def make(name: Text)(using Unsafe.type): Realm = Realm(name)
-
-@missingContext("""|A contextual Realm is needed in scope. This is required for logging commands like `Log.info` and `Log.warn`, in order to tag them in log output. A realm can be specified with,
-                     |    given Realm(t"project")
-                     |typically at the top-level in a package called `project`. It is often useful to name the realm so that it can be referenced externally, for example when pattern matching on log messages, so,
-                     |    given realm: Realm = Realm(t"project")
-                     |may be more appropriate.""".stripMargin)
-case class Realm private(name: Text):
-  def unapply(entry: Entry): Boolean = entry.realm == this
-
-object Level:
-  given Ordering[Level] = Ordering[Int].on[Level](_.ordinal)
-  given Communicable[Level] = level => msg"$level"
-
-enum Level:
-  case Fine, Info, Warn, Fail
-  def unapply(entry: Entry): Boolean = entry.level == this
-  
-case class Entry(realm: Realm, level: Level, message: Message, timestamp: Long, envelopes: ListMap[Text, Text])
+import scala.collection.mutable as scm
 
 object Eucalyptus:
   def recordLog
@@ -70,46 +46,45 @@ object Eucalyptus:
     if !name.matches("[a-z]+") then fail(msg"the realm name should comprise only of lowercase letters")
     else '{Realm.make(${Expr(name)}.tt)(using Unsafe)}
 
-trait Envelope[-EnvelopeType]:
-  def id: Text
-  def envelop(value: EnvelopeType): Text
+  def route(routes: Expr[PartialFunction[Entry, Any]], monitor: Expr[Monitor])(using Quotes): Expr[Log] =
+    import quotes.reflect.*
+    
+    val count: Int = routes.asTerm match
+      case Inlined(_, _, Block(List(defDef), term)) => defDef match
+        case DefDef(ident, scrutineeType, returnType, Some(Match(matchId, caseDefs))) => caseDefs.length
+    
+    '{
+      val loggers: Array[Logger | Null] = new Array(${Expr(count)})
 
-package logging:
-  given stdout(using Stdio, CharEncoder, Monitor): Log =
-    val sink = Out.sink
-  
-    Log:
-      case _ => sink
-
-  given silent: Log =
-    import errorHandlers.throwUnsafely
-    supervise:
-      Log { case _ => Logger.drain }
-
-object Logger:
-  val drain: Logger = stream => ()
-
-  def apply
-      [SinkType]
-      (sink: SinkType, appendable: Appendable[SinkType, Text], format: LogFormat[SinkType])
-      : Logger =
-    stream => safely(appendable.append(sink, stream.map(format(_))))
-
-trait Logger:
-  def write(stream: LazyList[Entry]): Unit 
-
-object LogFormat:
-  given standardAnsi[SinkType]: LogFormat[SinkType] = entry =>
-    import textWidthCalculation.uniform
-    val realm: Message = msg"${entry.realm.show.fit(8)}"
-    msg"${entry.timestamp} ${entry.level} $realm ${entry.message}".text
-  
-trait LogFormat[SinkType]:
-  def apply(entry: Entry): Text
-
-extension [SinkType](value: SinkType)
-  def sink(using appendable: Appendable[SinkType, Text], format: LogFormat[SinkType]): Logger =
-    Logger(value, appendable, format)
-
-extension (inline context: StringContext)
-  inline def realm(): Realm = ${Eucalyptus.realm('context)}
+      new Log():
+        def record(entry: Entry): Unit = ${
+          val pf = routes.asTerm match
+            case Inlined(_, _, Block(List(defDef), term)) => defDef match
+              case DefDef(ident, scrutineeType, returnType, Some(Match(matchId, caseDefs))) =>
+                val caseDefs2 = caseDefs.zipWithIndex.map:
+                  case (CaseDef(pattern, guard, target), index) => target.asExpr match
+                    case '{$target: targetType} =>
+                      def typeName = TypeRepr.of[targetType].show
+                      
+                      val logWriter: Expr[LogWriter[targetType]] = Expr.summon[LogWriter[targetType]].getOrElse:
+                        fail(msg"could not get a logger")
+                      
+                      val appendable = Expr.summon[Appendable[targetType, Text]]
+                      println(appendable)
+                      println(appendable.map(_.show))
+                      
+                      val action = '{
+                        loggers(${Expr(index)}) match
+                          case null => loggers(${Expr(index)}) = $logWriter.logger($target)
+                          case _    => ()
+                        
+                        loggers(${Expr(index)}).nn.put(entry)
+                      }
+                      
+                      CaseDef(pattern, guard, action.asTerm)
+              
+                val definition = DefDef.copy(defDef)(ident, scrutineeType, returnType, Some(Match(matchId, caseDefs2)))
+                Block(List(definition), term).asExprOf[PartialFunction[Entry, Any]]
+          '{$pf(entry)}
+        }
+    }
