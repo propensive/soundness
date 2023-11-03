@@ -31,6 +31,7 @@ object Tests extends Suite(t"Eucalyptus tests"):
       given Log = Log:
         case Warn() => Err
         case Fail() => Out
+        case _      => Syslog(t"tab")
     
       test(t"Log something"):
         given realm: Realm = realm"test"
