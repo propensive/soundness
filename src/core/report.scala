@@ -20,6 +20,7 @@ import rudiments.*
 import digression.*
 import anticipation.*
 import gossamer.*
+import perforate.*
 import chiaroscuro.*
 import ambience.*
 import escritoire.*, tableStyles.rounded
@@ -113,7 +114,7 @@ object TestReport:
   given Inclusion[TestReport, DebugInfo] = _.addDebugInfo(_, _)
 
 
-class TestReport(using env: Environment):
+class TestReport(using Environment):
   
   class TestsMap():
     private var tests: ListMap[TestId, ReportLine] = ListMap()
@@ -279,9 +280,7 @@ class TestReport(using env: Environment):
           if s.count < 2 then e"" else s.maxTime
       )
       
-    val columns = env(t"COLUMNS") match
-      case As[Int](cols) => cols
-      case _             => 120
+    val columns: Int = safely(Environment.columns).or(120)
 
     val summaryLines = lines.summaries
 
