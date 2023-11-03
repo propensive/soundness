@@ -65,7 +65,6 @@ object Log:
 
 @capability
 abstract class Log():
-  println("Instantiating Log")
   def envelopes: ListMap[Text, Text] = ListMap()
   
   def record(entry: Entry): Unit

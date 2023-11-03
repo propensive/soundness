@@ -69,10 +69,6 @@ object Eucalyptus:
                       val logWriter: Expr[LogWriter[targetType]] = Expr.summon[LogWriter[targetType]].getOrElse:
                         fail(msg"could not get a logger")
                       
-                      val appendable = Expr.summon[Appendable[targetType, Text]]
-                      println(appendable)
-                      println(appendable.map(_.show))
-                      
                       val action = '{
                         loggers(${Expr(index)}) match
                           case null => loggers(${Expr(index)}) = $logWriter.logger($target)
