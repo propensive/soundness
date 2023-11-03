@@ -119,6 +119,13 @@ class OsProcess private (java: ProcessHandle) extends ProcessRef:
     val duration = java.info.nn.totalCpuDuration.nn
     if duration.isPresent then SpecificDuration(duration.get.nn.toMillis) else Unset
 
+object Process:
+  given appendable
+      [ChunkType]
+      (using writable: Writable[ji.OutputStream, ChunkType])
+      : Appendable[Process[?, ?], ChunkType]^{writable} =
+    (process, stream) => process.stdin(stream)
+
 class Process[+ExecType <: Label, ResultType](process: java.lang.Process) extends ProcessRef:
   def pid: Pid = Pid(process.pid)
   def alive: Boolean = process.isAlive
