@@ -2,9 +2,10 @@
 # More information is available at: https://github.com/propensive/wrath/
 
 repo propensive/turbulence
+repo propensive/probably
 repo propensive/guillotine
 
-target eucalyptus/syslog
+target eucalyptus/test
 
 project eucalyptus
   module core
@@ -16,4 +17,10 @@ project eucalyptus
     compiler  scala
     sources   src/syslog
     include   guillotine/core eucalyptus/core
+
+  module test
+    compiler  scala
+    sources   src/test
+    include   probably/cli eucalyptus/syslog
+    main      eucalyptus.Tests
 
