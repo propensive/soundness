@@ -74,14 +74,14 @@ object Appendable:
   given stdoutBytes(using stdio: Stdio): SimpleAppendable[Out.type, Bytes] =
     (stderr, bytes) => stdio.write(bytes)
   
-  given stdoutText(using stdio: Stdio, enc: CharEncoder): SimpleAppendable[Out.type, Text] =
-    (stderr, text) => stdio.print(text)
+  given stdoutText(using stdio: Stdio): SimpleAppendable[Out.type, Text] =
+    (stdout, text) => stdio.print(text)
 
   given stderrBytes(using stdio: Stdio): SimpleAppendable[Err.type, Bytes] =
     (stderr, bytes) => stdio.writeErr(bytes)
   
-  given stderrText(using stdio: Stdio, enc: CharEncoder): SimpleAppendable[Err.type, Text] =
-    (stderr, text) => stdio.print(text)
+  given stderrText(using stdio: Stdio): SimpleAppendable[Err.type, Text] =
+    (stderr, text) => stdio.printErr(text)
 
   given outputStreamBytes(using streamCut: Raises[StreamCutError]): SimpleAppendable[ji.OutputStream, Bytes] =
     (outputStream, bytes) => outputStream.write(bytes.mutable(using Unsafe))
