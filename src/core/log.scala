@@ -61,21 +61,21 @@ object Log:
     ${Eucalyptus.recordLog('{Level.Fail}, 'value, 'log, 'communicable, 'realm)}
 
 @capability
-class Log(actions: PartialFunction[Entry, LogSink & Singleton]*)(using Monitor):
+class Log(actions: PartialFunction[Entry, Logger & Singleton]*)(using Monitor):
   transparent inline def thisLog = this
   def envelopes: ListMap[Text, Text] = ListMap()
   
-  class Streamer(target: LogSink):
+  class Streamer(target: Logger):
     lazy val funnel: Funnel[Entry] = Funnel()
-    lazy val task: Async[Unit] = Async(target.write(unsafely(funnel.stream)))
+    lazy val async: Async[Unit] = Async(target.write(unsafely(funnel.stream)))
 
-  private val streamers: TrieMap[LogSink, Streamer] = TrieMap()
+  private val streamers: TrieMap[Logger, Streamer] = TrieMap()
   
-  private def put(target: LogSink, entry: Entry): Unit =
+  private def put(target: Logger, entry: Entry): Unit =
     streamers.putIfAbsent(target, Streamer(target))
     val streamer = streamers(target)
     streamer.funnel.put(entry)
-    streamer.task
+    streamer.async
   
   def record(entry: Entry): Unit = actions.flatMap(_.lift(entry)).foreach(thisLog.put(_, entry))
 

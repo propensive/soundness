@@ -84,18 +84,19 @@ package logging:
   given silent: Log =
     import errorHandlers.throwUnsafely
     supervise:
-      Log { case _ => LogSink.drain }
+      Log { case _ => Logger.drain }
 
-object LogSink:
-  val drain = new LogSink:
+object Logger:
+  val drain = new Logger:
     def write(stream: LazyList[Entry]): Unit = ()
 
-  def apply[SinkType](sink: SinkType, appendable: Appendable[SinkType, Text], format: LogFormat[SinkType]): LogSink = new LogSink:
-    type Sink = SinkType
-    def write(stream: LazyList[Entry]): Unit = unsafely(appendable.append(sink, stream.map(format(_))))
+  def apply
+      [SinkType]
+      (sink: SinkType, appendable: Appendable[SinkType, Text], format: LogFormat[SinkType])
+      : Logger =
+    stream => unsafely(appendable.append(sink, stream.map(format(_))))
 
-trait LogSink:
-  type Sink
+trait Logger:
   def write(stream: LazyList[Entry]): Unit 
 
 object LogFormat:
@@ -108,8 +109,8 @@ trait LogFormat[SinkType]:
   def apply(entry: Entry): Text
 
 extension [SinkType: LogFormat](value: SinkType)
-  def sink(using appendable: Appendable[SinkType, Text]): LogSink =
-    LogSink(value, appendable, summon[LogFormat[SinkType]])
+  def sink(using appendable: Appendable[SinkType, Text]): Logger =
+    Logger(value, appendable, summon[LogFormat[SinkType]])
 
 extension (inline context: StringContext)
   inline def realm(): Realm = ${Eucalyptus.realm('context)}
