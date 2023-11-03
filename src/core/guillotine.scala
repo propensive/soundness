@@ -125,6 +125,9 @@ object Process:
       (using writable: Writable[ji.OutputStream, ChunkType])
       : Appendable[Process[?, ?], ChunkType]^{writable} =
     (process, stream) => process.stdin(stream)
+  
+  given appendableText(using streamCut: Raises[StreamCutError]): Appendable[Process[?, ?], Text]^{streamCut} =
+    (process, stream) => process.stdin(stream.map(_.sysBytes))
 
 class Process[+ExecType <: Label, ResultType](process: java.lang.Process) extends ProcessRef:
   def pid: Pid = Pid(process.pid)
