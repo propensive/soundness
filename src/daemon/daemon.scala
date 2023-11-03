@@ -207,12 +207,4 @@ enum DaemonEvent:
   case Trap(process: Pid, signal: Signal)
   case Exit(process: Pid)
 
-def arguments(using cli: Cli): List[Argument] = cli.arguments
-
-def parameters
-    [ParametersType]
-    (using interpreter: CliInterpreter[ParametersType], cli: Cli)
-    : ParametersType =
-  interpreter(arguments)
-
 def shell(using session: DaemonClient): DaemonClient = session

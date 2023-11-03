@@ -74,3 +74,11 @@ case class Argument(position: Int, value: Text, cursor: Maybe[Int]):
 
 package parameterInterpretation:
   given simple: SimpleParameterInterpreter.type = SimpleParameterInterpreter
+
+def arguments(using cli: Cli): List[Argument] = cli.arguments
+
+def parameters
+    [ParametersType]
+    (using interpreter: CliInterpreter[ParametersType], cli: Cli)
+    : ParametersType =
+  interpreter(arguments)
