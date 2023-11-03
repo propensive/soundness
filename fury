@@ -2,11 +2,17 @@
 # More information is available at: https://github.com/propensive/wrath/
 
 repo propensive/turbulence
+repo propensive/guillotine
 
-target eucalyptus/core
+target eucalyptus/syslog
 
 project eucalyptus
   module core
     compiler  scala
     sources   src/core
     include   turbulence/core gossamer/core
+  
+  module syslog
+    compiler  scala
+    sources   src/syslog
+    include   guillotine/core

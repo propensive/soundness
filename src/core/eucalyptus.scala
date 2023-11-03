@@ -87,14 +87,13 @@ package logging:
       Log { case _ => Logger.drain }
 
 object Logger:
-  val drain = new Logger:
-    def write(stream: LazyList[Entry]): Unit = ()
+  val drain: Logger = stream => ()
 
   def apply
       [SinkType]
       (sink: SinkType, appendable: Appendable[SinkType, Text], format: LogFormat[SinkType])
       : Logger =
-    stream => unsafely(appendable.append(sink, stream.map(format(_))))
+    stream => safely(appendable.append(sink, stream.map(format(_))))
 
 trait Logger:
   def write(stream: LazyList[Entry]): Unit 
@@ -108,9 +107,9 @@ object LogFormat:
 trait LogFormat[SinkType]:
   def apply(entry: Entry): Text
 
-extension [SinkType: LogFormat](value: SinkType)
-  def sink(using appendable: Appendable[SinkType, Text]): Logger =
-    Logger(value, appendable, summon[LogFormat[SinkType]])
+extension [SinkType](value: SinkType)
+  def sink(using appendable: Appendable[SinkType, Text], format: LogFormat[SinkType]): Logger =
+    Logger(value, appendable, format)
 
 extension (inline context: StringContext)
   inline def realm(): Realm = ${Eucalyptus.realm('context)}
