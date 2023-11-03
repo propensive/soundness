@@ -31,7 +31,7 @@ import scala.language.experimental.captureChecking
 object Log:
   
   private val dateFormat = jt.SimpleDateFormat(t"yyyy-MMM-dd HH:mm:ss.SSS".s)
-  
+
   inline def fine
       [ValueType]
       (inline value: ValueType)
@@ -61,7 +61,7 @@ object Log:
     ${Eucalyptus.recordLog('{Level.Fail}, 'value, 'log, 'communicable, 'realm)}
 
 @capability
-class Log(actions: PartialFunction[Entry, Logger & Singleton]*)(using Monitor):
+class Log(actions: PartialFunction[Entry, Logger])(using Monitor):
   transparent inline def thisLog = this
   def envelopes: ListMap[Text, Text] = ListMap()
   
@@ -77,8 +77,8 @@ class Log(actions: PartialFunction[Entry, Logger & Singleton]*)(using Monitor):
     streamer.funnel.put(entry)
     streamer.async
   
-  def record(entry: Entry): Unit = actions.flatMap(_.lift(entry)).foreach(thisLog.put(_, entry))
+  def record(entry: Entry): Unit = actions.lift(entry).foreach(thisLog.put(_, entry))
 
-  def tag[ValueType](value: ValueType)(using envelope: Envelope[ValueType]): Log = new Log(actions*):
+  def tag[ValueType](value: ValueType)(using envelope: Envelope[ValueType]): Log = new Log(actions):
     override def envelopes: ListMap[Text, Text] =
       thisLog.envelopes.updated(envelope.id, envelope.envelop(value))

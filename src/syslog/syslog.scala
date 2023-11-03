@@ -19,3 +19,7 @@ object Syslog:
         import logging.silent
         val process: Process["logger", Unit] = sh"logger --tag ${syslog.tag}".fork[Unit]()
         process.stdin(stream)
+
+package logging:
+  given syslog(using realm: Realm, monitor: Monitor): Log = Log:
+    case _ => Syslog(realm.name).sink

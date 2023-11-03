@@ -15,4 +15,5 @@ project eucalyptus
   module syslog
     compiler  scala
     sources   src/syslog
-    include   guillotine/core
+    include   guillotine/core eucalyptus/core
+
