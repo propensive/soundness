@@ -91,8 +91,9 @@ class Async
 
           child.cancel()
           boundary.break()
-      
-    Thread(runnable).tap(_.start())
+    
+    // TODO: Check whether making all threads daemons is desirable
+    Thread(runnable).tap(_.setDaemon(true)).tap(_.start())
   
   private def identifier: Text = Text(s"${codepoint.text}")
   private def eval(monitor: Submonitor[ResultType]): ResultType = evaluate(using monitor)
