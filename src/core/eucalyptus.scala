@@ -75,7 +75,7 @@ trait Envelope[-EnvelopeType]:
   def envelop(value: EnvelopeType): Text
 
 package logging:
-  given stdout(using Stdio, Raises[StreamCutError], CharEncoder, Monitor): Log =
+  given stdout(using Stdio, CharEncoder, Monitor): Log =
     val sink = Out.sink
   
     Log:
