@@ -42,13 +42,22 @@ enum Signal extends TtyEvent:
   def name: Text = t"SIG${this.toString.show.upper}"
   def id: Int = if ordinal < 15 then ordinal - 1 else ordinal
 
-  // def sendTo(process: OsProcess)(using WorkingDirectory, Raises[ExecError]): Unit =
-  //   sh"kill -${shortName} ${process.pid.value}"()
-
 enum Keypress extends TtyEvent:
-  case Printable(char: Char)
-  case Function(number: Int)
-  case Ctrl(char: Char)
+  case CharKey(char: Char)
+  case FunctionKey(number: Int)
+  case Control(char: Char)
   case EscapeSeq(id: Char, content: Char*)
-  case Enter, Escape, Tab, Backspace, Delete, PageUp, PageDown, LeftArrow, RightArrow, UpArrow,
-      DownArrow, CtrlLeftArrow, CtrlRightArrow, CtrlUpArrow, CtrlDownArrow, End, Home, Insert
+  
+  case Tab, Home, End, PageUp, PageDown, Insert, Delete, Enter, Backspace, Escape
+
+  case LeftArrow
+  case RightArrow
+  case UpArrow
+  case DownArrow
+
+  case Shift(keypress: Keypress)
+  case Alt(keypress: Keypress)
+  case Ctrl(keypress: Keypress)
+  case Meta(keypress: Keypress)
+
+

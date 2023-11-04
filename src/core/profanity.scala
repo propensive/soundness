@@ -29,6 +29,32 @@ trait Keyboard:
   type Keypress
   def process(stream: LazyList[Char]): LazyList[Keypress]
 
+object Keyboard:
+  def modified(code: Char, keypress: Keypress): Keypress =
+    def recur(n: Int, modifiers: List[Keypress => Keypress], keypress: Keypress): Keypress = modifiers match
+      case Nil => keypress
+      
+      case modifier :: tail =>
+        recur(n*2, tail, if (n & 8) == 8 then modifier(keypress) else keypress)
+
+    recur(code - '1', List(Keypress.Meta(_), Keypress.Ctrl(_), Keypress.Alt(_), Keypress.Shift(_)), keypress)
+
+  def navigation(code: Char): Keypress = code match
+    case 'A' => Keypress.UpArrow
+    case 'B' => Keypress.DownArrow
+    case 'C' => Keypress.RightArrow
+    case 'D' => Keypress.LeftArrow
+    case 'F' => Keypress.End
+    case 'H' => Keypress.Home
+
+  def vt(code: Char): Keypress = code match
+    case '1' | '7' => Keypress.Home
+    case '2'       => Keypress.Insert
+    case '3'       => Keypress.Delete
+    case '4' | '8' => Keypress.End
+    case '5'       => Keypress.PageUp
+    case '6'       => Keypress.PageDown
+
 class StandardKeyboard()(using Monitor) extends Keyboard:
   type Keypress = profanity.Keypress | TerminalInfo
 
@@ -37,23 +63,19 @@ class StandardKeyboard()(using Monitor) extends Keyboard:
       safely(Async(rest.head).await(30L)) match
         case Unset => Keypress.Escape #:: process(rest)
         case _ => rest match
-          case 'O' #:: fn #:: rest                  => Keypress.Function(fn.toInt - 79) #:: process(rest)
-          case '[' #:: rest                         => rest match
-            case '3' #:: '~' #:: rest                 => Keypress.Delete #:: process(rest)
-            case '2' #:: '~' #:: rest                 => Keypress.Insert #:: process(rest)
-            case 'F' #:: rest                         => Keypress.End #:: process(rest)
-            case 'H' #:: rest                         => Keypress.Home #:: process(rest)
-            case '5' #:: '~' #:: rest                 => Keypress.PageUp #:: process(rest)
-            case '6' #:: '~' #:: rest                 => Keypress.PageDown #:: process(rest)
-            case 'A' #:: rest                         => Keypress.UpArrow #:: process(rest)
-            case '1' #:: ';' #:: '5' #:: 'A' #:: rest => Keypress.CtrlUpArrow #:: process(rest)
-            case 'B' #:: rest                         => Keypress.DownArrow #:: process(rest)
-            case '1' #:: ';' #:: '5' #:: 'B' #:: rest => Keypress.CtrlDownArrow #:: process(rest)
-            case 'C' #:: rest                         => Keypress.RightArrow #:: process(rest)
-            case '1' #:: ';' #:: '5' #:: 'C' #:: rest => Keypress.CtrlRightArrow #:: process(rest)
-            case 'D' #:: rest                         => Keypress.LeftArrow #:: process(rest)
-            case '1' #:: ';' #:: '5' #:: 'D' #:: rest => Keypress.CtrlLeftArrow #:: process(rest)
-
+          case 'O' #:: fn #:: rest => Keypress.FunctionKey(fn.toInt - 79) #:: process(rest)
+          case '[' #:: rest        => rest match
+            case code #:: '~' #:: rest if '1' <= code <= '9' =>
+              Keyboard.vt(code) #:: process(rest)
+            case code #:: ';' #:: modifiers #:: '~' #:: rest if '1' <= code <= '9' =>
+              Keyboard.modified(modifiers, Keyboard.vt(code)) #:: process(rest)
+            
+            case '1' #:: ';' #:: modifiers #:: (code@('A' | 'B' | 'C' | 'D' | 'F' | 'H')) #:: rest =>
+              Keyboard.modified(modifiers, Keyboard.navigation(code)) #:: process(rest)
+              
+            case code #:: rest if 'A' <= code <= 'H' =>
+              Keyboard.navigation(code) #:: process(rest)
+            
             case '2' #:: '0' #:: '0' #:: '~' #:: tail =>
               val size = tail.indexOfSlice(List('\u001b', '[', '2', '0', '1', '~'))
               val content = tail.take(size).map(_.show).join
@@ -92,8 +114,8 @@ class StandardKeyboard()(using Monitor) extends Keyboard:
     case ('\b' | '\u007f') #:: rest           => Keypress.Backspace #:: process(rest)
     case '\u0009' #:: rest                    => Keypress.Tab #:: process(rest)
     case ('\u000a' | '\u000d') #:: rest       => Keypress.Enter #:: process(rest)
-    case char #:: rest if char < 32           => Keypress.Ctrl((char + 64).toChar) #:: process(rest)
-    case other #:: rest                       => Keypress.Printable(other) #:: process(rest)
+    case char #:: rest if char < 32           => Keypress.Control((char + 64).toChar) #:: process(rest)
+    case other #:: rest                       => Keypress.CharKey(other) #:: process(rest)
     case _                                    => LazyList()
 
 case class TerminalError(ttyMsg: Text) extends Error(msg"STDIN is not attached to a TTY: $ttyMsg")

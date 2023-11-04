@@ -31,7 +31,7 @@ object LineEditor:
     Out.print(render(initial))
 
     def finished(key: TtyEvent) =
-      key == Keypress.Enter || key == Keypress.Ctrl('D') || key == Keypress.Ctrl('C')
+      key == Keypress.Enter || key == Keypress.Control('D') || key == Keypress.Control('C')
 
     summon[Terminal].events.takeWhile(!finished(_)).foldLeft(LineEditor(initial, initial.length)):
       case (editor, next) =>
@@ -49,24 +49,24 @@ case class LineEditor(content: Text = t"", pos: Int = 0):
   import Keypress.*
 
   def apply(keypress: TtyEvent): LineEditor = try keypress match
-    case Printable(ch)  => copy(t"${content.take(pos)}$ch${content.drop(pos)}", pos + 1)
-    case Ctrl('U')      => copy(content.drop(pos), 0)
+    case CharKey(ch)      => copy(t"${content.take(pos)}$ch${content.drop(pos)}", pos + 1)
+    case Control('U')     => copy(content.drop(pos), 0)
 
-    case Ctrl('W')      => val prefix = content.take(0 max (pos - 1)).reverse.dropWhile(_ != ' ').reverse
-                           copy(t"$prefix${content.drop(pos)}", prefix.length)
+    case Control('W')     => val prefix = content.take(0 max (pos - 1)).reverse.dropWhile(_ != ' ').reverse
+                             copy(t"$prefix${content.drop(pos)}", prefix.length)
 
-    case Delete         => copy(t"${content.take(pos)}${content.drop(pos + 1)}")
-    case Backspace      => copy(t"${content.take(pos - 1)}${content.drop(pos)}", (pos - 1) max 0)
-    case Home           => copy(pos = 0)
-    case End            => copy(pos = content.length)
-    case LeftArrow      => copy(pos = (pos - 1) max 0)
-    case CtrlLeftArrow  => copy(pos = (pos - 2 max 0 to 0 by -1).find(content(_) == ' ').fold(0)(_ + 1))
+    case Delete           => copy(t"${content.take(pos)}${content.drop(pos + 1)}")
+    case Backspace        => copy(t"${content.take(pos - 1)}${content.drop(pos)}", (pos - 1) max 0)
+    case Home             => copy(pos = 0)
+    case End              => copy(pos = content.length)
+    case LeftArrow        => copy(pos = (pos - 1) max 0)
+    case Ctrl(LeftArrow)  => copy(pos = (pos - 2 max 0 to 0 by -1).find(content(_) == ' ').fold(0)(_ + 1))
 
-    case CtrlRightArrow => val range = ((pos + 1) min (content.length - 1)) to (content.length - 1)
-                           val newPos = range.find(content(_) == ' ').fold(content.length)(_ + 1)
-                           copy(pos = newPos min content.length)
-    case RightArrow     => copy(pos = (pos + 1) min content.length)
-    case _              => this
+    case Ctrl(RightArrow) => val range = ((pos + 1) min (content.length - 1)) to (content.length - 1)
+                             val newPos = range.find(content(_) == ' ').fold(content.length)(_ + 1)
+                             copy(pos = newPos min content.length)
+    case RightArrow       => copy(pos = (pos + 1) min content.length)
+    case _                => this
   catch case e: OutOfRangeError => this
 
   def unapply(stream: LazyList[TtyEvent])(using interaction: Interaction[LineEditor, Text])
@@ -87,10 +87,10 @@ trait Interaction[StateType, ResultType]:
     render(oldState, state)
 
     stream match
-      case Keypress.Enter #:: tail           => Some((result(state), tail))
-      case Keypress.Ctrl('C' | 'D') #:: tail => None
-      case other #:: tail                    => recur(tail, key(state, other), state)(key)
-      case _                                 => None
+      case Keypress.Enter #:: tail              => Some((result(state), tail))
+      case Keypress.Control('C' | 'D') #:: tail => None
+      case other #:: tail                       => recur(tail, key(state, other), state)(key)
+      case _                                    => None
 
   def apply(stream: LazyList[TtyEvent], state: StateType)(key: (StateType, TtyEvent) => StateType)
            : Option[(ResultType, LazyList[TtyEvent])] =
