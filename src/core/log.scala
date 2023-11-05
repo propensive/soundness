@@ -30,7 +30,7 @@ import scala.language.experimental.captureChecking
 
 object Log:
   
-  private val dateFormat = jt.SimpleDateFormat(t"yyyy-MMM-dd HH:mm:ss.SSS".s)
+  val dateFormat = jt.SimpleDateFormat(t"yyyy-MMM-dd HH:mm:ss.SSS".s)
 
   inline def fine
       [ValueType]

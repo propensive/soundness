@@ -27,11 +27,13 @@ import turbulence.*, stdioSources.jvm
 object Tests extends Suite(t"Eucalyptus tests"):
   def run(): Unit =
     import Level.*
+    given LogFormat[Out.type] = logFormats.standardColor[Out.type]
+    given LogFormat[Err.type] = logFormats.standardColor[Err.type]
     supervise:
       given Log = Log:
-        case Warn() => Err
+        case Warn() => Out
         case Fail() => Out
-        case _      => Syslog(t"tab")
+        case _      => Out//Syslog(t"tab")
     
       test(t"Log something"):
         given realm: Realm = realm"test"

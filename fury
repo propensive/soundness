@@ -18,9 +18,14 @@ project eucalyptus
     sources   src/syslog
     include   guillotine/core eucalyptus/core
 
+  module ansi
+    compiler  scala
+    sources   src/ansi
+    include   escapade/core eucalyptus/core
+
   module test
     compiler  scala
     sources   src/test
-    include   probably/cli eucalyptus/syslog
+    include   probably/cli eucalyptus/syslog eucalyptus/ansi
     main      eucalyptus.Tests
 
