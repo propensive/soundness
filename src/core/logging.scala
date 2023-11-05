@@ -32,11 +32,6 @@ object Realm:
   given Show[Realm] = _.name
   def make(name: Text)(using Unsafe.type): Realm = Realm(name)
 
-@missingContext("""|A contextual Realm is needed in scope. This is required for logging commands like `Log.info` and `Log.warn`, in order to tag them in log output. A realm can be specified with,
-                     |    given Realm(t"project")
-                     |typically at the top-level in a package called `project`. It is often useful to name the realm so that it can be referenced externally, for example when pattern matching on log messages, so,
-                     |    given realm: Realm = Realm(t"project")
-                     |may be more appropriate.""".stripMargin)
 case class Realm private(name: Text):
   def unapply(entry: Entry): Boolean = entry.realm == this
 

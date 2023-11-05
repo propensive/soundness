@@ -66,9 +66,4 @@ object Log:
 @capability
 abstract class Log():
   def envelopes: ListMap[Text, Text] = ListMap()
-  
   def record(entry: Entry): Unit
-
-  // def tag[ValueType](value: ValueType)(using envelope: Envelope[ValueType]): Log = new Log(actions):
-  //   override def envelopes: ListMap[Text, Text] =
-  //     thisLog.envelopes.updated(envelope.id, envelope.envelop(value))
