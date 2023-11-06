@@ -226,7 +226,7 @@ object Command:
   given Show[Command] = command => formattedArgs(command.args)
   
 case class Command(args: Text*) extends Executable:
-  def fork[ResultType]()(using working: WorkingDirectory, log: Log, exec: Raises[ExecError]): Process[Exec, ResultType] =
+  def fork[sealed ResultType]()(using working: WorkingDirectory, log: Log, exec: Raises[ExecError]): Process[Exec, ResultType] =
     val processBuilder = ProcessBuilder(args.ss*)
     
     working.directory.mm: directory =>
@@ -243,7 +243,7 @@ object Pipeline:
   given Show[Pipeline] = _.commands.map(_.show).join(t" | ")
   
 case class Pipeline(commands: Command*) extends Executable:
-  def fork[ResultType]()(using working: WorkingDirectory, log: Log, exec: Raises[ExecError]): Process[Exec, ResultType] =
+  def fork[sealed ResultType]()(using working: WorkingDirectory, log: Log, exec: Raises[ExecError]): Process[Exec, ResultType] =
     val processBuilders = commands.map: command =>
       val processBuilder = ProcessBuilder(command.args.ss*)
       
@@ -303,7 +303,7 @@ object Sh:
         case _ =>
           state
           
-    def parse(state: State, next: Text): State = next.chars.foldLeft(state): (state, next) =>
+    def parse(state: State, next: Text): State = next.chars.to(List).foldLeft(state): (state, next) =>
       ((state, next): @unchecked) match
         case (State(Awaiting, esc, args), ' ')          => State(Awaiting, false, args)
         case (State(Quotes1, false, rest :+ cur), '\\') => State(Quotes1, false, rest :+ t"$cur\\")
