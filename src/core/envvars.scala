@@ -53,7 +53,7 @@ object Environment extends Dynamic:
       raise(EnvironmentError(reader.defaultName))(reader.read(Text("")))
   
 @capability
-trait EnvironmentVariable[AliasType <: Label, VariableType]:
+trait EnvironmentVariable[AliasType <: Label, VariableType] extends Pure:
   inline def defaultName: Text = name.or(valueOf[AliasType].tt.uncamel.snake.upper)
   def name: Maybe[Text] = Unset
   def read(value: Text): VariableType
