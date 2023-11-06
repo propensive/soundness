@@ -123,17 +123,17 @@ sealed trait Path:
     
   def entryType
       ()(using dereferenceSymlinks: DereferenceSymlinks)(using io: Raises[IoError])
-      : EntryType =
+      : PathStatus =
     
     try (jnf.Files.getAttribute(java, "unix:mode", dereferenceSymlinks.options()*): @unchecked) match
       case mode: Int => (mode & 61440) match
-        case  4096 => EntryType.Fifo
-        case  8192 => EntryType.CharDevice
-        case 16384 => EntryType.Directory
-        case 24576 => EntryType.BlockDevice
-        case 32768 => EntryType.File
-        case 40960 => EntryType.Symlink
-        case 49152 => EntryType.Socket
+        case  4096 => PathStatus.Fifo
+        case  8192 => PathStatus.CharDevice
+        case 16384 => PathStatus.Directory
+        case 24576 => PathStatus.BlockDevice
+        case 32768 => PathStatus.File
+        case 40960 => PathStatus.Symlink
+        case 49152 => PathStatus.Socket
         case _     => throw Mistake(msg"an unexpected POSIX mode value was returned")
     
     catch
@@ -141,10 +141,10 @@ sealed trait Path:
         throw Mistake(msg"the file attribute unix:mode could not be accessed")
       
       case error: ji.FileNotFoundException =>
-        raise(IoError(this))(EntryType.File)
+        raise(IoError(this))(PathStatus.File)
       
       case error: ji.IOException =>
-        raise(IoError(this))(EntryType.File)
+        raise(IoError(this))(PathStatus.File)
 
   def as[EntryType <: Entry](using resolver: PathResolver[EntryType, this.type]): EntryType =
     resolver(this)
@@ -154,13 +154,13 @@ sealed trait Path:
       (using DereferenceSymlinks, Raises[IoError])
       : Boolean =
     inline erasedValue[EntryType] match
-      case _: Directory   => entryType() == EntryType.Directory
-      case _: File        => entryType() == EntryType.File
-      case _: Symlink     => entryType() == EntryType.Symlink
-      case _: Socket      => entryType() == EntryType.Socket
-      case _: Fifo        => entryType() == EntryType.Fifo
-      case _: BlockDevice => entryType() == EntryType.BlockDevice
-      case _: CharDevice  => entryType() == EntryType.CharDevice
+      case _: Directory   => entryType() == PathStatus.Directory
+      case _: File        => entryType() == PathStatus.File
+      case _: Symlink     => entryType() == PathStatus.Symlink
+      case _: Socket      => entryType() == PathStatus.Socket
+      case _: Fifo        => entryType() == PathStatus.Fifo
+      case _: BlockDevice => entryType() == PathStatus.BlockDevice
+      case _: CharDevice  => entryType() == PathStatus.CharDevice
   
   def make[EntryType <: Entry]()(using maker: EntryMaker[EntryType, this.type]): EntryType =
     maker(this)
@@ -214,8 +214,8 @@ object Windows:
     def fullname: Text =
       t"${Path.reachable.prefix(drive)}${descent.reverse.map(_.render).join(t"\\")}"
 
-  class SafePath(drive: Drive, val safeDescent: List[PathName[GeneralForbidden]])
-  extends Path(drive, safeDescent.map(_.widen[Forbidden]))
+  class SafePath(initDrive: Drive, val safeDescent: List[PathName[GeneralForbidden]])
+  extends Path(initDrive, safeDescent.map(_.widen[Forbidden]))
   
   object Link: 
     given creator: PathCreator[Link, Forbidden, Int] = Link(_, _)
@@ -404,22 +404,21 @@ sealed trait Entry:
     destination
       
 object PathResolver:
-  given entry
-      (using dereferenceSymlinks: DereferenceSymlinks, io: Raises[IoError],
-          notFound: Raises[NotFoundError])
-      : PathResolver[Entry, Path] =
-    new PathResolver[Entry, Path]:
-      def apply(path: Path): Entry =
-        if path.exists() then path.entryType() match
-          case EntryType.Directory => Directory(path)
-          case _                   => File(path)
-        else raise(NotFoundError(path))(Directory(path))
+  // given entry
+  //     (using dereferenceSymlinks: DereferenceSymlinks, io: Raises[IoError], notFound: Raises[NotFoundError])
+  //     : PathResolver[Entry, Path] =
+  //   new PathResolver[Entry, Path]:
+  //     def apply(path: Path): Entry =
+  //       if path.exists() then path.entryType() match
+  //         case PathStatus.Directory => Directory(path)
+  //         case _                    => File(path)
+  //       else raise(NotFoundError(path))(Directory(path))
 
   given file
       (using createNonexistent: CreateNonexistent, dereferenceSymlinks: DereferenceSymlinks,
           io: Raises[IoError])
       : PathResolver[File, Path] = path =>
-    if path.exists() && path.entryType() == EntryType.File then File(path)
+    if path.exists() && path.entryType() == PathStatus.File then File(path)
     else createNonexistent(path):
       jnf.Files.createFile(path.java)
     
@@ -429,14 +428,14 @@ object PathResolver:
       (using createNonexistent: CreateNonexistent, dereferenceSymlinks: DereferenceSymlinks,
           io: Raises[IoError])
       : PathResolver[Directory, Path] = path =>
-    if path.exists() && path.entryType() == EntryType.Directory then Directory(path)
+    if path.exists() && path.entryType() == PathStatus.Directory then Directory(path)
     else createNonexistent(path):
       jnf.Files.createDirectory(path.java)
     
     Directory(path)
 
 @capability
-trait PathResolver[EntryType <: Entry, -PathType <: Path]:
+trait PathResolver[sealed +EntryType <: Entry, -PathType <: Path]:
   def apply(value: PathType): EntryType
 
 object EntryMaker:
@@ -547,7 +546,7 @@ case class Symlink(path: Unix.Path) extends Unix.Entry
 case class BlockDevice(path: Unix.Path) extends Unix.Entry
 case class CharDevice(path: Unix.Path) extends Unix.Entry
 
-enum EntryType:
+enum PathStatus:
   case Fifo, CharDevice, Directory, BlockDevice, File, Symlink, Socket
 
 object DereferenceSymlinks:
@@ -577,7 +576,7 @@ object DeleteRecursively:
 
 @capability
 trait DeleteRecursively:
-  def conditionally[ResultType](path: Path)(operation: => ResultType): ResultType
+  def conditionally[sealed ResultType](path: Path)(operation: => ResultType): ResultType
 
 object OverwritePreexisting:
   given default(using Quickstart, Raises[OverwriteError]): OverwritePreexisting =
@@ -585,7 +584,7 @@ object OverwritePreexisting:
 
 @capability
 trait OverwritePreexisting:
-  def apply[ResultType](path: Path)(operation: => ResultType): ResultType
+  def apply[sealed ResultType](path: Path)(operation: => ResultType): ResultType
 
 object CreateNonexistentParents:
   given default(using Quickstart, Raises[IoError]): CreateNonexistentParents =
@@ -593,7 +592,7 @@ object CreateNonexistentParents:
 
 @capability
 trait CreateNonexistentParents:
-  def apply[ResultType](path: Path)(operation: => ResultType): ResultType
+  def apply[sealed ResultType](path: Path)(operation: => ResultType): ResultType
 
 object CreateNonexistent:
   given default(using Quickstart, Raises[IoError]): CreateNonexistent =
@@ -633,7 +632,7 @@ package filesystemOptions:
       (using io: Raises[IoError], notFound: Raises[NotFoundError])
       : DeleteRecursively =
     new DeleteRecursively:
-      def conditionally[ResultType](path: Path)(operation: => ResultType): ResultType =
+      def conditionally[sealed ResultType](path: Path)(operation: => ResultType): ResultType =
         given symlinks: DereferenceSymlinks = doNotDereferenceSymlinks
         given creation: CreateNonexistent = doNotCreateNonexistent
         
@@ -647,23 +646,23 @@ package filesystemOptions:
       (using unemptyDirectory: Raises[UnemptyDirectoryError])
       : DeleteRecursively =
     new DeleteRecursively:
-      def conditionally[ResultType](path: Path)(operation: => ResultType): ResultType =
+      def conditionally[sealed ResultType](path: Path)(operation: => ResultType): ResultType =
         try operation
         catch case error: jnf.DirectoryNotEmptyException => abort(UnemptyDirectoryError(path))
       
   given overwritePreexisting(using deleteRecursively: DeleteRecursively): OverwritePreexisting =
     new OverwritePreexisting:
-      def apply[ResultType](path: Path)(operation: => ResultType): ResultType =
+      def apply[sealed ResultType](path: Path)(operation: => ResultType): ResultType =
         deleteRecursively.conditionally(path)(operation)
       
   given doNotOverwritePreexisting(using overwrite: Raises[OverwriteError]): OverwritePreexisting =
     new OverwritePreexisting:
-      def apply[ResultType](path: Path)(operation: => ResultType): ResultType =
+      def apply[sealed ResultType](path: Path)(operation: => ResultType): ResultType =
         try operation catch case error: jnf.FileAlreadyExistsException => abort(OverwriteError(path))
       
   given createNonexistentParents(using Raises[IoError]): CreateNonexistentParents =
     new CreateNonexistentParents:
-      def apply[ResultType](path: Path)(operation: => ResultType): ResultType =
+      def apply[sealed ResultType](path: Path)(operation: => ResultType): ResultType =
         path.parent.mm: parent =>
           given DereferenceSymlinks = filesystemOptions.doNotDereferenceSymlinks
          
@@ -676,7 +675,7 @@ package filesystemOptions:
       (using notFound: Raises[NotFoundError])
       : CreateNonexistentParents =
     new CreateNonexistentParents:
-      def apply[ResultType](path: Path)(operation: => ResultType): ResultType =
+      def apply[sealed ResultType](path: Path)(operation: => ResultType): ResultType =
         try operation catch case error: ji.FileNotFoundException => abort(NotFoundError(path))
 
   given createNonexistent
@@ -711,7 +710,7 @@ extends Error(msg"the directory is not empty")
 case class ForbiddenOperationError(path: Path)
 extends Error(msg"insufficient permissions to modify $path")
 
-case class EntryTypeError(path: Path)
+case class PathStatusError(path: Path)
 extends Error(msg"the filesystem node at $path was expected to be a different type")
 
 case class SafeLink(ascent: Int, descent: List[PathName[GeneralForbidden]]) extends Link

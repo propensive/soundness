@@ -19,5 +19,4 @@ project galilei
     compiler  scala
     sources   src/test
     include   galilei/core probably/cli imperial/core
-    coverage  galilei/core
     main      galilei.Tests
