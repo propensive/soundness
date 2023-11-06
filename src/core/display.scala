@@ -25,30 +25,30 @@ import hieroglyph.*
 import spectacular.*
 import iridescence.*
 
-object Display:
-  given output: Display[Output] = identity(_)
-  given text: Display[Text] = text => Output(text)
-  given pid: Display[Pid] = pid => e"${pid.value.show}"
+object Displayable:
+  given output: Displayable[Output] = identity(_)
+  given text: Displayable[Text] = text => Output(text)
+  given pid: Displayable[Pid] = pid => e"${pid.value.show}"
 
-  given message: Display[Message] = _.fold[Output](e""): (acc, next, level) =>
+  given message: Displayable[Message] = _.fold[Output](e""): (acc, next, level) =>
     level match
       case 0 => e"$acc${colors.Khaki}($next)"
       case 1 => e"$acc$Italic(${colors.Gold}($next))"
       case _ => e"$acc$Italic($Bold(${colors.Yellow}($next)))"
 
-  given option[T: Display]: Display[Option[T]] =
+  given option[T: Displayable]: Displayable[Option[T]] =
     case None    => Output("empty".show)
-    case Some(v) => summon[Display[T]](v)
+    case Some(v) => summon[Displayable[T]](v)
   
-  given show[ValueType](using show: Show[ValueType]): Display[ValueType] = value =>
+  given show[ValueType](using show: Show[ValueType]): Displayable[ValueType] = value =>
     Output(show(value))
 
-  given exception(using TextWidthCalculator): Display[Exception] = e =>
-    summon[Display[StackTrace]](StackTrace.apply(e))
+  given exception(using TextWidthCalculator): Displayable[Exception] = e =>
+    summon[Displayable[StackTrace]](StackTrace.apply(e))
 
-  given error: Display[Error] = _.message.display
+  given error: Displayable[Error] = _.message.display
 
-  given (using TextWidthCalculator): Display[StackTrace] = stack =>
+  given (using TextWidthCalculator): Displayable[StackTrace] = stack =>
     val methodWidth = stack.frames.map(_.method.method.length).max
     val classWidth = stack.frames.map(_.method.className.length).max
     val fileWidth = stack.frames.map(_.file.length).max
@@ -73,7 +73,7 @@ object Display:
       case None        => root
       case Some(cause) => e"$root\n${colors.White}(caused by:)\n$cause"
   
-  given (using TextWidthCalculator): Display[StackTrace.Frame] = frame =>
+  given (using TextWidthCalculator): Displayable[StackTrace.Frame] = frame =>
     import colors.*
     val className = e"$MediumVioletRed(${frame.method.className.fit(40, Rtl)})"
     val method = e"$PaleVioletRed(${frame.method.method.fit(40)})"
@@ -81,19 +81,19 @@ object Display:
     val line = e"$MediumTurquoise(${frame.line.mm(_.show).or(t"?")})"
     e"$className$Gray(#)$method $file$Gray(:)$line"
 
-  given Display[StackTrace.Method] = method =>
+  given Displayable[StackTrace.Method] = method =>
     import colors.*
     val className = e"$MediumVioletRed(${method.className})"
     val methodName = e"$PaleVioletRed(${method.method})"
     e"$className$Gray(#)$methodName"
   
-  given (using decimalizer: Decimalizer): Display[Double] = double =>
+  given (using decimalizer: Decimalizer): Displayable[Double] = double =>
     Output.make(decimalizer.decimalize(double), _.copy(fg = colors.Gold.asInt))
 
-  given Display[Throwable] = throwable =>
+  given Displayable[Throwable] = throwable =>
     Output.make[String](throwable.getClass.getName.nn.show.cut(t".").last.s,
         _.copy(fg = colors.Crimson.asInt))
 
-trait Display[-ValueType] extends Showable[ValueType]:
+trait Displayable[-ValueType] extends Showable[ValueType]:
   def show(value: ValueType): Text = apply(value).plain
   def apply(value: ValueType): Output

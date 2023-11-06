@@ -85,8 +85,8 @@ trait Ansi2:
     new Substitution[Ansi.Input, ValueType, "t"]:
       def embed(value: ValueType) = Ansi.Input.TextInput:
         compiletime.summonFrom:
-          case display: Display[ValueType] => display(value)
-          case show: Show[ValueType]       => Output(show(value))
+          case display: Displayable[ValueType] => display(value)
+          case show: Show[ValueType]           => Output(show(value))
   
 
 object Ansi extends Ansi2:
@@ -188,7 +188,7 @@ object Output:
   given add: ClosedOperator["+", Output] = _.append(_)
 
   given textual: Textual[Output] with
-    type ShowType[-ValueType] = Display[ValueType]
+    type ShowType[-ValueType] = Displayable[ValueType]
     def string(text: Output): String = text.plain.s
     def length(text: Output): Int = text.plain.s.length
     def make(string: String): Output = Output(Text(string))
@@ -204,7 +204,7 @@ object Output:
     def unsafeChar(text: Output, index: Int): Char = text.plain.s.charAt(index)
     def indexOf(text: Output, sub: Text): Int = text.plain.s.indexOf(sub.s)
     
-    def show[ValueType](value: ValueType)(using display: Display[ValueType]) =
+    def show[ValueType](value: ValueType)(using display: Displayable[ValueType]) =
       display(value)
 
   def empty: Output = Output(t"")
