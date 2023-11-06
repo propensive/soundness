@@ -48,7 +48,10 @@ object Uuid:
 
 case class Uuid(msb: Long, lsb: Long):
   def java: ju.UUID = ju.UUID(msb, lsb)
-  def bytes: Bytes = Bytes(msb) ++ Bytes(lsb)
+  
+  def bytes: Bytes =
+    (Bytes(msb).mutable(using Unsafe) ++ Bytes(lsb).mutable(using Unsafe)).immutable(using Unsafe)
+
   def text: Text = this.java.toString.tt
   
   @targetName("invert")
