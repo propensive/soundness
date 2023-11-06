@@ -174,7 +174,7 @@ be used, but caution should be taken if there is a mismatch between the
 project's stability level and the importance of your own project.
 
 Spectacular is designed to be _small_. Its entire source code currently consists
-of 414 lines of code.
+of 416 lines of code.
 
 ## Building
 
