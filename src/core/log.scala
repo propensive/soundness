@@ -60,7 +60,7 @@ object Log:
       : Unit =
     ${Eucalyptus.recordLog('{Level.Fail}, 'value, 'log, 'communicable, 'realm)}
 
-  inline def apply(inline routes: PartialFunction[Entry, Any])(using monitor: Monitor): Log =
+  inline def route(inline routes: PartialFunction[Entry, Any])(using monitor: Monitor): Log =
     ${Eucalyptus.route('routes, 'monitor)}
 
 @capability

@@ -49,10 +49,6 @@ trait Envelope[-EnvelopeType]:
   def id: Text
   def envelop(value: EnvelopeType): Text
 
-package logging:
-  given stdout(using Stdio, Monitor): Log = Log:
-    case _ => Out
-  
   given silent: Log = entry => ()
 
 object Logger:
@@ -95,10 +91,21 @@ object LogFormat:
   given standard[TargetType]: LogFormat[TargetType] = entry =>
     import textWidthCalculation.uniform
     val realm: Message = msg"${entry.realm.show.fit(8)}"
-    msg"${Log.dateFormat.format(entry.timestamp).nn.tt} ${entry.level} $realm ${entry.message}".text+t"\n"
+    msg"${Log.dateFormat.format(entry.timestamp).nn.tt} ${entry.level} $realm ${entry.message}".text+"\n".tt
+    ???
   
 trait LogFormat[TargetType]:
   def apply(entry: Entry): Text
 
 extension (inline context: StringContext)
   inline def realm(): Realm = ${Eucalyptus.realm('context)}
+
+package logging:
+  given stdout(using Stdio, Monitor): Log = Log.route:
+    case _ => Out
+
+  given stderr(using Stdio, Monitor): Log = Log.route:
+    case _ => Err
+
+  given silent: Log = new Log:
+    def record(entry: Entry): Unit = ()
