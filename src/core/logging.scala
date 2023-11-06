@@ -91,8 +91,7 @@ object LogFormat:
   given standard[TargetType]: LogFormat[TargetType] = entry =>
     import textWidthCalculation.uniform
     val realm: Message = msg"${entry.realm.show.fit(8)}"
-    msg"${Log.dateFormat.format(entry.timestamp).nn.tt} ${entry.level} $realm ${entry.message}".text+"\n".tt
-    ???
+    msg"${Log.dateFormat.format(entry.timestamp).nn.tt} ${entry.level} $realm ${entry.message}".text+t"\n"
   
 trait LogFormat[TargetType]:
   def apply(entry: Entry): Text
