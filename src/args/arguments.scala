@@ -77,8 +77,12 @@ package parameterInterpretation:
 
 def arguments(using cli: Cli): List[Argument] = cli.arguments
 
+trait ParametersPostprocessor[ParametersType]:
+  def process(parameters: ParametersType): Unit
+
 def parameters
     [ParametersType]
-    (using interpreter: CliInterpreter[ParametersType], cli: Cli)
+    (using interpreter: CliInterpreter[ParametersType], cli: Cli,
+        postprocessor: ParametersPostprocessor[ParametersType])
     : ParametersType =
-  interpreter(arguments)
+  interpreter(arguments).tap(postprocessor.process)

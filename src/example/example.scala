@@ -63,8 +63,8 @@ def fury(): Unit =
       supervise:
         terminal:
           tty.events.foreach:
-            case Keypress.Printable('Q') => summon[DaemonClient].shutdown()
-            case other                   => Out.println(other.debug)
+            case Keypress.CharKey('Q') => summon[DaemonClient].shutdown()
+            case other                 => Out.println(other.debug)
 
           ExitStatus.Ok
 
@@ -85,4 +85,3 @@ object Action:
 
 enum Action:
   case Run, Build, Fire, Cheat
-
