@@ -18,20 +18,24 @@ package exoskeleton
 
 import perforate.*
 import spectacular.*
-import parasite.*
 import gossamer.*
 import anticipation.*
 import profanity.*
+import eucalyptus.*
+import parasite.*
 import rudiments.*
 import turbulence.*
 
 import executives.completions
 
+given Realm = realm"exosk"
+given LogFormat[Out.type] = logFormats.standardColor[Out.type]
+
 @main
 def fury(): Unit =
   import parameterInterpretation.posixParameters
   import errorHandlers.throwUnsafely
-  
+    
   daemon:
     val Lang = Flag[Language](t"speech", false, List('s'), t"the two-letter code of the language")
     val Size = Flag[Text](t"size", false, List('S'), t"big, medium or small")
@@ -56,15 +60,21 @@ def fury(): Unit =
         
 
     execute:
-      Out.println(t"language = ${Lang().debug}")
-      Out.println(t"size = ${Size().debug}")
-      Out.println(t"age = ${Age().debug}")
-    
       supervise:
+        given Log = Log.route:
+          case Level.Info() => Out
+          case Level.Fine() => Syslog(t"output")
+          case Level.Warn() => Out
+          case _ => Syslog(t"exo")
+          
+        Log.fine(t"language = ${Lang().debug}")
+        Log.fine(t"size = ${Size().debug}")
+        Log.fine(t"age = ${Age().debug}")
+
         terminal:
           tty.events.foreach:
             case Keypress.CharKey('Q') => summon[DaemonClient].shutdown()
-            case other                 => Out.println(other.debug)
+            case other                 => Log.info(other.debug)
 
           ExitStatus.Ok
 
