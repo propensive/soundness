@@ -45,7 +45,7 @@ object Async:
     Hook(thread)
 
   def race
-      [AsyncType]
+      [sealed AsyncType]
       (asyncs: Vector[Async[AsyncType]])(using cancel: Raises[CancelError], monitor: Monitor)
       : Async[AsyncType] =
 
@@ -64,7 +64,7 @@ object Async:
 
 @capability
 class Async
-    [+ResultType]
+    [sealed +ResultType]
     (evaluate: Submonitor[ResultType] ?=> ResultType)
     (using monitor: Monitor, codepoint: Codepoint):
   async =>
@@ -132,14 +132,14 @@ class Async
       case Suspended(n)         => if force then Active else Suspended(n - 1)
       case other                => other
 
-  def map[ResultType2](fn: ResultType => ResultType2)(using Raises[CancelError]): Async[ResultType2] =
+  def map[sealed ResultType2](fn: ResultType => ResultType2)(using Raises[CancelError]): Async[ResultType2] =
     Async(fn(async.await()))
   
-  def foreach[ResultType2](fn: ResultType => ResultType2)(using Raises[CancelError]): Unit =
+  def foreach[sealed ResultType2](fn: ResultType => ResultType2)(using Raises[CancelError]): Unit =
     Async(fn(async.await()))
   
   def flatMap
-      [ResultType2]
+      [sealed ResultType2]
       (fn: ResultType => Async[ResultType2])
       (using Raises[CancelError])
       : Async[ResultType2] =
@@ -162,6 +162,6 @@ def sleep[DurationType: GenericDuration](duration: DurationType)(using monitor: 
 def sleepUntil[InstantType: GenericInstant](instant: InstantType)(using monitor: Monitor): Unit =
   monitor.sleep(instant.millisecondsSinceEpoch - System.currentTimeMillis)
 
-extension [ResultType](asyncs: Seq[Async[ResultType]]^)
+extension [sealed ResultType](asyncs: Seq[Async[ResultType]]^)
   def sequence(using cancel: Raises[CancelError], mon: Monitor): Async[Seq[ResultType^{}]] = Async:
     asyncs.map(_.await())
