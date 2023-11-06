@@ -131,7 +131,7 @@ object TextConversion:
       def apply(vector: Vector[ElemType]): Text =
         vector.map(_.debug).mkString("⟨ ", " ", " ⟩").tt
   
-  inline given array[ElemType]: Debug[Array[ElemType]] =
+  inline given array[sealed ElemType]: Debug[Array[ElemType]] =
     new Debug[Array[ElemType]]:
       def apply(array: Array[ElemType]): Text = Text:
         array.zipWithIndex.map: (value, index) =>
