@@ -81,7 +81,7 @@ often arrived in English via a romance language.
 
 ## Logo
 
-
+The logo shows three tickets, each of which has been _validated_.
 
 ## License
 
