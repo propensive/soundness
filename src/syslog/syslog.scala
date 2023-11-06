@@ -34,5 +34,5 @@ object Syslog:
       stream.appendTo(sh"logger --tag ${syslog.tag}".fork[Unit]())
 
 package logging:
-  given syslog(using realm: Realm, monitor: Monitor): Log = Log:
+  given syslog(using realm: Realm, monitor: Monitor): Log = Log.route:
     case _ => Syslog(realm.name)
