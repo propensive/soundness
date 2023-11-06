@@ -24,7 +24,7 @@ import scala.compiletime.*
 
 import java.util.concurrent.atomic as juca
 
-import language.experimental.captureChecking
+//import language.experimental.captureChecking
 
 @capability
 trait Raises[-ErrorType <: Error]:
