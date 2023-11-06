@@ -19,13 +19,13 @@ package gossamer
 import rudiments.*
 import anticipation.*
 
-import language.experimental.captureChecking
+//import language.experimental.captureChecking
 
 case class Decimalizer
     (significantFigures: Maybe[Int] = Unset, decimalPlaces: Maybe[Int] = Unset,
-        decimalPoint: Char = '.', minusSign: Char = '-', exponent: Text = t"×10",
+        decimalPoint: Char = '.', minusSign: Char = '-', exponent: Text = "×10".tt,
         exponentThreshold: Int = 3, superscript: Boolean = true, exponentMultiple: Int = 1,
-        infinity: Text = t"∞", nan: Text = t"∉ℝ")
+        infinity: Text = "\u221e".tt, nan: Text = "\u2209\u211d".tt)
 extends DecimalConverter:
   
   def exponentScale(i: Int, a: Int): Int = if i == 0 then a else exponentScale(i/10, a + 1)
@@ -102,4 +102,4 @@ extends DecimalConverter:
       
       Text(new String(chars))
     else if double.isNaN then nan
-    else if double.isNegInfinity then t"$minusSign$infinity" else infinity
+    else if double.isNegInfinity then s"$minusSign$infinity".tt else infinity

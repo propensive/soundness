@@ -38,7 +38,7 @@ export Bidi.Ltr, Bidi.Rtl
 
 extension (value: Bytes)
   def uString: Text = Text(String(value.to(Array), "UTF-8"))
-  def hex: Text = Text(value.map { b => String.format("\\u%04x", b.toInt).nn }.mkString)
+  def hex: Text = Text(value.mutable(using Unsafe).map { b => String.format("\\u%04x", b.toInt).nn }.mkString)
   def text(using decoder: CharDecoder): Text = decoder.decode(value)
 
 object Cuttable:
@@ -255,8 +255,7 @@ extension (text: Text)
     Text(text.s.replaceAll(Pattern.quote(from.s), to.s).nn)
   
   def flatMap(fn: Char => Text): Text =
-    Text(String(text.s.toCharArray.nn.immutable(using Unsafe).flatMap(fn(_).s.toCharArray.nn
-        .immutable(using Unsafe)).mutable(using Unsafe)))
+    Text(String(text.s.toCharArray.nn.flatMap(fn(_).s.toCharArray.nn.immutable(using Unsafe))))
 
   inline def urlEncode: Text = Text(URLEncoder.encode(text.s, "UTF-8").nn)
   inline def urlDecode: Text = Text(URLDecoder.decode(text.s, "UTF-8").nn)
@@ -288,7 +287,7 @@ case class Numerous(word: Text, pluralEnd: Text = Text("s"), singularEnd: Text =
   def apply(value: Int): Text = Text(word.s+(if value == 1 then singularEnd.s else pluralEnd.s))
 
 object Joinable:
-  given [TextType](using textual: Textual[TextType]): Joinable[TextType] = elements =>
+  given [sealed TextType](using textual: Textual[TextType]): Joinable[TextType] = elements =>
     var acc: TextType = textual.empty
     for element <- elements do acc = textual.concat(acc, element)
     acc
