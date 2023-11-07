@@ -19,7 +19,7 @@ project exoskeleton
   
   module daemon
     sources  src/daemon
-    include  exoskeleton/core surveillance/core
+    include  exoskeleton/core surveillance/core eucalyptus/syslog
 
   module completions
     sources src/completions
@@ -27,6 +27,6 @@ project exoskeleton
   
   module example
     sources   src/example
-    include   exoskeleton/daemon escapade/core exoskeleton/completions eucalyptus/ansi eucalyptus/syslog
-    main      exoskeleton.fury
+    include   exoskeleton/daemon escapade/core exoskeleton/completions eucalyptus/ansi
+    main      exoskeleton.example
     artifact  rage
