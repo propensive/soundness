@@ -20,12 +20,15 @@ import guillotine.*
 import rudiments.*
 import parasite.*
 import anticipation.*
+import gossamer.*
 import turbulence.*
 import perforate.*
 
 case class Syslog(tag: Text)
 
 object Syslog:
+  given LogFormat[Syslog] = entry =>
+    t"[${entry.level}] ${entry.realm}: ${entry.message}\n"
 
   given (using Monitor): Appendable[Syslog, Text] = (syslog, stream) =>
     safely:

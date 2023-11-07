@@ -38,6 +38,7 @@ case class Realm private(name: Text):
 object Level:
   given Ordering[Level] = Ordering[Int].on[Level](_.ordinal)
   given Communicable[Level] = level => Message(level.show.upper)
+  given Show[Level] = _.toString.tt.upper
 
 enum Level:
   case Fine, Info, Warn, Fail
