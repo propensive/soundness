@@ -30,22 +30,29 @@ Eucalyptus has not yet been published as a binary.
 ### Defining a logger
 
 Libraries which use Eucalyptus for logging will need a contextual `Log` instance before they can
-be used. This may be as simple as defining a `given Log()` instance in the package where the
-libraries are used:
+be used. This may be as simple as defining a `given Log` instance in the package where the
+libraries are used, for example,
 ```scala
-given Log()
+given Log = logging.silent
+```
+or,
+```scala
+given Log = logging.stdout
+```
+or,
+```scala
+given Log = logging.syslog
 ```
 
-This will construct the simplest possible `Log` which logs nothing.
-
-A better alternative may be a logger which logs everything to `STDOUT`,
+A more versatile `Log` can route different log messages to different targets, for example,
 ```scala
-given Log(Everything |-> Stdout)
+given Log = Log.route:
+  case Level.Fail() => Err
+  case Level.Warn() => Out
+  case _            => Syslog(t"app")
 ```
-or which logs everything at `Warn` level or hight to `STDOUT`:
-```scala
-given Log(Everything.warn |-> Stdout)
-```
+would log all `FAIL` level messages to standard error, all `WARN` level messages to standard output, and
+everything else to the system log (with the tag `app`).
 
 ### Library Code
 
@@ -62,24 +69,23 @@ Messages may be logged (at a particular level) by calling one of four methods,
 - `Log.info`
 - `Log.warn`
 - `Log.fail`
-passing the single parameter of an `AnsiText` containing the message to be logged.
-
-These methods each take a single parameter which is typically an `AnsiText` or a
-`Text`, but can be any type that has a given `AnsiShow` instance available.
+passing the single parameter of a `Message` containing the message to be logged.
 
 #### Realm
 
-These four methods require a contextual `Realm` instance. Conventionally, this would 
-be declared in the main application package, and called `realm`, like so,
+These four methods require a contextual `Realm` instance in scope so that the source of log messages can be
+easily discerned from logs. Conventionally, this would 
+be declared in the main application package, and called `Realm`, like so,
 ```scala
 package mylibrary
-given realm: Realm = Realm("mylibrary")
+given Realm: Realm = realm"mylibrary"
 ```
 where `mylibrary` is the name that will appear in the logs. The name `realm` is given
 explicitly so that a user-defined `Log` instance may be configured to reference this
 realm within the package `mylibrary`, for example:
 ```scala
-Log(mylibrary.realm |-> Stdout)
+given Log = Log.route:
+  case myLibrary.Realm => Out
 ```
 
 Since `given` instances are not imported by default with a wildcard import, a `Realm`
@@ -90,22 +96,24 @@ definition does not need to be marked as private.
 When working with libraries such as [Scintillate](https://github.com/propensive/scintillate) or
 [Guillotine](https://github.com/propensive/guillotine), whose methods require
 a `Log` instance, it is possible to selectively include logs from specific libraries,
-by referring to that library's realm instead of `Everything`, for example:
+by referring to that library's realm, for example:
 ```scala
-given Log(scintillate.realm |-> Stdout)
+given Log = Log.route:
+  case scintillate.Realm => Out
 ```
 As with `Everything`, a level may also be specified:
 ```scala
-given Log(scintillate.realm.warn |-> Stdout)
+given Log = Log.route:
+  case Level.Warn() | Level.Fail() => Err
 ```
 
-And multiple rules may be included as repeated arguments to the `Log` constructor, for example:
+And multiple rules may be included as multiple cases in the `Log` constructor, where the `&` pattern operator
+can be used to match on more than one property, for example:
 ```scala
-given Log(
-  scintillate.realm.info |-> Stdout,
-  guillotine.realm       |-> Stdout,
-  probably.realm.fail    |-> Stdout
-)
+given Log = Log.route:
+  case scintillate.Realm & Info() => Out
+  case guillotine.Realm & Warn()  => Err
+  case probably.Realm             => Out
 ```
 
 
