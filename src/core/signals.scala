@@ -25,16 +25,16 @@ object Signal:
   given decoder: Decoder[Signal] = text => Signal.valueOf(text.lower.capitalize.s)
   given encoder: Encoder[Signal] = _.shortName
 
-sealed trait TtyEvent
+sealed trait TerminalEvent
 
-enum TerminalInfo extends TtyEvent:
+enum TerminalInfo extends TerminalEvent:
   case WindowSize(rows: Int, columns: Int)
   case BgColor(red: Int, green: Int, blue: Int)
   case LoseFocus
   case GainFocus
   case Paste(text: Text)
 
-enum Signal extends TtyEvent:
+enum Signal extends TerminalEvent:
   case Hup, Int, Quit, Ill, Trap, Abrt, Bus, Fpe, Kill, Usr1, Segv, Usr2, Pipe, Alrm, Term, Chld, Cont, Stop,
       Tstp, Ttin, Ttou, Urg, Xcpu, Xfsz, Vtalrm, Prof, Winch, Io, Pwr, Sys
   
@@ -42,7 +42,7 @@ enum Signal extends TtyEvent:
   def name: Text = t"SIG${this.toString.show.upper}"
   def id: Int = if ordinal < 15 then ordinal - 1 else ordinal
 
-enum Keypress extends TtyEvent:
+enum Keypress extends TerminalEvent:
   case CharKey(char: Char)
   case FunctionKey(number: Int)
   case Control(char: Char)
