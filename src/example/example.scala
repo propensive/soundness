@@ -36,7 +36,7 @@ def example(): Unit =
   import errorHandlers.throwUnsafely
   import parameterInterpretation.posix
     
-  daemon:
+  daemon[Int]:
     val Lang = Flag[Language](t"speech", false, List('s'), t"the two-letter code of the language")
     val Size = Flag[Text](t"size", false, List('S'), t"big, medium or small")
     val Age = Flag[Int](t"age", false, List('a'), t"the number of years")
@@ -71,9 +71,11 @@ def example(): Unit =
         Log.fine(t"size = ${Size().debug}")
         Log.fine(t"age = ${Age().debug}")
 
+
         terminal:
-          tty.events.foreach:
-            case Keypress.CharKey('Q') => summon[DaemonClient].shutdown()
+          tty.events.multiplexWith(daemon.bus).foreach:
+            case Keypress.CharKey('Q') => daemon.shutdown()
+            case Keypress.CharKey('w') => daemon.broadcast(42)
             case other                 => Log.info(other.debug)
 
           ExitStatus.Ok

@@ -49,8 +49,10 @@ enum CliInput:
   case Terminal, Pipe
 
 case class ClientConnection
+    [BusType <: Matchable]
     (pid: Pid, async: Async[Unit], signals: Funnel[Signal], terminate: Promise[Unit], close: () => Unit,
-        exitPromise: Promise[ExitStatus])
+        exitPromise: Promise[ExitStatus], bus: Funnel[BusType]):
+  def receive(message: BusType): Unit = bus.put(message)
 
 class LazyEnvironment(vars: List[Text]) extends Environment:
   private lazy val map: Map[Text, Text] =
@@ -60,7 +62,11 @@ class LazyEnvironment(vars: List[Text]) extends Environment:
   
   def variable(key: Text): Maybe[Text] = map.get(key).getOrElse(Unset)
 
-def daemon(using executive: Executive)(block: DaemonClient ?=> executive.CliType ?=> executive.Return): Unit =
+def daemon[BusType <: Matchable]
+    (using executive: Executive)
+    (block: DaemonClient[BusType] ?=> executive.CliType ?=> executive.Return)
+    : Unit =
+
   import environments.jvm
   import errorHandlers.throwUnsafely
 
@@ -70,7 +76,7 @@ def daemon(using executive: Executive)(block: DaemonClient ?=> executive.CliType
   val baseDir: Directory = (xdg.runtimeDir.or(xdg.stateHome) / PathName(id)).as[Directory]
   val portFile: Path = baseDir / p"port"
   val waitFile: Path = baseDir / p"wait"
-  val clients: scm.HashMap[Pid, ClientConnection] = scm.HashMap()
+  val clients: scm.HashMap[Pid, ClientConnection[BusType]] = scm.HashMap()
   var continue: Boolean = true
   
   lazy val termination: Unit =
@@ -144,31 +150,39 @@ def daemon(using executive: Executive)(block: DaemonClient ?=> executive.CliType
         clients -= process
 
       case DaemonEvent.Init(process, directory, scriptName, shellInput, textArguments, env) =>
-        Log.fine(t"Received init $process")
+        Log.fine(t"Received init from $process")
         val promise: Promise[Unit] = Promise()
         val exitPromise: Promise[ExitStatus] = Promise()
         val signalFunnel: Funnel[Signal] = Funnel()
+        val busFunnel: Funnel[BusType] = Funnel()
 
         val stdio: Stdio =
           Stdio(ji.PrintStream(socket.getOutputStream.nn), ji.PrintStream(socket.getOutputStream.nn), in)
         
-        val client = DaemonClient(() => shutdown(), shellInput, scriptName.decodeAs[Unix.Path])
+        def deliver(sourcePid: Pid, message: BusType): Unit = clients.foreach: (pid, client) =>
+          if sourcePid != pid then client.receive(message)
+
+        val client: DaemonClient[BusType] =
+          DaemonClient[BusType](() => shutdown(), shellInput, scriptName.decodeAs[Unix.Path],
+              deliver(process, _), busFunnel.stream)
+        
         val environment = LazyEnvironment(env)
         val workingDirectory = WorkingDirectory(directory)
         
         val async: Async[Unit] = Async:
           try
-            val cli: executive.CliType = executive.cli(textArguments, environment, workingDirectory, stdio,
-                signalFunnel.stream)
+            val cli: executive.CliType =
+              executive.cli(textArguments, environment, workingDirectory, stdio, signalFunnel.stream)
             
             val exitStatus = executive.process(cli, block(using client)(using cli))
             exitPromise.fulfill(exitStatus)
+
           catch case error: Exception => exitPromise.fulfill(ExitStatus.Fail(1))
           finally
             socket.close()
             Log.fine(t"Closed connection to ${process.value}")
         
-        clients(process) = ClientConnection(process, async, signalFunnel, promise, () => socket.close(), exitPromise)
+        clients(process) = ClientConnection[BusType](process, async, signalFunnel, promise, () => socket.close(), exitPromise, busFunnel)
 
   application(using executives.direct)(Nil):
     import stdioSources.jvm
@@ -201,13 +215,18 @@ def daemon(using executive: Executive)(block: DaemonClient ?=> executive.CliType
 
     ExitStatus.Ok
   
-case class DaemonClient(shutdown: () => Unit, cliInput: CliInput, script: Unix.Path)
+case class DaemonClient
+    [BusType <: Matchable]
+    (shutdown: () => Unit, cliInput: CliInput, script: Unix.Path, deliver: BusType => Unit,
+        bus: LazyList[BusType]):
+
+  def broadcast(message: BusType): Unit = deliver(message)
 
 enum DaemonEvent:
   case Init(process: Pid, work: Text, script: Text, cliInput: CliInput, arguments: List[Text], environment: List[Text])
   case Trap(process: Pid, signal: Signal)
   case Exit(process: Pid)
 
-def shell(using session: DaemonClient): DaemonClient = session
-
 given Realm = realm"exoskeleton"
+
+transparent inline def daemon = summonInline[DaemonClient[?]]
