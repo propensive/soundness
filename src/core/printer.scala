@@ -22,7 +22,7 @@ import gossamer.*
 
 import java.io as ji
 
-import language.experimental.captureChecking
+//import language.experimental.captureChecking
 
 object Printer:
 

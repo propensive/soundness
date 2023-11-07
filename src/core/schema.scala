@@ -22,12 +22,12 @@ import gossamer.*
 import anticipation.*
 import turbulence.*
 
-import language.experimental.captureChecking
+//import language.experimental.captureChecking
 import language.dynamics
 
 object CodlSchema:
   object Entry:
-    def apply(key: Text, schema: -> CodlSchema): Entry = new Entry(key, () => schema)
+    def apply(key: Text, schema: => CodlSchema): Entry = new Entry(key, () => schema)
     def unapply(value: Entry): Option[(Text, CodlSchema)] = Some(value.key -> value.schema)
 
   class Entry(val key: Text, getSchema: () => CodlSchema):
@@ -49,7 +49,7 @@ object CodlSchema:
 
 
 sealed trait CodlSchema(val subschemas: IArray[CodlSchema.Entry], val arity: Arity,
-                        val validator: Maybe[Text -> Boolean])
+                        val validator: Maybe[Text => Boolean])
 extends Dynamic:
   import CodlSchema.Entry
   protected lazy val dictionary: Map[Maybe[Text], CodlSchema] = subschemas.map(_.tuple).to(Map)
@@ -63,7 +63,7 @@ extends Dynamic:
       [SourceType]
       (source: SourceType)
       (using aggregate: Raises[AggregateError[CodlError]], readable: Readable[SourceType, Text])
-      : CodlDoc^{aggregate, readable} =
+      : CodlDoc/*^{aggregate, readable}*/ =
     Codl.parse(source, this)
   
   def apply(key: Text): Maybe[CodlSchema] = dictionary.get(key).orElse(dictionary.get(Unset)).getOrElse(Unset)
@@ -128,6 +128,6 @@ extends CodlSchema(IArray.from(structSubschemas), structArity, Unset):
   override def toString(): String =
     structSubschemas.map(_.toString).map(Text(_)).join(t"(", t", ", t")${structArity.symbol}").s
 
-case class Field(fieldArity: Arity, fieldValidator: Maybe[Text -> Boolean] = Unset)
+case class Field(fieldArity: Arity, fieldValidator: Maybe[Text => Boolean] = Unset)
 extends CodlSchema(IArray(), fieldArity, fieldValidator):
   def optional: Field = Field(Arity.Optional, fieldValidator)

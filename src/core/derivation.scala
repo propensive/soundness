@@ -26,7 +26,7 @@ import gossamer.*
 import scala.deriving.*
 import scala.compiletime.*
 
-import language.experimental.captureChecking
+//import language.experimental.captureChecking
 
 case class CodlLabel[+TargetType, +FieldNameType <: Label](label: String)
 
@@ -116,7 +116,7 @@ trait CodlWriter2 extends CodlWriter3:
       case _ => Nil
   
 object CodlWriter extends CodlWriter2:
-  given field[ValueType](using encoder: Encoder[ValueType]): CodlWriter[ValueType]^{encoder} =
+  given field[ValueType](using encoder: Encoder[ValueType]): CodlWriter[ValueType]/*^{encoder}*/ =
     new CodlWriter[ValueType]:
       def schema: CodlSchema = Field(Arity.One)
       
@@ -236,7 +236,7 @@ object CodlReader extends CodlReader2:
           : Maybe[ValueType] =
         if value.isEmpty then Unset else reader.read(value)
  
-  given field[ValueType](using decoder: Decoder[ValueType]): CodlReader[ValueType]^{decoder} =
+  given field[ValueType](using decoder: Decoder[ValueType]): CodlReader[ValueType]/*^{decoder}*/ =
     CodlFieldReader(decoder.decode(_))
   
   given boolean: CodlReader[Boolean] = CodlFieldReader(_ == t"yes")

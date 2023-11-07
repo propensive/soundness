@@ -28,7 +28,7 @@ import chiaroscuro.*
 import java.io as ji
 
 import language.dynamics
-import language.experimental.captureChecking
+//import language.experimental.captureChecking
 
 object CodlNode:
   given Debug[CodlNode] = _.data.option.fold(t"!"): data =>

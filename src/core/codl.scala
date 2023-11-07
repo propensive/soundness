@@ -25,7 +25,7 @@ import perforate.*
 import contextual.*
 import turbulence.*
 
-import language.experimental.captureChecking
+//import language.experimental.captureChecking
 
 given Realm = realm"cellulose"
 
@@ -66,7 +66,7 @@ object Codl:
       (source: Any)
       (using readable: Readable[source.type, Text], aggregate: Raises[AggregateError[CodlError]],
           codlRead: Raises[CodlReadError])
-      : ValueType^{readable, aggregate} =
+      : ValueType/*^{readable, aggregate}*/ =
     
     summon[CodlReader[ValueType]].schema.parse(readable.read(source)).as[ValueType]
   
@@ -75,7 +75,7 @@ object Codl:
       (source: SourceType, schema: CodlSchema = CodlSchema.Free, subs: List[Data] = Nil,
           fromStart: Boolean = false)
       (using readable: Readable[SourceType, Text], aggregate: Raises[AggregateError[CodlError]])
-      : CodlDoc^{readable, aggregate} =
+      : CodlDoc/*^{readable, aggregate}*/ =
     
     val (margin, stream) = tokenize(readable.read(source), fromStart)
     val baseSchema: CodlSchema = schema
@@ -274,7 +274,7 @@ object Codl:
     if stream.isEmpty
     then CodlDoc() else recur(stream, Proto(), Nil, Map(), Nil, 0, subs.reverse, Nil, LazyList(), Nil)
 
-  def tokenize(in: LazyList[Text]^, fromStart: Boolean = false): (Int, LazyList[CodlToken]^{in}) =
+  def tokenize(in: LazyList[Text]/*^*/, fromStart: Boolean = false): (Int, LazyList[CodlToken]/*^{in}*/) =
     val reader: PositionReader = new PositionReader(in.map(identity))
 
     enum State:
