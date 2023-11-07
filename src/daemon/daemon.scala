@@ -32,7 +32,7 @@ import turbulence.*
 import guillotine.*
 import surveillance.*
 import eucalyptus.*
-import ambience.*
+import ambience.*, systemProperties.jvm
 import spectacular.*
 
 import scala.collection.mutable as scm
@@ -54,9 +54,9 @@ case class ClientConnection
         exitPromise: Promise[ExitStatus], bus: Funnel[BusType]):
   def receive(message: BusType): Unit = bus.put(message)
 
-class LazyEnvironment(vars: List[Text]) extends Environment:
+class LazyEnvironment(variables: List[Text]) extends Environment:
   private lazy val map: Map[Text, Text] =
-    vars.map(_.cut(t"=", 2)).collect:
+    variables.map(_.cut(t"=", 2)).collect:
       case List(key, value) => (key, value)
     .to(Map)
   
@@ -70,10 +70,10 @@ def daemon[BusType <: Matchable]
   import environments.jvm
   import errorHandlers.throwUnsafely
 
-  val id: Text = Thread.currentThread.nn.getStackTrace.nn.last.nn.getClassName.nn.tt.cut(t".").last
+  val name: Text = Properties.exoskeleton.script[Text]()
   
   val xdg = Xdg()
-  val baseDir: Directory = (xdg.runtimeDir.or(xdg.stateHome) / PathName(id)).as[Directory]
+  val baseDir: Directory = (xdg.runtimeDir.or(xdg.stateHome) / PathName(name)).as[Directory]
   val portFile: Path = baseDir / p"port"
   val waitFile: Path = baseDir / p"wait"
   val clients: scm.HashMap[Pid, ClientConnection[BusType]] = scm.HashMap()
@@ -229,4 +229,8 @@ enum DaemonEvent:
 
 given Realm = realm"exoskeleton"
 
-transparent inline def daemon = summonInline[DaemonClient[?]]
+def bus[BusType <: Matchable](using daemon: DaemonClient[BusType]): LazyList[BusType] = daemon.bus
+def shutdown()(using daemon: DaemonClient[?]): Unit = daemon.shutdown()
+
+def broadcast[BusType <: Matchable](using daemon: DaemonClient[BusType])(message: BusType): Unit =
+  daemon.broadcast(message)

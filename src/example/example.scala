@@ -58,7 +58,6 @@ def example(): Unit =
       case _ =>
         Age()
         
-
     execute:
       supervise:
         given Log = Log.route:
@@ -73,9 +72,9 @@ def example(): Unit =
 
 
         terminal:
-          tty.events.multiplexWith(daemon.bus).foreach:
-            case Keypress.CharKey('Q') => daemon.shutdown()
-            case Keypress.CharKey('w') => daemon.broadcast(42)
+          tty.events.multiplexWith(bus).foreach:
+            case Keypress.CharKey('Q') => shutdown()
+            case Keypress.CharKey('w') => broadcast(42)
             case other                 => Log.info(other.debug)
 
           ExitStatus.Ok
