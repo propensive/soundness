@@ -32,8 +32,8 @@ package logFormats:
       case Level.Warn => colors.Gold
       case Level.Fail => colors.Tomato
 
-      e"${Bg(color)}[${colors.Black}($Bold( ${level.show.upper} ))]"
+      e"${Bg(color)}[${colors.Black}($Bold( ${level.show} ))]"
 
-    val realm: Output = e"${colors.MediumSeaGreen}(${entry.realm.show.fit(8)})"
+    val realm: Output = e"${colors.SteelBlue}(${entry.realm.show.fit(8)})"
 
     e"${colors.SlateGray}(${Log.dateFormat.format(entry.timestamp).nn.tt}) ${entry.level} $realm ${entry.message}\n".render
