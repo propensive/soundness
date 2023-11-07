@@ -6,4 +6,6 @@
 - unified programmatic tab-completions for `bash`, `zsh` and `fish`
 - easy to specify tab-completions which are dependent on others
 - functional API for application entry points
+- simple stream access to POSIX interrupts (signals)
+- support for messaging between clients
 - easy installation of completion scripts for each shell
