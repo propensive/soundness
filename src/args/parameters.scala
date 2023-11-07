@@ -96,7 +96,7 @@ trait Suggestions[-OperandType]:
   def suggest(): Iterable[Suggestion]
 
 package parameterInterpretation:
-  given posixParameters: PosixCliInterpreter.type = PosixCliInterpreter
+  given posix: PosixCliInterpreter.type = PosixCliInterpreter
 
 object FlagInterpreter:
   given unit: FlagInterpreter[Unit] = _ => ()

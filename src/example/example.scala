@@ -32,9 +32,9 @@ given Realm = realm"exosk"
 given LogFormat[Out.type] = logFormats.standardColor[Out.type]
 
 @main
-def fury(): Unit =
-  import parameterInterpretation.posixParameters
+def example(): Unit =
   import errorHandlers.throwUnsafely
+  import parameterInterpretation.posix
     
   daemon:
     val Lang = Flag[Language](t"speech", false, List('s'), t"the two-letter code of the language")

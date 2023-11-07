@@ -31,7 +31,7 @@ import gossamer.*
 import turbulence.*
 import guillotine.*
 import surveillance.*
-import eucalyptus.*, logging.silent
+import eucalyptus.*
 import ambience.*
 import spectacular.*
 
@@ -60,18 +60,16 @@ class LazyEnvironment(vars: List[Text]) extends Environment:
   
   def variable(key: Text): Maybe[Text] = map.get(key).getOrElse(Unset)
 
-def daemon
-    (using executive: Executive)
-    (block: DaemonClient ?=> executive.CliType ?=> executive.Return)
-    : Unit =
-  
+def daemon(using executive: Executive)(block: DaemonClient ?=> executive.CliType ?=> executive.Return): Unit =
   import environments.jvm
   import errorHandlers.throwUnsafely
+
+  val id: Text = Thread.currentThread.nn.getStackTrace.nn.last.nn.getClassName.nn.tt.cut(t".").last
   
   val xdg = Xdg()
-  val furyDir: Directory = (xdg.runtimeDir.or(xdg.stateHome) / p"fury").as[Directory]
-  val portFile: Path = furyDir / p"port"
-  val waitFile: Path = furyDir / p"wait"
+  val baseDir: Directory = (xdg.runtimeDir.or(xdg.stateHome) / PathName(id)).as[Directory]
+  val portFile: Path = baseDir / p"port"
+  val waitFile: Path = baseDir / p"wait"
   val clients: scm.HashMap[Pid, ClientConnection] = scm.HashMap()
   var continue: Boolean = true
   
@@ -79,13 +77,13 @@ def daemon
     portFile.wipe()
     System.exit(0)
   
-  def shutdown()(using Stdio): Unit =
-    Out.println(t"Shutdown daemon")
+  def shutdown()(using Stdio, Log): Unit =
+    Log.info(t"Shutdown daemon")
     termination
 
   def client
       (socket: jn.Socket)
-      (using Monitor, Stdio, Raises[StreamCutError], Raises[UndecodableCharError], Raises[NumberError])
+      (using Monitor, Log, Stdio, Raises[StreamCutError], Raises[UndecodableCharError], Raises[NumberError])
       : Unit =
 
     val in = socket.getInputStream.nn
@@ -129,16 +127,16 @@ def daemon
     
     message match
       case Unset =>
-        Out.println(t"Received unrecognized message")
+        Log.warn(t"Received unrecognized message")
         socket.close()
 
       case DaemonEvent.Trap(process, signal) =>
-        Out.println(t"Received signal $signal")
+        Log.fine(t"Received signal $signal")
         clients(process).signals.put(signal)
         socket.close()
       
       case DaemonEvent.Exit(process) =>
-        Out.println(t"Received exit status request from $process")
+        Log.fine(t"Received exit status request from $process")
         val exitStatus: ExitStatus = clients(process).exitPromise.await()
         
         socket.getOutputStream.nn.write(exitStatus().show.bytes.mutable(using Unsafe))
@@ -146,7 +144,7 @@ def daemon
         clients -= process
 
       case DaemonEvent.Init(process, directory, scriptName, shellInput, textArguments, env) =>
-        Out.println(t"Received init $process")
+        Log.fine(t"Received init $process")
         val promise: Promise[Unit] = Promise()
         val exitPromise: Promise[ExitStatus] = Promise()
         val signalFunnel: Funnel[Signal] = Funnel()
@@ -168,7 +166,7 @@ def daemon
           catch case error: Exception => exitPromise.fulfill(ExitStatus.Fail(1))
           finally
             socket.close()
-            Out.println(t"Closed connection to ${process.value}")
+            Log.fine(t"Closed connection to ${process.value}")
         
         clients(process) = ClientConnection(process, async, signalFunnel, promise, () => socket.close(), exitPromise)
 
@@ -181,12 +179,15 @@ def daemon
       portFile.wipe()
       
     supervise:
+      given Log = Log.route:
+        case _ => Syslog(t"exoskeleton")
+
       Async:
         sh"flock -u -x -n $portFile cat".exec[Unit]()
         shutdown()
 
       Async:
-        safely(furyDir.watch()).mm: watcher =>
+        safely(baseDir.watch()).mm: watcher =>
           watcher.stream.foreach:
             case Delete(_, t"port") => shutdown()
             case _ => ()
@@ -208,3 +209,5 @@ enum DaemonEvent:
   case Exit(process: Pid)
 
 def shell(using session: DaemonClient): DaemonClient = session
+
+given Realm = realm"exoskeleton"
