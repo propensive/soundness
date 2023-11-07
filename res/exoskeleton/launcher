@@ -4,13 +4,10 @@ declare portFile initFile ttystate script waitFile tmpPipe
 declare -i pid port stdoutPid continue pipePid argCount launchPid
 declare -a args signals sttyOptions
 
-
-# The name of the file which will contain the port number
-name="fury"
-
 # The TTY settings to use for terminal input
 sttyOptions=(intr undef -echo icanon raw opost)
 
+name="$(basename $0)"
 baseDir="${XDG_RUNTIME_DIR:-$HOME/.local/state}/$name"
 portFile="$baseDir/port"
 initFile="$baseDir/init"
