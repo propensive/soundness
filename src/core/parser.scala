@@ -24,7 +24,7 @@ import fulminate.*
 import turbulence.*
 import scala.collection.mutable.ArrayBuffer
 
-import language.experimental.captureChecking
+//import language.experimental.captureChecking
 
 object AsciiByte:
   inline final val Tab:          9   = 9   // '\t'
@@ -169,7 +169,7 @@ object JsonAst:
       [SourceType]
       (source: SourceType)
       (using readable: Readable[SourceType, Bytes], jsonParse: Raises[JsonParseError])
-      : JsonAst^{readable, jsonParse} =
+      : JsonAst/*^{readable, jsonParse}*/ =
 
     val stream = readable.read(source)
     var line: Int = 0

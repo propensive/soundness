@@ -20,22 +20,21 @@ package merino
 import probably.*
 import gossamer.*
 import anticipation.*, fileApi.javaIo
-import eucalyptus.*
+import eucalyptus.*, logging.stdout
 import rudiments.*
+import perforate.*
 import hieroglyph.*, charEncoders.utf8
-import turbulence.*, basicIo.jvm
-import ambience.*, environments.system
+import turbulence.*, stdioSources.jvm
+import ambience.*, environments.jvm
 
 import java.io as ji
 
 import unsafeExceptions.canThrowAny
 
-val StdoutSink = Stdout.sink
-
 object Tests extends Suite(t"Merino tests"):
   def run(): Unit =
-    val tests = ji.File(ji.File(env.pwd, "tests"), "test_parsing")
-    val tests2 = ji.File(ji.File(env.pwd, "tests"), "test_transform")
+    val tests = ji.File(ji.File(unsafely(Environment.pwd), "tests"), "test_parsing")
+    val tests2 = ji.File(ji.File(unsafely(Environment.pwd), "tests"), "test_transform")
     
     suite(t"Positive tests"):
       (tests.listFiles.nn.map(_.nn).to(List).filter(_.getName.nn.startsWith("y_")) ++ tests2.listFiles.nn.map(_.nn).to(List)).foreach: file =>
@@ -53,11 +52,11 @@ object Tests extends Suite(t"Merino tests"):
 
     suite(t"Parse large files"):
       val file: Bytes = test(t"Read file"):
-        ji.BufferedInputStream(ji.FileInputStream(ji.File(env.pwd, "huge.json"))).read[Bytes]
+        ji.BufferedInputStream(ji.FileInputStream(ji.File(unsafely(Environment.pwd), "huge.json"))).read[Bytes]
       .check()
       
       val file2: Bytes = test(t"Read file 2"):
-        ji.BufferedInputStream(ji.FileInputStream(ji.File(env.pwd, "huge2.json"))).read[Bytes]
+        ji.BufferedInputStream(ji.FileInputStream(ji.File(unsafely(Environment.pwd), "huge2.json"))).read[Bytes]
       .check()
       
       // test(t"Parse huge file with Jawn"):
