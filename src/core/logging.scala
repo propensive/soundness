@@ -101,6 +101,9 @@ extension (inline context: StringContext)
   inline def realm(): Realm = ${Eucalyptus.realm('context)}
 
 package logging:
+
+  given pinned: Log = Log.pinned
+
   given stdout(using Stdio, Monitor): Log = Log.route:
     case _ => Out
 

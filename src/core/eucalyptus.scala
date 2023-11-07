@@ -27,7 +27,7 @@ import scala.quoted.*
 import scala.collection.mutable as scm
 
 object Eucalyptus:
-  def recordLog
+  def record
       [MessageType: Type]
       (level: Expr[Level], message: Expr[MessageType], log: Expr[Log],
           communicable: Expr[Communicable[MessageType]], realm: Expr[Realm])

@@ -37,31 +37,39 @@ object Log:
       (inline value: ValueType)
       (using inline log: Log, inline communicable: Communicable[ValueType], inline realm: Realm)
       : Unit =
-    ${Eucalyptus.recordLog('{Level.Fine}, 'value, 'log, 'communicable, 'realm)}
+    ${Eucalyptus.record('{Level.Fine}, 'value, 'log, 'communicable, 'realm)}
   
   inline def info
       [ValueType]
       (inline value: ValueType)
       (using inline log: Log, inline communicable: Communicable[ValueType], inline realm: Realm)
       : Unit =
-    ${Eucalyptus.recordLog('{Level.Info}, 'value, 'log, 'communicable, 'realm)}
+    ${Eucalyptus.record('{Level.Info}, 'value, 'log, 'communicable, 'realm)}
   
   inline def warn
       [ValueType]
       (inline value: ValueType)
       (using inline log: Log, inline communicable: Communicable[ValueType], inline realm: Realm)
       : Unit =
-    ${Eucalyptus.recordLog('{Level.Warn}, 'value, 'log, 'communicable, 'realm)}
+    ${Eucalyptus.record('{Level.Warn}, 'value, 'log, 'communicable, 'realm)}
   
   inline def fail
       [ValueType]
       (inline value: ValueType)
       (using inline log: Log, inline communicable: Communicable[ValueType], inline realm: Realm)
       : Unit =
-    ${Eucalyptus.recordLog('{Level.Fail}, 'value, 'log, 'communicable, 'realm)}
+    ${Eucalyptus.record('{Level.Fail}, 'value, 'log, 'communicable, 'realm)}
 
   inline def route(inline routes: PartialFunction[Entry, Any])(using monitor: Monitor): Log =
     ${Eucalyptus.route('routes, 'monitor)}
+
+  private val localLog: ThreadLocal[AnyRef] = ThreadLocal()
+ 
+  inline def pin()(using inline log: Log): Unit = localLog.set(log)
+
+  def pinned: Log = localLog.get() match
+    case log: Log => log
+    case _        => logging.silent
 
 @capability
 abstract class Log():
