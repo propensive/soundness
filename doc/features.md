@@ -1,8 +1,7 @@
+- fast, portable daemon process for near-instantaneous invocations
+- safe concurrent invocations so that at most one daemon is running at any time
+- POSIX-style parameter parsing
 - unified programmatic tab-completions for `bash`, `zsh` and `fish`
-- automatic installation of completion scripts for each shell
-- tab-completions can be generated programmatically on-demand
-- high-level APIs for programs following common tab-completion patterns
-- low-level APIs for more fine-grained control over completions
-- fully functional API
-- can be used with [GraalVM](https://www.graalvm.org/) to eliminate JVM
-  startup time
+- supports installation of completion scripts for each shell
+- easy to specify tab-completions which are dependent on others
+- functional API for application entry points
