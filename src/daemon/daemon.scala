@@ -64,7 +64,7 @@ class LazyEnvironment(variables: List[Text]) extends Environment:
 
 def daemon[BusType <: Matchable]
     (using executive: Executive)
-    (block: DaemonClient[BusType] ?=> executive.CliType ?=> executive.Return)
+    (block: DaemonService[BusType] ?=> executive.CliType ?=> executive.Return)
     : Unit =
 
   import environments.jvm
@@ -136,21 +136,21 @@ def daemon[BusType <: Matchable]
         Log.warn(t"Received unrecognized message")
         socket.close()
 
-      case DaemonEvent.Trap(process, signal) =>
+      case DaemonEvent.Trap(pid, signal) =>
         Log.fine(t"Received signal $signal")
-        clients(process).signals.put(signal)
+        clients(pid).signals.put(signal)
         socket.close()
       
-      case DaemonEvent.Exit(process) =>
-        Log.fine(t"Received exit status request from $process")
-        val exitStatus: ExitStatus = clients(process).exitPromise.await()
+      case DaemonEvent.Exit(pid) =>
+        Log.fine(t"Received exit status request from $pid")
+        val exitStatus: ExitStatus = clients(pid).exitPromise.await()
         
         socket.getOutputStream.nn.write(exitStatus().show.bytes.mutable(using Unsafe))
         socket.close()
-        clients -= process
+        clients -= pid
 
-      case DaemonEvent.Init(process, directory, scriptName, shellInput, textArguments, env) =>
-        Log.fine(t"Received init from $process")
+      case DaemonEvent.Init(pid, directory, scriptName, shellInput, textArguments, env) =>
+        Log.fine(t"Received init from $pid")
         val promise: Promise[Unit] = Promise()
         val exitPromise: Promise[ExitStatus] = Promise()
         val signalFunnel: Funnel[Signal] = Funnel()
@@ -162,9 +162,9 @@ def daemon[BusType <: Matchable]
         def deliver(sourcePid: Pid, message: BusType): Unit = clients.foreach: (pid, client) =>
           if sourcePid != pid then client.receive(message)
 
-        val client: DaemonClient[BusType] =
-          DaemonClient[BusType](() => shutdown(), shellInput, scriptName.decodeAs[Unix.Path],
-              deliver(process, _), busFunnel.stream)
+        val client: DaemonService[BusType] =
+          DaemonService[BusType](pid, () => shutdown(), shellInput, scriptName.decodeAs[Unix.Path],
+              deliver(pid, _), busFunnel.stream)
         
         val environment = LazyEnvironment(env)
         val workingDirectory = WorkingDirectory(directory)
@@ -180,9 +180,9 @@ def daemon[BusType <: Matchable]
           catch case error: Exception => exitPromise.fulfill(ExitStatus.Fail(1))
           finally
             socket.close()
-            Log.fine(t"Closed connection to ${process.value}")
+            Log.fine(t"Closed connection to ${pid.value}")
         
-        clients(process) = ClientConnection[BusType](process, async, signalFunnel, promise, () => socket.close(), exitPromise, busFunnel)
+        clients(pid) = ClientConnection[BusType](pid, async, signalFunnel, promise, () => socket.close(), exitPromise, busFunnel)
 
   application(using executives.direct)(Nil):
     import stdioSources.jvm
@@ -215,22 +215,18 @@ def daemon[BusType <: Matchable]
 
     ExitStatus.Ok
   
-case class DaemonClient
+case class DaemonService
     [BusType <: Matchable]
-    (shutdown: () => Unit, cliInput: CliInput, script: Unix.Path, deliver: BusType => Unit,
+    (pid: Pid, shutdown: () => Unit, cliInput: CliInput, script: Unix.Path, deliver: BusType => Unit,
         bus: LazyList[BusType]):
 
   def broadcast(message: BusType): Unit = deliver(message)
 
 enum DaemonEvent:
-  case Init(process: Pid, work: Text, script: Text, cliInput: CliInput, arguments: List[Text], environment: List[Text])
-  case Trap(process: Pid, signal: Signal)
-  case Exit(process: Pid)
+  case Init(pid: Pid, work: Text, script: Text, cliInput: CliInput, arguments: List[Text], environment: List[Text])
+  case Trap(pid: Pid, signal: Signal)
+  case Exit(pid: Pid)
 
 given Realm = realm"exoskeleton"
 
-def bus[BusType <: Matchable](using daemon: DaemonClient[BusType]): LazyList[BusType] = daemon.bus
-def shutdown()(using daemon: DaemonClient[?]): Unit = daemon.shutdown()
-
-def broadcast[BusType <: Matchable](using daemon: DaemonClient[BusType])(message: BusType): Unit =
-  daemon.broadcast(message)
+def service[BusType <: Matchable](using service: DaemonService[BusType]): DaemonService[BusType] = service

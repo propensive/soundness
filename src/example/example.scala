@@ -63,7 +63,7 @@ def example(): Unit =
         given Log = Log.route:
           case _ => Out
         
-        Log.envelop(t"first"):
+        Log.envelop(service.pid):
           Log.fine(t"language = ${Lang().debug}")
           Log.fine(t"size = ${Size().debug}")
           
@@ -72,9 +72,9 @@ def example(): Unit =
 
             terminal:
               Log.envelop(t"terminal"):
-                tty.events.multiplexWith(bus).foreach:
-                  case Keypress.CharKey('Q') => shutdown()
-                  case Keypress.CharKey('w') => broadcast(42)
+                tty.events.multiplexWith(service.bus).foreach:
+                  case Keypress.CharKey('Q') => service.shutdown()
+                  case Keypress.CharKey('w') => service.broadcast(42)
                   case other                 => Log.info(other.debug)
     
                 ExitStatus.Ok
