@@ -16,13 +16,11 @@
 
 package eucalyptus
 
-import turbulence.*
 import parasite.*
 import fulminate.*
 import anticipation.*
 import rudiments.*
 import gossamer.*
-import perforate.*
 
 import java.text as jt
 

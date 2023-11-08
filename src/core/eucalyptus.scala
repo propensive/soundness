@@ -18,13 +18,10 @@ package eucalyptus
 
 import rudiments.*
 import fulminate.*
-import turbulence.*
 import anticipation.*
 import parasite.*
-import hieroglyph.*, charDecoders.utf8, charEncoders.utf8
 
 import scala.quoted.*
-import scala.collection.mutable as scm
 
 object Eucalyptus:
   def record
