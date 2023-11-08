@@ -4,7 +4,7 @@
 
 # Camouflage
 
-____
+__An LRU cache implementation for Scala__
 
 Caching provides a useful tradeoff between the costs of _time_ and _space_; that is, a cache can reduce the
 amount of computation time at the expense of using more memory. _Camouflage_ provides one implementation of a
@@ -152,7 +152,7 @@ often arrived in English via a romance language.
 
 ## Logo
 
-
+The logo shows a swatch of fabric in typical military camouflage colors.
 
 ## License
 
