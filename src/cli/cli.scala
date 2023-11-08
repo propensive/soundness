@@ -26,7 +26,7 @@ import hieroglyph.*, textWidthCalculation.uniform
 
 import language.adhocExtensions
 
-abstract class Suite(name: Text) extends TestSuite(name):
+abstract class Suite(suiteName: Text) extends TestSuite(suiteName):
   val suiteIo = safely(stdioSources.jvm).avow(using Unsafe)
 
   // FIXME: This seems to introduce a ghost ambiguity on the previous line
