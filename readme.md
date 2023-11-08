@@ -10,7 +10,9 @@ ____
 
 ## Features
 
-
+- provides an implementation of a least-recently-used (LRU) cache
+- cache requires only a _size_ parameter to initialize
+- serves as a simple drop-in memoization wrapper around expensive method calls
 
 ## Availability
 
