@@ -95,7 +95,7 @@ index, it is retrieved instead.
 
 ## Status
 
-Camouflage is classified as ____. For reference, Scala One projects are
+Camouflage is classified as __embryotic__. For reference, Scala One projects are
 categorized into one of the following five stability levels:
 
 - _embryonic_: for experimental or demonstrative purposes only, without any guarantees of longevity
@@ -139,7 +139,7 @@ Camouflage was designed and developed by Jon Pretty, and commercial support and 
 
 ## Name
 
-
+Camouflage is used for hiding something, which is the original meaning of _caching_.
 
 In general, Scala One project names are always chosen with some rationale, however it is usually
 frivolous. Each name is chosen for more for its _uniqueness_ and _intrigue_ than its concision or
