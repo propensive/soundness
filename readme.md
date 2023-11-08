@@ -27,7 +27,10 @@ Scala. Tab completions are automatically provided for [`bash`](https://www.gnu.o
 - unified programmatic tab-completions for `bash`, `zsh` and `fish`
 - easy to specify tab-completions which are dependent on others
 - functional API for application entry points
+- simple stream access to POSIX interrupts (signals)
+- support for messaging between clients
 - easy installation of completion scripts for each shell
+
 
 ## Availability
 
@@ -352,7 +355,7 @@ be used, but caution should be taken if there is a mismatch between the
 project's stability level and the importance of your own project.
 
 Exoskeleton is designed to be _small_. Its entire source code currently consists
-of 641 lines of code.
+of 645 lines of code.
 
 ## Building
 
