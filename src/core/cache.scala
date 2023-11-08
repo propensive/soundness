@@ -25,9 +25,6 @@ import scala.collection.mutable as scm
 import java.util.concurrent.atomic as juca
 
 class LruCache[KeyType, ValueType](maxSize: Int):
-
-  override def toString(): String = s"${values} / ${ids} / $keys"
-  
   private val counter: juca.AtomicInteger = juca.AtomicInteger(0)
   private val values: scm.HashMap[Int, ValueType] = scm.HashMap()
   private val ids: scm.HashMap[KeyType, Int] = scm.HashMap()
