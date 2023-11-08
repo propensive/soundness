@@ -35,5 +35,9 @@ package logFormats:
       e"${Bg(color)}[${colors.Black}($Bold( ${level.show} ))]"
 
     val realm: Output = e"${colors.SteelBlue}(${entry.realm.show.fit(8)})"
+    val colorSeq = List(colors.Chocolate, colors.OliveDrab, colors.CadetBlue, colors.DarkGoldenrod)
+    
+    val stack: Output =
+      entry.envelopes.reverse.zip(colorSeq).map { (item, color) => e"$color($item)" }.join(e"", e" ⟩ ", e" ⟩")
 
-    e"${colors.SlateGray}(${Log.dateFormat.format(entry.timestamp).nn.tt}) ${entry.level} $realm ${entry.message}\n".render
+    e"${colors.SlateGray}(${Log.dateFormat.format(entry.timestamp).nn.tt}) ${entry.level} $realm $stack ${entry.message}\n".render

@@ -44,11 +44,13 @@ enum Level:
   case Fine, Info, Warn, Fail
   def unapply(entry: Entry): Boolean = entry.level == this
   
-case class Entry(realm: Realm, level: Level, message: Message, timestamp: Long, envelopes: ListMap[Text, Text])
+case class Entry(realm: Realm, level: Level, message: Message, timestamp: Long, envelopes: List[Text])
+
+object Envelope:
+  given [EnvelopeType](using Show[EnvelopeType]): Envelope[EnvelopeType] = _.show
 
 trait Envelope[-EnvelopeType]:
-  def id: Text
-  def envelop(value: EnvelopeType): Text
+  def envelope(value: EnvelopeType): Text
 
   given silent: Log = entry => ()
 
@@ -60,7 +62,6 @@ object Logger:
       (target: TargetType, appendable: Appendable[TargetType, Text], format: LogFormat[TargetType])(using Monitor)
       : Logger =
     new ActiveLogger(target)(using appendable)
-
 
 object LogWriter:
   given active

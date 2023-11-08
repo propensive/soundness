@@ -69,7 +69,20 @@ object Log:
     case log: Log => log
     case _        => logging.silent
 
+  def envelop
+      [EnvelopeType: Envelope]
+      (value: EnvelopeType)
+      [sealed ResultType]
+      (block: Log ?=> ResultType)
+      (using log: Log)
+      : ResultType =
+
+    val log2: Log = new Log:
+      override val envelopes: List[Text] = summon[Envelope[EnvelopeType]].envelope(value) :: log.envelopes
+      def record(entry: Entry): Unit = log.record(entry)
+    block(using log2)
+
 @capability
 abstract class Log():
-  def envelopes: ListMap[Text, Text] = ListMap()
+  val envelopes: List[Text] = Nil
   def record(entry: Entry): Unit
