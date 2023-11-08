@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   width="84mm"
+   height="84mm"
+   viewBox="0 0 120 120"
+   version="1.1"
+   id="svg5"
+   xmlns:xlink="http://www.w3.org/1999/xlink"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <defs
+     id="defs2">
+    <linearGradient
+       id="linearGradient1672">
+      <stop
+         style="stop-color:#276500;stop-opacity:1;"
+         offset="0"
+         id="stop1668" />
+      <stop
+         style="stop-color:#455000;stop-opacity:1;"
+         offset="1"
+         id="stop1670" />
+    </linearGradient>
+    <linearGradient
+       xlink:href="#linearGradient1672"
+       id="linearGradient1674"
+       x1="-13.303558"
+       y1="278.34509"
+       x2="69.993752"
+       y2="278.34509"
+       gradientUnits="userSpaceOnUse"
+       gradientTransform="matrix(0.78622136,0,0,0.78622136,7.0256688,71.053665)" />
+    <clipPath
+       clipPathUnits="userSpaceOnUse"
+       id="clipPath1841">
+      <circle
+         style="fill:none;fill-opacity:1;stroke:#000000;stroke-width:0.00982361;stroke-opacity:1;stop-color:#000000"
+         id="circle1843"
+         cx="29.311186"
+         cy="289.89456"
+         r="32.745064" />
+    </clipPath>
+  </defs>
+  <g
+     id="layer1"
+     transform="translate(30.688814,-229.89455)">
+    <g
+       id="g1816"
+       clip-path="url(#clipPath1841)"
+       transform="matrix(1.8323372,0,0,1.8323372,-24.396792,-241.29004)">
+      <circle
+         style="fill:url(#linearGradient1674);fill-opacity:1;stroke:none;stroke-width:0.0098236;stop-color:#000000"
+         id="path790"
+         cx="29.311186"
+         cy="289.89456"
+         r="32.745064" />
+      <path
+         style="opacity:0.283055;fill:#03e8a0;fill-opacity:1;stroke:none;stroke-width:0.264583px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+         d="m 25,255.52917 c -10.000001,10 -10,20 0,30 10,10 20,10 30,0 10,-10 -10,-10 0,-20 10,-10 10,10 20.000001,0 10,-10 10,-20 0,-30 -10.000001,-10 -20.000001,-10 -30.000001,0 -10,10 10,10 0,20 -10,10 -10,-10 -20,0 z"
+         id="path1356-3" />
+      <path
+         style="opacity:0.418804;fill:#fff390;fill-opacity:1;stroke:none;stroke-width:0.264583px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+         d="m 5,305 c -10.000001,10 -10,20 0,30 10,10 20,10 30,0 10,-10 -10,-10 0,-20 10,-10 10,10 20,0 10,-10 10,-20 0,-30 -10,-10 -20,-10 -30,0 -10,10 10,10 0,20 -10,10 -10,-10 -20,0 z"
+         id="path1356-3-5-9" />
+      <path
+         style="opacity:0.283055;fill:#03e8a0;fill-opacity:1;stroke:none;stroke-width:0.264583px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+         d="m 33.466669,255.52917 c -10.000001,10 -10,20 0,30 10,10 20,10 30,0 10,-10 -10,-10 0,-20 10,-10 10,10 20.000001,0 10,-10 10,-20 0,-30 -10.000001,-10 -20.000001,-10 -30.000001,0 -10,10 10,10 0,20 -10,10 -10,-10 -20,0 z"
+         id="path1356-3-27" />
+      <path
+         style="opacity:0.418804;fill:#fff390;fill-opacity:1;stroke:none;stroke-width:0.264583px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+         d="m 13.466667,305 c -10.0000011,10 -10.0000001,20 0,30 10.000002,10 20.000002,10 30.000002,0 10,-10 -10,-10 0,-20 10,-10 10,10 20,0 10,-10 10,-20 0,-30 -10,-10 -20,-10 -30,0 -10,10 10,10 0,20 -10,10 -10,-10 -20.000002,0 z"
+         id="path1356-3-5-9-0" />
+      <path
+         style="opacity:0.283055;fill:#070000;fill-opacity:1;stroke:none;stroke-width:0.264583px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+         d="m -33.612502,280.76664 c -10.000001,10 -10,20 0,30 9.999999,10 20,10 30.0000007,0 9.9999994,-10 -10.0000007,-10 0,-20 9.9999994,-10 9.9999994,10 19.9999993,0 10,-10 10,-20 0,-30 -9.9999999,-10 -19.9999993,-10 -30,0 -10.000001,10 10.0000007,10 0,20 -10.000001,10 -10.000001,-10 -20,0 z"
+         id="path1356-3-5-9-6" />
+      <path
+         style="opacity:0.283055;fill:#070000;fill-opacity:1;stroke:none;stroke-width:0.264583px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+         d="m -25.145835,280.76664 c -10.000001,10 -10,20 0,30 10.000002,10 20.0000018,10 30.0000024,0 9.9999996,-10 -10.0000006,-10 0,-20 9.9999996,-10 9.9999996,10 19.9999996,0 10,-10 10,-20 0,-30 -10,-10 -19.9999996,-10 -30.0000002,0 -9.9999998,10 10.0000006,10 0,20 -9.9999998,10 -9.9999998,-10 -20.0000018,0 z"
+         id="path1356-3-5-9-0-0" />
+    </g>
+  </g>
+</svg>

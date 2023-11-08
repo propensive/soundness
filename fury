@@ -1,0 +1,22 @@
+# This is a buildfile for Fury or Wrath.
+# More information is available at: https://github.com/propensive/wrath/
+
+repo propensive/contextual
+repo propensive/larceny
+repo propensive/spectacular
+repo propensive/kaleidoscope
+
+target camouflage/test
+
+project camouflage
+  module core
+    compiler  scala
+    sources   src/core
+    include   rudiments/core
+
+  module test
+    compiler  scala
+    sources   src/test
+    coverage  camouflage/core
+    include   probably/cli camouflage/core
+    main      camouflage.Tests
