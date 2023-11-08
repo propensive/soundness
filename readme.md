@@ -29,6 +29,7 @@ Scala. Tab completions are automatically provided for [`bash`](https://www.gnu.o
 - functional API for application entry points
 - simple stream access to POSIX interrupts (signals)
 - support for messaging between clients
+- allows easy bundling with a JDK or JRE for distribution as a single file
 - easy installation of completion scripts for each shell
 
 
