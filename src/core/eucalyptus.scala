@@ -55,11 +55,11 @@ object Eucalyptus:
 
       new Log():
         def record(entry: Entry): Unit = ${
-          val partialFunction = routes.asTerm match
+          def partialFunction(index: Int) = routes.asTerm match
             case Inlined(_, _, Block(List(defDef), term)) => defDef match
               case DefDef(ident, scrutineeType, returnType, Some(Match(matchId, caseDefs))) =>
-                val caseDefs2 = caseDefs.zipWithIndex.map:
-                  case (CaseDef(pattern, guard, target), index) => target.asExpr match
+                val caseDef = caseDefs(index) match
+                  case CaseDef(pattern, guard, target) => target.asExpr match
                     case '{$target: targetType} =>
                       def typeName = TypeRepr.of[targetType].show
                       
@@ -77,10 +77,15 @@ object Eucalyptus:
                       CaseDef(pattern, guard, action.asTerm)
               
                 val definition = DefDef.copy(defDef)(ident, scrutineeType, returnType, Some(Match(matchId,
-                    caseDefs2)))
+                    List(caseDef))))
                 
                 Block(List(definition), term).asExprOf[PartialFunction[Entry, Any]]
 
-          '{$partialFunction(entry)}
+          def recur(index: Int, expr: Expr[Unit]): Expr[Unit] = if index >= count then expr else '{
+            $expr
+            ${partialFunction(index)}.lift(entry)
+          }
+
+          recur(0, '{()})
         }
     }
