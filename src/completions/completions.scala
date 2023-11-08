@@ -115,6 +115,7 @@ case class Execution(execute: CliInvocation => ExitStatus)
 
 def execute(block: Effectful ?=> CliInvocation ?=> ExitStatus): Execution = Execution(block(using ###)(using _))
 
+
 @capability
 erased trait Effectful
 
@@ -157,3 +158,4 @@ package executives:
 
       case invocation: CliInvocation =>
         execution.execute(invocation)
+

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-declare portFile initFile ttystate script waitFile tmpPipe
+declare portFile initFile ttystate script waitFile tmpPipe javaVersion dataHomeDir
 declare -i pid port stdoutPid continue pipePid argCount launchPid
 declare -a args signals sttyOptions
 
@@ -9,15 +9,18 @@ sttyOptions=(intr undef -echo icanon raw opost)
 
 name="$(basename $0)"
 baseDir="${XDG_RUNTIME_DIR:-$HOME/.local/state}/$name"
+dataHomeDir="${XDG_DATA_HOME:-$HOME/.local/share}"
 portFile="$baseDir/port"
 initFile="$baseDir/init"
 waitFile="$baseDir/wait"
 failFile="$baseDir/fail"
 script="$(realpath "$0")"
+javaVersion="21"
+javaHome="$dataHomeDir/java/$javaVersion"
 continue=1
 
 # The set of signals which should be captured and forwarded to the JVM process
-signals=(INT WINCH TERM USR1 USR2)
+signals=(INT WINCH TERM)
 
 pid=$$
 args=("$@")
@@ -33,6 +36,12 @@ backOut() {
   fi
 }
 
+installJava() {
+  mkdir -p "$dataHomeDir/java"
+  unzip -p "$script" exoskeleton/jre_$(uname -m).tar.gz 2>/dev/null | tar xzf - -C "$dataHomeDir/java"
+  mv "$dataHomeDir/java/jdk-21.0.1+12-jre" "$javaHome"
+}
+
 abort() {
   touch "$failFile"
   printf '' > "$waitFile"
@@ -40,7 +49,8 @@ abort() {
 }
 
 launch() {
-  mkfifo "$waitFile" 2> /dev/null && (exec nohup java -jar "$script" > /dev/null 2>&1 || abort) &
+  test -x "$javaHome/bin/java" || installJava
+  mkfifo "$waitFile" 2> /dev/null && (exec nohup "$javaHome/bin/java" -Dexoskeleton.script="$name" -jar "$script" > /dev/null 2>&1 || abort) &
   launchPid=$!
   flock "$initFile" sh -c "test -f \"$portFile\" || cat \"$waitFile\"" > /dev/null 2>&1 || abort
   rm -f "$initFile"

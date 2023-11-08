@@ -42,7 +42,7 @@ def example(): Unit =
     val Age = Flag[Int](t"age", false, List('a'), t"the number of years")
     val Color = Flag[Text]('c', false, List(), t"the color")
     val SubcommandAction = Subcommand[Action](0)
-    
+
     SubcommandAction() match
       case Unset =>
         Lang()
@@ -61,23 +61,23 @@ def example(): Unit =
     execute:
       supervise:
         given Log = Log.route:
-          case Level.Info() => Out
-          case Level.Fine() => Syslog(t"output")
-          case Level.Warn() => Out
-          case _ => Syslog(t"exo")
+          case _ => Out
+        
+        Log.envelop(t"first"):
+          Log.fine(t"language = ${Lang().debug}")
+          Log.fine(t"size = ${Size().debug}")
           
-        Log.fine(t"language = ${Lang().debug}")
-        Log.fine(t"size = ${Size().debug}")
-        Log.fine(t"age = ${Age().debug}")
+          Log.envelop(t"second"):
+            Log.fine(t"age = ${Age().debug}")
 
-
-        terminal:
-          tty.events.multiplexWith(bus).foreach:
-            case Keypress.CharKey('Q') => shutdown()
-            case Keypress.CharKey('w') => broadcast(42)
-            case other                 => Log.info(other.debug)
-
-          ExitStatus.Ok
+            terminal:
+              Log.envelop(t"terminal"):
+                tty.events.multiplexWith(bus).foreach:
+                  case Keypress.CharKey('Q') => shutdown()
+                  case Keypress.CharKey('w') => broadcast(42)
+                  case other                 => Log.info(other.debug)
+    
+                ExitStatus.Ok
 
 object Language:
   given Suggestions[Language] = () => Language.values.map: language =>

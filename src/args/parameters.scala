@@ -99,7 +99,9 @@ package parameterInterpretation:
   given posix: PosixCliInterpreter.type = PosixCliInterpreter
 
 object FlagInterpreter:
-  given unit: FlagInterpreter[Unit] = _ => ()
+  given unit: FlagInterpreter[Unit] with
+    override def operands: Int = 0
+    def interpret(arguments: List[Argument]): Unit = ()
 
   given decoder[OperandType: Decoder]: FlagInterpreter[OperandType] = arguments =>
     (arguments.take(1): @unchecked) match
