@@ -36,8 +36,14 @@ backOut() {
   fi
 }
 
+ensure() {
+  command -v "$1" > /dev/null || printf "The command %s is required, but was not found. Please install it and try again.\n" "$1" 1>&2
+  command -v "$1" > /dev/null || exit 1
+}
+
 installJava() {
   mkdir -p "$dataHomeDir/java"
+  ensure unzip
   unzip -p "$script" exoskeleton/jre_$(uname -m).tar.gz 2>/dev/null | tar xzf - -C "$dataHomeDir/java"
   mv "$dataHomeDir/java/jdk-21.0.1+12-jre" "$javaHome"
 }
@@ -52,6 +58,7 @@ launch() {
   test -x "$javaHome/bin/java" || installJava
   mkfifo "$waitFile" 2> /dev/null && (exec nohup "$javaHome/bin/java" -Dexoskeleton.script="$name" -jar "$script" > /dev/null 2>&1 || abort) &
   launchPid=$!
+  ensure flock
   flock "$initFile" sh -c "test -f \"$portFile\" || cat \"$waitFile\"" > /dev/null 2>&1 || abort
   rm -f "$initFile"
 }
@@ -96,6 +103,7 @@ mkfifo -m 600 "$tmpPipe" && exec 3<> "$tmpPipe" && rm "$tmpPipe"
 test -t 0 && stty "${sttyOptions[@]}" > /dev/null 2>&1
 connect <&0 >&3 &
 stdoutPid=$!
+ensure nc
 nc -q 1 localhost $port <&3 &
 pipePid=$!
 
