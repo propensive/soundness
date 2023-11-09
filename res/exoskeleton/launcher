@@ -1,6 +1,6 @@
 #!/bin/bash
 
-declare portFile initFile ttystate script waitFile tmpPipe javaVersion dataHomeDir
+declare portFile initFile ttystate script waitFile tmpPipe javaVersion dataHomeDir arch os
 declare -i pid port stdoutPid continue pipePid argCount launchPid
 declare -a args signals sttyOptions
 
@@ -42,10 +42,28 @@ ensure() {
 }
 
 installJava() {
+  local dir
   mkdir -p "$dataHomeDir/java"
   ensure unzip
-  unzip -p "$script" exoskeleton/jre_$(uname -m).tar.gz 2>/dev/null | tar xzf - -C "$dataHomeDir/java"
-  mv "$dataHomeDir/java/jdk-21.0.1+12-jre" "$javaHome"
+  
+  case "$(uname -s)" in
+    Linux|GNU*)       os="linux" ;;
+    Win*|Cygwin|Msys) os="windows" ;;
+    Mac*|Darwin*)     os="mac" ;;
+    SunOS)            os="solaris" ;;
+    *)                exit 1 ;;
+  esac
+
+  case "$(uname -m)" in
+    x86_64|amd64|i686-64)                   arch="x64" ;;
+    x86|i686|i386|i86pc)                    arch="x86" ;;
+    aarch64_be|aarch64|armv8b|armv8l|arm64) arch="aarch64" ;;
+    *)                                      exit 1 ;;
+  esac
+
+  unzip -p "$script" "exoskeleton/jre-$javaVersion-$os-$arch.tar.gz" 2>/dev/null | tar xzf - -C "$dataHomeDir/java"
+  dir=$(unzip -p "$script" "exoskeleton/jre-$javaVersion-$os-$arch.tar.gz" 2>/dev/null | tar tzf - | head -n1)
+  mv "$dataHomeDir/java/$dir" "$javaHome"
 }
 
 abort() {
