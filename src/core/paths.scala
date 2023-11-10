@@ -513,7 +513,7 @@ object File:
   given writableBytes
       (using io: Raises[IoError], streamCut: Raises[StreamCutError])
       : Writable[File, Bytes] =
-    Appendable.outputStreamBytes.asWritable.contraMap: file =>
+    Writable.outputStreamBytes.contraMap: file =>
       if !file.writable() then abort(IoError(file.path))
       ji.BufferedOutputStream(ji.FileOutputStream(file.path.java.toFile, false))
 
