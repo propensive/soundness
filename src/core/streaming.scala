@@ -83,8 +83,14 @@ object Appendable:
   given stderrText(using stdio: Stdio): SimpleAppendable[Err.type, Text] =
     (stderr, text) => stdio.printErr(text)
 
-  given outputStreamBytes(using streamCut: Raises[StreamCutError]): SimpleAppendable[ji.OutputStream, Bytes] =
-    (outputStream, bytes) => outputStream.write(bytes.mutable(using Unsafe))
+  given outputStreamBytes
+      (using streamCut: Raises[StreamCutError])
+      : Appendable[ji.OutputStream, Bytes] =
+    (outputStream, stream) =>
+      stream.foreach: bytes =>
+        outputStream.write(bytes.mutable(using Unsafe))
+        outputStream.flush()
+      outputStream.close()
   
   given decodingAdapter
       [TargetType]
