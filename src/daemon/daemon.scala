@@ -150,39 +150,42 @@ def daemon[BusType <: Matchable]
         clients -= pid
 
       case DaemonEvent.Init(pid, directory, scriptName, shellInput, textArguments, env) =>
-        Log.fine(t"Received init from $pid")
-        val promise: Promise[Unit] = Promise()
-        val exitPromise: Promise[ExitStatus] = Promise()
-        val signalFunnel: Funnel[Signal] = Funnel()
-        val busFunnel: Funnel[BusType] = Funnel()
+        Log.envelop(pid):
+          Log.fine(t"Received init")
+          val promise: Promise[Unit] = Promise()
+          val exitPromise: Promise[ExitStatus] = Promise()
+          val signalFunnel: Funnel[Signal] = Funnel()
+          val busFunnel: Funnel[BusType] = Funnel()
+  
+          val stdio: Stdio =
+            Stdio(ji.PrintStream(socket.getOutputStream.nn), ji.PrintStream(socket.getOutputStream.nn), in)
+          
+          def deliver(sourcePid: Pid, message: BusType): Unit = clients.foreach: (pid, client) =>
+            if sourcePid != pid then client.receive(message)
+  
+          val client: DaemonService[BusType] =
+            DaemonService[BusType](pid, () => shutdown(), shellInput, scriptName.decodeAs[Unix.Path],
+                deliver(pid, _), busFunnel.stream)
+          
+          val environment = LazyEnvironment(env)
+          val workingDirectory = WorkingDirectory(directory)
+          
+          val async: Async[Unit] = Async:
+            Log.pin()
+            try
+              val cli: executive.CliType =
+                executive.cli(textArguments, environment, workingDirectory, stdio, signalFunnel.stream)
+              
+              val exitStatus = executive.process(cli, block(using client)(using cli))
+              exitPromise.fulfill(exitStatus)
 
-        val stdio: Stdio =
-          Stdio(ji.PrintStream(socket.getOutputStream.nn), ji.PrintStream(socket.getOutputStream.nn), in)
+            catch case error: Exception => exitPromise.fulfill(ExitStatus.Fail(1))
+            finally
+              socket.close()
+              Log.fine(t"Closed connection to ${pid.value}")
         
-        def deliver(sourcePid: Pid, message: BusType): Unit = clients.foreach: (pid, client) =>
-          if sourcePid != pid then client.receive(message)
-
-        val client: DaemonService[BusType] =
-          DaemonService[BusType](pid, () => shutdown(), shellInput, scriptName.decodeAs[Unix.Path],
-              deliver(pid, _), busFunnel.stream)
-        
-        val environment = LazyEnvironment(env)
-        val workingDirectory = WorkingDirectory(directory)
-        
-        val async: Async[Unit] = Async:
-          try
-            val cli: executive.CliType =
-              executive.cli(textArguments, environment, workingDirectory, stdio, signalFunnel.stream)
-            
-            val exitStatus = executive.process(cli, block(using client)(using cli))
-            exitPromise.fulfill(exitStatus)
-
-          catch case error: Exception => exitPromise.fulfill(ExitStatus.Fail(1))
-          finally
-            socket.close()
-            Log.fine(t"Closed connection to ${pid.value}")
-        
-        clients(pid) = ClientConnection[BusType](pid, async, signalFunnel, promise, () => socket.close(), exitPromise, busFunnel)
+          clients(pid) = ClientConnection[BusType](pid, async, signalFunnel, promise, () => socket.close(),
+              exitPromise, busFunnel)
 
   application(using executives.direct)(Nil):
     import stdioSources.jvm

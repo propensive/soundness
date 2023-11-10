@@ -20,35 +20,34 @@ import rudiments.*
 import gossamer.*
 import spectacular.*
 import perforate.*
+import eucalyptus.*, logging.pinned
 import anticipation.*
+
+given Realm = realm"params"
 
 case class PosixParameters
     (positional: List[Argument] = Nil, parameters: Map[Argument, List[Argument]] = Map(),
         postpositional: List[Argument] = Nil):
   
-  def apply[OperandType](subcommand: Subcommand[OperandType])(using cli: Cli, /*suggestions: Suggestions[OperandType],*/ flagInterpreter: FlagInterpreter[OperandType]): Maybe[OperandType] =
-    positional.lift(subcommand.position).map: argument =>
-      //cli.suggest(subcommand)
-      safely(flagInterpreter.interpret(List(argument)))
-    .getOrElse(Unset)
-  
   def apply
       [OperandType]
       (flag: Flag[OperandType])
       (using cli: Cli)
-      (using interpreter: FlagInterpreter[OperandType] /*, suggestions: Suggestions[OperandType] = Suggestions.noSuggestions*/)
+      (using interpreter: FlagInterpreter[OperandType], suggestions: Suggestions[OperandType] = Suggestions.noSuggestions)
       : Maybe[OperandType] =
     
     cli.register(flag)
 
     parameters.find { (key, value) => flag.matches(key) }.map: (_, operands) =>
       cli.present(flag)
-      //operands.head.suggest(suggestions.suggest().to(List))
+      Log.fine(t"Seen ${flag.debug} and got suggestions ${suggestions.suggest().to(List).debug}")
+      cli.suggest(operands.head, () => suggestions.suggest().to(List))
       safely(interpreter.interpret(operands))
     .getOrElse(Unset)
-    
+
+
 object PosixCliInterpreter extends CliInterpreter[PosixParameters]:
-  def apply(arguments: List[Argument])(using cli: Cli): PosixParameters =
+  def interpret(arguments: List[Argument])(using cli: Cli): PosixParameters =
     def recur
         (todo: List[Argument], arguments: List[Argument], current: Maybe[Argument], parameters: PosixParameters)
         : PosixParameters =
@@ -68,7 +67,8 @@ object PosixCliInterpreter extends CliInterpreter[PosixParameters]:
           else if head().starts(t"-") then
             cli.unknown(head)
             recur(tail, Nil, head, push())
-          else recur(tail, head :: arguments, current, parameters)
+          else
+            recur(tail, head :: arguments, current, parameters)
         
         case Nil =>
           push()
@@ -135,13 +135,8 @@ case class Flag
 
   def apply()
       (using cli: Cli, interpreter: CliInterpreter[PosixParameters],
-          flagInterpreter: FlagInterpreter[OperandType])
+          flagInterpreter: FlagInterpreter[OperandType], suggestions: Suggestions[OperandType] = Suggestions.noSuggestions)
       : Maybe[OperandType] =
-    interpreter(cli.arguments)(this)
-
-case class Subcommand[OperandType](position: Int):
-  def apply()
-      (using cli: Cli, interpreter: CliInterpreter[PosixParameters],
-          flagInterpreter: FlagInterpreter[OperandType], suggestions: Suggestions[OperandType])
-      : Maybe[OperandType] =
-    interpreter(cli.arguments)(this)
+    Log.fine(t"Registering ${this.debug} suggesting ${suggestions.suggest().to(List).debug}")
+    cli.register(this)
+    interpreter.interpret(cli.arguments)(this)

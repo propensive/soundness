@@ -19,6 +19,7 @@ package exoskeleton
 import rudiments.*
 import ambience.*
 import anticipation.*
+import eucalyptus.*, logging.pinned
 import spectacular.*
 import gossamer.*
 import profanity.*
@@ -31,7 +32,7 @@ enum Shell:
   case Zsh, Bash, Fish
 
 object SimpleParameterInterpreter extends CliInterpreter[List[Argument]]:
-  def apply(arguments: List[Argument])(using Cli): List[Argument] = arguments
+  def interpret(arguments: List[Argument])(using Cli): List[Argument] = arguments
 
 object Cli:
   def arguments
@@ -42,16 +43,6 @@ object Cli:
       Argument(index, text, if focus == index then position else Unset)
 
 trait Cli extends ProcessContext:
-  type State
-  
-  private var currentState: State = initialState
-  protected def initialState: State
-  
-  def apply(): State = currentState
-  
-  def update(state: State): Unit = synchronized:
-    currentState = state
-  
   def arguments: List[Argument]
   def environment: Environment
   def workingDirectory: WorkingDirectory
@@ -59,13 +50,15 @@ trait Cli extends ProcessContext:
   def register(flag: Flag[?]): Unit = ()
   def present(flag: Flag[?]): Unit = ()
   def unknown(argument: Argument): Unit = ()
+  def suggest(argument: Argument, suggestions: () => List[Suggestion]): Unit = ()
+  def explain(update: (previous: Maybe[Text]) ?=> Maybe[Text]): Unit = ()
 
 trait CliInterpreter[ParametersType]:
-  def apply(arguments: List[Argument])(using Cli): ParametersType
+  def interpret(arguments: List[Argument])(using Cli): ParametersType
 
 object Parameters:
   def apply[ParametersType: CliInterpreter](arguments: List[Argument])(using Cli): ParametersType =
-    summon[CliInterpreter[ParametersType]](arguments)
+    summon[CliInterpreter[ParametersType]].interpret(arguments)
 
 case class Argument(position: Int, value: Text, cursor: Maybe[Int]):
   def apply(): Text = value
@@ -77,12 +70,5 @@ package parameterInterpretation:
 
 def arguments(using cli: Cli): List[Argument] = cli.arguments
 
-trait ParametersPostprocessor[ParametersType]:
-  def process(parameters: ParametersType): Unit
-
-def parameters
-    [ParametersType]
-    (using interpreter: CliInterpreter[ParametersType], cli: Cli,
-        postprocessor: ParametersPostprocessor[ParametersType])
-    : ParametersType =
-  interpreter(arguments).tap(postprocessor.process)
+def parameters[ParametersType](using interpreter: CliInterpreter[ParametersType], cli: Cli): ParametersType =
+  interpreter.interpret(arguments)

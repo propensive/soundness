@@ -28,16 +28,16 @@ import ambience.*, environments.jvm, systemProperties.jvm
 import galilei.*, filesystemOptions.{dereferenceSymlinks, createNonexistent, createNonexistentParents,
     doNotOverwritePreexisting}
 
-object Install:
-  def apply
+object TabCompletions:
+  def install
       (shell: Shell, command: Text, global: Boolean)
-      (using Raises[PathError], Raises[IoError], Raises[OverwriteError], Raises[StreamCutError])
+      (using Raises[PathError], Raises[IoError], Raises[OverwriteError], Raises[StreamCutError], Effectful)
       : List[Message] =
     val path: Path = scriptPath(shell, command, global)
-    
-    script(shell, command).sysBytes.writeTo(path.make[File]())
-    
-    List(msg"Completion script for ${shell.show.lower} installed to ${path}.") ++ messages(shell, global)
+
+    if path.exists() then Nil else
+      script(shell, command).sysBytes.writeTo(path.make[File]())
+      List(msg"Completion script for ${shell.show.lower} installed to ${path}.") ++ messages(shell, global)
 
   def scriptPath(shell: Shell, command: Text, global: Boolean)(using Raises[PathError], Raises[IoError]): Path =
     val xdg = Xdg()

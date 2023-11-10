@@ -21,6 +21,7 @@ import rudiments.*
 import ambience.*
 import anticipation.*
 import turbulence.*
+import eucalyptus.*, logging.pinned
 
 import sun.misc as sm
 
@@ -73,3 +74,6 @@ extends Cli, Stdio:
   
   type State = Unit
   def initialState: Unit = ()
+
+@capability
+erased trait Effectful

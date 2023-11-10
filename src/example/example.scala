@@ -20,6 +20,7 @@ import perforate.*
 import spectacular.*
 import gossamer.*
 import anticipation.*
+import ambience.*, systemProperties.jvm
 import profanity.*
 import eucalyptus.*
 import parasite.*
@@ -28,56 +29,44 @@ import turbulence.*
 
 import executives.completions
 
-given Realm = realm"exosk"
-given LogFormat[Out.type] = logFormats.standardColor[Out.type]
-
 @main
 def example(): Unit =
   import errorHandlers.throwUnsafely
   import parameterInterpretation.posix
     
   daemon[Int]:
-    val Lang = Flag[Language](t"speech", false, List('s'), t"the two-letter code of the language")
+
+    val Lang = Flag[Language](t"language", false, List('L'), t"the two-letter code of the language")
     val Size = Flag[Text](t"size", false, List('S'), t"big, medium or small")
     val Age = Flag[Int](t"age", false, List('a'), t"the number of years")
     val Color = Flag[Text]('c', false, List(), t"the color")
-    val SubcommandAction = Subcommand[Action](0)
 
-    SubcommandAction() match
-      case Unset =>
-        Lang()
-      
-      case Action.Run   =>
-        Lang()
-        Size()
-      
-      case Action.Build =>
-        Size()
-        Color()
-      
-      case _ =>
-        Age()
-        
+    import logging.pinned
+
+    Age()
+    Size()
+    Color()
+    Lang()
+
     execute:
-      supervise:
-        given Log = Log.route:
-          case _ => Out
-        
-        Log.envelop(service.pid):
-          Log.fine(t"language = ${Lang().debug}")
-          Log.fine(t"size = ${Size().debug}")
-          
-          Log.envelop(t"second"):
-            Log.fine(t"age = ${Age().debug}")
+      TabCompletions.install(Shell.Fish, t"launcher", false)
+      TabCompletions.install(Shell.Bash, t"launcher", false)
 
-            terminal:
-              Log.envelop(t"terminal"):
-                tty.events.multiplexWith(service.bus).foreach:
-                  case Keypress.CharKey('Q') => service.shutdown()
-                  case Keypress.CharKey('w') => service.broadcast(42)
-                  case other                 => Log.info(other.debug)
-    
-                ExitStatus.Ok
+      supervise:
+        terminal:
+          Out.println(Age().debug)
+          Out.println(Size().debug)
+          Out.println(Color().debug)
+          Out.println(Lang().debug)
+          Out.println(Properties.exoskeleton.fpath[Text]())
+          Out.println(Properties.exoskeleton.script[Text]())
+          Out.println(t"Hello world")
+          ExitStatus.Ok
+
+
+
+
+
 
 object Language:
   given Suggestions[Language] = () => Language.values.map: language =>
@@ -87,12 +76,3 @@ object Language:
 
 enum Language:
   case En, Fr, De, Es
-
-object Action:
-  given Suggestions[Action] = () => Action.values.map: action =>
-    Suggestion(action.toString.tt.lower, t"Do the ${action.toString.tt} action")
-  
-  given Decoder[Action] = text => valueOf(text.lower.capitalize.s)
-
-enum Action:
-  case Run, Build, Fire, Cheat

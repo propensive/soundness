@@ -19,6 +19,7 @@ package exoskeleton
 import anticipation.*
 import rudiments.*
 import turbulence.*
+import eucalyptus.*, logging.pinned
 import profanity.*
 import spectacular.*
 import gossamer.*
@@ -34,36 +35,28 @@ case class CliCompletion
         workingDirectory: WorkingDirectory, shell: Shell, currentArgument: Int, focusPosition: Int,
         stdio: Stdio, signals: LazyList[Signal])
 extends Cli:
-  type State = SuggestionsState
-  protected def initialState: SuggestionsState = SuggestionsState(Map(), Unset, Set(), Set())
-
-  private[exoskeleton] def updateSuggestions
-      (argument: Argument, transform: List[Suggestion] => List[Suggestion]): Unit =
-    
-    this() = apply().copy(suggestions = apply().suggestions.updated(argument, () =>
-        transform(apply().suggestions.getOrElse(argument, () => Nil)())))
-  
-  private[exoskeleton] def updateExplanation(transform: Maybe[Text] => Maybe[Text]): Unit =
-    this() = apply().copy(explanation = transform(apply().explanation))
+  var flags: Set[Flag[?]] = Set()
+  var seenFlags: Set[Flag[?]] = Set()
+  var unknownArguments: Set[Argument] = Set()
+  var suggestionsMap: Map[Argument, () => List[Suggestion]] = Map()
+  var explanation: Maybe[Text] = Unset
 
   def focus: Argument = arguments(currentArgument)
 
+  override def register(flag: Flag[?]): Unit = if !flag.secret then flags += flag
+  override def present(flag: Flag[?]): Unit = if !flag.repeatable then seenFlags += flag
+  override def unknown(argument: Argument): Unit = unknownArguments += argument
+  override def explain(update: (previous: Maybe[Text]) ?=> Maybe[Text]): Unit = explanation = update(using explanation)
+  
   def suggestions(argument: Argument = focus): List[Suggestion] =
-    apply().suggestions.get(argument).map(_()).getOrElse(Nil)
+    suggestionsMap.getOrElse(argument, () => Nil)()
   
-  def explanation: Maybe[Text] = apply().explanation
-  
-  override def register(flag: Flag[?]): Unit =
-    if !flag.secret then this() = apply().copy(known = apply().known + flag)
-  
-  override def present(flag: Flag[?]): Unit =
-    if !flag.repeatable then this() = apply().copy(present = apply().present + flag)
-  
-  override def unknown(argument: Argument): Unit =
-    updateSuggestions(argument, _ => flagSuggestions(argument().starts(t"--")))
+  def suggest(argument: Argument, update: List[Suggestion] => List[Suggestion]): Unit =
+    suggestionsMap =
+      suggestionsMap.updated(argument, () => update(suggestionsMap.getOrElse(argument, () => Nil)()))
   
   def flagSuggestions(longOnly: Boolean): List[Suggestion] =
-    (this().known -- this().present).to(List).flatMap: flag =>
+    (flags -- seenFlags).to(List).flatMap: flag =>
       val allFlags = (flag.name :: flag.aliases)
       
       if longOnly then
@@ -76,8 +69,11 @@ extends Cli:
 
   def serialize: List[Text] = shell match
     case Shell.Zsh =>
+      Log.fine(t"ZSH completions")
+      Log.fine(t"Flags ${flags.debug}")
+      Log.fine(t"Unknown ${unknownArguments.debug}")
       val title = explanation.mm { explanation => List(t"\t-X\t$explanation") }.or(Nil)
-      val items = suggestions(focus)
+      val items = if unknownArguments.contains(focus) then flagSuggestions(focus().starts(t"--")) else suggestions(focus)
       val width = items.map(_.text.length).max
       val aliasesWidth = items.map(_.aliases.join(t" ").length).max
       
@@ -116,18 +112,12 @@ case class Execution(execute: CliInvocation => ExitStatus)
 def execute(block: Effectful ?=> CliInvocation ?=> ExitStatus): Execution = Execution(block(using ###)(using _))
 
 
-@capability
-erased trait Effectful
-
-extension (argument: Argument)(using cli: Cli)
+extension (argument: Argument)(using cli: CliCompletion)
   def suggest(suggestions: (previous: List[Suggestion]) ?=> List[Suggestion]): Unit =
-  cli match
-    case cli: CliCompletion => cli.updateSuggestions(argument, suggestions(using _))
-    case _                  => ()
+    cli.suggest(argument, suggestions(using _))
   
-def explain(explanation: (previous: Maybe[Text]) ?=> Maybe[Text])(using cli: Cli): Unit = cli match
-  case cli: CliCompletion => cli.updateExplanation(explanation(using _))
-  case _                  => ()
+def explain(explanation: (previous: Maybe[Text]) ?=> Maybe[Text])(using cli: Cli): Unit =
+  cli.explain(explanation)
 
 package executives:
   given completions: Executive with
@@ -158,4 +148,3 @@ package executives:
 
       case invocation: CliInvocation =>
         execution.execute(invocation)
-
