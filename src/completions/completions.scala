@@ -49,7 +49,6 @@ extends Cli:
     parameters.read(flag)
 
   def focus: Argument =
-    println(t"Focus ${currentArgument} in ${arguments.debug}")
     arguments(currentArgument)
 
   override def register(flag: Flag[?], suggestions: Suggestions[?]): Unit =
@@ -77,10 +76,8 @@ extends Cli:
 
   def serialize: List[Text] = shell match
     case Shell.Zsh =>
-      println(t"Parameters: ${parameters.debug}")
       val title = explanation.mm { explanation => List(t"\t-X\t$explanation") }.or(Nil)
       
-      println(s"resultSuggestions: ${resultSuggestions}")
       val items =
         if parameters.focusFlag.unset
         then flagSuggestions(focus().starts(t"--"))
@@ -136,8 +133,6 @@ package executives:
             stdio: Stdio, signals: LazyList[Signal])(using interpreter: CliInterpreter): Cli =
       arguments match
         case t"{completions}" :: shellName :: As[Int](focus) :: As[Int](position) :: t"--" :: command :: rest =>
-          println(t"Doing completions on $command")
-          
           val shell = shellName match
             case t"zsh"  => Shell.Zsh
             case t"fish" => Shell.Fish
@@ -147,7 +142,6 @@ package executives:
               workingDirectory, shell, focus - 1, position, stdio, signals)
           
         case other =>
-          println(t"NOT Doing completions")
           CliInvocation(Cli.arguments(arguments), environment, workingDirectory, stdio, signals)
       
     def process(cli: Cli, execution: Execution): ExitStatus = (cli: @unchecked) match

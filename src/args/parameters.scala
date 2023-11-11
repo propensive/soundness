@@ -20,7 +20,7 @@ import rudiments.*
 import gossamer.*
 import spectacular.*
 import perforate.*
-import eucalyptus.*, logging.pinned
+import eucalyptus.*
 import anticipation.*
 
 given Realm = realm"params"
@@ -40,7 +40,6 @@ extends FlagParameters:
 
     parameters.find { (key, value) => flag.matches(key) }.map: (_, operands) =>
       cli.present(flag)
-      Log.fine(t"Seen ${flag.debug} and got suggestions ${suggestions.suggest().to(List).debug}")
       safely(interpreter.interpret(operands))
     .getOrElse(Unset)
 

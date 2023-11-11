@@ -19,7 +19,7 @@ package exoskeleton
 import rudiments.*
 import ambience.*
 import anticipation.*
-import eucalyptus.*, logging.pinned
+import eucalyptus.*
 import spectacular.*
 import gossamer.*
 import profanity.*
@@ -45,8 +45,6 @@ object Cli:
   def arguments
       (textArguments: Iterable[Text], focus: Maybe[Int] = Unset, position: Maybe[Int] = Unset)
       : List[Argument] =
-    println(t"arguments(${textArguments.debug}, ${focus.debug}, ${position.debug})")
-
     textArguments.to(List).padTo(focus.or(0) + 1, t"").zipWithIndex.map: (text, index) =>
       Argument(index, text, if focus == index then position else Unset)
 
@@ -58,7 +56,6 @@ trait Cli extends ProcessContext:
 
   def register(flag: Flag[?], suggestions: Suggestions[?]): Unit = ()
   def present(flag: Flag[?]): Unit = ()
-  def unknown(argument: Argument): Unit = ()
   def explain(update: (previous: Maybe[Text]) ?=> Maybe[Text]): Unit = ()
 
 trait FlagParameters:
