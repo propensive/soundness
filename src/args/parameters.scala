@@ -27,7 +27,7 @@ given Realm = realm"params"
 
 case class PosixParameters
     (positional: List[Argument] = Nil, parameters: Map[Argument, List[Argument]] = Map(),
-        postpositional: List[Argument] = Nil, focusOperandFlag: Maybe[Argument] = Unset)
+        postpositional: List[Argument] = Nil, focusFlag: Maybe[Argument] = Unset)
 extends FlagParameters:
   
   def read
@@ -49,8 +49,7 @@ object PosixCliInterpreter extends CliInterpreter:
   type Parameters = PosixParameters
   def interpret(arguments: List[Argument]): PosixParameters =
     def recur
-        (todo: List[Argument], arguments: List[Argument], current: Maybe[Argument], parameters: PosixParameters,
-            focusOperandFlag: Maybe[Argument])
+        (todo: List[Argument], arguments: List[Argument], current: Maybe[Argument], parameters: PosixParameters)
         : PosixParameters =
       
       def push(): PosixParameters = current match
@@ -63,15 +62,15 @@ object PosixCliInterpreter extends CliInterpreter:
       todo match
         case head :: tail =>
           if head() == t"--" then push().copy(postpositional = tail)
-          else if head().starts(t"-") then recur(tail, Nil, head, push(), focusOperandFlag)
+          else if head().starts(t"-") then recur(tail, Nil, head, push())
           else
-            val focusOperandFlag2 = if !head.cursor.unset then current else focusOperandFlag
-            recur(tail, head :: arguments, current, parameters, focusOperandFlag2)
+            val parameters2 = if !head.cursor.unset then parameters.copy(focusFlag = current) else parameters
+            recur(tail, head :: arguments, current, parameters2)
         
         case Nil =>
           push()
     
-    recur(arguments, Nil, Unset, PosixParameters(), Unset)
+    recur(arguments, Nil, Unset, PosixParameters())
 
 object Suggestion:
   def apply
@@ -98,7 +97,7 @@ package parameterInterpretation:
 
 object FlagInterpreter:
   given unit: FlagInterpreter[Unit] with
-    override def operands: Int = 0
+    override def operand: Boolean = false
     def interpret(arguments: List[Argument]): Unit = ()
 
   given decoder[OperandType: Decoder]: FlagInterpreter[OperandType] = arguments =>
@@ -106,7 +105,7 @@ object FlagInterpreter:
       case List(value) => value().decodeAs[OperandType]
 
 trait FlagInterpreter[OperandType]:
-  def operands: Int = 1
+  def operand: Boolean = true
   def interpret(arguments: List[Argument]): OperandType
 
 object Flag:

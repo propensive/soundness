@@ -212,6 +212,7 @@ def daemon[BusType <: Matchable]
     supervise:
       given Log = Log.route:
         case _ => Syslog(t"exoskeleton")
+      Log.pin()
 
       Async:
         sh"flock -u -x -n $portFile cat".exec[Unit]()

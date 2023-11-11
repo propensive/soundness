@@ -40,18 +40,22 @@ def example(): Unit =
     val Size = Flag[Text](t"size", false, List('S'), t"big, medium or small")
     val Age = Flag[Int](t"age", false, List('a'), t"the number of years")
     val Color = Flag[Text]('c', false, List(), t"the color")
+    val Verbose = Switch('v', false, List(t"verbose"), t"Verbose output")
 
     import logging.pinned
 
     Age()
     Size()
     Color()
+    Verbose()
     Lang()
+
+    Log.info(t"hello world")
 
     execute:
       TabCompletions.install(Shell.Fish, t"launcher", false)
       TabCompletions.install(Shell.Bash, t"launcher", false)
-
+      
       supervise:
         terminal:
           Out.println(Age().debug)
@@ -60,13 +64,8 @@ def example(): Unit =
           Out.println(Lang().debug)
           Out.println(Properties.exoskeleton.fpath[Text]())
           Out.println(Properties.exoskeleton.script[Text]())
-          Out.println(t"Hello world")
+
           ExitStatus.Ok
-
-
-
-
-
 
 object Language:
   given Suggestions[Language] = () => Language.values.map: language =>

@@ -35,7 +35,7 @@ case class Arguments(sequence: Argument*) extends FlagParameters:
   def read[OperandType](flag: Flag[OperandType])(using Cli, FlagInterpreter[OperandType], Suggestions[OperandType]): Maybe[OperandType] =
     Unset // FIXME
   
-  def focusOperandFlag: Maybe[Argument] = Unset
+  def focusFlag: Maybe[Argument] = Unset
 
 object SimpleParameterInterpreter extends CliInterpreter:
   type Parameters = Arguments
@@ -45,9 +45,9 @@ object Cli:
   def arguments
       (textArguments: Iterable[Text], focus: Maybe[Int] = Unset, position: Maybe[Int] = Unset)
       : List[Argument] =
-    Log.info(t"arguments(${textArguments.debug}, ${focus.debug}, ${position.debug})")
+    println(t"arguments(${textArguments.debug}, ${focus.debug}, ${position.debug})")
 
-    textArguments.to(List).padTo(focus.or(0), t"").zipWithIndex.map: (text, index) =>
+    textArguments.to(List).padTo(focus.or(0) + 1, t"").zipWithIndex.map: (text, index) =>
       Argument(index, text, if focus == index then position else Unset)
 
 trait Cli extends ProcessContext:
@@ -63,7 +63,7 @@ trait Cli extends ProcessContext:
 
 trait FlagParameters:
   def read[OperandType](flag: Flag[OperandType])(using Cli, FlagInterpreter[OperandType], Suggestions[OperandType]): Maybe[OperandType]
-  def focusOperandFlag: Maybe[Argument]
+  def focusFlag: Maybe[Argument]
 
 trait CliInterpreter:
   type Parameters <: FlagParameters

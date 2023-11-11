@@ -19,7 +19,7 @@ package exoskeleton
 import anticipation.*
 import rudiments.*
 import turbulence.*
-import eucalyptus.*, logging.pinned
+import eucalyptus.*
 import profanity.*
 import spectacular.*
 import gossamer.*
@@ -48,14 +48,15 @@ extends Cli:
     given Cli = this
     parameters.read(flag)
 
-  def focus: Argument = arguments(currentArgument)
+  def focus: Argument =
+    println(t"Focus ${currentArgument} in ${arguments.debug}")
+    arguments(currentArgument)
 
   override def register(flag: Flag[?], suggestions: Suggestions[?]): Unit =
-    parameters.focusOperandFlag.mm: argument =>
-      Log.fine(t"focusOperandFlag=${parameters.focusOperandFlag.debug} vs flag=${flag.debug}")
-      if flag.matches(argument) then
-        Log.fine("matches")
-        resultSuggestions = suggestions.suggest().to(List)
+    parameters.focusFlag.mm: argument =>
+      if flag.matches(argument) && currentArgument == argument.position + 1 then
+        val allSuggestions = suggestions.suggest().to(List)
+        if allSuggestions != Nil then resultSuggestions = allSuggestions
 
     if !flag.secret then flags(flag) = suggestions
   
@@ -76,20 +77,17 @@ extends Cli:
 
   def serialize: List[Text] = shell match
     case Shell.Zsh =>
-      Log.warn(t"Parameters: ${parameters.debug}")
+      println(t"Parameters: ${parameters.debug}")
       val title = explanation.mm { explanation => List(t"\t-X\t$explanation") }.or(Nil)
       
+      println(s"resultSuggestions: ${resultSuggestions}")
       val items =
-        if parameters.focusOperandFlag.unset
-        then
-          Log.info(t"flagSuggestions")
-          flagSuggestions(focus().starts(t"--"))
-        else
-          Log.info(t"resultSuggestions")
-          resultSuggestions
+        if parameters.focusFlag.unset
+        then flagSuggestions(focus().starts(t"--"))
+        else resultSuggestions
       
-      val width = items.map(_.text.length).max
-      val aliasesWidth = items.map(_.aliases.join(t" ").length).max
+      lazy val width = items.map(_.text.length).max
+      lazy val aliasesWidth = items.map(_.aliases.join(t" ").length).max
       
       val itemLines = items.flatMap:
         case Suggestion(text, description, hidden, incomplete, aliases) =>
@@ -138,18 +136,18 @@ package executives:
             stdio: Stdio, signals: LazyList[Signal])(using interpreter: CliInterpreter): Cli =
       arguments match
         case t"{completions}" :: shellName :: As[Int](focus) :: As[Int](position) :: t"--" :: command :: rest =>
-          Log.info(t"Doing completions on $command")
+          println(t"Doing completions on $command")
           
           val shell = shellName match
             case t"zsh"  => Shell.Zsh
             case t"fish" => Shell.Fish
             case _       => Shell.Bash
           
-          CliCompletion(Cli.arguments(arguments, focus, position), Cli.arguments(rest, focus, position), environment,
+          CliCompletion(Cli.arguments(arguments, focus - 1, position), Cli.arguments(rest, focus - 1, position), environment,
               workingDirectory, shell, focus - 1, position, stdio, signals)
           
         case other =>
-          Log.info(t"NOT Doing completions")
+          println(t"NOT Doing completions")
           CliInvocation(Cli.arguments(arguments), environment, workingDirectory, stdio, signals)
       
     def process(cli: Cli, execution: Execution): ExitStatus = (cli: @unchecked) match
