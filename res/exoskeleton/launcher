@@ -74,7 +74,7 @@ abort() {
 
 launch() {
   test -x "$javaHome/bin/java" || installJava
-  mkfifo "$waitFile" 2> /dev/null && (exec nohup "$javaHome/bin/java" -Dexoskeleton.script="$name" -Dexoskeleton.fpath="$(zsh -c 'printf "%s\n" $fpath' 2> /dev/null || echo '')" -jar "$script" > /dev/null 2>&1 || abort) &
+  mkfifo "$waitFile" 2> /dev/null && (exec nohup "$javaHome/bin/java" -Dexoskeleton.name="$name" -Dexoskeleton.script="$script" -Dexoskeleton.command="$(command -v "$name")" -Dexoskeleton.fpath="$(zsh -c 'printf "%s\n" $fpath' 2> /dev/null || echo '')" -jar "$script" > /dev/null 2>&1 || abort) &
   launchPid=$!
   ensure flock
   flock "$initFile" sh -c "test -f \"$portFile\" || cat \"$waitFile\"" > /dev/null 2>&1 || abort
@@ -85,11 +85,11 @@ handle() {
   case "$1" in
     TERM) continue=0 ;;
   esac
-  printf "s\n%s\n%s\n" "$pid" "$1" | nc -q 1 localhost $port
+  printf "s\n%s\n%s\n" "$pid" "$1" | nc -q 0 localhost $port
 }
 
 terminate() {
-  exit "$(printf "x\n%s\n" "$pid" | nc -q 1 localhost $port)" >/dev/null 2>&1
+  exit "$(printf "x\n%s\n" "$pid" | nc -q 0 localhost $port)" >/dev/null 2>&1
 }
 
 connect() {
@@ -122,7 +122,7 @@ test -t 0 && stty "${sttyOptions[@]}" > /dev/null 2>&1
 connect <&0 >&3 &
 stdoutPid=$!
 ensure nc
-nc -q 1 localhost $port <&3 &
+nc -q 0 localhost $port <&3 &
 pipePid=$!
 
 for signal in "${signals[@]}"
