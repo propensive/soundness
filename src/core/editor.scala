@@ -55,18 +55,19 @@ case class LineEditor(content: Text = t"", pos: Int = 0):
     case Control('W')     => val prefix = content.take(0 max (pos - 1)).reverse.dropWhile(_ != ' ').reverse
                              copy(t"$prefix${content.drop(pos)}", prefix.length)
 
-    case Delete           => copy(t"${content.take(pos)}${content.drop(pos + 1)}")
-    case Backspace        => copy(t"${content.take(pos - 1)}${content.drop(pos)}", (pos - 1) max 0)
-    case Home             => copy(pos = 0)
-    case End              => copy(pos = content.length)
-    case LeftArrow        => copy(pos = (pos - 1) max 0)
-    case Ctrl(LeftArrow)  => copy(pos = (pos - 2 max 0 to 0 by -1).find(content(_) == ' ').fold(0)(_ + 1))
+    case Delete      => copy(t"${content.take(pos)}${content.drop(pos + 1)}")
+    case Backspace   => copy(t"${content.take(pos - 1)}${content.drop(pos)}", (pos - 1) max 0)
+    case Home        => copy(pos = 0)
+    case End         => copy(pos = content.length)
+    case Left        => copy(pos = (pos - 1) max 0)
+    case Ctrl(Left)  => copy(pos = (pos - 2 max 0 to 0 by -1).find(content(_) == ' ').fold(0)(_ + 1))
 
-    case Ctrl(RightArrow) => val range = ((pos + 1) min (content.length - 1)) to (content.length - 1)
-                             val newPos = range.find(content(_) == ' ').fold(content.length)(_ + 1)
-                             copy(pos = newPos min content.length)
-    case RightArrow       => copy(pos = (pos + 1) min content.length)
-    case _                => this
+    case Ctrl(Right) => val range = ((pos + 1) min (content.length - 1)) to (content.length - 1)
+                        val newPos = range.find(content(_) == ' ').fold(content.length)(_ + 1)
+                        copy(pos = newPos min content.length)
+    case Right       => copy(pos = (pos + 1) min content.length)
+    case _           => this
+
   catch case e: OutOfRangeError => this
 
   def unapply(stream: LazyList[TerminalEvent])(using interaction: Interaction[LineEditor, Text])
@@ -124,9 +125,9 @@ object Interaction:
 case class SelectMenu[ItemType](options: List[ItemType], current: ItemType):
   import Keypress.*
   def apply(keypress: TerminalEvent): SelectMenu[ItemType] = try keypress match
-    case UpArrow   => copy(current = options(0 max options.indexOf(current) - 1))
-    case DownArrow => copy(current = options(options.size - 1 min options.indexOf(current) + 1))
-    case _         => this
+    case Up   => copy(current = options(0 max options.indexOf(current) - 1))
+    case Down => copy(current = options(options.size - 1 min options.indexOf(current) + 1))
+    case _    => this
   catch case e: OutOfRangeError => this
 
   def unapply

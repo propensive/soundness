@@ -30,24 +30,25 @@ trait Keyboard:
   def process(stream: LazyList[Char]): LazyList[Keypress]
 
 object Keyboard:
-  def modified(code: Char, keypress: Keypress): Keypress =
-    def recur(n: Int, modifiers: List[Keypress => Keypress], keypress: Keypress): Keypress = modifiers match
-      case Nil => keypress
-      
-      case modifier :: tail =>
-        recur(n*2, tail, if (n & 8) == 8 then modifier(keypress) else keypress)
+  import Keypress.*
 
-    recur(code - '1', List(Keypress.Meta(_), Keypress.Ctrl(_), Keypress.Alt(_), Keypress.Shift(_)), keypress)
+  def modified(code: Char, keypress: EditKey | FunctionKey): EditKey | FunctionKey | Shift | Alt | Ctrl | Meta =
+    val n = code - '1'
+    val shift: EditKey | FunctionKey | Shift = if (n&1) == 1 then Shift(keypress) else keypress
+    val alt: EditKey | FunctionKey | Shift | Alt = if (n&2) == 2 then Alt(shift) else shift
+    val ctrl: EditKey | FunctionKey | Shift | Alt | Ctrl = if (n&4) == 4 then Ctrl(alt) else alt
+    
+    if (n&8) == 8 then Meta(ctrl) else ctrl
 
-  def navigation(code: Char): Keypress = code match
-    case 'A' => Keypress.UpArrow
-    case 'B' => Keypress.DownArrow
-    case 'C' => Keypress.RightArrow
-    case 'D' => Keypress.LeftArrow
+  def navigation(code: Char): Keypress.EditKey = code match
+    case 'A' => Keypress.Up
+    case 'B' => Keypress.Down
+    case 'C' => Keypress.Right
+    case 'D' => Keypress.Left
     case 'F' => Keypress.End
     case 'H' => Keypress.Home
 
-  def vt(code: Char): Keypress = code match
+  def vt(code: Char): Keypress.EditKey = code match
     case '1' | '7' => Keypress.Home
     case '2'       => Keypress.Insert
     case '3'       => Keypress.Delete

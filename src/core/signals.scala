@@ -42,22 +42,19 @@ enum Signal extends TerminalEvent:
   def name: Text = t"SIG${this.toString.show.upper}"
   def id: Int = if ordinal < 15 then ordinal - 1 else ordinal
 
+object Keypress:
+  type EditKey = Tab.type | Home.type | End.type | PageUp.type | PageDown.type | Insert.type | Delete.type |
+      Enter.type | Backspace.type | Escape.type | Left.type | Right.type | Up.type | Down.type
+
 enum Keypress extends TerminalEvent:
+  case Tab, Home, End, PageUp, PageDown, Insert, Delete, Enter, Backspace, Escape, Left, Right, Up, Down
   case CharKey(char: Char)
   case FunctionKey(number: Int)
   case Control(char: Char)
   case EscapeSeq(id: Char, content: Char*)
-  
-  case Tab, Home, End, PageUp, PageDown, Insert, Delete, Enter, Backspace, Escape
-
-  case LeftArrow
-  case RightArrow
-  case UpArrow
-  case DownArrow
-
-  case Shift(keypress: Keypress)
-  case Alt(keypress: Keypress)
-  case Ctrl(keypress: Keypress)
-  case Meta(keypress: Keypress)
+  case Shift(keypress: Keypress.EditKey | FunctionKey)
+  case Alt(keypress: Shift | Keypress.EditKey | FunctionKey)
+  case Ctrl(keypress: Alt | Shift | Keypress.EditKey | FunctionKey)
+  case Meta(keypress: Ctrl | Alt | Shift | Keypress.EditKey | FunctionKey)
 
 
