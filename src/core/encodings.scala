@@ -88,8 +88,8 @@ class CharEncoder(val encoding: Encoding { type CanEncode = true }):
   def encode(text: Text): Bytes = text.s.getBytes(encoding.name.s).nn.immutable(using Unsafe)
   def encode(stream: LazyList[Text]): LazyList[Bytes] = stream.map(encode)
 
-class SafeCharDecoder(encoding: Encoding)
-extends CharDecoder(encoding)(using badEncodingHandlers.skip)
+class SafeCharDecoder(safeEncoding: Encoding)
+extends CharDecoder(safeEncoding)(using badEncodingHandlers.skip)
 
 class CharDecoder(val encoding: Encoding)(using handler: BadEncodingHandler):
   def decode(bytes: Bytes): Text =
