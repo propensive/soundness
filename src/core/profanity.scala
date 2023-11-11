@@ -47,6 +47,7 @@ object Keyboard:
     case 'D' => Keypress.Left
     case 'F' => Keypress.End
     case 'H' => Keypress.Home
+    case _   => Keypress.Escape
 
   def vt(code: Char): Keypress.EditKey = code match
     case '1' | '7' => Keypress.Home
@@ -55,6 +56,7 @@ object Keyboard:
     case '4' | '8' => Keypress.End
     case '5'       => Keypress.PageUp
     case '6'       => Keypress.PageDown
+    case _         => Keypress.Escape
 
 class StandardKeyboard()(using Monitor) extends Keyboard:
   type Keypress = profanity.Keypress | TerminalInfo
