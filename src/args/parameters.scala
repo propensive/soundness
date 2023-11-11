@@ -27,29 +27,30 @@ given Realm = realm"params"
 
 case class PosixParameters
     (positional: List[Argument] = Nil, parameters: Map[Argument, List[Argument]] = Map(),
-        postpositional: List[Argument] = Nil):
+        postpositional: List[Argument] = Nil, focusOperandFlag: Maybe[Argument] = Unset)
+extends FlagParameters:
   
-  def apply
+  def read
       [OperandType]
       (flag: Flag[OperandType])
-      (using cli: Cli)
-      (using interpreter: FlagInterpreter[OperandType], suggestions: Suggestions[OperandType] = Suggestions.noSuggestions)
+      (using cli: Cli, interpreter: FlagInterpreter[OperandType], suggestions: Suggestions[OperandType])
       : Maybe[OperandType] =
     
-    cli.register(flag)
+    cli.register(flag, suggestions)
 
     parameters.find { (key, value) => flag.matches(key) }.map: (_, operands) =>
       cli.present(flag)
       Log.fine(t"Seen ${flag.debug} and got suggestions ${suggestions.suggest().to(List).debug}")
-      cli.suggest(operands.head, () => suggestions.suggest().to(List))
       safely(interpreter.interpret(operands))
     .getOrElse(Unset)
 
 
-object PosixCliInterpreter extends CliInterpreter[PosixParameters]:
-  def interpret(arguments: List[Argument])(using cli: Cli): PosixParameters =
+object PosixCliInterpreter extends CliInterpreter:
+  type Parameters = PosixParameters
+  def interpret(arguments: List[Argument]): PosixParameters =
     def recur
-        (todo: List[Argument], arguments: List[Argument], current: Maybe[Argument], parameters: PosixParameters)
+        (todo: List[Argument], arguments: List[Argument], current: Maybe[Argument], parameters: PosixParameters,
+            focusOperandFlag: Maybe[Argument])
         : PosixParameters =
       
       def push(): PosixParameters = current match
@@ -61,19 +62,16 @@ object PosixCliInterpreter extends CliInterpreter[PosixParameters]:
       
       todo match
         case head :: tail =>
-          if head() == t"--" then
-            cli.unknown(head)
-            push().copy(postpositional = tail)
-          else if head().starts(t"-") then
-            cli.unknown(head)
-            recur(tail, Nil, head, push())
+          if head() == t"--" then push().copy(postpositional = tail)
+          else if head().starts(t"-") then recur(tail, Nil, head, push(), focusOperandFlag)
           else
-            recur(tail, head :: arguments, current, parameters)
+            val focusOperandFlag2 = if !head.cursor.unset then current else focusOperandFlag
+            recur(tail, head :: arguments, current, parameters, focusOperandFlag2)
         
         case Nil =>
           push()
     
-    recur(arguments, Nil, Unset, PosixParameters())
+    recur(arguments, Nil, Unset, PosixParameters(), Unset)
 
 object Suggestion:
   def apply
@@ -134,9 +132,8 @@ case class Flag
     flagId == name || aliases.contains(flagId)
 
   def apply()
-      (using cli: Cli, interpreter: CliInterpreter[PosixParameters],
+      (using cli: Cli, interpreter: CliInterpreter,
           flagInterpreter: FlagInterpreter[OperandType], suggestions: Suggestions[OperandType] = Suggestions.noSuggestions)
       : Maybe[OperandType] =
-    Log.fine(t"Registering ${this.debug} suggesting ${suggestions.suggest().to(List).debug}")
-    cli.register(this)
-    interpreter.interpret(cli.arguments)(this)
+    cli.register(this, suggestions)
+    cli.readParameter(this)

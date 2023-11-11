@@ -27,6 +27,8 @@ import perforate.*
 import hieroglyph.*, charEncoders.utf8
 import parasite.*
 import profanity.*
+import digression.*
+import fulminate.*
 import gossamer.*
 import turbulence.*
 import guillotine.*
@@ -65,12 +67,16 @@ class LazyEnvironment(variables: List[Text]) extends Environment:
 def daemon[BusType <: Matchable]
     (using executive: Executive)
     (block: DaemonService[BusType] ?=> executive.CliType ?=> executive.Return)
+    (using CliInterpreter)
     : Unit =
 
   import environments.jvm
   import errorHandlers.throwUnsafely
 
-  val name: Text = Properties.exoskeleton.script[Text]()
+  val name: Text = Properties.exoskeleton.name[Text]()
+  val script: Text = Properties.exoskeleton.script[Text]()
+  val command: Text = Properties.exoskeleton.command[Text]()
+  val fpath: List[Text] = Properties.exoskeleton.fpath[Text]().cut(t"\n")
   
   val xdg = Xdg()
   val baseDir: Directory = (xdg.runtimeDir.or(xdg.stateHome) / PathName(name)).as[Directory]
@@ -172,6 +178,7 @@ def daemon[BusType <: Matchable]
           
           val async: Async[Unit] = Async:
             Log.pin()
+            Log.info(t"Creating new CLI")
             try
               val cli: executive.CliType =
                 executive.cli(textArguments, environment, workingDirectory, stdio, signalFunnel.stream)
@@ -179,7 +186,14 @@ def daemon[BusType <: Matchable]
               val exitStatus = executive.process(cli, block(using client)(using cli))
               exitPromise.fulfill(exitStatus)
 
-            catch case error: Exception => exitPromise.fulfill(ExitStatus.Fail(1))
+            catch
+              case exception: Exception =>
+                Log.fail(t"Oh no")
+                Log.fail(exception.toString.show)
+                Maybe(exception.getStackTrace).mm: stackTrace =>
+                  stackTrace.foreach: frame =>
+                    Log.fail(frame.toString.tt)
+                exitPromise.fulfill(ExitStatus.Fail(1))
             finally
               socket.close()
               Log.fine(t"Closed connection to ${pid.value}")
@@ -229,7 +243,5 @@ enum DaemonEvent:
   case Init(pid: Pid, work: Text, script: Text, cliInput: CliInput, arguments: List[Text], environment: List[Text])
   case Trap(pid: Pid, signal: Signal)
   case Exit(pid: Pid)
-
-given Realm = realm"exoskeleton"
 
 def service[BusType <: Matchable](using service: DaemonService[BusType]): DaemonService[BusType] = service

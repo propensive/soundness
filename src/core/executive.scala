@@ -32,6 +32,7 @@ trait Executive:
   def cli
       (fullArguments: Iterable[Text], environment: Environment, workingDirectory: WorkingDirectory,
           stdio: Stdio, signals: LazyList[Signal])
+      (using interpreter: CliInterpreter)
       : CliType
   
   def process(cli: CliType, result: Return): ExitStatus 
@@ -44,6 +45,7 @@ package executives:
     def cli
         (arguments: Iterable[Text], environment: Environment, workingDirectory: WorkingDirectory, stdio: Stdio,
             signals: LazyList[Signal])
+      (using interpreter: CliInterpreter)
         : CliInvocation =
       
       CliInvocation(Cli.arguments(arguments), environments.jvm, workingDirectories.default, stdio, signals)
@@ -74,6 +76,7 @@ extends Cli, Stdio:
   
   type State = Unit
   def initialState: Unit = ()
+  def readParameter[OperandType](flag: Flag[OperandType])(using FlagInterpreter[OperandType], Suggestions[OperandType]): Maybe[OperandType] = Unset
 
 @capability
 erased trait Effectful

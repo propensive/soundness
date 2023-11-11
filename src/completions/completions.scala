@@ -26,6 +26,8 @@ import gossamer.*
 import ambience.*
 import hieroglyph.*, textWidthCalculation.uniform
 
+import scala.collection.mutable as scm
+
 case class SuggestionsState
     (suggestions: Map[Argument, () => List[Suggestion]], explanation: Maybe[Text], known: Set[Flag[?]],
         present: Set[Flag[?]])
@@ -34,29 +36,34 @@ case class CliCompletion
     (fullArguments: List[Argument], arguments: List[Argument], environment: Environment,
         workingDirectory: WorkingDirectory, shell: Shell, currentArgument: Int, focusPosition: Int,
         stdio: Stdio, signals: LazyList[Signal])
+    (using interpreter: CliInterpreter)
 extends Cli:
-  var flags: Set[Flag[?]] = Set()
-  var seenFlags: Set[Flag[?]] = Set()
-  var unknownArguments: Set[Argument] = Set()
-  var suggestionsMap: Map[Argument, () => List[Suggestion]] = Map()
+  private lazy val parameters: interpreter.Parameters = interpreter.interpret(arguments)
+  val flags: scm.HashMap[Flag[?], Suggestions[?]] = scm.HashMap()
+  val seenFlags: scm.HashSet[Flag[?]] = scm.HashSet()
   var explanation: Maybe[Text] = Unset
+  var resultSuggestions: List[Suggestion] = Nil
+
+  def readParameter[OperandType](flag: Flag[OperandType])(using FlagInterpreter[OperandType], Suggestions[OperandType]): Maybe[OperandType] =
+    given Cli = this
+    parameters.read(flag)
 
   def focus: Argument = arguments(currentArgument)
 
-  override def register(flag: Flag[?]): Unit = if !flag.secret then flags += flag
+  override def register(flag: Flag[?], suggestions: Suggestions[?]): Unit =
+    parameters.focusOperandFlag.mm: argument =>
+      Log.fine(t"focusOperandFlag=${parameters.focusOperandFlag.debug} vs flag=${flag.debug}")
+      if flag.matches(argument) then
+        Log.fine("matches")
+        resultSuggestions = suggestions.suggest().to(List)
+
+    if !flag.secret then flags(flag) = suggestions
+  
   override def present(flag: Flag[?]): Unit = if !flag.repeatable then seenFlags += flag
-  override def unknown(argument: Argument): Unit = unknownArguments += argument
   override def explain(update: (previous: Maybe[Text]) ?=> Maybe[Text]): Unit = explanation = update(using explanation)
   
-  def suggestions(argument: Argument = focus): List[Suggestion] =
-    suggestionsMap.getOrElse(argument, () => Nil)()
-  
-  def suggest(argument: Argument, update: List[Suggestion] => List[Suggestion]): Unit =
-    suggestionsMap =
-      suggestionsMap.updated(argument, () => update(suggestionsMap.getOrElse(argument, () => Nil)()))
-  
   def flagSuggestions(longOnly: Boolean): List[Suggestion] =
-    (flags -- seenFlags).to(List).flatMap: flag =>
+    (flags.keySet.to(Set) -- seenFlags.to(Set)).to(List).flatMap: flag =>
       val allFlags = (flag.name :: flag.aliases)
       
       if longOnly then
@@ -69,11 +76,18 @@ extends Cli:
 
   def serialize: List[Text] = shell match
     case Shell.Zsh =>
-      Log.fine(t"ZSH completions")
-      Log.fine(t"Flags ${flags.debug}")
-      Log.fine(t"Unknown ${unknownArguments.debug}")
+      Log.warn(t"Parameters: ${parameters.debug}")
       val title = explanation.mm { explanation => List(t"\t-X\t$explanation") }.or(Nil)
-      val items = if unknownArguments.contains(focus) then flagSuggestions(focus().starts(t"--")) else suggestions(focus)
+      
+      val items =
+        if parameters.focusOperandFlag.unset
+        then
+          Log.info(t"flagSuggestions")
+          flagSuggestions(focus().starts(t"--"))
+        else
+          Log.info(t"resultSuggestions")
+          resultSuggestions
+      
       val width = items.map(_.text.length).max
       val aliasesWidth = items.map(_.aliases.join(t" ").length).max
       
@@ -96,11 +110,11 @@ extends Cli:
       title ++ itemLines
           
     case Shell.Bash =>
-      suggestions(focus).filter(!_.hidden).flatMap: suggestion =>
+      resultSuggestions.filter(!_.hidden).flatMap: suggestion =>
         suggestion.text :: suggestion.aliases
     
     case Shell.Fish =>
-      suggestions(focus).flatMap:
+      resultSuggestions.flatMap:
         case Suggestion(text, description, hidden, incomplete, aliases) =>
           (text :: aliases).map: text =>
             (description: @unchecked) match
@@ -111,11 +125,6 @@ case class Execution(execute: CliInvocation => ExitStatus)
 
 def execute(block: Effectful ?=> CliInvocation ?=> ExitStatus): Execution = Execution(block(using ###)(using _))
 
-
-extension (argument: Argument)(using cli: CliCompletion)
-  def suggest(suggestions: (previous: List[Suggestion]) ?=> List[Suggestion]): Unit =
-    cli.suggest(argument, suggestions(using _))
-  
 def explain(explanation: (previous: Maybe[Text]) ?=> Maybe[Text])(using cli: Cli): Unit =
   cli.explain(explanation)
 
@@ -126,19 +135,21 @@ package executives:
 
     def cli
         (arguments: Iterable[Text], environment: Environment, workingDirectory: WorkingDirectory,
-            stdio: Stdio, signals: LazyList[Signal]): Cli =
+            stdio: Stdio, signals: LazyList[Signal])(using interpreter: CliInterpreter): Cli =
       arguments match
         case t"{completions}" :: shellName :: As[Int](focus) :: As[Int](position) :: t"--" :: command :: rest =>
+          Log.info(t"Doing completions on $command")
           
           val shell = shellName match
             case t"zsh"  => Shell.Zsh
             case t"fish" => Shell.Fish
             case _       => Shell.Bash
           
-          CliCompletion(Cli.arguments(arguments, focus, position), Cli.arguments(rest), environment,
+          CliCompletion(Cli.arguments(arguments, focus, position), Cli.arguments(rest, focus, position), environment,
               workingDirectory, shell, focus - 1, position, stdio, signals)
           
         case other =>
+          Log.info(t"NOT Doing completions")
           CliInvocation(Cli.arguments(arguments), environment, workingDirectory, stdio, signals)
       
     def process(cli: Cli, execution: Execution): ExitStatus = (cli: @unchecked) match

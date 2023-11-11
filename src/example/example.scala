@@ -76,3 +76,4 @@ object Language:
 
 enum Language:
   case En, Fr, De, Es
+

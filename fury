@@ -11,7 +11,7 @@ repo propensive/surveillance
 project exoskeleton
   module args
     sources  src/args
-    include  spectacular/core gossamer/core ambience/core profanity/core
+    include  spectacular/core gossamer/core ambience/core profanity/core eucalyptus/syslog
 
   module core
     sources  src/core
@@ -19,7 +19,7 @@ project exoskeleton
   
   module daemon
     sources  src/daemon
-    include  exoskeleton/core surveillance/core eucalyptus/syslog
+    include  exoskeleton/core surveillance/core eucalyptus/syslog digression/core
 
   module completions
     sources src/completions
@@ -29,4 +29,4 @@ project exoskeleton
     sources   src/example
     include   exoskeleton/daemon escapade/core exoskeleton/completions eucalyptus/ansi
     main      exoskeleton.example
-    artifact  rage
+    artifact  launcher

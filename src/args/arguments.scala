@@ -31,34 +31,43 @@ object Shell:
 enum Shell:
   case Zsh, Bash, Fish
 
-object SimpleParameterInterpreter extends CliInterpreter[List[Argument]]:
-  def interpret(arguments: List[Argument])(using Cli): List[Argument] = arguments
+case class Arguments(sequence: Argument*) extends FlagParameters:
+  def read[OperandType](flag: Flag[OperandType])(using Cli, FlagInterpreter[OperandType], Suggestions[OperandType]): Maybe[OperandType] =
+    Unset // FIXME
+  
+  def focusOperandFlag: Maybe[Argument] = Unset
+
+object SimpleParameterInterpreter extends CliInterpreter:
+  type Parameters = Arguments
+  def interpret(arguments: List[Argument]): Arguments = Arguments(arguments*)
 
 object Cli:
   def arguments
-     (textArguments: Iterable[Text], focus: Maybe[Int] = Unset, position: Maybe[Int] = Unset)
-     : List[Argument] =
+      (textArguments: Iterable[Text], focus: Maybe[Int] = Unset, position: Maybe[Int] = Unset)
+      : List[Argument] =
+    Log.info(t"arguments(${textArguments.debug}, ${focus.debug}, ${position.debug})")
 
-    textArguments.to(List).zipWithIndex.map: (text, index) =>
+    textArguments.to(List).padTo(focus.or(0), t"").zipWithIndex.map: (text, index) =>
       Argument(index, text, if focus == index then position else Unset)
 
 trait Cli extends ProcessContext:
   def arguments: List[Argument]
   def environment: Environment
   def workingDirectory: WorkingDirectory
+  def readParameter[OperandType](flag: Flag[OperandType])(using FlagInterpreter[OperandType], Suggestions[OperandType]): Maybe[OperandType]
 
-  def register(flag: Flag[?]): Unit = ()
+  def register(flag: Flag[?], suggestions: Suggestions[?]): Unit = ()
   def present(flag: Flag[?]): Unit = ()
   def unknown(argument: Argument): Unit = ()
-  def suggest(argument: Argument, suggestions: () => List[Suggestion]): Unit = ()
   def explain(update: (previous: Maybe[Text]) ?=> Maybe[Text]): Unit = ()
 
-trait CliInterpreter[ParametersType]:
-  def interpret(arguments: List[Argument])(using Cli): ParametersType
+trait FlagParameters:
+  def read[OperandType](flag: Flag[OperandType])(using Cli, FlagInterpreter[OperandType], Suggestions[OperandType]): Maybe[OperandType]
+  def focusOperandFlag: Maybe[Argument]
 
-object Parameters:
-  def apply[ParametersType: CliInterpreter](arguments: List[Argument])(using Cli): ParametersType =
-    summon[CliInterpreter[ParametersType]].interpret(arguments)
+trait CliInterpreter:
+  type Parameters <: FlagParameters
+  def interpret(arguments: List[Argument]): Parameters
 
 case class Argument(position: Int, value: Text, cursor: Maybe[Int]):
   def apply(): Text = value
@@ -69,6 +78,3 @@ package parameterInterpretation:
   given simple: SimpleParameterInterpreter.type = SimpleParameterInterpreter
 
 def arguments(using cli: Cli): List[Argument] = cli.arguments
-
-def parameters[ParametersType](using interpreter: CliInterpreter[ParametersType], cli: Cli): ParametersType =
-  interpreter.interpret(arguments)
