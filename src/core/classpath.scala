@@ -44,7 +44,7 @@ object ClasspathEntry:
 
   case object JavaRuntime extends ClasspathEntry
 
-  def apply(url: jn.URL): ClasspathEntry = url.getProtocol.nn.tt match
+  def apply(url: jn.URL): Maybe[ClasspathEntry] = url.getProtocol.nn.tt match
     case t"jrt" =>
       ClasspathEntry.JavaRuntime
     
@@ -54,6 +54,9 @@ object ClasspathEntry:
     
     case t"http" | t"https" =>
       ClasspathEntry.Url(url.toString.tt)
+
+    case _ =>
+      Unset
     
 object Classloader:
   def threadContext: Classloader = new Classloader(Thread.currentThread.nn.getContextClassLoader.nn)
@@ -77,8 +80,7 @@ object Classpath:
  
 class Classpath(urlClassloader: jn.URLClassLoader):
   def entries: List[ClasspathEntry] =
-    urlClassloader.mm(_.getURLs.nn.to(List)).or(Nil).map(_.nn).map(ClasspathEntry(_))
-  
+    urlClassloader.mm(_.getURLs.nn.to(List)).or(Nil).map(_.nn).flatMap(ClasspathEntry(_).option)
 
 object ClasspathRef:
   type Forbidden = "" | ".*\\/.*"
@@ -121,7 +123,7 @@ object Hellenism extends Hellenism2:
   extension (classRef: ClassRef)
     def classloader: Classloader = new Classloader(classRef.getClassLoader().nn)
     
-    def classpathEntry: ClasspathEntry =
+    def classpathEntry: Maybe[ClasspathEntry] =
       ClasspathEntry(classRef.getProtectionDomain.nn.getCodeSource.nn.getLocation.nn)
 
 export Hellenism.ClassRef
