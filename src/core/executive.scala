@@ -21,7 +21,6 @@ import rudiments.*
 import ambience.*
 import anticipation.*
 import turbulence.*
-import eucalyptus.*, logging.pinned
 
 import sun.misc as sm
 

@@ -22,7 +22,6 @@ import gossamer.*
 import anticipation.*
 import ambience.*, systemProperties.jvm
 import profanity.*
-import eucalyptus.*
 import parasite.*
 import rudiments.*
 import turbulence.*
@@ -42,15 +41,11 @@ def example(): Unit =
     val Color = Flag[Text]('c', false, List(), t"the color")
     val Verbose = Switch('v', false, List(t"verbose"), t"Verbose output")
 
-    import logging.pinned
-
     Age()
     Size()
     Color()
     Verbose()
     Lang()
-
-    Log.info(t"hello world")
 
     execute:
       TabCompletions.install(Shell.Fish, t"launcher", false)

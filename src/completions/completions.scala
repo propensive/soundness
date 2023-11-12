@@ -19,7 +19,6 @@ package exoskeleton
 import anticipation.*
 import rudiments.*
 import turbulence.*
-import eucalyptus.*
 import profanity.*
 import spectacular.*
 import gossamer.*
