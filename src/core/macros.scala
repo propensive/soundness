@@ -22,6 +22,8 @@ import rudiments.*
 import scala.quoted.*
 import scala.compiletime.*
 
+import language.experimental.captureChecking
+
 object Perforate:
   def readUnion(using quotes: Quotes)(repr: quotes.reflect.TypeRepr): Set[quotes.reflect.TypeRepr] =
     import quotes.reflect.*
@@ -29,11 +31,11 @@ object Perforate:
       case OrType(left, right) => readUnion(left) ++ readUnion(right)
       case other               => Set(other)
 
-  def makeUnion(using quotes: Quotes)(symbols: List[Type[?]]): Type[?] = symbols match
-    case Nil => Type.of[Nothing]
-    case head :: tail => (makeUnion(tail): @unchecked) match
+  def makeUnion(using quotes: Quotes)(symbols: List[Type[?]]): quotes.reflect.TypeRepr = symbols match
+    case Nil => quotes.reflect.TypeRepr.of[Nothing]
+    case head :: tail => (makeUnion(tail).asType: @unchecked) match
       case '[type unionType <: Error; unionType] => (head: @unchecked) match
-        case '[type headType <: Error; headType] => Type.of[headType | unionType]
+        case '[type headType <: Error; headType] => quotes.reflect.TypeRepr.of[unionType | headType]
 
   def mitigate
       (handler: Expr[PartialFunction[Error, Error]])
@@ -44,7 +46,7 @@ object Perforate:
     val types: List[Type[?]] = rhsTypes(handler)
     val inputTypes: List[Type[?]] = patternTypes(handler)
     
-    makeUnion(inputTypes) match
+    makeUnion(inputTypes).asType match
       case '[type inputErrorType <: Error; inputErrorType] =>
         '{
           new Mitigation[inputErrorType]:

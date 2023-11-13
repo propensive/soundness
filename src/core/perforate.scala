@@ -24,15 +24,17 @@ import scala.compiletime.*
 
 import java.util.concurrent.atomic as juca
 
-//import language.experimental.captureChecking
+import language.experimental.captureChecking
 
 @capability
-trait Raises[-ErrorType <: Error]:
+trait Raises[-ErrorType <: Error] extends Pure:
   def record(error: ErrorType): Unit
   def abort(error: ErrorType): Nothing
 
 @capability
-class RaisesThrow[ErrorType <: Error, SuccessType]()(using CanThrow[ErrorType]) extends Raises[ErrorType]:
+class RaisesThrow
+    [ErrorType <: Error, SuccessType]()(using @annotation.constructorOnly error: CanThrow[ErrorType])
+extends Raises[ErrorType]:
   def record(error: ErrorType): Unit = throw error
   def abort(error: ErrorType): Nothing = throw error
 
@@ -61,7 +63,7 @@ extends Raises[ErrorType]:
 class RaisesErrorResult
     [ErrorType <: Error, SuccessType]
     (label: boundary.Label[Either[ErrorType, SuccessType]])
-    (using Raises[UnexpectedSuccessError[SuccessType]])
+    (using @annotation.constructorOnly unexpectedSuccess: Raises[UnexpectedSuccessError[SuccessType]])
 extends Raises[ErrorType]:
 
   def record(error: ErrorType): Unit = boundary.break(Left(error))(using label)
@@ -112,7 +114,7 @@ def abort[SuccessType, ErrorType <: Error](error: ErrorType)(using handler: Rais
 def safely
     [ErrorType <: Error]
     (using DummyImplicit)
-    [SuccessType]
+    [sealed SuccessType]
     (block: CanThrow[Exception] ?=> RaisesMaybe[ErrorType, SuccessType] ?=> SuccessType)
     : Maybe[SuccessType] =
   try boundary: label ?=>
@@ -130,7 +132,7 @@ def throwErrors
 def validate
     [ErrorType <: Error]
     (using raise: Raises[AggregateError[ErrorType]])
-    [SuccessType]
+    [sealed SuccessType]
     (block: RaisesAggregate[ErrorType, SuccessType] ?=> SuccessType)
     : SuccessType =
   val value: Either[AggregateError[ErrorType], SuccessType] =
@@ -145,7 +147,7 @@ def validate
 def capture
     [ErrorType <: Error]
     (using DummyImplicit)
-    [SuccessType]
+    [sealed SuccessType]
     (block: RaisesErrorResult[ErrorType, SuccessType] ?=> SuccessType)
     (using raise: Raises[UnexpectedSuccessError[SuccessType]])
     : ErrorType =
@@ -159,7 +161,7 @@ def capture
 def over
     [ErrorType <: Error]
     (using DummyImplicit)
-    [SuccessType]
+    [sealed SuccessType]
     (block: ReturnMitigated[ErrorType, SuccessType] ?=> SuccessType)
     : Mitigated[SuccessType, ErrorType] =
   boundary: label ?=>
@@ -168,8 +170,8 @@ def over
 def failCompilation
     [ErrorType <: Error]
     (using Quotes)
-    [SuccessType]
-    (block: /*caps.Cap ?-> */RaisesCompileFailure[ErrorType, SuccessType] ?=> SuccessType)
+    [sealed SuccessType]
+    (block: RaisesCompileFailure[ErrorType, SuccessType] ?=> SuccessType)
     : SuccessType =
   given RaisesCompileFailure[ErrorType, SuccessType]()
   block
