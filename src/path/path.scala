@@ -16,28 +16,37 @@
 
 package anticipation
 
+import annotation.*
+
 import java.nio.file as jnf
 
 import language.experimental.captureChecking
 
+@capability
 trait SpecificDirectory[+DirectoryType]:
   def directory(directory: Text): DirectoryType
 
+@capability
 trait SpecificPath[+PathType]:
   def path(path: Text): PathType
 
+@capability
 trait SpecificFile[+FileType]:
   def file(path: Text): FileType
 
+@capability
 trait GenericPath[-PathType]:
   def pathText(path: PathType): Text
 
+@capability
 trait GenericDirectory[-DirectoryType]:
   def directoryText(path: DirectoryType): Text
 
+@capability
 trait GenericFile[-FileType]:
   def fileText(path: FileType): Text
 
+@capability
 trait GenericWatchService[+T]:
   def apply(): jnf.WatchService
 
