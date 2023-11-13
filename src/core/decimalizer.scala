@@ -19,7 +19,7 @@ package gossamer
 import rudiments.*
 import anticipation.*
 
-//import language.experimental.captureChecking
+import language.experimental.captureChecking
 
 case class Decimalizer
     (significantFigures: Maybe[Int] = Unset, decimalPlaces: Maybe[Int] = Unset,
