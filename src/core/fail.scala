@@ -18,6 +18,8 @@ package fulminate
 
 import scala.quoted.*
 
+import language.experimental.captureChecking
+
 def fail
     (using quotes: Quotes)
     (message: Message, pos: quotes.reflect.Position | Null = null)
