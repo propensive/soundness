@@ -16,6 +16,8 @@
 
 package symbolism
 
+import language.experimental.captureChecking
+
 trait Operator[OperatorType <: String & Singleton, -LeftType, -RightType]:
   type Result
   def apply(left: LeftType, right: RightType): Result
