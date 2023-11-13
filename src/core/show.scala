@@ -186,7 +186,7 @@ object TextConversion:
       "None".tt
     
     case Some(value) =>
-      val valueText = compiletime.summonFrom:
+      val valueText: Text = compiletime.summonFrom:
         case debug: Debug[ValueType]     => debug(value)
         case encoder: Encoder[ValueType] => encoder.encode(value)
         case show: Show[ValueType]       => show(value)
