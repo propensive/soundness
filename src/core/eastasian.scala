@@ -18,6 +18,8 @@ package hieroglyph
 
 import anticipation.*
 
+import language.experimental.captureChecking
+
 package textWidthCalculation:
   given eastAsianScripts: TextWidthCalculator with
     def width(text: Text): Int = text.s.foldLeft(0)(_ + width(_))

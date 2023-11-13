@@ -19,4 +19,4 @@ project hieroglyph
     sources   src/test
     main      hieroglyph.Tests
     include   hieroglyph/core probably/cli larceny/plugin
-    coverage  hieroglyph/core
+    #coverage  hieroglyph/core

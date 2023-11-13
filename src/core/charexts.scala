@@ -18,6 +18,8 @@ package hieroglyph
 
 import rudiments.*
 
+import language.experimental.captureChecking
+
 object Chars:
   val superscript: PartialFunction[Char, Char] =
     case '0' => '⁰'

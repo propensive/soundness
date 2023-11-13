@@ -25,6 +25,8 @@ import scala.collection.immutable.TreeMap
 
 import java.io as ji
 
+import language.experimental.captureChecking
+
 object Unicode:
   import Hieroglyph.*
   
