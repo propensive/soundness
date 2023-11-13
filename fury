@@ -18,5 +18,5 @@ project rudiments
     sources   src/test
     include   rudiments/core probably/cli larceny/plugin
     main      rudiments.Tests
-    coverage  rudiments/core
+    #coverage  rudiments/core
 

@@ -16,6 +16,8 @@
 
 package rudiments
 
+import language.experimental.captureChecking
+
 erased trait Quickstart
 
 package quickstart:

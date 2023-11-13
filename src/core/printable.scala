@@ -19,6 +19,8 @@ package rudiments
 import anticipation.*
 import fulminate.*
 
+import language.experimental.captureChecking
+
 object Printable:
   given text: Printable[Text] = identity(_)
   given char: Printable[Char] = _.toString.tt

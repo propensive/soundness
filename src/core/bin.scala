@@ -22,6 +22,8 @@ import fulminate.*
 
 import scala.quoted.*
 
+import language.experimental.captureChecking
+
 object Rudiments:
   opaque type ByteSize = Long
 

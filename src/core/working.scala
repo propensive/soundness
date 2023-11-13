@@ -18,6 +18,8 @@ package rudiments
 
 import anticipation.*
 
+import language.experimental.captureChecking
+
 object WorkingDirectory:
   def apply(text: Maybe[Text] = Unset): WorkingDirectory = new WorkingDirectory(text) {}
   given default(using Quickstart): WorkingDirectory = workingDirectories.default

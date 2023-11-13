@@ -16,6 +16,8 @@
 
 package rudiments
 
+import language.experimental.captureChecking
+
 object Inequality:
   inline given numeric: Inequality[Boolean, Int | Double | Char | Byte | Short | Float | Long] with
     inline def compare

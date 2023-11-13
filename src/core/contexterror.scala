@@ -16,6 +16,8 @@
 
 package rudiments
 
+import language.experimental.captureChecking
+
 def contextMessage
     (module: Maybe[String] = Unset,
      typeclass: Maybe[String] = Unset,
