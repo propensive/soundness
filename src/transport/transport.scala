@@ -16,6 +16,8 @@
 
 package anticipation
 
+import language.experimental.captureChecking
+
 trait Transport[TransportType]:
   type Writer[-DataType]
   type Reader[DataType]

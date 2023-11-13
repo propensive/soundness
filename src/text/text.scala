@@ -23,6 +23,8 @@ import scala.compiletime.*
 import scala.util.*
 import scala.reflect.*
 
+import language.experimental.captureChecking
+
 object Anticipation:
   opaque type Text <: Matchable = String
 
