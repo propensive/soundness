@@ -188,7 +188,7 @@ be used, but caution should be taken if there is a mismatch between the
 project's stability level and the importance of your own project.
 
 Anticipation is designed to be _small_. Its entire source code currently consists
-of 144 lines of code.
+of 146 lines of code.
 
 ## Building
 
