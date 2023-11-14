@@ -26,7 +26,8 @@ object WorkingDirectory:
 
 @capability
 trait WorkingDirectory(val directory: Maybe[Text]):
-  def path[PathType: SpecificPath]: Maybe[PathType] = directory.mm(SpecificPath(_))
+  def path[PathType](using specificPath: SpecificPath[PathType]): Maybe[PathType^{specificPath}] =
+    directory.mm(SpecificPath(_))
 
 object HomeDirectory:
   given default(using Quickstart): HomeDirectory = HomeDirectory(System.getProperty("user.home").nn.tt)
