@@ -24,7 +24,7 @@ import galilei.*, filesystemOptions.{dereferenceSymlinks, createNonexistent, cre
 import anticipation.*, fileApi.galileiApi
 import rudiments.*, homeDirectories.default
 import perforate.*
-import hieroglyph.*, charEncoders.utf8
+import hieroglyph.*, charEncoders.utf8, charDecoders.utf8, badEncodingHandlers.strict
 import parasite.*
 import profanity.*
 import digression.*
@@ -32,6 +32,7 @@ import fulminate.*
 import gossamer.*
 import turbulence.*
 import guillotine.*
+import hellenism.*, classloaders.threadContext
 import surveillance.*
 import eucalyptus.*
 import ambience.*, systemProperties.jvm
@@ -78,6 +79,7 @@ def daemon[BusType <: Matchable]
   val name: Text = Properties.exoskeleton.name[Text]()
   val script: Text = Properties.exoskeleton.script[Text]()
   val command: Text = Properties.exoskeleton.command[Text]()
+
   // FIXME: Investigate why `cut` causes a compiler crash
   //val fpath = Properties.exoskeleton.fpath[Text]().cut(t"\n")
   
@@ -229,7 +231,8 @@ def daemon[BusType <: Matchable]
           
       val socket: jn.ServerSocket = jn.ServerSocket(0)
       val port: Int = socket.getLocalPort
-      port.show.writeTo(portFile)
+      val buildId = (Classpath / p"exoskeleton" / p"build.id")().readAs[Text].trim.decodeAs[Int]
+      t"$port.$buildId".writeTo(portFile)
       waitFile.touch()
       waitFile.wipe()
       while continue do safely(client(socket.accept().nn))

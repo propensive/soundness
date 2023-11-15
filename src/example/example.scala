@@ -41,11 +41,17 @@ def example(): Unit =
     val Color = Flag[Text]('c', false, List(), t"the color")
     val Verbose = Switch('v', false, List(t"verbose"), t"Verbose output")
 
+
+
+
+
+
     Age()
     Size()
     Color()
     Verbose()
     Lang()
+
 
     execute:
       TabCompletions.install(Shell.Fish, t"launcher", false)
@@ -53,6 +59,7 @@ def example(): Unit =
       
       supervise:
         terminal:
+          Out.println(t"Beginning")
           Out.println(Age().debug)
           Out.println(Size().debug)
           Out.println(Color().debug)
@@ -61,6 +68,11 @@ def example(): Unit =
           Out.println(Properties.exoskeleton.script[Text]())
 
           ExitStatus.Ok
+
+
+
+
+
 
 object Language:
   given Suggestions[Language] = () => Language.values.map: language =>
