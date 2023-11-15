@@ -22,6 +22,8 @@ import anticipation.*
 import rudiments.*
 import ambience.*
 
+//import language.experimental.captureChecking
+
 case class Xdg()(using home: HomeDirectory):
 
   def dataHome[PathType: SpecificPath](using Environment): PathType =
