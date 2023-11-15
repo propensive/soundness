@@ -24,6 +24,8 @@ import anticipation.*
 import java.io as ji
 import java.nio as jn
 
+//import language.experimental.captureChecking
+
 object Writable:
   given outputStreamBytes
       (using streamCut: Raises[StreamCutError])

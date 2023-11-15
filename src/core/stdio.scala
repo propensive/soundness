@@ -24,6 +24,8 @@ import java.io as ji
 package stdioSources:
   given jvm: Stdio = Stdio(System.out.nn, System.err.nn, System.in.nn)
 
+import language.experimental.captureChecking
+
 @capability
 trait Io:
   def write(bytes: Bytes): Unit
@@ -88,10 +90,10 @@ trait Stdio extends Io:
 
   protected[turbulence] lazy val reader: ji.Reader = ji.InputStreamReader(in, "UTF-8")
   
-  def write(bytes: Bytes): Unit = out.write(bytes.mutable(using Unsafe), 0, bytes.length)
+  def write(bytes: Bytes): Unit = out.write(bytes.mutable(using Unsafe), 0, bytes.asInstanceOf[Array[Byte]].length)
   def print(text: Text): Unit = out.print(text.s)
   
-  def writeErr(bytes: Bytes): Unit = err.write(bytes.mutable(using Unsafe), 0, bytes.length)
+  def writeErr(bytes: Bytes): Unit = err.write(bytes.mutable(using Unsafe), 0, bytes.asInstanceOf[Array[Byte]].length)
   def printErr(text: Text): Unit = err.print(text.s)
 
   def read(array: Array[Byte]): Int = in.read(array, 0, array.length)
