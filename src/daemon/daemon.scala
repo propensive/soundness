@@ -77,11 +77,11 @@ def daemon[BusType <: Matchable]
   import errorHandlers.throwUnsafely
 
   val name: Text = Properties.exoskeleton.name[Text]()
-  val script: Text = Properties.exoskeleton.script[Text]()
-  val command: Text = Properties.exoskeleton.command[Text]()
+  val scriptPath: Text = Properties.exoskeleton.script[Text]()
+  val commandPath: Text = Properties.exoskeleton.command[Text]()
 
-  // FIXME: Investigate why `cut` causes a compiler crash
-  //val fpath = Properties.exoskeleton.fpath[Text]().cut(t"\n")
+  // FIXME: Investigate why `cut` causes a compiler crash with capture checking
+  val fpath: List[Text] = Properties.exoskeleton.fpath[Text]().cut(t"\n")
   
   val xdg = Xdg()
   val baseDir: Directory = (xdg.runtimeDir.or(xdg.stateHome) / PathName(name)).as[Directory]
@@ -176,7 +176,7 @@ def daemon[BusType <: Matchable]
   
           val client: DaemonService[BusType] =
             DaemonService[BusType](pid, () => shutdown(), shellInput, scriptName.decodeAs[Unix.Path],
-                deliver(pid, _), busFunnel.stream)
+                deliver(pid, _), busFunnel.stream, fpath, scriptPath, commandPath)
           
           val environment = LazyEnvironment(env)
           val workingDirectory = WorkingDirectory(directory)
@@ -242,9 +242,11 @@ def daemon[BusType <: Matchable]
 case class DaemonService
     [BusType <: Matchable]
     (pid: Pid, shutdown: () => Unit, cliInput: CliInput, script: Unix.Path, deliver: BusType => Unit,
-        bus: LazyList[BusType]):
+        bus: LazyList[BusType], fpath: List[Text], scriptPath: Text, commandPath: Text):
 
+  def zshCompletionDirectories(using Raises[PathError]): List[Path] = fpath.map(_.decodeAs[Path])
   def broadcast(message: BusType): Unit = deliver(message)
+  def scriptIsOnPath: Boolean = scriptPath == commandPath
 
 enum DaemonEvent:
   case Init(pid: Pid, work: Text, script: Text, cliInput: CliInput, arguments: List[Text], environment: List[Text])

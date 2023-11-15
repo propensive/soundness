@@ -41,11 +41,6 @@ def example(): Unit =
     val Color = Flag[Text]('c', false, List(), t"the color")
     val Verbose = Switch('v', false, List(t"verbose"), t"Verbose output")
 
-
-
-
-
-
     Age()
     Size()
     Color()
@@ -66,13 +61,12 @@ def example(): Unit =
           Out.println(Lang().debug)
           Out.println(Properties.exoskeleton.fpath[Text]())
           Out.println(Properties.exoskeleton.script[Text]())
+          Out.println(t"scriptPath=${service.scriptPath}")
+          Out.println(t"commandPath=${service.commandPath.or(t"no")}")
+          import booleanStyles.yesNo
+          Out.println(t"onPath=${service.scriptIsOnPath.show}")
 
           ExitStatus.Ok
-
-
-
-
-
 
 object Language:
   given Suggestions[Language] = () => Language.values.map: language =>
