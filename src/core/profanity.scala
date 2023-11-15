@@ -25,6 +25,8 @@ import parasite.*
 import turbulence.*
 import anticipation.*, timeApi.long
 
+import language.experimental.captureChecking
+
 trait Keyboard:
   type Keypress
   def process(stream: LazyList[Char]): LazyList[Keypress]
@@ -140,8 +142,7 @@ package keyboards:
     type Keypress = Int
      def process(stream: LazyList[Char]): LazyList[Int] = stream.map(_.toInt)
 
-  given standard(using Monitor): Keyboard { type Keypress = profanity.Keypress | TerminalInfo } =
-    StandardKeyboard()
+  given standard(using monitor: Monitor): StandardKeyboard^{monitor} = StandardKeyboard()
 
 enum TerminalMode:
   case Dark, Light
@@ -151,17 +152,17 @@ extends Stdio:
   export context.stdio.{in, out, err}
   given stdio: Stdio = context.stdio
 
-  val keyboard = StandardKeyboard()
+  val keyboard: StandardKeyboard^{monitor} = StandardKeyboard()
   var mode: Maybe[TerminalMode] = Unset
   var rows: Maybe[Int] = Unset
   var columns: Maybe[Int] = Unset
 
-  val signalHandler = Async:
+  private val signalHandler: Async[Unit] = Async:
     signals.foreach:
       case Signal.Winch => print(Terminal.reportSize)
       case _            => ()
 
-  def events: LazyList[TerminalEvent] = keyboard.process(In.stream[Char]).multiplexWith(signals).map:
+  def events: LazyList[TerminalEvent]^{monitor} = keyboard.process(In.stream[Char]).multiplexWith(signals).map:
     case resize@TerminalInfo.WindowSize(rows2, columns2) =>
       rows = rows2
       columns = columns2
@@ -219,7 +220,7 @@ trait TerminalSizeDetection:
   def apply(): Boolean
 
 def terminal
-    [ResultType]
+    [sealed ResultType]
     (block: Terminal ?=> ResultType)
     (using context: ProcessContext, monitor: Monitor)
     (using BracketedPasteMode, BackgroundColorDetection, TerminalFocusDetection, TerminalSizeDetection)

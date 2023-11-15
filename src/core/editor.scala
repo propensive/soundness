@@ -24,6 +24,8 @@ import turbulence.*
 import anticipation.*
 import eucalyptus.*
 
+import language.experimental.captureChecking
+
 object LineEditor:
   def concealed(str: Text): Text = str.mapChars { _ => '*' }
 
@@ -122,7 +124,7 @@ object Interaction:
 
     def result(editor: LineEditor): Text = editor.content
 
-case class SelectMenu[ItemType](options: List[ItemType], current: ItemType):
+case class SelectMenu[sealed ItemType](options: List[ItemType], current: ItemType):
   import Keypress.*
   def apply(keypress: TerminalEvent): SelectMenu[ItemType] = try keypress match
     case Up   => copy(current = options(0 max options.indexOf(current) - 1))

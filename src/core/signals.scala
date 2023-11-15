@@ -21,6 +21,8 @@ import gossamer.*
 import spectacular.*
 import rudiments.*
 
+import language.experimental.captureChecking
+
 object Signal:
   given decoder: Decoder[Signal] = text => Signal.valueOf(text.lower.capitalize.s)
   given encoder: Encoder[Signal] = _.shortName
