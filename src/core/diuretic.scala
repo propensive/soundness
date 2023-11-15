@@ -86,7 +86,7 @@ extension (stream: LazyList[IArray[Byte]])
 
     def read(): Int =
       index += 1
-      if index < current.asInstanceOf[Array[Byte]].length then current.asInstanceOf[Array[Byte]](index)
+      if index < current.length then current(index)
       else lazyList match
         case head #:: tail =>
           lazyList = tail
