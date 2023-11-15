@@ -23,7 +23,7 @@ import perforate.*
 import fulminate.*
 import gossamer.*
 
-//import language.experimental.captureChecking
+import language.experimental.captureChecking
 import language.dynamics
 
 @capability
@@ -39,7 +39,7 @@ object Environment extends Dynamic:
       (variable: Text)
       (using environment: Environment, reader: EnvironmentVariable[Label, VariableType],
           environmentError: Raises[EnvironmentError])
-      : VariableType/*^{environment, reader, environmentError}*/ =
+      : VariableType^{environment, reader, environmentError} =
     environment.variable(variable).mm(reader.read).or(raise(EnvironmentError(variable))(reader.read(Text(""))))
     
   inline def selectDynamic
@@ -48,12 +48,12 @@ object Environment extends Dynamic:
       (using environment: Environment,
           reader: EnvironmentVariable[key.type, VariableType],
           environmentError: Raises[EnvironmentError])
-      : VariableType/*^{environment, reader, environmentError}*/ =
+      : VariableType^{environment, reader, environmentError} =
     environment.variable(reader.defaultName).mm(reader.read(_)).or:
       raise(EnvironmentError(reader.defaultName))(reader.read(Text("")))
   
 @capability
-trait EnvironmentVariable[AliasType <: Label, VariableType] extends Pure:
+trait EnvironmentVariable[AliasType <: Label, +VariableType] extends Pure:
   inline def defaultName: Text = name.or(valueOf[AliasType].tt.uncamel.snake.upper)
   def name: Maybe[Text] = Unset
   def read(value: Text): VariableType
