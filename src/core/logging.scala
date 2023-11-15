@@ -28,6 +28,8 @@ import hieroglyph.*
 
 import scala.quoted.*
 
+import language.experimental.captureChecking
+
 object Realm:
   given Show[Realm] = _.name
   def make(name: Text)(using Unsafe.type): Realm = Realm(name)
@@ -59,15 +61,16 @@ object Logger:
 
   def apply
       [TargetType]
-      (target: TargetType, appendable: Appendable[TargetType, Text], format: LogFormat[TargetType])(using Monitor)
-      : Logger =
+      (target: TargetType, appendable: Appendable[TargetType, Text], format: LogFormat[TargetType])
+      (using monitor: Monitor)
+      : Logger^{monitor} =
     new ActiveLogger(target)(using appendable)
 
 object LogWriter:
   given active
       [TargetType]
       (using appendable: Appendable[TargetType, Text], format: LogFormat[TargetType], monitor: Monitor)
-      : LogWriter[TargetType] =
+      : LogWriter[TargetType]^{monitor} =
     ActiveLogger(_)(using appendable, format, monitor)
 
 trait LogWriter[TargetType]:

@@ -23,6 +23,8 @@ import parasite.*
 
 import scala.quoted.*
 
+import language.experimental.captureChecking
+
 object Eucalyptus:
   def record
       [MessageType: Type]
