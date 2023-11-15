@@ -22,6 +22,8 @@ import anticipation.*
 
 import scala.collection.mutable as scm
 
+import language.experimental.captureChecking
+
 extension (value: LazyList[Bytes])
   def slurp(): Bytes =
     val bld: scm.ArrayBuilder[Byte] = scm.ArrayBuilder.ofByte()

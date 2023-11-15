@@ -25,6 +25,8 @@ import java.util.concurrent.atomic as juca
 
 import java.util.concurrent as juc
 
+import language.experimental.captureChecking
+
 class Pulsar[DurationType: GenericDuration](duration: DurationType):
   private var continue: Boolean = true
   def stop(): Unit = continue = false

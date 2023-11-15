@@ -18,6 +18,8 @@ package turbulence
 
 import java.util.concurrent as juc
 
+//import language.experimental.captureChecking
+
 object Funnel:
   private object Termination
 

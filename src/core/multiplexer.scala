@@ -23,10 +23,12 @@ import perforate.*
 
 import java.util.concurrent as juc
 
+//import language.experimental.captureChecking
+
 object Multiplexer:
   private object Termination
 
-case class Multiplexer[KeyType, ElemType]()(using Monitor):
+case class Multiplexer[KeyType, ElemType]()(using monitor: Monitor):
   private val tasks: TrieMap[KeyType, Async[Unit]] = TrieMap()
   
   private val queue: juc.LinkedBlockingQueue[ElemType | Multiplexer.Termination.type] =
@@ -48,7 +50,8 @@ case class Multiplexer[KeyType, ElemType]()(using Monitor):
     tasks -= key
     if tasks.isEmpty then queue.put(Multiplexer.Termination)
   
-  def stream: LazyList[ElemType] = LazyList.continually(queue.take().nn).takeWhile(_ != Multiplexer.Termination)
+  def stream: LazyList[ElemType] =
+    LazyList.continually(queue.take().nn).takeWhile(_ != Multiplexer.Termination)
 
 extension [ElemType](stream: LazyList[ElemType])
 
@@ -78,7 +81,7 @@ extension [ElemType](stream: LazyList[ElemType])
 
     Async(recur(stream, System.currentTimeMillis)).await()
 
-  def multiplexWith(that: LazyList[ElemType])(using Monitor): LazyList[ElemType] =
+  def multiplexWith(that: LazyList[ElemType])(using monitor: Monitor): LazyList[ElemType] =
     unsafely(LazyList.multiplex(stream, that))
 
   def regulate(tap: Tap)(using Monitor): LazyList[ElemType] =

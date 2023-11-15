@@ -18,6 +18,8 @@ package turbulence
 
 import rudiments.*
 
+import language.experimental.captureChecking
+
 package lineSeparation:
   import LineSeparation.Action.*
   import LineSeparation.NewlineSeq

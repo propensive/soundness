@@ -19,4 +19,4 @@ project turbulence
     sources   src/test
     include   turbulence/core  probably/cli
     main      turbulence.Tests
-    coverage  turbulence/core
+    #coverage  turbulence/core
