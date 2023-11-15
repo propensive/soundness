@@ -16,6 +16,8 @@
 
 package escapade
 
+import language.experimental.captureChecking
+
 extension (inline ctx: StringContext)
   transparent inline def e(inline parts: Any*): Output =
     ${Ansi.Interpolator.expand('ctx, 'parts)}

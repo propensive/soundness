@@ -25,6 +25,8 @@ import symbolism.*
 import contextual.*
 import spectacular.*
 
+//import language.experimental.captureChecking
+
 opaque type CharSpan = Long
 
 object CharSpan:

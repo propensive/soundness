@@ -20,6 +20,8 @@ import rudiments.*
 import gossamer.*
 import anticipation.*
 
+//import language.experimental.captureChecking
+
 object Ribbon:
   def apply[ColorType: RgbColor](colors: ColorType*): Ribbon = Ribbon(colors.map(Bg(_))*)
 

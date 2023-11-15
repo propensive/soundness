@@ -21,6 +21,8 @@ import anticipation.*
 import gossamer.*
 import spectacular.*
 
+import language.experimental.captureChecking
+
 type Escape = Ansi.Input.Escape
 
 object Escape:

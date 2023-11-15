@@ -25,6 +25,8 @@ import hieroglyph.*
 import spectacular.*
 import iridescence.*
 
+import language.experimental.captureChecking
+
 object Displayable:
   given output: Displayable[Output] = identity(_)
   given text: Displayable[Text] = text => Output(text)
