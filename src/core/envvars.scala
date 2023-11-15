@@ -87,53 +87,26 @@ object EnvironmentVariable extends EnvironmentVariable2:
       : EnvironmentVariable["xdgConfigDirs", List[PathType]] =
     _.cut(systemProperties(t"path.separator").or(t":")).map(SpecificPath(_))
 
-  given xdgDataHome[PathType: SpecificPath]: EnvironmentVariable["xdgDataHome", PathType] =
-    SpecificPath(_)
-
-  given xdgConfigHome[PathType: SpecificPath]: EnvironmentVariable["xdgConfigHome", PathType] =
-    SpecificPath(_)
-  
-  given xdgStateHome[PathType: SpecificPath]: EnvironmentVariable["xdgStateHome", PathType] =
-    SpecificPath(_)
-  
-  given xdgCacheHome[PathType: SpecificPath]: EnvironmentVariable["xdgCacheHome", PathType] =
-    SpecificPath(_)
-  
-  given xdgRuntimeDir[PathType: SpecificPath]: EnvironmentVariable["xdgRuntimeDir", PathType] =
-    SpecificPath(_)
-  
+  given xdgDataHome[PathType: SpecificPath]: EnvironmentVariable["xdgDataHome", PathType] = SpecificPath(_)
+  given xdgConfigHome[PathType: SpecificPath]: EnvironmentVariable["xdgConfigHome", PathType] = SpecificPath(_)
+  given xdgStateHome[PathType: SpecificPath]: EnvironmentVariable["xdgStateHome", PathType] = SpecificPath(_)
+  given xdgCacheHome[PathType: SpecificPath]: EnvironmentVariable["xdgCacheHome", PathType] = SpecificPath(_)
+  given xdgRuntimeDir[PathType: SpecificPath]: EnvironmentVariable["xdgRuntimeDir", PathType] = SpecificPath(_)
   given home[PathType: SpecificPath]: EnvironmentVariable["home", PathType] = SpecificPath(_)
   given mail[PathType: SpecificPath]: EnvironmentVariable["mail", PathType] = SpecificPath(_)
-  
-  given shell[PathType: SpecificPath]: EnvironmentVariable["shell", PathType] =
-    SpecificPath(_)
-  
-  given oldPwd[PathType: SpecificPath]: EnvironmentVariable["oldPwd", PathType] with
-    def read(variable: Text): PathType = SpecificPath(variable)
-    override def name: Text = t"OLDPWD"
-
-  given windowId[PathType: SpecificPath]: EnvironmentVariable["windowId", PathType] with
-    def read(variable: Text): PathType = SpecificPath(variable)
-    override def name: Text = t"WINDOWID"
-
-  given editor[PathType: SpecificPath]: EnvironmentVariable["editor", PathType] =
-    SpecificPath(_)
-  
-  given pager[PathType: SpecificPath]: EnvironmentVariable["pager", PathType] =
-    SpecificPath(_)
+  given shell[PathType: SpecificPath]: EnvironmentVariable["shell", PathType] = SpecificPath(_)
+  given oldpwd[PathType: SpecificPath]: EnvironmentVariable["oldpwd", PathType] = SpecificPath(_)
+  given windowid[PathType: SpecificPath]: EnvironmentVariable["windowid", PathType] = SpecificPath(_)
+  given editor[PathType: SpecificPath]: EnvironmentVariable["editor", PathType] = SpecificPath(_)
+  given pager[PathType: SpecificPath]: EnvironmentVariable["pager", PathType] = SpecificPath(_)
   
   given sshAgentPid(using Raises[NumberError]): EnvironmentVariable["sshAgentPid", Pid] = text =>
     Pid(text.decodeAs[Int])
 
-  given sshAuthSock[PathType: SpecificPath]: EnvironmentVariable["sshAuthSock", PathType] =
-    SpecificPath(_)
-  
-  given manpager[PathType: SpecificPath]: EnvironmentVariable["manpager", PathType] =
-    SpecificPath(_)
-  
+  given sshAuthSock[PathType: SpecificPath]: EnvironmentVariable["sshAuthSock", PathType] = SpecificPath(_)
+  given manpager[PathType: SpecificPath]: EnvironmentVariable["manpager", PathType] = SpecificPath(_)
   given columns(using Decoder[Int]): EnvironmentVariable["columns", Int] = _.decodeAs[Int]
   given lang: EnvironmentVariable["lang", Text] = identity(_)
-  
   given display: EnvironmentVariable["display", Text] = identity(_)
   given term: EnvironmentVariable["term", Text] = identity(_)
 
