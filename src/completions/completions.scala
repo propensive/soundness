@@ -27,6 +27,8 @@ import hieroglyph.*, textWidthCalculation.uniform
 
 import scala.collection.mutable as scm
 
+import language.experimental.captureChecking
+
 case class SuggestionsState
     (suggestions: Map[Argument, () => List[Suggestion]], explanation: Maybe[Text], known: Set[Flag[?]],
         present: Set[Flag[?]])

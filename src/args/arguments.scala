@@ -23,6 +23,8 @@ import spectacular.*
 import gossamer.*
 import profanity.*
 
+import language.experimental.captureChecking
+
 object Shell:
   given decoder: Decoder[Shell] = text => valueOf(text.lower.capitalize.s)
   given encoder: Encoder[Shell] = _.toString.tt.lower

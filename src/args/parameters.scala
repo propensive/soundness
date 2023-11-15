@@ -23,6 +23,8 @@ import perforate.*
 import eucalyptus.*
 import anticipation.*
 
+import language.experimental.captureChecking
+
 given Realm = realm"params"
 
 case class PosixParameters
@@ -76,9 +78,10 @@ object Suggestion:
       [TextType: Printable]
       (text: Text, description: Maybe[TextType], hidden: Boolean = false, incomplete: Boolean = false,
           aliases: List[Text] = Nil)
+      (using printable: Printable[TextType])
       : Suggestion =
     
-    val descriptionText = description.mm { description => summon[Printable[TextType]].print(description) }
+    val descriptionText = description.option.map(printable.print(_)).getOrElse(Unset)
     
     new Suggestion(text, descriptionText, hidden, incomplete, aliases)
 
@@ -99,8 +102,9 @@ object FlagInterpreter:
     override def operand: Boolean = false
     def interpret(arguments: List[Argument]): Unit = ()
 
-  given decoder[OperandType: Decoder]: FlagInterpreter[OperandType] = arguments =>
-    (arguments.take(1): @unchecked) match
+  given decoder[OperandType](using decoder: Decoder[OperandType]): FlagInterpreter[OperandType]^{decoder} =
+    arguments =>
+      (arguments.take(1): @unchecked) match
       case List(value) => value().decodeAs[OperandType]
 
 trait FlagInterpreter[OperandType]:
