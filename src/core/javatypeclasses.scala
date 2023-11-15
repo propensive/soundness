@@ -18,6 +18,8 @@ package anticipation
 
 import diuretic.*
 
+import language.experimental.captureChecking
+
 package timeApi:
   given javaTime: JavaTime.type = JavaTime
   given long: JavaLongTime.type = JavaLongTime

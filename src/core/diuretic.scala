@@ -24,6 +24,8 @@ import java.nio.file as jnf
 import java.net as jn
 import java.util as ju
 
+import language.experimental.captureChecking
+
 object JavaTime
 extends GenericInstant[jt.Instant], GenericDuration[Long], SpecificInstant[jt.Instant], SpecificDuration[Long]:
   
@@ -84,7 +86,7 @@ extension (stream: LazyList[IArray[Byte]])
 
     def read(): Int =
       index += 1
-      if index < current.length then current(index)
+      if index < current.asInstanceOf[Array[Byte]].length then current.asInstanceOf[Array[Byte]](index)
       else lazyList match
         case head #:: tail =>
           lazyList = tail
