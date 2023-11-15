@@ -16,6 +16,8 @@
 
 package guillotine
 
+import language.experimental.captureChecking
+
 extension (inline context: StringContext)
   transparent inline def sh(inline parts: Any*): Any =
     ${Guillotine.sh('context, 'parts)}

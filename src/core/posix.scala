@@ -19,6 +19,8 @@ package guillotine
 import rudiments.*
 import anticipation.*
 
+import language.experimental.captureChecking
+
 trait PosixCommandOutputs:
   erased given alias: CommandOutput["alias", Text] = ###
   erased given ar: CommandOutput["ar", Text] = ###

@@ -325,7 +325,7 @@ object Sh:
   given [ValueType: AsParams]: Insertion[Params, ValueType] = value => Params(summon[AsParams[ValueType]].show(value))
 
 object AsParams:
-  given [PathType: GenericPath]: AsParams[PathType] = _.pathText
+  given [PathType](using genericPath: GenericPath[PathType]): AsParams[PathType]^{genericPath} = _.pathText
   given AsParams[Int] = _.show
   
   given [ValueType](using encoder: Encoder[ValueType]): AsParams[ValueType]^{encoder} =
