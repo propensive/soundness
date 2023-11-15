@@ -19,6 +19,8 @@ package exoskeleton
 import anticipation.*
 import rudiments.*
 
+import language.experimental.captureChecking
+
 abstract class Application:
   import executives.direct
   def invoke(using Cli): ExitStatus

@@ -24,6 +24,8 @@ import turbulence.*
 
 import sun.misc as sm
 
+import language.experimental.captureChecking
+
 trait Executive:
   type Return
   type CliType <: Cli

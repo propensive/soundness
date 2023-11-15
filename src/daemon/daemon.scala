@@ -40,6 +40,8 @@ import spectacular.*
 import scala.collection.mutable as scm
 import scala.compiletime.*
 
+//import language.experimental.captureChecking
+
 import java.net as jn
 import java.io as ji
 
@@ -67,7 +69,7 @@ class LazyEnvironment(variables: List[Text]) extends Environment:
 def daemon[BusType <: Matchable]
     (using executive: Executive)
     (block: DaemonService[BusType] ?=> executive.CliType ?=> executive.Return)
-    (using CliInterpreter)
+    (using interpreter: CliInterpreter)
     : Unit =
 
   import environments.jvm
@@ -76,7 +78,8 @@ def daemon[BusType <: Matchable]
   val name: Text = Properties.exoskeleton.name[Text]()
   val script: Text = Properties.exoskeleton.script[Text]()
   val command: Text = Properties.exoskeleton.command[Text]()
-  val fpath: List[Text] = Properties.exoskeleton.fpath[Text]().cut(t"\n")
+  // FIXME: Investigate why `cut` causes a compiler crash
+  //val fpath = Properties.exoskeleton.fpath[Text]().cut(t"\n")
   
   val xdg = Xdg()
   val baseDir: Directory = (xdg.runtimeDir.or(xdg.stateHome) / PathName(name)).as[Directory]
@@ -176,7 +179,7 @@ def daemon[BusType <: Matchable]
           val environment = LazyEnvironment(env)
           val workingDirectory = WorkingDirectory(directory)
           
-          val async: Async[Unit] = Async:
+          val async = Async:
             Log.pin()
             Log.info(t"Creating new CLI")
             try

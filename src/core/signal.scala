@@ -24,6 +24,8 @@ import perforate.*
 import rudiments.*
 import eucalyptus.*, logging.silent
 
+import language.experimental.captureChecking
+
 object Signal:
   given decoder: Decoder[Signal] = text => Signal.valueOf(text.lower.capitalize.s)
   given encoder: Encoder[Signal] = _.shortName
@@ -36,5 +38,5 @@ enum Signal:
   def name: Text = t"SIG${this.toString.show.upper}"
   def id: Int = if ordinal < 15 then ordinal - 1 else ordinal
 
-  def sendTo(process: OsProcess)(using WorkingDirectory, Raises[ExecError]): Unit =
-    sh"kill -${shortName} ${process.pid.value}"()
+  // def sendTo(process: OsProcess)(using directory: WorkingDirectory, exec: Raises[ExecError]): Unit^{exec, directory} =
+  //   sh"kill -${shortName} ${process.pid.value}"()

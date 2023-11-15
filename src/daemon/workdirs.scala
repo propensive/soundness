@@ -18,5 +18,7 @@ package rudiments
 
 import exoskeleton.*
 
+import language.experimental.captureChecking
+
 package workingDirectories:
   given daemonClient(using cli: Cli): WorkingDirectory = cli.workingDirectory
