@@ -81,7 +81,7 @@ often arrived in English via a romance language.
 
 ## Logo
 
-
+The logo is a stylized variation of the official SVG logo.
 
 ## License
 
