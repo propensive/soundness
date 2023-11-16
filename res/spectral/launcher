@@ -76,7 +76,6 @@ launch() {
   test -x "$javaHome/bin/java" || installJava
   mkfifo "$waitFile" 2> /dev/null && (exec nohup "$javaHome/bin/java" -Dspectral.name="$name" -Dspectral.script="$script" -Dspectral.command="$(command -v "$name")" -Dspectral.fpath="$(zsh -c 'printf "%s\n" $fpath' 2> /dev/null || echo '')" -jar "$script" > /dev/null 2>&1 || abort) &
   launchPid=$!
-  ensure flock Flock
   flock "$initFile" sh -c "test -f \"$portFile\" || cat \"$waitFile\"" > /dev/null 2>&1 || abort
   rm -f "$initFile"
   data="$(<"$portFile")"
@@ -87,23 +86,13 @@ handle() {
   case "$1" in
     TERM) continue=0 ;;
   esac
-  printf "s\n%s\n%s\n" "$pid" "$1" | nc -q0 localhost $port
+  printf "s\n%s\n%s\n" "$pid" "$1" >/dev/tcp/localhost/$port
 }
 
 terminate() {
-  exit "$(printf "x\n%s\n" "$pid" | nc -q0 localhost $port)" >/dev/null 2>&1
-}
-
-connect() {
-  test -t 0 && printf "i\nt\n" || printf "i\np\n"
-  printf "%s\n%s\n" "$pid" "$script"
-  pwd
-  printf "%s\n" "$argCount"
-  printf '%s\0' "${args[@]}"
-  printf "\n##\n"
-  env -0
-  printf "\n##\n"
-  exec cat
+  exec 6<> /dev/tcp/localhost/$port
+  printf "x\n%s\n" "$pid" >&6
+  exit "$(cat <&6)"
 }
 
 connectStderr() {
@@ -135,15 +124,21 @@ fi
 test -f "$portFile" || launch
 backOut
 
-ensure nc Netcat
-ensure ps Procps
-
 tmpPipe="$(mktemp -u)"
 mkfifo -m 600 "$tmpPipe" && exec 3<> "$tmpPipe" && rm "$tmpPipe"
 test -t 0 && stty "${sttyOptions[@]}" > /dev/null 2>&1
-connect <&0 >&3 &
-stdoutPid=$!
-nc -q0 localhost $port <&3 &
+exec 7<> /dev/tcp/localhost/$port
+
+test -t 0 && printf "i\nt\n" >&7 || printf "i\np\n" >&7
+printf "%s\n%s\n" "$pid" "$script" >&7
+pwd >&7
+printf "%s\n" "$argCount" >&7
+printf '%s\0' "${args[@]}" >&7
+printf "\n##\n" >&7
+env -0 >&7
+printf "\n##\n" >&7
+cat >&7 <&0 &
+cat <&7 &
 pipePid=$!
 
 for signal in "${signals[@]}"
@@ -153,10 +148,10 @@ done
 while [ $continue = 1 ]
 do
   wait $pipePid
-  ps $pipePid > /dev/null || continue=0
+  kill -0 $pipePid 2> /dev/null || continue=0
 done
 
 test -t 0 && stty "$ttystate"
-kill $stdoutPid $launchPid >/dev/null 2>&1
+
 terminate
 exit 1

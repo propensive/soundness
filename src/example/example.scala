@@ -49,13 +49,18 @@ def example(): Unit =
     Verbose()
     Lang()
 
+
     execute:
-      TabCompletions.install().foreach(Out.println(_))
+      //TabCompletions.install().foreach(Out.println(_))
       supervise:
         terminal:
           Out.println(t"Running 2")
           Out.println(Age().debug)
           Out.println(Size().debug)
+          Thread.sleep(Age().or(0))
+          tty.events.foreach: event =>
+            Out.println(event.debug)
+
           Out.println(Color().debug)
           Out.println(Lang().debug)
           ExitStatus.Ok
