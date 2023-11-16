@@ -1,0 +1,22 @@
+# This is a Wrath buildfile. More information is available at: https://github.com/propensive/wrath/
+
+target exoskeleton/example
+
+repo propensive/galilei
+repo propensive/ambience
+repo propensive/escapade
+repo propensive/profanity
+repo propensive/surveillance
+repo propensive/hellenism
+
+project exoskeleton
+  module daemon
+    sources  src/daemon
+    include  exoskeleton/core surveillance/core eucalyptus/syslog digression/core hellenism/core
+
+  module example
+    sources   src/example
+    include   exoskeleton/daemon escapade/core exoskeleton/completions eucalyptus/ansi
+    main      exoskeleton.example
+    artifact  launcher
+    counter   res/exoskeleton/build.id
