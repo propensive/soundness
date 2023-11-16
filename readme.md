@@ -71,7 +71,7 @@ be used, but caution should be taken if there is a mismatch between the
 project's stability level and the importance of your own project.
 
 Inimitable is designed to be _small_. Its entire source code currently consists
-of 93 lines of code.
+of 94 lines of code.
 
 ## Building
 
@@ -111,6 +111,10 @@ libraries perform some quite unpleasant tasks.
 Names should be English words, though many are obscure or archaic, and it should be noted how
 willingly English adopts foreign words. Names are generally of Greek or Latin origin, and have
 often arrived in English via a romance language.
+
+## Logo
+
+The logo shows an arrangement of the 128 bits which form a UUID in a grid.
 
 ## License
 
