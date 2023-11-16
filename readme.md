@@ -145,7 +145,7 @@ often arrived in English via a romance language.
 
 ## Logo
 
-
+The logo shows the shadowy side of a mountain range.
 
 ## License
 
