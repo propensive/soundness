@@ -18,17 +18,6 @@ project exoskeleton
     sources  src/core
     include  exoskeleton/args galilei/core
   
-  module daemon
-    sources  src/daemon
-    include  exoskeleton/core surveillance/core eucalyptus/syslog digression/core hellenism/core
-
   module completions
     sources src/completions
     include exoskeleton/core
-  
-  module example
-    sources   src/example
-    include   exoskeleton/daemon escapade/core exoskeleton/completions eucalyptus/ansi
-    main      exoskeleton.example
-    artifact  launcher
-    counter   res/exoskeleton/build.id
