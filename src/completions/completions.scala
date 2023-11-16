@@ -21,6 +21,7 @@ import rudiments.*
 import turbulence.*
 import profanity.*
 import spectacular.*
+import eucalyptus.*, logging.pinned
 import gossamer.*
 import ambience.*
 import hieroglyph.*, textWidthCalculation.uniform
@@ -75,47 +76,48 @@ extends Cli:
       
       else List(Suggestion(Flag.serialize(flag.name), flag.description, aliases = flag.aliases.map(Flag.serialize(_))))
 
-  def serialize: List[Text] = shell match
-    case Shell.Zsh =>
-      val title = explanation.mm { explanation => List(t"\t-X\t$explanation") }.or(Nil)
-      
-      val items =
-        if parameters.focusFlag.unset
-        then flagSuggestions(focus().starts(t"--"))
-        else resultSuggestions
-      
-      lazy val width = items.map(_.text.length).max
-      lazy val aliasesWidth = items.map(_.aliases.join(t" ").length).max
-      
-      val itemLines = items.flatMap:
-        case Suggestion(text, description, hidden, incomplete, aliases) =>
-          val hiddenParam = if hidden then t"-n\t" else t""
-          val aliasText = aliases.join(t" ").fit(aliasesWidth)
-          
-          val mainLine = (description: @unchecked) match
-            case Unset             => t"\t$hiddenParam--\t$text"
-            case description: Text => t"${text.fit(width)} $aliasText -- $description\t-l\t$hiddenParam--\t$text"
-          
-          val aliasLines = aliases.map: text =>
-            (description: @unchecked) match
-              case Unset             => t"\t-n\t--\t$text"
-              case description: Text => t"${text.fit(width)} $aliasText -- $description\t-l\t-n\t--\t$text"
-          
-          mainLine :: aliasLines
-      
-      title ++ itemLines
-          
-    case Shell.Bash =>
-      resultSuggestions.filter(!_.hidden).flatMap: suggestion =>
-        suggestion.text :: suggestion.aliases
+  def serialize: List[Text] =
+    val items = if parameters.focusFlag.unset then flagSuggestions(focus().starts(t"--")) else resultSuggestions
     
-    case Shell.Fish =>
-      resultSuggestions.flatMap:
-        case Suggestion(text, description, hidden, incomplete, aliases) =>
-          (text :: aliases).map: text =>
-            (description: @unchecked) match
-              case Unset             => t"$text"
-              case description: Text => t"$text\t$description"
+    shell match
+      case Shell.Zsh =>
+        Log.info(t"result suggestions: ${resultSuggestions.debug}")
+        Log.info(t"focus=${focus()}")
+        val title = explanation.mm { explanation => List(t"\t-X\t$explanation") }.or(Nil)
+        
+        lazy val width = items.map(_.text.length).max
+        lazy val aliasesWidth = items.map(_.aliases.join(t" ").length).max
+        
+        val itemLines = items.flatMap:
+          case Suggestion(text, description, hidden, incomplete, aliases) =>
+            val hiddenParam = if hidden then t"-n\t" else t""
+            val aliasText = aliases.join(t" ").fit(aliasesWidth)
+            
+            val mainLine = (description: @unchecked) match
+              case Unset             => t"\t$hiddenParam--\t$text"
+              case description: Text => t"${text.fit(width)} $aliasText -- $description\t-l\t$hiddenParam--\t$text"
+            
+            val aliasLines = aliases.map: text =>
+              (description: @unchecked) match
+                case Unset             => t"\t-n\t--\t$text"
+                case description: Text => t"${text.fit(width)} $aliasText -- $description\t-l\t-n\t--\t$text"
+            
+            mainLine :: aliasLines
+        
+        title ++ itemLines
+            
+      case Shell.Bash =>
+        items.filter(!_.hidden).flatMap: suggestion =>
+          suggestion.text :: suggestion.aliases
+        .filter(_.starts(focus()))
+      
+      case Shell.Fish =>
+        items.flatMap:
+          case Suggestion(text, description, hidden, incomplete, aliases) =>
+            (text :: aliases).map: text =>
+              (description: @unchecked) match
+                case Unset             => t"$text"
+                case description: Text => t"$text\t$description"
       
 case class Execution(execute: CliInvocation => ExitStatus)
 
@@ -138,6 +140,8 @@ package executives:
             case t"zsh"  => Shell.Zsh
             case t"fish" => Shell.Fish
             case _       => Shell.Bash
+          
+          Log.info(t"shellName=$shellName focus=$focus position=$position")
           
           CliCompletion(Cli.arguments(arguments, focus - 1, position), Cli.arguments(rest, focus - 1, position), environment,
               workingDirectory, shell, focus - 1, position, stdio, signals)

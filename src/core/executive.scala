@@ -19,6 +19,7 @@ package exoskeleton
 import profanity.*
 import rudiments.*
 import ambience.*
+import galilei.*
 import anticipation.*
 import turbulence.*
 
@@ -78,6 +79,10 @@ extends Cli, Stdio:
   type State = Unit
   def initialState: Unit = ()
   def readParameter[OperandType](flag: Flag[OperandType])(using FlagInterpreter[OperandType], Suggestions[OperandType]): Maybe[OperandType] = Unset
+
+trait ShellContext:
+  def scriptName: Text
+  def script: Path
 
 @capability
 erased trait Effectful

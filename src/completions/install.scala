@@ -22,7 +22,9 @@ import anticipation.*, fileApi.galileiApi
 import rudiments.*, homeDirectories.default
 import serpentine.*, hierarchies.unix
 import perforate.*
+import guillotine.*
 import fulminate.*
+import eucalyptus.*
 import turbulence.*
 import ambience.*, environments.jvm, systemProperties.jvm
 import galilei.*, filesystemOptions.{dereferenceSymlinks, createNonexistent, createNonexistentParents,
@@ -30,32 +32,48 @@ import galilei.*, filesystemOptions.{dereferenceSymlinks, createNonexistent, cre
 
 object TabCompletions:
   def install
-      (shell: Shell, command: Text, global: Boolean)
+      (shells: Shell*)
+      (using service: ShellContext)
+      (using WorkingDirectory, Log, Raises[ExecError], Raises[PathError], Raises[IoError],
+          Raises[StreamCutError], Raises[OverwriteError], Effectful)
+      : List[Message] =
+    val xdg = Xdg()
+    val scriptPath = sh"sh -c 'command -v ${service.scriptName}'".exec[Text]()
+    val command: Text = service.scriptName
+    
+    if scriptPath.decodeAs[Path] == service.script
+    then
+      (if shells.isEmpty then List(Shell.Zsh, Shell.Bash, Shell.Fish) else shells.to(List)).flatMap:
+        case Shell.Zsh =>
+          val dirs = sh"zsh -c 'source ~/.zshrc 2> /dev/null; printf %s, $$fpath'".exec[Text]().cut(t",").filter(_.trim != t"").map(_.decodeAs[Path]).reverse
+          install(Shell.Zsh, command, PathName(t"_$command"), dirs)
+        
+        case Shell.Bash =>
+          install(Shell.Bash, command, PathName(command), List(xdg.dataDirs.last / p"bash-completion" /
+              p"completions", xdg.dataHome / p"bash-completion" / p"completions"))
+
+        case Shell.Fish =>
+          install(Shell.Fish, command, PathName(t"$command.fish"), List(xdg.dataDirs.last / p"fish" /
+              p"vendor_completions.d", xdg.configHome / p"fish" / p"completions"))
+    
+    else List(
+      msg"The ${service.scriptName} command is not on the PATH, so completions scripts cannot be installed."
+    )
+
+  def install
+      (shell: Shell, command: Text, scriptName: PathName[GeneralForbidden], dirs: List[Path])
       (using Raises[PathError], Raises[IoError], Raises[OverwriteError], Raises[StreamCutError], Effectful)
       : List[Message] =
-    val path: Path = scriptPath(shell, command, global)
 
-    if path.exists() then Nil else
-      script(shell, command).sysBytes.writeTo(path.make[File]())
-      List(msg"Completion script for ${shell.show.lower} installed to ${path}.") ++ messages(shell, global)
-
-  def scriptPath(shell: Shell, command: Text, global: Boolean)(using Raises[PathError], Raises[IoError]): Path =
-    val xdg = Xdg()
-    val home = summon[HomeDirectory].path
-    
-    if global then shell match
-      case Shell.Bash => xdg.dataDirs.last / p"bash-completion" / p"completions" / PathName(command)
-      case Shell.Fish => xdg.dataDirs.last / p"fish" / p"vendor_completions.d" / PathName(t"$command.fish")
-      case Shell.Zsh  => xdg.dataDirs.last / p"zsh" / p"site-functions" / PathName(t"_$command")
-    else shell match
-      case Shell.Bash => xdg.dataHome / p"bash-completion" / p"completions" / PathName(command)
-      case Shell.Fish => xdg.configHome / p"fish" / p"completions" / PathName(t"$command.fish")
-      
-      case Shell.Zsh =>
-        val ohMyZsh = home / p".oh-my-zsh"
-        
-        if ohMyZsh.exists() then ohMyZsh / p"completions" / PathName(t"_$command")
-        else home / p".zsh" / p"completion" / PathName(t"_$command")
+    dirs.find { dir => dir.exists() && dir.as[Directory].writable() }.map: dir =>
+      val path = dir / scriptName
+      if path.exists()
+      then List(msg"A ${shell.show.lower} completion script already exists for ${command}.")
+      else
+        script(shell, command).sysBytes.writeTo(path.make[File]())
+        List(msg"Completion script for ${shell.show.lower} installed into ${path}.")
+    .getOrElse:
+      List(msg"No writable install location could be found for completions")
 
   def messages(shell: Shell, global: Boolean): List[Message] =
     if shell == Shell.Zsh && !global
@@ -95,7 +113,7 @@ object TabCompletions:
     case Shell.Bash =>
       t"""|_${command}_complete() {
           |  output="$$(${command} '{completions}' bash $$COMP_CWORD 0 -- $$COMP_LINE)"
-          |  COMPREPLY=($$(compgen -W $$output -- "$${COMP_WORDS[$$COMP_CWORD]}"))
+          |  COMPREPLY=($$output)
           |}
           |complete -F _${command}_complete $command
           |""".s.stripMargin.tt
