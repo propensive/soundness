@@ -126,7 +126,7 @@ often arrived in English via a romance language.
 
 ## Logo
 
-The logo shows a simplified diagram of a zipper.
+The logo shows the overlaid shapes of three zippers.
 
 ## License
 
