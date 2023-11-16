@@ -23,5 +23,6 @@ import language.experimental.captureChecking
 
 abstract class Application:
   import executives.direct
+  import parameterInterpretation.posix
   def invoke(using Cli): ExitStatus
   def main(textArguments: IArray[Text]): Unit = application(textArguments)(invoke)

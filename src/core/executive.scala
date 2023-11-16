@@ -25,7 +25,7 @@ import turbulence.*
 
 import sun.misc as sm
 
-import language.experimental.captureChecking
+//import language.experimental.captureChecking
 
 trait Executive:
   type Return
@@ -55,7 +55,7 @@ package executives:
     def process(cli: CliInvocation, exitStatus: ExitStatus): ExitStatus = exitStatus
 
 def application
-    (using executive: Executive)
+    (using executive: Executive, interpreter: CliInterpreter)
     (arguments: Iterable[Text], signals: List[Signal] = Nil)
     (block: Cli ?=> executive.Return)
     : Unit =
@@ -73,12 +73,15 @@ def application
 case class CliInvocation
     (arguments: List[Argument], environment: Environment, workingDirectory: WorkingDirectory, stdio: Stdio,
         signals: LazyList[Signal])
+    (using interpreter: CliInterpreter)
 extends Cli, Stdio:
   export stdio.{out, err, in}
-  
-  type State = Unit
-  def initialState: Unit = ()
-  def readParameter[OperandType](flag: Flag[OperandType])(using FlagInterpreter[OperandType], Suggestions[OperandType]): Maybe[OperandType] = Unset
+
+  private lazy val parameters: interpreter.Parameters = interpreter.interpret(arguments)
+
+  def readParameter[OperandType](flag: Flag[OperandType])(using FlagInterpreter[OperandType], Suggestions[OperandType]): Maybe[OperandType] =
+    given Cli = this
+    parameters.read(flag)
 
 trait ShellContext:
   def scriptName: Text
