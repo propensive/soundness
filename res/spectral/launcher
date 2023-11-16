@@ -61,8 +61,8 @@ installJava() {
     *)                                      exit 1 ;;
   esac
 
-  unzip -p "$script" "exoskeleton/jre-$javaVersion-$os-$arch.tar.gz" 2>/dev/null | tar xzf - -C "$dataHomeDir/java"
-  dir=$(unzip -p "$script" "exoskeleton/jre-$javaVersion-$os-$arch.tar.gz" 2>/dev/null | tar tzf - | head -n1)
+  unzip -p "$script" "spectral/jre-$javaVersion-$os-$arch.tar.gz" 2>/dev/null | tar xzf - -C "$dataHomeDir/java"
+  dir=$(unzip -p "$script" "spectral/jre-$javaVersion-$os-$arch.tar.gz" 2>/dev/null | tar tzf - | head -n1)
   mv "$dataHomeDir/java/$dir" "$javaHome"
 }
 
@@ -74,7 +74,7 @@ abort() {
 
 launch() {
   test -x "$javaHome/bin/java" || installJava
-  mkfifo "$waitFile" 2> /dev/null && (exec nohup "$javaHome/bin/java" -Dexoskeleton.name="$name" -Dexoskeleton.script="$script" -Dexoskeleton.command="$(command -v "$name")" -Dexoskeleton.fpath="$(zsh -c 'printf "%s\n" $fpath' 2> /dev/null || echo '')" -jar "$script" > /dev/null 2>&1 || abort) &
+  mkfifo "$waitFile" 2> /dev/null && (exec nohup "$javaHome/bin/java" -Dspectral.name="$name" -Dspectral.script="$script" -Dspectral.command="$(command -v "$name")" -Dspectral.fpath="$(zsh -c 'printf "%s\n" $fpath' 2> /dev/null || echo '')" -jar "$script" > /dev/null 2>&1 || abort) &
   launchPid=$!
   ensure flock
   flock "$initFile" sh -c "test -f \"$portFile\" || cat \"$waitFile\"" > /dev/null 2>&1 || abort

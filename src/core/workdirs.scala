@@ -1,5 +1,5 @@
 /*
-    Exoskeleton, version [unreleased]. Copyright 2023 Jon Pretty, Propensive OÜ.
+    Spectral, version [unreleased]. Copyright 2023 Jon Pretty, Propensive OÜ.
 
     The primary distribution site is: https://propensive.com/
 

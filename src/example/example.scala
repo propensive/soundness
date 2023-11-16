@@ -14,7 +14,7 @@
     and limitations under the License.
 */
 
-package exoskeleton
+package spectral
 
 import perforate.*
 import spectacular.*
@@ -24,6 +24,7 @@ import ambience.*, systemProperties.jvm
 import profanity.*
 import parasite.*
 import rudiments.*
+import exoskeleton.*
 import turbulence.*
 
 import executives.completions
@@ -47,7 +48,6 @@ def example(): Unit =
     Verbose()
     Lang()
 
-
     execute:
       TabCompletions.install(Shell.Fish, t"launcher", false)
       TabCompletions.install(Shell.Bash, t"launcher", false)
@@ -59,8 +59,8 @@ def example(): Unit =
           Out.println(Size().debug)
           Out.println(Color().debug)
           Out.println(Lang().debug)
-          Out.println(Properties.exoskeleton.fpath[Text]())
-          Out.println(Properties.exoskeleton.script[Text]())
+          Out.println(Properties.spectral.fpath[Text]())
+          Out.println(Properties.spectral.script[Text]())
           Out.println(t"scriptPath=${service.scriptPath}")
           Out.println(t"commandPath=${service.commandPath.or(t"no")}")
           import booleanStyles.yesNo

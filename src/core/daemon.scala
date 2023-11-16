@@ -1,5 +1,5 @@
 /*
-    Exoskeleton, version [unreleased]. Copyright 2023 Jon Pretty, Propensive OÜ.
+    Spectral, version [unreleased]. Copyright 2023 Jon Pretty, Propensive OÜ.
 
     The primary distribution site is: https://propensive.com/
 
@@ -14,7 +14,7 @@
     and limitations under the License.
 */
 
-package exoskeleton
+package spectral
 
 import serpentine.*, hierarchies.unix
 
@@ -24,6 +24,7 @@ import galilei.*, filesystemOptions.{dereferenceSymlinks, createNonexistent, cre
 import anticipation.*, fileApi.galileiApi
 import rudiments.*, homeDirectories.default
 import perforate.*
+import exoskeleton.*
 import hieroglyph.*, charEncoders.utf8, charDecoders.utf8, badEncodingHandlers.strict
 import parasite.*
 import profanity.*
@@ -76,12 +77,12 @@ def daemon[BusType <: Matchable]
   import environments.jvm
   import errorHandlers.throwUnsafely
 
-  val name: Text = Properties.exoskeleton.name[Text]()
-  val scriptPath: Text = Properties.exoskeleton.script[Text]()
-  val commandPath: Text = Properties.exoskeleton.command[Text]()
+  val name: Text = Properties.spectral.name[Text]()
+  val scriptPath: Text = Properties.spectral.script[Text]()
+  val commandPath: Text = Properties.spectral.command[Text]()
 
   // FIXME: Investigate why `cut` causes a compiler crash with capture checking
-  val fpath: List[Text] = Properties.exoskeleton.fpath[Text]().cut(t"\n")
+  val fpath: List[Text] = Properties.spectral.fpath[Text]().cut(t"\n")
   
   val xdg = Xdg()
   val baseDir: Directory = (xdg.runtimeDir.or(xdg.stateHome) / PathName(name)).as[Directory]
@@ -216,7 +217,7 @@ def daemon[BusType <: Matchable]
       
     supervise:
       given Log = Log.route:
-        case _ => Syslog(t"exoskeleton")
+        case _ => Syslog(t"spectral")
       Log.pin()
 
       Async:
@@ -231,7 +232,7 @@ def daemon[BusType <: Matchable]
           
       val socket: jn.ServerSocket = jn.ServerSocket(0)
       val port: Int = socket.getLocalPort
-      val buildId = (Classpath / p"exoskeleton" / p"build.id")().readAs[Text].trim.decodeAs[Int]
+      val buildId = (Classpath / p"spectral" / p"build.id")().readAs[Text].trim.decodeAs[Int]
       t"$port.$buildId".writeTo(portFile)
       waitFile.touch()
       waitFile.wipe()
@@ -254,3 +255,5 @@ enum DaemonEvent:
   case Exit(pid: Pid)
 
 def service[BusType <: Matchable](using service: DaemonService[BusType]): DaemonService[BusType] = service
+
+given Realm: Realm = realm"spectral"
