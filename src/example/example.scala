@@ -51,7 +51,6 @@ def example(): Unit =
 
     execute:
       TabCompletions.install().foreach(Out.println(_))
-      
       supervise:
         terminal:
           Out.println(t"Running 2")

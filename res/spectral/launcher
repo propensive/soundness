@@ -37,14 +37,14 @@ backOut() {
 }
 
 ensure() {
-  command -v "$1" > /dev/null || printf "The command %s is required, but was not found. Please install it and try again.\n" "$1" 1>&2
+  command -v "$1" > /dev/null || printf "The command %s is required, but was not found. Please install %s and try again.\n" "$1" "$2" 1>&2
   command -v "$1" > /dev/null || exit 1
 }
 
 installJava() {
   local dir
   mkdir -p "$dataHomeDir/java"
-  ensure unzip
+  ensure unzip Unzip
   
   case "$(uname -s)" in
     Linux|GNU*)       os="linux" ;;
@@ -76,7 +76,7 @@ launch() {
   test -x "$javaHome/bin/java" || installJava
   mkfifo "$waitFile" 2> /dev/null && (exec nohup "$javaHome/bin/java" -Dspectral.name="$name" -Dspectral.script="$script" -Dspectral.command="$(command -v "$name")" -Dspectral.fpath="$(zsh -c 'printf "%s\n" $fpath' 2> /dev/null || echo '')" -jar "$script" > /dev/null 2>&1 || abort) &
   launchPid=$!
-  ensure flock
+  ensure flock Flock
   flock "$initFile" sh -c "test -f \"$portFile\" || cat \"$waitFile\"" > /dev/null 2>&1 || abort
   rm -f "$initFile"
   data="$(<"$portFile")"
@@ -87,11 +87,11 @@ handle() {
   case "$1" in
     TERM) continue=0 ;;
   esac
-  printf "s\n%s\n%s\n" "$pid" "$1" | nc -q 0 localhost $port
+  printf "s\n%s\n%s\n" "$pid" "$1" | nc -q0 localhost $port
 }
 
 terminate() {
-  exit "$(printf "x\n%s\n" "$pid" | nc -q 0 localhost $port)" >/dev/null 2>&1
+  exit "$(printf "x\n%s\n" "$pid" | nc -q0 localhost $port)" >/dev/null 2>&1
 }
 
 connect() {
@@ -135,13 +135,15 @@ fi
 test -f "$portFile" || launch
 backOut
 
+ensure nc Netcat
+ensure ps Procps
+
 tmpPipe="$(mktemp -u)"
 mkfifo -m 600 "$tmpPipe" && exec 3<> "$tmpPipe" && rm "$tmpPipe"
 test -t 0 && stty "${sttyOptions[@]}" > /dev/null 2>&1
 connect <&0 >&3 &
 stdoutPid=$!
-ensure nc
-nc -q 0 localhost $port <&3 &
+nc -q0 localhost $port <&3 &
 pipePid=$!
 
 for signal in "${signals[@]}"
