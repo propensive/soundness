@@ -216,7 +216,7 @@ often arrived in English via a romance language.
 
 ## Logo
 
-
+The logo is an explosion, indicative of the most disastrous of exceptions.
 
 ## License
 
