@@ -20,14 +20,15 @@ import perforate.*
 import spectacular.*
 import gossamer.*
 import anticipation.*
-import ambience.*, systemProperties.jvm
 import profanity.*
 import parasite.*
 import rudiments.*
 import exoskeleton.*
 import turbulence.*
+import eucalyptus.*, logging.silent
 
 import executives.completions
+import workingDirectories.daemonClient
 
 @main
 def example(): Unit =
@@ -49,31 +50,29 @@ def example(): Unit =
     Lang()
 
     execute:
-      TabCompletions.install(Shell.Fish, t"launcher", false)
-      TabCompletions.install(Shell.Bash, t"launcher", false)
+      TabCompletions.install().foreach(Out.println(_))
       
       supervise:
         terminal:
-          Out.println(t"Beginning")
+          Out.println(t"Running 2")
           Out.println(Age().debug)
           Out.println(Size().debug)
           Out.println(Color().debug)
           Out.println(Lang().debug)
-          Out.println(Properties.spectral.fpath[Text]())
-          Out.println(Properties.spectral.script[Text]())
-          Out.println(t"scriptPath=${service.scriptPath}")
-          Out.println(t"commandPath=${service.commandPath.or(t"no")}")
-          import booleanStyles.yesNo
-          Out.println(t"onPath=${service.scriptIsOnPath.show}")
-
           ExitStatus.Ok
 
 object Language:
   given Suggestions[Language] = () => Language.values.map: language =>
-    Suggestion(language.toString.tt.lower, language.toString.tt.upper)
+    Suggestion(language.toString.tt.lower, language.name)
   
   given Decoder[Language] = text => valueOf(text.lower.capitalize.s)
 
 enum Language:
   case En, Fr, De, Es
+
+  def name: Text = this match
+    case En => t"English"
+    case Fr => t"Français"
+    case De => t"Deutsch"
+    case Es => t"Español"
 

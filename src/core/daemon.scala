@@ -78,12 +78,6 @@ def daemon[BusType <: Matchable]
   import errorHandlers.throwUnsafely
 
   val name: Text = Properties.spectral.name[Text]()
-  val scriptPath: Text = Properties.spectral.script[Text]()
-  val commandPath: Text = Properties.spectral.command[Text]()
-
-  // FIXME: Investigate why `cut` causes a compiler crash with capture checking
-  val fpath: List[Text] = Properties.spectral.fpath[Text]().cut(t"\n")
-  
   val xdg = Xdg()
   val baseDir: Directory = (xdg.runtimeDir.or(xdg.stateHome) / PathName(name)).as[Directory]
   val portFile: Path = baseDir / p"port"
@@ -177,7 +171,7 @@ def daemon[BusType <: Matchable]
   
           val client: DaemonService[BusType] =
             DaemonService[BusType](pid, () => shutdown(), shellInput, scriptName.decodeAs[Unix.Path],
-                deliver(pid, _), busFunnel.stream, fpath, scriptPath, commandPath)
+                deliver(pid, _), busFunnel.stream, name)
           
           val environment = LazyEnvironment(env)
           val workingDirectory = WorkingDirectory(directory)
@@ -194,7 +188,6 @@ def daemon[BusType <: Matchable]
 
             catch
               case exception: Exception =>
-                Log.fail(t"Oh no")
                 Log.fail(exception.toString.show)
                 Maybe(exception.getStackTrace).mm: stackTrace =>
                   stackTrace.foreach: frame =>
@@ -218,6 +211,7 @@ def daemon[BusType <: Matchable]
     supervise:
       given Log = Log.route:
         case _ => Syslog(t"spectral")
+
       Log.pin()
 
       Async:
@@ -243,11 +237,9 @@ def daemon[BusType <: Matchable]
 case class DaemonService
     [BusType <: Matchable]
     (pid: Pid, shutdown: () => Unit, cliInput: CliInput, script: Unix.Path, deliver: BusType => Unit,
-        bus: LazyList[BusType], fpath: List[Text], scriptPath: Text, commandPath: Text):
-
-  def zshCompletionDirectories(using Raises[PathError]): List[Path] = fpath.map(_.decodeAs[Path])
+        bus: LazyList[BusType], scriptName: Text)
+extends ShellContext:
   def broadcast(message: BusType): Unit = deliver(message)
-  def scriptIsOnPath: Boolean = scriptPath == commandPath
 
 enum DaemonEvent:
   case Init(pid: Pid, work: Text, script: Text, cliInput: CliInput, arguments: List[Text], environment: List[Text])
