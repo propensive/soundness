@@ -54,6 +54,13 @@ object CliInput:
 enum CliInput:
   case Terminal, Pipe
 
+package daemonConfig:
+  given doNotSupportStderr: StderrSupport = () => false
+  given supportStderr: StderrSupport = () => false
+
+trait StderrSupport:
+  def apply(): Boolean
+
 case class ClientConnection
     [BusType <: Matchable]
     (pid: Pid, async: Async[Unit], signals: Funnel[Signal], terminate: Promise[Unit], close: () => Unit,
@@ -71,7 +78,7 @@ class LazyEnvironment(variables: List[Text]) extends Environment:
 def daemon[BusType <: Matchable]
     (using executive: Executive)
     (block: DaemonService[BusType] ?=> executive.CliType ?=> executive.Return)
-    (using interpreter: CliInterpreter)
+    (using interpreter: CliInterpreter, stderrSupport: StderrSupport = daemonConfig.supportStderr)
     : Unit =
 
   import environments.jvm
@@ -227,7 +234,8 @@ def daemon[BusType <: Matchable]
       val socket: jn.ServerSocket = jn.ServerSocket(0)
       val port: Int = socket.getLocalPort
       val buildId = (Classpath / p"spectral" / p"build.id")().readAs[Text].trim.decodeAs[Int]
-      t"$port.$buildId".writeTo(portFile)
+      val stderr = if stderrSupport() then 1 else 0
+      t"$port $buildId $stderr".writeTo(portFile)
       waitFile.touch()
       waitFile.wipe()
       while continue do safely(client(socket.accept().nn))

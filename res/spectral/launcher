@@ -1,6 +1,6 @@
 #!/bin/bash
 
-declare portFile initFile ttystate script waitFile tmpPipe javaVersion dataHomeDir arch os portVersion
+declare portFile initFile ttystate script waitFile tmpPipe javaVersion dataHomeDir arch os data stderr
 declare -i pid port version buildId stdoutPid continue pipePid argCount launchPid
 declare -a args signals sttyOptions
 
@@ -79,8 +79,8 @@ launch() {
   ensure flock
   flock "$initFile" sh -c "test -f \"$portFile\" || cat \"$waitFile\"" > /dev/null 2>&1 || abort
   rm -f "$initFile"
-  portVersion="$(<"$portFile")"
-  port=${portVersion%.*}
+  data="$(<"$portFile")"
+  port=${data%% *}
 }
 
 handle() {
@@ -118,9 +118,11 @@ flock -n "$portFile" rm "$portFile"
 
 if [ -f "$portFile" ]
 then
-  portVersion="$(<"$portFile")"
-  port=${portVersion%.*}
-  version=${portVersion#*.}
+  data="$(<"$portFile")"
+  port=${data%% *}
+  data2="${data#* }"
+  stderr=${data2#* }
+  version=${data2% *}
   buildId=%%BUILDID%%
   
   if [ $version -ne $buildId ]
