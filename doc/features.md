@@ -1,12 +1,6 @@
-- fast daemon process for near-instantaneous invocations
-- safe concurrent invocations so that at most one daemon is running at any time
-- portable launcher written in Bash
-- facilitates single-file distributions of Scala executables
 - POSIX-style parameter parsing
 - unified programmatic tab-completions for `bash`, `zsh` and `fish`
-- easy to specify tab-completions which are dependent on others
+- easy to specify conditional tab-completions
 - functional API for application entry points
 - simple stream access to POSIX interrupts (signals)
-- support for messaging between clients
-- allows easy bundling with a JDK or JRE for distribution as a single file
 - easy installation of completion scripts for each shell
