@@ -34,9 +34,8 @@ import workingDirectories.daemonClient
 def example(): Unit =
   import errorHandlers.throwUnsafely
   import parameterInterpretation.posix
-    
-  daemon[Int]:
 
+  daemon[Int]:
     val Lang = Flag[Language](t"language", false, List('L'), t"the two-letter code of the language")
     val Size = Flag[Text](t"size", false, List('S'), t"big, medium or small")
     val Age = Flag[Int](t"age", false, List('a'), t"the number of years")
@@ -49,21 +48,22 @@ def example(): Unit =
     Verbose()
     Lang()
 
-
     execute:
-      //TabCompletions.install().foreach(Out.println(_))
-      supervise:
-        terminal:
-          Out.println(t"Running 2")
-          Out.println(Age().debug)
-          Out.println(Size().debug)
-          Thread.sleep(Age().or(0))
-          tty.events.foreach: event =>
-            Out.println(event.debug)
+      Out.println(t"Hello world!")
+      ExitStatus.Ok
 
-          Out.println(Color().debug)
-          Out.println(Lang().debug)
-          ExitStatus.Ok
+      // supervise:
+      //   terminal:
+      //     Out.println(t"Running 2")
+      //     Out.println(Age().debug)
+      //     Out.println(Size().debug)
+      //     Thread.sleep(Age().or(0))
+      //     tty.events.foreach: event =>
+      //       Out.println(event.debug)
+
+      //     Out.println(Color().debug)
+      //     Out.println(Lang().debug)
+      //     ExitStatus.Ok
 
 object Language:
   given Suggestions[Language] = () => Language.values.map: language =>

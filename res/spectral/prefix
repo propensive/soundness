@@ -36,36 +36,6 @@ backOut() {
   fi
 }
 
-ensure() {
-  command -v "$1" > /dev/null || printf "The command %s is required, but was not found. Please install %s and try again.\n" "$1" "$2" 1>&2
-  command -v "$1" > /dev/null || exit 1
-}
-
-installJava() {
-  local dir
-  mkdir -p "$dataHomeDir/java"
-  ensure unzip Unzip
-  
-  case "$(uname -s)" in
-    Linux|GNU*)       os="linux" ;;
-    Win*|Cygwin|Msys) os="windows" ;;
-    Mac*|Darwin*)     os="mac" ;;
-    SunOS)            os="solaris" ;;
-    *)                exit 1 ;;
-  esac
-
-  case "$(uname -m)" in
-    x86_64|amd64|i686-64)                   arch="x64" ;;
-    x86|i686|i386|i86pc)                    arch="x86" ;;
-    aarch64_be|aarch64|armv8b|armv8l|arm64) arch="aarch64" ;;
-    *)                                      exit 1 ;;
-  esac
-
-  unzip -p "$script" "spectral/jre-$javaVersion-$os-$arch.tar.gz" 2>/dev/null | tar xzf - -C "$dataHomeDir/java"
-  dir=$(unzip -p "$script" "spectral/jre-$javaVersion-$os-$arch.tar.gz" 2>/dev/null | tar tzf - | head -n1)
-  mv "$dataHomeDir/java/$dir" "$javaHome"
-}
-
 abort() {
   touch "$failFile"
   printf '' > "$waitFile"
@@ -73,7 +43,7 @@ abort() {
 }
 
 launch() {
-  test -x "$javaHome/bin/java" || installJava
+  test -x "$javaHome/bin/java" || extract
   mkfifo "$waitFile" 2> /dev/null && (exec nohup "$javaHome/bin/java" -Dspectral.name="$name" -Dspectral.script="$script" -Dspectral.command="$(command -v "$name")" -Dspectral.fpath="$(zsh -c 'printf "%s\n" $fpath' 2> /dev/null || echo '')" -jar "$script" > /dev/null 2>&1 || abort) &
   launchPid=$!
   flock "$initFile" sh -c "test -f \"$portFile\" || cat \"$waitFile\"" > /dev/null 2>&1 || abort
@@ -87,6 +57,16 @@ handle() {
     TERM) continue=0 ;;
   esac
   printf "s\n%s\n%s\n" "$pid" "$1" >/dev/tcp/localhost/$port
+}
+
+extract() {
+  local -i offset
+  local dir
+  mkdir -p "$dataHomeDir/java"
+  offset=$(grep -aobm1 'TERMINUS$' "$script" | cut -d: -f1)
+  tail -c +$((offset+10)) $script | tar xz -C "$dataHomeDir/java" 2> /dev/null
+  dir="$(tail -c +$((offset+10)) $script | tar tzf - 2> /dev/null | head -n1)"
+  mv "$dataHomeDir/java/$dir" "$javaHome"
 }
 
 terminate() {
@@ -138,6 +118,7 @@ printf "\n##\n" >&7
 env -0 >&7
 printf "\n##\n" >&7
 cat >&7 <&0 &
+stdoutPid=$!
 cat <&7 &
 pipePid=$!
 
@@ -152,6 +133,8 @@ do
 done
 
 test -t 0 && stty "$ttystate"
-
+kill $stdoutPid
 terminate
 exit 1
+
+: TERMINUS
