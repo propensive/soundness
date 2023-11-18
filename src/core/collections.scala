@@ -53,11 +53,11 @@ case class KeyNotFoundError(name: Text) extends Error(msg"the key $name was not 
 case class DuplicateIndexError()
 extends Error(msg"the sequence contained more than one element that mapped to the same index")
 
-extension [sealed ElemType](value: IArray[ElemType])
+extension [ElemType](value: IArray[ElemType])
   inline def mutable(using erased Unsafe.type): Array[ElemType] = (value.asMatchable: @unchecked) match
     case array: Array[ElemType] => array
 
-extension [sealed ElemType](value: Array[ElemType])
+extension [ElemType](value: Array[ElemType])
   inline def immutable(using erased Unsafe.type): IArray[ElemType] = (value: @unchecked) match
     case array: IArray[ElemType] => array
 
@@ -137,7 +137,7 @@ extension [ElemType](seq: IndexedSeq[ElemType])
     Cursor.curse(seq)(fn)
 
 extension (iarray: IArray.type)
-  def create[sealed ElemType: ClassTag](size: Int)(fn: Array[ElemType] => Unit): IArray[ElemType] =
+  def create[ElemType: ClassTag](size: Int)(fn: Array[ElemType] => Unit): IArray[ElemType] =
     val array: Array[ElemType] = new Array[ElemType](size)
     fn(array)
     array.immutable(using Unsafe)
