@@ -58,7 +58,7 @@ object Decoder:
   given pid(using number: Raises[NumberError]): Decoder[Pid] = long.map(Pid(_))
 
 @capability
-trait Decoder[sealed +ValueType] extends Unapply[Text, ValueType]:
+trait Decoder[+ValueType] extends Unapply[Text, ValueType]:
   def unapply(text: Text): Option[ValueType] = try Some(decode(text)) catch case error: Exception => None
   def decode(text: Text): ValueType
   def map[ValueType2](fn: ValueType => ValueType2): Decoder[ValueType2] = text => fn(decode(text))
