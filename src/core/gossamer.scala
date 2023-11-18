@@ -287,7 +287,7 @@ case class Numerous(word: Text, pluralEnd: Text = Text("s"), singularEnd: Text =
   def apply(value: Int): Text = Text(word.s+(if value == 1 then singularEnd.s else pluralEnd.s))
 
 object Joinable:
-  given [sealed TextType](using textual: Textual[TextType]): Joinable[TextType] = elements =>
+  given [TextType](using textual: Textual[TextType]): Joinable[TextType] = elements =>
     var acc: TextType = textual.empty
     for element <- elements do acc = textual.concat(acc, element)
     acc
