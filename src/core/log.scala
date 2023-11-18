@@ -72,7 +72,7 @@ object Log:
   def envelop
       [EnvelopeType: Envelope]
       (value: EnvelopeType)
-      [sealed ResultType]
+      [ResultType]
       (block: Log ?=> ResultType)
       (using log: Log)
       : ResultType =

@@ -23,7 +23,7 @@ import parasite.*
 
 import scala.quoted.*
 
-import language.experimental.captureChecking
+//import language.experimental.captureChecking
 
 object Eucalyptus:
   def record
