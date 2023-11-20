@@ -20,6 +20,8 @@ import ambience.*
 import anticipation.*
 import perforate.*
 
+//import language.experimental.captureChecking
+
 package workingDirectory:
   given jvm(using Raises[SystemPropertyError], SystemProperties): WorkingDirectory =
     WorkingDirectory(Properties.user.dir[Text]())

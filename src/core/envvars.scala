@@ -72,25 +72,31 @@ object EnvironmentVariable extends EnvironmentVariable2:
   given path
       [PathType: SpecificPath]
       (using systemProperties: SystemProperties)
-      : EnvironmentVariable["path", List[PathType]] =
+      : EnvironmentVariable["path", List[PathType]]^{systemProperties} =
     _.cut(systemProperties(t"path.separator").or(t":")).map(SpecificPath(_))
   
   given xdgDataDirs
       [PathType: SpecificPath]
       (using systemProperties: SystemProperties)
-      : EnvironmentVariable["xdgDataDirs", List[PathType]] =
+      : EnvironmentVariable["xdgDataDirs", List[PathType]]^{systemProperties} =
     _.cut(systemProperties(t"path.separator").or(t":")).map(SpecificPath(_))
   
   given xdgConfigDirs
       [PathType: SpecificPath]
       (using systemProperties: SystemProperties)
-      : EnvironmentVariable["xdgConfigDirs", List[PathType]] =
+      : EnvironmentVariable["xdgConfigDirs", List[PathType]]^{systemProperties} =
     _.cut(systemProperties(t"path.separator").or(t":")).map(SpecificPath(_))
 
-  given xdgDataHome[PathType: SpecificPath]: EnvironmentVariable["xdgDataHome", PathType] = SpecificPath(_)
-  given xdgConfigHome[PathType: SpecificPath]: EnvironmentVariable["xdgConfigHome", PathType] = SpecificPath(_)
+  given xdgDataHome[PathType](using specificPath: SpecificPath[PathType]): EnvironmentVariable["xdgDataHome", PathType]^{specificPath} =
+    SpecificPath(_)
+  
+  given xdgConfigHome[PathType](using specificPath: SpecificPath[PathType]): EnvironmentVariable["xdgConfigHome", PathType]^{specificPath} =
+    SpecificPath(_)
+  
   given xdgStateHome[PathType: SpecificPath]: EnvironmentVariable["xdgStateHome", PathType] = SpecificPath(_)
-  given xdgCacheHome[PathType: SpecificPath]: EnvironmentVariable["xdgCacheHome", PathType] = SpecificPath(_)
+  
+  given xdgCacheHome[PathType](using specificPath: SpecificPath[PathType]): EnvironmentVariable["xdgCacheHome", PathType]^{specificPath} = SpecificPath(_)
+  
   given xdgRuntimeDir[PathType: SpecificPath]: EnvironmentVariable["xdgRuntimeDir", PathType] = SpecificPath(_)
   given home[PathType: SpecificPath]: EnvironmentVariable["home", PathType] = SpecificPath(_)
   given mail[PathType: SpecificPath]: EnvironmentVariable["mail", PathType] = SpecificPath(_)
