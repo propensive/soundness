@@ -155,11 +155,11 @@ class Process[+ExecType <: Label, ResultType](process: java.lang.Process) extend
     case other => ExitStatus.Fail(other)
   
   def abort()(using Log): Unit =
-    Log.info(msg"The process with PID ${pid.value} was aborted")
+    //Log.info(msg"The process with PID ${pid.value} was aborted")
     process.destroy()
   
   def kill()(using Log): Unit =
-    Log.warn(msg"The process with PID ${pid.value} was killed")
+    //Log.warn(msg"The process with PID ${pid.value} was killed")
     process.destroyForcibly()
 
   def osProcess(using Raises[PidError]) = OsProcess(pid)
@@ -226,13 +226,13 @@ object Command:
   given Show[Command] = command => formattedArgs(command.args)
   
 case class Command(args: Text*) extends Executable:
-  def fork[sealed ResultType]()(using working: WorkingDirectory, log: Log, exec: Raises[ExecError]): Process[Exec, ResultType] =
+  def fork[ResultType]()(using working: WorkingDirectory, log: Log, exec: Raises[ExecError]): Process[Exec, ResultType] =
     val processBuilder = ProcessBuilder(args.ss*)
     
     working.directory.mm: directory =>
       processBuilder.directory(ji.File(directory.s))
     
-    Log.info(msg"Starting process ${this}")
+    //Log.info(msg"Starting process ${this}")
 
     try new Process(processBuilder.start().nn)
     catch case errror: ji.IOException => abort(ExecError(this, LazyList(), LazyList()))
@@ -243,7 +243,7 @@ object Pipeline:
   given Show[Pipeline] = _.commands.map(_.show).join(t" | ")
   
 case class Pipeline(commands: Command*) extends Executable:
-  def fork[sealed ResultType]()(using working: WorkingDirectory, log: Log, exec: Raises[ExecError]): Process[Exec, ResultType] =
+  def fork[ResultType]()(using working: WorkingDirectory, log: Log, exec: Raises[ExecError]): Process[Exec, ResultType] =
     val processBuilders = commands.map: command =>
       val processBuilder = ProcessBuilder(command.args.ss*)
       
@@ -252,7 +252,7 @@ case class Pipeline(commands: Command*) extends Executable:
     
       processBuilder.nn
     
-    Log.info(msg"Starting pipelined processes ${this}")
+    //Log.info(msg"Starting pipelined processes ${this}")
 
     new Process[Exec, ResultType](ProcessBuilder.startPipeline(processBuilders.asJava).nn.asScala.to(List).last)
 
