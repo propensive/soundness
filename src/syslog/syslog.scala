@@ -25,7 +25,7 @@ import turbulence.*
 import perforate.*
 import hieroglyph.*, textWidthCalculation.uniform
 
-import scala.language.experimental.captureChecking
+//import scala.language.experimental.captureChecking
 
 case class Syslog(tag: Text)
 
