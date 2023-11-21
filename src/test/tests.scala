@@ -208,6 +208,14 @@ object Tests extends Suite(t"Rudiments Tests"):
           left ::: right
       .assert(_ == Map(1 -> List("one"), 2 -> List("two", "deux"), 3 -> List("trois")))
 
+      test(t"runs"):
+        List(1, 2, 2, 1, 1, 1, 4, 4).runs
+      .assert(_ == List(List(1), List(2, 2), List(1, 1, 1), List(4, 4)))
+
+      test(t"runsBy"):
+        List(1, 2, 2, 1, 1, 1, 4, 4).runsBy(_%3)
+      .assert(_ == List(List(1), List(2, 2), List(1, 1, 1, 4, 4)))
+
     suite(t"Longest train tests"):
       test(t"Find longest train of zeros in middle"):
         List(1, 0, 0, 2, 3, 4, 0, 0, 0, 5, 6, 0, 7).longestTrain(_ == 0)

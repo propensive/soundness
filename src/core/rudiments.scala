@@ -16,8 +16,6 @@
 
 package rudiments
 
-import anticipation.*
-
 import scala.deriving.*
 
 import java.util.concurrent.atomic as juca
