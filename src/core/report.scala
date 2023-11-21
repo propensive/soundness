@@ -417,7 +417,7 @@ class TestReport(using Environment):
         ) ::: (
           comparisons.map: c =>
             import Baseline.*
-            val baseline = c.benchmark.baseline.avow(using Unsafe)
+            val baseline = c.benchmark.baseline.vouch(using Unsafe)
             Column(e"$Bold(${colors.CadetBlue}(${c.test.id}))", align = Alignment.Right): (bench: ReportLine.Bench) =>
               def op(left: Double, right: Double): Double = baseline.calc match
                 case Difference => left - right
