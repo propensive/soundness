@@ -19,6 +19,7 @@ package rudiments
 import anticipation.*
 
 import scala.deriving.*
+import scala.compiletime.*
 
 import java.util.concurrent.atomic as juca
 
@@ -69,3 +70,5 @@ object Default:
 
 trait Default[+ValueType](default: ValueType):
   def apply(): ValueType = default
+
+inline def default[ValueType]: ValueType = summonInline[Default[ValueType]]()
