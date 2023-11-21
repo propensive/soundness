@@ -34,8 +34,8 @@ extension [ValueType](maybe: Maybe[ValueType]^)
   def or(value: => ValueType): ValueType^{maybe, value} = if unset then value else cast(using Unsafe)
   def presume(using default: => Default[ValueType]): ValueType^{maybe, default} = or(default())
   
-  def avow(using Unsafe): ValueType^{maybe} =
-    or(throw Mistake(msg"a value was avowed to be set but was unset"))
+  def vouch(using Unsafe): ValueType^{maybe} =
+    or(throw Mistake(msg"a value was vouched as set but was unset"))
   
   def assume(using unsetValue: CanThrow[UnsetValueError]): ValueType^{maybe, unsetValue} =
     or(throw UnsetValueError())
