@@ -51,7 +51,6 @@ def example(): Unit =
     execute:
       Out.println(t"Hello world!")
       ExitStatus.Ok
-
       // supervise:
       //   terminal:
       //     Out.println(t"Running 2")

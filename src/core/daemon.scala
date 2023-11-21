@@ -85,8 +85,7 @@ def daemon[BusType <: Matchable]
   import errorHandlers.throwUnsafely
 
   val name: Text = Properties.spectral.name[Text]()
-  val xdg = Xdg()
-  val baseDir: Directory = (xdg.runtimeDir.or(xdg.stateHome) / PathName(name)).as[Directory]
+  val baseDir: Directory = (Xdg.runtimeDir.or(Xdg.stateHome) / PathName(name)).as[Directory]
   val portFile: Path = baseDir / p"port"
   val waitFile: Path = baseDir / p"wait"
   val clients: scm.HashMap[Pid, ClientConnection[BusType]] = scm.HashMap()
