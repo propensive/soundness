@@ -89,7 +89,7 @@ object Codl:
         
         val uniqueId2 =
           if child.schema.arity == Arity.Unique
-          then (child.key.avow(using Unsafe), (child.line, child.col)) else Unset
+          then (child.key.vouch(using Unsafe), (child.line, child.col)) else Unset
         
         (uniqueId2, copy(children = closed :: children, params = params + 1), errors2)
 
