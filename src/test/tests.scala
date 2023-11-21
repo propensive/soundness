@@ -174,6 +174,24 @@ object Tests extends Suite(t"Rudiments Tests"):
       test(t"Sift on a union of singleton types"):
         List.range(0, 10).sift[5 | 7]
       .assert(_ == List(5, 7))
+      
+      test(t"Map a List to twins"):
+        List(1, 2, 3).mtwin
+      .assert(_ == List((1, 1), (2, 2), (3, 3)))
+      
+      test(t"Map a Set to triples"):
+        Set(1, 2, 3).mtriple
+      .assert(_ == Set((1, 1, 1), (2, 2, 2), (3, 3, 3)))
+
+
+    suite(t"Array tests"):
+      test(t"Take a snapshot of an array"):
+        val array = Array[Int](1, 2, 3, 4, 5)
+        array(1) = 17
+        val snapshot: IArray[Int] = array.snapshot
+        array(1) = 42
+        snapshot.to(List)
+      .assert(_ == List(1, 17, 3, 4, 5))
 
     suite(t"Longest train tests"):
       test(t"Find longest train of zeros in middle"):
