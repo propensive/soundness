@@ -32,7 +32,7 @@ import language.experimental.captureChecking
 
 object Realm:
   given Show[Realm] = _.name
-  def make(name: Text)(using Unsafe.type): Realm = Realm(name)
+  def make(name: Text)(using Unsafe): Realm = Realm(name)
 
 case class Realm private(name: Text):
   def unapply(entry: Entry): Boolean = entry.realm == this
