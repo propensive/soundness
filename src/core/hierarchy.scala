@@ -28,7 +28,7 @@ import scala.quoted.*
 import scala.compiletime.*
 import scala.reflect.*
 
-import language.experimental.captureChecking
+//import language.experimental.captureChecking
 
 object PathError:
   enum Reason:
@@ -196,8 +196,9 @@ object Reachable:
     then raise(PathError(PathError.Reason.NotRooted(text))):
       creator.path(summonInline[Default[RootType]](), Nil)
     else
-      val root: RootType = rootRest.avow(using Unsafe)(0)
-      val rest: Text = rootRest.avow(using Unsafe)(1)
+      // FIXME: The casts below avoid an error in the compiler which just prints an AST without explanation
+      val root: RootType = rootRest.asInstanceOf[(RootType, Text)](0)
+      val rest: Text = rootRest.asInstanceOf[(RootType, Text)](1)
       
       val names = rest.cut(reachable.separator(creator.path(root, Nil))).reverse match
         case t"" :: tail => tail
@@ -230,7 +231,7 @@ object Followable:
       [LinkType <: Matchable, NameType <: Label]
       (using creator: PathCreator[LinkType, NameType, Int],
           followable: Followable[LinkType, NameType, ?, ?])
-      : Operator["+", LinkType, LinkType]^{followable, creator} =
+      : Operator["+", LinkType, LinkType]/*^{followable, creator}*/ =
     new Operator["+", LinkType, LinkType]:
       type Result = LinkType
 

@@ -24,7 +24,7 @@ import perforate.*
 import scala.compiletime.*
 import scala.quoted.*
 
-import language.experimental.captureChecking
+//import language.experimental.captureChecking
 
 object Serpentine:
   opaque type PathName[NameType <: Label] = String

@@ -23,7 +23,7 @@ import perforate.*
 import symbolism.*
 import gossamer.*
 
-import language.experimental.captureChecking
+//import language.experimental.captureChecking
 
 object Root
 
@@ -35,7 +35,7 @@ object SimplePath:
     type Result = SimplePath
     def apply(left: SimplePath, right: SimpleLink): SimplePath = left.append(right)
   
-  inline def parse(text: Text)(using path: Raises[PathError]): SimplePath^{path} =
+  inline def parse(text: Text)(using path: Raises[PathError]): SimplePath/*^{path}*/ =
     text.decodeAs[SimplePath]
   
   given show: Show[SimplePath] = _.render
@@ -63,7 +63,7 @@ object SimpleLink:
   
   given show: Show[SimpleLink] = _.render
   
-  inline def parse(text: Text)(using path: Raises[PathError]): SimpleLink^{path} =
+  inline def parse(text: Text)(using path: Raises[PathError]): SimpleLink/*^{path}*/ =
     text.decodeAs[SimpleLink]
 
   given pathCreator: PathCreator[SimpleLink, ".*\\/.*", Int] = SimpleLink(_, _)
