@@ -39,7 +39,7 @@ import java.nio as jn
 import java.nio.file as jnf
 import java.nio.channels as jnc
 
-import language.experimental.captureChecking
+//import language.experimental.captureChecking
 
 type GeneralForbidden = Windows.Forbidden | Unix.Forbidden
 
@@ -332,7 +332,7 @@ sealed trait Entry:
 
   def delete
       ()(using deleteRecursively: DeleteRecursively, io: Raises[IoError])
-      : Path^{deleteRecursively, io} =
+      : Path/*^{deleteRecursively, io}*/ =
     
     try deleteRecursively.conditionally(path)(jnf.Files.delete(path.java))
     catch
@@ -348,7 +348,7 @@ sealed trait Entry:
       (using overwritePreexisting: OverwritePreexisting,
           createNonexistentParents: CreateNonexistentParents)
       (using io: Raises[IoError])
-      : Path^{io, overwritePreexisting, createNonexistentParents} =
+      : Path/*^{io, overwritePreexisting, createNonexistentParents}*/ =
     
     createNonexistentParents(destination):
       overwritePreexisting(destination):
@@ -360,7 +360,7 @@ sealed trait Entry:
       (destination: Directory)
       (using overwritePreexisting: OverwritePreexisting, dereferenceSymlinks: DereferenceSymlinks)
       (using io: Raises[IoError])
-      : Path^{io, overwritePreexisting, dereferenceSymlinks} =
+      : Path/*^{io, overwritePreexisting, dereferenceSymlinks}*/ =
     given CreateNonexistentParents = filesystemOptions.createNonexistentParents
     copyTo(destination / path.descent.head)
 
@@ -369,7 +369,7 @@ sealed trait Entry:
       (using overwritePreexisting: OverwritePreexisting, dereferenceSymlinks: DereferenceSymlinks,
           createNonexistentParents: CreateNonexistentParents)
       (using io: Raises[IoError])
-      : Path^{io, overwritePreexisting, createNonexistentParents, dereferenceSymlinks} =
+      : Path/*^{io, overwritePreexisting, createNonexistentParents, dereferenceSymlinks}*/ =
 
     createNonexistentParents(destination):
       overwritePreexisting(destination):
@@ -382,7 +382,7 @@ sealed trait Entry:
       (using overwritePreexisting: OverwritePreexisting, moveAtomically: MoveAtomically,
           dereferenceSymlinks: DereferenceSymlinks)
       (using io: Raises[IoError])
-      : Path^{io, overwritePreexisting, moveAtomically, dereferenceSymlinks} =
+      : Path/*^{io, overwritePreexisting, moveAtomically, dereferenceSymlinks}*/ =
     given CreateNonexistentParents = filesystemOptions.createNonexistentParents
     moveTo(destination / path.descent.head)
 
@@ -392,8 +392,8 @@ sealed trait Entry:
           dereferenceSymlinks: DereferenceSymlinks,
           createNonexistentParents: CreateNonexistentParents)
       (using io: Raises[IoError])
-      : Path^{io, overwritePreexisting, createNonexistentParents, moveAtomically,
-          dereferenceSymlinks} =
+      : Path/*^{io, overwritePreexisting, createNonexistentParents, moveAtomically,
+          dereferenceSymlinks}*/ =
 
     val options: Seq[jnf.CopyOption] = dereferenceSymlinks.options() ++ moveAtomically.options()
 
@@ -435,7 +435,7 @@ object PathResolver:
     Directory(path)
 
 @capability
-trait PathResolver[sealed +EntryType <: Entry, -PathType <: Path]:
+trait PathResolver[+EntryType <: Entry, -PathType <: Path]:
   def apply(value: PathType): EntryType
 
 object EntryMaker:
@@ -532,7 +532,7 @@ case class File(path: Path) extends Unix.Entry, Windows.Entry:
       (using overwritePreexisting: OverwritePreexisting,
           createNonexistentParents: CreateNonexistentParents)
       (using io: Raises[IoError])
-      : Path^{io, overwritePreexisting, createNonexistentParents} =
+      : Path/*^{io, overwritePreexisting, createNonexistentParents}*/ =
     
     createNonexistentParents(destination):
       overwritePreexisting(destination):
@@ -576,7 +576,7 @@ object DeleteRecursively:
 
 @capability
 trait DeleteRecursively:
-  def conditionally[sealed ResultType](path: Path)(operation: => ResultType): ResultType
+  def conditionally[ResultType](path: Path)(operation: => ResultType): ResultType
 
 object OverwritePreexisting:
   given default(using Quickstart, Raises[OverwriteError]): OverwritePreexisting =
@@ -584,7 +584,7 @@ object OverwritePreexisting:
 
 @capability
 trait OverwritePreexisting:
-  def apply[sealed ResultType](path: Path)(operation: => ResultType): ResultType
+  def apply[ResultType](path: Path)(operation: => ResultType): ResultType
 
 object CreateNonexistentParents:
   given default(using Quickstart, Raises[IoError]): CreateNonexistentParents =
@@ -592,7 +592,7 @@ object CreateNonexistentParents:
 
 @capability
 trait CreateNonexistentParents:
-  def apply[sealed ResultType](path: Path)(operation: => ResultType): ResultType
+  def apply[ResultType](path: Path)(operation: => ResultType): ResultType
 
 object CreateNonexistent:
   given default(using Quickstart, Raises[IoError]): CreateNonexistent =
@@ -632,7 +632,7 @@ package filesystemOptions:
       (using io: Raises[IoError], notFound: Raises[NotFoundError])
       : DeleteRecursively =
     new DeleteRecursively:
-      def conditionally[sealed ResultType](path: Path)(operation: => ResultType): ResultType =
+      def conditionally[ResultType](path: Path)(operation: => ResultType): ResultType =
         given symlinks: DereferenceSymlinks = doNotDereferenceSymlinks
         given creation: CreateNonexistent = doNotCreateNonexistent
         
@@ -646,23 +646,23 @@ package filesystemOptions:
       (using unemptyDirectory: Raises[UnemptyDirectoryError])
       : DeleteRecursively =
     new DeleteRecursively:
-      def conditionally[sealed ResultType](path: Path)(operation: => ResultType): ResultType =
+      def conditionally[ResultType](path: Path)(operation: => ResultType): ResultType =
         try operation
         catch case error: jnf.DirectoryNotEmptyException => abort(UnemptyDirectoryError(path))
       
   given overwritePreexisting(using deleteRecursively: DeleteRecursively): OverwritePreexisting =
     new OverwritePreexisting:
-      def apply[sealed ResultType](path: Path)(operation: => ResultType): ResultType =
+      def apply[ResultType](path: Path)(operation: => ResultType): ResultType =
         deleteRecursively.conditionally(path)(operation)
       
   given doNotOverwritePreexisting(using overwrite: Raises[OverwriteError]): OverwritePreexisting =
     new OverwritePreexisting:
-      def apply[sealed ResultType](path: Path)(operation: => ResultType): ResultType =
+      def apply[ResultType](path: Path)(operation: => ResultType): ResultType =
         try operation catch case error: jnf.FileAlreadyExistsException => abort(OverwriteError(path))
       
   given createNonexistentParents(using Raises[IoError]): CreateNonexistentParents =
     new CreateNonexistentParents:
-      def apply[sealed ResultType](path: Path)(operation: => ResultType): ResultType =
+      def apply[ResultType](path: Path)(operation: => ResultType): ResultType =
         path.parent.mm: parent =>
           given DereferenceSymlinks = filesystemOptions.doNotDereferenceSymlinks
          
@@ -675,7 +675,7 @@ package filesystemOptions:
       (using notFound: Raises[NotFoundError])
       : CreateNonexistentParents =
     new CreateNonexistentParents:
-      def apply[sealed ResultType](path: Path)(operation: => ResultType): ResultType =
+      def apply[ResultType](path: Path)(operation: => ResultType): ResultType =
         try operation catch case error: ji.FileNotFoundException => abort(NotFoundError(path))
 
   given createNonexistent
