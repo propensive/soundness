@@ -157,7 +157,7 @@ case class Diff[ElemType](edits: Edit[ElemType]*):
     RDiff(changes*)
           
   def collate: List[Region[ElemType]] =
-    edits.runs:
+    edits.runsBy:
       case Par(_, _, _) => true
       case _            => false
     .map:
@@ -201,7 +201,7 @@ def diff
     else pos
 
   @tailrec
-  def trace(deletes: Int, inserts: Int, focus: List[Int], rows: List[IArray[Int]]): Diff[ElemType] =
+  def trace(deletes: Int, inserts: Int, focus: List[Int], rows: List[Array[Int]]): Diff[ElemType] =
     val delPos = if deletes == 0 then 0 else count(rows.head(deletes - 1) + 1, inserts - deletes)
     val insPos = if inserts == 0 then 0 else count(rows.head(deletes), inserts - deletes)
     val best = if deletes + inserts == 0 then count(0, 0) else delPos.max(insPos)
@@ -209,10 +209,10 @@ def diff
     if best == left.length && (best - deletes + inserts) == right.length
     then Diff(backtrack(left.length - 1, deletes, rows, Nil)*)
     else if inserts > 0 then trace(deletes + 1, inserts - 1, best :: focus, rows)
-    else trace(0, deletes + 1, Nil, IArray.from((best :: focus).reverse) :: rows)
+    else trace(0, deletes + 1, Nil, ((best :: focus).reverse).to(Array) :: rows)
 
   @tailrec
-  def backtrack(pos: Int, deletes: Int, rows: List[IArray[Int]], edits: Edits): Edits =
+  def backtrack(pos: Int, deletes: Int, rows: List[Array[Int]], edits: Edits): Edits =
     val rpos = pos + rows.length - deletes*2
     lazy val ins = rows.head(deletes) - 1
     lazy val del = rows.head(deletes - 1)
@@ -253,7 +253,7 @@ extension (diff: Diff[Text])
         
         case Region.Changed(deletions, insertions) :: tail =>
           val deletions2 = deletions.map(_.value).sift[Text]
-          val prelude = IArray.from(last ++ deletions2)
+          val prelude = (last ++ deletions2).to(Array)
           
           def replace(deletions: List[Text], target: Int): Replace =
             val index = prelude.indexOfSlice(deletions)
