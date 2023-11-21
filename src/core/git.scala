@@ -168,7 +168,7 @@ case class GitRepo(gitDir: Directory, workTree: Maybe[Directory] = Unset):
           given Unsafe = Unsafe
           val pem = parsePem(signature.join(t"\n"))
           
-          LazyList(Commit(hash.avow, tree.avow, parents.reverse, author.avow, committer.avow, pem,
+          LazyList(Commit(hash.vouch, tree.vouch, parents.reverse, author.vouch, committer.vouch, pem,
             lines.reverse))
       
       def read(stream: LazyList[Text], lines: List[Text]): (List[Text], LazyList[Text]) =
