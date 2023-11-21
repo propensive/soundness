@@ -78,13 +78,6 @@ object LineSeparation:
     case Nl, NlCr, NlLf, LfNl, CrNl, NlNl, Cr, Lf, Skip
 
 @capability
-@missingContext(contextMessage(module = "turbulence", typeclass = "LineSeparation",
-    suggest = "lineSeparation.adaptiveLinefeed")(
-  "lineSeparation.carriageReturn"         -> "end lines with '\\r', as on Mac OS",
-  "lineSeparation.linefeed"               -> "end lines with '\\n', as on UNIX and Linux",
-  "lineSeparation.carriageReturnLinefeed" -> "end lines with '\\r\\n', as on Windows",
-  "lineSeparation.jvm"                    -> "use the current platform's line endings"
-))
 case class LineSeparation(newline: LineSeparation.NewlineSeq, cr: LineSeparation.Action,
                               lf: LineSeparation.Action, crlf: LineSeparation.Action,
                               lfcr: LineSeparation.Action):

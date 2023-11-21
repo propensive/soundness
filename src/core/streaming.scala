@@ -57,7 +57,6 @@ object Writable:
       : Writable[TargetType, Text] =
     (target, stream) => writable.write(target, encoder.encode(stream))
 
-@missingContext(contextMessage(module = "turbulence", typeclass = "Writable", param = "${TargetType}")())
 @capability
 trait Writable[-TargetType, -ChunkType]:
   def write(target: TargetType, stream: LazyList[ChunkType]): Unit
