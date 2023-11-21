@@ -73,6 +73,32 @@ object Tests extends Suite(t"Rudiments Tests"):
         val x: Int = bin"00000000 11111111 11111111 11111111"
         x
       .assert(_ == 16777215)
+      
+      test(t"Specify a long"):
+        val x: Long = bin"10101010 10101010 10101010 10101010 00000000 11111111 11111111 11111111"
+        x
+      .assert(_ == -6148914694083051521L)
+      
+      test(t"Too many bits"):
+        demilitarize:
+          val x: Long = bin"010101010 10101010 10101010 10101010 00000000 11111111 11111111 11111111"
+          x
+        .map(_.errorId)
+      .assert(_ == List(ErrorId.NoExplanationID))
+      
+      test(t"Incorrect bit count"):
+        demilitarize:
+          val x: Long = bin"0101010 10101010 10101010 10101010 00000000 11111111 11111111 11111111"
+          x
+        .map(_.errorId)
+      .assert(_ == List(ErrorId.NoExplanationID))
+      
+      test(t"Too many bits for type"):
+        demilitarize:
+          val x: Byte = bin"00011111 11111111"
+          x
+        .map(_.errorId)
+      .assert(_ == List(ErrorId.TypeMismatchID))
 
     suite(t"Longest train tests"):
       test(t"Find longest train of zeros in middle"):
