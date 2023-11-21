@@ -144,6 +144,12 @@ object Tests extends Suite(t"Rudiments Tests"):
         654321123456789L.hex
       .assert(_ == t"2531a0221f715")
 
+      test(t"Pattern match hex"):
+        t"1234" match
+          case Hex(value) => value
+          case _          => 0
+      .assert(_ == 4660)
+
     suite(t"Collections tests"):
       val numbers = List(t"one", t"two", t"four", t"six", t"eight", t"nine")
       
@@ -156,6 +162,18 @@ object Tests extends Suite(t"Rudiments Tests"):
       //  capture[DuplicateIndexError]:
       //    numbers.indexBy(_.length)
       //.assert(_ == DuplicateIndexError())
+      
+      test(t"Sift some options"):
+        List(None, Some(1), Some(2), None).sift[Some[Int]]
+      .assert(_ == List(Some(1), Some(2)))
+
+      test(t"Sift on singleton type"):
+        List.range(0, 10).sift[5]
+      .assert(_ == List(5))
+
+      test(t"Sift on a union of singleton types"):
+        List.range(0, 10).sift[5 | 7]
+      .assert(_ == List(5, 7))
 
     suite(t"Longest train tests"):
       test(t"Find longest train of zeros in middle"):
