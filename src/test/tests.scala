@@ -42,7 +42,7 @@ object Tests extends Suite(t"Rudiments Tests"):
 
     test(t"Display a PID"):
       Pid(2999).toString
-    .assert(_ == "PID:2999")
+    .assert(_ == "↯2999")
 
     suite(t"Longest train tests"):
       test(t"Find longest train of zeros in middle"):

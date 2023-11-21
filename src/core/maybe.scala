@@ -28,16 +28,16 @@ type Maybe[ValueType] = Unset.type | ValueType
 
 case class UnsetValueError() extends Error(Message("the value was not set".tt))
 
-extension [ValueType](opt: Maybe[ValueType])
-  def unset: Boolean = opt == Unset
-  def cast(using Unsafe.type): ValueType = opt.asInstanceOf[ValueType]
-  def or(value: => ValueType): ValueType^{value} = if unset then value else cast(using Unsafe)
-  def presume(using default: => Default[ValueType]): ValueType^{default} = or(default())
+extension [ValueType](maybe: Maybe[ValueType]^)
+  def unset: Boolean = maybe == Unset
+  def cast(using Unsafe.type): ValueType = maybe.asInstanceOf[ValueType]
+  def or(value: => ValueType): ValueType^{maybe, value} = if unset then value else cast(using Unsafe)
+  def presume(using default: => Default[ValueType]): ValueType^{maybe, default} = or(default())
   
-  def avow(using Unsafe.type): ValueType =
+  def avow(using Unsafe.type): ValueType^{maybe} =
     or(throw Mistake(msg"a value was avowed to be set but was unset"))
   
-  def assume(using unsetValue: CanThrow[UnsetValueError]): ValueType^{unsetValue} =
+  def assume(using unsetValue: CanThrow[UnsetValueError]): ValueType^{maybe, unsetValue} =
     or(throw UnsetValueError())
   
   
@@ -54,6 +54,6 @@ extension [ValueType](opt: Maybe[ValueType])
 object Maybe:
   def apply[ValueType](value: ValueType | Null): Maybe[ValueType] = if value == null then Unset else value
 
-extension [ValueType](opt: Option[ValueType])
-  def maybe: Unset.type | ValueType = opt.getOrElse(Unset)
-  def presume(using default: Default[ValueType]) = opt.getOrElse(default())
+extension [ValueType](option: Option[ValueType])
+  def maybe: Unset.type | ValueType = option.getOrElse(Unset)
+  def presume(using default: Default[ValueType]) = option.getOrElse(default())
