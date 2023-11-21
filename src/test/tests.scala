@@ -99,7 +99,34 @@ object Tests extends Suite(t"Rudiments Tests"):
           x
         .map(_.errorId)
       .assert(_ == List(ErrorId.TypeMismatchID))
+      
+      test(t"Non-binary content"):
+        demilitarize:
+          bin"00011112 11111111"
+        .map(_.errorId)
+      .assert(_ == List(ErrorId.NoExplanationID))
 
+    suite(t"hex tests"):
+      test(t"Specify some bytes"):
+        hex"bacdf1e9".to(List)
+      .assert(_ == Bytes(-70, -51, -15, -23).to(List))
+      
+      test(t"Specify some bytes in uppercase with a space"):
+        hex"BACD F1E9".to(List)
+      .assert(_ == Bytes(-70, -51, -15, -23).to(List))
+      
+      test(t"Non-even number of bytes"):
+        demilitarize:
+          hex"bacdf1e"
+        .map(_.message)
+      .assert(_ == List(t"rudiments: a hexadecimal value must have an even number of digits"))
+    
+      test(t"Non-hex content"):
+        demilitarize:
+          hex"bacdf1eg"
+        .map(_.message)
+      .assert(_ == List(t"rudiments: g is not a valid hexadecimal character"))
+    
     suite(t"Longest train tests"):
       test(t"Find longest train of zeros in middle"):
         List(1, 0, 0, 2, 3, 4, 0, 0, 0, 5, 6, 0, 7).longestTrain(_ == 0)
