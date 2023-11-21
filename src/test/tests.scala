@@ -22,6 +22,8 @@ import larceny.*
 import probably.*
 import rudiments.*
 
+import language.experimental.captureChecking
+
 case class Person(name: Text, age: Int)
 
 object Tests extends Suite(t"Rudiments Tests"):
@@ -33,7 +35,19 @@ object Tests extends Suite(t"Rudiments Tests"):
       internet:
         remoteCall()
     .assert()
-    
+
+    test(t"Dual extraction"):
+      object AsInt:
+        def unapply(x: String): Option[Char] = Some('I')
+      
+      object AsLong:
+        def unapply(x: String): Option[Char] = Some('J')
+
+      "123" match
+        case AsInt(x) & AsLong(y) => (x, y)
+        case _                    => ('X', 'X')
+    .assert(_ == ('I', 'J'))
+
     test(t"Check remote call is not callable without `Internet`"):
       demilitarize:
         remoteCall()
@@ -43,6 +57,22 @@ object Tests extends Suite(t"Rudiments Tests"):
     test(t"Display a PID"):
       Pid(2999).toString
     .assert(_ == "↯2999")
+
+    suite(t"bin tests"):
+      test(t"Specify a byte"):
+        val x: Byte = bin"10101010"
+        x
+      .assert(_ == -86)
+      
+      test(t"Specify a short"):
+        val x: Short = bin"01111111 11111111"
+        x
+      .assert(_ == 32767)
+      
+      test(t"Specify an integer"):
+        val x: Int = bin"00000000 11111111 11111111 11111111"
+        x
+      .assert(_ == 16777215)
 
     suite(t"Longest train tests"):
       test(t"Find longest train of zeros in middle"):
