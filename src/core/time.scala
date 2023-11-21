@@ -154,7 +154,7 @@ abstract class RomanCalendar() extends Calendar:
     val month2 = MonthName.fromOrdinal(monthTotal%12)
     val year2 = getYear(date) + period.years + monthTotal/12
     
-    safely(julianDay(year2, month2, getDay(date)).addDays(period.days)).avow(using Unsafe)
+    safely(julianDay(year2, month2, getDay(date)).addDays(period.days)).vouch(using Unsafe)
   
   def leapYearsSinceEpoch(year: Int): Int
   def daysInYear(year: Y): Int = if leapYear(year) then 366 else 365
@@ -192,7 +192,7 @@ object YearMonth:
     type Result = Date
     
     def apply(yearMonth: YearMonth, day: Int): Date =
-      safely(calendars.gregorian.julianDay(yearMonth.year, yearMonth.month, day)).avow(using Unsafe)
+      safely(calendars.gregorian.julianDay(yearMonth.year, yearMonth.month, day)).vouch(using Unsafe)
 
 object Timing:
   opaque type Instant = Long
