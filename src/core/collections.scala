@@ -54,11 +54,11 @@ case class DuplicateIndexError()
 extends Error(msg"the sequence contained more than one element that mapped to the same index")
 
 extension [ElemType](value: IArray[ElemType])
-  inline def mutable(using erased Unsafe.type): Array[ElemType] = (value.asMatchable: @unchecked) match
+  inline def mutable(using Unsafe): Array[ElemType] = (value.asMatchable: @unchecked) match
     case array: Array[ElemType] => array
 
 extension [ElemType](value: Array[ElemType])
-  inline def immutable(using erased Unsafe.type): IArray[ElemType] = (value: @unchecked) match
+  def immutable(using Unsafe): IArray[ElemType] = (value: @unchecked) match
     case array: IArray[ElemType] => array
 
   def snapshot(using ClassTag[ElemType]): IArray[ElemType] =

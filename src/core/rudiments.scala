@@ -39,7 +39,7 @@ extension [ValueType](value: ValueType)
   def puncture(point: ValueType): Maybe[ValueType] = if value == point then Unset else point
   inline def is[ValueSubtype <: ValueType]: Boolean = value.isInstanceOf[ValueSubtype]
 
-  transparent inline def matchable(using erased Unsafe.type): ValueType & Matchable =
+  transparent inline def matchable(using Unsafe): ValueType & Matchable =
     value.asInstanceOf[ValueType & Matchable]
 
 case class Counter(first: Int = 0):
@@ -54,7 +54,8 @@ extension [ProductType <: Product](product: ProductType)(using mirror: Mirror.Pr
 extension [TupleType <: Tuple](tuple: TupleType)
   def to[ProductType](using mirror: Mirror.ProductOf[ProductType]): ProductType = mirror.fromProduct(tuple)
 
-object Unsafe
+erased trait Unsafe
+erased val Unsafe: Unsafe = ###
 
 object Default:
   given Default[Int](0)
