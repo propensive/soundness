@@ -346,7 +346,7 @@ extension
     if followable.ascent(link) > pathlike.descent(path).length
     then raise(PathError(PathError.Reason.ParentOfRoot))(path)
     else
-      val common: PathType = pathlike.ancestor(path, followable.ascent(link)).avow(using Unsafe)
+      val common: PathType = pathlike.ancestor(path, followable.ascent(link)).vouch(using Unsafe)
       val descent = pathlike.descent(common)
   
       creator.path(pathlike.ascent(path), followable.descent(link) ::: descent)
