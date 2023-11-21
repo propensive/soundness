@@ -183,8 +183,6 @@ object Tests extends Suite(t"Rudiments Tests"):
         Set(1, 2, 3).mtriple
       .assert(_ == Set((1, 1, 1), (2, 2, 2), (3, 3, 3)))
 
-
-    suite(t"Array tests"):
       test(t"Take a snapshot of an array"):
         val array = Array[Int](1, 2, 3, 4, 5)
         array(1) = 17
@@ -192,6 +190,23 @@ object Tests extends Suite(t"Rudiments Tests"):
         array(1) = 42
         snapshot.to(List)
       .assert(_ == List(1, 17, 3, 4, 5))
+      
+      test(t"Take Map#upsert as an insertion"):
+        val map = Map(1 -> "one", 2 -> "two")
+        map.upsert(3, _.or("three"))
+      .assert(_ == Map(1 -> "one", 2 -> "two", 3 -> "three"))
+      
+      test(t"Take Map#upsert as an update"):
+        val map = Map(1 -> "one", 2 -> "two")
+        map.upsert(2, _.or("")+"!")
+      .assert(_ == Map(1 -> "one", 2 -> "two!"))
+      
+      test(t"Collation"):
+        val map1 = Map(1 -> List("one"), 2 -> List("two"))
+        val map2 = Map(2 -> List("deux"), 3 -> List("trois"))
+        map1.collate(map2): (left, right) =>
+          left ::: right
+      .assert(_ == Map(1 -> List("one"), 2 -> List("two", "deux"), 3 -> List("trois")))
 
     suite(t"Longest train tests"):
       test(t"Find longest train of zeros in middle"):
