@@ -37,7 +37,6 @@ object TabCompletions:
       (using WorkingDirectory, Log, Raises[ExecError], Raises[PathError], Raises[IoError],
           Raises[StreamCutError], Raises[OverwriteError], Effectful)
       : List[Message] =
-    val xdg = Xdg()
     val scriptPath = sh"sh -c 'command -v ${service.scriptName}'".exec[Text]()
     val command: Text = service.scriptName
     
@@ -49,12 +48,12 @@ object TabCompletions:
           install(Shell.Zsh, command, PathName(t"_$command"), dirs)
         
         case Shell.Bash =>
-          install(Shell.Bash, command, PathName(command), List(xdg.dataDirs.last / p"bash-completion" /
-              p"completions", xdg.dataHome / p"bash-completion" / p"completions"))
+          install(Shell.Bash, command, PathName(command), List(Xdg.dataDirs.last / p"bash-completion" /
+              p"completions", Xdg.dataHome / p"bash-completion" / p"completions"))
 
         case Shell.Fish =>
-          install(Shell.Fish, command, PathName(t"$command.fish"), List(xdg.dataDirs.last / p"fish" /
-              p"vendor_completions.d", xdg.configHome / p"fish" / p"completions"))
+          install(Shell.Fish, command, PathName(t"$command.fish"), List(Xdg.dataDirs.last / p"fish" /
+              p"vendor_completions.d", Xdg.configHome / p"fish" / p"completions"))
     
     else List(
       msg"The ${service.scriptName} command is not on the PATH, so completions scripts cannot be installed."
