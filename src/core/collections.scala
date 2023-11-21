@@ -85,7 +85,9 @@ extension [ElemType](seq: Seq[ElemType])
   def random: ElemType = seq(util.Random().nextInt(seq.length))
   transparent inline def shuffle: Seq[ElemType] = util.Random().shuffle(seq)
   
-  def runs(fn: ElemType => Any): List[List[ElemType]] =
+  def runs: List[List[ElemType]] = runsBy(identity)
+
+  def runsBy(fn: ElemType => Any): List[List[ElemType]] =
     @tailrec
     def recur(current: Any, todo: Seq[ElemType], run: List[ElemType], done: List[List[ElemType]])
              : List[List[ElemType]] =
