@@ -19,6 +19,7 @@ package rudiments
 import anticipation.*
 import gossamer.*
 import larceny.*
+import perforate.*
 import probably.*
 import rudiments.*
 
@@ -126,7 +127,36 @@ object Tests extends Suite(t"Rudiments Tests"):
           hex"bacdf1eg"
         .map(_.message)
       .assert(_ == List(t"rudiments: g is not a valid hexadecimal character"))
-    
+   
+      test(t"Convert a byte to hex"):
+        126.toByte.hex
+      .assert(_ == t"7e")
+      
+      test(t"Convert a short to hex"):
+        32767.toShort.hex
+      .assert(_ == t"7fff")
+
+      test(t"Convert an integer to hex"):
+        123456789.hex
+      .assert(_ == t"75bcd15")
+      
+      test(t"Convert a long to hex"):
+        654321123456789L.hex
+      .assert(_ == t"2531a0221f715")
+
+    suite(t"Collections tests"):
+      val numbers = List(t"one", t"two", t"four", t"six", t"eight", t"nine")
+      
+      test(t"Index unique numbers by their first letter"):
+        safely:
+          numbers.indexBy(_.head)
+      .assert(_ == Map('o' -> t"one", 't' -> t"two", 'f' -> t"four", 's' -> t"six", 'e' -> t"eight", 'n' -> t"nine"))
+      
+      //test(t"Index unique numbers by their length"):
+      //  capture[DuplicateIndexError]:
+      //    numbers.indexBy(_.length)
+      //.assert(_ == DuplicateIndexError())
+
     suite(t"Longest train tests"):
       test(t"Find longest train of zeros in middle"):
         List(1, 0, 0, 2, 3, 4, 0, 0, 0, 5, 6, 0, 7).longestTrain(_ == 0)
