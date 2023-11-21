@@ -229,6 +229,84 @@ object Tests extends Suite(t"Rudiments Tests"):
         List(0, 0, 1, 2, 3, 4, 0, 0, 1, 5, 6, 0, 0, 0, 0).longestTrain(_ == 0)
       .assert(_ == (11, 4))
     
+    suite(t"Maybe tests"):
+      val unsetInt: Maybe[Int] = Unset
+      val setInt: Maybe[Int] = 42
+
+      test(t"Check whether unset value is unset"):
+        unsetInt.unset
+      .assert(_ == true)
+
+      test(t"Check thet set value is not unset"):
+        setInt.unset
+      .assert(_ == false)
+
+      test(t"Unsafely cast a set value"):
+        val x: Int = setInt.cast(using Unsafe)
+        x
+      .assert(_ == 42)
+
+      test(t"Provide an alternative for an unset value"):
+        unsetInt.or(1)
+      .assert(_ == 1)
+
+      test(t"Provide an alternative for a set value"):
+        setInt.or(1)
+      .assert(_ == 42)
+
+      test(t"Presume a default value for an unset value"):
+        unsetInt.presume
+      .assert(_ == 0)
+
+      test(t"Convert an unset value to an Option"):
+        unsetInt.option
+      .assert(_ == None)
+
+      test(t"Convert a set value to an Option"):
+        setInt.option
+      .assert(_ == Some(42))
+
+      test(t"Fold over a Maybe"):
+        unsetInt.fm(0)(_ + 1)
+      .assert(_ == 0)
+
+      test(t"Fold over a set Maybe"):
+        setInt.fm(0)(_ + 1)
+      .assert(_ == 43)
+
+      test(t"Map over an unset Maybe"):
+        unsetInt.mm(_ + 1)
+      .assert(_ == Unset)
+
+      test(t"Map over a set Maybe"):
+        setInt.mm(_ + 1)
+      .assert(_ == 43)
+
+      test(t"Construct a new Maybe from a null value"):
+        val x: String | Null = null
+        Maybe(x)
+      .assert(_ == Unset)
+
+      test(t"Construct a new Maybe from a possibly-null value"):
+        val x: String | Null = ""
+        Maybe(x)
+      .assert(_ == "")
+
+      test(t"Convert an option to a maybe"):
+        val x: Option[Int] = Some(42)
+        x.maybe
+      .assert(_ == 42)
+
+      test(t"Convert an empty Option to a maybe"):
+        val x: Option[Int] = None
+        x.maybe
+      .assert(_ == Unset)
+
+      test(t"Presume a value for an empty Option"):
+        val x: Option[List[Int]] = None
+        x.presume
+      .assert(_ == Nil)
+
     suite(t"PID & exit status tests"):
       test(t"Zero exit-status is OK"):
         ExitStatus(0)
