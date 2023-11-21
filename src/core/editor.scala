@@ -124,7 +124,7 @@ object Interaction:
 
     def result(editor: LineEditor): Text = editor.content
 
-case class SelectMenu[sealed ItemType](options: List[ItemType], current: ItemType):
+case class SelectMenu[ItemType](options: List[ItemType], current: ItemType):
   import Keypress.*
   def apply(keypress: TerminalEvent): SelectMenu[ItemType] = try keypress match
     case Up   => copy(current = options(0 max options.indexOf(current) - 1))

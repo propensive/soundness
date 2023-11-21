@@ -220,7 +220,7 @@ trait TerminalSizeDetection:
   def apply(): Boolean
 
 def terminal
-    [sealed ResultType]
+    [ResultType]
     (block: Terminal ?=> ResultType)
     (using context: ProcessContext, monitor: Monitor)
     (using BracketedPasteMode, BackgroundColorDetection, TerminalFocusDetection, TerminalSizeDetection)
