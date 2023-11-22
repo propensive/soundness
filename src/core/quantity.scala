@@ -24,7 +24,7 @@ import anticipation.*
 import scala.quoted.*
 import scala.compiletime.*
 
-import language.experimental.captureChecking
+//import language.experimental.captureChecking
 
 object QuantitativeMacros:
 
