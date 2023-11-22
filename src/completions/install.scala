@@ -40,11 +40,12 @@ object TabCompletions:
     val scriptPath = sh"sh -c 'command -v ${service.scriptName}'".exec[Text]()
     val command: Text = service.scriptName
     
-    if scriptPath.decodeAs[Path] == service.script
+    if safely(scriptPath.decodeAs[Path]) == service.script
     then
       (if shells.isEmpty then List(Shell.Zsh, Shell.Bash, Shell.Fish) else shells.to(List)).flatMap:
         case Shell.Zsh =>
-          val dirs = sh"zsh -c 'source ~/.zshrc 2> /dev/null; printf %s, $$fpath'".exec[Text]().cut(t",").filter(_.trim != t"").map(_.decodeAs[Path]).reverse
+          val dirNames = sh"zsh -c 'source ~/.zshrc 2> /dev/null; printf %s, $$fpath'".exec[Text]().cut(t",")
+          val dirs = dirNames.filter(_.trim != t"").map { dir => safely(dir.decodeAs[Path]) }.vouched
           install(Shell.Zsh, command, PathName(t"_$command"), dirs)
         
         case Shell.Bash =>
