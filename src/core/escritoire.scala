@@ -36,18 +36,29 @@ enum Alignment:
 enum DelimitRows:
   case None, Rule, Space, SpaceIfMultiline, RuleIfMultiline
 
+object ColumnAlignment:
+  val left: ColumnAlignment[Any] = () => Alignment.Left
+  given byte: ColumnAlignment[Byte] = () => Alignment.Right
+  given short: ColumnAlignment[Short] = () => Alignment.Right
+  given int: ColumnAlignment[Int] = () => Alignment.Right
+  given long: ColumnAlignment[Long] = () => Alignment.Right
+  given text: ColumnAlignment[Text] = () => Alignment.Left
+
+trait ColumnAlignment[-ColumnType]:
+  def alignment(): Alignment
+
 object Column:
   def apply
       [RowType, CellType, TextType]
-      (title: TextType, width: Maybe[Int] = Unset, align: Alignment = Alignment.Left,
+      (title: TextType, width: Maybe[Int] = Unset, align: Maybe[Alignment] = Unset,
           breaks: Breaks = Breaks.Space, hide: Boolean = false)(get: RowType -> CellType)
-      (using textual: Textual[TextType])
+      (using textual: Textual[TextType], columnAlignment: ColumnAlignment[CellType] = ColumnAlignment.left)
       (using textual.ShowType[CellType])
       : Column[RowType, TextType] =
 
     def contents(row: RowType): TextType = textual.show(get(row))
     
-    Column(title, contents, breaks, align, width, hide)
+    Column(title, contents, breaks, align.or(columnAlignment.alignment()), width, hide)
 
   def constrain
       [TextType: Textual]
