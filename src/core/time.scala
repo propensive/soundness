@@ -281,7 +281,7 @@ object TimeSystem:
   enum LeapDayArithmetic:
     case Throw, PreferFeb28, PreferMar1
 
-open class TimeSystem[Units <: Denomination]():
+open class TimeSystem[DenominationType <: Denomination]():
   def ambiguousTimes: TimeSystem.AmbiguousTimes = TimeSystem.AmbiguousTimes.Dilate
   def monthArithmetic: TimeSystem.MonthArithmetic = TimeSystem.MonthArithmetic.Scale
   def leapDayArithmetic: TimeSystem.LeapDayArithmetic = TimeSystem.LeapDayArithmetic.PreferFeb28
