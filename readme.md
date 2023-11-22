@@ -79,7 +79,7 @@ be used, but caution should be taken if there is a mismatch between the
 project's stability level and the importance of your own project.
 
 Escritoire is designed to be _small_. Its entire source code currently consists
-of 238 lines of code.
+of 247 lines of code.
 
 ## Building
 
@@ -123,6 +123,10 @@ libraries perform some quite unpleasant tasks.
 Names should be English words, though many are obscure or archaic, and it should be noted how
 willingly English adopts foreign words. Names are generally of Greek or Latin origin, and have
 often arrived in English via a romance language.
+
+## Logo
+
+The logo shows some stylized papers laid out on a green writing table, or _escritoire_.
 
 ## License
 
