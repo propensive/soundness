@@ -30,7 +30,7 @@ import serpentine.*, hierarchies.unix
 import spectacular.*
 import turbulence.*
 
-import language.experimental.captureChecking
+//import language.experimental.captureChecking
 
 import GitError.Detail.*
 
@@ -58,9 +58,9 @@ extends Error(msg"the Git operation could not be completed because $detail")
 
 case class GitRefError(value: Text) extends Error(msg"$value is not a valid Git reference")
 
-class GitProcess[+ResultType](val progress: LazyList[Progress])(closure: => ResultType^):
-  lazy val result: ResultType^{this} = closure
-  def complete(): ResultType^{this} = result
+class GitProcess[+ResultType](val progress: LazyList[Progress])(closure: => ResultType):
+  lazy val result: ResultType/*^{closure*}*/ = closure
+  def complete(): ResultType/*^{closure*}*/ = result
 
 object GitRepo:
   def apply(path: Path)(using gitError: Raises[GitError], io: Raises[IoError]): GitRepo =
@@ -96,7 +96,7 @@ case class GitRepo(gitDir: Directory, workTree: Maybe[Directory] = Unset):
   
   def pull
       ()(using GitCommand, Log, Internet, WorkingDirectory)(using gitError: Raises[GitError], exec: Raises[ExecError])
-      : GitProcess[Unit]^{gitError, exec} =
+      : GitProcess[Unit]/*^{gitError, exec}*/ =
     
     val process = sh"$git $repoOptions pull --progress".fork[ExitStatus]()
 
@@ -108,7 +108,7 @@ case class GitRepo(gitDir: Directory, workTree: Maybe[Directory] = Unset):
   def fetch
       (depth: Maybe[Int] = Unset, repo: Text, refspec: Refspec)
       (using GitCommand, Log, Internet, WorkingDirectory)(using gitError: Raises[GitError], exec: Raises[ExecError])
-      : GitProcess[Unit]^{gitError, exec} =
+      : GitProcess[Unit]/*^{gitError, exec}*/ =
     
     val depthOption = depth.fm(sh"") { depth => sh"--depth=$depth" }
     val command = sh"$git $repoOptions fetch $depthOption --progress $repo $refspec"
@@ -259,7 +259,7 @@ object Git:
       [PathType: GenericPath]
       (repo: Text, targetPath: PathType, commit: CommitHash)
       (using Internet, Decoder[Path], GitCommand)(using gitError: Raises[GitError], exec: Raises[ExecError], log: Log, workingDirectory: WorkingDirectory)
-      : GitProcess[GitRepo]^{gitError, log, workingDirectory, exec} =
+      : GitProcess[GitRepo]/*^{gitError, log, workingDirectory, exec}*/ =
     
     val gitRepo = init(targetPath)
     
@@ -275,7 +275,7 @@ object Git:
       (source: Text, targetPath: PathType, bare: Boolean = false, branch: Maybe[Branch] = Unset,
           recursive: Boolean = false)
       (using Internet, WorkingDirectory, Log, Decoder[Path], Raises[ExecError], GitCommand)(using gitError: Raises[GitError])
-      : GitProcess[GitRepo]^{gitError} =
+      : GitProcess[GitRepo]/*^{gitError}*/ =
     
     val target: Path = try targetPath.pathText.decodeAs[Path] catch case error: PathError => abort(GitError(InvalidRepoPath))
     
