@@ -31,7 +31,6 @@ extension [ValueType](seq: Iterable[ValueType])
   transparent inline def mtwin: Iterable[(ValueType, ValueType)] = seq.map { x => (x, x) }
   transparent inline def mtriple: Iterable[(ValueType, ValueType, ValueType)] = seq.map { x => (x, x, x) }
   
-
   def indexBy[ValueType2](fn: ValueType -> ValueType2): Map[ValueType2, ValueType] throws DuplicateIndexError =
     val map = seq.map: value =>
       (fn(value), value)

@@ -30,6 +30,7 @@ object Default:
   given [ElemType]: Default[Set[ElemType]](Set())
   given [ElemType]: Default[Vector[ElemType]](Vector())
 
+@capability
 trait Default[+ValueType](default: ValueType):
   def apply(): ValueType = default
 

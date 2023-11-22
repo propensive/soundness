@@ -28,32 +28,28 @@ type Maybe[ValueType] = Unset.type | ValueType
 
 case class UnsetValueError() extends Error(Message("the value was not set".tt))
 
-extension [ValueType](maybe: Maybe[ValueType]^)
-  def unset: Boolean = maybe == Unset
-  def cast(using Unsafe): ValueType = maybe.asInstanceOf[ValueType]
-  def or(value: => ValueType): ValueType^{maybe, value} = if unset then value else cast(using Unsafe)
-  def presume(using default: => Default[ValueType]): ValueType^{maybe, default} = or(default())
+extension [ValueType](maybe: Maybe[ValueType])
+  inline def unset: Boolean = maybe == Unset
+  inline def or(inline value: => ValueType): ValueType = if unset then value else maybe.asInstanceOf[ValueType]
+  inline def vouch(using Unsafe): ValueType = or(throw Mistake(msg"a value was vouched but was unset"))
   
-  def vouch(using Unsafe): ValueType^{maybe} =
-    or(throw Mistake(msg"a value was vouched as set but was unset"))
+  def presume(using default: Default[ValueType]): ValueType^{default} = or(default())
+  def option: Option[ValueType] = if unset then None else Some(vouch(using Unsafe))
+  def assume(using unsetValue: CanThrow[UnsetValueError]): ValueType^{unsetValue} = or(throw UnsetValueError())
   
-  def assume(using unsetValue: CanThrow[UnsetValueError]): ValueType^{maybe, unsetValue} =
-    or(throw UnsetValueError())
-  
-  
-  def option: Option[ValueType] = if unset then None else Some(cast(using Unsafe))
+  inline def fm[ValueType2](inline alternative: => ValueType2)(inline fn: ValueType => ValueType2): ValueType2 =
+    if unset then alternative else fn(vouch(using Unsafe))
 
-  def fm
-      [ValueType2](default: => ValueType2)(fn: ValueType => ValueType2)
-      : ValueType2^{default, fn} =
-    if unset then default else fn(cast(using Unsafe))
+  inline def mm[ValueType2](inline fn: ValueType => ValueType2): Maybe[ValueType2] =
+    if unset then Unset else fn(vouch(using Unsafe))
 
-  def mm[ValueType2](fn: ValueType => ValueType2): Maybe[ValueType2]^{fn} =
-    if unset then Unset else fn(cast(using Unsafe))
+extension [ValueType](iterable: Iterable[Maybe[ValueType]])
+  transparent inline def vouched: Iterable[ValueType] = iterable.filter(!_.unset).map(_.vouch(using Unsafe))
 
 object Maybe:
-  def apply[ValueType](value: ValueType | Null): Maybe[ValueType] = if value == null then Unset else value
+  inline def apply[ValueType](value: ValueType | Null): Maybe[ValueType] =
+    if value == null then Unset else value
 
 extension [ValueType](option: Option[ValueType])
-  def maybe: Unset.type | ValueType = option.getOrElse(Unset)
+  inline def maybe: Unset.type | ValueType = option.getOrElse(Unset)
   def presume(using default: Default[ValueType]) = option.getOrElse(default())
