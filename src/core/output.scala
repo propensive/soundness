@@ -22,6 +22,7 @@ import fulminate.*
 import anticipation.*
 import perforate.*
 import symbolism.*
+import turbulence.*
 import contextual.*
 import spectacular.*
 
@@ -188,6 +189,12 @@ object Ansi extends Ansi2:
 
 object Output:
   given add: ClosedOperator["+", Output] = _.append(_)
+
+  given appendableOut(using stdio: Stdio): SimpleAppendable[Out.type, Output] = (out, output) =>
+    stdio.print(output.render)
+  
+  given appendableErr(using stdio: Stdio): SimpleAppendable[Err.type, Output] = (err, output) =>
+    stdio.printErr(output.render)
 
   given textual: Textual[Output] with
     type ShowType[-ValueType] = Displayable[ValueType]
