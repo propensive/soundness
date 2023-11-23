@@ -73,7 +73,7 @@ object Tzdb:
     case After(month: MonthName, day: Weekday, date: Int)
     case Before(month: MonthName, day: Weekday, date: Int)
 
-  def parseFile(name: Text)(using Log, Raises[TzdbError]): List[Tzdb.Entry] =
+  def parseFile(name: Text)(using Log[Text], Raises[TzdbError]): List[Tzdb.Entry] =
     val lines: LazyList[Text] =
       val stream = safely(getClass.getResourceAsStream(s"/aviation/tzdb/$name").nn).or:
         abort(TzdbError(TzdbError.Reason.ZoneFileMissing(name), 0))
@@ -82,7 +82,7 @@ object Tzdb:
 
     parse(name, lines)
 
-  def parse(name: Text, lines: LazyList[Text])(using Log, Raises[TzdbError]): List[Tzdb.Entry] =
+  def parse(name: Text, lines: LazyList[Text])(using Log[Text], Raises[TzdbError]): List[Tzdb.Entry] =
     
     def parseDuration(lineNo: Int, str: Text) = str.cut(t":").to(List) match
       case As[Int](h) :: Nil                             => Duration(h, 0, 0)
