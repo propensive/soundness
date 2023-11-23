@@ -20,6 +20,7 @@ import rudiments.*
 import fulminate.*
 import anticipation.*
 import parasite.*
+import gossamer.*
 
 import scala.quoted.*
 
@@ -27,17 +28,17 @@ import scala.quoted.*
 
 object Eucalyptus:
   def record
-      [MessageType: Type]
-      (level: Expr[Level], message: Expr[MessageType], log: Expr[Log],
-          communicable: Expr[Communicable[MessageType]], realm: Expr[Realm])
+      [MessageType: Type, TextType: Type]
+      (level: Expr[Level], message: Expr[MessageType], log: Expr[Log[TextType]], realm: Expr[Realm])
       (using Quotes)
       : Expr[Unit] =
-  '{
-    val time = System.currentTimeMillis
-    
-    try $log.record(Entry($realm, $level, $communicable.message($message), time, $log.envelopes))
-    catch case e: Exception => ()
-  }
+  
+    '{
+      val time = System.currentTimeMillis
+      
+      try $log.record(Entry($realm, $level, ???, time, $log.envelopes))
+      catch case e: Exception => ()
+    }
 
   def realm(context: Expr[StringContext])(using Quotes): Expr[Realm] =
     import quotes.reflect.*
@@ -45,7 +46,7 @@ object Eucalyptus:
     if !name.matches("[a-z]+") then fail(msg"the realm name should comprise only of lowercase letters")
     else '{Realm.make(${Expr(name)}.tt)(using Unsafe)}
 
-  def route(routes: Expr[PartialFunction[Entry, Any]], monitor: Expr[Monitor])(using Quotes): Expr[Log] =
+  def route[TextType: Type](routes: Expr[PartialFunction[Entry[TextType], Any]], monitor: Expr[Monitor])(using Quotes): Expr[Log[TextType]] =
     import quotes.reflect.*
 
     def invalidRoutes(): Nothing = fail(msg"the routes must be specified as one or more case clauses")
@@ -55,10 +56,10 @@ object Eucalyptus:
       case _                                                                        => invalidRoutes()
     
     '{
-      val loggers: Array[Logger | Null] = new Array(${Expr(count)})
+      val loggers: Array[Logger[TextType] | Null] = new Array(${Expr(count)})
 
-      new Log():
-        def record(entry: Entry): Unit = ${
+      new Log[TextType]():
+        def record(entry: Entry[TextType]): Unit = ${
           def partialFunction(index: Int) = routes.asTerm match
             case Inlined(_, _, Block(List(defDef), term)) => defDef match
               case DefDef(ident, scrutineeType, returnType, Some(Match(matchId, caseDefs))) =>
@@ -67,9 +68,9 @@ object Eucalyptus:
                     case '{$target: targetType} =>
                       def typeName = TypeRepr.of[targetType].show
                       
-                      val logWriter: Expr[LogWriter[targetType]] = Expr.summon[LogWriter[targetType]].getOrElse:
+                      val logWriter: Expr[LogWriter[targetType, TextType]] = Expr.summon[LogWriter[targetType, TextType]].getOrElse:
                         fail(
-                            msg"could not get an instance of ${TypeRepr.of[LogWriter[targetType]].show.tt}")
+                            msg"could not get an instance of ${TypeRepr.of[LogWriter[targetType, TextType]].show.tt}")
                       
                       val action = '{
                         loggers(${Expr(index)}) match
@@ -84,7 +85,7 @@ object Eucalyptus:
                 val definition = DefDef.copy(defDef)(ident, scrutineeType, returnType, Some(Match(matchId,
                     List(caseDef))))
                 
-                Block(List(definition), term).asExprOf[PartialFunction[Entry, Any]]
+                Block(List(definition), term).asExprOf[PartialFunction[Entry[TextType], Any]]
                
               case _ =>
                 invalidRoutes()

@@ -23,7 +23,7 @@ import gossamer.*
 import spectacular.*
 import hieroglyph.textWidthCalculation.uniform
 
-import scala.language.experimental.captureChecking
+//import scala.language.experimental.captureChecking
 
 package logFormats:
   given standardColor[TargetType]: LogFormat[TargetType, Output] = entry =>

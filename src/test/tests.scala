@@ -31,7 +31,7 @@ object Tests extends Suite(t"Eucalyptus tests"):
     given LogFormat[Out.type, Output] = logFormats.standardColor[Out.type]
     given LogFormat[Err.type, Output] = logFormats.standardColor[Err.type]
     supervise:
-      given Log = Log.route:
+      given Log[Output] = Log.route[Output]:
         case Warn() => Out
         case Fail() => Out
         case _      => Out//Syslog(t"tab")

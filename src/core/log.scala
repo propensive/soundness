@@ -24,69 +24,73 @@ import gossamer.*
 
 import java.text as jt
 
-import scala.language.experimental.captureChecking
+//import scala.language.experimental.captureChecking
 
 object Log:
   
   val dateFormat = jt.SimpleDateFormat(t"yyyy-MMM-dd HH:mm:ss.SSS".s)
 
   inline def fine
-      [ValueType]
-      (inline value: ValueType)
-      (using inline log: Log)
-      (using inline communicable: Communicable[ValueType], inline realm: Realm)
+      [MessageType]
+      (inline message: MessageType)
+      [TextType]
+      (using inline log: Log[TextType], inline realm: Realm)
       : Unit =
-    ${Eucalyptus.record('{Level.Fine}, 'value, 'log, 'communicable, 'realm)}
+    ${Eucalyptus.record('{Level.Fine}, 'message, 'log, 'realm)}
   
   inline def info
-      [ValueType]
-      (inline value: ValueType)
-      (using inline log: Log)
-      (using inline communicable: Communicable[ValueType], inline realm: Realm)
+      [MessageType]
+      (inline message: MessageType)
+      [TextType]
+      (using inline log: Log[TextType], inline realm: Realm)
       : Unit =
-    ${Eucalyptus.record('{Level.Info}, 'value, 'log, 'communicable, 'realm)}
+    ${Eucalyptus.record('{Level.Info}, 'message, 'log, 'realm)}
   
   inline def warn
-      [ValueType]
-      (inline value: ValueType)
-      (using inline log: Log)
-      (using inline communicable: Communicable[ValueType], inline realm: Realm)
+      [MessageType]
+      (inline message: MessageType)
+      [TextType]
+      (using inline log: Log[TextType], inline realm: Realm)
       : Unit =
-    ${Eucalyptus.record('{Level.Warn}, 'value, 'log, 'communicable, 'realm)}
+    ${Eucalyptus.record('{Level.Warn}, 'message, 'log, 'realm)}
   
   inline def fail
-      [ValueType]
-      (inline value: ValueType)
-      (using inline log: Log)
-      (using inline communicable: Communicable[ValueType], inline realm: Realm)
+      [MessageType]
+      (inline message: MessageType)
+      [TextType]
+      (using inline log: Log[TextType], inline realm: Realm)
       : Unit =
-    ${Eucalyptus.record('{Level.Fail}, 'value, 'log, 'communicable, 'realm)}
+    ${Eucalyptus.record('{Level.Fail}, 'message, 'log, 'realm)}
 
-  inline def route(inline routes: PartialFunction[Entry, Any])(using monitor: Monitor): Log =
-    ${Eucalyptus.route('routes, 'monitor)}
+  inline def route
+      [TextType]
+      (inline routes: PartialFunction[Entry[?], Any])
+      (using monitor: Monitor)
+      : Log[TextType] =
+    ${Eucalyptus.route[TextType]('routes, 'monitor)}
 
   private val localLog: ThreadLocal[AnyRef] = ThreadLocal()
  
-  inline def pin()(using inline log: Log): Unit = localLog.set(log)
+  inline def pin()(using inline log: Log[Text]): Unit = localLog.set(log)
 
-  def pinned: Log = localLog.get() match
-    case log: Log => log
-    case _        => logging.silent
+  def pinned: Log[Text] = localLog.get() match
+    case log: Log[Text] => log
+    case _              => logging.silent
 
   def envelop
       [EnvelopeType: Envelope]
       (value: EnvelopeType)
-      [ResultType]
-      (block: Log ?=> ResultType)
-      (using log: Log)
+      [ResultType, TextType]
+      (block: Log[TextType] ?=> ResultType)
+      (using log: Log[TextType])
       : ResultType =
 
-    val log2: Log = new Log:
+    val log2: Log[TextType] = new Log[TextType]:
       override val envelopes: List[Text] = summon[Envelope[EnvelopeType]].envelope(value) :: log.envelopes
-      def record(entry: Entry): Unit = log.record(entry)
+      def record(entry: Entry[TextType]): Unit = log.record(entry)
     block(using log2)
 
 @capability
-abstract class Log():
+abstract class Log[TextType]():
   val envelopes: List[Text] = Nil
-  def record(entry: Entry): Unit
+  def record(entry: Entry[TextType]): Unit
