@@ -18,7 +18,6 @@ package eucalyptus
 
 import gossamer.*
 import rudiments.*
-import fulminate.*
 import anticipation.*
 import perforate.*
 import parasite.*
@@ -39,14 +38,17 @@ case class Realm private(name: Text):
 
 object Level:
   given Ordering[Level] = Ordering[Int].on[Level](_.ordinal)
-  given Communicable[Level] = level => Message(level.show.upper)
   given Show[Level] = _.toString.tt.upper
 
 enum Level:
   case Fine, Info, Warn, Fail
   def unapply(entry: Entry[?]): Boolean = entry.level == this
   
-case class Entry[TextType](realm: Realm, level: Level, message: TextType, timestamp: Long, envelopes: List[Text])
+case class Entry
+    [TextType]
+    (realm: Realm, level: Level, message: TextType, timestamp: Long, envelopes: List[Text]):
+  def map[TextType2](fn: TextType => TextType2): Entry[TextType2] =
+    Entry(realm, level, fn(message), timestamp, envelopes)
 
 object Envelope:
   given [EnvelopeType](using Show[EnvelopeType]): Envelope[EnvelopeType] = _.show
@@ -96,8 +98,8 @@ extends Logger[TextType]:
 object LogFormat:
   given standard[TargetType]: LogFormat[TargetType, Text] = entry =>
     import textWidthCalculation.uniform
-    val realm: Message = msg"${entry.realm.show.fit(8)}"
-    msg"${Log.dateFormat.format(entry.timestamp).nn.tt} ${entry.level} $realm ${entry.message}".text+t"\n"
+    val realm: Text = entry.realm.show.fit(8)
+    t"${Log.dateFormat.format(entry.timestamp).nn.tt} ${entry.level} $realm ${entry.message}\n"
   
 trait LogFormat[TargetType, TextType]:
   def apply(entry: Entry[TextType]): TextType

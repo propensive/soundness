@@ -29,14 +29,15 @@ import scala.quoted.*
 object Eucalyptus:
   def record
       [MessageType: Type, TextType: Type]
-      (level: Expr[Level], message: Expr[MessageType], log: Expr[Log[TextType]], realm: Expr[Realm])
+      (level: Expr[Level], message: Expr[MessageType], log: Expr[Log[TextType]], realm: Expr[Realm], textual: Expr[Textual[TextType]], show: Expr[Any])
       (using Quotes)
       : Expr[Unit] =
-  
+    
     '{
       val time = System.currentTimeMillis
-      
-      try $log.record(Entry($realm, $level, ???, time, $log.envelopes))
+      val t = $textual
+          
+      try $log.record(Entry($realm, $level, t.show($message)(using $show.asInstanceOf[t.ShowType[MessageType]]), time, $log.envelopes))
       catch case e: Exception => ()
     }
 
