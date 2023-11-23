@@ -29,17 +29,20 @@ package logFormats:
   given standardColor[TargetType]: LogFormat[TargetType, Text] = entry =>
     given displayLevel: Displayable[Level] = level =>
       val color = level match
-      case Level.Fine => colors.LightSeaGreen
-      case Level.Info => colors.YellowGreen
-      case Level.Warn => colors.Gold
-      case Level.Fail => colors.Tomato
+        case Level.Fine => colors.LightSeaGreen
+        case Level.Info => colors.YellowGreen
+        case Level.Warn => colors.Gold
+        case Level.Fail => colors.Tomato
 
       e"${Bg(color)}[${colors.Black}($Bold( ${level.show} ))]"
 
+    // FIXME: This is far too much object creation for every log message
     val realm: Output = e"${colors.SteelBlue}(${entry.realm.show.fit(8)})"
     val colorSeq = List(colors.Chocolate, colors.OliveDrab, colors.CadetBlue, colors.DarkGoldenrod)
     
     val stack: Output =
       entry.envelopes.reverse.zip(colorSeq).map { (item, color) => e"$color($item)" }.join(e"", e" ⟩ ", e" ⟩")
+    
+    val dateTime = Log.dateFormat.format(entry.timestamp).nn.tt
 
-    e"${colors.SlateGray}(${Log.dateFormat.format(entry.timestamp).nn.tt}) ${entry.level} $realm $stack ${entry.message}\n".render
+    e"${colors.SlateGray}($dateTime) ${entry.level} $realm $stack ${entry.message}\n".render

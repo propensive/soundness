@@ -60,18 +60,19 @@ object Logger:
   val drain: Logger = stream => ()
 
   def apply
-      [TargetType]
-      (target: TargetType, appendable: Appendable[TargetType, Text], format: LogFormat[TargetType, Text])
+      [TargetType, TextType]
+      (target: TargetType, appendable: Appendable[TargetType, TextType], format: LogFormat[TargetType, TextType])
       (using monitor: Monitor)
       : Logger^{monitor} =
-    LiveLogger(target)(using appendable)
+    LiveLogger(target)(using format)(using appendable)
 
 object LogWriter:
   given active
-      [TargetType]
-      (using appendable: Appendable[TargetType, Text], format: LogFormat[TargetType, Text], monitor: Monitor)
+      [TargetType, TextType]
+      (using format: LogFormat[TargetType, TextType])
+      (using appendable: Appendable[TargetType, TextType], monitor: Monitor)
       : LogWriter[TargetType]^{monitor} =
-    LiveLogger(_)(using appendable, format, monitor)
+    LiveLogger(_)(using format)(using appendable, monitor)
 
 trait LogWriter[TargetType]:
   def logger(target: TargetType): Logger
@@ -80,9 +81,10 @@ trait Logger:
   def put(entry: Entry): Unit
 
 class LiveLogger
-    [TargetType]
+    [TargetType, TextType]
     (target: TargetType)
-    (using appendable: Appendable[TargetType, Text], format: LogFormat[TargetType, Text], monitor: Monitor)
+    (using format: LogFormat[TargetType, TextType])
+    (using appendable: Appendable[TargetType, TextType], monitor: Monitor)
 extends Logger:
   private val funnel: Funnel[Entry] = Funnel()
   
