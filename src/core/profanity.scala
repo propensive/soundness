@@ -153,9 +153,13 @@ extends Stdio:
   given stdio: Stdio = context.stdio
 
   val keyboard: StandardKeyboard^{monitor} = StandardKeyboard()
+  val initRows: Promise[Int] = Promise()
+  val initColumns: Promise[Int] = Promise()
   var mode: Maybe[TerminalMode] = Unset
   var rows: Maybe[Int] = Unset
   var columns: Maybe[Int] = Unset
+
+  def knownColumns: Int = safely(initColumns.await(50L)).or(80)
 
   private val signalHandler: Async[Unit] = Async:
     signals.foreach:
@@ -165,7 +169,9 @@ extends Stdio:
   def events: LazyList[TerminalEvent]^{monitor} = keyboard.process(In.stream[Char]).multiplexWith(signals).map:
     case resize@TerminalInfo.WindowSize(rows2, columns2) =>
       rows = rows2
+      initRows.offer(rows2)
       columns = columns2
+      initColumns.offer(columns2)
       resize
     
     case bgColor@TerminalInfo.BgColor(red, green, blue) =>
