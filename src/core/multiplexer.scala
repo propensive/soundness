@@ -28,35 +28,35 @@ import java.util.concurrent as juc
 object Multiplexer:
   private object Termination
 
-case class Multiplexer[KeyType, ElemType]()(using monitor: Monitor):
+case class Multiplexer[KeyType, ElementType]()(using monitor: Monitor):
   private val tasks: TrieMap[KeyType, Async[Unit]] = TrieMap()
   
-  private val queue: juc.LinkedBlockingQueue[ElemType | Multiplexer.Termination.type] =
+  private val queue: juc.LinkedBlockingQueue[ElementType | Multiplexer.Termination.type] =
     juc.LinkedBlockingQueue()
 
   def close(): Unit = tasks.keys.foreach(remove(_))
 
   @tailrec
-  private def pump(key: KeyType, stream: LazyList[ElemType])(using Submonitor[Unit]): Unit =
+  private def pump(key: KeyType, stream: LazyList[ElementType])(using Submonitor[Unit]): Unit =
     if stream.isEmpty then remove(key) else
       acquiesce()
       queue.put(stream.head)
       pump(key, stream.tail)
 
-  def add(key: KeyType, stream: LazyList[ElemType]): Unit = tasks(key) =
+  def add(key: KeyType, stream: LazyList[ElementType]): Unit = tasks(key) =
     Async(pump(key, stream))
  
   private def remove(key: KeyType): Unit = synchronized:
     tasks -= key
     if tasks.isEmpty then queue.put(Multiplexer.Termination)
   
-  def stream: LazyList[ElemType] =
+  def stream: LazyList[ElementType] =
     LazyList.continually(queue.take().nn).takeWhile(_ != Multiplexer.Termination)
 
-extension [ElemType](stream: LazyList[ElemType])
+extension [ElementType](stream: LazyList[ElementType])
 
-  def deduplicate: LazyList[ElemType] =
-    def recur(last: ElemType, stream: LazyList[ElemType]): LazyList[ElemType] =
+  def deduplicate: LazyList[ElementType] =
+    def recur(last: ElementType, stream: LazyList[ElementType]): LazyList[ElementType] =
       stream match
         case head #:: tail => if last == head then recur(last, tail) else head #:: recur(head, tail)
         case _             => LazyList()
@@ -68,9 +68,9 @@ extension [ElemType](stream: LazyList[ElemType])
   def rate
       [DurationType: GenericDuration: SpecificDuration](duration: DurationType)
       (using monitor: Monitor, cancel: Raises[CancelError])
-      : LazyList[ElemType] =
+      : LazyList[ElementType] =
     
-    def recur(stream: LazyList[ElemType], last: Long): LazyList[ElemType] = stream match
+    def recur(stream: LazyList[ElementType], last: Long): LazyList[ElementType] = stream match
       case head #:: tail =>
         val delay = SpecificDuration(duration.milliseconds - (System.currentTimeMillis - last))
         if delay.milliseconds > 0 then sleep(delay)
@@ -81,19 +81,19 @@ extension [ElemType](stream: LazyList[ElemType])
 
     Async(recur(stream, System.currentTimeMillis)).await()
 
-  def multiplexWith(that: LazyList[ElemType])(using monitor: Monitor): LazyList[ElemType] =
+  def multiplexWith(that: LazyList[ElementType])(using monitor: Monitor): LazyList[ElementType] =
     unsafely(LazyList.multiplex(stream, that))
 
-  def regulate(tap: Tap)(using Monitor): LazyList[ElemType] =
+  def regulate(tap: Tap)(using Monitor): LazyList[ElementType] =
     def defer
-        (active: Boolean, stream: LazyList[Some[ElemType] | Tap.Regulation], buffer: List[ElemType])
-        : LazyList[ElemType] =
+        (active: Boolean, stream: LazyList[Some[ElementType] | Tap.Regulation], buffer: List[ElementType])
+        : LazyList[ElementType] =
       recur(active, stream, buffer)
 
     @tailrec
     def recur
-        (active: Boolean, stream: LazyList[Some[ElemType] | Tap.Regulation], buffer: List[ElemType])
-        : LazyList[ElemType] =
+        (active: Boolean, stream: LazyList[Some[ElementType] | Tap.Regulation], buffer: List[ElementType])
+        : LazyList[ElementType] =
       
       if active && buffer.nonEmpty then buffer.head #:: defer(true, stream, buffer.tail)
       else if stream.isEmpty then LazyList()
@@ -114,13 +114,18 @@ extension [ElemType](stream: LazyList[ElemType])
       [DurationType: SpecificDuration: GenericDuration]
       (duration: DurationType, maxSize: Maybe[Int] = Unset, maxDelay: Maybe[DurationType] = Unset)
       (using Monitor)
-      : LazyList[List[ElemType]] =
+      : LazyList[List[ElementType]] =
     
-    def defer(stream: LazyList[ElemType], list: List[ElemType], expiry: Long): LazyList[List[ElemType]] =
+    def defer
+        (stream: LazyList[ElementType], list: List[ElementType], expiry: Long)
+        : LazyList[List[ElementType]] =
+      
       recur(stream, list, expiry)
 
     @tailrec
-    def recur(stream: LazyList[ElemType], list: List[ElemType], expiry: Long): LazyList[List[ElemType]] =
+    def recur
+        (stream: LazyList[ElementType], list: List[ElementType], expiry: Long)
+        : LazyList[List[ElementType]] =
       if list.isEmpty then
         val expiry2: Long =
           maxDelay.option.map(_.milliseconds).fold(Long.MaxValue)(_ + System.currentTimeMillis)
@@ -143,9 +148,8 @@ extension [ElemType](stream: LazyList[ElemType])
     
     LazyList.defer(recur(stream, Nil, Long.MaxValue))
 
-  def parallelMap[ElemType2](fn: ElemType => ElemType2)(using monitor: Monitor): LazyList[ElemType2] =
-    
-    val out: Funnel[ElemType2] = Funnel()
+  def parallelMap[ElementType2](fn: ElementType => ElementType2)(using Monitor): LazyList[ElementType2] =
+    val out: Funnel[ElementType2] = Funnel()
     
     Async:
       stream.map: elem =>
