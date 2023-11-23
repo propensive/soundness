@@ -34,7 +34,7 @@ object TabCompletions:
   def install
       (shells: Shell*)
       (using service: ShellContext)
-      (using WorkingDirectory, Log, Raises[ExecError], Raises[PathError], Raises[IoError],
+      (using WorkingDirectory, Log[Text], Raises[ExecError], Raises[PathError], Raises[IoError],
           Raises[StreamCutError], Raises[OverwriteError], Effectful)
       : List[Message] =
     val scriptPath = sh"sh -c 'command -v ${service.scriptName}'".exec[Text]()
