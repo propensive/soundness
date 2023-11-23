@@ -80,8 +80,8 @@ trait Executor[ResultType]:
 
 trait ProcessRef:
   def pid: Pid
-  def kill()(using Log): Unit
-  def abort()(using Log): Unit
+  def kill()(using Log[Text]): Unit
+  def abort()(using Log[Text]): Unit
   def alive: Boolean
   def attend(): Unit
   def startTime[InstantType: SpecificInstant]: Maybe[InstantType]
@@ -100,8 +100,8 @@ object OsProcess:
 
 class OsProcess private (java: ProcessHandle) extends ProcessRef:
   def pid: Pid = Pid(java.pid)
-  def kill()(using Log): Unit = java.destroy()
-  def abort()(using Log): Unit = java.destroyForcibly()
+  def kill()(using Log[Text]): Unit = java.destroy()
+  def abort()(using Log[Text]): Unit = java.destroyForcibly()
   def alive: Boolean = java.isAlive
   def attend(): Unit = java.onExit.nn.get()
   
@@ -154,12 +154,12 @@ class Process[+ExecType <: Label, ResultType](process: java.lang.Process) extend
     case 0     => ExitStatus.Ok
     case other => ExitStatus.Fail(other)
   
-  def abort()(using Log): Unit =
-    //Log.info(msg"The process with PID ${pid.value} was aborted")
+  def abort()(using Log[Text]): Unit =
+    //Log.info(t"The process with PID ${pid.value} was aborted")
     process.destroy()
   
-  def kill()(using Log): Unit =
-    //Log.warn(msg"The process with PID ${pid.value} was killed")
+  def kill()(using Log[Text]): Unit =
+    //Log.warn(t"The process with PID ${pid.value} was killed")
     process.destroyForcibly()
 
   def osProcess(using Raises[PidError]) = OsProcess(pid)
@@ -175,12 +175,12 @@ sealed trait Executable:
 
   def fork
       [ResultType]
-      ()(using working: WorkingDirectory, log: Log, exec: Raises[ExecError])
+      ()(using working: WorkingDirectory, log: Log[Text], exec: Raises[ExecError])
       : Process[Exec, ResultType]^{working}
   
   def exec
       [ResultType]
-      ()(using working: WorkingDirectory, log: Log, executor: Executor[ResultType], exec: Raises[ExecError])
+      ()(using working: WorkingDirectory, log: Log[Text], executor: Executor[ResultType], exec: Raises[ExecError])
       : ResultType^{executor, working} =
     
     fork[ResultType]().await()
@@ -189,7 +189,7 @@ sealed trait Executable:
       [ResultType]
       ()
       (using erased commandOutput: CommandOutput[Exec, ResultType])
-      (using working: WorkingDirectory, log: Log, executor: Executor[ResultType], exec: Raises[ExecError])
+      (using working: WorkingDirectory, log: Log[Text], executor: Executor[ResultType], exec: Raises[ExecError])
       : ResultType^{executor, working} =
     
     fork[ResultType]().await()
@@ -226,7 +226,7 @@ object Command:
   given Show[Command] = command => formattedArgs(command.args)
   
 case class Command(args: Text*) extends Executable:
-  def fork[ResultType]()(using working: WorkingDirectory, log: Log, exec: Raises[ExecError]): Process[Exec, ResultType] =
+  def fork[ResultType]()(using working: WorkingDirectory, log: Log[Text], exec: Raises[ExecError]): Process[Exec, ResultType] =
     val processBuilder = ProcessBuilder(args.ss*)
     
     working.directory.mm: directory =>
@@ -243,7 +243,7 @@ object Pipeline:
   given Show[Pipeline] = _.commands.map(_.show).join(t" | ")
   
 case class Pipeline(commands: Command*) extends Executable:
-  def fork[ResultType]()(using working: WorkingDirectory, log: Log, exec: Raises[ExecError]): Process[Exec, ResultType] =
+  def fork[ResultType]()(using working: WorkingDirectory, log: Log[Text], exec: Raises[ExecError]): Process[Exec, ResultType] =
     val processBuilders = commands.map: command =>
       val processBuilder = ProcessBuilder(command.args.ss*)
       
