@@ -36,17 +36,17 @@ case class InotifyError()
 extends Error(msg"the limit on the number of paths that can be watched has been exceeded")
 
 extension [DirectoryType: SpecificDirectory: GenericDirectory](dirs: Seq[DirectoryType])(using Monitor)
-  def watch()(using Log, GenericWatchService[DirectoryType], Raises[InotifyError]): Watcher[DirectoryType] =
+  def watch()(using Log[Text], GenericWatchService[DirectoryType], Raises[InotifyError]): Watcher[DirectoryType] =
     Watcher[DirectoryType](dirs*)
 
 extension [DirectoryType: SpecificDirectory: GenericDirectory](dir: DirectoryType)(using Monitor)
-  def watch()(using Log, GenericWatchService[DirectoryType], Raises[InotifyError]): Watcher[DirectoryType] =
+  def watch()(using Log[Text], GenericWatchService[DirectoryType], Raises[InotifyError]): Watcher[DirectoryType] =
     Watcher[DirectoryType](dir)
 
 object Watcher:
   def apply
       [DirectoryType: GenericWatchService: SpecificDirectory: GenericDirectory]
-      (dirs: DirectoryType*)(using Log, Monitor)
+      (dirs: DirectoryType*)(using Log[Text], Monitor)
       : Watcher[DirectoryType] =
 
     val svc: jnf.WatchService = summon[GenericWatchService[DirectoryType]]()
@@ -72,7 +72,7 @@ case class Watcher
   def stream: LazyList[WatchEvent] = funnel.stream.takeWhile(_ != Unset).collect:
     case event: WatchEvent => event
   
-  def removeAll()(using Log): Unit = watches.values.map(toDirectory(_)).foreach(remove(_))
+  def removeAll()(using Log[Text]): Unit = watches.values.map(toDirectory(_)).foreach(remove(_))
 
   @tailrec
   private def pump(): Unit =
@@ -111,14 +111,14 @@ case class Watcher
     
     catch case err: Exception => List()
 
-  def add(dir: DirectoryType)(using Log): Unit = synchronized:
+  def add(dir: DirectoryType)(using Log[Text]): Unit = synchronized:
     val path = dirPath(dir)
     val watchKey = path.register(svc, ENTRY_CREATE, ENTRY_MODIFY, ENTRY_DELETE).nn
     watches(watchKey) = path
     dirs(path) = watchKey
     Log.info(t"Started watching ${path.toString.show}")
   
-  def remove(dir: DirectoryType)(using Log): Unit = synchronized:
+  def remove(dir: DirectoryType)(using Log[Text]): Unit = synchronized:
     val path = dirPath(dir)
     val watchKey = dirs(path)
     watchKey.cancel()
