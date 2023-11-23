@@ -26,7 +26,7 @@ import hieroglyph.textWidthCalculation.uniform
 import scala.language.experimental.captureChecking
 
 package logFormats:
-  given standardColor[TargetType]: LogFormat[TargetType, Text] = entry =>
+  given standardColor[TargetType]: LogFormat[TargetType, Output] = entry =>
     given displayLevel: Displayable[Level] = level =>
       val color = level match
         case Level.Fine => colors.LightSeaGreen
@@ -45,4 +45,4 @@ package logFormats:
     
     val dateTime = Log.dateFormat.format(entry.timestamp).nn.tt
 
-    e"${colors.SlateGray}($dateTime) ${entry.level} $realm $stack ${entry.message}\n".render
+    e"${colors.SlateGray}($dateTime) ${entry.level} $realm $stack ${entry.message}\n"

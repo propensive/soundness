@@ -88,6 +88,5 @@ object Log:
 
 @capability
 abstract class Log():
-  type MessageType
   val envelopes: List[Text] = Nil
   def record(entry: Entry): Unit

@@ -68,7 +68,8 @@ object Eucalyptus:
                       def typeName = TypeRepr.of[targetType].show
                       
                       val logWriter: Expr[LogWriter[targetType]] = Expr.summon[LogWriter[targetType]].getOrElse:
-                        fail(msg"could not get a logger")
+                        fail(
+                            msg"could not get an instance of ${TypeRepr.of[LogWriter[targetType]].show.tt}")
                       
                       val action = '{
                         loggers(${Expr(index)}) match

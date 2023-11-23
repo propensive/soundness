@@ -72,7 +72,7 @@ object LogWriter:
       (using format: LogFormat[TargetType, TextType])
       (using appendable: Appendable[TargetType, TextType], monitor: Monitor)
       : LogWriter[TargetType]^{monitor} =
-    LiveLogger(_)(using format)(using appendable, monitor)
+    LiveLogger[TargetType, TextType](_)(using format)(using appendable, monitor)
 
 trait LogWriter[TargetType]:
   def logger(target: TargetType): Logger
