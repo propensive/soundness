@@ -75,27 +75,27 @@ case class GitRepo(gitDir: Directory, workTree: Maybe[Directory] = Unset):
     case workTree: Directory => sh"--git-dir=${gitDir.path} --work-tree=${workTree.path}"
 
   @targetName("checkoutTag")
-  def checkout(tag: Tag)(using Log, GitCommand, WorkingDirectory, Raises[ExecError]): Unit =
+  def checkout(tag: Tag)(using Log[Text], GitCommand, WorkingDirectory, Raises[ExecError]): Unit =
       sh"$git $repoOptions checkout $tag".exec[ExitStatus]()
   
   @targetName("checkoutBranch")
-  def checkout(branch: Branch)(using Log, GitCommand, WorkingDirectory, Raises[ExecError]): Unit =
+  def checkout(branch: Branch)(using Log[Text], GitCommand, WorkingDirectory, Raises[ExecError]): Unit =
       sh"$git $repoOptions checkout $branch".exec[ExitStatus]()
   
   @targetName("checkoutCommitHash")
-  def checkout(commit: CommitHash)(using Log, GitCommand, WorkingDirectory, Raises[ExecError]): Unit =
+  def checkout(commit: CommitHash)(using Log[Text], GitCommand, WorkingDirectory, Raises[ExecError]): Unit =
       sh"$git $repoOptions checkout $commit".exec[ExitStatus]()
   
-  def pushTags()(using Log, Internet, Raises[GitError], GitCommand, WorkingDirectory, Raises[ExecError]): Unit =
+  def pushTags()(using Log[Text], Internet, Raises[GitError], GitCommand, WorkingDirectory, Raises[ExecError]): Unit =
     sh"$git $repoOptions push --tags".exec[ExitStatus]()
 
-  def switch(branch: Branch)(using GitCommand, Log, WorkingDirectory, Raises[GitError], Raises[ExecError]): Unit =
+  def switch(branch: Branch)(using GitCommand, Log[Text], WorkingDirectory, Raises[GitError], Raises[ExecError]): Unit =
     sh"$git $repoOptions switch $branch".exec[ExitStatus]() match
       case ExitStatus.Ok => ()
       case failure       => abort(GitError(CannotSwitchBranch))
   
   def pull
-      ()(using GitCommand, Log, Internet, WorkingDirectory)(using gitError: Raises[GitError], exec: Raises[ExecError])
+      ()(using GitCommand, Log[Text], Internet, WorkingDirectory)(using gitError: Raises[GitError], exec: Raises[ExecError])
       : GitProcess[Unit]/*^{gitError, exec}*/ =
     
     val process = sh"$git $repoOptions pull --progress".fork[ExitStatus]()
@@ -107,7 +107,7 @@ case class GitRepo(gitDir: Directory, workTree: Maybe[Directory] = Unset):
   
   def fetch
       (depth: Maybe[Int] = Unset, repo: Text, refspec: Refspec)
-      (using GitCommand, Log, Internet, WorkingDirectory)(using gitError: Raises[GitError], exec: Raises[ExecError])
+      (using GitCommand, Log[Text], Internet, WorkingDirectory)(using gitError: Raises[GitError], exec: Raises[ExecError])
       : GitProcess[Unit]/*^{gitError, exec}*/ =
     
     val depthOption = depth.fm(sh"") { depth => sh"--depth=$depth" }
@@ -119,22 +119,22 @@ case class GitRepo(gitDir: Directory, workTree: Maybe[Directory] = Unset):
         case ExitStatus.Ok => ()
         case failure       => abort(GitError(PullFailed))
   
-  def commit(message: Text)(using GitCommand, Log, WorkingDirectory, Raises[GitError], Raises[ExecError]): Unit =
+  def commit(message: Text)(using GitCommand, Log[Text], WorkingDirectory, Raises[GitError], Raises[ExecError]): Unit =
     sh"$git $repoOptions commit -m $message".exec[ExitStatus]() match
       case ExitStatus.Ok => ()
       case failure       => abort(GitError(CommitFailed))
   
-  def branches()(using GitCommand, WorkingDirectory, Log, Raises[ExecError]): List[Branch] =
+  def branches()(using GitCommand, WorkingDirectory, Log[Text], Raises[ExecError]): List[Branch] =
     sh"$git $repoOptions branch".exec[LazyList[Text]]().map(_.drop(2)).to(List).map(Branch.unsafe(_))
   
   // FIXME: this uses an `Executor[String]` instead of an `Executor[Text]` because, for some
   // reason, the latter captures the `WorkingDirectory` parameter
-  def branch()(using GitCommand, WorkingDirectory, Log, Raises[ExecError]): Branch =
+  def branch()(using GitCommand, WorkingDirectory, Log[Text], Raises[ExecError]): Branch =
     Branch.unsafe(sh"$git $repoOptions branch --show-current".exec[String]().tt)
   
   def makeBranch
       (branch: Branch)
-      (using GitCommand, WorkingDirectory, Log, Raises[GitError], Raises[ExecError])
+      (using GitCommand, WorkingDirectory, Log[Text], Raises[GitError], Raises[ExecError])
       : Unit =
 
     sh"$git $repoOptions checkout -b $branch".exec[ExitStatus]() match
@@ -145,17 +145,17 @@ case class GitRepo(gitDir: Directory, workTree: Maybe[Directory] = Unset):
   def reset(): Unit = ()
   def mv(): Unit = ()
   
-  def tags()(using GitCommand, WorkingDirectory, Log, Raises[ExecError]): List[Tag] =
+  def tags()(using GitCommand, WorkingDirectory, Log[Text], Raises[ExecError]): List[Tag] =
     sh"$git $repoOptions tag".exec[LazyList[Text]]().to(List).map(Tag.unsafe(_))
 
-  def tag(name: Tag)(using GitCommand, WorkingDirectory, Log, Raises[GitError], Raises[ExecError]): Tag =
+  def tag(name: Tag)(using GitCommand, WorkingDirectory, Log[Text], Raises[GitError], Raises[ExecError]): Tag =
     sh"$git $repoOptions tag $name".exec[ExitStatus]() match
       case ExitStatus.Ok => name
       case failure       => abort(GitError(TagFailed))
   
   private def parsePem(text: Text): Maybe[Pem] = safely(Pem.parse(text))
 
-  def log()(using GitCommand, WorkingDirectory, Log, Raises[ExecError]): LazyList[Commit] =
+  def log()(using GitCommand, WorkingDirectory, Log[Text], Raises[ExecError]): LazyList[Commit] =
     def recur
         (stream: LazyList[Text], hash: Maybe[CommitHash] = Unset, tree: Maybe[CommitHash] = Unset,
             parents: List[CommitHash] = Nil, author: Maybe[Text] = Unset,
@@ -240,7 +240,7 @@ object Git:
   def init
       [PathType: GenericPath]
       (targetPath: PathType, bare: Boolean = false)
-      (using Log, WorkingDirectory, Raises[GitError], Decoder[Path], Raises[ExecError])(using command: GitCommand)
+      (using Log[Text], WorkingDirectory, Raises[GitError], Decoder[Path], Raises[ExecError])(using command: GitCommand)
       : GitRepo =
     try
       throwErrors[PathError | IoError]:
@@ -258,7 +258,7 @@ object Git:
   def cloneCommit
       [PathType: GenericPath]
       (repo: Text, targetPath: PathType, commit: CommitHash)
-      (using Internet, Decoder[Path], GitCommand)(using gitError: Raises[GitError], exec: Raises[ExecError], log: Log, workingDirectory: WorkingDirectory)
+      (using Internet, Decoder[Path], GitCommand)(using gitError: Raises[GitError], exec: Raises[ExecError], log: Log[Text], workingDirectory: WorkingDirectory)
       : GitProcess[GitRepo]/*^{gitError, log, workingDirectory, exec}*/ =
     
     val gitRepo = init(targetPath)
@@ -274,7 +274,7 @@ object Git:
       [PathType: GenericPath]
       (source: Text, targetPath: PathType, bare: Boolean = false, branch: Maybe[Branch] = Unset,
           recursive: Boolean = false)
-      (using Internet, WorkingDirectory, Log, Decoder[Path], Raises[ExecError], GitCommand)(using gitError: Raises[GitError])
+      (using Internet, WorkingDirectory, Log[Text], Decoder[Path], Raises[ExecError], GitCommand)(using gitError: Raises[GitError])
       : GitProcess[GitRepo]/*^{gitError}*/ =
     
     val target: Path = try targetPath.pathText.decodeAs[Path] catch case error: PathError => abort(GitError(InvalidRepoPath))
@@ -355,7 +355,7 @@ case class Commit
         signature: Maybe[Pem], message: List[Text])
 
 package gitCommands:
-  given environmentDefault(using WorkingDirectory, Raises[PathError], Log, Raises[IoError], Raises[ExecError]): GitCommand =
+  given environmentDefault(using WorkingDirectory, Raises[PathError], Log[Text], Raises[IoError], Raises[ExecError]): GitCommand =
     val path: Path = sh"which git"()
 
     GitCommand(path.as[File])
