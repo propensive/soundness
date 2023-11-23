@@ -26,7 +26,7 @@ import hieroglyph.textWidthCalculation.uniform
 import scala.language.experimental.captureChecking
 
 package logFormats:
-  given standardColor[TargetType]: LogFormat[TargetType] = entry =>
+  given standardColor[TargetType]: LogFormat[TargetType, Text] = entry =>
     given displayLevel: Displayable[Level] = level =>
       val color = level match
       case Level.Fine => colors.LightSeaGreen

@@ -33,28 +33,32 @@ object Log:
   inline def fine
       [ValueType]
       (inline value: ValueType)
-      (using inline log: Log, inline communicable: Communicable[ValueType], inline realm: Realm)
+      (using inline log: Log)
+      (using inline communicable: Communicable[ValueType], inline realm: Realm)
       : Unit =
     ${Eucalyptus.record('{Level.Fine}, 'value, 'log, 'communicable, 'realm)}
   
   inline def info
       [ValueType]
       (inline value: ValueType)
-      (using inline log: Log, inline communicable: Communicable[ValueType], inline realm: Realm)
+      (using inline log: Log)
+      (using inline communicable: Communicable[ValueType], inline realm: Realm)
       : Unit =
     ${Eucalyptus.record('{Level.Info}, 'value, 'log, 'communicable, 'realm)}
   
   inline def warn
       [ValueType]
       (inline value: ValueType)
-      (using inline log: Log, inline communicable: Communicable[ValueType], inline realm: Realm)
+      (using inline log: Log)
+      (using inline communicable: Communicable[ValueType], inline realm: Realm)
       : Unit =
     ${Eucalyptus.record('{Level.Warn}, 'value, 'log, 'communicable, 'realm)}
   
   inline def fail
       [ValueType]
       (inline value: ValueType)
-      (using inline log: Log, inline communicable: Communicable[ValueType], inline realm: Realm)
+      (using inline log: Log)
+      (using inline communicable: Communicable[ValueType], inline realm: Realm)
       : Unit =
     ${Eucalyptus.record('{Level.Fail}, 'value, 'log, 'communicable, 'realm)}
 
@@ -84,5 +88,6 @@ object Log:
 
 @capability
 abstract class Log():
+  type MessageType
   val envelopes: List[Text] = Nil
   def record(entry: Entry): Unit

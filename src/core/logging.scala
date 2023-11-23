@@ -61,17 +61,17 @@ object Logger:
 
   def apply
       [TargetType]
-      (target: TargetType, appendable: Appendable[TargetType, Text], format: LogFormat[TargetType])
+      (target: TargetType, appendable: Appendable[TargetType, Text], format: LogFormat[TargetType, Text])
       (using monitor: Monitor)
       : Logger^{monitor} =
-    new ActiveLogger(target)(using appendable)
+    LiveLogger(target)(using appendable)
 
 object LogWriter:
   given active
       [TargetType]
-      (using appendable: Appendable[TargetType, Text], format: LogFormat[TargetType], monitor: Monitor)
+      (using appendable: Appendable[TargetType, Text], format: LogFormat[TargetType, Text], monitor: Monitor)
       : LogWriter[TargetType]^{monitor} =
-    ActiveLogger(_)(using appendable, format, monitor)
+    LiveLogger(_)(using appendable, format, monitor)
 
 trait LogWriter[TargetType]:
   def logger(target: TargetType): Logger
@@ -79,27 +79,26 @@ trait LogWriter[TargetType]:
 trait Logger:
   def put(entry: Entry): Unit
 
-class ActiveLogger
+class LiveLogger
     [TargetType]
     (target: TargetType)
-    (using appendable: Appendable[TargetType, Text], format: LogFormat[TargetType], monitor: Monitor)
+    (using appendable: Appendable[TargetType, Text], format: LogFormat[TargetType, Text], monitor: Monitor)
 extends Logger:
   private val funnel: Funnel[Entry] = Funnel()
   
   private val async: Async[Unit] = Async:
     appendable.append(target, unsafely(funnel.stream.map(format(_))))
   
-  def put(entry: Entry): Unit =
-    funnel.put(entry)
+  def put(entry: Entry): Unit = funnel.put(entry)
 
 object LogFormat:
-  given standard[TargetType]: LogFormat[TargetType] = entry =>
+  given standard[TargetType]: LogFormat[TargetType, Text] = entry =>
     import textWidthCalculation.uniform
     val realm: Message = msg"${entry.realm.show.fit(8)}"
     msg"${Log.dateFormat.format(entry.timestamp).nn.tt} ${entry.level} $realm ${entry.message}".text+t"\n"
   
-trait LogFormat[TargetType]:
-  def apply(entry: Entry): Text
+trait LogFormat[TargetType, +TextType]:
+  def apply(entry: Entry): TextType
 
 extension (inline context: StringContext)
   inline def realm(): Realm = ${Eucalyptus.realm('context)}

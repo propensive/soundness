@@ -30,7 +30,7 @@ import hieroglyph.*, textWidthCalculation.uniform
 case class Syslog(tag: Text)
 
 object Syslog:
-  given logFormat: LogFormat[Syslog] = entry =>
+  given logFormat: LogFormat[Syslog, Text] = entry =>
     val realm: Text = entry.realm.name.fit(8)
     val stack: Text = entry.envelopes.reverse.join(t"", t" ⟩ ", t" ⟩")
 

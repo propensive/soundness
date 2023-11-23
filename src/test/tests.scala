@@ -27,8 +27,8 @@ import turbulence.*, stdioSources.jvm
 object Tests extends Suite(t"Eucalyptus tests"):
   def run(): Unit =
     import Level.*
-    given LogFormat[Out.type] = logFormats.standardColor[Out.type]
-    given LogFormat[Err.type] = logFormats.standardColor[Err.type]
+    given LogFormat[Out.type, Text] = logFormats.standardColor[Out.type]
+    given LogFormat[Err.type, Text] = logFormats.standardColor[Err.type]
     supervise:
       given Log = Log.route:
         case Warn() => Out
