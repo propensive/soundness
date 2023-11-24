@@ -24,7 +24,7 @@ import turbulence.*
 import anticipation.*
 import eucalyptus.*
 
-import language.experimental.captureChecking
+//import language.experimental.captureChecking
 
 object LineEditor:
   def concealed(str: Text): Text = str.mapChars { _ => '*' }
