@@ -149,18 +149,19 @@ object Ansi extends Ansi2:
             closures(state2.copy(last = None), text)
 
     private def closures(state: State, text: Text): State =
-      state.stack.headOption.fold(state.copy(text = state.text+Interpolation.escape(text))):
-        frame =>
-          safely(text.where(_ == frame.bracket)) match
-            case Unset =>
-              state.copy(text = state.text+text)
+      try state.stack.headOption.fold(state.copy(text = state.text+TextEscapes.escape(text))): frame =>
+        safely(text.where(_ == frame.bracket)) match
+          case Unset =>
+            state.copy(text = state.text+text)
             
-            case idx: Int =>
-              val text2 = state.text+text.take(idx)
-              val span2: CharSpan = CharSpan(frame.start, state.text.length + idx)
-              val state2: State = state.add(span2, frame.transform)
-              val state3: State = state2.copy(text = text2, last = None, stack = state.stack.tail)
-              closures(state3, text.drop(idx + 1))
+          case idx: Int =>
+            val text2 = state.text+text.take(idx)
+            val span2: CharSpan = CharSpan(frame.start, state.text.length + idx)
+            val state2: State = state.add(span2, frame.transform)
+            val state3: State = state2.copy(text = text2, last = None, stack = state.stack.tail)
+            closures(state3, text.drop(idx + 1))
+      catch case error: EscapeError => error match
+        case EscapeError(message) => throw InterpolationError(message)
 
     def insert(state: State, value: Input): State = value match
       case Input.TextInput(text) =>
