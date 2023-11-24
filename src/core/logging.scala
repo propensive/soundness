@@ -117,5 +117,5 @@ package logging:
   given stderr(using Stdio, Monitor): Log[Text] = Log.route[Text]:
     case _ => Err
 
-  given silent: Log[Text] = new Log:
-    def record(entry: Entry[Text]): Unit = ()
+  given silent[MessageType]: Log[MessageType] = new Log[MessageType]:
+    def record(entry: Entry[MessageType]): Unit = ()
