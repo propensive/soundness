@@ -189,7 +189,9 @@ def daemon[BusType <: Matchable]
               val cli: executive.CliType =
                 executive.cli(textArguments, environment, workingDirectory, stdio, signalFunnel.stream)
               
-              val exitStatus = executive.process(cli, block(using client)(using cli))
+              val result = block(using client)(using cli)
+              val exitStatus: ExitStatus = executive.process(cli)(result)
+              
               exitPromise.fulfill(exitStatus)
 
             catch
@@ -206,7 +208,7 @@ def daemon[BusType <: Matchable]
           clients(pid) = ClientConnection[BusType](pid, async, signalFunnel, promise, () => socket.close(),
               exitPromise, busFunnel)
 
-  application(using executives.direct)(Nil):
+  application(using executives.direct(using unhandledErrors.silent))(Nil):
     import stdioSources.jvm
     import workingDirectories.default
 
