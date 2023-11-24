@@ -39,7 +39,8 @@ object Character:
   given Decoder[Character] with
     def decode(txt: Text): Character = txt match
       case r"[$ch(.):${As[Int](l)}([0-9]+):${As[Int](c)}([0-9]+)]" =>
-        Character(unsafely(ch(0).toInt), l, c)
+        import unsafeExceptions.canThrowAny
+        Character(ch(0).toInt, l, c)
       
       case _ =>
         End
@@ -81,9 +82,10 @@ class PositionReader(private var in: LazyList[Text]):
 
   @tailrec
   private def read(): Int =
+    import unsafeExceptions.canThrowAny
     current += 1
     
-    if current < text.length then unsafely(text(current)).toInt else if in.isEmpty then -1 else
+    if current < text.length then text(current).toInt else if in.isEmpty then -1 else
       text = in.head
       in = in.tail
       current = -1
