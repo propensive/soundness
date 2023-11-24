@@ -18,6 +18,10 @@ package exoskeleton
 
 import profanity.*
 import rudiments.*
+import gossamer.*
+import digression.*
+import hieroglyph.*, textWidthCalculation.uniform
+import escapade.*
 import ambience.*
 import galilei.*
 import anticipation.*
@@ -37,10 +41,50 @@ trait Executive:
       (using interpreter: CliInterpreter)
       : CliType
   
-  def process(cli: CliType, result: Return): ExitStatus 
+  def process(cli: CliType)(result: CliType ?=> Return): ExitStatus
+
+trait UnhandledErrorHandler:
+  def handle(fn: => ExitStatus)(using Stdio): ExitStatus
+
+package unhandledErrors:
+  given silent: UnhandledErrorHandler with
+    def handle(block: => ExitStatus)(using Stdio): ExitStatus =
+      try block catch
+        case error: Exception => ExitStatus(1)
+        case error: Throwable => ExitStatus(2)
+  
+  given genericErrorMessage: UnhandledErrorHandler with
+    def handle(block: => ExitStatus)(using Stdio): ExitStatus = try block catch
+      case error: Exception =>
+        Out.println(t"An unexpected error occurred.")
+        ExitStatus(1)
+      
+      case error: Throwable =>
+        Out.println(t"An unexpected error occurred.")
+        ExitStatus(2)
+  
+  given exceptionMessage: UnhandledErrorHandler with
+    def handle(block: => ExitStatus)(using Stdio): ExitStatus = try block catch
+      case error: Exception =>
+        Out.println(error.toString.tt)
+        ExitStatus(1)
+      
+      case error: Throwable =>
+        Out.println(error.toString.tt)
+        ExitStatus(2)
+
+  given stackTrace: UnhandledErrorHandler with
+    def handle(block: => ExitStatus)(using Stdio): ExitStatus = try block catch
+      case error: Exception =>
+        Out.println(StackTrace(error).display.render)
+        ExitStatus(1)
+      
+      case error: Throwable =>
+        Out.println(StackTrace(error).display.render)
+        ExitStatus(2)
 
 package executives:
-  given direct: Executive with
+  given direct(using handler: UnhandledErrorHandler): Executive with
     type Return = ExitStatus
     type CliType = CliInvocation
     
@@ -52,7 +96,8 @@ package executives:
       
       CliInvocation(Cli.arguments(arguments), environments.jvm, workingDirectories.default, stdio, signals)
 
-    def process(cli: CliInvocation, exitStatus: ExitStatus): ExitStatus = exitStatus
+    def process(cli: CliInvocation)(exitStatus: CliType ?=> ExitStatus): ExitStatus =
+      handler.handle(exitStatus(using cli))(using cli.stdio)
 
 def application
     (using executive: Executive, interpreter: CliInterpreter)
@@ -65,10 +110,9 @@ def application
     signals.foreach { signal => sm.Signal.handle(sm.Signal(signal.shortName.s), event => funnel.put(signal)) }
     funnel.stream
 
-  val arguments2 = Cli.arguments(arguments)
-  val cli = CliInvocation(arguments2, environments.jvm, workingDirectories.default, stdioSources.jvm, listen)
+  val cli = executive.cli(arguments, environments.jvm, workingDirectories.default, stdioSources.jvm, listen)
   
-  block(using cli)
+  System.exit(executive.process(cli)(block)())
 
 case class CliInvocation
     (arguments: List[Argument], environment: Environment, workingDirectory: WorkingDirectory, stdio: Stdio,

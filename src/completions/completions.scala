@@ -43,6 +43,11 @@ case class CliCompletion
     (using interpreter: CliInterpreter)
 extends Cli:
   private lazy val parameters: interpreter.Parameters = interpreter.interpret(arguments)
+
+  locally:
+    import logging.pinned
+    Log.warn(t"Initializing CliCompletion")
+
   val flags: scm.HashMap[Flag[?], Suggestions[?]] = scm.HashMap()
   val seenFlags: scm.HashSet[Flag[?]] = scm.HashSet()
   var explanation: Maybe[Text] = Unset
@@ -149,7 +154,7 @@ def explain(explanation: (previous: Maybe[Text]) ?=> Maybe[Text])(using cli: Cli
   cli.explain(explanation)
 
 package executives:
-  given completions: Executive with
+  given completions(using handler: UnhandledErrorHandler): Executive with
     type CliType = Cli
     type Return = Execution
 
@@ -171,10 +176,15 @@ package executives:
         case other =>
           CliInvocation(Cli.arguments(arguments), environment, workingDirectory, stdio, signals)
       
-    def process(cli: Cli, execution: Execution): ExitStatus = (cli: @unchecked) match
+    def process(cli: Cli)(execution: Cli ?=> Execution): ExitStatus = (cli: @unchecked) match
       case completion: CliCompletion =>
+        import logging.pinned
+        Log.warn(t"Handling completions")
+        completion.serialize.foreach(Log.fine(_))
+        Log.fine(t"Got completions: ${completion.serialize.length}")
         completion.serialize.foreach(Out.println(_)(using completion.stdio))
         ExitStatus.Ok
 
       case invocation: CliInvocation =>
-        execution.execute(invocation)
+        Log.warn(t"Handling invocation")
+        handler.handle(execution(using invocation).execute(invocation))(using invocation.stdio)
