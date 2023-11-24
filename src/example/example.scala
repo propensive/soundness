@@ -50,6 +50,7 @@ def example(): Unit =
 
     execute:
       Out.println(t"Hello world!")
+      TabCompletions.install().foreach(Out.println)
       ExitStatus.Ok
       // supervise:
       //   terminal:

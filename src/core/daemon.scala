@@ -95,13 +95,13 @@ def daemon[BusType <: Matchable]
     portFile.wipe()
     System.exit(0)
   
-  def shutdown()(using Stdio, Log): Unit =
+  def shutdown()(using Stdio, Log[Text]): Unit =
     Log.info(t"Shutdown daemon")
     termination
 
   def client
       (socket: jn.Socket)
-      (using Monitor, Log, Stdio, Raises[StreamCutError], Raises[UndecodableCharError], Raises[NumberError])
+      (using Monitor, Log[Text], Stdio, Raises[StreamCutError], Raises[UndecodableCharError], Raises[NumberError])
       : Unit =
 
     val in = socket.getInputStream.nn
@@ -215,7 +215,7 @@ def daemon[BusType <: Matchable]
       portFile.wipe()
       
     supervise:
-      given Log = Log.route:
+      given Log[Text] = Log.route[Text]:
         case _ => Syslog(t"spectral")
 
       Log.pin()
