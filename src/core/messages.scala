@@ -81,7 +81,9 @@ extension (inline context: StringContext)
   transparent inline def msg[ParamType](inline subs: ParamType = EmptyTuple): Message =
     inline subs.asMatchable match
       case tuple: Tuple =>
-        Message(context.parts.map(Text(_)).to(List), Message.make[tuple.type](tuple, Nil))
+        import unsafeExceptions.canThrowAny
+        Message(context.parts.map(Text(_)).map(TextEscapes.escape(_)).to(List), Message.make[tuple.type](tuple, Nil))
       
       case other =>
-        Message(context.parts.map(Text(_)).to(List), List(summonInline[Communicable[other.type]].message(other)))
+        import unsafeExceptions.canThrowAny
+        Message(context.parts.map(Text(_)).map(TextEscapes.escape(_)).to(List), List(summonInline[Communicable[other.type]].message(other)))
