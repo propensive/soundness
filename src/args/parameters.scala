@@ -24,7 +24,7 @@ import eucalyptus.*
 import escapade.*
 import anticipation.*
 
-import language.experimental.captureChecking
+import language.experimental.pureFunctions
 
 given Realm = realm"params"
 
@@ -99,7 +99,7 @@ object FlagInterpreter:
     override def operand: Boolean = false
     def interpret(arguments: List[Argument]): Unit = ()
 
-  given decoder[OperandType](using decoder: Decoder[OperandType]): FlagInterpreter[OperandType]^{decoder} =
+  given decoder[OperandType](using decoder: Decoder[OperandType]): FlagInterpreter[OperandType]/*^{decoder}*/ =
     arguments =>
       (arguments.take(1): @unchecked) match
       case List(value) => value().decodeAs[OperandType]

@@ -42,7 +42,7 @@ object TabCompletionsInstallation:
       msg"The ${script} command is not on the PATH, so completions scripts cannot be installed."
     
     case Shells(zsh, bash, fish) =>
-      msg"$zsh\n$bash\n$fish"
+      msg"$zsh\n\n$bash\n\n$fish"
 
   object InstallResult:
     given Communicable[InstallResult] =
