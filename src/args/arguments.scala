@@ -58,6 +58,7 @@ trait Cli extends ProcessContext:
   def register(flag: Flag[?], suggestions: Suggestions[?]): Unit = ()
   def present(flag: Flag[?]): Unit = ()
   def explain(update: (previous: Maybe[Text]) ?=> Maybe[Text]): Unit = ()
+  def suggest(argument: Argument, update: (previous: List[Suggestion]) ?=> List[Suggestion]) = ()
 
 trait FlagParameters:
   def read[OperandType](flag: Flag[OperandType])(using Cli, FlagInterpreter[OperandType], Suggestions[OperandType]): Maybe[OperandType]
@@ -71,6 +72,9 @@ case class Argument(position: Int, value: Text, cursor: Maybe[Int]):
   def apply(): Text = value
   def prefix: Maybe[Text] = cursor.mm(value.take(_))
   def suffix: Maybe[Text] = cursor.mm(value.drop(_))
+  
+  def suggest(using cli: Cli)(update: (previous: List[Suggestion]) ?=> List[Suggestion]) =
+    cli.suggest(this, update)
 
 package parameterInterpretation:
   given simple: SimpleParameterInterpreter.type = SimpleParameterInterpreter

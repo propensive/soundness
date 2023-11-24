@@ -44,25 +44,33 @@ extends Cli:
   val flags: scm.HashMap[Flag[?], Suggestions[?]] = scm.HashMap()
   val seenFlags: scm.HashSet[Flag[?]] = scm.HashSet()
   var explanation: Maybe[Text] = Unset
-  var resultSuggestions: List[Suggestion] = Nil
+  var cursorSuggestions: List[Suggestion] = Nil
 
-  def readParameter[OperandType](flag: Flag[OperandType])(using FlagInterpreter[OperandType], Suggestions[OperandType]): Maybe[OperandType] =
+  def readParameter
+      [OperandType]
+      (flag: Flag[OperandType])
+      (using FlagInterpreter[OperandType], Suggestions[OperandType])
+      : Maybe[OperandType] =
+
     given Cli = this
     parameters.read(flag)
 
-  def focus: Argument =
-    arguments(currentArgument)
+  def focus: Argument = arguments(currentArgument)
 
   override def register(flag: Flag[?], suggestions: Suggestions[?]): Unit =
     parameters.focusFlag.mm: argument =>
       if flag.matches(argument) && currentArgument == argument.position + 1 then
         val allSuggestions = suggestions.suggest().to(List)
-        if allSuggestions != Nil then resultSuggestions = allSuggestions
+        if allSuggestions != Nil then cursorSuggestions = allSuggestions
 
     if !flag.secret then flags(flag) = suggestions
   
   override def present(flag: Flag[?]): Unit = if !flag.repeatable then seenFlags += flag
-  override def explain(update: (previous: Maybe[Text]) ?=> Maybe[Text]): Unit = explanation = update(using explanation)
+  override def explain(update: (previous: Maybe[Text]) ?=> Maybe[Text]): Unit =
+    explanation = update(using explanation)
+  
+  override def suggest(argument: Argument, update: (previous: List[Suggestion]) ?=> List[Suggestion]) =
+    if argument == focus then cursorSuggestions = update(using cursorSuggestions)
   
   def flagSuggestions(longOnly: Boolean): List[Suggestion] =
     (flags.keySet.to(Set) -- seenFlags.to(Set)).to(List).flatMap: flag =>
@@ -74,15 +82,14 @@ extends Cli:
             List(Suggestion(Flag.serialize(main), flag.description, aliases = aliases.map(Flag.serialize(_))))
           case Nil => Nil
       
-      else List(Suggestion(Flag.serialize(flag.name), flag.description, aliases = flag.aliases.map(Flag.serialize(_))))
+      else List(Suggestion(Flag.serialize(flag.name), flag.description, aliases =
+          flag.aliases.map(Flag.serialize(_))))
 
   def serialize: List[Text] =
-    val items = if parameters.focusFlag.unset then flagSuggestions(focus().starts(t"--")) else resultSuggestions
+    val items = if cursorSuggestions.isEmpty && parameters.focusFlag.unset then flagSuggestions(focus().starts(t"--")) else cursorSuggestions
     
     shell match
       case Shell.Zsh =>
-        Log.info(t"result suggestions: ${resultSuggestions.debug}")
-        Log.info(t"focus=${focus()}")
         val title = explanation.mm { explanation => List(t"\t-X\t$explanation") }.or(Nil)
         
         lazy val width = items.map(_.text.length).max

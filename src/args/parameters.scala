@@ -139,3 +139,8 @@ case class Flag
       : Maybe[OperandType] =
     cli.register(this, suggestions)
     cli.readParameter(this)
+
+case class Subcommand(name: Text, description: Maybe[Text] = Unset, hidden: Boolean = false):
+  def unapply(argument: Argument)(using Cli): Boolean =
+    argument.suggest(Suggestion(name, description, hidden) :: previous)
+    argument() == name
