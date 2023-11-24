@@ -29,7 +29,7 @@ import scala.reflect.*
 import java.util.regex.*
 import java.net.{URLEncoder, URLDecoder}
 
-import language.experimental.captureChecking
+import language.experimental.pureFunctions
 
 enum Bidi:
   case Ltr, Rtl
@@ -327,55 +327,26 @@ object Interpolation:
   given [ValueType](using show: Show[ValueType]): Insertion[Input, ValueType] =
     value => Input(show(value))
 
-  def standardEscape
-      (text: Text, cur: Int, esc: Boolean)
-      : (Maybe[Char], Int, Boolean) throws InterpolationError =
-    text.s.charAt(cur) match
-      case '\\' if !esc => (Unset, cur + 1, true)
-      case '\\'         => ('\\', cur + 1, false)
-      case 'n' if esc   => ('\n', cur + 1, false)
-      case 'r' if esc   => ('\r', cur + 1, false)
-      case 'f' if esc   => ('\f', cur + 1, false)
-      case 'b' if esc   => ('\b', cur + 1, false)
-      case 't' if esc   => ('\t', cur + 1, false)
-      case 'u' if esc   => (parseUnicode(text.slice(cur + 1, cur + 5)), cur + 5, false)
-      case 'e' if esc   => ('\u001b', cur + 1, false)
-      case '"' if esc   => ('"', cur + 1, false)
-      case '\'' if esc  => ('\'', cur + 1, false)
-      case ch if esc    => throw InterpolationError(msg"the character $ch should not be escaped")
-      case ch           => (ch, cur + 1, false)
-
-  private def parseUnicode(chars: Text): Char throws InterpolationError =
-    if chars.length < 4
-    then throw InterpolationError(msg"the unicode escape is incomplete")
-    else Integer.parseInt(chars.s, 16).toChar
-
-  def escape(text: Text): Text throws InterpolationError =
-    val buf: StringBuilder = StringBuilder()
-    
-    @tailrec
-    def recur(cur: Int = 0, esc: Boolean): Unit =
-      if cur < text.length
-      then
-        val (char, idx, escape) = standardEscape(text, cur, esc)
-        char.mm(buf.add(_))
-        recur(idx, escape)
-      else if esc then throw InterpolationError(msg"the final character cannot be an escape")
-    
-    recur(0, false)
-    
-    buf.text
-      
   object T extends Interpolator[Input, Text, Text]:
     def initial: Text = anticipation.Text("")
-    def parse(state: Text, next: Text): Text = anticipation.Text(state.s+escape(next).s)
+    
+    def parse(state: Text, next: Text): Text =
+      try anticipation.Text(state.s+TextEscapes.escape(next).s)
+      catch case error: EscapeError => error match
+        case EscapeError(message) => throw InterpolationError(message)
+
     def skip(state: Text): Text = state
     def insert(state: Text, input: Input): Text = anticipation.Text(state.s+input.txt.s)
     def complete(state: Text): Text = state
   
   object Text extends Interpolator[Input, Text, Text]:
     def initial: Text = anticipation.Text("")
-    def parse(state: Text, next: Text): Text = anticipation.Text(state.s+escape(next).s)
+    
+    def parse(state: Text, next: Text): Text =
+      try anticipation.Text(state.s+TextEscapes.escape(next).s)
+      catch case error: EscapeError => error match
+        case EscapeError(message) => throw InterpolationError(message)
+    
     def skip(state: Text): Text = state
     def insert(state: Text, input: Input): Text = anticipation.Text(state.s+input.txt.s)
 
