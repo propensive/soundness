@@ -56,7 +56,7 @@ object Envelope:
 trait Envelope[-EnvelopeType]:
   def envelope(value: EnvelopeType): Text
 
-  given silent: Log[Text] = entry => ()
+  given silent[MessageType]: Log[MessageType] = entry => ()
 
 object Logger:
   def drain[AnyType]: Logger[AnyType] = stream => ()
