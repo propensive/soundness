@@ -21,6 +21,7 @@ import rudiments.*
 import turbulence.*
 import profanity.*
 import escapade.*
+import guillotine.*
 import spectacular.*
 import eucalyptus.*, logging.pinned
 import gossamer.*
@@ -91,40 +92,40 @@ extends Cli:
     
     shell match
       case Shell.Zsh =>
-        val title = explanation.mm { explanation => List(t"\t-X\t$explanation") }.or(Nil)
+        val title = explanation.mm { explanation => List(sh"'' -X $explanation") }.or(Nil)
         
         lazy val width = items.map(_.text.length).max
-        lazy val aliasesWidth = items.map(_.aliases.join(t" ").length).max
+        lazy val aliasesWidth = items.map(_.aliases.join(t" ").length).max + 1
         
-        val itemLines = items.flatMap:
+        val itemLines: List[Command] = items.flatMap:
           case Suggestion(text, description, hidden, incomplete, aliases) =>
-            val hiddenParam = if hidden then t"-n\t" else t""
+            val hiddenParam = if hidden then sh"-n" else sh""
             val aliasText = aliases.join(t" ").fit(aliasesWidth)
             
             val mainLine = (description: @unchecked) match
               case Unset =>
-                t"\t$hiddenParam--\t$text"
+                sh"'' $hiddenParam -- $text"
               
               case description: Text =>
-                t"${text.fit(width)} $aliasText -- $description\t-d\tdesc\t-l\t$hiddenParam--\t$text"
+                sh"'${text.fit(width)} $aliasText -- $description' -d desc -l $hiddenParam -- $text"
               
               case description: Output =>
-                t"${text.fit(width)} $aliasText -- ${description.render}\t-d\tdesc\t-l\t$hiddenParam--\t$text"
+                sh"'${text.fit(width)} $aliasText -- ${description.render}' -d desc -l $hiddenParam -- $text"
             
             val aliasLines = aliases.map: text =>
               (description: @unchecked) match
                 case Unset             =>
-                  t"\t-n\t--\t$text"
+                  sh"'' -n -- $text"
                 
                 case description: Text =>
-                  t"${text.fit(width)} $aliasText -- $description\t-d\tdesc\t-l\t-n\t--\t$text"
+                  sh"'${text.fit(width)} $aliasText -- $description' -d desc -l -n -- $text"
                 
                 case description: Output =>
-                  t"${text.fit(width)} $aliasText -- ${description.render}\t-d\tdesc\t-l\t-n\t--\t$text"
+                  sh"'${text.fit(width)} $aliasText -- ${description.render}' -d desc -l -n -- $text"
             
             mainLine :: aliasLines
         
-        title ++ itemLines
+        (title ++ itemLines).map(_.arguments.join(t"\t"))
             
       case Shell.Bash =>
         items.filter(!_.hidden).flatMap: suggestion =>
