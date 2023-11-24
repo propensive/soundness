@@ -38,7 +38,7 @@ import language.experimental.captureChecking
 enum Context:
   case Awaiting, Unquoted, Quotes2, Quotes1
 
-case class State(current: Context, esc: Boolean, args: List[Text])
+case class State(current: Context, esc: Boolean, arguments: List[Text])
 
 object CommandOutput extends PosixCommandOutputs
 
@@ -207,27 +207,27 @@ sealed trait Executable:
   infix def |(command: Executable): Pipeline = command(this)
 
 object Command:
-  given Communicable[Command] = command => Message(formattedArgs(command.args))
+  given Communicable[Command] = command => Message(formattedArguments(command.arguments))
 
-  private def formattedArgs(args: Seq[Text]): Text =
-    args.map: arg =>
-      if arg.contains(t"\"") && !arg.contains(t"'") then t"""'$arg'"""
-      else if arg.contains(t"'") && !arg.contains(t"\"") then t""""$arg""""
-      else if arg.contains(t"'") && arg.contains(t"\"")
-        then t""""${arg.rsub(t"\\\"", t"\\\\\"")}""""
-      else if arg.contains(t" ") || arg.contains(t"\t") || arg.contains(t"\\") then t"'$arg'"
-      else arg
+  private def formattedArguments(arguments: Seq[Text]): Text =
+    arguments.map: argument =>
+      if argument.contains(t"\"") && !argument.contains(t"'") then t"""'$argument'"""
+      else if argument.contains(t"'") && !argument.contains(t"\"") then t""""$argument""""
+      else if argument.contains(t"'") && argument.contains(t"\"")
+        then t""""${argument.rsub(t"\\\"", t"\\\\\"")}""""
+      else if argument.contains(t" ") || argument.contains(t"\t") || argument.contains(t"\\") then t"'$argument'"
+      else argument
     .join(t" ")
 
   given Debug[Command] = command =>
-    val commandText: Text = formattedArgs(command.args)
+    val commandText: Text = formattedArguments(command.arguments)
     if commandText.contains(t"\"") then t"sh\"\"\"$commandText\"\"\"" else t"sh\"$commandText\""
   
-  given Show[Command] = command => formattedArgs(command.args)
+  given Show[Command] = command => formattedArguments(command.arguments)
   
-case class Command(args: Text*) extends Executable:
+case class Command(arguments: Text*) extends Executable:
   def fork[ResultType]()(using working: WorkingDirectory, log: Log[Text], exec: Raises[ExecError]): Process[Exec, ResultType] =
-    val processBuilder = ProcessBuilder(args.ss*)
+    val processBuilder = ProcessBuilder(arguments.ss*)
     
     working.directory.mm: directory =>
       processBuilder.directory(ji.File(directory.s))
@@ -245,7 +245,7 @@ object Pipeline:
 case class Pipeline(commands: Command*) extends Executable:
   def fork[ResultType]()(using working: WorkingDirectory, log: Log[Text], exec: Raises[ExecError]): Process[Exec, ResultType] =
     val processBuilders = commands.map: command =>
-      val processBuilder = ProcessBuilder(command.args.ss*)
+      val processBuilder = ProcessBuilder(command.arguments.ss*)
       
       working.directory.mm: directory =>
         processBuilder.directory(ji.File(directory.s))
@@ -268,13 +268,13 @@ object Sh:
     import Context.*
   
     def complete(state: State): Command =
-      val args = state.current match
+      val arguments = state.current match
         case Quotes2        => throw InterpolationError(msg"the double quotes have not been closed")
         case Quotes1        => throw InterpolationError(msg"the single quotes have not been closed")
         case _ if state.esc => throw InterpolationError(msg"cannot terminate with an escape character")
-        case _              => state.args
+        case _              => state.arguments
       
-      Command(args*)
+      Command(arguments*)
 
     def initial: State = State(Awaiting, false, Nil)
 
@@ -288,40 +288,40 @@ object Sh:
           """)
           
           (state: @unchecked) match
-            case State(Awaiting, false, args) =>
-              State(Unquoted, false, args ++ (h :: t))
+            case State(Awaiting, false, arguments) =>
+              State(Unquoted, false, arguments ++ (h :: t))
 
-            case State(Unquoted, false, args :+ last) =>
-              State(Unquoted, false, args ++ (t"$last$h" :: t))
+            case State(Unquoted, false, arguments :+ last) =>
+              State(Unquoted, false, arguments ++ (t"$last$h" :: t))
             
-            case State(Quotes1, false, args :+ last) =>
-              State(Quotes1, false, args :+ (t"$last$h" :: t).join(t" "))
+            case State(Quotes1, false, arguments :+ last) =>
+              State(Quotes1, false, arguments :+ (t"$last$h" :: t).join(t" "))
             
-            case State(Quotes2, false, args :+ last) =>
-              State(Quotes2, false, args :+ (t"$last$h" :: t).join(t" "))
+            case State(Quotes2, false, arguments :+ last) =>
+              State(Quotes2, false, arguments :+ (t"$last$h" :: t).join(t" "))
             
         case _ =>
           state
           
     def parse(state: State, next: Text): State = next.chars.to(List).foldLeft(state): (state, next) =>
       ((state, next): @unchecked) match
-        case (State(Awaiting, esc, args), ' ')          => State(Awaiting, false, args)
+        case (State(Awaiting, esc, arguments), ' ')          => State(Awaiting, false, arguments)
         case (State(Quotes1, false, rest :+ cur), '\\') => State(Quotes1, false, rest :+ t"$cur\\")
-        case (State(ctx, false, args), '\\')            => State(ctx, true, args)
-        case (State(Unquoted, esc, args), ' ')          => State(Awaiting, false, args)
-        case (State(Quotes1, esc, args), '\'')          => State(Unquoted, false, args)
-        case (State(Quotes2, false, args), '"')         => State(Unquoted, false, args)
-        case (State(Unquoted, false, args), '"')        => State(Quotes2, false, args)
-        case (State(Unquoted, false, args), '\'')       => State(Quotes1, false, args)
-        case (State(Awaiting, false, args), '"')        => State(Quotes2, false, args :+ t"")
-        case (State(Awaiting, false, args), '\'')       => State(Quotes1, false, args :+ t"")
-        case (State(Awaiting, esc, args), char)         => State(Unquoted, false, args :+ t"$char")
+        case (State(ctx, false, arguments), '\\')            => State(ctx, true, arguments)
+        case (State(Unquoted, esc, arguments), ' ')          => State(Awaiting, false, arguments)
+        case (State(Quotes1, esc, arguments), '\'')          => State(Unquoted, false, arguments)
+        case (State(Quotes2, false, arguments), '"')         => State(Unquoted, false, arguments)
+        case (State(Unquoted, false, arguments), '"')        => State(Quotes2, false, arguments)
+        case (State(Unquoted, false, arguments), '\'')       => State(Quotes1, false, arguments)
+        case (State(Awaiting, false, arguments), '"')        => State(Quotes2, false, arguments :+ t"")
+        case (State(Awaiting, false, arguments), '\'')       => State(Quotes1, false, arguments :+ t"")
+        case (State(Awaiting, esc, arguments), char)         => State(Unquoted, false, arguments :+ t"$char")
         case (State(ctx, esc, Nil), char)               => State(ctx, false, List(t"$char"))
         case (State(ctx, esc, rest :+ cur), char)       => State(ctx, false, rest :+ t"$cur$char")
 
   given Insertion[Params, Text] = value => Params(value)
   given Insertion[Params, List[Text]] = xs => Params(xs*)
-  given Insertion[Params, Command] = command => Params(command.args*)
+  given Insertion[Params, Command] = command => Params(command.arguments*)
   given [ValueType: AsParams]: Insertion[Params, ValueType] = value => Params(summon[AsParams[ValueType]].show(value))
 
 object AsParams:
