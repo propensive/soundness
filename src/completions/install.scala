@@ -94,7 +94,7 @@ object TabCompletions:
           |  $command '{completions}' zsh "$$((CURRENT-1))" "$${#PREFIX}" -- $$words | while read -r -A ln
           |  do
           |    desc=($${ln[1]})
-          |    compadd -d desc -Q $${ln:1}
+          |    compadd -Q $${ln:1}
           |  done
           |  IFS=$$oldIfs
           |}

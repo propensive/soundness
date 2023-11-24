@@ -106,10 +106,10 @@ extends Cli:
                 t"\t$hiddenParam--\t$text"
               
               case description: Text =>
-                t"${text.fit(width)} $aliasText -- $description\t-l\t$hiddenParam--\t$text"
+                t"${text.fit(width)} $aliasText -- $description\t-d\tdesc\t-l\t$hiddenParam--\t$text"
               
               case description: Output =>
-                t"${text.fit(width)} $aliasText -- ${description.render}\t-l\t$hiddenParam--\t$text"
+                t"${text.fit(width)} $aliasText -- ${description.render}\t-d\tdesc\t-l\t$hiddenParam--\t$text"
             
             val aliasLines = aliases.map: text =>
               (description: @unchecked) match
@@ -117,10 +117,10 @@ extends Cli:
                   t"\t-n\t--\t$text"
                 
                 case description: Text =>
-                  t"${text.fit(width)} $aliasText -- $description\t-l\t-n\t--\t$text"
+                  t"${text.fit(width)} $aliasText -- $description\t-d\tdesc\t-l\t-n\t--\t$text"
                 
                 case description: Output =>
-                  t"${text.fit(width)} $aliasText -- ${description.render}\t-l\t-n\t--\t$text"
+                  t"${text.fit(width)} $aliasText -- ${description.render}\t-d\tdesc\t-l\t-n\t--\t$text"
             
             mainLine :: aliasLines
         
