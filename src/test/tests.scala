@@ -241,8 +241,8 @@ object Tests extends Suite(t"Rudiments Tests"):
         setInt.unset
       .assert(_ == false)
 
-      test(t"Unsafely cast a set value"):
-        val x: Int = setInt.cast(using Unsafe)
+      test(t"Unsafely vouch a set value"):
+        val x: Int = setInt.vouch(using Unsafe)
         x
       .assert(_ == 42)
 
