@@ -4,7 +4,7 @@
 
 # Spectral
 
-____
+__Launch Scala applications lightning-fast by running them as daemons.__
 
 _Spectral_ provides the capability to turn an existing Scala command-line application into a daemon for fast startup
 (like [Nailgun](https://github.com/facebookarchive/nailgun)). This is particularly useful when combined with
@@ -165,7 +165,7 @@ be used, but caution should be taken if there is a mismatch between the
 project's stability level and the importance of your own project.
 
 Spectral is designed to be _small_. Its entire source code currently consists
-of 235 lines of code.
+of 234 lines of code.
 
 ## Building
 
@@ -195,7 +195,7 @@ Spectral was designed and developed by Jon Pretty, and commercial support and tr
 
 ## Name
 
-
+_Spectral_ alludes to the paranormal concept of spectres, a type of daemon.
 
 In general, Scala One project names are always chosen with some rationale, however it is usually
 frivolous. Each name is chosen for more for its _uniqueness_ and _intrigue_ than its concision or
@@ -208,7 +208,7 @@ often arrived in English via a romance language.
 
 ## Logo
 
-
+The logo shows a spectrum of light, and is thus _spectral_.
 
 ## License
 
