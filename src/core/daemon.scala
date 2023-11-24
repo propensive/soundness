@@ -90,14 +90,15 @@ def daemon[BusType <: Matchable]
   val waitFile: Path = baseDir / p"wait"
   val clients: scm.HashMap[Pid, ClientConnection[BusType]] = scm.HashMap()
   var continue: Boolean = true
+  val terminatePid: Promise[Pid] = Promise()
   
   lazy val termination: Unit =
     portFile.wipe()
     System.exit(0)
   
-  def shutdown()(using Stdio, Log[Text]): Unit =
+  def shutdown(pid: Maybe[Pid])(using Stdio, Log[Text]): Unit =
     Log.info(t"Shutdown daemon")
-    termination
+    pid.mm(terminatePid.fulfill(_)).or(termination)
 
   def client
       (socket: jn.Socket)
@@ -160,6 +161,7 @@ def daemon[BusType <: Matchable]
         socket.getOutputStream.nn.write(exitStatus().show.bytes.mutable(using Unsafe))
         socket.close()
         clients -= pid
+        if terminatePid() == pid then termination
 
       case DaemonEvent.Init(pid, directory, scriptName, shellInput, textArguments, env) =>
         Log.envelop(pid):
@@ -176,7 +178,7 @@ def daemon[BusType <: Matchable]
             if sourcePid != pid then client.receive(message)
   
           val client: DaemonService[BusType] =
-            DaemonService[BusType](pid, () => shutdown(), shellInput, scriptName.decodeAs[Unix.Path],
+            DaemonService[BusType](pid, () => shutdown(pid), shellInput, scriptName.decodeAs[Unix.Path],
                 deliver(pid, _), busFunnel.stream, name)
           
           val environment = LazyEnvironment(env)
@@ -224,13 +226,18 @@ def daemon[BusType <: Matchable]
 
       Async:
         sh"flock -u -x -n $portFile cat".exec[Unit]()
-        shutdown()
+        Log.info(t"The file $portFile was changed; terminating immediately")
+        termination
 
       Async:
         safely(baseDir.watch()).mm: watcher =>
           watcher.stream.foreach:
-            case Delete(_, t"port") => shutdown()
-            case _ => ()
+            case Delete(_, t"port") =>
+              Log.info(t"The file $portFile was deleted; terminating immediately")
+              termination
+            
+            case _ =>
+              ()
           
       val socket: jn.ServerSocket = jn.ServerSocket(0)
       val port: Int = socket.getLocalPort
