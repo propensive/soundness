@@ -72,10 +72,10 @@ object EmailAddress:
       case LocalPart.Quoted(text)   => '{LocalPart.Quoted(${Expr(text)})}
       case LocalPart.Unquoted(text) => '{LocalPart.Unquoted(${Expr(text)})}
     
-    address.domain.asMatchable match
-      case ipv4: Int          => '{EmailAddress(Unset, $localPart, Ipv4(${Expr(ipv4)}))}
+    (address.domain.asMatchable: @unchecked) match
       case ipv6: Ipv6         => '{EmailAddress(Unset, $localPart, ${Expr(ipv6)})}
       case hostname: Hostname => '{EmailAddress(Unset, $localPart, ${Expr(hostname)})}
+      case ipv4: Int          => '{EmailAddress(Unset, $localPart, Ipv4(${Expr(ipv4)}))}
 
   def parse(text: Text): EmailAddress raises EmailAddressError =
     val buffer: StringBuilder = StringBuilder()
