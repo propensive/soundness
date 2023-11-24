@@ -34,4 +34,5 @@ object Communicable:
 trait Communicable[-ValueType]:
   def message(value: ValueType): Message
 
-
+extension [ValueType](value: ValueType)(using communicable: Communicable[ValueType])
+  def communicate: Message = communicable.message(value)
