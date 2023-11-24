@@ -133,7 +133,7 @@ do
 done
 
 test -t 0 && stty "$ttystate"
-kill $stdoutPid 2> /dev/null
+kill $launchPid $stdoutPid 2> /dev/null
 terminate
 exit 1
 
