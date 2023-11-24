@@ -18,6 +18,7 @@ package parasite
 
 import anticipation.*
 import perforate.*
+import rudiments.*
 
 import language.experimental.captureChecking
 
@@ -49,6 +50,8 @@ case class Promise[ValueType]() extends Covenant[ValueType]:
 
   private def get()(using Raises[CancelError]): ValueType =
     if cancelled then abort(CancelError()) else value.asInstanceOf[ValueType]
+
+  def apply(): Maybe[ValueType] = if ready then value.asInstanceOf[ValueType] else Unset
 
   def fulfill(supplied: -> ValueType)(using complete: Raises[AlreadyCompleteError]): Unit^{complete} =
     synchronized:
