@@ -23,6 +23,7 @@ import language.experimental.captureChecking
 
 object Printable:
   given text: Printable[Text] = identity(_)
+  given string: Printable[String] = _.tt
   given char: Printable[Char] = _.toString.tt
   given message: Printable[Message] = _.text
 
