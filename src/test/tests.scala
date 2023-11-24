@@ -101,7 +101,7 @@ object Tests extends Suite(t"Nettlesome tests"):
     
       test(t"Invalid IP address is compile error"):
         demilitarize(ip"192.168.0.0.0.1").map(_.message)
-      .assert(_ == List(t"perforate: the IP address is not valid because the address contains 6 period-separated groups instead of 4"))
+      .assert(_ == List(t"nettlesome: the IP address is not valid because the address contains 6 period-separated groups instead of 4"))
     
       test(t"IP address byte out of range"):
         capture(Ipv4.parse(t"100.300.200.0"))
@@ -417,7 +417,7 @@ object Tests extends Suite(t"Nettlesome tests"):
       
       test(t"Parse bad hostname at compiletime"):
         demilitarize(host"www..com").map(_.message)
-      .assert(_ == List(t"perforate: the hostname is not valid because a DNS label cannot be empty"))
+      .assert(_ == List(t"nettlesome: the hostname is not valid because a DNS label cannot be empty"))
     
     suite(t"MAC Address tests"):
       import MacAddressError.Reason.*
@@ -460,7 +460,7 @@ object Tests extends Suite(t"Nettlesome tests"):
 
       test(t"Check that a bad MAC address fails at compiletime"):
         demilitarize(mac"01:23:45:ab:cd:e").map(_.message)
-      .assert(_ == List(t"perforate: the MAC address is not valid because group 5 should be two hex digits, but its length is 1"))
+      .assert(_ == List(t"nettlesome: the MAC address is not valid because group 5 should be two hex digits, but its length is 1"))
 
       test(t"Create a MAC address from bytes"):
         MacAddress(1, 2, 3, 4, 5, 6).show
