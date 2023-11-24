@@ -178,13 +178,8 @@ package executives:
       
     def process(cli: Cli)(execution: Cli ?=> Execution): ExitStatus = (cli: @unchecked) match
       case completion: CliCompletion =>
-        import logging.pinned
-        Log.warn(t"Handling completions")
-        completion.serialize.foreach(Log.fine(_))
-        Log.fine(t"Got completions: ${completion.serialize.length}")
         completion.serialize.foreach(Out.println(_)(using completion.stdio))
         ExitStatus.Ok
 
       case invocation: CliInvocation =>
-        Log.warn(t"Handling invocation")
         handler.handle(execution(using invocation).execute(invocation))(using invocation.stdio)
