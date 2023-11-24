@@ -30,50 +30,87 @@ import ambience.*, environments.jvm, systemProperties.jvm
 import galilei.*, filesystemOptions.{dereferenceSymlinks, createNonexistent, createNonexistentParents,
     doNotOverwritePreexisting}
 
+enum TabCompletionsInstallation:
+  case CommandNotOnPath(script: Text)
+  case Shells
+      (zsh: TabCompletionsInstallation.InstallResult, bash: TabCompletionsInstallation.InstallResult,
+          fish: TabCompletionsInstallation.InstallResult)
+
+object TabCompletionsInstallation:
+  given Communicable[TabCompletionsInstallation] =
+    case CommandNotOnPath(script) =>
+      msg"The ${script} command is not on the PATH, so completions scripts cannot be installed."
+    
+    case Shells(zsh, bash, fish) =>
+      msg"$zsh\n$bash\n$fish"
+
+  object InstallResult:
+    given Communicable[InstallResult] =
+      case Installed(path) =>
+        msg"Completion script installed to $path."
+
+      case AlreadyInstalled(path) =>
+        msg"A completion script already exists at $path."
+
+      case NoWritableLocation =>
+        msg"No writable install location could be found for completions"
+
+      case ShellNotInstalled =>
+        msg"The shell is not installed"
+
+  enum InstallResult:
+    case Installed(path: Text)
+    case AlreadyInstalled(path: Text)
+    case NoWritableLocation
+    case ShellNotInstalled
+
 object TabCompletions:
-  def install
-      (shells: Shell*)
+  def install()
       (using service: ShellContext)
       (using WorkingDirectory, Log[Text], Raises[ExecError], Raises[PathError], Raises[IoError],
           Raises[StreamCutError], Raises[OverwriteError], Effectful)
-      : List[Message] =
+      : TabCompletionsInstallation =
     val scriptPath = sh"sh -c 'command -v ${service.scriptName}'".exec[Text]()
     val command: Text = service.scriptName
     
-    if safely(scriptPath.decodeAs[Path]) == service.script
-    then
-      (if shells.isEmpty then List(Shell.Zsh, Shell.Bash, Shell.Fish) else shells.to(List)).flatMap:
-        case Shell.Zsh =>
+    if safely(scriptPath.decodeAs[Path]) != service.script
+    then TabCompletionsInstallation.CommandNotOnPath(service.scriptName)
+    else
+      val zsh: TabCompletionsInstallation.InstallResult = 
+        if sh"sh -c 'command -v zsh'".exec[ExitStatus]() != ExitStatus.Ok
+        then TabCompletionsInstallation.InstallResult.ShellNotInstalled
+        else
           val dirNames = sh"zsh -c 'source ~/.zshrc 2> /dev/null; printf %s, $$fpath'".exec[Text]().cut(t",")
           val dirs = dirNames.filter(_.trim != t"").map { dir => safely(dir.decodeAs[Path]) }.vouched
           install(Shell.Zsh, command, PathName(t"_$command"), dirs)
         
-        case Shell.Bash =>
-          install(Shell.Bash, command, PathName(command), List(Xdg.dataDirs.last / p"bash-completion" /
-              p"completions", Xdg.dataHome / p"bash-completion" / p"completions"))
+      val bash: TabCompletionsInstallation.InstallResult =
+        if sh"sh -c 'command -v bash'".exec[ExitStatus]() != ExitStatus.Ok
+        then TabCompletionsInstallation.InstallResult.ShellNotInstalled
+        else install(Shell.Bash, command, PathName(command), List(Xdg.dataDirs.last / p"bash-completion" /
+            p"completions", Xdg.dataHome / p"bash-completion" / p"completions"))
 
-        case Shell.Fish =>
-          install(Shell.Fish, command, PathName(t"$command.fish"), List(Xdg.dataDirs.last / p"fish" /
-              p"vendor_completions.d", Xdg.configHome / p"fish" / p"completions"))
-    
-    else List(
-      msg"The ${service.scriptName} command is not on the PATH, so completions scripts cannot be installed."
-    )
+      val fish: TabCompletionsInstallation.InstallResult =
+        if sh"sh -c 'command -v fish'".exec[ExitStatus]() != ExitStatus.Ok
+        then TabCompletionsInstallation.InstallResult.ShellNotInstalled
+        else install(Shell.Fish, command, PathName(t"$command.fish"), List(Xdg.dataDirs.last / p"fish" /
+            p"vendor_completions.d", Xdg.configHome / p"fish" / p"completions"))
+      
+      TabCompletionsInstallation.Shells(zsh, bash, fish)
 
   def install
       (shell: Shell, command: Text, scriptName: PathName[GeneralForbidden], dirs: List[Path])
       (using Raises[PathError], Raises[IoError], Raises[OverwriteError], Raises[StreamCutError], Effectful)
-      : List[Message] =
+      : TabCompletionsInstallation.InstallResult =
 
     dirs.find { dir => dir.exists() && dir.as[Directory].writable() }.map: dir =>
       val path = dir / scriptName
       if path.exists()
-      then List(msg"A ${shell.show.lower} completion script already exists for ${command}.")
+      then TabCompletionsInstallation.InstallResult.AlreadyInstalled(path.show)
       else
         script(shell, command).sysBytes.writeTo(path.make[File]())
-        List(msg"Completion script for ${shell.show.lower} installed into ${path}.")
-    .getOrElse:
-      List(msg"No writable install location could be found for completions")
+        TabCompletionsInstallation.InstallResult.Installed(path.show)
+    .getOrElse(TabCompletionsInstallation.InstallResult.NoWritableLocation)
 
   def messages(shell: Shell, global: Boolean): List[Message] =
     if shell == Shell.Zsh && !global
