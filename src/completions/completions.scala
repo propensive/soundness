@@ -20,6 +20,7 @@ import anticipation.*
 import rudiments.*
 import turbulence.*
 import profanity.*
+import escapade.*
 import spectacular.*
 import eucalyptus.*, logging.pinned
 import gossamer.*
@@ -101,13 +102,25 @@ extends Cli:
             val aliasText = aliases.join(t" ").fit(aliasesWidth)
             
             val mainLine = (description: @unchecked) match
-              case Unset             => t"\t$hiddenParam--\t$text"
-              case description: Text => t"${text.fit(width)} $aliasText -- $description\t-l\t$hiddenParam--\t$text"
+              case Unset =>
+                t"\t$hiddenParam--\t$text"
+              
+              case description: Text =>
+                t"${text.fit(width)} $aliasText -- $description\t-l\t$hiddenParam--\t$text"
+              
+              case description: Output =>
+                t"${text.fit(width)} $aliasText -- ${description.render}\t-l\t$hiddenParam--\t$text"
             
             val aliasLines = aliases.map: text =>
               (description: @unchecked) match
-                case Unset             => t"\t-n\t--\t$text"
-                case description: Text => t"${text.fit(width)} $aliasText -- $description\t-l\t-n\t--\t$text"
+                case Unset             =>
+                  t"\t-n\t--\t$text"
+                
+                case description: Text =>
+                  t"${text.fit(width)} $aliasText -- $description\t-l\t-n\t--\t$text"
+                
+                case description: Output =>
+                  t"${text.fit(width)} $aliasText -- ${description.render}\t-l\t-n\t--\t$text"
             
             mainLine :: aliasLines
         
@@ -123,8 +136,9 @@ extends Cli:
           case Suggestion(text, description, hidden, incomplete, aliases) =>
             (text :: aliases).map: text =>
               (description: @unchecked) match
-                case Unset             => t"$text"
-                case description: Text => t"$text\t$description"
+                case Unset               => t"$text"
+                case description: Text   => t"$text\t$description"
+                case description: Output => t"$text\t${description.plain}"
       
 case class Execution(execute: CliInvocation => ExitStatus)
 

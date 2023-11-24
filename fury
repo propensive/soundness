@@ -12,7 +12,7 @@ repo propensive/hellenism
 project exoskeleton
   module args
     sources  src/args
-    include  spectacular/core gossamer/core ambience/core profanity/core eucalyptus/syslog
+    include  escapade/core spectacular/core gossamer/core ambience/core profanity/core eucalyptus/syslog
 
   module core
     sources  src/core
