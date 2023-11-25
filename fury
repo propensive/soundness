@@ -21,7 +21,7 @@ project eucalyptus
   module ansi
     compiler  scala
     sources   src/ansi
-    include   escapade/core eucalyptus/core
+    include   escapade/core eucalyptus/core iridescence/core
 
   module test
     compiler  scala
