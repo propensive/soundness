@@ -23,7 +23,6 @@ import digression.*
 import gossamer.*
 import hieroglyph.*
 import spectacular.*
-import iridescence.*
 
 import language.experimental.captureChecking
 
@@ -41,9 +40,9 @@ object Displayable:
 
   given message: Displayable[Message] = _.fold[Output](e""): (acc, next, level) =>
     level match
-      case 0 => e"$acc${colors.Khaki}($next)"
-      case 1 => e"$acc$Italic(${colors.Gold}($next))"
-      case _ => e"$acc$Italic($Bold(${colors.Yellow}($next)))"
+      case 0 => e"$acc${Fg(0xefe68b)}($next)"
+      case 1 => e"$acc$Italic(${Fg(0xffd600)}($next))"
+      case _ => e"$acc$Italic($Bold(${Fg(0xffff00)}($next)))"
 
   given option[T: Displayable]: Displayable[Option[T]] =
     case None    => Output("empty".show)
@@ -63,45 +62,42 @@ object Displayable:
     val fileWidth = stack.frames.map(_.file.length).max
     
     val fullClass = e"$Italic(${stack.component}.$Bold(${stack.className}))"
-    val init = e"${colors.White}($fullClass): ${stack.message}"
+    val init = e"${Fg(0xffffff)}($fullClass): ${stack.message}"
     
     val root = stack.frames.foldLeft(init):
       case (msg, frame) =>
         val obj = frame.method.className.ends(t"#")
-        import colors.*
         val drop = if obj then 1 else 0
-        val file = e"$CadetBlue(${frame.file.fit(fileWidth, Rtl)})"
+        val file = e"${Fg(0x5f9e9f)}(${frame.file.fit(fileWidth, Rtl)})"
         val dot = if obj then t"." else t"#"
-        val className = e"$MediumVioletRed(${frame.method.className.drop(drop, Rtl).fit(classWidth, Rtl)})"
-        val method = e"$PaleVioletRed(${frame.method.method.fit(methodWidth)})"
-        val line = e"$MediumTurquoise(${frame.line.mm(_.show).or(t"?")})"
+        val className = e"${Fg(0xc61485)}(${frame.method.className.drop(drop, Rtl).fit(classWidth, Rtl)})"
+        val method = e"${Fg(0xdb6f92)}(${frame.method.method.fit(methodWidth)})"
+        val line = e"${Fg(0x47d1cc)}(${frame.line.mm(_.show).or(t"?")})"
         
-        e"$msg\n  $Gray(at) $className$Gray($dot)$method $file$Gray(:)$line"
+        e"$msg\n  ${Fg(0x808080)}(at) $className${Fg(0x808080)}($dot)$method $file${Fg(0x808080)}(:)$line"
     
     stack.cause.option match
       case None        => root
-      case Some(cause) => e"$root\n${colors.White}(caused by:)\n$cause"
+      case Some(cause) => e"$root\n${Fg(0xffffff)}(caused by:)\n$cause"
   
   given (using TextWidthCalculator): Displayable[StackTrace.Frame] = frame =>
-    import colors.*
-    val className = e"$MediumVioletRed(${frame.method.className.fit(40, Rtl)})"
-    val method = e"$PaleVioletRed(${frame.method.method.fit(40)})"
-    val file = e"$CadetBlue(${frame.file.fit(18, Rtl)})"
-    val line = e"$MediumTurquoise(${frame.line.mm(_.show).or(t"?")})"
-    e"$className$Gray(#)$method $file$Gray(:)$line"
+    val className = e"${Fg(0xc61485)}(${frame.method.className.fit(40, Rtl)})"
+    val method = e"${Fg(0xdb6f92)}(${frame.method.method.fit(40)})"
+    val file = e"${Fg(0x5f9e9f)}(${frame.file.fit(18, Rtl)})"
+    val line = e"${Fg(0x47d1cc)}(${frame.line.mm(_.show).or(t"?")})"
+    e"$className${Fg(0x808080)}(#)$method $file${Fg(0x808080)}(:)$line"
 
   given Displayable[StackTrace.Method] = method =>
-    import colors.*
-    val className = e"$MediumVioletRed(${method.className})"
-    val methodName = e"$PaleVioletRed(${method.method})"
-    e"$className$Gray(#)$methodName"
+    val className = e"${Fg(0xc61485)}(${method.className})"
+    val methodName = e"${Fg(0xdb6f92)}(${method.method})"
+    e"$className${Fg(0x808080)}(#)$methodName"
   
   given (using decimalizer: Decimalizer): Displayable[Double] = double =>
-    Output.make(decimalizer.decimalize(double), _.copy(fg = colors.Gold.asInt))
+    Output.make(decimalizer.decimalize(double), _.copy(fg = 0xffd600))
 
   given Displayable[Throwable] = throwable =>
     Output.make[String](throwable.getClass.getName.nn.show.cut(t".").last.s,
-        _.copy(fg = colors.Crimson.asInt))
+        _.copy(fg = 0xdc133b))
 
 trait Displayable[-ValueType] extends Showable[ValueType]:
   def show(value: ValueType): Text = apply(value).plain
