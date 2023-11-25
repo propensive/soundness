@@ -26,7 +26,7 @@ import turbulence.*
 import contextual.*
 import spectacular.*
 
-//import language.experimental.captureChecking
+import language.experimental.pureFunctions
 
 opaque type CharSpan = Long
 
@@ -384,3 +384,19 @@ case class Fg(color: Int):
         t"\e[38;2;$red;$green;${blue}m"
 
 type Stylize[T] = Substitution[Ansi.Input, T, "esc"]
+
+object Highlight:
+  def apply[ValueType](using DummyImplicit)[ColorType: RgbColor](color: ColorType): Highlight[ValueType] =
+    value => Fg(color.asRgb24Int)
+
+  def apply
+      [ValueType]
+      (using DummyImplicit)
+      [ColorType: RgbColor]
+      (chooseColor: ValueType -> ColorType)
+      : Highlight[ValueType] =
+
+    value => Fg(chooseColor(value).asRgb24Int)
+
+trait Highlight[-ValueType]:
+  def color(value: ValueType): Fg

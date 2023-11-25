@@ -32,6 +32,13 @@ object Displayable:
   given text: Displayable[Text] = text => Output(text)
   given pid: Displayable[Pid] = pid => e"${pid.value.show}"
 
+  given highlighted
+      [ValueType]
+      (using highlight: Highlight[ValueType], show: Show[ValueType])
+      : Displayable[ValueType] =
+
+    value => e"${highlight.color(value)}(${value.show})"
+
   given message: Displayable[Message] = _.fold[Output](e""): (acc, next, level) =>
     level match
       case 0 => e"$acc${colors.Khaki}($next)"
