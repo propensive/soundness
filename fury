@@ -5,6 +5,7 @@ repo propensive/dissonance
 repo propensive/dendrology
 repo propensive/escritoire
 repo propensive/escapade
+repo propensive/iridescence
 
 target chiaroscuro/test
 
