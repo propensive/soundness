@@ -316,9 +316,17 @@ sealed trait Entry:
   def hidden()(using Raises[IoError]): Boolean =
     try jnf.Files.isHidden(path.java) catch case error: ji.IOException => raise(IoError(path))(false)
   
-  def readable(): Boolean = jnf.Files.isReadable(path.java)
-  def writable(): Boolean = jnf.Files.isWritable(path.java)
-  def executable(): Boolean = jnf.Files.isExecutable(path.java)
+  object readable:
+    def apply(): Boolean = jnf.Files.isReadable(path.java)
+    def update(status: Boolean): Unit = path.java.toFile.nn.setReadable(status)
+  
+  object writable:
+    def apply(): Boolean = jnf.Files.isWritable(path.java)
+    def writable(status: Boolean): Unit = path.java.toFile.nn.setWritable(status)
+  
+  object executable:
+    def apply(): Boolean = jnf.Files.isExecutable(path.java)
+    def executable(status: Boolean): Unit = path.java.toFile.nn.setExecutable(status)
 
   def hardLinks()(using dereferenceSymlinks: DereferenceSymlinks, io: Raises[IoError]): Int =
     try jnf.Files.getAttribute(path.java, "unix:nlink", dereferenceSymlinks.options()*) match
