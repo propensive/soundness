@@ -61,6 +61,9 @@ object Rudiments:
       @targetName("plus")
       def +(right: ByteSize): ByteSize = left + right
       
+      @targetName("minus")
+      def -(right: ByteSize): ByteSize = left - right
+      
       @targetName("times")
       def *(right: Int): ByteSize = left*right
       
