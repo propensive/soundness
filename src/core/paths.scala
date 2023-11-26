@@ -322,11 +322,11 @@ sealed trait Entry:
   
   object writable:
     def apply(): Boolean = jnf.Files.isWritable(path.java)
-    def writable(status: Boolean): Unit = path.java.toFile.nn.setWritable(status)
+    def update(status: Boolean): Unit = path.java.toFile.nn.setWritable(status)
   
   object executable:
     def apply(): Boolean = jnf.Files.isExecutable(path.java)
-    def executable(status: Boolean): Unit = path.java.toFile.nn.setExecutable(status)
+    def update(status: Boolean): Unit = path.java.toFile.nn.setExecutable(status)
 
   def hardLinks()(using dereferenceSymlinks: DereferenceSymlinks, io: Raises[IoError]): Int =
     try jnf.Files.getAttribute(path.java, "unix:nlink", dereferenceSymlinks.options()*) match
