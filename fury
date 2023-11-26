@@ -1,6 +1,6 @@
 # This is a Wrath buildfile. More information is available at: https://github.com/propensive/wrath/
 
-target spectral/example
+target spectral/core
 
 repo propensive/galilei
 repo propensive/ambience
@@ -13,10 +13,3 @@ project spectral
   module core
     sources  src/core
     include  surveillance/core eucalyptus/syslog digression/core hellenism/core exoskeleton/core
-
-  module example
-    sources   src/example
-    include   spectral/core escapade/core exoskeleton/completions eucalyptus/ansi
-    main      spectral.example
-    artifact  launcher
-    counter   res/spectral/build.id
