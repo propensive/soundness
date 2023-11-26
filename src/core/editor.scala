@@ -19,7 +19,6 @@ package profanity
 import rudiments.*
 import gossamer.*
 import spectacular.*
-import parasite.*
 import turbulence.*
 import anticipation.*
 import eucalyptus.*
@@ -29,7 +28,7 @@ import eucalyptus.*
 object LineEditor:
   def concealed(str: Text): Text = str.mapChars { _ => '*' }
 
-  def ask(initial: Text = t"", render: Text => Text = identity(_))(using Terminal, Monitor): Text =
+  def ask(initial: Text = t"", render: Text => Text = identity(_))(using Terminal): Text =
     Out.print(render(initial))
 
     def finished(key: TerminalEvent) =
@@ -73,7 +72,7 @@ case class LineEditor(content: Text = t"", pos: Int = 0):
   catch case e: OutOfRangeError => this
 
   def unapply(stream: LazyList[TerminalEvent])(using interaction: Interaction[LineEditor, Text])
-             (using Monitor, Terminal)
+             (using Terminal)
              : Option[(Text, LazyList[TerminalEvent])] =
     interaction(summon[Terminal].events, this)(_(_))
 
@@ -135,7 +134,6 @@ case class SelectMenu[ItemType](options: List[ItemType], current: ItemType):
   def unapply
       (stream: LazyList[TerminalEvent])
       (using terminal: Terminal, interaction: Interaction[SelectMenu[ItemType], ItemType])
-      (using Monitor)
       : Option[(ItemType, LazyList[TerminalEvent])] =
 
     interaction(summon[Terminal].events, this)(_(_))
