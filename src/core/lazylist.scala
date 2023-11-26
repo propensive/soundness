@@ -24,12 +24,35 @@ import scala.collection.mutable as scm
 
 import language.experimental.captureChecking
 
-extension (value: LazyList[Bytes])
+extension (lazyList: LazyList[Bytes])
   def slurp(): Bytes =
     val bld: scm.ArrayBuilder[Byte] = scm.ArrayBuilder.ofByte()
-    value.foreach { bs => bld.addAll(bs.mutable(using Unsafe)) }
+    
+    lazyList.foreach: bs =>
+      bld.addAll(bs.mutable(using Unsafe))
     
     bld.result().immutable(using Unsafe)
+
+  def drop(byteSize: ByteSize): LazyList[Bytes] =
+    def recur(stream: LazyList[Bytes], skip: ByteSize): LazyList[Bytes] = stream match
+      case head #:: tail =>
+        if head.byteSize < skip then recur(tail, skip - head.byteSize) else head.drop(skip.long.toInt) #:: tail
+      
+      case _ =>
+        LazyList()
+      
+    recur(lazyList, byteSize)
+  
+  def take(byteSize: ByteSize): LazyList[Bytes] =
+    def recur(stream: LazyList[Bytes], count: ByteSize): LazyList[Bytes] = stream match
+      case head #:: tail =>
+        if head.byteSize < count then head #:: recur(tail, count - head.byteSize)
+        else LazyList(head.take(count.long.toInt))
+      
+      case _ =>
+        LazyList()
+      
+    recur(lazyList, byteSize)
 
 extension (obj: LazyList.type)
   def multiplex[ElemType](streams: LazyList[ElemType]*)(using Monitor): LazyList[ElemType] =
@@ -39,7 +62,7 @@ extension (obj: LazyList.type)
     val multiplexer = Multiplexer[Any, ElemType]()
     streams.zipWithIndex.map(_.swap).foreach(multiplexer.add)
     multiplexer
- 
+
   def defer[ElemType](lazyList: => LazyList[ElemType]): LazyList[ElemType] =
     (null.asInstanceOf[ElemType] #:: lazyList).tail
 
