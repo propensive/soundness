@@ -79,7 +79,7 @@ case class LineEditor(value: Text = t"", position: Int = 0):
       (stream: LazyList[TerminalEvent])(using interaction: Interaction[LineEditor, Text])
       (using Terminal)
       : Option[(Text, LazyList[TerminalEvent])] =
-    interaction(summon[Terminal].events, this)(_(_))
+    interaction(stream, this)(_(_))
 
 trait Interaction[StateType, ResultType]:
   def before(): Unit = ()
@@ -110,7 +110,7 @@ trait Interaction[StateType, ResultType]:
     recur(stream, state, Unset)(key).tap(after().waive)
 
 object Interaction:
-  given [ItemType: Show](using Terminal): Interaction[SelectMenu[ItemType], ItemType] with
+  given [ItemType: Show](using Stdio): Interaction[SelectMenu[ItemType], ItemType] with
     override def before(): Unit = Out.print(t"\e[?25l")
     override def after(): Unit = Out.print(t"\e[J\e[?25h")
 
@@ -121,35 +121,37 @@ object Interaction:
 
     def result(state: SelectMenu[ItemType]): ItemType = state.current
 
-  given (using Terminal): Interaction[LineEditor, Text] with
-    override def before(): Unit = Out.print(t"\e[?25l")
-    override def after(): Unit = Out.print(t"\e[?25h")
+  given (using Stdio): Interaction[LineEditor, Text] with
     def render(editor: Maybe[LineEditor], editor2: LineEditor): Unit =
+      val buffer = StringBuilder()
       val prior = editor.or(editor2)
-      Out.print(t"\e[?25l")
-      if prior.position > 0 then Out.print(t"\e[${prior.position}D")
+      if prior.position > 0 then buffer.append(t"\e[${prior.position}D")
       val line = t"${editor2.value}${t" "*(prior.value.length - editor2.value.length)}"
-      Out.print(t"\e[K")
-      Out.print(line)
-      if line.length > 0 then Out.print(t"\e[${line.length}D")
-      if editor2.position > 0 then Out.print(t"\e[${editor2.position}C")
-      Out.print(t"\e[?25h")
+      buffer.append(t"\e[K")
+      buffer.append(line)
+      if line.length > 0 then buffer.append(t"\e[${line.length}D")
+      if editor2.position > 0 then buffer.append(t"\e[${editor2.position}C")
+      Out.print(buffer.text)
 
     def result(editor: LineEditor): Text = editor.value
 
 case class SelectMenu[ItemType](options: List[ItemType], current: ItemType):
   import Keypress.*
+  
   def apply(keypress: TerminalEvent): SelectMenu[ItemType] = try keypress match
     case Up   => copy(current = options(0 max options.indexOf(current) - 1))
     case Down => copy(current = options(options.size - 1 min options.indexOf(current) + 1))
+    case Home => copy(current = options.head)
+    case End  => copy(current = options.last)
     case _    => this
+
   catch case e: OutOfRangeError => this
 
   def unapply
       (stream: LazyList[TerminalEvent])
-      (using terminal: Terminal, interaction: Interaction[SelectMenu[ItemType], ItemType])
+      (using interaction: Interaction[SelectMenu[ItemType], ItemType])
       : Option[(ItemType, LazyList[TerminalEvent])] =
 
-    interaction(summon[Terminal].events, this)(_(_))
+    interaction(stream, this)(_(_))
 
 given realm: Realm = realm"profanity"
