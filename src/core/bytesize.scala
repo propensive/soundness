@@ -31,3 +31,6 @@ extension (bs: Long)
   def mb: ByteSize = ByteSize(bs*1024*1024)
   def gb: ByteSize = ByteSize(bs*1024*1024*1024)
   def tb: ByteSize = ByteSize(bs*1024*1024*1024*1024)
+
+extension (bytes: Bytes)
+  def byteSize: ByteSize = ByteSize(bytes.size)
