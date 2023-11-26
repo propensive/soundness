@@ -70,17 +70,18 @@ class StandardKeyboard()(using Monitor) extends Keyboard:
         case _ => rest match
           case 'O' #:: fn #:: rest => Keypress.FunctionKey(fn.toInt - 79) #:: process(rest)
           case '[' #:: rest        => rest match
+            case (code@('A' | 'B' | 'C' | 'D' | 'F' | 'H')) #:: rest =>
+              Keyboard.navigation(code) #:: process(rest)
+            
             case code #:: '~' #:: rest if '1' <= code <= '9' =>
               Keyboard.vt(code) #:: process(rest)
+            
             case code #:: ';' #:: modifiers #:: '~' #:: rest if '1' <= code <= '9' =>
               Keyboard.modified(modifiers, Keyboard.vt(code)) #:: process(rest)
             
             case '1' #:: ';' #:: modifiers #:: (code@('A' | 'B' | 'C' | 'D' | 'F' | 'H')) #:: rest =>
               Keyboard.modified(modifiers, Keyboard.navigation(code)) #:: process(rest)
               
-            case code #:: rest if 'A' <= code <= 'H' =>
-              Keyboard.navigation(code) #:: process(rest)
-            
             case '2' #:: '0' #:: '0' #:: '~' #:: tail =>
               val size = tail.indexOfSlice(List('\u001b', '[', '2', '0', '1', '~'))
               val content = tail.take(size).map(_.show).join

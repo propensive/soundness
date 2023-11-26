@@ -34,46 +34,51 @@ object LineEditor:
     def finished(key: TerminalEvent) =
       key == Keypress.Enter || key == Keypress.Control('D') || key == Keypress.Control('C')
 
+    val buffer: StringBuilder = StringBuilder()
+
     summon[Terminal].events.takeWhile(!finished(_)).foldLeft(LineEditor(initial, initial.length)):
       case (editor, next) =>
-        if editor.pos > 0 then Out.print(t"\e${editor.pos}D")
+        if editor.position > 0 then buffer.append(t"\e[${editor.position}D")
         val editor2 = editor(next)
-        val line = t"${editor2.content}${t" "*(editor.content.length - editor2.content.length)}"
-        Out.print(t"\e0K")
-        Out.print(render(line))
-        if line.length > 0 then Out.print(t"\e${line.length}D")
-        if editor2.pos > 0 then Out.print(t"\e${editor2.pos}C")
+        val line = t"${editor2.value}${t" "*(editor.value.length - editor2.value.length)}"
+        buffer.append(t"\e[0K")
+        buffer.append(render(line))
+        val left = line.length - editor2.position
+        if left > 0 then buffer.append(t"\e[${left}D")
+        Out.print(buffer.text)
+        buffer.clear()
         editor2
-    .content
+    .value
 
-case class LineEditor(content: Text = t"", pos: Int = 0):
+case class LineEditor(value: Text = t"", position: Int = 0):
   import Keypress.*
 
   def apply(keypress: TerminalEvent): LineEditor = try keypress match
-    case CharKey(ch)      => copy(t"${content.take(pos)}$ch${content.drop(pos)}", pos + 1)
-    case Control('U')     => copy(content.drop(pos), 0)
+    case CharKey(ch)      => copy(t"${value.take(position)}$ch${value.drop(position)}", position + 1)
+    case Control('U')     => copy(value.drop(position), 0)
 
-    case Control('W')     => val prefix = content.take(0 max (pos - 1)).reverse.dropWhile(_ != ' ').reverse
-                             copy(t"$prefix${content.drop(pos)}", prefix.length)
+    case Control('W')     => val prefix = value.take(0 max (position - 1)).reverse.dropWhile(_ != ' ').reverse
+                             copy(t"$prefix${value.drop(position)}", prefix.length)
 
-    case Delete      => copy(t"${content.take(pos)}${content.drop(pos + 1)}")
-    case Backspace   => copy(t"${content.take(pos - 1)}${content.drop(pos)}", (pos - 1) max 0)
-    case Home        => copy(pos = 0)
-    case End         => copy(pos = content.length)
-    case Left        => copy(pos = (pos - 1) max 0)
-    case Ctrl(Left)  => copy(pos = (pos - 2 max 0 to 0 by -1).find(content(_) == ' ').fold(0)(_ + 1))
+    case Delete      => copy(t"${value.take(position)}${value.drop(position + 1)}")
+    case Backspace   => copy(t"${value.take(position - 1)}${value.drop(position)}", (position - 1) max 0)
+    case Home        => copy(position = 0)
+    case End         => copy(position = value.length)
+    case Left        => copy(position = (position - 1) max 0)
+    case Ctrl(Left)  => copy(position = (position - 2 max 0 to 0 by -1).find(value(_) == ' ').fold(0)(_ + 1))
 
-    case Ctrl(Right) => val range = ((pos + 1) min (content.length - 1)) to (content.length - 1)
-                        val newPos = range.find(content(_) == ' ').fold(content.length)(_ + 1)
-                        copy(pos = newPos min content.length)
-    case Right       => copy(pos = (pos + 1) min content.length)
+    case Ctrl(Right) => val range = ((position + 1) min (value.length - 1)) to (value.length - 1)
+                        val position2 = range.find(value(_) == ' ').fold(value.length)(_ + 1)
+                        copy(position = position2 min value.length)
+    case Right       => copy(position = (position + 1) min value.length)
     case _           => this
 
   catch case e: OutOfRangeError => this
 
-  def unapply(stream: LazyList[TerminalEvent])(using interaction: Interaction[LineEditor, Text])
-             (using Terminal)
-             : Option[(Text, LazyList[TerminalEvent])] =
+  def unapply
+      (stream: LazyList[TerminalEvent])(using interaction: Interaction[LineEditor, Text])
+      (using Terminal)
+      : Option[(Text, LazyList[TerminalEvent])] =
     interaction(summon[Terminal].events, this)(_(_))
 
 trait Interaction[StateType, ResultType]:
@@ -83,9 +88,11 @@ trait Interaction[StateType, ResultType]:
   def result(state: StateType): ResultType
 
   @tailrec
-  final def recur(stream: LazyList[TerminalEvent], state: StateType, oldState: Maybe[StateType])
-                 (key: (StateType, TerminalEvent) => StateType)
-                 : Option[(ResultType, LazyList[TerminalEvent])] =
+  final def recur
+      (stream: LazyList[TerminalEvent], state: StateType, oldState: Maybe[StateType])
+      (key: (StateType, TerminalEvent) => StateType)
+      : Option[(ResultType, LazyList[TerminalEvent])] =
+    
     render(oldState, state)
 
     stream match
@@ -94,34 +101,41 @@ trait Interaction[StateType, ResultType]:
       case other #:: tail                       => recur(tail, key(state, other), state)(key)
       case _                                    => None
 
-  def apply(stream: LazyList[TerminalEvent], state: StateType)(key: (StateType, TerminalEvent) => StateType)
-           : Option[(ResultType, LazyList[TerminalEvent])] =
+  def apply
+      (stream: LazyList[TerminalEvent], state: StateType)
+      (key: (StateType, TerminalEvent) => StateType)
+      : Option[(ResultType, LazyList[TerminalEvent])] =
+    
     before()
     recur(stream, state, Unset)(key).tap(after().waive)
 
 object Interaction:
   given [ItemType: Show](using Terminal): Interaction[SelectMenu[ItemType], ItemType] with
-    override def before(): Unit = Out.print(t"\e?25l")
-    override def after(): Unit = Out.print(t"\eJ\e?25h")
+    override def before(): Unit = Out.print(t"\e[?25l")
+    override def after(): Unit = Out.print(t"\e[J\e[?25h")
 
     def render(old: Maybe[SelectMenu[ItemType]], menu: SelectMenu[ItemType]) =
       menu.options.foreach: opt =>
-        Out.print((if opt == menu.current then t" > $opt" else t"   $opt")+t"\eK\n")
-      Out.print(t"\e${menu.options.length}A")
+        Out.print((if opt == menu.current then t" > $opt" else t"   $opt")+t"\e[K\n")
+      Out.print(t"\e[${menu.options.length}A")
 
     def result(state: SelectMenu[ItemType]): ItemType = state.current
 
   given (using Terminal): Interaction[LineEditor, Text] with
+    override def before(): Unit = Out.print(t"\e[?25l")
+    override def after(): Unit = Out.print(t"\e[?25h")
     def render(editor: Maybe[LineEditor], editor2: LineEditor): Unit =
       val prior = editor.or(editor2)
-      if prior.pos > 0 then Out.print(t"\e${prior.pos}D")
-      val line = t"${editor2.content}${t" "*(prior.content.length - editor2.content.length)}"
-      Out.print(t"\e0K")
+      Out.print(t"\e[?25l")
+      if prior.position > 0 then Out.print(t"\e[${prior.position}D")
+      val line = t"${editor2.value}${t" "*(prior.value.length - editor2.value.length)}"
+      Out.print(t"\e[K")
       Out.print(line)
-      if line.length > 0 then Out.print(t"\e${line.length}D")
-      if editor2.pos > 0 then Out.print(t"\e${editor2.pos}C")
+      if line.length > 0 then Out.print(t"\e[${line.length}D")
+      if editor2.position > 0 then Out.print(t"\e[${editor2.position}C")
+      Out.print(t"\e[?25h")
 
-    def result(editor: LineEditor): Text = editor.content
+    def result(editor: LineEditor): Text = editor.value
 
 case class SelectMenu[ItemType](options: List[ItemType], current: ItemType):
   import Keypress.*
