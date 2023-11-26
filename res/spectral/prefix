@@ -1,7 +1,7 @@
 #!/bin/bash
 
 declare portFile initFile ttystate script waitFile tmpPipe javaVersion dataHomeDir arch os data stderr
-declare -i pid port version buildId stdoutPid continue pipePid argCount launchPid
+declare -i pid port version buildId stdoutPid continue pipePid argCount launchPid payloadSize jarSize
 declare -a args signals sttyOptions
 
 # The TTY settings to use for terminal input
@@ -26,6 +26,9 @@ pid=$$
 args=("$@")
 argCount=$#
 
+payloadSize=%%PAYLOADSIZE%%
+jarSize=%%JARSIZE%%
+
 backOut() {
   if [ -f "$failFile" ]
   then
@@ -44,7 +47,7 @@ abort() {
 
 launch() {
   test -x "$javaHome/bin/java" || extract
-  mkfifo "$waitFile" 2> /dev/null && (exec nohup "$javaHome/bin/java" -Dspectral.name="$name" -Dspectral.script="$script" -Dspectral.command="$(command -v "$name")" -Dspectral.fpath="$(zsh -c 'printf "%s\n" $fpath' 2> /dev/null || echo '')" -jar "$script" > /dev/null 2>&1 || abort) &
+  mkfifo "$waitFile" 2> /dev/null && (exec nohup "$javaHome/bin/java" -Dspectral.name="$name" -Dspectral.script="$script" -Dspectral.payloadSize=$payloadSize -Dspectral.jarSize=$jarSize -Dspectral.command="$(command -v "$name")" -Dspectral.fpath="$(zsh -c 'printf "%s\n" $fpath' 2> /dev/null || echo '')" -jar "$script" > /dev/null 2>&1 || abort) &
   launchPid=$!
   flock "$initFile" sh -c "test -f \"$portFile\" || cat \"$waitFile\"" > /dev/null 2>&1 || abort
   rm -f "$initFile"
@@ -136,5 +139,4 @@ test -t 0 && stty "$ttystate"
 kill $launchPid $stdoutPid 2> /dev/null
 terminate
 exit 1
-
 : TERMINUS
