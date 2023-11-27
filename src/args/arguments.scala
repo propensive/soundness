@@ -29,8 +29,7 @@ import language.experimental.captureChecking
 object Shell:
   given decoder: Decoder[Shell] = text => valueOf(text.lower.capitalize.s)
   given encoder: Encoder[Shell] = _.toString.tt.lower
-  given show: Show[Shell] = _.toString.tt.lower
-  given communicable: Communicable[Shell] = shell => msg"$shell"
+  given communicable: Communicable[Shell] = shell => Message(shell.toString.tt.lower)
 
 enum Shell:
   case Zsh, Bash, Fish
