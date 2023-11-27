@@ -18,6 +18,7 @@ package exoskeleton
 
 import rudiments.*
 import ambience.*
+import fulminate.*
 import anticipation.*
 import spectacular.*
 import gossamer.*
@@ -28,6 +29,8 @@ import language.experimental.captureChecking
 object Shell:
   given decoder: Decoder[Shell] = text => valueOf(text.lower.capitalize.s)
   given encoder: Encoder[Shell] = _.toString.tt.lower
+  given show: Show[Shell] = _.toString.tt.lower
+  given communicable: Communicable[Shell] = shell => msg"$shell"
 
 enum Shell:
   case Zsh, Bash, Fish
