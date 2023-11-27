@@ -30,31 +30,53 @@ import ambience.*
 import fulminate.*
 
 object Installer:
-
   object Result:
     given Communicable[Result] =
-      case AlreadyOnPath(script, path) => msg"the $script command is already installed at $path"
-      case Installed(script, path)     => msg"the $script command was installed to $path"
-      case PathNotWritable             => msg"no directory on the PATH environment variable was writable"
+      case AlreadyOnPath(script, path) => msg"The $script command is already installed at $path."
+      case Installed(script, path)     => msg"The $script command was installed to $path."
+      case PathNotWritable             => msg"No directory on the PATH environment variable was writable"
 
   enum Result:
     case AlreadyOnPath(script: Text, path: Text)
     case Installed(script: Text, path: Text)
     case PathNotWritable
 
-  def install
+
+  def candidateTargets
       ()
-      (using service: DaemonService[?], log: Log[Text])
+      (using service: DaemonService[?])
+      (using Log[Text], Environment, HomeDirectory, SystemProperties, Raises[PathError], Raises[IoError],
+          Raises[EnvironmentError])
+      : List[Directory] =
+    val paths: List[Path] = Environment.path
+    
+    val preferences: List[Path] = List(
+      Xdg.bin[Path],
+      % / p"usr" / p"local" / p"bin",
+      % / p"usr" / p"bin",
+      % / p"usr" / p"local" / p"sbin",
+      % / p"opt" / p"bin",
+      % / p"bin",
+      % / p"bin"
+    )
+
+    paths.filter(_.exists()).map(_.as[Directory]).filter(_.writable()).sortBy: directory =>
+      preferences.indexOf(directory.path) match
+        case -1    => Int.MaxValue
+        case index => index
+
+  def install
+      (force: Boolean = false, target: Maybe[Path] = Unset)
+      (using service: DaemonService[?], log: Log[Text], environment: Environment, home: HomeDirectory)
       (using Raises[ExecError], Raises[NumberError], Raises[SystemPropertyError], Raises[IoError],
           Raises[StreamCutError], Raises[NotFoundError], Raises[PathError], Raises[EnvironmentError])
       : Result =
     import workingDirectories.default
     import systemProperties.jvm
-    import environments.jvm
     val command: Text = service.scriptName
     val scriptPath = sh"sh -c 'command -v $command'".exec[Text]()
 
-    if safely(scriptPath.decodeAs[Path]) == service.script
+    if safely(scriptPath.decodeAs[Path]) == service.script && !force
     then Result.AlreadyOnPath(command, service.script.show)
     else
       val payloadSize: ByteSize = ByteSize(Properties.spectral.payloadSize[Int]())
@@ -64,7 +86,7 @@ object Installer:
       val prefixSize = fileSize - payloadSize - jarSize
       val stream = scriptFile.stream[Bytes]
       val paths: List[Path] = Environment.path
-      val installDirectory = paths.filter(_.exists()).view.map(_.as[Directory]).find(_.writable()).maybe
+      val installDirectory = target.mm(_.as[Directory]).or(candidateTargets().headOption.maybe)
       
       val installFile = installDirectory.mm: directory =>
         (directory / PathName(command)).make[File]()
@@ -73,7 +95,8 @@ object Installer:
       installFile.mm: file =>
         (stream.take(prefixSize) ++ stream.drop(fileSize - jarSize)).writeTo(file)
         file.executable() = true
-        Result.Installed(command, service.script.show)
+        Result.Installed(command, file.path.show)
       .or:
         Result.PathNotWritable
-        
+
+
