@@ -65,7 +65,7 @@ object TabCompletionsInstallation:
     case ShellNotInstalled
 
 object TabCompletions:
-  def install()
+  def install(force: Boolean = false)
       (using service: ShellContext)
       (using WorkingDirectory, Log[Text], Raises[ExecError], Raises[PathError], Raises[IoError],
           Raises[StreamCutError], Raises[OverwriteError], Effectful)
@@ -73,7 +73,7 @@ object TabCompletions:
     val scriptPath = sh"sh -c 'command -v ${service.scriptName}'".exec[Text]()
     val command: Text = service.scriptName
     
-    if safely(scriptPath.decodeAs[Path]) != service.script
+    if !force && safely(scriptPath.decodeAs[Path]) != service.script
     then TabCompletionsInstallation.CommandNotOnPath(service.scriptName)
     else
       val zsh: TabCompletionsInstallation.InstallResult = 
