@@ -25,7 +25,6 @@ signals=(INT WINCH TERM)
 pid=$$
 args=("$@")
 argCount=$#
-
 payloadSize=%%PAYLOADSIZE%%
 jarSize=%%JARSIZE%%
 
@@ -63,12 +62,13 @@ handle() {
 }
 
 extract() {
-  local -i offset
+  local -i offset fileSize
   local dir
   mkdir -p "$dataHomeDir/java"
-  offset=$(grep -aobm1 'TERMINUS$' "$script" | cut -d: -f1)
-  tail -c +$((offset+10)) $script | tar xz -C "$dataHomeDir/java" 2> /dev/null
-  dir="$(tail -c +$((offset+10)) $script | tar tzf - 2> /dev/null | head -n1)"
+  fileSize=$(wc -c "$script")
+  offset=$((fileSize - jarSize - payloadSize))
+  tail -c $offset "$script" | tar xz -C "$dataHomeDir/java" 2> /dev/null
+  dir="$(tail -c +"$offset" "$script" | tar tzf - 2> /dev/null | head -n1)"
   mv "$dataHomeDir/java/$dir" "$javaHome"
 }
 
@@ -139,4 +139,3 @@ test -t 0 && stty "$ttystate"
 kill $launchPid $stdoutPid 2> /dev/null
 terminate
 exit 1
-: TERMINUS
