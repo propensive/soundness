@@ -20,37 +20,19 @@ import rudiments.*
 import gossamer.*
 import spectacular.*
 import turbulence.*
+import perforate.*
 import anticipation.*
+import fulminate.*
 import eucalyptus.*
 
 //import language.experimental.captureChecking
 
-object LineEditor:
-  def concealed(str: Text): Text = str.mapChars { _ => '*' }
+case class DismissError() extends Error(msg"the user dismissed an interaction")
 
-  def ask(initial: Text = t"", render: Text => Text = identity(_))(using Terminal): Text =
-    Out.print(render(initial))
+trait Question[AnswerType]:
+  def apply(keypress: TerminalEvent): Question[AnswerType]
 
-    def finished(key: TerminalEvent) =
-      key == Keypress.Enter || key == Keypress.Control('D') || key == Keypress.Control('C')
-
-    val buffer: StringBuilder = StringBuilder()
-
-    summon[Terminal].events.takeWhile(!finished(_)).foldLeft(LineEditor(initial, initial.length)):
-      case (editor, next) =>
-        if editor.position > 0 then buffer.append(t"\e[${editor.position}D")
-        val editor2 = editor(next)
-        val line = t"${editor2.value}${t" "*(editor.value.length - editor2.value.length)}"
-        buffer.append(t"\e[0K")
-        buffer.append(render(line))
-        val left = line.length - editor2.position
-        if left > 0 then buffer.append(t"\e[${left}D")
-        Out.print(buffer.text)
-        buffer.clear()
-        editor2
-    .value
-
-case class LineEditor(value: Text = t"", position: Int = 0):
+case class LineEditor(value: Text = t"", position: Int = 0) extends Question[Text]:
   import Keypress.*
 
   def apply(keypress: TerminalEvent): LineEditor = try keypress match
@@ -76,21 +58,26 @@ case class LineEditor(value: Text = t"", position: Int = 0):
   catch case e: OutOfRangeError => this
 
   def unapply
-      (stream: LazyList[TerminalEvent])(using interaction: Interaction[LineEditor, Text])
-      (using Terminal)
+      (stream: LazyList[TerminalEvent])(using interaction: Interaction[Text, LineEditor])
       : Option[(Text, LazyList[TerminalEvent])] =
     interaction(stream, this)(_(_))
 
-trait Interaction[StateType, ResultType]:
+  def ask
+      (stream: LazyList[TerminalEvent])
+      (using Interaction[Text, LineEditor], Raises[DismissError])
+      : (Text, LazyList[TerminalEvent]) =
+    unapply(stream).getOrElse(abort(DismissError()))
+
+trait Interaction[ResultType, QuestionType]:
   def before(): Unit = ()
-  def render(state: Maybe[StateType], menu: StateType): Unit
+  def render(state: Maybe[QuestionType], menu: QuestionType): Unit
   def after(): Unit = ()
-  def result(state: StateType): ResultType
+  def result(state: QuestionType): ResultType
 
   @tailrec
   final def recur
-      (stream: LazyList[TerminalEvent], state: StateType, oldState: Maybe[StateType])
-      (key: (StateType, TerminalEvent) => StateType)
+      (stream: LazyList[TerminalEvent], state: QuestionType, oldState: Maybe[QuestionType])
+      (key: (QuestionType, TerminalEvent) => QuestionType)
       : Option[(ResultType, LazyList[TerminalEvent])] =
     
     render(oldState, state)
@@ -98,19 +85,20 @@ trait Interaction[StateType, ResultType]:
     stream match
       case Keypress.Enter #:: tail              => Some((result(state), tail))
       case Keypress.Control('C' | 'D') #:: tail => None
+      case Keypress.Escape #:: tail             => None
       case other #:: tail                       => recur(tail, key(state, other), state)(key)
       case _                                    => None
 
   def apply
-      (stream: LazyList[TerminalEvent], state: StateType)
-      (key: (StateType, TerminalEvent) => StateType)
+      (stream: LazyList[TerminalEvent], state: QuestionType)
+      (key: (QuestionType, TerminalEvent) => QuestionType)
       : Option[(ResultType, LazyList[TerminalEvent])] =
     
     before()
     recur(stream, state, Unset)(key).tap(after().waive)
 
 object Interaction:
-  given [ItemType: Show](using Stdio): Interaction[SelectMenu[ItemType], ItemType] with
+  given [ItemType: Show](using Stdio): Interaction[ItemType, SelectMenu[ItemType]] with
     override def before(): Unit = Out.print(t"\e[?25l")
     override def after(): Unit = Out.print(t"\e[J\e[?25h")
 
@@ -121,7 +109,7 @@ object Interaction:
 
     def result(state: SelectMenu[ItemType]): ItemType = state.current
 
-  given (using Stdio): Interaction[LineEditor, Text] with
+  given (using Stdio): Interaction[Text, LineEditor] with
     def render(editor: Maybe[LineEditor], editor2: LineEditor): Unit =
       val buffer = StringBuilder()
       val prior = editor.or(editor2)
@@ -135,7 +123,7 @@ object Interaction:
 
     def result(editor: LineEditor): Text = editor.value
 
-case class SelectMenu[ItemType](options: List[ItemType], current: ItemType):
+case class SelectMenu[ItemType](options: List[ItemType], current: ItemType) extends Question[ItemType]:
   import Keypress.*
   
   def apply(keypress: TerminalEvent): SelectMenu[ItemType] = try keypress match
@@ -149,9 +137,16 @@ case class SelectMenu[ItemType](options: List[ItemType], current: ItemType):
 
   def unapply
       (stream: LazyList[TerminalEvent])
-      (using interaction: Interaction[SelectMenu[ItemType], ItemType])
+      (using interaction: Interaction[ItemType, SelectMenu[ItemType]])
       : Option[(ItemType, LazyList[TerminalEvent])] =
 
     interaction(stream, this)(_(_))
+  
+  def ask
+      (stream: LazyList[TerminalEvent])
+      (using Interaction[ItemType, SelectMenu[ItemType]], Raises[DismissError])
+      : (ItemType, LazyList[TerminalEvent]) =
+    unapply(stream).getOrElse(abort(DismissError()))
+
 
 given realm: Realm = realm"profanity"
