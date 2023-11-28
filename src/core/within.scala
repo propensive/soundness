@@ -76,51 +76,34 @@ object Macros:
 
     val raiseTypes = patternTypes.map(_(0)).map(_.asType).map:
       case '[type errorType <: Error; errorType] => TypeRepr.of[Raises[errorType]]
-
-    TypeLambda(List("T"), _ => List(TypeBounds.empty), lambda =>
-      AppliedType(defn.FunctionClass(raiseTypes.length, true).typeRef, raiseTypes ::: List(lambda.param(0)))
+    
+    TypeLambda(List("ResultType"), _ => List(TypeBounds.empty), lambda =>
+      def recur(raiseTypes: List[TypeRepr]): TypeRepr = raiseTypes match
+        case Nil => lambda.param(0)
+        case head :: tail => AppliedType(defn.FunctionClass(1, true).typeRef, List(head, recur(tail)))
+      recur(raiseTypes)
     ).asType match
       case '[type contextType[+_]; contextType] => '{
         new Mitigator[ErrorType]:
           type Context[+ResultType] = contextType[ResultType]
-          def within[ResultType](block: contextType[ResultType]): ResultType = ???
+
+          def within[ResultType](block: contextType[ResultType]): ResultType = ${
+            def recur(current: Expr[Any], patternTypes: List[(TypeRepr, TypeRepr)]): Expr[ResultType] =
+              patternTypes match
+                case Nil => current.asExprOf[ResultType]
+                  
+                case (source, target) :: tail => source.asType match
+                  case '[type sourceType <: Error; sourceType] => target.asType match
+                    case '[type targetType <: Error; targetType] =>
+                      val raises = Expr.summon[Raises[targetType]].getOrElse:
+                        fail(msg"there is no capability to raise a ${target.show} in this context")
+                      
+                      val raises2 = '{
+                        $raises.contraMap[sourceType] { error => $handlers(error).asInstanceOf[targetType] }
+                      }
+                      
+                      recur('{${current.asExprOf[Raises[sourceType] ?=> Any]}(using ${raises2})}, tail)
+  
+            recur('block, patternTypes)
+          }
       }
-
-
-
-
-
-
-
-    // TypeLambda(List("T"), _ => List(TypeBounds.empty), lambda =>
-    //   AppliedType(defn.FunctionClass(raises.length, true).typeRef, raises ::: List(lambda.param(0)))
-    // ).asType match
-    //   case '[type contextType[+_]; contextType] => '{
-    //     new Mitigator[ErrorType]:
-    //       type Context[+ResultType] = contextType[ResultType]
-
-    //       def within[ResultType](block: contextType[ResultType]): ResultType = ${
-    //         def nestedContexts(patternTypes: List[(TypeRepr, TypeRepr)]): Expr[contextType[ResultType]] =
-    //           patternTypes match
-    //             case Nil =>
-    //               '{
-    //                 block
-    //               }
-    //             case (left, right) :: tail =>
-    //               right.asType match
-    //                 case '[type targetType <: Error; targetType] => left.asType match
-    //                   case '[type sourceType <: Error; sourceType] =>
-    //                     val raises = Expr.summon[Raises[targetType]].getOrElse:
-    //                       fail(msg"can't raise a ${right.show}")
-                            
-    //                       $raises.contraMap[sourceType] { error => $handlers(error).asInstanceOf[targetType] }
-
-    //                     '{
-    //                       given Raises[sourceType] =
-    //                         $raises.contraMap[sourceType] { error => $handlers(error).asInstanceOf[targetType] }
-    //                       ${nestedContexts(tail)}
-    //                     }
-    //         '{${nestedContexts(patternTypes)}.asInstanceOf[ResultType]}
-    //       }
-            
-    //   }.asExprOf[Mitigator[ErrorType] { type Context[+ResultType] = contextType[ResultType] }]

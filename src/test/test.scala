@@ -4,33 +4,36 @@ import fulminate.*
 
 //import language.experimental.captureChecking
 
-case class FooError() extends Error(msg"Foo")
-case class BarError(num: Int, str: String) extends Error(msg"Bar: $num $str")
-case class BazError() extends Error(msg"Baz")
-case class QuuxError(barError: BarError) extends Error(msg"Quux")
+def foo()(using fooError: Raises[FooError1]): String =
+  if math.random < 0.3 then abort(FooError1()) else "foo"
 
-def foo()(using fooError: Raises[FooError]): String =
-  if math.random < 0.3 then abort(FooError()) else "foo"
+def bar()(using barError: Raises[BarError1]): String =
+  if math.random < 0.3 then abort(BarError1(12, "two")) else "bar"
 
-def bar()(using barError: Raises[BarError]): String =
-  if math.random < 0.3 then abort(BarError(12, "two")) else "bar"
-
-def quux()(using quuxError: Raises[QuuxError]): String =
-  if math.random < 0.3 then abort(QuuxError(BarError(4, ""))) else "quux"
+def quux()(using quuxError: Raises[QuuxError1]): String =
+  if math.random < 0.3 then abort(QuuxError1(BarError1(4, ""))) else "quux"
 
 @main
 def run(): Unit =
+  import unsafeExceptions.canThrowAny
+  import errorHandlers.throwUnsafely
+  maybe()
+
+
+def maybe(): Unit raises BazError1 =
   println("Hello")
-  given Raises[BazError] = ???
-  println("Hello 2")
-  
+
   mitigate:
-    case _: FooError               => BazError()
-    case QuuxError(BarError(n, s)) => BazError()
-    case _: BarError               => BazError()
+    case quux@QuuxError1(BarError1(n, s)) => BazError1(s"$n / $s")
+    case bar@BarError1(n, s)            => BazError1(s"$n / $s")
   .within:
     println("Hello 3")
-    println(foo())
+    println(foo()+bar()+quux())
     println("Hello 4")
   
   println("Hello 5")
+
+case class FooError1() extends Error(msg"Foo")
+case class BarError1(num: Int, str: String) extends Error(msg"Bar: $num $str")
+case class BazError1(m: String) extends Error(msg"Baz: $m")
+case class QuuxError1(barError: BarError1) extends Error(msg"Quux")
