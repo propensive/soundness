@@ -87,9 +87,6 @@ object Macros:
       case _ =>
         Nil
     
-    patternTypes.map: (left, right) =>
-      println(s"${left.show} -> ${right.show}")
-
     val raiseTypes = patternTypes.map(_(0)).map(_.asType).map:
       case '[type errorType <: Error; errorType] => TypeRepr.of[Raises[errorType]]
     
