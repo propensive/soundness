@@ -28,8 +28,16 @@ import language.experimental.captureChecking
 
 @capability
 trait Raises[-ErrorType <: Error] extends Pure:
+
+  private inline def raises: this.type = this
+
   def record(error: ErrorType): Unit
   def abort(error: ErrorType): Nothing
+
+  def contraMap[ErrorType2 <: Error](fn: ErrorType2 -> ErrorType): Raises[ErrorType2] =
+    new Raises[ErrorType2]:
+      def record(error: ErrorType2): Unit = raises.record(fn(error))
+      def abort(error: ErrorType2): Nothing = raises.abort(fn(error))
 
 @capability
 class RaisesThrow
@@ -114,11 +122,11 @@ def abort[SuccessType, ErrorType <: Error](error: ErrorType)(using handler: Rais
 def safely
     [ErrorType <: Error]
     (using DummyImplicit)
-    [sealed SuccessType]
-    (block: CanThrow[Exception] ?=> RaisesMaybe[ErrorType, SuccessType] ?=> SuccessType)
+    [SuccessType]
+    (block: RaisesMaybe[ErrorType, SuccessType] ?=> CanThrow[Exception] ?=> SuccessType)
     : Maybe[SuccessType] =
   try boundary: label ?=>
-    block(using unsafeExceptions.canThrowAny)(using RaisesMaybe(label))
+    block(using RaisesMaybe(label))
   catch case error: Exception => Unset
 
 def throwErrors
@@ -132,7 +140,7 @@ def throwErrors
 def validate
     [ErrorType <: Error]
     (using raise: Raises[AggregateError[ErrorType]])
-    [sealed SuccessType]
+    [SuccessType]
     (block: RaisesAggregate[ErrorType, SuccessType] ?=> SuccessType)
     : SuccessType =
   val value: Either[AggregateError[ErrorType], SuccessType] =
@@ -147,7 +155,7 @@ def validate
 def capture
     [ErrorType <: Error]
     (using DummyImplicit)
-    [sealed SuccessType]
+    [SuccessType]
     (block: RaisesErrorResult[ErrorType, SuccessType] ?=> SuccessType)
     (using raise: Raises[UnexpectedSuccessError[SuccessType]])
     : ErrorType =
@@ -161,7 +169,7 @@ def capture
 def over
     [ErrorType <: Error]
     (using DummyImplicit)
-    [sealed SuccessType]
+    [SuccessType]
     (block: ReturnMitigated[ErrorType, SuccessType] ?=> SuccessType)
     : Mitigated[SuccessType, ErrorType] =
   boundary: label ?=>
@@ -170,7 +178,7 @@ def over
 def failCompilation
     [ErrorType <: Error]
     (using Quotes)
-    [sealed SuccessType]
+    [SuccessType]
     (block: RaisesCompileFailure[ErrorType, SuccessType] ?=> SuccessType)
     : SuccessType =
   given RaisesCompileFailure[ErrorType, SuccessType]()
@@ -194,8 +202,8 @@ infix type raises[SuccessType, ErrorType <: Error] = Raises[ErrorType] ?=> Succe
 trait Mitigation[-InputErrorTypes <: Error]:
   def handle[SuccessType](mitigated: Mitigated[SuccessType, InputErrorTypes]): SuccessType
 
-transparent inline def mitigate(inline handler: PartialFunction[Error, Error]): Mitigation[Nothing] =
-  ${Perforate.mitigate('handler)}
+// transparent inline def mitigate(inline handler: PartialFunction[Error, Error]): Mitigation[Nothing] =
+//   ${Perforate.mitigate('handler)}
 
 enum Mitigated[+SuccessType, +ErrorType <: Error]:
   case Success(value: SuccessType)
