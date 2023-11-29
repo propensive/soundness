@@ -41,7 +41,7 @@ def maybe(): Unit raises BazError1 =
 
   mitigate:
     case quux@QuuxError1(BarError1(n, s)) => BazError1(s"$n / $s")
-    case bar@BarError1(n, s)            => BazError1(s"$n / $s")
+    case (_: BarError1) | (_: FooError1) => BazError1(s"bar")
   .within:
     println("Hello 3")
     println(foo()+bar()+quux())

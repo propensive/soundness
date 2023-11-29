@@ -44,6 +44,11 @@ object Macros:
 
     type Q = (Int, Int)
 
+    def badPattern(patternType: TypeRepr): Nothing = fail(msg"""
+      this pattern will not match every ${patternType.show}, so a raise capabilities for ${patternType.show}
+      cannot be created
+    """)
+
     def exhaustive(pattern: Tree, patternType: TypeRepr): Boolean =
      pattern match
       case Wildcard()          => true
@@ -52,19 +57,20 @@ object Macros:
 
       case TypedOrTest(Unapply(Select(target, method), _, params), _) =>
         params.zip(patternType.typeSymbol.caseFields.map(_.info.typeSymbol.typeRef)).forall(exhaustive) ||
-            fail(msg"this pattern will not match every ${patternType.show}")
+            badPattern(patternType)
         
       case Unapply(Select(target, method), _, params) =>
         params.zip(patternType.typeSymbol.caseFields.map(_.info.typeSymbol.typeRef)).forall(exhaustive) ||
-            fail(msg"this pattern will not match every ${patternType.show}")
+            badPattern(patternType)
       
-      case other => fail(msg"this pattern will not match every ${patternType.show}")
-        
+      case other =>
+        badPattern(patternType)
 
     def patternType(pattern: Tree): List[TypeRepr] = pattern match
-      case Wildcard()          => Nil
-      case Typed(_, matchType) => List(matchType.tpe)
-      case Bind(_, pattern)    => patternType(pattern)
+      case Wildcard()             => Nil
+      case Typed(_, matchType)    => List(matchType.tpe)
+      case Bind(_, pattern)       => patternType(pattern)
+      case Alternatives(patterns) => patterns.flatMap(patternType)
       
       case TypedOrTest(Unapply(Select(target, method), _, _), typeTree) =>
         target.tpe.typeSymbol.methodMember(method).head.info match
@@ -72,6 +78,7 @@ object Macros:
             if exhaustive(pattern, typeTree.tpe) then List(typeTree.tpe) else Nil
           case _ =>
             Nil
+      
       case other =>
         Nil
 
