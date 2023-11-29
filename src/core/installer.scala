@@ -22,6 +22,7 @@ import serpentine.*, hierarchies.unix
 import rudiments.*
 import guillotine.*
 import gossamer.*
+import exoskeleton.*
 import turbulence.*
 import eucalyptus.*
 import perforate.*
@@ -84,8 +85,8 @@ object Installer:
   def install
       (force: Boolean = false, target: Maybe[Path] = Unset)
       (using service: DaemonService[?], log: Log[Text], environment: Environment, home: HomeDirectory)
-      (using Raises[InstallError])
-      : Result =
+      (using Effectful)
+      : Result raises InstallError =
     mitigate:
       case PathError(path)          => InstallError(InstallError.Reason.Environment)
       case ExecError(command, _, _) => InstallError(InstallError.Reason.Io)
