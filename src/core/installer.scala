@@ -30,17 +30,6 @@ import spectacular.*
 import ambience.*
 import fulminate.*
 
-object InstallError:
-  object Reason:
-    given communicable: Communicable[Reason] =
-      case Environment => msg"it was not possible to get enough information about the install environment"
-      case Io          => msg"an I/O error occurred when trying to write an installation file"
-  
-  enum Reason:
-    case Environment, Io
-
-case class InstallError(reason: InstallError.Reason) extends Error(msg"the installation failed because $reason")
-
 object Installer:
   object Result:
     given Communicable[Result] =
