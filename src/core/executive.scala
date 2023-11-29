@@ -19,6 +19,7 @@ package exoskeleton
 import profanity.*
 import rudiments.*
 import gossamer.*
+import fulminate.*
 import digression.*
 import hieroglyph.*, textWidthCalculation.uniform
 import escapade.*
@@ -133,3 +134,15 @@ trait ShellContext:
 
 @capability
 erased trait Effectful
+
+object InstallError:
+  object Reason:
+    given communicable: Communicable[Reason] =
+      case Environment => msg"it was not possible to get enough information about the install environment"
+      case Io          => msg"an I/O error occurred when trying to write an installation file"
+  
+  enum Reason:
+    case Environment, Io
+
+case class InstallError(reason: InstallError.Reason) extends Error(msg"the installation failed because $reason")
+

@@ -112,15 +112,15 @@ object TabCompletions:
         TabCompletionsInstallation.InstallResult.Installed(shell, path.show)
     .getOrElse(TabCompletionsInstallation.InstallResult.NoWritableLocation(shell))
 
-  def messages(shell: Shell, global: Boolean): List[Message] =
-    if shell == Shell.Zsh && !global
-    then List(msg"""Make sure that your ${t"~/.zshrc"} file contains the following lines:
+  // def messages(shell: Shell, global: Boolean): List[Message] =
+  //   if shell == Shell.Zsh && !global
+  //   then List(msg"""Make sure that your ${t"~/.zshrc"} file contains the following lines:
 
-      fpath=(~/.zsh/completion $$fpath)
-      autoload -U compinit
-      compinit
-    """)
-    else Nil
+  //     fpath=(~/.zsh/completion $$fpath)
+  //     autoload -U compinit
+  //     compinit
+  //   """)
+  //   else Nil
 
   def script(shell: Shell, command: Text): Text = shell match
     case Shell.Zsh =>
