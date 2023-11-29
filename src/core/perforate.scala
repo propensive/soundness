@@ -51,8 +51,7 @@ object Perforate:
       cannot be created
     """)
 
-    def exhaustive(pattern: Tree, patternType: TypeRepr): Boolean =
-     pattern match
+    def exhaustive(pattern: Tree, patternType: TypeRepr): Boolean = pattern match
       case Wildcard()          => true
       case Typed(_, matchType) => patternType <:< matchType.tpe
       case Bind(_, pattern)    => exhaustive(pattern, patternType)
@@ -69,20 +68,18 @@ object Perforate:
         badPattern(patternType)
 
     def patternType(pattern: Tree): List[TypeRepr] = pattern match
-      case Wildcard()             => Nil
       case Typed(_, matchType)    => List(matchType.tpe)
       case Bind(_, pattern)       => patternType(pattern)
       case Alternatives(patterns) => patterns.flatMap(patternType)
       
+      case Wildcard() =>
+        fail(msg"this pattern will match everything, so a specific raise capability cannot be created")
+      
       case TypedOrTest(Unapply(Select(target, method), _, _), typeTree) =>
-        target.tpe.typeSymbol.methodMember(method).head.info.asMatchable match
-          case MethodType(_, _, unapplyType) =>
-            if exhaustive(pattern, typeTree.tpe) then List(typeTree.tpe) else Nil
-          case _ =>
-            Nil
+        if exhaustive(pattern, typeTree.tpe) then List(typeTree.tpe) else Nil
       
       case other =>
-        Nil
+        fail(msg"a specific raise capability cannot be created for this pattern")
 
     val patternTypes: List[(TypeRepr, TypeRepr)] = handlers.asTerm match
       case Inlined(_, _, Block(List(defDef), term)) => defDef match
@@ -123,9 +120,7 @@ object Perforate:
                       val raises = Expr.summon[Raises[targetType]].getOrElse:
                         fail(msg"there is no capability to raise a ${target.show} in this context")
                       
-                      val raises2 = '{
-                        $raises.contraMap[sourceType] { error => $handlers(error).asInstanceOf[targetType] }
-                      }
+                      val raises2 = '{$raises.contraMap[sourceType]($handlers(_).asInstanceOf[targetType])}
                       
                       recur('{${current.asExprOf[Raises[sourceType] ?=> Any]}(using ${raises2})}, tail)
   
