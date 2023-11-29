@@ -29,6 +29,17 @@ import spectacular.*
 import ambience.*
 import fulminate.*
 
+object InstallError:
+  object Reason:
+    given communicable: Communicable[Reason] =
+      case Environment => msg"it was not possible to get enough information about the install environment"
+      case Io          => msg"an I/O error occurred when trying to write an installation file"
+  
+  enum Reason:
+    case Environment, Io
+
+case class InstallError(reason: InstallError.Reason) extends Error(msg"the installation failed because $reason")
+
 object Installer:
   object Result:
     given Communicable[Result] =
@@ -41,62 +52,76 @@ object Installer:
     case Installed(script: Text, path: Text)
     case PathNotWritable
 
-
   def candidateTargets
       ()
       (using service: DaemonService[?])
-      (using Log[Text], Environment, HomeDirectory, SystemProperties, Raises[PathError], Raises[IoError],
-          Raises[EnvironmentError])
-      : List[Directory] =
-    val paths: List[Path] = Environment.path
-    
-    val preferences: List[Path] = List(
-      Xdg.bin[Path],
-      % / p"usr" / p"local" / p"bin",
-      % / p"usr" / p"bin",
-      % / p"usr" / p"local" / p"sbin",
-      % / p"opt" / p"bin",
-      % / p"bin",
-      % / p"bin"
-    )
+      (using Log[Text], Environment, HomeDirectory, SystemProperties)
+      : List[Directory] raises InstallError =
+    mitigate:
+      case PathError(path)          => InstallError(InstallError.Reason.Environment)
+      case EnvironmentError(_)      => InstallError(InstallError.Reason.Environment)
+      case SystemPropertyError(_)   => InstallError(InstallError.Reason.Environment)
+      case IoError(_)               => InstallError(InstallError.Reason.Io)
+      case ExecError(command, _, _) => InstallError(InstallError.Reason.Io)
+    .within:
+      val paths: List[Path] = Environment.path
 
-    paths.filter(_.exists()).map(_.as[Directory]).filter(_.writable()).sortBy: directory =>
-      preferences.indexOf(directory.path) match
-        case -1    => Int.MaxValue
-        case index => index
+      val preferences: List[Path] = List(
+        Xdg.bin[Path],
+        % / p"usr" / p"local" / p"bin",
+        % / p"usr" / p"bin",
+        % / p"usr" / p"local" / p"sbin",
+        % / p"opt" / p"bin",
+        % / p"bin",
+        % / p"bin"
+      )
+
+      paths.filter(_.exists()).map(_.as[Directory]).filter(_.writable()).sortBy: directory =>
+        preferences.indexOf(directory.path) match
+          case -1    => Int.MaxValue
+          case index => index
 
   def install
       (force: Boolean = false, target: Maybe[Path] = Unset)
       (using service: DaemonService[?], log: Log[Text], environment: Environment, home: HomeDirectory)
-      (using Raises[ExecError], Raises[NumberError], Raises[SystemPropertyError], Raises[IoError],
-          Raises[StreamCutError], Raises[NotFoundError], Raises[PathError], Raises[EnvironmentError])
+      (using Raises[InstallError])
       : Result =
-    import workingDirectories.default
-    import systemProperties.jvm
-    val command: Text = service.scriptName
-    val scriptPath = sh"sh -c 'command -v $command'".exec[Text]()
+    mitigate:
+      case PathError(path)          => InstallError(InstallError.Reason.Environment)
+      case ExecError(command, _, _) => InstallError(InstallError.Reason.Io)
+      case StreamCutError(_)        => InstallError(InstallError.Reason.Io)
+      case SystemPropertyError(_)   => InstallError(InstallError.Reason.Environment)
+      case EnvironmentError(_)      => InstallError(InstallError.Reason.Environment)
+      case IoError(_)               => InstallError(InstallError.Reason.Io)
+      case NotFoundError(_)         => InstallError(InstallError.Reason.Io)
+      case NumberError(_, _)        => InstallError(InstallError.Reason.Environment)
+    .within:
+      import workingDirectories.default
+      import systemProperties.jvm
+      val command: Text = service.scriptName
+      val scriptPath = sh"sh -c 'command -v $command'".exec[Text]()
 
-    if safely(scriptPath.decodeAs[Path]) == service.script && !force
-    then Result.AlreadyOnPath(command, service.script.show)
-    else
-      val payloadSize: ByteSize = ByteSize(Properties.spectral.payloadSize[Int]())
-      val jarSize: ByteSize = ByteSize(Properties.spectral.jarSize[Int]())
-      val scriptFile: File = service.script.as[File]
-      val fileSize = scriptFile.size()
-      val prefixSize = fileSize - payloadSize - jarSize
-      val stream = scriptFile.stream[Bytes]
-      val paths: List[Path] = Environment.path
-      val installDirectory = target.mm(_.as[Directory]).or(candidateTargets().headOption.maybe)
-      
-      val installFile = installDirectory.mm: directory =>
-        (directory / PathName(command)).make[File]()
+      if safely(scriptPath.decodeAs[Path]) == service.script && !force
+      then Result.AlreadyOnPath(command, service.script.show)
+      else
+        val payloadSize: ByteSize = ByteSize(Properties.spectral.payloadSize[Int]())
+        val jarSize: ByteSize = ByteSize(Properties.spectral.jarSize[Int]())
+        val scriptFile: File = service.script.as[File]
+        val fileSize = scriptFile.size()
+        val prefixSize = fileSize - payloadSize - jarSize
+        val stream = scriptFile.stream[Bytes]
+        val paths: List[Path] = Environment.path
+        val installDirectory = target.mm(_.as[Directory]).or(candidateTargets().headOption.maybe)
+        
+        val installFile = installDirectory.mm: directory =>
+          (directory / PathName(command)).make[File]()
 
-      Log.info(t"Writing to ${installFile.debug}")
-      installFile.mm: file =>
-        (stream.take(prefixSize) ++ stream.drop(fileSize - jarSize)).writeTo(file)
-        file.executable() = true
-        Result.Installed(command, file.path.show)
-      .or:
-        Result.PathNotWritable
+        Log.info(t"Writing to ${installFile.debug}")
+        installFile.mm: file =>
+          (stream.take(prefixSize) ++ stream.drop(fileSize - jarSize)).writeTo(file)
+          file.executable() = true
+          Result.Installed(command, file.path.show)
+        .or:
+          Result.PathNotWritable
 
 
