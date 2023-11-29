@@ -20,199 +20,110 @@ import fulminate.*
 import rudiments.*
 
 import scala.quoted.*
-import scala.compiletime.*
 
-import java.util.concurrent.atomic as juca
+//import language.experimental.captureChecking
 
-import language.experimental.captureChecking
-
-@capability
-trait Raises[-ErrorType <: Error] extends Pure:
-
-  private inline def raises: this.type = this
-
-  def record(error: ErrorType): Unit
-  def abort(error: ErrorType): Nothing
-
-  def contraMap[ErrorType2 <: Error](fn: ErrorType2 -> ErrorType): Raises[ErrorType2] =
-    new Raises[ErrorType2]:
-      def record(error: ErrorType2): Unit = raises.record(fn(error))
-      def abort(error: ErrorType2): Nothing = raises.abort(fn(error))
-
-@capability
-class RaisesThrow
-    [ErrorType <: Error, SuccessType]()(using @annotation.constructorOnly error: CanThrow[ErrorType])
-extends Raises[ErrorType]:
-  def record(error: ErrorType): Unit = throw error
-  def abort(error: ErrorType): Nothing = throw error
-
-@capability
-class RaisesCompileFailure[ErrorType <: Error, SuccessType]()(using Quotes) extends Raises[ErrorType]:
-  def record(error: ErrorType): Unit = fail(error.message)
-  def abort(error: ErrorType): Nothing = fail(error.message)
-
-@capability
-class RaisesAggregate
-    [ErrorType <: Error, SuccessType]
-    (label: boundary.Label[Either[AggregateError[ErrorType], SuccessType]])
-extends Raises[ErrorType]:
-
-  private val collected: juca.AtomicReference[List[ErrorType]] = juca.AtomicReference(Nil)
-  
-  def record(error: ErrorType): Unit = collected.getAndUpdate(error :: _.nn)
-  
-  def abort(error: ErrorType): Nothing =
-    boundary.break(Left(AggregateError(error :: collected.get().nn)))(using label)
-  
-  def finish(): Unit =
-    if !collected.get().nn.isEmpty then boundary.break(Left(AggregateError(collected.get().nn)))(using label)
-
-@capability
-class RaisesErrorResult
-    [ErrorType <: Error, SuccessType]
-    (label: boundary.Label[Either[ErrorType, SuccessType]])
-    (using @annotation.constructorOnly unexpectedSuccess: Raises[UnexpectedSuccessError[SuccessType]])
-extends Raises[ErrorType]:
-
-  def record(error: ErrorType): Unit = boundary.break(Left(error))(using label)
-  def abort(error: ErrorType): Nothing = boundary.break(Left(error))(using label)
-
-@capability
-class RaisesMaybe[ErrorType <: Error, SuccessType](label: boundary.Label[Maybe[SuccessType]])
-extends Raises[ErrorType]:
-  type Result = Maybe[SuccessType]
-  type Return = Maybe[SuccessType]
-  
-  def record(error: ErrorType): Unit = boundary.break(Unset)(using label)
-  def abort(error: ErrorType): Nothing = boundary.break(Unset)(using label)
-
-@capability
-class ReturnMitigated
-    [ErrorType <: Error, SuccessType]
-    (label: boundary.Label[Mitigated[SuccessType, ErrorType]])
-extends Raises[ErrorType]:
-  type Result = Mitigated[SuccessType, ErrorType]
-  type Return = Mitigated[SuccessType, ErrorType]
-  
-  def record(error: ErrorType): Unit = boundary.break(Mitigated.Failure(error))(using label)
-  def abort(error: ErrorType): Nothing = boundary.break(Mitigated.Failure(error))(using label)
-
-trait Recovery[-ErrorType <: Error, +SuccessType]:
-  def recover(error: ErrorType): SuccessType
-
-def raise
-    [SuccessType, ErrorType <: Error]
-    (error: ErrorType)
-    (using handler: Raises[ErrorType], recovery: Recovery[ErrorType, SuccessType])
-    : SuccessType =
-  handler.record(error)
-  recovery.recover(error)
-
-def raise
-    [SuccessType, ErrorType <: Error]
-    (error: ErrorType)(ersatz: => SuccessType)
-    (using handler: Raises[ErrorType])
-    : SuccessType =
-  handler.record(error)
-  ersatz
-
-def abort[SuccessType, ErrorType <: Error](error: ErrorType)(using handler: Raises[ErrorType]): Nothing =
-  handler.abort(error)
-
-def safely
+transparent inline def mitigate
     [ErrorType <: Error]
-    (using DummyImplicit)
-    [SuccessType]
-    (block: RaisesMaybe[ErrorType, SuccessType] ?=> CanThrow[Exception] ?=> SuccessType)
-    : Maybe[SuccessType] =
-  try boundary: label ?=>
-    block(using RaisesMaybe(label))
-  catch case error: Exception => Unset
+    (inline mitigation: PartialFunction[Throwable, ErrorType])
+    : Mitigator[ErrorType] =
+  ${Perforate.mitigate[ErrorType]('mitigation)}
 
-def throwErrors
-    [ErrorType <: Error]
-    (using CanThrow[ErrorType])
-    [SuccessType]
-    (block: RaisesThrow[ErrorType, SuccessType] ?=> SuccessType)
-    : SuccessType =
-  block(using RaisesThrow())
+trait Mitigator[+ErrorType]:
+  type Context[+ResultType]
 
-def validate
-    [ErrorType <: Error]
-    (using raise: Raises[AggregateError[ErrorType]])
-    [SuccessType]
-    (block: RaisesAggregate[ErrorType, SuccessType] ?=> SuccessType)
-    : SuccessType =
-  val value: Either[AggregateError[ErrorType], SuccessType] =
-    boundary: label ?=>
-      val raiser = RaisesAggregate(label)
-      Right(block(using raiser)).tap(raiser.finish().waive)
+  def within[ResultType](block: Context[ResultType]): ResultType
+
+object Perforate:
+  def mitigate
+      [ErrorType <: Error: Type]
+      (handlers: Expr[PartialFunction[Throwable, ErrorType]])
+      (using Quotes)
+      : Expr[Mitigator[ErrorType]] =
+    import quotes.reflect.*
+
+    type Q = (Int, Int)
+
+    def badPattern(patternType: TypeRepr): Nothing = fail(msg"""
+      this pattern will not match every ${patternType.show}, so a raise capabilities for ${patternType.show}
+      cannot be created
+    """)
+
+    def exhaustive(pattern: Tree, patternType: TypeRepr): Boolean =
+     pattern match
+      case Wildcard()          => true
+      case Typed(_, matchType) => patternType <:< matchType.tpe
+      case Bind(_, pattern)    => exhaustive(pattern, patternType)
+
+      case TypedOrTest(Unapply(Select(target, method), _, params), _) =>
+        params.zip(patternType.typeSymbol.caseFields.map(_.info.typeSymbol.typeRef)).forall(exhaustive) ||
+            badPattern(patternType)
+        
+      case Unapply(Select(target, method), _, params) =>
+        params.zip(patternType.typeSymbol.caseFields.map(_.info.typeSymbol.typeRef)).forall(exhaustive) ||
+            badPattern(patternType)
+      
+      case other =>
+        badPattern(patternType)
+
+    def patternType(pattern: Tree): List[TypeRepr] = pattern match
+      case Wildcard()             => Nil
+      case Typed(_, matchType)    => List(matchType.tpe)
+      case Bind(_, pattern)       => patternType(pattern)
+      case Alternatives(patterns) => patterns.flatMap(patternType)
+      
+      case TypedOrTest(Unapply(Select(target, method), _, _), typeTree) =>
+        target.tpe.typeSymbol.methodMember(method).head.info match
+          case MethodType(_, _, unapplyType) =>
+            if exhaustive(pattern, typeTree.tpe) then List(typeTree.tpe) else Nil
+          case _ =>
+            Nil
+      
+      case other =>
+        Nil
+
+    val patternTypes: List[(TypeRepr, TypeRepr)] = handlers.asTerm match
+      case Inlined(_, _, Block(List(defDef), term)) => defDef match
+        case DefDef(ident, scrutineeType, returnType, Some(Match(matchId, caseDefs))) => caseDefs.flatMap:
+          case CaseDef(pattern, None, rhs) =>
+            rhs.asExpr match
+              case '{$rhs: rhsType} => patternType(pattern).map((_, TypeRepr.of[rhsType]))
+          case _ => Nil
+        case _ =>
+          Nil
+      case _ =>
+        Nil
+    
+    val raiseTypes = patternTypes.map(_(0)).map(_.asType).map:
+      case '[type errorType <: Error; errorType] => TypeRepr.of[Raises[errorType]]
+    
+    TypeLambda(List("ResultType"), _ => List(TypeBounds.empty), lambda =>
+      def recur(raiseTypes: List[TypeRepr]): TypeRepr = raiseTypes match
+        case Nil => lambda.param(0)
+        case head :: tail => AppliedType(defn.FunctionClass(1, true).typeRef, List(head, recur(tail)))
+      recur(raiseTypes)
+    ).asType match
+      case '[type contextType[+_]; contextType] => '{
+        new Mitigator[ErrorType]:
+          type Context[+ResultType] = contextType[ResultType]
+
+          def within[ResultType](block: contextType[ResultType]): ResultType = ${
+            def recur(current: Expr[Any], patternTypes: List[(TypeRepr, TypeRepr)]): Expr[ResultType] =
+              patternTypes match
+                case Nil => current.asExprOf[ResultType]
+                  
+                case (source, target) :: tail => source.asType match
+                  case '[type sourceType <: Error; sourceType] => target.asType match
+                    case '[type targetType <: Error; targetType] =>
+                      val raises = Expr.summon[Raises[targetType]].getOrElse:
+                        fail(msg"there is no capability to raise a ${target.show} in this context")
+                      
+                      val raises2 = '{
+                        $raises.contraMap[sourceType] { error => $handlers(error).asInstanceOf[targetType] }
+                      }
+                      
+                      recur('{${current.asExprOf[Raises[sourceType] ?=> Any]}(using ${raises2})}, tail)
   
-  value match
-    case Left(error)  => abort[SuccessType, AggregateError[ErrorType]](error)
-    case Right(value) => value
-
-def capture
-    [ErrorType <: Error]
-    (using DummyImplicit)
-    [SuccessType]
-    (block: RaisesErrorResult[ErrorType, SuccessType] ?=> SuccessType)
-    (using raise: Raises[UnexpectedSuccessError[SuccessType]])
-    : ErrorType =
-  val value: Either[ErrorType, SuccessType] = boundary: label ?=>
-    Right(block(using RaisesErrorResult(label)))
-  
-  value match
-    case Left(error)  => error
-    case Right(value) => abort(UnexpectedSuccessError(value))
-
-def over
-    [ErrorType <: Error]
-    (using DummyImplicit)
-    [SuccessType]
-    (block: ReturnMitigated[ErrorType, SuccessType] ?=> SuccessType)
-    : Mitigated[SuccessType, ErrorType] =
-  boundary: label ?=>
-    Mitigated.Success(block(using ReturnMitigated[ErrorType, SuccessType](label)))
-
-def failCompilation
-    [ErrorType <: Error]
-    (using Quotes)
-    [SuccessType]
-    (block: RaisesCompileFailure[ErrorType, SuccessType] ?=> SuccessType)
-    : SuccessType =
-  given RaisesCompileFailure[ErrorType, SuccessType]()
-  block
-
-def unsafely[ResultType](block: CanThrow[Exception] ?=> ResultType): ResultType =
-  block(using unsafeExceptions.canThrowAny)
-
-case class AggregateError[+ErrorType <: Error](errors: List[ErrorType])
-extends Error(Communicable.listMessage.message(errors.map(_.message)))
-
-case class UnexpectedSuccessError[ResultType](result: ResultType)
-extends Error(msg"the expression was expected to fail, but succeeded")
-
-package errorHandlers:
-  given throwUnsafely[SuccessType]: RaisesThrow[Error, SuccessType] =
-    RaisesThrow()(using unsafeExceptions.canThrowAny)
-
-infix type raises[SuccessType, ErrorType <: Error] = Raises[ErrorType] ?=> SuccessType
-
-trait Mitigation[-InputErrorTypes <: Error]:
-  def handle[SuccessType](mitigated: Mitigated[SuccessType, InputErrorTypes]): SuccessType
-
-// transparent inline def mitigate(inline handler: PartialFunction[Error, Error]): Mitigation[Nothing] =
-//   ${Perforate.mitigate('handler)}
-
-enum Mitigated[+SuccessType, +ErrorType <: Error]:
-  case Success(value: SuccessType)
-  case Failure(value: ErrorType)
-
-  def handle(block: PartialFunction[ErrorType, Error]): Mitigated[SuccessType, Error] = this match
-    case Success(value) => Success(value)
-    case Failure(value) => Failure(if block.isDefinedAt(value) then block(value) else value)
-
-  transparent inline def get: SuccessType raises ErrorType = this match
-    case Success(value) => value
-    case Failure(error) => abort(error)
+            recur('block, patternTypes)
+          }
+      }
