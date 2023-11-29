@@ -19,6 +19,8 @@ package perforate
 import fulminate.*
 import rudiments.*
 
+import scala.compiletime.*
+
 import scala.quoted.*
 
 //import language.experimental.captureChecking
@@ -73,7 +75,7 @@ object Perforate:
       case Alternatives(patterns) => patterns.flatMap(patternType)
       
       case TypedOrTest(Unapply(Select(target, method), _, _), typeTree) =>
-        target.tpe.typeSymbol.methodMember(method).head.info match
+        target.tpe.typeSymbol.methodMember(method).head.info.asMatchable match
           case MethodType(_, _, unapplyType) =>
             if exhaustive(pattern, typeTree.tpe) then List(typeTree.tpe) else Nil
           case _ =>
@@ -86,7 +88,7 @@ object Perforate:
       case Inlined(_, _, Block(List(defDef), term)) => defDef match
         case DefDef(ident, scrutineeType, returnType, Some(Match(matchId, caseDefs))) => caseDefs.flatMap:
           case CaseDef(pattern, None, rhs) =>
-            rhs.asExpr match
+            (rhs.asExpr: @unchecked) match
               case '{$rhs: rhsType} => patternType(pattern).map((_, TypeRepr.of[rhsType]))
           case _ => Nil
         case _ =>
@@ -94,15 +96,18 @@ object Perforate:
       case _ =>
         Nil
     
-    val raiseTypes = patternTypes.map(_(0)).map(_.asType).map:
-      case '[type errorType <: Error; errorType] => TypeRepr.of[Raises[errorType]]
+    val raiseTypes = patternTypes.map(_(0)).map(_.asType).map: patternType =>
+      (patternType: @unchecked) match
+        case '[type errorType <: Error; errorType] => TypeRepr.of[Raises[errorType]]
     
-    TypeLambda(List("ResultType"), _ => List(TypeBounds.empty), lambda =>
+    val typeLambda = TypeLambda(List("ResultType"), _ => List(TypeBounds.empty), lambda =>
       def recur(raiseTypes: List[TypeRepr]): TypeRepr = raiseTypes match
         case Nil => lambda.param(0)
         case head :: tail => AppliedType(defn.FunctionClass(1, true).typeRef, List(head, recur(tail)))
       recur(raiseTypes)
-    ).asType match
+    )
+    
+    (typeLambda.asType: @unchecked) match
       case '[type contextType[+_]; contextType] => '{
         new Mitigator[ErrorType]:
           type Context[+ResultType] = contextType[ResultType]
@@ -112,8 +117,8 @@ object Perforate:
               patternTypes match
                 case Nil => current.asExprOf[ResultType]
                   
-                case (source, target) :: tail => source.asType match
-                  case '[type sourceType <: Error; sourceType] => target.asType match
+                case (source, target) :: tail => (source.asType: @unchecked) match
+                  case '[type sourceType <: Error; sourceType] => (target.asType: @unchecked) match
                     case '[type targetType <: Error; targetType] =>
                       val raises = Expr.summon[Raises[targetType]].getOrElse:
                         fail(msg"there is no capability to raise a ${target.show} in this context")
