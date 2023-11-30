@@ -1,13 +1,16 @@
 #!/bin/bash
 
-declare portFile initFile ttystate script waitFile tmpPipe javaVersion dataHomeDir arch os data stderr
+declare portFile initFile ttystate script waitFile tmpPipe javaVersion dataHomeDir data stderr
 declare -i pid port version buildId stdoutPid continue pipePid argCount launchPid payloadSize jarSize
 declare -a args signals sttyOptions
 
 # The TTY settings to use for terminal input
 sttyOptions=(intr undef -echo icanon raw opost)
 
-name="$(basename $0)"
+# The set of signals which should be captured and forwarded to the JVM process
+signals=(INT WINCH TERM)
+
+name="$(basename "$0")"
 baseDir="${XDG_RUNTIME_DIR:-$HOME/.local/state}/$name"
 dataHomeDir="${XDG_DATA_HOME:-$HOME/.local/share}"
 portFile="$baseDir/port"
@@ -19,8 +22,6 @@ javaVersion="21"
 javaHome="$dataHomeDir/java/$javaVersion"
 continue=1
 
-# The set of signals which should be captured and forwarded to the JVM process
-signals=(INT WINCH TERM)
 
 pid=$$
 args=("$@")
@@ -55,10 +56,12 @@ launch() {
 }
 
 handle() {
+  # shellcheck disable=SC2317
   case "$1" in
     TERM) continue=0 ;;
   esac
-  printf "s\n%s\n%s\n" "$pid" "$1" >/dev/tcp/localhost/$port
+  # shellcheck disable=SC2317
+  printf "s\n%s\n%s\n" "$pid" "$1" >"/dev/tcp/localhost/$port"
 }
 
 extract() {
@@ -125,6 +128,7 @@ stdoutPid=$!
 cat <&7 &
 pipePid=$!
 
+# shellcheck disable=SC2064
 for signal in "${signals[@]}"
 do trap "handle $signal" "$signal"
 done
