@@ -108,7 +108,8 @@ object Installer:
 
         Log.info(t"Writing to ${installFile.debug}")
         installFile.mm: file =>
-          (stream.take(prefixSize) ++ stream.drop(fileSize - jarSize)).writeTo(file)
+          if prefixSize > 0.b then (stream.take(prefixSize) ++ stream.drop(fileSize - jarSize)).writeTo(file)
+          else stream.writeTo(file)
           file.executable() = true
           Result.Installed(command, file.path.show)
         .or:
