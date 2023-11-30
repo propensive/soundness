@@ -1,10 +1,12 @@
 package feudalism
 
+import scala.reflect.*
+
 import language.experimental.captureChecking
 
-class Ref[ValueType](get: ValueType):
-  def apply(): ValueType = get
-  def copy(): ValueType^{this} = get
+class MutexRef[ValueType](value: ValueType, makeSnapshot: ValueType => ValueType):
+  def apply(): ValueType = value
+  def snapshot(): ValueType = makeSnapshot(value)
 
 class Mutex[ValueType](initial: ValueType):
   private var count: Int = 0
@@ -13,14 +15,14 @@ class Mutex[ValueType](initial: ValueType):
   def read
       [ResultType, ImmutableType]
       (using immutable: Immutable[ValueType, ImmutableType])
-      (fn: (ref: Ref[ImmutableType]^) => ResultType)
-      : ResultType^{fn*} =
+      (fn: (ref: MutexRef[ImmutableType]) => ResultType)
+      : ResultType =
 
     synchronized:
       while count == -1 do wait()
       count += 1
     
-    val result = fn(Ref(immutable(value)))
+    val result = fn(MutexRef(immutable.make(value), immutable.snapshot(_)))
     
     synchronized:
       count -= 1
@@ -51,14 +53,20 @@ class Mutex[ValueType](initial: ValueType):
       notify()
 
 trait Immutable[MutableType, ImmutableType]:
-  def apply(ref: MutableType): ImmutableType
+  def snapshot(ref: ImmutableType): ImmutableType = ref
+  def make(ref: MutableType): ImmutableType
 
 object Immutable:
-  given [ElementType]: Immutable[Array[ElementType], IArray[ElementType]] with
-    def apply(ref: Array[ElementType]): IArray[ElementType] = ref.asInstanceOf[IArray[ElementType]]
+  given array[ElementType: ClassTag]: Immutable[Array[ElementType], IArray[ElementType]] with
+    def make(value: Array[ElementType]): IArray[ElementType] = value.asInstanceOf[IArray[ElementType]]
+    
+    override def snapshot(value: IArray[ElementType]): IArray[ElementType] =
+      val array = new Array[ElementType](value.length)
+      System.arraycopy(value, 0, array, 0, value.length)
+      array.asInstanceOf[IArray[ElementType]]
   
-  given Immutable[StringBuilder, String] with
-    def apply(ref: StringBuilder): String = ref.toString
+  given stringBuilder: Immutable[StringBuilder, String] with
+    def make(value: StringBuilder): String = value.toString
   
-  given [ValueType](using DummyImplicit): Immutable[ValueType, ValueType] with
-    def apply(ref: ValueType): ValueType = ref
+  given any[ValueType](using DummyImplicit): Immutable[ValueType, ValueType] with
+    def make(value: ValueType): ValueType = value
