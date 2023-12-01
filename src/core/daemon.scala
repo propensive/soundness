@@ -56,7 +56,7 @@ enum CliInput:
 
 package daemonConfig:
   given doNotSupportStderr: StderrSupport = () => false
-  given supportStderr: StderrSupport = () => false
+  given supportStderr: StderrSupport = () => true
 
 trait StderrSupport:
   def apply(): Boolean
@@ -64,7 +64,7 @@ trait StderrSupport:
 case class ClientConnection
     [BusType <: Matchable]
     (pid: Pid, async: Async[Unit], signals: Funnel[Signal], terminate: Promise[Unit], close: () => Unit,
-        exitPromise: Promise[ExitStatus], bus: Funnel[BusType]):
+        exitPromise: Promise[ExitStatus], bus: Funnel[BusType], stderr: Promise[ji.OutputStream]):
   def receive(message: BusType): Unit = bus.put(message)
 
 class LazyEnvironment(variables: List[Text]) extends Environment:
@@ -122,6 +122,10 @@ def daemon[BusType <: Matchable]
       buffer
 
     val message: Maybe[DaemonEvent] = line() match
+      case t"e" =>
+        val pid: Pid = line().decodeAs[Pid]
+        DaemonEvent.Stderr(pid)
+
       case t"s" =>
         val pid: Pid = line().decodeAs[Pid]
         val signal: Signal = line().decodeAs[Signal]
@@ -162,6 +166,10 @@ def daemon[BusType <: Matchable]
         socket.close()
         clients -= pid
         if terminatePid() == pid then termination
+      
+      case DaemonEvent.Stderr(pid) =>
+        Log.fine(t"Received STDERR connection request from $pid")
+        clients(pid).stderr.offer(socket.getOutputStream.nn)
 
       case DaemonEvent.Init(pid, directory, scriptName, shellInput, textArguments, env) =>
         Log.envelop(pid):
@@ -170,9 +178,18 @@ def daemon[BusType <: Matchable]
           val exitPromise: Promise[ExitStatus] = Promise()
           val signalFunnel: Funnel[Signal] = Funnel()
           val busFunnel: Funnel[BusType] = Funnel()
+          val stderrPromise: Promise[ji.OutputStream] = Promise()
+
+          val lazyStderr: ji.OutputStream = new ji.OutputStream():
+            private lazy val wrapped = stderrPromise.await()
+            def write(i: Int): Unit = wrapped.write(i)
+            override def write(bytes: Array[Byte]): Unit = wrapped.write(bytes)
+            
+            override def write(bytes: Array[Byte], offset: Int, length: Int): Unit =
+              wrapped.write(bytes, offset, length)
   
           val stdio: Stdio =
-            Stdio(ji.PrintStream(socket.getOutputStream.nn), ji.PrintStream(socket.getOutputStream.nn), in)
+            Stdio(ji.PrintStream(socket.getOutputStream.nn), ji.PrintStream(lazyStderr), in)
           
           def deliver(sourcePid: Pid, message: BusType): Unit = clients.foreach: (pid, client) =>
             if sourcePid != pid then client.receive(message)
@@ -208,7 +225,7 @@ def daemon[BusType <: Matchable]
               Log.fine(t"Closed connection to ${pid.value}")
         
           clients(pid) = ClientConnection[BusType](pid, async, signalFunnel, promise, () => socket.close(),
-              exitPromise, busFunnel)
+              exitPromise, busFunnel, stderrPromise)
 
   application(using executives.direct(using unhandledErrors.silent))(Nil):
     import stdioSources.jvm
@@ -261,7 +278,9 @@ enum DaemonEvent:
   case Init(pid: Pid, work: Text, script: Text, cliInput: CliInput, arguments: List[Text], environment: List[Text])
   case Trap(pid: Pid, signal: Signal)
   case Exit(pid: Pid)
+  case Stderr(pid: Pid)
 
 def service[BusType <: Matchable](using service: DaemonService[BusType]): DaemonService[BusType] = service
 
 given Realm: Realm = realm"spectral"
+

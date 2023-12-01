@@ -1,7 +1,7 @@
 #!/bin/bash
 
 declare portFile initFile ttystate script waitFile tmpPipe javaVersion dataHomeDir data stderr
-declare -i pid port version buildId stdoutPid continue pipePid argCount launchPid payloadSize jarSize
+declare -i pid port version buildId stdoutPid stderrPid continue pipePid argCount launchPid payloadSize jarSize
 declare -a args signals sttyOptions
 
 # The TTY settings to use for terminal input
@@ -81,10 +81,6 @@ terminate() {
   exit "$(cat <&6)"
 }
 
-connectStderr() {
-  printf "e\n%s" "$pid"
-}
-
 test -t 0 && ttystate="$(stty -g)"
 mkdir -p "$baseDir"
 backOut
@@ -114,7 +110,6 @@ tmpPipe="$(mktemp -u)"
 mkfifo -m 600 "$tmpPipe" && exec 3<> "$tmpPipe" && rm "$tmpPipe"
 test -t 0 && stty "${sttyOptions[@]}" > /dev/null 2>&1
 exec 7<> /dev/tcp/localhost/$port
-
 test -t 0 && printf "i\nt\n" >&7 || printf "i\np\n" >&7
 printf "%s\n%s\n" "$pid" "$script" >&7
 pwd >&7
@@ -128,6 +123,14 @@ stdoutPid=$!
 cat <&7 &
 pipePid=$!
 
+if [ "$stderr" = "1" ]
+then
+  exec 5<> /dev/tcp/localhost/$port
+  printf "e\n%s\n" "$pid" >&5
+  cat >&2 <&5 &
+  stderrPid=$1
+fi
+
 # shellcheck disable=SC2064
 for signal in "${signals[@]}"
 do trap "handle $signal" "$signal"
@@ -140,6 +143,9 @@ do
 done
 
 test -t 0 && stty "$ttystate"
-kill $launchPid $stdoutPid 2> /dev/null
+kill $launchPid 2> /dev/null
+kill $stdoutPid 2> /dev/null
+kill $stderrPid 2> /dev/null
 terminate
 exit 1
+
