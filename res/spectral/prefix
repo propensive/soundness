@@ -51,8 +51,16 @@ launch() {
   launchPid=$!
   flock "$initFile" sh -c "test -f \"$portFile\" || cat \"$waitFile\"" > /dev/null 2>&1 || abort
   rm -f "$initFile"
+  setup
+}
+
+setup() {
   data="$(<"$portFile")"
   port=${data%% *}
+  data2="${data#* }"
+  stderr=${data2#* }
+  version=${data2% *}
+  buildId=%%BUILDID%%
 }
 
 handle() {
@@ -89,12 +97,7 @@ flock -n "$portFile" rm "$portFile"
 
 if [ -f "$portFile" ]
 then
-  data="$(<"$portFile")"
-  port=${data%% *}
-  data2="${data#* }"
-  stderr=${data2#* }
-  version=${data2% *}
-  buildId=%%BUILDID%%
+  setup
   
   if [ $version -ne $buildId ]
   then
@@ -128,7 +131,7 @@ then
   exec 5<> /dev/tcp/localhost/$port
   printf "e\n%s\n" "$pid" >&5
   cat >&2 <&5 &
-  stderrPid=$1
+  stderrPid=$!
 fi
 
 # shellcheck disable=SC2064

@@ -180,13 +180,15 @@ def daemon[BusType <: Matchable]
           val busFunnel: Funnel[BusType] = Funnel()
           val stderrPromise: Promise[ji.OutputStream] = Promise()
 
-          val lazyStderr: ji.OutputStream = new ji.OutputStream():
-            private lazy val wrapped = stderrPromise.await()
-            def write(i: Int): Unit = wrapped.write(i)
-            override def write(bytes: Array[Byte]): Unit = wrapped.write(bytes)
-            
-            override def write(bytes: Array[Byte], offset: Int, length: Int): Unit =
-              wrapped.write(bytes, offset, length)
+          val lazyStderr: ji.OutputStream =
+            if !stderrSupport() then socket.getOutputStream.nn
+            else new ji.OutputStream():
+              private lazy val wrapped = stderrPromise.await()
+              def write(i: Int): Unit = wrapped.write(i)
+              override def write(bytes: Array[Byte]): Unit = wrapped.write(bytes)
+              
+              override def write(bytes: Array[Byte], offset: Int, length: Int): Unit =
+                wrapped.write(bytes, offset, length)
   
           val stdio: Stdio =
             Stdio(ji.PrintStream(socket.getOutputStream.nn), ji.PrintStream(lazyStderr), in)
@@ -283,4 +285,3 @@ enum DaemonEvent:
 def service[BusType <: Matchable](using service: DaemonService[BusType]): DaemonService[BusType] = service
 
 given Realm: Realm = realm"spectral"
-
