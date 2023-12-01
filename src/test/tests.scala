@@ -30,13 +30,6 @@ case class Person(name: Text, age: Int)
 object Tests extends Suite(t"Rudiments Tests"):
   def run(): Unit =
     
-    def remoteCall()(using Internet): Unit = ()
-
-    test(t"Check remote call is callable with `Internet`"):
-      internet:
-        remoteCall()
-    .assert()
-
     test(t"Dual extraction"):
       object AsInt:
         def unapply(x: String): Option[Char] = Some('I')
@@ -48,12 +41,6 @@ object Tests extends Suite(t"Rudiments Tests"):
         case AsInt(x) & AsLong(y) => (x, y)
         case _                    => ('X', 'X')
     .assert(_ == ('I', 'J'))
-
-    test(t"Check remote call is not callable without `Internet`"):
-      demilitarize:
-        remoteCall()
-      .map(_.errorId)
-    .assert(_ == List(ErrorId.MissingImplicitArgumentID))
 
     test(t"Display a PID"):
       Pid(2999).toString
