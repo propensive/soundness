@@ -24,6 +24,7 @@ import galilei.*, filesystemOptions.{doNotCreateNonexistent, dereferenceSymlinks
 import gastronomy.*
 import gossamer.*
 import guillotine.*
+import nettlesome.*
 import kaleidoscope.*
 import rudiments.*
 import serpentine.*, hierarchies.unix

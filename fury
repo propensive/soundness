@@ -3,6 +3,7 @@
 target nonagenarian/test
 
 repo propensive/probably
+repo propensive/nettlesome
 repo propensive/gastronomy
 repo propensive/larceny
 repo propensive/guillotine
@@ -13,7 +14,7 @@ project nonagenarian
   module core
     compiler  scala
     sources   src/core
-    include   guillotine/core rudiments/core galilei/core ambience/core gastronomy/core
+    include   guillotine/core rudiments/core galilei/core ambience/core gastronomy/core nettlesome/core
 
   module test
     compiler  scala
