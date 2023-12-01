@@ -29,6 +29,21 @@ import errorHandlers.throwUnsafely
 
 object Tests extends Suite(t"Nettlesome tests"):
   def run(): Unit =
+    suite(t"Internet tests"):
+      def remoteCall()(using Internet): Unit = ()
+
+      test(t"Check remote call is callable with `Internet`"):
+        internet(true):
+          remoteCall()
+      .assert()
+    
+      test(t"Check remote call is not callable without `Internet`"):
+        demilitarize:
+          remoteCall()
+        .map(_.errorId)
+      .assert(_ == List(ErrorId.MissingImplicitArgumentID))
+
+
     suite(t"IPv4 tests"):
       test(t"Parse in IPv4 address"):
         Ipv4.parse(t"1.2.3.4")
