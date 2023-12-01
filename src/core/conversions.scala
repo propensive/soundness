@@ -106,14 +106,14 @@ object Unapply:
     text =>
       import scala.reflect.Selectable.reflectiveSelectable
       mirror match
-        case mirror: { def valueOf(name: String): EnumType } =>
+        case mirror: { def valueOf(name: String): EnumType } @unchecked =>
           try Some(mirror.valueOf(text.s)) catch case error: Exception => None
   
   given fromOrdinal[EnumType <: reflect.Enum](using mirror: Mirror.SumOf[EnumType]): Unapply[Int, EnumType] =
     ordinal =>
       import scala.reflect.Selectable.reflectiveSelectable
       mirror match
-        case mirror: { def fromOrdinal(ordinal: Int): EnumType } =>
+        case mirror: { def fromOrdinal(ordinal: Int): EnumType } @unchecked =>
           try Some(mirror.fromOrdinal(ordinal)) catch case error: Exception => None
 
 trait Unapply[-ValueType, +ResultType]:
