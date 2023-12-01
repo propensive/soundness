@@ -22,10 +22,10 @@ import perforate.*
 
 //import language.experimental.captureChecking
 
-package workingDirectory:
+package workingDirectories:
   given jvm(using Raises[SystemPropertyError], SystemProperties): WorkingDirectory =
     WorkingDirectory(Properties.user.dir[Text]())
 
-package homeDirectory:
+package homeDirectories:
   given jvm(using Raises[SystemPropertyError], SystemProperties): HomeDirectory =
     HomeDirectory(Properties.user.home[Text]())
