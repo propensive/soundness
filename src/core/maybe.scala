@@ -30,6 +30,7 @@ case class UnsetValueError() extends Error(Message("the value was not set".tt))
 
 extension [ValueType](maybe: Maybe[ValueType])
   inline def unset: Boolean = maybe == Unset
+  inline def present: Boolean = maybe != Unset
   inline def or(inline value: => ValueType): ValueType = if unset then value else maybe.asInstanceOf[ValueType]
   inline def vouch(using Unsafe): ValueType = or(throw Mistake(msg"a value was vouched but was unset"))
   
