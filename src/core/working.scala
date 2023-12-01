@@ -37,15 +37,19 @@ case class HomeDirectory(text: Text):
   def path[PathType: SpecificPath]: PathType = SpecificPath(text)
 
 package workingDirectories:
-  given default: WorkingDirectory =
-    WorkingDirectory(Maybe(System.getProperty("user.dir")).mm(_.tt))
+  given default: WorkingDirectory = WorkingDirectory(Maybe(System.getProperty("user.dir")).mm(_.tt))
 
 package homeDirectories:
-  given default: HomeDirectory =
-    HomeDirectory(System.getProperty("user.home").nn.tt)
+  given default: HomeDirectory = HomeDirectory(System.getProperty("user.home").nn.tt)
 
 def workingDirectory
     [PathType]
     (using directory: WorkingDirectory, specificPath: SpecificPath[PathType])
+    : Maybe[PathType^{specificPath}] =
+  directory.path[PathType]
+
+def homeDirectory
+    [PathType]
+    (using directory: HomeDirectory, specificPath: SpecificPath[PathType])
     : Maybe[PathType^{specificPath}] =
   directory.path[PathType]
