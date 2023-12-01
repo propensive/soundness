@@ -18,6 +18,8 @@ package rudiments
 
 import anticipation.*
 
+import scala.deriving.*
+
 import language.experimental.captureChecking
 
 trait DecimalConverter:
@@ -99,6 +101,20 @@ object Unapply:
   given doubleInt: Unapply[Double, Int] = v => if v.toInt.toDouble == v then Some(v.toInt) else None
   given doubleLong: Unapply[Double, Long] = v => if v.toLong.toDouble == v then Some(v.toLong) else None
   given doubleFloat: Unapply[Double, Float] = v => if v.toFloat.toDouble == v then Some(v.toFloat) else None
+
+  given valueOf[EnumType <: reflect.Enum](using mirror: Mirror.SumOf[EnumType]): Unapply[Text, EnumType] =
+    text =>
+      import scala.reflect.Selectable.reflectiveSelectable
+      mirror match
+        case mirror: { def valueOf(name: String): EnumType } =>
+          try Some(mirror.valueOf(text.s)) catch case error: Exception => None
+  
+  given fromOrdinal[EnumType <: reflect.Enum](using mirror: Mirror.SumOf[EnumType]): Unapply[Int, EnumType] =
+    ordinal =>
+      import scala.reflect.Selectable.reflectiveSelectable
+      mirror match
+        case mirror: { def fromOrdinal(ordinal: Int): EnumType } =>
+          try Some(mirror.fromOrdinal(ordinal)) catch case error: Exception => None
 
 trait Unapply[-ValueType, +ResultType]:
   def unapply(value: ValueType): Option[ResultType]
