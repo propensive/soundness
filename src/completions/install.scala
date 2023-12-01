@@ -65,52 +65,63 @@ object TabCompletionsInstallation:
     case ShellNotInstalled(shell: Shell)
 
 object TabCompletions:
-  def install(force: Boolean = false)
+  def install
+      (force: Boolean = false)
       (using service: ShellContext)
-      (using WorkingDirectory, Log[Text], Raises[ExecError], Raises[PathError], Raises[IoError],
-          Raises[StreamCutError], Raises[OverwriteError], Effectful)
-      : TabCompletionsInstallation =
-    val scriptPath = sh"sh -c 'command -v ${service.scriptName}'".exec[Text]()
-    val command: Text = service.scriptName
-    
-    if !force && safely(scriptPath.decodeAs[Path]) != service.script
-    then TabCompletionsInstallation.CommandNotOnPath(service.scriptName)
-    else
-      val zsh: TabCompletionsInstallation.InstallResult = 
-        if sh"sh -c 'command -v zsh'".exec[ExitStatus]() != ExitStatus.Ok
-        then TabCompletionsInstallation.InstallResult.ShellNotInstalled(Shell.Zsh)
-        else
-          val dirNames = sh"zsh -c 'source ~/.zshrc 2> /dev/null; printf %s, $$fpath'".exec[Text]().cut(t",")
-          val dirs = dirNames.filter(_.trim != t"").map { dir => safely(dir.decodeAs[Path]) }.vouched
-          install(Shell.Zsh, command, PathName(t"_$command"), dirs)
-        
-      val bash: TabCompletionsInstallation.InstallResult =
-        if sh"sh -c 'command -v bash'".exec[ExitStatus]() != ExitStatus.Ok
-        then TabCompletionsInstallation.InstallResult.ShellNotInstalled(Shell.Bash)
-        else install(Shell.Bash, command, PathName(command), List(Xdg.dataDirs.last / p"bash-completion" /
-            p"completions", Xdg.dataHome / p"bash-completion" / p"completions"))
-
-      val fish: TabCompletionsInstallation.InstallResult =
-        if sh"sh -c 'command -v fish'".exec[ExitStatus]() != ExitStatus.Ok
-        then TabCompletionsInstallation.InstallResult.ShellNotInstalled(Shell.Fish)
-        else install(Shell.Fish, command, PathName(t"$command.fish"), List(Xdg.dataDirs.last / p"fish" /
-            p"vendor_completions.d", Xdg.configHome / p"fish" / p"completions"))
+      (using WorkingDirectory, Log[Text], Effectful)
+      : TabCompletionsInstallation raises InstallError =
+    mitigate:
+      case ExecError(_, _, _) => InstallError(InstallError.Reason.Environment)
+      case IoError(_)         => InstallError(InstallError.Reason.Io)
+      case PathError(_)       => InstallError(InstallError.Reason.Environment)
+      case StreamCutError(_)  => InstallError(InstallError.Reason.Io)
+      case OverwriteError(_)  => InstallError(InstallError.Reason.Io)
+    .within:
+      val scriptPath = sh"sh -c 'command -v ${service.scriptName}'".exec[Text]()
+      val command: Text = service.scriptName
       
-      TabCompletionsInstallation.Shells(zsh, bash, fish)
+      if !force && safely(scriptPath.decodeAs[Path]) != service.script
+      then TabCompletionsInstallation.CommandNotOnPath(service.scriptName)
+      else
+        val zsh: TabCompletionsInstallation.InstallResult = 
+          if sh"sh -c 'command -v zsh'".exec[ExitStatus]() != ExitStatus.Ok
+          then TabCompletionsInstallation.InstallResult.ShellNotInstalled(Shell.Zsh)
+          else
+            val dirNames = sh"zsh -c 'source ~/.zshrc 2> /dev/null; printf %s, $$fpath'".exec[Text]().cut(t",")
+            val dirs = dirNames.filter(_.trim != t"").map { dir => safely(dir.decodeAs[Path]) }.vouched
+            install(Shell.Zsh, command, PathName(t"_$command"), dirs)
+          
+        val bash: TabCompletionsInstallation.InstallResult =
+          if sh"sh -c 'command -v bash'".exec[ExitStatus]() != ExitStatus.Ok
+          then TabCompletionsInstallation.InstallResult.ShellNotInstalled(Shell.Bash)
+          else install(Shell.Bash, command, PathName(command), List(Xdg.dataDirs.last / p"bash-completion" /
+              p"completions", Xdg.dataHome / p"bash-completion" / p"completions"))
+
+        val fish: TabCompletionsInstallation.InstallResult =
+          if sh"sh -c 'command -v fish'".exec[ExitStatus]() != ExitStatus.Ok
+          then TabCompletionsInstallation.InstallResult.ShellNotInstalled(Shell.Fish)
+          else install(Shell.Fish, command, PathName(t"$command.fish"), List(Xdg.dataDirs.last / p"fish" /
+              p"vendor_completions.d", Xdg.configHome / p"fish" / p"completions"))
+        
+        TabCompletionsInstallation.Shells(zsh, bash, fish)
 
   def install
       (shell: Shell, command: Text, scriptName: PathName[GeneralForbidden], dirs: List[Path])
-      (using Raises[PathError], Raises[IoError], Raises[OverwriteError], Raises[StreamCutError], Effectful)
-      : TabCompletionsInstallation.InstallResult =
-
-    dirs.find { dir => dir.exists() && dir.as[Directory].writable() }.map: dir =>
-      val path = dir / scriptName
-      if path.exists()
-      then TabCompletionsInstallation.InstallResult.AlreadyInstalled(shell, path.show)
-      else
-        script(shell, command).sysBytes.writeTo(path.make[File]())
-        TabCompletionsInstallation.InstallResult.Installed(shell, path.show)
-    .getOrElse(TabCompletionsInstallation.InstallResult.NoWritableLocation(shell))
+      (using Effectful)
+      : TabCompletionsInstallation.InstallResult raises InstallError =
+    mitigate:
+      case StreamCutError(_) => InstallError(InstallError.Reason.Io)
+      case OverwriteError(_) => InstallError(InstallError.Reason.Io)
+      case IoError(_)        => InstallError(InstallError.Reason.Io)
+    .within:
+      dirs.find { dir => dir.exists() && dir.as[Directory].writable() }.map: dir =>
+        val path = dir / scriptName
+        if path.exists()
+        then TabCompletionsInstallation.InstallResult.AlreadyInstalled(shell, path.show)
+        else
+          script(shell, command).sysBytes.writeTo(path.make[File]())
+          TabCompletionsInstallation.InstallResult.Installed(shell, path.show)
+      .getOrElse(TabCompletionsInstallation.InstallResult.NoWritableLocation(shell))
 
   // def messages(shell: Shell, global: Boolean): List[Message] =
   //   if shell == Shell.Zsh && !global
