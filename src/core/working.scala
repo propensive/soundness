@@ -43,3 +43,9 @@ package workingDirectories:
 package homeDirectories:
   given default: HomeDirectory =
     HomeDirectory(System.getProperty("user.home").nn.tt)
+
+def workingDirectory
+    [PathType]
+    (using directory: WorkingDirectory, specificPath: SpecificPath[PathType])
+    : Maybe[PathType^{specificPath}] =
+  directory.path[PathType]
