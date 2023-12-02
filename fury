@@ -1,0 +1,8 @@
+target yossarian/pty
+
+repo propensive/probably
+
+project yossarian
+  module core
+    sources  src/core
+    include  iridescence/core perforate/core kaleidoscope/core
