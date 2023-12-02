@@ -38,6 +38,8 @@ object Pty:
 case class PtyEscapeError() extends Error(msg"an ANSI escape code was not handled")
 
 case class Pty(buffer0: ScreenBuffer, state0: PtyState, output: Funnel[Text]):
+  def stream: LazyList[Text] = output.stream
+
   def update(input: Text): Pty raises PtyEscapeError =
     val escBuffer = StringBuilder()
     val buffer: ScreenBuffer = buffer0.copy()
