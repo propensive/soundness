@@ -87,11 +87,21 @@ case class Pty(buffer0: ScreenBuffer, state0: PtyState):
       cursor.y = m - 1
     
     def ed(n: Int): Unit = n match
-      case 0 =>
-      case 1 =>
+      case 0 => for i <- cursor() until buffer.size do buffer.set(i, ' ', style)
+      case 1 => for i <- 0 until cursor() do buffer.set(i, ' ', style)
+      
       case 2 | 3 =>
+        for i <- 0 until buffer.size do buffer.set(i, ' ', style)
+        cursor() = 0
+      
+      case _ =>
+        raise(PtyEscapeError())(())
     
-    def el(n: Int): Unit = ()
+    def el(n: Int): Unit = n match
+      case 0 => for x <- cursor.x until buffer.width do buffer.set(x, cursor.y, ' ', style)
+      case 1 => for x <- 0 to cursor.x do buffer.set(x, cursor.y, ' ', style)
+      case 2 => for x <- 0 until buffer.width do buffer.set(x, cursor.y, ' ', style)
+      case _ => raise(PtyEscapeError())(())
 
     def title(text: Text): Unit = state = state.copy(title = text)
     def link(text: Text): Unit = ()
@@ -293,14 +303,18 @@ case class Pty(buffer0: ScreenBuffer, state0: PtyState):
           
           case '\u0027' =>
             proceed(Osc2)
+          
+          case char =>
+            escBuffer.append(char)
+            proceed(Osc)
         
         case Osc2 => current match
           case '\\' =>
             osc(escBuffer.text.tap(escBuffer.clear().waive))
             proceed(Normal)
           
-          case ch =>
-            raise(PtyEscapeError())(())
+          case char =>
+            escBuffer.append(char)
             proceed(Normal)
         
         case Csi => current match

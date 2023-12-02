@@ -51,6 +51,10 @@ object Yossarian:
       buffer(1)(offset(x, y)) = style
       buffer(2)(offset(x, y)) = char
 
+    def set(cursor: Int, char: Char, style: Style): Unit =
+      buffer(1)(cursor) = style
+      buffer(2)(cursor) = char
+    
     def copy(): ScreenBuffer =
       val style = new Array[Style](buffer(0))
       System.arraycopy(buffer(1), 0, style, 0, style.length)
