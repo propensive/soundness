@@ -21,6 +21,7 @@ import gossamer.*
 import fulminate.*
 import perforate.*
 import rudiments.*
+import turbulence.*
 import kaleidoscope.*
 import iridescence.*
 
@@ -28,15 +29,15 @@ import scala.compiletime.*
 
 case class PtyState
     (cursor: Int = 0, savedCursor: Int = 0, style: Style = Style(), focusDetectionMode: Boolean = false,
-        bracketedPasteMode: Boolean = false, hideCursor: Boolean = false, title: Text = t"")
+        focus: Boolean = true, bracketedPasteMode: Boolean = false, hideCursor: Boolean = false,
+        title: Text = t"")
 
 object Pty:
-  def apply(width: Int, height: Int): Pty =
-    Pty(ScreenBuffer(width, height), PtyState())
+  def apply(width: Int, height: Int): Pty = Pty(ScreenBuffer(width, height), PtyState(), Funnel())
 
 case class PtyEscapeError() extends Error(msg"an ANSI escape code was not handled")
 
-case class Pty(buffer0: ScreenBuffer, state0: PtyState):
+case class Pty(buffer0: ScreenBuffer, state0: PtyState, output: Funnel[Text]):
   def update(input: Text): Pty raises PtyEscapeError =
     val escBuffer = StringBuilder()
     val buffer: ScreenBuffer = buffer0.copy()
@@ -109,11 +110,12 @@ case class Pty(buffer0: ScreenBuffer, state0: PtyState):
     def su(n: Int): Unit = buffer.scroll(n)
     def sd(n: Int): Unit = buffer.scroll(-n)
     def hvp(n: Int, m: Int): Unit = cup(n, m)
-    def dsr(): Unit = ()
+    def dsr(): Unit = output.put(t"\e[${cursor.x + 1};${cursor.y + 1}s")
     def dectcem(state: Boolean): Unit = ()
     def scp(): Unit = state = state.copy(savedCursor = cursor())
     def rcp(): Unit = cursor() = state.savedCursor
-    def focus(boolean: Boolean): Unit = state.copy(focusDetectionMode = boolean)
+    def detectFocus(boolean: Boolean): Unit = state.copy(focusDetectionMode = boolean)
+    def focus(boolean: Boolean): Unit = state.copy(focus = boolean)
     def bcp(boolean: Boolean): Unit = state.copy(bracketedPasteMode = boolean)
     
     def osc(command: Text): Unit = command match
@@ -174,10 +176,12 @@ case class Pty(buffer0: ScreenBuffer, state0: PtyState):
       case (IntParam[0](6),     's') => scp()
       case (t"?25",             'h') => dectcem(true)
       case (t"?25",             'l') => dectcem(false)
-      case (t"?1004",           'h') => focus(true)
-      case (t"?1004",           'l') => focus(false)
+      case (t"?1004",           'h') => detectFocus(true)
+      case (t"?1004",           'l') => detectFocus(false)
       case (t"?2004",           'h') => bcp(true)
       case (t"?2004",           'l') => bcp(false)
+      case (t"",                'I') => focus(true)
+      case (t"",                'O') => focus(false)
       case _                         => raise(PtyEscapeError())(())
 
     // Uses the Ubuntu color palette
@@ -249,7 +253,8 @@ case class Pty(buffer0: ScreenBuffer, state0: PtyState):
 
         proceed(Normal)
 
-      if index >= input.length then Pty(buffer, state.copy(cursor = cursor(), style = style)) else
+      if index >= input.length then Pty(buffer, state.copy(cursor = cursor(), style = style), output = output)
+      else
        val current: Char = unsafely(input(index))
        context match
         case Normal => (current: @switch) match
