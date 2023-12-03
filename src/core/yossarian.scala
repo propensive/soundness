@@ -35,25 +35,20 @@ object Yossarian:
 
     def render: Text = buffer(2).grouped(width).map(String(_).tt).to(List).join(t"\n")
 
-    def scrollDown(n: Int): Unit =
-      val length = capacity - width*n
+    def scroll(n: Int): Unit =
+      val offset = math.abs(width*n)
+      val length = capacity - offset
+      val source = if n < 0 then 0 else offset
+      val destination = if n < 0 then offset else 0
       
-      System.arraycopy(buffer(1), 0, buffer(1), width*n, length)
-      System.arraycopy(buffer(2), 0, buffer(2), width*n, length)
+      System.arraycopy(buffer(1), source, buffer(1), destination, length)
+      System.arraycopy(buffer(2), source, buffer(2), destination, length)
       
-      for i <- 0 until width*n do
-        buffer(1)(i) = Style()
-        buffer(2)(i) = ' '
-    
-    def scrollUp(n: Int): Unit =
-      val length = capacity - width*n
+      val start = if n < 0 then 0 else length
       
-      System.arraycopy(buffer(1), width*n, buffer(1), 0, length)
-      System.arraycopy(buffer(2), width*n, buffer(2), 0, length)
-      
-      for i <- length until capacity do
-        buffer(1)(i) = Style()
-        buffer(2)(i) = ' '
+      for i <- 0 until offset do
+        buffer(1)(start + i) = Style()
+        buffer(2)(start + i) = ' '
     
     def set(x: Int, y: Int, char: Char, style: Style): Unit =
       buffer(1)(offset(x, y)) = style

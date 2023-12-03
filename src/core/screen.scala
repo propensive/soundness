@@ -36,18 +36,18 @@ object Pty:
   def apply(width: Int, height: Int): Pty = Pty(ScreenBuffer(width, height), PtyState(), Funnel())
 
   def stream(pty: Pty, in: LazyList[Text]): LazyList[Pty] raises PtyEscapeError = in match
-    case LazyList() => LazyList()
-    
     case head #:: tail =>
-      val pty2 = pty.update(head)
+      val pty2 = pty.consume(head)
       pty2 #:: stream(pty2, tail)
+    
+    case _ => LazyList()
 
 case class PtyEscapeError() extends Error(msg"an ANSI escape code was not handled")
 
 case class Pty(buffer: ScreenBuffer, state0: PtyState, output: Funnel[Text]):
   def stream: LazyList[Text] = output.stream
 
-  def update(input: Text): Pty raises PtyEscapeError =
+  def consume(input: Text): Pty raises PtyEscapeError =
     val escBuffer = StringBuilder()
     val buffer2: ScreenBuffer = buffer.copy()
     
@@ -116,8 +116,8 @@ case class Pty(buffer: ScreenBuffer, state0: PtyState, output: Funnel[Text]):
     def title(text: Text): Unit = state = state.copy(title = text)
     def link(text: Text): Unit = ()
 
-    def su(n: Int): Unit = buffer2.scrollUp(n)
-    def sd(n: Int): Unit = buffer2.scrollDown(n)
+    def su(n: Int): Unit = buffer2.scroll(n)
+    def sd(n: Int): Unit = buffer2.scroll(-n)
     def hvp(n: Int, m: Int): Unit = cup(n, m)
     def dsr(): Unit = output.put(t"\e[${cursor.x + 1};${cursor.y + 1}s")
     def dectcem(state: Boolean): Unit = ()
@@ -257,7 +257,7 @@ case class Pty(buffer: ScreenBuffer, state0: PtyState, output: Funnel[Text]):
         buffer2.set(cursor.x, cursor.y, char, style)
         cursor() += 1
         if cursor() == buffer2.capacity then
-          buffer2.scrollUp(1)
+          buffer2.scroll(1)
           cursor() -= buffer2.width
 
         proceed(Normal)
