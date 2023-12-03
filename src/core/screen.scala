@@ -35,23 +35,30 @@ case class PtyState
 object Pty:
   def apply(width: Int, height: Int): Pty = Pty(ScreenBuffer(width, height), PtyState(), Funnel())
 
+  def stream(pty: Pty, in: LazyList[Text]): LazyList[Pty] raises PtyEscapeError = in match
+    case LazyList() => LazyList()
+    
+    case head #:: tail =>
+      val pty2 = pty.update(head)
+      pty2 #:: stream(pty2, tail)
+
 case class PtyEscapeError() extends Error(msg"an ANSI escape code was not handled")
 
-case class Pty(buffer0: ScreenBuffer, state0: PtyState, output: Funnel[Text]):
+case class Pty(buffer: ScreenBuffer, state0: PtyState, output: Funnel[Text]):
   def stream: LazyList[Text] = output.stream
 
   def update(input: Text): Pty raises PtyEscapeError =
     val escBuffer = StringBuilder()
-    val buffer: ScreenBuffer = buffer0.copy()
+    val buffer2: ScreenBuffer = buffer.copy()
     
     object cursor:
       private var index: Int = state0.cursor
       def apply(): Int = index
       def update(value: Int): Unit = index = value
-      def x: Int = index%buffer.width
-      def y: Int = index/buffer.width
-      def x_=(x2: Int): Unit = index = y*buffer.width + x2.min(buffer.width - 1).max(0)
-      def y_=(y2: Int): Unit = index = y2.min(buffer.height - 1).max(0)*buffer.width + x
+      def x: Int = index%buffer2.width
+      def y: Int = index/buffer2.width
+      def x_=(x2: Int): Unit = index = y*buffer2.width + x2.min(buffer2.width - 1).max(0)
+      def y_=(y2: Int): Unit = index = y2.min(buffer2.height - 1).max(0)*buffer2.width + x
       
     var style = state0.style
     var state = state0
@@ -72,7 +79,7 @@ case class Pty(buffer0: ScreenBuffer, state0: PtyState, output: Funnel[Text]):
 
     def cuu(n: Int): Unit = cursor.x = cursor.y - n
     def cud(n: Int): Unit = cursor.x = cursor.y + n
-    def cuf(n: Int): Unit = cursor() = (cursor() + n).min(buffer.width*buffer.height - 1)
+    def cuf(n: Int): Unit = cursor() = (cursor() + n).min(buffer2.width*buffer2.height - 1)
     def cub(n: Int): Unit = cursor() = (cursor() - n).max(0)
     
     def cnl(n: Int): Unit =
@@ -90,27 +97,27 @@ case class Pty(buffer0: ScreenBuffer, state0: PtyState, output: Funnel[Text]):
       cursor.y = m - 1
     
     def ed(n: Int): Unit = n match
-      case 0 => for i <- cursor() until buffer.size do buffer.set(i, ' ', style)
-      case 1 => for i <- 0 until cursor() do buffer.set(i, ' ', style)
+      case 0 => for i <- cursor() until buffer2.capacity do buffer2.set(i, ' ', style)
+      case 1 => for i <- 0 until cursor() do buffer2.set(i, ' ', style)
       
       case 2 | 3 =>
-        for i <- 0 until buffer.size do buffer.set(i, ' ', style)
+        for i <- 0 until buffer2.capacity do buffer2.set(i, ' ', style)
         cursor() = 0
       
       case _ =>
         raise(PtyEscapeError())(())
     
     def el(n: Int): Unit = n match
-      case 0 => for x <- cursor.x until buffer.width do buffer.set(x, cursor.y, ' ', style)
-      case 1 => for x <- 0 to cursor.x do buffer.set(x, cursor.y, ' ', style)
-      case 2 => for x <- 0 until buffer.width do buffer.set(x, cursor.y, ' ', style)
+      case 0 => for x <- cursor.x until buffer2.width do buffer2.set(x, cursor.y, ' ', style)
+      case 1 => for x <- 0 to cursor.x do buffer2.set(x, cursor.y, ' ', style)
+      case 2 => for x <- 0 until buffer2.width do buffer2.set(x, cursor.y, ' ', style)
       case _ => raise(PtyEscapeError())(())
 
     def title(text: Text): Unit = state = state.copy(title = text)
     def link(text: Text): Unit = ()
 
-    def su(n: Int): Unit = buffer.scroll(n)
-    def sd(n: Int): Unit = buffer.scroll(-n)
+    def su(n: Int): Unit = buffer2.scrollUp(n)
+    def sd(n: Int): Unit = buffer2.scrollDown(n)
     def hvp(n: Int, m: Int): Unit = cup(n, m)
     def dsr(): Unit = output.put(t"\e[${cursor.x + 1};${cursor.y + 1}s")
     def dectcem(state: Boolean): Unit = ()
@@ -229,7 +236,7 @@ case class Pty(buffer0: ScreenBuffer, state0: PtyState, output: Funnel[Text]):
         recur(index + 1, context)
       
       inline def bs(): Pty =
-        buffer.set(cursor.x, cursor.y, ' ', buffer.style(cursor.x, cursor.y))
+        buffer2.set(cursor.x, cursor.y, ' ', buffer2.style(cursor.x, cursor.y))
         cursor() -= 1
         if cursor() < 0 then cursor() = 0
         proceed(Normal)
@@ -239,7 +246,7 @@ case class Pty(buffer0: ScreenBuffer, state0: PtyState, output: Funnel[Text]):
         ff()
       
       inline def ff(): Pty =
-        if cursor.y < buffer.height - 1 then cursor.y = cursor.y + 1 else su(1)
+        if cursor.y < buffer2.height - 1 then cursor.y = cursor.y + 1 else su(1)
         proceed(Normal)
       
       inline def cr(): Pty =
@@ -247,15 +254,15 @@ case class Pty(buffer0: ScreenBuffer, state0: PtyState, output: Funnel[Text]):
         proceed(Normal)
       
       inline def put(char: Char): Pty =
-        buffer.set(cursor.x, cursor.y, char, style)
+        buffer2.set(cursor.x, cursor.y, char, style)
         cursor() += 1
-        if cursor() == buffer.size then
-          buffer.scroll(1)
-          cursor() -= buffer.width
+        if cursor() == buffer2.capacity then
+          buffer2.scrollUp(1)
+          cursor() -= buffer2.width
 
         proceed(Normal)
 
-      if index >= input.length then Pty(buffer, state.copy(cursor = cursor(), style = style), output = output)
+      if index >= input.length then Pty(buffer2, state.copy(cursor = cursor(), style = style), output = output)
       else
        val current: Char = unsafely(input(index))
        context match

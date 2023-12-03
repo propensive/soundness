@@ -18,14 +18,10 @@ package yossarian
 
 import rudiments.*
 import iridescence.*
+import anticipation.*
+import gossamer.*
 
 object Yossarian:
-  // Bit packing
-  //  0-23 Foreground color
-  // 24-47 Background color
-  //    48 Bold
-  //    49 Italic
-  //    50 Strike
   opaque type Style = Long
   opaque type ScreenBuffer = (Int, Array[Style], Array[Char])
 
@@ -35,15 +31,27 @@ object Yossarian:
     def char(x: Int, y: Int): Style = buffer(2)(offset(x, y))
     def width: Int = buffer(0)
     def height: Int = buffer(1).length/buffer(0)
-    def size: Int = buffer(1).length
+    def capacity: Int = buffer(1).length
 
-    def scroll(n: Int): Unit =
-      val start = width*n
-      val end = size - width*n
-      System.arraycopy(buffer(1), start.max(0), buffer(1), (-start).max(0), end)
-      System.arraycopy(buffer(2), start.max(0), buffer(2), (-start).max(0), end)
+    def render: Text = buffer(2).grouped(width).map(String(_).tt).to(List).join(t"\n")
+
+    def scrollDown(n: Int): Unit =
+      val length = capacity - width*n
       
-      for i <- 0 until -width*n do
+      System.arraycopy(buffer(1), 0, buffer(1), width*n, length)
+      System.arraycopy(buffer(2), 0, buffer(2), width*n, length)
+      
+      for i <- 0 until width*n do
+        buffer(1)(i) = Style()
+        buffer(2)(i) = ' '
+    
+    def scrollUp(n: Int): Unit =
+      val length = capacity - width*n
+      
+      System.arraycopy(buffer(1), width*n, buffer(1), 0, length)
+      System.arraycopy(buffer(2), width*n, buffer(2), 0, length)
+      
+      for i <- length until capacity do
         buffer(1)(i) = Style()
         buffer(2)(i) = ' '
     
@@ -56,9 +64,9 @@ object Yossarian:
       buffer(2)(cursor) = char
     
     def copy(): ScreenBuffer =
-      val style = new Array[Style](buffer(0))
+      val style = new Array[Style](buffer(0)*height)
       System.arraycopy(buffer(1), 0, style, 0, style.length)
-      val chars = new Array[Char](buffer(0))
+      val chars = new Array[Char](buffer(0)*height)
       System.arraycopy(buffer(2), 0, chars, 0, chars.length)
       (buffer(0), style, chars)
 
