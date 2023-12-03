@@ -19,6 +19,7 @@ package yossarian
 import anticipation.*
 import gossamer.*
 import fulminate.*
+import spectacular.*
 import perforate.*
 import rudiments.*
 import turbulence.*
@@ -43,18 +44,32 @@ object Pty:
     case _ => LazyList()
 
 object PtyEscapeError:
+
+  object Reason:
+    given communicable: Communicable[Reason] =
+      case BadSgrParameters(ns)         => msg"${ns} is not a valid SGR parameter sequence"
+      case BadCsiParameter(n, command)  => msg"$n is not a valid CSI parameter for the $command command"
+      case NonintegerSgrParameter(text) => msg"$text is not a numerical SGR parameter"
+      case BadColor(n)                  => msg"$n is not a valid color number"
+      case BadOscParameter(parameter)   => msg"$parameter is not a recognized OSC parameter"
+      case BadCsiCommand(param, char)   => msg"$char (with parameter $param) is not a valid CSI command"
+      case BadCsiEscape(char)           => msg"$char is not valid in a CSI escape sequence"
+      case BadFeEscape(char)            => msg"$char is not a valid Fe escape"
+
   enum Reason:
-    case BadSgrParameter(n: Int)
+    case BadSgrParameters(n: Text)
+    case BadCsiParameter(n: Int, command: Text)
     case NonintegerSgrParameter(text: Text)
     case BadColor(n: Int)
     case BadOscParameter(parameter: Text)
     case BadCsiCommand(param: Text, char: Char)
     case BadCsiEscape(char: Char)
-    case BadEscape(char: Char)
+    case BadFeEscape(char: Char)
 
 import PtyEscapeError.Reason, Reason.*
 
-case class PtyEscapeError(reason: Reason) extends Error(msg"an ANSI escape code was not handled")
+case class PtyEscapeError(reason: Reason)
+extends Error(msg"an ANSI escape code could not be handled because $reason")
 
 case class Pty(buffer: ScreenBuffer, state0: PtyState, output: Funnel[Text]):
   def stream: LazyList[Text] = output.stream
@@ -117,13 +132,13 @@ case class Pty(buffer: ScreenBuffer, state0: PtyState, output: Funnel[Text]):
         cursor() = 0
       
       case n =>
-        raise(PtyEscapeError(BadSgrParameter(n)))(())
+        raise(PtyEscapeError(BadCsiParameter(n, t"ED")))(())
     
     def el(n: Int): Unit = n match
       case 0 => for x <- cursor.x until buffer2.width do buffer2.set(x, cursor.y, ' ', style)
       case 1 => for x <- 0 to cursor.x do buffer2.set(x, cursor.y, ' ', style)
       case 2 => for x <- 0 until buffer2.width do buffer2.set(x, cursor.y, ' ', style)
-      case n => raise(PtyEscapeError(BadSgrParameter(n)))(())
+      case n => raise(PtyEscapeError(BadCsiParameter(n, t"EL")))(())
 
     def title(text: Text): Unit = state = state.copy(title = text)
     def link(text: Text): Unit = ()
@@ -145,7 +160,7 @@ case class Pty(buffer: ScreenBuffer, state0: PtyState, output: Funnel[Text]):
       case parameter       => raise(PtyEscapeError(BadOscParameter(parameter)))(())
 
     def sgr(params: List[Int]): Unit = params match
-      case Nil =>
+      case Nil                            => style = Style()
       case 38 :: 5 :: n :: tail           => style = style.foreground = color8(n)
       case 38 :: 2 :: r :: g :: b :: tail => style = style.foreground = Rgb24(r, g, b)
       case 48 :: 5 :: n :: tail           => style = style.background = color8(n)
@@ -176,7 +191,8 @@ case class Pty(buffer: ScreenBuffer, state0: PtyState, output: Funnel[Text]):
         case n if 40 <= n <= 47               => style = style.background = palette(n - 40); sgr(tail)
         case n if 90 <= n <= 97               => style = style.foreground = palette(n - 82); sgr(tail)
         case n if 100 <= n <= 107             => style = style.background = palette(n - 92); sgr(tail)
-        case n                                => raise(PtyEscapeError(BadSgrParameter(n)))(())
+        case _ =>
+          raise(PtyEscapeError(BadSgrParameters(params.map(_.show).join(t";"))))(())
     
     def csi(params: Text, char: Char): Unit = (params, char) match
       case (SgrParams(params*), 'm') => sgr(params.to(List))
@@ -319,7 +335,7 @@ case class Pty(buffer: ScreenBuffer, state0: PtyState, output: Funnel[Text]):
           case 'N' | 'O' | 'P' | '\\' | 'X' | '^' | '_' => proceed(Normal)
           
           case char =>
-            raise(PtyEscapeError(BadEscape(char)))(())
+            raise(PtyEscapeError(BadFeEscape(char)))(())
             proceed(Normal)
         
         case Osc => current match
