@@ -42,7 +42,19 @@ object Pty:
     
     case _ => LazyList()
 
-case class PtyEscapeError() extends Error(msg"an ANSI escape code was not handled")
+object PtyEscapeError:
+  enum Reason:
+    case BadSgrParameter(n: Int)
+    case NonintegerSgrParameter(text: Text)
+    case BadColor(n: Int)
+    case BadOscParameter(parameter: Text)
+    case BadCsiCommand(param: Text, char: Char)
+    case BadCsiEscape(char: Char)
+    case BadEscape(char: Char)
+
+import PtyEscapeError.Reason, Reason.*
+
+case class PtyEscapeError(reason: Reason) extends Error(msg"an ANSI escape code was not handled")
 
 case class Pty(buffer: ScreenBuffer, state0: PtyState, output: Funnel[Text]):
   def stream: LazyList[Text] = output.stream
@@ -68,14 +80,14 @@ case class Pty(buffer: ScreenBuffer, state0: PtyState, output: Funnel[Text]):
 
     import Context.{Normal, Escape, Csi, Csi2, Osc, Osc2}
 
-    object IntParam:
+    object SgrParam:
       def unapply[DefaultType <: Int: ValueOf](params: Text): Some[Int] = params match
         case t""          => Some(valueOf[DefaultType])
         case As[Int](int) => Some(int)
-        case other        => raise(PtyEscapeError())(Some(valueOf[DefaultType]))
+        case text         => raise(PtyEscapeError(NonintegerSgrParameter(text)))(Some(valueOf[DefaultType]))
 
-    object IntParams:
-      def unapplySeq(params: Text): Some[List[Int]] = Some(params.cut(t";").flatMap(IntParam.unapply[0](_)))
+    object SgrParams:
+      def unapplySeq(params: Text): Some[List[Int]] = Some(params.cut(t";").flatMap(SgrParam.unapply[0](_)))
 
     def cuu(n: Int): Unit = cursor.x = cursor.y - n
     def cud(n: Int): Unit = cursor.x = cursor.y + n
@@ -104,14 +116,14 @@ case class Pty(buffer: ScreenBuffer, state0: PtyState, output: Funnel[Text]):
         for i <- 0 until buffer2.capacity do buffer2.set(i, ' ', style)
         cursor() = 0
       
-      case _ =>
-        raise(PtyEscapeError())(())
+      case n =>
+        raise(PtyEscapeError(BadSgrParameter(n)))(())
     
     def el(n: Int): Unit = n match
       case 0 => for x <- cursor.x until buffer2.width do buffer2.set(x, cursor.y, ' ', style)
       case 1 => for x <- 0 to cursor.x do buffer2.set(x, cursor.y, ' ', style)
       case 2 => for x <- 0 until buffer2.width do buffer2.set(x, cursor.y, ' ', style)
-      case _ => raise(PtyEscapeError())(())
+      case n => raise(PtyEscapeError(BadSgrParameter(n)))(())
 
     def title(text: Text): Unit = state = state.copy(title = text)
     def link(text: Text): Unit = ()
@@ -130,7 +142,7 @@ case class Pty(buffer: ScreenBuffer, state0: PtyState, output: Funnel[Text]):
     def osc(command: Text): Unit = command match
       case r"8;;$text(.*)" => link(text)
       case r"0;$text(.*)"  => title(text)
-      case _               => raise(PtyEscapeError())(())
+      case parameter       => raise(PtyEscapeError(BadOscParameter(parameter)))(())
 
     def sgr(params: List[Int]): Unit = params match
       case Nil =>
@@ -164,25 +176,25 @@ case class Pty(buffer: ScreenBuffer, state0: PtyState, output: Funnel[Text]):
         case n if 40 <= n <= 47               => style = style.background = palette(n - 40); sgr(tail)
         case n if 90 <= n <= 97               => style = style.foreground = palette(n - 82); sgr(tail)
         case n if 100 <= n <= 107             => style = style.background = palette(n - 92); sgr(tail)
-        case _                                => raise(PtyEscapeError())(())
+        case n                                => raise(PtyEscapeError(BadSgrParameter(n)))(())
     
     def csi(params: Text, char: Char): Unit = (params, char) match
-      case (IntParams(params*), 'm') => sgr(params.to(List))
-      case (IntParam[1](n),     'A') => cuu(n)
-      case (IntParam[1](n),     'B') => cud(n)
-      case (IntParam[1](n),     'C') => cuf(n)
-      case (IntParam[1](n),     'D') => cub(n)
-      case (IntParam[1](n),     'E') => cnl(n)
-      case (IntParam[1](n),     'F') => cpl(n)
-      case (IntParam[1](n),     'G') => cha(n)
-      case (IntParams(n, m),    'H') => cup(n, m)
-      case (IntParam[0](n),     'J') => ed(n)
-      case (IntParam[0](n),     'K') => el(n)
-      case (IntParam[1](n),     'S') => su(n)
-      case (IntParam[1](n),     'T') => sd(n)
-      case (IntParams(n, m),    'f') => hvp(n, m)
-      case (IntParam[0](6),     'n') => dsr()
-      case (IntParam[0](6),     's') => scp()
+      case (SgrParams(params*), 'm') => sgr(params.to(List))
+      case (SgrParam[1](n),     'A') => cuu(n)
+      case (SgrParam[1](n),     'B') => cud(n)
+      case (SgrParam[1](n),     'C') => cuf(n)
+      case (SgrParam[1](n),     'D') => cub(n)
+      case (SgrParam[1](n),     'E') => cnl(n)
+      case (SgrParam[1](n),     'F') => cpl(n)
+      case (SgrParam[1](n),     'G') => cha(n)
+      case (SgrParams(n, m),    'H') => cup(n, m)
+      case (SgrParam[0](n),     'J') => ed(n)
+      case (SgrParam[0](n),     'K') => el(n)
+      case (SgrParam[1](n),     'S') => su(n)
+      case (SgrParam[1](n),     'T') => sd(n)
+      case (SgrParams(n, m),    'f') => hvp(n, m)
+      case (SgrParam[0](6),     'n') => dsr()
+      case (SgrParam[0](6),     's') => scp()
       case (t"?25",             'h') => dectcem(true)
       case (t"?25",             'l') => dectcem(false)
       case (t"?1004",           'h') => detectFocus(true)
@@ -191,7 +203,7 @@ case class Pty(buffer: ScreenBuffer, state0: PtyState, output: Funnel[Text]):
       case (t"?2004",           'l') => bcp(false)
       case (t"",                'I') => focus(true)
       case (t"",                'O') => focus(false)
-      case _                         => raise(PtyEscapeError())(())
+      case (param,             char) => raise(PtyEscapeError(BadCsiCommand(param, char)))(())
 
     // Uses the Ubuntu color palette
     def palette(n: Int): Rgb24 = n match
@@ -211,7 +223,7 @@ case class Pty(buffer: ScreenBuffer, state0: PtyState, output: Funnel[Text]):
       case 13 => Rgb24(255,   0, 255)
       case 14 => Rgb24(  0, 255, 255)
       case 15 => Rgb24(255, 255, 255)
-      case _  => raise(PtyEscapeError())(Rgb24(127, 127, 127))
+      case _  => throw Mistake(msg"tried to access non-existent palette color")
 
     def color8(n: Int): Rgb24 = n match
       case n if 0 <= n <= 15 =>
@@ -228,8 +240,8 @@ case class Pty(buffer: ScreenBuffer, state0: PtyState, output: Funnel[Text]):
         val b = n - 16 - 36*r - 6*g
         Rgb24(r*42 + r/2, g*42 + g/2, b*42 + b/2)
       
-      case _ =>
-        raise(PtyEscapeError())(Rgb24(127, 127, 127))
+      case n =>
+        raise(PtyEscapeError(BadColor(n)))(Rgb24(127, 127, 127))
 
     def recur(index: Int, context: Context): Pty =
       inline def proceed(context: Context): Pty =
@@ -306,8 +318,8 @@ case class Pty(buffer: ScreenBuffer, state0: PtyState, output: Funnel[Text]):
           case ']'                                      => recur(index + 1, Osc)
           case 'N' | 'O' | 'P' | '\\' | 'X' | '^' | '_' => proceed(Normal)
           
-          case _ =>
-            raise(PtyEscapeError())(())
+          case char =>
+            raise(PtyEscapeError(BadEscape(char)))(())
             proceed(Normal)
         
         case Osc => current match
@@ -332,41 +344,37 @@ case class Pty(buffer: ScreenBuffer, state0: PtyState, output: Funnel[Text]):
             proceed(Normal)
         
         case Csi => current match
-          case ch if '\u0000' <= ch <= '\u001f' =>
-            raise(PtyEscapeError())(())
+          case char if '\u0000' <= char <= '\u001f' =>
+            raise(PtyEscapeError(BadCsiEscape(char)))(())
             proceed(Csi)
 
-          case ch if '\u0020' <= ch <= '\u002f' =>
-            escBuffer.append(ch)
+          case char if '\u0020' <= char <= '\u002f' =>
+            escBuffer.append(char)
             proceed(Csi2)
           
-          case ch if '\u0030' <= ch <= '\u003f' =>
-            escBuffer.append(ch)
+          case char if '\u0030' <= char <= '\u003f' =>
+            escBuffer.append(char)
             proceed(Csi)
           
-          case ch if '\u0040' <= ch <= '\u007e' =>
-            csi(escBuffer.text.tap(escBuffer.clear().waive), ch)
+          case char if '\u0040' <= char <= '\u007e' =>
+            csi(escBuffer.text.tap(escBuffer.clear().waive), char)
             proceed(Normal)
           
-          case ch =>
-            raise(PtyEscapeError())(())
+          case char =>
+            raise(PtyEscapeError(BadCsiEscape(char)))(())
             proceed(Normal)
 
         case Csi2 => current match
-          case ch if '\u0020' <= ch <= '\u002f' =>
-            escBuffer.append(ch)
+          case char if '\u0020' <= char <= '\u002f' =>
+            escBuffer.append(char)
             proceed(Csi2)
           
-          case ch if '\u0000' <= ch <= '\u003f' =>
-            raise(PtyEscapeError())(())
-            proceed(Csi)
-
-          case ch if '\u0040' <= ch <= '\u007e' =>
-            csi(escBuffer.text.tap(escBuffer.clear().waive), ch)
+          case char if '\u0040' <= char <= '\u007e' =>
+            csi(escBuffer.text.tap(escBuffer.clear().waive), char)
             proceed(Normal)
           
-          case ch =>
-            raise(PtyEscapeError())(())
+          case char =>
+            raise(PtyEscapeError(BadCsiEscape(char)))(())
             proceed(Normal)
 
     recur(0, Normal)
