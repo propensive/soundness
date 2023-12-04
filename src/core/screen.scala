@@ -159,40 +159,46 @@ case class Pty(buffer: ScreenBuffer, state0: PtyState, output: Funnel[Text]):
       case r"0;$text(.*)"  => title(text)
       case parameter       => raise(PtyEscapeError(BadOscParameter(parameter)))(())
 
+    import Style.{Bit, Foreground, Background}, Bit.*
+
     def sgr(params: List[Int]): Unit = params match
-      case Nil                            => style = Style()
-      case 38 :: 5 :: n :: tail           => style = style.foreground = color8(n)
-      case 38 :: 2 :: r :: g :: b :: tail => style = style.foreground = Rgb24(r, g, b)
-      case 48 :: 5 :: n :: tail           => style = style.background = color8(n)
-      case 48 :: 2 :: r :: g :: b :: tail => style = style.background = Rgb24(r, g, b)
-      case head :: tail                   => head match
-        case 0                                => style = Style(); sgr(tail)
-        case 1                                => style = style.bold = true; sgr(tail)
-        case 2                                => style = style.faint = true; sgr(tail)
-        case 3                                => style = style.italic = true; sgr(tail)
-        case 4                                => style = style.underline = true; sgr(tail)
-        case 5                                => style = style.blink = true; sgr(tail)
-        case 6                                => sgr(tail)
-        case 7                                => style = style.reverse = true; sgr(tail)
-        case 8                                => style = style.conceal = true; sgr(tail)
-        case 9                                => style = style.strike = true; sgr(tail)
-        case n if 10 <= n <= 19               => sgr(tail)
-        case 20                               => sgr(tail)
-        case 21                               => style = style.bold = false; sgr(tail)
-        case 22                               => style = style.bold = false; style = style.faint = false; sgr(tail)
-        case 23                               => style = style.italic = false; sgr(tail)
-        case 24                               => style = style.underline = false; sgr(tail)
-        case 25                               => style = style.blink = false; sgr(tail)
-        case 26                               => sgr(tail)
-        case 27                               => style = style.reverse = false; sgr(tail)
-        case 28                               => style = style.conceal = false; sgr(tail)
-        case 29                               => style = style.strike = false; sgr(tail)
-        case n if 30 <= n <= 37               => style = style.foreground = palette(n - 30); sgr(tail)
-        case n if 40 <= n <= 47               => style = style.background = palette(n - 40); sgr(tail)
-        case n if 90 <= n <= 97               => style = style.foreground = palette(n - 82); sgr(tail)
-        case n if 100 <= n <= 107             => style = style.background = palette(n - 92); sgr(tail)
-        case _ =>
-          raise(PtyEscapeError(BadSgrParameters(params.map(_.show).join(t";"))))(())
+      case Nil                            => ()
+      case 38 :: 5 :: n :: tail           => style = Foreground(style) = color8(n)
+      case 38 :: 2 :: r :: g :: b :: tail => style = Foreground(style) = Rgb24(r, g, b)
+      case 48 :: 5 :: n :: tail           => style = Background(style) = color8(n)
+      case 48 :: 2 :: r :: g :: b :: tail => style = Background(style) = Rgb24(r, g, b)
+      case head :: tail                   =>
+        style = head match
+          case 0                                => Style()
+          case 1                                => Bold(style) = true
+          case 2                                => Faint(style) = true
+          case 3                                => Italic(style) = true
+          case 4                                => Underline(style) = true
+          case 5                                => Blink(style) = true
+          case 6                                => style
+          case 7                                => Reverse(style) = true
+          case 8                                => Conceal(style) = true
+          case 9                                => Strike(style) = true
+          case n if 10 <= n <= 19               => style
+          case 20                               => style
+          case 21                               => Bold(style) = false
+          case 22                               => Faint(Bold(style) = false) = false
+          case 23                               => Italic(style) = false
+          case 24                               => Underline(style) = false
+          case 25                               => Blink(style) = false
+          case 26                               => style
+          case 27                               => Reverse(style) = false
+          case 28                               => Conceal(style) = false
+          case 29                               => Strike(style) = false
+          case n if 30 <= n <= 37               => Foreground(style) = palette(n - 30)
+          case n if 40 <= n <= 47               => Background(style) = palette(n - 40)
+          case n if 90 <= n <= 97               => Foreground(style) = palette(n - 82)
+          case n if 100 <= n <= 107             => Background(style) = palette(n - 92)
+          
+          case _ =>
+            raise(PtyEscapeError(BadSgrParameters(params.map(_.show).join(t";"))))(style)
+        
+        sgr(tail)
     
     def csi(params: Text, char: Char): Unit = (params, char) match
       case (SgrParams(params*), 'm') => sgr(params.to(List))
