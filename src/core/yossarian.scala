@@ -24,18 +24,20 @@ import gossamer.*
 
 object Yossarian:
   opaque type Style = Long
-  opaque type ScreenBuffer = (Int, Array[Style], Array[Char])
+  opaque type ScreenBuffer = (Int, Array[Style], Array[Char], Array[Text])
 
   extension (buffer: ScreenBuffer)
     def width: Int = buffer(0)
     def styleBuffer: Array[Style] = buffer(1)
     def charBuffer: Array[Char] = buffer(2)
+    def linkBuffer: Array[Text] = buffer(3)
     def capacity: Int = charBuffer.length
     def height: Int = capacity/width
     def offset(x: Int, y: Int): Int = y*width + x
     def style(x: Int, y: Int): Style = styleBuffer(offset(x, y))
-    def char(x: Int, y: Int): Style = charBuffer(offset(x, y))
-    def line: ScreenBuffer = (charBuffer.length, styleBuffer, charBuffer)
+    def char(x: Int, y: Int): Char = charBuffer(offset(x, y))
+    def link(x: Int, y: Int): Text = linkBuffer(offset(x, y))
+    def line: ScreenBuffer = (charBuffer.length, styleBuffer, charBuffer, linkBuffer)
     def render: Text = String(charBuffer).grouped(width).to(List).map(_.tt).join(t"\n")
 
     def find(text: Text): Maybe[ScreenBuffer] = line.render.s.indexOf(text.s) match
@@ -43,7 +45,8 @@ object Yossarian:
         Unset
       
       case index =>
-        (text.length, styleBuffer.slice(index, index + text.length), charBuffer.slice(index, index + text.length))
+        (text.length, styleBuffer.slice(index, index + text.length),
+            charBuffer.slice(index, index + text.length), linkBuffer.slice(index, index + text.length))
 
     def styles: IArray[Style] = styleBuffer.clone().immutable(using Unsafe)
 
@@ -55,33 +58,40 @@ object Yossarian:
       
       System.arraycopy(styleBuffer, source, styleBuffer, destination, length)
       System.arraycopy(charBuffer, source, charBuffer, destination, length)
+      System.arraycopy(linkBuffer, source, linkBuffer, destination, length)
       
       val start = if n < 0 then 0 else length
       
       for i <- 0 until offset do
         styleBuffer(start + i) = Style()
         charBuffer(start + i) = ' '
+        linkBuffer(start + i) = t""
     
-    def set(x: Int, y: Int, char: Char, style: Style): Unit =
+    def set(x: Int, y: Int, char: Char, style: Style, link: Text): Unit =
       styleBuffer(offset(x, y)) = style
       charBuffer(offset(x, y)) = char
+      linkBuffer(offset(x, y)) = link
 
-    def set(cursor: Int, char: Char, style: Style): Unit =
+    def set(cursor: Int, char: Char, style: Style, link: Text): Unit =
       styleBuffer(cursor) = style
       charBuffer(cursor) = char
+      linkBuffer(cursor) = link
     
     def copy(): ScreenBuffer =
-      val style = new Array[Style](capacity)
-      System.arraycopy(styleBuffer, 0, style, 0, style.length)
+      val styles = new Array[Style](capacity)
+      System.arraycopy(styleBuffer, 0, styles, 0, styles.length)
       val chars = new Array[Char](capacity)
       System.arraycopy(charBuffer, 0, chars, 0, chars.length)
-      (width, style, chars)
+      val links = new Array[Text](capacity)
+      System.arraycopy(linkBuffer, 0, links, 0, links.length)
+      (width, styles, chars, links)
     
   object ScreenBuffer:
     def apply(width: Int, height: Int): ScreenBuffer =
       val chars = Array.fill[Char](width*height)(' ')
-      val style = Array.fill[Style](width*height)(Style())
-      (width, style, chars)
+      val styles = Array.fill[Style](width*height)(Style())
+      val links = Array.fill[Text](width*height)(t"")
+      (width, styles, chars, links)
 
   object Style:
     def apply(): Style = Foreground(0L) = Rgb24(255, 255, 255)
