@@ -175,31 +175,31 @@ case class Pty(buffer: ScreenBuffer, state0: PtyState, output: Funnel[Text]):
       case 48 :: 2 :: r :: g :: b :: tail => style = Background(style) = Rgb24(r, g, b)
       case head :: tail                   =>
         style = head match
-          case 0                                => Style()
-          case 1                                => Bold(style) = true
-          case 2                                => Faint(style) = true
-          case 3                                => Italic(style) = true
-          case 4                                => Underline(style) = true
-          case 5                                => Blink(style) = true
-          case 6                                => style
-          case 7                                => Reverse(style) = true
-          case 8                                => Conceal(style) = true
-          case 9                                => Strike(style) = true
-          case n if 10 <= n <= 19               => style
-          case 20                               => style
-          case 21                               => Bold(style) = false
-          case 22                               => Faint(Bold(style) = false) = false
-          case 23                               => Italic(style) = false
-          case 24                               => Underline(style) = false
-          case 25                               => Blink(style) = false
-          case 26                               => style
-          case 27                               => Reverse(style) = false
-          case 28                               => Conceal(style) = false
-          case 29                               => Strike(style) = false
-          case n if 30 <= n <= 37               => Foreground(style) = palette(n - 30)
-          case n if 40 <= n <= 47               => Background(style) = palette(n - 40)
-          case n if 90 <= n <= 97               => Foreground(style) = palette(n - 82)
-          case n if 100 <= n <= 107             => Background(style) = palette(n - 92)
+          case 0                             => Style()
+          case 1                             => Bold(style) = true
+          case 2                             => Faint(style) = true
+          case 3                             => Italic(style) = true
+          case 4                             => Underline(style) = true
+          case 5                             => Blink(style) = true
+          case 6                             => style
+          case 7                             => Reverse(style) = true
+          case 8                             => Conceal(style) = true
+          case 9                             => Strike(style) = true
+          case n if 10 <= n <= 19            => style
+          case 20                            => style
+          case 21                            => Bold(style) = false
+          case 22                            => Faint(Bold(style) = false) = false
+          case 23                            => Italic(style) = false
+          case 24                            => Underline(style) = false
+          case 25                            => Blink(style) = false
+          case 26                            => style
+          case 27                            => Reverse(style) = false
+          case 28                            => Conceal(style) = false
+          case 29                            => Strike(style) = false
+          case n if 30 <= n <= 37            => Foreground(style) = palette(n - 30)
+          case n if 40 <= n <= 47            => Background(style) = palette(n - 40)
+          case n if 90 <= n <= 97            => Foreground(style) = palette(n - 82)
+          case n if 100 <= n <= 107          => Background(style) = palette(n - 92)
           
           case _ =>
             raise(PtyEscapeError(BadSgrParameters(params.map(_.show).join(t";"))))(style)
