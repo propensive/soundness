@@ -93,6 +93,18 @@ object Yossarian:
       val links = Array.fill[Text](width*height)(t"")
       (width, styles, chars, links)
 
+  extension (style: Style)
+    def bold: Boolean = Style.Bit.Bold(style)
+    def italic: Boolean = Style.Bit.Italic(style)
+    def blink: Boolean = Style.Bit.Blink(style)
+    def faint: Boolean = Style.Bit.Faint(style)
+    def conceal: Boolean = Style.Bit.Conceal(style)
+    def strike: Boolean = Style.Bit.Strike(style)
+    def underline: Boolean = Style.Bit.Underline(style)
+    def reverse: Boolean = Style.Bit.Reverse(style)
+    def foreground: Rgb24 = Style.Foreground(style)
+    def background: Rgb24 = Style.Background(style)
+
   object Style:
     def apply(): Style = Foreground(0L) = Rgb24(255, 255, 255)
 
@@ -124,6 +136,6 @@ object Yossarian:
       def apply(style: Style): Boolean = ((style >>> bit) & 1L) == 1L
       
       def update(style: Style, boolean: Boolean): Style =
-        if boolean then (style | (1L << bit)) else (style & (1L << bit))
+        if boolean then (style | (1L << bit)) else (style & ~(1L << bit))
 
 export Yossarian.*
