@@ -197,7 +197,9 @@ case class Pty(buffer: ScreenBuffer, state0: PtyState, output: Funnel[Text]):
           case 28                            => Conceal(style) = false
           case 29                            => Strike(style) = false
           case n if 30 <= n <= 37            => Foreground(style) = palette(n - 30)
+          case 39                            => Foreground(style) = Rgb24(255, 255, 255)
           case n if 40 <= n <= 47            => Background(style) = palette(n - 40)
+          case 49                            => Background(style) = Rgb24(0, 0, 0)
           case n if 90 <= n <= 97            => Foreground(style) = palette(n - 82)
           case n if 100 <= n <= 107          => Background(style) = palette(n - 92)
           
