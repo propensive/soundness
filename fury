@@ -4,6 +4,7 @@
 repo propensive/probably
 repo propensive/anticipation
 repo propensive/turbulence
+repo propensive/yossarian
 
 target escapade/test
 
@@ -16,5 +17,5 @@ project escapade
   module test
     compiler  scala
     sources   src/test
-    include   escapade/core probably/cli
+    include   escapade/core probably/cli yossarian/core
     main      escapade.Tests
