@@ -65,7 +65,7 @@ extends Cli:
   def focus: Argument = arguments(currentArgument)
 
   override def register(flag: Flag[?], suggestions: Suggestions[?]): Unit =
-    parameters.focusFlag.mm: argument =>
+    parameters.focusFlag.let: argument =>
       if flag.matches(argument) && currentArgument == argument.position + 1 then
         val allSuggestions = suggestions.suggest().to(List)
         if allSuggestions != Nil then cursorSuggestions = allSuggestions
@@ -97,7 +97,7 @@ extends Cli:
     
     shell match
       case Shell.Zsh =>
-        val title = explanation.mm { explanation => List(sh"'' -X $explanation") }.or(Nil)
+        val title = explanation.let { explanation => List(sh"'' -X $explanation") }.or(Nil)
         
         lazy val width = items.map(_.text.length).max
         lazy val aliasesWidth = items.map(_.aliases.join(t" ").length).max + 1

@@ -72,8 +72,8 @@ trait CliInterpreter:
 
 case class Argument(position: Int, value: Text, cursor: Maybe[Int]):
   def apply(): Text = value
-  def prefix: Maybe[Text] = cursor.mm(value.take(_))
-  def suffix: Maybe[Text] = cursor.mm(value.drop(_))
+  def prefix: Maybe[Text] = cursor.let(value.take(_))
+  def suffix: Maybe[Text] = cursor.let(value.drop(_))
   
   def suggest(using cli: Cli)(update: (previous: List[Suggestion]) ?=> List[Suggestion]) =
     cli.suggest(this, update)
