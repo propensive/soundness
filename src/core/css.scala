@@ -77,7 +77,7 @@ extends CssStylesheet.Item:
       t"size-adjust"             -> sizeAdjust,
       t"src"                     -> src,
       t"unicode-range"           -> unicodeRange
-    ).filter(!_(1).unset)
+    ).filter(!_(1).absent)
     
     params.collect:
       case (key: Text, value: Text) => t"$key: $value;"
