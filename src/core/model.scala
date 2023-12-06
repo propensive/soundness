@@ -53,8 +53,8 @@ object CodlNode:
   
 case class CodlNode(data: Maybe[Data] = Unset, meta: Maybe[Meta] = Unset) extends Dynamic:
   def key: Maybe[Text] = data.let(_.key)
-  def empty: Boolean = unsafely(data.unset || data.assume.children.isEmpty)
-  def blank: Boolean = data.unset && meta.unset
+  def empty: Boolean = unsafely(data.absent || data.assume.children.isEmpty)
+  def blank: Boolean = data.absent && meta.absent
   def schema: Maybe[CodlSchema] = data.let(_.schema)
   def layout: Maybe[Layout] = data.let(_.layout)
   def id: Maybe[Text] = data.let(_.id)
@@ -120,8 +120,8 @@ extends Indexed:
   def merge(input: CodlDoc): CodlDoc =
     
     def cmp(x: CodlNode, y: CodlNode): Boolean =
-      if x.uniqueId.unset || y.uniqueId.unset then
-        if x.data.unset || y.data.unset then x.meta == y.meta
+      if x.uniqueId.absent || y.uniqueId.absent then
+        if x.data.absent || y.data.absent then x.meta == y.meta
         else x.data == y.data
       else x.id == y.id
 
@@ -135,7 +135,7 @@ extends Indexed:
           val orig: CodlNode = original(left)
           val origData: Data = orig.data.or(???)
           
-          if orig.id.unset || updates(right).id.unset then orig :: nodes
+          if orig.id.absent || updates(right).id.absent then orig :: nodes
           else
             val children2 = recur(origData.children, updates(right).data.or(???).children)
             // FIXME: Check layout remains safe

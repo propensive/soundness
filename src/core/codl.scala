@@ -148,7 +148,7 @@ object Codl:
               go(focus = Proto(Unset, meta = focus.meta.or(if lines == 0 then Unset else Meta(lines))))
             
           case CodlToken.Indent =>
-            val errors2 = if focus.key.unset then CodlError(focus.line, focus.col, 1, IndentAfterComment) ::
+            val errors2 = if focus.key.absent then CodlError(focus.line, focus.col, 1, IndentAfterComment) ::
                 errors else errors
             
             go(focus = Proto(), peers = Nil, stack = (focus -> peers) :: stack, errors = errors2)
