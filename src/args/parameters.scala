@@ -66,7 +66,7 @@ object PosixCliInterpreter extends CliInterpreter:
           if head() == t"--" then push().copy(postpositional = tail)
           else if head().starts(t"-") then recur(tail, Nil, head, push())
           else
-            val parameters2 = if !head.cursor.unset then parameters.copy(focusFlag = current) else parameters
+            val parameters2 = if head.cursor.present then parameters.copy(focusFlag = current) else parameters
             recur(tail, head :: arguments, current, parameters2)
         
         case Nil =>

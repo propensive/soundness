@@ -93,7 +93,7 @@ extends Cli:
           flag.aliases.map(Flag.serialize(_))))
 
   def serialize: List[Text] =
-    val items = if cursorSuggestions.isEmpty && parameters.focusFlag.unset then flagSuggestions(focus().starts(t"--")) else cursorSuggestions
+    val items = if cursorSuggestions.isEmpty && parameters.focusFlag.absent then flagSuggestions(focus().starts(t"--")) else cursorSuggestions
     
     shell match
       case Shell.Zsh =>
