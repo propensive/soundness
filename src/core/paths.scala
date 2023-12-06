@@ -70,7 +70,7 @@ object Path:
       case _                      => Unset
     
     def prefix(root: Maybe[Windows.Drive]): Text =
-      root.mm(Windows.Path.reachable.prefix(_)).or(Unix.Path.reachable.prefix(Unset))
+      root.let(Windows.Path.reachable.prefix(_)).or(Unix.Path.reachable.prefix(Unset))
     
     def descent(path: Path): List[PathName[GeneralForbidden]] =
       // FIXME: This is a bit of a hack
@@ -671,7 +671,7 @@ package filesystemOptions:
   given createNonexistentParents(using Raises[IoError]): CreateNonexistentParents =
     new CreateNonexistentParents:
       def apply[ResultType](path: Path)(operation: => ResultType): ResultType =
-        path.parent.mm: parent =>
+        path.parent.let: parent =>
           given DereferenceSymlinks = filesystemOptions.doNotDereferenceSymlinks
          
           if !parent.exists() || !parent.is[Directory]
