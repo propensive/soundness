@@ -41,7 +41,7 @@ extension [ValueType](maybe: Maybe[ValueType])
   inline def fm[ValueType2](inline alternative: => ValueType2)(inline fn: ValueType => ValueType2): ValueType2 =
     if unset then alternative else fn(vouch(using Unsafe))
 
-  inline def mm[ValueType2](inline fn: ValueType => ValueType2): Maybe[ValueType2] =
+  inline def let[ValueType2](inline fn: ValueType => ValueType2): Maybe[ValueType2] =
     if unset then Unset else fn(vouch(using Unsafe))
 
 extension [ValueType](iterable: Iterable[Maybe[ValueType]])
