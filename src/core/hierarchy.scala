@@ -94,6 +94,13 @@ extension
     (using hierarchy: Hierarchy[PathType, LinkType])
   
   def root(using pathlike: Reachable[PathType, NameType, RootType]): RootType = pathlike.root(left)
+
+  @targetName("add")
+  def +
+      (link: LinkType)
+      (using Pathlike[PathType, NameType, RootType], PathCreator[PathType, NameType, RootType],
+          Followable[LinkType, NameType, ?, ?], Raises[PathError])
+      : PathType = left.append(link)
   
   def relativeTo
       [PathType2 <: PathType]
@@ -256,7 +263,7 @@ object Followable:
       def decode(text: Text): LinkType =
         import followable.*
         
-        val foundSeparator: Char = unsafely(text.where(separators.contains(_)).mm(text(_))).or('/')
+        val foundSeparator: Char = unsafely(text.where(separators.contains(_)).let(text(_))).or('/')
         val ascentPrefix: Text = t"$parentRef$foundSeparator"
         
         def recur(text: Text, ascent: Int = 0): LinkType =
