@@ -95,7 +95,7 @@ trait Interaction[ResultType, QuestionType]:
       : Option[(ResultType, LazyList[TerminalEvent])] =
     
     before()
-    recur(stream, state, Unset)(key).tap(after().waive)
+    recur(stream, state, Unset)(key).also(after())
 
 object Interaction:
   given [ItemType: Show](using Stdio): Interaction[ItemType, SelectMenu[ItemType]] with
