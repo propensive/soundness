@@ -65,7 +65,7 @@ trait CodlWriter3:
     new CodlWriter[Maybe[ValueType]]:
       def schema: CodlSchema = writer.schema.optional
       def write(value: Maybe[ValueType]): List[IArray[CodlNode]] =
-        value.mm(writer.write(_)).or(List())
+        value.let(writer.write(_)).or(List())
 
 trait CodlWriter2 extends CodlWriter3:
   inline given derived

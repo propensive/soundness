@@ -46,7 +46,7 @@ object Printer:
 
     def recur(node: CodlNode, indent: Int): Unit = node match
       case CodlNode(data, meta) =>
-        meta.mm: meta =>
+        meta.let: meta =>
           for i <- 0 until meta.blank do out.write('\n')
           meta.comments.foreach: comment =>
             for i <- 0 until indent do out.write(' ')
@@ -95,7 +95,7 @@ object Printer:
                         out.write(key.s)
                         col += key.length
                 
-                meta.mm(_.remark).mm: remark =>
+                meta.let(_.remark).let: remark =>
                   out.write(" # ")
                   out.write(remark.s)
                 

@@ -101,12 +101,12 @@ object Codl:
       def close: (CodlNode, List[CodlError]) =
         key.fm((CodlNode(Unset, meta), Nil)):
           case key: Text =>
-            val meta2 = meta.mm { m => m.copy(comments = m.comments.reverse) }
+            val meta2 = meta.let { m => m.copy(comments = m.comments.reverse) }
             val data = Data(key, IArray.from(children.reverse), Layout(params, multiline, col - margin), schema)
             val node = CodlNode(data, meta2)
             
             val errors = schema.requiredKeys.to(List).flatMap: key =>
-              if !node.data.mm(_.has(key)).or(false)
+              if !node.data.let(_.has(key)).or(false)
               then List(CodlError(line, col, node.key.or(t"?").length, MissingKey(node.key.or(t"?"), key)))
               else Nil
 
@@ -185,7 +185,7 @@ object Codl:
                   val (uniqueId, focus2, errors2) = focus.commit(Proto(word, line, col, multiline = block))
                   
                   val errors3 =
-                    uniqueId.mm: uniqueId =>
+                    uniqueId.let: uniqueId =>
                       if peerIds.contains(uniqueId(0))
                       then
                         val first = peerIds(uniqueId(0))
@@ -194,14 +194,14 @@ object Codl:
                       else Nil
                     .or(Nil)
                   
-                  val peerIds2 = uniqueId.mm(peerIds.updated(_, _)).or(peerIds)
+                  val peerIds2 = uniqueId.let(peerIds.updated(_, _)).or(peerIds)
                   go(focus = focus2, peerIds = peerIds2, lines = 0, errors = errors3 ::: errors2 ::: errors)
                 
                 case CodlSchema.Free =>
                   val (uniqueId, focus2, errors2) = focus.commit(Proto(word, line, col, multiline = block))
                   
                   val errors3 =
-                    uniqueId.mm: uniqueId =>
+                    uniqueId.let: uniqueId =>
                       if peerIds.contains(uniqueId(0))
                       then
                         val first = peerIds(uniqueId(0))
@@ -210,7 +210,7 @@ object Codl:
                       else Nil
                     .or(Nil)
                   
-                  val peerIds2 = uniqueId.mm(peerIds.updated(_, _)).or(peerIds)
+                  val peerIds2 = uniqueId.let(peerIds.updated(_, _)).or(peerIds)
                   go(focus = focus2, peerIds = peerIds2, lines = 0, errors = errors3 ::: errors2 ::: errors)
                 
                 case struct@Struct(_, _) => struct.param(focus.children.length) match
@@ -223,7 +223,7 @@ object Codl:
                     val (uniqueId, focus2, errors2) = focus.commit(peer)
                     
                     val errors3 =
-                      uniqueId.mm: uniqueId =>
+                      uniqueId.let: uniqueId =>
                         if peerIds.contains(uniqueId(0))
                         then
                           val first = peerIds(uniqueId(0))
@@ -232,17 +232,17 @@ object Codl:
                         else Nil
                       .or(Nil)
                     
-                    val peerIds2 = uniqueId.mm(peerIds.updated(_, _)).or(peerIds)
+                    val peerIds2 = uniqueId.let(peerIds.updated(_, _)).or(peerIds)
                     go(focus = focus2, peerIds = peerIds2, lines = 0, errors = errors3 ::: errors2 ::: errors)
               
               case _ =>
                 val (fschema: CodlSchema, errors2: List[CodlError]) =
                   if schema == CodlSchema.Free then (schema, errors)
-                  else schema(word).mm((_, errors)).or:
+                  else schema(word).let((_, errors)).or:
                     (CodlSchema.Free, List(CodlError(line, col, word.length, InvalidKey(word, word))))
 
                 val errors3 =
-                  if fschema.unique && peers.exists(_.data.mm(_.key) == word)
+                  if fschema.unique && peers.exists(_.data.let(_.key) == word)
                   then CodlError(line, col, word.length, DuplicateKey(word, word)) :: errors2
                   else errors2
                 

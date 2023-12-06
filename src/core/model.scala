@@ -41,29 +41,29 @@ object CodlNode:
     if left == right then Semblance.Identical(left.debug) else
       val comparison = IArray.from:
         diff(left.children, right.children).rdiff(_.id == _.id).changes.map:
-          case Par(_, _, v) => v.mm(_.key).or(t"—") -> Semblance.Identical(v.debug)
-          case Ins(_, v)    => v.mm(_.key).or(t"—") -> Semblance.Different(t"—", v.debug)
-          case Del(_, v)    => v.mm(_.key).or(t"—") -> Semblance.Different(v.debug, t"—")
+          case Par(_, _, v) => v.let(_.key).or(t"—") -> Semblance.Identical(v.debug)
+          case Ins(_, v)    => v.let(_.key).or(t"—") -> Semblance.Different(t"—", v.debug)
+          case Del(_, v)    => v.let(_.key).or(t"—") -> Semblance.Different(v.debug, t"—")
           
           case Sub(_, v, lv, rv) =>
-            if lv.mm(_.key) == rv.mm(_.key) then lv.mm(_.key).or(t"—") -> lv.contrastWith(rv)
-            else t"[key]" -> Semblance.Different(lv.mm(_.key).or(t"—"), rv.mm(_.key).or(t"—"))
+            if lv.let(_.key) == rv.let(_.key) then lv.let(_.key).or(t"—") -> lv.contrastWith(rv)
+            else t"[key]" -> Semblance.Different(lv.let(_.key).or(t"—"), rv.let(_.key).or(t"—"))
 
       Semblance.Breakdown(comparison, left.key.or(t"—"), right.key.or(t"—"))
   
 case class CodlNode(data: Maybe[Data] = Unset, meta: Maybe[Meta] = Unset) extends Dynamic:
-  def key: Maybe[Text] = data.mm(_.key)
+  def key: Maybe[Text] = data.let(_.key)
   def empty: Boolean = unsafely(data.unset || data.assume.children.isEmpty)
   def blank: Boolean = data.unset && meta.unset
-  def schema: Maybe[CodlSchema] = data.mm(_.schema)
-  def layout: Maybe[Layout] = data.mm(_.layout)
-  def id: Maybe[Text] = data.mm(_.id)
-  def uniqueId: Maybe[Text] = data.mm(_.uniqueId)
-  def children: IArray[CodlNode] = data.mm(_.children).or(IArray[CodlNode]())
+  def schema: Maybe[CodlSchema] = data.let(_.schema)
+  def layout: Maybe[Layout] = data.let(_.layout)
+  def id: Maybe[Text] = data.let(_.id)
+  def uniqueId: Maybe[Text] = data.let(_.uniqueId)
+  def children: IArray[CodlNode] = data.let(_.children).or(IArray[CodlNode]())
   def paramValue: Maybe[Text] = if children.isEmpty then key else Unset
   def structValue: Maybe[Text] = if children.size == 1 then children.head.paramValue else Unset
   def fieldValue: Maybe[Text] = paramValue.or(structValue)
-  def promote(n: Int) = copy(data = data.mm(_.promote(n)))
+  def promote(n: Int) = copy(data = data.let(_.promote(n)))
 
   def apply(key: Text): List[Data] = data.fm(List[CodlNode]())(_(key)).map(_.data).collect:
     case data: Data => data
@@ -74,11 +74,11 @@ case class CodlNode(data: Maybe[Data] = Unset, meta: Maybe[Meta] = Unset) extend
   def applyDynamic(key: String)(idx: Int = 0)(using Raises[MissingValueError]): Data = selectDynamic(key)(idx)
 
   def untyped: CodlNode =
-    val data2 = data.mm { data => Data(data.key, children = data.children.map(_.untyped)) }
+    val data2 = data.let { data => Data(data.key, children = data.children.map(_.untyped)) }
     CodlNode(data2, meta)
   
   def uncommented: CodlNode =
-    val data2 = data.mm { data => Data(data.key, children = data.children.map(_.uncommented), Layout.empty, data.schema) }
+    val data2 = data.let { data => Data(data.key, children = data.children.map(_.uncommented), Layout.empty, data.schema) }
     CodlNode(data2, Unset)
 
   def wiped: CodlNode = untyped.uncommented
@@ -97,11 +97,11 @@ object CodlDoc:
           (t"[schema]", left.schema.contrastWith(right.schema)) +:
           (t"[margin]", left.margin.contrastWith(right.margin)) +:
           diff(left.children, right.children).rdiff(_.id == _.id).changes.map:
-            case Par(_, _, v)      => v.mm(_.key).or(t"—") -> Semblance.Identical(v.debug)
-            case Ins(_, v)         => v.mm(_.key).or(t"—") -> Semblance.Different(t"—", v.debug)
-            case Del(_, v)         => v.mm(_.key).or(t"—") -> Semblance.Different(v.debug, t"—")
+            case Par(_, _, v)      => v.let(_.key).or(t"—") -> Semblance.Identical(v.debug)
+            case Ins(_, v)         => v.let(_.key).or(t"—") -> Semblance.Different(t"—", v.debug)
+            case Del(_, v)         => v.let(_.key).or(t"—") -> Semblance.Different(v.debug, t"—")
             case Sub(_, v, lv, rv) =>
-              val key = if lv.mm(_.key) == rv.mm(_.key) then lv.mm(_.key).or(t"—") else t"${lv.mm(_.key).or(t"—")}/${rv.mm(_.key).or(t"—")}"
+              val key = if lv.let(_.key) == rv.let(_.key) then lv.let(_.key).or(t"—") else t"${lv.let(_.key).or(t"—")}/${rv.let(_.key).or(t"—")}"
               key -> lv.contrastWith(rv)
         
         Semblance.Breakdown(comparison, t"", t"")
@@ -183,7 +183,7 @@ extends Indexed:
 
   def id: Maybe[Text] = schema.subschemas.find(_.schema.arity == Arity.Unique) match
     case Some(CodlSchema.Entry(name: Text, schema)) =>
-      index(name).mm(_.headOption.maybe).mm(children(_).fieldValue)
+      index(name).let(_.headOption.maybe).let(children(_).fieldValue)
     case _ => key
 
   def promote(n: Int): Data = copy(layout = layout.copy(params = n))
