@@ -450,7 +450,7 @@ object QuantitativeMacros:
         case '[head *: tail] =>
           val unitPower = readUnitPower(TypeRepr.of[head])
           
-          dimension.mm: current =>
+          dimension.let: current =>
             if unitPower.ref.dimensionRef != current
             then fail(msg"""
               the Count type incorrectly mixes units of ${unitPower.ref.dimensionRef.name} and
