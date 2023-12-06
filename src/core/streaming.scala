@@ -182,7 +182,7 @@ object Readable:
 
     def recur(): LazyList[Bytes] =
       try channel.read(buf) match
-        case -1 => LazyList().tap(_ => try channel.close() catch case err: Exception => ())
+        case -1 => LazyList().also(try channel.close() catch case err: Exception => ())
         case 0  => recur()
         
         case count =>
@@ -204,7 +204,7 @@ object Readable:
 
     def recur(total: Long): LazyList[Bytes] =
       try channel.read(buf) match
-        case -1 => LazyList().tap(_ => try channel.close() catch case err: Exception => ())
+        case -1 => LazyList().also(try channel.close() catch case err: Exception => ())
         case 0  => recur(total)
         
         case count =>
