@@ -141,7 +141,7 @@ case class ZipFile(private val filename: Text):
       : Unit throws ZipError | StreamCutError =
     
     val writeTimestamp: jnf.attribute.FileTime =
-      jnf.attribute.FileTime.fromMillis(timestamp.mm(_.milliseconds).or(System.currentTimeMillis)).nn
+      jnf.attribute.FileTime.fromMillis(timestamp.let(_.milliseconds).or(System.currentTimeMillis)).nn
   
     def recur(refs: LazyList[ZipEntry], set: Set[ZipRef]): Set[ZipRef] = refs match
       case head #:: tail => recur(tail, if set.contains(head.ref) then set else set + head.ref)
