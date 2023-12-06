@@ -165,10 +165,10 @@ class Process[+ExecType <: Label, ResultType](process: java.lang.Process) extend
   def osProcess(using Raises[PidError]) = OsProcess(pid)
   
   def startTime[InstantType: SpecificInstant]: Maybe[InstantType] =
-    safely(osProcess).mm(_.startTime[InstantType])
+    safely(osProcess).let(_.startTime[InstantType])
   
   def cpuUsage[DurationType: SpecificDuration]: Maybe[DurationType] =
-    safely(osProcess).mm(_.cpuUsage[DurationType])
+    safely(osProcess).let(_.cpuUsage[DurationType])
 
 sealed trait Executable:
   type Exec <: Label
@@ -229,7 +229,7 @@ case class Command(arguments: Text*) extends Executable:
   def fork[ResultType]()(using working: WorkingDirectory, log: Log[Text], exec: Raises[ExecError]): Process[Exec, ResultType] =
     val processBuilder = ProcessBuilder(arguments.ss*)
     
-    working.directory.mm: directory =>
+    working.directory.let: directory =>
       processBuilder.directory(ji.File(directory.s))
     
     //Log.info(msg"Starting process ${this}")
@@ -247,7 +247,7 @@ case class Pipeline(commands: Command*) extends Executable:
     val processBuilders = commands.map: command =>
       val processBuilder = ProcessBuilder(command.arguments.ss*)
       
-      working.directory.mm: directory =>
+      working.directory.let: directory =>
         processBuilder.directory(ji.File(directory.s))
     
       processBuilder.nn
