@@ -64,13 +64,13 @@ object Classloader:
   
 class Classloader(val java: ClassLoader):
 
-  def parent: Maybe[Classloader] = Maybe(java.getParent).mm(new Classloader(_))
+  def parent: Maybe[Classloader] = Maybe(java.getParent).let(new Classloader(_))
 
   protected def urlClassloader: Maybe[jn.URLClassLoader] = java match
     case java: jn.URLClassLoader => java
-    case _                       => parent.mm(_.urlClassloader)
+    case _                       => parent.let(_.urlClassloader)
   
-  def classpath: Maybe[Classpath] = urlClassloader.mm(Classpath(_))
+  def classpath: Maybe[Classpath] = urlClassloader.let(Classpath(_))
   private[hellenism] def inputStream(path: Text)(using notFound: Raises[ClasspathError]): ji.InputStream =
     Maybe(java.getResourceAsStream(path.s)).or(abort(ClasspathError(path)))
 
@@ -80,7 +80,7 @@ object Classpath:
  
 class Classpath(urlClassloader: jn.URLClassLoader):
   def entries: List[ClasspathEntry] =
-    urlClassloader.mm(_.getURLs.nn.to(List)).or(Nil).map(_.nn).flatMap(ClasspathEntry(_).option)
+    urlClassloader.let(_.getURLs.nn.to(List)).or(Nil).map(_.nn).flatMap(ClasspathEntry(_).option)
 
 object ClasspathRef:
   type Forbidden = "" | ".*\\/.*"
