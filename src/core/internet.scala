@@ -25,13 +25,14 @@ import language.experimental.captureChecking
 case class OfflineError() extends Error(msg"an Internet connection is not available")
 
 class Internet(val online: Boolean):
-  def require[ResultType](fn: Online.type ?=> ResultType)(using Raises[OfflineError]): ResultType =
+  def require[ResultType](fn: Online ?=> ResultType)(using Raises[OfflineError]): ResultType =
     if online then fn(using Online) else abort(OfflineError())
 
-  def appropriate[ResultType](fn: Online.type ?=> ResultType): Maybe[ResultType] =
+  def appropriate[ResultType](fn: Online ?=> ResultType): Maybe[ResultType] =
     if online then fn(using Online) else Unset
 
-object Online extends Internet(true)
+class Online() extends Internet(true)
+object Online extends Online()
 
 def internet[ResultType](online: Boolean)(fn: Internet ?=> ResultType): ResultType =
   fn(using Internet(online))
