@@ -114,7 +114,7 @@ object Url:
     def root(url: Url[SchemeType]): (Scheme[SchemeType], Maybe[Authority]) = (url.scheme, url.authority)
     
     def prefix(root: (Scheme[SchemeType], Maybe[Authority])): Text =
-      t"${root(0).name}:${root(1).mm(t"//"+_.show).or(t"")}"
+      t"${root(0).name}:${root(1).let(t"//"+_.show).or(t"")}"
     
   given [SchemeType <: Label]: PathCreator[Url[SchemeType], "", (Scheme[SchemeType], Maybe[Authority])] with
     def path(ascent: (Scheme[SchemeType], Maybe[Authority]), descent: List[PathName[""]]): Url[SchemeType] =
@@ -196,7 +196,7 @@ object Url:
 
 object Authority:
   given Show[Authority] = auth =>
-    t"${auth.userInfo.fm(t"")(_+t"@")}${auth.host}${auth.port.mm(_.show).fm(t"")(t":"+_)}"
+    t"${auth.userInfo.fm(t"")(_+t"@")}${auth.host}${auth.port.let(_.show).fm(t"")(t":"+_)}"
 
   def parse(value: Text)(using Raises[UrlError]): Authority raises HostnameError =
     import UrlError.Expectation.*
