@@ -152,7 +152,7 @@ object Json extends Dynamic:
 trait FallbackJsonSerializer:
   given [T](using writer: JsonSerializer[T]): JsonSerializer[Maybe[T]] = new JsonSerializer[Maybe[T]]:
     override def omit(t: Maybe[T]): Boolean = t.unset
-    def write(value: Maybe[T]): JsonAst = value.mm(writer.write(_)).or(JsonAst(null))
+    def write(value: Maybe[T]): JsonAst = value.let(writer.write(_)).or(JsonAst(null))
 
 object JsonSerializer extends FallbackJsonSerializer:
   given JsonSerializer[Int] = int => JsonAst(int.toLong)
