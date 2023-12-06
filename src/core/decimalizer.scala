@@ -42,7 +42,7 @@ extends DecimalConverter:
       val scale = baseScale - exponentValue
       
       val norm: Double = abs*math.pow(10, -baseScale)
-      val digits: Int = significantFigures.or(decimalPlaces.mm(1 + scale + _)).or(3)
+      val digits: Int = significantFigures.or(decimalPlaces.let(1 + scale + _)).or(3)
       
       @tailrec
       def write(chars: Array[Char], bcd: Long, idx: Int, carry: Boolean, point: Int): Array[Char] =

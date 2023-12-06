@@ -182,7 +182,7 @@ extension [TextType](using textual: Textual[TextType])(text: TextType)
     case i: Int => text.slice(i, text.length)
 
   def snipWhere(pred: Char -> Boolean, index: Int = 0): Maybe[(TextType, TextType)] =
-    text.where(pred, index).mm(text.snip(_))
+    text.where(pred, index).let(text.snip(_))
 
   def whilst(pred: Char -> Boolean): TextType = text.upto(!pred(_))
   def mapChars(fn: Char -> Char): TextType = textual.map(text, fn)
