@@ -199,7 +199,7 @@ object Reachable:
       (using path: Raises[PathError])
       : PathType =
     val rootRest: Maybe[(RootType, Text)] = rootParser.parse(text)
-    if rootRest.unset
+    if rootRest.absent
     then raise(PathError(PathError.Reason.NotRooted(text))):
       creator.path(summonInline[Default[RootType]](), Nil)
     else
