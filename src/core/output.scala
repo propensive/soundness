@@ -67,8 +67,8 @@ case class TextStyle
   private def strikeEsc: Text = if strike then styles.Strike.on else styles.Strike.off
   
   def addChanges(buf: StringBuilder, next: TextStyle): Unit =
-    if fg != next.fg then buf.add(next.fg.mm(Fg(_).ansi(24)).or(t"$esc[39m"))
-    if bg != next.bg then buf.add(next.bg.mm(Bg(_).ansi(24)).or(t"$esc[49m"))
+    if fg != next.fg then buf.add(next.fg.let(Fg(_).ansi(24)).or(t"$esc[39m"))
+    if bg != next.bg then buf.add(next.bg.let(Bg(_).ansi(24)).or(t"$esc[49m"))
     if italic != next.italic then buf.add(t"${esc}${next.italicEsc}")
     if bold != next.bold then buf.add(t"${esc}${next.boldEsc}")
     if reverse != next.reverse then buf.add(t"${esc}${next.reverseEsc}")

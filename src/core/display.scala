@@ -72,7 +72,7 @@ object Displayable:
         val dot = if obj then t"." else t"#"
         val className = e"${Fg(0xc61485)}(${frame.method.className.drop(drop, Rtl).fit(classWidth, Rtl)})"
         val method = e"${Fg(0xdb6f92)}(${frame.method.method.fit(methodWidth)})"
-        val line = e"${Fg(0x47d1cc)}(${frame.line.mm(_.show).or(t"?")})"
+        val line = e"${Fg(0x47d1cc)}(${frame.line.let(_.show).or(t"?")})"
         
         e"$msg\n  ${Fg(0x808080)}(at) $className${Fg(0x808080)}($dot)$method $file${Fg(0x808080)}(:)$line"
     
@@ -84,7 +84,7 @@ object Displayable:
     val className = e"${Fg(0xc61485)}(${frame.method.className.fit(40, Rtl)})"
     val method = e"${Fg(0xdb6f92)}(${frame.method.method.fit(40)})"
     val file = e"${Fg(0x5f9e9f)}(${frame.file.fit(18, Rtl)})"
-    val line = e"${Fg(0x47d1cc)}(${frame.line.mm(_.show).or(t"?")})"
+    val line = e"${Fg(0x47d1cc)}(${frame.line.let(_.show).or(t"?")})"
     e"$className${Fg(0x808080)}(#)$method $file${Fg(0x808080)}(:)$line"
 
   given Displayable[StackTrace.Method] = method =>
