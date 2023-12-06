@@ -126,7 +126,7 @@ class PositionReader(private var in: LazyList[Text]):
         Character(ch, lastLine, lastCol).tap(advance)
   
   def start(): (Int, Int) = (startLine, startCol)
-  def get(): Text = buf.toString.show.tap(buf.clear().waive)
+  def get(): Text = buf.toString.show.also(buf.clear())
   
   def put(char: Character): Unit =
     if buf.isEmpty then
