@@ -26,7 +26,7 @@ import language.experimental.captureChecking
 sealed trait Change[+ElemType] extends Product:
   def map[ElemType2](fn: ElemType => ElemType2): Change[ElemType2^{fn}] = this match
     case Sub(left, right, leftValue, rightValue) =>
-      Sub(left, right, leftValue.mm(fn), rightValue.mm(fn))
+      Sub(left, right, leftValue.let(fn), rightValue.let(fn))
     
     case edit: Edit[ElemType] =>
       edit.map(fn)
@@ -35,8 +35,8 @@ sealed trait Edit[+ElemType] extends Change[ElemType]:
   def value: Maybe[ElemType]
 
   override def map[ElemType2](fn: ElemType => ElemType2): Edit[ElemType2^{fn}] = this match
-    case Par(left, right, value) => Par(left, right, value.mm(fn))
-    case Del(left, value)        => Del(left, value.mm(fn))
+    case Par(left, right, value) => Par(left, right, value.let(fn))
+    case Del(left, value)        => Del(left, value.let(fn))
     case Ins(right, value)       => Ins(right, fn(value))
 
 case class Ins[+ElemType](right: Int, value: ElemType) extends Edit[ElemType]
@@ -130,7 +130,7 @@ case class Diff[ElemType](edits: Edit[ElemType]*):
       case Del(_, _) :: tail     => recur(tail, seq.tail)
       
       case Par(_, _, value) :: tail =>
-        value.mm(update(_, seq.head)).or(seq.head) #:: recur(tail, seq.tail)
+        value.let(update(_, seq.head)).or(seq.head) #:: recur(tail, seq.tail)
 
     recur(edits.to(List), seq)
 
