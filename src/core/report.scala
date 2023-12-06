@@ -168,22 +168,21 @@ class TestReport(using Environment):
   private val details: scm.SortedMap[TestId, scm.ArrayBuffer[DebugInfo]] =
     scm.TreeMap[TestId, scm.ArrayBuffer[DebugInfo]]().withDefault(_ => scm.ArrayBuffer[DebugInfo]())
 
-  def declareSuite(suite: TestSuite): TestReport = this.tap: _ =>
+  def declareSuite(suite: TestSuite): TestReport = this.also:
     resolve(suite.parent).tests(suite.id) = ReportLine.Suite(suite)
 
-  def addBenchmark(testId: TestId, benchmark: Benchmark): TestReport = this.tap: _ =>
+  def addBenchmark(testId: TestId, benchmark: Benchmark): TestReport = this.also:
     val benchmarks = resolve(testId.suite).tests
     benchmarks.getOrElseUpdate(testId, ReportLine.Bench(testId, benchmark))
   
-  def addOutcome(testId: TestId, outcome: Outcome): TestReport = this.tap: _ =>
+  def addOutcome(testId: TestId, outcome: Outcome): TestReport = this.also:
     val tests = resolve(testId.suite).tests
     
     (tests.getOrElseUpdate(testId, ReportLine.Test(testId, scm.ArrayBuffer[Outcome]())): @unchecked) match
       case ReportLine.Test(_, buf) => buf.append(outcome)
   
   def addDebugInfo(testId: TestId, info: DebugInfo): TestReport =
-    this.tap: _ =>
-      details(testId) = details(testId).append(info)
+    this.also(details(testId) = details(testId).append(info))
 
   enum Status:
     case Pass, Fail, Throws, CheckThrows, Mixed, Suite, Bench
