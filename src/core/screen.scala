@@ -355,7 +355,7 @@ case class Pty(buffer: ScreenBuffer, state0: PtyState, output: Funnel[Text]):
         
         case Osc => current match
           case '\u0007' =>
-            osc(escBuffer.text.tap(escBuffer.clear().waive))
+            osc(escBuffer.text.also(escBuffer.clear()))
             proceed(Normal)
           
           case '\u0027' =>
@@ -367,7 +367,7 @@ case class Pty(buffer: ScreenBuffer, state0: PtyState, output: Funnel[Text]):
         
         case Osc2 => current match
           case '\\' =>
-            osc(escBuffer.text.tap(escBuffer.clear().waive))
+            osc(escBuffer.text.also(escBuffer.clear()))
             proceed(Normal)
           
           case char =>
@@ -388,7 +388,7 @@ case class Pty(buffer: ScreenBuffer, state0: PtyState, output: Funnel[Text]):
             proceed(Csi)
           
           case char if '\u0040' <= char <= '\u007e' =>
-            csi(escBuffer.text.tap(escBuffer.clear().waive), char)
+            csi(escBuffer.text.also(escBuffer.clear()), char)
             proceed(Normal)
           
           case char =>
@@ -401,7 +401,7 @@ case class Pty(buffer: ScreenBuffer, state0: PtyState, output: Funnel[Text]):
             proceed(Csi2)
           
           case char if '\u0040' <= char <= '\u007e' =>
-            csi(escBuffer.text.tap(escBuffer.clear().waive), char)
+            csi(escBuffer.text.also(escBuffer.clear()), char)
             proceed(Normal)
           
           case char =>
