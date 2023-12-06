@@ -41,9 +41,9 @@ case class BaseLayout
       : Text =
     val home: Text = Environment.home[Text].or(Properties.user.home[Text]())
     val home2: Text = if home.ends(t"/") then home.drop(1, Rtl) else home
-    part.mm(baseDir / _).or(baseDir).render(home2)
+    part.let(baseDir / _).or(baseDir).render(home2)
 
-  given newBaseDir: BaseLayout.Dir = BaseLayout.Dir(baseDir.home, part.mm(_ :: baseDir.path).or(baseDir.path))
+  given newBaseDir: BaseLayout.Dir = BaseLayout.Dir(baseDir.home, part.let(_ :: baseDir.path).or(baseDir.path))
 
   def apply[PathType]()(using SpecificPath[PathType], SystemProperties, Raises[SystemPropertyError], Environment, Raises[EnvironmentError]): PathType =
     val path: Text = absolutePath
