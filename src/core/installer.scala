@@ -101,13 +101,13 @@ object Installer:
         val prefixSize = fileSize - payloadSize - jarSize
         val stream = scriptFile.stream[Bytes]
         val paths: List[Path] = Environment.path
-        val installDirectory = target.mm(_.as[Directory]).or(candidateTargets().headOption.maybe)
+        val installDirectory = target.let(_.as[Directory]).or(candidateTargets().headOption.maybe)
         
-        val installFile = installDirectory.mm: directory =>
+        val installFile = installDirectory.let: directory =>
           (directory / PathName(command)).make[File]()
 
         Log.info(t"Writing to ${installFile.debug}")
-        installFile.mm: file =>
+        installFile.let: file =>
           if prefixSize > 0.b then (stream.take(prefixSize) ++ stream.drop(fileSize - jarSize)).writeTo(file)
           else stream.writeTo(file)
           file.executable() = true

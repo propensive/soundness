@@ -98,7 +98,7 @@ def daemon[BusType <: Matchable]
   
   def shutdown(pid: Maybe[Pid])(using Stdio, Log[Text]): Unit =
     Log.info(t"Shutdown daemon")
-    pid.mm(terminatePid.fulfill(_)).or(termination)
+    pid.let(terminatePid.fulfill(_)).or(termination)
 
   def client
       (socket: jn.Socket)
@@ -218,7 +218,7 @@ def daemon[BusType <: Matchable]
             catch
               case exception: Exception =>
                 Log.fail(exception.toString.show)
-                Maybe(exception.getStackTrace).mm: stackTrace =>
+                Maybe(exception.getStackTrace).let: stackTrace =>
                   stackTrace.foreach: frame =>
                     Log.fail(frame.toString.tt)
                 exitPromise.fulfill(ExitStatus.Fail(1))
@@ -249,7 +249,7 @@ def daemon[BusType <: Matchable]
         termination
 
       Async:
-        safely(baseDir.watch()).mm: watcher =>
+        safely(baseDir.watch()).let: watcher =>
           watcher.stream.foreach:
             case Delete(_, t"port") =>
               Log.info(t"The file $portFile was deleted; terminating immediately")
