@@ -41,7 +41,7 @@ object Properties extends Dynamic:
       (using properties: SystemProperties, reader: SystemProperty[String, PropertyType],
           systemProperty: Raises[SystemPropertyError])
       : PropertyType^{properties, reader, systemProperty} =
-    properties(property).mm(reader.read).or(abort(SystemPropertyError(property)))
+    properties(property).let(reader.read).or(abort(SystemPropertyError(property)))
     
   def selectDynamic(key: String): PropertyAccess[key.type] = PropertyAccess[key.type](key)
 
@@ -110,7 +110,7 @@ case class PropertyAccess[NameType <: String](property: String) extends Dynamic:
           reader: SystemProperty[NameType+"."+key.type, PropertyType],
           systemProperty: Raises[SystemPropertyError])
       : PropertyType^{properties, reader, systemProperty} =
-    properties((property+"."+key).tt).mm(reader.read(_)).or:
+    properties((property+"."+key).tt).let(reader.read(_)).or:
       abort(SystemPropertyError((property+"."+key).tt))
   
   inline def apply
@@ -118,7 +118,7 @@ case class PropertyAccess[NameType <: String](property: String) extends Dynamic:
       ()(using properties: SystemProperties, reader: SystemProperty[NameType, PropertyType],
           systemProperty: Raises[SystemPropertyError])
       : PropertyType^{properties, reader, systemProperty} =
-    properties(valueOf[NameType].tt).mm(reader.read(_)).or:
+    properties(valueOf[NameType].tt).let(reader.read(_)).or:
       abort(SystemPropertyError(valueOf[NameType].tt))
 
 case class SystemPropertyError(property: Text)
@@ -129,4 +129,4 @@ package systemProperties:
     def apply(name: Text): Unset.type = Unset
 
   given jvm: SystemProperties with
-    def apply(name: Text): Maybe[Text] = Maybe(System.getProperty(name.s)).mm(_.tt)
+    def apply(name: Text): Maybe[Text] = Maybe(System.getProperty(name.s)).let(_.tt)

@@ -40,7 +40,7 @@ object Environment extends Dynamic:
       (using environment: Environment, reader: EnvironmentVariable[Label, VariableType],
           environmentError: Raises[EnvironmentError])
       : VariableType^{environment, reader, environmentError} =
-    environment.variable(variable).mm(reader.read).or(raise(EnvironmentError(variable))(reader.read(Text(""))))
+    environment.variable(variable).let(reader.read).or(raise(EnvironmentError(variable))(reader.read(Text(""))))
     
   inline def selectDynamic
       [VariableType]
@@ -49,7 +49,7 @@ object Environment extends Dynamic:
           reader: EnvironmentVariable[key.type, VariableType],
           environmentError: Raises[EnvironmentError])
       : VariableType^{environment, reader, environmentError} =
-    environment.variable(reader.defaultName).mm(reader.read(_)).or:
+    environment.variable(reader.defaultName).let(reader.read(_)).or:
       raise(EnvironmentError(reader.defaultName))(reader.read(Text("")))
   
 @capability
@@ -124,4 +124,4 @@ package environments:
     def variable(name: Text): Unset.type = Unset
 
   given jvm: Environment with
-    def variable(name: Text): Maybe[Text] = Maybe(System.getenv(name.s)).mm(_.tt)
+    def variable(name: Text): Maybe[Text] = Maybe(System.getenv(name.s)).let(_.tt)
