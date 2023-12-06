@@ -136,7 +136,7 @@ class TestReport(using Environment):
     def summaries: List[Summary] = this match
       case Suite(suite, tests)  =>
         val rest = tests.list.sortBy(_(0).timestamp).flatMap(_(1).summaries)
-        if suite.unset then rest else Summary(Status.Suite, suite.option.get.id, 0, 0, 0, 0) :: rest
+        if suite.absent then rest else Summary(Status.Suite, suite.option.get.id, 0, 0, 0, 0) :: rest
       
       case Bench(testId, bench@Benchmark(_, _, _, _, _, _, _, _)) =>
         List(Summary(Status.Bench, testId, 0, 0, 0, 0))
