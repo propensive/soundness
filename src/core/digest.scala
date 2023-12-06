@@ -113,7 +113,7 @@ case class Digest[HashType <: HashScheme[?]](bytes: Bytes) extends Encodable, Sh
 
 trait Digestible2:
   given [ValueType](using digestible: Digestible[ValueType]): Digestible[Maybe[ValueType]] = (acc, value) =>
-    value.mm(digestible.digest(acc, _))
+    value.let(digestible.digest(acc, _))
 
 object Digestible extends Digestible2:
   private transparent inline def deriveProduct(acc: DigestAccumulator, tuple: Tuple): Unit =
