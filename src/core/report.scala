@@ -386,7 +386,7 @@ class TestReport(using Environment):
       Out.println(ribbon.fill(e"${suite.let(_.id.id).or(t"")}", e"Benchmarks", e"${suite.let(_.name).or(t"")}"))
       
       val comparisons: List[ReportLine.Bench] =
-        benchmarks.filter(!_.benchmark.baseline.unset).to(List)
+        benchmarks.filter(!_.benchmark.baseline.absent).to(List)
       
       def confInt(b: Benchmark): Output =
         if b.confidenceInterval == 0 then e"" else e"${colors.Thistle}(±)${showTime(b.confidenceInterval)}"
