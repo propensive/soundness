@@ -524,7 +524,7 @@ be used, but caution should be taken if there is a mismatch between the
 project's stability level and the importance of your own project.
 
 Quantitative is designed to be _small_. Its entire source code currently consists
-of 1385 lines of code.
+of 1384 lines of code.
 
 ## Building
 
@@ -566,6 +566,10 @@ libraries perform some quite unpleasant tasks.
 Names should be English words, though many are obscure or archaic, and it should be noted how
 willingly English adopts foreign words. Names are generally of Greek or Latin origin, and have
 often arrived in English via a romance language.
+
+## Logo
+
+The logo shows an unlabelled diagram of the seven SI base units, as illustrated on [Wikipedia](https://en.wikipedia.org/wiki/2019_redefinition_of_the_SI_base_units).
 
 ## License
 
