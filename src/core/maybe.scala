@@ -22,30 +22,30 @@ import fulminate.*
 import language.experimental.captureChecking
 
 object Unset:
-  override def toString(): String = "[unset]"
+  override def toString(): String = "[absent]"
 
 type Maybe[ValueType] = Unset.type | ValueType
 
 case class UnsetValueError() extends Error(Message("the value was not set".tt))
 
 extension [ValueType](maybe: Maybe[ValueType])
-  inline def unset: Boolean = maybe == Unset
+  inline def absent: Boolean = maybe == Unset
   inline def present: Boolean = maybe != Unset
-  inline def or(inline value: => ValueType): ValueType = if unset then value else maybe.asInstanceOf[ValueType]
-  inline def vouch(using Unsafe): ValueType = or(throw Mistake(msg"a value was vouched but was unset"))
+  inline def or(inline value: => ValueType): ValueType = if absent then value else maybe.asInstanceOf[ValueType]
+  inline def vouch(using Unsafe): ValueType = or(throw Mistake(msg"a value was vouched but was absent"))
   
   def presume(using default: Default[ValueType]): ValueType^{default} = or(default())
-  def option: Option[ValueType] = if unset then None else Some(vouch(using Unsafe))
-  def assume(using unsetValue: CanThrow[UnsetValueError]): ValueType^{unsetValue} = or(throw UnsetValueError())
+  def option: Option[ValueType] = if absent then None else Some(vouch(using Unsafe))
+  def assume(using absentValue: CanThrow[UnsetValueError]): ValueType^{absentValue} = or(throw UnsetValueError())
   
   inline def fm[ValueType2](inline alternative: => ValueType2)(inline fn: ValueType => ValueType2): ValueType2 =
-    if unset then alternative else fn(vouch(using Unsafe))
+    if absent then alternative else fn(vouch(using Unsafe))
 
   inline def let[ValueType2](inline fn: ValueType => ValueType2): Maybe[ValueType2] =
-    if unset then Unset else fn(vouch(using Unsafe))
+    if absent then Unset else fn(vouch(using Unsafe))
 
 extension [ValueType](iterable: Iterable[Maybe[ValueType]])
-  transparent inline def vouched: Iterable[ValueType] = iterable.filter(!_.unset).map(_.vouch(using Unsafe))
+  transparent inline def vouched: Iterable[ValueType] = iterable.filter(!_.absent).map(_.vouch(using Unsafe))
 
 object Maybe:
   inline def apply[ValueType](value: ValueType | Null): Maybe[ValueType] =

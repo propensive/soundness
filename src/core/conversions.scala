@@ -56,7 +56,7 @@ object Unapply:
 
   given maybe[MatchType, ResultType](using ext: Unapply[MatchType, ResultType])
       : Unapply[Maybe[MatchType], ResultType] =
-    value => if value.unset then None else ext.unapply(value.asInstanceOf[MatchType])
+    value => if value.absent then None else ext.unapply(value.asInstanceOf[MatchType])
 
   given [ResultType](using ext: Irrefutable[Text, ResultType]): Irrefutable[String, ResultType] = v =>
     ext.unapply(v.tt)

@@ -217,15 +217,15 @@ object Tests extends Suite(t"Rudiments Tests"):
       .assert(_ == (11, 4))
     
     suite(t"Maybe tests"):
-      val unsetInt: Maybe[Int] = Unset
+      val absentInt: Maybe[Int] = Unset
       val setInt: Maybe[Int] = 42
 
-      test(t"Check whether unset value is unset"):
-        unsetInt.unset
+      test(t"Check whether absent value is absent"):
+        absentInt.absent
       .assert(_ == true)
 
-      test(t"Check thet set value is not unset"):
-        setInt.unset
+      test(t"Check thet set value is not absent"):
+        setInt.absent
       .assert(_ == false)
 
       test(t"Unsafely vouch a set value"):
@@ -233,20 +233,20 @@ object Tests extends Suite(t"Rudiments Tests"):
         x
       .assert(_ == 42)
 
-      test(t"Provide an alternative for an unset value"):
-        unsetInt.or(1)
+      test(t"Provide an alternative for an absent value"):
+        absentInt.or(1)
       .assert(_ == 1)
 
       test(t"Provide an alternative for a set value"):
         setInt.or(1)
       .assert(_ == 42)
 
-      test(t"Presume a default value for an unset value"):
-        unsetInt.presume
+      test(t"Presume a default value for an absent value"):
+        absentInt.presume
       .assert(_ == 0)
 
-      test(t"Convert an unset value to an Option"):
-        unsetInt.option
+      test(t"Convert an absent value to an Option"):
+        absentInt.option
       .assert(_ == None)
 
       test(t"Convert a set value to an Option"):
@@ -254,15 +254,15 @@ object Tests extends Suite(t"Rudiments Tests"):
       .assert(_ == Some(42))
 
       test(t"Fold over a Maybe"):
-        unsetInt.fm(0)(_ + 1)
+        absentInt.fm(0)(_ + 1)
       .assert(_ == 0)
 
       test(t"Fold over a set Maybe"):
         setInt.fm(0)(_ + 1)
       .assert(_ == 43)
 
-      test(t"Map over an unset Maybe"):
-        unsetInt.let(_ + 1)
+      test(t"Map over an absent Maybe"):
+        absentInt.let(_ + 1)
       .assert(_ == Unset)
 
       test(t"Map over a set Maybe"):
