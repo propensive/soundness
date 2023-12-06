@@ -27,7 +27,7 @@ object WorkingDirectory:
 @capability
 trait WorkingDirectory(val directory: Maybe[Text]):
   def path[PathType](using specificPath: SpecificPath[PathType]): Maybe[PathType^{specificPath}] =
-    directory.mm(SpecificPath(_))
+    directory.let(SpecificPath(_))
 
 object HomeDirectory:
   given default(using Quickstart): HomeDirectory = HomeDirectory(System.getProperty("user.home").nn.tt)
@@ -37,7 +37,7 @@ case class HomeDirectory(text: Text):
   def path[PathType: SpecificPath]: PathType = SpecificPath(text)
 
 package workingDirectories:
-  given default: WorkingDirectory = WorkingDirectory(Maybe(System.getProperty("user.dir")).mm(_.tt))
+  given default: WorkingDirectory = WorkingDirectory(Maybe(System.getProperty("user.dir")).let(_.tt))
 
 package homeDirectories:
   given default: HomeDirectory = HomeDirectory(System.getProperty("user.home").nn.tt)
