@@ -146,7 +146,7 @@ def validate
   val value: Either[AggregateError[ErrorType], SuccessType] =
     boundary: label ?=>
       val raiser = RaisesAggregate(label)
-      Right(block(using raiser)).tap(raiser.finish().waive)
+      Right(block(using raiser)).also(raiser.finish())
   
   value match
     case Left(error)  => abort[SuccessType, AggregateError[ErrorType]](error)
