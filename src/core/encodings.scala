@@ -112,7 +112,7 @@ class CharDecoder(val encoding: Encoding)(using handler: BadEncodingHandler):
         val result = decoder.decode(in, out, todo.isEmpty).nn
         
         if !result.isMalformed then result else
-          handler.handle(total + in.position, encoding).mm(out.put(_))
+          handler.handle(total + in.position, encoding).let(out.put(_))
           in.position(in.position + result.length)
           decode()
       

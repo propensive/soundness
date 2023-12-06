@@ -49,7 +49,7 @@ object Unicode:
       case _                => 1
 
   def eastAsianWidth(char: Char): Maybe[EaWidth] =
-    eastAsianWidths.minAfter(CharRange(char.toInt, char.toInt)).maybe.mm(_(1))
+    eastAsianWidths.minAfter(CharRange(char.toInt, char.toInt)).maybe.let(_(1))
 
   var count = 0
 
@@ -81,7 +81,7 @@ object Unicode:
     recur(stream, TreeMap())
 
 extension (char: Char)
-  def displayWidth: Int = Unicode.eastAsianWidth(char).mm(_.width).or(1)
+  def displayWidth: Int = Unicode.eastAsianWidth(char).let(_.width).or(1)
 
 @missingContext("a contextual TextWidthCalculator is required to work out the horizontal space a string of text takes when rendered in a monospaced font; for most purposes,\n\n    hieroglyph.textWidthCalculation.uniform\n\nwill suffice, but if using East Asian scripts,\n\n    import hieroglyph.textWidthCalculation.eastAsianScripts\n\nshould be used.")
 trait TextWidthCalculator:
