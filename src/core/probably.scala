@@ -53,9 +53,9 @@ case class TestId(name: Text, suite: Maybe[TestSuite], codepoint: Codepoint):
   val timestamp: Long = System.currentTimeMillis
   import textWidthCalculation.uniform
   lazy val id: Text = (suite.hashCode ^ name.hashCode).hex.pad(6, Rtl, '0').take(6, Rtl)
-  lazy val ids: List[Text] =  id :: suite.mm(_.id.ids).or(Nil)
+  lazy val ids: List[Text] =  id :: suite.let(_.id.ids).or(Nil)
   def apply[T](ctx: TestContext ?=> T): Test[T] = Test[T](this, ctx(using _))
-  def depth: Int = suite.mm(_.id.depth).or(0) + 1
+  def depth: Int = suite.let(_.id.depth).or(0) + 1
 
 class TestSuite(val name: Text, val parent: Maybe[TestSuite] = Unset)(using codepoint: Codepoint):
   override def equals(that: Any): Boolean = that.matchable(using Unsafe) match

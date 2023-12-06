@@ -233,7 +233,7 @@ class TestReport(using Environment):
     
   case class Summary(status: Status, id: TestId, count: Int, min: Long, max: Long, avg: Long):
     def indentedName: Output =
-      val depth = id.suite.mm(_.id.depth).or(0) + 1
+      val depth = id.suite.let(_.id.depth).or(0) + 1
       
       val title =
         if status == Status.Suite then e"${colors.Silver}($Bold(${id.name}))"
@@ -384,7 +384,7 @@ class TestReport(using Environment):
     
     benches(lines).groupBy(_.test.suite).foreach: (suite, benchmarks) =>
       val ribbon = Ribbon(colors.DarkGreen.srgb, colors.MediumSeaGreen.srgb, colors.PaleGreen.srgb)
-      Out.println(ribbon.fill(e"${suite.mm(_.id.id).or(t"")}", e"Benchmarks", e"${suite.mm(_.name).or(t"")}"))
+      Out.println(ribbon.fill(e"${suite.let(_.id.id).or(t"")}", e"Benchmarks", e"${suite.let(_.name).or(t"")}"))
       
       val comparisons: List[ReportLine.Bench] =
         benchmarks.filter(!_.benchmark.baseline.unset).to(List)
