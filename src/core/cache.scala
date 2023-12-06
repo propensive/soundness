@@ -47,7 +47,7 @@ class LruCache[KeyType, ValueType](maxSize: Int):
   def contains(key: KeyType): Boolean = ids.contains(key)
 
   def remove(key: KeyType): Unit =
-    ids.getOrElse(key, Unset).mm: id =>
+    ids.getOrElse(key, Unset).let: id =>
       values -= id
       ids -= key
       keys -= id
@@ -55,7 +55,7 @@ class LruCache[KeyType, ValueType](maxSize: Int):
   def apply(key: KeyType)(value: => ValueType): ValueType =
     val newId = counter.getAndIncrement()
     
-    ids.getOrElse(key, Unset).mm: oldId =>
+    ids.getOrElse(key, Unset).let: oldId =>
       values(oldId).tap(touch(oldId, newId, key, _))
     .or:
       value.tap: value =>
