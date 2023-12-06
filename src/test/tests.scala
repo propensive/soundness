@@ -262,11 +262,11 @@ object Tests extends Suite(t"Rudiments Tests"):
       .assert(_ == 43)
 
       test(t"Map over an unset Maybe"):
-        unsetInt.mm(_ + 1)
+        unsetInt.let(_ + 1)
       .assert(_ == Unset)
 
       test(t"Map over a set Maybe"):
-        setInt.mm(_ + 1)
+        setInt.let(_ + 1)
       .assert(_ == 43)
 
       test(t"Construct a new Maybe from a null value"):
