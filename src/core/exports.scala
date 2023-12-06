@@ -18,8 +18,6 @@ package rudiments
 
 import language.experimental.captureChecking
 
-export scala.util.chaining.scalaUtilChainingOps
-
 export scala.reflect.{ClassTag, Typeable}
 export scala.collection.immutable.{Set, List, ListMap, Map, TreeSet, TreeMap}
 export scala.collection.concurrent.TrieMap

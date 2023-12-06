@@ -40,6 +40,19 @@ extension [ValueType](value: ValueType)
   transparent inline def matchable(using Unsafe): ValueType & Matchable =
     value.asInstanceOf[ValueType & Matchable]
 
+extension [ValueType](inline value: => ValueType)
+  inline def pipe[ResultType](inline fn: ValueType => ResultType): ResultType = fn(value)
+
+  inline def tap(inline block: ValueType => Unit): ValueType =
+    val result: ValueType = value
+    block(result)
+    result
+  
+  inline def also(inline block: => Unit): ValueType =
+    val result: ValueType = value
+    block
+    result
+
 case class Counter(first: Int = 0):
   private val atomicInt: juca.AtomicInteger = juca.AtomicInteger(first)
   def apply(): Int = atomicInt.incrementAndGet()
