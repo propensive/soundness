@@ -23,7 +23,7 @@ import anticipation.*
 import spectacular.*
 import perforate.*
 
-import language.experimental.captureChecking
+import language.experimental.pureFunctions
 
 import Table.ShortPair
 
@@ -133,7 +133,7 @@ case class Table
       titles +: data.map { row => IArray.from(cols.map(_.get(row))) }
     
     val freeWidth: Int =
-      maxWidth - cols.filter(!_.width.unset).map(_.width.or(0)).sum - style.cost(cols.length)
+      maxWidth - cols.filter(!_.width.absent).map(_.width.or(0)).sum - style.cost(cols.length)
     
     val cellRefs: Array[Array[ShortPair]] =
       Array.tabulate(data.length + 1, cols.length): (row, col) =>
@@ -148,13 +148,13 @@ case class Table
       val maxLinesByRow: IArray[Int] = cellRefs.map(_.maxBy(_.left).left).immutable(using Unsafe)
       
       val totalUnfilledCellsByColumn: IArray[Int] = IArray.tabulate[Int](cols.length): col =>
-        if !cols(col).width.unset then 0 else cellRefs.indices.count: row =>
+        if !cols(col).width.absent then 0 else cellRefs.indices.count: row =>
           cellRefs(row)(col).left < maxLinesByRow(row)
       
       val mostSpaceInAnyColumn = totalUnfilledCellsByColumn.max
       
       val focus: Int = cols.indices.maxBy: col =>
-        if totalUnfilledCellsByColumn(col) == mostSpaceInAnyColumn && cols(col).width.unset
+        if totalUnfilledCellsByColumn(col) == mostSpaceInAnyColumn && cols(col).width.absent
         then widths(col)
         else -1
 
