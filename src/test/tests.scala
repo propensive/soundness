@@ -191,9 +191,9 @@ object Tests extends Suite(t"Parasite tests"):
 
         test(t"Sequencing tasks run in parallel"):
           var acc: List[Int] = Nil
-          val t1 = Async(sleep(40L).tap((acc ::= 2).waive))
-          val t2 = Async(sleep(60L).tap((acc ::= 3).waive))
-          val t3 = Async(sleep(20L).tap((acc ::= 1).waive))
+          val t1 = Async(sleep(40L).also((acc ::= 2)))
+          val t2 = Async(sleep(60L).also((acc ::= 3)))
+          val t3 = Async(sleep(20L).also((acc ::= 1)))
           List(t1, t2, t3).sequence.await()
           acc
         .assert(_ == List(3, 2, 1))

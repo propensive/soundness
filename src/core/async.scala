@@ -105,11 +105,11 @@ class Async
       [DurationType: GenericDuration]
       (duration: DurationType)(using Raises[CancelError], Raises[TimeoutError])
       : ResultType =
-    promise.await(duration).tap(thread.join().waive)
+    promise.await(duration).also(thread.join())
     result()
   
   def await()(using cancel: Raises[CancelError]): ResultType =
-    promise.await().tap(thread.join().waive)
+    promise.await().also(thread.join())
     result()
   
   private def result()(using cancel: Raises[CancelError]): ResultType =
