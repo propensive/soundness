@@ -613,7 +613,7 @@ object JsonAst:
                 colStart = cur
                 line += 1
               number = 
-                try BigDecimal(numberText.toCharArray).tap(numberText.setLength(0).waive)
+                try BigDecimal(numberText.toCharArray).also(numberText.setLength(0))
                 catch case err: NumberFormatException => throw err
               
               continue = false
