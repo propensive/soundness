@@ -164,7 +164,7 @@ case class GitRepo(gitDir: Directory, workTree: Maybe[Directory] = Unset):
         : LazyList[Commit] =
       
       def commit(): LazyList[Commit] =
-        if hash.unset || tree.unset || author.unset || committer.unset then LazyList()
+        if hash.absent || tree.absent || author.absent || committer.absent then LazyList()
         else
           given Unsafe = Unsafe
           val pem = parsePem(signature.join(t"\n"))
