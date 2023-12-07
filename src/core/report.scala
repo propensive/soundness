@@ -297,18 +297,13 @@ class TestReport(using Environment):
 
       val maxHits = data.map(_.branches).maxOption
 
-      def line(tiles: List[TreeTile], surface: Surface): (Output, Juncture) =
-        import treeStyles.default
-        import surface.juncture.*
+      given TreeStyle[(Output, Juncture)] = (tiles, row) =>
+        val description = if row(1).treeName == t"DefDef" then row(1).method.display else e"${row(1).shortCode}"
         
-        val description: Output =
-          if surface.juncture.treeName == t"DefDef" then surface.juncture.method.display
-          else e"$shortCode"
-        
-        e"${tiles.map(_.text).join}• $description" -> surface.juncture
+        e"${tiles.map(treeStyles.default.text(_)).join}• $description" -> row(1)
 
       def render(junctures: List[Surface]): LazyList[(Output, Juncture)] =
-        drawTree[Surface, (Output, Juncture)](_.children, line)(junctures)
+        drawTree[Surface, (Output, Juncture)](_.children, surface => (e"", surface.juncture))(junctures)
       
       import colors.*
       
