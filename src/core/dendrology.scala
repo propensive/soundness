@@ -61,13 +61,13 @@ enum TreeTile:
 import TreeTile.*
 
 object TreeDiagram:
-  def apply[NodeType](top: Seq[NodeType])(using expandable: Expandable[NodeType]): TreeDiagram[NodeType] =
-    apply[NodeType](expandable.children(_))(top)
+  def apply[NodeType](roots: NodeType*)(using expandable: Expandable[NodeType]): TreeDiagram[NodeType] =
+    by[NodeType](expandable.children(_))(roots*)
 
-  def apply
+  def by
       [NodeType]
       (getChildren: NodeType => Seq[NodeType])
-      (top: Seq[NodeType])
+      (roots: NodeType*)
       : TreeDiagram[NodeType] =
     def recur(level: List[TreeTile], input: Seq[NodeType]): LazyList[(List[TreeTile], NodeType)] =
       val last = input.size - 1
@@ -75,7 +75,7 @@ object TreeDiagram:
         val tiles: List[TreeTile] = ((if idx == last then Last else Branch) :: level).reverse
         (tiles, item) #:: recur((if idx == last then Space else Extender) :: level, getChildren(item))
   
-    new TreeDiagram(recur(Nil, top))
+    new TreeDiagram(recur(Nil, roots))
 
 case class TreeDiagram[NodeType](lines: LazyList[(List[TreeTile], NodeType)]):
   def render[LineType](line: NodeType => LineType)(using style: TreeStyle[LineType]): LazyList[LineType] =

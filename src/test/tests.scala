@@ -19,6 +19,7 @@ package dendrology
 import probably.*
 import rudiments.*
 import gossamer.*
+import acyclicity.*
 import anticipation.*
 import turbulence.*, stdioSources.jvm
 
@@ -52,6 +53,21 @@ object Tests extends Suite(t"Dendrology tests"):
     ))
   )
 
+  val types = Dag(
+    t"Any"           -> Set(),
+    t"Matchable"     -> Set(t"Any"),
+    t"AnyVal"        -> Set(t"Matchable"),
+    t"AnyRef"        -> Set(t"Matchable"),
+    t"Unit"          -> Set(t"AnyVal"),
+    t"Boolean"       -> Set(t"AnyVal"),
+    t"Int"           -> Set(t"AnyVal"),
+    t"String"        -> Set(t"AnyRef"),
+    t"List[Int]"     -> Set(t"AnyRef"),
+    t"Null"          -> Set(t"String", t"List[Int]"),
+    t"Nothing"       -> Set(t"Null", t"Unit", t"Boolean", t"Int")
+  )
+
   def run(): Unit =
-    import treeStyles.rounded
-    drawTree[Tree](_.children, tree => t"● ${tree.value}")(life).map(_(1)).foreach(Out.println(_))
+    import treeStyles.default
+    import dagStyles.default
+    DagDiagram(types).render { node => t"▪ $node" }.foreach(println(_))
