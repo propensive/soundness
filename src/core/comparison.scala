@@ -69,9 +69,9 @@ object Semblance:
         Column(e"Found")(_.right)
       )
 
-      val diagram = TreeDiagram[(Text, Semblance)](children, mkLine)
+      val diagram = TreeDiagram[(Text, Semblance)](children)
 
-      table.tabulate(diagram(cmp).lines, maxWidth = 200).join(e"\n")
+      table.tabulate(diagram(cmp).render(mkLine), maxWidth = 200).join(e"\n")
     
     case Different(left, right) =>
       val whitespace = if right.contains('\n') then e"\n" else e" "
