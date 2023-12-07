@@ -304,7 +304,7 @@ class TestReport(using Environment):
          else e"• ${surface.juncture.shortCode}"
 
       def render(junctures: List[Surface]): LazyList[(Surface, Output)] =
-        drawTree[Surface](_.children, describe(_))(junctures)
+        TreeDiagram[Surface](_.children, describe(_))(junctures).nodeLines
       
       import colors.*
       
