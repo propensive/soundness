@@ -54,4 +54,4 @@ object Tests extends Suite(t"Dendrology tests"):
 
   def run(): Unit =
     import treeStyles.rounded
-    drawTree[Tree, Text](_.children, tree => t"● ${tree.value}")(life).foreach(Out.println(_))
+    drawTree[Tree](_.children, tree => t"● ${tree.value}")(life).map(_(1)).foreach(Out.println(_))

@@ -54,16 +54,18 @@ enum TreeTile:
 import TreeTile.*
 
 def drawTree
-    [NodeType, LineType]
-    (using treeStyle: TreeStyle[LineType])
+    [NodeType]
+    (using DummyImplicit)
+    [LineType]
     (getChildren: NodeType -> Seq[NodeType], serializeNode: NodeType -> LineType)
+    (using treeStyle: TreeStyle[LineType])
     (top: Seq[NodeType])
-    : LazyList[LineType] =
-  def recur(level: List[TreeTile], input: Seq[NodeType]): LazyList[LineType] =
+    : LazyList[(NodeType, LineType)] =
+  def recur(level: List[TreeTile], input: Seq[NodeType]): LazyList[(NodeType, LineType)] =
     val last = input.size - 1
     input.zipWithIndex.to(LazyList).flatMap: (item, idx) =>
       val tiles: List[TreeTile] = ((if idx == last then Last else Branch) :: level).reverse
       val current = treeStyle.serialize(tiles, serializeNode(item))
-      current #:: recur((if idx == last then Space else Extender) :: level, getChildren(item))
+      (item, current) #:: recur((if idx == last then Space else Extender) :: level, getChildren(item))
 
   recur(Nil, top)
