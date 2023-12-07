@@ -10,7 +10,7 @@ project dendrology
   module core
     compiler  scala
     sources   src/core
-    include   spectacular/core
+    include   spectacular/core gossamer/core
 
   module test
     compiler  scala

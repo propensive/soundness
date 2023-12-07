@@ -18,37 +18,52 @@ package dendrology
 
 import rudiments.*
 import anticipation.*
+import gossamer.*
 
 import language.experimental.captureChecking
 
 package treeStyles:
-  given default: TreeStyle = TreeStyle(Text("  "), Text("└─"), Text("├─"), Text("│ "))
-  given rounded: TreeStyle = TreeStyle(Text("  "), Text("╰─"), Text("├─"), Text("│ "))
-  given ascii: TreeStyle   = TreeStyle(Text("  "), Text("+-"), Text("|-"), Text("| "))
+  given default[TextType: Textual]: TextualTreeStyle[TextType] =
+    TextualTreeStyle(Text("  "), Text("└─"), Text("├─"), Text("│ "))
+  
+  given rounded[TextType: Textual]: TextualTreeStyle[TextType] =
+    TextualTreeStyle(Text("  "), Text("╰─"), Text("├─"), Text("│ "))
+  
+  given ascii[TextType: Textual]: TextualTreeStyle[TextType] =
+    TextualTreeStyle(Text("  "), Text("+-"), Text("|-"), Text("| "))
 
-case class TreeStyle(space: Text, last: Text, branch: Text, extender: Text)
+trait TreeStyle[LineType]:
+  def serialize(tiles: List[TreeTile], node: LineType): LineType
+
+case class TextualTreeStyle
+    [LineType]
+    (space: Text, last: Text, branch: Text, extender: Text)
+    (using textual: Textual[LineType])
+extends TreeStyle[LineType]:
+  def serialize(tiles: List[TreeTile], node: LineType): LineType = textual.make(tiles.map(text(_)).join.s)+node
+  
+  def text(tile: TreeTile): Text = tile match
+    case TreeTile.Space    => space
+    case TreeTile.Last     => last
+    case TreeTile.Branch   => branch
+    case TreeTile.Extender => extender
 
 enum TreeTile:
   case Space, Last, Branch, Extender
-
-  def text(using style: TreeStyle): Text = this match
-    case Space    => style.space
-    case Last     => style.last
-    case Branch   => style.branch
-    case Extender => style.extender
 
 import TreeTile.*
 
 def drawTree
     [NodeType, LineType]
-    (getChildren: NodeType => Seq[NodeType], line: (List[TreeTile], NodeType) => LineType)
+    (using treeStyle: TreeStyle[LineType])
+    (getChildren: NodeType -> Seq[NodeType], serializeNode: NodeType -> LineType)
     (top: Seq[NodeType])
     : LazyList[LineType] =
   def recur(level: List[TreeTile], input: Seq[NodeType]): LazyList[LineType] =
     val last = input.size - 1
     input.zipWithIndex.to(LazyList).flatMap: (item, idx) =>
-      val current = line(((if idx == last then Last else Branch) :: level).reverse, item)
+      val tiles: List[TreeTile] = ((if idx == last then Last else Branch) :: level).reverse
+      val current = treeStyle.serialize(tiles, serializeNode(item))
       current #:: recur((if idx == last then Space else Extender) :: level, getChildren(item))
 
   recur(Nil, top)
-
