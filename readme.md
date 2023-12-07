@@ -4,19 +4,20 @@
 
 # Dendrology
 
-__Rendering of tree-like structures in the console__
+__Rendering of trees and DAGs in the console__
 
-_Dendrology_ provides a single method, `drawTree`, to produce a line-by-line,
-depth-indented visual representation of tree-structured data in a monospaced
-font, typically in a console, but potentially in any grid-based layout.
+_Dendrology_ provides methods for rendering data in a tree or directed acyclic graph
+structure as lines, for rendering in a monospaced font, typically in a terminal.
 
 ## Features
 
 - display any tree-structured data as a tree in a console
-- input data can be of any type whose children can be accessed recursively
+- tree data can be of any type whose children can be accessed recursively
+- display directed acyclic graphs in a console
 - output is a linearized sequence of any type
-- input is processed lazily, and output is a stream
+- tree input is processed lazily, and output is a stream
 - can be easily adapted to any grid-like layout, e.g. an HTML table
+- custom textual renderings are available
 
 
 ## Availability
@@ -25,7 +26,7 @@ Dendrology has not yet been published as a binary.
 
 ## Getting Started
 
-Dendrology can render tree-like structures as text, such as the following:
+Dendrology can render tree-like structures as text, such as the following,
 ```
 ├─● Plantae
 ├─● Fungi
@@ -43,76 +44,119 @@ Dendrology can render tree-like structures as text, such as the following:
         │ └─● Canis
         └─● Ursidae
 ```
-
-To convert some data in a tree-like structure into visual tree, we need a few
-things:
- - a type, `NodeType`, which represents each node in the tree,
- - a type, `LineType`, for each line of output (often just a string),
- - a way to access the children of each node, as a `Seq[NodeType]`, called `getChildren`,
- - a way to construct each line, `LineType`, from its node plus a sequence of "tiles"
-   representing the lines and spaces of the tree layout, called `mkLine`, and
- - the data to convert.
-
-The algorithm performs a depth-first traversal of the data, mapping each node
-to a line, and flattening the data in the process. The output will be a
-`LazyList[LineType]`. This traversal and conversion would be trivial, except for the
-additional `List[TreeTile]` that is provided for the construction of each line.
-
-The `List[TreeTile]` parameter is a sequence of tiles representing the lines
-and spacing needed to render the lines making up the tree, intended to be
-printed left-to-right, and left-aligned, with the variable number of elements
-in the sequence corresponding to the depth of that node in the tree, and
-effectively providing an appropriate indentation for each node, which would
-normally be rendered immediately after the tiles.
-
-For example, the lambda,
-```scala
-(tiles, node) -> t"${tiles.map(_.text).join}> ${node.title}"
+and DAGs such as this:
 ```
-could define a `mkLine` which returns a `Text` line by appending the `Node`'s
-`title` field to the tiles, serialized and joined as text.
-
-Four different kinds of tile are necessary to render any table:
- - a space (`Space`),
- - a vertical bar (`Extender`),
- - a vertical bar with a branch to the right (`Branch`), and
- - an L-shaped final branch (`Last`)
-
-These are defined in the `TreeTile` enumeration, and have a corresponding
-`Show` instance to convert them to text, however this requires a contextual
-`TreeStyle` instance in scope; a value which defines exactly which characters
-should be used to render the tiles as text. Three implementations are provided
-in the `dendrology.treeStyles` package: `default`, `rounded` and `ascii`.
-
-Calling `drawTree` with appropriate `getChildren` and this `mkLine`
-lambda will produce a `LazyList[Text]` instance which could, for example, be
-printed to standard output, like so:
-
-```scala
-import dendrology.*
-import treeStyles.rounded
-
-def mkLine(tiles: List[TreeTile], node: Node): Text =
-  t"${tiles.map(_.text).join}> ${node.title}"
-
-val lines = drawTree(_.children, mkLine)(myNodes)
-lines.foreach(println(_))
+▪ Any
+└─▪ Matchable
+  ├─▪ AnyRef
+  │ ├─▪ List[Int]
+  └─│─│─▪ AnyVal
+    │ │ ├─▪ Boolean
+    │ │ ├─│─▪ Int
+    │ │ └─│─│─▪ Unit
+    └─│───│─│─│─▪ String
+      └───│─│─│─┴─▪ Null
+          └─┴─┴───┴─▪ Nothing
 ```
+
+Dendrology is versatile, and can represent data in a variety of input and output types, so long as methods are
+specified for working with those types.
+
+## Trees
+
+To create a tree, all we need is the root node (or nodes), of some type, and a way to access a node's children
+(of the same type). This can then be applied recursively to the root node to fully expand the tree. This
+approach has the advantage that it does not require the data to be reshaped into a particular data structure to
+be used.
+
+Dendrology makes it possible to define the method for accessing a node's children in two ways: either as a
+lambda when a `TreeDiagram` is constructed, like so,
+```scala
+val diagram = TreeDiagram.by[Person](person => person.children)(headOfFamily)
+```
+or alternatively through a contextual instance of the typeclass `Expandable` for the given node type. Types
+which are naturally hierarchical can, of course, define their own `Expandable` instances so they can be used in
+tree-structures without the need to specify how child nodes should be accessed. For example:
+```scala
+given Expandable[Person] = _.children
+val diagram = TreeDiagram(headOfFamily)
+```
+
+It's possible to include multiple root nodes as parameters to `TreeDiagram`, which will appear as top-level
+siblings in the tree.
+
+Instances of `TreeDiagram` provide a few methods to help with rendering a diagram. The `render` method will
+meet most requirements for rendering a tree diagram as a series of lines. The `render` method takes a single
+parameter, a lambda for converting from the type of the nodes, `NodeType`, to a serialized type of each line,
+`LineType`. Typical choices might be a `NodeType` of some user-defined type like `Person`, and a `LineType` of
+`Text`.
+
+For example, we could write,
+```scala
+given Expandable[Person] = _.children
+val diagram = TreeDiagram(headOfFamily)
+
+import treeStyles.default
+val lines = diagram.render(_.name)
+lines.foreach(Out.println(_))
+```
+
+The algorithm performs a depth-first traversal of the data, mapping each node to a line, and flattening the data
+in the process. The output will be a `LazyList[LineType]`.
+
+The parameter to the `render` method, `_.name`, will determine the `LineType` is `Text`, which will resolve a
+contextual `TreeStyle[Text]`, which is needed to render the horizontal and vertical lines of the diagram as
+`Text`. The `dendrology.treeStyles` package provides `default`, `rounded` and `ascii` renderings for `Text` and
+other `Textual` types.
+
+In addition to `render`, the method `TreeDiagram#nodes` can recover the node value used to generate each line in
+the diagram. A common way to make use of this is to zip it with the output from `render` to get a
+`LazyList[(LineType, NodeType)]` which could be used to perform additional post-processing of each line, based
+on information from its corresponding node.
 
 ### Laziness
 
-The `drawTree` implementation accesses the tree data structure mostly
-lazily, but _does_ need to know the number of elements in each ancestor of the
-current node, but does not need to know anything about the descendants of
-subsequent nodes in the traversal until they are reached in their natural
-order.
+The `drawTree` implementation accesses the tree data structure mostly lazily, but _does_ need to know the number
+of elements in each ancestor of the current node, yet does not need to know anything about the descendants of
+subsequent nodes in the traversal until they are reached in their natural order.
 
-This is necessary because any subsequent siblings of any ancestor nodes will
-require an additional descending vertical line to be rendered in the
-appropriate column of the current line, whereas that vertical line should be
+This is necessary because any subsequent siblings of any ancestor nodes will require an additional descending
+vertical line to be rendered in the appropriate column of the current line, whereas that vertical line should be
 absent for each ancestor that is the last of its siblings.
 
+## Directed Acyclic Graphs
 
+A DAG diagram is represented by the `DagDiagram` class, and should be constructed from a `Dag` instance from
+[Acyclicity](https://github.com/propensive/acyclicity/).
+
+For example, given a value `dag`, an instance of `Dag[Person]`, we can construct a new `DagDiagram` with
+`DagDiagram(dag)`. Unlike `TreeDiagram`, `DagDiagram` always takes exactly one parameter.
+
+Like `TreeDiagram`, though, `DagDiagram` provides `render` and `nodes` methods with the same purpose. While
+`TreeDiagram` returns a `LazyList`, `DagDiagram` cannot (due to the nature of the data it represents) evaluate
+lazily, and provides a strict `List`.
+
+Here is the full code used to create the example DAG above:
+```scala
+import acyclicity.*
+import dendrology.*, dagStyles.default
+
+val dag = Dag(
+  t"Any"       -> Set(),
+  t"Matchable" -> Set(t"Any"),
+  t"AnyVal"    -> Set(t"Matchable"),
+  t"AnyRef"    -> Set(t"Matchable"),
+  t"Unit"      -> Set(t"AnyVal"),
+  t"Boolean"   -> Set(t"AnyVal"),
+  t"Int"       -> Set(t"AnyVal"),
+  t"String"    -> Set(t"AnyRef"),
+  t"List[Int]" -> Set(t"AnyRef"),
+  t"Null"      -> Set(t"String", t"List[Int]"),
+  t"Nothing"   -> Set(t"Null", t"Unit", t"Boolean", t"Int")
+)
+
+DagDiagram(dag).render { node => t"▪ $node" }.foreach(Out.println(_))
+```
 
 ## Status
 
