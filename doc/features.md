@@ -1,5 +1,7 @@
 - display any tree-structured data as a tree in a console
-- input data can be of any type whose children can be accessed recursively
+- tree data can be of any type whose children can be accessed recursively
+- display directed acyclic graphs in a console
 - output is a linearized sequence of any type
-- input is processed lazily, and output is a stream
+- tree input is processed lazily, and output is a stream
 - can be easily adapted to any grid-like layout, e.g. an HTML table
+- custom textual renderings are available

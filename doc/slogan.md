@@ -1,1 +1,1 @@
-Rendering of tree-like structures in the console
+Rendering of trees and DAGs in the console

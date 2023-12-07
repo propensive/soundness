@@ -1,3 +1,2 @@
-_Dendrology_ provides a single method, `drawTree`, to produce a line-by-line,
-depth-indented visual representation of tree-structured data in a monospaced
-font, typically in a console, but potentially in any grid-based layout.
+_Dendrology_ provides methods for rendering data in a tree or directed acyclic graph
+structure as lines, for rendering in a monospaced font, typically in a terminal.
