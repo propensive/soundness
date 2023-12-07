@@ -40,12 +40,19 @@ case class TextualTreeStyle
     (space: Text, last: Text, branch: Text, extender: Text)
     (using textual: Textual[LineType])
 extends TreeStyle[LineType]:
-  def serialize(tiles: List[TreeTile], node: LineType): LineType = textual.make(tiles.map(text(_)).join.s)+node
+  def serialize(tiles: List[TreeTile], node: LineType): LineType =
+    textual.make(tiles.map(text(_)).join.s)+node
   
   def text(tile: TreeTile): Text = tile match
     case TreeTile.Space    => space
     case TreeTile.Last     => last
     case TreeTile.Branch   => branch
+    case TreeTile.Extender => extender
+
+  def followOnText(tile: TreeTile): Text = tile match
+    case TreeTile.Space    => space
+    case TreeTile.Last     => space
+    case TreeTile.Branch   => extender
     case TreeTile.Extender => extender
 
 enum TreeTile:
