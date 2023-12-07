@@ -19,7 +19,8 @@ package dendrology
 import probably.*
 import rudiments.*
 import gossamer.*
-import turbulence.*, basicIo.jvm
+import anticipation.*
+import turbulence.*, stdioSources.jvm
 
 import unsafeExceptions.canThrowAny
 
@@ -52,6 +53,5 @@ object Tests extends Suite(t"Dendrology tests"):
   )
 
   def run(): Unit =
-    import treeStyles.default
-    def line(tiles: List[TreeTile], tree: Tree): Text = t"${tiles.map(_.text).join}● ${tree.value}"
-    drawTree[Tree, Text](_.children, line)(life).foreach(Out.println(_))
+    import treeStyles.rounded
+    drawTree[Tree, Text](_.children, tree => t"● ${tree.value}")(life).foreach(Out.println(_))
