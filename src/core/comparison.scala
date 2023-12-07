@@ -69,7 +69,7 @@ object Semblance:
         Column(e"Found")(_.right)
       )
 
-      table.tabulate(drawTree[(Text, Semblance), Row](children, mkLine)(cmp), maxWidth = 200).join(e"\n")
+      table.tabulate(drawTree[(Text, Semblance)](children, mkLine)(cmp).map(_(1)), maxWidth = 200).join(e"\n")
     
     case Different(left, right) =>
       val whitespace = if right.contains('\n') then e"\n" else e" "
