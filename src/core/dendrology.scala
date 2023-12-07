@@ -80,6 +80,9 @@ object TreeDiagram:
 case class TreeDiagram[NodeType](lines: LazyList[(List[TreeTile], NodeType)]):
   def render[LineType](line: NodeType => LineType)(using style: TreeStyle[LineType]): LazyList[LineType] =
     lines.map { (tiles, node) => style.serialize(tiles, line(node)) }
+  
+  def nodes: LazyList[NodeType] = lines.map(_(1))
+  def tiles: LazyList[List[TreeTile]] = lines.map(_(0))
 
 trait Expandable[NodeType]:
   def children(node: NodeType): List[NodeType]
