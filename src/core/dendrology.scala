@@ -60,19 +60,23 @@ enum TreeTile:
 
 import TreeTile.*
 
-def drawTree
-    [NodeType]
-    (using DummyImplicit)
-    [LineType]
-    (getChildren: NodeType -> Seq[NodeType], serializeNode: NodeType -> LineType)
-    (using treeStyle: TreeStyle[LineType])
-    (top: Seq[NodeType])
-    : LazyList[(NodeType, LineType)] =
-  def recur(level: List[TreeTile], input: Seq[NodeType]): LazyList[(NodeType, LineType)] =
-    val last = input.size - 1
-    input.zipWithIndex.to(LazyList).flatMap: (item, idx) =>
-      val tiles: List[TreeTile] = ((if idx == last then Last else Branch) :: level).reverse
-      val current = treeStyle.serialize(tiles, serializeNode(item))
-      (item, current) #:: recur((if idx == last then Space else Extender) :: level, getChildren(item))
+object TreeDiagram:
+  def apply
+      [NodeType]
+      (using DummyImplicit)
+      [LineType]
+      (getChildren: NodeType -> Seq[NodeType], serializeNode: NodeType -> LineType)
+      (using treeStyle: TreeStyle[LineType])
+      (top: Seq[NodeType])
+      : TreeDiagram[NodeType, LineType] =
+    def recur(level: List[TreeTile], input: Seq[NodeType]): LazyList[(NodeType, LineType)] =
+      val last = input.size - 1
+      input.zipWithIndex.to(LazyList).flatMap: (item, idx) =>
+        val tiles: List[TreeTile] = ((if idx == last then Last else Branch) :: level).reverse
+        val line = treeStyle.serialize(tiles, serializeNode(item))
+        (item, line) #:: recur((if idx == last then Space else Extender) :: level, getChildren(item))
+  
+    new TreeDiagram(recur(Nil, top))
 
-  recur(Nil, top)
+case class TreeDiagram[NodeType, LineType](nodeLines: LazyList[(NodeType, LineType)]):
+  def lines: LazyList[LineType] = nodeLines.map(_(1))
