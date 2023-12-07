@@ -39,7 +39,6 @@ object Semblance:
   given (using calc: TextWidthCalculator): Displayable[Semblance] =
     case Semblance.Breakdown(cmp, l, r) =>
       import tableStyles.horizontalGaps
-      import treeStyles.default
       
       def children(comp: (Text, Semblance)): List[(Text, Semblance)] = comp(1) match
         case Identical(value)                 => Nil
@@ -48,8 +47,11 @@ object Semblance:
       
       case class Row(treeLine: Text, left: Output, right: Output)
 
-      def mkLine(tiles: List[TreeTile], data: (Text, Semblance)): Row =
-        def line(bullet: Text) = t"${tiles.map(_.text).join}$bullet ${data(0)}"
+      given TreeStyle[Row] = (tiles, row) =>
+        row.copy(treeLine = tiles.map(treeStyles.default.text(_)).join+row.treeLine)
+
+      def mkLine(data: (Text, Semblance)) =
+        def line(bullet: Text): Text = t"$bullet ${data(0)}"
         
         data(1) match
           case Identical(v) =>
@@ -67,7 +69,7 @@ object Semblance:
         Column(e"Found")(_.right)
       )
 
-      table.tabulate(drawTree(children, mkLine)(cmp), maxWidth = 200).join(e"\n")
+      table.tabulate(drawTree[(Text, Semblance), Row](children, mkLine)(cmp), maxWidth = 200).join(e"\n")
     
     case Different(left, right) =>
       val whitespace = if right.contains('\n') then e"\n" else e" "
