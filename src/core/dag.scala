@@ -23,54 +23,54 @@ import language.experimental.captureChecking
 
 object Dag:
   @targetName("build")
-  def apply[T](keys: Set[T])(dependencies: T => Set[T]): Dag[T] =
+  def apply[NodeType](keys: Set[NodeType])(dependencies: NodeType => Set[NodeType]): Dag[NodeType] =
     Dag(keys.map { k => (k, dependencies(k)) }.to(Map))
 
   @targetName("fromEdges")
-  def apply[T](edges: (T, T)*): Dag[T] = Dag:
-    edges.foldLeft(Map[T, Set[T]]()):
+  def apply[NodeType](edges: (NodeType, NodeType)*): Dag[NodeType] = Dag:
+    edges.foldLeft(Map[NodeType, Set[NodeType]]()):
       case (acc, (k, v)) => acc.updated(k, acc.get(k).fold(Set(v))(_ + v))
   
   @targetName("fromNodes")
-  def apply[T](nodes: (T, Set[T])*): Dag[T] = Dag(Map(nodes*))
+  def apply[NodeType](nodes: (NodeType, Set[NodeType])*): Dag[NodeType] = Dag(Map(nodes*))
 
-case class Dag[T] private(edgeMap: Map[T, Set[T]] = Map()):
-  def keys: Set[T] = edgeMap.keySet
-  def map[S](fn: T => S): Dag[S] = Dag(edgeMap.map { case (k, v) => (fn(k), v.map(fn)) })
-  def subgraph(keep: Set[T]): Dag[T] = (keys &~ keep).foldLeft(this)(_.remove(_))
-  def apply(key: T): Set[T] = edgeMap.getOrElse(key, Set())
-  def descendants(key: T): Dag[T] = subgraph(reachable(key))
+case class Dag[NodeType] private(edgeMap: Map[NodeType, Set[NodeType]] = Map()):
+  def keys: Set[NodeType] = edgeMap.keySet
+  def map[NodeType2](fn: NodeType => NodeType2): Dag[NodeType2] = Dag(edgeMap.map { case (k, v) => (fn(k), v.map(fn)) })
+  def subgraph(keep: Set[NodeType]): Dag[NodeType] = (keys &~ keep).foldLeft(this)(_.remove(_))
+  def apply(key: NodeType): Set[NodeType] = edgeMap.getOrElse(key, Set())
+  def descendants(key: NodeType): Dag[NodeType] = subgraph(reachable(key))
 
   @targetName("removeKey")
-  infix def -(key: T): Dag[T] = Dag(edgeMap - key)
+  infix def -(key: NodeType): Dag[NodeType] = Dag(edgeMap - key)
   
-  def sources: Set[T] = edgeMap.collect { case (k, v) if v.isEmpty => k }.to(Set)
-  def edges: Set[(T, T)] = edgeMap.to(Set).flatMap { (k, vs) => vs.map(k -> _) }
-  def closure: Dag[T] = Dag(keys.map { k => k -> (reachable(k) - k) }.to(Map))
-  def sorted: List[T] = sort(edgeMap, Nil).reverse
-  def hasCycle(start: T): Boolean = findCycle(start).isDefined
+  def sources: Set[NodeType] = edgeMap.collect { case (k, v) if v.isEmpty => k }.to(Set)
+  def edges: Set[(NodeType, NodeType)] = edgeMap.to(Set).flatMap { (k, vs) => vs.map(k -> _) }
+  def closure: Dag[NodeType] = Dag(keys.map { k => k -> (reachable(k) - k) }.to(Map))
+  def sorted: List[NodeType] = sort(edgeMap, Nil).reverse
+  def hasCycle(start: NodeType): Boolean = findCycle(start).isDefined
   
-  def remove(key: T, value: T): Dag[T] =
+  def remove(key: NodeType, value: NodeType): Dag[NodeType] =
     Dag(edgeMap.updated(key, edgeMap.get(key).fold(Set())(_ - value)))
 
-  def traversal[S](fn: (Set[S], T) -> S): Map[T, S] =
-    sorted.foldLeft(Map[T, S]()):
+  def traversal[NodeType2](fn: (Set[NodeType2], NodeType) -> NodeType2): Map[NodeType, NodeType2] =
+    sorted.foldLeft(Map[NodeType, NodeType2]()):
       (map, next) => map.updated(next, fn(apply(next).map(map), next))
 
   @targetName("addAll")
-  infix def ++(dag: Dag[T]): Dag[T] =
+  infix def ++(dag: Dag[NodeType]): Dag[NodeType] =
     val joined = edgeMap.to(List) ++ dag.edgeMap.to(List)
     Dag(joined.groupBy(_._1).view.mapValues(_.flatMap(_._2).to(Set)).to(Map))
   
-  def add(key: T, value: T): Dag[T] = this ++ Dag(key -> value)
+  def add(key: NodeType, value: NodeType): Dag[NodeType] = this ++ Dag(key -> value)
 
-  def flatMap[S](fn: T => Dag[S]): Dag[S] = Dag:
+  def flatMap[NodeType2](fn: NodeType => Dag[NodeType2]): Dag[NodeType2] = Dag:
     edgeMap.flatMap:
       case (k, v) => fn(k).edgeMap.map:
         case (h, w) => (h, (w ++ v.flatMap(fn(_).keys)))
   .reduction
 
-  def reduction: Dag[T] =
+  def reduction: Dag[NodeType] =
     val allEdges = closure.edgeMap
     val removals = for i <- keys; j <- edgeMap(i); k <- edgeMap(j) if allEdges(i)(k) yield (i, k)
     
@@ -79,26 +79,26 @@ case class Dag[T] private(edgeMap: Map[T, Set[T]] = Map()):
         case (m, (k, v)) => m.updated(k, m(k) - v)
 
   // FIXME: This may be a slow implementation if called repeatedly
-  def reachable(node: T): Set[T] = edgeMap(node).flatMap(reachable) + node
+  def reachable(node: NodeType): Set[NodeType] = edgeMap(node).flatMap(reachable) + node
 
-  def invert: Dag[T] = Dag:
-    edgeMap.foldLeft(Map[T, Set[T]]()):
+  def invert: Dag[NodeType] = Dag:
+    edgeMap.foldLeft(Map[NodeType, Set[NodeType]]()):
       case (acc, (k, vs)) =>
         vs.foldLeft(acc):
           (acc2, v) => acc2.updated(v, acc2.get(v).fold(Set(k))(_ + k))
 
-  def remove(elem: T): Dag[T] = Dag:
+  def remove(elem: NodeType): Dag[NodeType] = Dag:
     (edgeMap - elem).view.mapValues:
       map => if map(elem) then map ++ edgeMap(elem) - elem else map
     .to(Map)
   
-  private def sort(todo: Map[T, Set[T]], done: List[T]): List[T] =
+  private def sort(todo: Map[NodeType, Set[NodeType]], done: List[NodeType]): List[NodeType] =
     if todo.isEmpty then done
     else
       val (node, _) = todo.find { (k, vs) => (vs -- done).isEmpty }.get
       sort((todo - node).view.mapValues(_.filter(_ != node)).to(Map), node :: done)
 
-  def filter(pred: T => Boolean): Dag[T] =
+  def filter(pred: NodeType => Boolean): Dag[NodeType] =
     val deletions = keys.filter(!pred(_))
     val inverted = invert
     
@@ -108,9 +108,9 @@ case class Dag[T] private(edgeMap: Map[T, Set[T]] = Map()):
           (acc2, ref) => acc2.updated(ref, acc2(ref) - next ++ acc(next))
       } -- deletions
 
-  private def findCycle(start: T): Option[List[T]] =
+  private def findCycle(start: NodeType): Option[List[NodeType]] =
     @tailrec
-    def recur(queue: List[(T, List[T])], finished: Set[T]): Option[List[T]] = queue match
+    def recur(queue: List[(NodeType, List[NodeType])], finished: Set[NodeType]): Option[List[NodeType]] = queue match
       case Nil =>
         None
       case (vertex, trace) :: tail =>
