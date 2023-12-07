@@ -297,13 +297,14 @@ class TestReport(using Environment):
 
       val maxHits = data.map(_.branches).maxOption
 
-      given TreeStyle[(Output, Juncture)] = (tiles, row) =>
-        val description = if row(1).treeName == t"DefDef" then row(1).method.display else e"${row(1).shortCode}"
-        
-        e"${tiles.map(treeStyles.default.text(_)).join}• $description" -> row(1)
+      import treeStyles.default
 
-      def render(junctures: List[Surface]): LazyList[(Output, Juncture)] =
-        drawTree[Surface, (Output, Juncture)](_.children, surface => (e"", surface.juncture))(junctures)
+      def describe(surface: Surface): Output =
+        if surface.juncture.treeName == t"DefDef" then e"• ${surface.juncture.method.display}"
+         else e"• ${surface.juncture.shortCode}"
+
+      def render(junctures: List[Surface]): LazyList[(Surface, Output)] =
+        drawTree[Surface](_.children, describe(_))(junctures)
       
       import colors.*
       
@@ -314,16 +315,17 @@ class TestReport(using Environment):
           .filter(!_.covered(allHits))
           .map(_.copy(children = Nil))
 
-      Table[(Output, Juncture)](
-        Column(e"") { row => if row(1).branch then e"⎇" else e"" },
+      Table[(Surface, Output)](
+        Column(e"") { row => if row(0).juncture.branch then e"⎇" else e"" },
         Column(e"") { row =>
-          if coverage.hits.contains(row(1).id) then e"${Bg(ForestGreen)}(  )"
-          else if coverage.oldHits.contains(row(1).id) then e"${Bg(Goldenrod)}(  )"
+          if coverage.hits.contains(row(0).juncture.id) then e"${Bg(ForestGreen)}(  )"
+          else if coverage.oldHits.contains(row(0).juncture.id) then e"${Bg(Goldenrod)}(  )"
           else e"${Bg(Brown)}(  )"
         },
-        Column(e"Juncture")(_(0)),
-        Column(e"Line") { row => e"$GreenYellow(${row(1).path})$Gray(:)$Gold(${row(1).lineNo})" },
-        Column(e"Symbol")(_(1).symbolName)
+        Column(e"Juncture")(_(1)),
+        Column(e"Line"): row =>
+          e"$GreenYellow(${row(0).juncture.path})$Gray(:)$Gold(${row(0).juncture.lineNo})",
+        Column(e"Symbol")(_(0).juncture.symbolName)
       ).tabulate(render(junctures2), columns)(using tableStyles.horizontal).foreach(Out.println)
       
       Out.println(e"")
