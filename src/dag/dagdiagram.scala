@@ -94,10 +94,3 @@ case class DagDiagram[NodeType](lines: List[(List[DagTile], NodeType)]):
   
   def nodes: List[NodeType] = lines.map(_(1))
   def tiles: List[List[DagTile]] = lines.map(_(0))
-
-@main
-def run(): Unit =
-  import dagStyles.default
-  val dag = Dag(t"two" -> Set(), t"three" -> Set(), t"four" -> Set(t"two"), t"five" -> Set(), t"six" -> Set(t"two", t"three"), t"seven" -> Set(), t"eight" -> Set(t"two"), t"nine" -> Set(t"three"), t"ten" -> Set(t"two", t"five"), t"eleven" -> Set(), t"twelve" -> Set(t"two", t"three", t"four", t"six"), t"thirteen" -> Set(), t"fourteen" -> Set(t"seven", t"two"), t"fifteen" -> Set(t"three", t"five"))
-  DagDiagram[Text](dag).render(desc => t"► $desc").foreach(println(_))
-  
