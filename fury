@@ -2,6 +2,7 @@
 # More information is available at: https://github.com/propensive/wrath/
 
 repo propensive/spectacular
+repo propensive/acyclicity
 repo propensive/probably
 
 target dendrology/test
@@ -11,9 +12,14 @@ project dendrology
     compiler  scala
     sources   src/core
     include   spectacular/core gossamer/core
+  
+  module dag
+    compiler  scala
+    sources   src/dag
+    include   spectacular/core gossamer/core acyclicity/core
 
   module test
     compiler  scala
     sources   src/test
-    include   dendrology/core probably/cli
+    include   dendrology/core probably/cli dendrology/dag
     main      dendrology.Tests
