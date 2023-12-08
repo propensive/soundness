@@ -34,7 +34,7 @@ object XmlName:
     case Unset                => name.name
     case Namespace(prefix, _) => t"$prefix:${name.name}"
 
-case class XmlName(name: Text, namespace: Maybe[Namespace] = Unset)
+case class XmlName(name: Text, namespace: Optional[Namespace] = Unset)
 
 sealed trait Xml:
   def pointer: List[Int | Text | Unit]
@@ -91,7 +91,7 @@ object Xml:
       catch case e: oxs.SAXParseException =>
         abort(XmlParseError(e.getLineNumber - 1, e.getColumnNumber - 1))
 
-    def getNamespace(node: owd.Node): Maybe[Namespace] =
+    def getNamespace(node: owd.Node): Optional[Namespace] =
       Option(node.getPrefix) match
         case None         => Unset
         case Some(prefix) => Option(node.getNamespaceURI) match
@@ -114,7 +114,7 @@ object Xml:
         
         val atts = (0 until node.getAttributes.nn.getLength).map(node.getAttributes.nn.item(_).nn)
         val attributes = atts.map { att =>
-          val alias: Maybe[Namespace] = getNamespace(att)
+          val alias: Optional[Namespace] = getNamespace(att)
           XmlName(Text(att.getLocalName.nn), alias) -> Text(att.getTextContent.nn)
         }.to(Map)
         
