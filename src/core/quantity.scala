@@ -444,7 +444,7 @@ object QuantitativeMacros:
     
     def untuple
         [TupleType: Type]
-        (dimension: Maybe[DimensionRef], result: List[UnitPower])
+        (dimension: Optional[DimensionRef], result: List[UnitPower])
         : List[UnitPower] =
       Type.of[TupleType] match
         case '[head *: tail] =>
