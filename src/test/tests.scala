@@ -254,11 +254,11 @@ object Tests extends Suite(t"Rudiments Tests"):
       .assert(_ == Some(42))
 
       test(t"Fold over a Optional"):
-        absentInt.fm(0)(_ + 1)
+        absentInt.lay(0)(_ + 1)
       .assert(_ == 0)
 
       test(t"Fold over a set Optional"):
-        setInt.fm(0)(_ + 1)
+        setInt.lay(0)(_ + 1)
       .assert(_ == 43)
 
       test(t"Map over an absent Optional"):
