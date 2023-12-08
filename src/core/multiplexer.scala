@@ -112,7 +112,7 @@ extension [ElementType](stream: LazyList[ElementType])
 
   def cluster
       [DurationType: SpecificDuration: GenericDuration]
-      (duration: DurationType, maxSize: Maybe[Int] = Unset, maxDelay: Maybe[DurationType] = Unset)
+      (duration: DurationType, maxSize: Optional[Int] = Unset, maxDelay: Optional[DurationType] = Unset)
       (using Monitor)
       : LazyList[List[ElementType]] =
     
