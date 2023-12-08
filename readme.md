@@ -173,6 +173,10 @@ Names should be English words, though many are obscure or archaic, and it should
 willingly English adopts foreign words. Names are generally of Greek or Latin origin, and have
 often arrived in English via a romance language.
 
+## Logo
+
+The logo shows part of the abdomen of a bee, the insect which makes honeycomb.
+
 ## License
 
 Honeycomb is copyright &copy; 2023 Jon Pretty & Propensive O&Uuml;, and is made available under the
