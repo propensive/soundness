@@ -136,7 +136,7 @@ case class ZipFile(private val filename: Text):
 
   def append
       [InstantType]
-      (entries: LazyList[ZipEntry], /*prefix: Maybe[Bytes] = Unset, */timestamp: Maybe[InstantType] = Unset)
+      (entries: LazyList[ZipEntry], /*prefix: Optional[Bytes] = Unset, */timestamp: Optional[InstantType] = Unset)
       (using env: Environment, instant: GenericInstant[InstantType] = timeApi.long)
       : Unit throws ZipError | StreamCutError =
     
