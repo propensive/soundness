@@ -84,8 +84,8 @@ trait ProcessRef:
   def abort()(using Log[Text]): Unit
   def alive: Boolean
   def attend(): Unit
-  def startTime[InstantType: SpecificInstant]: Maybe[InstantType]
-  def cpuUsage[DurationType: SpecificDuration]: Maybe[DurationType]
+  def startTime[InstantType: SpecificInstant]: Optional[InstantType]
+  def cpuUsage[DurationType: SpecificDuration]: Optional[DurationType]
 
 object OsProcess:
   private def allHandles = ProcessHandle.allProcesses.nn.iterator.nn.asScala.to(List)
@@ -105,17 +105,17 @@ class OsProcess private (java: ProcessHandle) extends ProcessRef:
   def alive: Boolean = java.isAlive
   def attend(): Unit = java.onExit.nn.get()
   
-  def parent: Maybe[OsProcess] = 
+  def parent: Optional[OsProcess] = 
     val parent = java.parent.nn
     if parent.isPresent then new OsProcess(parent.get.nn) else Unset
   
   def children: List[OsProcess] = java.children.nn.iterator.nn.asScala.map(new OsProcess(_)).to(List)
   
-  def startTime[InstantType: SpecificInstant]: Maybe[InstantType] =
+  def startTime[InstantType: SpecificInstant]: Optional[InstantType] =
     val instant = java.info.nn.startInstant.nn
     if instant.isPresent then SpecificInstant(instant.get.nn.toEpochMilli) else Unset
   
-  def cpuUsage[DurationType: SpecificDuration]: Maybe[DurationType] =
+  def cpuUsage[DurationType: SpecificDuration]: Optional[DurationType] =
     val duration = java.info.nn.totalCpuDuration.nn
     if duration.isPresent then SpecificDuration(duration.get.nn.toMillis) else Unset
 
@@ -164,10 +164,10 @@ class Process[+ExecType <: Label, ResultType](process: java.lang.Process) extend
 
   def osProcess(using Raises[PidError]) = OsProcess(pid)
   
-  def startTime[InstantType: SpecificInstant]: Maybe[InstantType] =
+  def startTime[InstantType: SpecificInstant]: Optional[InstantType] =
     safely(osProcess).let(_.startTime[InstantType])
   
-  def cpuUsage[DurationType: SpecificDuration]: Maybe[DurationType] =
+  def cpuUsage[DurationType: SpecificDuration]: Optional[DurationType] =
     safely(osProcess).let(_.cpuUsage[DurationType])
 
 sealed trait Executable:
