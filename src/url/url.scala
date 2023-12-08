@@ -121,8 +121,8 @@ object Url:
       Url(ascent(0), ascent(1), descent.reverse.map(_.render).join(t"/"))
     
   given show[SchemeType <: Label]: Show[Url[SchemeType]] = url =>
-    val auth = url.authority.fm(t"")(t"//"+_.show)
-    val rest = t"${url.query.fm(t"")(t"?"+_)}${url.fragment.fm(t"")(t"#"+_)}"
+    val auth = url.authority.lay(t"")(t"//"+_.show)
+    val rest = t"${url.query.lay(t"")(t"?"+_)}${url.fragment.lay(t"")(t"#"+_)}"
     t"${url.scheme}:$auth${url.pathText}$rest"
   
   given display[SchemeType <: Label]: Displayable[Url[SchemeType]] = url => e"$Underline(${Fg(0x00bfff)}(${show(url)}))"
@@ -196,7 +196,7 @@ object Url:
 
 object Authority:
   given Show[Authority] = auth =>
-    t"${auth.userInfo.fm(t"")(_+t"@")}${auth.host}${auth.port.let(_.show).fm(t"")(t":"+_)}"
+    t"${auth.userInfo.lay(t"")(_+t"@")}${auth.host}${auth.port.let(_.show).lay(t"")(t":"+_)}"
 
   def parse(value: Text)(using Raises[UrlError]): Authority raises HostnameError =
     import UrlError.Expectation.*
