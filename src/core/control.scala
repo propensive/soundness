@@ -78,10 +78,10 @@ extends Raises[ErrorType]:
   def abort(error: ErrorType): Nothing = boundary.break(Left(error))(using label)
 
 @capability
-class RaisesMaybe[ErrorType <: Error, SuccessType](label: boundary.Label[Maybe[SuccessType]])
+class RaisesOptional[ErrorType <: Error, SuccessType](label: boundary.Label[Optional[SuccessType]])
 extends Raises[ErrorType]:
-  type Result = Maybe[SuccessType]
-  type Return = Maybe[SuccessType]
+  type Result = Optional[SuccessType]
+  type Return = Optional[SuccessType]
   
   def record(error: ErrorType): Unit = boundary.break(Unset)(using label)
   def abort(error: ErrorType): Nothing = boundary.break(Unset)(using label)
@@ -123,10 +123,10 @@ def safely
     [ErrorType <: Error]
     (using DummyImplicit)
     [SuccessType]
-    (block: RaisesMaybe[ErrorType, SuccessType] ?=> CanThrow[Exception] ?=> SuccessType)
-    : Maybe[SuccessType] =
+    (block: RaisesOptional[ErrorType, SuccessType] ?=> CanThrow[Exception] ?=> SuccessType)
+    : Optional[SuccessType] =
   try boundary: label ?=>
-    block(using RaisesMaybe(label))
+    block(using RaisesOptional(label))
   catch case error: Exception => Unset
 
 def throwErrors
