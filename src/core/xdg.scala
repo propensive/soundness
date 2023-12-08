@@ -53,7 +53,7 @@ object Xdg:
   def runtimeDir
       [PathType]
       (using specificPath: SpecificPath[PathType], environment: Environment)
-      : Maybe[PathType/*^{specificPath, environment}*/] =
+      : Optional[PathType/*^{specificPath, environment}*/] =
     safely(Environment.xdgRuntimeDir[PathType])
   
   def bin

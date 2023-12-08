@@ -28,7 +28,7 @@ import language.dynamics
 
 @capability
 trait Environment:
-  def variable(name: Text): Maybe[Text]
+  def variable(name: Text): Optional[Text]
   def knownVariables: Set[Text] = Set()
 
 object Environment extends Dynamic:
@@ -55,7 +55,7 @@ object Environment extends Dynamic:
 @capability
 trait EnvironmentVariable[AliasType <: Label, +VariableType] extends Pure:
   inline def defaultName: Text = name.or(valueOf[AliasType].tt.uncamel.snake.upper)
-  def name: Maybe[Text] = Unset
+  def name: Optional[Text] = Unset
   def read(value: Text): VariableType
 
 trait EnvironmentVariable2:
@@ -124,4 +124,4 @@ package environments:
     def variable(name: Text): Unset.type = Unset
 
   given jvm: Environment with
-    def variable(name: Text): Maybe[Text] = Maybe(System.getenv(name.s)).let(_.tt)
+    def variable(name: Text): Optional[Text] = Optional(System.getenv(name.s)).let(_.tt)

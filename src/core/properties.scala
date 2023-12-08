@@ -30,7 +30,7 @@ import language.dynamics
 
 @capability
 trait SystemProperties:
-  def apply(name: Text): Maybe[Text]
+  def apply(name: Text): Optional[Text]
 
 object Properties extends Dynamic:
   given default(using Quickstart): SystemProperties = systemProperties.jvm
@@ -129,4 +129,4 @@ package systemProperties:
     def apply(name: Text): Unset.type = Unset
 
   given jvm: SystemProperties with
-    def apply(name: Text): Maybe[Text] = Maybe(System.getProperty(name.s)).let(_.tt)
+    def apply(name: Text): Optional[Text] = Optional(System.getProperty(name.s)).let(_.tt)
