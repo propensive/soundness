@@ -54,7 +54,7 @@ case class TzdbError(reason: TzdbError.Reason, line: Int)
 extends Error(msg"the timezone could not be parsed at line $line: $reason")
 
 object Tzdb:
-  case class Time(hours: Int, minutes: Int, seconds: Int, suffix: Maybe[Char])
+  case class Time(hours: Int, minutes: Int, seconds: Int, suffix: Optional[Char])
   case class Duration(hours: Int, minutes: Int, seconds: Int)
   
   enum Entry:
