@@ -38,7 +38,7 @@ extension [ValueType](maybe: Optional[ValueType])
   def option: Option[ValueType] = if absent then None else Some(vouch(using Unsafe))
   def assume(using absentValue: CanThrow[UnsetValueError]): ValueType^{absentValue} = or(throw UnsetValueError())
   
-  inline def fm[ValueType2](inline alternative: => ValueType2)(inline fn: ValueType => ValueType2): ValueType2 =
+  inline def lay[ValueType2](inline alternative: => ValueType2)(inline fn: ValueType => ValueType2): ValueType2 =
     if absent then alternative else fn(vouch(using Unsafe))
 
   inline def let[ValueType2](inline fn: ValueType => ValueType2): Optional[ValueType2] =
