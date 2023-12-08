@@ -69,7 +69,7 @@ object GitRepo:
     if (path / p".git").exists() then GitRepo((path / p".git").as[Directory], path.as[Directory])
     else GitRepo(path.as[Directory])
 
-case class GitRepo(gitDir: Directory, workTree: Maybe[Directory] = Unset):
+case class GitRepo(gitDir: Directory, workTree: Optional[Directory] = Unset):
 
   val repoOptions = workTree match
     case Unset               => sh"--git-dir=${gitDir.path}"
@@ -107,7 +107,7 @@ case class GitRepo(gitDir: Directory, workTree: Maybe[Directory] = Unset):
         case failure       => abort(GitError(PullFailed))
   
   def fetch
-      (depth: Maybe[Int] = Unset, repo: Text, refspec: Refspec)
+      (depth: Optional[Int] = Unset, repo: Text, refspec: Refspec)
       (using GitCommand, Log[Text], Internet, WorkingDirectory)(using gitError: Raises[GitError], exec: Raises[ExecError])
       : GitProcess[Unit]/*^{gitError, exec}*/ =
     
@@ -154,13 +154,13 @@ case class GitRepo(gitDir: Directory, workTree: Maybe[Directory] = Unset):
       case ExitStatus.Ok => name
       case failure       => abort(GitError(TagFailed))
   
-  private def parsePem(text: Text): Maybe[Pem] = safely(Pem.parse(text))
+  private def parsePem(text: Text): Optional[Pem] = safely(Pem.parse(text))
 
   def log()(using GitCommand, WorkingDirectory, Log[Text], Raises[ExecError]): LazyList[Commit] =
     def recur
-        (stream: LazyList[Text], hash: Maybe[CommitHash] = Unset, tree: Maybe[CommitHash] = Unset,
-            parents: List[CommitHash] = Nil, author: Maybe[Text] = Unset,
-            committer: Maybe[Text] = Unset, signature: List[Text] = Nil, lines: List[Text] = Nil)
+        (stream: LazyList[Text], hash: Optional[CommitHash] = Unset, tree: Optional[CommitHash] = Unset,
+            parents: List[CommitHash] = Nil, author: Optional[Text] = Unset,
+            committer: Optional[Text] = Unset, signature: List[Text] = Nil, lines: List[Text] = Nil)
         : LazyList[Commit] =
       
       def commit(): LazyList[Commit] =
@@ -273,7 +273,7 @@ object Git:
 
   def clone
       [PathType: GenericPath]
-      (source: Text, targetPath: PathType, bare: Boolean = false, branch: Maybe[Branch] = Unset,
+      (source: Text, targetPath: PathType, bare: Boolean = false, branch: Optional[Branch] = Unset,
           recursive: Boolean = false)
       (using Internet, WorkingDirectory, Log[Text], Decoder[Path], Raises[ExecError], GitCommand)(using gitError: Raises[GitError])
       : GitProcess[GitRepo]/*^{gitError}*/ =
@@ -353,7 +353,7 @@ case class GitCommand(file: File)
 
 case class Commit
     (commit: CommitHash, tree: CommitHash, parent: List[CommitHash], author: Text, committer: Text,
-        signature: Maybe[Pem], message: List[Text])
+        signature: Optional[Pem], message: List[Text])
 
 package gitCommands:
   given environmentDefault(using WorkingDirectory, Raises[PathError], Log[Text], Raises[IoError], Raises[ExecError]): GitCommand =
