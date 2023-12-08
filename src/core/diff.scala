@@ -32,7 +32,7 @@ sealed trait Change[+ElemType] extends Product:
       edit.map(fn)
 
 sealed trait Edit[+ElemType] extends Change[ElemType]:
-  def value: Maybe[ElemType]
+  def value: Optional[ElemType]
 
   override def map[ElemType2](fn: ElemType => ElemType2): Edit[ElemType2^{fn}] = this match
     case Par(left, right, value) => Par(left, right, value.let(fn))
@@ -40,14 +40,14 @@ sealed trait Edit[+ElemType] extends Change[ElemType]:
     case Ins(right, value)       => Ins(right, fn(value))
 
 case class Ins[+ElemType](right: Int, value: ElemType) extends Edit[ElemType]
-case class Del[+ElemType](left: Int, value: Maybe[ElemType] = Unset) extends Edit[ElemType]
+case class Del[+ElemType](left: Int, value: Optional[ElemType] = Unset) extends Edit[ElemType]
 
-case class Par[+ElemType](left: Int, right: Int, value: Maybe[ElemType] = Unset)
+case class Par[+ElemType](left: Int, right: Int, value: Optional[ElemType] = Unset)
 extends Edit[ElemType]
  
 case class Sub
     [+ElemType]
-    (left: Int, right: Int, leftValue: Maybe[ElemType], rightValue: Maybe[ElemType])
+    (left: Int, right: Int, leftValue: Optional[ElemType], rightValue: Optional[ElemType])
 extends Change[ElemType]
 
 enum Region[ElemType]:
@@ -55,8 +55,8 @@ enum Region[ElemType]:
   case Unchanged(retentions: List[Par[ElemType]])
 
 case class RDiff[ElemType](changes: Change[ElemType]*):
-  def flip: RDiff[Maybe[ElemType]] =
-    val changes2: Seq[Change[Maybe[ElemType]]] = changes.map:
+  def flip: RDiff[Optional[ElemType]] =
+    val changes2: Seq[Change[Optional[ElemType]]] = changes.map:
       case Par(left, right, value)                 => Par(right, left, value)
       case Del(left, value)                        => Ins(left, value)
       case Ins(right, value)                       => Del(right, value)
@@ -110,8 +110,8 @@ object Diff:
     recur(lines, 1, Nil, 0, 0, 0)
           
 case class Diff[ElemType](edits: Edit[ElemType]*):
-  def flip: Diff[Maybe[ElemType]] =
-    val edits2: Seq[Edit[Maybe[ElemType]]] = edits.map:
+  def flip: Diff[Optional[ElemType]] =
+    val edits2: Seq[Edit[Optional[ElemType]]] = edits.map:
       case Par(left, right, value) => Par(right, left, value)
       case Del(left, value)        => Ins(left, value)
       case Ins(right, value)       => Del(right, value)
