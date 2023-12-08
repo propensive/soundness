@@ -45,7 +45,7 @@ object CodlSchema:
     override def optional = Free
     override def toString(): String = "%"
 
-  def apply(subschemas: List[(Text, CodlSchema)]): CodlSchema = Struct(subschemas.map(Entry(_, _)), Arity.Optional)
+  def apply(subschemas: List[(Text, CodlSchema)]): CodlSchema = Struct(subschemas.map(Entry(_, _)), Arity.AtMostOne)
 
 
 sealed trait CodlSchema(val subschemas: IArray[CodlSchema.Entry], val arity: Arity,
@@ -90,7 +90,7 @@ extends Dynamic:
   export arity.{required, variadic, unique}
 
 enum Arity:
-  case One, AtLeastOne, Optional, Many, Unique
+  case One, AtLeastOne, AtMostOne, Many, Unique
 
   def required: Boolean = this == One || this == Unique || this == AtLeastOne
   def variadic: Boolean = this == AtLeastOne || this == Many
@@ -99,7 +99,7 @@ enum Arity:
   def symbol: Text = this match
     case One        => t""
     case AtLeastOne => t"+"
-    case Optional   => t"?"
+    case AtMostOne   => t"?"
     case Many       => t"*"
     case Unique     => t"!"
 
@@ -107,11 +107,11 @@ object Struct:
   def apply(arity: Arity, subschemas: (Text, CodlSchema)*): Struct =
     Struct(subschemas.map(CodlSchema.Entry(_, _)).to(List), arity)
 
-case class Struct(structSubschemas: List[CodlSchema.Entry], structArity: Arity = Arity.Optional)
+case class Struct(structSubschemas: List[CodlSchema.Entry], structArity: Arity = Arity.AtMostOne)
 extends CodlSchema(IArray.from(structSubschemas), structArity, Unset):
   import CodlSchema.Entry
   
-  def optional: Struct = Struct(structSubschemas, Arity.Optional)
+  def optional: Struct = Struct(structSubschemas, Arity.AtMostOne)
   def uniqueIndex: Maybe[Int] = subschemas.indexWhere(_.schema.arity == Arity.Unique) match
     case -1  => Unset
     case idx => idx
@@ -130,4 +130,4 @@ extends CodlSchema(IArray.from(structSubschemas), structArity, Unset):
 
 case class Field(fieldArity: Arity, fieldValidator: Maybe[Text => Boolean] = Unset)
 extends CodlSchema(IArray(), fieldArity, fieldValidator):
-  def optional: Field = Field(Arity.Optional, fieldValidator)
+  def optional: Field = Field(Arity.AtMostOne, fieldValidator)

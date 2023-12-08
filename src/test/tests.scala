@@ -23,7 +23,7 @@ import spectacular.*
 import parasite.*
 import perforate.*
 import anticipation.*
-import turbulence.*, basicIo.jvm
+import turbulence.*, stdioSources.jvm
 import hieroglyph.*, charEncoders.utf8
 import eucalyptus.*, logging.stdout
 
@@ -43,7 +43,7 @@ object Tests extends Suite(t"CoDL tests"):
     import Arity.*
 
     suite(t"Reader tests"):
-      def interpret(text: Text)(using Log): PositionReader = PositionReader(LazyList(text))
+      def interpret(text: Text)(using Log[Text]): PositionReader = PositionReader(LazyList(text))
 
       test(t"Character can store line"):
         Character('©', 123, 456).line
@@ -188,7 +188,7 @@ object Tests extends Suite(t"CoDL tests"):
       //   case _: IllegalStateException =>
 
     suite(t"Tokenizer tests"):
-      def parseText(text: Text)(using Log): (Int, LazyList[CodlToken]) =
+      def parseText(text: Text)(using Log[Text]): (Int, LazyList[CodlToken]) =
         val result = Codl.tokenize(LazyList(text))
         result(1).length
         result
@@ -497,7 +497,7 @@ object Tests extends Suite(t"CoDL tests"):
         doc.term().name()(1)
       .assert(_ == CodlNode(Data(t"beta")))
 
-    def read(text: Text)(using Log): CodlDoc = Codl.parse(text)
+    def read(text: Text)(using Log[Text]): CodlDoc = Codl.parse(text)
     
     suite(t"Untyped parsing tests"):
       test(t"Empty document"):
@@ -628,28 +628,28 @@ object Tests extends Suite(t"CoDL tests"):
       
       
     suite(t"Schema tests"):
-      val childSchema = Struct(Optional,
-                          t"one" -> Field(Optional),
-                          t"two" -> Field(Optional)
+      val childSchema = Struct(AtMostOne,
+                          t"one" -> Field(AtMostOne),
+                          t"two" -> Field(AtMostOne)
                         )
       
-      val grandchildSchema = Struct(Optional, t"data" -> Field(Optional))
+      val grandchildSchema = Struct(AtMostOne, t"data" -> Field(AtMostOne))
 
-      val childSchema2 = Struct(Optional,
+      val childSchema2 = Struct(AtMostOne,
                            t"alpha" -> grandchildSchema,
-                           t"beta" -> Field(Optional)
+                           t"beta" -> Field(AtMostOne)
                          )
                       
-      val rootSchema = Struct(Optional,
+      val rootSchema = Struct(AtMostOne,
                          t"child" -> childSchema,
                          t"second" -> childSchema2,
-                         t"third" -> Field(Optional),
-                         t"other" -> Struct(Optional,
-                           t"param" -> Field(Optional),
+                         t"third" -> Field(AtMostOne),
+                         t"other" -> Struct(AtMostOne,
+                           t"param" -> Field(AtMostOne),
                          )
                        )
       
-      val topSchema = Struct(Optional, t"root" -> rootSchema)
+      val topSchema = Struct(AtMostOne, t"root" -> rootSchema)
       
       test(t"Root node has correct name"):
         topSchema.parse(t"root").untyped()
@@ -666,7 +666,7 @@ object Tests extends Suite(t"CoDL tests"):
       test(t"Third child of root param is validated"):
         val doc = topSchema.parse(t"root\n  child\n  second\n  third value\n")
         doc.root()(2).schema
-      .assert(_ == Field(Optional))
+      .assert(_ == Field(AtMostOne))
       
       test(t"Second child of root param is validated"):
         val doc = topSchema.parse(t"root\n  child\n  second")
@@ -707,8 +707,8 @@ object Tests extends Suite(t"CoDL tests"):
         rootSchema.parse(t"child\n  one\nsecond").second().schema
       .assert(_ == childSchema2)
       
-      val requiredChild = Struct(Optional,
-                            t"root" -> Struct(Optional,
+      val requiredChild = Struct(AtMostOne,
+                            t"root" -> Struct(AtMostOne,
                               t"child" -> Field(One)
                             )
                           )
@@ -722,8 +722,8 @@ object Tests extends Suite(t"CoDL tests"):
         requiredChild.parse(t"root\n  child").untyped.root().child()
       .assert(_ == Data(t"child"))
       
-      val repeatableChild = Struct(Optional,
-                              t"root" -> Struct(Optional,
+      val repeatableChild = Struct(AtMostOne,
+                              t"root" -> Struct(AtMostOne,
                                 t"child" -> Field(Many)
                               )
                             )
@@ -737,8 +737,8 @@ object Tests extends Suite(t"CoDL tests"):
         repeatableChild.parse(t"root\n  child\n  child").untyped.root().child(1)
       .assert(_ == Data(t"child"))
       
-      val atLeastOneChild = Struct(Optional,
-                              t"root" -> Struct(Optional,
+      val atLeastOneChild = Struct(AtMostOne,
+                              t"root" -> Struct(AtMostOne,
                                 t"child" -> Field(AtLeastOne)
                               )
                             )
@@ -757,9 +757,9 @@ object Tests extends Suite(t"CoDL tests"):
       .assert(_ == CodlError(0, 0, 4, MissingKey(t"root", t"child")))
       
       def childWithTwoParams(alpha: Arity, beta: Arity) =
-        Struct(Optional,
-          t"root" -> Struct(Optional,
-            t"child" -> Struct(Optional,
+        Struct(AtMostOne,
+          t"root" -> Struct(AtMostOne,
+            t"child" -> Struct(AtMostOne,
               t"alpha" -> Field(alpha),
               t"beta" -> Field(beta)
             )
@@ -767,8 +767,8 @@ object Tests extends Suite(t"CoDL tests"):
         )
       
       def rootWithTwoParams(alpha: Arity, beta: Arity) =
-        Struct(Optional,
-          t"child" -> Struct(Optional,
+        Struct(AtMostOne,
+          t"child" -> Struct(AtMostOne,
             t"alpha" -> Field(alpha),
             t"beta" -> Field(beta)
           )
@@ -789,19 +789,19 @@ object Tests extends Suite(t"CoDL tests"):
       .assert(_ == CodlError(1, 16, 5, SurplusParams(t"three", t"child")))
       
       test(t"Two optional parameters not specified"):
-        childWithTwoParams(Optional, Optional).parse(t"root\n  child").root().child().layout.params
+        childWithTwoParams(AtMostOne, AtMostOne).parse(t"root\n  child").root().child().layout.params
       .assert(_ == 0)
       
       test(t"Two optional parameters with one specified"):
-        childWithTwoParams(Optional, Optional).parse(t"root\n  child one").root().child().layout.params
+        childWithTwoParams(AtMostOne, AtMostOne).parse(t"root\n  child one").root().child().layout.params
       .assert(_ == 1)
       
       test(t"Two optional parameters with both specified"):
-        childWithTwoParams(Optional, Optional).parse(t"root\n  child one two").root().child().layout.params
+        childWithTwoParams(AtMostOne, AtMostOne).parse(t"root\n  child one two").root().child().layout.params
       .assert(_ == 2)
       
       test(t"Two optional parameters with one surplus"):
-        capture[AggregateError[CodlError]](childWithTwoParams(Optional, Optional).parse(t"root\n  child one two three").root().child()) match
+        capture[AggregateError[CodlError]](childWithTwoParams(AtMostOne, AtMostOne).parse(t"root\n  child one two three").root().child()) match
           case AggregateError[CodlError](errors) => errors.head
       .assert(_ == CodlError(1, 16, 5, SurplusParams(t"three", t"child")))
       
@@ -828,19 +828,19 @@ object Tests extends Suite(t"CoDL tests"):
       .assert(_ == CodlError(1, 2, 5, MissingKey(t"child", t"beta")))
       
       test(t"Two optional parameters not specified on root"):
-        rootWithTwoParams(Optional, Optional).parse(t"  child").child().layout.params
+        rootWithTwoParams(AtMostOne, AtMostOne).parse(t"  child").child().layout.params
       .assert(_ == 0)
       
       test(t"Two optional parameters with one specified on root"):
-        rootWithTwoParams(Optional, Optional).parse(t"  child one").child().layout.params
+        rootWithTwoParams(AtMostOne, AtMostOne).parse(t"  child one").child().layout.params
       .assert(_ == 1)
       
       test(t"Two optional parameters with both specified on root"):
-        rootWithTwoParams(Optional, Optional).parse(t"  child one two").child().layout.params
+        rootWithTwoParams(AtMostOne, AtMostOne).parse(t"  child one two").child().layout.params
       .assert(_ == 2)
       
       test(t"Two optional parameters with one surplus on root"):
-        capture[AggregateError[CodlError]](rootWithTwoParams(Optional, Optional).parse(t"  child one two three").child()) match
+        capture[AggregateError[CodlError]](rootWithTwoParams(AtMostOne, AtMostOne).parse(t"  child one two three").child()) match
           case AggregateError[CodlError](errors) => errors.head
       .assert(_ == CodlError(0, 16, 5, SurplusParams(t"three", t"child")))
       
@@ -867,9 +867,9 @@ object Tests extends Suite(t"CoDL tests"):
       .assert(_ == CodlError(0, 2, 5, MissingKey(t"child", t"beta")))
       
     suite(t"Path tests"):
-      val schema = Struct(Optional,
-        t"root" -> Struct(Optional,
-          t"field" -> Struct(Optional,
+      val schema = Struct(AtMostOne,
+        t"root" -> Struct(AtMostOne,
+          t"field" -> Struct(AtMostOne,
             t"id"   -> Field(Unique),
             t"name" -> Field(One),
             t"description" -> Field(One)
@@ -877,8 +877,8 @@ object Tests extends Suite(t"CoDL tests"):
           t"another" -> Struct(Arity.Many,
             t"id"      -> Field(Unique),
             t"name"    -> Field(One),
-            t"color"   -> Field(Optional),
-            t"size"    -> Field(Optional)
+            t"color"   -> Field(AtMostOne),
+            t"size"    -> Field(AtMostOne)
           )
         )
       )
@@ -904,7 +904,7 @@ object Tests extends Suite(t"CoDL tests"):
         schema.parse(t"""root\n  another jill\n    name Jill\n  another\n    id jack\n    name Jack\n    color blue\n    size 8""").root().ids
       .assert(_ == Set(t"jack", t"jill"))
       
-      val repetitionSchema = Struct(Optional,
+      val repetitionSchema = Struct(AtMostOne,
         t"ABC" -> Struct(Many,
           t"DEF" -> Field(Unique),
           t"GHI" -> Field(One)
@@ -918,15 +918,15 @@ object Tests extends Suite(t"CoDL tests"):
     
     suite(t"Binary tests"):
 
-      val schema = Struct(Arity.Optional,
-        t"field" -> Struct(Arity.Optional,
-          t"child" -> Field(Optional)
+      val schema = Struct(Arity.AtMostOne,
+        t"field" -> Struct(Arity.AtMostOne,
+          t"child" -> Field(AtMostOne)
         ),
-        t"field2" -> Field(Optional),
-        t"field3" -> Field(Optional)
+        t"field2" -> Field(AtMostOne),
+        t"field3" -> Field(AtMostOne)
       )
       
-      def roundtrip(doc: CodlDoc)(using Log): CodlDoc = Bcodl.read(doc.schema, ji.StringReader(doc.bcodl.s).nn)
+      def roundtrip(doc: CodlDoc)(using Log[Text]): CodlDoc = Bcodl.read(doc.schema, ji.StringReader(doc.bcodl.s).nn)
 
       val doc = schema.parse(t"field")
       
