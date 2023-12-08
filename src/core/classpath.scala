@@ -44,7 +44,7 @@ object ClasspathEntry:
 
   case object JavaRuntime extends ClasspathEntry
 
-  def apply(url: jn.URL): Maybe[ClasspathEntry] = url.getProtocol.nn.tt match
+  def apply(url: jn.URL): Optional[ClasspathEntry] = url.getProtocol.nn.tt match
     case t"jrt" =>
       ClasspathEntry.JavaRuntime
     
@@ -64,15 +64,15 @@ object Classloader:
   
 class Classloader(val java: ClassLoader):
 
-  def parent: Maybe[Classloader] = Maybe(java.getParent).let(new Classloader(_))
+  def parent: Optional[Classloader] = Optional(java.getParent).let(new Classloader(_))
 
-  protected def urlClassloader: Maybe[jn.URLClassLoader] = java match
+  protected def urlClassloader: Optional[jn.URLClassLoader] = java match
     case java: jn.URLClassLoader => java
     case _                       => parent.let(_.urlClassloader)
   
-  def classpath: Maybe[Classpath] = urlClassloader.let(Classpath(_))
+  def classpath: Optional[Classpath] = urlClassloader.let(Classpath(_))
   private[hellenism] def inputStream(path: Text)(using notFound: Raises[ClasspathError]): ji.InputStream =
-    Maybe(java.getResourceAsStream(path.s)).or(abort(ClasspathError(path)))
+    Optional(java.getResourceAsStream(path.s)).or(abort(ClasspathError(path)))
 
 object Classpath:
   @targetName("child")
@@ -123,7 +123,7 @@ object Hellenism extends Hellenism2:
   extension (classRef: ClassRef)
     def classloader: Classloader = new Classloader(classRef.getClassLoader().nn)
     
-    def classpathEntry: Maybe[ClasspathEntry] =
+    def classpathEntry: Optional[ClasspathEntry] =
       ClasspathEntry(classRef.getProtectionDomain.nn.getCodeSource.nn.getLocation.nn)
 
 export Hellenism.ClassRef
