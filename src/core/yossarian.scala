@@ -40,7 +40,7 @@ object Yossarian:
     def line: ScreenBuffer = (charBuffer.length, styleBuffer, charBuffer, linkBuffer)
     def render: Text = String(charBuffer).grouped(width).to(List).map(_.tt).join(t"\n")
 
-    def find(text: Text): Maybe[ScreenBuffer] = line.render.s.indexOf(text.s) match
+    def find(text: Text): Optional[ScreenBuffer] = line.render.s.indexOf(text.s) match
       case -1 =>
         Unset
       
