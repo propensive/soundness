@@ -111,7 +111,7 @@ case class GitRepo(gitDir: Directory, workTree: Optional[Directory] = Unset):
       (using GitCommand, Log[Text], Internet, WorkingDirectory)(using gitError: Raises[GitError], exec: Raises[ExecError])
       : GitProcess[Unit]/*^{gitError, exec}*/ =
     
-    val depthOption = depth.fm(sh"") { depth => sh"--depth=$depth" }
+    val depthOption = depth.lay(sh"") { depth => sh"--depth=$depth" }
     val command = sh"$git $repoOptions fetch $depthOption --progress $repo $refspec"
     val process = command.fork[ExitStatus]()
 
@@ -281,7 +281,7 @@ object Git:
     val target: Path = try targetPath.pathText.decodeAs[Path] catch case error: PathError => abort(GitError(InvalidRepoPath))
     
     val bareOption = if bare then sh"--bare" else sh""
-    val branchOption = branch.fm(sh"") { branch => sh"--branch=$branch" }
+    val branchOption = branch.lay(sh"") { branch => sh"--branch=$branch" }
     val recursiveOption = if recursive then sh"--recursive" else sh""
     
     val process = sh"$git clone --progress $bareOption $branchOption $recursiveOption $source $target".fork[ExitStatus]()
