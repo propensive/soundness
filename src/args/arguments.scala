@@ -35,10 +35,10 @@ enum Shell:
   case Zsh, Bash, Fish
 
 case class Arguments(sequence: Argument*) extends FlagParameters:
-  def read[OperandType](flag: Flag[OperandType])(using Cli, FlagInterpreter[OperandType], Suggestions[OperandType]): Maybe[OperandType] =
+  def read[OperandType](flag: Flag[OperandType])(using Cli, FlagInterpreter[OperandType], Suggestions[OperandType]): Optional[OperandType] =
     Unset // FIXME
   
-  def focusFlag: Maybe[Argument] = Unset
+  def focusFlag: Optional[Argument] = Unset
 
 object SimpleParameterInterpreter extends CliInterpreter:
   type Parameters = Arguments
@@ -46,7 +46,7 @@ object SimpleParameterInterpreter extends CliInterpreter:
 
 object Cli:
   def arguments
-      (textArguments: Iterable[Text], focus: Maybe[Int] = Unset, position: Maybe[Int] = Unset)
+      (textArguments: Iterable[Text], focus: Optional[Int] = Unset, position: Optional[Int] = Unset)
       : List[Argument] =
     textArguments.to(List).padTo(focus.or(0) + 1, t"").zipWithIndex.map: (text, index) =>
       Argument(index, text, if focus == index then position else Unset)
@@ -55,25 +55,25 @@ trait Cli extends ProcessContext:
   def arguments: List[Argument]
   def environment: Environment
   def workingDirectory: WorkingDirectory
-  def readParameter[OperandType](flag: Flag[OperandType])(using FlagInterpreter[OperandType], Suggestions[OperandType]): Maybe[OperandType]
+  def readParameter[OperandType](flag: Flag[OperandType])(using FlagInterpreter[OperandType], Suggestions[OperandType]): Optional[OperandType]
 
   def register(flag: Flag[?], suggestions: Suggestions[?]): Unit = ()
   def present(flag: Flag[?]): Unit = ()
-  def explain(update: (previous: Maybe[Text]) ?=> Maybe[Text]): Unit = ()
+  def explain(update: (previous: Optional[Text]) ?=> Optional[Text]): Unit = ()
   def suggest(argument: Argument, update: (previous: List[Suggestion]) ?=> List[Suggestion]) = ()
 
 trait FlagParameters:
-  def read[OperandType](flag: Flag[OperandType])(using Cli, FlagInterpreter[OperandType], Suggestions[OperandType]): Maybe[OperandType]
-  def focusFlag: Maybe[Argument]
+  def read[OperandType](flag: Flag[OperandType])(using Cli, FlagInterpreter[OperandType], Suggestions[OperandType]): Optional[OperandType]
+  def focusFlag: Optional[Argument]
 
 trait CliInterpreter:
   type Parameters <: FlagParameters
   def interpret(arguments: List[Argument]): Parameters
 
-case class Argument(position: Int, value: Text, cursor: Maybe[Int]):
+case class Argument(position: Int, value: Text, cursor: Optional[Int]):
   def apply(): Text = value
-  def prefix: Maybe[Text] = cursor.let(value.take(_))
-  def suffix: Maybe[Text] = cursor.let(value.drop(_))
+  def prefix: Optional[Text] = cursor.let(value.take(_))
+  def suffix: Optional[Text] = cursor.let(value.drop(_))
   
   def suggest(using cli: Cli)(update: (previous: List[Suggestion]) ?=> List[Suggestion]) =
     cli.suggest(this, update)

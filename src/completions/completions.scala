@@ -33,7 +33,7 @@ import scala.collection.mutable as scm
 //import language.experimental.captureChecking
 
 case class SuggestionsState
-    (suggestions: Map[Argument, () => List[Suggestion]], explanation: Maybe[Text], known: Set[Flag[?]],
+    (suggestions: Map[Argument, () => List[Suggestion]], explanation: Optional[Text], known: Set[Flag[?]],
         present: Set[Flag[?]])
 
 case class CliCompletion
@@ -50,14 +50,14 @@ extends Cli:
 
   val flags: scm.HashMap[Flag[?], Suggestions[?]] = scm.HashMap()
   val seenFlags: scm.HashSet[Flag[?]] = scm.HashSet()
-  var explanation: Maybe[Text] = Unset
+  var explanation: Optional[Text] = Unset
   var cursorSuggestions: List[Suggestion] = Nil
 
   def readParameter
       [OperandType]
       (flag: Flag[OperandType])
       (using FlagInterpreter[OperandType], Suggestions[OperandType])
-      : Maybe[OperandType] =
+      : Optional[OperandType] =
 
     given Cli = this
     parameters.read(flag)
@@ -73,7 +73,7 @@ extends Cli:
     if !flag.secret then flags(flag) = suggestions
   
   override def present(flag: Flag[?]): Unit = if !flag.repeatable then seenFlags += flag
-  override def explain(update: (previous: Maybe[Text]) ?=> Maybe[Text]): Unit =
+  override def explain(update: (previous: Optional[Text]) ?=> Optional[Text]): Unit =
     explanation = update(using explanation)
   
   override def suggest(argument: Argument, update: (previous: List[Suggestion]) ?=> List[Suggestion]) =
@@ -150,7 +150,7 @@ case class Execution(execute: CliInvocation => ExitStatus)
 
 def execute(block: Effectful ?=> CliInvocation ?=> ExitStatus): Execution = Execution(block(using ###)(using _))
 
-def explain(explanation: (previous: Maybe[Text]) ?=> Maybe[Text])(using cli: Cli): Unit =
+def explain(explanation: (previous: Optional[Text]) ?=> Optional[Text])(using cli: Cli): Unit =
   cli.explain(explanation)
 
 package executives:
