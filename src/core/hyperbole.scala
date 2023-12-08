@@ -38,14 +38,14 @@ object reflection:
       case _ =>
         ansi""
 
-    case class TastyTree(name: Text, expr: Text, source: Text, children: List[TastyTree], param: Maybe[Text]):
+    case class TastyTree(name: Text, expr: Text, source: Text, children: List[TastyTree], param: Optional[Text]):
       def shortCode: Text =
         val c = expr.upto(_ != '\n')
         if c.length != expr.length then t"$c..." else expr
 
    
     object TastyTree:
-      def apply(name: Text, tree: Tree, children: List[TastyTree], parameter: Maybe[Text] = Unset): TastyTree =
+      def apply(name: Text, tree: Tree, children: List[TastyTree], parameter: Optional[Text] = Unset): TastyTree =
         TastyTree(name, tree.show.show, source(tree).plain, children, parameter)
     
       def expand(tree: Tree): TastyTree = tree match
@@ -82,5 +82,5 @@ object reflection:
     ).tabulate(seq, 400, DelimitRows.None).join(ansi"${'\n'}").render
 
 
-case class Expansion(text: Text, param: Maybe[Text], expr: Text, source: Text)
+case class Expansion(text: Text, param: Optional[Text], expr: Text, source: Text)
 
