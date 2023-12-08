@@ -65,7 +65,7 @@ case class CodlNode(data: Optional[Data] = Unset, meta: Optional[Meta] = Unset) 
   def fieldValue: Optional[Text] = paramValue.or(structValue)
   def promote(n: Int) = copy(data = data.let(_.promote(n)))
 
-  def apply(key: Text): List[Data] = data.fm(List[CodlNode]())(_(key)).map(_.data).collect:
+  def apply(key: Text): List[Data] = data.lay(List[CodlNode]())(_(key)).map(_.data).collect:
     case data: Data => data
 
   def selectDynamic(key: String)(using Raises[MissingValueError]): List[Data] =
@@ -213,15 +213,15 @@ trait Indexed extends Dynamic:
   lazy val index: Map[Text, List[Int]] =
     children.map(_.data).zipWithIndex.foldLeft(Map[Text, List[Int]]()):
       case (acc, (data: Data, idx)) =>
-        if idx < layout.params then schema.param(idx).fm(acc): entry =>
-          acc.upsert(entry.key, _.fm(List(idx))(idx :: _))
-        else acc.upsert(data.key, _.fm(List(idx))(idx :: _))
+        if idx < layout.params then schema.param(idx).lay(acc): entry =>
+          acc.upsert(entry.key, _.lay(List(idx))(idx :: _))
+        else acc.upsert(data.key, _.lay(List(idx))(idx :: _))
       case (acc, _) => acc
     .view.mapValues(_.reverse).to(Map)
     
   protected lazy val idIndex: Map[Text, Int] =
     def recur(idx: Int, map: Map[Text, Int] = Map()): Map[Text, Int] =
-      if idx < 0 then map else recur(idx - 1, children(idx).id.fm(map)(map.updated(_, idx)))
+      if idx < 0 then map else recur(idx - 1, children(idx).id.lay(map)(map.updated(_, idx)))
     
     recur(children.length - 1)
 

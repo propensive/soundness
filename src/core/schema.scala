@@ -77,8 +77,8 @@ extends Dynamic:
     case -1  => Unset
     case idx => idx
   
-  lazy val paramCount: Int = firstVariadic.fm(fieldCount) { f => (f + 1).min(fieldCount) }
-  private lazy val endlessParams: Boolean = firstVariadic.fm(false)(_ < fieldCount)
+  lazy val paramCount: Int = firstVariadic.lay(fieldCount) { f => (f + 1).min(fieldCount) }
+  private lazy val endlessParams: Boolean = firstVariadic.lay(false)(_ < fieldCount)
 
   def param(idx: Int): Optional[Entry] =
     if idx < paramCount then subschemas(idx)

@@ -99,7 +99,7 @@ object Codl:
       def setMeta(meta: Optional[Meta]): Proto = copy(meta = meta)
 
       def close: (CodlNode, List[CodlError]) =
-        key.fm((CodlNode(Unset, meta), Nil)):
+        key.lay((CodlNode(Unset, meta), Nil)):
           case key: Text =>
             val meta2 = meta.let { m => m.copy(comments = m.comments.reverse) }
             val data = Data(key, IArray.from(children.reverse), Layout(params, multiline, col - margin), schema)
