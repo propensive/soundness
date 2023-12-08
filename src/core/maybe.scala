@@ -24,11 +24,11 @@ import language.experimental.captureChecking
 object Unset:
   override def toString(): String = "[absent]"
 
-type Maybe[ValueType] = Unset.type | ValueType
+type Optional[ValueType] = Unset.type | ValueType
 
 case class UnsetValueError() extends Error(Message("the value was not set".tt))
 
-extension [ValueType](maybe: Maybe[ValueType])
+extension [ValueType](maybe: Optional[ValueType])
   inline def absent: Boolean = maybe == Unset
   inline def present: Boolean = maybe != Unset
   inline def or(inline value: => ValueType): ValueType = if absent then value else maybe.asInstanceOf[ValueType]
@@ -41,14 +41,14 @@ extension [ValueType](maybe: Maybe[ValueType])
   inline def fm[ValueType2](inline alternative: => ValueType2)(inline fn: ValueType => ValueType2): ValueType2 =
     if absent then alternative else fn(vouch(using Unsafe))
 
-  inline def let[ValueType2](inline fn: ValueType => ValueType2): Maybe[ValueType2] =
+  inline def let[ValueType2](inline fn: ValueType => ValueType2): Optional[ValueType2] =
     if absent then Unset else fn(vouch(using Unsafe))
 
-extension [ValueType](iterable: Iterable[Maybe[ValueType]])
+extension [ValueType](iterable: Iterable[Optional[ValueType]])
   transparent inline def vouched: Iterable[ValueType] = iterable.filter(!_.absent).map(_.vouch(using Unsafe))
 
-object Maybe:
-  inline def apply[ValueType](value: ValueType | Null): Maybe[ValueType] =
+object Optional:
+  inline def apply[ValueType](value: ValueType | Null): Optional[ValueType] =
     if value == null then Unset else value
 
 extension [ValueType](option: Option[ValueType])

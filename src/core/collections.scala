@@ -66,7 +66,7 @@ extension [ElemType](value: Array[ElemType])
     newArray.immutable(using Unsafe)
 
 extension [KeyType, ValueType](map: Map[KeyType, ValueType])
-  def upsert(key: KeyType, op: Maybe[ValueType] => ValueType): Map[KeyType, ValueType] =
+  def upsert(key: KeyType, op: Optional[ValueType] => ValueType): Map[KeyType, ValueType] =
     map.updated(key, op(if map.contains(key) then map(key) else Unset))
 
   def collate
@@ -107,7 +107,7 @@ object Cursor:
     
     inline def of[ElemType](inline seq: CursorSeq[ElemType]): ElemType = seq(cursor.index)
     
-    inline def of[ElemType](inline seq: CursorSeq[ElemType], inline offset: Int): Maybe[ElemType] =
+    inline def of[ElemType](inline seq: CursorSeq[ElemType], inline offset: Int): Optional[ElemType] =
       if (cursor.index + offset) >= 0 && (cursor.index + offset) < seq.length then seq(cursor.index + offset)
       else Unset
 
@@ -121,18 +121,18 @@ inline def cursor
   cursor.of(seq)
 
 inline def precursor
-    [ElemType](using inline seq: Cursor.CursorSeq[ElemType], inline cursor: Cursor.Cursor): Maybe[ElemType] =
+    [ElemType](using inline seq: Cursor.CursorSeq[ElemType], inline cursor: Cursor.Cursor): Optional[ElemType] =
   cursor.of(seq, -1)
 
 inline def postcursor
-    [ElemType](using inline seq: Cursor.CursorSeq[ElemType], inline cursor: Cursor.Cursor): Maybe[ElemType] =
+    [ElemType](using inline seq: Cursor.CursorSeq[ElemType], inline cursor: Cursor.Cursor): Optional[ElemType] =
   cursor.of(seq, 1)
 
 inline def cursorIndex(using inline cursor: Cursor.Cursor): Int = cursor.index
 
 inline def cursorOffset
     [ElemType](n: Int)(using inline seq: Cursor.CursorSeq[ElemType], inline cursor: Cursor.Cursor)
-    : Maybe[ElemType] =
+    : Optional[ElemType] =
   cursor.of(seq, n)
 
 extension [ElemType](seq: IndexedSeq[ElemType])

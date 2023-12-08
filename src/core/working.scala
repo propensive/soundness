@@ -21,12 +21,12 @@ import anticipation.*
 import language.experimental.captureChecking
 
 object WorkingDirectory:
-  def apply(text: Maybe[Text] = Unset): WorkingDirectory = new WorkingDirectory(text) {}
+  def apply(text: Optional[Text] = Unset): WorkingDirectory = new WorkingDirectory(text) {}
   given default(using Quickstart): WorkingDirectory = workingDirectories.default
 
 @capability
-trait WorkingDirectory(val directory: Maybe[Text]):
-  def path[PathType](using specificPath: SpecificPath[PathType]): Maybe[PathType^{specificPath}] =
+trait WorkingDirectory(val directory: Optional[Text]):
+  def path[PathType](using specificPath: SpecificPath[PathType]): Optional[PathType^{specificPath}] =
     directory.let(SpecificPath(_))
 
 object HomeDirectory:
@@ -37,7 +37,7 @@ case class HomeDirectory(text: Text):
   def path[PathType: SpecificPath]: PathType = SpecificPath(text)
 
 package workingDirectories:
-  given default: WorkingDirectory = WorkingDirectory(Maybe(System.getProperty("user.dir")).let(_.tt))
+  given default: WorkingDirectory = WorkingDirectory(Optional(System.getProperty("user.dir")).let(_.tt))
 
 package homeDirectories:
   given default: HomeDirectory = HomeDirectory(System.getProperty("user.home").nn.tt)
@@ -45,11 +45,11 @@ package homeDirectories:
 def workingDirectory
     [PathType]
     (using directory: WorkingDirectory, specificPath: SpecificPath[PathType])
-    : Maybe[PathType^{specificPath}] =
+    : Optional[PathType^{specificPath}] =
   directory.path[PathType]
 
 def homeDirectory
     [PathType]
     (using directory: HomeDirectory, specificPath: SpecificPath[PathType])
-    : Maybe[PathType^{specificPath}] =
+    : Optional[PathType^{specificPath}] =
   directory.path[PathType]

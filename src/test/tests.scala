@@ -216,9 +216,9 @@ object Tests extends Suite(t"Rudiments Tests"):
         List(0, 0, 1, 2, 3, 4, 0, 0, 1, 5, 6, 0, 0, 0, 0).longestTrain(_ == 0)
       .assert(_ == (11, 4))
     
-    suite(t"Maybe tests"):
-      val absentInt: Maybe[Int] = Unset
-      val setInt: Maybe[Int] = 42
+    suite(t"Optional tests"):
+      val absentInt: Optional[Int] = Unset
+      val setInt: Optional[Int] = 42
 
       test(t"Check whether absent value is absent"):
         absentInt.absent
@@ -253,30 +253,30 @@ object Tests extends Suite(t"Rudiments Tests"):
         setInt.option
       .assert(_ == Some(42))
 
-      test(t"Fold over a Maybe"):
+      test(t"Fold over a Optional"):
         absentInt.fm(0)(_ + 1)
       .assert(_ == 0)
 
-      test(t"Fold over a set Maybe"):
+      test(t"Fold over a set Optional"):
         setInt.fm(0)(_ + 1)
       .assert(_ == 43)
 
-      test(t"Map over an absent Maybe"):
+      test(t"Map over an absent Optional"):
         absentInt.let(_ + 1)
       .assert(_ == Unset)
 
-      test(t"Map over a set Maybe"):
+      test(t"Map over a set Optional"):
         setInt.let(_ + 1)
       .assert(_ == 43)
 
-      test(t"Construct a new Maybe from a null value"):
+      test(t"Construct a new Optional from a null value"):
         val x: String | Null = null
-        Maybe(x)
+        Optional(x)
       .assert(_ == Unset)
 
-      test(t"Construct a new Maybe from a possibly-null value"):
+      test(t"Construct a new Optional from a possibly-null value"):
         val x: String | Null = ""
-        Maybe(x)
+        Optional(x)
       .assert(_ == "")
 
       test(t"Convert an option to a maybe"):

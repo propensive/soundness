@@ -27,14 +27,14 @@ type Nat = Int & Singleton
 type Label = String & Singleton
 
 extension [ValueType](value: ValueType)
-  def only[ValueType2](fn: PartialFunction[ValueType, ValueType2]): Maybe[ValueType2] =
+  def only[ValueType2](fn: PartialFunction[ValueType, ValueType2]): Optional[ValueType2] =
     Some(value).collect(fn).getOrElse(Unset)
   
   def unit: Unit = ()
   def waive: Any => ValueType = _ => value
   def twin: (ValueType, ValueType) = (value, value)
   def triple: (ValueType, ValueType, ValueType) = (value, value, value)
-  def puncture(point: ValueType): Maybe[ValueType] = if value == point then Unset else point
+  def puncture(point: ValueType): Optional[ValueType] = if value == point then Unset else point
   inline def is[ValueSubtype <: ValueType]: Boolean = value.isInstanceOf[ValueSubtype]
 
   transparent inline def matchable(using Unsafe): ValueType & Matchable =
