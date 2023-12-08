@@ -50,7 +50,7 @@ trait ColumnAlignment[-ColumnType]:
 object Column:
   def apply
       [RowType, CellType, TextType]
-      (title: TextType, width: Maybe[Int] = Unset, align: Maybe[Alignment] = Unset,
+      (title: TextType, width: Optional[Int] = Unset, align: Optional[Alignment] = Unset,
           breaks: Breaks = Breaks.Space, hide: Boolean = false)(get: RowType -> CellType)
       (using textual: Textual[TextType], columnAlignment: ColumnAlignment[CellType] = ColumnAlignment.left)
       (using textual.ShowType[CellType])
@@ -92,7 +92,7 @@ object Column:
 
 case class Column
     [RowType, TextType: Textual]
-    (title: TextType, get: RowType -> TextType, breaks: Breaks, align: Alignment, width: Maybe[Int],
+    (title: TextType, get: RowType -> TextType, breaks: Breaks, align: Alignment, width: Optional[Int],
         hide: Boolean)
 
 object Table:
