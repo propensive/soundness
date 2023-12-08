@@ -1036,7 +1036,7 @@ object Tests extends Suite(t"CoDL tests"):
 
       case class Person(name: Text, age: Int)
       case class Organisation(name: Text, ceo: Person)
-      case class Player(name: Text, rank: Maybe[Int])
+      case class Player(name: Text, rank: Optional[Int])
 
       test(t"write a simple case class"):
         Person(t"John Smith", 65).codl.untyped
@@ -1091,7 +1091,7 @@ object Tests extends Suite(t"CoDL tests"):
         roundtrip[List[Text]](List(t"hello", t"world"))
       .assert(_ == List(t"hello", t"world"))
       
-      case class Foo(alpha: Text, beta: Maybe[Text])
+      case class Foo(alpha: Text, beta: Optional[Text])
       test(t"roundtrip a case class with an optional parameter"):
         roundtrip(Foo(t"one", t"two"))
       .assert(_ == Foo(t"one", t"two"))
@@ -1102,7 +1102,7 @@ object Tests extends Suite(t"CoDL tests"):
 
       case class Bar(foo: List[Baz], quux: Quux)
       case class Quux(alpha: Text, beta: List[Byte])
-      case class Baz(gamma: Text, delta: Int, eta: Maybe[Char])
+      case class Baz(gamma: Text, delta: Int, eta: Optional[Char])
       
       val complex = Bar(List(Baz(t"a", 2, Unset), Baz(t"c", 6, 'e')), Quux(t"e", List(1, 2, 4)))
       
@@ -1142,7 +1142,7 @@ object Tests extends Suite(t"CoDL tests"):
 
     // //   val record = GreekRecords(example1)
       
-    // //   test[Maybe[Text]](t"Test optional return value"):
+    // //   test[Optional[Text]](t"Test optional return value"):
     // //     record.alpha
     // //   .assert(_ == t"one")
       
@@ -1150,11 +1150,11 @@ object Tests extends Suite(t"CoDL tests"):
     // //     record.beta
     // //   .assert(_ == t"two")
       
-    // //   test[Maybe[Text]](t"Test missing value"):
+    // //   test[Optional[Text]](t"Test missing value"):
     // //     record.iota
     // //   .assert(_ == Unset)
       
-    // //   test[Maybe[Text]](t"Test unique return value"):
+    // //   test[Optional[Text]](t"Test unique return value"):
     // //     record.eta
     // //   .assert(_ == t"eight")
       

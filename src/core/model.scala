@@ -51,18 +51,18 @@ object CodlNode:
 
       Semblance.Breakdown(comparison, left.key.or(t"—"), right.key.or(t"—"))
   
-case class CodlNode(data: Maybe[Data] = Unset, meta: Maybe[Meta] = Unset) extends Dynamic:
-  def key: Maybe[Text] = data.let(_.key)
+case class CodlNode(data: Optional[Data] = Unset, meta: Optional[Meta] = Unset) extends Dynamic:
+  def key: Optional[Text] = data.let(_.key)
   def empty: Boolean = unsafely(data.absent || data.assume.children.isEmpty)
   def blank: Boolean = data.absent && meta.absent
-  def schema: Maybe[CodlSchema] = data.let(_.schema)
-  def layout: Maybe[Layout] = data.let(_.layout)
-  def id: Maybe[Text] = data.let(_.id)
-  def uniqueId: Maybe[Text] = data.let(_.uniqueId)
+  def schema: Optional[CodlSchema] = data.let(_.schema)
+  def layout: Optional[Layout] = data.let(_.layout)
+  def id: Optional[Text] = data.let(_.id)
+  def uniqueId: Optional[Text] = data.let(_.uniqueId)
   def children: IArray[CodlNode] = data.let(_.children).or(IArray[CodlNode]())
-  def paramValue: Maybe[Text] = if children.isEmpty then key else Unset
-  def structValue: Maybe[Text] = if children.size == 1 then children.head.paramValue else Unset
-  def fieldValue: Maybe[Text] = paramValue.or(structValue)
+  def paramValue: Optional[Text] = if children.isEmpty then key else Unset
+  def structValue: Optional[Text] = if children.size == 1 then children.head.paramValue else Unset
+  def fieldValue: Optional[Text] = paramValue.or(structValue)
   def promote(n: Int) = copy(data = data.let(_.promote(n)))
 
   def apply(key: Text): List[Data] = data.fm(List[CodlNode]())(_(key)).map(_.data).collect:
@@ -176,12 +176,12 @@ extends Indexed:
       schema.subschemas(idx).key -> idx
     .to(Map)
 
-  def uniqueId: Maybe[Text] = schema.subschemas.find(_.schema.arity == Arity.Unique) match
+  def uniqueId: Optional[Text] = schema.subschemas.find(_.schema.arity == Arity.Unique) match
     case Some(CodlSchema.Entry(name: Text, schema)) =>
       paramIndex.get(name).map(children(_).fieldValue).getOrElse(Unset)
     case _ => Unset
 
-  def id: Maybe[Text] = schema.subschemas.find(_.schema.arity == Arity.Unique) match
+  def id: Optional[Text] = schema.subschemas.find(_.schema.arity == Arity.Unique) match
     case Some(CodlSchema.Entry(name: Text, schema)) =>
       index(name).let(_.headOption.maybe).let(children(_).fieldValue)
     case _ => key
@@ -198,7 +198,7 @@ extends Indexed:
   override def hashCode: Int = key.hashCode ^ children.toSeq.hashCode ^ layout.hashCode ^ schema.hashCode
 
 
-case class Meta(blank: Int = 0, comments: List[Text] = Nil, remark: Maybe[Text] = Unset)
+case class Meta(blank: Int = 0, comments: List[Text] = Nil, remark: Optional[Text] = Unset)
 object Layout:
   final val empty = Layout(0, false, 0)
 

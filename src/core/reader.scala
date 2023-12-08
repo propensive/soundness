@@ -65,7 +65,7 @@ class PositionReader(private var in: LazyList[Text]):
   private var lastCol: Int = 0
   private var startLine: Int = 0
   private var startCol: Int = 0
-  private var requireCr: Maybe[Boolean] = Unset
+  private var requireCr: Optional[Boolean] = Unset
   private var finished: Boolean = false
   private val buf: StringBuilder = StringBuilder()
   

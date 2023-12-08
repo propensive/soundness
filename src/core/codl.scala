@@ -80,11 +80,11 @@ object Codl:
     val (margin, stream) = tokenize(readable.read(source), fromStart)
     val baseSchema: CodlSchema = schema
     
-    case class Proto(key: Maybe[Text] = Unset, line: Int = 0, col: Int = 0, children: List[CodlNode] = Nil,
-                        meta: Maybe[Meta] = Unset, schema: CodlSchema = CodlSchema.Free, params: Int = 0,
+    case class Proto(key: Optional[Text] = Unset, line: Int = 0, col: Int = 0, children: List[CodlNode] = Nil,
+                        meta: Optional[Meta] = Unset, schema: CodlSchema = CodlSchema.Free, params: Int = 0,
                         multiline: Boolean = false):
       
-      def commit(child: Proto): (Maybe[(Text, (Int, Int))], Proto, List[CodlError]) =
+      def commit(child: Proto): (Optional[(Text, (Int, Int))], Proto, List[CodlError]) =
         val (closed, errors2) = child.close
         
         val uniqueId2 =
@@ -96,7 +96,7 @@ object Codl:
       def substitute(data: Data): Proto =
         copy(children = CodlNode(data) :: children, params = params + 1)
       
-      def setMeta(meta: Maybe[Meta]): Proto = copy(meta = meta)
+      def setMeta(meta: Optional[Meta]): Proto = copy(meta = meta)
 
       def close: (CodlNode, List[CodlError]) =
         key.fm((CodlNode(Unset, meta), Nil)):
@@ -177,7 +177,7 @@ object Codl:
             go(focus = focus.substitute(subs.head), subs = subs.tail)
 
           case CodlToken.Item(word, line, col, block) =>
-            val meta2: Maybe[Meta] = focus.meta.or(if lines == 0 then Unset else Meta(blank = lines))
+            val meta2: Optional[Meta] = focus.meta.or(if lines == 0 then Unset else Meta(blank = lines))
             
             focus.key match
               case key: Text => focus.schema match
@@ -352,7 +352,7 @@ object Codl:
         else if char.char == ' ' then recur(Margin, padding = false)
         else token() #:: istream(char, count = count + 1, indent = indent, padding = false)
 
-      inline def fail(next: State, error: CodlError, adjust: Maybe[Int] = Unset): LazyList[CodlToken] =
+      inline def fail(next: State, error: CodlError, adjust: Optional[Int] = Unset): LazyList[CodlToken] =
         CodlToken.Error(error) #:: irecur(next, indent = adjust.or(char.column))
 
       inline def newline(next: State): LazyList[CodlToken] =

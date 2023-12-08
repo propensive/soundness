@@ -62,9 +62,9 @@ trait CodlWriter3:
       [ValueType]
       (using writer: CodlWriter[ValueType])
       : CodlWriter[ValueType | Unset.type] =
-    new CodlWriter[Maybe[ValueType]]:
+    new CodlWriter[Optional[ValueType]]:
       def schema: CodlSchema = writer.schema.optional
-      def write(value: Maybe[ValueType]): List[IArray[CodlNode]] =
+      def write(value: Optional[ValueType]): List[IArray[CodlNode]] =
         value.let(writer.write(_)).or(List())
 
 trait CodlWriter2 extends CodlWriter3:
@@ -227,13 +227,13 @@ object CodlReader extends CodlReader2:
   given maybe
       [ValueType]
       (using reader: CodlReader[ValueType])
-      : CodlReader[Maybe[ValueType]] =
-    new CodlReader[Maybe[ValueType]]:
+      : CodlReader[Optional[ValueType]] =
+    new CodlReader[Optional[ValueType]]:
       def schema: CodlSchema = reader.schema.optional
       
       def read
           (value: List[Indexed])(using codlRead: Raises[CodlReadError])
-          : Maybe[ValueType] =
+          : Optional[ValueType] =
         if value.isEmpty then Unset else reader.read(value)
  
   given field[ValueType](using decoder: Decoder[ValueType]): CodlReader[ValueType]/*^{decoder}*/ =

@@ -41,7 +41,7 @@ object CodlSchema:
 
   // FIXME
   object Free extends Struct(List(Entry(t"?", Field(Arity.Many))), Arity.Many):
-    override def apply(key: Text): Maybe[CodlSchema] = Free
+    override def apply(key: Text): Optional[CodlSchema] = Free
     override def optional = Free
     override def toString(): String = "%"
 
@@ -49,12 +49,12 @@ object CodlSchema:
 
 
 sealed trait CodlSchema(val subschemas: IArray[CodlSchema.Entry], val arity: Arity,
-                        val validator: Maybe[Text => Boolean])
+                        val validator: Optional[Text => Boolean])
 extends Dynamic:
   import CodlSchema.Entry
-  protected lazy val dictionary: Map[Maybe[Text], CodlSchema] = subschemas.map(_.tuple).to(Map)
+  protected lazy val dictionary: Map[Optional[Text], CodlSchema] = subschemas.map(_.tuple).to(Map)
   
-  lazy val keyMap: Map[Maybe[Text], Int] = subschemas.map(_.key).zipWithIndex.to(Map)
+  lazy val keyMap: Map[Optional[Text], Int] = subschemas.map(_.key).zipWithIndex.to(Map)
 
   def optional: CodlSchema
   def entry(n: Int): Entry = subschemas(n)
@@ -66,25 +66,25 @@ extends Dynamic:
       : CodlDoc/*^{aggregate, readable}*/ =
     Codl.parse(source, this)
   
-  def apply(key: Text): Maybe[CodlSchema] = dictionary.get(key).orElse(dictionary.get(Unset)).getOrElse(Unset)
+  def apply(key: Text): Optional[CodlSchema] = dictionary.get(key).orElse(dictionary.get(Unset)).getOrElse(Unset)
   def apply(idx: Int): Entry = subschemas(idx)
 
   private lazy val fieldCount: Int = subschemas.indexWhere(!_.schema.is[Field]) match
     case -1    => subschemas.size
     case count => count
   
-  private lazy val firstVariadic: Maybe[Int] = subschemas.indexWhere(_.schema.variadic) match
+  private lazy val firstVariadic: Optional[Int] = subschemas.indexWhere(_.schema.variadic) match
     case -1  => Unset
     case idx => idx
   
   lazy val paramCount: Int = firstVariadic.fm(fieldCount) { f => (f + 1).min(fieldCount) }
   private lazy val endlessParams: Boolean = firstVariadic.fm(false)(_ < fieldCount)
 
-  def param(idx: Int): Maybe[Entry] =
+  def param(idx: Int): Optional[Entry] =
     if idx < paramCount then subschemas(idx)
     else if endlessParams && paramCount > 0 then subschemas(paramCount - 1) else Unset
 
-  def has(key: Maybe[Text]): Boolean = dictionary.contains(key)
+  def has(key: Optional[Text]): Boolean = dictionary.contains(key)
   lazy val requiredKeys: List[Text] = subschemas.filter(_.required).map(_.key).collect { case text: Text => text }.to(List)
   
   export arity.{required, variadic, unique}
@@ -112,7 +112,7 @@ extends CodlSchema(IArray.from(structSubschemas), structArity, Unset):
   import CodlSchema.Entry
   
   def optional: Struct = Struct(structSubschemas, Arity.AtMostOne)
-  def uniqueIndex: Maybe[Int] = subschemas.indexWhere(_.schema.arity == Arity.Unique) match
+  def uniqueIndex: Optional[Int] = subschemas.indexWhere(_.schema.arity == Arity.Unique) match
     case -1  => Unset
     case idx => idx
   
@@ -128,6 +128,6 @@ extends CodlSchema(IArray.from(structSubschemas), structArity, Unset):
   override def toString(): String =
     structSubschemas.map(_.toString).map(Text(_)).join(t"(", t", ", t")${structArity.symbol}").s
 
-case class Field(fieldArity: Arity, fieldValidator: Maybe[Text => Boolean] = Unset)
+case class Field(fieldArity: Arity, fieldValidator: Optional[Text => Boolean] = Unset)
 extends CodlSchema(IArray(), fieldArity, fieldValidator):
   def optional: Field = Field(Arity.AtMostOne, fieldValidator)
