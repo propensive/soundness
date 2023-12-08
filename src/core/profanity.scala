@@ -156,9 +156,9 @@ extends Stdio:
   val keyboard: StandardKeyboard^{monitor} = StandardKeyboard()
   val initRows: Promise[Int] = Promise()
   val initColumns: Promise[Int] = Promise()
-  var mode: Maybe[TerminalMode] = Unset
-  var rows: Maybe[Int] = Unset
-  var columns: Maybe[Int] = Unset
+  var mode: Optional[TerminalMode] = Unset
+  var rows: Optional[Int] = Unset
+  var columns: Optional[Int] = Unset
 
   def knownColumns: Int = safely(initColumns.await(50L)).or(80)
 

@@ -70,13 +70,13 @@ case class LineEditor(value: Text = t"", position: Int = 0) extends Question[Tex
 
 trait Interaction[ResultType, QuestionType]:
   def before(): Unit = ()
-  def render(state: Maybe[QuestionType], menu: QuestionType): Unit
+  def render(state: Optional[QuestionType], menu: QuestionType): Unit
   def after(): Unit = ()
   def result(state: QuestionType): ResultType
 
   @tailrec
   final def recur
-      (stream: LazyList[TerminalEvent], state: QuestionType, oldState: Maybe[QuestionType])
+      (stream: LazyList[TerminalEvent], state: QuestionType, oldState: Optional[QuestionType])
       (key: (QuestionType, TerminalEvent) => QuestionType)
       : Option[(ResultType, LazyList[TerminalEvent])] =
     
@@ -102,7 +102,7 @@ object Interaction:
     override def before(): Unit = Out.print(t"\e[?25l")
     override def after(): Unit = Out.print(t"\e[J\e[?25h")
 
-    def render(old: Maybe[SelectMenu[ItemType]], menu: SelectMenu[ItemType]) =
+    def render(old: Optional[SelectMenu[ItemType]], menu: SelectMenu[ItemType]) =
       menu.options.foreach: opt =>
         Out.print((if opt == menu.current then t" > $opt" else t"   $opt")+t"\e[K\n")
       Out.print(t"\e[${menu.options.length}A")
@@ -110,7 +110,7 @@ object Interaction:
     def result(state: SelectMenu[ItemType]): ItemType = state.current
 
   given (using Stdio): Interaction[Text, LineEditor] with
-    def render(editor: Maybe[LineEditor], editor2: LineEditor): Unit =
+    def render(editor: Optional[LineEditor], editor2: LineEditor): Unit =
       val buffer = StringBuilder()
       val prior = editor.or(editor2)
       if prior.position > 0 then buffer.append(t"\e[${prior.position}D")
