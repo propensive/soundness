@@ -79,17 +79,17 @@ sealed trait Inode(val path: DiskPath):
     if path.parts.isEmpty then throw RootParentError(path.root)
     else Directory(path.root.make(path.parts.init))
   
-  def directory: Maybe[Directory]
-  def file: Maybe[File]
-  def symlink: Maybe[Symlink]
+  def directory: Optional[Directory]
+  def file: Optional[File]
+  def symlink: Optional[Symlink]
   def modified[InstantType: GenericInstant]: InstantType = makeInstant(javaFile.lastModified)
   def exists(): Boolean = javaFile.exists()
   def delete(): Unit throws IoError
 
   def readable: Boolean = Files.isReadable(javaPath)
   def writable: Boolean = Files.isWritable(javaPath)
-  def setPermissions(readable: Maybe[Boolean] = Unset, writable: Maybe[Boolean] = Unset,
-                         executable: Maybe[Boolean]): Unit throws IoError =
+  def setPermissions(readable: Optional[Boolean] = Unset, writable: Optional[Boolean] = Unset,
+                         executable: Optional[Boolean]): Unit throws IoError =
     if !readable.option.fold(true)(javaFile.setReadable(_)) |
         !writable.option.fold(true)(javaFile.setWritable(_)) |
         !executable.option.fold(true)(javaFile.setExecutable(_))
@@ -276,11 +276,11 @@ extends Inode(directoryPath), Shown[Directory]:
   def file: Unset.type = Unset
   def symlink: Unset.type = Unset
   
-  def tmpPath(suffix: Maybe[Text] = Unset): DiskPath =
+  def tmpPath(suffix: Optional[Text] = Unset): DiskPath =
     val part = unsafely(PathElement(t"${Uuid().show}${suffix.or(t"")}"))
     path.root.make(path.parts :+ part.value)
   
-  def tmpFile(suffix: Maybe[Text] = Unset): File throws IoError =
+  def tmpFile(suffix: Optional[Text] = Unset): File throws IoError =
     val file = tmpPath(suffix).file(Create)
     file.javaFile.deleteOnExit()
     file
@@ -411,7 +411,7 @@ extends Absolute(elements), Shown[DiskPath]:
     
     fifo
 
-  def file(): Maybe[File] = if exists() && isFile then unsafely(file(Expect)) else Unset
+  def file(): Optional[File] = if exists() && isFile then unsafely(file(Expect)) else Unset
 
   def file(creation: Creation): File throws IoError =
     import IoError.*
@@ -459,7 +459,7 @@ extends Absolute(elements), Shown[DiskPath]:
     
     Directory(this)
   
-  def directory(): Maybe[Directory] = if exists() && isDirectory then unsafely(directory(Expect)) else Unset
+  def directory(): Optional[Directory] = if exists() && isDirectory then unsafely(directory(Expect)) else Unset
 
   def symlink: Symlink throws IoError =
     if !javaFile.exists()
@@ -508,7 +508,7 @@ object Filesystem:
  
   def defaultSeparator: "/" | "\\" = if ji.File.separator == "\\" then "\\" else "/"
 
-  def parse(value: Text, pwd: Maybe[DiskPath] = Unset): DiskPath throws PathError =
+  def parse(value: Text, pwd: Optional[DiskPath] = Unset): DiskPath throws PathError =
     roots.flatMap: fs =>
       safely(fs.parse(value)).option
     .headOption.getOrElse:
@@ -527,7 +527,7 @@ extends Root(fsPrefix, fsSeparator), Shown[Filesystem]:
 
   def make(parts: List[Text]): DiskPath = DiskPath(this, parts.filter(_ != t""))
 
-  def parse(value: Text, pwd: Maybe[DiskPath] = Unset)
+  def parse(value: Text, pwd: Optional[DiskPath] = Unset)
            : DiskPath throws PathError =
     if value.starts(prefix) then make(List(value.drop(prefix.length).cut(separator)*))
     else try pwd.option.map(_ + Relative.parse(value)).getOrElse(throw PathError(value))

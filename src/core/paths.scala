@@ -63,13 +63,13 @@ object Path:
       if !path.java.toFile.nn.canWrite then abort(IoError(path))
       ji.BufferedOutputStream(ji.FileOutputStream(path.java.toFile, false))
 
-  given reachable: Reachable[Path, GeneralForbidden, Maybe[Windows.Drive]] with
-    def root(path: Path): Maybe[Windows.Drive] = path match
+  given reachable: Reachable[Path, GeneralForbidden, Optional[Windows.Drive]] with
+    def root(path: Path): Optional[Windows.Drive] = path match
       case path: Windows.SafePath => path.drive
       case path: Windows.Path     => path.drive
       case _                      => Unset
     
-    def prefix(root: Maybe[Windows.Drive]): Text =
+    def prefix(root: Optional[Windows.Drive]): Text =
       root.let(Windows.Path.reachable.prefix(_)).or(Unix.Path.reachable.prefix(Unset))
     
     def descent(path: Path): List[PathName[GeneralForbidden]] =
@@ -87,11 +87,11 @@ object Path:
       case path: Windows.SafePath => t"\\"
       case path: Windows.Path     => t"\\"
   
-  given rootParser: RootParser[Path, Maybe[Windows.Drive]] = text =>
+  given rootParser: RootParser[Path, Optional[Windows.Drive]] = text =>
     Windows.Path.rootParser.parse(text).or(Unix.Path.rootParser.parse(text))
   
-  given PathCreator[Path, GeneralForbidden, Maybe[Windows.Drive]] with
-    def path(root: Maybe[Windows.Drive], descent: List[PathName[GeneralForbidden]]) = root match
+  given PathCreator[Path, GeneralForbidden, Optional[Windows.Drive]] with
+    def path(root: Optional[Windows.Drive], descent: List[PathName[GeneralForbidden]]) = root match
       case drive@Windows.Drive(_) => Windows.SafePath(drive, descent)
       case _                      => Unix.SafePath(descent)
 

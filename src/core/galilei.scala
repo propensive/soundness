@@ -17,8 +17,8 @@
 package galilei
 
 // sealed trait Inode(val path: DiskPath):
-//   def setPermissions(readable: Maybe[Boolean] = Unset, writable: Maybe[Boolean] = Unset,
-//                          executable: Maybe[Boolean]): Unit throws IoError =
+//   def setPermissions(readable: Optional[Boolean] = Unset, writable: Optional[Boolean] = Unset,
+//                          executable: Optional[Boolean]): Unit throws IoError =
 //     if !readable.option.fold(true)(javaFile.setReadable(_)) |
 //         !writable.option.fold(true)(javaFile.setWritable(_)) |
 //         !executable.option.fold(true)(javaFile.setExecutable(_))
@@ -34,11 +34,11 @@ package galilei
 // object Directory:
 // case class Directory(directoryPath: DiskPath)
 // extends Inode(directoryPath), Shown[Directory]:
-//   def tmpPath(suffix: Maybe[Text] = Unset): DiskPath =
+//   def tmpPath(suffix: Optional[Text] = Unset): DiskPath =
 //     val part = unsafely(PathElement(t"${Uuid().show}${suffix.or(t"")}"))
 //     path.root.make(path.parts :+ part.value)
   
-//   def tmpFile(suffix: Maybe[Text] = Unset): File throws IoError =
+//   def tmpFile(suffix: Optional[Text] = Unset): File throws IoError =
 //     val file = tmpPath(suffix).file(Create)
 //     file.javaFile.deleteOnExit()
 //     file
