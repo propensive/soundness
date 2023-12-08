@@ -83,8 +83,8 @@ enum PathOp:
   case Move(coords: Coords)
   case Line(coords: Coords)
   case Close
-  case Cubic[CoordsType <: (Rel | Abs)](ctrl1: Maybe[CoordsType], ctrl2: CoordsType, point: CoordsType)
-  case Quadratic[CoordsType <: (Rel | Abs)](ctrl1: Maybe[CoordsType], point: CoordsType)
+  case Cubic[CoordsType <: (Rel | Abs)](ctrl1: Optional[CoordsType], ctrl2: CoordsType, point: CoordsType)
+  case Quadratic[CoordsType <: (Rel | Abs)](ctrl1: Optional[CoordsType], point: CoordsType)
   case Arc(rx: Float, ry: Float, angle: Degrees, largeArc: Boolean, sweep: Boolean, coords: Coords)
 
 object PathOp:
@@ -105,7 +105,7 @@ object PathOp:
       t"${coords.key('a')} $rx $ry $angle ${bit(largeArc)} ${bit(sweep)} $coords"
 
 case class Path
-    (ops: List[PathOp] = Nil, style: Maybe[CssStyle] = Unset, id: Maybe[SvgId] = Unset,
+    (ops: List[PathOp] = Nil, style: Optional[CssStyle] = Unset, id: Optional[SvgId] = Unset,
         transform: List[Transform] = Nil)
 extends Shape:
   import PathOp.*
@@ -164,7 +164,7 @@ sealed trait Shape:
 
 enum Transform:
   case Translate(vector: DxDy)
-  case Scale(x: Float, y: Maybe[Float])
+  case Scale(x: Float, y: Optional[Float])
   case Matrix()
   case Skew()
   case Rotate(angle: Degrees)
@@ -180,7 +180,7 @@ case class SvgDoc(svg: Svg, encoding: Encoding)
 
 // extension (elem: Shape)
 //   def translate(vector: DxDy) 
-//   def scale(xScale: Float, yScale: Maybe[Float])
+//   def scale(xScale: Float, yScale: Optional[Float])
 //   def skew()
 //   def rotate(angle: 0.0 ~ 360.0)
 //   def matrix(x1: Float, x2: Float, x3: Float, y1: Float, y2: Float, y3: Float)
