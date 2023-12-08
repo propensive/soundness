@@ -98,7 +98,7 @@ extension (words: Iterable[Text])
 
 extension [TextType](using textual: Textual[TextType])(text: TextType)
   inline def length: Int = textual.string(text).length
-  inline def populated: Maybe[TextType] = if textual.string(text).length == 0 then Unset else text
+  inline def populated: Optional[TextType] = if textual.string(text).length == 0 then Unset else text
   inline def lower: TextType = textual.map(text, _.toLower)
   inline def upper: TextType = textual.map(text, _.toUpper)
   def plain: Text = Text(textual.string(text))
@@ -132,7 +132,7 @@ extension [TextType](using textual: Textual[TextType])(text: TextType)
   def snip(n: Int): (TextType, TextType) =
     (text.slice(0, n min text.length), text.slice(n min text.length, text.length))
   
-  def char(index: Int): Maybe[Char] =
+  def char(index: Int): Optional[Char] =
     if index >= 0 && index < text.length then textual.unsafeChar(text, index) else Unset
 
   inline def reverse: TextType =
@@ -156,7 +156,7 @@ extension [TextType](using textual: Textual[TextType])(text: TextType)
     val end = text.where(!_.isWhitespace, bidi = Rtl).or(0)
     text.slice(start, end + 1)
   
-  def where(pred: Char -> Boolean, start: Maybe[Int] = Unset, bidi: Bidi = Ltr): Maybe[Int] =
+  def where(pred: Char -> Boolean, start: Optional[Int] = Unset, bidi: Bidi = Ltr): Optional[Int] =
     val length = text.length
     
     val step: Int = bidi match
@@ -167,7 +167,7 @@ extension [TextType](using textual: Textual[TextType])(text: TextType)
       case Ltr => start.or(0)
       case Rtl => start.or((length - 1).max(0))
 
-    def recur(i: Int): Maybe[Int] =
+    def recur(i: Int): Optional[Int] =
       if i >= length || i < 0 then Unset else if pred(textual.unsafeChar(text, i)) then i
       else recur(i + step)
     
@@ -181,7 +181,7 @@ extension [TextType](using textual: Textual[TextType])(text: TextType)
     case Unset  => textual.empty
     case i: Int => text.slice(i, text.length)
 
-  def snipWhere(pred: Char -> Boolean, index: Int = 0): Maybe[(TextType, TextType)] =
+  def snipWhere(pred: Char -> Boolean, index: Int = 0): Optional[(TextType, TextType)] =
     text.where(pred, index).let(text.snip(_))
 
   def whilst(pred: Char -> Boolean): TextType = text.upto(!pred(_))
