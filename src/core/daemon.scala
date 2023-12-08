@@ -73,7 +73,7 @@ class LazyEnvironment(variables: List[Text]) extends Environment:
       case List(key, value) => (key, value)
     .to(Map)
   
-  def variable(key: Text): Maybe[Text] = map.get(key).getOrElse(Unset)
+  def variable(key: Text): Optional[Text] = map.get(key).getOrElse(Unset)
 
 def daemon[BusType <: Matchable]
     (using executive: Executive)
@@ -96,7 +96,7 @@ def daemon[BusType <: Matchable]
     portFile.wipe()
     System.exit(0)
   
-  def shutdown(pid: Maybe[Pid])(using Stdio, Log[Text]): Unit =
+  def shutdown(pid: Optional[Pid])(using Stdio, Log[Text]): Unit =
     Log.info(t"Shutdown daemon")
     pid.let(terminatePid.fulfill(_)).or(termination)
 
@@ -121,7 +121,7 @@ def daemon[BusType <: Matchable]
       
       buffer
 
-    val message: Maybe[DaemonEvent] = line() match
+    val message: Optional[DaemonEvent] = line() match
       case t"e" =>
         val pid: Pid = line().decodeAs[Pid]
         DaemonEvent.Stderr(pid)
@@ -218,7 +218,7 @@ def daemon[BusType <: Matchable]
             catch
               case exception: Exception =>
                 Log.fail(exception.toString.show)
-                Maybe(exception.getStackTrace).let: stackTrace =>
+                Optional(exception.getStackTrace).let: stackTrace =>
                   stackTrace.foreach: frame =>
                     Log.fail(frame.toString.tt)
                 exitPromise.fulfill(ExitStatus.Fail(1))

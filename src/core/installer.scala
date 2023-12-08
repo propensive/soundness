@@ -72,7 +72,7 @@ object Installer:
           case index => index
 
   def install
-      (force: Boolean = false, target: Maybe[Path] = Unset)
+      (force: Boolean = false, target: Optional[Path] = Unset)
       (using service: DaemonService[?], log: Log[Text], environment: Environment, home: HomeDirectory)
       (using Effectful)
       : Result raises InstallError =
