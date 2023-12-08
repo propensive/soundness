@@ -147,7 +147,7 @@ object EmailAddress:
 
     EmailAddress(Unset, localPart, domain)
 
-case class EmailAddress(displayName: Maybe[Text], localPart: LocalPart, domain: Hostname | Ipv4 | Ipv6)
+case class EmailAddress(displayName: Optional[Text], localPart: LocalPart, domain: Hostname | Ipv4 | Ipv6)
 
 enum LocalPart:
   case Quoted(text: Text)

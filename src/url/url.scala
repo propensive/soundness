@@ -108,16 +108,16 @@ object Url:
   given [SchemeType <: Label](using Raises[UrlError], Raises[HostnameError]): Decoder[Url[SchemeType]] = parse(_)
   given [SchemeType <: Label]: Encoder[Url[SchemeType]] = _.show
 
-  given [SchemeType <: Label]: Reachable[Url[SchemeType], "", (Scheme[SchemeType], Maybe[Authority])] with
+  given [SchemeType <: Label]: Reachable[Url[SchemeType], "", (Scheme[SchemeType], Optional[Authority])] with
     def separator(url: Url[SchemeType]): Text = t"/"
     def descent(url: Url[SchemeType]): List[PathName[""]] = url.path
-    def root(url: Url[SchemeType]): (Scheme[SchemeType], Maybe[Authority]) = (url.scheme, url.authority)
+    def root(url: Url[SchemeType]): (Scheme[SchemeType], Optional[Authority]) = (url.scheme, url.authority)
     
-    def prefix(root: (Scheme[SchemeType], Maybe[Authority])): Text =
+    def prefix(root: (Scheme[SchemeType], Optional[Authority])): Text =
       t"${root(0).name}:${root(1).let(t"//"+_.show).or(t"")}"
     
-  given [SchemeType <: Label]: PathCreator[Url[SchemeType], "", (Scheme[SchemeType], Maybe[Authority])] with
-    def path(ascent: (Scheme[SchemeType], Maybe[Authority]), descent: List[PathName[""]]): Url[SchemeType] =
+  given [SchemeType <: Label]: PathCreator[Url[SchemeType], "", (Scheme[SchemeType], Optional[Authority])] with
+    def path(ascent: (Scheme[SchemeType], Optional[Authority]), descent: List[PathName[""]]): Url[SchemeType] =
       Url(ascent(0), ascent(1), descent.reverse.map(_.render).join(t"/"))
     
   given show[SchemeType <: Label]: Show[Url[SchemeType]] = url =>
@@ -224,7 +224,7 @@ object Authority:
             case Unset                                   => raise(UrlError(value, colon + 1, Number))(0)
           .pipe(Authority(Hostname.parse(value.slice(arobase + 1, colon)), value.take(arobase), _))
 
-case class Authority(host: Hostname, userInfo: Maybe[Text] = Unset, port: Maybe[Int] = Unset)
+case class Authority(host: Hostname, userInfo: Optional[Text] = Unset, port: Optional[Int] = Unset)
 
 object Weblink:
   given Followable[Weblink, "", "..", "."] with
@@ -242,8 +242,8 @@ type HttpUrl = Url["https" | "http"]
 
 case class Url
     [+SchemeType <: Label]
-    (scheme: Scheme[SchemeType], authority: Maybe[Authority], pathText: Text, query: Maybe[Text] = Unset,
-        fragment: Maybe[Text] = Unset):
+    (scheme: Scheme[SchemeType], authority: Optional[Authority], pathText: Text, query: Optional[Text] = Unset,
+        fragment: Optional[Text] = Unset):
   
   lazy val path: List[PathName[""]] =
     // FIXME: This needs to be handled better

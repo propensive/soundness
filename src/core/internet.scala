@@ -28,7 +28,7 @@ class Internet(val online: Boolean):
   def require[ResultType](fn: Online ?=> ResultType)(using Raises[OfflineError]): ResultType =
     if online then fn(using Online) else abort(OfflineError())
 
-  def appropriate[ResultType](fn: Online ?=> ResultType): Maybe[ResultType] =
+  def appropriate[ResultType](fn: Online ?=> ResultType): Optional[ResultType] =
     if online then fn(using Online) else Unset
 
 class Online() extends Internet(true)
