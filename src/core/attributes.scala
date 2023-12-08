@@ -23,7 +23,7 @@ import hieroglyph.*
 import spectacular.*
 
 trait HtmlAttribute[KeyType <: Label, -ValueType, -T]:
-  def convert(value: ValueType): Maybe[Text]
+  def convert(value: ValueType): Optional[Text]
   def rename: Option[Text] = None
 
 object Rel:
@@ -141,7 +141,7 @@ enum Wrap:
 
 object HtmlAttribute:
   given [L <: Label, V, T](using att: GenericHtmlAttribute[L, V]): HtmlAttribute[L, V, T] with
-    def convert(value: V): Maybe[Text] = att.serialize(value).show
+    def convert(value: V): Optional[Text] = att.serialize(value).show
     override def rename: Option[Text] = Some(att.name.show)
 
   given any[T, L <: Label]: HtmlAttribute[L, Text, T] = identity(_)

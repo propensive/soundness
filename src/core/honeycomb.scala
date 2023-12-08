@@ -107,7 +107,7 @@ extends Node[NameType], Dynamic:
 case class Element
     [+NameType <: Label]
     (labelString: String, unclosed: Boolean, tagBlock: Boolean, verbatim: Boolean,
-        attributes: Map[String, Maybe[Text]], children: Seq[Html[?]]) extends Node[NameType]:
+        attributes: Map[String, Optional[Text]], children: Seq[Html[?]]) extends Node[NameType]:
 
   def label: Text = labelString.show
 

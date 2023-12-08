@@ -92,7 +92,7 @@ object Honeycomb:
       : Expr[StartTag[NameType, ReturnType]] =
     import quotes.reflect.*
 
-    def recur(exprs: Seq[Expr[(Label, Any)]]): List[Expr[(String, Maybe[Text])]] = exprs match
+    def recur(exprs: Seq[Expr[(Label, Any)]]): List[Expr[(String, Optional[Text])]] = exprs match
       case '{type keyType <: Label; ($key: keyType, $value: valueType)} +: tail =>
         val att: String = key.value.get
         val expr: Expr[HtmlAttribute[keyType, valueType, NameType]] =
