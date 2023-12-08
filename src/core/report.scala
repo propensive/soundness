@@ -60,7 +60,7 @@ object Benchmark:
 
 case class Benchmark
     (total: Long, count: Int, min: Double, mean: Double, max: Double, sd: Double,
-        confidence: Benchmark.Percentiles, baseline: Maybe[Baseline]):
+        confidence: Benchmark.Percentiles, baseline: Optional[Baseline]):
   
   def zScore(percentile: Benchmark.Percentiles): Double = percentile match
     case 80 => 0.842
@@ -129,7 +129,7 @@ class TestReport(using Environment):
       tests(testId)
 
   enum ReportLine:
-    case Suite(suite: Maybe[TestSuite], tests: TestsMap = TestsMap())
+    case Suite(suite: Optional[TestSuite], tests: TestsMap = TestsMap())
     case Test(test: TestId, outcomes: scm.ArrayBuffer[Outcome] = scm.ArrayBuffer())
     case Bench(test: TestId, benchmark: Benchmark)
 
@@ -157,7 +157,7 @@ class TestReport(using Environment):
     
   private val lines: ReportLine.Suite = ReportLine.Suite(Unset)
   
-  def resolve(suite: Maybe[TestSuite]): ReportLine.Suite =
+  def resolve(suite: Optional[TestSuite]): ReportLine.Suite =
     suite.option.map: suite =>
       (resolve(suite.parent).tests(suite.id): @unchecked) match
         case suite@ReportLine.Suite(_, _) => suite

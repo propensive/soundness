@@ -24,9 +24,9 @@ import scala.collection.mutable as scm
 extension [TestType](test: Test[TestType])
   inline def benchmark
       [DurationType, ReportType]
-      (confidence: Maybe[Benchmark.Percentiles] = Unset, iterations: Maybe[Int] = Unset,
-          duration: Maybe[DurationType] = Unset, warmup: Maybe[DurationType] = Unset,
-          baseline: Maybe[Baseline] = Unset)
+      (confidence: Optional[Benchmark.Percentiles] = Unset, iterations: Optional[Int] = Unset,
+          duration: Optional[DurationType] = Unset, warmup: Optional[DurationType] = Unset,
+          baseline: Optional[Baseline] = Unset)
       (using runner: Runner[ReportType], inc: Inclusion[ReportType, Benchmark],
           specificDuration: SpecificDuration[DurationType] = timeApi.long,
           genericDuration: GenericDuration[DurationType] = timeApi.long)

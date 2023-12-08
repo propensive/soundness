@@ -49,7 +49,7 @@ class TestContext():
 object TestId:
   given Ordering[TestId] = math.Ordering.Implicits.seqOrdering[List, Text].on(_.ids.reverse)
 
-case class TestId(name: Text, suite: Maybe[TestSuite], codepoint: Codepoint):
+case class TestId(name: Text, suite: Optional[TestSuite], codepoint: Codepoint):
   val timestamp: Long = System.currentTimeMillis
   import textWidthCalculation.uniform
   lazy val id: Text = (suite.hashCode ^ name.hashCode).hex.pad(6, Rtl, '0').take(6, Rtl)
@@ -57,7 +57,7 @@ case class TestId(name: Text, suite: Maybe[TestSuite], codepoint: Codepoint):
   def apply[T](ctx: TestContext ?=> T): Test[T] = Test[T](this, ctx(using _))
   def depth: Int = suite.let(_.id.depth).or(0) + 1
 
-class TestSuite(val name: Text, val parent: Maybe[TestSuite] = Unset)(using codepoint: Codepoint):
+class TestSuite(val name: Text, val parent: Optional[TestSuite] = Unset)(using codepoint: Codepoint):
   override def equals(that: Any): Boolean = that.matchable(using Unsafe) match
     case that: TestSuite => name == that.name && parent == that.parent
     case _               => false
@@ -90,7 +90,7 @@ class Runner[ReportType]()(using reporter: TestReporter[ReportType]):
   def skip(id: TestId): Boolean = false
   val report: ReportType = reporter.make()
 
-  def maybeRun[T, S](test: Test[T]): Maybe[TestRun[T]] =
+  def maybeRun[T, S](test: Test[T]): Optional[TestRun[T]] =
     if skip(test.id) then Unset else run[T, S](test)
 
   def run[T, S](test: Test[T]): TestRun[T] =
