@@ -151,7 +151,7 @@ object BadEncodingHandler:
   given default(using Quickstart): BadEncodingHandler = badEncodingHandlers.substitute
 
 trait BadEncodingHandler:
-  def handle(pos: Int, encoding: Encoding): Maybe[Char]
+  def handle(pos: Int, encoding: Encoding): Optional[Char]
   def complete(): Unit
 
 package badEncodingHandlers:
@@ -163,11 +163,11 @@ package badEncodingHandlers:
       def complete(): Unit = ()
   
   given skip: BadEncodingHandler with
-    def handle(pos: Int, encoding: Encoding): Maybe[Char] = Unset
+    def handle(pos: Int, encoding: Encoding): Optional[Char] = Unset
     def complete(): Unit = ()
   
   given substitute: BadEncodingHandler with
-    def handle(pos: Int, encoding: Encoding): Maybe[Char] = '?'
+    def handle(pos: Int, encoding: Encoding): Optional[Char] = '?'
     def complete(): Unit = ()
   
   given collect
@@ -175,7 +175,7 @@ package badEncodingHandlers:
       : BadEncodingHandler^{aggregate} =
     new BadEncodingHandler:
       private val mistakes: scm.ArrayBuffer[UndecodableCharError] = scm.ArrayBuffer()
-      def handle(pos: Int, encoding: Encoding): Maybe[Char] = Unset
+      def handle(pos: Int, encoding: Encoding): Optional[Char] = Unset
       def complete(): Unit = if !mistakes.isEmpty then raise(AggregateError(mistakes.to(List)))(())
 
 case class UndecodableCharError(pos: Int, encoding: Encoding)

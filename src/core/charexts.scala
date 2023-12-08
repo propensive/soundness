@@ -51,5 +51,5 @@ object Chars:
     case '9' => '₉'
 
 extension (char: Char)
-  def superscript: Maybe[Char] = Chars.superscript.applyOrElse(char, _ => Unset)
-  def subscript: Maybe[Char] = Chars.subscript.applyOrElse(char, _ => Unset)
+  def superscript: Optional[Char] = Chars.superscript.applyOrElse(char, _ => Unset)
+  def subscript: Optional[Char] = Chars.subscript.applyOrElse(char, _ => Unset)
