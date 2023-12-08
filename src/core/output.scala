@@ -53,7 +53,7 @@ object TextStyle:
   val esc: Char = 27.toChar
 
 case class TextStyle
-    (fg: Maybe[Int] = Unset, bg: Maybe[Int] = Unset, italic: Boolean = false,
+    (fg: Optional[Int] = Unset, bg: Optional[Int] = Unset, italic: Boolean = false,
         bold: Boolean = false, reverse: Boolean = false, underline: Boolean = false,
         conceal: Boolean = false, strike: Boolean = false):
   import escapes.*

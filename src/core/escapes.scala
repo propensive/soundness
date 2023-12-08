@@ -26,7 +26,7 @@ import language.experimental.captureChecking
 type Escape = Ansi.Input.Escape
 
 object Escape:
-  def apply(code: Text, reset: Maybe[Text] = Unset): Escape = Ansi.Input.Escape(code, reset.or(t""))
+  def apply(code: Text, reset: Optional[Text] = Unset): Escape = Ansi.Input.Escape(code, reset.or(t""))
 
 object escapes:
   object foreground:
@@ -87,18 +87,18 @@ object escapes:
 object csi:
   val esc: Text = t"\e"
   val csi: Text = t"\e["
-  def cuu(n: Maybe[Int] = Unset): Text = t"$csi${n.let(_.show).or(t"")}A"
-  def cud(n: Maybe[Int] = Unset): Text = t"$csi${n.let(_.show).or(t"")}B"
-  def cuf(n: Maybe[Int] = Unset): Text = t"$csi${n.let(_.show).or(t"")}C"
-  def cub(n: Maybe[Int] = Unset): Text = t"$csi${n.let(_.show).or(t"")}D"
-  def cnl(n: Maybe[Int] = Unset): Text = t"$csi${n.let(_.show).or(t"")}E"
-  def cpl(n: Maybe[Int] = Unset): Text = t"$csi${n.let(_.show).or(t"")}F"
-  def cha(n: Maybe[Int] = Unset): Text = t"$csi${n.let(_.show).or(t"")}G"
-  def cup(n: Maybe[Int] = Unset, m: Maybe[Int] = Unset): Text = t"$csi${n.let(_.show).or(t"")};${m.let(_.show).or(t"")}H"
-  def ed(n: Maybe[Int] = Unset): Text = t"$csi${n.let(_.show).or(t"")}J"
-  def el(n: Maybe[Int] = Unset): Text = t"$csi${n.let(_.show).or(t"")}K"
-  def su(n: Maybe[Int] = Unset): Text = t"$csi${n.let(_.show).or(t"")}S"
-  def sd(n: Maybe[Int] = Unset): Text = t"$csi${n.let(_.show).or(t"")}T"
+  def cuu(n: Optional[Int] = Unset): Text = t"$csi${n.let(_.show).or(t"")}A"
+  def cud(n: Optional[Int] = Unset): Text = t"$csi${n.let(_.show).or(t"")}B"
+  def cuf(n: Optional[Int] = Unset): Text = t"$csi${n.let(_.show).or(t"")}C"
+  def cub(n: Optional[Int] = Unset): Text = t"$csi${n.let(_.show).or(t"")}D"
+  def cnl(n: Optional[Int] = Unset): Text = t"$csi${n.let(_.show).or(t"")}E"
+  def cpl(n: Optional[Int] = Unset): Text = t"$csi${n.let(_.show).or(t"")}F"
+  def cha(n: Optional[Int] = Unset): Text = t"$csi${n.let(_.show).or(t"")}G"
+  def cup(n: Optional[Int] = Unset, m: Optional[Int] = Unset): Text = t"$csi${n.let(_.show).or(t"")};${m.let(_.show).or(t"")}H"
+  def ed(n: Optional[Int] = Unset): Text = t"$csi${n.let(_.show).or(t"")}J"
+  def el(n: Optional[Int] = Unset): Text = t"$csi${n.let(_.show).or(t"")}K"
+  def su(n: Optional[Int] = Unset): Text = t"$csi${n.let(_.show).or(t"")}S"
+  def sd(n: Optional[Int] = Unset): Text = t"$csi${n.let(_.show).or(t"")}T"
   def hvp(n: Int, m: Int): Text = t"$csi${n};${m}f"
   def dsr(): Text = t"${csi}6n"
   def scp(): Text = t"${csi}s"
