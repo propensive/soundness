@@ -37,7 +37,7 @@ object Example:
     def parse(text: Text)(using Raises[PathError]): TestPath = text.decodeAs[TestPath]
 
     given rootParser: RootParser[TestPath, Drive] with
-      def parse(text: Text): Maybe[(Drive, Text)] = text.only:
+      def parse(text: Text): Optional[(Drive, Text)] = text.only:
         case r"$letter([a-zA-Z]):\\.*" => (Drive(unsafely(letter(0)).toUpper), text.drop(3))
 
     given reachable: Reachable[TestPath, Forbidden, Drive] with

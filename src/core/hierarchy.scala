@@ -162,13 +162,13 @@ trait Pathlike[-PathType <: Matchable, NameType <: Label, AscentType]:
       [PathType2 <: PathType]
       (path: PathType, n: Int)
       (using creator: PathCreator[PathType2, NameType, AscentType])
-      : Maybe[PathType2]
+      : Optional[PathType2]
   
   def parent
       [PathType2 <: PathType]
       (path: PathType)
       (using creator: PathCreator[PathType2, NameType, AscentType])
-      : Maybe[PathType2] =
+      : Optional[PathType2] =
     ancestor(path, 1)
 
   def child
@@ -182,7 +182,7 @@ trait MainRoot[PathType <: Matchable]:
   def empty(): PathType
 
 trait RootParser[PathType <: Matchable, +RootType]:
-  def parse(text: Text): Maybe[(RootType, Text)]
+  def parse(text: Text): Optional[(RootType, Text)]
   
 @capability
 trait PathCreator[+PathType <: Matchable, NameType <: Label, AscentType]:
@@ -198,7 +198,7 @@ object Reachable:
           creator: PathCreator[PathType, NameType, RootType])
       (using path: Raises[PathError])
       : PathType =
-    val rootRest: Maybe[(RootType, Text)] = rootParser.parse(text)
+    val rootRest: Optional[(RootType, Text)] = rootParser.parse(text)
     if rootRest.absent
     then raise(PathError(PathError.Reason.NotRooted(text))):
       creator.path(summonInline[Default[RootType]](), Nil)
@@ -230,7 +230,7 @@ extends Pathlike[PathType, NameType, RootType]:
       [PathType2 <: PathType]
       (path: PathType, n: Int)
       (using creator: PathCreator[PathType2, NameType, RootType])
-      : Maybe[PathType2] =
+      : Optional[PathType2] =
     if descent(path).length < n then Unset else creator.path(root(path), descent(path).drop(n))
 
 object Followable:
@@ -341,8 +341,8 @@ extension
   def descent: List[PathName[NameType]] = pathlike.descent(path)
   def depth: Int = pathlike.descent(path).length
 
-  transparent inline def parent: Maybe[PathType] = pathlike.parent(path)
-  transparent inline def ancestor(n: Int): Maybe[PathType] = pathlike.ancestor(path, n)
+  transparent inline def parent: Optional[PathType] = pathlike.parent(path)
+  transparent inline def ancestor(n: Int): Optional[PathType] = pathlike.ancestor(path, n)
   
   inline def append
       [LinkType <: Matchable]

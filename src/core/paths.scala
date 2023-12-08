@@ -42,7 +42,7 @@ object SimplePath:
   given mainRoot: MainRoot[SimplePath] = () => SimplePath(Nil)
 
   given rootParser: RootParser[SimplePath, Root.type] with
-    def parse(text: Text): Maybe[(Root.type, Text)] =
+    def parse(text: Text): Optional[(Root.type, Text)] =
       if text.starts(t"/") then (Root, text.drop(1)) else Unset
     
   given reachable: Reachable[SimplePath, ".*\\/.*", Root.type] with
