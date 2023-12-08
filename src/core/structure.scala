@@ -32,7 +32,7 @@ object BaseLayout:
       t"${if home then homeDir else t""}$slash${path.reverse.join(t"/")}"
 
 case class BaseLayout
-    (private val part: Maybe[Text], readOnly: Boolean = false)
+    (private val part: Optional[Text], readOnly: Boolean = false)
     (using baseDir: BaseLayout.Dir):
   
   def absolutePath
