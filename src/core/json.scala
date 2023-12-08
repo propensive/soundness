@@ -150,9 +150,9 @@ object Json extends Dynamic:
     Json(JsonAst((keys, values)))
 
 trait FallbackJsonSerializer:
-  given [T](using writer: JsonSerializer[T]): JsonSerializer[Maybe[T]] = new JsonSerializer[Maybe[T]]:
-    override def omit(t: Maybe[T]): Boolean = t.absent
-    def write(value: Maybe[T]): JsonAst = value.let(writer.write(_)).or(JsonAst(null))
+  given [T](using writer: JsonSerializer[T]): JsonSerializer[Optional[T]] = new JsonSerializer[Optional[T]]:
+    override def omit(t: Optional[T]): Boolean = t.absent
+    def write(value: Optional[T]): JsonAst = value.let(writer.write(_)).or(JsonAst(null))
 
 object JsonSerializer extends FallbackJsonSerializer:
   given JsonSerializer[Int] = int => JsonAst(int.toLong)
@@ -242,9 +242,9 @@ trait JsonSerializer[-ValueType]:
     (keys :+ "_type", values :+ label).asInstanceOf[JsonAst]
 
 trait FallbackJsonDeserializer:
-  given maybe[T](using reader: JsonDeserializer[T]^): JsonDeserializer[Maybe[T]]^{reader} =
-    new JsonDeserializer[Maybe[T]]:
-      def read(value: JsonAst, missing: Boolean): Maybe[T] =
+  given maybe[T](using reader: JsonDeserializer[T]^): JsonDeserializer[Optional[T]]^{reader} =
+    new JsonDeserializer[Optional[T]]:
+      def read(value: JsonAst, missing: Boolean): Optional[T] =
         if missing then Unset else reader.read(value, false)
 
 object JsonDeserializer extends FallbackJsonDeserializer:
