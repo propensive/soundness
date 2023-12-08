@@ -102,8 +102,8 @@ object Cookie:
 
   val dateFormat: jt.SimpleDateFormat = jt.SimpleDateFormat("dd MMM yyyy HH:mm:ss")
 
-case class Cookie(name: Text, value: Text, domain: Maybe[Text] = Unset,
-                      path: Maybe[Text] = Unset, expiry: Maybe[Long] = Unset,
+case class Cookie(name: Text, value: Text, domain: Optional[Text] = Unset,
+                      path: Optional[Text] = Unset, expiry: Optional[Long] = Unset,
                       ssl: Boolean = false):
   def serialize: Text =
     List(
@@ -207,7 +207,7 @@ inline def param(using Request)(key: Text): Text raises MissingParamError =
   summon[Request].params.get(key).getOrElse:
     abort(MissingParamError(key))
 
-def header(using Request)(header: RequestHeader[?]): Maybe[List[Text]] =
+def header(using Request)(header: RequestHeader[?]): Optional[List[Text]] =
   summon[Request].headers.get(header).getOrElse(Unset)
 
 object ParamReader:
