@@ -154,8 +154,8 @@ object PeriodicTable:
 
   lazy val symbols: Map[Text, ChemicalElement] = unsafely(elements.indexBy(_.symbol))
 
-  def apply(number: Int): Maybe[ChemicalElement] = if 1 <= number <= 118 then elements(number - 1) else Unset
-  def apply(symbol: Text): Maybe[ChemicalElement] = symbols.getOrElse(symbol, Unset)
+  def apply(number: Int): Optional[ChemicalElement] = if 1 <= number <= 118 then elements(number - 1) else Unset
+  def apply(symbol: Text): Optional[ChemicalElement] = symbols.getOrElse(symbol, Unset)
 
 object ChemicalElement:
   given show: Show[ChemicalElement] = _.symbol
@@ -223,7 +223,7 @@ trait Molecular extends Formulable:
   def `unary_+`: Molecule = molecule.copy(charge = molecule.charge + 1)
   
   def ion(charge: Int): Molecule = molecule.copy(charge = charge)
-  def as(state: Maybe[PhysicalState]): Molecule = molecule.copy(state = state)
+  def as(state: Optional[PhysicalState]): Molecule = molecule.copy(state = state)
 
 trait Formulable:
   def formula: ChemicalFormula
@@ -248,7 +248,7 @@ trait Formulable:
   @targetName("stoichiometric")
   def ===(rhs: Formulable): ChemicalEquation = ChemicalEquation(formula, Reaction.Stoichiometric, rhs.formula)
 
-case class Molecule(elements: Map[ChemicalElement, Int], charge: Int, state: Maybe[PhysicalState] = Unset)
+case class Molecule(elements: Map[ChemicalElement, Int], charge: Int, state: Optional[PhysicalState] = Unset)
 extends Molecular:
   def molecule: Molecule = this
 
