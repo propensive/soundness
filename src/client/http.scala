@@ -144,62 +144,62 @@ trait Locatable[-UrlType]:
 object Http:
   def post
       [PostType: Postable, UrlType: Locatable]
-      (url: UrlType, content: PostType = (), headers: RequestHeader.Value*)(using Internet, Log[Text])
+      (url: UrlType, content: PostType = (), headers: RequestHeader.Value*)(using Online, Log[Text])
       : HttpResponse =
     request[PostType](summon[Locatable[UrlType]].location(url), content, HttpMethod.Post, headers)
 
   def put
       [PostType: Postable, UrlType: Locatable]
-      (url: UrlType, content: PostType = (), headers: RequestHeader.Value*)(using Internet, Log[Text])
+      (url: UrlType, content: PostType = (), headers: RequestHeader.Value*)(using Online, Log[Text])
       : HttpResponse =
     request[PostType](summon[Locatable[UrlType]].location(url), content, HttpMethod.Put, headers)
   
   def get
       [UrlType: Locatable]
-      (url: UrlType, headers: Seq[RequestHeader.Value] = Nil)(using Internet, Log[Text])
+      (url: UrlType, headers: Seq[RequestHeader.Value] = Nil)(using Online, Log[Text])
       : HttpResponse =
     request(summon[Locatable[UrlType]].location(url), (), HttpMethod.Get, headers)
 
   def options
       [UrlType: Locatable]
-      (url: UrlType, headers: RequestHeader.Value*)(using Internet, Log[Text])
+      (url: UrlType, headers: RequestHeader.Value*)(using Online, Log[Text])
       : HttpResponse =
     request(summon[Locatable[UrlType]].location(url), (), HttpMethod.Options, headers)
 
   def head
       [UrlType: Locatable]
-      (url: UrlType, headers: RequestHeader.Value*)(using Internet, Log[Text])
+      (url: UrlType, headers: RequestHeader.Value*)(using Online, Log[Text])
       : HttpResponse =
     request(summon[Locatable[UrlType]].location(url), (), HttpMethod.Head, headers)
   
   def delete
       [UrlType: Locatable]
-      (url: UrlType, headers: RequestHeader.Value*)(using Internet, Log[Text])
+      (url: UrlType, headers: RequestHeader.Value*)(using Online, Log[Text])
       : HttpResponse =
     request(summon[Locatable[UrlType]].location(url), (), HttpMethod.Delete, headers)
   
   def connect
       [UrlType: Locatable]
-      (url: UrlType, headers: RequestHeader.Value*)(using Internet, Log[Text])
+      (url: UrlType, headers: RequestHeader.Value*)(using Online, Log[Text])
       : HttpResponse =
     request(summon[Locatable[UrlType]].location(url), (), HttpMethod.Connect, headers)
   
   def trace
       [UrlType: Locatable]
-      (url: UrlType, headers: RequestHeader.Value*)(using Internet, Log[Text])
+      (url: UrlType, headers: RequestHeader.Value*)(using Online, Log[Text])
       : HttpResponse =
     request(summon[Locatable[UrlType]].location(url), (), HttpMethod.Trace, headers)
   
   def patch
       [UrlType: Locatable]
-      (url: UrlType, headers: RequestHeader.Value*)(using Internet, Log[Text])
+      (url: UrlType, headers: RequestHeader.Value*)(using Online, Log[Text])
       : HttpResponse =
     request(summon[Locatable[UrlType]].location(url), (), HttpMethod.Patch, headers)
 
   private def request
       [PostType: Postable]
       (url: HttpUrl, content: PostType, method: HttpMethod,headers: Seq[RequestHeader.Value])
-      (using Internet, Log[Text])
+      (using Online, Log[Text])
       : HttpResponse =
     Log.info(msg"Sending HTTP $method request to $url")
     headers.foreach: header =>
@@ -327,7 +327,7 @@ case class Params(values: List[(Text, Text)]):
   .join(t"&")
 
 
-extension (url: HttpUrl)(using Internet, Log[Text])
+extension (url: HttpUrl)(using Online, Log[Text])
   def post[T: Postable](headers: RequestHeader.Value*)(body: T): HttpResponse =
     Http.post(url, body, headers*)
   
