@@ -1,0 +1,15 @@
+# This is a buildfile for Fury or Wrath.
+# More information is available at: https://github.com/propensive/wrath/
+target wharfinger/test
+
+repo propensive/probably
+repo propensive/jacinta
+repo propensive/telekinesis
+
+project wharfinger
+  module core
+    compiler  scala
+    sources   src/core
+    include   telekinesis/core jacinta/core
+
+
