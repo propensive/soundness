@@ -78,7 +78,7 @@ object Nettlesome:
     opaque type Ipv4 = Int
     opaque type MacAddress = Long
     opaque type DnsLabel = Text
-    opaque type Port = Int
+    opaque type TcpPort = Int
 
     object DnsLabel:
       given show: Show[DnsLabel] = identity(_)
@@ -138,13 +138,13 @@ object Nettlesome:
 
         recur(List(byte0, byte1, byte2, byte3, byte4, byte5), 0L)
 
-    object Port:
-      def unsafe(value: Int): Port = value
+    object TcpPort:
+      def unsafe(value: Int): TcpPort = value
 
-      def apply(value: Int): Port raises PortError =
+      def apply(value: Int): TcpPort raises PortError =
         if 1 <= value <= 65535 then value else raise(PortError())(unsafe(1))
 
-    extension (port: Port)
+    extension (port: TcpPort)
       def number: Int = port
       def privileged: Boolean = port < 1024
 
@@ -179,10 +179,10 @@ object Nettlesome:
   
   case class Ipv6(highBits: Long, lowBits: Long)
 
-  def port(context: Expr[StringContext])(using Quotes): Expr[Port] =
+  def port(context: Expr[StringContext])(using Quotes): Expr[TcpPort] =
     val portNumber: Int = failCompilation(context.valueOrAbort.parts.head.tt.decodeAs[Int])
     
-    if 1 <= portNumber <= 65535 then '{Port.unsafe(${Expr(portNumber)})}
+    if 1 <= portNumber <= 65535 then '{TcpPort.unsafe(${Expr(portNumber)})}
     else fail(msg"the port number ${portNumber} is not in the range 1-65535")
 
   def ip(context: Expr[StringContext])(using Quotes): Expr[Ipv4 | Ipv6] =
@@ -262,10 +262,10 @@ export Nettlesome.Ipv6
 export Nettlesome.Opaques.Ipv4
 export Nettlesome.Opaques.MacAddress
 export Nettlesome.Opaques.DnsLabel
-export Nettlesome.Opaques.Port
+export Nettlesome.Opaques.TcpPort
 
 extension (inline context: StringContext)
   transparent inline def ip(): Ipv4 | Ipv6 = ${Nettlesome.ip('context)}
   inline def mac(): MacAddress = ${Nettlesome.mac('context)}
-  inline def port(): Port = ${Nettlesome.port('context)}
+  inline def port(): TcpPort = ${Nettlesome.port('context)}
 
