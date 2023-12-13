@@ -73,6 +73,14 @@ extends Error(msg"the port is not in the valid range")
 case class IpAddressError(reason: Reason)
 extends Error(msg"the IP address is not valid because $reason")
 
+object Remote:
+  given ipv4: Remote[Ipv4] = _.show
+  given ipv6: Remote[Ipv6] = _.show
+  given hostname: Remote[Hostname] = _.show
+
+trait Remote[RemoteType]:
+  def remoteName(remote: RemoteType): Text
+
 object Nettlesome:
   object Opaques:
     opaque type Ipv4 = Int
