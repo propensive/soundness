@@ -17,8 +17,34 @@ class SocketConnection()
 
 case class BindError() extends Error(msg"the port was not available for binding")
 
+object Connectable:
+  given tcpPort(using Raises[StreamCutError]): Connectable[TcpPort] with
+    type Input = LazyList[Bytes]
+    type Output = LazyList[Bytes]
+    type Connection = jn.Socket
+    
+    def connect(remote: Text, port: TcpPort): jn.Socket =
+      jn.Socket(jn.InetAddress.getByName(remote.s), port.number)
+    
+    def send(socket: jn.Socket, hold: Promise[Unit], input: LazyList[Bytes]): Unit =
+      val out = socket.getOutputStream.nn
+
+      val end = LazyList.defer:
+        safely(hold.await())
+        LazyList(Bytes())
+
+      (input #::: end).writeTo(socket.getOutputStream.nn)
+    
+    def receive(socket: jn.Socket): LazyList[Bytes] = socket.getInputStream.nn.stream[Bytes]
+
 trait Connectable[SocketType]:
-  def connect(): Nothing
+  type Input
+  type Output
+  type Connection
+
+  def connect(remote: Text, socket: SocketType): Connection
+  def send(connection: Connection, hold: Promise[Unit], input: Input): Unit
+  def receive(connection: Connection): Output
 
 trait Bindable[SocketType]:
   private[coaxial] type Binding
@@ -113,4 +139,20 @@ object Socket:
         bindable.stop(binding)
         safely(async.await())
 
-      
+  def connect
+      [RemoteType, SocketType]
+      (remote: RemoteType, socket: SocketType)
+      (using connectable: Connectable[SocketType])
+      (using Remote[RemoteType])
+      (input: connectable.Input)
+      [ResultType]
+      (handle: connectable.Output => ResultType)
+      (using Monitor)
+      : ResultType raises StreamCutError =
+    val connection = connectable.connect(summon[Remote[RemoteType]].remoteName(remote), socket)
+    val hold: Promise[Unit] = Promise()
+    val sender = Async(connectable.send(connection, hold, input))
+    
+    handle(connectable.receive(connection)).also:
+      hold.offer(())
+      safely(sender.await())
