@@ -45,6 +45,7 @@ object Connectable:
     def send(socket: jn.Socket, hold: Promise[Unit], input: LazyList[Bytes]): Unit =
       val out = socket.getOutputStream.nn
 
+      // We append this to the end of the stream to ensure that the connection stays open
       val end = LazyList.defer:
         safely(hold.await())
         LazyList(Bytes())
@@ -52,6 +53,23 @@ object Connectable:
       (input #::: end).writeTo(socket.getOutputStream.nn)
     
     def receive(socket: jn.Socket): LazyList[Bytes] = socket.getInputStream.nn.stream[Bytes]
+
+  given udpPort: Connectable[UdpPort] with
+    type Input = Bytes
+    type Output = Unit
+    case class Connection(address: jn.InetAddress, port: Int, socket: jn.DatagramSocket)
+
+    def connect(remote: Text, port: UdpPort): Connection =
+      val address = jn.InetAddress.getByName(remote.s).nn
+      Connection(address, port.number, jn.DatagramSocket())
+    
+    def send(connection: Connection, hold: Promise[Unit], input: Bytes): Unit =
+      val packet = jn.DatagramPacket(input.mutable(using Unsafe), input.length, connection.address,
+          connection.port)
+      
+      connection.socket.send(packet)
+    
+    def receive(connection: Connection): Unit = ()
 
 trait Connectable[SocketType]:
   type Input
