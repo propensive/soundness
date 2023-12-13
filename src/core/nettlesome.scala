@@ -67,6 +67,9 @@ extends Error(msg"the MAC address is not valid because $reason")
 
 import IpAddressError.Reason, Reason.*
 
+case class PortError()
+extends Error(msg"the port is not in the valid range")
+
 case class IpAddressError(reason: Reason)
 extends Error(msg"the IP address is not valid because $reason")
 
@@ -75,6 +78,7 @@ object Nettlesome:
     opaque type Ipv4 = Int
     opaque type MacAddress = Long
     opaque type DnsLabel = Text
+    opaque type Port = Int
 
     object DnsLabel:
       given show: Show[DnsLabel] = identity(_)
@@ -134,6 +138,12 @@ object Nettlesome:
 
         recur(List(byte0, byte1, byte2, byte3, byte4, byte5), 0L)
 
+    object Port:
+      def unsafe(value: Int): Port = value
+
+      def apply(value: Int): Port raises PortError =
+        if 1 <= value <= 65535 then value else raise(PortError())(unsafe(1))
+
     extension (macAddress: MacAddress)
       def byte0: Int = (macAddress >>> 40).toInt
       def byte1: Int = (macAddress >>> 32).toInt & 255
@@ -164,6 +174,12 @@ object Nettlesome:
   case class Ipv4Subnet(ipv4: Ipv4, size: Int)
   
   case class Ipv6(highBits: Long, lowBits: Long)
+
+  def port(context: Expr[StringContext])(using Quotes): Expr[Port] =
+    val portNumber: Int = failCompilation(context.valueOrAbort.parts.head.tt.decodeAs[Int])
+    
+    if 1 <= portNumber <= 65535 then '{Port.unsafe(${Expr(portNumber)})}
+    else fail(msg"the port number ${portNumber} is not in the range 1-65535")
 
   def ip(context: Expr[StringContext])(using Quotes): Expr[Ipv4 | Ipv6] =
     val text = Text(context.valueOrAbort.parts.head)
@@ -242,8 +258,10 @@ export Nettlesome.Ipv6
 export Nettlesome.Opaques.Ipv4
 export Nettlesome.Opaques.MacAddress
 export Nettlesome.Opaques.DnsLabel
+export Nettlesome.Opaques.Port
 
 extension (inline context: StringContext)
   transparent inline def ip(): Ipv4 | Ipv6 = ${Nettlesome.ip('context)}
   inline def mac(): MacAddress = ${Nettlesome.mac('context)}
+  inline def port(): Port = ${Nettlesome.port('context)}
 
