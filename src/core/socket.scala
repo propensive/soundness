@@ -21,7 +21,7 @@ trait Connectable[SocketType]:
   def connect(): Nothing
 
 trait Bindable[SocketType]:
-  type Binding
+  private[coaxial] type Binding
   type Input
   type Output
   def bind(socket: SocketType): Binding
@@ -40,7 +40,7 @@ enum UdpResponse:
 
 object Bindable:
   given tcpPort(using Raises[StreamCutError]): Bindable[TcpPort] with
-    type Binding = jn.ServerSocket
+    private[coaxial] type Binding = jn.ServerSocket
     type Output = LazyList[Bytes]
     type Input = TcpConnection
     
@@ -53,7 +53,7 @@ object Bindable:
     def stop(binding: Binding): Unit = binding.close()
 
   given udpPort: Bindable[UdpPort] with
-    type Binding = jn.DatagramSocket
+    private[coaxial] type Binding = jn.DatagramSocket
     type Output = UdpResponse
     type Input = UdpPacket
     
