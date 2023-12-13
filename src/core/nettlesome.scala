@@ -79,6 +79,7 @@ object Nettlesome:
     opaque type MacAddress = Long
     opaque type DnsLabel = Text
     opaque type TcpPort = Int
+    opaque type UdpPort = Int
 
     object DnsLabel:
       given show: Show[DnsLabel] = identity(_)
@@ -144,10 +145,16 @@ object Nettlesome:
       def apply(value: Int): TcpPort raises PortError =
         if 1 <= value <= 65535 then value else raise(PortError())(unsafe(1))
 
-    extension (port: TcpPort)
+    object UdpPort:
+      def unsafe(value: Int): UdpPort = value
+
+      def apply(value: Int): UdpPort raises PortError =
+        if 1 <= value <= 65535 then value else raise(PortError())(unsafe(1))
+    
+    extension (port: TcpPort | UdpPort)
       def number: Int = port
       def privileged: Boolean = port < 1024
-
+    
     extension (macAddress: MacAddress)
       def byte0: Int = (macAddress >>> 40).toInt
       def byte1: Int = (macAddress >>> 32).toInt & 255
@@ -179,11 +186,17 @@ object Nettlesome:
   
   case class Ipv6(highBits: Long, lowBits: Long)
 
-  def port(context: Expr[StringContext])(using Quotes): Expr[TcpPort] =
+  def tcpPort(context: Expr[StringContext])(using Quotes): Expr[TcpPort] =
     val portNumber: Int = failCompilation(context.valueOrAbort.parts.head.tt.decodeAs[Int])
     
     if 1 <= portNumber <= 65535 then '{TcpPort.unsafe(${Expr(portNumber)})}
-    else fail(msg"the port number ${portNumber} is not in the range 1-65535")
+    else fail(msg"the TCP port number ${portNumber} is not in the range 1-65535")
+
+  def udpPort(context: Expr[StringContext])(using Quotes): Expr[UdpPort] =
+    val portNumber: Int = failCompilation(context.valueOrAbort.parts.head.tt.decodeAs[Int])
+    
+    if 1 <= portNumber <= 65535 then '{UdpPort.unsafe(${Expr(portNumber)})}
+    else fail(msg"the UDP port number ${portNumber} is not in the range 1-65535")
 
   def ip(context: Expr[StringContext])(using Quotes): Expr[Ipv4 | Ipv6] =
     val text = Text(context.valueOrAbort.parts.head)
@@ -263,9 +276,11 @@ export Nettlesome.Opaques.Ipv4
 export Nettlesome.Opaques.MacAddress
 export Nettlesome.Opaques.DnsLabel
 export Nettlesome.Opaques.TcpPort
+export Nettlesome.Opaques.UdpPort
 
 extension (inline context: StringContext)
   transparent inline def ip(): Ipv4 | Ipv6 = ${Nettlesome.ip('context)}
   inline def mac(): MacAddress = ${Nettlesome.mac('context)}
-  inline def port(): TcpPort = ${Nettlesome.port('context)}
+  inline def tcp(): TcpPort = ${Nettlesome.tcpPort('context)}
+  inline def udp(): UdpPort = ${Nettlesome.udpPort('context)}
 
