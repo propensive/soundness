@@ -144,6 +144,10 @@ object Nettlesome:
       def apply(value: Int): Port raises PortError =
         if 1 <= value <= 65535 then value else raise(PortError())(unsafe(1))
 
+    extension (port: Port)
+      def number: Int = port
+      def privileged: Boolean = port < 1024
+
     extension (macAddress: MacAddress)
       def byte0: Int = (macAddress >>> 40).toInt
       def byte1: Int = (macAddress >>> 32).toInt & 255
