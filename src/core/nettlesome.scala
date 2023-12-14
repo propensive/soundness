@@ -81,13 +81,20 @@ object Remote:
 trait Remote[RemoteType]:
   def remoteName(remote: RemoteType): Text
 
+case class Endpoint[+PortType](remote: Text, port: PortType)
+
+extension [RemoteType](value: RemoteType)(using remote: Remote[RemoteType])
+  infix def on[PortType](port: PortType): Endpoint[PortType] = Endpoint(remote.remoteName(value), port)
+
+erased trait Port
+
 object Nettlesome:
   object Opaques:
     opaque type Ipv4 = Int
     opaque type MacAddress = Long
     opaque type DnsLabel = Text
-    opaque type TcpPort = Int
-    opaque type UdpPort = Int
+    opaque type TcpPort <: Port = Int & Port
+    opaque type UdpPort <: Port = Int & Port
 
     object DnsLabel:
       given show: Show[DnsLabel] = identity(_)
@@ -148,16 +155,16 @@ object Nettlesome:
         recur(List(byte0, byte1, byte2, byte3, byte4, byte5), 0L)
 
     object TcpPort:
-      def unsafe(value: Int): TcpPort = value
+      def unsafe(value: Int): TcpPort = value.asInstanceOf[TcpPort]
 
       def apply(value: Int): TcpPort raises PortError =
-        if 1 <= value <= 65535 then value else raise(PortError())(unsafe(1))
+        if 1 <= value <= 65535 then value.asInstanceOf[TcpPort] else raise(PortError())(unsafe(1))
 
     object UdpPort:
-      def unsafe(value: Int): UdpPort = value
+      def unsafe(value: Int): UdpPort = value.asInstanceOf[UdpPort]
 
       def apply(value: Int): UdpPort raises PortError =
-        if 1 <= value <= 65535 then value else raise(PortError())(unsafe(1))
+        if 1 <= value <= 65535 then value.asInstanceOf[UdpPort] else raise(PortError())(unsafe(1))
     
     extension (port: TcpPort | UdpPort)
       def number: Int = port
