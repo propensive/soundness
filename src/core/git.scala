@@ -229,7 +229,7 @@ private[nonagenarian] inline def git(using command: GitCommand): GitCommand = co
 
 object Git:
   def progress(process: Process[?, ?]): LazyList[Progress] =
-    safely[StreamCutError]:
+    safely[StreamError]:
       process.stderr().map(_.uString).map(_.trim).flatMap(_.cut(r"[\n\r]")).collect:
         case r"Receiving objects: *${pc}([0-9]*)\%.*"            => Progress.Receiving(pc.s.toInt/100.0)
         case r"Resolving deltas: *${pc}([0-9]+)\%.*"             => Progress.Resolving(pc.s.toInt/100.0)
