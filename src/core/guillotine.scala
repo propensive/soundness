@@ -59,7 +59,7 @@ object Executor:
     stream.interpret(proc).map(_.s).foreach(buf.append(_))
     buf.toString
 
-  given dataStream(using streamCut: Raises[StreamCutError]): Executor[LazyList[Bytes]] =
+  given dataStream(using streamCut: Raises[StreamError]): Executor[LazyList[Bytes]] =
     proc => Readable.inputStream.read(proc.getInputStream.nn)
   
   given exitStatus: Executor[ExitStatus] = _.waitFor() match
@@ -126,7 +126,7 @@ object Process:
       : Appendable[Process[?, ?], ChunkType]^{writable} =
     (process, stream) => process.stdin(stream)
   
-  given appendableText(using streamCut: Raises[StreamCutError]): Appendable[Process[?, ?], Text]^{streamCut} =
+  given appendableText(using streamCut: Raises[StreamError]): Appendable[Process[?, ?], Text]^{streamCut} =
     (process, stream) => process.stdin(stream.map(_.sysBytes))
 
 class Process[+ExecType <: Label, ResultType](process: java.lang.Process) extends ProcessRef:
@@ -134,10 +134,10 @@ class Process[+ExecType <: Label, ResultType](process: java.lang.Process) extend
   def alive: Boolean = process.isAlive
   def attend(): Unit = process.waitFor()
   
-  def stdout()(using Raises[StreamCutError]): LazyList[Bytes] =
+  def stdout()(using Raises[StreamError]): LazyList[Bytes] =
     Readable.inputStream.read(process.getInputStream.nn)
   
-  def stderr()(using Raises[StreamCutError]): LazyList[Bytes] =
+  def stderr()(using Raises[StreamError]): LazyList[Bytes] =
     Readable.inputStream.read(process.getErrorStream.nn)
   
   def stdin
