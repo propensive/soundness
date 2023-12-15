@@ -129,6 +129,16 @@ def safely
     block(using RaisesOptional(label))
   catch case error: Exception => Unset
 
+def unsafely
+    [ErrorType <: Error]
+    (using DummyImplicit)
+    [SuccessType]
+    (block: RaisesThrow[ErrorType, SuccessType] ?=> CanThrow[Exception] ?=> SuccessType)
+    : SuccessType =
+  boundary: label ?=>
+    import unsafeExceptions.canThrowAny
+    block(using RaisesThrow())
+
 def throwErrors
     [ErrorType <: Error]
     (using CanThrow[ErrorType])
@@ -183,9 +193,6 @@ def failCompilation
     : SuccessType =
   given RaisesCompileFailure[ErrorType, SuccessType]()
   block
-
-def unsafely[ResultType](block: CanThrow[Exception] ?=> ResultType): ResultType =
-  block(using unsafeExceptions.canThrowAny)
 
 case class AggregateError[+ErrorType <: Error](errors: List[ErrorType])
 extends Error(Communicable.listMessage.message(errors.map(_.message)))
