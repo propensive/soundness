@@ -87,7 +87,7 @@ package galilei
 // object ClasspathRef:
 //   given Show[ClasspathRef] = t"ᶜᵖ｢"+_.fullname+t"｣"
 
-//   given readable(using classpathRef: CanThrow[ClasspathRefError], streamCut: CanThrow[StreamCutError])
+//   given readable(using classpathRef: CanThrow[ClasspathRefError], streamCut: CanThrow[StreamError])
 //                 : (/*{classpathRef, streamCut}*/ Readable[ClasspathRef, Bytes]) =
 //     Readable.inputStream.contraMap: ref =>
 //       ref.classpath.classLoader.getResourceAsStream(ref.fullname.drop(1).s) match

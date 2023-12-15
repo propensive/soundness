@@ -19,7 +19,7 @@ package galilei
 import probably.*
 import gossamer.*
 import imperial.*
-import turbulence.*, basicIo.jvm
+import turbulence.*, stdioSources.jvm
 import eucalyptus.*
 import parasite.*
 import rudiments.*
@@ -128,7 +128,7 @@ object Tests extends Suite(t"Galilei tests"):
           val link = (tmpDir.path / p"linked.txt")
           (tmpDir.path / p"file.txt").as[File].symlinkTo(link)
           link.entryType()
-        .assert(_ == EntryType.Symlink)
+        .assert(_ == PathStatus.Symlink)
 
         test(t"Delete a file"):
           import filesystemOptions.{doNotDeleteRecursively, createNonexistent, createNonexistentParents}
@@ -166,7 +166,7 @@ object Tests extends Suite(t"Galilei tests"):
           import logging.stdout
           val fifoPath = tmpPath / p"galilei" / p"fifo1"
           fifoPath.make[Fifo]().path.entryType()
-      .assert(_ == EntryType.Fifo)
+      .assert(_ == PathStatus.Fifo)
 
     suite(t"Windows hierarchy tests"):
       

@@ -57,7 +57,7 @@ object Path:
   given Insertion[Sh.Params, Path] = path => Sh.Params(path.fullname)
   
   given writableBytes
-      (using io: Raises[IoError], streamCut: Raises[StreamCutError])
+      (using io: Raises[IoError], streamCut: Raises[StreamError])
       : Writable[Path, Bytes] =
     Writable.outputStreamBytes.contraMap: path =>
       if !path.java.toFile.nn.canWrite then abort(IoError(path))
@@ -514,19 +514,19 @@ case class Directory(path: Path) extends Unix.Entry, Windows.Entry:
   inline def /(name: Text)(using Raises[PathError]): Path = path / PathName(name)
 
 object File:
-  given readableBytes(using streamCut: Raises[StreamCutError], io: Raises[IoError]): Readable[File, Bytes] =
+  given readableBytes(using streamCut: Raises[StreamError], io: Raises[IoError]): Readable[File, Bytes] =
     Readable.inputStream.contraMap: file =>
       ji.BufferedInputStream(jnf.Files.newInputStream(file.path.java))
   
   given writableBytes
-      (using io: Raises[IoError], streamCut: Raises[StreamCutError])
+      (using io: Raises[IoError], streamCut: Raises[StreamError])
       : Writable[File, Bytes] =
     Writable.outputStreamBytes.contraMap: file =>
       if !file.writable() then abort(IoError(file.path))
       ji.BufferedOutputStream(ji.FileOutputStream(file.path.java.toFile, false))
 
   given appendableBytes
-      (using io: Raises[IoError], streamCut: Raises[StreamCutError])
+      (using io: Raises[IoError], streamCut: Raises[StreamError])
       : Appendable[File, Bytes] =
     Appendable.outputStreamBytes.contraMap: file =>
       if !file.writable() then abort(IoError(file.path))
