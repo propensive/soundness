@@ -53,4 +53,4 @@ class Tap(initial: Boolean = true):
 
 case class Line(content: Text)
 
-case class StreamCutError(total: ByteSize) extends Error(msg"the stream was cut prematurely after $total bytes")
+case class StreamError(total: ByteSize) extends Error(msg"the stream was cut prematurely after $total bytes")

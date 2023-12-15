@@ -28,7 +28,7 @@ import java.nio as jn
 
 object Writable:
   given outputStreamBytes
-      (using streamCut: Raises[StreamCutError])
+      (using streamCut: Raises[StreamError])
       : Writable[ji.OutputStream, Bytes] =
     (outputStream, stream) =>
       stream.foreach: bytes =>
@@ -37,7 +37,7 @@ object Writable:
       outputStream.close()
   
   given outputStreamText
-      (using streamCut: Raises[StreamCutError], encoder: CharEncoder)
+      (using streamCut: Raises[StreamError], encoder: CharEncoder)
       : Writable[ji.OutputStream, Text] =
     (outputStream, stream) =>
       stream.foreach: text =>
@@ -85,7 +85,7 @@ object Appendable:
     (stderr, text) => stdio.printErr(text)
 
   given outputStreamBytes
-      (using streamCut: Raises[StreamCutError])
+      (using streamCut: Raises[StreamError])
       : Appendable[ji.OutputStream, Bytes] =
     (outputStream, stream) =>
       stream.foreach: bytes =>
@@ -154,25 +154,25 @@ object Readable:
     
     LazyList.defer(recur(0L.b))
 
-  given reader(using streamCut: Raises[StreamCutError]): Readable[ji.Reader, Char] = reader =>
+  given reader(using streamCut: Raises[StreamError]): Readable[ji.Reader, Char] = reader =>
     def recur(count: ByteSize): LazyList[Char] =
       try reader.read() match
         case -1  => LazyList()
         case int => int.toChar #:: recur(count + 1.b)
       catch case err: ji.IOException =>
         reader.close()
-        raise(StreamCutError(count))(LazyList())
+        raise(StreamError(count))(LazyList())
     
     LazyList.defer(recur(0L.b))
 
-  given bufferedReader(using streamCut: Raises[StreamCutError]): Readable[ji.BufferedReader, Line] = reader =>
+  given bufferedReader(using streamCut: Raises[StreamError]): Readable[ji.BufferedReader, Line] = reader =>
     def recur(count: ByteSize): LazyList[Line] =
       try reader.readLine match
         case null         => LazyList()
         case line: String => Line(Text(line)) #:: recur(count + line.length.b + 1.b)
       catch case err: ji.IOException =>
         reader.close()
-        raise(StreamCutError(count))(LazyList())
+        raise(StreamError(count))(LazyList())
     
     LazyList.defer(recur(0L.b))
 
@@ -198,7 +198,7 @@ object Readable:
       
     LazyList.defer(recur())
 
-  given inputStream(using streamCut: Raises[StreamCutError]): Readable[ji.InputStream, Bytes] = in =>
+  given inputStream(using streamCut: Raises[StreamError]): Readable[ji.InputStream, Bytes] = in =>
     val channel: jn.channels.ReadableByteChannel = jn.channels.Channels.newChannel(in).nn
     val buf: jn.ByteBuffer = jn.ByteBuffer.wrap(new Array[Byte](65536)).nn
 
@@ -216,7 +216,7 @@ object Readable:
 
           array.immutable(using Unsafe) #:: recur(total + count)
           
-      catch case e: Exception => LazyList(raise(StreamCutError(total.b))(Bytes()))
+      catch case e: Exception => LazyList(raise(StreamError(total.b))(Bytes()))
       
     LazyList.defer(recur(0))
 
