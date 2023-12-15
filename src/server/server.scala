@@ -195,10 +195,10 @@ case class Request
     headers.get(RequestHeader.ContentType).flatMap(_.headOption).flatMap(MediaType.unapply(_))
   
 trait RequestHandler:
-  def listen(handler: (request: Request) ?=> Response[?])(using Log, Monitor): ActiveServer
+  def listen(handler: (request: Request) ?=> Response[?])(using Log[Text], Monitor): ActiveServer
 
 extension (value: Http.type)
-  def listen(handler: (request: Request) ?=> Response[?])(using RequestHandler, Log, Monitor): ActiveServer =
+  def listen(handler: (request: Request) ?=> Response[?])(using RequestHandler, Log[Text], Monitor): ActiveServer =
     summon[RequestHandler].listen(handler)
 
 inline def request(using inline request: Request): Request = request
@@ -245,7 +245,7 @@ case class RequestParam[T](key: Text)(using ParamReader[T]):
 case class ActiveServer(port: Int, async: Async[Unit], cancel: () => Unit)
 
 case class HttpServer(port: Int) extends RequestHandler:
-  def listen(handler: (request: Request) ?=> Response[?])(using Log, Monitor): ActiveServer =
+  def listen(handler: (request: Request) ?=> Response[?])(using Log[Text], Monitor): ActiveServer =
     def handle(exchange: HttpExchange | Null) =
       try handler(using makeRequest(exchange.nn)).respond(SimpleResponder(exchange.nn))
       catch case NonFatal(exception) => exception.printStackTrace()
@@ -278,7 +278,7 @@ case class HttpServer(port: Int) extends RequestHandler:
     
     HttpBody.Chunked(recur())
 
-  private def makeRequest(exchange: HttpExchange)(using Log): Request =
+  private def makeRequest(exchange: HttpExchange)(using Log[Text]): Request =
     val uri = exchange.getRequestURI.nn
     val query = Option(uri.getQuery)
     
