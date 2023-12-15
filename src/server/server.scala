@@ -195,10 +195,10 @@ case class Request
     headers.get(RequestHeader.ContentType).flatMap(_.headOption).flatMap(MediaType.unapply(_))
   
 trait RequestHandler:
-  def listen(handler: (request: Request) ?=> Response[?])(using Log[Text], Monitor): ActiveServer
+  def listen(handler: (request: Request) ?=> Response[?])(using Log[Text], Monitor): HttpService
 
 extension (value: Http.type)
-  def listen(handler: (request: Request) ?=> Response[?])(using RequestHandler, Log[Text], Monitor): ActiveServer =
+  def listen(handler: (request: Request) ?=> Response[?])(using RequestHandler, Log[Text], Monitor): HttpService =
     summon[RequestHandler].listen(handler)
 
 inline def request(using inline request: Request): Request = request
@@ -242,10 +242,10 @@ case class RequestParam[T](key: Text)(using ParamReader[T]):
 // object Split:
 //   def unapply(req: Request): (Request, Request) = (req, req)
 
-case class ActiveServer(port: Int, async: Async[Unit], cancel: () => Unit)
+case class HttpService(port: Int, async: Async[Unit], cancel: () => Unit)
 
 case class HttpServer(port: Int) extends RequestHandler:
-  def listen(handler: (request: Request) ?=> Response[?])(using Log[Text], Monitor): ActiveServer =
+  def listen(handler: (request: Request) ?=> Response[?])(using Log[Text], Monitor): HttpService =
     def handle(exchange: HttpExchange | Null) =
       try handler(using makeRequest(exchange.nn)).respond(SimpleResponder(exchange.nn))
       catch case NonFatal(exception) => exception.printStackTrace()
@@ -265,7 +265,7 @@ case class HttpServer(port: Int) extends RequestHandler:
       try throwErrors(cancel.await()) catch case err: CancelError => ()
       server.stop(1)
     
-    ActiveServer(port, async, () => safely(cancel.fulfill(())))
+    HttpService(port, async, () => safely(cancel.fulfill(())))
     
   
   private def streamBody(exchange: HttpExchange): HttpBody.Chunked =
