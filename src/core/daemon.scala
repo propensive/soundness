@@ -102,7 +102,7 @@ def daemon[BusType <: Matchable]
 
   def client
       (socket: jn.Socket)
-      (using Monitor, Log[Text], Stdio, Raises[StreamCutError], Raises[UndecodableCharError], Raises[NumberError])
+      (using Monitor, Log[Text], Stdio, Raises[StreamError], Raises[UndecodableCharError], Raises[NumberError])
       : Unit =
 
     val in = socket.getInputStream.nn
