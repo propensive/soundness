@@ -74,7 +74,7 @@ object TabCompletions:
       case ExecError(_, _, _) => InstallError(InstallError.Reason.Environment)
       case IoError(_)         => InstallError(InstallError.Reason.Io)
       case PathError(_)       => InstallError(InstallError.Reason.Environment)
-      case StreamCutError(_)  => InstallError(InstallError.Reason.Io)
+      case StreamError(_)     => InstallError(InstallError.Reason.Io)
       case OverwriteError(_)  => InstallError(InstallError.Reason.Io)
     .within:
       val scriptPath = sh"sh -c 'command -v ${service.scriptName}'".exec[Text]()
@@ -110,7 +110,7 @@ object TabCompletions:
       (using Effectful)
       : TabCompletionsInstallation.InstallResult raises InstallError =
     mitigate:
-      case StreamCutError(_) => InstallError(InstallError.Reason.Io)
+      case StreamError(_)    => InstallError(InstallError.Reason.Io)
       case OverwriteError(_) => InstallError(InstallError.Reason.Io)
       case IoError(_)        => InstallError(InstallError.Reason.Io)
     .within:
