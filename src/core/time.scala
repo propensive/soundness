@@ -251,7 +251,7 @@ object Timing:
       val zonedTime = jt.Instant.ofEpochMilli(instant).nn.atZone(jt.ZoneId.of(timezone.name.s)).nn
       
       val date = (zonedTime.getMonthValue: @unchecked) match
-        case MonthName(month) => unsafely(throwErrors(Date(zonedTime.getYear, month, zonedTime.getDayOfMonth)))
+        case MonthName(month) => unsafely(Date(zonedTime.getYear, month, zonedTime.getDayOfMonth))
       
       val time = ((zonedTime.getHour, zonedTime.getMinute, zonedTime.getSecond): @unchecked) match
         case (Base24(hour), Base60(minute), Base60(second)) => Time(hour, minute, second)
@@ -411,7 +411,7 @@ object MonthName:
     catch case err: IllegalArgumentException => None
   
   def unapply(value: Int): Option[MonthName] =
-    if value < 1 || value > 12 then None else Some(fromOrdinal(value))
+    if value < 1 || value > 12 then None else Some(fromOrdinal(value - 1))
  
   given monthOfYear: Operator["-", Int, MonthName] with
     type Result = YearMonth
