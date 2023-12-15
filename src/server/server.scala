@@ -132,7 +132,7 @@ object Request:
   given Show[Request] = request =>
     val bodySample: Text =
       try request.body.stream.slurp().uString catch
-        case err: StreamCutError  => t"[-/-]"
+        case err: StreamError  => t"[-/-]"
     
     val headers: Text =
       request.rawHeaders.map:
@@ -179,17 +179,17 @@ case class Request
           )*)
         else Map[Text, Text]()
       }
-    catch case e: StreamCutError  => Map()
+    catch case e: StreamError  => Map()
 
   
   lazy val headers: Map[RequestHeader[?], List[Text]] = rawHeaders.map:
     case (RequestHeader(header), values) => header -> values
 
-  lazy val length: Int raises StreamCutError =
+  lazy val length: Int raises StreamError =
     try throwErrors:
       headers.get(RequestHeader.ContentLength).map(_.head).map(_.decodeAs[Int]).getOrElse:
         body.stream.map(_.length).sum
-    catch case err: NumberError => abort(StreamCutError(0.b))
+    catch case err: NumberError => abort(StreamError(0.b))
   
   lazy val contentType: Option[MediaType] =
     headers.get(RequestHeader.ContentType).flatMap(_.headOption).flatMap(MediaType.unapply(_))
@@ -327,7 +327,7 @@ case class HttpServer(port: Int) extends RequestHandler:
         
         case HttpBody.Chunked(body) =>
           try body.map(_.mutable(using Unsafe)).foreach(exchange.getResponseBody.nn.write(_))
-          catch case e: StreamCutError => () // FIXME: Should this be ignored?
+          catch case e: StreamError => () // FIXME: Should this be ignored?
       
       exchange.getResponseBody.nn.flush()
       exchange.close()

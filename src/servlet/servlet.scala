@@ -42,14 +42,14 @@ trait Servlet(handle: Request ?=> Response[?]) extends HttpServlet:
                                        unsafely(body.map(_.mutable(using Unsafe)).foreach(out.write(_)))
 
   protected def streamBody
-      (request: HttpServletRequest)(using Raises[StreamCutError])
+      (request: HttpServletRequest)(using Raises[StreamError])
       : HttpBody.Chunked =
     val in = request.getInputStream
     val buffer = new Array[Byte](4096)
 
     HttpBody.Chunked(Readable.inputStream.read(request.getInputStream.nn))
     
-  protected def makeRequest(request: HttpServletRequest): Request raises StreamCutError =
+  protected def makeRequest(request: HttpServletRequest): Request raises StreamError =
     val query = Option(request.getQueryString)
     
     val params: Map[Text, List[Text]] = query.fold(Map()): query =>
@@ -79,7 +79,7 @@ trait Servlet(handle: Request ?=> Response[?]) extends HttpServlet:
 
   def handle(servletRequest: HttpServletRequest, servletResponse: HttpServletResponse): Unit =
     try throwErrors(handle(using makeRequest(servletRequest)).respond(ServletResponseWriter(servletResponse)))
-    catch case error: StreamCutError =>
+    catch case error: StreamError =>
       () // FIXME
 
 
