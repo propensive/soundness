@@ -156,3 +156,21 @@ extension (bytes: Bytes)
     gzip.write(bytes.mutable(using Unsafe))
     gzip.close()
     raw.toByteArray().nn.immutable(using Unsafe)
+  
+  def gunzip: Bytes =
+    val in = ji.ByteArrayInputStream(bytes.mutable(using Unsafe))
+    val gunzip = juz.GZIPInputStream(in)
+    val out = new ji.ByteArrayOutputStream()
+    val buffer = new Array[Byte](1024)
+
+    @tailrec
+    def recur(available: Int): Bytes =
+      if available > 0 then
+        out.write(buffer, 0, available)
+        recur(gunzip.read(buffer))
+      else
+        gunzip.close()
+        out.close()
+        out.toByteArray().nn.immutable(using Unsafe)
+
+    recur(gunzip.read(buffer))
