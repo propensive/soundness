@@ -40,6 +40,22 @@ extension (value: Bytes)
   def uString: Text = Text(String(value.to(Array), "UTF-8"))
   def hex: Text = Text(value.mutable(using Unsafe).map { b => String.format("\\u%04x", b.toInt).nn }.mkString)
   def text(using decoder: CharDecoder): Text = decoder.decode(value)
+  
+  // Printable Unicode Encoding
+  def pue: Text =
+    value.map: b =>
+      val i = b&0xff
+      (if i%0x80 <= 0x20 || i == 0x7f then i + 0x100 else i).toChar
+    .mkString.tt
+
+object Pue:
+  def apply(text: Text): Bytes =
+    val length = text.length
+    IArray.create[Byte](length): array =>
+      var i = 0
+      while i < length do
+        array(i) = (text.s.charAt(i)%0x100).toByte
+        i += 1
 
 object Cuttable:
   given [TextType: Textual](using textual: Textual[TextType]): Cuttable[TextType, Text] =
