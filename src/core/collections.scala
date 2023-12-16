@@ -21,6 +21,9 @@ import fulminate.*
 
 import scala.compiletime.*
 
+import java.io as ji
+import java.util.zip as juz
+
 import language.experimental.captureChecking
 
 extension [ValueType <: Matchable](seq: Iterable[ValueType])
@@ -145,3 +148,11 @@ extension (iarray: IArray.type)
     val array: Array[ElemType] = new Array[ElemType](size)
     fn(array)
     array.immutable(using Unsafe)
+
+extension (bytes: Bytes)
+  def gzip: Bytes =
+    val raw = ji.ByteArrayOutputStream()
+    val gzip = juz.GZIPOutputStream(raw)
+    gzip.write(bytes.mutable(using Unsafe))
+    gzip.close()
+    raw.toByteArray().nn.immutable(using Unsafe)
