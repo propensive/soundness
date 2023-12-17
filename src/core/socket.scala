@@ -26,94 +26,147 @@ import perforate.*
 
 import java.net as jn
 import java.io as ji
+import java.nio.channels as jnc
+import java.nio.file as jnf
 
 object UnixSocket
 
-class SocketConnection()
-
 case class BindError() extends Error(msg"the port was not available for binding")
 
+object DomainSocket:
+  def apply[PathType: GenericPath](path: PathType): DomainSocket = DomainSocket(path.pathText)
+
+case class DomainSocket(private[coaxial] val address: Text):
+  def path[PathType: SpecificPath] = SpecificPath(address)
+
 object Connectable:
-  given tcpPort(using Raises[StreamCutError]): Connectable[TcpPort] with
-    type Input = LazyList[Bytes]
+  given domainSocket(using Raises[StreamError]): Connectable[DomainSocket] with
+    type Output = LazyList[Bytes]
+    case class Connection(channel: jnc.SocketChannel, in: ji.InputStream, out: ji.OutputStream)
+
+    def connect(domainSocket: DomainSocket): Connection =
+      val path = jnf.Path.of(domainSocket.address.s)
+      val address = jn.UnixDomainSocketAddress.of(path)
+      val channel = jnc.SocketChannel.open(jn.StandardProtocolFamily.UNIX).nn
+      channel.connect(address)
+      channel.finishConnect()
+      val out = jnc.Channels.newOutputStream(channel).nn
+      val in = jnc.Channels.newInputStream(channel).nn
+      
+      Connection(channel, in, out)
+
+    def send(connection: Connection, input: Bytes): Unit =
+      connection.out.write(input.mutable(using Unsafe))
+      connection.out.flush()
+      
+    def receive(connection: Connection): LazyList[Bytes] =
+      connection.in.stream[Bytes]
+    
+    def close(connection: Connection): Unit = connection.channel.close()
+
+  given tcpPort(using Raises[StreamError]): Connectable[Endpoint[TcpPort]] with
     type Output = LazyList[Bytes]
     type Connection = jn.Socket
     
-    def connect(remote: Text, port: TcpPort): jn.Socket =
-      jn.Socket(jn.InetAddress.getByName(remote.s), port.number)
+    def connect(endpoint: Endpoint[TcpPort]): jn.Socket =
+      jn.Socket(jn.InetAddress.getByName(endpoint.remote.s), endpoint.port.number)
     
-    def send(socket: jn.Socket, hold: Promise[Unit], input: LazyList[Bytes]): Unit =
+    def send(socket: jn.Socket, input: Bytes): Unit =
       val out = socket.getOutputStream.nn
-
-      // We append this to the end of the stream to ensure that the connection stays open
-      val end = LazyList.defer:
-        safely(hold.await())
-        LazyList(Bytes())
-
-      (input #::: end).writeTo(socket.getOutputStream.nn)
+      out.write(input.mutable(using Unsafe))
+      out.flush()
+    
+    def close(socket: jn.Socket): Unit = socket.close()
     
     def receive(socket: jn.Socket): LazyList[Bytes] = socket.getInputStream.nn.stream[Bytes]
 
-  given udpPort: Connectable[UdpPort] with
-    type Input = Bytes
-    type Output = Unit
+  given udpPort: Addressable[Endpoint[UdpPort]] with
     case class Connection(address: jn.InetAddress, port: Int, socket: jn.DatagramSocket)
 
-    def connect(remote: Text, port: UdpPort): Connection =
-      val address = jn.InetAddress.getByName(remote.s).nn
-      Connection(address, port.number, jn.DatagramSocket())
+    def connect(endpoint: Endpoint[UdpPort]): Connection =
+      val address = jn.InetAddress.getByName(endpoint.remote.s).nn
+      Connection(address, endpoint.port.number, jn.DatagramSocket())
     
-    def send(connection: Connection, hold: Promise[Unit], input: Bytes): Unit =
+    def send(connection: Connection, input: Bytes): Unit =
       val packet = jn.DatagramPacket(input.mutable(using Unsafe), input.length, connection.address,
           connection.port)
       
       connection.socket.send(packet)
-    
-    def receive(connection: Connection): Unit = ()
 
-trait Connectable[SocketType]:
-  type Input
-  type Output
+trait Addressable[EndpointType]:
   type Connection
 
-  def connect(remote: Text, socket: SocketType): Connection
-  def send(connection: Connection, hold: Promise[Unit], input: Input): Unit
-  def receive(connection: Connection): Output
+  def connect(endpoint: EndpointType): Connection
+  def send(connection: Connection, input: Bytes): Unit
+
+trait Connectable[EndpointType] extends Addressable[EndpointType]:
+  def receive(connection: Connection): LazyList[Bytes]
+  def close(connection: Connection): Unit
 
 trait Bindable[SocketType]:
-  private[coaxial] type Binding
+  type Binding
   type Input
   type Output
+  
   def bind(socket: SocketType): Binding
   def connect(binding: Binding): Input
   def process(binding: Binding, input: Input, output: Output): Unit
+  def close(connection: Input): Unit
   def stop(binding: Binding): Unit
 
 case class UdpPacket(data: Bytes, sender: Ipv4 | Ipv6, port: UdpPort)
 
-case class TcpConnection(private[coaxial] val socket: jn.Socket):
-  def stream: LazyList[Bytes] raises StreamCutError = Readable.inputStream.read(socket.getInputStream.nn)
+case class Connection(private[coaxial] val in: ji.InputStream, private[coaxial] val out: ji.OutputStream, close: () => Unit):
+  def stream(): LazyList[Bytes] raises StreamError = in.stream[Bytes]
 
 enum UdpResponse:
   case Ignore
   case Reply(data: Bytes)
 
 object Bindable:
-  given tcpPort(using Raises[StreamCutError]): Bindable[TcpPort] with
-    private[coaxial] type Binding = jn.ServerSocket
+
+//   given domainSocket(using Raises[StreamError]): Bindable[DomainSocket] with
+//     type Binding = jnc.ServerSocketChannel
+//     type Output = LazyList[Bytes]
+//     type Input = Connection
+
+//     def bind(domainSocket: DomainSocket): jnc.ServerSocketChannel =
+//       val address = jn.UnixDomainSocketAddress.of(domainSocket.address.s)
+//       jnc.ServerSocketChannel.open(jn.StandardProtocolFamily.UNIX).nn.tap: channel =>
+//         channel.configureBlocking(true)
+//         channel.bind(address)
+  
+//     def connect(channel: jnc.ServerSocketChannel): Connection =
+//       val clientChannel: jnc.SocketChannel = channel.accept().nn
+//       val in = jnc.Channels.newInputStream(clientChannel).nn
+//       val out = jnc.Channels.newOutputStream(clientChannel).nn
+//       Connection(in, out)
+
+//     def process(channel: jnc.ServerSocketChannel, connection: Connection, response: LazyList[Bytes]): Unit =
+//       response.writeTo(connection.out)
+//       connection.out.close()
+    
+//     def stop(channel: jnc.ServerSocketChannel): Unit = channel.close()
+
+  given tcpPort(using Raises[StreamError]): Bindable[TcpPort] with
+    type Binding = jn.ServerSocket
     type Output = LazyList[Bytes]
-    type Input = TcpConnection
+    type Input = Connection
     
     def bind(port: TcpPort): Binding = jn.ServerSocket(port.number)
-    def connect(binding: Binding): TcpConnection = TcpConnection(binding.accept().nn)
     
-    def process(socket: jn.ServerSocket, connection: TcpConnection, response: LazyList[Bytes]): Unit =
-      response.writeTo(connection.socket.getOutputStream.nn)
-
-    def stop(binding: Binding): Unit = binding.close()
+    def connect(binding: Binding): Connection =
+      val socket = binding.accept().nn
+      Connection(socket.getInputStream.nn, socket.getOutputStream.nn, () => socket.close())
+    
+    def process(socket: jn.ServerSocket, connection: Connection, response: LazyList[Bytes]): Unit =
+      response.writeTo(connection.out)
+    
+    def close(connection: Connection): Unit = connection.close()
+    def stop(socket: jn.ServerSocket): Unit = socket.close()
 
   given udpPort: Bindable[UdpPort] with
-    private[coaxial] type Binding = jn.DatagramSocket
+    type Binding = jn.DatagramSocket
     type Output = UdpResponse
     type Input = UdpPacket
     
@@ -146,6 +199,7 @@ object Bindable:
         socket.send(packet)
     
     def stop(binding: Binding): Unit = binding.close()
+    def close(input: UdpPacket): Unit = ()
 
 trait SocketService:
   def stop(): Unit
@@ -173,20 +227,62 @@ object Socket:
         bindable.stop(binding)
         safely(async.await())
 
-  def connect
-      [RemoteType, SocketType]
-      (remote: RemoteType, socket: SocketType)
-      (using connectable: Connectable[SocketType])
-      (using Remote[RemoteType])
-      (input: connectable.Input)
-      [ResultType]
-      (handle: connectable.Output => ResultType)
-      (using Monitor)
-      : ResultType raises StreamCutError =
-    val connection = connectable.connect(summon[Remote[RemoteType]].remoteName(remote), socket)
-    val hold: Promise[Unit] = Promise()
-    val sender = Async(connectable.send(connection, hold, input))
+  // def sendTo
+  //     [EndpointType]
+  //     (endpoint: EndpointType)
+  //     (using addressable: Addressable[EndpointType])
+  //     (input: addressable.Input)
+  //     (using Monitor)
+  //     : Unit raises StreamError =
+  //   val connection = addressable.connect(endpoint)
+  //   val sender = Async(addressable.send(connection, input))
     
-    handle(connectable.receive(connection)).also:
-      hold.offer(())
-      safely(sender.await())
+  //   safely(sender.await())
+  
+  // def connect
+  //     [EndpointType]
+  //     (endpoint: EndpointType)
+  //     (using connectable: Connectable[EndpointType])
+  //     (input: )
+  //     [ResultType]
+  //     (handle: connectable.Output => ResultType)
+  //     (using Monitor)
+  //     : ResultType raises StreamError =
+  //   val connection = connectable.connect(endpoint)
+  //   val sender = Async(connectable.send(connection, input))
+    
+  //   handle(connectable.receive(connection)).also:
+  //     safely(sender.await())
+
+
+extension [EndpointType](endpoint: EndpointType)
+  def connect
+      [StateType]
+      (initialState: StateType)
+      (initialMessage: Bytes = Bytes())
+      (handle: (state: StateType) ?=> Bytes => Control[StateType])
+      (using connectable: Connectable[EndpointType])
+      : StateType =
+
+    val connection = connectable.connect(endpoint)
+    
+    def recur(input: LazyList[Bytes], state: StateType): StateType = input match
+      case head #:: tail => handle(using state)(head) match
+        case Control.Terminate      => state
+        case Control.Ignore         => recur(tail, state)
+        case Control.Proceed(state) => recur(tail, state)
+        
+        case Control.Respond(message, state2) =>
+          connectable.send(connection, message)
+          recur(tail, state2.or(state))
+      
+      case _ => state
+    
+    recur(connectable.receive(connection), initialState).also:
+      connectable.close(connection)
+
+enum Control[+StateType]:
+  case Terminate
+  case Ignore
+  case Proceed(state: StateType)
+  case Respond(message: Bytes, state: Optional[StateType] = Unset)
