@@ -19,6 +19,7 @@ package ambience
 import anticipation.*
 import spectacular.*
 import rudiments.*
+import vacuous.*
 import perforate.*
 import fulminate.*
 import gossamer.*

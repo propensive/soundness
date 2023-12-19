@@ -20,6 +20,7 @@ import anticipation.*
 import spectacular.*
 import perforate.*
 import rudiments.*
+import vacuous.*
 import fulminate.*
 import gossamer.*
 

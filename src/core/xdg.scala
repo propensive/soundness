@@ -20,6 +20,7 @@ import gossamer.*
 import perforate.*
 import anticipation.*
 import rudiments.*
+import vacuous.*
 import ambience.*
 
 //import language.experimental.captureChecking
