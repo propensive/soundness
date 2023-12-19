@@ -17,6 +17,7 @@
 package imperial
 
 import rudiments.*
+import vacuous.*
 import ambience.*
 import perforate.*
 import anticipation.*
