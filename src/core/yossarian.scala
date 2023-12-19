@@ -17,6 +17,7 @@
 package yossarian
 
 import rudiments.*
+import vacuous.*
 import iridescence.*
 import spectacular.*
 import anticipation.*
