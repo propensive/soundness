@@ -20,6 +20,7 @@ import escapade.*
 import turbulence.*
 import perforate.*
 import rudiments.*
+import vacuous.*
 import anticipation.*
 import ambience.*, environments.jvm
 import hieroglyph.*, textWidthCalculation.uniform
