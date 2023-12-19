@@ -18,6 +18,7 @@ package guillotine
 
 import contextual.*
 import rudiments.*
+import vacuous.*
 import perforate.*
 import fulminate.*
 import turbulence.*
