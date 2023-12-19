@@ -17,6 +17,7 @@
 package cellulose
 
 import rudiments.*
+import vacuous.*
 import anticipation.*
 import gossamer.*
 
