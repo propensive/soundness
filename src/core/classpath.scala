@@ -17,6 +17,7 @@
 package hellenism
 
 import rudiments.*
+import vacuous.*
 import serpentine.*
 import fulminate.*
 import spectacular.*
