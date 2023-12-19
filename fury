@@ -1,0 +1,19 @@
+# This is a buildfile for Fury or Wrath.
+# More information is available at: https://github.com/propensive/wrath/
+target vacuity/test
+
+repo propensive/probably
+
+project vacuity
+  module core
+    compiler  scala
+    sources   src/core
+    include   fulminate/core
+
+  module test
+    compiler  scala
+    sources   src/test
+    include   vacuity/core probably/cli larceny/plugin
+    main      vacuity.Tests
+    #coverage  vacuity/core
+
