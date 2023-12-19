@@ -17,6 +17,7 @@
 package probably
 
 import rudiments.*
+import vacuous.*
 import digression.*
 import anticipation.*
 import gossamer.*

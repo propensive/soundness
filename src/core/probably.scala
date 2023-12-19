@@ -20,6 +20,7 @@ import eucalyptus.*
 import gossamer.*
 import anticipation.*
 import rudiments.*
+import vacuous.*
 import digression.*
 import spectacular.*
 import hieroglyph.*
