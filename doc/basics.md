@@ -32,7 +32,8 @@ available on any _countable_ value, and which return the `Ordinal` referring to 
 value typically means a `Seq` or one of its subtypes, but is actually an instance of any type that implements
 the `Countable` typeclass.
 
-The `ante` extension method refers to the ordinal before `pen`, that is, the third-to-last `Ordinal` index.
+The `ante` extension method refers to the ordinal before `pen`, that is, the third-to-last (or antepenultimate)
+`Ordinal` index.
 
 ### Arithmetic
 
