@@ -18,7 +18,7 @@ package parasite
 
 import anticipation.*
 import perforate.*
-import rudiments.*
+import vacuous.*
 
 import language.experimental.captureChecking
 
