@@ -6,6 +6,23 @@
 
 __An experiment in numeric semantics to eradicate off-by-one errors.__
 
+__Denominative__ introduces a distinction between the types of cardinal and ordinal numbers with the clear and
+ambitious goal of avoiding off-by-one errors, without compromising performance.
+
+## Features
+
+- provides an `Ordinal` type representing ordinal numbers
+- `Ordinal`s should be used for values which zero-indexed or one-indexed cardinal numbers could be ambiguous
+- `Ordinal`s are distinct from cardinal `Int`s
+- conversions between `Ordinal`s and `Int`s may be made only by specifying zero- or one-indexing
+- introduces a distinct namespace for the first ten ordinals
+
+## Availability
+
+Denominative has not yet been published as a binary.
+
+## Getting Started
+
 ## The `Ordinal` type
 
 _Denominative_ introduces a new type, `Ordinal`, which represents an ordinal number. Unlike cardinal numbers
@@ -40,7 +57,8 @@ available on any _countable_ value, and which return the `Ordinal` referring to 
 value typically means a `Seq` or one of its subtypes, but is actually an instance of any type that implements
 the `Countable` typeclass.
 
-The `ante` extension method refers to the ordinal before `pen`, that is, the third-to-last `Ordinal` index.
+The `ante` extension method refers to the ordinal before `pen`, that is, the third-to-last (or antepenultimate)
+`Ordinal` index.
 
 ### Arithmetic
 
@@ -87,22 +105,6 @@ An `Interval` is most useful as a way of specifying a range of `Ordinal` values 
 operation iteratively using each of the values. Two methods are provided: `foreach` and `foldLeft`, which
 behave exactly as their familiar counterparts in Scala's standard collections library.
 
-## Features
-
-- provides an `Ordinal` type representing ordinal numbers
-- `Ordinal`s should be used for values which zero-indexed or one-indexed cardinal numbers could be ambiguous
-- `Ordinal`s are distinct from cardinal `Int`s
-- conversions between `Ordinal`s and `Int`s may be made only by specifying zero- or one-indexing
-- introduces a distinct namespace for the first ten ordinals
-
-## Availability
-
-Denominative has not yet been published as a binary.
-
-## Getting Started
-
-__Denominative__ introduces a distinction between the types of cardinal and ordinal numbers with the clear and
-ambitious goal of avoiding off-by-one errors, without compromising performance.
 
 ## Status
 
