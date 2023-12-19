@@ -176,6 +176,6 @@ object ElementLocator:
   given ElementLocator[Selector](t"css selector", _.normalize.value)
   given ElementLocator[TagType[?, ?, ?]](t"tag name", _.label)
   given ElementLocator[DomId](t"css selector", v => t"#${v.name}")
-  given ElementLocator[Cls](t"css selector", v => t".${v.name}")
+  given ElementLocator[CssClass](t"css selector", v => t".${v.name}")
 
 given realm: Realm = realm"tarantula"
