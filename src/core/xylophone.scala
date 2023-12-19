@@ -17,6 +17,7 @@
 package xylophone
 
 import rudiments.*
+import vacuous.*
 import gossamer.*
 import hieroglyph.*
 import perforate.*
