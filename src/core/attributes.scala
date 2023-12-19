@@ -59,10 +59,10 @@ enum Target:
   case Browse(value: Text)
   case Self, Blank, Parent, Top
 
-object Cls:
-  given GenericCssSelection[Cls] = cls => t".${cls.name}"
+object CssClass:
+  given GenericCssSelection[CssClass] = cls => t".${cls.name}"
 
-case class Cls(name: Text)
+case class CssClass(name: Text)
 
 object DomId:
   given GenericCssSelection[DomId] = id => t"#${id.name}"
@@ -167,13 +167,13 @@ object HtmlAttribute:
   given checkedBoolean[T]: HtmlAttribute["checked", Boolean, T] = _ => Unset
   given cite[T]: HtmlAttribute["cite", Text, T] = identity(_)
 
-  given hclass[T]: HtmlAttribute["hclass", List[Cls], T] with
+  given hclass[T]: HtmlAttribute["hclass", List[CssClass], T] with
     override def rename: Option[Text] = Some(t"class")
-    def convert(value: List[Cls]): Text = value.map(_.name).join(t" ")
+    def convert(value: List[CssClass]): Text = value.map(_.name).join(t" ")
  
-  given hclass2[T]: HtmlAttribute["hclass", Cls, T] with
+  given hclass2[T]: HtmlAttribute["hclass", CssClass, T] with
     override def rename: Option[Text] = Some(t"class")
-    def convert(value: Cls): Text = value.name
+    def convert(value: CssClass): Text = value.name
  
   given code[T]: HtmlAttribute["code", Text, T] = identity(_) // MediaError
   given codebase[T]: HtmlAttribute["codebase", Text, T] = identity(_)
@@ -297,5 +297,5 @@ object HtmlAttribute:
   given wrap[T]: HtmlAttribute["wrap", Wrap, T] = _.show
 
 extension (sc: StringContext)
-  def cls(): Cls = Cls(Text(sc.parts.head))
+  def cls(): CssClass = CssClass(Text(sc.parts.head))
   def id(): DomId = DomId(Text(sc.parts.head))
