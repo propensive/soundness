@@ -17,6 +17,7 @@
 package turbulence
 
 import rudiments.*
+import vacuous.*
 import perforate.*
 import hieroglyph.*
 import anticipation.*

@@ -18,6 +18,7 @@ package turbulence
 
 import parasite.*
 import rudiments.*
+import vacuous.*
 import anticipation.*
 import perforate.*
 

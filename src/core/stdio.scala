@@ -17,6 +17,7 @@
 package turbulence
 
 import rudiments.*
+import vacuous.*
 import anticipation.*
 
 import java.io as ji
