@@ -4,7 +4,7 @@
 
 # Denominative
 
-____
+__An experiment in numeric semantics to eradicate off-by-one errors.__
 
 ## The `Ordinal` type
 
@@ -106,7 +106,7 @@ ambitious goal of avoiding off-by-one errors, without compromising performance.
 
 ## Status
 
-Denominative is classified as ____. For reference, Scala One projects are
+Denominative is classified as __experimental__. For reference, Scala One projects are
 categorized into one of the following five stability levels:
 
 - _embryonic_: for experimental or demonstrative purposes only, without any guarantees of longevity
@@ -120,7 +120,7 @@ be used, but caution should be taken if there is a mismatch between the
 project's stability level and the importance of your own project.
 
 Denominative is designed to be _small_. Its entire source code currently consists
-of 79 lines of code.
+of 92 lines of code.
 
 ## Building
 
@@ -150,7 +150,8 @@ Denominative was designed and developed by Jon Pretty, and commercial support an
 
 ## Name
 
-
+To denominate is to assign a name to, which is _denominative_. Denominative assigns new names to the ordinal
+numbers in order to distinguish them from the cardinals.
 
 In general, Scala One project names are always chosen with some rationale, however it is usually
 frivolous. Each name is chosen for more for its _uniqueness_ and _intrigue_ than its concision or
@@ -163,7 +164,8 @@ often arrived in English via a romance language.
 
 ## Logo
 
-
+The logo shows an on/off symbol, itself comprised of a 0 (off) and a 1 (on), alluding to the ideo of being "off
+by one".
 
 ## License
 
