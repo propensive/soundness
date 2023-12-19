@@ -18,6 +18,7 @@ package eucalyptus
 
 import gossamer.*
 import rudiments.*
+import vacuous.*
 import anticipation.*
 import perforate.*
 import parasite.*
