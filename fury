@@ -5,12 +5,13 @@ target denominative/test
 repo propensive/probably
 repo propensive/larceny
 repo propensive/rudiments
+repo propensive/spectacular
 
 project denominative
   module core
     compiler  scala
     sources   src/core
-    include   rudiments/core
+    include   rudiments/core spectacular/core
 
   module test
     compiler  scala
