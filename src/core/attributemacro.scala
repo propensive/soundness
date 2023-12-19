@@ -17,6 +17,7 @@
 package honeycomb
 
 import rudiments.*
+import vacuous.*
 import fulminate.*
 import gossamer.*
 import anticipation.*
@@ -55,9 +56,9 @@ trait Node[+NameType <: Label] extends Shown[Node[?]]:
   def unclosed: Boolean
   def verbatim: Boolean
 
-  inline def refine[NameType <: Label]: Option[Node[NameType]] = label.s match
+  inline def refine[NameType2 <: Label]: Option[Node[NameType2]] = label.s match
     case labelValue: NameType => Some:
-      new Node[NameType]:
+      new Node[NameType2]:
         def label: Text = labelValue.show
         export node.{attributes, children, block, unclosed, verbatim}
     case _ => None
