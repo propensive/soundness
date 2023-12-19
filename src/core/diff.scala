@@ -17,6 +17,7 @@
 package dissonance
 
 import rudiments.*
+import vacuous.*
 import fulminate.*
 import perforate.*
 import anticipation.*
