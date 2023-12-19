@@ -56,7 +56,7 @@ object UrlInterpolator extends contextual.Interpolator[UrlInput, Text, Url[Label
   def refined(context: Expr[StringContext], parts: Expr[Seq[Any]])(using Quotes): Expr[Url[Label]] =
     import quotes.reflect.*
 
-    ConstantType(StringConstant(context.value.get.parts.head.split(":").nn.head.nn)).asType match
+    (ConstantType(StringConstant(context.value.get.parts.head.split(":").nn.head.nn)).asType: @unchecked) match
       case '[type labelType <: Label; labelType] => '{${expand(context, parts)}.asInstanceOf[Url[labelType]]}
 
   def complete(value: Text): Url[Label] =
