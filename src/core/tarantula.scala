@@ -112,17 +112,17 @@ case class WebDriver(server: Browser#Server):
         post(t"value", Data(text).json)
     
       @targetName("at")
-      def /[T](value: T)(using el: ElementLocator[T])(using Log[Text]): List[Element] =
+      def /[ElementType](value: ElementType)(using locator: ElementLocator[ElementType])(using Log[Text]): List[Element] =
         case class Data(`using`: Text, value: Text)
-        post(t"elements", Data(el.strategy, el.value(value)).json)
+        post(t"elements", Data(locator.strategy, locator.value(value)).json)
           .value
           .as[List[Json]]
           .map(_(Wei).as[Text])
           .map(Element(_))
       
-      def element[T](value: T)(using el: ElementLocator[T], log: Log[Text]): Element =
+      def element[ElementType](value: ElementType)(using locator: ElementLocator[ElementType], log: Log[Text]): Element =
         case class Data(`using`: Text, value: Text)
-        val e = post(t"element", Data(el.strategy, el.value(value)).json)
+        val e = post(t"element", Data(locator.strategy, locator.value(value)).json)
         Element(e.value.selectDynamic(Wei.s).as[Text])
       
     private def get(address: Text)(using Log[Text]): Json = safe:
@@ -145,17 +145,17 @@ case class WebDriver(server: Browser#Server):
     def url[UrlType: SpecificUrl]()(using Log[Text]): UrlType = SpecificUrl(get(t"url").url.as[Text])
 
     @targetName("at")
-    def /[T](value: T)(using el: ElementLocator[T], log: Log[Text]): List[Element] =
+    def /[ElementType](value: ElementType)(using locator: ElementLocator[ElementType], log: Log[Text]): List[Element] =
       case class Data(`using`: Text, value: Text)
-      post(t"elements", Data(el.strategy, el.value(value)).json)
+      post(t"elements", Data(locator.strategy, locator.value(value)).json)
         .value
         .as[List[Json]]
         .map(_(Wei).as[Text])
         .map(Element(_))
     
-    def element[T](value: T)(using el: ElementLocator[T], log: Log[Text]): Element =
+    def element[ElementType](value: ElementType)(using locator: ElementLocator[ElementType], log: Log[Text]): Element =
       case class Data(`using`: Text, value: Text)
-      val e = post(t"element", Data(el.strategy, el.value(value)).json)
+      val e = post(t"element", Data(locator.strategy, locator.value(value)).json)
       
       Element(e.value.selectDynamic(Wei.s).as[Text])
     
