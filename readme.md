@@ -79,7 +79,7 @@ be used, but caution should be taken if there is a mismatch between the
 project's stability level and the importance of your own project.
 
 Escritoire is designed to be _small_. Its entire source code currently consists
-of 247 lines of code.
+of 248 lines of code.
 
 ## Building
 
