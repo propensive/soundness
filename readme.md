@@ -132,7 +132,7 @@ be used, but caution should be taken if there is a mismatch between the
 project's stability level and the importance of your own project.
 
 Honeycomb is designed to be _small_. Its entire source code currently consists
-of 719 lines of code.
+of 723 lines of code.
 
 ## Building
 
