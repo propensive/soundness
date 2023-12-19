@@ -17,6 +17,7 @@
 package serpentine
 
 import rudiments.*
+import vacuous.*
 import fulminate.*
 import spectacular.*
 import anticipation.*
