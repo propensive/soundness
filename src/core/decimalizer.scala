@@ -16,6 +16,7 @@
 
 package gossamer
 
+import vacuous.*
 import rudiments.*
 import anticipation.*
 
