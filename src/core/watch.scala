@@ -20,6 +20,7 @@ import eucalyptus.*
 import turbulence.*
 import gossamer.*
 import rudiments.*
+import vacuous.*
 import digression.*
 import parasite.*
 import fulminate.*
