@@ -20,6 +20,7 @@ import spectacular.*
 import gossamer.*
 import anticipation.*, fileApi.galileiApi
 import rudiments.*, homeDirectories.default
+import vacuous.*
 import serpentine.*, hierarchies.unix
 import perforate.*
 import guillotine.*
