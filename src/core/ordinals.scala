@@ -2,6 +2,7 @@ package denominative
 
 import rudiments.*
 import spectacular.*
+import anticipation.*
 
 final val Prim = Ordinal.fromOne(1)
 final val Sec  = Ordinal.fromOne(2)
@@ -53,6 +54,19 @@ object Denominative:
   object Ordinal:
     inline def fromZero(inline cardinal: Int): Ordinal = cardinal + 1
     inline def fromOne(inline cardinal: Int): Ordinal = cardinal
+
+    given show: Show[Ordinal] =
+      case Prim    => "prim".tt
+      case Sec     => "sec".tt
+      case Ter     => "ter".tt
+      case Quat    => "quat".tt
+      case Quin    => "quin".tt
+      case Sen     => "sen".tt
+      case Sept    => "sept".tt
+      case Oct     => "oct".tt
+      case Non     => "non".tt
+      case Den     => "den".tt
+      case ordinal => if ordinal.degenerate then "degenerate".tt else ("Ordinal.fromOne("+ordinal+")").tt
 
   extension (interval: Interval)
     inline def start: Ordinal = ((interval >> 32) & 0xffffffff).toInt
