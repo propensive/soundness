@@ -17,6 +17,7 @@
 package inimitable
 
 import anticipation.*
+import vacuous.*
 import rudiments.*
 import perforate.*
 import fulminate.*
