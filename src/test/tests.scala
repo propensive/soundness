@@ -19,6 +19,7 @@ package inimitable
 import anticipation.*
 import gossamer.*
 import larceny.*
+import perforate.*
 import probably.*
 import rudiments.*
 import digression.*
@@ -64,8 +65,7 @@ object Tests extends Suite(t"Inimitable Tests"):
       .assert(_ == Uuid(-6860364383762101208L, -8777588922722300788L))
       
       test(t"Parse a bad UUID at runtime"):
-        import unsafeExceptions.canThrowAny
-        capture[UuidError](Uuid.parse(t"not-a-uuid"))
+        unsafely(capture[UuidError](Uuid.parse(t"not-a-uuid")))
       .assert(_ == UuidError(t"not-a-uuid"))
       
       val uuid1 = Uuid()
