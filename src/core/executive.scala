@@ -18,6 +18,7 @@ package exoskeleton
 
 import profanity.*
 import rudiments.*
+import vacuous.*
 import gossamer.*
 import fulminate.*
 import digression.*
