@@ -17,6 +17,7 @@
 package jacinta
 
 import rudiments.*
+import vacuous.*
 import fulminate.*
 import turbulence.*
 import gossamer.*
