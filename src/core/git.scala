@@ -27,6 +27,7 @@ import guillotine.*
 import nettlesome.*
 import kaleidoscope.*
 import rudiments.*
+import vacuous.*
 import serpentine.*, hierarchies.unix
 import spectacular.*
 import turbulence.*
