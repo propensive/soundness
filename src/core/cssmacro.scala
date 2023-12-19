@@ -43,9 +43,9 @@ object Cataclysm:
     import quotes.reflect.*
 
     def recur(exprs: Seq[Expr[(Label, Any)]]): List[Expr[CssProperty]] = exprs match
-      case '{($key: k & Label, $value: v)} +: tail =>
-        val exp: Expr[PropertyDef[k & Label, v]] = Expr.summon[PropertyDef[k & Label, v]].getOrElse:
-          val typeName = TypeRepr.of[v].show
+      case '{type keyType <: Label; ($key: keyType, $value: valueType)} +: tail =>
+        val exp: Expr[PropertyDef[keyType, valueType]] = Expr.summon[PropertyDef[keyType, valueType]].getOrElse:
+          val typeName = TypeRepr.of[valueType].show
           fail(msg"no valid CSS element ${key.valueOrAbort} taking values of type $typeName exists")
         
         '{CssProperty(Text($key).uncamel.kebab, $exp.show($value))} :: recur(tail)
@@ -56,8 +56,8 @@ object Cataclysm:
     (properties: @unchecked) match
       case Varargs(exprs) => '{CssStyle(${Expr.ofSeq(recur(exprs))}*)}
 
-case class PropertyDef[Name <: Label, -T: ShowProperty]():
-  def show(value: T): Text = summon[ShowProperty[T]].show(value)
+case class PropertyDef[Name <: Label, -PropertyType: ShowProperty]():
+  def show(value: PropertyType): Text = summon[ShowProperty[PropertyType]].show(value)
 
 object Selectable:
   given ident: Selectable[Selector] = identity(_)
@@ -68,38 +68,39 @@ object Selectable:
       case s"#$id"  => Selector.Id(id.tt)
       case elem     => Selector.Element(elem.tt)
 
-trait Selectable[-T]:
-  def selector(value: T): Selector
+trait Selectable[-SelectorType]:
+  def selector(value: SelectorType): Selector
 
-def select[T: Selectable](sel: T)(css: CssStyle) = CssRule(summon[Selectable[T]].selector(sel), css)
+def select[SelectorType](sel: SelectorType)(using selectable: Selectable[SelectorType])(css: CssStyle) =
+  CssRule(selectable.selector(sel), css)
 
-extension [T: Selectable](left: T)
+extension [SelectorType: Selectable](left: SelectorType)(using selectable: Selectable[SelectorType])
   @targetName("definedAs")
-  infix def :=(css: CssStyle): CssRule = CssRule(summon[Selectable[T]].selector(left), css)
+  infix def :=(css: CssStyle): CssRule = CssRule(selectable.selector(left), css)
 
   @targetName("descendant")
-  infix def >>[S: Selectable](right: S): Selector =
-    summon[Selectable[T]].selector(left) >> summon[Selectable[S]].selector(right)
+  infix def >>[SelectorType2](right: SelectorType2)(using selectable2: Selectable[SelectorType2]): Selector =
+    selectable.selector(left) >> selectable2.selector(right)
   
   @targetName("child")
-  infix def >[S: Selectable](right: S): Selector =
-    summon[Selectable[T]].selector(left) > summon[Selectable[S]].selector(right)
+  infix def >[SelectorType2](right: SelectorType2)(using selectable2: Selectable[SelectorType2]): Selector =
+    selectable.selector(left) > selectable2.selector(right)
   
   @targetName("after")
-  infix def ~[S: Selectable](right: S): Selector =
-    summon[Selectable[T]].selector(left) + summon[Selectable[S]].selector(right)
+  infix def ~[SelectorType2](right: SelectorType2)(using selectable2: Selectable[SelectorType2]): Selector =
+    selectable.selector(left) + selectable2.selector(right)
   
   @targetName("or")
-  infix def ||[S: Selectable](right: S): Selector =
-    summon[Selectable[T]].selector(left) | summon[Selectable[S]].selector(right)
+  infix def ||[SelectorType2](right: SelectorType2)(using selectable2: Selectable[SelectorType2]): Selector =
+    selectable.selector(left) | selectable2.selector(right)
   
   @targetName("and")
-  infix def &&[S: Selectable](right: S): Selector =
-    summon[Selectable[T]].selector(left) & summon[Selectable[S]].selector(right)
+  infix def &&[SelectorType2](right: SelectorType2)(using selectable2: Selectable[SelectorType2]): Selector =
+    selectable.selector(left) & selectable2.selector(right)
   
   @targetName("before")
-  infix def ~~[S: Selectable](right: S): Selector =
-    summon[Selectable[T]].selector(left) ~ summon[Selectable[S]].selector(right)
+  infix def ~~[SelectorType2](right: SelectorType2)(using selectable2: Selectable[SelectorType2]): Selector =
+    selectable.selector(left) ~ selectable2.selector(right)
   
 object PropertyDef:
   given alignContent: PropertyDef["alignContent", Text] = PropertyDef()
