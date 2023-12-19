@@ -16,6 +16,7 @@
 
 package hieroglyph
 
+import vacuous.*
 import rudiments.*
 import fulminate.*
 import perforate.*

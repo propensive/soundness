@@ -16,7 +16,7 @@
 
 package hieroglyph
 
-import rudiments.*
+import vacuous.*
 
 import language.experimental.captureChecking
 
