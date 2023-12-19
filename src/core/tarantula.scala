@@ -34,38 +34,38 @@ import gesticulate.*
 import parasite.*
 import anticipation.*, timeApi.long
 
-import unsafeExceptions.canThrowAny
 import errorHandlers.throwUnsafely
-import annotation.targetName
+
+import unsafeExceptions.canThrowAny
 
 trait Browser(name: Text):
   transparent inline def browser = this
   
   case class Server(port: Int, value: Process[Label, Text]):
-    def stop()(using Log): Unit = browser.stop(this)
+    def stop()(using Log[Text]): Unit = browser.stop(this)
 
-  def launch(port: Int)(using WorkingDirectory, Log, Monitor): Server
-  def stop(server: Server)(using Log): Unit
+  def launch(port: Int)(using WorkingDirectory, Log[Text], Monitor): Server
+  def stop(server: Server)(using Log[Text]): Unit
 
-  def session[T](port: Int = 4444)(fn: (session: WebDriver#Session) ?=> T)(using WorkingDirectory, Log, Monitor): T =
+  def session[T](port: Int = 4444)(fn: (session: WebDriver#Session) ?=> T)(using WorkingDirectory, Log[Text], Monitor): T =
     val server = launch(port)
     try fn(using WebDriver(server).startSession()) finally server.stop()
 
 object Firefox extends Browser(t"firefox"):
-  def launch(port: Int)(using WorkingDirectory, Log, Monitor): Server =
+  def launch(port: Int)(using WorkingDirectory, Log[Text], Monitor): Server =
     val server: Process["geckodriver", Text] = sh"geckodriver --port $port".fork()
     sleep(100L)
     Server(port, server)
 
-  def stop(server: Server)(using Log): Unit = server.value.abort()
+  def stop(server: Server)(using Log[Text]): Unit = server.value.abort()
 
 object Chrome extends Browser(t"chrome"):
-  def launch(port: Int)(using WorkingDirectory, Log, Monitor): Server =
+  def launch(port: Int)(using WorkingDirectory, Log[Text], Monitor): Server =
     val server: Process["chromedriver", Text] = sh"chromedriver --port=$port".fork()
     sleep(100L)
     Server(port, server)
 
-  def stop(server: Server)(using Log): Unit = server.value.abort()
+  def stop(server: Server)(using Log[Text]): Unit = server.value.abort()
 
 def browser(using WebDriver#Session): WebDriver#Session = summon[WebDriver#Session]
 
@@ -93,25 +93,26 @@ case class WebDriver(server: Browser#Server):
 
     case class Element(elementId: Text):
       
-      private def get(address: Text)(using Log): Json = safe:
-        internet:
-          url"http://localhost:${server.port}/session/$sessionId/element/$elementId/$address"
-            .get(RequestHeader.ContentType(media"application/json")).as[Json]
-      
-      private def post(address: Text, content: Json)(using Log): Json = safe:
-        internet:
-          url"http://localhost:${server.port}/session/$sessionId/element/$elementId/$address"
-            .post(content).as[Json]
-      
-      def click()(using Log): Unit = post(t"click", Json.parse(t"{}"))
-      def clear()(using Log): Unit = post(t"clear", Json.parse(t"{}")) 
+      private def get(address: Text)(using Log[Text]): Json = safe:
+        given Online = Online
+        val url: HttpUrl = url"http://localhost:${server.port}/session/$sessionId/element/$elementId/$address"
 
-      def value(text: Text)(using Log): Unit =
+          url.get(RequestHeader.ContentType(media"application/json")).as[Json]
+      
+      private def post(address: Text, content: Json)(using Log[Text]): Json = safe:
+        given Online = Online
+        url"http://localhost:${server.port}/session/$sessionId/element/$elementId/$address"
+          .post(content).as[Json]
+      
+      def click()(using Log[Text]): Unit = post(t"click", Json.parse(t"{}"))
+      def clear()(using Log[Text]): Unit = post(t"clear", Json.parse(t"{}")) 
+
+      def value(text: Text)(using Log[Text]): Unit =
         case class Data(text: Text)
         post(t"value", Data(text).json)
     
       @targetName("at")
-      def /[T](value: T)(using el: ElementLocator[T])(using Log): List[Element] =
+      def /[T](value: T)(using el: ElementLocator[T])(using Log[Text]): List[Element] =
         case class Data(`using`: Text, value: Text)
         post(t"elements", Data(el.strategy, el.value(value)).json)
           .value
@@ -119,32 +120,32 @@ case class WebDriver(server: Browser#Server):
           .map(_(Wei).as[Text])
           .map(Element(_))
       
-      def element[T](value: T)(using el: ElementLocator[T], log: Log): Element =
+      def element[T](value: T)(using el: ElementLocator[T], log: Log[Text]): Element =
         case class Data(`using`: Text, value: Text)
         val e = post(t"element", Data(el.strategy, el.value(value)).json)
         Element(e.value.selectDynamic(Wei.s).as[Text])
       
-    private def get(address: Text)(using Log): Json = safe:
-      internet:
-        url"http://localhost:${server.port}/session/$sessionId/$address"
-          .get(RequestHeader.ContentType(media"application/json")).as[Json]
+    private def get(address: Text)(using Log[Text]): Json = safe:
+      given Online = Online
+      url"http://localhost:${server.port}/session/$sessionId/$address"
+        .get(RequestHeader.ContentType(media"application/json")).as[Json]
   
-    private def post(address: Text, content: Json)(using Log): Json = safe:
-      internet:
-        url"http://localhost:${server.port}/session/$sessionId/$address".post(content).as[Json]
+    private def post(address: Text, content: Json)(using Log[Text]): Json = safe:
+      given Online = Online
+      url"http://localhost:${server.port}/session/$sessionId/$address".post(content).as[Json]
     
-    def navigateTo[UrlType: GenericUrl](url: UrlType)(using Log): Json =
+    def navigateTo[UrlType: GenericUrl](url: UrlType)(using Log[Text]): Json =
       case class Data(url: Text)
       post(t"url", Data(url.text).json)
     
-    def refresh()(using Log): Unit = post(t"refresh", Json.parse(t"{}")).as[Json]
-    def forward()(using Log): Unit = post(t"forward", Json.parse(t"{}")).as[Json]
-    def back()(using Log): Unit = post(t"back", Json.parse(t"{}")).as[Json]
-    def title()(using Log): Text = get(t"title").as[Json].value.as[Text]
-    def url[UrlType: SpecificUrl]()(using Log): UrlType = SpecificUrl(get(t"url").url.as[Text])
+    def refresh()(using Log[Text]): Unit = post(t"refresh", Json.parse(t"{}")).as[Json]
+    def forward()(using Log[Text]): Unit = post(t"forward", Json.parse(t"{}")).as[Json]
+    def back()(using Log[Text]): Unit = post(t"back", Json.parse(t"{}")).as[Json]
+    def title()(using Log[Text]): Text = get(t"title").as[Json].value.as[Text]
+    def url[UrlType: SpecificUrl]()(using Log[Text]): UrlType = SpecificUrl(get(t"url").url.as[Text])
 
     @targetName("at")
-    def /[T](value: T)(using el: ElementLocator[T], log: Log): List[Element] =
+    def /[T](value: T)(using el: ElementLocator[T], log: Log[Text]): List[Element] =
       case class Data(`using`: Text, value: Text)
       post(t"elements", Data(el.strategy, el.value(value)).json)
         .value
@@ -152,16 +153,17 @@ case class WebDriver(server: Browser#Server):
         .map(_(Wei).as[Text])
         .map(Element(_))
     
-    def element[T](value: T)(using el: ElementLocator[T], log: Log): Element =
+    def element[T](value: T)(using el: ElementLocator[T], log: Log[Text]): Element =
       case class Data(`using`: Text, value: Text)
       val e = post(t"element", Data(el.strategy, el.value(value)).json)
       
       Element(e.value.selectDynamic(Wei.s).as[Text])
     
-    def activeElement()(using Log): Element =
+    def activeElement()(using Log[Text]): Element =
       Element(get(t"element/active").value.selectDynamic(Wei.s).as[Text])
 
-  def startSession()(using Log): Session = internet:
+  def startSession()(using Log[Text]): Session =
+    given Online = Online
     val url = url"http://localhost:${server.port}/session"
     val json = url.post(Json.parse(t"""{"capabilities":{}}""")).as[Json]
     
@@ -176,4 +178,4 @@ object ElementLocator:
   given ElementLocator[DomId](t"css selector", v => t"#${v.name}")
   given ElementLocator[Cls](t"css selector", v => t".${v.name}")
 
-given realm: Realm = Realm(t"tarantula")
+given realm: Realm = realm"tarantula"
