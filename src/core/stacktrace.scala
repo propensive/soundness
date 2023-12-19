@@ -17,6 +17,7 @@
 package digression
 
 import rudiments.*
+import vacuous.*
 import fulminate.*
 import anticipation.*
 
