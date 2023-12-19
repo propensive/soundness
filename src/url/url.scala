@@ -19,6 +19,7 @@ package nettlesome
 import serpentine.*
 import gossamer.*
 import rudiments.*
+import vacuous.*
 import fulminate.*
 import perforate.*
 import escapade.*
