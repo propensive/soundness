@@ -23,6 +23,7 @@ import galilei.*, filesystemOptions.{dereferenceSymlinks, createNonexistent, cre
 
 import anticipation.*, fileApi.galileiApi
 import rudiments.*, homeDirectories.default
+import vacuous.*
 import perforate.*
 import exoskeleton.*
 import hieroglyph.*, charEncoders.utf8, charDecoders.utf8, badEncodingHandlers.strict

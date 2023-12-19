@@ -20,6 +20,7 @@ import anticipation.*, fileApi.galileiApi
 import galilei.*, filesystemOptions.{createNonexistent, dereferenceSymlinks, overwritePreexisting, deleteRecursively, createNonexistentParents}
 import serpentine.*, hierarchies.unix
 import rudiments.*
+import vacuous.*
 import guillotine.*
 import gossamer.*
 import exoskeleton.*
