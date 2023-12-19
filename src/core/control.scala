@@ -17,6 +17,7 @@
 package perforate
 
 import fulminate.*
+import vacuous.*
 import rudiments.*
 
 import scala.quoted.*
