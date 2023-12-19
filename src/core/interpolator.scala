@@ -17,6 +17,7 @@
 package punctuation
 
 import rudiments.*
+import vacuous.*
 import fulminate.*
 import contextual.*
 import perforate.*
