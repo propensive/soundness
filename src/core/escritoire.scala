@@ -17,6 +17,7 @@
 package escritoire
 
 import rudiments.*
+import vacuous.*
 import gossamer.*
 import hieroglyph.*
 import anticipation.*
