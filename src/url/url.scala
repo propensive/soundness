@@ -27,6 +27,8 @@ import anticipation.*
 import contextual.*
 import spectacular.*
 
+import scala.quoted.*
+
 case class UrlError(text: Text, offset: Int, expected: UrlError.Expectation)
 extends Error(msg"the URL $text is not valid: expected $expected at $offset")
 
@@ -50,6 +52,13 @@ enum UrlInput:
   case RawTextual(value: Text)
 
 object UrlInterpolator extends contextual.Interpolator[UrlInput, Text, Url[Label]]:
+
+  def refined(context: Expr[StringContext], parts: Expr[Seq[Any]])(using Quotes): Expr[Url[Label]] =
+    import quotes.reflect.*
+
+    ConstantType(StringConstant(context.value.get.parts.head.split(":").nn.head.nn)).asType match
+      case '[type labelType <: Label; labelType] => '{${expand(context, parts)}.asInstanceOf[Url[labelType]]}
+
   def complete(value: Text): Url[Label] =
     try throwErrors(Url.parse(value)) catch
       case err: UrlError      => throw InterpolationError(Message(err.message.text))
