@@ -6,12 +6,13 @@ repo propensive/probably
 repo propensive/larceny
 repo propensive/fulminate
 repo propensive/symbolism
+repo propensive/vacuity
 
 project rudiments
   module core
     compiler  scala
     sources   src/core
-    include   anticipation/css anticipation/http symbolism/core anticipation/text anticipation/http fulminate/core anticipation/path
+    include   anticipation/css anticipation/http symbolism/core anticipation/text anticipation/http fulminate/core anticipation/path vacuity/core
 
   module test
     compiler  scala

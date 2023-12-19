@@ -1,5 +1,7 @@
 package rudiments
 
+import vacuity.*
+
 import scala.util as su
 
 import java.util as ju

@@ -18,6 +18,7 @@ package rudiments
 
 import anticipation.*
 import fulminate.*
+import vacuity.*
 
 import scala.compiletime.*
 

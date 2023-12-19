@@ -16,6 +16,8 @@
 
 package rudiments
 
+import vacuity.*
+
 import scala.deriving.*
 
 import java.util.concurrent.atomic as juca
@@ -64,6 +66,3 @@ extension [ProductType <: Product](product: ProductType)(using mirror: Mirror.Pr
 
 extension [TupleType <: Tuple](tuple: TupleType)
   def to[ProductType](using mirror: Mirror.ProductOf[ProductType]): ProductType = mirror.fromProduct(tuple)
-
-erased trait Unsafe
-erased val Unsafe: Unsafe = ###
