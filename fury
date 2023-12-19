@@ -3,7 +3,6 @@
 target cataclysm/core
 
 repo propensive/gossamer
-repo propensive/iridescence
 repo propensive/serpentine
 
 project cataclysm

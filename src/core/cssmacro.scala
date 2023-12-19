@@ -641,3 +641,4 @@ package pseudo:
   val firstOfType = Selector.PseudoClass(t"first-of-type")
   val lastOfType = Selector.PseudoClass(t"last-of-type")
   val onlyOfType = Selector.PseudoClass(t"only-of-type")
+
