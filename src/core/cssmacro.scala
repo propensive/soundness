@@ -365,9 +365,9 @@ object PropertyDef:
   given writingMode: PropertyDef["writingMode", Text] = PropertyDef()
   given zIndex: PropertyDef["zIndex", Int] = PropertyDef()
 
-  given inherit[L <: Label]: PropertyDef[L, Inherit.type] = PropertyDef()
-  given initial[L <: Label]: PropertyDef[L, Initial.type] = PropertyDef()
-  given transparent[L <: Label]: PropertyDef[L, Transparent.type] = PropertyDef()
+  given inherit[LabelType <: Label]: PropertyDef[LabelType, Inherit.type] = PropertyDef()
+  given initial[LabelType <: Label]: PropertyDef[LabelType, Initial.type] = PropertyDef()
+  given transparent[LabelType <: Label]: PropertyDef[LabelType, Transparent.type] = PropertyDef()
 
 object Inherit
 object Transparent
@@ -378,6 +378,7 @@ type Dimension = Length | Int
 object ShowProperty:
   given ShowProperty[Length] = _.show
   given ShowProperty[Duration] = _.show
+  
   given ShowProperty[Dimension] =
     case length: Length => length.show
     case int: Int       => int.show
@@ -416,8 +417,8 @@ object ShowProperty:
   given ShowProperty[Transparent.type] = c => t"transparent"
   given ShowProperty[Initial.type] = c => t"initial"
 
-trait ShowProperty[-T]:
-  def show(value: T): Text
+trait ShowProperty[-PropertyType]:
+  def show(value: PropertyType): Text
 
 object PropertyValue:
   given Show[PropertyValue] = _.toString.show.uncamel.kebab
