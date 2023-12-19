@@ -17,6 +17,7 @@
 package aviation
 
 import rudiments.*
+import vacuous.*
 import fulminate.*
 import spectacular.*
 import symbolism.*

@@ -22,6 +22,7 @@ import anticipation.*
 import spectacular.*
 import eucalyptus.*
 import rudiments.*
+import vacuous.*
 import perforate.*
 import fulminate.*
 
