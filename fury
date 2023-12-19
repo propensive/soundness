@@ -16,5 +16,7 @@ project superlunary
   module core
     compiler  scala
     sources   src/core
+    lib       scalajs-library https://repo1.maven.org/maven2/org/scala-js/scalajs-library_2.13/1.14.0/scalajs-library_2.13-1.14.0.jar
+    lib       scalajs-javalib https://repo1.maven.org/maven2/org/scala-js/scalajs-javalib/1.14.0/scalajs-javalib-1.14.0.jar
     include   anticipation/css anticipation/http symbolism/core anticipation/text anticipation/http jacinta/core inimitable/core gastronomy/core ambience/core hellenism/core guillotine/core
-    main      superlunary.run
+
