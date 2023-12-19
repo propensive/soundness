@@ -71,3 +71,4 @@ object Inimitable:
 extension (inline context: StringContext)
   inline def uuid(): Uuid = ${Inimitable.uuid('context)}
 
+lazy val jvmInstanceId: Uuid = Uuid()
