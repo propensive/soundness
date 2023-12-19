@@ -17,6 +17,7 @@
 package escapade
 
 import rudiments.*
+import vacuous.*
 import gossamer.*
 import anticipation.*
 
