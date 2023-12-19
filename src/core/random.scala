@@ -16,7 +16,7 @@
 
 package rudiments
 
-import vacuity.*
+import vacuous.*
 
 import scala.util as su
 

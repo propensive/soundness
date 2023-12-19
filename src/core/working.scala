@@ -17,7 +17,7 @@
 package rudiments
 
 import anticipation.*
-import vacuity.*
+import vacuous.*
 
 import language.experimental.captureChecking
 
