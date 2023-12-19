@@ -524,7 +524,7 @@ be used, but caution should be taken if there is a mismatch between the
 project's stability level and the importance of your own project.
 
 Quantitative is designed to be _small_. Its entire source code currently consists
-of 1384 lines of code.
+of 1385 lines of code.
 
 ## Building
 
