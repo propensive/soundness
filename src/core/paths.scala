@@ -17,6 +17,7 @@
 package galilei
 
 import rudiments.*
+import vacuous.*
 import fulminate.*
 import eucalyptus.*
 import turbulence.*
