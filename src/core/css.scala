@@ -18,6 +18,7 @@ package cataclysm
 
 import rudiments.*
 import gossamer.*
+import vacuous.*
 import anticipation.*
 import hieroglyph.*
 
