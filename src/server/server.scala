@@ -19,6 +19,7 @@ package scintillate
 import rudiments.*
 import fulminate.*
 import digression.*
+import vacuous.*
 import parasite.*
 import turbulence.*
 import perforate.*
