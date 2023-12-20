@@ -105,6 +105,11 @@ object Nettlesome:
       def text: Text = label
 
     object Ipv4:
+      given show: Show[Ipv4] = ip =>
+        t"${ip.byte0.toString}.${ip.byte1.toString}.${ip.byte2.toString}.${ip.byte3.toString}"
+
+      given encoder: Encoder[Ipv4] = _.show
+      given decoder(using Raises[IpAddressError]): Decoder[Ipv4] = parse(_)
 
       lazy val Localhost: Ipv4 = apply(127, 0, 0, 1)
 
@@ -112,9 +117,6 @@ object Nettlesome:
       
       def apply(byte0: Int, byte1: Int, byte2: Int, byte3: Int): Ipv4 =
         ((byte0 & 255) << 24) + ((byte1 & 255) << 16) + ((byte2 & 255) << 8) + (byte3 & 255)
-      
-      given show: Show[Ipv4] = ip =>
-        t"${ip.byte0.toString}.${ip.byte1.toString}.${ip.byte2.toString}.${ip.byte3.toString}"
       
       def parse(text: Text)(using Raises[IpAddressError]): Ipv4 = text.cut(t".") match
         case List(As[Int](byte0), As[Int](byte1), As[Int](byte2), As[Int](byte3)) =>
@@ -128,6 +130,8 @@ object Nettlesome:
 
     object MacAddress:
       given show: Show[MacAddress] = _.text
+      given encoder: Encoder[MacAddress] = _.text
+      given decoder(using Raises[MacAddressError]): Decoder[MacAddress] = parse(_)
 
       def apply(value: Long): MacAddress = value
       
@@ -158,12 +162,20 @@ object Nettlesome:
         recur(List(byte0, byte1, byte2, byte3, byte4, byte5), 0L)
 
     object TcpPort:
+      given show: Show[TcpPort] = _.number.show
+      given encoder: Encoder[TcpPort] = _.show
+      given decoder(using Raises[PortError]): Decoder[TcpPort] = text => apply(text.decodeAs[Int])
+      
       def unsafe(value: Int): TcpPort = value.asInstanceOf[TcpPort]
 
       def apply(value: Int): TcpPort raises PortError =
         if 1 <= value <= 65535 then value.asInstanceOf[TcpPort] else raise(PortError())(unsafe(1))
 
     object UdpPort:
+      given show: Show[UdpPort] = _.number.show
+      given encoder: Encoder[UdpPort] = _.show
+      given decoder(using Raises[PortError]): Decoder[UdpPort] = text => apply(text.decodeAs[Int])
+      
       def unsafe(value: Int): UdpPort = value.asInstanceOf[UdpPort]
 
       def apply(value: Int): UdpPort raises PortError =
