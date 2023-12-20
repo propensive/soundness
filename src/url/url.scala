@@ -260,6 +260,8 @@ case class Url
     import errorHandlers.throwUnsafely
     pathText.drop(1).cut(t"/").reverse.map(_.urlDecode).map(PathName(_))
 
+  def requestTarget: Text = pathText+query.lay(t"")(t"?"+_)
+
 object UrlError:
   enum Expectation:
     case Colon, More, LowerCaseLetter, PortRange, Number
