@@ -105,6 +105,9 @@ object Nettlesome:
       def text: Text = label
 
     object Ipv4:
+
+      lazy val Localhost: Ipv4 = apply(127, 0, 0, 1)
+
       def apply(int: Int): Ipv4 = int
       
       def apply(byte0: Int, byte1: Int, byte2: Int, byte3: Int): Ipv4 =
@@ -229,6 +232,9 @@ object Nettlesome:
     '{MacAddress(${Expr(macAddress.long)})}
 
   object Ipv6:
+    
+    lazy val Localhost: Ipv6 = apply(0, 0, 0, 0, 0, 0, 0, 1)
+    
     given toExpr: ToExpr[Ipv6] with
       def apply(ipv6: Ipv6)(using Quotes): Expr[Ipv6] = '{Ipv6(${Expr(ipv6.highBits)}, ${Expr(ipv6.lowBits)})}
     
