@@ -60,54 +60,54 @@ object TextConversion:
     case ch =>
       if ch < 128 && ch >= 32 then ch.toString.tt else String.format("\\u%04x", ch.toInt).nn.tt
 
-  given Debug[Char] = char => ("'"+escape(char).s+"'").tt
-  given Debug[Long] = long => (long.toString+"L").tt
-  given Debug[String] = string => summon[Debug[Text]](string.tt).s.substring(1).nn.tt
-  given Debug[Byte] = byte => (byte.toString+".toByte").tt
-  given Debug[Short] = short => (short.toString+".toShort").tt
-  given Debug[Message] = derived[Message]
+  given debugChar: Debug[Char] = char => ("'"+escape(char).s+"'").tt
+  given debugLong: Debug[Long] = long => (long.toString+"L").tt
+  given debugString: Debug[String] = string => summon[Debug[Text]](string.tt).s.substring(1).nn.tt
+  given debugByte: Debug[Byte] = byte => (byte.toString+".toByte").tt
+  given debugShort: Debug[Short] = short => (short.toString+".toShort").tt
+  given debugMessage: Debug[Message] = derived[Message]
   
-  given Debug[Text] = text =>
+  given debugText: Debug[Text] = text =>
     val builder: StringBuilder = new StringBuilder()
     text.s.foreach { char => builder.append(escape(char, true)) }
     
     ("t\""+builder.toString+"\"").tt
 
-  given Show[Text] = identity(_)
-  given Show[String] = _.tt
-  given Show[Char] = char => char.toString.tt
-  given Show[Long] = long => long.toString.tt
-  given Show[Int] = int => int.toString.tt
-  given Show[Short] = short => short.toString.tt
-  given Show[Byte] = byte => byte.toString.tt
-  given Show[Message] = _.text
-  given (using decimalizer: DecimalConverter): Show[Double] = decimalizer.decimalize(_)
-  given Show[Pid] = pid => ("\u21af"+pid.value).tt
+  given text: Show[Text] = identity(_)
+  given string: Show[String] = _.tt
+  given char: Show[Char] = char => char.toString.tt
+  given long: Show[Long] = long => long.toString.tt
+  given int: Show[Int] = int => int.toString.tt
+  given short: Show[Short] = short => short.toString.tt
+  given byte: Show[Byte] = byte => byte.toString.tt
+  given message: Show[Message] = _.text
+  given double(using decimalizer: DecimalConverter): Show[Double] = decimalizer.decimalize(_)
+  given pid: Show[Pid] = pid => ("\u21af"+pid.value).tt
   
-  given Debug[Float] =
+  given debugFloat: Debug[Float] =
     case Float.PositiveInfinity => "Float.PositiveInfinity".tt
     case Float.NegativeInfinity => "Float.NegativeInfinity".tt
     case float if float.isNaN   => "Float.NaN".tt
     case float                  => (float.toString+"F").tt
   
-  given Debug[Double] = 
+  given debugDouble: Debug[Double] = 
     case Double.PositiveInfinity => "Double.PositiveInfinity".tt
     case Double.NegativeInfinity => "Double.NegativeInfinity".tt
     case double if double.isNaN  => "Double.NaN".tt
     case double                  => double.toString.tt
 
-  given (using booleanStyle: BooleanStyle): Show[Boolean] = booleanStyle(_)
-  given Debug[Boolean] = boolean => if boolean then "true".tt else "false".tt
+  given boolean(using booleanStyle: BooleanStyle): Show[Boolean] = booleanStyle(_)
+  given debugBoolean: Debug[Boolean] = boolean => if boolean then "true".tt else "false".tt
 
-  given [ValueType](using show: Show[ValueType]): Show[Option[ValueType]] =
+  given option[ValueType](using show: Show[ValueType]): Show[Option[ValueType]] =
     case Some(value) => show(value)
     case None        => "none".tt
   
-  given Show[Uuid] = _.text
-  given Show[ByteSize] = _.text
-  given Show[reflect.Enum] = _.toString.show
-  given Debug[reflect.Enum] = _.toString.show
-  given Debug[Pid] = pid => s"[PID:${pid.value}]".tt
+  given uuid: Show[Uuid] = _.text
+  given byteSize: Show[ByteSize] = _.text
+  given reflectEnum: Show[reflect.Enum] = _.toString.show
+  given debugReflectEnum: Debug[reflect.Enum] = _.toString.show
+  given debugPid: Debug[Pid] = pid => s"[PID:${pid.value}]".tt
 
   given set[ElemType](using Show[ElemType]): Show[Set[ElemType]] = set =>
     set.map(_.show).mkString("{", ", ", "}").tt
@@ -194,8 +194,8 @@ object TextConversion:
       
       s"Some($valueText)".tt
   
-  given Show[None.type] = none => "none".tt
-  given Debug[None.type] = none => "None".tt
+  given none: Show[None.type] = none => "none".tt
+  given showNone: Debug[None.type] = none => "None".tt
   
   private transparent inline def deriveProduct
       [Labels <: Tuple]
