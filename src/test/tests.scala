@@ -18,7 +18,7 @@ object Tests extends Suite(t"Coaxial tests"):
       val udpServer = external[String, String]('{ response =>
         supervise:
           val promise: Promise[Unit] = Promise()
-          coaxial.Socket.listen(udp"3962"): in =>
+          udp"3962".listen: in =>
             UdpResponse.Reply(jvmInstanceId.show.sysBytes).also(promise.fulfill(()))
           promise.await()
           s"Running $response"

@@ -65,7 +65,7 @@ object Connectable:
     
     def close(connection: Connection): Unit = connection.channel.close()
 
-  given tcpPort(using Raises[StreamError]): Connectable[Endpoint[TcpPort]] with
+  given tcpEndpoint(using Online, Raises[StreamError]): Connectable[Endpoint[TcpPort]] with
     type Output = Bytes
     type Connection = jn.Socket
     
@@ -80,8 +80,21 @@ object Connectable:
     def close(socket: jn.Socket): Unit = socket.close()
     
     def receive(socket: jn.Socket): LazyList[Bytes] = socket.getInputStream.nn.stream[Bytes]
+  
+  given tcpPort(using Raises[StreamError]): Connectable[TcpPort] with
+    type Output = Bytes
+    type Connection = jn.Socket
+    
+    def connect(port: TcpPort): jn.Socket = jn.Socket(jn.InetAddress.getLocalHost.nn, port.number)
+    def close(socket: jn.Socket): Unit = socket.close()
+    def receive(socket: jn.Socket): LazyList[Bytes] = socket.getInputStream.nn.stream[Bytes]
+    
+    def send(socket: jn.Socket, input: Bytes): Unit =
+      val out = socket.getOutputStream.nn
+      out.write(input.mutable(using Unsafe))
+      out.flush()
 
-  given udpPort: Addressable[Endpoint[UdpPort]] with
+  given udpEndpoint: Addressable[Endpoint[UdpPort]] with
     case class Connection(address: jn.InetAddress, port: Int, socket: jn.DatagramSocket)
 
     def connect(endpoint: Endpoint[UdpPort]): Connection =
@@ -90,6 +103,18 @@ object Connectable:
     
     def send(connection: Connection, input: Bytes): Unit =
       val packet = jn.DatagramPacket(input.mutable(using Unsafe), input.length, connection.address,
+          connection.port)
+      
+      connection.socket.send(packet)
+  
+  given udpPort: Addressable[UdpPort] with
+    case class Connection(port: Int, socket: jn.DatagramSocket)
+
+    def connect(port: UdpPort): Connection =
+      Connection(port.number, jn.DatagramSocket())
+    
+    def send(connection: Connection, input: Bytes): Unit =
+      val packet = jn.DatagramPacket(input.mutable(using Unsafe), input.length, jn.InetAddress.getLocalHost.nn,
           connection.port)
       
       connection.socket.send(packet)
@@ -215,10 +240,8 @@ object Bindable:
 trait SocketService:
   def stop(): Unit
 
-object Socket:
+extension [SocketType](socket: SocketType)
   def listen
-      [SocketType]
-      (socket: SocketType)
       [ResultType]
       (using bindable: Bindable[SocketType], monitor: Monitor)
       (fn: bindable.Input => bindable.Output)
