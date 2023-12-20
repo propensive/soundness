@@ -21,6 +21,7 @@ import parasite.*
 import fulminate.*
 import turbulence.*
 import rudiments.*
+import vacuous.*
 import anticipation.*
 import perforate.*
 
@@ -41,7 +42,7 @@ case class DomainSocket(private[coaxial] val address: Text):
 
 object Connectable:
   given domainSocket(using Raises[StreamError]): Connectable[DomainSocket] with
-    type Output = LazyList[Bytes]
+    type Output = Bytes
     case class Connection(channel: jnc.SocketChannel, in: ji.InputStream, out: ji.OutputStream)
 
     def connect(domainSocket: DomainSocket): Connection =
@@ -65,7 +66,7 @@ object Connectable:
     def close(connection: Connection): Unit = connection.channel.close()
 
   given tcpPort(using Raises[StreamError]): Connectable[Endpoint[TcpPort]] with
-    type Output = LazyList[Bytes]
+    type Output = Bytes
     type Connection = jn.Socket
     
     def connect(endpoint: Endpoint[TcpPort]): jn.Socket =
@@ -110,13 +111,13 @@ trait Bindable[SocketType]:
   
   def bind(socket: SocketType): Binding
   def connect(binding: Binding): Input
-  def process(binding: Binding, input: Input, output: Output): Unit
+  def send(binding: Binding, input: Input, output: Output): Unit
   def close(connection: Input): Unit
   def stop(binding: Binding): Unit
 
 case class UdpPacket(data: Bytes, sender: Ipv4 | Ipv6, port: UdpPort)
 
-case class Connection(private[coaxial] val in: ji.InputStream, private[coaxial] val out: ji.OutputStream, close: () => Unit):
+case class Connection(private[coaxial] val in: ji.InputStream, private[coaxial] val out: ji.OutputStream):
   def stream(): LazyList[Bytes] raises StreamError = in.stream[Bytes]
 
 enum UdpResponse:
@@ -125,44 +126,54 @@ enum UdpResponse:
 
 object Bindable:
 
-//   given domainSocket(using Raises[StreamError]): Bindable[DomainSocket] with
-//     type Binding = jnc.ServerSocketChannel
-//     type Output = LazyList[Bytes]
-//     type Input = Connection
+  given domainSocket(using Raises[StreamError]): Bindable[DomainSocket] with
+    type Binding = jnc.ServerSocketChannel
+    type Output = Bytes
+    type Input = Connection
 
-//     def bind(domainSocket: DomainSocket): jnc.ServerSocketChannel =
-//       val address = jn.UnixDomainSocketAddress.of(domainSocket.address.s)
-//       jnc.ServerSocketChannel.open(jn.StandardProtocolFamily.UNIX).nn.tap: channel =>
-//         channel.configureBlocking(true)
-//         channel.bind(address)
+    def bind(domainSocket: DomainSocket): jnc.ServerSocketChannel =
+      val address = jn.UnixDomainSocketAddress.of(domainSocket.address.s)
+      jnc.ServerSocketChannel.open(jn.StandardProtocolFamily.UNIX).nn.tap: channel =>
+        channel.configureBlocking(true)
+        channel.bind(address)
+        println("bound")
   
-//     def connect(channel: jnc.ServerSocketChannel): Connection =
-//       val clientChannel: jnc.SocketChannel = channel.accept().nn
-//       val in = jnc.Channels.newInputStream(clientChannel).nn
-//       val out = jnc.Channels.newOutputStream(clientChannel).nn
-//       Connection(in, out)
-
-//     def process(channel: jnc.ServerSocketChannel, connection: Connection, response: LazyList[Bytes]): Unit =
-//       response.writeTo(connection.out)
-//       connection.out.close()
+    def connect(channel: jnc.ServerSocketChannel): Connection =
+      val clientChannel: jnc.SocketChannel = channel.accept().nn
+      val in = jnc.Channels.newInputStream(clientChannel).nn
+      val out = jnc.Channels.newOutputStream(clientChannel).nn
+      println("connected")
+      
+      Connection(in, out)
     
-//     def stop(channel: jnc.ServerSocketChannel): Unit = channel.close()
+    def send(channel: jnc.ServerSocketChannel, connection: Connection, bytes: Bytes): Unit =
+      connection.out.write(bytes.mutable(using Unsafe))
+      connection.out.flush()
+      println("sent")
+    
+    def stop(channel: jnc.ServerSocketChannel): Unit =
+      channel.close()
+      println("stopped")
+    
+    def close(connection: Connection): Unit =
+      connection.in.close()
+      connection.out.close()
+      println("closed")
 
   given tcpPort(using Raises[StreamError]): Bindable[TcpPort] with
     type Binding = jn.ServerSocket
-    type Output = LazyList[Bytes]
-    type Input = Connection
+    type Output = Bytes
+    type Input = jn.Socket
     
     def bind(port: TcpPort): Binding = jn.ServerSocket(port.number)
     
-    def connect(binding: Binding): Connection =
-      val socket = binding.accept().nn
-      Connection(socket.getInputStream.nn, socket.getOutputStream.nn, () => socket.close())
+    def connect(binding: Binding): jn.Socket = binding.accept().nn
     
-    def process(socket: jn.ServerSocket, connection: Connection, response: LazyList[Bytes]): Unit =
-      response.writeTo(connection.out)
+    def send(socket: jn.ServerSocket, input: Input, bytes: Bytes): Unit =
+      input.getOutputStream.nn.write(bytes.mutable(using Unsafe))
+      input.getOutputStream.nn.flush()
     
-    def close(connection: Connection): Unit = connection.close()
+    def close(socket: jn.Socket): Unit = socket.close()
     def stop(socket: jn.ServerSocket): Unit = socket.close()
 
   given udpPort: Bindable[UdpPort] with
@@ -185,7 +196,7 @@ object Bindable:
 
       UdpPacket(array.slice(0, packet.getLength).immutable(using Unsafe), ip, UdpPort.unsafe(address.getPort))
     
-    def process(socket: jn.DatagramSocket, input: UdpPacket, response: UdpResponse): Unit = response match
+    def send(socket: jn.DatagramSocket, input: UdpPacket, response: UdpResponse): Unit = response match
       case UdpResponse.Ignore => ()
 
       case UdpResponse.Reply(data) =>
@@ -219,7 +230,7 @@ object Socket:
     val async = Async:
       while continue do
         val connection = bindable.connect(binding)
-        Async(bindable.process(binding, connection, fn(connection)))
+        Async(bindable.send(binding, connection, fn(connection)))
 
     new SocketService:
       def stop(): Unit =
@@ -268,13 +279,16 @@ extension [EndpointType](endpoint: EndpointType)
     
     def recur(input: LazyList[Bytes], state: StateType): StateType = input match
       case head #:: tail => handle(using state)(head) match
-        case Control.Terminate      => state
-        case Control.Ignore         => recur(tail, state)
-        case Control.Proceed(state) => recur(tail, state)
+        case Control.Continue(state2) => recur(tail, state2.or(state))
+        case Control.Terminate        => state
         
-        case Control.Respond(message, state2) =>
+        case Control.Reply(message, state2) =>
           connectable.send(connection, message)
           recur(tail, state2.or(state))
+        
+        case Control.Conclude(message, state2) =>
+          connectable.send(connection, message)
+          state2.or(state)
       
       case _ => state
     
@@ -282,7 +296,7 @@ extension [EndpointType](endpoint: EndpointType)
       connectable.close(connection)
 
 enum Control[+StateType]:
+  case Continue(state: Optional[StateType] = Unset)
   case Terminate
-  case Ignore
-  case Proceed(state: StateType)
-  case Respond(message: Bytes, state: Optional[StateType] = Unset)
+  case Reply(message: Bytes, state: Optional[StateType] = Unset)
+  case Conclude(message: Bytes, state: Optional[StateType] = Unset)
