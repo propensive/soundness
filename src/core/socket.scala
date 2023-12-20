@@ -19,7 +19,9 @@ package coaxial
 import nettlesome.*
 import parasite.*
 import fulminate.*
+import hieroglyph.*
 import turbulence.*
+import gossamer.*
 import rudiments.*
 import vacuous.*
 import anticipation.*
@@ -40,6 +42,37 @@ object DomainSocket:
 case class DomainSocket(private[coaxial] val address: Text):
   def path[PathType: SpecificPath] = SpecificPath(address)
 
+sealed trait Control[+StateType]
+
+object Control:
+  sealed trait Interactive
+
+  case class Conclude[+StateType](message: Bytes, state: Optional[StateType]) extends Control[StateType]
+  case object Terminate extends Control[Nothing]
+  case class Continue[+StateType](state: Optional[StateType] = Unset) extends Control[StateType], Interactive
+  
+  case class Reply[+StateType](message: Bytes, state: Optional[StateType])
+  extends Control[StateType], Interactive
+  
+
+  object Conclude:
+    def apply
+        [MessageType, StateType]
+        (message: MessageType, state: Optional[StateType] = Unset)
+        (using transmissible: Transmissible[MessageType])
+        : Conclude[StateType] =
+      Conclude(transmissible.serialize(message), state)
+
+  object Reply:
+    def apply
+        [MessageType, StateType]
+        (message: MessageType, state: Optional[StateType] = Unset)
+        (using transmissible: Transmissible[MessageType])
+        : Reply[StateType] =
+      Reply(transmissible.serialize(message), state)
+
+import Control.*
+
 object Connectable:
   given domainSocket(using Raises[StreamError]): Connectable[DomainSocket] with
     type Output = Bytes
@@ -56,7 +89,7 @@ object Connectable:
       
       Connection(channel, in, out)
 
-    def send(connection: Connection, input: Bytes): Unit =
+    def transmit(connection: Connection, input: Bytes): Unit =
       connection.out.write(input.mutable(using Unsafe))
       connection.out.flush()
       
@@ -68,11 +101,11 @@ object Connectable:
   given tcpEndpoint(using Online, Raises[StreamError]): Connectable[Endpoint[TcpPort]] with
     type Output = Bytes
     type Connection = jn.Socket
-    
+      
     def connect(endpoint: Endpoint[TcpPort]): jn.Socket =
       jn.Socket(jn.InetAddress.getByName(endpoint.remote.s), endpoint.port.number)
     
-    def send(socket: jn.Socket, input: Bytes): Unit =
+    def transmit(socket: jn.Socket, input: Bytes): Unit =
       val out = socket.getOutputStream.nn
       out.write(input.mutable(using Unsafe))
       out.flush()
@@ -89,11 +122,12 @@ object Connectable:
     def close(socket: jn.Socket): Unit = socket.close()
     def receive(socket: jn.Socket): LazyList[Bytes] = socket.getInputStream.nn.stream[Bytes]
     
-    def send(socket: jn.Socket, input: Bytes): Unit =
+    def transmit(socket: jn.Socket, input: Bytes): Unit =
       val out = socket.getOutputStream.nn
       out.write(input.mutable(using Unsafe))
       out.flush()
 
+object Addressable:
   given udpEndpoint: Addressable[Endpoint[UdpPort]] with
     case class Connection(address: jn.InetAddress, port: Int, socket: jn.DatagramSocket)
 
@@ -101,7 +135,7 @@ object Connectable:
       val address = jn.InetAddress.getByName(endpoint.remote.s).nn
       Connection(address, endpoint.port.number, jn.DatagramSocket())
     
-    def send(connection: Connection, input: Bytes): Unit =
+    def transmit(connection: Connection, input: Bytes): Unit =
       val packet = jn.DatagramPacket(input.mutable(using Unsafe), input.length, connection.address,
           connection.port)
       
@@ -113,7 +147,7 @@ object Connectable:
     def connect(port: UdpPort): Connection =
       Connection(port.number, jn.DatagramSocket())
     
-    def send(connection: Connection, input: Bytes): Unit =
+    def transmit(connection: Connection, input: Bytes): Unit =
       val packet = jn.DatagramPacket(input.mutable(using Unsafe), input.length, jn.InetAddress.getLocalHost.nn,
           connection.port)
       
@@ -123,7 +157,7 @@ trait Addressable[EndpointType]:
   type Connection
 
   def connect(endpoint: EndpointType): Connection
-  def send(connection: Connection, input: Bytes): Unit
+  def transmit(connection: Connection, input: Bytes): Unit
 
 trait Connectable[EndpointType] extends Addressable[EndpointType]:
   def receive(connection: Connection): LazyList[Bytes]
@@ -136,7 +170,7 @@ trait Bindable[SocketType]:
   
   def bind(socket: SocketType): Binding
   def connect(binding: Binding): Input
-  def send(binding: Binding, input: Input, output: Output): Unit
+  def transmit(binding: Binding, input: Input, output: Output): Unit
   def close(connection: Input): Unit
   def stop(binding: Binding): Unit
 
@@ -150,7 +184,6 @@ enum UdpResponse:
   case Reply(data: Bytes)
 
 object Bindable:
-
   given domainSocket(using Raises[StreamError]): Bindable[DomainSocket] with
     type Binding = jnc.ServerSocketChannel
     type Output = Bytes
@@ -171,7 +204,7 @@ object Bindable:
       
       Connection(in, out)
     
-    def send(channel: jnc.ServerSocketChannel, connection: Connection, bytes: Bytes): Unit =
+    def transmit(channel: jnc.ServerSocketChannel, connection: Connection, bytes: Bytes): Unit =
       connection.out.write(bytes.mutable(using Unsafe))
       connection.out.flush()
       println("sent")
@@ -194,7 +227,7 @@ object Bindable:
     
     def connect(binding: Binding): jn.Socket = binding.accept().nn
     
-    def send(socket: jn.ServerSocket, input: Input, bytes: Bytes): Unit =
+    def transmit(socket: jn.ServerSocket, input: Input, bytes: Bytes): Unit =
       input.getOutputStream.nn.write(bytes.mutable(using Unsafe))
       input.getOutputStream.nn.flush()
     
@@ -221,7 +254,7 @@ object Bindable:
 
       UdpPacket(array.slice(0, packet.getLength).immutable(using Unsafe), ip, UdpPort.unsafe(address.getPort))
     
-    def send(socket: jn.DatagramSocket, input: UdpPacket, response: UdpResponse): Unit = response match
+    def transmit(socket: jn.DatagramSocket, input: UdpPacket, response: UdpResponse): Unit = response match
       case UdpResponse.Ignore => ()
 
       case UdpResponse.Reply(data) =>
@@ -236,6 +269,13 @@ object Bindable:
     
     def stop(binding: Binding): Unit = binding.close()
     def close(input: UdpPacket): Unit = ()
+
+trait Transmissible[-MessageType]:
+  def serialize(message: MessageType): Bytes
+
+object Transmissible:
+  given bytes: Transmissible[Bytes] = identity(_)
+  given text(using CharEncoder): Transmissible[Text] = _.bytes
 
 trait SocketService:
   def stop(): Unit
@@ -253,41 +293,13 @@ extension [SocketType](socket: SocketType)
     val async = Async:
       while continue do
         val connection = bindable.connect(binding)
-        Async(bindable.send(binding, connection, fn(connection)))
+        Async(bindable.transmit(binding, connection, fn(connection)))
 
     new SocketService:
       def stop(): Unit =
         continue = false
         bindable.stop(binding)
         safely(async.await())
-
-  // def sendTo
-  //     [EndpointType]
-  //     (endpoint: EndpointType)
-  //     (using addressable: Addressable[EndpointType])
-  //     (input: addressable.Input)
-  //     (using Monitor)
-  //     : Unit raises StreamError =
-  //   val connection = addressable.connect(endpoint)
-  //   val sender = Async(addressable.send(connection, input))
-    
-  //   safely(sender.await())
-  
-  // def connect
-  //     [EndpointType]
-  //     (endpoint: EndpointType)
-  //     (using connectable: Connectable[EndpointType])
-  //     (input: )
-  //     [ResultType]
-  //     (handle: connectable.Output => ResultType)
-  //     (using Monitor)
-  //     : ResultType raises StreamError =
-  //   val connection = connectable.connect(endpoint)
-  //   val sender = Async(connectable.send(connection, input))
-    
-  //   handle(connectable.receive(connection)).also:
-  //     safely(sender.await())
-
 
 extension [EndpointType](endpoint: EndpointType)
   def connect
@@ -302,15 +314,15 @@ extension [EndpointType](endpoint: EndpointType)
     
     def recur(input: LazyList[Bytes], state: StateType): StateType = input match
       case head #:: tail => handle(using state)(head) match
-        case Control.Continue(state2) => recur(tail, state2.or(state))
-        case Control.Terminate        => state
+        case Continue(state2) => recur(tail, state2.or(state))
+        case Terminate        => state
         
-        case Control.Reply(message, state2) =>
-          connectable.send(connection, message)
+        case Reply(message, state2) =>
+          connectable.transmit(connection, message)
           recur(tail, state2.or(state))
         
-        case Control.Conclude(message, state2) =>
-          connectable.send(connection, message)
+        case Conclude(message, state2) =>
+          connectable.transmit(connection, message)
           state2.or(state)
       
       case _ => state
@@ -318,8 +330,9 @@ extension [EndpointType](endpoint: EndpointType)
     recur(connectable.receive(connection), initialState).also:
       connectable.close(connection)
 
-enum Control[+StateType]:
-  case Continue(state: Optional[StateType] = Unset)
-  case Terminate
-  case Reply(message: Bytes, state: Optional[StateType] = Unset)
-  case Conclude(message: Bytes, state: Optional[StateType] = Unset)
+  def transmit[MessageType]
+      (message: MessageType)
+      (using transmissible: Transmissible[MessageType], addressable: Addressable[EndpointType])
+      (using Monitor)
+      : Unit raises StreamError =
+    addressable.transmit(addressable.connect(endpoint), transmissible.serialize(message))
