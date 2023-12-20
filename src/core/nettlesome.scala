@@ -162,9 +162,9 @@ object Nettlesome:
         recur(List(byte0, byte1, byte2, byte3, byte4, byte5), 0L)
 
     object TcpPort:
-      given show: Show[TcpPort] = _.number.show
-      given encoder: Encoder[TcpPort] = _.show
-      given decoder(using Raises[PortError]): Decoder[TcpPort] = text => apply(text.decodeAs[Int])
+      given show: Show[TcpPort] = port => TextConversion.int(port.number)
+      given encoder: Encoder[TcpPort] = port => TextConversion.int(port.number)
+      given decoder(using Raises[NumberError], Raises[PortError]): Decoder[TcpPort] = text => apply(Decoder.int.decode(text))
       
       def unsafe(value: Int): TcpPort = value.asInstanceOf[TcpPort]
 
@@ -172,9 +172,9 @@ object Nettlesome:
         if 1 <= value <= 65535 then value.asInstanceOf[TcpPort] else raise(PortError())(unsafe(1))
 
     object UdpPort:
-      given show: Show[UdpPort] = _.number.show
-      given encoder: Encoder[UdpPort] = _.show
-      given decoder(using Raises[PortError]): Decoder[UdpPort] = text => apply(text.decodeAs[Int])
+      given show: Show[UdpPort] = port => TextConversion.int(port.number)
+      given encoder: Encoder[UdpPort] = port => TextConversion.int(port.number)
+      given decoder(using Raises[NumberError], Raises[PortError]): Decoder[UdpPort] = text => apply(Decoder.int.decode(text))
       
       def unsafe(value: Int): UdpPort = value.asInstanceOf[UdpPort]
 
