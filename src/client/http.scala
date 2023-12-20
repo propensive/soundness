@@ -104,6 +104,39 @@ object HttpMethod:
 enum HttpMethod:
   case Get, Head, Post, Put, Delete, Connect, Options, Trace, Patch
 
+case class HttpRequest
+    (method: HttpMethod, host: Hostname, requestTarget: Text, headers: List[RequestHeader.Value],
+        body: HttpBody):
+  def serialize: LazyList[Bytes] =
+    import charEncoders.ascii
+    val buffer = StringBuffer()
+    buffer.append(method.show.upper)
+    buffer.append(t" ")
+    buffer.append(requestTarget)
+    buffer.append(t" HTTP/1.0\nhost: ")
+    buffer.append(host.show)
+    
+    body match
+      case HttpBody.Chunked(_) => ()
+      case HttpBody.Empty      => buffer.append(t"\ncontent-length: 0")
+      
+      case HttpBody.Data(data) =>
+        buffer.append(t"\ncontent-length: ")
+        buffer.append(data.length.show)
+    
+    headers.map: parameter =>
+      buffer.append(t"\n")
+      buffer.append(parameter.header.header)
+      buffer.append(t": ")
+      buffer.append(parameter.value)
+    
+    buffer.append(t"\n\n")
+    
+    body match
+      case HttpBody.Chunked(data) => buffer.toString.tt.bytes #:: data
+      case HttpBody.Empty         => LazyList(buffer.toString.tt.bytes)
+      case HttpBody.Data(data)    => LazyList(buffer.toString.tt.bytes, data)
+
 object HttpReadable:
   given HttpReadable[Text] with
     def read(status: HttpStatus, body: HttpBody): Text = body match
@@ -207,7 +240,7 @@ object Http:
       Log.fine(Message(header.show))
     
     Log.fine(msg"HTTP request body: ${summon[Postable[PostType]].preview(content)}")
-    
+
     (URI(url.show.s).toURL.nn.openConnection.nn: @unchecked) match
       case conn: HttpURLConnection =>
         conn.setRequestMethod(method.toString.show.upper.s)
@@ -327,14 +360,9 @@ case class Params(values: List[(Text, Text)]):
     if k.length == 0 then v.urlEncode else t"${k.urlEncode}=${v.urlEncode}"
   .join(t"&")
 
-
 extension (url: HttpUrl)(using Online, Log[Text])
-  def post[T: Postable](headers: RequestHeader.Value*)(body: T): HttpResponse =
-    Http.post(url, body, headers*)
-  
-  def put[T: Postable](headers: RequestHeader.Value*)(body: T): HttpResponse =
-    Http.put(url, body, headers*)
-  
+  def post[T: Postable](headers: RequestHeader.Value*)(body: T): HttpResponse = Http.post(url, body, headers*)
+  def put[T: Postable](headers: RequestHeader.Value*)(body: T): HttpResponse = Http.put(url, body, headers*)
   def post[T: Postable](body: T): HttpResponse = Http.post(url, body)
   def put[T: Postable](body: T): HttpResponse = Http.put(url, body)
   def get(headers: RequestHeader.Value*): HttpResponse = Http.get(url, headers)
