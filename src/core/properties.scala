@@ -51,7 +51,7 @@ trait SystemProperty[NameType <: String, PropertyType]:
   def read(value: Text): PropertyType
 
 object SystemProperty:
-  given generic[UnknownType <: String & Singleton]: SystemProperty[UnknownType, Text] =
+  given generic[UnknownType <: String & Singleton](using DummyImplicit): SystemProperty[UnknownType, Text] =
     identity(_)
   
   given javaHome[PathType: SpecificPath]: SystemProperty["java.home", PathType] =
