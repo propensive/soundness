@@ -7,7 +7,7 @@ repo propensive/serpentine
 repo propensive/wisteria
 repo propensive/nettlesome
 
-target telekinesis/test
+target telekinesis/client
 
 project telekinesis
   module client
