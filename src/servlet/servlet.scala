@@ -18,6 +18,7 @@ package scintillate
 
 import rudiments.*
 import perforate.*
+import vacuous.*
 import anticipation.*
 import turbulence.*
 import spectacular.*
