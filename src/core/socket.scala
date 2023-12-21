@@ -20,6 +20,7 @@ import nettlesome.*
 import parasite.*
 import fulminate.*
 import hieroglyph.*
+import spectacular.*
 import turbulence.*
 import gossamer.*
 import rudiments.*
@@ -276,14 +277,26 @@ trait Transmissible[-MessageType]:
 object Transmissible:
   given bytes: Transmissible[Bytes] = identity(_)
   given text(using CharEncoder): Transmissible[Text] = _.bytes
+  given encoder[MessageType: Encoder](using CharEncoder): Transmissible[MessageType] = _.encode.bytes
+
+trait Receivable[+MessageType]:
+  def deserialize(message: Bytes): MessageType
+
+object Receivable:
+  given bytes: Receivable[Bytes] = identity(_)
+  given text(using CharDecoder): Receivable[Text] = _.text
+  given decoder[MessageType: Decoder](using CharDecoder): Receivable[MessageType] = _.text.decodeAs[MessageType]
 
 trait SocketService:
   def stop(): Unit
 
+
+
 extension [SocketType](socket: SocketType)
   def listen
-      [ResultType]
+      [InputType]
       (using bindable: Bindable[SocketType], monitor: Monitor)
+      [ResultType]
       (fn: bindable.Input => bindable.Output)
       : SocketService raises BindError =
 
