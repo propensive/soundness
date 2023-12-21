@@ -45,14 +45,17 @@ trait Responder:
   def addHeader(key: Text, value: Text): Unit
 
 trait FallbackHandler:
-  given [T: Show](using encoder: CharEncoder): SimpleHandler[T] =
-    SimpleHandler(media"text/plain"(charset = encoder.encoding.name), v =>
-        HttpBody.Chunked(LazyList(v.show.bytes)))
+  given [ResponseType: Show](using encoder: CharEncoder): SimpleHandler[ResponseType] =
+    SimpleHandler(media"text/plain"(charset = encoder.encoding.name), value =>
+        HttpBody.Chunked(LazyList(value.show.bytes)))
 
 object Handler extends FallbackHandler:
-  given iarrayByteHandler[T](using hr: GenericHttpResponseStream[T], ct: Raises[MediaTypeError])
-                         : SimpleHandler[T] =
-    SimpleHandler(Media.parse(hr.mediaType.show), value => HttpBody.Chunked(hr.content(value).map(identity)))
+  given bytes
+      [ResponseType]
+      (using responseStream: GenericHttpResponseStream[ResponseType], mediaType: Raises[MediaTypeError])
+      : SimpleHandler[ResponseType] =
+    SimpleHandler(Media.parse(responseStream.mediaType.show),
+        value => HttpBody.Chunked(responseStream.content(value).map(identity)))
 
   given Handler[Redirect] with
     def process(content: Redirect, status: Int, headers: Map[Text, Text],
@@ -61,18 +64,18 @@ object Handler extends FallbackHandler:
       headers.foreach(responder.addHeader)
       responder.sendBody(301, HttpBody.Empty)
 
-  given [T: SimpleHandler]: Handler[NotFound[T]] with
-    def process(notFound: NotFound[T], status: Int, headers: Map[Text, Text],
-                    responder: Responder): Unit =
-      val handler = summon[SimpleHandler[T]]
+  given [ResponseType](using handler: SimpleHandler[ResponseType]): Handler[NotFound[ResponseType]] with
+    def process
+        (notFound: NotFound[ResponseType], status: Int, headers: Map[Text, Text], responder: Responder)
+        : Unit =
       responder.addHeader(ResponseHeader.ContentType.header, handler.mediaType.show)
       headers.foreach(responder.addHeader)
       responder.sendBody(404, handler.stream(notFound.content))
 
-  given [T: SimpleHandler]: Handler[ServerError[T]] with
-    def process(notFound: ServerError[T], status: Int, headers: Map[Text, Text],
-                    responder: Responder): Unit =
-      val handler = summon[SimpleHandler[T]]
+  given [ResponseType](using handler: SimpleHandler[ResponseType]): Handler[ServerError[ResponseType]] with
+    def process
+        (notFound: ServerError[ResponseType], status: Int, headers: Map[Text, Text], responder: Responder)
+        : Unit =
       responder.addHeader(ResponseHeader.ContentType.header, handler.mediaType.show)
       headers.foreach(responder.addHeader)
       responder.sendBody(500, handler.stream(notFound.content))
@@ -85,17 +88,17 @@ object Redirect:
 
 case class Redirect(location: Url["http" | "https"])
 
-trait Handler[T]:
-  def process(content: T, status: Int, headers: Map[Text, Text], responder: Responder): Unit
+trait Handler[ResponseType]:
+  def process(content: ResponseType, status: Int, headers: Map[Text, Text], responder: Responder): Unit
 
-case class SimpleHandler[T](mediaType: MediaType, stream: T => HttpBody) extends Handler[T]:
-  def process(content: T, status: Int, headers: Map[Text, Text], responder: Responder): Unit =
+case class SimpleHandler[ResponseType](mediaType: MediaType, stream: ResponseType => HttpBody) extends Handler[ResponseType]:
+  def process(content: ResponseType, status: Int, headers: Map[Text, Text], responder: Responder): Unit =
     responder.addHeader(ResponseHeader.ContentType.header, mediaType.show)
     headers.foreach(responder.addHeader)
     responder.sendBody(status, stream(content))
 
-case class NotFound[T: SimpleHandler](content: T)
-case class ServerError[T: SimpleHandler](content: T)
+case class NotFound[ContentType: SimpleHandler](content: ContentType)
+case class ServerError[ContentType: SimpleHandler](content: ContentType)
 
 object Cookie:
   given genericHttpRequestParam: GenericHttpRequestParam["set-cookie", Cookie] = _.serialize
@@ -212,26 +215,26 @@ def header(using Request)(header: RequestHeader[?]): Optional[List[Text]] =
   summon[Request].headers.get(header).getOrElse(Unset)
 
 object ParamReader:
-  given [T](using ext: Unapply[Text, T]): ParamReader[T] = ext.unapply(_)
+  given [ParamType](using ext: Unapply[Text, ParamType]): ParamReader[ParamType] = ext.unapply(_)
   given ParamReader[Text] = Some(_)
 
 object UrlPath:
   def unapply(request: Request): Some[Text] = Some(request.pathText)
 
-trait ParamReader[T]:
-  def read(value: Text): Option[T]
+trait ParamReader[ParamType]:
+  def read(value: Text): Option[ParamType]
 
 object RequestParam:
   given GenericHtmlAttribute["name", RequestParam[?]] with
     def name: Text = t"name"
     def serialize(value: RequestParam[?]): Text = value.key
 
-case class RequestParam[T](key: Text)(using ParamReader[T]):
-  def opt(using Request): Option[T] =
-    summon[Request].params.get(key).flatMap(summon[ParamReader[T]].read(_))
+case class RequestParam[ParamType](key: Text)(using ParamReader[ParamType]):
+  def opt(using Request): Option[ParamType] =
+    summon[Request].params.get(key).flatMap(summon[ParamReader[ParamType]].read(_))
 
-  def unapply(req: Request): Option[T] = opt(using req)
-  def apply()(using Request): T raises MissingParamError = opt.getOrElse(abort(MissingParamError(key)))
+  def unapply(req: Request): Option[ParamType] = opt(using req)
+  def apply()(using Request): ParamType raises MissingParamError = opt.getOrElse(abort(MissingParamError(key)))
 
 // trait HttpService:
 //   def stop(): Unit
