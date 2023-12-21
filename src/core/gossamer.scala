@@ -50,7 +50,7 @@ extension (value: Bytes)
     .mkString.tt
 
 object Pue:
-  def apply(text: Text): Bytes =
+  def apply(text: into Text): Bytes =
     val length = text.length
     IArray.create[Byte](length): array =>
       var i = 0
@@ -161,7 +161,7 @@ extension [TextType](using textual: Textual[TextType])(text: TextType)
     
     recur(0, textual.empty)
   
-  def contains(substring: Text): Boolean = textual.indexOf(text, substring) != -1
+  def contains(substring: into Text): Boolean = textual.indexOf(text, substring) != -1
   def contains(char: Char): Boolean = textual.indexOf(text, char.show) != -1
 
   def apply(index: Int): Char throws OutOfRangeError =
@@ -240,7 +240,7 @@ extension [TextType](using textual: Textual[TextType])(text: TextType)
   def unkebab: List[TextType] = text.cut(Text("-"))
   def unsnake: List[TextType] = text.cut(Text("_"))
   
-  inline def starts(prefix: Text): Boolean =
+  inline def starts(prefix: into Text): Boolean =
     val length: Int = prefix.s.length
     
     def recur(index: Int): Boolean =
@@ -248,7 +248,7 @@ extension [TextType](using textual: Textual[TextType])(text: TextType)
 
     length <= text.length && recur(0)
   
-  inline def ends(suffix: Text): Boolean =
+  inline def ends(suffix: into Text): Boolean =
     val length: Int = suffix.s.length
     val offset: Int = text.length - length
     
@@ -265,10 +265,10 @@ extension [TextType](using textual: Textual[TextType])(text: TextType)
   inline def subscript: TextType = textual.map(text, hieroglyph.subscript(_).or(' '))
   inline def superscript: TextType = textual.map(text, hieroglyph.superscript(_).or(' '))
   
-extension (text: Text)
-  inline def rsub(from: Text, to: Text): Text = Text(text.s.replaceAll(from.s, to.s).nn)
+extension (text: into Text)
+  inline def rsub(from: into Text, to: into Text): Text = Text(text.s.replaceAll(from.s, to.s).nn)
   
-  inline def sub(from: Text, to: Text): Text =
+  inline def sub(from: into Text, to: into Text): Text =
     Text(text.s.replaceAll(Pattern.quote(from.s), to.s).nn)
   
   def flatMap(fn: Char => Text): Text =
@@ -280,7 +280,7 @@ extension (text: Text)
   inline def bytes(using encoder: CharEncoder): IArray[Byte] = encoder.encode(text)
   inline def sysBytes: IArray[Byte] = CharEncoder.system.encode(text)
   
-  def lev(other: Text): Int =
+  def lev(other: into Text): Int =
     val m = text.s.length
     val n = other.length
     val old = new Array[Int](n + 1)
@@ -372,6 +372,6 @@ object Interpolation:
       anticipation.Text(String.join("\n", array*).nn)
 
 extension (buf: StringBuilder)
-  def add(text: Text): Unit = buf.append(text.s)
+  def add(text: into Text): Unit = buf.append(text.s)
   def add(char: Char): Unit = buf.append(char)
   def text: Text = Text(buf.toString)
