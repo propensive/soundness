@@ -20,6 +20,7 @@ import rudiments.*
 import vacuous.*
 import gossamer.*
 import anticipation.*
+import serpentine.*
 import hieroglyph.*
 import spectacular.*
 
@@ -222,6 +223,8 @@ object HtmlAttribute:
   given hidden[T]: HtmlAttribute["hidden", Boolean, T] = _ => Unset
   given high[T]: HtmlAttribute["high", Double, T] = _.toString.show
   given href: HtmlAttribute["href", Text, Text] = identity(_)
+  given href2[T]: HtmlAttribute["href", SimplePath, T] = _.show
+  given href3[T]: HtmlAttribute["href", %.type, T] = root => t"/"
   given hreflang[T]: HtmlAttribute["hreflang", Text, T] = identity(_) // Needs to be provided by Cosmopolite
   
   given httpEquiv[T]: HtmlAttribute["httpEquiv", HttpEquiv, T] with
@@ -275,6 +278,7 @@ object HtmlAttribute:
   given spellcheck[T]: HtmlAttribute["spellcheck", Boolean, T] = if _ then t"true" else t"false"
   given src[T]: HtmlAttribute["src", Text, T] = identity(_)
   given src2[T, PathType: GenericPath]: HtmlAttribute["src", PathType, T] = _.pathText
+  given src3[T]: HtmlAttribute["src", SimplePath, T] = _.show
   given srcdoc[T]: HtmlAttribute["srcdoc", Html[?], T] = _.show
   given srclang[T]: HtmlAttribute["srclang", Text, T] = identity(_)
   given srcset[T]: HtmlAttribute["srcset", Text, T] = identity(_) // This should be provided by Cataclysm

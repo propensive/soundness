@@ -2,11 +2,12 @@
 
 target honeycomb/test
 repo propensive/gossamer
+repo propensive/serpentine
 
 project honeycomb
   module core
     sources  src/core
-    include  gossamer/core anticipation/html anticipation/css anticipation/path
+    include  gossamer/core anticipation/html anticipation/css anticipation/path serpentine/core
 
   module test
     sources   src/test
