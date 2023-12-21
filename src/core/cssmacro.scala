@@ -19,6 +19,7 @@ package cataclysm
 import rudiments.*
 import fulminate.*
 import gossamer.*
+import serpentine.*
 import anticipation.*
 import spectacular.*
 
@@ -125,7 +126,8 @@ object PropertyDef:
   given backgroundColor2: PropertyDef["backgroundColor", Transparent.type] = PropertyDef()
   given backgroundImage: PropertyDef["backgroundImage", Text] = PropertyDef()
   //given backgroundImage2: PropertyDef["backgroundImage", Relative] = PropertyDef()
-  //given backgroundImage3: PropertyDef["backgroundImage", GenericPath] = PropertyDef()
+  given backgroundImage3[PathType: GenericPath]: PropertyDef["backgroundImage", PathType] = PropertyDef()
+  given backgroundImage4: PropertyDef["backgroundImage", SimplePath] = PropertyDef()
   given backgroundOrigin: PropertyDef["backgroundOrigin", Text] = PropertyDef()
   given backgroundPosition: PropertyDef["backgroundPosition", Text] = PropertyDef()
   given backgroundPosition2: PropertyDef["backgroundPosition", Dimension] = PropertyDef()
@@ -403,6 +405,11 @@ object ShowProperty:
   given ShowProperty[Font] = _.names.map: f =>
     if f.contains(t" ") then t"'$f'" else f
   .join(t", ")
+
+  given ShowProperty[SimplePath] = path => t"url('${path}')"
+
+  given [PathType](using generic: GenericPath[PathType]): ShowProperty[PathType] =
+    path => t"url('${path.pathText}')"
 
   given ShowProperty[Text] = identity(_)
   given ShowProperty[Int] = _.show
