@@ -23,6 +23,7 @@ import guillotine.*
 import turbulence.*
 import rudiments.*
 import vacuous.*
+import fulminate.*
 import ambience.*, systemProperties.jvm
 import gossamer.*
 import inimitable.*
@@ -35,27 +36,15 @@ import scala.compiletime.*
 import scala.quoted.*, staging.*
 import scala.reflect.Selectable.reflectiveSelectable
 
-trait Container[+OutputType]
-
-object Baz:
-  given Baz = new Baz {}
-
-trait Baz
-
-class Sandbox[InputType, OutputType](expr: Quotes ?=> Expr[InputType => OutputType]):
-
-  def body(using Quotes): Expr[InputType => OutputType] = expr
-
-inline def container
+inline def external
     [InputType: JsonSerializer: JsonDeserializer, OutputType]
     (body: Quotes ?=> Expr[InputType => OutputType])
+    (using Raises[CompileError])
     : InputType => OutputType =
 
   val dest = Uuid().show
-  val settings: Compiler.Settings = Compiler.Settings.make(Some("/home/propensive/tmp/staging/"+dest), List("-scalajs"))
+  val settings: Compiler.Settings = Compiler.Settings.make(Some("/home/propensive/tmp/staging/"+dest), List())
   given compiler: Compiler = Compiler.make(getClass.nn.getClassLoader.nn)(using settings)
-
-
 
   try run: (quotes: Quotes) ?=>
     import quotes.reflect.*
@@ -67,7 +56,7 @@ inline def container
     val classpath: Text = (entries :+ t"/home/propensive/tmp/staging/$dest").join(t":")
 
     '{ (input: InputType) =>
-      object Eex:
+      object External:
         def run(input: String): String =
           unsafely: (raises) ?=>
             import hieroglyph.charEncoders.utf8
@@ -89,7 +78,7 @@ inline def container
         val log: Log[Text] = logging.silent
         val serializer = summonInline[JsonSerializer[InputType]]
         val in = MinimalSerializer.serialize(input.json(using serializer).root).s
-        val cmd = Command(t"java", t"-classpath", cp, t"superlunary.SandboxRunner", t"Generated$$Code$$From$$Quoted$$Eex$$2$$", in)
+        val cmd = Command(t"java", t"-classpath", cp, t"superlunary.SandboxRunner", t"Generated$$Code$$From$$Quoted$$External$$2$$", in)
         val output = cmd.exec[Text]()(using wd, log)
 
         val readable = summonInline[Readable[Text, Bytes]]
@@ -98,9 +87,11 @@ inline def container
         json.as[OutputType](using deserializer)
     }
   
-  catch case error: Throwable =>
-    println("Thrown")
-    ???
+  catch case error: dotty.tools.dotc.reporting.UnhandledError =>
+    println("Thrown "+error)
+    abort(CompileError())
+
+case class CompileError() extends Error(msg"A compilation error occurred")
 
 object SandboxRunner:
   def main(args: Array[String]): Unit =
