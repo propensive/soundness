@@ -38,17 +38,14 @@ object Tests extends Suite(t"Coaxial tests"):
 
     supervise:
       val async = Async:
-        val udpServer = external[UdpPort, String]('{ port =>
+        val udpServer = external[UdpPort, Text]('{ port =>
           unsafely:
             supervise:
-              val out = port.toString
-              val promise: Promise[Unit] = Promise()
-              val server = port.listen: in =>
-                UdpResponse.Reply(jvmInstanceId.show.sysBytes).also(promise.fulfill(()))
+              val promise: Promise[Text] = Promise()
+              val server = port.listen[Text]: in =>
+                UdpResponse.Reply(jvmInstanceId.show.sysBytes).also(promise.fulfill(in))
               
               promise.await()
-              server.stop()
-              s"Running $out"
         })
 
         test(t"Test UDP server"):
@@ -60,6 +57,6 @@ object Tests extends Suite(t"Coaxial tests"):
         Thread.sleep(5000)
         println("transmitting")
         udp"3962".transmit(jvmInstanceId.show)
-      .assert()
+      .assert(_ == jvmInstanceId.show)
       
       async.await()
