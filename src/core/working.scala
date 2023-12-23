@@ -17,7 +17,6 @@
 package rudiments
 
 import anticipation.*
-import vacuous.*
 import fulminate.*
 
 import language.experimental.captureChecking
@@ -52,11 +51,11 @@ package homeDirectories:
 def workingDirectory
     [PathType]
     (using directory: WorkingDirectory, specificPath: SpecificPath[PathType])
-    : Optional[PathType^{specificPath}] =
+    : PathType^{specificPath} =
   directory.path[PathType]
 
 def homeDirectory
     [PathType]
     (using directory: HomeDirectory, specificPath: SpecificPath[PathType])
-    : Optional[PathType^{specificPath}] =
+    : PathType^{specificPath} =
   directory.path[PathType]
