@@ -230,8 +230,7 @@ case class Command(arguments: Text*) extends Executable:
   def fork[ResultType]()(using working: WorkingDirectory, log: Log[Text], exec: Raises[ExecError]): Process[Exec, ResultType] =
     val processBuilder = ProcessBuilder(arguments.ss*)
     
-    working.directory.let: directory =>
-      processBuilder.directory(ji.File(directory.s))
+    processBuilder.directory(ji.File(working.directory().s))
     
     //Log.info(msg"Starting process ${this}")
 
@@ -248,8 +247,7 @@ case class Pipeline(commands: Command*) extends Executable:
     val processBuilders = commands.map: command =>
       val processBuilder = ProcessBuilder(command.arguments.ss*)
       
-      working.directory.let: directory =>
-        processBuilder.directory(ji.File(directory.s))
+      processBuilder.directory(ji.File(working.directory().s))
     
       processBuilder.nn
     
