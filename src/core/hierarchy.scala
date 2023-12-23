@@ -89,6 +89,14 @@ extension
     (using followable: Followable[LinkType, NameType, ?, ?])
   def ascent: Int = followable.ascent(left)
 
+  def inWorkingDirectory
+      [RootType]
+      (using hierarchy: Hierarchy[PathType, LinkType])
+      (using WorkingDirectory, Pathlike[PathType, NameType, RootType], SpecificPath[PathType],
+          PathCreator[PathType, NameType, RootType], Raises[PathError])
+      : PathType =
+    workingDirectory + left
+
 extension
     [PathType <: Matchable, LinkType <: Matchable, NameType <: Label, RootType]
     (left: PathType)
