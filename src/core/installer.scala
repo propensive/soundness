@@ -102,7 +102,7 @@ object Installer:
         val prefixSize = fileSize - payloadSize - jarSize
         val stream = scriptFile.stream[Bytes]
         val paths: List[Path] = Environment.path
-        val installDirectory = target.let(_.as[Directory]).or(candidateTargets().headOption.maybe)
+        val installDirectory = target.let(_.as[Directory]).or(candidateTargets().headOption.optional)
         
         val installFile = installDirectory.let: directory =>
           (directory / PathName(command)).make[File]()
