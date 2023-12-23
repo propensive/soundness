@@ -18,30 +18,36 @@ package rudiments
 
 import anticipation.*
 import vacuous.*
+import fulminate.*
 
 import language.experimental.captureChecking
 
+case class WorkingDirectoryError() extends Error(msg"there is no working directory")
+case class HomeDirectoryError() extends Error(msg"there is no home directory")
+
 object WorkingDirectory:
-  def apply(text: Optional[Text] = Unset): WorkingDirectory = new WorkingDirectory(text) {}
   given default(using Quickstart): WorkingDirectory = workingDirectories.default
 
 @capability
-trait WorkingDirectory(val directory: Optional[Text]):
-  def path[PathType](using specificPath: SpecificPath[PathType]): Optional[PathType^{specificPath}] =
-    directory.let(SpecificPath(_))
+trait WorkingDirectory:
+  def directory(): Text
+  def path[PathType: SpecificPath]: PathType = SpecificPath(directory())
 
 object HomeDirectory:
-  given default(using Quickstart): HomeDirectory = HomeDirectory(System.getProperty("user.home").nn.tt)
+  given default(using Quickstart): HomeDirectory = () => System.getProperty("user.home").nn.tt
 
 @capability
-case class HomeDirectory(text: Text):
-  def path[PathType: SpecificPath]: PathType = SpecificPath(text)
+trait HomeDirectory:
+  def directory(): Text
+  def path[PathType: SpecificPath]: PathType = SpecificPath(directory())
 
 package workingDirectories:
-  given default: WorkingDirectory = WorkingDirectory(Optional(System.getProperty("user.dir")).let(_.tt))
+  given default: WorkingDirectory = () => System.getProperty("user.dir").nn.tt
+  //given none(using Raises[WorkingDirectoryError]): WorkingDirectory = () => abort(WorkingDirectoryError())
 
 package homeDirectories:
-  given default: HomeDirectory = HomeDirectory(System.getProperty("user.home").nn.tt)
+  given default: HomeDirectory = () => System.getProperty("user.home").nn.tt
+  //given none(using Raises[HomeDirectoryError]): HomeDirectory = () => abort(HomeDirectoryError())
 
 def workingDirectory
     [PathType]
