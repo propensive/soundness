@@ -202,7 +202,7 @@ def daemon[BusType <: Matchable]
                 deliver(pid, _), busFunnel.stream, name)
           
           val environment = LazyEnvironment(env)
-          val workingDirectory = WorkingDirectory(directory)
+          val workingDirectory: WorkingDirectory = () => directory
           
           val async = Async:
             Log.pin()
