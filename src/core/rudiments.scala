@@ -23,9 +23,9 @@ import perforate.*
 //import language.experimental.captureChecking
 
 package workingDirectories:
-  given jvm(using Raises[SystemPropertyError], SystemProperties): WorkingDirectory =
-    WorkingDirectory(Properties.user.dir[Text]())
+  given jvm(using Raises[SystemPropertyError], SystemProperties): WorkingDirectory = () =>
+    Properties.user.dir[Text]()
 
 package homeDirectories:
-  given jvm(using Raises[SystemPropertyError], SystemProperties): HomeDirectory =
-    HomeDirectory(Properties.user.home[Text]())
+  given jvm(using Raises[SystemPropertyError], SystemProperties): HomeDirectory = () =>
+    Properties.user.home[Text]()

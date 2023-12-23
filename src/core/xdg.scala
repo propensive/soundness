@@ -31,25 +31,25 @@ object Xdg:
       [PathType]
       (using specificPath: SpecificPath[PathType], environment: Environment, home: HomeDirectory)
       : PathType/*^{specificPath, environment, home}*/ =
-    safely(Environment.xdgDataHome[PathType]).or(SpecificPath(t"${home.text}/.local/share"))
+    safely(Environment.xdgDataHome[PathType]).or(SpecificPath(t"${home.directory()}/.local/share"))
   
   def configHome
       [PathType]
       (using specificPath: SpecificPath[PathType], environment: Environment, home: HomeDirectory)
       : PathType/*^{specificPath, environment, home}*/ =
-    safely(Environment.xdgConfigHome[PathType]).or(SpecificPath(t"${home.text}/.config"))
+    safely(Environment.xdgConfigHome[PathType]).or(SpecificPath(t"${home.directory()}/.config"))
   
   def cacheHome
       [PathType]
       (using specificPath: SpecificPath[PathType], environment: Environment, home: HomeDirectory)
       : PathType/*^{specificPath, environment, home}*/ =
-    safely(Environment.xdgCacheHome[PathType]).or(SpecificPath(t"${home.text}/.cache"))
+    safely(Environment.xdgCacheHome[PathType]).or(SpecificPath(t"${home.directory()}/.cache"))
   
   def stateHome
       [PathType]
       (using environment: Environment, specificPath: SpecificPath[PathType], home: HomeDirectory)
       : PathType/*^{specificPath, environment, home}*/ =
-    safely(Environment.xdgStateHome[PathType]).or(SpecificPath(t"${home.text}/.local/state"))
+    safely(Environment.xdgStateHome[PathType]).or(SpecificPath(t"${home.directory()}/.local/state"))
   
   def runtimeDir
       [PathType]
@@ -61,7 +61,7 @@ object Xdg:
       [PathType]
       (using specificPath: SpecificPath[PathType], environment: Environment, home: HomeDirectory)
       : PathType/*^{specificPath, environment, home}*/ =
-    safely(Environment.xdgConfigHome[PathType]).or(SpecificPath(t"${home.text}/.local/bin"))
+    safely(Environment.xdgConfigHome[PathType]).or(SpecificPath(t"${home.directory()}/.local/bin"))
   
   def dataDirs
       [PathType]
