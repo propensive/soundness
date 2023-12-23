@@ -27,6 +27,7 @@ import serpentine.*
 import spectacular.*
 import hieroglyph.*, charEncoders.utf8
 import perforate.*
+import vacuous.*
 import anticipation.*, fileApi.galileiApi
 import ambience.*, environments.jvm, systemProperties.jvm
 
