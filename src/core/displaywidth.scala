@@ -50,7 +50,7 @@ object Unicode:
       case _                => 1
 
   def eastAsianWidth(char: Char): Optional[EaWidth] =
-    eastAsianWidths.minAfter(CharRange(char.toInt, char.toInt)).maybe.let(_(1))
+    eastAsianWidths.minAfter(CharRange(char.toInt, char.toInt)).optional.let(_(1))
 
   var count = 0
 
