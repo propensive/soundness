@@ -214,7 +214,7 @@ object StackTrace:
       case error: Error => error.message
       case other        => Message(Text(Option(exception.getMessage).map(_.nn).getOrElse("")))
     
-    StackTrace(component, className, message, frames, cause.map(_.nn).map(StackTrace(_)).maybe)
+    StackTrace(component, className, message, frames, cause.map(_.nn).map(StackTrace(_)).optional)
 
 case class StackTrace
     (component: Text, className: Text, message: Message, frames: List[StackTrace.Frame],
