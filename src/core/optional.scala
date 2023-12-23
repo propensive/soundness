@@ -28,10 +28,10 @@ type Optional[ValueType] = Unset.type | ValueType
 
 case class UnsetValueError() extends Error(Message("the value was not set".tt))
 
-extension [ValueType](maybe: Optional[ValueType])
-  inline def absent: Boolean = maybe == Unset
-  inline def present: Boolean = maybe != Unset
-  inline def or(inline value: => ValueType): ValueType = if absent then value else maybe.asInstanceOf[ValueType]
+extension [ValueType](optional: Optional[ValueType])
+  inline def absent: Boolean = optional == Unset
+  inline def present: Boolean = optional != Unset
+  inline def or(inline value: => ValueType): ValueType = if absent then value else optional.asInstanceOf[ValueType]
   inline def vouch(using Unsafe): ValueType = or(throw Mistake(msg"a value was vouched but was absent"))
   
   def presume(using default: Default[ValueType]): ValueType = or(default())
@@ -52,7 +52,7 @@ object Optional:
     if value == null then Unset else value
 
 extension [ValueType](option: Option[ValueType])
-  inline def maybe: Unset.type | ValueType = option.getOrElse(Unset)
+  inline def optional: Unset.type | ValueType = option.getOrElse(Unset)
   def presume(using default: Default[ValueType]) = option.getOrElse(default())
 
 erased trait Unsafe
