@@ -59,7 +59,7 @@ extends CodlReader[ValueType]:
         abort(CodlReadError())
 
 trait CodlWriter3:
-  given maybe
+  given optional
       [ValueType]
       (using writer: CodlWriter[ValueType])
       : CodlWriter[ValueType | Unset.type] =
@@ -225,7 +225,7 @@ trait CodlReader2:
                   deriveProduct[DerivationType, tailType, tailLabels](value)
         
 object CodlReader extends CodlReader2:
-  given maybe
+  given optional
       [ValueType]
       (using reader: CodlReader[ValueType])
       : CodlReader[Optional[ValueType]] =
