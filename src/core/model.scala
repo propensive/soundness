@@ -87,11 +87,12 @@ case class CodlNode(data: Optional[Data] = Unset, meta: Optional[Meta] = Unset) 
 object CodlDoc:
   def apply(nodes: CodlNode*): CodlDoc = CodlDoc(IArray.from(nodes), CodlSchema.Free, 0)
 
-  given Debug[CodlDoc] = _.write
+  given debug: Debug[CodlDoc] = _.write
+  given show(using printer: CodlPrinter): Show[CodlDoc] = printer.serialize(_)
   
-  given Similarity[CodlDoc] = _.schema == _.schema
+  given similarity: Similarity[CodlDoc] = _.schema == _.schema
 
-  inline given Contrast[CodlDoc] = new Contrast[CodlDoc]:
+  inline given contrast: Contrast[CodlDoc] = new Contrast[CodlDoc]:
     def apply(left: CodlDoc, right: CodlDoc) =
       inline if left == right then Semblance.Identical(left.debug) else
         val comparison = IArray.from:
