@@ -418,3 +418,5 @@ object Codl:
     def skip(state: State): State = insert(state, List(Data(t"_")))
     def insert(state: State, data: List[Data]): State = state.copy(subs = data.reverse ::: state.subs)
     def parse(state: State, next: Text): State = state.copy(parts = next :: state.parts).tap(complete(_))
+
+
