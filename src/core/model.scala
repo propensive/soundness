@@ -69,10 +69,10 @@ case class CodlNode(data: Optional[Data] = Unset, meta: Optional[Meta] = Unset) 
   def apply(key: Text): List[Data] = data.lay(List[CodlNode]())(_(key)).map(_.data).collect:
     case data: Data => data
 
-  def selectDynamic(key: String)(using Raises[MissingValueError]): List[Data] =
+  def selectDynamic(key: String)(using erased DynamicCodlEnabler)(using Raises[MissingValueError]): List[Data] =
     data.option.getOrElse(abort(MissingValueError(key.show))).selectDynamic(key)
   
-  def applyDynamic(key: String)(idx: Int = 0)(using Raises[MissingValueError]): Data = selectDynamic(key)(idx)
+  def applyDynamic(key: String)(idx: Int = 0)(using erased DynamicCodlEnabler)(using Raises[MissingValueError]): Data = selectDynamic(key)(idx)
 
   def untyped: CodlNode =
     val data2 = data.let { data => Data(data.key, children = data.children.map(_.untyped)) }
@@ -244,8 +244,13 @@ trait Indexed extends Dynamic:
         List.range(idx, layout.params).map: idx =>
           Data(key, IArray(unsafely(children(idx))), Layout.empty, CodlSchema.Free)
 
-  def selectDynamic(key: String)(using Raises[MissingValueError]): List[Data] =
+  def selectDynamic(key: String)(using erased DynamicCodlEnabler)(using Raises[MissingValueError]): List[Data] =
     index(key.show).map(children(_).data).collect:
       case data: Data => data
   
-  def applyDynamic(key: String)(idx: Int = 0)(using Raises[MissingValueError]): Data = selectDynamic(key)(idx)
+  def applyDynamic(key: String)(idx: Int = 0)(using erased DynamicCodlEnabler)(using Raises[MissingValueError]): Data = selectDynamic(key)(idx)
+
+erased trait DynamicCodlEnabler
+
+object dynamicCodlAccess:
+  erased given enabled: DynamicCodlEnabler = ###

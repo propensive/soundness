@@ -21,6 +21,7 @@ import gossamer.*
 import rudiments.*
 import spectacular.*
 import parasite.*
+import vacuous.*
 import perforate.*
 import anticipation.*
 import turbulence.*, stdioSources.jvm
@@ -462,6 +463,7 @@ object Tests extends Suite(t"CoDL tests"):
       .assert(_ contains CodlToken.Error(CodlError(2, 1, 1, CodlError.Reason.UnevenIndent(0, 1))))
 
     suite(t"Access tests"):
+      import dynamicCodlAccess.enabled
       val doc = CodlDoc(
         CodlNode(t"term")(
           CodlNode(t"name")(CodlNode(t"alpha")(), CodlNode(t"beta")()),
@@ -628,6 +630,7 @@ object Tests extends Suite(t"CoDL tests"):
       
       
     suite(t"Schema tests"):
+      import dynamicCodlAccess.enabled
       val childSchema = Struct(AtMostOne,
                           t"one" -> Field(AtMostOne),
                           t"two" -> Field(AtMostOne)
@@ -867,6 +870,7 @@ object Tests extends Suite(t"CoDL tests"):
       .assert(_ == CodlError(0, 2, 5, MissingKey(t"child", t"beta")))
       
     suite(t"Path tests"):
+      import dynamicCodlAccess.enabled
       val schema = Struct(AtMostOne,
         t"root" -> Struct(AtMostOne,
           t"field" -> Struct(AtMostOne,
