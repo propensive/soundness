@@ -44,7 +44,7 @@ case class Compilation
     (sources: Map[Text, Text],
         classpath: List[Path],
         out: Path):
-  def apply()(using SystemProperties): Unit raises CompilationError =
+  def apply()(using SystemProperties): List[Diagnostic] raises CompilationError =
     object reporter extends Reporter, UniqueMessagePositions, HideNonSensicalMessages:
       val errors: scm.ListBuffer[Diagnostic] = scm.ListBuffer()
       def doReport(diagnostic: Diagnostic)(using core.Contexts.Context): Unit = errors += diagnostic
@@ -77,7 +77,7 @@ case class Compilation
               "-new-syntax", "-Yrequire-targetName", "-Ysafe-init", "-Yexplicit-nulls", "-Xmax-inlines", "64",
               "-Ycheck-all-patmat", "-classpath", classpathText.s, ""), ctx).map(_(1)).get
         
-        def run(files: List[File], classpath: Text): List[Diagnostic] =
+        def run(classpath: Text): List[Diagnostic] =
           val ctx = currentCtx.fresh
           
           val ctx2 = ctx
@@ -94,6 +94,8 @@ case class Compilation
             if !reporter.hasErrors then finish(Compilation.Scala3, run)(using ctx2)
           
           reporter.errors.to(List)
+      
+      driver.run(classpathText)
           
             
 enum CompileResult:
