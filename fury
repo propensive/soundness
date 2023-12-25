@@ -6,6 +6,7 @@ repo propensive/probably
 repo propensive/larceny
 repo propensive/fulminate
 repo propensive/galilei
+repo propensive/hellenism
 repo propensive/symbolism
 repo propensive/vacuous
 
@@ -13,5 +14,5 @@ project anthology
   module core
     compiler  scala
     sources   src/core
-    include   rudiments/core galilei/core ambience/core
+    include   rudiments/core galilei/core ambience/core hellenism/core
 

@@ -17,13 +17,13 @@
 package anthology
 
 import anticipation.*
-import galilei.*, filesystemOptions.dereferenceSymlinks
-import gossamer.*
+import galilei.*
 import perforate.*
 import fulminate.*
 import ambience.*
 import rudiments.*
 import spectacular.*
+import hellenism.*
 
 import scala.collection.mutable as scm
 
@@ -41,9 +41,7 @@ object Compilation:
 
 case class Compilation
     [CompilerType <: Double]
-    (sources: Map[Text, Text],
-        classpath: List[Path],
-        out: Path):
+    (sources: Map[Text, Text], classpath: LocalClasspath, out: Path):
   def apply()(using SystemProperties): List[Diagnostic] raises CompilationError =
     object reporter extends Reporter, UniqueMessagePositions, HideNonSensicalMessages:
       val errors: scm.ListBuffer[Diagnostic] = scm.ListBuffer()
@@ -55,10 +53,6 @@ case class Compilation
     .within:
       val separator: Text = Properties.path.separator().show
       
-      val classpathText: Text = classpath.map: path =>
-        if path.is[Directory] then t"${path.fullname}/" else path.fullname
-      .join(separator)
-    
       val callbackApi = new dtdi.CompilerCallback:
         override def onClassGenerated
             (source: dtdi.SourceFile, generatedClass: dtdi.AbstractFile, className: String)
@@ -75,16 +69,16 @@ case class Compilation
 
           setup(Array[String]("-d", out.fullname.s, "-deprecation", "-feature", "-Wunused:all",
               "-new-syntax", "-Yrequire-targetName", "-Ysafe-init", "-Yexplicit-nulls", "-Xmax-inlines", "64",
-              "-Ycheck-all-patmat", "-classpath", classpathText.s, ""), ctx).map(_(1)).get
+              "-Ycheck-all-patmat", "-classpath", classpath().s, ""), ctx).map(_(1)).get
         
-        def run(classpath: Text): List[Diagnostic] =
+        def run(classpath: LocalClasspath): List[Diagnostic] =
           val ctx = currentCtx.fresh
           
           val ctx2 = ctx
             .setReporter(reporter)
             .setCompilerCallback(callbackApi)
             .setSetting(ctx.settings.language, Nil)
-            .setSetting(ctx.settings.classpath, classpath.s)
+            .setSetting(ctx.settings.classpath, classpath().s)
           
           val sourceFiles: List[dtdu.SourceFile] = sources.to(List).map: (name, content) =>
             dtdu.SourceFile.virtual(name.s, content.s)
@@ -95,7 +89,7 @@ case class Compilation
           
           reporter.errors.to(List)
       
-      driver.run(classpathText)
+      driver.run(classpath)
           
             
 enum CompileResult:
