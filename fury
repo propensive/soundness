@@ -3,6 +3,7 @@
 
 repo propensive/digression
 repo propensive/serpentine
+repo propensive/ambience
 repo propensive/probably
 repo propensive/anticipation
 
@@ -12,7 +13,7 @@ project hellenism
   module core
     compiler  scala
     sources   src/core
-    include   digression/core serpentine/core anticipation/url turbulence/core
+    include   digression/core serpentine/core anticipation/url turbulence/core ambience/core
 
   module test
     compiler  scala

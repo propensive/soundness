@@ -21,6 +21,7 @@ import vacuous.*
 import serpentine.*
 import fulminate.*
 import spectacular.*
+import ambience.*
 import gossamer.*
 import perforate.*
 import anticipation.*
@@ -78,10 +79,34 @@ class Classloader(val java: ClassLoader):
 object Classpath:
   @targetName("child")
   def /(child: PathName[ClasspathRef.Forbidden]): ClasspathRef = ClasspathRef(List(child))
- 
-class Classpath(urlClassloader: jn.URLClassLoader):
-  def entries: List[ClasspathEntry] =
-    urlClassloader.let(_.getURLs.nn.to(List)).or(Nil).map(_.nn).flatMap(ClasspathEntry(_).option)
+
+  def apply(classloader: jn.URLClassLoader): Classpath =
+    val entries = classloader.let(_.getURLs.nn.to(List)).or(Nil).map(_.nn).flatMap(ClasspathEntry(_).option)
+    
+    if entries.exists:
+      case _: ClasspathEntry.Url => true
+      case _                     => false
+    then OnlineClasspath(entries)
+    else LocalClasspath:
+      entries.collect:
+        case directory: ClasspathEntry.Directory      => directory
+        case jar: ClasspathEntry.Jarfile              => jar
+        case runtime: ClasspathEntry.JavaRuntime.type => runtime
+
+trait Classpath:
+  def entries: List[ClasspathEntry]
+
+case class OnlineClasspath(entries: List[ClasspathEntry]) extends Classpath
+
+case class LocalClasspath
+    (entries: List[ClasspathEntry.Directory | ClasspathEntry.Jarfile | ClasspathEntry.JavaRuntime.type])
+extends Classpath:
+  def apply()(using SystemProperties): Text =
+    entries.flatMap:
+      case ClasspathEntry.Directory(directory) => List(directory)
+      case ClasspathEntry.Jarfile(jarfile)     => List(jarfile)
+      case _                                   => Nil
+    .join(unsafely(Properties.path.separator()))
 
 object ClasspathRef:
   type Forbidden = "" | ".*\\/.*"
