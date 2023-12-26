@@ -56,12 +56,12 @@ enum UnusedFeature[CompilerType](val name: Text):
   case Linted extends UnusedFeature[3.3](t"linted")
 
 package scalacOptions:
-
   val newSyntax = CompileOption[ScalacVersions](t"-new-syntax")
 
   package warnings:
     val feature = CompileOption[ScalacVersions](t"-feature")
     val deprecation = CompileOption[ScalacVersions](t"-deprecation")
+    val implausiblePatterns = CompileOption[3.3](t"-Wimplausible-patterns")
     
     def unused[CompilerType <: ScalacVersions](selection: Unused[CompilerType]) =
       val option = selection match
@@ -82,8 +82,16 @@ package scalacOptions:
 
   package language:
     package experimental:
+      val clauseInterleaving = CompileOption[3.3 | 3.4](t"-language:experimental.clauseInterleaving")
       val givenLoopPrevention = CompileOption[3.4](t"-language:experimental.givenLoopPrevention")
+      val fewerBraces = CompileOption[3.1 | 3.2 | 3.3 | 3.4](t"-language:experimental.fewerBraces")
       val into = CompileOption[3.4](t"-language:experimental.into")
+      val relaxedExtensionImports = CompileOption[3.3](t"-language:experimental.relaxedExtensionImports")
+      val erasedDefinitions = CompileOption[ScalacVersions](t"-language:experimental.erasedDefinitions")
+      val saferExceptions = CompileOption[3.2 | 3.3 | 3.4](t"-language:experimental.saferExceptions")
+      val namedTypeArguments = CompileOption[ScalacVersions](t"-language:experimental.namedTypeArguments")
+      val pureFunctions = CompileOption[3.3 | 3.4](t"-language:experimental.pureFunctions")
+      val captureChecking = CompileOption[3.3 | 3.4](t"-language:experimental.captureChecking")
 
 object Scalac:
   var Scala3: Compiler = new Compiler()
