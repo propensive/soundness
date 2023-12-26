@@ -21,6 +21,7 @@ import galilei.*
 import perforate.*
 import fulminate.*
 import ambience.*
+import gossamer.*
 import rudiments.*
 import spectacular.*
 import hellenism.*
@@ -34,22 +35,70 @@ import language.adhocExtensions
 object Compiler:
   private var Scala3 = new dotty.tools.dotc.Compiler()
 
-case class CompilationError() extends Error(msg"there was a compilation error")
+case class ScalacError() extends Error(msg"there was a compilation error")
 
-object Compilation:
+type ScalacVersions = 3.0 | 3.1 | 3.2 | 3.3 | 3.4 | 3.5
+
+case class CompileOption[CompilerType <: ScalacVersions](flags: Text*)
+
+enum Unused[CompilerType]:
+  case All extends Unused[3.1 | 3.2 | 3.3]
+  case None extends Unused[3.1 | 3.2 | 3.3]
+  case Subset[CompilerType <: 3.3](feature: UnusedFeature[CompilerType]*) extends Unused[CompilerType]
+
+enum UnusedFeature[CompilerType](val name: Text):
+  case Imports(strict: Boolean) extends UnusedFeature[3.3](t"imports")
+  case Privates extends UnusedFeature[3.3](t"privates")
+  case Locals extends UnusedFeature[3.3](t"locals")
+  case Explicits extends UnusedFeature[3.3](t"explicits")
+  case Implicits extends UnusedFeature[3.3](t"implicits")
+  case Params extends UnusedFeature[3.3](t"params")
+  case Linted extends UnusedFeature[3.3](t"linted")
+
+package scalacOptions:
+
+  val newSyntax = CompileOption[ScalacVersions](t"-new-syntax")
+
+  package warnings:
+    val feature = CompileOption[ScalacVersions](t"-feature")
+    val deprecation = CompileOption[ScalacVersions](t"-deprecation")
+    
+    def unused[CompilerType <: ScalacVersions](selection: Unused[CompilerType]) =
+      val option = selection match
+        case Unused.All               => t"-Wunused:all"
+        case Unused.None              => t"-Wunused:none"
+        case Unused.Subset(features*) => features.map(_.name).join(t"-Wunused:", t",", t"")
+
+      CompileOption[CompilerType](option)
+
+  package internal:
+    val requireTargetName = CompileOption[ScalacVersions](t"-Yrequire-targetName")
+    val safeInit = CompileOption[ScalacVersions](t"-Ysafe-init")
+    val explicitNulls = CompileOption[ScalacVersions](t"-Yexplicit-nulls")
+    val checkPatterns = CompileOption[ScalacVersions](t"-Ycheck-all-patmat")
+
+  package advanced:
+    def maxInlines(n: Int): CompileOption[ScalacVersions] = CompileOption(t"-Xmax-inlines", n.show)
+
+  package language:
+    package experimental:
+      val givenLoopPrevention = CompileOption[3.4](t"-language:experimental.givenLoopPrevention")
+      val into = CompileOption[3.4](t"-language:experimental.into")
+
+object Scalac:
   var Scala3: Compiler = new Compiler()
 
-case class Compilation
-    [CompilerType <: Double]
-    (sources: Map[Text, Text], classpath: LocalClasspath, out: Path):
-  def apply()(using SystemProperties): List[Diagnostic] raises CompilationError =
+case class Scalac
+    [CompilerType <: ScalacVersions]
+    (sources: Map[Text, Text], classpath: LocalClasspath, out: Path, options: List[CompileOption[CompilerType]]):
+  def apply()(using SystemProperties): List[Diagnostic] raises ScalacError =
     object reporter extends Reporter, UniqueMessagePositions, HideNonSensicalMessages:
       val errors: scm.ListBuffer[Diagnostic] = scm.ListBuffer()
       def doReport(diagnostic: Diagnostic)(using core.Contexts.Context): Unit = errors += diagnostic
     
     mitigate:
-      case SystemPropertyError(_) => CompilationError()
-      case IoError(_)             => CompilationError()
+      case SystemPropertyError(_) => ScalacError()
+      case IoError(_)             => ScalacError()
     .within:
       val separator: Text = Properties.path.separator().show
       
@@ -67,9 +116,9 @@ case class Compilation
           //val pluginParams = plugins
           //val jsParams = 
 
-          setup(Array[String]("-d", out.fullname.s, "-deprecation", "-feature", "-Wunused:all",
+          setup(Array[String]("-d", out.fullname.s, "-classpath", classpath().s, "-deprecation", "-feature", "-Wunused:all",
               "-new-syntax", "-Yrequire-targetName", "-Ysafe-init", "-Yexplicit-nulls", "-Xmax-inlines", "64",
-              "-Ycheck-all-patmat", "-classpath", classpath().s, ""), ctx).map(_(1)).get
+              "-Ycheck-all-patmat", ""), ctx).map(_(1)).get
         
         def run(classpath: LocalClasspath): List[Diagnostic] =
           val ctx = currentCtx.fresh
@@ -83,9 +132,9 @@ case class Compilation
           val sourceFiles: List[dtdu.SourceFile] = sources.to(List).map: (name, content) =>
             dtdu.SourceFile.virtual(name.s, content.s)
           
-          Compilation.Scala3.newRun(using ctx2).tap: run =>
+          Scalac.Scala3.newRun(using ctx2).tap: run =>
             run.compileSources(sourceFiles)
-            if !reporter.hasErrors then finish(Compilation.Scala3, run)(using ctx2)
+            if !reporter.hasErrors then finish(Scalac.Scala3, run)(using ctx2)
           
           reporter.errors.to(List)
       
