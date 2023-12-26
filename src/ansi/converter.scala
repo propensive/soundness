@@ -18,9 +18,10 @@ package punctuation
 
 import rudiments.*
 import gossamer.*
-import escapade.*, escapes.*, rendering.output
+import escapade.*, escapes.*
 import iridescence.*
 import harlequin.*
+import digression.*
 import spectacular.*
 import hieroglyph.*, textWidthCalculation.eastAsianScripts
 

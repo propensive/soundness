@@ -23,6 +23,7 @@ import perforate.*
 import symbolism.*
 import rudiments.*
 import anticipation.*
+import vacuous.*
 
 import errorHandlers.throwUnsafely
 
@@ -46,12 +47,12 @@ object Tests extends Suite(t"Punctuation tests"):
     
     test(t"get a bullet list"):
       Markdown.parse(t" - Item 1\n - Item 2")
-    .assert(_ == Markdown(BulletList(None, false, ListItem(Paragraph(Copy(t"Item 1"))),
+    .assert(_ == Markdown(BulletList(Unset, false, ListItem(Paragraph(Copy(t"Item 1"))),
         ListItem(Paragraph(Copy(t"Item 2"))))))
     
     test(t"get an ordered list"):
       Markdown.parse(t" 1. Item 1\n 2. Item 2")
-    .assert(_ == Markdown(BulletList(Some(1), false, ListItem(Paragraph(Copy(t"Item 1"))),
+    .assert(_ == Markdown(BulletList(1, false, ListItem(Paragraph(Copy(t"Item 1"))),
         ListItem(Paragraph(Copy(t"Item 2"))))))
 
     test(t"plain paragraph"):
@@ -92,13 +93,13 @@ object Tests extends Suite(t"Punctuation tests"):
       Markdown.parse(t"""```
                           |echo Hello World
                           |```""".s.stripMargin.show)
-    .assert(_ == Markdown(FencedCode(None, None, t"echo Hello World\n")))
+    .assert(_ == Markdown(FencedCode(Unset, Unset, t"echo Hello World\n")))
     
     test(t"a syntax-aware code block"):
       Markdown.parse(t"""```scala
                           |echo Hello World
                           |```""".s.stripMargin.show)
-    .assert(_ == Markdown(FencedCode(Some(t"scala"), None, t"echo Hello World\n")))
+    .assert(_ == Markdown(FencedCode(t"scala", Unset, t"echo Hello World\n")))
     
     test(t"a link"):
       Markdown.parse(t"Take a look [here](http://example.com/)")
@@ -116,7 +117,7 @@ object Tests extends Suite(t"Punctuation tests"):
     
     test(t"indented content"):
       Markdown.parse(t"    This paragraph is\n    indented.\n")
-    .assert(_ == Markdown(FencedCode(None, None, t"This paragraph is\nindented.\n")))
+    .assert(_ == Markdown(FencedCode(Unset, Unset, t"This paragraph is\nindented.\n")))
     
     test(t"hard linebreak"):
       Markdown.parse(t"Line 1  \nLine 2\n")

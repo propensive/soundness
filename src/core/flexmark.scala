@@ -20,6 +20,7 @@ import rudiments.*
 import fulminate.*
 import anticipation.*
 import gossamer.*
+import vacuous.*
 import perforate.*
 import spectacular.*
 
@@ -64,8 +65,8 @@ object Markdown:
       case ThematicBreak()
       case Paragraph(children: Inline*)
       case Heading(level: 1 | 2 | 3 | 4 | 5 | 6, children: Inline*)
-      case FencedCode(lang: Option[Text], meta: Option[Text], value: Text)
-      case BulletList(numbered: Option[Int], loose: Boolean, children: ListItem*)
+      case FencedCode(lang: Optional[Text], meta: Optional[Text], value: Text)
+      case BulletList(numbered: Optional[Int], loose: Boolean, children: ListItem*)
       case Blockquote(children: Block*)
       case Reference(id: Text, location: Text)
       case Table(children: TablePart*)
@@ -173,7 +174,7 @@ object Markdown:
       (using Raises[MarkdownError])
       : Text =
     
-    Option(node.getReferenceNode(root)).fold(raise(MarkdownError(t"the image reference could not be resolved"))(t"https://example.com/")):  node =>
+    Optional(node.getReferenceNode(root)).lay(raise(MarkdownError(t"the image reference could not be resolved"))(t"https://example.com/")): node =>
       node.nn.getUrl.toString.show
 
   type PhrasingInput = cvfa.Emphasis | cvfa.StrongEmphasis | cvfa.Code | cvfa.HardLineBreak |
@@ -218,20 +219,20 @@ object Markdown:
     node match
       case node: cvfa.BlockQuote        => Blockquote(flowChildren(root, node)*)
       
-      case node: cvfa.BulletList        => BulletList(numbered = None, loose = node.isLoose,
+      case node: cvfa.BulletList        => BulletList(numbered = Unset, loose = node.isLoose,
                                                listItems(root, node)*)
       
-      case node: cvfa.CodeBlock         => FencedCode(None, None, node.getContentChars.toString.show)
-      case node: cvfa.IndentedCodeBlock => FencedCode(None, None, node.getContentChars.toString.show)
+      case node: cvfa.CodeBlock         => FencedCode(Unset, Unset, node.getContentChars.toString.show)
+      case node: cvfa.IndentedCodeBlock => FencedCode(Unset, Unset, node.getContentChars.toString.show)
       case node: cvfa.Paragraph         => Paragraph(phraseChildren(root, node)*)
       
-      case node: cvfa.OrderedList       => BulletList(numbered = Some(1), loose = node.isLoose,
+      case node: cvfa.OrderedList       => BulletList(numbered = 1, loose = node.isLoose,
                                                listItems(root, node)*)
       
       case node: cvfa.ThematicBreak     => ThematicBreak()
       
-      case node: cvfa.FencedCodeBlock   => FencedCode(if node.getInfo.toString.show == t"" then None
-                                               else Some(node.getInfo.toString.show), None,
+      case node: cvfa.FencedCodeBlock   => FencedCode(if node.getInfo.toString.show == t"" then Unset
+                                               else node.getInfo.toString.show, Unset,
                                                node.getContentChars.toString.show)
       
       case node: cvfa.Heading           => node.getLevel match

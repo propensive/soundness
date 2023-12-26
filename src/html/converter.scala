@@ -18,6 +18,7 @@ package punctuation
 
 import honeycomb.*
 import rudiments.*
+import vacuous.*
 import perforate.*
 import symbolism.*
 import anticipation.*
@@ -75,7 +76,7 @@ open class HtmlConverter():
     case Markdown.Ast.Block.ThematicBreak()                 => Seq(Hr)
     case Markdown.Ast.Block.FencedCode(syntax, meta, value) => Seq(Pre(honeycomb.Code(escape(value))))
     case Markdown.Ast.Block.Reference(_, _)                 => Seq()
-    case Markdown.Ast.Block.BulletList(num, _, _, items*)   => Seq((if num.isEmpty then Ul else Ol)(
+    case Markdown.Ast.Block.BulletList(num, _, _, items*)   => Seq((if num.absent then Ul else Ol)(
                                                                    items.flatMap(listItem)*))
     case Markdown.Ast.Block.Table(parts*)                   => Seq(Table(parts.flatMap(tableParts)))
     case other                                              => Seq()
