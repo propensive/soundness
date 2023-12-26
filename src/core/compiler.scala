@@ -123,10 +123,8 @@ case class Scalac
           val ctx = initCtx.fresh
           //val pluginParams = plugins
           //val jsParams = 
-
-          setup(Array[String]("-d", out.fullname.s, "-classpath", classpath().s, "-deprecation", "-feature", "-Wunused:all",
-              "-new-syntax", "-Yrequire-targetName", "-Ysafe-init", "-Yexplicit-nulls", "-Xmax-inlines", "64",
-              "-Ycheck-all-patmat", ""), ctx).map(_(1)).get
+          val args: List[Text] = List(t"-d", out.fullname, t"-classpath", classpath()) ::: options.flatMap(_.flags) ::: List(t"")
+          setup(args.map(_.s).to(Array), ctx).map(_(1)).get
         
         def run(classpath: LocalClasspath): List[Diagnostic] =
           val ctx = currentCtx.fresh
