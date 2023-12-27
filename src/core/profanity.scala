@@ -229,19 +229,17 @@ trait TerminalSizeDetection:
 
 def terminal
     [ResultType]
-    (block: Terminal ?=> ResultType)
+    (block: (terminal: Terminal) ?=> ResultType)
     (using context: ProcessContext, monitor: Monitor)
     (using BracketedPasteMode, BackgroundColorDetection, TerminalFocusDetection, TerminalSizeDetection)
     : ResultType =
-  given term: Terminal = Terminal(context.signals)
+  given terminal: Terminal = Terminal(context.signals)
   if summon[BackgroundColorDetection]() then Out.print(Terminal.reportBackground)
   if summon[TerminalFocusDetection]() then Out.print(Terminal.enableFocus)
   if summon[BracketedPasteMode]() then Out.print(Terminal.enablePaste)
   if summon[TerminalSizeDetection]() then Out.print(Terminal.reportSize)
   
-  try block(using term) finally
+  try block(using terminal) finally
     if summon[BracketedPasteMode]() then Out.print(Terminal.disablePaste)
     if summon[TerminalFocusDetection]() then Out.print(Terminal.disableFocus)
 
-
-inline def tty(using inline tty: Terminal): Terminal = tty
