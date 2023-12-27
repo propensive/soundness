@@ -168,20 +168,21 @@ extends Stdio:
       case Signal.Winch => print(Terminal.reportSize)
       case _            => ()
 
-  def events: LazyList[TerminalEvent]^{monitor} = keyboard.process(In.stream[Char]).multiplexWith(signals).map:
-    case resize@TerminalInfo.WindowSize(rows2, columns2) =>
-      rows = rows2
-      initRows.offer(rows2)
-      columns = columns2
-      initColumns.offer(columns2)
-      resize
-    
-    case bgColor@TerminalInfo.BgColor(red, green, blue) =>
-      mode = if (0.299*red + 0.587*green + 0.114*blue) > 32768 then TerminalMode.Light else TerminalMode.Dark
-      bgColor
+  def events: LazyList[TerminalEvent]^{monitor} = LazyList.defer:
+    keyboard.process(In.stream[Char]).multiplexWith(signals).map:
+      case resize@TerminalInfo.WindowSize(rows2, columns2) =>
+        rows = rows2
+        initRows.offer(rows2)
+        columns = columns2
+        initColumns.offer(columns2)
+        resize
+      
+      case bgColor@TerminalInfo.BgColor(red, green, blue) =>
+        mode = if (0.299*red + 0.587*green + 0.114*blue) > 32768 then TerminalMode.Light else TerminalMode.Dark
+        bgColor
 
-    case other =>
-      other
+      case other =>
+        other
 
 package terminalOptions:
   given bracketedPasteMode: BracketedPasteMode = () => true
