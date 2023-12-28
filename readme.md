@@ -31,10 +31,17 @@ Acyclicity provides a monadic representation of a directed, acyclic graph (DAG) 
 generating [DOT](https://bit.ly/3vFumLW) files which can be rendered with tools such as
 [GraphViz](https://graphviz.org/).
 
+All Acyclicity terms and types are defined in the `acyclicity` package.
+```scala
+import acyclicity.*
+```
+
 The `Dag[T]` type represents a mapping from nodes of type `T` to zero, one or many other nodes in the graph, and
 can be constructed by providing the mapping from each node to its `Set` of dependent nodes, or by calling,
 ```scala
-Dag.from(nodes)(fn)
+val nodes: Set[Int] = Set(2, 3, 4, 5, 10, 15, 30)
+def fn(n: Int): Set[Int] = (0 until n).filter(n%_ == 0).to(Set)
+val dag = Dag(nodes)(fn)
 ```
 where `nodes` is a `Set` of nodes, and `fn` is a function from each node to its dependencies.
 
@@ -54,7 +61,7 @@ val factors = Dag(
 
 A `Dag[T]` may be mapped to a `Dag[S]` with a function `T => S`, like so:
 ```scala
-factors.map(_*10)
+val dag2 = factors.map(_*10)
 ```
 
 Care should be taken when more than one node in the domain maps to a single node in the range, but both incoming
@@ -79,13 +86,16 @@ A list of nodes will be returned in topologically-sorted order by calling `Dag#s
 
 ### DOT output
 
-An extension method, `dot`, on `Dag`s of `String`s will produce a `Dot` instance, an AST of the DOT code
-necessary to render a graph. This can then be serialized to a `String` with the `serialize` method.
+An extension method, `dot`, on `Dag`s of `Text`s will produce a `Dot` instance, an AST of the DOT code
+necessary to render a graph. This can then be serialized to a `Text` with the `serialize` method.
 
-Typical usage would be to first convert a `Dag[T]` to a `Dag[String]`, then produce the `Dot` instance and
+Typical usage would be to first convert a `Dag[T]` to a `Dag[Text]`, then produce the `Dot` instance and
 serialize it, for example:
 ```scala
-println(dag.map(_.name).dot.serialize)
+import spectacular.show
+
+@main
+def graph() = println(dag.map(_.show).dot.serialize)
 ```
 
 ### Limitations
