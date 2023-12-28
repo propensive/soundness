@@ -1,10 +1,20 @@
+All Ambience terms and types are in the `ambience` package.
+
+```scala
+import ambience.*
+````
+
+All other entities are imported explicitly.
+
 ### Environment Variables
 
 An environment variable, such as `XDG_DATA_DIRS`, can be accessed by applying
 it as a `Text` value, to the `Environment` object, like so:
 ```scala
-import ambience.*, gossamer.*
+import gossamer.t
 import environments.jvm
+import perforate.errorHandlers.throwUnsafely
+
 val xdgDataDirs = Environment(t"XDG_DATA_DIRS")
 ```
 
@@ -52,7 +62,9 @@ We can, of course, provide one. The `EnvironmentVariable` trait defines two meth
 
 Here is an example implementation for a process ID:
 ```scala
-import spectacular.*
+import anticipation.Text
+import rudiments.Pid
+import spectacular.decodeAs
 
 given EnvironmentVariable["child", Pid] with
   def read(value: Text): Pid = Pid(value.decodeAs[Int])
@@ -93,6 +105,9 @@ variable is not specified. It is distinct from the empty string.
 For example, given a `Map[Text, Text]` of environment variables, `vars`, we
 could create a new `Environment` with the following `given` definition:
 ```scala
+import vacuous.Unset
+
+val vars = Map(t"HOME" -> t"/home/root")
 given Environment = vars.getOrElse(_, Unset)
 ```
 
@@ -121,6 +136,8 @@ slightly different from `Environment`, though: since property names use a
 "dotted" format, they can be accessed as dynamic members of the `Properties`
 object, for example,
 ```scala
+import systemProperties.jvm
+
 val home = Properties.user.home()
 ```
 or,
