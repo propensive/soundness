@@ -29,6 +29,11 @@ Gesticulate has not yet been published as a binary.
 
 ### `MediaType`
 
+All terms and types are defined in the `gesticulate` package:
+```scala
+import gesticulate.*
+```
+
 Gesticulate primarily provides the `MediaType` type, consisting of:
  - a main "type" (called `group` to avoid a conflict with Scala's `type` keyword)
  - a subtype
@@ -55,11 +60,13 @@ Parameters may be any key/value pair, and are represented as a `List[(String, St
 The media type for XHTML, encoded as `UTF-8`, which would normally be written as
 `application/xhtml+xml; charset=UTF-8` may be represented as the case class instance,
 ```scala
-MediaType(
+import gossamer.t
+
+val mediaType = MediaType(
   group = Media.Group.Application,
-  subtype = Media.Subtype.Standard("xhtml"),
+  subtype = Media.Subtype.Standard(t"xhtml"),
   suffixes = List(Media.Suffix.Xml),
-  parameters = List("charset" -> "UTF-8")
+  parameters = List(t"charset" -> t"UTF-8")
 )
 ```
 
