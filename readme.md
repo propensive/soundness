@@ -30,6 +30,11 @@ Spectacular has not yet been published as a binary.
 
 ## Getting Started
 
+All Spectacular terms and types are defined in the `spectacular` package:
+```scala
+import spectacular.*
+```
+
 ### `Show` and `Debug`
 
 Given a value of some type, e.g. a value `artifact` of type `Artifact`, calling
@@ -83,9 +88,11 @@ typeclass will be used as a fallback, and `toString` as a last resort.
 
 For example, the case class,
 ```scala
+import anticipation.Text
+
 class Id(id: String) { override def toString(): String = id }
 case class Person(id: Id, name: Text, age: Int)
-Person(Id("jqm"), t"Jennifer", 61).debug
+val person = Person(Id("jqm"), t"Jennifer", 61).debug
 ```
 will produce the text,
 ```
@@ -105,8 +112,11 @@ scenarios, and without specifying, Spectacular will not presume any particular
 But by importing a `BooleanStyle` value from the `spectacular.booleanStyles`
 package, a style can be chosen, for example,
 ```scala
+import turbulence.Out
+import turbulence.stdioSources.jvm
 import booleanStyles.yesNo
-Io.println(true.show)
+
+def run(): Unit = Out.println(true.show)
 ```
 will print the text `yes`.
 
