@@ -54,8 +54,6 @@ For example, the methods `Hsl#srgb` and `Srgb#xyz` both exist, but `Hsl#xyz` is 
 
 Here are some examples:
 ```scala
-import iridescence.*
-
 val DeepPink: Srgb = Srgb(1, 0.078, 0.576)
 val Gold: Hsv = Srgb(1, 0.843, 0).hsv
 val Gold2: Cmyk = Gold.srgb.cmyk
