@@ -34,6 +34,11 @@ and DAGs such as this:
 Dendrology is versatile, and can represent data in a variety of input and output types, so long as methods are
 specified for working with those types.
 
+All Dendrology terms and types are in the `dendrology` package.
+```scala
+import dendrology.*
+```
+
 ## Trees
 
 To create a tree, all we need is the root node (or nodes), of some type, and a way to access a node's children
@@ -44,6 +49,13 @@ be used.
 Dendrology makes it possible to define the method for accessing a node's children in two ways: either as a
 lambda when a `TreeDiagram` is constructed, like so,
 ```scala
+import anticipation.Text
+
+case class Person(name: Text, age: Int, children: List[Person])
+val daughter = Person(t"Jill", 7, List())
+val son = Person(t"Jack", 9, List())
+val headOfFamily = Person(t"John", 37, List(son, daughter))
+
 val diagram = TreeDiagram.by[Person](person => person.children)(headOfFamily)
 ```
 or alternatively through a contextual instance of the typeclass `Expandable` for the given node type. Types
@@ -51,7 +63,7 @@ which are naturally hierarchical can, of course, define their own `Expandable` i
 tree-structures without the need to specify how child nodes should be accessed. For example:
 ```scala
 given Expandable[Person] = _.children
-val diagram = TreeDiagram(headOfFamily)
+val diagram2 = TreeDiagram(headOfFamily)
 ```
 
 It's possible to include multiple root nodes as parameters to `TreeDiagram`, which will appear as top-level
@@ -65,12 +77,12 @@ parameter, a lambda for converting from the type of the nodes, `NodeType`, to a 
 
 For example, we could write,
 ```scala
-given Expandable[Person] = _.children
-val diagram = TreeDiagram(headOfFamily)
-
 import treeStyles.default
-val lines = diagram.render(_.name)
-lines.foreach(Out.println(_))
+
+val lines = diagram2.render(_.name)
+@main
+def run(): Unit =
+  lines.foreach(Out.println(_))
 ```
 
 The algorithm performs a depth-first traversal of the data, mapping each node to a line, and flattening the data
@@ -110,8 +122,10 @@ lazily, and provides a strict `List`.
 
 Here is the full code used to create the example DAG above:
 ```scala
-import acyclicity.*
-import dendrology.*, dagStyles.default
+import acyclicity.Dag
+import gossamer.t
+import turbulence.Out, turbulence.stdioSources.jvm
+import dagStyles.default
 
 val dag = Dag(
   t"Any"       -> Set(),
@@ -127,5 +141,7 @@ val dag = Dag(
   t"Nothing"   -> Set(t"Null", t"Unit", t"Boolean", t"Int")
 )
 
-DagDiagram(dag).render { node => t"▪ $node" }.foreach(Out.println(_))
+@main
+def run2(): Unit =
+  DagDiagram(dag).render { node => t"▪ $node" }.foreach(Out.println(_))
 ```
