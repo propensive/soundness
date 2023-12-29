@@ -1,6 +1,6 @@
 # This is a buildfile for Fury or Wrath.
 # More information is available at: https://github.com/propensive/wrath/
-target anthology/scalac
+target anthology/scala
 
 repo propensive/probably
 repo propensive/larceny
@@ -20,4 +20,8 @@ project anthology
     compiler  scala
     sources   src/kotlin
     include   rudiments/core galilei/core ambience/core hellenism/core
+    lib       kotlin-compiler https://repo1.maven.org/maven2/org/jetbrains/kotlin/kotlin-compiler/1.9.22/kotlin-compiler-1.9.22.jar
+    lib       kotlin-script-runtime https://repo1.maven.org/maven2/org/jetbrains/kotlin/kotlin-script-runtime/1.9.22/kotlin-script-runtime-1.9.22.jar
+    lib       kotlin-stdlib https://repo1.maven.org/maven2/org/jetbrains/kotlin/kotlin-stdlib-jdk8/1.9.22/kotlin-stdlib-jdk8-1.9.22.jar
+    lib       kotlin-reflect https://repo1.maven.org/maven2/org/jetbrains/kotlin/kotlin-reflect/1.6.10/kotlin-reflect-1.6.10.jar
 
