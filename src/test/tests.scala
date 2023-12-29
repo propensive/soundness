@@ -75,8 +75,8 @@ object Tests extends Suite(t"Chiaroscuro tests"):
         import hieroglyph.textWidthCalculation.uniform
         import escapade.*
         import turbulence.*
-        import basicIo.jvm
-        Out.println(result.out)
+        import stdioSources.jvm
+        Out.println(result.display)
 
         result
       .assert(_ == Identical(t""))
