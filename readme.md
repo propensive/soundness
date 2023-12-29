@@ -26,6 +26,11 @@ Chiaroscuro has not yet been published as a binary.
 
 ## Getting Started
 
+All Chiaroscuro terms and types are defined in the `chiaroscuro` package:
+```scala
+import chiaroscuro.*
+```
+
 Two values of the same type can be compared with the `contrastWith` method,
 provided by Chiaroscuro. This will return an instance of `Semblance`,
 describing the similarity of one value with the other, and will be one of three
@@ -99,6 +104,14 @@ between similar elements.
 
 For example, consider the board members of an imaginary company,
 ```scala
+import anticipation.Text
+import gossamer.t
+
+enum Role:
+  case Ceo, Cto, Coo, Cmo, Cfo
+
+case class Member(role: Role, name: Text)
+
 val boardMembers: List[Member] = List(
   Member(Role.Ceo, t"Jane"),
   Member(Role.Cto, t"Leopold"),
