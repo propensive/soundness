@@ -28,6 +28,11 @@ Gastronomy has not yet been published as a binary.
 
 ## Getting Started
 
+All Gastronomy terms and types are defined in the `gastronomy` package:
+```scala
+import gastronomy.*
+```
+
 __Gastronomy__ provides representations of public, private and symmetric keys which offer a number
 of cryptographic methods:
 
@@ -52,6 +57,7 @@ random keys.
 
 Given, for example, a `PrivateKey[Dsa[1024]]` instance, `key`, data may be signed with, for example,
 ```scala
+val key: PrivateKey[Dsa[1024]] = ???
 val signature: Signature[Dsa[1024]] = key.sign(data)
 ```
 This works for any value, `data`, that has an appropriate `ByteCodec` instance. The type parameter
