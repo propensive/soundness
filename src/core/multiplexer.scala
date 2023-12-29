@@ -113,7 +113,7 @@ extension [ElementType](stream: LazyList[ElementType])
 
   def cluster
       [DurationType: GenericDuration]
-      (duration: DurationType, maxSize: Optional[Int])(using Monitor)
+      (duration: DurationType, maxSize: Optional[Int] = Unset)(using Monitor)
       : LazyList[List[ElementType]] =
     val Limit = maxSize.or(Int.MaxValue)
     
