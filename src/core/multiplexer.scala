@@ -112,42 +112,27 @@ extension [ElementType](stream: LazyList[ElementType])
     LazyList.defer(recur(true, stream.map(Some(_)).multiplexWith(tap.stream), Nil))
 
   def cluster
-      [DurationType: SpecificDuration: GenericDuration]
-      (duration: DurationType, maxSize: Optional[Int] = Unset, maxDelay: Optional[DurationType] = Unset)
-      (using Monitor)
+      [DurationType: GenericDuration]
+      (duration: DurationType, maxSize: Optional[Int])(using Monitor)
       : LazyList[List[ElementType]] =
+    val Limit = maxSize.or(Int.MaxValue)
     
-    def defer
-        (stream: LazyList[ElementType], list: List[ElementType], expiry: Long)
-        : LazyList[List[ElementType]] =
-      
-      recur(stream, list, expiry)
-
-    @tailrec
-    def recur
-        (stream: LazyList[ElementType], list: List[ElementType], expiry: Long)
-        : LazyList[List[ElementType]] =
-      if list.isEmpty then
-        val expiry2: Long =
-          maxDelay.option.map(_.milliseconds).fold(Long.MaxValue)(_ + System.currentTimeMillis)
+    def recur(stream: LazyList[ElementType], list: List[ElementType], count: Int): LazyList[List[ElementType]] =
+      count match
+        case 0 => safely(Async(stream.isEmpty).await()) match
+          case Unset => recur(stream, Nil, 0)
+          case false => recur(stream.tail, stream.head :: list, count + 1)
+          case true  => LazyList()
         
-        if stream.isEmpty then LazyList() else recur(stream.tail, List(stream.head), expiry2)
-      
-      else
-        val hasMore: Async[Boolean] = Async(!stream.isEmpty)
-
-        val recurse: Option[Boolean] =
-          try throwErrors:
-            val deadline: Long = duration.milliseconds.min(expiry - System.currentTimeMillis).max(0)
-            if hasMore.await(SpecificDuration(deadline)) then Some(true) else None
-          catch case err: (TimeoutError | CancelError) => Some(false)
-
-        // The try/catch above seems to fool tail-call identification
-        if recurse.isEmpty then LazyList(list)
-        else if recurse.get then recur(stream.tail, stream.head :: list, expiry)
-        else list.reverse #:: defer(stream, Nil, Long.MaxValue)
+        case Limit =>
+          list.reverse #:: recur(stream, Nil, 0)
+        
+        case _ => safely(Async(stream.isEmpty).await(duration)) match
+          case Unset => list.reverse #:: recur(stream, Nil, 0)
+          case false => recur(stream.tail, stream.head :: list, count + 1)
+          case true  => LazyList(list.reverse)
     
-    LazyList.defer(recur(stream, Nil, Long.MaxValue))
+    LazyList.defer(recur(stream, Nil, 0))
 
   def parallelMap[ElementType2](fn: ElementType => ElementType2)(using Monitor): LazyList[ElementType2] =
     val out: Funnel[ElementType2] = Funnel()
