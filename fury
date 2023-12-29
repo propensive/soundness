@@ -1,6 +1,6 @@
 # This is a buildfile for Fury or Wrath.
 # More information is available at: https://github.com/propensive/wrath/
-target anthology/core
+target anthology/scalac
 
 repo propensive/probably
 repo propensive/larceny
@@ -11,8 +11,13 @@ repo propensive/symbolism
 repo propensive/vacuous
 
 project anthology
-  module core
+  module scala
     compiler  scala
-    sources   src/core
+    sources   src/scala
+    include   rudiments/core galilei/core ambience/core hellenism/core
+
+  module kotlin
+    compiler  scala
+    sources   src/kotlin
     include   rudiments/core galilei/core ambience/core hellenism/core
 
