@@ -113,7 +113,7 @@ extension (words: Iterable[Text])
   def snake: Text = words.join(Text("_"))
   def kebab: Text = words.join(Text("-"))
 
-extension [TextType](using textual: Textual[TextType])(text: TextType)
+extension [TextType](text: TextType)(using textual: Textual[TextType])
   inline def length: Int = textual.string(text).length
   inline def populated: Optional[TextType] = if textual.string(text).length == 0 then Unset else text
   inline def lower: TextType = textual.map(text, _.toLower)
