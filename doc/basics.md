@@ -1,3 +1,8 @@
+All Parasite terms and types are defined in the `parasite` package:
+```scala
+import parasite.*
+```
+
 A Parasite task, an instance of `Async`, is similar to a Scala or Java
 `Future`: it encapsulates a block of code which it starts executing
 immediately, and once evaluated, holds the result. There are, however, a few
@@ -5,11 +10,13 @@ differences.
 
 We can create one inside a `supervise` block with:
 ```scala
-import parasite.*
+import perforate.errorHandlers.throwUnsafely
 
-supervise:
+def slowTask(): Unit = ???
+
+def run() = supervise:
   val async = Async:
-    someSlowTask()
+    slowTask()
 ```
 
 This creates a new `Async[ResultType]` where `ResultType` is the return type of
