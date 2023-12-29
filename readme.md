@@ -47,7 +47,7 @@ types, like `List` or `IArray` can result in semblances which are neither
 The three cases of `Semblance` are defined as follows:
 - `Identical(value: Text)`
 - `Different(left: Text, right: Text)`
-- `Breakdown(comparison: IArray[(Text, Semblance)], left: Text, right: Text)
+- `Breakdown(comparison: IArray[(Text, Semblance)], left: Text, right: Text)`
 
 `Identical` includes just a textual representation of the two identical values.
 `Different` includes textual representations of _both_ values, since they will
