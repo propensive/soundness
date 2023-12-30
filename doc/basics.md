@@ -143,3 +143,4 @@ and a good implementation can dramatically improve the readability of the
 - `Json` objects with equal `"id"` fields to be similar
 - a choice the same case of an enum (regardless of parameters) to indicate similarity
 
+
