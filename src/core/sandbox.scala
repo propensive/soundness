@@ -24,7 +24,7 @@ import turbulence.*
 import rudiments.*
 import vacuous.*
 import fulminate.*
-import ambience.*, systemProperties.jvm
+import ambience.*, systemProperties.virtualMachine
 import gossamer.*
 import inimitable.*
 import hieroglyph.*, charDecoders.utf8, charEncoders.utf8
@@ -74,7 +74,7 @@ inline def external
       
       unsafely: raises ?=>
         import hieroglyph.charEncoders.utf8
-        val wd: WorkingDirectory = workingDirectories.jvm
+        val wd: WorkingDirectory = workingDirectories.virtualMachine
         val log: Log[Text] = logging.silent
         val serializer = summonInline[JsonSerializer[InputType]]
         val in = MinimalSerializer.serialize(input.json(using serializer).root).s
