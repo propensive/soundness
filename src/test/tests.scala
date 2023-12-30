@@ -21,7 +21,7 @@ import rudiments.*
 import gossamer.*
 import acyclicity.*
 import anticipation.*
-import turbulence.*, stdioSources.jvm
+import turbulence.*, stdioSources.virtualMachine
 
 import unsafeExceptions.canThrowAny
 
