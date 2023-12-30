@@ -24,8 +24,8 @@ import eucalyptus.*, logging.stdout
 import rudiments.*
 import perforate.*
 import hieroglyph.*, charEncoders.utf8
-import turbulence.*, stdioSources.jvm
-import ambience.*, environments.jvm
+import turbulence.*, stdioSources.virtualMachine
+import ambience.*, environments.virtualMachine
 
 import java.io as ji
 
