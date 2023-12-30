@@ -24,7 +24,7 @@ import parasite.*
 import vacuous.*
 import perforate.*
 import anticipation.*
-import turbulence.*, stdioSources.jvm
+import turbulence.*, stdioSources.virtualMachine
 import hieroglyph.*, charEncoders.utf8
 import eucalyptus.*, logging.stdout
 
