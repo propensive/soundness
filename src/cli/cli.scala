@@ -22,13 +22,13 @@ import perforate.*
 import rudiments.*
 import vacuous.*
 import anticipation.*
-import ambience.*, environments.jvm
+import ambience.*, environments.virtualMachine
 import hieroglyph.*, textWidthCalculation.uniform
 
 import language.adhocExtensions
 
 abstract class Suite(suiteName: Text) extends TestSuite(suiteName):
-  val suiteIo = safely(stdioSources.jvm).vouch(using Unsafe)
+  val suiteIo = safely(stdioSources.virtualMachine).vouch(using Unsafe)
 
   // FIXME: This seems to introduce a ghost ambiguity on the previous line
   // It should be moved back to the top-level as soon as it works
