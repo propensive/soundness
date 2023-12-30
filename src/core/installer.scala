@@ -88,7 +88,7 @@ object Installer:
       case NumberError(_, _)        => InstallError(InstallError.Reason.Environment)
     .within:
       import workingDirectories.default
-      import systemProperties.jvm
+      import systemProperties.virtualMachine
       val command: Text = service.scriptName
       val scriptPath = sh"sh -c 'command -v $command'".exec[Text]()
 

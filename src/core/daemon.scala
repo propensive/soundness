@@ -37,7 +37,7 @@ import guillotine.*
 import hellenism.*, classloaders.threadContext
 import surveillance.*
 import eucalyptus.*
-import ambience.*, systemProperties.jvm
+import ambience.*, systemProperties.virtualMachine
 import spectacular.*
 
 import scala.collection.mutable as scm
@@ -82,7 +82,7 @@ def daemon[BusType <: Matchable]
     (using interpreter: CliInterpreter, stderrSupport: StderrSupport = daemonConfig.supportStderr)
     : Unit =
 
-  import environments.jvm
+  import environments.virtualMachine
   import errorHandlers.throwUnsafely
 
   val name: Text = Properties.spectral.name[Text]()
@@ -231,7 +231,7 @@ def daemon[BusType <: Matchable]
               exitPromise, busFunnel, stderrPromise)
 
   application(using executives.direct(using unhandledErrors.silent))(Nil):
-    import stdioSources.jvm
+    import stdioSources.virtualMachine
     import workingDirectories.default
 
     Async.onShutdown:
