@@ -171,7 +171,7 @@ object Tests extends Suite(t"Guillotine tests"):
 
     suite(t"Execution tests"):
 
-      given Environment = environments.jvm
+      given Environment = environments.virtualMachine
 
       test(t"Echo string"):
         sh"echo hello".exec[Text]()
