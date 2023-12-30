@@ -23,7 +23,7 @@ import anticipation.*
 import java.io as ji
 
 package stdioSources:
-  given jvm: Stdio = Stdio(System.out.nn, System.err.nn, System.in.nn)
+  given virtualMachine: Stdio = Stdio(System.out.nn, System.err.nn, System.in.nn)
 
 import language.experimental.captureChecking
 

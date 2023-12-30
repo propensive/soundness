@@ -30,7 +30,7 @@ package lineSeparation:
   given carriageReturnLinefeed: LineSeparation(NewlineSeq.CrLf, Skip, Lf, Nl, LfNl)
   given adaptiveLinefeed: LineSeparation(NewlineSeq.Lf, Nl, Nl, Nl, Nl)
   
-  given jvm: LineSeparation = System.lineSeparator.nn match
+  given virtualMachine: LineSeparation = System.lineSeparator.nn match
     case "\r\n"    => carriageReturnLinefeed
     case "\r"      => carriageReturn
     case "\n"      => linefeed
