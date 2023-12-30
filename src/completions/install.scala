@@ -27,7 +27,7 @@ import guillotine.*
 import fulminate.*
 import eucalyptus.*
 import turbulence.*
-import ambience.*, environments.jvm, systemProperties.jvm
+import ambience.*, environments.virtualMachine, systemProperties.virtualMachine
 import galilei.*, filesystemOptions.{dereferenceSymlinks, createNonexistent, createNonexistentParents,
     doNotOverwritePreexisting}
 

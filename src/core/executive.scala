@@ -96,7 +96,7 @@ package executives:
       (using interpreter: CliInterpreter)
         : CliInvocation =
       
-      CliInvocation(Cli.arguments(arguments), environments.jvm, workingDirectories.default, stdio, signals)
+      CliInvocation(Cli.arguments(arguments), environments.virtualMachine, workingDirectories.default, stdio, signals)
 
     def process(cli: CliInvocation)(exitStatus: CliType ?=> ExitStatus): ExitStatus =
       handler.handle(exitStatus(using cli))(using cli.stdio)
@@ -112,7 +112,7 @@ def application
     signals.foreach { signal => sm.Signal.handle(sm.Signal(signal.shortName.s), event => funnel.put(signal)) }
     funnel.stream
 
-  val cli = executive.cli(arguments, environments.jvm, workingDirectories.default, stdioSources.jvm, listen)
+  val cli = executive.cli(arguments, environments.virtualMachine, workingDirectories.default, stdioSources.virtualMachine, listen)
   
   System.exit(executive.process(cli)(block)())
 
