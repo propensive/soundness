@@ -19,7 +19,7 @@ package galilei
 import probably.*
 import gossamer.*
 import imperial.*
-import turbulence.*, stdioSources.jvm
+import turbulence.*, stdioSources.virtualMachine
 import eucalyptus.*
 import parasite.*
 import rudiments.*
@@ -29,7 +29,7 @@ import hieroglyph.*, charEncoders.utf8
 import perforate.*
 import vacuous.*
 import anticipation.*, fileApi.galileiApi
-import ambience.*, environments.jvm, systemProperties.jvm
+import ambience.*, environments.virtualMachine, systemProperties.virtualMachine
 
 import errorHandlers.throwUnsafely
 
