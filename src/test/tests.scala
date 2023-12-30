@@ -23,7 +23,7 @@ import spectacular.*
 import escapade.*
 import parasite.*
 import perforate.*, errorHandlers.throwUnsafely
-import turbulence.*, stdioSources.jvm
+import turbulence.*, stdioSources.virtualMachine
 
 object Tests extends Suite(t"Eucalyptus tests"):
   def run(): Unit =
