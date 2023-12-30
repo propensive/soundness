@@ -148,4 +148,3 @@ where the empty parentheses are necessary to signal that the path representing
 the property name has been specified, and its value should be retrieved. The
 retrieval itself works in much the same way as for environment variables.
 
-
