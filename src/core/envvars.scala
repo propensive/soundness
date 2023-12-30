@@ -33,7 +33,7 @@ trait Environment:
   def knownVariables: Set[Text] = Set()
 
 object Environment extends Dynamic:
-  given default(using Quickstart): Environment = environments.jvm
+  given default(using Quickstart): Environment = environments.virtualMachine
 
   def apply
       [VariableType]
@@ -124,5 +124,5 @@ package environments:
   given empty: Environment with
     def variable(name: Text): Unset.type = Unset
 
-  given jvm: Environment with
+  given virtualMachine: Environment with
     def variable(name: Text): Optional[Text] = Optional(System.getenv(name.s)).let(_.tt)

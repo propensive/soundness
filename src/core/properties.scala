@@ -34,7 +34,7 @@ trait SystemProperties:
   def apply(name: Text): Optional[Text]
 
 object Properties extends Dynamic:
-  given default(using Quickstart): SystemProperties = systemProperties.jvm
+  given default(using Quickstart): SystemProperties = systemProperties.virtualMachine
   
   def apply
       [PropertyType]
@@ -129,5 +129,5 @@ package systemProperties:
   given empty: SystemProperties with
     def apply(name: Text): Unset.type = Unset
 
-  given jvm: SystemProperties with
+  given virtualMachine: SystemProperties with
     def apply(name: Text): Optional[Text] = Optional(System.getProperty(name.s)).let(_.tt)
