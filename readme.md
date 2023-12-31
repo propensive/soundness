@@ -23,18 +23,27 @@ Escritoire has not yet been published as a binary.
 
 ## Getting Started
 
+All Escritoire terms and types are defined in the `escritoire` package:
+```scala
+import escritoire.*
+```
+
 Creating a table to be displayed in a monospaced font (e.g. for rendering in a console) is easy,
 and first requires a `Tabulation` instance to be defined, specifying each column and how it should
 be rendered.
 
 For example,
 ```scala
+import anticipation.Text
+import gossamer.t
+
 case class Person(name: Text, age: Int, active: Boolean)
 
-val table = Tabulation[Person](
-  Column("Name", _.name),
-  Column("Age", _.age),
-  Column("Active", p => if p.active then "Yes" else "No")
+val table = Table[Person](
+  Column(t"Name")(_.name),
+  Column(t"Age")(_.age),
+  Column(t"Active"): person =>
+    if person.active then t"Yes" else t"No"
 )
 ```
 describes a table of three columns, `Name`, `Age` and `Active`, defined for rows of type `Person`,
@@ -48,10 +57,17 @@ Given such a definition, any collection of instances of `Person`, `ps`, can be r
 
 For example,
 ```scala
-val persons = List(Person("Bill", 48, true), Person("Janet", 54, false))
-table.tabulate(100, persons)
+import turbulence.Out
+import turbulence.stdioSources.virtualMachine
+import escritoire.tableStyles.default
+import hieroglyph.textWidthCalculation.uniform
+
+val persons = List(Person(t"Bill", 48, true), Person(t"Janet", 54, false))
+
+def renderTable(): Unit =
+  table.tabulate(persons, 100).foreach(Out.println(_))
 ```
-will return a sequence of `Text`s which will print as,
+will return and print a sequence of `Text`s as,
 ```
 ┌───────┬─────┬────────┐
 │ Name  │ Age │ Active │
