@@ -17,6 +17,7 @@
 package camouflage
 
 import rudiments.*
+import vacuous.*
 
 import scala.collection.mutable as scm
 
