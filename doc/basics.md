@@ -118,3 +118,4 @@ The `Redirect` and `NotFound` case classes provide representations of an HTTP `3
 `Redirect` takes a single parameter, a representation of a location typically as a `Url` or a `String`, but
 other representations can be used provided a `ToLocation` for that type is in contextual scope.
 
+
