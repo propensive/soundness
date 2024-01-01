@@ -63,3 +63,4 @@ Media types may be parsed using `MediaType.parse(string)` which returns a `Media
 `InvalidMediaTypeError`. The `InvalidMediaTypeError.Nature` type encodes different varieties of
 parsing failure, should it be useful to distinguish between these.
 
+
