@@ -23,7 +23,6 @@ import spectacular.*
 import vacuous.*
 import perforate.*
 import anticipation.*
-import symbolism.*
 import larceny.*
 
 import unsafeExceptions.canThrowAny
