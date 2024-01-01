@@ -191,6 +191,7 @@ retrieval itself works in much the same way as for environment variables.
 
 
 
+
 ## Status
 
 Ambience is classified as __fledgling__. For reference, Scala One projects are
@@ -293,6 +294,6 @@ The logo depicts the upper atmosphere of an imagined planet, alluding to the syn
 
 ## License
 
-Ambience is copyright &copy; 2023 Jon Pretty & Propensive O&Uuml;, and
+Ambience is copyright &copy; 2024 Jon Pretty & Propensive O&Uuml;, and
 is made available under the [Apache 2.0 License](/license.md).
 
