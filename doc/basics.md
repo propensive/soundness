@@ -94,3 +94,4 @@ every substitution to be a `String`.
 These two extension methods produce a two-tuple and a three-tuple (respectively) of repetitions of the value it
 is applied to. This can be useful in a subsequent `map` operation.
 
+
