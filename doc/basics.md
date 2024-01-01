@@ -69,3 +69,4 @@ Should a `Mistake` be thrown, it should represent a programming mistake: the
 manifestation of a misconception of impossibility on the part of the
 programmer.
 
+
