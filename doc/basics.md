@@ -50,3 +50,4 @@ object Main // ...
 Additionally, code which references an absolute name, such as
 `_root_.com.example.Main` will not find the entity with its new, shaded name.
 
+
