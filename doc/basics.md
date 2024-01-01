@@ -29,3 +29,4 @@ Therefore, methods which need to perform text width calculations can use either
 a `uniform` mode or an `eastAsianScripts` mode, depending on the contextual
 value imported from the `textWidthCalculation` package.
 
+
