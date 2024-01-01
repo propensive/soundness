@@ -36,3 +36,4 @@ on a cloud-based system, or inside a browser using ScalaJS.
 _Superlunary_ provides the wiring to make it easy to exploit the powerful syntax and
 consistency-checking of quoted code, to make it possible to deploy the code inside
 quotes to an environment of your choosing.
+
