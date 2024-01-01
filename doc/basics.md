@@ -43,3 +43,4 @@ The `apply` method, and its parameters, are inlined, so as to minimize the
 performance cost of deferring simple operations to a typeclass, and any
 implementation of `Operator` should do the same.
 
+
