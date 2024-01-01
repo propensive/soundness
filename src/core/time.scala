@@ -74,6 +74,10 @@ object Dates:
         : Date =
       cal.julianDay(year, month, day)
 
+    given show: Show[Date] = d =>
+      given RomanCalendar = calendars.gregorian
+      t"${d.day.toString.show}-${d.month.show}-${d.year.toString.show}"
+
     given decoder(using Raises[DateError]): Decoder[Date] = parse(_)
     given encoder: Encoder[Date] = _.show
     
@@ -83,10 +87,6 @@ object Dates:
     
     given ordering: Ordering[Date] = Ordering.Int
     
-    given Show[Date] = d =>
-      given RomanCalendar = calendars.gregorian
-      t"${d.day.toString.show}-${d.month.show}-${d.year.toString.show}"
-
     given plus(using calendar: Calendar): Operator["+", Date, Period] with
       type Result = Date
       def apply(date: Date, period: Period): Date = calendar.add(date, period)
