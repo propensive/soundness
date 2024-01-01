@@ -35,3 +35,4 @@ A `Point[MonadicType]` instance can always be provided to explicitly specify the
 Mercator also provides a `Functor` typeclass, which provides implementations of just
 `point` and `map`. If `map` is required for a particular operation, but `flatMap` is not,
 then only the `Functor` typeclass should be summoned.
+
