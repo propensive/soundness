@@ -58,3 +58,4 @@ Substitutions into Markdown literals are also supported, provided the type of th
 converted to Markdown, and can appear at the position it's substituted. Conversion of a particular type
 to Markdown is permitted by the existence of a contextual typeclass instance.
 
+
