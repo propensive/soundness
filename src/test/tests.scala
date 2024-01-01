@@ -20,6 +20,7 @@ import anticipation.*
 import gossamer.*
 import larceny.*
 import perforate.*
+import vacuous.*
 import probably.*
 import rudiments.*
 
@@ -279,14 +280,14 @@ object Tests extends Suite(t"Rudiments Tests"):
         Optional(x)
       .assert(_ == "")
 
-      test(t"Convert an option to a maybe"):
+      test(t"Convert an option to an optional"):
         val x: Option[Int] = Some(42)
-        x.maybe
+        x.optional
       .assert(_ == 42)
 
-      test(t"Convert an empty Option to a maybe"):
+      test(t"Convert an empty Option to an optional"):
         val x: Option[Int] = None
-        x.maybe
+        x.optional
       .assert(_ == Unset)
 
       test(t"Presume a value for an empty Option"):
