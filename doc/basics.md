@@ -63,3 +63,4 @@ months, to try to maintain the invariant that the sun's maximum elevation above
 the Greenwich Meridian (Solar Noon) should be within one second of Clock Noon
 (i.e. the time at which the clock digits read 12:00:00).
 
+
