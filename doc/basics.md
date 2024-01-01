@@ -26,3 +26,4 @@ will infer the type of `result` to be `-2.0e8 ~ 3.0e8` (while its value will be 
 Unranged `Double`s are pervasive in Scala, so a `Double#force` extension method is provided which can be used (carefully) to convert a `Double`
 to an expected ranged type.
 
+
