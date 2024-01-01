@@ -194,3 +194,4 @@ Gastronomy may be easily extended to support other cryptographic algorithms. The
 implementations of `Rsa`, `Dsa`, `Aes`, `Sha1`, `Sha2` and `Md5` should be studied to investigate
 this possibility.
 
+
