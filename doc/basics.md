@@ -88,3 +88,4 @@ one element must be evicted. That value is `two` because it is the least-recentl
 the previous line (_1_), `one` would be the least-recently-used value, and the line marked _3_ would result in
 the evaluation of `ein` and its insertion into the cache; but since `one` remains in the cache at the same
 index, it is retrieved instead.
+
