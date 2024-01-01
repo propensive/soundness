@@ -112,6 +112,7 @@ This library is incomplete, inadequately tested and subject to further developme
 used by developers who do not mind examining the source code to diagnose unexpected behavior.
 
 
+
 ## Status
 
 Acyclicity is classified as __fledgling__. For reference, Scala One projects are
@@ -214,6 +215,6 @@ The logo shows a single dot, alluding to the [DOT language](https://graphviz.org
 
 ## License
 
-Acyclicity is copyright &copy; 2023 Jon Pretty & Propensive O&Uuml;, and
+Acyclicity is copyright &copy; 2024 Jon Pretty & Propensive O&Uuml;, and
 is made available under the [Apache 2.0 License](/license.md).
 
