@@ -21,3 +21,4 @@ and start a new thread to respond to updates.
 The most important method of a `Watcher` is its `stream` method, which will return a `LazyList[WatchEvent]`
 
 
+
