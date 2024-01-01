@@ -20,6 +20,7 @@ import probably.*
 import rudiments.*
 import hieroglyph.*, charEncoders.utf8, textWidthCalculation.uniform
 import spectacular.*
+import vacuous.*
 import perforate.*
 import anticipation.*
 import symbolism.*
