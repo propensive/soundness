@@ -22,7 +22,7 @@ import fulminate.*
 import language.experimental.captureChecking
 
 object Unset:
-  override def toString(): String = "[absent]"
+  override def toString(): String = "∅"
 
 type Optional[ValueType] = Unset.type | ValueType
 
