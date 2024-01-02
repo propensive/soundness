@@ -1,6 +1,7 @@
 
 repo propensive/probably
 repo propensive/merino
+repo propensive/wisteria
 repo propensive/contextual
 
 target jacinta/test
@@ -8,7 +9,7 @@ target jacinta/test
 project jacinta
   module core
     sources  src/core
-    include  merino/core gossamer/core contextual/core anticipation/transport
+    include  merino/core gossamer/core contextual/core anticipation/transport wisteria/core
   
   module test
     sources   src/test
