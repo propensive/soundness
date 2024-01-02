@@ -228,9 +228,11 @@ object TerminalSizeDetection:
 trait TerminalSizeDetection:
   def apply(): Boolean
 
+inline def terminal: Terminal = compiletime.summonInline[Terminal]
+
 def terminal
     [ResultType]
-    (block: (terminal: Terminal) ?=> ResultType)
+    (block: Terminal ?=> ResultType)
     (using context: ProcessContext, monitor: Monitor)
     (using BracketedPasteMode, BackgroundColorDetection, TerminalFocusDetection, TerminalSizeDetection)
     : ResultType =
