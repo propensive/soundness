@@ -20,6 +20,7 @@ import anticipation.*
 import vacuous.*
 
 import scala.deriving.*
+import scala.reflect.*
 
 import language.experimental.captureChecking
 
@@ -103,16 +104,16 @@ object Unapply:
   given doubleLong: Unapply[Double, Long] = v => if v.toLong.toDouble == v then Some(v.toLong) else None
   given doubleFloat: Unapply[Double, Float] = v => if v.toFloat.toDouble == v then Some(v.toFloat) else None
 
-  given valueOf[EnumType <: reflect.Enum](using mirror: Mirror.SumOf[EnumType]): Unapply[Text, EnumType] =
+  given valueOf[EnumType <: Enum](using mirror: Mirror.SumOf[EnumType]): Unapply[Text, EnumType] =
     text =>
-      import scala.reflect.Selectable.reflectiveSelectable
+      import Selectable.reflectiveSelectable
       mirror match
         case mirror: { def valueOf(name: String): EnumType } @unchecked =>
           try Some(mirror.valueOf(text.s)) catch case error: Exception => None
   
-  given fromOrdinal[EnumType <: reflect.Enum](using mirror: Mirror.SumOf[EnumType]): Unapply[Int, EnumType] =
+  given fromOrdinal[EnumType <: Enum](using mirror: Mirror.SumOf[EnumType]): Unapply[Int, EnumType] =
     ordinal =>
-      import scala.reflect.Selectable.reflectiveSelectable
+      import Selectable.reflectiveSelectable
       mirror match
         case mirror: { def fromOrdinal(ordinal: Int): EnumType } @unchecked =>
           try Some(mirror.fromOrdinal(ordinal)) catch case error: Exception => None
