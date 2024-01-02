@@ -2,6 +2,9 @@
 # More information is available at: https://github.com/propensive/wrath/
 
 repo propensive/rudiments
+repo propensive/fulminate
+repo propensive/gossamer
+repo propensive/perforate
 
 target wisteria/core
 
@@ -9,4 +12,4 @@ project wisteria
   module core
     compiler  scala
     sources   src/core
-    include   rudiments/core
+    include   rudiments/core fulminate/core gossamer/core perforate/core
