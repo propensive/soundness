@@ -22,10 +22,15 @@ import perforate.*
 import anticipation.*
 import inimitable.*
 
+import scala.reflect.*
+import scala.deriving.*
+
 import language.experimental.captureChecking
 
 case class NumberError(text: Text, specializable: Specializable)
 extends Error(msg"$text is not a valid ${specializable.show}")
+
+case class EnumCaseError(text: Text) extends Error(msg"$text is not a valid enumeration case")
 
 object Decoder:
   given int(using number: Raises[NumberError]): Decoder[Int] = text =>
@@ -56,6 +61,9 @@ object Decoder:
   given text: Decoder[Text] = identity(_)
   given string: Decoder[String] = _.s
   given pid(using number: Raises[NumberError]): Decoder[Pid] = long.map(Pid(_))
+
+  given enumDecoder[EnumType <: Enum](using Mirror.SumOf[EnumType], Raises[EnumCaseError]): Decoder[EnumType] =
+    text => Unapply.valueOf[EnumType].unapply(text).getOrElse(abort(EnumCaseError(text)))
 
 @capability
 trait Decoder[+ValueType] extends Unapply[Text, ValueType]:
