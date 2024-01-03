@@ -26,7 +26,7 @@ import anticipation.*
 import scala.deriving.*
 import scala.compiletime.*
 
-case class SumError(variant: Text, sum: Text, validVariants: List[Text])
+case class VariantError(variant: Text, sum: Text, validVariants: List[Text])
 extends Error(msg"""the specified $variant is not one of the valid variants (${validVariants.join(t", ")}) of
                     sum $sum""")
 
@@ -98,9 +98,9 @@ trait Derivation[TypeclassType[_]] extends ProductDerivation[TypeclassType]:
 
           case EmptyTuple => throw Mistake(msg"unreachable")
         case EmptyTuple =>
-          val raises = summonInline[Raises[SumError]]
+          val raises = summonInline[Raises[VariantError]]
           val variants = constValueTuple[reflective.MirroredElemLabels].toList.map(_.toString.tt)
-          abort(SumError(variant, constValue[reflective.MirroredLabel].tt, variants))(using raises)
+          abort(VariantError(variant, constValue[reflective.MirroredLabel].tt, variants))(using raises)
   
   inline def split[DerivationType: ReflectiveSum]: TypeclassType[DerivationType]
   
