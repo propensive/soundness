@@ -98,7 +98,7 @@ object Derivation:
         val variants = constValueTuple[mirror.MirroredElemLabels].toList.map(_.toString.tt)
         abort(CoproductError(variant, constValue[mirror.MirroredLabel].tt, variants))(using raises)
 
-  transparent inline def productOf
+  transparent inline def fromProduct
       [DerivationType, TypeclassType[_]]
       (using mirror: Mirror.ProductOf[DerivationType])
       (inline join: (typeclass: TypeclassType[Any], label: Text) ?=> Any) =
@@ -121,13 +121,14 @@ object Derivation:
         case EmptyTuple => EmptyTuple
       case EmptyTuple => EmptyTuple
 
-  transparent inline def productOf
+  transparent inline def toProduct
       [DerivationType <: Product, TypeclassType[_]]
-      (using mirror: Mirror.ProductOf[DerivationType])
       (value: DerivationType)
+      (using mirror: Mirror.ProductOf[DerivationType])
       [ResultType: ClassTag]
       (inline join: (typeclass: TypeclassType[Any], label: Text, param: Any) ?=> ResultType)
       : IArray[ResultType] =
+    
     val array: Array[ResultType] = new Array(valueOf[Tuple.Size[mirror.MirroredElemTypes]])
     
     product[DerivationType, TypeclassType, mirror.MirroredElemTypes, mirror.MirroredElemLabels, ResultType]
@@ -153,3 +154,25 @@ object Derivation:
                   label.tt, param)
               
               product[DerivationType, TypeclassType, paramsType, labelsType, ResultType](params, array, index + 1)(join)
+
+
+trait Derived[TypeclassType[_]]:
+
+  transparent inline def join[DerivationType: Mirror.ProductOf]: TypeclassType[DerivationType]
+  transparent inline def split[DerivationType: Mirror.SumOf]: TypeclassType[DerivationType]
+
+  inline given derived2[DerivationType](using mirror: Mirror.Of[DerivationType]): TypeclassType[DerivationType] =
+    inline mirror match
+      case mirror: Mirror.ProductOf[DerivationType] =>
+        join[DerivationType](using mirror)
+      
+      case mirror: Mirror.SumOf[DerivationType] =>
+        split[DerivationType](using mirror)
+
+
+// trait ProductDerivation[TypeclassType[_]]:
+//   transparent inline def join[DerivationType](inline typeclass: Typeclass[DerivationType], inline label: Text, inline param: Any): Any =
+    
+
+// trait Derivation[TypeclassType[_]] extends ProductDerivation[TypeclassType]:
+//   inline def split
