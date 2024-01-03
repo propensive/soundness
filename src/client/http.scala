@@ -24,7 +24,7 @@ import hieroglyph.*
 import perforate.*
 import turbulence.*
 import gesticulate.*
-import wisteria.*
+import wisteria2.*
 import spectacular.*
 import eucalyptus.*
 import anticipation.*
@@ -46,10 +46,8 @@ enum HttpBody:
   def as[T](using readable: HttpReadable[T]): T = readable.read(HttpStatus.Ok, this)
 
 object QuerySerializer extends ProductDerivation[QuerySerializer]:
-  def join[T](ctx: CaseClass[QuerySerializer, T]): QuerySerializer[T] = value =>
-    ctx.params.map: param =>
-      param.typeclass.params(param.deref(value)).prefix(Text(param.label))
-    .reduce(_.append(_))
+  inline def join[DerivationType: ReflectiveProduct]: QuerySerializer[DerivationType] =
+    product.from(_)(typeclass.params(param).prefix(label)).reduce(_.append(_))
 
   given QuerySerializer[Text] = str => Params(List((t"", str)))
   given QuerySerializer[Int] = int => Params(List((t"", int.show)))
