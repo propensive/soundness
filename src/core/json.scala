@@ -142,7 +142,7 @@ object Json extends Dynamic:
     val values: IArray[JsonAst] = IArray.from(elements.map(_(1).root))
     Json(JsonAst((keys, values)))
 
-trait JsonEncoder2 extends Derived[JsonEncoder]:
+trait JsonEncoder2 extends Derivation[JsonEncoder]:
   given [ValueType](using encoder: JsonEncoder[ValueType]): JsonEncoder[Optional[ValueType]] =
     new JsonEncoder[Optional[ValueType]]:
       override def omit(value: Optional[ValueType]): Boolean = value.absent
@@ -221,7 +221,7 @@ trait JsonDecoder2:
   //     : JsonDecoder[ValueType]^{jsonAccess, decoder} =
   //   (value, missing) => decoder.decode(value.string)
 
-object JsonDecoder extends JsonDecoder2, Derived[JsonDecoder]:
+object JsonDecoder extends JsonDecoder2, Derivation[JsonDecoder]:
   given jsonAst(using jsonAccess: Raises[JsonAccessError]): JsonDecoder[JsonAst]^{jsonAccess} =
     (value, missing) => value
   
