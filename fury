@@ -2,6 +2,7 @@
 # More information is available at: https://github.com/propensive/wrath/
 
 repo propensive/dissonance
+repo propensive/wisteria
 repo propensive/dendrology
 repo propensive/escritoire
 repo propensive/escapade
@@ -13,7 +14,7 @@ project chiaroscuro
   module core
     compiler  scala
     sources   src/core
-    include   gossamer/core dissonance/core escritoire/core dendrology/core escapade/core iridescence/core
+    include   gossamer/core dissonance/core escritoire/core dendrology/core escapade/core iridescence/core wisteria/core
 
   module test
     compiler  scala

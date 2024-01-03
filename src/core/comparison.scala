@@ -19,6 +19,7 @@ package chiaroscuro
 import rudiments.*
 import gossamer.*
 import dissonance.*
+import wisteria2.*
 import escapade.*
 import iridescence.*
 import dendrology.*
@@ -28,7 +29,6 @@ import hieroglyph.*
 import anticipation.*
 
 import scala.deriving.*
-import scala.compiletime.*
 
 enum Semblance:
   case Identical(value: Text)
@@ -92,13 +92,12 @@ extension [ValueType](left: ValueType)
   def contrastWith(right: ValueType)(using contrast: Contrast[ValueType]): Semblance =
     contrast(left, right)
 
-trait FallbackContrast:
-  given [ValueType]: Contrast[ValueType] = new Contrast[ValueType]:
-    def apply(a: ValueType, b: ValueType): Semblance =
-      if a == b then Semblance.Identical(a.debug)
-      else Semblance.Different(a.debug, b.debug)
+trait Contrast2:
+  inline given generic[ValueType](using scala.util.NotGiven[ValueType <:< Product]): Contrast[ValueType] with
+    def apply(left: ValueType, right: ValueType): Semblance =
+      if left == right then Semblance.Identical(left.debug) else Semblance.Different(left.debug, right.debug)
 
-object Contrast extends FallbackContrast:
+object Contrast extends Derivation[Contrast], Contrast2:
   def nothing[ValueType]: Contrast[ValueType] = (a, b) => Semblance.Identical(a.debug)
   
   inline given Contrast[Exception] = new Contrast[Exception]:
@@ -152,47 +151,17 @@ object Contrast extends FallbackContrast:
       def apply(left: Vector[ValueType], right: Vector[ValueType]): Semblance =
         compareSeq[ValueType](left.to(IndexedSeq), right.to(IndexedSeq), left.debug, right.debug)
   
-  private transparent inline def deriveSum
-      [TupleType <: Tuple, DerivedType]
-      (ordinal: Int)
-      : Contrast[DerivedType] =
-    inline erasedValue[TupleType] match
-      case _: (head *: tail) =>
-        inline if ordinal == 0 then summonInline[Contrast[head]].asInstanceOf[Contrast[DerivedType]]
-        else deriveSum[tail, DerivedType](ordinal - 1)
-      case _ => ???
-
-  private transparent inline def deriveProduct
-      [Labels <: Tuple]
-      (left: Tuple, right: Tuple)
-      : List[(Text, Semblance)] =
-    inline left match
-      case EmptyTuple => Nil
-      case leftCons: (? *: ?) => leftCons match
-        case leftHead *: leftTail => inline right match
-          case rightCons: (? *: ?) => rightCons match
-            case rightHead *: rightTail => inline erasedValue[Labels] match
-              case _: (headLabel *: tailLabels) => inline valueOf[headLabel].asMatchable match
-                case label: String =>
-                  val item =
-                    if leftHead == rightHead then Semblance.Identical(leftHead.debug)
-                    else summonInline[Contrast[leftHead.type | rightHead.type]](leftHead, rightHead)
-                  
-                  (Text(label), item) :: deriveProduct[tailLabels](leftTail, rightTail)
-        
-  inline given derived
-      [DerivationType](using mirror: Mirror.Of[DerivationType]): Contrast[DerivationType] =
-    inline mirror match
-      case given Mirror.ProductOf[DerivationType & Product] =>
-        (left: DerivationType, right: DerivationType) => inline (left.asMatchable: @unchecked) match
-          case leftProduct: Product => inline (right.asMatchable: @unchecked) match
-            case rightProduct: Product =>
-              val leftTuple = Tuple.fromProductTyped(leftProduct)
-              val rightTuple = Tuple.fromProductTyped(rightProduct)
-              val product = deriveProduct[mirror.MirroredElemLabels](leftTuple, rightTuple)
-              Semblance.Breakdown(IArray.from(product), left.debug, right.debug)
-     
-      case mirror: Mirror.SumOf[DerivationType] => (left: DerivationType, right: DerivationType) =>
-        if mirror.ordinal(left) == mirror.ordinal(right)
-        then deriveSum[mirror.MirroredElemTypes, DerivationType](mirror.ordinal(left))(left, right)
-        else Semblance.Different(left.debug, right.debug)
+  inline def join[DerivationType: ReflectiveProduct]: Contrast[DerivationType] = (left, right) =>
+    val elements = params(left):
+      val leftParam = param
+      label -> oneParam(right)(ordinal):
+        if leftParam == param then Semblance.Identical(leftParam.debug) else typeclass(leftParam, param)
+    
+    Semblance.Breakdown(elements, left.debug, right.debug)
+  
+  inline def split[DerivationType: ReflectiveSum]: Contrast[DerivationType] = (left, right) =>
+    variants(left):
+      val leftOrdinal = ordinal
+      variants(right):
+        if leftOrdinal == ordinal then typeclass(left, right) else Semblance.Different(left.debug, right.debug)
+    
