@@ -189,13 +189,13 @@ object JsonEncoder extends JsonEncoder2:
       case Some(value) => summon[JsonEncoder[ValueType]].encode(value)
 
   inline def join[DerivationType: ReflectiveProduct]: JsonEncoder[DerivationType] = value =>
-    val labels = product.from(value)(label.s)
-    val values = product.from(value)(typeclass.encode(param))
+    val labels = params(value)(label.s)
+    val values = params(value)(typeclass.encode(param))
     
     JsonAst((labels, values))
   
   inline def split[DerivationType: ReflectiveSum]: JsonEncoder[DerivationType] = value =>
-    sum.from(value):
+    variants(value):
       summonInline[Raises[JsonAccessError]].contextually(typeclass.tag(label).encode(value))
 
 trait JsonEncoder[-ValueType]:
@@ -286,7 +286,7 @@ object JsonDecoder extends JsonDecoder2, Derivation[JsonDecoder]:
       val keyValues = json.obj
       val values = keyValues(0).zip(keyValues(1)).to(Map)
 
-      product.of:
+      product:
         val missing = !values.contains(label.s)
         val value = if missing then JsonAst(0L) else values(label.s)
         typeclass.decode(value, missing)
@@ -300,7 +300,7 @@ object JsonDecoder extends JsonDecoder2, Derivation[JsonDecoder]:
         
         case index =>
           val discriminant = values(1)(index).string
-          sum.of(discriminant)(typeclass.decode(json, missing))
+          sum(discriminant)(typeclass.decode(json, missing))
 
 trait JsonDecoder[ValueType]:
   private inline def decoder: this.type = this
