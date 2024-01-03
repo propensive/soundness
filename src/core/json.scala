@@ -143,13 +143,13 @@ object Json extends Dynamic:
     val values: IArray[JsonAst] = IArray.from(elements.map(_(1).root))
     Json(JsonAst((keys, values)))
 
-trait FallbackJsonEncoder:
+trait JsonEncoder2 extends Derived[JsonEncoder]:
   given [ValueType](using encoder: JsonEncoder[ValueType]): JsonEncoder[Optional[ValueType]] =
     new JsonEncoder[Optional[ValueType]]:
       override def omit(value: Optional[ValueType]): Boolean = value.absent
       def encode(value: Optional[ValueType]): JsonAst = value.let(encoder.encode(_)).or(JsonAst(null))
 
-object JsonEncoder extends FallbackJsonEncoder, Derived[JsonEncoder]:
+object JsonEncoder extends JsonEncoder2:
   given int: JsonEncoder[Int] = int => JsonAst(int.toLong)
   given text: JsonEncoder[Text] = text => JsonAst(text.s)
   given string: JsonEncoder[String] = JsonAst(_)
@@ -189,38 +189,19 @@ object JsonEncoder extends FallbackJsonEncoder, Derived[JsonEncoder]:
       case None        => JsonAst(null)
       case Some(value) => summon[JsonEncoder[ValueType]].encode(value)
 
-  transparent inline def join[DerivationType: Mirror.ProductOf]: JsonEncoder[DerivationType] = ???
-  // transparent inline def join[DerivationType: Mirror.ProductOf]: JsonEncoder[DerivationType] = value =>
-  //   val labels = Derivation.productOf[DerivationType & Product, JsonEncoder](value)(label.s)
-  //   val values = Derivation.productOf[DerivationType & Product, JsonEncoder](value):
-  //     typeclass.encode(param)
+  inline def join[DerivationType: Mirror.ProductOf]: JsonEncoder[DerivationType] = value =>
+    val labels = Derivation.toProduct[DerivationType, JsonEncoder](value)(label.s)
+    val values = Derivation.toProduct[DerivationType, JsonEncoder](value):
+      typeclass.encode(param)
     
-  //   JsonAst((labels, values))
+    JsonAst((labels, values))
   
-  transparent inline def split[DerivationType: Mirror.SumOf]: JsonEncoder[DerivationType] = value =>
+  inline def split[DerivationType: Mirror.SumOf]: JsonEncoder[DerivationType] = value =>
     Derivation.sumOf[DerivationType, JsonEncoder](value):
-      given Raises[JsonAccessError] = summonInline[Raises[JsonAccessError]]
-      typeclass.tag(label).encode(value)
-
-  inline given derived
-      [DerivationType](using mirror: Mirror.Of[DerivationType])(using Raises[JsonAccessError])
-      : JsonEncoder[DerivationType] =
-    inline mirror match
-      case given Mirror.ProductOf[DerivationType & Product] => (value: DerivationType) =>
-        (value.asMatchable: @unchecked) match
-          case value: Product =>
-            val labels: IArray[String] =
-              Derivation.toProduct[DerivationType & Product, JsonEncoder](value)(label.s)
-            
-            val values: IArray[JsonAst] = Derivation.toProduct[DerivationType & Product, JsonEncoder](value):
-              typeclass.encode(param)
-
-            JsonAst((labels, values))
-    
-      case sumMirror: Mirror.SumOf[DerivationType] =>
-        (value: DerivationType) =>
-          Derivation.sumOf[DerivationType, JsonEncoder](value):
-            typeclass.tag(label).encode(value)
+      val jsonAccess: Raises[JsonAccessError] = summonInline[Raises[JsonAccessError]]
+      locally:
+        given Raises[JsonAccessError] = jsonAccess
+        typeclass.tag(label).encode(value)
 
 trait JsonEncoder[-ValueType]:
   def omit(value: ValueType): Boolean = false
@@ -233,19 +214,19 @@ trait JsonEncoder[-ValueType]:
     val (keys, values) = encode(value).obj
     JsonAst((keys :+ "_type", values :+ label.s))
 
-trait FallbackJsonDecoder:
+trait JsonDecoder2:
   given maybe[ValueType](using decoder: JsonDecoder[ValueType]^): JsonDecoder[Optional[ValueType]]^{decoder} =
     new JsonDecoder[Optional[ValueType]]:
       def decode(value: JsonAst, missing: Boolean): Optional[ValueType] =
         if missing then Unset else decoder.decode(value, false)
   
-  given decoder
-      [ValueType]
-      (using jsonAccess: Raises[JsonAccessError], decoder: Decoder[ValueType])
-      : JsonDecoder[ValueType]^{jsonAccess, decoder} =
-    (value, missing) => decoder.decode(value.string)
+  // given decoder
+  //     [ValueType]
+  //     (using jsonAccess: Raises[JsonAccessError], decoder: Decoder[ValueType])
+  //     : JsonDecoder[ValueType]^{jsonAccess, decoder} =
+  //   (value, missing) => decoder.decode(value.string)
 
-object JsonDecoder extends FallbackJsonDecoder:
+object JsonDecoder extends JsonDecoder2, Derived[JsonDecoder]:
   given jsonAst(using jsonAccess: Raises[JsonAccessError]): JsonDecoder[JsonAst]^{jsonAccess} =
     (value, missing) => value
   
@@ -292,9 +273,9 @@ object JsonDecoder extends FallbackJsonDecoder:
       : JsonDecoder[CollectionType[ElementType]]^{jsonAccess} =
     new JsonDecoder[CollectionType[ElementType]]:
       def decode(value: JsonAst, missing: Boolean): CollectionType[ElementType] =
-        val bld = factory.newBuilder
-        value.array.foreach(bld += decoder.decode(_, false))
-        bld.result()
+        val builder = factory.newBuilder
+        value.array.foreach(builder += decoder.decode(_, false))
+        builder.result()
 
   given map[ElementType]
       (using decoder: JsonDecoder[ElementType])
@@ -304,30 +285,31 @@ object JsonDecoder extends FallbackJsonDecoder:
         
       keys.indices.foldLeft(Map[String, ElementType]()): (acc, index) =>
         acc.updated(keys(index), decoder.decode(values(index), false))
+  
+  inline def join[DerivationType: Mirror.ProductOf]: JsonDecoder[DerivationType] = (json, missing) =>
+    val jsonAccess = summonInline[Raises[JsonAccessError]]
+    locally:
+      given Raises[JsonAccessError] = jsonAccess
+      val keyValues = json.obj
+      val values = keyValues(0).zip(keyValues(1)).to(Map)
 
-  inline given derived
-      [DerivationType](using mirror: Mirror.Of[DerivationType])(using jsonAccess: Raises[JsonAccessError])
-      : JsonDecoder[DerivationType] =
-    inline mirror match
-      case given Mirror.ProductOf[DerivationType] => (value, missing) =>
-        val keyValues = value.obj
-        val values = keyValues(0).zip(keyValues(1)).to(Map)
+      Derivation.fromProduct[DerivationType, JsonDecoder]:
+        val missing = !values.contains(label.s)
+        val value = if missing then JsonAst(0L) else values(label.s)
+        typeclass.decode(value, missing)
+  
+  inline def split[DerivationType: Mirror.SumOf]: JsonDecoder[DerivationType] = (json, missing) =>
+    val jsonAccess = summonInline[Raises[JsonAccessError]]
+    locally:
+      given Raises[JsonAccessError] = jsonAccess
+      val values = json.obj
+      values(0).indexOf("_type") match
+        case -1 =>
+          abort(JsonAccessError(Reason.Label(t"_type")))
         
-        Derivation.fromProduct[DerivationType, JsonDecoder]:
-          val missing = !values.contains(label.s)
-          val value = if missing then JsonAst(0L) else values(label.s)
-          typeclass.decode(value, missing)
-    
-      case mirror: Mirror.SumOf[DerivationType] => (value, missing) =>
-        val values = value.obj
-        
-        values(0).indexOf("_type") match
-          case -1 =>
-            abort(JsonAccessError(Reason.Label(t"_type")))
-          
-          case index =>
-            val discriminant = values(1)(index).string
-            Derivation.sumOf[DerivationType, JsonDecoder](discriminant)(typeclass.decode(value, missing))
+        case index =>
+          val discriminant = values(1)(index).string
+          Derivation.sumOf[DerivationType, JsonDecoder](discriminant)(typeclass.decode(json, missing))
 
 trait JsonDecoder[ValueType]:
   private inline def decoder: this.type = this
