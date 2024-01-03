@@ -130,12 +130,12 @@ trait ProductDerivation[TypeclassType[_]]:
           case EmptyTuple => EmptyTuple
         case EmptyTuple => EmptyTuple
 
-    transparent inline def from
+    transparent inline def params
         [DerivationType]
         (inline value: DerivationType)
         (using reflective: ReflectiveProduct[DerivationType])
         [ResultType: ClassTag]
-        (inline join: (typeclass: TypeclassType[Any], label: Text, param: Any) ?=> ResultType)
+        (inline join: (typeclass: TypeclassType[Any], label: Text, ordinal: Int, param: Any) ?=> ResultType)
         : IArray[ResultType] =
       
       val array: Array[ResultType] = new Array(valueOf[Tuple.Size[reflective.MirroredElemTypes]])
@@ -145,15 +145,14 @@ trait ProductDerivation[TypeclassType[_]]:
           case given ReflectiveProduct[DerivationType & Product] =>
             product[DerivationType, reflective.MirroredElemTypes, reflective.MirroredElemLabels, ResultType]
                 (Tuple.fromProductTyped(value), array, 0):
-              (typeclass, label, param) => join(using typeclass, label, param)
+              (typeclass, label, ordinal, param) => join(using typeclass, label, ordinal, param)
       
       array.immutable(using Unsafe)
       
-
     private transparent inline def product
         [DerivationType, ParamsType <: Tuple, LabelsType <: Tuple, ResultType]
         (tuple: Tuple, array: Array[ResultType], index: Int)
-        (inline join: (TypeclassType[Any], Text, Any) => ResultType)
+        (inline join: (TypeclassType[Any], Text, Int, Any) => ResultType)
         : Unit =
 
       inline tuple match
@@ -163,7 +162,7 @@ trait ProductDerivation[TypeclassType[_]]:
             case _: (labelType *: labelsType) => inline valueOf[labelType].asMatchable match
               case label: String =>
                 array(index) = join(summonInline[TypeclassType[paramType]].asInstanceOf[TypeclassType[Any]],
-                    label.tt, param)
+                    label.tt, index, param)
                 
                 product[DerivationType, paramsType, labelsType, ResultType](params, array, index + 1)(join)
 
@@ -175,17 +174,12 @@ trait ProductDerivation[TypeclassType[_]]:
       : TypeclassType[DerivationType] =
 
     inline this match
-      case derivation: Derivation[TypeclassType] =>
-        inline reflective match
-          case reflective: ReflectiveProduct[DerivationType] =>
-            join[DerivationType](using reflective)
-          case reflective: ReflectiveSum[DerivationType] =>
-            derivation.split[DerivationType](using reflective)
+      case derivation: Derivation[TypeclassType] => inline reflective match
+        case reflective: ReflectiveProduct[DerivationType] => join[DerivationType](using reflective)
+        case reflective: ReflectiveSum[DerivationType]     => derivation.split[DerivationType](using reflective)
       
-      case derivation: ProductDerivation[TypeclassType] =>
-        inline reflective match
-          case reflective: ReflectiveProduct[DerivationType] => join[DerivationType](using reflective)
-
+      case derivation: ProductDerivation[TypeclassType] => inline reflective match
+        case reflective: ReflectiveProduct[DerivationType] => join[DerivationType](using reflective)
 
 type Reflective[DerivationType] = Mirror.Of[DerivationType]
 type ReflectiveProduct[DerivationType] = Mirror.ProductOf[DerivationType]
