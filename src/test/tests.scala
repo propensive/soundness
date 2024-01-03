@@ -90,7 +90,7 @@ object Tests extends Suite(t"Caesura tests"):
 
     test(t"convert complex row to string"):
       CsvDoc(List(Csv(t"0.1", t"two", t"three", t"4", t"five", t"six"))).show
-    .assert(_ == t"""0.1,two,three,4,five,six""") // "
+    .assert(_ == t"""0.1,two,three,4,five,six""")
 
     test(t"convert row with escaped quote"):
       CsvDoc(List(Csv(t"hello\"world"))).show
@@ -106,7 +106,7 @@ object Tests extends Suite(t"Caesura tests"):
 
     test(t"convert case class to tsv"):
       Seq(Foo(t"hello", t"world")).tsv.show
-    .assert(_ == t"hello\tworld") // "
+    .assert(_ == t"hello\tworld")
 
 case class Foo(one: Text, two: Text)
 case class Bar(one: Double, foo1: Foo, four: Int, foo2: Foo)
