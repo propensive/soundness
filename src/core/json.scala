@@ -105,19 +105,11 @@ extension (json: JsonAst)
     if isLong then long else if isDouble then double else if isBigDecimal then bigDecimal
     else raise(JsonAccessError(Reason.NotType(JsonPrimitive.Number)))(0L)
   
-extension [T](value: T)(using writer: JsonSerializer[T])
+extension [ValueType](value: ValueType)(using writer: JsonSerializer[ValueType])
   def json: Json = Json(writer.write(value))
 
 object Json extends Dynamic:
   
-  given transport: Transport[Json] with
-    type Writer[-DataType] = JsonSerializer[DataType]
-    type Reader[DataType] = JsonDeserializer[DataType]
-
-    def write[DataType: Writer](value: DataType): LazyList[Bytes] = ???
-    def read[DataType: Reader](value: LazyList[Bytes]): DataType = ???
-
-
   def parse
       [SourceType]
       (value: SourceType)
@@ -152,9 +144,10 @@ object Json extends Dynamic:
     Json(JsonAst((keys, values)))
 
 trait FallbackJsonSerializer:
-  given [T](using writer: JsonSerializer[T]): JsonSerializer[Optional[T]] = new JsonSerializer[Optional[T]]:
-    override def omit(t: Optional[T]): Boolean = t.absent
-    def write(value: Optional[T]): JsonAst = value.let(writer.write(_)).or(JsonAst(null))
+  given [ValueType](using writer: JsonSerializer[ValueType]): JsonSerializer[Optional[ValueType]] =
+    new JsonSerializer[Optional[ValueType]]:
+      override def omit(value: Optional[ValueType]): Boolean = value.absent
+      def write(value: Optional[ValueType]): JsonAst = value.let(writer.write(_)).or(JsonAst(null))
 
 object JsonSerializer extends FallbackJsonSerializer:
   given int: JsonSerializer[Int] = int => JsonAst(int.toLong)
@@ -177,8 +170,18 @@ object JsonSerializer extends FallbackJsonSerializer:
       : JsonSerializer[CollectionType[ElementType]] = values =>
     JsonAst(IArray.from(values.map(summon[JsonSerializer[ElementType]].write(_))))
 
-  //given [T: JsonSerializer]: JsonSerializer[Map[String, T]] = values =>
-  //  JObject(mutable.Map(values.view.mapValues(summon[JsonSerializer[T]].write(_)).to(Seq)*))
+  given map[ValueType](using serializer: JsonSerializer[ValueType]): JsonSerializer[Map[String, ValueType]] =
+    map =>
+      val keys = new Array[String](map.size)
+      val values = new Array[JsonAst](map.size)
+      var index = 0
+      
+      map.foreach: (key, value) =>
+        keys(index) = key
+        values(index) = serializer.write(value)
+        index += 1
+      
+      JsonAst(keys.immutable(using Unsafe), values.immutable(using Unsafe))
 
   given opt[ValueType: JsonSerializer]: JsonSerializer[Option[ValueType]] with
     override def omit(value: Option[ValueType]): Boolean = value.isEmpty
