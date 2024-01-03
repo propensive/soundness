@@ -155,7 +155,7 @@ object TextConversion:
         iarray.zipWithIndex.map: (value, index) =>
           val subscript = index.toString.map { digit => (digit + 8272).toChar }.mkString
           subscript+value.debug.s.tt
-        .mkString("⁅"+arrayPrefix(iarray.toString), "∣", "⁆")
+        .mkString("⁅"+arrayPrefix(iarray.toString), "╱", "⁆")
   
   private def renderBraille(str: String): String =
     ("0"*(str.length%2)+str).grouped(2).flatMap: pair =>

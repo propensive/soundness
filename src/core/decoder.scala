@@ -57,6 +57,14 @@ object Decoder:
     try java.lang.Long.parseLong(text.s) catch case _: NumberFormatException =>
       raise(NumberError(text, Long))(0L)
 
+  given double(using number: Raises[NumberError]): Decoder[Double] = text =>
+    try java.lang.Double.parseDouble(text.s) catch case _: NumberFormatException =>
+      raise(NumberError(text, Double))(0.0)
+  
+  given float(using number: Raises[NumberError]): Decoder[Float] = text =>
+    try java.lang.Float.parseFloat(text.s) catch case _: NumberFormatException =>
+      raise(NumberError(text, Float))(0.0F)
+
   given char: Decoder[Char] = _.s(0)
   given text: Decoder[Text] = identity(_)
   given string: Decoder[String] = _.s
