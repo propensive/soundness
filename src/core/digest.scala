@@ -114,60 +114,42 @@ case class Digest[HashType <: HashScheme[?]](bytes: Bytes) extends Encodable, Sh
   override def hashCode: Int = bytes.hashCode
 
 trait Digestible2:
-  given [ValueType](using digestible: Digestible[ValueType]): Digestible[Optional[ValueType]] = (acc, value) =>
-    value.let(digestible.digest(acc, _))
+  given optional[ValueType](using digestible: Digestible[ValueType]): Digestible[Optional[ValueType]] =
+    (acc, value) => value.let(digestible.digest(acc, _))
 
 object Digestible extends Digestible2, Derived[Digestible]:
-  private transparent inline def deriveProduct(acc: DigestAccumulator, tuple: Tuple): Unit =
-    inline tuple match
-      case EmptyTuple => ()
-      case cons: (? *: ?) => cons match
-        case head *: tail =>
-          summonInline[Digestible[head.type]].digest(acc, head)
-          deriveProduct(acc, tail)
-
-  private transparent inline def deriveSum
-      [TupleType <: Tuple, DerivedType]
-      (ordinal: Int)
-      : Digestible[DerivedType] =
-    inline erasedValue[TupleType] match
-      case _: (head *: tail) =>
-        if ordinal == 0
-        then summonInline[Digestible[head]].asInstanceOf[Digestible[DerivedType]]
-        else deriveSum[tail, DerivedType](ordinal - 1)
-
   inline def join[DerivationType: Mirror.ProductOf]: Digestible[DerivationType] = (accumulator, value) =>
-    Derivation.product.from[DerivationType, Digestible](value)[Unit]:
+    product.from[DerivationType](value)[Unit]:
       typeclass.digest(accumulator, param)
       
   inline def split[DerivationType: Mirror.SumOf]: Digestible[DerivationType] = (accumulator, value) =>
-    Derivation.sum.from[DerivationType, Digestible](value)[Unit]:
-      // FIXME perhaps add ordinal value to accumulator
+    sum.from[DerivationType](value)[Unit]:
+      int.digest(accumulator, ordinal)
       typeclass.digest(accumulator, variant)
 
   given[ValueType: Digestible]: Digestible[Iterable[ValueType]] =
     (acc, xs) => xs.foreach(summon[Digestible[ValueType]].digest(acc, _))
 
-  given Digestible[Int] =
+  given int: Digestible[Int] =
     (acc, n) => acc.append((24 to 0 by -8).map(n >> _).map(_.toByte).toArray.immutable(using Unsafe))
   
-  given Digestible[Long] =
+  given long: Digestible[Long] =
     (acc, n) => acc.append((52 to 0 by -8).map(n >> _).map(_.toByte).toArray.immutable(using Unsafe))
   
-  given Digestible[Double] =
+  given double: Digestible[Double] =
     (acc, n) => summon[Digestible[Long]].digest(acc, jl.Double.doubleToRawLongBits(n))
   
-  given Digestible[Float] =
+  given float: Digestible[Float] =
     (acc, n) => summon[Digestible[Int]].digest(acc, jl.Float.floatToRawIntBits(n))
   
-  given Digestible[Boolean] = (acc, n) => acc.append(IArray(if n then 1.toByte else 0.toByte))
-  given Digestible[Byte] = (acc, n) => acc.append(IArray(n))
-  given Digestible[Short] = (acc, n) => acc.append(IArray((n >> 8).toByte, n.toByte))
-  given Digestible[Char] = (acc, n) => acc.append(IArray((n >> 8).toByte, n.toByte))
-  given Digestible[Text] = (acc, s) => acc.append(s.bytes(using charEncoders.utf8))
-  given Digestible[Bytes] = _.append(_)
-  given Digestible[Iterable[Bytes]] = (acc, stream) => stream.foreach(acc.append(_))
-  given Digestible[Digest[?]] = (acc, d) => acc.append(d.bytes)
+  given boolean: Digestible[Boolean] = (acc, n) => acc.append(IArray(if n then 1.toByte else 0.toByte))
+  given byte: Digestible[Byte] = (acc, n) => acc.append(IArray(n))
+  given short: Digestible[Short] = (acc, n) => acc.append(IArray((n >> 8).toByte, n.toByte))
+  given char: Digestible[Char] = (acc, n) => acc.append(IArray((n >> 8).toByte, n.toByte))
+  given text: Digestible[Text] = (acc, s) => acc.append(s.bytes(using charEncoders.utf8))
+  given bytes: Digestible[Bytes] = _.append(_)
+  given iterable: Digestible[Iterable[Bytes]] = (acc, stream) => stream.foreach(acc.append(_))
+  given digest: Digestible[Digest[?]] = (acc, d) => acc.append(d.bytes)
 
 trait Digestible[-ValueType]:
   def digest(acc: DigestAccumulator, value: ValueType): Unit
