@@ -30,7 +30,7 @@ case class VariantError(variant: Text, sum: Text, validVariants: List[Text])
 extends Error(msg"""the specified $variant is not one of the valid variants (${validVariants.join(t", ")}) of
                     sum $sum""")
 
-trait Derivation[TypeclassType[_]] extends ProductDerivation[TypeclassType]:
+trait SumDerivationMethods[TypeclassType[_]]:
   transparent inline def sum
       [DerivationType]
       (variant: Text)
@@ -46,7 +46,7 @@ trait Derivation[TypeclassType[_]] extends ProductDerivation[TypeclassType]:
 
   transparent inline def variants
       [DerivationType]
-      (value: DerivationType)
+      (sum: DerivationType)
       [ResultType]
       (inline split: (typeclass: TypeclassType[DerivationType], label: Text, variant: DerivationType,
           ordinal: Int) ?=> ResultType)
@@ -55,11 +55,11 @@ trait Derivation[TypeclassType[_]] extends ProductDerivation[TypeclassType]:
 
     inline reflective match
       case reflective: ReflectiveSum[DerivationType] =>
-        val ordinal = reflective.ordinal(value)
+        val ordinal = reflective.ordinal(sum)
         
         sumRecur[DerivationType, reflective.MirroredElemTypes, reflective.MirroredElemLabels](ordinal)
             (using reflective):
-          label => typeclass => split(using typeclass, label, value, ordinal)
+          label => typeclass => split(using typeclass, label, sum, ordinal)
 
   private transparent inline def sumRecur
       [DerivationType, VariantsType <: Tuple, LabelsType <: Tuple]
@@ -104,7 +104,7 @@ trait Derivation[TypeclassType[_]] extends ProductDerivation[TypeclassType]:
   inline def split[DerivationType: ReflectiveSum]: TypeclassType[DerivationType]
   
 
-trait ProductDerivation[TypeclassType[_]]:
+trait ProductDerivationMethods[TypeclassType[_]]:
   transparent inline def product
       [DerivationType]
       (using reflective: ReflectiveProduct[DerivationType])
@@ -132,7 +132,7 @@ trait ProductDerivation[TypeclassType[_]]:
 
   transparent inline def params
       [DerivationType]
-      (inline value: DerivationType)
+      (inline product: DerivationType)
       (using reflective: ReflectiveProduct[DerivationType])
       [ResultType: ClassTag]
       (inline join: (typeclass: TypeclassType[Any], label: Text, ordinal: Int, param: Any) ?=> ResultType)
@@ -140,29 +140,29 @@ trait ProductDerivation[TypeclassType[_]]:
     
     val array: Array[ResultType] = new Array(valueOf[Tuple.Size[reflective.MirroredElemTypes]])
     
-    inline value.asMatchable match
-      case value: Product => inline reflective match
+    inline product.asMatchable match
+      case product: Product => inline reflective match
         case given ReflectiveProduct[DerivationType & Product] =>
           paramsRecur[DerivationType, reflective.MirroredElemTypes, reflective.MirroredElemLabels, ResultType]
-              (Tuple.fromProductTyped(value), array, 0):
+              (Tuple.fromProductTyped(product), array, 0):
             (typeclass, label, ordinal, param) => join(using typeclass, label, ordinal, param)
     
     array.immutable(using Unsafe)
     
-  transparent inline def param
+  transparent inline def oneParam
       [DerivationType]
-      (inline value: DerivationType)
+      (inline product: DerivationType)
       (index: Int)
       (using reflective: ReflectiveProduct[DerivationType])
       [ResultType]
       (inline join: (typeclass: TypeclassType[Any], label: Text, ordinal: Int, param: Any) ?=> ResultType)
       : ResultType =
     
-    inline value.asMatchable match
-      case value: Product => inline reflective match
+    inline product.asMatchable match
+      case product: Product => inline reflective match
         case given ReflectiveProduct[DerivationType & Product] =>
           paramRecur[DerivationType, reflective.MirroredElemTypes, reflective.MirroredElemLabels, ResultType]
-              (Tuple.fromProductTyped(value), 0, index):
+              (Tuple.fromProductTyped(product), 0, index):
             (typeclass, label, ordinal, param) => join(using typeclass, label, ordinal, param)
     
   private transparent inline def paramRecur
@@ -200,18 +200,25 @@ trait ProductDerivation[TypeclassType[_]]:
 
   inline def join[DerivationType: ReflectiveProduct]: TypeclassType[DerivationType]
 
+trait ProductDerivation[TypeclassType[_]] extends ProductDerivationMethods[TypeclassType]:
   inline given derived
       [DerivationType]
       (using reflective: Reflective[DerivationType])
       : TypeclassType[DerivationType] =
 
-    inline this match
-      case derivation: Derivation[TypeclassType] => inline reflective match
-        case reflective: ReflectiveProduct[DerivationType] => join[DerivationType](using reflective)
-        case reflective: ReflectiveSum[DerivationType]     => derivation.split[DerivationType](using reflective)
-      
-      case derivation: ProductDerivation[TypeclassType] => inline reflective match
-        case reflective: ReflectiveProduct[DerivationType] => join[DerivationType](using reflective)
+    inline reflective match
+      case reflective: ReflectiveProduct[DerivationType] => join[DerivationType](using reflective)
+
+trait Derivation[TypeclassType[_]]
+extends ProductDerivationMethods[TypeclassType], SumDerivationMethods[TypeclassType]:
+  inline given derived
+      [DerivationType]
+      (using reflective: Reflective[DerivationType])
+      : TypeclassType[DerivationType] =
+
+    inline reflective match
+      case reflective: ReflectiveProduct[DerivationType] => join[DerivationType](using reflective)
+      case reflective: ReflectiveSum[DerivationType]     => split[DerivationType](using reflective)
 
 type Reflective[DerivationType] = Mirror.Of[DerivationType]
 type ReflectiveProduct[DerivationType] = Mirror.ProductOf[DerivationType]
