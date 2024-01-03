@@ -30,10 +30,10 @@ case class CoproductError(variant: Text, coproduct: Text, validVariants: List[Te
 extends Error(msg"""the specified $variant is not one of the valid variants (${validVariants.join(t", ")}) of
                     coproduct $coproduct""")
 
-object Derivation:
-  object sum:
+trait Derived[TypeclassType[_]]:
+  protected object sum:
     transparent inline def of
-        [DerivationType, TypeclassType[_]]
+        [DerivationType]
         (variant: Text)
         [ResultType]
         (inline split: (typeclass: TypeclassType[DerivationType]) ?=> ResultType)
@@ -42,11 +42,11 @@ object Derivation:
 
       inline mirror match
         case given Mirror.SumOf[DerivationType] =>
-          sum[DerivationType, TypeclassType, mirror.MirroredElemTypes, mirror.MirroredElemLabels](variant):
+          sum[DerivationType, mirror.MirroredElemTypes, mirror.MirroredElemLabels](variant):
             typeclass => split(using typeclass)
 
     transparent inline def from
-        [DerivationType, TypeclassType[_]]
+        [DerivationType]
         (value: DerivationType)
         [ResultType]
         (inline split: (typeclass: TypeclassType[DerivationType], label: Text, variant: DerivationType,
@@ -57,12 +57,12 @@ object Derivation:
       inline mirror match
         case mirror: Mirror.SumOf[DerivationType] =>
           val ordinal = mirror.ordinal(value)
-          sum[DerivationType, TypeclassType, mirror.MirroredElemTypes, mirror.MirroredElemLabels](ordinal)
+          sum[DerivationType, mirror.MirroredElemTypes, mirror.MirroredElemLabels](ordinal)
               (using mirror):
             label => typeclass => split(using typeclass, label, value, ordinal)
 
     private transparent inline def sum
-        [DerivationType, TypeclassType[_], VariantsType <: Tuple, LabelsType <: Tuple]
+        [DerivationType, VariantsType <: Tuple, LabelsType <: Tuple]
         (ordinal: Int)
         [ResultType]
         (using mirror: Mirror.SumOf[DerivationType])
@@ -75,12 +75,12 @@ object Derivation:
             if ordinal == 0 then inline valueOf[labelType].asMatchable match
               case label: String => split(label.tt):
                 summonInline[TypeclassType[variantType]].asInstanceOf[TypeclassType[DerivationType]]
-            else sum[DerivationType, TypeclassType, variantsType, labelsType](ordinal - 1)(split)
+            else sum[DerivationType, variantsType, labelsType](ordinal - 1)(split)
           case EmptyTuple => throw Mistake(msg"unreachable")
         case EmptyTuple => throw Mistake(msg"unreachable")
 
     private transparent inline def sum
-        [DerivationType, TypeclassType[_], VariantsType <: Tuple, LabelsType <: Tuple]
+        [DerivationType, VariantsType <: Tuple, LabelsType <: Tuple]
         (variant: Text)
         [ResultType]
         (inline split: TypeclassType[DerivationType] => ResultType)
@@ -93,7 +93,7 @@ object Derivation:
             case label: String =>
               if label.tt == variant
               then split(summonInline[TypeclassType[variantType]].asInstanceOf[TypeclassType[DerivationType]])
-              else sum[DerivationType, TypeclassType, variantsType, labelsType](variant)(split)
+              else sum[DerivationType, variantsType, labelsType](variant)(split)
 
           case EmptyTuple => throw Mistake(msg"unreachable")
         case EmptyTuple =>
@@ -101,18 +101,18 @@ object Derivation:
           val variants = constValueTuple[mirror.MirroredElemLabels].toList.map(_.toString.tt)
           abort(CoproductError(variant, constValue[mirror.MirroredLabel].tt, variants))(using raises)
   
-  object product:
+  protected object product:
     transparent inline def of
-        [DerivationType, TypeclassType[_]]
+        [DerivationType]
         (using mirror: Mirror.ProductOf[DerivationType])
         (inline join: (typeclass: TypeclassType[Any], label: Text) ?=> Any) =
       
       mirror.fromProduct:
-        product[DerivationType, TypeclassType, mirror.MirroredElemTypes, mirror.MirroredElemLabels]
+        product[DerivationType, mirror.MirroredElemTypes, mirror.MirroredElemLabels]
             (typeclass ?=> label => join(using typeclass, label))
 
     private transparent inline def product
-        [DerivationType, TypeclassType[_], ParamsType <: Tuple, LabelsType <: Tuple]
+        [DerivationType, ParamsType <: Tuple, LabelsType <: Tuple]
         (inline join: (typeclass: TypeclassType[Any]) ?=> Text => Any)
         : Tuple =
 
@@ -121,12 +121,12 @@ object Derivation:
           case _: (labelType *: labelsType) => inline valueOf[labelType].asMatchable match
             case label: String =>
               join(using summonInline[TypeclassType[paramType]].asInstanceOf[TypeclassType[Any]])(label.tt) *:
-                  product[DerivationType, TypeclassType, paramsType, labelsType](join)
+                  product[DerivationType, paramsType, labelsType](join)
           case EmptyTuple => EmptyTuple
         case EmptyTuple => EmptyTuple
 
     transparent inline def from
-        [DerivationType, TypeclassType[_]]
+        [DerivationType]
         (inline value: DerivationType)
         (using mirror: Mirror.ProductOf[DerivationType])
         [ResultType: ClassTag]
@@ -138,7 +138,7 @@ object Derivation:
       inline value.asMatchable match
         case value: Product => inline mirror match
           case given Mirror.ProductOf[DerivationType & Product] =>
-            product[DerivationType, TypeclassType, mirror.MirroredElemTypes, mirror.MirroredElemLabels, ResultType]
+            product[DerivationType, mirror.MirroredElemTypes, mirror.MirroredElemLabels, ResultType]
                 (Tuple.fromProductTyped(value), array, 0):
               (typeclass, label, param) => join(using typeclass, label, param)
       
@@ -146,7 +146,7 @@ object Derivation:
       
 
     private transparent inline def product
-        [DerivationType, TypeclassType[_], ParamsType <: Tuple, LabelsType <: Tuple, ResultType]
+        [DerivationType, ParamsType <: Tuple, LabelsType <: Tuple, ResultType]
         (tuple: Tuple, array: Array[ResultType], index: Int)
         (inline join: (TypeclassType[Any], Text, Any) => ResultType)
         : Unit =
@@ -160,10 +160,7 @@ object Derivation:
                 array(index) = join(summonInline[TypeclassType[paramType]].asInstanceOf[TypeclassType[Any]],
                     label.tt, param)
                 
-                product[DerivationType, TypeclassType, paramsType, labelsType, ResultType](params, array, index + 1)(join)
-
-
-trait Derived[TypeclassType[_]]:
+                product[DerivationType, paramsType, labelsType, ResultType](params, array, index + 1)(join)
 
   inline def join[DerivationType: Mirror.ProductOf]: TypeclassType[DerivationType]
   inline def split[DerivationType: Mirror.SumOf]: TypeclassType[DerivationType]
