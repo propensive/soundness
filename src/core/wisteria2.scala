@@ -49,15 +49,17 @@ object Derivation:
         [DerivationType, TypeclassType[_]]
         (value: DerivationType)
         [ResultType]
-        (inline split: (typeclass: TypeclassType[DerivationType], label: Text) ?=> ResultType)
+        (inline split: (typeclass: TypeclassType[DerivationType], label: Text, variant: DerivationType,
+            ordinal: Int) ?=> ResultType)
         (using mirror: Mirror.Of[DerivationType])
         : ResultType =
 
       inline mirror match
         case mirror: Mirror.SumOf[DerivationType] =>
-          sum[DerivationType, TypeclassType, mirror.MirroredElemTypes, mirror.MirroredElemLabels]
-              (mirror.ordinal(value))(using mirror):
-            label => typeclass => split(using typeclass, label)
+          val ordinal = mirror.ordinal(value)
+          sum[DerivationType, TypeclassType, mirror.MirroredElemTypes, mirror.MirroredElemLabels](ordinal)
+              (using mirror):
+            label => typeclass => split(using typeclass, label, value, ordinal)
 
     private transparent inline def sum
         [DerivationType, TypeclassType[_], VariantsType <: Tuple, LabelsType <: Tuple]
@@ -100,7 +102,7 @@ object Derivation:
           abort(CoproductError(variant, constValue[mirror.MirroredLabel].tt, variants))(using raises)
   
   object product:
-    transparent inline def from
+    transparent inline def of
         [DerivationType, TypeclassType[_]]
         (using mirror: Mirror.ProductOf[DerivationType])
         (inline join: (typeclass: TypeclassType[Any], label: Text) ?=> Any) =
@@ -123,7 +125,7 @@ object Derivation:
           case EmptyTuple => EmptyTuple
         case EmptyTuple => EmptyTuple
 
-    transparent inline def of
+    transparent inline def from
         [DerivationType, TypeclassType[_]]
         (inline value: DerivationType)
         (using mirror: Mirror.ProductOf[DerivationType])
