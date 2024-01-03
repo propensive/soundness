@@ -45,20 +45,20 @@ enum HttpBody:
 
   def as[T](using readable: HttpReadable[T]): T = readable.read(HttpStatus.Ok, this)
 
-object QuerySerializer extends ProductDerivation[QuerySerializer]:
-  inline def join[DerivationType: ReflectiveProduct]: QuerySerializer[DerivationType] =
+object QueryEncoder extends ProductDerivation[QueryEncoder]:
+  inline def join[DerivationType: ReflectiveProduct]: QueryEncoder[DerivationType] =
     product.from(_)(typeclass.params(param).prefix(label)).reduce(_.append(_))
 
-  given QuerySerializer[Text] = str => Params(List((t"", str)))
-  given QuerySerializer[Int] = int => Params(List((t"", int.show)))
-  given QuerySerializer[Params] = identity(_)
-  given [MapType <: Map[Text, Text]]: QuerySerializer[MapType] = map => Params(map.to(List))
+  given QueryEncoder[Text] = string => Params(List((t"", string)))
+  given QueryEncoder[Int] = int => Params(List((t"", int.show)))
+  given QueryEncoder[Params] = identity(_)
+  given [MapType <: Map[Text, Text]]: QueryEncoder[MapType] = map => Params(map.to(List))
 
-trait QuerySerializer[ValueType]:
+trait QueryEncoder[ValueType]:
   def params(value: ValueType): Params
 
 trait FallbackPostable:
-  given [QueryType](using serializer: QuerySerializer[QueryType]): Postable[QueryType] =
+  given [QueryType](using serializer: QueryEncoder[QueryType]): Postable[QueryType] =
     Postable(media"application/x-www-form-urlencoded", value =>
         LazyList(serializer.params(value).queryString.bytes(using charEncoders.utf8)))
 
