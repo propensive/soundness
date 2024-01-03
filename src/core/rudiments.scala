@@ -42,6 +42,8 @@ extension [ValueType](value: ValueType)
   transparent inline def matchable(using Unsafe): ValueType & Matchable =
     value.asInstanceOf[ValueType & Matchable]
 
+  def contextually[ResultType](block: ValueType ?=> ResultType): ResultType = block(using value)
+
 extension [ValueType](inline value: => ValueType)
   inline def pipe[ResultType](inline fn: ValueType => ResultType): ResultType = fn(value)
 
