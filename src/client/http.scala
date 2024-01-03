@@ -49,10 +49,10 @@ object QueryEncoder extends ProductDerivation[QueryEncoder]:
   inline def join[DerivationType: ReflectiveProduct]: QueryEncoder[DerivationType] =
     product.from(_)(typeclass.params(param).prefix(label)).reduce(_.append(_))
 
-  given QueryEncoder[Text] = string => Params(List((t"", string)))
-  given QueryEncoder[Int] = int => Params(List((t"", int.show)))
-  given QueryEncoder[Params] = identity(_)
-  given [MapType <: Map[Text, Text]]: QueryEncoder[MapType] = map => Params(map.to(List))
+  given text: QueryEncoder[Text] = string => Params(List((t"", string)))
+  given int: QueryEncoder[Int] = int => Params(List((t"", int.show)))
+  given params: QueryEncoder[Params] = identity(_)
+  given map[MapType <: Map[Text, Text]]: QueryEncoder[MapType] = map => Params(map.to(List))
 
 trait QueryEncoder[ValueType]:
   def params(value: ValueType): Params
@@ -63,15 +63,15 @@ trait FallbackPostable:
         LazyList(serializer.params(value).queryString.bytes(using charEncoders.utf8)))
 
 object Postable extends FallbackPostable:
-  given (using encoder: CharEncoder): Postable[Text] =
+  given text(using encoder: CharEncoder): Postable[Text] =
     Postable(media"text/plain", value => LazyList(IArray.from(value.bytes)))
   
-  given (using encoder: CharEncoder): Postable[LazyList[Text]] =
+  given textStream(using encoder: CharEncoder): Postable[LazyList[Text]] =
     Postable(media"application/octet-stream", _.map(_.bytes))
   
-  given Postable[Unit] = Postable(media"text/plain", unit => LazyList())
-  given Postable[Bytes] = Postable(media"application/octet-stream", LazyList(_))
-  given Postable[LazyList[Bytes]] = Postable(media"application/octet-stream", _.map(identity(_)))
+  given unit: Postable[Unit] = Postable(media"text/plain", unit => LazyList())
+  given bytes: Postable[Bytes] = Postable(media"application/octet-stream", LazyList(_))
+  given byteStream: Postable[LazyList[Bytes]] = Postable(media"application/octet-stream", _.map(identity(_)))
   
   given dataStream
       [ResponseType]
@@ -97,7 +97,7 @@ object HttpMethod:
     def name: Text = t"formmethod"
     def serialize(method: HttpMethod): Text = method.show
 
-  given Communicable[HttpMethod] = method => Message(method.show.upper)
+  given communicable: Communicable[HttpMethod] = method => Message(method.show.upper)
 
 enum HttpMethod:
   case Get, Head, Post, Put, Delete, Connect, Options, Trace, Patch
@@ -136,25 +136,29 @@ case class HttpRequest
       case HttpBody.Data(data)    => LazyList(buffer.toString.tt.bytes, data)
 
 object HttpReadable:
-  given HttpReadable[Text] with
+  given text: HttpReadable[Text] with
     def read(status: HttpStatus, body: HttpBody): Text = body match
       case HttpBody.Empty         => t""
       case HttpBody.Data(body)    => body.uString
       case HttpBody.Chunked(body) => body.slurp().uString
   
-  given HttpReadable[Bytes] with
+  given bytes: HttpReadable[Bytes] with
     def read(status: HttpStatus, body: HttpBody): Bytes = body match
       case HttpBody.Empty         => IArray()
       case HttpBody.Data(body)    => body
       case HttpBody.Chunked(body) => body.slurp()
 
-  given [T](using reader: GenericHttpReader[T]): HttpReadable[T] with
-    def read(status: HttpStatus, body: HttpBody): T = body match
+  given genericHttpReader
+      [ContentType]
+      (using reader: GenericHttpReader[ContentType])
+      : HttpReadable[ContentType] with
+
+    def read(status: HttpStatus, body: HttpBody): ContentType = body match
       case HttpBody.Empty         => reader.read(t"")
       case HttpBody.Data(data)    => reader.read(data.uString)
       case HttpBody.Chunked(data) => reader.read(data.slurp().uString)
 
-  given HttpReadable[HttpStatus] with
+  given httpStatus: HttpReadable[HttpStatus] with
     def read(status: HttpStatus, body: HttpBody) = status
 
 trait HttpReadable[+BodyType]:
@@ -168,7 +172,7 @@ case class HttpResponse
     case status              => readable.read(status, body)
 
 object Locatable:
-  given httpsUrl: Locatable[HttpUrl] = identity(_)
+  given httpUrl: Locatable[HttpUrl] = identity(_)
 
 trait Locatable[-UrlType]:
   def location(value: UrlType): HttpUrl
@@ -229,9 +233,10 @@ object Http:
     request(summon[Locatable[UrlType]].location(url), (), HttpMethod.Patch, headers)
 
   private def request
-      [PostType: Postable]
+      [PostType]
       (url: HttpUrl, content: PostType, method: HttpMethod,headers: Seq[RequestHeader.Value])
       (using Online, Log[Text])
+      (using postable: Postable[PostType])
       : HttpResponse =
     Log.info(msg"Sending HTTP $method request to $url")
     headers.foreach: header =>
@@ -242,7 +247,7 @@ object Http:
     (URI(url.show.s).toURL.nn.openConnection.nn: @unchecked) match
       case conn: HttpURLConnection =>
         conn.setRequestMethod(method.toString.show.upper.s)
-        conn.setRequestProperty(RequestHeader.ContentType.header.s, summon[Postable[PostType]].contentType.show.s)
+        conn.setRequestProperty(RequestHeader.ContentType.header.s, postable.contentType.show.s)
         conn.setRequestProperty("User-Agent", "Telekinesis/1.0.0")
         
         headers.foreach:
@@ -290,7 +295,7 @@ object HttpStatus:
   private lazy val all: Map[Int, HttpStatus] = values.immutable(using Unsafe).mtwin.map(_.code -> _).to(Map)
   def unapply(code: Int): Option[HttpStatus] = all.get(code)
 
-  given Communicable[HttpStatus] = status => msg"${status.code} (${status.description})"
+  given communicable: Communicable[HttpStatus] = status => msg"${status.code} (${status.description})"
 
 enum HttpStatus(val code: Int, val description: Text):
   case Continue extends HttpStatus(100, t"Continue"), FailureCase
