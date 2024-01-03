@@ -16,7 +16,7 @@
 
 package caesura
 
-import wisteria.*
+import wisteria2.*
 import rudiments.*
 import gossamer.*
 import fulminate.*
@@ -74,11 +74,11 @@ trait RowFormat:
   protected def escape(str: Text): Text
 
 object Row:
-  def from[T](value: T)(using writer: Csv.Writer[T]): Row = writer.write(value)
+  def from[RowType](value: RowType)(using writer: Csv.Writer[RowType]): Row = writer.write(value)
   given Show[Row] = _.elems.join(t",")
 
 case class Row(elems: Text*):
-  def as[T: ColumnParser]: T = summon[ColumnParser[T]].decode(this)
+  def as[CellType: ColumnParser]: CellType = summon[ColumnParser[CellType]].decode(this)
 
 object Csv extends RowFormat:
   type Type = Csv
@@ -101,11 +101,9 @@ object Csv extends RowFormat:
   given Writer[Char] = c => Row(c.show)
 
   object Writer extends ProductDerivation[Writer]:
-    def join[T](caseClass: CaseClass[Writer, T]): Writer[T] = (value: T) =>
-      Row(caseClass.params.flatMap {
-        param => param.typeclass.write(param.deref(value)).elems
-      }*)
-
+    inline def join[DerivationType: ReflectiveProduct]: Writer[DerivationType] = value =>
+      Row(params(value)(typeclass.write(param).elems).to(List).flatten*)
+    
   trait Writer[T]:
     def write(value: T): Row
 
@@ -139,24 +137,28 @@ object Tsv extends RowFormat:
 
 
 object ColumnParser extends ProductDerivation[ColumnParser]:
-  given [T: Decoder]: ColumnParser[T] = _.elems.head.decodeAs[T]
   
-  def join[T](caseClass: CaseClass[ColumnParser, T]): ColumnParser[T] = ColumnParser[T](
-    fn = { row =>
-      
-      @annotation.tailrec
-      def parseParams(row: Row, typeclasses: Seq[ColumnParser[?]], params: Vector[Any]): T =
-        if typeclasses.isEmpty then caseClass.rawConstruct(params)
-        else
-          val typeclass = typeclasses.head
-          val appended = params :+ typeclass.decode(Row(row.elems.take(typeclass.width)*))
-          parseParams(Row(row.elems.drop(typeclass.width)*), typeclasses.tail, appended)
-      
-      val typeclasses = caseClass.params.map(_.typeclass)
-      parseParams(row, typeclasses, Vector())
-    },
-    width = caseClass.params.map(_.typeclass.width).sum
-  )
+  inline def join[DerivationType: ReflectiveProduct]: ColumnParser[DerivationType] =
+    new ColumnParser[DerivationType]:
+      def decode(elems: Row): DerivationType =
+        var count: Int = 0
+        product:
+          val row = Row(elems.elems.drop(count)*)
+          count += typeclass.width
+          typeclass.decode(row)
+        
+      override def width: Int =
+        var count: Int = 0
+        
+        // FIXME: constructing the new product is unnecessary, but Wisteria does not currently provide a way
+        // to iterate over the parameters
+        product:
+          count += typeclass.width
+          null.asInstanceOf[Any]
+        
+        count
+  
+  given decoder[T: Decoder]: ColumnParser[T] = _.elems.head.decodeAs[T]
 
   def apply[T](fn: Row => T, width: Int = 1): ColumnParser[T] =
     val colWidth = width

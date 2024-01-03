@@ -1,17 +1,23 @@
 # This is a buildfile for Fury or Wrath.
 # More information is available at: https://github.com/propensive/wrath/
 
-target caesura/core
+target caesura/test
 
 repo propensive/gossamer
 repo propensive/turbulence
 repo propensive/spectacular
 repo propensive/hieroglyph
 repo propensive/wisteria
+repo propensive/probably
 
 project caesura
   module core
     compiler  scala
     sources   src/core
     include   gossamer/core turbulence/core wisteria/core spectacular/core hieroglyph/core
-
+  
+  module test
+    compiler  scala
+    sources   src/test
+    include   probably/cli caesura/core
+    main      caesura.Tests

@@ -20,11 +20,14 @@ import probably.*
 import gossamer.*
 import rudiments.*
 import turbulence.*
+import anticipation.*
+import spectacular.*
+import perforate.*, errorHandlers.throwUnsafely
 
 import unsafeExceptions.canThrowAny
-import encodings.Utf8
+import hieroglyph.*, charEncoders.utf8
 
-given Log(_ => SystemOut.sink)
+given decimalizer: Decimalizer = Decimalizer(4)
 
 object Tests extends Suite(t"Caesura tests"):
   def run(): Unit =
