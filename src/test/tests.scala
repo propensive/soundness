@@ -183,12 +183,12 @@ object Tests extends Suite(t"Spectacular Tests"):
       test(t"serialize IArray of booleans"):
         val text = IArray(true, false, true).debug
         text.take(3)+text.drop(8) // need to remove part which is variable for different runs
-      .assert(_ == t"""⁅ℤ¦₀true∣₁false∣₂true⁆""")
+      .assert(_ == t"""⁅ℤ¦₀true╱₁false╱₂true⁆""")
       
       test(t"serialize IArray of strings"):
         val text = IArray(t"one", t"two", t"three").debug
         text.take(3)+text.drop(8) // need to remove part which is variable for different runs
-      .assert(_ == t"""⁅𝕃¦₀t"one"∣₁t"two"∣₂t"three"⁆""")
+      .assert(_ == t"""⁅𝕃¦₀t"one"╱₁t"two"╱₂t"three"⁆""")
 
     suite(t"Show tests"):
       test(t"Show a string"):
