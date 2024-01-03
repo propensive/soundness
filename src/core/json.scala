@@ -30,7 +30,6 @@ import perforate.*
 
 import scala.collection.Factory
 import scala.compiletime.*
-import scala.deriving.*
 
 import language.dynamics
 import language.experimental.captureChecking
