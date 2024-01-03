@@ -116,7 +116,7 @@ trait Digestible2:
   given optional[ValueType](using digestible: Digestible[ValueType]): Digestible[Optional[ValueType]] =
     (acc, value) => value.let(digestible.digest(acc, _))
 
-object Digestible extends Digestible2, Derived[Digestible]:
+object Digestible extends Digestible2, Derivation[Digestible]:
   inline def join[DerivationType: ReflectiveProduct]: Digestible[DerivationType] = (accumulator, value) =>
     product.from(value)(typeclass.digest(accumulator, param))
       
