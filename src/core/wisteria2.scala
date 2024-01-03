@@ -31,140 +31,140 @@ extends Error(msg"""the specified $variant is not one of the valid variants (${v
                     sum $sum""")
 
 trait Derivation[TypeclassType[_]] extends ProductDerivation[TypeclassType]:
-  protected object sum:
-    transparent inline def of
-        [DerivationType]
-        (variant: Text)
-        [ResultType]
-        (inline split: (typeclass: TypeclassType[DerivationType]) ?=> ResultType)
-        (using reflective: Reflective[DerivationType])
-        : ResultType =
+  transparent inline def sum
+      [DerivationType]
+      (variant: Text)
+      [ResultType]
+      (inline split: (typeclass: TypeclassType[DerivationType]) ?=> ResultType)
+      (using reflective: Reflective[DerivationType])
+      : ResultType =
 
-      inline reflective match
-        case given ReflectiveSum[DerivationType] =>
-          sum[DerivationType, reflective.MirroredElemTypes, reflective.MirroredElemLabels](variant):
-            typeclass => split(using typeclass)
+    inline reflective match
+      case given ReflectiveSum[DerivationType] =>
+        sumRecur[DerivationType, reflective.MirroredElemTypes, reflective.MirroredElemLabels](variant):
+          typeclass => split(using typeclass)
 
-    transparent inline def from
-        [DerivationType]
-        (value: DerivationType)
-        [ResultType]
-        (inline split: (typeclass: TypeclassType[DerivationType], label: Text, variant: DerivationType,
-            ordinal: Int) ?=> ResultType)
-        (using reflective: ReflectiveSum[DerivationType])
-        : ResultType =
+  transparent inline def variants
+      [DerivationType]
+      (value: DerivationType)
+      [ResultType]
+      (inline split: (typeclass: TypeclassType[DerivationType], label: Text, variant: DerivationType,
+          ordinal: Int) ?=> ResultType)
+      (using reflective: ReflectiveSum[DerivationType])
+      : ResultType =
 
-      inline reflective match
-        case reflective: ReflectiveSum[DerivationType] =>
-          val ordinal = reflective.ordinal(value)
-          
-          sum[DerivationType, reflective.MirroredElemTypes, reflective.MirroredElemLabels](ordinal)
-              (using reflective):
-            label => typeclass => split(using typeclass, label, value, ordinal)
+    inline reflective match
+      case reflective: ReflectiveSum[DerivationType] =>
+        val ordinal = reflective.ordinal(value)
+        
+        sumRecur[DerivationType, reflective.MirroredElemTypes, reflective.MirroredElemLabels](ordinal)
+            (using reflective):
+          label => typeclass => split(using typeclass, label, value, ordinal)
 
-    private transparent inline def sum
-        [DerivationType, VariantsType <: Tuple, LabelsType <: Tuple]
-        (ordinal: Int)
-        [ResultType]
-        (using reflective: ReflectiveSum[DerivationType])
-        (inline split: Text => TypeclassType[DerivationType] => ResultType)
-        : ResultType =
+  private transparent inline def sumRecur
+      [DerivationType, VariantsType <: Tuple, LabelsType <: Tuple]
+      (ordinal: Int)
+      [ResultType]
+      (using reflective: ReflectiveSum[DerivationType])
+      (inline split: Text => TypeclassType[DerivationType] => ResultType)
+      : ResultType =
 
-      inline erasedValue[VariantsType] match
-        case _: (variantType *: variantsType) => inline erasedValue[LabelsType] match
-          case _: (labelType *: labelsType) =>
-            if ordinal == 0 then inline valueOf[labelType].asMatchable match
-              case label: String => split(label.tt):
-                summonInline[TypeclassType[variantType]].asInstanceOf[TypeclassType[DerivationType]]
-            else sum[DerivationType, variantsType, labelsType](ordinal - 1)(split)
-          case EmptyTuple => throw Mistake(msg"unreachable")
+    inline erasedValue[VariantsType] match
+      case _: (variantType *: variantsType) => inline erasedValue[LabelsType] match
+        case _: (labelType *: labelsType) =>
+          if ordinal == 0 then inline valueOf[labelType].asMatchable match
+            case label: String => split(label.tt):
+              summonInline[TypeclassType[variantType]].asInstanceOf[TypeclassType[DerivationType]]
+          else sumRecur[DerivationType, variantsType, labelsType](ordinal - 1)(split)
         case EmptyTuple => throw Mistake(msg"unreachable")
+      case EmptyTuple => throw Mistake(msg"unreachable")
 
-    private transparent inline def sum
-        [DerivationType, VariantsType <: Tuple, LabelsType <: Tuple]
-        (variant: Text)
-        [ResultType]
-        (inline split: TypeclassType[DerivationType] => ResultType)
-        (using reflective: ReflectiveSum[DerivationType])
-        : ResultType =
+  private transparent inline def sumRecur
+      [DerivationType, VariantsType <: Tuple, LabelsType <: Tuple]
+      (variant: Text)
+      [ResultType]
+      (inline split: TypeclassType[DerivationType] => ResultType)
+      (using reflective: ReflectiveSum[DerivationType])
+      : ResultType =
 
-      inline erasedValue[VariantsType] match
-        case _: (variantType *: variantsType) => inline erasedValue[LabelsType] match
-          case _: (labelType *: labelsType) => inline valueOf[labelType].asMatchable match
-            case label: String =>
-              if label.tt == variant
-              then split(summonInline[TypeclassType[variantType]].asInstanceOf[TypeclassType[DerivationType]])
-              else sum[DerivationType, variantsType, labelsType](variant)(split)
+    inline erasedValue[VariantsType] match
+      case _: (variantType *: variantsType) => inline erasedValue[LabelsType] match
+        case _: (labelType *: labelsType) => inline valueOf[labelType].asMatchable match
+          case label: String =>
+            if label.tt == variant
+            then split(summonInline[TypeclassType[variantType]].asInstanceOf[TypeclassType[DerivationType]])
+            else sumRecur[DerivationType, variantsType, labelsType](variant)(split)
 
-          case EmptyTuple => throw Mistake(msg"unreachable")
-        case EmptyTuple =>
-          val raises = summonInline[Raises[VariantError]]
-          val variants = constValueTuple[reflective.MirroredElemLabels].toList.map(_.toString.tt)
-          abort(VariantError(variant, constValue[reflective.MirroredLabel].tt, variants))(using raises)
+        case EmptyTuple => throw Mistake(msg"unreachable")
+      case EmptyTuple =>
+        val raises = summonInline[Raises[VariantError]]
+        val variants = constValueTuple[reflective.MirroredElemLabels].toList.map(_.toString.tt)
+        abort(VariantError(variant, constValue[reflective.MirroredLabel].tt, variants))(using raises)
   
   inline def split[DerivationType: ReflectiveSum]: TypeclassType[DerivationType]
   
 
 trait ProductDerivation[TypeclassType[_]]:
-  protected object product:
-    transparent inline def of
-        [DerivationType]
-        (using reflective: ReflectiveProduct[DerivationType])
-        (inline join: (typeclass: TypeclassType[Any], label: Text) ?=> Any) =
-      
-      reflective.fromProduct:
-        product[DerivationType, reflective.MirroredElemTypes, reflective.MirroredElemLabels]
-            (typeclass ?=> label => join(using typeclass, label))
+  transparent inline def product
+      [DerivationType]
+      (using reflective: ReflectiveProduct[DerivationType])
+      (inline join: (typeclass: TypeclassType[Any], label: Text, ordinal: Int) ?=> Any) =
+    
+    reflective.fromProduct:
+      productRecur[DerivationType, reflective.MirroredElemTypes, reflective.MirroredElemLabels](0)
+          (typeclass => label => ordinal => join(using typeclass, label, ordinal))
 
-    private transparent inline def product
-        [DerivationType, ParamsType <: Tuple, LabelsType <: Tuple]
-        (inline join: (typeclass: TypeclassType[Any]) ?=> Text => Any)
-        : Tuple =
+  private transparent inline def productRecur
+      [DerivationType, ParamsType <: Tuple, LabelsType <: Tuple]
+      (index: Int)
+      (inline join: TypeclassType[Any] => Text => Int => Any)
+      : Tuple =
 
-      inline erasedValue[ParamsType] match
-        case _: (paramType *: paramsType) => inline erasedValue[LabelsType] match
+    inline erasedValue[ParamsType] match
+      case _: (paramType *: paramsType) => inline erasedValue[LabelsType] match
+        case _: (labelType *: labelsType) => inline valueOf[labelType].asMatchable match
+          case label: String =>
+            val typeclass = summonInline[TypeclassType[paramType]].asInstanceOf[TypeclassType[Any]]
+            join(typeclass)(label.tt)(index) *:
+                productRecur[DerivationType, paramsType, labelsType](index + 1)(join)
+        case EmptyTuple => EmptyTuple
+      case EmptyTuple => EmptyTuple
+
+  transparent inline def params
+      [DerivationType]
+      (inline value: DerivationType)
+      (using reflective: ReflectiveProduct[DerivationType])
+      [ResultType: ClassTag]
+      (inline join: (typeclass: TypeclassType[Any], label: Text, ordinal: Int, param: Any) ?=> ResultType)
+      : IArray[ResultType] =
+    
+    val array: Array[ResultType] = new Array(valueOf[Tuple.Size[reflective.MirroredElemTypes]])
+    
+    inline value.asMatchable match
+      case value: Product => inline reflective match
+        case given ReflectiveProduct[DerivationType & Product] =>
+          productRecur[DerivationType, reflective.MirroredElemTypes, reflective.MirroredElemLabels, ResultType]
+              (Tuple.fromProductTyped(value), array, 0):
+            (typeclass, label, ordinal, param) => join(using typeclass, label, ordinal, param)
+    
+    array.immutable(using Unsafe)
+    
+  private transparent inline def productRecur
+      [DerivationType, ParamsType <: Tuple, LabelsType <: Tuple, ResultType]
+      (tuple: Tuple, array: Array[ResultType], index: Int)
+      (inline join: (TypeclassType[Any], Text, Int, Any) => ResultType)
+      : Unit =
+
+    inline tuple match
+      case EmptyTuple => ()
+      case cons: (paramType *: paramsType) => cons match
+        case param *: params => inline erasedValue[LabelsType] match
           case _: (labelType *: labelsType) => inline valueOf[labelType].asMatchable match
             case label: String =>
-              join(using summonInline[TypeclassType[paramType]].asInstanceOf[TypeclassType[Any]])(label.tt) *:
-                  product[DerivationType, paramsType, labelsType](join)
-          case EmptyTuple => EmptyTuple
-        case EmptyTuple => EmptyTuple
-
-    transparent inline def params
-        [DerivationType]
-        (inline value: DerivationType)
-        (using reflective: ReflectiveProduct[DerivationType])
-        [ResultType: ClassTag]
-        (inline join: (typeclass: TypeclassType[Any], label: Text, ordinal: Int, param: Any) ?=> ResultType)
-        : IArray[ResultType] =
-      
-      val array: Array[ResultType] = new Array(valueOf[Tuple.Size[reflective.MirroredElemTypes]])
-      
-      inline value.asMatchable match
-        case value: Product => inline reflective match
-          case given ReflectiveProduct[DerivationType & Product] =>
-            product[DerivationType, reflective.MirroredElemTypes, reflective.MirroredElemLabels, ResultType]
-                (Tuple.fromProductTyped(value), array, 0):
-              (typeclass, label, ordinal, param) => join(using typeclass, label, ordinal, param)
-      
-      array.immutable(using Unsafe)
-      
-    private transparent inline def product
-        [DerivationType, ParamsType <: Tuple, LabelsType <: Tuple, ResultType]
-        (tuple: Tuple, array: Array[ResultType], index: Int)
-        (inline join: (TypeclassType[Any], Text, Int, Any) => ResultType)
-        : Unit =
-
-      inline tuple match
-        case EmptyTuple => ()
-        case cons: (paramType *: paramsType) => cons match
-          case param *: params => inline erasedValue[LabelsType] match
-            case _: (labelType *: labelsType) => inline valueOf[labelType].asMatchable match
-              case label: String =>
-                array(index) = join(summonInline[TypeclassType[paramType]].asInstanceOf[TypeclassType[Any]],
-                    label.tt, index, param)
-                
-                product[DerivationType, paramsType, labelsType, ResultType](params, array, index + 1)(join)
+              array(index) = join(summonInline[TypeclassType[paramType]].asInstanceOf[TypeclassType[Any]],
+                  label.tt, index, param)
+              
+              productRecur[DerivationType, paramsType, labelsType, ResultType](params, array, index + 1)(join)
 
   inline def join[DerivationType: ReflectiveProduct]: TypeclassType[DerivationType]
 
