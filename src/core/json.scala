@@ -220,90 +220,90 @@ trait JsonEncoder[-ValueType]:
     val (keys, values) = encode(value).obj
     (keys :+ "_type", values :+ label.s).asInstanceOf[JsonAst]
 
-trait FallbackJsonDeserializer:
-  given maybe[ValueType](using reader: JsonDeserializer[ValueType]^): JsonDeserializer[Optional[ValueType]]^{reader} =
-    new JsonDeserializer[Optional[ValueType]]:
-      def read(value: JsonAst, missing: Boolean): Optional[ValueType] =
-        if missing then Unset else reader.read(value, false)
+trait FallbackJsonDecoder:
+  given maybe[ValueType](using decoder: JsonDecoder[ValueType]^): JsonDecoder[Optional[ValueType]]^{decoder} =
+    new JsonDecoder[Optional[ValueType]]:
+      def decode(value: JsonAst, missing: Boolean): Optional[ValueType] =
+        if missing then Unset else decoder.decode(value, false)
   
   given decoder
       [ValueType]
       (using jsonAccess: Raises[JsonAccessError], decoder: Decoder[ValueType])
-      : JsonDeserializer[ValueType]^{jsonAccess, decoder} =
+      : JsonDecoder[ValueType]^{jsonAccess, decoder} =
     (value, missing) => decoder.decode(value.string)
 
-object JsonDeserializer extends FallbackJsonDeserializer:
-  given jsonAst(using jsonAccess: Raises[JsonAccessError]): JsonDeserializer[JsonAst]^{jsonAccess} =
+object JsonDecoder extends FallbackJsonDecoder:
+  given jsonAst(using jsonAccess: Raises[JsonAccessError]): JsonDecoder[JsonAst]^{jsonAccess} =
     (value, missing) => value
   
-  given json(using jsonAccess: Raises[JsonAccessError]): JsonDeserializer[Json]^{jsonAccess} =
+  given json(using jsonAccess: Raises[JsonAccessError]): JsonDecoder[Json]^{jsonAccess} =
     (value, missing) => Json(value)
   
-  given int(using jsonAccess: Raises[JsonAccessError]): JsonDeserializer[Int]^{jsonAccess} =
+  given int(using jsonAccess: Raises[JsonAccessError]): JsonDecoder[Int]^{jsonAccess} =
     (value, missing) => value.long.toInt
   
-  given byte(using jsonAccess: Raises[JsonAccessError]): JsonDeserializer[Byte]^{jsonAccess} =
+  given byte(using jsonAccess: Raises[JsonAccessError]): JsonDecoder[Byte]^{jsonAccess} =
     (value, missing) => value.long.toByte
   
-  given short(using jsonAccess: Raises[JsonAccessError]): JsonDeserializer[Short]^{jsonAccess} =
+  given short(using jsonAccess: Raises[JsonAccessError]): JsonDecoder[Short]^{jsonAccess} =
     (value, missing) => value.long.toShort
   
-  given float(using jsonAccess: Raises[JsonAccessError]): JsonDeserializer[Float]^{jsonAccess} =
+  given float(using jsonAccess: Raises[JsonAccessError]): JsonDecoder[Float]^{jsonAccess} =
     (value, missing) => value.double.toFloat
   
-  given double(using jsonAccess: Raises[JsonAccessError]): JsonDeserializer[Double]^{jsonAccess} =
+  given double(using jsonAccess: Raises[JsonAccessError]): JsonDecoder[Double]^{jsonAccess} =
     (value, missing) => value.double
   
-  given long(using jsonAccess: Raises[JsonAccessError]): JsonDeserializer[Long]^{jsonAccess} =
+  given long(using jsonAccess: Raises[JsonAccessError]): JsonDecoder[Long]^{jsonAccess} =
     (value, missing) => value.long
 
-  given text(using jsonAccess: Raises[JsonAccessError]): JsonDeserializer[Text]^{jsonAccess} =
+  given text(using jsonAccess: Raises[JsonAccessError]): JsonDecoder[Text]^{jsonAccess} =
     (value, missing) => value.string
 
-  given string(using jsonAccess: Raises[JsonAccessError]): JsonDeserializer[String]^{jsonAccess} =
+  given string(using jsonAccess: Raises[JsonAccessError]): JsonDecoder[String]^{jsonAccess} =
     (value, missing) => value.string.s
   
-  given boolean(using jsonAccess: Raises[JsonAccessError]): JsonDeserializer[Boolean]^{jsonAccess} =
+  given boolean(using jsonAccess: Raises[JsonAccessError]): JsonDecoder[Boolean]^{jsonAccess} =
     (value, missing) => value.boolean
   
-  given option[ValueType](using reader: JsonDeserializer[ValueType]^)(using Raises[JsonAccessError])
-      : JsonDeserializer[Option[ValueType]]^{reader} =
-    new JsonDeserializer[Option[ValueType]]:
-      def read(value: JsonAst, missing: Boolean): Option[ValueType] =
-        if missing then None else Some(reader.read(value, false))
+  given option[ValueType](using decoder: JsonDecoder[ValueType]^)(using Raises[JsonAccessError])
+      : JsonDecoder[Option[ValueType]]^{decoder} =
+    new JsonDecoder[Option[ValueType]]:
+      def decode(value: JsonAst, missing: Boolean): Option[ValueType] =
+        if missing then None else Some(decoder.decode(value, false))
 
   given array
       [CollectionType[ElementType] <: Iterable[ElementType], ElementType]
-      (using reader: JsonDeserializer[ElementType], jsonAccess: Raises[JsonAccessError],
+      (using decoder: JsonDecoder[ElementType], jsonAccess: Raises[JsonAccessError],
           factory: Factory[ElementType, CollectionType[ElementType]])
-      : JsonDeserializer[CollectionType[ElementType]]^{jsonAccess} =
-    new JsonDeserializer[CollectionType[ElementType]]:
-      def read(value: JsonAst, missing: Boolean): CollectionType[ElementType] =
+      : JsonDecoder[CollectionType[ElementType]]^{jsonAccess} =
+    new JsonDecoder[CollectionType[ElementType]]:
+      def decode(value: JsonAst, missing: Boolean): CollectionType[ElementType] =
         val bld = factory.newBuilder
-        value.array.foreach(bld += reader.read(_, false))
+        value.array.foreach(bld += decoder.decode(_, false))
         bld.result()
 
   given map[ElementType]
-      (using reader: JsonDeserializer[ElementType])
-      (using jsonAccess: Raises[JsonAccessError]): JsonDeserializer[Map[String, ElementType]]^{jsonAccess} =
+      (using decoder: JsonDecoder[ElementType])
+      (using jsonAccess: Raises[JsonAccessError]): JsonDecoder[Map[String, ElementType]]^{jsonAccess} =
     (value, missing) =>
       val (keys, values) = value.obj
         
       keys.indices.foldLeft(Map[String, ElementType]()): (acc, index) =>
-        acc.updated(keys(index), reader.read(values(index), false))
+        acc.updated(keys(index), decoder.decode(values(index), false))
 
   inline given derived
       [DerivationType](using mirror: Mirror.Of[DerivationType])(using jsonAccess: Raises[JsonAccessError])
-      : JsonDeserializer[DerivationType] =
+      : JsonDecoder[DerivationType] =
     inline mirror match
       case given Mirror.ProductOf[DerivationType] => (value, missing) =>
         val keyValues = value.obj
         val values = keyValues(0).zip(keyValues(1)).to(Map)
         
-        Derivation.productOf[DerivationType, JsonDeserializer]:
+        Derivation.productOf[DerivationType, JsonDecoder]:
           val missing = !values.contains(label.s)
           val value = if missing then 0.asInstanceOf[JsonAst] else values(label.s)
-          typeclass.read(value, missing)
+          typeclass.decode(value, missing)
     
       case mirror: Mirror.SumOf[DerivationType] => (value, missing) =>
         val values = value.obj
@@ -314,14 +314,14 @@ object JsonDeserializer extends FallbackJsonDeserializer:
           
           case index =>
             val discriminant = values(1)(index).string
-            Derivation.sumOf[DerivationType, JsonDeserializer](discriminant)(typeclass.read(value, missing))
+            Derivation.sumOf[DerivationType, JsonDecoder](discriminant)(typeclass.decode(value, missing))
 
-trait JsonDeserializer[ValueType]:
-  private inline def reader: this.type = this
+trait JsonDecoder[ValueType]:
+  private inline def decoder: this.type = this
   
-  def read(json: JsonAst, missing: Boolean): ValueType
-  def map[ValueType2](fn: ValueType => ValueType2): JsonDeserializer[ValueType2]^{this, fn} =
-    (json, missing) => fn(reader.read(json, missing))
+  def decode(json: JsonAst, missing: Boolean): ValueType
+  def map[ValueType2](fn: ValueType => ValueType2): JsonDecoder[ValueType2]^{this, fn} =
+    (json, missing) => fn(decoder.decode(json, missing))
 
 class Json(rootValue: Any) extends Dynamic derives CanEqual:
   def root: JsonAst = rootValue.asInstanceOf[JsonAst]
@@ -421,8 +421,8 @@ class Json(rootValue: Any) extends Dynamic derives CanEqual:
     case _ =>
       false
 
-  def as[ValueType](using reader: JsonDeserializer[ValueType], jsonAccess: Raises[JsonAccessError]): ValueType =
-    reader.read(root, false)
+  def as[ValueType](using decoder: JsonDecoder[ValueType], jsonAccess: Raises[JsonAccessError]): ValueType =
+    decoder.decode(root, false)
 
 trait JsonPrinter:
   def serialize(json: JsonAst): Text
