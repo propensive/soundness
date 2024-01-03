@@ -19,96 +19,94 @@ package caesura
 import probably.*
 import gossamer.*
 import rudiments.*
-import turbulence.*
 import anticipation.*
 import spectacular.*
 import perforate.*, errorHandlers.throwUnsafely
 
-import unsafeExceptions.canThrowAny
-import hieroglyph.*, charEncoders.utf8
+import hieroglyph.*
 
-given decimalizer: Decimalizer = Decimalizer(4)
+given decimalizer: Decimalizer = Decimalizer(1)
 
 object Tests extends Suite(t"Caesura tests"):
   def run(): Unit =
     test(t"simple parse"):
-      Csv.parseLine(t"""hello,world""")
-    .assert(_ == Row(t"hello", t"world"))
+      CsvDoc.parseLine(t"""hello,world""")
+    .assert(_ == Csv(t"hello", t"world"))
 
     test(t"simple parse with quotes"):
-      Csv.parseLine(t""""hello","world"""")
-    .assert(_ == Row(t"hello", t"world"))
+      CsvDoc.parseLine(t""""hello","world"""")
+    .assert(_ == Csv(t"hello", t"world"))
 
     test(t"empty unquoted field at start"):
-      Csv.parseLine(t",hello,world")
-    .assert(_ == Row(t"", t"hello", t"world"))
+      CsvDoc.parseLine(t",hello,world")
+    .assert(_ == Csv(t"", t"hello", t"world"))
 
     test(t"empty unquoted field at end"):
-      Csv.parseLine(t"hello,world,")
-    .assert(_ == Row(t"hello", t"world", t""))
+      CsvDoc.parseLine(t"hello,world,")
+    .assert(_ == Csv(t"hello", t"world", t""))
 
     test(t"empty unquoted field in middle"):
-      Csv.parseLine(t"hello,,world")
-    .assert(_ == Row(t"hello", t"", t"world"))
+      CsvDoc.parseLine(t"hello,,world")
+    .assert(_ == Csv(t"hello", t"", t"world"))
 
     test(t"empty quoted field at start"):
-      Csv.parseLine(t""""","hello","world"""")
-    .assert(_ == Row(t"", t"hello", t"world"))
+      CsvDoc.parseLine(t""""","hello","world"""")
+    .assert(_ == Csv(t"", t"hello", t"world"))
     test(t"empty quoted field at end"):
-      Csv.parseLine(t""""hello","world",""""")
-    .assert(_ == Row(t"hello", t"world", t""))
+      CsvDoc.parseLine(t""""hello","world",""""")
+    .assert(_ == Csv(t"hello", t"world", t""))
 
     test(t"empty quoted field in middle"):
-      Csv.parseLine(t""""hello","","world"""")
-    .assert(_ == Row(t"hello", t"", t"world"))
+      CsvDoc.parseLine(t""""hello","","world"""")
+    .assert(_ == Csv(t"hello", t"", t"world"))
 
     test(t"quoted comma"):
-      Csv.parseLine(t""""hello,world"""")
-    .assert(_ == Row(t"hello,world"))
+      CsvDoc.parseLine(t""""hello,world"""")
+    .assert(_ == Csv(t"hello,world"))
 
     test(t"escaped quotes"):
-      Csv.parseLine(t""""hello""world"""")
-    .assert(_ == Row(t"""hello"world"""))
+      CsvDoc.parseLine(t""""hello""world"""")
+    .assert(_ == Csv(t"""hello"world"""))
 
     test(t"decode case class"):
-      Csv.parseLine(t"""hello,world""").as[Foo]
+      CsvDoc.parseLine(t"""hello,world""").as[Foo]
     .assert(_ == Foo(t"hello", t"world"))
 
     test(t"decode complex case class"):
-      Csv.parseLine(t"""0.1,two,three,4,five,six""").as[Bar]
+      CsvDoc.parseLine(t"""0.1,two,three,4,five,six""").as[Bar]
     .assert(_ == Bar(0.1, Foo(t"two", t"three"), 4, Foo(t"five", t"six")))
 
     test(t"encode case class"):
-      Row.from(Foo(t"hello", t"world"))
-    .assert(_ == Row(t"hello", t"world"))
+      Foo(t"hello", t"world").csv
+    .assert(_ == Csv(t"hello", t"world"))
 
     test(t"encode complex case class"):
-      Row.from(Bar(0.1, Foo(t"two", t"three"), 4, Foo(t"five", t"six")))
-    .assert(_ == Row(t"0.1", t"two", t"three", t"4", t"five", t"six"))
+      Bar(0.1, Foo(t"two", t"three"), 4, Foo(t"five", t"six")).csv
+    .assert(_ == Csv(t"0.1", t"two", t"three", t"4", t"five", t"six"))
 
     test(t"convert simple row to string"):
-      Csv(List(Row(t"hello", t"world"))).show.s
-    .assert(_ == """hello,world""")
+      CsvDoc(List(Csv(t"hello", t"world"))).show
+    .assert(_ == t"""hello,world""")
 
     test(t"convert complex row to string"):
-      Csv(List(Row(t"0.1", t"two", t"three", t"4", t"five", t"six"))).show.s
-    .assert(_ == """0.1,two,three,4,five,six""") // "
+      CsvDoc(List(Csv(t"0.1", t"two", t"three", t"4", t"five", t"six"))).show
+    .assert(_ == t"""0.1,two,three,4,five,six""") // "
 
     test(t"convert row with escaped quote"):
-      Csv(List(Row(t"hello\"world"))).show.s
-    .assert(_ == """"hello""world"""")
+      CsvDoc(List(Csv(t"hello\"world"))).show
+    .assert(_ == t""""hello""world"""")
 
     test(t"simple parse tsv"):
       Tsv.parseLine(t"hello\tworld")
-    .assert(_ == Row(t"hello", t"world"))
+    .assert(_ == Csv(t"hello", t"world"))
 
     test(t"decode case class from tsv"):
       Tsv.parseLine(t"hello\tworld").as[Foo]
     .assert(_ == Foo(t"hello", t"world"))
 
     test(t"convert case class to tsv"):
-      Seq(Foo(t"hello", t"world")).tsv.show.s
-    .assert(_ == "hello\tworld") // "
+      Seq(Foo(t"hello", t"world")).tsv.show
+    .assert(_ == t"hello\tworld") // "
 
 case class Foo(one: Text, two: Text)
 case class Bar(one: Double, foo1: Foo, four: Int, foo2: Foo)

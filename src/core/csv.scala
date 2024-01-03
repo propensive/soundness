@@ -27,18 +27,18 @@ import anticipation.*
 
 trait RowFormat:
   protected val separator: Char
-  type Type
-  def wrap(seq: List[Row]): Type
+  type Format
+  def wrap(list: List[Csv]): Format
   
-  def parse[SourceType](source: SourceType)(using readable: Readable[SourceType, Line])
-           : Type = wrap:
-      readable.read(source).to(List).map:
-        line => parseLine(line.content)
+  def parse[SourceType](source: SourceType)(using readable: Readable[SourceType, Line]): Format = wrap:
+    readable.read(source).to(List).map: line =>
+      parseLine(line.content)
 
-  def parseLine(line: Text): Row =
+  def parseLine(line: Text): Csv =
     @tailrec
-    def parseLine(items: Vector[Text], idx: Int, quoted: Boolean, start: Int, end: Int,
-                      join: Boolean): Vector[Text] =
+    def parseLine
+        (items: Vector[Text], idx: Int, quoted: Boolean, start: Int, end: Int, join: Boolean)
+        : Vector[Text] =
       if line.length <= idx then
         if join then items.init :+ t"${items.last}${line.slice(start, if end < 0 then idx else end)}"
         else items :+ line.slice(start, if end < 0 then idx else end)
@@ -61,89 +61,82 @@ trait RowFormat:
           case '"' =>
             if quoted then parseLine(items, idx + 1, quoted = false, start, idx, join = join)
             else if end != -1 then
-              parseLine(items :+ line.slice(start, idx), idx + 1, quoted = true, idx + 1, -1,
-                  join = true)
+              parseLine(items :+ line.slice(start, idx), idx + 1, quoted = true, idx + 1, -1, join = true)
             else parseLine(items, idx + 1, quoted = true, idx + 1, -1, join = false)
   
           case ch: Char =>
             parseLine(items, idx + 1, quoted, start, end, join)
 
-    Row(parseLine(Vector(), 0, quoted = false, 0, -1, join = false)*)
+    Csv(parseLine(Vector(), 0, quoted = false, 0, -1, join = false)*)
 
-  def serialize(row: Row): Text = row.elems.map(escape).join(separator.show)
+  def serialize(row: Csv): Text = row.elems.map(escape).join(separator.show)
   protected def escape(str: Text): Text
 
-object Row:
-  def from[RowType](value: RowType)(using writer: Csv.Writer[RowType]): Row = writer.write(value)
-  given Show[Row] = _.elems.join(t",")
+object Csv:
+  given show: Show[Csv] = _.elems.join(t",")
 
-case class Row(elems: Text*):
-  def as[CellType: ColumnParser]: CellType = summon[ColumnParser[CellType]].decode(this)
+case class Csv(elems: Text*):
+  def as[CellType: CsvDecoder]: CellType = summon[CsvDecoder[CellType]].decode(this)
 
-object Csv extends RowFormat:
-  type Type = Csv
-  def wrap(seq: List[Row]): Csv = Csv(seq)
-  given Show[Csv] = _.rows.map(serialize).join(t"\n")
+object CsvDoc extends RowFormat:
+  type Format = CsvDoc
+  def wrap(seq: List[Csv]): CsvDoc = CsvDoc(seq)
+  given show: Show[CsvDoc] = _.rows.map(serialize).join(t"\n")
 
-  given (using CharEncoder): GenericHttpResponseStream[Csv] with
-    def mediaType: Text = "text/csv".tt
-    def content(value: Csv): LazyList[IArray[Byte]] =
-      LazyList(value.rows.map(Csv.serialize(_)).join(t"\n").bytes)
-
-  given Writer[String] = s => Row(Text(s))
-  given Writer[Text] = s => Row(s)
-  given Writer[Int] = i => Row(i.show)
-  given (using BooleanStyle): Writer[Boolean] = b => Row(b.show)
-  given Writer[Byte] = b => Row(b.show)
-  given Writer[Short] = s => Row(s.show)
-  given Writer[Float] = f => Row(f.toString.tt)
-  given Writer[Double] = d => Row(d.toString.tt)
-  given Writer[Char] = c => Row(c.show)
-
-  object Writer extends ProductDerivation[Writer]:
-    inline def join[DerivationType: ReflectiveProduct]: Writer[DerivationType] = value =>
-      Row(params(value)(typeclass.write(param).elems).to(List).flatten*)
-    
-  trait Writer[T]:
-    def write(value: T): Row
+  given httpResponseStream(using CharEncoder): GenericHttpResponseStream[CsvDoc] with
+    def mediaType: Text = t"text/csv"
+    def content(value: CsvDoc): LazyList[IArray[Byte]] =
+      LazyList(value.rows.map(CsvDoc.serialize(_)).join(t"\n").bytes)
 
   override val separator = ','
-  def escape(str: Text): Text =
-    val c = str.count { ch => ch.isWhitespace || ch == '"' || ch == ',' }
-    if c > 0 then t""""${str.s.replaceAll("\"", "\"\"").nn}"""" else str
+  
+  def escape(text: Text): Text =
+    val count = text.count { char => char.isWhitespace || char == '"' || char == ',' }
+    if count > 0 then t""""${text.s.replaceAll("\"", "\"\"").nn}"""" else text
 
-extension [T](value: Seq[T])
-  def csv(using Csv.Writer[T]): Csv = Csv(value.to(List).map(summon[Csv.Writer[T]].write(_)))
-  def tsv(using Csv.Writer[T]): Tsv = Tsv(value.to(List).map(summon[Csv.Writer[T]].write(_)))
+object CsvEncoder extends ProductDerivation[CsvEncoder]:
+  inline def join[DerivationType: ReflectiveProduct]: CsvEncoder[DerivationType] = value =>
+    Csv(params(value)(typeclass.encode(param).elems).to(List).flatten*)
+  
+  given encoder[ValueType](using encoder: Encoder[ValueType]): CsvEncoder[ValueType] = value =>
+    Csv(encoder.encode(value))
+  
+trait CsvEncoder[ValueType]:
+  def encode(value: ValueType): Csv
 
-case class Csv(rows: List[Row]):
-  def as[T: ColumnParser]: List[T] = rows.map(_.as[T])
+extension [ValueType](value: ValueType)
+  def csv(using encoder: CsvEncoder[ValueType]): Csv = encoder.encode(value)
 
-case class Tsv(rows: List[Row]):
-  def as[T: ColumnParser]: List[T] = rows.map(_.as[T])
+extension [ElementType](value: Seq[ElementType])
+  def csv(using encoder: CsvEncoder[ElementType]): CsvDoc = CsvDoc(value.to(List).map(encoder.encode(_)))
+  def tsv(using encoder: CsvEncoder[ElementType]): TsvDoc = TsvDoc(value.to(List).map(encoder.encode(_)))
 
-object Tsv extends RowFormat:
-  type Type = Tsv
-  def wrap(seq: List[Row]): Tsv = Tsv(seq)
+case class CsvDoc(rows: List[Csv]):
+  def as[ValueType: CsvDecoder]: List[ValueType] = rows.map(_.as[ValueType])
+
+case class TsvDoc(rows: List[Csv]):
+  def as[ValueType: CsvDecoder]: List[ValueType] = rows.map(_.as[ValueType])
+
+object TsvDoc extends RowFormat:
+  type Format = TsvDoc
+  def wrap(seq: List[Csv]): TsvDoc = TsvDoc(seq)
   override val separator = '\t'
   def escape(str: Text): Text = Text(str.s.replaceAll("\t", "        ").nn)
-  given Show[Tsv] = _.rows.map(serialize).join(t"\n")
+  given show: Show[TsvDoc] = _.rows.map(serialize).join(t"\n")
 
-  given (using CharEncoder): GenericHttpResponseStream[Tsv] with
+  given httpResponseStream(using CharEncoder): GenericHttpResponseStream[TsvDoc] with
     def mediaType: Text = "text/tab-separated-values".tt
     
-    def content(value: Tsv): LazyList[IArray[Byte]] =
-      LazyList(value.rows.map(Tsv.serialize(_)).join(t"\n").bytes)
+    def content(value: TsvDoc): LazyList[IArray[Byte]] =
+      LazyList(value.rows.map(TsvDoc.serialize(_)).join(t"\n").bytes)
 
-
-object ColumnParser extends ProductDerivation[ColumnParser]:
-  
-  inline def join[DerivationType: ReflectiveProduct]: ColumnParser[DerivationType] =
-    new ColumnParser[DerivationType]:
-      def decode(elems: Row): DerivationType =
+object CsvDecoder extends ProductDerivation[CsvDecoder]:
+  inline def join[DerivationType: ReflectiveProduct]: CsvDecoder[DerivationType] =
+    new CsvDecoder[DerivationType]:
+      def decode(elems: Csv): DerivationType =
         var count: Int = 0
         product:
-          val row = Row(elems.elems.drop(count)*)
+          val row = Csv(elems.elems.drop(count)*)
           count += typeclass.width
           typeclass.decode(row)
         
@@ -158,15 +151,8 @@ object ColumnParser extends ProductDerivation[ColumnParser]:
         
         count
   
-  given decoder[T: Decoder]: ColumnParser[T] = _.elems.head.decodeAs[T]
+  given decoder[ValueType: Decoder]: CsvDecoder[ValueType] = _.elems.head.decodeAs[ValueType]
 
-  def apply[T](fn: Row => T, width: Int = 1): ColumnParser[T] =
-    val colWidth = width
-    
-    new ColumnParser[T]:
-      def decode(row: Row): T = fn(row)
-      override def width: Int = colWidth
-
-trait ColumnParser[T]:
-  def decode(elems: Row): T
+trait CsvDecoder[ValueType]:
+  def decode(elems: Csv): ValueType
   def width: Int = 1
