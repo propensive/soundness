@@ -226,8 +226,11 @@ trait FallbackJsonDeserializer:
       def read(value: JsonAst, missing: Boolean): Optional[ValueType] =
         if missing then Unset else reader.read(value, false)
   
-  given decoder[T](using jsonAccess: Raises[JsonAccessError], decoder: Decoder[T]): JsonDeserializer[T]^{jsonAccess, decoder} =
-    (v, missing) => decoder.decode(v.string)
+  given decoder
+      [ValueType]
+      (using jsonAccess: Raises[JsonAccessError], decoder: Decoder[ValueType])
+      : JsonDeserializer[ValueType]^{jsonAccess, decoder} =
+    (value, missing) => decoder.decode(value.string)
 
 object JsonDeserializer extends FallbackJsonDeserializer:
   given jsonAst(using jsonAccess: Raises[JsonAccessError]): JsonDeserializer[JsonAst]^{jsonAccess} =
@@ -322,11 +325,13 @@ trait JsonDeserializer[ValueType]:
 
 class Json(rootValue: Any) extends Dynamic derives CanEqual:
   def root: JsonAst = rootValue.asInstanceOf[JsonAst]
-  def apply(idx: Int)(using Raises[JsonAccessError]): Json = Json(root.array(idx))
-  def selectDynamic(field: String)(using erased DynamicJsonEnabler)(using Raises[JsonAccessError]): Json = apply(Text(field))
+  def apply(index: Int)(using Raises[JsonAccessError]): Json = Json(root.array(index))
+  
+  def selectDynamic(field: String)(using erased DynamicJsonEnabler)(using Raises[JsonAccessError]): Json =
+    apply(field.tt)
 
-  def applyDynamic(field: String)(idx: Int)(using erased DynamicJsonEnabler)(using Raises[JsonAccessError]): Json =
-    apply(Text(field))(idx)
+  def applyDynamic(field: String)(index: Int)(using erased DynamicJsonEnabler, Raises[JsonAccessError]): Json =
+    apply(field.tt)(index)
   
   def apply(field: Text)(using Raises[JsonAccessError]): Json =
     root.obj(0).indexWhere(_ == field.s) match
@@ -429,103 +434,109 @@ package jsonPrinters:
 
 object MinimalSerializer extends JsonPrinter:
   def serialize(json: JsonAst): Text =
-    val sb: StringBuilder = StringBuilder()
+    val builder: StringBuilder = StringBuilder()
     def appendString(str: String): Unit =
       str.foreach:
-        case '\t' => sb.append("\\t")
-        case '\n' => sb.append("\\n")
-        case '\r' => sb.append("\\r")
-        case '\\' => sb.append("\\\\")
-        case '\f' => sb.append("\\f")
-        case ch   => sb.append(ch)
+        case '\t' => builder.append("\\t")
+        case '\n' => builder.append("\\n")
+        case '\r' => builder.append("\\r")
+        case '\\' => builder.append("\\\\")
+        case '\f' => builder.append("\\f")
+        case char => builder.append(char)
 
     def recur(json: JsonAst): Unit = json.asMatchable match
       case (keys, values) => (keys.asMatchable: @unchecked) match
         case keys: Array[String] @unchecked => (values.asMatchable: @unchecked) match
           case values: Array[JsonAst] @unchecked =>
-            sb.append('{')
+            builder.append('{')
             val last = keys.length - 1
             keys.indices.foreach: i =>
-              sb.append('"')
+              builder.append('"')
               appendString(keys(i))
-              sb.append('"')
-              sb.append(':')
+              builder.append('"')
+              builder.append(':')
               recur(values(i))
-              sb.append(if i == last then '}' else ',')
+              builder.append(if i == last then '}' else ',')
       
       case array: Array[JsonAst] @unchecked =>
-        sb.append('[')
+        builder.append('[')
         val last = array.length - 1
         array.indices.foreach: i =>
           recur(array(i))
-          sb.append(if i == last then ']' else ',')
+          builder.append(if i == last then ']' else ',')
       
       case long: Long =>
-       sb.append(long.toString)
+       builder.append(long.toString)
       
       case double: Double =>
-        sb.append(double.toString)
+        builder.append(double.toString)
       
       case string: String =>
-        sb.append('"')
+        builder.append('"')
         appendString(string)
-        sb.append('"')
-      case boolean: Boolean => sb.append(boolean.toString)
-      case _ => sb.append("null")
+        builder.append('"')
+      case boolean: Boolean => builder.append(boolean.toString)
+      case _ => builder.append("null")
 
     recur(json)
-    sb.toString.show
+    builder.toString.show
 
 // FIXME: Implement this
 object HumanReadableSerializer extends JsonPrinter:
   def serialize(json: JsonAst): Text =
-    val sb: StringBuilder = StringBuilder()
-    def appendString(str: String): Unit =
-      str.foreach:
-        case '\t' => sb.append("\\t")
-        case '\n' => sb.append("\\n")
-        case '\r' => sb.append("\\r")
-        case '\\' => sb.append("\\\\")
-        case '\f' => sb.append("\\f")
-        case ch   => sb.append(ch)
+    val builder: StringBuilder = StringBuilder()
+    
+    def appendString(string: String): Unit =
+      string.foreach:
+        case '\t' => builder.append("\\t")
+        case '\n' => builder.append("\\n")
+        case '\r' => builder.append("\\r")
+        case '\\' => builder.append("\\\\")
+        case '\f' => builder.append("\\f")
+        case ch   => builder.append(ch)
 
     def recur(json: JsonAst, indent: Int): Unit = json.asMatchable match
       case (keys, values) => (keys.asMatchable: @unchecked) match
         case keys: Array[String] => (values.asMatchable: @unchecked) match
           case values: Array[JsonAst] @unchecked =>
-            sb.append('{')
+            builder.append('{')
             val last = keys.length - 1
-            keys.indices.foreach: i =>
-              sb.append('"')
-              appendString(keys(i))
-              sb.append('"')
-              sb.append(':')
-              recur(values(i), indent)
-              sb.append(if i == last then '}' else ',')
+            
+            keys.indices.foreach: index =>
+              builder.append('"')
+              appendString(keys(index))
+              builder.append('"')
+              builder.append(':')
+              recur(values(index), indent)
+              builder.append(if index == last then '}' else ',')
       
       case array: Array[JsonAst] @unchecked =>
-        sb.append('[')
+        builder.append('[')
         val last = array.length - 1
-        array.indices.foreach: i =>
-          recur(array(i), indent)
-          sb.append(if i == last then ']' else ',')
+        
+        array.indices.foreach: index =>
+          recur(array(index), indent)
+          builder.append(if index == last then ']' else ',')
       
       case long: Long =>
-       sb.append(long.toString)
+       builder.append(long.toString)
       
       case double: Double =>
-        sb.append(double.toString)
+        builder.append(double.toString)
       
       case string: String =>
-        sb.append('"')
+        builder.append('"')
         appendString(string)
-        sb.append('"')
+        builder.append('"')
       
-      case boolean: Boolean => sb.append(boolean.toString)
-      case _ => sb.append("null")
+      case boolean: Boolean =>
+        builder.append(boolean.toString)
+      
+      case _ =>
+        builder.append("null")
 
     recur(json, 0)
-    sb.toString.show
+    builder.text
 
 
 object JsonAccessError:
