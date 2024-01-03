@@ -182,6 +182,7 @@ and a good implementation can dramatically improve the readability of the
 
 
 
+
 ## Status
 
 Chiaroscuro is classified as __maturescent__. For reference, Scala One projects are
@@ -288,6 +289,6 @@ The logo shows a stylized crescent moon, illustrating the contrast of light agai
 
 ## License
 
-Chiaroscuro is copyright &copy; 2023 Jon Pretty & Propensive O&Uuml;, and
+Chiaroscuro is copyright &copy; 2024 Jon Pretty & Propensive O&Uuml;, and
 is made available under the [Apache 2.0 License](/license.md).
 
