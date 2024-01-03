@@ -37,12 +37,12 @@ trait Derived[TypeclassType[_]]:
         (variant: Text)
         [ResultType]
         (inline split: (typeclass: TypeclassType[DerivationType]) ?=> ResultType)
-        (using mirror: Mirror.Of[DerivationType])
+        (using reflective: Reflective[DerivationType])
         : ResultType =
 
-      inline mirror match
-        case given Mirror.SumOf[DerivationType] =>
-          sum[DerivationType, mirror.MirroredElemTypes, mirror.MirroredElemLabels](variant):
+      inline reflective match
+        case given ReflectiveSum[DerivationType] =>
+          sum[DerivationType, reflective.MirroredElemTypes, reflective.MirroredElemLabels](variant):
             typeclass => split(using typeclass)
 
     transparent inline def from
@@ -51,21 +51,21 @@ trait Derived[TypeclassType[_]]:
         [ResultType]
         (inline split: (typeclass: TypeclassType[DerivationType], label: Text, variant: DerivationType,
             ordinal: Int) ?=> ResultType)
-        (using mirror: Mirror.Of[DerivationType])
+        (using reflective: ReflectiveSum[DerivationType])
         : ResultType =
 
-      inline mirror match
-        case mirror: Mirror.SumOf[DerivationType] =>
-          val ordinal = mirror.ordinal(value)
-          sum[DerivationType, mirror.MirroredElemTypes, mirror.MirroredElemLabels](ordinal)
-              (using mirror):
+      inline reflective match
+        case reflective: ReflectiveSum[DerivationType] =>
+          val ordinal = reflective.ordinal(value)
+          sum[DerivationType, reflective.MirroredElemTypes, reflective.MirroredElemLabels](ordinal)
+              (using reflective):
             label => typeclass => split(using typeclass, label, value, ordinal)
 
     private transparent inline def sum
         [DerivationType, VariantsType <: Tuple, LabelsType <: Tuple]
         (ordinal: Int)
         [ResultType]
-        (using mirror: Mirror.SumOf[DerivationType])
+        (using reflective: ReflectiveSum[DerivationType])
         (inline split: Text => TypeclassType[DerivationType] => ResultType)
         : ResultType =
 
@@ -84,7 +84,7 @@ trait Derived[TypeclassType[_]]:
         (variant: Text)
         [ResultType]
         (inline split: TypeclassType[DerivationType] => ResultType)
-        (using mirror: Mirror.SumOf[DerivationType])
+        (using reflective: ReflectiveSum[DerivationType])
         : ResultType =
 
       inline erasedValue[VariantsType] match
@@ -98,17 +98,17 @@ trait Derived[TypeclassType[_]]:
           case EmptyTuple => throw Mistake(msg"unreachable")
         case EmptyTuple =>
           val raises = summonInline[Raises[CoproductError]]
-          val variants = constValueTuple[mirror.MirroredElemLabels].toList.map(_.toString.tt)
-          abort(CoproductError(variant, constValue[mirror.MirroredLabel].tt, variants))(using raises)
+          val variants = constValueTuple[reflective.MirroredElemLabels].toList.map(_.toString.tt)
+          abort(CoproductError(variant, constValue[reflective.MirroredLabel].tt, variants))(using raises)
   
   protected object product:
     transparent inline def of
         [DerivationType]
-        (using mirror: Mirror.ProductOf[DerivationType])
+        (using reflective: ReflectiveProduct[DerivationType])
         (inline join: (typeclass: TypeclassType[Any], label: Text) ?=> Any) =
       
-      mirror.fromProduct:
-        product[DerivationType, mirror.MirroredElemTypes, mirror.MirroredElemLabels]
+      reflective.fromProduct:
+        product[DerivationType, reflective.MirroredElemTypes, reflective.MirroredElemLabels]
             (typeclass ?=> label => join(using typeclass, label))
 
     private transparent inline def product
@@ -128,17 +128,17 @@ trait Derived[TypeclassType[_]]:
     transparent inline def from
         [DerivationType]
         (inline value: DerivationType)
-        (using mirror: Mirror.ProductOf[DerivationType])
+        (using reflective: ReflectiveProduct[DerivationType])
         [ResultType: ClassTag]
         (inline join: (typeclass: TypeclassType[Any], label: Text, param: Any) ?=> ResultType)
         : IArray[ResultType] =
       
-      val array: Array[ResultType] = new Array(valueOf[Tuple.Size[mirror.MirroredElemTypes]])
+      val array: Array[ResultType] = new Array(valueOf[Tuple.Size[reflective.MirroredElemTypes]])
       
       inline value.asMatchable match
-        case value: Product => inline mirror match
-          case given Mirror.ProductOf[DerivationType & Product] =>
-            product[DerivationType, mirror.MirroredElemTypes, mirror.MirroredElemLabels, ResultType]
+        case value: Product => inline reflective match
+          case given ReflectiveProduct[DerivationType & Product] =>
+            product[DerivationType, reflective.MirroredElemTypes, reflective.MirroredElemLabels, ResultType]
                 (Tuple.fromProductTyped(value), array, 0):
               (typeclass, label, param) => join(using typeclass, label, param)
       
@@ -162,13 +162,17 @@ trait Derived[TypeclassType[_]]:
                 
                 product[DerivationType, paramsType, labelsType, ResultType](params, array, index + 1)(join)
 
-  inline def join[DerivationType: Mirror.ProductOf]: TypeclassType[DerivationType]
-  inline def split[DerivationType: Mirror.SumOf]: TypeclassType[DerivationType]
+  inline def join[DerivationType: ReflectiveProduct]: TypeclassType[DerivationType]
+  inline def split[DerivationType: ReflectiveSum]: TypeclassType[DerivationType]
 
-  inline given derived[DerivationType](using mirror: Mirror.Of[DerivationType]): TypeclassType[DerivationType] =
-    inline mirror match
-      case mirror: Mirror.ProductOf[DerivationType] =>
-        join[DerivationType](using mirror)
+  inline given derived[DerivationType](using reflective: Reflective[DerivationType]): TypeclassType[DerivationType] =
+    inline reflective match
+      case reflective: ReflectiveProduct[DerivationType] =>
+        join[DerivationType](using reflective)
       
-      case mirror: Mirror.SumOf[DerivationType] =>
-        split[DerivationType](using mirror)
+      case reflective: ReflectiveSum[DerivationType] =>
+        split[DerivationType](using reflective)
+
+type Reflective[DerivationType] = Mirror.Of[DerivationType]
+type ReflectiveProduct[DerivationType] = Mirror.ProductOf[DerivationType]
+type ReflectiveSum[DerivationType] = Mirror.SumOf[DerivationType]
