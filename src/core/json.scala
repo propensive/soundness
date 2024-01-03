@@ -162,7 +162,7 @@ object JsonEncoder extends FallbackJsonEncoder:
   given encoder[ValueType](using encoder: Encoder[ValueType]): JsonEncoder[ValueType]^{encoder} = value =>
     JsonAst(value.encode.s)
   
-  given (using jsonAccess: Raises[JsonAccessError]): JsonEncoder[Json]^{jsonAccess} = _.root
+  given json(using jsonAccess: Raises[JsonAccessError]): JsonEncoder[Json]^{jsonAccess} = _.root
   
   given nil: JsonEncoder[Nil.type] = value => JsonAst(IArray[JsonAst]())
 
@@ -170,18 +170,17 @@ object JsonEncoder extends FallbackJsonEncoder:
       : JsonEncoder[CollectionType[ElementType]] = values =>
     JsonAst(IArray.from(values.map(summon[JsonEncoder[ElementType]].encode(_))))
 
-  given map[ValueType](using encoder: JsonEncoder[ValueType]): JsonEncoder[Map[String, ValueType]] =
-    map =>
-      val keys = new Array[String](map.size)
-      val values = new Array[JsonAst](map.size)
-      var index = 0
-      
-      map.foreach: (key, value) =>
-        keys(index) = key
-        values(index) = encoder.encode(value)
-        index += 1
-      
-      JsonAst(keys.immutable(using Unsafe), values.immutable(using Unsafe))
+  given map[ValueType](using encoder: JsonEncoder[ValueType]): JsonEncoder[Map[String, ValueType]] = map =>
+    val keys = new Array[String](map.size)
+    val values = new Array[JsonAst](map.size)
+    var index = 0
+    
+    map.foreach: (key, value) =>
+      keys(index) = key
+      values(index) = encoder.encode(value)
+      index += 1
+    
+    JsonAst(keys.immutable(using Unsafe), values.immutable(using Unsafe))
 
   given opt[ValueType: JsonEncoder]: JsonEncoder[Option[ValueType]] with
     override def omit(value: Option[ValueType]): Boolean = value.isEmpty
@@ -197,12 +196,13 @@ object JsonEncoder extends FallbackJsonEncoder:
       case given Mirror.ProductOf[DerivationType & Product] => (value: DerivationType) =>
         (value.asMatchable: @unchecked) match
           case value: Product =>
-            val labels: IArray[Text] = Derivation.productOf[DerivationType & Product, JsonEncoder](value)(label)
+            val labels: IArray[String] =
+              Derivation.productOf[DerivationType & Product, JsonEncoder](value)(label.s)
             
             val values: IArray[JsonAst] = Derivation.productOf[DerivationType & Product, JsonEncoder](value):
               typeclass.encode(param)
 
-            (labels, values).asInstanceOf[JsonAst]
+            JsonAst((labels, values))
     
       case sumMirror: Mirror.SumOf[DerivationType] =>
         (value: DerivationType) =>
@@ -218,7 +218,7 @@ trait JsonEncoder[-ValueType]:
 
   def tag(label: Text)(using jsonAccess: Raises[JsonAccessError]): JsonEncoder[ValueType]^{jsonAccess} = (value: ValueType) =>
     val (keys, values) = encode(value).obj
-    (keys :+ "_type", values :+ label.s).asInstanceOf[JsonAst]
+    JsonAst((keys :+ "_type", values :+ label.s))
 
 trait FallbackJsonDecoder:
   given maybe[ValueType](using decoder: JsonDecoder[ValueType]^): JsonDecoder[Optional[ValueType]]^{decoder} =
@@ -302,7 +302,7 @@ object JsonDecoder extends FallbackJsonDecoder:
         
         Derivation.productOf[DerivationType, JsonDecoder]:
           val missing = !values.contains(label.s)
-          val value = if missing then 0.asInstanceOf[JsonAst] else values(label.s)
+          val value = if missing then JsonAst(0L) else values(label.s)
           typeclass.decode(value, missing)
     
       case mirror: Mirror.SumOf[DerivationType] => (value, missing) =>
