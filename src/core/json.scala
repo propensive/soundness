@@ -138,7 +138,7 @@ object Json extends Dynamic:
       : Aggregable[Bytes, Json] =
     Json.parse(_)
 
-  def applyDynamicNamed[T <: String](methodName: "of")(elements: (String, Json)*): Json =
+  def applyDynamicNamed(methodName: "of")(elements: (String, Json)*): Json =
     val keys: IArray[String] = IArray.from(elements.map(_(0)))
     val values: IArray[JsonAst] = IArray.from(elements.map(_(1).root))
     Json(JsonAst((keys, values)))
